@@ -123,7 +123,7 @@ namespace Beamable
 			{
 				ConfigDatabase.Init();
 			}
-			catch (FileNotFoundException)
+			catch (FileNotFoundException) when (!Application.isEditor)
 			{
 				Debug.LogError("Failed to find 'config-defaults' file. This should never be seen here. If you do, please file a bug-report.");
 			}
@@ -141,8 +141,11 @@ namespace Beamable
 				provider => provider.GetService<PlatformRequester>());
 			DependencyBuilder.AddSingleton<IHttpRequester>(p => p.GetService<PlatformRequester>());
 			DependencyBuilder.AddSingleton(BeamableEnvironment.Data);
+			DependencyBuilder.AddSingleton<IPlatformRequesterHostResolver>(() => BeamableEnvironment.Data);
 			DependencyBuilder.AddSingleton<IUserContext>(provider => provider.GetService<IPlatformService>());
 			DependencyBuilder.AddSingleton<IConnectivityService, ConnectivityService>();
+			DependencyBuilder.AddSingleton<GatewayConnectivityChecker>();
+			RegisterConnectivityChecker();
 			DependencyBuilder.AddSingleton<IDeviceIdResolver, DefaultDeviceIdResolver>();
 			DependencyBuilder.AddScoped<IAuthService, AuthService>();
 			DependencyBuilder.AddScoped<IInventoryApi, InventoryService>(
@@ -266,11 +269,58 @@ namespace Beamable
 				
 				if (state == UnityEditor.PlayModeStateChange.ExitingPlayMode)
 				{
-					Debug.Log("Stopping all contexts manually");
 					await StopAllContexts();
 				}
 			};
 #endif
+		}
+
+		private static void RegisterConnectivityChecker()
+		{
+			// XXX: Whenever the presence API is stable enough to use as a connectivity source, replace this hardcoded value with a CoreConfig option
+			var strategy = ConnectivityStrategy.BeamableGateway;
+
+			#region example core config option
+			// [Tooltip("The ConnectivityStrategy allows the developer to configure how Beamable determines connectivity to the internet. " +
+			//          "Without connectivity, Beamable will not function as intended. By default, the \"BeamableGateway\" strategy will " + 
+			//          "configure the SDK to send periodic requests to api.beamable.com/health. The result of those network requests will " +
+			// 		 "determine connectivity for the rest of the SDK. \n\n" + 
+			//          "The \"BeamablePresence\" strategy will use the results of the existing " + 
+			//          "presence heartbeat to determine network connectivity. If the " + nameof(SendHeartbeat) + @" property is disabled, " + 
+			//          "then \"BeamablePresence\" is invalid. \n\n" +
+			//          "Finally, the \"None\" strategy will not create any connectivity checker. In this case, it is up to the developer " +
+			//          "to register a custom IConnectivityChecker with the BeamContext dependencies. If no IConnectivityChecker is registered, " +
+			//          "an exception will be thrown on startup."
+			// )]
+			// public ConnectivityStrategy ConnectivityStrategy = ConnectivityStrategy.BeamableGateway;
+			#endregion
+
+			void Register<T>() where T : IConnectivityChecker
+			{
+				DependencyBuilder.AddSingleton<IConnectivityChecker>(p =>
+				{
+					var checker = p.GetService<T>();
+					checker.ConnectivityCheckingEnabled = true;
+					return checker;
+				});
+			}
+
+			switch (strategy)
+			{
+				case ConnectivityStrategy.BeamableGateway:
+					Register<GatewayConnectivityChecker>();
+					break;
+				case ConnectivityStrategy.BeamablePresence when !CoreConfiguration.Instance.SendHeartbeat:
+					throw new InvalidOperationException(
+						"It is invalid to set the Beamable ConnectivityStrategy to BeamablePresence when the SendHeartbeat flag is false.");
+				case ConnectivityStrategy.BeamablePresence:
+					Register<IPresenceApi>();
+					break;
+				case ConnectivityStrategy.None:
+				default:
+					// it is up the developer to add a service
+					break;
+			}
 		}
 
 		/// <summary>
@@ -298,6 +348,20 @@ namespace Beamable
 			{
 				await ctx.Stop();
 			}
+		}
+
+		/// <summary>
+		/// Changes the current PID value for the game, and resets the game to the given scene defined by <see cref="sceneQualifier"/>.
+		/// When the next <see cref="BeamContext"/> loads, it will use the same CID as before, but the
+		/// PID will be the value given to this function.
+		/// </summary>
+		/// <param name="pid">a valid Beamable PID for the current CID.</param>
+		/// <param name="sceneQualifier">The string should either be a scene name, or the stringified int of a scene build index.</param>
+		public static async Promise ChangePid(string pid, string sceneQualifier = "0")
+		{
+			await StopAllContexts();
+			ConfigDatabase.SetString("pid", pid, persist: false); // setting persist to false means the new pid won't be stored in player prefs.
+			await ResetToScene(sceneQualifier);
 		}
 
 		/// <summary>

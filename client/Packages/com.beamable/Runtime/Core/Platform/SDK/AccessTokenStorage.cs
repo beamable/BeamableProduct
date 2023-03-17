@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.Api
@@ -81,6 +82,10 @@ namespace Beamable.Api
 
 		public Promise<Unit> SaveTokenForRealm(string cid, string pid, AccessToken token)
 		{
+			if (_prefix.StartsWith("editor."))
+			{
+				SaveTokenForCustomer(cid, token); // if this token looks like an editor token, then we should should also save it as customer scoped, otherwise, the save action won't apply to the right data. 
+			}
 			AliasHelper.ValidateCid(cid);
 			PlayerPrefs.SetString($"{_prefix}{cid}.{pid}.access_token", token.Token);
 			PlayerPrefs.SetString($"{_prefix}{cid}.{pid}.refresh_token", token.RefreshToken);
@@ -172,7 +177,20 @@ namespace Beamable.Api
 			AliasHelper.ValidateCid(cid);
 			var compressedTokens = PlayerPrefs.GetString(GetDeviceTokenKey(cid, pid), "");
 			var refreshTokens = compressedTokens.Split(Constants.DelimiterSplit, StringSplitOptions.RemoveEmptyEntries);
-			return Array.ConvertAll(refreshTokens, Convert);
+			var converted = Array.ConvertAll(refreshTokens, Convert);
+
+			// return converted;
+			var validTokens = new List<TokenResponse>();
+			foreach (var convert in converted)
+			{
+				var isOfflineToken = convert.access_token == Common.Constants.Commons.OFFLINE;
+				if (!isOfflineToken)
+				{
+					validTokens.Add(convert);
+				}
+			}
+
+			return validTokens.ToArray();
 		}
 
 		private string Convert(IAccessToken token)

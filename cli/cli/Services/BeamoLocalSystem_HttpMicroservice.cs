@@ -3,6 +3,9 @@
  * It handles default values, how to start the container with its data and other utility functions around this protocol. 
  */
 
+using cli.Utils;
+using Newtonsoft.Json;
+
 namespace cli.Services;
 
 public partial class BeamoLocalSystem
@@ -63,14 +66,17 @@ public partial class BeamoLocalSystem
 
 		bindMounts.AddRange(localProtocol.CustomBindMounts);
 
+		// TODO: Move this out of here and into another service then get the cached value here.
+		var secret = await _beamo.GetRealmSecret();
+
 		var environmentVariables = new List<DockerEnvironmentVariable>()
 		{
-			new() { VariableName = ENV_CID, Value = localProtocol.CID },
-			new() { VariableName = ENV_PID, Value = localProtocol.PID },
-			new() { VariableName = ENV_SECRET, Value = localProtocol.RealmSecret },
-			new() { VariableName = ENV_HOST, Value = localProtocol.WebSocketHost },
-			new() { VariableName = ENV_LOG_LEVEL, Value = localProtocol.LogLevel },
-			new() { VariableName = ENV_NAME_PREFIX, Value = localProtocol.Prefix },
+			new() { VariableName = ENV_CID, Value = _ctx.Cid },
+			new() { VariableName = ENV_PID, Value = _ctx.Pid },
+			new() { VariableName = ENV_SECRET, Value = secret },
+			new() { VariableName = ENV_HOST, Value = $"{_ctx.Host.Replace("http://", "wss://").Replace("https://", "wss://")}/socket" },
+			new() { VariableName = ENV_LOG_LEVEL, Value =  _ctx.LogLevel.ToString() },
+			new() { VariableName = ENV_NAME_PREFIX, Value = MachineHelper.GetUniqueDeviceId() },
 			new() { VariableName = ENV_WATCH_TOKEN, Value = shouldPrepareWatch.ToString() },
 		};
 		environmentVariables.AddRange(localProtocol.CustomEnvironmentVariables);
@@ -80,8 +86,8 @@ public partial class BeamoLocalSystem
 		var reqTimeout = 1;
 		var waitRetryMax = 3;
 		var tries = 5;
-		var port = localProtocol.HealthCheckInternalPort;
-		var endpoint = localProtocol.HealthCheckEndpoint;
+		var port = 6565;
+		var endpoint = "health";
 		var pipeCmd = "kill";
 		var cmdStr = $"wget -O- -q --timeout={reqTimeout} --waitretry={waitRetryMax} --tries={tries} http://localhost:{port}/{endpoint} || {pipeCmd} 1";
 
@@ -120,18 +126,7 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	private async Task PrepareDefaultLocalProtocol_HttpMicroservice(BeamoServiceDefinition owner, HttpMicroserviceLocalProtocol local)
 	{
-		// TODO: Move this out of here and into another service then get the cached value here.
-		var secret = await _beamo.GetRealmSecret();
 
-		local.CID = _ctx.Cid;
-		local.PID = _ctx.Pid;
-		local.RealmSecret = secret;
-		local.WebSocketHost = $"{_ctx.Host.Replace("http://", "wss://").Replace("https://", "wss://")}/socket";
-		local.Prefix = Environment.MachineName;
-		local.LogLevel = _ctx.LogLevel.ToString();
-
-		local.HealthCheckEndpoint = "health";
-		local.HealthCheckInternalPort = "6565";
 
 		local.CustomPortBindings = new List<DockerPortBinding>();
 		local.CustomVolumes = new List<DockerVolume>();
@@ -172,26 +167,36 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 	/// This is for local and development things
 	/// </summary>
 	public string RelativeDockerfilePath;
-
-
-	public string CID;
-	public string PID;
-
-	/// <summary>
-	/// TODO: We should add secret storage/resolution to Beam-O...
-	/// </summary>
-	public string RealmSecret;
-
-	/// <summary>
-	/// TODO: Discuss with Drazen how to step out of this problem by leveraging the Http Service Discovery thing.
-	/// </summary>
-	public string WebSocketHost;
-
-	public string LogLevel;
-	public string Prefix;
-
-	public string HealthCheckEndpoint;
-	public string HealthCheckInternalPort;
+	//
+	// [JsonIgnore]
+	// public string CID;
+	//
+	// [JsonIgnore]
+	// public string PID;
+	//
+	// /// <summary>
+	// /// TODO: We should add secret storage/resolution to Beam-O...
+	// /// </summary>
+	// [JsonIgnore]
+	// public string RealmSecret;
+	//
+	// /// <summary>
+	// /// TODO: Discuss with Drazen how to step out of this problem by leveraging the Http Service Discovery thing.
+	// /// </summary>
+	// [JsonIgnore]
+	// public string WebSocketHost;
+	//
+	// [JsonIgnore]
+	// public string LogLevel;
+	//
+	// [JsonIgnore]
+	// public string Prefix;
+	//
+	// [JsonIgnore]
+	// public string HealthCheckEndpoint;
+	//
+	// [JsonIgnore]
+	// public string HealthCheckInternalPort;
 
 	public DockerBindMount BindSrcForHotReloading;
 	public string HotReloadEnabledEndpoint;
@@ -202,15 +207,16 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 	public List<DockerVolume> CustomVolumes;
 	public List<DockerEnvironmentVariable> CustomEnvironmentVariables;
 
-	public bool VerifyCanBeBuiltLocally()
+	public bool VerifyCanBeBuiltLocally(ConfigService configService)
 	{
 		var hasPaths = !string.IsNullOrEmpty(DockerBuildContextPath) && !string.IsNullOrEmpty(RelativeDockerfilePath);
 		if (hasPaths)
 		{
-			if (!Directory.Exists(DockerBuildContextPath))
-				throw new Exception($"DockerBuildContext doesn't exist: [{DockerBuildContextPath}]");
+			var path = configService.GetRelativePath(DockerBuildContextPath);
+			if (!Directory.Exists(path))
+				throw new Exception($"DockerBuildContext doesn't exist: [{path}]");
 
-			var dockerfilePath = Path.Combine(DockerBuildContextPath, RelativeDockerfilePath);
+			var dockerfilePath = Path.Combine(path, RelativeDockerfilePath);
 			if (!File.Exists(dockerfilePath))
 				throw new Exception($"No Dockerfile found at path: [{dockerfilePath}]");
 		}

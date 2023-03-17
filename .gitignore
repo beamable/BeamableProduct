@@ -38,6 +38,12 @@ fake-react/
 fake-svelte/
 loadtests/
 
+user-token.json
+
+/stress-tests/standalone-microservice/services/StressTest/bin/
+/stress-tests/standalone-microservice/services/StressTest/obj/
+/stress-tests/standalone-microservice/services/StressTest/.idea/
+
 # Microservice project files
 /microservice/bin/
 /microservice/obj
@@ -69,6 +75,23 @@ loadtests/
 /cli/tests/.idea/
 /cli/*.sln.DotSettings.*
 cli/cli/beamoLocalRuntime.json
+
+/templates/artifacts/
+/templates/bin/
+/templates/obj
+/templates/.idea/
+/templates/templates/bin/
+/templates/templates/nupkg/
+/templates/templates/obj/
+/templates/templates/.idea/
+/templates/templates/Data/
+/templates/BeamService/bin/
+/templates/BeamService/obj/
+/templates/BeamService/.idea/
+/templates/CommonLibrary/bin/
+/templates/CommonLibrary/obj/
+/templates/CommonLibrary/.idea/
+/templates/*.sln.DotSettings.*
 
 # Server generated files.
 /server/tmp/

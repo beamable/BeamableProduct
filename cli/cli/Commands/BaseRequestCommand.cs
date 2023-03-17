@@ -9,11 +9,10 @@ namespace cli;
 public abstract class BaseRequestCommand : AppCommand<BaseRequestArgs>
 {
 	protected abstract Method Method { get; }
-	private readonly CliRequester _requester;
+	private CliRequester _requester;
 
-	protected BaseRequestCommand(CliRequester requester, string name, string description) : base(name, description)
+	protected BaseRequestCommand(string name, string description) : base(name, description)
 	{
-		_requester = requester;
 	}
 
 	public override void Configure()
@@ -27,6 +26,8 @@ public abstract class BaseRequestCommand : AppCommand<BaseRequestArgs>
 
 	public override async Task Handle(BaseRequestArgs args)
 	{
+		_requester = args.Requester;
+
 		string body = null;
 		if (!string.IsNullOrWhiteSpace(args.bodyPath))
 		{

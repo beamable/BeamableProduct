@@ -1,5 +1,5 @@
 ﻿using Beamable.Common.Content;
-using Beamable.Reflection;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -12,6 +12,9 @@ namespace Beamable.Server.Editor
 	{
 		private const int PADDING = 2;
 
+		private List<MicroserviceDescriptor> _filteredDescriptors;
+		private readonly List<FederationOption> _options = new List<FederationOption>();
+
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
 		{
 			return EditorGUIUtility.singleLineHeight * 3 + PADDING * 2;
@@ -20,34 +23,47 @@ namespace Beamable.Server.Editor
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 		{
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-			var descriptors = serviceRegistry.Descriptors;
 
-			if (descriptors.Count == 0)
+			if (_filteredDescriptors == null)
+			{
+				_filteredDescriptors = serviceRegistry.Descriptors
+													  .FindAll(descriptor => descriptor.IsUsedForFederation)
+													  .ToList();
+			}
+
+			if (_filteredDescriptors.Count == 0)
 			{
 				position = EditorGUI.PrefixLabel(position, label);
-				EditorGUI.SelectableLabel(position, "You must create a Microservice to configure a Federation",
-										  EditorStyles.wordWrappedLabel);
+				EditorGUI.SelectableLabel(
+					position,
+					"You must create a Microservice implementing IFederatedLogin interface to configure a Federation",
+					EditorStyles.wordWrappedLabel);
 				return;
 			}
+
+			BuildOptions(_filteredDescriptors);
 
 			var routeInfoPosition = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
 			EditorGUI.LabelField(routeInfoPosition, "Federation",
 								 new GUIStyle(EditorStyles.label) { font = EditorStyles.boldFont });
 			EditorGUI.indentLevel += 1;
 
-			var servicesGuiContents = descriptors
-									  .Select(d => new GUIContent(d.Name))
+			var servicesGuiContents = _options
+									  .Select(opt => new GUIContent(opt.ToString()))
 									  .ToList();
 
 			var nextRect = new Rect(position.x, position.y + EditorGUIUtility.singleLineHeight + PADDING,
 									position.width, EditorGUIUtility.singleLineHeight);
 
 			SerializedProperty serviceProperty = property.FindPropertyRelative(nameof(Federation.Service));
-			var originalServiceIndex = descriptors.FindIndex(d => d.Name.Equals(serviceProperty.stringValue));
+			SerializedProperty namespaceProperty = property.FindPropertyRelative(nameof(Federation.Namespace));
+			var originalServiceIndex = _options.FindIndex(opt => opt.Microservice == serviceProperty.stringValue &&
+																 opt.Namespace == namespaceProperty.stringValue);
 
 			if (originalServiceIndex == -1)
 			{
-				if (string.IsNullOrEmpty(serviceProperty.stringValue))
+				if (string.IsNullOrEmpty(serviceProperty.stringValue) ||
+					string.IsNullOrEmpty(namespaceProperty.stringValue))
 				{
 					servicesGuiContents.Insert(0, new GUIContent("<none>"));
 					originalServiceIndex = 0;
@@ -64,53 +80,39 @@ namespace Beamable.Server.Editor
 			}
 
 			EditorGUI.BeginChangeCheck();
-			var nextServiceIndex = EditorGUI.Popup(nextRect, new GUIContent("Microservice"), originalServiceIndex,
+			var nextServiceIndex = EditorGUI.Popup(nextRect, new GUIContent("Federation"), originalServiceIndex,
 												   servicesGuiContents.ToArray(), EditorStyles.popup);
 			if (EditorGUI.EndChangeCheck())
 			{
-				serviceProperty.stringValue = descriptors
-											  .FirstOrDefault(descriptor =>
-																  descriptor.Name.Equals(
-																	  servicesGuiContents[nextServiceIndex].text))
-											  ?.Name;
+				var option =
+					_options.FirstOrDefault(opt => opt.ToString().Equals(servicesGuiContents[nextServiceIndex].text));
+				serviceProperty.stringValue = option?.Microservice;
+				namespaceProperty.stringValue = option?.Namespace;
 			}
+		}
 
-			var cache = BeamEditor.GetReflectionSystem<ThirdPartyIdentityReflectionCache.Registry>();
+		private void BuildOptions(List<MicroserviceDescriptor> descriptors)
+		{
+			_options.Clear();
 
-			SerializedProperty namespaceProperty = property.FindPropertyRelative(nameof(Federation.Namespace));
-			nextRect = new Rect(position.x, position.y + 2 * EditorGUIUtility.singleLineHeight + PADDING,
-								position.width, EditorGUIUtility.singleLineHeight);
-
-			var identitiesGuiContents = cache.ThirdPartiesOptions.Select(d => new GUIContent(d)).ToList();
-			var selectedNamespaceIndex = cache.ThirdPartiesOptions.FindIndex(d => d.Equals(namespaceProperty.stringValue));
-
-			if (selectedNamespaceIndex == -1)
+			foreach (var descriptor in descriptors)
 			{
-				if (string.IsNullOrEmpty(namespaceProperty.stringValue))
+				foreach (var federatedNamespace in descriptor.FederatedNamespaces)
 				{
-					identitiesGuiContents.Insert(0, new GUIContent("<none>"));
-					selectedNamespaceIndex = 0;
-				}
-				else
-				{
-					identitiesGuiContents.Insert(0, new GUIContent(namespaceProperty.stringValue));
-					selectedNamespaceIndex = 0;
-					if (!namespaceProperty.stringValue.EndsWith(MISSING_SUFFIX))
-					{
-						namespaceProperty.stringValue += MISSING_SUFFIX;
-					}
+					_options.Add(new FederationOption { Microservice = descriptor.Name, Namespace = federatedNamespace });
 				}
 			}
+		}
 
-			EditorGUI.BeginChangeCheck();
-			var nextNamespaceIndex = EditorGUI.Popup(nextRect, new GUIContent("Namespace"),
-													 selectedNamespaceIndex,
-													 identitiesGuiContents.ToArray(), EditorStyles.popup);
+		[System.Serializable]
+		private class FederationOption
+		{
+			public string Microservice { get; set; }
+			public string Namespace { get; set; }
 
-			if (EditorGUI.EndChangeCheck())
+			public override string ToString()
 			{
-				namespaceProperty.stringValue =
-					cache.ThirdPartiesOptions.FirstOrDefault(i => i.Equals(identitiesGuiContents[nextNamespaceIndex].text));
+				return $"{Microservice} / {Namespace}";
 			}
 		}
 	}

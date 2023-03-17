@@ -116,7 +116,7 @@ public partial class BeamoLocalSystem
 		// Build list of service storage references
 		{
 			var allMongoServices = localManifest.ServiceDefinitions.Where(sd => sd.Protocol == BeamoProtocolType.EmbeddedMongoDb).ToList();
-			remoteManifest.storageReference = allMongoServices.Select(mongoSd => new ServiceStorageReference()
+			var locals = allMongoServices.Select(mongoSd => new ServiceStorageReference()
 			{
 				id = mongoSd.BeamoId,
 				// Tied to Embedded Mongo DB --- if we add other embedded db types, they each get their const.
@@ -124,12 +124,23 @@ public partial class BeamoLocalSystem
 				templateId = "small",
 				enabled = mongoSd.ShouldBeEnabledOnRemote,
 			}).ToList();
+			foreach (var local in locals)
+			{
+				var index = remoteManifest.storageReference.FindIndex(reference => reference.id == local.id);
+				if (index < 0)
+				{
+					remoteManifest.storageReference.Add(local);
+					continue;
+				}
+
+				remoteManifest.storageReference[index] = local;
+			}
 		}
 
 		// Build list of service references
 		{
 			var allHttpMicroservices = localManifest.ServiceDefinitions.Where(sd => sd.Protocol == BeamoProtocolType.HttpMicroservice).ToList();
-			remoteManifest.manifest = allHttpMicroservices.Select(httpSd =>
+			var locals = allHttpMicroservices.Select(httpSd =>
 			{
 				var remoteProtocol = localManifest.HttpMicroserviceRemoteProtocols[httpSd.BeamoId];
 				if (!perServiceComments.TryGetValue(httpSd.BeamoId, out var httpSdComments))
@@ -150,6 +161,18 @@ public partial class BeamoLocalSystem
 					comments = httpSdComments,
 				};
 			}).ToList();
+
+			foreach (var local in locals)
+			{
+				var index = remoteManifest.manifest.FindIndex(reference => reference.serviceName == local.serviceName);
+				if (index < 0)
+				{
+					remoteManifest.manifest.Add(local);
+					continue;
+				}
+
+				remoteManifest.manifest[index] = local;
+			}
 		}
 	}
 

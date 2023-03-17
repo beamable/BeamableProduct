@@ -10,12 +10,11 @@ public class ConfigSetCommandArgs : CommandArgs
 
 public class ConfigSetCommand : AppCommand<ConfigSetCommandArgs>
 {
-	private readonly ConfigService _configService;
+	private ConfigService _configService;
 
-	public ConfigSetCommand(ConfigService configService)
-		: base("set", "set a config value")
+	public ConfigSetCommand()
+		: base("set", "Set a config value")
 	{
-		_configService = configService;
 	}
 
 	public override void Configure()
@@ -31,6 +30,8 @@ public class ConfigSetCommand : AppCommand<ConfigSetCommandArgs>
 
 	public override Task Handle(ConfigSetCommandArgs args)
 	{
+		_configService = args.ConfigService;
+
 		_configService.SetConfigString(args.name, args.value);
 		_configService.FlushConfig();
 		return Task.CompletedTask;

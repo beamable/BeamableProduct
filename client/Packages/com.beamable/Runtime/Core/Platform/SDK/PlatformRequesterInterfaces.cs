@@ -5,7 +5,7 @@ using System;
 
 namespace Beamable.Api
 {
-	public interface IPlatformRequester : IBeamableRequester
+	public interface IPlatformRequester : IRequester
 	{
 		AccessToken Token { get; set; }
 		string TimeOverride { get; set; }
@@ -19,6 +19,11 @@ namespace Beamable.Api
 		void DeleteToken();
 	}
 
+	public interface IPlatformRequesterFactory
+	{
+		IPlatformRequester Create(string cid);
+		IPlatformRequester Create(string cid, string pid);
+	}
 
 
 }

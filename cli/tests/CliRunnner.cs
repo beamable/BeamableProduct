@@ -1,3 +1,4 @@
+using Beamable.Common.Dependencies;
 using cli;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -8,7 +9,7 @@ namespace tests;
 public static class Cli
 {
 	public static int RunWithParams(params string[] args) => RunWithParams(null, args);
-	public static int RunWithParams(Action<ServiceCollection>? configurator, params string[] args)
+	public static int RunWithParams(Action<IDependencyBuilder>? configurator, params string[] args)
 	{
 		var app = new App();
 		app.Configure(configurator);
@@ -17,7 +18,7 @@ public static class Cli
 	}
 
 	public static Task<int> RunAsyncWithParams(params string[] args) => RunAsyncWithParams(null, args);
-	public static Task<int> RunAsyncWithParams(Action<ServiceCollection>? configurator, params string[] args)
+	public static Task<int> RunAsyncWithParams(Action<IDependencyBuilder>? configurator, params string[] args)
 	{
 		var app = new App();
 		app.Configure(configurator);

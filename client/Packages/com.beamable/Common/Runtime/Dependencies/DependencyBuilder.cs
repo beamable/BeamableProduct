@@ -352,6 +352,8 @@ namespace Beamable.Common.Dependencies
 		/// <returns>The same instance of <see cref="IDependencyBuilder"/> so that you can chain methods together.</returns>
 		IDependencyBuilder ReplaceSingleton<TExisting, TNew>(TNew newService, bool autoCreate = true) where TNew : TExisting;
 
+		IDependencyBuilder ReplaceSingleton<TExisting>(TExisting nextInstance);
+
 		/// <summary>
 		/// Replace a singleton service already registered in the <see cref="IDependencyBuilder"/>
 		/// </summary>
@@ -540,6 +542,8 @@ namespace Beamable.Common.Dependencies
 
 		public IDependencyBuilder AddSingleton<T>() => AddSingleton<T, T>();
 
+		public IDependencyBuilder ReplaceSingleton<TExisting>(TExisting nextInstance) =>
+			ReplaceSingleton<TExisting, TExisting>(() => nextInstance);
 		public IDependencyBuilder ReplaceSingleton<TExisting, TNew>(bool autoCreate = true)
 			where TNew : TExisting =>
 			ReplaceSingleton<TExisting, TNew>(Instantiate<TNew>, autoCreate);
@@ -619,7 +623,15 @@ namespace Beamable.Common.Dependencies
 			var values = new object[parameters.Length];
 			for (var i = 0; i < parameters.Length; i++)
 			{
-				values[i] = provider.GetService(parameters[i].ParameterType);
+				try
+				{
+					values[i] = provider.GetService(parameters[i].ParameterType);
+				}
+				catch (Exception ex)
+				{
+					BeamableLogger.LogError($"Could not create instance of type=[{type.FullName}] because parameter index=[{i}] name=[{parameters[i].Name}] of type=[{parameters[i].ParameterType}] could not instantiate due to message=[{ex.Message}]");
+					throw;
+				}
 			}
 
 			var instance = cons?.Invoke(values);

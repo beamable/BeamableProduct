@@ -22,37 +22,38 @@ public enum GenerateSdkConflictResolutionStrategy
 
 public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>
 {
-	private readonly SwaggerService _swagger;
+	private SwaggerService _swagger;
 
-	public GenerateSdkCommand(SwaggerService swagger) : base("generate", "generate Beamable client source code from open API documents")
+	public GenerateSdkCommand() : base("generate", "Generate Beamable client source code from open API documents")
 	{
-		_swagger = swagger;
 	}
 
 	public override void Configure()
 	{
 		AddOption(new Option<bool>("--concat", () => false,
-			"when true, all the generated code will be in one file. When false, there will be multiple files"),
+			"When true, all the generated code will be in one file. When false, there will be multiple files"),
 			(args, val) => args.Concat = val); // TODO: In C#, we can concat, but in C++/js, it could make no sense to support concat
 		AddOption(new Option<string>("--output", () => null,
-			"when null or empty, the generated code will be sent to standard-out. When there is a output value, the file or files will be written to the path."),
+			"When null or empty, the generated code will be sent to standard-out. When there is a output value, the file or files will be written to the path"),
 			(args, val) => args.OutputPath = val);
 
 		AddOption(new Option<string>("--filter", () => null,
-			"a string to filter which open apis to generate. An empty string matches everything"),
+			"Filter which open apis to generate. An empty string matches everything"),
 			(args, val) => args.Filter = val);
 
 		AddOption(new Option<string>("--engine", () => "",
-				"a string to filter which engine code we should generate (unity | unreal). An empty string matches everything"),
+				"Filter which engine code we should generate (unity | unreal). An empty string matches everything"),
 			(args, val) => args.Engine = val);
 
 		AddOption(new Option<GenerateSdkConflictResolutionStrategy>("--conflict-strategy", () => GenerateSdkConflictResolutionStrategy.None,
-			"when multiple openAPI documents identify a schema with the same name, this flag controls how the conflict is resolved."),
+			"When multiple openAPI documents identify a schema with the same name, this flag controls how the conflict is resolved"),
 			(args, val) => args.ResolutionStrategy = val);
 	}
 
 	public override async Task Handle(GenerateSdkCommandArgs args)
 	{
+		_swagger = args.SwaggerService;
+
 		var filter = BeamableApiFilter.Parse(args.Filter);
 		var output = await _swagger.Generate(filter, args.Engine, args.ResolutionStrategy);
 

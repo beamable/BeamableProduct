@@ -15,28 +15,29 @@ public class ServicesResetCommandArgs : LoginCommandArgs
 
 public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>
 {
-	private readonly BeamoLocalSystem _localBeamo;
+	private BeamoLocalSystem _localBeamo;
 
-	public ServicesResetCommand(BeamoLocalSystem localBeamo) :
+	public ServicesResetCommand() :
 		base("reset",
-			"Resets services to default settings and cleans up docker images (if any exist).")
+			"Resets services to default settings and cleans up docker images (if any exist)")
 	{
-		_localBeamo = localBeamo;
 	}
 
 	public override void Configure()
 	{
-		AddOption(new Option<string[]>("--ids", "The ids for the services you wish to reset.") { AllowMultipleArgumentsPerToken = true },
+		AddOption(new Option<string[]>("--ids", "The ids for the services you wish to reset") { AllowMultipleArgumentsPerToken = true },
 			(args, i) => args.BeamoIdsToReset = i.Length == 0 ? null : i);
 
 		AddArgument(new Argument<string>("target", $"Either image|container|protocols." +
 												   $"'image' will cleanup all your locally built images for the selected Beamo Services.\n" +
 												   $"'container' will stop all your locally running containers for the selected Beamo Services.\n" +
-												   $"'protocols' will reset all the protocol data for the selected Beamo Services back to default parameters."), (args, i) => args.Target = i);
+												   $"'protocols' will reset all the protocol data for the selected Beamo Services back to default parameters"), (args, i) => args.Target = i);
 	}
 
 	public override async Task Handle(ServicesResetCommandArgs args)
 	{
+		_localBeamo = args.BeamoLocalSystem;
+
 		await _localBeamo.SynchronizeInstanceStatusWithDocker(_localBeamo.BeamoManifest, _localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
 		await _localBeamo.StartListeningToDocker();
 

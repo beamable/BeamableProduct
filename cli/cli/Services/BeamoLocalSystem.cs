@@ -19,7 +19,9 @@ public partial class BeamoLocalSystem
 	/// The full-path to where we are storing the <see cref="BeamoManifest"/>.
 	/// TODO: This part will get abstracted out --- probably into <see cref="ConfigService"/> --- so that we can move this to the Beamable.Common library or some shared space.
 	/// </summary>
-	private readonly string _beamoLocalManifestFile;
+	// private readonly string _beamoLocalManifestFile;
+	private const string beamoLocalManifestFileName = "beamoLocalManifest";
+
 
 	/// <summary>
 	/// The current local state of containers, associated with the <see cref="BeamoLocalManifest.ServiceDefinitions"/>, keept in sync with the <see cref="_beamoLocalRuntimeFile"/> json file.
@@ -30,8 +32,11 @@ public partial class BeamoLocalSystem
 	/// The full-path to where we are storing the <see cref="BeamoRuntime"/> data. We need to serialize runtime data as, in most cases, we'll need to survive domain reloads or multiple runs of the cli.
 	/// TODO: This part will get abstracted out --- probably into <see cref="ConfigService"/> --- so that we can move this to the Beamable.Common library or some shared space.
 	/// </summary>
-	private readonly string _beamoLocalRuntimeFile;
+	// private readonly string _beamoLocalRuntimeFile;
+	private const string beamoLocalRuntimeFileName = "beamoLocalRuntime";
 
+
+	private readonly ConfigService _configService;
 
 	/// <summary>
 	/// The context for this service's execution. Holds the current <see cref="IAppContext.Pid"/>, <see cref="IAppContext.Cid"/> and <see cref="IAppContext.Token"/>
@@ -67,6 +72,7 @@ public partial class BeamoLocalSystem
 
 	public BeamoLocalSystem(ConfigService configService, IAppContext ctx, IRealmsApi realmsApi, BeamoService beamo)
 	{
+		_configService = configService;
 		_ctx = ctx;
 		_beamo = beamo;
 		_realmApi = realmsApi;
@@ -76,38 +82,18 @@ public partial class BeamoLocalSystem
 		_client = new DockerClientConfiguration(new AnonymousCredentials(), TimeSpan.FromSeconds(60))
 			.CreateClient();
 
-		// TODO: Make this persistence part agnostic of where this is running so we can use it in Unity as well, maybe?
-		var beamableFilePath = configService.ConfigFilePath;
 		// Load or create the local manifest
-		_beamoLocalManifestFile = Path.Combine(beamableFilePath, "beamoLocalManifest.json");
-		if (File.Exists(_beamoLocalManifestFile))
+		BeamoManifest = _configService.LoadDataFile<BeamoLocalManifest>(beamoLocalManifestFileName, () => new BeamoLocalManifest()
 		{
-			BeamoManifest = JsonConvert.DeserializeObject<BeamoLocalManifest>(File.ReadAllText(_beamoLocalManifestFile), new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto });
-		}
-		else
-		{
-			BeamoManifest = new BeamoLocalManifest()
-			{
-				ServiceDefinitions = new List<BeamoServiceDefinition>(8),
-				HttpMicroserviceLocalProtocols = new BeamoLocalProtocolMap<HttpMicroserviceLocalProtocol>(),
-				HttpMicroserviceRemoteProtocols = new BeamoRemoteProtocolMap<HttpMicroserviceRemoteProtocol>(),
-				EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>(),
-				EmbeddedMongoDbRemoteProtocols = new BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol>(),
-			};
-			SaveBeamoLocalManifest();
-		}
-
+			ServiceDefinitions = new List<BeamoServiceDefinition>(8),
+			HttpMicroserviceLocalProtocols = new BeamoLocalProtocolMap<HttpMicroserviceLocalProtocol>(),
+			HttpMicroserviceRemoteProtocols = new BeamoRemoteProtocolMap<HttpMicroserviceRemoteProtocol>(),
+			EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>(),
+			EmbeddedMongoDbRemoteProtocols = new BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol>(),
+		});
 		// Load or create the local runtime data
-		_beamoLocalRuntimeFile = Path.Combine(beamableFilePath, "beamoLocalRuntime.json");
-		if (File.Exists(_beamoLocalRuntimeFile))
-		{
-			BeamoRuntime = JsonConvert.DeserializeObject<BeamoLocalRuntime>(File.ReadAllText(_beamoLocalRuntimeFile), new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto });
-		}
-		else
-		{
-			BeamoRuntime = new BeamoLocalRuntime() { ExistingLocalServiceInstances = new List<BeamoServiceInstance>(8) };
-			SaveBeamoLocalRuntime();
-		}
+		BeamoRuntime = _configService.LoadDataFile<BeamoLocalRuntime>(beamoLocalRuntimeFileName, () =>
+			new BeamoLocalRuntime() { ExistingLocalServiceInstances = new List<BeamoServiceInstance>(8) });
 
 		// Make a cancellation token source to cancel the docker event stream we listen for updates. See StartListeningToDocker.
 		_dockerListeningThreadCancel = new CancellationTokenSource();
@@ -116,12 +102,8 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// Persists the current state of <see cref="BeamoManifest"/> out to disk. TODO: Make this persistence part agnostic of where this is running so we can use it in Unity as well, maybe?
 	/// </summary>
-	public void SaveBeamoLocalManifest() =>
-		File.WriteAllText(_beamoLocalManifestFile, JsonConvert.SerializeObject(BeamoManifest, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto }));
-
-	public void SaveBeamoLocalRuntime() =>
-		File.WriteAllText(_beamoLocalRuntimeFile, JsonConvert.SerializeObject(BeamoRuntime, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto }));
-
+	public void SaveBeamoLocalManifest() => _configService.SaveDataFile(beamoLocalManifestFileName, BeamoManifest);
+	public void SaveBeamoLocalRuntime() => _configService.SaveDataFile(beamoLocalRuntimeFileName, BeamoRuntime);
 	/// <summary>
 	/// Checks to see if the service id matches the <see cref="BeamoServiceIdRegex"/>.
 	/// </summary>
@@ -556,7 +538,7 @@ public enum BeamoProtocolType
 
 public interface IBeamoLocalProtocol
 {
-	public bool VerifyCanBeBuiltLocally();
+	public bool VerifyCanBeBuiltLocally(ConfigService configService);
 }
 
 public interface IBeamoRemoteProtocol

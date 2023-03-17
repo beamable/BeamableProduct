@@ -15,6 +15,8 @@
 			public const string OBSOLETE_WILL_BE_REMOVED = "This is no longer supported, and will be removed in the future.";
 			public const string OBSOLETE_BUSS_INTRODUCED = "Not used after introducing BUSS system";
 			public const string OPEN = "Open";
+
+			public const string OFFLINE = "offline";
 		}
 
 		public static class Environment
@@ -115,6 +117,7 @@
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_POOLING = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Pooling";
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_ENV = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Change Environment";
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_SAMPLE = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Sample Utility";
+					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_CLEAR_CID_PID_MEMORY = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Clear Toolbox CID/PID";
 
 					//Menu Items: Window (#ifdef BEAMABLE_DEVELOPER)
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_BEAMABLE_DEVELOPER_SAMPLES = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + "/Samples";

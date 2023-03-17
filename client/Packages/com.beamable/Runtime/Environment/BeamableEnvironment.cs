@@ -1,3 +1,4 @@
+using Beamable.Api;
 using Beamable.Common;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
@@ -117,7 +118,7 @@ namespace Beamable
 	}
 
 	[Serializable]
-	public class EnvironmentData : JsonSerializable.ISerializable
+	public class EnvironmentData : JsonSerializable.ISerializable, IPlatformRequesterHostResolver
 	{
 		public static EnvironmentData BeamableDev => new EnvironmentData
 		{
@@ -247,5 +248,8 @@ namespace Beamable
 				sdkVersion = "0.0.0";
 			}
 		}
+
+		string IPlatformRequesterHostResolver.Host => apiUrl;
+		PackageVersion IPlatformRequesterHostResolver.PackageVersion => SdkVersion;
 	}
 }

@@ -6,18 +6,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- `DisableBeamableCidPidWarningsOnBuild` option in _Project Settings/Beamable/Editor_ that will disable the CID/PID warning dialog on build.
+
+## [1.12.1]
+### Added
+- `ItemView` has new `contentId` field.
+
+### Fixed
+- Editor no longer throws "Failed to refresh account" messages.
+- AdminConsole works on webGL builds.
+- CurrencyHud no longer throws exceptions.
+- TournamentContent period field no longer loses focus. 
+- Switching environments will correctly sign out the current editor user.
+
+### Changed
+- CID/PID warning at build time is more descriptive.
+- Functions names in third party Websocket library so now they should not conflict when user is using other libraries that depends on that library
+
+
+## [1.12.0]
+### Added
+- Parse optional `proxyId` as `FederatedId` field for items related to `FederatedInventory` feature
+- Possibility to disable property order dependence for content checksum.
+- `Beam.ChangePid` allows the game to change the assigned pid. The pid will reset when the game restarts.
+- `IPlatformRequesterErrorHandler` implementation can be added to `IDependencyProvider` to handle any uncaught Beamable Network errors.
+- `PlayerInventory` has explicit methods for getting Items and Currencies with string references.
+- `PlayerInventory` has load methods for Items and Currencies that retrieve data and call `Refresh()`.
+- `SDKRequesterOptions<T>` has a field called `disableScopeHeaders` that will prevent CID/PID headers from being sent.
+
+### Changed
+- Exception on using `BeamContext` outside playMode
+- The _config-defaults.txt_ file no longer controls the which CID/PID are used while in Editor. The _config-defaults.txt_ file will still control the CID/PID in a built game.
+- Expose Google Play Game Services `ForceRefreshToken` option and set it to `true` by default
+- `Beamable.Common` assembly name changed to `Unity.Beamable.Runtime.Common` to align with assembly definition file.
+
+### Removed
+- The Toolbox signin flow no longer allows for guest accounts.
+
+### Fixed
+- Fixed slow SDK installation process.
+- Fixed Error Code for `NoConnectivityException` at `UnityBeamablePurchaser` on StartPurchase.
+
+## [1.11.1]
+### Changed
+- Expose Google Play Game Services `ForceRefreshToken` option and set it to `true` by default
+
+### Fixed
+- `PlayerInventory` triggers `OnDataUpdated` events.
+- `PlayerInventory` item properties can be `null` without throwing a `NullReferenceException`.
+
+### Issues
+- All content will appear as modified. This is because the content checksum algorithm changed to use alphabetical field ordering.
+
+## [1.11.0]
+### Added
 - `PlayerInventory` supports storing player's inventory in offline mode
 - `PlayerInventory` supports `UpdateDelayed` method
 - `IFederatedLogin<T>` interface type available for Microservices
 - "external" identities section has been added to a `User` class
 - `BeamContext.Default.Accounts` now has `IsThirdPartyAvailable` and `IsEmailAvailable` methods which check if given credentials are available for usage.
+- Added `BeamContext.Presence` layer to handle requesting/changing player's presence status
+- `BeamContext.Social` now contains an event for players changing their presence status
+- `PlayerAccounts` supports external identity auth.
+- `BeamContext.Default.Instance` returns a `Promise<BeamContext>` that returns the default context.
 
 ### Changed
 - `PlayerInventory` no longer duplicates items if retrieved with multiple `GetItems()` calls.
-- `PlayerInventory` makes less read calls to Beamable Cloud by coupling read operations into batches every .3 seconds.
 - Multiple calls to `PlayerInventory.Update()` will operate serially instead of compete for priority. 
-- Connectivity events are sourced from the `Heartbeat` every 5 seconds, instead of from the `ConnectivityService` every 3 seconds.
 - Update banner in Toolbox will link to changelog instead of blog post.
+- Refactored `BeamContext` initialization logic.
 
 ### Fixed
 - `IBeamableDisposable.OnDispose()` is only called once per service, instead of once per service usage.
@@ -25,9 +82,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed an issue with logging in and realm switching while being on an archived realm.
 - Duplicate content is now displayed immediately in `Content Manager`
 - Update banner in Toolbox will update both `com.beamable` and `com.beamable.server` package. 
-
-### Removed
-- `connectivityRoute` option in `config-defaults` no longer has any effect. All connectivity checks happen as part of the heart beat cycle every 5 seconds.
+- Fixed issues with wrong content status and checksum on domain reload.
+- `FilePathSelectorAttribute` no longer accesses `Application` in constructor.
 
 ## [1.10.3]
 ### Changed

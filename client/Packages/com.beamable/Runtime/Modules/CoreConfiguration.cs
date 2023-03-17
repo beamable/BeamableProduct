@@ -1,10 +1,8 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 
-#if UNITY_EDITOR
-using UnityEditor.Compilation;
-#endif
 using static Beamable.Common.Constants.MenuItems.Assets;
 
 namespace Beamable
@@ -82,6 +80,7 @@ namespace Beamable
 		[Tooltip("It will enable/disable hearbeat service default behaviour.\n" +
 				 "Disabling it allows to reduce amount of calls to Beamable with cost of disabling support for matchmaking services.")]
 		public bool SendHeartbeat = true;
+
 		[Tooltip("By default, when your player isn't connected to the internet, Beamable will accrue inventory writes " +
 				 "in a buffer and optimistically simulate the effects locally in memory. When your player comes back " +
 				 "online, the buffer will be replayed. If this isn't desirable, you should disable the feature.")]
@@ -110,9 +109,6 @@ namespace Beamable
 		[Tooltip("Register any assemblies you wish to ignore from the assembly sweep.")]
 		public List<string> AssembliesToSweep = new List<string>();
 
-#if UNITY_EDITOR
-		private Assembly[] playerAssemblies = null;
-#endif
 		public void OnValidate()
 		{
 			// Ensure default paths exist for Reflection Cache User System Objects
@@ -162,28 +158,34 @@ namespace Beamable
 			BeamableAssistantHintDetailConfigPaths = BeamableAssistantHintDetailConfigPaths.Distinct().ToList();
 
 #if UNITY_EDITOR
-
-			if (playerAssemblies == null) // because it was triggered twice and it's too heavy
+			
+			// it's reflection-bruteForce but looks like it gives the same result as CompilationPipeline.GetAssemblies()
+			
+			var coreAssembly = System.Reflection.Assembly.Load("UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
+			var getAssembliesMethodInfo = coreAssembly?.GetType("UnityEngine.ScriptingRuntime")?.GetMethod("GetAllUserAssemblies");
+			
+			if (getAssembliesMethodInfo != null)
 			{
-				playerAssemblies = CompilationPipeline.GetAssemblies();
-			}
+				string[] assemblyNames =  (string[])getAssembliesMethodInfo.Invoke(null, null);
 
-			for (int i = 0; i < playerAssemblies.Length; i++)
-			{
-				if (!string.IsNullOrEmpty(playerAssemblies[i].name))
+				for (int i = 0; i < assemblyNames.Length; i++)
 				{
-					if (!AssembliesToSweep.Contains(playerAssemblies[i].name))
+					var nameWithoutEx = Path.GetFileNameWithoutExtension(assemblyNames[i]);
+
+					if (!AssembliesToSweep.Contains(nameWithoutEx) && !assemblyNames[i].Contains("Packages/") && !assemblyNames[i].Contains("Assets/"))
 					{
-						AssembliesToSweep.Add(playerAssemblies[i].name);
+						AssembliesToSweep.Add(nameWithoutEx);
 					}
 				}
 			}
-
+			
 #if BEAMABLE_DEVELOPER
 
 			for (int i = 0; i < AssembliesToSweep.Count; i++)
 			{
-				if (AssembliesToSweep[i].Contains("Test"))
+				if (AssembliesToSweep[i].Contains("Test") &&
+				    !AssembliesToSweep[i].Contains("Beamable.Microservice") &&
+				    !AssembliesToSweep[i].Contains("Beamable.Storage"))
 				{
 					AssembliesToSweep.RemoveAt(i);
 					i--;

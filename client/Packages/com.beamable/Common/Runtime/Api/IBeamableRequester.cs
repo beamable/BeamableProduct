@@ -1,3 +1,5 @@
+using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Serialization;
 using System;
@@ -63,6 +65,11 @@ namespace Beamable.Common.Api
 		public bool useConnectivityPreCheck;
 
 		/// <summary>
+		/// When true, the requester should not send any scope headers on the request.
+		/// </summary>
+		public bool disableScopeHeaders;
+
+		/// <summary>
 		/// A function that takes a JSON string and should output the response of the method. 
 		/// </summary>
 		public Func<string, T> parser;
@@ -79,6 +86,7 @@ namespace Beamable.Common.Api
 			includeAuthHeader = clone.includeAuthHeader;
 			useConnectivityPreCheck = clone.useConnectivityPreCheck;
 			parser = clone.parser;
+			disableScopeHeaders = clone.disableScopeHeaders;
 		}
 	}
 
@@ -153,6 +161,7 @@ namespace Beamable.Common.Api
 	[Serializable]
 	public class EmptyResponse
 	{
+		public static readonly EmptyResponse Unit = new EmptyResponse();
 	}
 
 	/// <summary>
@@ -506,3 +515,22 @@ namespace Beamable.Common.Api
 		}
 	}
 }
+
+namespace Beamable.Api
+{
+	public static class ConnectivityExceptionExtensions
+	{
+		public static Promise<T> RecoverFromNoConnectivity<T>(this Promise<T> self, Func<T> recovery) =>
+			self.RecoverFromNoConnectivity(_ => recovery());
+
+		public static Promise<T> RecoverFromNoConnectivity<T>(this Promise<T> self, Func<NoConnectivityException, T> recovery)
+		{
+			return self.Recover(ex =>
+			{
+				if (ex is NoConnectivityException err) return recovery(err);
+				throw ex;
+			});
+		}
+	}
+}
+

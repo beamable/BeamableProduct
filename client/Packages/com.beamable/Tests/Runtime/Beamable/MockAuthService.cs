@@ -120,6 +120,16 @@ namespace Beamable.Tests.Runtime.Api
 			throw new NotImplementedException();
 		}
 
+		public Promise<ExternalLoginResponse> LoginExternalIdentity(string externalToken,
+															 string providerService,
+															 string providerNamespace,
+															 ChallengeSolution challengeSolution = null,
+															 bool mergeGamerTagToAccount = true)
+		{
+			throw new NotImplementedException();
+		}
+
+
 		public Promise<AttachExternalIdentityResponse> AttachIdentity(string externalToken,
 																	  string providerService,
 																	  string providerNamespace = "",
