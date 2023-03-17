@@ -197,9 +197,11 @@ namespace Beamable.Purchasing
 		/// <summary>
 		/// Handle failed initialization by logging the error.
 		/// </summary>
-		public void OnInitializeFailed(InitializationFailureReason error)
+		public void OnInitializeFailed(InitializationFailureReason error) => OnInitializeFailed(error, string.Empty);
+
+		public void OnInitializeFailed(InitializationFailureReason error, string message)
 		{
-			Debug.LogError("Billing failed to initialize!");
+			Debug.LogError($"Billing failed to initialize! {message}");
 			switch (error)
 			{
 				case InitializationFailureReason.AppNotKnown:
