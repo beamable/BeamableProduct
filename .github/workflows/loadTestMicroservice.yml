@@ -39,7 +39,7 @@ jobs:
           cd ./standalone-microservice/bin/Debug/net6.0
           dotnet-counters collect --refresh-interval 3 --format json --output ../../../../reports/counter.json -- standalone-microservice &
           cd ../../../..
-          beam profile run-nbomber standalone-microservice add '{"a":3,"b":4}' --include-prefix false --rps 20
+          beam profile run-nbomber standalone-microservice add '{"a":3,"b":4}' --include-prefix false --rps 30
           echo "jobs"
           jobs -p
           echo "kill"
@@ -57,7 +57,7 @@ jobs:
         continue-on-error: true
         working-directory: ./stress-tests/standalone-microservice/services/reports
         run: |
-          echo "log='$(beam profile check-counters ./counter.json --cpu-limit 15)'" >> $GITHUB_OUTPUT
+          echo "log='$(beam profile check-counters ./counter.json --cpu-limit 35)'" >> $GITHUB_OUTPUT
       - name: Check NBomber
         id: checkNbomber
         continue-on-error: true
