@@ -219,7 +219,14 @@ public class App
 			switch (ex)
 			{
 				case CliException cliException:
-					Console.Error.WriteLine(cliException.Message);
+					if (cliException.ReportOnStdOut)
+					{
+						Console.WriteLine(cliException.Message);
+					}
+					else
+					{
+						Console.Error.WriteLine(cliException.Message);
+					}
 					if (cliException.UseNonZeroExitCode)
 					{
 						context.ExitCode = 1;

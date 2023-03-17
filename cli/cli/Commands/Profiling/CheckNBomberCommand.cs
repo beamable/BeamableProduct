@@ -56,7 +56,7 @@ public class CheckNBomberCommand : AppCommand<CheckNBomberCommandArgs>
 		
 		if (warnings.Count > 0)
 		{
-			throw new CliException(string.Join(",", warnings), true);
+			throw new CliException(string.Join(",", warnings), true, true);
 		}
 		
 		BeamableLogger.Log("No issues found.");

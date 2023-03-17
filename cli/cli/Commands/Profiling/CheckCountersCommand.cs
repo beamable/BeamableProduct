@@ -54,7 +54,7 @@ public class CheckCountersCommand : AppCommand<CheckCountersCommandArgs>
 		for (var i = 0; i < cpuData.Length; i++)
 		{
 			// check for spike
-			if (cpuData[i].value > cpuLimit) // 12% CPU utilization
+			if (cpuData[i].value > cpuLimit) 
 			{
 				warnings.Add(new DotnetCounterPerfWarning($"CPU utilization spiked beyond limit=[{cpuLimit}] i=[{i}]", cpuData[i]));
 			}
@@ -63,7 +63,7 @@ public class CheckCountersCommand : AppCommand<CheckCountersCommandArgs>
 		for (var i = 0; i < memData.Length; i++)
 		{
 			// check for spike
-			if (memData[i].value > memLimit) // 12% CPU utilization
+			if (memData[i].value > memLimit)
 			{
 				warnings.Add(new DotnetCounterPerfWarning($"Memory utilization spiked beyond limit=[{memLimit}] i=[{i}]", memData[i]));
 			}
@@ -71,7 +71,7 @@ public class CheckCountersCommand : AppCommand<CheckCountersCommandArgs>
 
 		if (warnings.Count > 0)
 		{
-			throw new CliException(string.Join(",", warnings.Select(w => w.ToString())), true);
+			throw new CliException(string.Join(",", warnings.Select(w => w.ToString())), true, true);
 		}
 
 		BeamableLogger.Log("No issues found.");
@@ -111,11 +111,3 @@ public struct DotnetCounterEntry
 	public string counterType; // Rate or Metric
 	public double value;
 }
-// {
-// "timestamp": "2023-02-28 22:09:30Z",
-// "provider": "System.Runtime",
-// "name": "POH (Pinned Object Heap) Size (B)",
-// "tags": "",
-// "counterType": "Metric",
-// "value": 0
-// },

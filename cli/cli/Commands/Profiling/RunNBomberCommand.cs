@@ -14,6 +14,7 @@ public class RunNBomberCommandArgs : CommandArgs
 	public string jsonBody;
 
 	public bool includePrefix;
+	public int rps;
 }
 
 public class RunNBomberCommand : AppCommand<RunNBomberCommandArgs>
@@ -28,9 +29,7 @@ public class RunNBomberCommand : AppCommand<RunNBomberCommandArgs>
 		AddArgument(new Argument<string>("method", "The method name in the service to stress test"), (args, i) => args.method = i);
 		AddArgument(new Argument<string>("body", "The json body for each request"), (args, i) => args.jsonBody = i);
 		AddOption(new Option<bool>("--include-prefix", () => true, "If true, the generated .env file will include the local machine name as prefix"), (args, i) => args.includePrefix = i);
-		// AddOption(new Option<string>("--host", "if set, the stress test will use the given host instead of the default"), (args, i) => args.hostOverride = i);
-		// AddOption(new Option<string>("--cid", "if set, the stress test will use the given cid instead of the default"), (args, i) => args.cidOverride = i);
-		// AddOption(new Option<string>("--pid", "if set, the stress test will use the given cid instead of the default"), (args, i) => args.cidOverride = i);
+		AddOption(new Option<int>("--rps", () => 50, "The requested requests per second for the test"), (args, i) => args.rps = i);
 	}
 
 	public override Task Handle(RunNBomberCommandArgs args)
@@ -65,7 +64,7 @@ public class RunNBomberCommand : AppCommand<RunNBomberCommandArgs>
 			.WithoutWarmUp()
 			.WithMaxFailCount(1)
 
-			.WithLoadSimulations(Simulation.Inject(rate: 50, interval: TimeSpan.FromSeconds(1),
+			.WithLoadSimulations(Simulation.Inject(rate: args.rps, interval: TimeSpan.FromSeconds(1),
 				during: TimeSpan.FromSeconds(30)))
 		;
 
