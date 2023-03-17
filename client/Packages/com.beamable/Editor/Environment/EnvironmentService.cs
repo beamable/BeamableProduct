@@ -8,10 +8,16 @@ namespace Beamable.Editor.Environment
 {
 	public class EnvironmentService
 	{
+		private readonly BeamEditorContext _context;
 		public EnvironmentData GetDev() => EnvironmentData.BeamableDev;
 		public EnvironmentData GetStaging() => EnvironmentData.BeamableStaging;
 		public EnvironmentData GetProd() => EnvironmentData.BeamableProduction;
 
+		public EnvironmentService(BeamEditorContext context)
+		{
+			_context = context;
+		}
+		
 		/// <summary>
 		/// Erase the overrides file, and reload the editor.
 		/// After this method is called, whatever is in env-defaults will be used.
@@ -22,6 +28,7 @@ namespace Beamable.Editor.Environment
 			{
 				FileUtil.DeleteFileOrDirectory(OVERRIDE_PATH);
 				FileUtil.DeleteFileOrDirectory(OVERRIDE_PATH + ".meta");
+				_context.Logout(false);
 				ConfigDatabase.DeleteConfigDatabase();
 				EditorUtility.RequestScriptReload();
 				AssetDatabase.Refresh();
@@ -38,6 +45,7 @@ namespace Beamable.Editor.Environment
 			var json = JsonSerializable.ToJson(data);
 			File.WriteAllText(OVERRIDE_PATH, json);
 			ConfigDatabase.DeleteConfigDatabase();
+			_context.Logout(false);
 			EditorUtility.RequestScriptReload();
 			AssetDatabase.Refresh();
 
