@@ -35,6 +35,12 @@ namespace Beamable.Server
 		public int SendChunkSize { get; }
 		public int BeamInstanceCount { get; }
 		public int RequestCancellationTimeoutSeconds { get; }
+		public LogOutputType LogOutputType { get; }
+	}
+
+	public enum LogOutputType
+	{
+		DEFAULT, STRUCTURED, UNSTRUCTURED
 	}
 
 	public class MicroserviceArgs : IMicroserviceArgs
@@ -68,6 +74,7 @@ namespace Beamable.Server
 	   public int SendChunkSize { get; set; }
 	   public int BeamInstanceCount { get; set; }
 	   public int RequestCancellationTimeoutSeconds { get; set; }
+	   public LogOutputType LogOutputType { get; set; }
    }
 
    public static class MicroserviceArgsExtensions
@@ -104,7 +111,8 @@ namespace Beamable.Server
             RateLimitCPUOffset = args.RateLimitCPUOffset,
             BeamInstanceCount = args.BeamInstanceCount,
             RequestCancellationTimeoutSeconds = args.RequestCancellationTimeoutSeconds,
-            HealthPort = args.HealthPort
+            HealthPort = args.HealthPort,
+            LogOutputType = args.LogOutputType
          };
          
          configurator?.Invoke(next);
@@ -142,6 +150,23 @@ namespace Beamable.Server
 			      val = 10;
 		      }
 		      return val;
+	      }
+      }
+
+      public LogOutputType LogOutputType
+      {
+	      get
+	      {
+		      var arg = Environment.GetEnvironmentVariable("LOG_TYPE")?.ToLowerInvariant();
+		      switch (arg)
+		      {
+			      case "structured":
+				      return LogOutputType.STRUCTURED;
+			      case "unstructured":
+				      return LogOutputType.UNSTRUCTURED;
+			      default:
+				      return LogOutputType.DEFAULT;
+		      }
 	      }
       }
       public string LogLevel => Environment.GetEnvironmentVariable("LOG_LEVEL") ?? "debug";

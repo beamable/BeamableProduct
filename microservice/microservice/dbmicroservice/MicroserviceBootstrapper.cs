@@ -39,6 +39,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
+using Serilog.Formatting.Display;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -63,6 +64,9 @@ namespace Beamable.Server
 			
             var envLogLevel = (LogEventLevel)Enum.Parse(typeof(LogEventLevel), logLevel, true);
 
+            var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+            
+            
             // The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
             LogLevel = new LoggingLevelSwitch { MinimumLevel = envLogLevel };
 
@@ -90,8 +94,27 @@ namespace Beamable.Server
 		            .Destructure.ToMaximumDepth(args.LogMaxDepth)
 		            .Destructure.ToMaximumStringLength(args.LogDestructureMaxLength);
             }
-            Log.Logger = logConfig
-               .WriteTo.Console(new MicroserviceLogFormatter())
+
+            var logger = logConfig;
+            switch (args.LogOutputType)
+            {
+	            case LogOutputType.DEFAULT when !inDocker:
+	            case LogOutputType.UNSTRUCTURED:
+		            logger = logConfig.WriteTo.Console(
+			            new MessageTemplateTextFormatter(
+				            "{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}"));
+		            break;
+	            case LogOutputType.DEFAULT: // when inDocker: // logically, think of this as having inDocker==true, but technically because the earlier case checks for !inDocker, its redundant.
+	            case LogOutputType.STRUCTURED:
+		            logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
+		            break;
+				default:
+					logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
+					break;
+            }
+            
+            
+            Log.Logger = logger
                .CreateLogger();
 
             // use newtonsoft for JsonUtility
