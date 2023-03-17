@@ -33,7 +33,7 @@ public class Tests
 	{
 		void CheckNaming(string commandName, string description, string optionName = null)
 		{
-			const string KEBAB_CASE_PATTERN = "^[a-z]+(?:[-][a-z]+)*$";
+			const string KEBAB_CASE_PATTERN = "^([a-z]|[0-9])+(?:[-]([a-z]|[0-9])+)*$";
 			var isOption = !string.IsNullOrWhiteSpace(optionName);
 			var logPrefix = isOption ?
 				$"{optionName} argument for command {commandName}" :
