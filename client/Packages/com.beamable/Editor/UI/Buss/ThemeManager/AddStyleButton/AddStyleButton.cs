@@ -1,18 +1,16 @@
-﻿using Beamable.Editor.UI.Common;
+﻿using Beamable.Editor.UI.Buss;
 using System;
 using UnityEngine.UIElements;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class AddStyleButton : BeamableBasicVisualElement
+	public class AddStyleButton : ThemeManagerBasicComponent
 	{
 		private VisualElement _addStyleButton;
 		private Action _onButtonClicked;
 
-		public AddStyleButton() : base(
-			$"{BUSS_THEME_MANAGER_PATH}/{nameof(AddStyleButton)}/{nameof(AddStyleButton)}.uss")
-		{ }
+		public AddStyleButton() : base(nameof(AddStyleButton)) { }
 
 		public void Setup(Action onButtonClicked)
 		{
@@ -24,7 +22,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Init();
 
-			_addStyleButton = new VisualElement { name = "addStyleButton" };
+			_addStyleButton = new VisualElement {name = "addStyleButton"};
 			_addStyleButton.AddToClassList("button");
 			_addStyleButton.Add(new Label(ADD_STYLE_BUTTON_LABEL));
 

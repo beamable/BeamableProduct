@@ -1,16 +1,12 @@
 ﻿using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
-using System.Collections.Generic;
 using UnityEditor;
-using UnityEngine;
 using UnityEngine.UIElements;
-using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class StylePropertyVisualElement : BeamableBasicVisualElement
+	public class StylePropertyVisualElement : ThemeManagerBasicComponent
 	{
 		private readonly StylePropertyModel _model;
 		private BussPropertyVisualElement _propertyVisualElement;
@@ -21,8 +17,7 @@ namespace Beamable.Editor.UI.Components
 		private VisualElement _variableParent;
 		private VisualElement _overrideIndicatorParent;
 
-		public StylePropertyVisualElement(StylePropertyModel model) : base(
-			$"{BUSS_THEME_MANAGER_PATH}/{nameof(StylePropertyVisualElement)}/{nameof(StylePropertyVisualElement)}.uss")
+		public StylePropertyVisualElement(StylePropertyModel model) : base(nameof(StylePropertyVisualElement))
 		{
 			_model = model;
 		}
@@ -31,17 +26,17 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Init();
 
-			_labelComponent = new TextElement { name = "propertyLabel" };
+			_labelComponent = new TextElement {name = "propertyLabel"};
 			_labelComponent.RegisterCallback<MouseDownEvent>(_model.LabelClicked);
 			Root.Add(_labelComponent);
 
-			_valueParent = new VisualElement { name = "value" };
+			_valueParent = new VisualElement {name = "value"};
 			Root.Add(_valueParent);
 
-			_variableParent = new VisualElement { name = "globalVariable" };
+			_variableParent = new VisualElement {name = "globalVariable"};
 			Root.Add(_variableParent);
 
-			_overrideIndicatorParent = new VisualElement { name = "overrideIndicatorParent" };
+			_overrideIndicatorParent = new VisualElement {name = "overrideIndicatorParent"};
 			_overrideIndicatorParent.AddToClassList("overrideIndicatorParent");
 			Root.Add(_overrideIndicatorParent);
 
@@ -178,7 +173,7 @@ namespace Beamable.Editor.UI.Components
 				_valueParent.Clear();
 			}
 
-			_propertyVisualElement = new CustomMessageBussPropertyVisualElement(message) { name = "message" };
+			_propertyVisualElement = new CustomMessageBussPropertyVisualElement(message) {name = "message"};
 			_valueParent.Add(_propertyVisualElement);
 			_propertyVisualElement.Init();
 		}

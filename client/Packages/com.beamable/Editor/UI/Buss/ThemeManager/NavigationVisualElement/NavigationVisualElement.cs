@@ -1,13 +1,11 @@
 ﻿using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System.Collections.Generic;
 using UnityEngine.UIElements;
-using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class NavigationVisualElement : BeamableBasicVisualElement
+	public class NavigationVisualElement : ThemeManagerBasicComponent
 	{
 		private readonly List<IndentedLabelVisualElement> _spawnedLabels = new List<IndentedLabelVisualElement>();
 		private bool _hasDelayedChangeCallback;
@@ -15,8 +13,7 @@ namespace Beamable.Editor.UI.Components
 		private IndentedLabelVisualElement _selectedLabel;
 		private readonly ThemeManagerModel _model;
 
-		public NavigationVisualElement(ThemeManagerModel model) : base(
-			$"{BUSS_THEME_MANAGER_PATH}/{nameof(NavigationVisualElement)}/{nameof(NavigationVisualElement)}.uss")
+		public NavigationVisualElement(ThemeManagerModel model) : base(nameof(NavigationVisualElement))
 		{
 			_model = model;
 		}
@@ -25,13 +22,13 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Init();
 
-			VisualElement header = new VisualElement { name = "header" };
+			VisualElement header = new VisualElement {name = "header"};
 
-			Image foldIcon = new Image { name = "foldIcon" };
+			Image foldIcon = new Image {name = "foldIcon"};
 			foldIcon.AddToClassList("unfolded");
 			header.Add(foldIcon);
 
-			TextElement label = new TextElement { name = "headerLabel", text = "Navigation" };
+			TextElement label = new TextElement {name = "headerLabel", text = "Navigation"};
 			header.Add(label);
 
 			header.RegisterCallback<MouseDownEvent>(evt =>
@@ -43,7 +40,7 @@ namespace Beamable.Editor.UI.Components
 
 			Root.Add(header);
 
-			_hierarchyContainer = new ScrollView { name = "elementsContainer" };
+			_hierarchyContainer = new ScrollView {name = "elementsContainer"};
 			Root.Add(_hierarchyContainer);
 
 			_model.Change += Refresh;
@@ -65,7 +62,8 @@ namespace Beamable.Editor.UI.Components
 			{
 				IndentedLabelVisualElement label = new IndentedLabelVisualElement();
 				label.Setup(pair.Key, BussNameUtility.GetFormattedLabel(pair.Key), _model.NavigationElementClicked,
-							pair.Value, IndentedLabelVisualElement.DEFAULT_SINGLE_INDENT_WIDTH, pair.Key == _model.SelectedElement);
+				            pair.Value, IndentedLabelVisualElement.DEFAULT_SINGLE_INDENT_WIDTH,
+				            pair.Key == _model.SelectedElement);
 				label.Init();
 				_spawnedLabels.Add(label);
 				_hierarchyContainer.Add(label);

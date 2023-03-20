@@ -1,3 +1,4 @@
+using Beamable.Editor.UI.Buss;
 using System.Linq;
 using UnityEngine.UIElements;
 using static Beamable.Common.Constants;
@@ -5,7 +6,7 @@ using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class StyleCardVisualElement : BeamableVisualElement
+	public class StyleCardVisualElement : ThemeManagerComponent
 	{
 		private readonly StyleCardModel _model;
 
@@ -18,14 +19,15 @@ namespace Beamable.Editor.UI.Components
 		private VisualElement _propertiesParent;
 		private VisualElement _selectorLabelParent;
 		private VisualElement _showAllButton;
-		private TextElement _showAllButtonText;
-		// TODO: restore while doing BEAM-3122
-		// private VisualElement _undoButton;
 		private VisualElement _variablesParent;
+
+		private TextElement _showAllButtonText;
 		private Image _foldIcon;
 
-		public StyleCardVisualElement(StyleCardModel model) : base(
-			$"{BUSS_THEME_MANAGER_PATH}/{nameof(StyleCardVisualElement)}/{nameof(StyleCardVisualElement)}")
+		// TODO: restore while doing BEAM-3122
+		// private VisualElement _undoButton;
+
+		public StyleCardVisualElement(StyleCardModel model) : base(nameof(StyleCardVisualElement))
 		{
 			_model = model;
 		}
@@ -39,7 +41,7 @@ namespace Beamable.Editor.UI.Components
 			_propertiesParent = Root.Q<VisualElement>("properties");
 			_colorBlock = Root.Q<VisualElement>("foldIconParent");
 
-			_foldIcon = new Image { name = "foldIcon" };
+			_foldIcon = new Image {name = "foldIcon"};
 			_colorBlock.Add(_foldIcon);
 
 			_optionsButton = Root.Q<VisualElement>("optionsButton");
@@ -69,7 +71,6 @@ namespace Beamable.Editor.UI.Components
 			_colorBlock.RegisterCallback<MouseDownEvent>(_model.FoldButtonClicked);
 		}
 
-
 		public void RepaintProperties()
 		{
 			SetSelectorStatus();
@@ -85,7 +86,6 @@ namespace Beamable.Editor.UI.Components
 			_selectorLabelComponent.EnableInClassList("is-exact", appliedStatus == RuleAppliedStatus.Exact);
 			_selectorLabelComponent.EnableInClassList("is-inherited", appliedStatus == RuleAppliedStatus.Inherited);
 			_selectorLabelComponent.EnableInClassList("is-not-applied", appliedStatus == RuleAppliedStatus.NotApplied);
-
 		}
 
 		private void SetFold()
@@ -140,7 +140,8 @@ namespace Beamable.Editor.UI.Components
 
 			_selectorLabelComponent = new BussSelectorLabelVisualElement();
 
-			_selectorLabelComponent.Setup(_model.StyleRule, _model.StyleSheet, _model.OnSelectorChanged, _model.PrepareCommands);
+			_selectorLabelComponent.Setup(_model.StyleRule, _model.StyleSheet, _model.OnSelectorChanged,
+			                              _model.PrepareCommands);
 			_selectorLabelParent.Add(_selectorLabelComponent);
 			SetSelectorStatus();
 		}

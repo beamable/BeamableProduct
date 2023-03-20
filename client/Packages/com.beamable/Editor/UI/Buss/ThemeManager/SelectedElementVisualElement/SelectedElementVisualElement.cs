@@ -1,16 +1,13 @@
 ﻿using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine.UIElements;
 
-using static Beamable.Common.Constants.Features.Buss.ThemeManager;
-
 namespace Beamable.Editor.UI.Components
 {
-	public class SelectedElementVisualElement : BeamableBasicVisualElement
+	public class SelectedElementVisualElement : ThemeManagerBasicComponent
 	{
 		private const float MIN_CONTENT_HEIGHT = 120.0f;
 		private const float SINGLE_CLASS_ENTRY_HEIGHT = 24.0f;
@@ -27,8 +24,7 @@ namespace Beamable.Editor.UI.Components
 		private Dictionary<TextField, EventCallback<ChangeEvent<string>>> _changeHandlers =
 			new Dictionary<TextField, EventCallback<ChangeEvent<string>>>();
 
-		public SelectedElementVisualElement(ThemeManagerModel model) : base(
-			$"{BUSS_THEME_MANAGER_PATH}/{nameof(SelectedElementVisualElement)}/{nameof(SelectedElementVisualElement)}.uss")
+		public SelectedElementVisualElement(ThemeManagerModel model) : base(nameof(SelectedElementVisualElement))
 		{
 			_model = model;
 		}
@@ -40,7 +36,7 @@ namespace Beamable.Editor.UI.Components
 			VisualElement header = new VisualElement();
 			header.AddToClassList("header");
 
-			Image foldIcon = new Image { name = "foldIcon" };
+			Image foldIcon = new Image {name = "foldIcon"};
 			foldIcon.AddToClassList("unfolded");
 			header.Add(foldIcon);
 
@@ -78,7 +74,7 @@ namespace Beamable.Editor.UI.Components
 
 			_currentStyleSheet = new LabeledObjectField();
 			_currentStyleSheet.Setup("Style sheet", typeof(BussStyleSheet), _model.SelectedElementStyleSheet,
-									 _model.OnStyleSheetSelected);
+			                         _model.OnStyleSheetSelected);
 			_contentContainer.Add(_currentStyleSheet);
 			Root.Add(_contentContainer);
 
@@ -98,14 +94,14 @@ namespace Beamable.Editor.UI.Components
 
 		private void CreateButtons()
 		{
-			VisualElement buttonsContainer = new VisualElement { name = "buttonsContainer" };
+			VisualElement buttonsContainer = new VisualElement {name = "buttonsContainer"};
 
-			VisualElement removeButton = new VisualElement { name = "removeButton" };
+			VisualElement removeButton = new VisualElement {name = "removeButton"};
 			removeButton.AddToClassList("button");
 			removeButton.RegisterCallback<MouseDownEvent>(RemoveClassButtonClicked);
 			buttonsContainer.Add(removeButton);
 
-			VisualElement addButton = new VisualElement { name = "addButton" };
+			VisualElement addButton = new VisualElement {name = "addButton"};
 			addButton.AddToClassList("button");
 			addButton.RegisterCallback<MouseDownEvent>(AddClassButtonClicked);
 			buttonsContainer.Add(addButton);
@@ -223,8 +219,8 @@ namespace Beamable.Editor.UI.Components
 
 		private VisualElement CreateListViewElement()
 		{
-			VisualElement classElement = new VisualElement { name = "classElement" };
-			classElement.Add(new VisualElement { name = "space" });
+			VisualElement classElement = new VisualElement {name = "classElement"};
+			classElement.Add(new VisualElement {name = "space"});
 			classElement.Add(new TextField());
 			return classElement;
 		}
@@ -235,13 +231,15 @@ namespace Beamable.Editor.UI.Components
 			textField.value = BussNameUtility.AsClassSelector(_classesList.itemsSource[index] as string);
 			textField.isDelayed = true;
 			BindTextfieldCallback(textField, ClassValueChanged);
+
 			void ClassValueChanged(ChangeEvent<string> evt)
 			{
 				string newValue = BussNameUtility.AsClassSelector(evt.newValue);
 				_classesList.itemsSource[index] = newValue;
 				textField.SetValueWithoutNotify(newValue);
 				Undo.RecordObject(_model.SelectedElement, "Change classes");
-				_model.SelectedElement.UpdateClasses(BussNameUtility.AsCleanList((List<string>)_classesList.itemsSource));
+				_model.SelectedElement.UpdateClasses(
+					BussNameUtility.AsCleanList((List<string>)_classesList.itemsSource));
 				EditorUtility.SetDirty(_model.SelectedElement);
 				_model.ForceRefresh();
 			}
@@ -261,8 +259,8 @@ namespace Beamable.Editor.UI.Components
 			{
 				_changeHandlers.Add(textField, cb);
 			}
-			textField.RegisterValueChangedCallback(cb);
 
+			textField.RegisterValueChangedCallback(cb);
 		}
 
 		protected override void OnDestroy()

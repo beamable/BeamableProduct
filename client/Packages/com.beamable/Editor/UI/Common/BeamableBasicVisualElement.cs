@@ -40,7 +40,7 @@ namespace Beamable.Editor.UI.Common
 		}
 
 		public BeamEditorContext Context => Provider.GetService<BeamEditorContext>();
-
+		
 		protected BeamableBasicVisualElement(string ussPath, bool createRoot = true)
 		{
 			Assert.IsTrue(File.Exists(ussPath), $"Cannot find {ussPath}");

@@ -1,13 +1,11 @@
-﻿using Beamable.Editor.UI.Common;
-using Beamable.Editor.UI.Components;
+﻿using Beamable.Editor.UI.Components;
 using System;
 using UnityEngine.UIElements;
-using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Buss
 {
 	// TODO: TD213896
-	public class ThemeManagerActionBarVisualElement : BeamableBasicVisualElement
+	public class ThemeManagerActionBarVisualElement : ThemeManagerBasicComponent
 	{
 		private readonly Action _onAddStyle;
 		private readonly Action _onCopy;
@@ -16,11 +14,11 @@ namespace Beamable.Editor.UI.Buss
 		private readonly Action<string> _onSearch;
 
 		public ThemeManagerActionBarVisualElement(Action onAddStyle,
-													  Action onCopy,
-													  Action onRefresh,
-													  Action onDocs,
-													  Action<string> onSearch) : base(
-			$"{BUSS_THEME_MANAGER_PATH}/{nameof(ThemeManagerActionBarVisualElement)}/{nameof(ThemeManagerActionBarVisualElement)}.uss")
+		                                          Action onCopy,
+		                                          Action onRefresh,
+		                                          Action onDocs,
+		                                          Action<string> onSearch) : base(
+			nameof(ThemeManagerActionBarVisualElement))
 		{
 			_onAddStyle = onAddStyle;
 			_onCopy = onCopy;
@@ -33,16 +31,16 @@ namespace Beamable.Editor.UI.Buss
 		{
 			base.Init();
 
-			VisualElement leftContainer = new VisualElement { name = "leftContainer" };
+			VisualElement leftContainer = new VisualElement {name = "leftContainer"};
 			Root.Add(leftContainer);
 
 			leftContainer.Add(CreateLabeledIconButton("addStyle", "Add style", _onAddStyle));
 			leftContainer.Add(CreateLabeledIconButton("duplicateStylesheet", "Duplicate", _onCopy));
 
-			VisualElement rightContainer = new VisualElement { name = "rightContainer" };
+			VisualElement rightContainer = new VisualElement {name = "rightContainer"};
 			Root.Add(rightContainer);
 
-			SearchBarVisualElement searchBarVisualElement = new SearchBarVisualElement { name = "searchBar" };
+			SearchBarVisualElement searchBarVisualElement = new SearchBarVisualElement {name = "searchBar"};
 			searchBarVisualElement.OnSearchChanged += _onSearch;
 			rightContainer.Add(searchBarVisualElement);
 

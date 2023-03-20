@@ -1,22 +1,18 @@
 using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
 using UnityEngine.UIElements;
-using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class InlineStyleVisualElement : BeamableBasicVisualElement
+	public class InlineStyleVisualElement : ThemeManagerBasicComponent
 	{
 		private VisualElement _variableContainer;
 		private VisualElement _propertyContainer;
 
 		private readonly ThemeManagerModel _model;
 
-		public InlineStyleVisualElement(ThemeManagerModel model) : base(
-			$"{BUSS_THEME_MANAGER_PATH}/{nameof(InlineStyleVisualElement)}/{nameof(InlineStyleVisualElement)}.uss",
-			false)
+		public InlineStyleVisualElement(ThemeManagerModel model) : base(nameof(InlineStyleVisualElement), false)
 		{
 			_model = model;
 		}
@@ -28,7 +24,7 @@ namespace Beamable.Editor.UI.Components
 			VisualElement header = new VisualElement();
 			header.AddToClassList("header");
 
-			Image foldIcon = new Image { name = "foldIcon" };
+			Image foldIcon = new Image {name = "foldIcon"};
 			foldIcon.AddToClassList("folded");
 			header.Add(foldIcon);
 
@@ -95,9 +91,11 @@ namespace Beamable.Editor.UI.Components
 			foreach (BussPropertyProvider property in selectedElement.InlineStyle.Properties)
 			{
 				StylePropertyModel model = new StylePropertyModel(selectedElement.StyleSheet, null,
-																  property,
-																  propertySourceTracker, selectedElement, selectedElement,
-																  _model.RemoveInlineProperty, null, _model.SetInlinePropertyValueType);
+				                                                  property,
+				                                                  propertySourceTracker, selectedElement,
+				                                                  selectedElement,
+				                                                  _model.RemoveInlineProperty, null,
+				                                                  _model.SetInlinePropertyValueType);
 
 				var element = new StylePropertyVisualElement(model);
 				element.Init();
