@@ -2,7 +2,7 @@ namespace cli;
 
 public class ProfilingCommandArgs : CommandArgs
 {
-	
+
 }
 public class ProfilingCommand : AppCommand<ProfilingCommandArgs>
 {
@@ -12,7 +12,7 @@ public class ProfilingCommand : AppCommand<ProfilingCommandArgs>
 
 	public override void Configure()
 	{
-		
+
 	}
 
 	public override Task Handle(ProfilingCommandArgs args)
