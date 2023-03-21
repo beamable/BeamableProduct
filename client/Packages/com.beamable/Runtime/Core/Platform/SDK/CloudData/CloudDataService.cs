@@ -17,7 +17,7 @@ namespace Beamable.Api.CloudData
 	/// </summary>
 	public class CloudDataService : CloudDataApi
 	{
-		public CloudDataService(IUserContext ctx, IBeamableRequester requester) : base(ctx, requester)
+		public CloudDataService(IUserContext ctx, IBeamableRequester requester, IHttpRequester httpRequester) : base(ctx, requester, httpRequester)
 		{
 		}
 	}

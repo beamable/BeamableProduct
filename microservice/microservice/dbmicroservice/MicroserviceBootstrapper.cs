@@ -26,6 +26,7 @@ using Beamable.Server.Api.Leaderboards;
 using Beamable.Server.Api.Mail;
 using Beamable.Server.Api.Notifications;
 using Beamable.Server.Api.Payments;
+using Beamable.Server.Api.Push;
 using Beamable.Server.Api.RealmConfig;
 using Beamable.Server.Api.Social;
 using Beamable.Server.Api.Stats;
@@ -39,8 +40,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
+using Serilog.Formatting.Display;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using UnityEngine;
 using Constants = Beamable.Common.Constants;
@@ -63,6 +67,9 @@ namespace Beamable.Server
 			
             var envLogLevel = (LogEventLevel)Enum.Parse(typeof(LogEventLevel), logLevel, true);
 
+            var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+            
+            
             // The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
             LogLevel = new LoggingLevelSwitch { MinimumLevel = envLogLevel };
 
@@ -90,8 +97,27 @@ namespace Beamable.Server
 		            .Destructure.ToMaximumDepth(args.LogMaxDepth)
 		            .Destructure.ToMaximumStringLength(args.LogDestructureMaxLength);
             }
-            Log.Logger = logConfig
-               .WriteTo.Console(new MicroserviceLogFormatter())
+
+            var logger = logConfig;
+            switch (args.LogOutputType)
+            {
+	            case LogOutputType.DEFAULT when !inDocker:
+	            case LogOutputType.UNSTRUCTURED:
+		            logger = logConfig.WriteTo.Console(
+			            new MessageTemplateTextFormatter(
+				            "{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}"));
+		            break;
+	            case LogOutputType.DEFAULT: // when inDocker: // logically, think of this as having inDocker==true, but technically because the earlier case checks for !inDocker, its redundant.
+	            case LogOutputType.STRUCTURED:
+		            logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
+		            break;
+				default:
+					logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
+					break;
+            }
+            
+            
+            Log.Logger = logger
                .CreateLogger();
 
             // use newtonsoft for JsonUtility
@@ -173,6 +199,14 @@ namespace Beamable.Server
 			        .AddScoped<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
 			        .AddScoped<IRealmInfo>(provider => provider.GetService<IMicroserviceArgs>())
 			        .AddScoped<IBeamableRequester>(p => p.GetService<MicroserviceRequester>())
+			        .AddScoped<IHttpRequester, MicroserviceHttpRequester>(() =>
+			        {
+				        HttpClientHandler handler = new HttpClientHandler()
+				        {
+					        AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+				        };
+				        return new MicroserviceHttpRequester(new HttpClient(handler));
+			        })
 			        .AddSingleton<IMicroserviceArgs>(envArgs)
 			        .AddSingleton<SocketRequesterContext>(_ =>
 			        {
@@ -209,6 +243,7 @@ namespace Beamable.Server
 			        .AddScoped<IMicroserviceRealmConfigService, RealmConfigService>()
 			        .AddScoped<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
 			        .AddScoped<IMicroservicePaymentsApi, MicroservicePaymentsApi>()
+			        .AddScoped<IMicroservicePushApi, MicroservicePushApi>()
 			        .AddSingleton<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>()
 			        .AddSingleton<MongoSerializationService>()
 			        .AddSingleton<IMongoSerializationService>(p => p.GetService<MongoSerializationService>())
@@ -312,6 +347,7 @@ namespace Beamable.Server
 			        Commerce = provider.GetRequiredService<IMicroserviceCommerceApi>(),
 			        Chat = provider.GetRequiredService<IMicroserviceChatApi>(),
 			        Payments = provider.GetRequiredService<IMicroservicePaymentsApi>(),
+			        Push = provider.GetRequiredService<IMicroservicePushApi>(),
 		        };
 		        return services;
 	        }
