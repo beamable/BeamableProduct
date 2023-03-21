@@ -4,11 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-### Changed
-- Standalone Microservices don't use structured JSON logs
-
+## [1.13.0]
 ### Added
+- `IMicroserviceBuildContext.AddDirectory` method allows to copy an entire directory of files into a build context.
 - `IMicroserviceNotificationsApi` supports notifying entire player base with `NotifyGame` method.
 - `IMicroserviceNotificationsApi` supports notifying servers with `NotifyServer` method.
 - Microservices has `Push` service
@@ -16,10 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Microservice calls to `GetCloudDataContent` no longer throw 500 errors.
 
-
-## [1.12.1]
-### Added
-- `IMicroserviceBuildContext.AddDirectory` method allows to copy an entire directory of files into a build context.
+### Changed
+- Standalone Microservices don't use structured JSON logs
 
 ## [1.12.0]
 ### Fixed
