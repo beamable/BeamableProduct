@@ -1,16 +1,13 @@
 ﻿using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine.UIElements;
 
-using static Beamable.Common.Constants.Features.Buss.ThemeManager;
-
 namespace Beamable.Editor.UI.Components
 {
-	public class SelectedElementVisualElement : BeamableBasicVisualElement
+	public class SelectedElementVisualElement : ThemeManagerBasicComponent
 	{
 		private const float MIN_CONTENT_HEIGHT = 120.0f;
 		private const float SINGLE_CLASS_ENTRY_HEIGHT = 24.0f;
@@ -27,8 +24,7 @@ namespace Beamable.Editor.UI.Components
 		private Dictionary<TextField, EventCallback<ChangeEvent<string>>> _changeHandlers =
 			new Dictionary<TextField, EventCallback<ChangeEvent<string>>>();
 
-		public SelectedElementVisualElement(ThemeManagerModel model) : base(
-			$"{BUSS_THEME_MANAGER_PATH}/{nameof(SelectedElementVisualElement)}/{nameof(SelectedElementVisualElement)}.uss")
+		public SelectedElementVisualElement(ThemeManagerModel model) : base(nameof(SelectedElementVisualElement))
 		{
 			_model = model;
 		}

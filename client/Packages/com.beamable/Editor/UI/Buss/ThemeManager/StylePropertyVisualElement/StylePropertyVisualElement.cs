@@ -1,16 +1,12 @@
 ﻿using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
-using System.Collections.Generic;
 using UnityEditor;
-using UnityEngine;
 using UnityEngine.UIElements;
-using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class StylePropertyVisualElement : BeamableBasicVisualElement
+	public class StylePropertyVisualElement : ThemeManagerBasicComponent
 	{
 		private readonly StylePropertyModel _model;
 		private BussPropertyVisualElement _propertyVisualElement;
@@ -21,8 +17,7 @@ namespace Beamable.Editor.UI.Components
 		private VisualElement _variableParent;
 		private VisualElement _overrideIndicatorParent;
 
-		public StylePropertyVisualElement(StylePropertyModel model) : base(
-			$"{BUSS_THEME_MANAGER_PATH}/{nameof(StylePropertyVisualElement)}/{nameof(StylePropertyVisualElement)}.uss")
+		public StylePropertyVisualElement(StylePropertyModel model) : base(nameof(StylePropertyVisualElement))
 		{
 			_model = model;
 		}
