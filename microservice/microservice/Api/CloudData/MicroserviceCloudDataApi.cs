@@ -5,7 +5,7 @@ namespace Beamable.Server.Api.CloudData
 {
    public class MicroserviceCloudDataApi : CloudDataApi, IMicroserviceCloudDataApi
    {
-      public MicroserviceCloudDataApi(IBeamableRequester requester, IUserContext ctx) : base(ctx, requester)
+      public MicroserviceCloudDataApi(IBeamableRequester requester, IUserContext ctx, IHttpRequester httpRequester) : base(ctx, requester, httpRequester)
       {
       }
    }

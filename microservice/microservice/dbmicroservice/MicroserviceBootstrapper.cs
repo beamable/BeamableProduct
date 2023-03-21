@@ -42,6 +42,8 @@ using Serilog.Events;
 using Serilog.Formatting.Display;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using UnityEngine;
 using Constants = Beamable.Common.Constants;
@@ -196,6 +198,14 @@ namespace Beamable.Server
 			        .AddScoped<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
 			        .AddScoped<IRealmInfo>(provider => provider.GetService<IMicroserviceArgs>())
 			        .AddScoped<IBeamableRequester>(p => p.GetService<MicroserviceRequester>())
+			        .AddScoped<IHttpRequester, MicroserviceHttpRequester>(() =>
+			        {
+				        HttpClientHandler handler = new HttpClientHandler()
+				        {
+					        AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+				        };
+				        return new MicroserviceHttpRequester(new HttpClient(handler));
+			        })
 			        .AddSingleton<IMicroserviceArgs>(envArgs)
 			        .AddSingleton<SocketRequesterContext>(_ =>
 			        {
