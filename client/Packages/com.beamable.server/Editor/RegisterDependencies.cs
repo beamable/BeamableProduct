@@ -14,6 +14,7 @@ namespace Beamable.Server.Editor
 		{
 			builder.LoadSingleton(provider => new MicroservicesDataModel(provider.GetService<BeamEditorContext>()));
 			builder.AddSingleton<MicroserviceManager>();
+			builder.AddSingleton<MicroserviceDiscovery>();
 		}
 	}
 }
