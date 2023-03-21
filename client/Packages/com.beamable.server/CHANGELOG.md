@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Standalone Microservices don't use structured JSON logs
 
+### Added
+- Microservices has `Push` service
+
 ### Fixed
 - Microservice calls to `GetCloudDataContent` no longer throw 500 errors.
 
