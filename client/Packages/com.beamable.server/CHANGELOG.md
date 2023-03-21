@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `IMicroserviceNotificationsApi` supports notifying entire player base with `NotifyGame` method.
 - `IMicroserviceNotificationsApi` supports notifying servers with `NotifyServer` method.
+- Microservices has `Push` service
+
+### Fixed
+- Microservice calls to `GetCloudDataContent` no longer throw 500 errors.
+
 
 ## [1.12.1]
 ### Added
