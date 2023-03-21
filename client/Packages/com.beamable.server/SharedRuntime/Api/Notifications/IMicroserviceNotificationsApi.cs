@@ -67,7 +67,6 @@ namespace Beamable.Server.Api.Notifications
 		/// Notifies all players at the given <paramref name="name"/>. The <paramref name="name"/> is the one you should subscribe to in
 		/// your <see cref="INotificationService.Subscribe{T}"/> calls in the client-code.
 		/// </summary>
-		/// <param name="gamertags">The list of gamertags for the players you wish to notify.</param>
 		/// <param name="name">The context that player's client must be subscribed too to see the notification.</param>
 		/// <param name="messagePayload">The data to send along with the notification. Must be a JSON-serializable type.</param>
 		Promise<EmptyResponse> NotifyGame<T>(string name, T messagePayload);
