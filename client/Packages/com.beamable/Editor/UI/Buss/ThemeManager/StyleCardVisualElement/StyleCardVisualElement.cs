@@ -1,3 +1,4 @@
+using Beamable.Editor.UI.Buss;
 using System.Linq;
 using UnityEngine.UIElements;
 using static Beamable.Common.Constants;
@@ -5,7 +6,7 @@ using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class StyleCardVisualElement : BeamableVisualElement
+	public class StyleCardVisualElement : ThemeManagerComponent
 	{
 		private readonly StyleCardModel _model;
 
@@ -24,8 +25,7 @@ namespace Beamable.Editor.UI.Components
 		private VisualElement _variablesParent;
 		private Image _foldIcon;
 
-		public StyleCardVisualElement(StyleCardModel model) : base(
-			$"{BUSS_THEME_MANAGER_PATH}/{nameof(StyleCardVisualElement)}/{nameof(StyleCardVisualElement)}")
+		public StyleCardVisualElement(StyleCardModel model) : base(nameof(StyleCardVisualElement))
 		{
 			_model = model;
 		}
