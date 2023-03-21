@@ -87,11 +87,17 @@ namespace Beamable.Common.Api.CloudData
 	{
 		public IUserContext Ctx { get; }
 		public IBeamableRequester Requester { get; }
+		public IHttpRequester HttpRequester { get; }
 
-		public CloudDataApi(IUserContext ctx, IBeamableRequester requester)
+		public CloudDataApi(IUserContext ctx, IBeamableRequester requester, IHttpRequester httpRequester=null)
 		{
 			Ctx = ctx;
 			Requester = requester;
+			HttpRequester = httpRequester;
+			if (httpRequester == null)
+			{
+				BeamableLogger.LogWarning($"{nameof(CloudDataApi)} was initialized without a {nameof(httpRequester)}, which means that certain functions will not work. {nameof(GetCloudDataContent)} will break.");
+			}
 		}
 
 		public Promise<GetCloudDataManifestResponse> GetGameManifest()
@@ -112,8 +118,7 @@ namespace Beamable.Common.Api.CloudData
 
 		public Promise<string> GetCloudDataContent(CloudMetaData metaData)
 		{
-			return Requester.Request(Method.GET,
-									 $"https://{metaData.uri}", parser: s => s);
+			return HttpRequester.ManualRequest(Method.GET, $"https://{metaData.uri}", parser: s => s);
 		}
 	}
 }

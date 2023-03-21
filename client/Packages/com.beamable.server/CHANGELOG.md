@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Microservices has `Push` service
 
+### Fixed
+- Microservice calls to `GetCloudDataContent` no longer throw 500 errors.
+
 ## [1.12.1]
 ### Added
 - `IMicroserviceBuildContext.AddDirectory` method allows to copy an entire directory of files into a build context.
