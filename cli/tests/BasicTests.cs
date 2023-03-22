@@ -1,4 +1,3 @@
-
 using Beamable.Common.Api;
 using cli;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,7 +33,7 @@ public class Tests
 	{
 		void CheckNaming(string commandName, string description, string optionName = null)
 		{
-			const string KEBAB_CASE_PATTERN = "^[a-z]+(?:[-][a-z]+)*$";
+			const string KEBAB_CASE_PATTERN = "^([a-z]|[0-9])+(?:[-]([a-z]|[0-9])+)*$";
 			var isOption = !string.IsNullOrWhiteSpace(optionName);
 			var logPrefix = isOption ?
 				$"{optionName} argument for command {commandName}" :
@@ -128,8 +127,23 @@ public class Tests
 
 
 			builder.AddSingleton<ISwaggerStreamDownloader>(mock.Object);
-
 		}, "oapi", "generate", "--filter", "social,t:basic");
+		Assert.AreEqual(0, status);
+	}
+
+
+	[Test]
+	public async Task GenerateUnreal() // TODO: better name please
+	{
+		var status = await Cli.RunAsyncWithParams(builder =>
+		{
+			var mock = new Mock<ISwaggerStreamDownloader>();
+
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("content"))))
+				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.ContentObjectApi));
+
+			builder.AddSingleton<ISwaggerStreamDownloader>(mock.Object);
+		}, "oapi", "generate", "--filter", "content,t:basic", "--engine", "unreal");
 		Assert.AreEqual(0, status);
 	}
 

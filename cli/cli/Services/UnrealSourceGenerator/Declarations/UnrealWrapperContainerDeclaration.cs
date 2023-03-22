@@ -2,75 +2,6 @@
 
 namespace cli.Unreal;
 
-public struct UnrealEnumDeclaration
-{
-	public string UnrealTypeName;
-	public string NamespacedTypeName;
-
-	public List<string> EnumValues;
-
-	public void BakeIntoProcessMap(Dictionary<string, string> helperDict)
-	{
-		var enumValues = string.Join(",\n\t", EnumValues.Select(v =>
-		{
-			var enumValue = $@"{v} UMETA(DisplayName=""{v.SpaceOutOnUpperCase()}"")";
-
-			return enumValue;
-		}));
-
-		helperDict.Add(nameof(UnrealTypeName), UnrealTypeName);
-		helperDict.Add(nameof(NamespacedTypeName), NamespacedTypeName);
-		helperDict.Add(nameof(EnumValues), enumValues);
-	}
-
-	public const string U_ENUM_HEADER = $@"
-#pragma once
-
-#include ""CoreMinimal.h""
-
-#include ""₢{nameof(NamespacedTypeName)}₢.generated.h""
-
-UENUM(BlueprintType, Category=""Beam|Enums"")
-enum class ₢{nameof(UnrealTypeName)}₢ : uint8
-{{
-	₢{nameof(EnumValues)}₢		
-}};
-
-UCLASS(BlueprintType, Category=""Beam|Enums"")
-class BEAMABLECORE_API U₢{nameof(NamespacedTypeName)}₢Library : public UBlueprintFunctionLibrary
-{{
-	GENERATED_BODY()
-public:		
-	
-	UFUNCTION(BlueprintPure, meta = (DisplayName = ""Beam - ₢{nameof(NamespacedTypeName)}₢ To Serialization Name"", CompactNodeTitle = ""->""), Category=""Beam|Enums"")
-	static FString ₢{nameof(NamespacedTypeName)}₢ToSerializationName(₢{nameof(UnrealTypeName)}₢ Value)
-	{{
-		const UEnum* Enum = StaticEnum<₢{nameof(UnrealTypeName)}₢>();
-		const int32 NameIndex = Enum->GetIndexByValue(static_cast<int64>(Value));
-		const FString SerializationName = Enum->GetNameStringByValue(NameIndex);		
-		return SerializationName;
-		
-	}}
-
-	UFUNCTION(BlueprintPure, meta = (DisplayName = ""Beam - Serialization Name To ₢{nameof(NamespacedTypeName)}₢"", CompactNodeTitle = ""->""), Category=""Beam|Enums"")
-	static ₢{nameof(UnrealTypeName)}₢ SerializationNameTo₢{nameof(NamespacedTypeName)}₢(FString Value)
-	{{
-		const UEnum* Enum = StaticEnum<₢{nameof(UnrealTypeName)}₢>();
-		for (int32 NameIndex = 0; NameIndex < Enum->NumEnums() - 1; ++NameIndex)
-		{{
-			const FString& SerializationName = Enum->GetNameStringByValue(NameIndex);
-			if(Value == SerializationName)
-				return static_cast<₢{nameof(UnrealTypeName)}₢>(Enum->GetValueByIndex(NameIndex));
-		}}
-		
-		ensureAlways(false); //  This should be impossible!
-		return ₢{nameof(UnrealTypeName)}₢();
-	}}	
-}};
-
-";
-}
-
 public struct UnrealWrapperContainerDeclaration
 {
 	public string UnrealTypeName;
@@ -184,17 +115,17 @@ struct ₢{nameof(UnrealTypeName)}₢ : public FBeamMap
 ₢{nameof(UnrealTypeName)}₢::₢{nameof(UnrealTypeName)}₢(const TMap<FString, ₢{nameof(ValueUnrealTypeName)}₢>& Val): Values(Val)
 {{}}
 
-void FMapOfString::BeamSerializeProperties(TUnrealJsonSerializer& Serializer) const
+void ₢{nameof(UnrealTypeName)}₢::BeamSerializeProperties(TUnrealJsonSerializer& Serializer) const
 {{
 	UBeamJsonUtils::SerializeMap<₢{nameof(ValueUnrealTypeName)}₢>(Values, Serializer);
 }}
 
-void FMapOfString::BeamSerializeProperties(TUnrealPrettyJsonSerializer& Serializer) const
+void ₢{nameof(UnrealTypeName)}₢::BeamSerializeProperties(TUnrealPrettyJsonSerializer& Serializer) const
 {{
 	UBeamJsonUtils::SerializeMap<₢{nameof(ValueUnrealTypeName)}₢>(Values, Serializer);
 }}
 
-void FMapOfString::BeamDeserializeElements(const TSharedPtr<FJsonObject>& Elements)
+void ₢{nameof(UnrealTypeName)}₢::BeamDeserializeElements(const TSharedPtr<FJsonObject>& Elements)
 {{
 	UBeamJsonUtils::DeserializeMap<₢{nameof(ValueUnrealTypeName)}₢>(Elements, Values);
 }}";
