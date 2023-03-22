@@ -1,22 +1,18 @@
 using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
 using UnityEngine.UIElements;
-using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class InlineStyleVisualElement : BeamableBasicVisualElement
+	public class InlineStyleVisualElement : ThemeManagerBasicComponent
 	{
 		private VisualElement _variableContainer;
 		private VisualElement _propertyContainer;
 
 		private readonly ThemeManagerModel _model;
 
-		public InlineStyleVisualElement(ThemeManagerModel model) : base(
-			$"{BUSS_THEME_MANAGER_PATH}/{nameof(InlineStyleVisualElement)}/{nameof(InlineStyleVisualElement)}.uss",
-			false)
+		public InlineStyleVisualElement(ThemeManagerModel model) : base(nameof(InlineStyleVisualElement), false)
 		{
 			_model = model;
 		}
