@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using Beamable.Common;
 using Beamable.Editor.UI.Components;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 #if UNITY_2018
@@ -25,6 +26,12 @@ namespace Beamable.Editor
 		private const string PROPERTY_HOVERED = "hovered";
 		private const string PROPERTY_HIDDEN = "hidden";
 
+		public static void AddRange(this ScrollView scrollView, IEnumerable<VisualElement> collection)
+		{
+			foreach (var item in collection)
+				scrollView.Add(item);
+		}
+		
 		public static void SetInactive(this VisualElement element, bool value)
 		{
 			if (value)

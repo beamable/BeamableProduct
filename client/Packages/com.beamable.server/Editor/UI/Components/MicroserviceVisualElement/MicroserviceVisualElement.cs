@@ -27,7 +27,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override bool IsRemoteEnabled => _microserviceModel.RemoteReference?.enabled ?? false;
 
 		private MicroserviceModel _microserviceModel;
-
+		
 		protected override void OnDestroy()
 		{
 			base.OnDestroy();
