@@ -1,6 +1,7 @@
 ﻿using Beamable.AccountManagement;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
+using Beamable.Player;
 using System;
 using UnityEngine;
 using UnityEngine.Events;
@@ -17,8 +18,9 @@ namespace Beamable.EasyFeatures.Components
 		public AuthMethodButton AuthMethodButtonPrefab;
 
 		private BeamContext _context;
+		private UnityAction _onRefresh;
 
-		public void Setup(BeamContext context, UnityAction onEmailLoginPressed = null)
+		public void Setup(BeamContext context, UnityAction onEmailLoginPressed = null, UnityAction onRefresh = null)
 		{
 			foreach (Transform child in transform)
 			{
@@ -26,6 +28,7 @@ namespace Beamable.EasyFeatures.Components
 			}
 			
 			_context = context;
+			_onRefresh = onRefresh;
 
 			if (onEmailLoginPressed != null)
 			{
@@ -97,7 +100,24 @@ namespace Beamable.EasyFeatures.Components
 				}
 				else
 				{
-					Debug.LogError($"Error: {result.error} - {result.innerException}");
+					if (result.error == PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN)
+					{
+						// TODO: inform the user that the token is already linked with other account and offer switching to that account
+						var account = await _context.Accounts.RecoverAccountWithThirdParty(thirdParty, response.AuthToken);
+						if (account.isSuccess)
+						{
+							await account.SwitchToAccount();
+							_onRefresh?.Invoke();
+						}
+						else
+						{
+							Debug.LogError("Error occurred while switching to other account");
+						}
+					}
+					else
+					{
+						Debug.LogError($"Error: {result.error} - {result.innerException}");	
+					}
 				}
 			}
 		}

@@ -48,7 +48,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				return;
 			}
 
-			ThirdPartyLogin.Setup(System.Context);
+			ThirdPartyLogin.Setup(System.Context, onRefresh: FeatureControl.OpenAccountsView);
 			
 			EmailInput.Setup((string input, out string errorMessage) => System.IsEmailValid(input, out errorMessage));
 			EmailInput.text = System.Email;

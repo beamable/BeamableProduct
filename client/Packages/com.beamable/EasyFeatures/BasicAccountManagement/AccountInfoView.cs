@@ -59,7 +59,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 				return;
 			}
 			
-			ThirdPartyLogin.Setup(System.Context, OnEmailLoginPressed);
+			ThirdPartyLogin.Setup(System.Context, OnEmailLoginPressed, FeatureControl.OpenAccountsView);
 			
 			SetStatusPopupPrefab.gameObject.SetActive(false);
 
