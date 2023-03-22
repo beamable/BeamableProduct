@@ -54,7 +54,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				Animate(new Vector3(_offset * SelectionIndex, 0, 0));
 		}
 
-		private void Animate(Vector3 to) 
+		private void Animate(Vector3 to)
 			=> Animate(to, _animDuration);
 		private void Animate(Vector3 to, int duration) =>
 			_animatedElement.experimental.animation.Position(to, duration);
@@ -75,7 +75,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Animate(new Vector3(_offset * SelectionIndex, 0, 0));
 		}
 	}
-	
+
 	public class PublishPopup : MicroserviceComponent
 	{
 		public new class UxmlFactory : UxmlFactory<PublishPopup, UxmlTraits> { }
@@ -139,16 +139,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public override void Refresh()
 		{
 			base.Refresh();
-			
+
 			var loadingIndicator = Root.Q<LoadingIndicatorVisualElement>();
 			loadingIndicator.SetText("Fetching Beamable Cloud Data");
 			Assert.IsNotNull(InitPromise, "The InitPromise must be set before calling Refresh()");
 			loadingIndicator.SetPromise(InitPromise, Root.Q("mainVisualElement"));
-			
+
 			if (Model?.Services == null)
 				return;
 
-			_allUnarchivedServices = new List<IEntryModel>(Model.Services.Values.Where(x => !x.Archived)); 
+			_allUnarchivedServices = new List<IEntryModel>(Model.Services.Values.Where(x => !x.Archived));
 			_allUnarchivedServices.AddRange(Model.Storages.Values.Where(x => !x.Archived).ToList());
 
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
@@ -173,7 +173,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_scrollContainer = new ScrollView(ScrollViewMode.Vertical);
 			_scrollContainer.horizontalScroller?.RemoveFromHierarchy();
-			
+
 #if UNITY_2021_1_OR_NEWER
 			_scrollContainer.verticalScrollerVisibility = ScrollerVisibility.AlwaysVisible;
 #else
@@ -184,7 +184,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_infoTitle = Root.Q<Label>("infoTitle");
 			_infoTitle.Add(new Label("Publish services to "));
-			_infoTitle.Add(new Label($"{Context.CurrentRealm.DisplayName} ") {style = {color = new StyleColor(_infoColor)}});
+			_infoTitle.Add(new Label($"{Context.CurrentRealm.DisplayName} ") { style = { color = new StyleColor(_infoColor) } });
 			_infoTitle.Add(new Label("realm"));
 
 			_infoDescription = Root.Q<Label>("infoDescription");
@@ -194,12 +194,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_docReference = Root.Q("docReference");
 			_docReference.RegisterCallback<MouseDownEvent>(_ => Application.OpenURL(Constants.URLs.Documentations.URL_DOC_MICROSERVICES_PUBLISHING));
 			_docReference.tooltip = "Document";
-			
+
 			_publishManifestElements = new Dictionary<string, PublishManifestEntryVisualElement>(_allUnarchivedServices.Count);
-			_servicesList.style.height = Mathf.Clamp(_allUnarchivedServices.Count,1, MAX_ROW) * ROW_HEIGHT;
+			_servicesList.style.height = Mathf.Clamp(_allUnarchivedServices.Count, 1, MAX_ROW) * ROW_HEIGHT;
 
 			var elements = new List<PublishManifestEntryVisualElement>();
-		
+
 			for (int index = 0; index < _allUnarchivedServices.Count; index++)
 			{
 				var model = _allUnarchivedServices[index];
@@ -213,9 +213,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 
 			var orderedElements = elements.OrderBy(x => x.Model.Type)
-			                                                .ThenByDescending(x => x.IsLocal && !x.IsRemote)
-			                                                .ToList();
-			
+															.ThenByDescending(x => x.IsLocal && !x.IsRemote)
+															.ToList();
+
 			orderedElements.ForEach(x =>
 			{
 				var dependencies = GetAllDependencies(x.Model);
@@ -230,7 +230,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 						return;
 					}
 				}
-				
+
 				foreach (var dependency in dependencies)
 				{
 					if (!(dependency.Model is StorageEntryModel storageEntryModel) || !(x.Model is ManifestEntryModel serviceModel))
@@ -241,17 +241,17 @@ namespace Beamable.Editor.Microservice.UI.Components
 						_storageDependsOnServiceRepresentation[storageEntryModel].Add(serviceModel);
 						continue;
 					}
-					_storageDependsOnServiceRepresentation.Add(storageEntryModel, new List<ManifestEntryModel> {serviceModel});
+					_storageDependsOnServiceRepresentation.Add(storageEntryModel, new List<ManifestEntryModel> { serviceModel });
 				}
 			});
-			
+
 			orderedElements.ForEach(x =>
 			{
 				if (x.Model.Enabled)
 					HandleEnableStateChanged(x.Model);
 			});
 			_scrollContainer.AddRange(orderedElements);
-			
+
 			Root.Q("enableC").tooltip = ON_OFF_HEADER_TOOLTIP;
 			Root.Q("nameC").tooltip = NAME_HEADER_TOOLTIP;
 			Root.Q("knownLocationC").tooltip = KNOWN_LOCATION_HEADER_TOOLTIP;
@@ -283,13 +283,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 			if (model is ManifestEntryModel serviceModel)
 			{
 				dependenciesToUpdate.AddRange(from PublishManifestEntryVisualElement entry in _publishManifestElements.Values
-				                              from dependency in serviceModel.Dependencies 
-				                              where entry.Model.Name == dependency.id 
-				                              select entry);
+											  from dependency in serviceModel.Dependencies
+											  where entry.Model.Name == dependency.id
+											  select entry);
 			}
 			return dependenciesToUpdate;
 		}
-		
+
 		private void HandleEnableStateChanged(IEntryModel model)
 		{
 			GetAllDependencies(model)?.ForEach(x =>
@@ -332,13 +332,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 					kvp.Value.UpdateStatus(ServicePublishState.Published);
 					continue;
 				}
-				
+
 				kvp.Value.UpdateStatus(ServicePublishState.Unpublished);
 				new DeployMSLogParser(kvp.Value.LoadingBar, serviceModel);
 				_servicesToPublish.Add(kvp.Value);
 			}
 		}
-		
+
 		private void AddLogger()
 		{
 			_logger = new LogVisualElement
@@ -375,9 +375,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			Root.Q("logContainer").Add(_logger);
 			_logger.Refresh();
-		} 
+		}
 		private float CalculateProgress() => _servicesToPublish.Count == 0 ? 0f : _servicesToPublish.Average(x => x.LoadingBar.Progress);
-		
+
 		private static string GetPublishedKey(string serviceName) => string.Format(MicroserviceReflectionCache.Registry.SERVICE_PUBLISHED_KEY, serviceName);
 
 		private void HandleProgressInfoUpdated(string message, ServicePublishState state)
@@ -391,9 +391,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void HandlePrimaryButtonClicked()
 		{
 			if (Context.CurrentRealm.IsProduction)
-				if (!EditorUtility.DisplayDialog("Warning", "You are trying to publish services to the PROD realm. Continue?", "Publish", "Cancel")) 
+				if (!EditorUtility.DisplayDialog("Warning", "You are trying to publish services to the PROD realm. Continue?", "Publish", "Cancel"))
 					return;
-			
+
 			foreach (PublishManifestEntryVisualElement manifestEntryVisualElement in _publishManifestElements.Values)
 				manifestEntryVisualElement.HandlePublishStarted();
 
@@ -434,7 +434,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			if (success)
 				_serviceServicePublishStateAnimator.Animate(ServicePublishState.Published);
-			
+
 			_primarySubmitButton.SetText("Close");
 			_primarySubmitButton.Enable();
 			_primarySubmitButton.SetAsFailure(!success);
@@ -443,14 +443,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_arrowLeft.SetEnabled(true);
 			_arrowRight.SetEnabled(true);
 		}
-		
+
 		protected override void OnDestroy()
 		{
 			foreach (var desc in MicroservicesDataModel.Instance.AllLocalServices.Where(x => !x.IsArchived))
 			{
-				if (!_logForwardActions.TryGetValue(desc, out var cb)) 
+				if (!_logForwardActions.TryGetValue(desc, out var cb))
 					continue;
-				if (desc.Logs == null) 
+				if (desc.Logs == null)
 					continue;
 				desc.Logs.OnMessagesUpdated -= cb;
 			}
