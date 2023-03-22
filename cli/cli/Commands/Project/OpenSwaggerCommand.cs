@@ -25,7 +25,7 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>
 	{
 		var cid = args.AppContext.Cid;
 		var pid = args.AppContext.Pid;
-		var url = $"{args.AppContext.Host.Replace("api", "portal")}/{cid}/games/{pid}/realms/{pid}/microservices/{args.serviceName}/docs";
+		var url = $"{args.AppContext.Host.Replace("dev.", "dev-").Replace("api", "portal")}/{cid}/games/{pid}/realms/{pid}/microservices/{args.serviceName}/docs";
 		if (!args.isRemote)
 		{
 			url += $"?prefix={MachineHelper.GetUniqueDeviceId()}";

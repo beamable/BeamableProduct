@@ -43,6 +43,13 @@ namespace Beamable.Server.Editor
 		void AddFile(string srcPath, string containerPath);
 
 		/// <summary>
+		/// Adding a directory will add a directory from your local Unity project into the final Microservice docker image.
+		/// </summary>
+		/// <param name="srcPath">The source path should be relative to your Unity project. For example, a valid path may be "Assets/myContent </param>
+		/// <param name="containerPath">The container path is where the directory will be placed in the Docker image. It should also include the copied name. For example, a valid path may be "myContent"</param>
+		void AddDirectory(string srcPath, string containerPath);
+
+		/// <summary>
 		/// Commiting a file assumes that a file is already present in the docker build context.
 		/// </summary>
 		/// <param name="containerPath">The container path is where the file will be placed in the Docker image. It should also include the copied filename. For example, a valid path may be "mydata/test.txt" </param>
@@ -59,6 +66,12 @@ namespace Beamable.Server.Editor
 		public void AddFile(string srcPath, string containerPath)
 		{
 			FileUtils.CopyFile(Descriptor, srcPath, containerPath);
+			CommitFile(containerPath);
+		}
+
+		public void AddDirectory(string srcPath, string containerPath)
+		{
+			FileUtils.CopyFolderToBuildDirectory(srcPath, containerPath, Descriptor);
 			CommitFile(containerPath);
 		}
 
