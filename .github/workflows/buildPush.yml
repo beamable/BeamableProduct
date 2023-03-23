@@ -56,9 +56,9 @@ jobs:
           - playmode
           - editmode
         unityVersion:
-          - 2019.4.30f1
           - 2020.3.19f1
           - 2021.3.2f1
+          - 2022.2.11f1
     steps:
       - uses: actions/checkout@v2
       - name: Login to Docker Hub
@@ -138,7 +138,7 @@ jobs:
           - iOS
           - StandaloneOSX
         unityVersion:
-          - 2021.3.2f1
+          - 2022.2.11f1
         projectPath:
           - client
     steps:

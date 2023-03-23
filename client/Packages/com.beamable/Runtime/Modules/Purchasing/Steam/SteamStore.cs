@@ -80,8 +80,11 @@ namespace Beamable.Purchasing.Steam
 			{
 				Debug.LogError(ex);
 			}
-
+#if UNITY_PURCHASING_4_6_OR_NEWER
+			callback.OnSetupFailed(InitializationFailureReason.PurchasingUnavailable, message);
+#else
 			callback.OnSetupFailed(InitializationFailureReason.PurchasingUnavailable);
+#endif
 		}
 
 		public void OnTransactionAuthorized(SteamTransaction transaction)
