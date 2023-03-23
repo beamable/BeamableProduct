@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - `DisableBeamableCidPidWarningsOnBuild` option in _Project Settings/Beamable/Editor_ that will disable the CID/PID warning dialog on build.
+- `IsExternalIdentityAvailable` method added to AuthAPI and used in PlayerAccounts SDK during attaching external identity
 
 ## [1.12.1]
 ### Added
