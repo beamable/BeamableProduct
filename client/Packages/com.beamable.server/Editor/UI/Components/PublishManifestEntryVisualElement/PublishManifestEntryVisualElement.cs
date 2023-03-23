@@ -33,7 +33,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public int Index => _index;
 		public bool IsRemote => _isRemote;
 		public bool IsLocal => _isLocal;
-		
+
 		public ServicePublishState PublishState { get; private set; }
 		public ILoadingBar LoadingBar
 		{
@@ -73,14 +73,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private readonly Dictionary<string, string> _serviceTypeToProperTypeName = new Dictionary<string, string>
 		{
-			{ "Microservice", "MicroService" }, 
+			{ "Microservice", "MicroService" },
 			{ "mongov1", "StorageObject" }
 		};
 
 		public PublishManifestEntryVisualElement(IEntryModel model,
-		                                         int elementIndex,
-		                                         bool isLocal,
-		                                         bool isRemote) : base(nameof(PublishManifestEntryVisualElement))
+												 int elementIndex,
+												 bool isLocal,
+												 bool isRemote) : base(nameof(PublishManifestEntryVisualElement))
 		{
 			Model = model;
 			_index = elementIndex;
@@ -99,7 +99,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_enableColumn = Root.Q("enableC");
 			_enableColumn.tooltip = CHECKBOX_TOOLTIP;
-			
+
 			EnableState = Root.Q<BeamableCheckboxVisualElement>("enableState");
 			EnableState.Refresh();
 			UpdateEnableState(Model.Enabled);
@@ -123,7 +123,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 			if (IsLocal && IsRemote)
 			{
-				var image = new Image { name = "separator"};
+				var image = new Image { name = "separator" };
 				locationString += " & ";
 				_knowLocationEntry.Add(image);
 			}
@@ -133,8 +133,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 				locationString += "Remote";
 				_knowLocationEntry.Add(image);
 			}
-			
-			var locationLabel = new Label {name = "locationLabel", text = locationString};
+
+			var locationLabel = new Label { name = "locationLabel", text = locationString };
 			_knowLocationEntry.Add(locationLabel);
 
 			if (Model is ManifestEntryModel serviceModel)
@@ -142,15 +142,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 				var dependencies = serviceModel.Dependencies.Select(dep => dep.id).ToList();
 				Root.Q<ExpandableListVisualElement>("dependenciesList").Setup(dependencies);
 			}
-			
+
 			// _sizeDropdown = Root.Q<DropdownVisualElement>("sizeDropdown");
 			// _sizeDropdown.Setup(TemplateSizes.ToList(), null);
 			// _sizeDropdown.Refresh();
-			
+
 			_commentField = Root.Q<TextField>("comment");
 			_commentField.value = Model.Comment;
 			_commentField.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
-			
+
 			_stateLabel = Root.Q<Label>("status");
 			UpdateStatus(ServicePublishState.Unpublished);
 		}
@@ -158,7 +158,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public void UpdateEnableState(bool isEnabled, bool isSilentUpdate = false, string additionalTooltip = "")
 		{
 			Model.Enabled = isEnabled;
-			EnableState.SetWithoutNotify(isEnabled); 
+			EnableState.SetWithoutNotify(isEnabled);
 			EnableState.EnableInClassList("enabled", isEnabled);
 			EnableState.EnableInClassList("disabled", !isEnabled);
 
@@ -167,7 +167,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				tooltip += $"\n\nOn/Off state is in fixed state due to:\n{additionalTooltip}";
 			_enableColumn.tooltip = tooltip;
 			EnableState.tooltip = tooltip;
-			
+
 			if (Model is ManifestEntryModel && !isSilentUpdate)
 				OnEnableStateChanged?.Invoke(Model);
 		}
