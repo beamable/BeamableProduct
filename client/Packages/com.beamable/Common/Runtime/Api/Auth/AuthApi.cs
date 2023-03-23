@@ -384,6 +384,17 @@ namespace Beamable.Common.Api.Auth
 
 			throw new Exception("Problem with challenge token parsing");
 		}
+		
+		public Promise<bool> IsExternalIdentityAvailable(string providerService, string externalToken, string[] namespaces = null)
+		{
+			ExternalIdentityAvailabilityRequest body = new ExternalIdentityAvailabilityRequest
+			{
+				provider_service = providerService, user_id = externalToken, provider_namespace = namespaces
+			};
+
+			return Requester.Request<AvailabilityResponse>(Method.GET, $"{ACCOUNT_URL}/available/external_identity",
+			                                               body, false).Map(response => response.available);
+		}
 	}
 
 	/// <summary>
@@ -841,5 +852,13 @@ namespace Beamable.Common.Api.Auth
 		public string challenge;
 		public long validUntil;
 		public string signature;
+	}
+
+	[Serializable]
+	public class ExternalIdentityAvailabilityRequest
+	{
+		public string provider_service;
+		public string user_id;
+		public string[] provider_namespace;
 	}
 }
