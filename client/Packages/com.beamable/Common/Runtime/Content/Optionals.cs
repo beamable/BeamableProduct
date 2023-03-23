@@ -256,7 +256,7 @@ namespace Beamable.Common.Content
 	{
 		public OptionalLongArray()
 		{
-			
+
 		}
 
 		public OptionalLongArray(IEnumerable<long> data)
@@ -264,7 +264,7 @@ namespace Beamable.Common.Content
 			Value = data.ToArray();
 			HasValue = true;
 		}
-		
+
 	}
 
 	[System.Serializable]
