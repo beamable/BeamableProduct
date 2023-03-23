@@ -31,7 +31,7 @@ namespace Beamable.Editor
 			foreach (var item in collection)
 				scrollView.Add(item);
 		}
-		
+
 		public static void SetInactive(this VisualElement element, bool value)
 		{
 			if (value)

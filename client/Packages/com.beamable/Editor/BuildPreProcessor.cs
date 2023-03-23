@@ -17,12 +17,12 @@ namespace Beamable.Editor
 		public async void OnPreprocessBuild(BuildReport report)
 		{
 			var messages = new List<string>();
-			#if !BEAMABLE_NO_CID_PID_WARNINGS_ON_BUILD
+#if !BEAMABLE_NO_CID_PID_WARNINGS_ON_BUILD
 			if (!CheckForConfigDefaultsAlignment(out var message))
 			{
 				messages.Add(message);
 			}
-			#endif
+#endif
 
 			var hasLocalContentChanges = await ContentIO.HasLocalChanges();
 			if (hasLocalContentChanges)

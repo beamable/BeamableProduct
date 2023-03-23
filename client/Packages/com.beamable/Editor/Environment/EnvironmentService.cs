@@ -17,7 +17,7 @@ namespace Beamable.Editor.Environment
 		{
 			_context = context;
 		}
-		
+
 		/// <summary>
 		/// Erase the overrides file, and reload the editor.
 		/// After this method is called, whatever is in env-defaults will be used.

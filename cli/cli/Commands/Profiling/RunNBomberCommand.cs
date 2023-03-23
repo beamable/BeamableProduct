@@ -40,7 +40,7 @@ public class RunNBomberCommand : AppCommand<RunNBomberCommandArgs>
 		var pid = args.AppContext.Pid;
 		var prefix = args.includePrefix ? MachineHelper.GetUniqueDeviceId() : "";
 		var host = args.AppContext.Host;
-		
+
 		var url = $"{host}/basic/{cid}.{pid}.{prefix}micro_{args.service}/{args.method}";
 		var scope = $"{cid}.{pid}";
 		var scenario = Scenario.Create("simple_scenario", async context =>

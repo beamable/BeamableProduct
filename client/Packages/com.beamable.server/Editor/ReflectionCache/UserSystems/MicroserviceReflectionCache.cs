@@ -445,7 +445,7 @@ namespace Beamable.Server.Editor
 				{
 					var anyArchivedStorages =
 						service.Value.Dependencies.Any(d => !model.Storages.TryGetValue(d.id, out var storage) ||
-						                                    storage.Archived);
+															storage.Archived);
 					if (anyArchivedStorages && !service.Value.Archived)
 					{
 						var msg =
@@ -466,8 +466,8 @@ namespace Beamable.Server.Editor
 			}
 
 			private void CheckServicesStatus(ManifestModel model,
-			                                 Action<LogMessage> logger,
-			                                 Action<IDescriptor> onServiceDeployed)
+											 Action<LogMessage> logger,
+											 Action<IDescriptor> onServiceDeployed)
 			{
 				foreach (var descriptor in Descriptors)
 				{
@@ -527,16 +527,16 @@ namespace Beamable.Server.Editor
 					try
 					{
 						var buildCommand = new BuildImageCommand(descriptor, availableArchitectures,
-						                                         includeDebugTools: false,
-						                                         watch: false,
-						                                         pull: true,
-						                                         cpuContext: CPUArchitectureContext.DEPLOY);
-						                                         await buildCommand.StartAsync();
+																 includeDebugTools: false,
+																 watch: false,
+																 pull: true,
+																 cpuContext: CPUArchitectureContext.DEPLOY);
+						await buildCommand.StartAsync();
 					}
 					catch (Exception e)
 					{
 						OnProgressInfoUpdated?.Invoke($"Deploy failed due to {descriptor.Name} failing to build",
-						                              ServicePublishState.Failed);
+													  ServicePublishState.Failed);
 						OnDeployFailed?.Invoke(model, $"Deploy failed due to {descriptor.Name} failing to build: {e}.");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 						return false;
@@ -547,8 +547,8 @@ namespace Beamable.Server.Editor
 			}
 
 			private async Task<bool> PerformHealthChecks(ManifestModel model,
-			                                             CancellationToken token,
-			                                             BeamEditorContext de)
+														 CancellationToken token,
+														 BeamEditorContext de)
 			{
 				var secret = await de.GetRealmSecret();
 
@@ -559,7 +559,7 @@ namespace Beamable.Server.Editor
 						continue;
 
 					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Verifying healthcheck",
-					                              ServicePublishState.Verifying);
+												  ServicePublishState.Verifying);
 					UpdateServiceDeployStatus(descriptor, ServicePublishState.Verifying);
 					try
 					{
@@ -654,10 +654,10 @@ namespace Beamable.Server.Editor
 			}
 
 			private async Task<bool> PublishServices(ManifestModel model,
-			                                         CancellationToken token,
-			                                         BeamEditorContext context,
-			                                         Action<LogMessage> logger,
-			                                         Action<IDescriptor> onServiceDeployed)
+													 CancellationToken token,
+													 BeamEditorContext context,
+													 Action<LogMessage> logger,
+													 Action<IDescriptor> onServiceDeployed)
 			{
 				var client = context.GetMicroserviceManager();
 				var existingManifest = await client.GetCurrentManifest();
@@ -681,7 +681,7 @@ namespace Beamable.Server.Editor
 					}
 
 					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Preparing image",
-					                              ServicePublishState.InProgress);
+												  ServicePublishState.InProgress);
 					UpdateServiceDeployStatus(descriptor, ServicePublishState.InProgress);
 
 					var uploader = new ContainerUploadHarness();
@@ -762,31 +762,31 @@ namespace Beamable.Server.Editor
 						Message = $"Uploading container service=[{descriptor.Name}]"
 					});
 					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Uploading image",
-					                              ServicePublishState.InProgress);
-					await uploader.UploadContainer(descriptor, token, () => 
-					                               {
-						                               Debug.Log(string.Format(UPLOAD_CONTAINER_MESSAGE,
-						                                                       descriptor.Name));
-						                               onServiceDeployed?.Invoke(descriptor);
-						                               UpdateServiceDeployStatus(
-							                               descriptor, ServicePublishState.Published);
-					                               },
-					                               () =>
-					                               {
-						                               Debug.LogError(
-							                               string.Format(
-								                               CANT_UPLOAD_CONTAINER_MESSAGE, descriptor.Name));
-						                               if (token.IsCancellationRequested)
-						                               {
-							                               var msg =
-								                               $"Cancellation requested during upload of {descriptor.Name}";
-							                               OnProgressInfoUpdated?.Invoke(
-								                               msg, ServicePublishState.Failed);
-							                               OnDeployFailed?.Invoke(model, msg);
-							                               UpdateServiceDeployStatus(
-								                               descriptor, ServicePublishState.Failed);
-						                               }
-					                               }, imageId);
+												  ServicePublishState.InProgress);
+					await uploader.UploadContainer(descriptor, token, () =>
+												   {
+													   Debug.Log(string.Format(UPLOAD_CONTAINER_MESSAGE,
+																			   descriptor.Name));
+													   onServiceDeployed?.Invoke(descriptor);
+													   UpdateServiceDeployStatus(
+														   descriptor, ServicePublishState.Published);
+												   },
+												   () =>
+												   {
+													   Debug.LogError(
+														   string.Format(
+															   CANT_UPLOAD_CONTAINER_MESSAGE, descriptor.Name));
+													   if (token.IsCancellationRequested)
+													   {
+														   var msg =
+															   $"Cancellation requested during upload of {descriptor.Name}";
+														   OnProgressInfoUpdated?.Invoke(
+															   msg, ServicePublishState.Failed);
+														   OnDeployFailed?.Invoke(model, msg);
+														   UpdateServiceDeployStatus(
+															   descriptor, ServicePublishState.Failed);
+													   }
+												   }, imageId);
 				}
 
 				// at this point, all storage objects should at least be marked as complete.

@@ -35,7 +35,7 @@ public class CheckCountersCommand : AppCommand<CheckCountersCommandArgs>
 
 		var counterJson = File.ReadAllText(args.countersJsonFilePath);
 		var data = JsonConvert.DeserializeObject<DotnetCountersData>(counterJson);
-		
+
 		// process data into separate categories
 		var dataGroups = data.Events.GroupBy(evt => evt.name).ToDictionary(group => group.Key, group => group.ToArray());
 		if (!dataGroups.TryGetValue("CPU Usage (%)", out var cpuData))
@@ -54,12 +54,12 @@ public class CheckCountersCommand : AppCommand<CheckCountersCommandArgs>
 		for (var i = 0; i < cpuData.Length; i++)
 		{
 			// check for spike
-			if (cpuData[i].value > cpuLimit) 
+			if (cpuData[i].value > cpuLimit)
 			{
 				warnings.Add(new DotnetCounterPerfWarning($"CPU utilization spiked beyond limit=[{cpuLimit}] i=[{i}]", cpuData[i]));
 			}
 		}
-		
+
 		for (var i = 0; i < memData.Length; i++)
 		{
 			// check for spike

@@ -46,7 +46,7 @@ public class App
 		Log.Logger = new LoggerConfiguration()
 			.WriteTo.SpectreConsole("{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}", LogLevel.MinimumLevel)
 			.CreateLogger();
-		
+
 		BeamableLogProvider.Provider = new CliSerilogProvider();
 		CliSerilogProvider.LogContext.Value = Log.Logger;
 	}
@@ -142,7 +142,7 @@ public class App
 		Commands.AddCommand<CheckCountersCommand, CheckCountersCommandArgs, ProfilingCommand>();
 		Commands.AddCommand<CheckNBomberCommand, CheckNBomberCommandArgs, ProfilingCommand>();
 		Commands.AddCommand<RunNBomberCommand, RunNBomberCommandArgs, ProfilingCommand>();
-		
+
 		// beamo commands
 		Commands.AddRootCommand<ServicesCommand, ServicesCommandArgs>();
 		Commands.AddCommand<ServicesManifestsCommand, ServicesManifestsArgs, ServicesCommand>();

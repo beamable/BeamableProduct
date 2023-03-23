@@ -89,7 +89,7 @@ namespace Beamable.Common.Api.CloudData
 		public IBeamableRequester Requester { get; }
 		public IHttpRequester HttpRequester { get; }
 
-		public CloudDataApi(IUserContext ctx, IBeamableRequester requester, IHttpRequester httpRequester=null)
+		public CloudDataApi(IUserContext ctx, IBeamableRequester requester, IHttpRequester httpRequester = null)
 		{
 			Ctx = ctx;
 			Requester = requester;
