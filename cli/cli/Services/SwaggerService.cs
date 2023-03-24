@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Common.Dependencies;
 using cli.Utils;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Exceptions;
@@ -12,6 +13,8 @@ using System.Text;
 
 namespace cli;
 
+
+
 public class SwaggerService
 {
 	private readonly IAppContext _context;
@@ -22,7 +25,7 @@ public class SwaggerService
 	public static readonly BeamableApiDescriptor[] Apis = new BeamableApiDescriptor[]
 	{
 		// these are currently broken...
-		// BeamableApis.BasicService("content"),
+		BeamableApis.BasicService("content"),
 		// BeamableApis.BasicService("trails"),
 
 		// behold the list of Beamable Apis
@@ -61,11 +64,11 @@ public class SwaggerService
 		BeamableApis.ObjectService("mail"),
 	};
 
-	public SwaggerService(IAppContext context, ISwaggerStreamDownloader downloader, IEnumerable<ISourceGenerator> generators)
+	public SwaggerService(IAppContext context, ISwaggerStreamDownloader downloader, SourceGeneratorListProvider generators)
 	{
 		_context = context;
 		_downloader = downloader;
-		_generators = generators.ToList();
+		_generators = generators.Generators.ToList();
 	}
 
 	/// <summary>
@@ -424,6 +427,18 @@ public class SwaggerService
 	public interface ISourceGenerator
 	{
 		List<GeneratedFileDescriptor> Generate(IGenerationContext context);
+	}
+	
+	public class SourceGeneratorListProvider
+	{
+		public readonly ISourceGenerator[] Generators;
+
+		public SourceGeneratorListProvider(IDependencyProviderScope scope)
+		{
+			var descriptors = scope.SingletonServices.Where(service => service.Interface.IsAssignableTo(typeof(ISourceGenerator))).ToList();
+			Generators = descriptors.Select(descriptor => scope.GetService(descriptor.Interface)).Cast<ISourceGenerator>().ToArray();
+		}
+		
 	}
 
 }

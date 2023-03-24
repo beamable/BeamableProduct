@@ -18,6 +18,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>beam</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
+    <LangVersion>11</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup>
