@@ -536,11 +536,11 @@ namespace Test
 	[System.SerializableAttribute()]
 	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
-		public OptionalLongArray foo = new OptionalLongArray();
+		public OptionalArrayOfLong foo = new OptionalArrayOfLong();
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
         {
             if ((s.HasKey(""foo"") 
-                        || ((foo != default(OptionalLongArray)) 
+                        || ((foo != default(OptionalArrayOfLong)) 
                         && foo.HasValue)))
 			{
 				s.SerializeArray(""foo"", ref foo.Value);
@@ -642,14 +642,14 @@ namespace Test
 	[System.SerializableAttribute()]
 	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
-		public OptionalMapOfLongArray foo = new OptionalMapOfLongArray();
+		public OptionalMapOfArrayOfLong foo = new OptionalMapOfArrayOfLong();
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
         {
             if ((s.HasKey(""foo"") 
-                        || ((foo != default(OptionalMapOfLongArray)) 
+                        || ((foo != default(OptionalMapOfArrayOfLong)) 
                         && foo.HasValue)))
 			{
-				s.SerializeDictionary<MapOfLongArray, long[]>(""foo"", ref foo.Value);
+				s.SerializeDictionary<MapOfArrayOfLong, long[]>(""foo"", ref foo.Value);
 				foo.HasValue = true;
 			}
 		}
