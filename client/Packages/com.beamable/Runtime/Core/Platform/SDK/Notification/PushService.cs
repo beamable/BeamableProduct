@@ -55,7 +55,7 @@ namespace Beamable.Api.Notification
 		/// to the player's third party account.</param>
 		public async Promise Register(string token)
 		{
-			await _pushApi.PostRegister(new RegisterReq {provider = "google", token = token});
+			await _pushApi.PostRegister(new RegisterReq { provider = "google", token = token });
 		}
 	}
 

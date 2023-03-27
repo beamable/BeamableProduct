@@ -1,5 +1,6 @@
 {
     "name": "Unity.Beamable.Purchasing",
+    "rootNamespace": "",
     "references": [
         "Beamable.ConsoleCommands",
         "Beamable.Coroutines",
@@ -9,7 +10,6 @@
         "UnityEngine.Purchasing",
         "UnityEngine.Purchasing.Stores"
     ],
-    "optionalUnityReferences": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
@@ -20,5 +20,13 @@
     "autoReferenced": true,
     "defineConstraints": [
         "BEAMABLE_PURCHASING"
-    ]
+    ],
+    "versionDefines": [
+        {
+            "name": "com.unity.purchasing",
+            "expression": "4.6",
+            "define": "UNITY_PURCHASING_4_6_OR_NEWER"
+        }
+    ],
+    "noEngineReferences": false
 }

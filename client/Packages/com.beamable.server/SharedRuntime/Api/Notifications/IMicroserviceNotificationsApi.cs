@@ -52,7 +52,7 @@ namespace Beamable.Server.Api.Notifications
 		/// <param name="name">The context that player's client must be subscribed too to see the notification.</param>
 		/// <param name="messagePayload">The data to send along with the notification. Must be a JSON-serializable type.</param>
 		Promise<EmptyResponse> NotifyPlayer<T>(List<long> gamertags, string name, T messagePayload);
-		
+
 		/// <summary>
 		/// Notifies all players at the given <paramref name="name"/>. The <paramref name="name"/> is the one you should subscribe to in
 		/// your <see cref="INotificationService.Subscribe{T}"/> calls in the client-code.
@@ -70,7 +70,7 @@ namespace Beamable.Server.Api.Notifications
 		/// <param name="name">The context that player's client must be subscribed too to see the notification.</param>
 		/// <param name="messagePayload">The data to send along with the notification. Must be a JSON-serializable type.</param>
 		Promise<EmptyResponse> NotifyGame<T>(string name, T messagePayload);
-		
+
 		/// <summary>
 		/// Notifies all servers at the given <paramref name="name"/>.
 		/// </summary>
@@ -79,10 +79,10 @@ namespace Beamable.Server.Api.Notifications
 		/// <param name="messagePayload">The data to send along with the notification. Must be a JSON-serializable type.</param>
 		/// <returns></returns>
 		Promise<EmptyResponse> NotifyServer(bool toAll, string name, string messagePayload);
-		
+
 		/// <inheritdoc cref="NotifyServer(bool,string,string)"/>
 		Promise<EmptyResponse> NotifyServer(bool toAll, string name);
-		
+
 		/// <inheritdoc cref="NotifyServer(bool,string,string)"/>
 		Promise<EmptyResponse> NotifyServer<T>(bool toAll, string name, T messagePayload);
 	}

@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.11.0]
 ### Added
 - Microservices with `IFederatedLogin<T>` will generate client callable methods.
+- New `Publish Window` UI styling in `Microservice Manager`
 - Microservices with `IFederatedInventory<T>` will generate client callable methods.
 
 ### Fixed
