@@ -704,7 +704,7 @@ namespace Test
                         || ((foo != default(OptionalArrayOfMapOfFish)) 
                         && foo.HasValue)))
 			{
-				s.SerializeArray(""foo"", ref foo.Value);
+				s.SerializeList(""foo"", ref foo.Value);
 				foo.HasValue = true;
 			}
 		}
