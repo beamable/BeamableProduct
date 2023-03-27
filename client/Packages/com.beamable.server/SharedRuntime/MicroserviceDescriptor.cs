@@ -41,6 +41,8 @@ namespace Beamable.Server.Editor
 		public bool HasValidationError { get; set; }
 		public bool HasValidationWarning { get; set; }
 		public bool IsGenerator { get; set; }
+
+		public List<FederationComponent> FederationComponents { get; set; } = new List<FederationComponent>();
 		public List<string> FederatedNamespaces { get; set; } = new List<string>();
 		public bool IsUsedForFederation => FederatedNamespaces.Count > 0;
 
@@ -56,6 +58,16 @@ namespace Beamable.Server.Editor
 			return false;
 		}
 
+	}
+
+	[Serializable]
+	public class FederationComponent
+	{
+		public Type interfaceType;
+		public IThirdPartyCloudIdentity identity;
+		public string typeName;
+
+		public string ComponentName => $"{typeName}/{identity?.UniqueName}";
 	}
 
 	[Serializable]

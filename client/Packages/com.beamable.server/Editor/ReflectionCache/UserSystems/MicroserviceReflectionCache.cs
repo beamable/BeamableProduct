@@ -56,8 +56,16 @@ namespace Beamable.Server.Editor
 			private static readonly AttributeOfInterest STORAGE_OBJECT_ATTRIBUTE;
 			private static readonly List<AttributeOfInterest> ATTRIBUTES_OF_INTEREST;
 
+			private static Dictionary<Type, string> _federationComponentToName;
+
 			static Registry()
 			{
+				_federationComponentToName = new Dictionary<Type, string>
+				{
+					[typeof(IFederatedLogin<>)] = "IFederatedLogin",
+					[typeof(IFederatedInventory<>)] = "IFederatedInventory",
+				};
+				
 				MICROSERVICE_BASE_TYPE = new BaseTypeOfInterest(typeof(Microservice));
 				MICROSERVICE_ATTRIBUTE =
 					new AttributeOfInterest(typeof(MicroserviceAttribute), new Type[] { },
@@ -306,17 +314,29 @@ namespace Beamable.Server.Editor
 						// Check if MS is used for external identity federation
 						var interfaces = descriptor.Type.GetInterfaces();
 
+						
+						
 						foreach (var it in interfaces)
 						{
 							if (!it.IsGenericType) continue;
-							if (it.GetGenericTypeDefinition() != typeof(IFederatedLogin<>)) continue;
 
-							var map = descriptor.Type.GetInterfaceMap(it);
+							if (!_federationComponentToName.TryGetValue(it.GetGenericTypeDefinition(),
+							                                            out var typeName))
+							{
+								continue;
+							}
+							
 							var federatedType = it.GetGenericArguments()[0];
 
 							if (Activator.CreateInstance(federatedType) is IThirdPartyCloudIdentity identity)
 							{
 								descriptor.FederatedNamespaces.Add(identity.UniqueName);
+								descriptor.FederationComponents.Add(new FederationComponent
+								{
+									identity = identity,
+									interfaceType = it,
+									typeName = typeName
+								});
 							}
 						}
 
@@ -664,6 +684,7 @@ namespace Beamable.Server.Editor
 				var existingServiceToState = existingManifest.manifest.ToDictionary(s => s.serviceName);
 				var nameToImageDetails = new Dictionary<string, ImageDetails>();
 				var enabledServices = new List<string>();
+				var nameToDescriptor = Descriptors.ToDictionary(d => d.Name);
 
 				foreach (var descriptor in Descriptors)
 				{
@@ -824,7 +845,8 @@ namespace Beamable.Server.Editor
 				var localServiceReferences = nameToImageDetails.Select(kvp =>
 				{
 					var sa = model.Services[kvp.Key];
-					return new ServiceReference
+					var desc = nameToDescriptor[kvp.Key];
+					return new ServiceReference()
 					{
 						serviceName = sa.Name,
 						templateId = sa.TemplateId,
@@ -833,7 +855,11 @@ namespace Beamable.Server.Editor
 						comments = sa.Comment,
 						imageId = kvp.Value.imageId,
 						imageCpuArch = kvp.Value.cpuArch,
-						dependencies = sa.Dependencies
+						dependencies = sa.Dependencies,
+						components = desc?.FederationComponents?.Select(c => new ServiceComponent
+						{
+							name = c.ComponentName
+						})?.ToList()
 					};
 				}).Where(service => !service
 							 .archived); // If this is a local-only service, and its archived, best not to send it _at all_.

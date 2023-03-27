@@ -204,7 +204,7 @@ jobs:
           - iOS
           - StandaloneOSX
         unityVersion:
-          - 2022.2.11f1
+          - 2021.3.2f1
         projectPath:
           - client
         include:
