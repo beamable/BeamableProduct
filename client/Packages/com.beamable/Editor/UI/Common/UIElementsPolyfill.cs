@@ -274,7 +274,9 @@ namespace UnityEngine.UIElements
 
     public static VisualElement SetBackgroundScaleModeToFit(this VisualElement self)
     {
+#pragma warning disable CS0618
       self.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
+#pragma warning restore CS0618
       return self;
     }
 
@@ -438,11 +440,19 @@ public static class UIElementsPolyfill2020
 {
   public static void BeamableOnSelectionsChanged(this ListView listView, Action<IEnumerable<object>> cb)
   {
-    listView.onSelectionChange += cb;
+#if UNITY_2022_2_OR_NEWER
+	  listView.selectionChanged += cb;
+#else
+	  listView.onSelectionChange += cb;
+#endif
   }
   public static void BeamableOnItemChosen(this ListView listView, Action<object> cb)
   {
-    listView.onItemsChosen += set => cb(set.FirstOrDefault());
+#if UNITY_2022_2_OR_NEWER
+	  listView.itemsChosen += set => cb(set.FirstOrDefault());
+#else
+	  listView.onItemsChosen += set => cb(set.FirstOrDefault());
+#endif
   }
 }
 #else

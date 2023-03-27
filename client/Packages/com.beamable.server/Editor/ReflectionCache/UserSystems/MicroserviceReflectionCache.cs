@@ -56,8 +56,16 @@ namespace Beamable.Server.Editor
 			private static readonly AttributeOfInterest STORAGE_OBJECT_ATTRIBUTE;
 			private static readonly List<AttributeOfInterest> ATTRIBUTES_OF_INTEREST;
 
+			private static Dictionary<Type, string> _federationComponentToName;
+
 			static Registry()
 			{
+				_federationComponentToName = new Dictionary<Type, string>
+				{
+					[typeof(IFederatedLogin<>)] = "IFederatedLogin",
+					[typeof(IFederatedInventory<>)] = "IFederatedInventory",
+				};
+				
 				MICROSERVICE_BASE_TYPE = new BaseTypeOfInterest(typeof(Microservice));
 				MICROSERVICE_ATTRIBUTE =
 					new AttributeOfInterest(typeof(MicroserviceAttribute), new Type[] { },
@@ -306,17 +314,29 @@ namespace Beamable.Server.Editor
 						// Check if MS is used for external identity federation
 						var interfaces = descriptor.Type.GetInterfaces();
 
+						
+						
 						foreach (var it in interfaces)
 						{
 							if (!it.IsGenericType) continue;
-							if (it.GetGenericTypeDefinition() != typeof(IFederatedLogin<>)) continue;
 
-							var map = descriptor.Type.GetInterfaceMap(it);
+							if (!_federationComponentToName.TryGetValue(it.GetGenericTypeDefinition(),
+							                                            out var typeName))
+							{
+								continue;
+							}
+							
 							var federatedType = it.GetGenericArguments()[0];
 
 							if (Activator.CreateInstance(federatedType) is IThirdPartyCloudIdentity identity)
 							{
 								descriptor.FederatedNamespaces.Add(identity.UniqueName);
+								descriptor.FederationComponents.Add(new FederationComponent
+								{
+									identity = identity,
+									interfaceType = it,
+									typeName = typeName
+								});
 							}
 						}
 
@@ -445,7 +465,7 @@ namespace Beamable.Server.Editor
 				{
 					var anyArchivedStorages =
 						service.Value.Dependencies.Any(d => !model.Storages.TryGetValue(d.id, out var storage) ||
-						                                    storage.Archived);
+															storage.Archived);
 					if (anyArchivedStorages && !service.Value.Archived)
 					{
 						var msg =
@@ -466,8 +486,8 @@ namespace Beamable.Server.Editor
 			}
 
 			private void CheckServicesStatus(ManifestModel model,
-			                                 Action<LogMessage> logger,
-			                                 Action<IDescriptor> onServiceDeployed)
+											 Action<LogMessage> logger,
+											 Action<IDescriptor> onServiceDeployed)
 			{
 				foreach (var descriptor in Descriptors)
 				{
@@ -527,16 +547,16 @@ namespace Beamable.Server.Editor
 					try
 					{
 						var buildCommand = new BuildImageCommand(descriptor, availableArchitectures,
-						                                         includeDebugTools: false,
-						                                         watch: false,
-						                                         pull: true,
-						                                         cpuContext: CPUArchitectureContext.DEPLOY);
-						                                         await buildCommand.StartAsync();
+																 includeDebugTools: false,
+																 watch: false,
+																 pull: true,
+																 cpuContext: CPUArchitectureContext.DEPLOY);
+						await buildCommand.StartAsync();
 					}
 					catch (Exception e)
 					{
 						OnProgressInfoUpdated?.Invoke($"Deploy failed due to {descriptor.Name} failing to build",
-						                              ServicePublishState.Failed);
+													  ServicePublishState.Failed);
 						OnDeployFailed?.Invoke(model, $"Deploy failed due to {descriptor.Name} failing to build: {e}.");
 						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 						return false;
@@ -547,8 +567,8 @@ namespace Beamable.Server.Editor
 			}
 
 			private async Task<bool> PerformHealthChecks(ManifestModel model,
-			                                             CancellationToken token,
-			                                             BeamEditorContext de)
+														 CancellationToken token,
+														 BeamEditorContext de)
 			{
 				var secret = await de.GetRealmSecret();
 
@@ -559,7 +579,7 @@ namespace Beamable.Server.Editor
 						continue;
 
 					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Verifying healthcheck",
-					                              ServicePublishState.Verifying);
+												  ServicePublishState.Verifying);
 					UpdateServiceDeployStatus(descriptor, ServicePublishState.Verifying);
 					try
 					{
@@ -654,16 +674,17 @@ namespace Beamable.Server.Editor
 			}
 
 			private async Task<bool> PublishServices(ManifestModel model,
-			                                         CancellationToken token,
-			                                         BeamEditorContext context,
-			                                         Action<LogMessage> logger,
-			                                         Action<IDescriptor> onServiceDeployed)
+													 CancellationToken token,
+													 BeamEditorContext context,
+													 Action<LogMessage> logger,
+													 Action<IDescriptor> onServiceDeployed)
 			{
 				var client = context.GetMicroserviceManager();
 				var existingManifest = await client.GetCurrentManifest();
 				var existingServiceToState = existingManifest.manifest.ToDictionary(s => s.serviceName);
 				var nameToImageDetails = new Dictionary<string, ImageDetails>();
 				var enabledServices = new List<string>();
+				var nameToDescriptor = Descriptors.ToDictionary(d => d.Name);
 
 				foreach (var descriptor in Descriptors)
 				{
@@ -681,7 +702,7 @@ namespace Beamable.Server.Editor
 					}
 
 					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Preparing image",
-					                              ServicePublishState.InProgress);
+												  ServicePublishState.InProgress);
 					UpdateServiceDeployStatus(descriptor, ServicePublishState.InProgress);
 
 					var uploader = new ContainerUploadHarness();
@@ -762,31 +783,31 @@ namespace Beamable.Server.Editor
 						Message = $"Uploading container service=[{descriptor.Name}]"
 					});
 					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Uploading image",
-					                              ServicePublishState.InProgress);
-					await uploader.UploadContainer(descriptor, token, () => 
-					                               {
-						                               Debug.Log(string.Format(UPLOAD_CONTAINER_MESSAGE,
-						                                                       descriptor.Name));
-						                               onServiceDeployed?.Invoke(descriptor);
-						                               UpdateServiceDeployStatus(
-							                               descriptor, ServicePublishState.Published);
-					                               },
-					                               () =>
-					                               {
-						                               Debug.LogError(
-							                               string.Format(
-								                               CANT_UPLOAD_CONTAINER_MESSAGE, descriptor.Name));
-						                               if (token.IsCancellationRequested)
-						                               {
-							                               var msg =
-								                               $"Cancellation requested during upload of {descriptor.Name}";
-							                               OnProgressInfoUpdated?.Invoke(
-								                               msg, ServicePublishState.Failed);
-							                               OnDeployFailed?.Invoke(model, msg);
-							                               UpdateServiceDeployStatus(
-								                               descriptor, ServicePublishState.Failed);
-						                               }
-					                               }, imageId);
+												  ServicePublishState.InProgress);
+					await uploader.UploadContainer(descriptor, token, () =>
+												   {
+													   Debug.Log(string.Format(UPLOAD_CONTAINER_MESSAGE,
+																			   descriptor.Name));
+													   onServiceDeployed?.Invoke(descriptor);
+													   UpdateServiceDeployStatus(
+														   descriptor, ServicePublishState.Published);
+												   },
+												   () =>
+												   {
+													   Debug.LogError(
+														   string.Format(
+															   CANT_UPLOAD_CONTAINER_MESSAGE, descriptor.Name));
+													   if (token.IsCancellationRequested)
+													   {
+														   var msg =
+															   $"Cancellation requested during upload of {descriptor.Name}";
+														   OnProgressInfoUpdated?.Invoke(
+															   msg, ServicePublishState.Failed);
+														   OnDeployFailed?.Invoke(model, msg);
+														   UpdateServiceDeployStatus(
+															   descriptor, ServicePublishState.Failed);
+													   }
+												   }, imageId);
 				}
 
 				// at this point, all storage objects should at least be marked as complete.
@@ -824,7 +845,8 @@ namespace Beamable.Server.Editor
 				var localServiceReferences = nameToImageDetails.Select(kvp =>
 				{
 					var sa = model.Services[kvp.Key];
-					return new ServiceReference
+					var desc = nameToDescriptor[kvp.Key];
+					return new ServiceReference()
 					{
 						serviceName = sa.Name,
 						templateId = sa.TemplateId,
@@ -833,7 +855,11 @@ namespace Beamable.Server.Editor
 						comments = sa.Comment,
 						imageId = kvp.Value.imageId,
 						imageCpuArch = kvp.Value.cpuArch,
-						dependencies = sa.Dependencies
+						dependencies = sa.Dependencies,
+						components = desc?.FederationComponents?.Select(c => new ServiceComponent
+						{
+							name = c.ComponentName
+						})?.ToList()
 					};
 				}).Where(service => !service
 							 .archived); // If this is a local-only service, and its archived, best not to send it _at all_.
