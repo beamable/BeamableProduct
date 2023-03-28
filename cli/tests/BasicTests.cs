@@ -130,8 +130,8 @@ public class Tests
 		}, "oapi", "generate", "--filter", "social,t:basic");
 		Assert.AreEqual(0, status);
 	}
-	
-	
+
+
 	[Test]
 	public async Task GenerateContent()
 	{

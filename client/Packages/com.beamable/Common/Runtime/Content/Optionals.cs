@@ -283,7 +283,7 @@ namespace Beamable.Common.Content
 	[Obsolete("use " + nameof(OptionalArrayOfByte) + " instead")]
 	public class OptionalByteArray : OptionalArray<byte> { }
 
-	
+
 	[System.Serializable]
 	[Agnostic]
 	public class OptionalArrayOfInt : OptionalArray<int> { }
@@ -310,7 +310,7 @@ namespace Beamable.Common.Content
 	{
 		public OptionalArrayOfLong()
 		{
-			
+
 		}
 
 		public OptionalArrayOfLong(IEnumerable<long> data)
@@ -318,7 +318,7 @@ namespace Beamable.Common.Content
 			Value = data.ToArray();
 			HasValue = true;
 		}
-		
+
 	}
 
 	[System.Serializable]
@@ -329,8 +329,8 @@ namespace Beamable.Common.Content
 	[Agnostic]
 	public class OptionalArrayOfByte : OptionalArray<byte> { }
 
-	
-	
+
+
 	[System.Serializable]
 	[Agnostic]
 	public class OptionalDictionaryStringToObject : Optional<Dictionary<string, object>> { }
