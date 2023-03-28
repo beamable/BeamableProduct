@@ -70,7 +70,7 @@ public class SchemaTypeDeclarations
 public class RequiredOneOfInterface
 {
 	public string interfaceName;
-	public IList<OpenApiSchema> oneOf;
+	public IList<OpenApiSchema> childTypeSchemas;
 	public CodeTypeDeclaration type;
 	public CodeTypeDeclaration serializationFactoryType;
 }
@@ -141,9 +141,9 @@ public static class UnityHelper
 		}
 
 		// handle oneOf interface matching...
-		foreach (var (name, oneOf) in oneOfs)
+		foreach (var (interfaceName, requiredOneOfInterface) in oneOfs)
 		{
-			foreach (var childSchema in oneOf.oneOf)
+			foreach (var childSchema in requiredOneOfInterface.childTypeSchemas)
 			{
 				if (childSchema.Reference == null)
 				{
@@ -155,7 +155,7 @@ public static class UnityHelper
 					throw new Exception($"OneOf of id=[{childSchema.Reference.Id}] not found");
 				}
 
-				childType.Model.BaseTypes.Add(name);
+				childType.Model.BaseTypes.Add(interfaceName);
 			}
 		}
 		
@@ -251,7 +251,7 @@ public static class UnityHelper
 		cons.Statements.Add(new CodeAssignStatement(referenceProvider, new CodeArgumentReferenceExpression("provider")));
 		cons.Statements.Add(new CodeAssignStatement(referenceFactories, new CodeObjectCreateExpression(factoryField.Type)));
 
-		foreach (var oneOf in oneOfs)
+		foreach (var oneOf in oneOfs) // TODO: wait, we don't need to do this for services that don't reference the oneOf
 		{
 			var createInstanceExpr = new CodeObjectCreateExpression(new CodeTypeReference(oneOf.Value.serializationFactoryType.Name));
 			cons.Statements.Add(new CodeMethodInvokeExpression(referenceFactories, nameof(List<int>.Add),
@@ -273,14 +273,14 @@ public static class UnityHelper
 
 		var customSerializerType =
 			new CodeTypeReference(nameof(ICustomSerializer<int>), serializationMethod.ReturnType);
-		var customBlock = new CodeConditionStatement(
+		var overrideSerailizationBlock = new CodeConditionStatement(
 			condition: new CodeMethodInvokeExpression(method: new CodeMethodReferenceExpression(referenceProvider,
 				nameof(IDependencyProvider.CanBuildService), customSerializerType)) );
-		customBlock.TrueStatements.Add(
+		overrideSerailizationBlock.TrueStatements.Add(
 			new CodeVariableDeclarationStatement(customSerializerType, "serializer",
 				new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(referenceProvider,
 					nameof(IDependencyProvider.GetService), customSerializerType))));
-		customBlock.TrueStatements.Add(new CodeMethodReturnStatement(new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(
+		overrideSerailizationBlock.TrueStatements.Add(new CodeMethodReturnStatement(new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(
 			targetObject: new CodeVariableReferenceExpression("serializer"), methodName:nameof(ICustomSerializer<int>.Deserialize)) 
 		)
 		{
@@ -292,7 +292,7 @@ public static class UnityHelper
 			CodeBinaryOperatorType.IdentityInequality,
 			new CodeDefaultValueExpression(new CodeTypeReference(typeof(IDependencyProvider))));
 
-		var nonNullBlock = new CodeConditionStatement(valueIsNotNullExpr, customBlock);
+		var nonNullBlock = new CodeConditionStatement(valueIsNotNullExpr, overrideSerailizationBlock);
 		
 		serializationMethod.Statements.Add(nonNullBlock);
 		serializationMethod.Statements.Add(
@@ -1224,14 +1224,13 @@ public static class UnityHelper
 			}
 			
 			// if the fieldSchema introduced an anonymous enum, we need to handle it.
-			if (fieldSchema.Enum?.Count > 0 && fieldSchema.Reference == null) // TODO: if there are multiple instances of the enum, this will generate multiple definitions- not a problem yet.
+			if (fieldSchema.Enum?.Count > 0 && fieldSchema.Reference == null) 
 			{
 				var enumName = $"{type.Name}_{field.Name}";
 				field.Type = new CodeTypeReference(enumName);
 				var innerEnum = GenerateEnumModelDecl(enumName, fieldSchema);
 				var innerExtensions = GenerateEnumExtensions(enumName, fieldSchema);
 
-				// var inner = new CodeTypeDeclaration(enumName) { IsEnum = true };
 				type.Members.Add(innerEnum);
 				type.Members.Add(innerExtensions);
 			}
@@ -1277,7 +1276,7 @@ public static class UnityHelper
 				polymorphicFields.Add(new RequiredOneOfInterface
 				{
 					interfaceName = interfaceName,
-					oneOf = fieldSchema.Items.OneOf,
+					childTypeSchemas = fieldSchema.Items.OneOf,
 					type = innerInterface,
 					serializationFactoryType = factoryType
 				});

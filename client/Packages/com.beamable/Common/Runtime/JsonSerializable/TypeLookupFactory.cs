@@ -18,19 +18,6 @@ namespace Beamable.Serialization
 		{
 			private Dictionary<string, Func<TBase>> _typeToFactory = new Dictionary<string, Func<TBase>>();
 
-			public TypeLookupFactory()
-			{
-				
-			}
-
-			public TypeLookupFactory(IDictionary<string, Func<TBase>> typeToFactories)
-			{
-				foreach (var kvp in typeToFactories)
-				{
-					_typeToFactory.Add(kvp.Key, kvp.Value);
-				}
-			}
-
 			/// <summary>
 			/// Registers a sub type for the polymorphic serialization
 			/// </summary>
@@ -48,7 +35,7 @@ namespace Beamable.Serialization
 				return type.IsAssignableFrom(typeof(TBase));
 			}
 
-			ISerializable ISerializableFactory.TryCreate(Type type, IDictionary<string, object> dict)
+			ISerializable ISerializableFactory.TryCreate(Type _, IDictionary<string, object> dict)
 			{
 				if (!dict.TryGetValue("type", out var typeObj) || !(typeObj is string typeStr))
 				{

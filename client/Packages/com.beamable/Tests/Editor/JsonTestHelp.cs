@@ -23,6 +23,11 @@ namespace Beamable.Editor.Tests
 				.Add<SubB>("b");
 			var instance = JsonSerializable.FromJson<Wrapper>(json, new List<JsonSerializable.ISerializableFactory>{factory});
 
+			Assert.AreEqual(instance.data.Length, original.data.Length);
+			Assert.AreEqual(instance.data[0].type, original.data[0].type);
+			Assert.AreEqual(instance.data[1].type, original.data[1].type);
+			Assert.AreEqual(((SubA) instance.data[0]).x, ((SubA) original.data[0]).x);
+			Assert.AreEqual(((SubB) instance.data[1]).y, ((SubB) original.data[1]).y);
 		}
 
 	
