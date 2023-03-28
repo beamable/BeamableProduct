@@ -514,7 +514,7 @@ namespace Beamable
 
 			// TODO: Handle faulty API
 			// TODO: Handle offline?
-			
+
 			async Promise Initialize()
 			{
 				var configService = ServiceScope.GetService<ConfigDefaultsService>();
@@ -540,7 +540,7 @@ namespace Beamable
 				}
 
 				requester.Host = BeamableEnvironment.ApiUrl;
-				
+
 				ServiceScope.GetService<BeamableVsp>().TryToEmitAttribution("login"); // this will no-op if the package isn't a VSP package.
 
 				var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
@@ -548,12 +548,12 @@ namespace Beamable
 				requester.Token = accessToken;
 
 				// it is possible that the requester cid/pid have been set, but the editor account service hasn't.
-				if (accessToken != null &&  account.HasEmptyCustomerView)
+				if (accessToken != null && account.HasEmptyCustomerView)
 				{
 					await account.UpdateRealms(requester);
 					account.Refresh();
 				}
-				
+
 				await RefreshRealmSecret();
 
 			}
