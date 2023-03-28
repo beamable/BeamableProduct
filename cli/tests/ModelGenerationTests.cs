@@ -1,7 +1,9 @@
+using Beamable.Serialization;
 using cli;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using NUnit.Framework;
+using System;
 using System.CodeDom;
 using System.Collections.Generic;
 
@@ -142,6 +144,101 @@ namespace Test
 ");
 	}
 
+	
+	[Test]
+	public void EnumFieldWithoutReference()
+	{
+
+		var type = UnityHelper.GenerateModelDecl("Tuna", new OpenApiSchema
+		{
+			Type = "object",
+			Properties = new Dictionary<string, OpenApiSchema>
+			{
+				["foo"] = new OpenApiSchema
+				{
+					Type = "string",
+					Enum = new List<IOpenApiAny> { new OpenApiString("text") },
+					Default = new OpenApiString("text")
+				}
+			},
+			Required = new HashSet<string> { "foo" }
+		});
+
+		Assert.IsNotNull(type);
+		var unit = new CodeCompileUnit();
+		unit.Namespaces.Add(new CodeNamespace("Test") { Types = { type } });
+		var src = UnityHelper.GenerateCsharp(unit);
+
+		Console.WriteLine(src);
+		src.AssertSrc(@"
+namespace Test
+{
+    
+	[System.SerializableAttribute()]
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	{
+		public Tuna_foo foo;
+        public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
+        {
+			s.SerializeEnum(""foo"", ref foo, Tuna_fooExtensions.ToEnumString, Tuna_fooExtensions.FromEnumString);
+		}
+		public enum Tuna_foo
+		{
+			Text,
+		}
+		public class Tuna_fooExtensions
+        {
+            public static string ToEnumString(Tuna_foo val)
+            {
+                if ((Tuna_foo.Text == val))
+                {
+                    return ""text"";
+				}
+				throw new System.ArgumentException(""Unknown enum value"");
+			}
+			public static Tuna_foo FromEnumString(string str)
+			{
+				if ((""text"" == str))
+				{
+					return Tuna_foo.Text;
+				}
+				throw new System.ArgumentException(""Unknown string value"");
+			}
+		}
+	}
+}
+");
+	}
+
+
+	public class Example
+	{
+		public BaseTest[] objs;
+		public void Test(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
+		{
+			s.SerializeArray("x", ref objs);
+		}
+	}
+
+	public class BaseTest : Beamable.Serialization.JsonSerializable.ISerializable
+	{
+		public void Serialize(JsonSerializable.IStreamSerializer s)
+		{
+			throw new NotImplementedException();
+		}
+	}
+
+	public class SubA : BaseTest
+	{
+		
+	}
+	
+	
+	public class SubB : BaseTest
+	{
+		
+	}
+	
 	[Test]
 	public void EnumField()
 	{
@@ -439,11 +536,11 @@ namespace Test
 	[System.SerializableAttribute()]
 	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
-		public OptionalLongArray foo = new OptionalLongArray();
+		public OptionalArrayOfLong foo = new OptionalArrayOfLong();
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
         {
             if ((s.HasKey(""foo"") 
-                        || ((foo != default(OptionalLongArray)) 
+                        || ((foo != default(OptionalArrayOfLong)) 
                         && foo.HasValue)))
 			{
 				s.SerializeArray(""foo"", ref foo.Value);
@@ -545,14 +642,69 @@ namespace Test
 	[System.SerializableAttribute()]
 	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
-		public OptionalMapOfLongArray foo = new OptionalMapOfLongArray();
+		public OptionalMapOfArrayOfLong foo = new OptionalMapOfArrayOfLong();
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
         {
             if ((s.HasKey(""foo"") 
-                        || ((foo != default(OptionalMapOfLongArray)) 
+                        || ((foo != default(OptionalMapOfArrayOfLong)) 
                         && foo.HasValue)))
 			{
-				s.SerializeDictionary<MapOfLongArray, long[]>(""foo"", ref foo.Value);
+				s.SerializeDictionary<MapOfArrayOfLong, long[]>(""foo"", ref foo.Value);
+				foo.HasValue = true;
+			}
+		}
+	}
+}");
+
+	}
+	
+	
+	[Test]
+	public void OptionalArrayOfMapFishField()
+	{
+		var type = UnityHelper.GenerateModelDecl("Tuna", new OpenApiSchema
+		{
+			Type = "object",
+			Properties = new Dictionary<string, OpenApiSchema>
+			{
+				["foo"] = new()
+				{
+					Type = "array",
+					Items = new OpenApiSchema
+					{
+						Type = "object",
+						AdditionalProperties = new OpenApiSchema
+						{
+							Reference = new OpenApiReference{Id = "Fish"}
+						},
+						AdditionalPropertiesAllowed = true
+					},
+					AdditionalPropertiesAllowed = true
+				}
+			},
+			Required = new HashSet<string>()
+		});
+
+		Assert.IsNotNull(type);
+		var unit = new CodeCompileUnit();
+		unit.Namespaces.Add(new CodeNamespace("Test") { Types = { type } });
+		var src = UnityHelper.GenerateCsharp(unit);
+
+		src.AssertSrc(@"
+namespace Test
+{
+    
+	[System.SerializableAttribute()]
+	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
+	{
+		public OptionalArrayOfMapOfFish foo = new OptionalArrayOfMapOfFish();
+        public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
+        {
+            if ((s.HasKey(""foo"") 
+                        || ((foo != default(OptionalArrayOfMapOfFish)) 
+                        && foo.HasValue)))
+			{
+				s.SerializeList(""foo"", ref foo.Value);
 				foo.HasValue = true;
 			}
 		}
@@ -599,10 +751,10 @@ namespace Test
 	[System.SerializableAttribute()]
 	public partial class Tuna : Beamable.Serialization.JsonSerializable.ISerializable
 	{
-		public MapOfLongArray foo = new MapOfLongArray();
+		public MapOfArrayOfLong foo = new MapOfArrayOfLong();
         public virtual void Serialize(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
         {
-			s.SerializeDictionary<MapOfLongArray, long[]>(""foo"", ref foo);
+			s.SerializeDictionary<MapOfArrayOfLong, long[]>(""foo"", ref foo);
 		}
 	}
 }");

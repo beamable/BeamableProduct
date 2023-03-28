@@ -8,6 +8,7 @@ using cli.Content;
 using cli.Dotnet;
 using cli.Services;
 using cli.Services.Content;
+using cli.Unreal;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Core;
@@ -73,9 +74,10 @@ public class App
 		services.AddSingleton<CliEnvironment>();
 		services.AddSingleton<SwaggerService>();
 		services.AddSingleton<ISwaggerStreamDownloader, SwaggerStreamDownloader>();
-		services.AddSingleton<SwaggerService.ISourceGenerator, UnitySourceGenerator>();
-		// services.AddSingleton<SwaggerService.ISourceGenerator, UnrealSourceGenerator>(); // TODO: figure out how to handle this...
+		services.AddSingleton<UnitySourceGenerator>();
+		services.AddSingleton<UnrealSourceGenerator>();
 		services.AddSingleton<ProjectService>();
+		services.AddSingleton<SwaggerService.SourceGeneratorListProvider>();
 
 		OpenApiRegistration.RegisterOpenApis(services);
 
@@ -233,6 +235,7 @@ public class App
 					}
 					break;
 				default:
+					context.ExitCode = 1;
 					Console.Error.WriteLine(ex.Message);
 					Console.Error.WriteLine(ex.StackTrace);
 					break;

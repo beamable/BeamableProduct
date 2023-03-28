@@ -214,7 +214,15 @@ namespace Beamable.Serialization
 		/// <typeparam name="T"></typeparam>
 		/// <param name="json"></param>
 		/// <returns></returns>
-		public static T FromJson<T>(string json) where T : ISerializable, new()
+		public static T FromJson<T>(string json) where T : ISerializable, new() => FromJson<T>(json, null);
+
+		/// <summary>
+		/// Deserializes a JSON string into an ISerializable object
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="json"></param>
+		/// <returns></returns>
+		public static T FromJson<T>(string json, IEnumerable<ISerializableFactory> factories) where T : ISerializable, new()
 		{
 			var data = SmallerJSON.Json.Deserialize(json) as IDictionary<string, object>;
 			if (data == null)
@@ -226,6 +234,13 @@ namespace Beamable.Serialization
 			{
 				LoadStream ls = LoadStream.Spawn();
 				ls.Init(data, ListMode.kReplace);
+				if (factories != null)
+				{
+					foreach (var factory in factories)
+					{
+						ls.RegisterISerializableFactory(factory);
+					}
+				}
 				T obj = new T();
 				obj.Serialize(ls);
 				ls.Recycle();
