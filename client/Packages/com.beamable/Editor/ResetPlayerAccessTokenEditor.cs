@@ -23,9 +23,13 @@ namespace Beamable.Editor
 				EditorGUILayout.LabelField("Editor (the token used in edit mode)");
 				if (GUILayout.Button("Clear Tokens"))
 				{
+					var token = BeamEditorContext.Default.Requester.Token;
 					BeamEditorContext.Default.EditorAccountService.Clear();
+					var storage = BeamEditorContext.Default.ServiceScope.GetService<AccessTokenStorage>();
+					storage.DeleteTokenForCustomer(token.Cid);
+					storage.DeleteTokenForRealm(token.Cid, token.Pid);
 					BeamEditorContext.Default.Requester.DeleteToken();
-					BeamEditorContext.Default.Requester.Token.SaveAsCustomerScoped();
+
 				}
 
 				if (GUILayout.Button("Corrupt Tokens"))
