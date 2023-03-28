@@ -29,7 +29,7 @@ public class CheckNBomberCommand : AppCommand<CheckNBomberCommandArgs>
 		var csv = File.ReadAllText(args.nBomberJsonFilePath);
 		var lines = CsvReader.ReadFromText(csv);
 		var warnings = new List<string>();
-		
+
 		foreach (var line in lines)
 		{
 			if (!double.TryParse(line["failed"], out var failCount))
@@ -41,7 +41,7 @@ public class CheckNBomberCommand : AppCommand<CheckNBomberCommandArgs>
 			{
 				warnings.Add($"fails above limit. fails=[{failCount}] limit=[{args.failLimit}]");
 			}
-			
+
 			if (!double.TryParse(line["95_percent"], out var p95))
 			{
 				warnings.Add("No parsable p95 column");
@@ -51,14 +51,14 @@ public class CheckNBomberCommand : AppCommand<CheckNBomberCommandArgs>
 			{
 				warnings.Add($"p95 above limit. p95=[{p95}] limit=[{args.p95Limit}]");
 			}
-			
+
 		}
-		
+
 		if (warnings.Count > 0)
 		{
 			throw new CliException(string.Join(",", warnings), true, true);
 		}
-		
+
 		BeamableLogger.Log("No issues found.");
 		return Task.CompletedTask;
 	}

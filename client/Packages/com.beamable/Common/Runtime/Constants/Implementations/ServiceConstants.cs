@@ -39,12 +39,12 @@ namespace Beamable.Common
 				public const string MICROSERVICE_IMAGE_CLASS = "microserviceImage";
 				public const string STORAGE_IMAGE_CLASS = "storageImage";
 				public const string CHECKBOX_TOOLTIP = "Enable/disable the service";
+				public const string CHECKBOX_TOOLTIP_ARCHIVED_STORAGE = "At least one dependent StorageObject is archived.";
+				public const string CHECKBOX_TOOLTIP_DEPENDENCY_ON_SERVICE = "Depends on at least one Microservice.";
 
-				public const float DEFAULT_ROW_HEIGHT = 56.0f;
-				public const int MAX_ROW = 6;
-				public static readonly Vector2 MIN_SIZE = new Vector2(900, 440);
-				public const float ROW_HEIGHT = 65;
-				public const float HEIGHT_BASE = 380;
+				public static readonly Vector2 MIN_SIZE = new Vector2(900, 560);
+				public const int MAX_ROW = 4;
+				public const float ROW_HEIGHT = 50;
 
 				public static string GetBuildButtonString(bool includeDebugTools, string text) => includeDebugTools
 					? $"{BUILD_DEBUG_PREFIX} {text}"
@@ -74,6 +74,16 @@ namespace Beamable.Common
 						public const string MESSAGE = "Due to the realm change, all running services are stopped";
 						public const string OK = "Ok";
 					}
+				}
+
+				public static class PublishWindow
+				{
+					public const string ON_OFF_HEADER_TOOLTIP = "A service can either be off or on. If the service is off, no ClientCallable methods can execute";
+					public const string NAME_HEADER_TOOLTIP = "The name of the service";
+					public const string KNOWN_LOCATION_HEADER_TOOLTIP = "A service can exist on your machine, or in a remote realm, or both. A 'Remote' value means that the service has been deployed previously, and only exists on the realm. A 'Local' value means that the service has not been deployed yet, and only exists on your machine. A 'Local & Remote' value means that the service exists on the realm and on your machine";
+					public const string DEPENDENCIES_HEADER_TOOLTIP = "The storage objects that the service requires to run";
+					public const string COMMENTS_HEADER_TOOLTIP = "You may enter in specific comments per service that are viewable from portal for this deployment";
+					public const string STATUS_HEADER_TOOLTIP = "Indicates the current phase of the publication for the service";
 				}
 			}
 		}
