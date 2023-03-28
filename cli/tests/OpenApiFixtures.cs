@@ -2,6 +2,1710 @@ namespace tests;
 
 public static class OpenApiFixtures
 {
+	#region content basic
+
+	public const string ContentBasicApi = @"
+{
+    ""info"": {
+        ""title"": ""content basic"",
+        ""version"": ""1.0"",
+        ""contact"": {
+            ""name"": ""Beamable Support"",
+            ""url"": ""https://api.beamable.com"",
+            ""email"": ""support@beamable.com""
+        }
+    },
+    ""servers"": [
+        {
+            ""url"": ""https://api.beamable.com""
+        }
+    ],
+    ""paths"": {
+        ""/basic/content/manifests/unarchive"": {
+            ""post"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/EmptyResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""requestBody"": {
+                    ""content"": {
+                        ""application/json"": {
+                            ""schema"": {
+                                ""$ref"": ""#/components/schemas/ArchiveOrUnarchiveManifestsRequest""
+                            }
+                        }
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": [],
+                        ""developer"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/content/manifest/pull"": {
+            ""post"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/Manifest""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""requestBody"": {
+                    ""content"": {
+                        ""application/json"": {
+                            ""schema"": {
+                                ""$ref"": ""#/components/schemas/PullManifestRequest""
+                            }
+                        }
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": [],
+                        ""tester"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/content/manifest/history"": {
+            ""get"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/GetManifestHistoryResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""parameters"": [
+                    {
+                        ""name"": ""id"",
+                        ""in"": ""query"",
+                        ""schema"": {
+                            ""type"": ""string"",
+                            ""x-beamable-semantic-type"": ""ContentManifestId""
+                        },
+                        ""required"": false
+                    },
+                    {
+                        ""name"": ""limit"",
+                        ""in"": ""query"",
+                        ""schema"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int32""
+                        },
+                        ""required"": false
+                    }
+                ],
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": [],
+                        ""tester"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/content/binary"": {
+            ""post"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/SaveBinaryResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""requestBody"": {
+                    ""content"": {
+                        ""application/json"": {
+                            ""schema"": {
+                                ""$ref"": ""#/components/schemas/SaveBinaryRequest""
+                            }
+                        }
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": [],
+                        ""developer"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/content/manifests/pull"": {
+            ""post"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/ManifestChecksums""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""requestBody"": {
+                    ""content"": {
+                        ""application/json"": {
+                            ""schema"": {
+                                ""$ref"": ""#/components/schemas/PullAllManifestsRequest""
+                            }
+                        }
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": [],
+                        ""tester"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/content/content"": {
+            ""get"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/ContentOrText""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""parameters"": [
+                    {
+                        ""name"": ""contentId"",
+                        ""in"": ""query"",
+                        ""schema"": {
+                            ""type"": ""string"",
+                            ""x-beamable-semantic-type"": ""ContentId""
+                        },
+                        ""required"": true
+                    },
+                    {
+                        ""name"": ""version"",
+                        ""in"": ""query"",
+                        ""schema"": {
+                            ""type"": ""string""
+                        },
+                        ""required"": true
+                    }
+                ],
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": [],
+                        ""tester"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/content/localizations"": {
+            ""get"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/GetLocalizationsResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": [],
+                        ""tester"": []
+                    }
+                ]
+            },
+            ""put"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/CommonResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""requestBody"": {
+                    ""content"": {
+                        ""application/json"": {
+                            ""schema"": {
+                                ""$ref"": ""#/components/schemas/PutLocalizationsRequest""
+                            }
+                        }
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": [],
+                        ""developer"": []
+                    }
+                ]
+            },
+            ""delete"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/CommonResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""requestBody"": {
+                    ""content"": {
+                        ""application/json"": {
+                            ""schema"": {
+                                ""$ref"": ""#/components/schemas/DeleteLocalizationRequest""
+                            }
+                        }
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": [],
+                        ""developer"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/content/text"": {
+            ""post"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/SaveTextResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""requestBody"": {
+                    ""content"": {
+                        ""application/json"": {
+                            ""schema"": {
+                                ""$ref"": ""#/components/schemas/SaveTextRequest""
+                            }
+                        }
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": [],
+                        ""developer"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/content/manifest/exact"": {
+            ""get"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/Manifest""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""parameters"": [
+                    {
+                        ""name"": ""uid"",
+                        ""in"": ""query"",
+                        ""schema"": {
+                            ""type"": ""string""
+                        },
+                        ""required"": true
+                    }
+                ],
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": [],
+                        ""tester"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/content/manifest"": {
+            ""get"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/Manifest""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""parameters"": [
+                    {
+                        ""name"": ""id"",
+                        ""in"": ""query"",
+                        ""schema"": {
+                            ""type"": ""string"",
+                            ""x-beamable-semantic-type"": ""ContentManifestId""
+                        },
+                        ""description"": ""ID of the content manifest"",
+                        ""required"": false
+                    }
+                ],
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": [],
+                        ""tester"": []
+                    }
+                ]
+            },
+            ""post"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/Manifest""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""requestBody"": {
+                    ""content"": {
+                        ""application/json"": {
+                            ""schema"": {
+                                ""$ref"": ""#/components/schemas/SaveManifestRequest""
+                            }
+                        }
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": [],
+                        ""developer"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/content/manifests/archive"": {
+            ""post"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/EmptyResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""requestBody"": {
+                    ""content"": {
+                        ""application/json"": {
+                            ""schema"": {
+                                ""$ref"": ""#/components/schemas/ArchiveOrUnarchiveManifestsRequest""
+                            }
+                        }
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": [],
+                        ""developer"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/content/"": {
+            ""post"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/SaveContentResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""requestBody"": {
+                    ""content"": {
+                        ""application/json"": {
+                            ""schema"": {
+                                ""$ref"": ""#/components/schemas/SaveContentRequest""
+                            }
+                        }
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": [],
+                        ""developer"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/content/manifest/public"": {
+            ""get"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""text/csv"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/ClientManifestCsvResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""parameters"": [
+                    {
+                        ""name"": ""id"",
+                        ""in"": ""query"",
+                        ""schema"": {
+                            ""type"": ""string"",
+                            ""x-beamable-semantic-type"": ""ContentManifestId""
+                        },
+                        ""description"": ""ID of the content manifest"",
+                        ""required"": false
+                    }
+                ],
+                ""security"": [
+                    {
+                        ""scope"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/content/manifest/repeat"": {
+            ""put"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/CommonResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""requestBody"": {
+                    ""content"": {
+                        ""application/json"": {
+                            ""schema"": {
+                                ""$ref"": ""#/components/schemas/RepeatManifestRequest""
+                            }
+                        }
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": [],
+                        ""developer"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/content/manifest/private"": {
+            ""get"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""text/csv"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/ClientManifestCsvResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""parameters"": [
+                    {
+                        ""name"": ""id"",
+                        ""in"": ""query"",
+                        ""schema"": {
+                            ""type"": ""string"",
+                            ""x-beamable-semantic-type"": ""ContentManifestId""
+                        },
+                        ""description"": ""ID of the content manifest"",
+                        ""required"": false
+                    }
+                ],
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": [],
+                        ""tester"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/content/manifest/checksums"": {
+            ""get"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/ManifestChecksums""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": [],
+                        ""tester"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/content/manifest/checksum"": {
+            ""get"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/ManifestChecksum""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""parameters"": [
+                    {
+                        ""name"": ""id"",
+                        ""in"": ""query"",
+                        ""schema"": {
+                            ""type"": ""string"",
+                            ""x-beamable-semantic-type"": ""ContentManifestId""
+                        },
+                        ""description"": ""ID of the content manifest"",
+                        ""required"": false
+                    }
+                ],
+                ""security"": [
+                    {
+                        ""scope"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/content/manifests"": {
+            ""get"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/GetManifestsResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": [],
+                        ""tester"": []
+                    }
+                ]
+            }
+        }
+    },
+    ""components"": {
+        ""schemas"": {
+            ""ReferenceSuperset"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""tags"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""type"": ""string""
+                        }
+                    },
+                    ""uri"": {
+                        ""type"": ""string""
+                    },
+                    ""version"": {
+                        ""type"": ""string""
+                    },
+                    ""id"": {
+                        ""type"": ""string"",
+                        ""x-beamable-semantic-type"": ""ContentId""
+                    },
+                    ""checksum"": {
+                        ""type"": ""string""
+                    },
+                    ""type"": {
+                        ""type"": ""string""
+                    },
+                    ""visibility"": {
+                        ""type"": ""string""
+                    }
+                },
+                ""required"": [
+                    ""type"",
+                    ""id"",
+                    ""version"",
+                    ""uri""
+                ]
+            },
+            ""BinaryDefinition"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""id"": {
+                        ""type"": ""string"",
+                        ""x-beamable-semantic-type"": ""ContentId""
+                    },
+                    ""checksum"": {
+                        ""type"": ""string""
+                    },
+                    ""uploadContentType"": {
+                        ""type"": ""string""
+                    },
+                    ""tags"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""type"": ""string""
+                        }
+                    }
+                },
+                ""required"": [
+                    ""id"",
+                    ""checksum"",
+                    ""uploadContentType""
+                ]
+            },
+            ""PullManifestRequest"": {
+                ""properties"": {
+                    ""sourceRealmPid"": {
+                        ""type"": ""string"",
+                        ""x-beamable-semantic-type"": ""Pid""
+                    },
+                    ""id"": {
+                        ""type"": ""string"",
+                        ""x-beamable-semantic-type"": ""ContentManifestId""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Pull Manifest Request"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""sourceRealmPid""
+                ]
+            },
+            ""GetManifestsResponse"": {
+                ""properties"": {
+                    ""manifests"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""$ref"": ""#/components/schemas/Manifest""
+                        }
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Get Manifests Response"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""manifests""
+                ]
+            },
+            ""SaveBinaryRequest"": {
+                ""properties"": {
+                    ""binary"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""$ref"": ""#/components/schemas/BinaryDefinition""
+                        }
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Save Binary Request"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""binary""
+                ]
+            },
+            ""TextReference"": {
+                ""properties"": {
+                    ""tags"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""type"": ""string""
+                        }
+                    },
+                    ""uri"": {
+                        ""type"": ""string""
+                    },
+                    ""version"": {
+                        ""type"": ""string""
+                    },
+                    ""id"": {
+                        ""type"": ""string"",
+                        ""x-beamable-semantic-type"": ""ContentId""
+                    },
+                    ""checksum"": {
+                        ""type"": ""string""
+                    },
+                    ""lastChanged"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    },
+                    ""type"": {
+                        ""type"": ""string"",
+                        ""enum"": [
+                            ""text""
+                        ],
+                        ""default"": ""text""
+                    },
+                    ""visibility"": {
+                        ""type"": ""string""
+                    },
+                    ""created"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""text"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""type"",
+                    ""id"",
+                    ""version"",
+                    ""uri"",
+                    ""tags"",
+                    ""visibility""
+                ]
+            },
+            ""SaveBinaryResponse"": {
+                ""properties"": {
+                    ""binary"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""$ref"": ""#/components/schemas/BinaryReference""
+                        }
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Save Binary Response"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""binary""
+                ]
+            },
+            ""SaveTextRequest"": {
+                ""properties"": {
+                    ""text"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""$ref"": ""#/components/schemas/TextDefinition""
+                        }
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Save Text Request"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""text""
+                ]
+            },
+            ""TextDefinition"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""id"": {
+                        ""type"": ""string"",
+                        ""x-beamable-semantic-type"": ""ContentId""
+                    },
+                    ""checksum"": {
+                        ""type"": ""string""
+                    },
+                    ""properties"": {
+                        ""type"": ""object"",
+                        ""additionalProperties"": {
+                            ""type"": ""string""
+                        }
+                    },
+                    ""tags"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""type"": ""string""
+                        }
+                    }
+                },
+                ""required"": [
+                    ""id"",
+                    ""checksum"",
+                    ""properties""
+                ]
+            },
+            ""PutLocalizationsRequest"": {
+                ""properties"": {
+                    ""localizations"": {
+                        ""type"": ""object"",
+                        ""additionalProperties"": {
+                            ""type"": ""array"",
+                            ""items"": {
+                                ""$ref"": ""#/components/schemas/LocalizedValue""
+                            }
+                        }
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Put Localizations Request"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""localizations""
+                ]
+            },
+            ""ContentOrText"": {
+                ""properties"": {
+                    ""id"": {
+                        ""type"": ""string"",
+                        ""x-beamable-semantic-type"": ""ContentId""
+                    },
+                    ""version"": {
+                        ""type"": ""string""
+                    },
+                    ""properties"": {
+                        ""type"": ""object"",
+                        ""additionalProperties"": {
+                            ""type"": ""string""
+                        }
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Content Or Text"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""id"",
+                    ""version"",
+                    ""properties""
+                ]
+            },
+            ""CommonResponse"": {
+                ""properties"": {
+                    ""result"": {
+                        ""type"": ""string""
+                    },
+                    ""data"": {
+                        ""type"": ""object"",
+                        ""additionalProperties"": {
+                            ""type"": ""string""
+                        }
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Common Response"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""result"",
+                    ""data""
+                ]
+            },
+            ""ArchiveOrUnarchiveManifestsRequest"": {
+                ""properties"": {
+                    ""manifestIds"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""x-beamable-semantic-type"": ""ContentManifestId"",
+                            ""type"": ""string""
+                        }
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Archive Or Unarchive Manifests Request"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""manifestIds""
+                ]
+            },
+            ""ContentMeta"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""data"": {
+                        ""type"": ""string""
+                    },
+                    ""text"": {
+                        ""type"": ""string""
+                    },
+                    ""visibility"": {
+                        ""$ref"": ""#/components/schemas/ContentVisibility""
+                    }
+                },
+                ""required"": [
+                    ""visibility""
+                ]
+            },
+            ""GetExactManifestRequest"": {
+                ""properties"": {
+                    ""uid"": {
+                        ""type"": ""string""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Get Exact Manifest Request"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""uid""
+                ]
+            },
+            ""BinaryReference"": {
+                ""properties"": {
+                    ""uploadMethod"": {
+                        ""type"": ""string""
+                    },
+                    ""tags"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""type"": ""string""
+                        }
+                    },
+                    ""uri"": {
+                        ""type"": ""string""
+                    },
+                    ""version"": {
+                        ""type"": ""string""
+                    },
+                    ""id"": {
+                        ""type"": ""string"",
+                        ""x-beamable-semantic-type"": ""ContentId""
+                    },
+                    ""checksum"": {
+                        ""type"": ""string""
+                    },
+                    ""lastChanged"": {
+                        ""type"": ""string""
+                    },
+                    ""uploadUri"": {
+                        ""type"": ""string""
+                    },
+                    ""type"": {
+                        ""type"": ""string"",
+                        ""enum"": [
+                            ""binary""
+                        ],
+                        ""default"": ""binary""
+                    },
+                    ""visibility"": {
+                        ""type"": ""string""
+                    },
+                    ""created"": {
+                        ""type"": ""string""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""binary"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""type"",
+                    ""id"",
+                    ""tags"",
+                    ""version"",
+                    ""uri"",
+                    ""uploadUri"",
+                    ""uploadMethod"",
+                    ""visibility""
+                ]
+            },
+            ""GetManifestRequest"": {
+                ""properties"": {
+                    ""id"": {
+                        ""type"": ""string"",
+                        ""description"": ""ID of the content manifest"",
+                        ""x-beamable-semantic-type"": ""ContentManifestId""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Get Manifest Request"",
+                ""type"": ""object""
+            },
+            ""PullAllManifestsRequest"": {
+                ""properties"": {
+                    ""sourceRealmPid"": {
+                        ""type"": ""string"",
+                        ""x-beamable-semantic-type"": ""Pid""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Pull All Manifests Request"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""sourceRealmPid""
+                ]
+            },
+            ""GetManifestHistoryRequest"": {
+                ""properties"": {
+                    ""id"": {
+                        ""type"": ""string"",
+                        ""x-beamable-semantic-type"": ""ContentManifestId""
+                    },
+                    ""limit"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int32""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Get Manifest History Request"",
+                ""type"": ""object""
+            },
+            ""ContentDefinition"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""prefix"": {
+                        ""type"": ""string""
+                    },
+                    ""tags"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""type"": ""string""
+                        }
+                    },
+                    ""id"": {
+                        ""type"": ""string"",
+                        ""x-beamable-semantic-type"": ""ContentId""
+                    },
+                    ""checksum"": {
+                        ""type"": ""string""
+                    },
+                    ""properties"": {
+                        ""type"": ""object"",
+                        ""additionalProperties"": {
+                            ""$ref"": ""#/components/schemas/ContentMeta""
+                        }
+                    },
+                    ""variants"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""type"": ""object"",
+                            ""additionalProperties"": {
+                                ""$ref"": ""#/components/schemas/ContentMeta""
+                            }
+                        }
+                    }
+                },
+                ""required"": [
+                    ""id"",
+                    ""checksum"",
+                    ""properties"",
+                    ""prefix""
+                ]
+            },
+            ""ManifestChecksum"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""id"": {
+                        ""type"": ""string"",
+                        ""x-beamable-semantic-type"": ""ContentManifestId""
+                    },
+                    ""checksum"": {
+                        ""type"": ""string""
+                    },
+                    ""createdAt"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    },
+                    ""archived"": {
+                        ""type"": ""boolean""
+                    }
+                },
+                ""required"": [
+                    ""id"",
+                    ""checksum"",
+                    ""createdAt""
+                ]
+            },
+            ""SaveContentRequest"": {
+                ""properties"": {
+                    ""content"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""$ref"": ""#/components/schemas/ContentDefinition""
+                        }
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Save Content Request"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""content""
+                ]
+            },
+            ""SaveManifestRequest"": {
+                ""properties"": {
+                    ""id"": {
+                        ""type"": ""string"",
+                        ""x-beamable-semantic-type"": ""ContentManifestId""
+                    },
+                    ""references"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""$ref"": ""#/components/schemas/ReferenceSuperset""
+                        }
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Save Manifest Request"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""id"",
+                    ""references""
+                ]
+            },
+            ""RepeatManifestRequest"": {
+                ""properties"": {
+                    ""uid"": {
+                        ""type"": ""string""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Repeat Manifest Request"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""uid""
+                ]
+            },
+            ""ContentVisibility"": {
+                ""type"": ""string"",
+                ""enum"": [
+                    ""public"",
+                    ""private""
+                ]
+            },
+            ""Manifest"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""archived"": {
+                        ""type"": ""boolean""
+                    },
+                    ""references"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""oneOf"": [
+                                {
+                                    ""$ref"": ""#/components/schemas/ContentReference""
+                                },
+                                {
+                                    ""$ref"": ""#/components/schemas/TextReference""
+                                },
+                                {
+                                    ""$ref"": ""#/components/schemas/BinaryReference""
+                                }
+                            ]
+                        }
+                    },
+                    ""id"": {
+                        ""type"": ""string"",
+                        ""x-beamable-semantic-type"": ""ContentManifestId""
+                    },
+                    ""checksum"": {
+                        ""type"": ""string""
+                    },
+                    ""created"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    }
+                },
+                ""required"": [
+                    ""id"",
+                    ""references"",
+                    ""checksum"",
+                    ""created""
+                ]
+            },
+            ""LocalizationQuery"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""id"": {
+                        ""type"": ""string""
+                    },
+                    ""languages"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""type"": ""string""
+                        }
+                    }
+                },
+                ""required"": [
+                    ""id""
+                ]
+            },
+            ""EmptyResponse"": {
+                ""properties"": {
+                    ""result"": {
+                        ""type"": ""string""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Empty Response"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""result""
+                ]
+            },
+            ""GetLocalizationsResponse"": {
+                ""properties"": {
+                    ""localizations"": {
+                        ""type"": ""object"",
+                        ""additionalProperties"": {
+                            ""type"": ""array"",
+                            ""items"": {
+                                ""$ref"": ""#/components/schemas/LocalizedValue""
+                            }
+                        }
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Get Localizations Response"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""localizations""
+                ]
+            },
+            ""GetContentRequest"": {
+                ""properties"": {
+                    ""contentId"": {
+                        ""type"": ""string"",
+                        ""x-beamable-semantic-type"": ""ContentId""
+                    },
+                    ""version"": {
+                        ""type"": ""string""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Get Content Request"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""contentId"",
+                    ""version""
+                ]
+            },
+            ""ClientManifestCsvResponse"": {
+                ""properties"": {
+                    ""itemsCsv"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""$ref"": ""#/components/schemas/ClientContentInfo""
+                        }
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Client Manifest Csv Response"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""itemsCsv""
+                ]
+            },
+            ""LocalizedValue"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""language"": {
+                        ""type"": ""string""
+                    },
+                    ""value"": {
+                        ""type"": ""string""
+                    }
+                },
+                ""required"": [
+                    ""language"",
+                    ""value""
+                ]
+            },
+            ""ManifestChecksums"": {
+                ""properties"": {
+                    ""manifests"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""$ref"": ""#/components/schemas/ManifestChecksum""
+                        }
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Manifest Checksums"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""manifests""
+                ]
+            },
+            ""SaveTextResponse"": {
+                ""properties"": {
+                    ""text"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""$ref"": ""#/components/schemas/TextReference""
+                        }
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Save Text Response"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""text""
+                ]
+            },
+            ""ManifestSummary"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""uid"": {
+                        ""type"": ""string""
+                    },
+                    ""manifest"": {
+                        ""$ref"": ""#/components/schemas/ManifestChecksum""
+                    }
+                },
+                ""required"": [
+                    ""uid"",
+                    ""manifest""
+                ]
+            },
+            ""DeleteLocalizationRequest"": {
+                ""properties"": {
+                    ""localizations"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""$ref"": ""#/components/schemas/LocalizationQuery""
+                        }
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Delete Localization Request"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""localizations""
+                ]
+            },
+            ""ClientContentInfo"": {
+                ""x-beamable-primary-key"": ""contentId"",
+                ""properties"": {
+                    ""tags"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""type"": ""string""
+                        }
+                    },
+                    ""uri"": {
+                        ""type"": ""string""
+                    },
+                    ""version"": {
+                        ""type"": ""string""
+                    },
+                    ""contentId"": {
+                        ""type"": ""string"",
+                        ""x-beamable-semantic-type"": ""ContentId""
+                    },
+                    ""type"": {
+                        ""$ref"": ""#/components/schemas/ContentType""
+                    }
+                },
+                ""x-beamable-csv-order"": ""type,contentId,version,uri,tags"",
+                ""additionalProperties"": false,
+                ""type"": ""object"",
+                ""required"": [
+                    ""contentId"",
+                    ""version"",
+                    ""uri"",
+                    ""tags"",
+                    ""type""
+                ]
+            },
+            ""ContentType"": {
+                ""type"": ""string"",
+                ""enum"": [
+                    ""content"",
+                    ""text"",
+                    ""binary""
+                ]
+            },
+            ""GetManifestHistoryResponse"": {
+                ""properties"": {
+                    ""manifests"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""$ref"": ""#/components/schemas/ManifestSummary""
+                        }
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Get Manifest History Response"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""manifests""
+                ]
+            },
+            ""SaveContentResponse"": {
+                ""properties"": {
+                    ""content"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""$ref"": ""#/components/schemas/ContentReference""
+                        }
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Save Content Response"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""content""
+                ]
+            },
+            ""ContentReference"": {
+                ""properties"": {
+                    ""tag"": {
+                        ""type"": ""string""
+                    },
+                    ""tags"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""type"": ""string""
+                        }
+                    },
+                    ""uri"": {
+                        ""type"": ""string""
+                    },
+                    ""version"": {
+                        ""type"": ""string""
+                    },
+                    ""id"": {
+                        ""type"": ""string"",
+                        ""x-beamable-semantic-type"": ""ContentId""
+                    },
+                    ""checksum"": {
+                        ""type"": ""string""
+                    },
+                    ""lastChanged"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    },
+                    ""type"": {
+                        ""type"": ""string"",
+                        ""enum"": [
+                            ""content""
+                        ],
+                        ""default"": ""content""
+                    },
+                    ""visibility"": {
+                        ""$ref"": ""#/components/schemas/ContentVisibility""
+                    },
+                    ""created"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""content"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""type"",
+                    ""id"",
+                    ""tags"",
+                    ""version"",
+                    ""uri"",
+                    ""visibility"",
+                    ""tag""
+                ]
+            }
+        },
+        ""securitySchemes"": {
+            ""admin"": {
+                ""type"": ""custom"",
+                ""description"": ""Requires privileged user with an admin scope.""
+            },
+            ""scope"": {
+                ""type"": ""apiKey"",
+                ""name"": ""X-DE-SCOPE"",
+                ""in"": ""header"",
+                ""description"": ""Customer and project scope. This should contain the '<customer-id>.<project-id>'.""
+            },
+            ""userRequired"": {
+                ""type"": ""apiKey"",
+                ""name"": ""X-DE-GAMERTAG"",
+                ""in"": ""header"",
+                ""description"": ""Gamer Tag of the player.""
+            },
+            ""developer"": {
+                ""type"": ""custom"",
+                ""description"": ""Requires privileged user with an developer scope.""
+            },
+            ""tester"": {
+                ""type"": ""custom"",
+                ""description"": ""Requires privileged user with an tester scope.""
+            },
+            ""api"": {
+                ""type"": ""apiKey"",
+                ""name"": ""X-DE-SIGNATURE"",
+                ""in"": ""header"",
+                ""description"": ""Signed Request authentication using project secret key.""
+            },
+            ""user"": {
+                ""type"": ""http"",
+                ""description"": ""Bearer authentication with an player access token in the Authorization header."",
+                ""scheme"": ""bearer"",
+                ""bearerFormat"": ""Bearer <Access Token>""
+            }
+        }
+    },
+    ""security"": [],
+    ""externalDocs"": {
+        ""description"": ""Beamable Documentation"",
+        ""url"": ""https://docs.beamable.com""
+    },
+    ""openapi"": ""3.0.2""
+}
+";
+	#endregion
+	
 	#region event-players object
 
 	public const string EventPlayersObjectApi = @"
