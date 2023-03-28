@@ -291,6 +291,10 @@ namespace Beamable.Editor
 		public OptionalString realmPid = new OptionalString();
 		public EditorUser user;
 
+		public bool HasEmptyCustomerView =>
+			customerViewResponse == null || customerViewResponse.customer == null ||
+			customerViewResponse.customer.projects.Length == 0;
+		
 		[SerializeField]
 		private CustomerViewResponse customerViewResponse;
 
@@ -365,11 +369,10 @@ namespace Beamable.Editor
 				Projects = CustomerRealms
 			};
 
-			CurrentRealm.DoIfExists(realm =>
+			if (CurrentRealm.HasValue)
 			{
-				// override the gamePid value based on the realmPid's actual game parent.
-				gamePid.Set(realm.GamePid);
-			});
+				gamePid.Set(CurrentRealm.Value.GamePid);
+			}
 		}
 
 		public string GetRealmPidForGame(RealmView game)

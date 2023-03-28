@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Fixed
 - "Serialization depth limit" warning for `RealmView` on domain reloads.
-
+- Realms are reloaded if absent on domain reload.
+- Realm secret is reloaded on login.
 
 ## [1.13.0]
 ### Added
