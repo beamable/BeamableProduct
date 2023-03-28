@@ -115,6 +115,13 @@ namespace Beamable.Server.Editor.ManagerClient
 		public string comments;
 		public List<ServiceDependency> dependencies;
 		public long containerHealthCheckPort = HEALTH_PORT;
+		public List<ServiceComponent> components = new List<ServiceComponent>();
+	}
+
+	[System.Serializable]
+	public class ServiceComponent
+	{
+		public string name;
 	}
 
 
