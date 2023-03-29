@@ -16,5 +16,12 @@ namespace Beamable.Server.Editor
 			builder.AddSingleton<MicroserviceManager>();
 			builder.AddSingleton<MicroserviceDiscovery>();
 		}
+
+		[RegisterBeamableDependencies(-1000, RegistrationOrigin.RUNTIME)]
+		public static void RegisterRuntime(IDependencyBuilder builder)
+		{
+			builder.AddSingleton<MicroserviceDiscovery>();
+			builder.AddSingleton<IMicroservicePrefixService, MicroservicePrefixService>();
+		}
 	}
 }

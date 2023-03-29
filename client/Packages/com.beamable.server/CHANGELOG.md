@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Microservices with `IFederated` interfaces will include federation details in service manifest.
+- Running game will direct Microservice traffic to local standalone Microservices.
+
 
 ## [1.13.0]
 ### Added

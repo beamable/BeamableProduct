@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using Beamable.Editor;
 using Beamable.NetMQ;
@@ -13,85 +14,56 @@ using UnityEngine;
 
 namespace Beamable.Server.Editor
 {
-	[InitializeOnLoad]
-	public class UsageExample
+	public class MicroserviceDiscovery : IBeamableDisposable, ILoadWithContext
 	{
-		static UsageExample()
-		{
-			Demo();
-		}
+		private readonly IBeamableRequester _requester;
+
+		public const float SECONDS_BETWEEN_ZMQ_READS = .1f;
+		public const float SECONDS_UNTIL_DATA_RECEIVED = .5f;
 		
-		static async void Demo()
-		{
-			var ctx = BeamEditorContext.Default;
-			await ctx.InitializePromise;
-	
-			var discovery = ctx.ServiceScope.GetService<MicroserviceDiscovery>();
-			discovery.Start();
-		}
-		
-		[MenuItem("ZMQ/check")]
-	
-		public static async void Check()
-		{
-			var ctx = BeamEditorContext.Default;
-			await ctx.InitializePromise;
-	
-			var discovery = ctx.ServiceScope.GetService<MicroserviceDiscovery>();
-			// var name = "MMV3Publish2";
-			var name = "standalone-microservice";
-			if (discovery.TryIsRunning(name, out var data))
-			{
-				Debug.Log("Running! " + data.prefix);
-			}
-			else
-			{
-				Debug.Log("not running");
-			}
-		}
-	}
-	
-	public class MicroserviceDiscovery : IBeamableDisposable
-	{
-		private readonly BeamEditorContext _ctx;
 		private NetMQBeacon _beacon;
 		private ResponseSocket _server;
-
+		private Promise _gotAnyDataPromise;
 		private Dictionary<string, DiscoveryData> _nameToLatestEntry =
 			new Dictionary<string, DiscoveryData>();
 
-		public MicroserviceDiscovery( BeamEditorContext ctx)
+		public MicroserviceDiscovery(IBeamableRequester requester)
 		{
-			_ctx = ctx;
+			_requester = requester;
+			_gotAnyDataPromise = new Promise();
+			Start();
 		}
 
-		void Check()
-		{
-			
-		}
-		
 		public void Start()
 		{
 			EditorCoroutineUtility.StartCoroutineOwnerless(Loop());
 			
 			_beacon = new NetMQBeacon();
 			_beacon.ConfigureAllInterfaces(Beamable.Common.Constants.Features.Services.DISCOVERY_PORT);
-			_beacon.Publish("unity"); // TODO: remove
 			_beacon.Subscribe("");
-			
-			Debug.Log($"Beamable-Beacon waiting for connections.... [{_beacon.BoundTo}] [{_beacon.HostName}] [{_beacon.IsDisposed}]");
 		}
 
 		IEnumerator Loop()
 		{
 			var toRemove = new List<string>();
+			var timeUntilComplete = SECONDS_UNTIL_DATA_RECEIVED;
 			while (true)
 			{
-				yield return new WaitForSecondsRealtime(.1f);
+				yield return new WaitForSecondsRealtime(SECONDS_BETWEEN_ZMQ_READS);
+
+				if (timeUntilComplete <= 0)
+				{
+					_gotAnyDataPromise.CompleteSuccess();
+				}
+				else
+				{
+					timeUntilComplete -= SECONDS_BETWEEN_ZMQ_READS;
+				}
+				
 				var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 				if (TryToListen(out var service) && service != null && service.serviceName != null)
 				{
-					if (service.cid != _ctx.Requester.Cid || service.pid != _ctx.Requester.Pid)
+					if (service.cid != _requester.Cid || service.pid != _requester.Pid)
 					{
 						continue; // skip any service for a cid/pid that isn't our current Unity game.
 					}
@@ -131,15 +103,15 @@ namespace Beamable.Server.Editor
 			}
 		}
 
+		public async Promise WaitForUpdate()
+		{
+			await _gotAnyDataPromise;
+		}
+
 		public bool TryIsRunning(string serviceName, out ServiceDiscoveryEntry service)
 		{
 			service = null;
 
-			foreach (var kvp in _nameToLatestEntry)
-			{
-				Debug.Log($"Service: {kvp.Key} - {kvp.Value.timestamp} - {kvp.Value.entry.prefix}");
-			}
-			
 			if (_nameToLatestEntry.TryGetValue(serviceName, out var data))
 			{
 				service = data.entry;
@@ -172,8 +144,6 @@ namespace Beamable.Server.Editor
 
 		public Promise OnDispose()
 		{
-			// _beacon.Unsubscribe();
-			// _beacon.Silence();
 			return Promise.Success;
 		}
 
