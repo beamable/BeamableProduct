@@ -9,7 +9,7 @@ namespace Beamable.Server
 		public string cid;
 		public string pid;
 		public string prefix;
-		public int healthPort; // TODO remove
-		public bool isContainer; // TODO remove
+		public int healthPort; 
+		public bool isContainer;
 	}
 }
