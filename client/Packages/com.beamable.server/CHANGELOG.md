@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- Microservices with `IFederated` interfaces will include federation details in service manifest.
+
 ## [1.13.0]
 ### Added
 - `IMicroserviceBuildContext.AddDirectory` method allows to copy an entire directory of files into a build context.
@@ -37,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.11.0]
 ### Added
 - Microservices with `IFederatedLogin<T>` will generate client callable methods.
+- New `Publish Window` UI styling in `Microservice Manager`
 - Microservices with `IFederatedInventory<T>` will generate client callable methods.
 
 ### Fixed
