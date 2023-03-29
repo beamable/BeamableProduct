@@ -1705,7 +1705,7 @@ public static class OpenApiFixtures
 }
 ";
 	#endregion
-	
+
 	#region event-players object
 
 	public const string EventPlayersObjectApi = @"

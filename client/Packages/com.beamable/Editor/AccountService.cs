@@ -294,7 +294,7 @@ namespace Beamable.Editor
 		public bool HasEmptyCustomerView =>
 			customerViewResponse == null || customerViewResponse.customer == null ||
 			customerViewResponse.customer.projects.Length == 0;
-		
+
 		[SerializeField]
 		private CustomerViewResponse customerViewResponse;
 

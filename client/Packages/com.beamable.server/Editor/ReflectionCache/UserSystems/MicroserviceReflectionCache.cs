@@ -65,7 +65,7 @@ namespace Beamable.Server.Editor
 					[typeof(IFederatedLogin<>)] = "IFederatedLogin",
 					[typeof(IFederatedInventory<>)] = "IFederatedInventory",
 				};
-				
+
 				MICROSERVICE_BASE_TYPE = new BaseTypeOfInterest(typeof(Microservice));
 				MICROSERVICE_ATTRIBUTE =
 					new AttributeOfInterest(typeof(MicroserviceAttribute), new Type[] { },
@@ -314,18 +314,18 @@ namespace Beamable.Server.Editor
 						// Check if MS is used for external identity federation
 						var interfaces = descriptor.Type.GetInterfaces();
 
-						
-						
+
+
 						foreach (var it in interfaces)
 						{
 							if (!it.IsGenericType) continue;
 
 							if (!_federationComponentToName.TryGetValue(it.GetGenericTypeDefinition(),
-							                                            out var typeName))
+																		out var typeName))
 							{
 								continue;
 							}
-							
+
 							var federatedType = it.GetGenericArguments()[0];
 
 							if (Activator.CreateInstance(federatedType) is IThirdPartyCloudIdentity identity)

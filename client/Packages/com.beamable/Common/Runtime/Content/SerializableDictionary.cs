@@ -17,7 +17,7 @@ namespace Beamable.Common.Content
 	[Serializable] public class MapOfInt : SerializableDictionaryStringToInt { }
 	[Serializable] public class OptionalMapOfInt : Optional<MapOfInt> { }
 	[Serializable] public class MapOfString : SerializableDictionaryStringToString { }
-	
+
 	[Obsolete("use " + nameof(MapOfArrayOfString) + " instead")]
 	[Serializable] public class MapOfStringArray : SerializableDictionaryStringToSomething<string[]> { }
 	[Serializable] public class MapOfArrayOfString : SerializableDictionaryStringToSomething<string[]> { }

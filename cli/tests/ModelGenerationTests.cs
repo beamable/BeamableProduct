@@ -144,7 +144,7 @@ namespace Test
 ");
 	}
 
-	
+
 	[Test]
 	public void EnumFieldWithoutReference()
 	{
@@ -230,15 +230,15 @@ namespace Test
 
 	public class SubA : BaseTest
 	{
-		
+
 	}
-	
-	
+
+
 	public class SubB : BaseTest
 	{
-		
+
 	}
-	
+
 	[Test]
 	public void EnumField()
 	{
@@ -657,8 +657,8 @@ namespace Test
 }");
 
 	}
-	
-	
+
+
 	[Test]
 	public void OptionalArrayOfMapFishField()
 	{
@@ -675,7 +675,7 @@ namespace Test
 						Type = "object",
 						AdditionalProperties = new OpenApiSchema
 						{
-							Reference = new OpenApiReference{Id = "Fish"}
+							Reference = new OpenApiReference { Id = "Fish" }
 						},
 						AdditionalPropertiesAllowed = true
 					},

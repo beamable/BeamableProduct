@@ -428,7 +428,7 @@ public class SwaggerService
 	{
 		List<GeneratedFileDescriptor> Generate(IGenerationContext context);
 	}
-	
+
 	public class SourceGeneratorListProvider
 	{
 		public readonly ISourceGenerator[] Generators;
@@ -438,7 +438,7 @@ public class SwaggerService
 			var descriptors = scope.SingletonServices.Where(service => service.Interface.IsAssignableTo(typeof(ISourceGenerator))).ToList();
 			Generators = descriptors.Select(descriptor => scope.GetService(descriptor.Interface)).Cast<ISourceGenerator>().ToArray();
 		}
-		
+
 	}
 
 }
