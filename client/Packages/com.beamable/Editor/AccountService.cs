@@ -300,7 +300,7 @@ namespace Beamable.Editor
 
 		[field: NonSerialized]
 		public List<RealmView> CustomerRealms { get; private set; }
-		
+
 		[field: NonSerialized]
 		public CustomerView CustomerView { get; private set; }
 
