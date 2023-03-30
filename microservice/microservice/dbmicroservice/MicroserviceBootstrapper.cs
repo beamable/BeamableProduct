@@ -365,18 +365,16 @@ namespace Beamable.Server
 
         public static void ConfigureDiscovery(IMicroserviceArgs args, MicroserviceAttribute attribute)
         {
-	        var beacon = new NetMQBeacon();
 	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
 
-	        var port = Constants.Features.Services.DISCOVERY_PORT;
 	        if (inDocker)
 	        {
-		        beacon.ConfigureAllInterfaces(port);
+		        return;
 	        }
-	        else
-	        {
-		        beacon.Configure(port);
-	        }
+	        var beacon = new NetMQBeacon();
+	        var port = Constants.Features.Services.DISCOVERY_PORT;
+	        beacon.Configure(port);
+	        
 	        var msg = new ServiceDiscoveryEntry
 	        {
 		        cid = args.CustomerID,
@@ -384,7 +382,6 @@ namespace Beamable.Server
 		        prefix = args.NamePrefix,
 		        serviceName = attribute.MicroserviceName,
 		        healthPort = args.HealthPort,
-		        isContainer = inDocker
 	        };
 	        var msgJson = JsonConvert.SerializeObject(msg, UnitySerializationSettings.Instance);
 	        beacon.Publish(msgJson, TimeSpan.FromMilliseconds(250));
