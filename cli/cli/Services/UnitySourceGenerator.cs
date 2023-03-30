@@ -656,7 +656,7 @@ public static class UnityHelper
 			
 			var queryListRefIfStatement = new CodeConditionStatement(
 				new CodeBinaryOperatorExpression( new CodePropertyReferenceExpression(
-					queryListRef, "Length"), CodeBinaryOperatorType.GreaterThan, new CodePrimitiveExpression(0)));
+					queryListRef, "Count"), CodeBinaryOperatorType.GreaterThan, new CodePrimitiveExpression(0)));
 					
 			queryListRefIfStatement.TrueStatements.Add(joinAssignment);
 			queryListRefIfStatement.TrueStatements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(varUrl),
