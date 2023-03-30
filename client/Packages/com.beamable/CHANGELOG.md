@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Realms are reloaded if absent on domain reload.
 - Realm secret is reloaded on login.
 
+### Added
+- `ILoadWithContext` interface will obligate a service registered as a singleton to be instantiated on `BeamContext.InitServices` call.
+
 ## [1.13.0]
 ### Added
 - `ItemView` has new `contentId` field.

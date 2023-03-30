@@ -1,5 +1,6 @@
 {
     "name": "Unity.Beamable.Editor",
+    "rootNamespace": "",
     "references": [
         "Beamable.Config",
         "Beamable.Service",
@@ -16,14 +17,17 @@
         "Beamable.UnityUIExtensions",
         "Beamable.ConsoleCommands"
     ],
-    "optionalUnityReferences": [],
     "includePlatforms": [
         "Editor"
     ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
-    "precompiledReferences": [],
+    "precompiledReferences": [
+        "Beamable.NetMQ.dll"
+    ],
     "autoReferenced": true,
-    "defineConstraints": []
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

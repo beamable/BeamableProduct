@@ -51,16 +51,17 @@ namespace Beamable.Server
 			_ctx = ctx;
 		}
 
-		public IDependencyProvider Provider => _ctx?.ServiceProvider ?? BeamContext.Default.ServiceProvider;
+		public virtual IDependencyProvider Provider => _ctx?.ServiceProvider ?? BeamContext.Default.ServiceProvider;
 
 		protected async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
 		{
 			var requester = _requester ?? await API.Instance.Map(b => b.Requester);
-			return await MicroserviceClientHelper.Request<T>(requester, serviceName, endpoint, serializedFields);
+			return await MicroserviceClientHelper.Request<T>(Provider, requester, serviceName, endpoint, serializedFields);
 		}
 
 		protected string SerializeArgument<T>(T arg) => MicroserviceClientHelper.SerializeArgument(arg);
 
+		[Obsolete]
 		protected string CreateUrl(string cid, string pid, string serviceName, string endpoint)
 		   => MicroserviceClientHelper.CreateUrl(cid, pid, serviceName, endpoint);
 	}
@@ -290,12 +291,30 @@ namespace Beamable.Server
 		public static string CreateUrl(string cid, string pid, string serviceName, string endpoint)
 		{
 			var prefix = _prefix ?? (_prefix = MicroserviceIndividualization.GetServicePrefix(serviceName));
+			return CreateUrl(cid, pid, serviceName, endpoint, prefix);
+		}
+		
+		public static string CreateUrl(string cid, string pid, string serviceName, string endpoint, string prefix)
+		{
 			var path = $"{prefix}micro_{serviceName}/{endpoint}";
 			var url = $"/basic/{cid}.{pid}.{path}";
-			return url;
+			return url; ///basic/123.testpid.micro_test/test
 		}
 
-		public static async Promise<T> Request<T>(IBeamableRequester requester, string serviceName, string endpoint, string[] serializedFields)
+		public static Dictionary<string, Promise<string>> serviceNameToPrefixPromise =
+			new Dictionary<string, Promise<string>>();
+
+		[Obsolete("Use the variant that accepts a dependency provider.")]
+		public static Promise<T> Request<T>(IBeamableRequester requester,
+		                                          string serviceName,
+		                                          string endpoint,
+		                                          string[] serializedFields)
+		{
+			var ctx = BeamContext.Default;
+			return Request<T>(ctx.ServiceProvider, requester, serviceName, endpoint, serializedFields);
+		}
+
+		public static async Promise<T> Request<T>(IDependencyProvider provider, IBeamableRequester requester, string serviceName, string endpoint, string[] serializedFields)
 		{
 			var argArray = "[ " + string.Join(",", serializedFields) + " ]";
 
@@ -312,9 +331,23 @@ namespace Beamable.Server
 				return result;
 			}
 
-			// var b = await API.Instance;
-			// var requester = b.Requester;
-			var url = CreateUrl(requester.AccessToken.Cid, requester.AccessToken.Pid, serviceName, endpoint);
+			if (!serviceNameToPrefixPromise.TryGetValue(serviceName, out var prefixPromise))
+			{
+				// need to resolve the IPrefixService
+				if (provider.CanBuildService<IMicroservicePrefixService>())
+				{
+					var prefixService = provider.GetService<IMicroservicePrefixService>();
+					prefixPromise = serviceNameToPrefixPromise[serviceName] = prefixService.GetPrefix(serviceName);
+				}
+				else
+				{
+					prefixPromise = Promise<string>.Successful("");
+				}
+			}
+
+			var prefix = await prefixPromise;
+			var url = CreateUrl(requester.AccessToken.Cid, requester.AccessToken.Pid, serviceName, endpoint, prefix);
+			
 			var req = new RequestObject
 			{
 				payload = argArray

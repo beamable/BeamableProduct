@@ -1,5 +1,6 @@
 {
     "name": "Unity.Beamable.Editor.Server",
+    "rootNamespace": "",
     "references": [
         "Beamable.Config",
         "Beamable.JsonSerializable",
@@ -12,9 +13,9 @@
         "Unity.Beamable.Server.Runtime.Mocks",
         "Unity.Beamable",
         "Unity.Beamable.Editor",
-        "Unity.Addressables"
+        "Unity.Addressables",
+        "Unity.EditorCoroutines.Editor"
     ],
-    "optionalUnityReferences": [],
     "includePlatforms": [
         "Editor"
     ],
@@ -23,8 +24,13 @@
     "overrideReferences": true,
     "precompiledReferences": [
         "MongoDB.Driver.dll",
-        "ICSharpCode.SharpZipLib.dll"
+        "ICSharpCode.SharpZipLib.dll",
+        "Beamable.NetMQ.dll",
+        "Beamable.AsyncIO.dll",
+        "Beamable.NaCl.dll"
     ],
     "autoReferenced": true,
-    "defineConstraints": []
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }
