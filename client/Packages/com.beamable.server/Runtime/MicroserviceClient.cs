@@ -51,7 +51,7 @@ namespace Beamable.Server
 			_ctx = ctx;
 		}
 
-		public IDependencyProvider Provider => _ctx?.ServiceProvider ?? BeamContext.Default.ServiceProvider;
+		public virtual IDependencyProvider Provider => _ctx?.ServiceProvider ?? BeamContext.Default.ServiceProvider;
 
 		protected async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
 		{
@@ -61,6 +61,7 @@ namespace Beamable.Server
 
 		protected string SerializeArgument<T>(T arg) => MicroserviceClientHelper.SerializeArgument(arg);
 
+		[Obsolete]
 		protected string CreateUrl(string cid, string pid, string serviceName, string endpoint)
 		   => MicroserviceClientHelper.CreateUrl(cid, pid, serviceName, endpoint);
 	}
@@ -297,7 +298,7 @@ namespace Beamable.Server
 		{
 			var path = $"{prefix}micro_{serviceName}/{endpoint}";
 			var url = $"/basic/{cid}.{pid}.{path}";
-			return url;
+			return url; ///basic/123.testpid.micro_test/test
 		}
 
 		public static Dictionary<string, Promise<string>> serviceNameToPrefixPromise =
