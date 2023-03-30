@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Microservices with `IFederated` interfaces will include federation details in service manifest.
 
+### Fixed
+- `KeyNotFound`error in RealmConfig.
+
 ## [1.13.0]
 ### Added
 - `IMicroserviceBuildContext.AddDirectory` method allows to copy an entire directory of files into a build context.
