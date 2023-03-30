@@ -281,7 +281,7 @@ namespace Beamable.Editor
 	}
 
 	[Serializable]
-	public class EditorAccountInfo
+	public class EditorAccountInfo : ISerializationCallbackReceiver
 	{
 		public string cid;
 
@@ -294,11 +294,14 @@ namespace Beamable.Editor
 		public bool HasEmptyCustomerView =>
 			customerViewResponse == null || customerViewResponse.customer == null ||
 			customerViewResponse.customer.projects.Length == 0;
-		
+
 		[SerializeField]
 		private CustomerViewResponse customerViewResponse;
 
+		[field: NonSerialized]
 		public List<RealmView> CustomerRealms { get; private set; }
+
+		[field: NonSerialized]
 		public CustomerView CustomerView { get; private set; }
 
 		public List<RealmView> CustomerGames => CustomerRealms.Where(r => r.IsProduction).ToList(); // TODO: don't use linq.
@@ -394,6 +397,15 @@ namespace Beamable.Editor
 			var api = new RealmsApi(requester);
 			var res = await api.GetCustomer();
 			SetCustomerViewResponse(res);
+		}
+
+		public void OnBeforeSerialize()
+		{
+		}
+
+		public void OnAfterDeserialize()
+		{
+			Refresh();
 		}
 	}
 
