@@ -653,16 +653,16 @@ public static class UnityHelper
 				new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)),
 					nameof(string.Concat), queryStringRef,
 					joinExpr));
-			
+
 			var queryListRefIfStatement = new CodeConditionStatement(
-				new CodeBinaryOperatorExpression( new CodePropertyReferenceExpression(
+				new CodeBinaryOperatorExpression(new CodePropertyReferenceExpression(
 					queryListRef, "Count"), CodeBinaryOperatorType.GreaterThan, new CodePrimitiveExpression(0)));
-					
+
 			queryListRefIfStatement.TrueStatements.Add(joinAssignment);
 			queryListRefIfStatement.TrueStatements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(varUrl),
 				new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)), nameof(string.Concat),
 					new CodeVariableReferenceExpression(varUrl), new CodeVariableReferenceExpression(varQuery))));
-			
+
 			method.Statements.Add(queryListRefIfStatement);
 		}
 

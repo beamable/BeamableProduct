@@ -21,7 +21,7 @@ namespace Beamable.Server.Editor
 			_registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			_nameToDescriptor = _registry.Descriptors.ToDictionary(d => d.Name);
 		}
-		
+
 		public async Promise<string> GetPrefix(string serviceName)
 		{
 			if (!_nameToDescriptor.TryGetValue(serviceName, out var descriptor))
@@ -37,7 +37,8 @@ namespace Beamable.Server.Editor
 			if (isRunningInDocker)
 			{
 				return MicroserviceIndividualization.Prefix;
-			} else if (_discoveryService.TryIsRunning(serviceName, out var localRunningEntry))
+			}
+			else if (_discoveryService.TryIsRunning(serviceName, out var localRunningEntry))
 			{
 				return localRunningEntry.prefix;
 			}
@@ -47,7 +48,7 @@ namespace Beamable.Server.Editor
 			}
 		}
 	}
-	
+
 	// [InitializeOnLoadAttribute]
 	[Obsolete("This type is not used anymore.")]
 	public class MicroservicePrefixSetter
