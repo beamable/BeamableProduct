@@ -256,6 +256,8 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(CoreConfiguration.Instance);
 			DependencyBuilder.AddSingleton<IAuthSettings>(AccountManagementConfiguration.Instance);
 			DependencyBuilder.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
+
+			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 
 

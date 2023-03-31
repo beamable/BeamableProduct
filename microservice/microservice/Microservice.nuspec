@@ -20,12 +20,14 @@
             <dependency id="Serilog.Formatting.Compact" version="1.1.*" />
             <dependency id="Serilog.Sinks.Console" version="3.1.*" />
             <dependency id="System.CommandLine" version="2.0.0-beta3.22114.*" />
-            <dependency id="System.ServiceModel.Primitives" version="4.8.*" />
+            <dependency id="System.ServiceModel.Primitives" version="4.9.*" />
             <dependency id="MongoDB.Driver" version="2.15.*" />
+            <dependency id="NetMQ" version="4.0.1.11"/>
         </dependencies>
 
     </metadata>
     <files>
+        <file src="bin\Release\net6.0\Unity.Beamable.*.dll" target="lib\net6.0" />
         <file src="bin\Release\net6.0\Beamable.*.dll" target="lib\net6.0" />
         <file src="bin\Release\net6.0\BeamableMicroserviceBase.dll" target="lib\net6.0" />
         <file src="bin\Release\net6.0\UnityEngine.dll" target="lib\net6.0" />

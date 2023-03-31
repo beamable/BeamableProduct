@@ -126,8 +126,22 @@ public class Tests
 				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.SocialBasicOpenApi));
 
 
-			builder.AddSingleton<ISwaggerStreamDownloader>(mock.Object);
+			builder.ReplaceSingleton<ISwaggerStreamDownloader>(mock.Object);
 		}, "oapi", "generate", "--filter", "social,t:basic");
+		Assert.AreEqual(0, status);
+	}
+
+
+	[Test]
+	public async Task GenerateContent()
+	{
+		var status = await Cli.RunAsyncWithParams(builder =>
+		{
+			var mock = new Mock<ISwaggerStreamDownloader>();
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic") && x.Contains("content"))))
+				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.ContentBasicApi));
+			builder.ReplaceSingleton<ISwaggerStreamDownloader>(mock.Object);
+		}, "oapi", "generate", "--filter", "content,t:basic", "--engine", "unity");
 		Assert.AreEqual(0, status);
 	}
 
@@ -142,7 +156,7 @@ public class Tests
 			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("content"))))
 				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.ContentObjectApi));
 
-			builder.AddSingleton<ISwaggerStreamDownloader>(mock.Object);
+			builder.ReplaceSingleton<ISwaggerStreamDownloader>(mock.Object);
 		}, "oapi", "generate", "--filter", "content,t:basic", "--engine", "unreal");
 		Assert.AreEqual(0, status);
 	}
