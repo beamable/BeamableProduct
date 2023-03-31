@@ -422,10 +422,6 @@ namespace Beamable.Server.Editor
 											  Action<IDescriptor> onServiceDeployed = null,
 											  Action<LogMessage> logger = null)
 			{
-				// don't do anything if there are no descriptors.
-				if (Descriptors.Count == 0)
-					return;
-
 				if (logger == null)
 					logger = message => Debug.Log($"[{message.Level}] {message.Timestamp} - {message.Message}");
 
