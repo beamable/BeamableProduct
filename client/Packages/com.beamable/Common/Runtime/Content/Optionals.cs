@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
+
 #pragma warning disable CS0618
 
 namespace Beamable.Common.Content
@@ -230,35 +232,104 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
+	[Obsolete("use " + nameof(OptionalArrayOfInt) + " instead")]
 	public class OptionalIntArray : OptionalArray<int> { }
 
 	[System.Serializable]
 	[Agnostic]
+	[Obsolete("use " + nameof(OptionalArrayOfString) + " instead")]
 	public class OptionalStringArray : OptionalArray<string> { }
 
 	[System.Serializable]
 	[Agnostic]
+	[Obsolete("use " + nameof(OptionalArrayOfFloat) + " instead")]
 	public class OptionalFloatArray : OptionalArray<float> { }
 
 	[System.Serializable]
 	[Agnostic]
+	[Obsolete("use " + nameof(OptionalArrayOfDouble) + " instead")]
 	public class OptionalDoubleArray : OptionalArray<double> { }
 
 	[System.Serializable]
 	[Agnostic]
+	[Obsolete("use " + nameof(OptionalArrayOfShort) + " instead")]
 	public class OptionalShortArray : OptionalArray<short> { }
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalLongArray : OptionalArray<long> { }
+	[Obsolete("use " + nameof(OptionalArrayOfLong) + " instead")]
+	public class OptionalLongArray : OptionalArray<long>
+	{
+		public OptionalLongArray()
+		{
+
+		}
+
+		public OptionalLongArray(IEnumerable<long> data)
+		{
+			Value = data.ToArray();
+			HasValue = true;
+		}
+
+	}
 
 	[System.Serializable]
 	[Agnostic]
+	[Obsolete("use " + nameof(OptionalArrayOfUuid) + " instead")]
 	public class OptionalUuidArray : OptionalArray<Guid> { }
 
 	[System.Serializable]
 	[Agnostic]
+	[Obsolete("use " + nameof(OptionalArrayOfByte) + " instead")]
 	public class OptionalByteArray : OptionalArray<byte> { }
+
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalArrayOfInt : OptionalArray<int> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalArrayOfString : OptionalArray<string> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalArrayOfFloat : OptionalArray<float> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalArrayOfDouble : OptionalArray<double> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalArrayOfShort : OptionalArray<short> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalArrayOfLong : OptionalArray<long>
+	{
+		public OptionalArrayOfLong()
+		{
+
+		}
+
+		public OptionalArrayOfLong(IEnumerable<long> data)
+		{
+			Value = data.ToArray();
+			HasValue = true;
+		}
+
+	}
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalArrayOfUuid : OptionalArray<Guid> { }
+
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalArrayOfByte : OptionalArray<byte> { }
+
+
 
 	[System.Serializable]
 	[Agnostic]

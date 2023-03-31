@@ -1,19 +1,34 @@
 using Beamable.Common;
+using Beamable.Common.Dependencies;
 using System;
 using UnityEngine;
 
 namespace Beamable.Server.Tests.Runtime
 {
+
 	public class TestClient : MicroserviceClient
 	{
+		public class TestPrefixProvider : IMicroservicePrefixService
+		{
+			public Promise<string> GetPrefix(string serviceName)
+			{
+				return Promise<string>.Successful("test");
+			}
+		}
+		
 		private readonly string _serviceName;
 
+		private readonly IDependencyProvider _provider;
 		public TestClient(string serviceName)
 		{
 			_serviceName = serviceName;
 			MicroserviceClientHelper.SetPrefix("test");
-
+			var builder = new DependencyBuilder();
+			builder.AddSingleton<IMicroservicePrefixService, TestPrefixProvider>();
+			_provider = builder.Build();
 		}
+
+		public override IDependencyProvider Provider => _provider;
 
 		public Promise<T> Request<T>(string endpoint, string[] serializedFields)
 		{
@@ -22,7 +37,7 @@ namespace Beamable.Server.Tests.Runtime
 
 		public string GetMockPath(string cid, string pid, string endpoint)
 		{
-			return CreateUrl(cid, pid, _serviceName, endpoint);
+			return MicroserviceClientHelper.CreateUrl(cid, pid, _serviceName, endpoint, "test");
 		}
 	}
 

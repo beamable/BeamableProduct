@@ -26,6 +26,7 @@ using Beamable.Server.Api.Leaderboards;
 using Beamable.Server.Api.Mail;
 using Beamable.Server.Api.Notifications;
 using Beamable.Server.Api.Payments;
+using Beamable.Server.Api.Push;
 using Beamable.Server.Api.RealmConfig;
 using Beamable.Server.Api.Social;
 using Beamable.Server.Api.Stats;
@@ -36,6 +37,8 @@ using Core.Server.Common;
 using microservice;
 using microservice.Common;
 using Microsoft.Extensions.DependencyInjection;
+using NetMQ;
+using Newtonsoft.Json;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -45,6 +48,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using System.Threading;
 using UnityEngine;
 using Constants = Beamable.Common.Constants;
 
@@ -242,6 +246,7 @@ namespace Beamable.Server
 			        .AddScoped<IMicroserviceRealmConfigService, RealmConfigService>()
 			        .AddScoped<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
 			        .AddScoped<IMicroservicePaymentsApi, MicroservicePaymentsApi>()
+			        .AddScoped<IMicroservicePushApi, MicroservicePushApi>()
 			        .AddSingleton<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>()
 			        .AddSingleton<MongoSerializationService>()
 			        .AddSingleton<IMongoSerializationService>(p => p.GetService<MongoSerializationService>())
@@ -345,6 +350,7 @@ namespace Beamable.Server
 			        Commerce = provider.GetRequiredService<IMicroserviceCommerceApi>(),
 			        Chat = provider.GetRequiredService<IMicroserviceChatApi>(),
 			        Payments = provider.GetRequiredService<IMicroservicePaymentsApi>(),
+			        Push = provider.GetRequiredService<IMicroservicePushApi>(),
 		        };
 		        return services;
 	        }
@@ -357,14 +363,39 @@ namespace Beamable.Server
 	        mongo.Init();
         }
 
+        public static void ConfigureDiscovery(IMicroserviceArgs args, MicroserviceAttribute attribute)
+        {
+	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+
+	        if (inDocker)
+	        {
+		        return;
+	        }
+	        var beacon = new NetMQBeacon();
+	        var port = Constants.Features.Services.DISCOVERY_PORT;
+	        beacon.Configure(port);
+	        
+	        var msg = new ServiceDiscoveryEntry
+	        {
+		        cid = args.CustomerID,
+		        pid = args.ProjectName,
+		        prefix = args.NamePrefix,
+		        serviceName = attribute.MicroserviceName,
+		        healthPort = args.HealthPort,
+	        };
+	        var msgJson = JsonConvert.SerializeObject(msg, UnitySerializationSettings.Instance);
+	        beacon.Publish(msgJson, TimeSpan.FromMilliseconds(250));
+        }
+
         public static async Task Start<TMicroService>() where TMicroService : Microservice
         {
+	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
 	        var envArgs = new EnviornmentArgs();
 	        ConfigureLogging(envArgs);
 	        ConfigureUncaughtExceptions();
 	        ConfigureUnhandledError();
 	        ConfigureDocsProvider();
-	        
+	        ConfigureDiscovery(envArgs, attribute);
 	        ReflectionCache = ConfigureReflectionCache();
 	        
 	        // configure the root service scope, and then build the root service provider.
@@ -381,7 +412,6 @@ namespace Beamable.Server
 		        conf.ServiceScope = rootServiceScope;
 	        });
 
-	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
 	        for (var i = 0; i < args.BeamInstanceCount; i++)
             {
 	            var isFirstInstance = i == 0;
