@@ -384,6 +384,14 @@ namespace Beamable.Common.Api.Auth
 
 			throw new Exception("Problem with challenge token parsing");
 		}
+		
+		public Promise<bool> IsExternalIdentityAvailable(string providerService, string externalToken, string[] namespaces = null)
+		{
+			return Requester.Request<AvailabilityResponse>(
+				Method.GET,
+				$"{ACCOUNT_URL}/available/external_identity?provider_service={providerService}&user_id={externalToken}?provider_namespace={namespaces}",
+				null, false).Map(response => response.available);
+		}
 	}
 
 	/// <summary>
