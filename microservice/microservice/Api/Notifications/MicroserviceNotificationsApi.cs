@@ -128,7 +128,7 @@ namespace Beamable.Server.Api.Notifications
 	    
 	    public NotificationRequestBuilder WithDbids(List<long> dbids)
 	    {
-		    Request.dbids = new OptionalLongArray(dbids);
+		    Request.dbids = new OptionalArrayOfLong(dbids);
 		    return this;
 	    }
 

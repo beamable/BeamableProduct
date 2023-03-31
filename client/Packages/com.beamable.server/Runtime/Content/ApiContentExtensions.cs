@@ -38,7 +38,9 @@ namespace Beamable.Server
 		{
 			// TODO: all people to configure which requester gets used
 			var requester = await Beamable.API.Instance.Map(b => b.Requester);
-			await MicroserviceClientHelper.Request<Unit>(requester,
+			var ctx = await BeamContext.Default.Instance;
+			await MicroserviceClientHelper.Request<Unit>(ctx.ServiceProvider, 
+			                                             requester,
 														 api.ServiceRoute.Service,
 														 api.ServiceRoute.Endpoint,
 														 api.PrepareParameters(variables));
