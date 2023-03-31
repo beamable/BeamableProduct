@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `KeyNotFound`error in RealmConfig.
+- `Beamable.Microservice.Runtime` nuget package correctly includes `Unity.Beamable.Runtime.Common`
 
 ## [1.13.0]
 ### Added
