@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `DisableBeamableCidPidWarningsOnBuild` option in _Project Settings/Beamable/Editor_ that will disable the CID/PID warning dialog on build.
 
+### Fixed
+- User is able to publish after reverting from Change Environment
+
 ## [1.12.1]
 ### Added
 - `ItemView` has new `contentId` field.
