@@ -20,7 +20,7 @@ namespace Beamable.Server.Editor
 
 		public const float SECONDS_BETWEEN_ZMQ_READS = .1f;
 		public const float SECONDS_UNTIL_DATA_RECEIVED = .5f;
-		
+
 		private NetMQBeacon _beacon;
 		private ResponseSocket _server;
 		private Promise _gotAnyDataPromise;
@@ -37,7 +37,7 @@ namespace Beamable.Server.Editor
 		public void Start()
 		{
 			EditorCoroutineUtility.StartCoroutineOwnerless(Loop());
-			
+
 			_beacon = new NetMQBeacon();
 			_beacon.ConfigureAllInterfaces(Beamable.Common.Constants.Features.Services.DISCOVERY_PORT);
 			_beacon.Subscribe("");
@@ -59,7 +59,7 @@ namespace Beamable.Server.Editor
 				{
 					timeUntilComplete -= SECONDS_BETWEEN_ZMQ_READS;
 				}
-				
+
 				var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 				if (TryToListen(out var service) && service != null && service.serviceName != null)
 				{
@@ -67,7 +67,7 @@ namespace Beamable.Server.Editor
 					{
 						continue; // skip any service for a cid/pid that isn't our current Unity game.
 					}
-					
+
 					if (_nameToLatestEntry.TryGetValue(service.serviceName, out var existingData))
 					{
 						existingData.timestamp = now;
@@ -82,7 +82,7 @@ namespace Beamable.Server.Editor
 						};
 					}
 				}
-				
+
 				// cull out old data...
 				toRemove.Clear();
 				foreach (var kvp in _nameToLatestEntry)
@@ -120,11 +120,11 @@ namespace Beamable.Server.Editor
 
 			return false;
 		}
-		
+
 		private bool TryToListen(out ServiceDiscoveryEntry service)
 		{
 			service = null;
-			var validHostPrefixes = new string[] {"192.", "0.0.0.0", "127.0.0.1"};
+			var validHostPrefixes = new string[] { "192.", "0.0.0.0", "127.0.0.1" };
 			if (!_beacon.TryReceive(TimeSpan.FromMilliseconds(50), out var message))
 			{
 				return false;

@@ -7,6 +7,6 @@ namespace Beamable
 	/// </summary>
 	public interface ILoadWithContext
 	{
-		
+
 	}
 }
