@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `ILoadWithContext` interface will obligate a service registered as a singleton to be instantiated on `BeamContext.InitServices` call.
 
+### Fixed
+- User is able to publish after reverting from Change Environment
+
 ## [1.13.0]
 ### Added
 - `ItemView` has new `contentId` field.
