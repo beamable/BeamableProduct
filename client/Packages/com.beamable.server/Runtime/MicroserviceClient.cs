@@ -293,7 +293,7 @@ namespace Beamable.Server
 			var prefix = _prefix ?? (_prefix = MicroserviceIndividualization.GetServicePrefix(serviceName));
 			return CreateUrl(cid, pid, serviceName, endpoint, prefix);
 		}
-		
+
 		public static string CreateUrl(string cid, string pid, string serviceName, string endpoint, string prefix)
 		{
 			var path = $"{prefix}micro_{serviceName}/{endpoint}";
@@ -306,9 +306,9 @@ namespace Beamable.Server
 
 		[Obsolete("Use the variant that accepts a dependency provider.")]
 		public static Promise<T> Request<T>(IBeamableRequester requester,
-		                                          string serviceName,
-		                                          string endpoint,
-		                                          string[] serializedFields)
+												  string serviceName,
+												  string endpoint,
+												  string[] serializedFields)
 		{
 			var ctx = BeamContext.Default;
 			return Request<T>(ctx.ServiceProvider, requester, serviceName, endpoint, serializedFields);
@@ -347,7 +347,7 @@ namespace Beamable.Server
 
 			var prefix = await prefixPromise;
 			var url = CreateUrl(requester.AccessToken.Cid, requester.AccessToken.Pid, serviceName, endpoint, prefix);
-			
+
 			var req = new RequestObject
 			{
 				payload = argArray
