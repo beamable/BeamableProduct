@@ -64,4 +64,4 @@ namespace Beamable.Server.Api.RealmConfig
 		public string GetSetting(string nameSpace, string key, string defaultValue = null) =>
 		   GetNamespace(nameSpace).GetSetting(key, defaultValue);
 	}
-} 
+}

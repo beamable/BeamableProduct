@@ -303,7 +303,7 @@ namespace Beamable.Common.Api.Auth
 		/// <param name="token">Challenge token received from a server.</param>
 		/// <returns><see cref="ChallengeToken"/> structure</returns>
 		ChallengeToken ParseChallengeToken(string token);
-		
+
 		/// <summary>
 		/// Method for checking whether there is an existing identity or not. 
 		/// </summary>

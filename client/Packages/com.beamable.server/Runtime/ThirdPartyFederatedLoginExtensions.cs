@@ -43,8 +43,8 @@ namespace Beamable.Server
 			var serviceNamespace = GetServiceNamespace<T>();
 			var api = client.Provider.GetService<IAuthApi>();
 			return api.AuthorizeExternalIdentity(token, client.ServiceName,
-			                                     serviceNamespace,
-			                                     solution);
+												 serviceNamespace,
+												 solution);
 		}
 
 		public static Promise<bool> IsExternalIdentityAvailable<T>(this ISupportsFederatedLogin<T> client, string token)
@@ -52,7 +52,7 @@ namespace Beamable.Server
 		{
 			var serviceNamespace = GetServiceNamespace<T>();
 			var api = client.Provider.GetService<IAuthApi>();
-			string[] namespaces = {serviceNamespace};
+			string[] namespaces = { serviceNamespace };
 
 			return api.IsExternalIdentityAvailable(client.ServiceName, token, namespaces);
 		}

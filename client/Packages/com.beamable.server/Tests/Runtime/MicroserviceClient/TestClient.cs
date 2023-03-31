@@ -15,7 +15,7 @@ namespace Beamable.Server.Tests.Runtime
 				return Promise<string>.Successful("test");
 			}
 		}
-		
+
 		private readonly string _serviceName;
 
 		private readonly IDependencyProvider _provider;
