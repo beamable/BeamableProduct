@@ -27,6 +27,7 @@
 
     </metadata>
     <files>
+        <file src="bin\Release\net6.0\Unity.Beamable.*.dll" target="lib\net6.0" />
         <file src="bin\Release\net6.0\Beamable.*.dll" target="lib\net6.0" />
         <file src="bin\Release\net6.0\BeamableMicroserviceBase.dll" target="lib\net6.0" />
         <file src="bin\Release\net6.0\UnityEngine.dll" target="lib\net6.0" />
