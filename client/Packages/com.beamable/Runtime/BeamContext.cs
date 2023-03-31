@@ -517,6 +517,8 @@ namespace Beamable
 			_heartbeatService = ServiceProvider.GetService<IHeartbeatService>();
 			_behaviour = ServiceProvider.GetService<BeamableBehaviour>();
 			_offlineCache = ServiceProvider.GetService<OfflineCache>();
+
+			var _ = _serviceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
 		}
 
 

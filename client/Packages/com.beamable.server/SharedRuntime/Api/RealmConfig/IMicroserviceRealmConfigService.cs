@@ -28,7 +28,7 @@ namespace Beamable.Server.Api.RealmConfig
 
 		}
 
-		public string GetSetting(string key, string defaultValue = null) => this[key] ?? defaultValue;
+		public string GetSetting(string key, string defaultValue = null) => this.TryGetValue(key, out string value) ? value : defaultValue;
 	}
 
 	/// <summary>
@@ -59,7 +59,7 @@ namespace Beamable.Server.Api.RealmConfig
 			return new RealmConfig(readonlyDict);
 		}
 
-		public RealmConfigNamespaceData GetNamespace(string nameSpace) => this[nameSpace] ?? EmptyNamespace;
+		public RealmConfigNamespaceData GetNamespace(string nameSpace) => this.TryGetValue(nameSpace, out RealmConfigNamespaceData value) ? value : EmptyNamespace;
 
 		public string GetSetting(string nameSpace, string key, string defaultValue = null) =>
 		   GetNamespace(nameSpace).GetSetting(key, defaultValue);
