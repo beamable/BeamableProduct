@@ -7,15 +7,15 @@ namespace Beamable.Server
 {
 	public static class ThirdPartyFederatedLoginExtensions
 	{
-		private static readonly ConcurrentDictionary<Type, string> ServiceNamespaceCache = new ConcurrentDictionary<Type, string>();
+		private static readonly ConcurrentDictionary<Type, string> ServiceNamespaceCache =
+			new ConcurrentDictionary<Type, string>();
 
 		private static string GetServiceNamespace<T>() where T : IThirdPartyCloudIdentity, new()
 		{
 			return ServiceNamespaceCache.GetOrAdd(typeof(T), _ => new T().UniqueName);
 		}
 
-		public static Promise<AttachExternalIdentityResponse> AttachIdentity<T>(
-			this ISupportsFederatedLogin<T> client,
+		public static Promise<AttachExternalIdentityResponse> AttachIdentity<T>(this ISupportsFederatedLogin<T> client,
 			string token,
 			ChallengeSolution solution = null)
 			where T : IThirdPartyCloudIdentity, new()
@@ -25,8 +25,7 @@ namespace Beamable.Server
 			return api.AttachIdentity(token, client.ServiceName, serviceNamespace, solution);
 		}
 
-		public static Promise<DetachExternalIdentityResponse> DetachIdentity<T>(
-			this ISupportsFederatedLogin<T> client,
+		public static Promise<DetachExternalIdentityResponse> DetachIdentity<T>(this ISupportsFederatedLogin<T> client,
 			string userId)
 			where T : IThirdPartyCloudIdentity, new()
 		{
@@ -44,8 +43,18 @@ namespace Beamable.Server
 			var serviceNamespace = GetServiceNamespace<T>();
 			var api = client.Provider.GetService<IAuthApi>();
 			return api.AuthorizeExternalIdentity(token, client.ServiceName,
-												 serviceNamespace,
-												 solution);
+			                                     serviceNamespace,
+			                                     solution);
+		}
+
+		public static Promise<bool> IsExternalIdentityAvailable<T>(this ISupportsFederatedLogin<T> client, string token)
+			where T : IThirdPartyCloudIdentity, new()
+		{
+			var serviceNamespace = GetServiceNamespace<T>();
+			var api = client.Provider.GetService<IAuthApi>();
+			string[] namespaces = {serviceNamespace};
+
+			return api.IsExternalIdentityAvailable(client.ServiceName, token, namespaces);
 		}
 	}
 }

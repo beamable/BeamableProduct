@@ -9,12 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - "Serialization depth limit" warning for `RealmView` on domain reloads.
 - Realms are reloaded if absent on domain reload.
 - Realm secret is reloaded on login.
+- User is able to publish after reverting from Change Environment
 
 ### Added
 - `ILoadWithContext` interface will obligate a service registered as a singleton to be instantiated on `BeamContext.InitServices` call.
+- `IsExternalIdentityAvailable` method added to AuthAPI and used in PlayerAccounts SDK during attaching external identity
 
-### Fixed
-- User is able to publish after reverting from Change Environment
 
 ## [1.13.0]
 ### Added

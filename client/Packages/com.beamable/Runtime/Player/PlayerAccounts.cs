@@ -1492,23 +1492,33 @@ namespace Beamable.Player
 				}
 			}
 
-			try
+			bool externalIdentityAvailable = await service.IsExternalIdentityAvailable(client.ServiceName, account._user.id.ToString());
+
+			if (externalIdentityAvailable)
 			{
-				var authorizeRes = await service.AttachIdentity(token, client.ServiceName, ident.UniqueName);
-				var user = await HandleResponse(authorizeRes);
-				if (user == null)
+				try
 				{
+					var authorizeRes = await service.AttachIdentity(token, client.ServiceName, ident.UniqueName);
+					var user = await HandleResponse(authorizeRes);
+					if (user == null)
+					{
+						res.error = PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN;
+						return res;
+					}
+
+					account.Update(user);
+					account.TryTriggerUpdate();
+				}
+				catch (PlatformRequesterException ex)
+				{
+					res.innerException = ex;
 					res.error = PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN;
 					return res;
 				}
-
-				account.Update(user);
-				account.TryTriggerUpdate();
 			}
-			catch (PlatformRequesterException ex)
+			else
 			{
-				res.innerException = ex;
-				res.error = PlayerRegistrationError.CREDENTIAL_IS_ALREADY_TAKEN;
+				res.error = PlayerRegistrationError.ALREADY_HAS_CREDENTIAL;
 				return res;
 			}
 
@@ -1547,6 +1557,21 @@ namespace Beamable.Player
 			account.TryTriggerUpdate();
 
 			return account;
+		}
+
+		public async Promise<bool> IsExternalIdentityAvailable<TCloudIdentity, TService>(string token, PlayerAccount account = null, string[] namespaces = null)
+			where TCloudIdentity : IThirdPartyCloudIdentity, new()
+			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity>
+		{
+			if (account == null)
+			{
+				account = Current;
+			}
+
+			var service = GetAuthServiceForAccount(account);
+			var client = _provider.GetService<TService>();
+
+			return await service.IsExternalIdentityAvailable(client.ServiceName, token, namespaces);
 		}
 
 		/// <summary>

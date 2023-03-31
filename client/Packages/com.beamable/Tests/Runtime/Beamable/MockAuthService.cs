@@ -156,6 +156,11 @@ namespace Beamable.Tests.Runtime.Api
 			throw new NotImplementedException();
 		}
 
+		public Promise<bool> IsExternalIdentityAvailable(string providerService, string externalToken, string[] namespaces = null)
+		{
+			throw new NotImplementedException();
+		}
+
 		public Promise<User> SetLanguage(SystemLanguage language)
 		{
 			throw new NotImplementedException();
