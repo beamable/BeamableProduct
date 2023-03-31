@@ -61,6 +61,20 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		}
 
 		/// <summary>
+		/// Gets account view data for a given player with overriden online status. Default playerId will return current user's view data.
+		/// </summary>
+		/// <param name="isOnline">Online status to be set.</param>
+		public async Promise<AccountSlotPresenter.ViewData> GetOverridenAccountData(
+			bool includeAuthMethods,
+			bool isOnline,
+			long playerId = -1)
+		{
+			var viewData = await GetAccountViewData(includeAuthMethods, true, playerId);
+			viewData.Presence.online = isOnline;
+			return viewData;
+		}
+
+		/// <summary>
 		/// Gets account view data for a given player. Default playerId will return current user's view data.
 		/// </summary>
 		public async Promise<AccountSlotPresenter.ViewData> GetAccountViewData(
@@ -117,12 +131,6 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			return data;
 		}
 
-		public int AuthenticatedAccountsCount()
-		{
-			return Context.Accounts.Count(acc => acc.HasEmail ||
-			                                     (acc.ThirdParties != null && acc.ThirdParties.Length > 0));
-		}
-
 		/// <summary>
 		/// Gets a linked email address for a given player or an empty string if there's no linked email.
 		/// </summary>
@@ -158,6 +166,11 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			return true;
 		}
 
+		public bool IsPasswordValid(string password, out string errorMessage)
+		{
+			return IsPasswordValid(password, password, out errorMessage);
+		}
+
 		public bool IsPasswordValid(string password, string confirmation, out string errorMessage)
 		{
 			if (string.IsNullOrWhiteSpace(password))
@@ -169,6 +182,18 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			if (confirmation != password)
 			{
 				errorMessage = "Passwords don't match";
+				return false;
+			}
+
+			errorMessage = "";
+			return true;
+		}
+
+		public bool IsResetCodeValid(string code, out string errorMessage)
+		{
+			if (string.IsNullOrWhiteSpace(code))
+			{
+				errorMessage = "Please provide a reset code";
 				return false;
 			}
 

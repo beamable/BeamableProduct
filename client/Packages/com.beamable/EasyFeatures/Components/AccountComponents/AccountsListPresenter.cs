@@ -20,25 +20,36 @@ namespace Beamable.EasyFeatures.Components
 		protected Action<long> onEntryPressed;
 		protected Action<long> onAcceptPressed;
 		protected Action<long> onCancelPressed;
+		protected Action<long> onDeletePressed;
+		protected Action<bool, long> onToggleSwitched;
 		protected string buttonText;
 
 		private bool isAcceptCancelVariant;
 		private bool isToggleList;
 		private ToggleGroup toggleGroup;
 
-		public void Setup(List<AccountSlotPresenter.ViewData> viewData, Action<long> onButtonPressed = null, string buttonText = "Confirm", Action<long> onEntryPressed = null)
+		public void Setup(List<AccountSlotPresenter.ViewData> viewData,
+		                  Action<long> onButtonPressed = null,
+		                  string buttonText = "Confirm",
+		                  Action<long> onEntryPressed = null,
+		                  Action<long> onDeletePressed = null)
 		{
 			isAcceptCancelVariant = false;
 			isToggleList = false;
-			
+
 			this.onButtonPressed = onButtonPressed;
 			this.buttonText = buttonText;
 			this.onEntryPressed = onEntryPressed;
-			
+			this.onDeletePressed = onDeletePressed;
+
 			SetupInternal(viewData);
 		}
 
-		public void Setup(List<AccountSlotPresenter.ViewData> viewData, Action<long> onAcceptPressed, Action<long> onCancelPressed, Action<long> onEntryPressed = null)
+		public void Setup(List<AccountSlotPresenter.ViewData> viewData,
+		                  Action<long> onAcceptPressed,
+		                  Action<long> onCancelPressed,
+		                  Action<long> onEntryPressed = null,
+		                  Action<long> onDeletePressed = null)
 		{
 			isAcceptCancelVariant = true;
 			isToggleList = false;
@@ -46,20 +57,23 @@ namespace Beamable.EasyFeatures.Components
 			this.onAcceptPressed = onAcceptPressed;
 			this.onCancelPressed = onCancelPressed;
 			this.onEntryPressed = onEntryPressed;
-			
+			this.onDeletePressed = onDeletePressed;
+
 			SetupInternal(viewData);
 		}
 
-		public void SetupToggles(List<AccountSlotPresenter.ViewData> viewData, ToggleGroup group, Action<long> onToggleSelected = null)
+		public void SetupToggles(List<AccountSlotPresenter.ViewData> viewData,
+		                         ToggleGroup group,
+		                         Action<bool, long> onToggleSwitched = null,
+		                         Action<long> onDeletePressed = null)
 		{
 			isAcceptCancelVariant = false;
 			isToggleList = true;
 			toggleGroup = group;
+			this.onDeletePressed = onDeletePressed;
 
-			onAcceptPressed = null;
-			onCancelPressed = null;
-			onEntryPressed = onToggleSelected;
-			
+			this.onToggleSwitched = onToggleSwitched;
+
 			SetupInternal(viewData);
 		}
 
@@ -67,18 +81,18 @@ namespace Beamable.EasyFeatures.Components
 		{
 			Slots = viewData.ToList();
 			ScrollView.SetContentProvider(this);
-			
+
 			ClearEntries();
 			SpawnEntries();
 		}
-		
+
 		public void ClearEntries()
 		{
 			foreach (AccountSlotPresenter slotPresenter in SpawnedEntries)
 			{
 				Destroy(slotPresenter.gameObject);
 			}
-			
+
 			SpawnedEntries.Clear();
 		}
 
@@ -94,7 +108,7 @@ namespace Beamable.EasyFeatures.Components
 				};
 				items.Add(poolData);
 			}
-			
+
 			ScrollView.SetContent(items);
 		}
 
@@ -110,24 +124,24 @@ namespace Beamable.EasyFeatures.Components
 
 			if (isToggleList)
 			{
-				spawned.SetupAsToggle(data, toggleGroup, onEntryPressed);
+				spawned.SetupAsToggle(data, toggleGroup, onToggleSwitched, onDeletePressed);
 			}
 			else if (isAcceptCancelVariant)
 			{
-				spawned.Setup(data, onEntryPressed, onCancelPressed, onAcceptPressed);
+				spawned.Setup(data, onEntryPressed, onCancelPressed, onAcceptPressed, onDeletePressed);
 			}
 			else
 			{
-				spawned.Setup(data, onEntryPressed, onButtonPressed, buttonText);	
+				spawned.Setup(data, onEntryPressed, onButtonPressed, buttonText, onDeletePressed);
 			}
-			
+
 			return spawned.GetComponent<RectTransform>();
 		}
 
 		public void Despawn(PoolableScrollView.IItem item, RectTransform transform)
 		{
 			if (transform == null) return;
-			
+
 			// TODO: implement object pooling
 			var slotPresenter = transform.GetComponent<AccountSlotPresenter>();
 			SpawnedEntries.Remove(slotPresenter);

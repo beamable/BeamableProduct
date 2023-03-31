@@ -13,9 +13,8 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		{
 			BeamContext Context { get; set; }
 
-			/// <inheritdoc cref="AccountManagementPlayerSystem.GetAccountViewData"/>
-			Promise<AccountSlotPresenter.ViewData> GetAccountViewData(bool includeAuthMethods, bool includePresence, long playerId = -1);
-			int AuthenticatedAccountsCount();
+			/// <inheritdoc cref="AccountManagementPlayerSystem.GetOverridenAccountData"/>
+			Promise<AccountSlotPresenter.ViewData> GetOverridenAccountData(bool includeAuthMethods, bool isOnline, long playerId = -1);
 			/// <inheritdoc cref="AccountManagementPlayerSystem.GetLinkedEmailAddress"/>
 			string GetLinkedEmailAddress(long playerId);
 		}
@@ -28,18 +27,13 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 		public ToggleGroup OtherAccountsToggleGroup;
 		public GameObject OtherAccountsGroup;
 		
-		[Header("Button groups")]
-		public GameObject SignInButtonsGroup;
-		public GameObject SwitchButtonsGroup;
-		
-		[Space]
+		[Header("Buttons")]
 		public Button SignInButton;
 		public Button CreateAccountButton;
-		
-		[Header("Switch Account Popup")]
-		public SwitchAccountPopup SwitchAccountPopupPrefab;
 		public Button LoadGameButton;
 		public Button SwitchAccountButton;
+		
+		public SwitchAccountPopup SwitchAccountPopupPrefab;
 
 		protected IDependencies System;
 
@@ -68,10 +62,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			
 			await System.Context.Accounts.OnReady;
 
-			bool hasSingleGuestAccount = System.Context.Accounts.Count == 1 && System.AuthenticatedAccountsCount() == 0;
-			SignInButtonsGroup.SetActive(hasSingleGuestAccount);
-			SwitchButtonsGroup.SetActive(!hasSingleGuestAccount);
-			LoadGameButton.interactable = _selectedOtherAccountId > 0;
+			UpdateButtons();
 			
 			SwitchAccountPopupPrefab.gameObject.SetActive(false);
 
@@ -86,7 +77,7 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 			// setup current account
 			AccountSlotPresenter.PoolData data = new AccountSlotPresenter.PoolData
 			{
-				Height = 150, Index = 0, ViewData = await System.GetAccountViewData(true, true)
+				Height = 150, Index = 0, ViewData = await System.GetOverridenAccountData(true, true)
 			};
 			
 			AccountPresenter.Setup(data, OpenAccountInfoView, null);
@@ -102,19 +93,53 @@ namespace Beamable.EasyFeatures.BasicAccountManagement
 					if (account.GamerTag == System.Context.PlayerId)
 						continue;
 
-					accountsViewData.Add(await System.GetAccountViewData(true, true, account.GamerTag));
+					accountsViewData.Add(await System.GetOverridenAccountData(true, false, account.GamerTag));
 				}
 				
-				OtherAccountsList.SetupToggles(accountsViewData, OtherAccountsToggleGroup, OnOtherAccountSelected);
+				OtherAccountsList.SetupToggles(accountsViewData, OtherAccountsToggleGroup, OnOtherAccountSelected, RemoveAccount);
 			}
 			
 			FeatureControl.SetLoadingOverlay(false);
 		}
 
-		private void OnOtherAccountSelected(long playerId)
+		private void UpdateButtons()
 		{
-			_selectedOtherAccountId = playerId;
-			LoadGameButton.interactable = true;
+			var currentAccount = System.Context.Accounts.Current;
+			bool isCurrentAuthenticated = currentAccount.HasEmail || currentAccount.ThirdParties?.Length > 0;
+			bool showLoadButton = isCurrentAuthenticated || _selectedOtherAccountId > 0;
+			bool showCreateAccountButton = System.Context.Accounts.Count == 1 && !isCurrentAuthenticated;
+			SignInButton.gameObject.SetActive(!showLoadButton);
+			CreateAccountButton.gameObject.SetActive(showCreateAccountButton);
+			LoadGameButton.gameObject.SetActive(showLoadButton);
+			SwitchAccountButton.gameObject.SetActive(!showCreateAccountButton);
+			LoadGameButton.interactable = _selectedOtherAccountId > 0;
+		}
+
+		private async void RemoveAccount(long playerId)
+		{
+			var account = System.Context.Accounts.FirstOrDefault(acc => acc.GamerTag == playerId);
+			if (account != null)
+			{
+				await account.Remove();
+				FeatureControl.OpenAccountsView();
+			}
+			else
+			{
+				Debug.LogError($"Account with ID '{playerId}' does not exist on this device!");
+			}
+		}
+
+		private void OnDisable()
+		{
+			_selectedOtherAccountId = -1;
+		}
+
+		private void OnOtherAccountSelected(bool selected, long playerId)
+		{
+			_selectedOtherAccountId = selected ? playerId : -1;
+			LoadGameButton.interactable = selected;
+			
+			UpdateButtons();
 		}
 
 		private void OnSwitchAccount()

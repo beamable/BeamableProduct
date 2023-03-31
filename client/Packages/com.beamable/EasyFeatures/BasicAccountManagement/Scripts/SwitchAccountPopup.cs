@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace Beamable.EasyFeatures.BasicAccountManagement
 {
-	public class SwitchAccountPopup : SlidingPopup
+	public class SwitchAccountPopup : SlidingOverlay
 	{
 		public Button SignInButton;
 		public Button CreateAccountButton;

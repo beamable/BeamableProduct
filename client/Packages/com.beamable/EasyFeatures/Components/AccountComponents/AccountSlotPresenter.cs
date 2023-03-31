@@ -5,6 +5,7 @@ using Beamable.UI.Scripts;
 using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 namespace Beamable.EasyFeatures.Components
@@ -14,8 +15,10 @@ namespace Beamable.EasyFeatures.Components
 		private const string SELECTED_CLASS = "selected";
 
 		public float AuthIconSize = 45;
-		
+
 		[Space]
+		public Image BackgroundImage;
+		public BussElement BackgroundBussElement;
 		public Image AvatarImage;
 		public Image DefaultAvatarImage;
 		public TextMeshProUGUI UsernameText;
@@ -23,12 +26,12 @@ namespace Beamable.EasyFeatures.Components
 		public TextMeshProUGUI StatusText;
 		public Button ConfirmButton;
 		public TextMeshProUGUI ConfirmButtonText;
-		public Button MainButton;
-		public Toggle MainToggle;
-		public BussElement ToggleBussElement;
+		public Image MainButton;
 		public GameObject AcceptCancelButtons;
 		public Button AcceptButton;
 		public Button CancelButton;
+		public Button DeleteButton;
+		public SlidingPanel SlidingPanel;
 		public BussElement PresenceDotBussElement;
 		public Transform LinkedAuthsRoot;
 		public AuthMethodButton AuthMethodButtonPrefab;
@@ -38,6 +41,9 @@ namespace Beamable.EasyFeatures.Components
 		[Range(0, 1)]
 		public float OfflineAlpha = 0.5f;
 		public CanvasGroup CanvasGroup;
+		
+		private Button _button;
+		private Toggle _toggle;
 		
 		public struct ViewData
 		{
@@ -58,48 +64,96 @@ namespace Beamable.EasyFeatures.Components
 			public float Height { get; set; }
 		}
 
-		public void Setup(PoolData item, Action<long> onEntryPressed, Action<long> onConfirmPressed, string buttonText = "Confirm")
+		public void Setup(PoolData item, Action<long> onEntryPressed, Action<long> onConfirmPressed, string buttonText = "Confirm", Action<long> deleteAction = null)
 		{
 			SetViewData(item.ViewData);
 
 			ConfirmButton.onClick.ReplaceOrAddListener(() => onConfirmPressed?.Invoke(item.ViewData.PlayerId));
 			ConfirmButton.gameObject.SetActive(onConfirmPressed != null);
 			ConfirmButtonText.text = buttonText;
-			MainButton.gameObject.SetActive(true);
-			MainButton.onClick.ReplaceOrAddListener(() => onEntryPressed?.Invoke(item.ViewData.PlayerId));
-			MainToggle.gameObject.SetActive(false);
 			AcceptCancelButtons.SetActive(false);
+			SetupDeleteAction(item.ViewData.PlayerId, deleteAction);
+
+			InitButton(() => onEntryPressed?.Invoke(item.ViewData.PlayerId));
 		}
 
-		public void Setup(PoolData item, Action<long> onEntryPressed, Action<long> onCancelPressed, Action<long> onAcceptPressed)
+		public void Setup(PoolData item, Action<long> onEntryPressed, Action<long> onCancelPressed, Action<long> onAcceptPressed, Action<long> deleteAction = null)
 		{
 			SetViewData(item.ViewData);
 			
 			ConfirmButton.gameObject.SetActive(false);
-			MainButton.gameObject.SetActive(true);
-			MainButton.onClick.ReplaceOrAddListener(() => onEntryPressed?.Invoke(item.ViewData.PlayerId));
-			MainToggle.gameObject.SetActive(false);
 			AcceptCancelButtons.SetActive(true);
 			AcceptButton.onClick.ReplaceOrAddListener(() => onAcceptPressed?.Invoke(item.ViewData.PlayerId));
 			CancelButton.onClick.ReplaceOrAddListener(() => onCancelPressed?.Invoke(item.ViewData.PlayerId));
+			SetupDeleteAction(item.ViewData.PlayerId, deleteAction);
+			
+			InitButton(() => onEntryPressed?.Invoke(item.ViewData.PlayerId));
 		}
 		
-		public void SetupAsToggle(PoolData item, ToggleGroup group, Action<long> onEntrySelected)
+		public void SetupAsToggle(PoolData item, ToggleGroup group, Action<bool, long> onToggleSwitched, Action<long> deleteAction = null)
 		{
 			SetViewData(item.ViewData);
 			
 			ConfirmButton.gameObject.SetActive(false);
-			MainButton.gameObject.SetActive(false);
-			MainToggle.gameObject.SetActive(true);
-			MainToggle.group = group;
-			MainToggle.onValueChanged.ReplaceOrAddListener(selected =>
-			{
-				ToggleBussElement.SetClass(SELECTED_CLASS, selected);
-				
-				if (selected)
-					onEntrySelected?.Invoke(item.ViewData.PlayerId);
-			});
 			AcceptCancelButtons.SetActive(false);
+			SetupDeleteAction(item.ViewData.PlayerId, deleteAction);
+			
+			InitToggle(group, selected =>
+			{
+				BackgroundBussElement.SetClass(SELECTED_CLASS, selected);
+				onToggleSwitched?.Invoke(selected, item.ViewData.PlayerId);
+			});
+		}
+		
+		private void InitButton(UnityAction onPressedAction)
+		{
+			_button = MainButton.gameObject.GetComponent<Button>();
+			if (_button == null)
+			{
+				_button = MainButton.gameObject.AddComponent<Button>();				
+			}
+			_button.targetGraphic = BackgroundImage;
+			_button.onClick.ReplaceOrAddListener(onPressedAction);
+		}
+		
+		private void InitToggle(ToggleGroup group, UnityAction<bool> onPressedAction)
+		{
+			_toggle = MainButton.gameObject.GetComponent<Toggle>();
+			if (_toggle == null)
+			{
+				_toggle = MainButton.gameObject.AddComponent<Toggle>();	
+			}
+			_toggle.targetGraphic = BackgroundImage;
+			_toggle.group = group;
+			_toggle.onValueChanged.ReplaceOrAddListener(onPressedAction);
+		}
+
+		private void SetupDeleteAction(long playerId, Action<long> deleteAction)
+		{
+			DeleteButton.onClick.ReplaceOrAddListener(() => deleteAction?.Invoke(playerId));
+			DeleteButton.gameObject.SetActive(false);
+			SlidingPanel.enabled = deleteAction != null;
+
+			void ShowDeleteButton()
+			{
+				if (deleteAction != null)
+				{
+					DeleteButton.gameObject.SetActive(true);
+				}
+			}
+
+			void HideDeleteButton()
+			{
+				if (deleteAction != null)
+				{
+					DeleteButton.gameObject.SetActive(false);
+				}
+			}
+
+			SlidingPanel.OnDragStarted -= ShowDeleteButton;
+			SlidingPanel.OnDragStarted += ShowDeleteButton;
+			SlidingPanel.OnHidden -= HideDeleteButton;
+			SlidingPanel.OnHidden += HideDeleteButton;
 		}
 
 		private void SetViewData(ViewData viewData)
@@ -119,13 +173,13 @@ namespace Beamable.EasyFeatures.Components
 			
 			// show linked auths icons
 			if (viewData.HasEmail)
-				Instantiate(AuthMethodButtonPrefab, LinkedAuthsRoot).SetupEmail(true, false, AuthIconSize);
+				Instantiate(AuthMethodButtonPrefab, LinkedAuthsRoot).SetupEmail(true, size: AuthIconSize);
 
 			if (viewData.ThirdParties != null)
 			{
 				foreach (var thirdParty in viewData.ThirdParties)
 				{
-					Instantiate(AuthMethodButtonPrefab, LinkedAuthsRoot).SetupThirdParty(thirdParty, true, false, AuthIconSize);
+					Instantiate(AuthMethodButtonPrefab, LinkedAuthsRoot).SetupThirdParty(thirdParty, true, size: AuthIconSize);
 				}
 			}
 			
