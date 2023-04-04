@@ -92,18 +92,55 @@ public class TypeTests
 	{
 		var schema = SchemaGenerator.Convert(typeof(Sample));
 		
+		Assert.AreEqual("this is a sample", schema.Description);
 		Assert.AreEqual(1, schema.Properties.Count);
 		
 		Assert.AreEqual(nameof(Tuna), schema.Properties[nameof(Sample.fish)].Reference.Id);
+		Assert.AreEqual("a fish", schema.Properties[nameof(Sample.fish)].Description);
 	}
 
+	[Test]
+	public void CheckEnums()
+	{
+		var schema = SchemaGenerator.Convert(typeof(Fish));
+		Assert.AreEqual(2, schema.Enum.Count);
+	}
+	
+	
+	[Test]
+	public void CheckEnumsOnObject()
+	{
+		var schema = SchemaGenerator.Convert(typeof(FishThing));
+		Assert.AreEqual(1, schema.Properties.Count);
+
+		var prop = schema.Properties[nameof(FishThing.type)];
+		Assert.AreEqual(nameof(Fish), prop.Reference.Id);
+	}
+
+
+	/// <summary>
+	/// this is a sample
+	/// </summary>
 	public class Sample
 	{
+		/// <summary>
+		/// a fish
+		/// </summary>
 		public Tuna fish;
 	}
 
+	/// <summary>
+	/// the fish
+	/// </summary>
 	public class Tuna
 	{
 		public int smelly;
+	}
+	
+	public enum Fish { Tuna, Salmon }
+
+	public class FishThing
+	{
+		public Fish type;
 	}
 }

@@ -1,5 +1,8 @@
+using Beamable.Common.Content;
 using Beamable.Server;
 using Beamable.Server.Common;
+using Beamable.Server.Common.XmlDocs;
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using System.Collections;
 using System.Reflection;
@@ -33,6 +36,7 @@ public class SchemaGenerator
 		{
 			var curr = toExplore.Dequeue();
 			if (seen.Contains(curr)) continue;
+			if (curr == null) continue;
 
 			seen.Add(curr);
 
@@ -62,6 +66,11 @@ public class SchemaGenerator
 					toExplore.Enqueue(genType);
 				}
 			}
+			// if this an array, we need the element type
+			if (curr.IsArray)
+			{
+				toExplore.Enqueue(curr.GetElementType());
+			}
 			
 		}
 	}
@@ -78,7 +87,14 @@ public class SchemaGenerator
 
 		switch (runtimeType)
 		{
-			
+			case {} x when x.IsAssignableTo(typeof(Optional)):
+				var instance = Activator.CreateInstance(runtimeType) as Optional;
+				return Convert(instance.GetOptionalType());
+				break;
+			case {} x when x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Optional<>):
+				return Convert(x.GetGenericArguments()[0]);
+			case { } x when x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Nullable<>):
+				return Convert(x.GetGenericArguments()[0]);
 			case { } x when x == typeof(double):
 				return new OpenApiSchema { Type = "number", Format = "double"};
 			case { } x when x == typeof(float):
@@ -101,9 +117,6 @@ public class SchemaGenerator
 			case { } x when x == typeof(Guid):
 				return new OpenApiSchema { Type = "string", Format = "uuid"};
 			
-			case Type _ when depth == 0:
-				return new OpenApiSchema { Reference = new OpenApiReference { Id = runtimeType.Name, Type = ReferenceType.Schema} };
-
 			// handle arrays
 			case Type x when x.IsArray:
 				var elemType = x.GetElementType();
@@ -120,13 +133,25 @@ public class SchemaGenerator
 					AdditionalProperties = Convert(x.GetGenericArguments()[1], depth - 1)
 				};
 
-				break;
+			
+			case Type _ when depth <= 0:
+				return new OpenApiSchema { Reference = new OpenApiReference { Id = runtimeType.Name, Type = ReferenceType.Schema} };
+
+			case { IsEnum: true }:
+				var enumNames = Enum.GetNames(runtimeType);
+				return new OpenApiSchema
+				{
+					Enum = enumNames.Select(name => new OpenApiString(name)).Cast<IOpenApiAny>().ToList()
+				};
 			
 			default:
 				
 				var schema = new OpenApiSchema { };
-				// schema.Title = runtimeType.Name;
+				var comments = DocsLoader.GetTypeComments(runtimeType);
+				
+				schema.Description = comments.Summary;
 				schema.Properties = new Dictionary<string, OpenApiSchema>();
+				schema.Required = new SortedSet<string>();
 
 				if (depth == 0) return schema;
 				var members = GetSerializableMembers(runtimeType);
@@ -134,7 +159,15 @@ public class SchemaGenerator
 				{
 					var name = member.Name;
 					var fieldSchema = Convert(member.FieldType, depth - 1);
+
+					var comment = DocsLoader.GetMemberComments(member);
+					fieldSchema.Description = comment?.Summary;
 					schema.Properties[name] = fieldSchema;
+
+					if (!member.FieldType.IsAssignableTo(typeof(Optional)))
+					{
+						schema.Required.Add(name);
+					}
 				}
 				
 				

@@ -308,21 +308,7 @@ namespace Beamable.Server
       public void RebuildRouteTable()
       {
 	      ServiceMethods = RouteTableGeneration.BuildRoutes(MicroserviceType, _serviceAttribute, BuildServiceInstance);
-	      // ServiceMethods = ServiceMethodHelper.Scan(_serviceAttribute,
-		     //  new ICallableGenerator[]
-		     //  {
-			    //   new FederatedLoginCallableGenerator(),
-			    //   new FederatedInventoryCallbackGenerator()
-		     //  },
-		     //  new ServiceMethodProvider
-		     //  {
-			    //   instanceType = typeof(AdminRoutes), factory = BuildAdminInstance, pathPrefix = "admin/"
-		     //  },
-		     //  new ServiceMethodProvider
-		     //  {
-			    //   instanceType = MicroserviceType, factory = BuildServiceInstance, pathPrefix = ""
-		     //  });
-         SwaggerGenerator.InvalidateSwagger(this);
+	      SwaggerGenerator.InvalidateSwagger(this);
       }
 
       async Task SetupWebsocket(IConnection socket, bool initContent = false)
@@ -594,13 +580,6 @@ namespace Beamable.Server
 	      var service = scope.GetRequiredService(MicroserviceType) as Microservice;
 	      service.ProvideDefaultServices(scope, Create);
 	      return service;
-      }
-
-      AdminRoutes BuildAdminInstance(RequestContext ctx)
-      {
-         var service = new AdminRoutes();
-         service.Microservice = this;
-         return service;
       }
 
       async Task HandleClientMessage(MicroserviceRequestContext ctx, Stopwatch sw)
