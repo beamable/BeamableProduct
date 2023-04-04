@@ -1,3 +1,5 @@
+using Beamable.Server;
+using Beamable.Server.Common;
 using Microsoft.OpenApi.Models;
 using System.Collections;
 using System.Reflection;
@@ -7,19 +9,71 @@ namespace Beamable.Tooling.Common.OpenAPI;
 
 public class SchemaGenerator
 {
-	public SchemaGenerator()
+
+	public static IEnumerable<Type> FindAllComplexTypes(IEnumerable<ServiceMethod> methods)
 	{
 		
+		// construct a queue of types that we will need to search over for other types... These types are the entry points into the search.
+		var toExplore = new Queue<Type>();
+		foreach (var method in methods)
+		{
+			toExplore.Enqueue(method.Method.ReturnType); // output type of a method
+			foreach (var parameter in method.ParameterInfos)
+			{
+				toExplore.Enqueue(parameter.ParameterType); // and all input types of the method
+			}
+		}
+
+		// construct a set of types we've seen. It starts empty.
+		var seen = new HashSet<Type>();
+
+		// perform a BFS over the type graph until we've exhausted all types, or we've hit a safety limit.
+		var safety = 99999;
+		while (safety-- > 0 && toExplore.Count > 0)
+		{
+			var curr = toExplore.Dequeue();
+			if (seen.Contains(curr)) continue;
+
+			seen.Add(curr);
+
+			var shouldEmit = true;
+			shouldEmit &= !curr.IsGenericType; // we don't want to emit generic types for documentation, because the generic aspect will be covered by the openAPI schema itself
+			shouldEmit &= !curr.IsPrimitive; // we don't want to emit primitives, because those don't need special documentation
+			shouldEmit &= curr.IsSerializable;
+			shouldEmit &= !curr.IsArray;
+			shouldEmit &= curr != typeof(string);
+			if (shouldEmit)
+			{
+				yield return curr; // add the current type to the final set of types.
+			}
+			
+			// expand on this type... 
+			// need to final the serialized properties of the type.
+			var fields = UnityJsonContractResolver.GetSerializedFields(curr);
+			foreach (var field in fields)
+			{
+				toExplore.Enqueue(field.FieldType);
+			}
+			// but also, in C#, if this is a list, or a promise, or a task like, then we are about the _generic_ argument involved. 
+			if (curr.IsGenericType)
+			{
+				foreach (var genType in curr.GetGenericArguments())
+				{
+					toExplore.Enqueue(genType);
+				}
+			}
+			
+		}
 	}
 
-	public IEnumerable<Type> Traverse<T>() => Traverse(typeof(T));
-	public IEnumerable<Type> Traverse(Type runtimeType)
+	public static IEnumerable<Type> Traverse<T>() => Traverse(typeof(T));
+	public static IEnumerable<Type> Traverse(Type runtimeType)
 	{
 		yield return runtimeType;
 	}
 
 	
-	public OpenApiSchema Convert(Type runtimeType, int depth = 1)
+	public static OpenApiSchema Convert(Type runtimeType, int depth = 1)
 	{
 
 		switch (runtimeType)
@@ -48,7 +102,7 @@ public class SchemaGenerator
 				return new OpenApiSchema { Type = "string", Format = "uuid"};
 			
 			case Type _ when depth == 0:
-				return new OpenApiSchema { Reference = new OpenApiReference { Id = runtimeType.Name } };
+				return new OpenApiSchema { Reference = new OpenApiReference { Id = runtimeType.Name, Type = ReferenceType.Schema} };
 
 			// handle arrays
 			case Type x when x.IsArray:

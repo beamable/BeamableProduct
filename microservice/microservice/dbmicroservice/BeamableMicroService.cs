@@ -31,6 +31,7 @@ using Beamable.Server.Api.Commerce;
 using Beamable.Server.Api.Payments;
 using Beamable.Server.Common;
 using Beamable.Server.Content;
+using beamable.tooling.common.Microservice;
 using Core.Server.Common;
 using microservice;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -306,20 +307,21 @@ namespace Beamable.Server
 
       public void RebuildRouteTable()
       {
-	      ServiceMethods = ServiceMethodHelper.Scan(_serviceAttribute,
-		      new ICallableGenerator[]
-		      {
-			      new FederatedLoginCallableGenerator(),
-			      new FederatedInventoryCallbackGenerator()
-		      },
-		      new ServiceMethodProvider
-		      {
-			      instanceType = typeof(AdminRoutes), factory = BuildAdminInstance, pathPrefix = "admin/"
-		      },
-		      new ServiceMethodProvider
-		      {
-			      instanceType = MicroserviceType, factory = BuildServiceInstance, pathPrefix = ""
-		      });
+	      ServiceMethods = RouteTableGeneration.BuildRoutes(MicroserviceType, _serviceAttribute, BuildServiceInstance);
+	      // ServiceMethods = ServiceMethodHelper.Scan(_serviceAttribute,
+		     //  new ICallableGenerator[]
+		     //  {
+			    //   new FederatedLoginCallableGenerator(),
+			    //   new FederatedInventoryCallbackGenerator()
+		     //  },
+		     //  new ServiceMethodProvider
+		     //  {
+			    //   instanceType = typeof(AdminRoutes), factory = BuildAdminInstance, pathPrefix = "admin/"
+		     //  },
+		     //  new ServiceMethodProvider
+		     //  {
+			    //   instanceType = MicroserviceType, factory = BuildServiceInstance, pathPrefix = ""
+		     //  });
          SwaggerGenerator.InvalidateSwagger(this);
       }
 

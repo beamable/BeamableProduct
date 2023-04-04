@@ -10,19 +10,10 @@ namespace microserviceTests.OpenAPITests;
 
 public class TypeTests
 {
-	private SchemaGenerator _generator;
-	
-	[SetUp]
-	public void Setup()
-	{
-		_generator = new SchemaGenerator();
-	}
-	
 	[Test]
 	public void CheckRelatedTypes()
 	{
-		var g = new SchemaGenerator();
-		var types = g.Traverse<int>().ToList();
+		var types = SchemaGenerator.Traverse<int>().ToList();
 		
 		Assert.AreEqual(1, types.Count);
 		Assert.AreEqual(typeof(int), types[0]);
@@ -50,7 +41,7 @@ public class TypeTests
 	[TestCase(typeof(Guid), "string", "uuid")]
 	public void CheckPrimitives(Type runtimeType, string typeName, string format)
 	{
-		var schema = _generator.Convert(runtimeType);
+		var schema = SchemaGenerator.Convert(runtimeType);
 		Assert.AreEqual(typeName, schema.Type);
 		Assert.AreEqual(format, schema.Format);
 	}
@@ -59,7 +50,7 @@ public class TypeTests
 	[TestCase(typeof(List<float>), "number", "float")]
 	public void CheckPrimitiveArrays(Type runtimeType, string typeName, string format)
 	{
-		var schema = _generator.Convert(runtimeType);
+		var schema = SchemaGenerator.Convert(runtimeType);
 		Assert.AreEqual(typeName, schema.Items.Type);
 		Assert.AreEqual(format, schema.Items.Format);
 	}
@@ -67,7 +58,7 @@ public class TypeTests
 	[TestCase(typeof(Dictionary<string, int>), "integer", "int32")]
 	public void CheckMapTypes(Type runtimeType, string typeName, string format)
 	{
-		var schema = _generator.Convert(runtimeType);
+		var schema = SchemaGenerator.Convert(runtimeType);
 		Assert.AreEqual(true, schema.AdditionalPropertiesAllowed);
 		Assert.AreEqual(typeName, schema.AdditionalProperties.Type);
 		Assert.AreEqual(format, schema.AdditionalProperties.Format);
@@ -77,7 +68,7 @@ public class TypeTests
 	[TestCase(typeof(List<Sample>))]
 	public void CheckListOfObjects(Type runtimeType)
 	{
-		var schema = _generator.Convert(runtimeType);
+		var schema = SchemaGenerator.Convert(runtimeType);
 		Assert.AreEqual(nameof(Sample), schema.Items.Reference.Id);
 	}
 
@@ -85,7 +76,7 @@ public class TypeTests
 	[Test]
 	public void CheckObject()
 	{
-		var schema = _generator.Convert(typeof(Vector2));
+		var schema = SchemaGenerator.Convert(typeof(Vector2));
 		
 		Assert.AreEqual(2, schema.Properties.Count);
 		
@@ -99,7 +90,7 @@ public class TypeTests
 	[Test]
 	public void CheckObjectWithReference()
 	{
-		var schema = _generator.Convert(typeof(Sample));
+		var schema = SchemaGenerator.Convert(typeof(Sample));
 		
 		Assert.AreEqual(1, schema.Properties.Count);
 		
