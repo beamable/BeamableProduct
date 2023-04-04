@@ -2,6 +2,7 @@ using Beamable.Server;
 using Beamable.Tooling.Common.OpenAPI;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Extensions;
+using Microsoft.OpenApi.Models;
 
 namespace microservice.Common
 {
@@ -9,7 +10,9 @@ namespace microservice.Common
    {
 	   public Type MicroserviceType { get; set; }
 	   public MicroserviceAttribute MicroserviceAttribute { get; set; }
-
+	   public string PublicHost { get; set; }
+	   
+	   
       /// <summary>
       /// A simple method to check if the microservice can send and receive network traffic.
       /// </summary>
@@ -34,7 +37,14 @@ namespace microservice.Common
       public string Docs()
       {
 	      var docs = new ServiceDocGenerator();
-	      var doc = docs.Generate(MicroserviceType, MicroserviceAttribute);
+	      var doc = docs.Generate(MicroserviceType, MicroserviceAttribute, this);
+
+	      if (!string.IsNullOrEmpty(PublicHost))
+	      {
+		      doc.Servers.Add(new OpenApiServer { Url = PublicHost });
+
+	      }
+	      
 	      var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
 
 	      return outputString;

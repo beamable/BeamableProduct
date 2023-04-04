@@ -159,7 +159,8 @@ WORKDIR /subapp
 
 {GetCustomFileAdditions()}
 COPY {Descriptor.ImageName}.csproj .
-RUN cp /src/baseImageDocs.xml .
+RUN ls /app
+RUN cp /app/BeamableMicroserviceBase.xml .
 
 RUN echo $BEAMABLE_SDK_VERSION > /subapp/.beamablesdkversion
 
@@ -205,7 +206,7 @@ WORKDIR /subapp
 {GetCustomFileAdditions()}
 EXPOSE {HEALTH_PORT}
 COPY --from=build-env /subapp .
-COPY --from=build-env /app/baseImageDocs.xml .
+COPY --from=build-env /app/BeamableMicroserviceBase.xml .
 ENV BEAMABLE_SDK_VERSION_EXECUTION={BeamableEnvironment.SdkVersion}
 {GetEntryPoint()}
 ";

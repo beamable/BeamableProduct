@@ -5,7 +5,7 @@ namespace beamable.tooling.common.Microservice;
 
 public static class RouteTableGeneration
 {
-	public static ServiceMethodCollection BuildRoutes(Type microserviceType, MicroserviceAttribute serviceAttribute, Func<RequestContext, object> serviceFactory)
+	public static ServiceMethodCollection BuildRoutes(Type microserviceType, MicroserviceAttribute serviceAttribute, AdminRoutes adminRoutes, Func<RequestContext, object> serviceFactory)
 	{
 		var collection = ServiceMethodHelper.Scan(serviceAttribute,
 			new ICallableGenerator[]
@@ -15,11 +15,7 @@ public static class RouteTableGeneration
 			},
 			new ServiceMethodProvider
 			{
-				instanceType = typeof(AdminRoutes), factory = (_ => new AdminRoutes
-				{
-					MicroserviceAttribute = serviceAttribute,
-					MicroserviceType = microserviceType
-				}), pathPrefix = "admin/"
+				instanceType = typeof(AdminRoutes), factory = _ => adminRoutes, pathPrefix = "admin/"
 			},
 			new ServiceMethodProvider
 			{

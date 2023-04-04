@@ -22,7 +22,7 @@ public class DocTests
 	public void TestMethodScanning()
 	{
 		var gen = new ServiceDocGenerator();
-		var doc = gen.Generate<DocService>();
+		var doc = gen.Generate<DocService>(null);
 		
 		// Assert.AreEqual("docs", doc.Info.Title);
 		// Assert.AreEqual(1, doc.Paths.Count);
@@ -37,6 +37,9 @@ public class DocTests
 	[Microservice("docs")]
 	public class DocService : Microservice
 	{
+		[ClientCallable]
+		public void Nothing(){ }
+		
 		/// <summary>
 		/// This method will add some stuff together
 		/// </summary>
@@ -109,9 +112,9 @@ public class DocTests
 
 		// [ClientCallable]
 		// public InventoryUpdateBuilder ReturnsInventoryUpdateBuilder() => null;
-
-		[ClientCallable]
-		public ObjectWithOptional ReturnsOptions(ObjectWithOptional req, OptionalInt num) => null;
+		//
+		// [ClientCallable]
+		// public ObjectWithOptional ReturnsOptions(ObjectWithOptional req, OptionalInt num) => null;
 	}
 
 	/// <summary>

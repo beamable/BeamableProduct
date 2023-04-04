@@ -194,9 +194,6 @@ namespace Beamable.Server
          });
          Log.Debug(Logs.STARTING_PREFIX + " {host} {prefix} {cid} {pid} {sdkVersionExecution} {sdkVersionBuild} {disableCustomHooks}", args.Host, args.NamePrefix, args.CustomerID, args.ProjectName, args.SdkVersionExecution, args.SdkVersionBaseBuild, args.DisableCustomInitializationHooks);
          
-         XmlDocsHelper.ProvideXmlForBaseImage(typeof(AdminRoutes));
-         XmlDocsHelper.ProvideXmlForService(MicroserviceType);
-
          RebuildRouteTable();
 
          _requester = new MicroserviceRequester(_args, null, _socketRequesterContext, false);
@@ -307,8 +304,13 @@ namespace Beamable.Server
 
       public void RebuildRouteTable()
       {
-	      ServiceMethods = RouteTableGeneration.BuildRoutes(MicroserviceType, _serviceAttribute, BuildServiceInstance);
-	      SwaggerGenerator.InvalidateSwagger(this);
+	      var adminRoutes = new AdminRoutes
+	      {
+		      MicroserviceAttribute = _serviceAttribute, 
+		      MicroserviceType = MicroserviceType,
+		      PublicHost = $"{_args.Host.Replace("wss://", "https://").Replace("/socket", "")}/basic/{_args.CustomerID}.{_args.ProjectName}.{QualifiedName}/"
+	      };
+	      ServiceMethods = RouteTableGeneration.BuildRoutes(MicroserviceType, _serviceAttribute, adminRoutes, BuildServiceInstance);
       }
 
       async Task SetupWebsocket(IConnection socket, bool initContent = false)

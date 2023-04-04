@@ -4,6 +4,7 @@ using Beamable.Server;
 using Beamable.Server.Common;
 using Beamable.Server.Common.XmlDocs;
 using beamable.tooling.common.Microservice;
+using microservice.Common;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 
@@ -40,20 +41,20 @@ public class ServiceDocGenerator
 		Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = SCOPE }
 	};
 	
-	public OpenApiDocument Generate<TMicroservice>() where TMicroservice: Microservice
+	public OpenApiDocument Generate<TMicroservice>(AdminRoutes adminRoutes) where TMicroservice: Microservice
 	{
 		var attr = typeof(TMicroservice).GetCustomAttribute(typeof(MicroserviceAttribute)) as MicroserviceAttribute;
-		return Generate(typeof(TMicroservice), attr);
+		return Generate(typeof(TMicroservice), attr, adminRoutes);
 	}
 	
-	public OpenApiDocument Generate(Type microserviceType, MicroserviceAttribute attribute)
+	public OpenApiDocument Generate(Type microserviceType, MicroserviceAttribute attribute, AdminRoutes adminRoutes)
 	{
 		if (!microserviceType.IsAssignableTo(typeof(Microservice)))
 		{
 			throw new ArgumentException($"must be a subtype of {nameof(Microservice)}", nameof(microserviceType));
 		}
 
-		var coll = RouteTableGeneration.BuildRoutes(microserviceType, attribute, _ => null);
+		var coll = RouteTableGeneration.BuildRoutes(microserviceType, attribute, adminRoutes, _ => null);
 		var methods = coll.Methods.ToList();
 		var doc = new OpenApiDocument {
 			Info = new OpenApiInfo
@@ -125,16 +126,12 @@ public class ServiceDocGenerator
 				{
 					requestSchema.Required.Add(parameterName);
 				}
-				
 			}
 
 			var requestJson = new OpenApiMediaType { Schema = requestSchema };
 			var operation = new OpenApiOperation
 			{
-				RequestBody = new OpenApiRequestBody
-				{
-					Content = new Dictionary<string, OpenApiMediaType> { [JSON_CONTENT_TYPE] = requestJson }
-				},
+				
 				Responses = new OpenApiResponses
 				{
 					["200"] = response
@@ -145,6 +142,14 @@ public class ServiceDocGenerator
 					new OpenApiTag{ Name = method.Tag }
 				}
 			};
+			if (method.ParameterInfos.Count > 0)
+			{
+				operation.RequestBody = new OpenApiRequestBody
+				{
+					Content = new Dictionary<string, OpenApiMediaType> { [JSON_CONTENT_TYPE] = requestJson }
+				};
+			}
+			
 
 			var pathItem = new OpenApiPathItem { Operations = new Dictionary<OperationType, OpenApiOperation> { [OperationType.Post] = operation } };
 			var securityReq = new OpenApiSecurityRequirement { [_scopeSecuritySchemeReference] = new List<string>() };
