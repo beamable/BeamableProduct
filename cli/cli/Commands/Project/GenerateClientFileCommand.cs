@@ -106,7 +106,7 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 						if (generationTask != null)
 							return generationTask;
 					}
-					catch (FileNotFoundException e)
+					catch (DirectoryNotExistException e)
 					{
 						BeamableLogger.LogError($"Could not generate [{descriptor.Name}] client linked unity project because directory doesn't exist [{unityAssetPath}]");
 					}
