@@ -18,17 +18,6 @@ public class TypeTests
 		Assert.AreEqual(1, types.Count);
 		Assert.AreEqual(typeof(int), types[0]);
 	}
-	
-	// [Test]
-	// public void CheckRelatedTypes_Vector()
-	// {
-	// 	var g = new SchemaGenerator();
-	// 	var types = g.Traverse<Vector2>().ToList();
-	// 	
-	// 	Assert.AreEqual(2, types.Count);
-	// 	Assert.AreEqual(typeof(Vector2), types[0]);
-	// 	Assert.AreEqual(typeof(float), types[1]);
-	// }
 
 	[TestCase(typeof(float), "number", "float")]
 	[TestCase(typeof(double), "number", "double")]

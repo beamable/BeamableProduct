@@ -74,10 +74,7 @@ public class ServiceDocGenerator
 			}
 		};
 		
-
-		var paths = new OpenApiPaths();
 		var allTypes = SchemaGenerator.FindAllComplexTypes(methods).ToList();
-
 		
 		foreach (var type in allTypes)
 		{
@@ -87,8 +84,6 @@ public class ServiceDocGenerator
 
 		foreach (var method in methods)
 		{
-			// TODO: handle docs
-
 			var comments = DocsLoader.GetMethodComments(method.Method);
 			var parameterNameToComment = comments.Parameters.ToDictionary(kvp => kvp.Name, kvp => kvp.Text);
 			
@@ -100,7 +95,7 @@ public class ServiceDocGenerator
 			};
 			var response = new OpenApiResponse()
 			{
-				Description = comments.Returns,
+				Description = comments.Returns ?? "",
 			};
 			if (!IsEmptyResponseType(returnType))
 			{
@@ -119,7 +114,7 @@ public class ServiceDocGenerator
 
 				if (parameterNameToComment.TryGetValue(parameterName, out var comment))
 				{
-					parameterSchema.Description = comment;
+					parameterSchema.Description = comment ?? "";
 				}
 				requestSchema.Properties[parameterName] = parameterSchema;
 				if (!method.ParameterInfos[i].ParameterType.IsAssignableTo(typeof(Optional)))
@@ -190,22 +185,4 @@ public class ServiceDocGenerator
 		var isVoid = type == typeof(void);
 		return isPromise || isTask || isVoid;
 	}
-
-	// public static OpenApiPathItem Convert(ServiceMethod method)
-	// {
-	// 	var item = new OpenApiPathItem();
-	//
-	// 	var returnType = method.Method.ReturnType;
-	// 	
-	// 	
-	// 	var operation = new OpenApiOperation { RequestBody = new OpenApiRequestBody { Content = new Dictionary<string, OpenApiMediaType>
-	// 			{
-	// 				["application/json"] = new OpenApiMediaType { Schema = new OpenApiSchema() }
-	// 			}
-	// 		}
-	// 	};
-	// 	// operation.
-	// 	item.AddOperation(OperationType.Post, operation);
-	// 	return item;
-	// } 
 }

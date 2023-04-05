@@ -19,8 +19,6 @@ namespace Beamable.Server
 
       public IEnumerable<ServiceMethod> Methods => _methods.ToList();
       
-      // public IEnumerable<KeyValuePair<string, ServiceMethod>> Methods
-
       public async Task<string> Handle(RequestContext ctx, string path, IParameterProvider parameterProvider)
       {
          BeamableSerilogProvider.LogContext.Value.Debug($"Handling {path}");

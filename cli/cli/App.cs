@@ -64,6 +64,7 @@ public class App
 		services.AddSingleton<IAliasService, AliasService>();
 		services.AddSingleton<IBeamableRequester>(provider => provider.GetRequiredService<CliRequester>());
 		services.AddSingleton<CliRequester, CliRequester>();
+		services.AddSingleton<IRequester>(p => p.GetService<CliRequester>());
 		services.AddSingleton<IAuthSettings, DefaultAuthSettings>();
 		services.AddSingleton<IAuthApi, AuthApi>();
 		services.AddSingleton<ConfigService>();

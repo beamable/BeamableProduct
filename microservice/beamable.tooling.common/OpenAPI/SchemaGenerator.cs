@@ -15,7 +15,6 @@ public class SchemaGenerator
 
 	public static IEnumerable<Type> FindAllComplexTypes(IEnumerable<ServiceMethod> methods)
 	{
-		
 		// construct a queue of types that we will need to search over for other types... These types are the entry points into the search.
 		var toExplore = new Queue<Type>();
 		foreach (var method in methods)
@@ -72,6 +71,11 @@ public class SchemaGenerator
 				toExplore.Enqueue(curr.GetElementType());
 			}
 			
+		}
+
+		if (safety <= 0)
+		{
+			throw new InvalidOperationException("Exceeded while-loop safety limit");
 		}
 	}
 
@@ -154,7 +158,7 @@ public class SchemaGenerator
 				schema.Required = new SortedSet<string>();
 
 				if (depth == 0) return schema;
-				var members = GetSerializableMembers(runtimeType);
+				var members = UnityJsonContractResolver.GetSerializedFields(runtimeType);
 				foreach (var member in members)
 				{
 					var name = member.Name;
@@ -169,43 +173,8 @@ public class SchemaGenerator
 						schema.Required.Add(name);
 					}
 				}
-				
-				
+
 				return schema;
-				break;
 		}
-
-		throw new NotImplementedException();
-	}
-	
-	protected static List<FieldInfo> GetSerializableMembers(Type objectType)
-	{
-
-		IEnumerable<FieldInfo> GetAllFields(Type t)
-		{
-			if (t == null)
-				return Enumerable.Empty<FieldInfo>();
-
-			BindingFlags flags = BindingFlags.Public |
-			                     BindingFlags.NonPublic |
-			                     BindingFlags.Instance |
-			                     BindingFlags.DeclaredOnly;
-			return t.GetFields(flags).Concat(GetAllFields(t.BaseType));
-		}
-
-		var fields = GetAllFields(objectType);
-
-		bool IsPublicField(FieldInfo field) => field.IsPublic;
-		bool IsReadOnly(FieldInfo field) => field.IsInitOnly;
-		bool IsPublicAndWritable(FieldInfo field) => IsPublicField(field) && !IsReadOnly(field);
-		bool IsMarkedSerializeAttribute(FieldInfo field) => field.GetCustomAttribute<SerializeField>() != null;
-
-		bool ShouldIncludeField(FieldInfo field) => IsPublicAndWritable(field) || IsMarkedSerializeAttribute(field);
-
-		var validFields = fields
-			.Where(ShouldIncludeField)
-			.ToList();
-
-		return validFields.Cast<FieldInfo>().ToList();
 	}
 }
