@@ -189,8 +189,6 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 				if (string.Compare(existingContent, descriptors[i].Content, CultureInfo.InvariantCulture,
 					    CompareOptions.IgnoreSymbols) == 0)
 				{
-					// don't need to write anything, because the files are identical.
-
 					identicalFileCounter++;
 					continue;
 				}
@@ -198,6 +196,8 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 
 			File.WriteAllText(outputPath, descriptors[i].Content);
 		}
+		
+		// don't need to write anything, because the files are identical.
 		
 		if (identicalFileCounter == descriptors.Count)
 			return Task.CompletedTask;
