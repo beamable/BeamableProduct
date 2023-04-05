@@ -136,7 +136,8 @@ public class ServiceDocGenerator
 				{
 					["200"] = response
 				},
-				Description = comments.Summary,
+				Description = comments.Remarks,
+				Summary = comments.Summary,
 				Tags = new List<OpenApiTag>
 				{
 					new OpenApiTag{ Name = method.Tag }
