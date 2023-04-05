@@ -199,35 +199,39 @@ namespace Beamable.Server.Common
             return baseProps;
         }
 
+        public static List<FieldInfo> GetSerializedFields(Type objectType)
+        {
+	        IEnumerable<FieldInfo> GetAllFields(Type t)
+	        {
+		        if (t == null)
+			        return Enumerable.Empty<FieldInfo>();
+
+		        BindingFlags flags = BindingFlags.Public |
+		                             BindingFlags.NonPublic |
+		                             BindingFlags.Instance |
+		                             BindingFlags.DeclaredOnly;
+		        return t.GetFields(flags).Concat(GetAllFields(t.BaseType));
+	        }
+
+	        var fields = GetAllFields(objectType);
+
+	        bool IsPublicField(FieldInfo field) => field.IsPublic;
+	        bool IsReadOnly(FieldInfo field) => field.IsInitOnly;
+	        bool IsPublicAndWritable(FieldInfo field) => IsPublicField(field) && !IsReadOnly(field);
+	        bool IsMarkedSerializeAttribute(FieldInfo field) => field.GetCustomAttribute<SerializeField>() != null;
+
+	        bool ShouldIncludeField(FieldInfo field) => IsPublicAndWritable(field) || IsMarkedSerializeAttribute(field);
+
+	        var validFields = fields
+		        .Where(ShouldIncludeField)
+		        .ToList();
+
+	        return validFields.ToList();
+        }
+        
         protected override List<MemberInfo> GetSerializableMembers(Type objectType)
         {
-
-            IEnumerable<FieldInfo> GetAllFields(Type t)
-            {
-                if (t == null)
-                    return Enumerable.Empty<FieldInfo>();
-
-                BindingFlags flags = BindingFlags.Public |
-                                     BindingFlags.NonPublic |
-                                     BindingFlags.Instance |
-                                     BindingFlags.DeclaredOnly;
-                return t.GetFields(flags).Concat(GetAllFields(t.BaseType));
-            }
-
-            var fields = GetAllFields(objectType);
-
-            bool IsPublicField(FieldInfo field) => field.IsPublic;
-            bool IsReadOnly(FieldInfo field) => field.IsInitOnly;
-            bool IsPublicAndWritable(FieldInfo field) => IsPublicField(field) && !IsReadOnly(field);
-            bool IsMarkedSerializeAttribute(FieldInfo field) => field.GetCustomAttribute<SerializeField>() != null;
-
-            bool ShouldIncludeField(FieldInfo field) => IsPublicAndWritable(field) || IsMarkedSerializeAttribute(field);
-
-            var validFields = fields
-               .Where(ShouldIncludeField)
-               .ToList();
-
-            return validFields.Cast<MemberInfo>().ToList();
+	        return GetSerializedFields(objectType).Cast<MemberInfo>().ToList();
         }
     }
 }

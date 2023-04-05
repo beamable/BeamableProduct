@@ -17,6 +17,8 @@ namespace Beamable.Server.Editor.CodeGen
 		private bool DebuggingEnabled = true;
 		public const string DOTNET_RUNTIME_DEBUGGING_TOOLS_IMAGE = "mcr.microsoft.com/dotnet/runtime:6.0";
 		public const string DOTNET_RUNTIME_IMAGE = "mcr.microsoft.com/dotnet/runtime:6.0-alpine";
+		// this is for arm based images... Left in here as convenience of reference.
+		// public const string DOTNET_RUNTIME_IMAGE = "mcr.microsoft.com/dotnet/runtime:6.0-alpine3.16-arm64v8";
 
 
 #if BEAMABLE_DEVELOPER
@@ -159,7 +161,6 @@ WORKDIR /subapp
 
 {GetCustomFileAdditions()}
 COPY {Descriptor.ImageName}.csproj .
-RUN cp /src/baseImageDocs.xml .
 
 RUN echo $BEAMABLE_SDK_VERSION > /subapp/.beamablesdkversion
 
@@ -205,7 +206,6 @@ WORKDIR /subapp
 {GetCustomFileAdditions()}
 EXPOSE {HEALTH_PORT}
 COPY --from=build-env /subapp .
-COPY --from=build-env /app/baseImageDocs.xml .
 ENV BEAMABLE_SDK_VERSION_EXECUTION={BeamableEnvironment.SdkVersion}
 {GetEntryPoint()}
 ";

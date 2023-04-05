@@ -24,7 +24,6 @@ namespace Beamable.Common
 				public const string REMOTE_ONLY = "Remote Only";
 
 				public const string CONTENT_UPDATE_EVENT = "content.manifest";
-				public const string MY_UPDATE_EVENT = "chris.test.update";
 
 				public const int HEALTH_PORT = 6565;
 				public const int DISCOVERY_PORT = 8624;

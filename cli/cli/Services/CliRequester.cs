@@ -9,7 +9,7 @@ using System.Text;
 
 namespace cli;
 
-public class CliRequester : IBeamableRequester
+public class CliRequester : IRequester
 {
 	private readonly IAppContext _ctx;
 	public IAccessToken AccessToken => _ctx.Token;
@@ -165,6 +165,12 @@ public class CliRequester : IBeamableRequester
 	{
 		// TODO: Fix this/
 		return url;
+	}
+
+	public Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> req)
+	{
+		
+		return Request<T>(req.Method, req.uri, req.body, req.includeAuthHeader, req.parser, req.useCache);
 	}
 
 	private static HttpMethod FromMethod(Method method)

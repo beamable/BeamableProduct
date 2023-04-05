@@ -31,6 +31,7 @@ using Beamable.Server.Api.Commerce;
 using Beamable.Server.Api.Payments;
 using Beamable.Server.Common;
 using Beamable.Server.Content;
+using beamable.tooling.common.Microservice;
 using Core.Server.Common;
 using microservice;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -193,9 +194,6 @@ namespace Beamable.Server
          });
          Log.Debug(Logs.STARTING_PREFIX + " {host} {prefix} {cid} {pid} {sdkVersionExecution} {sdkVersionBuild} {disableCustomHooks}", args.Host, args.NamePrefix, args.CustomerID, args.ProjectName, args.SdkVersionExecution, args.SdkVersionBaseBuild, args.DisableCustomInitializationHooks);
          
-         XmlDocsHelper.ProvideXmlForBaseImage(typeof(AdminRoutes));
-         XmlDocsHelper.ProvideXmlForService(MicroserviceType);
-
          RebuildRouteTable();
 
          _requester = new MicroserviceRequester(_args, null, _socketRequesterContext, false);
@@ -306,21 +304,13 @@ namespace Beamable.Server
 
       public void RebuildRouteTable()
       {
-	      ServiceMethods = ServiceMethodHelper.Scan(_serviceAttribute,
-		      new ICallableGenerator[]
-		      {
-			      new FederatedLoginCallableGenerator(),
-			      new FederatedInventoryCallbackGenerator()
-		      },
-		      new ServiceMethodProvider
-		      {
-			      instanceType = typeof(AdminRoutes), factory = BuildAdminInstance, pathPrefix = "admin/"
-		      },
-		      new ServiceMethodProvider
-		      {
-			      instanceType = MicroserviceType, factory = BuildServiceInstance, pathPrefix = ""
-		      });
-         SwaggerGenerator.InvalidateSwagger(this);
+	      var adminRoutes = new AdminRoutes
+	      {
+		      MicroserviceAttribute = _serviceAttribute, 
+		      MicroserviceType = MicroserviceType,
+		      PublicHost = $"{_args.Host.Replace("wss://", "https://").Replace("/socket", "")}/basic/{_args.CustomerID}.{_args.ProjectName}.{QualifiedName}/"
+	      };
+	      ServiceMethods = RouteTableGeneration.BuildRoutes(MicroserviceType, _serviceAttribute, adminRoutes, BuildServiceInstance);
       }
 
       async Task SetupWebsocket(IConnection socket, bool initContent = false)
@@ -592,13 +582,6 @@ namespace Beamable.Server
 	      var service = scope.GetRequiredService(MicroserviceType) as Microservice;
 	      service.ProvideDefaultServices(scope, Create);
 	      return service;
-      }
-
-      AdminRoutes BuildAdminInstance(RequestContext ctx)
-      {
-         var service = new AdminRoutes();
-         service.Microservice = this;
-         return service;
       }
 
       async Task HandleClientMessage(MicroserviceRequestContext ctx, Stopwatch sw)

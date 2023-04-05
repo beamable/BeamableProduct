@@ -98,7 +98,7 @@ public class AddUnityClientOutputCommand : AppCommand<AddUnityClientOutputComman
 
 				if (IsDirectoryUnityEsque(childPath))
 				{
-					BeamableLogger.Log($"-- I think that {childPath} is a unity projet");
+					BeamableLogger.Log($"-- I think that {childPath} is a unity project");
 
 					yield return childPath;
 				}

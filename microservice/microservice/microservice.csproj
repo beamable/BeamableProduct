@@ -27,9 +27,7 @@
   <PropertyGroup>
 
     <NoWarn>1591</NoWarn>
-
-    <DocumentationFile>baseImageDocs.xml</DocumentationFile>
-
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
 
@@ -42,7 +40,7 @@
 
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0-preview.6.21352.12" />
 
-    <PackageReference Include="Microsoft.OpenApi" Version="1.2.*" />
+    <PackageReference Include="Microsoft.OpenApi" Version="1.6.3" />
 
     <PackageReference Include="NetMQ" Version="4.0.1.11" />
 

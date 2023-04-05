@@ -23,6 +23,7 @@ public class ConfigCommand : AppCommand<ConfigCommandArgs>
 	public override Task Handle(ConfigCommandArgs args)
 	{
 		BeamableLogger.Log(args.ConfigService.ConfigFilePath);
+		BeamableLogger.Log($"cid=[{args.AppContext.Cid}] pid=[{args.AppContext.Pid}]");
 		BeamableLogger.Log(args.ConfigService.PrettyPrint());
 		return Task.CompletedTask;
 	}

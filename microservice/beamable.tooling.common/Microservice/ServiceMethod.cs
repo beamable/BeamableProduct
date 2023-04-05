@@ -4,7 +4,6 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Server.Common;
-using LoxSmoke.DocXml;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -17,15 +16,15 @@ namespace Beamable.Server
 
 	public class ServiceMethod
 	{
-		public string Tag;
-		public string Path;
+		public string Tag { get; init; }
+		public string Path { get; init; }
 		public Func<RequestContext, object> InstanceFactory;
-		public HashSet<string> RequiredScopes;
-		public bool RequireAuthenticatedUser;
-		public List<ParameterInfo> ParameterInfos;
-		public MethodInfo Method;
+		public HashSet<string> RequiredScopes { get; init; }
+		public bool RequireAuthenticatedUser { get; init; }
+		public List<ParameterInfo> ParameterInfos { get; init; }
+		public MethodInfo Method { get; init; }
 		public List<ParameterDeserializer> Deserializers;
-		public List<string> ParameterNames;
+		public List<string> ParameterNames { get; init; }
 		public Dictionary<string, ParameterDeserializer> ParameterDeserializers;
 		public MethodInvocation Executor;
 		public IResponseSerializer ResponseSerializer;

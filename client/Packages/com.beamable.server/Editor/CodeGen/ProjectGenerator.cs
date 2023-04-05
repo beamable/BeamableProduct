@@ -78,7 +78,7 @@ namespace Beamable.Server.Editor.CodeGen
 
 	            <PropertyGroup>
 	               <NoWarn>1591</NoWarn>
-	               <DocumentationFile>serviceDocs.xml</DocumentationFile>
+				   <GenerateDocumentationFile>true</GenerateDocumentationFile>
 	            </PropertyGroup>
 
 {GetCustomFragmentString()}

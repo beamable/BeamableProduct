@@ -4,24 +4,9 @@
         <name>BeamableMicroserviceBase</name>
     </assembly>
     <members>
-        <member name="T:Beamable.Server.Api.Notifications.PlayerNotificationRequest">
-            <summary>
-            Notification request format.
-            </summary>
-        </member>
-        <member name="T:Beamable.Server.Api.Notifications.PlayerBatchNotificationRequest">
-            <summary>
-            Format of the Notification request when notifying multiple players.
-            </summary>
-        </member>
-        <member name="T:Beamable.Server.Api.Notifications.PlayerNotificationPayload">
-            <summary>
-            Structure representing the expected format for the notification we are sending.
-            </summary>
-        </member>
         <member name="F:Beamable.Server.BeamableMicroService._ranCustomUserInitializationHooks">
             <summary>
-            We need to guarantee <see cref="M:Beamable.Server.BeamableMicroService.ResolveCustomInitializationHook"/> only gets run once when we <see cref="M:Beamable.Server.BeamableMicroService.SetupWebsocket(Beamable.Server.IConnection)"/>.
+            We need to guarantee <see cref="M:Beamable.Server.BeamableMicroService.ResolveCustomInitializationHook"/> only gets run once when we <see cref="M:Beamable.Server.BeamableMicroService.SetupWebsocket(Beamable.Server.IConnection,System.Boolean)"/>.
             </summary>
         </member>
         <member name="M:Beamable.Server.BeamableMicroService.ResolveCustomInitializationHook">
@@ -36,9 +21,24 @@
         <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.Connect" -->
         <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.OnConnect(System.Action{Beamable.Server.IConnection})" -->
         <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.OnDisconnect(System.Action{Beamable.Server.IConnection,System.Boolean})" -->
-        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.OnMessage(System.Action{Beamable.Server.IConnection,System.String,System.Int64})" -->
-        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.SendMessage(System.String)" -->
-        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.Close" -->
+        <member name="M:Beamable.Server.EasyWebSocket.OnMessage(System.Action{Beamable.Server.IConnection,System.Text.Json.JsonDocument,System.Int64,System.Diagnostics.Stopwatch})">
+            <summary>
+            Set the Action to call when a messages has been received.
+            </summary>
+            <param name="onMessage">The Action to call.</param>
+            <returns></returns>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:Beamable.Server.EasyWebSocket.SendMessage(System.String,System.Diagnostics.Stopwatch)" -->
+        <member name="M:Beamable.Server.EasyWebSocket.Close">
+            <summary>
+            Terminate the socket in a friendly way.
+            </summary>
+        </member>
+        <member name="P:Beamable.Server.EnviornmentArgs.RateLimitWebsocket">
+            <summary>
+            By default, rate limiting is on, so if you pass anything to WS_DISABLE_RATE_LIMIT, it'll disable it.
+            </summary>
+        </member>
         <member name="T:Beamable.Server.MicroserviceAuthenticationDaemon">
             <summary>
             This class manages our authentication process between this C#MS and our Beamo service. It provides the following properties:
@@ -50,6 +50,11 @@
         <member name="F:Beamable.Server.MicroserviceAuthenticationDaemon.AUTH_THREAD_WAIT_HANDLE">
             <summary>
             The <see cref="T:System.Threading.EventWaitHandle"/> we use to wake this thread up from its slumber so we can authenticate the C#MS with the Beamo service.
+            </summary>
+        </member>
+        <member name="F:Beamable.Server.MicroserviceAuthenticationDaemon.AUTH_THREAD_WAIT_FOR_REQUESTS_TO_FINISH_HANDLE">
+            <summary>
+            The <see cref="T:System.Threading.EventWaitHandle"/> we use to allow requests to process, while we wait before checking if we should wait for more requests to finish again.
             </summary>
         </member>
         <member name="F:Beamable.Server.MicroserviceAuthenticationDaemon._OutgoingRequestCounter">
