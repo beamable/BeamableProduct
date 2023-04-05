@@ -6,7 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Server.Common;
-using LoxSmoke.DocXml;
 using microservice.Extensions;
 using Newtonsoft.Json;
 using Serilog;
@@ -88,7 +87,7 @@ namespace Beamable.Server
 	      return serviceMethod;
       }
 
-            private static void GenerateMethodExecution(MethodInfo method, 
+	   private static void GenerateMethodExecution(MethodInfo method, 
 	      out MethodInvocation executor,
 	      out List<ParameterDeserializer> deserializers,
 	      out Dictionary<string, ParameterDeserializer> namedDeserializers,

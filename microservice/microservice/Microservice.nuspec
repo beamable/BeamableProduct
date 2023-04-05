@@ -14,7 +14,7 @@
             <dependency id="EmbedIO" version="3.4.*" />
             <dependency id="LoxSmoke.DocXml" version="3.4.*" />
             <dependency id="Microsoft.Extensions.DependencyInjection" version="6.0.0-preview.6.21352.12" />
-            <dependency id="Microsoft.OpenApi" version="1.2.*" />
+            <dependency id="Microsoft.OpenApi" version="1.6.*" />
             <dependency id="Newtonsoft.Json" version="12.0.*" />
             <dependency id="Serilog" version="2.10.*" />
             <dependency id="Serilog.Formatting.Compact" version="1.1.*" />

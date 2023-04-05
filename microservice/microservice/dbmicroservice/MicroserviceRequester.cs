@@ -51,18 +51,6 @@ namespace Beamable.Server
       }
    }
 
-   public class WebsocketErrorResponse
-   {
-      public int status;
-      public string service;
-      public string error;
-      public string message;
-
-      public override string ToString()
-      {
-         return $"Websocket Error Response. status=[{status}] service=[{service}] error=[{error}] message=[{message}]";
-      }
-   }
 
    public class WebsocketRequesterException : RequesterException
    {

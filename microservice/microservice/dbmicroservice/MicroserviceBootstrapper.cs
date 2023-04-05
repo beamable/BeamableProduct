@@ -148,11 +148,6 @@ namespace Beamable.Server
             });
         }
 
-        private static void ConfigureDocsProvider()
-        {
-            XmlDocsHelper.ProviderFactory = XmlDocsHelper.FileIOProvider;
-        }
-
         public static void ConfigureUncaughtExceptions()
         {
 	        AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
@@ -394,7 +389,6 @@ namespace Beamable.Server
 	        ConfigureLogging(envArgs);
 	        ConfigureUncaughtExceptions();
 	        ConfigureUnhandledError();
-	        ConfigureDocsProvider();
 	        ConfigureDiscovery(envArgs, attribute);
 	        ReflectionCache = ConfigureReflectionCache();
 	        

@@ -7,6 +7,7 @@ namespace cli.Services;
 public class ProjectData
 {
 	public HashSet<string> unityProjectsPaths = new HashSet<string>();
+	public HashSet<string> unrealProjectsPaths = new HashSet<string>();
 }
 
 public class ProjectService
@@ -25,10 +26,21 @@ public class ProjectService
 	{
 		return _projects.unityProjectsPaths.ToList();
 	}
+	
+	public List<string> GetLinkedUnrealProjects()
+	{
+		return _projects.unrealProjectsPaths.ToList();
+	}
 
 	public void AddUnityProject(string relativePath)
 	{
 		_projects.unityProjectsPaths.Add(relativePath);
+		_configService.SaveDataFile(".linkedProjects", _projects);
+	}
+	
+	public void AddUnrealProject(string relativePath)
+	{
+		_projects.unrealProjectsPaths.Add(relativePath);
 		_configService.SaveDataFile(".linkedProjects", _projects);
 	}
 
