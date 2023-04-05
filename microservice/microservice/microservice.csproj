@@ -27,8 +27,6 @@
   <PropertyGroup>
 
     <NoWarn>1591</NoWarn>
-
-<!--    <DocumentationFile>baseImageDocs.xml</DocumentationFile>-->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
