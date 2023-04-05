@@ -2,6 +2,10 @@ using Beamable.Common;
 using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Generator;
+using Beamable.Tooling.Common.OpenAPI;
+using cli.Unreal;
+using microservice.Common;
+using Microsoft.OpenApi.Models;
 using System.CommandLine;
 using System.Globalization;
 using System.Reflection;
@@ -67,6 +71,24 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 				generator.GenerateCSharpCode(outputPath);
 			}
 
+			var gen = new ServiceDocGenerator();
+			var oapiDocument = gen.Generate<Microservice>(new AdminRoutes()
+			{
+				MicroserviceType = type,
+				MicroserviceAttribute = attribute
+			});
+
+			var unrealGenerator = new UnrealSourceGenerator();
+			var docs = new List<OpenApiDocument>() { oapiDocument };
+			var orderedSchemas = SwaggerService.ExtractAllSchemas(docs,
+				GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
+			
+			var fileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext
+			{
+				Documents = docs,
+				OrderedSchemas = orderedSchemas
+			});
+			
 			if (args.outputToLinkedProjects)
 			{
 				var linkedUnityProjects = args.ProjectService.GetLinkedUnityProjects();
