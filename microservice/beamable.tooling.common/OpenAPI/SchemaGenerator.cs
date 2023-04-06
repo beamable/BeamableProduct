@@ -139,7 +139,11 @@ public class SchemaGenerator
 
 			
 			case Type _ when depth <= 0:
-				return new OpenApiSchema { Reference = new OpenApiReference { Id = runtimeType.Name, Type = ReferenceType.Schema} };
+				return new OpenApiSchema
+				{
+					Type = "object",
+					Reference = new OpenApiReference { Id = runtimeType.Name, Type = ReferenceType.Schema}
+				};
 
 			case { IsEnum: true }:
 				var enumNames = Enum.GetNames(runtimeType);
@@ -156,6 +160,9 @@ public class SchemaGenerator
 				schema.Description = comments.Summary;
 				schema.Properties = new Dictionary<string, OpenApiSchema>();
 				schema.Required = new SortedSet<string>();
+				schema.Type = "object";
+				schema.Title = runtimeType.Name;
+				schema.AdditionalPropertiesAllowed = false;
 
 				if (depth == 0) return schema;
 				var members = UnityJsonContractResolver.GetSerializedFields(runtimeType);

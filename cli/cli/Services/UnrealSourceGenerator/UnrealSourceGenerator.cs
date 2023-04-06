@@ -1,4 +1,5 @@
-﻿using Microsoft.OpenApi;
+﻿using Beamable.Common;
+using Microsoft.OpenApi;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Models;
@@ -1141,7 +1142,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	public static void GetNamespacedServiceNameFromApiDoc(OpenApiInfo parentDocInfo, out string serviceTitle, out string serviceName)
 	{
 		var serviceNames = parentDocInfo.Title.Split(" ");
-		serviceTitle = serviceNames[1].Sanitize().Capitalize();
+		serviceTitle = serviceNames.Length == 1 ? "Basic" : serviceNames[1].Sanitize().Capitalize();
+
 		serviceName = serviceNames[0].Sanitize().Capitalize();
 	}
 
