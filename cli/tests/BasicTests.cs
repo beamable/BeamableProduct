@@ -1,8 +1,17 @@
 using Beamable.Common.Api;
+using Beamable.Server;
+using Beamable.Tooling.Common.OpenAPI;
 using cli;
+using cli.Unreal;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.OpenApi;
+using Microsoft.OpenApi.Exceptions;
+using Microsoft.OpenApi.Extensions;
+using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi.Readers;
 using Moq;
 using NUnit.Framework;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -100,6 +109,35 @@ public class Tests
 	// {
 	// 	var status = await Cli.RunAsyncWithParams("--host", "https://dev.api.beamable.com", "oapi", "generate", "--conflict-strategy", "RenameUncommonConflicts", "--engine", "unity");
 	// }
+
+	[Test]
+	public void TestUnrealMicroserviceGen()
+	{
+		var gen = new ServiceDocGenerator();
+		var doc = gen.Generate<TroublesomeService>(null);
+		var generator = new UnrealSourceGenerator();
+		var docs = new List<OpenApiDocument>() { doc };
+		var orderedSchemas = SwaggerService.ExtractAllSchemas(docs,
+			GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
+		var ctx = new SwaggerService.DefaultGenerationContext
+		{
+			Documents = docs,
+			OrderedSchemas = orderedSchemas
+		};
+		var descriptors = generator.Generate(ctx);
+
+		Console.WriteLine("----- OUTPUT ----");
+		Console.WriteLine(string.Join("\n", descriptors.Select(d => $"{d.FileName}\n\n{d.Content}\n")));
+		
+		Assert.AreEqual(11, descriptors.Count);
+	}
+	
+	[Microservice("troublesome")]
+	public class TroublesomeService : Microservice
+	{
+		[Callable]
+		public int Add(int a, int b) => a + b;
+	}
 
 	[Test]
 	public async Task GenerateStuff() // TODO: better name please

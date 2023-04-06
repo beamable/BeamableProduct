@@ -5,7 +5,10 @@ using Beamable.Server.Common;
 using Beamable.Server.Common.XmlDocs;
 using beamable.tooling.common.Microservice;
 using microservice.Common;
+using Microsoft.OpenApi;
+using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi.Readers;
 using System.Reflection;
 
 namespace Beamable.Tooling.Common.OpenAPI;
@@ -102,10 +105,14 @@ public class ServiceDocGenerator
 				response.Content = new Dictionary<string, OpenApiMediaType> { [JSON_CONTENT_TYPE] = returnJson };
 			}
 
+			var requestSchemaName = method.Path.Replace("/", "_") + "RequestArgs";
 			var requestSchema = new OpenApiSchema
 			{
 				Properties = new Dictionary<string, OpenApiSchema>(),
-				Required = new SortedSet<string>()
+				Required = new SortedSet<string>(),
+				Type = "object",
+				// Title = requestSchemaName,
+				AdditionalPropertiesAllowed = false
 			};
 			for (var i = 0; i < method.ParameterInfos.Count; i++)
 			{
@@ -123,7 +130,6 @@ public class ServiceDocGenerator
 				}
 			}
 
-			var requestJson = new OpenApiMediaType { Schema = requestSchema };
 			var operation = new OpenApiOperation
 			{
 				
@@ -140,9 +146,22 @@ public class ServiceDocGenerator
 			};
 			if (method.ParameterInfos.Count > 0)
 			{
+				doc.Components.Schemas.Add(requestSchemaName, requestSchema);
 				operation.RequestBody = new OpenApiRequestBody
 				{
-					Content = new Dictionary<string, OpenApiMediaType> { [JSON_CONTENT_TYPE] = requestJson }
+					
+					Content = new Dictionary<string, OpenApiMediaType> { [JSON_CONTENT_TYPE] = new OpenApiMediaType
+					{
+						Schema = new OpenApiSchema
+						{
+							Type = "object",
+							Reference = new OpenApiReference
+							{
+								Type = ReferenceType.Schema,
+								Id = requestSchemaName
+							}
+						}
+					} }
 				};
 			}
 			
@@ -159,6 +178,9 @@ public class ServiceDocGenerator
 
 		}
 		
+		var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
+		doc = new OpenApiStringReader().Read(outputString, out var diag);
+
 		return doc;
 	}
 
