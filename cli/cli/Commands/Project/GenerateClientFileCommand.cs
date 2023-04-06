@@ -71,24 +71,6 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 				generator.GenerateCSharpCode(outputPath);
 			}
 
-			var gen = new ServiceDocGenerator();
-			var oapiDocument = gen.Generate<Microservice>(new AdminRoutes()
-			{
-				MicroserviceType = type,
-				MicroserviceAttribute = attribute
-			});
-
-			var unrealGenerator = new UnrealSourceGenerator();
-			var docs = new List<OpenApiDocument>() { oapiDocument };
-			var orderedSchemas = SwaggerService.ExtractAllSchemas(docs,
-				GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
-			
-			var unrealFileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext
-			{
-				Documents = docs,
-				OrderedSchemas = orderedSchemas
-			});
-			
 			if (args.outputToLinkedProjects)
 			{
 				// UNITY
@@ -117,21 +99,39 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 	
 				// UNREAL
 				
-				foreach (var unrealProjectPath in args.ProjectService.GetLinkedUnrealProjects())
+				if (args.ProjectService.GetLinkedUnrealProjects().Count > 0)
 				{
-					var unrealAssetPath = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectPath, "Content");
+					var gen = new ServiceDocGenerator();
+					var oapiDocument = gen.Generate(type, attribute, null);
 
-					if (!Directory.Exists(unrealAssetPath))
+					var unrealGenerator = new UnrealSourceGenerator();
+					var docs = new List<OpenApiDocument>() { oapiDocument };
+					var orderedSchemas = SwaggerService.ExtractAllSchemas(docs,
+						GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
+
+					var unrealFileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext
 					{
-						BeamableLogger.LogError($"Could not generate [{descriptor.Name}] client linked unreal project because directory doesn't exist [{unrealAssetPath}]");
-						continue;
-					}
-					
-					Task generationTask = GenerateFile(unrealFileDescriptors, args, unrealAssetPath);
+						Documents = docs, OrderedSchemas = orderedSchemas
+					});
 
-					if (generationTask != null)
-						return generationTask;
-					
+					foreach (var unrealProjectPath in args.ProjectService.GetLinkedUnrealProjects())
+					{
+						var unrealAssetPath =
+							Path.Combine(args.ConfigService.BaseDirectory, unrealProjectPath, "Content");
+
+						if (!Directory.Exists(unrealAssetPath))
+						{
+							BeamableLogger.LogError(
+								$"Could not generate [{descriptor.Name}] client linked unreal project because directory doesn't exist [{unrealAssetPath}]");
+							continue;
+						}
+
+						Task generationTask = GenerateFile(unrealFileDescriptors, args, unrealAssetPath);
+
+						if (generationTask != null)
+							return generationTask;
+
+					}
 				}
 			}
 		}
