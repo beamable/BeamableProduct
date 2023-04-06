@@ -71,24 +71,6 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 				generator.GenerateCSharpCode(outputPath);
 			}
 
-			var gen = new ServiceDocGenerator();
-			var oapiDocument = gen.Generate<Microservice>(new AdminRoutes()
-			{
-				MicroserviceType = type,
-				MicroserviceAttribute = attribute
-			});
-
-			var unrealGenerator = new UnrealSourceGenerator();
-			var docs = new List<OpenApiDocument>() { oapiDocument };
-			var orderedSchemas = SwaggerService.ExtractAllSchemas(docs,
-				GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
-			
-			var unrealFileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext
-			{
-				Documents = docs,
-				OrderedSchemas = orderedSchemas
-			});
-			
 			if (args.outputToLinkedProjects)
 			{
 				// UNITY
