@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Dependencies;
 using Serilog.Events;
 using System.CommandLine.Binding;
 
@@ -9,7 +10,7 @@ namespace cli;
 
 public class AppServices : IServiceProvider
 {
-	public IServiceProvider duck;
+	public IDependencyProvider duck;
 	public object GetService(Type serviceType) => duck.GetService(serviceType);
 }
 

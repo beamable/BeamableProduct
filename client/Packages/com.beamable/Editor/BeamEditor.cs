@@ -19,6 +19,7 @@ using Beamable.Console;
 using Beamable.Content;
 using Beamable.Editor;
 using Beamable.Editor.Assistant;
+using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.Config;
 using Beamable.Editor.Content;
 using Beamable.Editor.Environment;
@@ -118,6 +119,7 @@ namespace Beamable
 			DependencyBuilder.AddGlobalStorage<AccountService, EditorStorageLayer>();
 			DependencyBuilder.AddSingleton<IAccountService>(p => p.GetService<AccountService>());
 
+			DependencyBuilder.AddSingleton<BeamCommands>();
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 		}
 	}
