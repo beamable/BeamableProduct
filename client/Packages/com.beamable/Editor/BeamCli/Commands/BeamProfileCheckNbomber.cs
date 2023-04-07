@@ -4,90 +4,52 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common;
     using Beamable.Common.BeamCli;
     
-    public partial class BeamCommands
+    public class ProfileCheckNbomberArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
-        /// <summary>Read the results of a n-bomber .csv file and determine if there are errors</summary>
-        /// <param name="nbomberFilePath">The path to the nbomber output csv file</param>
-        /// <param name="dryrun">Should any networking happen?</param>
-        /// <param name="cid">Cid to use; will default to whatever is in the file system</param>
-        /// <param name="pid">Pid to use; will default to whatever is in the file system</param>
-        /// <param name="host">The host endpoint for beamable</param>
-        /// <param name="refreshToken">Refresh token to use for the requests</param>
-        /// <param name="log">Extra logs gets printed out</param>
-        /// <param name="dir">Directory to use for configuration</param>
-        /// <param name="version">Show version information</param>
-        /// <param name="help">Show help and usage information</param>
-        /// <param name="failLimit">(default=0) The max number of failed requests</param>
-        /// <param name="p95Limit">(default=2500) The max p95 in ms</param>
-        public virtual Beamable.Common.BeamCli.IBeamCommand ProfileCheckNbomber(string nbomberFilePath, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool dryrun, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string cid, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string pid, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string host, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string refreshToken, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string log, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string dir, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool version, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool help, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(double))] [System.Runtime.InteropServices.OptionalAttribute()] double failLimit, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(double))] [System.Runtime.InteropServices.OptionalAttribute()] double p95Limit)
+        /// <summary>The path to the nbomber output csv file</summary>
+        public string nbomberFilePath;
+        /// <summary>The max number of failed requests</summary>
+        public double failLimit;
+        /// <summary>The max p95 in ms</summary>
+        public double p95Limit;
+        /// <summary>Serializes the arguments for command line usage.</summary>
+        public virtual string Serialize()
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
-            // Capture the path to the command
-            string genBeamCommandStr = "beam profile check-nbomber";
-            // The first argument is always the path to the command itself
-            genBeamCommandArgs.Add(genBeamCommandStr);
-            // If the dryrun value was not default, then add it to the list of args.
-            if ((dryrun != default(bool)))
-            {
-                genBeamCommandArgs.Add(("--dryrun=" + dryrun));
-            }
-            // If the cid value was not default, then add it to the list of args.
-            if ((cid != default(string)))
-            {
-                genBeamCommandArgs.Add(("--cid=" + cid));
-            }
-            // If the pid value was not default, then add it to the list of args.
-            if ((pid != default(string)))
-            {
-                genBeamCommandArgs.Add(("--pid=" + pid));
-            }
-            // If the host value was not default, then add it to the list of args.
-            if ((host != default(string)))
-            {
-                genBeamCommandArgs.Add(("--host=" + host));
-            }
-            // If the refreshToken value was not default, then add it to the list of args.
-            if ((refreshToken != default(string)))
-            {
-                genBeamCommandArgs.Add(("--refresh-token=" + refreshToken));
-            }
-            // If the log value was not default, then add it to the list of args.
-            if ((log != default(string)))
-            {
-                genBeamCommandArgs.Add(("--log=" + log));
-            }
-            // If the dir value was not default, then add it to the list of args.
-            if ((dir != default(string)))
-            {
-                genBeamCommandArgs.Add(("--dir=" + dir));
-            }
-            // If the version value was not default, then add it to the list of args.
-            if ((version != default(bool)))
-            {
-                genBeamCommandArgs.Add(("--version=" + version));
-            }
-            // If the help value was not default, then add it to the list of args.
-            if ((help != default(bool)))
-            {
-                genBeamCommandArgs.Add(("--help=" + help));
-            }
             // Add the nbomberFilePath value to the list of args.
-            genBeamCommandArgs.Add(nbomberFilePath);
+            genBeamCommandArgs.Add(this.nbomberFilePath);
             // If the failLimit value was not default, then add it to the list of args.
-            if ((failLimit != default(double)))
+            if ((this.failLimit != default(double)))
             {
-                genBeamCommandArgs.Add(("--fail-limit=" + failLimit));
+                genBeamCommandArgs.Add(("--fail-limit=" + this.failLimit));
             }
             // If the p95Limit value was not default, then add it to the list of args.
-            if ((p95Limit != default(double)))
+            if ((this.p95Limit != default(double)))
             {
-                genBeamCommandArgs.Add(("--p95-limit=" + p95Limit));
+                genBeamCommandArgs.Add(("--p95-limit=" + this.p95Limit));
             }
-            // Create an instance of an IBeamCommand
-            Beamable.Common.BeamCli.IBeamCommand command = this._factory.Create();
+            string genBeamCommandStr = "";
             // Join all the args with spaces
             genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
+            return genBeamCommandStr;
+        }
+    }
+    public partial class BeamCommands
+    {
+        public virtual Beamable.Common.BeamCli.IBeamCommand ProfileCheckNbomber(ProfileCheckNbomberArgs checkNbomberArgs)
+        {
+            // Create a list of arguments for the command
+            System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
+            genBeamCommandArgs.Add("beam");
+            genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
+            genBeamCommandArgs.Add("profile");
+            genBeamCommandArgs.Add("check-nbomber");
+            genBeamCommandArgs.Add(checkNbomberArgs.Serialize());
+            // Create an instance of an IBeamCommand
+            Beamable.Common.BeamCli.IBeamCommand command = this._factory.Create();
+            // Join all the command paths and args into one string
+            string genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
             // Configure the command with the command string
             command.SetCommand(genBeamCommandStr);
             // Return the command!

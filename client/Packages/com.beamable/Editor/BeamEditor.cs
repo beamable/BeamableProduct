@@ -19,6 +19,7 @@ using Beamable.Console;
 using Beamable.Content;
 using Beamable.Editor;
 using Beamable.Editor.Assistant;
+using Beamable.Editor.BeamCli;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.Config;
 using Beamable.Editor.Content;
@@ -120,6 +121,8 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IAccountService>(p => p.GetService<AccountService>());
 
 			DependencyBuilder.AddSingleton<BeamCommands>();
+			DependencyBuilder.AddSingleton<BeamCli>();
+			
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 		}
 	}

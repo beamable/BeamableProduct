@@ -52,7 +52,7 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 		while (safety-- > 0 && queue.Count > 0)
 		{
 			var curr = queue.Dequeue();
-			if (curr.executionPath != "beam")
+			// if (curr.executionPath != "beam")
 			{
 				allCommands.Add(curr);
 			}
@@ -62,7 +62,8 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 				var subBeamCommand = new BeamCommandDescriptor
 				{
 					executionPath = $"{curr.executionPath} {subCommand.Name}", 
-					command = subCommand
+					command = subCommand,
+					parent = curr
 				};
 				queue.Enqueue(subBeamCommand);
 			}
@@ -138,10 +139,13 @@ public class BeamCommandDescriptor
 {
 	public string executionPath;
 	public Command command;
+	public BeamCommandDescriptor parent;
 
 	public string ExecutionPathAsCapitalizedStringWithoutBeam()
 	{
 		var words = executionPath.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+		if (words.Length == 1) return "Beam";
 		return string.Join("", words.Skip(1).Select(w => w.Capitalize()));
 	}
+	
 }

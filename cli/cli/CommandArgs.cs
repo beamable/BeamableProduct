@@ -26,6 +26,7 @@ public abstract class CommandArgs
 	public IAppContext AppContext => Provider.GetService<IAppContext>();
 	public IRealmsApi RealmsApi => Provider.GetService<IRealmsApi>();
 	public IAliasService AliasService => Provider.GetService<IAliasService>();
+	public DataReporterService Reporter => Provider.GetService<DataReporterService>();
 	public CliRequester Requester => Provider.GetService<CliRequester>();
 	public SwaggerService SwaggerService => Provider.GetService<SwaggerService>();
 	public BeamoLocalSystem BeamoLocalSystem => Provider.GetService<BeamoLocalSystem>();

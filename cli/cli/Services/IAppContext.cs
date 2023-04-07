@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Dependencies;
+using Serilog;
 using Serilog.Events;
 using System.CommandLine.Binding;
 
@@ -21,6 +22,7 @@ public interface IAppContext
 	public string Cid { get; }
 	public string Pid { get; }
 	public string Host { get; }
+	public bool UseFatalAsReportingChannel { get; }
 	public string WorkingDirectory { get; }
 	public IAccessToken Token { get; }
 	public string RefreshToken { get; }
@@ -48,7 +50,9 @@ public class DefaultAppContext : IAppContext
 	private readonly ConfigDirOption _configDirOption;
 	private readonly ConfigService _configService;
 	private readonly CliEnvironment _environment;
+	private readonly EnableReporterOption _reporterOption;
 	public bool IsDryRun { get; private set; }
+	public bool UseFatalAsReportingChannel { get; private set; }
 
 	public IAccessToken Token => _token;
 	private CliToken _token;
@@ -65,7 +69,7 @@ public class DefaultAppContext : IAppContext
 
 	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, PlatformOption platformOption,
 		AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption, ConfigDirOption configDirOption,
-		ConfigService configService, CliEnvironment environment)
+		ConfigService configService, CliEnvironment environment, EnableReporterOption reporterOption)
 	{
 		_dryRunOption = dryRunOption;
 		_cidOption = cidOption;
@@ -77,10 +81,12 @@ public class DefaultAppContext : IAppContext
 		_configDirOption = configDirOption;
 		_configService = configService;
 		_environment = environment;
+		_reporterOption = reporterOption;
 	}
 
 	public void Apply(BindingContext bindingContext)
 	{
+		UseFatalAsReportingChannel = bindingContext.ParseResult.GetValueForOption(_reporterOption);
 		IsDryRun = bindingContext.ParseResult.GetValueForOption(_dryRunOption);
 
 		// Configure log level from option

@@ -42,12 +42,13 @@ public class App
 	{
 		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
 		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
-
+		
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
 		Log.Logger = new LoggerConfiguration()
-			.WriteTo.SpectreConsole("{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}", LogLevel.MinimumLevel)
+			.WriteTo.SpectreConsole("{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}")
+			.MinimumLevel.ControlledBy(LogLevel)
 			.CreateLogger();
-
+		
 		BeamableLogProvider.Provider = new CliSerilogProvider();
 		CliSerilogProvider.LogContext.Value = Log.Logger;
 	}
@@ -80,7 +81,7 @@ public class App
 		services.AddSingleton<ProjectService>();
 		services.AddSingleton<SwaggerService.SourceGeneratorListProvider>();
 		services.AddSingleton<ICliGenerator, UnityCliGenerator>();
-
+		services.AddSingleton<DataReporterService>();
 		OpenApiRegistration.RegisterOpenApis(services);
 
 		_serviceConfigurator?.Invoke(services);
@@ -105,6 +106,7 @@ public class App
 		Commands.AddSingleton<AccessTokenOption>();
 		Commands.AddSingleton<RefreshTokenOption>();
 		Commands.AddSingleton<LogOption>();
+		Commands.AddSingleton<EnableReporterOption>();
 		Commands.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
@@ -115,6 +117,7 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
+			root.AddGlobalOption(provider.GetRequiredService<EnableReporterOption>());
 			root.Description = "A CLI for interacting with the Beamable Cloud.";
 			return root;
 		});

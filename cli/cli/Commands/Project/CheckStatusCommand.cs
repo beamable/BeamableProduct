@@ -1,4 +1,6 @@
+using Beamable.Common.BeamCli;
 using NetMQ;
+using Serilog;
 
 namespace cli.Dotnet;
 
@@ -16,9 +18,14 @@ public class CheckStatusCommand : AppCommand<CheckStatusCommandArgs>
 	{
 	}
 
-	public override Task Handle(CheckStatusCommandArgs args)
+	public override async Task Handle(CheckStatusCommandArgs args)
 	{
-		
-		return Task.CompletedTask;
+		for (var i = 0; i < 10; i++)
+		{
+			Log.Information("Printing " + i);
+			args.Reporter.Report("nums", new SampleNumber(){x = i});
+			Log.Information("did the print");
+			await Task.Delay(Random.Shared.Next(100));
+		}
 	}
 }

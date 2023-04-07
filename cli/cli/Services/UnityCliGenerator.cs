@@ -37,12 +37,12 @@ public class UnityCliGenerator : ICliGenerator
 		foreach (var command in context.Commands)
 		{
 			if (invalidCommands.Contains(command.executionPath)) continue;
-			files.Add(Generate(context.Root, command));
+			files.Add(Generate(command));
 		}
 		return files;
 	}
 
-	public static GeneratedFileDescriptor Generate(BeamCommandDescriptor rootCommand, BeamCommandDescriptor command)
+	public static GeneratedFileDescriptor Generate(BeamCommandDescriptor command)
 	{
 		var unit = new CodeCompileUnit();
 		var root = new CodeNamespace("Beamable.Editor.BeamCli.Commands");
@@ -50,14 +50,176 @@ public class UnityCliGenerator : ICliGenerator
 		root.Imports.Add(new CodeNamespaceImport("Beamable.Common.BeamCli"));
 		unit.Namespaces.Add(root);
 
-		root.Types.Add(GenerateCodeType(rootCommand, command));
+		root.Types.Add(GenerateArgType(command));
+		root.Types.Add(GenerateCodeType(command));
+		
 		
 		var srcCode = UnityHelper.GenerateCsharp(unit);
 		var fileName = ConvertToSnakeCase(command.executionPath) + ".cs";
 		return new GeneratedFileDescriptor { Content = srcCode, FileName = fileName.Capitalize() };
 	}
 
-	public static CodeTypeDeclaration GenerateCodeType(BeamCommandDescriptor rootCommand, BeamCommandDescriptor descriptor)
+	public static string GetArgClassName(BeamCommandDescriptor descriptor)
+	{
+		return ConvertToSnakeCase(descriptor.ExecutionPathAsCapitalizedStringWithoutBeam() + "Args");
+	}
+
+	public static CodeTypeDeclaration GenerateArgType(BeamCommandDescriptor descriptor)
+	{
+		const string argsVar = "genBeamCommandArgs";
+		const string strVar = "genBeamCommandStr";
+
+
+		var name = GetArgClassName(descriptor);
+		var type = new CodeTypeDeclaration(name );
+		type.BaseTypes.Add(new CodeTypeReference(typeof(IBeamCommandArgs)));
+
+
+		var method = new CodeMemberMethod
+		{
+			Name = nameof(IBeamCommandArgs.Serialize),
+			ReturnType = new CodeTypeReference(typeof(string)),
+			Attributes = MemberAttributes.Public,
+			Comments =
+			{
+				new CodeCommentStatement(new CodeComment("<summary>Serializes the arguments for command line usage.</summary>", true))
+			}
+		};
+		type.Members.Add(method);
+
+		var argReference = new CodeVariableReferenceExpression(argsVar);
+		var createArgListStatement = new CodeVariableDeclarationStatement(typeof(List<string>), argsVar, new CodeObjectCreateExpression(typeof(List<string>)));
+		method.Statements.Add(new CodeCommentStatement("Create a list of arguments for the command"));
+		method.Statements.Add(createArgListStatement);
+
+		
+		try
+		{
+			foreach (var arg in descriptor.command.Arguments)
+			{
+				var parameter = CreateParameter(arg);
+				var fieldDecl = new CodeMemberField(parameter.Type, parameter.Name);
+				fieldDecl.Comments.Add(new CodeCommentStatement($"<summary>{arg.Description}</summary>", true));
+				fieldDecl.Attributes = MemberAttributes.Public;
+				type.Members.Add(fieldDecl);
+				var parameterReference =  new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), fieldDecl.Name);
+
+				var valueIsNotNullExpr = new CodeBinaryOperatorExpression(parameterReference,
+					CodeBinaryOperatorType.IdentityInequality,
+					new CodeDefaultValueExpression(parameter.Type));
+				var conditional = new CodeConditionStatement(valueIsNotNullExpr);
+				var addStatement =
+					new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), parameterReference);
+				conditional.TrueStatements.Add(addStatement);
+
+				if (parameter.CustomAttributes.Count > 0)
+				{
+					method.Statements.Add(new CodeCommentStatement(
+						$"If the {parameter.Name} value was not default, then add it to the list of args."));
+					method.Statements.Add(conditional);
+				}
+				else
+				{
+					method.Statements.Add(
+						new CodeCommentStatement($"Add the {parameter.Name} value to the list of args."));
+					method.Statements.Add(addStatement);
+				}
+			}
+
+			foreach (var option in descriptor.command.Options)
+			{
+				var parameter = CreateParameter(option);
+				var fieldDecl = new CodeMemberField(parameter.Type, parameter.Name);
+				fieldDecl.Comments.Add(new CodeCommentStatement($"<summary>{option.Description}</summary>", true));
+				fieldDecl.Attributes = MemberAttributes.Public;
+
+				type.Members.Add(fieldDecl);
+
+				var parameterReference =  new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), fieldDecl.Name);
+
+				var valueIsNotNullExpr = new CodeBinaryOperatorExpression(parameterReference,
+					CodeBinaryOperatorType.IdentityInequality,
+					new CodeDefaultValueExpression(parameter.Type));
+				var conditional = new CodeConditionStatement(valueIsNotNullExpr);
+
+
+
+				var optionalVal =
+					new CodeBinaryOperatorExpression(new CodePrimitiveExpression("--" + option.Name + "="),
+						CodeBinaryOperatorType.Add, parameterReference);
+				var addStatement =
+					new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), optionalVal);
+
+				if (option.AllowMultipleArgumentsPerToken)
+				{
+					var loopInitExpr =
+						new CodeVariableDeclarationStatement(typeof(int), "i", new CodePrimitiveExpression(0));
+					var loopRef = new CodeVariableReferenceExpression("i");
+					var loopTestExpr = new CodeBinaryOperatorExpression(loopRef, CodeBinaryOperatorType.LessThan,
+						new CodeFieldReferenceExpression(parameterReference, "Length"));
+					var loopIncExpr = new CodeAssignStatement(loopRef,
+						new CodeBinaryOperatorExpression(loopRef, CodeBinaryOperatorType.Add,
+							new CodePrimitiveExpression(1)));
+					var loopStatement = new CodeIterationStatement(loopInitExpr, loopTestExpr, loopIncExpr);
+
+					conditional.TrueStatements.Add(loopStatement);
+
+					var arrayIndexValue = new CodeArrayIndexerExpression(parameterReference, loopRef);
+					var optionalArrVal =
+						new CodeBinaryOperatorExpression(new CodePrimitiveExpression("--" + option.Name + "="),
+							CodeBinaryOperatorType.Add, arrayIndexValue);
+					var addArrStatement =
+						new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), optionalArrVal);
+
+					loopStatement.Statements.Add(new CodeCommentStatement("The parameter allows multiple values"));
+					loopStatement.Statements.Add(addArrStatement);
+				}
+				else
+				{
+
+					conditional.TrueStatements.Add(addStatement);
+				}
+
+				if (parameter.CustomAttributes.Count > 0)
+				{
+					method.Statements.Add(new CodeCommentStatement(
+						$"If the {parameter.Name} value was not default, then add it to the list of args."));
+					method.Statements.Add(conditional);
+				}
+				else
+				{
+					method.Statements.Add(
+						new CodeCommentStatement($"Add the {parameter.Name} value to the list of args."));
+					method.Statements.Add(addStatement);
+				}
+			}
+
+		}
+		catch (UnityCliGenerationException ex)
+		{
+			Log.Error($"path=[{descriptor.executionPath}] message=[{ex.Message}]");
+			throw ex;
+		}
+
+
+		var createStrStatement = new CodeVariableDeclarationStatement(typeof(string), strVar,
+			new CodePrimitiveExpression(""));
+		var strReference = new CodeVariableReferenceExpression(strVar);
+		method.Statements.Add(createStrStatement);
+
+		var joinStatement = new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)),
+			nameof(string.Join), new CodePrimitiveExpression(" "), argReference);
+		var strAssignment = new CodeAssignStatement(strReference, joinStatement);
+		method.Statements.Add(new CodeCommentStatement("Join all the args with spaces"));
+		method.Statements.Add(strAssignment);
+		
+		var returnStatement = new CodeMethodReturnStatement(strReference);
+		method.Statements.Add(returnStatement);
+
+		return type;
+	}
+
+	public static CodeTypeDeclaration GenerateCodeType(BeamCommandDescriptor descriptor)
 	{
 		const string strVar = "genBeamCommandStr";
 		const string argsVar = "genBeamCommandArgs";
@@ -73,149 +235,52 @@ public class UnityCliGenerator : ICliGenerator
 			ReturnType = new CodeTypeReference(typeof(IBeamCommand)),
 			Attributes = MemberAttributes.Public
 		};
-
-
+		
 		var createArgListStatement = new CodeVariableDeclarationStatement(typeof(List<string>), argsVar, new CodeObjectCreateExpression(typeof(List<string>)));
 		var argReference = new CodeVariableReferenceExpression(argsVar);
 		method.Statements.Add(new CodeCommentStatement("Create a list of arguments for the command"));
 		method.Statements.Add(createArgListStatement);
 
-		var createStrStatement = new CodeVariableDeclarationStatement(typeof(string), strVar,
-			new CodePrimitiveExpression(descriptor.executionPath));
-		var strReference = new CodeVariableReferenceExpression(strVar);
-		method.Statements.Add(new CodeCommentStatement("Capture the path to the command"));
-		method.Statements.Add(createStrStatement);
 
-		var addStrStatement = new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), strReference);
-		method.Statements.Add(new CodeCommentStatement("The first argument is always the path to the command itself"));
-		method.Statements.Add(addStrStatement);
-
-		void AddArgsAndOptions(BeamCommandDescriptor subCommand)
+		var statementCollection = new CodeStatementCollection();
+		var curr = descriptor;
+		while (curr != null)
 		{
-			try
+			var argClassName = GetArgClassName(curr);
+			var commandName = curr.command.Name.Replace("Beamable.Tools", "beam");
+			var parameter =
+				new CodeParameterDeclarationExpression(argClassName,
+					(ConvertToSnakeCase(commandName) + "Args").UnCapitalize());
+
+			
+			
+			if (curr.command.Arguments.Count > 0 || curr.command.Options.Count > 0)
 			{
-				foreach (var arg in subCommand.command.Arguments)
+				var parameterReference = new CodeVariableReferenceExpression(parameter.Name);
+				if (parameter.Name != "beamArgs")
 				{
-					var parameter = CreateParameter(arg);
-					method.Parameters.Add(parameter);
-
-					var parameterReference = new CodeVariableReferenceExpression(parameter.Name);
-
-					var valueIsNotNullExpr = new CodeBinaryOperatorExpression(parameterReference,
-						CodeBinaryOperatorType.IdentityInequality,
-						new CodeDefaultValueExpression(parameter.Type));
-					var conditional = new CodeConditionStatement(valueIsNotNullExpr);
-					var addStatement =
-						new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), parameterReference);
-					conditional.TrueStatements.Add(addStatement);
-
-					if (parameter.CustomAttributes.Count > 0)
-					{
-						method.Statements.Add(new CodeCommentStatement(
-							$"If the {parameter.Name} value was not default, then add it to the list of args."));
-						method.Statements.Add(conditional);
-					}
-					else
-					{
-						method.Statements.Add(
-							new CodeCommentStatement($"Add the {parameter.Name} value to the list of args."));
-						method.Statements.Add(addStatement);
-					}
+					method.Parameters.Insert(0, parameter);
 				}
-
-				foreach (var option in subCommand.command.Options)
+				else
 				{
-					var parameter = CreateParameter(option);
-					method.Parameters.Add(parameter);
-
-
-					var parameterReference = new CodeVariableReferenceExpression(parameter.Name);
-
-					var valueIsNotNullExpr = new CodeBinaryOperatorExpression(parameterReference,
-						CodeBinaryOperatorType.IdentityInequality,
-						new CodeDefaultValueExpression(parameter.Type));
-					var conditional = new CodeConditionStatement(valueIsNotNullExpr);
-
-
-
-					var optionalVal =
-						new CodeBinaryOperatorExpression(new CodePrimitiveExpression("--" + option.Name + "="),
-							CodeBinaryOperatorType.Add, parameterReference);
-					var addStatement =
-						new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), optionalVal);
-
-					if (option.AllowMultipleArgumentsPerToken)
-					{
-						var loopInitExpr =
-							new CodeVariableDeclarationStatement(typeof(int), "i", new CodePrimitiveExpression(0));
-						var loopRef = new CodeVariableReferenceExpression("i");
-						var loopTestExpr = new CodeBinaryOperatorExpression(loopRef, CodeBinaryOperatorType.LessThan,
-							new CodeFieldReferenceExpression(parameterReference, "Length"));
-						var loopIncExpr = new CodeAssignStatement(loopRef,
-							new CodeBinaryOperatorExpression(loopRef, CodeBinaryOperatorType.Add,
-								new CodePrimitiveExpression(1)));
-						var loopStatement = new CodeIterationStatement(loopInitExpr, loopTestExpr, loopIncExpr);
-
-						conditional.TrueStatements.Add(loopStatement);
-
-						var arrayIndexValue = new CodeArrayIndexerExpression(parameterReference, loopRef);
-						var optionalArrVal =
-							new CodeBinaryOperatorExpression(new CodePrimitiveExpression("--" + option.Name + "="),
-								CodeBinaryOperatorType.Add, arrayIndexValue);
-						var addArrStatement =
-							new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), optionalArrVal);
-
-						loopStatement.Statements.Add(new CodeCommentStatement("The parameter allows multiple values"));
-						loopStatement.Statements.Add(addArrStatement);
-					}
-					else
-					{
-
-						conditional.TrueStatements.Add(addStatement);
-					}
-
-					if (parameter.CustomAttributes.Count > 0)
-					{
-						method.Statements.Add(new CodeCommentStatement(
-							$"If the {parameter.Name} value was not default, then add it to the list of args."));
-						method.Statements.Add(conditional);
-					}
-					else
-					{
-						method.Statements.Add(
-							new CodeCommentStatement($"Add the {parameter.Name} value to the list of args."));
-						method.Statements.Add(addStatement);
-					}
+					parameterReference = new CodeVariableReferenceExpression("defaultBeamArgs");
 				}
+				var serializeStatement =
+					new CodeMethodInvokeExpression(parameterReference, nameof(IBeamCommandArgs.Serialize));
+				var addArgsStatement = new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), serializeStatement);
+				statementCollection.Insert(0,new CodeExpressionStatement(addArgsStatement));
 
 			}
-			catch (UnityCliGenerationException ex)
-			{
-				Log.Error($"path=[{subCommand.executionPath}] message=[{ex.Message}]");
-				throw ex;
-			}
-		}
-		AddArgsAndOptions(rootCommand);
-		AddArgsAndOptions(descriptor);
-		
-		// sort the parameters so that optionals are always last
-		var parameters = method.Parameters.Cast<CodeParameterDeclarationExpression>().ToList();
-		parameters.Sort((a, b) => a.CustomAttributes.Count.CompareTo(b.CustomAttributes.Count));
-		method.Parameters.Clear();
-		method.Parameters.AddRange(parameters.ToArray());
+			var addPathStatement = new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), new CodePrimitiveExpression(commandName));
+			statementCollection.Insert(0,new CodeExpressionStatement(addPathStatement));
 
-		// create the method comments.
-		method.Comments.Add(new CodeCommentStatement(new CodeComment($"<summary>{descriptor.command.Description}</summary>", true)));
-		foreach (var parameter in parameters)
-		{
-			var desc = "";
-			if (parameter.UserData.Contains("desc"))
-			{
-				desc = parameter.UserData["desc"].ToString();
-			}
-			method.Comments.Add(new CodeCommentStatement(new CodeComment($"<param name=\"{parameter.Name}\">{desc}</param>", true)));
+			
+			
+			curr = curr.parent;
 		}
-		
+
+		method.Statements.AddRange(statementCollection);
+
 		
 		var factoryReference = new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), "_factory");
 		var createMethodCall = new CodeMethodInvokeExpression(factoryReference, nameof(IBeamCommandFactory.Create));
@@ -224,13 +289,15 @@ public class UnityCliGenerator : ICliGenerator
 		var instanceReference = new CodeVariableReferenceExpression("command");
 		method.Statements.Add(new CodeCommentStatement("Create an instance of an IBeamCommand"));
 		method.Statements.Add(instanceAssignment);
-
+		
 		var joinStatement = new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)),
 			nameof(string.Join), new CodePrimitiveExpression(" "), argReference);
-		var strAssignment = new CodeAssignStatement(strReference, joinStatement);
-		method.Statements.Add(new CodeCommentStatement("Join all the args with spaces"));
-		method.Statements.Add(strAssignment);
-		
+		var createStrStatement = new CodeVariableDeclarationStatement(typeof(string), strVar,
+			joinStatement);
+		var strReference = new CodeVariableReferenceExpression(strVar);
+		method.Statements.Add(new CodeCommentStatement("Join all the command paths and args into one string"));
+		method.Statements.Add(createStrStatement);
+
 		var setCommandMethodCall = new CodeMethodInvokeExpression(instanceReference, nameof(IBeamCommand.SetCommand), strReference);
 		method.Statements.Add(new CodeCommentStatement("Configure the command with the command string"));
 		method.Statements.Add(setCommandMethodCall);

@@ -49,6 +49,7 @@ public class DownloadOpenAPICommand : AppCommand<DownloadOpenAPICommandArgs>
 			if (!hasOutput)
 			{
 				Log.Information(json);
+				args.Reporter.Report("output", json);
 				continue;
 			}
 
