@@ -6,6 +6,20 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class BeamCommands
     {
+        /// <summary>Base POST request command</summary>
+        /// <param name="uri"></param>
+        /// <param name="dryrun">Should any networking happen?</param>
+        /// <param name="cid">Cid to use; will default to whatever is in the file system</param>
+        /// <param name="pid">Pid to use; will default to whatever is in the file system</param>
+        /// <param name="host">The host endpoint for beamable</param>
+        /// <param name="refreshToken">Refresh token to use for the requests</param>
+        /// <param name="log">Extra logs gets printed out</param>
+        /// <param name="dir">Directory to use for configuration</param>
+        /// <param name="version">Show version information</param>
+        /// <param name="help">Show help and usage information</param>
+        /// <param name="header">Custom header</param>
+        /// <param name="body">Relative path to request body</param>
+        /// <param name="customerScoped">Make request customer scoped instead of product only</param>
         public virtual Beamable.Common.BeamCli.IBeamCommand Post(string uri, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool dryrun, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string cid, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string pid, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string host, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string refreshToken, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string log, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string dir, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool version, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool help, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string[]))] [System.Runtime.InteropServices.OptionalAttribute()] string[] header, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string body, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool customerScoped)
         {
             // Create a list of arguments for the command

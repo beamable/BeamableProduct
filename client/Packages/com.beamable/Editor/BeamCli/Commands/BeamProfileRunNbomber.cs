@@ -6,6 +6,21 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class BeamCommands
     {
+        /// <summary>Runs an n-bomber stress test for a given microservice method</summary>
+        /// <param name="service">The name of the microservice to stress test</param>
+        /// <param name="method">The method name in the service to stress test</param>
+        /// <param name="body">The json body for each request</param>
+        /// <param name="dryrun">Should any networking happen?</param>
+        /// <param name="cid">Cid to use; will default to whatever is in the file system</param>
+        /// <param name="pid">Pid to use; will default to whatever is in the file system</param>
+        /// <param name="host">The host endpoint for beamable</param>
+        /// <param name="refreshToken">Refresh token to use for the requests</param>
+        /// <param name="log">Extra logs gets printed out</param>
+        /// <param name="dir">Directory to use for configuration</param>
+        /// <param name="version">Show version information</param>
+        /// <param name="help">Show help and usage information</param>
+        /// <param name="includePrefix">(default=True) If true, the generated .env file will include the local machine name as prefix</param>
+        /// <param name="rps">(default=50) The requested requests per second for the test</param>
         public virtual Beamable.Common.BeamCli.IBeamCommand ProfileRunNbomber(string service, string method, string body, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool dryrun, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string cid, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string pid, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string host, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string refreshToken, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string log, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string dir, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool version, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool help, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool includePrefix, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(int))] [System.Runtime.InteropServices.OptionalAttribute()] int rps)
         {
             // Create a list of arguments for the command

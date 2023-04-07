@@ -1,11 +1,9 @@
-using Beamable.Common;
 using Beamable.Common.Dependencies;
 using cli.Services;
 using cli.Unreal;
 using Serilog;
 using System.CommandLine;
 using System.CommandLine.Invocation;
-using System.Diagnostics;
 
 namespace cli;
 
@@ -18,7 +16,7 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 {
 	private readonly IDependencyProviderScope _commandScope;
 
-	public CliInterfaceGeneratorCommand(IDependencyProviderScope commandScope) : base("generate-interface", "generates C# code for interfacing with the CLI from Unity")
+	public CliInterfaceGeneratorCommand(IDependencyProviderScope commandScope) : base("generate-interface", "Generates C# code for interfacing with the CLI from Unity")
 	{
 		_commandScope = commandScope;
 	}
@@ -27,7 +25,7 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 	{
 		AddOption(new Option<bool>("--concat", () => false,
 				"When true, all the generated code will be in one file. When false, there will be multiple files"),
-			(args, val) => args.Concat = val); // TODO: In C#, we can concat, but in C++/js, it could make no sense to support concat
+			(args, val) => args.Concat = val);
 
 		AddOption(new Option<string>("--output", () => null,
 				"When null or empty, the generated code will be sent to standard-out. When there is a output value, the file or files will be written to the path"),
@@ -141,11 +139,6 @@ public class BeamCommandDescriptor
 	public string executionPath;
 	public Command command;
 
-	public string ExecutionPathAsCapitalizedString()
-	{
-		var words = executionPath.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-		return string.Join("", words.Select(w => w.Capitalize()));
-	}
 	public string ExecutionPathAsCapitalizedStringWithoutBeam()
 	{
 		var words = executionPath.Split(' ', StringSplitOptions.RemoveEmptyEntries);

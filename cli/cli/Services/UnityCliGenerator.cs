@@ -3,6 +3,7 @@ using cli.Unreal;
 using Serilog;
 using System.CodeDom;
 using System.CommandLine;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace cli.Services;
@@ -15,7 +16,7 @@ public class CliGeneratorContext
 
 public interface ICliGenerator
 {
-	//dotnet run -- generate-interface --output=../../client/Packages/com.beamable/Editor/BeamCli/Commands
+	
 	List<GeneratedFileDescriptor> Generate(CliGeneratorContext context);
 }
 
@@ -203,6 +204,19 @@ public class UnityCliGenerator : ICliGenerator
 		method.Parameters.Clear();
 		method.Parameters.AddRange(parameters.ToArray());
 
+		// create the method comments.
+		method.Comments.Add(new CodeCommentStatement(new CodeComment($"<summary>{descriptor.command.Description}</summary>", true)));
+		foreach (var parameter in parameters)
+		{
+			var desc = "";
+			if (parameter.UserData.Contains("desc"))
+			{
+				desc = parameter.UserData["desc"].ToString();
+			}
+			method.Comments.Add(new CodeCommentStatement(new CodeComment($"<param name=\"{parameter.Name}\">{desc}</param>", true)));
+		}
+		
+		
 		var factoryReference = new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), "_factory");
 		var createMethodCall = new CodeMethodInvokeExpression(factoryReference, nameof(IBeamCommandFactory.Create));
 		var instanceAssignment =
@@ -246,8 +260,11 @@ public class UnityCliGenerator : ICliGenerator
 		if (arg.HasDefaultValue)
 		{
 			AddDefaultValue(parameter, parameter.Type);
-		}
+			
+			parameter.UserData["desc"] = $"(default={arg?.GetDefaultValue()?.ToString()}) ";
 
+		}
+		parameter.UserData["desc"] += arg.Description;
 		return parameter;
 	}
 	
@@ -268,7 +285,14 @@ public class UnityCliGenerator : ICliGenerator
 			type.ArrayRank = 1;
 		}
 		var parameter = new CodeParameterDeclarationExpression(type, name);
-
+		var field = typeof(Option).GetField("_argument", BindingFlags.Instance | BindingFlags.NonPublic);
+		if (field == null) throw new InvalidOperationException("must have default value arg");
+		var internalArg = field?.GetValue(option) as Argument;
+		if (internalArg?.HasDefaultValue ?? false)
+		{
+			parameter.UserData["desc"] = option.IsRequired ? "": $"(default={internalArg?.GetDefaultValue()?.ToString()}) ";
+		}
+		parameter.UserData["desc"] += option.Description;
 		AddDefaultValue(parameter, type);
 		
 		return parameter;

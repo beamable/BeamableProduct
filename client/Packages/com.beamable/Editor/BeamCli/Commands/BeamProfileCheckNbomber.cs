@@ -6,6 +6,19 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class BeamCommands
     {
+        /// <summary>Read the results of a n-bomber .csv file and determine if there are errors</summary>
+        /// <param name="nbomberFilePath">The path to the nbomber output csv file</param>
+        /// <param name="dryrun">Should any networking happen?</param>
+        /// <param name="cid">Cid to use; will default to whatever is in the file system</param>
+        /// <param name="pid">Pid to use; will default to whatever is in the file system</param>
+        /// <param name="host">The host endpoint for beamable</param>
+        /// <param name="refreshToken">Refresh token to use for the requests</param>
+        /// <param name="log">Extra logs gets printed out</param>
+        /// <param name="dir">Directory to use for configuration</param>
+        /// <param name="version">Show version information</param>
+        /// <param name="help">Show help and usage information</param>
+        /// <param name="failLimit">(default=0) The max number of failed requests</param>
+        /// <param name="p95Limit">(default=2500) The max p95 in ms</param>
         public virtual Beamable.Common.BeamCli.IBeamCommand ProfileCheckNbomber(string nbomberFilePath, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool dryrun, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string cid, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string pid, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string host, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string refreshToken, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string log, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string dir, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool version, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool help, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(double))] [System.Runtime.InteropServices.OptionalAttribute()] double failLimit, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(double))] [System.Runtime.InteropServices.OptionalAttribute()] double p95Limit)
         {
             // Create a list of arguments for the command

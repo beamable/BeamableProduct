@@ -6,6 +6,22 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class BeamCommands
     {
+        /// <summary>Deploys services, either locally or remotely (to the current realm)</summary>
+        /// <param name="dryrun">Should any networking happen?</param>
+        /// <param name="cid">Cid to use; will default to whatever is in the file system</param>
+        /// <param name="pid">Pid to use; will default to whatever is in the file system</param>
+        /// <param name="host">The host endpoint for beamable</param>
+        /// <param name="refreshToken">Refresh token to use for the requests</param>
+        /// <param name="log">Extra logs gets printed out</param>
+        /// <param name="dir">Directory to use for configuration</param>
+        /// <param name="version">Show version information</param>
+        /// <param name="help">Show help and usage information</param>
+        /// <param name="ids">The ids for the services you wish to deploy. Ignoring this option deploys all services.If '--remote' option is set, these are the ids that'll become enabled by Beam-O once it receives the updated manifest</param>
+        /// <param name="remote">(default=False) If this option is set, we publish the manifest instead</param>
+        /// <param name="fromFile">(default=) If this option is set to a valid path to a ServiceManifest JSON, deploys that instead. Only works if --remote flag is set</param>
+        /// <param name="comment">(default=) Requires --remote flag. Associates this comment along with the published Manifest. You'll be able to read it via the Beamable Portal</param>
+        /// <param name="serviceComments">(default=System.String[]) Requires --remote flag. Any number of 'BeamoId::Comment' strings. 
+        ///Associates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal</param>
         public virtual Beamable.Common.BeamCli.IBeamCommand ServicesDeploy([System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool dryrun, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string cid, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string pid, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string host, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string refreshToken, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string log, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string dir, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool version, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool help, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string[]))] [System.Runtime.InteropServices.OptionalAttribute()] string[] ids, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool remote, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string fromFile, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string comment, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string[]))] [System.Runtime.InteropServices.OptionalAttribute()] string[] serviceComments)
         {
             // Create a list of arguments for the command

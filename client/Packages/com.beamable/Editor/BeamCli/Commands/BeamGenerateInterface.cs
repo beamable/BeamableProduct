@@ -6,6 +6,18 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public partial class BeamCommands
     {
+        /// <summary>Generates C# code for interfacing with the CLI from Unity</summary>
+        /// <param name="dryrun">Should any networking happen?</param>
+        /// <param name="cid">Cid to use; will default to whatever is in the file system</param>
+        /// <param name="pid">Pid to use; will default to whatever is in the file system</param>
+        /// <param name="host">The host endpoint for beamable</param>
+        /// <param name="refreshToken">Refresh token to use for the requests</param>
+        /// <param name="log">Extra logs gets printed out</param>
+        /// <param name="dir">Directory to use for configuration</param>
+        /// <param name="version">Show version information</param>
+        /// <param name="help">Show help and usage information</param>
+        /// <param name="concat">(default=False) When true, all the generated code will be in one file. When false, there will be multiple files</param>
+        /// <param name="output">(default=) When null or empty, the generated code will be sent to standard-out. When there is a output value, the file or files will be written to the path</param>
         public virtual Beamable.Common.BeamCli.IBeamCommand GenerateInterface([System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool dryrun, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string cid, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string pid, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string host, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string refreshToken, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string log, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string dir, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool version, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool help, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(bool))] [System.Runtime.InteropServices.OptionalAttribute()] bool concat, [System.Runtime.InteropServices.DefaultParameterValueAttribute(default(string))] [System.Runtime.InteropServices.OptionalAttribute()] string output)
         {
             // Create a list of arguments for the command
