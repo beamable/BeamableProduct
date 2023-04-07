@@ -317,8 +317,16 @@ namespace Beamable.Content
 
 			if (File.Exists(contentPath))
 			{
-				var json = File.ReadAllText(contentPath);
-				ContentDataInfo = DeserializeDataCache<ContentDataInfoWrapper>(json);
+				try
+				{
+					var json = File.ReadAllText(contentPath);
+					var contentData = DeserializeDataCache<ContentDataInfoWrapper>(json);
+					ContentDataInfo = contentData;
+				}
+				catch (Exception e)
+				{
+					Debug.LogError($"Failed to deserialize baked content({e}), continue initialization without it.");
+				}
 			}
 			else
 			{
