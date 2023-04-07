@@ -10,7 +10,7 @@ public class CheckStatusCommandArgs : CommandArgs
 }
 public class CheckStatusCommand : AppCommand<CheckStatusCommandArgs>
 {
-	public CheckStatusCommand() : base("ps", "list the running status of local services not running in docker")
+	public CheckStatusCommand() : base("ps", "List the running status of local services not running in docker")
 	{
 	}
 
