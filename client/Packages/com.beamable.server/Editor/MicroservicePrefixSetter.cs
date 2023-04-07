@@ -12,12 +12,10 @@ namespace Beamable.Server.Editor
 
 	public class MicroservicePrefixService : IMicroservicePrefixService
 	{
-		private readonly MicroserviceDiscovery _discoveryService;
 		private readonly MicroserviceReflectionCache.Registry _registry;
 		private readonly Dictionary<string, MicroserviceDescriptor> _nameToDescriptor;
-		public MicroservicePrefixService(MicroserviceDiscovery discoveryService)
+		public MicroservicePrefixService()
 		{
-			_discoveryService = discoveryService;
 			_registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			_nameToDescriptor = _registry.Descriptors.ToDictionary(d => d.Name);
 		}
@@ -33,14 +31,9 @@ namespace Beamable.Server.Editor
 				WriteLogToUnity = false
 			};
 			var isRunningInDocker = await command.Start();
-			await _discoveryService.WaitForUpdate();
 			if (isRunningInDocker)
 			{
 				return MicroserviceIndividualization.Prefix;
-			}
-			else if (_discoveryService.TryIsRunning(serviceName, out var localRunningEntry))
-			{
-				return localRunningEntry.prefix;
 			}
 			else
 			{
