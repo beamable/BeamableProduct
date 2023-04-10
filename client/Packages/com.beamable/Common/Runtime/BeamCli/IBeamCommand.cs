@@ -10,6 +10,17 @@ namespace Beamable.Common.BeamCli
 		IBeamCommand On(Action<ReportDataPointDescription> cb);
 	}
 
+	public class BeamCommandWrapper 
+	{
+		public IBeamCommand Command { get; set; }
+		public Promise Run() => Command.Run();
+	}
+
+	public interface IResultChannel
+	{
+		string ChannelName { get; }
+	}
+
 	public interface IBeamCommandFactory
 	{
 		IBeamCommand Create();
