@@ -264,7 +264,15 @@ public class UnityCliGenerator : ICliGenerator
 
 	public static CodeTypeDeclaration GenerateResultStreamType(Type runtimeType)
 	{
-		var type = new CodeTypeDeclaration { Name = GetResultClassName(runtimeType) };
+		var type = new CodeTypeDeclaration
+		{
+			Name = GetResultClassName(runtimeType),
+			TypeAttributes = TypeAttributes.Serializable | TypeAttributes.Public,
+			CustomAttributes = new CodeAttributeDeclarationCollection
+			{
+				new CodeAttributeDeclaration(new CodeTypeReference(typeof(SerializableAttribute)))
+			}
+		};
 
 		foreach (var field in UnityJsonContractResolver.GetSerializedFields(runtimeType))
 		{

@@ -41,7 +41,7 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public class ProjectPsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamSampleNumber(System.Action<ReportDataPoint<Beamable.Common.BeamCli.SampleNumber>> cb)
+        public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamCheckStatusStreamResult(System.Action<ReportDataPoint<BeamCheckStatusStreamResult>> cb)
         {
             this.Command.On("stream", cb);
             return this;
