@@ -1,4 +1,5 @@
 using Beamable.Common.BeamCli;
+using Beamable.Server.Common;
 using cli.Unreal;
 using Serilog;
 using System.CodeDom;
@@ -36,9 +37,36 @@ public class UnityCliGenerator : ICliGenerator
 		var files = new List<GeneratedFileDescriptor>();
 		foreach (var command in context.Commands)
 		{
+			if (!command.hasValidOutput && command.executionPath != "beam") continue;
 			if (invalidCommands.Contains(command.executionPath)) continue;
 			files.Add(Generate(command));
 		}
+
+		var resultTypes = context.Commands.SelectMany(command => command.resultStreams.Select(s => s.runtimeType));
+
+		foreach (var resultType in resultTypes)
+		{
+			if (resultType.Namespace.StartsWith("Beamable.Common")) continue;
+			
+			var unit = new CodeCompileUnit();
+			var root = new CodeNamespace("Beamable.Editor.BeamCli.Commands");
+			root.Imports.Add(new CodeNamespaceImport("Beamable.Common"));
+			root.Imports.Add(new CodeNamespaceImport("Beamable.Common.BeamCli"));
+			unit.Namespaces.Add(root);
+
+			var decl = GenerateResultStreamType(resultType);
+			root.Types.Add(decl);
+			var srcCode = UnityHelper.GenerateCsharp(unit);
+			
+			var fileName = ConvertToSnakeCase(decl.Name) + ".cs";
+			files.Add(new GeneratedFileDescriptor
+			{
+				Content = srcCode,
+				FileName = fileName
+			});
+		}
+		
+		
 		return files;
 	}
 
@@ -52,7 +80,8 @@ public class UnityCliGenerator : ICliGenerator
 
 		root.Types.Add(GenerateArgType(command));
 		root.Types.Add(GenerateCodeType(command));
-		
+		root.Types.Add(GenerateReturnType(command));
+
 		
 		var srcCode = UnityHelper.GenerateCsharp(unit);
 		var fileName = ConvertToSnakeCase(command.executionPath) + ".cs";
@@ -63,6 +92,20 @@ public class UnityCliGenerator : ICliGenerator
 	{
 		return ConvertToSnakeCase(descriptor.ExecutionPathAsCapitalizedStringWithoutBeam() + "Args");
 	}
+	
+	public static string GetReturnClassName(BeamCommandDescriptor descriptor)
+	{
+		return ConvertToSnakeCase(descriptor.ExecutionPathAsCapitalizedStringWithoutBeam() + "Wrapper");
+	}
+	public static string GetResultClassName(Type runtimeType)
+	{
+		if (runtimeType.Namespace.StartsWith("Beamable.Common"))
+		{
+			return runtimeType.FullName;
+		}
+		return ConvertToSnakeCase("Beam" + runtimeType.Name);
+	}
+
 
 	public static CodeTypeDeclaration GenerateArgType(BeamCommandDescriptor descriptor)
 	{
@@ -219,10 +262,68 @@ public class UnityCliGenerator : ICliGenerator
 		return type;
 	}
 
+	public static CodeTypeDeclaration GenerateResultStreamType(Type runtimeType)
+	{
+		var type = new CodeTypeDeclaration { Name = GetResultClassName(runtimeType) };
+
+		foreach (var field in UnityJsonContractResolver.GetSerializedFields(runtimeType))
+		{
+			var fieldDecl = new CodeMemberField
+			{
+				Name = field.Name,
+				Type = new CodeTypeReference(field.FieldType),
+				Attributes = MemberAttributes.Public
+			};
+			type.Members.Add(fieldDecl);
+
+		}
+		
+		return type;
+	}
+	
+	public static CodeTypeDeclaration GenerateReturnType(BeamCommandDescriptor descriptor)
+	{
+		var type = new CodeTypeDeclaration
+		{
+			Name = GetReturnClassName(descriptor),
+			BaseTypes =
+			{
+				new CodeTypeReference(typeof(BeamCommandWrapper))
+			}
+		};
+
+		foreach (var result in descriptor.resultStreams)
+		{
+			var method = new CodeMemberMethod
+			{
+				Name = $"On{result.channel.Capitalize()}{result.runtimeType.Name}",
+				Attributes = MemberAttributes.Public,
+				ReturnType = type.BaseTypes[0]
+			};
+
+			var argTypeRef = new CodeTypeReference($"System.Action<ReportDataPoint<{GetResultClassName(result.runtimeType)}>>");
+			method.Parameters.Add(new CodeParameterDeclarationExpression { Name = "cb", Type = argTypeRef });
+
+			var commandRef = new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), nameof(BeamCommandWrapper.Command));
+			var methodInvocStatement =
+				new CodeMethodInvokeExpression(commandRef, "On", new CodePrimitiveExpression(result.channel), new CodeVariableReferenceExpression("cb"));
+			method.Statements.Add(methodInvocStatement);
+			
+			var returnStatement = new CodeMethodReturnStatement(new CodeThisReferenceExpression());
+			method.Statements.Add(returnStatement);
+			
+			
+			type.Members.Add(method);
+		}
+		
+		return type;
+	}
+	
 	public static CodeTypeDeclaration GenerateCodeType(BeamCommandDescriptor descriptor)
 	{
 		const string strVar = "genBeamCommandStr";
 		const string argsVar = "genBeamCommandArgs";
+		const string wrapperVar = "genBeamCommandWrapper";
 		
 		var type = new CodeTypeDeclaration("BeamCommands")
 		{
@@ -232,7 +333,7 @@ public class UnityCliGenerator : ICliGenerator
 		var method = new CodeMemberMethod
 		{
 			Name = ConvertToSnakeCase(descriptor.ExecutionPathAsCapitalizedStringWithoutBeam()),
-			ReturnType = new CodeTypeReference(typeof(IBeamCommand)),
+			ReturnType = new CodeTypeReference(GetReturnClassName(descriptor)),
 			Attributes = MemberAttributes.Public
 		};
 		
@@ -301,14 +402,35 @@ public class UnityCliGenerator : ICliGenerator
 		var setCommandMethodCall = new CodeMethodInvokeExpression(instanceReference, nameof(IBeamCommand.SetCommand), strReference);
 		method.Statements.Add(new CodeCommentStatement("Configure the command with the command string"));
 		method.Statements.Add(setCommandMethodCall);
+
+		var wrapperCreationStatement = new CodeVariableDeclarationStatement(GetReturnClassName(descriptor), wrapperVar, new CodeObjectCreateExpression(GetReturnClassName(descriptor)));
+		var wrapperReference = new CodeVariableReferenceExpression(wrapperVar);
+		var setWrapperStatement = new CodeAssignStatement(new CodeFieldReferenceExpression(wrapperReference, nameof(BeamCommandWrapper.Command)),
+			instanceReference);
+		// var setCommandStatement = new CodeMethodInvokeExpression(wrapperReference, nameof(BeamCommandWrapper))
 		
-		var returnStatement = new CodeMethodReturnStatement(instanceReference);
+		
+		method.Statements.Add(wrapperCreationStatement);
+		method.Statements.Add(setWrapperStatement);
+
+		
+		var returnStatement = new CodeMethodReturnStatement(wrapperReference);
 		method.Statements.Add(new CodeCommentStatement("Return the command!"));
 		method.Statements.Add(returnStatement);
 		
 		type.Members.Add(method);
+		
+		// generate result stream methods...
+		// foreach (var result in descriptor.resultStreams)
+		// {
+		// 	var resultMethod = CreateResultStreamMethod(descriptor, result);
+		// 	type.Members.Add(resultMethod);
+		// }
+		
+		
 		return type;
 	}
+
 
 	public static void AddDefaultValue(CodeParameterDeclarationExpression parameter, CodeTypeReference type)
 	{

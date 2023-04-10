@@ -53,8 +53,15 @@ namespace Beamable.Editor.BeamCli.Commands
 
 namespace Beamable.Editor.BeamCli
 {
-
-
+	public static class BeamCommandExtensions
+	{
+		// public static void Handle<TChannel, TData>(this IBeamCommandResultStream<TChannel, TData> self, Action<ReportDataPoint<TData>> cb)
+		// 	where TChannel : IResultChannel, new()
+		// {
+		// 	var channel = new TChannel(); // TODO: cache
+		// 	// self.On(channel.ChannelName, cb);
+		// }
+	}
 	
 	public class BeamCommandFactory : IBeamCommandFactory
 	{

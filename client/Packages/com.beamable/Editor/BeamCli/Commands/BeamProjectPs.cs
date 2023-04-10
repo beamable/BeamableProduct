@@ -19,7 +19,7 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class BeamCommands
     {
-        public virtual Beamable.Common.BeamCli.IBeamCommand ProjectPs()
+        public virtual ProjectPsWrapper ProjectPs()
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
@@ -33,8 +33,18 @@ namespace Beamable.Editor.BeamCli.Commands
             string genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
             // Configure the command with the command string
             command.SetCommand(genBeamCommandStr);
+            ProjectPsWrapper genBeamCommandWrapper = new ProjectPsWrapper();
+            genBeamCommandWrapper.Command = command;
             // Return the command!
-            return command;
+            return genBeamCommandWrapper;
+        }
+    }
+    public class ProjectPsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+    {
+        public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamSampleNumber(System.Action<ReportDataPoint<Beamable.Common.BeamCli.SampleNumber>> cb)
+        {
+            this.Command.On("stream", cb);
+            return this;
         }
     }
 }

@@ -1,14 +1,17 @@
 using Beamable.Common.BeamCli;
 using NetMQ;
 using Serilog;
+using System.CommandLine;
 
-namespace cli.Dotnet;
+namespace cli;
 
 public class CheckStatusCommandArgs : CommandArgs
 {
 	
 }
+
 public class CheckStatusCommand : AppCommand<CheckStatusCommandArgs>
+	, IResultSteam<DefaultStreamResultChannel, SampleNumber>
 {
 	public CheckStatusCommand() : base("ps", "List the running status of local services not running in docker")
 	{
@@ -22,10 +25,9 @@ public class CheckStatusCommand : AppCommand<CheckStatusCommandArgs>
 	{
 		for (var i = 0; i < 10; i++)
 		{
-			Log.Information("Printing " + i);
-			args.Reporter.Report("nums", new SampleNumber(){x = i});
-			Log.Information("did the print");
+			this.SendResults(new SampleNumber{ x = i } );
 			await Task.Delay(Random.Shared.Next(100));
 		}
 	}
+
 }

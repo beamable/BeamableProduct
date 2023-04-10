@@ -1,3 +1,4 @@
+using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using cli.Services;
 using cli.Unreal;
@@ -52,10 +53,8 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 		while (safety-- > 0 && queue.Count > 0)
 		{
 			var curr = queue.Dequeue();
-			// if (curr.executionPath != "beam")
-			{
-				allCommands.Add(curr);
-			}
+			allCommands.Add(curr);
+			
 
 			foreach (var subCommand in curr.command.Subcommands)
 			{
@@ -63,8 +62,31 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 				{
 					executionPath = $"{curr.executionPath} {subCommand.Name}", 
 					command = subCommand,
-					parent = curr
+					parent = curr,
+					hasValidOutput = subCommand.GetType().IsAssignableTo(typeof(IEmptyResult))
 				};
+				
+				
+				// find result streams...
+				var interfaces = subCommand.GetType().GetInterfaces();
+				foreach (var interfaceType in interfaces)
+				{
+					if (!interfaceType.IsGenericType) continue;
+					if (interfaceType.GetGenericTypeDefinition() != typeof(IResultSteam<,>)) continue;
+					var genArgs = interfaceType.GetGenericArguments();
+
+					var channelType = genArgs[0];
+					var resultType = genArgs[1];
+
+					subBeamCommand.hasValidOutput = true;
+					subBeamCommand.resultStreams.Add(new BeamCommandResultDescriptor
+					{
+						channel = (Activator.CreateInstance(channelType) as IResultChannel)?.ChannelName,
+						runtimeType = resultType
+					});
+				}
+				
+
 				queue.Enqueue(subBeamCommand);
 			}
 		}
@@ -80,7 +102,6 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 		
 		
 		var outputData = !string.IsNullOrEmpty(args.OutputPath);
-		// TODO: rewrite as a pattern match
 		if (outputData)
 		{
 			var isFile = args.OutputPath.EndsWith(".cs");
@@ -140,7 +161,10 @@ public class BeamCommandDescriptor
 	public string executionPath;
 	public Command command;
 	public BeamCommandDescriptor parent;
+	public bool hasValidOutput;
+	public List<BeamCommandResultDescriptor> resultStreams = new List<BeamCommandResultDescriptor>();
 
+	
 	public string ExecutionPathAsCapitalizedStringWithoutBeam()
 	{
 		var words = executionPath.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -148,4 +172,10 @@ public class BeamCommandDescriptor
 		return string.Join("", words.Skip(1).Select(w => w.Capitalize()));
 	}
 	
+}
+
+public class BeamCommandResultDescriptor
+{
+	public string channel;
+	public Type runtimeType;
 }

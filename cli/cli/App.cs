@@ -81,7 +81,6 @@ public class App
 		services.AddSingleton<ProjectService>();
 		services.AddSingleton<SwaggerService.SourceGeneratorListProvider>();
 		services.AddSingleton<ICliGenerator, UnityCliGenerator>();
-		services.AddSingleton<DataReporterService>();
 		OpenApiRegistration.RegisterOpenApis(services);
 
 		_serviceConfigurator?.Invoke(services);

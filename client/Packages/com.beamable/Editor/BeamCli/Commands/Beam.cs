@@ -89,7 +89,7 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class BeamCommands
     {
-        public virtual Beamable.Common.BeamCli.IBeamCommand Beam()
+        public virtual BeamWrapper Beam()
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
@@ -101,8 +101,13 @@ namespace Beamable.Editor.BeamCli.Commands
             string genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
             // Configure the command with the command string
             command.SetCommand(genBeamCommandStr);
+            BeamWrapper genBeamCommandWrapper = new BeamWrapper();
+            genBeamCommandWrapper.Command = command;
             // Return the command!
-            return command;
+            return genBeamCommandWrapper;
         }
+    }
+    public class BeamWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+    {
     }
 }
