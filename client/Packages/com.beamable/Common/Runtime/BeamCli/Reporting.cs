@@ -12,7 +12,7 @@ namespace Beamable.Common.BeamCli
 		{
 			return $"{PATTERN_START}{message}{PATTERN_END}";
 		}
-		
+
 	}
 
 	[Serializable]
