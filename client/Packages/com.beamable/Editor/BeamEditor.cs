@@ -122,7 +122,7 @@ namespace Beamable
 
 			DependencyBuilder.AddSingleton<BeamCommands>();
 			DependencyBuilder.AddSingleton<BeamCli>();
-			
+
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 		}
 	}
