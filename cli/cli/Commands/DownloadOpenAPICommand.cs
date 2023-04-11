@@ -13,7 +13,7 @@ public class DownloadOpenAPICommandArgs : CommandArgs
 }
 
 
-public class DownloadOpenAPICommand : AppCommand<DownloadOpenAPICommandArgs>
+public class DownloadOpenAPICommand : AppCommand<DownloadOpenAPICommandArgs>, IEmptyResult
 {
 	private SwaggerService _swaggerService;
 
@@ -49,6 +49,7 @@ public class DownloadOpenAPICommand : AppCommand<DownloadOpenAPICommandArgs>
 			if (!hasOutput)
 			{
 				Log.Information(json);
+				// args.Reporter.Report("output", json);
 				continue;
 			}
 

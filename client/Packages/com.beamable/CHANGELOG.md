@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Detect issues with parsing baked content.
 
+### Added
+- Beam CLI bindings.
+
 ## [1.14.0]
 ### Fixed
 - "Serialization depth limit" warning for `RealmView` on domain reloads.
