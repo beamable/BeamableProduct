@@ -42,13 +42,13 @@ public class App
 	{
 		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
 		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
-		
+
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
 		Log.Logger = new LoggerConfiguration()
 			.WriteTo.SpectreConsole("{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}")
 			.MinimumLevel.ControlledBy(LogLevel)
 			.CreateLogger();
-		
+
 		BeamableLogProvider.Provider = new CliSerilogProvider();
 		CliSerilogProvider.LogContext.Value = Log.Logger;
 	}

@@ -19,7 +19,7 @@ public interface IResultSteam<TChannel, TData> : IResultProvider
 
 public interface IEmptyResult : IResultProvider
 {
-	
+
 }
 
 
@@ -43,7 +43,7 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider
 {
 	private List<Action<BindingContext, TArgs>> _bindingActions = new List<Action<BindingContext, TArgs>>();
 
-	 DataReporterService IResultProvider.Reporter { get; set; }
+	DataReporterService IResultProvider.Reporter { get; set; }
 
 	protected AppCommand(string name, string description = null) : base(name, description)
 	{

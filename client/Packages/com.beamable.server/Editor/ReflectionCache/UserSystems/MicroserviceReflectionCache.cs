@@ -402,22 +402,22 @@ namespace Beamable.Server.Editor
 			public event Action<string, ServicePublishState> OnProgressInfoUpdated;
 
 			public async Task Deploy(ManifestModel model,
-			                         CancellationToken token,
-			                         Action<IDescriptor> onServiceDeployed = null,
-			                         Action<LogMessage> logger = null)
+									 CancellationToken token,
+									 Action<IDescriptor> onServiceDeployed = null,
+									 Action<LogMessage> logger = null)
 			{
 				try
 				{
 #if !UNITY_2021
-						AssetDatabase.StartAssetEditing();
+					AssetDatabase.StartAssetEditing();
 #endif
-					
+
 					await DeployInternal(model, token, onServiceDeployed, logger);
 				}
 				finally
 				{
 #if !UNITY_2021
-						AssetDatabase.StopAssetEditing();
+					AssetDatabase.StopAssetEditing();
 #endif
 				}
 			}

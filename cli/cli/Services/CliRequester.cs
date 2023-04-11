@@ -169,7 +169,7 @@ public class CliRequester : IRequester
 
 	public Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> req)
 	{
-		
+
 		return Request<T>(req.Method, req.uri, req.body, req.includeAuthHeader, req.parser, req.useCache);
 	}
 

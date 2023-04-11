@@ -7,7 +7,7 @@ namespace cli;
 
 public class CheckStatusCommandArgs : CommandArgs
 {
-	
+
 }
 
 public class CheckStatusStreamResult
@@ -34,7 +34,7 @@ public class CheckStatusCommand : AppCommand<CheckStatusCommandArgs>
 			{
 				cid = args.AppContext.Cid,
 				pid = args.AppContext.Pid
-			} );
+			});
 			await Task.Delay(Random.Shared.Next(100));
 		}
 	}

@@ -26,7 +26,7 @@ public class ProjectService
 	{
 		return _projects.unityProjectsPaths.ToList();
 	}
-	
+
 	public List<string> GetLinkedUnrealProjects()
 	{
 		return _projects.unrealProjectsPaths.ToList();
@@ -37,7 +37,7 @@ public class ProjectService
 		_projects.unityProjectsPaths.Add(relativePath);
 		_configService.SaveDataFile(".linkedProjects", _projects);
 	}
-	
+
 	public void AddUnrealProject(string relativePath)
 	{
 		_projects.unrealProjectsPaths.Add(relativePath);

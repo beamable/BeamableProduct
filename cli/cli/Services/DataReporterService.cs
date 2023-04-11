@@ -14,7 +14,7 @@ public class DataReporterService
 	{
 		_appContext = appContext;
 	}
-	
+
 	public void Report(string rawMessage)
 	{
 		if (!_appContext.UseFatalAsReportingChannel) return;
@@ -27,7 +27,7 @@ public class DataReporterService
 	{
 		var pt = new ReportDataPoint<T>
 		{
-			data = data, 
+			data = data,
 			type = type,
 			ts = DateTimeOffset.Now.ToUnixTimeMilliseconds()
 		};

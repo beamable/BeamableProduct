@@ -128,10 +128,10 @@ public class Tests
 
 		Console.WriteLine("----- OUTPUT ----");
 		Console.WriteLine(string.Join("\n", descriptors.Select(d => $"{d.FileName}\n\n{d.Content}\n")));
-		
+
 		Assert.AreEqual(11, descriptors.Count);
 	}
-	
+
 	[Microservice("troublesome")]
 	public class TroublesomeService : Microservice
 	{

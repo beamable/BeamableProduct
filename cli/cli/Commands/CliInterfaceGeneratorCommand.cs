@@ -37,7 +37,7 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 	public override Task Handle(CliInterfaceGeneratorCommandArgs args)
 	{
 		var ctx = args.DependencyProvider.GetService<InvocationContext>();
-		
+
 		var allCommands = new List<BeamCommandDescriptor>();
 		var rootCommand = ctx.Parser.Configuration.RootCommand;
 		var rootBeamCommand = new BeamCommandDescriptor
@@ -45,7 +45,7 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 			executionPath = "beam", // the root command is special and has the tool name, not the assembly name
 			command = rootCommand
 		};
-		
+
 		// traverse the tree and create more BeamCommands
 		var queue = new Queue<BeamCommandDescriptor>();
 		queue.Enqueue(rootBeamCommand);
@@ -54,19 +54,19 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 		{
 			var curr = queue.Dequeue();
 			allCommands.Add(curr);
-			
+
 
 			foreach (var subCommand in curr.command.Subcommands)
 			{
 				var subBeamCommand = new BeamCommandDescriptor
 				{
-					executionPath = $"{curr.executionPath} {subCommand.Name}", 
+					executionPath = $"{curr.executionPath} {subCommand.Name}",
 					command = subCommand,
 					parent = curr,
 					hasValidOutput = subCommand.GetType().IsAssignableTo(typeof(IEmptyResult))
 				};
-				
-				
+
+
 				// find result streams...
 				var interfaces = subCommand.GetType().GetInterfaces();
 				foreach (var interfaceType in interfaces)
@@ -85,12 +85,12 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 						runtimeType = resultType
 					});
 				}
-				
+
 
 				queue.Enqueue(subBeamCommand);
 			}
 		}
-		
+
 		// now we have all the beam commands and their call sites
 		// proxy out to a generator... for now, its unity... but someday it'll be unity or unreal.
 		var generator = args.DependencyProvider.GetService<ICliGenerator>();
@@ -99,8 +99,8 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 			Root = rootBeamCommand,
 			Commands = allCommands
 		});
-		
-		
+
+
 		var outputData = !string.IsNullOrEmpty(args.OutputPath);
 		if (outputData)
 		{
@@ -151,7 +151,7 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 				Log.Warning(file.Content);
 			}
 		}
-		
+
 		return Task.CompletedTask;
 	}
 }
@@ -164,14 +164,14 @@ public class BeamCommandDescriptor
 	public bool hasValidOutput;
 	public List<BeamCommandResultDescriptor> resultStreams = new List<BeamCommandResultDescriptor>();
 
-	
+
 	public string ExecutionPathAsCapitalizedStringWithoutBeam()
 	{
 		var words = executionPath.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 		if (words.Length == 1) return "Beam";
 		return string.Join("", words.Skip(1).Select(w => w.Capitalize()));
 	}
-	
+
 }
 
 public class BeamCommandResultDescriptor

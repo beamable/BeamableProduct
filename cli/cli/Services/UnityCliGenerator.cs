@@ -17,7 +17,7 @@ public class CliGeneratorContext
 
 public interface ICliGenerator
 {
-	
+
 	List<GeneratedFileDescriptor> Generate(CliGeneratorContext context);
 }
 
@@ -28,12 +28,12 @@ public class UnityCliGenerator : ICliGenerator
 		// the following commands are more complicated and either use nullables or enums
 		var invalidCommands = new string[]
 		{
-			"beam services register", 
-			"beam services modify", 
-			"beam services enable", 
+			"beam services register",
+			"beam services modify",
+			"beam services enable",
 			"beam oapi generate",
 		};
-		
+
 		var files = new List<GeneratedFileDescriptor>();
 		foreach (var command in context.Commands)
 		{
@@ -47,7 +47,7 @@ public class UnityCliGenerator : ICliGenerator
 		foreach (var resultType in resultTypes)
 		{
 			if (resultType.Namespace.StartsWith("Beamable.Common")) continue;
-			
+
 			var unit = new CodeCompileUnit();
 			var root = new CodeNamespace("Beamable.Editor.BeamCli.Commands");
 			root.Imports.Add(new CodeNamespaceImport("Beamable.Common"));
@@ -57,7 +57,7 @@ public class UnityCliGenerator : ICliGenerator
 			var decl = GenerateResultStreamType(resultType);
 			root.Types.Add(decl);
 			var srcCode = UnityHelper.GenerateCsharp(unit);
-			
+
 			var fileName = ConvertToSnakeCase(decl.Name) + ".cs";
 			files.Add(new GeneratedFileDescriptor
 			{
@@ -65,8 +65,8 @@ public class UnityCliGenerator : ICliGenerator
 				FileName = fileName
 			});
 		}
-		
-		
+
+
 		return files;
 	}
 
@@ -82,7 +82,7 @@ public class UnityCliGenerator : ICliGenerator
 		root.Types.Add(GenerateCodeType(command));
 		root.Types.Add(GenerateReturnType(command));
 
-		
+
 		var srcCode = UnityHelper.GenerateCsharp(unit);
 		var fileName = ConvertToSnakeCase(command.executionPath) + ".cs";
 		return new GeneratedFileDescriptor { Content = srcCode, FileName = fileName.Capitalize() };
@@ -92,7 +92,7 @@ public class UnityCliGenerator : ICliGenerator
 	{
 		return ConvertToSnakeCase(descriptor.ExecutionPathAsCapitalizedStringWithoutBeam() + "Args");
 	}
-	
+
 	public static string GetReturnClassName(BeamCommandDescriptor descriptor)
 	{
 		return ConvertToSnakeCase(descriptor.ExecutionPathAsCapitalizedStringWithoutBeam() + "Wrapper");
@@ -114,7 +114,7 @@ public class UnityCliGenerator : ICliGenerator
 
 
 		var name = GetArgClassName(descriptor);
-		var type = new CodeTypeDeclaration(name );
+		var type = new CodeTypeDeclaration(name);
 		type.BaseTypes.Add(new CodeTypeReference(typeof(IBeamCommandArgs)));
 
 
@@ -135,7 +135,7 @@ public class UnityCliGenerator : ICliGenerator
 		method.Statements.Add(new CodeCommentStatement("Create a list of arguments for the command"));
 		method.Statements.Add(createArgListStatement);
 
-		
+
 		try
 		{
 			foreach (var arg in descriptor.command.Arguments)
@@ -145,7 +145,7 @@ public class UnityCliGenerator : ICliGenerator
 				fieldDecl.Comments.Add(new CodeCommentStatement($"<summary>{arg.Description}</summary>", true));
 				fieldDecl.Attributes = MemberAttributes.Public;
 				type.Members.Add(fieldDecl);
-				var parameterReference =  new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), fieldDecl.Name);
+				var parameterReference = new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), fieldDecl.Name);
 
 				var valueIsNotNullExpr = new CodeBinaryOperatorExpression(parameterReference,
 					CodeBinaryOperatorType.IdentityInequality,
@@ -178,7 +178,7 @@ public class UnityCliGenerator : ICliGenerator
 
 				type.Members.Add(fieldDecl);
 
-				var parameterReference =  new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), fieldDecl.Name);
+				var parameterReference = new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), fieldDecl.Name);
 
 				var valueIsNotNullExpr = new CodeBinaryOperatorExpression(parameterReference,
 					CodeBinaryOperatorType.IdentityInequality,
@@ -255,7 +255,7 @@ public class UnityCliGenerator : ICliGenerator
 		var strAssignment = new CodeAssignStatement(strReference, joinStatement);
 		method.Statements.Add(new CodeCommentStatement("Join all the args with spaces"));
 		method.Statements.Add(strAssignment);
-		
+
 		var returnStatement = new CodeMethodReturnStatement(strReference);
 		method.Statements.Add(returnStatement);
 
@@ -285,10 +285,10 @@ public class UnityCliGenerator : ICliGenerator
 			type.Members.Add(fieldDecl);
 
 		}
-		
+
 		return type;
 	}
-	
+
 	public static CodeTypeDeclaration GenerateReturnType(BeamCommandDescriptor descriptor)
 	{
 		var type = new CodeTypeDeclaration
@@ -316,23 +316,23 @@ public class UnityCliGenerator : ICliGenerator
 			var methodInvocStatement =
 				new CodeMethodInvokeExpression(commandRef, "On", new CodePrimitiveExpression(result.channel), new CodeVariableReferenceExpression("cb"));
 			method.Statements.Add(methodInvocStatement);
-			
+
 			var returnStatement = new CodeMethodReturnStatement(new CodeThisReferenceExpression());
 			method.Statements.Add(returnStatement);
-			
-			
+
+
 			type.Members.Add(method);
 		}
-		
+
 		return type;
 	}
-	
+
 	public static CodeTypeDeclaration GenerateCodeType(BeamCommandDescriptor descriptor)
 	{
 		const string strVar = "genBeamCommandStr";
 		const string argsVar = "genBeamCommandArgs";
 		const string wrapperVar = "genBeamCommandWrapper";
-		
+
 		var type = new CodeTypeDeclaration("BeamCommands")
 		{
 			IsPartial = true
@@ -344,7 +344,7 @@ public class UnityCliGenerator : ICliGenerator
 			ReturnType = new CodeTypeReference(GetReturnClassName(descriptor)),
 			Attributes = MemberAttributes.Public
 		};
-		
+
 		var createArgListStatement = new CodeVariableDeclarationStatement(typeof(List<string>), argsVar, new CodeObjectCreateExpression(typeof(List<string>)));
 		var argReference = new CodeVariableReferenceExpression(argsVar);
 		method.Statements.Add(new CodeCommentStatement("Create a list of arguments for the command"));
@@ -361,8 +361,8 @@ public class UnityCliGenerator : ICliGenerator
 				new CodeParameterDeclarationExpression(argClassName,
 					(ConvertToSnakeCase(commandName) + "Args").UnCapitalize());
 
-			
-			
+
+
 			if (curr.command.Arguments.Count > 0 || curr.command.Options.Count > 0)
 			{
 				var parameterReference = new CodeVariableReferenceExpression(parameter.Name);
@@ -377,20 +377,20 @@ public class UnityCliGenerator : ICliGenerator
 				var serializeStatement =
 					new CodeMethodInvokeExpression(parameterReference, nameof(IBeamCommandArgs.Serialize));
 				var addArgsStatement = new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), serializeStatement);
-				statementCollection.Insert(0,new CodeExpressionStatement(addArgsStatement));
+				statementCollection.Insert(0, new CodeExpressionStatement(addArgsStatement));
 
 			}
 			var addPathStatement = new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), new CodePrimitiveExpression(commandName));
-			statementCollection.Insert(0,new CodeExpressionStatement(addPathStatement));
+			statementCollection.Insert(0, new CodeExpressionStatement(addPathStatement));
 
-			
-			
+
+
 			curr = curr.parent;
 		}
 
 		method.Statements.AddRange(statementCollection);
 
-		
+
 		var factoryReference = new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), "_factory");
 		var createMethodCall = new CodeMethodInvokeExpression(factoryReference, nameof(IBeamCommandFactory.Create));
 		var instanceAssignment =
@@ -398,7 +398,7 @@ public class UnityCliGenerator : ICliGenerator
 		var instanceReference = new CodeVariableReferenceExpression("command");
 		method.Statements.Add(new CodeCommentStatement("Create an instance of an IBeamCommand"));
 		method.Statements.Add(instanceAssignment);
-		
+
 		var joinStatement = new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)),
 			nameof(string.Join), new CodePrimitiveExpression(" "), argReference);
 		var createStrStatement = new CodeVariableDeclarationStatement(typeof(string), strVar,
@@ -416,26 +416,26 @@ public class UnityCliGenerator : ICliGenerator
 		var setWrapperStatement = new CodeAssignStatement(new CodeFieldReferenceExpression(wrapperReference, nameof(BeamCommandWrapper.Command)),
 			instanceReference);
 		// var setCommandStatement = new CodeMethodInvokeExpression(wrapperReference, nameof(BeamCommandWrapper))
-		
-		
+
+
 		method.Statements.Add(wrapperCreationStatement);
 		method.Statements.Add(setWrapperStatement);
 
-		
+
 		var returnStatement = new CodeMethodReturnStatement(wrapperReference);
 		method.Statements.Add(new CodeCommentStatement("Return the command!"));
 		method.Statements.Add(returnStatement);
-		
+
 		type.Members.Add(method);
-		
+
 		// generate result stream methods...
 		// foreach (var result in descriptor.resultStreams)
 		// {
 		// 	var resultMethod = CreateResultStreamMethod(descriptor, result);
 		// 	type.Members.Add(resultMethod);
 		// }
-		
-		
+
+
 		return type;
 	}
 
@@ -457,14 +457,14 @@ public class UnityCliGenerator : ICliGenerator
 		if (arg.HasDefaultValue)
 		{
 			AddDefaultValue(parameter, parameter.Type);
-			
+
 			parameter.UserData["desc"] = $"(default={arg?.GetDefaultValue()?.ToString()}) ";
 
 		}
 		parameter.UserData["desc"] += arg.Description;
 		return parameter;
 	}
-	
+
 
 	public static CodeParameterDeclarationExpression CreateParameter(Option option)
 	{
@@ -487,15 +487,15 @@ public class UnityCliGenerator : ICliGenerator
 		var internalArg = field?.GetValue(option) as Argument;
 		if (internalArg?.HasDefaultValue ?? false)
 		{
-			parameter.UserData["desc"] = option.IsRequired ? "": $"(default={internalArg?.GetDefaultValue()?.ToString()}) ";
+			parameter.UserData["desc"] = option.IsRequired ? "" : $"(default={internalArg?.GetDefaultValue()?.ToString()}) ";
 		}
 		parameter.UserData["desc"] += option.Description;
 		AddDefaultValue(parameter, type);
-		
+
 		return parameter;
 	}
 
-	
+
 	/// <summary>
 	/// Written by ChatGPT
 	/// This function splits the input string into an array of words using the "-" character as a separator. It then converts each word to title case (capitalizing the first letter and leaving the rest in lowercase), except for the first word which is converted to lowercase. Finally, it joins the words back together with no separator to form the snake case string.
@@ -505,7 +505,7 @@ public class UnityCliGenerator : ICliGenerator
 	public static string ConvertToSnakeCase(string input)
 	{
 		// Split the input string into an array of words
-		string[] words = input.Split(new char[]{'-', ' '});
+		string[] words = input.Split(new char[] { '-', ' ' });
 
 		// Convert the first word to lowercase and keep the rest of the words in title case
 		for (int i = 1; i < words.Length; i++)
@@ -523,7 +523,7 @@ public class UnityCliGenerator : ICliGenerator
 	{
 		public UnityCliGenerationException(string message) : base(message)
 		{
-			
+
 		}
 	}
 }
