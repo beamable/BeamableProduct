@@ -11,7 +11,7 @@ namespace cli;
 
 public class CheckStatusCommandArgs : CommandArgs
 {
-	
+
 }
 
 
