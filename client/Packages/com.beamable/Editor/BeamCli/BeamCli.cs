@@ -2,7 +2,6 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using Beamable.Editor.BeamCli.Commands;
-using UnityEditor;
 
 namespace Beamable.Editor.BeamCli
 {

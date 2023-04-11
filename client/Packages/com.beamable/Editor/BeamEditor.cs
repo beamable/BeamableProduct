@@ -10,6 +10,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Assistant;
+using Beamable.Common.BeamCli;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using Beamable.Common.Dependencies;
@@ -63,7 +64,6 @@ using UnityEditor.Compilation;
 
 namespace Beamable
 {
-
 	public static class BeamEditorDependencies
 	{
 		public static IDependencyBuilder DependencyBuilder;
@@ -121,7 +121,10 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IAccountService>(p => p.GetService<AccountService>());
 
 			DependencyBuilder.AddSingleton<BeamCommands>();
+			DependencyBuilder.AddGlobalStorage<BeamCommandFactory, EditorStorageLayer>();
 			DependencyBuilder.AddSingleton<BeamCli>();
+			
+			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
 			
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 		}
@@ -560,6 +563,8 @@ namespace Beamable
 				}
 
 				await RefreshRealmSecret();
+
+				var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
 
 			}
 
