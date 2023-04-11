@@ -1766,6 +1766,11 @@ public static class StringExtensions
 		return string.Concat(char.ToUpper(word[0]).ToString(), word.AsSpan(1));
 	}
 
+	public static string UnCapitalize(this string word)
+	{
+		return string.Concat(char.ToLower(word[0]).ToString(), word.AsSpan(1));
+	}
+
 	public static string ProcessReplacement(this string src,
 		Dictionary<string, string> replacements,
 		string replacementKeyStart = "₢",
