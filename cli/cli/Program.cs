@@ -7,6 +7,7 @@ public static class Program
 		var app = new App();
 		app.Configure();
 		app.Build();
+		
 		return await app.RunAsync(args);
 	}
 }

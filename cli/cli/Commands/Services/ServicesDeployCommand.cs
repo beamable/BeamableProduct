@@ -1,6 +1,7 @@
 ﻿using Beamable.Common;
 using cli.Services;
 using Newtonsoft.Json;
+using Serilog;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 using System.CommandLine;
