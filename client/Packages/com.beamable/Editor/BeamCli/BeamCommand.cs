@@ -13,7 +13,7 @@ using Debug = UnityEngine.Debug;
 
 namespace Beamable.Editor.BeamCli.Commands
 {
-	public partial class BeamCommands : IBeamableDisposable, ILoadWithContext
+	public partial class BeamCommands : IBeamableDisposable
 	{
 		private readonly IBeamableRequester _requester;
 		private IBeamCommandFactory _factory;
