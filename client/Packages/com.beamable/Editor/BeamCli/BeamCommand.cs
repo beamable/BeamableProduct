@@ -28,10 +28,21 @@ namespace Beamable.Editor.BeamCli.Commands
 		
 		private BeamArgs ConstructDefaultArgs()
 		{
+			string cid = null;
+			string pid = null;
+			try
+			{
+				cid = _requester.Cid;
+				pid = _requester.Pid;
+			}
+			catch
+			{
+				// if there is no cid or pid, oh well.
+			}
 			var beamArgs = new BeamArgs
 			{
-				cid = _requester.Cid,
-				pid = _requester.Pid,
+				cid = cid,
+				pid = pid,
 				host = BeamableEnvironment.ApiUrl,
 				refreshToken = _requester.AccessToken.RefreshToken,
 				log = "Information",
