@@ -44,7 +44,7 @@ namespace Beamable.Editor.BeamCli.Commands
 				cid = cid,
 				pid = pid,
 				host = BeamableEnvironment.ApiUrl,
-				refreshToken = _requester.AccessToken.RefreshToken,
+				refreshToken = _requester?.AccessToken?.RefreshToken,
 				log = "Information",
 				reporterUseFatal = true
 			};
