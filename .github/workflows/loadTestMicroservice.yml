@@ -45,10 +45,12 @@ jobs:
           
           echo "starting service"
           mkdir ../../../../logs
-          LOG_PATH=../../../../logs/serviceRuntime.log DOTNET_DiagnosticPorts=/home/runner/work/myport.sock ./standalone-microservice &
+          export DOTNET_DiagnosticPorts=/home/runner/work/myport.sock
+          LOG_PATH=../../../../logs/serviceRuntime.log ./standalone-microservice &
           
           echo "starting profiler"
           cd ../../../..
+          unset DOTNET_DiagnosticPorts
           beam profile run-nbomber standalone-microservice add '{"a":3,"b":4}' --include-prefix false --rps 30
           echo "jobs"
           jobs -p
