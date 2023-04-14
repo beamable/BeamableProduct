@@ -44,7 +44,7 @@ jobs:
           mkdir ../../../../logs
           touch ../../../../logs/service.log
           echo $DOTNET_DiagnosticPorts
-          ./standalone-microservice >> ../../../../logs/service.log &
+          ./standalone-microservice >> ../../../../logs/service.log 2>&1 &
           echo "starting profiler"
           cd ../../../..
           beam profile run-nbomber standalone-microservice add '{"a":3,"b":4}' --include-prefix false --rps 30
