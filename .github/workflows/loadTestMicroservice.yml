@@ -40,7 +40,7 @@ jobs:
           echo "starting service"
       
           mkdir ../../../../logs
-          LOG_PATH=../../../../logs/serviceRuntime.log DOTNET_DiagnosticPorts=/home/runner/work/myport.sock ./standalone-microservice &
+          LOG_PATH=../../../../logs/serviceRuntime.log ./standalone-microservice &
           
           echo "starting counters"
           mkdir ../../../../reports
