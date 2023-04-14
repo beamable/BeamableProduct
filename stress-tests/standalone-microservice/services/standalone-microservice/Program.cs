@@ -53,7 +53,7 @@ namespace Beamable.standalone_microservice
 			using var process = new Process();
 
 			process.StartInfo.FileName = "beam";
-			process.StartInfo.Arguments = $"--log fatal project generate-env {serviceName} . --auto-deploy";
+			process.StartInfo.Arguments = $"--log fatal project generate-env {serviceName} . --auto-deploy --include-prefix=false --instance-count=1";
 			process.StartInfo.RedirectStandardOutput = true;
 			process.StartInfo.RedirectStandardError = true;
 			process.StartInfo.CreateNoWindow = true;
