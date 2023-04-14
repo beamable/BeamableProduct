@@ -219,7 +219,6 @@ namespace Beamable.Server
          {
 	         var _ = contentService.Init();
          }
-         _args.ServiceScope.GetService<IMicroserviceRealmConfigService>();
       }
 
       public async Task RunForever()
@@ -356,11 +355,15 @@ namespace Beamable.Server
                 }
             }
 
-       
+            var realmService = _args.ServiceScope.GetService<RealmConfigService>();
+            await realmService.GetRealmConfigSettings();
+            
             await ProvideService(QualifiedName);
 
             HasInitialized = true;
             Log.Information(Logs.READY_FOR_TRAFFIC_PREFIX + "baseVersion={baseVersion} executionVersion={executionVersion}", _args.SdkVersionBaseBuild, _args.SdkVersionExecution);
+            realmService.UpdateLogLevel();
+
             _serviceInitialized.CompleteSuccess(PromiseBase.Unit);
          }
          catch (Exception ex)

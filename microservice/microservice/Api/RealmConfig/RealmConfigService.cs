@@ -31,13 +31,9 @@ namespace Beamable.Server.Api.RealmConfig
 	         {
 		         GetRealmConfigSettings().Then(_ => UpdateLogLevel());
 	         });
-         GetRealmConfigSettings().Then(_ =>
-         {
-	         UpdateLogLevel();
-         });
       }
 
-      private void UpdateLogLevel()
+      public void UpdateLogLevel()
       {
 	      var level = GetLogLevel();
 	      MicroserviceBootstrapper.LogLevel.MinimumLevel = level;
@@ -45,10 +41,11 @@ namespace Beamable.Server.Api.RealmConfig
 
       private LogEventLevel GetLogLevel()
       {
+	      MicroserviceBootstrapper.TryParseLogLevel(_args.LogLevel, out var defaultLevel);
 	      if (!_config.TryGetValue(Constants.Features.Services.REALM_CONFIG_SERVICE_LOG_NAMESPACE,
 		          out var logInfo))
 	      {
-		      return LogEventLevel.Debug;
+		      return defaultLevel;
 	      }
 
 	      var keyName = _serviceAttribute.MicroserviceName;
@@ -58,7 +55,7 @@ namespace Beamable.Server.Api.RealmConfig
 	      }
 	      if (!logInfo.TryGetValue(keyName, out var logLevel))
 	      {
-		      return LogEventLevel.Debug;
+		      return defaultLevel;
 	      }
 	      
 	      if (MicroserviceBootstrapper.TryParseLogLevel(logLevel, out var serilogLogLevel))
@@ -66,7 +63,7 @@ namespace Beamable.Server.Api.RealmConfig
 		      return serilogLogLevel;
 	      }
 
-	      return LogEventLevel.Debug;
+	      return defaultLevel;
       }
       
       private Promise<GetRealmConfigResponse> GetRealmConfig()
