@@ -37,14 +37,15 @@ jobs:
         working-directory: ./stress-tests/standalone-microservice/services/
         run: |
           cd ./standalone-microservice/bin/Debug/net6.0
-          echo "starting service"
-      
-          mkdir ../../../../logs
-          LOG_PATH=../../../../logs/serviceRuntime.log ./standalone-microservice &
-          
+
+
           echo "starting counters"
           mkdir ../../../../reports
           dotnet-counters collect --diagnostic-port /home/runner/work/myport.sock --refresh-interval 3 --format json --output ../../../../reports/counter.json &
+          
+          echo "starting service"
+          mkdir ../../../../logs
+          LOG_PATH=../../../../logs/serviceRuntime.log DOTNET_DiagnosticPorts=/home/runner/work/myport.sock ./standalone-microservice &
           
           echo "starting profiler"
           cd ../../../..
