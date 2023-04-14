@@ -38,19 +38,16 @@ jobs:
         run: |
           cd ./standalone-microservice/bin/Debug/net6.0
           echo "starting service"
-          export DOTNET_DiagnosticPorts=/home/runner/work/myport.sock
-          export LOG_TYPE=file
-          export LOG_PATH=../../../../logs/serviceRuntime.log
+      
           mkdir ../../../../logs
           touch ../../../../logs/service.log
-          echo $DOTNET_DiagnosticPorts
-          ./standalone-microservice >> ../../../../logs/service.log 2>&1 &
+          LOG_PATH=../../../../logs/serviceRuntime.log LOG_TYPE=file DOTNET_DiagnosticPorts=/home/runner/work/myport.sock ./standalone-microservice >> ../../../../logs/service.log 2>&1 &
           
           echo "starting counters"
           mkdir ../../../../reports
           dotnet-counters collect --diagnostic-port /home/runner/work/myport.sock --refresh-interval 3 --format json --output ../../../../reports/counter.json &
           
-          
+        
           echo "starting profiler"
           cd ../../../..
           beam profile run-nbomber standalone-microservice add '{"a":3,"b":4}' --include-prefix false --rps 30
