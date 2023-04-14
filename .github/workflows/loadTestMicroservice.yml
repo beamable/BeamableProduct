@@ -41,10 +41,10 @@ jobs:
           dotnet-counters collect --diagnostic-port /home/runner/work/myport.sock --refresh-interval 3 --format json --output ../../../../reports/counter.json &
           echo "starting service"
           export DOTNET_DiagnosticPorts=/home/runner/work/myport.sock
-          mkdir ../../../../reports
-          touch ../../../../reports/service.log
+          mkdir ../../../../logs
+          touch ../../../../logs/service.log
           echo $DOTNET_DiagnosticPorts
-          standalone-microservice >> ../../../../reports/service.log 2>&1 &
+          standalone-microservice >> ../../../../logs/service.log 2>&1 &
           echo "starting profiler"
           cd ../../../..
           beam profile run-nbomber standalone-microservice add '{"a":3,"b":4}' --include-prefix false --rps 30
@@ -53,8 +53,8 @@ jobs:
           echo "kill"
           kill $(jobs -p)
           ls
-          ls ./reports
-          cat ./reports/service.log
+          ls ./logs
+          cat ./logs/service.log
       - name: Save Profiler Data 
         uses: actions/upload-artifact@v3
         with:
