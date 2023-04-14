@@ -37,20 +37,19 @@ jobs:
         working-directory: ./stress-tests/standalone-microservice/services/
         run: |
           cd ./standalone-microservice/bin/Debug/net6.0
-
+          echo "starting service"
+      
 
           echo "starting counters"
           mkdir ../../../../reports
-          dotnet-counters collect --diagnostic-port /home/runner/work/myport.sock --refresh-interval 3 --format json --output ../../../../reports/counter.json &
+          dotnet-counters collect --diagnostic-port ~/myport.sock --refresh-interval 3 --format json --output ../../../../reports/counter.json &
           
-          echo "starting service"
+          
           mkdir ../../../../logs
-          export DOTNET_DiagnosticPorts=/home/runner/work/myport.sock
-          LOG_PATH=../../../../logs/serviceRuntime.log ./standalone-microservice &
+          LOG_PATH=../../../../logs/serviceRuntime.log DOTNET_DiagnosticPorts=~/myport.sock DOTNET_DefaultDiagnosticPortSuspend=0 ./standalone-microservice &
           
           echo "starting profiler"
           cd ../../../..
-          unset DOTNET_DiagnosticPorts
           beam profile run-nbomber standalone-microservice add '{"a":3,"b":4}' --include-prefix false --rps 30
           echo "jobs"
           jobs -p
@@ -58,7 +57,7 @@ jobs:
           kill $(jobs -p)
           ls
           ls ./logs
-          echo "showing service logs"
+          echo "showing logs"
           cat ./logs/serviceRuntime.log
           cp ./logs/serviceRuntime.log ./reports/serviceRuntime.log
       - name: Save Profiler Data 
