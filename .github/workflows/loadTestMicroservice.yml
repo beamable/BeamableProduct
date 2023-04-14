@@ -40,14 +40,12 @@ jobs:
           echo "starting service"
       
           mkdir ../../../../logs
-          touch ../../../../logs/service.log
-          LOG_PATH=../../../../logs/serviceRuntime.log LOG_TYPE=file DOTNET_DiagnosticPorts=/home/runner/work/myport.sock ./standalone-microservice >> ../../../../logs/service.log 2>&1 &
+          LOG_PATH=../../../../logs/serviceRuntime.log DOTNET_DiagnosticPorts=/home/runner/work/myport.sock ./standalone-microservice &
           
           echo "starting counters"
           mkdir ../../../../reports
           dotnet-counters collect --diagnostic-port /home/runner/work/myport.sock --refresh-interval 3 --format json --output ../../../../reports/counter.json &
           
-        
           echo "starting profiler"
           cd ../../../..
           beam profile run-nbomber standalone-microservice add '{"a":3,"b":4}' --include-prefix false --rps 30
@@ -57,9 +55,8 @@ jobs:
           kill $(jobs -p)
           ls
           ls ./logs
-          cat ./logs/service.log
+          echo "showing service logs"
           cat ./logs/serviceRuntime.log
-          cp ./logs/service.log ./reports/service.log
           cp ./logs/serviceRuntime.log ./reports/serviceRuntime.log
       - name: Save Profiler Data 
         uses: actions/upload-artifact@v3
