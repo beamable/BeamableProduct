@@ -46,7 +46,7 @@ jobs:
           
 
           mkdir ../../../../logs
-          LOG_PATH=../../../../logs/serviceRuntime.log ./standalone-microservice &
+          LOG_PATH=../../../../logs/serviceRuntime.log DOTNET_DiagnosticPorts=~/myport.sock DOTNET_DefaultDiagnosticPortSuspend=0 ./standalone-microservice &
           
           echo "starting profiler"
           cd ../../../..
