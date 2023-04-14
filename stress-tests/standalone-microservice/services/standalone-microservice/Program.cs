@@ -1,6 +1,8 @@
 ﻿using Beamable.Server;
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Beamable.standalone_microservice
@@ -12,7 +14,7 @@ namespace Beamable.standalone_microservice
 		/// </summary>
 		public static async Task Main()
 		{
-			// Put your code in the standalone_microservice class
+			await Prepare<StandaloneMicroservice>();
 			
 			// load environment variables from local file
 			LoadEnvironmentVariables();
@@ -36,6 +38,35 @@ namespace Beamable.standalone_microservice
 					continue;
 
 				Environment.SetEnvironmentVariable(parts[0], parts[1]);
+			}
+		}
+		
+		static async Task Prepare<TMicroservice>() where TMicroservice : Microservice
+		{
+			
+			var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+			if (inDocker) return;
+			
+			MicroserviceAttribute attribute = typeof(TMicroservice).GetCustomAttribute<MicroserviceAttribute>();
+			var serviceName = attribute.MicroserviceName.ToLower();
+			
+			using var process = new Process();
+
+			process.StartInfo.FileName = "beam";
+			process.StartInfo.Arguments = $"--log fatal project generate-env {serviceName} . --auto-deploy";
+			process.StartInfo.RedirectStandardOutput = true;
+			process.StartInfo.RedirectStandardError = true;
+			process.StartInfo.CreateNoWindow = true;
+			process.StartInfo.UseShellExecute = false;
+
+			process.Start();
+			await process.WaitForExitAsync();
+			
+			var result = await process.StandardOutput.ReadToEndAsync();
+			// Console.WriteLine(result);
+			if (process.ExitCode != 0)
+			{
+				throw new Exception($"Failed to generate-env message=[{result}]");
 			}
 		}
 	}

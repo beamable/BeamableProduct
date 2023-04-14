@@ -56,21 +56,33 @@ NAME_PREFIX={prefix}
 BEAM_INSTANCE_COUNT={args.instanceCount}
 ";
 		
-		var manifest = args.BeamoLocalSystem.BeamoManifest;
-		var service = manifest.ServiceDefinitions.FirstOrDefault(service => service.BeamoId == args.serviceId);
-		if (service == null)
-		{
-			throw new CliException("Service is not listed in local beamo manifest", true, true);
-		}
-
+		
 		var sw = new Stopwatch();
 		sw.Start();
 		
-		if (args.autoDeploy)
+		var manifest = args.BeamoLocalSystem.BeamoManifest;
+		var service = manifest.ServiceDefinitions.FirstOrDefault(service => service.BeamoId == args.serviceId);
+		if (service != null)
 		{
 			
-		}
+			try
+			{
+				await AppendDependencyVars();
+			}
+			catch (Exception) when (args.autoDeploy)
+			{
+				await args.BeamoLocalSystem.SynchronizeInstanceStatusWithDocker(args.BeamoLocalSystem.BeamoManifest, args.BeamoLocalSystem.BeamoRuntime.ExistingLocalServiceInstances);
+				await args.BeamoLocalSystem.StartListeningToDocker();
+				Log.Information("Starting " + string.Join(",", service.DependsOnBeamoIds) + " " + sw.ElapsedMilliseconds);
+				await args.BeamoLocalSystem.DeployToLocal(args.BeamoLocalSystem.BeamoManifest, service.DependsOnBeamoIds);
+				args.BeamoLocalSystem.SaveBeamoLocalManifest();
+				args.BeamoLocalSystem.SaveBeamoLocalRuntime();
+				await args.BeamoLocalSystem.StopListeningToDocker();
+				await AppendDependencyVars();
+			}
 
+		}
+		
 		async Promise AppendDependencyVars()
 		{
 			foreach (var dependency in service.DependsOnBeamoIds)
@@ -91,21 +103,6 @@ BEAM_INSTANCE_COUNT={args.instanceCount}
 			}
 		}
 
-		try
-		{
-			await AppendDependencyVars();
-		}
-		catch (Exception) when (args.autoDeploy)
-		{
-			await args.BeamoLocalSystem.SynchronizeInstanceStatusWithDocker(args.BeamoLocalSystem.BeamoManifest, args.BeamoLocalSystem.BeamoRuntime.ExistingLocalServiceInstances);
-			await args.BeamoLocalSystem.StartListeningToDocker();
-			Log.Information("Starting " + string.Join(",", service.DependsOnBeamoIds) + " " + sw.ElapsedMilliseconds);
-			await args.BeamoLocalSystem.DeployToLocal(args.BeamoLocalSystem.BeamoManifest, service.DependsOnBeamoIds);
-			args.BeamoLocalSystem.SaveBeamoLocalManifest();
-			args.BeamoLocalSystem.SaveBeamoLocalRuntime();
-			await args.BeamoLocalSystem.StopListeningToDocker();
-			await AppendDependencyVars();
-		}
 		BeamableLogger.Log($"WRITING ENV FILE t=[{sw.ElapsedMilliseconds}] env=[{fileContent}]");
 		var path = Path.Combine(args.output, ".env");
 		Directory.CreateDirectory(args.output);
