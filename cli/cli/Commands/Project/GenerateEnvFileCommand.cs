@@ -32,7 +32,7 @@ public class GenerateEnvFileCommand : AppCommand<GenerateEnvFileCommandArgs>
 		AddArgument(new Argument<string>("output", "Where to output the .env file"), (args, i) => args.output = i);
 		AddOption(new Option<bool>("--include-prefix", () => true, "If true, the generated .env file will include the local machine name as prefix"), (args, i) => args.includePrefix = i);
 		AddOption(new Option<int>("--instance-count", () => 1, "How many virtual websocket connections the server will open"), (args, i) => args.instanceCount = i);
-		AddOption(new Option<bool>("--auto-deploy", () => false, "When enabled, automatically deploy dependencies that aren't running."), (args, i) => args.autoDeploy = i);
+		AddOption(new Option<bool>("--auto-deploy", () => false, "When enabled, automatically deploy dependencies that aren't running"), (args, i) => args.autoDeploy = i);
 	}
 
 	public override async Task Handle(GenerateEnvFileCommandArgs args)
