@@ -37,13 +37,16 @@ jobs:
         working-directory: ./stress-tests/standalone-microservice/services/
         run: |
           cd ./standalone-microservice/bin/Debug/net6.0
-          dotnet-counters collect --refresh-interval 3 --format json --output ../../../../reports/counter.json -- standalone-microservice &
+          dotnet-counters collect --diagnostic-port myport.sock --refresh-interval 3 --format json --output ../../../../reports/counter.json
+          DOTNET_DiagnosticPorts=/home/user/myport.sock standalone-microservice >> ../../../../reports/service.log
           cd ../../../..
           beam profile run-nbomber standalone-microservice add '{"a":3,"b":4}' --include-prefix false --rps 30
           echo "jobs"
           jobs -p
           echo "kill"
           kill $(jobs -p)
+          ls
+          cat ./reports/service.log
       - name: Save Profiler Data 
         uses: actions/upload-artifact@v3
         with:
