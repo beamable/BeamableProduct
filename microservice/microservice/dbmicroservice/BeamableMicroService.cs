@@ -192,6 +192,7 @@ namespace Beamable.Server
 				builder.AddScoped(_socketRequesterContext.Daemon);
 	         });
          });
+
          Log.Debug(Logs.STARTING_PREFIX + " {host} {prefix} {cid} {pid} {sdkVersionExecution} {sdkVersionBuild} {disableCustomHooks}", args.Host, args.NamePrefix, args.CustomerID, args.ProjectName, args.SdkVersionExecution, args.SdkVersionBaseBuild, args.DisableCustomInitializationHooks);
          
          RebuildRouteTable();
@@ -218,6 +219,7 @@ namespace Beamable.Server
          {
 	         var _ = contentService.Init();
          }
+         _args.ServiceScope.GetService<IMicroserviceRealmConfigService>();
       }
 
       public async Task RunForever()
