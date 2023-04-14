@@ -44,9 +44,9 @@ jobs:
           mkdir ../../../../reports
           dotnet-counters collect --diagnostic-port ~/myport.sock --refresh-interval 3 --format json --output ../../../../reports/counter.json &
           
-          
+
           mkdir ../../../../logs
-          LOG_PATH=../../../../logs/serviceRuntime.log DOTNET_DiagnosticPorts=~/myport.sock DOTNET_DefaultDiagnosticPortSuspend=0 ./standalone-microservice &
+          LOG_PATH=../../../../logs/serviceRuntime.log ./standalone-microservice &
           
           echo "starting profiler"
           cd ../../../..
@@ -56,8 +56,8 @@ jobs:
           echo "kill"
           kill $(jobs -p)
           ls
-          ls ./logs
           echo "showing logs"
+          ls ./logs
           cat ./logs/serviceRuntime.log
           cp ./logs/serviceRuntime.log ./reports/serviceRuntime.log
       - name: Save Profiler Data 
