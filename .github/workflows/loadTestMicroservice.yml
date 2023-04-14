@@ -41,6 +41,7 @@ jobs:
           dotnet-counters collect --diagnostic-port /home/runner/work/myport.sock --refresh-interval 3 --format json --output ../../../../reports/counter.json &
           echo "starting service"
           export DOTNET_DiagnosticPorts=/home/runner/work/myport.sock
+          mkdir ../../../../reports
           touch ../../../../reports/service.log
           echo $DOTNET_DiagnosticPorts
           ./standalone-microservice >> ../../../../reports/service.log 2>&1 &
