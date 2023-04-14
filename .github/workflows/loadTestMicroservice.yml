@@ -38,9 +38,9 @@ jobs:
         run: |
           cd ./standalone-microservice/bin/Debug/net6.0
           echo "starting counters"
-          dotnet-counters collect --diagnostic-port myport.sock --refresh-interval 3 --format json --output ../../../../reports/counter.json
+          dotnet-counters collect --diagnostic-port /home/runner/work/myport.sock --refresh-interval 3 --format json --output ../../../../reports/counter.json
           echo "starting service"
-          DOTNET_DiagnosticPorts=myport.sock standalone-microservice >> ../../../../reports/service.log
+          DOTNET_DiagnosticPorts=/home/runner/work/myport.sock standalone-microservice >> ../../../../reports/service.log
           cd ../../../..
           beam profile run-nbomber standalone-microservice add '{"a":3,"b":4}' --include-prefix false --rps 30
           echo "jobs"
