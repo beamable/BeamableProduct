@@ -44,7 +44,7 @@ jobs:
           mkdir ../../../../logs
           touch ../../../../logs/service.log
           echo $DOTNET_DiagnosticPorts
-          ./standalone-microservice >> ../../../../logs/service.log 2>&1 &
+          ./standalone-microservice >> ../../../../logs/service.log &
           echo "starting profiler"
           cd ../../../..
           beam profile run-nbomber standalone-microservice add '{"a":3,"b":4}' --include-prefix false --rps 30
@@ -55,6 +55,7 @@ jobs:
           ls
           ls ./logs
           cat ./logs/service.log
+          cp ./logs/service.log ./reports/service.log
       - name: Save Profiler Data 
         uses: actions/upload-artifact@v3
         with:
