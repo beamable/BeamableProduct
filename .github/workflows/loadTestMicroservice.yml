@@ -37,7 +37,7 @@ jobs:
         working-directory: ./stress-tests/standalone-microservice/services/
         run: |
           cd ./standalone-microservice/bin/Debug/net6.0
-          dotnet-counters collect --diagnostic-port myport.sock --refresh-interval 3 --format json --output ../../../../reports/counter.json
+          dotnet-counters collect --diagnostic-port /home/user/myport.sock --refresh-interval 3 --format json --output ../../../../reports/counter.json
           DOTNET_DiagnosticPorts=/home/user/myport.sock standalone-microservice >> ../../../../reports/service.log
           cd ../../../..
           beam profile run-nbomber standalone-microservice add '{"a":3,"b":4}' --include-prefix false --rps 30
