@@ -49,10 +49,6 @@ jobs:
           jobs -p
           echo "kill"
           kill $(jobs -p)
-          ls
-          echo "showing logs"
-          ls ./logs
-          cat ./logs/serviceRuntime.log
           cp ./logs/serviceRuntime.log ./reports/serviceRuntime.log
       - name: Save Profiler Data 
         uses: actions/upload-artifact@v3
