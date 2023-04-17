@@ -44,7 +44,6 @@ public partial class BeamoLocalSystem
 				new()
 				{
 					VariableName = ENV_MONGO_SERVER,
-					// Value = $"mongodb://beamable:beamable@gateway.docker.internal:55002"
 					Value = connectionString
 				}, 
 				new ()
