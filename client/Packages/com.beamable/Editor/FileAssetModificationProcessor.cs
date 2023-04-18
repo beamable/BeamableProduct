@@ -1,34 +1,48 @@
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
 namespace Beamable.Editor
 {
+	/// <summary>
+	/// Beamable may have types that try to serialize and save themselves, but they shouldn't. This class will prevent them from attempting to save.
+	/// </summary>
 	public class FileModificationWarning : AssetModificationProcessor
 	{
+		public const string PREFIX = "Packages/com.beamable";
+		private static readonly List<string> InvalidPaths = new List<string>();
+		private static readonly List<string> NextPaths = new List<string>();
+
 		static string[] OnWillSaveAssets(string[] paths)
 		{
-			Debug.Log("Performing safety check... Brought you by Beamable...");
-			var invalidCount = 0;
-
-			var actualPaths = new List<string>(paths.Length);
-
-			// paths = paths.Where(PackageUtil.DoesFileExistLocally).ToArray();
-			for (var i = 0; i < paths.Length; i++)
+			InvalidPaths.Clear();
+			foreach (var path in paths) // find the invalid paths
 			{
-				if (PackageUtil.DoesFileExistLocally(paths[i]))
+				var pathSpan = path.AsSpan();
+				if (!pathSpan.StartsWith(PREFIX)) continue; // if this path isn't even in beamable, don't do anything.
+				
+				if (!PackageUtil.DoesFileExistLocally(path)) // if this file does not exist, we cannot save it.
 				{
-					actualPaths.Add(paths[i]); // don't save this one.
-				}
-				else
-				{
-					Debug.Log("Invalidated " + paths[i]);
-					invalidCount++;
+					InvalidPaths.Add(path); // don't save this one.
 				}
 			}
-			Debug.Log("okay, invalid count " + invalidCount);
-			return actualPaths.ToArray();
+
+			if (InvalidPaths.Count > 0)
+			{
+				NextPaths.Clear();
+				NextPaths.AddRange(paths);
+				foreach (var path in InvalidPaths)
+				{
+					Debug.LogWarning("------ not saving beamable path " + path);
+					NextPaths.Remove(path);
+				}
+
+				paths = NextPaths.ToArray();
+			}
+
+			return paths;
+			
 		}
 	}
 }
