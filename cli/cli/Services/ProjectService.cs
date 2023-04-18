@@ -69,13 +69,13 @@ public class ProjectService
 			.WithArguments($"add {projectPath} reference {referencePath}")
 			.ExecuteAsyncAndLog().Task;
 	}
-	
+
 	public async Task CreateNewStorage(string slnFilePath, string storageName)
 	{
 		var slnDirectory = Path.GetDirectoryName(slnFilePath);
 		var rootServicesPath = Path.Combine(slnDirectory, "services");
 		var storagePath = Path.Combine(rootServicesPath, storageName);
-		
+
 		if (Directory.Exists(storagePath))
 		{
 			throw new CliException("Cannot create a storage because the directory already exists");
