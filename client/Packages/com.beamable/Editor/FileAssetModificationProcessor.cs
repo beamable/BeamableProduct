@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -9,11 +11,19 @@ namespace Beamable.Editor
 		{
 			Debug.Log("Performing safety check... Brought you by Beamable...");
 			var invalidCount = 0;
+
+			var actualPaths = new List<string>(paths.Length);
+
+			paths = paths.Where(PackageUtil.DoesFileExistLocally).ToArray();
 			for (var i = 0; i < paths.Length; i++)
 			{
-				if (!PackageUtil.DoesFileExistLocally(paths[i]))
+				if (PackageUtil.DoesFileExistLocally(paths[i]))
 				{
-					paths[i] = null; // don't save this one.
+					actualPaths.Add(paths[i]); // don't save this one.
+				}
+				else
+				{
+					Debug.Log("Invalidated " + paths[i]);
 					invalidCount++;
 				}
 			}
