@@ -8,7 +8,6 @@ namespace cli.Commands.Project;
 
 public class OpenMongoExpressCommandArgs : CommandArgs
 {
-	public bool isRemote;
 	public string storageName;
 }
 
@@ -21,25 +20,12 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
 	public override void Configure()
 	{
 		AddArgument(new Argument<string>("service-name", "Name of the storage to open mongo-express to"), (arg, i) => arg.storageName = i);
-		AddOption(new Option<bool>("--remote", "If passed, Mongo-express will open to the remote version of this storage. Otherwise, it will try and use the local version"), (arg, i) => arg.isRemote = i);
 	}
 
 	public override async Task Handle(OpenMongoExpressCommandArgs args)
 	{
 		// first, get the local connection string,
-		if (args.isRemote)
-		{
-			HandleRemoteCase(args);
-		}
-		else
-		{
-			await HandleLocalCase(args);
-		}
-	}
-
-	void HandleRemoteCase(OpenMongoExpressCommandArgs args)
-	{
-		throw new NotImplementedException("Remote mongo-express is not supported at the moment.");
+		await HandleLocalCase(args);
 	}
 
 	async Task HandleLocalCase(OpenMongoExpressCommandArgs args)

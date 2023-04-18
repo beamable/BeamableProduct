@@ -80,8 +80,6 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
 			
 			Log.Information($"Adding storage=[{storageDef.BeamoId}] to service=[{service.BeamoId}] {nameof(service.DependsOnBeamoIds)} array.");
 			service.DependsOnBeamoIds = next.ToArray();
-				// <BEAM-CLI-INSERT-FLAG:COPY>
-			
 		}
 
 		foreach (var service in services)
@@ -99,7 +97,6 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
 
 			const string search =
 				"# <BEAM-CLI-INSERT-FLAG:COPY> do not delete this line. It is used by the beam CLI to insert custom actions";
-			// var search = "<BEAM-CLI-INSERT-FLAG:COPY>";
 			var replacement = @$"WORKDIR /subsrc/{args.storageName}
 COPY {args.storageName}/. .
 {search}";
