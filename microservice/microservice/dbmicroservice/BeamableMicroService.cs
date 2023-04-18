@@ -355,7 +355,7 @@ namespace Beamable.Server
                 }
             }
 
-            var realmService = _args.ServiceScope.GetService<RealmConfigService>();
+            var realmService = _args.ServiceScope.GetService<IRealmConfigService>();
             await realmService.GetRealmConfigSettings();
             
             await ProvideService(QualifiedName);

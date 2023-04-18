@@ -9,7 +9,12 @@ using System;
 
 namespace Beamable.Server.Api.RealmConfig
 {
-   public class RealmConfigService : IMicroserviceRealmConfigService
+	public interface IRealmConfigService : IMicroserviceRealmConfigService
+	{
+		void UpdateLogLevel();
+	}
+	
+   public class RealmConfigService : IRealmConfigService
    {
       private readonly IBeamableRequester _requester;
       private readonly MicroserviceAttribute _serviceAttribute;

@@ -290,6 +290,7 @@ namespace Beamable.Server
 			        .AddScoped<IMicroserviceSocialApi, MicroserviceSocialApi>()
 			        .AddScoped<IMicroserviceCloudDataApi, MicroserviceCloudDataApi>()
 			        .AddSingleton<IMicroserviceRealmConfigService>(p => p.GetService<RealmConfigService>())
+			        .AddSingleton<IRealmConfigService>(p => p.GetService<RealmConfigService>())
 			        .AddSingleton<RealmConfigService>()
 			        .AddScoped<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
 			        .AddScoped<IMicroservicePaymentsApi, MicroservicePaymentsApi>()
