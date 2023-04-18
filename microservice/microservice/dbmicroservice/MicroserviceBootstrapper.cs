@@ -89,6 +89,8 @@ namespace Beamable.Server
 				    return true;
 			    case "d":
 			    case "dbug":
+			    case "dbg":
+
 			    case "debug":
 				    serilogLevel = LogEventLevel.Debug;
 				    return true;
