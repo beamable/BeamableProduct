@@ -6,6 +6,7 @@ rm -rf ./templates/Data
 mkdir ./templates/Data
 cp -R ./BeamService/ ./templates/Data/BeamService
 cp -R ./CommonLibrary/ ./templates/Data/CommonLibrary
+cp -R ./BeamStorage/ ./templates/Data/BeamStorage
 
 # TODO: modify the version number of the copied data
 

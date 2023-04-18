@@ -5,6 +5,8 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS build-env
 WORKDIR /subsrc/BeamServiceCommon
 COPY BeamServiceCommon/. .
 
+# <BEAM-CLI-INSERT-FLAG:COPY> do not delete this line. It is used by the beam CLI to insert custom actions
+
 # copy in required files
 WORKDIR /subsrc/BeamService
 COPY BeamService/BeamService.csproj .

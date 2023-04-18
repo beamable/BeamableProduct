@@ -34,6 +34,10 @@ public partial class BeamoLocalSystem
 			cancellationToken);
 	}
 
+	public string GetBeamIdAsMongoContainer(string beamoId) => $"{beamoId}_mongoDb";
+	
+	const string MONGO_DATA_CONTAINER_PORT = "27017";
+
 	/// <summary>
 	/// Runs a service locally, enforcing the <see cref="BeamoProtocolType.EmbeddedMongoDb"/> protocol.
 	/// </summary>
@@ -43,14 +47,13 @@ public partial class BeamoLocalSystem
 		const string ENV_MONGO_ROOT_PASSWORD = "MONGO_INITDB_ROOT_PASSWORD";
 		const string VOL_NAME_DATA = "{0}_data";
 		const string VOL_NAME_FILES = "{0}_files";
-		const string IN_CONTAINER_PORT = "27017";
 
 		var imageId = serviceDefinition.ImageId;
-		var containerName = $"{serviceDefinition.BeamoId}_mongoDb";
+		var containerName = GetBeamIdAsMongoContainer(serviceDefinition.BeamoId);
 
 		var portBindings = new List<DockerPortBinding>();
 		if (!string.IsNullOrEmpty(localProtocol.MongoLocalPort))
-			portBindings.Add(new DockerPortBinding() { LocalPort = localProtocol.MongoLocalPort, InContainerPort = IN_CONTAINER_PORT });
+			portBindings.Add(new DockerPortBinding() { LocalPort = localProtocol.MongoLocalPort, InContainerPort = MONGO_DATA_CONTAINER_PORT });
 
 		var volumes = new List<DockerVolume>();
 		volumes.Add(new DockerVolume { VolumeName = string.Format(VOL_NAME_DATA, serviceDefinition.BeamoId), InContainerPath = localProtocol.DataVolumeInContainerPath });

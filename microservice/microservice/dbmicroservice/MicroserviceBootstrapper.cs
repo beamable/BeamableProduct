@@ -114,6 +114,9 @@ namespace Beamable.Server
 	            case LogOutputType.STRUCTURED:
 		            logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
 		            break;
+	            case LogOutputType.FILE:
+		            logger = logConfig.WriteTo.File(args.LogOutputPath ?? "./service.log");
+		            break;
 				default:
 					logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
 					break;

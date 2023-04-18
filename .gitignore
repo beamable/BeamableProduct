@@ -88,6 +88,9 @@ cli/cli/beamoLocalRuntime.json
 /templates/BeamService/bin/
 /templates/BeamService/obj/
 /templates/BeamService/.idea/
+/templates/BeamStorage/bin/
+/templates/BeamStorage/obj/
+/templates/BeamStorage/.idea/
 /templates/CommonLibrary/bin/
 /templates/CommonLibrary/obj/
 /templates/CommonLibrary/.idea/

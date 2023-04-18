@@ -69,9 +69,6 @@
         <Message Text="Creating beamable base docs file..." Importance="high" />
         <WriteLinesToFile File="$(OutDir)/baseImageDocs.xml" Lines="$(BeamableBaseDocs)" Overwrite="true" />
 
-        <Message Text="Creating beamable .env file..." Importance="high" />
-        <Exec Command="$(BeamableTool) project generate-env $(OutDir) --include-prefix=false --instance-count=10" />
-        <WriteLinesToFile File="$(OutDir)/.env" Lines="BEAMABLE_SDK_VERSION_EXECUTION=$(BeamableVersion)" Overwrite="false" />
     </Target>
     
     <!-- When running in a container, before building, we need to prepare a few files -->
