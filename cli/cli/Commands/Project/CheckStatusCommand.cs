@@ -54,7 +54,7 @@ public class CheckStatusCommand : AppCommand<CheckStatusCommandArgs>
 			foreach (var kvp in _nameToEntryWithTimestamp)
 			{
 				var age = now - kvp.Value.Item1;
-				if (age > 350)
+				if (age > Beamable.Common.Constants.Features.Services.DISCOVERY_RECEIVE_PERIOD_MS)
 				{
 					Log.Information($"{kvp.Key} is off");
 					this.SendResults(CreateEvent(kvp.Value.Item2, false));
@@ -109,7 +109,7 @@ public class CheckStatusCommand : AppCommand<CheckStatusCommandArgs>
 	private bool TryToListen(out ServiceDiscoveryEntry service)
 	{
 		service = null;
-		var validHostPrefixes = new string[] { "192.", "0.0.0.0", "127.0.0.1" };
+		var validHostPrefixes = Beamable.Common.Constants.Features.Services.DISCOVERY_IPS;
 		if (!_beacon.TryReceive(TimeSpan.FromMilliseconds(50), out var message))
 		{
 			return false;
