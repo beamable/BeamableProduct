@@ -8,7 +8,7 @@ namespace Beamable.Editor
 	/// <summary>
 	/// Beamable may have types that try to serialize and save themselves, but they shouldn't. This class will prevent them from attempting to save.
 	/// </summary>
-	public class FileModificationWarning : AssetModificationProcessor
+	public class FileModificationWarning : UnityEditor.AssetModificationProcessor
 	{
 		public const string PREFIX = "Packages/com.beamable";
 		private static readonly List<string> InvalidPaths = new List<string>();
