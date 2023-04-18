@@ -34,7 +34,9 @@ namespace Beamable.Editor
 				NextPaths.AddRange(paths);
 				foreach (var path in InvalidPaths)
 				{
-					Debug.LogWarning("------ not saving beamable path " + path);
+					#if BEAMABLE_LOG_INVALID_ASSET_SAVE_WARNINGS
+					Debug.LogWarning("Beamable will not save asset at " + path);
+					#endif
 					NextPaths.Remove(path);
 				}
 
