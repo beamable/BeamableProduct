@@ -41,15 +41,21 @@ namespace Beamable.UI.Buss
 			}
 		}
 
+		public void TrySetDirty()
+		{
+			if (!IsWritable) return;
+#if UNITY_EDITOR
+			UnityEditor.EditorUtility.SetDirty(this);
+#endif
+		}
+
 		public void TriggerChange()
 		{
 			if (!IsWritable) return;
 
 			BussConfiguration.UseConfig(conf => conf.UpdateStyleSheet(this));
 			Change?.Invoke();
-#if UNITY_EDITOR
-			UnityEditor.EditorUtility.SetDirty(this);
-#endif
+			TrySetDirty();
 		}
 
 		public void RemoveStyle(BussStyleRule styleRule)
