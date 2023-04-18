@@ -116,5 +116,6 @@ namespace microserviceTests.microservice
       public int BeamInstanceCount => 1;
       public int RequestCancellationTimeoutSeconds => 10;
       public LogOutputType LogOutputType => LogOutputType.DEFAULT;
+      public string LogOutputPath { get; }
    }
 }
