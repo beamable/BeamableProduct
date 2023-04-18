@@ -192,6 +192,7 @@ namespace Beamable.Server
 				builder.AddScoped(_socketRequesterContext.Daemon);
 	         });
          });
+
          Log.Debug(Logs.STARTING_PREFIX + " {host} {prefix} {cid} {pid} {sdkVersionExecution} {sdkVersionBuild} {disableCustomHooks}", args.Host, args.NamePrefix, args.CustomerID, args.ProjectName, args.SdkVersionExecution, args.SdkVersionBaseBuild, args.DisableCustomInitializationHooks);
          
          RebuildRouteTable();
@@ -354,11 +355,15 @@ namespace Beamable.Server
                 }
             }
 
-       
+            var realmService = _args.ServiceScope.GetService<IRealmConfigService>();
+            await realmService.GetRealmConfigSettings();
+            
             await ProvideService(QualifiedName);
 
             HasInitialized = true;
             Log.Information(Logs.READY_FOR_TRAFFIC_PREFIX + "baseVersion={baseVersion} executionVersion={executionVersion}", _args.SdkVersionBaseBuild, _args.SdkVersionExecution);
+            realmService.UpdateLogLevel();
+
             _serviceInitialized.CompleteSuccess(PromiseBase.Unit);
          }
          catch (Exception ex)

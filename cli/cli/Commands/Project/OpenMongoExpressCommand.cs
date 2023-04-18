@@ -28,7 +28,6 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
 		await HandleLocalCase(args);
 	}
 
-
 	async Task HandleLocalCase(OpenMongoExpressCommandArgs args)
 	{
 		try

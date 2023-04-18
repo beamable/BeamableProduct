@@ -24,6 +24,9 @@ namespace Beamable.Common
 				public const string REMOTE_ONLY = "Remote Only";
 
 				public const string CONTENT_UPDATE_EVENT = "content.manifest";
+				public const string REALM_CONFIG_UPDATE_EVENT = "realm-config.refresh";
+
+				public const string REALM_CONFIG_SERVICE_LOG_NAMESPACE = "service_logs";
 
 				public const int HEALTH_PORT = 6565;
 				public const int DISCOVERY_PORT = 8624;

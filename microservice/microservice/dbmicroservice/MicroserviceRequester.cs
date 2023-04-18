@@ -518,7 +518,11 @@ namespace Beamable.Server
          var req = new MicroserviceEventProviderRequest
          {
             type = "event",
-            evtWhitelist = new []{Constants.Features.Services.CONTENT_UPDATE_EVENT}
+            evtWhitelist = new []
+            {
+	            Constants.Features.Services.CONTENT_UPDATE_EVENT,
+	            Constants.Features.Services.REALM_CONFIG_UPDATE_EVENT
+            }
          };
          var promise = Request<MicroserviceProviderResponse>(Method.POST, "gateway/provider", req);
 
