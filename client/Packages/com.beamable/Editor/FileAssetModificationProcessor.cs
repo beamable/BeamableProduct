@@ -14,7 +14,7 @@ namespace Beamable.Editor
 
 			var actualPaths = new List<string>(paths.Length);
 
-			paths = paths.Where(PackageUtil.DoesFileExistLocally).ToArray();
+			// paths = paths.Where(PackageUtil.DoesFileExistLocally).ToArray();
 			for (var i = 0; i < paths.Length; i++)
 			{
 				if (PackageUtil.DoesFileExistLocally(paths[i]))
@@ -28,7 +28,7 @@ namespace Beamable.Editor
 				}
 			}
 			Debug.Log("okay, invalid count " + invalidCount);
-			return paths;
+			return actualPaths.ToArray();
 		}
 	}
 }
