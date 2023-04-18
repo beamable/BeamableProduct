@@ -36,11 +36,12 @@ namespace Beamable.Server
 		public int BeamInstanceCount { get; }
 		public int RequestCancellationTimeoutSeconds { get; }
 		public LogOutputType LogOutputType { get; }
+		public string LogOutputPath { get; }
 	}
 
 	public enum LogOutputType
 	{
-		DEFAULT, STRUCTURED, UNSTRUCTURED
+		DEFAULT, STRUCTURED, UNSTRUCTURED, FILE
 	}
 
 	public class MicroserviceArgs : IMicroserviceArgs
@@ -75,6 +76,7 @@ namespace Beamable.Server
 	   public int BeamInstanceCount { get; set; }
 	   public int RequestCancellationTimeoutSeconds { get; set; }
 	   public LogOutputType LogOutputType { get; set; }
+	   public string LogOutputPath { get; set; }
    }
 
    public static class MicroserviceArgsExtensions
@@ -112,7 +114,8 @@ namespace Beamable.Server
             BeamInstanceCount = args.BeamInstanceCount,
             RequestCancellationTimeoutSeconds = args.RequestCancellationTimeoutSeconds,
             HealthPort = args.HealthPort,
-            LogOutputType = args.LogOutputType
+            LogOutputType = args.LogOutputType,
+            LogOutputPath = args.LogOutputPath
          };
          
          configurator?.Invoke(next);
@@ -157,6 +160,10 @@ namespace Beamable.Server
       {
 	      get
 	      {
+		      if (!string.IsNullOrEmpty(LogOutputPath))
+		      {
+			      return LogOutputType.FILE;
+		      }
 		      var arg = Environment.GetEnvironmentVariable("LOG_TYPE")?.ToLowerInvariant();
 		      switch (arg)
 		      {
@@ -164,11 +171,15 @@ namespace Beamable.Server
 				      return LogOutputType.STRUCTURED;
 			      case "unstructured":
 				      return LogOutputType.UNSTRUCTURED;
+			      case "file":
+				      return LogOutputType.FILE;
 			      default:
 				      return LogOutputType.DEFAULT;
 		      }
 	      }
       }
+
+      public string LogOutputPath => Environment.GetEnvironmentVariable("LOG_PATH");
       public string LogLevel => Environment.GetEnvironmentVariable("LOG_LEVEL") ?? "debug";
 
       public bool DisableLogTruncate => (Environment.GetEnvironmentVariable("DISABLE_LOG_TRUNCATE")?.ToLowerInvariant() ?? "") == "true";

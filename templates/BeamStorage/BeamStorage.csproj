@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Beamable.Microservice.Runtime" Version="1.15.0-PREVIEW.RC1" />
+      <PackageReference Include="MongoDB.Driver" Version="2.19.1" />
+    </ItemGroup>
+
+</Project>
