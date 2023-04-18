@@ -19,8 +19,7 @@ namespace Beamable.Editor
 			InvalidPaths.Clear();
 			foreach (var path in paths) // find the invalid paths
 			{
-				var pathSpan = path.AsSpan();
-				if (!pathSpan.StartsWith(PREFIX)) continue; // if this path isn't even in beamable, don't do anything.
+				if (!path.StartsWith(PREFIX)) continue; // if this path isn't even in beamable, don't do anything.
 				
 				if (!PackageUtil.DoesFileExistLocally(path)) // if this file does not exist, we cannot save it.
 				{
