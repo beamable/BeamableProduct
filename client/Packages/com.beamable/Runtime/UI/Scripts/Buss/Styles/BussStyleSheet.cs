@@ -2,6 +2,7 @@
 using Beamable.UI.Sdf;
 using System;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Serialization;
 using static Beamable.Common.Constants.MenuItems.Assets;
@@ -19,24 +20,33 @@ namespace Beamable.UI.Buss
 #pragma warning disable CS0649
 		[SerializeField] private List<BussStyleRule> _styles = new List<BussStyleRule>();
 		[SerializeField, HideInInspector] private List<Object> _assetReferences = new List<Object>();
-		[SerializeField] private bool _isReadOnly;
 		[SerializeField] private int _sortingOrder;
 #pragma warning restore CS0649
 
 		public List<BussStyleRule> Styles => _styles;
-		public bool IsReadOnly => _isReadOnly;
+		public bool IsReadOnly => !IsWritable;
 		public int SortingOrder => _sortingOrder;
 
 		public bool IsWritable
 		{
 			get
 			{
-#if BEAMABLE_DEVELOPER
-				return true;
+#if UNITY_EDITOR
+				var path = AssetDatabase.GetAssetPath(this);
+				var isLocal = PackageUtil.DoesFileExistLocally(path);
+				return isLocal;
 #else
-				return !IsReadOnly;
+				return false;
 #endif
 			}
+		}
+
+		public void TrySetDirty()
+		{
+			if (!IsWritable) return;
+#if UNITY_EDITOR
+			UnityEditor.EditorUtility.SetDirty(this);
+#endif
 		}
 
 		public void TriggerChange()
@@ -45,9 +55,7 @@ namespace Beamable.UI.Buss
 
 			BussConfiguration.UseConfig(conf => conf.UpdateStyleSheet(this));
 			Change?.Invoke();
-#if UNITY_EDITOR
-			UnityEditor.EditorUtility.SetDirty(this);
-#endif
+			TrySetDirty();
 		}
 
 		public void RemoveStyle(BussStyleRule styleRule)
@@ -109,7 +117,7 @@ namespace Beamable.UI.Buss
 #if BEAMABLE_DEVELOPER
 		public void SetReadonly(bool value)
 		{
-			_isReadOnly = value;
+			// _isReadOnly = value;
 		}
 
 		public void SetSortingOrder(int order)

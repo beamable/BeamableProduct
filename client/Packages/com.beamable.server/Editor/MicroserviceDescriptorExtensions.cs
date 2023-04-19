@@ -6,7 +6,7 @@ namespace Beamable.Server.Editor
 	{
 		public static bool IsSourceCodeAvailableLocally(this IDescriptor descriptor)
 		{
-			return BeamablePackages.DoesFileExistLocally(descriptor.AttributePath);
+			return PackageUtil.DoesFileExistLocally(descriptor.AttributePath);
 		}
 	}
 }
