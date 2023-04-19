@@ -238,7 +238,7 @@ namespace Beamable.Editor.UI.Components
 			if (StyleSheet != null)
 			{
 #if UNITY_EDITOR
-				EditorUtility.SetDirty(StyleSheet);
+				StyleSheet.TrySetDirty();
 #endif
 				StyleSheet.TriggerChange();
 			}

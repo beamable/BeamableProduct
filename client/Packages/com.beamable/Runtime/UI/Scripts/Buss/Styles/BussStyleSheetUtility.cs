@@ -116,7 +116,7 @@ namespace Beamable.UI.Buss
 
 			targetStyleSheet.Styles.Add(rule);
 #if UNITY_EDITOR
-			EditorUtility.SetDirty(targetStyleSheet);
+			targetStyleSheet.TrySetDirty();
 			AssetDatabase.SaveAssets();
 #endif
 			targetStyleSheet.TriggerChange();
@@ -126,7 +126,7 @@ namespace Beamable.UI.Buss
 		{
 			targetStyleSheet.RemoveStyle(style);
 #if UNITY_EDITOR
-			EditorUtility.SetDirty(targetStyleSheet);
+			targetStyleSheet.TrySetDirty();
 			AssetDatabase.SaveAssets();
 #endif
 			targetStyleSheet.TriggerChange();

@@ -130,7 +130,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		: base(service.ImageName, service.ContainerName, service)
 		{
 			_service = service;
-			if (!BeamablePackages.DoesFileExistLocally(service.AttributePath))
+			if (!PackageUtil.DoesFileExistLocally(service.AttributePath))
 			{
 				Debug.LogWarning($"Cannot autogenerate client code for service=[{service.Name}], because the service code does not exist locally.");
 			}
