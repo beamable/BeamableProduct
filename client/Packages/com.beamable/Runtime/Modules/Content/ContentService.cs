@@ -320,7 +320,7 @@ namespace Beamable.Content
 			{
 				var json = File.ReadAllText(contentPath);
 				var contentData = DeserializeDataCache<ContentDataInfoWrapper>(json);
-				contentDataExists = contentData != null && contentData.Count > 0;
+				contentDataExists = contentData != null && contentData.content?.Count > 0;
 				if(contentDataExists)
 				{
 					ContentDataInfo = contentData;
