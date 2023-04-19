@@ -37,7 +37,7 @@ public partial class BeamoLocalSystem
 			cancellationToken);
 	}
 
-	public async Task<List<DockerEnvironmentVariable>> GetLocalConnectionStrings(BeamoLocalManifest localManifest, string host="gateway.docker.internal")
+	public async Task<List<DockerEnvironmentVariable>> GetLocalConnectionStrings(BeamoLocalManifest localManifest, string host = "gateway.docker.internal")
 	{
 		var output = new List<DockerEnvironmentVariable>();
 		foreach (var local in localManifest.EmbeddedMongoDbLocalProtocols)
@@ -49,7 +49,7 @@ public partial class BeamoLocalSystem
 		return output;
 	}
 
-	public async Task<DockerEnvironmentVariable> GetLocalConnectionString(BeamoLocalManifest localManifest, string storageName, string host="gateway.docker.internal")
+	public async Task<DockerEnvironmentVariable> GetLocalConnectionString(BeamoLocalManifest localManifest, string storageName, string host = "gateway.docker.internal")
 	{
 		if (!localManifest.EmbeddedMongoDbLocalProtocols.TryGetValue(storageName, out var localStorage))
 		{
@@ -62,20 +62,20 @@ public partial class BeamoLocalSystem
 		{
 			throw new Exception($"could not configure connection to storage=[{storageName}] because port was not mapped in storage container");
 		}
-				
+
 		if (bindings.Count != 1)
 		{
 			throw new Exception($"could not configure connection to storage=[{storageName}] because port bindings were not equal to one");
 		}
 
 		var portBinding = bindings[0];
-				
+
 		var str = $"mongodb://{localStorage.RootUsername}:{localStorage.RootPassword}@{host}:{portBinding.HostPort}";
 		var key = $"STORAGE_CONNSTR_{storageName}";
 
 		return new DockerEnvironmentVariable { VariableName = key, Value = str };
 	}
-	
+
 	/// <summary>
 	/// Runs a service locally, enforcing the <see cref="BeamoProtocolType.HttpMicroservice"/> protocol.
 	/// </summary>
@@ -119,7 +119,7 @@ public partial class BeamoLocalSystem
 			new() { VariableName = ENV_NAME_PREFIX, Value = MachineHelper.GetUniqueDeviceId() },
 			new() { VariableName = ENV_WATCH_TOKEN, Value = shouldPrepareWatch.ToString() },
 		};
-		
+
 		// add in connection string environment vars for mongo storage dependencies
 		if (serviceDefinition.DependsOnBeamoIds != null)
 		{
@@ -130,7 +130,7 @@ public partial class BeamoLocalSystem
 					var connectionEnvVar = await GetLocalConnectionString(localManifest, dependencyId);
 					environmentVariables.Add(connectionEnvVar);
 				}
-				catch(Exception ex)
+				catch (Exception ex)
 				{
 					BeamableLogger.LogException(ex);
 					continue;
