@@ -11,6 +11,10 @@
         <GenerateClientCode>true</GenerateClientCode>
     </PropertyGroup>
 
+    <PropertyGroup Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true">
+        <DefineConstants>$(DefineConstants);BEAMABLE_GENERATE_ENV</DefineConstants>
+    </PropertyGroup>
+
     <!-- Standard dotnet settings-->
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -47,7 +51,6 @@
 
     <!-- Before starting the build, we need to prepare a few files and an .env file to pass startup information to the service -->
     <Target Name="setup-beamable" BeforeTargets="Build" DependsOnTargets="RunResolvePackageDependencies" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true">
-
         <CreateItem Include="@(PackageDefinitions)" Condition="'%(Name)' == 'Beamable.Microservice.Runtime'">
             <Output TaskParameter="Include" ItemName="BeamablePackage" />
         </CreateItem>
@@ -59,10 +62,6 @@
         <!-- We need a file that lets the runtime know what version of Beamable it was built with... -->
         <Message Text="Creating beamable version file..." Importance="high" />
         <WriteLinesToFile File="$(OutDir)/.beamablesdkversion" Lines="$(BeamableVersion)" Overwrite="true" />
-
-        <Message Text="Creating beamable .env file..." Importance="high" />
-        <Exec Command="$(BeamableTool) project generate-env $(OutDir)" />
-        <WriteLinesToFile File="$(OutDir)/.env" Lines="BEAMABLE_SDK_VERSION_EXECUTION=$(BeamableVersion)" Overwrite="false"/>
     </Target>
     
     <!-- When running in a container, before building, we need to prepare a few files -->
