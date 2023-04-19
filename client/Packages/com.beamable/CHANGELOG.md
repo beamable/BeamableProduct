@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Detect issues with parsing baked content.
 
 ### Added
+- Added additional info about active listing limit default value in StoreContent
 - Beam CLI bindings.
 
 ## [1.14.0]
