@@ -60,6 +60,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
 
+///Modified
 namespace Beamable
 {
 	/// <summary>
