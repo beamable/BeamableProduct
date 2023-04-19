@@ -177,7 +177,7 @@ namespace Beamable.Server
             JsonUtilityConverter.Init();
 
             BeamableLogProvider.Provider = new BeamableSerilogProvider();
-            Debug.Instance = new MicroserviceDebug();
+            Debug.Instance = new BeamableLoggerDebug();
             BeamableSerilogProvider.LogContext.Value = Log.Logger;
         }
 

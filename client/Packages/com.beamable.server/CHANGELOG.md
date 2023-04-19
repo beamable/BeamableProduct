@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Runtime log level switching. In RealmConfig, use a key for service_logs|serviceName=logLevel.
 
+### Changed
+- Microservices upload to Beamable ECR instead of custom Docker registry.
+
 ## [1.14.0]
 ### Added
 - New Microservice publish window.

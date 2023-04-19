@@ -2,7 +2,8 @@
     "name": "Unity.Beamable.Server.Runtime.Shared",
     "references": [
         "Unity.Beamable.Runtime.Common",
-        "Unity.Beamable.Server.Runtime.Common"
+        "Unity.Beamable.Server.Runtime.Common",
+        "Beamable.SmallerJSON"
     ],
     "optionalUnityReferences": [],
     "includePlatforms": [

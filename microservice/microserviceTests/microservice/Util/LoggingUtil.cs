@@ -14,7 +14,7 @@ namespace microserviceTests.microservice.Util
 	    public static void InitTestCorrelator(LogEventLevel logLevel=LogEventLevel.Verbose)
         {
 	        BeamableLogProvider.Provider = new BeamableSerilogProvider();
-	        Debug.Instance = new MicroserviceDebug();
+	        Debug.Instance = new BeamableLoggerDebug();
 	        // https://github.com/serilog/serilog/wiki/Configuration-Basics
 	        Log.Logger = new LoggerConfiguration()
 		        .MinimumLevel.Is(logLevel)
