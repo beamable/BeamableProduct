@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unrelased]
 ### Fixed
 - Importing assets during microservice publish process on Unity2021.
+- Unity clients will direct Microservice traffic to local standalone Microservices.
 
 ### Added
 - Runtime log level switching. In RealmConfig, use a key for service_logs|serviceName=logLevel.
+
 
 ## [1.14.0]
 ### Added
