@@ -19,6 +19,8 @@ namespace Beamable.Editor
 		private Dictionary<string, EditorCoroutine> _runningSchedulers;
 		private bool _forceStop;
 
+		public bool IsForceStopped => _forceStop;
+
 		public BeamableDispatcher()
 		{
 			_workQueues = new Dictionary<string, Queue<Action>>();
@@ -117,7 +119,12 @@ namespace Beamable.Editor
 		/// <exception cref="Exception">If the <see cref="Start"/> method has not been called with the given queueName, an exception will be thrown.</exception>
 		public void Schedule(string queueName, Action work)
 		{
-			if (_forceStop) throw new Exception("Cannot schedule work, because the scheduler has been stopped.");
+			if (_forceStop)
+			{
+				var ex = new Exception("Cannot schedule work, because the scheduler has been stopped.");
+				Debug.LogException(ex);
+				throw ex;
+			}
 			if (_workQueues.TryGetValue(queueName, out var queue))
 			{
 				lock (queue)

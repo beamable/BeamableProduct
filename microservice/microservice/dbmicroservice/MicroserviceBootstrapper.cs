@@ -432,7 +432,7 @@ namespace Beamable.Server
 		        healthPort = args.HealthPort,
 	        };
 	        var msgJson = JsonConvert.SerializeObject(msg, UnitySerializationSettings.Instance);
-	        beacon.Publish(msgJson, TimeSpan.FromMilliseconds(250));
+	        beacon.Publish(msgJson, TimeSpan.FromMilliseconds(Constants.Features.Services.DISCOVERY_BROADCAST_PERIOD_MS));
         }
 
         public static async Task Start<TMicroService>() where TMicroService : Microservice

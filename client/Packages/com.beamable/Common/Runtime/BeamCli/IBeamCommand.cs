@@ -24,6 +24,7 @@ namespace Beamable.Common.BeamCli
 	public interface IBeamCommandFactory
 	{
 		IBeamCommand Create();
+		void ClearAll();
 	}
 
 	public interface IBeamCommandArgs
