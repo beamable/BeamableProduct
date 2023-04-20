@@ -11,9 +11,9 @@ public static class Constants
 	public const string PLATFORM_PRODUCTION = "https://api.beamable.com";
 	public const string DEFAULT_PLATFORM = PLATFORM_PRODUCTION;
 
-	public const string DOCKER_REGISTRY_DEV = "https://dev-microservices.beamable.com/v2/";
-	public const string DOCKER_REGISTRY_STAGING = "https://staging-microservices.beamable.com/v2/";
-	public const string DOCKER_REGISTRY_PRODUCTION = "https://microservices.beamable.com/v2/";
+	public const string DOCKER_REGISTRY_DEV = "https://dev-ecr.beamable.com";
+	public const string DOCKER_REGISTRY_STAGING = "https://staging-ecr.beamable.com";
+	public const string DOCKER_REGISTRY_PRODUCTION = "https://ecr.beamable.com";
 
 	public const string CONFIG_CID = "cid";
 	public const string CONFIG_PID = "pid";

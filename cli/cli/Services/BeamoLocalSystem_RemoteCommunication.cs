@@ -233,7 +233,7 @@ public partial class BeamoLocalSystem
 					var tar = TarArchive.CreateInputTarArchive(stream, Encoding.Default);
 					tar.ExtractContents(folder);
 
-					var service = new ECRUploaderService(cid, realmPid, gamePid, accessToken, sd.BeamoId, sd.TruncImageId);
+					var service = new ECRUploaderService(cid, realmPid, gamePid, accessToken, sd.BeamoId, sd.TruncImageId, dockerRegistryUrl);
 					service.OnProgress += onContainerUploadProgress;
 					await service.Upload(folder, cancellationToken);
 					

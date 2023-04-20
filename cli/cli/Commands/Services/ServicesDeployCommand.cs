@@ -15,6 +15,7 @@ public class ServicesDeployCommandArgs : LoginCommandArgs
 	public string FromJsonFile;
 	public string RemoteComment;
 	public string[] RemoteServiceComments;
+	public string registryUrl;
 }
 
 public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
@@ -47,6 +48,8 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 
 		AddOption(new Option<string>("--comment", () => "", $"Requires --remote flag. Associates this comment along with the published Manifest. You'll be able to read it via the Beamable Portal"),
 			(args, i) => args.RemoteComment = i);
+		AddOption(new Option<string>("--registry-url", $"Requires --remote flag. Override the default registry upload url."),
+			(args, i) => args.registryUrl = i);
 
 		AddOption(new Option<string[]>("--service-comments", Array.Empty<string>, $"Requires --remote flag. Any number of 'BeamoId::Comment' strings. " +
 																				  $"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal")
@@ -128,6 +131,10 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 				Constants.PLATFORM_PRODUCTION => Constants.DOCKER_REGISTRY_PRODUCTION,
 				_ => throw new ArgumentOutOfRangeException()
 			};
+			if (!string.IsNullOrEmpty(args.registryUrl))
+			{
+				dockerRegistryUrl = args.registryUrl;
+			}
 
 			await AnsiConsole
 				.Progress()

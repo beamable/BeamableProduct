@@ -99,7 +99,7 @@ namespace Beamable.Server
 									string token,
 									string serviceName,
 		                            string imageId,
-									string registryUrl="https://dev-ecr.beamable.com/v2")
+									string registryUrl="https://dev-ecr.beamable.com")
 		{
 			_client = new HttpClient();
 			_client.DefaultRequestHeaders.Add("x-ks-clientid", cid);
