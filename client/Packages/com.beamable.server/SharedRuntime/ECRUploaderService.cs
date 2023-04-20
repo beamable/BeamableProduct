@@ -91,7 +91,7 @@ namespace Beamable.Server
 		private readonly string _serviceName;
 		private readonly string _imageId;
 
-		public event Action<string, float> OnProgress = (_, _) => { }; // serviceName, progress[0-1]
+		public event Action<string, float> OnProgress; // serviceName, progress[0-1]
 
 		public ECRUploaderService(string cid, 
 									string pid,
