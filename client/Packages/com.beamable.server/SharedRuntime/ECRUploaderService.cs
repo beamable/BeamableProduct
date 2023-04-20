@@ -99,7 +99,7 @@ namespace Beamable.Server
 									string token,
 									string serviceName,
 		                            string imageId,
-									string registryUrl="https://vwe9gi1uxg.execute-api.us-west-2.amazonaws.com/dev/v2")
+									string registryUrl="https://ecr.beamable.com/dev/v2")
 		{
 			_client = new HttpClient();
 			_client.DefaultRequestHeaders.Add("x-ks-clientid", cid);
@@ -180,7 +180,7 @@ namespace Beamable.Server
 			}
 			catch (Exception ex)
 			{
-				Debug.LogError($"Failed to get Presignned url for uri=[{uri}]");
+				Debug.LogError($"Failed to get Presigned url for uri=[{uri}]");
 				Debug.LogException(ex);
 				throw;
 			}
