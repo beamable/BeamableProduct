@@ -70,7 +70,7 @@
   </ItemGroup>
   
   <Target Name="BuildCLIInterface" AfterTargets="Build">
-    <Exec Command="./$(OutDir)/$(AssemblyName) generate-interface --output=../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
+    <Exec Command=".\$(OutDir)\$(AssemblyName) generate-interface --output=../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
   </Target>
 
 </Project>
