@@ -47,7 +47,7 @@ public class GenerateEnvFileCommand : AppCommand<GenerateEnvFileCommandArgs>
 		var prefix = args.includePrefix ? MachineHelper.GetUniqueDeviceId() : "";
 		var host = args.AppContext.Host.Replace("http", "ws") + "/socket";
 
-		
+
 		var fileContent = @$"SECRET={secret}
 HOST={host}
 CID={cid}
@@ -55,16 +55,16 @@ PID={pid}
 NAME_PREFIX={prefix}
 BEAM_INSTANCE_COUNT={args.instanceCount}
 ";
-		
-		
+
+
 		var sw = new Stopwatch();
 		sw.Start();
-		
+
 		var manifest = args.BeamoLocalSystem.BeamoManifest;
 		var service = manifest.ServiceDefinitions.FirstOrDefault(service => service.BeamoId == args.serviceId);
 		if (service != null)
 		{
-			
+
 			try
 			{
 				await AppendDependencyVars();
@@ -82,7 +82,7 @@ BEAM_INSTANCE_COUNT={args.instanceCount}
 			}
 
 		}
-		
+
 		async Promise AppendDependencyVars()
 		{
 			foreach (var dependency in service.DependsOnBeamoIds)

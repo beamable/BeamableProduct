@@ -14,7 +14,7 @@ namespace Beamable.UI.Buss
 
 		public override void ApplyStyle()
 		{
-			
+
 			if (!_hasText)
 			{
 				_text = GetComponent<TextMeshProUGUI>();
