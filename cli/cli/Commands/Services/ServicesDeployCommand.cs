@@ -48,7 +48,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 
 		AddOption(new Option<string>("--comment", () => "", $"Requires --remote flag. Associates this comment along with the published Manifest. You'll be able to read it via the Beamable Portal"),
 			(args, i) => args.RemoteComment = i);
-		AddOption(new Option<string>("--registry-url", $"Requires --remote flag. Override the default registry upload url."),
+		AddOption(new Option<string>("--registry-url", $"Requires --remote flag. Override the default registry upload url"),
 			(args, i) => args.registryUrl = i);
 
 		AddOption(new Option<string[]>("--service-comments", Array.Empty<string>, $"Requires --remote flag. Any number of 'BeamoId::Comment' strings. " +
