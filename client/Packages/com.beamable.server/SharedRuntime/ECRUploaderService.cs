@@ -295,9 +295,8 @@ namespace Beamable.Server
 			{
 				var _ = job.Value.ContinueWith((_, state) =>
 				{
-					var doneTasks = uploadIndexToJob.Count(j => j.Value.IsCompletedSuccessfully);
+					var doneTasks = uploadIndexToJob.Count(j => j.Value.IsCompleted);
 					var progress = doneTasks / (float)(manifest.layers.Length);
-					BeamableLogger.Log("EMITTING PROGRESS: " + progress);
 					EmitProgress(.25f + (progress * .7f));
 				}, job.Key, token);
 			}

@@ -32,7 +32,7 @@ public class RunNBomberCommand : AppCommand<RunNBomberCommandArgs>
 		AddArgument(new Argument<string>("method", "The method name in the service to stress test"), (args, i) => args.method = i);
 		AddArgument(new Argument<string>("body", "The json body for each request"), (args, i) => args.jsonBody = i);
 		AddOption(new Option<bool>("--include-prefix", () => true, "If true, the generated .env file will include the local machine name as prefix"), (args, i) => args.includePrefix = i);
-		AddOption(new Option<bool>("--include-auth", () => true, "If true, the requests will be given the CLI's auth token"), (args, i) => args.includePrefix = i);
+		AddOption(new Option<bool>("--include-auth", () => true, "If true, the requests will be given the CLI's auth token"), (args, i) => args.includeAuth = i);
 		AddOption(new Option<int>("--rps", () => 50, "The requested requests per second for the test"), (args, i) => args.rps = i);
 		AddOption(new Option<int>("--duration", () => 30, "How long to run the test for"), (args, i) => args.duration = i);
 		AddOption(new Option<string>("--auth", "Include an auth header. This will override the --include-auth flag"), (args, i) => args.authHeader = i);
