@@ -26,12 +26,12 @@ namespace Beamable.Server.Editor
 		{
 			await BeamEditorContext.Default.InitializePromise;
 			var cli = BeamEditorContext.Default.ServiceScope.GetService<BeamCli>();
-			
+
 			_command = cli.Command.ProjectPs();
 			_command.OnStreamServiceDiscoveryEvent(Handle);
-			
+
 			_gotAnyDataPromise = new Promise();
-			
+
 			var available = await cli.IsAvailable();
 			if (!available)
 			{
@@ -64,7 +64,7 @@ namespace Beamable.Server.Editor
 		{
 			return _nameToPrefix.TryGetValue(serviceName, out prefix);
 		}
-		
+
 		public Promise OnDispose()
 		{
 			return Promise.Success;

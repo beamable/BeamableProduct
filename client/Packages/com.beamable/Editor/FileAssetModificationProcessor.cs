@@ -20,7 +20,7 @@ namespace Beamable.Editor
 			foreach (var path in paths) // find the invalid paths
 			{
 				if (!path.StartsWith(PREFIX)) continue; // if this path isn't even in beamable, don't do anything.
-				
+
 				if (!PackageUtil.DoesFileExistLocally(path)) // if this file does not exist, we cannot save it.
 				{
 					InvalidPaths.Add(path); // don't save this one.
@@ -33,9 +33,9 @@ namespace Beamable.Editor
 				NextPaths.AddRange(paths);
 				foreach (var path in InvalidPaths)
 				{
-					#if BEAMABLE_LOG_INVALID_ASSET_SAVE_WARNINGS
+#if BEAMABLE_LOG_INVALID_ASSET_SAVE_WARNINGS
 					Debug.LogWarning("Beamable will not save asset at " + path);
-					#endif
+#endif
 					NextPaths.Remove(path);
 				}
 
@@ -43,7 +43,7 @@ namespace Beamable.Editor
 			}
 
 			return paths;
-			
+
 		}
 	}
 }

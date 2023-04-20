@@ -90,7 +90,7 @@ public struct UnrealApiSubsystemDeclaration
 		helperDict.Add(nameof(_baseTypeDeclaration), isMSGen ? "UBeamMicroserviceClientSubsystem" : "UEngineSubsystem");
 		helperDict.Add(nameof(SubsystemName), SubsystemName);
 
-		if(isMSGen) IncludeStatements.Add(@"#include ""BeamBackend/BeamMicroserviceClientSubsystem.h""");
+		if (isMSGen) IncludeStatements.Add(@"#include ""BeamBackend/BeamMicroserviceClientSubsystem.h""");
 		helperDict.Add(nameof(IncludeStatements), string.Join("\n", IncludeStatements));
 
 		helperDict.Add(nameof(EndpointRawFunctionDeclarations), endpointRawFunctions);
@@ -110,9 +110,9 @@ public struct UnrealApiSubsystemDeclaration
 		{
 			d.IntoProcessMap(helperDict);
 
-			var bpTemplate = isMsGen? UnrealEndpointDeclaration.RAW_MS_BP_DEFINITION : UnrealEndpointDeclaration.RAW_BP_DEFINITION;
-			var cppTemplate = isMsGen? UnrealEndpointDeclaration.RAW_MS_CPP_DEFINITION : UnrealEndpointDeclaration.RAW_CPP_DEFINITION;
-			
+			var bpTemplate = isMsGen ? UnrealEndpointDeclaration.RAW_MS_BP_DEFINITION : UnrealEndpointDeclaration.RAW_BP_DEFINITION;
+			var cppTemplate = isMsGen ? UnrealEndpointDeclaration.RAW_MS_CPP_DEFINITION : UnrealEndpointDeclaration.RAW_CPP_DEFINITION;
+
 			var bp = bpTemplate.ProcessReplacement(helperDict);
 			var cpp = cppTemplate.ProcessReplacement(helperDict);
 			helperDict.Clear();
@@ -123,10 +123,10 @@ public struct UnrealApiSubsystemDeclaration
 		var authEndpointRawFunctions = string.Join("\n\t\t", AuthenticatedEndpointRawFunctionDeclarations.Select(d =>
 		{
 			d.IntoProcessMap(helperDict);
-			
-			var bpTemplate = isMsGen? UnrealEndpointDeclaration.RAW_MS_AUTH_BP_DEFINITION : UnrealEndpointDeclaration.RAW_AUTH_BP_DEFINITION;
-			var cppTemplate = isMsGen? UnrealEndpointDeclaration.RAW_MS_AUTH_CPP_DEFINITION : UnrealEndpointDeclaration.RAW_AUTH_CPP_DEFINITION;
-			
+
+			var bpTemplate = isMsGen ? UnrealEndpointDeclaration.RAW_MS_AUTH_BP_DEFINITION : UnrealEndpointDeclaration.RAW_AUTH_BP_DEFINITION;
+			var cppTemplate = isMsGen ? UnrealEndpointDeclaration.RAW_MS_AUTH_CPP_DEFINITION : UnrealEndpointDeclaration.RAW_AUTH_CPP_DEFINITION;
+
 			var bp = bpTemplate.ProcessReplacement(helperDict);
 			var cpp = cppTemplate.ProcessReplacement(helperDict);
 			helperDict.Clear();
