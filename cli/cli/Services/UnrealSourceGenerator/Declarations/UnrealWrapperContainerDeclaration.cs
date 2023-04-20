@@ -14,6 +14,7 @@ public struct UnrealWrapperContainerDeclaration
 
 	public void BakeIntoProcessMap(Dictionary<string, string> helperDict)
 	{
+		helperDict.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
 		helperDict.Add(nameof(UnrealTypeName), UnrealTypeName);
 		helperDict.Add(nameof(NamespacedTypeName), NamespacedTypeName);
 		helperDict.Add(nameof(UnrealTypeIncludeStatement), UnrealTypeIncludeStatement);
@@ -33,7 +34,7 @@ public struct UnrealWrapperContainerDeclaration
 #include ""₢{nameof(NamespacedTypeName)}₢.generated.h""
 		
 USTRUCT(BlueprintType, Category=""Beam|Wrappers|Arrays"")
-struct BEAMABLECORE_API ₢{nameof(UnrealTypeName)}₢ : public FBeamArray
+struct ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ ₢{nameof(UnrealTypeName)}₢ : public FBeamArray
 {{
 	GENERATED_BODY()
 

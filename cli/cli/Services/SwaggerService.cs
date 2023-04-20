@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
+using cli.Unreal;
 using cli.Utils;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Exceptions;
@@ -91,6 +92,14 @@ public class SwaggerService
 		var files = new List<GeneratedFileDescriptor>();
 		foreach (var generator in _generators.Where(g => string.IsNullOrEmpty(targetEngine) || g.GetType().Name.Contains(targetEngine, StringComparison.OrdinalIgnoreCase)))
 		{
+			// Set the paths to mirror the folder structure of the BeamableCore plugin's "Source" folder
+			// The reason we do this is so that we can simply copy/paste the result of the generation over the Source folder.
+			// For a "clean install" all the user has to do is go to these paths and delete the AutoGen folder, code-gen again and then copy/paste the results
+			// on the "Source" folder of the plugin (or, in SAMS case, the project) 
+			UnrealSourceGenerator.headerFileOutputPath = "BeamableCore/Public/";
+			UnrealSourceGenerator.cppFileOutputPath = "BeamableCore/Private/";
+			UnrealSourceGenerator.blueprintHeaderFileOutputPath = "BeamableCoreBlueprintNodes/Public/BeamFlow/ApiRequest/";
+			UnrealSourceGenerator.blueprintCppFileOutputPath = "BeamableCoreBlueprintNodes/Private/BeamFlow/ApiRequest/";
 			files.AddRange(generator.Generate(context));
 		}
 
