@@ -132,11 +132,12 @@ namespace Beamable.Editor.Content
 						// uh oh, we found a potential issue in content... 
 						if (contentTypeToClassCaseInsensitive.TryGetValue(currType.ToLowerInvariant(), out runtimeType))
 						{
-							// we were able to resolve it by 
+							// we were able to resolve it by using a case insensitive check
 							currType = _typeCache.ClassToContentType[runtimeType];
 						}
 						else
 						{
+							// we weren't able to resolve it :( 
 							Debug.LogError(@$"Unable to find a content type for type=[{currType}].
 This can happen if the content folders have different names than the content attribute strings. 
 Make sure that the {root} folder and sub folder names match the content attribute strings exactly.
