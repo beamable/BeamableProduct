@@ -15,15 +15,15 @@ public class ProjectData
 	{
 		public string CoreProjectName;
 		public string BlueprintNodesProjectName;
-		
+
 		public string Path;
 		public string SourceFilesPath;
-		
+
 		public string MsCoreHeaderPath;
 		public string MsCoreCppPath;
 		public string MsBlueprintNodesHeaderPath;
 		public string MsBlueprintNodesCppPath;
-		
+
 
 		public bool Equals(string other) => Path.Equals(other);
 		public bool Equals(Unreal other) => Path == other.Path;
@@ -69,15 +69,15 @@ public class ProjectService
 		var projectName = relativePath.Substring(relativePath.LastIndexOf("\\", StringComparison.Ordinal) + 1);
 		var msPath = $"{projectName}";
 		var msBlueprintPath = $"{projectName}BlueprintNodes";
-		
+
 		_projects.unrealProjectsPaths.Add(new ProjectData.Unreal()
 		{
 			CoreProjectName = projectName,
 			BlueprintNodesProjectName = $"{projectName}BlueprintNodes",
-			
+
 			Path = relativePath,
 			SourceFilesPath = relativePath + $"\\Source\\",
-			
+
 			MsCoreHeaderPath = msPath,
 			MsCoreCppPath = msPath,
 			MsBlueprintNodesHeaderPath = msBlueprintPath,
@@ -110,13 +110,13 @@ public class ProjectService
 			.WithArguments($"add {projectPath} reference {referencePath}")
 			.ExecuteAsyncAndLog().Task;
 	}
-	
+
 	public async Task CreateNewStorage(string slnFilePath, string storageName)
 	{
 		var slnDirectory = Path.GetDirectoryName(slnFilePath);
 		var rootServicesPath = Path.Combine(slnDirectory, "services");
 		var storagePath = Path.Combine(rootServicesPath, storageName);
-		
+
 		if (Directory.Exists(storagePath))
 		{
 			throw new CliException("Cannot create a storage because the directory already exists");

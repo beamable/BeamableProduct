@@ -15,7 +15,7 @@ public struct UnrealEnumDeclaration
 
 			return enumValue;
 		}));
-		
+
 		helperDict.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
 		helperDict.Add(nameof(UnrealTypeName), UnrealTypeName);
 		helperDict.Add(nameof(NamespacedTypeName), NamespacedTypeName);

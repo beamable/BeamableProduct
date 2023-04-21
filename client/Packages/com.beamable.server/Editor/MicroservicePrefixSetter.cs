@@ -21,7 +21,7 @@ namespace Beamable.Server.Editor
 			_registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			_nameToDescriptor = _registry.Descriptors.ToDictionary(d => d.Name);
 		}
-		
+
 
 		public async Promise<string> GetPrefix(string serviceName)
 		{
@@ -38,7 +38,7 @@ namespace Beamable.Server.Editor
 					return MicroserviceIndividualization.Prefix;
 				}
 			}
-			
+
 			if (_discoveryService.TryIsRunning(serviceName, out var prefix))
 			{
 				return prefix;

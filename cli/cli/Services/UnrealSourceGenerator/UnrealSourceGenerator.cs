@@ -467,7 +467,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			{
 				var enumDecl = new UnrealEnumDeclaration
 				{
-					UnrealTypeName = schemaUnrealType, NamespacedTypeName = schemaNamespacedType, EnumValues = schema.Enum.OfType<OpenApiString>().Select(v => v.Value).ToList()
+					UnrealTypeName = schemaUnrealType,
+					NamespacedTypeName = schemaNamespacedType,
+					EnumValues = schema.Enum.OfType<OpenApiString>().Select(v => v.Value).ToList()
 				};
 
 				enumTypes.Add(enumDecl);
@@ -1046,7 +1048,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 						var bodySchema = requestMediaType.Schema.GetEffective(openApiDocument);
 
 						var unrealProperty = new UnrealPropertyDeclaration();
-						unrealProperty.PropertyUnrealType = GetNonOptionalUnrealTypeFromFieldSchema(openApiDocument,  bodySchema, out _);
+						unrealProperty.PropertyUnrealType = GetNonOptionalUnrealTypeFromFieldSchema(openApiDocument, bodySchema, out _);
 						unrealProperty.PropertyNamespacedType = GetNamespacedTypeNameFromUnrealType(unrealProperty.PropertyUnrealType);
 						unrealProperty.PropertyName = UnrealPropertyDeclaration.GetPrimitiveUPropertyFieldName(unrealProperty.PropertyUnrealType, "Body", kSchemaGenerationBuilder);
 						unrealProperty.BriefCommentString = $"The \"{unrealProperty.PropertyUnrealType}\" instance to use for the request.";
@@ -1076,11 +1078,11 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 								var writer = new OpenApiJsonWriter(sw);
 								bodySchema.SerializeAsV3WithoutReference(writer);
 								Console.WriteLine($"{serviceTitle}-{serviceName}-{unrealEndpoint.GlobalNamespacedEndpointName} FROM {operationType.ToString()} {endpointPath}\n" +
-								                  string.Join("\n", unrealEndpoint.RequestQueryParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-								                  "\n" + string.Join("\n", unrealEndpoint.RequestPathParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-								                  "\n" + string.Join("\n", unrealEndpoint.RequestBodyParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-								                  $"\n{unrealEndpoint.ResponseBodyUnrealType}" +
-								                  $"\n{sw}");
+												  string.Join("\n", unrealEndpoint.RequestQueryParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+												  "\n" + string.Join("\n", unrealEndpoint.RequestPathParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+												  "\n" + string.Join("\n", unrealEndpoint.RequestBodyParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+												  $"\n{unrealEndpoint.ResponseBodyUnrealType}" +
+												  $"\n{sw}");
 							}
 							else
 							{
@@ -1127,11 +1129,11 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 								var writer = new OpenApiJsonWriter(sw);
 								bodySchema.SerializeAsV3WithoutReference(writer);
 								Console.WriteLine($"{serviceTitle}-{serviceName}-{unrealEndpoint.GlobalNamespacedEndpointName} FROM {operationType.ToString()} {endpointPath}\n" +
-								                  string.Join("\n", unrealEndpoint.RequestQueryParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-								                  "\n" + string.Join("\n", unrealEndpoint.RequestPathParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-								                  "\n" + string.Join("\n", unrealEndpoint.RequestBodyParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-								                  $"\n{unrealEndpoint.ResponseBodyUnrealType}" +
-								                  $"\n{sw}");
+												  string.Join("\n", unrealEndpoint.RequestQueryParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+												  "\n" + string.Join("\n", unrealEndpoint.RequestPathParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+												  "\n" + string.Join("\n", unrealEndpoint.RequestBodyParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+												  $"\n{unrealEndpoint.ResponseBodyUnrealType}" +
+												  $"\n{sw}");
 							}
 						}
 						else if (response.Content.TryGetValue("text/plain", out jsonResponse))
@@ -1209,13 +1211,13 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	private static bool IsUnrealContainerOrWrapperType(string unrealType)
 	{
 		return unrealType.StartsWith(UNREAL_ARRAY) || unrealType.StartsWith(UNREAL_MAP) || unrealType.StartsWith(UNREAL_OPTIONAL) || unrealType.StartsWith(UNREAL_U_OBJECT_PREFIX) ||
-		       UNREAL_ALL_SEMTYPES.Contains(unrealType);
+			   UNREAL_ALL_SEMTYPES.Contains(unrealType);
 	}
 
 	private static bool IsUnrealPrimitiveType(string unrealType)
 	{
 		return unrealType.StartsWith(UNREAL_BYTE) || unrealType.StartsWith(UNREAL_SHORT) || unrealType.StartsWith(UNREAL_INT) || unrealType.StartsWith(UNREAL_LONG) ||
-		       unrealType.StartsWith(UNREAL_FLOAT) || unrealType.StartsWith(UNREAL_DOUBLE);
+			   unrealType.StartsWith(UNREAL_FLOAT) || unrealType.StartsWith(UNREAL_DOUBLE);
 	}
 
 
@@ -1308,7 +1310,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 		if (genType == GenerationType.Microservice)
 			schemaName = $"{parentDoc.Info.Title.Sanitize()}{schemaName}";
-		
+
 		return isOptional ? $"Optional{schemaName}" : schemaName;
 	}
 
@@ -1400,8 +1402,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		if (doesConflict)
 		{
 			throw new ArgumentException($"{methodName} was found in more than one service. " +
-			                            $"In this case, this is because you have two microservices with the same name OR because this name clashes with an existing Beamable API. " +
-			                            $"Please change your Microservice name to resolve this.");
+										$"In this case, this is because you have two microservices with the same name OR because this name clashes with an existing Beamable API. " +
+										$"Please change your Microservice name to resolve this.");
 		}
 
 		// In case we want to manually override an endpoint's name...
@@ -1432,8 +1434,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		if (doesConflict)
 		{
 			throw new ArgumentException($"{methodName} was overloaded in {serviceName}. " +
-			                            $"We do not support overloading Callable/ClientCallable/AdminCallable functions." +
-			                            $"Please rename all overloads to resolve this.");
+										$"We do not support overloading Callable/ClientCallable/AdminCallable functions." +
+										$"Please rename all overloads to resolve this.");
 		}
 
 		// In case we want to manually override an endpoint's name...
@@ -1498,7 +1500,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					}
 				}
 
-				nonOverridenUnrealType = MakeUnrealUObjectTypeFromNamespacedType($"OneOf{str}") ;
+				nonOverridenUnrealType = MakeUnrealUObjectTypeFromNamespacedType($"OneOf{str}");
 				return UNREAL_TYPES_OVERRIDES.ContainsKey(nonOverridenUnrealType)
 					? UNREAL_TYPES_OVERRIDES[nonOverridenUnrealType]
 					: throw new Exception($"Should never see this!!! If you do, add an override to the UNREAL_TYPES_OVERRIDE with this as the key={nonOverridenUnrealType}");
