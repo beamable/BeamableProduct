@@ -69,6 +69,9 @@
     <Folder Include="nupkg" />
   </ItemGroup>
   
+  <Target Name="PrepTools" BeforeTargets="Build">
+    <Exec Command="dotnet tool restore"/>
+  </Target>
   <Target Name="BuildCLIInterface" AfterTargets="Build">
     <Exec Command=".\$(OutDir)\$(AssemblyName) generate-interface --output=../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
     <Exec Command="dotnet tool run dotnet-format ../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
