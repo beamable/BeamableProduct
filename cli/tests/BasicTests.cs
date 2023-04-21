@@ -115,7 +115,7 @@ public class Tests
 	{
 		var gen = new ServiceDocGenerator();
 		var doc = gen.Generate<TroublesomeService>(null);
-		
+
 		UnrealSourceGenerator.exportMacro = "TROUBLESOMEPROJECT_API";
 		UnrealSourceGenerator.blueprintExportMacro = "TROUBLESOMEPROJECTBLUEPRINTNODES_API";
 		UnrealSourceGenerator.headerFileOutputPath = "/";

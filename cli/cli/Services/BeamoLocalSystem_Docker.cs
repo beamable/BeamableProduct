@@ -81,7 +81,7 @@ public partial class BeamoLocalSystem
 			createParams.Name = containerName;
 			createParams.Image = image;
 		}
-		
+
 
 		// Build container health check
 		if (!string.IsNullOrEmpty(healthcheckCmd))

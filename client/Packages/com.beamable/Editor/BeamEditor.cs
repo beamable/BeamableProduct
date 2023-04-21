@@ -123,9 +123,9 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<BeamCommands>();
 			DependencyBuilder.AddGlobalStorage<BeamCommandFactory, EditorStorageLayer>();
 			DependencyBuilder.AddSingleton<BeamCli>();
-			
+
 			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
-			
+
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 		}
 	}

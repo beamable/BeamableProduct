@@ -35,7 +35,7 @@ public struct UnrealEndpointDeclaration
 	private string _makeHiddenParameterNames;
 	private string _makeNonBodyImpl;
 	private string _makeBodyImpl;
-	
+
 
 	public List<string> GetAllUnrealTypes()
 	{
@@ -199,8 +199,8 @@ public struct UnrealEndpointDeclaration
 							if (tp.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
 							{
 								return $"// Assumes the object is constructed and have the new request take ownership of the memory for it\n\t" +
-								       $"Req->{p.PropertyName}->{tp.PropertyName} = {GetBodyParamName(nonBodyParamsDeclarations, tp)};\n\t" +
-								       $"Req->{p.PropertyName}->{tp.PropertyName}->Rename(nullptr, Req);";
+									   $"Req->{p.PropertyName}->{tp.PropertyName} = {GetBodyParamName(nonBodyParamsDeclarations, tp)};\n\t" +
+									   $"Req->{p.PropertyName}->{tp.PropertyName}->Rename(nullptr, Req);";
 							}
 
 							return $"Req->{p.PropertyName}->{tp.PropertyName} = {GetBodyParamName(nonBodyParamsDeclarations, tp)};";

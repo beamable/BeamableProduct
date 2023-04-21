@@ -20,7 +20,7 @@ public class ServiceDiscoveryEvent
 {
 	public string cid, pid, prefix, service;
 	public bool isRunning;
-	
+
 }
 
 
@@ -63,14 +63,14 @@ public class CheckStatusCommand : AppCommand<CheckStatusCommandArgs>
 				}
 			}
 
-			
+
 			foreach (var x in toRemove)
 			{
 				_nameToEntryWithTimestamp.Remove(x);
 			}
 			toRemove.Clear();
-			
-			
+
+
 			if (!TryToListen(out var service))
 			{
 				continue;
@@ -86,8 +86,8 @@ public class CheckStatusCommand : AppCommand<CheckStatusCommandArgs>
 				this.SendResults(CreateEvent(service, true));
 			}
 			_nameToEntryWithTimestamp[service.serviceName] = (now, service);
-			
-			
+
+
 			// cull old entries
 			Thread.Sleep(50);
 		}
@@ -121,10 +121,10 @@ public class CheckStatusCommand : AppCommand<CheckStatusCommandArgs>
 		}
 
 		var entry = JsonConvert.DeserializeObject<ServiceDiscoveryEntry>(message.String, UnitySerializationSettings.Instance);
-		
+
 		service = entry;
 		return true;
 
 	}
-	
+
 }

@@ -72,7 +72,7 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 						var outputPath = Path.Combine(args.outputDirectory, $"{descriptor.Name}Client.cs");
 						generator.GenerateCSharpCode(outputPath);
 					}
-					
+
 					foreach (var unityProjectPath in args.ProjectService.GetLinkedUnityProjects())
 					{
 						var unityAssetPath = Path.Combine(args.ConfigService.BaseDirectory, unityProjectPath, "Assets");
@@ -160,7 +160,7 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 			{
 				var existingContent = File.ReadAllText(outputPath);
 				if (string.Compare(existingContent, descriptors[i].Content, CultureInfo.InvariantCulture,
-					    CompareOptions.IgnoreSymbols) == 0)
+						CompareOptions.IgnoreSymbols) == 0)
 				{
 					identicalFileCounter++;
 					continue;
