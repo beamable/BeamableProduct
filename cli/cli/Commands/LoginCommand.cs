@@ -45,22 +45,38 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 
 		BeamableLogger.Log($"signing into... {_ctx.Cid}.{_ctx.Pid}");
 		BeamableLogger.Log($"signing into... {_authApi.Requester.Cid}.{_authApi.Requester.Pid}");
-		var response = await _authApi.Login(username, password, false, args.customerScoped).ShowLoading("Authorizing...");
-		if (args.saveToEnvironment && !string.IsNullOrWhiteSpace(response.refresh_token))
+		var response = new TokenResponse();
+		try
+		{
+			response = await _authApi.Login(username, password, false, args.customerScoped)
+				.ShowLoading("Authorizing...");
+		}catch(Exception e)
+		{
+			BeamableLogger.LogError($"Login failed with Exception: {e.Message}");
+			return;
+		}
+		
+		args.username = username;
+		args.password = password;
+		if (string.IsNullOrWhiteSpace(response.refresh_token))
+		{
+			BeamableLogger.LogError("Login failed");
+			return;
+		}
+		_ctx.UpdateToken(response);
+
+		if (args.saveToEnvironment)
 		{
 			BeamableLogger.Log($"Saving refresh token as {Constants.KEY_ENV_REFRESH_TOKEN} env variable");
 			Environment.SetEnvironmentVariable(Constants.KEY_ENV_REFRESH_TOKEN, response.refresh_token);
 		}
-		if (args.saveToFile && !string.IsNullOrWhiteSpace(response.refresh_token))
+		if (args.saveToFile)
 		{
 			BeamableLogger.Log($"Saving refresh token to {Constants.CONFIG_TOKEN_FILE_NAME}-" +
 							   " do not add it to control version system. It should be used only locally.");
-			_configService.SaveTokenToFile(response);
+			_configService.SaveTokenToFile(_ctx.Token);
 		}
 
-		args.username = username;
-		args.password = password;
-		_ctx.UpdateToken(response);
 		BeamableLogger.Log(JsonConvert.SerializeObject(response, Formatting.Indented));
 	}
 
