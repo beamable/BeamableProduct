@@ -24,5 +24,5 @@ namespace Beamable.Server
 
       public void LogFormat(string format, params object[] args) => BeamableLogger.Log(string.Format(format, args));
    }
-#pragma warning enable 1591
+#pragma warning restore 1591
 }
