@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Invalid package invalidations no longer occur for Beamable based assets.
+- Content folders can be case insensitive.
 
 ## [1.14.0]
 ### Fixed
