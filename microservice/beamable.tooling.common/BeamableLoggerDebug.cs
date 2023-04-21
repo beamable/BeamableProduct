@@ -1,9 +1,9 @@
-using System;
 using Beamable.Common;
 using UnityEngine;
 
 namespace Beamable.Server
 {
+#pragma warning disable 1591
    public class BeamableLoggerDebug : IDebug
    {
       public void Assert(bool assertion) => BeamableLogger.Assert(assertion);
@@ -24,4 +24,5 @@ namespace Beamable.Server
 
       public void LogFormat(string format, params object[] args) => BeamableLogger.Log(string.Format(format, args));
    }
+#pragma warning enable 1591
 }

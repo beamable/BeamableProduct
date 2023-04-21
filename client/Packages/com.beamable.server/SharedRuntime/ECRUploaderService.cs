@@ -15,66 +15,6 @@ using UnityEngine;
 
 namespace Beamable.Server
 {
-	// public static class Doodad
-	// {
-	// 	[MenuItem("UPLOAD/TESTSTUFF")]
-	// 	public static async void TestTheThing()
-	// 	{
-	// 		var api = BeamEditorContext.Default;
-	// 		await api.InitializePromise;
-	// 		
-	// 		var _client = new HttpClient();
-	// 		var cid = api.Requester.Cid;
-	// 		var pid = api.Requester.Pid;
-	// 		_client.DefaultRequestHeaders.Add("x-ks-clientid", cid);
-	// 		_client.DefaultRequestHeaders.Add("x-ks-projectid", pid);
-	// 		_client.DefaultRequestHeaders.Add("x-ks-token", api.Requester.Token.Token);
-	// 		var serviceUniqueName = "ee6e048a0b6017c4990f13f9d07f9e";//GetHash($"{cid}_{api.ProductionRealm.Pid}_swagger2").Substring(0, 30);
-	//
-	// 		Debug.Log("UNIQUE SERVICE NAME "  + serviceUniqueName);
-	// 		var _uploadBaseUri = $"https://vwe9gi1uxg.execute-api.us-west-2.amazonaws.com/dev/v2/{serviceUniqueName}";
-	//
-	// 		var manifest =
-	// 			"[{\"Config\":\"0028ad28bb75ccb988689b6e5903f2d965d0de3ae5c5572fbc457f8e4542bd1e.json\",\"RepoTags\":null,\"Layers\":[\"1288696addccc4013c5bcf61c1b6c38128a7214a0942976792918b51912d90f7/layer.tar\",\"23747de4211504b6a1554ded518d7abb1e42049460a8eace93cc274553d8e4ea/layer.tar\",\"96c4e657586f01e8c1e113952dbfadddc0036cc8c9f2cc4209233ae2ea4d16cc/layer.tar\",\"a36c795243d77178545508b4f9695c17824d9264bfa9acf4e2e747362ce6260f/layer.tar\",\"80d277b9f6fabe21f1b8432519a55534ba496344ef18c9f5186f368cbb2b49cb/layer.tar\"]}]";
-	//
-	// 		var encodedManifest = Base64Encode(manifest);
-	// 		// var hardcodedBase64 =
-	// 		// 	"W3siQ29uZmlnIjoiMDAyOGFkMjhiYjc1Y2NiOTg4Njg5YjZlNTkwM2YyZDk2NWQwZGUzYWU1YzU1NzJmYmM0NTdmOGU0NTQyYmQxZS5qc29uIiwiUmVwb1RhZ3MiOm51bGwsIkxheWVycyI6WyIxMjg4Njk2YWRkY2NjNDAxM2M1YmNmNjFjMWI2YzM4MTI4YTcyMTRhMDk0Mjk3Njc5MjkxOGI1MTkxMmQ5MGY3L2xheWVyLnRhciIsIjIzNzQ3ZGU0MjExNTA0YjZhMTU1NGRlZDUxOGQ3YWJiMWU0MjA0OTQ2MGE4ZWFjZTkzY2MyNzQ1NTNkOGU0ZWEvbGF5ZXIudGFyIiwiOTZjNGU2NTc1ODZmMDFlOGMxZTExMzk1MmRiZmFkZGRjMDAzNmNjOGM5ZjJjYzQyMDkyMzNhZTJlYTRkMTZjYy9sYXllci50YXIiLCJhMzZjNzk1MjQzZDc3MTc4NTQ1NTA4YjRmOTY5NWMxNzgyNGQ5MjY0YmZhOWFjZjRlMmU3NDczNjJjZTYyNjBmL2xheWVyLnRhciIsIjgwZDI3N2I5ZjZmYWJlMjFmMWI4NDMyNTE5YTU1NTM0YmE0OTYzNDRlZjE4YzlmNTE4NmYzNjhjYmIyYjQ5Y2IvbGF5ZXIudGFyIl19XQo=";
-	// 		//var bytes = UTF8Encoding.ASCII.GetBytes(manifest);
-	// 		// Debug.Log("BYTE SIZE IS " + bytes.Length);//
-	// 		var commitToRegistryResponse = await _client.PostAsync($"{_uploadBaseUri}/submitLayersToECR?imageTag=latest", new StringContent(manifest));
-	// 		
-	// 		try
-	// 		{
-	// 			commitToRegistryResponse.EnsureSuccessStatusCode();
-	// 		}
-	// 		catch (HttpRequestException httpError)
-	// 		{
-	// 			throw new HttpRequestException($"Commiting image to registry failed with: {httpError}");
-	// 		}
-	// 	}
-	// 	
-	// 	public static string Base64Encode(string plainText) 
-	// 	{
-	// 		var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
-	// 		return System.Convert.ToBase64String(plainTextBytes);
-	// 	}
-	// 	
-	// 	private readonly static MD5 _md5 = MD5.Create();
-	//
-	// 	static string GetHash(string input)
-	// 	{
-	// 		byte[] data = _md5.ComputeHash(Encoding.UTF8.GetBytes(input));
-	// 		var sBuilder = new StringBuilder();
-	// 		for (int i = 0; i < data.Length; i++)
-	// 		{
-	// 			sBuilder.Append(data[i].ToString("x2"));
-	// 		}
-	// 		return sBuilder.ToString();
-	// 	}
-	//
-	// }
-
 	public class ECRUploaderService
 	{
 
@@ -149,8 +89,6 @@ namespace Beamable.Server
 			requestMessage.Content = content;
 			
 			var registryResponse = await SendRequestWithRetries($"Upload {uri} to s3", () => request.SendAsync(requestMessage, cancellationToken), cancellationToken);
-
-			// var registryResponse = await request.SendAsync(requestMessage);
 			try
 			{
 				registryResponse.EnsureSuccessStatusCode();
@@ -188,23 +126,6 @@ namespace Beamable.Server
 			var url = response.Headers.Location;
 			return url;
 		}
-
-		// private async Task<bool> GetLayer(string layer)
-		// {
-		// 	var response = await _client.GetAsync($"{_uploadBaseUri}/doesLayerExist?digest={layer}");
-		//
-		// 	switch (response.StatusCode)
-		// 	{
-		// 		case HttpStatusCode.NotFound:
-		// 			return false; // a valid error code meaning the layer does not exist.
-		// 		case HttpStatusCode.OK:
-		// 			return true; // the body does not need to be serialized, because any 200 implies success.
-		// 		default:
-		// 			response.EnsureSuccessStatusCode();
-		// 			return false;
-		// 	}
-		//
-		// }
 
 		private async Task<HttpResponseMessage> CommitImageToRegistry(byte[] localManifestBytes, CancellationToken cancellationToken)
 		{
@@ -277,14 +198,6 @@ namespace Beamable.Server
 			for (var i = 0; i < manifest.layers.Length; i++)
 			{
 				var layer = manifest.layers[i];
-
-				// TODO: Check that the layer needs to be uploaded (it may already be)
-				// var isAlreadyUploaded = await GetLayer(layer);
-				// if (isAlreadyUploaded)
-				// {
-				//  Debug.Log($"Skipping part {i}/{manifest.layers.Length}");
-				//  continue;
-				// }
 				var url = await GetPresignedURLForObject(layer, token);
 				var work = SendFileToS3(url, GenerateContentForUpload($"{folder}/{layer}"), token);
 				uploadIndexToJob.Add(i, work);

@@ -62,7 +62,7 @@ public class RunNBomberCommand : AppCommand<RunNBomberCommandArgs>
 				}
 				if (!string.IsNullOrEmpty(args.authHeader))
 				{
-					request = request.WithHeader("Authorization", "Bearer 5d938ebe-9cbd-41d6-b077-d8dd89b99819");
+					request = request.WithHeader("Authorization", $"Bearer {args.authHeader}");
 				}
 				
 				// HttpCompletionOption: https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httpcompletionoption?view=net-7.0
