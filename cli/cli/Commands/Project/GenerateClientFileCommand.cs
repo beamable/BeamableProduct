@@ -19,6 +19,7 @@ public class GenerateClientFileCommandArgs : CommandArgs
 	public string outputDirectory;
 	public bool outputToLinkedProjects = true;
 }
+
 public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArgs>
 {
 	public GenerateClientFileCommand() : base("generate-client", "Generate a C# client file based on a built C# microservice dll directory")
@@ -34,8 +35,8 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 
 	public override Task Handle(GenerateClientFileCommandArgs args)
 	{
-
 		#region load client dll into current domain
+
 		var absolutePath = Path.GetFullPath(args.microserviceAssemblyPath);
 		var absoluteDir = Path.GetDirectoryName(absolutePath);
 		AssemblyLoadContext.Default.Resolving += (context, name) =>
@@ -46,6 +47,7 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 			return null;
 		};
 		var userAssembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(absolutePath);
+
 		#endregion
 
 		var allTypes = userAssembly.GetExportedTypes();
@@ -55,46 +57,39 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 			var attribute = type.GetCustomAttribute<MicroserviceAttribute>();
 			if (attribute == null) continue;
 
-			var descriptor = new MicroserviceDescriptor
-			{
-				Name = attribute.MicroserviceName,
-				AttributePath = attribute.SourcePath,
-				Type = type
-			};
+			var descriptor = new MicroserviceDescriptor { Name = attribute.MicroserviceName, AttributePath = attribute.SourcePath, Type = type };
 
 			var generator = new ClientCodeGenerator(descriptor);
-
-			if (!string.IsNullOrEmpty(args.outputDirectory))
-			{
-				Directory.CreateDirectory(args.outputDirectory);
-				var outputPath = Path.Combine(args.outputDirectory, $"{descriptor.Name}Client.cs");
-				generator.GenerateCSharpCode(outputPath);
-			}
-
 			if (args.outputToLinkedProjects)
 			{
 				// UNITY
 
-				foreach (var unityProjectPath in args.ProjectService.GetLinkedUnityProjects())
+				if (args.ProjectService.GetLinkedUnityProjects().Count > 0)
 				{
-					var unityAssetPath = Path.Combine(args.ConfigService.BaseDirectory, unityProjectPath, "Assets");
-
-					if (!Directory.Exists(unityAssetPath))
+					if (!string.IsNullOrEmpty(args.outputDirectory))
 					{
-						BeamableLogger.LogError($"Could not generate [{descriptor.Name}] client linked unity project because directory doesn't exist [{unityAssetPath}]");
-						continue;
+						Directory.CreateDirectory(args.outputDirectory);
+						var outputPath = Path.Combine(args.outputDirectory, $"{descriptor.Name}Client.cs");
+						generator.GenerateCSharpCode(outputPath);
 					}
 
-					GeneratedFileDescriptor fileDescriptor = new GeneratedFileDescriptor()
+					foreach (var unityProjectPath in args.ProjectService.GetLinkedUnityProjects())
 					{
-						Content = generator.GetCSharpCodeString(),
-						FileName = $"{descriptor.Name}Client.cs"
-					};
+						var unityAssetPath = Path.Combine(args.ConfigService.BaseDirectory, unityProjectPath, "Assets");
 
-					Task generationTask = GenerateFile(new List<GeneratedFileDescriptor>() { fileDescriptor }, args, unityAssetPath);
+						if (!Directory.Exists(unityAssetPath))
+						{
+							BeamableLogger.LogError($"Could not generate [{descriptor.Name}] client linked unity project because directory doesn't exist [{unityAssetPath}]");
+							continue;
+						}
 
-					if (generationTask != null)
-						return generationTask;
+						GeneratedFileDescriptor fileDescriptor = new GeneratedFileDescriptor() { Content = generator.GetCSharpCodeString(), FileName = $"{descriptor.Name}Client.cs" };
+
+						Task generationTask = GenerateFile(new List<GeneratedFileDescriptor>() { fileDescriptor }, args, unityAssetPath);
+
+						if (generationTask != null)
+							return generationTask;
+					}
 				}
 
 				// UNREAL
@@ -104,19 +99,25 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 					var gen = new ServiceDocGenerator();
 					var oapiDocument = gen.Generate(type, attribute, null);
 
-					var unrealGenerator = new UnrealSourceGenerator();
-					var docs = new List<OpenApiDocument>() { oapiDocument };
-					var orderedSchemas = SwaggerService.ExtractAllSchemas(docs,
-						GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
 
-					var unrealFileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext
+					foreach (var unrealProjectData in args.ProjectService.GetLinkedUnrealProjects())
 					{
-						Documents = docs,
-						OrderedSchemas = orderedSchemas
-					});
+						var unrealGenerator = new UnrealSourceGenerator();
+						var docs = new List<OpenApiDocument>() { oapiDocument };
+						var orderedSchemas = SwaggerService.ExtractAllSchemas(docs,
+							GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
 
-					foreach (var unrealProjectPath in args.ProjectService.GetLinkedUnrealProjects())
-					{
+						// Set up the generator to generate code with the correct output path for the AutoGen folders.
+						UnrealSourceGenerator.exportMacro = unrealProjectData.CoreProjectName.ToUpper() + "_API";
+						UnrealSourceGenerator.blueprintExportMacro = unrealProjectData.BlueprintNodesProjectName.ToUpper() + "_API";
+						UnrealSourceGenerator.headerFileOutputPath = unrealProjectData.MsCoreHeaderPath + "/";
+						UnrealSourceGenerator.cppFileOutputPath = unrealProjectData.MsCoreCppPath + "/";
+						UnrealSourceGenerator.blueprintHeaderFileOutputPath = unrealProjectData.MsBlueprintNodesHeaderPath + "/Public/";
+						UnrealSourceGenerator.blueprintCppFileOutputPath = unrealProjectData.MsBlueprintNodesCppPath + "/Private/";
+						UnrealSourceGenerator.genType = UnrealSourceGenerator.GenerationType.Microservice;
+						var unrealFileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext { Documents = docs, OrderedSchemas = orderedSchemas });
+
+						var unrealProjectPath = unrealProjectData.Path;
 						var unrealAssetPath =
 							Path.Combine(args.ConfigService.BaseDirectory, unrealProjectPath, "Content");
 
@@ -127,11 +128,15 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 							continue;
 						}
 
-						Task generationTask = GenerateFile(unrealFileDescriptors, args, unrealAssetPath);
+						for (int i = 0; i < unrealFileDescriptors.Count; i++)
+						{
+							var outputPath = Path.Combine(args.outputDirectory, $"{unrealFileDescriptors[i].FileName}");
+							Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
 
-						if (generationTask != null)
-							return generationTask;
+							File.WriteAllText(outputPath, unrealFileDescriptors[i].Content);
+						}
 
+						return Task.CompletedTask;
 					}
 				}
 			}

@@ -28,17 +28,16 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
 		await HandleLocalCase(args);
 	}
 
-
 	async Task HandleLocalCase(OpenMongoExpressCommandArgs args)
 	{
 		try
 		{
 			Log.Information("Finding local connection string...");
 			var connStr = await args.BeamoLocalSystem.GetLocalConnectionString(args.BeamoLocalSystem.BeamoManifest, args.storageName);
-			
+
 			Log.Information("Starting mongo-express");
 			var res = await args.BeamoLocalSystem.GetOrCreateMongoExpress(args.storageName, connStr.Value);
-			
+
 			var port = res.NetworkSettings.Ports["8081/tcp"][0];
 			var url = $"http://{port.HostIP}:{port.HostPort}";
 			Log.Information($"Opening web page {url}");

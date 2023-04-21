@@ -1,41 +1,50 @@
 
-// using System.Diagnostics;
-
+using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.BeamCli;
-using Beamable.Editor;
+using Beamable.Common.Dependencies;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Editor.BeamCli.Commands
 {
-	public partial class BeamCommands
+	public partial class BeamCommands : IBeamableDisposable
 	{
 		private readonly IBeamableRequester _requester;
 		private IBeamCommandFactory _factory;
 		public BeamArgs defaultBeamArgs;
 
-		public BeamCommands(IBeamableRequester requester, BeamableDispatcher dispatcher)
+		public BeamCommands(IBeamableRequester requester, BeamCommandFactory factory)
 		{
 			_requester = requester;
-			_factory = new BeamCommandFactory(dispatcher);
+			_factory = factory;
 			defaultBeamArgs = ConstructDefaultArgs();
 		}
 
-		public BeamArgs ConstructDefaultArgs()
+		private BeamArgs ConstructDefaultArgs()
 		{
+			string cid = null;
+			string pid = null;
+			try
+			{
+				cid = _requester.Cid;
+				pid = _requester.Pid;
+			}
+			catch
+			{
+				// if there is no cid or pid, oh well.
+			}
 			var beamArgs = new BeamArgs
 			{
-				cid = _requester.Cid,
-				pid = _requester.Pid,
+				cid = cid,
+				pid = pid,
 				host = BeamableEnvironment.ApiUrl,
-				refreshToken = _requester.AccessToken.RefreshToken,
+				refreshToken = _requester?.AccessToken?.RefreshToken,
 				log = "Information",
 				reporterUseFatal = true
 			};
@@ -47,39 +56,78 @@ namespace Beamable.Editor.BeamCli.Commands
 			defaultBeamArgs = args;
 			return this;
 		}
-	}
 
+		public Promise OnDispose()
+		{
+			_factory.ClearAll();
+			return Promise.Success;
+		}
+	}
 }
 
 namespace Beamable.Editor.BeamCli
 {
-	public static class BeamCommandExtensions
-	{
-		// public static void Handle<TChannel, TData>(this IBeamCommandResultStream<TChannel, TData> self, Action<ReportDataPoint<TData>> cb)
-		// 	where TChannel : IResultChannel, new()
-		// {
-		// 	var channel = new TChannel(); // TODO: cache
-		// 	// self.On(channel.ChannelName, cb);
-		// }
-	}
 
 	public class BeamCommandFactory : IBeamCommandFactory
 	{
 		private readonly BeamableDispatcher _dispatcher;
+
+		[SerializeField]
+		public BeamCommandPidCollection PidCollection = new BeamCommandPidCollection();
 
 		public BeamCommandFactory(BeamableDispatcher dispatcher)
 		{
 			_dispatcher = dispatcher;
 		}
 
-		public IBeamCommand Create() => new BeamCommand(_dispatcher);
+		public IBeamCommand Create()
+		{
+			var command = new BeamCommand(_dispatcher, PidCollection);
+			return command;
+		}
+
+		public void ClearAll()
+		{
+			PidCollection.ClearAll();
+		}
+	}
+
+
+	[Serializable]
+	public class BeamCommandPidCollection
+	{
+		public List<int> pids = new List<int>();
+		public void Add(int pid)
+		{
+			pids.Add(pid);
+		}
+
+		public void Remove(int pid)
+		{
+			pids.Remove(pid);
+		}
+
+		public void ClearAll()
+		{
+			foreach (var pid in pids)
+			{
+				try
+				{
+					Process.GetProcessById(pid)?.Kill();
+				}
+				catch
+				{
+					// unable to kill process
+				}
+			}
+			pids.Clear();
+		}
 	}
 
 	public class BeamCommand : IBeamCommand
 	{
 		private readonly BeamableDispatcher _dispatcher;
-
-
+		private readonly BeamCommandPidCollection _collection;
 		private string _command;
 
 		public string Command
@@ -108,9 +156,10 @@ namespace Beamable.Editor.BeamCli
 
 		private List<ReportDataPointDescription> _points = new List<ReportDataPointDescription>();
 		private Action<ReportDataPointDescription> _callbacks = (_) => { };
-		public BeamCommand(BeamableDispatcher dispatcher)
+		public BeamCommand(BeamableDispatcher dispatcher, BeamCommandPidCollection collection = null)
 		{
 			_dispatcher = dispatcher;
+			_collection = collection;
 		}
 
 		public IBeamCommand On<T>(string type, Action<ReportDataPoint<T>> cb)
@@ -137,7 +186,6 @@ namespace Beamable.Editor.BeamCli
 
 			messageBuffer += message;
 
-			// Debug.LogWarning(message);
 			if (!isMessageInProgress)
 			{
 				var startIndex = messageBuffer.IndexOf(Reporting.PATTERN_START, StringComparison.Ordinal);
@@ -204,7 +252,6 @@ namespace Beamable.Editor.BeamCli
 					_process.StartInfo.RedirectStandardError = CaptureStandardBuffers;
 					_process.StartInfo.CreateNoWindow = true;
 					_process.StartInfo.UseShellExecute = false;
-					// ModifyStartInfo(_process.StartInfo);
 
 					_status = new TaskCompletionSource<int>();
 					_standardOutComplete = new TaskCompletionSource<int>();
@@ -213,28 +260,39 @@ namespace Beamable.Editor.BeamCli
 						Task.Run(async () =>
 					   {
 						   await Task.Delay(1); // give 1 ms for log messages to eep out
+							if (_dispatcher.IsForceStopped)
+						   {
+							   _process.Kill();
+							   return;
+						   }
 						   _dispatcher.Schedule(() =>
-						  {
-							  // there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
-							  // _hasExited = true;
-							  _exitCode = _process.ExitCode;
+						   {
+								// there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
+								// _hasExited = true;
+								_exitCode = _process.ExitCode;
 
-							  // OnExit?.Invoke(_process.ExitCode);
-							  // HandleOnExit();
+								// OnExit?.Invoke(_process.ExitCode);
+								// HandleOnExit();
 
-							  _status.TrySetResult(0);
-						  });
+								_status.TrySetResult(0);
+						   });
 					   });
 					};
 
 					_process.Exited += eh;
 
+					var pid = 0;
 					try
 					{
 						_process.EnableRaisingEvents = true;
 
 						_process.OutputDataReceived += (sender, args) =>
 						{
+							if (_dispatcher.IsForceStopped)
+							{
+								_process.Kill();
+								return;
+							}
 							_dispatcher.Schedule(() =>
 							{
 								try
@@ -249,6 +307,11 @@ namespace Beamable.Editor.BeamCli
 						};
 						_process.ErrorDataReceived += (sender, args) =>
 						{
+							if (_dispatcher.IsForceStopped)
+							{
+								_process.Kill();
+								return;
+							}
 							_dispatcher.Schedule(() =>
 							{
 								try
@@ -263,6 +326,8 @@ namespace Beamable.Editor.BeamCli
 						};
 
 						_process.Start();
+						pid = _process.Id;
+						_collection?.Add(pid);
 						// _started = true;
 						_process.BeginOutputReadLine();
 						_process.BeginErrorReadLine();
@@ -277,6 +342,7 @@ namespace Beamable.Editor.BeamCli
 					finally
 					{
 						_process.Exited -= eh;
+						_collection?.Remove(pid);
 					}
 
 				}

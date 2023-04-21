@@ -62,13 +62,60 @@ namespace Beamable.Server
 	    public static ReflectionCache ReflectionCache;
 	    public static ContentService ContentService;
 	    public static List<BeamableMicroService> Instances = new List<BeamableMicroService>();
+
+	    public static bool TryParseLogLevel(string logLevel, out LogEventLevel serilogLevel)
+	    {
+		    if (logLevel == null)
+		    {
+			    serilogLevel= LogEventLevel.Debug;
+			    return false;
+		    }
+
+		    switch (logLevel.ToLowerInvariant())
+		    {
+			    
+			    case "f":
+			    case "fatal":
+				    serilogLevel = LogEventLevel.Fatal;
+				    return true;
+			    case "e":
+			    case "err":
+			    case "error":
+				    serilogLevel = LogEventLevel.Error;
+				    return true;
+			    case "v":
+			    case "verbose":
+				    serilogLevel = LogEventLevel.Verbose;
+				    return true;
+			    case "d":
+			    case "dbug":
+			    case "dbg":
+
+			    case "debug":
+				    serilogLevel = LogEventLevel.Debug;
+				    return true;
+			    case "w":
+			    case "warn":
+			    case "warning":
+				    serilogLevel = LogEventLevel.Warning;
+				    return true;
+			    case "i":
+			    case "information":
+			    case "info":
+				    serilogLevel = LogEventLevel.Information;
+				    return true;
+			    default:
+				    serilogLevel = LogEventLevel.Debug;
+				    return false;
+		    }
+	    }
 	    
         private static void ConfigureLogging(IMicroserviceArgs args)
         {
             var logLevel = args.LogLevel;
 			var disableLogTruncate = (Environment.GetEnvironmentVariable("DISABLE_LOG_TRUNCATE")?.ToLowerInvariant() ?? "") == "true";
-			
-            var envLogLevel = (LogEventLevel)Enum.Parse(typeof(LogEventLevel), logLevel, true);
+
+			TryParseLogLevel(logLevel, out var envLogLevel);
 
             var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
             
@@ -197,6 +244,7 @@ namespace Beamable.Server
 		        var collection = new DependencyBuilder();
 		        collection
 			        .AddScoped<T>()
+			        .AddSingleton(attribute)
 			        .AddScoped<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
 			        .AddScoped<IRealmInfo>(provider => provider.GetService<IMicroserviceArgs>())
 			        .AddScoped<IBeamableRequester>(p => p.GetService<MicroserviceRequester>())
@@ -241,7 +289,9 @@ namespace Beamable.Server
 			        .AddScoped<IMicroserviceNotificationsApi, MicroserviceNotificationApi>()
 			        .AddScoped<IMicroserviceSocialApi, MicroserviceSocialApi>()
 			        .AddScoped<IMicroserviceCloudDataApi, MicroserviceCloudDataApi>()
-			        .AddScoped<IMicroserviceRealmConfigService, RealmConfigService>()
+			        .AddSingleton<IMicroserviceRealmConfigService>(p => p.GetService<RealmConfigService>())
+			        .AddSingleton<IRealmConfigService>(p => p.GetService<RealmConfigService>())
+			        .AddSingleton<RealmConfigService>()
 			        .AddScoped<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
 			        .AddScoped<IMicroservicePaymentsApi, MicroservicePaymentsApi>()
 			        .AddScoped<IMicroservicePushApi, MicroservicePushApi>()
@@ -382,7 +432,7 @@ namespace Beamable.Server
 		        healthPort = args.HealthPort,
 	        };
 	        var msgJson = JsonConvert.SerializeObject(msg, UnitySerializationSettings.Instance);
-	        beacon.Publish(msgJson, TimeSpan.FromMilliseconds(250));
+	        beacon.Publish(msgJson, TimeSpan.FromMilliseconds(Constants.Features.Services.DISCOVERY_BROADCAST_PERIOD_MS));
         }
 
         public static async Task Start<TMicroService>() where TMicroService : Microservice

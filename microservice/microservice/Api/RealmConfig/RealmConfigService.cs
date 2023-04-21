@@ -2,18 +2,75 @@ using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Newtonsoft.Json;
+using Serilog;
+using Serilog.Events;
+using Swan.Logging;
+using System;
 
 namespace Beamable.Server.Api.RealmConfig
 {
-   public class RealmConfigService : IMicroserviceRealmConfigService
+	public interface IRealmConfigService : IMicroserviceRealmConfigService
+	{
+		void UpdateLogLevel();
+	}
+	
+   public class RealmConfigService : IRealmConfigService
    {
       private readonly IBeamableRequester _requester;
+      private readonly MicroserviceAttribute _serviceAttribute;
+      private readonly IMicroserviceArgs _args;
 
-      public RealmConfigService(IBeamableRequester requester)
+      private RealmConfig _config;
+
+
+      public RealmConfigService(IBeamableRequester requester, SocketRequesterContext ctx, MicroserviceAttribute serviceAttribute, IMicroserviceArgs args)
       {
+	      _config = new RealmConfig(new Dictionary<string, RealmConfigNamespaceData>()); // start empty...
+	      
          _requester = requester;
+         _serviceAttribute = serviceAttribute;
+         _args = args;
+         ctx.Subscribe<GetRealmConfigResponse>(
+	         Constants.Features.Services.REALM_CONFIG_UPDATE_EVENT,
+	         cb =>
+	         {
+		         GetRealmConfigSettings().Then(_ => UpdateLogLevel());
+	         });
       }
 
+      public void UpdateLogLevel()
+      {
+	      var level = GetLogLevel();
+	      MicroserviceBootstrapper.LogLevel.MinimumLevel = level;
+      }
+
+      private LogEventLevel GetLogLevel()
+      {
+	      MicroserviceBootstrapper.TryParseLogLevel(_args.LogLevel, out var defaultLevel);
+	      if (!_config.TryGetValue(Constants.Features.Services.REALM_CONFIG_SERVICE_LOG_NAMESPACE,
+		          out var logInfo))
+	      {
+		      return defaultLevel;
+	      }
+
+	      var keyName = _serviceAttribute.MicroserviceName;
+	      if (!string.IsNullOrEmpty(_args.NamePrefix))
+	      {
+		      keyName = $"{_args.NamePrefix}_{keyName}";
+	      }
+	      if (!logInfo.TryGetValue(keyName, out var logLevel))
+	      {
+		      return defaultLevel;
+	      }
+	      
+	      if (MicroserviceBootstrapper.TryParseLogLevel(logLevel, out var serilogLogLevel))
+	      {
+		      return serilogLogLevel;
+	      }
+
+	      return defaultLevel;
+      }
+      
       private Promise<GetRealmConfigResponse> GetRealmConfig()
       {
          return _requester.Request(Method.GET, "basic/realms/config", parser: Parse);
@@ -31,36 +88,60 @@ namespace Beamable.Server.Api.RealmConfig
          public Dictionary<string, string> config;
       }
 
-      public Promise<RealmConfig> GetRealmConfigSettings()
+      private static bool TryExtract(KeyValuePair<string, string> kvp, out string nameSpace, out string setting, out string configValue)
       {
-         return GetRealmConfig().Map(realmConfigData =>
-         {
-            var nameSpaceToSettings = new Dictionary<string, Dictionary<string, string>>();
-            if (realmConfigData?.config == null) return RealmConfig.From(nameSpaceToSettings);
+	      nameSpace = null;
+	      setting = null;
+	      var fullKey = kvp.Key;
+	      configValue = kvp.Value;
+	      if (string.IsNullOrEmpty(fullKey)) return false; // invalid realm key.
 
-            foreach (var kvp in realmConfigData.config)
-            {
-               var fullKey = kvp.Key;
-               var configValue = kvp.Value;
-               if (string.IsNullOrEmpty(fullKey)) continue; // invalid realm key.
+	      var keyParts = fullKey.Split('|');
+	      if (keyParts.Length != 2) return false; // invalid realm setting key.
 
-               var keyParts = fullKey.Split('|');
-               if (keyParts.Length != 2) continue; // invalid realm setting key.
+	       nameSpace = keyParts[0];
+	       setting = keyParts[1];
 
-               var nameSpace = keyParts[0];
-               var setting = keyParts[1];
+	       return true;
+      }
 
-               if (!nameSpaceToSettings.TryGetValue(nameSpace, out var nameSpaceSection))
-               {
-                  nameSpaceSection = new Dictionary<string, string>();
-               }
+      private static RealmConfig Add(Dictionary<string, string> patch, RealmConfig existing=null)
+      {
+	      var nameSpaceToSettings = new Dictionary<string, Dictionary<string, string>>();
 
-               nameSpaceSection[setting] = configValue;
-               nameSpaceToSettings[nameSpace] = nameSpaceSection;
-            }
+	      if (existing != null)
+	      {
+		      // add in the existing stuff
+		      foreach (var kvp in existing)
+		      {
+			      nameSpaceToSettings[kvp.Key] = new Dictionary<string, string>(kvp.Value);
+		      }
+	      }
 
-            return RealmConfig.From(nameSpaceToSettings);
-         });
+	      foreach (var kvp in patch)
+	      {
+		      if (!TryExtract(kvp, out var nameSpace, out var setting, out var configValue))
+		      {
+			      continue;
+		      }
+
+		      if (!nameSpaceToSettings.TryGetValue(nameSpace, out var nameSpaceSection))
+		      {
+			      nameSpaceSection = new Dictionary<string, string>();
+		      }
+
+		      nameSpaceSection[setting] = configValue;
+		      nameSpaceToSettings[nameSpace] = nameSpaceSection;
+	      }
+	      return RealmConfig.From(nameSpaceToSettings);
+      }
+      
+      public async Promise<RealmConfig> GetRealmConfigSettings()
+      {
+	      var latest = await GetRealmConfig();
+	      _config = Add(latest.config, null);
+	      return _config;
       }
    }
+   
 }
