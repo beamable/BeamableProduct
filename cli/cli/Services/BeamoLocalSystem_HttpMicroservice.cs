@@ -3,6 +3,7 @@
  * It handles default values, how to start the container with its data and other utility functions around this protocol. 
  */
 
+using Beamable.Common;
 using cli.Utils;
 using Newtonsoft.Json;
 
@@ -36,10 +37,49 @@ public partial class BeamoLocalSystem
 			cancellationToken);
 	}
 
+	public async Task<List<DockerEnvironmentVariable>> GetLocalConnectionStrings(BeamoLocalManifest localManifest, string host = "gateway.docker.internal")
+	{
+		var output = new List<DockerEnvironmentVariable>();
+		foreach (var local in localManifest.EmbeddedMongoDbLocalProtocols)
+		{
+			var environmentVariable = await GetLocalConnectionString(localManifest, local.Key, host);
+			output.Add(environmentVariable);
+		}
+
+		return output;
+	}
+
+	public async Task<DockerEnvironmentVariable> GetLocalConnectionString(BeamoLocalManifest localManifest, string storageName, string host = "gateway.docker.internal")
+	{
+		if (!localManifest.EmbeddedMongoDbLocalProtocols.TryGetValue(storageName, out var localStorage))
+		{
+			throw new Exception($"Could not find entry for {storageName}");
+		}
+		var localStorageContainerName = GetBeamIdAsMongoContainer(storageName);
+		var storageDesc = await _client.Containers.InspectContainerAsync(localStorageContainerName);
+
+		if (!storageDesc.NetworkSettings.Ports.TryGetValue($"{MONGO_DATA_CONTAINER_PORT}/tcp", out var bindings))
+		{
+			throw new Exception($"could not configure connection to storage=[{storageName}] because port was not mapped in storage container");
+		}
+
+		if (bindings.Count != 1)
+		{
+			throw new Exception($"could not configure connection to storage=[{storageName}] because port bindings were not equal to one");
+		}
+
+		var portBinding = bindings[0];
+
+		var str = $"mongodb://{localStorage.RootUsername}:{localStorage.RootPassword}@{host}:{portBinding.HostPort}";
+		var key = $"STORAGE_CONNSTR_{storageName}";
+
+		return new DockerEnvironmentVariable { VariableName = key, Value = str };
+	}
+
 	/// <summary>
 	/// Runs a service locally, enforcing the <see cref="BeamoProtocolType.HttpMicroservice"/> protocol.
 	/// </summary>
-	public async Task RunLocalHttpMicroservice(BeamoServiceDefinition serviceDefinition, HttpMicroserviceLocalProtocol localProtocol)
+	public async Task RunLocalHttpMicroservice(BeamoServiceDefinition serviceDefinition, HttpMicroserviceLocalProtocol localProtocol, BeamoLocalManifest localManifest)
 	{
 		const string ENV_CID = "CID";
 		const string ENV_PID = "PID";
@@ -79,6 +119,26 @@ public partial class BeamoLocalSystem
 			new() { VariableName = ENV_NAME_PREFIX, Value = MachineHelper.GetUniqueDeviceId() },
 			new() { VariableName = ENV_WATCH_TOKEN, Value = shouldPrepareWatch.ToString() },
 		};
+
+		// add in connection string environment vars for mongo storage dependencies
+		if (serviceDefinition.DependsOnBeamoIds != null)
+		{
+			foreach (var dependencyId in serviceDefinition.DependsOnBeamoIds)
+			{
+				try
+				{
+					var connectionEnvVar = await GetLocalConnectionString(localManifest, dependencyId);
+					environmentVariables.Add(connectionEnvVar);
+				}
+				catch (Exception ex)
+				{
+					BeamableLogger.LogException(ex);
+					continue;
+				}
+			}
+		}
+
+
 		environmentVariables.AddRange(localProtocol.CustomEnvironmentVariables);
 
 		// Configures docker's own health check command to target our application's configured health check endpoint.

@@ -7,6 +7,7 @@ using Beamable.Common;
 using Docker.DotNet.Models;
 using ICSharpCode.SharpZipLib.Tar;
 using Newtonsoft.Json;
+using Serilog;
 using System.Collections.Concurrent;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -15,6 +16,7 @@ namespace cli.Services;
 
 public partial class BeamoLocalSystem
 {
+
 	/// <summary>
 	/// Uses the given image (name or id) to create/replace the container with the given name and configurations.
 	/// Returns whether or not the container successfully started. It DOES NOT guarantee the app inside the container is running correctly. 
@@ -80,11 +82,13 @@ public partial class BeamoLocalSystem
 			createParams.Image = image;
 		}
 
+
 		// Build container health check
+		if (!string.IsNullOrEmpty(healthcheckCmd))
 		{
 			createParams.Healthcheck = new HealthConfig() { Test = new List<string>() { healthcheckCmd } };
-			hostConfig.AutoRemove = autoRemoveWhenStopped;
 		}
+		hostConfig.AutoRemove = autoRemoveWhenStopped;
 
 		// Build env vars
 		{
@@ -120,6 +124,10 @@ public partial class BeamoLocalSystem
 		{
 			createParams.StopTimeout = TimeSpan.FromMilliseconds(10000);
 			var response = await _client.Containers.CreateContainerAsync(createParams);
+			foreach (var warning in response.Warnings)
+			{
+				Log.Warning(warning);
+			}
 			return response.ID;
 		}
 		catch (Exception e)

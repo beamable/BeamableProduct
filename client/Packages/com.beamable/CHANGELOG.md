@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- Added additional info about active listing limit default value in StoreContent
+- Beam CLI bindings.
+
+### Fixed
+- Invalid package invalidations no longer occur for Beamable based assets.
+- Content folders can be case insensitive.
+
 ## [1.14.0]
 ### Fixed
 - "Serialization depth limit" warning for `RealmView` on domain reloads.

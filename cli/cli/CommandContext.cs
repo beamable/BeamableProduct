@@ -1,14 +1,49 @@
+using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
+using cli.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System.CommandLine;
 using System.CommandLine.Binding;
 
 namespace cli;
 
-public abstract class AppCommand<TArgs> : Command
+public interface IResultProvider
+{
+	public DataReporterService Reporter { get; set; }
+}
+
+public interface IResultSteam<TChannel, TData> : IResultProvider
+	where TChannel : IResultChannel, new()
+{
+}
+
+public interface IEmptyResult : IResultProvider
+{
+
+}
+
+
+public class DefaultStreamResultChannel : IResultChannel
+{
+	public string ChannelName { get; } = "stream";
+}
+
+public static class ResultStreamExtensions
+{
+	public static void SendResults<TChannel, TData>(this IResultSteam<TChannel, TData> self, TData data)
+		where TChannel : IResultChannel, new()
+	{
+		var channel = new TChannel(); // TODO: cache.
+		self.Reporter.Report(channel.ChannelName, data);
+	}
+}
+
+public abstract partial class AppCommand<TArgs> : Command, IResultProvider
 	where TArgs : CommandArgs
 {
 	private List<Action<BindingContext, TArgs>> _bindingActions = new List<Action<BindingContext, TArgs>>();
+
+	DataReporterService IResultProvider.Reporter { get; set; }
 
 	protected AppCommand(string name, string description = null) : base(name, description)
 	{
@@ -100,6 +135,7 @@ public abstract class AppCommand<TArgs> : Command
 			return args;
 		}
 	}
+
 }
 
 public interface ICommandFactory

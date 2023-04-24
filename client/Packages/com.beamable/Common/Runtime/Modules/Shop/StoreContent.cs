@@ -37,8 +37,9 @@ namespace Beamable.Common.Shop
 		/// <summary>
 		/// The default value is 20. If you need to show more than 20 listings at a time, change this field.
 		/// </summary>
-		[Tooltip(ContentObject.TooltipOptional0 + "The default value is 20. If you need to show more than 20 listings at a time, change this field. ")]
+		[Tooltip(ContentObject.TooltipOptional0 + "The default value is 20. If you need to show more than 20 listings at a time, change this field.")]
 		[MustBePositive]
+		[Header("Active Listing Limit defaults to 20 listings if not set")]
 		public OptionalInt activeListingLimit;
 	}
 }

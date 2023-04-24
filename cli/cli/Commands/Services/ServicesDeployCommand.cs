@@ -1,6 +1,7 @@
 ﻿using Beamable.Common;
 using cli.Services;
 using Newtonsoft.Json;
+using Serilog;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 using System.CommandLine;
@@ -194,12 +195,12 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 						await _localBeamo.DeployToLocal(_localBeamo.BeamoManifest, args.BeamoIdsToDeploy,
 							(beamoId, progress) =>
 							{
-								var progressTask = allProgressTasks.First(pt => pt.Description.Contains(beamoId));
-								progressTask.Increment((progress * 80) - progressTask.Value);
+								var progressTask = allProgressTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
+								progressTask?.Increment((progress * 80) - progressTask.Value);
 							}, beamoId =>
 							{
-								var progressTask = allProgressTasks.First(pt => pt.Description.Contains(beamoId));
-								progressTask.Increment(20);
+								var progressTask = allProgressTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
+								progressTask?.Increment(20);
 							});
 					}
 					catch (CliException e)

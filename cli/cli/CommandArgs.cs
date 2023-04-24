@@ -1,5 +1,6 @@
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
+using Beamable.Common.Dependencies;
 using cli.Services;
 using cli.Services.Content;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +17,8 @@ public abstract class CommandArgs
 
 	public bool Dryrun { get; set; }
 	public IServiceProvider Provider { get; set; }
+
+	public IDependencyProvider DependencyProvider => Provider.GetService<IDependencyProvider>();
 
 	public IAuthApi AuthApi => Provider.GetService<IAuthApi>();
 	public ConfigService ConfigService => Provider.GetService<ConfigService>();
