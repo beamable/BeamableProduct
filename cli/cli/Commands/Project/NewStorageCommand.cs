@@ -13,7 +13,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
 {
 	public NewStorageCommand() : base("new-storage", "Create and add a new Microstorage")
 	{
-		
+
 	}
 
 	public override void Configure()
@@ -48,12 +48,12 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
 		{
 			throw new CliException($"No sln file found at path=[{args.slnPath}]", true, true);
 		}
-		
+
 		Log.Information($"Registering local project... 'beam services register --id {args.storageName} --type EmbeddedMongoDb'");
-		var storageDef = await args.BeamoLocalSystem.AddDefinition_EmbeddedMongoDb(args.storageName, "mongo:latest", new string[]{},
+		var storageDef = await args.BeamoLocalSystem.AddDefinition_EmbeddedMongoDb(args.storageName, "mongo:latest", new string[] { },
 			CancellationToken.None);
 
-		
+
 		// identify the linkable projects...
 		var services = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols;
 		var choices = new List<string>();
@@ -70,14 +70,14 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
 			.AddChoices(choices)
 			.NotRequired()).ToArray();
 
-		
+
 		foreach (var service in args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions)
 		{
 			var isDep = dependencies.Any(d => d.ToLowerInvariant().Equals(service.BeamoId.ToLowerInvariant()));
 			if (!isDep) continue;
 			var next = service.DependsOnBeamoIds.ToList();
 			next.Add(storageDef.BeamoId);
-			
+
 			Log.Information($"Adding storage=[{storageDef.BeamoId}] to service=[{service.BeamoId}] {nameof(service.DependsOnBeamoIds)} array.");
 			service.DependsOnBeamoIds = next.ToArray();
 		}
@@ -106,10 +106,10 @@ COPY {args.storageName}/. .
 		}
 
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
-		
+
 		// add the project itself
 		await args.ProjectService.CreateNewStorage(args.slnPath, args.storageName);
-		
+
 		foreach (var dependency in dependencies)
 		{
 			Log.Information($"Adding {args.storageName} reference to {dependency}. ");

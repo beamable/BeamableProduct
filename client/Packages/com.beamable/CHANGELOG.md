@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added additional info about active listing limit default value in StoreContent
 - Beam CLI bindings.
 
+### Fixed
+- Invalid package invalidations no longer occur for Beamable based assets.
+- Content folders can be case insensitive.
+
 ## [1.14.0]
 ### Fixed
 - "Serialization depth limit" warning for `RealmView` on domain reloads.

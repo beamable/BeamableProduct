@@ -8,7 +8,32 @@ namespace cli.Services;
 public class ProjectData
 {
 	public HashSet<string> unityProjectsPaths = new HashSet<string>();
-	public HashSet<string> unrealProjectsPaths = new HashSet<string>();
+
+	public HashSet<Unreal> unrealProjectsPaths = new HashSet<Unreal>();
+
+	public struct Unreal : IEquatable<string>, IEquatable<Unreal>
+	{
+		public string CoreProjectName;
+		public string BlueprintNodesProjectName;
+
+		public string Path;
+		public string SourceFilesPath;
+
+		public string MsCoreHeaderPath;
+		public string MsCoreCppPath;
+		public string MsBlueprintNodesHeaderPath;
+		public string MsBlueprintNodesCppPath;
+
+
+		public bool Equals(string other) => Path.Equals(other);
+		public bool Equals(Unreal other) => Path == other.Path;
+
+		public override bool Equals(object obj) => (obj is Unreal unreal && Equals(unreal)) || (obj is string unrealPath && Equals(unrealPath));
+		public override int GetHashCode() => (Path != null ? Path.GetHashCode() : 0);
+
+		public static bool operator ==(Unreal left, Unreal right) => left.Equals(right);
+		public static bool operator !=(Unreal left, Unreal right) => !(left == right);
+	}
 }
 
 public class ProjectService
@@ -28,7 +53,7 @@ public class ProjectService
 		return _projects.unityProjectsPaths.ToList();
 	}
 
-	public List<string> GetLinkedUnrealProjects()
+	public List<ProjectData.Unreal> GetLinkedUnrealProjects()
 	{
 		return _projects.unrealProjectsPaths.ToList();
 	}
@@ -41,7 +66,23 @@ public class ProjectService
 
 	public void AddUnrealProject(string relativePath)
 	{
-		_projects.unrealProjectsPaths.Add(relativePath);
+		var projectName = relativePath.Substring(relativePath.LastIndexOf("\\", StringComparison.Ordinal) + 1);
+		var msPath = $"{projectName}";
+		var msBlueprintPath = $"{projectName}BlueprintNodes";
+
+		_projects.unrealProjectsPaths.Add(new ProjectData.Unreal()
+		{
+			CoreProjectName = projectName,
+			BlueprintNodesProjectName = $"{projectName}BlueprintNodes",
+
+			Path = relativePath,
+			SourceFilesPath = relativePath + $"\\Source\\",
+
+			MsCoreHeaderPath = msPath,
+			MsCoreCppPath = msPath,
+			MsBlueprintNodesHeaderPath = msBlueprintPath,
+			MsBlueprintNodesCppPath = msBlueprintPath
+		});
 		_configService.SaveDataFile(".linkedProjects", _projects);
 	}
 
@@ -69,13 +110,13 @@ public class ProjectService
 			.WithArguments($"add {projectPath} reference {referencePath}")
 			.ExecuteAsyncAndLog().Task;
 	}
-	
+
 	public async Task CreateNewStorage(string slnFilePath, string storageName)
 	{
 		var slnDirectory = Path.GetDirectoryName(slnFilePath);
 		var rootServicesPath = Path.Combine(slnDirectory, "services");
 		var storagePath = Path.Combine(rootServicesPath, storageName);
-		
+
 		if (Directory.Exists(storagePath))
 		{
 			throw new CliException("Cannot create a storage because the directory already exists");

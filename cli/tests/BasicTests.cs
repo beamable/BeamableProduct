@@ -115,6 +115,14 @@ public class Tests
 	{
 		var gen = new ServiceDocGenerator();
 		var doc = gen.Generate<TroublesomeService>(null);
+
+		UnrealSourceGenerator.exportMacro = "TROUBLESOMEPROJECT_API";
+		UnrealSourceGenerator.blueprintExportMacro = "TROUBLESOMEPROJECTBLUEPRINTNODES_API";
+		UnrealSourceGenerator.headerFileOutputPath = "/";
+		UnrealSourceGenerator.cppFileOutputPath = "/";
+		UnrealSourceGenerator.blueprintHeaderFileOutputPath = "/Public/";
+		UnrealSourceGenerator.blueprintCppFileOutputPath = "/Private/";
+		UnrealSourceGenerator.genType = UnrealSourceGenerator.GenerationType.Microservice;
 		var generator = new UnrealSourceGenerator();
 		var docs = new List<OpenApiDocument>() { doc };
 		var orderedSchemas = SwaggerService.ExtractAllSchemas(docs,
@@ -129,7 +137,7 @@ public class Tests
 		Console.WriteLine("----- OUTPUT ----");
 		Console.WriteLine(string.Join("\n", descriptors.Select(d => $"{d.FileName}\n\n{d.Content}\n")));
 
-		Assert.AreEqual(11, descriptors.Count);
+		Assert.AreEqual(14, descriptors.Count);
 	}
 
 	[Microservice("troublesome")]
