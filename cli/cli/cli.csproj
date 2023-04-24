@@ -15,8 +15,6 @@
     <Company>Beamable</Company>
     <VersionPrefix>$(VersionPrefix)</VersionPrefix>
 
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>beam</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
