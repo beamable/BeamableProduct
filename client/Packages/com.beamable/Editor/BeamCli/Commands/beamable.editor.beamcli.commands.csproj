@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <PackageId>Beamable.Editor.BeamCli.Commands</PackageId>
+        <Authors>Beamable Team</Authors>
+        <Company>Beamable</Company>
+        <OutputType>Library</OutputType>
+        <TargetFrameworks>netstandard2.1;net6.0</TargetFrameworks>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Remove="'\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Remove="'\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Remove="'\**" />
+    </ItemGroup>
+</Project>
