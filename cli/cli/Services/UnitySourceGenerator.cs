@@ -1533,7 +1533,7 @@ public static class UnityHelper
 
 	public static string GenerateCsharp(CodeCompileUnit unit)
 	{
-		
+
 		CodeDomProvider provider = CodeDomProvider.CreateProvider("CSharp");
 		CodeGeneratorOptions options = new CodeGeneratorOptions { BracingStyle = "C", BlankLinesBetweenMembers = false };
 		var sb = new StringBuilder();
@@ -1543,7 +1543,7 @@ public static class UnityHelper
 			unit, sourceWriter, options);
 		sourceWriter.Flush();
 		var source = sb.ToString();
-		
+
 		// CodeDom adds some comments we don't want before the namespace declaration.
 		var expectedFirstLineMinusAutoGenComments = new Regex("(namespace.*\n{)|(using.*;)");
 		return source.Substring(expectedFirstLineMinusAutoGenComments.Matches(source).First().Index).Insert(0, "\n");
