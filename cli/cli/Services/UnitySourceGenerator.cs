@@ -11,6 +11,7 @@ using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace cli;
 
@@ -1532,7 +1533,7 @@ public static class UnityHelper
 
 	public static string GenerateCsharp(CodeCompileUnit unit)
 	{
-		const int COUNT_OF_AUTO_GENERATED_MESSAGE_TEXT = 357;
+		
 		CodeDomProvider provider = CodeDomProvider.CreateProvider("CSharp");
 		CodeGeneratorOptions options = new CodeGeneratorOptions { BracingStyle = "C", BlankLinesBetweenMembers = false };
 		var sb = new StringBuilder();
@@ -1542,7 +1543,10 @@ public static class UnityHelper
 			unit, sourceWriter, options);
 		sourceWriter.Flush();
 		var source = sb.ToString();
-		return source.Substring(COUNT_OF_AUTO_GENERATED_MESSAGE_TEXT);
+		
+		// CodeDom adds some comments we don't want before the namespace declaration.
+		var expectedFirstLineMinusAutoGenComments = new Regex("(namespace.*\n{)|(using.*;)");
+		return source.Substring(expectedFirstLineMinusAutoGenComments.Matches(source).First().Index).Insert(0, "\n");
 	}
 }
 
