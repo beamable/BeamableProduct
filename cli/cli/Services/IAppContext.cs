@@ -128,8 +128,11 @@ public class DefaultAppContext : IAppContext
 		string defaultRefreshToken = string.Empty;
 		if (_configService.ReadTokenFromFile(out var response))
 		{
-			defaultAccessToken = response.access_token;
-			defaultRefreshToken = response.refresh_token;
+			if (response.ExpiresAt > DateTime.Now)
+			{
+				defaultAccessToken = response.Token;
+			}
+			defaultRefreshToken = response.RefreshToken;
 		}
 		_configService.TryGetSetting(out var accessToken, bindingContext, _accessTokenOption, defaultAccessToken);
 		_configService.TryGetSetting(out _refreshToken, bindingContext, _refreshTokenOption, defaultRefreshToken);
@@ -151,8 +154,7 @@ public class DefaultAppContext : IAppContext
 
 	public void UpdateToken(TokenResponse response)
 	{
-		_token.Token = response.access_token;
-		_token.RefreshToken = response.refresh_token;
+		_token = new CliToken(response, _cid, _pid);
 	}
 
 }
