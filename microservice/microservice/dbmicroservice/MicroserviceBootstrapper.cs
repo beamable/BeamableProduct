@@ -155,7 +155,7 @@ namespace Beamable.Server
 	            case LogOutputType.UNSTRUCTURED:
 		            logger = logConfig.WriteTo.Console(
 			            new MessageTemplateTextFormatter(
-				            "{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}"));
+				            "{Timestamp:HH:mm:ss.fff} [{Level:u4}] {Message:lj}{NewLine}{Exception}"));
 		            break;
 	            case LogOutputType.DEFAULT: // when inDocker: // logically, think of this as having inDocker==true, but technically because the earlier case checks for !inDocker, its redundant.
 	            case LogOutputType.STRUCTURED:
