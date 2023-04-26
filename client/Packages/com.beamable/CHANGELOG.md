@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Invalid package invalidations no longer occur for Beamable based assets.
 - Content folders can be case insensitive.
 
+### Changed
+- Beamable button includes Beamable SDK version.
+
 ## [1.14.0]
 ### Fixed
 - "Serialization depth limit" warning for `RealmView` on domain reloads.
