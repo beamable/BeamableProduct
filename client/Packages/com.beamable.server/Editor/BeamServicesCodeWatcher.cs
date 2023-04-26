@@ -370,6 +370,8 @@ namespace Beamable.Server.Editor
 				EditorApplication.delayCall += WatchMicroserviceFiles;
 				return;
 			}
+			if (DockerCommand.DockerNotInstalled)
+				return;
 
 			var codeWatcher = Default;
 
