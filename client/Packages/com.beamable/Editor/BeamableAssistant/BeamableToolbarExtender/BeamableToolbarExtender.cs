@@ -323,6 +323,10 @@ namespace Beamable.Editor.ToolbarExtender
 			GUILayout.BeginArea(beamableAssistantButtonRect);
 			var version = BeamableEnvironment.SdkVersion;
 			var versionStr = $"Beamable {version}";
+			if (version.IsReleaseCandidate)
+			{
+				versionStr = $"Beamable {version.Major}.{version.Minor}.{version.Patch} RC{version.RC}";
+			}
 			if (version.IsNightly)
 			{
 				versionStr = $"BeamDev {version.NightlyTime}";
