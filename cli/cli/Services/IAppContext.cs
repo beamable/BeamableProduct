@@ -128,7 +128,7 @@ public class DefaultAppContext : IAppContext
 		string defaultRefreshToken = string.Empty;
 		if (_configService.ReadTokenFromFile(out var response))
 		{
-			if(response.ExpiresAt > DateTime.Now)
+			if (response.ExpiresAt > DateTime.Now)
 			{
 				defaultAccessToken = response.Token;
 			}

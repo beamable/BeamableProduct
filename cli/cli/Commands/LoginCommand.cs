@@ -50,12 +50,13 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 		{
 			response = await _authApi.Login(username, password, false, args.customerScoped)
 				.ShowLoading("Authorizing...");
-		}catch(Exception e)
+		}
+		catch (Exception e)
 		{
 			BeamableLogger.LogError($"Login failed with Exception: {e.Message}");
 			return;
 		}
-		
+
 		args.username = username;
 		args.password = password;
 		if (string.IsNullOrWhiteSpace(response.refresh_token))
