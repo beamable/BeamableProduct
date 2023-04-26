@@ -138,7 +138,6 @@ public class MicroserviceAuthenticationDaemon
 			{
 				while (!authHappened)
 				{
-					// authHappened = true;
 					try
 					{
 						// If we need to run authenticate --- let's do that and reset the counter so that all request tasks waiting for auth get released.
