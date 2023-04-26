@@ -82,8 +82,7 @@ public struct UnrealCsvRowTypeDeclaration
 
 
 	public const string CSV_ROW_TYPE_HEADER =
-		$@"
-#pragma once
+		$@"#pragma once
 
 #include ""CoreMinimal.h""
 #include ""Engine/DataTable.h""
@@ -153,8 +152,7 @@ void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FSt
 	}
 
 	public const string CSV_SERIALIZABLE_TYPE_HEADER =
-		$@"
-#pragma once
+		$@"#pragma once
 
 #include ""CoreMinimal.h""
 #include ""BeamBackend/BeamBaseResponseBodyInterface.h""
@@ -438,8 +436,7 @@ void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FSt
 	}
 
 	public const string JSON_SERIALIZABLE_TYPE_HEADER =
-		$@"
-#pragma once
+		$@"#pragma once
 
 #include ""CoreMinimal.h""
 ₢{nameof(_responseBodyIncludes)}₢
@@ -491,8 +488,7 @@ void U₢{nameof(NamespacedTypeName)}₢::BeamDeserializeProperties(const TShare
 
 ";
 
-	public const string JSON_SERIALIZABLE_TYPES_LIBRARY_HEADER = $@"
-#pragma once
+	public const string JSON_SERIALIZABLE_TYPES_LIBRARY_HEADER = $@"#pragma once
 
 #include ""CoreMinimal.h""
 #include ""₢{nameof(UnrealSourceGenerator.headerFileOutputPath)}₢AutoGen/₢{nameof(NamespacedTypeName)}₢.h""

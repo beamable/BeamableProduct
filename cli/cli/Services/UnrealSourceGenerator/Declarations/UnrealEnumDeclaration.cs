@@ -22,8 +22,7 @@ public struct UnrealEnumDeclaration
 		helperDict.Add(nameof(EnumValues), enumValues);
 	}
 
-	public const string U_ENUM_HEADER = $@"
-#pragma once
+	public const string U_ENUM_HEADER = $@"#pragma once
 
 #include ""CoreMinimal.h""
 

@@ -66,7 +66,7 @@ public class ProjectService
 
 	public void AddUnrealProject(string relativePath)
 	{
-		var projectName = relativePath.Substring(relativePath.LastIndexOf("\\", StringComparison.Ordinal) + 1);
+		var projectName = Path.GetFileName(_configService.WorkingDirectory);
 		var msPath = $"{projectName}";
 		var msBlueprintPath = $"{projectName}BlueprintNodes";
 

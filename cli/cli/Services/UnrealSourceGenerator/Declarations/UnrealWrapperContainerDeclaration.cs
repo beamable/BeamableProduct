@@ -24,8 +24,7 @@ public struct UnrealWrapperContainerDeclaration
 	}
 
 
-	public const string ARRAY_WRAPPER_HEADER_DECL = $@"
-#pragma once
+	public const string ARRAY_WRAPPER_HEADER_DECL = $@"#pragma once
 
 #include ""CoreMinimal.h""
 #include ""Serialization/BeamArray.h""
@@ -79,8 +78,7 @@ void ₢{nameof(UnrealTypeName)}₢::BeamDeserializeElements(const TArray<TShare
 }}
 ";
 
-	public const string MAP_WRAPPER_HEADER_DECL = $@"
-#pragma once
+	public const string MAP_WRAPPER_HEADER_DECL = $@"#pragma once
 
 #include ""CoreMinimal.h""
 #include ""Serialization/BeamMap.h""
