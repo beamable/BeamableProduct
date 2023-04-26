@@ -318,10 +318,17 @@ namespace Beamable.Editor.ToolbarExtender
 
 			if (notificationManager != null && notificationManager.PendingValidationNotifications.Any())
 				btnTexture = _validationTexture;
-
-
+			
+			
 			GUILayout.BeginArea(beamableAssistantButtonRect);
-			if (GUILayout.Button(new GUIContent(" Beamable", btnTexture), GUILayout.Width(beamableAssistantEnd - beamableAssistantStart), GUILayout.Height(dropdownHeight)))
+			var version = BeamableEnvironment.SdkVersion;
+			var versionStr = $"Beamable {version}";
+			if (version.IsNightly)
+			{
+				versionStr = $"BeamDev {version.NightlyTime}";
+			}
+			var titleContent = new GUIContent(versionStr, btnTexture);
+			if (GUILayout.Button(titleContent, GUILayout.Width(beamableAssistantEnd - beamableAssistantStart), GUILayout.Height(dropdownHeight)))
 			{
 				// create the menu and add items to it
 				var menu = new GenericMenu();
