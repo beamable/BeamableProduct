@@ -117,22 +117,20 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 						UnrealSourceGenerator.genType = UnrealSourceGenerator.GenerationType.Microservice;
 						var unrealFileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext { Documents = docs, OrderedSchemas = orderedSchemas });
 
-						var unrealProjectPath = unrealProjectData.Path;
-						var unrealAssetPath =
-							Path.Combine(args.ConfigService.BaseDirectory, unrealProjectPath, "Content");
-
-						if (!Directory.Exists(unrealAssetPath))
-						{
-							BeamableLogger.LogError(
-								$"Could not generate [{descriptor.Name}] client linked unreal project because directory doesn't exist [{unrealAssetPath}]");
-							continue;
-						}
-
+						var hasOutputPath = !string.IsNullOrEmpty(args.outputDirectory);
 						for (int i = 0; i < unrealFileDescriptors.Count; i++)
 						{
-							var outputPath = Path.Combine(args.outputDirectory, $"{unrealFileDescriptors[i].FileName}");
-							Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
+							string outputPath;
+							if (hasOutputPath)
+							{
+								outputPath = Path.Combine(args.outputDirectory, $"{unrealFileDescriptors[i].FileName}");
+							}
+							else
+							{
+								outputPath = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.SourceFilesPath, $"{unrealFileDescriptors[i].FileName}");
+							}
 
+							Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
 							File.WriteAllText(outputPath, unrealFileDescriptors[i].Content);
 						}
 

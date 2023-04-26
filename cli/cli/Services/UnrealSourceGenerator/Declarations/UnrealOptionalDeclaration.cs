@@ -26,8 +26,7 @@ public struct UnrealOptionalDeclaration
 		helperDict.Add(nameof(ValueUnrealTypeIncludeStatement), ValueUnrealTypeIncludeStatement);
 	}
 
-	public const string OPTIONAL_HEADER_DECL = $@"
-#pragma once
+	public const string OPTIONAL_HEADER_DECL = $@"#pragma once
 
 #include ""CoreMinimal.h""
 #include ""Serialization/BeamOptional.h""
