@@ -66,7 +66,7 @@ public class ProjectService
 
 	public void AddUnrealProject(string relativePath)
 	{
-		var projectName = relativePath.Substring(relativePath.LastIndexOf("\\", StringComparison.Ordinal) + 1);
+		var projectName = Path.GetFileName(_configService.WorkingDirectory);
 		var msPath = $"{projectName}";
 		var msBlueprintPath = $"{projectName}BlueprintNodes";
 
@@ -135,7 +135,7 @@ public class ProjectService
 			.ExecuteAsyncAndLog().Task;
 	}
 
-	public async Task<string> CreateNewSolution(string directory, string solutionName, string projectName)
+	public async Task<string> CreateNewSolution(string directory, string solutionName, string projectName, bool createCommonLibrary = true)
 	{
 		if (string.IsNullOrEmpty(directory))
 		{
@@ -175,25 +175,28 @@ public class ProjectService
 			.WithArguments($"sln {solutionPath} add {projectPath}")
 			.ExecuteAsyncAndLog().Task;
 
-		// create the shared library project
-		await Cli.Wrap($"dotnet")
-			.WithArguments($"new beamlib -n {commonProjectName} -o {commonProjectPath}")
-			.ExecuteAsyncAndLog().Task;
+		// create the shared library project only if requested
+		if (createCommonLibrary)
+		{
+			await Cli.Wrap($"dotnet")
+				.WithArguments($"new beamlib -n {commonProjectName} -o {commonProjectPath}")
+				.ExecuteAsyncAndLog().Task;
 
-		// restore the shared library tools
-		await Cli.Wrap($"dotnet")
-			.WithArguments($"tool restore --tool-manifest {Path.Combine(commonProjectPath, ".config", "dotnet-tools.json")}")
-			.ExecuteAsyncAndLog().Task;
+			// restore the shared library tools
+			await Cli.Wrap($"dotnet")
+				.WithArguments($"tool restore --tool-manifest {Path.Combine(commonProjectPath, ".config", "dotnet-tools.json")}")
+				.ExecuteAsyncAndLog().Task;
 
-		// add the shared library to the solution
-		await Cli.Wrap($"dotnet")
-			.WithArguments($"sln {solutionPath} add {commonProjectPath}")
-			.ExecuteAsyncAndLog().Task;
+			// add the shared library to the solution
+			await Cli.Wrap($"dotnet")
+				.WithArguments($"sln {solutionPath} add {commonProjectPath}")
+				.ExecuteAsyncAndLog().Task;
 
-		// add the shared library as a reference of the project
-		await Cli.Wrap($"dotnet")
-			.WithArguments($"add {projectPath} reference {commonProjectPath}")
-			.ExecuteAsyncAndLog().Task;
+			// add the shared library as a reference of the project
+			await Cli.Wrap($"dotnet")
+				.WithArguments($"add {projectPath} reference {commonProjectPath}")
+				.ExecuteAsyncAndLog().Task;
+		}
 
 		return solutionPath;
 	}

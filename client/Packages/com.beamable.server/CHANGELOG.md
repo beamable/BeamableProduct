@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Authorization will be retried if failures occur.
 - Authorization failures during service registration have a 2 minute timeout instead of 10 seconds, allowing for several retry events.
 - ClassPool uses thread locking to prevent memory violations during multithreaded access.
+- If Docker not installed skip Microservice code watch.
+- Microservices can be started with an alias in the CID environment variable.
+
 
 ### Added
 - Runtime log level switching. In RealmConfig, use a key for service_logs|serviceName=logLevel.
