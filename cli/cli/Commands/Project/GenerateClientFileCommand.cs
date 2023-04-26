@@ -127,8 +127,7 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 							}
 							else
 							{
-								outputPath = Path.Combine(unrealProjectData.SourceFilesPath, $"{unrealFileDescriptors[i].FileName}");
-								outputPath = Path.Combine(args.ConfigService.BaseDirectory, outputPath);
+								outputPath = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.SourceFilesPath, $"{unrealFileDescriptors[i].FileName}");
 							}
 
 							Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
