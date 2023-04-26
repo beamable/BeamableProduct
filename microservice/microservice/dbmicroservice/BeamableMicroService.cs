@@ -104,6 +104,7 @@ namespace Beamable.Server
 
       private ConcurrentDictionary<long, Task> _runningTaskTable = new ConcurrentDictionary<long, Task>();
       private const int EXIT_CODE_PENDING_TASKS_STILL_RUNNING = 11;
+      private const int EXIT_CODE_FAILED_AUTH = 12;
       private const int EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK = 110;
       private const int HTTP_STATUS_GONE = 410;
       private const int ShutdownLimitSeconds = 5;
@@ -335,7 +336,7 @@ namespace Beamable.Server
          try
          {
 	         _socketRequesterContext.Daemon.WakeAuthThread();
-            await _requester.WaitForAuthorization();
+            await _requester.WaitForAuthorization(TimeSpan.FromMinutes(2), "Registering services event.");
             // We can disable custom initialization hooks from running. This is so we can verify the image works (outside of the custom hooks) before a publish.
             // TODO This is not ideal. There's an open ticket with some ideas on how we can improve the publish process to guarantee it's impossible to publish an image
             // TODO that will not boot correctly.
@@ -368,8 +369,9 @@ namespace Beamable.Server
          }
          catch (Exception ex)
          {
-            Log.Error("Service failed to provide services. {message} {stack}", ex.Message, ex.StackTrace);
+            Log.Fatal("Service failed to provide services. {message} {stack}", ex.Message, ex.StackTrace);
             _serviceInitialized.CompleteError(ex);
+            Environment.Exit(EXIT_CODE_FAILED_AUTH);
          }
 
       }

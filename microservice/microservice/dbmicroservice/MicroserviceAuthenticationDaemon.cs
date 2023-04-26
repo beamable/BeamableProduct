@@ -131,25 +131,45 @@ public class MicroserviceAuthenticationDaemon
 
 			// Declare a variable that'll hold the total number of requests that have been made by the service AFTER we run authenticate.
 			ulong outgoingReqsCountAtEnd;
+			
+			// Declare a variable we'll use to track if the auth actually completed.
+			var authHappened = false;
 			try
 			{
-				// If we need to run authenticate --- let's do that and reset the counter so that all request tasks waiting for auth get released.
-				Log.Verbose($"Authorization Daemon checking for pending requests. At ThreadID = {Environment.CurrentManagedThreadId}, Requests=[{AuthorizationCounter}]");
-				if (AuthorizationCounter > 0)
+				while (!authHappened)
 				{
-					// Do the authorization back and forth with Beamo
-					await Authenticate();
+					try
+					{
+						// If we need to run authenticate --- let's do that and reset the counter so that all request tasks waiting for auth get released.
+						Log.Verbose($"Authorization Daemon checking for pending requests. At ThreadID = {Environment.CurrentManagedThreadId}, Requests=[{AuthorizationCounter}]");
+						if (AuthorizationCounter > 0)
+						{
+							// Do the authorization back and forth with Beamo
+							await Authenticate();
 
-					// Resets the auth counter back to 0
-					Log.Verbose($"Authorization Daemon clearing pending requests. At ThreadID = {Environment.CurrentManagedThreadId}");
-					Interlocked.Exchange(ref AuthorizationCounter, 0);
+							// Resets the auth counter back to 0
+							Log.Verbose($"Authorization Daemon clearing pending requests. At ThreadID = {Environment.CurrentManagedThreadId}");
+							Interlocked.Exchange(ref AuthorizationCounter, 0);
+							authHappened = true;
+						}
+						else
+						{
+							Log.Verbose("Authorization Daemon tried to authenticate, but found that there were no pending auth requests.");
+							authHappened = true;
+						}
+					}
+					catch (Exception ex)
+					{
+						BeamableLogger.LogError("Authorization failed.");
+						BeamableLogger.LogException(ex);
+					}
+
+					if (!authHappened)
+					{
+						Log.Verbose("Authorization Daemon failed to authenticate. Trying again...");
+					}
 				}
-			}
-			catch (Exception ex)
-			{
-				BeamableLogger.LogError("Authorization failed.");
-				BeamableLogger.LogException(ex);
-			}
+			} 
 			finally
 			{
 				// Get the total number of Outgoing Requests after we finished the authentication process
@@ -169,11 +189,13 @@ public class MicroserviceAuthenticationDaemon
 			} while (stillProcessingPotentiallyFailedReqs);
 
 			AUTH_THREAD_WAIT_FOR_REQUESTS_TO_FINISH_HANDLE.Reset();
-			
-			// This solves an extremely unlikely race condition
-			Log.Verbose($"Authorization Daemon clearing pending requests and waiting for call. At ThreadID = {Environment.CurrentManagedThreadId}");
-			Interlocked.Exchange(ref AuthorizationCounter, 0);
-			AUTH_THREAD_WAIT_HANDLE.Reset();
+
+			{
+				// This solves an extremely unlikely race condition
+				Log.Verbose($"Authorization Daemon clearing pending requests and waiting for call. At ThreadID = {Environment.CurrentManagedThreadId}");
+				Interlocked.Exchange(ref AuthorizationCounter, 0);
+				AUTH_THREAD_WAIT_HANDLE.Reset();
+			}
 		}
 	}
 
@@ -196,7 +218,8 @@ public class MicroserviceAuthenticationDaemon
 		if (!string.Equals("ok", authRes.result))
 		{
 			Log.Error("Authorization failed. result=[{result}]", authRes.result);
-			throw new Exception("Authorization failed");
+			
+			throw new BeamableWebsocketAuthException(authRes.result);
 		}
 
 		Log.Debug($"Authorization complete at ThreadID = {Thread.CurrentThread.ManagedThreadId}");
@@ -218,5 +241,13 @@ public class MicroserviceAuthenticationDaemon
 	{
 		var daemon = new MicroserviceAuthenticationDaemon(env, requester);
 		return (new TaskFactory().StartNew(() => daemon.Run(cancellationTokenSource), cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default), daemon);
+	}
+}
+
+public class BeamableWebsocketAuthException : Exception
+{
+	public BeamableWebsocketAuthException(string result) : base($"Failed to auth websocket. result=[{result}]")
+	{
+		
 	}
 }
