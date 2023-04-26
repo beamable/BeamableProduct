@@ -70,7 +70,7 @@
   </ItemGroup>
 
   <Target Name="PrepTools" BeforeTargets="Build">
-    <Exec Command="dotnet tool restore"/>
+    <Exec Command="dotnet tool restore" />
   </Target>
   <Target Name="BuildCLIInterface" AfterTargets="Build">
     <Exec Condition="'$(IsWindows)'!='true'" Command="./$(OutDir)/$(AssemblyName) generate-interface --output=../../client/Packages/com.beamable/Editor/BeamCli/Commands" />

@@ -43,7 +43,7 @@ public class DefaultAppContext : IAppContext
 	private readonly DryRunOption _dryRunOption;
 	private readonly CidOption _cidOption;
 	private readonly PidOption _pidOption;
-	private readonly PlatformOption _platformOption;
+	private readonly HostOption _hostOption;
 	private readonly AccessTokenOption _accessTokenOption;
 	private readonly RefreshTokenOption _refreshTokenOption;
 	private readonly LogOption _logOption;
@@ -67,14 +67,14 @@ public class DefaultAppContext : IAppContext
 	public string WorkingDirectory => _configService.WorkingDirectory;
 	public LogEventLevel LogLevel { get; private set; }
 
-	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, PlatformOption platformOption,
+	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, HostOption hostOption,
 		AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption, ConfigDirOption configDirOption,
 		ConfigService configService, CliEnvironment environment, EnableReporterOption reporterOption)
 	{
 		_dryRunOption = dryRunOption;
 		_cidOption = cidOption;
 		_pidOption = pidOption;
-		_platformOption = platformOption;
+		_hostOption = hostOption;
 		_accessTokenOption = accessTokenOption;
 		_refreshTokenOption = refreshTokenOption;
 		_logOption = logOption;
@@ -117,7 +117,7 @@ public class DefaultAppContext : IAppContext
 			// throw new CliException("cannot run without a cid. Please login.");
 		}
 
-		if (!_configService.TryGetSetting(out _host, bindingContext, _platformOption))
+		if (!_configService.TryGetSetting(out _host, bindingContext, _hostOption))
 		{
 			_host = Constants.DEFAULT_PLATFORM;
 			// throw new CliException("cannot run without a cid. Please login.");
