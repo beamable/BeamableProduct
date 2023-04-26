@@ -53,7 +53,18 @@ public partial class BeamoLocalSystem
 			}
 		}
 
-		var allLocalContainers = await _client.Containers.ListContainersAsync(new ContainersListParameters() { All = true });
+		IList<ContainerListResponse> allLocalContainers;
+
+		try
+		{
+			allLocalContainers =
+				await _client.Containers.ListContainersAsync(new ContainersListParameters() { All = true });
+		}
+		catch (Exception e)
+		{
+			BeamableLogger.LogError($"Failed, Docker message: {e.Message}");
+			throw;
+		}
 
 		// Remove all service instances that no longer exist
 		existingServiceInstances.RemoveAll(si => allLocalContainers.Count(dc => dc.Names.Contains(si.ContainerName)) < 1);
