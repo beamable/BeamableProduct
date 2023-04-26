@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Newtonsoft.Json;
 using System.CommandLine.Binding;
@@ -145,7 +146,7 @@ public class ConfigService
 		File.WriteAllText(fullPath, json);
 	}
 
-	public bool ReadTokenFromFile(out TokenResponse response)
+	public bool ReadTokenFromFile(out CliToken response)
 	{
 		response = null;
 		string fullPath = Path.Combine(ConfigFilePath, Constants.CONFIG_TOKEN_FILE_NAME);
@@ -154,7 +155,7 @@ public class ConfigService
 		try
 		{
 			var content = File.ReadAllText(fullPath);
-			response = JsonConvert.DeserializeObject<TokenResponse>(content);
+			response = JsonConvert.DeserializeObject<CliToken>(content);
 			return true;
 		}
 		catch
@@ -165,7 +166,7 @@ public class ConfigService
 		return false;
 	}
 
-	public void SaveTokenToFile(TokenResponse response)
+	public void SaveTokenToFile(IAccessToken response)
 	{
 		string fullPath = Path.Combine(ConfigFilePath, Constants.CONFIG_TOKEN_FILE_NAME);
 		var json = JsonConvert.SerializeObject(response);

@@ -61,8 +61,16 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 		_ctx = args.AppContext;
 		_localBeamo = args.BeamoLocalSystem;
 		_remoteBeamo = args.BeamoService;
-		await _localBeamo.SynchronizeInstanceStatusWithDocker(_localBeamo.BeamoManifest, _localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
-		await _localBeamo.StartListeningToDocker();
+		try
+		{
+			await _localBeamo.SynchronizeInstanceStatusWithDocker(_localBeamo.BeamoManifest,
+				_localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
+			await _localBeamo.StartListeningToDocker();
+		}
+		catch
+		{
+			return;
+		}
 
 		if (args.BeamoIdsToDeploy == null)
 			args.BeamoIdsToDeploy = _localBeamo.BeamoManifest.ServiceDefinitions.Select(c => c.BeamoId).ToArray();
