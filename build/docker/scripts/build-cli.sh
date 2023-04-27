@@ -11,24 +11,12 @@ echo $VERSION
 if [ -z "$SUFFIX" ]
 then
     dotnet pack ./cli/cli --configuration Release /p:VersionPrefix=$VERSION_PREFIX
-    echo "DEBUG_CHRIS_CLI_CONTAINER---checking ls after cli pack"
-    ls -a ./client/Packages/com.beamable/Editor/BeamCli/Commands
-    
     dotnet pack ./client/Packages/com.beamable/Common --configuration Release --include-source --include-symbols /p:VersionPrefix=$VERSION_PREFIX
-    echo "DEBUG_CHRIS_CLI_CONTAINER---checking ls after common pack"
-    ls -a ./client/Packages/com.beamable/Editor/BeamCli/Commands
-   
-   dotnet pack ./microservice/unityEngineStubs --configuration Release --include-source --include-symbols /p:VersionPrefix=$VERSION_PREFIX
+    dotnet pack ./microservice/unityEngineStubs --configuration Release --include-source --include-symbols /p:VersionPrefix=$VERSION_PREFIX
     dotnet pack ./microservice/microservice --configuration Release --include-source --include-symbols /p:NuspecFile=Microservice.nuspec /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION
 else
     dotnet pack ./cli/cli --configuration Release --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX
-    echo "DEBUG_CHRIS_CLI_CONTAINER---checking ls after cli pack"
-    ls -a ./client/Packages/com.beamable/Editor/BeamCli/Commands
-    
     dotnet pack ./client/Packages/com.beamable/Common --configuration Release --include-source --include-symbols --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX
-    echo "DEBUG_CHRIS_CLI_CONTAINER---checking ls after common pack"
-    ls -a ./client/Packages/com.beamable/Editor/BeamCli/Commands
-    
     dotnet pack ./microservice/unityEngineStubs --configuration Release --include-source --include-symbols --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX
     dotnet pack ./microservice/microservice -c Release --include-source --include-symbols  --version-suffix=${SUFFIX-""} /p:NuspecFile=Microservice.nuspec /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION
 fi
