@@ -10,7 +10,8 @@ namespace cli.Dotnet;
 
 public class NewSolutionCommandArgs : CommandArgs
 {
-	public string name;
+	public string SolutionName;
+	public string ProjectName;
 	public string directory;
 	public bool SkipCommon;
 }
@@ -21,7 +22,8 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 	private readonly AddUnityClientOutputCommand _addUnityCommand;
 	private readonly AddUnrealClientOutputCommand _addUnrealCommand;
 
-	public NewSolutionCommand(InitCommand initCommand, AddUnityClientOutputCommand addUnityCommand, AddUnrealClientOutputCommand addUnrealCommand) : base("new", "Start a brand new beamable solution using dotnet")
+	public NewSolutionCommand(InitCommand initCommand, AddUnityClientOutputCommand addUnityCommand, AddUnrealClientOutputCommand addUnrealCommand) : base("new",
+		"Start a brand new beamable solution using dotnet")
 	{
 		_initCommand = initCommand;
 		_addUnityCommand = addUnityCommand;
@@ -30,15 +32,19 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("name", "Name of the new project"), (args, i) => args.name = i);
+		AddArgument(new Argument<string>("name", "Name of the new project"), (args, i) => args.ProjectName = i);
 		AddArgument(new Argument<string>("output", () => "", description: "Where the project be created"), (args, i) => args.directory = i);
-		AddOption(new Option<bool>("--skip-common", () => false, description: "If you should create a common library"), (args, i) => args.SkipCommon = i);
+		AddOption(new ConfigurableOptionFlag("skip-common", "If you should create a common library"), (args, i) => args.SkipCommon = i);
+		AddOption(new ConfigurableOption("solution-name", "The name of the solution of the new project"), (args, i) => args.SolutionName = i);
 	}
 
 	public override async Task Handle(NewSolutionCommandArgs args)
 	{
+		// Default the solution name to the project name.
+		args.SolutionName = string.IsNullOrEmpty(args.SolutionName) ? args.ProjectName : args.SolutionName;
+
 		// in the current directory, create a project using dotnet. 
-		var path = await args.ProjectService.CreateNewSolution(args.directory, args.name, args.name, !args.SkipCommon);
+		var path = await args.ProjectService.CreateNewSolution(args.directory, args.SolutionName, args.ProjectName, !args.SkipCommon);
 
 		// initialize a beamable project in that directory...
 		var createdNewWorkingDir = false;
@@ -52,13 +58,15 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 		}
 
 		// Find path to service folders: either it is in the working directory, or it will be inside 'args.name\\services' from the working directory.
-		var projectDirectory = createdNewWorkingDir ? $"services" : Path.GetRelativePath(args.ConfigService.BaseDirectory,
-			Directory.EnumerateDirectories(args.ConfigService.BaseDirectory, $"{args.name}\\services", SearchOption.AllDirectories).First());
+		var projectDirectory = createdNewWorkingDir
+			? $"services"
+			: Path.GetRelativePath(args.ConfigService.BaseDirectory,
+				Directory.EnumerateDirectories(args.ConfigService.BaseDirectory, $"{args.ProjectName}\\services", SearchOption.AllDirectories).First());
 
 		// now that a .beamable folder has been created, setup the beamo manifest
-		await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.name.ToLower(),
+		await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.ToLower(),
 			projectDirectory,
-			Path.Combine(args.name, "Dockerfile"),
+			Path.Combine(args.ProjectName, "Dockerfile"),
 			new string[] { },
 			CancellationToken.None);
 
@@ -80,6 +88,5 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 		{
 			await _addUnrealCommand.Handle(new AddUnrealClientOutputCommandArgs() { path = ".", Provider = args.Provider });
 		}
-
 	}
 }
