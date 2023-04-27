@@ -55,11 +55,6 @@ namespace Beamable.Server.Editor
 			_gotAnyDataPromise.CompleteSuccess();
 		}
 
-		public async Promise WaitForUpdate()
-		{
-			await _gotAnyDataPromise;
-		}
-
 		public bool TryIsRunning(string serviceName, out string prefix)
 		{
 			return _nameToPrefix.TryGetValue(serviceName, out prefix);
