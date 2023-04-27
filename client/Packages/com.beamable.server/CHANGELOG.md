@@ -6,17 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.15.0]
 ### Fixed
-- Importing assets during microservice publish process on Unity2021.
+- Unity 2021 no longer imports assets during Microservice publish process. 
 - Unity clients will direct Microservice traffic to local standalone Microservices.
 - Authorization will be retried if failures occur.
 - Authorization failures during service registration have a 2 minute timeout instead of 10 seconds, allowing for several retry events.
 - ClassPool uses thread locking to prevent memory violations during multithreaded access.
-- If Docker not installed skip Microservice code watch.
+- If Docker is not installed, Microservice Manager skips code watch.
 - Microservices can be started with an alias in the CID environment variable.
 
 
 ### Added
-- Runtime log level switching. In RealmConfig, use a key for service_logs|serviceName=logLevel.
+- Runtime log level switching. In RealmConfig, use a key for `service_logs|serviceName=logLevel`.
 
 
 ## [1.14.0]
