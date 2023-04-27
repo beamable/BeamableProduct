@@ -22,7 +22,7 @@ namespace Beamable.Api.Notification.Internal
 #if NOTIFICATIONS_PACKAGE
 		int ScheduledLocalNotificationsAmount => iOSNotificationCenter.GetScheduledNotifications().Length;
 #else
-	   int ScheduledLocalNotificationsAmount => NotificationServices.scheduledLocalNotifications.Length
+	   int ScheduledLocalNotificationsAmount => NotificationServices.scheduledLocalNotifications.Length;
 #endif
 		public const string CancellationKey = "NOTIFICATION_KEY";
 
