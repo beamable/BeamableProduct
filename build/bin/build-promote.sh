@@ -4,14 +4,22 @@ set -e
 export BEAMSERVICE_TAG=${ENVIRONMENT}_${VERSION:-0.0.0}
 export LOCAL_REPO_TAG=beamservice:${BEAMSERVICE_TAG}
 
+echo "debug--Chris-- checking directory before microservice build"
+ls -a ../client/Packages/com.beamable/Editor/BeamCli/Commands
+
 echo "Starting Microservice dependencies..."
-docker-compose --no-ansi -f docker/image.microservice/docker-compose.yml build --pull --no-cache # Fresh pull, no cache, builds
-docker-compose --no-ansi -f docker/image.microservice/docker-compose.yml up --exit-code-from microservice # Runs containers and checks the exit code
-docker-compose --no-ansi -f docker/image.microservice/docker-compose.yml down # TODO: Ensure that this down command executes
+docker-compose -f docker/image.microservice/docker-compose.yml build --pull --no-cache # Fresh pull, no cache, builds
+docker-compose -f docker/image.microservice/docker-compose.yml up --exit-code-from microservice # Runs containers and checks the exit code
+docker-compose -f docker/image.microservice/docker-compose.yml down # TODO: Ensure that this down command executes
+
+echo "debug--Chris-- checking directory before cli build"
+ls -a ../client/Packages/com.beamable/Editor/BeamCli/Commands
 
 echo "Starting nuget builds"
-docker-compose --no-ansi -f docker/cli/docker-compose.yml up --build --exit-code-from cli
-docker-compose --no-ansi -f docker/cli/docker-compose.yml down # TODO: Ensure that this down command executes
+docker-compose -f docker/cli/docker-compose.yml up --build --exit-code-from cli
+docker-compose -f docker/cli/docker-compose.yml down # TODO: Ensure that this down command executes
+
+echo "debug--Chris-- checking directory after cli build"
 
 echo "Logging into dockerhub"
 docker login -u ${DOCKER_HUB_USER} -p ${DOCKER_HUB_PASSWORD}

@@ -6,8 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.15.0]
 ### Added
-- Added additional info about active listing limit default value in StoreContent
-- Beam CLI bindings.
+- Added additional info about active listing limit default value in StoreContent.
+- Limited Beam CLI bindings.
 
 ### Fixed
 - Invalid package invalidations no longer occur for Beamable based assets.
