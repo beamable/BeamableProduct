@@ -39,7 +39,7 @@ namespace Beamable.Common.Pooling
 				Recycle(val as ClassPool<T>);
 			}
 		}
-		
+
 		public static T Spawn()
 		{
 			lock (lockSignal)
