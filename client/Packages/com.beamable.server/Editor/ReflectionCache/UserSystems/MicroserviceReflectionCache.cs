@@ -408,15 +408,19 @@ namespace Beamable.Server.Editor
 			{
 				try
 				{
+#if !UNITY_2021
 					AssetDatabase.StartAssetEditing();
+#endif
+
 					await DeployInternal(model, token, onServiceDeployed, logger);
 				}
 				finally
 				{
+#if !UNITY_2021
 					AssetDatabase.StopAssetEditing();
+#endif
 				}
 			}
-
 			private async Task DeployInternal(ManifestModel model,
 											  CancellationToken token,
 											  Action<IDescriptor> onServiceDeployed = null,

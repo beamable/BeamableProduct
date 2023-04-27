@@ -1,21 +1,30 @@
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Api.Auth;
 using Beamable.Server.Common;
 using Newtonsoft.Json;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
+using NotImplementedException = System.NotImplementedException;
 
 namespace Beamable.Server;
 
-public class MicroserviceHttpRequester : IHttpRequester
+public class MicroserviceHttpRequester : IHttpRequester, IRequester
 {
 	private readonly HttpClient _client;
+	private readonly string _baseAddr;
 
-	public MicroserviceHttpRequester(HttpClient client)
+	public MicroserviceHttpRequester(IMicroserviceArgs args, HttpClient client)
 	{
 		_client = client;
+		_baseAddr = args.Host
+			.Replace("ws://", "http://")
+			.Replace("wss://", "https://")
+			.Replace("/socket/", "")
+			.Replace("/socket", "");
 	}
 	
 	public async Promise<T> ManualRequest<T>(Method method, string url, object body = null, Dictionary<string, string> headers = null,
@@ -81,8 +90,42 @@ public class MicroserviceHttpRequester : IHttpRequester
 		return result;
 	}
 
+	public IAccessToken AccessToken =>
+		throw new NotImplementedException($"{nameof(MicroserviceHttpRequester)} does not support access tokens");
+	public string Cid => throw new NotImplementedException($"{nameof(MicroserviceHttpRequester)} does not contain cid");
+
+	public string Pid => throw new NotImplementedException($"{nameof(MicroserviceHttpRequester)} does not contain pid");
+
+
+	public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null,
+		bool useCache = false)
+	{
+		return BeamableRequest<T>(new SDKRequesterOptions<T>
+		{
+			method = method,
+			uri = uri,
+			body = body,
+			includeAuthHeader = includeAuthHeader,
+			parser = parser,
+			disableScopeHeaders = true,
+			useCache = false,
+			useConnectivityPreCheck = false
+		});
+	}
+
+	public IBeamableRequester WithAccessToken(TokenResponse tokenResponse)
+	{
+		throw new NotImplementedException($"{nameof(MicroserviceHttpRequester)} does not support accepting a new access token");
+	}
+
 	public string EscapeURL(string url)
 	{
 		return System.Web.HttpUtility.UrlEncode(url);
+	}
+
+	public Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> req)
+	{
+		var uri = _baseAddr + req.uri;
+		return ManualRequest<T>(req.method, uri, req.body);
 	}
 }

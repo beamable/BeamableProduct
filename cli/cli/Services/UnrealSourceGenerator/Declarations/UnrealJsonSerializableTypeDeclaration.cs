@@ -7,6 +7,7 @@ public enum ResponseBodyType
 	None,
 	Json,
 	Csv,
+	PrimitiveWrapper
 }
 
 public struct TypeRequestBody : IEquatable<string>, IComparable<string>
@@ -81,8 +82,7 @@ public struct UnrealCsvRowTypeDeclaration
 
 
 	public const string CSV_ROW_TYPE_HEADER =
-		$@"
-#pragma once
+		$@"#pragma once
 
 #include ""CoreMinimal.h""
 #include ""Engine/DataTable.h""
@@ -144,7 +144,7 @@ void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FSt
 
 	UBeamCsvUtils::StoreNameAsColumn<{RowUnrealType}>(CsvData, {RowUnrealType}::KeyField);
 }}";
-
+		processDictionary.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
 		processDictionary.Add(nameof(NamespacedTypeName), NamespacedTypeName);
 		processDictionary.Add(nameof(RowUnrealType), RowUnrealType);
 		processDictionary.Add(nameof(RowNamespacedTypeName), RowNamespacedTypeName);
@@ -152,8 +152,7 @@ void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FSt
 	}
 
 	public const string CSV_SERIALIZABLE_TYPE_HEADER =
-		$@"
-#pragma once
+		$@"#pragma once
 
 #include ""CoreMinimal.h""
 #include ""BeamBackend/BeamBaseResponseBodyInterface.h""
@@ -162,7 +161,7 @@ void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FSt
 #include ""₢{nameof(NamespacedTypeName)}₢.generated.h""
 
 UCLASS(BlueprintType, Category=""Beam"")
-class BEAMABLECORE_API U₢{nameof(NamespacedTypeName)}₢ : public UObject, public IBeamBaseResponseBodyInterface
+class ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ U₢{nameof(NamespacedTypeName)}₢ : public UObject, public IBeamBaseResponseBodyInterface
 {{
 	GENERATED_BODY()
 
@@ -387,11 +386,26 @@ void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FSt
 		{
 			throw new Exception("You should never be seeing this! Instead, schemas that represent the result of the 'text/csv' endpoints have a special code-gen path.");
 		}
+		else if (IsResponseBodyType == ResponseBodyType.PrimitiveWrapper)
+		{
+			var wrappedPrimitiveType = UPropertyDeclarations[0].PropertyUnrealType;
+			var propertyName = UPropertyDeclarations[0].PropertyName;
+			_defineResponseBodyInterface = @$"
+void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FString ResponseContent)
+{{
+	OuterOwner = RequestData;
+	UBeamJsonUtils::DeserializeRawPrimitive<{wrappedPrimitiveType}>(ResponseContent, {propertyName}, OuterOwner);
+}}";
+		}
 		else
 		{
 			_defineResponseBodyInterface = "";
 		}
 
+
+		processDictionary.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
+		processDictionary.Add(nameof(UnrealSourceGenerator.headerFileOutputPath), UnrealSourceGenerator.headerFileOutputPath);
+		processDictionary.Add(nameof(UnrealSourceGenerator.blueprintHeaderFileOutputPath), UnrealSourceGenerator.blueprintHeaderFileOutputPath);
 
 		processDictionary.Add(nameof(NamespacedTypeName), NamespacedTypeName);
 		processDictionary.Add(nameof(UPropertyDeclarations), propertyDeclarations);
@@ -422,8 +436,7 @@ void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FSt
 	}
 
 	public const string JSON_SERIALIZABLE_TYPE_HEADER =
-		$@"
-#pragma once
+		$@"#pragma once
 
 #include ""CoreMinimal.h""
 ₢{nameof(_responseBodyIncludes)}₢
@@ -433,7 +446,7 @@ void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FSt
 #include ""₢{nameof(NamespacedTypeName)}₢.generated.h""
 
 UCLASS(BlueprintType, Category=""Beam"")
-class BEAMABLECORE_API U₢{nameof(NamespacedTypeName)}₢ : public UObject, public FBeamJsonSerializable₢{nameof(_inheritResponseBodyInterface)}₢
+class ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ U₢{nameof(NamespacedTypeName)}₢ : public UObject, public FBeamJsonSerializable₢{nameof(_inheritResponseBodyInterface)}₢
 {{
 	GENERATED_BODY()
 
@@ -450,7 +463,7 @@ public:
 
 	public const string JSON_SERIALIZABLE_TYPE_CPP =
 		@$"
-#include ""AutoGen/₢{nameof(NamespacedTypeName)}₢.h""
+#include ""₢{nameof(UnrealSourceGenerator.headerFileOutputPath)}₢AutoGen/₢{nameof(NamespacedTypeName)}₢.h""
 ₢{nameof(JsonUtilsInclude)}₢
 ₢{nameof(DefaultValueHelpersInclude)}₢
 
@@ -475,17 +488,16 @@ void U₢{nameof(NamespacedTypeName)}₢::BeamDeserializeProperties(const TShare
 
 ";
 
-	public const string JSON_SERIALIZABLE_TYPES_LIBRARY_HEADER = $@"
-#pragma once
+	public const string JSON_SERIALIZABLE_TYPES_LIBRARY_HEADER = $@"#pragma once
 
 #include ""CoreMinimal.h""
-#include ""AutoGen/₢{nameof(NamespacedTypeName)}₢.h""
+#include ""₢{nameof(UnrealSourceGenerator.headerFileOutputPath)}₢AutoGen/₢{nameof(NamespacedTypeName)}₢.h""
 
 #include ""₢{nameof(NamespacedTypeName)}₢Library.generated.h""
 
 
 UCLASS(BlueprintType, Category=""Beam"")
-class BEAMABLECORE_API U₢{nameof(NamespacedTypeName)}₢Library : public UBlueprintFunctionLibrary
+class ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ U₢{nameof(NamespacedTypeName)}₢Library : public UBlueprintFunctionLibrary
 {{
 	GENERATED_BODY()
 
@@ -501,7 +513,7 @@ public:
 }};";
 
 	public const string JSON_SERIALIZABLE_TYPES_LIBRARY_CPP = $@"
-#include ""AutoGen/₢{nameof(NamespacedTypeName)}₢Library.h""
+#include ""₢{nameof(UnrealSourceGenerator.headerFileOutputPath)}₢AutoGen/₢{nameof(NamespacedTypeName)}₢Library.h""
 
 #include ""CoreMinimal.h""
 

@@ -9,7 +9,7 @@ using System.Text;
 
 namespace cli;
 
-public class CliRequester : IBeamableRequester
+public class CliRequester : IRequester
 {
 	private readonly IAppContext _ctx;
 	public IAccessToken AccessToken => _ctx.Token;
@@ -103,7 +103,7 @@ public class CliRequester : IBeamableRequester
 			switch (error)
 			{
 				// when code?.Error?.error == "InvalidTokenError" || code?.Error?.error == "ExpiredTokenError":
-				case RequesterException e when e.RequestError.error == "InvalidTokenError" || e.RequestError.error == "ExpiredTokenError" || e.Status == 403:
+				case RequesterException e when e.RequestError.error is "InvalidTokenError" or "ExpiredTokenError" || e.Status == 403 || AccessToken.ExpiresAt < DateTime.Now:
 					BeamableLogger.Log("Got failure for token " + AccessToken.Token + " because " + e.RequestError.error);
 					var authService = new AuthApi(this);
 					return authService.LoginRefreshToken(AccessToken.RefreshToken).Map(rsp =>
@@ -165,6 +165,12 @@ public class CliRequester : IBeamableRequester
 	{
 		// TODO: Fix this/
 		return url;
+	}
+
+	public Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> req)
+	{
+
+		return Request<T>(req.Method, req.uri, req.body, req.includeAuthHeader, req.parser, req.useCache);
 	}
 
 	private static HttpMethod FromMethod(Method method)

@@ -16,6 +16,7 @@ public struct UnrealOptionalDeclaration
 	{
 		_valueInitializerStatement = ValueUnrealTypeName.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX) ? "nullptr" : $"{ValueUnrealTypeName}()";
 
+		helperDict.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
 		helperDict.Add(nameof(UnrealTypeName), UnrealTypeName);
 		helperDict.Add(nameof(NamespacedTypeName), NamespacedTypeName);
 		helperDict.Add(nameof(UnrealTypeIncludeStatement), UnrealTypeIncludeStatement);
@@ -25,8 +26,7 @@ public struct UnrealOptionalDeclaration
 		helperDict.Add(nameof(ValueUnrealTypeIncludeStatement), ValueUnrealTypeIncludeStatement);
 	}
 
-	public const string OPTIONAL_HEADER_DECL = $@"
-#pragma once
+	public const string OPTIONAL_HEADER_DECL = $@"#pragma once
 
 #include ""CoreMinimal.h""
 #include ""Serialization/BeamOptional.h""
@@ -37,7 +37,7 @@ public struct UnrealOptionalDeclaration
 // Has Native Make/Break require static blueprint pure functions to present as nodes that
 // don't require an execution pin connection. This is super relevant for Blueprint UX. 
 USTRUCT(BlueprintType, meta=(HasNativeMake=""BeamableCore.₢{nameof(NamespacedTypeName)}₢Library.MakeOptional"", BeamOptionalType=""₢{nameof(ValueUnrealTypeName)}₢""))
-struct BEAMABLECORE_API ₢{nameof(UnrealTypeName)}₢ : public FBeamOptional
+struct ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ ₢{nameof(UnrealTypeName)}₢ : public FBeamOptional
 {{
 	GENERATED_BODY()
 
@@ -85,7 +85,7 @@ void ₢{nameof(UnrealTypeName)}₢::Set(const void* Data)
 #include ""₢{nameof(NamespacedTypeName)}₢Library.generated.h""
 
 UCLASS(BlueprintType)
-class BEAMABLECORE_API U₢{nameof(NamespacedTypeName)}₢Library : public UBlueprintFunctionLibrary
+class ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ U₢{nameof(NamespacedTypeName)}₢Library : public UBlueprintFunctionLibrary
 {{
 	GENERATED_BODY()
 public:	

@@ -16,13 +16,13 @@ public struct UnrealEnumDeclaration
 			return enumValue;
 		}));
 
+		helperDict.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
 		helperDict.Add(nameof(UnrealTypeName), UnrealTypeName);
 		helperDict.Add(nameof(NamespacedTypeName), NamespacedTypeName);
 		helperDict.Add(nameof(EnumValues), enumValues);
 	}
 
-	public const string U_ENUM_HEADER = $@"
-#pragma once
+	public const string U_ENUM_HEADER = $@"#pragma once
 
 #include ""CoreMinimal.h""
 
@@ -35,7 +35,7 @@ enum class ₢{nameof(UnrealTypeName)}₢ : uint8
 }};
 
 UCLASS(BlueprintType, Category=""Beam|Enums"")
-class BEAMABLECORE_API U₢{nameof(NamespacedTypeName)}₢Library : public UBlueprintFunctionLibrary
+class ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ U₢{nameof(NamespacedTypeName)}₢Library : public UBlueprintFunctionLibrary
 {{
 	GENERATED_BODY()
 public:		

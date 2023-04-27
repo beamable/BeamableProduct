@@ -31,6 +31,7 @@ using Beamable.Server.Api.Commerce;
 using Beamable.Server.Api.Payments;
 using Beamable.Server.Common;
 using Beamable.Server.Content;
+using beamable.tooling.common.Microservice;
 using Core.Server.Common;
 using microservice;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -103,6 +104,7 @@ namespace Beamable.Server
 
       private ConcurrentDictionary<long, Task> _runningTaskTable = new ConcurrentDictionary<long, Task>();
       private const int EXIT_CODE_PENDING_TASKS_STILL_RUNNING = 11;
+      private const int EXIT_CODE_FAILED_AUTH = 12;
       private const int EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK = 110;
       private const int HTTP_STATUS_GONE = 410;
       private const int ShutdownLimitSeconds = 5;
@@ -191,11 +193,9 @@ namespace Beamable.Server
 				builder.AddScoped(_socketRequesterContext.Daemon);
 	         });
          });
+
          Log.Debug(Logs.STARTING_PREFIX + " {host} {prefix} {cid} {pid} {sdkVersionExecution} {sdkVersionBuild} {disableCustomHooks}", args.Host, args.NamePrefix, args.CustomerID, args.ProjectName, args.SdkVersionExecution, args.SdkVersionBaseBuild, args.DisableCustomInitializationHooks);
          
-         XmlDocsHelper.ProvideXmlForBaseImage(typeof(AdminRoutes));
-         XmlDocsHelper.ProvideXmlForService(MicroserviceType);
-
          RebuildRouteTable();
 
          _requester = new MicroserviceRequester(_args, null, _socketRequesterContext, false);
@@ -306,21 +306,13 @@ namespace Beamable.Server
 
       public void RebuildRouteTable()
       {
-	      ServiceMethods = ServiceMethodHelper.Scan(_serviceAttribute,
-		      new ICallableGenerator[]
-		      {
-			      new FederatedLoginCallableGenerator(),
-			      new FederatedInventoryCallbackGenerator()
-		      },
-		      new ServiceMethodProvider
-		      {
-			      instanceType = typeof(AdminRoutes), factory = BuildAdminInstance, pathPrefix = "admin/"
-		      },
-		      new ServiceMethodProvider
-		      {
-			      instanceType = MicroserviceType, factory = BuildServiceInstance, pathPrefix = ""
-		      });
-         SwaggerGenerator.InvalidateSwagger(this);
+	      var adminRoutes = new AdminRoutes
+	      {
+		      MicroserviceAttribute = _serviceAttribute, 
+		      MicroserviceType = MicroserviceType,
+		      PublicHost = $"{_args.Host.Replace("wss://", "https://").Replace("/socket", "")}/basic/{_args.CustomerID}.{_args.ProjectName}.{QualifiedName}/"
+	      };
+	      ServiceMethods = RouteTableGeneration.BuildRoutes(MicroserviceType, _serviceAttribute, adminRoutes, BuildServiceInstance);
       }
 
       async Task SetupWebsocket(IConnection socket, bool initContent = false)
@@ -344,7 +336,7 @@ namespace Beamable.Server
          try
          {
 	         _socketRequesterContext.Daemon.WakeAuthThread();
-            await _requester.WaitForAuthorization();
+            await _requester.WaitForAuthorization(TimeSpan.FromMinutes(2), "Registering services event.");
             // We can disable custom initialization hooks from running. This is so we can verify the image works (outside of the custom hooks) before a publish.
             // TODO This is not ideal. There's an open ticket with some ideas on how we can improve the publish process to guarantee it's impossible to publish an image
             // TODO that will not boot correctly.
@@ -364,17 +356,22 @@ namespace Beamable.Server
                 }
             }
 
-       
+            var realmService = _args.ServiceScope.GetService<IRealmConfigService>();
+            await realmService.GetRealmConfigSettings();
+            
             await ProvideService(QualifiedName);
 
             HasInitialized = true;
             Log.Information(Logs.READY_FOR_TRAFFIC_PREFIX + "baseVersion={baseVersion} executionVersion={executionVersion}", _args.SdkVersionBaseBuild, _args.SdkVersionExecution);
+            realmService.UpdateLogLevel();
+
             _serviceInitialized.CompleteSuccess(PromiseBase.Unit);
          }
          catch (Exception ex)
          {
-            Log.Error("Service failed to provide services. {message} {stack}", ex.Message, ex.StackTrace);
+            Log.Fatal("Service failed to provide services. {message} {stack}", ex.Message, ex.StackTrace);
             _serviceInitialized.CompleteError(ex);
+            Environment.Exit(EXIT_CODE_FAILED_AUTH);
          }
 
       }
@@ -592,13 +589,6 @@ namespace Beamable.Server
 	      var service = scope.GetRequiredService(MicroserviceType) as Microservice;
 	      service.ProvideDefaultServices(scope, Create);
 	      return service;
-      }
-
-      AdminRoutes BuildAdminInstance(RequestContext ctx)
-      {
-         var service = new AdminRoutes();
-         service.Microservice = this;
-         return service;
       }
 
       async Task HandleClientMessage(MicroserviceRequestContext ctx, Stopwatch sw)

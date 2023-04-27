@@ -14,6 +14,7 @@ public struct UnrealWrapperContainerDeclaration
 
 	public void BakeIntoProcessMap(Dictionary<string, string> helperDict)
 	{
+		helperDict.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
 		helperDict.Add(nameof(UnrealTypeName), UnrealTypeName);
 		helperDict.Add(nameof(NamespacedTypeName), NamespacedTypeName);
 		helperDict.Add(nameof(UnrealTypeIncludeStatement), UnrealTypeIncludeStatement);
@@ -23,8 +24,7 @@ public struct UnrealWrapperContainerDeclaration
 	}
 
 
-	public const string ARRAY_WRAPPER_HEADER_DECL = $@"
-#pragma once
+	public const string ARRAY_WRAPPER_HEADER_DECL = $@"#pragma once
 
 #include ""CoreMinimal.h""
 #include ""Serialization/BeamArray.h""
@@ -33,7 +33,7 @@ public struct UnrealWrapperContainerDeclaration
 #include ""₢{nameof(NamespacedTypeName)}₢.generated.h""
 		
 USTRUCT(BlueprintType, Category=""Beam|Wrappers|Arrays"")
-struct BEAMABLECORE_API ₢{nameof(UnrealTypeName)}₢ : public FBeamArray
+struct ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ ₢{nameof(UnrealTypeName)}₢ : public FBeamArray
 {{
 	GENERATED_BODY()
 
@@ -78,8 +78,7 @@ void ₢{nameof(UnrealTypeName)}₢::BeamDeserializeElements(const TArray<TShare
 }}
 ";
 
-	public const string MAP_WRAPPER_HEADER_DECL = $@"
-#pragma once
+	public const string MAP_WRAPPER_HEADER_DECL = $@"#pragma once
 
 #include ""CoreMinimal.h""
 #include ""Serialization/BeamMap.h""

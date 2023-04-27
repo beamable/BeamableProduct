@@ -22,25 +22,25 @@ namespace Beamable.Server.Editor
 			_nameToDescriptor = _registry.Descriptors.ToDictionary(d => d.Name);
 		}
 
+
 		public async Promise<string> GetPrefix(string serviceName)
 		{
-			if (!_nameToDescriptor.TryGetValue(serviceName, out var descriptor))
+			if (_nameToDescriptor.TryGetValue(serviceName, out var descriptor))
 			{
-				return "";
+				var command = new CheckImageCommand(descriptor)
+				{
+					WriteLogToUnity = false
+				};
+				var isRunningInDocker = await command.Start();
+				if (isRunningInDocker)
+				{
+					return MicroserviceIndividualization.Prefix;
+				}
 			}
-			var command = new CheckImageCommand(descriptor)
+			
+			if (_discoveryService.TryIsRunning(serviceName, out var prefix))
 			{
-				WriteLogToUnity = false
-			};
-			var isRunningInDocker = await command.Start();
-			await _discoveryService.WaitForUpdate();
-			if (isRunningInDocker)
-			{
-				return MicroserviceIndividualization.Prefix;
-			}
-			else if (_discoveryService.TryIsRunning(serviceName, out var localRunningEntry))
-			{
-				return localRunningEntry.prefix;
+				return prefix;
 			}
 			else
 			{

@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeamService", "BeamService\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonLibrary", "CommonLibrary\CommonLibrary.csproj", "{74FB371E-3386-4A52-9CC0-11CA623D2BB7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeamStorage", "BeamStorage\BeamStorage.csproj", "{EF1BAFA1-CC46-4D75-8C69-20E962A71D72}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{74FB371E-3386-4A52-9CC0-11CA623D2BB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{74FB371E-3386-4A52-9CC0-11CA623D2BB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{74FB371E-3386-4A52-9CC0-11CA623D2BB7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EF1BAFA1-CC46-4D75-8C69-20E962A71D72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF1BAFA1-CC46-4D75-8C69-20E962A71D72}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EF1BAFA1-CC46-4D75-8C69-20E962A71D72}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EF1BAFA1-CC46-4D75-8C69-20E962A71D72}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

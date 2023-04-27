@@ -6,6 +6,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Leaderboards;
+using Beamable.Common.Api.Realms;
 using Beamable.Common.Api.Stats;
 using Beamable.Common.Assistant;
 using Beamable.Common.Content;
@@ -62,13 +63,60 @@ namespace Beamable.Server
 	    public static ReflectionCache ReflectionCache;
 	    public static ContentService ContentService;
 	    public static List<BeamableMicroService> Instances = new List<BeamableMicroService>();
+
+	    public static bool TryParseLogLevel(string logLevel, out LogEventLevel serilogLevel)
+	    {
+		    if (logLevel == null)
+		    {
+			    serilogLevel= LogEventLevel.Debug;
+			    return false;
+		    }
+
+		    switch (logLevel.ToLowerInvariant())
+		    {
+			    
+			    case "f":
+			    case "fatal":
+				    serilogLevel = LogEventLevel.Fatal;
+				    return true;
+			    case "e":
+			    case "err":
+			    case "error":
+				    serilogLevel = LogEventLevel.Error;
+				    return true;
+			    case "v":
+			    case "verbose":
+				    serilogLevel = LogEventLevel.Verbose;
+				    return true;
+			    case "d":
+			    case "dbug":
+			    case "dbg":
+
+			    case "debug":
+				    serilogLevel = LogEventLevel.Debug;
+				    return true;
+			    case "w":
+			    case "warn":
+			    case "warning":
+				    serilogLevel = LogEventLevel.Warning;
+				    return true;
+			    case "i":
+			    case "information":
+			    case "info":
+				    serilogLevel = LogEventLevel.Information;
+				    return true;
+			    default:
+				    serilogLevel = LogEventLevel.Debug;
+				    return false;
+		    }
+	    }
 	    
         private static void ConfigureLogging(IMicroserviceArgs args)
         {
             var logLevel = args.LogLevel;
 			var disableLogTruncate = (Environment.GetEnvironmentVariable("DISABLE_LOG_TRUNCATE")?.ToLowerInvariant() ?? "") == "true";
-			
-            var envLogLevel = (LogEventLevel)Enum.Parse(typeof(LogEventLevel), logLevel, true);
+
+			TryParseLogLevel(logLevel, out var envLogLevel);
 
             var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
             
@@ -108,11 +156,14 @@ namespace Beamable.Server
 	            case LogOutputType.UNSTRUCTURED:
 		            logger = logConfig.WriteTo.Console(
 			            new MessageTemplateTextFormatter(
-				            "{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}"));
+				            "{Timestamp:HH:mm:ss.fff} [{Level:u4}] {Message:lj}{NewLine}{Exception}"));
 		            break;
 	            case LogOutputType.DEFAULT: // when inDocker: // logically, think of this as having inDocker==true, but technically because the earlier case checks for !inDocker, its redundant.
 	            case LogOutputType.STRUCTURED:
 		            logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
+		            break;
+	            case LogOutputType.FILE:
+		            logger = logConfig.WriteTo.File(args.LogOutputPath ?? "./service.log");
 		            break;
 				default:
 					logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
@@ -146,11 +197,6 @@ namespace Beamable.Server
 
 	            _ = Task.Run(DelayedCheck);
             });
-        }
-
-        private static void ConfigureDocsProvider()
-        {
-            XmlDocsHelper.ProviderFactory = XmlDocsHelper.FileIOProvider;
         }
 
         public static void ConfigureUncaughtExceptions()
@@ -199,6 +245,7 @@ namespace Beamable.Server
 		        var collection = new DependencyBuilder();
 		        collection
 			        .AddScoped<T>()
+			        .AddSingleton(attribute)
 			        .AddScoped<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
 			        .AddScoped<IRealmInfo>(provider => provider.GetService<IMicroserviceArgs>())
 			        .AddScoped<IBeamableRequester>(p => p.GetService<MicroserviceRequester>())
@@ -208,7 +255,7 @@ namespace Beamable.Server
 				        {
 					        AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
 				        };
-				        return new MicroserviceHttpRequester(new HttpClient(handler));
+				        return new MicroserviceHttpRequester(envArgs, new HttpClient(handler));
 			        })
 			        .AddSingleton<IMicroserviceArgs>(envArgs)
 			        .AddSingleton<SocketRequesterContext>(_ =>
@@ -232,6 +279,7 @@ namespace Beamable.Server
 			        .AddSingleton<IContentApi>(p => p.GetService<ContentService>())
 			        .AddSingleton<IContentResolver, DefaultContentResolver>()
 			        .AddSingleton<IConnectionProvider, EasyWebSocketProvider>()
+			        .AddSingleton<IAliasService, AliasService>()
 			        .AddScoped<IMicroserviceInventoryApi, MicroserviceInventoryApi>()
 			        .AddScoped<IMicroserviceGroupsApi, MicroserviceGroupsApi>()
 			        .AddScoped<IMicroserviceTournamentApi, MicroserviceTournamentApi>()
@@ -243,7 +291,9 @@ namespace Beamable.Server
 			        .AddScoped<IMicroserviceNotificationsApi, MicroserviceNotificationApi>()
 			        .AddScoped<IMicroserviceSocialApi, MicroserviceSocialApi>()
 			        .AddScoped<IMicroserviceCloudDataApi, MicroserviceCloudDataApi>()
-			        .AddScoped<IMicroserviceRealmConfigService, RealmConfigService>()
+			        .AddSingleton<IMicroserviceRealmConfigService>(p => p.GetService<RealmConfigService>())
+			        .AddSingleton<IRealmConfigService>(p => p.GetService<RealmConfigService>())
+			        .AddSingleton<RealmConfigService>()
 			        .AddScoped<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
 			        .AddScoped<IMicroservicePaymentsApi, MicroservicePaymentsApi>()
 			        .AddScoped<IMicroservicePushApi, MicroservicePushApi>()
@@ -384,7 +434,18 @@ namespace Beamable.Server
 		        healthPort = args.HealthPort,
 	        };
 	        var msgJson = JsonConvert.SerializeObject(msg, UnitySerializationSettings.Instance);
-	        beacon.Publish(msgJson, TimeSpan.FromMilliseconds(250));
+	        beacon.Publish(msgJson, TimeSpan.FromMilliseconds(Constants.Features.Services.DISCOVERY_BROADCAST_PERIOD_MS));
+        }
+
+        public static async Task<string> ConfigureCid(IMicroserviceArgs args)
+        {
+	        // it is possible that the user passed in an alias instead a cid for the env var, we should fix that...
+	        if (AliasHelper.IsCid(args.CustomerID)) return args.CustomerID;
+	        
+	        // if here, we can assume the string is an alias... 
+	        var aliasService = new AliasService(new MicroserviceHttpRequester(args, new HttpClient()));
+	        var res = await aliasService.Resolve(args.CustomerID);
+	        return res.Cid.Value;
         }
 
         public static async Task Start<TMicroService>() where TMicroService : Microservice
@@ -394,7 +455,6 @@ namespace Beamable.Server
 	        ConfigureLogging(envArgs);
 	        ConfigureUncaughtExceptions();
 	        ConfigureUnhandledError();
-	        ConfigureDocsProvider();
 	        ConfigureDiscovery(envArgs, attribute);
 	        ReflectionCache = ConfigureReflectionCache();
 	        
@@ -405,11 +465,12 @@ namespace Beamable.Server
 		        allowHydration = false
 	        });
 	        InitializeServices(rootServiceScope);
-	        
-	        
+
+	        var resolvedCid = await ConfigureCid(envArgs);
 	        var args = envArgs.Copy(conf =>
 	        {
 		        conf.ServiceScope = rootServiceScope;
+		        conf.CustomerID = resolvedCid;
 	        });
 
 	        for (var i = 0; i < args.BeamInstanceCount; i++)

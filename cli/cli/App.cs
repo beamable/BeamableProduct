@@ -4,6 +4,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
+using cli.Commands.Project;
 using cli.Content;
 using cli.Dotnet;
 using cli.Services;
@@ -45,7 +46,8 @@ public class App
 
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
 		Log.Logger = new LoggerConfiguration()
-			.WriteTo.SpectreConsole("{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}", LogLevel.MinimumLevel)
+			.WriteTo.SpectreConsole("{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}")
+			.MinimumLevel.ControlledBy(LogLevel)
 			.CreateLogger();
 
 		BeamableLogProvider.Provider = new CliSerilogProvider();
@@ -64,6 +66,7 @@ public class App
 		services.AddSingleton<IAliasService, AliasService>();
 		services.AddSingleton<IBeamableRequester>(provider => provider.GetRequiredService<CliRequester>());
 		services.AddSingleton<CliRequester, CliRequester>();
+		services.AddSingleton<IRequester>(p => p.GetService<CliRequester>());
 		services.AddSingleton<IAuthSettings, DefaultAuthSettings>();
 		services.AddSingleton<IAuthApi, AuthApi>();
 		services.AddSingleton<ConfigService>();
@@ -78,7 +81,7 @@ public class App
 		services.AddSingleton<UnrealSourceGenerator>();
 		services.AddSingleton<ProjectService>();
 		services.AddSingleton<SwaggerService.SourceGeneratorListProvider>();
-
+		services.AddSingleton<ICliGenerator, UnityCliGenerator>();
 		OpenApiRegistration.RegisterOpenApis(services);
 
 		_serviceConfigurator?.Invoke(services);
@@ -103,6 +106,7 @@ public class App
 		Commands.AddSingleton<AccessTokenOption>();
 		Commands.AddSingleton<RefreshTokenOption>();
 		Commands.AddSingleton<LogOption>();
+		Commands.AddSingleton<EnableReporterOption>();
 		Commands.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
@@ -113,20 +117,27 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
+			root.AddGlobalOption(provider.GetRequiredService<EnableReporterOption>());
 			root.Description = "A CLI for interacting with the Beamable Cloud.";
 			return root;
 		});
 
 
 		// add commands
+		Commands.AddRootCommand<CliInterfaceGeneratorCommand, CliInterfaceGeneratorCommandArgs>();
+
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
 		Commands.AddRootCommand<ProjectCommand, ProjectCommandArgs>();
 		Commands.AddCommand<NewSolutionCommand, NewSolutionCommandArgs, ProjectCommand>();
+		Commands.AddCommand<NewStorageCommand, NewStorageCommandArgs, ProjectCommand>();
 		Commands.AddCommand<GenerateEnvFileCommand, GenerateEnvFileCommandArgs, ProjectCommand>();
 		Commands.AddCommand<GenerateClientFileCommand, GenerateClientFileCommandArgs, ProjectCommand>();
 		Commands.AddCommand<OpenSwaggerCommand, OpenSwaggerCommandArgs, ProjectCommand>();
+		Commands.AddCommand<OpenMongoExpressCommand, OpenMongoExpressCommandArgs, ProjectCommand>();
 		Commands.AddCommand<AddUnityClientOutputCommand, AddUnityClientOutputCommandArgs, ProjectCommand>();
+		Commands.AddCommand<AddUnrealClientOutputCommand, AddUnrealClientOutputCommandArgs, ProjectCommand>();
 		Commands.AddCommand<ShareCodeCommand, ShareCodeCommandArgs, ProjectCommand>();
+		Commands.AddCommand<CheckStatusCommand, CheckStatusCommandArgs, ProjectCommand>();
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Commands.AddRootCommand<BaseRequestGetCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestPutCommand, BaseRequestArgs>();

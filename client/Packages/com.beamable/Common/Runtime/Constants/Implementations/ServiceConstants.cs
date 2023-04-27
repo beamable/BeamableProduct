@@ -24,10 +24,16 @@ namespace Beamable.Common
 				public const string REMOTE_ONLY = "Remote Only";
 
 				public const string CONTENT_UPDATE_EVENT = "content.manifest";
-				public const string MY_UPDATE_EVENT = "chris.test.update";
+				public const string REALM_CONFIG_UPDATE_EVENT = "realm-config.refresh";
+
+				public const string REALM_CONFIG_SERVICE_LOG_NAMESPACE = "service_logs";
 
 				public const int HEALTH_PORT = 6565;
 				public const int DISCOVERY_PORT = 8624;
+
+				public const int DISCOVERY_BROADCAST_PERIOD_MS = 250;
+				public const int DISCOVERY_RECEIVE_PERIOD_MS = 350;
+				public static readonly string[] DISCOVERY_IPS = new string[] { "192.", "0.0.0.0", "127.0.0.1" };
 
 				public const string UPLOAD_CONTAINER_MESSAGE = "Uploaded container service=[{0}]";
 				public const string CONTAINER_ALREADY_UPLOADED_MESSAGE = "Service [{0}] is already deployed at imageId";
