@@ -5,7 +5,7 @@
         <TargetFramework>net6.0</TargetFramework>
         <PackageId>Beamable.Templates</PackageId>
         <Title>Beamable dotnet-new-templates</Title>
-
+        <PackageReadmeFile>readme.md</PackageReadmeFile>
         <VersionPrefix>$(VersionPrefix)</VersionPrefix>
         
         <IncludeContentInPack>true</IncludeContentInPack>
@@ -18,7 +18,9 @@
     <PropertyGroup>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
-
+    <ItemGroup>
+        <None Include="readme.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
     <ItemGroup>
         <Content Include="Data/BeamService/**" Exclude="Data/BeamService/bin/**;Data/BeamService/obj/**;" />
         <Compile Remove="**/*" />
