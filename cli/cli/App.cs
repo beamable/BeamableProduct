@@ -99,7 +99,7 @@ public class App
 		Commands.AddSingleton<CidOption>();
 		Commands.AddSingleton<PidOption>();
 		Commands.AddSingleton<ConfigDirOption>();
-		Commands.AddSingleton<PlatformOption>();
+		Commands.AddSingleton<HostOption>();
 		Commands.AddSingleton<LimitOption>();
 		Commands.AddSingleton<SkipOption>();
 		Commands.AddSingleton<DeployFilePathOption>();
@@ -113,7 +113,7 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<DryRunOption>());
 			root.AddGlobalOption(provider.GetRequiredService<CidOption>());
 			root.AddGlobalOption(provider.GetRequiredService<PidOption>());
-			root.AddGlobalOption(provider.GetRequiredService<PlatformOption>());
+			root.AddGlobalOption(provider.GetRequiredService<HostOption>());
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
