@@ -314,13 +314,20 @@ namespace Beamable.Content
 				}
 			}
 			string contentPath = Path.Combine(contentDirectory, contentFileName);
+			bool contentDataExists = File.Exists(contentPath);
 
-			if (File.Exists(contentPath))
+			if (contentDataExists)
 			{
 				var json = File.ReadAllText(contentPath);
-				ContentDataInfo = DeserializeDataCache<ContentDataInfoWrapper>(json);
+				var contentData = DeserializeDataCache<ContentDataInfoWrapper>(json);
+				contentDataExists = contentData != null && contentData.content?.Count > 0;
+				if(contentDataExists)
+				{
+					ContentDataInfo = contentData;
+				}
 			}
-			else
+			
+			if(!contentDataExists)
 			{
 				var bakedFile = Resources.Load<TextAsset>(BAKED_FILE_RESOURCE_PATH);
 
