@@ -69,6 +69,7 @@
     <Folder Include="nupkg" />
   </ItemGroup>
 
+
   <Target Name="PrepTools" BeforeTargets="Build" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true">
     <Exec Command="dotnet tool restore"/>
   </Target>
