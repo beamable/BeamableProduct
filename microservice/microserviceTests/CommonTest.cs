@@ -146,7 +146,8 @@ public class CommonTest
 			Console.WriteLine($"Dumping logs for [{TestContext.CurrentContext.Test.MethodName}]");
 			foreach (var log in GetLogs().ToList())
 			{
-				Console.WriteLine($"[{log.Level}]" + log.RenderMessage());
+				
+				Console.WriteLine($"l=[{log.Level}]" + log.RenderMessage());
 			}
 			Console.WriteLine("End of log stream");
 		}
