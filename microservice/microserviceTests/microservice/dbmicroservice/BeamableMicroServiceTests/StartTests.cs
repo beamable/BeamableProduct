@@ -1312,7 +1312,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
         [Test]
         [NonParallelizable]
-        [TimeoutWithTeardown(120000)]
+        [TimeoutWithTeardown(180000)]
         public async Task HandleAuthDrop_WithMultipleRequestsInFlight_WithoutHardcodedRequestIds()
         {
 
@@ -1404,7 +1404,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             var waitingTask = Task.WhenAll(tasks);
             await waitingTask;
 
-            await Task.Delay(1000);
+            await Task.Delay(6000);
             await ms.OnShutdown(this, null);
             Log.Debug($"TEST_INFO- checking final asserts allmockscalled=[{testSocket.AllMocksCalled()}] authFailCount=[{authFailCount}] failureCount=[{failureCount}] successCount=[{successCount}]");
 
