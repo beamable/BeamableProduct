@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Rare concurrent modification to collection error regarding `IDependencyProvider` when used in a Microservice.
 
+### Changed
+- Generated OpenAPI document for Microservices includes qualified naming extensions.
 
 ## [1.15.0]
 ### Fixed
