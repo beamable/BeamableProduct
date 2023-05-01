@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Detect issues with parsing baked content.
 
+### Changed
+- Beamable Environment window leaves version number and environment label unchanged when using preset buttons. 
+
 ## [1.15.0]
 ### Added
 - Added additional info about active listing limit default value in StoreContent.

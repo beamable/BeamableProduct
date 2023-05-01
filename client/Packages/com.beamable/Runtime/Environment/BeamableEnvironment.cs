@@ -120,27 +120,27 @@ namespace Beamable
 	[Serializable]
 	public class EnvironmentData : JsonSerializable.ISerializable, IPlatformRequesterHostResolver
 	{
-		public static EnvironmentData BeamableDev => new EnvironmentData
+		public static EnvironmentData BeamableDev(PackageVersion v) => new EnvironmentData
 		{
-			environment = "dev",
+			environment = "prod",
 			apiUrl = "https://dev.api.beamable.com",
 			portalUrl = "https://dev-portal.beamable.com",
 			beamMongoExpressUrl = "https://dev.storage.beamable.com",
 			dockerRegistryUrl = "https://dev-microservices.beamable.com/v2/",
 			isUnityVsp = false,
-			_version = "0.0.0"
+			_version = v
 		};
-		public static EnvironmentData BeamableStaging => new EnvironmentData
+		public static EnvironmentData BeamableStaging(PackageVersion v) => new EnvironmentData
 		{
-			environment = "staging",
+			environment = "prod",
 			apiUrl = "https://staging.api.beamable.com",
 			portalUrl = "https://staging-portal.beamable.com",
 			beamMongoExpressUrl = "https://staging.storage.beamable.com",
 			dockerRegistryUrl = "https://staging-microservices.beamable.com/v2/",
 			isUnityVsp = false,
-			_version = "0.0.0"
+			_version = v
 		};
-		public static EnvironmentData BeamableProduction => new EnvironmentData
+		public static EnvironmentData BeamableProduction(PackageVersion v) => new EnvironmentData
 		{
 			environment = "prod",
 			apiUrl = "https://api.beamable.com",
@@ -148,7 +148,7 @@ namespace Beamable
 			beamMongoExpressUrl = "https://storage.beamable.com",
 			dockerRegistryUrl = "https://microservices.beamable.com/v2/",
 			isUnityVsp = false,
-			_version = "0.0.0"
+			_version = v
 		};
 
 		[SerializeField] private string environment;
