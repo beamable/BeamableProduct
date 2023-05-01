@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Fixed
 - Detect issues with parsing baked content.
+- Exiting playmode early no longer causes a service scope exception. 
 
 ### Changed
 - Beamable Environment window leaves version number and environment label unchanged when using preset buttons. 
