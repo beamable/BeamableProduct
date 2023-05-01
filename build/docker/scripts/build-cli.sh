@@ -13,20 +13,27 @@ echo "preparing template build"
 export CURRENT_DIRECTORY=$(pwd)
 echo $(pwd)
 cd ./templates
-./build.sh
+
+rm -rf ./templates/Data
+mkdir ./templates/Data
+cp -R ./BeamService/ ./templates/Data/BeamService
+cp -R ./CommonLibrary/ ./templates/Data/CommonLibrary
+cp -R ./BeamStorage/ ./templates/Data/BeamStorage
+
+
 cd $CURRENT_DIRECTORY
 
 echo "running dotnet packs"
 
 if [ -z "$SUFFIX" ]
 then
-    dotnet pack ./templates/templates/templates.csproj -o ./templates/artifacts/ --no-build /p:VersionPrefix=$VERSION_PREFIX
+    dotnet pack ./templates/templates/templates.csproj -o ./templates/artifacts/ /p:VersionPrefix=$VERSION_PREFIX
     dotnet pack ./cli/cli --configuration Release /p:VersionPrefix=$VERSION_PREFIX
     dotnet pack ./client/Packages/com.beamable/Common --configuration Release --include-source --include-symbols /p:VersionPrefix=$VERSION_PREFIX
     dotnet pack ./microservice/unityEngineStubs --configuration Release --include-source --include-symbols /p:VersionPrefix=$VERSION_PREFIX
     dotnet pack ./microservice/microservice --configuration Release --include-source --include-symbols /p:NuspecFile=Microservice.nuspec /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION
 else
-    dotnet pack ./templates/templates/templates.csproj -o ./templates/artifacts/ --no-build --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX
+    dotnet pack ./templates/templates/templates.csproj -o ./templates/artifacts/ --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX
     dotnet pack ./cli/cli --configuration Release --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX
     dotnet pack ./client/Packages/com.beamable/Common --configuration Release --include-source --include-symbols --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX
     dotnet pack ./microservice/unityEngineStubs --configuration Release --include-source --include-symbols --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX
@@ -35,7 +42,7 @@ fi
 
 echo "Installing built package..."
 export PATH="$PATH:/root/.dotnet/tools"
-dotnet tool install --global --prerelease --add-source ./nupkg/ beamable.tools
+dotnet tool install --global --prerelease --add-source ./cli/cli/nupkg beamable.tools
 
 echo "Checking built version..."
 beam --version #todo: is it possible to assert that the output must match the $VERSION string?
