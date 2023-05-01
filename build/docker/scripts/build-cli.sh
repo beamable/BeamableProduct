@@ -11,6 +11,7 @@ echo $VERSION
 
 echo "preparing template build"
 export CURRENT_DIRECTORY=$(pwd)
+echo $(pwd)
 cd ./templates
 ./build.sh
 cd $CURRENT_DIRECTORY
@@ -19,13 +20,13 @@ echo "running dotnet packs"
 
 if [ -z "$SUFFIX" ]
 then
-    dotnet pack .templates/templates/templates.csproj -o ./templates/artifacts/ --no-build /p:VersionPrefix=$VERSION_PREFIX
+    dotnet pack ./templates/templates/templates.csproj -o ./templates/artifacts/ --no-build /p:VersionPrefix=$VERSION_PREFIX
     dotnet pack ./cli/cli --configuration Release /p:VersionPrefix=$VERSION_PREFIX
     dotnet pack ./client/Packages/com.beamable/Common --configuration Release --include-source --include-symbols /p:VersionPrefix=$VERSION_PREFIX
     dotnet pack ./microservice/unityEngineStubs --configuration Release --include-source --include-symbols /p:VersionPrefix=$VERSION_PREFIX
     dotnet pack ./microservice/microservice --configuration Release --include-source --include-symbols /p:NuspecFile=Microservice.nuspec /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION
 else
-    dotnet pack .templates/templates/templates.csproj -o ./templates/artifacts/ --no-build --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX
+    dotnet pack ./templates/templates/templates.csproj -o ./templates/artifacts/ --no-build --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX
     dotnet pack ./cli/cli --configuration Release --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX
     dotnet pack ./client/Packages/com.beamable/Common --configuration Release --include-source --include-symbols --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX
     dotnet pack ./microservice/unityEngineStubs --configuration Release --include-source --include-symbols --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX
