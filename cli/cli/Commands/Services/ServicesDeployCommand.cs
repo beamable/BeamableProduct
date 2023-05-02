@@ -224,6 +224,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 			_localBeamo.SaveBeamoLocalRuntime();
 		}
 
+		await _localBeamo.StopExistingLocalServiceInstances();
 		await _localBeamo.StopListeningToDocker();
 	}
 }
