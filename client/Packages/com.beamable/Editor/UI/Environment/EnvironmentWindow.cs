@@ -148,19 +148,19 @@ namespace Beamable.Editor.UI.Environment
 
 		private void OnStagingClicked()
 		{
-			_data = _service.GetStaging();
+			_data = _service.GetStaging(BeamableEnvironment.SdkVersion);
 			SetUIFromData();
 		}
 
 		private void OnDevClicked()
 		{
-			_data = _service.GetDev();
+			_data = _service.GetDev(BeamableEnvironment.SdkVersion);
 			SetUIFromData();
 		}
 
 		private void OnProdClicked()
 		{
-			_data = _service.GetProd();
+			_data = _service.GetProd(BeamableEnvironment.SdkVersion);
 			SetUIFromData();
 		}
 	}
