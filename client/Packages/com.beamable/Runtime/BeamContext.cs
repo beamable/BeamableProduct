@@ -456,7 +456,7 @@ namespace Beamable
 							switch (err)
 							{
 								case ServiceScopeDisposedException ex:
-									PlatformLogger.Log($"Beamable is exiting early, and caught a {ex.GetType().Name} exception. msg=[{ex.Message}] stack=[{ex.StackTrace}]" );
+									PlatformLogger.Log($"Beamable is exiting early, and caught a {ex.GetType().Name} exception. msg=[{ex.Message}] stack=[{ex.StackTrace}]");
 									break;
 								default:
 									Debug.LogException(err);

@@ -37,7 +37,7 @@ namespace Beamable.Server.Editor
 					return MicroserviceIndividualization.Prefix;
 				}
 			}
-			
+
 			if (_discoveryService.TryIsRunning(serviceName, out var prefix))
 			{
 				return prefix;

@@ -33,13 +33,13 @@ public class InitCommand : AppCommand<InitCommandArgs>
 	{
 		AddOption(new UsernameOption(), (args, i) => args.username = i);
 		AddOption(new PasswordOption(), (args, i) => args.password = i);
-		
+
 		// Options to allow for re-initializing a project to a different host/cid/pid and user
 		AddOption(new HostOption(), (args, i) => args.selectedEnvironment = i);
 		AddOption(new CidOption(), (args, i) => args.cid = i);
 		AddOption(new PidOption(), (args, i) => args.pid = i);
 		AddOption(new RefreshTokenOption(), (args, i) => args.refreshToken = i);
-		
+
 		AddOption(new SaveToEnvironmentOption(), (args, b) => args.saveToEnvironment = b);
 		AddOption(new SaveToFileOption(), (args, b) => args.saveToFile = b);
 		AddOption(new CustomerScopedOption(), (args, b) => args.customerScoped = b);
@@ -86,12 +86,12 @@ public class InitCommand : AppCommand<InitCommandArgs>
 
 			return;
 		}
-		
+
 		// If we have a given pid, let's login there.
 		if (!string.IsNullOrEmpty(args.pid))
 		{
 			_ctx.Set(cid, args.pid, host);
-			
+
 			await _loginCommand.Handle(args);
 			_configService.SetBeamableDirectory(_ctx.WorkingDirectory);
 			_configService.SetConfigString(Constants.CONFIG_PID, args.pid);
@@ -170,7 +170,7 @@ public class InitCommand : AppCommand<InitCommandArgs>
 		// If we were given a host that is a path, let's just return it.
 		if (env.StartsWith("https"))
 			return env;
-		
+
 		// Otherwise, we try to convert it into a valid URL.
 		return (env switch
 		{
