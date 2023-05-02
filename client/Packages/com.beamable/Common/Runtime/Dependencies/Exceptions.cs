@@ -2,7 +2,7 @@ using System;
 
 namespace Beamable.Common.Dependencies
 {
-	public class ServiceScopeDisposedException : Exception 
+	public class ServiceScopeDisposedException : Exception
 	{
 		private readonly string _src;
 		private readonly Type _requestedType;

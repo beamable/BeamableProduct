@@ -321,13 +321,13 @@ namespace Beamable.Content
 				var json = File.ReadAllText(contentPath);
 				var contentData = DeserializeDataCache<ContentDataInfoWrapper>(json);
 				contentDataExists = contentData != null && contentData.content?.Count > 0;
-				if(contentDataExists)
+				if (contentDataExists)
 				{
 					ContentDataInfo = contentData;
 				}
 			}
-			
-			if(!contentDataExists)
+
+			if (!contentDataExists)
 			{
 				var bakedFile = Resources.Load<TextAsset>(BAKED_FILE_RESOURCE_PATH);
 
