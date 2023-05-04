@@ -3,6 +3,7 @@ using Beamable.Server;
 using Beamable.Server.Common;
 using Beamable.Server.Common.XmlDocs;
 using Microsoft.OpenApi.Any;
+using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
 using System.Collections;
 using System.Reflection;
@@ -142,7 +143,7 @@ public class SchemaGenerator
 				return new OpenApiSchema
 				{
 					Type = "object",
-					Reference = new OpenApiReference { Id = runtimeType.Name, Type = ReferenceType.Schema}
+					Reference = new OpenApiReference { Id = GetQualifiedReferenceName(runtimeType), Type = ReferenceType.Schema}
 				};
 
 			case { IsEnum: true }:
@@ -163,7 +164,15 @@ public class SchemaGenerator
 				schema.Type = "object";
 				schema.Title = runtimeType.Name;
 				schema.AdditionalPropertiesAllowed = false;
-
+				schema.Extensions = new Dictionary<string, IOpenApiExtension>
+				{
+					["x-beamable-namespace"] = new OpenApiString(runtimeType.Namespace),
+					["x-beamable-name"] = new OpenApiString(runtimeType.Name),
+					["x-beamable-qualified-name"] = new OpenApiString(GetQualifiedReferenceName(runtimeType)),
+					["x-beamable-assembly-name"] = new OpenApiString(runtimeType.Assembly.GetName().Name),
+					["x-beamable-assembly-version"] = new OpenApiString(runtimeType.Assembly.GetName().Version.ToString())
+				};
+				
 				if (depth == 0) return schema;
 				var members = UnityJsonContractResolver.GetSerializedFields(runtimeType);
 				foreach (var member in members)
@@ -183,5 +192,10 @@ public class SchemaGenerator
 
 				return schema;
 		}
+	}
+
+	public static string GetQualifiedReferenceName(Type runtimeType)
+	{
+		return runtimeType.FullName.Replace("+", ".");
 	}
 }

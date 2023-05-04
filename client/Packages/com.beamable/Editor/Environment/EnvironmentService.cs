@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Config;
 using Beamable.Serialization;
 using System.IO;
@@ -9,9 +10,9 @@ namespace Beamable.Editor.Environment
 	public class EnvironmentService
 	{
 		private readonly BeamEditorContext _context;
-		public EnvironmentData GetDev() => EnvironmentData.BeamableDev;
-		public EnvironmentData GetStaging() => EnvironmentData.BeamableStaging;
-		public EnvironmentData GetProd() => EnvironmentData.BeamableProduction;
+		public EnvironmentData GetDev(PackageVersion v) => EnvironmentData.BeamableDev(v);
+		public EnvironmentData GetStaging(PackageVersion v) => EnvironmentData.BeamableStaging(v);
+		public EnvironmentData GetProd(PackageVersion v) => EnvironmentData.BeamableProduction(v);
 
 		public EnvironmentService(BeamEditorContext context)
 		{

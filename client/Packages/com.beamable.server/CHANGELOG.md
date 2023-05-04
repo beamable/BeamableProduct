@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.1]
+### Fixed
+- Rare concurrent modification to collection error regarding `IDependencyProvider` when used in a Microservice.
+
+### Changed
+- Generated OpenAPI document for Microservices includes qualified naming extensions.
+- If Docker is not installed, calling Microservices from Editor still work.
+
 ## [1.15.0]
 ### Fixed
 - Unity 2021 no longer imports assets during Microservice publish process. 
@@ -14,10 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - If Docker is not installed, Microservice Manager skips code watch.
 - Microservices can be started with an alias in the CID environment variable.
 
-
 ### Added
 - Runtime log level switching. In RealmConfig, use a key for `service_logs|serviceName=logLevel`.
-
 
 ## [1.14.0]
 ### Added
