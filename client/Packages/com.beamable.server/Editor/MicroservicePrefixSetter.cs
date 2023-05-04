@@ -32,7 +32,6 @@ namespace Beamable.Server.Editor
 					WriteLogToUnity = false
 				};
 				var isRunningInDocker = await command.Start();
-				await _discoveryService.WaitForUpdate();
 				if (isRunningInDocker)
 				{
 					return MicroserviceIndividualization.Prefix;

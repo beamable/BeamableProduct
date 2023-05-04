@@ -318,8 +318,8 @@ namespace Beamable.Editor.ToolbarExtender
 
 			if (notificationManager != null && notificationManager.PendingValidationNotifications.Any())
 				btnTexture = _validationTexture;
-			
-			
+
+
 			GUILayout.BeginArea(beamableAssistantButtonRect);
 			var version = BeamableEnvironment.SdkVersion;
 			var versionStr = $"Beamable {version}";
