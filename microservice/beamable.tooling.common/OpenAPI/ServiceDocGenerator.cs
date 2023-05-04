@@ -82,7 +82,7 @@ public class ServiceDocGenerator
 		foreach (var type in allTypes)
 		{
 			var schema = SchemaGenerator.Convert(type);
-			doc.Components.Schemas.Add(type.Name, schema);
+			doc.Components.Schemas.Add(SchemaGenerator.GetQualifiedReferenceName(type), schema);
 		}
 
 		foreach (var method in methods)
