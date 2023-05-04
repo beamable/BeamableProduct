@@ -195,7 +195,7 @@ public partial class BeamoLocalSystem
 					new ImageBuildParameters
 					{
 						Tags = new[] { tag },
-						Dockerfile = dockerfilePathInBuildContext.Replace("\\","/"),
+						Dockerfile = dockerfilePathInBuildContext.Replace("\\", "/"),
 						Labels = new Dictionary<string, string>() { { "beamoId", imageName } },
 					},
 					stream,
