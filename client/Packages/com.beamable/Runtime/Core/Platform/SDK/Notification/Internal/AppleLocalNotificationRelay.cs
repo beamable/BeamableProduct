@@ -102,6 +102,8 @@ namespace Beamable.Api.Notification.Internal
 #endif
 		}
 
+		[Obsolete("ClearDeliveredNotifications is deprecated with no replacement."+
+				"Instead, cancel notifications individually with CancelNotification.")]
 		public void ClearDeliveredNotifications()
 		{
 			//clearAllNotification();
