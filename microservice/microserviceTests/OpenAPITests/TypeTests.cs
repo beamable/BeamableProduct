@@ -58,7 +58,7 @@ public class TypeTests
 	public void CheckListOfObjects(Type runtimeType)
 	{
 		var schema = SchemaGenerator.Convert(runtimeType);
-		Assert.AreEqual(nameof(Sample), schema.Items.Reference.Id);
+		Assert.AreEqual("microserviceTests.OpenAPITests.TypeTests+Sample", schema.Items.Reference.Id);
 	}
 
 
@@ -84,7 +84,7 @@ public class TypeTests
 		Assert.AreEqual("this is a sample", schema.Description);
 		Assert.AreEqual(1, schema.Properties.Count);
 		
-		Assert.AreEqual(nameof(Tuna), schema.Properties[nameof(Sample.fish)].Reference.Id);
+		Assert.AreEqual("microserviceTests.OpenAPITests.TypeTests+Tuna", schema.Properties[nameof(Sample.fish)].Reference.Id);
 		Assert.AreEqual("a fish", schema.Properties[nameof(Sample.fish)].Description);
 	}
 
@@ -103,7 +103,7 @@ public class TypeTests
 		Assert.AreEqual(1, schema.Properties.Count);
 
 		var prop = schema.Properties[nameof(FishThing.type)];
-		Assert.AreEqual(nameof(Fish), prop.Reference.Id);
+		Assert.AreEqual("microserviceTests.OpenAPITests.TypeTests+Fish", prop.Reference.Id);
 	}
 
 
