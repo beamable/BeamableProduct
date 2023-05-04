@@ -195,7 +195,7 @@ public partial class BeamoLocalSystem
 					new ImageBuildParameters
 					{
 						Tags = new[] { tag },
-						Dockerfile = dockerfilePathInBuildContext,
+						Dockerfile = dockerfilePathInBuildContext.Replace("\\","/"),
 						Labels = new Dictionary<string, string>() { { "beamoId", imageName } },
 					},
 					stream,
@@ -230,32 +230,33 @@ public partial class BeamoLocalSystem
 						}
 
 						var messageStream = message.Stream;
-						if (!string.IsNullOrEmpty(messageStream))
+						if (string.IsNullOrEmpty(messageStream))
 						{
-							// BeamableLogger.Log(messageStream);
-							if (regex.IsMatch(messageStream))
-							{
-								// The group at idx 0 is the full match --- since we want the groups capturing the separated step values, we start at indices 1 and 2.
-								var currentStepStr = regex.Match(messageStream).Groups[1].Captures[0].Value;
-								var totalStepStr = regex.Match(messageStream).Groups[2].Captures[0].Value;
-
-								var currStep = float.Parse(currentStepStr);
-								// Add one here because Step 14/14 or Step 2/2 means we have just started step 14 or 2.
-								var totalStep = float.Parse(totalStepStr) + 1;
-
-								// Update the progress only if it increased (this is because we can sometimes get out of order stream step messages for the earlier steps).
-								// IDK why this happens, but... it does...
-								var currProgress = currStep / totalStep;
-								progress = progress < currProgress ? currProgress : progress;
-							}
-
-							// We set this to one here when we receive this stream message as it's the final one
-							if (messageStream.StartsWith("Successfully tagged"))
-								progress = 1;
-
-							// Update the progress handler
-							progressUpdateHandler?.Invoke(progress);
+							return;
 						}
+
+						if (regex.IsMatch(messageStream))
+						{
+							// The group at idx 0 is the full match --- since we want the groups capturing the separated step values, we start at indices 1 and 2.
+							var currentStepStr = regex.Match(messageStream).Groups[1].Captures[0].Value;
+							var totalStepStr = regex.Match(messageStream).Groups[2].Captures[0].Value;
+
+							var currStep = float.Parse(currentStepStr);
+							// Add one here because Step 14/14 or Step 2/2 means we have just started step 14 or 2.
+							var totalStep = float.Parse(totalStepStr) + 1;
+
+							// Update the progress only if it increased (this is because we can sometimes get out of order stream step messages for the earlier steps).
+							// IDK why this happens, but... it does...
+							var currProgress = currStep / totalStep;
+							progress = progress < currProgress ? currProgress : progress;
+						}
+
+						// We set this to one here when we receive this stream message as it's the final one
+						if (messageStream.StartsWith("Successfully tagged"))
+							progress = 1;
+
+						// Update the progress handler
+						progressUpdateHandler?.Invoke(progress);
 					}));
 			}
 			catch (Exception ex)
