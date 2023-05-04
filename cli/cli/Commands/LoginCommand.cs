@@ -47,7 +47,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 		{
 			var username = GetUserName(args);
 			var password = GetPassword(args);
-	
+
 			BeamableLogger.Log($"signing into... {_ctx.Cid}.{_ctx.Pid}");
 			BeamableLogger.Log($"signing into... {_authApi.Requester.Cid}.{_authApi.Requester.Pid}");
 			var response = new TokenResponse();
@@ -61,7 +61,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 				BeamableLogger.LogError($"Login failed with Exception: {e.Message}");
 				return;
 			}
-	
+
 			args.username = username;
 			args.password = password;
 			if (string.IsNullOrWhiteSpace(response.refresh_token))
@@ -70,7 +70,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 				return;
 			}
 			_ctx.UpdateToken(response);
-	
+
 			if (args.saveToEnvironment)
 			{
 				BeamableLogger.Log($"Saving refresh token as {Constants.KEY_ENV_REFRESH_TOKEN} env variable");
@@ -82,7 +82,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 								   " do not add it to control version system. It should be used only locally.");
 				_configService.SaveTokenToFile(_ctx.Token);
 			}
-	
+
 			BeamableLogger.Log(JsonConvert.SerializeObject(response, Formatting.Indented));
 		}
 		else
@@ -99,15 +99,15 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 				BeamableLogger.LogError($"Login failed with Exception: {e.Message}");
 				return;
 			}
-	
+
 			if (string.IsNullOrWhiteSpace(response.refresh_token))
 			{
 				BeamableLogger.LogError("Login failed");
 				return;
 			}
-			
+
 			_ctx.UpdateToken(response);
-			
+
 			if (args.saveToEnvironment && !string.IsNullOrWhiteSpace(response.refresh_token))
 			{
 				BeamableLogger.Log($"Saving refresh token as {Constants.KEY_ENV_REFRESH_TOKEN} env variable");
@@ -117,11 +117,11 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 			if (args.saveToFile && !string.IsNullOrWhiteSpace(response.refresh_token))
 			{
 				BeamableLogger.Log($"Saving refresh token to {Constants.CONFIG_TOKEN_FILE_NAME}-" +
-				                   " do not add it to control version system. It should be used only locally.");
+								   " do not add it to control version system. It should be used only locally.");
 				_configService.SaveTokenToFile(_ctx.Token);
 			}
 
-			
+
 			BeamableLogger.Log(JsonConvert.SerializeObject(response, Formatting.Indented));
 		}
 	}

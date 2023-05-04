@@ -16,6 +16,7 @@ using Beamable.Common.Api.Notifications;
 using Beamable.Common.Api.Presence;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Spew;
 using Beamable.Config;
 using Beamable.Connection;
 using Beamable.Content.Utility;
@@ -452,7 +453,15 @@ namespace Beamable
 						.Error(err =>
 						{
 							errors[attemptIndex] = err;
-							Debug.LogException(err);
+							switch (err)
+							{
+								case ServiceScopeDisposedException ex:
+									PlatformLogger.Log($"Beamable is exiting early, and caught a {ex.GetType().Name} exception. msg=[{ex.Message}] stack=[{ex.StackTrace}]");
+									break;
+								default:
+									Debug.LogException(err);
+									break;
+							}
 						})
 						.Then(__ =>
 						{

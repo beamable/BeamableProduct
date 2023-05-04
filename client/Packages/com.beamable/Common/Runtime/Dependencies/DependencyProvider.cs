@@ -289,14 +289,14 @@ namespace Beamable.Common.Dependencies
 
 		public bool CanBuildService(Type t)
 		{
-			if (_destroyed) throw new Exception("Provider scope has been destroyed and can no longer be accessed.");
+			if (_destroyed) throw new ServiceScopeDisposedException(nameof(CanBuildService), t, this);
 
 			return Transients.ContainsKey(t) || Scoped.ContainsKey(t) || Singletons.ContainsKey(t) || (Parent?.CanBuildService(t) ?? false);
 		}
 
 		public object GetService(Type t)
 		{
-			if (_destroyed) throw new Exception("Provider scope has been destroyed and can no longer be accessed.");
+			if (_destroyed) throw new ServiceScopeDisposedException(nameof(GetService), t, this);
 
 			if (t == typeof(IDependencyProvider)) return this;
 			if (t == typeof(IDependencyProviderScope)) return this;

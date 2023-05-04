@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Generated OpenAPI document for Microservices includes qualified naming extensions.
+- If Docker is not installed, calling Microservices from Editor still work.
 
 ## [1.15.0]
 ### Fixed
