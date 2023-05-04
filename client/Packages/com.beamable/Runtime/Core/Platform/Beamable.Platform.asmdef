@@ -1,5 +1,6 @@
 {
     "name": "Beamable.Platform",
+    "rootNamespace": "",
     "references": [
         "PubNub",
         "Beamable.Config",
@@ -10,9 +11,9 @@
         "Beamable.SmallerJSON",
         "Beamable.ConsoleCommands",
         "Unity.Beamable.Runtime.Common",
-        "Google.Play.Games"
+        "Google.Play.Games",
+        "Unity.Notifications.iOS"
     ],
-    "optionalUnityReferences": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
@@ -21,5 +22,13 @@
         "Facebook.Unity.dll"
     ],
     "autoReferenced": true,
-    "defineConstraints": []
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.mobile.notifications",
+            "expression": "[2,3]",
+            "define": "NOTIFICATIONS_PACKAGE"
+        }
+    ],
+    "noEngineReferences": false
 }
