@@ -47,7 +47,7 @@ namespace Beamable.Server.Editor
 			{
 				return prefix;
 			}
-			
+
 			return string.Empty;
 
 		}
