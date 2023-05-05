@@ -81,7 +81,8 @@ public class App
 		services.AddSingleton<UnrealSourceGenerator>();
 		services.AddSingleton<ProjectService>();
 		services.AddSingleton<SwaggerService.SourceGeneratorListProvider>();
-		services.AddSingleton<ICliGenerator, UnityCliGenerator>();
+		services.AddSingleton<UnityCliGenerator>();
+		services.AddSingleton<UnrealCliGenerator>();
 		OpenApiRegistration.RegisterOpenApis(services);
 
 		_serviceConfigurator?.Invoke(services);
