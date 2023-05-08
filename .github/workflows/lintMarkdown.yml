@@ -1,0 +1,23 @@
+name: Sync Wiki
+
+on:
+  pull_request:
+    branches:
+      - 'main'
+      - 'staging'
+      - 'production'
+
+jobs:
+  lint-markdown:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    concurrency:
+      group: lint-markdown-${{ github.head_ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v2
+      - name: Lint
+        uses: avto-dev/markdown-lint@v1
+        with:
+          args: 'rfc/'
+          config: 'markdownlint.json'
