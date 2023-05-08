@@ -1,4 +1,4 @@
-name: Sync Wiki
+name: Lint Markdown
 
 on:
   pull_request:
