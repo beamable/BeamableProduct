@@ -241,7 +241,11 @@ namespace Beamable.Player
 					return;
 				}
 
-				var unseenScopes = new HashSet<string>(scopes);
+				var unseenScopes = new HashSet<string>();
+				foreach (var scope in localItems.GetKeysRecursive(scopes)) 
+				{
+					unseenScopes.Add(scope);
+				}
 
 				var itemGroupsToUpdate = new HashSet<PlayerItemGroup>();
 				var currGroupsToUpdate = new HashSet<PlayerCurrencyGroup>();
@@ -250,7 +254,10 @@ namespace Beamable.Player
 				#region update or create items
 				foreach (var group in res.items)
 				{
-					unseenScopes.Remove(group.id); // mark this scope of items as "seen"
+					foreach (var parentScope in localItems.Traverse(group.id)) 
+					{
+						unseenScopes.Remove(parentScope.path);// mark this scope of items as "seen"
+					}
 
 					var plrItems = new PlayerItem[group.items.Length];
 					var contentRef = new ItemRef(group.id);
