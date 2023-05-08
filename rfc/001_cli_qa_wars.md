@@ -23,8 +23,14 @@ At least for now just QA War spreadsheet on GDocs should be more than enough. Th
   - can you see created `.beamable` directory with files in it?
 - save credentials
   - can you save credentials to project using `beam login --save-to-file`?
+  - test it out using `beam get /basic/accounts/me`
 - `beam content` commands
   - can you download content using `beam content pull`?
   - can you open and edit content using `beam content open <content_id>`?
   - can you check status using `beam content status`?
   - can you publish changes using `beam content push`?
+- `beam project` commands
+  - can you connect unity project using `beam project add-unity-project <path>`?
+  - can you create and run new SAMS using [this tutorial](https://docs.beamable.com/docs/standalone-microservices)?
+  - can you create new storage using `beam project new-storage <name>`?
+  - can you deploy those services with `beam services deploy --remote`?
