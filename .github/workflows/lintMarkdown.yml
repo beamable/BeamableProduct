@@ -17,7 +17,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Lint
-        uses: avto-dev/markdown-lint@v1
+        uses: DavidAnson/markdownlint-cli2-action@v9
         with:
-          args: 'rfc/'
-          config: 'markdownlint.json'
+          globs: 'rfc/*.md'
