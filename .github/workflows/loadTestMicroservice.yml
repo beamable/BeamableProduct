@@ -4,8 +4,9 @@ on:
   pull_request:
     branches:
       - 'main'
-    branches-ignore:
+    paths-ignore:
       - 'rfc/**'
+      - '.github/**'
 
 jobs:
   runPerfTest:
