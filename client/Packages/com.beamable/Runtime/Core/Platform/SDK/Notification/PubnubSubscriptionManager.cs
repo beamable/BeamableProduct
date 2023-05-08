@@ -183,7 +183,7 @@ namespace Beamable.Api.Notification
             return;
          }
 #endif
-			if (subscriberDetails.subscribeKey == null)
+			if (string.IsNullOrWhiteSpace(subscriberDetails.subscribeKey))
 			{
 				Debug.LogError("Missing Subscription Key");
 				return;
