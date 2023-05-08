@@ -5,7 +5,6 @@
 I would like to schedule a QA Wars for CLI. For now at least once, 
 based on the outcome we can decide if and when we should do it again. 
 
-
 ## Motivation 
 
 Right now I see two big issues with using CLI:
