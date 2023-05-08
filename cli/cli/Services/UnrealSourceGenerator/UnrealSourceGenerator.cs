@@ -310,8 +310,14 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			{
 				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/{serializedTypeName.NamespacedTypeName}.h", Content = s.serializableHeader, },
 				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/{serializedTypeName.NamespacedTypeName}.cpp", Content = s.serializableCpp, },
-				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/{serializedTypeName.NamespacedTypeName}Library.h", Content = s.serializableTypeLibraryHeader, },
-				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/{serializedTypeName.NamespacedTypeName}Library.cpp", Content = s.serializableTypeLibraryCpp, },
+				new GeneratedFileDescriptor
+				{
+					FileName = $"{headerFileOutputPath}AutoGen/{serializedTypeName.NamespacedTypeName}Library.h", Content = s.serializableTypeLibraryHeader,
+				},
+				new GeneratedFileDescriptor
+				{
+					FileName = $"{cppFileOutputPath}AutoGen/{serializedTypeName.NamespacedTypeName}Library.cpp", Content = s.serializableTypeLibraryCpp,
+				},
 			};
 		}));
 
@@ -407,11 +413,13 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			{
 				new GeneratedFileDescriptor
 				{
-					FileName = $"{headerFileOutputPath}AutoGen/SubSystems/{decl.NamespacedOwnerServiceName}/{decl.GlobalNamespacedEndpointName}Request.h", Content = sc.endpointHeader
+					FileName = $"{headerFileOutputPath}AutoGen/SubSystems/{decl.NamespacedOwnerServiceName}/{decl.GlobalNamespacedEndpointName}Request.h",
+					Content = sc.endpointHeader
 				},
 				new GeneratedFileDescriptor
 				{
-					FileName = $"{cppFileOutputPath}AutoGen/SubSystems/{decl.NamespacedOwnerServiceName}/{decl.GlobalNamespacedEndpointName}Request.cpp", Content = sc.endpointCpp
+					FileName = $"{cppFileOutputPath}AutoGen/SubSystems/{decl.NamespacedOwnerServiceName}/{decl.GlobalNamespacedEndpointName}Request.cpp",
+					Content = sc.endpointCpp
 				},
 				new GeneratedFileDescriptor
 				{
@@ -467,9 +475,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			{
 				var enumDecl = new UnrealEnumDeclaration
 				{
-					UnrealTypeName = schemaUnrealType,
-					NamespacedTypeName = schemaNamespacedType,
-					EnumValues = schema.Enum.OfType<OpenApiString>().Select(v => v.Value).ToList()
+					UnrealTypeName = schemaUnrealType, NamespacedTypeName = schemaNamespacedType, EnumValues = schema.Enum.OfType<OpenApiString>().Select(v => v.Value).ToList()
 				};
 
 				enumTypes.Add(enumDecl);
@@ -583,7 +589,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 						{
 							NamespacedTypeName = GetNamespacedTypeNameFromUnrealType(overridenWrapperType),
 							PolymorphicWrappedTypes =
-								ptrWrappedTypes.Select(s => new PolymorphicWrappedData { UnrealType = s, ExpectedTypeValue = polymorphicWrappedSchemaExpectedTypeValues[s] }).ToList(),
+								ptrWrappedTypes.Select(s => new PolymorphicWrappedData { UnrealType = s, ExpectedTypeValue = polymorphicWrappedSchemaExpectedTypeValues[s] })
+									.ToList(),
 							UPropertyDeclarations = ptrWrappedTypes.Select(s => new UnrealPropertyDeclaration
 							{
 								PropertyUnrealType = s,
@@ -879,7 +886,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 								var arrayTypeSchema = isReference ? fieldSchema.Items.GetEffective(openApiDocument) : fieldSchema.Items;
 								if (arrayTypeSchema.Extensions.TryGetValue(EXTENSION_BEAMABLE_SEMANTIC_TYPE, out var e) && e is OpenApiString)
 								{
-									var arraySerializationUnrealType = GetNonOptionalUnrealTypeFromFieldSchema(ns.Document, arrayTypeSchema, out _, UnrealTypeGetFlags.NeverSemanticType);
+									var arraySerializationUnrealType =
+										GetNonOptionalUnrealTypeFromFieldSchema(ns.Document, arrayTypeSchema, out _, UnrealTypeGetFlags.NeverSemanticType);
 									fieldSemanticTypesUnderlyingTypeMap.TryAdd(handle, arraySerializationUnrealType);
 									continue;
 								}
@@ -1014,7 +1022,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 						var unrealProperty = new UnrealPropertyDeclaration();
 						unrealProperty.PropertyUnrealType = GetUnrealTypeFromSchema(openApiDocument, paramFieldHandle, paramSchema, out _);
 						unrealProperty.PropertyNamespacedType = GetNamespacedTypeNameFromUnrealType(unrealProperty.PropertyUnrealType);
-						unrealProperty.PropertyName = UnrealPropertyDeclaration.GetPrimitiveUPropertyFieldName(unrealProperty.PropertyUnrealType, param.Name, kSchemaGenerationBuilder);
+						unrealProperty.PropertyName =
+							UnrealPropertyDeclaration.GetPrimitiveUPropertyFieldName(unrealProperty.PropertyUnrealType, param.Name, kSchemaGenerationBuilder);
 						unrealProperty.RawFieldName = param.Name;
 						unrealProperty.PropertyDisplayName = unrealProperty.PropertyName.SpaceOutOnUpperCase();
 						unrealProperty.NonOptionalTypeName = GetNonOptionalUnrealTypeFromFieldSchema(openApiDocument, paramSchema, out _);
@@ -1036,7 +1045,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 								unrealEndpoint.RequestPathParameters.Add(unrealProperty);
 								break;
 							default:
-								Console.WriteLine($"Skipping Endpoint Param. ENDPOINT={unrealEndpoint.GlobalNamespacedEndpointName}, PARAM={param.Name}, PARAM.IN={param.In.ToString()}");
+								Console.WriteLine(
+									$"Skipping Endpoint Param. ENDPOINT={unrealEndpoint.GlobalNamespacedEndpointName}, PARAM={param.Name}, PARAM.IN={param.In.ToString()}");
 								break;
 						}
 					}
@@ -1078,11 +1088,11 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 								var writer = new OpenApiJsonWriter(sw);
 								bodySchema.SerializeAsV3WithoutReference(writer);
 								Console.WriteLine($"{serviceTitle}-{serviceName}-{unrealEndpoint.GlobalNamespacedEndpointName} FROM {operationType.ToString()} {endpointPath}\n" +
-												  string.Join("\n", unrealEndpoint.RequestQueryParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-												  "\n" + string.Join("\n", unrealEndpoint.RequestPathParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-												  "\n" + string.Join("\n", unrealEndpoint.RequestBodyParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-												  $"\n{unrealEndpoint.ResponseBodyUnrealType}" +
-												  $"\n{sw}");
+								                  string.Join("\n", unrealEndpoint.RequestQueryParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+								                  "\n" + string.Join("\n", unrealEndpoint.RequestPathParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+								                  "\n" + string.Join("\n", unrealEndpoint.RequestBodyParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+								                  $"\n{unrealEndpoint.ResponseBodyUnrealType}" +
+								                  $"\n{sw}");
 							}
 							else
 							{
@@ -1129,11 +1139,11 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 								var writer = new OpenApiJsonWriter(sw);
 								bodySchema.SerializeAsV3WithoutReference(writer);
 								Console.WriteLine($"{serviceTitle}-{serviceName}-{unrealEndpoint.GlobalNamespacedEndpointName} FROM {operationType.ToString()} {endpointPath}\n" +
-												  string.Join("\n", unrealEndpoint.RequestQueryParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-												  "\n" + string.Join("\n", unrealEndpoint.RequestPathParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-												  "\n" + string.Join("\n", unrealEndpoint.RequestBodyParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-												  $"\n{unrealEndpoint.ResponseBodyUnrealType}" +
-												  $"\n{sw}");
+								                  string.Join("\n", unrealEndpoint.RequestQueryParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+								                  "\n" + string.Join("\n", unrealEndpoint.RequestPathParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+								                  "\n" + string.Join("\n", unrealEndpoint.RequestBodyParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+								                  $"\n{unrealEndpoint.ResponseBodyUnrealType}" +
+								                  $"\n{sw}");
 							}
 						}
 						else if (response.Content.TryGetValue("text/plain", out jsonResponse))
@@ -1175,7 +1185,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			}
 
 			unrealServiceDecl.IncludeStatements.AddRange(
-				unrealServiceDecl.GetAllEndpoints().Select(e => $"#include \"{headerFileOutputPath}AutoGen/SubSystems/{e.NamespacedOwnerServiceName}/{e.GlobalNamespacedEndpointName}Request.h\"")
+				unrealServiceDecl.GetAllEndpoints().Select(e =>
+					$"#include \"{headerFileOutputPath}AutoGen/SubSystems/{e.NamespacedOwnerServiceName}/{e.GlobalNamespacedEndpointName}Request.h\"")
 			);
 
 			// If we had declared it already, replace that old declaration with the new one.
@@ -1210,14 +1221,15 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 	private static bool IsUnrealContainerOrWrapperType(string unrealType)
 	{
-		return unrealType.StartsWith(UNREAL_ARRAY) || unrealType.StartsWith(UNREAL_MAP) || unrealType.StartsWith(UNREAL_OPTIONAL) || unrealType.StartsWith(UNREAL_U_OBJECT_PREFIX) ||
-			   UNREAL_ALL_SEMTYPES.Contains(unrealType);
+		return unrealType.StartsWith(UNREAL_ARRAY) || unrealType.StartsWith(UNREAL_MAP) || unrealType.StartsWith(UNREAL_OPTIONAL) ||
+		       unrealType.StartsWith(UNREAL_U_OBJECT_PREFIX) ||
+		       UNREAL_ALL_SEMTYPES.Contains(unrealType);
 	}
 
 	private static bool IsUnrealPrimitiveType(string unrealType)
 	{
 		return unrealType.StartsWith(UNREAL_BYTE) || unrealType.StartsWith(UNREAL_SHORT) || unrealType.StartsWith(UNREAL_INT) || unrealType.StartsWith(UNREAL_LONG) ||
-			   unrealType.StartsWith(UNREAL_FLOAT) || unrealType.StartsWith(UNREAL_DOUBLE);
+		       unrealType.StartsWith(UNREAL_FLOAT) || unrealType.StartsWith(UNREAL_DOUBLE);
 	}
 
 
@@ -1322,7 +1334,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// <param name="httpVerb"></param>
 	/// <param name="endpointPath"></param>
 	/// <param name="endpointNameOverlaps">Not passing in this, will make you ignore name overlap resolution</param>
-	public static string GetSubsystemNamespacedEndpointName(string serviceName, bool isObjectService, OperationType httpVerb, string endpointPath, Dictionary<string, bool> endpointNameOverlaps = null)
+	public static string GetSubsystemNamespacedEndpointName(string serviceName, bool isObjectService, OperationType httpVerb, string endpointPath,
+		Dictionary<string, bool> endpointNameOverlaps = null)
 	{
 		// If an object service, we need to skip 4 '/' to get what we want (/object/mail/{objectId}/whatWeWant)
 		var skipsLeft = isObjectService ? 4 : 3;
@@ -1402,8 +1415,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		if (doesConflict)
 		{
 			throw new ArgumentException($"{methodName} was found in more than one service. " +
-										$"In this case, this is because you have two microservices with the same name OR because this name clashes with an existing Beamable API. " +
-										$"Please change your Microservice name to resolve this.");
+			                            $"In this case, this is because you have two microservices with the same name OR because this name clashes with an existing Beamable API. " +
+			                            $"Please change your Microservice name to resolve this.");
 		}
 
 		// In case we want to manually override an endpoint's name...
@@ -1434,8 +1447,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		if (doesConflict)
 		{
 			throw new ArgumentException($"{methodName} was overloaded in {serviceName}. " +
-										$"We do not support overloading Callable/ClientCallable/AdminCallable functions." +
-										$"Please rename all overloads to resolve this.");
+			                            $"We do not support overloading Callable/ClientCallable/AdminCallable functions." +
+			                            $"Please rename all overloads to resolve this.");
 		}
 
 		// In case we want to manually override an endpoint's name...
@@ -1461,7 +1474,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// <param name="fieldDeclarationHandle">A string created by <see cref="GetFieldDeclarationHandle"/>. Should null or empty, if generating the type name instead of a field/parameter's declaration.</param>
 	/// <param name="schema">The field schema (value of <see cref="OpenApiSchema.Properties"/>).</param>
 	/// <returns>The correct Unreal-land type as a string.</returns>
-	public static string GetUnrealTypeFromSchema([NotNull] OpenApiDocument parentDoc, [NotNull] string fieldDeclarationHandle, [NotNull] OpenApiSchema schema, out string nonOverridenUnrealType,
+	public static string GetUnrealTypeFromSchema([NotNull] OpenApiDocument parentDoc, [NotNull] string fieldDeclarationHandle, [NotNull] OpenApiSchema schema,
+		out string nonOverridenUnrealType,
 		UnrealTypeGetFlags Flags = UnrealTypeGetFlags.None)
 	{
 		// The field is considered an optional type ONLY if it is in the dictionary AND it's value in the dictionary is false.
@@ -1514,7 +1528,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					unrealType = $"F{referenceId}";
 
 					if (isEnum)
-						Console.WriteLine($"ENUM ={unrealType}, {referenceId}, {string.Join("-", schema.GetEffective(parentDoc).Enum.OfType<OpenApiString>().Select(s => s.Value))}\n");
+						Console.WriteLine(
+							$"ENUM ={unrealType}, {referenceId}, {string.Join("-", schema.GetEffective(parentDoc).Enum.OfType<OpenApiString>().Select(s => s.Value))}\n");
 				}
 				else if (isEnum)
 				{
@@ -1941,6 +1956,33 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 		// If (SomethingArrayey | SomethingMappy | SomethingOptional) aren't any of the raw cases above, we just prepend an 'U' and '*' to it.
 		return $"U{namespacedWrappedType}*";
+	}
+
+	/// <summary>
+	/// Gets an Unreal type from a <see cref="System.Type"/>. Used primarily for code generating the CLI interface for invocation from inside Unreal. 
+	/// </summary>
+	public static string GetUnrealTypeFromReflectionType(Type unrealWrapperType)
+	{
+		if (unrealWrapperType == typeof(byte))
+			return UNREAL_BYTE;
+		if (unrealWrapperType == typeof(short))
+			return UNREAL_SHORT;
+		if (unrealWrapperType == typeof(int))
+			return UNREAL_INT;
+		if (unrealWrapperType == typeof(long))
+			return UNREAL_LONG;
+		if (unrealWrapperType == typeof(bool))
+			return UNREAL_BOOL;
+		if (unrealWrapperType == typeof(float))
+			return UNREAL_FLOAT;
+		if (unrealWrapperType == typeof(double))
+			return UNREAL_DOUBLE;
+		if (unrealWrapperType == typeof(string))
+			return UNREAL_STRING;
+		if (unrealWrapperType == typeof(Guid))
+			return UNREAL_GUID;
+
+		throw new ArgumentException("We don't support making unreal types from non-primitive reflection types");
 	}
 
 	/// <summary>
