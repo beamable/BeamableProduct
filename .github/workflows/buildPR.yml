@@ -6,6 +6,8 @@ on:
       - 'main'
       - 'staging'
       - 'production'
+    branches-ignore:
+      - 'rfc/**'
     # paths:
     #   - 'client/**'
     #   - 'microservice/**'
