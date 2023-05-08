@@ -6,7 +6,9 @@ on:
       - 'main'
       - 'staging'
       - 'production'
-      - '!rfc/**'
+    paths-ignore:
+      - 'rfc/**'
+      - '.github/**'
     # paths:
     #   - 'client/**'
     #   - 'microservice/**'
