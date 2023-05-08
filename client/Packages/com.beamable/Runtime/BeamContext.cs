@@ -258,8 +258,6 @@ namespace Beamable
 		private IConnectivityService _connectivityService;
 		private IConnectivityChecker _connectivityChecker;
 		private NotificationService _notification;
-		private IPubnubSubscriptionManager _pubnubSubscriptionManager;
-		private IPubnubNotificationService _pubnubNotificationService;
 		private ISessionService _sessionService;
 		private IHeartbeatService _heartbeatService;
 		private BeamableBehaviour _behaviour;
@@ -520,8 +518,6 @@ namespace Beamable
 				_connectivityChecker = ServiceProvider.GetService<IConnectivityChecker>();
 			}
 			_notification = ServiceProvider.GetService<NotificationService>();
-			_pubnubSubscriptionManager = ServiceProvider.GetService<IPubnubSubscriptionManager>();
-			_pubnubNotificationService = ServiceProvider.GetService<IPubnubNotificationService>();
 			_sessionService = ServiceProvider.GetService<ISessionService>();
 			_heartbeatService = ServiceProvider.GetService<IHeartbeatService>();
 			_behaviour = ServiceProvider.GetService<BeamableBehaviour>();
@@ -555,8 +551,9 @@ namespace Beamable
 		{
 			try
 			{
-				_pubnubSubscriptionManager.UnsubscribeAll();
-				await _pubnubSubscriptionManager.SubscribeToProvider();
+				var pubnubSubscriptionManager = ServiceProvider.GetService<IPubnubSubscriptionManager>();
+				pubnubSubscriptionManager.UnsubscribeAll();
+				await pubnubSubscriptionManager.SubscribeToProvider();
 			}
 			catch (NoConnectivityException)
 			{
@@ -875,7 +872,9 @@ namespace Beamable
 		public Promise<BeamContext> Instance => OnReady?.Map(_ => this);
 
 		INotificationService IPlatformService.Notification => _notification;
-		IPubnubNotificationService IPlatformService.PubnubNotificationService => _pubnubNotificationService;
+
+		IPubnubNotificationService IPlatformService.PubnubNotificationService =>
+			ServiceProvider.GetService<IPubnubNotificationService>();
 		IConnectivityService IPlatformService.ConnectivityService => _connectivityService;
 		IHeartbeatService IPlatformService.Heartbeat => _heartbeatService;
 
