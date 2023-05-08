@@ -44,7 +44,7 @@ public struct UnrealCliCommandDeclaration
 			return UnrealCliStreamDeclaration.STREAM_PARSE_IMPL.ProcessReplacement(dict);
 
 		}));
-		
+
 		dict.Clear();
 		dict.Add(nameof(CommandName), CommandName);
 		dict.Add(nameof(CommandKeywords), CommandKeywords);
@@ -205,7 +205,8 @@ public class UnrealCliGenerator : ICliGenerator
 
 					var streamDataProperties = rs.runtimeType.GetFields().Select(fieldInfo => new UnrealPropertyDeclaration()
 					{
-						PropertyName = fieldInfo.Name, PropertyUnrealType = UnrealSourceGenerator.GetUnrealTypeFromReflectionType(fieldInfo.FieldType)
+						PropertyName = fieldInfo.Name,
+						PropertyUnrealType = UnrealSourceGenerator.GetUnrealTypeFromReflectionType(fieldInfo.FieldType)
 					}).ToList();
 
 					return new UnrealCliStreamDeclaration()

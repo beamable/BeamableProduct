@@ -33,7 +33,7 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 		AddOption(new Option<string>("--output", () => null,
 				"When null or empty, the generated code will be sent to standard-out. When there is a output value, the file or files will be written to the path"),
 			(args, val) => args.OutputPath = val);
-		
+
 		AddOption(new Option<string>("--engine", () => "",
 				"Filter which engine code we should generate (unity | unreal). An empty string matches everything"),
 			(args, val) => args.Engine = val);
