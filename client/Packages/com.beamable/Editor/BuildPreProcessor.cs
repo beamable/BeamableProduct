@@ -156,19 +156,44 @@ popup, click the 'Save Config-Defaults' button.";
 				if (!doesProguardFileExists)
 				{
 					warningMessage = "There is no Proguard File";
-					return false;
+					var shouldCreateProguardFile = !EditorGUIExtension.IsInHeadlessMode() &&
+					                               EditorUtility.DisplayDialog("Create proguard file",
+					                                                           $"{warningMessage}.\nDo you want to create the proguard file?",
+					                                                           "Yes", "No, cancel build");
+					if (shouldCreateProguardFile)
+					{
+						var proguardDir = Path.Combine("Assets", "Plugins", "Android");
+						if (!Directory.Exists(proguardDir))
+						{
+							Directory.CreateDirectory(proguardDir);
+						}
+						var filePath = Path.Combine(proguardDir, "proguard-user.txt");
+
+						File.WriteAllText(filePath, string.Empty);
+						AssetDatabase.SaveAssets();
+						AssetDatabase.ImportAsset(filePath, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+						
+						proguardFilesGuids =
+							AssetDatabase.FindAssets("t:TextAsset proguard-user", new[] {"Assets/Plugins/Android"});
+						doesProguardFileExists = proguardFilesGuids.Length > 0;
+					}
+					else
+					{
+						return false;
+					}
 				}
 
 				var path = AssetDatabase.GUIDToAssetPath(proguardFilesGuids[0]);
 				var proguardContent = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
 
-				var doesProguardFileHaveCorrectRules = rules.All(s => proguardContent.text.Contains(s));
+				var missingRules = rules.Where(r => !proguardContent.text.Contains(r)).ToList();
+				var doesProguardFileHaveCorrectRules = missingRules.Count == 0;
 				if (doesProguardFileHaveCorrectRules)
 				{
 					continue;
 				}
 
-				var rulesString = $"{string.Join(" { *; }\n", rules.Where(r=>!proguardContent.text.Contains(r)))} {{ *; }}";
+				var rulesString = $"{string.Join(" { *; }\n", missingRules)} {{ *; }}";
 				warningMessage = $"Proguard File does not have this rules:\n{rulesString}";
 				if (!EditorGUIExtension.IsInHeadlessMode() && EditorUtility.DisplayDialog("Update proguard file",
 					    $"{warningMessage}.\nDo you want to update the proguard file?", 
