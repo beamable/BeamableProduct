@@ -23,6 +23,10 @@ namespace Beamable.Editor
 				messages.Add(message);
 			}
 #endif
+			if (!CheckForCorrectProguardRules(out var proguardMessage))
+			{
+				messages.Add(proguardMessage);
+			}
 
 			var hasLocalContentChanges = await ContentIO.HasLocalChanges();
 			if (hasLocalContentChanges)
@@ -111,6 +115,39 @@ popup, click the 'Save Config-Defaults' button.";
 				return false;
 			}
 
+			return true;
+		}
+
+		private static bool CheckForCorrectProguardRules(out string warningMessage)
+		{
+			string[] rules = new[] {"com.beamable.googlesignin.**", "com.google.unity.**"};
+			
+			warningMessage = string.Empty;
+			if (!PlayerSettingsHelper.GetDefines().Contains("BEAMABLE_GPGS"))
+			{
+				return true;
+			}
+
+			var proguardFilesGuids =
+				AssetDatabase.FindAssets("t:TextAsset proguard-user", new[] {"Assets/Plugins/Android"});
+
+			var doesProguardFileExists = proguardFilesGuids.Length > 0;
+			if (!doesProguardFileExists)
+			{
+				warningMessage = "There is no Proguard File";
+				return false;
+			}
+			
+			var path = AssetDatabase.GUIDToAssetPath(proguardFilesGuids[0]);
+			var proguardContent = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
+
+			var doesProguardFileHaveCorrectRules = rules.All(s => proguardContent.text.Contains(s));
+			if (!doesProguardFileHaveCorrectRules)
+			{
+				warningMessage = $"Proguard File does not have this rules:\n{string.Join("{*;}\n",rules)}";
+				return true;
+				
+			}
 			return true;
 		}
 	}
