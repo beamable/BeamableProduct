@@ -2,6 +2,7 @@ using Beamable.Config;
 using Beamable.Content;
 using Beamable.Editor.Content;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Build;
@@ -12,6 +13,11 @@ namespace Beamable.Editor
 {
 	public class BuildPreProcessor : IPreprocessBuildWithReport
 	{
+		private static readonly Dictionary<string, string[]> RulesPerDefineSymbol = new Dictionary<string, string[]>
+		{
+			{"BEAMABLE_GPGS", new[] {"com.beamable.googlesignin.**", "com.google.unity.**"}}
+		};
+
 		public int callbackOrder { get; }
 
 		public async void OnPreprocessBuild(BuildReport report)
@@ -117,36 +123,54 @@ popup, click the 'Save Config-Defaults' button.";
 
 			return true;
 		}
-
 		private static bool CheckForCorrectProguardRules(out string warningMessage)
 		{
-			string[] rules = new[] {"com.beamable.googlesignin.**", "com.google.unity.**"};
-			
 			warningMessage = string.Empty;
-			if (!PlayerSettingsHelper.GetDefines().Contains("BEAMABLE_GPGS"))
+			foreach (var defineSymbolRules in RulesPerDefineSymbol)
 			{
-				return true;
-			}
+				if (!PlayerSettingsHelper.GetDefines().Contains(defineSymbolRules.Key))
+				{
+					continue;
+				}
 
-			var proguardFilesGuids =
-				AssetDatabase.FindAssets("t:TextAsset proguard-user", new[] {"Assets/Plugins/Android"});
+				var rules = defineSymbolRules.Value;
 
-			var doesProguardFileExists = proguardFilesGuids.Length > 0;
-			if (!doesProguardFileExists)
-			{
-				warningMessage = "There is no Proguard File";
+				var proguardFilesGuids =
+					AssetDatabase.FindAssets("t:TextAsset proguard-user", new[] {"Assets/Plugins/Android"});
+
+				var doesProguardFileExists = proguardFilesGuids.Length > 0;
+				if (!doesProguardFileExists)
+				{
+					warningMessage = "There is no Proguard File";
+					return false;
+				}
+
+				var path = AssetDatabase.GUIDToAssetPath(proguardFilesGuids[0]);
+				var proguardContent = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
+
+				var doesProguardFileHaveCorrectRules = rules.All(s => proguardContent.text.Contains(s));
+				if (doesProguardFileHaveCorrectRules)
+				{
+					continue;
+				}
+
+				var rulesString = $"{string.Join(" { *; }\n", rules.Where(r=>!proguardContent.text.Contains(r)))} {{ *; }}";
+				warningMessage = $"Proguard File does not have this rules:\n{rulesString}";
+				if (!EditorGUIExtension.IsInHeadlessMode() && EditorUtility.DisplayDialog("Update proguard file",
+					    $"{warningMessage}.\nDo you want to update the proguard file?", 
+					    "Yes", "No, cancel build"))
+				{
+					string newContentText = $"{proguardContent.text}\n{rulesString}\n";
+					File.WriteAllText(AssetDatabase.GetAssetPath(proguardContent), newContentText);
+					EditorUtility.SetDirty(proguardContent);
+					AssetDatabase.SaveAssets();
+					AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(proguardContent),
+					                          ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+					warningMessage = string.Empty;
+					continue;
+				}
+
 				return false;
-			}
-			
-			var path = AssetDatabase.GUIDToAssetPath(proguardFilesGuids[0]);
-			var proguardContent = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
-
-			var doesProguardFileHaveCorrectRules = rules.All(s => proguardContent.text.Contains(s));
-			if (!doesProguardFileHaveCorrectRules)
-			{
-				warningMessage = $"Proguard File does not have this rules:\n{string.Join("{*;}\n",rules)}";
-				return true;
-				
 			}
 			return true;
 		}
