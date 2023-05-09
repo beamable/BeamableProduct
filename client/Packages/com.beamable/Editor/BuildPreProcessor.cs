@@ -13,6 +13,10 @@ namespace Beamable.Editor
 {
 	public class BuildPreProcessor : IPreprocessBuildWithReport
 	{
+		/// <summary>
+		/// Dictionary where key represents define symbol
+		/// and value is list of proguard rules required by that define symbol
+		/// </summary>
 		private static readonly Dictionary<string, string[]> RulesPerDefineSymbol = new Dictionary<string, string[]>
 		{
 			{"BEAMABLE_GPGS", new[] {"com.beamable.googlesignin.**", "com.google.unity.**"}}
@@ -123,9 +127,23 @@ popup, click the 'Save Config-Defaults' button.";
 
 			return true;
 		}
+
+
+		/// <summary>
+		/// It performs checks for each symbol specified in <see cref="RulesPerDefineSymbol"/>
+		/// if project contains all of the rules that are required in case of define symbol presence.
+		/// </summary>
+		/// <returns>
+		/// True if all required rules are defined.
+		/// </returns>
 		private static bool CheckForCorrectProguardRules(out string warningMessage)
 		{
 			warningMessage = string.Empty;
+			var proguardFilesGuids =
+				AssetDatabase.FindAssets("t:TextAsset proguard-user", new[] {"Assets/Plugins/Android"});
+
+			var doesProguardFileExists = proguardFilesGuids.Length > 0;
+
 			foreach (var defineSymbolRules in RulesPerDefineSymbol)
 			{
 				if (!PlayerSettingsHelper.GetDefines().Contains(defineSymbolRules.Key))
@@ -134,11 +152,6 @@ popup, click the 'Save Config-Defaults' button.";
 				}
 
 				var rules = defineSymbolRules.Value;
-
-				var proguardFilesGuids =
-					AssetDatabase.FindAssets("t:TextAsset proguard-user", new[] {"Assets/Plugins/Android"});
-
-				var doesProguardFileExists = proguardFilesGuids.Length > 0;
 				if (!doesProguardFileExists)
 				{
 					warningMessage = "There is no Proguard File";
