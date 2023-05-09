@@ -242,7 +242,7 @@ namespace Beamable.Player
 				}
 
 				var unseenScopes = new HashSet<string>();
-				foreach (var scope in localItems.GetKeysRecursive(scopes)) 
+				foreach (var scope in localItems.GetKeysRecursive(scopes))
 				{
 					unseenScopes.Add(scope);
 				}
@@ -254,7 +254,7 @@ namespace Beamable.Player
 				#region update or create items
 				foreach (var group in res.items)
 				{
-					foreach (var parentScope in localItems.Traverse(group.id)) 
+					foreach (var parentScope in localItems.Traverse(group.id))
 					{
 						unseenScopes.Remove(parentScope.path);// mark this scope of items as "seen"
 					}
