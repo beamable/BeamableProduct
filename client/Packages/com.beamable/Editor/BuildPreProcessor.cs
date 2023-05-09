@@ -139,7 +139,7 @@ popup, click the 'Save Config-Defaults' button.";
 		private static bool CheckForCorrectProguardRules(out string warningMessage)
 		{
 			warningMessage = string.Empty;
-#if UNITY_ANDROID
+#if UNITY_ANDROID && !BEAMABLE_NO_CHECKS_FOR_PROGUARD
 			var proguardFilesGuids =
 				AssetDatabase.FindAssets("t:TextAsset proguard-user", new[] {"Assets/Plugins/Android"});
 
