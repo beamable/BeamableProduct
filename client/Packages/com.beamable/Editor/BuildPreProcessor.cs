@@ -139,6 +139,7 @@ popup, click the 'Save Config-Defaults' button.";
 		private static bool CheckForCorrectProguardRules(out string warningMessage)
 		{
 			warningMessage = string.Empty;
+#if UNITY_ANDROID
 			var proguardFilesGuids =
 				AssetDatabase.FindAssets("t:TextAsset proguard-user", new[] {"Assets/Plugins/Android"});
 
@@ -185,6 +186,7 @@ popup, click the 'Save Config-Defaults' button.";
 
 				return false;
 			}
+#endif
 			return true;
 		}
 	}
