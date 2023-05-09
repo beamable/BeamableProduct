@@ -137,7 +137,7 @@ public class Tests
 		Console.WriteLine("----- OUTPUT ----");
 		Console.WriteLine(string.Join("\n", descriptors.Select(d => $"{d.FileName}\n\n{d.Content}\n")));
 
-		Assert.AreEqual(14, descriptors.Count);
+		Assert.AreEqual(15, descriptors.Count);
 	}
 
 	[Microservice("troublesome")]
