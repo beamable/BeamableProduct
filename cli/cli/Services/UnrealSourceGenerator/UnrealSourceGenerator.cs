@@ -170,6 +170,16 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// </summary>
 	public static string blueprintCppFileOutputPath = "BeamableCoreBlueprintNodes/Private/BeamFlow/ApiRequest/";
 
+	/// <summary>
+	/// Path + name, without extension or leading slash, to where in the output folder this the <see cref="PreviousGenerationPassesData"/> will be output.
+	/// </summary>
+	public static string currentGenerationPassDataFilePath = "BeamableCore_GenerationPass";
+
+	/// <summary>
+	/// A set of containers holding data regarding types generated in all previous passes (ie: Our CodeGen API generates a file with this structure that is used for our customers' C#MS codegen).  
+	/// </summary>
+	public static PreviousGenerationPassesData previousGenerationPassesData = new();
+
 	public enum GenerationType { BasicObject, Microservice }
 
 	public static GenerationType genType = GenerationType.BasicObject;
@@ -214,229 +224,208 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		// Generate the actual files we'll need from the data we've built.
 		var processDictionary = new Dictionary<string, string>(16);
 
-		// Generate all Optional Type Files
-		var optionalDeclarations = optionalTypes.Select(ot =>
-		{
-			ot.BakeIntoProcessMap(processDictionary);
-			var headerDeclaration = UnrealOptionalDeclaration.OPTIONAL_HEADER_DECL.ProcessReplacement(processDictionary);
-			var cppDeclaration = UnrealOptionalDeclaration.OPTIONAL_CPP_DECL.ProcessReplacement(processDictionary);
-			var bpLibraryHeader = UnrealOptionalDeclaration.OPTIONAL_LIBRARY_HEADER_DECL.ProcessReplacement(processDictionary);
-			var bpLibraryCpp = UnrealOptionalDeclaration.OPTIONAL_LIBRARY_CPP_DECL.ProcessReplacement(processDictionary);
+		// A dictionary that'll be filled with the UnrealType name of ONLY THE TYPES THAT'LL BE CONTAINED IN GENERATED FILES.
+		// INFO: UnrealTypes defined in "previousGenerationPassesData" will not be added here.
+		var newGeneratedUnrealTypes = new Dictionary<string, string>();
 
-			processDictionary.Clear();
-			return (headerDeclaration, cppDeclaration, bpLibraryHeader, bpLibraryCpp);
-		});
+		// Generate all Optional Type Files (except the ones that were already generated in a previous run).
+		var optionalDeclarations = optionalTypes
+			.Except(optionalTypes.Where(t => previousGenerationPassesData.InEngineTypeToIncludePaths.ContainsKey(t.UnrealTypeName)))
+			.Select(decl =>
+			{
+				decl.BakeIntoProcessMap(processDictionary);
+				var headerDeclaration = UnrealOptionalDeclaration.OPTIONAL_HEADER_DECL.ProcessReplacement(processDictionary);
+				var cppDeclaration = UnrealOptionalDeclaration.OPTIONAL_CPP_DECL.ProcessReplacement(processDictionary);
+				var bpLibraryHeader = UnrealOptionalDeclaration.OPTIONAL_LIBRARY_HEADER_DECL.ProcessReplacement(processDictionary);
+				var bpLibraryCpp = UnrealOptionalDeclaration.OPTIONAL_LIBRARY_CPP_DECL.ProcessReplacement(processDictionary);
+
+				processDictionary.Clear();
+				return (decl, headerDeclaration, cppDeclaration, bpLibraryHeader, bpLibraryCpp);
+			}).ToList();
 		outputFiles.AddRange(optionalDeclarations.SelectMany((s, idx) =>
 		{
-			var optionalType = optionalTypes[idx];
+			var headerFileName = $"{headerFileOutputPath}AutoGen/Optionals/{s.decl.NamespacedTypeName}.h";
+			newGeneratedUnrealTypes.TryAdd(s.decl.UnrealTypeName, headerFileName);
 			return new[]
 			{
-				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/Optionals/{optionalType.NamespacedTypeName}.h", Content = s.headerDeclaration },
-				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Optionals/{optionalType.NamespacedTypeName}.cpp", Content = s.cppDeclaration },
-				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/Optionals/{optionalType.NamespacedTypeName}Library.h", Content = s.bpLibraryHeader },
-				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Optionals/{optionalType.NamespacedTypeName}Library.cpp", Content = s.bpLibraryCpp },
+				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.headerDeclaration }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Optionals/{s.decl.NamespacedTypeName}.cpp", Content = s.cppDeclaration },
+				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/Optionals/{s.decl.NamespacedTypeName}Library.h", Content = s.bpLibraryHeader }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Optionals/{s.decl.NamespacedTypeName}Library.cpp", Content = s.bpLibraryCpp },
 			};
 		}));
 
 		// Generate Array Wrapper Type Files
-		var arrayWrapperDeclarations = arrayWrapperTypes.Select(ot =>
-		{
-			ot.BakeIntoProcessMap(processDictionary);
-			var headerDeclaration = UnrealWrapperContainerDeclaration.ARRAY_WRAPPER_HEADER_DECL.ProcessReplacement(processDictionary);
-			var cppDeclaration = UnrealWrapperContainerDeclaration.ARRAY_WRAPPER_CPP_DECL.ProcessReplacement(processDictionary);
-			processDictionary.Clear();
-			return (headerDeclaration, cppDeclaration);
-		});
+		var arrayWrapperDeclarations = arrayWrapperTypes
+			.Except(arrayWrapperTypes.Where(t => previousGenerationPassesData.InEngineTypeToIncludePaths.ContainsKey(t.UnrealTypeName)))
+			.Select(decl =>
+			{
+				decl.BakeIntoProcessMap(processDictionary);
+				var headerDeclaration = UnrealWrapperContainerDeclaration.ARRAY_WRAPPER_HEADER_DECL.ProcessReplacement(processDictionary);
+				var cppDeclaration = UnrealWrapperContainerDeclaration.ARRAY_WRAPPER_CPP_DECL.ProcessReplacement(processDictionary);
+				processDictionary.Clear();
+				return (decl, headerDeclaration, cppDeclaration);
+			});
 		outputFiles.AddRange(arrayWrapperDeclarations.SelectMany((s, idx) =>
 		{
-			var arrayWrapperType = arrayWrapperTypes[idx];
-			return new[]
-			{
-				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/Arrays/{arrayWrapperType.NamespacedTypeName}.h", Content = s.headerDeclaration },
-				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Arrays/{arrayWrapperType.NamespacedTypeName}.cpp", Content = s.cppDeclaration },
-			};
+			var headerFileName = $"{headerFileOutputPath}AutoGen/Arrays/{s.decl.NamespacedTypeName}.h";
+			newGeneratedUnrealTypes.TryAdd(s.decl.UnrealTypeName, headerFileName);
+			return new[] { new GeneratedFileDescriptor { FileName = headerFileName, Content = s.headerDeclaration }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Arrays/{s.decl.NamespacedTypeName}.cpp", Content = s.cppDeclaration }, };
 		}));
 
 		// Generate Map Wrapper Type Files
-		var mapWrapperDeclarations = mapWrapperTypes.Select(ot =>
-		{
-			ot.BakeIntoProcessMap(processDictionary);
-			var headerDeclaration = UnrealWrapperContainerDeclaration.MAP_WRAPPER_HEADER_DECL.ProcessReplacement(processDictionary);
-			var cppDeclaration = UnrealWrapperContainerDeclaration.MAP_WRAPPER_CPP_DECL.ProcessReplacement(processDictionary);
-			processDictionary.Clear();
-			return (headerDeclaration, cppDeclaration);
-		});
+		var mapWrapperDeclarations = mapWrapperTypes
+			.Except(mapWrapperTypes.Where(t => previousGenerationPassesData.InEngineTypeToIncludePaths.ContainsKey(t.UnrealTypeName)))
+			.Select(decl =>
+			{
+				decl.BakeIntoProcessMap(processDictionary);
+				var headerDeclaration = UnrealWrapperContainerDeclaration.MAP_WRAPPER_HEADER_DECL.ProcessReplacement(processDictionary);
+				var cppDeclaration = UnrealWrapperContainerDeclaration.MAP_WRAPPER_CPP_DECL.ProcessReplacement(processDictionary);
+				processDictionary.Clear();
+				return (decl, headerDeclaration, cppDeclaration);
+			});
 		outputFiles.AddRange(mapWrapperDeclarations.SelectMany((s, idx) =>
 		{
-			var mapWrapperType = mapWrapperTypes[idx];
-			return new[]
-			{
-				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/Maps/{mapWrapperType.NamespacedTypeName}.h", Content = s.headerDeclaration },
-				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Maps/{mapWrapperType.NamespacedTypeName}.cpp", Content = s.cppDeclaration },
-			};
+			var headerFileName = $"{headerFileOutputPath}AutoGen/Maps/{s.decl.NamespacedTypeName}.h";
+			newGeneratedUnrealTypes.TryAdd(s.decl.UnrealTypeName, headerFileName);
+			return new[] { new GeneratedFileDescriptor { FileName = headerFileName, Content = s.headerDeclaration }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Maps/{s.decl.NamespacedTypeName}.cpp", Content = s.cppDeclaration }, };
 		}));
 
 		// Generate all enum type declarations
-		var enumTypesCode = enumTypes.Select(d =>
+		var enumTypesCode = enumTypes
+			.Except(enumTypes.Where(t => previousGenerationPassesData.InEngineTypeToIncludePaths.ContainsKey(t.UnrealTypeName)))
+			.Select(decl =>
+			{
+				decl.BakeIntoProcessMap(processDictionary);
+				var header = UnrealEnumDeclaration.U_ENUM_HEADER.ProcessReplacement(processDictionary);
+				processDictionary.Clear();
+				return (decl, header);
+			});
+		outputFiles.AddRange(enumTypesCode.SelectMany((s, _) =>
 		{
-			d.BakeIntoProcessMap(processDictionary);
-			var header = UnrealEnumDeclaration.U_ENUM_HEADER.ProcessReplacement(processDictionary);
-			processDictionary.Clear();
-			return header;
-		});
-		outputFiles.AddRange(enumTypesCode.SelectMany((s, idx) =>
-		{
-			var enumType = enumTypes[idx];
-			return new[] { new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/Enums/{enumType.NamespacedTypeName}.h", Content = s, }, };
+			var headerFileName = $"{headerFileOutputPath}AutoGen/Enums/{s.decl.NamespacedTypeName}.h";
+			newGeneratedUnrealTypes.TryAdd(s.decl.UnrealTypeName, headerFileName);
+			return new[] { new GeneratedFileDescriptor { FileName = headerFileName, Content = s.header, }, };
 		}));
 
 		// Generate all serializable types
 		var allSerializableTypes = serializableTypes.Union(polymorphicTypeWrappers).Union(outResponseWrapperTypes).ToList();
-		var serializableTypesCode = allSerializableTypes.Select(d =>
-		{
-			d.IntoProcessMap(processDictionary);
-			var serializableHeader = UnrealJsonSerializableTypeDeclaration.JSON_SERIALIZABLE_TYPE_HEADER.ProcessReplacement(processDictionary);
-			var serializableCpp = UnrealJsonSerializableTypeDeclaration.JSON_SERIALIZABLE_TYPE_CPP.ProcessReplacement(processDictionary);
-			var serializableTypeLibraryHeader = UnrealJsonSerializableTypeDeclaration.JSON_SERIALIZABLE_TYPES_LIBRARY_HEADER.ProcessReplacement(processDictionary);
-			var serializableTypeLibraryCpp = UnrealJsonSerializableTypeDeclaration.JSON_SERIALIZABLE_TYPES_LIBRARY_CPP.ProcessReplacement(processDictionary);
-			processDictionary.Clear();
+		var serializableTypesCode = allSerializableTypes
+			.Except(allSerializableTypes.Where(t => previousGenerationPassesData.InEngineTypeToIncludePaths.ContainsKey(t.NamespacedTypeName)))
+			.Select(decl =>
+			{
+				decl.IntoProcessMap(processDictionary);
+				var serializableHeader = UnrealJsonSerializableTypeDeclaration.JSON_SERIALIZABLE_TYPE_HEADER.ProcessReplacement(processDictionary);
+				var serializableCpp = UnrealJsonSerializableTypeDeclaration.JSON_SERIALIZABLE_TYPE_CPP.ProcessReplacement(processDictionary);
+				var serializableTypeLibraryHeader = UnrealJsonSerializableTypeDeclaration.JSON_SERIALIZABLE_TYPES_LIBRARY_HEADER.ProcessReplacement(processDictionary);
+				var serializableTypeLibraryCpp = UnrealJsonSerializableTypeDeclaration.JSON_SERIALIZABLE_TYPES_LIBRARY_CPP.ProcessReplacement(processDictionary);
+				processDictionary.Clear();
 
-			return (serializableHeader, serializableCpp, serializableTypeLibraryHeader, serializableTypeLibraryCpp);
-		});
+				return (decl, serializableHeader, serializableCpp, serializableTypeLibraryHeader, serializableTypeLibraryCpp);
+			});
 		outputFiles.AddRange(serializableTypesCode.SelectMany((s, idx) =>
 		{
-			var serializedTypeName = allSerializableTypes[idx];
+			var headerFileName = $"{headerFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}.h";
+			newGeneratedUnrealTypes.TryAdd(s.decl.UnrealTypeName, headerFileName);
 			return new[]
 			{
-				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/{serializedTypeName.NamespacedTypeName}.h", Content = s.serializableHeader, },
-				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/{serializedTypeName.NamespacedTypeName}.cpp", Content = s.serializableCpp, },
-				new GeneratedFileDescriptor
-				{
-					FileName = $"{headerFileOutputPath}AutoGen/{serializedTypeName.NamespacedTypeName}Library.h", Content = s.serializableTypeLibraryHeader,
-				},
-				new GeneratedFileDescriptor
-				{
-					FileName = $"{cppFileOutputPath}AutoGen/{serializedTypeName.NamespacedTypeName}Library.cpp", Content = s.serializableTypeLibraryCpp,
-				},
+				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.serializableHeader, }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}.cpp", Content = s.serializableCpp, },
+				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}Library.h", Content = s.serializableTypeLibraryHeader, }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}Library.cpp", Content = s.serializableTypeLibraryCpp, },
 			};
 		}));
 
 
 		// Generate all csv response types
-		var csvResponseTypesCode = csvResponseTypes.Select(d =>
+		var csvResponseTypesCode = csvResponseTypes.Select(decl =>
 		{
-			d.IntoProcessMap(processDictionary);
+			decl.IntoProcessMap(processDictionary);
 
 			var header = UnrealCsvSerializableTypeDeclaration.CSV_SERIALIZABLE_TYPE_HEADER.ProcessReplacement(processDictionary);
 			var cpp = UnrealCsvSerializableTypeDeclaration.CSV_SERIALIZABLE_TYPE_CPP.ProcessReplacement(processDictionary);
-			return (header, cpp);
+			return (decl, header, cpp);
 		});
 		outputFiles.AddRange(csvResponseTypesCode.SelectMany((s, idx) =>
 		{
-			var csvResponseType = csvResponseTypes[idx];
-			return new[]
-			{
-				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/{csvResponseType.NamespacedTypeName}.h", Content = s.header, },
-				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/{csvResponseType.NamespacedTypeName}.cpp", Content = s.cpp, },
-			};
+			var headerFileName = $"{headerFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}.h";
+			newGeneratedUnrealTypes.TryAdd(s.decl.UnrealTypeName, headerFileName);
+			return new[] { new GeneratedFileDescriptor { FileName = headerFileName, Content = s.header, }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}.cpp", Content = s.cpp, }, };
 		}));
 
 		// Generate all csv row types
-		var csvRowTypesCode = csvRowTypes.Select(d =>
+		var csvRowTypesCode = csvRowTypes.Select(decl =>
 		{
-			d.IntoProcessMap(processDictionary);
+			decl.IntoProcessMap(processDictionary);
 
 			var header = UnrealCsvRowTypeDeclaration.CSV_ROW_TYPE_HEADER.ProcessReplacement(processDictionary);
 			var cpp = UnrealCsvRowTypeDeclaration.CSV_ROW_TYPE_CPP.ProcessReplacement(processDictionary);
 
-			return (header, cpp);
+			return (decl, header, cpp);
 		});
 		outputFiles.AddRange(csvRowTypesCode.SelectMany((s, idx) =>
 		{
-			var csvRowType = csvRowTypes[idx];
-			return new[]
-			{
-				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/Rows/{csvRowType.RowNamespacedType}.h", Content = s.header, },
-				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Rows/{csvRowType.RowNamespacedType}.cpp", Content = s.cpp, },
-			};
+			var headerFileName = $"{headerFileOutputPath}AutoGen/Rows/{s.decl.RowNamespacedType}.h";
+			newGeneratedUnrealTypes.TryAdd(s.decl.RowUnrealType, headerFileName);
+			return new[] { new GeneratedFileDescriptor { FileName = headerFileName, Content = s.header, }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Rows/{s.decl.RowNamespacedType}.cpp", Content = s.cpp, }, };
 		}));
 
 		// Subsystem Declarations
-		var subsystemsCode = subsystemDeclarations.Select(sd =>
+		var subsystemsCode = subsystemDeclarations.Select(decl =>
 		{
-			sd.IntoProcessMapHeader(processDictionary);
+			decl.IntoProcessMapHeader(processDictionary);
 			var subsystemHeader = UnrealApiSubsystemDeclaration.U_SUBSYSTEM_HEADER.ProcessReplacement(processDictionary);
 			processDictionary.Clear();
 
-			sd.IntoProcessMapCpp(processDictionary);
+			decl.IntoProcessMapCpp(processDictionary);
 			var subsystemCpp = UnrealApiSubsystemDeclaration.U_SUBSYSTEM_CPP.ProcessReplacement(processDictionary);
 			processDictionary.Clear();
 
-			return (subsystemHeader, subsystemCpp);
+			return (decl, subsystemHeader, subsystemCpp);
 		});
-		outputFiles.AddRange(subsystemsCode.SelectMany((sc, i) =>
+		outputFiles.AddRange(subsystemsCode.SelectMany((s, i) =>
 		{
-			var decl = subsystemDeclarations[i];
-			return new[]
-			{
-				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/SubSystems/Beam{decl.SubsystemName}Api.h", Content = sc.subsystemHeader },
-				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/SubSystems/Beam{decl.SubsystemName}Api.cpp", Content = sc.subsystemCpp },
-			};
+			return new[] { new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/SubSystems/Beam{s.decl.SubsystemName}Api.h", Content = s.subsystemHeader }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/SubSystems/Beam{s.decl.SubsystemName}Api.cpp", Content = s.subsystemCpp }, };
 		}));
 
 		var subsystemEndpoints = subsystemDeclarations.SelectMany(sd => sd.GetAllEndpoints()).ToList();
-		var subsystemEndpointsCode = subsystemEndpoints.Select(se =>
+		var subsystemEndpointsCode = subsystemEndpoints.Select(decl =>
 		{
-			se.IntoProcessMap(processDictionary, serializableTypes);
+			decl.IntoProcessMap(processDictionary, serializableTypes);
 			var endpointHeader = UnrealEndpointDeclaration.U_ENDPOINT_HEADER.ProcessReplacement(processDictionary);
 			processDictionary.Clear();
 
-			se.IntoProcessMap(processDictionary, serializableTypes);
+			decl.IntoProcessMap(processDictionary, serializableTypes);
 			var endpointCpp = UnrealEndpointDeclaration.U_ENDPOINT_CPP.ProcessReplacement(processDictionary);
 			processDictionary.Clear();
 
-			se.IntoProcessMap(processDictionary, serializableTypes);
+			decl.IntoProcessMap(processDictionary, serializableTypes);
 			var beamFlowNodeHeader = UnrealEndpointDeclaration.BEAM_FLOW_BP_NODE_HEADER.ProcessReplacement(processDictionary);
 			processDictionary.Clear();
 
-			se.IntoProcessMap(processDictionary, serializableTypes);
+			decl.IntoProcessMap(processDictionary, serializableTypes);
 			var beamFlowNodeCpp = UnrealEndpointDeclaration.BEAM_FLOW_BP_NODE_CPP.ProcessReplacement(processDictionary);
 			processDictionary.Clear();
 
 
-			return (endpointHeader, endpointCpp, beamFlowNodeHeader, beamFlowNodeCpp);
+			return (decl, endpointHeader, endpointCpp, beamFlowNodeHeader, beamFlowNodeCpp);
 		});
 		outputFiles.AddRange(subsystemEndpointsCode.SelectMany((sc, i) =>
 		{
-			var decl = subsystemEndpoints[i];
 			return new[]
 			{
-				new GeneratedFileDescriptor
-				{
-					FileName = $"{headerFileOutputPath}AutoGen/SubSystems/{decl.NamespacedOwnerServiceName}/{decl.GlobalNamespacedEndpointName}Request.h",
-					Content = sc.endpointHeader
-				},
-				new GeneratedFileDescriptor
-				{
-					FileName = $"{cppFileOutputPath}AutoGen/SubSystems/{decl.NamespacedOwnerServiceName}/{decl.GlobalNamespacedEndpointName}Request.cpp",
-					Content = sc.endpointCpp
-				},
-				new GeneratedFileDescriptor
-				{
-					FileName = $"{blueprintHeaderFileOutputPath}AutoGen/{decl.NamespacedOwnerServiceName}/K2BeamNode_ApiRequest_{decl.GlobalNamespacedEndpointName}.h",
-					Content = sc.beamFlowNodeHeader
-				},
-				new GeneratedFileDescriptor
-				{
-					FileName =
-						$"{blueprintCppFileOutputPath}AutoGen/{decl.NamespacedOwnerServiceName}/K2BeamNode_ApiRequest_{decl.GlobalNamespacedEndpointName}.cpp",
-					Content = sc.beamFlowNodeCpp
-				},
+				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/SubSystems/{sc.decl.NamespacedOwnerServiceName}/{sc.decl.GlobalNamespacedEndpointName}Request.h", Content = sc.endpointHeader },
+				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/SubSystems/{sc.decl.NamespacedOwnerServiceName}/{sc.decl.GlobalNamespacedEndpointName}Request.cpp", Content = sc.endpointCpp },
+				new GeneratedFileDescriptor { FileName = $"{blueprintHeaderFileOutputPath}AutoGen/{sc.decl.NamespacedOwnerServiceName}/K2BeamNode_ApiRequest_{sc.decl.GlobalNamespacedEndpointName}.h", Content = sc.beamFlowNodeHeader },
+				new GeneratedFileDescriptor { FileName = $"{blueprintCppFileOutputPath}AutoGen/{sc.decl.NamespacedOwnerServiceName}/K2BeamNode_ApiRequest_{sc.decl.GlobalNamespacedEndpointName}.cpp", Content = sc.beamFlowNodeCpp },
 			};
 		}));
 
 		// Prints out all the identified semtype declarations
 		Console.WriteLine(kSemTypeDeclarationPointsLog.ToString());
+		foreach ((string key, string value) in newGeneratedUnrealTypes)
+		{
+			previousGenerationPassesData.InEngineTypeToIncludePaths.Add(key, value);
+			Console.WriteLine($"Mapped {key} to {value}");
+		}
+
+		outputFiles.Add(new GeneratedFileDescriptor() { FileName = $"{currentGenerationPassDataFilePath}.json", Content = JsonConvert.SerializeObject(previousGenerationPassesData), });
 		return outputFiles;
 	}
 
@@ -514,10 +503,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 				var csvRowType = new UnrealCsvRowTypeDeclaration
 				{
-					RowUnrealType = schemaUnrealType,
-					RowNamespacedType = GetNamespacedTypeNameFromUnrealType(schemaUnrealType),
-					PropertyDeclarations = uproperties,
-					KeyDeclarationIdx = Array.IndexOf(order, keyProperty),
+					RowUnrealType = schemaUnrealType, RowNamespacedType = GetNamespacedTypeNameFromUnrealType(schemaUnrealType), PropertyDeclarations = uproperties, KeyDeclarationIdx = Array.IndexOf(order, keyProperty),
 				};
 				csvRowTypes.Add(csvRowType);
 			}
@@ -528,6 +514,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 				var csvResponseType = new UnrealCsvSerializableTypeDeclaration
 				{
+					UnrealTypeName = schemaUnrealType,
 					NamespacedTypeName = schemaNamespacedType,
 					RowUnrealType = rowUnrealType,
 					RowNamespacedTypeName = GetNamespacedTypeNameFromUnrealType(rowUnrealType),
@@ -541,6 +528,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				// Prepare the data for injection in the template string.
 				var serializableTypeDeclaration = new UnrealJsonSerializableTypeDeclaration
 				{
+					UnrealTypeName = schemaUnrealType,
 					NamespacedTypeName = schemaNamespacedType,
 					PropertyIncludes = new List<string>(8),
 					UPropertyDeclarations = new List<UnrealPropertyDeclaration>(8),
@@ -555,7 +543,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					var unrealType = GetUnrealTypeFromSchema(namedOpenApiSchema.Document, handle, fieldSchema, out var nonOverridenUnrealType);
 					if (string.IsNullOrEmpty(unrealType))
 					{
-						Console.WriteLine($"Skipping unreal type for {handle} cause not supported yet!");
+						using var sw = new StringWriter();
+						var writer = new OpenApiJsonWriter(sw);
+						fieldSchema.SerializeAsV3WithoutReference(writer);
+						Console.WriteLine($"Skipping unreal type for {handle} cause not supported yet! Schema: {sw}");
 						continue;
 					}
 
@@ -589,6 +580,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 						var polyWrapperDecl = new UnrealJsonSerializableTypeDeclaration
 						{
+							UnrealTypeName = overridenWrapperType,
 							NamespacedTypeName = GetNamespacedTypeNameFromUnrealType(overridenWrapperType),
 							PolymorphicWrappedTypes =
 								ptrWrappedTypes.Select(s => new PolymorphicWrappedData { UnrealType = s, ExpectedTypeValue = polymorphicWrappedSchemaExpectedTypeValues[s] })
@@ -1103,6 +1095,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 								// Prepare the wrapper around the primitive this endpoint returns as a response payload.
 								var wrapperBody = new UnrealJsonSerializableTypeDeclaration
 								{
+									UnrealTypeName = $"U{unrealEndpoint.GlobalNamespacedEndpointName}Response*",
 									NamespacedTypeName = $"{unrealEndpoint.GlobalNamespacedEndpointName}Response",
 									PropertyIncludes = new List<string>(8),
 									UPropertyDeclarations = new List<UnrealPropertyDeclaration>(8),
@@ -1815,30 +1808,41 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		{
 			if (unrealType.StartsWith(UNREAL_U_ENUM_PREFIX))
 			{
+				if (previousGenerationPassesData.InEngineTypeToIncludePaths.TryGetValue(unrealType, out var includeStatement))
+					return $"#include \"{includeStatement}\"";
+				
 				var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
 				return $"#include \"{headerFileOutputPath}AutoGen/Enums/{header}\"";
 			}
 
 			if (unrealType.StartsWith(UNREAL_OPTIONAL))
 			{
+				if (previousGenerationPassesData.InEngineTypeToIncludePaths.TryGetValue(unrealType, out var includeStatement))
+					return $"#include \"{includeStatement}\"";
 				var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
 				return $"#include \"{headerFileOutputPath}AutoGen/Optionals/{header}\"";
 			}
 
 			if (unrealType.StartsWith(UNREAL_WRAPPER_ARRAY))
 			{
+				if (previousGenerationPassesData.InEngineTypeToIncludePaths.TryGetValue(unrealType, out var includeStatement))
+					return $"#include \"{includeStatement}\"";
 				var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
 				return $"#include \"{headerFileOutputPath}AutoGen/Arrays/{header}\"";
 			}
 
 			if (unrealType.StartsWith(UNREAL_WRAPPER_MAP))
 			{
+				if (previousGenerationPassesData.InEngineTypeToIncludePaths.TryGetValue(unrealType, out var includeStatement))
+					return $"#include \"{includeStatement}\"";
 				var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
 				return $"#include \"{headerFileOutputPath}AutoGen/Maps/{header}\"";
 			}
 
 			if (unrealType.StartsWith(UNREAL_ARRAY))
 			{
+				if (previousGenerationPassesData.InEngineTypeToIncludePaths.TryGetValue(unrealType, out var includeStatement))
+					return $"#include \"{includeStatement}\"";
 				var firstTemplate = UnrealPropertyDeclaration.ExtractFirstTemplateParamFromType(unrealType);
 				if (MustInclude(firstTemplate))
 				{
@@ -1848,6 +1852,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 			if (unrealType.StartsWith(UNREAL_MAP))
 			{
+				if (previousGenerationPassesData.InEngineTypeToIncludePaths.TryGetValue(unrealType, out var includeStatement))
+					return $"#include \"{includeStatement}\"";
 				var secondTemplate = UnrealPropertyDeclaration.ExtractSecondTemplateParamFromType(unrealType);
 				if (MustInclude(secondTemplate))
 				{
@@ -1857,8 +1863,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 			if (MustInclude(unrealType))
 			{
-				var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
+				if (previousGenerationPassesData.InEngineTypeToIncludePaths.TryGetValue(unrealType, out var includeStatement))
+					return $"#include \"{includeStatement}\"";
 
+				var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
 				if (unrealType.StartsWith(UNREAL_U_BEAM_NODE_PREFIX))
 					return $"#include \"{blueprintHeaderFileOutputPath}AutoGen/{header}\"";
 
@@ -1994,6 +2002,11 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	{
 		return ueType.EndsWith("*") ? ueType.Substring(0, ueType.Length - 1) : ueType;
 	}
+}
+
+public class PreviousGenerationPassesData
+{
+	public Dictionary<string, string> InEngineTypeToIncludePaths = new();
 }
 
 public static class StringExtensions
