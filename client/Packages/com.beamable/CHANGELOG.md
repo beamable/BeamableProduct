@@ -10,8 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Beamable network requests use the combined `X-BEAM-SCOPE` header instead of the `X-KS-CLIENTID` and `X-KS-PROJECTID` headers.
+- Detect missing proguard rules during build.
+
 
 ### Fixed
+- Using portal to remove the last item in a group while listening to "items" with the Inventory PSDK will cause the SDK to notice the change. 
 - Do not init Pubnub Services until needed.
 
 ## [1.15.1]
