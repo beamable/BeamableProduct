@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
+using cli.Unreal;
 using CliWrap;
 using Serilog;
 
@@ -23,6 +24,7 @@ public class ProjectData
 		public string MsCoreCppPath;
 		public string MsBlueprintNodesHeaderPath;
 		public string MsBlueprintNodesCppPath;
+		public string BeamableBackendGenerationPassFile;
 
 
 		public bool Equals(string other) => Path.Equals(other);
@@ -79,7 +81,9 @@ public class ProjectService
 			MsCoreHeaderPath = msPath,
 			MsCoreCppPath = msPath,
 			MsBlueprintNodesHeaderPath = msBlueprintPath,
-			MsBlueprintNodesCppPath = msBlueprintPath
+			MsBlueprintNodesCppPath = msBlueprintPath,
+			
+			BeamableBackendGenerationPassFile = relativePath + $"\\Plugins\\BeamableCore\\Source\\{UnrealSourceGenerator.currentGenerationPassDataFilePath}.json"
 		});
 		_configService.SaveDataFile(".linkedProjects", _projects);
 	}

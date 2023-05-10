@@ -72,6 +72,7 @@ public struct UnrealCsvRowTypeDeclaration
 
 		_includesForProperties = string.Join("\n", PropertyDeclarations.Select(p => UnrealSourceGenerator.GetIncludeStatementForUnrealType(p.PropertyUnrealType)));
 
+		processDictionary.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
 		processDictionary.Add(nameof(RowNamespacedType), RowNamespacedType);
 		processDictionary.Add(nameof(RowUnrealType), RowUnrealType);
 		processDictionary.Add(nameof(PropertyDeclarations), propertyDeclarations);
@@ -91,7 +92,7 @@ public struct UnrealCsvRowTypeDeclaration
 #include ""₢{nameof(RowNamespacedType)}₢.generated.h""
 
 USTRUCT(BlueprintType)
-struct ₢{nameof(RowUnrealType)}₢ : public FTableRowBase
+struct ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ ₢{nameof(RowUnrealType)}₢ : public FTableRowBase
 {{
 	GENERATED_BODY()
 
@@ -115,6 +116,7 @@ const TArray<FString> ₢{nameof(RowUnrealType)}₢::HeaderFields = {{
 
 public struct UnrealCsvSerializableTypeDeclaration
 {
+	public string UnrealTypeName;
 	public string NamespacedTypeName;
 
 	public string RowUnrealType;
@@ -123,6 +125,7 @@ public struct UnrealCsvSerializableTypeDeclaration
 	public bool NeedsHeaderRow;
 
 	private string _defineResponseBodyInterface;
+
 
 	public void IntoProcessMap(Dictionary<string, string> processDictionary)
 	{
@@ -190,6 +193,7 @@ public struct PolymorphicWrappedData
 
 public struct UnrealJsonSerializableTypeDeclaration
 {
+	public string UnrealTypeName;
 	public string NamespacedTypeName;
 	public List<string> PropertyIncludes;
 	public List<UnrealPropertyDeclaration> UPropertyDeclarations;
@@ -215,6 +219,7 @@ public struct UnrealJsonSerializableTypeDeclaration
 
 	private string _declarePolyWrapperGetType;
 	private string _definePolyWrapperGetType;
+
 
 	public void IntoProcessMap(Dictionary<string, string> processDictionary)
 	{
