@@ -10,8 +10,8 @@ namespace cli.Dotnet;
 
 public class NewSolutionCommandArgs : CommandArgs
 {
-	public string SolutionName;
-	public string ProjectName;
+	public ServiceName SolutionName;
+	public ServiceName ProjectName;
 	public string directory;
 	public bool SkipCommon;
 }
@@ -32,10 +32,10 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("name", "Name of the new project"), (args, i) => args.ProjectName = i);
+		AddArgument(new Argument<ServiceName>("name", "Name of the new project"), (args, i) => args.ProjectName = i);
 		AddArgument(new Argument<string>("output", () => "", description: "Where the project be created"), (args, i) => args.directory = i);
 		AddOption(new ConfigurableOptionFlag("skip-common", "If you should create a common library"), (args, i) => args.SkipCommon = i);
-		AddOption(new ConfigurableOption("solution-name", "The name of the solution of the new project"), (args, i) => args.SolutionName = i);
+		AddOption(new Option<ServiceName>("--solution-name", "The name of the solution of the new project"), (args, i) => args.SolutionName = i);
 	}
 
 	public override async Task Handle(NewSolutionCommandArgs args)
@@ -64,7 +64,7 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 				Directory.EnumerateDirectories(args.ConfigService.BaseDirectory, $"{args.ProjectName}\\services", SearchOption.AllDirectories).First());
 
 		// now that a .beamable folder has been created, setup the beamo manifest
-		await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.ToLower(),
+		await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value.ToLower(),
 			projectDirectory,
 			Path.Combine(args.ProjectName, "Dockerfile"),
 			new string[] { },

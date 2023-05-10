@@ -16,7 +16,7 @@ public class GenerateEnvFileCommandArgs : CommandArgs
 	public string output;
 	public bool includePrefix = true;
 	public int instanceCount = 1;
-	public string serviceId;
+	public ServiceName serviceId;
 	public bool autoDeploy;
 }
 
@@ -28,7 +28,7 @@ public class GenerateEnvFileCommand : AppCommand<GenerateEnvFileCommandArgs>
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("service", "Which service to generate the .env file for"), (args, i) => args.serviceId = i);
+		AddArgument(new Argument<ServiceName>("service", "Which service to generate the .env file for"), (args, i) => args.serviceId = i);
 		AddArgument(new Argument<string>("output", "Where to output the .env file"), (args, i) => args.output = i);
 		AddOption(new Option<bool>("--include-prefix", () => true, "If true, the generated .env file will include the local machine name as prefix"), (args, i) => args.includePrefix = i);
 		AddOption(new Option<int>("--instance-count", () => 1, "How many virtual websocket connections the server will open"), (args, i) => args.instanceCount = i);

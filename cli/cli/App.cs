@@ -95,6 +95,8 @@ public class App
 
 		ConfigureLogging();
 
+		Commands.AddSingleton(new ArgValidator<ServiceName>(arg => new ServiceName(arg)));
+		
 		// add global options
 		Commands.AddSingleton<DryRunOption>();
 		Commands.AddSingleton<CidOption>();

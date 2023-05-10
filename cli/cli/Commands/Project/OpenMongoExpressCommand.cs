@@ -8,7 +8,7 @@ namespace cli.Commands.Project;
 
 public class OpenMongoExpressCommandArgs : CommandArgs
 {
-	public string storageName;
+	public ServiceName storageName;
 }
 
 public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
@@ -19,7 +19,7 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("service-name", "Name of the storage to open mongo-express to"), (arg, i) => arg.storageName = i);
+		AddArgument(new Argument<ServiceName>("service-name", "Name of the storage to open mongo-express to"), (arg, i) => arg.storageName = i);
 	}
 
 	public override async Task Handle(OpenMongoExpressCommandArgs args)
