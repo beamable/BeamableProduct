@@ -75,9 +75,7 @@ void ₢{nameof(UnrealTypeName)}₢::Set(const void* Data)
 	IsSet = true;
 }}";
 
-	public const string OPTIONAL_LIBRARY_HEADER_DECL = $@"
-
-#pragma once
+	public const string OPTIONAL_LIBRARY_HEADER_DECL = $@"#pragma once
 
 #include ""CoreMinimal.h""
 ₢{nameof(UnrealTypeIncludeStatement)}₢
