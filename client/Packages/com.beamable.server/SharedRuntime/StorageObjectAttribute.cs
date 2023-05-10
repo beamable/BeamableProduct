@@ -9,6 +9,8 @@ namespace Beamable.Server
 	{
 		public string StorageName { get; }
 		public string SourcePath { get; }
+		
+		public string[] Names => new[] { StorageName };
 
 		public StorageObjectAttribute(string storageName, [System.Runtime.CompilerServices.CallerFilePath]
 		 string sourcePath = "")
@@ -16,8 +18,6 @@ namespace Beamable.Server
 			StorageName = storageName;
 			SourcePath = sourcePath;
 		}
-
-		public string[] Names => new[] { StorageName };
 
 		public AttributeValidationResult IsAllowedOnMember(MemberInfo member)
 		{
