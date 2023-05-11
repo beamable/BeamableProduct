@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Common.Semantics;
 using cli.Services;
 using CliWrap;
 using Serilog;

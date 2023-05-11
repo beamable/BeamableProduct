@@ -4,6 +4,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Semantics;
 using cli.Commands.Project;
 using cli.Content;
 using cli.Dotnet;

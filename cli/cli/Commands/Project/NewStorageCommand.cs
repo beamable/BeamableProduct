@@ -1,3 +1,4 @@
+using Beamable.Common.Semantics;
 using Serilog;
 using Spectre.Console;
 using System.CommandLine;

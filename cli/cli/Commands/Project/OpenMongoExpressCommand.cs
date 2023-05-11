@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Common.Semantics;
 using cli.Utils;
 using Docker.DotNet;
 using Serilog;

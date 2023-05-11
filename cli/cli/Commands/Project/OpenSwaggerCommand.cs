@@ -1,3 +1,4 @@
+using Beamable.Common.Semantics;
 using cli.Utils;
 using System.CommandLine;
 
