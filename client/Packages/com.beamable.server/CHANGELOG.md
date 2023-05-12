@@ -627,12 +627,6 @@ Task(IServiceInitializer)`, async/regular `Promise<Unit>(IServiceInitializer)` a
 
 - Publish loading bars
 
-## [0.17.4]
-
-### Fixed
-
-- Publish loading bars
-
 ## [0.17.3]
 
 ### Added

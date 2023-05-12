@@ -879,14 +879,14 @@ This is a broken package. It includes changes from the 1.1.0 release. Please do 
 
 ## [0.13.3]
 
-### Fixed:
+### Fixed
 
 - Matchmaking state transition bug
 - Increases heartbeat rate for MatchMaking
 
 ## [0.13.2]
 
-### Fixed:
+### Fixed
 
 - Fixed isHttpError obsolete errors
 - Removed use of Social.localUser.id from GameCenter Authentication
@@ -897,13 +897,13 @@ This is a broken package. It includes changes from the 1.1.0 release. Please do 
 
 ## [0.13.1]
 
-### Fixed:
+### Fixed
 
 - GameCenter SDK errors with non-iOS il2cpp builds
 
 ## [0.13.0]
 
-### Fixed:
+### Fixed
 
 - Fixed possible null reference exception in MustReferenceContent validation attribute
 
