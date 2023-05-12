@@ -3,6 +3,7 @@ using Beamable.Common.Dependencies;
 using cli.Services;
 using cli.Unreal;
 using Serilog;
+using Spectre.Console;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 
@@ -12,6 +13,7 @@ public class CliInterfaceGeneratorCommandArgs : CommandArgs
 {
 	public string? OutputPath;
 	public bool Concat;
+	public string Engine;
 }
 public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorCommandArgs>
 {
@@ -31,6 +33,10 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 		AddOption(new Option<string>("--output", () => null,
 				"When null or empty, the generated code will be sent to standard-out. When there is a output value, the file or files will be written to the path"),
 			(args, val) => args.OutputPath = val);
+
+		AddOption(new Option<string>("--engine", () => "",
+				"Filter which engine code we should generate (unity | unreal). An empty string matches everything"),
+			(args, val) => args.Engine = val);
 
 	}
 
@@ -93,7 +99,14 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 
 		// now we have all the beam commands and their call sites
 		// proxy out to a generator... for now, its unity... but someday it'll be unity or unreal.
-		var generator = args.DependencyProvider.GetService<ICliGenerator>();
+		args.Engine = string.IsNullOrEmpty(args.Engine) ? AnsiConsole.Ask<SelectionPrompt<string>>("").AddChoices("unity", "unreal").Show(AnsiConsole.Console) : args.Engine;
+		ICliGenerator generator = args.Engine.ToLower() switch
+		{
+			"unity" => args.DependencyProvider.GetService<UnityCliGenerator>(),
+			"unreal" => args.DependencyProvider.GetService<UnrealCliGenerator>(),
+			_ => throw new ArgumentOutOfRangeException("Should be impossible!")
+		};
+
 		var output = generator.Generate(new CliGeneratorContext
 		{
 			Root = rootBeamCommand,

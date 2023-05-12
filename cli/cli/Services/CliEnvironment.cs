@@ -22,7 +22,7 @@ public class CliEnvironment
 	public string LogLevel { get; }
 
 
-	private static readonly Type[] SUPPORTED_OPTION_TYPES = new[] { typeof(PlatformOption), typeof(CidOption), typeof(PidOption), typeof(AccessTokenOption), typeof(RefreshTokenOption), typeof(ConfigDirOption) };
+	private static readonly Type[] SUPPORTED_OPTION_TYPES = new[] { typeof(HostOption), typeof(CidOption), typeof(PidOption), typeof(AccessTokenOption), typeof(RefreshTokenOption), typeof(ConfigDirOption) };
 
 	public bool TryGetFromOption(ConfigurableOption option, out string var)
 	{
@@ -40,7 +40,7 @@ public class CliEnvironment
 	{
 		return option switch
 		{
-			PlatformOption => Api,
+			HostOption => Api,
 			CidOption => Cid,
 			PidOption => Pid,
 			AccessTokenOption => AccessToken,

@@ -15,15 +15,14 @@ public struct UnrealEnumDeclaration
 
 			return enumValue;
 		}));
-		
+
 		helperDict.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
 		helperDict.Add(nameof(UnrealTypeName), UnrealTypeName);
 		helperDict.Add(nameof(NamespacedTypeName), NamespacedTypeName);
 		helperDict.Add(nameof(EnumValues), enumValues);
 	}
 
-	public const string U_ENUM_HEADER = $@"
-#pragma once
+	public const string U_ENUM_HEADER = $@"#pragma once
 
 #include ""CoreMinimal.h""
 

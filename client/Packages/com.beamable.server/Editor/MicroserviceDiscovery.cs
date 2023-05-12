@@ -26,12 +26,12 @@ namespace Beamable.Server.Editor
 		{
 			await BeamEditorContext.Default.InitializePromise;
 			var cli = BeamEditorContext.Default.ServiceScope.GetService<BeamCli>();
-			
+
 			_command = cli.Command.ProjectPs();
 			_command.OnStreamServiceDiscoveryEvent(Handle);
-			
+
 			_gotAnyDataPromise = new Promise();
-			
+
 			var available = await cli.IsAvailable();
 			if (!available)
 			{
@@ -55,16 +55,11 @@ namespace Beamable.Server.Editor
 			_gotAnyDataPromise.CompleteSuccess();
 		}
 
-		public async Promise WaitForUpdate()
-		{
-			await _gotAnyDataPromise;
-		}
-
 		public bool TryIsRunning(string serviceName, out string prefix)
 		{
 			return _nameToPrefix.TryGetValue(serviceName, out prefix);
 		}
-		
+
 		public Promise OnDispose()
 		{
 			return Promise.Success;

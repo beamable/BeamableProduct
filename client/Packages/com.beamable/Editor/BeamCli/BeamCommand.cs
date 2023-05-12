@@ -25,7 +25,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			_factory = factory;
 			defaultBeamArgs = ConstructDefaultArgs();
 		}
-		
+
 		private BeamArgs ConstructDefaultArgs()
 		{
 			string cid = null;
@@ -67,14 +67,14 @@ namespace Beamable.Editor.BeamCli.Commands
 
 namespace Beamable.Editor.BeamCli
 {
-	
+
 	public class BeamCommandFactory : IBeamCommandFactory
 	{
 		private readonly BeamableDispatcher _dispatcher;
-		
+
 		[SerializeField]
 		public BeamCommandPidCollection PidCollection = new BeamCommandPidCollection();
-		
+
 		public BeamCommandFactory(BeamableDispatcher dispatcher)
 		{
 			_dispatcher = dispatcher;
@@ -85,14 +85,14 @@ namespace Beamable.Editor.BeamCli
 			var command = new BeamCommand(_dispatcher, PidCollection);
 			return command;
 		}
-		
+
 		public void ClearAll()
 		{
 			PidCollection.ClearAll();
 		}
 	}
 
-	
+
 	[Serializable]
 	public class BeamCommandPidCollection
 	{
@@ -123,7 +123,7 @@ namespace Beamable.Editor.BeamCli
 			pids.Clear();
 		}
 	}
-	
+
 	public class BeamCommand : IBeamCommand
 	{
 		private readonly BeamableDispatcher _dispatcher;
@@ -148,15 +148,15 @@ namespace Beamable.Editor.BeamCli
 		// private bool _hasExited;
 		protected int _exitCode = -1;
 		private bool _hasExecuted;
-		
+
 		private string messageBuffer = "";
 		private bool isMessageInProgress;
 
 		// private Dictionary<string, List<Action<string>>
 
 		private List<ReportDataPointDescription> _points = new List<ReportDataPointDescription>();
-		private Action<ReportDataPointDescription> _callbacks = (_) => {};
-		public BeamCommand(BeamableDispatcher dispatcher, BeamCommandPidCollection collection=null)
+		private Action<ReportDataPointDescription> _callbacks = (_) => { };
+		public BeamCommand(BeamableDispatcher dispatcher, BeamCommandPidCollection collection = null)
 		{
 			_dispatcher = dispatcher;
 			_collection = collection;
@@ -173,13 +173,13 @@ namespace Beamable.Editor.BeamCli
 
 			return this;
 		}
-		
+
 		public IBeamCommand On(Action<ReportDataPointDescription> cb)
 		{
 			_callbacks += cb;
 			return this;
 		}
-		
+
 		private void ProcessStandardOut(string message)
 		{
 			if (message == null) return;
@@ -194,7 +194,8 @@ namespace Beamable.Editor.BeamCli
 					isMessageInProgress = true;
 					messageBuffer = messageBuffer.Substring(startIndex + Reporting.PATTERN_START.Length);
 				}
-			} else if (isMessageInProgress)
+			}
+			else if (isMessageInProgress)
 			{
 				var startIndex = messageBuffer.IndexOf(Reporting.PATTERN_END, StringComparison.Ordinal);
 				if (startIndex >= 0)
@@ -233,7 +234,7 @@ namespace Beamable.Editor.BeamCli
 			_hasExecuted = true;
 			try
 			{
-				
+
 				using (_process = new System.Diagnostics.Process())
 				{
 #if UNITY_EDITOR && !UNITY_EDITOR_WIN
@@ -256,26 +257,26 @@ namespace Beamable.Editor.BeamCli
 					_standardOutComplete = new TaskCompletionSource<int>();
 					EventHandler eh = (s, e) =>
 					{
-						Task.Run( async () =>
-						{
-							await Task.Delay(1); // give 1 ms for log messages to eep out
-							if (_dispatcher.IsForceStopped)
-							{
-								_process.Kill();
-								return;
-							}
-							_dispatcher.Schedule(() =>
-							{
-								// there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
-								// _hasExited = true;
-								_exitCode = _process.ExitCode;
-							
-								// OnExit?.Invoke(_process.ExitCode);
-								// HandleOnExit();
-							
-								_status.TrySetResult(0);
-							});
-						});
+						Task.Run(async () =>
+					   {
+						   await Task.Delay(1); // give 1 ms for log messages to eep out
+						   if (_dispatcher.IsForceStopped)
+						   {
+							   _process.Kill();
+							   return;
+						   }
+						   _dispatcher.Schedule(() =>
+						   {
+							   // there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
+							   // _hasExited = true;
+							   _exitCode = _process.ExitCode;
+
+							   // OnExit?.Invoke(_process.ExitCode);
+							   // HandleOnExit();
+
+							   _status.TrySetResult(0);
+						   });
+					   });
 					};
 
 					_process.Exited += eh;
@@ -352,7 +353,7 @@ namespace Beamable.Editor.BeamCli
 				throw;
 			}
 		}
-		
-		
+
+
 	}
 }

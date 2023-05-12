@@ -53,7 +53,18 @@ public partial class BeamoLocalSystem
 			}
 		}
 
-		var allLocalContainers = await _client.Containers.ListContainersAsync(new ContainersListParameters() { All = true });
+		IList<ContainerListResponse> allLocalContainers;
+
+		try
+		{
+			allLocalContainers =
+				await _client.Containers.ListContainersAsync(new ContainersListParameters() { All = true });
+		}
+		catch (Exception e)
+		{
+			BeamableLogger.LogError($"Failed, Docker message: {e.Message}");
+			throw;
+		}
 
 		// Remove all service instances that no longer exist
 		existingServiceInstances.RemoveAll(si => allLocalContainers.Count(dc => dc.Names.Contains(si.ContainerName)) < 1);
@@ -286,7 +297,7 @@ public partial class BeamoLocalSystem
 		foreach (var builtLayer in builtLayers)
 		{
 			var runContainerTasks = new List<Task>();
-			
+
 			// Kick off all the run container tasks for the Embedded MongoDatabases in this layer
 			if (builtLayer.TryGetValue(BeamoProtocolType.EmbeddedMongoDb, out var microStorageContainers))
 				runContainerTasks.AddRange(microStorageContainers.Select(async sd =>
@@ -294,7 +305,7 @@ public partial class BeamoLocalSystem
 					await RunLocalEmbeddedMongoDb(sd, localManifest.EmbeddedMongoDbLocalProtocols[sd.BeamoId]);
 					onServiceDeployCompleted?.Invoke(sd.BeamoId);
 				}));
-			
+
 			// Kick off all the run container tasks for the HTTP Microservices in this layer
 			if (builtLayer.TryGetValue(BeamoProtocolType.HttpMicroservice, out var microserviceContainers))
 				runContainerTasks.AddRange(microserviceContainers.Select(async sd =>

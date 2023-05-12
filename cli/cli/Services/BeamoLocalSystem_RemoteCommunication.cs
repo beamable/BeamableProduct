@@ -106,6 +106,14 @@ public partial class BeamoLocalSystem
 	}
 
 	/// <summary>
+	/// Stops docker services defined in the <see cref="BeamoLocalRuntime"/>.
+	/// </summary>
+	public async Task StopExistingLocalServiceInstances()
+	{
+		await Task.WhenAll(BeamoRuntime.ExistingLocalServiceInstances.Select(async sd => await StopContainer(sd.ContainerId)));
+	}
+
+	/// <summary>
 	/// Modifies the given <paramref name="remoteManifest"/> to match the data in the given <paramref name="localManifest"/> as well as the given <paramref name="comments"/> and
 	/// <paramref name="perServiceComments"/>.
 	/// </summary>

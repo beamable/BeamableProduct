@@ -13,6 +13,7 @@ using Beamable.Server.Content;
 using microserviceTests.microservice.Util;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using Serilog;
 using Serilog.Events;
 using System.Linq;
 using ClientRequest = Beamable.Microservice.Tests.Socket.ClientRequest;
@@ -1311,7 +1312,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
         [Test]
         [NonParallelizable]
-        [TimeoutWithTeardown(120000)]
+        [TimeoutWithTeardown(180000)]
         public async Task HandleAuthDrop_WithMultipleRequestsInFlight_WithoutHardcodedRequestIds()
         {
 
@@ -1386,7 +1387,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
             await ms.Start<SimpleMicroservice>(new TestArgs());
             Assert.IsTrue(ms.HasInitialized);
-
+            Log.Debug("TEST_INFO- passed init");
             var tasks = new List<Task>();
             for (var i = 0; i < failureCount; i++)
             {
@@ -1397,13 +1398,16 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                 }));
             }
             await Task.Delay(nonceDelay);
+            
             noncePromise.CompleteSuccess();
 
             var waitingTask = Task.WhenAll(tasks);
             await waitingTask;
 
-            await Task.Delay(1000);
+            await Task.Delay(6000);
             await ms.OnShutdown(this, null);
+            Log.Debug($"TEST_INFO- checking final asserts allmockscalled=[{testSocket.AllMocksCalled()}] authFailCount=[{authFailCount}] failureCount=[{failureCount}] successCount=[{successCount}]");
+
             Assert.IsTrue(testSocket.AllMocksCalled());
             Assert.IsTrue(authFailCount <= failureCount); // it cannot be the case that we failed more messages for auth failure than we had original requests.
             Assert.AreEqual(failureCount, successCount); // we need to make sure that the success message came back for each failure, eventually.

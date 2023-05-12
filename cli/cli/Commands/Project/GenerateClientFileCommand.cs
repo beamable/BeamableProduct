@@ -6,6 +6,7 @@ using Beamable.Tooling.Common.OpenAPI;
 using cli.Unreal;
 using microservice.Common;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json;
 using System.CommandLine;
 using System.Globalization;
 using System.Reflection;
@@ -59,20 +60,20 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 
 			var descriptor = new MicroserviceDescriptor { Name = attribute.MicroserviceName, AttributePath = attribute.SourcePath, Type = type };
 
-			var generator = new ClientCodeGenerator(descriptor);
 			if (args.outputToLinkedProjects)
 			{
 				// UNITY
 
 				if (args.ProjectService.GetLinkedUnityProjects().Count > 0)
 				{
+					var generator = new ClientCodeGenerator(descriptor);
 					if (!string.IsNullOrEmpty(args.outputDirectory))
 					{
 						Directory.CreateDirectory(args.outputDirectory);
 						var outputPath = Path.Combine(args.outputDirectory, $"{descriptor.Name}Client.cs");
 						generator.GenerateCSharpCode(outputPath);
 					}
-					
+
 					foreach (var unityProjectPath in args.ProjectService.GetLinkedUnityProjects())
 					{
 						var unityAssetPath = Path.Combine(args.ConfigService.BaseDirectory, unityProjectPath, "Assets");
@@ -107,6 +108,8 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 						var orderedSchemas = SwaggerService.ExtractAllSchemas(docs,
 							GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
 
+						var previousGenerationFilePath = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.BeamableBackendGenerationPassFile);
+
 						// Set up the generator to generate code with the correct output path for the AutoGen folders.
 						UnrealSourceGenerator.exportMacro = unrealProjectData.CoreProjectName.ToUpper() + "_API";
 						UnrealSourceGenerator.blueprintExportMacro = unrealProjectData.BlueprintNodesProjectName.ToUpper() + "_API";
@@ -115,24 +118,24 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 						UnrealSourceGenerator.blueprintHeaderFileOutputPath = unrealProjectData.MsBlueprintNodesHeaderPath + "/Public/";
 						UnrealSourceGenerator.blueprintCppFileOutputPath = unrealProjectData.MsBlueprintNodesCppPath + "/Private/";
 						UnrealSourceGenerator.genType = UnrealSourceGenerator.GenerationType.Microservice;
+						UnrealSourceGenerator.previousGenerationPassesData = JsonConvert.DeserializeObject<PreviousGenerationPassesData>(File.ReadAllText(previousGenerationFilePath));
+						UnrealSourceGenerator.currentGenerationPassDataFilePath = $"{unrealProjectData.CoreProjectName}_GenerationPass";
 						var unrealFileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext { Documents = docs, OrderedSchemas = orderedSchemas });
 
-						var unrealProjectPath = unrealProjectData.Path;
-						var unrealAssetPath =
-							Path.Combine(args.ConfigService.BaseDirectory, unrealProjectPath, "Content");
-
-						if (!Directory.Exists(unrealAssetPath))
-						{
-							BeamableLogger.LogError(
-								$"Could not generate [{descriptor.Name}] client linked unreal project because directory doesn't exist [{unrealAssetPath}]");
-							continue;
-						}
-
+						var hasOutputPath = !string.IsNullOrEmpty(args.outputDirectory);
 						for (int i = 0; i < unrealFileDescriptors.Count; i++)
 						{
-							var outputPath = Path.Combine(args.outputDirectory, $"{unrealFileDescriptors[i].FileName}");
-							Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
+							string outputPath;
+							if (hasOutputPath)
+							{
+								outputPath = Path.Combine(args.outputDirectory, $"{unrealFileDescriptors[i].FileName}");
+							}
+							else
+							{
+								outputPath = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.SourceFilesPath, $"{unrealFileDescriptors[i].FileName}");
+							}
 
+							Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
 							File.WriteAllText(outputPath, unrealFileDescriptors[i].Content);
 						}
 
@@ -160,7 +163,7 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 			{
 				var existingContent = File.ReadAllText(outputPath);
 				if (string.Compare(existingContent, descriptors[i].Content, CultureInfo.InvariantCulture,
-					    CompareOptions.IgnoreSymbols) == 0)
+						CompareOptions.IgnoreSymbols) == 0)
 				{
 					identicalFileCounter++;
 					continue;

@@ -72,6 +72,7 @@ public struct UnrealCsvRowTypeDeclaration
 
 		_includesForProperties = string.Join("\n", PropertyDeclarations.Select(p => UnrealSourceGenerator.GetIncludeStatementForUnrealType(p.PropertyUnrealType)));
 
+		processDictionary.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
 		processDictionary.Add(nameof(RowNamespacedType), RowNamespacedType);
 		processDictionary.Add(nameof(RowUnrealType), RowUnrealType);
 		processDictionary.Add(nameof(PropertyDeclarations), propertyDeclarations);
@@ -82,8 +83,7 @@ public struct UnrealCsvRowTypeDeclaration
 
 
 	public const string CSV_ROW_TYPE_HEADER =
-		$@"
-#pragma once
+		$@"#pragma once
 
 #include ""CoreMinimal.h""
 #include ""Engine/DataTable.h""
@@ -92,7 +92,7 @@ public struct UnrealCsvRowTypeDeclaration
 #include ""₢{nameof(RowNamespacedType)}₢.generated.h""
 
 USTRUCT(BlueprintType)
-struct ₢{nameof(RowUnrealType)}₢ : public FTableRowBase
+struct ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ ₢{nameof(RowUnrealType)}₢ : public FTableRowBase
 {{
 	GENERATED_BODY()
 
@@ -116,6 +116,7 @@ const TArray<FString> ₢{nameof(RowUnrealType)}₢::HeaderFields = {{
 
 public struct UnrealCsvSerializableTypeDeclaration
 {
+	public string UnrealTypeName;
 	public string NamespacedTypeName;
 
 	public string RowUnrealType;
@@ -124,6 +125,7 @@ public struct UnrealCsvSerializableTypeDeclaration
 	public bool NeedsHeaderRow;
 
 	private string _defineResponseBodyInterface;
+
 
 	public void IntoProcessMap(Dictionary<string, string> processDictionary)
 	{
@@ -153,8 +155,7 @@ void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FSt
 	}
 
 	public const string CSV_SERIALIZABLE_TYPE_HEADER =
-		$@"
-#pragma once
+		$@"#pragma once
 
 #include ""CoreMinimal.h""
 #include ""BeamBackend/BeamBaseResponseBodyInterface.h""
@@ -192,6 +193,7 @@ public struct PolymorphicWrappedData
 
 public struct UnrealJsonSerializableTypeDeclaration
 {
+	public string UnrealTypeName;
 	public string NamespacedTypeName;
 	public List<string> PropertyIncludes;
 	public List<UnrealPropertyDeclaration> UPropertyDeclarations;
@@ -217,6 +219,7 @@ public struct UnrealJsonSerializableTypeDeclaration
 
 	private string _declarePolyWrapperGetType;
 	private string _definePolyWrapperGetType;
+
 
 	public void IntoProcessMap(Dictionary<string, string> processDictionary)
 	{
@@ -438,8 +441,7 @@ void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FSt
 	}
 
 	public const string JSON_SERIALIZABLE_TYPE_HEADER =
-		$@"
-#pragma once
+		$@"#pragma once
 
 #include ""CoreMinimal.h""
 ₢{nameof(_responseBodyIncludes)}₢
@@ -491,8 +493,7 @@ void U₢{nameof(NamespacedTypeName)}₢::BeamDeserializeProperties(const TShare
 
 ";
 
-	public const string JSON_SERIALIZABLE_TYPES_LIBRARY_HEADER = $@"
-#pragma once
+	public const string JSON_SERIALIZABLE_TYPES_LIBRARY_HEADER = $@"#pragma once
 
 #include ""CoreMinimal.h""
 #include ""₢{nameof(UnrealSourceGenerator.headerFileOutputPath)}₢AutoGen/₢{nameof(NamespacedTypeName)}₢.h""

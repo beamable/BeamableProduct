@@ -6,11 +6,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Added additional info about active listing limit default value in StoreContent
-- Beam CLI bindings.
+- Detect missing proguard rules during build.
+
+### Fixed
+- Using portal to remove the last item in a group while listening to "items" with the Inventory PSDK will cause the SDK to notice the change. 
+- Do not init Pubnub Services until needed.
+
+## [1.15.1]
+### Fixed
+- Detect issues with parsing baked content.
+- Exiting playmode early no longer causes a service scope exception. 
+
+### Changed
+- Beamable Environment window leaves version number and environment label unchanged when using preset buttons. 
+
+## [1.15.0]
+### Added
+- Added additional info about active listing limit default value in StoreContent.
+- Limited Beam CLI bindings.
 
 ### Fixed
 - Invalid package invalidations no longer occur for Beamable based assets.
+- Content folders can be case insensitive.
+
+### Changed
+- Beamable button includes Beamable SDK version.
 
 ## [1.14.0]
 ### Fixed

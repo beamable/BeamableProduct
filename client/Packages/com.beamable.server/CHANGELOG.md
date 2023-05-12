@@ -4,16 +4,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unrelased]
+## [Unreleased]
+### Changed
+- Microservices upload to Beamable ECR instead of custom Docker registry.
+
+## [1.15.1]
 ### Fixed
-- Importing assets during microservice publish process on Unity2021.
+- Rare concurrent modification to collection error regarding `IDependencyProvider` when used in a Microservice.
+
+### Changed
+- Generated OpenAPI document for Microservices includes qualified naming extensions.
+- If Docker is not installed, calling Microservices from Editor still work.
+
+## [1.15.0]
+### Fixed
+- Unity 2021 no longer imports assets during Microservice publish process. 
 - Unity clients will direct Microservice traffic to local standalone Microservices.
+- Authorization will be retried if failures occur.
+- Authorization failures during service registration have a 2 minute timeout instead of 10 seconds, allowing for several retry events.
+- ClassPool uses thread locking to prevent memory violations during multithreaded access.
+- If Docker is not installed, Microservice Manager skips code watch.
+- Microservices can be started with an alias in the CID environment variable.
 
 ### Added
 - Runtime log level switching. In RealmConfig, use a key for service_logs|serviceName=logLevel.
-
-### Changed
-- Microservices upload to Beamable ECR instead of custom Docker registry.
 
 ## [1.14.0]
 ### Added

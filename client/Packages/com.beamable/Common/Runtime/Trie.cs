@@ -274,6 +274,37 @@ namespace Beamable.Common
 		}
 
 		/// <summary>
+		/// Given a set of keys, this will return those keys and all the sub-keys in the trie.
+		/// For example, if the trie had keys,
+		/// - a.b.c,
+		/// - a.b.d
+		/// - a.e.k
+		/// - a.f.j
+		///
+		/// and you gave the function, "a.b" and "a.e", you'd get the following
+		/// - a.b
+		/// - a.b.c,
+		/// - a.b.d,
+		/// - a.e,
+		/// - a.e.k
+		/// </summary>
+		/// <param name="keys"></param>
+		/// <returns></returns>
+		public HashSet<string> GetKeysRecursive(IEnumerable<string> keys)
+		{
+			var results = new HashSet<string>();
+			foreach (var key in keys)
+			{
+				foreach (var child in TraverseChildren(key))
+				{
+					results.Add(child.path);
+				}
+			}
+
+			return results;
+		}
+
+		/// <summary>
 		/// Given a set of key values, this will return the set of keys that would return data in the trie.
 		/// For example, if the trie had data at the following paths,
 		/// - a.b.c,

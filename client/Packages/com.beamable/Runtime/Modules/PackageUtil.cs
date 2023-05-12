@@ -5,7 +5,7 @@ namespace Beamable
 {
 	public class PackageUtil
 	{
-		
+
 		/// <summary>
 		/// When using Unity Packages, the package can be installed locally, or through the Unity package cache.
 		/// When the package is installed locally, the package files actually exist in the /Packages/com.package/ folder.

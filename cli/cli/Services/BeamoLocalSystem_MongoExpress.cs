@@ -13,11 +13,11 @@ public partial class BeamoLocalSystem
 	public const string ENV_ME_CONFIG_SITE_COOKIESECRET = "ME_CONFIG_SITE_COOKIESECRET";
 	public const string ENV_ME_CONFIG_SITE_SESSIONSECRET = "ME_CONFIG_SITE_SESSIONSECRET";
 	public string GetMongoExpressContainerNameFromStorageId(string storageId) => $"tool_{storageId}_storage";
-	
+
 	public async Task<ContainerInspectResponse> GetOrCreateMongoExpress(string storageId, string connectionString)
 	{
 		var containerId = GetMongoExpressContainerNameFromStorageId(storageId);
-		
+
 		try
 		{
 			Log.Information("Cleaning any old container for mongo-express");
@@ -28,7 +28,7 @@ public partial class BeamoLocalSystem
 		{
 			Log.Information("Could not remove");
 		}
-		
+
 		// the container isn't running, so we need to start it!
 		Log.Information($"Creating container {MONGO_EXPRESS_IMAGE} {containerId}");
 		var container = await CreateContainer(
@@ -45,7 +45,7 @@ public partial class BeamoLocalSystem
 				{
 					VariableName = ENV_MONGO_SERVER,
 					Value = connectionString
-				}, 
+				},
 				new ()
 				{
 					VariableName = ENV_CODE_THEME,

@@ -21,10 +21,15 @@ namespace Beamable.Server.Editor
 			_registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			_nameToDescriptor = _registry.Descriptors.ToDictionary(d => d.Name);
 		}
-		
+
 
 		public async Promise<string> GetPrefix(string serviceName)
 		{
+			if (DockerCommand.DockerNotInstalled)
+			{
+				return string.Empty;
+			}
+
 			if (_nameToDescriptor.TryGetValue(serviceName, out var descriptor))
 			{
 				var command = new CheckImageCommand(descriptor)
@@ -32,21 +37,19 @@ namespace Beamable.Server.Editor
 					WriteLogToUnity = false
 				};
 				var isRunningInDocker = await command.Start();
-				await _discoveryService.WaitForUpdate();
 				if (isRunningInDocker)
 				{
 					return MicroserviceIndividualization.Prefix;
 				}
 			}
-			
+
 			if (_discoveryService.TryIsRunning(serviceName, out var prefix))
 			{
 				return prefix;
 			}
-			else
-			{
-				return "";
-			}
+
+			return string.Empty;
+
 		}
 	}
 

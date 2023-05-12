@@ -100,6 +100,7 @@ public class SwaggerService
 			UnrealSourceGenerator.cppFileOutputPath = "BeamableCore/Private/";
 			UnrealSourceGenerator.blueprintHeaderFileOutputPath = "BeamableCoreBlueprintNodes/Public/BeamFlow/ApiRequest/";
 			UnrealSourceGenerator.blueprintCppFileOutputPath = "BeamableCoreBlueprintNodes/Private/BeamFlow/ApiRequest/";
+			UnrealSourceGenerator.previousGenerationPassesData = new PreviousGenerationPassesData();
 			files.AddRange(generator.Generate(context));
 		}
 
