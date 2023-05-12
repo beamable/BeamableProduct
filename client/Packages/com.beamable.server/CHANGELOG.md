@@ -601,7 +601,7 @@ no changes
 ### Added
 
 - `ApiContent` classes and execution methods allow you to invoke microservices with data
-- `InitializeServicesAttribute` can now be used over static methods to declare initialization hooks in microservices. 
+- `InitializeServicesAttribute` can now be used over static methods to declare initialization hooks in microservices.
 Supported signatures are async/regular `Task(IServiceInitializer)`, async/regular `Promise<Unit>(IServiceInitializer)` and synchronous `void(IServiceInitializer)`.
   `void` methods must be fully synchronous --- it is not possible to guarantee that any promises started within a `void` initialization
   method will have completed by the time the microservice is receiving traffic.
