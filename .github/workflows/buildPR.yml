@@ -25,7 +25,7 @@ jobs:
         with:
           command: config
           globs: |
-            client/markdownlint.jsonc
+            client/client.markdownlint.jsonc
             client/Packages/**/*.md
   baseNuget:
     timeout-minutes: 10
