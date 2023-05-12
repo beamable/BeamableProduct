@@ -82,7 +82,7 @@ public class ProjectService
 			MsCoreCppPath = msPath,
 			MsBlueprintNodesHeaderPath = msBlueprintPath,
 			MsBlueprintNodesCppPath = msBlueprintPath,
-			
+
 			BeamableBackendGenerationPassFile = relativePath + $"\\Plugins\\BeamableCore\\Source\\{UnrealSourceGenerator.currentGenerationPassDataFilePath}.json"
 		});
 		_configService.SaveDataFile(".linkedProjects", _projects);
