@@ -23,7 +23,7 @@ namespace cli
 			}
 			return default;
 		}
-	
+
 		public T GetValue(ArgumentResult parse)
 		{
 			var strValue = parse.GetValueOrDefault<string>();

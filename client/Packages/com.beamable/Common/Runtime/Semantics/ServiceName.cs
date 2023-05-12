@@ -5,7 +5,7 @@ namespace Beamable.Common.Semantics
 {
 	public struct ServiceName
 	{
-		public string Value { get; } 
+		public string Value { get; }
 		public ServiceName(string value)
 		{
 			string pattern = @"^[A-Za-z][A-Za-z0-9_-]*$";
@@ -14,12 +14,12 @@ namespace Beamable.Common.Semantics
 			{
 				throw new Exception($"Invalid {nameof(ServiceName)}. Input=[{value}] is invalid. Must be alpha numeric. Dashes and underscores are allowed. Must start with an alpha character.");
 			}
-		
+
 			Value = value;
 		}
 
 		public static implicit operator string(ServiceName d) => d.Value;
-	
+
 		public override string ToString()
 		{
 			return Value;
