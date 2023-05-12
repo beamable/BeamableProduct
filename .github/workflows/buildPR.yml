@@ -26,7 +26,7 @@ jobs:
           command: config
           globs: |
             client/client.markdownlint.jsonc
-            client/Packages/**/*.md
+            client/Packages/**/CHANGELOG.md
   baseNuget:
     timeout-minutes: 10
     runs-on: ubuntu-latest
