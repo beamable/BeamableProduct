@@ -891,7 +891,7 @@ This is a broken package. It includes changes from the 1.1.0 release. Please do 
 - Fixed isHttpError obsolete errors
 - Removed use of Social.localUser.id from GameCenter Authentication
 
-### Added:
+### Added
 
 - Support for GameCenter Authentication on iOS 13.5+
 
