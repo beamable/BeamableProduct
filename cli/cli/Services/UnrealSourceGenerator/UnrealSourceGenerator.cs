@@ -503,7 +503,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 				var csvRowType = new UnrealCsvRowTypeDeclaration
 				{
-					RowUnrealType = schemaUnrealType, RowNamespacedType = GetNamespacedTypeNameFromUnrealType(schemaUnrealType), PropertyDeclarations = uproperties, KeyDeclarationIdx = Array.IndexOf(order, keyProperty),
+					RowUnrealType = schemaUnrealType,
+					RowNamespacedType = GetNamespacedTypeNameFromUnrealType(schemaUnrealType),
+					PropertyDeclarations = uproperties,
+					KeyDeclarationIdx = Array.IndexOf(order, keyProperty),
 				};
 				csvRowTypes.Add(csvRowType);
 			}
@@ -1810,7 +1813,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			{
 				if (previousGenerationPassesData.InEngineTypeToIncludePaths.TryGetValue(unrealType, out var includeStatement))
 					return $"#include \"{includeStatement}\"";
-				
+
 				var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
 				return $"#include \"{headerFileOutputPath}AutoGen/Enums/{header}\"";
 			}
