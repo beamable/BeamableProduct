@@ -23,7 +23,10 @@ jobs:
       - name: Lint
         uses: DavidAnson/markdownlint-cli2-action@v9
         with:
-          globs: 'client/Packages/**/*.md'
+          command: config
+          globs: |
+            client/markdownlint.jsonc
+            client/Packages/**/*.md
   baseNuget:
     timeout-minutes: 10
     runs-on: ubuntu-latest
