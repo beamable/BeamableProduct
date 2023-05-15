@@ -463,15 +463,17 @@ namespace Beamable.Api
 
 		protected virtual void AddCidPidHeaders(UnityWebRequest request)
 		{
-			if (!string.IsNullOrEmpty(Cid))
+			if (!string.IsNullOrEmpty(Cid) )
 			{
-				request.SetRequestHeader(Constants.Requester.HEADER_CID, Cid);
-			}
-
-			if (!string.IsNullOrEmpty(Pid))
-			{
-				request.SetRequestHeader(Constants.Requester.HEADER_PID, Pid);
-			}
+				if (!string.IsNullOrEmpty(Pid))
+				{
+					request.SetRequestHeader(Constants.Requester.HEADER_SCOPE, $"{Cid}.{Pid}");
+				}
+				else
+				{
+					request.SetRequestHeader(Constants.Requester.HEADER_SCOPE, $"{Cid}");
+				}
+			} 
 		}
 
 		protected void AddAuthHeader<T>(UnityWebRequest request, SDKRequesterOptions<T> opts)
