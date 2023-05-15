@@ -732,7 +732,7 @@ public class SwaggerService
 			var referencedSchemas = new Dictionary<string, OpenApiSchema>();
 			var schemasToExplore = new Queue<OpenApiSchema>();
 
-			clonedDocument.Info.Title = $"{tagToPathSet.Key} Beam";
+			clonedDocument.Info.Title = $"{tagToPathSet.Key} Actor";
 			clonedDocument.Components = new OpenApiComponents();
 			clonedDocument.Components.Schemas = referencedSchemas;
 			clonedDocument.Paths = new OpenApiPaths();
