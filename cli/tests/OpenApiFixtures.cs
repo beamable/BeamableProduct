@@ -2,7 +2,7 @@ namespace tests;
 
 public static class OpenApiFixtures
 {
-	
+
 	#region proto-actor
 
 	public const string ProtoActor = @"{
@@ -2616,7 +2616,7 @@ public static class OpenApiFixtures
   }
 }";
 	#endregion
-	
+
 	#region content basic
 
 	public const string ContentBasicApi = @"
