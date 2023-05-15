@@ -194,7 +194,13 @@ public static class UnityHelper
 	{
 		unit = new CodeCompileUnit();
 		GetTypeNames(document, out var title, out var className, out _, out _);
-		var root = new CodeNamespace($"{BeamableGeneratedNamespace}.{SanitizeClassName(title)}");
+		
+		var namespaceName = SanitizeClassName(title);
+		// if (title == "Beamable")
+		// {
+		// 	namespaceName = "Api";
+		// }
+		var root = new CodeNamespace($"{BeamableGeneratedNamespace}.{namespaceName}");
 		root.Imports.Add(new CodeNamespaceImport(BeamableGeneratedModelsNamespace));
 		root.Imports.Add(new CodeNamespaceImport(BeamableOptionalNamespace));
 		root.Imports.Add(new CodeNamespaceImport("Beamable.Common"));
@@ -342,6 +348,8 @@ public static class UnityHelper
 				}
 			}
 			var methodName = path.Key.Substring(index);
+
+			methodName = SwaggerService.FormatPathNameAsMethodName(methodName);
 			if (methodName.Length > 1)
 			{
 				methodName = char.ToUpper(methodName[0]) + methodName.Substring(1);
@@ -1039,6 +1047,7 @@ public static class UnityHelper
 	{
 		switch (schema.Type, schema.Format)
 		{
+			case ("string", _) when schema.Enum?.Count > 0:
 			case ("array", _):
 			case ("object", _):
 				var type = new CodeTypeDeclaration($"Optional{SanitizeClassName(name)}");
@@ -1243,10 +1252,9 @@ public static class UnityHelper
 				type.Members.Add(innerExtensions);
 			}
 
-			// if the fieldSchema introduced a oneOf character, we need to generate the definition
-			if (fieldSchema.Items?.OneOf?.Count > 0)
+			RequiredOneOfInterface HandleOneOf(IList<OpenApiSchema> oneOf)
 			{
-				var interfaceName = OneOfClassName(fieldSchema.Items.OneOf);
+				var interfaceName = OneOfClassName(oneOf);
 				var innerInterface = new CodeTypeDeclaration(interfaceName) { IsInterface = true };
 				innerInterface.BaseTypes.Add(new CodeTypeReference(typeof(JsonSerializable.ISerializable)));
 
@@ -1259,7 +1267,7 @@ public static class UnityHelper
 
 				var factoryConstructor = new CodeConstructor { Attributes = MemberAttributes.Public };
 				factoryType.Members.Add(factoryConstructor);
-				foreach (var child in fieldSchema.Items.OneOf)
+				foreach (var child in oneOf)
 				{
 					var childClassName = SanitizeClassName(child.Reference.Id);
 					var referencedSchema = schema.Reference.HostDocument.Components.Schemas[child.Reference.Id];
@@ -1281,15 +1289,25 @@ public static class UnityHelper
 					factoryConstructor.Statements.Add(statement);
 				}
 
-				polymorphicFields.Add(new RequiredOneOfInterface
+				return new RequiredOneOfInterface
 				{
 					interfaceName = interfaceName,
-					childTypeSchemas = fieldSchema.Items.OneOf,
+					childTypeSchemas = oneOf,
 					type = innerInterface,
 					serializationFactoryType = factoryType
-				});
+				};
 
+			}
+			
+			if (fieldSchema.OneOf?.Count > 0)
+			{
+				// TODO: put this back in when we support scheduler polymorphism
+				// polymorphicFields.Add(HandleOneOf(fieldSchema.OneOf));
+			}
 
+			if (fieldSchema.Items?.OneOf?.Count > 0)
+			{
+				polymorphicFields.Add(HandleOneOf(fieldSchema.Items.OneOf));
 			}
 		}
 
