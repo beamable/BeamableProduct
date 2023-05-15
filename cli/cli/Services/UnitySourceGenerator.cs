@@ -737,6 +737,7 @@ public static class UnityHelper
 		// remove "basic" and "object" words...
 		const string basicService = "Basic";
 		const string objectService = "Object";
+		const string apiService = "Actor";
 
 		fileName = "";
 		title = "";
@@ -759,20 +760,27 @@ public static class UnityHelper
 				title = casedWord;
 			}
 
-			fileName += casedWord;
 			switch (casedWord)
 			{
 				case basicService:
+					fileName += casedWord;
+					break;
+				case apiService: // in the API naming case, we'll keep "Beam<SERVICE>" conventions
+					className = $"Beam{className}";
+					fileName = $"Beam{fileName}";
 					break;
 				case objectService:
 					methodCustomization = "Object";
+					fileName += casedWord;
 					break;
 				default:
 					className += casedWord;
+					fileName += casedWord;
 					break;
 			}
 		}
 
+		className = className.Replace("Playerpresence", "PlayerPresence");
 		className += "Api";
 		className = SanitizeClassName(className);
 
