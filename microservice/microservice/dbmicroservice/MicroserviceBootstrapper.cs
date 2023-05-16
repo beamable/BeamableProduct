@@ -44,6 +44,7 @@ using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Formatting.Display;
+using SharedRuntime;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -215,11 +216,14 @@ namespace Beamable.Server
 
         public static ReflectionCache ConfigureReflectionCache()
         {
-	        
 	        var reflectionCache = new ReflectionCache();
 	        var contentTypeReflectionCache = new ContentTypeReflectionCache();
+	        var mongoIndexesReflectionCache = new MongoIndexesReflectionCache();
+	        
 	        reflectionCache.RegisterTypeProvider(contentTypeReflectionCache);
 	        reflectionCache.RegisterReflectionSystem(contentTypeReflectionCache);
+	        reflectionCache.RegisterTypeProvider(mongoIndexesReflectionCache);
+	        reflectionCache.RegisterReflectionSystem(mongoIndexesReflectionCache);
 	        reflectionCache.SetStorage(new BeamHintGlobalStorage());
 
 	        var relevantAssemblyNames = AppDomain.CurrentDomain.GetAssemblies().Where(asm => !asm.GetName().Name.StartsWith("System.") &&

@@ -1,6 +1,7 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
+using Beamable.Microservices;
 using Beamable.Server;
 using MongoDB.Bson;
 using System;
@@ -76,12 +77,17 @@ namespace SharedRuntime
 							if (attributeData.AttributeType != typeof(MongoIndexAttribute))
 								continue;
 
-							var mongoIndexType = (MongoIndexType)attributeData.ConstructorArguments[0].Value;
+							var mongoIndexType = (MongoDbExtensions.IndexType)attributeData.ConstructorArguments[0].Value;
+							var mongoIndexName = (string)attributeData.ConstructorArguments[1].Value;
+
+							if (string.IsNullOrEmpty(mongoIndexName))
+								mongoIndexName = mongoIndexType.ToString().ToLower();
+							
 							var fieldInfo = (FieldInfo)memberInfo;
 
 							var indexDetails = new MongoIndexDetails
 							{
-								Field = fieldInfo.Name, IndexType = mongoIndexType
+								Field = fieldInfo.Name, IndexType = mongoIndexType, IndexName = mongoIndexName
 							};
 
 							pendingIndexData.Indexes.Add(indexDetails);
@@ -112,7 +118,8 @@ namespace SharedRuntime
 
 	public class MongoIndexDetails
 	{
-		public MongoIndexType IndexType { get; set; }
+		public MongoDbExtensions.IndexType IndexType { get; set; }
+		public string IndexName { get; set; }
 		public string Field { get; set; }
 	}
 }
