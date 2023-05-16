@@ -23,7 +23,7 @@ public struct UnrealCliCommandDeclaration
 
 	public void IntoProcessDict(Dictionary<string, string> dict)
 	{
-		_streamFieldDeclarations = string.Join("\n\n", Streams.Select(s =>
+		_streamFieldDeclarations = string.Join("\n\n\t", Streams.Select(s =>
 		{
 			dict.Clear();
 			s.IntoProcessDict(dict);
@@ -42,7 +42,6 @@ public struct UnrealCliCommandDeclaration
 			dict.Clear();
 			s.IntoProcessDict(dict);
 			return UnrealCliStreamDeclaration.STREAM_PARSE_IMPL.ProcessReplacement(dict);
-
 		}));
 
 		dict.Clear();
@@ -115,10 +114,12 @@ inline TSharedPtr<FMonitoredProcess> U₢{nameof(CommandName)}₢Command::RunImp
 	{{
 		if (OnCompleted)
 		{{
-			OnCompleted(ResultCode, Op);
+			AsyncTask(ENamedThreads::GameThread, [this, ResultCode, Op]
+			{{
+				OnCompleted(ResultCode, Op);
+			}});
 		}}
 	}});
-	CliProcess->Launch();
 	return CliProcess;
 }}
 ";
@@ -171,8 +172,10 @@ struct F₢{nameof(StreamDataName)}₢
 				₢{nameof(StreamName)}₢Timestamps.Add(Timestamp);
 
 				UE_LOG(LogBeamCli, Verbose, TEXT(""₢{nameof(CommandName)}₢ Command - Message Received: %s""), *MessageJson);
-				On₢{nameof(StreamName)}₢StreamOutput.CheckCallable();
-				On₢{nameof(StreamName)}₢StreamOutput(₢{nameof(StreamName)}₢Stream, ₢{nameof(StreamName)}₢Timestamps, Op);
+				AsyncTask(ENamedThreads::GameThread, [this, Op]
+				{{
+					On₢{nameof(StreamName)}₢StreamOutput(₢{nameof(StreamName)}₢Stream, ₢{nameof(StreamName)}₢Timestamps, Op);
+				}});				
 			}}
 ";
 }
@@ -201,13 +204,9 @@ public class UnrealCliGenerator : ICliGenerator
 				Streams = command.resultStreams.Select(rs =>
 				{
 					// For the default stream, we don't add it to the type name
-					var streamChannel = rs.channel == "stream" ? "" : rs.channel.Capitalize();
+					var streamChannel = rs.channel == "stream" ? "" : rs.channel.Sanitize().Capitalize();
 
-					var streamDataProperties = rs.runtimeType.GetFields().Select(fieldInfo => new UnrealPropertyDeclaration()
-					{
-						PropertyName = fieldInfo.Name,
-						PropertyUnrealType = UnrealSourceGenerator.GetUnrealTypeFromReflectionType(fieldInfo.FieldType)
-					}).ToList();
+					var streamDataProperties = rs.runtimeType.GetFields().Select(fieldInfo => new UnrealPropertyDeclaration() { PropertyName = fieldInfo.Name, PropertyUnrealType = UnrealSourceGenerator.GetUnrealTypeFromReflectionType(fieldInfo.FieldType) }).ToList();
 
 					return new UnrealCliStreamDeclaration()
 					{
@@ -223,16 +222,8 @@ public class UnrealCliGenerator : ICliGenerator
 			var dict = new Dictionary<string, string>();
 
 			cliCommandDeclaration.IntoProcessDict(dict);
-			files.Add(new GeneratedFileDescriptor()
-			{
-				FileName = $"BeamableCoreEditor/Public/Subsystems/CLI/Autogen/{commandName}Command.h",
-				Content = UnrealCliCommandDeclaration.HEADER_COMMAND_TEMPLATE.ProcessReplacement(dict)
-			});
-			files.Add(new GeneratedFileDescriptor()
-			{
-				FileName = $"BeamableCoreEditor/Public/Subsystems/CLI/Autogen/{commandName}Command.cpp",
-				Content = UnrealCliCommandDeclaration.CPP_COMMAND_TEMPLATE.ProcessReplacement(dict)
-			});
+			files.Add(new GeneratedFileDescriptor() { FileName = $"BeamableCoreEditor/Public/Subsystems/CLI/Autogen/{commandName}Command.h", Content = UnrealCliCommandDeclaration.HEADER_COMMAND_TEMPLATE.ProcessReplacement(dict) });
+			files.Add(new GeneratedFileDescriptor() { FileName = $"BeamableCoreEditor/Public/Subsystems/CLI/Autogen/{commandName}Command.cpp", Content = UnrealCliCommandDeclaration.CPP_COMMAND_TEMPLATE.ProcessReplacement(dict) });
 		}
 
 

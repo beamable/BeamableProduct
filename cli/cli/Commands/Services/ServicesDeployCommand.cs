@@ -1,4 +1,5 @@
 ﻿using Beamable.Common;
+using Beamable.Common.BeamCli;
 using cli.Services;
 using Newtonsoft.Json;
 using Serilog;
@@ -17,7 +18,11 @@ public class ServicesDeployCommandArgs : LoginCommandArgs
 	public string[] RemoteServiceComments;
 }
 
-public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
+public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
+	IResultSteam<DefaultStreamResultChannel, ServiceDeployReportResult>,
+	IResultSteam<ServiceLocalDeployProgressResult, ServiceLocalDeployProgressResult>,
+	IResultSteam<ServiceRemoteDeployProgressResult, ServiceRemoteDeployProgressResult>
+
 {
 	private IAppContext _ctx;
 	private BeamoLocalSystem _localBeamo;
@@ -27,16 +32,12 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 		base("deploy",
 			"Deploys services, either locally or remotely (to the current realm)")
 	{
-
 	}
 
 	public override void Configure()
 	{
 		AddOption(new Option<string[]>("--ids", "The ids for the services you wish to deploy. Ignoring this option deploys all services." +
-												"If '--remote' option is set, these are the ids that'll become enabled by Beam-O once it receives the updated manifest")
-		{
-			AllowMultipleArgumentsPerToken = true
-		},
+		                                        "If '--remote' option is set, these are the ids that'll become enabled by Beam-O once it receives the updated manifest") { AllowMultipleArgumentsPerToken = true },
 			(args, i) => args.BeamoIdsToDeploy = i.Length == 0 ? null : i);
 
 		AddOption(new Option<bool>("--remote", () => false, $"If this option is set, we publish the manifest instead"),
@@ -49,10 +50,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 			(args, i) => args.RemoteComment = i);
 
 		AddOption(new Option<string[]>("--service-comments", Array.Empty<string>, $"Requires --remote flag. Any number of 'BeamoId::Comment' strings. " +
-																				  $"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal")
-		{
-			AllowMultipleArgumentsPerToken = true
-		},
+		                                                                          $"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal") { AllowMultipleArgumentsPerToken = true },
 			(args, i) => args.RemoteServiceComments = i);
 	}
 
@@ -105,6 +103,13 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 				}
 
 				return;
+			}
+			
+			// Enable the list of BeamoIds that were given
+			foreach (string beamoId in args.BeamoIdsToDeploy)
+			{
+				var sd = _localBeamo.BeamoManifest.ServiceDefinitions.First(def => def.BeamoId == beamoId);
+				sd.ShouldBeEnabledOnRemote = true;
 			}
 
 			// Parse and prepare per-service comments dictionary (BeamoId => CommentString) 
@@ -161,6 +166,8 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 					var uploadManifestTask = ctx.AddTask("Publishing Manifest to Beam-O!");
 
 
+					var atLeastOneFailed = false;
+					
 					_ = await _localBeamo.DeployToRemote(_localBeamo.BeamoManifest, _localBeamo.BeamoRuntime, dockerRegistryUrl,
 						args.RemoteComment ?? string.Empty,
 						perServiceComments,
@@ -168,27 +175,46 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 						{
 							var progressTask = buildAndTestTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
 							progressTask?.Increment((progress * 99) - progressTask.Value);
+							this.SendResults<ServiceRemoteDeployProgressResult, ServiceRemoteDeployProgressResult>(
+								new ServiceRemoteDeployProgressResult() { BeamoId = beamoId, BuildAndTestProgress = progressTask?.Value ?? 0.0f, ContainerUploadProgress = 0.0f, }
+							);
 						}, beamoId =>
 						{
 							var progressTask = buildAndTestTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
 							progressTask?.Increment(progressTask.MaxValue - progressTask.Value);
+							this.SendResults<ServiceRemoteDeployProgressResult, ServiceRemoteDeployProgressResult>(
+								new ServiceRemoteDeployProgressResult() { BeamoId = beamoId, BuildAndTestProgress = progressTask?.Value ?? 0.0f, ContainerUploadProgress = 0.0f, }
+							);
 						}, (beamoId, progress) =>
 						{
+							var buildAndTestTask = buildAndTestTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
 							var progressTask = uploadingContainerTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
 							progressTask?.Increment((progress * 99) - progressTask.Value);
+							this.SendResults<ServiceRemoteDeployProgressResult, ServiceRemoteDeployProgressResult>(
+								new ServiceRemoteDeployProgressResult() { BeamoId = beamoId, BuildAndTestProgress = buildAndTestTask?.Value ?? 0.0f, ContainerUploadProgress = progressTask?.Value ?? 0.0f, }
+							);
 						},
-						(beamoId, successfull) =>
+						(beamoId, successful) =>
 						{
 							var progressTask = uploadingContainerTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
 							if (progressTask != null)
 							{
 								progressTask.Increment(progressTask.MaxValue - progressTask.Value);
-								progressTask.Description = successfull ? $"Success: {progressTask?.Description}" : $"Failure: {progressTask?.Description}";
+								progressTask.Description = successful ? $"Success: {progressTask?.Description}" : $"Failure: {progressTask?.Description}";
+								atLeastOneFailed |= !successful;
 							}
 						});
 
 					// Finish the upload manifest task
 					uploadManifestTask.Increment(100);
+					
+					this.SendResults<DefaultStreamResultChannel, ServiceDeployReportResult>(new ServiceDeployReportResult() { Success = !atLeastOneFailed, FailureReason = "" });
+					
+					// After deploying to remote, we need to stop the services we deployed locally.
+					await _localBeamo.StopExistingLocalServiceInstances();
+					
+					_localBeamo.SaveBeamoLocalManifest();
+					_localBeamo.SaveBeamoLocalRuntime();
 				});
 		}
 		else
@@ -205,10 +231,12 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 							{
 								var progressTask = allProgressTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
 								progressTask?.Increment((progress * 80) - progressTask.Value);
+								this.SendResults<ServiceLocalDeployProgressResult, ServiceLocalDeployProgressResult>(new ServiceLocalDeployProgressResult() { BeamoId = beamoId, LocalDeployProgress = progressTask?.Value ?? 0.0f, });
 							}, beamoId =>
 							{
 								var progressTask = allProgressTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
 								progressTask?.Increment(20);
+								this.SendResults<ServiceLocalDeployProgressResult, ServiceLocalDeployProgressResult>(new ServiceLocalDeployProgressResult() { BeamoId = beamoId, LocalDeployProgress = progressTask?.Value ?? 0.0f, });
 							});
 					}
 					catch (CliException e)
@@ -216,15 +244,43 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>
 						if (e.Message.Contains("cyclical", StringComparison.InvariantCultureIgnoreCase))
 							AnsiConsole.MarkupLine($"[red]{e.Message}[/]");
 						else
+						{
+							this.SendResults<DefaultStreamResultChannel, ServiceDeployReportResult>(new ServiceDeployReportResult() { Success = false, FailureReason = e.ToString() });
 							throw;
+						}
 					}
 				});
+			
+			this.SendResults<DefaultStreamResultChannel, ServiceDeployReportResult>(new ServiceDeployReportResult() { Success = true, FailureReason = "" });
 
 			_localBeamo.SaveBeamoLocalManifest();
 			_localBeamo.SaveBeamoLocalRuntime();
 		}
 
-		await _localBeamo.StopExistingLocalServiceInstances();
 		await _localBeamo.StopListeningToDocker();
 	}
+}
+
+public class ServiceLocalDeployProgressResult : IResultChannel
+{
+	public string ChannelName => "local_progress";
+
+	public string BeamoId;
+	public double LocalDeployProgress;
+}
+
+public class ServiceRemoteDeployProgressResult : IResultChannel
+{
+	public string ChannelName => "remote_progress";
+
+	public string BeamoId;
+	public double BuildAndTestProgress;
+	public double ContainerUploadProgress;
+}
+
+public class ServiceDeployReportResult
+{
+	public bool Success;
+
+	public string FailureReason;
 }
