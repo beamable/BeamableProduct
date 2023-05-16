@@ -420,8 +420,8 @@ public class SwaggerService
 		}
 
 		var output = await Task.WhenAll(tasks);
-		
-		
+
+
 		var processors = new List<Func<OpenApiDocumentResult, List<OpenApiDocumentResult>>>
 		{
 			Rewrite204StatusCodeTo200,
@@ -446,7 +446,7 @@ public class SwaggerService
 				}
 			}
 		}
-		
+
 		return final;
 	}
 
@@ -473,7 +473,7 @@ public class SwaggerService
 
 		return output;
 	}
-	
+
 	private static string SerializeSchema(OpenApiSchema schema)
 	{
 		using var sw = new StringWriter();
@@ -494,7 +494,7 @@ public class SwaggerService
 
 		var output = new List<OpenApiDocumentResult>();
 		output.Add(swagger);
-		
+
 		// the 204 http status code means GOOD, but, void return. To keep generation simple, we'll map these to 200 status codes with empty returns.
 		foreach (var path in swagger.Document.Paths)
 		{
@@ -519,7 +519,7 @@ public class SwaggerService
 
 		return output;
 	}
-	
+
 	private static List<OpenApiDocumentResult> AddTitlesToAllSchemasIfNone(OpenApiDocumentResult swagger)
 	{
 		foreach (var schema in swagger.Document.Components.Schemas)
@@ -543,7 +543,7 @@ public class SwaggerService
 			}
 		};
 	}
-	
+
 	private static List<OpenApiDocumentResult> ReduceProtoActorMimeTypes(OpenApiDocumentResult swagger)
 	{
 		const string APPLICATION_JSON = "application/json";
@@ -585,14 +585,14 @@ public class SwaggerService
 				}
 			}
 		}
-		
+
 		return output;
 	}
-	
+
 	private static List<OpenApiDocumentResult> RewriteInlineResultSchemasAsReferences(OpenApiDocumentResult swagger)
 	{
 		var output = new List<OpenApiDocumentResult>();
-		
+
 		var addedComponents = new Dictionary<string, KeyValuePair<string, OpenApiSchema>>(); // name -> json --> schema
 		foreach (var path in swagger.Document.Paths)
 		{
@@ -626,7 +626,7 @@ public class SwaggerService
 							existingForms = addedComponents[id] =
 								new KeyValuePair<string, OpenApiSchema>(json, schema);
 						}
-							
+
 						if (existingForms.Key == json)
 						{
 							// this is good, we can just reference this other schema!
@@ -646,12 +646,12 @@ public class SwaggerService
 		{
 			swagger.Document.Components.Schemas.Add(schema.Value.Title, schema.Value);
 		}
-		
+
 		output.Add(swagger);
 
 		return output;
 	}
-	
+
 	private static List<OpenApiDocumentResult> SplitTagsIntoSeparateDocuments(OpenApiDocumentResult swagger)
 	{
 		var output = new List<OpenApiDocumentResult>();
@@ -704,14 +704,14 @@ public class SwaggerService
 
 				tagCollection.Add(path);
 			}
-			
+
 
 			if (tagToPaths.Count == 0)
 			{
 				output.Add(swagger);
 				return output;
 			}
-			
+
 			if (opsWithTagsCount != opCount)
 			{
 				throw new CliException(
@@ -774,9 +774,9 @@ public class SwaggerService
 				if (curr == null) continue;
 				if (seenSchemas.Contains(curr)) continue;
 				seenSchemas.Add(curr);
-				
-				
-				
+
+
+
 				schemasToExplore.Enqueue(curr.AdditionalProperties);
 				schemasToExplore.Enqueue(curr.Items);
 				if (curr.Properties != null)
@@ -794,7 +794,7 @@ public class SwaggerService
 						schemasToExplore.Enqueue(option);
 					}
 				}
-				
+
 				var isInlineSchema = string.IsNullOrEmpty(curr.Reference?.Id);
 				if (isInlineSchema) continue;
 
@@ -802,7 +802,7 @@ public class SwaggerService
 				referencedSchemas[curr.Reference.Id] = referencedSchema;
 
 			}
-			
+
 			output.Add(new OpenApiDocumentResult
 			{
 				Descriptor = swagger.Descriptor,
@@ -813,7 +813,7 @@ public class SwaggerService
 		}
 		return output;
 	}
-	
+
 
 	public class OpenApiDocumentResult
 	{

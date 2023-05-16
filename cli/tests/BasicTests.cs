@@ -190,14 +190,14 @@ public class Tests
 		}, "oapi", "generate", "--filter", "content,t:basic", "--engine", "unity");
 		Assert.AreEqual(0, status);
 	}
-	
+
 	[Test]
 	public async Task GenerateProtoActor()
 	{
 		var status = await Cli.RunAsyncWithParams(builder =>
 		{
 			var mock = new Mock<ISwaggerStreamDownloader>();
-			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("api") )))
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("api"))))
 				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.ProtoActor));
 			builder.ReplaceSingleton<ISwaggerStreamDownloader>(mock.Object);
 		}, "oapi", "generate", "--filter", "t:api", "--engine", "unity", "--conflict-strategy", "RenameUncommonConflicts");
