@@ -4,6 +4,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Semantics;
 using cli.Commands.Project;
 using cli.Content;
 using cli.Dotnet;
@@ -81,7 +82,8 @@ public class App
 		services.AddSingleton<UnrealSourceGenerator>();
 		services.AddSingleton<ProjectService>();
 		services.AddSingleton<SwaggerService.SourceGeneratorListProvider>();
-		services.AddSingleton<ICliGenerator, UnityCliGenerator>();
+		services.AddSingleton<UnityCliGenerator>();
+		services.AddSingleton<UnrealCliGenerator>();
 		OpenApiRegistration.RegisterOpenApis(services);
 
 		_serviceConfigurator?.Invoke(services);
@@ -93,6 +95,8 @@ public class App
 			throw new InvalidOperationException("The app has already been built, and cannot be configured anymore");
 
 		ConfigureLogging();
+
+		Commands.AddSingleton(new ArgValidator<ServiceName>(arg => new ServiceName(arg)));
 
 		// add global options
 		Commands.AddSingleton<DryRunOption>();

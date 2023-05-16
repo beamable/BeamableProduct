@@ -87,7 +87,7 @@ void ₢{nameof(UnrealTypeName)}₢::BeamDeserializeElements(const TArray<TShare
 #include ""₢{nameof(NamespacedTypeName)}₢.generated.h""
 
 USTRUCT(BlueprintType, Category=""Beam|Wrappers|Maps"")
-struct ₢{nameof(UnrealTypeName)}₢ : public FBeamMap
+struct ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ ₢{nameof(UnrealTypeName)}₢ : public FBeamMap
 {{
 	GENERATED_BODY()
 

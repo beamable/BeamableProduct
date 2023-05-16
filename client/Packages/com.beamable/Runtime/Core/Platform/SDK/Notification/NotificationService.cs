@@ -389,7 +389,7 @@ namespace Beamable.Api.Notification
 			NotificationLogger.LogFormat("Create notification channel. id={0}, name={1}, description={2}.", id, name, description);
 		}
 
-#if NOTIFICATIONS_PACKAGE
+#if NOTIFICATIONS_PACKAGE && UNITY_IOS
 		IEnumerator RequestAuthorization()
 		{
 			var authorizationOption = AuthorizationOption.Alert | AuthorizationOption.Badge | AuthorizationOption.Sound;
