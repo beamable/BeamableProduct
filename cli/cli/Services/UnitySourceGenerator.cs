@@ -194,7 +194,7 @@ public static class UnityHelper
 	{
 		unit = new CodeCompileUnit();
 		GetTypeNames(document, out var title, out var className, out _, out _);
-		
+
 		var namespaceName = SanitizeClassName(title);
 		// if (title == "Beamable")
 		// {
@@ -1306,7 +1306,7 @@ public static class UnityHelper
 				};
 
 			}
-			
+
 			if (fieldSchema.OneOf?.Count > 0)
 			{
 				// TODO: put this back in when we support scheduler polymorphism
