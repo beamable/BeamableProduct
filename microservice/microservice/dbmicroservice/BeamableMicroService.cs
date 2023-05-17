@@ -58,7 +58,6 @@ using microservice.Common;
 using Newtonsoft.Json;
 using Serilog;
 using Microsoft.Extensions.DependencyInjection;
-using SharedRuntime;
 using System.Linq.Expressions;
 using System.Text.Json;
 using static Beamable.Common.Constants.Features.Services;

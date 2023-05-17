@@ -2,14 +2,13 @@
 using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
 using Beamable.Microservices;
-using Beamable.Server;
 using MongoDB.Bson;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace SharedRuntime
+namespace Beamable.Server
 {
 	public class MongoIndexesReflectionCache : IReflectionSystem
 	{
