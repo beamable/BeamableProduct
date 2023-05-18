@@ -194,7 +194,7 @@ public class UnrealCliGenerator : ICliGenerator
 			if (invalidCommands.Contains(command.executionPath)) continue;
 
 			var nonBeamCommandNames = command.executionPath.Substring(command.executionPath.IndexOf(" ", StringComparison.Ordinal) + 1);
-			var commandName = $"BeamCli{string.Join("", nonBeamCommandNames.Split(" ").Select(c => c.Capitalize()))}";
+			var commandName = $"BeamCli{string.Join("", nonBeamCommandNames.Split(" ").Select(c => c.Sanitize().Capitalize()))}";
 			var cliCommandDeclaration = new UnrealCliCommandDeclaration()
 			{
 				CommandName = commandName,

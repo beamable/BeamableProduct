@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
 using cli.Utils;
@@ -13,20 +14,18 @@ public class InitCommandArgs : LoginCommandArgs
 	public string pid;
 }
 
-public class InitCommand : AppCommand<InitCommandArgs>
+public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStreamResultChannel, InitCommandResult>
 {
 	private readonly LoginCommand _loginCommand;
-	private readonly ConfigCommand _configCommand;
 	private IRealmsApi _realmsApi;
 	private IAliasService _aliasService;
 	private IAppContext _ctx;
 	private ConfigService _configService;
 
-	public InitCommand(LoginCommand loginCommand, ConfigCommand configCommand)
+	public InitCommand(LoginCommand loginCommand)
 		: base("init", "Initialize a new Beamable project in the current directory")
 	{
 		_loginCommand = loginCommand;
-		_configCommand = configCommand;
 	}
 
 	public override void Configure()
@@ -71,7 +70,14 @@ public class InitCommand : AppCommand<InitCommandArgs>
 		await GetPidAndAuth(args, cid, host);
 
 		AnsiConsole.MarkupLine("Success! :thumbs up: Here are your connection details");
-		await _configCommand.Handle(args.Create<ConfigCommandArgs>());
+		BeamableLogger.Log(args.ConfigService.ConfigFilePath);
+		BeamableLogger.Log($"cid=[{args.AppContext.Cid}] pid=[{args.AppContext.Pid}]");
+		BeamableLogger.Log(args.ConfigService.PrettyPrint());
+		this.SendResults(new InitCommandResult() { 
+			host = args.ConfigService.GetConfigString(Constants.CONFIG_PLATFORM),
+			cid = args.ConfigService.GetConfigString(Constants.CONFIG_CID), 
+			pid = args.ConfigService.GetConfigString(Constants.CONFIG_PID) 
+		});
 	}
 
 	private async Task GetPidAndAuth(InitCommandArgs args, string cid, string host)
@@ -189,4 +195,11 @@ public class InitCommand : AppCommand<InitCommandArgs>
 			_ => throw new ArgumentOutOfRangeException()
 		});
 	}
+}
+
+public class InitCommandResult
+{
+	public string host;
+	public string cid;
+	public string pid;
 }
