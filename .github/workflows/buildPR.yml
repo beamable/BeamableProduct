@@ -12,14 +12,6 @@ on:
     #   - 'cli/**'
 
 jobs:
-  lint-markdown:
-    timeout-minutes: 5
-    runs-on: ubuntu-latest
-    concurrency:
-      group: lint-markdown-${{ github.head_ref }}
-      cancel-in-progress: true
-    steps:
-      - uses: actions/checkout@v2
   baseNuget:
     timeout-minutes: 10
     runs-on: ubuntu-latest
