@@ -21,11 +21,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Lint
-        uses: DavidAnson/markdownlint-cli2-action@v9
+        uses: DavidAnson/markdownlint-cli2-action@v10
         with:
-          command: config
+          # command: fix
           globs: |
-            client/client.markdownlint.jsonc
             client/Packages/**/CHANGELOG.md
   baseNuget:
     timeout-minutes: 10
