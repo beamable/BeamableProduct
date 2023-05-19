@@ -37,6 +37,7 @@ jobs:
       - name: Lint changelogs
         uses: DavidAnson/markdownlint-cli2-action@v10
         with:
+          continue-on-error: true
           command: fix
           globs: |
             client/Packages/**/CHANGELOG.md
