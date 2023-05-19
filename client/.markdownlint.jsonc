@@ -1,0 +1,23 @@
+{
+  "line-length": {
+    "strict": false,
+    "code_blocks": false,
+    "line_length": 300
+  },
+  "no-duplicate-heading": {
+    "siblings_only": true,
+    "allow_different_nesting": true,
+  },
+  "proper-names": {
+    "code_blocks": false,
+    "names": [
+      "CommonMark",
+      "JavaScript",
+      "Markdown",
+      "markdown-it",
+      "markdownlint",
+      "markdownlint-cli2",
+      "Node.js"
+    ]
+  }
+}
