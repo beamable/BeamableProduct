@@ -137,14 +137,13 @@ public class CheckStatusCommand : AppCommand<CheckStatusCommandArgs>
 	private bool TryToListen(out ServiceDiscoveryEntry service)
 	{
 		service = null;
-		var validHostPrefixes = Beamable.Common.Constants.Features.Services.DISCOVERY_IPS.Append("172.");
 		if (!_beacon.TryReceive(TimeSpan.FromMilliseconds(50), out var message))
 		{
 			return false;
 		}
 		
 		var isSelf = _networkInterfaceCollection.Any(item => item.Address.ToString().StartsWith(message.PeerHost));
-		if (!isSelf && !validHostPrefixes.Any(prefix => message.PeerHost.StartsWith(prefix)))
+		if (!isSelf)
 		{
 			return false;
 		}
