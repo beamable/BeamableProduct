@@ -219,8 +219,13 @@ namespace Beamable.Server
 			_webSocketPromise = AttemptConnection();
 			var socket = await _webSocketPromise;
 
+			if (!_args.DisableCustomInitializationHooks && !_ranCustomUserInitializationHooks)
+			{
+				await SetupStorage();
+			}
+
 			await SetupWebsocket(socket, _serviceAttribute.EnableEagerContentLoading);
-			await SetupStorage();
+
 			if (!_serviceAttribute.EnableEagerContentLoading)
 			{
 				var _ = contentService.Init();
@@ -403,35 +408,41 @@ namespace Beamable.Server
 							method.Name == nameof(IStorageObjectConnectionProvider.GetCollection) &&
 							method.GetParameters().Length == 0)
 						.FirstOrDefault(x => x.IsGenericMethod);
-
-				MethodInfo getCollectionMethodGeneric =
-					getCollectionMethod?.MakeGenericMethod(data.Database, data.Collection);
-				var collectionGenericObject = getCollectionMethodGeneric?.Invoke(connectionProvider, null);
-
+				
 				Type mongoCollectionType = typeof(IMongoCollection<>);
 				Type mongoCollectionGenericType = mongoCollectionType.MakeGenericType(data.Collection);
 				Type promiseGenericType = typeof(Promise<>).MakeGenericType(mongoCollectionGenericType);
-
-				object convertedPromise = Convert.ChangeType(collectionGenericObject, promiseGenericType);
-
+				
 				MethodInfo getResultMethod = promiseGenericType.GetMethod(nameof(Promise.GetResult));
-				object extractedCollectionObject = getResultMethod?.Invoke(convertedPromise, null);
+				
+				IEnumerable<Type> enumerable = typeof(MongoDbExtensions).Assembly.GetTypes();
+				Type mongoDbExtensionsType = enumerable.First(t => t.Name == nameof(MongoDbExtensions));
 
-				Assembly assembly = typeof(MongoDbExtensions).Assembly;
+				MethodInfo methodInfo = mongoDbExtensionsType.GetMethod(nameof(MongoDbExtensions.CreateSingleIndex));
+				MethodInfo createSingleIndexMethodGeneric = methodInfo?.MakeGenericMethod(data.Collection);
 
-				IEnumerable<Type> enumerable = assembly.GetTypes();
-				Type first = enumerable.First(t => t.Name == nameof(MongoDbExtensions));
-
-				MethodInfo methodInfo = first.GetMethod(nameof(MongoDbExtensions.CreateSingleIndex));
-				MethodInfo genericMethod = methodInfo?.MakeGenericMethod(data.Collection);
-
-				foreach (MongoIndexDetails details in data.Indexes)
+				try
 				{
-					genericMethod?.Invoke(extractedCollectionObject,
-						new[] { extractedCollectionObject, details.IndexType, details.Field, details.IndexName });
+					MethodInfo getCollectionMethodGeneric =
+						getCollectionMethod?.MakeGenericMethod(data.Database, data.Collection);
+					
+					object collectionGenericObject = getCollectionMethodGeneric?.Invoke(connectionProvider, null);
+					object convertedPromise = Convert.ChangeType(collectionGenericObject, promiseGenericType);
+					object extractedCollectionObject = getResultMethod?.Invoke(convertedPromise, null);
+					
+					foreach (MongoIndexDetails details in data.Indexes)
+					{
+						createSingleIndexMethodGeneric?.Invoke(extractedCollectionObject,
+							new[] { extractedCollectionObject, details.IndexType, details.Field, details.IndexName });
+					}
+				}
+				catch (Exception e)
+				{
+					BeamableLogger.LogException(e);
+					throw;
 				}
 			}
-			
+
 			return Task.CompletedTask;
 		}
 

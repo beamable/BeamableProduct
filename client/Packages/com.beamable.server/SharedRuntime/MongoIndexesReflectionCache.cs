@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using UnityEngine;
 
 namespace Beamable.Server
 {
@@ -25,8 +26,6 @@ namespace Beamable.Server
 
 		public List<PendingMongoIndexData> PendingMongoIndexesData => _pendingMongoIndexesData;
 
-		internal static MongoIndexesReflectionCache Instance;
-
 		static MongoIndexesReflectionCache()
 		{
 			ICOLLECTION_ELEMENT_TYPE = new BaseTypeOfInterest(typeof(StorageDocument));
@@ -44,8 +43,6 @@ namespace Beamable.Server
 
 		public void OnBaseTypeOfInterestFound(BaseTypeOfInterest baseType, IReadOnlyList<MemberInfo> cachedSubTypes)
 		{
-			Instance = this;
-
 			if (!BASE_TYPES_OF_INTEREST.Contains(baseType))
 				return;
 

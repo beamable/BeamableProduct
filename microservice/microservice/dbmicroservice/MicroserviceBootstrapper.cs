@@ -451,7 +451,7 @@ namespace Beamable.Server
         public static async Task Start<TMicroService>() where TMicroService : Microservice
         {
 	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
-	        var envArgs = new EnviornmentArgs();
+	        var envArgs = new EnvironmentArgs();
 	        ConfigureLogging(envArgs);
 	        ConfigureUncaughtExceptions();
 	        ConfigureUnhandledError();

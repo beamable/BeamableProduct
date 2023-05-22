@@ -123,7 +123,7 @@ namespace Beamable.Server
       }
    }
 
-   public class EnviornmentArgs : IMicroserviceArgs
+   public class EnvironmentArgs : IMicroserviceArgs
    {
       public string CustomerID => Environment.GetEnvironmentVariable("CID");
       public string ProjectName => Environment.GetEnvironmentVariable("PID");
