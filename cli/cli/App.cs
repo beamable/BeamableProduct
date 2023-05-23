@@ -4,6 +4,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Semantics;
 using cli.Commands.Project;
 using cli.Content;
 using cli.Dotnet;
@@ -81,7 +82,8 @@ public class App
 		services.AddSingleton<UnrealSourceGenerator>();
 		services.AddSingleton<ProjectService>();
 		services.AddSingleton<SwaggerService.SourceGeneratorListProvider>();
-		services.AddSingleton<ICliGenerator, UnityCliGenerator>();
+		services.AddSingleton<UnityCliGenerator>();
+		services.AddSingleton<UnrealCliGenerator>();
 		OpenApiRegistration.RegisterOpenApis(services);
 
 		_serviceConfigurator?.Invoke(services);
@@ -94,12 +96,14 @@ public class App
 
 		ConfigureLogging();
 
+		Commands.AddSingleton(new ArgValidator<ServiceName>(arg => new ServiceName(arg)));
+
 		// add global options
 		Commands.AddSingleton<DryRunOption>();
 		Commands.AddSingleton<CidOption>();
 		Commands.AddSingleton<PidOption>();
 		Commands.AddSingleton<ConfigDirOption>();
-		Commands.AddSingleton<PlatformOption>();
+		Commands.AddSingleton<HostOption>();
 		Commands.AddSingleton<LimitOption>();
 		Commands.AddSingleton<SkipOption>();
 		Commands.AddSingleton<DeployFilePathOption>();
@@ -113,7 +117,7 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<DryRunOption>());
 			root.AddGlobalOption(provider.GetRequiredService<CidOption>());
 			root.AddGlobalOption(provider.GetRequiredService<PidOption>());
-			root.AddGlobalOption(provider.GetRequiredService<PlatformOption>());
+			root.AddGlobalOption(provider.GetRequiredService<HostOption>());
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());

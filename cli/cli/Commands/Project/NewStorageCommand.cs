@@ -1,3 +1,4 @@
+using Beamable.Common.Semantics;
 using Serilog;
 using Spectre.Console;
 using System.CommandLine;
@@ -6,7 +7,7 @@ namespace cli.Commands.Project;
 
 public class NewStorageCommandArgs : CommandArgs
 {
-	public string storageName;
+	public ServiceName storageName;
 	public string slnPath;
 }
 public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
@@ -18,7 +19,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("name", "The name of the new Microstorage."), (args, i) => args.storageName = i);
+		AddArgument(new Argument<ServiceName>("name", "The name of the new Microstorage."), (args, i) => args.storageName = i);
 		AddOption(new Option<string>("--sln", "The path to the solution that the Microstorage will be added to"), (args, i) => args.slnPath = i);
 	}
 
