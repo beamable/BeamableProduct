@@ -18,6 +18,14 @@ namespace Beamable.Microservices
 			Wildcard,
 		}
 
+		/// <summary>
+		/// Method to create single mongo index for a single field 
+		/// </summary>
+		/// <param name="collection">Collection that index should be created for</param>
+		/// <param name="type">Type of index to create</param>
+		/// <param name="fieldName">Field name that index will be created for</param>
+		/// <param name="indexName">(Optional) Custom index name, if left empty index will be named after <see cref="IndexType"/> passed formatted to lower</param>
+		/// <typeparam name="T">Constrained to a class that derives from <see cref="StorageDocument"/></typeparam>
 		public static async Task CreateSingleIndex<T>(this IMongoCollection<T> collection,
 		                                        IndexType type,
 		                                        string fieldName,
@@ -28,6 +36,13 @@ namespace Beamable.Microservices
 			                             string.IsNullOrEmpty(indexName) ? type.ToString().ToLower() : indexName);
 		}
 		
+		/// <summary>
+		/// Method to create compound index containing set of supported mongo indexes
+		/// </summary>
+		/// <param name="collection">Collection that index should be created for</param>
+		/// <param name="indexes">Dictionary containing pairs of <see cref="IndexType"/> for index type and <see cref="string"/> for indexed field</param>
+		/// <param name="indexName">(Optional) Custom index name, if left empty index will be named as default "compound" name</param>
+		/// <typeparam name="T">Constrained to a class that derives from <see cref="StorageDocument"/></typeparam>
 		public static async Task CreateCompoundIndex<T>(this IMongoCollection<T> collection,
 		                                                Dictionary<IndexType, string> indexes,
 		                                                string indexName = "compound") where T : StorageDocument
@@ -44,6 +59,13 @@ namespace Beamable.Microservices
 			await collection.CreateIndex(keysDefinition, indexName);
 		}
 
+		/// <summary>
+		/// Method to create single ascending index for a field
+		/// </summary>
+		/// <param name="collection">Collection that index should be created for</param>
+		/// <param name="fieldName">Field name that index will be created for</param>
+		/// <param name="indexName">(Optional) Custom index name, if left empty index will be named as default "ascending" name</param>
+		/// <typeparam name="T">Constrained to a class that derives from <see cref="StorageDocument"/></typeparam>
 		public static async Task CreateAscendingIndex<T>(this IMongoCollection<T> collection,
 		                                                 string fieldName,
 		                                                 string indexName = "ascending")
@@ -53,6 +75,13 @@ namespace Beamable.Microservices
 			await collection.CreateIndex(indexKeysDefinition, indexName);
 		}
 
+		/// <summary>
+		/// Method to create single descending index for a field
+		/// </summary>
+		/// <param name="collection">Collection that index should be created for</param>
+		/// <param name="fieldName">Field name that index will be created for</param>
+		/// <param name="indexName">(Optional) Custom index name, if left empty index will be named as default "descending" name</param>
+		/// <typeparam name="T">Constrained to a class that derives from <see cref="StorageDocument"/></typeparam>
 		public static async Task CreateDescendingIndex<T>(this IMongoCollection<T> collection,
 		                                                  string fieldName,
 		                                                  string indexName = "descending")
@@ -62,6 +91,13 @@ namespace Beamable.Microservices
 			await collection.CreateIndex(indexKeysDefinition, indexName);
 		}
 
+		/// <summary>
+		/// Method to create single ascending text for a field
+		/// </summary>
+		/// <param name="collection">Collection that index should be created for</param>
+		/// <param name="fieldName">Field name that index will be created for</param>
+		/// <param name="indexName">(Optional) Custom index name, if left empty index will be named as default "text" name</param>
+		/// <typeparam name="T">Constrained to a class that derives from <see cref="StorageDocument"/></typeparam>
 		public static async Task CreateTextIndex<T>(this IMongoCollection<T> collection,
 		                                            string fieldName,
 		                                            string indexName = "text")
@@ -71,6 +107,13 @@ namespace Beamable.Microservices
 			await collection.CreateIndex(indexKeysDefinition, indexName);
 		}
 
+		/// <summary>
+		/// Method to create single geo2D index for a field
+		/// </summary>
+		/// <param name="collection">Collection that index should be created for</param>
+		/// <param name="fieldName">Field name that index will be created for</param>
+		/// <param name="indexName">(Optional) Custom index name, if left empty index will be named as default "geo2D" name</param>
+		/// <typeparam name="T">Constrained to a class that derives from <see cref="StorageDocument"/></typeparam>
 		public static async Task CreateGeo2DIndex<T>(this IMongoCollection<T> collection,
 		                                             string fieldName,
 		                                             string indexName = "geo2D")
@@ -80,6 +123,13 @@ namespace Beamable.Microservices
 			await collection.CreateIndex(indexKeysDefinition, indexName);
 		}
 
+		/// <summary>
+		/// Method to create single geo2DSphere index for a field
+		/// </summary>
+		/// <param name="collection">Collection that index should be created for</param>
+		/// <param name="fieldName">Field name that index will be created for</param>
+		/// <param name="indexName">(Optional) Custom index name, if left empty index will be named as default "geo2DSphere" name</param>
+		/// <typeparam name="T">Constrained to a class that derives from <see cref="StorageDocument"/></typeparam>
 		public static async Task CreateGeo2DSphereIndex<T>(this IMongoCollection<T> collection,
 		                                                   string fieldName,
 		                                                   string indexName = "geo2Dsphere")
@@ -89,6 +139,13 @@ namespace Beamable.Microservices
 			await collection.CreateIndex(indexKeysDefinition, indexName);
 		}
 
+		/// <summary>
+		/// Method to create single hashed index for a field
+		/// </summary>
+		/// <param name="collection">Collection that index should be created for</param>
+		/// <param name="fieldName">Field name that index will be created for</param>
+		/// <param name="indexName">(Optional) Custom index name, if left empty index will be named as default "hashed" name</param>
+		/// <typeparam name="T">Constrained to a class that derives from <see cref="StorageDocument"/></typeparam>
 		public static async Task CreateHashedIndex<T>(this IMongoCollection<T> collection,
 		                                              string fieldName,
 		                                              string indexName = "hashed")
@@ -98,6 +155,13 @@ namespace Beamable.Microservices
 			await collection.CreateIndex(indexKeysDefinition, indexName);
 		}
 
+		/// <summary>
+		/// Method to create single wildcard index for a field
+		/// </summary>
+		/// <param name="collection">Collection that index should be created for</param>
+		/// <param name="fieldName">Field name that index will be created for</param>
+		/// <param name="indexName">(Optional) Custom index name, if left empty index will be named as default "wildcard" name</param>
+		/// <typeparam name="T">Constrained to a class that derives from <see cref="StorageDocument"/></typeparam>
 		public static async Task CreateWildcardIndex<T>(this IMongoCollection<T> collection,
 		                                                string fieldName,
 		                                                string indexName = "wildcard")
