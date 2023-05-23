@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using UnityEngine;
 
 namespace Beamable.Server
 {
@@ -75,10 +74,6 @@ namespace Beamable.Server
 
 							var mongoIndexType = (MongoDbExtensions.IndexType)attributeData.ConstructorArguments[0].Value;
 							var mongoIndexName = (string)attributeData.ConstructorArguments[1].Value;
-
-							if (string.IsNullOrEmpty(mongoIndexName))
-								mongoIndexName = mongoIndexType.ToString().ToLower();
-							
 							var fieldInfo = (FieldInfo)memberInfo;
 
 							var indexDetails = new MongoIndexDetails

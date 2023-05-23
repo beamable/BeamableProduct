@@ -12,7 +12,7 @@ namespace MongoDB.Bson
 		public MongoIndexAttribute(MongoDbExtensions.IndexType indexType, string indexName = "")
 		{
 			_indexType = indexType;
-			_indexName = indexName;
+			_indexName = string.IsNullOrEmpty(indexName) ? indexType.ToString().ToLower() : indexName;
 		}
 	}
 }
