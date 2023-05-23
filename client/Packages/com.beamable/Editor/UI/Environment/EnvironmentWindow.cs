@@ -33,7 +33,6 @@ namespace Beamable.Editor.UI.Environment
 		private VisualElement _windowRoot;
 		private EnvironmentData _data;
 		private EnvironmentService _service;
-		private TextField _envTextBox;
 		private TextField _apiTextBox;
 		private TextField _portalApiTextBox;
 		private TextField _mongoExpressTextBox;
@@ -66,7 +65,6 @@ namespace Beamable.Editor.UI.Environment
 			var title = root.Q<Label>("title");
 			title.AddTextWrapStyle();
 
-			_envTextBox = root.Q<TextField>("env");
 			_apiTextBox = root.Q<TextField>("api");
 			_portalApiTextBox = root.Q<TextField>("portalApi");
 			_mongoExpressTextBox = root.Q<TextField>("mongoExpress");
@@ -122,7 +120,6 @@ namespace Beamable.Editor.UI.Environment
 		private void OnApplyClicked()
 		{
 			_data = new EnvironmentData(
-				_envTextBox.value,
 				_apiTextBox.value,
 				_portalApiTextBox.value,
 				_mongoExpressTextBox.value,
@@ -135,7 +132,6 @@ namespace Beamable.Editor.UI.Environment
 
 		void SetUIFromData()
 		{
-			_envTextBox.SetValueWithoutNotify(_data.Environment);
 			_apiTextBox.SetValueWithoutNotify(_data.ApiUrl);
 			_portalApiTextBox.SetValueWithoutNotify(_data.PortalUrl);
 			_mongoExpressTextBox.SetValueWithoutNotify(_data.BeamMongoExpressUrl);

@@ -122,7 +122,6 @@ namespace Beamable
 	{
 		public static EnvironmentData BeamableDev(PackageVersion v) => new EnvironmentData
 		{
-			environment = "prod",
 			apiUrl = "https://dev.api.beamable.com",
 			portalUrl = "https://dev-portal.beamable.com",
 			beamMongoExpressUrl = "https://dev.storage.beamable.com",
@@ -132,7 +131,6 @@ namespace Beamable
 		};
 		public static EnvironmentData BeamableStaging(PackageVersion v) => new EnvironmentData
 		{
-			environment = "prod",
 			apiUrl = "https://staging.api.beamable.com",
 			portalUrl = "https://staging-portal.beamable.com",
 			beamMongoExpressUrl = "https://staging.storage.beamable.com",
@@ -142,7 +140,6 @@ namespace Beamable
 		};
 		public static EnvironmentData BeamableProduction(PackageVersion v) => new EnvironmentData
 		{
-			environment = "prod",
 			apiUrl = "https://api.beamable.com",
 			portalUrl = "https://portal.beamable.com",
 			beamMongoExpressUrl = "https://storage.beamable.com",
@@ -151,7 +148,6 @@ namespace Beamable
 			_version = v
 		};
 
-		[SerializeField] private string environment;
 		[SerializeField] private string apiUrl;
 		[SerializeField] private string portalUrl;
 		[SerializeField] private string beamMongoExpressUrl;
@@ -165,7 +161,21 @@ namespace Beamable
 		/// <summary>
 		/// The Beamable Cloud environment the game is using. For games, this should always be "prod"
 		/// </summary>
-		public string Environment => environment;
+		public string Environment
+		{
+			get
+			{
+				switch (ApiUrl)
+				{
+					case "https://dev.api.beamable.com":
+						return "dev";
+					case "https://staging.api.beamable.com":
+						return "staging";
+				}
+
+				return "prod";
+			}
+		}
 
 		/// <summary>
 		/// The Beamable Cloud API url.
@@ -200,22 +210,19 @@ namespace Beamable
 		/// <summary>
 		/// construct a new data structure
 		/// </summary>
-		/// <param name="environment">a name for this environment. </param>
 		/// <param name="apiUrl">where to find beamable</param>
 		/// <param name="portalUrl">where to find the portal</param>
 		/// <param name="beamMongoExpressUrl">where to find the mongo express page</param>
 		/// <param name="dockerRegistryUrl">where to find the beamable docker registry</param>
 		/// <param name="isUnityVsp">is this package from Unity VSP?</param>
 		/// <param name="version">the package version</param>
-		public EnvironmentData(string environment,
-							   string apiUrl,
-							   string portalUrl,
-							   string beamMongoExpressUrl,
-							   string dockerRegistryUrl,
-							   bool isUnityVsp,
-							   PackageVersion version)
+		public EnvironmentData(string apiUrl,
+		                       string portalUrl,
+		                       string beamMongoExpressUrl,
+		                       string dockerRegistryUrl,
+		                       bool isUnityVsp,
+		                       PackageVersion version)
 		{
-			this.environment = environment;
 			this.apiUrl = apiUrl;
 			this.portalUrl = portalUrl;
 			this.beamMongoExpressUrl = beamMongoExpressUrl;
@@ -234,7 +241,6 @@ namespace Beamable
 
 		public void Serialize(JsonSerializable.IStreamSerializer s)
 		{
-			s.Serialize("environment", ref environment);
 			s.Serialize("apiUrl", ref apiUrl);
 			s.Serialize("portalUrl", ref portalUrl);
 			s.Serialize("sdkVersion", ref sdkVersion);

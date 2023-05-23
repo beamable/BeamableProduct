@@ -11,9 +11,6 @@
 
         <engine:ScrollView>
 
-            <engine:Label name="env" text="Environment (advanced)" class="labelText" tooltip="The environment label is used to decide which Microservice Docker Image to use. 'prod' is used for all release candidate and production builds. 'dev' is used for nightly. "/>
-            <engine:TextField name="env" class="input"/>
-
             <engine:Label name="api" text="API" class="labelText"/>
             <engine:TextField name="api" class="input"/>
 
