@@ -128,12 +128,4 @@
 
   </ItemGroup>
 
-
-
-  <ItemGroup>
-    <Reference Include="MongoDB.Driver">
-      <HintPath>..\..\client\Packages\com.beamable.server\Editor\ThirdParty\Mongo\MongoDB.Driver.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
 </Project>

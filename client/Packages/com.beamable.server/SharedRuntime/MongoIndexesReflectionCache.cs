@@ -3,6 +3,7 @@ using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
 using Beamable.Microservices;
 using MongoDB.Bson;
+using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -98,6 +99,52 @@ namespace Beamable.Server
 		public void OnReflectionCacheBuilt(PerBaseTypeCache perBaseTypeCache, PerAttributeCache perAttributeCache) { }
 
 		public void SetStorage(IBeamHintGlobalStorage hintGlobalStorage) { }
+		
+		public void SetupStorage(IStorageObjectConnectionProvider connectionProvider)
+		{
+			foreach (PendingMongoIndexData data in _pendingMongoIndexesData)
+			{
+				MethodInfo getCollectionMethod =
+					typeof(IStorageObjectConnectionProvider).GetMethods()
+						.Where(method =>
+							method.Name == nameof(IStorageObjectConnectionProvider.GetCollection) &&
+							method.GetParameters().Length == 0)
+						.FirstOrDefault(x => x.IsGenericMethod);
+
+				Type mongoCollectionType = typeof(IMongoCollection<>);
+				Type mongoCollectionGenericType = mongoCollectionType.MakeGenericType(data.Collection);
+				Type promiseGenericType = typeof(Promise<>).MakeGenericType(mongoCollectionGenericType);
+
+				MethodInfo getResultMethod = promiseGenericType.GetMethod(nameof(Promise.GetResult));
+
+				IEnumerable<Type> enumerable = typeof(MongoDbExtensions).Assembly.GetTypes();
+				Type mongoDbExtensionsType = enumerable.First(t => t.Name == nameof(MongoDbExtensions));
+
+				MethodInfo methodInfo = mongoDbExtensionsType.GetMethod(nameof(MongoDbExtensions.CreateSingleIndex));
+				MethodInfo createSingleIndexMethodGeneric = methodInfo?.MakeGenericMethod(data.Collection);
+
+				try
+				{
+					MethodInfo getCollectionMethodGeneric =
+						getCollectionMethod?.MakeGenericMethod(data.Database, data.Collection);
+
+					object collectionGenericObject = getCollectionMethodGeneric?.Invoke(connectionProvider, null);
+					object convertedPromise = Convert.ChangeType(collectionGenericObject, promiseGenericType);
+					object extractedCollectionObject = getResultMethod?.Invoke(convertedPromise, null);
+
+					foreach (MongoIndexDetails details in data.Indexes)
+					{
+						createSingleIndexMethodGeneric?.Invoke(extractedCollectionObject,
+							new[] { extractedCollectionObject, details.IndexType, details.Field, details.IndexName });
+					}
+				}
+				catch (Exception e)
+				{
+					BeamableLogger.LogException(e);
+					throw;
+				}
+			}
+		}
 	}
 
 	public class PendingMongoIndexData
