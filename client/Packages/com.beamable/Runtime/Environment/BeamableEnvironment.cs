@@ -89,7 +89,7 @@ namespace Beamable
 		/// </summary>
 		public static void ReloadEnvironment()
 		{
-			string envText = "";
+			string envText = string.Empty;
 
 #if UNITY_EDITOR
 			envText = File.ReadAllText(FilePath);
@@ -98,12 +98,18 @@ namespace Beamable
 #endif
 
 			var overrideFile = Resources.Load<TextAsset>(Path.GetFileNameWithoutExtension(OVERRIDE_PATH));
+			var rawDict = Json.Deserialize(envText) as ArrayDict;
 			if (overrideFile)
 			{
-				envText = overrideFile.text;
+				// ReSharper disable PossibleNullReferenceException
+				var overrideRawDict = Json.Deserialize(overrideFile.text) as ArrayDict;
+				foreach (var key in overrideRawDict.Keys)
+				{
+					rawDict[key] = overrideRawDict[key];
+				}
+				// ReSharper restore PossibleNullReferenceException
 			}
 
-			var rawDict = Json.Deserialize(envText) as ArrayDict;
 			JsonSerializable.Deserialize(Data, rawDict);
 		}
 
@@ -257,5 +263,36 @@ namespace Beamable
 
 		string IPlatformRequesterHostResolver.Host => apiUrl;
 		PackageVersion IPlatformRequesterHostResolver.PackageVersion => SdkVersion;
+	}
+	
+	[Serializable]
+	public class EnvironmentOverridesData : JsonSerializable.ISerializable {
+		public string ApiUrl => _apiUrl;
+		public string PortalUrl => _portalUrl;
+		public string BeamMongoExpressUrl => _beamMongoExpressUrl;
+		public string DockerRegistryUrl => _dockerRegistryUrl;
+
+		private string _apiUrl;
+		private string _portalUrl;
+		private string _beamMongoExpressUrl;
+		private string _dockerRegistryUrl;
+
+		public EnvironmentOverridesData(string apiUrl,
+		                                string portalUrl,
+		                                string beamMongoExpressUrl,
+		                                string dockerRegistryUrl)
+		{
+			_apiUrl = apiUrl;
+			_portalUrl = portalUrl;
+			_beamMongoExpressUrl = beamMongoExpressUrl;
+			_dockerRegistryUrl = dockerRegistryUrl;
+		}
+		public void Serialize(JsonSerializable.IStreamSerializer s)
+		{
+			s.Serialize("apiUrl", ref _apiUrl);
+			s.Serialize("portalUrl", ref _portalUrl);
+			s.Serialize("beamMongoExpressUrl", ref _beamMongoExpressUrl);
+			s.Serialize("dockerRegistryUrl", ref _dockerRegistryUrl);
+		} 
 	}
 }

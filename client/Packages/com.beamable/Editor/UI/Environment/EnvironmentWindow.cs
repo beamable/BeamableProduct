@@ -37,8 +37,6 @@ namespace Beamable.Editor.UI.Environment
 		private TextField _portalApiTextBox;
 		private TextField _mongoExpressTextBox;
 		private TextField _dockerRegTextBox;
-		private TextField _sdkVersionTextBox;
-		private Toggle _isVspToggle;
 		private PrimaryButtonVisualElement _applyButton;
 
 		protected override void Build()
@@ -69,19 +67,6 @@ namespace Beamable.Editor.UI.Environment
 			_portalApiTextBox = root.Q<TextField>("portalApi");
 			_mongoExpressTextBox = root.Q<TextField>("mongoExpress");
 			_dockerRegTextBox = root.Q<TextField>("dockerReg");
-			_sdkVersionTextBox = root.Q<TextField>("sdkVersion");
-			_isVspToggle = root.Q<Toggle>("isUnityVsp");
-
-
-			var validVersion = _sdkVersionTextBox.AddErrorLabel("valid version", version =>
-			{
-				if (!PackageVersion.TryFromSemanticVersionString(version, out _))
-				{
-					return "invalid semantic version";
-				}
-
-				return null;
-			});
 
 
 			string CheckUrl(string url)
@@ -101,7 +86,7 @@ namespace Beamable.Editor.UI.Environment
 			root.Q<GenericButtonVisualElement>("cancel").OnClick += OnRevertClicked;
 
 			_applyButton = root.Q<PrimaryButtonVisualElement>();
-			_applyButton.AddGateKeeper(validVersion,
+			_applyButton.AddGateKeeper(
 								_apiTextBox.AddErrorLabel("valid api url", CheckUrl),
 								_portalApiTextBox.AddErrorLabel("valid portal url", CheckUrl),
 								_mongoExpressTextBox.AddErrorLabel("valid mongo express url", CheckUrl),
@@ -119,15 +104,13 @@ namespace Beamable.Editor.UI.Environment
 
 		private void OnApplyClicked()
 		{
-			_data = new EnvironmentData(
+			var overridesData = new EnvironmentOverridesData(
 				_apiTextBox.value,
 				_portalApiTextBox.value,
 				_mongoExpressTextBox.value,
-				_dockerRegTextBox.value,
-				_isVspToggle.value,
-				_sdkVersionTextBox.value
+				_dockerRegTextBox.value
 			);
-			_service.SetOverrides(_data);
+			_service.SetOverrides(overridesData);
 		}
 
 		void SetUIFromData()
@@ -136,8 +119,6 @@ namespace Beamable.Editor.UI.Environment
 			_portalApiTextBox.SetValueWithoutNotify(_data.PortalUrl);
 			_mongoExpressTextBox.SetValueWithoutNotify(_data.BeamMongoExpressUrl);
 			_dockerRegTextBox.SetValueWithoutNotify(_data.DockerRegistryUrl);
-			_sdkVersionTextBox.SetValueWithoutNotify(_data.SdkVersion.ToString());
-			_isVspToggle.SetValueWithoutNotify(_data.IsUnityVsp);
 
 			_applyButton.CheckGateKeepers();
 		}
