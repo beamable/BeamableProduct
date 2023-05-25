@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 using System.CommandLine;
+using System.Net;
 
 namespace cli;
 
@@ -12,7 +13,7 @@ public class ServicesListCommandArgs : LoginCommandArgs
 	public bool AsJson;
 }
 
-public class ServicesListCommand : AppCommand<ServicesListCommandArgs>
+public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultSteam<DefaultStreamResultChannel, ServiceListResult>
 {
 	private IAppContext _ctx;
 	private BeamoLocalSystem _localBeamo;
@@ -22,7 +23,6 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>
 		base("ps",
 			"Lists the current local or remote service manifest and status (as summary table or json)")
 	{
-
 	}
 
 	public override void Configure()
@@ -72,6 +72,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>
 				var isRunningColumn = new TableColumn(new Markup("Is Running", columnNameStyle));
 				table.AddColumn(beamoIdColumn).AddColumn(imageNameColumn).AddColumn(shouldBeRunningColumn).AddColumn(isRunningColumn);
 
+				var localServiceListResult = new ServiceListResult(false, manifest.manifest.Count);
 				foreach (var responseService in manifest.manifest)
 				{
 					var beamoId = new Markup(responseService.serviceName);
@@ -79,8 +80,16 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>
 					var remoteTargetStatus = new Markup(responseService.enabled ? "[green]Should be Enabled[/]" : "[red]Should be Disabled[/]");
 					var remoteStatus = new Markup(status.services.First(s => s.serviceName == responseService.serviceName).running ? "[green]On[/]" : "[red]Off[/]");
 					table.AddRow(new TableRow(new[] { beamoId, imageId, remoteTargetStatus, remoteStatus }));
+
+
+					localServiceListResult.AddRemote(responseService.serviceName,
+						responseService.enabled,
+						status.services.First(s => s.serviceName == responseService.serviceName).running,
+						responseService.imageId,
+						responseService.dependencies.Select(d => d.id));
 				}
 
+				this.SendResults(localServiceListResult);
 				AnsiConsole.Write(table);
 			}
 			else
@@ -111,6 +120,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>
 				var canBeBuiltLocally = new TableColumn(new Markup("Can be Built Locally", columnNameStyle));
 
 				table.AddColumn(beamoIdColumn).AddColumn(imageNameColumn).AddColumn(containersColumn).AddColumn(shouldEnableOnRemoteDeployColumn).AddColumn(canBeBuiltLocally);
+				var localServiceListResult = new ServiceListResult(true, serviceDefinitions.Count);
 				foreach (var sd in serviceDefinitions)
 				{
 					var beamoIdMarkup = new Markup($"[green]{sd.BeamoId}[/]");
@@ -120,7 +130,8 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>
 
 					IRenderable containersRenderable;
 					var existingServiceInstances = runningServiceInstances.Where(si => si.BeamoId == sd.BeamoId).ToList();
-					if (existingServiceInstances.Count == 0)
+					var hasNoRunningInstances = existingServiceInstances.Count == 0;
+					if (hasNoRunningInstances)
 					{
 						containersRenderable = new Markup("[yellow]-------------------[/]");
 					}
@@ -137,16 +148,29 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>
 						{
 							var containerNameMarkup = new Markup(existingServiceInstance.ContainerName);
 							var containerStatusMarkup = new Markup(existingServiceInstance.IsRunning ? "[green]On[/]" : "[red]Off[/]");
-							var containerPortMappingMarkup = new Markup(string.Join(", ", existingServiceInstance.ActivePortBindings.Select(p => $"{p.LocalPort}:{p.InContainerPort}")));
+
+							var portMappings = existingServiceInstance.ActivePortBindings.Select(p => $"{p.LocalPort}:{p.InContainerPort}");
+							var containerPortMappingMarkup = new Markup(string.Join(", ", portMappings));
 							containersTable.AddRow(containerNameMarkup, containerStatusMarkup, containerPortMappingMarkup);
 						}
 
 						containersRenderable = containersTable;
 					}
 
+					localServiceListResult.AddLocal(sd.BeamoId,
+						sd.ShouldBeEnabledOnRemote,
+						!hasNoRunningInstances,
+						sd.Protocol.ToString(),
+						sd.ImageId,
+						"",
+						"",
+						new[] { "" },
+						new[] { "" },
+						sd.DependsOnBeamoIds);
 					table.AddRow(new TableRow(new[] { beamoIdMarkup, imageIdMarkup, containersRenderable, shouldBeEnabledOnDeployMarkup, isRemoteOnlyMarkup, }));
 				}
 
+				this.SendResults(localServiceListResult);
 				AnsiConsole.Write(table);
 			}
 			else
@@ -158,5 +182,72 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>
 			_localBeamo.SaveBeamoLocalRuntime();
 			await _localBeamo.StopListeningToDocker();
 		}
+	}
+}
+
+public class ServiceListResult
+{
+	public bool IsLocal;
+
+	public List<string> BeamoIds;
+	public List<bool> ShouldBeEnabledOnRemote;
+	public List<bool> RunningState;
+
+	public List<string> ProtocolTypes;
+	public List<string> ImageIds;
+
+	public List<string> ContainerNames;
+	public List<string> ContainerIds;
+	public List<string> LocalHostPorts;
+	public List<string> LocalContainerPorts;
+
+	public List<string> Dependencies;
+
+	public ServiceListResult(bool local, int allocateCount)
+	{
+		IsLocal = local;
+		BeamoIds = new List<string>(allocateCount);
+
+		ShouldBeEnabledOnRemote = new List<bool>(allocateCount);
+		RunningState = new List<bool>(allocateCount);
+
+		ProtocolTypes = new List<string>(allocateCount);
+		ImageIds = new List<string>(allocateCount);
+
+		ContainerNames = new List<string>(allocateCount);
+		ContainerIds = new List<string>(allocateCount);
+		LocalHostPorts = new List<string>(allocateCount);
+		LocalContainerPorts = new List<string>(allocateCount);
+
+		Dependencies = new List<string>(allocateCount);
+	}
+
+	public void AddLocal(string beamoId, bool shouldBeEnabledOnRemote, bool running, string protocol, string imageId,
+		string containerName, string containerId, IEnumerable<string> hostPort, IEnumerable<string> containerPort, IEnumerable<string> dependentBeamoIds)
+	{
+		BeamoIds.Add(beamoId);
+		RunningState.Add(running);
+		ShouldBeEnabledOnRemote.Add(shouldBeEnabledOnRemote);
+
+		ProtocolTypes.Add(protocol);
+		ImageIds.Add(imageId);
+
+		ContainerNames.Add(containerName);
+		ContainerIds.Add(containerId);
+		LocalHostPorts.Add(string.Join(",", hostPort.ToList()));
+		LocalContainerPorts.Add(string.Join(",", containerPort.ToList()));
+
+		Dependencies.Add(string.Join(",", dependentBeamoIds.ToList()));
+	}
+
+	public void AddRemote(string beamoId, bool shouldBeEnabledOnRemote, bool running, string imageId, IEnumerable<string> dependentBeamoIds)
+	{
+		BeamoIds.Add(beamoId);
+		RunningState.Add(running);
+		ShouldBeEnabledOnRemote.Add(shouldBeEnabledOnRemote);
+
+		ImageIds.Add(imageId);
+
+		Dependencies.Add(string.Join(",", dependentBeamoIds.ToList()));
 	}
 }

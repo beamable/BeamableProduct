@@ -10,7 +10,7 @@ public class OpenSwaggerCommandArgs : CommandArgs
 	public ServiceName serviceName;
 }
 
-public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>
+public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResult
 {
 	public OpenSwaggerCommand() : base("open-swagger", "Opens the swagger page for a given service")
 	{

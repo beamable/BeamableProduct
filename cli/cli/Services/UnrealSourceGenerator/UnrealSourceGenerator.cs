@@ -2,6 +2,7 @@
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Writers;
 using Newtonsoft.Json;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
@@ -462,12 +463,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			// TODO: Declare this instead of serialized type
 			if (schemaUnrealType.StartsWith(UNREAL_U_ENUM_PREFIX))
 			{
-				var enumDecl = new UnrealEnumDeclaration
-				{
-					UnrealTypeName = schemaUnrealType,
-					NamespacedTypeName = schemaNamespacedType,
-					EnumValues = schema.Enum.OfType<OpenApiString>().Select(v => v.Value).ToList()
-				};
+				var enumDecl = new UnrealEnumDeclaration { UnrealTypeName = schemaUnrealType, NamespacedTypeName = schemaNamespacedType, EnumValues = schema.Enum.OfType<OpenApiString>().Select(v => v.Value).ToList() };
 
 				enumTypes.Add(enumDecl);
 			}
@@ -503,10 +499,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 				var csvRowType = new UnrealCsvRowTypeDeclaration
 				{
-					RowUnrealType = schemaUnrealType,
-					RowNamespacedType = GetNamespacedTypeNameFromUnrealType(schemaUnrealType),
-					PropertyDeclarations = uproperties,
-					KeyDeclarationIdx = Array.IndexOf(order, keyProperty),
+					RowUnrealType = schemaUnrealType, RowNamespacedType = GetNamespacedTypeNameFromUnrealType(schemaUnrealType), PropertyDeclarations = uproperties, KeyDeclarationIdx = Array.IndexOf(order, keyProperty),
 				};
 				csvRowTypes.Add(csvRowType);
 			}
@@ -930,7 +923,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			GetNamespacedServiceNameFromApiDoc(openApiDocument.Info, out var serviceTitle, out var serviceName);
 
 			var isMSGen = genType == GenerationType.Microservice;
-			var unrealServiceDecl = new UnrealApiSubsystemDeclaration { SubsystemName = isMSGen ? $"{serviceName.Capitalize()}Ms" : serviceName.Capitalize(), };
+			var unrealServiceDecl = new UnrealApiSubsystemDeclaration { ServiceName = serviceName, SubsystemName = isMSGen ? $"{serviceName.Capitalize()}Ms" : serviceName.Capitalize(), };
 
 			// check and see if we already declared this subsystem (but an object/basic version of it)
 			var alreadyDeclared = outSubsystemDeclarations.Any(d => d.SubsystemName == unrealServiceDecl.SubsystemName);
@@ -1085,11 +1078,11 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 								var writer = new OpenApiJsonWriter(sw);
 								bodySchema.SerializeAsV3WithoutReference(writer);
 								Console.WriteLine($"{serviceTitle}-{serviceName}-{unrealEndpoint.GlobalNamespacedEndpointName} FROM {operationType.ToString()} {endpointPath}\n" +
-												  string.Join("\n", unrealEndpoint.RequestQueryParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-												  "\n" + string.Join("\n", unrealEndpoint.RequestPathParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-												  "\n" + string.Join("\n", unrealEndpoint.RequestBodyParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-												  $"\n{unrealEndpoint.ResponseBodyUnrealType}" +
-												  $"\n{sw}");
+								                  string.Join("\n", unrealEndpoint.RequestQueryParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+								                  "\n" + string.Join("\n", unrealEndpoint.RequestPathParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+								                  "\n" + string.Join("\n", unrealEndpoint.RequestBodyParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+								                  $"\n{unrealEndpoint.ResponseBodyUnrealType}" +
+								                  $"\n{sw}");
 							}
 							else
 							{
@@ -1137,11 +1130,11 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 								var writer = new OpenApiJsonWriter(sw);
 								bodySchema.SerializeAsV3WithoutReference(writer);
 								Console.WriteLine($"{serviceTitle}-{serviceName}-{unrealEndpoint.GlobalNamespacedEndpointName} FROM {operationType.ToString()} {endpointPath}\n" +
-												  string.Join("\n", unrealEndpoint.RequestQueryParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-												  "\n" + string.Join("\n", unrealEndpoint.RequestPathParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-												  "\n" + string.Join("\n", unrealEndpoint.RequestBodyParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
-												  $"\n{unrealEndpoint.ResponseBodyUnrealType}" +
-												  $"\n{sw}");
+								                  string.Join("\n", unrealEndpoint.RequestQueryParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+								                  "\n" + string.Join("\n", unrealEndpoint.RequestPathParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+								                  "\n" + string.Join("\n", unrealEndpoint.RequestBodyParameters.Select(qd => $"{qd.PropertyUnrealType} {qd.PropertyName}")) +
+								                  $"\n{unrealEndpoint.ResponseBodyUnrealType}" +
+								                  $"\n{sw}");
 							}
 						}
 						else if (response.Content.TryGetValue("text/plain", out jsonResponse))
@@ -1220,14 +1213,14 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	private static bool IsUnrealContainerOrWrapperType(string unrealType)
 	{
 		return unrealType.StartsWith(UNREAL_ARRAY) || unrealType.StartsWith(UNREAL_MAP) || unrealType.StartsWith(UNREAL_OPTIONAL) ||
-			   unrealType.StartsWith(UNREAL_U_OBJECT_PREFIX) ||
-			   UNREAL_ALL_SEMTYPES.Contains(unrealType);
+		       unrealType.StartsWith(UNREAL_U_OBJECT_PREFIX) ||
+		       UNREAL_ALL_SEMTYPES.Contains(unrealType);
 	}
 
 	private static bool IsUnrealPrimitiveType(string unrealType)
 	{
 		return unrealType.StartsWith(UNREAL_BYTE) || unrealType.StartsWith(UNREAL_SHORT) || unrealType.StartsWith(UNREAL_INT) || unrealType.StartsWith(UNREAL_LONG) ||
-			   unrealType.StartsWith(UNREAL_FLOAT) || unrealType.StartsWith(UNREAL_DOUBLE);
+		       unrealType.StartsWith(UNREAL_FLOAT) || unrealType.StartsWith(UNREAL_DOUBLE);
 	}
 
 
@@ -1413,8 +1406,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		if (doesConflict)
 		{
 			throw new ArgumentException($"{methodName} was found in more than one service. " +
-										$"In this case, this is because you have two microservices with the same name OR because this name clashes with an existing Beamable API. " +
-										$"Please change your Microservice name to resolve this.");
+			                            $"In this case, this is because you have two microservices with the same name OR because this name clashes with an existing Beamable API. " +
+			                            $"Please change your Microservice name to resolve this.");
 		}
 
 		// In case we want to manually override an endpoint's name...
@@ -1445,8 +1438,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		if (doesConflict)
 		{
 			throw new ArgumentException($"{methodName} was overloaded in {serviceName}. " +
-										$"We do not support overloading Callable/ClientCallable/AdminCallable functions." +
-										$"Please rename all overloads to resolve this.");
+			                            $"We do not support overloading Callable/ClientCallable/AdminCallable functions." +
+			                            $"Please rename all overloads to resolve this.");
 		}
 
 		// In case we want to manually override an endpoint's name...
@@ -1976,26 +1969,66 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// </summary>
 	public static string GetUnrealTypeFromReflectionType(Type unrealWrapperType)
 	{
-		if (unrealWrapperType == typeof(byte))
-			return UNREAL_BYTE;
-		if (unrealWrapperType == typeof(short))
-			return UNREAL_SHORT;
-		if (unrealWrapperType == typeof(int))
-			return UNREAL_INT;
-		if (unrealWrapperType == typeof(long))
-			return UNREAL_LONG;
-		if (unrealWrapperType == typeof(bool))
-			return UNREAL_BOOL;
-		if (unrealWrapperType == typeof(float))
-			return UNREAL_FLOAT;
-		if (unrealWrapperType == typeof(double))
-			return UNREAL_DOUBLE;
-		if (unrealWrapperType == typeof(string))
-			return UNREAL_STRING;
-		if (unrealWrapperType == typeof(Guid))
-			return UNREAL_GUID;
+		static string GetPrimitive(Type type)
+		{
+			if (type == typeof(byte))
+				return UNREAL_BYTE;
+			if (type == typeof(short))
+				return UNREAL_SHORT;
+			if (type == typeof(int))
+				return UNREAL_INT;
+			if (type == typeof(long))
+				return UNREAL_LONG;
+			if (type == typeof(bool))
+				return UNREAL_BOOL;
+			if (type == typeof(float))
+				return UNREAL_FLOAT;
+			if (type == typeof(double))
+				return UNREAL_DOUBLE;
+			if (type == typeof(string))
+				return UNREAL_STRING;
+			if (type == typeof(Guid))
+				return UNREAL_GUID;
 
-		throw new ArgumentException("We don't support making unreal types from non-primitive reflection types");
+			return "";
+		}
+
+		var primitiveType = GetPrimitive(unrealWrapperType);
+
+		if (string.IsNullOrEmpty(primitiveType))
+		{
+			var isList = unrealWrapperType.IsGenericType && typeof(IList).IsAssignableFrom(unrealWrapperType);
+			var isArray = unrealWrapperType.IsArray;
+			if (isList || isArray)
+			{
+				var subType = isArray ? unrealWrapperType : unrealWrapperType.GenericTypeArguments[0];
+				var primitive = GetPrimitive(subType);
+				if(string.IsNullOrEmpty(primitive))
+					throw new ArgumentException($"We don't support arrays of non-primitive types here. {unrealWrapperType.FullName}");
+				return UNREAL_ARRAY + $"<{primitive}>";
+			}
+
+			var isDictionary = unrealWrapperType.IsGenericType && typeof(IDictionary).IsAssignableFrom(unrealWrapperType);
+			if (isDictionary)
+			{
+				if (unrealWrapperType.GenericTypeArguments[0] != typeof(string))
+					throw new ArgumentException($"We don't support non-string dictionaries here. {unrealWrapperType.FullName}");
+				
+				var subType = unrealWrapperType.GenericTypeArguments[1];
+				var primitive = GetPrimitive(subType);
+				if(string.IsNullOrEmpty(primitive))
+					throw new ArgumentException($"We don't support maps of non-primitive types here. {unrealWrapperType.FullName}");
+				
+				return UNREAL_MAP + $"<{UNREAL_STRING}, {primitive}>";
+			}
+		}
+		else
+		{
+			return primitiveType;
+		}
+
+
+		throw new ArgumentException($"We only support arrays of primitives and string maps of primitives (Dictionary<string, Primitive>, List<Primitive> or Primitive[]). {unrealWrapperType.Name}");
 	}
 
 	/// <summary>

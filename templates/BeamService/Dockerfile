@@ -1,9 +1,10 @@
 ﻿# use the dotnet SDK as a build stage
 FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS build-env
 
-# copy in required files
-WORKDIR /subsrc/BeamServiceCommon
-COPY BeamServiceCommon/. .
+# Since generating the common library is optional, the CLI will replace the insert flag below to copy it correctly 
+# At the moment, it'll only do so, if the common library project was created at the time of setting up the solution.
+# If not, this line will remain so that we can make a command that adds only the common library to your C#MS solution.
+# <BEAM-CLI-INSERT-FLAG:COPY_COMMON> do not delete this line. It is used by the beam CLI to insert custom actions
 
 # <BEAM-CLI-INSERT-FLAG:COPY> do not delete this line. It is used by the beam CLI to insert custom actions
 

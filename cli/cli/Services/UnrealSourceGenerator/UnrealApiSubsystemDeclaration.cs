@@ -2,6 +2,7 @@
 
 public struct UnrealApiSubsystemDeclaration
 {
+	public string ServiceName;
 	public string SubsystemName;
 
 	public List<string> IncludeStatements;
@@ -19,7 +20,7 @@ public struct UnrealApiSubsystemDeclaration
 	public List<UnrealEndpointDeclaration> AuthenticatedEndpointUFunctionWithRetryDeclarations;
 
 	private string _baseTypeDeclaration;
-
+	private string _assigneMicroserviceId;
 
 	public List<UnrealEndpointDeclaration> GetAllEndpoints() => EndpointRawFunctionDeclarations
 		.Union(AuthenticatedEndpointRawFunctionDeclarations)
@@ -87,6 +88,7 @@ public struct UnrealApiSubsystemDeclaration
 		var isMSGen = UnrealSourceGenerator.genType == UnrealSourceGenerator.GenerationType.Microservice;
 
 		helperDict.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
+		helperDict.Add(nameof(_assigneMicroserviceId), isMSGen ? $"MicroserviceName = TEXT(\"{ServiceName}\");" : "");
 		helperDict.Add(nameof(_baseTypeDeclaration), isMSGen ? "UBeamMicroserviceClientSubsystem" : "UEngineSubsystem");
 		helperDict.Add(nameof(SubsystemName), SubsystemName);
 
@@ -166,9 +168,11 @@ public struct UnrealApiSubsystemDeclaration
 			return ufunction;
 		}));
 
+		var isMSGen = UnrealSourceGenerator.genType == UnrealSourceGenerator.GenerationType.Microservice;
 		helperDict.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
 		helperDict.Add(nameof(UnrealSourceGenerator.headerFileOutputPath), UnrealSourceGenerator.headerFileOutputPath);
 		helperDict.Add(nameof(SubsystemName), SubsystemName);
+		helperDict.Add(nameof(_assigneMicroserviceId), isMSGen ? $"MicroserviceName = TEXT(\"{ServiceName}\");" : "");
 
 		helperDict.Add(nameof(EndpointRawFunctionDeclarations), endpointRawFunctions);
 		helperDict.Add(nameof(AuthenticatedEndpointRawFunctionDeclarations), authEndpointRawFunctions);
@@ -249,6 +253,7 @@ void UBeam₢{nameof(SubsystemName)}₢Api::Initialize(FSubsystemCollectionBase&
 	Backend = Cast<UBeamBackend>(Collection.InitializeDependency(UBeamBackend::StaticClass()));
 	RequestTracker = Cast<UBeamRequestTracker>(Collection.InitializeDependency(UBeamRequestTracker::StaticClass()));
 	ResponseCache = Cast<UBeamResponseCache>(Collection.InitializeDependency(UBeamResponseCache::StaticClass()));
+	₢{nameof(_assigneMicroserviceId)}₢
 }}
 
 void UBeam₢{nameof(SubsystemName)}₢Api::Deinitialize()

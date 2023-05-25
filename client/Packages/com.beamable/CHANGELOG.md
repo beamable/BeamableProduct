@@ -11,7 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Beamable network requests use the combined `X-BEAM-SCOPE` header instead of the `X-KS-CLIENTID` and `X-KS-PROJECTID` headers.
 - Detect missing proguard rules during build.
-
+- You can now create a SAMS with no Common Library (needed for UE)
+- Added INSTANCE_COUNT to CLI BeamoService's Local Microservice Protocol for SAMS (default to 1)
+- Added implementation to `beam services deploy --ids` command so that it now enables the given MS Ids when given any 
+- Added Docker Container Updates to CheckStatus command in CLI
 
 ### Fixed
 - Using portal to remove the last item in a group while listening to "items" with the Inventory PSDK will cause the SDK to notice the change. 

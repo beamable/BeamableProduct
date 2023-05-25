@@ -13,7 +13,7 @@ public class ServicesResetCommandArgs : LoginCommandArgs
 	public string Target;
 }
 
-public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>
+public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>, IResultSteam<DefaultStreamResultChannel, ServicesResetCommand.ServicesResetResult>
 {
 	private BeamoLocalSystem _localBeamo;
 
@@ -134,10 +134,22 @@ public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>
 				});
 		}
 
+		this.SendResults(new ServicesResetResult
+		{ 
+			Target = args.Target,
+			Ids = args.BeamoIdsToReset.ToList(),
+		});
 
 
 		_localBeamo.SaveBeamoLocalManifest();
 		_localBeamo.SaveBeamoLocalRuntime();
 		await _localBeamo.StopListeningToDocker();
+	}
+	
+	
+	public class ServicesResetResult
+	{
+		public string Target;
+		public List<string> Ids;
 	}
 }
