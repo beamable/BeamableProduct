@@ -31,7 +31,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 
 	public ServicesDeployCommand() :
 		base("deploy",
-			"Deploys services remotely to the current realm.")
+			"Deploys services remotely to the current realm")
 	{
 	}
 
@@ -43,7 +43,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 		AddOption(new Option<string[]>("--disable", "These are the ids for services you wish to be disabled once Beam-O receives the updated manifest") { AllowMultipleArgumentsPerToken = true },
 			(args, i) => args.BeamoIdsToDisable = i.Length == 0 ? null : i);
 
-		AddOption(new Option<string>("--from-file", () => null, $"If this option is set to a valid path to a ServiceManifest JSON, deploys that instead."),
+		AddOption(new Option<string>("--from-file", () => null, $"If this option is set to a valid path to a ServiceManifest JSON, deploys that instead"),
 			(args, i) => args.FromJsonFile = i);
 
 		AddOption(new Option<string>("--comment", () => "", $"Associates this comment along with the published Manifest. You'll be able to read it via the Beamable Portal"),

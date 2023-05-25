@@ -23,13 +23,13 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 
 	public ServicesRunCommand() :
 		base("run",
-			"Run services locally in Docker. Will fail if no docker instance is running in the local machine.")
+			"Run services locally in Docker. Will fail if no docker instance is running in the local machine")
 	{
 	}
 
 	public override void Configure()
 	{
-		AddOption(new Option<string[]>("--ids", "The ids for the services you wish to deploy. Ignoring this option deploys all services.") { AllowMultipleArgumentsPerToken = true },
+		AddOption(new Option<string[]>("--ids", "The ids for the services you wish to deploy. Ignoring this option deploys all services") { AllowMultipleArgumentsPerToken = true },
 			(args, i) => args.BeamoIdsToDeploy = i.Length == 0 ? null : i);
 	}
 
