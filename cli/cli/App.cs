@@ -168,6 +168,7 @@ public class App
 		Commands.AddCommand<ServicesModifyCommand, ServicesModifyCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesEnableCommand, ServicesEnableCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesDeployCommand, ServicesDeployCommandArgs, ServicesCommand>();
+		Commands.AddCommand<ServicesRunCommand, ServicesRunCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesResetCommand, ServicesResetCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesTemplatesCommand, ServicesTemplatesCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesRegistryCommand, ServicesRegistryCommandArgs, ServicesCommand>();
