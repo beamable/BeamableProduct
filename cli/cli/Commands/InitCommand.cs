@@ -67,9 +67,13 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 		}
 
 		_configService.SetConfigString(Constants.CONFIG_CID, cid);
-		await GetPidAndAuth(args, cid, host);
-
-		AnsiConsole.MarkupLine("Success! :thumbs up: Here are your connection details");
+		var success = await GetPidAndAuth(args, cid, host);
+		if (!success)
+		{
+			AnsiConsole.MarkupLine("Failure! :thumbs_down:");
+			return;
+		}
+		AnsiConsole.MarkupLine("Success! :thumbs_up: Here are your connection details");
 		BeamableLogger.Log(args.ConfigService.ConfigFilePath);
 		BeamableLogger.Log($"cid=[{args.AppContext.Cid}] pid=[{args.AppContext.Pid}]");
 		BeamableLogger.Log(args.ConfigService.PrettyPrint());
@@ -80,7 +84,7 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 		});
 	}
 
-	private async Task GetPidAndAuth(InitCommandArgs args, string cid, string host)
+	private async Task<bool> GetPidAndAuth(InitCommandArgs args, string cid, string host)
 	{
 		if (!string.IsNullOrEmpty(_ctx.Pid) && string.IsNullOrEmpty(args.pid))
 		{
@@ -88,9 +92,9 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 			_configService.SetBeamableDirectory(_ctx.WorkingDirectory);
 			_configService.FlushConfig();
 
-			await _loginCommand.Handle(args);
+			var didLogin = await Login(args);
 
-			return;
+			return didLogin;
 		}
 
 		// If we have a given pid, let's login there.
@@ -98,12 +102,19 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 		{
 			_ctx.Set(cid, args.pid, host);
 
-			await _loginCommand.Handle(args);
-			_configService.SetBeamableDirectory(_ctx.WorkingDirectory);
-			_configService.SetConfigString(Constants.CONFIG_PID, args.pid);
-			_configService.FlushConfig();
+			var didLogin = await Login(args);
+			if(didLogin)
+			{
+				_configService.SetBeamableDirectory(_ctx.WorkingDirectory);
+				_configService.SetConfigString(Constants.CONFIG_PID, args.pid);
+				_configService.FlushConfig();
+			}
+			else
+			{
+				_configService.RemoveConfigFolderContent();
+			}
 
-			return;
+			return didLogin;
 		}
 
 		_ctx.Set(cid, null, host);
@@ -111,16 +122,40 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 		_configService.FlushConfig();
 
 		var pid = await PickGameAndRealm(args);
+		if(string.IsNullOrWhiteSpace(pid))
+		{
+			_configService.RemoveConfigFolderContent();
+			return false;
+		}
+		
 		_ctx.Set(cid, pid, host);
 		_configService.SetConfigString(Constants.CONFIG_PID, pid);
 		_configService.FlushConfig();
 
-		await _loginCommand.Handle(args); // login again with the scoped token
+		return await Login(args);
+	}
+
+	private async Task<bool> Login(LoginCommandArgs args)
+	{
+		try
+		{
+			await _loginCommand.Handle(args);
+			return _loginCommand.Successful;
+		}
+		catch
+		{
+			BeamableLogger.LogError("Login failed. Init aborted.");
+			return false;
+		}
 	}
 
 	private async Task<string> PickGameAndRealm(InitCommandArgs args)
 	{
-		await _loginCommand.Handle(args);
+		var didLogin = await Login(args);
+		if (!didLogin)
+		{
+			return string.Empty; // cannot fetch games without correct credentials
+		}
 		var games = await _realmsApi.GetGames().ShowLoading("Fetching games...");
 		var gameChoices = games.Select(g => g.DisplayName.Replace("[PROD]", "")).ToList();
 		var gameSelection = AnsiConsole.Prompt(

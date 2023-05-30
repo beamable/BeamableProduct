@@ -19,6 +19,7 @@ public class LoginCommandArgs : CommandArgs
 
 public class LoginCommand : AppCommand<LoginCommandArgs>
 {
+	public bool Successful { get; private set; } = false;
 	private IAppContext _ctx;
 	private ConfigService _configService;
 	private IAuthApi _authApi;
@@ -124,6 +125,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 
 			BeamableLogger.Log(JsonConvert.SerializeObject(response, Formatting.Indented));
 		}
+		Successful = true;
 	}
 
 	private string GetUserName(LoginCommandArgs args)
