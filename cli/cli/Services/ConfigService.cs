@@ -28,7 +28,6 @@ public class ConfigService
 
 	public void Init(BindingContext bindingContext)
 	{
-
 		if (!TryGetSetting(out _dir, bindingContext, _configDirOption))
 		{
 			_dir = Directory.GetCurrentDirectory();
@@ -59,12 +58,14 @@ public class ConfigService
 	public void SaveDataFile<T>(string fileName, T data)
 	{
 		if (!fileName.EndsWith(".json")) fileName += ".json";
-		var json = JsonConvert.SerializeObject(data, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto });
+		var json = JsonConvert.SerializeObject(data,
+			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto });
 		var dir = Path.Combine(ConfigFilePath, fileName);
 		File.WriteAllText(dir, json);
 	}
 
 	public T LoadDataFile<T>(string fileName) where T : new() => LoadDataFile<T>(fileName, () => new T());
+
 	public T LoadDataFile<T>(string fileName, Func<T> defaultValueGenerator)
 	{
 		try
@@ -72,8 +73,10 @@ public class ConfigService
 			if (!fileName.EndsWith(".json")) fileName += ".json";
 			var dir = Path.Combine(ConfigFilePath, fileName);
 			if (!File.Exists(dir)) { return defaultValueGenerator(); }
+
 			var json = File.ReadAllText(dir);
-			var data = JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto });
+			var data = JsonConvert.DeserializeObject<T>(json,
+				new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto });
 			return data;
 		}
 		catch (Exception ex)
@@ -90,7 +93,8 @@ public class ConfigService
 	}
 
 
-	public bool TryGetSetting(out string value, BindingContext context, ConfigurableOption option, string defaultValue = null)
+	public bool TryGetSetting(out string value, BindingContext context, ConfigurableOption option,
+		string defaultValue = null)
 	{
 		// Try to get from option
 		value = context.ParseResult.GetValueForOption(option);
@@ -103,7 +107,8 @@ public class ConfigService
 		if (string.IsNullOrEmpty(value))
 		{
 			_ = _environment.TryGetFromOption(option, out value);
-			CliSerilogProvider.Instance.Debug($"Trying to get option={option.GetType().Name} from Env Vars! Value Found={value}");
+			CliSerilogProvider.Instance.Debug(
+				$"Trying to get option={option.GetType().Name} from Env Vars! Value Found={value}");
 		}
 
 		var hasValue = !string.IsNullOrEmpty(value);
@@ -130,7 +135,7 @@ public class ConfigService
 
 	public void SetBeamableDirectory(string dir)
 	{
-		ConfigFilePath = Path.Combine(dir, Constants.CONFIG_FOLDER); ;
+		ConfigFilePath = Path.Combine(dir, Constants.CONFIG_FOLDER);
 	}
 
 	public void FlushConfig()
@@ -142,6 +147,7 @@ public class ConfigService
 		{
 			Directory.CreateDirectory(ConfigFilePath);
 		}
+
 		string fullPath = Path.Combine(ConfigFilePath, Constants.CONFIG_DEFAULTS_FILE_NAME);
 		File.WriteAllText(fullPath, json);
 	}
@@ -173,6 +179,23 @@ public class ConfigService
 		File.WriteAllText(fullPath, json);
 	}
 
+	public void RemoveConfigFolderContent()
+	{
+		if (TryToFindBeamableConfigFolder(out var path))
+		{
+			var directory = new DirectoryInfo(path);
+			foreach (FileInfo file in directory.GetFiles())
+			{
+				file.Delete();
+			}
+
+			foreach (DirectoryInfo subDirectory in directory.GetDirectories())
+			{
+				subDirectory.Delete(true);
+			}
+		}
+	}
+
 	void RefreshConfig()
 	{
 		ConfigFileExists = TryToFindBeamableConfigFolder(out var configPath);
@@ -180,7 +203,7 @@ public class ConfigService
 		TryToReadConfigFile(ConfigFilePath, out _config);
 	}
 
-	bool TryToFindBeamableConfigFolder(out string? result)
+	bool TryToFindBeamableConfigFolder(out string result)
 	{
 		result = string.Empty;
 		var basePath = _dir;
