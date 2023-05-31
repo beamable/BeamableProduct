@@ -1,4 +1,6 @@
-﻿using Beamable.Server;
+﻿using Beamable.Common;
+using Beamable.Server;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -7,6 +9,8 @@ namespace Beamable.Microservices
 {
 	public static class MongoDbExtensions
 	{
+		#region Indexes
+
 		public enum IndexType
 		{
 			Ascending,
@@ -27,9 +31,9 @@ namespace Beamable.Microservices
 		/// <param name="indexName">(Optional) Custom index name, if left empty index will be named after <see cref="IndexType"/> passed formatted to lower</param>
 		/// <typeparam name="T">Constrained to a class that derives from <see cref="StorageDocument"/></typeparam>
 		public static async Task CreateSingleIndex<T>(this IMongoCollection<T> collection,
-		                                        IndexType type,
-		                                        string fieldName,
-		                                        string indexName = "") where T : StorageDocument
+		                                              IndexType type,
+		                                              string fieldName,
+		                                              string indexName = "") where T : StorageDocument
 		{
 			var indexKeysDefinition = BuildDefinition<T>(type, fieldName);
 			await collection.CreateIndex(indexKeysDefinition,
@@ -202,6 +206,107 @@ namespace Beamable.Microservices
 			var model =
 				new CreateIndexModel<T>(indexKeysDefinition, new CreateIndexOptions {Name = indexName});
 			await indexManager.CreateOneAsync(model);
+		}
+
+		#endregion
+		
+		#region CRUD
+		public static async Promise<TCollection> Get<TCollection>(this IMongoCollection<TCollection> collection,
+		                                                          string id)
+			where TCollection : StorageDocument
+		{
+			var filter = Builders<TCollection>.Filter.Eq("_id", new ObjectId(id));
+			var search = await collection.FindAsync(filter);
+			return search.FirstOrDefault();
+		}
+
+		public static async Promise<TCollection> Get<TStorage, TCollection>(
+			this IStorageObjectConnectionProvider provider,
+			string id)
+			where TStorage : MongoStorageObject
+			where TCollection : StorageDocument
+		{
+			var collection = await provider.GetCollection<TStorage, TCollection>();
+			var filter = Builders<TCollection>.Filter.Eq("_id", new ObjectId(id));
+			var search = await collection.FindAsync(filter);
+			return search.FirstOrDefault();
+		}
+		
+		public static async void Create<TStorage, TCollection>(this IStorageObjectConnectionProvider provider,
+		                                                       TCollection data) where TStorage : MongoStorageObject
+			where TCollection : StorageDocument
+		{
+			var collection = await provider.GetCollection<TStorage, TCollection>();
+			await collection.Create(data);
+		}
+		
+		public static async Task Create<TCollection>(this IMongoCollection<TCollection> collection,
+		                                             TCollection data) where TCollection : StorageDocument
+		{
+			await collection.InsertOneAsync(data);
+		}
+		
+		public static async Promise<bool> Update<TStorage, TCollection>(this IStorageObjectConnectionProvider provider,
+		                                                                string id,
+		                                                                TCollection updatedData)
+			where TStorage : MongoStorageObject
+			where TCollection : StorageDocument
+		{
+			var collection = await provider.GetCollection<TStorage, TCollection>();
+			return await collection.Update(id, updatedData);
+		}
+		
+		public static async Promise<bool> Update<TCollection>(this IMongoCollection<TCollection> collection,
+		                                                      string id,
+		                                                      TCollection updatedData)
+			where TCollection : StorageDocument
+		{
+			var filter = Builders<TCollection>.Filter.Eq("_id", new ObjectId(id));
+			var result = await collection.ReplaceOneAsync(filter, updatedData);
+			return result.ModifiedCount > 0;
+		}
+		
+		public static async Promise<bool> Delete<TStorage, TCollection>(this IStorageObjectConnectionProvider provider,
+		                                                                string id)
+			where TStorage : MongoStorageObject
+			where TCollection : StorageDocument
+		{
+			var collection = await provider.GetCollection<TStorage, TCollection>();
+			return await collection.Delete(id);
+		}
+
+		public static async Promise<bool> Delete<TCollection>(this IMongoCollection<TCollection> collection, string id)
+			where TCollection : StorageDocument
+		{
+			var filter = Builders<TCollection>.Filter.Eq("_id", new ObjectId(id));
+			var result = await collection.DeleteOneAsync(filter);
+			return result.DeletedCount > 0;
+		}
+		
+		#endregion
+		
+		public static async Promise<bool> UpdateMany<TCollection>(this IMongoCollection<TCollection> collection,
+		                                                          string id,
+		                                                          Dictionary<string, object> updatedData)
+			where TCollection : StorageDocument
+		{
+			FilterDefinition<TCollection> filter = Builders<TCollection>.Filter.Eq("_id", new ObjectId(id));
+
+			var update = Builders<TCollection>.Update;
+			var updates = new List<UpdateDefinition<TCollection>>();
+
+			foreach (var data in updatedData)
+			{
+				updates.Add(update.Set(data.Key, data.Value));
+			}
+
+			var result = await collection.UpdateOneAsync(filter, update.Combine(updates), new UpdateOptions
+			{
+				IsUpsert = true,
+				
+			});
+
+			return result.ModifiedCount == updatedData.Count;
 		}
 	}
 }
