@@ -90,7 +90,7 @@ public partial class BeamoLocalSystem
 		const string ENV_NAME_PREFIX = "NAME_PREFIX";
 		const string ENV_WATCH_TOKEN = "WATCH_TOKEN";
 		const string ENV_INSTANCE_COUNT = "BEAM_INSTANCE_COUNT";
-		
+
 
 		var imageId = serviceDefinition.ImageId;
 		var containerName = $"{serviceDefinition.BeamoId}_httpMicroservice";
@@ -123,10 +123,10 @@ public partial class BeamoLocalSystem
 			new() { VariableName = ENV_WATCH_TOKEN, Value = shouldPrepareWatch.ToString() },
 			new() { VariableName = ENV_INSTANCE_COUNT, Value = localProtocol.InstanceCount.ToString() },
 		};
-		Log.Information("Building Env Vars.. {host} {prefix} {cid} {pid}", 
-			(object)$"{_ctx.Host.Replace("http://", "wss://").Replace("https://", "wss://")}/socket", 
-			(object)MachineHelper.GetUniqueDeviceId(), 
-			(object)_ctx.Cid, (object) _ctx.Pid);
+		Log.Information("Building Env Vars.. {host} {prefix} {cid} {pid}",
+			(object)$"{_ctx.Host.Replace("http://", "wss://").Replace("https://", "wss://")}/socket",
+			(object)MachineHelper.GetUniqueDeviceId(),
+			(object)_ctx.Cid, (object)_ctx.Pid);
 
 
 		// add in connection string environment vars for mongo storage dependencies

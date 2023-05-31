@@ -209,11 +209,11 @@ namespace Beamable
 		/// <param name="isUnityVsp">is this package from Unity VSP?</param>
 		/// <param name="version">the package version</param>
 		public EnvironmentData(string apiUrl,
-		                       string portalUrl,
-		                       string beamMongoExpressUrl,
-		                       string dockerRegistryUrl,
-		                       bool isUnityVsp,
-		                       PackageVersion version)
+							   string portalUrl,
+							   string beamMongoExpressUrl,
+							   string dockerRegistryUrl,
+							   bool isUnityVsp,
+							   PackageVersion version)
 		{
 			this.apiUrl = apiUrl;
 			this.portalUrl = portalUrl;
@@ -250,9 +250,10 @@ namespace Beamable
 		string IPlatformRequesterHostResolver.Host => apiUrl;
 		PackageVersion IPlatformRequesterHostResolver.PackageVersion => SdkVersion;
 	}
-	
+
 	[Serializable]
-	public class EnvironmentOverridesData : JsonSerializable.ISerializable {
+	public class EnvironmentOverridesData : JsonSerializable.ISerializable
+	{
 		public string ApiUrl => _apiUrl;
 		public string PortalUrl => _portalUrl;
 		public string BeamMongoExpressUrl => _beamMongoExpressUrl;
@@ -264,9 +265,9 @@ namespace Beamable
 		private string _dockerRegistryUrl;
 
 		public EnvironmentOverridesData(string apiUrl,
-		                                string portalUrl,
-		                                string beamMongoExpressUrl,
-		                                string dockerRegistryUrl)
+										string portalUrl,
+										string beamMongoExpressUrl,
+										string dockerRegistryUrl)
 		{
 			_apiUrl = apiUrl;
 			_portalUrl = portalUrl;
@@ -279,6 +280,6 @@ namespace Beamable
 			s.Serialize("portalUrl", ref _portalUrl);
 			s.Serialize("beamMongoExpressUrl", ref _beamMongoExpressUrl);
 			s.Serialize("dockerRegistryUrl", ref _dockerRegistryUrl);
-		} 
+		}
 	}
 }
