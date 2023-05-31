@@ -21,7 +21,7 @@ public class RegisterCommand : AppCommand<RegisterCommandArgs>
 	private readonly InitCommand _initCommand;
 	private readonly LoginCommand _loginCommand;
 
-	public RegisterCommand(InitCommand initCommand, LoginCommand loginCommand) : base("new", "create a new beamable organization")
+	public RegisterCommand(InitCommand initCommand, LoginCommand loginCommand) : base("new", "Create a new beamable organization")
 	{
 		_initCommand = initCommand;
 		_loginCommand = loginCommand;
@@ -29,11 +29,11 @@ public class RegisterCommand : AppCommand<RegisterCommandArgs>
 
 	public override void Configure()
 	{
-		AddOption(new Option<string>("--alias", "the name you will use to sign into the organization"), (args, i) => args.alias = i);
-		AddOption(new Option<string>("--game", "the first game for the organization"), (args, i) => args.gameName = i);
-		AddOption(new Option<string>("--username", "the admin email for the new organization"), (args, i) => args.username = i);
-		AddOption(new Option<string>("--password", "the admin password for the new organization"), (args, i) => args.password = i);
-		AddOption(new Option<bool>("--accept-legal", "accept the Beamable legal agreements"), (args, i) => args.agreedToLegal = i);
+		AddOption(new Option<string>("--alias", "The name you will use to sign into the organization"), (args, i) => args.alias = i);
+		AddOption(new Option<string>("--game", "The first game for the organization"), (args, i) => args.gameName = i);
+		AddOption(new Option<string>("--username", "The admin email for the new organization"), (args, i) => args.username = i);
+		AddOption(new Option<string>("--password", "The admin password for the new organization"), (args, i) => args.password = i);
+		AddOption(new Option<bool>("--accept-legal", "Accept the Beamable legal agreements"), (args, i) => args.agreedToLegal = i);
 	}
 
 	public override async Task Handle(RegisterCommandArgs args)

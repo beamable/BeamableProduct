@@ -8,7 +8,7 @@ public class OrganizationCommandArgs : CommandArgs
 }
 public class OrganizationCommand : AppCommand<OrganizationCommandArgs>
 {
-	public OrganizationCommand() : base("org", "commands related to beamable organizations")
+	public OrganizationCommand() : base("org", "Commands related to beamable organizations")
 	{
 	}
 
