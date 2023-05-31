@@ -1,8 +1,7 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
-using Beamable.Microservices;
-using MongoDB.Bson;
+using Beamable.Mongo;
 using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
@@ -73,7 +72,7 @@ namespace Beamable.Server
 							if (attributeData.AttributeType != typeof(MongoIndexAttribute))
 								continue;
 
-							var mongoIndexType = (MongoDbExtensions.IndexType)attributeData.ConstructorArguments[0].Value;
+							var mongoIndexType = (MongoIndexesExtension.IndexType)attributeData.ConstructorArguments[0].Value;
 							var mongoIndexName = (string)attributeData.ConstructorArguments[1].Value;
 							var fieldInfo = (FieldInfo)memberInfo;
 
@@ -117,10 +116,10 @@ namespace Beamable.Server
 
 				MethodInfo getResultMethod = promiseGenericType.GetMethod(nameof(Promise.GetResult));
 
-				IEnumerable<Type> enumerable = typeof(MongoDbExtensions).Assembly.GetTypes();
-				Type mongoDbExtensionsType = enumerable.First(t => t.Name == nameof(MongoDbExtensions));
+				IEnumerable<Type> enumerable = typeof(MongoIndexesExtension).Assembly.GetTypes();
+				Type mongoDbExtensionsType = enumerable.First(t => t.Name == nameof(MongoIndexesExtension));
 
-				MethodInfo methodInfo = mongoDbExtensionsType.GetMethod(nameof(MongoDbExtensions.CreateSingleIndex));
+				MethodInfo methodInfo = mongoDbExtensionsType.GetMethod(nameof(MongoIndexesExtension.CreateSingleIndex));
 				MethodInfo createSingleIndexMethodGeneric = methodInfo?.MakeGenericMethod(data.Collection);
 
 				try
@@ -156,7 +155,7 @@ namespace Beamable.Server
 
 	public class MongoIndexDetails
 	{
-		public MongoDbExtensions.IndexType IndexType { get; set; }
+		public MongoIndexesExtension.IndexType IndexType { get; set; }
 		public string IndexName { get; set; }
 		public string Field { get; set; }
 	}

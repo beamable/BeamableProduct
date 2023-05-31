@@ -1,15 +1,14 @@
-﻿using Beamable.Microservices;
-using System;
+﻿using System;
 
-namespace MongoDB.Bson
+namespace Beamable.Mongo
 {
 	[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
 	public class MongoIndexAttribute : Attribute
 	{
-		private readonly MongoDbExtensions.IndexType _indexType;
+		private readonly MongoIndexesExtension.IndexType _indexType;
 		private readonly string _indexName;
 		
-		public MongoIndexAttribute(MongoDbExtensions.IndexType indexType, string indexName = "")
+		public MongoIndexAttribute(MongoIndexesExtension.IndexType indexType, string indexName = "")
 		{
 			_indexType = indexType;
 			_indexName = string.IsNullOrEmpty(indexName) ? indexType.ToString().ToLower() : indexName;
