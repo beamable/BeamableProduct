@@ -167,21 +167,7 @@ namespace Beamable
 		/// <summary>
 		/// The Beamable Cloud environment the game is using. For games, this should always be "prod"
 		/// </summary>
-		public string Environment
-		{
-			get
-			{
-				switch (ApiUrl)
-				{
-					case "https://dev.api.beamable.com":
-						return "dev";
-					case "https://staging.api.beamable.com":
-						return "staging";
-				}
-
-				return "prod";
-			}
-		}
+		public string Environment => _version.IsNightly ? "dev" : "prod";
 
 		/// <summary>
 		/// The Beamable Cloud API url.
