@@ -44,6 +44,11 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 		// Default the solution name to the project name.
 		args.SolutionName = string.IsNullOrEmpty(args.SolutionName) ? args.ProjectName : args.SolutionName;
 
+		if (string.IsNullOrEmpty(args.directory))
+		{
+			args.directory = args.SolutionName;
+		}
+
 		// in the current directory, create a project using dotnet. 
 		var path = await args.ProjectService.CreateNewSolution(args.directory, args.SolutionName, args.ProjectName, !args.SkipCommon);
 
@@ -65,11 +70,36 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 				Directory.EnumerateDirectories(args.ConfigService.BaseDirectory, $"{args.ProjectName}\\services", SearchOption.AllDirectories).First());
 
 		// now that a .beamable folder has been created, setup the beamo manifest
-		await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value.ToLower(),
+		var sd = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value.ToLower(),
 			projectDirectory,
 			Path.Combine(args.ProjectName, "Dockerfile"),
 			new string[] { },
 			CancellationToken.None);
+
+		if (!args.SkipCommon)
+		{
+			var commonProjectName = $"{args.ProjectName}Common";
+			var solutionPath = Path.Combine(args.ConfigService.WorkingDirectory, args.directory);
+			var rootServicesPath = Path.Combine(solutionPath, "services");
+			var commonProjectPath = Path.Combine(rootServicesPath, commonProjectName);
+
+			var service = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[sd.BeamoId];
+			var dockerfilePath = service.RelativeDockerfilePath;
+			Log.Information("Docker file path is " + dockerfilePath);
+			var serviceFolder = Path.GetDirectoryName(dockerfilePath);
+			Log.Information("Docker file folder is " + serviceFolder);
+
+			dockerfilePath = Path.Combine(args.directory, service.DockerBuildContextPath, dockerfilePath);
+			var dockerfileText = File.ReadAllText(dockerfilePath);
+
+			const string search =
+				"# <BEAM-CLI-INSERT-FLAG:COPY_COMMON> do not delete this line. It is used by the beam CLI to insert custom actions";
+			var replacement = @$"WORKDIR /subsrc/{commonProjectName}
+COPY {commonProjectName}/. .
+{search}";
+			dockerfileText = dockerfileText.Replace(search, replacement);
+			await File.WriteAllTextAsync(dockerfilePath, dockerfileText);
+		}
 
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
 		args.BeamoLocalSystem.SaveBeamoLocalRuntime();

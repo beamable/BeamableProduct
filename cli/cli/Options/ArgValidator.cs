@@ -12,6 +12,8 @@ namespace cli
 
 		public T GetValue(OptionResult parse)
 		{
+			if (parse == null) return default;
+			
 			var strValue = parse.GetValueOrDefault<string>();
 			try
 			{
@@ -23,7 +25,7 @@ namespace cli
 			}
 			return default;
 		}
-	
+
 		public T GetValue(ArgumentResult parse)
 		{
 			var strValue = parse.GetValueOrDefault<string>();

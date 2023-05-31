@@ -34,7 +34,7 @@ public static class ResultStreamExtensions
 		where TChannel : IResultChannel, new()
 	{
 		var channel = new TChannel(); // TODO: cache.
-		self.Reporter.Report(channel.ChannelName, data);
+		self?.Reporter?.Report(channel.ChannelName, data);
 	}
 }
 
@@ -68,7 +68,7 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider
 		ArgValidator<T> validator = CommandProvider.CanBuildService<ArgValidator<T>>()
 			? CommandProvider.GetService<ArgValidator<T>>()
 			: null;
-		
+
 		var set = new Action<BindingContext, TArgs>((ctx, args) =>
 		{
 			if (validator != null)
@@ -90,7 +90,7 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider
 				var _ = validator.GetValue(res);
 			});
 		}
-		
+
 		base.AddArgument(arg);
 		return arg;
 	}
@@ -113,7 +113,7 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider
 				binder(args, res);
 			}
 		});
-		
+
 		if (validator != null)
 		{
 			arg.AddValidator(res =>

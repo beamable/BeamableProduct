@@ -138,15 +138,18 @@ namespace Beamable.Editor.Content
 						else
 						{
 							// we weren't able to resolve it :( 
-							Debug.LogError(@$"Unable to find a content type for type=[{currType}].
-This can happen if the content folders have different names than the content attribute strings. 
-Make sure that the {root} folder and sub folder names match the content attribute strings exactly.
-This could also happen if you are missing content classes for content in the realm. 
-
-If you are sure you have all the content classes, but nothing is working, follow these steps...
-1. make a backup of your {root} folder...
-2. delete the {root} folder...
-3. download content from the Content Manager...");
+							Debug.LogError($"Unable to find a content type for type=[{currType}]." +
+										   $"\nThis can happen if the content folders have different names than the " +
+										   $"content attribute strings. " +
+										   $"\nMake sure that the {root} folder and sub folder names match the content " +
+										   $"attribute strings exactly." +
+										   $"\nThis could also happen if you are missing " +
+										   $"content classes for content in the realm. " +
+										   $"\n\nIf you are sure you have " +
+										   $"all the content classes, but nothing is working, follow these steps..." +
+										   $"\n1. make a backup of your {root} folder..." +
+										   $"\n2. delete the {root} folder..." +
+										   $"\n3. download content from the Content Manager...");
 						}
 					}
 				}

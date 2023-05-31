@@ -33,7 +33,6 @@ namespace Beamable.Common
 
 				public const int DISCOVERY_BROADCAST_PERIOD_MS = 250;
 				public const int DISCOVERY_RECEIVE_PERIOD_MS = 350;
-				public static readonly string[] DISCOVERY_IPS = new string[] { "192.", "0.0.0.0", "127.0.0.1" };
 
 				public const string UPLOAD_CONTAINER_MESSAGE = "Uploaded container service=[{0}]";
 				public const string CONTAINER_ALREADY_UPLOADED_MESSAGE = "Service [{0}] is already deployed at imageId";

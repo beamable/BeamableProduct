@@ -119,7 +119,7 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// Kick off a long running task that receives updates from the docker engine.
 	/// </summary>
-	public async Task StartListeningToDocker()
+	public async Task StartListeningToDocker(Action<string, string> onServiceContainerStateChange = null)
 	{
 		// Cancel the thread if it's already running.
 		if (_dockerListeningThread != null && !_dockerListeningThread.IsCompleted)
@@ -163,6 +163,7 @@ public partial class BeamoLocalSystem
 							IsRunning = false
 						};
 						BeamoRuntime.ExistingLocalServiceInstances.Add(newServiceInstance);
+						onServiceContainerStateChange?.Invoke(beamoId, messageAction);
 					}
 
 					break;
@@ -170,14 +171,26 @@ public partial class BeamoLocalSystem
 
 				case ("container", "destroy"):
 				{
-					BeamoRuntime.ExistingLocalServiceInstances.RemoveAll(si => si.ContainerId == message.ID);
+					BeamoRuntime.ExistingLocalServiceInstances.RemoveAll(si =>
+					{
+						var wasDestroyed = si.ContainerId == message.ID;
+						if (wasDestroyed)
+						{
+							onServiceContainerStateChange?.Invoke(si.BeamoId, messageAction);
+						}
+						return wasDestroyed;
+					});
 					break;
 				}
 
 				case ("container", "start"):
 				{
 					var beamoServiceInstance = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.ContainerId == message.ID);
-					if (beamoServiceInstance != null) beamoServiceInstance.IsRunning = true;
+					if (beamoServiceInstance != null)
+					{
+						beamoServiceInstance.IsRunning = true;
+						onServiceContainerStateChange?.Invoke(beamoServiceInstance.BeamoId, messageAction);
+					}
 					// TODO: Detect when people containers are running but their dependencies are not. Output a list of warnings that people can then print out.
 					break;
 				}
@@ -185,7 +198,11 @@ public partial class BeamoLocalSystem
 				case ("container", "stop"):
 				{
 					var beamoServiceInstance = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.ContainerId == message.ID);
-					if (beamoServiceInstance != null) beamoServiceInstance.IsRunning = false;
+					if (beamoServiceInstance != null)
+					{
+						beamoServiceInstance.IsRunning = false;
+						onServiceContainerStateChange?.Invoke(beamoServiceInstance.BeamoId, messageAction);
+					}
 					// TODO: Detect when people containers are running but their dependencies are not. Output a list of warnings that people can then print out.
 					break;
 				}

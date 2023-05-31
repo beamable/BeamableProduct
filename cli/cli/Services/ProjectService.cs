@@ -139,10 +139,6 @@ public class ProjectService
 
 	public async Task<string> CreateNewSolution(string directory, string solutionName, string projectName, bool createCommonLibrary = true)
 	{
-		if (string.IsNullOrEmpty(directory))
-		{
-			directory = solutionName;
-		}
 
 		var solutionPath = Path.Combine(_configService.WorkingDirectory, directory);
 		var rootServicesPath = Path.Combine(solutionPath, "services");

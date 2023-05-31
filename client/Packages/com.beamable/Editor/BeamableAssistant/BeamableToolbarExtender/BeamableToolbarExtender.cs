@@ -252,12 +252,12 @@ namespace Beamable.Editor.ToolbarExtender
 					// referencing https://docs.unity3d.com/Manual/upm-lifecycle.html
 					if (package.registry == null)
 						return false; // no registry implies a local package, which won't trigger.
-					if (!PackageVersion.TryFromSemanticVersionString(package.version, out var version))
+					if (!PackageVersion.TryFromSemanticVersionString(package.version, out var ver))
 					{
 						return true; // this isn't a valid package version, so we'll assume its a preview.
 					}
 
-					var isPreview = version.IsExperimental || version.IsPreview;
+					var isPreview = ver.IsExperimental || ver.IsPreview;
 					return isPreview;
 				});
 
