@@ -77,7 +77,7 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 			var solutionPath = Path.Combine(args.ConfigService.WorkingDirectory, args.directory);
 			var rootServicesPath = Path.Combine(solutionPath, "services");
 			var commonProjectPath = Path.Combine(rootServicesPath, commonProjectName);
-			
+
 			var service = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[sd.BeamoId];
 			var dockerfilePath = service.RelativeDockerfilePath;
 			Log.Information("Docker file path is " + dockerfilePath);
