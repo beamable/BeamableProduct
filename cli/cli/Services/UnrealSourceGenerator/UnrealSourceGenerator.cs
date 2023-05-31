@@ -2,6 +2,7 @@
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Writers;
 using Newtonsoft.Json;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
@@ -462,12 +463,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			// TODO: Declare this instead of serialized type
 			if (schemaUnrealType.StartsWith(UNREAL_U_ENUM_PREFIX))
 			{
-				var enumDecl = new UnrealEnumDeclaration
-				{
-					UnrealTypeName = schemaUnrealType,
-					NamespacedTypeName = schemaNamespacedType,
-					EnumValues = schema.Enum.OfType<OpenApiString>().Select(v => v.Value).ToList()
-				};
+				var enumDecl = new UnrealEnumDeclaration { UnrealTypeName = schemaUnrealType, NamespacedTypeName = schemaNamespacedType, EnumValues = schema.Enum.OfType<OpenApiString>().Select(v => v.Value).ToList() };
 
 				enumTypes.Add(enumDecl);
 			}
@@ -930,7 +926,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			GetNamespacedServiceNameFromApiDoc(openApiDocument.Info, out var serviceTitle, out var serviceName);
 
 			var isMSGen = genType == GenerationType.Microservice;
-			var unrealServiceDecl = new UnrealApiSubsystemDeclaration { SubsystemName = isMSGen ? $"{serviceName.Capitalize()}Ms" : serviceName.Capitalize(), };
+			var unrealServiceDecl = new UnrealApiSubsystemDeclaration { ServiceName = serviceName, SubsystemName = isMSGen ? $"{serviceName.Capitalize()}Ms" : serviceName.Capitalize(), };
 
 			// check and see if we already declared this subsystem (but an object/basic version of it)
 			var alreadyDeclared = outSubsystemDeclarations.Any(d => d.SubsystemName == unrealServiceDecl.SubsystemName);
@@ -1976,26 +1972,66 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// </summary>
 	public static string GetUnrealTypeFromReflectionType(Type unrealWrapperType)
 	{
-		if (unrealWrapperType == typeof(byte))
-			return UNREAL_BYTE;
-		if (unrealWrapperType == typeof(short))
-			return UNREAL_SHORT;
-		if (unrealWrapperType == typeof(int))
-			return UNREAL_INT;
-		if (unrealWrapperType == typeof(long))
-			return UNREAL_LONG;
-		if (unrealWrapperType == typeof(bool))
-			return UNREAL_BOOL;
-		if (unrealWrapperType == typeof(float))
-			return UNREAL_FLOAT;
-		if (unrealWrapperType == typeof(double))
-			return UNREAL_DOUBLE;
-		if (unrealWrapperType == typeof(string))
-			return UNREAL_STRING;
-		if (unrealWrapperType == typeof(Guid))
-			return UNREAL_GUID;
+		static string GetPrimitive(Type type)
+		{
+			if (type == typeof(byte))
+				return UNREAL_BYTE;
+			if (type == typeof(short))
+				return UNREAL_SHORT;
+			if (type == typeof(int))
+				return UNREAL_INT;
+			if (type == typeof(long))
+				return UNREAL_LONG;
+			if (type == typeof(bool))
+				return UNREAL_BOOL;
+			if (type == typeof(float))
+				return UNREAL_FLOAT;
+			if (type == typeof(double))
+				return UNREAL_DOUBLE;
+			if (type == typeof(string))
+				return UNREAL_STRING;
+			if (type == typeof(Guid))
+				return UNREAL_GUID;
 
-		throw new ArgumentException("We don't support making unreal types from non-primitive reflection types");
+			return "";
+		}
+
+		var primitiveType = GetPrimitive(unrealWrapperType);
+
+		if (string.IsNullOrEmpty(primitiveType))
+		{
+			var isList = unrealWrapperType.IsGenericType && typeof(IList).IsAssignableFrom(unrealWrapperType);
+			var isArray = unrealWrapperType.IsArray;
+			if (isList || isArray)
+			{
+				var subType = isArray ? unrealWrapperType : unrealWrapperType.GenericTypeArguments[0];
+				var primitive = GetPrimitive(subType);
+				if (string.IsNullOrEmpty(primitive))
+					throw new ArgumentException($"We don't support arrays of non-primitive types here. {unrealWrapperType.FullName}");
+				return UNREAL_ARRAY + $"<{primitive}>";
+			}
+
+			var isDictionary = unrealWrapperType.IsGenericType && typeof(IDictionary).IsAssignableFrom(unrealWrapperType);
+			if (isDictionary)
+			{
+				if (unrealWrapperType.GenericTypeArguments[0] != typeof(string))
+					throw new ArgumentException($"We don't support non-string dictionaries here. {unrealWrapperType.FullName}");
+
+				var subType = unrealWrapperType.GenericTypeArguments[1];
+				var primitive = GetPrimitive(subType);
+				if (string.IsNullOrEmpty(primitive))
+					throw new ArgumentException($"We don't support maps of non-primitive types here. {unrealWrapperType.FullName}");
+
+				return UNREAL_MAP + $"<{UNREAL_STRING}, {primitive}>";
+			}
+		}
+		else
+		{
+			return primitiveType;
+		}
+
+
+		throw new ArgumentException($"We only support arrays of primitives and string maps of primitives (Dictionary<string, Primitive>, List<Primitive> or Primitive[]). {unrealWrapperType.Name}");
 	}
 
 	/// <summary>
