@@ -41,7 +41,7 @@ namespace Beamable.Editor.Environment
 		/// After this method is called, Beamable will use the given <see cref="EnvironmentData"/> instead of whatever is in env-defaults.
 		/// </summary>
 		/// <param name="data"></param>
-		public void SetOverrides(EnvironmentData data)
+		public void SetOverrides(EnvironmentOverridesData data)
 		{
 			var json = JsonSerializable.ToJson(data);
 			File.WriteAllText(OVERRIDE_PATH, json);

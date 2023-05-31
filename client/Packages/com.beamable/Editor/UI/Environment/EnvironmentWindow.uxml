@@ -11,9 +11,6 @@
 
         <engine:ScrollView>
 
-            <engine:Label name="env" text="Environment (advanced)" class="labelText" tooltip="The environment label is used to decide which Microservice Docker Image to use. 'prod' is used for all release candidate and production builds. 'dev' is used for nightly. "/>
-            <engine:TextField name="env" class="input"/>
-
             <engine:Label name="api" text="API" class="labelText"/>
             <engine:TextField name="api" class="input"/>
 
@@ -25,13 +22,6 @@
 
             <engine:Label name="dockerReg" text="Docker Registry" class="labelText"/>
             <engine:TextField name="dockerReg" class="input"/>
-
-            <engine:Label name="isUnityVsp" text="Is Unity VSP" class="labelText"/>
-            <engine:Toggle name="isUnityVsp"/>
-
-            <engine:Label name="sdkVersion" text="Version" class="labelText"/>
-            <engine:TextField name="sdkVersion" class="input"/>
-
         </engine:ScrollView>
         <engine:Label name="env-presets-label" text="Environment Presets" class="labelText"/>
         <engine:VisualElement name="env-presets">
