@@ -141,7 +141,7 @@ public class CheckStatusCommand : AppCommand<CheckStatusCommandArgs>
 		{
 			return false;
 		}
-		
+
 		var isSelf = _networkInterfaceCollection.Any(item => item.Address.ToString().StartsWith(message.PeerHost));
 		if (!isSelf)
 		{

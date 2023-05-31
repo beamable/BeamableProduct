@@ -50,7 +50,8 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 			(args, i) => args.RemoteComment = i);
 
 		AddOption(new Option<string[]>("--service-comments", Array.Empty<string>, $"Any number of strings in the format BeamoId::Comment" +
-		                                                                          $"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal") { AllowMultipleArgumentsPerToken = true },
+																				  $"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal")
+		{ AllowMultipleArgumentsPerToken = true },
 			(args, i) => args.RemoteServiceComments = i);
 	}
 

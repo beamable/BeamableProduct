@@ -135,7 +135,7 @@ public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>, IResul
 		}
 
 		this.SendResults(new ServicesResetResult
-		{ 
+		{
 			Target = args.Target,
 			Ids = args.BeamoIdsToReset.ToList(),
 		});
@@ -145,8 +145,8 @@ public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>, IResul
 		_localBeamo.SaveBeamoLocalRuntime();
 		await _localBeamo.StopListeningToDocker();
 	}
-	
-	
+
+
 	public class ServicesResetResult
 	{
 		public string Target;
