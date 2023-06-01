@@ -160,6 +160,10 @@ public class App
 		Commands.AddCommand<CheckNBomberCommand, CheckNBomberCommandArgs, ProfilingCommand>();
 		Commands.AddCommand<RunNBomberCommand, RunNBomberCommandArgs, ProfilingCommand>();
 
+		// org commands
+		Commands.AddRootCommand<OrganizationCommand, OrganizationCommandArgs>();
+		Commands.AddCommand<RegisterCommand, RegisterCommandArgs, OrganizationCommand>();
+		
 		// beamo commands
 		Commands.AddRootCommand<ServicesCommand, ServicesCommandArgs>();
 		Commands.AddCommand<ServicesManifestsCommand, ServicesManifestsArgs, ServicesCommand>();
