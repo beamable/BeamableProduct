@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- fix path issues in `project new` with different names for solution and project
 - Split `services deploy [--remote]` command into `services deploy` (for remote) and `services run` for running services
   in local docker
 - Project commands such as `project new`
