@@ -41,6 +41,7 @@ jobs:
           command: fix
           globs: |
             client/Packages/**/CHANGELOG.md
+            cli/cli/CHANGELOG.md
       - name: check headcommit message
         id: commit
         run: |
