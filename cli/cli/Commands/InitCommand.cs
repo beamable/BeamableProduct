@@ -77,10 +77,11 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 		BeamableLogger.Log(args.ConfigService.ConfigFilePath);
 		BeamableLogger.Log($"cid=[{args.AppContext.Cid}] pid=[{args.AppContext.Pid}]");
 		BeamableLogger.Log(args.ConfigService.PrettyPrint());
-		this.SendResults(new InitCommandResult() { 
+		this.SendResults(new InitCommandResult()
+		{
 			host = args.ConfigService.GetConfigString(Constants.CONFIG_PLATFORM),
-			cid = args.ConfigService.GetConfigString(Constants.CONFIG_CID), 
-			pid = args.ConfigService.GetConfigString(Constants.CONFIG_PID) 
+			cid = args.ConfigService.GetConfigString(Constants.CONFIG_CID),
+			pid = args.ConfigService.GetConfigString(Constants.CONFIG_PID)
 		});
 	}
 
@@ -103,7 +104,7 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 			_ctx.Set(cid, args.pid, host);
 
 			var didLogin = await Login(args);
-			if(didLogin)
+			if (didLogin)
 			{
 				_configService.SetBeamableDirectory(_ctx.WorkingDirectory);
 				_configService.SetConfigString(Constants.CONFIG_PID, args.pid);
@@ -122,12 +123,12 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 		_configService.FlushConfig();
 
 		var pid = await PickGameAndRealm(args);
-		if(string.IsNullOrWhiteSpace(pid))
+		if (string.IsNullOrWhiteSpace(pid))
 		{
 			_configService.RemoveConfigFolderContent();
 			return false;
 		}
-		
+
 		_ctx.Set(cid, pid, host);
 		_configService.SetConfigString(Constants.CONFIG_PID, pid);
 		_configService.FlushConfig();

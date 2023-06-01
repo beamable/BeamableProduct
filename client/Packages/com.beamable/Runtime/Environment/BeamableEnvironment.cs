@@ -89,7 +89,7 @@ namespace Beamable
 		/// </summary>
 		public static void ReloadEnvironment()
 		{
-			string envText = "";
+			string envText = string.Empty;
 
 #if UNITY_EDITOR
 			envText = File.ReadAllText(FilePath);
@@ -98,12 +98,18 @@ namespace Beamable
 #endif
 
 			var overrideFile = Resources.Load<TextAsset>(Path.GetFileNameWithoutExtension(OVERRIDE_PATH));
+			var rawDict = Json.Deserialize(envText) as ArrayDict;
 			if (overrideFile)
 			{
-				envText = overrideFile.text;
+				// ReSharper disable PossibleNullReferenceException
+				var overrideRawDict = Json.Deserialize(overrideFile.text) as ArrayDict;
+				foreach (var key in overrideRawDict.Keys)
+				{
+					rawDict[key] = overrideRawDict[key];
+				}
+				// ReSharper restore PossibleNullReferenceException
 			}
 
-			var rawDict = Json.Deserialize(envText) as ArrayDict;
 			JsonSerializable.Deserialize(Data, rawDict);
 		}
 
@@ -122,7 +128,6 @@ namespace Beamable
 	{
 		public static EnvironmentData BeamableDev(PackageVersion v) => new EnvironmentData
 		{
-			environment = "prod",
 			apiUrl = "https://dev.api.beamable.com",
 			portalUrl = "https://dev-portal.beamable.com",
 			beamMongoExpressUrl = "https://dev.storage.beamable.com",
@@ -132,7 +137,6 @@ namespace Beamable
 		};
 		public static EnvironmentData BeamableStaging(PackageVersion v) => new EnvironmentData
 		{
-			environment = "prod",
 			apiUrl = "https://staging.api.beamable.com",
 			portalUrl = "https://staging-portal.beamable.com",
 			beamMongoExpressUrl = "https://staging.storage.beamable.com",
@@ -142,7 +146,6 @@ namespace Beamable
 		};
 		public static EnvironmentData BeamableProduction(PackageVersion v) => new EnvironmentData
 		{
-			environment = "prod",
 			apiUrl = "https://api.beamable.com",
 			portalUrl = "https://portal.beamable.com",
 			beamMongoExpressUrl = "https://storage.beamable.com",
@@ -151,7 +154,6 @@ namespace Beamable
 			_version = v
 		};
 
-		[SerializeField] private string environment;
 		[SerializeField] private string apiUrl;
 		[SerializeField] private string portalUrl;
 		[SerializeField] private string beamMongoExpressUrl;
@@ -165,7 +167,7 @@ namespace Beamable
 		/// <summary>
 		/// The Beamable Cloud environment the game is using. For games, this should always be "prod"
 		/// </summary>
-		public string Environment => environment;
+		public string Environment => _version.IsNightly ? "dev" : "prod";
 
 		/// <summary>
 		/// The Beamable Cloud API url.
@@ -200,22 +202,19 @@ namespace Beamable
 		/// <summary>
 		/// construct a new data structure
 		/// </summary>
-		/// <param name="environment">a name for this environment. </param>
 		/// <param name="apiUrl">where to find beamable</param>
 		/// <param name="portalUrl">where to find the portal</param>
 		/// <param name="beamMongoExpressUrl">where to find the mongo express page</param>
 		/// <param name="dockerRegistryUrl">where to find the beamable docker registry</param>
 		/// <param name="isUnityVsp">is this package from Unity VSP?</param>
 		/// <param name="version">the package version</param>
-		public EnvironmentData(string environment,
-							   string apiUrl,
+		public EnvironmentData(string apiUrl,
 							   string portalUrl,
 							   string beamMongoExpressUrl,
 							   string dockerRegistryUrl,
 							   bool isUnityVsp,
 							   PackageVersion version)
 		{
-			this.environment = environment;
 			this.apiUrl = apiUrl;
 			this.portalUrl = portalUrl;
 			this.beamMongoExpressUrl = beamMongoExpressUrl;
@@ -234,7 +233,6 @@ namespace Beamable
 
 		public void Serialize(JsonSerializable.IStreamSerializer s)
 		{
-			s.Serialize("environment", ref environment);
 			s.Serialize("apiUrl", ref apiUrl);
 			s.Serialize("portalUrl", ref portalUrl);
 			s.Serialize("sdkVersion", ref sdkVersion);
@@ -251,5 +249,37 @@ namespace Beamable
 
 		string IPlatformRequesterHostResolver.Host => apiUrl;
 		PackageVersion IPlatformRequesterHostResolver.PackageVersion => SdkVersion;
+	}
+
+	[Serializable]
+	public class EnvironmentOverridesData : JsonSerializable.ISerializable
+	{
+		public string ApiUrl => _apiUrl;
+		public string PortalUrl => _portalUrl;
+		public string BeamMongoExpressUrl => _beamMongoExpressUrl;
+		public string DockerRegistryUrl => _dockerRegistryUrl;
+
+		private string _apiUrl;
+		private string _portalUrl;
+		private string _beamMongoExpressUrl;
+		private string _dockerRegistryUrl;
+
+		public EnvironmentOverridesData(string apiUrl,
+										string portalUrl,
+										string beamMongoExpressUrl,
+										string dockerRegistryUrl)
+		{
+			_apiUrl = apiUrl;
+			_portalUrl = portalUrl;
+			_beamMongoExpressUrl = beamMongoExpressUrl;
+			_dockerRegistryUrl = dockerRegistryUrl;
+		}
+		public void Serialize(JsonSerializable.IStreamSerializer s)
+		{
+			s.Serialize("apiUrl", ref _apiUrl);
+			s.Serialize("portalUrl", ref _portalUrl);
+			s.Serialize("beamMongoExpressUrl", ref _beamMongoExpressUrl);
+			s.Serialize("dockerRegistryUrl", ref _dockerRegistryUrl);
+		}
 	}
 }
