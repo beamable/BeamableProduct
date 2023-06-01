@@ -34,7 +34,7 @@ public static class ResultStreamExtensions
 		where TChannel : IResultChannel, new()
 	{
 		var channel = new TChannel(); // TODO: cache.
-		self.Reporter.Report(channel.ChannelName, data);
+		self.Reporter?.Report(channel.ChannelName, data);
 	}
 }
 
