@@ -8,9 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - `beam org new` creates a new Beamable organization
 
 ### Changed
+
 - fix path issues in `project new` with different names for solution and project
 - Split `services deploy [--remote]` command into `services deploy` (for remote) and `services run` for running services
   in local docker
@@ -18,5 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.15.2]
 
 ### Added
+
 - Project commands such as `project new`
 - Basic app structure
