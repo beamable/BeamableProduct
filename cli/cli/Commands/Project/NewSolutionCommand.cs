@@ -145,6 +145,12 @@ COPY {commonProjectName}/. .
 			//
 		}
 
+		if (string.IsNullOrWhiteSpace(result))
+		{
+			const string SERVICES_PATH_ERROR = "Could not find Solution services path!";
+			Log.Error(SERVICES_PATH_ERROR);
+		}
+
 		return result;
 	}
 }
