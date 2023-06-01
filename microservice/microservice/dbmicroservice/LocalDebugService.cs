@@ -1,10 +1,16 @@
-﻿using System.Net.WebSockets;
+﻿using Beamable.Server.Common;
+using System.Net.WebSockets;
 using System.Threading.Tasks;
 using EmbedIO;
 using EmbedIO.Routing;
 using EmbedIO.WebApi;
 using Serilog;
 using Swan.Logging;
+using System;
+using System.Collections.Concurrent;
+using System.IO;
+using System.Text;
+using System.Threading;
 using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server {
@@ -15,12 +21,12 @@ namespace Beamable.Server {
 		private readonly BeamableMicroService _beamableService;
 		private WebServer _server;
 
-		public ContainerDiagnosticService(IMicroserviceArgs args, BeamableMicroService service)
+		public ContainerDiagnosticService(IMicroserviceArgs args, BeamableMicroService service, PipeSink pipeSink)
 		{
 			ConsoleLogger.Instance.LogLevel = LogLevel.Error;
 			_beamableService = service;
 			_server = new WebServer(args.HealthPort)
-				.WithWebApi("/", m => m.WithController(() => new SampleController(service)));
+				.WithWebApi("/", m => m.WithController(() => new SampleController(service, pipeSink)));
 		}
 
 		public async Task Run()
@@ -31,9 +37,33 @@ namespace Beamable.Server {
 		public class SampleController : WebApiController 
 		{
 			private readonly BeamableMicroService _beamableService;
-			public SampleController(BeamableMicroService service)
+			private readonly PipeSink _pipeSink;
+
+			public SampleController(BeamableMicroService service, PipeSink pipeSink)
 			{
 				_beamableService = service;
+				_pipeSink = pipeSink;
+			}
+
+			[Route(HttpVerbs.Get, "/logs")]
+			public string StreamLogs()
+			{
+				this.Response.ContentType = "text/event-stream";
+
+				var index = 0;
+				using var writer = this.HttpContext.OpenResponseText();
+				while (!HttpContext.CancellationToken.IsCancellationRequested)
+				{
+					if (!_pipeSink.TryGetNextMessage(ref index, out var message))
+					{
+						Thread.Sleep(10);
+						continue;
+						
+					}
+					writer.WriteLine($"data: {message}");
+					writer.Flush();
+				}
+				return "";
 			}
 			
 			[Route(HttpVerbs.Any, "/health")]
