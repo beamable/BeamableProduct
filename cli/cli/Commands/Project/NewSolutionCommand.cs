@@ -128,7 +128,8 @@ COPY {commonProjectName}/. .
 				result = Path.GetRelativePath(args.ConfigService.BaseDirectory, list.First());
 			}
 		}
-		catch {
+		catch
+		{
 			//
 		}
 
@@ -141,7 +142,8 @@ COPY {commonProjectName}/. .
 				result = Path.GetRelativePath(args.ConfigService.BaseDirectory, list.First());
 			}
 		}
-		catch {
+		catch
+		{
 			//
 		}
 

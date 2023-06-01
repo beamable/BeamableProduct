@@ -920,13 +920,16 @@ This is a broken package. It includes changes from the 1.1.0 release. Please do 
 ## [0.13.0]
 
 ### Fixed
+
 - Fixed possible null reference exception in MustReferenceContent validation attribute
 
 ### Added
+
 - GameCenter sdk Authentication Support
 - Adds an optional field, activeListingLimit to Store Content
 
 ### Changed
+
 - Switched MatchmakingService API to point to our new backend matchmaking service.
 
 ## [0.12.0]
