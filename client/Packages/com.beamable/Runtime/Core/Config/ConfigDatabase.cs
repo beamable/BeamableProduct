@@ -1,7 +1,9 @@
-﻿using System;
+﻿using Beamable.Common;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
 
 namespace Beamable.Config
 {
@@ -10,6 +12,7 @@ namespace Beamable.Config
 		private static Dictionary<string, string> database = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 		private static readonly Dictionary<string, string> sessionOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 		private const string ConfigFileKey = "config_file_key";
+		private static Promise _init;
 
 		/// <summary>
 		/// The init method must be called before any values can be reliably read from the
@@ -19,14 +22,14 @@ namespace Beamable.Config
 		/// When true, calling this method will force reload the values from disk.
 		/// Session overrides remain.
 		/// </param>
-		public static void Init(bool forceReload = false)
+		public static Promise Init(bool forceReload = false)
 		{
-			var alreadyInitialized = database != null && database.Count > 0;
-
-			if (forceReload || !alreadyInitialized)
+			if (_init == null || _init.IsCompleted && forceReload)
 			{
-				SetConfigValuesFromFile(GetConfigFileName());
+				_init = SetConfigValuesFromFile(GetConfigFileName());
 			}
+
+			return _init;
 		}
 
 		public static string GetConfigFileName()
@@ -62,9 +65,9 @@ namespace Beamable.Config
 #endif
 		}
 
-		public static void SetConfigValuesFromFile(string fileName)
+		public static async Promise SetConfigValuesFromFile(string fileName)
 		{
-			var text = GetFileContent(fileName);
+			var text = await GetFileContent(fileName);
 
 			if (!(Serialization.SmallerJSON.Json.Deserialize(text) is IDictionary<string, object> dictionaryJson))
 			{
@@ -228,25 +231,38 @@ namespace Beamable.Config
 #endif
 		}
 
-		private static string GetFileContent(string fileName)
+		private static Promise<string> GetFileContent(string fileName)
 		{
-#if UNITY_EDITOR
-			var fullPath = GetFullPath(fileName);
-
-			if(File.Exists(fullPath))
+			var resultPromise = new Promise<string>();
+#if !UNITY_WEBGL
+			var handle = Addressables.LoadAssetAsync<TextAsset>(fileName);
+			if (handle.IsValid())
 			{
-				var result = File.ReadAllText(fullPath);
-				return result;
+				// This would not work on WebGL:
+				// https://docs.unity3d.com/Packages/com.unity.addressables@1.20/manual/SynchronousAddressables.html
+				handle.WaitForCompletion();
+				resultPromise.CompleteSuccess(handle.Result.text);
+				Addressables.Release(handle);
 			}
+			else
 #endif
-			var asset = Resources.Load(fileName) as TextAsset;
-			if (asset == null)
 			{
-				return "{}"; // empty json.
-							 // throw new FileNotFoundException("Cannot find config file in Resource directory", fileName);
-			}
+#if UNITY_EDITOR
+				var fullPath = GetFullPath(fileName);
 
-			return asset.text;
+				if(File.Exists(fullPath))
+				{
+					var result = File.ReadAllText(fullPath);
+					resultPromise.CompleteSuccess(result);
+					return resultPromise;
+				}
+#endif
+				var asset = Resources.Load(fileName) as TextAsset;
+				resultPromise.CompleteSuccess(asset != null ? asset.text : "{}");
+			}
+			
+			
+			return resultPromise;
 		}
 	}
 }

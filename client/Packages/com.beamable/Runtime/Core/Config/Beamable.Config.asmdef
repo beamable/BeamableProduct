@@ -4,7 +4,9 @@
         "Beamable.SmallerJSON",
         "Beamable.Service",
         "Beamable.ConsoleCommands",
-        "Unity.Beamable.Runtime.Common"
+        "Unity.Beamable.Runtime.Common",
+        "Unity.Addressables",
+        "Unity.ResourceManager"
     ],
     "optionalUnityReferences": [],
     "includePlatforms": [],

@@ -2,6 +2,7 @@ using Beamable.Common.Dependencies;
 using Beamable.ConsoleCommands;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -20,7 +21,7 @@ namespace Beamable.Config
 		}
 
 		[BeamableConsoleCommand(nameof(Config), "Manipulate config values.", "CONFIG [list | get <name> | set <name> <value> | reset [name] | usefile [filename]]")]
-		private string Config(params string[] args)
+		private async Task<string> Config(params string[] args)
 		{
 			if (args.Length < 1)
 			{
@@ -144,7 +145,7 @@ namespace Beamable.Config
 						}
 
 						ConfigDatabase.SetPreferredConfigFile(fileName);
-						ConfigDatabase.SetConfigValuesFromFile(fileName);
+						await ConfigDatabase.SetConfigValuesFromFile(fileName);
 						//reset the player account, so that data will load from the new location.
 
 						return "Config Set to: " + fileName +
