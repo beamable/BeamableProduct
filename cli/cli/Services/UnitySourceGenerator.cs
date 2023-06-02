@@ -1297,8 +1297,7 @@ public static class UnityHelper
 
 					if (!(childTypeProperty.Default is OpenApiString openApiStr))
 					{
-						openApiStr = new OpenApiString(childClassName.ToLower());
-						//throw new Exception("Cannot construct oneOf to types that do not have internal type field as a valid string");
+						openApiStr = new OpenApiString(childClassName);
 					}
 					var statement = new CodeExpressionStatement(new CodeMethodInvokeExpression(
 						method: new CodeMethodReferenceExpression(new CodeThisReferenceExpression(), nameof(JsonSerializable.TypeLookupFactory<JsonSerializable.ISerializable>.Add))
