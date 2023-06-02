@@ -21,12 +21,12 @@ namespace Beamable.Server {
 		private readonly BeamableMicroService _beamableService;
 		private WebServer _server;
 
-		public ContainerDiagnosticService(IMicroserviceArgs args, BeamableMicroService service, PipeSink pipeSink)
+		public ContainerDiagnosticService(IMicroserviceArgs args, BeamableMicroService service, DebugLogSink debugLogSink)
 		{
 			ConsoleLogger.Instance.LogLevel = LogLevel.Error;
 			_beamableService = service;
 			_server = new WebServer(args.HealthPort)
-				.WithWebApi("/", m => m.WithController(() => new SampleController(service, pipeSink)));
+				.WithWebApi("/", m => m.WithController(() => new SampleController(service, debugLogSink)));
 		}
 
 		public async Task Run()
@@ -37,12 +37,12 @@ namespace Beamable.Server {
 		public class SampleController : WebApiController 
 		{
 			private readonly BeamableMicroService _beamableService;
-			private readonly PipeSink _pipeSink;
+			private readonly DebugLogSink _debugLogSink;
 
-			public SampleController(BeamableMicroService service, PipeSink pipeSink)
+			public SampleController(BeamableMicroService service, DebugLogSink debugLogSink)
 			{
 				_beamableService = service;
-				_pipeSink = pipeSink;
+				_debugLogSink = debugLogSink;
 			}
 
 			[Route(HttpVerbs.Get, "/logs")]
@@ -54,7 +54,7 @@ namespace Beamable.Server {
 				using var writer = this.HttpContext.OpenResponseText();
 				while (!HttpContext.CancellationToken.IsCancellationRequested)
 				{
-					if (!_pipeSink.TryGetNextMessage(ref index, out var message))
+					if (!_debugLogSink.TryGetNextMessage(ref index, out var message))
 					{
 						Thread.Sleep(10);
 						continue;

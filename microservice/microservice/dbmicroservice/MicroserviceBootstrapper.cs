@@ -64,7 +64,7 @@ namespace Beamable.Server
 	    public static ContentService ContentService;
 	    public static List<BeamableMicroService> Instances = new List<BeamableMicroService>();
 
-	    private static PipeSink ConfigureLogging(IMicroserviceArgs args, MicroserviceAttribute attr)
+	    private static DebugLogSink ConfigureLogging(IMicroserviceArgs args, MicroserviceAttribute attr)
         {
             var logLevel = args.LogLevel;
 			var disableLogTruncate = (Environment.GetEnvironmentVariable("DISABLE_LOG_TRUNCATE")?.ToLowerInvariant() ?? "") == "true";
@@ -104,12 +104,11 @@ namespace Beamable.Server
 
             var logger = logConfig;
 
-            PipeSink pipeSink = null;
+            DebugLogSink debugLogSink = null;
             if (!inDocker)
             {
-	            pipeSink = new PipeSink(args.CustomerID, args.ProjectName, attr.MicroserviceName,
-		            new MicroserviceLogFormatter());
-	            logConfig.WriteTo.Sink(pipeSink);
+	            debugLogSink = new DebugLogSink(new MicroserviceLogFormatter());
+	            logConfig.WriteTo.Sink(debugLogSink);
             }
             
             switch (args.LogOutputType)
@@ -143,7 +142,7 @@ namespace Beamable.Server
             Debug.Instance = new MicroserviceDebug();
             BeamableSerilogProvider.LogContext.Value = Log.Logger;
 
-            return pipeSink;
+            return debugLogSink;
         }
 
         public static void ConfigureUnhandledError()
