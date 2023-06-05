@@ -20,7 +20,7 @@ class TailLogMessage
 
 	[JsonProperty("__m")]
 	public string message;
-		
+
 	[JsonProperty("__l")]
 	public string logLevel;
 
@@ -93,41 +93,41 @@ public class TailLogsCommand : AppCommand<TailLogsCommandArgs>, IResultSteam<Def
 	async Task TailProcess(ServiceDiscoveryEvent evt, TailLogsCommandArgs args)
 	{
 		using (var client = new HttpClient())
-        {
-            // Set up the HTTP GET request
-            var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:{evt.healthPort}/logs");
+		{
+			// Set up the HTTP GET request
+			var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:{evt.healthPort}/logs");
 
-            // Set the "text/event-stream" media type to indicate Server-Sent Events
-            request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("text/event-stream"));
+			// Set the "text/event-stream" media type to indicate Server-Sent Events
+			request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("text/event-stream"));
 
-            // Send the request and get the response
-            try
-            {
-	            var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+			// Send the request and get the response
+			try
+			{
+				var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
-	            // Check if the response is successful
-	            if (response.IsSuccessStatusCode)
-	            {
-		            // Read the content as a stream
-		            using var stream = await response.Content.ReadAsStreamAsync();
-		            using var reader = new StreamReader(stream);
-		            while (!reader.EndOfStream)
-		            {
-			            var line = await reader.ReadLineAsync();
-			            var _ = await reader.ReadLineAsync(); // skip new line.
-			            HandleLog(line?.Substring("data: ".Length));
-		            }
-	            }
-	            else
-	            {
-		            Log.Error("Error: {0} - {1}", (int)response.StatusCode, response.ReasonPhrase);
-	            }
-            }
-            catch (HttpRequestException ex) when (ex.Message.StartsWith("Connection refused"))
-            {
-	            Log.Debug("Service is not ready to accept connections yet... Retrying soon...");
-            } 
-        }
+				// Check if the response is successful
+				if (response.IsSuccessStatusCode)
+				{
+					// Read the content as a stream
+					using var stream = await response.Content.ReadAsStreamAsync();
+					using var reader = new StreamReader(stream);
+					while (!reader.EndOfStream)
+					{
+						var line = await reader.ReadLineAsync();
+						var _ = await reader.ReadLineAsync(); // skip new line.
+						HandleLog(line?.Substring("data: ".Length));
+					}
+				}
+				else
+				{
+					Log.Error("Error: {0} - {1}", (int)response.StatusCode, response.ReasonPhrase);
+				}
+			}
+			catch (HttpRequestException ex) when (ex.Message.StartsWith("Connection refused"))
+			{
+				Log.Debug("Service is not ready to accept connections yet... Retrying soon...");
+			}
+		}
 	}
-	
+
 }
