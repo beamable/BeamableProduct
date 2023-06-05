@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <!-- Unity can handle netstandard2.0 libraries -->
-        <TargetFramework>netstandard2.0</TargetFramework>
+        <!-- Unity 2021 can handle netstandard2.1 libraries -->
+        <TargetFramework>netstandard2.1</TargetFramework>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
 

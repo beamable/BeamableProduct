@@ -11,5 +11,6 @@ namespace Beamable.Server
 		public string prefix;
 		public int healthPort;
 		public bool isContainer;
+		public string containerId;
 	}
 }

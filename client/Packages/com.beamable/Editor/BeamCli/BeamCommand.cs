@@ -185,6 +185,7 @@ namespace Beamable.Editor.BeamCli
 			if (message == null) return;
 
 			messageBuffer += message;
+			Debug.Log("-" + message);
 
 			if (!isMessageInProgress)
 			{
@@ -218,6 +219,8 @@ namespace Beamable.Editor.BeamCli
 
 		private void ProcessStandardErr(string data)
 		{
+			Debug.Log("!" + data);
+
 			if (data == null) return;
 			if (!AutoLogErrors) return;
 			Debug.LogError(data);
