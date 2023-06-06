@@ -851,7 +851,7 @@ namespace Beamable.Common.Api.Auth
 		public string challenge;
 		public int challenge_ttl;
 	}
-	
+
 	[Serializable]
 	public class ExternalLoginAuthenticationResponse
 	{
