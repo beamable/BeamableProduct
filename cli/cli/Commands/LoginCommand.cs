@@ -51,15 +51,13 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 			BeamableLogger.LogError("Could not found `.beamable` configuration to login into. Try calling `beam init` first.");
 			return;
 		}
+		TokenResponse response;
+		BeamableLogger.Log($"signing into... {_ctx.Cid}.{_ctx.Pid}");
 
 		if (string.IsNullOrEmpty(args.refreshToken))
 		{
 			var username = GetUserName(args);
 			var password = GetPassword(args);
-
-			BeamableLogger.Log($"signing into... {_ctx.Cid}.{_ctx.Pid}");
-			BeamableLogger.Log($"signing into... {_authApi.Requester.Cid}.{_authApi.Requester.Pid}");
-			var response = new TokenResponse();
 			try
 			{
 				response = await _authApi.Login(username, password, false, args.customerScoped)
@@ -73,14 +71,9 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 
 			args.username = username;
 			args.password = password;
-			
-			Successful = HandleResponse(args, response);
 		}
 		else
 		{
-			BeamableLogger.Log($"signing into... {_ctx.Cid}.{_ctx.Pid}");
-			BeamableLogger.Log($"signing into... {_authApi.Requester.Cid}.{_authApi.Requester.Pid}");
-			TokenResponse response;
 			try
 			{
 				response = await _authApi.LoginRefreshToken(args.refreshToken).ShowLoading("Authorizing...");
@@ -91,8 +84,8 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 				return;
 			}
 			
-			Successful = HandleResponse(args, response);
 		}
+		Successful = HandleResponse(args, response);
 	}
 
 	private bool HandleResponse(LoginCommandArgs args, TokenResponse response)
