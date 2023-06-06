@@ -94,7 +94,8 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 				result = Path.GetRelativePath(args.ConfigService.BaseDirectory, list.First());
 			}
 		}
-		catch {
+		catch
+		{
 			//
 		}
 
@@ -107,7 +108,8 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 				result = Path.GetRelativePath(args.ConfigService.BaseDirectory, list.First());
 			}
 		}
-		catch {
+		catch
+		{
 			//
 		}
 

@@ -10,6 +10,10 @@
 
 		public const int SYSTEM_DEPENDENCY_ORDER = -1000;
 
+		public const string LINK_LICENSE = "https://beamable.com/license";
+		public const string LINK_TERMS_OF_SERVICE = "https://beamable.com/tos";
+		public const string LINK_PRIVACY = "https://beamable.com/privacy";
+
 		public static class Commons
 		{
 			public const string OBSOLETE_WILL_BE_REMOVED = "This is no longer supported, and will be removed in the future.";
