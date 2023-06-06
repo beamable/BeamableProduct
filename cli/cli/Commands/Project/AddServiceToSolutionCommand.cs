@@ -34,7 +34,6 @@ public class AddServiceToSolutionCommand : AppCommand<AddServiceToSolutionComman
 
 	public override async Task Handle(AddServiceToSolutionCommandArgs args)
 	{
-		// in the current directory, create a project using dotnet. 
 		string projectPath = await args.ProjectService.AddToSolution(args.SolutionName, args.ProjectName,!args.SkipCommon);
 
 		var sd = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value.ToLower(),
