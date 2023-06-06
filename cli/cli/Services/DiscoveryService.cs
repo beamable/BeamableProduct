@@ -12,7 +12,7 @@ public class DiscoveryService
 {
 	private readonly BeamoLocalSystem _localSystem;
 	private readonly IAppContext _appContext;
-	
+
 	private readonly InterfaceCollection _networkInterfaceCollection;
 	private NetMQBeacon _beacon;
 
@@ -30,8 +30,8 @@ public class DiscoveryService
 		_beacon.Unsubscribe();
 		_beacon.Dispose();
 	}
-	
-	public async IAsyncEnumerable<ServiceDiscoveryEvent> StartDiscovery(TimeSpan timeout=default)
+
+	public async IAsyncEnumerable<ServiceDiscoveryEvent> StartDiscovery(TimeSpan timeout = default)
 	{
 		_beacon = new NetMQBeacon();
 		_beacon.ConfigureAllInterfaces(Beamable.Common.Constants.Features.Services.DISCOVERY_PORT);
@@ -67,14 +67,14 @@ public class DiscoveryService
 		var toRemove = new HashSet<string>();
 		while (true)
 		{
-			
+
 			// return any messages to the caller.
 			foreach (var evt in evtQueue)
 			{
 				yield return evt;
 			}
 			evtQueue.Clear();
-			
+
 			// check if we have exhausted our ps time.
 			var nowTime = DateTimeOffset.Now;
 			var duration = nowTime - startTime;
@@ -82,8 +82,8 @@ public class DiscoveryService
 			{
 				break;
 			}
-			
-			
+
+
 			// listen for netMQ messages
 			var now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
@@ -147,8 +147,8 @@ public class DiscoveryService
 			healthPort = entry.healthPort
 		};
 	}
-	
-	
+
+
 	bool TryToListen(out ServiceDiscoveryEntry service)
 	{
 		service = null;
