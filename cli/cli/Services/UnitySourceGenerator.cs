@@ -1346,10 +1346,6 @@ public static class UnityHelper
 		var field = new CodeMemberField();
 
 		field.Name = SanitizeFieldName(fieldName);
-		if (fieldName == "jobAction")
-		{
-			GenSchema.breakit = true;
-		}
 		field.Type = isRequired ? fieldSchema.GetTypeReference() : fieldSchema.GetOptionalTypeReference();
 		field.Attributes = MemberAttributes.Public;
 
@@ -1665,7 +1661,6 @@ public class GenSchema
 		return typeRef;
 	}
 
-	public static bool breakit;
 	public GenCodeTypeReference GetTypeReference()
 	{
 		switch (Schema?.Type, Schema?.Format, Schema?.Reference?.Id)
