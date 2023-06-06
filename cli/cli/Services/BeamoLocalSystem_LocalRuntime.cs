@@ -126,7 +126,7 @@ public partial class BeamoLocalSystem
 		return StartListeningToDockerRaw((beamoId, action, _) =>
 			onServiceContainerStateChange?.Invoke(beamoId, action));
 	}
-	
+
 	/// <summary>
 	/// Kick off a long running task that receives updates from the docker engine.
 	/// </summary>
@@ -430,7 +430,7 @@ public partial class BeamoLocalSystem
 			ShowStderr = true,
 			Follow = true,
 		});
-		
+
 		// stream.
 		if (stream == null)
 		{
