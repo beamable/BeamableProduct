@@ -24,50 +24,65 @@ namespace Beamable.Editor
 
 		public int callbackOrder { get; }
 
-		public void OnPreprocessBuild(BuildReport report)
+		public async void OnPreprocessBuild(BuildReport report)
 		{
-			return;
-// 			var messages = new List<string>();
-// #if !BEAMABLE_NO_CID_PID_WARNINGS_ON_BUILD
-// 			if (!CheckForConfigDefaultsAlignment(out var message))
-// 			{
-// 				messages.Add(message);
-// 			}
-// #endif
-// 			if (!CheckForCorrectProguardRules(out var proguardMessage))
-// 			{
-// 				messages.Add(proguardMessage);
-// 			}
-//
-// 			var hasLocalContentChanges = await ContentIO.HasLocalChanges();
-// 			if (hasLocalContentChanges)
-// 			{
-// 				messages.Add("Local Beamable Content has non published changes. ");
-// 			}
-//
-// 			if (messages.Count > 0)
-// 			{
-// 				// EditorUtility.Dis
-// 				var title = messages.Count == 1 ? "Beamable Warning" : $"{messages.Count} Beamable Warnings";
-// 				if (!EditorUtility.DisplayDialog(title, string.Join("\n\n", messages), "Continue Build",
-// 												 "Abort Build"))
-// 				{
-// 					throw new BuildFailedException("Aborted build due to Beamable checks");
-// 				}
-// 			}
-//
-// 			if (ContentConfiguration.Instance.BakeContentOnBuild)
-// 			{
-// 				await ContentIO.BakeContent(skipCheck: true);
-// 			}
-// 			if (CoreConfiguration.Instance.PreventCodeStripping)
-// 			{
-// 				BeamableLinker.GenerateLinkFile();
-// 			}
-// 			if (CoreConfiguration.Instance.PreventAddressableCodeStripping)
-// 			{
-// 				BeamableLinker.GenerateAddressablesLinkFile();
-// 			}
+#if !BEAMABLE_FORCE_BUILD_PREPROCESSOR
+			var isHeadless = Application.isBatchMode;
+			if (isHeadless)
+			{
+				return;
+			}
+#endif
+			
+			var messages = new List<string>();
+#if !BEAMABLE_NO_CID_PID_WARNINGS_ON_BUILD
+			if (!CheckForConfigDefaultsAlignment(out var message))
+			{
+				messages.Add(message);
+			}
+#endif
+			if (!CheckForCorrectProguardRules(out var proguardMessage))
+			{
+				messages.Add(proguardMessage);
+			}
+
+			var hasLocalContentChangesPromise = ContentIO.HasLocalChanges();
+			if (hasLocalContentChangesPromise.IsCompleted)
+			{
+				var hasLocalContentChanges = hasLocalContentChangesPromise.GetResult();
+				if (hasLocalContentChanges)
+				{
+					messages.Add("Local Beamable Content has non published changes. ");
+				}
+			}
+			else
+			{
+				Debug.LogWarning("Beamable wasn't able to detect if there was unpublished content, because the Beamable SDK wasn't initialized yet.");
+			}
+
+			if (messages.Count > 0)
+			{
+				// EditorUtility.Dis
+				var title = messages.Count == 1 ? "Beamable Warning" : $"{messages.Count} Beamable Warnings";
+				if (!EditorUtility.DisplayDialog(title, string.Join("\n\n", messages), "Continue Build",
+												 "Abort Build"))
+				{
+					throw new BuildFailedException("Aborted build due to Beamable checks");
+				}
+			}
+
+			if (ContentConfiguration.Instance.BakeContentOnBuild)
+			{
+				await ContentIO.BakeContent(skipCheck: true);
+			}
+			if (CoreConfiguration.Instance.PreventCodeStripping)
+			{
+				BeamableLinker.GenerateLinkFile();
+			}
+			if (CoreConfiguration.Instance.PreventAddressableCodeStripping)
+			{
+				BeamableLinker.GenerateAddressablesLinkFile();
+			}
 		}
 
 		/// <summary>

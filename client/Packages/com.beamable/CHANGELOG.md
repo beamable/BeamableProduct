@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Allow `env-overrides` config to override single values instead of all of them.
+- Beamable's build preprocessor no longer runs in batch mode (CI/CD). 
 
 ## [1.15.2]
 
