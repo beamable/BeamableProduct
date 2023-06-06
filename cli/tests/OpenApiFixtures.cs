@@ -14,7 +14,8 @@ public static class OpenApiFixtures
       ""url"": ""https://beamable.com/contact-us"",
       ""email"": ""support@beamable.com""
     },
-    ""version"": ""1.0""
+    ""version"": ""1.0"",
+    ""x-beamable-semantic-type"": ""Semantic type information for use in automatic SDK generation""
   },
   ""servers"": [
     {
@@ -149,7 +150,8 @@ public static class OpenApiFixtures
             ""name"": ""MatchType"",
             ""in"": ""query"",
             ""schema"": {
-              ""type"": ""string""
+              ""type"": ""string"",
+              ""x-beamable-semantic-type"": ""ContentId""
             }
           }
         ],
@@ -1169,7 +1171,7 @@ public static class OpenApiFixtures
             ""content"": {
               ""application/json"": {
                 ""schema"": {
-                  ""$ref"": ""#/components/schemas/JobDefinitionSaveResponse""
+                  ""$ref"": ""#/components/schemas/JobDefinition""
                 }
               }
             }
@@ -1215,7 +1217,7 @@ public static class OpenApiFixtures
                 ""schema"": {
                   ""type"": ""array"",
                   ""items"": {
-                    ""$ref"": ""#/components/schemas/JobDefinitionResponse""
+                    ""$ref"": ""#/components/schemas/JobDefinition""
                   }
                 }
               }
@@ -1245,7 +1247,7 @@ public static class OpenApiFixtures
             ""content"": {
               ""application/json"": {
                 ""schema"": {
-                  ""$ref"": ""#/components/schemas/JobDefinitionResponse""
+                  ""$ref"": ""#/components/schemas/JobDefinition""
                 }
               }
             }
@@ -1489,7 +1491,8 @@ public static class OpenApiFixtures
         ""properties"": {
           ""playerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           },
           ""tags"": {
             ""type"": ""array"",
@@ -1524,7 +1527,8 @@ public static class OpenApiFixtures
         ""properties"": {
           ""playerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           }
         },
         ""additionalProperties"": false
@@ -1546,7 +1550,8 @@ public static class OpenApiFixtures
           },
           ""matchType"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""ContentId""
           },
           ""playerTags"": {
             ""type"": ""array"",
@@ -1576,7 +1581,8 @@ public static class OpenApiFixtures
           },
           ""leader"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           },
           ""maxSize"": {
             ""type"": ""integer"",
@@ -1588,6 +1594,9 @@ public static class OpenApiFixtures
       ""CronTrigger"": {
         ""type"": ""object"",
         ""properties"": {
+          ""type"": {
+            ""type"": ""string""
+          },
           ""expression"": {
             ""type"": ""string""
           }
@@ -1597,6 +1606,9 @@ public static class OpenApiFixtures
       ""ExactTrigger"": {
         ""type"": ""object"",
         ""properties"": {
+          ""type"": {
+            ""type"": ""string""
+          },
           ""executeAt"": {
             ""type"": ""string"",
             ""format"": ""date-time""
@@ -1607,6 +1619,9 @@ public static class OpenApiFixtures
       ""HttpCall"": {
         ""type"": ""object"",
         ""properties"": {
+          ""type"": {
+            ""type"": ""string""
+          },
           ""uri"": {
             ""type"": ""string""
           },
@@ -1636,29 +1651,8 @@ public static class OpenApiFixtures
         ""properties"": {
           ""playerId"": {
             ""type"": ""string"",
-            ""nullable"": true
-          }
-        },
-        ""additionalProperties"": false
-      },
-      ""JobActionDto"": {
-        ""type"": ""object"",
-        ""properties"": {
-          ""type"": {
-            ""type"": ""string""
-          },
-          ""value"": {
-            ""oneOf"": [
-              {
-                ""$ref"": ""#/components/schemas/HttpCall""
-              },
-              {
-                ""$ref"": ""#/components/schemas/PublishMessage""
-              },
-              {
-                ""$ref"": ""#/components/schemas/ServiceCall""
-              }
-            ]
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           }
         },
         ""additionalProperties"": false
@@ -1689,7 +1683,7 @@ public static class OpenApiFixtures
         },
         ""additionalProperties"": false
       },
-      ""JobDefinitionResponse"": {
+      ""JobDefinition"": {
         ""type"": ""object"",
         ""properties"": {
           ""id"": {
@@ -1698,14 +1692,34 @@ public static class OpenApiFixtures
           ""name"": {
             ""type"": ""string""
           },
+          ""owner"": {
+            ""type"": ""string""
+          },
           ""triggers"": {
             ""type"": ""array"",
             ""items"": {
-              ""$ref"": ""#/components/schemas/JobTriggerDto""
+              ""oneOf"": [
+                {
+                  ""$ref"": ""#/components/schemas/CronTrigger""
+                },
+                {
+                  ""$ref"": ""#/components/schemas/ExactTrigger""
+                }
+              ]
             }
           },
           ""jobAction"": {
-            ""$ref"": ""#/components/schemas/JobActionDto""
+            ""oneOf"": [
+              {
+                ""$ref"": ""#/components/schemas/HttpCall""
+              },
+              {
+                ""$ref"": ""#/components/schemas/PublishMessage""
+              },
+              {
+                ""$ref"": ""#/components/schemas/ServiceCall""
+              }
+            ]
           },
           ""retryPolicy"": {
             ""$ref"": ""#/components/schemas/JobRetryPolicy""
@@ -1734,11 +1748,28 @@ public static class OpenApiFixtures
           ""triggers"": {
             ""type"": ""array"",
             ""items"": {
-              ""$ref"": ""#/components/schemas/JobTriggerDto""
+              ""oneOf"": [
+                {
+                  ""$ref"": ""#/components/schemas/CronTrigger""
+                },
+                {
+                  ""$ref"": ""#/components/schemas/ExactTrigger""
+                }
+              ]
             }
           },
           ""jobAction"": {
-            ""$ref"": ""#/components/schemas/JobActionDto""
+            ""oneOf"": [
+              {
+                ""$ref"": ""#/components/schemas/HttpCall""
+              },
+              {
+                ""$ref"": ""#/components/schemas/PublishMessage""
+              },
+              {
+                ""$ref"": ""#/components/schemas/ServiceCall""
+              }
+            ]
           },
           ""retryPolicy"": {
             ""$ref"": ""#/components/schemas/JobRetryPolicy""
@@ -1746,15 +1777,6 @@ public static class OpenApiFixtures
           ""source"": {
             ""type"": ""string"",
             ""nullable"": true
-          }
-        },
-        ""additionalProperties"": false
-      },
-      ""JobDefinitionSaveResponse"": {
-        ""type"": ""object"",
-        ""properties"": {
-          ""jobId"": {
-            ""type"": ""string""
           }
         },
         ""additionalProperties"": false
@@ -1822,25 +1844,6 @@ public static class OpenApiFixtures
         ],
         ""type"": ""string""
       },
-      ""JobTriggerDto"": {
-        ""type"": ""object"",
-        ""properties"": {
-          ""type"": {
-            ""type"": ""string""
-          },
-          ""value"": {
-            ""oneOf"": [
-              {
-                ""$ref"": ""#/components/schemas/CronTrigger""
-              },
-              {
-                ""$ref"": ""#/components/schemas/ExactTrigger""
-              }
-            ]
-          }
-        },
-        ""additionalProperties"": false
-      },
       ""JoinLobby"": {
         ""type"": ""object"",
         ""properties"": {
@@ -1878,7 +1881,8 @@ public static class OpenApiFixtures
         ""properties"": {
           ""playerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           }
         },
         ""additionalProperties"": false
@@ -1938,7 +1942,8 @@ public static class OpenApiFixtures
         ""properties"": {
           ""playerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           },
           ""tags"": {
             ""type"": ""array"",
@@ -2013,7 +2018,8 @@ public static class OpenApiFixtures
         ""properties"": {
           ""id"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""ContentId""
           },
           ""teams"": {
             ""type"": ""array"",
@@ -2055,7 +2061,8 @@ public static class OpenApiFixtures
           },
           ""playerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           }
         },
         ""additionalProperties"": false
@@ -2073,7 +2080,8 @@ public static class OpenApiFixtures
           },
           ""playerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           },
           ""status"": {
             ""$ref"": ""#/components/schemas/PresenceStatus""
@@ -2114,7 +2122,8 @@ public static class OpenApiFixtures
           },
           ""leader"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           },
           ""members"": {
             ""type"": ""array"",
@@ -2122,7 +2131,8 @@ public static class OpenApiFixtures
               ""type"": ""string""
             },
             ""nullable"": true,
-            ""readOnly"": true
+            ""readOnly"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           },
           ""maxSize"": {
             ""type"": ""integer"",
@@ -2220,7 +2230,8 @@ public static class OpenApiFixtures
         ""properties"": {
           ""playerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           }
         },
         ""additionalProperties"": false
@@ -2228,6 +2239,9 @@ public static class OpenApiFixtures
       ""PublishMessage"": {
         ""type"": ""object"",
         ""properties"": {
+          ""type"": {
+            ""type"": ""string""
+          },
           ""topic"": {
             ""type"": ""string""
           },
@@ -2256,11 +2270,13 @@ public static class OpenApiFixtures
           },
           ""customerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""Cid""
           },
           ""realmId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""Pid""
           }
         },
         ""additionalProperties"": false
@@ -2270,7 +2286,8 @@ public static class OpenApiFixtures
         ""properties"": {
           ""playerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           }
         },
         ""additionalProperties"": false
@@ -2280,7 +2297,8 @@ public static class OpenApiFixtures
         ""properties"": {
           ""playerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           },
           ""tags"": {
             ""type"": ""array"",
@@ -2306,11 +2324,13 @@ public static class OpenApiFixtures
           },
           ""customerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""Cid""
           },
           ""realmId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""Pid""
           }
         },
         ""additionalProperties"": false
@@ -2328,6 +2348,9 @@ public static class OpenApiFixtures
       ""ServiceCall"": {
         ""type"": ""object"",
         ""properties"": {
+          ""type"": {
+            ""type"": ""string""
+          },
           ""uri"": {
             ""type"": ""string""
           },
@@ -2393,7 +2416,8 @@ public static class OpenApiFixtures
               ""type"": ""string""
             },
             ""nullable"": true,
-            ""readOnly"": true
+            ""readOnly"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           }
         },
         ""additionalProperties"": false
@@ -2443,11 +2467,13 @@ public static class OpenApiFixtures
               ""type"": ""string""
             },
             ""nullable"": true,
-            ""readOnly"": true
+            ""readOnly"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           },
           ""matchType"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""ContentId""
           },
           ""matchId"": {
             ""type"": ""string"",
@@ -2497,7 +2523,8 @@ public static class OpenApiFixtures
               ""type"": ""string""
             },
             ""nullable"": true,
-            ""readOnly"": true
+            ""readOnly"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           },
           ""matchTypes"": {
             ""type"": ""array"",
@@ -2505,7 +2532,8 @@ public static class OpenApiFixtures
               ""type"": ""string""
             },
             ""nullable"": true,
-            ""readOnly"": true
+            ""readOnly"": true,
+            ""x-beamable-semantic-type"": ""ContentId""
           },
           ""maxWaitDurationSecs"": {
             ""type"": ""integer"",
@@ -2552,7 +2580,8 @@ public static class OpenApiFixtures
           },
           ""matchType"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""ContentId""
           },
           ""maxPlayers"": {
             ""type"": ""integer"",

@@ -260,7 +260,7 @@ namespace Beamable.Serialization
 			}
 
 			public bool Serialize<T>(string key, ref T value)
-			   where T : class, ISerializable, new()
+			   where T : ISerializable
 			{
 				return InternalSerialize<T>(key, value);
 			}
