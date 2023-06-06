@@ -1069,7 +1069,7 @@ public static class UnityHelper
 
 		return type;
 	}
-	
+
 	/// <summary>
 	/// The Optional captures a type like
 	/// <code>
@@ -1242,7 +1242,7 @@ public static class UnityHelper
 			// construct some primitive information about this field.
 			var fieldApiName = property.Key;
 			var fieldSchema = property.Value;
-			
+
 			var isPolymorphArray = fieldSchema.Items?.OneOf?.Count > 0;
 			var isPolymorphObject = fieldSchema.OneOf?.Count > 0;
 			var isPolymorph = isPolymorphArray || isPolymorphObject;
