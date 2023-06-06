@@ -4,7 +4,7 @@ namespace cli;
 
 public class OrganizationCommandArgs : CommandArgs
 {
-	
+
 }
 public class OrganizationCommand : AppCommand<OrganizationCommandArgs>
 {
@@ -14,7 +14,7 @@ public class OrganizationCommand : AppCommand<OrganizationCommandArgs>
 
 	public override void Configure()
 	{
-		
+
 	}
 
 	public override Task Handle(OrganizationCommandArgs args)

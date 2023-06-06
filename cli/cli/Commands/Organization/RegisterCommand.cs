@@ -42,7 +42,7 @@ public class RegisterCommand : AppCommand<RegisterCommandArgs>
 			new FigletText("Beam")
 				.LeftAligned()
 				.Color(Color.Red));
-		
+
 		AnsiConsole.Write("Welcome to Beamable. You are creating a new Beamable organization. If you already have an org, use the 'beam init' command to sign in.");
 		var legal = await GetLegal(args);
 		if (!legal)
@@ -67,11 +67,11 @@ public class RegisterCommand : AppCommand<RegisterCommandArgs>
 			email = username,
 			password = password
 		});
-		
-		
+
+
 		await _initCommand.Handle(new InitCommandArgs
 		{
-			Provider = args.Provider, 
+			Provider = args.Provider,
 			saveToFile = true,
 			cid = res.cid.ToString(),
 			pid = res.pid,
@@ -85,7 +85,7 @@ public class RegisterCommand : AppCommand<RegisterCommandArgs>
 		loginArgs.saveToFile = true;
 		await _loginCommand.Handle(loginArgs);
 	}
-	
+
 	private async Task<string> GetAlias(RegisterCommandArgs args)
 	{
 		if (!string.IsNullOrEmpty(args.alias))
@@ -108,7 +108,7 @@ public class RegisterCommand : AppCommand<RegisterCommandArgs>
 				.PromptStyle("green")
 		);
 	}
-	
+
 	private async Task<string> GetGame(RegisterCommandArgs args)
 	{
 		if (!string.IsNullOrEmpty(args.gameName))
@@ -137,10 +137,10 @@ public class RegisterCommand : AppCommand<RegisterCommandArgs>
 		if (args.agreedToLegal) return true;
 
 		return AnsiConsole.Prompt(new ConfirmationPrompt($"Have you read, and accept the following? " +
-		                                                 $"\nlicense {Beamable.Common.Constants.LINK_LICENSE} " +
-		                                                 $"\nterms of service {Beamable.Common.Constants.LINK_TERMS_OF_SERVICE} " +
-		                                                 $"\nprivacy {Beamable.Common.Constants.LINK_PRIVACY} " +
-		                                                 $"\n"));
+														 $"\nlicense {Beamable.Common.Constants.LINK_LICENSE} " +
+														 $"\nterms of service {Beamable.Common.Constants.LINK_TERMS_OF_SERVICE} " +
+														 $"\nprivacy {Beamable.Common.Constants.LINK_PRIVACY} " +
+														 $"\n"));
 	}
 
 }
