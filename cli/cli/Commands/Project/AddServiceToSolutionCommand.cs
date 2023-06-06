@@ -28,7 +28,7 @@ public class AddServiceToSolutionCommand : AppCommand<AddServiceToSolutionComman
 	public override void Configure()
 	{
 		AddArgument(new Argument<ServiceName>("name", "Name of the new project"), (args, i) => args.ProjectName = i);
-		AddArgument(new Argument<ServiceName>("solution-name", "The name of the solution of the new project"), (args, i) => args.SolutionName = i);
+		AddArgument(new Argument<ServiceName>("solution-name", "Name of the existing solution"), (args, i) => args.SolutionName = i);
 		AddOption(new ConfigurableOptionFlag("skip-common", "If you should create a common library"), (args, i) => args.SkipCommon = i);
 	}
 
