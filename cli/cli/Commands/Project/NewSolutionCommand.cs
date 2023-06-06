@@ -49,22 +49,24 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 
 		// initialize a beamable project in that directory...
 		var createdNewWorkingDir = false;
+		var currentPath = Directory.GetCurrentDirectory();
 		if (!args.ConfigService.ConfigFileExists.GetValueOrDefault(false))
 		{
 			args.ConfigService.SetTempWorkingDir(path);
-
+			Directory.SetCurrentDirectory(path);
 
 			await _initCommand.Handle(new InitCommandArgs { Provider = args.Provider, saveToFile = true });
 			createdNewWorkingDir = true;
 		}
 
 		// Find path to service folders: either it is in the working directory, or it will be inside 'args.name\\services' from the working directory.
-		string projectDirectory = createdNewWorkingDir ? "services" : GetServicesDir(args, path);
+		string projectDirectory = GetServicesDir(args, path);
+		string projectDockerfilePath = Path.Combine(args.ProjectName, "Dockerfile");
 
 		// now that a .beamable folder has been created, setup the beamo manifest
 		var sd = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value.ToLower(),
 			projectDirectory,
-			Path.Combine(args.ProjectName, "Dockerfile"),
+			projectDockerfilePath,
 			new string[] { },
 			CancellationToken.None);
 
@@ -111,6 +113,11 @@ COPY {commonProjectName}/. .
 		if (addUnrealProject)
 		{
 			await _addUnrealCommand.Handle(new AddUnrealClientOutputCommandArgs() { path = ".", Provider = args.Provider });
+		}
+
+		if (createdNewWorkingDir)
+		{
+			Directory.SetCurrentDirectory(currentPath);
 		}
 	}
 

@@ -8,6 +8,12 @@ namespace Beamable.Common.Semantics
 		public string Value { get; }
 		public ServiceName(string value)
 		{
+			// if we do not set the value skip checks
+			if (string.IsNullOrEmpty(value))
+			{
+				Value = string.Empty;
+				return;
+			}
 			string pattern = @"^[A-Za-z][A-Za-z0-9_-]*$";
 			bool isMatch = Regex.IsMatch(value, pattern);
 			if (!isMatch)
