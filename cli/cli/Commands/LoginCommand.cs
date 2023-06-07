@@ -13,6 +13,7 @@ public class LoginCommandArgs : CommandArgs
 	public string password;
 	public bool saveToEnvironment;
 	public bool saveToFile;
+	public bool printToConsole;
 	public bool customerScoped;
 	public string refreshToken = "";
 }
@@ -36,6 +37,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 		AddOption(new SaveToFileOption(), (args, b) => args.saveToFile = b);
 		AddOption(new CustomerScopedOption(), (args, b) => args.customerScoped = b);
 		AddOption(new RefreshTokenOption(), (args, i) => args.refreshToken = i);
+		AddOption(new PrintToConsoleOption(), (args, b) => args.printToConsole = b);
 	}
 
 	public override async Task Handle(LoginCommandArgs args)
@@ -44,14 +46,18 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 		_configService = args.ConfigService;
 		_authApi = args.AuthApi;
 
+		if (!_configService.ConfigFileExists.GetValueOrDefault(false))
+		{
+			BeamableLogger.LogError("Could not found `.beamable` configuration to login into. Try calling `beam init` first.");
+			return;
+		}
+		TokenResponse response;
+		BeamableLogger.Log($"signing into... {_ctx.Cid}.{_ctx.Pid}");
+
 		if (string.IsNullOrEmpty(args.refreshToken))
 		{
 			var username = GetUserName(args);
 			var password = GetPassword(args);
-
-			BeamableLogger.Log($"signing into... {_ctx.Cid}.{_ctx.Pid}");
-			BeamableLogger.Log($"signing into... {_authApi.Requester.Cid}.{_authApi.Requester.Pid}");
-			var response = new TokenResponse();
 			try
 			{
 				response = await _authApi.Login(username, password, false, args.customerScoped)
@@ -65,32 +71,9 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 
 			args.username = username;
 			args.password = password;
-			if (string.IsNullOrWhiteSpace(response.refresh_token))
-			{
-				BeamableLogger.LogError("Login failed");
-				return;
-			}
-			_ctx.UpdateToken(response);
-
-			if (args.saveToEnvironment)
-			{
-				BeamableLogger.Log($"Saving refresh token as {Constants.KEY_ENV_REFRESH_TOKEN} env variable");
-				Environment.SetEnvironmentVariable(Constants.KEY_ENV_REFRESH_TOKEN, response.refresh_token);
-			}
-			if (args.saveToFile)
-			{
-				BeamableLogger.Log($"Saving refresh token to {Constants.CONFIG_TOKEN_FILE_NAME}-" +
-								   " do not add it to control version system. It should be used only locally.");
-				_configService.SaveTokenToFile(_ctx.Token);
-			}
-
-			BeamableLogger.Log(JsonConvert.SerializeObject(response, Formatting.Indented));
 		}
 		else
 		{
-			BeamableLogger.Log($"signing into... {_ctx.Cid}.{_ctx.Pid}");
-			BeamableLogger.Log($"signing into... {_authApi.Requester.Cid}.{_authApi.Requester.Pid}");
-			TokenResponse response;
 			try
 			{
 				response = await _authApi.LoginRefreshToken(args.refreshToken).ShowLoading("Authorizing...");
@@ -101,31 +84,38 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 				return;
 			}
 
-			if (string.IsNullOrWhiteSpace(response.refresh_token))
-			{
-				BeamableLogger.LogError("Login failed");
-				return;
-			}
+		}
+		Successful = HandleResponse(args, response);
+	}
 
-			_ctx.UpdateToken(response);
+	private bool HandleResponse(LoginCommandArgs args, TokenResponse response)
+	{
+		if (string.IsNullOrWhiteSpace(response.refresh_token))
+		{
+			BeamableLogger.LogError("Login failed");
+			return false;
+		}
 
-			if (args.saveToEnvironment && !string.IsNullOrWhiteSpace(response.refresh_token))
-			{
-				BeamableLogger.Log($"Saving refresh token as {Constants.KEY_ENV_REFRESH_TOKEN} env variable");
-				Environment.SetEnvironmentVariable(Constants.KEY_ENV_REFRESH_TOKEN, response.refresh_token);
-			}
+		_ctx.UpdateToken(response);
 
-			if (args.saveToFile && !string.IsNullOrWhiteSpace(response.refresh_token))
-			{
-				BeamableLogger.Log($"Saving refresh token to {Constants.CONFIG_TOKEN_FILE_NAME}-" +
-								   " do not add it to control version system. It should be used only locally.");
-				_configService.SaveTokenToFile(_ctx.Token);
-			}
+		if (args.saveToEnvironment)
+		{
+			BeamableLogger.Log($"Saving refresh token as {Constants.KEY_ENV_REFRESH_TOKEN} env variable");
+			Environment.SetEnvironmentVariable(Constants.KEY_ENV_REFRESH_TOKEN, response.refresh_token);
+		}
 
+		if (args.saveToFile)
+		{
+			BeamableLogger.Log($"Saving refresh token to {Constants.CONFIG_TOKEN_FILE_NAME}-" +
+							   " do not add it to control version system. It should be used only locally.");
+			_configService.SaveTokenToFile(_ctx.Token);
+		}
 
+		if (args.printToConsole)
+		{
 			BeamableLogger.Log(JsonConvert.SerializeObject(response, Formatting.Indented));
 		}
-		Successful = true;
+		return true;
 	}
 
 	private string GetUserName(LoginCommandArgs args)

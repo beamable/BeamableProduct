@@ -54,25 +54,24 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 
 		// initialize a beamable project in that directory...
 		var createdNewWorkingDir = false;
+		var currentPath = Directory.GetCurrentDirectory();
 		if (!args.ConfigService.ConfigFileExists.GetValueOrDefault(false))
 		{
 			args.ConfigService.SetTempWorkingDir(path);
-
+			Directory.SetCurrentDirectory(path);
 
 			await _initCommand.Handle(new InitCommandArgs { Provider = args.Provider, saveToFile = true });
 			createdNewWorkingDir = true;
 		}
 
 		// Find path to service folders: either it is in the working directory, or it will be inside 'args.name\\services' from the working directory.
-		var projectDirectory = createdNewWorkingDir
-			? $"services"
-			: Path.GetRelativePath(args.ConfigService.BaseDirectory,
-				Directory.EnumerateDirectories(args.ConfigService.BaseDirectory, $"{args.ProjectName}\\services", SearchOption.AllDirectories).First());
+		string projectDirectory = GetServicesDir(args, path);
+		string projectDockerfilePath = Path.Combine(args.ProjectName, "Dockerfile");
 
 		// now that a .beamable folder has been created, setup the beamo manifest
 		var sd = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value.ToLower(),
 			projectDirectory,
-			Path.Combine(args.ProjectName, "Dockerfile"),
+			projectDockerfilePath,
 			new string[] { },
 			CancellationToken.None);
 
@@ -119,5 +118,52 @@ COPY {commonProjectName}/. .
 		{
 			await _addUnrealCommand.Handle(new AddUnrealClientOutputCommandArgs() { path = ".", Provider = args.Provider });
 		}
+
+		if (createdNewWorkingDir)
+		{
+			Directory.SetCurrentDirectory(currentPath);
+		}
+	}
+
+	private static string GetServicesDir(NewSolutionCommandArgs args, string newSolutionPath)
+	{
+		string result = string.Empty;
+		//using try catch because of the Directory.EnumerateDirectories behaviour
+		try
+		{
+			var list = Directory.EnumerateDirectories(args.ConfigService.BaseDirectory,
+				$"{args.SolutionName}\\services",
+				SearchOption.AllDirectories).ToList();
+			if (list.Count > 0)
+			{
+				result = Path.GetRelativePath(args.ConfigService.BaseDirectory, list.First());
+			}
+		}
+		catch
+		{
+			//
+		}
+
+		try
+		{
+			if (string.IsNullOrWhiteSpace(result))
+			{
+				var list = Directory.EnumerateDirectories(newSolutionPath, "services",
+					SearchOption.AllDirectories).ToList();
+				result = Path.GetRelativePath(args.ConfigService.BaseDirectory, list.First());
+			}
+		}
+		catch
+		{
+			//
+		}
+
+		if (string.IsNullOrWhiteSpace(result))
+		{
+			const string SERVICES_PATH_ERROR = "Could not find Solution services path!";
+			Log.Error(SERVICES_PATH_ERROR);
+		}
+
+		return result;
 	}
 }
