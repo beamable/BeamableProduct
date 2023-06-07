@@ -94,7 +94,7 @@ namespace Beamable.Serialization
 			bool Serialize(string key, ref Quaternion target);
 			bool Serialize(string key, ref Gradient target);
 #endif
-			bool Serialize<T>(string key, ref T value) where T : class, ISerializable, new();
+			bool Serialize<T>(string key, ref T value) where T : ISerializable;
 			bool SerializeInline<T>(string key, ref T value) where T : ISerializable;
 			bool SerializeList<TList>(string key, ref TList value) where TList : IList, new();
 			bool SerializeKnownList<TElem>(string key, ref List<TElem> value) where TElem : ISerializable, new();
