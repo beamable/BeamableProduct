@@ -1222,9 +1222,23 @@ public static class UnityHelper
 		type.CustomAttributes.Add(
 			new CodeAttributeDeclaration(new CodeTypeReference(typeof(SerializableAttribute))));
 
+		
+		// if the base type is a list, then add the list base class.
+		if (schema.Items?.Reference?.Id != null)
+		{
+			type.BaseTypes.Add(new CodeTypeReference(typeof(List<>))
+			{
+				TypeArguments = { new CodeTypeReference( SanitizeClassName(schema.Items.Reference.Id)) }
+			});
+			if (schema.Properties.Count > 0)
+			{
+				throw new Exception($"Cannot have a model type that is a list, and has properties. name=[{name}] model=[{schema.Title}] ");
+			}
+		}
+		
 		// add the serialization interface
 		type.BaseTypes.Add(new CodeTypeReference(typeof(JsonSerializable.ISerializable)));
-
+		
 		// add the implementation of the serialization interface as a method...
 		var serializeMethod = new CodeMemberMethod();
 		serializeMethod.Name = nameof(JsonSerializable.IStreamSerializer.Serialize);
