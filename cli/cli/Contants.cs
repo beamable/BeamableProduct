@@ -13,7 +13,7 @@ public static class Constants
 
 	public const string DOCKER_REGISTRY_DEV = "https://dev-ecr.beamable.com";
 	public const string DOCKER_REGISTRY_STAGING = "https://staging-ecr.beamable.com";
-	public const string DOCKER_REGISTRY_PRODUCTION = "https://ecr.beamable.com";
+	public const string DOCKER_REGISTRY_PRODUCTION = "https://vwe9gi1uxg.execute-api.us-west-2.amazonaws.com/prod";
 
 	public const string CONFIG_CID = "cid";
 	public const string CONFIG_PID = "pid";

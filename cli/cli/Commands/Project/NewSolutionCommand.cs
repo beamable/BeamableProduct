@@ -58,7 +58,7 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 		if (!args.ConfigService.ConfigFileExists.GetValueOrDefault(false))
 		{
 			args.ConfigService.SetTempWorkingDir(path);
-			Directory.SetCurrentDirectory(path);
+			// Directory.SetCurrentDirectory(path);
 
 			await _initCommand.Handle(new InitCommandArgs { Provider = args.Provider, saveToFile = true });
 			createdNewWorkingDir = true;
@@ -89,8 +89,11 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 			Log.Information("Docker file folder is " + serviceFolder);
 
 			dockerfilePath = Path.Combine(args.directory, service.DockerBuildContextPath, dockerfilePath);
+			Log.Information("Reading docker from " + dockerfilePath);
 			var dockerfileText = File.ReadAllText(dockerfilePath);
 
+			
+			
 			const string search =
 				"# <BEAM-CLI-INSERT-FLAG:COPY_COMMON> do not delete this line. It is used by the beam CLI to insert custom actions";
 			var replacement = @$"WORKDIR /subsrc/{commonProjectName}
