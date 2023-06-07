@@ -785,6 +785,7 @@ PlayerSettings:
     13: BEAMABLE_PURCHASING
   platformArchitecture: {}
   scriptingBackend:
+    Android: 1
     Standalone: 0
   il2cppCompilerConfiguration: {}
   managedStrippingLevel: {}
