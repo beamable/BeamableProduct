@@ -37,6 +37,12 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 	{
 		_localBeamo = args.BeamoLocalSystem;
 
+		var isDockerRunning = await _localBeamo.CheckIsRunning();
+		if (!isDockerRunning)
+		{
+			throw new CliException("Docker is not running in this machine. Please start Docker before running this command.", Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_DOCKER_NOT_RUNNING, true);
+		}
+
 		try
 		{
 			await _localBeamo.SynchronizeInstanceStatusWithDocker(_localBeamo.BeamoManifest,

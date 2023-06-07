@@ -47,7 +47,7 @@ public class RegisterCommand : AppCommand<RegisterCommandArgs>
 		var legal = await GetLegal(args);
 		if (!legal)
 		{
-			throw new CliException("Cannot continue without legal agreement.", true, true);
+			throw new CliException("Cannot continue without legal agreement.");
 		}
 		var alias = await GetAlias(args);
 		var game = await GetGame(args);

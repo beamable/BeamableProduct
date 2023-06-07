@@ -251,10 +251,7 @@ public class App
 					{
 						Console.Error.WriteLine(cliException.Message);
 					}
-					if (cliException.UseNonZeroExitCode)
-					{
-						context.ExitCode = 1;
-					}
+					context.ExitCode = cliException.NonZeroOrOneExitCode;
 					break;
 				default:
 					context.ExitCode = 1;

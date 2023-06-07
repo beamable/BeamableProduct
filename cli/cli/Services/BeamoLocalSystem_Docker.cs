@@ -16,6 +16,22 @@ namespace cli.Services;
 
 public partial class BeamoLocalSystem
 {
+	/// <summary>
+	/// Checks if Docker is running locally.
+	/// </summary>
+	/// <returns></returns>
+	public async Task<bool> CheckIsRunning()
+	{
+		try
+		{
+			await _client.System.PingAsync();
+			return true;
+		}
+		catch
+		{
+			return false;
+		}
+	}
 
 	/// <summary>
 	/// Uses the given image (name or id) to create/replace the container with the given name and configurations.
@@ -88,6 +104,7 @@ public partial class BeamoLocalSystem
 		{
 			createParams.Healthcheck = new HealthConfig() { Test = new List<string>() { healthcheckCmd } };
 		}
+
 		hostConfig.AutoRemove = autoRemoveWhenStopped;
 
 		// Build env vars
@@ -128,6 +145,7 @@ public partial class BeamoLocalSystem
 			{
 				Log.Warning(warning);
 			}
+
 			return response.ID;
 		}
 		catch (Exception e)
@@ -186,18 +204,12 @@ public partial class BeamoLocalSystem
 
 		using (var stream = CreateTarballForDirectory(dockerBuildContextPath))
 		{
-
 			var tag = $"{imageName}:{containerImageTag}";
 			var progress = 0f;
 			try
 			{
 				await _client.Images.BuildImageFromDockerfileAsync(
-					new ImageBuildParameters
-					{
-						Tags = new[] { tag },
-						Dockerfile = dockerfilePathInBuildContext.Replace("\\", "/"),
-						Labels = new Dictionary<string, string>() { { "beamoId", imageName } },
-					},
+					new ImageBuildParameters { Tags = new[] { tag }, Dockerfile = dockerfilePathInBuildContext.Replace("\\", "/"), Labels = new Dictionary<string, string>() { { "beamoId", imageName } }, },
 					stream,
 					null,
 					new Dictionary<string, string>(),
@@ -520,9 +532,9 @@ public partial class BeamoLocalSystem
 							// TODO: A more robust algorithm for this is to make sure that we don't have repeating image ids tied to BeamoIds when running this stop loop.
 							if (!e.Message.Contains("reference does not exist") &&
 
-								// Because we run this in-parallel, we can also get this error:
-								// Docker API responded with status code=InternalServerError, response={"message":"unrecognized image ID sha256:c8b57c4bf7e3a88daf948d5d17bc7145db05771e928b3b3095ca4590719b5469"}    
-								!e.Message.Contains("unrecognized image ID"))
+							    // Because we run this in-parallel, we can also get this error:
+							    // Docker API responded with status code=InternalServerError, response={"message":"unrecognized image ID sha256:c8b57c4bf7e3a88daf948d5d17bc7145db05771e928b3b3095ca4590719b5469"}    
+							    !e.Message.Contains("unrecognized image ID"))
 								throw;
 						}
 					}
@@ -581,6 +593,4 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public async Task<Stream> SaveImage(BeamoServiceDefinition serviceDefinition) =>
 		await _client.Images.SaveImageAsync(serviceDefinition.ImageId, CancellationToken.None);
-
-
 }
