@@ -77,6 +77,10 @@ public class BuildSampleProject
 	[MenuItem("Beamable/SampleBuild/Development")]
 	public static void Development()
 	{
+#if UNITY_2022_3_OR_NEWER
+		PlayerSettings.SetIl2CppCompilerConfiguration(BuildTargetGroup.Android, Il2CppCompilerConfiguration.Debug);
+		PlayerSettings.SetIl2CppCodeGeneration(NamedBuildTarget.Android, Il2CppCodeGeneration.OptimizeSize);
+#endif
 		PlayerSettings.iOS.appleDeveloperTeamID = teamId;
 		PlayerSettings.applicationIdentifier = "com.beamable.dev";
 		PlayerSettings.iOS.buildNumber = Environment.GetEnvironmentVariable("ANDROID_VERSION_CODE") ?? "2";
