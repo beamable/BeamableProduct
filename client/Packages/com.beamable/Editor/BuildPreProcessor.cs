@@ -26,6 +26,14 @@ namespace Beamable.Editor
 
 		public async void OnPreprocessBuild(BuildReport report)
 		{
+#if !BEAMABLE_FORCE_BUILD_PREPROCESSOR
+			var isHeadless = Application.isBatchMode;
+			if (isHeadless)
+			{
+				return;
+			}
+#endif
+
 			var messages = new List<string>();
 #if !BEAMABLE_NO_CID_PID_WARNINGS_ON_BUILD
 			if (!CheckForConfigDefaultsAlignment(out var message))
@@ -38,10 +46,18 @@ namespace Beamable.Editor
 				messages.Add(proguardMessage);
 			}
 
-			var hasLocalContentChanges = await ContentIO.HasLocalChanges();
-			if (hasLocalContentChanges)
+			var hasLocalContentChangesPromise = ContentIO.HasLocalChanges();
+			if (hasLocalContentChangesPromise.IsCompleted)
 			{
-				messages.Add("Local Beamable Content has non published changes. ");
+				var hasLocalContentChanges = hasLocalContentChangesPromise.GetResult();
+				if (hasLocalContentChanges)
+				{
+					messages.Add("Local Beamable Content has non published changes. ");
+				}
+			}
+			else
+			{
+				Debug.LogWarning("Beamable wasn't able to detect if there was unpublished content, because the Beamable SDK wasn't initialized yet.");
 			}
 
 			if (messages.Count > 0)

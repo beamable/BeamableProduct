@@ -7,10 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.0]
+
 ### Added
 
 - `beam org new` creates a new Beamable organization
 - `beam project logs` tails service logs
+- `CLIException` now return error codes with valuable semantics (unknown and reportable errors are error code `1`;
+  anything above 1 is a usage error that a user should be able fix)
 
 ### Changed
 
