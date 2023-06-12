@@ -415,7 +415,7 @@ namespace Beamable.Server
         {
 	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
 
-	        var envArgs = new EnviornmentArgs();
+	        var envArgs = new EnvironmentArgs();
 	        var pipeSink = ConfigureLogging(envArgs, attribute);
 	        ConfigureUncaughtExceptions();
 	        ConfigureUnhandledError();
