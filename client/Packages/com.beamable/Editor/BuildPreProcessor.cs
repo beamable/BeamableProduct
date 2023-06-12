@@ -33,7 +33,7 @@ namespace Beamable.Editor
 				return;
 			}
 #endif
-			
+
 			var messages = new List<string>();
 #if !BEAMABLE_NO_CID_PID_WARNINGS_ON_BUILD
 			if (!CheckForConfigDefaultsAlignment(out var message))
