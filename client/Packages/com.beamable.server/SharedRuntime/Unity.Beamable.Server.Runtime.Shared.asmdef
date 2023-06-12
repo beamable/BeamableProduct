@@ -13,6 +13,7 @@
     "overrideReferences": true,
     "precompiledReferences": [
         "MongoDB.Driver.dll",
+        "MongoDB.Driver.Core.dll",
         "MongoDB.Bson.dll",
         "System.Runtime.CompilerServices.Unsafe.dll"
     ],
