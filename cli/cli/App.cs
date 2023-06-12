@@ -7,6 +7,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Common.Semantics;
 using cli.Commands.Project;
 using cli.Content;
+using cli.Docs;
 using cli.Dotnet;
 using cli.Services;
 using cli.Services.Content;
@@ -85,6 +86,7 @@ public class App
 		services.AddSingleton<UnityCliGenerator>();
 		services.AddSingleton<UnrealCliGenerator>();
 		services.AddTransient<DiscoveryService>();
+		services.AddSingleton<CliGenerator>();
 		OpenApiRegistration.RegisterOpenApis(services);
 
 		_serviceConfigurator?.Invoke(services);
@@ -149,6 +151,7 @@ public class App
 		Commands.AddRootCommand<BaseRequestPutCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestPostCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestDeleteCommand, BaseRequestArgs>();
+		Commands.AddRootCommand<GenerateDocsCommand, GenerateDocsCommandArgs>();
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Commands.AddCommand<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
 		Commands.AddCommand<ConfigGetSecret, ConfigGetSecretArgs, ConfigCommand>();
