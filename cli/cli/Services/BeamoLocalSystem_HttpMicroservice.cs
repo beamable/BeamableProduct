@@ -6,6 +6,7 @@
 using Beamable.Common;
 using cli.Utils;
 using Newtonsoft.Json;
+using Serilog;
 
 namespace cli.Services;
 
@@ -88,6 +89,8 @@ public partial class BeamoLocalSystem
 		const string ENV_LOG_LEVEL = "LOG_LEVEL";
 		const string ENV_NAME_PREFIX = "NAME_PREFIX";
 		const string ENV_WATCH_TOKEN = "WATCH_TOKEN";
+		const string ENV_INSTANCE_COUNT = "BEAM_INSTANCE_COUNT";
+
 
 		var imageId = serviceDefinition.ImageId;
 		var containerName = $"{serviceDefinition.BeamoId}_httpMicroservice";
@@ -118,7 +121,13 @@ public partial class BeamoLocalSystem
 			new() { VariableName = ENV_LOG_LEVEL, Value =  _ctx.LogLevel.ToString() },
 			new() { VariableName = ENV_NAME_PREFIX, Value = MachineHelper.GetUniqueDeviceId() },
 			new() { VariableName = ENV_WATCH_TOKEN, Value = shouldPrepareWatch.ToString() },
+			new() { VariableName = ENV_INSTANCE_COUNT, Value = localProtocol.InstanceCount.ToString() },
 		};
+		Log.Information("Building Env Vars.. {host} {prefix} {cid} {pid}",
+			(object)$"{_ctx.Host.Replace("http://", "wss://").Replace("https://", "wss://")}/socket",
+			(object)MachineHelper.GetUniqueDeviceId(),
+			(object)_ctx.Cid, (object)_ctx.Pid);
+
 
 		// add in connection string environment vars for mongo storage dependencies
 		if (serviceDefinition.DependsOnBeamoIds != null)
@@ -153,7 +162,7 @@ public partial class BeamoLocalSystem
 
 		// Creates and runs the container. This container will auto destroy when it stops.
 		// TODO: Make the auto destruction optional to help CS identify issues in the wild.
-		await CreateAndRunContainer(imageId, containerName, cmdStr, true, portBindings, volumes, bindMounts, environmentVariables);
+		await CreateAndRunContainer(imageId, containerName, cmdStr, false, portBindings, volumes, bindMounts, environmentVariables);
 	}
 
 	/// <summary>
@@ -266,6 +275,8 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 	public List<DockerBindMount> CustomBindMounts;
 	public List<DockerVolume> CustomVolumes;
 	public List<DockerEnvironmentVariable> CustomEnvironmentVariables;
+
+	public int InstanceCount = 1;
 
 	public bool VerifyCanBeBuiltLocally(ConfigService configService)
 	{

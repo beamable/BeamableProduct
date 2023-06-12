@@ -568,7 +568,7 @@ namespace Beamable.Serialization
 #endif
 
 			public bool Serialize<T>(string key, ref T value)
-			   where T : class, ISerializable, new()
+			   where T : ISerializable
 			{
 				object tmp;
 				if (curDict.TryGetValue(key, out tmp))

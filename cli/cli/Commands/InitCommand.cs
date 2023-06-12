@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
 using cli.Utils;
@@ -13,20 +14,18 @@ public class InitCommandArgs : LoginCommandArgs
 	public string pid;
 }
 
-public class InitCommand : AppCommand<InitCommandArgs>
+public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStreamResultChannel, InitCommandResult>
 {
 	private readonly LoginCommand _loginCommand;
-	private readonly ConfigCommand _configCommand;
 	private IRealmsApi _realmsApi;
 	private IAliasService _aliasService;
 	private IAppContext _ctx;
 	private ConfigService _configService;
 
-	public InitCommand(LoginCommand loginCommand, ConfigCommand configCommand)
+	public InitCommand(LoginCommand loginCommand)
 		: base("init", "Initialize a new Beamable project in the current directory")
 	{
 		_loginCommand = loginCommand;
-		_configCommand = configCommand;
 	}
 
 	public override void Configure()
@@ -43,6 +42,7 @@ public class InitCommand : AppCommand<InitCommandArgs>
 		AddOption(new SaveToEnvironmentOption(), (args, b) => args.saveToEnvironment = b);
 		AddOption(new SaveToFileOption(), (args, b) => args.saveToFile = b);
 		AddOption(new CustomerScopedOption(), (args, b) => args.customerScoped = b);
+		AddOption(new PrintToConsoleOption(), (args, b) => args.printToConsole = b);
 	}
 
 	public override async Task Handle(InitCommandArgs args)
@@ -68,13 +68,25 @@ public class InitCommand : AppCommand<InitCommandArgs>
 		}
 
 		_configService.SetConfigString(Constants.CONFIG_CID, cid);
-		await GetPidAndAuth(args, cid, host);
-
-		AnsiConsole.MarkupLine("Success! :thumbs up: Here are your connection details");
-		await _configCommand.Handle(args.Create<ConfigCommandArgs>());
+		var success = await GetPidAndAuth(args, cid, host);
+		if (!success)
+		{
+			AnsiConsole.MarkupLine("Failure! :thumbs_down:");
+			return;
+		}
+		AnsiConsole.MarkupLine("Success! :thumbs_up: Here are your connection details");
+		BeamableLogger.Log(args.ConfigService.ConfigFilePath);
+		BeamableLogger.Log($"cid=[{args.AppContext.Cid}] pid=[{args.AppContext.Pid}]");
+		BeamableLogger.Log(args.ConfigService.PrettyPrint());
+		this.SendResults(new InitCommandResult()
+		{
+			host = args.ConfigService.GetConfigString(Constants.CONFIG_PLATFORM),
+			cid = args.ConfigService.GetConfigString(Constants.CONFIG_CID),
+			pid = args.ConfigService.GetConfigString(Constants.CONFIG_PID)
+		});
 	}
 
-	private async Task GetPidAndAuth(InitCommandArgs args, string cid, string host)
+	private async Task<bool> GetPidAndAuth(InitCommandArgs args, string cid, string host)
 	{
 		if (!string.IsNullOrEmpty(_ctx.Pid) && string.IsNullOrEmpty(args.pid))
 		{
@@ -82,9 +94,9 @@ public class InitCommand : AppCommand<InitCommandArgs>
 			_configService.SetBeamableDirectory(_ctx.WorkingDirectory);
 			_configService.FlushConfig();
 
-			await _loginCommand.Handle(args);
+			var didLogin = await Login(args);
 
-			return;
+			return didLogin;
 		}
 
 		// If we have a given pid, let's login there.
@@ -92,12 +104,19 @@ public class InitCommand : AppCommand<InitCommandArgs>
 		{
 			_ctx.Set(cid, args.pid, host);
 
-			await _loginCommand.Handle(args);
-			_configService.SetBeamableDirectory(_ctx.WorkingDirectory);
-			_configService.SetConfigString(Constants.CONFIG_PID, args.pid);
-			_configService.FlushConfig();
+			var didLogin = await Login(args);
+			if (didLogin)
+			{
+				_configService.SetBeamableDirectory(_ctx.WorkingDirectory);
+				_configService.SetConfigString(Constants.CONFIG_PID, args.pid);
+				_configService.FlushConfig();
+			}
+			else
+			{
+				_configService.RemoveConfigFolderContent();
+			}
 
-			return;
+			return didLogin;
 		}
 
 		_ctx.Set(cid, null, host);
@@ -105,16 +124,40 @@ public class InitCommand : AppCommand<InitCommandArgs>
 		_configService.FlushConfig();
 
 		var pid = await PickGameAndRealm(args);
+		if (string.IsNullOrWhiteSpace(pid))
+		{
+			_configService.RemoveConfigFolderContent();
+			return false;
+		}
+
 		_ctx.Set(cid, pid, host);
 		_configService.SetConfigString(Constants.CONFIG_PID, pid);
 		_configService.FlushConfig();
 
-		await _loginCommand.Handle(args); // login again with the scoped token
+		return await Login(args);
+	}
+
+	private async Task<bool> Login(LoginCommandArgs args)
+	{
+		try
+		{
+			await _loginCommand.Handle(args);
+			return _loginCommand.Successful;
+		}
+		catch
+		{
+			BeamableLogger.LogError("Login failed. Init aborted.");
+			return false;
+		}
 	}
 
 	private async Task<string> PickGameAndRealm(InitCommandArgs args)
 	{
-		await _loginCommand.Handle(args);
+		var didLogin = await Login(args);
+		if (!didLogin)
+		{
+			return string.Empty; // cannot fetch games without correct credentials
+		}
 		var games = await _realmsApi.GetGames().ShowLoading("Fetching games...");
 		var gameChoices = games.Select(g => g.DisplayName.Replace("[PROD]", "")).ToList();
 		var gameSelection = AnsiConsole.Prompt(
@@ -189,4 +232,11 @@ public class InitCommand : AppCommand<InitCommandArgs>
 			_ => throw new ArgumentOutOfRangeException()
 		});
 	}
+}
+
+public class InitCommandResult
+{
+	public string host;
+	public string cid;
+	public string pid;
 }

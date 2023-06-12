@@ -36,11 +36,12 @@ jobs:
         id: format-changes
       - name: Lint changelogs
         uses: DavidAnson/markdownlint-cli2-action@v10
+        continue-on-error: true
         with:
-          continue-on-error: true
           command: fix
           globs: |
             client/Packages/**/CHANGELOG.md
+            cli/cli/CHANGELOG.md
       - name: check headcommit message
         id: commit
         run: |
