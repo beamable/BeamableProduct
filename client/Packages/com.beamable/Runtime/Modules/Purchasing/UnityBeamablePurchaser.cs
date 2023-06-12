@@ -19,12 +19,12 @@ namespace Beamable.Purchasing
 	/// Implementation of Unity IAP for Beamable purchasing.
 	/// </summary>
 	public class UnityBeamablePurchaser : IStoreListener
-	                                    , IBeamablePurchaser
-	                                      
+										, IBeamablePurchaser
+
 #if UNITY_PURCHASING_4_6_OR_NEWER // if this is a newer IAP, then include the detailed store listener.
 	                                    , IDetailedStoreListener
 #endif
-	
+
 	{
 		private IStoreController _storeController;
 #pragma warning disable CS0649
@@ -282,9 +282,9 @@ namespace Beamable.Purchasing
 		{
 			OnPurchaseFailedInternal(product, failureReason, new OptionalString(), new OptionalString());
 		}
-		
-		
-		#if UNITY_PURCHASING_4_6_OR_NEWER
+
+
+#if UNITY_PURCHASING_4_6_OR_NEWER
 		/// <summary>
 		/// Handle a purchase failure event from Unity IAP.
 		/// This method is used for IAP integrations using 4.x. and above
@@ -295,14 +295,14 @@ namespace Beamable.Purchasing
 		{
 			OnPurchaseFailedInternal(product, failureDescription.reason, new OptionalString(failureDescription.message), new OptionalString(failureDescription.productId));
 		}
-		#endif
-		
+#endif
+
 		private void OnPurchaseFailedInternal(Product product, PurchaseFailureReason failureReason, OptionalString message, OptionalString productId)
 		{
 			// A product purchase attempt did not succeed. Check failureReason for more detail. Consider sharing
 			// this reason with the user to guide their troubleshooting actions.
 			InAppPurchaseLogger.Log(string.Format("OnPurchaseFailed: FAIL. Product: '{0}', PurchaseFailureReason: {1} Message: {2}, ProductId: {3}",
-			                                      product.definition.storeSpecificId, failureReason, message?.Value, productId?.Value));
+												  product.definition.storeSpecificId, failureReason, message?.Value, productId?.Value));
 			var paymentService = GetPaymentService();
 			var reasonInt = (int)failureReason;
 			if (failureReason == PurchaseFailureReason.UserCancelled)
