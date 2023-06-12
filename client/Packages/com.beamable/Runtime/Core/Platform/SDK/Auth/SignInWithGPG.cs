@@ -11,7 +11,7 @@ namespace Beamable.Platform.SDK.Auth
 		public Action<bool> OnLoginResult;
 		public Action<bool, string> OnRequestServerSideAccessResult;
 
-		public bool ForceRefreshToken { get; set; } = true;
+		public static bool ForceRefreshToken { get; set; } = true;
 
 		public SignInWithGPG()
 		{

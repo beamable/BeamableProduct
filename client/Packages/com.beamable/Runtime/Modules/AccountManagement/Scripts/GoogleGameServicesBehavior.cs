@@ -32,7 +32,7 @@ namespace Beamable.AccountManagement
 			}
 #if BEAMABLE_GPGS && UNITY_ANDROID
 			_gpg = new SignInWithGPG();
-			_gpg.ForceRefreshToken = forceRefreshToken;
+			SignInWithGPG.ForceRefreshToken = forceRefreshToken;
 			_gpg.OnLoginResult += HandleLoginResult;
 			_gpg.OnRequestServerSideAccessResult += HandleRequestServerSideAccessResult;
 			
