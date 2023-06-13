@@ -4,13 +4,18 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
+using UnityEngine.ResourceManagement.ResourceLocations;
 
 namespace Beamable.Config
 {
 	public static class ConfigDatabase
 	{
-		private static Dictionary<string, string> database = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-		private static readonly Dictionary<string, string> sessionOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+		private static Dictionary<string, string> database =
+			new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+		private static readonly Dictionary<string, string> sessionOverrides =
+			new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
 		private const string ConfigFileKey = "config_file_key";
 		private static Promise _init;
 
@@ -82,7 +87,6 @@ namespace Beamable.Config
 					database[iter.Current.Key] = iter.Current.Value.ToString();
 				}
 			}
-
 		}
 
 		public static ICollection<string> GetAllValueNames()
@@ -99,6 +103,7 @@ namespace Beamable.Config
 				{
 					return sessionOverrides[name];
 				}
+
 				return PlayerPrefs.HasKey(name) ? PlayerPrefs.GetString(name).Trim() : ConfigDatabase.database[name];
 			}
 			else
@@ -117,9 +122,13 @@ namespace Beamable.Config
 				{
 					value = sessionOverrides[name];
 				}
-				value = (allowSessionOverrides && PlayerPrefs.HasKey(name)) ? PlayerPrefs.GetString(name).Trim() : ConfigDatabase.database[name];
+
+				value = (allowSessionOverrides && PlayerPrefs.HasKey(name))
+					? PlayerPrefs.GetString(name).Trim()
+					: ConfigDatabase.database[name];
 				return true;
 			}
+
 			value = null;
 			return false;
 		}
@@ -138,6 +147,7 @@ namespace Beamable.Config
 					sessionOverrides[name] = value;
 					return;
 				}
+
 				sessionOverrides.Remove(name);
 				database[name] = value;
 				PlayerPrefs.SetString(name.Trim(), value.Trim());
@@ -211,7 +221,6 @@ namespace Beamable.Config
 		public static string GetFullPath(string fileName) =>
 			Path.Combine("Assets", "Beamable", "Resources", $"{fileName}.txt");
 
-
 		/// <summary>
 		/// Remove the config-defaults file. Calling this outside the Unity Editor has no effect.
 		/// </summary>
@@ -233,35 +242,56 @@ namespace Beamable.Config
 
 		private static Promise<string> GetFileContent(string fileName)
 		{
-			var resultPromise = new Promise<string>();
-#if !UNITY_WEBGL
-			var handle = Addressables.LoadAssetAsync<TextAsset>(fileName);
-			if (handle.IsValid())
-			{
-				// This would not work on WebGL:
-				// https://docs.unity3d.com/Packages/com.unity.addressables@1.20/manual/SynchronousAddressables.html
-				handle.WaitForCompletion();
-				resultPromise.CompleteSuccess(handle.Result.text);
-				Addressables.Release(handle);
-			}
-			else
-#endif
+			string GetFileContentOld()
 			{
 #if UNITY_EDITOR
 				var fullPath = GetFullPath(fileName);
 
-				if(File.Exists(fullPath))
+				if (File.Exists(fullPath))
 				{
 					var result = File.ReadAllText(fullPath);
-					resultPromise.CompleteSuccess(result);
-					return resultPromise;
+					return result;
 				}
 #endif
 				var asset = Resources.Load(fileName) as TextAsset;
-				resultPromise.CompleteSuccess(asset != null ? asset.text : "{}");
+				return asset != null ? asset.text : "{}";
 			}
 			
 			
+
+			var resultPromise = new Promise<string>();
+#if !UNITY_WEBGL
+			bool AddressableResourceExists<T>(string key) {
+				foreach (var l in Addressables.ResourceLocators) {
+					if (l.Locate(key, typeof(T), out IList<IResourceLocation> _))
+						return true;
+				}
+				return false;
+			}
+
+			
+			var initPromise = new Promise();
+			Addressables.InitializeAsync(true).Completed += handle => initPromise.CompleteSuccess();
+			initPromise.Then(_ =>
+			{
+				if (!AddressableResourceExists<TextAsset>(fileName))
+				{
+					resultPromise.CompleteSuccess(GetFileContentOld());
+					return;
+				}
+				var handle = Addressables.LoadAssetAsync<TextAsset>(fileName);
+				if (handle.IsValid())
+				{
+					// This would not work on WebGL:
+					// https://docs.unity3d.com/Packages/com.unity.addressables@1.20/manual/SynchronousAddressables.html
+					handle.WaitForCompletion();
+					resultPromise.CompleteSuccess(handle.Result.text);
+					Addressables.Release(handle);
+				}
+			}).Error(exception => resultPromise.CompleteSuccess(GetFileContentOld()));
+
+#endif
+
 			return resultPromise;
 		}
 	}
