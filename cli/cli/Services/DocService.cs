@@ -190,7 +190,7 @@ public class DocService
 		{
 			var opt = optionList[i];
 			if (opt.IsHidden) continue;
-			argSb.Append("|");
+			argSb.Append("|--");
 			argSb.Append(opt.ArgumentHelpName ?? opt.Name);
 			argSb.Append("|");
 			argSb.Append(opt.ValueType.Name);
@@ -421,9 +421,7 @@ public class DocService
 
 	public DocDesc GenerateDocFile(BeamCommandDescriptor commandDesc, GenerateDocsCommandArgs args)
 	{
-		var service = args.DependencyProvider.GetService<DocService>();
-		
-		var rendered = service.Render(args.categorySlug, commandDesc,
+		var rendered = Render(args.categorySlug, commandDesc,
 			(KEY_TITLE, commandDesc.executionPath.Substring("beam".Length).Trim()),
 			(KEY_DESC, commandDesc.command.Description)
 		);
