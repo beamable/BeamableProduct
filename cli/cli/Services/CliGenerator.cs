@@ -43,6 +43,7 @@ public class CliGenerator
 					parent = curr,
 					hasValidOutput = subCommand.GetType().IsAssignableTo(typeof(IEmptyResult))
 				};
+				curr.children.Add(subBeamCommand);
 
 
 				// find result streams...

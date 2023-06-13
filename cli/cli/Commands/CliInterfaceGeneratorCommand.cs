@@ -117,6 +117,7 @@ public class BeamCommandDescriptor
 	public string executionPath;
 	public Command command;
 	public BeamCommandDescriptor parent;
+	public List<BeamCommandDescriptor> children = new List<BeamCommandDescriptor>();
 	public bool hasValidOutput;
 	public List<BeamCommandResultDescriptor> resultStreams = new List<BeamCommandResultDescriptor>();
 
@@ -128,6 +129,15 @@ public class BeamCommandDescriptor
 		return string.Join(separater, words.Skip(1).Select(w => w.Capitalize()));
 	}
 
+	public string GetSlug()
+	{
+		var path = executionPath.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+		if (path.Length == 1)
+		{
+			return "beam";
+		}
+		return string.Join("-", path.Skip(1));
+	}
 }
 
 public class BeamCommandResultDescriptor

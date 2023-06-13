@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `beam docs` creates and uploads CLI documentation to Readme.com
+
 ## [1.16.0]
 
 ### Added

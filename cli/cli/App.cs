@@ -86,6 +86,7 @@ public class App
 		services.AddSingleton<UnityCliGenerator>();
 		services.AddSingleton<UnrealCliGenerator>();
 		services.AddTransient<DiscoveryService>();
+		services.AddSingleton<DocService>();
 		services.AddSingleton<CliGenerator>();
 		OpenApiRegistration.RegisterOpenApis(services);
 
