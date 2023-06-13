@@ -13,7 +13,7 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     concurrency:
-      group: generate-${{ github.head_ref }}
+      group: publish-cli
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v3
