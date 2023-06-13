@@ -1,0 +1,34 @@
+name: Docs CI
+
+on:
+  workflow_dispatch:
+
+
+jobs:
+  generate:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    concurrency:
+      group: generate-${{ github.head_ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET Core SDK
+        uses: actions/setup-dotnet@v1.7.2
+        with:
+          dotnet-version: 6.0.x
+      - name: Build CLI 
+        run: |
+          dotnet build ./cli/cli 
+      - name: Build and Publish Docs
+        run: |
+          dotnet run --project ./cli/cli -- docs --readme-key ${{secrets.README_API_KEY}} --guide-slug cli-flows --command-slug cli-test
+      - name: Post to a Slack channel
+        if: ${{ steps.changes.outputs.any == 'true' && steps.cpr.outputs.pull-request-number }}
+        id: slack
+        uses: slackapi/slack-github-action@v1.21.0
+        with:
+          channel-id: C01300W32CS
+          slack-message: "CLI Docs have been published!"
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
