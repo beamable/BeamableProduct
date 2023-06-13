@@ -634,7 +634,7 @@ public class SwaggerService
 						else
 						{
 							// no good, we have a new form of serialization
-							throw new CliException("Operations that return inline schemas may not have different schemas that collide under the operation method and tag", true, true);
+							throw new CliException("Operations that return inline schemas may not have different schemas that collide under the operation method and tag");
 						}
 
 					}
@@ -672,8 +672,7 @@ public class SwaggerService
 					var hasInvalidTags = tags?.Count > 1;
 					if (hasInvalidTags)
 					{
-						throw new CliException(
-							"Swagger docs are not allowed to have more than 1 tag in each operation.", true, true);
+						throw new CliException("Swagger docs are not allowed to have more than 1 tag in each operation.");
 					}
 
 					var hasTags = tags?.Count == 1;
@@ -687,9 +686,7 @@ public class SwaggerService
 					}
 					else if (tag != tags[0].Name)
 					{
-						throw new CliException(
-							"If an operation has a tag, then all operations in the same path must have the same tag. ",
-							true, true);
+						throw new CliException("If an operation has a tag, then all operations in the same path must have the same tag. ");
 					}
 				}
 
@@ -714,8 +711,7 @@ public class SwaggerService
 
 			if (opsWithTagsCount != opCount)
 			{
-				throw new CliException(
-					"If a swagger doc has a tag in an operation, then every operation must have a tag.", true, true);
+				throw new CliException("If a swagger doc has a tag in an operation, then every operation must have a tag.");
 			}
 
 		}
