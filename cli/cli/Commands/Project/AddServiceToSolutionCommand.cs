@@ -1,5 +1,4 @@
 ﻿using Beamable.Common.Semantics;
-using Serilog;
 using Spectre.Console;
 using System.CommandLine;
 
@@ -28,24 +27,71 @@ public class AddServiceToSolutionCommand : AppCommand<AddServiceToSolutionComman
 	public override void Configure()
 	{
 		AddArgument(new Argument<ServiceName>("name", "Name of the new project"), (args, i) => args.ProjectName = i);
-		AddArgument(new Argument<ServiceName>("solution-name", "Name of the existing solution"), (args, i) => args.SolutionName = i);
-		AddOption(new ConfigurableOptionFlag("skip-common", "If you should create a common library"), (args, i) => args.SkipCommon = i);
+		AddOption(new Option<ServiceName>("--solution-name", "Name of the existing solution"),
+			(args, i) => args.SolutionName = i);
+		AddOption(new ConfigurableOptionFlag("skip-common", "If you should create a common library"),
+			(args, i) => args.SkipCommon = i);
 	}
 
 	public override async Task Handle(AddServiceToSolutionCommandArgs args)
 	{
-		string projectPath = await args.ProjectService.AddToSolution(args.SolutionName, args.ProjectName,!args.SkipCommon);
+		if (string.IsNullOrEmpty(args.SolutionName.Value))
+		{
+			List<string> solutionPaths = Directory.GetFiles(args.ConfigService.WorkingDirectory, "*.sln",
+				SearchOption.TopDirectoryOnly).ToList();
+
+			List<string> solutionFiles = new();
+			
+			foreach (string solutionPath in solutionPaths)
+			{
+				string[] split = solutionPath.Split(Path.DirectorySeparatorChar);
+				string solutionName = split[^1].Split(".")[0];
+				solutionFiles.Add(solutionName);
+			}
+
+			switch (solutionFiles.Count)
+			{
+				case 0:
+					throw new CliException(
+						$"No solution files found in {args.ConfigService.WorkingDirectory} directory");
+				case 1:
+					args.SolutionName = new ServiceName(solutionFiles[0]);
+					break;
+				default:
+				{
+					solutionFiles.Add("cancel");
+
+					string selection = AnsiConsole.Prompt(
+						new SelectionPrompt<string>()
+							.Title("Select solution file You would like new project add to:")
+							.AddChoices(solutionFiles)
+					);
+
+					if (selection == "cancel")
+					{
+						return;
+					}
+
+					args.SolutionName = new ServiceName(selection);
+					break;
+				}
+			}
+		}
+
+		string projectPath =
+			await args.ProjectService.AddToSolution(args.SolutionName, args.ProjectName, !args.SkipCommon);
 
 		var sd = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value.ToLower(),
 			projectPath,
 			Path.Combine(args.ProjectName, "Dockerfile"),
 			new string[] { },
 			CancellationToken.None);
-		
+
 		if (!args.SkipCommon)
 		{
 			var service = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[sd.BeamoId];
-			args.ProjectService.CreateCommon(args.ProjectName, service.RelativeDockerfilePath, service.DockerBuildContextPath);
+			args.ProjectService.CreateCommon(args.ProjectName, service.RelativeDockerfilePath,
+				service.DockerBuildContextPath);
 		}
 
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();

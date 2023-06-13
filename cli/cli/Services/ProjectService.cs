@@ -215,12 +215,6 @@ public class ProjectService
 	{
 		var solutionFile = $"{solutionName}.sln";
 		var solutionPath = Path.Combine(_configService.WorkingDirectory, solutionFile);
-		
-		if (!File.Exists(solutionPath))
-		{
-			throw new CliException($"Solution file {solutionFile} doesn't exist");
-		}
-		
 		var rootServicesPath = "services";
 		var commonProjectName = $"{projectName}Common";
 		var projectPath = Path.Combine(rootServicesPath, projectName);
