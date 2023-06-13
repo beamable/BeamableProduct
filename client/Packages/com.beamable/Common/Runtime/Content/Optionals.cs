@@ -43,7 +43,8 @@ namespace Beamable.Common.Content
 	[System.Serializable]
 	[Agnostic]
 
-	[DebuggerDisplay("{HasValue ? (Value?.ToString()) : \"no value\"}")]
+	// [DebuggerDisplay("{HasValue ? (Value?.ToString()) : \"no value\"}")]
+	[DebuggerDisplay("{HasValue ? (Value == null ? \"no value\" : Value.ToString()) : \"no value\"}")]
 	public class Optional<T> : Optional
 	{
 		public static implicit operator T(Optional<T> option) => option?.HasValue == true ? (T)option.Value : default(T);
@@ -176,11 +177,29 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalBool : OptionalValue<bool> { }
+	public class OptionalBool : OptionalValue<bool>
+	{
+		public OptionalBool(){}
+
+		public OptionalBool(bool value)
+		{
+			Value = value;
+			HasValue = true;
+		}
+	}
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalInt : OptionalValue<int> { }
+	public class OptionalInt : OptionalValue<int>
+	{
+		public OptionalInt(){}
+
+		public OptionalInt(int value)
+		{
+			Value = value;
+			HasValue = true;
+		}
+	}
 
 	[System.Serializable]
 	public class OptionalObject : Optional<object> { }

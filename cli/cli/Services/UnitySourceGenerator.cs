@@ -1235,7 +1235,7 @@ public static class UnityHelper
 				throw new Exception($"Cannot have a model type that is a list, and has properties. name=[{name}] model=[{schema.Title}] ");
 			}
 		}
-		
+
 		// add the serialization interface
 		type.BaseTypes.Add(new CodeTypeReference(typeof(JsonSerializable.ISerializable)));
 		
@@ -1290,7 +1290,8 @@ public static class UnityHelper
 				var interfaceName = OneOfClassName(oneOf);
 				var innerInterface = new CodeTypeDeclaration(interfaceName) { IsInterface = true };
 				innerInterface.BaseTypes.Add(new CodeTypeReference(typeof(JsonSerializable.ISerializable)));
-
+				innerInterface.IsPartial = true;
+				
 				var factoryName = interfaceName + "Factory";
 				var factoryType = new CodeTypeDeclaration(factoryName);
 
