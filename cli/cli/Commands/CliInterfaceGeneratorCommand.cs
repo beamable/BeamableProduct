@@ -122,7 +122,7 @@ public class BeamCommandDescriptor
 	public List<BeamCommandResultDescriptor> resultStreams = new List<BeamCommandResultDescriptor>();
 
 
-	public string ExecutionPathAsCapitalizedStringWithoutBeam(string separater="")
+	public string ExecutionPathAsCapitalizedStringWithoutBeam(string separater = "")
 	{
 		var words = executionPath.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 		if (words.Length == 1) return "Beam";
