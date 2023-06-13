@@ -41,7 +41,7 @@ public class AddServiceToSolutionCommand : AppCommand<AddServiceToSolutionComman
 				SearchOption.TopDirectoryOnly).ToList();
 
 			List<string> solutionFiles = new();
-			
+
 			foreach (string solutionPath in solutionPaths)
 			{
 				string[] split = solutionPath.Split(Path.DirectorySeparatorChar);
