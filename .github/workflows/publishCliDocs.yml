@@ -1,4 +1,4 @@
-name: Docs CI
+name: Publish CLI Docs
 
 on:
   workflow_dispatch:
