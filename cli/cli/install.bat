@@ -1,4 +1,4 @@
-dotnet pack /p:Version=1.15.2
+dotnet pack /p:Version=0.0.0
 taskkill /IM "beam.exe" /F || true
 dotnet tool uninstall beamable.tools -g || true
-dotnet tool install --global --version 1.15.2 --add-source ./nupkg/ beamable.tools
+dotnet tool install --global --version 0.0.0 --add-source ./nupkg/ beamable.tools
