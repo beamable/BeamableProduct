@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added `project add` command that allows to create new project and add it to an existing solution
+
 ### Changed
 
 - fix issues with failing `project new` command
