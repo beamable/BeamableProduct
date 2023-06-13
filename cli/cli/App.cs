@@ -84,6 +84,7 @@ public class App
 		services.AddSingleton<SwaggerService.SourceGeneratorListProvider>();
 		services.AddSingleton<UnityCliGenerator>();
 		services.AddSingleton<UnrealCliGenerator>();
+		services.AddTransient<DiscoveryService>();
 		OpenApiRegistration.RegisterOpenApis(services);
 
 		_serviceConfigurator?.Invoke(services);
@@ -137,6 +138,7 @@ public class App
 		Commands.AddCommand<GenerateEnvFileCommand, GenerateEnvFileCommandArgs, ProjectCommand>();
 		Commands.AddCommand<GenerateClientFileCommand, GenerateClientFileCommandArgs, ProjectCommand>();
 		Commands.AddCommand<OpenSwaggerCommand, OpenSwaggerCommandArgs, ProjectCommand>();
+		Commands.AddCommand<TailLogsCommand, TailLogsCommandArgs, ProjectCommand>();
 		Commands.AddCommand<OpenMongoExpressCommand, OpenMongoExpressCommandArgs, ProjectCommand>();
 		Commands.AddCommand<AddUnityClientOutputCommand, AddUnityClientOutputCommandArgs, ProjectCommand>();
 		Commands.AddCommand<AddUnrealClientOutputCommand, AddUnrealClientOutputCommandArgs, ProjectCommand>();
@@ -159,6 +161,10 @@ public class App
 		Commands.AddCommand<CheckCountersCommand, CheckCountersCommandArgs, ProfilingCommand>();
 		Commands.AddCommand<CheckNBomberCommand, CheckNBomberCommandArgs, ProfilingCommand>();
 		Commands.AddCommand<RunNBomberCommand, RunNBomberCommandArgs, ProfilingCommand>();
+
+		// org commands
+		Commands.AddRootCommand<OrganizationCommand, OrganizationCommandArgs>();
+		Commands.AddCommand<RegisterCommand, RegisterCommandArgs, OrganizationCommand>();
 
 		// beamo commands
 		Commands.AddRootCommand<ServicesCommand, ServicesCommandArgs>();
@@ -245,10 +251,7 @@ public class App
 					{
 						Console.Error.WriteLine(cliException.Message);
 					}
-					if (cliException.UseNonZeroExitCode)
-					{
-						context.ExitCode = 1;
-					}
+					context.ExitCode = cliException.NonZeroOrOneExitCode;
 					break;
 				default:
 					context.ExitCode = 1;

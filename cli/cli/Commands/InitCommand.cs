@@ -42,6 +42,7 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 		AddOption(new SaveToEnvironmentOption(), (args, b) => args.saveToEnvironment = b);
 		AddOption(new SaveToFileOption(), (args, b) => args.saveToFile = b);
 		AddOption(new CustomerScopedOption(), (args, b) => args.customerScoped = b);
+		AddOption(new PrintToConsoleOption(), (args, b) => args.printToConsole = b);
 	}
 
 	public override async Task Handle(InitCommandArgs args)
