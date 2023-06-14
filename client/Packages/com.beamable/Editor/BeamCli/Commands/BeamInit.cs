@@ -24,6 +24,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public bool saveToFile;
 		/// <summary>Make request customer scoped instead of product only</summary>
 		public bool customerScoped;
+		/// <summary>Prints out login request response to console</summary>
+		public bool printToConsole;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -73,6 +75,11 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.customerScoped != default(bool)))
 			{
 				genBeamCommandArgs.Add(("--customer-scoped=" + this.customerScoped));
+			}
+			// If the printToConsole value was not default, then add it to the list of args.
+			if ((this.printToConsole != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--print-to-console=" + this.printToConsole));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces
