@@ -64,7 +64,7 @@ public class CliGenerator
 						runtimeType = resultType
 					});
 				}
-				
+
 				queue.Enqueue(subBeamCommand);
 			}
 		}
