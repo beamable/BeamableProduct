@@ -25,7 +25,7 @@ public class DocService
 	private const string KEY_TITLE = "TITLE";
 	private const string KEY_DESC = "{{DESC}}";
 	// private const string KEY_PARAMS = "{{PARAMS}}";
-	
+
 	private const string DocTemplate = @$"
 {KEY_USAGE_NOTE}
 {KEY_USAGE}
@@ -77,11 +77,11 @@ public class DocService
 		var output = new List<DocGuideDescriptor>();
 		var asm = Assembly.GetExecutingAssembly();
 		var allResources = asm.GetManifestResourceNames();
-		string prefix =$"cli.Docs.Guides";
+		string prefix = $"cli.Docs.Guides";
 		foreach (var resource in allResources)
 		{
 			if (!resource.StartsWith(prefix)) continue;
-			
+
 			using Stream stream = asm.GetManifestResourceStream(resource);
 			using StreamReader reader = new StreamReader(stream);
 			string pattern = @"cli\.Docs\.Guides\.(\d+)_(.+)\.md";
@@ -104,7 +104,7 @@ public class DocService
 			var content = sb.ToString();
 			var order = match.Groups[1].Value;
 			var title = match.Groups[2].Value;
-			
+
 			output.Add(new DocGuideDescriptor
 			{
 				order = int.Parse(order),
@@ -117,13 +117,13 @@ public class DocService
 
 		return output;
 	}
-	
+
 	public string GetLink(string category, BeamCommandDescriptor desc)
 	{
 		var slug = desc.GetSlug();
 		return $"[{slug}](doc:{category}-{slug})";
 	}
-	
+
 	public string GetUsage(BeamCommandDescriptor desc)
 	{
 		var sb = new StringBuilder();
@@ -133,11 +133,11 @@ public class DocService
 		{
 			if (arg.HasDefaultValue)
 			{
-				sb.Append($" [<{arg.HelpName??arg.Name}>]");
+				sb.Append($" [<{arg.HelpName ?? arg.Name}>]");
 			}
 			else
 			{
-				sb.Append($" <{arg.HelpName??arg.Name}>");
+				sb.Append($" <{arg.HelpName ?? arg.Name}>");
 			}
 		}
 
@@ -156,7 +156,7 @@ public class DocService
 		return @$"### Parent Command
 {GetLink(category, command.parent)}";
 	}
-	
+
 	public string GetChildrenSection(string category, BeamCommandDescriptor command)
 	{
 		if (command.command.Subcommands.Count == 0)
@@ -175,7 +175,7 @@ public class DocService
 
 	public string GetOptDescription(BeamCommandDescriptor command, CompiledDocDescriptor desc)
 	{
-		
+
 		var argSb = new StringBuilder();
 		var optionList = new List<Option>();
 		var parent = command.parent;
@@ -185,8 +185,8 @@ public class DocService
 			optionList.AddRange(parent.command.Options);
 			parent = parent.parent;
 		}
-		
-		for (var i = 0; i < optionList.Count; i ++)
+
+		for (var i = 0; i < optionList.Count; i++)
 		{
 			var opt = optionList[i];
 			if (opt.IsHidden) continue;
@@ -219,13 +219,13 @@ public class DocService
 
 	public string GetArgDescription(BeamCommandDescriptor command, CompiledDocDescriptor desc)
 	{
-		
+
 		if (command.command.Arguments.Count == 0)
 		{
 			return "";
 		}
 		var argSb = new StringBuilder();
-		for (var i = 0; i < command.command.Arguments.Count; i ++)
+		for (var i = 0; i < command.command.Arguments.Count; i++)
 		{
 			var arg = command.command.Arguments[i];
 			argSb.Append("|");
@@ -254,12 +254,12 @@ public class DocService
 
 		return argSection;
 	}
-	
-	public string Render(string docCategory, BeamCommandDescriptor command, params (string, string)[] extraVars) 
+
+	public string Render(string docCategory, BeamCommandDescriptor command, params (string, string)[] extraVars)
 	{
 		var desc = Parse(command);
 		var variables = extraVars.ToList();
-		
+
 		var rendered = DocTemplate;
 
 
@@ -267,7 +267,7 @@ public class DocService
 		{
 			rendered = rendered.Replace(key, value);
 		}
-		
+
 		void FillRequired(string key)
 		{
 			rendered = rendered.Replace(key, desc.GetRequiredMarkdown(key));
@@ -282,8 +282,8 @@ public class DocService
 
 			rendered = rendered.Replace(key, content);
 		}
-		
-		
+
+
 		FillRequired(KEY_ABOUT);
 		FillOptional(KEY_USAGE_NOTE);
 		Fill(KEY_USAGE, GetUsage(command));
@@ -298,20 +298,20 @@ public class DocService
 			var loweredForm = variable.Item1.ToLower();
 			var normalForm = variable.Item1.ToLower().Capitalize();
 			var upperForm = variable.Item1.ToUpper();
-			
+
 			rendered = rendered.Replace($"{{{{{loweredForm}}}}}", variable.Item2);
 			rendered = rendered.Replace($"{{{{{normalForm}}}}}", variable.Item2);
 			rendered = rendered.Replace($"{{{{{upperForm}}}}}", variable.Item2);
 		}
-		
+
 		return rendered;
 	}
-	
+
 	public bool GetDocsFile(BeamCommandDescriptor descriptor, out string content)
 	{
 		content = null;
-		string resourceName =$"cli.Docs.Commands.{descriptor.GetSlug().ToLower()}.md";
-		
+		string resourceName = $"cli.Docs.Commands.{descriptor.GetSlug().ToLower()}.md";
+
 		Assembly assembly = Assembly.GetExecutingAssembly();
 		using Stream stream = assembly.GetManifestResourceStream(resourceName);
 		if (stream == null)
@@ -320,7 +320,7 @@ public class DocService
 		}
 		using StreamReader reader = new StreamReader(stream);
 
-		content= reader.ReadToEnd();
+		content = reader.ReadToEnd();
 		return true;
 	}
 
@@ -349,10 +349,10 @@ public class DocService
 				if (latestHeader != null)
 				{
 					var title = latestHeader.GetTitle(file);
-					var content = file.Substring(latestHeader.Span.End + 1, (block.Span.Start - latestHeader.Span.End) -1 );
+					var content = file.Substring(latestHeader.Span.End + 1, (block.Span.Start - latestHeader.Span.End) - 1);
 					titleToMarkdown.Add(title, content);
 				}
-				
+
 				latestHeader = heading;
 			}
 		}
@@ -368,13 +368,14 @@ public class DocService
 		{
 			titleToMarkdown[key] = titleToMarkdown[key].Trim();
 		}
-		
-		return new CompiledDocDescriptor { 
-			titleToMarkdown = titleToMarkdown 
+
+		return new CompiledDocDescriptor
+		{
+			titleToMarkdown = titleToMarkdown
 		};
 	}
 
-	
+
 	public async Task DeleteDoc(DocDesc desc)
 	{
 		var res = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Delete, $"https://dash.readme.com/api/v1/docs/{desc.slug}"));
@@ -383,10 +384,10 @@ public class DocService
 			Log.Error($"failed to delete {desc.slug} status=[{res.StatusCode}] {await res.Content.ReadAsStringAsync()}");
 		}
 	}
-	
+
 	public async Task<bool> DoesDocExist(ReadmePostDocumentRequest desc)
 	{
-		
+
 		var response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Get, $"https://dash.readme.com/api/v1/docs/{desc.slug}"));
 		return response.StatusCode == HttpStatusCode.OK;
 	}
@@ -484,7 +485,7 @@ public class CompiledDocDescriptor
 		markdown = null;
 		return false;
 	}
-	
+
 }
 
 
