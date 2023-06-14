@@ -34,7 +34,7 @@ public class GenerateDocsCommand : AppCommand<GenerateDocsCommandArgs>
 		var generatorContext = args.DependencyProvider.GetService<CliGenerator>().GetCliContext();
 
 		var docService = args.DependencyProvider.GetService<DocService>();
-		
+
 		docService.SetReadmeAuth(args.readmeApiKey);
 
 		var guideTask = docService.UploadGuides(args);
@@ -44,7 +44,7 @@ public class GenerateDocsCommand : AppCommand<GenerateDocsCommandArgs>
 			if (command == generatorContext.Root) continue;
 			var doc = docService.GenerateDocFile(command, args);
 			Log.Information(doc.markdownContent);
-			
+
 			// TODO: at some point, rate limiting may kick us in the pants.
 			var reqObject = new ReadmePostDocumentRequest
 			{
