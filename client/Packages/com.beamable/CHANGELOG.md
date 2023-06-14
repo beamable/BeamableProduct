@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Cron expression preview now omits leading zeroes: for example " 1:23 PM" instead of "01:23 PM"
+
 ## [1.16.0]
 
 ### Fixed
