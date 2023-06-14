@@ -55,7 +55,16 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 			args.ConfigService.SetTempWorkingDir(path);
 			Directory.SetCurrentDirectory(path);
 
-			await _initCommand.Handle(new InitCommandArgs { Provider = args.Provider, saveToFile = true });
+			try
+			{
+				await _initCommand.Handle(new InitCommandArgs { Provider = args.Provider, saveToFile = true });
+			}
+			catch
+			{
+				Directory.SetCurrentDirectory(currentPath);
+				throw;
+			}
+
 			createdNewWorkingDir = true;
 		}
 
