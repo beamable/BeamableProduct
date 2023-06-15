@@ -137,6 +137,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 #if UNITY_2019_3_OR_NEWER
 		public const float space = 8;
+		public const float additionalSpace = 200;
 #else
 		public const float space = 10;
 #endif
@@ -211,8 +212,6 @@ namespace Beamable.Editor.ToolbarExtender
 #endif
 			leftRect.xMax = playButtonsPosition;
 
-
-
 			Rect rightRect = new Rect(0, 0, screenWidth, Screen.height);
 			rightRect.xMin = playButtonsPosition;
 			rightRect.xMin += _commandStyle.fixedWidth * 3; // Play buttons
@@ -221,7 +220,9 @@ namespace Beamable.Editor.ToolbarExtender
 			rightRect.xMax -= dropdownWidth; // Layout
 			rightRect.xMax -= space; // Spacing between layout and layers
 			rightRect.xMax -= dropdownWidth; // Layers
-#if UNITY_2019_3_OR_NEWER
+#if UNITY_2022_3_OR_NEWER
+			rightRect.xMax -= additionalSpace;
+#elif UNITY_2019_3_OR_NEWER
 			rightRect.xMax -= space; // Spacing between layers and account
 #else
 			rightRect.xMax -= largeSpace; // Spacing between layers and account
@@ -235,7 +236,6 @@ namespace Beamable.Editor.ToolbarExtender
 			rightRect.xMax -= space; // Spacing between cloud and collab
 			rightRect.xMax -= versionControlWidth; // Colab/PlasticSCM button
 #endif
-
 
 #if UNITY_2019_4_OR_NEWER // Handling of preview packages
 			Type type = typeof(UnityEditor.PackageManager.PackageInfo);
@@ -268,7 +268,6 @@ namespace Beamable.Editor.ToolbarExtender
 					rightRect.xMax -= space;
 					rightRect.xMax -= previewPackagesWarningWidth;
 				}
-				
 			}
 #endif
 
@@ -305,7 +304,6 @@ namespace Beamable.Editor.ToolbarExtender
 			rightRect.y = 3;
 			rightRect.height = 24;
 #endif
-
 
 			var beamableAssistantButtonRect = new Rect(beamableAssistantStart, rightRect.y + 2, beamableAssistantEnd - beamableAssistantStart, dropdownHeight);
 			var btnTexture = _noHintsTexture;
