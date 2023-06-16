@@ -410,11 +410,11 @@ namespace Beamable.Serialization
 				return true;
 			}
 
-			public bool Serialize(string key, ref DateTime target)
+			public bool Serialize(string key, ref DateTime target, params string[] formats)
 			{
 				//The "O" or "o" standard format specifier represents a custom date and
 				//time format string using a pattern that preserves time zone information.
-				string tmp = target.ToString("O");
+				string tmp = target.ToString(formats.Length > 0 ? formats[0] : "O");
 				AppendKey(key);
 				AppendStringValue(tmp);
 				return true;

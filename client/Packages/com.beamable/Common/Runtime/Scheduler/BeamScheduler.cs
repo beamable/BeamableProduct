@@ -7,47 +7,54 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Linq.Expressions;
 using UnityEngine;
 
 namespace Beamable.Common.Scheduler
 {
+
+	public interface IBeamSchedulerContext
+	{
+		string Cid { get; }
+		string Pid { get; }
+		string Prefix { get; }
+		string ServiceName { get; }
+	}
+	
 	public class BeamScheduler
 	{
 		private readonly IBeamSchedulerApi _api;
-
-		public BeamScheduler(IBeamSchedulerApi api)
+		public IBeamSchedulerContext SchedulerContext { get; }
+		
+		public BeamScheduler(IBeamSchedulerApi api, IBeamSchedulerContext schedulerContext)
 		{
 			_api = api;
+			SchedulerContext = schedulerContext;
 		}
-
+		
+		/// <summary>
+		/// After a job is scheduled, it will execute some time later.
+		/// This method finds the information about the executions that have already happened.
+		/// </summary>
+		/// <param name="jobId">The id of a job that has been scheduled. See <see cref="CreateJob(string,string,Beamable.Common.Scheduler.ISchedulableAction,Beamable.Common.Scheduler.ISchedulerTrigger[],Beamable.Common.Scheduler.RetryPolicy)"/> to create a job.</param>
+		/// <param name="limit">The number of events to fetch. By default, this is 1000.</param>
+		/// <returns></returns>
 		public async Promise<List<JobExecution>> GetJobActivity(string jobId, OptionalInt limit=null)
 		{
 			var res = await _api.GetJobActivity(jobId, limit);
-			var executions = res.Select(Utility.Convert).ToList();
+			var events = res.Select(Utility.Convert).ToList();
+			var executions = events.GroupBy(e => e.executionId).Select(g => new JobExecution
+			{
+				events = g.ToList(), executionId = g.Key, jobId = g.FirstOrDefault().jobId,
+			}).ToList();
 			return executions;
 		}
 		
-		public async Promise GetJobUpcomingExecutions(string jobId)
+		public async Promise<List<UpcomingExecution>> GetJobUpcomingExecutions(string jobId, OptionalDateTime from=null, OptionalInt limit=null)
 		{
-			throw new NotImplementedException(); // TODO: the auto-gen api doesn't handle this,
-			/*
-			 *       "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "string",
-                    "format": "date-time"
-                  }
-                }
-              }
-            }
-          },
-			 */
-			// _api.GetJobNextExecutions()
+			var res = await _api.GetJobNextExecutions(jobId, from, limit);
+			var executions = res.Select(dt => new UpcomingExecution { executeAt = dt }).ToList();
+			return executions;
 		}
 
 
@@ -74,6 +81,30 @@ namespace Beamable.Common.Scheduler
 			var job = Utility.Convert(res);
 			return job;
 		}
+
+		public async Promise<Job> SaveJob(Job job)
+		{
+			// TODO: Is this even correct at the API level?
+			var req = Utility.CreateSaveRequest(job.name, job.source, job.action,  job.triggers.ToArray(), job.retryPolicy);
+			req.id = new OptionalString(job.id);
+			var res = await _api.PostJob(req);
+			job = Utility.Convert(res);
+			return job;
+		}
+		
+		public async Promise<Job> CreateJob(
+			string name, 
+			string source, 
+			ISchedulableAction action, 
+			ISchedulerTrigger[] triggers,
+			RetryPolicy retryPolicy=null)
+		{
+			// TODO: Is it possible to specify the jobID ahead of time? 
+			var req = Utility.CreateSaveRequest(name, source, action, triggers, retryPolicy);
+			var res = await _api.PostJob(req);
+			var job = Utility.Convert(res);
+			return job;
+		}
 		
 		public async Promise<Job> CreateJob(
 			string name, 
@@ -82,17 +113,15 @@ namespace Beamable.Common.Scheduler
 			ISchedulerTrigger trigger,
 			RetryPolicy retryPolicy=null)
 		{
-			var req = Utility.CreateSaveRequest(name, source, action, new ISchedulerTrigger[]{trigger}, retryPolicy);
-			var res = await _api.PostJob(req);
-			var job = Utility.Convert(res);
-			return job;
+			return await CreateJob(name, source, action, new ISchedulerTrigger[] { trigger }, retryPolicy);
 		}
+
 
 		public static class Utility
 		{
-			public static JobExecution Convert(JobActivity activity)
+			public static JobExecutionEvent Convert(JobActivity activity)
 			{
-				return new JobExecution
+				return new JobExecutionEvent
 				{
 					id = activity.id.GetOrThrow(() => new Exception("Job activity needs id")),
 					jobId = activity.jobId.GetOrThrow(() => new Exception("Job activity needs jobId")),
@@ -100,7 +129,7 @@ namespace Beamable.Common.Scheduler
 						activity.executionId.GetOrThrow(() => new Exception("Job activity needs executionId")),
 					state = activity.state.GetOrThrow(() => new Exception("Job activity needs state")),
 					message = activity.message.Value,
-					timestamp = activity.timestamp
+					timestamp = activity.timestamp.GetOrThrow(() => new Exception("JobActivity needs timestamp")).ToString("O")
 				};
 			}
 			public static Job Convert(JobDefinition job)
@@ -147,6 +176,11 @@ namespace Beamable.Common.Scheduler
 					})
 				};
 			}
+
+			public static string GetServiceUrl(string cid, string pid, string serviceName, string path, string prefix=null)
+			{
+				return $"basic/{cid}.{pid}.{prefix}micro_{serviceName}/{path}";
+			}
 		}
 	}
 
@@ -173,14 +207,44 @@ namespace Beamable.Common.Scheduler
 	[Serializable]
 	public class JobExecution
 	{
+		public string jobId;
+		public string executionId;
+
+		public List<JobExecutionEvent> events;
+	}
+	
+
+	[Serializable]
+	public class JobExecutionEvent : ISerializationCallbackReceiver
+	{
 		public string executionId;
 		public string id;
 		public string jobId;
 		public string message;
+		
+		[NonSerialized]
 		public JobState state;
 		public string timestamp;
+
+		[SerializeField]
+		private string jobState;
+		
+		public void OnBeforeSerialize()
+		{
+			jobState = JobStateExtensions.ToEnumString(state);
+		}
+
+		public void OnAfterDeserialize()
+		{
+			state = JobStateExtensions.FromEnumString(jobState);
+		}
 	}
-	
+
+	[Serializable]
+	public class UpcomingExecution
+	{
+		public DateTime executeAt;
+	}
 
 	[Serializable]
 	public class Job : ISerializationCallbackReceiver
@@ -281,19 +345,19 @@ namespace Beamable.Common.Scheduler
 	[Serializable]
 	public class RetryPolicy
 	{
-		public int maxRetryCount = 10;
-		public int retryDelayMs = 1000;
+		public int maxRetryCount = 1;
+		public int retryDelayMs = 10 * 1000;
 		public bool useExponentialBackoff = true;
 	}
 	
 	[Serializable]
 	public class ExactTimeEvent : ISchedulerTrigger
 	{
-		public DateTimeOffset executeAt = DateTimeOffset.UtcNow;
+		public DateTime executeAt = DateTime.UtcNow;
 		
 		public ExactTimeEvent(){}
 
-		public ExactTimeEvent(DateTimeOffset executeAt)
+		public ExactTimeEvent(DateTime executeAt)
 		{
 			this.executeAt = executeAt;
 		}
@@ -303,7 +367,7 @@ namespace Beamable.Common.Scheduler
 			return new ExactTrigger
 			{
 				type = new OptionalString(nameof(ExactTrigger)), 
-				executeAt = new OptionalString(executeAt.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ"))
+				executeAt = new OptionalDateTime(executeAt)
 			};
 		}
 	}
@@ -319,13 +383,395 @@ namespace Beamable.Common.Scheduler
 		{
 			this.cronExpression = cronExpression;
 		}
-		
+
 		IOneOf_CronTriggerOrExactTrigger IConvertToSchedulerTrigger.Convert()
 		{
 			return new Beamable.Api.Autogenerated.Models.CronTrigger
 			{
 				type = new OptionalString(nameof(Beamable.Api.Autogenerated.Models.CronTrigger)), expression = new OptionalString(cronExpression)
 			};
+		}
+	}
+
+
+	public interface ICronComponent
+	{
+		string UseDefaults();
+	}
+
+	public interface ICronSeconds : ICronComponent, ICronMinutes
+	{
+		ICronMinutes EverySecond();
+		ICronMinutes EveryNthSecond(int n);
+		ICronMinutes BetweenSeconds(int start, int end);
+		ICronMinutes AtSecond(params int[] seconds);
+		ICronMinutes ComplexSeconds(string secondStr);
+	}
+	public interface ICronMinutes: ICronComponent, ICronHours
+	{
+		ICronHours EveryMinute();
+		ICronHours EveryNthMinute(int n);
+		ICronHours BetweenMinutes(int start, int end);
+		ICronHours AtMinute(params int[] minutes);
+		ICronHours ComplexMinutes(string minuteStr);
+	}
+	public interface ICronHours: ICronComponent, ICronDayOfMonth
+	{
+		ICronDayOfMonth EveryHour();
+		ICronDayOfMonth EveryNthHour(int n);
+		ICronDayOfMonth BetweenHours(int start, int end);
+		ICronDayOfMonth AtHour(params int[] hours);
+		ICronDayOfMonth ComplexHours(string hourStr);
+	}
+
+	public interface ICronDaySplit : ICronComponent, ICronDayOfWeek, ICronDayOfMonth
+	{
+		
+	}
+	
+	public interface ICronDayOfMonth: ICronComponent, ICronMonth
+	{
+		ICronMonth EveryDayOfTheMonth();
+		ICronMonth ComplexDayOfMonth(string dayOfMonthStr);
+		ICronMonth OnDayOfMonth(params int[] daysOfMonth); // TODO: return a different variant of ICronMonth that uses AndTuesdays etc instead of OnTuesday
+	}
+	public interface ICronMonth: ICronComponent, ICronDayOfWeek
+	{
+		ICronDayOfWeek EveryMonth();
+		ICronDayOfWeek EveryNthMonth(int n);
+		ICronDayOfWeek BetweenMonths(int start, int end);
+		ICronDayOfWeek InMonth(params int[] months);
+		ICronDayOfWeek ComplexMonth(string monthStr);
+	}
+
+	public static class ICronExtensions
+	{
+		public static ICronDayOfWeek InJanuary(this ICronMonth self) => self.InMonth(1);
+		public static ICronDayOfWeek InFebruary(this ICronMonth self) => self.InMonth(2);
+		public static ICronDayOfWeek InMarch(this ICronMonth self) => self.InMonth(3);
+		public static ICronDayOfWeek InApril(this ICronMonth self) => self.InMonth(4);
+		public static ICronDayOfWeek InMay(this ICronMonth self) => self.InMonth(5);
+		public static ICronDayOfWeek InJune(this ICronMonth self) => self.InMonth(6);
+		public static ICronDayOfWeek InJuly(this ICronMonth self) => self.InMonth(7);
+		public static ICronDayOfWeek InAugust(this ICronMonth self) => self.InMonth(8);
+		public static ICronDayOfWeek InSeptember(this ICronMonth self) => self.InMonth(9);
+		public static ICronDayOfWeek InOctober(this ICronMonth self) => self.InMonth(10);
+		public static ICronDayOfWeek InNovember(this ICronMonth self) => self.InMonth(11);
+		public static ICronDayOfWeek InDecember(this ICronMonth self) => self.InMonth(12);
+
+		public static ICronComplete OnSunday(this ICronDayOfWeek self) => self.OnDays(0);
+		public static ICronComplete OnMonday(this ICronDayOfWeek self) => self.OnDays(1);
+		public static ICronComplete OnTuesday(this ICronDayOfWeek self) => self.OnDays(2);
+		public static ICronComplete OnWednesday(this ICronDayOfWeek self) => self.OnDays(3);
+		public static ICronComplete OnThursday(this ICronDayOfWeek self) => self.OnDays(4);
+		public static ICronComplete OnFriday(this ICronDayOfWeek self) => self.OnDays(5);
+		public static ICronComplete OnSaturday(this ICronDayOfWeek self) => self.OnDays(6);
+	}
+	
+	public interface ICronDayOfWeek: ICronComplete
+	{
+		ICronComplete EveryDayOfTheWeek();
+		ICronComplete EveryNthDay(int n);
+		ICronComplete BetweenDays(int start, int end);
+		ICronComplete OnDays(params int[] days);
+		ICronComplete ComplexDay(string dayStr);
+	}
+
+	public interface ICronComplete : ICronComponent
+	{
+		
+	}
+
+	public class CronBuilder : ICronSeconds, ICronMinutes, ICronHours, ICronMonth, ICronDayOfMonth, ICronDayOfWeek, ICronComplete
+	{
+		private const string STAR = "*";
+		private const string ZERO = "0";
+		private const string NULL = null;
+		
+		private const int SECOND_INDEX = 0;
+		private const int MINUTE_INDEX = 1;
+		private const int HOUR_INDEX = 2;
+		private const int DAY_OF_MONTH_INDEX = 3;
+		private const int MONTH_INDEX = 4;
+		private const int DAY_OF_WEEK_INDEX = 5;
+
+		private string secondStr { get => components[SECOND_INDEX]; set => components[SECOND_INDEX] = value; }
+		private string minuteStr { get => components[MINUTE_INDEX]; set => components[MINUTE_INDEX] = value; }
+		private string hourStr { get => components[HOUR_INDEX]; set => components[HOUR_INDEX] = value; }
+		private string dayOfMonthStr { get => components[DAY_OF_MONTH_INDEX]; set => components[DAY_OF_MONTH_INDEX] = value; }
+		private string monthStr { get => components[MONTH_INDEX]; set => components[MONTH_INDEX] = value; }
+		private string dayOfWeekStr { get => components[DAY_OF_WEEK_INDEX]; set => components[DAY_OF_WEEK_INDEX] = value; }
+
+		private int? starAfterIndex = null;
+		
+		
+		private string[] defaults = new string[] { ZERO, ZERO, ZERO, STAR, STAR, STAR };
+		private string[] components = new string[] { NULL, NULL, NULL, NULL, NULL, NULL };
+		
+		private string BuildString()
+		{
+			for (var i = 0; i < components.Length; i++)
+			{
+				if (i > starAfterIndex)
+				{
+					defaults[i] = STAR;
+				}
+			}
+
+			var buffer = new string[components.Length];
+			for (var i = 0; i < components.Length; i++)
+			{
+				var component = components[i] ?? defaults[i];
+				buffer[i] = component;
+			}
+
+			return string.Join(" ", buffer);
+			// return $"{secondStr } {minuteStr } {hourStr } {dayOfMonthStr } {monthStr } {dayOfWeekStr }";
+			// return $"{secondStr ?? ZERO} {minuteStr ?? ZERO} {hourStr ?? ZERO} {dayOfMonthStr ?? ZERO} {monthStr ?? ZERO} {dayOfWeekStr ?? ZERO}";
+		}
+
+		public string UseDefaults()
+		{
+			return BuildString();
+		}
+
+		public ICronComplete EveryDayOfTheWeek()
+		{
+			dayOfWeekStr = STAR;
+			starAfterIndex = DAY_OF_WEEK_INDEX;
+			return this;
+		}
+
+		public ICronMonth OnDayOfMonth(params int[] daysOfMonth)
+		{
+			ValidateDayOfMonth(daysOfMonth);
+			dayOfMonthStr = string.Join(",", daysOfMonth);
+			return this;
+		}
+
+		public ICronMonth EveryDayOfTheMonth()
+		{
+			dayOfMonthStr = STAR;
+			starAfterIndex = DAY_OF_MONTH_INDEX;
+			return this;
+		}
+
+		public ICronMonth ComplexDayOfMonth(string dayOfMonthStr)
+		{
+			this.dayOfMonthStr = dayOfMonthStr;
+			return this;
+		}
+
+		public ICronComplete EveryNthDay(int n)
+		{
+			ValidateDays(n);
+			dayOfWeekStr = $"*/{n}";
+			return this;
+		}
+
+		public ICronComplete BetweenDays(int start, int end)
+		{
+			ValidateDays(start, end);
+			dayOfWeekStr = $"{start}-{end}";
+			return this;
+		}
+
+		public ICronComplete OnDays(params int[] days)
+		{
+			ValidateDays(days);
+			dayOfWeekStr = string.Join(",", days);
+			return this;
+		}
+
+		public ICronComplete ComplexDay(string dayStr)
+		{
+			this.dayOfWeekStr = dayStr;
+			return this;
+		}
+
+		public ICronDayOfWeek EveryMonth()
+		{
+			monthStr = STAR;
+			starAfterIndex = MONTH_INDEX;
+			return this;
+		}
+
+		public ICronDayOfWeek EveryNthMonth(int n)
+		{
+			ValidateMonth(n);
+			monthStr = $"*/{n}";
+			starAfterIndex = MONTH_INDEX;
+			return this;
+		}
+
+		public ICronDayOfWeek BetweenMonths(int start, int end)
+		{
+			ValidateMonth(start, end);
+			monthStr = $"{start}-{end}";
+			return this;
+		}
+
+		public ICronDayOfWeek InMonth(params int[] months)
+		{
+			ValidateMonth(months);
+			monthStr = string.Join(",", months);
+			return this;
+		}
+
+		public ICronDayOfWeek ComplexMonth(string monthStr)
+		{
+			this.monthStr = monthStr;
+			return this;
+		}
+
+		public ICronDayOfMonth EveryHour()
+		{
+			hourStr = STAR;
+			starAfterIndex = HOUR_INDEX;
+			return this;
+		}
+
+
+		public ICronDayOfMonth EveryNthHour(int n)
+		{
+			ValidateHour(n);
+			starAfterIndex = HOUR_INDEX;
+			hourStr = $"*/{n}";
+			return this;
+		}
+
+		public ICronDayOfMonth BetweenHours(int start, int end)
+		{
+			ValidateHour(start, end);
+			hourStr = $"{start}-{end}";
+			return this;
+		}
+
+		public ICronDayOfMonth AtHour(params int[] hours)
+		{
+			ValidateHour(hours);
+			
+			hourStr = string.Join(",", hours);
+			return this;
+		}
+
+		public ICronDayOfMonth ComplexHours(string hourStr)
+		{
+			this.hourStr = hourStr;
+			return this;
+		}
+
+		public ICronHours EveryMinute()
+		{
+			minuteStr = STAR;
+			starAfterIndex = MINUTE_INDEX;
+			return this;
+		}
+
+		public ICronHours EveryNthMinute(int n)
+		{
+			ValidateMinute(n);
+			starAfterIndex = MINUTE_INDEX;
+			minuteStr = $"*/{n}";
+			return this;
+		}
+
+		public ICronHours BetweenMinutes(int start, int end)
+		{
+			ValidateMinute(start, end);
+			minuteStr = $"{start}-{end}";
+			return this;
+		}
+
+		public ICronHours AtMinute(params int[] minutes)
+		{
+			ValidateMinute(minutes);
+			
+			minuteStr = string.Join(",", minutes);
+			return this;
+		}
+
+		public ICronHours ComplexMinutes(string minuteStr)
+		{
+			this.minuteStr = minuteStr;
+			return this;
+		}
+
+		public ICronMinutes EverySecond()
+		{
+			secondStr = STAR;
+			starAfterIndex = SECOND_INDEX;
+			return this;
+		}
+
+		public ICronMinutes EveryNthSecond(int n)
+		{
+			ValidateSecond(n);
+			secondStr = $"*/{n}";
+			starAfterIndex = SECOND_INDEX;
+			return this;
+		}
+
+		public ICronMinutes BetweenSeconds(int start, int end)
+		{
+			ValidateSecond(start, end);
+			secondStr = $"{start}-{end}";
+			return this;
+		}
+
+		public ICronMinutes AtSecond(params int[] seconds)
+		{
+			ValidateSecond(seconds);
+			
+			secondStr = string.Join(",", seconds);
+			return this;
+		}
+
+		private void ValidateSecond(params int[] seconds)
+		{
+			foreach (var second in seconds)
+				if (second < 0 || second > 59)
+					throw new ArgumentOutOfRangeException($"cron based second value must be 0-59. second=[{second}]");
+		}
+		private void ValidateMinute(params int[] minutes)
+		{
+			foreach (var minute in minutes)
+				if (minute < 0 || minute > 59)
+					throw new ArgumentOutOfRangeException($"cron based minute value must be 0-59. minute=[{minute}]");
+		}
+		
+		private void ValidateHour(params int[] hours)
+		{
+			foreach (var hour in hours)
+				if (hour < 0 || hour > 59)
+					throw new ArgumentOutOfRangeException($"cron based hour value must be 0-23. hour=[{hour}]");
+		}
+		
+		private void ValidateDayOfMonth(params int[] doms)
+		{
+			foreach (var dom in doms)
+				if (dom < 1 || dom > 31)
+					throw new ArgumentOutOfRangeException($"cron based day-of-month value must be 1-31. day-of-month=[{dom}]");
+		}
+		
+		private void ValidateMonth(params int[] months)
+		{
+			foreach (var month in months)
+				if (month < 1 || month > 12)
+					throw new ArgumentOutOfRangeException($"cron based month value must be 1-12. month=[{month}]");
+		}
+		
+		private void ValidateDays(params int[] days)
+		{
+			foreach (var day in days)
+				if (day < 0 || day > 6)
+					throw new ArgumentOutOfRangeException($"cron based day value must be 0-6. day=[{day}]");
+		}
+
+		public ICronMinutes ComplexSeconds(string secondStr)
+		{
+			this.secondStr = secondStr;
+			return this;
 		}
 	}
 	
@@ -360,10 +806,14 @@ namespace Beamable.Common.Scheduler
 	public class ServiceAction : ISchedulableAction
 	{
 		public string body;
-		public Method method = Method.GET;
+		public Method method = Method.POST;
 		public string uri;
-		
-		
+
+		public ServiceAction()
+		{
+			// empty cons
+		}
+
 		IOneOf_HttpCallOrPublishMessageOrServiceCall IConvertToSchedulerAction.Convert()
 		{
 			return new ServiceCall
@@ -430,12 +880,8 @@ namespace Beamable.Api.Autogenerated.Models
 	{
 		public ISchedulerTrigger Convert()
 		{
-			if (!DateTimeOffset.TryParseExact(executeAt.GetOrThrow(() => new Exception("ExactTime needs exectAt")), "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
-			{
-				throw new Exception("ExactTime has invalid date string");
-			}
 
-			return new ExactTimeEvent { executeAt = date };
+			return new ExactTimeEvent { executeAt = executeAt.GetOrThrow(() => new Exception("ExactTime needs exactAt")) };
 		}
 	}
 	

@@ -358,6 +358,18 @@ namespace Beamable.Common.Content
 	[Agnostic]
 	public class OptionalListInt : Optional<List<int>> { }
 
+	[Serializable]
+	public class OptionalDateTime : Optional<DateTime>
+	{
+		public OptionalDateTime(){}
+
+		public OptionalDateTime(DateTime dt)
+		{
+			Value = dt;
+			HasValue = true;
+		}
+	}
+
 	[System.Serializable]
 	[Agnostic]
 	public class OptionalListString : Optional<List<string>> { }
