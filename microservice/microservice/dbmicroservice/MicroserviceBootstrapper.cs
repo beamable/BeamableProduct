@@ -368,6 +368,7 @@ namespace Beamable.Server
 			        Chat = provider.GetRequiredService<IMicroserviceChatApi>(),
 			        Payments = provider.GetRequiredService<IMicroservicePaymentsApi>(),
 			        Push = provider.GetRequiredService<IMicroservicePushApi>(),
+			        Scheduler = provider.GetRequiredService<BeamScheduler>()
 		        };
 		        return services;
 	        }

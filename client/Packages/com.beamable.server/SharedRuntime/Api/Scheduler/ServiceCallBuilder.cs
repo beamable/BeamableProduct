@@ -6,6 +6,7 @@ using System;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Beamable.Server
 {
@@ -21,7 +22,8 @@ namespace Beamable.Server
 		}
 	}
 
-	public class ServiceCallBuilder<T> where T : Microservice
+	public class ServiceCallBuilder<T> : IServiceCallBuilder<T, ServiceAction>
+		where T : Microservice
 	{
 		private readonly bool _useLocal;
 		private readonly IBeamSchedulerContext _ctx;
@@ -43,6 +45,27 @@ namespace Beamable.Server
 			var call = CreateAction(expr);
 			return call;
 		}
+
+		public ServiceAction Run(Expression<Func<T, Func<Task>>> expr) => CreateAction(expr);
+
+		public ServiceAction Run<TArg1>(Expression<Func<T, Func<TArg1, Task>>> expr, TArg1 arg)
+		 => CreateAction(expr, arg);
+
+		public ServiceAction Run<TArg1, TArg2>(Expression<Func<T, Func<TArg1, TArg2, Task>>> expr, TArg1 arg1, TArg2 arg2)
+			=> CreateAction(expr, arg1, arg2);
+
+		public ServiceAction Run<TArg1, TArg2, TArg3>(Expression<Func<T, Func<TArg1, TArg2, TArg3, Task>>> expr, TArg1 arg1, TArg2 arg2, TArg3 arg3)
+			=> CreateAction(expr, arg1, arg2, arg3);
+
+
+		public ServiceAction Run<TArg1, TArg2, TArg3, TArg4>(Expression<Func<T, Func<TArg1, TArg2, TArg3, TArg4, Task>>> expr, TArg1 arg1, TArg2 arg2, TArg3 arg3, TArg4 arg4)
+			=> CreateAction(expr, arg1, arg2, arg3, arg4);
+
+
+		public ServiceAction Run<TArg1, TArg2, TArg3, TArg4, TArg5>(Expression<Func<T, Func<TArg1, TArg2, TArg3, TArg4, TArg5, Task>>> expr, TArg1 arg1, TArg2 arg2, TArg3 arg3, TArg4 arg4,
+			TArg5 arg5)
+			=> CreateAction(expr, arg1, arg2, arg3, arg4, arg5);
+
 
 		public ServiceAction Run<TArg1>(Expression<Func<T, Func<TArg1, Promise>>> expr,
 			TArg1 arg)

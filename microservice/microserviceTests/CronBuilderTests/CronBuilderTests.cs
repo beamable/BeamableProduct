@@ -1,5 +1,6 @@
 using Beamable.Common.Scheduler;
 using NUnit.Framework;
+using Swan;
 using System;
 using System.Collections.Generic;
 
@@ -7,346 +8,562 @@ namespace microserviceTests.CronBuilderTests;
 
 public class CronBuilderTests
 {
-	public List<(Func<CronBuilder, string>, string)> parseTestCases = new List<(Func<CronBuilder, string>, string)>
+	public List<(Func<ICronInitial, string>, string)> parseTestCases = new List<(Func<ICronInitial, string>, string)>
 	{
-		{ (b => b.UseDefaults(), 
+		
+		{ (b => b
+				.AtMidnight()
+				.ToCron(), 
 			"0 0 0 * * *") },
 		
 		{ (b => b
-				.AtSecond(5)
-				.UseDefaults(), 
-			"5 0 0 * * *") },
+				.Weekly()
+				.ToCron(), 
+			"0 0 0 * * 0") },
+		
+		{ (b => b
+				.Weekly(day: 5)
+				.ToCron(), 
+			"0 0 0 * * 5") },
+		
+		{ (b => b
+				.Weekly(day: 5, hour: 12)
+				.ToCron(), 
+			"0 0 12 * * 5") },
+
+		{ (b => b
+				.Daily()
+				.ToCron(), 
+			"0 0 0 * * *") },
+		
+		{ (b => b
+				.Daily(hour: 3)
+				.ToCron(), 
+			"0 0 3 * * *") },
+		
+		{ (b => b
+				.Monthly()
+				.ToCron(), 
+			"0 0 0 1 * *") },
+		
+		{ (b => b
+				.Monthly(day: 15)
+				.ToCron(), 
+			"0 0 0 15 * *") },
+		
+		{ (b => b
+				.TwiceMonthly()
+				.ToCron(), 
+			"0 0 0 1,15 * *") },
+		
+		{ (b => b
+				.TwiceMonthly(day1:3, day2:18)
+				.ToCron(), 
+			"0 0 0 3,18 * *") },
+		
+		{ (b => b
+				.AtSecond(30)
+				.AtMinute(0)
+				.AtHour(12)
+				.EveryDayOfTheWeek()
+				.EveryMonth()
+				.ToCron(), 
+			"30 0 12 * * *") },
 		
 		{ (b => b
 				.AtSecond(5, 2, 6)
-				.UseDefaults(), 
-			"5,2,6 0 0 * * *") },
+				.AtMinute(0)
+				.AtHour(12)
+				.EveryDayOfTheMonth()
+				.EveryMonth()
+				.ToCron(), 
+			"5,2,6 0 12 * * *") },
 		
 		{ (b => b
+				.AtSecond(0)
 				.AtMinute(5)
-				.UseDefaults(), 
-			"0 5 0 * * *") },
+				.AtHour(0)
+				.EveryDayOfTheWeek()
+				.EveryMonth()
+				.ToCron(), 
+			"0 5 0 * * *") }, // not allowed?
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.AtHour(5)
-				.UseDefaults(), 
+				.EveryDayOfTheWeek()
+				.EveryMonth()
+				.ToCron(), 
 			"0 0 5 * * *") },
 		
 		{ (b => b
 				.EverySecond()
-				.UseDefaults(), 
+				.EveryMinute()
+				.EveryHour()
+				.EveryDay()
+				.ToCron(), 
 			"* * * * * *") },
 		
 		{ (b => b
+				.AtSecond(0)
 				.EveryMinute()
-				.UseDefaults(), 
-			"0 * * * * *") },
-
-		{ (b => b
 				.EveryHour()
-				.UseDefaults(), 
+				.EveryDay()
+				.ToCron(), 
+			"0 * * * * *") },
+		
+		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
+				.EveryHour()
+				.EveryDay()
+				.ToCron(), 
 			"0 0 * * * *") },
 		
 		{ (b => b
 				.EverySecond()
 				.AtMinute(30)
-				.UseDefaults(), 
+				.EveryHour()
+				.EveryDay()
+				.ToCron(), 
 			"* 30 * * * *") },
 		
 		{ (b => b
 				.EverySecond()
+				.EveryMinute()
 				.AtHour(2)
-				.UseDefaults(), 
+				.EveryDay()
+				.ToCron(), 
 			"* * 2 * * *") },
 		
 		{ (b => b
 				.EverySecond()
 				.AtMinute(12)
 				.AtHour(2)
-				.UseDefaults(), 
+				.EveryDay()
+				.ToCron(), 
 			"* 12 2 * * *") },
 		
 		{ (b => b
+				.AtSecond(0)
 				.EveryMinute()
 				.AtHour(4)
-				.UseDefaults(), 
+				.EveryDay()
+				.ToCron(), 
 			"0 * 4 * * *") },
 		
 		{ (b => b
 				.AtSecond(5)
 				.AtMinute(10)
 				.EveryHour()
-				.UseDefaults(), 
+				.EveryDay()
+				.ToCron(), 
 			"5 10 * * * *") },
 		
 		{ (b => b
 				.EveryNthSecond(2)
-				.UseDefaults(), 
+				.EveryMinute()
+				.EveryHour()
+				.EveryDay()
+				.ToCron(), 
 			"*/2 * * * * *") },
 		
 		{ (b => b
 				.EveryNthSecond(3)
+				.EveryMinute()
 				.AtHour(8)
-				.UseDefaults(), 
+				.EveryDay()
+				.ToCron(), 
 			"*/3 * 8 * * *") },
 		
 		{ (b => b
-				.BetweenSeconds(0, 2)
+				.BetweenSeconds(0,2)
+				.EveryMinute()
 				.AtHour(8)
-				.UseDefaults(), 
-			"0-2 0 8 * * *") },
+				.EveryDay()
+				.ToCron(), 
+			"0-2 * 8 * * *") },
 		
 		{ (b => b
 				.BetweenSeconds(0, 2)
 				.EveryNthMinute(5)
 				.AtHour(8)
-				.UseDefaults(), 
+				.EveryDay()
+				.ToCron(), 
 			"0-2 */5 8 * * *") },
 		
 		{ (b => b
 				.ComplexSeconds("3,5-10,*/13")
-				.UseDefaults(), 
+				.AtMinute(0)
+				.AtHour(0)
+				.EveryDay()
+				.ToCron(), 
 			"3,5-10,*/13 0 0 * * *") },
 		
 		{ (b => b
+				.AtSecond(0)
 				.BetweenMinutes(20,23)
-				.UseDefaults(), 
+				.AtHour(0)
+				.EveryDay()
+				.ToCron(), 
 			"0 20-23 0 * * *") },
 		
 		{ (b => b
+				.AtSecond(0)
 				.ComplexMinutes("4,6-10,*/12")
-				.UseDefaults(), 
+				.AtHour(0)
+				.EveryDay()
+				.ToCron(), 
 			"0 4,6-10,*/12 0 * * *") },
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.BetweenHours(7, 20)
-				.UseDefaults(), 
+				.EveryDay()
+				.ToCron(), 
 			"0 0 7-20 * * *") },
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.EveryNthHour(7)
-				.UseDefaults(), 
+				.EveryDay()
+				.ToCron(), 
 			"0 0 */7 * * *") },
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.ComplexHours("8/2,4")
-				.UseDefaults(), 
+				.EveryDay()
+				.ToCron(), 
 			"0 0 8/2,4 * * *") },
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
+				.AtHour(0)
 				.OnDayOfMonth(2)
-				.UseDefaults(), 
+				.EveryDay()
+				.ToCron(), 
 			"0 0 0 2 * *") },
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
+				.AtHour(0)
 				.OnDayOfMonth(1,15)
-				.UseDefaults(), 
+				.EveryMonth()
+				.ToCron(), 
 			"0 0 0 1,15 * *") },
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.AtHour(12)
 				.OnDayOfMonth(15)
-				.UseDefaults(), 
+				.EveryMonth()
+				.ToCron(), 
 			"0 0 12 15 * *") },
 		
 		{ (b => b
+				.AtSecond(0)
 				.EveryMinute()
+				.EveryHour()
 				.OnDayOfMonth(15)
-				.UseDefaults(), 
+				.EveryMonth()
+				.ToCron(), 
 			"0 * * 15 * *") },
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.AtHour(12)
 				.EveryDayOfTheMonth()
-				.UseDefaults(), 
+				.EveryMonth()
+				.ToCron(), 
 			"0 0 12 * * *") },
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
+				.AtHour(0)
 				.ComplexDayOfMonth("12-18")
-				.UseDefaults(), 
+				.EveryMonth()
+				.ToCron(), 
 			"0 0 0 12-18 * *") }, 
-
+		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.AtHour(4)
+				.EveryDayOfTheWeek()
 				.InMonth(3)
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 4 * 3 *") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.AtHour(9)
+				.EveryDay()
 				.InJanuary()
-				.UseDefaults(), 
+				
+				.ToCron(), 
 			"0 0 9 * 1 *") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.AtHour(9)
+				.EveryDay()
 				.InFebruary()
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 9 * 2 *") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.AtHour(9)
+				.EveryDay()
 				.InMarch()
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 9 * 3 *") }, 
 		
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.AtHour(9)
+				.EveryDay()
 				.InApril()
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 9 * 4 *") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.AtHour(9)
+				.EveryDay()
 				.InMay()
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 9 * 5 *") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.AtHour(9)
+				.EveryDay()
 				.InJune()
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 9 * 6 *") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.AtHour(9)
+				.EveryDay()
 				.InJuly()
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 9 * 7 *") }, 
-
+		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.AtHour(9)
+				.EveryDay()
 				.InAugust()
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 9 * 8 *") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.AtHour(9)
+				.EveryDay()
 				.InSeptember()
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 9 * 9 *") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.AtHour(9)
+				.EveryDay()
 				.InOctober()
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 9 * 10 *") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.AtHour(9)
+				.EveryDay()
 				.InNovember()
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 9 * 11 *") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.AtHour(9)
+				.EveryDay()
 				.InDecember()
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 9 * 12 *") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.AtHour(9)
+				.EveryDay()
 				.BetweenMonths(3, 5)
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 9 * 3-5 *") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.AtHour(9)
+				.EveryDay()
 				.ComplexMonth("8,3-5")
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 9 * 8,3-5 *") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
 				.AtHour(22)
+				.EveryDay()
 				.EveryMonth()
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 22 * * *") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
+				.AtHour(0)
+				.EveryDay()
 				.EveryNthMonth(3)
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 0 * */3 *") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
+				.AtHour(0)
 				.OnDays(1,5,3)
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 0 * * 1,5,3") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
+				.AtHour(0)
 				.EveryNthDay(3)
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 0 * * */3") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
+				.AtHour(0)
 				.ComplexDay("2-4,6")
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 0 * * 2-4,6") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
+				.AtHour(0)
 				.BetweenDays(2,5)
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 0 * * 2-5") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
+				.AtHour(0)
 				.OnSunday()
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 0 * * 0") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
+				.AtHour(0)
 				.OnMonday()
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 0 * * 1") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
+				.AtHour(0)
 				.OnTuesday()
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 0 * * 2") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
+				.AtHour(0)
 				.OnWednesday()
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 0 * * 3") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
+				.AtHour(0)
 				.OnThursday()
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 0 * * 4") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
+				.AtHour(0)
 				.OnFriday()
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 0 * * 5") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
+				.AtHour(0)
 				.OnSaturday()
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 0 * * 6") }, 
 		
 		{ (b => b
+				.AtSecond(0)
 				.AtMinute(30)
 				.AtHour(12)
-				.InApril()
 				.OnFriday()
-				.UseDefaults(), 
+				.InApril()
+				.ToCron(), 
 			"0 30 12 * 4 5") },
-
+		
 		{ (b => b
+				.AtSecond(0)
 				.EveryMinute()
+				.EveryHour()
+				.EveryDay()
 				.BetweenMonths(1,2)
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 * * * 1-2 *") }, 
 		
 		{ (b => b
+				.AtSecond(0)
+				.AtMinute(0)
+				.AtHour(0)
 				.EveryDayOfTheWeek()
-				.UseDefaults(), 
+				.ToCron(), 
 			"0 0 0 * * *") },
-
-		{ (b => b
-				.OnDayOfMonth(3)
-				.OnDays(6)
-				.UseDefaults(), 
-			"0 0 0 3 * 6") }, 
+		
 	};
 
 	[Test]
@@ -363,16 +580,4 @@ public class CronBuilderTests
 		}
 	}
 
-	[Test]
-	public void Test()
-	{
-		var b = new CronBuilder();
-		var cron = b
-			.EveryMinute()
-			.BetweenMonths(1, 2)
-			.UseDefaults();
-		
-		Assert.AreEqual("0 * * * 1-2 *", cron);
-			// "0 * * * 1-2 *") }, 
-	}
 }
