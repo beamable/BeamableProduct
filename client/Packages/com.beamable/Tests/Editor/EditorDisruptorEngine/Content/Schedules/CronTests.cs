@@ -9,15 +9,15 @@ namespace Beamable.Editor.Tests.Content
 	public class CronTests
 	{
 		[TestCase("* * * * * * *", "Every Second")]
-		[TestCase("8 33 14 * * * *", "At 02:33:08 PM")]
-		[TestCase("16 33 14 * * * *", "At 02:33:16 PM")]
-		[TestCase("16 33 14 * * 3 *", "At 02:33:16 PM, only on Wednesday")]
-		[TestCase("16 33 14 * * 2,5-6 *", "At 02:33:16 PM, only on Tuesday and Friday through Saturday")]
-		[TestCase("16 33 14 * * 1,2-3,5,6-7 *", "At 02:33:16 PM, only on Monday, Tuesday through Wednesday, Friday, and Saturday through Sunday")]
-		[TestCase("16 33 14 * * 1,2-3,5,6-7 2020", "At 02:33:16 PM, only on Monday, Tuesday through Wednesday, Friday, and Saturday through Sunday, only in 2020")]
-		[TestCase("16 33 14 * * 1,2-3,5,6-7 2020-2022", "At 02:33:16 PM, only on Monday, Tuesday through Wednesday, Friday, and Saturday through Sunday, 2020 through 2022")]
-		[TestCase("16 33 14 1 11 * 2021", "At 02:33:16 PM, on day 1 of the month, only in November, only in 2021")]
-		[TestCase("16 33 14 1-2,4-5,10,12-13 1-3,6-8,10,12 * 2021", "At 02:33:16 PM, on day 1 through 2, 4 through 5, 10, and 12 through 13 of the month, only in January through March, June through August, October, and December, only in 2021")]
+		[TestCase("8 33 14 * * * *", "At  2:33:08 PM")]
+		[TestCase("16 33 14 * * * *", "At  2:33:16 PM")]
+		[TestCase("16 33 14 * * 3 *", "At  2:33:16 PM, only on Wednesday")]
+		[TestCase("16 33 14 * * 2,5-6 *", "At  2:33:16 PM, only on Tuesday and Friday through Saturday")]
+		[TestCase("16 33 14 * * 1,2-3,5,6-7 *", "At  2:33:16 PM, only on Monday, Tuesday through Wednesday, Friday, and Saturday through Sunday")]
+		[TestCase("16 33 14 * * 1,2-3,5,6-7 2020", "At  2:33:16 PM, only on Monday, Tuesday through Wednesday, Friday, and Saturday through Sunday, only in 2020")]
+		[TestCase("16 33 14 * * 1,2-3,5,6-7 2020-2022", "At  2:33:16 PM, only on Monday, Tuesday through Wednesday, Friday, and Saturday through Sunday, 2020 through 2022")]
+		[TestCase("16 33 14 1 11 * 2021", "At  2:33:16 PM, on day 1 of the month, only in November, only in 2021")]
+		[TestCase("16 33 14 1-2,4-5,10,12-13 1-3,6-8,10,12 * 2021", "At  2:33:16 PM, on day 1 through 2, 4 through 5, 10, and 12 through 13 of the month, only in January through March, June through August, October, and December, only in 2021")]
 		[TestCase("16 33 14 1-2,4-5,10,12-13 1-3,6-8,10,12 * 2021", "O 14:33:16, od 1 do 2, od 4 do 5, 10, i od 12 do 13-ego dnia miesiąca, tylko od styczeń do marzec, od czerwiec do sierpień, październik, i grudzień, tylko 2021", CronLocale.pl_PL)]
 		public void CRON_Correct_Description_Result(string cronString, string expectedResult, CronLocale locale = CronLocale.en_US)
 		{
