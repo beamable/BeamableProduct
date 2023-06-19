@@ -1,6 +1,5 @@
 #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 using System;
-using System.Linq;
 using UnityEngine;
 using UnityEditor;
 using System.Reflection;
@@ -9,6 +8,10 @@ using System.Reflection;
 using UnityEngine.UIElements;
 #else
 using UnityEngine.Experimental.UIElements;
+#endif
+
+#if UNITY_2022_1_OR_NEWER
+using System.Linq;
 #endif
 
 namespace Beamable.Editor.ToolbarExtender
@@ -115,7 +118,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 					// Get first child which 'happens' to be toolbar IMGUIContainer
 					var container = (IMGUIContainer)visualTree[0];
-
+					
 					// (Re)attach handler
 					var handler = (Action)m_imguiContainerOnGui.GetValue(container);
 					handler -= OnGUI;

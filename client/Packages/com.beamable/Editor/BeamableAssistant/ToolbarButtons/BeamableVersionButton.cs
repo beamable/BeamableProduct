@@ -1,4 +1,5 @@
-﻿using Beamable.Editor.Assistant;
+﻿#if UNITY_2022_1_OR_NEWER
+using Beamable.Editor.Assistant;
 using Beamable.Editor.UI.Common;
 using System;
 using System.IO;
@@ -12,7 +13,7 @@ namespace Beamable.Editor.ToolbarExtender
 {
 	public class BeamableVersionButton : BeamableBasicVisualElement
 	{
-		private VisualElement _icon;
+		// private VisualElement _icon;
 
 		public BeamableVersionButton() :
 			base(
@@ -26,7 +27,7 @@ namespace Beamable.Editor.ToolbarExtender
 			base.Init();
 
 			RefreshIcon();
-			Root.Add(_icon);
+			// Root.Add(_icon);
 
 			VisualElement label = new TextElement {name = "label", text = GetVersion()};
 			Root.Add(label);
@@ -37,10 +38,10 @@ namespace Beamable.Editor.ToolbarExtender
 
 		private void RefreshIcon()
 		{
-			_icon = new VisualElement
-			{
-				name = "icon", style = {backgroundImage = new StyleBackground(GetSprite())}
-			};
+			// _icon = new VisualElement
+			// {
+			// 	name = "icon", style = {backgroundImage = new StyleBackground(GetSprite())}
+			// };
 		}
 
 		protected override void OnDestroy()
@@ -124,3 +125,4 @@ namespace Beamable.Editor.ToolbarExtender
 		}
 	}
 }
+#endif

@@ -1,5 +1,6 @@
 #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 using Beamable.Common;
+using Beamable.Editor.Assistant;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,6 +32,10 @@ namespace Beamable.Editor.ToolbarExtender
 		private static List<BeamableToolbarButton> _leftButtons = new List<BeamableToolbarButton>();
 		private static List<BeamableToolbarButton> _rightButtons = new List<BeamableToolbarButton>();
 
+		private static Texture _noHintsTexture;
+		private static Texture _hintsTexture;
+		private static Texture _validationTexture;
+		
 #if UNITY_2019_4_OR_NEWER
 		private static bool _hasPreviewPackages = false;
 #endif
@@ -85,6 +90,10 @@ namespace Beamable.Editor.ToolbarExtender
 
 				return orderComp == 0 ? labelComp : orderComp;
 			});
+			
+			_noHintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info.png");
+			_hintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info hit.png");
+			_validationTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info valu.png");
 
 			var toolbarButtonsSearchInFolders = BeamEditor.CoreConfiguration.BeamableAssistantToolbarButtonsPaths.Where(Directory.Exists).ToArray();
 			var toolbarButtonsGuids = BeamableAssetDatabase.FindAssets<BeamableToolbarButton>(toolbarButtonsSearchInFolders);
@@ -262,6 +271,10 @@ namespace Beamable.Editor.ToolbarExtender
 			rightRect.xMax -= buttonWidth; // Cloud
 			rightRect.xMax -= space; // Spacing between cloud and collab
 #endif
+			
+			var beamableAssistantEnd = rightRect.xMax -= space; // Space between collab and Beamable Assistant
+			var beamableAssistantStart = rightRect.xMax -= beamableAssistantWidth; // Beamable Assistant Button
+			
 			// Add spacing around existing controls
 			leftRect.xMin += space;
 			leftRect.xMax -= space;
@@ -287,6 +300,47 @@ namespace Beamable.Editor.ToolbarExtender
 			rightRect.y = 5;
 			rightRect.height = 24;
 #endif
+			var beamableAssistantButtonRect = new Rect(beamableAssistantStart, rightRect.y + 2, beamableAssistantEnd - beamableAssistantStart, dropdownHeight);
+			var btnTexture = _noHintsTexture;
+
+			// Gets notification manager and evaluate if there are pending notifications
+			BeamHintNotificationManager notificationManager = null;
+			BeamEditor.GetBeamHintSystem(ref notificationManager);
+			if (notificationManager != null && notificationManager.PendingHintNotifications.Any())
+				btnTexture = _hintsTexture;
+
+			if (notificationManager != null && notificationManager.PendingValidationNotifications.Any())
+				btnTexture = _validationTexture;
+
+
+			GUILayout.BeginArea(beamableAssistantButtonRect);
+			var version = BeamableEnvironment.SdkVersion;
+			var versionStr = $"Beamable {version}";
+			if (version.IsReleaseCandidate)
+			{
+				versionStr = $"Beamable {version.Major}.{version.Minor}.{version.Patch} RC{version.RC}";
+			}
+			if (version.IsNightly)
+			{
+				versionStr = $"BeamDev {version.NightlyTime}";
+			}
+			var titleContent = new GUIContent(versionStr, btnTexture);
+			if (GUILayout.Button(titleContent, GUILayout.Width(beamableAssistantEnd - beamableAssistantStart), GUILayout.Height(dropdownHeight)))
+			{
+				// create the menu and add items to it
+				var menu = new GenericMenu();
+
+				_assistantMenuItems
+					.ForEach(item =>
+					{
+						menu.AddItem(item.RenderLabel(_editorAPI), false, data => item.OnItemClicked((BeamEditorContext)data), _editorAPI);
+					});
+
+				menu.ShowAsContext();
+			}
+
+			GUILayout.EndArea();
+			
 
 			GUILayout.BeginArea(leftRect);
 			GUILayout.BeginHorizontal();
