@@ -13,7 +13,7 @@ namespace Beamable.Editor.ToolbarExtender
 {
 	public class BeamableVersionButton : BeamableBasicVisualElement
 	{
-		// private VisualElement _icon;
+		private VisualElement _icon;
 
 		public BeamableVersionButton() :
 			base(
@@ -27,7 +27,7 @@ namespace Beamable.Editor.ToolbarExtender
 			base.Init();
 
 			RefreshIcon();
-			// Root.Add(_icon);
+			Root.Add(_icon);
 
 			VisualElement label = new TextElement {name = "label", text = GetVersion()};
 			Root.Add(label);
@@ -38,10 +38,10 @@ namespace Beamable.Editor.ToolbarExtender
 
 		private void RefreshIcon()
 		{
-			// _icon = new VisualElement
-			// {
-			// 	name = "icon", style = {backgroundImage = new StyleBackground(GetSprite())}
-			// };
+			_icon = new VisualElement
+			{
+				name = "icon", style = {backgroundImage = new StyleBackground(GetSprite())}
+			};
 		}
 
 		protected override void OnDestroy()
