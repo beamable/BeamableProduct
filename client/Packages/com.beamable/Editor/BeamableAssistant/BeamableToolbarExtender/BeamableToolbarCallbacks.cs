@@ -1,5 +1,6 @@
 #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityEditor;
 using System.Reflection;
@@ -91,6 +92,12 @@ namespace Beamable.Editor.ToolbarExtender
 					{
 						_ = (bool) m_SendEventToIMGUI.Invoke(container, new object[]{evt, true, false});
 					});
+
+					BeamableVersionButton versionButton = new BeamableVersionButton();
+					versionButton.Init();
+
+					VisualElement visualElement = mRoot?.Children().ToList()[0].Children().ToList()[0].Children().ToList().Last();
+					visualElement?.Add(versionButton);
 					
 					// Adds the configured container to the Toolbar VisualElement list.  
 					mRoot?.Add(container);
@@ -114,7 +121,6 @@ namespace Beamable.Editor.ToolbarExtender
 					handler -= OnGUI;
 					handler += OnGUI;
 					m_imguiContainerOnGui.SetValue(container, handler);
-
 #endif
 				}
 			}
