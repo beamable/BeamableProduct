@@ -9,7 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - MongoDbExtensions class that supports mongo indexes creation
 - `ICollectionElement` interface and `MongoIndexAttribute` to support automatic index creation during microservice startup
-- Set of CRUD methods for `IMongoCollection` and `IStorageObjectConnectionProvider`
 
 ## [1.16.0]
 
