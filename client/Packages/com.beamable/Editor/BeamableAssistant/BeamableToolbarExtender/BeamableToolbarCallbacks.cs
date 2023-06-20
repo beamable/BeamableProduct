@@ -120,7 +120,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 					// Get first child which 'happens' to be toolbar IMGUIContainer
 					var container = (IMGUIContainer)visualTree[0];
-					
+
 					// (Re)attach handler
 					var handler = (Action)m_imguiContainerOnGui.GetValue(container);
 					handler -= OnGUI;
@@ -155,7 +155,7 @@ namespace Beamable.Editor.ToolbarExtender
 			return null;
 		}
 #endif
-		
+
 		static void OnGUI()
 		{
 			var handler = OnToolbarGUI;

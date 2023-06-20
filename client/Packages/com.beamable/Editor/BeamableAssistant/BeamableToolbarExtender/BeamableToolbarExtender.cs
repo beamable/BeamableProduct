@@ -37,7 +37,7 @@ namespace Beamable.Editor.ToolbarExtender
 		private static Texture _hintsTexture;
 		private static Texture _validationTexture;
 #endif
-		
+
 #if UNITY_2019_4_OR_NEWER
 		private static bool _hasPreviewPackages = false;
 #endif
@@ -92,7 +92,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 				return orderComp == 0 ? labelComp : orderComp;
 			});
-		
+
 #if !UNITY_2022_1_OR_NEWER && UNITY_2019_1_OR_NEWER
 			_noHintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info.png");
 			_hintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info hit.png");
@@ -275,7 +275,7 @@ namespace Beamable.Editor.ToolbarExtender
 			rightRect.xMax -= buttonWidth; // Cloud
 			rightRect.xMax -= space; // Spacing between cloud and collab
 #endif
-			
+
 			// Add spacing around existing controls
 			leftRect.xMin += space;
 			leftRect.xMax -= space;
