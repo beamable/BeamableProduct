@@ -28,10 +28,8 @@ namespace Beamable.Editor.ToolbarExtender
 		[SerializeField] private Side Location = Side.Left;
 
 		public abstract void OnButtonClicked(BeamEditorContext editorAPI);
-
 		public virtual bool ShouldDisplayButton(BeamEditorContext editorAPI) => IsVisible;
 		public virtual Side GetButtonSide(BeamEditorContext editorAPI) => Location;
-
 		public virtual int GetButtonOrder(BeamEditorContext editorAPI) => Order;
 		public virtual string GetButtonText(BeamEditorContext editorAPI) => ButtonText;
 		public virtual Vector2 GetButtonSize(BeamEditorContext editorAPI) => ButtonSize;
