@@ -32,8 +32,7 @@ namespace Beamable.Editor.ToolbarExtender
 		private static List<BeamableToolbarButton> _leftButtons = new List<BeamableToolbarButton>();
 		private static List<BeamableToolbarButton> _rightButtons = new List<BeamableToolbarButton>();
 
-#if UNITY_2022_1_OR_NEWER
-#elif UNITY_2019_1_OR_NEWER
+#if !UNITY_2022_1_OR_NEWER && UNITY_2019_1_OR_NEWER
 		private static Texture _noHintsTexture;
 		private static Texture _hintsTexture;
 		private static Texture _validationTexture;
@@ -94,8 +93,7 @@ namespace Beamable.Editor.ToolbarExtender
 				return orderComp == 0 ? labelComp : orderComp;
 			});
 		
-#if UNITY_2022_1_OR_NEWER
-#elif UNITY_2019_1_OR_NEWER
+#if !UNITY_2022_1_OR_NEWER && UNITY_2019_1_OR_NEWER
 			_noHintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info.png");
 			_hintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info hit.png");
 			_validationTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info valu.png");
@@ -304,8 +302,7 @@ namespace Beamable.Editor.ToolbarExtender
 			rightRect.height = 24;
 #endif
 
-#if UNITY_2022_1_OR_NEWER
-#elif UNITY_2019_1_OR_NEWER
+#if !UNITY_2022_1_OR_NEWER && UNITY_2019_1_OR_NEWER
 			var beamableAssistantEnd = rightRect.xMax -= space; // Space between collab and Beamable Assistant
 			var beamableAssistantStart = rightRect.xMax -= beamableAssistantWidth; // Beamable Assistant Button
 			var beamableAssistantButtonRect = new Rect(beamableAssistantStart, rightRect.y + 2, beamableAssistantEnd - beamableAssistantStart, dropdownHeight);
