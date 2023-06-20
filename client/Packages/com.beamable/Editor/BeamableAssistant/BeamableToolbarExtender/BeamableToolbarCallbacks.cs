@@ -10,6 +10,10 @@ using UnityEngine.UIElements;
 using UnityEngine.Experimental.UIElements;
 #endif
 
+#if UNITY_2022_1_OR_NEWER
+using System.Linq;
+#endif
+
 namespace Beamable.Editor.ToolbarExtender
 {
 	public static class BeamableToolbarCallbacks
@@ -91,9 +95,17 @@ namespace Beamable.Editor.ToolbarExtender
 					{
 						_ = (bool) m_SendEventToIMGUI.Invoke(container, new object[]{evt, true, false});
 					});
-					
+
 					// Adds the configured container to the Toolbar VisualElement list.  
 					mRoot?.Add(container);
+					
+#if UNITY_2022_1_OR_NEWER
+					BeamableVersionButton versionButton = new BeamableVersionButton();
+					versionButton.Init();
+
+					var toolbarZoneRightAlign = GetTargetToolbar(mRoot);
+					toolbarZoneRightAlign?.Add(versionButton);
+#endif
 
 #else
 #if UNITY_2020_1_OR_NEWER
@@ -108,18 +120,42 @@ namespace Beamable.Editor.ToolbarExtender
 
 					// Get first child which 'happens' to be toolbar IMGUIContainer
 					var container = (IMGUIContainer)visualTree[0];
-
+					
 					// (Re)attach handler
 					var handler = (Action)m_imguiContainerOnGui.GetValue(container);
 					handler -= OnGUI;
 					handler += OnGUI;
 					m_imguiContainerOnGui.SetValue(container, handler);
-
 #endif
 				}
 			}
 		}
 
+#if UNITY_2022_1_OR_NEWER
+		private static VisualElement GetTargetToolbar(VisualElement root)
+		{
+			var rootChildren = root?.Children().ToList();
+			if (rootChildren?.Count > 0)
+			{
+				VisualElement firstElement = rootChildren[0];
+				var firstElementChildren = firstElement?.Children().ToList();
+
+				if (firstElementChildren?.Count > 0)
+				{
+					var toolbarContainerContent = firstElementChildren[0];
+					var toolbarContainerChildren = toolbarContainerContent?.Children().ToList();
+
+					if (toolbarContainerChildren?.Count > 0)
+					{
+						return toolbarContainerChildren.Last();
+					}
+				}
+			}
+
+			return null;
+		}
+#endif
+		
 		static void OnGUI()
 		{
 			var handler = OnToolbarGUI;
