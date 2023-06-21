@@ -49,7 +49,7 @@ namespace Beamable.Server
 		TResponse Run<TArg1>(
 			Expression<Func<T, Func<TArg1, TTask>>> expr, 
 			TArg1 arg);
-		
+		 
 		/// <inheritdoc cref="Run(System.Linq.Expressions.Expression{System.Func{T,System.Action}})"/>
 		TResponse Run<TArg1, TArg2>(
 			Expression<Func<T, Func<TArg1, TArg2, TTask>>> expr, 

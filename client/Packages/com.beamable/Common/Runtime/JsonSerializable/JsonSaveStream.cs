@@ -410,6 +410,15 @@ namespace Beamable.Serialization
 				return true;
 			}
 
+			/// <summary>
+			///
+			/// </summary>
+			/// <param name="key"></param>
+			/// <param name="target"></param>
+			/// <param name="formats">
+			/// If multiple formats are given, the first format will be used.
+			/// </param>
+			/// <returns></returns>
 			public bool Serialize(string key, ref DateTime target, params string[] formats)
 			{
 				//The "O" or "o" standard format specifier represents a custom date and

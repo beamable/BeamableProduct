@@ -42,8 +42,6 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
-
-	// [DebuggerDisplay("{HasValue ? (Value?.ToString()) : \"no value\"}")]
 	[DebuggerDisplay("{HasValue ? (Value == null ? \"no value\" : Value.ToString()) : \"no value\"}")]
 	public class Optional<T> : Optional
 	{

@@ -1222,33 +1222,31 @@ public static class UnityHelper
 		type.CustomAttributes.Add(
 			new CodeAttributeDeclaration(new CodeTypeReference(typeof(SerializableAttribute))));
 
-		
-		
+
+
 		if (schema.Items != null)
 		{
-
-		// if the base type is a list, then add the list base class.
-		if (schema.Items?.Reference?.Id != null)
-		{
-			type.BaseTypes.Add(new CodeTypeReference(typeof(List<>))
+			// if the base type is a list, then add the list base class.
+			if (schema.Items?.Reference?.Id != null)
 			{
-				TypeArguments = { new CodeTypeReference( SanitizeClassName(schema.Items.Reference.Id)) }
-			});
-			if (schema.Properties.Count > 0)
-			{
-				throw new Exception($"Cannot have a model type that is a list, and has properties. name=[{name}] model=[{schema.Title}] ");
+				type.BaseTypes.Add(new CodeTypeReference(typeof(List<>))
+				{
+					TypeArguments = { new CodeTypeReference(SanitizeClassName(schema.Items.Reference.Id)) }
+				});
+				if (schema.Properties.Count > 0)
+				{
+					throw new Exception(
+						$"Cannot have a model type that is a list, and has properties. name=[{name}] model=[{schema.Title}] ");
+				}
 			}
-		}
-		else
-		{
-			var gen = new GenSchema(schema.Items);
-			
-			var baseType = gen.GetTypeReference();
-			type.BaseTypes.Add(new CodeTypeReference(typeof(List<>)) 
-				{ TypeArguments = { baseType } }
-			);
-		}
+			else
+			{
+				var gen = new GenSchema(schema.Items);
 
+				var baseType = gen.GetTypeReference();
+				type.BaseTypes.Add(new CodeTypeReference(typeof(List<>)) { TypeArguments = { baseType } }
+				);
+			}
 		}
 
 		// add the serialization interface
