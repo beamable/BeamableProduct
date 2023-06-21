@@ -34,7 +34,7 @@ namespace Beamable.Platform.SDK.Auth
 		}
 
         /// <summary>
-        /// Performs local login first, then it will request server side token.
+        /// Performs login first, then it will request server side token.
         /// </summary>
 		public void Login()
 		{
@@ -42,7 +42,8 @@ namespace Beamable.Platform.SDK.Auth
 		}
 
         /// <summary>
-        /// Performs local login to Google Play Games Services.
+        /// Performs login to Google Play Games Services.
+        /// It does not handle server side access.
         /// </summary>
         /// <returns>Promise with SignInStatus value</returns>
 		public static Promise<SignInStatus> PerformLocalLogin()
