@@ -40,7 +40,7 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
 			var res = await args.BeamoLocalSystem.GetOrCreateMongoExpress(args.storageName, connStr.Value);
 
 			var port = res.NetworkSettings.Ports["8081/tcp"][0];
-			var url = $"http://{port.HostIP}:{port.HostPort}";
+			var url = $"http://localhost:{port.HostPort}";
 			Log.Information($"Opening web page {url}");
 			await Task.Delay(250); // give mongo a chance to boot :(
 			MachineHelper.OpenBrowser(url);
