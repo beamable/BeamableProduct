@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Cron expression preview now omits leading zeroes: for example " 1:23 PM" instead of "01:23 PM"
-- Skip Buss OnValidate while playing
+- Skip Buss and old styling OnValidate while playing
 
 ## [1.16.0]
 
