@@ -158,7 +158,7 @@ namespace Beamable.Common.Api.Announcements
 		public List<AnnouncementAttachment> attachments;
 
 		/// <summary>
-		/// An announcement cna have rewards that the player can claim with the <see cref="IAnnouncementsApi.Claim(string)"/> method.
+		/// An announcement can have rewards that the player can claim with the <see cref="IAnnouncementsApi.Claim(string)"/> method.
 		/// The <see cref="AnnouncementPlayerRewards"/> is the set of rewards that the player will get when they claim the announcement.
 		/// The contents of this field align with the values of the <see cref="AnnouncementContent.gift"/> field.
 		///  <b>Be careful!</b> Player rewards can also exist in the <see cref="attachments"/> field.

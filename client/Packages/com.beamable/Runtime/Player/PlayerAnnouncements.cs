@@ -1,5 +1,6 @@
 using Beamable.Api;
 using Beamable.Common;
+using Beamable.Common.Announcements;
 using Beamable.Common.Api.Announcements;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Dependencies;
@@ -47,6 +48,11 @@ namespace Beamable.Player
 		public bool IsClaimed;
 
 		public bool IsIgnored;
+
+		/// <summary>
+		/// A type of <see cref="PlayerReward"/> that allows a player to claim <see cref="AnnouncementApiReward"/> as well as items and currencies.
+		/// </summary>
+		public AnnouncementPlayerRewards Gift;
 
 
 		internal Announcement(PlayerAnnouncements group)
@@ -180,6 +186,7 @@ namespace Beamable.Player
 				Channel = view.channel,
 				IsRead = view.isRead,
 				IsClaimed = view.isClaimed,
+				Gift = view.gift
 			}).ToList();
 
 			SetData(nextAnnouncements);
