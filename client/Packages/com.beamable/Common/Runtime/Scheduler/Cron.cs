@@ -5,12 +5,12 @@ namespace Beamable.Common.Scheduler
 {
 	public interface ICronComponent
 	{
-		
+
 	}
 
 	public interface ICronInitial : ICronSeconds
 	{
-		
+
 	}
 
 	public interface ICronComplete : ICronComponent
@@ -21,65 +21,65 @@ namespace Beamable.Common.Scheduler
 		/// <returns></returns>
 		string ToCron();
 	}
-	
+
 	public interface ICronSeconds : ICronComponent
 	{
 		ICronMinutes EverySecond();
 		ICronMinutes EveryNthSecond(int n);
-		
+
 		/// <inheritdoc cref="AtSecond"/>
 		ICronMinutes BetweenSeconds(int start, int end);
-		
+
 		/// <summary>
 		/// Seconds should be 0-59.
 		/// A value of 0 means, "the first second", and 59 means, "the last second"
 		/// </summary>
 		/// <returns></returns>
 		ICronMinutes AtSecond(int second, params int[] additionalSeconds);
-		
+
 		/// <summary>
 		/// Specify a custom second-component string. There is no validation for this string.
 		/// </summary>
 		/// <returns></returns>
 		ICronMinutes ComplexSeconds(string secondStr);
 	}
-	public interface ICronMinutes: ICronComponent
+	public interface ICronMinutes : ICronComponent
 	{
 		ICronHours EveryMinute();
 		ICronHours EveryNthMinute(int n);
-		
+
 		/// <inheritdoc cref="AtMinute"/>
 		ICronHours BetweenMinutes(int start, int end);
-		
+
 		/// <summary>
 		/// Minutes should be 0-59.
 		/// A value of 0 means, "the first minute", and 59 means, "the last minute"
 		/// </summary>
 		/// <returns></returns>
 		ICronHours AtMinute(int minute, params int[] additionalMinutes);
-		
+
 		/// <summary>
 		/// Specify a custom minute-component string. There is no validation for this string.
 		/// </summary>
 		/// <returns></returns>
 		ICronHours ComplexMinutes(string minuteStr);
-		
+
 	}
-	public interface ICronHours: ICronComponent
+	public interface ICronHours : ICronComponent
 	{
 		ICronDaySplit EveryHour();
 		ICronDaySplit EveryNthHour(int n);
-		
+
 		/// <inheritdoc cref="AtHour"/>
 		ICronDaySplit BetweenHours(int start, int end);
-		
+
 		/// <summary>
 		/// Hours should be 0-23.
 		/// A value of 0 means, "the first hour", and 23 means, "the last hour"
 		/// </summary>
 		/// <returns></returns>
 		ICronDaySplit AtHour(int hour, params int[] additionalHours);
-		
+
 		/// <summary>
 		/// Specify a custom hour-component string. There is no validation for this string.
 		/// </summary>
@@ -89,75 +89,75 @@ namespace Beamable.Common.Scheduler
 
 	public interface ICronDaySplit : ICronDayOfWeek, ICronDayOfMonth
 	{
-		
+
 	}
-	
-	public interface ICronDayOfMonth: ICronComponent
+
+	public interface ICronDayOfMonth : ICronComponent
 	{
 		ICronMonth EveryDayOfTheMonth();
 		ICronMonth EveryNthDayOfTheMonth(int n);
-		
+
 		/// <summary>
 		/// Specify a custom day-of-month-component string. There is no validation for this string.
 		/// </summary>
 		/// <returns></returns>
 		ICronMonth ComplexDayOfMonth(string dayOfMonthStr);
-		
+
 		/// <summary>
 		/// Days-Of-The-Month should be 1-31.
 		/// A value of 1 means, "the first day". Depending on the month, some day values are invalid.
 		/// </summary>
 		/// <returns></returns>
-		ICronMonth OnDayOfMonth(int dayOfMonth, params int[] additionalDaysOfMonth); 
-		
+		ICronMonth OnDayOfMonth(int dayOfMonth, params int[] additionalDaysOfMonth);
+
 		/// <inheritdoc cref="OnDayOfMonth"/>
 		ICronMonth BetweenDaysOfMonth(int start, int end);
 	}
-	
-	public interface ICronDayOfWeek: ICronComponent
+
+	public interface ICronDayOfWeek : ICronComponent
 	{
 		ICronMonth EveryDayOfTheWeek();
 		ICronMonth EveryNthDay(int n);
-		
+
 		/// <inheritdoc cref="OnDays"/>
 		ICronMonth BetweenDays(int start, int end);
-		
+
 		/// <summary>
 		/// Days-Of-The-Week should be 0-6.
 		/// A value of 0 means, "Sunday" and 6 means "Saturday". 
 		/// </summary>
 		/// <returns></returns>
 		ICronMonth OnDays(int day, params int[] additionalDays);
-		
+
 		/// <summary>
 		/// Specify a custom day-of-week-component string. There is no validation for this string.
 		/// </summary>
 		/// <returns></returns>
 		ICronMonth ComplexDay(string dayStr);
 	}
-	
-	public interface ICronMonth: ICronComponent
+
+	public interface ICronMonth : ICronComponent
 	{
 		ICronComplete EveryMonth();
 		ICronComplete EveryNthMonth(int n);
-		
+
 		/// <inheritdoc cref="InMonth"/>
 		ICronComplete BetweenMonths(int start, int end);
-		
+
 		/// <summary>
 		/// Months should be 1-12.
 		/// A value of 1 means, "January" and 12 means "December". 
 		/// </summary>
 		/// <returns></returns>
 		ICronComplete InMonth(int month, params int[] additionalMonths);
-		
+
 		/// <summary>
 		/// Specify a custom month string. There is no validation for this string.
 		/// </summary>
 		/// <returns></returns>
 		ICronComplete ComplexMonth(string monthStr);
 	}
-	
+
 	public static class ICronExtensions
 	{
 		public static ICronMonth EveryDay(this ICronDaySplit self) => self.EveryDayOfTheWeek();
@@ -185,9 +185,9 @@ namespace Beamable.Common.Scheduler
 		public static ICronMonth OnSaturday(this ICronDayOfWeek self) => self.OnDays(6);
 
 
-		public static ICronComplete AtMidnight(this ICronInitial self) => Daily(self,0);
-		
-		public static ICronComplete Monthly(this ICronInitial self, int day=1) =>
+		public static ICronComplete AtMidnight(this ICronInitial self) => Daily(self, 0);
+
+		public static ICronComplete Monthly(this ICronInitial self, int day = 1) =>
 			self
 				.AtSecond(0)
 				.AtMinute(0)
@@ -196,7 +196,7 @@ namespace Beamable.Common.Scheduler
 				.EveryMonth()
 			;
 
-		public static ICronComplete TwiceMonthly(this ICronInitial self, int day1=1, int day2=15) =>
+		public static ICronComplete TwiceMonthly(this ICronInitial self, int day1 = 1, int day2 = 15) =>
 			self
 				.AtSecond(0)
 				.AtMinute(0)
@@ -204,8 +204,8 @@ namespace Beamable.Common.Scheduler
 				.OnDayOfMonth(day1, day2)
 				.EveryMonth()
 			;
-		
-		public static ICronComplete Weekly(this ICronInitial self, int day=0, int hour=0) =>
+
+		public static ICronComplete Weekly(this ICronInitial self, int day = 0, int hour = 0) =>
 			self
 				.AtSecond(0)
 				.AtMinute(0)
@@ -214,7 +214,7 @@ namespace Beamable.Common.Scheduler
 				.EveryMonth()
 			;
 
-		public static ICronComplete Daily(this ICronInitial self, int hour=0) =>
+		public static ICronComplete Daily(this ICronInitial self, int hour = 0) =>
 			self
 				.AtSecond(0)
 				.AtMinute(0)
@@ -224,7 +224,7 @@ namespace Beamable.Common.Scheduler
 			;
 
 	}
-	
+
 
 
 	public class CronBuilder : ICronSeconds, ICronInitial, ICronDaySplit, ICronMinutes, ICronHours, ICronMonth, ICronDayOfMonth, ICronDayOfWeek, ICronComplete
@@ -232,7 +232,7 @@ namespace Beamable.Common.Scheduler
 		private const string STAR = "*";
 		private const string ZERO = "0";
 		private const string NULL = null;
-		
+
 		private const int SECOND_INDEX = 0;
 		private const int MINUTE_INDEX = 1;
 		private const int HOUR_INDEX = 2;
@@ -248,11 +248,11 @@ namespace Beamable.Common.Scheduler
 		private string dayOfWeekStr { get => components[DAY_OF_WEEK_INDEX]; set => components[DAY_OF_WEEK_INDEX] = value; }
 
 		private int? starAfterIndex = null;
-		
-		
+
+
 		private string[] defaults = new string[] { STAR, STAR, STAR, STAR, STAR, STAR };
 		private string[] components = new string[] { NULL, NULL, NULL, NULL, NULL, NULL };
-		
+
 		private string BuildString()
 		{
 			for (var i = 0; i < components.Length; i++)
@@ -409,7 +409,7 @@ namespace Beamable.Common.Scheduler
 		{
 			hours = Combine(hour, hours);
 			ValidateHour(hours);
-			
+
 			hourStr = string.Join(",", hours);
 			return this;
 		}
@@ -445,7 +445,7 @@ namespace Beamable.Common.Scheduler
 		{
 			minutes = Combine(minute, minutes);
 			ValidateMinute(minutes);
-			
+
 			minuteStr = string.Join(",", minutes);
 			return this;
 		}
@@ -481,7 +481,7 @@ namespace Beamable.Common.Scheduler
 		{
 			seconds = Combine(second, seconds);
 			ValidateSecond(seconds);
-			
+
 			secondStr = string.Join(",", seconds);
 			return this;
 		}
@@ -510,28 +510,28 @@ namespace Beamable.Common.Scheduler
 				if (minute < 0 || minute > 59)
 					throw new ArgumentOutOfRangeException($"cron based minute value must be 0-59. minute=[{minute}]");
 		}
-		
+
 		private void ValidateHour(params int[] hours)
 		{
 			foreach (var hour in hours)
 				if (hour < 0 || hour > 23)
 					throw new ArgumentOutOfRangeException($"cron based hour value must be 0-23. hour=[{hour}]");
 		}
-		
+
 		private void ValidateDayOfMonth(params int[] doms)
 		{
 			foreach (var dom in doms)
 				if (dom < 1 || dom > 31)
 					throw new ArgumentOutOfRangeException($"cron based day-of-month value must be 1-31. day-of-month=[{dom}]");
 		}
-		
+
 		private void ValidateMonth(params int[] months)
 		{
 			foreach (var month in months)
 				if (month < 1 || month > 12)
 					throw new ArgumentOutOfRangeException($"cron based month value must be 1-12. month=[{month}]");
 		}
-		
+
 		private void ValidateDays(params int[] days)
 		{
 			foreach (var day in days)
@@ -545,5 +545,5 @@ namespace Beamable.Common.Scheduler
 			return this;
 		}
 	}
-	
+
 }
