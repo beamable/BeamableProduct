@@ -12,6 +12,7 @@ using Beamable.Common.Assistant;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
+using Beamable.Common.Scheduler;
 using Beamable.Server;
 using Beamable.Server.Api;
 using Beamable.Server.Api.Announcements;
@@ -29,6 +30,7 @@ using Beamable.Server.Api.Notifications;
 using Beamable.Server.Api.Payments;
 using Beamable.Server.Api.Push;
 using Beamable.Server.Api.RealmConfig;
+using Beamable.Server.Api.Scheduler;
 using Beamable.Server.Api.Social;
 using Beamable.Server.Api.Stats;
 using Beamable.Server.Api.Tournament;
@@ -209,6 +211,8 @@ namespace Beamable.Server
 		        collection
 			        .AddScoped<T>()
 			        .AddSingleton(attribute)
+			        .AddSingleton<IBeamSchedulerContext, SchedulerContext>()
+			        .AddSingleton<BeamScheduler>()
 			        .AddScoped<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
 			        .AddScoped<IRealmInfo>(provider => provider.GetService<IMicroserviceArgs>())
 			        .AddScoped<IBeamableRequester>(p => p.GetService<MicroserviceRequester>())
@@ -364,6 +368,7 @@ namespace Beamable.Server
 			        Chat = provider.GetRequiredService<IMicroserviceChatApi>(),
 			        Payments = provider.GetRequiredService<IMicroservicePaymentsApi>(),
 			        Push = provider.GetRequiredService<IMicroservicePushApi>(),
+			        Scheduler = provider.GetRequiredService<BeamScheduler>()
 		        };
 		        return services;
 	        }

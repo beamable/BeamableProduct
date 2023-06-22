@@ -1222,9 +1222,36 @@ public static class UnityHelper
 		type.CustomAttributes.Add(
 			new CodeAttributeDeclaration(new CodeTypeReference(typeof(SerializableAttribute))));
 
+
+
+		if (schema.Items != null)
+		{
+			// if the base type is a list, then add the list base class.
+			if (schema.Items?.Reference?.Id != null)
+			{
+				type.BaseTypes.Add(new CodeTypeReference(typeof(List<>))
+				{
+					TypeArguments = { new CodeTypeReference(SanitizeClassName(schema.Items.Reference.Id)) }
+				});
+				if (schema.Properties.Count > 0)
+				{
+					throw new Exception(
+						$"Cannot have a model type that is a list, and has properties. name=[{name}] model=[{schema.Title}] ");
+				}
+			}
+			else
+			{
+				var gen = new GenSchema(schema.Items);
+
+				var baseType = gen.GetTypeReference();
+				type.BaseTypes.Add(new CodeTypeReference(typeof(List<>)) { TypeArguments = { baseType } }
+				);
+			}
+		}
+
 		// add the serialization interface
 		type.BaseTypes.Add(new CodeTypeReference(typeof(JsonSerializable.ISerializable)));
-
+		
 		// add the implementation of the serialization interface as a method...
 		var serializeMethod = new CodeMemberMethod();
 		serializeMethod.Name = nameof(JsonSerializable.IStreamSerializer.Serialize);
@@ -1276,7 +1303,8 @@ public static class UnityHelper
 				var interfaceName = OneOfClassName(oneOf);
 				var innerInterface = new CodeTypeDeclaration(interfaceName) { IsInterface = true };
 				innerInterface.BaseTypes.Add(new CodeTypeReference(typeof(JsonSerializable.ISerializable)));
-
+				innerInterface.IsPartial = true;
+				
 				var factoryName = interfaceName + "Factory";
 				var factoryType = new CodeTypeDeclaration(factoryName);
 
@@ -1528,6 +1556,20 @@ public static class UnityHelper
 
 
 				return true;
+			case "string" when schema.Format == "date-time":
+				// use the default serialize method.
+				methodExpr = new CodeMethodReferenceExpression(new CodeArgumentReferenceExpression(PARAM_SERIALIZER),
+					nameof(JsonSerializable.IStreamSerializer.Serialize));
+				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ssZ"));
+				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.fZ"));
+				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.ffZ"));
+				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.fffZ"));
+				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.ffffZ"));
+				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.fffffZ"));
+				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.ffffffZ"));
+				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.fffffffzzz"));
+				return true;
+				break;
 			case "object" when schema.AdditionalPropertiesAllowed:
 				var method = new CodeMethodReferenceExpression(new CodeArgumentReferenceExpression(PARAM_SERIALIZER),
 					nameof(JsonSerializable.IStreamSerializer.SerializeDictionary));
@@ -1702,6 +1744,8 @@ public class GenSchema
 				return new GenCodeTypeReference(typeof(Guid));
 			case ("string", "byte", _):
 				return new GenCodeTypeReference(typeof(byte));
+			case ("string", "date-time", _):
+				return new GenCodeTypeReference(typeof(DateTime));
 			case ("string", _, _) when (Schema?.Extensions.TryGetValue("x-beamable-object-id", out var ext) ?? false):
 				return new GenCodeTypeReference(typeof(string));
 			case ("System.String", _, _):

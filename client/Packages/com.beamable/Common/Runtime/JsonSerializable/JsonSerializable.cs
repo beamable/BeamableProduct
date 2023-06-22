@@ -85,7 +85,7 @@ namespace Beamable.Serialization
 			bool Serialize(string key, ref Guid target);
 			bool Serialize(string key, ref StringBuilder target);
 #if BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
-			bool Serialize(string key, ref DateTime target);
+			bool Serialize(string key, ref DateTime target, params string[] formats);
 			bool Serialize(string key, ref Rect target);
 			bool Serialize(string key, ref Vector2 target);
 			bool Serialize(string key, ref Vector3 target);
