@@ -17,16 +17,20 @@ namespace Beamable.Theme
 		public SoundStyleApplier StyledSounds;
 		public StringStyleApplier StyledStrings;
 
+#if UNITY_EDITOR && BEAMABLE_DEVELOPER
 		private string _lastHash = "";
 		private ThemeObject _lastTheme;
+#endif
 
 		public void Refresh()
 		{
 			if (!gameObject.activeInHierarchy || !isActiveAndEnabled || !gameObject.scene.IsValid()) return;  // OnValidate runs on prefabs, which we absolutely don't want.
 
 			var theme = ThemeConfiguration.Instance.Style;
+#if UNITY_EDITOR && BEAMABLE_DEVELOPER
 			_lastTheme = theme;
 			_lastHash = theme.Hash;
+#endif
 
 			StyledImages?.ApplyAll(theme);
 			StyledTexts?.ApplyAll(theme);
@@ -46,7 +50,7 @@ namespace Beamable.Theme
 		}
 
 
-#if UNITY_EDITOR
+#if UNITY_EDITOR && BEAMABLE_DEVELOPER
       void Update()
       {
          if (!gameObject.activeInHierarchy) return;
@@ -58,9 +62,10 @@ namespace Beamable.Theme
             Refresh();
          }
       }
+
       private void OnValidate()
       {
-         if (!gameObject.activeInHierarchy) return;
+         if (!gameObject.activeInHierarchy || Application.isPlaying) return;
 
          Refresh();
       }
