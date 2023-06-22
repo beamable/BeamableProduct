@@ -236,12 +236,13 @@ namespace Beamable.Editor.BeamCli
 
 		public void SetCommand(string command)
 		{
-
-			var home = System.Environment.GetEnvironmentVariable("HOME");
-#if UNITY_EDITOR_WIN 
-			home = System.Environment.GetEnvironmentVariable("USERPROFILE");
+#if UNITY_EDITOR_WIN
+			const string homePathEnv = "USERPROFILE";
+#else
+			const string homePathEnv = "HOME";
 #endif
-
+			var home = System.Environment.GetEnvironmentVariable(homePathEnv);
+			
 			var defaultDotnetToolPath = Path.Combine(home, ".dotnet", "tools", "beam");
 			var beamLocation = CoreConfiguration.Instance.BeamCLIPath.GetOrElse(defaultDotnetToolPath);
 			
