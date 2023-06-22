@@ -117,7 +117,7 @@ namespace Beamable.Server
 
 		private ServiceAction CreateAction(LambdaExpression expr, params object[] args)
 		{
-			var info = GetPathForMethod(expr);
+			var info = GetServiceMethodInfo(expr);
 			var uri = GetUri(info.pathName);
 			var json = GetBody(info.parameterNames, args);
 
@@ -148,7 +148,7 @@ namespace Beamable.Server
 			return uri;
 		}
 
-		private ServiceMethodInfo2 GetPathForMethod(LambdaExpression expression)
+		private ServiceMethodInfo GetServiceMethodInfo(LambdaExpression expression)
 		{
 			if (expression == null)
 				throw new ArgumentNullException(nameof(expression));
@@ -202,10 +202,10 @@ namespace Beamable.Server
 			}
 
 
-			return new ServiceMethodInfo2 { parameterNames = parameterNames, pathName = pathName };
+			return new ServiceMethodInfo { parameterNames = parameterNames, pathName = pathName };
 		}
 
-		struct ServiceMethodInfo2
+		struct ServiceMethodInfo
 		{
 			public string pathName;
 			public string[] parameterNames;

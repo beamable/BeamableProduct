@@ -25,7 +25,8 @@ namespace Beamable.Server
 		/// <see cref="ServerCallableAttribute"/> method. When the method is executed, if it takes
 		/// arguments, then those arguments need to passed as additional parameters. All parameters
 		/// will be serialized to JSON when the <see cref="Job"/> is saved, and stored
-		/// in the <see cref="ServiceAction.body"/> field.
+		/// in the <see cref="ServiceAction.body"/> field. It is invalid to schedule a call to a method
+		/// with a return value.
 		/// <code>
 		/// .Run(service => service.HelloWorld, "message")
 		/// </code>
@@ -114,8 +115,15 @@ namespace Beamable.Server
 		);
 	}
 	
-	public interface IServiceCallBuilder<T, TResponse>
-		: IServiceCallBuilderGen<T, Promise, TResponse>
+	/// <summary>
+	/// This exists to summarize the <see cref="IServiceCallBuilderGen"/> interface for methods
+	/// that return <see cref="Task"/> and <see cref="Promise"/>
+	/// 
+	/// </summary>
+	/// <typeparam name="T"></typeparam>
+	/// <typeparam name="TResponse"></typeparam>
+	public interface IServiceCallBuilder<T, TResponse> 
+			: IServiceCallBuilderGen<T, Promise, TResponse>
 			, IServiceCallBuilderGen<T, Task, TResponse>
 		where T : Microservice
 	{

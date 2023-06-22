@@ -104,7 +104,7 @@ public class CronBuilderTests
 				.EveryDay()
 				.ToCron(), 
 			"* * * * * *") },
-		
+
 		{ (b => b
 				.AtSecond(0)
 				.EveryMinute()
@@ -246,7 +246,7 @@ public class CronBuilderTests
 				.AtMinute(0)
 				.AtHour(0)
 				.OnDayOfMonth(2)
-				.EveryDay()
+				.EveryMonth()
 				.ToCron(), 
 			"0 0 0 2 * *") },
 		
@@ -576,7 +576,8 @@ public class CronBuilderTests
 			var test = parseTestCases[i];
 			var actual = test.Item1(builder);
 			var expected = test.Item2;
-			Assert.AreEqual(actual,expected);
+			
+			Assert.AreEqual(expected, actual, $"cron expression at index=[{i}] failed. Was=[{actual}] Expected=[{expected}]");
 		}
 	}
 
