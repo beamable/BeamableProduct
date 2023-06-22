@@ -49,26 +49,25 @@ namespace Beamable.Theme
 			Refresh();
 		}
 
-
 #if UNITY_EDITOR && BEAMABLE_DEVELOPER
-      void Update()
-      {
-         if (!gameObject.activeInHierarchy) return;
+		void Update()
+		{
+			if (!gameObject.activeInHierarchy) return;
 
-         var theme = ThemeConfiguration.Instance.Style;
+			var theme = ThemeConfiguration.Instance.Style;
 
-         if (_lastHash != theme.Hash || theme != _lastTheme)
-         {
-            Refresh();
-         }
-      }
+			if (_lastHash != theme.Hash || theme != _lastTheme)
+			{
+				Refresh();
+			}
+		}
 
-      private void OnValidate()
-      {
-         if (!gameObject.activeInHierarchy || Application.isPlaying) return;
+		private void OnValidate()
+		{
+			if (!gameObject.activeInHierarchy || Application.isPlaying) return;
 
-         Refresh();
-      }
+			Refresh();
+		}
 #endif
 	}
 }
