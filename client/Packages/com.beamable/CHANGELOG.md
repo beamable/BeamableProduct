@@ -12,8 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PerformLocalLogin` method in `SignInWithGPG` class
 
 ### Changed
-
 - Cron expression preview now omits leading zeroes: for example " 1:23 PM" instead of "01:23 PM"
+- Serialization of `DateTime` now supports optional format parameter for Beamable Serialization library.
 - Skip Buss and old styling OnValidate while playing
 
 ## [1.16.0]
