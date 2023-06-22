@@ -25,9 +25,9 @@ namespace Beamable.Server
 
 
 		public ISchedulerBuilderTrigger Run<T>(Method method,
-		                                       string uri,
-		                                       T body,
-		                                       Dictionary<string, string> headers = null)
+											   string uri,
+											   T body,
+											   Dictionary<string, string> headers = null)
 		{
 			var action = _builder.Run(method, uri, body, headers);
 			_setAction(action);
@@ -35,9 +35,9 @@ namespace Beamable.Server
 		}
 
 		public ISchedulerBuilderTrigger Run(Method method,
-		                                    string uri,
-		                                    string contentType = "application/json",
-		                                    Dictionary<string, string> headers = null)
+											string uri,
+											string contentType = "application/json",
+											Dictionary<string, string> headers = null)
 		{
 			var action = _builder.Run(method, uri, contentType, headers);
 			_setAction(action);
@@ -45,10 +45,10 @@ namespace Beamable.Server
 		}
 
 		public ISchedulerBuilderTrigger Run(Method method,
-		                                    string uri,
-		                                    string body,
-		                                    string contentType = "application/json",
-		                                    Dictionary<string, string> headers = null)
+											string uri,
+											string body,
+											string contentType = "application/json",
+											Dictionary<string, string> headers = null)
 		{
 			var action = _builder.Run(method, uri, body, contentType, headers);
 			_setAction(action);
