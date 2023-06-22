@@ -113,6 +113,12 @@ namespace Beamable.Player
 		private StorageHandle<PlayerInventory> _saveHandle;
 		private Promise _pendingUpdate;
 
+		public PlayerInventory()
+		{
+			localCurrencies = new PlayerCurrencyTrie();
+			localItems = new PlayerItemTrie();
+		}
+		
 		public PlayerInventory(
 			IPlatformService platformService,
 			INotificationService notificationService,
@@ -159,7 +165,7 @@ namespace Beamable.Player
 		}
 
 		[Serializable]
-		private class InventoryScopeNotification
+		public class InventoryScopeNotification
 		{
 			public string[] scopes;
 		}
