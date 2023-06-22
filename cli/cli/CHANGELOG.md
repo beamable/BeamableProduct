@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - fix issues with failing `project new` command
+- `beam project open-mongo` opens the browser to `localhost` instead of `0.0.0.0`
 
 ## [1.16.0]
 
