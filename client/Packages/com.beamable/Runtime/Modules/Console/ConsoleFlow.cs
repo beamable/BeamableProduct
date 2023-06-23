@@ -430,6 +430,7 @@ namespace Beamable.Console
 		{
 			_isActive = true;
 			canvas.enabled = true;
+			txtInput.gameObject.SetActive(true);
 			txtInput.text = "";
 			txtInput.Select();
 			txtInput.ActivateInputField();
