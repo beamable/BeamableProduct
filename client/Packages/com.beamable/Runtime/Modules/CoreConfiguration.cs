@@ -111,9 +111,9 @@ namespace Beamable
 		public List<string> AssembliesToSweep = new List<string>();
 
 		[Tooltip("By default, Unity will look for the Beam CLI as a globally installed dotnet tool. If you wish to override this, you can " +
-		         "specify the full path here. The path should include the executable file.")]
+				 "specify the full path here. The path should include the executable file.")]
 		public OptionalString BeamCLIPath = new OptionalString();
-		
+
 		public void OnValidate()
 		{
 			// Ensure default paths exist for Reflection Cache User System Objects

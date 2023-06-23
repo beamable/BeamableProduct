@@ -1251,7 +1251,7 @@ public static class UnityHelper
 
 		// add the serialization interface
 		type.BaseTypes.Add(new CodeTypeReference(typeof(JsonSerializable.ISerializable)));
-		
+
 		// add the implementation of the serialization interface as a method...
 		var serializeMethod = new CodeMemberMethod();
 		serializeMethod.Name = nameof(JsonSerializable.IStreamSerializer.Serialize);
@@ -1304,7 +1304,7 @@ public static class UnityHelper
 				var innerInterface = new CodeTypeDeclaration(interfaceName) { IsInterface = true };
 				innerInterface.BaseTypes.Add(new CodeTypeReference(typeof(JsonSerializable.ISerializable)));
 				innerInterface.IsPartial = true;
-				
+
 				var factoryName = interfaceName + "Factory";
 				var factoryType = new CodeTypeDeclaration(factoryName);
 

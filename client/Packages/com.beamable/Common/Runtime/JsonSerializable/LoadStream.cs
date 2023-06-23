@@ -408,13 +408,13 @@ namespace Beamable.Serialization
 			private readonly string[] _standardFormats = new[] { "O" };
 			public bool Serialize(string key, ref DateTime target, params string[] formats)
 			{
-				
+
 				object tmp;
 				if (curDict.TryGetValue(key, out tmp))
 				{
 					if (tmp == null)
 						return false;
-					
+
 					if (formats.Length == 0) formats = _standardFormats;
 					for (var i = 0; i < formats.Length; i++)
 					{
@@ -429,7 +429,7 @@ namespace Beamable.Serialization
 
 						return true;
 					}
-					
+
 					BeamableLogger.LogWarning("DateTime could not deserialize: " + tmp + "  " + string.Join(",", formats) + "\n" + new StackTrace());
 					return false;
 				}

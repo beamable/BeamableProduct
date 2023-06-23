@@ -177,7 +177,7 @@ namespace Beamable.Common.Content
 	[Agnostic]
 	public class OptionalBool : OptionalValue<bool>
 	{
-		public OptionalBool(){}
+		public OptionalBool() { }
 
 		public OptionalBool(bool value)
 		{
@@ -190,7 +190,7 @@ namespace Beamable.Common.Content
 	[Agnostic]
 	public class OptionalInt : OptionalValue<int>
 	{
-		public OptionalInt(){}
+		public OptionalInt() { }
 
 		public OptionalInt(int value)
 		{
@@ -359,7 +359,7 @@ namespace Beamable.Common.Content
 	[Serializable]
 	public class OptionalDateTime : Optional<DateTime>
 	{
-		public OptionalDateTime(){}
+		public OptionalDateTime() { }
 
 		public OptionalDateTime(DateTime dt)
 		{
