@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix issues with failing `project new` command
 - `beam project open-mongo` opens the browser to `localhost` instead of `0.0.0.0`
 
+### Fixed
+
+- `beam project generate-env` loads `.dll` files into new context, allowing for multiple versions of similar libraries
+
 ## [1.16.0]
 
 ### Added
