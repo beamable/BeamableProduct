@@ -22,6 +22,7 @@ namespace Beamable.Endel
 		public static void Setup()
 		{
 			synchronizationContext = SynchronizationContext.Current;
+			WaitForUpdate.Init();
 		}
 
 		public static void Run(IEnumerator waitForUpdate, CoroutineService coroutineService)
@@ -35,22 +36,23 @@ namespace Beamable.Endel
 
 	public class WaitForUpdate : CustomYieldInstruction
 	{
-		private readonly CoroutineService _coroutineService;
+		static CoroutineService CoroutineService;
 
 		public override bool keepWaiting
 		{
 			get { return false; }
 		}
 
-		public WaitForUpdate(CoroutineService coroutineService)
+		public static void Init()
 		{
-			_coroutineService = coroutineService;
+			CoroutineService = new GameObject(nameof(BeamMainThreadUtil)).AddComponent<CoroutineService>();
+			CoroutineService.gameObject.hideFlags = HideFlags.HideAndDontSave;
 		}
 
 		public MainThreadAwaiter GetAwaiter()
 		{
 			var awaiter = new MainThreadAwaiter();
-			BeamMainThreadUtil.Run(CoroutineWrapper(this, awaiter), _coroutineService);
+			BeamMainThreadUtil.Run(CoroutineWrapper(this, awaiter), CoroutineService);
 			return awaiter;
 		}
 
@@ -712,7 +714,7 @@ namespace Beamable.Endel
 				}
 				finally
 				{
-					await new WaitForUpdate(_coroutineService);
+					await new WaitForUpdate();
 					OnClose?.Invoke(closeCode);
 				}
 			}

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Use separate `CoroutineService` in WebSocket so it will not fail after `BeamContext` disposal
+
 ### Added
 
 - `PerformLocalLogin` method in `SignInWithGPG` class
