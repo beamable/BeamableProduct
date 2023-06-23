@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Config;
 using Beamable.Serialization;
 using System.IO;
@@ -8,9 +9,15 @@ namespace Beamable.Editor.Environment
 {
 	public class EnvironmentService
 	{
-		public EnvironmentData GetDev() => EnvironmentData.BeamableDev;
-		public EnvironmentData GetStaging() => EnvironmentData.BeamableStaging;
-		public EnvironmentData GetProd() => EnvironmentData.BeamableProduction;
+		private readonly BeamEditorContext _context;
+		public EnvironmentData GetDev(PackageVersion v) => EnvironmentData.BeamableDev(v);
+		public EnvironmentData GetStaging(PackageVersion v) => EnvironmentData.BeamableStaging(v);
+		public EnvironmentData GetProd(PackageVersion v) => EnvironmentData.BeamableProduction(v);
+
+		public EnvironmentService(BeamEditorContext context)
+		{
+			_context = context;
+		}
 
 		/// <summary>
 		/// Erase the overrides file, and reload the editor.
@@ -22,6 +29,7 @@ namespace Beamable.Editor.Environment
 			{
 				FileUtil.DeleteFileOrDirectory(OVERRIDE_PATH);
 				FileUtil.DeleteFileOrDirectory(OVERRIDE_PATH + ".meta");
+				Logout();
 				ConfigDatabase.DeleteConfigDatabase();
 				EditorUtility.RequestScriptReload();
 				AssetDatabase.Refresh();
@@ -33,14 +41,20 @@ namespace Beamable.Editor.Environment
 		/// After this method is called, Beamable will use the given <see cref="EnvironmentData"/> instead of whatever is in env-defaults.
 		/// </summary>
 		/// <param name="data"></param>
-		public void SetOverrides(EnvironmentData data)
+		public void SetOverrides(EnvironmentOverridesData data)
 		{
 			var json = JsonSerializable.ToJson(data);
 			File.WriteAllText(OVERRIDE_PATH, json);
 			ConfigDatabase.DeleteConfigDatabase();
+			Logout();
 			EditorUtility.RequestScriptReload();
 			AssetDatabase.Refresh();
+		}
 
+		void Logout()
+		{
+			_context.Logout(false);
+			_context.EditorAccountService.Clear();
 		}
 	}
 }

@@ -85,7 +85,7 @@ namespace Beamable.Serialization
 			bool Serialize(string key, ref Guid target);
 			bool Serialize(string key, ref StringBuilder target);
 #if BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
-			bool Serialize(string key, ref DateTime target);
+			bool Serialize(string key, ref DateTime target, params string[] formats);
 			bool Serialize(string key, ref Rect target);
 			bool Serialize(string key, ref Vector2 target);
 			bool Serialize(string key, ref Vector3 target);
@@ -94,7 +94,7 @@ namespace Beamable.Serialization
 			bool Serialize(string key, ref Quaternion target);
 			bool Serialize(string key, ref Gradient target);
 #endif
-			bool Serialize<T>(string key, ref T value) where T : class, ISerializable, new();
+			bool Serialize<T>(string key, ref T value) where T : ISerializable;
 			bool SerializeInline<T>(string key, ref T value) where T : ISerializable;
 			bool SerializeList<TList>(string key, ref TList value) where TList : IList, new();
 			bool SerializeKnownList<TElem>(string key, ref List<TElem> value) where TElem : ISerializable, new();
@@ -214,7 +214,15 @@ namespace Beamable.Serialization
 		/// <typeparam name="T"></typeparam>
 		/// <param name="json"></param>
 		/// <returns></returns>
-		public static T FromJson<T>(string json) where T : ISerializable, new()
+		public static T FromJson<T>(string json) where T : ISerializable, new() => FromJson<T>(json, null);
+
+		/// <summary>
+		/// Deserializes a JSON string into an ISerializable object
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="json"></param>
+		/// <returns></returns>
+		public static T FromJson<T>(string json, IEnumerable<ISerializableFactory> factories) where T : ISerializable, new()
 		{
 			var data = SmallerJSON.Json.Deserialize(json) as IDictionary<string, object>;
 			if (data == null)
@@ -226,6 +234,13 @@ namespace Beamable.Serialization
 			{
 				LoadStream ls = LoadStream.Spawn();
 				ls.Init(data, ListMode.kReplace);
+				if (factories != null)
+				{
+					foreach (var factory in factories)
+					{
+						ls.RegisterISerializableFactory(factory);
+					}
+				}
 				T obj = new T();
 				obj.Serialize(ls);
 				ls.Recycle();

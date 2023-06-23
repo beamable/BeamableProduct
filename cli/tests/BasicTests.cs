@@ -1,9 +1,17 @@
-
 using Beamable.Common.Api;
+using Beamable.Server;
+using Beamable.Tooling.Common.OpenAPI;
 using cli;
+using cli.Unreal;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.OpenApi;
+using Microsoft.OpenApi.Exceptions;
+using Microsoft.OpenApi.Extensions;
+using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi.Readers;
 using Moq;
 using NUnit.Framework;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -34,7 +42,7 @@ public class Tests
 	{
 		void CheckNaming(string commandName, string description, string optionName = null)
 		{
-			const string KEBAB_CASE_PATTERN = "^[a-z]+(?:[-][a-z]+)*$";
+			const string KEBAB_CASE_PATTERN = "^([a-z]|[0-9])+(?:[-]([a-z]|[0-9])+)*$";
 			var isOption = !string.IsNullOrWhiteSpace(optionName);
 			var logPrefix = isOption ?
 				$"{optionName} argument for command {commandName}" :
@@ -103,6 +111,43 @@ public class Tests
 	// }
 
 	[Test]
+	public void TestUnrealMicroserviceGen()
+	{
+		var gen = new ServiceDocGenerator();
+		var doc = gen.Generate<TroublesomeService>(null);
+
+		UnrealSourceGenerator.exportMacro = "TROUBLESOMEPROJECT_API";
+		UnrealSourceGenerator.blueprintExportMacro = "TROUBLESOMEPROJECTBLUEPRINTNODES_API";
+		UnrealSourceGenerator.headerFileOutputPath = "/";
+		UnrealSourceGenerator.cppFileOutputPath = "/";
+		UnrealSourceGenerator.blueprintHeaderFileOutputPath = "/Public/";
+		UnrealSourceGenerator.blueprintCppFileOutputPath = "/Private/";
+		UnrealSourceGenerator.genType = UnrealSourceGenerator.GenerationType.Microservice;
+		var generator = new UnrealSourceGenerator();
+		var docs = new List<OpenApiDocument>() { doc };
+		var orderedSchemas = SwaggerService.ExtractAllSchemas(docs,
+			GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
+		var ctx = new SwaggerService.DefaultGenerationContext
+		{
+			Documents = docs,
+			OrderedSchemas = orderedSchemas
+		};
+		var descriptors = generator.Generate(ctx);
+
+		Console.WriteLine("----- OUTPUT ----");
+		Console.WriteLine(string.Join("\n", descriptors.Select(d => $"{d.FileName}\n\n{d.Content}\n")));
+
+		Assert.AreEqual(15, descriptors.Count);
+	}
+
+	[Microservice("troublesome")]
+	public class TroublesomeService : Microservice
+	{
+		[Callable]
+		public int Add(int a, int b) => a + b;
+	}
+
+	[Test]
 	public async Task GenerateStuff() // TODO: better name please
 	{
 		var status = await Cli.RunAsyncWithParams(builder =>
@@ -127,9 +172,52 @@ public class Tests
 				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.SocialBasicOpenApi));
 
 
-			builder.AddSingleton<ISwaggerStreamDownloader>(mock.Object);
-
+			builder.ReplaceSingleton<ISwaggerStreamDownloader>(mock.Object);
 		}, "oapi", "generate", "--filter", "social,t:basic");
+		Assert.AreEqual(0, status);
+	}
+
+
+	[Test]
+	public async Task GenerateContent()
+	{
+		var status = await Cli.RunAsyncWithParams(builder =>
+		{
+			var mock = new Mock<ISwaggerStreamDownloader>();
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic") && x.Contains("content"))))
+				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.ContentBasicApi));
+			builder.ReplaceSingleton<ISwaggerStreamDownloader>(mock.Object);
+		}, "oapi", "generate", "--filter", "content,t:basic", "--engine", "unity");
+		Assert.AreEqual(0, status);
+	}
+
+	[Test]
+	public async Task GenerateProtoActor()
+	{
+		var status = await Cli.RunAsyncWithParams(builder =>
+		{
+			var mock = new Mock<ISwaggerStreamDownloader>();
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("api"))))
+				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.ProtoActor));
+			builder.ReplaceSingleton<ISwaggerStreamDownloader>(mock.Object);
+		}, "oapi", "generate", "--filter", "t:api", "--engine", "unity", "--conflict-strategy", "RenameUncommonConflicts");
+		Assert.AreEqual(0, status);
+	}
+
+	//dotnet run --project ./cli/cli -- --host https://dev.api.beamable.com oapi generate --filter t:api --engine unity --conflict-strategy RenameUncommonConflicts --output ./client/Packages/com.beamable/Runtime/OpenApi2
+
+	[Test]
+	public async Task GenerateUnreal() // TODO: better name please
+	{
+		var status = await Cli.RunAsyncWithParams(builder =>
+		{
+			var mock = new Mock<ISwaggerStreamDownloader>();
+
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("content"))))
+				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.ContentObjectApi));
+
+			builder.ReplaceSingleton<ISwaggerStreamDownloader>(mock.Object);
+		}, "oapi", "generate", "--filter", "content,t:basic", "--engine", "unreal");
 		Assert.AreEqual(0, status);
 	}
 

@@ -113,9 +113,9 @@ jobs:
           - playmode
           - editmode
         unityVersion:
-          - 2019.4.30f1
           - 2020.3.19f1
           - 2021.3.2f1
+          - 2022.3.0f1
         include:
           - unityVersion: 2020.3.19f1
             unityEmailOverride: UNITY_EMAIL_DEVOPS
@@ -154,11 +154,6 @@ jobs:
           key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
           restore-keys: |
             Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
-      - name: Run script file
-        run: |
-          chmod +x ./build/clean_iap.sh
-          UNITY_VERSION=${{ matrix.unityVersion }} ./build/clean_iap.sh
-        shell: bash
       - uses: game-ci/unity-test-runner@v2
         id: tests
         timeout-minutes: 30
@@ -204,7 +199,7 @@ jobs:
           - iOS
           - StandaloneOSX
         unityVersion:
-          - 2021.3.2f1
+          - 2022.3.0f1
         projectPath:
           - client
         include:
@@ -230,16 +225,6 @@ jobs:
         run: |
           chmod +x ./build/create_config_defaults.sh
           ./build/create_config_defaults.sh
-        shell: bash
-      - name: Check Unity IAP
-        run: |
-          chmod +x ./build/clean_iap.sh
-          UNITY_VERSION=${{ matrix.unityVersion }} ./build/clean_iap.sh
-        shell: bash
-      - name: Check Gradle Builds
-        run: |
-          chmod +x ./build/clean_gradle.sh
-          UNITY_VERSION=${{ matrix.unityVersion }} ./build/clean_gradle.sh
         shell: bash
       - name: Cache Docker Layers
         uses: actions/cache@v2
@@ -271,8 +256,8 @@ jobs:
         run: |
           rm -rf /github/workspace/dist
         shell: bash
-      - uses: game-ci/unity-builder@v2.0.4
-        timeout-minutes: 30
+      - uses: game-ci/unity-builder@v2.1.2
+        timeout-minutes: 60
         env:
           UNITY_EMAIL: ${{ secrets[matrix.unityEmailOverride] || secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets[matrix.unityPasswordOverride] || secrets.UNITY_PASSWORD }}

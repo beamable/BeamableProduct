@@ -1,5 +1,4 @@
 #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
-
 using Beamable.Common;
 using Beamable.Editor.Assistant;
 using System;
@@ -13,6 +12,7 @@ using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 #if UNITY_2019_4_OR_NEWER
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
+using UnityEditorInternal;
 #endif
 
 namespace Beamable.Editor.ToolbarExtender
@@ -29,17 +29,18 @@ namespace Beamable.Editor.ToolbarExtender
 
 		private static BeamEditorContext _editorAPI;
 		private static List<BeamableAssistantMenuItem> _assistantMenuItems;
-		private static List<BeamableToolbarButton> _leftButtons;
-		private static List<BeamableToolbarButton> _rightButtons;
+		private static List<BeamableToolbarButton> _leftButtons = new List<BeamableToolbarButton>();
+		private static List<BeamableToolbarButton> _rightButtons = new List<BeamableToolbarButton>();
 
+#if !UNITY_2022_1_OR_NEWER && UNITY_2019_1_OR_NEWER
 		private static Texture _noHintsTexture;
 		private static Texture _hintsTexture;
 		private static Texture _validationTexture;
+#endif
 
 #if UNITY_2019_4_OR_NEWER
 		private static bool _hasPreviewPackages = false;
 #endif
-
 		private static Action _repaint;
 
 		public static void Repaint() => _repaint?.Invoke();
@@ -74,7 +75,6 @@ namespace Beamable.Editor.ToolbarExtender
 
 			BeamableToolbarCallbacks.OnToolbarGUI = OnGUI;
 
-
 			if (!BeamEditor.IsInitialized)
 				return;
 
@@ -93,18 +93,30 @@ namespace Beamable.Editor.ToolbarExtender
 				return orderComp == 0 ? labelComp : orderComp;
 			});
 
+#if !UNITY_2022_1_OR_NEWER && UNITY_2019_1_OR_NEWER
+			_noHintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info.png");
+			_hintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info hit.png");
+			_validationTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info valu.png");
+#endif
+
 			var toolbarButtonsSearchInFolders = BeamEditor.CoreConfiguration.BeamableAssistantToolbarButtonsPaths.Where(Directory.Exists).ToArray();
 			var toolbarButtonsGuids = BeamableAssetDatabase.FindAssets<BeamableToolbarButton>(toolbarButtonsSearchInFolders);
 			var toolbarButtons = toolbarButtonsGuids.Select(guid => AssetDatabase.LoadAssetAtPath<BeamableToolbarButton>(AssetDatabase.GUIDToAssetPath(guid))).ToList();
 
-			var groupedBySide = toolbarButtons.GroupBy(btn => btn.GetButtonSide(api)).ToList();
-			_leftButtons = groupedBySide.Where(g => g.Key == BeamableToolbarButton.Side.Left)
-										.SelectMany(g => g)
-										.ToList();
+			_leftButtons.Clear();
+			_rightButtons.Clear();
 
-			_rightButtons = groupedBySide.Where(g => g.Key == BeamableToolbarButton.Side.Right)
-										 .SelectMany(g => g)
-										 .ToList();
+			for (int i = 0; i < toolbarButtons.Count; i++)
+			{
+				if (toolbarButtons[i].GetButtonSide(api) == BeamableToolbarButton.Side.Left)
+				{
+					_leftButtons.Add(toolbarButtons[i]);
+				}
+				else
+				{
+					_rightButtons.Add(toolbarButtons[i]);
+				}
+			}
 
 			_leftButtons.Sort((b1, b2) =>
 			{
@@ -123,10 +135,6 @@ namespace Beamable.Editor.ToolbarExtender
 
 				return orderComp == 0 ? (labelComp == 0 ? textureComp : labelComp) : orderComp;
 			});
-
-			_noHintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info.png");
-			_hintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info hit.png");
-			_validationTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info valu.png");
 		}
 
 #if UNITY_2019_3_OR_NEWER
@@ -205,11 +213,10 @@ namespace Beamable.Editor.ToolbarExtender
 #endif
 			leftRect.xMax = playButtonsPosition;
 
-
-
 			Rect rightRect = new Rect(0, 0, screenWidth, Screen.height);
 			rightRect.xMin = playButtonsPosition;
 			rightRect.xMin += _commandStyle.fixedWidth * 3; // Play buttons
+			rightRect.xMin += 200; // Additional left side offset
 			rightRect.xMax = screenWidth;
 			rightRect.xMax -= space; // Spacing right
 			rightRect.xMax -= dropdownWidth; // Layout
@@ -230,7 +237,6 @@ namespace Beamable.Editor.ToolbarExtender
 			rightRect.xMax -= versionControlWidth; // Colab/PlasticSCM button
 #endif
 
-
 #if UNITY_2019_4_OR_NEWER // Handling of preview packages
 			Type type = typeof(UnityEditor.PackageManager.PackageInfo);
 			MethodInfo methodInfo = type?.GetMethod(GET_ALL_METHOD_NAME, BindingFlags.NonPublic | BindingFlags.Static);
@@ -246,12 +252,12 @@ namespace Beamable.Editor.ToolbarExtender
 					// referencing https://docs.unity3d.com/Manual/upm-lifecycle.html
 					if (package.registry == null)
 						return false; // no registry implies a local package, which won't trigger.
-					if (!PackageVersion.TryFromSemanticVersionString(package.version, out var version))
+					if (!PackageVersion.TryFromSemanticVersionString(package.version, out var ver))
 					{
 						return true; // this isn't a valid package version, so we'll assume its a preview.
 					}
 
-					var isPreview = version.IsExperimental || version.IsPreview;
+					var isPreview = ver.IsExperimental || ver.IsPreview;
 					return isPreview;
 				});
 
@@ -262,7 +268,6 @@ namespace Beamable.Editor.ToolbarExtender
 					rightRect.xMax -= space;
 					rightRect.xMax -= previewPackagesWarningWidth;
 				}
-				
 			}
 #endif
 
@@ -270,9 +275,6 @@ namespace Beamable.Editor.ToolbarExtender
 			rightRect.xMax -= buttonWidth; // Cloud
 			rightRect.xMax -= space; // Spacing between cloud and collab
 #endif
-
-			var beamableAssistantEnd = rightRect.xMax -= space; // Space between collab and Beamable Assistant
-			var beamableAssistantStart = rightRect.xMax -= beamableAssistantWidth; // Beamable Assistant Button
 
 			// Add spacing around existing controls
 			leftRect.xMin += space;
@@ -296,11 +298,13 @@ namespace Beamable.Editor.ToolbarExtender
 #else
 			leftRect.y = 5;
 			leftRect.height = 24;
-			rightRect.y = 3;
+			rightRect.y = 5;
 			rightRect.height = 24;
 #endif
 
-
+#if !UNITY_2022_1_OR_NEWER && UNITY_2019_1_OR_NEWER
+			var beamableAssistantEnd = rightRect.xMax -= space; // Space between collab and Beamable Assistant
+			var beamableAssistantStart = rightRect.xMax -= beamableAssistantWidth; // Beamable Assistant Button
 			var beamableAssistantButtonRect = new Rect(beamableAssistantStart, rightRect.y + 2, beamableAssistantEnd - beamableAssistantStart, dropdownHeight);
 			var btnTexture = _noHintsTexture;
 
@@ -315,7 +319,18 @@ namespace Beamable.Editor.ToolbarExtender
 
 
 			GUILayout.BeginArea(beamableAssistantButtonRect);
-			if (GUILayout.Button(new GUIContent(" Beamable", btnTexture), GUILayout.Width(beamableAssistantEnd - beamableAssistantStart), GUILayout.Height(dropdownHeight)))
+			var version = BeamableEnvironment.SdkVersion;
+			var versionStr = $"Beamable {version}";
+			if (version.IsReleaseCandidate)
+			{
+				versionStr = $"Beamable {version.Major}.{version.Minor}.{version.Patch} RC{version.RC}";
+			}
+			if (version.IsNightly)
+			{
+				versionStr = $"BeamDev {version.NightlyTime}";
+			}
+			var titleContent = new GUIContent(versionStr, btnTexture);
+			if (GUILayout.Button(titleContent, GUILayout.Width(beamableAssistantEnd - beamableAssistantStart), GUILayout.Height(dropdownHeight)))
 			{
 				// create the menu and add items to it
 				var menu = new GenericMenu();
@@ -330,6 +345,7 @@ namespace Beamable.Editor.ToolbarExtender
 			}
 
 			GUILayout.EndArea();
+#endif
 
 			GUILayout.BeginArea(leftRect);
 			GUILayout.BeginHorizontal();
@@ -379,5 +395,4 @@ namespace Beamable.Editor.ToolbarExtender
 		}
 	}
 }
-
 #endif

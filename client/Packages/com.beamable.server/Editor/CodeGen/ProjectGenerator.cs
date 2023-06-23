@@ -76,10 +76,10 @@ namespace Beamable.Server.Editor.CodeGen
                <TargetFramework>net6.0</TargetFramework>
             </PropertyGroup>
 
-            <PropertyGroup>
-               <NoWarn>1591</NoWarn>
-               <DocumentationFile>serviceDocs.xml</DocumentationFile>
-            </PropertyGroup>
+	            <PropertyGroup>
+	               <NoWarn>1591</NoWarn>
+				   <GenerateDocumentationFile>true</GenerateDocumentationFile>
+	            </PropertyGroup>
 
 {GetCustomFragmentString()}
             <ItemGroup>
@@ -88,7 +88,7 @@ namespace Beamable.Server.Editor.CodeGen
 <SpecificVersion>False</SpecificVersion>
                </Reference>
                <Reference Include=""Beamable.Common"">
-                  <HintPath>/src/lib/Beamable.Common.dll</HintPath>
+                  <HintPath>/src/lib/Unity.Beamable.Runtime.Common.dll</HintPath>
 <SpecificVersion>False</SpecificVersion>
                </Reference>
                <Reference Include=""Beamable.Server"">

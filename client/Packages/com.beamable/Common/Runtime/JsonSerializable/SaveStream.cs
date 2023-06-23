@@ -109,11 +109,11 @@ namespace Beamable.Serialization
 				curDict[key] = target.ToString(); return true;
 			}
 
-			public bool Serialize(string key, ref DateTime target)
+			public bool Serialize(string key, ref DateTime target, params string[] formats)
 			{
 				//The "O" or "o" standard format specifier represents a custom date and
 				//time format string using a pattern that preserves time zone information.
-				string data = target.ToString("O");
+				string data = target.ToString(formats.Length > 0 ? formats[0] : "O");
 				curDict[key] = data;
 				return true;
 			}
@@ -260,7 +260,7 @@ namespace Beamable.Serialization
 			}
 
 			public bool Serialize<T>(string key, ref T value)
-			   where T : class, ISerializable, new()
+			   where T : ISerializable
 			{
 				return InternalSerialize<T>(key, value);
 			}

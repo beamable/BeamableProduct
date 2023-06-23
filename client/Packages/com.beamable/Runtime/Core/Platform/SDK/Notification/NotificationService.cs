@@ -7,15 +7,20 @@ using Beamable.Common.Spew;
 using Beamable.Pooling;
 using Beamable.Serialization.SmallerJSON;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using StringBuilderPool = Beamable.Common.Pooling.StringBuilderPool;
 
 #if UNITY_IOS
+#if NOTIFICATIONS_PACKAGE
+using Unity.Notifications.iOS;
+#elif !UNITY_2022_1_OR_NEWER
 using NotificationServices = UnityEngine.iOS.NotificationServices;
 using NotificationType = UnityEngine.iOS.NotificationType;
 using LocalNotification = UnityEngine.iOS.LocalNotification;
 using RemoteNotification = UnityEngine.iOS.RemoteNotification;
+#endif
 #endif
 
 #if USE_FIREBASE
@@ -84,10 +89,14 @@ namespace Beamable.Api.Notification
 					LocalRelay = new GoogleLocalNotificationRelay();
 					NotificationLogger.Log("Local notifications using Google provider.");
 					break;
-#if UNITY_IOS
+#if UNITY_IOS && (NOTIFICATIONS_PACKAGE || !UNITY_2022_1_OR_NEWER)
             case RuntimePlatform.IPhonePlayer:
+#if NOTIFICATIONS_PACKAGE
+	            StartCoroutine(RequestAuthorization());
+#elif !UNITY_2022_1_OR_NEWER
                 NotificationServices.RegisterForNotifications(NotificationType.Alert | NotificationType.Badge | NotificationType.Sound);
-                LocalRelay = new AppleLocalNotificationRelay();
+#endif
+	            LocalRelay = new AppleLocalNotificationRelay();
                NotificationLogger.Log("Local notifications using Apple provider.");
                break;
 #endif // UNITY_IOS
@@ -379,6 +388,22 @@ namespace Beamable.Api.Notification
 			LocalRelay.CreateNotificationChannel(id, name, description);
 			NotificationLogger.LogFormat("Create notification channel. id={0}, name={1}, description={2}.", id, name, description);
 		}
+
+#if NOTIFICATIONS_PACKAGE && UNITY_IOS
+		IEnumerator RequestAuthorization()
+		{
+			var authorizationOption = AuthorizationOption.Alert | AuthorizationOption.Badge | AuthorizationOption.Sound;
+			using (var req = new AuthorizationRequest(authorizationOption, true))
+			{
+				while (!req.IsFinished)
+				{
+					yield return null;
+				}
+
+				BeamableLogger.Log($"RequestAuthorization:\n granted: {req.Granted},\n error: {req.Error},\n deviceToken: {req.DeviceToken}");
+			}
+		}
+#endif
 
 		/// <summary>
 		/// Schedule a local notification. This will overwrite any

@@ -10,6 +10,10 @@
 
 		public const int SYSTEM_DEPENDENCY_ORDER = -1000;
 
+		public const string LINK_LICENSE = "https://beamable.com/license";
+		public const string LINK_TERMS_OF_SERVICE = "https://beamable.com/tos";
+		public const string LINK_PRIVACY = "https://beamable.com/privacy";
+
 		public static class Commons
 		{
 			public const string OBSOLETE_WILL_BE_REMOVED = "This is no longer supported, and will be removed in the future.";
@@ -37,6 +41,7 @@
 			public const string BEAMABLE_PACKAGE = "Packages/com.beamable";
 			public const string BEAMABLE_PACKAGE_EDITOR = BEAMABLE_PACKAGE + "/Editor";
 			public const string BEAMABLE_PACKAGE_EDITOR_UI = BEAMABLE_PACKAGE_EDITOR + "/UI";
+			public const string BEAMABLE_PACKAGE_EDITOR_ASSISTANT = BEAMABLE_PACKAGE_EDITOR_UI + "/BeamableAssistant";
 
 			public const string BEAMABLE_SERVER_PACKAGE = "Packages/com.beamable.server";
 			public const string BEAMABLE_SERVER_PACKAGE_EDITOR = BEAMABLE_SERVER_PACKAGE + "/Editor";
@@ -72,6 +77,7 @@
 				public const string URL_DOC_INVENTORY_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/inventory-feature-overview";
 				public const string URL_DOC_STORE_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/stores-feature-overview";
 				public const string URL_DOC_MICROSERVICES = URL_BEAMABLE_DOCS_WEBSITE + "/microservices-feature";
+				public const string URL_DOC_MICROSERVICES_PUBLISHING = URL_BEAMABLE_DOCS_WEBSITE + "/microservices-publishing";
 
 				public const string URL_DOC_WINDOW_CONTENT_MANAGER = URL_BEAMABLE_DOCS_WEBSITE + "/content-manager-overview";
 				public const string URL_DOC_WINDOW_CONTENT_NAMESPACES = URL_BEAMABLE_DOCS_WEBSITE + "/content-manager#namespaces";
@@ -117,6 +123,7 @@
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_POOLING = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Pooling";
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_ENV = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Change Environment";
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_SAMPLE = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Sample Utility";
+					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_CLEAR_CID_PID_MEMORY = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Clear Toolbox CID/PID";
 
 					//Menu Items: Window (#ifdef BEAMABLE_DEVELOPER)
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_BEAMABLE_DEVELOPER_SAMPLES = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + "/Samples";

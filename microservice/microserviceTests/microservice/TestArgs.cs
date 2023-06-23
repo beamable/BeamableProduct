@@ -2,6 +2,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
 using Beamable.Microservice.Tests.Socket;
 using Beamable.Server;
+using Beamable.Server.Api.RealmConfig;
 using System;
 using System.Threading.Tasks;
 
@@ -29,6 +30,12 @@ namespace microserviceTests.microservice
 			{
 				conf.Builder.RemoveIfExists<SocketRequesterContext>();
 				conf.Builder.AddSingleton(_ => Service.SocketContext);
+				conf.Builder.RemoveIfExists<IRealmConfigService>();
+				conf.Builder.RemoveIfExists<IMicroserviceRealmConfigService>();
+				conf.Builder.RemoveIfExists<RealmConfigService>();
+				conf.Builder.AddSingleton<MockRealmConfig>();
+				conf.Builder.AddSingleton<IMicroserviceRealmConfigService>(p => p.GetService<MockRealmConfig>());
+				conf.Builder.AddSingleton<IRealmConfigService>(p => p.GetService<MockRealmConfig>());
 				conf.Socket(_provider);
 				conf.Content(_resolver);
 			});
@@ -115,6 +122,7 @@ namespace microserviceTests.microservice
       public int SendChunkSize => 1024;
       public int BeamInstanceCount => 1;
       public int RequestCancellationTimeoutSeconds => 10;
-
+      public LogOutputType LogOutputType => LogOutputType.DEFAULT;
+      public string LogOutputPath { get; }
    }
 }

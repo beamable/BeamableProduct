@@ -4,7 +4,10 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Semantics;
+using cli.Commands.Project;
 using cli.Content;
+using cli.Docs;
 using cli.Dotnet;
 using cli.Services;
 using cli.Services.Content;
@@ -13,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
+using Serilog.Sinks.SpectreConsole;
 using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Invocation;
@@ -43,7 +47,8 @@ public class App
 
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
 		Log.Logger = new LoggerConfiguration()
-			.WriteTo.Console(LogLevel.MinimumLevel)
+			.WriteTo.SpectreConsole("{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}")
+			.MinimumLevel.ControlledBy(LogLevel)
 			.CreateLogger();
 
 		BeamableLogProvider.Provider = new CliSerilogProvider();
@@ -62,6 +67,7 @@ public class App
 		services.AddSingleton<IAliasService, AliasService>();
 		services.AddSingleton<IBeamableRequester>(provider => provider.GetRequiredService<CliRequester>());
 		services.AddSingleton<CliRequester, CliRequester>();
+		services.AddSingleton<IRequester>(p => p.GetService<CliRequester>());
 		services.AddSingleton<IAuthSettings, DefaultAuthSettings>();
 		services.AddSingleton<IAuthApi, AuthApi>();
 		services.AddSingleton<ConfigService>();
@@ -72,63 +78,81 @@ public class App
 		services.AddSingleton<CliEnvironment>();
 		services.AddSingleton<SwaggerService>();
 		services.AddSingleton<ISwaggerStreamDownloader, SwaggerStreamDownloader>();
-		services.AddSingleton<SwaggerService.ISourceGenerator, UnitySourceGenerator>();
-		// services.AddSingleton<SwaggerService.ISourceGenerator, UnrealSourceGenerator>(); // TODO: figure out how to handle this...
+		services.AddSingleton<UnitySourceGenerator>();
+		services.AddSingleton<UnrealSourceGenerator>();
 		services.AddSingleton<ProjectService>();
-
+		services.AddSingleton<SwaggerService.SourceGeneratorListProvider>();
+		services.AddSingleton<UnityCliGenerator>();
+		services.AddSingleton<UnrealCliGenerator>();
+		services.AddTransient<DiscoveryService>();
+		services.AddSingleton<DocService>();
+		services.AddSingleton<CliGenerator>();
 		OpenApiRegistration.RegisterOpenApis(services);
 
 		_serviceConfigurator?.Invoke(services);
 	}
 
-	public virtual void Configure(Action<IDependencyBuilder>? serviceConfigurator = null, Action<IDependencyBuilder>? commandConfigurator = null)
+	public virtual void Configure(Action<IDependencyBuilder> serviceConfigurator = null, Action<IDependencyBuilder> commandConfigurator = null)
 	{
 		if (IsBuilt)
 			throw new InvalidOperationException("The app has already been built, and cannot be configured anymore");
 
 		ConfigureLogging();
 
+		Commands.AddSingleton(new ArgValidator<ServiceName>(arg => new ServiceName(arg)));
+
 		// add global options
 		Commands.AddSingleton<DryRunOption>();
 		Commands.AddSingleton<CidOption>();
 		Commands.AddSingleton<PidOption>();
 		Commands.AddSingleton<ConfigDirOption>();
-		Commands.AddSingleton<PlatformOption>();
+		Commands.AddSingleton<HostOption>();
 		Commands.AddSingleton<LimitOption>();
 		Commands.AddSingleton<SkipOption>();
 		Commands.AddSingleton<DeployFilePathOption>();
 		Commands.AddSingleton<AccessTokenOption>();
 		Commands.AddSingleton<RefreshTokenOption>();
 		Commands.AddSingleton<LogOption>();
+		Commands.AddSingleton<EnableReporterOption>();
 		Commands.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
 			root.AddGlobalOption(provider.GetRequiredService<DryRunOption>());
 			root.AddGlobalOption(provider.GetRequiredService<CidOption>());
 			root.AddGlobalOption(provider.GetRequiredService<PidOption>());
-			root.AddGlobalOption(provider.GetRequiredService<PlatformOption>());
+			root.AddGlobalOption(provider.GetRequiredService<HostOption>());
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
+			root.AddGlobalOption(provider.GetRequiredService<EnableReporterOption>());
 			root.Description = "A CLI for interacting with the Beamable Cloud.";
 			return root;
 		});
 
 
 		// add commands
+		Commands.AddRootCommand<CliInterfaceGeneratorCommand, CliInterfaceGeneratorCommandArgs>();
+
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
 		Commands.AddRootCommand<ProjectCommand, ProjectCommandArgs>();
 		Commands.AddCommand<NewSolutionCommand, NewSolutionCommandArgs, ProjectCommand>();
+		Commands.AddCommand<NewStorageCommand, NewStorageCommandArgs, ProjectCommand>();
 		Commands.AddCommand<GenerateEnvFileCommand, GenerateEnvFileCommandArgs, ProjectCommand>();
 		Commands.AddCommand<GenerateClientFileCommand, GenerateClientFileCommandArgs, ProjectCommand>();
 		Commands.AddCommand<OpenSwaggerCommand, OpenSwaggerCommandArgs, ProjectCommand>();
+		Commands.AddCommand<TailLogsCommand, TailLogsCommandArgs, ProjectCommand>();
+		Commands.AddCommand<OpenMongoExpressCommand, OpenMongoExpressCommandArgs, ProjectCommand>();
 		Commands.AddCommand<AddUnityClientOutputCommand, AddUnityClientOutputCommandArgs, ProjectCommand>();
+		Commands.AddCommand<AddUnrealClientOutputCommand, AddUnrealClientOutputCommandArgs, ProjectCommand>();
 		Commands.AddCommand<ShareCodeCommand, ShareCodeCommandArgs, ProjectCommand>();
+		Commands.AddCommand<CheckStatusCommand, CheckStatusCommandArgs, ProjectCommand>();
+		Commands.AddCommand<AddServiceToSolutionCommand, AddServiceToSolutionCommandArgs, ProjectCommand>();
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Commands.AddRootCommand<BaseRequestGetCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestPutCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestPostCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestDeleteCommand, BaseRequestArgs>();
+		Commands.AddRootCommand<GenerateDocsCommand, GenerateDocsCommandArgs>();
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Commands.AddCommand<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
 		Commands.AddCommand<ConfigGetSecret, ConfigGetSecretArgs, ConfigCommand>();
@@ -136,6 +160,15 @@ public class App
 		Commands.AddRootCommand<OpenAPICommand, OpenAPICommandArgs>();
 		Commands.AddCommand<GenerateSdkCommand, GenerateSdkCommandArgs, OpenAPICommand>();
 		Commands.AddCommand<DownloadOpenAPICommand, DownloadOpenAPICommandArgs, OpenAPICommand>();
+
+		Commands.AddRootCommand<ProfilingCommand, ProfilingCommandArgs>();
+		Commands.AddCommand<CheckCountersCommand, CheckCountersCommandArgs, ProfilingCommand>();
+		Commands.AddCommand<CheckNBomberCommand, CheckNBomberCommandArgs, ProfilingCommand>();
+		Commands.AddCommand<RunNBomberCommand, RunNBomberCommandArgs, ProfilingCommand>();
+
+		// org commands
+		Commands.AddRootCommand<OrganizationCommand, OrganizationCommandArgs>();
+		Commands.AddCommand<RegisterCommand, RegisterCommandArgs, OrganizationCommand>();
 
 		// beamo commands
 		Commands.AddRootCommand<ServicesCommand, ServicesCommandArgs>();
@@ -145,6 +178,7 @@ public class App
 		Commands.AddCommand<ServicesModifyCommand, ServicesModifyCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesEnableCommand, ServicesEnableCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesDeployCommand, ServicesDeployCommandArgs, ServicesCommand>();
+		Commands.AddCommand<ServicesRunCommand, ServicesRunCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesResetCommand, ServicesResetCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesTemplatesCommand, ServicesTemplatesCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesRegistryCommand, ServicesRegistryCommandArgs, ServicesCommand>();
@@ -208,14 +242,23 @@ public class App
 		commandLineBuilder.UseDefaults();
 		commandLineBuilder.UseSuggestDirective();
 		commandLineBuilder.UseTypoCorrections();
-		commandLineBuilder.UseExceptionHandler((ex, ctx) =>
+		commandLineBuilder.UseExceptionHandler((ex, context) =>
 		{
 			switch (ex)
 			{
 				case CliException cliException:
-					Console.Error.WriteLine(cliException.Message);
+					if (cliException.ReportOnStdOut)
+					{
+						Console.WriteLine(cliException.Message);
+					}
+					else
+					{
+						Console.Error.WriteLine(cliException.Message);
+					}
+					context.ExitCode = cliException.NonZeroOrOneExitCode;
 					break;
 				default:
+					context.ExitCode = 1;
 					Console.Error.WriteLine(ex.Message);
 					Console.Error.WriteLine(ex.StackTrace);
 					break;

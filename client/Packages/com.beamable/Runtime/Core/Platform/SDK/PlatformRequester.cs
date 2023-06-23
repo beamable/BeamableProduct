@@ -9,6 +9,7 @@ using Beamable.Api.Connectivity;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Dependencies;
 using Beamable.Common.Pooling;
 using Beamable.Common.Spew;
 using Beamable.Serialization;
@@ -24,6 +25,20 @@ using Debug = UnityEngine.Debug;
 namespace Beamable.Api
 {
 
+	public interface IPlatformRequesterErrorHandler
+	{
+		Promise<T> HandleError<T>(Exception ex,
+								  string contentType,
+								  byte[] body,
+								  SDKRequesterOptions<T> opts);
+	}
+
+	public interface IPlatformRequesterHostResolver
+	{
+		string Host { get; }
+		PackageVersion PackageVersion { get; }
+	}
+
 	/// <summary>
 	/// This type defines the %PlatformRequester.
 	///
@@ -37,6 +52,7 @@ namespace Beamable.Api
 	/// </summary>
 	public class PlatformRequester : IPlatformRequester, IHttpRequester, IRequester
 	{
+		private readonly IDependencyProvider _provider;
 		private const string ACCEPT_HEADER = "application/json";
 
 		private readonly PackageVersion _beamableVersion;
@@ -53,10 +69,34 @@ namespace Beamable.Api
 		public string Shard { get; set; }
 		public string Language { get; set; }
 		public string TimeOverride { get; set; }
-		public IAuthApi AuthService { private get; set; }
+
+		private IAuthApi _authService;
+
+		public IAuthApi AuthService
+		{
+			private get
+			{
+				if (_authService == null)
+				{
+					if (_provider == null)
+					{
+						Debug.LogError("PlatformRequester does not have an authService, nor does it have a provider to get one."); // expect a null reference.
+					}
+					_authService = _provider.GetService<IAuthApi>();
+				}
+
+				return _authService;
+			}
+			set
+			{
+				_authService = value;
+			}
+		}
 
 		private string _requestTimeoutMs = null;
 		private int _timeoutSeconds = Constants.Requester.DEFAULT_APPLICATION_TIMEOUT_SECONDS;
+
+		public IPlatformRequesterErrorHandler ErrorHandler { get; set; }
 
 		public string RequestTimeoutMs
 		{
@@ -77,6 +117,17 @@ namespace Beamable.Api
 
 		private readonly OfflineCache _offlineCache;
 
+		public PlatformRequester(IDependencyProvider provider)
+		{
+			var resolver = provider.GetService<IPlatformRequesterHostResolver>();
+			_provider = provider;
+			Host = resolver.Host;
+			_beamableVersion = resolver.PackageVersion;
+			accessTokenStorage = provider.GetService<AccessTokenStorage>();
+			_connectivityService = provider.GetService<IConnectivityService>();
+			_offlineCache = provider.GetService<OfflineCache>();
+		}
+
 		public PlatformRequester(string host, PackageVersion beamableVersion, AccessTokenStorage accessTokenStorage, IConnectivityService connectivityService, OfflineCache offlineCache)
 		{
 			Host = host;
@@ -86,19 +137,32 @@ namespace Beamable.Api
 			_offlineCache = offlineCache;
 		}
 
+		public PlatformRequester RemoveConnectivityChecks()
+		{
+			_connectivityService = null;
+			return this;
+		}
+
 		public IBeamableRequester WithAccessToken(TokenResponse token)
 		{
-			var requester = new PlatformRequester(Host, _beamableVersion, accessTokenStorage, _connectivityService, _offlineCache)
+			PlatformRequester CreateInstance()
 			{
-				Cid = Cid,
-				Pid = Pid,
-				Shard = Shard,
-				Language = Language,
-				TimeOverride = TimeOverride,
-				AuthService = AuthService,
-				Token = new AccessToken(accessTokenStorage, Cid, Pid, token.access_token, token.refresh_token,
-				  token.expires_in)
-			};
+				if (_provider == null)
+				{
+					return new PlatformRequester(Host, _beamableVersion, accessTokenStorage, _connectivityService,
+												 _offlineCache);
+				}
+				return new PlatformRequester(_provider);
+			}
+
+			var requester = CreateInstance();
+			requester.Cid = Cid;
+			requester.Pid = Pid;
+			requester.Shard = Shard;
+			requester.TimeOverride = TimeOverride;
+			requester.AuthService = AuthService;
+			requester.Token = new AccessToken(accessTokenStorage, Cid, Pid, token.access_token, token.refresh_token,
+											  token.expires_in);
 			return requester;
 		}
 
@@ -366,6 +430,10 @@ namespace Beamable.Api
 				return await MakeRequest(contentType, body, opts);
 			}
 
+			if (ErrorHandler != null)
+			{
+				return await ErrorHandler.HandleError(error, contentType, body, opts);
+			}
 			throw error;
 		}
 
@@ -397,12 +465,14 @@ namespace Beamable.Api
 		{
 			if (!string.IsNullOrEmpty(Cid))
 			{
-				request.SetRequestHeader(Constants.Requester.HEADER_CID, Cid);
-			}
-
-			if (!string.IsNullOrEmpty(Pid))
-			{
-				request.SetRequestHeader(Constants.Requester.HEADER_PID, Pid);
+				if (!string.IsNullOrEmpty(Pid))
+				{
+					request.SetRequestHeader(Constants.Requester.HEADER_SCOPE, $"{Cid}.{Pid}");
+				}
+				else
+				{
+					request.SetRequestHeader(Constants.Requester.HEADER_SCOPE, $"{Cid}");
+				}
 			}
 		}
 
@@ -451,7 +521,11 @@ namespace Beamable.Api
 			UnityWebRequest request = BuildWebRequest(contentType, body, opts);
 			request.SetRequestHeader("Accept", GetAcceptHeader());
 
-			AddCidPidHeaders(request);
+			if (!opts.disableScopeHeaders)
+			{
+				AddCidPidHeaders(request);
+			}
+
 			AddVersionHeaders(request);
 			AddAuthHeader(request, opts);
 			AddShardHeader(request);

@@ -410,8 +410,7 @@ namespace Beamable.Editor.UI.Components
 			if (StyleSheet != null)
 			{
 #if UNITY_EDITOR
-				EditorUtility.SetDirty(StyleSheet);
-				AssetDatabase.SaveAssets();
+				StyleSheet.TrySetDirty();
 #endif
 			}
 		}

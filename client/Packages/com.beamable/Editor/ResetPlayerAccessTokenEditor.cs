@@ -1,4 +1,5 @@
 using Beamable.Api;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using static Beamable.Common.Constants.MenuItems.Windows;
@@ -19,6 +20,26 @@ namespace Beamable.Editor
 			private string Prefix;
 			private void OnGUI()
 			{
+				EditorGUILayout.LabelField("Editor (the token used in edit mode)");
+				if (GUILayout.Button("Clear Tokens"))
+				{
+					var token = BeamEditorContext.Default.Requester.Token;
+					BeamEditorContext.Default.EditorAccountService.Clear();
+					var storage = BeamEditorContext.Default.ServiceScope.GetService<AccessTokenStorage>();
+					storage.DeleteTokenForCustomer(token.Cid);
+					storage.DeleteTokenForRealm(token.Cid, token.Pid);
+					BeamEditorContext.Default.Requester.DeleteToken();
+
+				}
+
+				if (GUILayout.Button("Corrupt Tokens"))
+				{
+					BeamEditorContext.Default.Requester.Token.CorruptAccessToken();
+					BeamEditorContext.Default.Requester.Token.SaveAsCustomerScoped();
+				}
+
+				EditorGUILayout.LabelField("Runtime (the token used when you enter playmode)");
+
 				Prefix = EditorGUILayout.TextField("PlayerCode", Prefix);
 				if (GUILayout.Button("Cancel"))
 				{

@@ -7,6 +7,7 @@ using Beamable.Common;
 using Docker.DotNet.Models;
 using ICSharpCode.SharpZipLib.Tar;
 using Newtonsoft.Json;
+using Serilog;
 using System.Collections.Concurrent;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -15,6 +16,23 @@ namespace cli.Services;
 
 public partial class BeamoLocalSystem
 {
+	/// <summary>
+	/// Checks if Docker is running locally.
+	/// </summary>
+	/// <returns></returns>
+	public async Task<bool> CheckIsRunning()
+	{
+		try
+		{
+			await _client.System.PingAsync();
+			return true;
+		}
+		catch
+		{
+			return false;
+		}
+	}
+
 	/// <summary>
 	/// Uses the given image (name or id) to create/replace the container with the given name and configurations.
 	/// Returns whether or not the container successfully started. It DOES NOT guarantee the app inside the container is running correctly. 
@@ -80,11 +98,14 @@ public partial class BeamoLocalSystem
 			createParams.Image = image;
 		}
 
+
 		// Build container health check
+		if (!string.IsNullOrEmpty(healthcheckCmd))
 		{
 			createParams.Healthcheck = new HealthConfig() { Test = new List<string>() { healthcheckCmd } };
-			hostConfig.AutoRemove = autoRemoveWhenStopped;
 		}
+
+		hostConfig.AutoRemove = autoRemoveWhenStopped;
 
 		// Build env vars
 		{
@@ -120,6 +141,11 @@ public partial class BeamoLocalSystem
 		{
 			createParams.StopTimeout = TimeSpan.FromMilliseconds(10000);
 			var response = await _client.Containers.CreateContainerAsync(createParams);
+			foreach (var warning in response.Warnings)
+			{
+				Log.Warning(warning);
+			}
+
 			return response.ID;
 		}
 		catch (Exception e)
@@ -178,18 +204,12 @@ public partial class BeamoLocalSystem
 
 		using (var stream = CreateTarballForDirectory(dockerBuildContextPath))
 		{
-
 			var tag = $"{imageName}:{containerImageTag}";
 			var progress = 0f;
 			try
 			{
 				await _client.Images.BuildImageFromDockerfileAsync(
-					new ImageBuildParameters
-					{
-						Tags = new[] { tag },
-						Dockerfile = dockerfilePathInBuildContext,
-						Labels = new Dictionary<string, string>() { { "beamoId", imageName } },
-					},
+					new ImageBuildParameters { Tags = new[] { tag }, Dockerfile = dockerfilePathInBuildContext.Replace("\\", "/"), Labels = new Dictionary<string, string>() { { "beamoId", imageName } }, },
 					stream,
 					null,
 					new Dictionary<string, string>(),
@@ -222,32 +242,33 @@ public partial class BeamoLocalSystem
 						}
 
 						var messageStream = message.Stream;
-						if (!string.IsNullOrEmpty(messageStream))
+						if (string.IsNullOrEmpty(messageStream))
 						{
-							// BeamableLogger.Log(messageStream);
-							if (regex.IsMatch(messageStream))
-							{
-								// The group at idx 0 is the full match --- since we want the groups capturing the separated step values, we start at indices 1 and 2.
-								var currentStepStr = regex.Match(messageStream).Groups[1].Captures[0].Value;
-								var totalStepStr = regex.Match(messageStream).Groups[2].Captures[0].Value;
-
-								var currStep = float.Parse(currentStepStr);
-								// Add one here because Step 14/14 or Step 2/2 means we have just started step 14 or 2.
-								var totalStep = float.Parse(totalStepStr) + 1;
-
-								// Update the progress only if it increased (this is because we can sometimes get out of order stream step messages for the earlier steps).
-								// IDK why this happens, but... it does...
-								var currProgress = currStep / totalStep;
-								progress = progress < currProgress ? currProgress : progress;
-							}
-
-							// We set this to one here when we receive this stream message as it's the final one
-							if (messageStream.StartsWith("Successfully tagged"))
-								progress = 1;
-
-							// Update the progress handler
-							progressUpdateHandler?.Invoke(progress);
+							return;
 						}
+
+						if (regex.IsMatch(messageStream))
+						{
+							// The group at idx 0 is the full match --- since we want the groups capturing the separated step values, we start at indices 1 and 2.
+							var currentStepStr = regex.Match(messageStream).Groups[1].Captures[0].Value;
+							var totalStepStr = regex.Match(messageStream).Groups[2].Captures[0].Value;
+
+							var currStep = float.Parse(currentStepStr);
+							// Add one here because Step 14/14 or Step 2/2 means we have just started step 14 or 2.
+							var totalStep = float.Parse(totalStepStr) + 1;
+
+							// Update the progress only if it increased (this is because we can sometimes get out of order stream step messages for the earlier steps).
+							// IDK why this happens, but... it does...
+							var currProgress = currStep / totalStep;
+							progress = progress < currProgress ? currProgress : progress;
+						}
+
+						// We set this to one here when we receive this stream message as it's the final one
+						if (messageStream.StartsWith("Successfully tagged"))
+							progress = 1;
+
+						// Update the progress handler
+						progressUpdateHandler?.Invoke(progress);
 					}));
 			}
 			catch (Exception ex)
@@ -572,6 +593,4 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public async Task<Stream> SaveImage(BeamoServiceDefinition serviceDefinition) =>
 		await _client.Images.SaveImageAsync(serviceDefinition.ImageId, CancellationToken.None);
-
-
 }

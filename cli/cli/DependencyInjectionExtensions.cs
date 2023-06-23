@@ -1,4 +1,5 @@
 using Beamable.Common.Dependencies;
+using cli.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System.CommandLine;
 
@@ -31,9 +32,17 @@ public static class DependencyInjectionExtensions
 			var root = provider.GetRequiredService<TBaseCommand>();
 			var command = provider.GetRequiredService<TCommand>();
 
+			command.CommandProvider = provider;
 			command.Configure();
 			var binder = new AppCommand<TArgs>.Binder(command, provider);
-			command.SetHandler((TArgs args) => command.Handle(args), binder);
+			command.SetHandler((TArgs args) =>
+			{
+				if (command is IResultProvider resultProvider)
+				{
+					resultProvider.Reporter = new DataReporterService(args.AppContext);
+				}
+				return command.Handle(args);
+			}, binder);
 			root.AddCommand(command);
 			return factory;
 		});

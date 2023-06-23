@@ -27,9 +27,7 @@
   <PropertyGroup>
 
     <NoWarn>1591</NoWarn>
-
-    <DocumentationFile>baseImageDocs.xml</DocumentationFile>
-
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
 
@@ -42,7 +40,9 @@
 
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0-preview.6.21352.12" />
 
-    <PackageReference Include="Microsoft.OpenApi" Version="1.2.*" />
+    <PackageReference Include="Microsoft.OpenApi" Version="1.6.3" />
+
+    <PackageReference Include="NetMQ" Version="4.0.1.11" />
 
     <PackageReference Include="Newtonsoft.Json" Version="12.0.*" />
 
@@ -52,9 +52,11 @@
 
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.*" />
 
+    <PackageReference Include="Serilog.Sinks.File" Version="3.1.1" />
+
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta3.22114.*" />
 
-    <PackageReference Include="System.ServiceModel.Primitives" Version="4.8.*" />
+    <PackageReference Include="System.ServiceModel.Primitives" Version="4.9.*" />
 
     <PackageReference Include="System.Threading.RateLimiting" Version="7.0.0" />
 
@@ -96,7 +98,7 @@
 
     <Reference Include="Beamable.Common">
 
-      <HintPath>.\lib\Beamable.Common.dll</HintPath>
+      <HintPath>.\lib\Unity.Beamable.Runtime.Common.dll</HintPath>
 
     </Reference>
 

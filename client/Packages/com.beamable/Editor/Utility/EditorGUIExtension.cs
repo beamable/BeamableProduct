@@ -135,5 +135,10 @@ namespace Beamable.Editor
 		}
 
 		public static EditorGUIRectController ToRectController(this Rect rect) => new EditorGUIRectController(rect);
+
+		public static bool IsInHeadlessMode()
+		{
+			return SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null;
+		}
 	}
 }

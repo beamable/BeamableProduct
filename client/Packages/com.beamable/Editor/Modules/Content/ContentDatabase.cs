@@ -3,6 +3,7 @@ using Beamable.Common.Content;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -107,6 +108,11 @@ namespace Beamable.Editor.Content
 			ContentTypeNode rootNode = new ContentTypeNode();
 
 			nodeStack.Push(rootNode);
+
+			var contentTypeToClassCaseInsensitive = _typeCache.ContentTypeToClass.ToDictionary(
+				x => x.Key.ToLowerInvariant(),
+				x => x.Value);
+
 			#endregion
 
 			#region DFS over file structure
@@ -121,7 +127,31 @@ namespace Beamable.Editor.Content
 				Type runtimeType = null;
 				if (hasCurrType)
 				{
-					_typeCache.TryGetType(currType, out runtimeType);
+					if (!_typeCache.TryGetType(currType, out runtimeType))
+					{
+						// uh oh, we found a potential issue in content... 
+						if (contentTypeToClassCaseInsensitive.TryGetValue(currType.ToLowerInvariant(), out runtimeType))
+						{
+							// we were able to resolve it by using a case insensitive check
+							currType = _typeCache.ClassToContentType[runtimeType];
+						}
+						else
+						{
+							// we weren't able to resolve it :( 
+							Debug.LogError($"Unable to find a content type for type=[{currType}]." +
+										   $"\nThis can happen if the content folders have different names than the " +
+										   $"content attribute strings. " +
+										   $"\nMake sure that the {root} folder and sub folder names match the content " +
+										   $"attribute strings exactly." +
+										   $"\nThis could also happen if you are missing " +
+										   $"content classes for content in the realm. " +
+										   $"\n\nIf you are sure you have " +
+										   $"all the content classes, but nothing is working, follow these steps..." +
+										   $"\n1. make a backup of your {root} folder..." +
+										   $"\n2. delete the {root} folder..." +
+										   $"\n3. download content from the Content Manager...");
+						}
+					}
 				}
 
 				if (!Directory.Exists(currentFilePath)) continue; // if this directory doesn't exist, we can't do anything.

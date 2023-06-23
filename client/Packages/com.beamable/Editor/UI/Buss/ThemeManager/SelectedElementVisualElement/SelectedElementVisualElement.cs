@@ -185,7 +185,9 @@ namespace Beamable.Editor.UI.Components
 			view.SetItemHeight(SINGLE_CLASS_ENTRY_HEIGHT);
 			view.name = "classesList";
 
-#if UNITY_2020_1_OR_NEWER
+#if UNITY_2022_2_OR_NEWER
+			view.selectionChanged += SelectionChanged;
+#elif UNITY_2020_1_OR_NEWER
 			view.onSelectionChange += SelectionChanged;
 #else
 			view.onSelectionChanged += SelectionChanged;

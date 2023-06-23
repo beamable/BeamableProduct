@@ -2,6 +2,7 @@
 
 public struct UnrealApiSubsystemDeclaration
 {
+	public string ServiceName;
 	public string SubsystemName;
 
 	public List<string> IncludeStatements;
@@ -17,6 +18,9 @@ public struct UnrealApiSubsystemDeclaration
 
 	public List<UnrealEndpointDeclaration> EndpointUFunctionWithRetryDeclarations;
 	public List<UnrealEndpointDeclaration> AuthenticatedEndpointUFunctionWithRetryDeclarations;
+
+	private string _baseTypeDeclaration;
+	private string _assigneMicroserviceId;
 
 	public List<UnrealEndpointDeclaration> GetAllEndpoints() => EndpointRawFunctionDeclarations
 		.Union(AuthenticatedEndpointRawFunctionDeclarations)
@@ -81,9 +85,14 @@ public struct UnrealApiSubsystemDeclaration
 			return ufunctionDeclaration;
 		}));
 
+		var isMSGen = UnrealSourceGenerator.genType == UnrealSourceGenerator.GenerationType.Microservice;
 
+		helperDict.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
+		helperDict.Add(nameof(_assigneMicroserviceId), isMSGen ? $"MicroserviceName = TEXT(\"{ServiceName}\");" : "");
+		helperDict.Add(nameof(_baseTypeDeclaration), isMSGen ? "UBeamMicroserviceClientSubsystem" : "UEngineSubsystem");
 		helperDict.Add(nameof(SubsystemName), SubsystemName);
 
+		if (isMSGen) IncludeStatements.Add(@"#include ""BeamBackend/BeamMicroserviceClientSubsystem.h""");
 		helperDict.Add(nameof(IncludeStatements), string.Join("\n", IncludeStatements));
 
 		helperDict.Add(nameof(EndpointRawFunctionDeclarations), endpointRawFunctions);
@@ -98,11 +107,16 @@ public struct UnrealApiSubsystemDeclaration
 
 	public void IntoProcessMapCpp(Dictionary<string, string> helperDict)
 	{
+		var isMsGen = UnrealSourceGenerator.genType == UnrealSourceGenerator.GenerationType.Microservice;
 		var endpointRawFunctions = string.Join("\n\t\t", EndpointRawFunctionDeclarations.Select(d =>
 		{
 			d.IntoProcessMap(helperDict);
-			var bp = UnrealEndpointDeclaration.RAW_BP_DEFINITION.ProcessReplacement(helperDict);
-			var cpp = UnrealEndpointDeclaration.RAW_CPP_DEFINITION.ProcessReplacement(helperDict);
+
+			var bpTemplate = isMsGen ? UnrealEndpointDeclaration.RAW_MS_BP_DEFINITION : UnrealEndpointDeclaration.RAW_BP_DEFINITION;
+			var cppTemplate = isMsGen ? UnrealEndpointDeclaration.RAW_MS_CPP_DEFINITION : UnrealEndpointDeclaration.RAW_CPP_DEFINITION;
+
+			var bp = bpTemplate.ProcessReplacement(helperDict);
+			var cpp = cppTemplate.ProcessReplacement(helperDict);
 			helperDict.Clear();
 
 			return bp + cpp;
@@ -111,8 +125,12 @@ public struct UnrealApiSubsystemDeclaration
 		var authEndpointRawFunctions = string.Join("\n\t\t", AuthenticatedEndpointRawFunctionDeclarations.Select(d =>
 		{
 			d.IntoProcessMap(helperDict);
-			var bp = UnrealEndpointDeclaration.RAW_AUTH_BP_DEFINITION.ProcessReplacement(helperDict);
-			var cpp = UnrealEndpointDeclaration.RAW_AUTH_CPP_DEFINITION.ProcessReplacement(helperDict);
+
+			var bpTemplate = isMsGen ? UnrealEndpointDeclaration.RAW_MS_AUTH_BP_DEFINITION : UnrealEndpointDeclaration.RAW_AUTH_BP_DEFINITION;
+			var cppTemplate = isMsGen ? UnrealEndpointDeclaration.RAW_MS_AUTH_CPP_DEFINITION : UnrealEndpointDeclaration.RAW_AUTH_CPP_DEFINITION;
+
+			var bp = bpTemplate.ProcessReplacement(helperDict);
+			var cpp = cppTemplate.ProcessReplacement(helperDict);
 			helperDict.Clear();
 			return bp + cpp;
 		}));
@@ -150,7 +168,11 @@ public struct UnrealApiSubsystemDeclaration
 			return ufunction;
 		}));
 
+		var isMSGen = UnrealSourceGenerator.genType == UnrealSourceGenerator.GenerationType.Microservice;
+		helperDict.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
+		helperDict.Add(nameof(UnrealSourceGenerator.headerFileOutputPath), UnrealSourceGenerator.headerFileOutputPath);
 		helperDict.Add(nameof(SubsystemName), SubsystemName);
+		helperDict.Add(nameof(_assigneMicroserviceId), isMSGen ? $"MicroserviceName = TEXT(\"{ServiceName}\");" : "");
 
 		helperDict.Add(nameof(EndpointRawFunctionDeclarations), endpointRawFunctions);
 		helperDict.Add(nameof(AuthenticatedEndpointRawFunctionDeclarations), authEndpointRawFunctions);
@@ -181,7 +203,7 @@ public struct UnrealApiSubsystemDeclaration
  * Subsystem containing request calls for the ₢{nameof(SubsystemName)}₢ service.
  */
 UCLASS(NotBlueprintType)
-class BEAMABLECORE_API UBeam₢{nameof(SubsystemName)}₢Api : public UEngineSubsystem
+class ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ UBeam₢{nameof(SubsystemName)}₢Api : public ₢{nameof(_baseTypeDeclaration)}₢
 {{
 private:
 	GENERATED_BODY()
@@ -221,7 +243,7 @@ public:
 ";
 
 	public const string U_SUBSYSTEM_CPP = $@"
-#include ""AutoGen/SubSystems/Beam₢{nameof(SubsystemName)}₢Api.h""
+#include ""₢{nameof(UnrealSourceGenerator.headerFileOutputPath)}₢AutoGen/SubSystems/Beam₢{nameof(SubsystemName)}₢Api.h""
 #include ""BeamCoreSettings.h""
 
 
@@ -231,6 +253,7 @@ void UBeam₢{nameof(SubsystemName)}₢Api::Initialize(FSubsystemCollectionBase&
 	Backend = Cast<UBeamBackend>(Collection.InitializeDependency(UBeamBackend::StaticClass()));
 	RequestTracker = Cast<UBeamRequestTracker>(Collection.InitializeDependency(UBeamRequestTracker::StaticClass()));
 	ResponseCache = Cast<UBeamResponseCache>(Collection.InitializeDependency(UBeamResponseCache::StaticClass()));
+	₢{nameof(_assigneMicroserviceId)}₢
 }}
 
 void UBeam₢{nameof(SubsystemName)}₢Api::Deinitialize()

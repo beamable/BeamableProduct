@@ -74,7 +74,7 @@ namespace Beamable.Serialization
 			public bool Serialize(string key, ref string target) { return false; }
 			public bool Serialize(string key, ref Guid target) { return false; }
 			public bool Serialize(string key, ref StringBuilder target) { return false; }
-			public bool Serialize(string key, ref DateTime target) { return false; }
+			public bool Serialize(string key, ref DateTime target, params string[] formats) { return false; }
 
 #if BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
 			public bool Serialize(string key, ref Rect target) { return false; }
@@ -194,7 +194,7 @@ namespace Beamable.Serialization
 
 
 			public bool Serialize<T>(string key, ref T value)
-			   where T : class, ISerializable, new()
+			   where T : ISerializable
 			{
 				if (value == null)
 				{

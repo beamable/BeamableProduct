@@ -1,6 +1,8 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Dependencies;
+using Serilog;
 using Serilog.Events;
 using System.CommandLine.Binding;
 
@@ -9,7 +11,7 @@ namespace cli;
 
 public class AppServices : IServiceProvider
 {
-	public IServiceProvider duck;
+	public IDependencyProvider duck;
 	public object GetService(Type serviceType) => duck.GetService(serviceType);
 }
 
@@ -20,6 +22,7 @@ public interface IAppContext
 	public string Cid { get; }
 	public string Pid { get; }
 	public string Host { get; }
+	public bool UseFatalAsReportingChannel { get; }
 	public string WorkingDirectory { get; }
 	public IAccessToken Token { get; }
 	public string RefreshToken { get; }
@@ -40,14 +43,16 @@ public class DefaultAppContext : IAppContext
 	private readonly DryRunOption _dryRunOption;
 	private readonly CidOption _cidOption;
 	private readonly PidOption _pidOption;
-	private readonly PlatformOption _platformOption;
+	private readonly HostOption _hostOption;
 	private readonly AccessTokenOption _accessTokenOption;
 	private readonly RefreshTokenOption _refreshTokenOption;
 	private readonly LogOption _logOption;
 	private readonly ConfigDirOption _configDirOption;
 	private readonly ConfigService _configService;
 	private readonly CliEnvironment _environment;
+	private readonly EnableReporterOption _reporterOption;
 	public bool IsDryRun { get; private set; }
+	public bool UseFatalAsReportingChannel { get; private set; }
 
 	public IAccessToken Token => _token;
 	private CliToken _token;
@@ -62,24 +67,26 @@ public class DefaultAppContext : IAppContext
 	public string WorkingDirectory => _configService.WorkingDirectory;
 	public LogEventLevel LogLevel { get; private set; }
 
-	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, PlatformOption platformOption,
+	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, HostOption hostOption,
 		AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption, ConfigDirOption configDirOption,
-		ConfigService configService, CliEnvironment environment)
+		ConfigService configService, CliEnvironment environment, EnableReporterOption reporterOption)
 	{
 		_dryRunOption = dryRunOption;
 		_cidOption = cidOption;
 		_pidOption = pidOption;
-		_platformOption = platformOption;
+		_hostOption = hostOption;
 		_accessTokenOption = accessTokenOption;
 		_refreshTokenOption = refreshTokenOption;
 		_logOption = logOption;
 		_configDirOption = configDirOption;
 		_configService = configService;
 		_environment = environment;
+		_reporterOption = reporterOption;
 	}
 
 	public void Apply(BindingContext bindingContext)
 	{
+		UseFatalAsReportingChannel = bindingContext.ParseResult.GetValueForOption(_reporterOption);
 		IsDryRun = bindingContext.ParseResult.GetValueForOption(_dryRunOption);
 
 		// Configure log level from option
@@ -110,7 +117,7 @@ public class DefaultAppContext : IAppContext
 			// throw new CliException("cannot run without a cid. Please login.");
 		}
 
-		if (!_configService.TryGetSetting(out _host, bindingContext, _platformOption))
+		if (!_configService.TryGetSetting(out _host, bindingContext, _hostOption))
 		{
 			_host = Constants.DEFAULT_PLATFORM;
 			// throw new CliException("cannot run without a cid. Please login.");
@@ -121,8 +128,11 @@ public class DefaultAppContext : IAppContext
 		string defaultRefreshToken = string.Empty;
 		if (_configService.ReadTokenFromFile(out var response))
 		{
-			defaultAccessToken = response.access_token;
-			defaultRefreshToken = response.refresh_token;
+			if (response.ExpiresAt > DateTime.Now)
+			{
+				defaultAccessToken = response.Token;
+			}
+			defaultRefreshToken = response.RefreshToken;
 		}
 		_configService.TryGetSetting(out var accessToken, bindingContext, _accessTokenOption, defaultAccessToken);
 		_configService.TryGetSetting(out _refreshToken, bindingContext, _refreshTokenOption, defaultRefreshToken);
@@ -144,8 +154,7 @@ public class DefaultAppContext : IAppContext
 
 	public void UpdateToken(TokenResponse response)
 	{
-		_token.Token = response.access_token;
-		_token.RefreshToken = response.refresh_token;
+		_token = new CliToken(response, _cid, _pid);
 	}
 
 }

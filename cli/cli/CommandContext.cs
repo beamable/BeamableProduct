@@ -1,14 +1,51 @@
+using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
+using cli.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System.CommandLine;
 using System.CommandLine.Binding;
 
 namespace cli;
 
-public abstract class AppCommand<TArgs> : Command
+public interface IResultProvider
+{
+	public DataReporterService Reporter { get; set; }
+}
+
+public interface IResultSteam<TChannel, TData> : IResultProvider
+	where TChannel : IResultChannel, new()
+{
+}
+
+public interface IEmptyResult : IResultProvider
+{
+
+}
+
+
+public class DefaultStreamResultChannel : IResultChannel
+{
+	public string ChannelName { get; } = "stream";
+}
+
+public static class ResultStreamExtensions
+{
+	public static void SendResults<TChannel, TData>(this IResultSteam<TChannel, TData> self, TData data)
+		where TChannel : IResultChannel, new()
+	{
+		var channel = new TChannel(); // TODO: cache.
+		self.Reporter?.Report(channel.ChannelName, data);
+	}
+}
+
+
+public abstract partial class AppCommand<TArgs> : Command, IResultProvider
 	where TArgs : CommandArgs
 {
 	private List<Action<BindingContext, TArgs>> _bindingActions = new List<Action<BindingContext, TArgs>>();
+
+	DataReporterService IResultProvider.Reporter { get; set; }
+	public IDependencyProvider CommandProvider { get; set; }
 
 	protected AppCommand(string name, string description = null) : base(name, description)
 	{
@@ -26,24 +63,65 @@ public abstract class AppCommand<TArgs> : Command
 	/// to the <see cref="Handle"/> method.
 	/// </param>
 	/// <typeparam name="T"></typeparam>
-	protected void AddArgument<T>(Argument<T> arg, Action<TArgs, T> binder)
+	protected Argument<T> AddArgument<T>(Argument<T> arg, Action<TArgs, T> binder)
 	{
+		ArgValidator<T> validator = CommandProvider.CanBuildService<ArgValidator<T>>()
+			? CommandProvider.GetService<ArgValidator<T>>()
+			: null;
+
 		var set = new Action<BindingContext, TArgs>((ctx, args) =>
 		{
-			var res = ctx.ParseResult.GetValueForArgument(arg);
-			binder(args, res);
+			if (validator != null)
+			{
+				binder(args, validator.GetValue(ctx.ParseResult.FindResultFor(arg)));
+			}
+			else
+			{
+				var res = ctx.ParseResult.GetValueForArgument(arg);
+				binder(args, res);
+			}
 		});
 		_bindingActions.Add(set);
+
+		if (validator != null)
+		{
+			arg.AddValidator(res =>
+			{
+				var _ = validator.GetValue(res);
+			});
+		}
+
 		base.AddArgument(arg);
+		return arg;
 	}
 
 	protected void AddOption<T>(Option<T> arg, Action<TArgs, T> binder)
 	{
+		ArgValidator<T> validator = CommandProvider.CanBuildService<ArgValidator<T>>()
+			? CommandProvider.GetService<ArgValidator<T>>()
+			: null;
+
 		var set = new Action<BindingContext, TArgs>((ctx, args) =>
 		{
-			var res = ctx.ParseResult.GetValueForOption(arg);
-			binder(args, res);
+			if (validator != null)
+			{
+				binder(args, validator.GetValue(ctx.ParseResult.FindResultFor(arg)));
+			}
+			else
+			{
+				var res = ctx.ParseResult.GetValueForOption(arg);
+				binder(args, res);
+			}
 		});
+
+		if (validator != null)
+		{
+			arg.AddValidator(res =>
+			{
+				var _ = validator.GetValue(res);
+			});
+		}
+
 		_bindingActions.Add(set);
 		base.AddOption(arg);
 	}
@@ -100,6 +178,7 @@ public abstract class AppCommand<TArgs> : Command
 			return args;
 		}
 	}
+
 }
 
 public interface ICommandFactory

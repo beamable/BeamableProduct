@@ -24,7 +24,6 @@ namespace Beamable.Editor.Login.UI
 		private ExistingCustomerVisualElement _existingCustomerVisualElement;
 		private LegalCopyVisualElement _legalCopyVisualElement;
 		private ProjectSelectVisualElement _projectSelectVisualElement;
-		private NewUserVisualElement _newUserVisualElement;
 		private AccountSummaryVisualElement _accountSummaryVisualElement;
 		private NoRoleVisualElement _noRoleVisualElement;
 		private ForgotVisualElement _forgotPasswordVisualElement;
@@ -43,7 +42,6 @@ namespace Beamable.Editor.Login.UI
 				_existingCustomerVisualElement = new ExistingCustomerVisualElement() { Model = initializedModel, Manager = this };
 				_legalCopyVisualElement = new LegalCopyVisualElement() { Model = initializedModel, Manager = this };
 				_projectSelectVisualElement = new ProjectSelectVisualElement() { Model = initializedModel, Manager = this };
-				_newUserVisualElement = new NewUserVisualElement() { Model = initializedModel, Manager = this };
 				_accountSummaryVisualElement = new AccountSummaryVisualElement { Model = initializedModel, Manager = this };
 				_noRoleVisualElement = new NoRoleVisualElement { Model = initializedModel, Manager = this };
 				_forgotPasswordVisualElement = new ForgotVisualElement { Model = initializedModel, Manager = this };
@@ -107,11 +105,12 @@ namespace Beamable.Editor.Login.UI
 		public Promise<LoginManagerResult> Logout(LoginModel model)
 		{
 			var b = BeamEditorContext.Default;
-			b.Logout();
+			b.Logout(clearRealmPid: false);
 			model.Customer.SetUserInfo(0, null);
 			AssumePage(model);
 			return Promise<LoginManagerResult>.Successful(LoginManagerResult.Pass);
 		}
+
 
 		public Promise<LoginManagerResult> SendPasswordResetCode(LoginModel model)
 		{
@@ -158,17 +157,6 @@ namespace Beamable.Editor.Login.UI
 															  .OnBadRequest(EXCEPTION_TYPE_BAD_GAME_NAME, BAD_GAME_NAME_ERROR)
 															  .On(err => err.Status == 500 && err.Error.message == model.Customer.CidOrAlias, CID_TAKEN_ERROR)
 															  );
-		}
-
-		public Promise<LoginManagerResult> AttemptNewUser(LoginModel model)
-		{
-			var b = BeamEditorContext.Default;
-			var createUser = b.CreateUser(model.Customer.CidOrAlias, model.Customer.Email, model.Customer.Password);
-
-			return UseCommonErrorHandling(model, createUser, new LoginErrorHandlers()
-															 .OnBadRequest(EXCEPTION_TYPE_NOCID, NO_ALIAS_FOUND_ERROR)
-															 .OnBadRequest(EXCEPTION_TYPE_EMAIL_TAKEN, EMAIL_TAKEN_ERROR)
-			);
 		}
 
 		public Promise<LoginManagerResult> AttemptLoginExistingCustomer(LoginModel model)
@@ -249,11 +237,6 @@ namespace Beamable.Editor.Login.UI
 		public void GotoNewCustomer()
 		{
 			GotoNewPage(_newCustomerVisualElement);
-		}
-
-		public void GotoNewUser()
-		{
-			GotoNewPage(_newUserVisualElement);
 		}
 
 		public void GotoNoRole()

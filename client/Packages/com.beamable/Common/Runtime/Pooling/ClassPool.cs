@@ -1,6 +1,7 @@
 ﻿using Beamable.Common;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 
 namespace Beamable.Common.Pooling
@@ -16,11 +17,11 @@ namespace Beamable.Common.Pooling
 	MyClass.Spawn();
 	MyClass.Recycle(myClassInstance);
 	*/
-
 	public class ClassPool<T> : IDisposable where T : ClassPool<T>, new()
 	{
 
-		public static LinkedList<T> free = new LinkedList<T>();
+		private static LinkedList<T> freeList = new LinkedList<T>();
+		private static object lockSignal = new object();
 
 		public LinkedListNode<T> poolNode;
 
@@ -41,11 +42,13 @@ namespace Beamable.Common.Pooling
 
 		public static T Spawn()
 		{
-			var node = free.First;
-			if (node == null)
+			lock (lockSignal)
 			{
-				var t = new T();
-				t.poolNode = new LinkedListNode<T>(t);
+				var node = freeList.First;
+				if (node == null)
+				{
+					var t = new T();
+					t.poolNode = new LinkedListNode<T>(t);
 #if UNITY_EDITOR
             if (!ClassPoolProfiler.totalAllocated.ContainsKey(typeof(T)))
             {
@@ -57,34 +60,42 @@ namespace Beamable.Common.Pooling
                ClassPoolProfiler.totalAllocated[typeof(T)] = count+1;
             }
 #endif
-				return t;
+					return t;
+				}
+
+				var ret = node.Value;
+				freeList.RemoveFirst();
+				return ret;
 			}
-			var ret = node.Value;
-			free.RemoveFirst();
-			return ret;
 		}
 
 		public static void Recycle(ClassPool<T> obj)
 		{
-			obj.OnRecycle();
-			free.AddFirst(obj.poolNode);
+			lock (lockSignal)
+			{
+				obj.OnRecycle();
+				freeList.AddFirst(obj.poolNode);
+			}
 		}
 
 		public static void Preallocate(int count)
 		{
-			// Skip preallocation if the pool is not empty
-			// This tolerates force-restart
-			if (free.First != null) return;
-
-			for (int i = 0; i < count; ++i)
+			lock (lockSignal)
 			{
-				var t = new T();
-				t.poolNode = new LinkedListNode<T>(t);
-				free.AddFirst(t.poolNode);
-			}
+				// Skip preallocation if the pool is not empty
+				// This tolerates force-restart
+				if (freeList.First != null) return;
+
+				for (int i = 0; i < count; ++i)
+				{
+					var t = new T();
+					t.poolNode = new LinkedListNode<T>(t);
+					freeList.AddFirst(t.poolNode);
+				}
 #if UNITY_EDITOR
          ClassPoolProfiler.totalAllocated[typeof(T)] = count;
 #endif
+			}
 		}
 
 		public void Recycle()

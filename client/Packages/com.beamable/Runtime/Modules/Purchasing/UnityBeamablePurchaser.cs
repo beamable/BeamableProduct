@@ -1,6 +1,8 @@
 using Beamable.Api;
 using Beamable.Api.Payments;
 using Beamable.Common;
+using Beamable.Common.Api;
+using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Spew;
 using Beamable.Coroutines;
@@ -9,13 +11,20 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Purchasing;
+using UnityEngine.Purchasing.Extension;
 
 namespace Beamable.Purchasing
 {
 	/// <summary>
 	/// Implementation of Unity IAP for Beamable purchasing.
 	/// </summary>
-	public class UnityBeamablePurchaser : IStoreListener, IBeamablePurchaser
+	public class UnityBeamablePurchaser : IStoreListener
+										, IBeamablePurchaser
+
+#if UNITY_PURCHASING_4_6_OR_NEWER // if this is a newer IAP, then include the detailed store listener.
+	                                    , IDetailedStoreListener
+#endif
+
 	{
 		private IStoreController _storeController;
 #pragma warning disable CS0649
@@ -136,7 +145,13 @@ namespace Beamable.Purchasing
 			}).Error(err =>
 			{
 				Debug.LogError($"There was an exception making the begin purchase request: {err}");
-				_fail?.Invoke(err as ErrorCode);
+
+				if (err is NoConnectivityException)
+				{
+					_fail?.Invoke(new ErrorCode(0, GameSystem.GAME_CLIENT, err.Message)); // network error code
+				}
+				else
+					_fail?.Invoke(err as ErrorCode);
 			});
 
 			return result;
@@ -155,11 +170,21 @@ namespace Beamable.Purchasing
 
 				// Begin the asynchronous process of restoring purchases. Expect a confirmation response in
 				// the Action<bool> below, and ProcessPurchase if there are previously purchased products to restore.
+#if UNITY_PURCHASING_4_6_OR_NEWER
+				_appleExtensions.RestoreTransactions((result, error) =>
+#else
 				_appleExtensions.RestoreTransactions(result =>
+#endif
 				{
 					// The first phase of restoration. If no more responses are received on ProcessPurchase then
 					// no purchases are available to be restored.
 					InAppPurchaseLogger.Log("RestorePurchases continuing: " + result + ". If no further messages, no purchases available to restore.");
+#if UNITY_PURCHASING_4_6_OR_NEWER
+					if (!string.IsNullOrWhiteSpace(error))
+					{
+						InAppPurchaseLogger.Log($"Error: {error}");
+					}
+#endif
 				});
 			}
 			else
@@ -190,9 +215,11 @@ namespace Beamable.Purchasing
 		/// <summary>
 		/// Handle failed initialization by logging the error.
 		/// </summary>
-		public void OnInitializeFailed(InitializationFailureReason error)
+		public void OnInitializeFailed(InitializationFailureReason error) => OnInitializeFailed(error, string.Empty);
+
+		public void OnInitializeFailed(InitializationFailureReason error, string message)
 		{
-			Debug.LogError("Billing failed to initialize!");
+			Debug.LogError($"Billing failed to initialize! {message}");
 			switch (error)
 			{
 				case InitializationFailureReason.AppNotKnown:
@@ -245,15 +272,37 @@ namespace Beamable.Purchasing
 
 		/// <summary>
 		/// Handle a purchase failure event from Unity IAP.
+		/// This method is used for IAP integrations prior to 4.x.
+		///
+		/// The new callback is <see cref="OnPurchaseFailed(UnityEngine.Purchasing.Product,UnityEngine.Purchasing.Extension.PurchaseFailureDescription)"/>
 		/// </summary>
 		/// <param name="product">The product whose purchase was attempted</param>
 		/// <param name="failureReason">Information about why the purchase failed</param>
 		public void OnPurchaseFailed(Product product, PurchaseFailureReason failureReason)
 		{
+			OnPurchaseFailedInternal(product, failureReason, new OptionalString(), new OptionalString());
+		}
+
+
+#if UNITY_PURCHASING_4_6_OR_NEWER
+		/// <summary>
+		/// Handle a purchase failure event from Unity IAP.
+		/// This method is used for IAP integrations using 4.x. and above
+		/// </summary>
+		/// <param name="product">The product whose purchase was attempted</param>
+		/// <param name="failureDescription">Information about why the purchase failed</param>
+		public void OnPurchaseFailed(Product product, PurchaseFailureDescription failureDescription)
+		{
+			OnPurchaseFailedInternal(product, failureDescription.reason, new OptionalString(failureDescription.message), new OptionalString(failureDescription.productId));
+		}
+#endif
+
+		private void OnPurchaseFailedInternal(Product product, PurchaseFailureReason failureReason, OptionalString message, OptionalString productId)
+		{
 			// A product purchase attempt did not succeed. Check failureReason for more detail. Consider sharing
 			// this reason with the user to guide their troubleshooting actions.
-			InAppPurchaseLogger.Log(string.Format("OnPurchaseFailed: FAIL. Product: '{0}', PurchaseFailureReason: {1}",
-			   product.definition.storeSpecificId, failureReason));
+			InAppPurchaseLogger.Log(string.Format("OnPurchaseFailed: FAIL. Product: '{0}', PurchaseFailureReason: {1} Message: {2}, ProductId: {3}",
+												  product.definition.storeSpecificId, failureReason, message?.Value, productId?.Value));
 			var paymentService = GetPaymentService();
 			var reasonInt = (int)failureReason;
 			if (failureReason == PurchaseFailureReason.UserCancelled)

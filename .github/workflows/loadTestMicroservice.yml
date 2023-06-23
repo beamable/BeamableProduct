@@ -1,0 +1,95 @@
+name: Perf Test Microservices
+
+on:
+  pull_request:
+    branches:
+      - 'main'
+
+jobs:
+  runPerfTest:
+    timeout-minutes: 4
+    runs-on: ubuntu-latest
+    concurrency:
+      group: stresstest-${{ github.head_ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET Core SDK
+        uses: actions/setup-dotnet@v1.7.2
+        with:
+          dotnet-version: 6.0.x
+      - name: Install Dotnet Counters
+        run: |
+          dotnet tool install --global dotnet-counters
+      - name: Build and Install BEAM CLI 
+        working-directory: ./cli/cli
+        run: |
+          ./install.sh
+      - name: Login to BEAM CLI
+        working-directory: ./stress-tests/standalone-microservice
+        run: |
+          beam login --username ${{ secrets.BEAM_STRESSTEST_EMAIL }} --password ${{ secrets.BEAM_STRESSTEST_PASS }} --save-to-file
+      - name: Build Microservice
+        working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice
+        run: |
+          dotnet build
+      - name: Run Microservice (with profiler)
+        working-directory: ./stress-tests/standalone-microservice/services/
+        run: |
+          cd ./standalone-microservice/bin/Debug/net6.0
+      
+
+          echo "starting counters"
+          mkdir ../../../../reports
+          dotnet-counters collect --diagnostic-port ~/myport.sock --refresh-interval 3 --format json --output ../../../../reports/counter.json &
+          
+          echo "starting service"
+          mkdir ../../../../logs
+          LOG_PATH=../../../../logs/serviceRuntime.log DOTNET_DiagnosticPorts=~/myport.sock ./standalone-microservice &
+          
+          echo "starting profiler"
+          cd ../../../..
+          beam profile run-nbomber standalone-microservice add '{"a":3,"b":4}' --include-prefix false --rps 30
+          echo "jobs"
+          jobs -p
+          echo "kill"
+          kill $(jobs -p)
+          ls
+          ls ./logs
+          echo "showing logs"
+          cat ./logs/serviceRuntime.log
+          cp ./logs/serviceRuntime.log ./reports/serviceRuntime.log
+      - name: Save Profiler Data 
+        uses: actions/upload-artifact@v3
+        with:
+          name: profiler
+          if-no-files-found: error
+          retention-days: 15
+          path: |
+            ./stress-tests/standalone-microservice/services/reports
+      - name: Check Dotnet Counters
+        id: checkCounters
+        continue-on-error: true
+        working-directory: ./stress-tests/standalone-microservice/services/reports
+        run: |
+          echo "log='$(beam profile check-counters ./counter.json --cpu-limit 35)'" >> $GITHUB_OUTPUT
+      - name: Check NBomber
+        id: checkNbomber
+        continue-on-error: true
+        working-directory: ./stress-tests/standalone-microservice/services/reports
+        run: |
+          echo "log='$(beam profile check-nbomber ./report.csv --p95-limit 9000)'" >> $GITHUB_OUTPUT
+      - name: Post to a Slack channel
+        id: slack
+        if: ${{!contains(steps.checkNbomber.outputs.log, 'No issues found') || !contains(steps.checkCounters.outputs.log, 'No issues found')}}
+        uses: slackapi/slack-github-action@v1.21.0
+        with:
+          channel-id: C0409CMRKA9
+          slack-message: "Automated C#MS smoke tests failed! \nbomber: ${{steps.checkNbomber.outputs.log}} \ncounters: ${{steps.checkCounters.outputs.log}} \n https://github.com/beamable/BeamableProduct/actions/runs/${{ github.run_id }} "
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: Fail if checks failed
+        if: ${{!contains(steps.checkNbomber.outputs.log, 'No issues found') || !contains(steps.checkCounters.outputs.log, 'No issues found')}}
+        run: |
+          echo bomber: ${{steps.checkNbomber.outputs.log}} counters: ${{steps.checkCounters.outputs.log}}
+          exit 1

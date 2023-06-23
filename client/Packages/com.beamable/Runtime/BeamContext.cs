@@ -16,6 +16,7 @@ using Beamable.Common.Api.Notifications;
 using Beamable.Common.Api.Presence;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Spew;
 using Beamable.Config;
 using Beamable.Connection;
 using Beamable.Content.Utility;
@@ -257,8 +258,6 @@ namespace Beamable
 		private IConnectivityService _connectivityService;
 		private IConnectivityChecker _connectivityChecker;
 		private NotificationService _notification;
-		private IPubnubSubscriptionManager _pubnubSubscriptionManager;
-		private IPubnubNotificationService _pubnubNotificationService;
 		private ISessionService _sessionService;
 		private IHeartbeatService _heartbeatService;
 		private BeamableBehaviour _behaviour;
@@ -452,7 +451,15 @@ namespace Beamable
 						.Error(err =>
 						{
 							errors[attemptIndex] = err;
-							Debug.LogException(err);
+							switch (err)
+							{
+								case ServiceScopeDisposedException ex:
+									PlatformLogger.Log($"Beamable is exiting early, and caught a {ex.GetType().Name} exception. msg=[{ex.Message}] stack=[{ex.StackTrace}]");
+									break;
+								default:
+									Debug.LogException(err);
+									break;
+							}
 						})
 						.Then(__ =>
 						{
@@ -481,23 +488,8 @@ namespace Beamable
 
 		protected virtual void RegisterServices(IDependencyBuilder builder)
 		{
-			builder.AddSingleton<PlatformRequester, PlatformRequester>(
-				provider => new PlatformRequester(
-					_environment.ApiUrl,
-					_environment.SdkVersion,
-					provider.GetService<AccessTokenStorage>(),
-					provider.GetService<IConnectivityService>(),
-					provider.GetService<OfflineCache>()
-				)
-			);
-			builder.AddSingleton<IBeamableApiRequester>(
-				provider => new BeamableApiRequester(
-					_environment.ApiUrl,
-					_environment.SdkVersion,
-					provider.GetService<AccessTokenStorage>(),
-					provider.GetService<IConnectivityService>(),
-					provider.GetService<OfflineCache>())
-			);
+			builder.AddSingleton<PlatformRequester>(provider => new PlatformRequester(provider));
+			builder.AddSingleton<IBeamableApiRequester>(provider => new BeamableApiRequester(provider));
 			builder.AddSingleton<IPlatformRequester>(provider => provider.GetService<PlatformRequester>());
 			builder.AddSingleton<IBeamableAPI>(provider => Api);
 			builder.AddSingleton<BeamContext>(this);
@@ -526,12 +518,12 @@ namespace Beamable
 				_connectivityChecker = ServiceProvider.GetService<IConnectivityChecker>();
 			}
 			_notification = ServiceProvider.GetService<NotificationService>();
-			_pubnubSubscriptionManager = ServiceProvider.GetService<IPubnubSubscriptionManager>();
-			_pubnubNotificationService = ServiceProvider.GetService<IPubnubNotificationService>();
 			_sessionService = ServiceProvider.GetService<ISessionService>();
 			_heartbeatService = ServiceProvider.GetService<IHeartbeatService>();
 			_behaviour = ServiceProvider.GetService<BeamableBehaviour>();
 			_offlineCache = ServiceProvider.GetService<OfflineCache>();
+
+			var _ = _serviceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
 		}
 
 
@@ -559,8 +551,9 @@ namespace Beamable
 		{
 			try
 			{
-				_pubnubSubscriptionManager.UnsubscribeAll();
-				await _pubnubSubscriptionManager.SubscribeToProvider();
+				var pubnubSubscriptionManager = ServiceProvider.GetService<IPubnubSubscriptionManager>();
+				pubnubSubscriptionManager.UnsubscribeAll();
+				await pubnubSubscriptionManager.SubscribeToProvider();
 			}
 			catch (NoConnectivityException)
 			{
@@ -879,7 +872,9 @@ namespace Beamable
 		public Promise<BeamContext> Instance => OnReady?.Map(_ => this);
 
 		INotificationService IPlatformService.Notification => _notification;
-		IPubnubNotificationService IPlatformService.PubnubNotificationService => _pubnubNotificationService;
+
+		IPubnubNotificationService IPlatformService.PubnubNotificationService =>
+			ServiceProvider.GetService<IPubnubNotificationService>();
 		IConnectivityService IPlatformService.ConnectivityService => _connectivityService;
 		IHeartbeatService IPlatformService.Heartbeat => _heartbeatService;
 

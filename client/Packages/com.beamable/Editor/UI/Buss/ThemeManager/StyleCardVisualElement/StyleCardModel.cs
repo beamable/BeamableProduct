@@ -110,7 +110,7 @@ namespace Beamable.Editor.UI.Components
 						StyleRule.Properties.Add(
 							BussPropertyProvider.Create(key, instance));
 #if UNITY_EDITOR
-						EditorUtility.SetDirty(StyleSheet);
+						StyleSheet.TrySetDirty();
 #endif
 						AssetDatabase.SaveAssets();
 						StyleSheet.TriggerChange();
@@ -137,7 +137,7 @@ namespace Beamable.Editor.UI.Components
 						return;
 					}
 #if UNITY_EDITOR
-					EditorUtility.SetDirty(StyleSheet);
+					StyleSheet.TrySetDirty();
 #endif
 
 					AssetDatabase.SaveAssets();
@@ -167,7 +167,7 @@ namespace Beamable.Editor.UI.Components
 		public void FoldButtonClicked(MouseDownEvent evt)
 		{
 #if UNITY_EDITOR
-			EditorUtility.SetDirty(StyleSheet);
+			StyleSheet.TrySetDirty();
 #endif
 
 			StyleRule.SetFolded(!StyleRule.Folded);
@@ -289,7 +289,7 @@ namespace Beamable.Editor.UI.Components
 		public void ShowAllButtonClicked(MouseDownEvent evt)
 		{
 #if UNITY_EDITOR
-			EditorUtility.SetDirty(StyleSheet);
+			StyleSheet.TrySetDirty();
 #endif
 
 			Undo.RecordObject(StyleSheet, StyleRule.ShowAll ? "Hide All" : "Show All");
@@ -330,10 +330,9 @@ namespace Beamable.Editor.UI.Components
 
 			propertyModel.PropertyProvider.GetProperty().ValueType = valueType;
 #if UNITY_EDITOR
-			EditorUtility.SetDirty(propertyModel.StyleSheet);
-#endif
+			propertyModel.StyleSheet.TrySetDirty();
 			AssetDatabase.SaveAssets();
-
+#endif
 			Change?.Invoke();
 			_globalRefresh?.Invoke();
 		}
@@ -360,9 +359,10 @@ namespace Beamable.Editor.UI.Components
 				propertyModel.StyleSheet.RemoveStyleProperty(bussProperty, propertyModel.StyleRule);
 
 #if UNITY_EDITOR
-				EditorUtility.SetDirty(propertyModel.StyleSheet);
-#endif
+				propertyModel.StyleSheet.TrySetDirty();
+
 				AssetDatabase.SaveAssets();
+#endif
 			}
 
 			Change?.Invoke();

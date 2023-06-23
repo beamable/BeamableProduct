@@ -303,5 +303,16 @@ namespace Beamable.Common.Api.Auth
 		/// <param name="token">Challenge token received from a server.</param>
 		/// <returns><see cref="ChallengeToken"/> structure</returns>
 		ChallengeToken ParseChallengeToken(string token);
+
+		/// <summary>
+		/// Method for checking whether there is an existing identity or not. 
+		/// </summary>
+		/// <param name="providerService">Provider (microservice) name with custom verification logic. It is required to
+		/// implement Authenticate(string token, string challenge, string solution) method there</param>
+		/// <param name="externalToken">Unique token identifying player.</param>
+		/// <param name="namespaces">Optional parameter for checking availability against passed namespaces (in case we have
+		/// more of them).</param>
+		/// <returns></returns>
+		Promise<bool> IsExternalIdentityAvailable(string providerService, string externalToken, string[] namespaces = null);
 	}
 }

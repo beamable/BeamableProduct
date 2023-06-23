@@ -51,18 +51,6 @@ namespace Beamable.Server
       }
    }
 
-   public class WebsocketErrorResponse
-   {
-      public int status;
-      public string service;
-      public string error;
-      public string message;
-
-      public override string ToString()
-      {
-         return $"Websocket Error Response. status=[{status}] service=[{service}] error=[{error}] message=[{message}]";
-      }
-   }
 
    public class WebsocketRequesterException : RequesterException
    {
@@ -530,7 +518,11 @@ namespace Beamable.Server
          var req = new MicroserviceEventProviderRequest
          {
             type = "event",
-            evtWhitelist = new []{Constants.Features.Services.CONTENT_UPDATE_EVENT}
+            evtWhitelist = new []
+            {
+	            Constants.Features.Services.CONTENT_UPDATE_EVENT,
+	            Constants.Features.Services.REALM_CONFIG_UPDATE_EVENT
+            }
          };
          var promise = Request<MicroserviceProviderResponse>(Method.POST, "gateway/provider", req);
 

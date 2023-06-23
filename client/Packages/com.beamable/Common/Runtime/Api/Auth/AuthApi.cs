@@ -273,9 +273,18 @@ namespace Beamable.Common.Api.Auth
 				{
 					var res = new ExternalLoginResponse();
 
-					var authResult = JsonUtility.FromJson<ExternalAuthenticationResponse>(json);
+					var externalLoginResponse = JsonUtility.FromJson<ExternalLoginAuthenticationResponse>(json);
+					var authResult = new ExternalAuthenticationResponse();
+					if (externalLoginResponse.token_type == "challenge")
+					{
+						authResult = new ExternalAuthenticationResponse
+						{
+							challenge = externalLoginResponse.challenge_token,
+							challenge_ttl = externalLoginResponse.expires_in
+						};
+					}
 
-					if (authResult?.challenge?.Length > 0)
+					if (authResult.challenge?.Length > 0)
 					{
 						// the response object is requesting a further challenge to be made.
 						res.challenge.Set(authResult);
@@ -383,6 +392,14 @@ namespace Beamable.Common.Api.Auth
 			}
 
 			throw new Exception("Problem with challenge token parsing");
+		}
+
+		public Promise<bool> IsExternalIdentityAvailable(string providerService, string externalToken, string[] namespaces = null)
+		{
+			return Requester.Request<AvailabilityResponse>(
+				Method.GET,
+				$"{ACCOUNT_URL}/available/external_identity?provider_service={providerService}&user_id={externalToken}?provider_namespace={namespaces}",
+				null, false).Map(response => response.available);
 		}
 	}
 
@@ -833,6 +850,14 @@ namespace Beamable.Common.Api.Auth
 		public string user_id;
 		public string challenge;
 		public int challenge_ttl;
+	}
+
+	[Serializable]
+	public class ExternalLoginAuthenticationResponse
+	{
+		public int expires_in;
+		public string token_type;
+		public string challenge_token;
 	}
 
 	[Serializable]
