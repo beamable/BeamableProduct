@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.16.0]
 
 ### Added
+
 - `Services.Scheduler` SDK available for scheduling jobs for later execution.
 
 ## [1.15.1]
