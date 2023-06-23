@@ -11,9 +11,9 @@ namespace Beamable.Server
 	{
 
 		public HttpAction Run(Method method,
-		                      string uri,
-		                      string contentType = "application/json",
-		                      Dictionary<string, string> headers = null)
+							  string uri,
+							  string contentType = "application/json",
+							  Dictionary<string, string> headers = null)
 		{
 			var action = new HttpAction
 			{
@@ -21,8 +21,8 @@ namespace Beamable.Server
 				body = "",
 				contentType = contentType,
 				uri = uri,
-				headers = headers?.Select(kvp => new HttpCallHeader {key = kvp.Key, value = kvp.Value}).ToList() ??
-				          new List<HttpCallHeader>()
+				headers = headers?.Select(kvp => new HttpCallHeader { key = kvp.Key, value = kvp.Value }).ToList() ??
+						  new List<HttpCallHeader>()
 			};
 			return action;
 		}
@@ -35,17 +35,17 @@ namespace Beamable.Server
 				body = JsonUtility.ToJson(body),
 				contentType = "application/json",
 				uri = uri,
-				headers = headers?.Select(kvp => new HttpCallHeader {key = kvp.Key, value = kvp.Value}).ToList() ??
-				          new List<HttpCallHeader>()
+				headers = headers?.Select(kvp => new HttpCallHeader { key = kvp.Key, value = kvp.Value }).ToList() ??
+						  new List<HttpCallHeader>()
 			};
 			return action;
 		}
 
 		public HttpAction Run(Method method,
-		                      string uri,
-		                      string body,
-		                      string contentType = "application/json",
-		                      Dictionary<string, string> headers = null)
+							  string uri,
+							  string body,
+							  string contentType = "application/json",
+							  Dictionary<string, string> headers = null)
 		{
 			var action = new HttpAction
 			{
@@ -53,8 +53,8 @@ namespace Beamable.Server
 				body = body,
 				contentType = contentType,
 				uri = uri,
-				headers = headers?.Select(kvp => new HttpCallHeader {key = kvp.Key, value = kvp.Value}).ToList() ??
-				          new List<HttpCallHeader>()
+				headers = headers?.Select(kvp => new HttpCallHeader { key = kvp.Key, value = kvp.Value }).ToList() ??
+						  new List<HttpCallHeader>()
 			};
 			return action;
 		}
