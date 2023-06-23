@@ -2,6 +2,7 @@ using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using cli.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Spectre.Console;
 using System.CommandLine;
 using System.CommandLine.Binding;
 

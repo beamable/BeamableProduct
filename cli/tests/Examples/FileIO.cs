@@ -1,11 +1,9 @@
 using NUnit.Framework;
-using System;
 using System.IO;
-using System.Threading.Tasks;
 
-namespace tests.Examples.Config;
+namespace tests.Examples;
 
-public class ConfigExamples : ExampleTest
+public class FileIO : CLITest
 {
 	[Test]
 	public void Simple()
