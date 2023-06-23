@@ -35,7 +35,7 @@ namespace Beamable.Server
 		/// 
 		/// </returns>
 		IServiceCallBuilder<T> Microservice<T>(bool useLocal = true) where T : Microservice;
-		
+
 		/// <summary>
 		/// Configure the <see cref="Job"/> to run an HTTP request as the <see cref="Job.action"/>
 		/// </summary>
@@ -59,7 +59,7 @@ namespace Beamable.Server
 		/// <param name="cronExpression"></param>
 		/// <returns></returns>
 		ISchedulerBuilderFinal OnCron(string cronExpression);
-		
+
 		/// <summary>
 		/// Schedules the <see cref="Job"/> on a CRON schedule.
 		/// </summary>
@@ -82,31 +82,31 @@ namespace Beamable.Server
 		/// </param>
 		/// <returns></returns>
 		ISchedulerBuilderFinal OnCron(Func<ICronInitial, ICronComplete> cronBuilder);
-		
+
 		/// <inheritdoc cref="OnCron(Func{ICronInitial, ICronComplete})"/>
 		ISchedulerBuilderFinal OnCron(Func<ICronInitial, string> cronBuilder);
-		
+
 		/// <summary>
 		/// Schedules the <see cref="Job"/> to run at a specific time in UTC
 		/// </summary>
 		/// <param name="executeAt">The UTC time the job will execute</param>
 		/// <returns></returns>
 		ISchedulerBuilderFinal OnExactDate(DateTime executeAt);
-		
+
 		/// <summary>
 		/// Schedules the <see cref="Job"/> to run later by some given time span.
 		/// </summary>
 		/// <param name="timespan">The amount of time into the future the Job should run.</param>
 		/// <returns></returns>
 		ISchedulerBuilderFinal After(TimeSpan timespan);
-		
+
 		/// <summary>
 		/// Configure the <see cref="RetryPolicy"/> for the <see cref="Job"/>
 		/// </summary>
 		/// <param name="policy"></param>
 		/// <returns></returns>
 		ISchedulerBuilderFinal WithRetryPolicy(RetryPolicy policy);
-		
+
 		/// <summary>
 		/// Configure the <see cref="RetryPolicy"/> for the <see cref="Job"/>
 		/// </summary>
@@ -135,9 +135,9 @@ namespace Beamable.Server
 		/// </para>
 		/// </param>
 		/// <returns>A scheduled <see cref="Job"/></returns>
-		Promise<Job> Save(string name, string source=null);
+		Promise<Job> Save(string name, string source = null);
 	}
-	
+
 	public class SchedulerBuilder : ISchedulerBuilderSetup, ISchedulerBuilderFinal
 	{
 		private readonly BeamScheduler _scheduler;
@@ -156,7 +156,7 @@ namespace Beamable.Server
 			var builder = new ServiceCallBuilder<T>(useLocal, _scheduler.SchedulerContext);
 			return new ServiceCallBuilderWrapper<T>(this, builder, action => _action = action);
 		}
-		
+
 		public HttpCallBuilderWrapper Http()
 		{
 			return new HttpCallBuilderWrapper(this, http => _action = http);
@@ -191,14 +191,14 @@ namespace Beamable.Server
 			return this;
 		}
 
-		public ISchedulerBuilderFinal After(TimeSpan timespan) => OnExactDate(DateTime.UtcNow + timespan); 
+		public ISchedulerBuilderFinal After(TimeSpan timespan) => OnExactDate(DateTime.UtcNow + timespan);
 
 		public ISchedulerBuilderFinal WithRetryPolicy(RetryPolicy policy)
 		{
 			_retry = policy;
 			return this;
 		}
-		public ISchedulerBuilderFinal WithRetryPolicy(int? maxRetryCount=null, int? retryDelayMs=null, bool? useExponentialBackoff=null)
+		public ISchedulerBuilderFinal WithRetryPolicy(int? maxRetryCount = null, int? retryDelayMs = null, bool? useExponentialBackoff = null)
 		{
 			if (maxRetryCount.HasValue)
 			{
@@ -214,12 +214,12 @@ namespace Beamable.Server
 			{
 				_retry.useExponentialBackoff = useExponentialBackoff.Value;
 			}
-			
+
 			return this;
 		}
 
 
-		public async Promise<Job> Save(string name, string source=null)
+		public async Promise<Job> Save(string name, string source = null)
 		{
 			if (string.IsNullOrEmpty(source))
 			{
@@ -228,7 +228,7 @@ namespace Beamable.Server
 			return await _scheduler.CreateJob(name, source, _action, _triggers.ToArray(), _retry);
 		}
 	}
-	
+
 
 	public static class SchedulerExtensions
 	{
