@@ -46,11 +46,6 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 		_configService = args.ConfigService;
 		_authApi = args.AuthApi;
 
-		if (!_configService.ConfigFileExists.GetValueOrDefault(false))
-		{
-			BeamableLogger.LogError("Could not found `.beamable` configuration to login into. Try calling `beam init` first.");
-			return;
-		}
 		TokenResponse response;
 		BeamableLogger.Log($"signing into... {_ctx.Cid}.{_ctx.Pid}");
 

@@ -1,3 +1,4 @@
+using Beamable.Common.Scheduler;
 using Beamable.Server.Api;
 using Beamable.Server.Api.Announcements;
 using Beamable.Server.Api.Calendars;
@@ -40,6 +41,7 @@ namespace Beamable.Server
       public IMicroserviceCommerceApi Commerce { get; set; }
       public IMicroserviceChatApi Chat { get; set; }
       public IMicroservicePaymentsApi Payments { get; set; }
+      public BeamScheduler Scheduler { get; set; }
       public IMicroservicePushApi Push { get; set; }
    }
 }

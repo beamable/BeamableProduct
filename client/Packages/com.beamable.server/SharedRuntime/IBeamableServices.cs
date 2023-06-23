@@ -1,3 +1,4 @@
+using Beamable.Common.Scheduler;
 using Beamable.Server.Api;
 using Beamable.Server.Api.Announcements;
 using Beamable.Server.Api.Calendars;
@@ -155,5 +156,10 @@ namespace Beamable.Server
 		/// %Microservice entry point for payment operations.
 		/// </summary>
 		IMicroservicePaymentsApi Payments { get; }
+
+		/// <summary>
+		/// A <see cref="BeamScheduler"/> that can be used to schedule jobs for execution later.
+		/// </summary>
+		BeamScheduler Scheduler { get; }
 	}
 }

@@ -623,7 +623,7 @@ namespace Beamable.CronExpression
 			if (!string.IsNullOrEmpty(secondExpression))
 				second = string.Concat(":", Convert.ToInt32(secondExpression).ToString().PadLeft(2, '0'));
 
-			return string.Format("{0}:{1}{2}{3}", hour.ToString().PadLeft(2, '0'), minute.PadLeft(2, '0'), second,
+			return string.Format("{0}:{1}{2}{3}", hour.ToString().PadLeft(2, ' '), minute.PadLeft(2, '0'), second,
 				period);
 		}
 
