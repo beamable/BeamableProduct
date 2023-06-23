@@ -41,7 +41,7 @@ namespace Beamable.AccountManagement
 
 		private bool _initializedStatCallbacks = false;
 
-		void OnEnable()
+		void Awake()
 		{
 			InitializeStatCallbacks();
 		}
