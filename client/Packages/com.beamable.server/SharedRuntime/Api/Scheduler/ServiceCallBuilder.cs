@@ -13,7 +13,7 @@ namespace Beamable.Server
 
 	public static class BeamSchedulerExtensions
 	{
-		
+
 		public static ServiceCallBuilder<T> GetMicroserviceCallHelper<T>(this BeamScheduler scheduler)
 			where T : Microservice
 		{
@@ -39,7 +39,7 @@ namespace Beamable.Server
 			var call = CreateAction(expr);
 			return call;
 		}
-		
+
 		public ServiceAction Run(Expression<Func<T, Action>> expr)
 		{
 			var call = CreateAction(expr);

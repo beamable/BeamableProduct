@@ -18,18 +18,18 @@ namespace Beamable.Common.Scheduler
 		string Prefix { get; }
 		string ServiceName { get; }
 	}
-	
+
 	public class BeamScheduler
 	{
 		private readonly IBeamSchedulerApi _api;
 		public IBeamSchedulerContext SchedulerContext { get; }
-		
+
 		public BeamScheduler(IBeamSchedulerApi api, IBeamSchedulerContext schedulerContext)
 		{
 			_api = api;
 			SchedulerContext = schedulerContext;
 		}
-		
+
 		/// <summary>
 		/// After a <see cref="Job"/> is created, it will execute some time later.
 		/// This method finds the information about the executions that have already happened.
@@ -37,17 +37,19 @@ namespace Beamable.Common.Scheduler
 		/// <param name="jobId">The <see cref="Job.id"/> of a <see cref="Job"/> that has been scheduled. See <see cref="CreateJob(string,string,Beamable.Common.Scheduler.ISchedulableAction,Beamable.Common.Scheduler.ISchedulerTrigger[],Beamable.Common.Scheduler.RetryPolicy)"/> to create a job.</param>
 		/// <param name="limit">The number of events to fetch. By default, this is 1000.</param>
 		/// <returns>A set of <see cref="JobExecution"/>s describing the recent activity.</returns>
-		public async Promise<List<JobExecution>> GetJobActivity(string jobId, OptionalInt limit=null)
+		public async Promise<List<JobExecution>> GetJobActivity(string jobId, OptionalInt limit = null)
 		{
 			var res = await _api.GetJobActivity(jobId, limit);
 			var events = res.Select(Utility.Convert).ToList();
 			var executions = events.GroupBy(e => e.executionId).Select(g => new JobExecution
 			{
-				events = g.ToList(), executionId = g.Key, jobId = g.FirstOrDefault().jobId,
+				events = g.ToList(),
+				executionId = g.Key,
+				jobId = g.FirstOrDefault().jobId,
 			}).ToList();
 			return executions;
 		}
-		
+
 		/// <summary>
 		/// After a <see cref="Job"/> is scheduled, it will execute some time later.
 		/// This method returns the upcoming times the job will be executed.
@@ -58,7 +60,7 @@ namespace Beamable.Common.Scheduler
 		/// <param name="from">A time to look for executions afterwards.</param>
 		/// <param name="limit">The maximum number of upcoming executions that will be returned.</param>
 		/// <returns>A set of <see cref="UpcomingExecution"/></returns>
-		public async Promise<List<UpcomingExecution>> GetJobUpcomingExecutions(string jobId, OptionalDateTime from=null, OptionalInt limit=null)
+		public async Promise<List<UpcomingExecution>> GetJobUpcomingExecutions(string jobId, OptionalDateTime from = null, OptionalInt limit = null)
 		{
 			var res = await _api.GetJobNextExecutions(jobId, from, limit);
 			var executions = res.Select(dt => new UpcomingExecution { executeAt = dt }).ToList();
@@ -68,7 +70,7 @@ namespace Beamable.Common.Scheduler
 
 		/// <inheritdoc cref="DeleteJob(string)"/>
 		public async Promise DeleteJob(Job job) => await DeleteJob(job?.id);
-		
+
 		/// <summary>
 		/// After a <see cref="Job"/> has been scheduled using the <see cref="CreateJob(string,string,Beamable.Common.Scheduler.ISchedulableAction,Beamable.Common.Scheduler.ISchedulerTrigger[],Beamable.Common.Scheduler.RetryPolicy)"/>
 		/// method, it will exist forever. This method will remove the job and cancel all upcoming executions.
@@ -87,18 +89,18 @@ namespace Beamable.Common.Scheduler
 		/// <param name="name">Filter <see cref="Job"/>s by the <see cref="Job.name"/> field.</param>
 		/// <returns>A list of <see cref="Job"/></returns>
 		public async Promise<List<Job>> GetJobs(
-			OptionalInt limit=null, 
-			OptionalString source=null, 
-			OptionalString name=null)
+			OptionalInt limit = null,
+			OptionalString source = null,
+			OptionalString name = null)
 		{
 			var res = await _api.GetJobs(limit, name, source);
 			var jobs = res.Select(Utility.Convert).ToList();
 			return jobs;
 		}
-		
+
 		/// <inheritdoc cref="GetJob(String)"/>
 		public async Promise<Job> GetJob(Job job) => await GetJob(job?.id);
-		
+
 		/// <summary>
 		/// Get a specific scheduled <see cref="Job"/>.
 		/// </summary>
@@ -124,13 +126,13 @@ namespace Beamable.Common.Scheduler
 		public async Promise<Job> SaveJob(Job job)
 		{
 			// TODO: Is this even correct at the API level?
-			var req = Utility.CreateSaveRequest(job.name, job.source, job.action,  job.triggers.ToArray(), job.retryPolicy);
+			var req = Utility.CreateSaveRequest(job.name, job.source, job.action, job.triggers.ToArray(), job.retryPolicy);
 			req.id = new OptionalString(job.id);
 			var res = await _api.PostJob(req);
 			job = Utility.Convert(res);
 			return job;
 		}
-		
+
 		/// <summary>
 		/// Create and schedule a <see cref="Job"/>.
 		/// </summary>
@@ -149,11 +151,11 @@ namespace Beamable.Common.Scheduler
 		/// <param name="retryPolicy">A <see cref="RetryPolicy"/> for the action</param>
 		/// <returns>The created <see cref="Job"/></returns>
 		public async Promise<Job> CreateJob(
-			string name, 
-			string source, 
-			ISchedulableAction action, 
+			string name,
+			string source,
+			ISchedulableAction action,
 			ISchedulerTrigger[] triggers,
-			RetryPolicy retryPolicy=null)
+			RetryPolicy retryPolicy = null)
 		{
 			// TODO: Is it possible to specify the jobID ahead of time? 
 			var req = Utility.CreateSaveRequest(name, source, action, triggers, retryPolicy);
@@ -161,14 +163,14 @@ namespace Beamable.Common.Scheduler
 			var job = Utility.Convert(res);
 			return job;
 		}
-		
+
 		/// <inheritdoc cref="CreateJob(string,string,Beamable.Common.Scheduler.ISchedulableAction,Beamable.Common.Scheduler.ISchedulerTrigger[],Beamable.Common.Scheduler.RetryPolicy)"/>
 		public async Promise<Job> CreateJob(
-			string name, 
-			string source, 
-			ISchedulableAction action, 
+			string name,
+			string source,
+			ISchedulableAction action,
 			ISchedulerTrigger trigger,
-			RetryPolicy retryPolicy=null)
+			RetryPolicy retryPolicy = null)
 		{
 			return await CreateJob(name, source, action, new ISchedulerTrigger[] { trigger }, retryPolicy);
 		}
@@ -202,9 +204,9 @@ namespace Beamable.Common.Scheduler
 					owner = job.owner.GetOrThrow(() => new Exception("Job definition has no owner")),
 					retryPolicy = new RetryPolicy
 					{
-						maxRetryCount = retry.maxRetryCount.GetOrThrow(()=> new Exception("Retry policy has no maxRetryCount")),
-						retryDelayMs = retry.retryDelayMs.GetOrThrow(()=> new Exception("Retry policy has no retryDelayMs")),
-						useExponentialBackoff = retry.useExponentialBackoff.GetOrThrow(()=> new Exception("Retry policy has no useExponentialBackoff")),
+						maxRetryCount = retry.maxRetryCount.GetOrThrow(() => new Exception("Retry policy has no maxRetryCount")),
+						retryDelayMs = retry.retryDelayMs.GetOrThrow(() => new Exception("Retry policy has no retryDelayMs")),
+						useExponentialBackoff = retry.useExponentialBackoff.GetOrThrow(() => new Exception("Retry policy has no useExponentialBackoff")),
 					}
 				};
 
@@ -234,7 +236,7 @@ namespace Beamable.Common.Scheduler
 				};
 			}
 
-			public static string GetServiceUrl(string cid, string pid, string serviceName, string path, string prefix=null)
+			public static string GetServiceUrl(string cid, string pid, string serviceName, string path, string prefix = null)
 			{
 				return $"basic/{cid}.{pid}.{prefix}micro_{serviceName}/{path}";
 			}
@@ -248,12 +250,12 @@ namespace Beamable.Common.Scheduler
 	/// <item> <see cref="ServiceAction"/> will execute a C#MS method </item>
 	/// </list>
 	/// </summary>
-	public interface ISchedulableAction 
+	public interface ISchedulableAction
 	{
 		IOneOf_HttpCallOrPublishMessageOrServiceCall Convert();
 	}
 
-	
+
 	/// <summary>
 	/// A trigger that will cause the <see cref="Job.action"/> to execute
 	/// <list type="bullet">
@@ -278,7 +280,7 @@ namespace Beamable.Common.Scheduler
 		/// The id of the <see cref="Job"/> that executed
 		/// </summary>
 		public string jobId;
-		
+
 		/// <summary>
 		/// The id of the specific execution. A single <see cref="Job"/> may have many executions
 		/// if it was scheduled with a <see cref="CronEvent"/>.
@@ -290,7 +292,7 @@ namespace Beamable.Common.Scheduler
 		/// </summary>
 		public List<JobExecutionEvent> events;
 	}
-	
+
 
 	/// <summary>
 	/// A single event that happened during the execution of a <see cref="Job"/>
@@ -300,21 +302,21 @@ namespace Beamable.Common.Scheduler
 	{
 		/// <inheritdoc cref="JobExecution.executionId"/>
 		public string executionId;
-		
+
 		/// <summary>
 		/// The id of the specific event in the whole <see cref="JobExecution"/>
 		/// </summary>
 		public string id;
-		
+
 		/// <inheritdoc cref="JobExecution.jobId"/>
 		public string jobId;
-		
+
 		/// <summary>
 		/// A message describing any extra information for this state.
 		/// Often, this is an empty string unless the <see cref="state"/> is <see cref="JobState.ERROR"/>
 		/// </summary>
 		public string message;
-		
+
 		/// <summary>
 		/// The <see cref="JobState"/> of the step in the job execution.
 		/// <list type="bullet">
@@ -328,7 +330,7 @@ namespace Beamable.Common.Scheduler
 		/// </summary>
 		[NonSerialized]
 		public JobState state;
-		
+
 		/// <summary>
 		/// A datetime string in ISO 8601
 		/// </summary>
@@ -336,7 +338,7 @@ namespace Beamable.Common.Scheduler
 
 		[SerializeField]
 		private string jobState;
-		
+
 		public void OnBeforeSerialize()
 		{
 			jobState = JobStateExtensions.ToEnumString(state);
@@ -375,30 +377,30 @@ namespace Beamable.Common.Scheduler
 		/// An optional ISO-8601 date string representing the last time the <see cref="Job"/> was modified.
 		/// </summary>
 		public OptionalString lastUpdate;
-		
+
 		/// <summary>
 		/// The name of the <see cref="Job"/>.
 		/// This is not a unique value.
 		/// </summary>
 		public string name;
-		
+
 		/// <summary>
 		/// The source of the <see cref="Job"/>.
 		/// Jobs can be filtered by this field.
 		/// </summary>
 		public string source;
-		
+
 		/// <summary>
 		/// The owner of the <see cref="Job"/> is the realm that maintains the job. 
 		/// </summary>
 		public string owner;
-		
+
 		/// <summary>
 		/// The <see cref="RetryPolicy"/> contains information about how a <see cref="Job"/>
 		/// should be rescheduled in the event of a failure.
 		/// </summary>
 		public RetryPolicy retryPolicy;
-		
+
 		/// <summary>
 		/// The <see cref="ISchedulableAction"/> is the thing that will execute when the <see cref="triggers"/>
 		/// dictate.
@@ -423,16 +425,16 @@ namespace Beamable.Common.Scheduler
 
 		[SerializeField]
 		private HttpAction _httpAction;
-		
+
 		[SerializeField]
 		private ServiceAction _serviceAction;
-		
+
 		[SerializeField]
 		private PublishAction _publishAction;
 
 		[SerializeField]
 		private List<CronEvent> _cronTriggers;
-		
+
 		[SerializeField]
 		private List<ExactTimeEvent> _exactTimeTriggers;
 
@@ -499,7 +501,7 @@ namespace Beamable.Common.Scheduler
 			}
 		}
 	}
-	
+
 	/// <summary>
 	/// The retry policy is used when a <see cref="Job"/> fails and needs to be rescheduled.
 	/// </summary>
@@ -514,14 +516,14 @@ namespace Beamable.Common.Scheduler
 		/// each time the CRON schedule dictates an invocation, the max retry count is in effect.
 		/// </summary>
 		public int maxRetryCount = 1;
-		
+
 		/// <summary>
 		/// How long should Beamable wait before attempting to retry the failed job.
 		/// </summary>
 		public int retryDelayMs = 10 * 1000;
 		public bool useExponentialBackoff = true;
 	}
-	
+
 	/// <summary>
 	/// An <see cref="ExactTimeEvent"/> will run a <see cref="Job"/> at the given <see cref="executeAt"/> time.
 	/// </summary>
@@ -532,8 +534,8 @@ namespace Beamable.Common.Scheduler
 		/// The time at which a <see cref="Job"/> will run. This should be in UTC.
 		/// </summary>
 		public DateTime executeAt = DateTime.UtcNow;
-		
-		public ExactTimeEvent(){}
+
+		public ExactTimeEvent() { }
 
 		public ExactTimeEvent(DateTime executeAt)
 		{
@@ -544,12 +546,12 @@ namespace Beamable.Common.Scheduler
 		{
 			return new ExactTrigger
 			{
-				type = new OptionalString(nameof(ExactTrigger)), 
+				type = new OptionalString(nameof(ExactTrigger)),
 				executeAt = new OptionalDateTime(executeAt)
 			};
 		}
 	}
-	
+
 	/// <summary>
 	/// A <see cref="CronEvent"/> will run a <see cref="Job"/> at the given <see cref="cronExpression"/> is true.
 	/// </summary>
@@ -570,8 +572,8 @@ namespace Beamable.Common.Scheduler
 		/// Consider using the <see cref="ICronInitial"/> interface from <see cref="CronBuilder"/>.
 		/// </summary>
 		public string cronExpression = "* * * * * *";
-		
-		public CronEvent(){}
+
+		public CronEvent() { }
 
 		public CronEvent(string cronExpression)
 		{
@@ -582,11 +584,12 @@ namespace Beamable.Common.Scheduler
 		{
 			return new Beamable.Api.Autogenerated.Models.CronTrigger
 			{
-				type = new OptionalString(nameof(Beamable.Api.Autogenerated.Models.CronTrigger)), expression = new OptionalString(cronExpression)
+				type = new OptionalString(nameof(Beamable.Api.Autogenerated.Models.CronTrigger)),
+				expression = new OptionalString(cronExpression)
 			};
 		}
 	}
-	
+
 	/// <summary>
 	/// The <see cref="HttpAction"/> will trigger an HTTP request when the <see cref="Job"/> executes.
 	/// </summary>
@@ -597,22 +600,22 @@ namespace Beamable.Common.Scheduler
 		/// The HTTP method to use.
 		/// </summary>
 		public Method method = Method.GET;
-		
+
 		/// <summary>
 		/// The fully qualified uri of the request. Must include the "https://" segment.
 		/// </summary>
 		public string uri;
-		
+
 		/// <summary>
 		/// The content type of the request.
 		/// </summary>
 		public string contentType = "application/json";
-		
+
 		/// <summary>
 		/// The body of the request.
 		/// </summary>
 		public string body;
-		
+
 		/// <summary>
 		/// A set of <see cref="HttpCallHeader"/>s for the request.
 		/// </summary>
@@ -646,12 +649,12 @@ namespace Beamable.Common.Scheduler
 		/// The JSON body of the request.
 		/// </summary>
 		public string body;
-		
+
 		/// <summary>
 		/// The method of the request.
 		/// </summary>
 		public Method method = Method.POST;
-		
+
 		/// <summary>
 		/// The fully qualified Uri of the request. This must in the format of
 		/// <code>
@@ -676,7 +679,7 @@ namespace Beamable.Common.Scheduler
 			};
 		}
 	}
-	
+
 	[Serializable]
 	public class PublishAction : ISchedulableAction
 	{
@@ -684,8 +687,8 @@ namespace Beamable.Common.Scheduler
 		public string message;
 		public OptionalMapOfString headers;
 		public bool persist;
-		
-		
+
+
 		IOneOf_HttpCallOrPublishMessageOrServiceCall ISchedulableAction.Convert()
 		{
 			return new PublishMessage
@@ -735,7 +738,7 @@ namespace Beamable.Api.Autogenerated.Models
 			return new ExactTimeEvent { executeAt = executeAt.GetOrThrow(() => new Exception("ExactTime needs exactAt")) };
 		}
 	}
-	
+
 	public partial interface IOneOf_HttpCallOrPublishMessageOrServiceCall
 	{
 		ISchedulableAction Convert();
@@ -746,7 +749,7 @@ namespace Beamable.Api.Autogenerated.Models
 		public ISchedulableAction Convert()
 		{
 			if (!MethodUtil.TryParseMethod(method.GetOrThrow(() => new Exception("HttpAction must have a method")),
-				    out var parsedMethod))
+					out var parsedMethod))
 			{
 				throw new Exception("HttpAction method was not able to parse");
 			}
@@ -783,7 +786,7 @@ namespace Beamable.Api.Autogenerated.Models
 		public ISchedulableAction Convert()
 		{
 			if (!MethodUtil.TryParseMethod(method.GetOrThrow(() => new Exception("ServiceCall must have a method")),
-				    out var parsedMethod))
+					out var parsedMethod))
 			{
 				throw new Exception("ServiceCall method was not able to parse");
 			}

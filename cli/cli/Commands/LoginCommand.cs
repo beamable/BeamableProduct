@@ -3,6 +3,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using cli.Utils;
 using Newtonsoft.Json;
+using Serilog;
 using Spectre.Console;
 
 namespace cli;
@@ -60,6 +61,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 			}
 			catch (Exception e)
 			{
+				Log.Verbose(e.Message + " " + e.StackTrace);
 				BeamableLogger.LogError($"Login failed with Exception: {e.Message}");
 				return;
 			}

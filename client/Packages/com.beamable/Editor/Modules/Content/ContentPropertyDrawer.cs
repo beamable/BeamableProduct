@@ -298,10 +298,19 @@ namespace Beamable.Editor.Content
 			GUILayout.BeginHorizontal(GUI.skin.FindStyle("Toolbar"), GUILayout.Height(30));
 
 			GUI.SetNextControlName(SearchControlName);
-			_searchString = GUILayout.TextField(_searchString, GUI.skin.FindStyle("ToolbarSeachTextField")); // SIC. The "ToolbarSeachTextField" is on purpose. It's a Unity typo.
+			
+#if UNITY_2022_1_OR_NEWER
+			// hey wow, they fixed the typo!!
+			const string styleName = "ToolbarSearchTextField";
+#else 
+			// SIC. The "ToolbarSeachTextField" is on purpose. It's a Unity typo.
+			const string styleName = "ToolbarSeachTextField";
+#endif
+			
+			_searchString = GUILayout.TextField(_searchString, GUI.skin.FindStyle(styleName)); 
 			GUI.FocusControl(SearchControlName);
 
-			if (GUILayout.Button("", GUI.skin.FindStyle("ToolbarSeachCancelButton")))
+			if (GUILayout.Button("", GUI.skin.FindStyle(styleName)))
 			{
 				// Remove focus if cleared
 				_searchString = "";

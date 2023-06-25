@@ -144,9 +144,9 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 			await _loginCommand.Handle(args);
 			return _loginCommand.Successful;
 		}
-		catch
+		catch (Exception ex)
 		{
-			BeamableLogger.LogError("Login failed. Init aborted.");
+			BeamableLogger.LogError("Login failed. Init aborted. " + ex.Message);
 			return false;
 		}
 	}
