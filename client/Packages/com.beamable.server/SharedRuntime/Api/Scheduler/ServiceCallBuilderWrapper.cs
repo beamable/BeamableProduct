@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Beamable.Server
 {
-	
+
 	public interface IServiceCallBuilderGen<T, TTask, TResponse> where T : Microservice
 	{
 		/// <summary>
@@ -42,71 +42,71 @@ namespace Beamable.Server
 		/// The continuation for the service call creation flow. 
 		/// </returns>
 		TResponse Run(Expression<Func<T, Action>> expr);
-		
+
 		/// <inheritdoc cref="Run(System.Linq.Expressions.Expression{System.Func{T,System.Action}})"/>
 		TResponse Run(Expression<Func<T, Func<TTask>>> expr);
-		
+
 		/// <inheritdoc cref="Run(System.Linq.Expressions.Expression{System.Func{T,System.Action}})"/>
 		TResponse Run<TArg1>(
-			Expression<Func<T, Func<TArg1, TTask>>> expr, 
+			Expression<Func<T, Func<TArg1, TTask>>> expr,
 			TArg1 arg);
-		 
+
 		/// <inheritdoc cref="Run(System.Linq.Expressions.Expression{System.Func{T,System.Action}})"/>
 		TResponse Run<TArg1, TArg2>(
-			Expression<Func<T, Func<TArg1, TArg2, TTask>>> expr, 
+			Expression<Func<T, Func<TArg1, TArg2, TTask>>> expr,
 			TArg1 arg1,
 			TArg2 arg2);
-		
+
 		/// <inheritdoc cref="Run(System.Linq.Expressions.Expression{System.Func{T,System.Action}})"/>
 		TResponse Run<
-			TArg1, 
+			TArg1,
 			TArg2,
 			TArg3
 		>(
 			Expression<Func<T, Func<
-				TArg1, 
-				TArg2, 
+				TArg1,
+				TArg2,
 				TArg3,
-				TTask>>> expr, 
+				TTask>>> expr,
 			TArg1 arg1,
 			TArg2 arg2,
 			TArg3 arg3
 			);
-		
+
 		/// <inheritdoc cref="Run(System.Linq.Expressions.Expression{System.Func{T,System.Action}})"/>
 		TResponse Run<
-			TArg1, 
+			TArg1,
 			TArg2,
 			TArg3,
 			TArg4
 		>(
 			Expression<Func<T, Func<
-				TArg1, 
-				TArg2, 
+				TArg1,
+				TArg2,
 				TArg3,
 				TArg4,
-				TTask>>> expr, 
+				TTask>>> expr,
 			TArg1 arg1,
 			TArg2 arg2,
 			TArg3 arg3,
 			TArg4 arg4
 		);
-		
+
 		/// <inheritdoc cref="Run(System.Linq.Expressions.Expression{System.Func{T,System.Action}})"/>
 		TResponse Run<
-			TArg1, 
+			TArg1,
 			TArg2,
 			TArg3,
 			TArg4,
 			TArg5
 		>(
 			Expression<Func<T, Func<
-				TArg1, 
-				TArg2, 
+				TArg1,
+				TArg2,
 				TArg3,
 				TArg4,
 				TArg5,
-				TTask>>> expr, 
+				TTask>>> expr,
 			TArg1 arg1,
 			TArg2 arg2,
 			TArg3 arg3,
@@ -114,7 +114,7 @@ namespace Beamable.Server
 			TArg5 arg5
 		);
 	}
-	
+
 	/// <summary>
 	/// This exists to summarize the <see cref="IServiceCallBuilderGen"/> interface for methods
 	/// that return <see cref="Task"/> and <see cref="Promise"/>
@@ -122,12 +122,12 @@ namespace Beamable.Server
 	/// </summary>
 	/// <typeparam name="T"></typeparam>
 	/// <typeparam name="TResponse"></typeparam>
-	public interface IServiceCallBuilder<T, TResponse> 
+	public interface IServiceCallBuilder<T, TResponse>
 			: IServiceCallBuilderGen<T, Promise, TResponse>
 			, IServiceCallBuilderGen<T, Task, TResponse>
 		where T : Microservice
 	{
-		
+
 	}
 
 	/// <summary>
@@ -137,10 +137,10 @@ namespace Beamable.Server
 	public interface IServiceCallBuilder<T> : IServiceCallBuilder<T, ISchedulerBuilderTrigger>
 		where T : Microservice
 	{
-		
+
 	}
-	
-	public class ServiceCallBuilderWrapper<T> : IServiceCallBuilder<T> 
+
+	public class ServiceCallBuilderWrapper<T> : IServiceCallBuilder<T>
 		where T : Microservice
 	{
 		private readonly SchedulerBuilder _builder;
@@ -159,8 +159,8 @@ namespace Beamable.Server
 			var call = _serviceCallBuilder.Run(expr);
 			_setAction(call);
 			return _builder;
-		} 
-		
+		}
+
 		public ISchedulerBuilderTrigger Run(Expression<Func<T, Action>> expr)
 		{
 			var call = _serviceCallBuilder.Run(expr);
@@ -206,7 +206,7 @@ namespace Beamable.Server
 			return _builder;
 		}
 
-		public ISchedulerBuilderTrigger Run<TArg1>(Expression<Func<T, Func<TArg1, Promise>>> expr, 
+		public ISchedulerBuilderTrigger Run<TArg1>(Expression<Func<T, Func<TArg1, Promise>>> expr,
 			TArg1 arg)
 		{
 			var call = _serviceCallBuilder.Run(expr, arg);

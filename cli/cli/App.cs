@@ -17,6 +17,7 @@ using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.SpectreConsole;
+using Spectre.Console;
 using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Invocation;
@@ -40,17 +41,17 @@ public class App
 
 	public bool IsBuilt => CommandProvider != null;
 
-	private static void ConfigureLogging()
+	private static void ConfigureLogging(Func<LoggerConfiguration, ILogger> configureLogger=null)
 	{
 		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
 		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
 
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
-		Log.Logger = new LoggerConfiguration()
-			.WriteTo.SpectreConsole("{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}")
+		configureLogger ??= config => config.WriteTo.SpectreConsole("{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}")
 			.MinimumLevel.ControlledBy(LogLevel)
 			.CreateLogger();
-
+		Log.Logger = configureLogger(new LoggerConfiguration());
+		
 		BeamableLogProvider.Provider = new CliSerilogProvider();
 		CliSerilogProvider.LogContext.Value = Log.Logger;
 	}
@@ -87,18 +88,23 @@ public class App
 		services.AddTransient<DiscoveryService>();
 		services.AddSingleton<DocService>();
 		services.AddSingleton<CliGenerator>();
+
 		OpenApiRegistration.RegisterOpenApis(services);
 
 		_serviceConfigurator?.Invoke(services);
 	}
 
-	public virtual void Configure(Action<IDependencyBuilder> serviceConfigurator = null, Action<IDependencyBuilder> commandConfigurator = null)
+	public virtual void Configure(
+		Action<IDependencyBuilder> serviceConfigurator = null, 
+		Action<IDependencyBuilder> commandConfigurator = null,
+		Func<LoggerConfiguration, ILogger> configureLogger=null
+		)
 	{
 		if (IsBuilt)
 			throw new InvalidOperationException("The app has already been built, and cannot be configured anymore");
 
-		ConfigureLogging();
-
+		ConfigureLogging(configureLogger);
+		
 		Commands.AddSingleton(new ArgValidator<ServiceName>(arg => new ServiceName(arg)));
 
 		// add global options

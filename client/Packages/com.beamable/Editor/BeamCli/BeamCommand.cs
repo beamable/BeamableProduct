@@ -80,7 +80,7 @@ namespace Beamable.Editor.BeamCli
 		public BeamCommandFactory(BeamableDispatcher dispatcher)
 		{
 			_dispatcher = dispatcher;
-			
+
 			AssemblyReloadEvents.beforeAssemblyReload -= ClearAll;
 			AssemblyReloadEvents.afterAssemblyReload -= ClearAll;
 			AssemblyReloadEvents.beforeAssemblyReload += ClearAll;
@@ -242,11 +242,11 @@ namespace Beamable.Editor.BeamCli
 			const string homePathEnv = "HOME";
 #endif
 			var home = System.Environment.GetEnvironmentVariable(homePathEnv);
-			
+
 			var defaultDotnetToolPath = Path.Combine(home, ".dotnet", "tools", "beam");
 			var beamLocation = CoreConfiguration.Instance.BeamCLIPath.GetOrElse(defaultDotnetToolPath);
-			
-			Command = beamLocation + command.Substring("beam".Length) ;
+
+			Command = beamLocation + command.Substring("beam".Length);
 		}
 
 		public async Promise Run()
