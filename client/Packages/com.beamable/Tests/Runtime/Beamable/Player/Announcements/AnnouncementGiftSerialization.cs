@@ -44,9 +44,9 @@ namespace Beamable.Tests.Runtime.Player.Notifications
 }";
 
 			var response = AnnouncementSerializationUtil.DeserializeQueryResponse(json);
-			
+
 			Assert.AreEqual(1, response.announcements.Count);
-			
+
 			Assert.AreEqual("giftTest", response.announcements[0].id);
 			Assert.AreEqual("body", response.announcements[0].body);
 			Assert.AreEqual("summary", response.announcements[0].summary);
@@ -54,7 +54,7 @@ namespace Beamable.Tests.Runtime.Player.Notifications
 			Assert.AreEqual("main", response.announcements[0].channel);
 			Assert.AreEqual(false, response.announcements[0].isRead);
 			Assert.AreEqual(false, response.announcements[0].isClaimed);
-			
+
 			Assert.AreEqual(true, response.announcements[0].gift.applyVipBonus.HasValue);
 			Assert.AreEqual(true, response.announcements[0].gift.applyVipBonus.Value);
 			Assert.AreEqual(true, response.announcements[0].gift.description.HasValue);
@@ -63,15 +63,15 @@ namespace Beamable.Tests.Runtime.Player.Notifications
 			Assert.AreEqual(1, response.announcements[0].gift.currencies.Value.listData.Count);
 			Assert.AreEqual(15, response.announcements[0].gift.currencies.Value.listData[0].amount);
 			Assert.AreEqual("currency.gems", response.announcements[0].gift.currencies.Value.listData[0].symbol.Id);
-			
+
 			Assert.AreEqual(1, response.announcements[0].gift.items.Value.listData.Count);
 			Assert.AreEqual("items.diamond_1", response.announcements[0].gift.items.Value.listData[0].symbol.Id);
 			Assert.AreEqual(true, response.announcements[0].gift.items.Value.listData[0].properties.HasValue);
 			Assert.AreEqual(1, response.announcements[0].gift.items.Value.listData[0].properties.Value.Count);
 			Assert.AreEqual("b", response.announcements[0].gift.items.Value.listData[0].properties.Value["a"]);
 		}
-		
-		
+
+
 		[Test]
 		public void AnnouncementDeserializeWithGift_Empty()
 		{
@@ -97,7 +97,7 @@ namespace Beamable.Tests.Runtime.Player.Notifications
 
 			var response = AnnouncementSerializationUtil.DeserializeQueryResponse(json);
 			Assert.AreEqual(1, response.announcements.Count);
-			
+
 			Assert.AreEqual("giftTest", response.announcements[0].id);
 			Assert.AreEqual("body", response.announcements[0].body);
 			Assert.AreEqual("summary", response.announcements[0].summary);
@@ -105,13 +105,13 @@ namespace Beamable.Tests.Runtime.Player.Notifications
 			Assert.AreEqual("main", response.announcements[0].channel);
 			Assert.AreEqual(false, response.announcements[0].isRead);
 			Assert.AreEqual(false, response.announcements[0].isClaimed);
-			
+
 			Assert.AreEqual(false, response.announcements[0].gift.applyVipBonus.HasValue);
 			Assert.AreEqual(false, response.announcements[0].gift.description.HasValue);
 			Assert.AreEqual(false, response.announcements[0].gift.currencies.HasValue);
 			Assert.AreEqual(false, response.announcements[0].gift.items.HasValue);
 		}
 	}
-	
-	
+
+
 }
