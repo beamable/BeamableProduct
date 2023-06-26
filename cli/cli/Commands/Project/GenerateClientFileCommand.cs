@@ -64,7 +64,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 				throw;
 			}
 		};
-		
+
 		var userAssembly = loadContext.LoadFromAssemblyPath(absolutePath);
 
 		#endregion
