@@ -796,7 +796,7 @@ public class SwaggerService
 
 				var referencedSchema = swagger.Document.Components.Schemas[curr.Reference.Id];
 				referencedSchemas[curr.Reference.Id] = referencedSchema;
-
+				schemasToExplore.Enqueue(referencedSchema);
 			}
 
 			output.Add(new OpenApiDocumentResult

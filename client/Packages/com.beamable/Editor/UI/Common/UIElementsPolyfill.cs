@@ -484,12 +484,14 @@ public static class UssLoader
 		var u2019Path = ussPath.Replace(".uss", ".2019.uss");
 		var u2020Path = ussPath.Replace(".uss", ".2020.uss");
 		var u2021Path = ussPath.Replace(".uss", ".2021.uss");
+		var u2022Path = ussPath.Replace(".uss", ".2022.uss");
 		var darkAvailable = File.Exists(darkPath);
 		var lightAvailable = File.Exists(lightPath);
 		var u2018Available = File.Exists(u2018Path);
 		var u2019Available = File.Exists(u2019Path);
 		var u2020Available = File.Exists(u2020Path);
 		var u2021Available = File.Exists(u2021Path);
+		var u2022Available = File.Exists(u2022Path);
 
 		if (EditorGUIUtility.isProSkin && darkAvailable)
 		{
@@ -523,8 +525,15 @@ public static class UssLoader
 
 		if (u2021Available)
 		{
-#if UNITY_2021_1_OR_NEWER // 2021 is the max supported version, so we forward lean and assume all uss works in 2022.
+#if UNITY_2021_1_OR_NEWER
 			ussPaths.Add(u2021Path);
+#endif
+		}
+
+		if (u2022Available)
+		{
+#if UNITY_2022_1_OR_NEWER // 2022 is the max supported version, so we forward lean and assume all uss works in 2023.
+			ussPaths.Add(u2022Path);
 #endif
 		}
 
