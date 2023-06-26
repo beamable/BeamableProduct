@@ -241,7 +241,7 @@ namespace Beamable.Common.Api.Announcements
 		public void Serialize(JsonSerializable.IStreamSerializer s)
 		{
 			if (s.HasKey(nameof(symbol))
-			    || symbol != default(CurrencyRef))
+				|| symbol != default(CurrencyRef))
 			{
 				s.Serialize(nameof(symbol), ref symbol.Id);
 			}
@@ -249,25 +249,25 @@ namespace Beamable.Common.Api.Announcements
 			s.Serialize(nameof(amount), ref amount);
 		}
 	}
-	
-	
+
+
 	[Serializable]
 	public class PlayerRewardNewItemView : JsonSerializable.ISerializable
 	{
 		public ItemRef symbol = new ItemRef();
 		public OptionalSerializableDictionaryStringToString properties = new OptionalSerializableDictionaryStringToString();
-		
+
 		public void Serialize(JsonSerializable.IStreamSerializer s)
 		{
 			if (s.HasKey(nameof(symbol))
-			    || symbol != default(ItemRef))
+				|| symbol != default(ItemRef))
 			{
 				s.Serialize(nameof(symbol), ref symbol.Id);
 			}
-			
+
 			if ((s.HasKey(nameof(properties))
-			     || ((properties != default(OptionalSerializableDictionaryStringToString))
-			         && properties.HasValue)))
+				 || ((properties != default(OptionalSerializableDictionaryStringToString))
+					 && properties.HasValue)))
 			{
 				s.SerializeDictionary<SerializableDictionaryStringToString, string>(nameof(properties), ref properties.Value);
 				properties.HasValue = true;
@@ -275,7 +275,7 @@ namespace Beamable.Common.Api.Announcements
 		}
 	}
 
-	
+
 	[Serializable]
 	public class PlayerRewardListOfCurrencyChangeView : DisplayableList<PlayerRewardCurrencyChangeView>
 	{
@@ -285,7 +285,7 @@ namespace Beamable.Common.Api.Announcements
 		public override string GetListPropertyPath() => nameof(listData);
 	}
 
-	
+
 
 	[Serializable]
 	public class PlayerRewardListOfNewItemView : DisplayableList<PlayerRewardNewItemView>
@@ -296,7 +296,7 @@ namespace Beamable.Common.Api.Announcements
 		public override string GetListPropertyPath() => nameof(listData);
 	}
 
-	
+
 	[Serializable]
 	public class OptionalPlayerRewardCurrencyChangeView : Optional<PlayerRewardListOfCurrencyChangeView>
 	{
@@ -331,46 +331,46 @@ namespace Beamable.Common.Api.Announcements
 		{
 			var anyCurrencies = currencies.GetOrElse(() => null)?.Count > 0;
 			var anyItems = items?.GetOrElse(() => null)?.Count > 0;
-			return anyCurrencies || anyItems ;
+			return anyCurrencies || anyItems;
 		}
 
 
 		public void Serialize(JsonSerializable.IStreamSerializer s)
 		{
 			if ((s.HasKey(nameof(applyVipBonus))
-			     || ((applyVipBonus != default(OptionalBool))
-			         && applyVipBonus.HasValue)))
+				 || ((applyVipBonus != default(OptionalBool))
+					 && applyVipBonus.HasValue)))
 			{
 				s.Serialize(nameof(applyVipBonus), ref applyVipBonus.Value);
 				applyVipBonus.HasValue = true;
 			}
-			
+
 			if ((s.HasKey(nameof(description))
-			     || ((description != default(OptionalString))
-			         && description.HasValue)))
+				 || ((description != default(OptionalString))
+					 && description.HasValue)))
 			{
 				s.Serialize(nameof(description), ref description.Value);
 				description.HasValue = true;
 			}
-			
+
 			if ((s.HasKey("changeCurrencies")
-			     || ((currencies != default(OptionalPlayerRewardCurrencyChangeView))
-			         && currencies.HasValue)))
+				 || ((currencies != default(OptionalPlayerRewardCurrencyChangeView))
+					 && currencies.HasValue)))
 			{
 				s.SerializeList("changeCurrencies", ref currencies.Value.listData);
 				currencies.HasValue = true;
 			}
-			
+
 			if ((s.HasKey("addItems")
-			     || ((items != default(OptionalPlayerRewardNewItemView))
-			         && items.HasValue)))
+				 || ((items != default(OptionalPlayerRewardNewItemView))
+					 && items.HasValue)))
 			{
 				s.SerializeList("addItems", ref items.Value.listData);
 				items.HasValue = true;
 			}
 		}
 	}
-	
+
 	[Serializable]
 	public class AnnouncementRequest
 	{
