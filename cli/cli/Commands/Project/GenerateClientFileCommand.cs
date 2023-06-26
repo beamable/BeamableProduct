@@ -4,9 +4,9 @@ using Beamable.Server.Editor;
 using Beamable.Server.Generator;
 using Beamable.Tooling.Common.OpenAPI;
 using cli.Unreal;
-using microservice.Common;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
+using Serilog;
 using System.CommandLine;
 using System.Globalization;
 using System.Reflection;
@@ -40,14 +40,32 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 
 		var absolutePath = Path.GetFullPath(args.microserviceAssemblyPath);
 		var absoluteDir = Path.GetDirectoryName(absolutePath);
-		AssemblyLoadContext.Default.Resolving += (context, name) =>
+		var loadContext = new AssemblyLoadContext("generate-client-context", false);
+		loadContext.Resolving += (context, name) =>
 		{
 			var assemblyPath = Path.Combine(absoluteDir, $"{name.Name}.dll");
-			if (assemblyPath != null)
-				return context.LoadFromAssemblyPath(assemblyPath);
-			return null;
+			try
+			{
+				Log.Verbose($"loading dll name=[{name.Name}] version=[{name.Version}]");
+				if (assemblyPath != null)
+					return context.LoadFromAssemblyPath(assemblyPath);
+				return null;
+			}
+			catch (Exception ex)
+			{
+				BeamableLogger.LogError($@"Unable to load dll at path=[{assemblyPath}] 
+name=[{name}] 
+context=[{context.Name}]
+message=[{ex.Message}]
+ex-type=[{ex.GetType().Name}]
+inner-message=[{ex.InnerException?.Message}]
+inner-type=[{ex.InnerException?.GetType().Name}]
+");
+				throw;
+			}
 		};
-		var userAssembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(absolutePath);
+
+		var userAssembly = loadContext.LoadFromAssemblyPath(absolutePath);
 
 		#endregion
 

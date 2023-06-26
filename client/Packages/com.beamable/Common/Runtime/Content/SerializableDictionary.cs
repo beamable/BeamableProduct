@@ -54,7 +54,13 @@ namespace Beamable.Common.Content
 	}
 
 	[Serializable]
-	public class OptionalSerializableDictionaryStringToString : Optional<SerializableDictionaryStringToString> { }
+	public class OptionalSerializableDictionaryStringToString : Optional<SerializableDictionaryStringToString>
+	{
+		public OptionalSerializableDictionaryStringToString()
+		{
+			Value = new MapOfString();
+		}
+	}
 
 	[Serializable]
 	public class OptionalSerializableDictionaryStringToSomething<T> : Optional<SerializableDictionaryStringToSomething<T>> { }

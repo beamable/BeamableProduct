@@ -41,7 +41,7 @@ public class App
 
 	public bool IsBuilt => CommandProvider != null;
 
-	private static void ConfigureLogging(Func<LoggerConfiguration, ILogger> configureLogger=null)
+	private static void ConfigureLogging(Func<LoggerConfiguration, ILogger> configureLogger = null)
 	{
 		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
 		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
@@ -51,7 +51,7 @@ public class App
 			.MinimumLevel.ControlledBy(LogLevel)
 			.CreateLogger();
 		Log.Logger = configureLogger(new LoggerConfiguration());
-		
+
 		BeamableLogProvider.Provider = new CliSerilogProvider();
 		CliSerilogProvider.LogContext.Value = Log.Logger;
 	}
@@ -95,16 +95,16 @@ public class App
 	}
 
 	public virtual void Configure(
-		Action<IDependencyBuilder> serviceConfigurator = null, 
+		Action<IDependencyBuilder> serviceConfigurator = null,
 		Action<IDependencyBuilder> commandConfigurator = null,
-		Func<LoggerConfiguration, ILogger> configureLogger=null
+		Func<LoggerConfiguration, ILogger> configureLogger = null
 		)
 	{
 		if (IsBuilt)
 			throw new InvalidOperationException("The app has already been built, and cannot be configured anymore");
 
 		ConfigureLogging(configureLogger);
-		
+
 		Commands.AddSingleton(new ArgValidator<ServiceName>(arg => new ServiceName(arg)));
 
 		// add global options
