@@ -290,7 +290,7 @@ namespace Beamable.Common.Api.Announcements
 	[Serializable]
 	public class PlayerRewardListOfNewItemView : DisplayableList<PlayerRewardNewItemView>
 	{
-		public List<NewItem> listData = new List<NewItem>();
+		public List<PlayerRewardNewItemView> listData = new List<PlayerRewardNewItemView>();
 
 		protected override IList InternalList => listData;
 		public override string GetListPropertyPath() => nameof(listData);
