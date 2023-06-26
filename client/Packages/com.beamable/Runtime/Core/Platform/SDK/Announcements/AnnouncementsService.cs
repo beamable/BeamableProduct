@@ -9,7 +9,7 @@ namespace Beamable.Api.Announcements
 {
 	public class AnnouncementsSubscription : PlatformSubscribable<AnnouncementQueryResponse, AnnouncementQueryResponse>
 	{
-		public AnnouncementsSubscription(IDependencyProvider provider, string service) : base(provider, service)
+		public AnnouncementsSubscription(IDependencyProvider provider, string service) : base(provider, service, new AnnouncementSubscriptionGetter())
 		{
 		}
 
@@ -20,6 +20,15 @@ namespace Beamable.Api.Announcements
 				announcement.endDateTime = DateTime.UtcNow.AddSeconds(announcement.secondsRemaining);
 			}
 			Notify(data);
+		}
+
+	}
+
+	public class AnnouncementSubscriptionGetter : BeamableGetApiResource<AnnouncementQueryResponse>
+	{
+		public override Promise<AnnouncementQueryResponse> RequestData(IBeamableRequester requester, string url)
+		{
+			return requester.Request(Method.GET, url, useCache: false, parser: AnnouncementSerializationUtil.DeserializeQueryResponse);
 		}
 	}
 

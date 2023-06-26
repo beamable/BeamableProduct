@@ -1,5 +1,6 @@
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
+using Beamable.Serialization;
 using UnityEngine;
 #pragma warning disable CS0618
 
@@ -54,7 +55,7 @@ namespace Beamable.Common.Announcements
 
 	[System.Serializable]
 	[Agnostic]
-	public class AnnouncementAttachment
+	public class AnnouncementAttachment : JsonSerializable.ISerializable
 	{
 		[Tooltip("This should be the contentId of the attachment. Either an item id, or a currency id.")]
 		[MustBeCurrencyOrItem]
@@ -68,5 +69,12 @@ namespace Beamable.Common.Announcements
 		[MustBeOneOf("currency", "items")]
 		// TODO: [MustMatchReference(nameof(symbol))]
 		public string type;
+
+		public void Serialize(JsonSerializable.IStreamSerializer s)
+		{
+			s.Serialize(nameof(symbol), ref symbol);
+			s.Serialize(nameof(count), ref count);
+			s.Serialize(nameof(type), ref type);
+		}
 	}
 }
