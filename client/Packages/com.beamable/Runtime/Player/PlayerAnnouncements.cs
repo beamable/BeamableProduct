@@ -7,6 +7,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Common.Player;
 using System;
 using System.Linq;
+using UnityEngine;
 
 namespace Beamable.Player
 {
@@ -50,9 +51,9 @@ namespace Beamable.Player
 		public bool IsIgnored;
 
 		/// <summary>
-		/// A type of <see cref="PlayerReward"/> that allows a player to claim <see cref="AnnouncementApiReward"/> as well as items and currencies.
+		/// A type of <see cref="PlayerRewardView"/> that allows a player to claim <see cref="AnnouncementApiReward"/> as well as items and currencies.
 		/// </summary>
-		public AnnouncementPlayerRewards Gift;
+		public PlayerRewardView Gift;
 
 
 		internal Announcement(PlayerAnnouncements group)
