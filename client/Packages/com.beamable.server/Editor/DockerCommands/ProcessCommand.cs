@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Assistant;
+using Beamable.Editor;
 using Beamable.Editor.Microservice.UI;
 using Beamable.Editor.UI;
 using Beamable.Editor.UI.Model;
@@ -59,6 +60,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		private Process _process;
 		private TaskCompletionSource<int> _status, _standardOutComplete;
 
+		protected BeamableDispatcher _dispatcher;
 		private bool _started, _hasExited;
 		protected int _exitCode = -1;
 		protected string DockerCmd => MicroserviceConfiguration.Instance.ValidatedDockerCommand;
@@ -213,6 +215,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			try
 			{
 				var _ = MicroserviceConfiguration.Instance; // preload configuration...
+				_dispatcher = BeamEditorContext.Default.Dispatcher;
 				if (WriteCommandToUnity)
 				{
 					Debug.Log("============== Start Executing [" + command + "] ===============");
@@ -244,7 +247,7 @@ namespace Beamable.Server.Editor.DockerCommands
 						Task.Run(async () =>
 						{
 							await Task.Delay(1); // give 1 ms for log messages to eep out
-							BeamEditorContext.Default.Dispatcher.Schedule(() =>
+							_dispatcher.Schedule(() =>
 							{
 								// there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
 								_hasExited = true;
@@ -266,7 +269,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 						_process.OutputDataReceived += (sender, args) =>
 						{
-							BeamEditorContext.Default.Dispatcher.Schedule(() =>
+							_dispatcher.Schedule(() =>
 							{
 								try
 								{
@@ -280,7 +283,7 @@ namespace Beamable.Server.Editor.DockerCommands
 						};
 						_process.ErrorDataReceived += (sender, args) =>
 						{
-							BeamEditorContext.Default.Dispatcher.Schedule(() =>
+							_dispatcher.Schedule(() =>
 							{
 								try
 								{
@@ -470,13 +473,14 @@ namespace Beamable.Server.Editor.DockerCommands
 				return false;
 			}
 
+			var dispatcher = BeamEditorContext.Default.Dispatcher;
 			var dockerProcess = Process.Start(new ProcessStartInfo(dockerDesktopPath));
 			dockerProcess.EnableRaisingEvents = true;
 			dockerProcess.Exited += async (sender, args) =>
 			{
 				await DockerCheckTask;
 
-				BeamEditorContext.Default.Dispatcher.Schedule(async () =>
+				dispatcher.Schedule(async () =>
 				{
 					Debug.Log("Docker Desktop was closed!");
 					DockerNotRunning = true;
