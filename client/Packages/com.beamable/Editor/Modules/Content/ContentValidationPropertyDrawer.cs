@@ -188,7 +188,7 @@ namespace Beamable.Editor.Content
 		static RefEditorGUI()
 		{
 			_propertyDrawerTypes = TypeCache.GetTypesDerivedFrom<PropertyDrawer>().ToArray();
-			
+
 			var t = typeof(EditorGUI);
 			var delegateType = typeof(DefaultPropertyFieldDelegate);
 			var m = t.GetMethod("DefaultPropertyField", BindingFlags.Static | BindingFlags.NonPublic);

@@ -13,7 +13,7 @@ public static class PromiseHelperExtensions
 	{
 		return self.Returns(Promise<TResult>.Successful(result));
 	}
-	
+
 	public static IReturnsResult<TMock> ReturnsPromise<TMock, TResult>(this IReturns<TMock, Promise<TResult>> self, Func<TResult> resultGenerator)
 		where TMock : class
 	{

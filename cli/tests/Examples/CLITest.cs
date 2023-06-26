@@ -28,28 +28,28 @@ public class CLITest
 	private Action<IDependencyBuilder> _configurator;
 
 	private List<Mock> _mockObjects = new List<Mock>();
-	
+
 	protected TestConsole Ansi
 	{
 		get;
 		private set;
 	}
-	
+
 	[SetUp]
 	public void Setup()
 	{
 		TestId = Guid.NewGuid().ToString();
 
 		_originalWorkingDir = Directory.GetCurrentDirectory();
-		
+
 		Directory.CreateDirectory(WorkingDir);
 		Directory.SetCurrentDirectory(WorkingDir);
-		
+
 		AnsiConsole.Console = Ansi = new TestConsole()
 			.Colors(ColorSystem.Standard)
 			.Interactive()
 			.EmitAnsiSequences();
-		
+
 		_serilogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
 		_mockRequester = new Mock<IRequester>();
 	}
@@ -86,7 +86,7 @@ public class CLITest
 			});
 		};
 	}
-	
+
 	protected int Run(params string[] args)
 	{
 		var exitCode = Cli.RunWithParams(builder =>
@@ -96,19 +96,19 @@ public class CLITest
 			builder.Remove<CliRequester>();
 			builder.AddSingleton<IRequester>(_mockRequester.Object);
 			builder.AddSingleton<IBeamableRequester>(_mockRequester.Object);
-			
+
 			_configurator?.Invoke(builder);
-		}, 
+		},
 		logger => logger
 		.WriteTo.Console(new MessageTemplateTextFormatter(
 			"{Timestamp:HH:mm:ss.fff} [{Level:u4}] {Message:lj}{NewLine}{Exception}"))
 		.MinimumLevel.ControlledBy(_serilogLevel)
-		.CreateLogger(), 
-		
+		.CreateLogger(),
+
 		args);
 
 		Assert.AreEqual(0, exitCode, $"Command had a non zero exit code. Check logs. code=[{exitCode}] command=[{string.Join(" ", args)}]");
 		return exitCode;
 	}
-	
+
 }
