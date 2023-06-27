@@ -189,7 +189,7 @@ namespace Beamable.Editor.ToolbarExtender
 				Debug.LogWarning("Editor skin has not been loaded yet, so Beamable Toolbar is creating it.");
 				GUI.skin = EditorGUIUtility.GetBuiltinSkin(EditorSkin.Inspector);
 			}
-			
+
 			if (_commandStyle == null)
 			{
 				_commandStyle = new GUIStyle("CommandLeft");
