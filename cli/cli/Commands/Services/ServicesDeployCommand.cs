@@ -56,7 +56,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 			(args, i) => args.RemoteServiceComments = i);
 		
 		AddOption(new Option<string>("--docker-registry-url", "A custom docker registry url to use when uploading. By default, the result from the beamo/registry network call will be used, " +
-		                                                      "with minor string manipulation to add https scheme, remove port specificatino, and add /v2. "), (args, i) => args.dockerRegistryUrl = i);
+		                                                      "with minor string manipulation to add https scheme, remove port specificatino, and add /v2 "), (args, i) => args.dockerRegistryUrl = i);
 	}
 
 	public override async Task Handle(ServicesDeployCommandArgs args)
