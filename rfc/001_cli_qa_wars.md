@@ -30,7 +30,7 @@ Steps:
   - can you download content using `beam content pull`?
   - can you open and edit content using `beam content open <content_id>`?
   - can you check status using `beam content status`?
-  - can you publish changes using `beam content push`?
+  - can you publish changes using `beam content publish`?
 - `beam project` commands
   - can you connect unity project using `beam project add-unity-project <path>`?
   - can you create and run new SAMS using [this tutorial](https://docs.beamable.com/docs/standalone-microservices)?
