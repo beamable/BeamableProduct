@@ -15,8 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add gift field in `Announcement` class.
-
 ## [1.16.0]
 
 ### Added
@@ -24,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unity 2022 LTS Support
 - Core configuration allows `BeamCLIPath` to be configured.
 - `PerformLocalLogin` method in `SignInWithGPG` class
+- Add gift field in `Announcement` class.
 
 ### Fixed
 

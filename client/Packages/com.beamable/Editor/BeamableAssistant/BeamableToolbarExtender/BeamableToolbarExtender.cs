@@ -184,12 +184,6 @@ namespace Beamable.Editor.ToolbarExtender
 			// Create two containers, left and right
 			// Screen is whole toolbar
 
-			if (GUI.skin == null)
-			{
-				Debug.LogWarning("Editor skin has not been loaded yet, so Beamable Toolbar is creating it.");
-				GUI.skin = EditorGUIUtility.GetBuiltinSkin(EditorSkin.Inspector);
-			}
-
 			if (_commandStyle == null)
 			{
 				_commandStyle = new GUIStyle("CommandLeft");
