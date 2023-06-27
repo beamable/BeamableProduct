@@ -110,7 +110,7 @@ public class DocService
 				order = int.Parse(order),
 				title = title.Replace("-", " "),
 				content = content,
-				slug = title.ToLower(),
+				slug = "cli-guide-" + title.ToLower(),
 				excerpt = excerpt
 			});
 		}
