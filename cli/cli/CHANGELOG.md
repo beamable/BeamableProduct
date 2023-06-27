@@ -9,7 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `beam services deploy` accepts an optional `--docker-registry-url` 
+
 ### Changed
+
+### Fixed
+
+- `beam services deploy` uses docker registry endpoint derived from call to `/basic/beamo/registry`
 
 ## [1.16.0]
 
