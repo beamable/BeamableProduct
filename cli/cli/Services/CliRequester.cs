@@ -102,13 +102,21 @@ public class CliRequester : IRequester
 		{
 			switch (error)
 			{
-				case RequesterException e when e.RequestError.error is "InvalidTokenError" or "ExpiredTokenError" || e.Status == 403 ||
-				                               (!string.IsNullOrWhiteSpace(AccessToken.RefreshToken) && AccessToken.ExpiresAt < DateTime.Now):
-					BeamableLogger.Log("Got failure for token " + AccessToken.Token + " because " + e.RequestError.error);
+				case RequesterException e when e.RequestError.error is "TimeOutError":
+					BeamableLogger.LogWarning("Timeout error, retrying in few seconds... ");
+					return Task.Delay(TimeSpan.FromSeconds(5)).ToPromise().FlatMap(_ =>
+							Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
+				case RequesterException e when e.RequestError.error is "InvalidTokenError" or "ExpiredTokenError" ||
+				                               e.Status == 403 ||
+				                               (!string.IsNullOrWhiteSpace(AccessToken.RefreshToken) &&
+				                                AccessToken.ExpiresAt < DateTime.Now):
+					BeamableLogger.Log(
+						"Got failure for token " + AccessToken.Token + " because " + e.RequestError.error);
 					var authService = new AuthApi(this);
 					return authService.LoginRefreshToken(AccessToken.RefreshToken).Map(rsp =>
 						{
-							BeamableLogger.Log($"Got new token: access=[{rsp.access_token}] refresh=[{rsp.refresh_token}] type=[{rsp.token_type}] ");
+							BeamableLogger.Log(
+								$"Got new token: access=[{rsp.access_token}] refresh=[{rsp.refresh_token}] type=[{rsp.token_type}] ");
 							_ctx.UpdateToken(rsp);
 							return PromiseBase.Unit;
 						})
@@ -169,7 +177,6 @@ public class CliRequester : IRequester
 
 	public Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> req)
 	{
-
 		return Request<T>(req.Method, req.uri, req.body, req.includeAuthHeader, req.parser, req.useCache);
 	}
 
@@ -184,5 +191,4 @@ public class CliRequester : IRequester
 			_ => throw new ArgumentOutOfRangeException(nameof(method), method, null)
 		};
 	}
-
 }
