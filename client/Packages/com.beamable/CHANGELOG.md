@@ -9,8 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - no changes
 
-- `StorageDocument` types can use `Id` in Mongo Filter Expressions.
-
 ## [1.16.0]
 
 ### Added
