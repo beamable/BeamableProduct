@@ -43,7 +43,7 @@ public class RegisterCommand : AppCommand<RegisterCommandArgs>
 				.LeftAligned()
 				.Color(Color.Red));
 
-		AnsiConsole.Write("Welcome to Beamable. You are creating a new Beamable organization. If you already have an org, use the 'beam init' command to sign in.");
+		AnsiConsole.WriteLine("Welcome to Beamable. You are creating a new Beamable organization. If you already have an org, use the 'beam init' command to sign in.");
 		var legal = await GetLegal(args);
 		if (!legal)
 		{
@@ -58,26 +58,34 @@ public class RegisterCommand : AppCommand<RegisterCommandArgs>
 		// new CliRequester(args.AppContext);
 		args.AppContext.Set(null, null, args.AppContext.Host);
 		args.AppContext.UpdateToken(null);
-		var realmsApi = args.DependencyProvider.GetService<IRealmsApi>();
-		var res = await realmsApi.PostCustomer(new NewCustomerRequest
+		
+		try
 		{
-			alias = new OptionalString(alias),
-			customerName = new OptionalString(alias),
-			projectName = game,
-			email = username,
-			password = password
-		});
+			var realmsApi = args.DependencyProvider.GetService<IRealmsApi>();
+			var res = await realmsApi.PostCustomer(new NewCustomerRequest
+			{
+				alias = new OptionalString(alias),
+				customerName = new OptionalString(alias),
+				projectName = game,
+				email = username,
+				password = password
+			});
 
-
-		await _initCommand.Handle(new InitCommandArgs
+			await _initCommand.Handle(new InitCommandArgs
+			{
+				Provider = args.Provider,
+				saveToFile = true,
+				cid = res.cid.ToString(),
+				pid = res.pid,
+				username = username,
+				password = password
+			});
+		}
+		catch (Exception e)
 		{
-			Provider = args.Provider,
-			saveToFile = true,
-			cid = res.cid.ToString(),
-			pid = res.pid,
-			username = username,
-			password = password
-		});
+			throw new CliException($"Failed to create new org: {e.Message}");
+		}
+
 
 		var loginArgs = args.Create<LoginCommandArgs>();
 		loginArgs.password = password;
