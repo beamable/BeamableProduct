@@ -1,5 +1,7 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Api;
+using Serilog;
+using UnityEngine;
 
 namespace cli.Services;
 
@@ -70,11 +72,28 @@ public class BeamoService
 			.RecoverFrom40x(_ => new List<ServiceTemplate>());
 	}
 
-	public Promise<string> GetDockerImageRegistry()
+	
+	public async Promise<string> GetDockerImageRegistry()
 	{
-		return Requester.Request<GetElasticContainerRegistryURIResponse>(Method.GET, $"{SERVICE}/registry")
+		return await Requester.Request<GetElasticContainerRegistryURIResponse>(Method.GET, $"{SERVICE}/registry")
 			.Map(res => res.uri)
 			.RecoverFrom40x(_ => string.Empty);
+	}
+
+	
+	public async Promise<string> GetDockerImageRegistryUri()
+	{
+		var uri = await GetDockerImageRegistry();
+		if (!uri.Contains("://"))
+		{
+			uri = $"https://{uri}"; // add an https protocol if there is no protocol present.
+		}
+		if (!Uri.TryCreate(uri, UriKind.RelativeOrAbsolute, out var parsedUri))
+		{
+			throw new CliException($"Invalid registry URI uri=[{uri}]");
+		}	
+		
+		return $"{parsedUri.Scheme}://{parsedUri.Host}/v2/";
 	}
 
 	public Promise<string> GetUploadApi()
