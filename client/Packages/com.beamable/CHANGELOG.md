@@ -5,17 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.16.1]
 
-### Added
-
-### Changed
-
-### Fixed
-
-### Added
-
-- Add gift field in `Announcement` class.
+- no changes
 
 ## [1.16.0]
 
@@ -24,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unity 2022 LTS Support
 - Core configuration allows `BeamCLIPath` to be configured.
 - `PerformLocalLogin` method in `SignInWithGPG` class
+- Add gift field in `Announcement` class.
 
 ### Fixed
 
