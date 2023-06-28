@@ -58,7 +58,7 @@ public class RegisterCommand : AppCommand<RegisterCommandArgs>
 		// new CliRequester(args.AppContext);
 		args.AppContext.Set(null, null, args.AppContext.Host);
 		args.AppContext.UpdateToken(null);
-		
+
 		try
 		{
 			var realmsApi = args.DependencyProvider.GetService<IRealmsApi>();

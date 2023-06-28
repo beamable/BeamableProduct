@@ -72,7 +72,7 @@ public class BeamoService
 			.RecoverFrom40x(_ => new List<ServiceTemplate>());
 	}
 
-	
+
 	public async Promise<string> GetDockerImageRegistry()
 	{
 		return await Requester.Request<GetElasticContainerRegistryURIResponse>(Method.GET, $"{SERVICE}/registry")
@@ -80,7 +80,7 @@ public class BeamoService
 			.RecoverFrom40x(_ => string.Empty);
 	}
 
-	
+
 	public async Promise<string> GetDockerImageRegistryUri()
 	{
 		var uri = await GetDockerImageRegistry();
@@ -91,8 +91,8 @@ public class BeamoService
 		if (!Uri.TryCreate(uri, UriKind.RelativeOrAbsolute, out var parsedUri))
 		{
 			throw new CliException($"Invalid registry URI uri=[{uri}]");
-		}	
-		
+		}
+
 		return $"{parsedUri.Scheme}://{parsedUri.Host}/v2/";
 	}
 
