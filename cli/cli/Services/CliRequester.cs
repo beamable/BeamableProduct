@@ -107,9 +107,9 @@ public class CliRequester : IRequester
 					return Task.Delay(TimeSpan.FromSeconds(5)).ToPromise().FlatMap(_ =>
 							Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
 				case RequesterException e when e.RequestError.error is "InvalidTokenError" or "ExpiredTokenError" ||
-				                               e.Status == 403 ||
-				                               (!string.IsNullOrWhiteSpace(AccessToken.RefreshToken) &&
-				                                AccessToken.ExpiresAt < DateTime.Now):
+											   e.Status == 403 ||
+											   (!string.IsNullOrWhiteSpace(AccessToken.RefreshToken) &&
+												AccessToken.ExpiresAt < DateTime.Now):
 					BeamableLogger.Log(
 						"Got failure for token " + AccessToken.Token + " because " + e.RequestError.error);
 					var authService = new AuthApi(this);

@@ -54,9 +54,9 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 																				  $"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal")
 		{ AllowMultipleArgumentsPerToken = true },
 			(args, i) => args.RemoteServiceComments = i);
-		
+
 		AddOption(new Option<string>("--docker-registry-url", "A custom docker registry url to use when uploading. By default, the result from the beamo/registry network call will be used, " +
-		                                                      "with minor string manipulation to add https scheme, remove port specificatino, and add /v2 "), (args, i) => args.dockerRegistryUrl = i);
+															  "with minor string manipulation to add https scheme, remove port specificatino, and add /v2 "), (args, i) => args.dockerRegistryUrl = i);
 	}
 
 	public override async Task Handle(ServicesDeployCommandArgs args)
@@ -154,7 +154,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 		{
 			dockerRegistryUrl = await _remoteBeamo.GetDockerImageRegistryUri();
 		}
-		
+
 		await AnsiConsole
 			.Progress()
 			.StartAsync(async ctx =>

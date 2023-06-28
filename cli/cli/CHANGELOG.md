@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `beam services deploy` accepts an optional `--docker-registry-url` 
+- `beam services deploy` accepts an optional `--docker-registry-url`
 
 ### Changed
 
