@@ -380,7 +380,11 @@ namespace Beamable.Common.Api
 		}
 		static string GenerateMessage(string prefix, string method, string uri, long responseCode, string responsePayload)
 		{
+#if UNITY_2018_1_OR_NEWER // It will be false on CLI target
 			return $"{prefix}. method=[{method}] uri=[{uri}] code=[{responseCode}] payload=[{responsePayload}]";
+#else
+			return $"{prefix}. method=[[{method}]] uri=[[{uri}]] code=[[{responseCode}]] payload=[[{responsePayload}]]";
+#endif
 		}
 	}
 
