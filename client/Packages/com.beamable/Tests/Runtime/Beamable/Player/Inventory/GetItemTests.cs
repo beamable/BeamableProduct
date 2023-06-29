@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using UnityEngine.TestTools;
+using EmptyResponse = Beamable.Common.Api.EmptyResponse;
 
 namespace Beamable.Tests.Runtime
 {
@@ -241,7 +242,7 @@ namespace Beamable.Tests.Runtime
 		
 		
 		[UnityTest]
-		public IEnumerator CanHandle_LastDeletion()
+		public IEnumerator CanHandle_LastDeletion() // aka, "Marco's Madness"
 		{
 			MockContent.Provide(new InventoryTestItem().SetContentName("a"));
 			MockContent.Provide(new InventoryTestItem().SetContentName("b"));
@@ -253,32 +254,38 @@ namespace Beamable.Tests.Runtime
 				var getRequestCount = 0;
 				b.ReplaceSingleton<IInventoryApi>(new MockInventoryApi()
 				{
-					ObjectPost = async (_, _, _) =>
+					ObjectPost = async (_, request, _) =>
 					{
 						await Promise.Success; // syntax to make Unity warnings shutup.
 						getRequestCount++;
+						Debug.Log($"[{getRequestCount}] REQUESTING INVENTORY FOR " + string.Join(", ", request.scopes.Value ?? Array.Empty<string>()));
 						switch (getRequestCount)
 						{
 							case 1: // on the first call, make the system use its disk cache...
 								throw new NoConnectivityException("simulated lack o nets");
-							case 2: // on the second call, there is no data, because its been deleted!
+							case 2:
 								return new InventoryView
 								{
 									currencies = Array.Empty<CurrencyView>(),
 									items = new ItemGroup[]
 									{
-										// new ItemGroup()
-										// {
-										// 	id = InventoryTestItem.FULL_CONTENT_ID + ".a",
-										// 	items = new Item[]
-										// 	{
-										// 		new Item
-										// 		{
-										// 			id = 4,
-										// 			properties = Array.Empty<ItemProperty>()
-										// 		}
-										// 	}
-										// }
+										new ItemGroup()
+										{
+											id = InventoryTestItem.FULL_CONTENT_ID + ".a",
+											items = new Item[]
+											{
+												new Item
+												{
+													id = 1,
+													properties = Array.Empty<ItemProperty>()
+												},
+												new Item
+												{
+													id = 2,
+													properties = Array.Empty<ItemProperty>()
+												}
+											}
+										}
 									}
 								};
 							default:
@@ -298,10 +305,10 @@ namespace Beamable.Tests.Runtime
 				ItemId = 1,
 				ContentId = InventoryTestItem.FULL_CONTENT_ID + ".a"
 			});
-			inventory.LocalItems.Insert(InventoryTestItem.FULL_CONTENT_ID + ".b", new PlayerItem
+			inventory.LocalItems.Insert(InventoryTestItem.FULL_CONTENT_ID + ".a", new PlayerItem
 			{
 				ItemId = 2,
-				ContentId = InventoryTestItem.FULL_CONTENT_ID + ".b"
+				ContentId = InventoryTestItem.FULL_CONTENT_ID + ".a"
 			});
 			inventory.LocalItems.Insert(InventoryTestItem.FULL_CONTENT_ID + ".will-be-deleted", new PlayerItem
 			{
@@ -328,6 +335,7 @@ namespace Beamable.Tests.Runtime
 				                                                         {
 					                                                         scopes = new string[]
 					                                                         {
+						                                                         "items",
 						                                                         InventoryTestItem.FULL_CONTENT_ID + ".will-be-deleted"
 					                                                         }
 				                                                         })));
@@ -338,6 +346,187 @@ namespace Beamable.Tests.Runtime
 			// Assert.AreEqual(2, callbackInvocationCount);
 			Assert.AreEqual(2, items.Count); // .a and .b exist
 
+		}
+		
+		[UnityTest]
+		public IEnumerator CanHandle_EmptyCallback() // aka, "Russell's Rouse" 
+		{
+			/*
+			 * In Russell's case,
+			 *  he has a player that already has an inventory item.
+			 * then he calls the Update for that item, and for a different item type.
+			 * And he gets a callback for the OnDataUpdated that shows the item is empty.
+			 */
+			
+			
+			MockContent.Provide(new InventoryTestItem().SetContentName("a"));
+			MockContent.Provide(new InventoryTestItem().SetContentName("b"));
+			// var putCalled = false;
+			TriggerContextInit(b =>
+			{
+				OnRegister(b);
+
+				var getRequestCount = 0;
+				
+				         
+				b.ReplaceSingleton<IInventoryApi>(new MockInventoryApi()
+				{
+					// ObjectPut = async  (_, request, _) =>
+					// {
+					// 	await Promise.Success; // syntax to make Unity warnings shutup.
+					//
+					// 	putCalled = true;
+					// 	return new CommonResponse();
+					// },
+					ObjectPost = async (_, request, _) =>
+					{
+						await Promise.Success; // syntax to make Unity warnings shutup.
+						getRequestCount++;
+						var scopeString = string.Join(",", request.scopes.Value);
+
+						Debug.Log($"[{scopeString}] REQUESTING INVENTORY FOR " + string.Join(", ", request.scopes.Value ?? Array.Empty<string>()));
+						switch (getRequestCount)
+						{
+							case (var n) when scopeString == "currency":
+								return new InventoryView {currencies = Array.Empty<CurrencyView>(), items = Array.Empty<ItemGroup>()};
+							case (var initialRequest) when initialRequest < 3:
+								return new InventoryView
+								{
+									currencies = Array.Empty<CurrencyView>(),
+									items = new ItemGroup[]
+									{
+										new ItemGroup
+										{
+											id = InventoryTestItem.FULL_CONTENT_ID + ".a",
+											items = new Item[]
+											{
+												new Item
+												{
+													id = 1, properties = Array.Empty<ItemProperty>()
+												}
+											}
+										},
+										new ItemGroup
+										{
+											id = InventoryTestItem.FULL_CONTENT_ID + ".b",
+											items = new Item[]
+											{
+												new Item
+												{
+													id = 2, properties = Array.Empty<ItemProperty>()
+												}
+											}
+										}
+									}
+								};
+							case (var _) when scopeString == "items.inventoryTestItem.b":
+							case (var _) when scopeString == "items,items.inventoryTestItem.b":
+								return new InventoryView
+								{
+									currencies = Array.Empty<CurrencyView>(),
+									items = new ItemGroup[]
+									{
+										new ItemGroup
+										{
+											id = InventoryTestItem.FULL_CONTENT_ID + ".b",
+											items = new Item[]
+											{
+												new Item
+												{
+													id = 2, properties = new ItemProperty[]
+													{
+														new ItemProperty
+														{
+															name = "a", value = "b"
+														}
+													}
+												}
+											}
+										}
+									}
+								};
+						}
+						throw new NotImplementedException("Unexpected call to get inventory");
+					}
+				});
+			});
+			yield return Context.OnReady.ToYielder();
+			Assert.IsTrue(Context.OnReady.IsCompleted);
+
+			
+			
+			var putMock = Requester.MockRequest<EmptyResponse>(Method.PUT, $"/object/inventory/{Context.PlayerId}")
+			                       // .WithURIMatcher(x => x?.Contains("object/inventory") ?? false)
+			                       .WithResponse(new EmptyResponse())
+				                       
+				;
+			
+			#region setup basic item callbacks
+			
+			var itemGroupA = Context.Inventory.GetItems(InventoryTestItem.FULL_CONTENT_ID + ".a");
+			var callbackInvocationCountGroupA = 0;
+			var itemGroupASizes = new List<int>();
+			itemGroupA.OnDataUpdated += (nextItems) =>
+			{
+				callbackInvocationCountGroupA++;
+				itemGroupASizes.Add(nextItems.Count);
+			};
+			yield return itemGroupA.OnReady.ToYielder();
+			
+			var itemGroupB = Context.Inventory.GetItems(InventoryTestItem.FULL_CONTENT_ID + ".b");
+			var callbackInvocationCountGroupB = 0;
+			itemGroupB.OnDataUpdated += (nextItems) =>
+			{
+				callbackInvocationCountGroupB++;
+			};
+			yield return itemGroupB.OnReady.ToYielder();
+
+			#endregion
+			
+			#region trigger update calls
+
+			var updateCall = Context.Inventory.Update(b =>
+			{
+				b.UpdateItem(InventoryTestItem.FULL_CONTENT_ID + ".b", 2, new Dictionary<string, string> {["a"] = "b"});
+			});
+			
+			// wait some time...
+			yield return new WaitForSecondsRealtime(.1f);
+
+			yield return updateCall.ToYielder();
+			// simulate a notification!
+			Context.Api.NotificationService.Publish("inventory.refresh",
+			                                        Json.Deserialize(JsonUtility.ToJson(
+				                                                         new PlayerInventory.InventoryScopeNotification()
+				                                                         {
+					                                                         scopes = new string[]
+					                                                         {
+						                                                         "items",
+						                                                         InventoryTestItem.FULL_CONTENT_ID + ".b"
+					                                                         }
+				                                                         })));
+			
+			// simulate a bit of time...
+			yield return new WaitForSecondsRealtime(DebounceService.DEFAULT_DEBOUNCE_TIME_SECONDS + .1f);
+			
+			#endregion
+			
+			
+			
+	
+			// Assert.AreEqual(2, callbackInvocationCount);
+			
+			
+			Assert.AreEqual(1, itemGroupA.Count);
+			Assert.AreEqual(1, itemGroupB.Count);
+
+			Assert.AreEqual(1, callbackInvocationCountGroupA);
+			Assert.AreEqual(2, callbackInvocationCountGroupB);
+			
+			Assert.AreEqual(1, itemGroupASizes.Count);
+			Assert.AreEqual(1, itemGroupASizes[0]);
+			// Assert.AreEqual(1, itemGroupASizes[1]);
+			// Assert.IsTrue(putCalled);
 		}
 	}
 }

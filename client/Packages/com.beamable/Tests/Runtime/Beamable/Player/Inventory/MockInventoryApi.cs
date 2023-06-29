@@ -44,9 +44,13 @@ namespace Beamable.Tests.Runtime
 			return ObjectPost?.Invoke(objectId, gsReq, includeAuthHeader);
 		}
 
+		public delegate Promise<CommonResponse> ObjectPutProxy(long objectId,
+		                                                       InventoryUpdateRequest gsRequest,
+		                                                       bool includeAuthHeader);
+		public ObjectPutProxy ObjectPut { get; set; }
 		Promise<CommonResponse> IInventoryApi.ObjectPut(long objectId, InventoryUpdateRequest gsReq, bool includeAuthHeader)
 		{
-			throw new System.NotImplementedException();
+			return ObjectPut?.Invoke(objectId, gsReq, includeAuthHeader);
 		}
 
 		Promise<CommonResponse> IInventoryApi.ObjectPutProxyReload(long objectId, bool includeAuthHeader)
