@@ -61,7 +61,7 @@ namespace Beamable.Mongo
 			where TCollection : StorageDocument
 		{
 			var filter = Builders<TCollection>.Filter.Eq("_id", new ObjectId(id));
-			var result = await collection.ReplaceOneAsync(filter, updatedData);
+			var result = await collection.UpdateOneAsync(filter, new ObjectUpdateDefinition<TCollection>(updatedData));
 			return result.ModifiedCount > 0;
 		}
 
