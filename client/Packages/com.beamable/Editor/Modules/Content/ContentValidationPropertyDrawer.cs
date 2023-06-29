@@ -187,12 +187,7 @@ namespace Beamable.Editor.Content
 		public static DefaultPropertyFieldDelegate VanillaPropertyField;
 		static RefEditorGUI()
 		{
-			var asmName = typeof(PropertyDrawer).AssemblyQualifiedName;
-			var t2 = Type.GetType(asmName.Replace("UnityEditor.PropertyDrawer", "UnityEditor.EditorAssemblies"));
-			var subClassMethod = t2.GetMethod("SubclassesOf", BindingFlags.Static | BindingFlags.NonPublic);
-
-			var propertyDrawerTypesObj = subClassMethod?.Invoke(null, new object[] { typeof(PropertyDrawer) });
-			_propertyDrawerTypes = propertyDrawerTypesObj as Type[];
+			_propertyDrawerTypes = TypeCache.GetTypesDerivedFrom<PropertyDrawer>().ToArray();
 
 			var t = typeof(EditorGUI);
 			var delegateType = typeof(DefaultPropertyFieldDelegate);

@@ -1,0 +1,20 @@
+﻿BeamableVersionButton {
+    margin-top: 1px;
+    padding-top: 2px;
+    width: 200px;
+    height: 18px;
+    background-color: #383838;
+    margin-right: 4px;
+    flex-direction: row;
+    justify-content: center;
+}
+
+#icon {
+    width: 15px;
+    height: 15px;
+    margin-right: 5px;
+}
+
+#label {
+    -unity-text-align: middle-center;
+}

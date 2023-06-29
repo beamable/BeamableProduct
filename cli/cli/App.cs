@@ -4,8 +4,10 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Semantics;
 using cli.Commands.Project;
 using cli.Content;
+using cli.Docs;
 using cli.Dotnet;
 using cli.Services;
 using cli.Services.Content;
@@ -39,16 +41,16 @@ public class App
 
 	public bool IsBuilt => CommandProvider != null;
 
-	private static void ConfigureLogging()
+	private static void ConfigureLogging(Func<LoggerConfiguration, ILogger> configureLogger = null)
 	{
 		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
 		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
 
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
-		Log.Logger = new LoggerConfiguration()
-			.WriteTo.SpectreConsole("{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}")
+		configureLogger ??= config => config.WriteTo.SpectreConsole("{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}")
 			.MinimumLevel.ControlledBy(LogLevel)
 			.CreateLogger();
+		Log.Logger = configureLogger(new LoggerConfiguration());
 
 		BeamableLogProvider.Provider = new CliSerilogProvider();
 		CliSerilogProvider.LogContext.Value = Log.Logger;
@@ -83,17 +85,27 @@ public class App
 		services.AddSingleton<SwaggerService.SourceGeneratorListProvider>();
 		services.AddSingleton<UnityCliGenerator>();
 		services.AddSingleton<UnrealCliGenerator>();
+		services.AddTransient<DiscoveryService>();
+		services.AddSingleton<DocService>();
+		services.AddSingleton<CliGenerator>();
+
 		OpenApiRegistration.RegisterOpenApis(services);
 
 		_serviceConfigurator?.Invoke(services);
 	}
 
-	public virtual void Configure(Action<IDependencyBuilder> serviceConfigurator = null, Action<IDependencyBuilder> commandConfigurator = null)
+	public virtual void Configure(
+		Action<IDependencyBuilder> serviceConfigurator = null,
+		Action<IDependencyBuilder> commandConfigurator = null,
+		Func<LoggerConfiguration, ILogger> configureLogger = null
+		)
 	{
 		if (IsBuilt)
 			throw new InvalidOperationException("The app has already been built, and cannot be configured anymore");
 
-		ConfigureLogging();
+		ConfigureLogging(configureLogger);
+
+		Commands.AddSingleton(new ArgValidator<ServiceName>(arg => new ServiceName(arg)));
 
 		// add global options
 		Commands.AddSingleton<DryRunOption>();
@@ -134,16 +146,19 @@ public class App
 		Commands.AddCommand<GenerateEnvFileCommand, GenerateEnvFileCommandArgs, ProjectCommand>();
 		Commands.AddCommand<GenerateClientFileCommand, GenerateClientFileCommandArgs, ProjectCommand>();
 		Commands.AddCommand<OpenSwaggerCommand, OpenSwaggerCommandArgs, ProjectCommand>();
+		Commands.AddCommand<TailLogsCommand, TailLogsCommandArgs, ProjectCommand>();
 		Commands.AddCommand<OpenMongoExpressCommand, OpenMongoExpressCommandArgs, ProjectCommand>();
 		Commands.AddCommand<AddUnityClientOutputCommand, AddUnityClientOutputCommandArgs, ProjectCommand>();
 		Commands.AddCommand<AddUnrealClientOutputCommand, AddUnrealClientOutputCommandArgs, ProjectCommand>();
 		Commands.AddCommand<ShareCodeCommand, ShareCodeCommandArgs, ProjectCommand>();
 		Commands.AddCommand<CheckStatusCommand, CheckStatusCommandArgs, ProjectCommand>();
+		Commands.AddCommand<AddServiceToSolutionCommand, AddServiceToSolutionCommandArgs, ProjectCommand>();
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Commands.AddRootCommand<BaseRequestGetCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestPutCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestPostCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestDeleteCommand, BaseRequestArgs>();
+		Commands.AddRootCommand<GenerateDocsCommand, GenerateDocsCommandArgs>();
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Commands.AddCommand<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
 		Commands.AddCommand<ConfigGetSecret, ConfigGetSecretArgs, ConfigCommand>();
@@ -157,6 +172,10 @@ public class App
 		Commands.AddCommand<CheckNBomberCommand, CheckNBomberCommandArgs, ProfilingCommand>();
 		Commands.AddCommand<RunNBomberCommand, RunNBomberCommandArgs, ProfilingCommand>();
 
+		// org commands
+		Commands.AddRootCommand<OrganizationCommand, OrganizationCommandArgs>();
+		Commands.AddCommand<RegisterCommand, RegisterCommandArgs, OrganizationCommand>();
+
 		// beamo commands
 		Commands.AddRootCommand<ServicesCommand, ServicesCommandArgs>();
 		Commands.AddCommand<ServicesManifestsCommand, ServicesManifestsArgs, ServicesCommand>();
@@ -165,6 +184,7 @@ public class App
 		Commands.AddCommand<ServicesModifyCommand, ServicesModifyCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesEnableCommand, ServicesEnableCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesDeployCommand, ServicesDeployCommandArgs, ServicesCommand>();
+		Commands.AddCommand<ServicesRunCommand, ServicesRunCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesResetCommand, ServicesResetCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesTemplatesCommand, ServicesTemplatesCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesRegistryCommand, ServicesRegistryCommandArgs, ServicesCommand>();
@@ -241,10 +261,7 @@ public class App
 					{
 						Console.Error.WriteLine(cliException.Message);
 					}
-					if (cliException.UseNonZeroExitCode)
-					{
-						context.ExitCode = 1;
-					}
+					context.ExitCode = cliException.NonZeroOrOneExitCode;
 					break;
 				default:
 					context.ExitCode = 1;

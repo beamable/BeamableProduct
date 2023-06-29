@@ -137,7 +137,7 @@ public class Tests
 		Console.WriteLine("----- OUTPUT ----");
 		Console.WriteLine(string.Join("\n", descriptors.Select(d => $"{d.FileName}\n\n{d.Content}\n")));
 
-		Assert.AreEqual(14, descriptors.Count);
+		Assert.AreEqual(15, descriptors.Count);
 	}
 
 	[Microservice("troublesome")]
@@ -191,6 +191,20 @@ public class Tests
 		Assert.AreEqual(0, status);
 	}
 
+	[Test]
+	public async Task GenerateProtoActor()
+	{
+		var status = await Cli.RunAsyncWithParams(builder =>
+		{
+			var mock = new Mock<ISwaggerStreamDownloader>();
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("api"))))
+				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.ProtoActor));
+			builder.ReplaceSingleton<ISwaggerStreamDownloader>(mock.Object);
+		}, "oapi", "generate", "--filter", "t:api", "--engine", "unity", "--conflict-strategy", "RenameUncommonConflicts");
+		Assert.AreEqual(0, status);
+	}
+
+	//dotnet run --project ./cli/cli -- --host https://dev.api.beamable.com oapi generate --filter t:api --engine unity --conflict-strategy RenameUncommonConflicts --output ./client/Packages/com.beamable/Runtime/OpenApi2
 
 	[Test]
 	public async Task GenerateUnreal() // TODO: better name please

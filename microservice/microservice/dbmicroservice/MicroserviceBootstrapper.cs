@@ -12,6 +12,7 @@ using Beamable.Common.Assistant;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
+using Beamable.Common.Scheduler;
 using Beamable.Server;
 using Beamable.Server.Api;
 using Beamable.Server.Api.Announcements;
@@ -29,6 +30,7 @@ using Beamable.Server.Api.Notifications;
 using Beamable.Server.Api.Payments;
 using Beamable.Server.Api.Push;
 using Beamable.Server.Api.RealmConfig;
+using Beamable.Server.Api.Scheduler;
 using Beamable.Server.Api.Social;
 using Beamable.Server.Api.Stats;
 using Beamable.Server.Api.Tournament;
@@ -64,59 +66,12 @@ namespace Beamable.Server
 	    public static ContentService ContentService;
 	    public static List<BeamableMicroService> Instances = new List<BeamableMicroService>();
 
-	    public static bool TryParseLogLevel(string logLevel, out LogEventLevel serilogLevel)
-	    {
-		    if (logLevel == null)
-		    {
-			    serilogLevel= LogEventLevel.Debug;
-			    return false;
-		    }
-
-		    switch (logLevel.ToLowerInvariant())
-		    {
-			    
-			    case "f":
-			    case "fatal":
-				    serilogLevel = LogEventLevel.Fatal;
-				    return true;
-			    case "e":
-			    case "err":
-			    case "error":
-				    serilogLevel = LogEventLevel.Error;
-				    return true;
-			    case "v":
-			    case "verbose":
-				    serilogLevel = LogEventLevel.Verbose;
-				    return true;
-			    case "d":
-			    case "dbug":
-			    case "dbg":
-
-			    case "debug":
-				    serilogLevel = LogEventLevel.Debug;
-				    return true;
-			    case "w":
-			    case "warn":
-			    case "warning":
-				    serilogLevel = LogEventLevel.Warning;
-				    return true;
-			    case "i":
-			    case "information":
-			    case "info":
-				    serilogLevel = LogEventLevel.Information;
-				    return true;
-			    default:
-				    serilogLevel = LogEventLevel.Debug;
-				    return false;
-		    }
-	    }
-	    
-        private static void ConfigureLogging(IMicroserviceArgs args)
+	    private static DebugLogSink ConfigureLogging(IMicroserviceArgs args, MicroserviceAttribute attr)
         {
             var logLevel = args.LogLevel;
 			var disableLogTruncate = (Environment.GetEnvironmentVariable("DISABLE_LOG_TRUNCATE")?.ToLowerInvariant() ?? "") == "true";
 
-			TryParseLogLevel(logLevel, out var envLogLevel);
+			LogUtil.TryParseLogLevel(logLevel, out var envLogLevel);
 
             var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
             
@@ -150,6 +105,14 @@ namespace Beamable.Server
             }
 
             var logger = logConfig;
+
+            DebugLogSink debugLogSink = null;
+            if (!inDocker)
+            {
+	            debugLogSink = new DebugLogSink(new MicroserviceLogFormatter());
+	            logConfig.WriteTo.Sink(debugLogSink);
+            }
+            
             switch (args.LogOutputType)
             {
 	            case LogOutputType.DEFAULT when !inDocker:
@@ -180,6 +143,8 @@ namespace Beamable.Server
             BeamableLogProvider.Provider = new BeamableSerilogProvider();
             Debug.Instance = new MicroserviceDebug();
             BeamableSerilogProvider.LogContext.Value = Log.Logger;
+
+            return debugLogSink;
         }
 
         public static void ConfigureUnhandledError()
@@ -246,6 +211,8 @@ namespace Beamable.Server
 		        collection
 			        .AddScoped<T>()
 			        .AddSingleton(attribute)
+			        .AddSingleton<IBeamSchedulerContext, SchedulerContext>()
+			        .AddSingleton<BeamScheduler>()
 			        .AddScoped<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
 			        .AddScoped<IRealmInfo>(provider => provider.GetService<IMicroserviceArgs>())
 			        .AddScoped<IBeamableRequester>(p => p.GetService<MicroserviceRequester>())
@@ -401,6 +368,7 @@ namespace Beamable.Server
 			        Chat = provider.GetRequiredService<IMicroserviceChatApi>(),
 			        Payments = provider.GetRequiredService<IMicroservicePaymentsApi>(),
 			        Push = provider.GetRequiredService<IMicroservicePushApi>(),
+			        Scheduler = provider.GetRequiredService<BeamScheduler>()
 		        };
 		        return services;
 	        }
@@ -452,7 +420,7 @@ namespace Beamable.Server
         {
 	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
 	        var envArgs = new EnviornmentArgs();
-	        ConfigureLogging(envArgs);
+	        var pipeSink = ConfigureLogging(envArgs, attribute);
 	        ConfigureUncaughtExceptions();
 	        ConfigureUnhandledError();
 	        ConfigureDiscovery(envArgs, attribute);
@@ -487,7 +455,7 @@ namespace Beamable.Server
 				
 	            if (isFirstInstance)
 	            {
-		            var localDebug = new ContainerDiagnosticService(instanceArgs, beamableService);
+		            var localDebug = new ContainerDiagnosticService(instanceArgs, beamableService, pipeSink);
 		            var runningDebugTask = localDebug.Run();
 	            }
 	            

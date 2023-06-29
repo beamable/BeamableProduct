@@ -33,7 +33,6 @@ namespace Beamable.Common
 
 				public const int DISCOVERY_BROADCAST_PERIOD_MS = 250;
 				public const int DISCOVERY_RECEIVE_PERIOD_MS = 350;
-				public static readonly string[] DISCOVERY_IPS = new string[] { "192.", "0.0.0.0", "127.0.0.1" };
 
 				public const string UPLOAD_CONTAINER_MESSAGE = "Uploaded container service=[{0}]";
 				public const string CONTAINER_ALREADY_UPLOADED_MESSAGE = "Service [{0}] is already deployed at imageId";
@@ -47,6 +46,10 @@ namespace Beamable.Common
 				public const string CHECKBOX_TOOLTIP = "Enable/disable the service";
 				public const string CHECKBOX_TOOLTIP_ARCHIVED_STORAGE = "At least one dependent StorageObject is archived.";
 				public const string CHECKBOX_TOOLTIP_DEPENDENCY_ON_SERVICE = "Depends on at least one Microservice.";
+
+				public const int CMD_RESULT_CODE_DOCKER_NOT_RUNNING = 500;
+				public const int CMD_RESULT_CODE_CONTAINER_NOT_RUNNING = 501;
+				public const int CMD_RESULT_CODE_SOLUTION_NOT_FOUND = 502;
 
 				public static readonly Vector2 MIN_SIZE = new Vector2(900, 560);
 				public const int MAX_ROW = 4;

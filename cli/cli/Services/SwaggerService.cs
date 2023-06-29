@@ -10,7 +10,10 @@ using Microsoft.OpenApi.Readers;
 using Microsoft.OpenApi.Writers;
 using Newtonsoft.Json;
 using Serilog;
+using System.Collections;
 using System.Text;
+using System.Text.RegularExpressions;
+using UnityEngine;
 
 namespace cli;
 
@@ -26,10 +29,13 @@ public class SwaggerService
 	public static readonly BeamableApiDescriptor[] Apis = new BeamableApiDescriptor[]
 	{
 		// these are currently broken...
-		BeamableApis.BasicService("content"),
 		// BeamableApis.BasicService("trails"),
+		
+		// the proto-actor stack!
+		BeamableApis.ProtoActor(),
 
-		// behold the list of Beamable Apis
+		// behold the list of Beamable scala Apis
+		BeamableApis.BasicService("content"),
 		BeamableApis.BasicService("beamo"),
 		BeamableApis.ObjectService("event-players"),
 		BeamableApis.BasicService("events"),
@@ -100,6 +106,7 @@ public class SwaggerService
 			UnrealSourceGenerator.cppFileOutputPath = "BeamableCore/Private/";
 			UnrealSourceGenerator.blueprintHeaderFileOutputPath = "BeamableCoreBlueprintNodes/Public/BeamFlow/ApiRequest/";
 			UnrealSourceGenerator.blueprintCppFileOutputPath = "BeamableCoreBlueprintNodes/Private/BeamFlow/ApiRequest/";
+			UnrealSourceGenerator.previousGenerationPassesData = new PreviousGenerationPassesData();
 			files.AddRange(generator.Generate(context));
 		}
 
@@ -413,8 +420,396 @@ public class SwaggerService
 		}
 
 		var output = await Task.WhenAll(tasks);
+
+
+		var processors = new List<Func<OpenApiDocumentResult, List<OpenApiDocumentResult>>>
+		{
+			Rewrite204StatusCodeTo200,
+			ReduceProtoActorMimeTypes,
+			RewriteInlineResultSchemasAsReferences,
+			SplitTagsIntoSeparateDocuments,
+			AddTitlesToAllSchemasIfNone,
+			Reserailize
+		};
+
+
+		var final = output.ToList();
+		foreach (var processor in processors)
+		{
+			var startingSet = final.ToList();
+			final.Clear();
+			foreach (var elem in startingSet)
+			{
+				foreach (var processed in processor(elem))
+				{
+					final.Add(processed);
+				}
+			}
+		}
+
+		return final;
+	}
+
+	public static string FormatPathNameAsMethodName(string input)
+	{
+		// Define the regular expression pattern
+		string pattern = @"\{([^}]*)\}";
+
+		// Replace all matches of the pattern with the captured text in uppercase, surrounded by "By"
+		string output = Regex.Replace(input, pattern, "");
+
+		// // Remove all non-alphanumeric characters and join the remaining parts of the string
+		output = string.Join("", output.Split(new char[] { '/', '-' }).Select(part =>
+		{
+			if (part.Length > 0) // Check if the length of the part is greater than zero
+			{
+				return char.ToUpper(part[0]) + part.Substring(1);
+			}
+			else
+			{
+				return "";
+			}
+		}));
+
 		return output;
 	}
+
+	private static string SerializeSchema(OpenApiSchema schema)
+	{
+		using var sw = new StringWriter();
+		var oldTitle = schema.Title;
+		schema.Title = string.Empty;
+		var writer = new OpenApiJsonWriter(sw);
+		schema.SerializeAsV3WithoutReference(writer);
+		var json = sw.ToString();
+		schema.Title = oldTitle;
+		return json;
+	}
+
+	private static List<OpenApiDocumentResult> Rewrite204StatusCodeTo200(OpenApiDocumentResult swagger)
+	{
+		const string STATUS_200 = "200";
+		const string STATUS_204 = "204";
+		const string APPLICATION_JSON = "application/json";
+
+		var output = new List<OpenApiDocumentResult>();
+		output.Add(swagger);
+
+		// the 204 http status code means GOOD, but, void return. To keep generation simple, we'll map these to 200 status codes with empty returns.
+		foreach (var path in swagger.Document.Paths)
+		{
+			foreach (var op in path.Value.Operations)
+			{
+				if (!op.Value.Responses.ContainsKey(STATUS_200) && op.Value.Responses.ContainsKey(STATUS_204))
+				{
+					op.Value.Responses.Remove(STATUS_204);
+					op.Value.Responses[STATUS_200] = new OpenApiResponse
+					{
+						Content = new Dictionary<string, OpenApiMediaType>
+						{
+							[APPLICATION_JSON] = new OpenApiMediaType
+							{
+								Schema = new OpenApiSchema()
+							}
+						}
+					};
+				}
+			}
+		}
+
+		return output;
+	}
+
+	private static List<OpenApiDocumentResult> AddTitlesToAllSchemasIfNone(OpenApiDocumentResult swagger)
+	{
+		foreach (var schema in swagger.Document.Components.Schemas)
+		{
+			schema.Value.Title ??= schema.Key;
+		}
+
+		return new List<OpenApiDocumentResult> { swagger };
+	}
+
+
+	private static List<OpenApiDocumentResult> Reserailize(OpenApiDocumentResult swagger)
+	{
+		var outputString = swagger.Document.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
+		var clonedDocument = new OpenApiStringReader().Read(outputString, out var diag);
+		return new List<OpenApiDocumentResult>
+		{
+			new OpenApiDocumentResult
+			{
+				Descriptor = swagger.Descriptor, Diagnostic = diag, Document = clonedDocument
+			}
+		};
+	}
+
+	private static List<OpenApiDocumentResult> ReduceProtoActorMimeTypes(OpenApiDocumentResult swagger)
+	{
+		const string APPLICATION_JSON = "application/json";
+		const string TEXT_JSON = "text/json";
+		const string APPLICATION_STAR_JSON = "application/*+json";
+		// the proto-actor stack request objects have application/json, text/json, and application/*+json, which is too confusing.
+		// this step will check for the existence of these 3 mime types together, and remove text/json and application/*+json
+		var output = new List<OpenApiDocumentResult> { swagger };
+
+		foreach (var path in swagger.Document.Paths)
+		{
+			foreach (var op in path.Value.Operations)
+			{
+				var content = op.Value?.RequestBody?.Content;
+				if (content == null)
+				{
+					continue;
+				}
+
+				var hasAppJson = content.ContainsKey(APPLICATION_JSON);
+				var hasTextJson = content.ContainsKey(TEXT_JSON);
+				var hasAppStarJson = content.ContainsKey(APPLICATION_STAR_JSON);
+
+				if (!hasAppJson || !hasTextJson || !hasAppStarJson)
+				{
+					continue;
+				}
+
+				// the reference must all be identical here
+				var appJsonSchema = SerializeSchema(content[APPLICATION_JSON].Schema);
+				var textJsonSchema = SerializeSchema(content[TEXT_JSON].Schema);
+				var appStarJsonSchema = SerializeSchema(content[APPLICATION_STAR_JSON].Schema);
+
+				if (appJsonSchema == textJsonSchema && textJsonSchema == appStarJsonSchema)
+				{
+					// hey, we can remove text and app_star, because they are essentially identical.
+					op.Value.RequestBody.Content.Remove(TEXT_JSON);
+					op.Value.RequestBody.Content.Remove(APPLICATION_STAR_JSON);
+				}
+			}
+		}
+
+		return output;
+	}
+
+	private static List<OpenApiDocumentResult> RewriteInlineResultSchemasAsReferences(OpenApiDocumentResult swagger)
+	{
+		var output = new List<OpenApiDocumentResult>();
+
+		var addedComponents = new Dictionary<string, KeyValuePair<string, OpenApiSchema>>(); // name -> json --> schema
+		foreach (var path in swagger.Document.Paths)
+		{
+			foreach (var op in path.Value.Operations)
+			{
+				foreach (var res in op.Value.Responses)
+				{
+					foreach (var content in res.Value.Content)
+					{
+						var schema = content.Value.Schema;
+						var isInlineSchema = schema.Reference?.Id == null;
+
+						if (!isInlineSchema)
+						{
+							continue;
+						}
+						var pathName = FormatPathNameAsMethodName(path.Key);
+						var id = $"{pathName}{op.Key}{op.Value.Tags[0].Name}Response";
+						var referencedSchema = new OpenApiSchema
+						{
+							Type = "object",
+							Reference = new OpenApiReference { Type = ReferenceType.Schema, Id = id }
+						};
+						content.Value.Schema = referencedSchema;
+
+						var json = SerializeSchema(schema);
+
+						schema.Title = id;
+						if (!addedComponents.TryGetValue(id, out var existingForms))
+						{
+							existingForms = addedComponents[id] =
+								new KeyValuePair<string, OpenApiSchema>(json, schema);
+						}
+
+						if (existingForms.Key == json)
+						{
+							// this is good, we can just reference this other schema!
+						}
+						else
+						{
+							// no good, we have a new form of serialization
+							throw new CliException("Operations that return inline schemas may not have different schemas that collide under the operation method and tag");
+						}
+
+					}
+				}
+			}
+		}
+
+		foreach (var schema in addedComponents.Values)
+		{
+			swagger.Document.Components.Schemas.Add(schema.Value.Title, schema.Value);
+		}
+
+		output.Add(swagger);
+
+		return output;
+	}
+
+	private static List<OpenApiDocumentResult> SplitTagsIntoSeparateDocuments(OpenApiDocumentResult swagger)
+	{
+		var output = new List<OpenApiDocumentResult>();
+
+		var opCount = 0;
+		var opsWithTagsCount = 0;
+
+		var tagToPaths = new Dictionary<string, List<KeyValuePair<string, OpenApiPathItem>>>();
+		try
+		{
+			foreach (var path in swagger.Document.Paths)
+			{
+				string tag = null;
+				foreach (var op in path.Value.Operations)
+				{
+					opCount++;
+					var tags = op.Value?.Tags;
+					var hasInvalidTags = tags?.Count > 1;
+					if (hasInvalidTags)
+					{
+						throw new CliException("Swagger docs are not allowed to have more than 1 tag in each operation.");
+					}
+
+					var hasTags = tags?.Count == 1;
+					if (!hasTags) continue;
+
+					opsWithTagsCount++;
+
+					if (tag == null)
+					{
+						tag = tags[0].Name;
+					}
+					else if (tag != tags[0].Name)
+					{
+						throw new CliException("If an operation has a tag, then all operations in the same path must have the same tag. ");
+					}
+				}
+
+				if (tag == null)
+				{
+					continue;
+				}
+				if (!tagToPaths.TryGetValue(tag, out var tagCollection))
+				{
+					tagToPaths[tag] = tagCollection = new List<KeyValuePair<string, OpenApiPathItem>>();
+				}
+
+				tagCollection.Add(path);
+			}
+
+
+			if (tagToPaths.Count == 0)
+			{
+				output.Add(swagger);
+				return output;
+			}
+
+			if (opsWithTagsCount != opCount)
+			{
+				throw new CliException("If a swagger doc has a tag in an operation, then every operation must have a tag.");
+			}
+
+		}
+		catch (Exception ex)
+		{
+			Debug.LogError(ex);
+			throw;
+		}
+
+		foreach (var tagToPathSet in tagToPaths)
+		{
+			var outputString = swagger.Document.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
+			var clonedDocument = new OpenApiStringReader().Read(outputString, out var diag);
+			var referencedSchemas = new Dictionary<string, OpenApiSchema>();
+			var schemasToExplore = new Queue<OpenApiSchema>();
+
+			clonedDocument.Info.Title = $"{tagToPathSet.Key} Actor";
+			clonedDocument.Components = new OpenApiComponents();
+			clonedDocument.Components.Schemas = referencedSchemas;
+			clonedDocument.Paths = new OpenApiPaths();
+			foreach (var kvp in tagToPathSet.Value)
+			{
+				clonedDocument.Paths.Add(kvp.Key, kvp.Value);
+
+				foreach (var op in kvp.Value.Operations)
+				{
+					if (op.Value?.RequestBody != null)
+					{
+						foreach (var content in op.Value.RequestBody.Content)
+						{
+							schemasToExplore.Enqueue(content.Value.Schema);
+						}
+					}
+
+
+					if (op.Value?.Responses != null)
+					{
+						foreach (var response in op.Value.Responses)
+						{
+							if (response.Value?.Content != null)
+							{
+								foreach (var content in response.Value.Content)
+								{
+									schemasToExplore.Enqueue(content.Value.Schema);
+								}
+							}
+						}
+					}
+				}
+			}
+
+			var seenSchemas = new HashSet<OpenApiSchema>();
+			while (schemasToExplore.Count > 0)
+			{
+				var curr = schemasToExplore.Dequeue();
+				if (curr == null) continue;
+				if (seenSchemas.Contains(curr)) continue;
+				seenSchemas.Add(curr);
+
+
+
+				schemasToExplore.Enqueue(curr.AdditionalProperties);
+				schemasToExplore.Enqueue(curr.Items);
+				if (curr.Properties != null)
+				{
+					foreach (var prop in curr.Properties)
+					{
+						schemasToExplore.Enqueue(prop.Value);
+					}
+				}
+
+				if (curr.OneOf != null)
+				{
+					foreach (var option in curr.OneOf)
+					{
+						schemasToExplore.Enqueue(option);
+					}
+				}
+
+				var isInlineSchema = string.IsNullOrEmpty(curr.Reference?.Id);
+				if (isInlineSchema) continue;
+
+				var referencedSchema = swagger.Document.Components.Schemas[curr.Reference.Id];
+				referencedSchemas[curr.Reference.Id] = referencedSchema;
+				schemasToExplore.Enqueue(referencedSchema);
+			}
+
+			output.Add(new OpenApiDocumentResult
+			{
+				Descriptor = swagger.Descriptor,
+				Diagnostic = diag,
+				Document = clonedDocument
+			});
+
+		}
+		return output;
+	}
+
 
 	public class OpenApiDocumentResult
 	{
@@ -512,13 +907,13 @@ public class BeamableApiFilter : DefaultQuery
 
 public static class BeamableApis
 {
-	public static BeamableApiDescriptor ProtoActor(string service)
+	public static BeamableApiDescriptor ProtoActor()
 	{
 		return new BeamableApiDescriptor
 		{
 			Source = BeamableApiSource.PLAT_PROTO,
-			RelativeUrl = $"basic/{service}/platform/docs",
-			Service = service
+			RelativeUrl = $"api/platform/docs",
+			Service = "api"
 		};
 	}
 
@@ -555,7 +950,7 @@ public static class BeamableApiSourceExtensions
 {
 	static Dictionary<BeamableApiSource, string> enumToString = new Dictionary<BeamableApiSource, string>
 	{
-		{BeamableApiSource.PLAT_PROTO, "proto"},
+		{BeamableApiSource.PLAT_PROTO, "api"},
 		{BeamableApiSource.PLAT_THOR_BASIC, "basic"},
 		{BeamableApiSource.PLAT_THOR_OBJECT, "object"},
 	};
@@ -605,7 +1000,7 @@ public static class BeamableApiSourceExtensions
 	{
 		switch (source)
 		{
-			case BeamableApiSource.PLAT_PROTO: return "proto";
+			case BeamableApiSource.PLAT_PROTO: return "api";
 			case BeamableApiSource.PLAT_THOR_BASIC: return "basic";
 			case BeamableApiSource.PLAT_THOR_OBJECT: return "object";
 		}

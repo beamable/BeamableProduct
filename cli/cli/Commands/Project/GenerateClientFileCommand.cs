@@ -4,8 +4,9 @@ using Beamable.Server.Editor;
 using Beamable.Server.Generator;
 using Beamable.Tooling.Common.OpenAPI;
 using cli.Unreal;
-using microservice.Common;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json;
+using Serilog;
 using System.CommandLine;
 using System.Globalization;
 using System.Reflection;
@@ -39,14 +40,32 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 
 		var absolutePath = Path.GetFullPath(args.microserviceAssemblyPath);
 		var absoluteDir = Path.GetDirectoryName(absolutePath);
-		AssemblyLoadContext.Default.Resolving += (context, name) =>
+		var loadContext = new AssemblyLoadContext("generate-client-context", false);
+		loadContext.Resolving += (context, name) =>
 		{
 			var assemblyPath = Path.Combine(absoluteDir, $"{name.Name}.dll");
-			if (assemblyPath != null)
-				return context.LoadFromAssemblyPath(assemblyPath);
-			return null;
+			try
+			{
+				Log.Verbose($"loading dll name=[{name.Name}] version=[{name.Version}]");
+				if (assemblyPath != null)
+					return context.LoadFromAssemblyPath(assemblyPath);
+				return null;
+			}
+			catch (Exception ex)
+			{
+				BeamableLogger.LogError($@"Unable to load dll at path=[{assemblyPath}] 
+name=[{name}] 
+context=[{context.Name}]
+message=[{ex.Message}]
+ex-type=[{ex.GetType().Name}]
+inner-message=[{ex.InnerException?.Message}]
+inner-type=[{ex.InnerException?.GetType().Name}]
+");
+				throw;
+			}
 		};
-		var userAssembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(absolutePath);
+
+		var userAssembly = loadContext.LoadFromAssemblyPath(absolutePath);
 
 		#endregion
 
@@ -59,13 +78,13 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 
 			var descriptor = new MicroserviceDescriptor { Name = attribute.MicroserviceName, AttributePath = attribute.SourcePath, Type = type };
 
-			var generator = new ClientCodeGenerator(descriptor);
 			if (args.outputToLinkedProjects)
 			{
 				// UNITY
 
 				if (args.ProjectService.GetLinkedUnityProjects().Count > 0)
 				{
+					var generator = new ClientCodeGenerator(descriptor);
 					if (!string.IsNullOrEmpty(args.outputDirectory))
 					{
 						Directory.CreateDirectory(args.outputDirectory);
@@ -107,6 +126,8 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 						var orderedSchemas = SwaggerService.ExtractAllSchemas(docs,
 							GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
 
+						var previousGenerationFilePath = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.BeamableBackendGenerationPassFile);
+
 						// Set up the generator to generate code with the correct output path for the AutoGen folders.
 						UnrealSourceGenerator.exportMacro = unrealProjectData.CoreProjectName.ToUpper() + "_API";
 						UnrealSourceGenerator.blueprintExportMacro = unrealProjectData.BlueprintNodesProjectName.ToUpper() + "_API";
@@ -115,6 +136,8 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 						UnrealSourceGenerator.blueprintHeaderFileOutputPath = unrealProjectData.MsBlueprintNodesHeaderPath + "/Public/";
 						UnrealSourceGenerator.blueprintCppFileOutputPath = unrealProjectData.MsBlueprintNodesCppPath + "/Private/";
 						UnrealSourceGenerator.genType = UnrealSourceGenerator.GenerationType.Microservice;
+						UnrealSourceGenerator.previousGenerationPassesData = JsonConvert.DeserializeObject<PreviousGenerationPassesData>(File.ReadAllText(previousGenerationFilePath));
+						UnrealSourceGenerator.currentGenerationPassDataFilePath = $"{unrealProjectData.CoreProjectName}_GenerationPass";
 						var unrealFileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext { Documents = docs, OrderedSchemas = orderedSchemas });
 
 						var hasOutputPath = !string.IsNullOrEmpty(args.outputDirectory);

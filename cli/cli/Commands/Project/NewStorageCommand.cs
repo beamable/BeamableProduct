@@ -1,3 +1,4 @@
+using Beamable.Common.Semantics;
 using Serilog;
 using Spectre.Console;
 using System.CommandLine;
@@ -6,7 +7,7 @@ namespace cli.Commands.Project;
 
 public class NewStorageCommandArgs : CommandArgs
 {
-	public string storageName;
+	public ServiceName storageName;
 	public string slnPath;
 }
 public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
@@ -18,7 +19,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("name", "The name of the new Microstorage."), (args, i) => args.storageName = i);
+		AddArgument(new Argument<ServiceName>("name", "The name of the new Microstorage."), (args, i) => args.storageName = i);
 		AddOption(new Option<string>("--sln", "The path to the solution that the Microstorage will be added to"), (args, i) => args.slnPath = i);
 	}
 
@@ -41,12 +42,12 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
 
 		if (string.IsNullOrEmpty(args.slnPath))
 		{
-			throw new CliException($"Was not able to infer sln file, please provide one with --sln.", true, true);
+			throw new CliException($"Was not able to infer sln file, please provide one with --sln.", Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_SOLUTION_NOT_FOUND, true);
 		}
 
 		if (!File.Exists(args.slnPath))
 		{
-			throw new CliException($"No sln file found at path=[{args.slnPath}]", true, true);
+			throw new CliException($"No sln file found at path=[{args.slnPath}]", Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_SOLUTION_NOT_FOUND, true);
 		}
 
 		Log.Information($"Registering local project... 'beam services register --id {args.storageName} --type EmbeddedMongoDb'");

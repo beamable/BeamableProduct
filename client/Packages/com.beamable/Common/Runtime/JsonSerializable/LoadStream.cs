@@ -8,6 +8,7 @@ using Beamable.Common.Spew;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 #if BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES
@@ -404,24 +405,33 @@ namespace Beamable.Serialization
 				return false;
 			}
 
-			public bool Serialize(string key, ref DateTime target)
+			private readonly string[] _standardFormats = new[] { "O" };
+			public bool Serialize(string key, ref DateTime target, params string[] formats)
 			{
+
 				object tmp;
 				if (curDict.TryGetValue(key, out tmp))
 				{
 					if (tmp == null)
 						return false;
-					try
+
+					if (formats.Length == 0) formats = _standardFormats;
+					for (var i = 0; i < formats.Length; i++)
 					{
-						target = DateTime.ParseExact(tmp.ToString(), "O", CultureInfo.InvariantCulture);
-					}
-					catch (Exception e)
-					{
-						BeamableLogger.LogWarning("DateTime could not deserialize: " + tmp + "  " + e.Message);
-						return false;
+						try
+						{
+							target = DateTime.ParseExact(tmp.ToString(), formats[i], CultureInfo.InvariantCulture);
+						}
+						catch (FormatException)
+						{
+							continue;
+						}
+
+						return true;
 					}
 
-					return true;
+					BeamableLogger.LogWarning("DateTime could not deserialize: " + tmp + "  " + string.Join(",", formats) + "\n" + new StackTrace());
+					return false;
 				}
 				return false;
 			}
@@ -568,7 +578,7 @@ namespace Beamable.Serialization
 #endif
 
 			public bool Serialize<T>(string key, ref T value)
-			   where T : class, ISerializable, new()
+			   where T : ISerializable
 			{
 				object tmp;
 				if (curDict.TryGetValue(key, out tmp))

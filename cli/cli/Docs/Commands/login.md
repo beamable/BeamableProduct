@@ -1,0 +1,4 @@
+# About
+The {{title}} command will perform a login action and acquire Beamable authorization tokens. There are two main ways Beamable handles authorization, access tokens, and JWTs. JWTs are still being developed. Access tokens are the primary way to handle authorization. Any API request sent to Beamable needs an `Authorization` header with a bearer token using the Beamable _access token_. These tokens are short lived and will need to be refreshed periodically. The login command also issues a _refresh token_ which can be used to fetch a new _access token_ if the need arises. 
+
+By default, the login command will not _save_ your access tokens. You should pass the `--save-to-file` option to commit the _access token_ and _refresh token_ to your `./beamable` folder.  

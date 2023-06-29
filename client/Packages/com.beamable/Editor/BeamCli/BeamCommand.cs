@@ -7,7 +7,9 @@ using Beamable.Common.Dependencies;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
+using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -78,6 +80,16 @@ namespace Beamable.Editor.BeamCli
 		public BeamCommandFactory(BeamableDispatcher dispatcher)
 		{
 			_dispatcher = dispatcher;
+
+			AssemblyReloadEvents.beforeAssemblyReload -= ClearAll;
+			AssemblyReloadEvents.afterAssemblyReload -= ClearAll;
+			AssemblyReloadEvents.beforeAssemblyReload += ClearAll;
+			AssemblyReloadEvents.afterAssemblyReload += ClearAll;
+			EditorApplication.wantsToQuit += () =>
+			{
+				ClearAll();
+				return true;
+			};
 		}
 
 		public IBeamCommand Create()
@@ -185,7 +197,6 @@ namespace Beamable.Editor.BeamCli
 			if (message == null) return;
 
 			messageBuffer += message;
-
 			if (!isMessageInProgress)
 			{
 				var startIndex = messageBuffer.IndexOf(Reporting.PATTERN_START, StringComparison.Ordinal);
@@ -225,7 +236,17 @@ namespace Beamable.Editor.BeamCli
 
 		public void SetCommand(string command)
 		{
-			Command = command;
+#if UNITY_EDITOR_WIN
+			const string homePathEnv = "USERPROFILE";
+#else
+			const string homePathEnv = "HOME";
+#endif
+			var home = System.Environment.GetEnvironmentVariable(homePathEnv);
+
+			var defaultDotnetToolPath = Path.Combine(home, ".dotnet", "tools", "beam");
+			var beamLocation = CoreConfiguration.Instance.BeamCLIPath.GetOrElse(defaultDotnetToolPath);
+
+			Command = beamLocation + command.Substring("beam".Length);
 		}
 
 		public async Promise Run()

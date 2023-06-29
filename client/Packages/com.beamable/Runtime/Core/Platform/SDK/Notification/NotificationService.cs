@@ -89,7 +89,7 @@ namespace Beamable.Api.Notification
 					LocalRelay = new GoogleLocalNotificationRelay();
 					NotificationLogger.Log("Local notifications using Google provider.");
 					break;
-#if UNITY_IOS
+#if UNITY_IOS && (NOTIFICATIONS_PACKAGE || !UNITY_2022_1_OR_NEWER)
             case RuntimePlatform.IPhonePlayer:
 #if NOTIFICATIONS_PACKAGE
 	            StartCoroutine(RequestAuthorization());
@@ -389,7 +389,7 @@ namespace Beamable.Api.Notification
 			NotificationLogger.LogFormat("Create notification channel. id={0}, name={1}, description={2}.", id, name, description);
 		}
 
-#if NOTIFICATIONS_PACKAGE
+#if NOTIFICATIONS_PACKAGE && UNITY_IOS
 		IEnumerator RequestAuthorization()
 		{
 			var authorizationOption = AuthorizationOption.Alert | AuthorizationOption.Badge | AuthorizationOption.Sound;

@@ -1,6 +1,8 @@
 using Beamable.Common.BeamCli;
 using Beamable.Server;
 using Beamable.Server.Common;
+using cli.Services;
+using cli.Utils;
 using NetMQ;
 using Newtonsoft.Json;
 using Serilog;
@@ -11,19 +13,17 @@ namespace cli;
 
 public class CheckStatusCommandArgs : CommandArgs
 {
-
 }
-
 
 [Serializable]
 public class ServiceDiscoveryEvent
 {
 	public string cid, pid, prefix, service;
 	public bool isRunning;
-
+	public bool isContainer;
+	public int healthPort;
+	public string containerId;
 }
-
-
 
 public class CheckStatusCommand : AppCommand<CheckStatusCommandArgs>
 	, IResultSteam<DefaultStreamResultChannel, ServiceDiscoveryEvent>
@@ -33,8 +33,11 @@ public class CheckStatusCommand : AppCommand<CheckStatusCommandArgs>
 	private Dictionary<string, (long, ServiceDiscoveryEntry)> _nameToEntryWithTimestamp =
 		new Dictionary<string, (long, ServiceDiscoveryEntry)>();
 
+	private InterfaceCollection _networkInterfaceCollection;
+
 	public CheckStatusCommand() : base("ps", "List the running status of local services not running in docker")
 	{
+		_networkInterfaceCollection = new InterfaceCollection();
 	}
 
 	public override void Configure()
@@ -43,88 +46,19 @@ public class CheckStatusCommand : AppCommand<CheckStatusCommandArgs>
 
 	public override async Task Handle(CheckStatusCommandArgs args)
 	{
-		_beacon = new NetMQBeacon();
-		_beacon.ConfigureAllInterfaces(Beamable.Common.Constants.Features.Services.DISCOVERY_PORT);
-		_beacon.Subscribe("");
-		var toRemove = new HashSet<string>();
-		while (true)
+		var discovery = args.DependencyProvider.GetService<DiscoveryService>();
+		await foreach (var evt in discovery.StartDiscovery())
 		{
-			var now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-
-			foreach (var kvp in _nameToEntryWithTimestamp)
+			if (!evt.isRunning)
 			{
-				var age = now - kvp.Value.Item1;
-				if (age > Beamable.Common.Constants.Features.Services.DISCOVERY_RECEIVE_PERIOD_MS)
-				{
-					Log.Information($"{kvp.Key} is off");
-					this.SendResults(CreateEvent(kvp.Value.Item2, false));
-					_nameToEntryWithTimestamp.Remove(kvp.Key);
-					toRemove.Add(kvp.Key);
-				}
+				Log.Information($"{evt.service} is off");
 			}
-
-
-			foreach (var x in toRemove)
+			else
 			{
-				_nameToEntryWithTimestamp.Remove(x);
+				Log.Information($"{evt.service} is available prefix=[{evt.prefix}] docker=[{evt.isContainer}]");
 			}
-			toRemove.Clear();
-
-
-			if (!TryToListen(out var service))
-			{
-				continue;
-			}
-			if (service.cid != args.AppContext.Cid || service.pid != args.AppContext.Pid)
-			{
-				continue;
-			}
-
-			if (!_nameToEntryWithTimestamp.ContainsKey(service.serviceName))
-			{
-				Log.Information($"{service.serviceName} is available at prefix=[{service.prefix}]");
-				this.SendResults(CreateEvent(service, true));
-			}
-			_nameToEntryWithTimestamp[service.serviceName] = (now, service);
-
-
-			// cull old entries
-			Thread.Sleep(50);
+			this.SendResults(evt);
 		}
-	}
-
-	public static ServiceDiscoveryEvent CreateEvent(ServiceDiscoveryEntry entry, bool isRunning)
-	{
-		return new ServiceDiscoveryEvent
-		{
-			service = entry.serviceName,
-			pid = entry.pid,
-			cid = entry.cid,
-			prefix = entry.prefix,
-			isRunning = isRunning
-		};
-	}
-
-
-	private bool TryToListen(out ServiceDiscoveryEntry service)
-	{
-		service = null;
-		var validHostPrefixes = Beamable.Common.Constants.Features.Services.DISCOVERY_IPS;
-		if (!_beacon.TryReceive(TimeSpan.FromMilliseconds(50), out var message))
-		{
-			return false;
-		}
-
-		if (!validHostPrefixes.Any(prefix => message.PeerHost.StartsWith(prefix)))
-		{
-			return false;
-		}
-
-		var entry = JsonConvert.DeserializeObject<ServiceDiscoveryEntry>(message.String, UnitySerializationSettings.Instance);
-
-		service = entry;
-		return true;
-
 	}
 
 }

@@ -5,6 +5,8 @@
 
 using Beamable.Common;
 using Docker.DotNet.Models;
+using Serilog;
+using System.Text;
 
 namespace cli.Services;
 
@@ -119,7 +121,16 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// Kick off a long running task that receives updates from the docker engine.
 	/// </summary>
-	public async Task StartListeningToDocker()
+	public Task StartListeningToDocker(Action<string, string> onServiceContainerStateChange = null)
+	{
+		return StartListeningToDockerRaw((beamoId, action, _) =>
+			onServiceContainerStateChange?.Invoke(beamoId, action));
+	}
+
+	/// <summary>
+	/// Kick off a long running task that receives updates from the docker engine.
+	/// </summary>
+	public async Task StartListeningToDockerRaw(Action<string, string, Message> onServiceContainerStateChange = null)
 	{
 		// Cancel the thread if it's already running.
 		if (_dockerListeningThread != null && !_dockerListeningThread.IsCompleted)
@@ -136,6 +147,7 @@ public partial class BeamoLocalSystem
 		{
 			var messageType = message.Type;
 			var messageAction = message.Action;
+			Log.Verbose($"Docker Message type=[{messageType}] action=[{messageAction}] id=[{message.ID}]");
 
 			switch (messageType, messageAction)
 			{
@@ -163,6 +175,7 @@ public partial class BeamoLocalSystem
 							IsRunning = false
 						};
 						BeamoRuntime.ExistingLocalServiceInstances.Add(newServiceInstance);
+						onServiceContainerStateChange?.Invoke(beamoId, messageAction, message);
 					}
 
 					break;
@@ -170,14 +183,26 @@ public partial class BeamoLocalSystem
 
 				case ("container", "destroy"):
 				{
-					BeamoRuntime.ExistingLocalServiceInstances.RemoveAll(si => si.ContainerId == message.ID);
+					BeamoRuntime.ExistingLocalServiceInstances.RemoveAll(si =>
+					{
+						var wasDestroyed = si.ContainerId == message.ID;
+						if (wasDestroyed)
+						{
+							onServiceContainerStateChange?.Invoke(si.BeamoId, messageAction, message);
+						}
+						return wasDestroyed;
+					});
 					break;
 				}
 
 				case ("container", "start"):
 				{
 					var beamoServiceInstance = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.ContainerId == message.ID);
-					if (beamoServiceInstance != null) beamoServiceInstance.IsRunning = true;
+					if (beamoServiceInstance != null)
+					{
+						beamoServiceInstance.IsRunning = true;
+						onServiceContainerStateChange?.Invoke(beamoServiceInstance.BeamoId, messageAction, message);
+					}
 					// TODO: Detect when people containers are running but their dependencies are not. Output a list of warnings that people can then print out.
 					break;
 				}
@@ -185,7 +210,11 @@ public partial class BeamoLocalSystem
 				case ("container", "stop"):
 				{
 					var beamoServiceInstance = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.ContainerId == message.ID);
-					if (beamoServiceInstance != null) beamoServiceInstance.IsRunning = false;
+					if (beamoServiceInstance != null)
+					{
+						beamoServiceInstance.IsRunning = false;
+						onServiceContainerStateChange?.Invoke(beamoServiceInstance.BeamoId, messageAction, message);
+					}
 					// TODO: Detect when people containers are running but their dependencies are not. Output a list of warnings that people can then print out.
 					break;
 				}
@@ -240,7 +269,7 @@ public partial class BeamoLocalSystem
 	// }
 
 	/// <summary>
-	/// <inheritdoc cref="VerifyCanBeBuiltLocally(cli.BeamoServiceDefinition)"/>.
+	/// <inheritdoc cref="VerifyCanBeBuiltLocally(BeamoServiceDefinition)"/>.
 	/// </summary>
 	private bool VerifyCanBeBuiltLocally(BeamoLocalManifest manifest, BeamoServiceDefinition toCheck)
 	{
@@ -389,6 +418,31 @@ public partial class BeamoLocalSystem
 
 		// Build them into a list of indices into the unsorted list of containers (the parameter list)
 		builtLayers = layers.ToArray();
+	}
+
+
+	public async IAsyncEnumerable<string> TailLogs(string containerId)
+	{
+		// _client.Containers.GetContainerLogsAsync()
+		var stream = await _client.Containers.GetContainerLogsAsync(containerId, new ContainerLogsParameters
+		{
+			ShowStdout = true,
+			ShowStderr = true,
+			Follow = true,
+		});
+
+		// stream.
+		if (stream == null)
+		{
+			yield break;
+		}
+
+		using var reader = new StreamReader(stream, Encoding.UTF8);
+		while (!reader.EndOfStream)
+		{
+			var line = await reader.ReadLineAsync();
+			yield return line?.Substring(8); // substring 8 because of a strange encoding issue in docker dotnet.
+		}
 	}
 }
 
