@@ -2,8 +2,15 @@
 
 ## Summary
 
+The TLDR is that I think we can move ahead with integrating SAMs into Unity with the CLI without solving the CLI bundling or authentication problems.
+1. Auth should come last, and
+2. Bundling should come as we need a feature that itself doesn't already enforce the existence of the CLI.
 
 ## Motivation
+
+By integrating the CLI into Unity, we will be able to
+1. save work by implementing new features in the CLI, and integrating Unity and Unreal with the CLI. Otherwise, we'd need to implement new features once for every engine we want to support.
+2. improve the discoverability of SAMs by integrating them directly with Unity
 
 ## Implementation
 
@@ -34,6 +41,9 @@ Contrary to recent thinking, the _last_ step of the integration is shifting auth
 
 The value of replacing the Unity `config-default.txt` scheme with the CLI is in simplifying the Unity authentication process. It is not a requirement, it is a desire. We can authenticate the CLI without making this refactor. 
 
+Until we reach a bundled CLI, we rely on a globally installed CLI. 
+**Version mismatches are possible here!**
+
 
 ### Integrating SAMs
 
@@ -44,7 +54,7 @@ The following requirements need to met for a full SAMs integration with Unity.
 
 1. Unity needs to be aware of SAM `.sln`s 
     - SAMs are aware of Unity Projects through the `.linkedProjects.json` file.
-    - 
+    - <TODO>
 2. The Microservice Manager should show a card for each Standalone Microservice and Microstorage. If there are existing Unity C#MS or StorageObjects, a warning should be displayed suggesting an _Ejection_, and no cards should be shown.
     - Microservices and Microstorages should be runnable. Running a Standalone Microservice should use new CLI commands
         - `beam project run <service> # proxies out to dotnet run`  
@@ -66,4 +76,22 @@ The following requirements need to met for a full SAMs integration with Unity.
 
 ### Bundling the CLI with the SDK
 
+If the CLI is always available with the SDK, we can begin to replace existing SDK features in favor of the CLI. If the CLI is not available, and we make the assumption it is, then we will be introducing a new source of bug and configuration concern.
+
+The CLI depends on `dotnet`. Currently, developers do not need to install `dotnet` unless they want to _debug_ their Unity backed C#MS. Normally, the CLI can be installed with `dotnet tool install --global Beamable.Tools --version 1.16.1`. However, if `dotnet` is not available, then obviously this approach will fail.
+
+This leads the SDK towards a cascading approach to resolving a CLI. In all cases, the SDK should attempt to find a version of the CLI with the same matching version number. 
+
+This is the series of steps the SDK will use to resolve the CLI location...
+1. If the CLI is not already available, continue...
+2. Attempt `dotnet tool install Beamable.Tools --tool-path /Temp/Beam/Cli/<version> --version <version>`. If this fails due to no dotnet, continue...
+3. Prompt the Developer with a message, "Beamable needs to install Beam CLI <version>. This can happen automatically if `dotnet` is available. However, no `dotnet` framework was detected. Without `dotnet`, Beamable can download a prebuilt binary of the CLI. However, the binary is larger and harder to manage than the variant available with the `dotnet` framework. Would you like to download `dotnet` to continue with the regular CLI installation flow?". 
+    - A "Yes" answer will install `dotnet` as quietly as possible. This may not be very quiet. 
+    - A "No" answer will start a download from Beamable's CDN, to the user's `/Temp/Beam/Cli/<version>` directory.
+
+In the CDN case, we will need to modify our build & deploy process for the Beamable SDK to automatically build and deploy self contained variants fo the CLI for linux, mac, and windows, all between x86 and ARM based CPU architectures. The deployed CLIs will be uploaded to an AWS S3 Bucket. The S3 bucket should be accessible through a CloudFront CDN layer.
+
+Ultimately, the CLI is available as a lazily resolved asset.
+
 ### Replacing existing Unity systems with CLI
+<Todo>
