@@ -8,10 +8,10 @@ namespace Beamable.Mongo
 		private readonly MongoIndexesExtension.IndexType _indexType;
 		private readonly string _indexName;
 		
-		public MongoIndexAttribute(MongoIndexesExtension.IndexType indexType, string indexName = "")
+		public MongoIndexAttribute(MongoIndexesExtension.IndexType indexType, string indexName)
 		{
 			_indexType = indexType;
-			_indexName = string.IsNullOrEmpty(indexName) ? indexType.ToString().ToLower() : indexName;
+			_indexName = indexName;
 		}
 	}
 }

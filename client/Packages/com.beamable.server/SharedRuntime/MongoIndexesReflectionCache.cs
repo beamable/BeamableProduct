@@ -72,7 +72,8 @@ namespace Beamable.Server
 							if (attributeData.AttributeType != typeof(MongoIndexAttribute))
 								continue;
 
-							var mongoIndexType = (MongoIndexesExtension.IndexType)attributeData.ConstructorArguments[0].Value;
+							var mongoIndexType =
+								(MongoIndexesExtension.IndexType)attributeData.ConstructorArguments[0].Value;
 							var mongoIndexName = (string)attributeData.ConstructorArguments[1].Value;
 							var fieldInfo = (FieldInfo)memberInfo;
 
@@ -98,17 +99,21 @@ namespace Beamable.Server
 		public void OnReflectionCacheBuilt(PerBaseTypeCache perBaseTypeCache, PerAttributeCache perAttributeCache) { }
 
 		public void SetStorage(IBeamHintGlobalStorage hintGlobalStorage) { }
-		
+
 		public void SetupStorage(IStorageObjectConnectionProvider connectionProvider)
 		{
 			foreach (PendingMongoIndexData data in _pendingMongoIndexesData)
 			{
+				BeamableLogger.Log($"Working on: {data.Database}");
+
 				MethodInfo getCollectionMethod =
 					typeof(IStorageObjectConnectionProvider).GetMethods()
-						.Where(method =>
-							method.Name == nameof(IStorageObjectConnectionProvider.GetCollection) &&
-							method.GetParameters().Length == 0)
-						.FirstOrDefault(x => x.IsGenericMethod);
+					                                        .Where(method =>
+						                                               method.Name ==
+						                                               nameof(IStorageObjectConnectionProvider
+							                                                      .GetCollection) &&
+						                                               method.GetParameters().Length == 0)
+					                                        .FirstOrDefault(x => x.IsGenericMethod);
 
 				Type mongoCollectionType = typeof(IMongoCollection<>);
 				Type mongoCollectionGenericType = mongoCollectionType.MakeGenericType(data.Collection);
@@ -119,7 +124,8 @@ namespace Beamable.Server
 				IEnumerable<Type> enumerable = typeof(MongoIndexesExtension).Assembly.GetTypes();
 				Type mongoDbExtensionsType = enumerable.First(t => t.Name == nameof(MongoIndexesExtension));
 
-				MethodInfo methodInfo = mongoDbExtensionsType.GetMethod(nameof(MongoIndexesExtension.CreateSingleIndex));
+				MethodInfo methodInfo =
+					mongoDbExtensionsType.GetMethod(nameof(MongoIndexesExtension.CreateSingleIndex));
 				MethodInfo createSingleIndexMethodGeneric = methodInfo?.MakeGenericMethod(data.Collection);
 
 				try
@@ -133,8 +139,14 @@ namespace Beamable.Server
 
 					foreach (MongoIndexDetails details in data.Indexes)
 					{
+						BeamableLogger.Log($"Index data: {details.IndexType}-{details.Field}-{details.IndexName}");
+
 						createSingleIndexMethodGeneric?.Invoke(extractedCollectionObject,
-							new[] { extractedCollectionObject, details.IndexType, details.Field, details.IndexName });
+						                                       new[]
+						                                       {
+							                                       extractedCollectionObject, details.IndexType,
+							                                       details.Field, details.IndexName
+						                                       });
 					}
 				}
 				catch (Exception e)
