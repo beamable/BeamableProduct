@@ -222,10 +222,13 @@ namespace Beamable.Player
 				var scopes = nextScopes.ToArray();
 				nextScopes.Clear();
 
-				// we only want to get scopes that are relevant to the currently requested data
-				var filteredScopes = _requestCounter.GetRelevantKeys(scopes).ToArray();
-				filteredScopes = filteredScopes.Where(scope => _requestCounter.GetExact(scope).Count > 0).ToArray();
-
+				// we only want to get scopes that are relevant to the currently requested data, or the current data in memory
+				var filteredItems = localItems.GetRelevantKeys(scopes).ToArray();
+				var filteredCurrencies = localCurrencies.GetRelevantKeys(scopes).ToArray();
+				var filteredRequests = _requestCounter.GetRelevantKeys(scopes).ToArray();
+				var joined = filteredItems.Union(filteredCurrencies).Union(filteredRequests).Distinct().ToArray();
+				
+				var filteredScopes = joined;
 				if (filteredScopes.Length == 0) return; // if there are no scopes, there is nothing to download. But actually, the API treats an empty scope as "everything", which is extra bad for us.
 				if (_userContext.UserId == 0)
 				{
@@ -247,11 +250,7 @@ namespace Beamable.Player
 					return;
 				}
 
-				var unseenScopes = new HashSet<string>();
-				foreach (var scope in localItems.GetKeysRecursive(scopes))
-				{
-					unseenScopes.Add(scope);
-				}
+				var unseenScopes = new HashSet<string>(scopes);
 
 				var itemGroupsToUpdate = new HashSet<PlayerItemGroup>();
 				var currGroupsToUpdate = new HashSet<PlayerCurrencyGroup>();
@@ -260,11 +259,8 @@ namespace Beamable.Player
 				#region update or create items
 				foreach (var group in res.items)
 				{
-					foreach (var parentScope in localItems.Traverse(group.id))
-					{
-						unseenScopes.Remove(parentScope.path);// mark this scope of items as "seen"
-					}
-
+					unseenScopes.Remove(group.id);
+					
 					var plrItems = new PlayerItem[group.items.Length];
 					var contentRef = new ItemRef(group.id);
 					var content = await contentRef.Resolve().Recover(_ => null); ;

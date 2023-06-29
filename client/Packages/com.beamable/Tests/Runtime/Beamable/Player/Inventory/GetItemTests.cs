@@ -22,27 +22,6 @@ namespace Beamable.Tests.Runtime
 {
 	public class PlayerInventoryPSDKGetItems : BeamContextTest
 	{
-		[ContentType(CONTENT)]
-		public class TestItemA : ItemContent
-		{
-			public const string CONTENT = "a";
-			public const string FULL_CONTENT_ID = "items." + CONTENT;
-		}
-		
-		[ContentType(CONTENT)]
-		public class TestItemB : ItemContent
-		{
-			public const string CONTENT = "b";
-			public const string FULL_CONTENT_ID = "items." + CONTENT;
-		}
-		
-		[ContentType(CONTENT)]
-		public class TestItemC : ItemContent
-		{
-			public const string CONTENT = "c";
-			public const string FULL_CONTENT_ID = "items." + CONTENT;
-		}
-		
 		[UnityTest]
 		public IEnumerator CanGetPlayerItems_Simple()
 		{
@@ -199,16 +178,6 @@ namespace Beamable.Tests.Runtime
 			});
 			yield return Context.OnReady.ToYielder();
 			Assert.IsTrue(Context.OnReady.IsCompleted);
-			
-			// pre-populate the disk cache
-			// var layer = DependencyBuilder.Instantiate<ScopedServiceStorage<OfflineCacheStorageLayer>>(Context.ServiceProvider);
-			// var inventory = new PlayerInventory();
-			// inventory.LocalItems.Insert(InventoryTestItem.FULL_CONTENT_ID + "." + itemName, new PlayerItem
-			// {
-			// 	ItemId = 1,
-			// 	ContentId = InventoryTestItem.FULL_CONTENT_ID + "." + itemName
-			// });
-			// layer.Save(inventory);
 
 			var items = Context.Inventory.GetItems(InventoryTestItem.FULL_CONTENT_ID);
 			yield return items.OnReady.ToYielder();
@@ -242,7 +211,7 @@ namespace Beamable.Tests.Runtime
 		
 		
 		[UnityTest]
-		public IEnumerator CanHandle_LastDeletion() // aka, "Marco's Madness"
+		public IEnumerator CanHandle_LastDeletion() 
 		{
 			MockContent.Provide(new InventoryTestItem().SetContentName("a"));
 			MockContent.Provide(new InventoryTestItem().SetContentName("b"));
@@ -344,21 +313,14 @@ namespace Beamable.Tests.Runtime
 			yield return new WaitForSecondsRealtime(DebounceService.DEFAULT_DEBOUNCE_TIME_SECONDS + .1f);
 			//
 			// Assert.AreEqual(2, callbackInvocationCount);
-			Assert.AreEqual(2, items.Count); // .a and .b exist
+			Assert.AreEqual(2, items.Count); // there are two .a items
 
 		}
 		
 		[UnityTest]
-		public IEnumerator CanHandle_EmptyCallback() // aka, "Russell's Rouse" 
+		public IEnumerator CanHandle_EmptyCallback()
 		{
-			/*
-			 * In Russell's case,
-			 *  he has a player that already has an inventory item.
-			 * then he calls the Update for that item, and for a different item type.
-			 * And he gets a callback for the OnDataUpdated that shows the item is empty.
-			 */
-			
-			
+
 			MockContent.Provide(new InventoryTestItem().SetContentName("a"));
 			MockContent.Provide(new InventoryTestItem().SetContentName("b"));
 			// var putCalled = false;
@@ -371,13 +333,6 @@ namespace Beamable.Tests.Runtime
 				         
 				b.ReplaceSingleton<IInventoryApi>(new MockInventoryApi()
 				{
-					// ObjectPut = async  (_, request, _) =>
-					// {
-					// 	await Promise.Success; // syntax to make Unity warnings shutup.
-					//
-					// 	putCalled = true;
-					// 	return new CommonResponse();
-					// },
 					ObjectPost = async (_, request, _) =>
 					{
 						await Promise.Success; // syntax to make Unity warnings shutup.
@@ -453,10 +408,8 @@ namespace Beamable.Tests.Runtime
 			yield return Context.OnReady.ToYielder();
 			Assert.IsTrue(Context.OnReady.IsCompleted);
 
-			
-			
-			var putMock = Requester.MockRequest<EmptyResponse>(Method.PUT, $"/object/inventory/{Context.PlayerId}")
-			                       // .WithURIMatcher(x => x?.Contains("object/inventory") ?? false)
+			// mock the request to save the inventory.
+			Requester.MockRequest<EmptyResponse>(Method.PUT, $"/object/inventory/{Context.PlayerId}")
 			                       .WithResponse(new EmptyResponse())
 				                       
 				;
@@ -494,7 +447,7 @@ namespace Beamable.Tests.Runtime
 			yield return new WaitForSecondsRealtime(.1f);
 
 			yield return updateCall.ToYielder();
-			// simulate a notification!
+			// simulate a notification to let the PSDK know there was an update.
 			Context.Api.NotificationService.Publish("inventory.refresh",
 			                                        Json.Deserialize(JsonUtility.ToJson(
 				                                                         new PlayerInventory.InventoryScopeNotification()
@@ -512,21 +465,14 @@ namespace Beamable.Tests.Runtime
 			#endregion
 			
 			
-			
-	
-			// Assert.AreEqual(2, callbackInvocationCount);
-			
-			
-			Assert.AreEqual(1, itemGroupA.Count);
-			Assert.AreEqual(1, itemGroupB.Count);
+			Assert.AreEqual(1, itemGroupA.Count); // there is only one .a
+			Assert.AreEqual(1, itemGroupB.Count); // and only one .b
 
-			Assert.AreEqual(1, callbackInvocationCountGroupA);
-			Assert.AreEqual(2, callbackInvocationCountGroupB);
+			Assert.AreEqual(1, callbackInvocationCountGroupA); // .a's cb only gets called once, because it never changes
+			Assert.AreEqual(2, callbackInvocationCountGroupB); // .b's cb gets called twice
 			
 			Assert.AreEqual(1, itemGroupASizes.Count);
-			Assert.AreEqual(1, itemGroupASizes[0]);
-			// Assert.AreEqual(1, itemGroupASizes[1]);
-			// Assert.IsTrue(putCalled);
+			Assert.AreEqual(1, itemGroupASizes[0]); // and the size of .a's callback was 1.
 		}
 	}
 }
