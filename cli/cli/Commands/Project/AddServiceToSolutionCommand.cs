@@ -1,4 +1,5 @@
 ﻿using Beamable.Common.Semantics;
+using Serilog;
 using Spectre.Console;
 using System.CommandLine;
 
@@ -77,12 +78,14 @@ public class AddServiceToSolutionCommand : AppCommand<AddServiceToSolutionComman
 				}
 			}
 		}
-
-		string projectPath =
+		
+		string path =
 			await args.ProjectService.AddToSolution(args.SolutionName, args.ProjectName, !args.SkipCommon);
+		
+		string projectDirectory = GetServicesDir(args, path);
 
 		var sd = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value.ToLower(),
-			projectPath,
+			projectDirectory,
 			Path.Combine(args.ProjectName, "Dockerfile"),
 			new string[] { },
 			CancellationToken.None);
@@ -98,5 +101,47 @@ public class AddServiceToSolutionCommand : AppCommand<AddServiceToSolutionComman
 		args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 
 		await args.ProjectService.LinkProjects(_addUnityCommand, _addUnrealCommand, args.Provider);
+	}
+	
+	private static string GetServicesDir(AddServiceToSolutionCommandArgs args, string newSolutionPath)
+	{
+		string result = string.Empty;
+		//using try catch because of the Directory.EnumerateDirectories behaviour
+		try
+		{
+			var list = Directory.EnumerateDirectories(args.ConfigService.BaseDirectory,
+				$"{args.SolutionName}\\services",
+				SearchOption.AllDirectories).ToList();
+			if (list.Count > 0)
+			{
+				result = Path.GetRelativePath(args.ConfigService.BaseDirectory, list.First());
+			}
+		}
+		catch
+		{
+			//
+		}
+
+		try
+		{
+			if (string.IsNullOrWhiteSpace(result))
+			{
+				var list = Directory.EnumerateDirectories(newSolutionPath, "services",
+					SearchOption.AllDirectories).ToList();
+				result = Path.GetRelativePath(args.ConfigService.BaseDirectory, list.First());
+			}
+		}
+		catch
+		{
+			//
+		}
+
+		if (string.IsNullOrWhiteSpace(result))
+		{
+			const string SERVICES_PATH_ERROR = "Could not find Solution services path!";
+			Log.Error(SERVICES_PATH_ERROR);
+		}
+
+		return result;
 	}
 }
