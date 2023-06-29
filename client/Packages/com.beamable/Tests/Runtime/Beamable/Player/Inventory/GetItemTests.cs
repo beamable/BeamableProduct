@@ -80,7 +80,7 @@ namespace Beamable.Tests.Runtime
 				OnRegister(b);
 				b.ReplaceSingleton<IInventoryApi>(new MockInventoryApi()
 				{
-					ObjectPost = (_, _, _) => throw new NoConnectivityException("simulated lack of internet")
+					ObjectPost = (id, req, auth) => throw new NoConnectivityException("simulated lack of internet")
 				});
 			});
 			yield return Context.OnReady.ToYielder();
@@ -105,7 +105,7 @@ namespace Beamable.Tests.Runtime
 				
 				b.ReplaceSingleton<IInventoryApi>(new MockInventoryApi()
 				{
-					ObjectPost = (_, _, _) => throw new NoConnectivityException("simulated lack of internet")
+					ObjectPost = (id, req, auth) => throw new NoConnectivityException("simulated lack of internet")
 				});
 			});
 			yield return Context.OnReady.ToYielder();
@@ -142,7 +142,7 @@ namespace Beamable.Tests.Runtime
 				var getRequestCount = 0;
 				b.ReplaceSingleton<IInventoryApi>(new MockInventoryApi()
 				{
-					ObjectPost = async (_, _, _) =>
+					ObjectPost = async (id, req, auth) =>
 					{
 						await Promise.Success; // syntax to make Unity warnings shutup.
 						getRequestCount++;
@@ -223,7 +223,7 @@ namespace Beamable.Tests.Runtime
 				var getRequestCount = 0;
 				b.ReplaceSingleton<IInventoryApi>(new MockInventoryApi()
 				{
-					ObjectPost = async (_, request, _) =>
+					ObjectPost = async (id, request, auth) =>
 					{
 						await Promise.Success; // syntax to make Unity warnings shutup.
 						getRequestCount++;
@@ -333,73 +333,79 @@ namespace Beamable.Tests.Runtime
 				         
 				b.ReplaceSingleton<IInventoryApi>(new MockInventoryApi()
 				{
-					ObjectPost = async (_, request, _) =>
+					ObjectPost = async (id, request, auth) =>
 					{
 						await Promise.Success; // syntax to make Unity warnings shutup.
 						getRequestCount++;
 						var scopeString = string.Join(",", request.scopes.Value);
 
 						Debug.Log($"[{scopeString}] REQUESTING INVENTORY FOR " + string.Join(", ", request.scopes.Value ?? Array.Empty<string>()));
-						switch (getRequestCount)
+
+						if (scopeString == "currency")
 						{
-							case (var n) when scopeString == "currency":
-								return new InventoryView {currencies = Array.Empty<CurrencyView>(), items = Array.Empty<ItemGroup>()};
-							case (var initialRequest) when initialRequest < 3:
-								return new InventoryView
+							return new InventoryView {currencies = Array.Empty<CurrencyView>(), items = Array.Empty<ItemGroup>()};
+						}
+
+						if (getRequestCount < 3)
+						{
+							return new InventoryView
+							{
+								currencies = Array.Empty<CurrencyView>(),
+								items = new ItemGroup[]
 								{
-									currencies = Array.Empty<CurrencyView>(),
-									items = new ItemGroup[]
+									new ItemGroup
 									{
-										new ItemGroup
+										id = InventoryTestItem.FULL_CONTENT_ID + ".a",
+										items = new Item[]
 										{
-											id = InventoryTestItem.FULL_CONTENT_ID + ".a",
-											items = new Item[]
+											new Item
 											{
-												new Item
-												{
-													id = 1, properties = Array.Empty<ItemProperty>()
-												}
+												id = 1, properties = Array.Empty<ItemProperty>()
 											}
-										},
-										new ItemGroup
+										}
+									},
+									new ItemGroup
+									{
+										id = InventoryTestItem.FULL_CONTENT_ID + ".b",
+										items = new Item[]
 										{
-											id = InventoryTestItem.FULL_CONTENT_ID + ".b",
-											items = new Item[]
+											new Item
 											{
-												new Item
-												{
-													id = 2, properties = Array.Empty<ItemProperty>()
-												}
+												id = 2, properties = Array.Empty<ItemProperty>()
 											}
 										}
 									}
-								};
-							case (var _) when scopeString == "items.inventoryTestItem.b":
-							case (var _) when scopeString == "items,items.inventoryTestItem.b":
-								return new InventoryView
+								}
+							};
+						}
+
+						if (scopeString == "items.inventoryTestItem.b" ||
+						    scopeString == "items,items.inventoryTestItem.b")
+						{
+							return new InventoryView
+							{
+								currencies = Array.Empty<CurrencyView>(),
+								items = new ItemGroup[]
 								{
-									currencies = Array.Empty<CurrencyView>(),
-									items = new ItemGroup[]
+									new ItemGroup
 									{
-										new ItemGroup
+										id = InventoryTestItem.FULL_CONTENT_ID + ".b",
+										items = new Item[]
 										{
-											id = InventoryTestItem.FULL_CONTENT_ID + ".b",
-											items = new Item[]
+											new Item
 											{
-												new Item
+												id = 2, properties = new ItemProperty[]
 												{
-													id = 2, properties = new ItemProperty[]
+													new ItemProperty
 													{
-														new ItemProperty
-														{
-															name = "a", value = "b"
-														}
+														name = "a", value = "b"
 													}
 												}
 											}
 										}
 									}
-								};
+								}
+							};
 						}
 						throw new NotImplementedException("Unexpected call to get inventory");
 					}
