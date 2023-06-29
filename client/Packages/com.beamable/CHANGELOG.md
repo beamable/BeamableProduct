@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- GPGS compilation issue
+- GPGS compilation issue- move non static action invoke out of a static method
 
 ## [1.16.1]
 
