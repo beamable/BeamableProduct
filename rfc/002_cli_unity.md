@@ -54,7 +54,7 @@ The following requirements need to met for a full SAMs integration with Unity.
 
 1. Unity needs to be aware of SAM `.sln`s 
     - SAMs are aware of Unity Projects through the `.linkedProjects.json` file.
-    - <TODO>
+    - See the section, "Unity SAM Awareness"
 2. The Microservice Manager should show a card for each Standalone Microservice and Microstorage. If there are existing Unity C#MS or StorageObjects, a warning should be displayed suggesting an _Ejection_, and no cards should be shown.
     - Microservices and Microstorages should be runnable. Running a Standalone Microservice should use new CLI commands
         - `beam project run <service> # proxies out to dotnet run`  
@@ -73,6 +73,51 @@ The following requirements need to met for a full SAMs integration with Unity.
     - Each Microstrage will run as `beam project new-storage`
     - The new `.beamable` project will use `beam project add-unity-project`
 4. The developer must be able to remove the configuration and remove the Ejection state from the Microservice Manager.  
+
+
+### Unity SAM Awareness
+
+
+### State Sync
+Traditionally, in a SAM solution, the developer may use `beam config` to see what CID/PID they are connected to, and then run their SAM relative to that CID/PID combo. If there is a linked Unity project, and that project is setup to to use the same CID/PID combo, the through `beam project ps`, Unity can direct traffic to the local SAM. 
+
+However, if either Unity or the SAM solution change the CID/PID combo, the traffic will not be routable, because they are considered to be different project realms. 
+
+For a tight integration of SAM and Unity, we should ensure that CID/PID changes in Unity proliferate to the linked SAM solution, and vice verca, changing the CID/PID in the SAM solution should proliferate to the linked Unity project. The design goal is that the user's action is always honored as the source of truth. 
+
+Let us consider each site separately.
+
+#### Changing CID/PID from the SAM
+
+The developer can change the CID/PID in a `.beamable` folder either by manually changing the files, or by using a command such as `beam init`. When the Standalone Microservice starts, we already run a `beam generate-env` command from within the C#MS process. At this point, we should identify any linked Unity projects, and adjust the Unity's project CID/PID/Auth combo to point to the same realm. This should happen automatically, but may be disabled if the (new) `--share-auth-with-linked-projects` flag is disabled. We can extract this as a separate command to be used at the developer's discrection,
+
+```shell
+beam unity set-config-defaults <path-to-unity> <cid> <pid> <email> <access_token> <refresh_token> [--for-build]
+```
+
+The command will need to change the connection settings and auth in given Unity project.
+
+_At this point, I have a few different ideas for implementation, here they are..._
+
+_idea 1_
+
+In the Unity project, the `/Library/BeamableEditor/beamable/editorStorage/singleton_AccountService_global.json` file contains JSON that defines the currently selected cid. It also contains a list of customers with their associated cid values. For each customer, there is a set of metadata defining the selected realm and game. There is also a user object describing the signed in developer, and list of realms that can be configured. The `beam unity set-config-defaults` command needs to ingest this file, and modify it such that the given connection strings are selected in the file. Ideally, the code that manages this file can be moved to the `/Common/Runtime` folder so that the same code is managing the file in Unity and in the CLI.
+
+However, the actual access tokens are not found in the previous `singleton_AccountService_global.json` file. The tokens are present in `PlayerPrefs`, accessible through the Unity `AccessTokenStorage` class with a "editor" prefix. The CLI will need to find a way to write to the `PlayerPrefs`. 
+
+_idea 2: (because that last one was a doozie)_ 
+
+The Unity SDK is already using a standard `beam project ps` command to receive ZMQ updates about local Standalone Microservices. We can create a variant of `beam project ps` called `beam unity listen` that will encompass `beam project ps`, but add new ZMQ message types. The `beam unity set-config-defaults` command send a ZMQ message to a listening Unity project. The message will include the new connection details, and the Unity SDK will use the existing _Switch Realm_ and _Login/Logout_ methods it has. 
+
+However, if Unity is not currently running when the developer runs the `beam unity set-config-defaults` command, then the ZMQ channel is not open, the Unity will miss the message and therefor remain on an old realm. In this scenario, when the Beamable SDK initalizes, it should recongize all linked SAM solutions, recognize a difference in CID/PID combo, and offer a log message explaining the situation. The log message should contain information on steps to sync the states. This scenario is not incredibly harmful, because if the user stops, and re-runs the Standalone Microservice after opening Unity, the `beam unity set-config-defaults` command is likely to execute again, and switch the Unity profile. 
+
+If Unity receives a set-config-defaults message in Playmode, it should log a warning in the console, and ignore the message, because we cannot support switching realms during Playmode. 
+
+#### Changing CID/PID from Unity
+
+The developer can change the Cid/Pid in Unity by logging out and in, or by using the realm switcher. 
+<todo>
+
 
 ### Bundling the CLI with the SDK
 
