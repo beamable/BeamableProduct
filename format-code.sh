@@ -1,4 +1,4 @@
 #!/bin/bash
 
 dotnet tool restore
-dotnet-format -f ${1:"client/Packages"}
+dotnet tool run dotnet-format -f ${1:"client/Packages"}
