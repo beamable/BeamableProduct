@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace Beamable.Server
 {
@@ -100,7 +101,7 @@ namespace Beamable.Server
 
 		public void SetStorage(IBeamHintGlobalStorage hintGlobalStorage) { }
 
-		public void SetupStorage(IStorageObjectConnectionProvider connectionProvider)
+		public async void SetupStorage(IStorageObjectConnectionProvider connectionProvider)
 		{
 			foreach (PendingMongoIndexData data in _pendingMongoIndexesData)
 			{
@@ -141,12 +142,22 @@ namespace Beamable.Server
 					{
 						BeamableLogger.Log($"Index data: {details.IndexType}-{details.Field}-{details.IndexName}");
 
-						createSingleIndexMethodGeneric?.Invoke(extractedCollectionObject,
+						var someResult = (Task)createSingleIndexMethodGeneric?.Invoke(extractedCollectionObject,
 						                                       new[]
 						                                       {
 							                                       extractedCollectionObject, details.IndexType,
 							                                       details.Field, details.IndexName
 						                                       });
+
+						if (someResult != null)
+						{
+							BeamableLogger.Log("someResult is not null");
+							await someResult.ConfigureAwait(false);
+							// var result = someResult.GetType().GetProperty("Result");
+							// var value = result.GetValue(someResult);
+
+							BeamableLogger.Log($"Index created");
+						}
 					}
 				}
 				catch (Exception e)
