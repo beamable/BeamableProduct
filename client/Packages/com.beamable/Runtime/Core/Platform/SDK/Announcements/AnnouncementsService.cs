@@ -11,6 +11,7 @@ namespace Beamable.Api.Announcements
 	{
 		public AnnouncementsSubscription(IDependencyProvider provider, string service) : base(provider, service, new AnnouncementSubscriptionGetter())
 		{
+
 		}
 
 		protected override void OnRefresh(AnnouncementQueryResponse data)

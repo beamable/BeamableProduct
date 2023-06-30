@@ -50,10 +50,16 @@ namespace Beamable.Api
 	/// ![img beamable-logo]
 	///
 	/// </summary>
-	public class PlatformRequester : IPlatformRequester, IHttpRequester, IRequester
+	public class PlatformRequester :
+
+		IPlatformRequester, IHttpRequester
 	{
-		private readonly IDependencyProvider _provider;
-		private const string ACCEPT_HEADER = "application/json";
+		private
+
+	readonly
+	IDependencyProvider _provider;
+		private const
+			string ACCEPT_HEADER = "application/json";
 
 		private readonly PackageVersion _beamableVersion;
 		protected AccessTokenStorage accessTokenStorage;
@@ -68,7 +74,9 @@ namespace Beamable.Api
 		public AccessToken Token { get; set; }
 		public string Shard { get; set; }
 		public string Language { get; set; }
-		public string TimeOverride { get; set; }
+		public string TimeOverride
+
+		{ get; set; }
 
 		private IAuthApi _authService;
 
@@ -513,7 +521,8 @@ namespace Beamable.Api
 		}
 
 		protected virtual string GetAcceptHeader() => ACCEPT_HEADER;
-		private UnityWebRequest PrepareWebRequester<T>(string contentType, byte[] body, SDKRequesterOptions<T> opts)
+		private UnityWebRequest
+			PrepareWebRequester<T>(string contentType, byte[] body, SDKRequesterOptions<T> opts)
 		{
 			PlatformLogger.Log($"<b>[PlatformRequester][{opts.method.ToString()}]</b> {Host}{opts.uri}");
 
