@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.16.1]
 
 ### Fixed
+
 - Player Inventory PSDK no longer triggers `OnDataChanged` callbacks with incorrect empty list
 
 ## [1.16.0]

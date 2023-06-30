@@ -45,8 +45,8 @@ namespace Beamable.Tests.Runtime
 		}
 
 		public delegate Promise<CommonResponse> ObjectPutProxy(long objectId,
-		                                                       InventoryUpdateRequest gsRequest,
-		                                                       bool includeAuthHeader);
+															   InventoryUpdateRequest gsRequest,
+															   bool includeAuthHeader);
 		public ObjectPutProxy ObjectPut { get; set; }
 		Promise<CommonResponse> IInventoryApi.ObjectPut(long objectId, InventoryUpdateRequest gsReq, bool includeAuthHeader)
 		{

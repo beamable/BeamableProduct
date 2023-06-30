@@ -118,7 +118,7 @@ namespace Beamable.Player
 			localCurrencies = new PlayerCurrencyTrie();
 			localItems = new PlayerItemTrie();
 		}
-		
+
 		public PlayerInventory(
 			IPlatformService platformService,
 			INotificationService notificationService,
@@ -227,7 +227,7 @@ namespace Beamable.Player
 				var filteredCurrencies = localCurrencies.GetRelevantKeys(scopes).ToArray();
 				var filteredRequests = _requestCounter.GetRelevantKeys(scopes).ToArray();
 				var joined = filteredItems.Union(filteredCurrencies).Union(filteredRequests).Distinct().ToArray();
-				
+
 				var filteredScopes = joined;
 				if (filteredScopes.Length == 0) return; // if there are no scopes, there is nothing to download. But actually, the API treats an empty scope as "everything", which is extra bad for us.
 				if (_userContext.UserId == 0)
@@ -260,7 +260,7 @@ namespace Beamable.Player
 				foreach (var group in res.items)
 				{
 					unseenScopes.Remove(group.id);
-					
+
 					var plrItems = new PlayerItem[group.items.Length];
 					var contentRef = new ItemRef(group.id);
 					var content = await contentRef.Resolve().Recover(_ => null); ;

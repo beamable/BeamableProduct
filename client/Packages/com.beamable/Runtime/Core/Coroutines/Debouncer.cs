@@ -31,7 +31,7 @@ namespace Beamable.Coroutines
 	}
 
 
-	public abstract class DebounceService<T> : DebounceService 
+	public abstract class DebounceService<T> : DebounceService
 		where T : Delegate
 	{
 		private readonly CoroutineService _coroutineService;
