@@ -55,6 +55,7 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 		if (args.Dryrun)
 		{
 			Log.Information($"Preventing install due to dry run. Would have installed version=[{packageVersion.originalVersion}]");
+			return;
 		}
 
 		await Cli.Wrap("dotnet")
