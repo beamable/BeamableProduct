@@ -26,7 +26,7 @@ namespace Beamable.Tests.Runtime
 		public IEnumerator CanGetPlayerItems_Simple()
 		{
 			const string itemName = "test";
-			
+
 			async Promise<InventoryView> ObjectPost(long objectid, InventoryQueryRequest gsreq, bool includeauthheader)
 			{
 				await Promise.Success;
@@ -50,7 +50,7 @@ namespace Beamable.Tests.Runtime
 					}
 				};
 			}
-			
+
 			MockContent.Provide(new InventoryTestItem().SetContentName(itemName));
 			TriggerContextInit(b =>
 			{
@@ -65,15 +65,15 @@ namespace Beamable.Tests.Runtime
 
 			var items = Context.Inventory.GetItems(InventoryTestItem.FULL_CONTENT_ID);
 			yield return items.OnReady.ToYielder();
-			
+
 			Assert.AreEqual(1, items.Count);
 		}
-		
+
 		[UnityTest]
 		public IEnumerator CanGetPlayerItems_ReadFromCache_Empty()
 		{
 			const string itemName = "test";
-			
+
 			MockContent.Provide(new InventoryTestItem().SetContentName(itemName));
 			TriggerContextInit(b =>
 			{
@@ -88,21 +88,21 @@ namespace Beamable.Tests.Runtime
 
 			var items = Context.Inventory.GetItems(InventoryTestItem.FULL_CONTENT_ID);
 			yield return items.OnReady.ToYielder();
-			
+
 			Assert.AreEqual(0, items.Count);
 		}
-		
-		
+
+
 		[UnityTest]
 		public IEnumerator CanGetPlayerItems_ReadFromCache_NotEmpty()
 		{
 			const string itemName = "test";
-			
+
 			MockContent.Provide(new InventoryTestItem().SetContentName(itemName));
 			TriggerContextInit(b =>
 			{
 				OnRegister(b);
-				
+
 				b.ReplaceSingleton<IInventoryApi>(new MockInventoryApi()
 				{
 					ObjectPost = (id, req, auth) => throw new NoConnectivityException("simulated lack of internet")
@@ -110,7 +110,7 @@ namespace Beamable.Tests.Runtime
 			});
 			yield return Context.OnReady.ToYielder();
 			Assert.IsTrue(Context.OnReady.IsCompleted);
-			
+
 			// pre-populate the disk cache
 			var layer = DependencyBuilder.Instantiate<ScopedServiceStorage<OfflineCacheStorageLayer>>(Context.ServiceProvider);
 			var inventory = new PlayerInventory();
@@ -124,16 +124,16 @@ namespace Beamable.Tests.Runtime
 			// actually do the test where we get the items.
 			var items = Context.Inventory.GetItems(InventoryTestItem.FULL_CONTENT_ID);
 			yield return items.OnReady.ToYielder();
-			
+
 			Assert.AreEqual(1, items.Count);
 		}
-		
-		
+
+
 		[UnityTest]
 		public IEnumerator CanHandleNetworkUpdate_OneItemType()
 		{
 			const string itemName = "test";
-			
+
 			MockContent.Provide(new InventoryTestItem().SetContentName(itemName));
 			TriggerContextInit(b =>
 			{
@@ -148,7 +148,7 @@ namespace Beamable.Tests.Runtime
 						getRequestCount++;
 						switch (getRequestCount)
 						{
-							case 2: 
+							case 2:
 								return new InventoryView
 								{
 									currencies = Array.Empty<CurrencyView>(),
@@ -193,25 +193,25 @@ namespace Beamable.Tests.Runtime
 
 
 			Context.Api.NotificationService.Publish("inventory.refresh",
-			                                        Json.Deserialize(JsonUtility.ToJson(
-				                                        new PlayerInventory.InventoryScopeNotification()
-				                                        {
-					                                        scopes = new string[]
-					                                        {
-						                                        InventoryTestItem.FULL_CONTENT_ID
-					                                        }
-				                                        })));
-			
+													Json.Deserialize(JsonUtility.ToJson(
+														new PlayerInventory.InventoryScopeNotification()
+														{
+															scopes = new string[]
+															{
+																InventoryTestItem.FULL_CONTENT_ID
+															}
+														})));
+
 			// simulate a bit of time...
 			yield return new WaitForSecondsRealtime(DebounceService.DEFAULT_DEBOUNCE_TIME_SECONDS + .1f);
-			
+
 			Assert.AreEqual(1, callbackInvocationCount);
 		}
-		
-		
-		
+
+
+
 		[UnityTest]
-		public IEnumerator CanHandle_LastDeletion() 
+		public IEnumerator CanHandle_LastDeletion()
 		{
 			MockContent.Provide(new InventoryTestItem().SetContentName("a"));
 			MockContent.Provide(new InventoryTestItem().SetContentName("b"));
@@ -265,7 +265,7 @@ namespace Beamable.Tests.Runtime
 			});
 			yield return Context.OnReady.ToYielder();
 			Assert.IsTrue(Context.OnReady.IsCompleted);
-			
+
 			// pre-populate the disk cache
 			var layer = DependencyBuilder.Instantiate<ScopedServiceStorage<OfflineCacheStorageLayer>>(Context.ServiceProvider);
 			var inventory = new PlayerInventory();
@@ -299,15 +299,15 @@ namespace Beamable.Tests.Runtime
 
 			// // simulate a notification!
 			Context.Api.NotificationService.Publish("inventory.refresh",
-			                                        Json.Deserialize(JsonUtility.ToJson(
-				                                                         new PlayerInventory.InventoryScopeNotification()
-				                                                         {
-					                                                         scopes = new string[]
-					                                                         {
-						                                                         "items",
-						                                                         InventoryTestItem.FULL_CONTENT_ID + ".will-be-deleted"
-					                                                         }
-				                                                         })));
+													Json.Deserialize(JsonUtility.ToJson(
+																		 new PlayerInventory.InventoryScopeNotification()
+																		 {
+																			 scopes = new string[]
+																			 {
+																				 "items",
+																				 InventoryTestItem.FULL_CONTENT_ID + ".will-be-deleted"
+																			 }
+																		 })));
 			//
 			// simulate a bit of time...
 			yield return new WaitForSecondsRealtime(DebounceService.DEFAULT_DEBOUNCE_TIME_SECONDS + .1f);
@@ -316,7 +316,7 @@ namespace Beamable.Tests.Runtime
 			Assert.AreEqual(2, items.Count); // there are two .a items
 
 		}
-		
+
 		[UnityTest]
 		public IEnumerator CanHandle_EmptyCallback()
 		{
@@ -329,8 +329,8 @@ namespace Beamable.Tests.Runtime
 				OnRegister(b);
 
 				var getRequestCount = 0;
-				
-				         
+
+
 				b.ReplaceSingleton<IInventoryApi>(new MockInventoryApi()
 				{
 					ObjectPost = async (id, request, auth) =>
@@ -343,7 +343,7 @@ namespace Beamable.Tests.Runtime
 
 						if (scopeString == "currency")
 						{
-							return new InventoryView {currencies = Array.Empty<CurrencyView>(), items = Array.Empty<ItemGroup>()};
+							return new InventoryView { currencies = Array.Empty<CurrencyView>(), items = Array.Empty<ItemGroup>() };
 						}
 
 						if (getRequestCount < 3)
@@ -380,7 +380,7 @@ namespace Beamable.Tests.Runtime
 						}
 
 						if (scopeString == "items.inventoryTestItem.b" ||
-						    scopeString == "items,items.inventoryTestItem.b")
+							scopeString == "items,items.inventoryTestItem.b")
 						{
 							return new InventoryView
 							{
@@ -416,12 +416,12 @@ namespace Beamable.Tests.Runtime
 
 			// mock the request to save the inventory.
 			Requester.MockRequest<EmptyResponse>(Method.PUT, $"/object/inventory/{Context.PlayerId}")
-			                       .WithResponse(new EmptyResponse())
-				                       
+								   .WithResponse(new EmptyResponse())
+
 				;
-			
+
 			#region setup basic item callbacks
-			
+
 			var itemGroupA = Context.Inventory.GetItems(InventoryTestItem.FULL_CONTENT_ID + ".a");
 			var callbackInvocationCountGroupA = 0;
 			var itemGroupASizes = new List<int>();
@@ -431,7 +431,7 @@ namespace Beamable.Tests.Runtime
 				itemGroupASizes.Add(nextItems.Count);
 			};
 			yield return itemGroupA.OnReady.ToYielder();
-			
+
 			var itemGroupB = Context.Inventory.GetItems(InventoryTestItem.FULL_CONTENT_ID + ".b");
 			var callbackInvocationCountGroupB = 0;
 			itemGroupB.OnDataUpdated += (nextItems) =>
@@ -441,42 +441,42 @@ namespace Beamable.Tests.Runtime
 			yield return itemGroupB.OnReady.ToYielder();
 
 			#endregion
-			
+
 			#region trigger update calls
 
 			var updateCall = Context.Inventory.Update(b =>
 			{
-				b.UpdateItem(InventoryTestItem.FULL_CONTENT_ID + ".b", 2, new Dictionary<string, string> {["a"] = "b"});
+				b.UpdateItem(InventoryTestItem.FULL_CONTENT_ID + ".b", 2, new Dictionary<string, string> { ["a"] = "b" });
 			});
-			
+
 			// wait some time...
 			yield return new WaitForSecondsRealtime(.1f);
 
 			yield return updateCall.ToYielder();
 			// simulate a notification to let the PSDK know there was an update.
 			Context.Api.NotificationService.Publish("inventory.refresh",
-			                                        Json.Deserialize(JsonUtility.ToJson(
-				                                                         new PlayerInventory.InventoryScopeNotification()
-				                                                         {
-					                                                         scopes = new string[]
-					                                                         {
-						                                                         "items",
-						                                                         InventoryTestItem.FULL_CONTENT_ID + ".b"
-					                                                         }
-				                                                         })));
-			
+													Json.Deserialize(JsonUtility.ToJson(
+																		 new PlayerInventory.InventoryScopeNotification()
+																		 {
+																			 scopes = new string[]
+																			 {
+																				 "items",
+																				 InventoryTestItem.FULL_CONTENT_ID + ".b"
+																			 }
+																		 })));
+
 			// simulate a bit of time...
 			yield return new WaitForSecondsRealtime(DebounceService.DEFAULT_DEBOUNCE_TIME_SECONDS + .1f);
-			
+
 			#endregion
-			
-			
+
+
 			Assert.AreEqual(1, itemGroupA.Count); // there is only one .a
 			Assert.AreEqual(1, itemGroupB.Count); // and only one .b
 
 			Assert.AreEqual(1, callbackInvocationCountGroupA); // .a's cb only gets called once, because it never changes
 			Assert.AreEqual(2, callbackInvocationCountGroupB); // .b's cb gets called twice
-			
+
 			Assert.AreEqual(1, itemGroupASizes.Count);
 			Assert.AreEqual(1, itemGroupASizes[0]); // and the size of .a's callback was 1.
 		}
