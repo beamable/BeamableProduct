@@ -110,7 +110,7 @@ public class AddServiceToSolutionCommand : AppCommand<AddServiceToSolutionComman
 		try
 		{
 			var list = Directory.EnumerateDirectories(args.ConfigService.BaseDirectory,
-				$"{args.SolutionName}\\services",
+				"services",
 				SearchOption.AllDirectories).ToList();
 			if (list.Count > 0)
 			{
@@ -138,8 +138,8 @@ public class AddServiceToSolutionCommand : AppCommand<AddServiceToSolutionComman
 
 		if (string.IsNullOrWhiteSpace(result))
 		{
-			const string SERVICES_PATH_ERROR = "Could not find Solution services path!";
-			Log.Error(SERVICES_PATH_ERROR);
+			const string servicesPathError = "Could not find Solution services path!";
+			Log.Error(servicesPathError);
 		}
 
 		return result;
