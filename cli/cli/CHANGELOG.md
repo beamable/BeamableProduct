@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix issues with `ShowLoading` helper function caused by rethrowing
+- Pull `mongo-express` in `project open-mongo` command if needed 
 
 ## [1.16.1]
 
