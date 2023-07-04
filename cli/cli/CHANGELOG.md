@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix issues with `ShowLoading` helper function caused by rethrowing
 
+### Changed
+
+- Add NET 7.0 as second target for CLI
+
 ## [1.16.1]
 
 ### Added
