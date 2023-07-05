@@ -14,20 +14,7 @@ To install the Beamable CLI, run the following commands in a shell.
 dotnet tool install --global Beamable.Tools
 ```
 
-And verify your installation with `beam version`.
-
-### Updating
-As of 1.16.2, a globally installed CLI can manage its own updates through the use of the [beam version install](doc:cli-version-install) command.
-
-The following command will install the latest CLI. The "latest" string can be any valid CLI version
-```shell
-beam version install latest
-```
-
-> 📘 Check Versions on Nuget
->
-> Remember, Beamable.Tools is a dotnet tool available through Nuget. As such, you can find all available versions at [nuget.org](https://www.nuget.org/packages/Beamable.Tools) 
-
+And verify your installation with `beam --version`. 
 
 ## Getting Started
 
