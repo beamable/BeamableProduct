@@ -36,6 +36,10 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
 				BeamableLogger.Log(
 					$"No service-name passed as argument. Running command for {args.storageName} since it is the only one storage in BeamoManifest.");
 			}
+			else
+			{
+				throw new CliException("No service-name passed as argument.");
+			}
 		}
 		// first, get the local connection string,
 		await HandleLocalCase(args);
