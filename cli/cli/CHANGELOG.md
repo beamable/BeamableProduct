@@ -5,13 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.2]
+
+### Added
+
+- create default `.gitignore` file during `beam init` if none is present
+- `beam version` commands to manage CLI version install
+
+### Fixed
+
+- Fix issues with `ShowLoading` helper function caused by rethrowing
+- Pull `mongo-express` in `project open-mongo` command if needed 
+
+### Changed
+
+- If there is only one Microservice, `beam project open-swagger` work without passing Microservice ID
+- If there is only one Storage, `beam project open-mongo` work without passing Storage ID
+
 ## [1.16.1]
 
 ### Added
 
 - `beam services deploy` accepts an optional `--docker-registry-url`
-
-### Changed
 
 ### Fixed
 

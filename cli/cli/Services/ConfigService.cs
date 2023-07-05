@@ -1,8 +1,11 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Markdig.Helpers;
+using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using System.CommandLine.Binding;
+using System.Text;
 
 namespace cli;
 
@@ -150,6 +153,25 @@ public class ConfigService
 
 		string fullPath = Path.Combine(ConfigFilePath, Constants.CONFIG_DEFAULTS_FILE_NAME);
 		File.WriteAllText(fullPath, json);
+	}
+
+	public void CreateIgnoreFile()
+	{
+		if (string.IsNullOrEmpty(ConfigFilePath))
+			throw new CliException("No beamable project exists. Please use beam init");
+		
+		string ignoreFilePath = Path.Combine(ConfigFilePath, Constants.CONFIG_IGNORE_FILE_NAME);
+		if (File.Exists(ignoreFilePath))
+			return;
+
+		var builder = new StringBuilder();
+		foreach (var fileName in Constants.FILES_TO_IGNORE)
+		{
+			builder.Append('/');
+			builder.Append(fileName.EndsWith(".json") ? fileName : fileName + ".json");
+			builder.Append(Environment.NewLine);
+		}
+		File.WriteAllText(ignoreFilePath,builder.ToString());
 	}
 
 	public bool ReadTokenFromFile(out CliToken response)
