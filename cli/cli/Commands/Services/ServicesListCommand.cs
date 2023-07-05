@@ -3,7 +3,6 @@ using Newtonsoft.Json;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 using System.CommandLine;
-using System.Net;
 
 namespace cli;
 
@@ -11,9 +10,11 @@ public class ServicesListCommandArgs : LoginCommandArgs
 {
 	public bool Remote;
 	public bool AsJson;
+	public bool Federated;
 }
 
-public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultSteam<DefaultStreamResultChannel, ServiceListResult>
+public class ServicesListCommand : AppCommand<ServicesListCommandArgs>,
+	IResultSteam<DefaultStreamResultChannel, ServiceListResult>
 {
 	private IAppContext _ctx;
 	private BeamoLocalSystem _localBeamo;
@@ -27,11 +28,18 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 
 	public override void Configure()
 	{
-		AddOption(new Option<bool>("--remote", "Makes it so that we output the current realm's remote manifest, instead of the local one"),
+		AddOption(
+			new Option<bool>("--remote",
+				"Makes it so that we output the current realm's remote manifest, instead of the local one"),
 			(args, i) => args.Remote = i);
 
 		AddOption(new Option<bool>("--json", "Outputs as json instead of summary table"),
 			(args, i) => args.AsJson = i);
+
+		AddOption(
+			new Option<bool>("--federated",
+				"Checks if services implement either IFederatedLogin or IFederatedInventory interfaces"),
+			(args, i) => args.Federated = i);
 	}
 
 	public override async Task Handle(ServicesListCommandArgs args)
@@ -39,13 +47,11 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 		_ctx = args.AppContext;
 		_localBeamo = args.BeamoLocalSystem;
 		_remoteBeamo = args.BeamoService;
-		// //await _remoteBeamo.GetMetricsUrl("test", "cpu");
-		// var templates = await _remoteBeamo.Promote(_ctx.Pid);
-		// Console.WriteLine($"{string.Join("", JsonConvert.SerializeObject(templates))}");
+
+		var scanner = new FederatedServicesScanner();
 
 		var titleText = !args.Remote ? "Local Services Status" : "Remote Services Status";
 		AnsiConsole.MarkupLine($"[lightskyblue1]{titleText}[/]");
-
 
 		// Declare style for column headers
 		var columnNameStyle = new Style(Color.SlateBlue1);
@@ -57,7 +63,9 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 		{
 			if (args.Remote)
 			{
-				throw new CliException("Docker is not running in this machine. Please start Docker before running this command.", Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_DOCKER_NOT_RUNNING, true);
+				throw new CliException(
+					"Docker is not running in this machine. Please start Docker before running this command.",
+					Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_DOCKER_NOT_RUNNING, true);
 			}
 
 			var table = new Table();
@@ -65,22 +73,62 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 			var imageNameColumn = new TableColumn(new Markup("Image Id", columnNameStyle));
 			var shouldBeRunningColumn = new TableColumn(new Markup("Should be Running", columnNameStyle));
 			var isRunningColumn = new TableColumn(new Markup("Is Running", columnNameStyle));
-			table.AddColumn(beamoIdColumn).AddColumn(imageNameColumn).AddColumn(shouldBeRunningColumn).AddColumn(isRunningColumn);
+			table.AddColumn(beamoIdColumn).AddColumn(imageNameColumn).AddColumn(shouldBeRunningColumn)
+				.AddColumn(isRunningColumn);
+
+			if (args.Federated)
+			{
+				var federatedLoginColumn = new TableColumn(new Markup("Federated Login", columnNameStyle));
+				var federatedInventoryColumn = new TableColumn(new Markup("Federated Inventory", columnNameStyle));
+				table.AddColumn(federatedLoginColumn).AddColumn(federatedInventoryColumn);
+				
+				scanner.ScanSolution(args.ConfigService.WorkingDirectory);
+			}
+
 			foreach (var sd in serviceDefinitions)
 			{
+				FederatedServicesScanner.Data data = scanner.GetData(sd.BeamoId);
+
+				string federatedLoginImplementations = data != null && args.Federated
+					? data.GetFederatedLoginImplementations()
+					: "";
+				var federatedLoginMarkup = new Markup(federatedLoginImplementations);
+
+				string federatedInventoryImplementations = data != null && args.Federated
+					? data.GetFederatedInventoryImplementations()
+					: "";
+				var federatedInventoryMarkup = new Markup(federatedInventoryImplementations);
+				
 				var beamoIdMarkup = new Markup($"[green]{sd.BeamoId}[/]");
 				var imageIdMarkup = new Markup($"{sd.TruncImageId}");
-				var shouldBeEnabledOnDeployMarkup = new Markup(sd.ShouldBeEnabledOnRemote ? "[green]Enable[/]" : "[red]Disable[/]");
-				var isRemoteOnlyMarkup = new Markup(_localBeamo.VerifyCanBeBuiltLocally(sd) ? "[green]True[/]" : "[red]False[/]");
-				localServiceListResult.AddLocal(sd.BeamoId, sd.ShouldBeEnabledOnRemote, false, sd.Protocol.ToString(), sd.ImageId,
+				var shouldBeEnabledOnDeployMarkup =
+					new Markup(sd.ShouldBeEnabledOnRemote ? "[green]Enable[/]" : "[red]Disable[/]");
+				var isRemoteOnlyMarkup =
+					new Markup(_localBeamo.VerifyCanBeBuiltLocally(sd) ? "[green]True[/]" : "[red]False[/]");
+				localServiceListResult.AddLocal(sd.BeamoId, sd.ShouldBeEnabledOnRemote, false, sd.Protocol.ToString(),
+					sd.ImageId,
 					"", "", new[] { "" }, new[] { "" }, sd.DependsOnBeamoIds);
 
-				table.AddRow(new TableRow(new[] { beamoIdMarkup, imageIdMarkup, shouldBeEnabledOnDeployMarkup, isRemoteOnlyMarkup, }));
+				IEnumerable<IRenderable> items = new[]
+				{
+					beamoIdMarkup, imageIdMarkup, shouldBeEnabledOnDeployMarkup, isRemoteOnlyMarkup
+				};
+
+				if (args.Federated)
+				{
+					items = items.Concat(new[] { federatedLoginMarkup, federatedInventoryMarkup });
+				}
+
+				table.AddRow(new TableRow(items));
 			}
 
 			this.SendResults(localServiceListResult);
 
-			var warning = new Panel("No docker running --- the running information here is not up-to-date!") { Header = new PanelHeader("NO DOCKER RUNNING") };
+			var warning =
+				new Panel("No docker running --- the running information here is not up-to-date!")
+				{
+					Header = new PanelHeader("NO DOCKER RUNNING")
+				};
 			AnsiConsole.Write(warning);
 			AnsiConsole.Write(table);
 			return;
@@ -107,14 +155,20 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 				var imageNameColumn = new TableColumn(new Markup("Image Id", columnNameStyle));
 				var shouldBeRunningColumn = new TableColumn(new Markup("Should be Running", columnNameStyle));
 				var isRunningColumn = new TableColumn(new Markup("Is Running", columnNameStyle));
-				table.AddColumn(beamoIdColumn).AddColumn(imageNameColumn).AddColumn(shouldBeRunningColumn).AddColumn(isRunningColumn);
+				table.AddColumn(beamoIdColumn).AddColumn(imageNameColumn).AddColumn(shouldBeRunningColumn)
+					.AddColumn(isRunningColumn);
 
 				foreach (var responseService in manifest.manifest)
 				{
 					var beamoId = new Markup(responseService.serviceName);
 					var imageId = new Markup(responseService.imageId);
-					var remoteTargetStatus = new Markup(responseService.enabled ? "[green]Should be Enabled[/]" : "[red]Should be Disabled[/]");
-					var remoteStatus = new Markup(status.services.First(s => s.serviceName == responseService.serviceName).running ? "[green]On[/]" : "[red]Off[/]");
+					var remoteTargetStatus = new Markup(responseService.enabled
+						? "[green]Should be Enabled[/]"
+						: "[red]Should be Disabled[/]");
+					var remoteStatus =
+						new Markup(status.services.First(s => s.serviceName == responseService.serviceName).running
+							? "[green]On[/]"
+							: "[red]Off[/]");
 					table.AddRow(new TableRow(new[] { beamoId, imageId, remoteTargetStatus, remoteStatus }));
 
 
@@ -138,7 +192,8 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 		}
 		else
 		{
-			await _localBeamo.SynchronizeInstanceStatusWithDocker(_localBeamo.BeamoManifest, _localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
+			await _localBeamo.SynchronizeInstanceStatusWithDocker(_localBeamo.BeamoManifest,
+				_localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
 			_localBeamo.SaveBeamoLocalRuntime();
 
 			if (!args.AsJson)
@@ -151,19 +206,46 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 				var imageNameColumn = new TableColumn(new Markup("Image Id", columnNameStyle));
 				var containersColumn = new TableColumn(new Markup("Local Running Containers", columnNameStyle));
 
-				var shouldEnableOnRemoteDeployColumn = new TableColumn(new Markup("Should Enable On Remote Deploy", columnNameStyle));
+				var shouldEnableOnRemoteDeployColumn =
+					new TableColumn(new Markup("Should Enable On Remote Deploy", columnNameStyle));
 				var canBeBuiltLocally = new TableColumn(new Markup("Can be Built Locally", columnNameStyle));
 
-				table.AddColumn(beamoIdColumn).AddColumn(imageNameColumn).AddColumn(containersColumn).AddColumn(shouldEnableOnRemoteDeployColumn).AddColumn(canBeBuiltLocally);
+				table.AddColumn(beamoIdColumn).AddColumn(imageNameColumn).AddColumn(containersColumn)
+					.AddColumn(shouldEnableOnRemoteDeployColumn).AddColumn(canBeBuiltLocally);
+
+				if (args.Federated)
+				{
+					var federatedLoginColumn = new TableColumn(new Markup("Federated Login", columnNameStyle));
+					var federatedInventoryColumn = new TableColumn(new Markup("Federated Inventory", columnNameStyle));
+					table.AddColumn(federatedLoginColumn).AddColumn(federatedInventoryColumn);
+
+					scanner.ScanSolution(args.ConfigService.WorkingDirectory);
+				}
+
 				foreach (var sd in serviceDefinitions)
 				{
+					FederatedServicesScanner.Data data = scanner.GetData(sd.BeamoId);
+
+					string federatedLoginImplementations = data != null && args.Federated
+						? data.GetFederatedLoginImplementations()
+						: "";
+					var federatedLoginMarkup = new Markup(federatedLoginImplementations);
+
+					string federatedInventoryImplementations = data != null && args.Federated
+						? data.GetFederatedInventoryImplementations()
+						: "";
+					var federatedInventoryMarkup = new Markup(federatedInventoryImplementations);
+
 					var beamoIdMarkup = new Markup($"[green]{sd.BeamoId}[/]");
 					var imageIdMarkup = new Markup($"{sd.TruncImageId}");
-					var shouldBeEnabledOnDeployMarkup = new Markup(sd.ShouldBeEnabledOnRemote ? "[green]Enable[/]" : "[red]Disable[/]");
-					var isRemoteOnlyMarkup = new Markup(_localBeamo.VerifyCanBeBuiltLocally(sd) ? "[green]True[/]" : "[red]False[/]");
+					var shouldBeEnabledOnDeployMarkup =
+						new Markup(sd.ShouldBeEnabledOnRemote ? "[green]Enable[/]" : "[red]Disable[/]");
+					var isRemoteOnlyMarkup =
+						new Markup(_localBeamo.VerifyCanBeBuiltLocally(sd) ? "[green]True[/]" : "[red]False[/]");
 
 					IRenderable containersRenderable;
-					var existingServiceInstances = runningServiceInstances.Where(si => si.BeamoId == sd.BeamoId).ToList();
+					var existingServiceInstances =
+						runningServiceInstances.Where(si => si.BeamoId == sd.BeamoId).ToList();
 					var hasNoRunningInstances = existingServiceInstances.Count == 0;
 					if (hasNoRunningInstances)
 					{
@@ -181,11 +263,15 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 						foreach (var existingServiceInstance in existingServiceInstances)
 						{
 							var containerNameMarkup = new Markup(existingServiceInstance.ContainerName);
-							var containerStatusMarkup = new Markup(existingServiceInstance.IsRunning ? "[green]On[/]" : "[red]Off[/]");
+							var containerStatusMarkup =
+								new Markup(existingServiceInstance.IsRunning ? "[green]On[/]" : "[red]Off[/]");
 
-							var portMappings = existingServiceInstance.ActivePortBindings.Select(p => $"{p.LocalPort}:{p.InContainerPort}");
+							var portMappings =
+								existingServiceInstance.ActivePortBindings.Select(p =>
+									$"{p.LocalPort}:{p.InContainerPort}");
 							var containerPortMappingMarkup = new Markup(string.Join(", ", portMappings));
-							containersTable.AddRow(containerNameMarkup, containerStatusMarkup, containerPortMappingMarkup);
+							containersTable.AddRow(containerNameMarkup, containerStatusMarkup,
+								containerPortMappingMarkup);
 						}
 
 						containersRenderable = containersTable;
@@ -201,7 +287,19 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 						new[] { "" },
 						new[] { "" },
 						sd.DependsOnBeamoIds);
-					table.AddRow(new TableRow(new[] { beamoIdMarkup, imageIdMarkup, containersRenderable, shouldBeEnabledOnDeployMarkup, isRemoteOnlyMarkup, }));
+
+					IEnumerable<IRenderable> items = new[]
+					{
+						beamoIdMarkup, imageIdMarkup, containersRenderable, shouldBeEnabledOnDeployMarkup,
+						isRemoteOnlyMarkup
+					};
+
+					if (args.Federated)
+					{
+						items = items.Concat(new[] { federatedLoginMarkup, federatedInventoryMarkup });
+					}
+
+					table.AddRow(new TableRow(items));
 				}
 
 				this.SendResults(localServiceListResult);
@@ -260,7 +358,8 @@ public class ServiceListResult
 	}
 
 	public void AddLocal(string beamoId, bool shouldBeEnabledOnRemote, bool running, string protocol, string imageId,
-		string containerName, string containerId, IEnumerable<string> hostPort, IEnumerable<string> containerPort, IEnumerable<string> dependentBeamoIds)
+		string containerName, string containerId, IEnumerable<string> hostPort, IEnumerable<string> containerPort,
+		IEnumerable<string> dependentBeamoIds)
 	{
 		BeamoIds.Add(beamoId);
 		RunningState.Add(running);
@@ -277,7 +376,8 @@ public class ServiceListResult
 		Dependencies.Add(string.Join(",", dependentBeamoIds.ToList()));
 	}
 
-	public void AddRemote(string beamoId, bool shouldBeEnabledOnRemote, bool running, string imageId, IEnumerable<string> dependentBeamoIds)
+	public void AddRemote(string beamoId, bool shouldBeEnabledOnRemote, bool running, string imageId,
+		IEnumerable<string> dependentBeamoIds)
 	{
 		BeamoIds.Add(beamoId);
 		RunningState.Add(running);

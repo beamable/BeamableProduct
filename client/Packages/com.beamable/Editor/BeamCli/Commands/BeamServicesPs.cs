@@ -10,6 +10,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public bool remote;
 		/// <summary>Outputs as json instead of summary table</summary>
 		public bool json;
+		/// <summary>Checks if services implement either IFederatedLogin or IFederatedInventory interfaces</summary>
+		public bool federated;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -24,6 +26,11 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.json != default(bool)))
 			{
 				genBeamCommandArgs.Add(("--json=" + this.json));
+			}
+			// If the federated value was not default, then add it to the list of args.
+			if ((this.federated != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--federated=" + this.federated));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces
