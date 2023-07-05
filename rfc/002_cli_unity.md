@@ -140,3 +140,67 @@ Ultimately, the CLI is available as a lazily resolved asset.
 
 ### Replacing existing Unity systems with CLI
 <Todo>
+
+
+
+
+
+----
+
+# notes from July 5th
+
+## benefits
+1. only do the work once
+2. feature parity
+3. we get to avoid building 3 products, in favor of building 1 product with 2 views.
+
+## unknowns
+1. how are we structuing engine specific data relative to the CLI? 
+    - Unity has data it needs to integrate with Content with a native-esque workflow. Where does that data live? Naively, the data lives in Unity! However, that immediately invalidates the "DRY" principle of data! Which is the source of truth? 
+    - Maybe we shift the entire responsibilty to the CLI, and the CLI is aware of the engine. The engine _always_ proxies through the CLI. 
+2. How much of the data is owned by the CLI, and how much is owned by the engine view? Until we answer this question, we shouldn't commit any tech. 
+    - Question: we've already done integration work- should this have been colored by the answer to this question? 
+3. If the CLI is the source of truth, how do we handle multi-engine versions? If we bug-fix the CLI to solve an issue in Unity, does that warrant a version bump for Unreal? This has Beamable Developer workflow implications. And this has user facing 'how do I get updates?' implications. 
+
+
+## Content
+1. content schemas would help with validation. If we had them, Unity/Unreal/Godot could use the schemas. 
+    - this is blocked by getting a lot of backend support for building out schemas. 
+2. Multiple sources-of-truths are bad, so we should find a way for 1 source of truth. (CLI). 
+
+
+## Process
+
+option 1. Incremental.
+- do some work, ticketize, evalulate result, may or may not continue. 
+
+option 2. Project. 
+- there are milestones, map out the unkowns, and the next big release is the CLI integration. It involes everyone! 
+
+Pedro is not in favor of incremental, because in his experience, the project never reaches the ideal "finished" state. The code is in limbo between old/new systems. Because it takes time, we need to support old and new systems, and fix bugs in both places, and we risk customers depending on old code. 
+Buss, EasyFeatures, ReflectionCache are all unfinished examples at Beamable, though this situation happens at every tech company. 
+
+Acknowledge that the Project approach takes a lot of _time_, and its not without its own issues. 
+
+Peter
+- Buss morphed from incremental to project approach, because the buss branch _is_ the project branch. Somewhere along the way, we lost the motivation/focus/time to support the project. 
+- ReflectionCache example maybe due to Pedro's shift to Unreal focus. 
+- EasyFeatures were dependent on Buss, and Buss was blocked? 
+
+Pedro
+- Peter's take on the examples proves Pedro's point that the incremental approach doesn't work. The efforts were never structured. The incremental approach relies on individuals- a project relies on the team's focus. 
+
+Luke
+- strike forces were meant to be project approach-
+Pedro
+- practically, strike forces are not projects
+- A project has a well structured plan, it has milestones that the team is aware of, it has dependencies on other people, and those people are aware of those. We've never had those things in the strike forces. The strike forces have not done those things. 
+
+Luke
+- Disagree- there _were_ milestones
+
+-- regardless of cause, previous projects have stalled and output is small. If we try the same thing with CLI, why should we expect it to be different? 
+
+Releases and actions can be incremental! 
+But "thinking" should be project based. We need a clear plan and view of the end goal at all points. That view may change as we build, but we shouldn't start releasing code without a clear view of the end goal. This vision needs to be documented and put into words.
+- Peter is on board- maybe for different large features, we should have design/tech retrospectives. Maybe we should have these meetings on other features like Buss. For example, is UIToolkit > Buss ? 
