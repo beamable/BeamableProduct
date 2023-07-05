@@ -18,9 +18,9 @@ public class VersionListCommand : AppCommand<VersionListCommandArgs>
 
 	public override void Configure()
 	{
-		AddOption(new Option<int>("--limit", () => 10, "how many package versions to display"), (args, i) => args.limit = i);
-		AddOption(new Option<bool>("--include-rc", () => false, "should release candidates be shown"), (args, i) => args.includeRc = i);
-		AddOption(new Option<bool>("--include-release", () => true, "should stable releases be shown"), (args, i) => args.includeProd = i);
+		AddOption(new Option<int>("--limit", () => 10, "How many package versions to display"), (args, i) => args.limit = i);
+		AddOption(new Option<bool>("--include-rc", () => false, "Should release candidates be shown"), (args, i) => args.includeRc = i);
+		AddOption(new Option<bool>("--include-release", () => true, "Should stable releases be shown"), (args, i) => args.includeProd = i);
 	}
 
 	public override async Task Handle(VersionListCommandArgs args)

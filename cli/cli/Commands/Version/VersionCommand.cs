@@ -23,11 +23,11 @@ public class VersionCommand : AppCommand<VersionCommandArgs>
 
 	public override void Configure()
 	{
-		AddOption(new Option<bool>("--show-version", () => true, "displays the executing CLI version"), (args, i) => args.showVersion = i);
-		AddOption(new Option<bool>("--show-location", () => true, "displays the executing CLI install location"), (args, i) => args.showLocation = i);
-		AddOption(new Option<bool>("--show-templates", () => true, "displays available Beamable template version"), (args, i) => args.showTemplates = i);
-		AddOption(new Option<bool>("--show-type", () => true, "displays the executing CLI install type"), (args, i) => args.showType = i);
-		AddOption(new Option<string>("--output", () => "log", "how to display the information, anything other than log will print straight to console with no labels."), (args, i) => args.output = i);
+		AddOption(new Option<bool>("--show-version", () => true, "Displays the executing CLI version"), (args, i) => args.showVersion = i);
+		AddOption(new Option<bool>("--show-location", () => true, "Displays the executing CLI install location"), (args, i) => args.showLocation = i);
+		AddOption(new Option<bool>("--show-templates", () => true, "Displays available Beamable template version"), (args, i) => args.showTemplates = i);
+		AddOption(new Option<bool>("--show-type", () => true, "Displays the executing CLI install type"), (args, i) => args.showType = i);
+		AddOption(new Option<string>("--output", () => "log", "How to display the information, anything other than log will print straight to console with no labels."), (args, i) => args.output = i);
 	}
 
 	public override async Task Handle(VersionCommandArgs args)

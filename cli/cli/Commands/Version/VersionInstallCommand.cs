@@ -19,7 +19,7 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("version", () => "latest", "the version of the CLI to install"),
+		AddArgument(new Argument<string>("version", () => "latest", "The version of the CLI to install"),
 			(args, i) => args.version = i);
 	}
 
