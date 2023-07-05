@@ -1,5 +1,4 @@
-﻿using Beamable.Common;
-using cli.Services;
+﻿using cli.Services;
 using Newtonsoft.Json;
 using Serilog.Events;
 using Spectre.Console;
@@ -49,32 +48,15 @@ public class ServicesEnableCommand : AppCommand<ServicesEnableCommandArgs>
 	public override async Task Handle(ServicesEnableCommandArgs args)
 	{
 		_localBeamo = args.BeamoLocalSystem;
-		var hasAnyServices = _localBeamo.BeamoManifest.ServiceDefinitions.Count > 0;
-		if (!hasAnyServices)
-		{
-			BeamableLogger.LogError("There are no services in BeamoManifest.");
-		}
 
 		// Handle Beamo Id Option 
 		var existingBeamoIds = _localBeamo.BeamoManifest.ServiceDefinitions.Select(c => c.BeamoId).ToList();
-		if (string.IsNullOrEmpty(args.BeamoId))
 		{
-			args.BeamoId = AnsiConsole.Prompt(new SelectionPrompt<string>()
-				.Title("Choose the [lightskyblue1]Beamo-O Service[/] to Modify:").AddChoices(existingBeamoIds));
+			if (string.IsNullOrEmpty(args.BeamoId))
+				args.BeamoId = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Choose the [lightskyblue1]Beamo-O Service[/] to Modify:").AddChoices(existingBeamoIds));
 		}
 
-		var serviceDefinition = _localBeamo.BeamoManifest.ServiceDefinitions.FirstOrDefault(sd => sd.BeamoId == args.BeamoId);
-
-		if (serviceDefinition == null)
-		{
-			var root = new Tree($"Could not find find [bold][red]{args.BeamoId}[/][/] service. These are available services:");
-			foreach (var beamoServiceDefinition in _localBeamo.BeamoManifest.ServiceDefinitions)
-			{
-				root.AddNode($"[[{beamoServiceDefinition.Protocol.ToString()}]] [bold]{beamoServiceDefinition.BeamoId}[/]");
-			}
-			AnsiConsole.Write(root);
-			return;
-		}
+		var serviceDefinition = _localBeamo.BeamoManifest.ServiceDefinitions.First(sd => sd.BeamoId == args.BeamoId);
 
 		// For now, we only support enabling/disabling the HttpMicroservice protocol services --- TODO this should change in the future...
 		if (serviceDefinition.Protocol != BeamoProtocolType.HttpMicroservice)

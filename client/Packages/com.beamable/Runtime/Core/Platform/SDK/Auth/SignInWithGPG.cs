@@ -15,18 +15,16 @@ namespace Beamable.Platform.SDK.Auth
 	{
         /// <summary>
         /// Event for handling local login result.
-        /// It will be called only when using non static Login method.
         /// </summary>
 		public Action<bool> OnLoginResult;
 
         /// <summary>
         /// Event for handling server side token access result. 
-        /// It will be called only when using non static Login method.
         /// </summary>
 		public Action<bool, string> OnRequestServerSideAccessResult;
 
         /// <summary>
-        /// Property that controls if call for server side access will try to get token that could be useful for long lived access.
+        /// Property that controls if call for server side acces will try to get token that could be useful for long lived access.
         /// </summary>
 		public static bool ForceRefreshToken { get; set; } = true;
 
@@ -59,6 +57,7 @@ namespace Beamable.Platform.SDK.Auth
 			{
 				PlayGamesPlatform.Instance.Authenticate(status =>
 				{
+					OnLoginResult?.Invoke(status == SignInStatus.Success);
 					if (status == SignInStatus.Success)
 					{
 						promise.CompleteSuccess(SignInStatus.Success);
@@ -93,7 +92,6 @@ namespace Beamable.Platform.SDK.Auth
 
 		private void HandleAuthenticate(SignInStatus status)
 		{
-			OnLoginResult?.Invoke(status == SignInStatus.Success);
 			if(status == SignInStatus.Success)
 			{
 				RequestServerSideToken().Then(HandleRequestServerSideAccess);

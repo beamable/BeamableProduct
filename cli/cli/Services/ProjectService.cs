@@ -3,12 +3,8 @@ using Beamable.Common.Dependencies;
 using cli.Dotnet;
 using cli.Unreal;
 using CliWrap;
-using CliWrap.Buffered;
-using JetBrains.Annotations;
 using Serilog;
 using Spectre.Console;
-using System.Text;
-using System.Text.RegularExpressions;
 
 namespace cli.Services;
 
@@ -108,57 +104,6 @@ public class ProjectService
 			throw new CliException(
 				"Cannot access Beamable.Templates dotnet templates. Please install the Beamable templates and try again.");
 		}
-	}
-
-	public async Task<DotnetTemplateInfo> GetTemplateInfo()
-	{
-		var templateStream = new StringBuilder();
-		await Cli.Wrap("dotnet")
-			.WithArguments("new uninstall")
-			.WithValidation(CommandResultValidation.None)
-			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(templateStream))
-			.ExecuteBufferedAsync();
-
-		var info = new DotnetTemplateInfo();
-
-		var buffer = templateStream.ToString();
-		string pattern = @"Beamable\.Templates[\s\S]*?Version: (\d+\.\d+\.\d+)[\s\S]*?Templates:\n((?:\s{3}.*\(.*\)\s+C#\n)+)";
-		Regex regex = new Regex(pattern);
-
-		Match match = regex.Match(buffer);
-		if (match.Success)
-		{
-			string version = match.Groups[1].Value;
-			info.templateVersion = version.Trim();
-
-			string templates = match.Groups[2].Value;
-			foreach (Match templateMatch in Regex.Matches(templates, @"\s{3}(.*\(.*\))\s+C#"))
-			{
-				string template = templateMatch.Groups[1].Value;
-				info.templates.Add(template.Trim());
-			}
-		}
-		
-		
-		
-		// var lines = buffer.Split(Environment.NewLine);
-		// for (var i = 0; i < lines.Length; i++)
-		// {
-		// 	var line = lines[i];
-		// 	if (line.Contains("Beamable.Templates"))
-		// 	{
-		// 		
-		// 	}
-		// }
-		
-		return info;
-	}
-
-	public class DotnetTemplateInfo
-	{
-		public bool HasTemplates => !string.IsNullOrEmpty(templateVersion);
-		public string templateVersion;
-		public List<string> templates = new List<string>();
 	}
 
 	public async Task AddProjectReference(string slnFilePath, string project, string projectReference)
