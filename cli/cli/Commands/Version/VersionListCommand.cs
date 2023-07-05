@@ -12,7 +12,7 @@ public class VersionListCommandArgs : CommandArgs
 }
 public class VersionListCommand : AppCommand<VersionListCommandArgs>
 {
-	public VersionListCommand() : base("ps", "show the most recent available versions")
+	public VersionListCommand() : base("ps", "Show the most recent available versions")
 	{
 	}
 

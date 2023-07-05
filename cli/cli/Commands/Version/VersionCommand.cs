@@ -16,7 +16,7 @@ public class VersionCommandArgs : CommandArgs
 
 public class VersionCommand : AppCommand<VersionCommandArgs>
 {
-	public VersionCommand() : base("version", "commands for managing the CLI version")
+	public VersionCommand() : base("version", "Commands for managing the CLI version")
 	{
 		
 	}

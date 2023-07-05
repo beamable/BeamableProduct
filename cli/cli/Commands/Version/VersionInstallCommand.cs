@@ -12,7 +12,7 @@ public class VersionInstallCommandArgs : CommandArgs
 
 public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 {
-	public VersionInstallCommand() : base("install", "install a different version of the CLI")
+	public VersionInstallCommand() : base("install", "Install a different version of the CLI")
 	{
 		
 	}
