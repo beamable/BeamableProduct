@@ -1,9 +1,6 @@
-using Beamable.Common;
-using Beamable.Common.Runtime.Collections;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using Serilog;
-using Spectre.Console;
 
 namespace cli.Services;
 
@@ -19,19 +16,6 @@ public partial class BeamoLocalSystem
 
 	public async Task<ContainerInspectResponse> GetOrCreateMongoExpress(string storageId, string connectionString)
 	{
-		var hasImage = await _client.HasImageWithTag(MONGO_EXPRESS_IMAGE);
-		if (!hasImage)
-		{
-			BeamableLogger.Log($"Need to download {MONGO_EXPRESS_IMAGE}");
-			await AnsiConsole.Progress()
-				.StartAsync(async ctx => 
-				{
-					// Define tasks
-					var task = ctx.AddTask($"[green]Pulling {MONGO_EXPRESS_IMAGE}[/]");
-
-					await _client.PullAndCreateImage(MONGO_EXPRESS_IMAGE, f => task.Increment((f * 99) - task.Value));
-				});
-		}
 		var containerId = GetMongoExpressContainerNameFromStorageId(storageId);
 
 		try
@@ -94,4 +78,5 @@ public partial class BeamoLocalSystem
 		Log.Information($"Started: success=[{success}] name=[{res.Name}] container=[{container}]");
 		return res;
 	}
+
 }
