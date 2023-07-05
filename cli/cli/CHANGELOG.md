@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix issues with `ShowLoading` helper function caused by rethrowing
+- Pull `mongo-express` in `project open-mongo` command if needed 
+
+### Changed
+
+- If there is only one Microservice, `beam project open-swagger` work without passing Microservice ID
+- If there is only one Storage, `beam project open-mongo` work without passing Storage ID
 
 ## [1.16.1]
 
