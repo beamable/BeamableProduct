@@ -12,6 +12,7 @@ using cli.Dotnet;
 using cli.Services;
 using cli.Services.Content;
 using cli.Unreal;
+using cli.Version;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Core;
@@ -20,6 +21,7 @@ using Serilog.Sinks.SpectreConsole;
 using Spectre.Console;
 using System.CommandLine;
 using System.CommandLine.Builder;
+using System.CommandLine.Help;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 
@@ -88,6 +90,7 @@ public class App
 		services.AddTransient<DiscoveryService>();
 		services.AddSingleton<DocService>();
 		services.AddSingleton<CliGenerator>();
+		services.AddSingleton<VersionService>();
 
 		OpenApiRegistration.RegisterOpenApis(services);
 
@@ -172,6 +175,11 @@ public class App
 		Commands.AddCommand<CheckNBomberCommand, CheckNBomberCommandArgs, ProfilingCommand>();
 		Commands.AddCommand<RunNBomberCommand, RunNBomberCommandArgs, ProfilingCommand>();
 
+		// version commands
+		Commands.AddRootCommand<VersionCommand, VersionCommandArgs>();
+		Commands.AddCommand<VersionListCommand, VersionListCommandArgs, VersionCommand>();
+		Commands.AddCommand<VersionInstallCommand, VersionInstallCommandArgs, VersionCommand>();
+		
 		// org commands
 		Commands.AddRootCommand<OrganizationCommand, OrganizationCommandArgs>();
 		Commands.AddCommand<RegisterCommand, RegisterCommandArgs, OrganizationCommand>();
