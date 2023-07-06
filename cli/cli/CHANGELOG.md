@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - If there is only one Microservice, `beam project open-swagger` work without passing Microservice ID
 - If there is only one Storage, `beam project open-mongo` work without passing Storage ID
 
+### Changed
+
+- Add NET 7.0 as second target for CLI
+
 ## [1.16.1]
 
 ### Added
