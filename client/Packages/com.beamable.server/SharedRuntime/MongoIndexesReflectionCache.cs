@@ -118,9 +118,6 @@ namespace Beamable.Server
 
 				Type mongoCollectionType = typeof(IMongoCollection<>);
 				Type mongoCollectionGenericType = mongoCollectionType.MakeGenericType(data.Collection);
-				Type promiseGenericType = typeof(Promise<>).MakeGenericType(mongoCollectionGenericType);
-
-				MethodInfo getResultMethod = promiseGenericType.GetMethod(nameof(Promise.GetResult));
 
 				IEnumerable<Type> enumerable = typeof(MongoIndexesExtension).Assembly.GetTypes();
 				Type mongoDbExtensionsType = enumerable.First(t => t.Name == nameof(MongoIndexesExtension));
@@ -135,29 +132,38 @@ namespace Beamable.Server
 						getCollectionMethod?.MakeGenericMethod(data.Database, data.Collection);
 
 					object collectionGenericObject = getCollectionMethodGeneric?.Invoke(connectionProvider, null);
-					object convertedPromise = Convert.ChangeType(collectionGenericObject, promiseGenericType);
-					object extractedCollectionObject = getResultMethod?.Invoke(convertedPromise, null);
+
+					Promise promise = Convert(collectionGenericObject, mongoCollectionGenericType);
+					await promise;
+
+					MethodInfo resultFromPromiseMethod = GetType().GetMethod("GetResultFromPromise",
+						BindingFlags.Instance | BindingFlags.Public);
+					MethodInfo resultFromPromiseGeneric =
+						resultFromPromiseMethod?.MakeGenericMethod(mongoCollectionGenericType);
+					object collection = resultFromPromiseGeneric?.Invoke(this, new[] { collectionGenericObject });
 
 					foreach (MongoIndexDetails details in data.Indexes)
 					{
-						BeamableLogger.Log($"Index data: {details.IndexType}-{details.Field}-{details.IndexName}");
+						BeamableLogger.Log($"Creating index: {details.IndexType}-{details.Field}-{details.IndexName}");
 
-						var someResult = (Task)createSingleIndexMethodGeneric?.Invoke(extractedCollectionObject,
-						                                       new[]
-						                                       {
-							                                       extractedCollectionObject, details.IndexType,
-							                                       details.Field, details.IndexName
-						                                       });
-
-						if (someResult != null)
+						if (collection == null)
 						{
-							BeamableLogger.Log("someResult is not null");
-							await someResult.ConfigureAwait(false);
-							// var result = someResult.GetType().GetProperty("Result");
-							// var value = result.GetValue(someResult);
-
-							BeamableLogger.Log($"Index created");
+							continue;
 						}
+
+						var someResult = (Task)createSingleIndexMethodGeneric?.Invoke(collection,
+							new[]
+							{
+								collection, details.IndexType, details.Field, details.IndexName
+							});
+
+						if (someResult == null)
+						{
+							continue;
+						}
+
+						await someResult.ConfigureAwait(false);
+						BeamableLogger.Log($"Index: {details.IndexType}-{details.Field}-{details.IndexName} has been created");
 					}
 				}
 				catch (Exception e)
@@ -167,8 +173,28 @@ namespace Beamable.Server
 				}
 			}
 		}
-	}
 
+		public T GetResultFromPromise<T>(object promise)
+		{
+			Promise<T> convertedPromise = (Promise<T>)promise;
+			return convertedPromise.GetResult();
+		}
+
+		public async Promise Convert(object obj, Type elementType)
+		{
+			var genMethod = GetType().GetMethod(nameof(ConvertGeneric), BindingFlags.Instance | BindingFlags.Public);
+			var method = genMethod.MakeGenericMethod(elementType);
+			var res = method.Invoke(this, new object[]{obj});
+			var resPromise = (Promise)res;
+			await resPromise;
+		}
+		public async Promise ConvertGeneric<T>(object obj)
+		{
+			var cast = (Promise<T>)obj;
+			await cast;
+		}
+	}
+	
 	public class PendingMongoIndexData
 	{
 		public Type Database { get; set; }
