@@ -76,7 +76,7 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     concurrency:
-      group: cli-tests-${{ github.head_ref }}
+      group: cli-tests-${{ github.head_ref }}-${{ matrix.dotnet-version }}
       cancel-in-progress: true
     strategy:
       matrix:
