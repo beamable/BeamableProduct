@@ -1,6 +1,7 @@
 using cli.Services;
 using CliWrap;
 using Serilog;
+using Spectre.Console;
 using System.CommandLine;
 
 namespace cli.Version;
@@ -8,6 +9,7 @@ namespace cli.Version;
 public class VersionInstallCommandArgs : CommandArgs
 {
 	public string version;
+	public bool quiet;
 }
 
 public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
@@ -21,6 +23,10 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 	{
 		AddArgument(new Argument<string>("version", () => "latest", "The version of the CLI to install"),
 			(args, i) => args.version = i);
+		
+		var option = AddOption(new Option<bool>("--quiet", () => false, "When true, no prompts will be displayed"),
+			(args, i) => args.quiet = i);
+		option.AddAlias("-q");
 	}
 
 	public override async Task Handle(VersionInstallCommandArgs args)
@@ -48,14 +54,24 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 		if (packageVersion == null)
 		{
 			throw new CliException(
-				$"Given version is not available on Nuget. Use `beam version ps` to view available versions. version=[{args.version}]");
+				$"Given version is not available on Nuget. Use `beam version ls` to view available versions. version=[{args.version}]");
 		}
 
 		
 		if (args.Dryrun)
 		{
-			Log.Information($"Preventing install due to dry run. Would have installed version=[{packageVersion.originalVersion}]");
+			Log.Information($"Preventing install due to dry run. Would have installed version={packageVersion.originalVersion}");
 			return;
+		}
+
+		if (!args.quiet)
+		{
+			var shouldContinue = AnsiConsole.Prompt(new ConfirmationPrompt(
+				$"Are you sure you want to install Beam CLI Version={packageVersion.originalVersion}"));
+			if (!shouldContinue)
+			{
+				return;
+			}
 		}
 
 		await Cli.Wrap("dotnet")
