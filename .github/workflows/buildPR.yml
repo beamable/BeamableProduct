@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     concurrency:
-      group: base-microservice-nuget-${{ github.head_ref }}
+      group: base-microservice-nuget-${{ github.head_ref }}-${{ matrix.dotnet-version }}
       cancel-in-progress: true
     strategy:
       matrix:
@@ -48,7 +48,7 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     concurrency:
-      group: base-image-tests-${{ github.head_ref }}
+      group: base-image-tests-${{ github.head_ref }}-${{ matrix.dotnet-version }}
       cancel-in-progress: true
     strategy:
       matrix:
