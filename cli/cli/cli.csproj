@@ -82,8 +82,9 @@
   <Target Name="BuildCLIInterface" AfterTargets="Build" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true">
     <Message Importance="high" Text="$(OutDir)"/>
     <Message Importance="high" Text="$(PublishDir)"/>
-    <Exec Condition="'$(IsWindows)'!='true'" Command="./$(PublishDir)/$(AssemblyName) generate-interface --engine unity --output=../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
-    <Exec Condition="'$(IsWindows)'=='true'" Command=".\$(PublishDir)$(AssemblyName) generate-interface --engine unity --output=..\..\client\Packages\com.beamable\Editor\BeamCli\Commands" />
+    <Exec Condition="'$(IsWindows)'!='true'" Command="./$(OutDir)$(AssemblyName) --help" />
+    <Exec Condition="'$(IsWindows)'!='true'" Command="./$(OutDir)$(AssemblyName) generate-interface --engine unity --output=../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
+    <Exec Condition="'$(IsWindows)'=='true'" Command=".\$(OutDir)$(AssemblyName) generate-interface --engine unity --output=..\..\client\Packages\com.beamable\Editor\BeamCli\Commands" />
     <Exec Command="dotnet tool run dotnet-format ../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
 
   </Target>
