@@ -96,7 +96,7 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider
 		return arg;
 	}
 
-	protected void AddOption<T>(Option<T> arg, Action<TArgs, T> binder)
+	protected Option<T> AddOption<T>(Option<T> arg, Action<TArgs, T> binder)
 	{
 		ArgValidator<T> validator = CommandProvider.CanBuildService<ArgValidator<T>>()
 			? CommandProvider.GetService<ArgValidator<T>>()
@@ -125,6 +125,7 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider
 
 		_bindingActions.Add(set);
 		base.AddOption(arg);
+		return arg;
 	}
 
 	/// <summary>
