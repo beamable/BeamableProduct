@@ -1,8 +1,14 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
+using cli.Dotnet;
 using cli.Unreal;
 using CliWrap;
+using CliWrap.Buffered;
+using JetBrains.Annotations;
 using Serilog;
+using Spectre.Console;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace cli.Services;
 
@@ -30,7 +36,9 @@ public class ProjectData
 		public bool Equals(string other) => Path.Equals(other);
 		public bool Equals(Unreal other) => Path == other.Path;
 
-		public override bool Equals(object obj) => (obj is Unreal unreal && Equals(unreal)) || (obj is string unrealPath && Equals(unrealPath));
+		public override bool Equals(object obj) => (obj is Unreal unreal && Equals(unreal)) ||
+												   (obj is string unrealPath && Equals(unrealPath));
+
 		public override int GetHashCode() => (Path != null ? Path.GetHashCode() : 0);
 
 		public static bool operator ==(Unreal left, Unreal right) => left.Equals(right);
@@ -82,8 +90,8 @@ public class ProjectService
 			MsCoreCppPath = msPath,
 			MsBlueprintNodesHeaderPath = msBlueprintPath,
 			MsBlueprintNodesCppPath = msBlueprintPath,
-
-			BeamableBackendGenerationPassFile = relativePath + $"\\Plugins\\BeamableCore\\Source\\{UnrealSourceGenerator.currentGenerationPassDataFilePath}.json"
+			BeamableBackendGenerationPassFile = relativePath +
+												$"\\Plugins\\BeamableCore\\Source\\{UnrealSourceGenerator.currentGenerationPassDataFilePath}.json"
 		});
 		_configService.SaveDataFile(".linkedProjects", _projects);
 	}
@@ -97,8 +105,60 @@ public class ProjectService
 
 		if (!canUseTemplates)
 		{
-			throw new CliException("Cannot access Beamable.Templates dotnet templates. Please install the Beamable templates and try again.");
+			throw new CliException(
+				"Cannot access Beamable.Templates dotnet templates. Please install the Beamable templates and try again.");
 		}
+	}
+
+	public async Task<DotnetTemplateInfo> GetTemplateInfo()
+	{
+		var templateStream = new StringBuilder();
+		await Cli.Wrap("dotnet")
+			.WithArguments("new uninstall")
+			.WithValidation(CommandResultValidation.None)
+			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(templateStream))
+			.ExecuteBufferedAsync();
+
+		var info = new DotnetTemplateInfo();
+
+		var buffer = templateStream.ToString();
+		string pattern = @"Beamable\.Templates[\s\S]*?Version: (\d+\.\d+\.\d+)[\s\S]*?Templates:\n((?:\s{3}.*\(.*\)\s+C#\n)+)";
+		Regex regex = new Regex(pattern);
+
+		Match match = regex.Match(buffer);
+		if (match.Success)
+		{
+			string version = match.Groups[1].Value;
+			info.templateVersion = version.Trim();
+
+			string templates = match.Groups[2].Value;
+			foreach (Match templateMatch in Regex.Matches(templates, @"\s{3}(.*\(.*\))\s+C#"))
+			{
+				string template = templateMatch.Groups[1].Value;
+				info.templates.Add(template.Trim());
+			}
+		}
+		
+		
+		
+		// var lines = buffer.Split(Environment.NewLine);
+		// for (var i = 0; i < lines.Length; i++)
+		// {
+		// 	var line = lines[i];
+		// 	if (line.Contains("Beamable.Templates"))
+		// 	{
+		// 		
+		// 	}
+		// }
+		
+		return info;
+	}
+
+	public class DotnetTemplateInfo
+	{
+		public bool HasTemplates => !string.IsNullOrEmpty(templateVersion);
+		public string templateVersion;
+		public List<string> templates = new List<string>();
 	}
 
 	public async Task AddProjectReference(string slnFilePath, string project, string projectReference)
@@ -137,7 +197,8 @@ public class ProjectService
 			.ExecuteAsyncAndLog().Task;
 	}
 
-	public async Task<string> CreateNewSolution(string directory, string solutionName, string projectName, bool createCommonLibrary = true)
+	public async Task<string> CreateNewSolution(string directory, string solutionName, string projectName,
+		bool createCommonLibrary = true)
 	{
 		if (string.IsNullOrEmpty(directory))
 		{
@@ -169,7 +230,8 @@ public class ProjectService
 
 		// restore the microservice tools
 		await Cli.Wrap($"dotnet")
-			.WithArguments($"tool restore --tool-manifest \"{Path.Combine(projectName, ".config", "dotnet-tools.json")}\"")
+			.WithArguments(
+				$"tool restore --tool-manifest \"{Path.Combine(projectName, ".config", "dotnet-tools.json")}\"")
 			.ExecuteAsyncAndLog().Task;
 
 		// add the microservice to the solution
@@ -186,7 +248,8 @@ public class ProjectService
 
 			// restore the shared library tools
 			await Cli.Wrap($"dotnet")
-				.WithArguments($"tool restore --tool-manifest \"{Path.Combine(commonProjectPath, ".config", "dotnet-tools.json")}\"")
+				.WithArguments(
+					$"tool restore --tool-manifest \"{Path.Combine(commonProjectPath, ".config", "dotnet-tools.json")}\"")
 				.ExecuteAsyncAndLog().Task;
 
 			// add the shared library to the solution
@@ -201,6 +264,110 @@ public class ProjectService
 		}
 
 		return solutionPath;
+	}
+
+	public async Task<string> AddToSolution(string solutionName, string projectName, bool createCommonLibrary = true, bool skipSolutionCreation = false)
+	{
+		var solutionFile = $"{solutionName}.sln";
+		var solutionPath = Path.Combine(_configService.WorkingDirectory, solutionFile);
+		var rootServicesPath = "services";
+		var commonProjectName = $"{projectName}Common";
+		var projectPath = Path.Combine(rootServicesPath, projectName);
+		var commonProjectPath = Path.Combine(rootServicesPath, commonProjectName);
+
+		if (Directory.Exists(projectPath))
+		{
+			throw new CliException($"Project {projectName} already exists");
+		}
+
+		// check that we have the templates available 
+		await EnsureCanUseTemplates();
+
+		if (!skipSolutionCreation)
+		{
+			// create the beam microservice project
+			await Cli.Wrap($"dotnet")
+				.WithArguments($"new beamservice -n \"{projectName}\" -o \"{projectPath}\"")
+				.ExecuteAsyncAndLog().Task;
+
+			// restore the microservice tools
+			await Cli.Wrap($"dotnet")
+				.WithArguments(
+					$"tool restore --tool-manifest \"{Path.Combine(projectName, ".config", "dotnet-tools.json")}\"")
+				.ExecuteAsyncAndLog().Task;
+		}
+
+		// add the microservice to the solution
+		await Cli.Wrap($"dotnet")
+			.WithArguments($"sln \"{solutionPath}\" add \"{projectPath}\"")
+			.ExecuteAsyncAndLog().Task;
+
+		// create the shared library project only if requested
+		if (createCommonLibrary)
+		{
+			await Cli.Wrap($"dotnet")
+				.WithArguments($"new beamlib -n \"{commonProjectName}\" -o \"{commonProjectPath}\"")
+				.ExecuteAsyncAndLog().Task;
+
+			// restore the shared library tools
+			await Cli.Wrap($"dotnet")
+				.WithArguments(
+					$"tool restore --tool-manifest \"{Path.Combine(commonProjectPath, ".config", "dotnet-tools.json")}\"")
+				.ExecuteAsyncAndLog().Task;
+
+			// add the shared library to the solution
+			await Cli.Wrap($"dotnet")
+				.WithArguments($"sln \"{solutionPath}\" add \"{commonProjectPath}\"")
+				.ExecuteAsyncAndLog().Task;
+
+			// add the shared library as a reference of the project
+			await Cli.Wrap($"dotnet")
+				.WithArguments($"add \"{projectPath}\" reference \"{commonProjectPath}\"")
+				.ExecuteAsyncAndLog().Task;
+		}
+
+		return projectPath;
+	}
+
+	public async void CreateCommon(string projectName, string dockerfilePath, string dockerBuildContextPath)
+	{
+		var commonProjectName = $"{projectName}Common";
+		Log.Information("Docker file path is {DockerfilePath}", dockerfilePath);
+		var serviceFolder = Path.GetDirectoryName(dockerfilePath);
+		Log.Information("Docker file folder is {DockerFileFolder}", serviceFolder);
+
+		dockerfilePath = Path.Combine(dockerBuildContextPath, dockerfilePath);
+		var dockerfileText = await File.ReadAllTextAsync(dockerfilePath);
+
+		const string search =
+			"# <BEAM-CLI-INSERT-FLAG:COPY_COMMON> do not delete this line. It is used by the beam CLI to insert custom actions";
+		var replacement = @$"WORKDIR /subsrc/{commonProjectName}
+COPY {commonProjectName}/. .
+{search}";
+		dockerfileText = dockerfileText.Replace(search, replacement);
+		await File.WriteAllTextAsync(dockerfilePath, dockerfileText);
+	}
+
+	public async Task LinkProjects(AddUnityClientOutputCommand addUnityCommand, AddUnrealClientOutputCommand addUnrealCommand, IServiceProvider provider)
+	{
+		// ask if we should link a Unity project
+		var addUnityProject = AnsiConsole.Confirm(
+			"Would you like to link a Unity project? A linked Unity project will receive autogenerated client updates.",
+			true);
+		if (addUnityProject)
+		{
+			await addUnityCommand.Handle(new AddUnityClientOutputCommandArgs { path = ".", Provider = provider });
+		}
+
+		// ask if we should link a Unreal project
+		var addUnrealProject = AnsiConsole.Confirm(
+			"Would you like to link an Unreal project? A linked Unreal project will receive autogenerated client updates.",
+			true);
+		if (addUnrealProject)
+		{
+			await addUnrealCommand.Handle(
+				new AddUnrealClientOutputCommandArgs() { path = ".", Provider = provider });
+		}
 	}
 }
 

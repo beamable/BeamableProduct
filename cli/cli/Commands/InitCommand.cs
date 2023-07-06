@@ -122,6 +122,7 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 		_ctx.Set(cid, null, host);
 		_configService.SetBeamableDirectory(_ctx.WorkingDirectory);
 		_configService.FlushConfig();
+		_configService.CreateIgnoreFile();
 
 		var pid = await PickGameAndRealm(args);
 		if (string.IsNullOrWhiteSpace(pid))
@@ -144,9 +145,9 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 			await _loginCommand.Handle(args);
 			return _loginCommand.Successful;
 		}
-		catch
+		catch (Exception ex)
 		{
-			BeamableLogger.LogError("Login failed. Init aborted.");
+			BeamableLogger.LogError("Login failed. Init aborted. " + ex.Message);
 			return false;
 		}
 	}

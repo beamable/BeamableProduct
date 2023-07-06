@@ -8,6 +8,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	public class BeamServiceListResult
 	{
 		public bool IsLocal;
+		public bool IsDockerRunning;
 		public System.Collections.Generic.List<string> BeamoIds;
 		public System.Collections.Generic.List<bool> ShouldBeEnabledOnRemote;
 		public System.Collections.Generic.List<bool> RunningState;

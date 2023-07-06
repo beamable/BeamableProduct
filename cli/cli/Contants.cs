@@ -4,17 +4,29 @@ public static class Constants
 {
 	public const string CONFIG_FOLDER = ".beamable";
 	public const string CONFIG_DEFAULTS_FILE_NAME = "config-defaults.json";
+	public const string CONFIG_IGNORE_FILE_NAME = ".gitignore";
 	public const string CONFIG_TOKEN_FILE_NAME = "user-token.json";
+	
+	/// <summary>
+	/// The full-path to where we are storing the <see cref="BeamoManifest"/>.
+	/// TODO: This part will get abstracted out --- probably into <see cref="ConfigService"/> --- so that we can move this to the Beamable.Common library or some shared space.
+	/// </summary>
+	// private readonly string _beamoLocalManifestFile;
+	public const string BEAMO_LOCAL_MANIFEST_FILE_NAME = "beamoLocalManifest";
+
+	/// <summary>
+	/// The full-path to where we are storing the <see cref="BeamoRuntime"/> data. We need to serialize runtime data as, in most cases, we'll need to survive domain reloads or multiple runs of the cli.
+	/// TODO: This part will get abstracted out --- probably into <see cref="ConfigService"/> --- so that we can move this to the Beamable.Common library or some shared space.
+	/// </summary>
+	// private readonly string _beamoLocalRuntimeFile;
+	public const string BEAMO_LOCAL_RUNTIME_FILE_NAME = "beamoLocalRuntime";
+	
+	public static readonly string[] FILES_TO_IGNORE = new []{CONFIG_TOKEN_FILE_NAME, BEAMO_LOCAL_MANIFEST_FILE_NAME,BEAMO_LOCAL_RUNTIME_FILE_NAME };
 
 	public const string PLATFORM_DEV = "https://dev.api.beamable.com";
 	public const string PLATFORM_STAGING = "https://staging.api.beamable.com";
 	public const string PLATFORM_PRODUCTION = "https://api.beamable.com";
 	public const string DEFAULT_PLATFORM = PLATFORM_PRODUCTION;
-
-	public const string DOCKER_REGISTRY_DEV = "https://dev-microservices.beamable.com/v2/";
-	public const string DOCKER_REGISTRY_STAGING = "https://staging-microservices.beamable.com/v2/";
-	public const string DOCKER_REGISTRY_PRODUCTION = "https://microservices.beamable.com/v2/";
-
 	public const string CONFIG_CID = "cid";
 	public const string CONFIG_PID = "pid";
 	public const string CONFIG_DIR = "dir";

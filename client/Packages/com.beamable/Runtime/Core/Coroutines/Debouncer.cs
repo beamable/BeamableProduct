@@ -25,8 +25,14 @@ namespace Beamable.Coroutines
 		}
 	}
 
+	public abstract class DebounceService
+	{
+		public const float DEFAULT_DEBOUNCE_TIME_SECONDS = .3f;
+	}
 
-	public abstract class DebounceService<T> where T : Delegate
+
+	public abstract class DebounceService<T> : DebounceService
+		where T : Delegate
 	{
 		private readonly CoroutineService _coroutineService;
 
@@ -54,7 +60,7 @@ namespace Beamable.Coroutines
 		{
 			if (bouncer == null)
 			{
-				bouncer = new WaitForSecondsRealtime(.3f); // TODO: is this the right default?
+				bouncer = new WaitForSecondsRealtime(DEFAULT_DEBOUNCE_TIME_SECONDS); // TODO: is this the right default?
 			}
 
 			if (!_actionToYielder.TryGetValue(action, out var instruction))

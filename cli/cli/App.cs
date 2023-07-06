@@ -7,10 +7,12 @@ using Beamable.Common.Dependencies;
 using Beamable.Common.Semantics;
 using cli.Commands.Project;
 using cli.Content;
+using cli.Docs;
 using cli.Dotnet;
 using cli.Services;
 using cli.Services.Content;
 using cli.Unreal;
+using cli.Version;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Core;
@@ -19,6 +21,7 @@ using Serilog.Sinks.SpectreConsole;
 using Spectre.Console;
 using System.CommandLine;
 using System.CommandLine.Builder;
+using System.CommandLine.Help;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 
@@ -40,16 +43,16 @@ public class App
 
 	public bool IsBuilt => CommandProvider != null;
 
-	private static void ConfigureLogging()
+	private static void ConfigureLogging(Func<LoggerConfiguration, ILogger> configureLogger = null)
 	{
 		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
 		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
 
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
-		Log.Logger = new LoggerConfiguration()
-			.WriteTo.SpectreConsole("{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}")
+		configureLogger ??= config => config.WriteTo.SpectreConsole("{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}")
 			.MinimumLevel.ControlledBy(LogLevel)
 			.CreateLogger();
+		Log.Logger = configureLogger(new LoggerConfiguration());
 
 		BeamableLogProvider.Provider = new CliSerilogProvider();
 		CliSerilogProvider.LogContext.Value = Log.Logger;
@@ -85,17 +88,25 @@ public class App
 		services.AddSingleton<UnityCliGenerator>();
 		services.AddSingleton<UnrealCliGenerator>();
 		services.AddTransient<DiscoveryService>();
+		services.AddSingleton<DocService>();
+		services.AddSingleton<CliGenerator>();
+		services.AddSingleton<VersionService>();
+
 		OpenApiRegistration.RegisterOpenApis(services);
 
 		_serviceConfigurator?.Invoke(services);
 	}
 
-	public virtual void Configure(Action<IDependencyBuilder> serviceConfigurator = null, Action<IDependencyBuilder> commandConfigurator = null)
+	public virtual void Configure(
+		Action<IDependencyBuilder> serviceConfigurator = null,
+		Action<IDependencyBuilder> commandConfigurator = null,
+		Func<LoggerConfiguration, ILogger> configureLogger = null
+		)
 	{
 		if (IsBuilt)
 			throw new InvalidOperationException("The app has already been built, and cannot be configured anymore");
 
-		ConfigureLogging();
+		ConfigureLogging(configureLogger);
 
 		Commands.AddSingleton(new ArgValidator<ServiceName>(arg => new ServiceName(arg)));
 
@@ -144,11 +155,13 @@ public class App
 		Commands.AddCommand<AddUnrealClientOutputCommand, AddUnrealClientOutputCommandArgs, ProjectCommand>();
 		Commands.AddCommand<ShareCodeCommand, ShareCodeCommandArgs, ProjectCommand>();
 		Commands.AddCommand<CheckStatusCommand, CheckStatusCommandArgs, ProjectCommand>();
+		Commands.AddCommand<AddServiceToSolutionCommand, AddServiceToSolutionCommandArgs, ProjectCommand>();
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Commands.AddRootCommand<BaseRequestGetCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestPutCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestPostCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestDeleteCommand, BaseRequestArgs>();
+		Commands.AddRootCommand<GenerateDocsCommand, GenerateDocsCommandArgs>();
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Commands.AddCommand<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
 		Commands.AddCommand<ConfigGetSecret, ConfigGetSecretArgs, ConfigCommand>();
@@ -162,6 +175,11 @@ public class App
 		Commands.AddCommand<CheckNBomberCommand, CheckNBomberCommandArgs, ProfilingCommand>();
 		Commands.AddCommand<RunNBomberCommand, RunNBomberCommandArgs, ProfilingCommand>();
 
+		// version commands
+		Commands.AddRootCommand<VersionCommand, VersionCommandArgs>();
+		Commands.AddCommand<VersionListCommand, VersionListCommandArgs, VersionCommand>();
+		Commands.AddCommand<VersionInstallCommand, VersionInstallCommandArgs, VersionCommand>();
+		
 		// org commands
 		Commands.AddRootCommand<OrganizationCommand, OrganizationCommandArgs>();
 		Commands.AddCommand<RegisterCommand, RegisterCommandArgs, OrganizationCommand>();

@@ -2,6 +2,7 @@
 using Beamable.UI.Sdf;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -87,9 +88,14 @@ namespace Beamable.UI.Buss
 		{
 			PutAssetReferencesInReferenceList();
 		}
+
+		[Conditional("UNITY_EDITOR")]
 		private void OnValidate()
 		{
-			TriggerChange();
+			if (!Application.isPlaying)
+			{
+				TriggerChange();
+			}
 		}
 
 		public void OnAfterDeserialize()
