@@ -21,7 +21,7 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<ServiceName>("service-name",()=>new ServiceName(),"Name of the storage to open mongo-express to"), (arg, i) => arg.storageName = i);
+		AddArgument(new Argument<ServiceName>("service-name", () => new ServiceName(), "Name of the storage to open mongo-express to"), (arg, i) => arg.storageName = i);
 	}
 
 	public override async Task Handle(OpenMongoExpressCommandArgs args)
