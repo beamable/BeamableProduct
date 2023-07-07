@@ -274,6 +274,10 @@ public struct UnrealEndpointDeclaration
 				{
 					return $"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), *static_cast<FString>({routeParameterDeclaration.PropertyName}));";
 				}
+				else if (UnrealSourceGenerator.UNREAL_GUID.Contains(routeParameterDeclaration.PropertyUnrealType))
+				{
+					return $"Route = Route.Replace(TEXT(\"{{id}}\"), *Id.ToString(EGuidFormats::DigitsLower));";
+				}
 
 				// We fail the gen loudly if we ever see a type that doesn't match this. It should be impossible.
 				throw new NotImplementedException("No definition for how to embed a path parameter of this type into the route string. Please add a conditional to handle this case.");
