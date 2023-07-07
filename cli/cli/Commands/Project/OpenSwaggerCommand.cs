@@ -20,7 +20,7 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<ServiceName>("service-name",()=> new ServiceName(), "Name of the service to open swagger to"), (arg, i) => arg.serviceName = i);
+		AddArgument(new Argument<ServiceName>("service-name", () => new ServiceName(), "Name of the service to open swagger to"), (arg, i) => arg.serviceName = i);
 		AddOption(new Option<bool>("--remote", "If passed, swagger will open to the remote version of this service. Otherwise, it will try and use the local version"), (arg, i) => arg.isRemote = i);
 	}
 

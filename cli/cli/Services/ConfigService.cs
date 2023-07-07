@@ -159,7 +159,7 @@ public class ConfigService
 	{
 		if (string.IsNullOrEmpty(ConfigFilePath))
 			throw new CliException("No beamable project exists. Please use beam init");
-		
+
 		string ignoreFilePath = Path.Combine(ConfigFilePath, Constants.CONFIG_IGNORE_FILE_NAME);
 		if (File.Exists(ignoreFilePath))
 			return;
@@ -171,7 +171,7 @@ public class ConfigService
 			builder.Append(fileName.EndsWith(".json") ? fileName : fileName + ".json");
 			builder.Append(Environment.NewLine);
 		}
-		File.WriteAllText(ignoreFilePath,builder.ToString());
+		File.WriteAllText(ignoreFilePath, builder.ToString());
 	}
 
 	public bool ReadTokenFromFile(out CliToken response)

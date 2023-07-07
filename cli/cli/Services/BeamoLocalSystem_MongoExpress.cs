@@ -24,7 +24,7 @@ public partial class BeamoLocalSystem
 		{
 			BeamableLogger.Log($"Need to download {MONGO_EXPRESS_IMAGE}");
 			await AnsiConsole.Progress()
-				.StartAsync(async ctx => 
+				.StartAsync(async ctx =>
 				{
 					// Define tasks
 					var task = ctx.AddTask($"[green]Pulling {MONGO_EXPRESS_IMAGE}[/]");
