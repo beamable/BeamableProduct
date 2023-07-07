@@ -138,9 +138,9 @@ public class ProjectService
 				info.templates.Add(template.Trim());
 			}
 		}
-		
-		
-		
+
+
+
 		// var lines = buffer.Split(Environment.NewLine);
 		// for (var i = 0; i < lines.Length; i++)
 		// {
@@ -150,7 +150,7 @@ public class ProjectService
 		// 		
 		// 	}
 		// }
-		
+
 		return info;
 	}
 
