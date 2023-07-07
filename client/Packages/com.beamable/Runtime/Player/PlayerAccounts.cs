@@ -1157,6 +1157,43 @@ namespace Beamable.Player
 			return RecoverAccount((auth, merge) => auth.LoginThirdParty(thirdParty, token, merge));
 		}
 
+
+		/// <summary>
+		/// Find an existing account by a <see cref="TokenResponse"/>.
+		///
+		/// Depending on the state of the realm, this method may produce different behaviour.
+		/// The returned <see cref="PlayerRecoveryOperation"/> will either contain the <see cref="PlayerAccount"/>
+		/// for the given <see cref="TokenResponse"/>, or it will have a <see cref="PlayerRecoveryError"/> value.
+		///
+		/// </summary>
+		/// <param name="tokenResponse">
+		/// The auth token.
+		/// </param>
+		/// <returns>A <see cref="PlayerRecoveryOperation"/> containing the <see cref="PlayerAccount"/> or a <see cref="PlayerRecoveryError"/> value.</returns>
+		public Promise<PlayerRecoveryOperation> RecoverAccountWithRefreshToken(
+			TokenResponse tokenResponse)
+		{
+			return RecoverAccountWithRefreshToken(tokenResponse.refresh_token);
+		}
+		
+		/// <summary>
+		/// Find an existing account by a refresh token from a <see cref="TokenResponse"/>.
+		///
+		/// Depending on the state of the realm, this method may produce different behaviour.
+		/// The returned <see cref="PlayerRecoveryOperation"/> will either contain the <see cref="PlayerAccount"/>
+		/// for the given <see cref="TokenResponse"/>, or it will have a <see cref="PlayerRecoveryError"/> value.
+		///
+		/// </summary>
+		/// <param name="refreshToken">
+		/// The refresh token from a <see cref="TokenResponse"/>.
+		/// </param>
+		/// <returns>A <see cref="PlayerRecoveryOperation"/> containing the <see cref="PlayerAccount"/> or a <see cref="PlayerRecoveryError"/> value.</returns>
+		public Promise<PlayerRecoveryOperation> RecoverAccountWithRefreshToken(
+			string refreshToken)
+		{
+			return RecoverAccount((auth, _) => auth.LoginRefreshToken(refreshToken));
+		}
+
 		private async Promise<PlayerRecoveryOperation> RecoverAccount(
 			Func<IAuthService, bool, Promise<TokenResponse>> loginFunction)
 		{
