@@ -16,14 +16,14 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 {
 	public VersionInstallCommand() : base("install", "Install a different version of the CLI")
 	{
-		
+
 	}
 
 	public override void Configure()
 	{
 		AddArgument(new Argument<string>("version", () => "latest", "The version of the CLI to install"),
 			(args, i) => args.version = i);
-		
+
 		var option = AddOption(new Option<bool>("--quiet", () => false, "When true, no prompts will be displayed"),
 			(args, i) => args.quiet = i);
 		option.AddAlias("-q");
@@ -41,7 +41,7 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 				$"Use the `dotnet tool` suite of commands to manage the install. " +
 				$"Use `beam version` to discover where this Beam CLI install is located. ");
 		}
-		
+
 		var data = await service.GetBeamableToolPackageVersions();
 
 		var packageVersion = args.version?.ToLower() switch
@@ -57,7 +57,7 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 				$"Given version is not available on Nuget. Use `beam version ls` to view available versions. version=[{args.version}]");
 		}
 
-		
+
 		if (args.Dryrun)
 		{
 			Log.Information($"Preventing install due to dry run. Would have installed version={packageVersion.originalVersion}");
@@ -78,7 +78,7 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 			.WithArguments($"tool update Beamable.Tools --global --version {packageVersion.originalVersion}")
 			.WithValidation(CommandResultValidation.ZeroExitCode)
 			.ExecuteAsyncAndLog();
-		
+
 		Log.Information($"Beam CLI version=[{packageVersion.originalVersion}] installed successfully as a global tool. Use `beam version` or `beam --version` to verify.");
 	}
 

@@ -1175,7 +1175,7 @@ namespace Beamable.Player
 		{
 			return RecoverAccountWithRefreshToken(tokenResponse.refresh_token);
 		}
-		
+
 		/// <summary>
 		/// Find an existing account by a refresh token from a <see cref="TokenResponse"/>.
 		///

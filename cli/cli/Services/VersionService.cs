@@ -26,7 +26,7 @@ public class VersionService
 		public string packageVersion;
 	}
 
-	public async Task<NugetPackages[]> GetBeamableToolPackageVersions(string packageName="beamable.tools")
+	public async Task<NugetPackages[]> GetBeamableToolPackageVersions(string packageName = "beamable.tools")
 	{
 		var url = $"https://api.nuget.org/v3-flatcontainer/{packageName}/index.json";
 		var message = await _httpClient.GetAsync(url);
@@ -51,7 +51,7 @@ public class VersionService
 		}
 
 		return packageVersions;
-		
+
 	}
 
 	public async Task<VersionInfo> GetInformationData()
@@ -65,7 +65,7 @@ public class VersionService
 
 		var templateInfo = await _projectService.GetTemplateInfo();
 		info.templateVersion = templateInfo.HasTemplates ? templateInfo.templateVersion : "<no templates installed>";
-		
+
 		var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 		var globalToolsDir = Path.Combine(homeDir, ".dotnet", "tools");
 		if (info.location?.StartsWith(globalToolsDir) ?? false)

@@ -45,7 +45,7 @@ public class VersionListCommand : AppCommand<VersionListCommandArgs>
 				return;
 		}
 
-		
+
 		var set = data.TakeLast(args.limit).Reverse();
 
 		foreach (var q in set)

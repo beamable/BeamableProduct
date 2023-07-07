@@ -179,7 +179,7 @@ public class App
 		Commands.AddRootCommand<VersionCommand, VersionCommandArgs>();
 		Commands.AddCommand<VersionListCommand, VersionListCommandArgs, VersionCommand>();
 		Commands.AddCommand<VersionInstallCommand, VersionInstallCommandArgs, VersionCommand>();
-		
+
 		// org commands
 		Commands.AddRootCommand<OrganizationCommand, OrganizationCommandArgs>();
 		Commands.AddCommand<RegisterCommand, RegisterCommandArgs, OrganizationCommand>();
