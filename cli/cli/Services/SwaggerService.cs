@@ -754,7 +754,7 @@ public class SwaggerService
 			var referencedSchemas = new Dictionary<string, OpenApiSchema>();
 			var schemasToExplore = new Queue<OpenApiSchema>();
 
-			if(tagsToSkip.Contains(tagToPathSet.Key))
+			if (tagsToSkip.Contains(tagToPathSet.Key))
 				continue;
 			clonedDocument.Info.Title = $"{tagToPathSet.Key} Actor";
 			clonedDocument.Components = new OpenApiComponents();

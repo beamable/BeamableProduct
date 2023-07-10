@@ -61,7 +61,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	public const string UNREAL_OPTIONAL_U_SEMTYPE_CONTENTMANIFESTID = $"{UNREAL_OPTIONAL}BeamContentManifestId";
 	public const string UNREAL_OPTIONAL_U_SEMTYPE_CONTENTID = $"{UNREAL_OPTIONAL}BeamContentId";
 	public const string UNREAL_OPTIONAL_U_SEMTYPE_STATSTYPE = $"{UNREAL_OPTIONAL}BeamStatsType";
-	
+
 
 	public static readonly List<string> UNREAL_ALL_SEMTYPES = new()
 	{
@@ -98,7 +98,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		GetNamespacedTypeNameFromUnrealType(UNREAL_U_REPTYPE_CLIENTPERMISSION),
 	};
 	// End of Replacement Types
-	
+
 	public const string UNREAL_U_BEAM_PLAIN_TEXT_RESPONSE_TYPE = "UBeamPlainTextResponseBody*";
 	private const string EXTENSION_BEAMABLE_SEMANTIC_TYPE = "x-beamable-semantic-type";
 
@@ -134,7 +134,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	{
 		{ "UOneOf_UContentReference_UTextReference_UBinaryReference*", "UBaseContentReference*" },
 		{ "UOneOf_UCronTrigger_UExactTrigger*", "UBeamJobTrigger*" },
-		{ "UOneOf_UHttpCall_UPublishMessage_UServiceCall*", "UBeamJobType*"}
+		{ "UOneOf_UHttpCall_UPublishMessage_UServiceCall*", "UBeamJobType*" }
 	};
 
 	/// <summary>
@@ -201,8 +201,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	public static PreviousGenerationPassesData previousGenerationPassesData = new();
 
 	public enum GenerationType { BasicObject, Microservice }
-	
-	public enum ServiceType {Basic, Object, Api}
+
+	public enum ServiceType { Basic, Object, Api }
 
 	public static GenerationType genType = GenerationType.BasicObject;
 
@@ -468,10 +468,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 		// Allocate a list to keep track of all Schema types that we have already declared.
 		var listOfDeclaredTypes = new List<string>(namedOpenApiSchemata.Count);
-		
+
 		// Add replacement types so that we don't generate them when we see them
 		listOfDeclaredTypes.AddRange(UNREAL_ALL_REPTYPES_NAMESPACED_NAMES);
-		
+
 		// Convert the schema into the generation format
 		foreach (var namedOpenApiSchema in namedOpenApiSchemata)
 		{
@@ -770,7 +770,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			foreach (OpenApiDocument openApiDocument in documents)
 			{
 				GetNamespacedServiceNameFromApiDoc(openApiDocument.Info, out var serviceTitle, out _);
-				
+
 				var serviceType = GetServiceTypeFromDocTitle(serviceTitle);
 				foreach ((string endpointPath, OpenApiPathItem endpoint) in openApiDocument.Paths)
 				{
@@ -980,7 +980,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					// Find the service type from the document
 					var serviceType = GetServiceTypeFromDocTitle(serviceTitle);
 					if (isMsGen) serviceType = ServiceType.Basic; // We are never an object/api service if we are generating Microservice client code.
-					
+
 					if (genType == GenerationType.BasicObject)
 					{
 						unrealEndpoint.GlobalNamespacedEndpointName =
@@ -1000,8 +1000,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					unrealEndpoint.NamespacedOwnerServiceName = unrealServiceDecl.SubsystemName;
 					// TODO: For now, we make all non-basic endpoints require auth. This is due to certain endpoints' OpenAPI spec not being correctly generated. We also need to correctly generate the server-only services in UE at a future date.
 					unrealEndpoint.IsAuth = serviceType != ServiceType.Basic ||
-					                        serviceTitle.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
-					                        endpointData.Security[0].Any(kvp => kvp.Key.Reference.Id == "user");
+											serviceTitle.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
+											endpointData.Security[0].Any(kvp => kvp.Key.Reference.Id == "user");
 					unrealEndpoint.EndpointName = endpointPath;
 					unrealEndpoint.EndpointRoute = isMsGen ? $"micro_{openApiDocument.Info.Title}{endpointPath}" : endpointPath;
 					unrealEndpoint.EndpointVerb = operationType switch
@@ -1373,7 +1373,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		nameRelevantPath = nameRelevantPath.Substring(nameRelevantPath.IndexOf('/') + 1);
 
 		var methodName = SwaggerService.FormatPathNameAsMethodName(nameRelevantPath);
-		
+
 		// Capitalize the name
 		methodName = methodName.Length > 1 ? methodName.Capitalize() : methodName;
 
@@ -1531,11 +1531,11 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				return nonOverridenUnrealType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_CONTENTID : UNREAL_U_SEMTYPE_CONTENTID;
 			case (_, _, _, "StatsType"):
 				return nonOverridenUnrealType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_STATSTYPE : UNREAL_U_SEMTYPE_STATSTYPE;
-			
+
 			// Handle replacement types (types that we replace by hand-crafted types inside the SDK)
 			case var (_, _, referenceId, _) when !string.IsNullOrEmpty(referenceId) && referenceId.Equals("ClientPermission", StringComparison.InvariantCultureIgnoreCase):
 				return nonOverridenUnrealType = isOptional ? UNREAL_OPTIONAL_U_REPTYPE_CLIENTPERMISSION : UNREAL_U_REPTYPE_CLIENTPERMISSION;
-			
+
 			// Handles any field of any existing Schema Types
 			case var (_, _, _, _) when isPolymorphicWrapper:
 			{
@@ -1550,7 +1550,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					{
 						var val = defaults.Default as OpenApiString;
 						if (polymorphicWrappedSchemaExpectedTypeValues.TryGetValue(wrappedUnrealType, out var existing) &&
-						    (existing != val?.Value && existing != openApiSchema.Reference.Id.Sanitize()))
+							(existing != val?.Value && existing != openApiSchema.Reference.Id.Sanitize()))
 							throw new Exception(
 								"Found a wrapped type that is currently used in two different ways. We don't support that cause it doesn't make a lot of sense. You should never see this.");
 
@@ -1835,10 +1835,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 			if (unrealType.StartsWith(UNREAL_U_SEMTYPE_STATSTYPE))
 				return @"#include ""BeamBackend/SemanticTypes/BeamStatsType.h""";
-			
+
 			if (unrealType.StartsWith(UNREAL_U_REPTYPE_CLIENTPERMISSION))
-				return @"#include ""BeamBackend/ReplacementTypes/BeamClientPermission.h""";	
-			
+				return @"#include ""BeamBackend/ReplacementTypes/BeamClientPermission.h""";
+
 		}
 
 		// Then, go over all generated types
