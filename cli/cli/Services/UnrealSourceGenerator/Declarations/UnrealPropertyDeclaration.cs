@@ -44,7 +44,7 @@ public struct UnrealPropertyDeclaration
 		helperDict.Add(nameof(NonOptionalTypeName), NonOptionalTypeName);
 		helperDict.Add(nameof(NonOptionalTypeNameRelevantTemplateParam), NonOptionalTypeNameRelevantTemplateParam);
 		helperDict.Add(nameof(BriefCommentString), BriefCommentString);
-		
+
 		if (string.IsNullOrEmpty(SemTypeSerializationType))
 			SemTypeSerializationType = UnrealSourceGenerator.UNREAL_STRING;
 		helperDict.Add(nameof(SemTypeSerializationType), SemTypeSerializationType);
