@@ -62,6 +62,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	public const string UNREAL_OPTIONAL_U_SEMTYPE_CONTENTID = $"{UNREAL_OPTIONAL}BeamContentId";
 	public const string UNREAL_OPTIONAL_U_SEMTYPE_STATSTYPE = $"{UNREAL_OPTIONAL}BeamStatsType";
 
+
 	public static readonly List<string> UNREAL_ALL_SEMTYPES = new()
 	{
 		UNREAL_U_SEMTYPE_CID,
@@ -84,6 +85,19 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		GetNamespacedTypeNameFromUnrealType(UNREAL_U_SEMTYPE_STATSTYPE),
 	};
 	// End of Semantic Types
+
+	// Start of Replacement Types
+	public const string UNREAL_U_REPTYPE_CLIENTPERMISSION = "FBeamClientPermission";
+	public const string UNREAL_OPTIONAL_U_REPTYPE_CLIENTPERMISSION = $"{UNREAL_OPTIONAL}BeamClientPermission";
+	public static readonly List<string> UNREAL_ALL_REPTYPES = new()
+	{
+		UNREAL_U_REPTYPE_CLIENTPERMISSION
+	};
+	public static readonly List<string> UNREAL_ALL_REPTYPES_NAMESPACED_NAMES = new()
+	{
+		GetNamespacedTypeNameFromUnrealType(UNREAL_U_REPTYPE_CLIENTPERMISSION),
+	};
+	// End of Replacement Types
 
 	public const string UNREAL_U_BEAM_PLAIN_TEXT_RESPONSE_TYPE = "UBeamPlainTextResponseBody*";
 	private const string EXTENSION_BEAMABLE_SEMANTIC_TYPE = "x-beamable-semantic-type";
@@ -116,7 +130,12 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// Things like Optionals, BeamArray/Map and any polymorphic type (schema containing 'OneOf').
 	/// TODO: Over time, we should probably move this into its own partial file of this type.
 	/// </summary>
-	public static readonly Dictionary<string, string> UNREAL_TYPES_OVERRIDES = new() { { "UOneOf_UContentReference_UTextReference_UBinaryReference*", "UBaseContentReference*" } };
+	public static readonly Dictionary<string, string> UNREAL_TYPES_OVERRIDES = new()
+	{
+		{ "UOneOf_UContentReference_UTextReference_UBinaryReference*", "UBaseContentReference*" },
+		{ "UOneOf_UCronTrigger_UExactTrigger*", "UBeamJobTrigger*" },
+		{ "UOneOf_UHttpCall_UPublishMessage_UServiceCall*", "UBeamJobType*" }
+	};
 
 	/// <summary>
 	/// See <see cref="UNREAL_TYPES_OVERRIDES"/>. 
@@ -182,6 +201,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	public static PreviousGenerationPassesData previousGenerationPassesData = new();
 
 	public enum GenerationType { BasicObject, Microservice }
+
+	public enum ServiceType { Basic, Object, Api }
 
 	public static GenerationType genType = GenerationType.BasicObject;
 
@@ -447,6 +468,11 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 		// Allocate a list to keep track of all Schema types that we have already declared.
 		var listOfDeclaredTypes = new List<string>(namedOpenApiSchemata.Count);
+
+		// Add replacement types so that we don't generate them when we see them
+		listOfDeclaredTypes.AddRange(UNREAL_ALL_REPTYPES_NAMESPACED_NAMES);
+
+		// Convert the schema into the generation format
 		foreach (var namedOpenApiSchema in namedOpenApiSchemata)
 		{
 			// We need to decide on whether we'll name the type simply or if we'll use their service title to augment the name.
@@ -744,13 +770,13 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			foreach (OpenApiDocument openApiDocument in documents)
 			{
 				GetNamespacedServiceNameFromApiDoc(openApiDocument.Info, out var serviceTitle, out _);
-				var isObjectService = serviceTitle.Contains("object", StringComparison.OrdinalIgnoreCase);
 
+				var serviceType = GetServiceTypeFromDocTitle(serviceTitle);
 				foreach ((string endpointPath, OpenApiPathItem endpoint) in openApiDocument.Paths)
 				{
 					foreach ((OperationType operationType, OpenApiOperation value) in endpoint.Operations)
 					{
-						var endpointName = GetSubsystemNamespacedEndpointName(serviceName, isObjectService, operationType, endpointPath);
+						var endpointName = GetSubsystemNamespacedEndpointName(serviceName, serviceType, operationType, endpointPath);
 
 						// If it collides with another endpoint globally...
 						if (globalEndpointNameCollisions.ContainsKey(endpointName))
@@ -794,11 +820,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				{
 					foreach ((OperationType operationType, OpenApiOperation value) in endpoint.Operations)
 					{
-						var isObjectService = serviceTitle.Contains("object", StringComparison.OrdinalIgnoreCase);
-
+						var serviceType = GetServiceTypeFromDocTitle(serviceTitle);
 						foreach (var param in value.Parameters)
 						{
-							var paramOwnerId = GetEndpointFieldOwner(serviceName, isObjectService, operationType, endpointPath);
+							var paramOwnerId = GetEndpointFieldOwner(serviceName, serviceType, operationType, endpointPath);
 							var handle = GetFieldDeclarationHandle(paramOwnerId, $"{param.Name}");
 							fieldSchemaRequiredMap.TryAdd(handle, param.Required);
 						}
@@ -863,11 +888,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				{
 					foreach ((OperationType operationType, OpenApiOperation value) in endpoint.Operations)
 					{
-						var isObjectService = serviceTitle.Contains("object", StringComparison.OrdinalIgnoreCase);
-
+						var serviceType = GetServiceTypeFromDocTitle(serviceTitle);
 						foreach (var param in value.Parameters)
 						{
-							var paramOwnerId = GetEndpointFieldOwner(serviceName, isObjectService, operationType, endpointPath);
+							var paramOwnerId = GetEndpointFieldOwner(serviceName, serviceType, operationType, endpointPath);
 							var handle = GetFieldDeclarationHandle(paramOwnerId, $"{param.Name}");
 
 							var fieldSchema = param.Schema;
@@ -953,14 +977,16 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				{
 					var unrealEndpoint = new UnrealEndpointDeclaration();
 
-					// We are never an object service if we are generating Microservice client code.
-					var isObjectService = !isMsGen && serviceTitle.Contains("object", StringComparison.OrdinalIgnoreCase);
+					// Find the service type from the document
+					var serviceType = GetServiceTypeFromDocTitle(serviceTitle);
+					if (isMsGen) serviceType = ServiceType.Basic; // We are never an object/api service if we are generating Microservice client code.
+
 					if (genType == GenerationType.BasicObject)
 					{
 						unrealEndpoint.GlobalNamespacedEndpointName =
-							GetSubsystemNamespacedEndpointName(unrealServiceDecl.SubsystemName, isObjectService, operationType, endpointPath, globalEndpointNameCollisions);
+							GetSubsystemNamespacedEndpointName(unrealServiceDecl.SubsystemName, serviceType, operationType, endpointPath, globalEndpointNameCollisions);
 						unrealEndpoint.SubsystemNamespacedEndpointName =
-							GetSubsystemNamespacedEndpointName(unrealServiceDecl.SubsystemName, isObjectService, operationType, endpointPath, perSubsystemCollisions[serviceName]);
+							GetSubsystemNamespacedEndpointName(unrealServiceDecl.SubsystemName, serviceType, operationType, endpointPath, perSubsystemCollisions[serviceName]);
 					}
 					else if (genType == GenerationType.Microservice)
 					{
@@ -972,7 +998,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 					unrealEndpoint.SelfUnrealType = $"U{unrealEndpoint.GlobalNamespacedEndpointName}Request*";
 					unrealEndpoint.NamespacedOwnerServiceName = unrealServiceDecl.SubsystemName;
-					unrealEndpoint.IsAuth = endpointData.Security[0].Any(kvp => kvp.Key.Reference.Id == "user");
+					// TODO: For now, we make all non-basic endpoints require auth. This is due to certain endpoints' OpenAPI spec not being correctly generated. We also need to correctly generate the server-only services in UE at a future date.
+					unrealEndpoint.IsAuth = serviceType != ServiceType.Basic ||
+											serviceTitle.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
+											endpointData.Security[0].Any(kvp => kvp.Key.Reference.Id == "user");
 					unrealEndpoint.EndpointName = endpointPath;
 					unrealEndpoint.EndpointRoute = isMsGen ? $"micro_{openApiDocument.Info.Title}{endpointPath}" : endpointPath;
 					unrealEndpoint.EndpointVerb = operationType switch
@@ -990,7 +1019,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					foreach (var param in endpointData.Parameters)
 					{
 						var paramSchema = param.Schema.Reference != null ? param.Schema.GetEffective(openApiDocument) : param.Schema;
-						var paramOwnerId = GetEndpointFieldOwner(serviceName, isObjectService, operationType, endpointPath);
+						var paramOwnerId = GetEndpointFieldOwner(serviceName, serviceType, operationType, endpointPath);
 						var paramFieldHandle = GetFieldDeclarationHandle(paramOwnerId, param.Name);
 
 
@@ -1246,12 +1275,12 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// <summary>
 	/// Basically generates the <see cref="GetFieldDeclarationHandle"/>'s 'Owner' parameter for endpoint fields.
 	/// </summary>
-	private static string GetEndpointFieldOwner(string serviceName, bool isObjectService, OperationType operationType, string endpointPath)
+	private static string GetEndpointFieldOwner(string serviceName, ServiceType serviceType, OperationType operationType, string endpointPath)
 	{
 		switch (genType)
 		{
 			case GenerationType.BasicObject:
-				return $"{serviceName}_{GetSubsystemNamespacedEndpointName(serviceName, isObjectService, operationType, endpointPath, globalEndpointNameCollisions)}";
+				return $"{serviceName}_{GetSubsystemNamespacedEndpointName(serviceName, serviceType, operationType, endpointPath, globalEndpointNameCollisions)}";
 			case GenerationType.Microservice:
 				return $"{serviceName}_{GetMicroserviceSubsystemGlobalNamespacedEndpointName(serviceName, endpointPath, globalEndpointNameCollisions)}";
 			default:
@@ -1268,6 +1297,14 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		serviceTitle = serviceNames.Length == 1 ? "Basic" : serviceNames[1].Sanitize().Capitalize();
 
 		serviceName = serviceNames[0].Sanitize().Capitalize();
+	}
+
+	public static ServiceType GetServiceTypeFromDocTitle(string serviceTitle)
+	{
+		if (string.IsNullOrEmpty(serviceTitle)) return ServiceType.Basic;
+		if (serviceTitle.Contains("object", StringComparison.OrdinalIgnoreCase)) return ServiceType.Object;
+		if (serviceTitle.Contains("actor", StringComparison.OrdinalIgnoreCase)) return ServiceType.Api;
+		return ServiceType.Basic;
 	}
 
 	/// <summary>
@@ -1324,34 +1361,20 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// Gets a uniquely identifiable name for an endpoint living inside a service (may or may not be an object service). 
 	/// </summary>
 	/// <param name="serviceName">When null, we assume it's not an object service. This impacts how we generate the namespaced name.</param>
-	/// <param name="isObjectService"></param>
+	/// <param name="serviceType"></param>
 	/// <param name="httpVerb"></param>
 	/// <param name="endpointPath"></param>
 	/// <param name="endpointNameOverlaps">Not passing in this, will make you ignore name overlap resolution</param>
-	public static string GetSubsystemNamespacedEndpointName(string serviceName, bool isObjectService, OperationType httpVerb, string endpointPath,
+	public static string GetSubsystemNamespacedEndpointName(string serviceName, ServiceType serviceType, OperationType httpVerb, string endpointPath,
 		Dictionary<string, bool> endpointNameOverlaps = null)
 	{
 		// If an object service, we need to skip 4 '/' to get what we want (/object/mail/{objectId}/whatWeWant)
-		var skipsLeft = isObjectService ? 4 : 3;
+		var nameRelevantPath = endpointPath.Substring(endpointPath.IndexOf('/', 1) + 1);
+		nameRelevantPath = nameRelevantPath.Substring(nameRelevantPath.IndexOf('/') + 1);
 
-		// Find the 3rd/4th index and split out that substring (whatWeWant OR WhatWeWant/SomeOtherThing)
-		var index = 0;
-		for (var i = 0; i < endpointPath.Length; i++)
-		{
-			if (endpointPath[i] == '/')
-			{
-				skipsLeft--;
-			}
-
-			if (skipsLeft == 0)
-			{
-				index = i + 1;
-				break;
-			}
-		}
+		var methodName = SwaggerService.FormatPathNameAsMethodName(nameRelevantPath);
 
 		// Capitalize the name
-		var methodName = endpointPath.Substring(index);
 		methodName = methodName.Length > 1 ? methodName.Capitalize() : methodName;
 
 		// Ensure we don't have '-', '/' and others in the name
@@ -1375,7 +1398,13 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		var doesConflict = endpointNameOverlaps != null && endpointNameOverlaps.TryGetValue(methodName, out var conflicts) && conflicts;
 		if (doesConflict)
 		{
-			var conflictResolutionPrefix = isObjectService ? $"Object{serviceName}" : $"Basic{serviceName}";
+			var conflictResolutionPrefix = serviceType switch
+			{
+				ServiceType.Api => $"Api{serviceName}",
+				ServiceType.Basic => $"Basic{serviceName}",
+				ServiceType.Object => $"Object{serviceName}",
+				_ => throw new Exception($"Should not be possible for service {serviceName} to fall here.")
+			};
 			methodName = conflictResolutionPrefix + methodName;
 		}
 
@@ -1487,6 +1516,26 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 		switch (schema.Type, schema.Format, schema.Reference?.Id, semType)
 		{
+			// Handle semantic types
+			case (_, _, _, "Cid"):
+				return nonOverridenUnrealType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_CID : UNREAL_U_SEMTYPE_CID;
+			case (_, _, _, "Pid"):
+				return nonOverridenUnrealType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_PID : UNREAL_U_SEMTYPE_PID;
+			case (_, _, _, "AccountId"):
+				return nonOverridenUnrealType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_ACCOUNTID : UNREAL_U_SEMTYPE_ACCOUNTID;
+			case (_, _, _, "Gamertag"):
+				return nonOverridenUnrealType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_GAMERTAG : UNREAL_U_SEMTYPE_GAMERTAG;
+			case (_, _, _, "ContentManifestId"):
+				return nonOverridenUnrealType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_CONTENTMANIFESTID : UNREAL_U_SEMTYPE_CONTENTMANIFESTID;
+			case (_, _, _, "ContentId"):
+				return nonOverridenUnrealType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_CONTENTID : UNREAL_U_SEMTYPE_CONTENTID;
+			case (_, _, _, "StatsType"):
+				return nonOverridenUnrealType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_STATSTYPE : UNREAL_U_SEMTYPE_STATSTYPE;
+
+			// Handle replacement types (types that we replace by hand-crafted types inside the SDK)
+			case var (_, _, referenceId, _) when !string.IsNullOrEmpty(referenceId) && referenceId.Equals("ClientPermission", StringComparison.InvariantCultureIgnoreCase):
+				return nonOverridenUnrealType = isOptional ? UNREAL_OPTIONAL_U_REPTYPE_CLIENTPERMISSION : UNREAL_U_REPTYPE_CLIENTPERMISSION;
+
 			// Handles any field of any existing Schema Types
 			case var (_, _, _, _) when isPolymorphicWrapper:
 			{
@@ -1500,11 +1549,12 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					if (polyWrappedSchema.Properties.TryGetValue("type", out var defaults))
 					{
 						var val = defaults.Default as OpenApiString;
-						if (polymorphicWrappedSchemaExpectedTypeValues.TryGetValue(wrappedUnrealType, out var existing) && existing != val.Value)
+						if (polymorphicWrappedSchemaExpectedTypeValues.TryGetValue(wrappedUnrealType, out var existing) &&
+							(existing != val?.Value && existing != openApiSchema.Reference.Id.Sanitize()))
 							throw new Exception(
 								"Found a wrapped type that is currently used in two different ways. We don't support that cause it doesn't make a lot of sense. You should never see this.");
 
-						polymorphicWrappedSchemaExpectedTypeValues.TryAdd(wrappedUnrealType, val.Value);
+						polymorphicWrappedSchemaExpectedTypeValues.TryAdd(wrappedUnrealType, val?.Value ?? openApiSchema.Reference.Id.Sanitize());
 					}
 				}
 
@@ -1689,22 +1739,6 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					return UNREAL_ARRAY + $"<{dataType}>";
 				}
 			}
-			// Handle semantic types
-			case (_, _, _, "Cid"):
-				return nonOverridenUnrealType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_CID : UNREAL_U_SEMTYPE_CID;
-			case (_, _, _, "Pid"):
-				return nonOverridenUnrealType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_PID : UNREAL_U_SEMTYPE_PID;
-			case (_, _, _, "AccountId"):
-				return nonOverridenUnrealType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_ACCOUNTID : UNREAL_U_SEMTYPE_ACCOUNTID;
-			case (_, _, _, "Gamertag"):
-				return nonOverridenUnrealType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_GAMERTAG : UNREAL_U_SEMTYPE_GAMERTAG;
-			case (_, _, _, "ContentManifestId"):
-				return nonOverridenUnrealType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_CONTENTMANIFESTID : UNREAL_U_SEMTYPE_CONTENTMANIFESTID;
-			case (_, _, _, "ContentId"):
-				return nonOverridenUnrealType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_CONTENTID : UNREAL_U_SEMTYPE_CONTENTID;
-			case (_, _, _, "StatsType"):
-				return nonOverridenUnrealType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_STATSTYPE : UNREAL_U_SEMTYPE_STATSTYPE;
-
 			// Handle Primitive Types 
 			case ("number", "float", _, _):
 			{
@@ -1801,6 +1835,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 			if (unrealType.StartsWith(UNREAL_U_SEMTYPE_STATSTYPE))
 				return @"#include ""BeamBackend/SemanticTypes/BeamStatsType.h""";
+
+			if (unrealType.StartsWith(UNREAL_U_REPTYPE_CLIENTPERMISSION))
+				return @"#include ""BeamBackend/ReplacementTypes/BeamClientPermission.h""";
+
 		}
 
 		// Then, go over all generated types
