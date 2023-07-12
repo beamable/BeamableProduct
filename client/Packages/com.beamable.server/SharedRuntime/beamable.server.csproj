@@ -26,6 +26,10 @@
             <HintPath>..\Editor\ThirdParty\Mongo\MongoDB.Driver.dll</HintPath>
         </Reference>
 
+        <Reference Include="MongoDB.Driver.Core">
+            <HintPath>..\Editor\ThirdParty\Mongo\MongoDB.Driver.Core.dll</HintPath>
+        </Reference>
+
         <Reference Include="MongoDB.Bson">
             <HintPath>..\Editor\ThirdParty\Mongo\MongoDB.Bson.dll</HintPath>
         </Reference>
