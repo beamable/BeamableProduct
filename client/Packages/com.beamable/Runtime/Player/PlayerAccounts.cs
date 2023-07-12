@@ -1578,25 +1578,24 @@ namespace Beamable.Player
 				account = Current;
 			}
 
-			var service = GetAuthServiceForAccount(account);
-
-			var client = _provider.GetService<TService>();
-			var ident = new TCloudIdentity();
+			var authService = GetAuthServiceForAccount(account);
+			var providerService = _provider.GetService<TService>().ServiceName;
+			var providerNamespace = new TCloudIdentity().UniqueName;
 
 			if (!account.TryGetExternalIdentity<TCloudIdentity, TService>(out var identity))
 			{
 				return account;
 			}
 
-			await service.DetachIdentity(client.ServiceName, identity.userId, ident.UniqueName);
-			var user = await service.GetUser();
+			await authService.DetachIdentity(providerService, identity.userId, providerNamespace);
+			var user = await authService.GetUser();
 			account.Update(user);
 			account.TryTriggerUpdate();
 
 			return account;
 		}
 
-		public async Promise<bool> IsExternalIdentityAvailable<TCloudIdentity, TService>(string token, PlayerAccount account = null, string[] namespaces = null)
+		public async Promise<bool> IsExternalIdentityAvailable<TCloudIdentity, TService>(string token, PlayerAccount account = null)
 			where TCloudIdentity : IThirdPartyCloudIdentity, new()
 			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity>
 		{
@@ -1605,10 +1604,11 @@ namespace Beamable.Player
 				account = Current;
 			}
 
-			var service = GetAuthServiceForAccount(account);
-			var client = _provider.GetService<TService>();
+			var authService = GetAuthServiceForAccount(account);
+			var providerService = _provider.GetService<TService>().ServiceName;
+			var providerNamespace = new TCloudIdentity().UniqueName;
 
-			return await service.IsExternalIdentityAvailable(client.ServiceName, token, namespaces);
+			return await authService.IsExternalIdentityAvailable(providerService, token, providerNamespace);
 		}
 
 		/// <summary>

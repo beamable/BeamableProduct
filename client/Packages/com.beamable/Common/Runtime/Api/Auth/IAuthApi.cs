@@ -313,6 +313,6 @@ namespace Beamable.Common.Api.Auth
 		/// <param name="namespaces">Optional parameter for checking availability against passed namespaces (in case we have
 		/// more of them).</param>
 		/// <returns></returns>
-		Promise<bool> IsExternalIdentityAvailable(string providerService, string externalToken, string[] namespaces = null);
+		Promise<bool> IsExternalIdentityAvailable(string providerService, string externalToken, string providerNamespace = null);
 	}
 }
