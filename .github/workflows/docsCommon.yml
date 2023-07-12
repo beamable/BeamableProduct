@@ -24,7 +24,7 @@ jobs:
       group: doxygen-${{ github.head_ref }}
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Resolve S3 Destination
         run: |
           S3=${{inputs.s3Dest}}

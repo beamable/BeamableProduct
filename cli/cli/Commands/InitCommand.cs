@@ -122,6 +122,7 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 		_ctx.Set(cid, null, host);
 		_configService.SetBeamableDirectory(_ctx.WorkingDirectory);
 		_configService.FlushConfig();
+		_configService.CreateIgnoreFile();
 
 		var pid = await PickGameAndRealm(args);
 		if (string.IsNullOrWhiteSpace(pid))
