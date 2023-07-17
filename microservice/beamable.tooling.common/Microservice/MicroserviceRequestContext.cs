@@ -29,7 +29,9 @@ public class MicroserviceRequestContext : RequestContext
 
 	public override bool IsCancelled => CancellationToken.IsCancellationRequested;
 
-	public override string Body => _body ??= BodyElement.GetRawText();
+	public override string Body => _body ??= BodyElement.ToString();
+
+	public override string RawBodyText => BodyElement.GetRawText();
 
 	public override RequestHeaders Headers
 	{
