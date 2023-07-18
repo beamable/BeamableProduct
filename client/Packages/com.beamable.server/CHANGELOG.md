@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+
 - `Create` method in `MongoCRUDExtensions` has been made awaitable
 
 ## [1.16.1]
