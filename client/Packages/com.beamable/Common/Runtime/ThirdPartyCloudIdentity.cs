@@ -35,9 +35,9 @@ namespace Beamable.Common
 			string id,
 			string transaction,
 			Dictionary<string, long> currencies,
-			List<ItemCreateRequest> newItems,
-			List<ItemDeleteRequest> deleteItems,
-			List<ItemUpdateRequest> updateItems);
+			List<FederatedItemCreateRequest> newItems,
+			List<FederatedItemDeleteRequest> deleteItems,
+			List<FederatedItemUpdateRequest> updateItems);
 	}
 
 	[Serializable]
