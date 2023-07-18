@@ -70,7 +70,7 @@ namespace Beamable.Common.Content
 	{
 		private const int MIN_LINES = 10;
 		private const int MAX_LINES = 20;
-		
+
 		[Tooltip(ContentObject.TooltipSubject1)]
 		[CannotBeBlank]
 		public string subject;
