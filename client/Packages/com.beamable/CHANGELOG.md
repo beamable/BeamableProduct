@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `IsExternalIdentityAvailable` takes an optional string `providerNamespace` instead of an optional string[] for `namespaces` parameter.
 - `PlayerAccounts.IsExternalIdentityAvailable` resolves the `providerNamespace` automatically from parametrized type.
+- `TextAreaAttribute` added to `EmailContent` body.
 
 ## [1.16.2]
 
