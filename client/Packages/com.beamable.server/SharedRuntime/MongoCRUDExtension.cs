@@ -31,7 +31,7 @@ namespace Beamable.Mongo
 			return search.FirstOrDefault();
 		}
 
-		public static async void Create<TStorage, TCollection>(this IStorageObjectConnectionProvider provider,
+		public static async Task Create<TStorage, TCollection>(this IStorageObjectConnectionProvider provider,
 			TCollection data) where TStorage : MongoStorageObject
 			where TCollection : StorageDocument
 		{
