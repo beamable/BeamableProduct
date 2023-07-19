@@ -114,6 +114,8 @@ public class SchemaGenerator
 			
 			case { } x when x == typeof(bool):
 				return new OpenApiSchema { Type = "boolean"};
+			case { } x when x == typeof(decimal):
+				return new OpenApiSchema { Type = "number", Format = "decimal" };
 			
 			case { } x when x == typeof(string):
 				return new OpenApiSchema { Type = "string"};
