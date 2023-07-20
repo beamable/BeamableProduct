@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- `StorageDocument.Id` is now `public` and can be written to manually. 
+- `StorageDocument.Id` is now `public` and can be written to manually.
 
 ## [1.16.2]
 
