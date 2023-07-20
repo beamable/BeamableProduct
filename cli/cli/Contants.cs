@@ -4,7 +4,9 @@ public static class Constants
 {
 	public const string CONFIG_FOLDER = ".beamable";
 	public const string CONFIG_DEFAULTS_FILE_NAME = "config-defaults.json";
-	public const string CONFIG_IGNORE_FILE_NAME = ".gitignore";
+	public const string CONFIG_GIT_IGNORE_FILE_NAME = ".gitignore";
+	public const string CONFIG_SVN_IGNORE_FILE_NAME = ".svnignore";
+	public const string CONFIG_P4_IGNORE_FILE_NAME = ".p4ignore";
 	public const string CONFIG_TOKEN_FILE_NAME = "user-token.json";
 
 	/// <summary>

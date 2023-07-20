@@ -10,6 +10,16 @@ using System.Text;
 namespace cli;
 
 
+
+[Serializable]
+public enum Vcs
+{
+	Git,
+	// ReSharper disable once InconsistentNaming
+	SVN,
+	P4
+}
+
 public class ConfigService
 {
 	private readonly CliEnvironment _environment;
@@ -155,13 +165,13 @@ public class ConfigService
 		File.WriteAllText(fullPath, json);
 	}
 
-	public void CreateIgnoreFile()
+	public void CreateIgnoreFile(Vcs system = Vcs.Git, bool forceCreate = false)
 	{
 		if (string.IsNullOrEmpty(ConfigFilePath))
 			throw new CliException("No beamable project exists. Please use beam init");
 
-		string ignoreFilePath = Path.Combine(ConfigFilePath, Constants.CONFIG_IGNORE_FILE_NAME);
-		if (File.Exists(ignoreFilePath))
+		string ignoreFilePath = GetIgnoreFilePath(system);
+		if (File.Exists(ignoreFilePath) && !forceCreate)
 			return;
 
 		var builder = new StringBuilder();
@@ -172,6 +182,8 @@ public class ConfigService
 			builder.Append(Environment.NewLine);
 		}
 		File.WriteAllText(ignoreFilePath, builder.ToString());
+
+		BeamableLogger.Log($"Generated ignore file at {ignoreFilePath}");
 	}
 
 	public bool ReadTokenFromFile(out CliToken response)
@@ -265,4 +277,13 @@ public class ConfigService
 
 		return false;
 	}
+
+	string GetIgnoreFilePath(Vcs system) =>
+		system switch
+		{
+			Vcs.Git => Path.Combine(ConfigFilePath, Constants.CONFIG_GIT_IGNORE_FILE_NAME),
+			Vcs.SVN => Path.Combine(ConfigFilePath, Constants.CONFIG_SVN_IGNORE_FILE_NAME),
+			Vcs.P4 => Path.Combine(ConfigFilePath, Constants.CONFIG_P4_IGNORE_FILE_NAME),
+			_ => throw new ArgumentOutOfRangeException(nameof(system), system, $"VCS {system} is not supported")
+		};
 }
