@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `Create` method in `MongoCRUDExtensions` has been made awaitable
 
+### Changed
+
+- `StorageDocument.Id` is now `public` and can be written to manually. 
+
 ## [1.16.1]
 
 ### Fixed
