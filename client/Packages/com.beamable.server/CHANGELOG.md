@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `[Callable]` methods can accept and return `decimal` primitives
+
 ### Fixed
 
 - `Create` method in `MongoCRUDExtensions` has been made awaitable
