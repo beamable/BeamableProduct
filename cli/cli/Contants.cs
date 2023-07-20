@@ -21,7 +21,7 @@ public static class Constants
 	// private readonly string _beamoLocalRuntimeFile;
 	public const string BEAMO_LOCAL_RUNTIME_FILE_NAME = "beamoLocalRuntime";
 
-	public static readonly string[] FILES_TO_IGNORE = new[] { CONFIG_TOKEN_FILE_NAME, BEAMO_LOCAL_MANIFEST_FILE_NAME, BEAMO_LOCAL_RUNTIME_FILE_NAME };
+	public static readonly string[] FILES_TO_IGNORE = new[] { CONFIG_TOKEN_FILE_NAME, BEAMO_LOCAL_RUNTIME_FILE_NAME };
 
 	public const string PLATFORM_DEV = "https://dev.api.beamable.com";
 	public const string PLATFORM_STAGING = "https://staging.api.beamable.com";
