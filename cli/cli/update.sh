@@ -1,4 +1,7 @@
 #bin/sh
 
-dotnet pack
-dotnet tool update --global --add-source ./nupkg/ beamable.tools
+default_version='0.0.0'
+version=${1:-$default_version}
+
+dotnet pack -p:PackageVersion=$version
+dotnet tool update --global --version $version --add-source ./nupkg/ beamable.tools
