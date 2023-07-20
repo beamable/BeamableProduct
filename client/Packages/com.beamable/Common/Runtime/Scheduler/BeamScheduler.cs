@@ -220,7 +220,10 @@ namespace Beamable.Common.Scheduler
 				ISchedulerTrigger[] triggers,
 				RetryPolicy retryPolicy = null)
 			{
-				retryPolicy ??= new RetryPolicy();
+				if (retryPolicy == null)
+				{
+					retryPolicy = new RetryPolicy();
+				}
 				return new JobDefinitionSaveRequest
 				{
 					name = new OptionalString(name),

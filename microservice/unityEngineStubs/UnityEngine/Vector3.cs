@@ -35,8 +35,9 @@ namespace UnityEngine {
         public static Vector3 Slerp(Vector3 a, Vector3 b, float t) {
             t = Mathf.Clamp01(t);
             var angle = Vector3.Angle(a, b);
-            var sinR = 1f / MathF.Sin(angle);
-            return MathF.Sin((1f - t) * angle) * sinR * a + MathF.Sin(t * angle) * sinR * b;
+            
+            var sinR = 1f / Mathf.Sin(angle);
+            return Mathf.Sin((1f - t) * angle) * sinR * a + Mathf.Sin(t * angle) * sinR * b;
         }
 
         /// <summary>
@@ -47,8 +48,8 @@ namespace UnityEngine {
         /// <param name="t"></param>
         public static Vector3 SlerpUnclamped(Vector3 a, Vector3 b, float t) {
             var angle = Vector3.Angle(a, b);
-            var sinR = 1f / MathF.Sin(angle);
-            return MathF.Sin((1f - t) * angle) * sinR * a + MathF.Sin(t * angle) * sinR * b;
+            var sinR = 1f / Mathf.Sin(angle);
+            return Mathf.Sin((1f - t) * angle) * sinR * a + Mathf.Sin(t * angle) * sinR * b;
         }
 
         public static void OrthoNormalize(ref Vector3 normal, ref Vector3 tangent) {

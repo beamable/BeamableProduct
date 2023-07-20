@@ -12,7 +12,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 
-#if !DISABLE_BEAMABLE_ASYNCMETHODBUILDER && !UNITY_2021_2_OR_NEWER
+#if (!DISABLE_BEAMABLE_ASYNCMETHODBUILDER && !UNITY_2021_2_OR_NEWER) || (NETSTANDARD2_0)
 namespace System.Runtime.CompilerServices
 {
 	public sealed class AsyncMethodBuilderAttribute : Attribute
