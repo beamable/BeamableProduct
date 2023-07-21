@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Beamable.Common nuget package is available for netstandard2.0
+- `CancelJob` function in `BeamScheduler`
+
+### Changed
+
+- Cron expressions given to `BeamScheduler` are validated using `CronValidation.TryValidate` utility.
+- `ICronBuilder.ToString()` results in a cron expression instead of the default C# `ToString()` class name.
 
 ### Removed
 
