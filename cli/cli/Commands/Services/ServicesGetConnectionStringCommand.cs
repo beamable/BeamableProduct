@@ -1,5 +1,6 @@
 using Beamable.Common;
 using cli.Services;
+using Spectre.Console;
 using System.CommandLine;
 
 namespace cli;
@@ -27,8 +28,15 @@ public class ServicesGetConnectionStringCommand : AppCommand<ServicesGetConnecti
 	{
 		try
 		{
-			var connectionString = await args.GetLocalOrRemoteConnectionString();
-			BeamableLogger.Log($"The connection string for \"{args.StorageName}\" is: {connectionString}");
+			var canProceed = AnsiConsole.Confirm(
+				"[yellow]WARNING:[/] The MongoDB connection string allows full read/write access to your Storage. Before proceeding, make sure you are in a secure environment and your screen is not visible to anyone unauthorized. Proceed?",
+				false);
+
+			if (canProceed)
+			{
+				var connectionString = await args.GetLocalOrRemoteConnectionString();
+				BeamableLogger.Log($"The connection string for \"{args.StorageName}\" is: {connectionString}");
+			}
 		}
 		catch (Exception ex)
 		{
