@@ -1,4 +1,5 @@
 using Beamable.Common;
+using cli.Services;
 using System.CommandLine;
 
 namespace cli;
@@ -11,7 +12,8 @@ public class ServicesGetConnectionStringCommandArgs : CommandArgs
 
 public class ServicesGetConnectionStringCommand : AppCommand<ServicesGetConnectionStringCommandArgs>
 {
-	public ServicesGetConnectionStringCommand() : base("get-connection-string", "Gets the Micro-storage connection string")
+	public ServicesGetConnectionStringCommand() : base("get-connection-string",
+		"Gets the Micro-storage connection string")
 	{
 	}
 
@@ -25,13 +27,29 @@ public class ServicesGetConnectionStringCommand : AppCommand<ServicesGetConnecti
 	{
 		try
 		{
-			var connStr = await args.BeamoLocalSystem.GetLocalConnectionString(
-				args.BeamoLocalSystem.BeamoManifest, args.StorageName, "localhost");
-			BeamableLogger.Log($"The connection string for \"{args.StorageName}\" is: {connStr.Value}");
+			var connectionString = await args.GetLocalOrRemoteConnectionString();
+			BeamableLogger.Log($"The connection string for \"{args.StorageName}\" is: {connectionString}");
 		}
 		catch (Exception ex)
 		{
 			BeamableLogger.LogError(ex.Message);
 		}
+	}
+}
+
+public static class ServicesGetConnectionStringCommandArgsExtensions
+{
+	public static async Task<string> GetLocalOrRemoteConnectionString(this ServicesGetConnectionStringCommandArgs args)
+	{
+		if (args.IsRemote) return await args.BeamoService.GetStorageConnectionString();
+
+		return await args.GetLocalConnectionStringFromDocker();
+	}
+
+	private static async Task<string> GetLocalConnectionStringFromDocker(
+		this ServicesGetConnectionStringCommandArgs args)
+	{
+		return (await args.BeamoLocalSystem.GetLocalConnectionString(args.BeamoLocalSystem.BeamoManifest,
+			args.StorageName, "localhost")).Value;
 	}
 }
