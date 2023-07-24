@@ -247,6 +247,7 @@ namespace Beamable.Server.Editor.DockerCommands
 						Task.Run(async () =>
 						{
 							await Task.Delay(1); // give 1 ms for log messages to eep out
+							if (_dispatcher.IsForceStopped) return;
 							_dispatcher.Schedule(() =>
 							{
 								// there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
@@ -269,6 +270,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 						_process.OutputDataReceived += (sender, args) =>
 						{
+							if (_dispatcher.IsForceStopped) return;
 							_dispatcher.Schedule(() =>
 							{
 								try
@@ -283,6 +285,7 @@ namespace Beamable.Server.Editor.DockerCommands
 						};
 						_process.ErrorDataReceived += (sender, args) =>
 						{
+							if (_dispatcher.IsForceStopped) return;
 							_dispatcher.Schedule(() =>
 							{
 								try
