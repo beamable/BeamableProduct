@@ -24,9 +24,9 @@ public class ServicesGetConnectionStringCommand : AppCommand<ServicesGetConnecti
 		var remoteOptions = new[] { "-r", "--remote" };
 		var quietOptions = new[] { "-q", "--quiet" };
 
-		AddArgument(new Argument<string>("storage-name", "The name of the Micro-storage"),
+		AddArgument(new Argument<string>("storage-name", "The name of the Microstorage"),
 			(args, i) => args.StorageName = i);
-		AddOption(new Option<bool>(remoteOptions, "The Micro-storage remote connection string"),
+		AddOption(new Option<bool>(remoteOptions, "The Microstorage remote connection string"),
 			(arg, i) => arg.IsRemote = i);
 		AddOption(new Option<bool>(quietOptions, "Ignores confirmation step"),
 			(arg, i) => arg.IsQuiet = i);
