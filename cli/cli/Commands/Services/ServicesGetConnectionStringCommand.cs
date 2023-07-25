@@ -9,6 +9,7 @@ public class ServicesGetConnectionStringCommandArgs : CommandArgs
 {
 	public string StorageName;
 	public bool IsRemote;
+	public bool IsQuiet;
 }
 
 public class ServicesGetConnectionStringCommand : AppCommand<ServicesGetConnectionStringCommandArgs>
@@ -20,15 +21,19 @@ public class ServicesGetConnectionStringCommand : AppCommand<ServicesGetConnecti
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("storage-name", "The name of the Micro-storage"), (args, i) => args.StorageName = i);
-		AddOption(new Option<bool>("--remote", "The Micro-storage remote connection string"), (arg, i) => arg.IsRemote = i);
+		AddArgument(new Argument<string>("storage-name", "The name of the Micro-storage"),
+			(args, i) => args.StorageName = i);
+		AddOption(new Option<bool>("--remote", "The Micro-storage remote connection string"),
+			(arg, i) => arg.IsRemote = i);
+		AddOption(new Option<bool>("--quiet", "Ignores confirmation step"),
+			(arg, i) => arg.IsQuiet = i);
 	}
 
 	public override async Task Handle(ServicesGetConnectionStringCommandArgs args)
 	{
 		try
 		{
-			var canProceed = AnsiConsole.Confirm(
+			var canProceed = args.IsQuiet || AnsiConsole.Confirm(
 				"[yellow]WARNING:[/] The MongoDB connection string allows full read/write access to your Storage. Before proceeding, make sure you are in a secure environment and your screen is not visible to anyone unauthorized. Proceed?",
 				false);
 
