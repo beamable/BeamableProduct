@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `beam services get-connection-string my-storage-name` retrieves the local connection string for the specified micro-storage
+- `beam services get-connection-string my-storage-name --remote` retrieves the remote connection string for the specified micro-storage
+- Add `--quiet` to ignore confirmation step when retrieving connection string
+
 ### Fixed
 
 - Fix issue with cli crash when linking unity/unreal project that scans over protected folder

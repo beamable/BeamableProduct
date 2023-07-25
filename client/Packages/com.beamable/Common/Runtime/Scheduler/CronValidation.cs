@@ -9,13 +9,13 @@ namespace Beamable.Common.Scheduler
 		public string Error { get; }
 
 		public CronInvalidException(string cronExpression, string error)
-			:base ($"cron=[{cronExpression}] is not valid. reason=[{error}]")
+			: base($"cron=[{cronExpression}] is not valid. reason=[{error}]")
 		{
 			CronExpression = cronExpression;
 			Error = error;
 		}
 	}
-	
+
 	public static class CronValidation
 	{
 		static readonly Regex CRON_CLAUSE_REGEX = new Regex("^([0-9]|-|/|\\*|,)+$");
@@ -52,7 +52,7 @@ namespace Beamable.Common.Scheduler
 				}
 
 			}
-			
+
 			message = null;
 			return true;
 		}

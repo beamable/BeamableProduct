@@ -51,7 +51,7 @@ public class LoadingIndicator : MonoBehaviour
 		{
 			return;
 		}
-		
+
 		_currentSession = null;
 
 		if (_sessionQueue.Count == 0)
