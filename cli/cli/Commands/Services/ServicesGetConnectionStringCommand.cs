@@ -40,7 +40,7 @@ public class ServicesGetConnectionStringCommand : AppCommand<ServicesGetConnecti
 
 		if (!canProceed)
 		{
-			return Task.CompletedTask;
+			return;
 		}
 
 		try
