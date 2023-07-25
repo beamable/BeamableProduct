@@ -40,7 +40,7 @@ public class ServicesGetConnectionStringCommand : AppCommand<ServicesGetConnecti
 			if (canProceed)
 			{
 				var connectionString = await args.GetLocalOrRemoteConnectionString();
-				BeamableLogger.Log($"The connection string for \"{args.StorageName}\" is: {connectionString}");
+				BeamableLogger.Log(connectionString);
 			}
 		}
 		catch (Exception ex)
