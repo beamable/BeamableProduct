@@ -8,8 +8,8 @@
     
     <engine:VisualElement name="mainVisualElement">
         <engine:VisualElement name="statusIcon"/>
-        <engine:Label name="time" text="[17:26:24]"/>
-        <engine:Label name="description" text="TEST CONTENT"/>
+        <engine:Label name="time"/>
+        <engine:Label name="description"/>
         <engine:VisualElement name="postfixIcon"/>
     </engine:VisualElement>
 
