@@ -21,11 +21,14 @@ public class ServicesGetConnectionStringCommand : AppCommand<ServicesGetConnecti
 
 	public override void Configure()
 	{
+		var remoteOptions = new[] { "-r", "--remote" };
+		var quietOptions = new[] { "-q", "--quiet" };
+		
 		AddArgument(new Argument<string>("storage-name", "The name of the Micro-storage"),
 			(args, i) => args.StorageName = i);
-		AddOption(new Option<bool>("--remote", "The Micro-storage remote connection string"),
+		AddOption(new Option<bool>(remoteOptions, "The Micro-storage remote connection string"),
 			(arg, i) => arg.IsRemote = i);
-		AddOption(new Option<bool>("--quiet", "Ignores confirmation step"),
+		AddOption(new Option<bool>(quietOptions, "Ignores confirmation step"),
 			(arg, i) => arg.IsQuiet = i);
 	}
 
