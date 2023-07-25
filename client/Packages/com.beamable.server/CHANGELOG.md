@@ -7,22 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Hide invalid log elements from Microservices Window. 
+
+## [1.17.0]
+
 ### Added
 
 - `[Callable]` methods can accept and return `decimal` primitives
-- Option to get raw body text of request in Microservices.
+- Beamable.Common nuget package is available for netstandard2.0
+- `CancelJob` function in `BeamScheduler`
 
 ### Fixed
 
 - `Create` method in `MongoCRUDExtensions` has been made awaitable
+- Error message, `"Cannot schedule work, because the scheduler has been stopped."`, for Docker commands that finish processing during domain reloads.
 
 ### Changed
 
-- `StorageDocument.Id` is now `public` and can be written to manually. 
+- `StorageDocument.Id` is now `public` and can be written to manually.
+- Cron expressions given to `BeamScheduler` are validated using `CronValidation.TryValidate` utility.
+- `ICronBuilder.ToString()` results in a cron expression instead of the default C# `ToString()` class name.
 
-## [1.16.2]
+### Removed
 
-no changes
+- `Quaternion` method implementations no longer work in Microservices using netstandard2.0
 
 ## [1.16.1]
 

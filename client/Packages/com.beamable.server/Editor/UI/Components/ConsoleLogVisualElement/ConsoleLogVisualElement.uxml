@@ -4,13 +4,9 @@
         xmlns:engine="UnityEngine.Experimental.UIElements"
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
-    
-    
-    <engine:VisualElement name="mainVisualElement">
-        <engine:VisualElement name="statusIcon"/>
-        <engine:Label name="time" text="[17:26:24]"/>
-        <engine:Label name="description" text="TEST CONTENT"/>
-        <engine:VisualElement name="postfixIcon"/>
-    </engine:VisualElement>
 
+        <engine:VisualElement name="statusIcon"/>
+        <engine:Label name="time"/>
+        <engine:Label name="description"/>
+        <engine:VisualElement name="postfixIcon"/>
 </engine:UXML>
