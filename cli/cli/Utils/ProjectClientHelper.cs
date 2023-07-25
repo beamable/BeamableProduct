@@ -5,21 +5,48 @@ namespace cli.Utils;
 
 public interface IProjectClient
 {
-	string GetProjectClientTypeName();
+	IEnumerable<string> TypicalFolders { get; }
+
+	string ProjectClientTypeName { get; }
+
+	void AddProject<T>(string relativePath, T args) where T : CommandArgs;
 }
 
 public class UnityProjectClient : IProjectClient
 {
-	public string GetProjectClientTypeName() => "Unity";
+	public IEnumerable<string> TypicalFolders { get; } = new[] { "Assets", "Packages", "ProjectSettings" };
+
+	public string ProjectClientTypeName => "Unity";
+
+	public void AddProject<T>(string relativePath, T args) where T : CommandArgs
+	{
+		args.ProjectService.AddUnityProject(relativePath);
+	}
 }
 
 public class UnrealProjectClient : IProjectClient
 {
-	public string GetProjectClientTypeName() => "Unreal";
+	public IEnumerable<string> TypicalFolders { get; } = new[] { "Content", "Plugins", "Config"  };
+
+	public string ProjectClientTypeName => "Unreal";
+
+	public void AddProject<T>(string relativePath, T args) where T : CommandArgs
+	{
+		args.ProjectService.AddUnrealProject(relativePath);
+	}
 }
 
 public class ProjectClientHelper<TProjectClient> where TProjectClient : IProjectClient, new()
 {
+	private readonly TProjectClient _client;
+	private readonly string _projectClientTypeName;
+
+	public ProjectClientHelper()
+	{
+		_client = new TProjectClient();
+		_projectClientTypeName = _client.ProjectClientTypeName;
+	}
+
 	public bool SuggestProjectClientTypeCandidates<T>(IEnumerable<string> expectedParentDirectories, T args)
 		where T : CommandArgs
 	{
@@ -27,8 +54,8 @@ public class ProjectClientHelper<TProjectClient> where TProjectClient : IProject
 		switch (defaultPaths.Count)
 		{
 			// if there is only one detected file, offer to use that.
-			case 1 when AnsiConsole.Confirm($"Automatically found {defaultPaths[0]}. Add as unity project?"):
-				AddProjectClient(defaultPaths[0], args);
+			case 1 when AnsiConsole.Confirm($"Automatically found {defaultPaths[0]}. Add as {_projectClientTypeName} project?"):
+				_client.AddProject(defaultPaths[0], args);
 				return true;
 			// if there are many detected files, offer up a list of them
 			case > 0:
@@ -36,12 +63,12 @@ public class ProjectClientHelper<TProjectClient> where TProjectClient : IProject
 				defaultPaths.Add("continue");
 				var selectionPath = AnsiConsole.Prompt(
 					new SelectionPrompt<string>()
-						.Title("Select the Unity project to link, or continue to search manually")
+						.Title($"Select the {_projectClientTypeName} project to link, or continue to search manually")
 						.AddChoices(defaultPaths)
 				);
 				if (selectionPath != "continue")
 				{
-					AddProjectClient(selectionPath, args);
+					_client.AddProject(selectionPath, args);
 					return true;
 				}
 
@@ -52,33 +79,17 @@ public class ProjectClientHelper<TProjectClient> where TProjectClient : IProject
 		return false;
 	}
 
-	private static void AddProjectClient<T>(string relativePath, T args) where T : CommandArgs
-	{
-		switch (new TProjectClient())
-		{
-			case UnityProjectClient:
-				args.ProjectService.AddUnityProject(relativePath);
-				break;
-			case UnrealProjectClient:
-				args.ProjectService.AddUnrealProject(relativePath);
-				break;
-			default:
-				throw new InvalidCastException("Invalid value for class generic type");
-		}
-	}
-
 	public void FindProjectClientInDirectory(string workingDir, ref string directory)
 	{
 		while (!IsValidProjectClientDirectory(ref directory))
 		{
-			var projectClientTypeName = new TProjectClient().GetProjectClientTypeName();
 			var subDirs = Directory.GetDirectories(directory).ToList();
 			subDirs = subDirs.Select(x => x.Substring(x.LastIndexOf(Path.DirectorySeparatorChar) + 1)).ToList();
 
 			subDirs.Add("..");
 			var dirSelection = AnsiConsole.Prompt(
 				new SelectionPrompt<string>()
-					.Title($"This doesn't look like a {projectClientTypeName} project. Where is it from here?")
+					.Title($"This doesn't look like a {_projectClientTypeName} project. Where is it from here?")
 					.AddChoices(subDirs)
 			);
 
@@ -87,12 +98,11 @@ public class ProjectClientHelper<TProjectClient> where TProjectClient : IProject
 		}
 	}
 
-	private static IEnumerable<string> GetProjectClientTypeCandidates(IEnumerable<string> paths)
+	private IEnumerable<string> GetProjectClientTypeCandidates(IEnumerable<string> paths)
 	{
 		foreach (var path in paths)
 		{
-			var projectClientTypeName = new TProjectClient().GetProjectClientTypeName();
-			BeamableLogger.Log($"Looking in {path} for default {projectClientTypeName} projects");
+			BeamableLogger.Log($"Looking in {path} for default {_projectClientTypeName} projects");
 
 			var childPaths = Directory.GetDirectories(path);
 			foreach (var childPath in childPaths)
@@ -102,7 +112,7 @@ public class ProjectClientHelper<TProjectClient> where TProjectClient : IProject
 
 				if (IsValidProjectClientDirectory(ref childPathRef))
 				{
-					BeamableLogger.Log($"-- I think that {childPath} is a {projectClientTypeName} project");
+					BeamableLogger.Log($"-- I think that {childPath} is a {_projectClientTypeName} project");
 
 					yield return childPath;
 				}
@@ -110,19 +120,14 @@ public class ProjectClientHelper<TProjectClient> where TProjectClient : IProject
 		}
 	}
 
-	private static bool IsValidProjectClientDirectory(ref string path)
+	private bool IsValidProjectClientDirectory(ref string path)
 	{
 		try
 		{
 			var subDirs = Directory.GetDirectories(path).ToList();
 			subDirs = subDirs.Select(x => x.Substring(x.LastIndexOf(Path.DirectorySeparatorChar) + 1)).ToList();
 
-			return new TProjectClient() switch
-			{
-				UnityProjectClient => IsUnityProjectDirectory(subDirs),
-				UnrealProjectClient => IsUnrealProjectDirectory(subDirs),
-				_ => throw new InvalidCastException("Invalid value for class generic type")
-			};
+			return _client.TypicalFolders.All(folder => subDirs.Contains(folder));
 		}
 		catch (Exception e) when (e is UnauthorizedAccessException)
 		{
@@ -131,23 +136,5 @@ public class ProjectClientHelper<TProjectClient> where TProjectClient : IProject
 			BeamableLogger.LogWarning($"Skipping folder - “{folderName}” because it is protected");
 			return false;
 		}
-	}
-
-	private static bool IsUnityProjectDirectory(List<string> subDirs)
-	{
-		var hasAssets = subDirs.Contains("Assets");
-		var hasPackages = subDirs.Contains("Packages");
-		var hasSettings = subDirs.Contains("ProjectSettings");
-
-		return hasAssets && hasPackages && hasSettings;
-	}
-
-	private static bool IsUnrealProjectDirectory(ICollection<string> subDirs)
-	{
-		var hasContent = subDirs.Contains("Content");
-		var hasPlugins = subDirs.Contains("Plugins");
-		var hasConfig = subDirs.Contains("Config");
-
-		return hasContent && hasPlugins && hasConfig;
 	}
 }
