@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Hide invalid log elements from Microservices Window. 
+- Hide invalid log elements from Microservices Window.
 
 ## [1.17.0]
 
