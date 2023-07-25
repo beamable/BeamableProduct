@@ -65,14 +65,9 @@ namespace Beamable.Server
 		public string Method { get; }
 
 		/// <summary>
-		/// The body of this request.
-		/// </summary>
-		public virtual string Body { get; }
-
-		/// <summary>
 		/// The raw body of this request.
 		/// </summary>
-		public virtual string RawBodyText { get; }
+		public virtual string Body { get; }
 
 		/// <summary>
 		/// Permissions associated with the caller of this request.
@@ -161,10 +156,10 @@ namespace Beamable.Server
 			Pid = pid;
 			Id = -1;
 			_userId = -1;
-			Path = string.Empty;
-			Method = string.Empty;
+			Path = "";
+			Method = "";
 			Status = 0;
-			Body = string.Empty;
+			Body = "";
 			Scopes = new HashSet<string>();
 		}
 
