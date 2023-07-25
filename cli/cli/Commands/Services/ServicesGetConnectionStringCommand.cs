@@ -23,7 +23,7 @@ public class ServicesGetConnectionStringCommand : AppCommand<ServicesGetConnecti
 	{
 		var remoteOptions = new[] { "-r", "--remote" };
 		var quietOptions = new[] { "-q", "--quiet" };
-		
+
 		AddArgument(new Argument<string>("storage-name", "The name of the Micro-storage"),
 			(args, i) => args.StorageName = i);
 		AddOption(new Option<bool>(remoteOptions, "The Micro-storage remote connection string"),
