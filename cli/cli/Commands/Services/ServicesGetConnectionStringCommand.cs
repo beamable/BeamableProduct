@@ -34,17 +34,19 @@ public class ServicesGetConnectionStringCommand : AppCommand<ServicesGetConnecti
 
 	public override async Task Handle(ServicesGetConnectionStringCommandArgs args)
 	{
+		var canProceed = args.IsQuiet || AnsiConsole.Confirm(
+			"[yellow]WARNING:[/] The MongoDB connection string allows full read/write access to your Storage. Before proceeding, make sure you are in a secure environment and your screen is not visible to anyone unauthorized. Proceed?",
+			false);
+
+		if (!canProceed)
+		{
+			return Task.CompletedTask;
+		}
+
 		try
 		{
-			var canProceed = args.IsQuiet || AnsiConsole.Confirm(
-				"[yellow]WARNING:[/] The MongoDB connection string allows full read/write access to your Storage. Before proceeding, make sure you are in a secure environment and your screen is not visible to anyone unauthorized. Proceed?",
-				false);
-
-			if (canProceed)
-			{
-				var connectionString = await args.GetLocalOrRemoteConnectionString();
-				BeamableLogger.Log(connectionString);
-			}
+			var connectionString = await args.GetLocalOrRemoteConnectionString();
+			BeamableLogger.Log(connectionString);
 		}
 		catch (Exception ex)
 		{
