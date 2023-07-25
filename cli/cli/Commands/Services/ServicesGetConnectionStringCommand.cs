@@ -15,7 +15,7 @@ public class ServicesGetConnectionStringCommandArgs : CommandArgs
 public class ServicesGetConnectionStringCommand : AppCommand<ServicesGetConnectionStringCommandArgs>
 {
 	public ServicesGetConnectionStringCommand() : base("get-connection-string",
-		"Gets the Micro-storage connection string")
+		"Gets the Microstorage connection string")
 	{
 	}
 
