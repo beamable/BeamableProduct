@@ -190,7 +190,7 @@ namespace Beamable.Common.Reflection
 		/// </summary>
 		public TReflectionUserSystem GetFirstSystemOfType<TReflectionUserSystem>() where TReflectionUserSystem : IReflectionSystem
 		{
-			return (TReflectionUserSystem)_registeredCacheUserSystems.First(system => system.GetType() == typeof(TReflectionUserSystem));
+			return (TReflectionUserSystem)_registeredCacheUserSystems.FirstOrDefault(system => system.GetType() == typeof(TReflectionUserSystem));
 		}
 
 		/// <summary>

@@ -5,44 +5,54 @@ using Newtonsoft.Json;
 
 namespace UnityEngine
 {
+
   /// <summary>
   ///   <para>Quaternions are used to represent rotations.</para>
   /// </summary>
   [JsonObject(MemberSerialization.Fields)]
   public struct Quaternion : IEquatable<Quaternion>
   {
-    /// <summary>
-    ///   <para>X component of the Quaternion. Don't modify this directly unless you know quaternions inside out.</para>
-    /// </summary>
-    public float x;
-    /// <summary>
-    ///   <para>Y component of the Quaternion. Don't modify this directly unless you know quaternions inside out.</para>
-    /// </summary>
-    public float y;
-    /// <summary>
-    ///   <para>Z component of the Quaternion. Don't modify this directly unless you know quaternions inside out.</para>
-    /// </summary>
-    public float z;
-    /// <summary>
-    ///   <para>W component of the Quaternion. Do not directly modify quaternions.</para>
-    /// </summary>
-    public float w;
-    public const float kEpsilon = 1E-06f;
+	  
+	  /// <summary>
+	  ///   <para>X component of the Quaternion. Don't modify this directly unless you know quaternions inside out.</para>
+	  /// </summary>
+	  public float x;
+	  /// <summary>
+	  ///   <para>Y component of the Quaternion. Don't modify this directly unless you know quaternions inside out.</para>
+	  /// </summary>
+	  public float y;
+	  /// <summary>
+	  ///   <para>Z component of the Quaternion. Don't modify this directly unless you know quaternions inside out.</para>
+	  /// </summary>
+	  public float z;
+	  /// <summary>
+	  ///   <para>W component of the Quaternion. Do not directly modify quaternions.</para>
+	  /// </summary>
+	  public float w;
+	  public const float kEpsilon = 1E-06f;
 
-    /// <summary>
-    ///   <para>Constructs new Quaternion with given x,y,z,w components.</para>
-    /// </summary>
-    /// <param name="x"></param>
-    /// <param name="y"></param>
-    /// <param name="z"></param>
-    /// <param name="w"></param>
-    public Quaternion(float x, float y, float z, float w)
-    {
-      this.x = x;
-      this.y = y;
-      this.z = z;
-      this.w = w;
-    }
+	  /// <summary>
+	  ///   <para>Constructs new Quaternion with given x,y,z,w components.</para>
+	  /// </summary>
+	  /// <param name="x"></param>
+	  /// <param name="y"></param>
+	  /// <param name="z"></param>
+	  /// <param name="w"></param>
+	  public Quaternion(float x, float y, float z, float w)
+	  {
+		  this.x = x;
+		  this.y = y;
+		  this.z = z;
+		  this.w = w;
+	  }
+	  
+#if NETSTANDARD2_0
+	  public bool Equals(Quaternion other)
+	  {
+		  throw new NotImplementedException("This method is not supported on net standard 2.0");
+	  }
+#else
+
 
     /// <summary>
     ///   <para>Creates a rotation which rotates from fromDirection to toDirection.</para>
@@ -53,8 +63,8 @@ namespace UnityEngine
       var dot = Vector3.Dot(fromDirection, toDirection);
       if (Mathf.Abs(dot) > .99999f) return identity;
       var cross = Vector3.Cross(fromDirection, toDirection);
-      var w = MathF.Sqrt((fromDirection.sqrMagnitude) * (toDirection.sqrMagnitude)) + dot;
-      return new Quaternion(cross.x, cross.y, cross.z, w);
+      var w = Math.Sqrt((fromDirection.sqrMagnitude) * (toDirection.sqrMagnitude)) + dot;
+      return new Quaternion(cross.x, cross.y, cross.z, (float)w);
     }
 
     /// <summary>
@@ -326,14 +336,14 @@ namespace UnityEngine
         float x, y, z;
         if (!singular)
         {
-          x = MathF.Atan2(matrix.M32 , matrix.M33);
-          y =  MathF.Atan2(-matrix.M31, sy);
-          z =  MathF.Atan2(matrix.M21, matrix.M11);
+          x = Mathf.Atan2(matrix.M32 , matrix.M33);
+          y =  Mathf.Atan2(-matrix.M31, sy);
+          z =  Mathf.Atan2(matrix.M21, matrix.M11);
         }
         else
         {
-          x =  MathF.Atan2(-matrix.M23, matrix.M22);
-          y =  MathF.Atan2(-matrix.M31, sy);
+          x =  Mathf.Atan2(-matrix.M23, matrix.M22);
+          y =  Mathf.Atan2(-matrix.M31, sy);
           z = 0;
         }
         return new Vector3(x, y, z);
@@ -527,5 +537,6 @@ namespace UnityEngine
     {
       return AngleAxis(57.29578f * angle, axis);
     }
+#endif
   }
 }

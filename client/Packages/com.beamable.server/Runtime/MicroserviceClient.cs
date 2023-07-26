@@ -6,6 +6,7 @@ using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -121,6 +122,8 @@ namespace Beamable.Server
 					return prim.ToString();
 				case int prim:
 					return prim.ToString();
+				case decimal prim:
+					return prim.ToString(CultureInfo.InvariantCulture);
 				case Vector2Int prim:
 					return JsonUtility.ToJson(new Vector2IntEx(prim));
 				case Vector3Int prim:
@@ -170,6 +173,8 @@ namespace Beamable.Server
 					return (T)(object)bool.Parse(json);
 				case int _:
 					return (T)(object)int.Parse(json);
+				case decimal _:
+					return (T)(object)decimal.Parse(json);
 				case Vector2Int _:
 					return (T)(object)Vector2IntEx.DeserializeToVector2(json);
 				case Vector3Int _:
@@ -189,6 +194,10 @@ namespace Beamable.Server
 				else if (typeof(Dictionary<string, double>) == type)
 				{
 					result = ConvertArrayDictToDictionary<double>(arrayDict);
+				}
+				else if (typeof(Dictionary<string, decimal>) == type)
+				{
+					result = ConvertArrayDictToDictionary<decimal>(arrayDict);
 				}
 				else if (typeof(Dictionary<string, float>) == type)
 				{

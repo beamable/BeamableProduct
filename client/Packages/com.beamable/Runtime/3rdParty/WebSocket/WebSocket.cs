@@ -28,6 +28,7 @@ namespace Beamable.Endel
 		{
 			synchronizationContext.Post(_ =>
 			{
+				if (!coroutineService) return;
 				coroutineService.StartCoroutine(waitForUpdate);
 			}, null);
 		}
