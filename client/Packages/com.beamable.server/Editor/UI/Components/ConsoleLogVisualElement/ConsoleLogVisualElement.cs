@@ -13,7 +13,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class ConsoleLogVisualElement : MicroserviceComponent
 	{
-		private VisualElement _mainVisualElement;
 		private VisualElement _statusIcon;
 		private Label _time;
 		private Label _description;
@@ -27,27 +26,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
-		{
-			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
-			{ name = "custom-text", defaultValue = "nada" };
-
-			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-			{
-				get { yield break; }
-			}
-
-			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-			{
-				base.Init(ve, bag, cc);
-				var self = ve as ConsoleLogVisualElement;
-			}
-		}
+		{ }
 
 		public override void Refresh()
 
 		{
 			base.Refresh();
-			_mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
 			_statusIcon = Root.Q<VisualElement>("statusIcon");
 			_time = Root.Q<Label>("time");
 			_description = Root.Q<Label>("description");
@@ -58,8 +42,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public void SetNewModel(LogMessage model)
 		{
 			_model = model;
+			bool shouldBeInvisible = string.IsNullOrWhiteSpace(model.Message);
+			EnableInClassList("invisible", shouldBeInvisible);
 
-			if (string.IsNullOrWhiteSpace(model.Message))
+			if (shouldBeInvisible)
 				return;
 
 			var text = model.Message.Split('\n');

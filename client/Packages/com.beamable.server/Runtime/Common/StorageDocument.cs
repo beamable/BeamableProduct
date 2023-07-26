@@ -23,7 +23,7 @@ namespace Beamable.Server
 		public string Id
 		{
 			get => _id;
-			protected set => _id = value;
+			set => _id = value;
 		}
 	}
 }

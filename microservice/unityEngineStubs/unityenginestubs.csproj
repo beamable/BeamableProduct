@@ -11,7 +11,7 @@
       <VersionPrefix>$(VersionPrefix)</VersionPrefix>
       <PackageOutputPath>./nupkg</PackageOutputPath>
       <AssemblyName>UnityEngine</AssemblyName>
-      <TargetFrameworks>net6.0;netstandard2.1</TargetFrameworks>
+      <TargetFrameworks>netstandard2.0;net6.0;net7.0;netstandard2.1</TargetFrameworks>
    </PropertyGroup>
    <ItemGroup>
      <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />

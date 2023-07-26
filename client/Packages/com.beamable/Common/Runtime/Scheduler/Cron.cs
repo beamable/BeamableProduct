@@ -544,6 +544,11 @@ namespace Beamable.Common.Scheduler
 			this.secondStr = secondStr;
 			return this;
 		}
+
+		public override string ToString()
+		{
+			return ToCron();
+		}
 	}
 
 }
