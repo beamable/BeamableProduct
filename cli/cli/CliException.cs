@@ -20,9 +20,8 @@ public class CliException : Exception
 
 	public CliException(string message, int nonZeroOrOneExitCode, bool useStdOut) : base(message)
 	{
-		Debug.Assert(NonZeroOrOneExitCode > 1, "NonZeroOrOneExitCode must be > 1 --- 0 is OK and 1 is \"private exception\" (not meant to be exposed to our cli-interface layer). In Engine, we check for these exceptions and ask for a bug report.");
-
 		NonZeroOrOneExitCode = nonZeroOrOneExitCode;
 		ReportOnStdOut = useStdOut;
+		Debug.Assert(NonZeroOrOneExitCode > 1, "NonZeroOrOneExitCode must be > 1 --- 0 is OK and 1 is \"private exception\" (not meant to be exposed to our cli-interface layer). In Engine, we check for these exceptions and ask for a bug report.");
 	}
 }
