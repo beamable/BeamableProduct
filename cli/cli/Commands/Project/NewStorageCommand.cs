@@ -65,11 +65,17 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
 			choices.Add(serviceFolder);
 		}
 
-		var dependencies = AnsiConsole.Prompt(new MultiSelectionPrompt<string>()
+		var prompt = new MultiSelectionPrompt<string>()
 			.Title("Service Dependencies")
-			.InstructionsText("Which services will use this storage?")
+			.InstructionsText("Which services will use this storage?\n[grey](Press [blue]<space>[/] to toggle, " +
+			                  "[green]<enter>[/] to accept)[/]")
 			.AddChoices(choices)
-			.NotRequired()).ToArray();
+			.NotRequired();
+		foreach (string choice in choices)
+		{
+			prompt.Select(choice);
+		}
+		var dependencies = AnsiConsole.Prompt(prompt).ToArray();
 
 
 		foreach (var service in args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions)
