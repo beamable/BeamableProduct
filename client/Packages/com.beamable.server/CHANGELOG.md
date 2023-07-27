@@ -17,10 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `Create` method in `MongoCRUDExtensions` has been made awaitable
 - Error message, `"Cannot schedule work, because the scheduler has been stopped."`, for Docker commands that finish processing during domain reloads.
+- Hide invalid log elements from Microservices Window.
 
 ### Changed
 
-- `StorageDocument.Id` is now `public` and can be written to manually. 
+- `StorageDocument.Id` is now `public` and can be written to manually.
 - Cron expressions given to `BeamScheduler` are validated using `CronValidation.TryValidate` utility.
 - `ICronBuilder.ToString()` results in a cron expression instead of the default C# `ToString()` class name.
 
