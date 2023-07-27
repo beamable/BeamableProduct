@@ -177,7 +177,7 @@ public partial class BeamoLocalSystem
 			Protocol = type,
 			DependsOnBeamoIds = beamoIdDependencies,
 			ImageId = string.Empty,
-			ShouldBeEnabledOnRemote = false,
+			ShouldBeEnabledOnRemote = true,
 		};
 
 		// Register the services before initializing protocols so that the protocol initialization can know about the service.
