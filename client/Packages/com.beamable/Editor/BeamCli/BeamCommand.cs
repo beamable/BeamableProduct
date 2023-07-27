@@ -283,7 +283,7 @@ namespace Beamable.Editor.BeamCli
 						   await Task.Delay(1); // give 1 ms for log messages to eep out
 						   if (_dispatcher.IsForceStopped)
 						   {
-							   _process.Kill();
+							   KillProc();
 							   return;
 						   }
 						   _dispatcher.Schedule(() =>
@@ -311,7 +311,7 @@ namespace Beamable.Editor.BeamCli
 						{
 							if (_dispatcher.IsForceStopped)
 							{
-								_process.Kill();
+								KillProc();
 								return;
 							}
 							_dispatcher.Schedule(() =>
@@ -330,7 +330,7 @@ namespace Beamable.Editor.BeamCli
 						{
 							if (_dispatcher.IsForceStopped)
 							{
-								_process.Kill();
+								KillProc();
 								return;
 							}
 							_dispatcher.Schedule(() =>
@@ -373,6 +373,24 @@ namespace Beamable.Editor.BeamCli
 				// Debug.LogException(e);
 				throw;
 			}
+		}
+
+		private void KillProc()
+		{
+			if (_process.HasExited)
+			{
+				return;
+			}
+
+			try
+			{
+				_process.Kill();
+			}
+			catch
+			{
+				Debug.LogWarning($"Unable to kill beamCLI process. This <i>may</i> mean that there are pending beamCLI tasks on your machine. \n command=[{_command}]");
+			}
+
 		}
 
 
