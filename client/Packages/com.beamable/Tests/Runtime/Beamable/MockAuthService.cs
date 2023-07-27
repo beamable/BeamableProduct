@@ -156,7 +156,7 @@ namespace Beamable.Tests.Runtime.Api
 			throw new NotImplementedException();
 		}
 
-		public Promise<bool> IsExternalIdentityAvailable(string providerService, string externalToken, string[] namespaces = null)
+		public Promise<bool> IsExternalIdentityAvailable(string providerService, string externalToken, string providerNamespace)
 		{
 			throw new NotImplementedException();
 		}

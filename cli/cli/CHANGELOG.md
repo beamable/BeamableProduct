@@ -5,12 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0]
+
+### Added
+
+- `beam project generate-ignore-file` command to generate an ignore file in config folder for given VCS
+- `beam services get-connection-string my-storage-name` retrieves the local connection string
+for the specified micro-storage
+- `beam services get-connection-string my-storage-name --remote` retrieves the remote connection string
+for the specified micro-storage
+- Add `--quiet` to ignore confirmation step when retrieving connection string
+
 ## [1.16.2]
 
 ### Added
 
 - create default `.gitignore` file during `beam init` if none is present
 - `beam version` commands to manage CLI version install
+- Add NET 7.0 as second target for CLI
 
 ### Fixed
 
@@ -21,10 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - If there is only one Microservice, `beam project open-swagger` work without passing Microservice ID
 - If there is only one Storage, `beam project open-mongo` work without passing Storage ID
-
-### Changed
-
-- Add NET 7.0 as second target for CLI
 
 ## [1.16.1]
 

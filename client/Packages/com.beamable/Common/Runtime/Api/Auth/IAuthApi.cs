@@ -310,9 +310,8 @@ namespace Beamable.Common.Api.Auth
 		/// <param name="providerService">Provider (microservice) name with custom verification logic. It is required to
 		/// implement Authenticate(string token, string challenge, string solution) method there</param>
 		/// <param name="externalToken">Unique token identifying player.</param>
-		/// <param name="namespaces">Optional parameter for checking availability against passed namespaces (in case we have
-		/// more of them).</param>
+		/// <param name="providerNamespace">Optional parameter for checking availability of the token within a specific namespace.</param>
 		/// <returns></returns>
-		Promise<bool> IsExternalIdentityAvailable(string providerService, string externalToken, string[] namespaces = null);
+		Promise<bool> IsExternalIdentityAvailable(string providerService, string externalToken, string providerNamespace = null);
 	}
 }
