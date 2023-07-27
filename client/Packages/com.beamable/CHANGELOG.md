@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Avoid early initialization of `BeamEditor` when `Resources` are not available in Editor.
 - Missing `TextReference` exception in the `LoadingIndicator` when entering and exiting Playmode quickly
 - Disposed `CoroutineService` exception in the `BeamMainThreadUtil` when entering and exiting Playmode quickly
+- `PlayerAccounts.SwitchAccount` method make sure that data is initialized before switching account
 
 ### Changed
 

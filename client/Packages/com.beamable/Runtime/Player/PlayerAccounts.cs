@@ -1028,6 +1028,8 @@ namespace Beamable.Player
 		/// <param name="account"></param>
 		public async Promise SwitchToAccount(PlayerAccount account)
 		{
+			await OnReady;
+
 			_storage.StoreDeviceRefreshToken(_ctx.Cid, _ctx.Pid,
 											 new AccessToken(_storage, _ctx.Cid, _ctx.Pid, _ctx.AccessToken.Token,
 															 _ctx.AccessToken.RefreshToken, 1));
