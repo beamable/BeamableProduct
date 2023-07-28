@@ -1,11 +1,8 @@
 using Beamable.Common;
 using Beamable.Common.Semantics;
-using cli.Services;
-using CliWrap;
 using Serilog;
 using Spectre.Console;
 using System.CommandLine;
-using UnityEngine;
 
 namespace cli.Dotnet;
 
@@ -90,10 +87,15 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 
 		await args.ProjectService.LinkProjects(_addUnityCommand, _addUnrealCommand, args.Provider);
 
-		if (createdNewWorkingDir)
-		{
-			Directory.SetCurrentDirectory(currentPath);
-		}
+		if (createdNewWorkingDir) HandleCreatedNewWorkingDirectory(currentPath, path, args.SolutionName);
+	}
+
+	private static void HandleCreatedNewWorkingDirectory(string currentPath, string path, string solutionName)
+	{
+		Directory.SetCurrentDirectory(currentPath);
+		BeamableLogger.Log("A new Beamable microservice project has been created successfully!");
+		AnsiConsole.MarkupLine($"To get started:\n[lime]cd {path}[/]");
+		AnsiConsole.MarkupLine($"Then open [lime]{solutionName}.sln[/] in your IDE and run the project");
 	}
 
 	private static string GetServicesDir(NewSolutionCommandArgs args, string newSolutionPath)
