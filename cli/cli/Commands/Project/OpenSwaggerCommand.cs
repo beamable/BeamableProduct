@@ -41,14 +41,14 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 					break;
 				case > 1:
 					BeamableLogger.Log("We found more than one microservices in the directory");
-					AskForServiceNameAndExecuteBeamCommandTask(serviceDefinitions, args,
+					AskForServiceNameAndRunBeamCommandTask(serviceDefinitions, args,
 						!string.IsNullOrWhiteSpace(args.AppContext.WorkingDirectory)
 							? args.AppContext.WorkingDirectory
 							: "");
 					return Task.CompletedTask;
 				default:
 					BeamableLogger.Log("We couldn't find a service name in the directory");
-					AskForDirectoryAndExecuteBeamCommandTask(args);
+					AskForDirectoryAndRunBeamCommandTask(args);
 					return Task.CompletedTask;
 			}
 		}
@@ -64,10 +64,10 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 		return Task.CompletedTask;
 	}
 
-	private static void AskForDirectoryAndExecuteBeamCommandTask(OpenSwaggerCommandArgs args)
+	private static async void AskForDirectoryAndRunBeamCommandTask(OpenSwaggerCommandArgs args)
 	{
 		string directory = AnsiConsole.Ask<string>("Enter the absolute or relative directory to use:");
-		new BeamCommandAssistantBuilder("project open-swagger")
+		await new BeamCommandAssistantBuilder("project open-swagger")
 			.WithOption(true, "--dir", directory)
 			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Host), "--host", args.AppContext.Host)
 			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Cid), "--cid", args.AppContext.Cid)
@@ -75,10 +75,10 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.RefreshToken), "--refresh-token", args.AppContext.RefreshToken)
 			.WithOption(args.AppContext.IsDryRun, "--dryrun", "")
 			.WithOption(args.isRemote, "--remote", "")
-			.ExecuteAsync();
+			.RunAsync();
 	}
 
-	private static void AskForServiceNameAndExecuteBeamCommandTask(
+	private static async void AskForServiceNameAndRunBeamCommandTask(
 		IEnumerable<BeamoServiceDefinition> serviceDefinitions, OpenSwaggerCommandArgs args, string directory)
 	{
 		string serviceName = AnsiConsole.Prompt(
@@ -88,7 +88,7 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 				.MoreChoicesText("[grey](Move up and down to reveal more service name)[/]")
 				.AddChoices(serviceDefinitions.Select(serviceDef => serviceDef.BeamoId)));
 
-		new BeamCommandAssistantBuilder("project open-swagger")
+		await new BeamCommandAssistantBuilder("project open-swagger")
 			.AddArgument(serviceName)
 			.WithOption(!string.IsNullOrWhiteSpace(directory), "--dir", directory)
 			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Host), "--host", args.AppContext.Host)
@@ -97,7 +97,6 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.RefreshToken), "--refresh-token", args.AppContext.RefreshToken)
 			.WithOption(args.AppContext.IsDryRun, "--dryrun", string.Empty)
 			.WithOption(args.isRemote, "--remote", string.Empty)
-
-			.ExecuteAsync();
+			.RunAsync();
 	}
 }

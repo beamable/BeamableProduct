@@ -41,14 +41,14 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
 					break;
 				case > 1:
 					BeamableLogger.Log("We found more than one storage in the directory");
-					AskForStorageAndExecuteBeamCommandTask(storages, args,
+					AskForStorageAndRunBeamCommandTask(storages, args,
 						!string.IsNullOrWhiteSpace(args.AppContext.WorkingDirectory)
 							? args.AppContext.WorkingDirectory
 							: "");
 					return;
 				default:
 					BeamableLogger.Log("We couldn't find a storage in the directory");
-					AskForDirectoryAndExecuteBeamCommandTask(args);
+					AskForDirectoryAndRunBeamCommandTask(args);
 					return;
 			}
 		}
@@ -63,6 +63,7 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
 			Log.Information("Finding local connection string...");
 			var connStr = await args.BeamoLocalSystem.GetLocalConnectionString(args.BeamoLocalSystem.BeamoManifest, args.storageName);
 
+			Log.Information($"ConnStr: {connStr.Value}");
 			Log.Information("Starting mongo-express");
 			var res = await args.BeamoLocalSystem.GetOrCreateMongoExpress(args.storageName, connStr.Value);
 
@@ -84,20 +85,20 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
 		}
 	}
 
-	private static void AskForDirectoryAndExecuteBeamCommandTask(OpenMongoExpressCommandArgs args)
+	private static async void AskForDirectoryAndRunBeamCommandTask(OpenMongoExpressCommandArgs args)
 	{
 		string directory = AnsiConsole.Ask<string>("Enter the absolute or relative directory to use:");
-		new BeamCommandAssistantBuilder("project open-mongo")
+		await new BeamCommandAssistantBuilder("project open-mongo")
 			.WithOption(true, "--dir", directory)
 			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Host), "--host", args.AppContext.Host)
 			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Cid), "--cid", args.AppContext.Cid)
 			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Pid), "--pid", args.AppContext.Pid)
 			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.RefreshToken), "--refresh-token", args.AppContext.RefreshToken)
-			.WithOption(args.AppContext.IsDryRun, "--dryrun", "")
-			.ExecuteAsync();
+			.WithOption(args.AppContext.IsDryRun, "--dryrun", string.Empty)
+			.RunAsync();
 	}
 
-	private static void AskForStorageAndExecuteBeamCommandTask(
+	private static async void AskForStorageAndRunBeamCommandTask(
 		IEnumerable<BeamoServiceDefinition> storages, OpenMongoExpressCommandArgs args, string directory)
 	{
 		string serviceName = AnsiConsole.Prompt(
@@ -107,7 +108,7 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
 				.MoreChoicesText("[grey](Move up and down to reveal more storage)[/]")
 				.AddChoices(storages.Select(serviceDef => serviceDef.BeamoId)));
 
-		new BeamCommandAssistantBuilder("project open-mongo")
+		await new BeamCommandAssistantBuilder("project open-mongo")
 			.AddArgument(serviceName)
 			.WithOption(!string.IsNullOrWhiteSpace(directory), "--dir", directory)
 			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Host), "--host", args.AppContext.Host)
@@ -115,6 +116,6 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
 			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Pid), "--pid", args.AppContext.Pid)
 			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.RefreshToken), "--refresh-token", args.AppContext.RefreshToken)
 			.WithOption(args.AppContext.IsDryRun, "--dryrun", "")
-			.ExecuteAsync();
+			.RunAsync();
 	}
 }

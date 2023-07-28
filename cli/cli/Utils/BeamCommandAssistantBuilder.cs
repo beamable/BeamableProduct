@@ -1,11 +1,11 @@
 using Beamable.Common;
-using System.Diagnostics;
+using System.Text;
 
 namespace cli.Utils;
 
 public class BeamCommandAssistantBuilder
 {
-	private string _beamCommand;
+	private readonly StringBuilder _beamCommand;
 
 	/// <summary>
 	/// Initialize with the beam command to be executed
@@ -13,7 +13,7 @@ public class BeamCommandAssistantBuilder
 	/// <param name="command"></param>
 	public BeamCommandAssistantBuilder(string command)
 	{
-		_beamCommand = command;
+		_beamCommand = new StringBuilder(command);
 	}
 
 	/// <summary>
@@ -23,7 +23,7 @@ public class BeamCommandAssistantBuilder
 	/// <returns></returns>
 	public BeamCommandAssistantBuilder AddArgument(string arg)
 	{
-		_beamCommand += $" {arg}";
+		_beamCommand.Append($" {arg}");
 		return this;
 	}
 
@@ -38,21 +38,18 @@ public class BeamCommandAssistantBuilder
 	{
 		if (!includeOption) return this;
 
-        _beamCommand += string.IsNullOrWhiteSpace(optionValue) ? $" {optionFlag}" : $" {optionFlag} {optionValue}";
+		_beamCommand.Append(string.IsNullOrWhiteSpace(optionValue) ? $" {optionFlag}" : $" {optionFlag} {optionValue}");
 
 		return this;
 	}
 
 	/// <summary>
-	/// Execute the composed beam command
+	/// Re-run program with the composed beam command
 	/// </summary>
-	public void ExecuteAsync()
+	public Task RunAsync()
 	{
 		BeamableLogger.Log($"Running 'beam {_beamCommand}'");
-		using var process = new Process();
-		process.StartInfo.FileName = "beam";
-		process.StartInfo.Arguments = _beamCommand;
-		process.Start();
-		process.WaitForExit();
+		Program.Main(_beamCommand.ToString().Split(' ')).Wait();
+		return Task.CompletedTask;
 	}
 }
