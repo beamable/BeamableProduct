@@ -95,8 +95,9 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Cid), "--cid", args.AppContext.Cid)
 			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Pid), "--pid", args.AppContext.Pid)
 			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.RefreshToken), "--refresh-token", args.AppContext.RefreshToken)
-			.WithOption(args.AppContext.IsDryRun, "--dryrun", "")
-			.WithOption(args.isRemote, "--remote", "")
+			.WithOption(args.AppContext.IsDryRun, "--dryrun", string.Empty)
+			.WithOption(args.isRemote, "--remote", string.Empty)
+
 			.ExecuteAsync();
 	}
 }
