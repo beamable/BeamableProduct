@@ -38,8 +38,7 @@ public class BeamCommandAssistantBuilder
 	{
 		if (!includeOption) return this;
 
-		if (string.IsNullOrWhiteSpace(optionValue)) _beamCommand += $" {optionFlag}";
-		else _beamCommand += $" {optionFlag} {optionValue}";
+        _beamCommand += string.IsNullOrWhiteSpace(optionValue) ? $" {optionFlag}" : $" {optionFlag} {optionValue}";
 
 		return this;
 	}
