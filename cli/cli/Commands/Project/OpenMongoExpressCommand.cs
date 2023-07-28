@@ -44,7 +44,7 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
 					AskForStorageAndRunBeamCommandTask(storages, args,
 						!string.IsNullOrWhiteSpace(args.AppContext.WorkingDirectory)
 							? args.AppContext.WorkingDirectory
-							: "");
+							: string.Empty);
 					return;
 				default:
 					BeamableLogger.Log("We couldn't find a storage in the directory");
