@@ -67,13 +67,8 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 	private static async void AskForDirectoryAndRunBeamCommandTask(OpenSwaggerCommandArgs args)
 	{
 		string directory = AnsiConsole.Ask<string>("Enter the absolute or relative directory to use:");
-		await new BeamCommandAssistantBuilder("project open-swagger")
+		await new BeamCommandAssistantBuilder("project open-swagger", args.AppContext)
 			.WithOption(true, "--dir", directory)
-			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Host), "--host", args.AppContext.Host)
-			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Cid), "--cid", args.AppContext.Cid)
-			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Pid), "--pid", args.AppContext.Pid)
-			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.RefreshToken), "--refresh-token", args.AppContext.RefreshToken)
-			.WithOption(args.AppContext.IsDryRun, "--dryrun", string.Empty)
 			.WithOption(args.isRemote, "--remote", string.Empty)
 			.RunAsync();
 	}
@@ -88,14 +83,9 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 				.MoreChoicesText("[grey](Move up and down to reveal more service name)[/]")
 				.AddChoices(serviceDefinitions.Select(serviceDef => serviceDef.BeamoId)));
 
-		await new BeamCommandAssistantBuilder("project open-swagger")
+		await new BeamCommandAssistantBuilder("project open-swagger", args.AppContext)
 			.AddArgument(serviceName)
 			.WithOption(!string.IsNullOrWhiteSpace(directory), "--dir", directory)
-			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Host), "--host", args.AppContext.Host)
-			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Cid), "--cid", args.AppContext.Cid)
-			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Pid), "--pid", args.AppContext.Pid)
-			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.RefreshToken), "--refresh-token", args.AppContext.RefreshToken)
-			.WithOption(args.AppContext.IsDryRun, "--dryrun", string.Empty)
 			.WithOption(args.isRemote, "--remote", string.Empty)
 			.RunAsync();
 	}

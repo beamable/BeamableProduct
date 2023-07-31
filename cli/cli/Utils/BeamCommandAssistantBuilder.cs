@@ -11,9 +11,11 @@ public class BeamCommandAssistantBuilder
 	/// Initialize with the beam command to be executed
 	/// </summary>
 	/// <param name="command"></param>
-	public BeamCommandAssistantBuilder(string command)
+	/// <param name="appContext"></param>
+	public BeamCommandAssistantBuilder(string command, IAppContext appContext)
 	{
 		_beamCommand = new StringBuilder(command);
+		AddDefaultOptions(appContext);
 	}
 
 	/// <summary>
@@ -25,6 +27,26 @@ public class BeamCommandAssistantBuilder
 	{
 		_beamCommand.Append($" {arg}");
 		return this;
+	}
+
+	private void AddDefaultOptions(IAppContext appContext)
+	{
+		var optionFlags = new Dictionary<string, string>()
+		{
+			{ "--host", appContext.Host },
+			{ "--cid", appContext.Cid },
+			{ "--pid", appContext.Pid },
+			{ "--refresh-token", appContext.RefreshToken }
+		};
+
+		if (appContext.IsDryRun) _beamCommand.Append(" --dryrun");
+
+		foreach ((string optionFlag, string optionValue) in optionFlags)
+		{
+			if (string.IsNullOrWhiteSpace(optionValue)) continue;
+
+			_beamCommand.Append($" {optionFlag} {optionValue}");
+		}
 	}
 
 	/// <summary>

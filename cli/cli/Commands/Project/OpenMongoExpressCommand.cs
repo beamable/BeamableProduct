@@ -88,13 +88,8 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
 	private static async void AskForDirectoryAndRunBeamCommandTask(OpenMongoExpressCommandArgs args)
 	{
 		string directory = AnsiConsole.Ask<string>("Enter the absolute or relative directory to use:");
-		await new BeamCommandAssistantBuilder("project open-mongo")
+		await new BeamCommandAssistantBuilder("project open-mongo", args.AppContext)
 			.WithOption(true, "--dir", directory)
-			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Host), "--host", args.AppContext.Host)
-			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Cid), "--cid", args.AppContext.Cid)
-			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Pid), "--pid", args.AppContext.Pid)
-			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.RefreshToken), "--refresh-token", args.AppContext.RefreshToken)
-			.WithOption(args.AppContext.IsDryRun, "--dryrun", string.Empty)
 			.RunAsync();
 	}
 
@@ -108,14 +103,9 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
 				.MoreChoicesText("[grey](Move up and down to reveal more storage)[/]")
 				.AddChoices(storages.Select(serviceDef => serviceDef.BeamoId)));
 
-		await new BeamCommandAssistantBuilder("project open-mongo")
+		await new BeamCommandAssistantBuilder("project open-mongo", args.AppContext)
 			.AddArgument(serviceName)
 			.WithOption(!string.IsNullOrWhiteSpace(directory), "--dir", directory)
-			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Host), "--host", args.AppContext.Host)
-			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Cid), "--cid", args.AppContext.Cid)
-			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.Pid), "--pid", args.AppContext.Pid)
-			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.RefreshToken), "--refresh-token", args.AppContext.RefreshToken)
-			.WithOption(args.AppContext.IsDryRun, "--dryrun", string.Empty)
 			.RunAsync();
 	}
 }
