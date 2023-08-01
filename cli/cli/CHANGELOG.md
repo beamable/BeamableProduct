@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Auto install Beamable templates
+
 ### Fixed
 
 - Fix issue with cli crash when linking unity/unreal project that scans over protected folder
