@@ -34,7 +34,7 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 			(args, i) => args.BeamoIdsToDeploy = i.Length == 0 ? null : i);
 		AddOption(
 			new Option<bool>(new string[] { "--force-amd-cpu-arch", "-fcpu" }, () => false,
-				"When true, will force the services to run with the same CPU architecture they will be forced to use when deploying "),
+				"Force the services to run with amd64 CPU architecture, useful when deploying from computers with ARM architecture"),
 			(args, i) => args.forceAmdCpuArchitecture = i);
 	}
 
