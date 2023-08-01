@@ -54,7 +54,7 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
     <PackageReference Include="Serilog.Sinks.SpectreConsole" Version="0.3.3" />
     <PackageReference Include="SharpZipLib" Version="1.3.3" />
-    <PackageReference Include="Spectre.Console" Version="0.45.0" />
+    <PackageReference Include="Spectre.Console" Version="0.47.0" />
     <PackageReference Include="System.CodeDom" Version="6.0.0" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta3.22114.1" />
   </ItemGroup>
@@ -80,7 +80,7 @@
     <Exec Command="dotnet tool restore" />
   </Target>
   <Target Name="BuildCLIInterface" AfterTargets="Pack" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true">
-    <Message Importance="high" Text="OutDir: $(OutputPath)"/>
+    <Message Importance="high" Text="OutDir: $(OutputPath)" />
     <Exec Condition="'$(IsWindows)'!='true'" Command="./$(OutputPath)$(AssemblyName) generate-interface --engine unity --output=../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
     <Exec Condition="'$(IsWindows)'=='true'" Command=".\$(OutputPath)$(AssemblyName) generate-interface --engine unity --output=..\..\client\Packages\com.beamable\Editor\BeamCli\Commands" />
     <Exec Command="dotnet tool run dotnet-format ../../client/Packages/com.beamable/Editor/BeamCli/Commands" />

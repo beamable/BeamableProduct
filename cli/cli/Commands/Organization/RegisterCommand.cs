@@ -40,7 +40,7 @@ public class RegisterCommand : AppCommand<RegisterCommandArgs>
 	{
 		AnsiConsole.Write(
 			new FigletText("Beam")
-				.LeftAligned()
+				.LeftJustified()
 				.Color(Color.Red));
 
 		AnsiConsole.WriteLine("Welcome to Beamable. You are creating a new Beamable organization. If you already have an org, use the 'beam init' command to sign in.");
