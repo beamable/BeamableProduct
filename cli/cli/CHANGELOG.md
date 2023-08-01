@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix issue with cli crash when linking unity/unreal project that scans over protected folder
 
+### Changed
+- newly created service will have `ShouldBeEnabledOnRemote` as true in `BeamoServiceDefinition`
+- when creating new storage, service dependencies are all selected by default
+
 ## [1.17.0]
 
 ### Added
