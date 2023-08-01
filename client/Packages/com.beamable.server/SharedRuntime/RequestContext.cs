@@ -87,11 +87,20 @@ namespace Beamable.Server
 			return missingCount == 0;
 		}
 
+		[Obsolete]
 		public void CheckAdmin()
 		{
 			if (!HasScopes("*"))
 				throw new MissingScopesException(Scopes);
 		}
+		
+		public void AssertAdmin()
+		{
+			if (!HasScopes("*"))
+				throw new MissingScopesException(Scopes);
+		}
+
+		public bool IsAdmin => HasScopes("*");
 
 		/// <summary>
 		/// If the request is cancelled or times out, calling this method will trigger an exception.
