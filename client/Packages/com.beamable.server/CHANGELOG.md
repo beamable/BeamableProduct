@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `[Callable]` methods can accept and return `decimal` primitives
 - Beamable.Common nuget package is available for netstandard2.0
 - `CancelJob` function in `BeamScheduler`
+- `Context` now has a property `IsAdmin`
 
 ### Fixed
 
@@ -24,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `StorageDocument.Id` is now `public` and can be written to manually.
 - Cron expressions given to `BeamScheduler` are validated using `CronValidation.TryValidate` utility.
 - `ICronBuilder.ToString()` results in a cron expression instead of the default C# `ToString()` class name.
+- `Context.CheckAdmin()` is now obsolete, should use `Context.AssertAdmin()`.
 
 ### Removed
 
