@@ -287,7 +287,7 @@ public partial class BeamoLocalSystem
 	/// Using the given <paramref name="localManifest"/>, builds and deploys all services with the given <paramref name="deployBeamoIds"/> to the local docker engine.
 	/// If <paramref name="deployBeamoIds"/> is null, will deploy ALL services. Also, this does check for cyclical dependencies before running the deployment.
 	/// </summary>
-	public async Task DeployToLocal(BeamoLocalManifest localManifest, string[] deployBeamoIds = null, Action<string, float> buildPullImageProgress = null,
+	public async Task DeployToLocal(BeamoLocalManifest localManifest, string[] deployBeamoIds = null, bool forceAmdCpuArchitecture=false, Action<string, float> buildPullImageProgress = null,
 		Action<string> onServiceDeployCompleted = null)
 	{
 		deployBeamoIds ??= localManifest.ServiceDefinitions.Select(c => c.BeamoId).ToArray();
@@ -314,7 +314,7 @@ public partial class BeamoLocalSystem
 
 		// Builds all images for all services that are defined and can be built locally.
 		var prepareImages = new List<Task>(localManifest.ServiceDefinitions.Where(VerifyCanBeBuiltLocally)
-			.Select(c => PrepareBeamoServiceImage(c, buildPullImageProgress)));
+			.Select(c => PrepareBeamoServiceImage(c, buildPullImageProgress, forceAmdCpuArchitecture)));
 		await Task.WhenAll(prepareImages);
 
 

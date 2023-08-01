@@ -9,11 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `beam services run` takes a `--force-amd-cpu-arch` flag that will force the built CPU architecture to `linux/amd64`
 - Auto install Beamable templates
+
 
 ### Fixed
 
 - Fix issue with cli crash when linking unity/unreal project that scans over protected folder
+- `beam services deploy` will force build services to `linux/amd64` CPU architecture for usage on Beamable Cloud
 
 ### Changed
 
