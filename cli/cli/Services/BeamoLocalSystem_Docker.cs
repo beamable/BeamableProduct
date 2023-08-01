@@ -161,7 +161,7 @@ public partial class BeamoLocalSystem
 	/// <see cref="BeamoServiceDefinition.DockerBuildContextPath"/> and <see cref="BeamoServiceDefinition.RelativeDockerfilePath"/>.  
 	/// </summary>
 	/// <returns>The image id that was created/pulled.</returns>
-	public async Task<string> PrepareBeamoServiceImage(BeamoServiceDefinition serviceDefinition, Action<string, float> messageHandler, bool forceAmdCpuArchitecture=false)
+	public async Task<string> PrepareBeamoServiceImage(BeamoServiceDefinition serviceDefinition, Action<string, float> messageHandler, bool forceAmdCpuArchitecture = false)
 	{
 		switch (serviceDefinition.Protocol)
 		{
@@ -199,7 +199,7 @@ public partial class BeamoLocalSystem
 	/// It inspects the created image and returns it's ID.
 	/// </summary>
 	public async Task<string> BuildAndCreateImage(string imageName, string dockerBuildContextPath, string dockerfilePathInBuildContext, Action<float> progressUpdateHandler,
-		string containerImageTag = "latest", bool forceAmdCpuArchitecture=false)
+		string containerImageTag = "latest", bool forceAmdCpuArchitecture = false)
 	{
 		dockerBuildContextPath = _configService.GetRelativePath(dockerBuildContextPath);
 
