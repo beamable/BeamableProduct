@@ -26,7 +26,7 @@ public class UnityProjectClient : IProjectClient
 
 public class UnrealProjectClient : IProjectClient
 {
-	public IEnumerable<string> TypicalFolders { get; } = new[] { "Content", "Plugins", "Config"  };
+	public IEnumerable<string> TypicalFolders { get; } = new[] { "Content", "Plugins", "Config" };
 
 	public string ProjectClientTypeName => "Unreal";
 
