@@ -17,9 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `Context.CheckAdmin()` is now obsolete, should use `Context.AssertAdmin()`.
+- The `InitializeServicesAttribute` methods should be able to return a `Promise` instead of only a `Promise<Unit>`.
 
 ### Removed
-
 
 ## [1.17.0]
 
