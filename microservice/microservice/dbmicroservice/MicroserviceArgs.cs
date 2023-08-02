@@ -37,6 +37,7 @@ namespace Beamable.Server
 		public int RequestCancellationTimeoutSeconds { get; }
 		public LogOutputType LogOutputType { get; }
 		public string LogOutputPath { get; }
+		public bool EnableDangerousDeflateOptions { get; }
 	}
 
 	public enum LogOutputType
@@ -77,6 +78,7 @@ namespace Beamable.Server
 	   public int RequestCancellationTimeoutSeconds { get; set; }
 	   public LogOutputType LogOutputType { get; set; }
 	   public string LogOutputPath { get; set; }
+	   public bool EnableDangerousDeflateOptions { get; set; }
    }
 
    public static class MicroserviceArgsExtensions
@@ -115,7 +117,8 @@ namespace Beamable.Server
             RequestCancellationTimeoutSeconds = args.RequestCancellationTimeoutSeconds,
             HealthPort = args.HealthPort,
             LogOutputType = args.LogOutputType,
-            LogOutputPath = args.LogOutputPath
+            LogOutputPath = args.LogOutputPath,
+            EnableDangerousDeflateOptions = args.EnableDangerousDeflateOptions
          };
          
          configurator?.Invoke(next);
@@ -125,6 +128,7 @@ namespace Beamable.Server
 
    public class EnviornmentArgs : IMicroserviceArgs
    {
+	   static bool IsEnvironmentVariableTrue(string key) => (Environment.GetEnvironmentVariable(key)?.ToLowerInvariant() ?? string.Empty) == "true";
       public string CustomerID => Environment.GetEnvironmentVariable("CID");
       public string ProjectName => Environment.GetEnvironmentVariable("PID");
       public IDependencyProviderScope ServiceScope { get; }
@@ -356,5 +360,6 @@ namespace Beamable.Server
       }
 
       public string SdkVersionBaseBuild => File.ReadAllText(".beamablesdkversion").Trim();
+      public bool EnableDangerousDeflateOptions => IsEnvironmentVariableTrue("WS_ENABLE_DANGEROUS_DEFLATE_OPTIONS");
    }
 }
