@@ -26,9 +26,6 @@ public class CheckNBomberCommand : AppCommand<CheckNBomberCommandArgs>
 
 	public override Task Handle(CheckNBomberCommandArgs args)
 	{
-		BeamableLogger.Log("Starting nbomber check");
-		Console.WriteLine("Console starting");
-
 		var csv = File.ReadAllText(args.nBomberJsonFilePath);
 		var lines = CsvReader.ReadFromText(csv);
 		var warnings = new List<string>();
@@ -63,7 +60,6 @@ public class CheckNBomberCommand : AppCommand<CheckNBomberCommandArgs>
 		}
 
 		BeamableLogger.Log("No issues found.");
-		Console.WriteLine("No issues found from Console.");
 		return Task.CompletedTask;
 	}
 }

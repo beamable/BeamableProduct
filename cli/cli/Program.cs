@@ -17,6 +17,5 @@ public static class Program
 		{
 			Log.CloseAndFlush();
 		}
-		
 	}
 }
