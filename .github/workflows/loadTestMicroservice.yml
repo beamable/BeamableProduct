@@ -36,23 +36,20 @@ jobs:
         run: |
           dotnet build
       - name: Starting Counters
-        uses: JarvusInnovations/background-action@v1
-        with:
-          wait-for: 2s
-          wait-on: socket:~/myport.sock
-          working-directory: ./stress-tests/standalone-microservice/services/
-          run: |
-            cd ./standalone-microservice/bin/Debug/net6.0
-        
+        working-directory: ./stress-tests/standalone-microservice/services/
+        run: |
+          cd ./standalone-microservice/bin/Debug/net6.0
+      
 
-            echo "starting counters"
-            mkdir ../../../../reports
-            dotnet-counters collect --diagnostic-port ~/myport.sock --refresh-interval 3 --format json --output ../../../../reports/counter.json &
+          echo "starting counters"
+          mkdir ../../../../reports
+          dotnet-counters collect --diagnostic-port ~/myport.sock --refresh-interval 3 --format json --output ../../../../reports/counter.json &
       - name: Run Microservice (with profiler)
         working-directory: ./stress-tests/standalone-microservice/services/
         run: |
           cd ./standalone-microservice/bin/Debug/net6.0
-          
+
+          sleep 5
           echo "starting service"
           mkdir ../../../../logs
           LOG_PATH=../../../../logs/serviceRuntime.log DOTNET_DiagnosticPorts=~/myport.sock ./standalone-microservice &
