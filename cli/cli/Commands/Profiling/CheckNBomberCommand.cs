@@ -60,6 +60,7 @@ public class CheckNBomberCommand : AppCommand<CheckNBomberCommandArgs>
 		}
 
 		BeamableLogger.Log("No issues found.");
+		Console.WriteLine("No issues found from Console.");
 		return Task.CompletedTask;
 	}
 }
