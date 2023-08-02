@@ -39,6 +39,7 @@ jobs:
         uses: JarvusInnovations/background-action@v1
         with:
           wait-for: 2s
+          wait-on: socket:~/myport.sock
           working-directory: ./stress-tests/standalone-microservice/services/
           run: |
             cd ./standalone-microservice/bin/Debug/net6.0
