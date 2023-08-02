@@ -380,7 +380,7 @@ namespace Beamable.Server
 
       /// <summary>
       /// Handles custom initialization hooks. Makes the following assumptions:
-      ///   - User defined at least one <see cref="InitializeServicesAttribute"/> over a static async method that returns a <see cref="Promise{Unit}"/> and receives a <see cref="IServiceInitializer"/>.
+      ///   - User defined at least one <see cref="InitializeServicesAttribute"/> over a static async method that returns a <see cref="Promise{Unit}"/> or a <see cref="Promise"/> and receives a <see cref="IServiceInitializer"/>.
       ///   - Any exception will fail loudly and prevent the C#MS from receiving traffic.
       /// <para/>
       /// </summary>
@@ -443,9 +443,13 @@ namespace Beamable.Server
             {
                promise = (Promise<Unit>)initializationMethod.Invoke(null, new object[] { serviceInitializers });
             }
+            else if (resultType == typeof(Promise))
+            {
+	            promise = (Promise)initializationMethod.Invoke(null, new object[] { serviceInitializers });
+            }
             else
             {
-               BeamableLogger.LogWarning($"Skipping method with [{nameof(InitializeServicesAttribute)}] since it isn't a synchronous [void] method, a [{nameof(Task)}] or a [{nameof(Promise<Unit>)}]");
+               BeamableLogger.LogWarning($"Skipping method with [{nameof(InitializeServicesAttribute)}] since it isn't a synchronous [void] method, a [{nameof(Task)}], a [{nameof(Promise)}] or a [{nameof(Promise<Unit>)}]");
                continue;
             }
 
