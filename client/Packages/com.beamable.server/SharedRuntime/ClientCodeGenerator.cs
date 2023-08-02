@@ -187,7 +187,7 @@ namespace Beamable.Server.Generator
 			var interfaces = Descriptor.Type.GetInterfaces();
 			foreach (var type in interfaces)
 			{
-				if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IFederatedLogin<>))
+				if (type.IsGenericType && type.GetGenericTypeDefinition().FullName == typeof(IFederatedLogin<>).FullName)
 				{
 					var genericType = type.GetGenericArguments()[0];
 					var baseReference = new CodeTypeReference(typeof(ISupportsFederatedLogin<>));
@@ -202,7 +202,7 @@ namespace Beamable.Server.Generator
 			var interfaces = Descriptor.Type.GetInterfaces();
 			foreach (var type in interfaces)
 			{
-				if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IFederatedInventory<>))
+				if (type.IsGenericType && type.GetGenericTypeDefinition().FullName == typeof(IFederatedInventory<>).FullName)
 				{
 					var genericType = type.GetGenericArguments()[0];
 					var baseReference = new CodeTypeReference(typeof(ISupportsFederatedInventory<>));
