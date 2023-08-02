@@ -1,7 +1,7 @@
-using Beamable.Server.Editor;
+
 using System.Collections.Generic;
 
-namespace Beamable.Server
+namespace Beamable.Server.Editor
 {
 	public class MicroserviceClientInfo
 	{
