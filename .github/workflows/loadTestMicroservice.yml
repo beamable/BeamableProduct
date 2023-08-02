@@ -81,6 +81,8 @@ jobs:
         continue-on-error: true
         working-directory: ./stress-tests/standalone-microservice/services/reports
         run: |
+          beam --version
+          cat ./report.csv
           beam profile check-nbomber ./report.csv --p95-limit 9000
           echo $?
           echo "nbomber_log='$(beam profile check-nbomber ./report.csv --p95-limit 9000)'" >> $GITHUB_ENV
