@@ -93,7 +93,7 @@ namespace Beamable.Server
 			if (!HasScopes("*"))
 				throw new MissingScopesException(Scopes);
 		}
-		
+
 		/// <summary>
 		/// Throws an exception in case the user does not have the admin scope.
 		/// </summary>
