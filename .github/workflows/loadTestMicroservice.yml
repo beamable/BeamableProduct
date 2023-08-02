@@ -82,6 +82,12 @@ jobs:
         working-directory: ./stress-tests/standalone-microservice/services/reports
         run: |
           echo "log='$(beam profile check-nbomber ./report.csv --p95-limit 9000)'" >> $GITHUB_OUTPUT
+      - name: Debug NBomber Output
+        run: |
+          echo NBOMBER OUTPUT: ${{steps.checkNbomber.outputs.log}}
+      - name: Debug Counters Output
+        run: |
+          echo COUNTERS OUTPUT: ${{steps.checkCounters.outputs.log}}
       - name: Post to a Slack channel
         id: slack
         if: ${{!contains(steps.checkNbomber.outputs.log, 'No issues found') || !contains(steps.checkCounters.outputs.log, 'No issues found')}}
