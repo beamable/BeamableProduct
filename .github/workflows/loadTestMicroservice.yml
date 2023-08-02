@@ -80,9 +80,10 @@ jobs:
         working-directory: ./stress-tests/standalone-microservice/services/reports
         run: |
           echo "log='$(beam profile check-nbomber ./report.csv --p95-limit 9000)'" >> $GITHUB_OUTPUT
+          echo "x='3'" >> $GITHUB_OUTPUT
       - name: Debug NBomber Output
         run: |
-          echo NBOMBER OUTPUT: ${{steps.checkNbomber.outputs.log}}
+          echo NBOMBER OUTPUT: ${{steps.checkNbomber.outputs.x}}
       - name: Debug Counters Output
         run: |
           echo COUNTERS OUTPUT: ${{steps.checkCounters.outputs.log}}
