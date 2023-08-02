@@ -76,7 +76,7 @@ public partial class BeamoLocalSystem
 		// Then, let's try to deploy locally first.
 		try
 		{
-			await DeployToLocal(localManifest, null, buildPullImageProgress, onServiceDeployCompleted);
+			await DeployToLocal(localManifest, null, true, buildPullImageProgress, onServiceDeployCompleted);
 		}
 		// If we fail, log out a message and the exception that caused the failure
 		catch (Exception e)
