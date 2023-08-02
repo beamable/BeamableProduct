@@ -87,11 +87,27 @@ namespace Beamable.Server
 			return missingCount == 0;
 		}
 
+		[Obsolete("Use " + nameof(AssertAdmin) + " instead")]
 		public void CheckAdmin()
 		{
 			if (!HasScopes("*"))
 				throw new MissingScopesException(Scopes);
 		}
+		
+		/// <summary>
+		/// Throws an exception in case the user does not have the admin scope.
+		/// </summary>
+		/// <exception cref="MissingScopesException"></exception>
+		public void AssertAdmin()
+		{
+			if (!IsAdmin)
+				throw new MissingScopesException(Scopes);
+		}
+
+		/// <summary>
+		/// Returns true if the user is the admin, false otherwise.
+		/// </summary>
+		public bool IsAdmin => HasScopes("*");
 
 		/// <summary>
 		/// If the request is cancelled or times out, calling this method will trigger an exception.
