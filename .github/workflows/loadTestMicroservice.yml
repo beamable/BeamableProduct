@@ -72,13 +72,13 @@ jobs:
             ./stress-tests/standalone-microservice/services/reports
       - name: Check Dotnet Counters
         id: checkCounters
-        continue-on-error: true
+        continue-on-error: false
         working-directory: ./stress-tests/standalone-microservice/services/reports
         run: |
           echo "log='$(beam profile check-counters ./counter.json --cpu-limit 35)'" >> $GITHUB_OUTPUT
       - name: Check NBomber
         id: checkNbomber
-        continue-on-error: true
+        continue-on-error: false
         working-directory: ./stress-tests/standalone-microservice/services/reports
         run: |
           echo "log='$(beam profile check-nbomber ./report.csv --p95-limit 9000)'" >> $GITHUB_OUTPUT
