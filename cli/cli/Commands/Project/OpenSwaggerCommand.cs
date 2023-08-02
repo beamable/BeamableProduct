@@ -9,8 +9,8 @@ namespace cli.Dotnet;
 
 public class OpenSwaggerCommandArgs : CommandArgs
 {
-	public bool isRemote;
-	public ServiceName serviceName;
+	public bool IsRemote;
+	public ServiceName ServiceName;
 }
 
 public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResult
@@ -21,13 +21,13 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<ServiceName>("service-name", () => new ServiceName(), "Name of the service to open swagger to"), (arg, i) => arg.serviceName = i);
-		AddOption(new Option<bool>("--remote", "If passed, swagger will open to the remote version of this service. Otherwise, it will try and use the local version"), (arg, i) => arg.isRemote = i);
+		AddArgument(new Argument<ServiceName>("service-name", () => new ServiceName(), "Name of the service to open swagger to"), (arg, i) => arg.ServiceName = i);
+		AddOption(new Option<bool>("--remote", "If passed, swagger will open to the remote version of this service. Otherwise, it will try and use the local version"), (arg, i) => arg.IsRemote = i);
 	}
 
 	public override Task Handle(OpenSwaggerCommandArgs args)
 	{
-		if (string.IsNullOrWhiteSpace(args.serviceName))
+		if (string.IsNullOrWhiteSpace(args.ServiceName))
 		{
 			var serviceDefinitions = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions
 				.Where(definition => definition.Protocol == BeamoProtocolType.HttpMicroservice).ToList();
@@ -35,9 +35,9 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 			switch (serviceDefinitions.Count)
 			{
 				case 1:
-					args.serviceName = new ServiceName(serviceDefinitions[0].BeamoId);
+					args.ServiceName = new ServiceName(serviceDefinitions[0].BeamoId);
 					BeamableLogger.Log(
-						$"No service-name passed as argument. Running command for {args.serviceName} since it is the only microservice in BeamoManifest.");
+						$"No service-name passed as argument. Running command for {args.ServiceName} since it is the only microservice in BeamoManifest.");
 					break;
 				case > 1:
 					BeamableLogger.Log("We found more than one microservices in the directory");
@@ -55,8 +55,8 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 
 		var cid = args.AppContext.Cid;
 		var pid = args.AppContext.Pid;
-		var url = $"{args.AppContext.Host.Replace("dev.", "dev-").Replace("api", "portal")}/{cid}/games/{pid}/realms/{pid}/microservices/{args.serviceName}/docs";
-		if (!args.isRemote)
+		var url = $"{args.AppContext.Host.Replace("dev.", "dev-").Replace("api", "portal")}/{cid}/games/{pid}/realms/{pid}/microservices/{args.ServiceName}/docs";
+		if (!args.IsRemote)
 		{
 			url += $"?prefix={MachineHelper.GetUniqueDeviceId()}";
 		}
@@ -69,7 +69,7 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 		string directory = AnsiConsole.Ask<string>("Enter the absolute or relative directory to use:");
 		await new BeamCommandAssistantBuilder("project open-swagger", args.AppContext)
 			.WithOption(true, "--dir", directory)
-			.WithOption(args.isRemote, "--remote", string.Empty)
+			.WithOption(args.IsRemote, "--remote")
 			.RunAsync();
 	}
 
@@ -86,7 +86,7 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 		await new BeamCommandAssistantBuilder("project open-swagger", args.AppContext)
 			.AddArgument(serviceName)
 			.WithOption(!string.IsNullOrWhiteSpace(directory), "--dir", directory)
-			.WithOption(args.isRemote, "--remote", string.Empty)
+			.WithOption(args.IsRemote, "--remote")
 			.RunAsync();
 	}
 }

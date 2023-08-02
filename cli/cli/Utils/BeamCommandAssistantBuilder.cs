@@ -25,7 +25,11 @@ public class BeamCommandAssistantBuilder
 	/// <returns></returns>
 	public BeamCommandAssistantBuilder AddArgument(string arg)
 	{
-		_beamCommand.Append($" {arg}");
+		int indexOfFirstDefaultFlag = _beamCommand.ToString().IndexOf("--", StringComparison.Ordinal);
+
+		if (indexOfFirstDefaultFlag > 0) _beamCommand.Insert(indexOfFirstDefaultFlag, $"{arg} ");
+		else _beamCommand.Append($" {arg}");
+
 		return this;
 	}
 
@@ -54,13 +58,15 @@ public class BeamCommandAssistantBuilder
 	/// </summary>
 	/// <param name="includeOption">Whether the option should be included</param>
 	/// <param name="optionFlag">Specify the optionFlag with '--' e.g '--remote'</param>
-	/// <param name="optionValue">The value of the the optionFlag</param>
+	/// <param name="optionValues">The value(s) of the the optionFlag</param>
 	/// <returns></returns>
-	public BeamCommandAssistantBuilder WithOption(bool includeOption, string optionFlag, string optionValue)
+	public BeamCommandAssistantBuilder WithOption(bool includeOption, string optionFlag, params string[] optionValues)
 	{
 		if (!includeOption) return this;
 
-		_beamCommand.Append(string.IsNullOrWhiteSpace(optionValue) ? $" {optionFlag}" : $" {optionFlag} {optionValue}");
+		_beamCommand.Append(optionValues.Length == 0
+			? $" {optionFlag}"
+			: $" {optionFlag}{string.Join(string.Empty, optionValues.Select(optionValue => $" {optionValue}"))}");
 
 		return this;
 	}

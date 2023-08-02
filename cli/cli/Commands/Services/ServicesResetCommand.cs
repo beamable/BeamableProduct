@@ -1,9 +1,8 @@
-﻿using cli.Services;
-using Newtonsoft.Json;
+﻿using Beamable.Common;
+using cli.Services;
+using cli.Utils;
 using Spectre.Console;
-using Spectre.Console.Rendering;
 using System.CommandLine;
-using System.CommandLine.Invocation;
 
 namespace cli;
 
@@ -62,6 +61,23 @@ public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>, IResul
 				args.BeamoIdsToReset = Array.Empty<string>();
 			}
 		}
+		else
+		{
+			var localIds = _localBeamo.BeamoManifest.ServiceDefinitions
+				.Select(c => c.BeamoId).Distinct().ToList();
+
+			if (localIds.Count == 0)
+			{
+				BeamableLogger.Log("We couldn't find a service in the directory");
+				string directory = AnsiConsole.Ask<string>("Enter the absolute or relative directory to use:");
+				await new BeamCommandAssistantBuilder("services reset", args.AppContext)
+					.AddArgument(args.Target)
+					.WithOption(true, "--dir", directory)
+					.WithOption(args.BeamoIdsToReset.Length > 0, "--ids", args.BeamoIdsToReset)
+					.RunAsync();
+				return;
+			}
+		}
 
 		if (args.BeamoIdsToReset.Contains("_All_"))
 			args.BeamoIdsToReset = _localBeamo.BeamoManifest.ServiceDefinitions.Select(sd => sd.BeamoId).ToArray();
@@ -84,7 +100,6 @@ public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>, IResul
 				});
 
 		}
-
 		else if (args.Target == "container")
 		{
 			await AnsiConsole
@@ -101,7 +116,6 @@ public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>, IResul
 					await Task.WhenAll(actualTasks);
 				});
 		}
-
 		else if (args.Target == "protocols")
 		{
 			await AnsiConsole
@@ -139,7 +153,6 @@ public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>, IResul
 			Target = args.Target,
 			Ids = args.BeamoIdsToReset.ToList(),
 		});
-
 
 		_localBeamo.SaveBeamoLocalManifest();
 		_localBeamo.SaveBeamoLocalRuntime();
