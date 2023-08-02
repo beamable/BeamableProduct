@@ -7,10 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.17.0]
 
-### Added
-
-- Supporting deleted and updated items in `IFederatedLogin`
-
 ### Fixed
 
 - `IsExternalIdentityAvailable` no longer returns 'true' if user_id is already in use by another player and contains special characters
