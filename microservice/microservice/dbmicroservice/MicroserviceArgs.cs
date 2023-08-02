@@ -129,36 +129,33 @@ namespace Beamable.Server
    public class EnviornmentArgs : IMicroserviceArgs
    {
 	   static bool IsEnvironmentVariableTrue(string key) => (Environment.GetEnvironmentVariable(key)?.ToLowerInvariant() ?? string.Empty) == "true";
+	   static int GetIntFromEnvironmentVariable(string key, int defaultValue)
+	   {
+		   if (!int.TryParse(Environment.GetEnvironmentVariable(key), out int val))
+		   {
+			   val = defaultValue;
+		   }
+		   return val;
+	   }
+	   static double GetDoubleFromEnvironmentVariable(string key, double defaultValue)
+	   {
+		   if (!double.TryParse(Environment.GetEnvironmentVariable(key), out double val))
+		   {
+			   val = defaultValue;
+		   }
+		   return val;
+	   }
       public string CustomerID => Environment.GetEnvironmentVariable("CID");
       public string ProjectName => Environment.GetEnvironmentVariable("PID");
       public IDependencyProviderScope ServiceScope { get; }
-      public int HealthPort {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("HEALTH_PORT"), out var val))
-		      {
-			      val = Constants.Features.Services.HEALTH_PORT;
-		      }
-		      return val;
-	      }
-      }
+      public int HealthPort => GetIntFromEnvironmentVariable("HEALTH_PORT", Constants.Features.Services.HEALTH_PORT);
       public string Host => Environment.GetEnvironmentVariable("HOST");
       public string Secret => Environment.GetEnvironmentVariable("SECRET");
       public string NamePrefix => Environment.GetEnvironmentVariable("NAME_PREFIX") ?? "";
       public string SdkVersionExecution => Environment.GetEnvironmentVariable("BEAMABLE_SDK_VERSION_EXECUTION") ?? "";
-      public bool WatchToken => (Environment.GetEnvironmentVariable("WATCH_TOKEN")?.ToLowerInvariant() ?? "") == "true";
-      public bool DisableCustomInitializationHooks => (Environment.GetEnvironmentVariable("DISABLE_CUSTOM_INITIALIZATION_HOOKS")?.ToLowerInvariant() ?? "") == "true";
-
-      public int RequestCancellationTimeoutSeconds {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("REQUEST_TIMEOUT_SECONDS"), out var val))
-		      {
-			      val = 10;
-		      }
-		      return val;
-	      }
-      }
+      public bool WatchToken => IsEnvironmentVariableTrue("WATCH_TOKEN");
+      public bool DisableCustomInitializationHooks => IsEnvironmentVariableTrue("DISABLE_CUSTOM_INITIALIZATION_HOOKS");
+      public int RequestCancellationTimeoutSeconds => GetIntFromEnvironmentVariable("REQUEST_TIMEOUT_SECONDS", 10);
 
       public LogOutputType LogOutputType
       {
@@ -185,180 +182,28 @@ namespace Beamable.Server
 
       public string LogOutputPath => Environment.GetEnvironmentVariable("LOG_PATH");
       public string LogLevel => Environment.GetEnvironmentVariable("LOG_LEVEL") ?? "debug";
+      public bool DisableLogTruncate => IsEnvironmentVariableTrue("DISABLE_LOG_TRUNCATE");
+      public int LogTruncateLimit => GetIntFromEnvironmentVariable("LOG_TRUNCATE_LIMIT", 1000);
+      public int LogMaxCollectionSize => GetIntFromEnvironmentVariable("LOG_DESTRUCTURE_MAX_COLLECTION_SIZE", 15);
+      public int LogMaxDepth => GetIntFromEnvironmentVariable("LOG_DESTRUCTURE_MAX_DEPTH", 3);
 
-      public bool DisableLogTruncate => (Environment.GetEnvironmentVariable("DISABLE_LOG_TRUNCATE")?.ToLowerInvariant() ?? "") == "true";
-
-      public int LogTruncateLimit
-      {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("LOG_TRUNCATE_LIMIT"), out var val))
-		      {
-			      val = 1000;
-		      }
-
-		      return val;
-	      }
-      }
-      public int LogMaxCollectionSize {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("LOG_DESTRUCTURE_MAX_COLLECTION_SIZE"), out var val))
-		      {
-			      val = 15;
-		      }
-
-		      return val;
-	      }
-      }
-      public int LogMaxDepth{
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("LOG_DESTRUCTURE_MAX_DEPTH"), out var val))
-		      {
-			      val = 3;
-		      }
-
-		      return val;
-	      }
-      }
-
-      public int LogDestructureMaxLength
-      {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("LOG_DESTRUCTURE_MAX_LENGTH"), out var val))
-		      {
-			      val = 250;
-		      }
-
-		      return val;
-	      }
-      }
+      public int LogDestructureMaxLength => GetIntFromEnvironmentVariable("LOG_DESTRUCTURE_MAX_LENGTH", 250);
 
       /// <summary>
       /// By default, rate limiting is on, so if you pass anything to WS_DISABLE_RATE_LIMIT, it'll disable it.
       /// </summary>
       public bool RateLimitWebsocket => string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WS_DISABLE_RATE_LIMIT"));
-
-      public int RateLimitWebsocketTokens
-      {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_TOKENS"), out var limit))
-		      {
-			      limit = 1000;
-		      }
-		      return limit;
-	      }
-      }
-
-      public int RateLimitWebsocketPeriodSeconds 
-      {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_PERIOD_SECONDS"), out var limit))
-		      {
-			      limit = 1;
-		      }
-		      return limit;
-	      }
-      }
-      public int RateLimitWebsocketTokensPerPeriod 
-      {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_TOKENS_PER_PERIOD"), out var limit))
-		      {
-			      limit = 1000;
-		      }
-		      return limit;
-	      }
-      }
-      
-      public int BeamInstanceCount 
-      {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("BEAM_INSTANCE_COUNT"), out var limit))
-		      {
-			      limit = 10;
-		      }
-		      return limit;
-	      }
-      }
-
-      public int RateLimitWebsocketMaxQueueSize
-      {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_MAX_QUEUE_SIZE"), out var limit))
-		      {
-			      limit = 100000;
-		      }
-		      return limit;
-	      }
-      }
-
-      public double RateLimitCPUMultiplierLow
-      {
-	      get
-	      {
-		      if (!double.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_CPU_MULT_LOW"), out var limit))
-		      {
-			      limit = -.2;
-		      }
-		      return limit;
-	      }
-      }
-
-      public double RateLimitCPUMultiplierHigh
-      {
-	      get
-	      {
-		      if (!double.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_CPU_MULT_HIGH"), out var limit))
-		      {
-			      limit = .1;
-		      }
-		      return limit;
-	      }
-      }
-
-      public int RateLimitCPUOffset 
-      {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_CPU_OFFSET"), out var limit))
-		      {
-			      limit = 0;
-		      }
-		      return limit;
-	      }
-      }
-
-
-      public int ReceiveChunkSize {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RECEIVE_CHUNK_SIZE"), out var limit))
-		      {
-			      limit = 65536;
-		      }
-		      return limit;
-	      }
-      }
-
-      public int SendChunkSize{
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_SEND_CHUNK_SIZE"), out var limit))
-		      {
-			      limit = 65536;
-		      }
-		      return limit;
-	      }
-      }
-
+      public int RateLimitWebsocketTokens => GetIntFromEnvironmentVariable("WS_RATE_LIMIT_TOKENS", 1000);
+      public int RateLimitWebsocketPeriodSeconds => GetIntFromEnvironmentVariable("WS_RATE_LIMIT_PERIOD_SECONDS", 1);
+      public int RateLimitWebsocketTokensPerPeriod => GetIntFromEnvironmentVariable("WS_RATE_LIMIT_TOKENS_PER_PERIOD", 1000);
+      public int BeamInstanceCount => GetIntFromEnvironmentVariable("BEAM_INSTANCE_COUNT", 10);
+      public int RateLimitWebsocketMaxQueueSize =>
+	      GetIntFromEnvironmentVariable("WS_RATE_LIMIT_MAX_QUEUE_SIZE", 100000);
+      public double RateLimitCPUMultiplierLow => GetDoubleFromEnvironmentVariable("WS_RATE_LIMIT_CPU_MULT_LOW", -.2);
+      public double RateLimitCPUMultiplierHigh => GetDoubleFromEnvironmentVariable("WS_RATE_LIMIT_CPU_MULT_HIGH", .1);
+      public int RateLimitCPUOffset => GetIntFromEnvironmentVariable("WS_RATE_LIMIT_CPU_OFFSET", 0);
+      public int ReceiveChunkSize => GetIntFromEnvironmentVariable("WS_RECEIVE_CHUNK_SIZE", 65536);
+      public int SendChunkSize =>  GetIntFromEnvironmentVariable("WS_SEND_CHUNK_SIZE", 65536);
       public string SdkVersionBaseBuild => File.ReadAllText(".beamablesdkversion").Trim();
       public bool EnableDangerousDeflateOptions => IsEnvironmentVariableTrue("WS_ENABLE_DANGEROUS_DEFLATE_OPTIONS");
    }
