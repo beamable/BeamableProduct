@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `beam project open-swagger` and `beam project open-mongo` when service name or storage is not specified
 - Fix `beam project open-swagger` and `beam project open-mongo` when multiple service name or storage exist in the same directory, user can now select the service name or storage to use
 - `beam services deploy` will force build services to `linux/amd64` CPU architecture for usage on Beamable Cloud
+- Fix open-swagger case sensitivity problem
 
 ### Changed
 
