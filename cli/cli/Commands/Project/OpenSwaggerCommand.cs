@@ -4,7 +4,6 @@ using cli.Services;
 using cli.Utils;
 using Spectre.Console;
 using System.CommandLine;
-using System.Text.RegularExpressions;
 
 namespace cli.Dotnet;
 
