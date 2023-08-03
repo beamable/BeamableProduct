@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Standalone Microservices that implement `IFederatedLogin<>` or `IFederatedInventory<>` now appear as federation options in linked Unity projects.
+- `GetTournamentInfo` is now obsolete, should use `GetRunningTournamentInfo` that returns the actual running cycle tournament info.
 
 ### Changed
 

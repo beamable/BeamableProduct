@@ -28,6 +28,15 @@ namespace Beamable.Common.Api.Tournaments
 		Promise<TournamentInfo> GetTournamentInfo(string tournamentContentId);
 
 		/// <summary>
+		/// Find the running <see cref="TournamentInfo"/> that matches the given tournament content id.
+		/// </summary>
+		/// <param name="tournamentContentId">A tournament content id.</param>
+		/// <returns>
+		/// A <see cref="Promise{T}"/> containing the running <see cref="TournamentInfo"/> whose <see cref="TournamentInfo.contentId"/> matches the <see cref="tournamentContentId"/>
+		/// </returns>
+		Promise<TournamentInfo> GetRunningTournamentInfo(string tournamentContentId);
+
+		/// <summary>
 		/// Find all the tournaments that match given criteria.
 		/// </summary>
 		/// <param name="contentId">If included, only tournaments that were created from the given tournament content id will be included.</param>
