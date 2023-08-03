@@ -4,6 +4,7 @@ using cli.Services;
 using cli.Utils;
 using Spectre.Console;
 using System.CommandLine;
+using System.Text.RegularExpressions;
 
 namespace cli.Dotnet;
 
@@ -55,11 +56,17 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 
 		var cid = args.AppContext.Cid;
 		var pid = args.AppContext.Pid;
+		var refreshToken = args.AppContext.RefreshToken;
 		var url = $"{args.AppContext.Host.Replace("dev.", "dev-").Replace("api", "portal")}/{cid}/games/{pid}/realms/{pid}/microservices/{args.serviceName}/docs";
+
+		if (!string.IsNullOrWhiteSpace(refreshToken)) url += $"?refresh_token={refreshToken}";
+
 		if (!args.isRemote)
 		{
-			url += $"?prefix={MachineHelper.GetUniqueDeviceId()}";
+			char queryLiteral = Regex.IsMatch(url, @"\?.*=") ? '&' : '?';
+			url += $"{queryLiteral}prefix={MachineHelper.GetUniqueDeviceId()}";
 		}
+
 		MachineHelper.OpenBrowser(url);
 		return Task.CompletedTask;
 	}
