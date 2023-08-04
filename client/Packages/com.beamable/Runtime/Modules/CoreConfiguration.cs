@@ -184,9 +184,7 @@ namespace Beamable
 					continue;
 
 				var shouldAddAssembly = !assemblyNames[i].Contains("Packages/") && !assemblyNames[i].Contains("Assets/");
-#if BEAMABLE_DEVELOPER
-				shouldAddAssembly &= nameWithoutEx.Contains("UnityEditor.Test") && !nameWithoutEx.Contains("Beamable.Microservice") && !nameWithoutEx.Contains("Beamable.Storage");
-#endif
+
 				if (shouldAddAssembly)
 				{
 					AssembliesToSweep.Add(nameWithoutEx);
@@ -206,6 +204,18 @@ namespace Beamable
 					}
 				}
 			}
+#if BEAMABLE_DEVELOPER
+			for (int i = 0; i < AssembliesToSweep.Count; i++)
+			{
+				if (AssembliesToSweep[i].Contains("UnityEditor.Test") &&
+				    !AssembliesToSweep[i].Contains("Beamable.Microservice") &&
+				    !AssembliesToSweep[i].Contains("Beamable.Storage"))
+				{
+					AssembliesToSweep.RemoveAt(i);
+					i--;
+				}
+			}
+#endif
 			AssembliesToSweep.Sort();
 #endif
 		}
