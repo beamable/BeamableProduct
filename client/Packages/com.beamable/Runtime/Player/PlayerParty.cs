@@ -445,7 +445,7 @@ namespace Beamable.Player
 		#endregion
 
 		/// <summary>
-		/// the gamerTag of the party member
+		/// the player id of the party member
 		/// </summary>
 		public long playerId;
 
