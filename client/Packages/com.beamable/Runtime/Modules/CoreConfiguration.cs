@@ -170,6 +170,7 @@ namespace Beamable
 		/// Updates content of <see cref="AssembliesToSweep"/>
 		/// which is later passed to <see cref="Beamable.Common.Reflection.ReflectionCache"/>.
 		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void RebuildAssembliesToSweep()
 		{
 #if UNITY_EDITOR
