@@ -3,8 +3,6 @@ using Beamable.Server;
 using Core.Server.Common;
 using Serilog;
 using Serilog.Events;
-using Serilog.Formatting.Raw;
-using Serilog.Sinks.TestCorrelator;
 using UnityEngine;
 
 namespace microserviceTests.microservice.Util
