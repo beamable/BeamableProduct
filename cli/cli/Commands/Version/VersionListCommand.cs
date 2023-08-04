@@ -1,3 +1,4 @@
+using Beamable.Common;
 using cli.Services;
 using Serilog;
 using System.CommandLine;
@@ -46,11 +47,11 @@ public class VersionListCommand : AppCommand<VersionListCommandArgs>
 		}
 
 
-		var set = data.TakeLast(args.limit).Reverse();
+		var set = data.TakeLast(args.limit).Reverse().Select(q=>q.packageVersion).ToList();
 
-		foreach (var q in set)
+		foreach (var version in set)
 		{
-			Log.Information(q.packageVersion);
+			Log.Information(version);
 		}
 	}
 }
