@@ -7,4 +7,5 @@ services:
       dockerfile: build/docker/image.microservice/Dockerfile
     volumes:
       - ../../../:/Client
-    
+    environment:
+      BUILD_TARGET_FRAMEWORK: ${BUILD_TARGET_FRAMEWORK}
