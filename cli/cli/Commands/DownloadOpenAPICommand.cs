@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Extensions;
 using Newtonsoft.Json;
@@ -8,7 +9,7 @@ namespace cli;
 
 public class DownloadOpenAPICommandArgs : CommandArgs
 {
-	public string? OutputPath;
+	[CanBeNull] public string OutputPath;
 	public string Filter;
 }
 

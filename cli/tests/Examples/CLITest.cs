@@ -19,13 +19,12 @@ namespace tests.Examples;
 public class CLITest
 {
 	protected string WorkingDir => Path.Combine(_originalWorkingDir, "testRuns", TestId);
-	protected string TestId { get; private set; }
-	protected int x = 0;
-	private string _originalWorkingDir;
+	protected string TestId { get; private set; } = default!;
+	private string _originalWorkingDir = Directory.GetCurrentDirectory();
 
-	protected Mock<IRequester> _mockRequester;
-	protected LoggingLevelSwitch _serilogLevel;
-	private Action<IDependencyBuilder> _configurator;
+	protected Mock<IRequester> _mockRequester = default!;
+	protected LoggingLevelSwitch _serilogLevel = default!;
+	private Action<IDependencyBuilder> _configurator = default!;
 
 	private List<Mock> _mockObjects = new List<Mock>();
 
@@ -33,7 +32,7 @@ public class CLITest
 	{
 		get;
 		private set;
-	}
+	} = default!;
 
 	[SetUp]
 	public void Setup()

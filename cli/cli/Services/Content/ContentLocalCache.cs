@@ -1,4 +1,5 @@
 ﻿using Beamable.Common.Content;
+using JetBrains.Annotations;
 using System.Text.Json;
 
 namespace cli.Services.Content;
@@ -72,7 +73,8 @@ public class ContentLocalCache
 		return false;
 	}
 
-	public ContentDocument? GetContent(string id)
+	[CanBeNull]
+	public ContentDocument GetContent(string id)
 	{
 		var content = ContentDocument.AtPath(GetContentPath(id));
 		return content;
