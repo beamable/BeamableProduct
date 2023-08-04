@@ -17,8 +17,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
-using Serilog.Sinks.SpectreConsole;
-using Spectre.Console;
+using Serilog.Sinks.Spectre;
 using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Help;
@@ -49,7 +48,8 @@ public class App
 		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
 
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
-		configureLogger ??= config => config.WriteTo.SpectreConsole("{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}")
+		configureLogger ??= config => config
+			.WriteTo.Spectre("{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}", LogLevel.MinimumLevel, LogLevel)
 			.MinimumLevel.ControlledBy(LogLevel)
 			.CreateLogger();
 		Log.Logger = configureLogger(new LoggerConfiguration());
