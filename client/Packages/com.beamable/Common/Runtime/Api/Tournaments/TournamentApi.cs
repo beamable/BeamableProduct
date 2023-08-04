@@ -23,11 +23,11 @@ namespace Beamable.Common.Api.Tournaments
 			return GetAllTournaments().Map(resp =>
 			   resp.tournaments.FirstOrDefault(tournament => string.Equals(tournament.contentId, tournamentContentId)));
 		}
-		
+
 		public Promise<TournamentInfo> GetRunningTournamentInfo(string tournamentContentId)
 		{
-			return GetAllTournaments(isRunning:true).Map(resp =>
-				resp.tournaments.FirstOrDefault(tournament => string.Equals(tournament.contentId, tournamentContentId)));
+			return GetAllTournaments(isRunning: true).Map(resp =>
+				 resp.tournaments.FirstOrDefault(tournament => string.Equals(tournament.contentId, tournamentContentId)));
 		}
 
 		public Promise<TournamentInfoResponse> GetAllTournaments(string contentId = null, int? cycle = null, bool? isRunning = null)
