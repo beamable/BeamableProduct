@@ -58,6 +58,7 @@ public class CLITest
 	public void Teardown()
 	{
 		Directory.SetCurrentDirectory(_originalWorkingDir);
+		Directory.Delete(WorkingDir, true);
 
 		foreach (var mock in _mockObjects)
 		{
