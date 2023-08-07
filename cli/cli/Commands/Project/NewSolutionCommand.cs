@@ -70,7 +70,7 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 		string projectDockerfilePath = Path.Combine(args.ProjectName, "Dockerfile");
 
 		// now that a .beamable folder has been created, setup the beamo manifest
-		var sd = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value.ToLower(),
+		var sd = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value,
 			projectDirectory,
 			projectDockerfilePath,
 			new string[] { },

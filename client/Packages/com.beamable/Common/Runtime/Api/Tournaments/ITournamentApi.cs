@@ -1,4 +1,5 @@
 using Beamable.Common.Content;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -25,7 +26,17 @@ namespace Beamable.Common.Api.Tournaments
 		/// <returns>
 		/// A <see cref="Promise{T}"/> containing the first <see cref="TournamentInfo"/> whose <see cref="TournamentInfo.contentId"/> matches the <see cref="tournamentContentId"/>
 		/// </returns>
+		[Obsolete("Use " + nameof(GetRunningTournamentInfo) + " method instead.")]
 		Promise<TournamentInfo> GetTournamentInfo(string tournamentContentId);
+
+		/// <summary>
+		/// Find the running <see cref="TournamentInfo"/> that matches the given tournament content id.
+		/// </summary>
+		/// <param name="tournamentContentId">A tournament content id.</param>
+		/// <returns>
+		/// A <see cref="Promise{T}"/> containing the running <see cref="TournamentInfo"/> whose <see cref="TournamentInfo.contentId"/> matches the <see cref="tournamentContentId"/>
+		/// </returns>
+		Promise<TournamentInfo> GetRunningTournamentInfo(string tournamentContentId);
 
 		/// <summary>
 		/// Find all the tournaments that match given criteria.

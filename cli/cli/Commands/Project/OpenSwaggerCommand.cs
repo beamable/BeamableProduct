@@ -55,11 +55,15 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 
 		var cid = args.AppContext.Cid;
 		var pid = args.AppContext.Pid;
-		var url = $"{args.AppContext.Host.Replace("dev.", "dev-").Replace("api", "portal")}/{cid}/games/{pid}/realms/{pid}/microservices/{args.ServiceName}/docs";
-		if (!args.IsRemote)
+		var refreshToken = args.AppContext.RefreshToken;
+		var queryArgs = new List<string>
 		{
-			url += $"?prefix={MachineHelper.GetUniqueDeviceId()}";
-		}
+			$"refresh_token={refreshToken}",
+			$"prefix={MachineHelper.GetUniqueDeviceId()}"
+		};
+		var joinedQueryString = string.Join("&", queryArgs);
+		var url = $"{args.AppContext.Host.Replace("dev.", "dev-").Replace("api", "portal")}/{cid}/games/{pid}/realms/{pid}/microservices/{args.ServiceName}/docs?{joinedQueryString}";
+
 		MachineHelper.OpenBrowser(url);
 		return Task.CompletedTask;
 	}

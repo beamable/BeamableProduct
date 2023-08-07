@@ -55,6 +55,7 @@ public class CLITest
 	public virtual void Teardown()
 	{
 		Directory.SetCurrentDirectory(OriginalWorkingDir);
+		Directory.Delete(WorkingDir, true);
 
 		foreach (var mock in _mockObjects)
 		{
@@ -107,5 +108,4 @@ public class CLITest
 		Assert.AreEqual(0, exitCode, $"Command had a non zero exit code. Check logs. code=[{exitCode}] command=[{string.Join(" ", args)}]");
 		return exitCode;
 	}
-
 }
