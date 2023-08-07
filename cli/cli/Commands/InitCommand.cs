@@ -62,6 +62,7 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 
 		if (!AliasHelper.IsCid(cid))
 		{
+			Console.WriteLine($"What is the cid {cid}");
 			var aliasResolve = await _aliasService.Resolve(cid).ShowLoading("Resolving alias...");
 			cid = aliasResolve.Cid.GetOrElse(() => throw new CliException("Invalid alias"));
 		}
