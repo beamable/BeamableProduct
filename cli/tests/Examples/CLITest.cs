@@ -109,5 +109,4 @@ public class CLITest
 		Assert.AreEqual(0, exitCode, $"Command had a non zero exit code. Check logs. code=[{exitCode}] command=[{string.Join(" ", args)}]");
 		return exitCode;
 	}
-
 }
