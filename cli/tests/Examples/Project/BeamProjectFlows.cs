@@ -7,6 +7,7 @@ using Serilog.Events;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using tests.Examples.Init;
 using tests.MoqExtensions;
 
 namespace tests.Examples.Project;
@@ -87,6 +88,7 @@ public class BeamProjectFlows : CLITest
 	{
 		#region Arrange
 
+		new BeamInitFlows().InEmptyDirectory();
 		Ansi.Input.PushTextWithEnter("n"); // don't link unity project
 		Ansi.Input.PushTextWithEnter("n"); // don't link unreal project
 
