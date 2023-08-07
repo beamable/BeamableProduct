@@ -64,7 +64,8 @@ public class CLITestExtensions : CLITest
 				.Verifiable();
 		});
 
-		Ansi.Input.PushTextWithEnter(alias); // enter alias
+		// Ansi.Input.PushTextWithEnter(alias); // enter alias
+		Ansi.Input.PushTextWithEnter(cid); // enter cid
 		Ansi.Input.PushTextWithEnter(userName); // enter email
 		Ansi.Input.PushTextWithEnter(password); // enter password
 
