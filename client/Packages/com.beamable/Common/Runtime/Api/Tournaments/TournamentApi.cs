@@ -1,4 +1,5 @@
 using Beamable.Common.Api.Stats;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -16,10 +17,17 @@ namespace Beamable.Common.Api.Tournaments
 			_requester = requester;
 		}
 
+		[Obsolete("Use " + nameof(GetRunningTournamentInfo) + " method instead.")]
 		public Promise<TournamentInfo> GetTournamentInfo(string tournamentContentId)
 		{
 			return GetAllTournaments().Map(resp =>
 			   resp.tournaments.FirstOrDefault(tournament => string.Equals(tournament.contentId, tournamentContentId)));
+		}
+
+		public Promise<TournamentInfo> GetRunningTournamentInfo(string tournamentContentId)
+		{
+			return GetAllTournaments(isRunning: true).Map(resp =>
+				 resp.tournaments.FirstOrDefault(tournament => string.Equals(tournament.contentId, tournamentContentId)));
 		}
 
 		public Promise<TournamentInfoResponse> GetAllTournaments(string contentId = null, int? cycle = null, bool? isRunning = null)
