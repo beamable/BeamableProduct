@@ -11,15 +11,16 @@ namespace tests.Examples;
 
 public class CLITestExtensions : CLITest
 {
+	protected string alias = "sample-alias";
+	protected string userName = "user@test.com";
+	protected string password = "password";
+	private string cid = "123";
+	private string pid = "456";
+	
 	public void PrepareEnvironment()
 	{
 		base.Setup();
 		_serilogLevel.MinimumLevel = LogEventLevel.Verbose;
-		var alias = "sample-alias";
-		var userName = "user@test.com";
-		var password = "password";
-		var cid = "123";
-		var pid = "456";
 
 		Mock<IAliasService>(mock =>
 		{
@@ -65,11 +66,11 @@ public class CLITestExtensions : CLITest
 		});
 
 		// Ansi.Input.PushTextWithEnter(alias); // enter alias
-		Ansi.Input.PushTextWithEnter(cid); // enter cid
-		Ansi.Input.PushTextWithEnter(userName); // enter email
-		Ansi.Input.PushTextWithEnter(password); // enter password
-
-		Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the game
-		Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the realm
+		// Ansi.Input.PushTextWithEnter(cid); // enter cid
+		// Ansi.Input.PushTextWithEnter(userName); // enter email
+		// Ansi.Input.PushTextWithEnter(password); // enter password
+		//
+		// Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the game
+		// Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the realm
 	}
 }

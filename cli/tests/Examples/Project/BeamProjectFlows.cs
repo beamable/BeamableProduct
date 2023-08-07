@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using System;
 using System.IO;
 
 namespace tests.Examples.Project;
@@ -18,7 +19,13 @@ public class BeamProjectFlows : CLITestExtensions
 		#region Arrange
 
 		PrepareEnvironment();
-		Ansi.Input.PushTextWithEnter("sample-alias"); // don't link unity project
+		Ansi.Input.PushTextWithEnter(alias); // enter alias
+		Ansi.Input.PushTextWithEnter(userName); // enter email
+		Ansi.Input.PushTextWithEnter(password); // enter password
+
+		Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the game
+		Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the realm
+		Ansi.Input.PushTextWithEnter("n"); // don't link unity project
 		Ansi.Input.PushTextWithEnter("n"); // don't link unreal project
 
 		const string serviceName = "Example";
