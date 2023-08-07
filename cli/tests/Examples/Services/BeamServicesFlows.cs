@@ -31,10 +31,8 @@ public class BeamServicesFlows : CLITest
 	}
 
 	[TearDown]
-	public override void Teardown()
+	public new void Teardown()
 	{
-		Directory.SetCurrentDirectory(OriginalWorkingDir);
-		Directory.Delete(WorkingDir, true);
 		// Dispose of the Docker client
 		_dockerClient.Dispose();
 	}

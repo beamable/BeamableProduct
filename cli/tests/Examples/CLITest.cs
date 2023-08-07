@@ -52,7 +52,7 @@ public class CLITest
 	}
 
 	[TearDown]
-	public virtual void Teardown()
+	public void Teardown()
 	{
 		Directory.SetCurrentDirectory(OriginalWorkingDir);
 		Directory.Delete(WorkingDir, true);
