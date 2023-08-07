@@ -16,8 +16,8 @@ public class CLITestExtensions : CLITest
 	protected string password = "password";
 	private string cid = "123";
 	private string pid = "456";
-	
-	public void PrepareEnvironment()
+
+	protected void SetupMocks()
 	{
 		base.Setup();
 		_serilogLevel.MinimumLevel = LogEventLevel.Verbose;
@@ -64,13 +64,5 @@ public class CLITestExtensions : CLITest
 				})
 				.Verifiable();
 		});
-
-		// Ansi.Input.PushTextWithEnter(alias); // enter alias
-		// Ansi.Input.PushTextWithEnter(cid); // enter cid
-		// Ansi.Input.PushTextWithEnter(userName); // enter email
-		// Ansi.Input.PushTextWithEnter(password); // enter password
-		//
-		// Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the game
-		// Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the realm
 	}
 }
