@@ -14,15 +14,15 @@ dotnet tool update Beamable.Tools --global --version 1.17.0
 
 ### Simpler way
 
-In cli tool, as of 1.16.2, it is possible to use `beam version` tools to get list of available versions:
+In cli tool, as of 1.16.2, it is possible to use `beam version` tools to get the list of available versions:
 
 ```
 beam version ls
 ```
 
-Command above can also have arguments like  `--include-rc {true/false}` or `--include-release {true/false}` so it is possible to specify if it should print out RC versions, release ones or both of them.
+The `beam version ls` command can also have arguments like  `--include-rc {true/false}` or `--include-release {true/false}` so it is possible to specify if it should print out RC versions, release ones or both of them.
 
-Then in order to install specific version there is command:
+Then in order to install specific version you can use the `beam version` command:
 
 ```
 beam version install <version?>
