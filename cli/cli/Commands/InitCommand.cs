@@ -54,7 +54,6 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 
 		AnsiConsole.Write(
 			new FigletText("Beam")
-				.LeftAligned()
 				.Color(Color.Red));
 
 		var host = _configService.SetConfigString(Constants.CONFIG_PLATFORM, GetHost(args));
