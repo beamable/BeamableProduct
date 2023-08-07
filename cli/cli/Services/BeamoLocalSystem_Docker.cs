@@ -177,7 +177,7 @@ public partial class BeamoLocalSystem
 			case BeamoProtocolType.HttpMicroservice:
 			{
 				var localProtocol = BeamoManifest.HttpMicroserviceLocalProtocols[serviceDefinition.BeamoId];
-				serviceDefinition.ImageId = await BuildAndCreateImage(serviceDefinition.BeamoId,
+				serviceDefinition.ImageId = await BuildAndCreateImage(serviceDefinition.BeamoId.ToLower(),
 					localProtocol.DockerBuildContextPath,
 					localProtocol.RelativeDockerfilePath,
 					progress =>
