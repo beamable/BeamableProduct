@@ -99,7 +99,7 @@ BEAM_INSTANCE_COUNT={args.instanceCount}
 				{
 					// uh oh, the storage isn't running
 					throw new CliException(
-						$"Service requires storage=[{dependency}] but it is not running. Please execute 'beam services deploy --ids {dependency}'", Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_CONTAINER_NOT_RUNNING, true);
+						$"Service requires storage=[{dependency}] but it is not running. Please execute 'beam services run --ids {dependency}'", Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_CONTAINER_NOT_RUNNING, true);
 				}
 			}
 		}
