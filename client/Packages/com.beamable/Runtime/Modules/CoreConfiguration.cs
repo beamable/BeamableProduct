@@ -237,7 +237,7 @@ namespace Beamable
 				return assemblyNames;
 			}
 #endif
-			return new string[]{};
+			return new string[] { };
 		}
 	}
 }
