@@ -74,6 +74,13 @@ public class BeamProjectFlows : CLITest
 		Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the game
 		Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the realm
 	}
+	
+	[TearDown]
+	public override void Teardown()
+	{
+		Directory.SetCurrentDirectory(OriginalWorkingDir);
+		Directory.Delete(WorkingDir, true);
+	}
 
 	[Test]
 	public void CanCreateNewBeamableSolution()
