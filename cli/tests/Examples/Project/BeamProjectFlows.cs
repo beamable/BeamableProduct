@@ -18,7 +18,7 @@ public class BeamProjectFlows : CLITestExtensions
 		#region Arrange
 
 		PrepareEnvironment();
-		Ansi.Input.PushTextWithEnter("n"); // don't link unity project
+		Ansi.Input.PushTextWithEnter("sample-alias"); // don't link unity project
 		Ansi.Input.PushTextWithEnter("n"); // don't link unreal project
 
 		const string serviceName = "Example";
