@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Content types from SAMS are visible in Content Manager in Unity.
+- Announcements clientData not being deserialized correctly.
 
 ## [1.17.0]
 
