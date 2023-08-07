@@ -18,10 +18,10 @@ namespace tests.Examples;
 [NonParallelizable]
 public class CLITest
 {
-	protected string WorkingDir => Path.Combine(_originalWorkingDir, "testRuns", TestId);
+	protected string WorkingDir => Path.Combine(OriginalWorkingDir, "testRuns", TestId);
 	protected string TestId { get; private set; }
 	protected int x = 0;
-	private string _originalWorkingDir;
+	protected readonly string OriginalWorkingDir = Directory.GetCurrentDirectory();
 
 	protected Mock<IRequester> _mockRequester;
 	protected LoggingLevelSwitch _serilogLevel;
@@ -40,8 +40,6 @@ public class CLITest
 	{
 		TestId = Guid.NewGuid().ToString();
 
-		_originalWorkingDir = Directory.GetCurrentDirectory();
-
 		Directory.CreateDirectory(WorkingDir);
 		Directory.SetCurrentDirectory(WorkingDir);
 
@@ -57,7 +55,8 @@ public class CLITest
 	[TearDown]
 	public void Teardown()
 	{
-		Directory.SetCurrentDirectory(_originalWorkingDir);
+		Directory.SetCurrentDirectory(OriginalWorkingDir);
+		Directory.Delete(WorkingDir, true);
 
 		foreach (var mock in _mockObjects)
 		{
@@ -110,5 +109,4 @@ public class CLITest
 		Assert.AreEqual(0, exitCode, $"Command had a non zero exit code. Check logs. code=[{exitCode}] command=[{string.Join(" ", args)}]");
 		return exitCode;
 	}
-
 }

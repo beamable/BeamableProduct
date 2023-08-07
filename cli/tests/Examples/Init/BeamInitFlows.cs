@@ -86,6 +86,5 @@ public class BeamInitFlows : CLITest
 		var configDefaultsStr = File.ReadAllText(".beamable/config-defaults.json");
 		var expectedJson = $@"{{""host"":""https://api.beamable.com"",""cid"":""{cid}"",""pid"":""{pid}""}}";
 		Assert.AreEqual(expectedJson, configDefaultsStr, "The config-defaults file should contain the cid and pid.");
-
 	}
 }
