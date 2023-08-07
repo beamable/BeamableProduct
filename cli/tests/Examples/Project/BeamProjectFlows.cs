@@ -25,8 +25,8 @@ public class BeamProjectFlows : CLITestExtensions
 
 		Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the game
 		Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the realm
-		Ansi.Input.PushTextWithEnter(alias); // don't link unity project
-		// Ansi.Input.PushTextWithEnter(alias); // don't link unreal project
+		Ansi.Input.PushTextWithEnter($"{alias}-1"); // don't link unity project
+		Ansi.Input.PushTextWithEnter(alias); // don't link unreal project
 
 		const string serviceName = "Example";
 
