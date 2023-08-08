@@ -1,3 +1,5 @@
+#define DEBUG
+
 using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using cli;
@@ -18,8 +20,8 @@ namespace tests.Examples;
 [NonParallelizable]
 public class CLITest
 {
-	protected string WorkingDir => Path.Combine(OriginalWorkingDir, "testRuns", TestId!);
-	protected string? TestId { get; private set; }
+	protected string WorkingDir => Path.Combine(OriginalWorkingDir, "testRuns", TestId);
+	protected string TestId { get; private set; } = default!;
 	protected readonly string OriginalWorkingDir = Directory.GetCurrentDirectory();
 
 	protected Mock<IRequester> _mockRequester = default!;
