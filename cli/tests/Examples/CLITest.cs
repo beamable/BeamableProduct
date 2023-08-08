@@ -1,5 +1,3 @@
-#define DEBUG
-
 using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using cli;
@@ -57,11 +55,6 @@ public class CLITest
 	public void Teardown()
 	{
 		Directory.SetCurrentDirectory(OriginalWorkingDir);
-
-#if DEBUG
-		Directory.Delete(WorkingDir, true);
-#else
-#endif
 
 		foreach (var mock in _mockObjects)
 		{
