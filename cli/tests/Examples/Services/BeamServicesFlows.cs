@@ -1,19 +1,11 @@
-using Beamable.Common.Api.Auth;
-using Beamable.Common.Api.Realms;
-using Beamable.Common.Content;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using DotNet.Testcontainers.Builders;
-using Moq;
 using NUnit.Framework;
-using Serilog.Events;
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using tests.Examples.Project;
-using tests.MoqExtensions;
 
 namespace tests.Examples.Services;
 
@@ -33,7 +25,7 @@ public class BeamServicesFlows : CLITest
 	[TearDown]
 	public new void Teardown()
 	{
-		// Dispose of the Docker client
+		// Dispose the Docker client
 		_dockerClient.Dispose();
 	}
 

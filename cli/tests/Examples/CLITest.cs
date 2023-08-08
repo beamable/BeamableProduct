@@ -1,3 +1,5 @@
+#define DEBUG
+
 using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using cli;
