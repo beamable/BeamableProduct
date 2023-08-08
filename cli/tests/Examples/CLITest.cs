@@ -20,7 +20,6 @@ public class CLITest
 {
 	protected string WorkingDir => Path.Combine(OriginalWorkingDir, "testRuns", TestId);
 	protected string TestId { get; private set; }
-	protected int x = 0;
 	protected readonly string OriginalWorkingDir = Directory.GetCurrentDirectory();
 
 	protected Mock<IRequester> _mockRequester;
