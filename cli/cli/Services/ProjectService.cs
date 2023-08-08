@@ -52,10 +52,13 @@ public class ProjectService
 
 	private ProjectData _projects;
 
+	public bool? ConfigFileExists { get; }
+
 	public ProjectService(ConfigService configService)
 	{
 		_configService = configService;
 		_projects = configService.LoadDataFile<ProjectData>(".linkedProjects");
+		ConfigFileExists = _configService.ConfigFileExists;
 	}
 
 	public List<string> GetLinkedUnityProjects()
