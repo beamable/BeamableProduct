@@ -2,6 +2,7 @@ using Beamable.Common.Content;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 using static Beamable.Common.Constants.MenuItems.Assets;
@@ -162,33 +163,51 @@ namespace Beamable
 			BeamableAssistantToolbarButtonsPaths = BeamableAssistantToolbarButtonsPaths.Distinct().ToList();
 			BeamableAssistantHintDetailConfigPaths = BeamableAssistantHintDetailConfigPaths.Distinct().ToList();
 
+			RebuildAssembliesToSweep();
+		}
+
+		/// <summary>
+		/// Updates content of <see cref="AssembliesToSweep"/>
+		/// which is later passed to <see cref="Beamable.Common.Reflection.ReflectionCache"/>.
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private void RebuildAssembliesToSweep()
+		{
 #if UNITY_EDITOR
-			
-			// it's reflection-bruteForce but looks like it gives the same result as CompilationPipeline.GetAssemblies()
-			
-			var coreAssembly = System.Reflection.Assembly.Load("UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
-			var getAssembliesMethodInfo = coreAssembly?.GetType("UnityEngine.ScriptingRuntime")?.GetMethod("GetAllUserAssemblies");
-			
-			if (getAssembliesMethodInfo != null)
+			string[] assemblyNames =  GetAllUserAssemblies();
+
+			for (int i = 0; i < assemblyNames.Length; i++)
 			{
-				string[] assemblyNames =  (string[])getAssembliesMethodInfo.Invoke(null, null);
+				var nameWithoutEx = Path.GetFileNameWithoutExtension(assemblyNames[i]);
 
-				for (int i = 0; i < assemblyNames.Length; i++)
+				if(AssembliesToSweep.Contains(nameWithoutEx))
+					continue;
+
+				var shouldAddAssembly = !assemblyNames[i].Contains("Packages/") && !assemblyNames[i].Contains("Assets/");
+
+				if (shouldAddAssembly)
 				{
-					var nameWithoutEx = Path.GetFileNameWithoutExtension(assemblyNames[i]);
+					AssembliesToSweep.Add(nameWithoutEx);
+				}
+			}
+			var commonDllsDir = new DirectoryInfo(Beamable.Common.Constants.Directories.SAMS_COMMON_DLL_DIR);
 
-					if (!AssembliesToSweep.Contains(nameWithoutEx) && !assemblyNames[i].Contains("Packages/") && !assemblyNames[i].Contains("Assets/"))
+			if (commonDllsDir.Exists)
+			{
+				FileInfo[] files = commonDllsDir.GetFiles();
+				for (int i = 0; i < files.Length; i++)
+				{
+					var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(files[i].Name);
+					if (files[i].Extension.Equals(".dll") && !AssembliesToSweep.Contains(fileNameWithoutExtension))
 					{
-						AssembliesToSweep.Add(nameWithoutEx);
+						AssembliesToSweep.Add(fileNameWithoutExtension);
 					}
 				}
 			}
-			
 #if BEAMABLE_DEVELOPER
-
 			for (int i = 0; i < AssembliesToSweep.Count; i++)
 			{
-				if (AssembliesToSweep[i].Contains("Test") &&
+				if (AssembliesToSweep[i].Contains("UnityEditor.Test") &&
 				    !AssembliesToSweep[i].Contains("Beamable.Microservice") &&
 				    !AssembliesToSweep[i].Contains("Beamable.Storage"))
 				{
@@ -199,6 +218,26 @@ namespace Beamable
 #endif
 			AssembliesToSweep.Sort();
 #endif
+		}
+
+		/// <summary>
+		/// it's reflection-bruteForce but looks like it gives the same result as CompilationPipeline.GetAssemblies()
+		/// </summary>
+		/// <returns>Array with paths to assemblies</returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static string[] GetAllUserAssemblies()
+		{
+#if UNITY_EDITOR
+			var coreAssembly = System.Reflection.Assembly.Load("UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
+			var getAssembliesMethodInfo = coreAssembly?.GetType("UnityEngine.ScriptingRuntime")?.GetMethod("GetAllUserAssemblies");
+
+			if (getAssembliesMethodInfo != null)
+			{
+				string[] assemblyNames =  (string[])getAssembliesMethodInfo.Invoke(null, null);
+				return assemblyNames;
+			}
+#endif
+			return new string[] { };
 		}
 	}
 }

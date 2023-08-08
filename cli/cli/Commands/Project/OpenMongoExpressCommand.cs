@@ -75,7 +75,7 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
 		}
 		catch (DockerContainerNotFoundException)
 		{
-			Log.Error($"The storage is not running. Please run 'beam services deploy --ids {args.storageName}'");
+			Log.Error($"The storage is not running. Please run 'beam services run --ids {args.storageName}'");
 			return;
 		}
 		catch (Exception ex)

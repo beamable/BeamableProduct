@@ -124,5 +124,6 @@ namespace microserviceTests.microservice
       public int RequestCancellationTimeoutSeconds => 10;
       public LogOutputType LogOutputType => LogOutputType.DEFAULT;
       public string LogOutputPath { get; }
+      public bool EnableDangerousDeflateOptions => false;
    }
 }

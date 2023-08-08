@@ -135,7 +135,7 @@ namespace Beamable.Api.Analytics
 			if (usingDefaultSettings)
 				UpdateBatchSettings(_defaultBatchSettings);
 
-			// Add Saved events into batch now that we have a proper gamertag to assign them to.
+			// Add Saved events into batch now that we have a proper player id to assign them to.
 			AnalyticsLogger.LogFormat("Backfilling early requests: {0} total", _earlyRequests.Count);
 			for (var i = 0; i < _earlyRequests.Count; i++)
 			{
