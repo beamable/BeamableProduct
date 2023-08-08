@@ -18,8 +18,8 @@ namespace tests.Examples;
 [NonParallelizable]
 public class CLITest
 {
-	protected string WorkingDir => Path.Combine(OriginalWorkingDir, "testRuns", TestId);
-	protected string TestId { get; private set; } = default!;
+	protected string WorkingDir => Path.Combine(OriginalWorkingDir, "testRuns", TestId!);
+	protected string? TestId { get; private set; }
 	protected readonly string OriginalWorkingDir = Directory.GetCurrentDirectory();
 
 	protected Mock<IRequester> _mockRequester = default!;
