@@ -58,10 +58,6 @@ public class CLITest
 	{
 		Directory.SetCurrentDirectory(OriginalWorkingDir);
 
-#if DEBUG
-		Directory.Delete(WorkingDir, true);
-#endif
-
 		foreach (var mock in _mockObjects)
 		{
 			mock.VerifyAll();
