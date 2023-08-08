@@ -1,5 +1,3 @@
-#define DEBUG
-
 using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using cli;
@@ -14,6 +12,7 @@ using Spectre.Console.Testing;
 using System;
 using System.Collections.Generic;
 using System.IO;
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
 namespace tests.Examples;
 
@@ -21,12 +20,12 @@ namespace tests.Examples;
 public class CLITest
 {
 	protected string WorkingDir => Path.Combine(OriginalWorkingDir, "testRuns", TestId);
-	protected string TestId { get; private set; } = default!;
+	protected string TestId { get; private set; }
 	protected readonly string OriginalWorkingDir = Directory.GetCurrentDirectory();
 
-	protected Mock<IRequester> _mockRequester = default!;
-	protected LoggingLevelSwitch _serilogLevel = default!;
-	private Action<IDependencyBuilder> _configurator = default!;
+	protected Mock<IRequester> _mockRequester;
+	protected LoggingLevelSwitch _serilogLevel;
+	private Action<IDependencyBuilder> _configurator;
 
 	private List<Mock> _mockObjects = new List<Mock>();
 
@@ -34,7 +33,7 @@ public class CLITest
 	{
 		get;
 		private set;
-	} = default!;
+	}
 
 	[SetUp]
 	public void Setup()
@@ -57,6 +56,7 @@ public class CLITest
 	public void Teardown()
 	{
 		Directory.SetCurrentDirectory(OriginalWorkingDir);
+		Directory.Delete(WorkingDir, true);
 
 		foreach (var mock in _mockObjects)
 		{
