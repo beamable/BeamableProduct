@@ -27,15 +27,15 @@ namespace Beamable.Common.Api.Social
 		/// When a player is blocked, they'll appear in the <see cref="SocialList.blocked"/> list.
 		/// Use the <see cref="UnblockPlayer"/> method to revert.
 		/// </summary>
-		/// <param name="gamerTag">The gamertag of the player to block</param>
-		/// <returns>A <see cref="Promise"/> containing a <see cref="FriendStatus"/> for the given gamertag</returns>
+		/// <param name="gamerTag">The player id of the player to block</param>
+		/// <returns>A <see cref="Promise"/> containing a <see cref="FriendStatus"/> for the given player id</returns>
 		Promise<FriendStatus> BlockPlayer(long gamerTag);
 
 		/// <summary>
 		/// Unblock a player from the current player's <see cref="SocialList.blocked"/> list.
 		/// </summary>
-		/// <param name="gamerTag">The gamertag of the player to unblock</param>
-		/// <returns>A <see cref="Promise"/> containing a <see cref="FriendStatus"/> for the given gamertag</returns>
+		/// <param name="gamerTag">The player id of the player to unblock</param>
+		/// <returns>A <see cref="Promise"/> containing a <see cref="FriendStatus"/> for the given player id</returns>
 		Promise<FriendStatus> UnblockPlayer(long gamerTag);
 
 		/// <summary>
