@@ -1,23 +1,14 @@
-using Beamable.Common.Api.Auth;
-using Beamable.Common.Api.Realms;
-using Beamable.Common.Content;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using DotNet.Testcontainers.Builders;
-using Moq;
 using NUnit.Framework;
-using Serilog.Events;
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using tests.Examples.Project;
-using tests.MoqExtensions;
 
 namespace tests.Examples.Services;
 
-[TestFixture]
 public class BeamServicesFlows : CLITest
 {
 	private const string ServiceName = "Example";
@@ -30,10 +21,9 @@ public class BeamServicesFlows : CLITest
 		_dockerClient = new DockerClientConfiguration(new AnonymousCredentials()).CreateClient();
 	}
 
-	[TearDown]
-	public new void Teardown()
+	private void Dispose()
 	{
-		// Dispose of the Docker client
+		// Dispose the Docker client
 		_dockerClient.Dispose();
 	}
 
@@ -76,6 +66,8 @@ public class BeamServicesFlows : CLITest
 		bool isNotRunning = containers.Any(c => c.Names.Contains($"/{ServiceName}"));
 		Assert.IsTrue(isNotRunning, $"Container '{ServiceName}' should not be running.");
 
+		Dispose();
+
 		#endregion
 	}
 
@@ -117,6 +109,8 @@ public class BeamServicesFlows : CLITest
 		// Check if the container with the specified name is not running
 		bool isNotRunning = containers.Any(c => c.Names.Contains($"/{ServiceName}"));
 		Assert.IsTrue(isNotRunning, $"Container '{ServiceName}' should not be running.");
+
+		Dispose();
 
 		#endregion
 	}

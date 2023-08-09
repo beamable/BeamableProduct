@@ -4,6 +4,9 @@ using Newtonsoft.Json;
 using Serilog;
 using System.CommandLine;
 
+#pragma warning disable CS0649
+// ReSharper disable InconsistentNaming
+
 namespace cli.Commands.Project;
 
 public class TailLogsCommandArgs : CommandArgs
