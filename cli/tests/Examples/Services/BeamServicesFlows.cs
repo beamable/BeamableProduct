@@ -21,7 +21,7 @@ public class BeamServicesFlows : CLITest
 		_dockerClient = new DockerClientConfiguration(new AnonymousCredentials()).CreateClient();
 	}
 
-	void Dispose()
+	private void Dispose()
 	{
 		// Dispose the Docker client
 		_dockerClient.Dispose();
