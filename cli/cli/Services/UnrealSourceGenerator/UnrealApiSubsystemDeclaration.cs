@@ -1,4 +1,5 @@
-﻿namespace cli.Unreal;
+﻿#pragma warning disable CS0649
+namespace cli.Unreal;
 
 public struct UnrealApiSubsystemDeclaration
 {

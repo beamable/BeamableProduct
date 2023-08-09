@@ -193,14 +193,13 @@ public partial class BeamoLocalSystem
 	/// Implementation of <see cref="LocalProtocolModifier{TLocal}"/> that applies the default values of the <see cref="HttpMicroserviceLocalProtocol"/>.
 	/// <see cref="AddServiceDefinition{TLocal,TRemote}"/> and <see cref="TryUpdateLocalProtocol{TLocal}"/> to understand how this gets called. 
 	/// </summary>
-	private async Task PrepareDefaultLocalProtocol_HttpMicroservice(BeamoServiceDefinition owner, HttpMicroserviceLocalProtocol local)
+	private Task PrepareDefaultLocalProtocol_HttpMicroservice(BeamoServiceDefinition owner, HttpMicroserviceLocalProtocol local)
 	{
-
-
 		local.CustomPortBindings = new List<DockerPortBinding>();
 		local.CustomVolumes = new List<DockerVolume>();
 		local.CustomBindMounts = new List<DockerBindMount>();
 		local.CustomEnvironmentVariables = new List<DockerEnvironmentVariable>();
+		return Task.CompletedTask;
 	}
 
 	/// <summary>

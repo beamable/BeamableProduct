@@ -353,7 +353,7 @@ public class ProjectService
 		return projectPath;
 	}
 
-	public async void CreateCommon(string projectName, string dockerfilePath, string dockerBuildContextPath)
+	public async Task CreateCommon(string projectName, string dockerfilePath, string dockerBuildContextPath)
 	{
 		var commonProjectName = $"{projectName}Common";
 		Log.Information("Docker file path is {DockerfilePath}", dockerfilePath);

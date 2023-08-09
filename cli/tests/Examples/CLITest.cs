@@ -12,6 +12,7 @@ using Spectre.Console.Testing;
 using System;
 using System.Collections.Generic;
 using System.IO;
+#pragma warning disable CS8618
 
 namespace tests.Examples;
 
@@ -20,13 +21,13 @@ public class CLITest
 {
 	protected string WorkingDir => Path.Combine(OriginalWorkingDir, "testRuns", TestId);
 	protected string TestId { get; private set; }
-	protected readonly string OriginalWorkingDir = Directory.GetCurrentDirectory();
+	protected string OriginalWorkingDir;
 
 	protected Mock<IRequester> _mockRequester;
 	protected LoggingLevelSwitch _serilogLevel;
 	private Action<IDependencyBuilder> _configurator;
 
-	private List<Mock> _mockObjects = new List<Mock>();
+	private List<Mock> _mockObjects = new();
 
 	protected TestConsole Ansi
 	{
@@ -38,6 +39,8 @@ public class CLITest
 	public void Setup()
 	{
 		TestId = Guid.NewGuid().ToString();
+		
+		OriginalWorkingDir = Directory.GetCurrentDirectory();
 
 		Directory.CreateDirectory(WorkingDir);
 		Directory.SetCurrentDirectory(WorkingDir);

@@ -420,16 +420,17 @@ public partial class BeamoLocalSystem
 		builtLayers = layers.ToArray();
 	}
 
-
 	public async IAsyncEnumerable<string> TailLogs(string containerId)
 	{
 		// _client.Containers.GetContainerLogsAsync()
+#pragma warning disable CS0618
 		var stream = await _client.Containers.GetContainerLogsAsync(containerId, new ContainerLogsParameters
 		{
 			ShowStdout = true,
 			ShowStderr = true,
 			Follow = true,
 		});
+#pragma warning restore CS0618
 
 		// stream.
 		if (stream == null)
