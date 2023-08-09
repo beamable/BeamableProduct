@@ -79,7 +79,7 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 		if (!args.SkipCommon)
 		{
 			var service = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[sd.BeamoId];
-			args.ProjectService.CreateCommon(args.ConfigService,args.ProjectName, service.RelativeDockerfilePath, service.DockerBuildContextPath);
+			await args.ProjectService.CreateCommon(args.ConfigService,args.ProjectName, service.RelativeDockerfilePath, service.DockerBuildContextPath);
 		}
 
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();

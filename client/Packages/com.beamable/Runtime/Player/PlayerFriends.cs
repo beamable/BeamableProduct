@@ -229,7 +229,7 @@ namespace Beamable.Player
 		/// The invited player may accept the invitation with the <see cref="AcceptInviteFrom"/> method.
 		/// After the resultant <see cref="Promise"/> completes, the <see cref="SentInvites"/> list will contain an invite for the given <see cref="playerId"/>
 		/// </summary>
-		/// <param name="playerId">the gamerTag of the player to invite to become friends</param>
+		/// <param name="playerId">the player id of the player to invite to become friends</param>
 		public async Promise Invite(long playerId)
 		{
 			await _socialApi.SendFriendRequest(playerId);
@@ -275,7 +275,7 @@ namespace Beamable.Player
 		/// A player can be unblocked with the <see cref="UnblockPlayer"/> method.
 		/// After the resultant <see cref="Promise"/> completes, the <see cref="Blocked"/> field will include the given <see cref="playerId"/>
 		/// </summary>
-		/// <param name="playerId">the gamerTag of the player to block</param>
+		/// <param name="playerId">the player id of the player to block</param>
 		public async Promise BlockPlayer(long playerId)
 		{
 			await _socialApi.BlockPlayer(playerId);
@@ -300,7 +300,7 @@ namespace Beamable.Player
 		/// You cannot unblock a player who is not currently blocked. You can block players with the <see cref="Blocked"/> method.
 		/// After the resultant <see cref="Promise"/> completes, the <see cref="Blocked"/> field will no longer include the given <see cref="playerId"/>
 		/// </summary>
-		/// <param name="playerId">the gamerTag of the player to unblock</param>
+		/// <param name="playerId">the player id of the player to unblock</param>
 		public async Promise UnblockPlayer(long playerId)
 		{
 			await _socialApi.UnblockPlayer(playerId);
@@ -312,7 +312,7 @@ namespace Beamable.Player
 		/// will not be able to become friends any more.
 		/// After the resultant <see cref="Promise"/> completes, the <see cref="SentInvites"/> list will no longer include the given <see cref="playerId"/>
 		/// </summary>
-		/// <param name="playerId">the gamerTag of the player to cancel the friendship request with</param>
+		/// <param name="playerId">the player id of the player to cancel the friendship request with</param>
 		public async Promise CancelInvite(long playerId)
 		{
 			await _socialApi.CancelFriendRequest(playerId);
@@ -356,7 +356,7 @@ namespace Beamable.Player
 	public class PlayerFriend
 	{
 		/// <summary>
-		/// the gamerTag of the friend
+		/// the player id of the friend
 		/// </summary>
 		public long playerId;
 
@@ -450,7 +450,7 @@ namespace Beamable.Player
 	public class BlockedPlayer
 	{
 		/// <summary>
-		/// The gamerTag of the blocked player
+		/// The player id of the blocked player
 		/// </summary>
 		public long playerId;
 		private readonly PlayerSocial _sdk;
