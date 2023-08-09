@@ -16,10 +16,9 @@ using System.IO;
 
 namespace tests.Examples;
 
-[NonParallelizable]
 public class CLITest
 {
-	protected string WorkingDir => Path.Combine(OriginalWorkingDir, "testRuns", TestId);
+	protected string WorkingDir => Path.Combine(OriginalWorkingDir, "testRuns-1", TestId);
 	protected string TestId { get; private set; }
 	protected string OriginalWorkingDir;
 
