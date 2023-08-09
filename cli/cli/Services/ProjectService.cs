@@ -357,15 +357,11 @@ public class ProjectService
 	{
 		var commonProjectName = $"{projectName}Common";
 		Log.Information("Docker file path is {DockerfilePath}", dockerfilePath);
-		Console.WriteLine($"Docker file path is {dockerfilePath}");
 		var serviceFolder = Path.GetDirectoryName(dockerfilePath);
 		Log.Information("Docker file folder is {DockerFileFolder}", serviceFolder);
-		Console.WriteLine($"Docker file folder is {serviceFolder}");
 
 		dockerfilePath = Path.Combine(dockerBuildContextPath, dockerfilePath);
 		var dockerfileText = await File.ReadAllTextAsync(dockerfilePath);
-		Console.WriteLine($"Docker file new path is {dockerfilePath}");
-		Console.WriteLine($"Docker file text is {dockerfileText}");
 
 		const string search =
 			"# <BEAM-CLI-INSERT-FLAG:COPY_COMMON> do not delete this line. It is used by the beam CLI to insert custom actions";
