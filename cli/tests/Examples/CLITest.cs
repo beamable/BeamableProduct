@@ -16,6 +16,7 @@ using System.IO;
 
 namespace tests.Examples;
 
+[NonParallelizable]
 public class CLITest
 {
 	protected string WorkingDir => Path.Combine(OriginalWorkingDir, "testRuns", TestId);
