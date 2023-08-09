@@ -156,20 +156,20 @@ namespace Beamable.Common.Api.Social
 		public List<FriendInvite> invites;
 
 		/// <summary>
-		/// Check if a given gamertag is in the <see cref="blocked"/> list.
+		/// Check if a given player id is in the <see cref="blocked"/> list.
 		/// </summary>
-		/// <param name="dbid">a gamertag</param>
-		/// <returns>true if the given gamertag is in the <see cref="blocked"/> list</returns>
+		/// <param name="dbid">a player id</param>
+		/// <returns>true if the given plyer id is in the <see cref="blocked"/> list</returns>
 		public bool IsBlocked(long dbid)
 		{
 			return blocked.Find(p => p.playerId == dbid.ToString()) != null;
 		}
 
 		/// <summary>
-		/// Check if a given gamertag is in the <see cref="friends"/> list.
+		/// Check if a given player id is in the <see cref="friends"/> list.
 		/// </summary>
-		/// <param name="dbid">a gamertag</param>
-		/// <returns>true if the given gamertag is in the <see cref="friends"/> list</returns>
+		/// <param name="dbid">a player id</param>
+		/// <returns>true if the given player id is in the <see cref="friends"/> list</returns>
 		public bool IsFriend(long dbid)
 		{
 			return friends.Find(f => f.playerId == dbid.ToString()) != null;
@@ -181,7 +181,7 @@ namespace Beamable.Common.Api.Social
 	public class Friend
 	{
 		/// <summary>
-		/// The gamertag of this friend
+		/// The player id of this friend
 		/// </summary>
 		public string playerId;
 
@@ -201,7 +201,7 @@ namespace Beamable.Common.Api.Social
 	public class Player
 	{
 		/// <summary>
-		/// The gamertag of this player
+		/// The player id of this player
 		/// </summary>
 		public string playerId;
 	}

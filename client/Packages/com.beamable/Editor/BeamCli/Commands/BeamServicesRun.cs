@@ -8,6 +8,8 @@ namespace Beamable.Editor.BeamCli.Commands
 	{
 		/// <summary>The ids for the services you wish to deploy. Ignoring this option deploys all services</summary>
 		public string[] ids;
+		/// <summary>Force the services to run with amd64 CPU architecture, useful when deploying from computers with ARM architecture</summary>
+		public bool forceAmdCpuArch;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -21,6 +23,11 @@ namespace Beamable.Editor.BeamCli.Commands
 					// The parameter allows multiple values
 					genBeamCommandArgs.Add(("--ids=" + this.ids[i]));
 				}
+			}
+			// If the forceAmdCpuArch value was not default, then add it to the list of args.
+			if ((this.forceAmdCpuArch != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--force-amd-cpu-arch=" + this.forceAmdCpuArch));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

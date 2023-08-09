@@ -110,7 +110,7 @@ namespace Beamable.Server.Api.Stats
 		/// <summary>
 		/// Deletes a player's game private stats (<see cref="DeleteStats"/>).
 		/// </summary>
-		/// <param name="userId">A player's realm-specific GamerTag (for example, <see cref="RequestContext.UserId"/>).</param>
+		/// <param name="userId">A player's realm-specific Player id (for example, <see cref="RequestContext.UserId"/>).</param>
 		/// <param name="stats">The list of stats to delete.</param>
 		/// <returns></returns>
 		Promise DeleteProtectedPlayerStats(long userId, string[] stats);
@@ -121,7 +121,7 @@ namespace Beamable.Server.Api.Stats
 		/// <param name="domain">"game" or "player".</param>
 		/// <param name="access">"public" or "private"</param>
 		/// <param name="type">Should always be "player" (exists for legacy reasons).</param>
-		/// <param name="userId">A player's realm-specific GamerTag (for example, <see cref="RequestContext.UserId"/>).</param>
+		/// <param name="userId">A player's realm-specific Player id (for example, <see cref="RequestContext.UserId"/>).</param>
 		/// <param name="stats">The list of stats to delete.</param>
 		Promise DeleteStats(string domain, string access, string type, long userId, string[] stats);
 	}
