@@ -144,10 +144,10 @@ public class RegisterCommand : AppCommand<RegisterCommandArgs>
 		if (args.agreedToLegal) return Task.FromResult(true);
 
 		return Task.FromResult(AnsiConsole.Prompt(new ConfirmationPrompt($"Have you read, and accept the following? " +
-		                                                                 $"\nlicense {Beamable.Common.Constants.LINK_LICENSE} " +
-		                                                                 $"\nterms of service {Beamable.Common.Constants.LINK_TERMS_OF_SERVICE} " +
-		                                                                 $"\nprivacy {Beamable.Common.Constants.LINK_PRIVACY} " +
-		                                                                 $"\n")));
+																		 $"\nlicense {Beamable.Common.Constants.LINK_LICENSE} " +
+																		 $"\nterms of service {Beamable.Common.Constants.LINK_TERMS_OF_SERVICE} " +
+																		 $"\nprivacy {Beamable.Common.Constants.LINK_PRIVACY} " +
+																		 $"\n")));
 	}
 
 }
