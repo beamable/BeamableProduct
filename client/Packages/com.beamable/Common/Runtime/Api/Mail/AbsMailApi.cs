@@ -268,12 +268,12 @@ namespace Beamable.Common.Api.Mail
 		public long claimedTimeMs;
 
 		/// <summary>
-		/// The gamertag of the player who received the mail
+		/// The player id of the player who received the mail
 		/// </summary>
 		public long receiverGamerTag;
 
 		/// <summary>
-		/// The gamertag of the player who sent the mail
+		/// The player id of the player who sent the mail
 		/// </summary>
 		public long senderGamerTag;
 
