@@ -5,7 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.17.2]
+
+### Added
+
+- Supporting deleted and updated items in `IFederatedLogin`
+
+
+## [1.17.1]
 
 ### Added
 
@@ -20,8 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `Context.CheckAdmin()` is now obsolete, should use `Context.AssertAdmin()`.
 - The `InitializeServicesAttribute` methods should be able to return a `Promise` instead of only a `Promise<Unit>`.
-
-### Removed
 
 ## [1.17.0]
 

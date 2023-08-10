@@ -5,17 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.17.2]
+
+### Fixed
+- Announcements clientData not being deserialized correctly.
+
+## [1.17.1]
 
 ### Fixed
 
 - Content types from SAMS are visible in Content Manager in Unity.
 
 ## [1.17.0]
-
-### Added
-
-- Supporting deleted and updated items in `IFederatedLogin`
 
 ### Fixed
 
