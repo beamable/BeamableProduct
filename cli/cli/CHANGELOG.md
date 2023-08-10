@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.1]
+
+### Added
+
+- `beam services run` takes a `--force-amd-cpu-arch` flag that will force the built CPU architecture to `linux/amd64`
+- Auto install Beamable templates
+- Add refresh token to open-swagger url
+
+### Fixed
+
+- Fix issue with cli crash when linking unity/unreal project that scans over protected folder
+- Fix `beam project open-swagger` and `beam project open-mongo` when service name or storage is not specified
+- Fix `beam project open-swagger` and `beam project open-mongo` when multiple service name or storage exist in the same directory, user can now select the service name or storage to use
+- `beam services deploy` will force build services to `linux/amd64` CPU architecture for usage on Beamable Cloud
+- Fix `beam open-mongo` returning wrong command to execute when storage is not running
+- Fix open-swagger case sensitivity problem
+
+### Changed
+
+- newly created service will have `ShouldBeEnabledOnRemote` as true in `BeamoServiceDefinition`
+- when creating new storage, service dependencies are all selected by default
+
 ## [1.17.0]
 
 ### Added
