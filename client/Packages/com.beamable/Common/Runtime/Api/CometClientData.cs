@@ -1,3 +1,4 @@
+using Beamable.Serialization;
 using System;
 using System.Collections.Generic;
 
@@ -45,7 +46,7 @@ namespace Beamable.Common.Api
 	}
 
 	[Serializable]
-	public struct CometClientDataEntry
+	public struct CometClientDataEntry : JsonSerializable.ISerializable
 	{
 		/// <summary>
 		/// The unique key of a client data property
@@ -56,5 +57,11 @@ namespace Beamable.Common.Api
 		/// The value of a client data property
 		/// </summary>
 		public string value;
+
+		public void Serialize(JsonSerializable.IStreamSerializer s)
+		{
+			s.Serialize(nameof(name), ref name);
+			s.Serialize(nameof(value), ref value);
+		}
 	}
 }
