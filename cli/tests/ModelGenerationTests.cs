@@ -213,7 +213,7 @@ namespace Test
 
 	public class Example
 	{
-		public BaseTest[] objs;
+		public BaseTest[]? objs;
 		public void Test(Beamable.Serialization.JsonSerializable.IStreamSerializer s)
 		{
 			s.SerializeArray("x", ref objs);

@@ -57,7 +57,7 @@ public class DefaultAppContext : IAppContext
 	public IAccessToken Token => _token;
 	private CliToken _token;
 
-	private string _cid, _pid, _host, _dir;
+	private string _cid, _pid, _host;
 	private string _refreshToken;
 
 	public string Cid => _cid;

@@ -195,6 +195,7 @@ public class App
 		Commands.AddCommand<ServicesDeployCommand, ServicesDeployCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesRunCommand, ServicesRunCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesResetCommand, ServicesResetCommandArgs, ServicesCommand>();
+		Commands.AddCommand<ServicesStopCommand, ServicesStopCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesTemplatesCommand, ServicesTemplatesCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesRegistryCommand, ServicesRegistryCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesUploadApiCommand, ServicesUploadApiCommandArgs, ServicesCommand>();
