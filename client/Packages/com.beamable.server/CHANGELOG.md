@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Supporting deleted and updated items in `IFederatedLogin`
+
+
+## [1.17.1]
+
+### Added
+
 - `Context` now has a property `IsAdmin`
 
 ### Fixed
@@ -20,8 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `Context.CheckAdmin()` is now obsolete, should use `Context.AssertAdmin()`.
 - The `InitializeServicesAttribute` methods should be able to return a `Promise` instead of only a `Promise<Unit>`.
-
-### Removed
 
 ## [1.17.0]
 
