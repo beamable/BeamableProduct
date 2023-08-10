@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.17.2]
 
 ### Fixed
+
 - Announcements clientData not being deserialized correctly.
 
 ## [1.17.1]
