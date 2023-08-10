@@ -2,6 +2,7 @@ using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using cli.Services;
 using cli.Unreal;
+using JetBrains.Annotations;
 using Serilog;
 using Spectre.Console;
 using System.CommandLine;
@@ -11,7 +12,7 @@ namespace cli;
 
 public class CliInterfaceGeneratorCommandArgs : CommandArgs
 {
-	public string? OutputPath;
+	[CanBeNull] public string OutputPath;
 	public bool Concat;
 	public string Engine;
 }
@@ -51,6 +52,7 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 		{
 			"unity" => args.DependencyProvider.GetService<UnityCliGenerator>(),
 			"unreal" => args.DependencyProvider.GetService<UnrealCliGenerator>(),
+			// ReSharper disable once NotResolvedInText
 			_ => throw new ArgumentOutOfRangeException("Should be impossible!")
 		};
 

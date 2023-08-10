@@ -73,9 +73,9 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
 			await Task.Delay(250); // give mongo a chance to boot :(
 			MachineHelper.OpenBrowser(url);
 		}
-		catch (DockerContainerNotFoundException ex)
+		catch (DockerContainerNotFoundException)
 		{
-			Log.Error($"The storage is not running. Please run 'beam services deploy --ids {args.storageName}'");
+			Log.Error($"The storage is not running. Please run 'beam services run --ids {args.storageName}'");
 			return;
 		}
 		catch (Exception ex)

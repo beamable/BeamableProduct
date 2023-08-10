@@ -316,14 +316,14 @@ namespace Beamable.Experimental.Api.Sim
 		/// <summary>
 		/// Add a callback that will trigger after each player joins the game relay.
 		/// </summary>
-		/// <param name="callback">a callback where the only argument is the gamertag of the player that joined.</param>
+		/// <param name="callback">a callback where the only argument is the player id of the player that joined.</param>
 		/// <returns>An instance that can be sent to the <see cref="Remove"/> method to remove the handler.</returns>
 		public EventCallback<string> OnConnect(EventCallback<string> callback) { return OnInternal("connect", "$system", callback); }
 
 		/// <summary>
 		/// Add a callback that will trigger after a player disconnects from the game realy.
 		/// </summary>
-		/// <param name="callback">a callback where the only argument is the gamertag of the player that disconnected.</param>
+		/// <param name="callback">a callback where the only argument is the player id of the player that disconnected.</param>
 		/// <returns>An instance that can be sent to the <see cref="Remove"/> method to remove the handler.</returns>
 		public EventCallback<string> OnDisconnect(EventCallback<string> callback) { return OnInternal("disconnect", "$system", callback); }
 

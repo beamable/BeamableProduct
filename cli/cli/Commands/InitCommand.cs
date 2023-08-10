@@ -54,7 +54,6 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 
 		AnsiConsole.Write(
 			new FigletText("Beam")
-				.LeftAligned()
 				.Color(Color.Red));
 
 		var host = _configService.SetConfigString(Constants.CONFIG_PLATFORM, GetHost(args));
@@ -179,19 +178,19 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 		return realm.Pid;
 	}
 
-	private async Task<string> GetCid(InitCommandArgs args)
+	private Task<string> GetCid(InitCommandArgs args)
 	{
 		if (!string.IsNullOrEmpty(_ctx.Cid) && string.IsNullOrEmpty(args.cid))
-			return _ctx.Cid;
+			return Task.FromResult(_ctx.Cid);
 
 		if (!string.IsNullOrEmpty(args.cid))
-			return args.cid;
+			return Task.FromResult(args.cid);
 
-		return AnsiConsole.Prompt(
+		return Task.FromResult(AnsiConsole.Prompt(
 			new TextPrompt<string>("Please enter your [green]cid or alias[/]:")
 				.PromptStyle("green")
 				.ValidationErrorMessage("[red]Not a valid cid or alias[/]")
-		);
+		));
 	}
 
 	private string GetHost(InitCommandArgs args)

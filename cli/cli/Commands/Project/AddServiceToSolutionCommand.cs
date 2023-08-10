@@ -81,7 +81,7 @@ public class AddServiceToSolutionCommand : AppCommand<AddServiceToSolutionComman
 		string projectPath =
 			await args.ProjectService.AddToSolution(args.SolutionName, args.ProjectName, !args.SkipCommon);
 
-		var sd = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value.ToLower(),
+		var sd = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value,
 			projectPath,
 			Path.Combine(args.ProjectName, "Dockerfile"),
 			new string[] { },
@@ -90,7 +90,7 @@ public class AddServiceToSolutionCommand : AppCommand<AddServiceToSolutionComman
 		if (!args.SkipCommon)
 		{
 			var service = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[sd.BeamoId];
-			args.ProjectService.CreateCommon(args.ProjectName, service.RelativeDockerfilePath,
+			await args.ProjectService.CreateCommon(args.ProjectName, service.RelativeDockerfilePath,
 				service.DockerBuildContextPath);
 		}
 

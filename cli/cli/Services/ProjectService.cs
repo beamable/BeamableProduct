@@ -52,10 +52,13 @@ public class ProjectService
 
 	private ProjectData _projects;
 
+	public bool? ConfigFileExists { get; }
+
 	public ProjectService(ConfigService configService)
 	{
 		_configService = configService;
 		_projects = configService.LoadDataFile<ProjectData>(".linkedProjects");
+		ConfigFileExists = _configService.ConfigFileExists;
 	}
 
 	public List<string> GetLinkedUnityProjects()
@@ -350,7 +353,7 @@ public class ProjectService
 		return projectPath;
 	}
 
-	public async void CreateCommon(string projectName, string dockerfilePath, string dockerBuildContextPath)
+	public async Task CreateCommon(string projectName, string dockerfilePath, string dockerBuildContextPath)
 	{
 		var commonProjectName = $"{projectName}Common";
 		Log.Information("Docker file path is {DockerfilePath}", dockerfilePath);

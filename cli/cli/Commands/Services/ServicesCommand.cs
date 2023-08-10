@@ -16,11 +16,11 @@ public class ServicesCommandArgs : LoginCommandArgs
 public class ServicesCommand : AppCommand<ServicesCommandArgs>
 {
 	private IAppContext _ctx;
-	private ConfigService _configService;
-	private LoginCommand _loginCommand;
-	private ConfigCommand _configCommand;
-	private IRealmsApi _realmsApi;
-	private IAliasService _aliasService;
+	// private ConfigService _configService;
+	// private LoginCommand _loginCommand;
+	// private ConfigCommand _configCommand;
+	// private IRealmsApi _realmsApi;
+	// private IAliasService _aliasService;
 	private BeamoLocalSystem _localBeamo;
 
 	public ServicesCommand()
