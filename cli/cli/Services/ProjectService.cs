@@ -99,10 +99,10 @@ public class ProjectService
 		_configService.SaveDataFile(".linkedProjects", _projects);
 	}
 
-	public async Task EnsureCanUseTemplates()
+	public static async Task EnsureCanUseTemplates()
 	{
 		var canUseTemplates = await Cli.Wrap("dotnet")
-			.WithArguments($"new list --tag beamable")
+			.WithArguments("new list --tag beamable")
 			.WithValidation(CommandResultValidation.None)
 			.ExecuteAsync().Select(res => res.ExitCode == 0).Task;
 
@@ -134,7 +134,7 @@ public class ProjectService
 		}
 	}
 
-	public async Task<DotnetTemplateInfo> GetTemplateInfo()
+	public static async Task<DotnetTemplateInfo> GetTemplateInfo()
 	{
 		var templateStream = new StringBuilder();
 		await Cli.Wrap("dotnet")
@@ -192,9 +192,7 @@ public class ProjectService
 
 		var projectPath = Path.Combine(rootServicesPath, project);
 		var referencePath = Path.Combine(rootServicesPath, projectReference);
-		await Cli.Wrap($"dotnet")
-			.WithArguments($"add {projectPath} reference {referencePath}")
-			.ExecuteAsyncAndLog().Task;
+		await RunDotnetCommand($"add {projectPath} reference {referencePath}");
 	}
 
 	public async Task CreateNewStorage(string slnFilePath, string storageName)
@@ -211,14 +209,10 @@ public class ProjectService
 		await EnsureCanUseTemplates();
 
 		// create the beam microservice project
-		await Cli.Wrap($"dotnet")
-			.WithArguments($"new beamstorage -n {storageName} -o {storagePath}")
-			.ExecuteAsyncAndLog().Task;
+		await RunDotnetCommand($"new beamstorage -n {storageName} -o {storagePath}");
 
 		// add the new project as a reference to the solution
-		await Cli.Wrap($"dotnet")
-			.WithArguments($"sln {slnFilePath} add {storagePath}")
-			.ExecuteAsyncAndLog().Task;
+		await RunDotnetCommand($"sln {slnFilePath} add {storagePath}");
 	}
 
 	public async Task<string> CreateNewSolution(string directory, string solutionName, string projectName,
@@ -243,51 +237,57 @@ public class ProjectService
 		// check that we have the templates available
 		await EnsureCanUseTemplates();
 		// create the solution
-		await Cli.Wrap($"dotnet")
-			.WithArguments($"new sln -n \"{solutionName}\" -o \"{solutionPath}\"")
-			.ExecuteAsyncAndLog().Task;
+		await RunDotnetCommand($"new sln -n \"{solutionName}\" -o \"{solutionPath}\"");
 
 		// create the beam microservice project
-		await Cli.Wrap($"dotnet")
-			.WithArguments($"new beamservice -n \"{projectName}\" -o \"{projectPath}\"")
-			.ExecuteAsyncAndLog().Task;
+		await RunDotnetCommand($"new beamservice -n \"{projectName}\" -o \"{projectPath}\"");
 
 		// restore the microservice tools
-		await Cli.Wrap($"dotnet")
-			.WithArguments(
-				$"tool restore --tool-manifest \"{Path.Combine(projectName, ".config", "dotnet-tools.json")}\"")
-			.ExecuteAsyncAndLog().Task;
+		await RunDotnetCommand(
+				$"tool restore --tool-manifest \"{Path.Combine(projectName, ".config", "dotnet-tools.json")}\"");
 
 		// add the microservice to the solution
-		await Cli.Wrap($"dotnet")
-			.WithArguments($"sln \"{solutionPath}\" add \"{projectPath}\"")
-			.ExecuteAsyncAndLog().Task;
+		await RunDotnetCommand($"sln \"{solutionPath}\" add \"{projectPath}\"");
+
+		var templateInfo = await GetTemplateInfo();
+		var templateVersion = templateInfo.HasTemplates ? templateInfo.templateVersion : null;
+
+		await UpdateProjectDependencyVersion(projectPath, "Beamable.Microservice.Runtime", templateVersion);
 
 		// create the shared library project only if requested
 		if (createCommonLibrary)
 		{
-			await Cli.Wrap($"dotnet")
-				.WithArguments($"new beamlib -n \"{commonProjectName}\" -o \"{commonProjectPath}\"")
-				.ExecuteAsyncAndLog().Task;
+			await RunDotnetCommand($"new beamlib -n \"{commonProjectName}\" -o \"{commonProjectPath}\"");
 
 			// restore the shared library tools
-			await Cli.Wrap($"dotnet")
-				.WithArguments(
-					$"tool restore --tool-manifest \"{Path.Combine(commonProjectPath, ".config", "dotnet-tools.json")}\"")
-				.ExecuteAsyncAndLog().Task;
+			await RunDotnetCommand(
+					$"tool restore --tool-manifest \"{Path.Combine(commonProjectPath, ".config", "dotnet-tools.json")}\"");
 
 			// add the shared library to the solution
-			await Cli.Wrap($"dotnet")
-				.WithArguments($"sln \"{solutionPath}\" add \"{commonProjectPath}\"")
-				.ExecuteAsyncAndLog().Task;
+			await RunDotnetCommand($"sln \"{solutionPath}\" add \"{commonProjectPath}\"");
 
 			// add the shared library as a reference of the project
-			await Cli.Wrap($"dotnet")
-				.WithArguments($"add \"{projectPath}\" reference \"{commonProjectPath}\"")
-				.ExecuteAsyncAndLog().Task;
+			await RunDotnetCommand($"add \"{projectPath}\" reference \"{commonProjectPath}\"");
+			
+			await UpdateProjectDependencyVersion(commonProjectPath, "Beamable.Common", templateVersion);
 		}
 
 		return solutionPath;
+	}
+
+	/// <summary>
+	/// Runs a dotnet command that will add or update dependency in specified dotnet project.
+	/// </summary>
+	/// <param name="projectPath">dotnet project path</param>
+	/// <param name="packageName">Name of package to update</param>
+	/// <param name="version">Specifies in which version package will be installed.
+	/// Can be empty- then it will install latest available version.</param>
+	/// <returns></returns>
+	private Task UpdateProjectDependencyVersion(string projectPath, string packageName, string version)
+	{
+		var versionToUpdate = string.IsNullOrWhiteSpace(version) || version.Equals("0.0.0") ? string.Empty : $" --version \"{version}\"";
+		
+		return RunDotnetCommand($"add \"{projectPath}\" package {packageName}{versionToUpdate}");
 	}
 
 	public async Task<string> AddToSolution(string solutionName, string projectName, bool createCommonLibrary = true, bool skipSolutionCreation = false)
@@ -310,44 +310,37 @@ public class ProjectService
 		if (!skipSolutionCreation)
 		{
 			// create the beam microservice project
-			await Cli.Wrap($"dotnet")
-				.WithArguments($"new beamservice -n \"{projectName}\" -o \"{projectPath}\"")
-				.ExecuteAsyncAndLog().Task;
+			await RunDotnetCommand($"new beamservice -n \"{projectName}\" -o \"{projectPath}\"");
 
 			// restore the microservice tools
-			await Cli.Wrap($"dotnet")
-				.WithArguments(
-					$"tool restore --tool-manifest \"{Path.Combine(projectName, ".config", "dotnet-tools.json")}\"")
-				.ExecuteAsyncAndLog().Task;
+			await RunDotnetCommand(
+					$"tool restore --tool-manifest \"{Path.Combine(projectName, ".config", "dotnet-tools.json")}\"");
 		}
 
 		// add the microservice to the solution
-		await Cli.Wrap($"dotnet")
-			.WithArguments($"sln \"{solutionPath}\" add \"{projectPath}\"")
-			.ExecuteAsyncAndLog().Task;
+		await RunDotnetCommand($"sln \"{solutionPath}\" add \"{projectPath}\"");
+
+		var templateInfo = await GetTemplateInfo();
+		var templateVersion = templateInfo.HasTemplates ? templateInfo.templateVersion : null;
+
+		await UpdateProjectDependencyVersion(projectPath, "Beamable.Microservice.Runtime", templateVersion);
 
 		// create the shared library project only if requested
 		if (createCommonLibrary)
 		{
-			await Cli.Wrap($"dotnet")
-				.WithArguments($"new beamlib -n \"{commonProjectName}\" -o \"{commonProjectPath}\"")
-				.ExecuteAsyncAndLog().Task;
+			await RunDotnetCommand($"new beamlib -n \"{commonProjectName}\" -o \"{commonProjectPath}\"");
 
 			// restore the shared library tools
-			await Cli.Wrap($"dotnet")
-				.WithArguments(
-					$"tool restore --tool-manifest \"{Path.Combine(commonProjectPath, ".config", "dotnet-tools.json")}\"")
-				.ExecuteAsyncAndLog().Task;
+			await RunDotnetCommand(
+					$"tool restore --tool-manifest \"{Path.Combine(commonProjectPath, ".config", "dotnet-tools.json")}\"");
 
 			// add the shared library to the solution
-			await Cli.Wrap($"dotnet")
-				.WithArguments($"sln \"{solutionPath}\" add \"{commonProjectPath}\"")
-				.ExecuteAsyncAndLog().Task;
+			await RunDotnetCommand($"sln \"{solutionPath}\" add \"{commonProjectPath}\"");
 
 			// add the shared library as a reference of the project
-			await Cli.Wrap($"dotnet")
-				.WithArguments($"add \"{projectPath}\" reference \"{commonProjectPath}\"")
-				.ExecuteAsyncAndLog().Task;
+			await RunDotnetCommand($"add \"{projectPath}\" reference \"{commonProjectPath}\"");
+			
+			await UpdateProjectDependencyVersion(commonProjectPath, "Beamable.Common", templateVersion);
 		}
 
 		return projectPath;
@@ -394,6 +387,11 @@ COPY {commonProjectName}/. .
 			await addUnrealCommand.Handle(
 				new AddUnrealClientOutputCommandArgs() { path = ".", Provider = provider });
 		}
+	}
+
+	Task RunDotnetCommand(string arguments)
+	{
+		return Cli.Wrap("dotnet").WithArguments(arguments).ExecuteAsyncAndLog().Task;
 	}
 }
 
