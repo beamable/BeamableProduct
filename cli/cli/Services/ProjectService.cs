@@ -103,10 +103,31 @@ public class ProjectService
 			.WithValidation(CommandResultValidation.None)
 			.ExecuteAsync().Select(res => res.ExitCode == 0).Task;
 
-		if (!canUseTemplates)
+		if (!canUseTemplates) await PromptAndInstallTemplates();
+	}
+
+	private static async Task PromptAndInstallTemplates()
+	{
+		// lets get user consent before auto installing beamable templates
+		var canInstallTemplates =
+			AnsiConsole.Confirm(
+				"Beamable templates are currently not installed. Would you like to proceed with installing the Beamable templates?");
+
+		if (!canInstallTemplates)
 		{
 			throw new CliException(
-				"Cannot access Beamable.Templates dotnet templates. Please install the Beamable templates and try again.");
+				"Before you can continue, you must install the Beamable templates by running - " +
+				"dotnet new install beamable.templates");
+		}
+
+		var isTemplateInstalled = await Cli.Wrap("dotnet")
+			.WithArguments("new install beamable.templates")
+			.WithValidation(CommandResultValidation.None)
+			.ExecuteAsyncAndLog().Select(res => res.ExitCode == 0).Task;
+
+		if (!isTemplateInstalled)
+		{
+			throw new CliException("Installation of Beamable templates failed, please attempt the installation again.");
 		}
 	}
 
