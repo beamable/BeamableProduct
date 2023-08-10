@@ -6,14 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-no changes
+
+### Fixed
+- Announcements clientData not being deserialized correctly.
 
 ## [1.17.1]
 
 ### Fixed
 
 - Content types from SAMS are visible in Content Manager in Unity.
-- Announcements clientData not being deserialized correctly.
 
 ## [1.17.0]
 
