@@ -10,6 +10,7 @@ robocopy  "%CD%/CommonLibrary/" "%CD%/templates/Data/CommonLibrary" /s /e
 robocopy  "%CD%/BeamStorage/" "%CD%/templates/Data/BeamStorage" /s /e
 
 :: TODO: modify the version number of the copied data
+dotnet restore
 
 :: produce a nuget package...
 :: dotnet pack ./templates/templates.csproj -o ./artifacts/ --no-build --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX
@@ -19,5 +20,5 @@ dotnet "pack" "%CD%/templates/templates.csproj" "-o" "%CD%/artifacts/" "--no-bui
 DEL /S /F /Q "%CD%/templates/Data"
 
 :: install the latest version...
-dotnet "new" "-i" "%CD%/artifacts/Beamable.Templates.0.0.0.nupkg"
+dotnet "new" "install" "%CD%/artifacts/Beamable.Templates.0.0.0.nupkg"
 
