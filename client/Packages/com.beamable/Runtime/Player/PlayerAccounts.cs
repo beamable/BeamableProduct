@@ -107,8 +107,8 @@ namespace Beamable.Player
 		private string _subtext;
 
 		/// <summary>
-		/// The gamerTag for the given player.
-		/// GamerTags are associated with a specific realm.
+		/// The player id for the given player.
+		/// Player ids are associated with a specific realm.
 		/// This value should not be modified.
 		/// </summary>
 		public long GamerTag => _gamerTag;
@@ -774,7 +774,7 @@ namespace Beamable.Player
 		public bool isSuccess => error == PlayerRecoveryError.NONE;
 
 		/// <summary>
-		/// If the account already had a gamerTag in the current realm, then this value be true.
+		/// If the account already had a player id in the current realm, then this value be true.
 		/// When this value is false, it implies that the account exists in the CID scope, but not
 		/// in the current PID scope. 
 		/// </summary>

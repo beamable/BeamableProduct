@@ -445,7 +445,7 @@ namespace Beamable.Player
 		#endregion
 
 		/// <summary>
-		/// the gamerTag of the party member
+		/// the player id of the party member
 		/// </summary>
 		public long playerId;
 
@@ -545,7 +545,7 @@ namespace Beamable.Player
 		private readonly PlayerParty _sdk;
 
 		/// <summary>
-		/// The gamerTag of the player that invited you to the party
+		/// The player id of the player that invited you to the party
 		/// </summary>
 		public long invitedBy;
 

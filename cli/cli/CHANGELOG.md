@@ -5,12 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.2]
+
+### Fixed
+
+- `beam project {new/add}` commands work if called from other directory than the one with Beamable config.
+
 ## [1.17.1]
 
 ### Added
 
 - `beam services run` takes a `--force-amd-cpu-arch` flag that will force the built CPU architecture to `linux/amd64`
 - Auto install Beamable templates
+- Add `beam services stop` to stop locally running container for selected Beamo services
 - Add refresh token to open-swagger url
 
 ### Fixed
