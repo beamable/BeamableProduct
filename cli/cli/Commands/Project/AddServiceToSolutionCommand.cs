@@ -90,7 +90,7 @@ public class AddServiceToSolutionCommand : AppCommand<AddServiceToSolutionComman
 		if (!args.SkipCommon)
 		{
 			var service = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[sd.BeamoId];
-			await args.ProjectService.CreateCommon(args.ProjectName, service.RelativeDockerfilePath,
+			await args.ProjectService.CreateCommon(args.ConfigService, args.ProjectName, service.RelativeDockerfilePath,
 				service.DockerBuildContextPath);
 		}
 

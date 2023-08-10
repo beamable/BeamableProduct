@@ -353,14 +353,16 @@ public class ProjectService
 		return projectPath;
 	}
 
-	public async Task CreateCommon(string projectName, string dockerfilePath, string dockerBuildContextPath)
+
+	public async Task CreateCommon(ConfigService configService, string projectName, string dockerfilePath, string dockerBuildContextPath)
 	{
 		var commonProjectName = $"{projectName}Common";
 		Log.Information("Docker file path is {DockerfilePath}", dockerfilePath);
 		var serviceFolder = Path.GetDirectoryName(dockerfilePath);
+		serviceFolder = configService.GetRelativePath(serviceFolder);
 		Log.Information("Docker file folder is {DockerFileFolder}", serviceFolder);
 
-		dockerfilePath = Path.Combine(dockerBuildContextPath, dockerfilePath);
+		dockerfilePath = configService.GetRelativePath(Path.Combine(dockerBuildContextPath, dockerfilePath));
 		var dockerfileText = await File.ReadAllTextAsync(dockerfilePath);
 
 		const string search =
