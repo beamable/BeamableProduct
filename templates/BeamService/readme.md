@@ -41,7 +41,7 @@ When a Microservice is built, a web-page will be opened automatically directed t
 The project may also be run in Docker by executing the following command. However, it is recommended to 
 run the dotnet process locally for workflow speed. 
 ```shell
-beam services deploy --ids BeamService
+beam services run --ids BeamService
 ```
 
 ### MSBuild Properties
@@ -93,7 +93,7 @@ to share the `.dll` files meant for the shared library.
 The project can be deployed to the remote realm by running the follow command. 
 ```shell
 beam services ps --remote
-beam services deploy --remote
+beam services deploy
 ```
 
 However, the realm that is used will depend on the current value of the beam CLI. The current value
