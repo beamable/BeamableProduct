@@ -71,7 +71,7 @@ namespace Beamable.Common.Api.Tournaments
 		/// </param>
 		/// <param name="from">How many entries from the top of the list to skip before returning data. Used with <see cref="max"/>, this can be used to page the global standings.</param>
 		/// <param name="max">Limit the number of entries that will be returned. used with <see cref="from"/>, this can be used to page the global standings.</param>
-		/// <param name="focus">The gamertag of a player to focus the results for. A focused response will include the given player, and surrounding scores.</param>
+		/// <param name="focus">The player id of a player to focus the results for. A focused response will include the given player, and surrounding scores.</param>
 		/// <returns>A <see cref="Promise{T}"/> containing a <see cref="TournamentStandingsResponse"/> where the inner standings are global.</returns>
 		Promise<TournamentStandingsResponse> GetGlobalStandings(string tournamentId, int cycle = -1, int from = -1,
 		   int max = -1, int focus = -1);
@@ -87,7 +87,7 @@ namespace Beamable.Common.Api.Tournaments
 		/// </param>
 		/// <param name="from">How many entries from the top of the list to skip before returning data. Used with <see cref="max"/>, this can be used to page the standings.</param>
 		/// <param name="max">Limit the number of entries that will be returned. used with <see cref="from"/>, this can be used to page the standings.</param>
-		/// <param name="focus">The gamertag of a player to focus the results for. A focused response will include the given player, and surrounding scores.</param>
+		/// <param name="focus">The player id of a player to focus the results for. A focused response will include the given player, and surrounding scores.</param>
 		/// <returns>A <see cref="Promise{T}"/> containing a <see cref="TournamentStandingsResponse"/> where the inner standings are relative the current player's tier and stage.</returns>
 		Promise<TournamentStandingsResponse> GetStandings(string tournamentId, int cycle = -1, int from = -1,
 														  int max = -1, int focus = -1);
@@ -103,7 +103,7 @@ namespace Beamable.Common.Api.Tournaments
 		/// </param>
 		/// <param name="from">How many entries from the top of the list to skip before returning data. Used with <see cref="max"/>, this can be used to page the standings.</param>
 		/// <param name="max">Limit the number of entries that will be returned. used with <see cref="from"/>, this can be used to page the standings.</param>
-		/// <param name="focus">The gamertag of a player to focus the results for. A focused response will include the given player, and surrounding scores.</param>
+		/// <param name="focus">The player id of a player to focus the results for. A focused response will include the given player, and surrounding scores.</param>
 		/// <returns>A <see cref="Promise{T}"/> containing a <see cref="TournamentStandingsResponse"/> where the inner standings are for the player's group members.</returns>
 		Promise<TournamentStandingsResponse> GetGroupPlayers(string tournamentId, int cycle = -1, int from = -1,
 															 int max = -1, int focus = -1);
@@ -159,7 +159,7 @@ namespace Beamable.Common.Api.Tournaments
 		/// method before they can submit scores.
 		/// </summary>
 		/// <param name="tournamentId">The runtime id of a tournament.</param>
-		/// <param name="dbid">The gamertag of the player that will have their score updated.</param>
+		/// <param name="dbid">The player id of the player that will have their score updated.</param>
 		/// <param name="score">
 		/// If the <see cref="incrementScore"/> is false (which it is by default),
 		///  then the score will be the player's new score.
@@ -247,7 +247,7 @@ namespace Beamable.Common.Api.Tournaments
 	public class TournamentEntry
 	{
 		/// <summary>
-		/// The gamertag of the player this entry represents
+		/// The player id of the player this entry represents
 		/// </summary>
 		public long playerId;
 
@@ -310,7 +310,7 @@ namespace Beamable.Common.Api.Tournaments
 	public class TournamentChampionEntry
 	{
 		/// <summary>
-		/// The gamertag of the champion
+		/// The player id of the champion
 		/// </summary>
 		public long playerId;
 
@@ -470,7 +470,7 @@ namespace Beamable.Common.Api.Tournaments
 		public string tournamentId;
 
 		/// <summary>
-		/// The gamertag of this player's tournament status.
+		/// The player id of this player's tournament status.
 		/// </summary>
 		[Tooltip(ContentObject.TooltipPlayerDbid1)]
 		public long playerId;

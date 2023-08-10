@@ -28,7 +28,7 @@ namespace Beamable.Experimental.Api.Chat
 		/// </summary>
 		/// <param name="roomName">A name for the room</param>
 		/// <param name="keepSubscribed">When true, the current player will receive messages for the room.</param>
-		/// <param name="players">A list of gamertags of other players who will be included in the chat room.</param>
+		/// <param name="players">A list of player ids of other players who will be included in the chat room.</param>
 		/// <returns>A <see cref="Promise"/> containing the newly created <see cref="RoomInfo"/></returns>
 		Promise<RoomInfo> CreateRoom(string roomName, bool keepSubscribed, List<long> players);
 
@@ -63,7 +63,7 @@ namespace Beamable.Experimental.Api.Chat
 		public string roomId;
 
 		/// <summary>
-		/// The gamertag of the sender
+		/// The player id of the sender
 		/// </summary>
 		public long gamerTag;
 
@@ -174,7 +174,7 @@ namespace Beamable.Experimental.Api.Chat
 		public bool keepSubscribed;
 
 		/// <summary>
-		/// A list of gamertags who are in the room
+		/// A list of player ids who are in the room
 		/// </summary>
 		public List<long> players;
 	}

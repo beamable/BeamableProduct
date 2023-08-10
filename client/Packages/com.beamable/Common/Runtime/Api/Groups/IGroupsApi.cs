@@ -10,7 +10,7 @@ namespace Beamable.Common.Api.Groups
 		/// Get the <see cref="GroupUser"/> for a player, which contains all the group metadata the player belongs to.
 		/// Use the <see cref="GetGroup"/> method to resolve the full group data.
 		/// </summary>
-		/// <param name="gamerTag">The gamertag of a player</param>
+		/// <param name="gamerTag">The player id of a player</param>
 		/// <returns>A <see cref="Promise{T}"/> containing the player's <see cref="GroupUser"/> data</returns>
 		Promise<GroupUser> GetUser(long gamerTag);
 
@@ -136,7 +136,7 @@ namespace Beamable.Common.Api.Groups
 		/// Once a member is kicked, they will no longer be a member.
 		/// </summary>
 		/// <param name="group">The group id to kick the member from.</param>
-		/// <param name="gamerTag">The gamertag of the member to kick from the group.</param>
+		/// <param name="gamerTag">The player id of the member to kick from the group.</param>
 		/// <returns>A <see cref="Promise{T}"/> containing a <see cref="GroupMembershipResponse"/> to check that the Kick operation occurred correctly.</returns>
 		Promise<GroupMembershipResponse> Kick(long group, long gamerTag);
 
@@ -150,7 +150,7 @@ namespace Beamable.Common.Api.Groups
 		/// The player that is running this method must have sufficient permissions to grant the role.
 		/// </summary>
 		/// <param name="group">The group id</param>
-		/// <param name="gamerTag">the gamertag of the player whose role will be changed.</param>
+		/// <param name="gamerTag">the player id of the player whose role will be changed.</param>
 		/// <param name="role">The role to assign the player to. Valid options are "leader", "officer", or ""</param>
 		/// <returns>A <see cref="Promise{T}"/> representing the network call.</returns>
 		Promise<EmptyResponse> SetRole(long group, long gamerTag, string role);
@@ -174,7 +174,7 @@ namespace Beamable.Common.Api.Groups
 		/// <b>ATTENTION!</b> For group donations to work, you must configure a <see cref="GroupDonationsContent"/> content object called "default".
 		/// </summary>
 		/// <param name="group">The group id</param>
-		/// <param name="recipientId">The gamertag of the player that is asking for a donation.</param>
+		/// <param name="recipientId">The player id of the player that is asking for a donation.</param>
 		/// <param name="amount">The amount of currency to donate to the player.</param>
 		/// <param name="autoClaim">
 		/// When true, the currency will automatically be transferred into the recipient's inventory.

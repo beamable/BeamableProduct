@@ -101,7 +101,7 @@ namespace Beamable.Experimental.Api.Chat
 		public readonly bool KeepSubscribed;
 
 		/// <summary>
-		/// A list of gamertags that are in the room.
+		/// A list of player ids that are in the room.
 		/// The list may be null if there are no tracked players.
 		/// </summary>
 		public readonly List<long> Players;

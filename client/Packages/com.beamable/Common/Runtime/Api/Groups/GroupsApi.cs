@@ -260,7 +260,7 @@ namespace Beamable.Common.Api.Groups
 	public class GroupUser
 	{
 		/// <summary>
-		/// The gamertag of this player
+		/// The player id of this player
 		/// </summary>
 		public long gamerTag;
 
@@ -451,7 +451,7 @@ namespace Beamable.Common.Api.Groups
 	public class Member
 	{
 		/// <summary>
-		/// The player gamertag
+		/// The player player id
 		/// </summary>
 		public long gamerTag;
 
@@ -712,7 +712,7 @@ namespace Beamable.Common.Api.Groups
 	public class DonationRequest
 	{
 		/// <summary>
-		/// the gamertag of the player who is requesting the donation.
+		/// the player id of the player who is requesting the donation.
 		/// </summary>
 		public long playerId;
 

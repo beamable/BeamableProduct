@@ -43,7 +43,7 @@ namespace Beamable.Server
 		public int Status { get; }
 
 		/// <summary>
-		/// The gamertag of the user that initiated this request. Be aware that this number can be 0 if there was no authorization header on the original request.
+		/// The player id of the user that initiated this request. Be aware that this number can be 0 if there was no authorization header on the original request.
 		/// </summary>
 		public long UserId
 		{

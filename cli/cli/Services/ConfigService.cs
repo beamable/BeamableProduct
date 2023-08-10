@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using JetBrains.Annotations;
 using Markdig.Helpers;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
@@ -26,10 +27,10 @@ public class ConfigService
 	private readonly ConfigDirOption _configDirOption;
 	public string WorkingDirectory => _dir;
 	public bool? ConfigFileExists { get; private set; }
-	public string? ConfigFilePath { get; private set; }
+	[CanBeNull] public string ConfigFilePath { get; private set; }
 	public string BaseDirectory => Path.GetDirectoryName(ConfigFilePath);
 
-	private Dictionary<string, string>? _config;
+	[CanBeNull] private Dictionary<string, string> _config;
 
 	private string _dir;
 
@@ -130,7 +131,8 @@ public class ConfigService
 
 	public string PrettyPrint() => JsonConvert.SerializeObject(_config, Formatting.Indented);
 
-	public string? GetConfigString(string key, string? defaultValue = null)
+	[CanBeNull]
+	public string GetConfigString(string key, [CanBeNull] string defaultValue = null)
 	{
 		if (_config?.TryGetValue(key, out var value) ?? false)
 		{
@@ -263,9 +265,9 @@ public class ConfigService
 		return false;
 	}
 
-	bool TryToReadConfigFile(string? folderPath, out Dictionary<string, string> result)
+	bool TryToReadConfigFile([CanBeNull] string folderPath, out Dictionary<string, string> result)
 	{
-		string fullPath = Path.Combine(folderPath, Constants.CONFIG_DEFAULTS_FILE_NAME);
+		string fullPath = Path.Combine(folderPath ?? string.Empty, Constants.CONFIG_DEFAULTS_FILE_NAME);
 		result = new Dictionary<string, string>();
 		if (File.Exists(fullPath))
 		{
