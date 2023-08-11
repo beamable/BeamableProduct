@@ -112,6 +112,8 @@ namespace Beamable.Server
 					var outputJson = "[" + string.Join(",", output) + "]";
 					return outputJson;
 				}
+				case Enum prim:
+					return prim.ToString();
 				case bool prim:
 					return prim ? "true" : "false";
 				case long prim:
@@ -159,6 +161,14 @@ namespace Beamable.Server
 					return (T)(object)Json.Deserialize(json);
 
 				return (T)(object)json;
+			}
+
+			if (type.IsEnum)
+			{
+				if (Enum.IsDefined(type, json))
+				{
+					return (T)Enum.Parse(type, json);
+				}
 			}
 
 			switch (defaultInstance)
