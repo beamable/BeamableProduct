@@ -12,7 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `--log` option correctly changes desired log level.
 - `beam project {new/add}` commands work if called from other directory than the one with Beamable config.
 
-
 ## [1.17.1]
 
 ### Added
