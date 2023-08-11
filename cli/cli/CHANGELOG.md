@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.17.2]
 
+### Added
+
+- Added missing XML documentation to CLI related code, enable `TreatWarningsAsErrors` in CLI project.
+
 ### Fixed
 
 - `--log` option correctly changes desired log level.
