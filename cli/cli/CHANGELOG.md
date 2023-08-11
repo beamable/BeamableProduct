@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added 
+
+- `beam project update-unity-beam package` command for installing and updating Beam packages in Unity projects.
+
 ## [1.17.2]
 
 ### Fixed
