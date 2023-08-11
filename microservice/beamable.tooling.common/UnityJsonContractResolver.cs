@@ -1,3 +1,4 @@
+#nullable enable
 using Beamable.Common;
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Content;
