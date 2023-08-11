@@ -1,4 +1,3 @@
-#nullable enable
 using Beamable.Common;
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Content;
@@ -196,6 +195,7 @@ namespace Beamable.Server.Common
 	    /// </summary>
 	    public override bool CanWrite => !_skip.Value || (_skip.Value = false);
 
+#pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
 	    /// <summary>
 	    /// Reads JSON and invokes deserialization with callback methods.
 	    /// </summary>
@@ -231,6 +231,7 @@ namespace Beamable.Server.Common
 
 		    serializer.Converters.Insert(thisIndex, this);
 	    }
+#pragma warning restore CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
 
 	    /// <summary>
 	    /// Disposes of the thread-local skip flag.
