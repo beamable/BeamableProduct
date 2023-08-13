@@ -1,13 +1,10 @@
-using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
-using System.Linq;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
 #endif
 using static Beamable.Common.Constants.URLs;
 using static Beamable.Common.Constants.Features.LoginBase;
@@ -57,7 +54,7 @@ namespace Beamable.Editor.Login.UI.Components
 			_passwordField.isPasswordField = true;
 			var isPasswordValid = _passwordField.AddErrorLabel("Password", m => PrimaryButtonVisualElement.IsPassword(m)
 			   ? null
-			   : "A valid password must be at least 4 characters long");
+			   : "A valid password must be at least 6 characters long and should include uppercase and lowercase letters, digits, as well as special characters");
 
 			_passwordConfField = Root.Q<TextField>("confirmPassword");
 			_passwordConfField.AddPlaceholder(PLACEHOLDER_PASSWORD_CONFIRM_FIELD);
@@ -78,7 +75,6 @@ namespace Beamable.Editor.Login.UI.Components
 
 			var constraints = new[] { doPasswordsMatch, isPasswordValid, isEmail, isAlias, isGame, isLegal };
 			_continueButton.AddGateKeeper(constraints);
-			_continueButton.RegisterCallback<MouseEnterEvent>(evt => ContinueButton_OnMouseEnter(evt, constraints));
 
 			_switchCustomerButton = Root.Q<GenericButtonVisualElement>("existingOrganization");
 			_switchCustomerButton.OnClick += Manager.GotoExistingCustomer;
@@ -94,14 +90,6 @@ namespace Beamable.Editor.Login.UI.Components
 			   _passwordField.value);
 			var promise = Manager.AttemptNewCustomer(Model);
 			_continueButton.Load(AddErrorLabel(promise, _errorText));
-		}
-		private void ContinueButton_OnMouseEnter(MouseEnterEvent evt, FormConstraint[] constraints)
-		{
-			var fieldsWithError = constraints.Where(kvp => !kvp.IsValid);
-			foreach (var fieldWithError in fieldsWithError)
-			{
-				fieldWithError.Check(true);
-			}
 		}
 	}
 }

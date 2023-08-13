@@ -219,8 +219,8 @@ namespace Beamable.Editor.UI.Components
 		public static string PasswordErrorHandler(string password)
 		{
 			return PrimaryButtonVisualElement.IsPassword(password)
-			   ? null
-			   : "A valid password must be at least 4 characters long";
+				? null
+				: "A valid password must be at least 6 characters long and should include uppercase and lowercase letters, digits, as well as special characters";
 		}
 
 		public static string LegalErrorHandler(bool read)
@@ -256,8 +256,32 @@ namespace Beamable.Editor.UI.Components
 
 		public static bool IsPassword(string password)
 		{
-			return password.Length > 1; // TODO: Implement actual password check
+			// Check minimum length
+			if (password.Length < 6)
+				return false;
+
+			// Check for uppercase, lowercase, digit, and special character
+			bool hasUppercase = false;
+			bool hasLowercase = false;
+			bool hasDigit = false;
+			bool hasSpecialChar = false;
+
+			foreach (char c in password)
+			{
+				if (char.IsUpper(c))
+					hasUppercase = true;
+				else if (char.IsLower(c))
+					hasLowercase = true;
+				else if (char.IsDigit(c))
+					hasDigit = true;
+				else if (!char.IsLetterOrDigit(c))
+					hasSpecialChar = true;
+			}
+
+			// Check if all criteria are met
+			return hasUppercase && hasLowercase && hasDigit && hasSpecialChar;
 		}
+
 		public static Func<string, bool> MatchesTextField(TextField tf)
 		{
 			return (str => string.Equals(tf.value, str));
@@ -298,18 +322,16 @@ namespace Beamable.Editor.UI.Components
 			}
 			return errorMessage == string.Empty;
 		}
+
 		public static bool IsValidEmail(string email)
 		{
-			try
-			{
-				email = email.Trim();
-				var addr = new System.Net.Mail.MailAddress(email);
-				return addr.Address == email;
-			}
-			catch
-			{
-				return false;
-			}
+			if (string.IsNullOrWhiteSpace(email)) return false;
+
+			email = email.Trim();
+			// Regular expression pattern for validating email addresses
+			string pattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+			var regex = new Regex(pattern);
+			return regex.IsMatch(email);
 		}
 	}
 }
