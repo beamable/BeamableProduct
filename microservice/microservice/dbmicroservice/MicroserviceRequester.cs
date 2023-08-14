@@ -480,7 +480,7 @@ namespace Beamable.Server
             msg = Json.Serialize(dict, stringBuilder.Builder);
          }
 
-         var truncatedMsg = msg.Substring(0, Math.Max(_env.LogTruncateLimit, msg.Length));
+         var truncatedMsg = msg.Substring(0, Math.Min(_env.LogTruncateLimit, msg.Length));
          Log.Debug("sending request " + truncatedMsg);
          _socketContext.Daemon.BumpRequestCounter();
          return _socketContext.SendMessageSafely(msg, _waitForAuthorization).FlatMap(_ =>
