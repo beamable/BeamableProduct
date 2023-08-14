@@ -480,7 +480,7 @@ namespace Beamable.Server
             msg = Json.Serialize(dict, stringBuilder.Builder);
          }
 
-         Log.Debug("sending request {msg}", msg);
+         Log.Debug("sending request " + msg);
          _socketContext.Daemon.BumpRequestCounter();
          return _socketContext.SendMessageSafely(msg, _waitForAuthorization).FlatMap(_ =>
 	         {
@@ -489,8 +489,7 @@ namespace Beamable.Server
 				         if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway")
 				         {
 					         // need to wait for authentication to finish...
-					         Log.Debug("Request {id} and {msg} failed with 403. Will reauth and and retry.", req.id,
-						         msg);
+					         Log.Debug($"Request {{id}} and {msg} failed with 403. Will reauth and and retry.", req.id);
 
 					         _socketContext.Daemon.WakeAuthThread();
 					         var waitForAuth = WaitForAuthorization(message: msg).ToPromise();
