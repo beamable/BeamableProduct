@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Fixed issue with `reset` command in Admin Prefab requires the user to re-enter Unity Play mode to take effect.
+
 ## [1.17.2]
 
 ### Fixed

@@ -51,7 +51,7 @@ namespace Beamable.Connection
 		{
 			_disconnecting = true;
 #if !UNITY_WEBGL || UNITY_EDITOR
-			if (_dispatchMessagesRoutine != null)
+			if (_dispatchMessagesRoutine != null && _coroutineService != null)
 			{
 				_coroutineService.StopCoroutine(_dispatchMessagesRoutine);
 			}

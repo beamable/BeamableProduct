@@ -364,7 +364,7 @@ namespace Beamable
 		{
 			await StopAllContexts();
 			ConfigDatabase.SetString("pid", pid, persist: false); // setting persist to false means the new pid won't be stored in player prefs.
-			await ResetToScene(sceneQualifier);
+			ResetToScene(sceneQualifier);
 		}
 
 		/// <summary>
@@ -376,13 +376,12 @@ namespace Beamable
 		/// This method won't deploy objects in the DontDestroyOnLoad scene.
 		/// </summary>
 		/// <param name="sceneQualifier">The string should either be a scene name, or the stringified int of a scene build index.</param>
-		public static async Promise ResetToScene(string sceneQualifier = null)
+		public static void ResetToScene(string sceneQualifier = null)
 		{
 			var loadAction = GetLoadSceneFunction(sceneQualifier);
 
 			var totalScenesRequired = 0;
 			var scenesDestroyed = 0;
-			var allScenesUnloaded = new Promise();
 
 			Action<AsyncOperation> Check(Scene unloadedScene)
 			{
@@ -390,8 +389,6 @@ namespace Beamable
 				{
 					scenesDestroyed++;
 					if (scenesDestroyed != totalScenesRequired) return;
-
-					allScenesUnloaded.CompleteSuccess();
 				};
 			}
 
@@ -409,7 +406,6 @@ namespace Beamable
 				else op.completed += Check(toDestroy);
 			}
 
-			await allScenesUnloaded;
 			loadAction();
 		}
 

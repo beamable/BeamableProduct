@@ -52,25 +52,32 @@ namespace Beamable.Api
 		[BeamableConsoleCommand("RESET", "Dispose the context, clear the access token, and reload the scene given as an argument, OR the current scene", "RESET <scene index or name>")]
 		protected string Reset(params string[] args)
 		{
-
-			Beam.ClearAndStopAllContexts()
-				.FlatMap(_ => Beam.ResetToScene(args.Length == 1 ? args[0] : null))
-				.Then(_ =>
-				{
-					Debug.Log("Reset complete");
-				});
+			try
+			{
+				_ = Beam.ClearAndStopAllContexts().GetResult();
+				Beam.ResetToScene(args.Length == 1 ? args[0] : null);
+				Debug.Log("Reset complete");
+			}
+			catch (Exception ex)
+			{
+				Debug.LogError($"Reset failed with error - {ex.Message}");
+			}
 			return "Resetting...";
 		}
 
 		[BeamableConsoleCommand(new[] { "RESTART", "FR" }, "Clear access tokens, then Restart the game as if it had just been launched", "FORCE-RESTART")]
 		public string Restart(params string[] args)
 		{
-			Beam.ClearAndStopAllContexts()
-				.FlatMap(_ => Beam.ResetToScene("0"))
-				.Then(_ =>
-				{
-					Debug.Log("Restart complete");
-				});
+			try
+			{
+				_ = Beam.ClearAndStopAllContexts().GetResult();
+				Beam.ResetToScene("0");
+				Debug.Log("Restart complete");
+			}
+			catch (Exception ex)
+			{
+				Debug.LogError($"Restart failed with error - {ex.Message}");
+			}
 			return "Restarting to scene 0...";
 		}
 
@@ -357,7 +364,7 @@ namespace Beamable.Api
 		{
 			var platform = _provider.GetService<BeamContext>();
 			platform.AccessToken.ExpireAccessToken();
-			var _ = Beam.ResetToScene(args.Length == 1 ? args[0] : null);
+			Beam.ResetToScene(args.Length == 1 ? args[0] : null);
 			return "Access Token is now expired. Restarting.";
 		}
 
