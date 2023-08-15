@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common;
+using Microsoft.Extensions.ObjectPool;
 using Serilog;
 using System.Buffers;
 using System.Collections.Generic;
@@ -277,12 +278,13 @@ namespace Beamable.Server
 					var sw = new Stopwatch();
 					var readCount = 0;
 
-					MemoryStream stream = new MemoryStream();
+					var streamPool = ObjectPool.Create<MemoryStream>(new DefaultPooledObjectPolicy<MemoryStream>());
+
 					cpu.StartSample();
+					var stream = streamPool.Get();
 					do
 					{
-						var segment = new ArraySegment<byte>(readSegment.Array);
-						result = await _ws.ReceiveAsync(segment, _cancellationToken);
+						result = await _ws.ReceiveAsync(readSegment, _cancellationToken);
 
 						readCount++;
 
@@ -303,12 +305,27 @@ namespace Beamable.Server
 					{
 						GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
 					}
-
-					stream.Seek(0, SeekOrigin.Begin);
-					var document = await JsonDocument.ParseAsync(stream);
+					
 					cpu.EndSample();
 
-					EmitMessage(document, sw);
+					Task.Run(async () =>
+					{
+						try
+						{
+							stream.Seek(0, SeekOrigin.Begin);
+							var document = await JsonDocument.ParseAsync(stream);
+							EmitMessage(document, sw);
+						}
+						catch (Exception ex)
+						{
+							Log.Error("websocket dispatch error. " + ex.Message);
+						}
+						finally
+						{
+							streamPool.Return(stream);
+						}
+					});
+
 				}
 			}
 

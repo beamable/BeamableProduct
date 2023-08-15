@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Microservice "sending request" debug log messages is easier to read
+- Microservice uses object pooling for parsing incoming requests
 
 ## [1.17.2]
 
