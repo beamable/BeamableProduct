@@ -99,6 +99,7 @@ public partial class BeamoLocalSystem
 				existingServiceInstances.Add(new BeamoServiceInstance
 				{
 					BeamoId = beamoId,
+					ImageId = dockerContainer.ImageID,
 					ContainerId = containerId,
 					ContainerName = containerName,
 					ActivePortBindings = ports,
@@ -168,6 +169,7 @@ public partial class BeamoLocalSystem
 
 						var newServiceInstance = new BeamoServiceInstance()
 						{
+							ImageId = containerData.Image,
 							BeamoId = beamoId,
 							ContainerId = message.ID,
 							ContainerName = containerName,
@@ -457,6 +459,7 @@ public class BeamoServiceInstance : IEquatable<BeamoServiceInstance>
 	public string BeamoId;
 	public string ContainerId;
 	public string ContainerName;
+	public string ImageId;
 	public List<DockerPortBinding> ActivePortBindings;
 
 	public bool IsRunning;

@@ -49,11 +49,23 @@ public partial class BeamoLocalSystem
 		var existingInstance = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.ContainerName.Contains(containerName));
 		if (existingInstance != null)
 		{
-			if (existingInstance.IsRunning)
-				return true;
+			if (existingInstance.ImageId == image)
+			{
+				// the image is the same, so we can re-use it.
+				if (existingInstance.IsRunning)
+				{
+					// since the exact right image is already running for this container; do nothing.
+					return true;
+				}
 
+				return await RunContainer(containerName);
+			}
+			else
+			{
+				// the image is not correct, so we need to erase the old container before recreating it.
+				await DeleteContainer(containerName);
+			}
 
-			return await RunContainer(containerName);
 		}
 
 		_ = await CreateContainer(image, containerName, healthConfig, autoRemoveWhenStopped, portBindings, volumes, bindMounts, environmentVars);
