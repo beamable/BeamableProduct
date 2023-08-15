@@ -1217,6 +1217,10 @@ namespace Beamable.Player
 			{
 				return new PlayerRecoveryOperation(ex, PlayerRecoveryError.INSUFFICIENT_DATA);
 			}
+			catch (PlatformRequesterException ex) when (ex.Error.status == 401 || ex.Error.status == 403)
+			{
+				return new PlayerRecoveryOperation(ex, PlayerRecoveryError.UNKNOWN_CREDENTIALS);
+			}
 			catch (Exception ex)
 			{
 				return new PlayerRecoveryOperation(ex, PlayerRecoveryError.UNKNOWN_ERROR);
