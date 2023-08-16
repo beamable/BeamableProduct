@@ -26,7 +26,7 @@ public class ServiceNameArgument : Argument<ServiceName>
 
 public class SpecificVersionOption : Option<string>
 {
-	public SpecificVersionOption() : base("version", () => string.Empty,
+	public SpecificVersionOption() : base("--version", () => string.Empty,
 		"Specifies version of Beamable project dependencies")
 	{
 	}

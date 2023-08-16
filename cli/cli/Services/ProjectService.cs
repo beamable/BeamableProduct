@@ -100,23 +100,43 @@ public class ProjectService
 		});
 		_configService.SaveDataFile(".linkedProjects", _projects);
 	}
-
-	public static async Task EnsureCanUseTemplates()
+	
+	public static async Task EnsureCanUseTemplates(string version)
 	{
-		var canUseTemplates = await Cli.Wrap("dotnet")
-			.WithArguments("new list --tag beamable")
-			.WithValidation(CommandResultValidation.None)
-			.ExecuteAsync().Select(res => res.ExitCode == 0).Task;
+		var info = await GetTemplateInfo();
 
-		if (!canUseTemplates) await PromptAndInstallTemplates();
+		if (!info.HasTemplates || version != info.templateVersion)
+		{
+			await PromptAndInstallTemplates(info.templateVersion, version);
+		}
 	}
-
-	private static async Task PromptAndInstallTemplates()
+	
+	/// <param name="version">
+	/// The version of the template to install.
+	/// A null string will imply the "latest" version.
+	///
+	/// <b> There are missing versions of the template! </b>
+	/// See for details, https://www.nuget.org/packages/Beamable.Templates, but not all versions exist.
+	/// This may cause the command to fail, but in that case, that is expected.
+	/// </param>
+	private static async Task PromptAndInstallTemplates(string currentlyInstalledVersion, string version)
 	{
 		// lets get user consent before auto installing beamable templates
+		var question = "";
+		if (string.IsNullOrEmpty(currentlyInstalledVersion))
+		{
+			question =
+				"Beamable templates are currently not installed. Would you like to proceed with installing the Beamable templates?";
+		}
+		else
+		{
+			var latestMsg = string.IsNullOrEmpty(version) ? "the latest version" : $"version {version}";
+			question =
+				$"Beamable templates are currently installed as {currentlyInstalledVersion}. Would you like to proceed with installing {latestMsg}";
+		}
+		
 		var canInstallTemplates =
-			AnsiConsole.Confirm(
-				"Beamable templates are currently not installed. Would you like to proceed with installing the Beamable templates?");
+			AnsiConsole.Confirm(question);
 
 		if (!canInstallTemplates)
 		{
@@ -125,8 +145,14 @@ public class ProjectService
 				"dotnet new install beamable.templates");
 		}
 
+		if (!string.IsNullOrEmpty(currentlyInstalledVersion))
+		{
+			// there are already templates installed, so un-install them first.
+			await RunDotnetCommand("new uninstall beamable.templates");
+		}
+		
 		var isTemplateInstalled = await Cli.Wrap("dotnet")
-			.WithArguments("new install beamable.templates")
+			.WithArguments($"new install beamable.templates::{version}")
 			.WithValidation(CommandResultValidation.None)
 			.ExecuteAsyncAndLog().Select(res => res.ExitCode == 0).Task;
 
@@ -208,7 +234,7 @@ public class ProjectService
 			throw new CliException("Cannot create a storage because the directory already exists");
 		}
 
-		await EnsureCanUseTemplates();
+		await EnsureCanUseTemplates(null); // TODO: tech debt, this whole command needs to care about version.
 
 		// create the beam microservice project
 		await RunDotnetCommand($"new beamstorage -n {storageName} -o {storagePath}");
@@ -230,7 +256,8 @@ public class ProjectService
 		{
 			directory = solutionName;
 		}
-
+		string usedVersion = string.IsNullOrWhiteSpace(version) ? await GetVersion() : version;
+		
 		var solutionPath = Path.Combine(_configService.WorkingDirectory, directory);
 		var rootServicesPath = Path.Combine(solutionPath, "services");
 		var commonProjectName = $"{projectName}Common";
@@ -243,7 +270,8 @@ public class ProjectService
 		}
 
 		// check that we have the templates available
-		await EnsureCanUseTemplates();
+		await EnsureCanUseTemplates(usedVersion);
+		
 		// create the solution
 		await RunDotnetCommand($"new sln -n \"{solutionName}\" -o \"{solutionPath}\"");
 
@@ -257,7 +285,6 @@ public class ProjectService
 		// add the microservice to the solution
 		await RunDotnetCommand($"sln \"{solutionPath}\" add \"{projectPath}\"");
 
-		string usedVersion = string.IsNullOrWhiteSpace(version) ? await GetVersion() : version;
 
 		await UpdateProjectDependencyVersion(projectPath, "Beamable.Microservice.Runtime", usedVersion);
 
@@ -321,7 +348,7 @@ public class ProjectService
 		}
 
 		// check that we have the templates available 
-		await EnsureCanUseTemplates();
+		await EnsureCanUseTemplates(version);
 
 		if (!skipSolutionCreation)
 		{
@@ -413,7 +440,7 @@ COPY {commonProjectName}/. .
 		return nugetPackages.Last().packageVersion;
 	}
 
-	Task RunDotnetCommand(string arguments)
+	static Task RunDotnetCommand(string arguments)
 	{
 		return Cli.Wrap("dotnet").WithArguments(arguments).ExecuteAsyncAndLog().Task;
 	}
@@ -424,6 +451,19 @@ public static class CliExtensions
 	public static CommandTask<CommandResult> ExecuteAsyncAndLog(this Command command)
 	{
 		Log.Information($"Running '{command.TargetFilePath} {command.Arguments}'");
-		return command.ExecuteAsync();
+
+		var buffer = new StringBuilder();
+		var commandTask = command
+			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(buffer))
+			.WithStandardErrorPipe(PipeTarget.ToStringBuilder(buffer))
+			.ExecuteAsync();
+		commandTask.Task.ContinueWith(t =>
+		{
+			if (!t.IsCompletedSuccessfully)
+			{
+				Log.Error(buffer.ToString());
+			}
+		});
+		return commandTask;
 	}
 }
