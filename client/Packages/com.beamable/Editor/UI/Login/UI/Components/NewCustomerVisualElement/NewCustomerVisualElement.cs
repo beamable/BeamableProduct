@@ -54,7 +54,7 @@ namespace Beamable.Editor.Login.UI.Components
 			_passwordField.isPasswordField = true;
 			var isPasswordValid = _passwordField.AddErrorLabel("Password", m => PrimaryButtonVisualElement.IsPassword(m)
 			   ? null
-			   : "A valid password must be at least 6 characters long and should include uppercase and lowercase letters, digits, as well as special characters");
+			   : "A valid password must be at least 4 characters long");
 
 			_passwordConfField = Root.Q<TextField>("confirmPassword");
 			_passwordConfField.AddPlaceholder(PLACEHOLDER_PASSWORD_CONFIRM_FIELD);
