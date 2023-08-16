@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix issue with archived realms showing in options when selecting realm
 - Rerunning `beam services run` will detect code changes
+- New projects created with `beam project new` will include the required `Microsoft.OpenApi.Readers` package
 - If an internal `dotnet` command fails, `beam` will now emit the logs of the failed command
 
 ## [1.17.2]
