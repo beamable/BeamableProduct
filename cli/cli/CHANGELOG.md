@@ -7,10 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added 
+
+- `beam project update-unity-beam package` command for installing and updating Beam packages in Unity projects.
+
 ### Fixed
 
 - Fix issue with archived realms showing in options when selecting realm
 - Rerunning `beam services run` will detect code changes
+
 
 ## [1.17.2]
 
