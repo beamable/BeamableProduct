@@ -22,8 +22,8 @@ public class UpdateUnityBeamPackageCommand : AppCommand<UpdateUnityBeamPackageCo
 	public override void Configure()
 	{
 		AddArgument(new Argument<string>("path", "Relative path to the Unity project"), (args, i) => args.path = i);
-		AddArgument(new Argument<string>("version", "Version of beam package"), (args, i) => args.version = i);
-		AddOption(new Option<BeamNexusRepository>("repository", ()=>BeamNexusRepository.Release,"Beamable repository to use"),(args, i) => args.repository = i);
+		AddOption(new Option<string>("--version", ()=>string.Empty,"Version of beam package"), (args, i) => args.version = i);
+		AddOption(new Option<BeamNexusRepository>("--repository", ()=>BeamNexusRepository.Release,"Beamable repository to use"),(args, i) => args.repository = i);
 		AddOption(new ConfigurableOptionFlag("skip-server-package","Skips adding server package"),(args, i) => args.skipServerPackage = i);
 	}
 
