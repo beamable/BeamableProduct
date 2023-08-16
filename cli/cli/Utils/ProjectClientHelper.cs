@@ -98,7 +98,7 @@ public class ProjectClientHelper<TProjectClient> where TProjectClient : IProject
 		}
 	}
 
-	private IEnumerable<string> GetProjectClientTypeCandidates(IEnumerable<string> paths)
+	public IEnumerable<string> GetProjectClientTypeCandidates(IEnumerable<string> paths)
 	{
 		foreach (var path in paths)
 		{

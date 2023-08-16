@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+-  Add `Beamable.Common` as dependency to SAMS Common project
+
 ### Changed
 
 - `beam project {new/add}` does update SAMS Beamable dependencies during project creation.
+- `beam project update-unity-beam-package` command for installing and updating Beam packages in Unity projects.
+
 
 ### Fixed
 
@@ -18,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - If an internal `dotnet` command fails, `beam` will now emit the logs of the failed command
 
 ## [1.17.2]
+
+### Added
+
+- Added missing XML documentation to CLI related code, enable `TreatWarningsAsErrors` in CLI project.
 
 ### Fixed
 
