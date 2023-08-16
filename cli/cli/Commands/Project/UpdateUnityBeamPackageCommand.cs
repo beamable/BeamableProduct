@@ -22,9 +22,9 @@ public class UpdateUnityBeamPackageCommand : AppCommand<UpdateUnityBeamPackageCo
 	public override void Configure()
 	{
 		AddArgument(new Argument<string>("path", "Relative path to the Unity project"), (args, i) => args.path = i);
-		AddOption(new Option<string>("--version", ()=>string.Empty,"Version of beam package"), (args, i) => args.version = i);
-		AddOption(new Option<BeamNexusRepository>("--repository", ()=>BeamNexusRepository.Release,"Beamable repository to use"),(args, i) => args.repository = i);
-		AddOption(new ConfigurableOptionFlag("skip-server-package","Skips adding server package"),(args, i) => args.skipServerPackage = i);
+		AddOption(new Option<string>("--version", () => string.Empty, "Version of beam package"), (args, i) => args.version = i);
+		AddOption(new Option<BeamNexusRepository>("--repository", () => BeamNexusRepository.Release, "Beamable repository to use"), (args, i) => args.repository = i);
+		AddOption(new ConfigurableOptionFlag("skip-server-package", "Skips adding server package"), (args, i) => args.skipServerPackage = i);
 	}
 
 	public override async Task Handle(UpdateUnityBeamPackageCommandArgs args)
@@ -62,7 +62,7 @@ public class UpdateUnityBeamPackageCommand : AppCommand<UpdateUnityBeamPackageCo
 		}
 		var packageManifest = UnityPackageManifest.FromFile(filePath);
 		packageManifest.AddOrUpdateScopedRegistryForBeam(args.repository);
-		packageManifest.SetBeamablePackagesVersion(args.version,!args.skipServerPackage);
+		packageManifest.SetBeamablePackagesVersion(args.version, !args.skipServerPackage);
 		await packageManifest.SaveToFile(filePath);
 		AnsiConsole.WriteLine($"Packages at {filePath} updated, current beamable version: {args.version}");
 	}
