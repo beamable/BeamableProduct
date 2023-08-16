@@ -9,7 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add email validation and password validation 
+- Add email validation and password validation
+
+### Fixed
+
+- Fixed wrong error code when providing wrong password while logging in.
 
 ## [1.17.2]
 
