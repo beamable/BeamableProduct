@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+-  Add `Beamable.Common` as dependency to SAMS Common project
+
 ### Changed
 
 - `beam project {new/add}` does update SAMS Beamable dependencies during project creation.
