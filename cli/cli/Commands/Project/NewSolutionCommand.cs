@@ -6,12 +6,35 @@ using System.CommandLine;
 
 namespace cli.Dotnet;
 
-public class NewSolutionCommandArgs : CommandArgs
+public class SolutionCommandArgs : CommandArgs
 {
 	public ServiceName SolutionName;
 	public ServiceName ProjectName;
-	public string directory;
 	public bool SkipCommon;
+	public string SpecifiedVersion;
+}
+
+public class SkipCommonOptionFlag : ConfigurableOptionFlag
+{
+	public SkipCommonOptionFlag() : base("skip-common", "If you should create a common library") { }
+}
+
+public class ServiceNameArgument : Argument<ServiceName>
+{
+	public ServiceNameArgument() : base("name", "Name of the new project") { }
+}
+
+public class SpecificVersionOption : Option<string>
+{
+	public SpecificVersionOption() : base("version", () => string.Empty,
+		"Specifies version of Beamable project dependencies")
+	{
+	}
+}
+
+public class NewSolutionCommandArgs : SolutionCommandArgs
+{
+	public string directory;
 }
 
 public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
@@ -20,7 +43,8 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 	private readonly AddUnityClientOutputCommand _addUnityCommand;
 	private readonly AddUnrealClientOutputCommand _addUnrealCommand;
 
-	public NewSolutionCommand(InitCommand initCommand, AddUnityClientOutputCommand addUnityCommand, AddUnrealClientOutputCommand addUnrealCommand) : base("new",
+	public NewSolutionCommand(InitCommand initCommand, AddUnityClientOutputCommand addUnityCommand,
+		AddUnrealClientOutputCommand addUnrealCommand) : base("new",
 		"Start a brand new beamable solution using dotnet")
 	{
 		_initCommand = initCommand;
@@ -30,10 +54,15 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<ServiceName>("name", "Name of the new project"), (args, i) => args.ProjectName = i);
-		AddArgument(new Argument<string>("output", () => "", description: "Where the project be created"), (args, i) => args.directory = i);
-		AddOption(new ConfigurableOptionFlag("skip-common", "If you should create a common library"), (args, i) => args.SkipCommon = i);
-		AddOption(new Option<ServiceName>("--solution-name", "The name of the solution of the new project"), (args, i) => args.SolutionName = i);
+		AddArgument(new ServiceNameArgument(), (args, i) => args.ProjectName = i);
+		AddArgument(new Argument<string>("output", () => string.Empty, description: "Where the project be created"),
+			(args, i) => args.directory = i);
+		AddOption(new SkipCommonOptionFlag(), (args, i) => args.SkipCommon = i);
+		AddOption(new Option<ServiceName>("--solution-name", "The name of the solution of the new project"),
+			(args, i) => args.SolutionName = i);
+		AddOption(
+			new SpecificVersionOption(),
+			(args, i) => args.SpecifiedVersion = i);
 	}
 
 	public override async Task Handle(NewSolutionCommandArgs args)
@@ -42,7 +71,7 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 		args.SolutionName = string.IsNullOrEmpty(args.SolutionName) ? args.ProjectName : args.SolutionName;
 
 		// in the current directory, create a project using dotnet. 
-		var path = await args.ProjectService.CreateNewSolution(args.directory, args.SolutionName, args.ProjectName, !args.SkipCommon);
+		var path = await args.ProjectService.CreateNewSolution(args);
 
 		// initialize a beamable project in that directory...
 		var createdNewWorkingDir = false;
@@ -79,7 +108,8 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 		if (!args.SkipCommon)
 		{
 			var service = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[sd.BeamoId];
-			await args.ProjectService.CreateCommon(args.ConfigService, args.ProjectName, service.RelativeDockerfilePath, service.DockerBuildContextPath);
+			await args.ProjectService.CreateCommon(args.ConfigService, args.ProjectName, service.RelativeDockerfilePath,
+				service.DockerBuildContextPath);
 		}
 
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();

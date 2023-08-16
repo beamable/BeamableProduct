@@ -37,7 +37,7 @@ public class ProjectData
 		public bool Equals(Unreal other) => Path == other.Path;
 
 		public override bool Equals(object obj) => (obj is Unreal unreal && Equals(unreal)) ||
-												   (obj is string unrealPath && Equals(unrealPath));
+		                                           (obj is string unrealPath && Equals(unrealPath));
 
 		public override int GetHashCode() => (Path != null ? Path.GetHashCode() : 0);
 
@@ -49,14 +49,16 @@ public class ProjectData
 public class ProjectService
 {
 	private readonly ConfigService _configService;
+	private readonly VersionService _versionService;
 
 	private ProjectData _projects;
 
 	public bool? ConfigFileExists { get; }
 
-	public ProjectService(ConfigService configService)
+	public ProjectService(ConfigService configService, VersionService versionService)
 	{
 		_configService = configService;
+		_versionService = versionService;
 		_projects = configService.LoadDataFile<ProjectData>(".linkedProjects");
 		ConfigFileExists = _configService.ConfigFileExists;
 	}
@@ -94,7 +96,7 @@ public class ProjectService
 			MsBlueprintNodesHeaderPath = msBlueprintPath,
 			MsBlueprintNodesCppPath = msBlueprintPath,
 			BeamableBackendGenerationPassFile = relativePath +
-												$"\\Plugins\\BeamableCore\\Source\\{UnrealSourceGenerator.currentGenerationPassDataFilePath}.json"
+			                                    $"\\Plugins\\BeamableCore\\Source\\{UnrealSourceGenerator.currentGenerationPassDataFilePath}.json"
 		});
 		_configService.SaveDataFile(".linkedProjects", _projects);
 	}
@@ -146,7 +148,8 @@ public class ProjectService
 		var info = new DotnetTemplateInfo();
 
 		var buffer = templateStream.ToString();
-		string pattern = @"Beamable\.Templates[\s\S]*?Version: (\d+\.\d+\.\d+)[\s\S]*?Templates:\n((?:\s{3}.*\(.*\)\s+C#\n)+)";
+		string pattern =
+			@"Beamable\.Templates[\s\S]*?Version: (\d+\.\d+\.\d+)[\s\S]*?Templates:\n((?:\s{3}.*\(.*\)\s+C#\n)+)";
 		Regex regex = new Regex(pattern);
 
 		Match match = regex.Match(buffer);
@@ -162,7 +165,6 @@ public class ProjectService
 				info.templates.Add(template.Trim());
 			}
 		}
-
 
 
 		// var lines = buffer.Split(Environment.NewLine);
@@ -215,8 +217,14 @@ public class ProjectService
 		await RunDotnetCommand($"sln {slnFilePath} add {storagePath}");
 	}
 
+	public Task<string> CreateNewSolution(NewSolutionCommandArgs args)
+	{
+		return CreateNewSolution(args.directory, args.SolutionName, args.ProjectName,
+			!args.SkipCommon, args.SpecifiedVersion);
+	}
+
 	public async Task<string> CreateNewSolution(string directory, string solutionName, string projectName,
-		bool createCommonLibrary = true)
+		bool createCommonLibrary = true, string version = "")
 	{
 		if (string.IsNullOrEmpty(directory))
 		{
@@ -244,15 +252,14 @@ public class ProjectService
 
 		// restore the microservice tools
 		await RunDotnetCommand(
-				$"tool restore --tool-manifest \"{Path.Combine(projectName, ".config", "dotnet-tools.json")}\"");
+			$"tool restore --tool-manifest \"{Path.Combine(projectName, ".config", "dotnet-tools.json")}\"");
 
 		// add the microservice to the solution
 		await RunDotnetCommand($"sln \"{solutionPath}\" add \"{projectPath}\"");
 
-		var templateInfo = await GetTemplateInfo();
-		var templateVersion = templateInfo.HasTemplates ? templateInfo.templateVersion : null;
+		string usedVersion = string.IsNullOrWhiteSpace(version) ? await GetVersion() : version;
 
-		await UpdateProjectDependencyVersion(projectPath, "Beamable.Microservice.Runtime", templateVersion);
+		await UpdateProjectDependencyVersion(projectPath, "Beamable.Microservice.Runtime", usedVersion);
 
 		// create the shared library project only if requested
 		if (createCommonLibrary)
@@ -261,15 +268,15 @@ public class ProjectService
 
 			// restore the shared library tools
 			await RunDotnetCommand(
-					$"tool restore --tool-manifest \"{Path.Combine(commonProjectPath, ".config", "dotnet-tools.json")}\"");
+				$"tool restore --tool-manifest \"{Path.Combine(commonProjectPath, ".config", "dotnet-tools.json")}\"");
 
 			// add the shared library to the solution
 			await RunDotnetCommand($"sln \"{solutionPath}\" add \"{commonProjectPath}\"");
 
 			// add the shared library as a reference of the project
 			await RunDotnetCommand($"add \"{projectPath}\" reference \"{commonProjectPath}\"");
-			
-			await UpdateProjectDependencyVersion(commonProjectPath, "Beamable.Common", templateVersion);
+
+			await UpdateProjectDependencyVersion(commonProjectPath, "Beamable.Common", usedVersion);
 		}
 
 		return solutionPath;
@@ -285,12 +292,21 @@ public class ProjectService
 	/// <returns></returns>
 	private Task UpdateProjectDependencyVersion(string projectPath, string packageName, string version)
 	{
-		var versionToUpdate = string.IsNullOrWhiteSpace(version) || version.Equals("0.0.0") ? string.Empty : $" --version \"{version}\"";
-		
+		var versionToUpdate = string.IsNullOrWhiteSpace(version) || version.Equals("0.0.0")
+			? string.Empty
+			: $" --version \"{version}\"";
+
 		return RunDotnetCommand($"add \"{projectPath}\" package {packageName}{versionToUpdate}");
 	}
 
-	public async Task<string> AddToSolution(string solutionName, string projectName, bool createCommonLibrary = true, bool skipSolutionCreation = false)
+	public Task<string> AddToSolution(SolutionCommandArgs args)
+	{
+		return args.ProjectService.AddToSolution(args.SolutionName, args.ProjectName, !args.SkipCommon,
+			version: args.SpecifiedVersion);
+	}
+
+	public async Task<string> AddToSolution(string solutionName, string projectName, bool createCommonLibrary = true,
+		bool skipSolutionCreation = false, string version = "")
 	{
 		var solutionFile = $"{solutionName}.sln";
 		var solutionPath = Path.Combine(_configService.WorkingDirectory, solutionFile);
@@ -314,16 +330,15 @@ public class ProjectService
 
 			// restore the microservice tools
 			await RunDotnetCommand(
-					$"tool restore --tool-manifest \"{Path.Combine(projectName, ".config", "dotnet-tools.json")}\"");
+				$"tool restore --tool-manifest \"{Path.Combine(projectName, ".config", "dotnet-tools.json")}\"");
 		}
 
 		// add the microservice to the solution
 		await RunDotnetCommand($"sln \"{solutionPath}\" add \"{projectPath}\"");
 
-		var templateInfo = await GetTemplateInfo();
-		var templateVersion = templateInfo.HasTemplates ? templateInfo.templateVersion : null;
+		string usedVersion = string.IsNullOrWhiteSpace(version) ? await GetVersion() : version;
 
-		await UpdateProjectDependencyVersion(projectPath, "Beamable.Microservice.Runtime", templateVersion);
+		await UpdateProjectDependencyVersion(projectPath, "Beamable.Microservice.Runtime", usedVersion);
 
 		// create the shared library project only if requested
 		if (createCommonLibrary)
@@ -332,22 +347,23 @@ public class ProjectService
 
 			// restore the shared library tools
 			await RunDotnetCommand(
-					$"tool restore --tool-manifest \"{Path.Combine(commonProjectPath, ".config", "dotnet-tools.json")}\"");
+				$"tool restore --tool-manifest \"{Path.Combine(commonProjectPath, ".config", "dotnet-tools.json")}\"");
 
 			// add the shared library to the solution
 			await RunDotnetCommand($"sln \"{solutionPath}\" add \"{commonProjectPath}\"");
 
 			// add the shared library as a reference of the project
 			await RunDotnetCommand($"add \"{projectPath}\" reference \"{commonProjectPath}\"");
-			
-			await UpdateProjectDependencyVersion(commonProjectPath, "Beamable.Common", templateVersion);
+
+			await UpdateProjectDependencyVersion(commonProjectPath, "Beamable.Common", usedVersion);
 		}
 
 		return projectPath;
 	}
 
 
-	public async Task CreateCommon(ConfigService configService, string projectName, string dockerfilePath, string dockerBuildContextPath)
+	public async Task CreateCommon(ConfigService configService, string projectName, string dockerfilePath,
+		string dockerBuildContextPath)
 	{
 		var commonProjectName = $"{projectName}Common";
 		Log.Information("Docker file path is {DockerfilePath}", dockerfilePath);
@@ -367,7 +383,8 @@ COPY {commonProjectName}/. .
 		await File.WriteAllTextAsync(dockerfilePath, dockerfileText);
 	}
 
-	public async Task LinkProjects(AddUnityClientOutputCommand addUnityCommand, AddUnrealClientOutputCommand addUnrealCommand, IServiceProvider provider)
+	public async Task LinkProjects(AddUnityClientOutputCommand addUnityCommand,
+		AddUnrealClientOutputCommand addUnrealCommand, IServiceProvider provider)
 	{
 		// ask if we should link a Unity project
 		var addUnityProject = AnsiConsole.Confirm(
@@ -387,6 +404,13 @@ COPY {commonProjectName}/. .
 			await addUnrealCommand.Handle(
 				new AddUnrealClientOutputCommandArgs() { path = ".", Provider = provider });
 		}
+	}
+
+	private async Task<string> GetVersion()
+	{
+		var nugetPackages = (await _versionService.GetBeamableToolPackageVersions()).Where(d => !d.packageVersion.Contains("preview")).ToArray();
+		
+		return nugetPackages.Last().packageVersion;
 	}
 
 	Task RunDotnetCommand(string arguments)
