@@ -24,7 +24,7 @@ public class UnityPackageManifest
 
 		// var properties = JsonConvert.DeserializeObject<UnityPackageManifest>(fileContent);
 		var properties = fullManifest["dependencies"]!.ToObject<Dictionary<string, string>>();
-		var scopedRegistries = fullManifest["scopedRegistries"]?.ToObject<UnityScopedRegistry[]>() ?? new UnityScopedRegistry[]{};
+		var scopedRegistries = fullManifest["scopedRegistries"]?.ToObject<UnityScopedRegistry[]>() ?? new UnityScopedRegistry[] { };
 
 		return new UnityPackageManifest() { dependencies = properties, scopedRegistries = scopedRegistries };
 	}
@@ -95,7 +95,9 @@ public static class BeamNexusRepositoryHelper
 	{
 		return new UnityPackageManifest.UnityScopedRegistry
 		{
-			name = "Beamable", url = repository.GetUrl(), scopes = new[] { "com.beamable" }
+			name = "Beamable",
+			url = repository.GetUrl(),
+			scopes = new[] { "com.beamable" }
 		};
 	}
 
