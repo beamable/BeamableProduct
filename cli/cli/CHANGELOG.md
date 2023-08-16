@@ -9,13 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
--  Add `Beamable.Common` as dependency to SAMS Common project
+- Add `Beamable.Common` as dependency to SAMS Common project
 
 ### Changed
 
 - `beam project {new/add}` does update SAMS Beamable dependencies during project creation.
 - `beam project update-unity-beam-package` command for installing and updating Beam packages in Unity projects.
-
 
 ### Fixed
 

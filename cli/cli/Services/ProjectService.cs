@@ -37,7 +37,7 @@ public class ProjectData
 		public bool Equals(Unreal other) => Path == other.Path;
 
 		public override bool Equals(object obj) => (obj is Unreal unreal && Equals(unreal)) ||
-		                                           (obj is string unrealPath && Equals(unrealPath));
+												   (obj is string unrealPath && Equals(unrealPath));
 
 		public override int GetHashCode() => (Path != null ? Path.GetHashCode() : 0);
 
@@ -96,11 +96,11 @@ public class ProjectService
 			MsBlueprintNodesHeaderPath = msBlueprintPath,
 			MsBlueprintNodesCppPath = msBlueprintPath,
 			BeamableBackendGenerationPassFile = relativePath +
-			                                    $"\\Plugins\\BeamableCore\\Source\\{UnrealSourceGenerator.currentGenerationPassDataFilePath}.json"
+												$"\\Plugins\\BeamableCore\\Source\\{UnrealSourceGenerator.currentGenerationPassDataFilePath}.json"
 		});
 		_configService.SaveDataFile(".linkedProjects", _projects);
 	}
-	
+
 	public static async Task EnsureCanUseTemplates(string version)
 	{
 		var info = await GetTemplateInfo();
@@ -110,7 +110,7 @@ public class ProjectService
 			await PromptAndInstallTemplates(info.templateVersion, version);
 		}
 	}
-	
+
 	/// <param name="version">
 	/// The version of the template to install.
 	/// A null string will imply the "latest" version.
@@ -134,7 +134,7 @@ public class ProjectService
 			question =
 				$"Beamable templates are currently installed as {currentlyInstalledVersion}. Would you like to proceed with installing {latestMsg}";
 		}
-		
+
 		var canInstallTemplates =
 			AnsiConsole.Confirm(question);
 
@@ -150,7 +150,7 @@ public class ProjectService
 			// there are already templates installed, so un-install them first.
 			await RunDotnetCommand("new uninstall beamable.templates");
 		}
-		
+
 		var isTemplateInstalled = await Cli.Wrap("dotnet")
 			.WithArguments($"new install beamable.templates::{version}")
 			.WithValidation(CommandResultValidation.None)
@@ -257,7 +257,7 @@ public class ProjectService
 			directory = solutionName;
 		}
 		string usedVersion = string.IsNullOrWhiteSpace(version) ? await GetVersion() : version;
-		
+
 		var solutionPath = Path.Combine(_configService.WorkingDirectory, directory);
 		var rootServicesPath = Path.Combine(solutionPath, "services");
 		var commonProjectName = $"{projectName}Common";
@@ -271,7 +271,7 @@ public class ProjectService
 
 		// check that we have the templates available
 		await EnsureCanUseTemplates(usedVersion);
-		
+
 		// create the solution
 		await RunDotnetCommand($"new sln -n \"{solutionName}\" -o \"{solutionPath}\"");
 
@@ -436,7 +436,7 @@ COPY {commonProjectName}/. .
 	private async Task<string> GetVersion()
 	{
 		var nugetPackages = (await _versionService.GetBeamableToolPackageVersions()).Where(d => !d.packageVersion.Contains("preview")).ToArray();
-		
+
 		return nugetPackages.Last().packageVersion;
 	}
 
