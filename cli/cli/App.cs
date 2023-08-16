@@ -156,6 +156,7 @@ public class App
 		Commands.AddCommand<OpenMongoExpressCommand, OpenMongoExpressCommandArgs, ProjectCommand>();
 		Commands.AddCommand<AddUnityClientOutputCommand, AddUnityClientOutputCommandArgs, ProjectCommand>();
 		Commands.AddCommand<AddUnrealClientOutputCommand, AddUnrealClientOutputCommandArgs, ProjectCommand>();
+		Commands.AddCommand<UpdateUnityBeamPackageCommand, UpdateUnityBeamPackageCommandArgs, ProjectCommand>();
 		Commands.AddCommand<ShareCodeCommand, ShareCodeCommandArgs, ProjectCommand>();
 		Commands.AddCommand<CheckStatusCommand, CheckStatusCommandArgs, ProjectCommand>();
 		Commands.AddCommand<AddServiceToSolutionCommand, AddServiceToSolutionCommandArgs, ProjectCommand>();
