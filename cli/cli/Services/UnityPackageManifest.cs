@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿using JetBrains.Annotations;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace cli.Services;
 
@@ -6,8 +8,8 @@ namespace cli.Services;
 public class UnityPackageManifest
 {
 	public Dictionary<string, string> dependencies;
+
 	public UnityScopedRegistry[] scopedRegistries;
-	
 
 	public static UnityPackageManifest FromFile(string path)
 	{
@@ -18,9 +20,13 @@ public class UnityPackageManifest
 
 		var fileContent = File.ReadAllText(path);
 
-		var properties = JsonConvert.DeserializeObject<UnityPackageManifest>(fileContent);
+		JObject fullManifest = JObject.Parse(fileContent);
 
-		return properties;
+		// var properties = JsonConvert.DeserializeObject<UnityPackageManifest>(fileContent);
+		var properties = fullManifest["dependencies"]!.ToObject<Dictionary<string, string>>();
+		var scopedRegistries = fullManifest["scopedRegistries"]?.ToObject<UnityScopedRegistry[]>() ?? new UnityScopedRegistry[]{};
+
+		return new UnityPackageManifest() { dependencies = properties, scopedRegistries = scopedRegistries };
 	}
 
 	public void SetBeamablePackagesVersion(string packageVersion, bool addServerPackageIfMissing = true)
@@ -28,7 +34,7 @@ public class UnityPackageManifest
 		AddOrUpdatePackage("com.beamable", packageVersion);
 		if (addServerPackageIfMissing || dependencies.ContainsKey("com.beamable.server"))
 		{
-			AddOrUpdatePackage("com.beamable.server",packageVersion);
+			AddOrUpdatePackage("com.beamable.server", packageVersion);
 		}
 	}
 
@@ -55,9 +61,14 @@ public class UnityPackageManifest
 
 	public async Task SaveToFile(string path)
 	{
-		var value = JsonConvert.SerializeObject(this, Formatting.Indented);
-		
-		await File.WriteAllTextAsync(path, value);
+		var fileContent = await File.ReadAllTextAsync(path);
+		JObject fullManifest = JObject.Parse(fileContent);
+
+		// var properties = JsonConvert.DeserializeObject<UnityPackageManifest>(fileContent);
+		fullManifest["dependencies"]!.Replace(JToken.FromObject(dependencies));
+		fullManifest["scopedRegistries"] = JToken.FromObject(scopedRegistries);
+
+		await File.WriteAllTextAsync(path, fullManifest.ToString());
 	}
 
 	[Serializable]
