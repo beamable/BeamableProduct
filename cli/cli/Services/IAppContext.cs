@@ -97,11 +97,13 @@ public class DefaultAppContext : IAppContext
 			if (string.IsNullOrEmpty(logLevelOption))
 			{
 				App.LogLevel.MinimumLevel = LogEventLevel.Information;
-			} else if (LogUtil.TryParseLogLevel(logLevelOption, out var level))
+			}
+			else if (LogUtil.TryParseLogLevel(logLevelOption, out var level))
 			{
 				App.LogLevel.MinimumLevel = level;
-			} else if (!string.IsNullOrEmpty(_environment.LogLevel) &&
-			           LogUtil.TryParseLogLevel(_environment.LogLevel, out level))
+			}
+			else if (!string.IsNullOrEmpty(_environment.LogLevel) &&
+					 LogUtil.TryParseLogLevel(_environment.LogLevel, out level))
 			{
 				App.LogLevel.MinimumLevel = level;
 			}
