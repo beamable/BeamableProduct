@@ -177,6 +177,7 @@ public class ProjectService
 		var buffer = templateStream.ToString();
 		string pattern =
 			@"Beamable\.Templates[\s\S]*?Version: (\d+\.\d+\.\d+(?:-\w+\.\w+\d*)?)[\s\S]*?Templates:\n((?:\s{3}.*\(.*\)\s+C#\n)+)";
+
 		Regex regex = new Regex(pattern);
 
 		Match match = regex.Match(buffer);
@@ -437,6 +438,7 @@ COPY {commonProjectName}/. .
 	private async Task<string> GetVersion()
 	{
 		var nugetPackages = (await _versionService.GetBeamableToolPackageVersions(replaceDashWithDot: false)).ToArray();
+
 
 		return nugetPackages.Last().packageVersion;
 	}
