@@ -152,8 +152,7 @@ public class ProjectService
 			await RunDotnetCommand("new uninstall beamable.templates");
 		}
 
-		var isTemplateInstalled = await Cli.Wrap("dotnet")
-			.WithArguments($"new install beamable.templates::{version}")
+		var isTemplateInstalled = await CliExtensions.GetDotnetCommand($"new install beamable.templates::{version}")
 			.WithValidation(CommandResultValidation.None)
 			.ExecuteAsyncAndLog().Select(res => res.ExitCode == 0).Task;
 
@@ -166,8 +165,7 @@ public class ProjectService
 	public static async Task<DotnetTemplateInfo> GetTemplateInfo()
 	{
 		var templateStream = new StringBuilder();
-		await Cli.Wrap("dotnet")
-			.WithArguments("new uninstall")
+		await CliExtensions.GetDotnetCommand("new uninstall")
 			.WithValidation(CommandResultValidation.None)
 			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(templateStream))
 			.ExecuteBufferedAsync();
@@ -439,18 +437,26 @@ COPY {commonProjectName}/. .
 	{
 		var nugetPackages = (await _versionService.GetBeamableToolPackageVersions(replaceDashWithDot: false)).ToArray();
 
-
 		return nugetPackages.Last().packageVersion;
 	}
 
 	static Task RunDotnetCommand(string arguments)
 	{
-		return Cli.Wrap("dotnet").WithArguments(arguments).ExecuteAsyncAndLog().Task;
+		return CliExtensions.GetDotnetCommand(arguments).ExecuteAsyncAndLog().Task;
 	}
 }
 
 public static class CliExtensions
 {
+	
+	public static Command GetDotnetCommand(string arguments)
+	{
+		return Cli.Wrap("dotnet").WithEnvironmentVariables(new Dictionary<string, string>
+		{
+			["DOTNET_CLI_UI_LANGUAGE"] = "en"
+		}).WithArguments(arguments);
+	}
+	
 	public static CommandTask<CommandResult> ExecuteAsyncAndLog(this Command command)
 	{
 		Log.Information($"Running '{command.TargetFilePath} {command.Arguments}'");
