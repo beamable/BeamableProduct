@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `beam project {new/add}` does update SAMS Beamable dependencies during project creation.
 - `beam project update-unity-beam-package` command for installing and updating Beam packages in Unity projects.
+- Requests commands (`beam {get/put/post/delete/me}`) always output result to console.
 
 ### Fixed
 
