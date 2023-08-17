@@ -24,7 +24,8 @@ public class VersionService
 		public string packageVersion;
 	}
 
-	public async Task<NugetPackages[]> GetBeamableToolPackageVersions(string packageName = "beamable.tools")
+	public async Task<NugetPackages[]> GetBeamableToolPackageVersions(bool replaceDashWithDot = true,
+		string packageName = "beamable.tools")
 	{
 		var url = $"https://api.nuget.org/v3-flatcontainer/{packageName}/index.json";
 		var message = await _httpClient.GetAsync(url);
@@ -44,7 +45,9 @@ public class VersionService
 			packageVersions[i] = new NugetPackages
 			{
 				originalVersion = response.versions[i],
-				packageVersion = response.versions[i].Replace("-", ".")
+				packageVersion = replaceDashWithDot
+					? response.versions[i].Replace("-", ".")
+					: response.versions[i]
 			};
 		}
 
