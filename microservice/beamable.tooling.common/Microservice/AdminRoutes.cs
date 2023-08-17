@@ -6,10 +6,24 @@ using Microsoft.OpenApi.Models;
 
 namespace microservice.Common
 {
+	/// <summary>
+	/// Represents default administrative routes associated with a microservice.
+	/// </summary>
    public class AdminRoutes
    {
+	   /// <summary>
+	   /// Microservice associated with the administrative routes.
+	   /// </summary>
 	   public Type MicroserviceType { get; set; }
+
+	   /// <summary>
+	   /// MicroserviceAttribute associated with the administrative routes.
+	   /// </summary>
 	   public MicroserviceAttribute MicroserviceAttribute { get; set; }
+
+	   /// <summary>
+	   /// Public host for the administrative routes.
+	   /// </summary>
 	   public string PublicHost { get; set; }
 	   
 	   

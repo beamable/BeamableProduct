@@ -6,12 +6,10 @@ namespace cli.Services;
 
 public class VersionService
 {
-	private readonly ProjectService _projectService;
 	private readonly HttpClient _httpClient;
 
-	public VersionService(ProjectService projectService)
+	public VersionService()
 	{
-		_projectService = projectService;
 		_httpClient = new HttpClient();
 	}
 
@@ -63,7 +61,7 @@ public class VersionService
 		info.version = versionInfo.FileVersion;
 		info.location = Environment.ProcessPath;
 
-		var templateInfo = await _projectService.GetTemplateInfo();
+		var templateInfo = await ProjectService.GetTemplateInfo();
 		info.templateVersion = templateInfo.HasTemplates ? templateInfo.templateVersion : "<no templates installed>";
 
 		var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
