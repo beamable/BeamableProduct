@@ -439,7 +439,6 @@ COPY {commonProjectName}/. .
 	{
 		var nugetPackages = (await _versionService.GetBeamableToolPackageVersions(replaceDashWithDot: false)).ToArray();
 
-
 		return nugetPackages.Last().packageVersion;
 	}
 
