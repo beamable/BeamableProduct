@@ -105,7 +105,8 @@ public class ProjectService
 	{
 		var info = await GetTemplateInfo();
 
-		if (!info.HasTemplates || version != info.templateVersion)
+		if (!info.HasTemplates ||
+		    !string.Equals(version, info.templateVersion, StringComparison.CurrentCultureIgnoreCase))
 		{
 			await PromptAndInstallTemplates(info.templateVersion, version);
 		}
@@ -175,7 +176,8 @@ public class ProjectService
 
 		var buffer = templateStream.ToString();
 		string pattern =
-			@"Beamable\.Templates[\s\S]*?Version: (\d+\.\d+\.\d+)[\s\S]*?Templates:\n((?:\s{3}.*\(.*\)\s+C#\n)+)";
+			@"Beamable\.Templates[\s\S]*?Version: (\d+\.\d+\.\d+(?:-\w+\.\w+\d*)?)[\s\S]*?Templates:\n((?:\s{3}.*\(.*\)\s+C#\n)+)";
+
 		Regex regex = new Regex(pattern);
 
 		Match match = regex.Match(buffer);
@@ -435,7 +437,8 @@ COPY {commonProjectName}/. .
 
 	private async Task<string> GetVersion()
 	{
-		var nugetPackages = (await _versionService.GetBeamableToolPackageVersions()).Where(d => !d.packageVersion.Contains("preview")).ToArray();
+		var nugetPackages = (await _versionService.GetBeamableToolPackageVersions(replaceDashWithDot: false)).ToArray();
+
 
 		return nugetPackages.Last().packageVersion;
 	}
