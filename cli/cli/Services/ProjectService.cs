@@ -106,7 +106,7 @@ public class ProjectService
 		var info = await GetTemplateInfo();
 
 		if (!info.HasTemplates ||
-		    !string.Equals(version, info.templateVersion, StringComparison.CurrentCultureIgnoreCase))
+			!string.Equals(version, info.templateVersion, StringComparison.CurrentCultureIgnoreCase))
 		{
 			await PromptAndInstallTemplates(info.templateVersion, version);
 		}
