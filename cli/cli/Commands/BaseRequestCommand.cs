@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using cli.Utils;
 using Spectre.Console;
+using Spectre.Console.Json;
 using System.CommandLine;
 
 namespace cli;
@@ -41,10 +42,23 @@ public abstract class BaseRequestCommand : AppCommand<BaseRequestArgs>
 			body = await File.ReadAllTextAsync(args.bodyPath);
 		}
 
-		var response = await _requester.CustomRequest(Method, args.uri, body, true,
-													  s => s, args.customerScoped, args.customHeaders)
-									   .ShowLoading("Sending Request..");
-		AnsiConsole.WriteLine(response);
+		try
+		{
+			var response = await _requester.CustomRequest(Method, args.uri, body, true,
+					s => s, args.customerScoped, args.customHeaders)
+				.ShowLoading("Sending Request..");
+			AnsiConsole.Write(
+				new Panel(new JsonText(response))
+					.Header($"{args.uri}")
+					.Collapse()
+					.RoundedBorder()
+					.BorderColor(Color.Blue));
+		}
+		catch (Exception e)
+		{
+			throw new CliException($"Failed request: {e.Message}");
+		}
+		
 	}
 }
 
