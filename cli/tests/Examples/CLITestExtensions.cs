@@ -3,7 +3,6 @@ using Beamable.Common.Api.Realms;
 using Beamable.Common.Content;
 using Moq;
 using Serilog.Events;
-using System;
 using System.Collections.Generic;
 using tests.MoqExtensions;
 
