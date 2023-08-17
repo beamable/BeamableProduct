@@ -4,14 +4,8 @@ using System.CommandLine;
 
 namespace cli.Dotnet;
 
-public class AddServiceToSolutionCommandArgs : CommandArgs
-{
-	public ServiceName ProjectName;
-	public ServiceName SolutionName;
-	public bool SkipCommon;
-}
 
-public class AddServiceToSolutionCommand : AppCommand<AddServiceToSolutionCommandArgs>
+public class AddServiceToSolutionCommand : AppCommand<SolutionCommandArgs>
 {
 	private readonly AddUnityClientOutputCommand _addUnityCommand;
 	private readonly AddUnrealClientOutputCommand _addUnrealCommand;
@@ -29,11 +23,11 @@ public class AddServiceToSolutionCommand : AppCommand<AddServiceToSolutionComman
 		AddArgument(new Argument<ServiceName>("name", "Name of the new project"), (args, i) => args.ProjectName = i);
 		AddOption(new Option<ServiceName>("--solution-name", "Name of the existing solution"),
 			(args, i) => args.SolutionName = i);
-		AddOption(new ConfigurableOptionFlag("skip-common", "If you should create a common library"),
+		AddOption(new SkipCommonOptionFlag(),
 			(args, i) => args.SkipCommon = i);
 	}
 
-	public override async Task Handle(AddServiceToSolutionCommandArgs args)
+	public override async Task Handle(SolutionCommandArgs args)
 	{
 		if (string.IsNullOrEmpty(args.SolutionName.Value))
 		{
@@ -79,7 +73,7 @@ public class AddServiceToSolutionCommand : AppCommand<AddServiceToSolutionComman
 		}
 
 		string projectPath =
-			await args.ProjectService.AddToSolution(args.SolutionName, args.ProjectName, !args.SkipCommon);
+			await args.ProjectService.AddToSolution(args);
 
 		var sd = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value,
 			projectPath,

@@ -156,7 +156,6 @@ namespace Beamable.Common.Dependencies
 		private readonly IUserContext _context;
 		private readonly IDependencyNameProvider _depName;
 		private readonly IDependencyScopeNameProvider _scopeName;
-		private readonly IDependencyProvider _provider;
 
 		public ScopedServiceStorage(IUserContext context, IDependencyNameProvider depName, IDependencyScopeNameProvider scopeName, TStorageLayer storageLayer) : base(storageLayer)
 		{
