@@ -183,6 +183,11 @@ namespace Beamable.Server
 					return (T)(object)InventoryViewEx.DeserializeToInventoryView(json);
 			}
 
+			if(type.IsEnum)
+			{
+				return (T)(object) int.Parse(json);
+			}
+
 			if (typeof(IDictionary).IsAssignableFrom(type))
 			{
 				var arrayDict = (ArrayDict)Json.Deserialize(json);
