@@ -106,7 +106,7 @@ public class ProjectService
 		var info = await GetTemplateInfo();
 
 		if (!info.HasTemplates ||
-		    !string.Equals(version, info.templateVersion, StringComparison.CurrentCultureIgnoreCase))
+			!string.Equals(version, info.templateVersion, StringComparison.CurrentCultureIgnoreCase))
 		{
 			await PromptAndInstallTemplates(info.templateVersion, version);
 		}
@@ -172,7 +172,7 @@ public class ProjectService
 
 		var info = new DotnetTemplateInfo();
 
-		var buffer = templateStream.ToString().Replace("\r\n","\n");
+		var buffer = templateStream.ToString().Replace("\r\n", "\n");
 		string pattern =
 			@"Beamable\.Templates[\s\S]*?Version: (\d+\.\d+\.\d+(?:-\w+\.\w+\d*)?)[\s\S]*?Templates:\n((?:\s{3}.*\(.*\)\s+C#\n)+)";
 
@@ -448,7 +448,7 @@ COPY {commonProjectName}/. .
 
 public static class CliExtensions
 {
-	
+
 	public static Command GetDotnetCommand(string arguments)
 	{
 		return Cli.Wrap("dotnet").WithEnvironmentVariables(new Dictionary<string, string>
@@ -456,7 +456,7 @@ public static class CliExtensions
 			["DOTNET_CLI_UI_LANGUAGE"] = "en"
 		}).WithArguments(arguments);
 	}
-	
+
 	public static CommandTask<CommandResult> ExecuteAsyncAndLog(this Command command)
 	{
 		Log.Information($"Running '{command.TargetFilePath} {command.Arguments}'");
