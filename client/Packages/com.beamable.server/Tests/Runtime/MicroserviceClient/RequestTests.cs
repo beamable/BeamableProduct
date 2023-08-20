@@ -347,5 +347,21 @@ namespace Beamable.Server.Tests.Runtime
 
 			Assert.AreEqual(tmpList, req.GetResult());
 		}
+
+		[UnityTest]
+		public IEnumerator CanAddTwoNumbers()
+		{
+			var client = new TestClient(ROUTE);
+
+			MockRequester.MockRequest<int>(Method.POST,
+												 client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+						 .WithBodyMatch<string>((body) => body.Equals("{\"num1\":\"10\",\"num2\":\"5\"}"))
+						 .WithResponse(15);
+
+			var req = client.Request<int>(ROUTE, new Dictionary<string, string> { { "num1", "10" }, { "num2", "5" } });
+
+			yield return req.ToYielder();
+			Assert.AreEqual(15, req.GetResult());
+		}
 	}
 }

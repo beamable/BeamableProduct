@@ -250,7 +250,7 @@ namespace Beamable.Server.Generator
 			genMethod.Name = info.MethodInfo.Name;
 
 			// the input arguments...
-			var serializationFields = new List<string>();
+			var serializationFields = new Dictionary<string, string>();
 			var methodParams = info.MethodInfo.GetParameters();
 			for (var i = 0; i < methodParams.Length; i++)
 			{
@@ -262,7 +262,7 @@ namespace Beamable.Server.Generator
 
 				var serializationFieldName = $"serialized_{paramName}";
 				var declare = new CodeParameterDeclarationExpression(typeof(string), serializationFieldName);
-				serializationFields.Add(serializationFieldName);
+				serializationFields.Add(paramName, serializationFieldName);
 
 				var serializeInvoke = new CodeMethodInvokeExpression(
 					new CodeMethodReferenceExpression(
@@ -325,13 +325,28 @@ namespace Beamable.Server.Generator
 
 			// servicePath = $"micro_{Descriptor.Name}/{servicePath}"; // micro is the feature name, so we don't accidently stop out an existing service.
 
+			const string serializedFieldVariableName = "serializedFields";
 
-			var serializedFieldVariableName = "serializedFields";
-			var fieldDeclare = new CodeParameterDeclarationExpression(typeof(string[]), serializedFieldVariableName);
-			var fieldReferences = serializationFields.Select(f => new CodeVariableReferenceExpression(f)).ToArray();
-			var fieldCreate = new CodeArrayCreateExpression(typeof(string[]), fieldReferences);
+			// Create a dictionary and add key-value pairs
+			var dictionaryType = new CodeTypeReference(typeof(Dictionary<string, string>));
+			var dictionaryDeclaration = new CodeVariableDeclarationStatement(
+				dictionaryType, serializedFieldVariableName,
+				new CodeObjectCreateExpression(dictionaryType)
+			);
+			genMethod.Statements.Add(dictionaryDeclaration);
 
-			genMethod.Statements.Add(new CodeAssignStatement(fieldDeclare, fieldCreate));
+			foreach (KeyValuePair<string, string> kvp in serializationFields)
+			{
+				// Add key-value pairs to the dictionary
+				genMethod.Statements.Add(
+					new CodeMethodInvokeExpression(
+						new CodeVariableReferenceExpression(serializedFieldVariableName),
+						"Add",
+						new CodePrimitiveExpression(kvp.Key),
+						new CodeVariableReferenceExpression(kvp.Value)
+					)
+				);
+			}
 
 			var requestInvokeExpr = new CodeMethodInvokeExpression(
 				new CodeMethodReferenceExpression(

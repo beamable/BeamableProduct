@@ -60,6 +60,12 @@ namespace Beamable.Server
 			return await MicroserviceClientHelper.Request<T>(Provider, requester, serviceName, endpoint, serializedFields);
 		}
 
+		protected async Promise<T> Request<T>(string serviceName, string endpoint, Dictionary<string, string> serializedFields)
+		{
+			var requester = _requester ?? await API.Instance.Map(b => b.Requester);
+			return await MicroserviceClientHelper.Request<T>(Provider, requester, serviceName, endpoint, serializedFields);
+		}
+
 		protected string SerializeArgument<T>(T arg) => MicroserviceClientHelper.SerializeArgument(arg);
 
 		[Obsolete]
@@ -340,6 +346,31 @@ namespace Beamable.Server
 				return result;
 			}
 
+			Promise<string> prefixPromise = PrefixPromise<T>(provider, serviceName);
+			var prefix = await prefixPromise;
+			var url = CreateUrl(requester.AccessToken.Cid, requester.AccessToken.Pid, serviceName, endpoint, prefix);
+			var req = new RequestObject
+			{
+				payload = argArray
+			};
+			return await requester.Request<T>(Method.POST, url, req, parser: Parser);
+		}
+
+		public static async Promise<T> Request<T>(IDependencyProvider provider,
+												  IBeamableRequester requester,
+												  string serviceName,
+												  string endpoint,
+												  Dictionary<string, string> serializedFields)
+		{
+			Promise<string> prefixPromise = PrefixPromise<T>(provider, serviceName);
+			var prefix = await prefixPromise;
+			var url = CreateUrl(requester.AccessToken.Cid, requester.AccessToken.Pid, serviceName, endpoint, prefix);
+			var req = SerializeArgument(serializedFields);
+			return await requester.Request(Method.POST, url, req, parser: DeserializeResult<T>);
+		}
+
+		private static Promise<string> PrefixPromise<T>(IDependencyProvider provider, string serviceName)
+		{
 			if (!serviceNameToPrefixPromise.TryGetValue(serviceName, out var prefixPromise))
 			{
 				// need to resolve the IPrefixService
@@ -354,17 +385,7 @@ namespace Beamable.Server
 				}
 			}
 
-			var prefix = await prefixPromise;
-			var url = CreateUrl(requester.AccessToken.Cid, requester.AccessToken.Pid, serviceName, endpoint, prefix);
-
-			var req = new RequestObject
-			{
-				payload = argArray
-			};
-			return await requester.Request<T>(Method.POST, url, req, parser: Parser);
+			return prefixPromise;
 		}
-
-
 	}
-
 }
