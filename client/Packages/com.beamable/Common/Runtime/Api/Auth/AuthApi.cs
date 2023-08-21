@@ -408,6 +408,7 @@ namespace Beamable.Common.Api.Auth
 			var query = HttpUtility.ParseQueryString(string.Empty);
 			query["user_id"] = externalToken;
 			query["provider_service"] = providerService;
+			Debug.Log($"{query}");
 			if (!string.IsNullOrEmpty(providerNamespace))
 				query["provider_namespace"] = providerNamespace;
 
