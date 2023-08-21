@@ -1,7 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Api;
-using Beamable.Common.Api.Auth;
 using cli.Utils;
+using Spectre.Console;
 using System.CommandLine;
 
 namespace cli;
@@ -44,7 +44,7 @@ public abstract class BaseRequestCommand : AppCommand<BaseRequestArgs>
 		var response = await _requester.CustomRequest(Method, args.uri, body, true,
 													  s => s, args.customerScoped, args.customHeaders)
 									   .ShowLoading("Sending Request..");
-		BeamableLogger.Log(response);
+		AnsiConsole.WriteLine(response);
 	}
 }
 

@@ -168,7 +168,9 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 		var game = games.FirstOrDefault(g => g.DisplayName.Replace("[PROD]", "") == gameSelection);
 
 		var realms = await _realmsApi.GetRealms(game).ShowLoading("Fetching realms...");
-		var realmChoices = realms.Select(r => r.DisplayName.Replace("[", "").Replace("]", ""));
+		var realmChoices = realms
+			.Where(r => !r.Archived)
+			.Select(r => r.DisplayName.Replace("[", "").Replace("]", ""));
 		var realmSelection = AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
 				.Title("What [green]realm[/] are you using?")
