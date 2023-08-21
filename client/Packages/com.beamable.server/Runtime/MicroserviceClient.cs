@@ -185,7 +185,7 @@ namespace Beamable.Server
 				case InventoryView _:
 					return (T)(object)InventoryViewEx.DeserializeToInventoryView(json);
 			}
-			
+
 			if (type.IsEnum)
 			{
 				var stringValue = json.Replace("\"", string.Empty);
