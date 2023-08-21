@@ -9,10 +9,6 @@ on:
     paths-ignore:
       - 'rfc/**'
       - '.github/**'
-    # paths:
-    #   - 'client/**'
-    #   - 'microservice/**'
-    #   - 'cli/**'
 
 jobs:
   baseNuget:
