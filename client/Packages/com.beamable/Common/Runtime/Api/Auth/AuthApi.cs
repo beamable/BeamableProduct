@@ -51,7 +51,7 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<bool> IsThirdPartyAvailable(AuthThirdParty thirdParty, string token)
 		{
-			string query = $"thirdParty={thirdParty.GetString()}&token={token}";
+			string query = _requester.EscapeURL($"thirdParty={thirdParty.GetString()}&token={token}");
 			return _requester
 				   .Request<AvailabilityResponse>(
 					   Method.GET,
@@ -146,7 +146,7 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<User> RemoveThirdPartyAssociation(AuthThirdParty thirdParty, string token)
 		{
-			string query = $"thirdParty={thirdParty.GetString()}&token={token}";
+			string query = _requester.EscapeURL($"thirdParty={thirdParty.GetString()}&token={token}");
 			return _requester.Request<User>(Method.DELETE,
 											$"{ACCOUNT_URL}/me/third-party?{query}",
 											null, true);
@@ -398,10 +398,10 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<bool> IsExternalIdentityAvailable(string providerService, string externalToken, string providerNamespace = null)
 		{
-			string query = $"provider_service={providerService}&user_id={externalToken}";
+			string query = _requester.EscapeURL($"provider_service={providerService}&user_id={externalToken}");
 
 			if (!string.IsNullOrWhiteSpace(providerNamespace))
-				query += $"&{providerNamespace}";
+				query += _requester.EscapeURL($"&{providerNamespace}");
 
 			return Requester.Request<AvailabilityResponse>(
 				Method.GET,
