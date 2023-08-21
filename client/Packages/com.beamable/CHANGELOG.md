@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed `HttpUtility` throwing compilation error in Unity.
 
+## [1.17.3]
+
+### Added
+
+- Add email validation
+
+### Fixed
+
+- Fixed wrong error code when providing wrong password while logging in.
+- Fixed error when trying to get enum type from Microservice.
+
 ## [1.17.2]
 
 ### Fixed

@@ -5,7 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.3]
+
+### Added
+
+- Add `Beamable.Common` as dependency to SAMS Common project
+
+### Changed
+
+- `beam project {new/add}` does update SAMS Beamable dependencies during project creation.
+- `beam project update-unity-beam-package` command for installing and updating Beam packages in Unity projects.
+- Requests commands (`beam {get/put/post/delete/me}`) always output result to console.
+
+### Fixed
+
+- Fix issue with archived realms showing in options when selecting realm
+- Rerunning `beam services run` will detect code changes
+- New projects created with `beam project new` will include the required `Microsoft.OpenApi.Readers` package
+- If an internal `dotnet` command fails, `beam` will now emit the logs of the failed command
+- Improved installed templates detection
+
 ## [1.17.2]
+
+### Added
+
+- Added missing XML documentation to CLI related code, enable `TreatWarningsAsErrors` in CLI project.
 
 ### Fixed
 

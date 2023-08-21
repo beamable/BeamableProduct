@@ -107,7 +107,7 @@ namespace Beamable.Common.Content
 
 				/* PRIMITIVE TYPES... */
 				case Enum e:
-					return Json.Serialize(arg, new StringBuilder());
+					return Convert.ChangeType(arg, typeof(int)).ToString();
 				case bool b:
 				case long l:
 				case string s:
