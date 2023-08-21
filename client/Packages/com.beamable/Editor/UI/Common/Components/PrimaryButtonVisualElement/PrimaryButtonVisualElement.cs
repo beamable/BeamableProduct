@@ -211,16 +211,14 @@ namespace Beamable.Editor.UI.Components
 
 		public static string EmailErrorHandler(string email)
 		{
-			return PrimaryButtonVisualElement.IsValidEmail(email)
-			   ? null
-			   : "Email is not valid";
+			return IsValidEmail(email) ? null : "Email is not valid";
 		}
 
 		public static string PasswordErrorHandler(string password)
 		{
-			return PrimaryButtonVisualElement.IsPassword(password)
-			   ? null
-			   : "A valid password must be at least 4 characters long";
+			return IsPassword(password)
+				? null
+				: "A valid password must be at least 4 characters long";
 		}
 
 		public static string LegalErrorHandler(bool read)
@@ -258,6 +256,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			return password.Length > 1; // TODO: Implement actual password check
 		}
+
 		public static Func<string, bool> MatchesTextField(TextField tf)
 		{
 			return (str => string.Equals(tf.value, str));
@@ -298,18 +297,16 @@ namespace Beamable.Editor.UI.Components
 			}
 			return errorMessage == string.Empty;
 		}
+
 		public static bool IsValidEmail(string email)
 		{
-			try
-			{
-				email = email.Trim();
-				var addr = new System.Net.Mail.MailAddress(email);
-				return addr.Address == email;
-			}
-			catch
-			{
-				return false;
-			}
+			if (string.IsNullOrWhiteSpace(email)) return false;
+
+			email = email.Trim();
+			// Regular expression pattern for validating email addresses
+			string pattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+			var regex = new Regex(pattern);
+			return regex.IsMatch(email);
 		}
 	}
 }
