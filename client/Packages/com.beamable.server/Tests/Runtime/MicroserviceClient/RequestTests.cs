@@ -65,7 +65,7 @@ namespace Beamable.Server.Tests.Runtime
 			yield return req.ToYielder();
 			Assert.AreEqual(new Dictionary<string, string> { { "one", "15" }, { "two", "151" }, { "three", "125" } }, req.GetResult());
 		}
-		
+
 		[UnityTest]
 		public IEnumerator CanDeserializeEnumValues()
 		{
@@ -73,8 +73,8 @@ namespace Beamable.Server.Tests.Runtime
 			int enumValue = (int)Convert.ChangeType(EnumTest.EnumValueTest1, typeof(int));
 
 			MockRequester.MockRequest<EnumTest>(Method.POST,
-			                                    client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
-			             .WithRawResponse(enumValue.ToString());
+												client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+						 .WithRawResponse(enumValue.ToString());
 
 			var req = client.Request<EnumTest>(ROUTE, new string[] { });
 
