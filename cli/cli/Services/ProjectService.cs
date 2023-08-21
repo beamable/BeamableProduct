@@ -105,7 +105,8 @@ public class ProjectService
 	{
 		var info = await GetTemplateInfo();
 
-		if (!info.HasTemplates || version != info.templateVersion)
+		if (!info.HasTemplates ||
+			!string.Equals(version, info.templateVersion, StringComparison.CurrentCultureIgnoreCase))
 		{
 			await PromptAndInstallTemplates(info.templateVersion, version);
 		}
@@ -151,8 +152,7 @@ public class ProjectService
 			await RunDotnetCommand("new uninstall beamable.templates");
 		}
 
-		var isTemplateInstalled = await Cli.Wrap("dotnet")
-			.WithArguments($"new install beamable.templates::{version}")
+		var isTemplateInstalled = await CliExtensions.GetDotnetCommand($"new install beamable.templates::{version}")
 			.WithValidation(CommandResultValidation.None)
 			.ExecuteAsyncAndLog().Select(res => res.ExitCode == 0).Task;
 
@@ -165,17 +165,17 @@ public class ProjectService
 	public static async Task<DotnetTemplateInfo> GetTemplateInfo()
 	{
 		var templateStream = new StringBuilder();
-		await Cli.Wrap("dotnet")
-			.WithArguments("new uninstall")
+		await CliExtensions.GetDotnetCommand("new uninstall")
 			.WithValidation(CommandResultValidation.None)
 			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(templateStream))
 			.ExecuteBufferedAsync();
 
 		var info = new DotnetTemplateInfo();
 
-		var buffer = templateStream.ToString();
+		var buffer = templateStream.ToString().Replace("\r\n", "\n");
 		string pattern =
-			@"Beamable\.Templates[\s\S]*?Version: (\d+\.\d+\.\d+)[\s\S]*?Templates:\n((?:\s{3}.*\(.*\)\s+C#\n)+)";
+			@"Beamable\.Templates[\s\S]*?Version: (\d+\.\d+\.\d+(?:-\w+\.\w+\d*)?)[\s\S]*?Templates:\n((?:\s{3}.*\(.*\)\s+C#\n)+)";
+
 		Regex regex = new Regex(pattern);
 
 		Match match = regex.Match(buffer);
@@ -435,19 +435,28 @@ COPY {commonProjectName}/. .
 
 	private async Task<string> GetVersion()
 	{
-		var nugetPackages = (await _versionService.GetBeamableToolPackageVersions()).Where(d => !d.packageVersion.Contains("preview")).ToArray();
+		var nugetPackages = (await _versionService.GetBeamableToolPackageVersions(replaceDashWithDot: false)).ToArray();
 
 		return nugetPackages.Last().packageVersion;
 	}
 
 	static Task RunDotnetCommand(string arguments)
 	{
-		return Cli.Wrap("dotnet").WithArguments(arguments).ExecuteAsyncAndLog().Task;
+		return CliExtensions.GetDotnetCommand(arguments).ExecuteAsyncAndLog().Task;
 	}
 }
 
 public static class CliExtensions
 {
+
+	public static Command GetDotnetCommand(string arguments)
+	{
+		return Cli.Wrap("dotnet").WithEnvironmentVariables(new Dictionary<string, string>
+		{
+			["DOTNET_CLI_UI_LANGUAGE"] = "en"
+		}).WithArguments(arguments);
+	}
+
 	public static CommandTask<CommandResult> ExecuteAsyncAndLog(this Command command)
 	{
 		Log.Information($"Running '{command.TargetFilePath} {command.Arguments}'");
