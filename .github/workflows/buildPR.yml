@@ -162,7 +162,7 @@ jobs:
           UNITY_PASSWORD: ${{ secrets[matrix.unityPasswordOverride] || secrets.UNITY_PASSWORD }}
           UNITY_SERIAL: ${{ secrets[matrix.unitySerialOverride] || secrets.UNITY_SERIAL }}
         with:
-          customParameters: -apiProfile 3 -warnaserror+
+          customParameters: -profile 3 -warnaserror+
           projectPath: ${{ matrix.projectPath }}
           testMode: ${{ matrix.testMode }}
           unityVersion: ${{ matrix.unityVersion }}
