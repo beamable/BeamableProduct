@@ -646,7 +646,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    ""version"": """",
    ""properties"": {
       ""e"": {
-         ""data"": ""B""
+         ""data"": 1
       }
    }
 }".Replace("\r\n", "").Replace("\n", "").Replace(" ", "");
