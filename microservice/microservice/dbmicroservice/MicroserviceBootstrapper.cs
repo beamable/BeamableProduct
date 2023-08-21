@@ -519,14 +519,13 @@ namespace Beamable.Server
 	    {
 		    foreach (var singleProp in logEvent.Properties)
 		    {
-			    var typeName = singleProp.Value?.ToString();
+			    var stringifiedPropValue = singleProp.Value?.ToString();
 
-			    if (typeName != null && typeName.Length > _width)
+			    if (stringifiedPropValue != null && stringifiedPropValue.Length > _width)
 			    {
-				    typeName = typeName.Substring(0, _width) + "...";
+				    stringifiedPropValue = stringifiedPropValue.Substring(0, _width) + "...";
+				    logEvent.AddOrUpdateProperty(propertyFactory.CreateProperty(singleProp.Key, stringifiedPropValue));
 			    }
-
-			    logEvent.AddOrUpdateProperty(propertyFactory.CreateProperty(singleProp.Key, typeName));
 		    }
 
 	    }

@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed issue with `reset` command in Admin Prefab requires the user to re-enter Unity Play mode to take effect.
 
+## [1.17.3]
+
+### Added
+
+- Add email validation
+
+### Fixed
+
+- Fixed wrong error code when providing wrong password while logging in.
+
 ## [1.17.2]
 
 ### Fixed
