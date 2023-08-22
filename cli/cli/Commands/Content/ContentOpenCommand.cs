@@ -21,6 +21,7 @@ public class ContentOpenCommand : AppCommand<ContentOpenCommandArgs>
 	public override Task Handle(ContentOpenCommandArgs args)
 	{
 		_contentService = args.ContentService;
+		args.InitLocalContent();
 
 		var path = string.IsNullOrWhiteSpace(args.contentId)
 			? _contentService.ContentLocal.ContentDirPath
@@ -40,7 +41,7 @@ public class ContentOpenCommand : AppCommand<ContentOpenCommandArgs>
 	}
 }
 
-public class ContentOpenCommandArgs : CommandArgs
+public class ContentOpenCommandArgs : ContentCommandArgs
 {
 	public string contentId;
 }

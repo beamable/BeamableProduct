@@ -9,8 +9,9 @@ public class ContentLocalCache
 	private readonly IAppContext _context;
 	private Dictionary<string, ContentDocument> _localAssets;
 	private TagsLocalFile _localTags;
-	public string ContentDirPath => Path.Combine(_context.WorkingDirectory, Constants.CONFIG_FOLDER, "Content");
-	private string BaseDirPath => Path.Combine(_context.WorkingDirectory, Constants.CONFIG_FOLDER);
+	public string ManifestId { get; set; } = "global";
+	public string ContentDirPath => Path.Combine(BaseDirPath, ManifestId);
+	private string BaseDirPath => Path.Combine(_context.WorkingDirectory, Constants.CONFIG_FOLDER, "Content");
 
 	public Dictionary<string, ContentDocument> Assets => _localAssets;
 
@@ -36,16 +37,23 @@ public class ContentLocalCache
 
 		foreach (var pair in Assets.Where(pair => manifest.entries.All(info => info.contentId != pair.Key)))
 		{
-			resultList.Add(new LocalContent { contentId = pair.Key, status = ContentStatus.Created, tags = _localTags.TagsForContent(pair.Key) });
+			resultList.Add(new LocalContent
+			{
+				contentId = pair.Key, status = ContentStatus.Created, tags = _localTags.TagsForContent(pair.Key)
+			});
 		}
+
 		foreach (ClientContentInfo contentManifestEntry in manifest.entries)
 		{
 			ContentStatus localStatus;
 			var contentExistsLocally = Assets.ContainsKey(contentManifestEntry.contentId);
 			if (contentExistsLocally)
 			{
-				var sameTags = _localTags.TagsForContent(contentManifestEntry.contentId).All(contentManifestEntry.tags.Contains);
-				localStatus = HasSameVersion(contentManifestEntry) && sameTags ? ContentStatus.UpToDate : ContentStatus.Modified;
+				var sameTags = _localTags.TagsForContent(contentManifestEntry.contentId)
+					.All(contentManifestEntry.tags.Contains);
+				localStatus = HasSameVersion(contentManifestEntry) && sameTags
+					? ContentStatus.UpToDate
+					: ContentStatus.Modified;
 			}
 			else
 			{
@@ -55,8 +63,12 @@ public class ContentLocalCache
 			var tags = contentExistsLocally
 				? _localTags.TagsForContent(contentManifestEntry.contentId)
 				: contentManifestEntry.tags;
-			resultList.Add(new LocalContent { contentId = contentManifestEntry.contentId, status = localStatus, tags = tags });
+			resultList.Add(new LocalContent
+			{
+				contentId = contentManifestEntry.contentId, status = localStatus, tags = tags
+			});
 		}
+
 		resultList.Sort((a, b) => a.status.CompareTo(b.status));
 
 		return resultList;
@@ -81,15 +93,16 @@ public class ContentLocalCache
 	}
 
 
-	public void Init()
+	public void Init(string manifestId = "global")
 	{
 		if (_localAssets != null)
 			return;
-
+		ManifestId = manifestId;
 		if (!Directory.Exists(ContentDirPath))
 		{
 			Directory.CreateDirectory(ContentDirPath);
 		}
+
 		_localAssets = new Dictionary<string, ContentDocument>();
 
 		foreach (var path in Directory.EnumerateFiles(ContentDirPath, "*json"))
@@ -97,15 +110,17 @@ public class ContentLocalCache
 			var content = ContentDocument.AtPath(path);
 			_localAssets.Add(content.id, content);
 		}
-		_localTags = TagsLocalFile.ReadFromFile(BaseDirPath);
+
+		_localTags = TagsLocalFile.ReadFromDirectory(BaseDirPath, ManifestId);
 	}
 
-	public async Task UpdateContent(ContentDocument result)
+	public async Task UpdateContent(ContentDocument result, ClientContentInfo info)
 	{
 		var path = Path.Combine(ContentDirPath, $"{result.id}.json");
 		if (result.properties != null)
 		{
-			var value = JsonSerializer.Serialize(result.properties.Value, new JsonSerializerOptions { WriteIndented = true });
+			var value = JsonSerializer.Serialize(result.properties.Value,
+				new JsonSerializerOptions { WriteIndented = true });
 			_localAssets[result.id] = result;
 			await File.WriteAllTextAsync(path, value);
 		}

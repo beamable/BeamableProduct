@@ -1,5 +1,6 @@
 ﻿using Beamable.Common;
 using cli.Services.Content;
+using Spectre.Console;
 using System.Text.Json;
 
 namespace cli.Content;
@@ -14,19 +15,20 @@ public class ContentPullCommand : AppCommand<ContentPullCommandArgs>
 	public override async Task Handle(ContentPullCommandArgs args)
 	{
 		_contentService = args.ContentService;
+		args.InitLocalContent();
 		var manifest = await _contentService.GetManifest(args.ManifestId);
-		_contentService.UpdateTags(manifest);
+		_contentService.UpdateTags(manifest, args.ManifestId);
 		var result = await _contentService.PullContent(manifest);
 		if (args.printOutput)
 		{
 			var json = JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
-			BeamableLogger.Log(json);
+			AnsiConsole.WriteLine(json);
 		}
 	}
 
 	public override void Configure()
 	{
-		AddOption(new ConfigurableOption("manifest-id", "Set the manifest to use, 'global' by default"),
+		AddOption(ContentCommand.MANIFEST_OPTION,
 			(args, s) => args.ManifestId = s);
 		AddOption(new ConfigurableOptionFlag("print-output", "Print content to console"),
 			(args, b) => args.printOutput = b);

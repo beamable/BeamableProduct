@@ -18,14 +18,7 @@ public class ContentService
 	private readonly CliRequester _requester;
 	private readonly ContentLocalCache _contentLocal;
 
-	public ContentLocalCache ContentLocal
-	{
-		get
-		{
-			_contentLocal.Init();
-			return _contentLocal;
-		}
-	}
+	public ContentLocalCache ContentLocal => _contentLocal;
 
 	public ContentService(CliRequester requester, ContentLocalCache contentLocal)
 	{
@@ -59,7 +52,7 @@ public class ContentService
 		});
 	}
 
-	public void UpdateTags(ClientManifest manifest)
+	public void UpdateTags(ClientManifest manifest, string manifestId)
 	{
 		Dictionary<string, List<string>> tags = new();
 		foreach (ClientContentInfo clientContentInfo in manifest.entries)
@@ -75,7 +68,7 @@ public class ContentService
 			}
 		}
 
-		var localTags = new TagsLocalFile(tags);
+		var localTags = new TagsLocalFile(tags, manifestId);
 		_contentLocal.UpdateTags(localTags);
 	}
 
@@ -98,7 +91,7 @@ public class ContentService
 				contents.Add(result);
 				if (saveToDisk)
 				{
-					await ContentLocal.UpdateContent(result);
+					await ContentLocal.UpdateContent(result, contentInfo);
 				}
 			}
 			catch (Exception e)
@@ -207,8 +200,8 @@ public class ContentService
 	{
 		var dict = new Dictionary<string, ManifestReferenceSuperset>();
 		foreach (var doc in
-				 localContents.Where(content => content.status != ContentStatus.Deleted)
-					 .Select(localContent => _contentLocal.GetContent(localContent.contentId)))
+		         localContents.Where(content => content.status != ContentStatus.Deleted)
+			         .Select(localContent => _contentLocal.GetContent(localContent.contentId)))
 		{
 			var definition = PrepareContentForPublish(doc);
 			var matchingContent = currentManifest.entries.FirstOrDefault(info => info.contentId.Equals(definition.id));

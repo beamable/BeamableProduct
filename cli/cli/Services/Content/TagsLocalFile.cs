@@ -7,14 +7,17 @@ namespace cli.Services.Content;
 [Serializable]
 public class TagsLocalFile
 {
-	private const string FILENAME = "localTags.json";
+	private const string FILENAME_FORMAT = "localTags_{0}.json";
+	public string ManifestId { get; init; }
 	public Dictionary<string, string[]> tags = new();
+	private string Filename => string.Format(FILENAME_FORMAT, ManifestId);
 
 	public TagsLocalFile()
 	{ }
 
-	public TagsLocalFile(Dictionary<string, List<string>> dict)
+	public TagsLocalFile(Dictionary<string, List<string>> dict , string manifestId)
 	{
+		ManifestId = manifestId;
 		foreach (string key in dict.Keys)
 		{
 			tags[key] = dict[key].ToArray();
@@ -37,21 +40,23 @@ public class TagsLocalFile
 
 	public void WriteToFile(string dir)
 	{
-		var path = Path.Combine(dir, FILENAME);
+		var path = Path.Combine(dir, Filename);
 		var json = JsonConvert.SerializeObject(this, Formatting.Indented);
 		File.WriteAllText(path, json, Encoding.UTF8);
 	}
 
-	public static TagsLocalFile ReadFromFile(string dir)
+	public static TagsLocalFile ReadFromDirectory(string dir, string manifestId)
 	{
-		var path = Path.Combine(dir, FILENAME);
+		var tagsLocalFile = new TagsLocalFile { ManifestId = manifestId };
+		
+		var path = Path.Combine(dir, tagsLocalFile.Filename);
 		if (string.IsNullOrWhiteSpace(dir) || !File.Exists(path))
 		{
 			BeamableLogger.LogWarning("Tags file not found, using empty one");
-			return new TagsLocalFile();
+			return tagsLocalFile;
 		}
 		var jsonContent = File.ReadAllText(path);
-
-		return JsonConvert.DeserializeObject<TagsLocalFile>(jsonContent);
+		tagsLocalFile = JsonConvert.DeserializeObject<TagsLocalFile>(jsonContent);
+		return tagsLocalFile;
 	}
 }
