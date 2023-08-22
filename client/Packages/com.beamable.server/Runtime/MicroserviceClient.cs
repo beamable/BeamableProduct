@@ -112,6 +112,9 @@ namespace Beamable.Server
 					var outputJson = "[" + string.Join(",", output) + "]";
 					return outputJson;
 				}
+				case Enum prim:
+					var result = Convert.ChangeType(prim, typeof(int));
+					return result.ToString();
 				case bool prim:
 					return prim ? "true" : "false";
 				case long prim:
@@ -181,6 +184,12 @@ namespace Beamable.Server
 					return (T)(object)Vector3IntEx.DeserializeToVector3(json);
 				case InventoryView _:
 					return (T)(object)InventoryViewEx.DeserializeToInventoryView(json);
+			}
+
+			if (type.IsEnum)
+			{
+				var stringValue = json.Replace("\"", string.Empty);
+				return (T)Enum.ToObject(typeof(T), int.Parse(stringValue));
 			}
 
 			if (typeof(IDictionary).IsAssignableFrom(type))
