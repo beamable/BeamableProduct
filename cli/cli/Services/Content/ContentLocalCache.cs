@@ -1,4 +1,7 @@
-﻿using Beamable.Common.Content;
+﻿using Beamable.Common;
+using Beamable.Common.Api;
+using Beamable.Common.Content;
+using cli.Utils;
 using JetBrains.Annotations;
 using System.Text.Json;
 
@@ -6,36 +9,37 @@ namespace cli.Services.Content;
 
 public class ContentLocalCache
 {
-	private readonly IAppContext _context;
+	public string ManifestId { get; }
+	public Dictionary<string, ContentDocument> Assets => _localAssets;
+	public string ContentDirPath => Path.Combine(BaseDirPath, "Content");
+	private string BaseDirPath => _configService.ConfigFilePath;
+
 	private Dictionary<string, ContentDocument> _localAssets;
 	private TagsLocalFile _localTags;
-	public string ManifestId { get; set; } = "global";
-	public string ContentDirPath => Path.Combine(BaseDirPath, ManifestId);
-	private string BaseDirPath => Path.Combine(_context.WorkingDirectory, Constants.CONFIG_FOLDER, "Content");
+	private CliRequester _requester;
 
-	public Dictionary<string, ContentDocument> Assets => _localAssets;
+	private ClientManifest Manifest { get; set; }
 
-	public Dictionary<string, ClientManifest> Manifests => _manifests;
+	private readonly ConfigService _configService;
 
-	private readonly Dictionary<string, ClientManifest> _manifests = new();
-
-	public ContentLocalCache(IAppContext context)
+	public ContentLocalCache(ConfigService configService, string manifestId, CliRequester requester)
 	{
-		_context = context;
+		ManifestId = manifestId;
+		_requester = requester;
+		_configService = configService;
 	}
 
 	public string[] GetTags(string contentId) => _localTags.TagsForContent(contentId);
 
-	public void UpdateManifest(string manifestId, ClientManifest manifest)
+	public List<LocalContent> GetLocalContentStatus()
 	{
-		_manifests[manifestId] = manifest;
-	}
-
-	public List<LocalContent> GetLocalContentStatus(ClientManifest manifest)
-	{
+		if (Manifest == null)
+		{
+			throw new CliException("Cannot show current local status due to missing Manifest information.");
+		}
 		var resultList = new List<LocalContent>();
 
-		foreach (var pair in Assets.Where(pair => manifest.entries.All(info => info.contentId != pair.Key)))
+		foreach (var pair in Assets.Where(pair => Manifest.entries.All(info => info.contentId != pair.Key)))
 		{
 			resultList.Add(new LocalContent
 			{
@@ -43,7 +47,7 @@ public class ContentLocalCache
 			});
 		}
 
-		foreach (ClientContentInfo contentManifestEntry in manifest.entries)
+		foreach (ClientContentInfo contentManifestEntry in Manifest.entries)
 		{
 			ContentStatus localStatus;
 			var contentExistsLocally = Assets.ContainsKey(contentManifestEntry.contentId);
@@ -93,11 +97,11 @@ public class ContentLocalCache
 	}
 
 
-	public void Init(string manifestId = "global")
+	public void Init()
 	{
 		if (_localAssets != null)
 			return;
-		ManifestId = manifestId;
+
 		if (!Directory.Exists(ContentDirPath))
 		{
 			Directory.CreateDirectory(ContentDirPath);
@@ -114,7 +118,7 @@ public class ContentLocalCache
 		_localTags = TagsLocalFile.ReadFromDirectory(BaseDirPath, ManifestId);
 	}
 
-	public async Task UpdateContent(ContentDocument result, ClientContentInfo info)
+	public async Task UpdateContent(ContentDocument result)
 	{
 		var path = Path.Combine(ContentDirPath, $"{result.id}.json");
 		if (result.properties != null)
@@ -139,4 +143,60 @@ public class ContentLocalCache
 	}
 
 	public string GetContentPath(string id) => Path.Combine(ContentDirPath, $"{id}.json");
+
+	public async Promise<ClientManifest> GetManifest()
+	{
+		if (Manifest != null)
+		{
+			return Manifest;
+		}
+
+		string url = $"{ContentService.SERVICE}/manifest/public?id={ManifestId}";
+
+		Manifest = await _requester.Request(Method.GET, url, null, true, ClientManifest.ParseCSV, true).Recover(ex =>
+		{
+			if (ex is RequesterException { Status: 404 })
+			{
+				return new ClientManifest { entries = new List<ClientContentInfo>() };
+			}
+
+			throw ex;
+		}).ShowLoading();
+		return Manifest;
+	}
+	public async Promise<Dictionary<string, ManifestReferenceSuperset>> BuildLocalManifestReferenceSupersets()
+	{
+		var manifest = await GetManifest();
+		var localContents = GetLocalContentStatus();
+		var dict = new Dictionary<string, ManifestReferenceSuperset>();
+
+		foreach (var localContent in
+		         localContents.Where(content => content.status != ContentStatus.Deleted))
+		{
+			var definition = PrepareContentForPublish(localContent.contentId);
+			var matchingContent = manifest.entries.FirstOrDefault(info => info.contentId.Equals(definition.id));
+			var publicVersion = ManifestReferenceSuperset.CreateFromDefinition(definition, matchingContent, true);
+			var privateVersion = ManifestReferenceSuperset.CreateFromDefinition(definition, matchingContent, false);
+			dict.Add(publicVersion.Key, publicVersion);
+			dict.Add(privateVersion.Key, privateVersion);
+		}
+
+		return dict;
+	}
+	
+	public ContentDefinition PrepareContentForPublish(string contentId)
+	{
+		var document = GetContent(contentId);
+		var tags = GetTags(contentId);
+		
+		return new ContentDefinition
+		{
+			id = document!.id,
+			checksum = document.CalculateChecksum(),
+			properties =
+				JsonSerializer.Serialize(document.properties, new JsonSerializerOptions { WriteIndented = false }),
+			tags = tags,
+			lastChanged = 0
+		};
+	}
 }

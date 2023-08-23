@@ -1,55 +1,49 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
-using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
-using Newtonsoft.Json;
 using Spectre.Console;
 using System.Text;
-using System.Text.Json;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace cli.Services.Content;
 
 public class ContentService
 {
+	public const string SERVICE = "/basic/content";
 	const int DEFAULT_TABLE_LIMIT = 100;
-	const string SERVICE = "/basic/content";
 	private readonly CliRequester _requester;
-	private readonly ContentLocalCache _contentLocal;
+	private readonly ConfigService _config;
+	private readonly Dictionary<string, ContentLocalCache> _localCaches = new();
 
-	public ContentLocalCache ContentLocal => _contentLocal;
+	public ContentLocalCache GetLocalCache(string manifestId)
+	{
+		if (_localCaches.TryGetValue(manifestId, out ContentLocalCache localCache))
+		{
+			return localCache;
+		}
 
-	public ContentService(CliRequester requester, ContentLocalCache contentLocal)
+		var newLocalCache = new ContentLocalCache(_config, manifestId, _requester);
+		newLocalCache.Init();
+		_localCaches.Add(newLocalCache.ManifestId, newLocalCache);
+
+		return _localCaches[manifestId];
+	}
+
+	public ContentService(CliRequester requester, ConfigService config)
 	{
 		_requester = requester;
-		_contentLocal = contentLocal;
+		_config = config;
 	}
 
 	public Promise<ClientManifest> GetManifest(string manifestId)
 	{
 		if (string.IsNullOrWhiteSpace(manifestId))
 		{
-			manifestId = "global";
+			throw new CliException($"This is not a valid manifestID: \"{manifestId}\"");
 		}
 
-		if (ContentLocal.Manifests.ContainsKey(manifestId))
-		{
-			var promise = new Promise<ClientManifest>();
-			promise.CompleteSuccess(ContentLocal.Manifests[manifestId]);
-			return promise;
-		}
-
-		string url = $"{SERVICE}/manifest/public?id={manifestId}";
-		return _requester.Request(Method.GET, url, null, true, ClientManifest.ParseCSV, true).Recover(ex =>
-		{
-			if (ex is RequesterException { Status: 404 })
-			{
-				return new ClientManifest { entries = new List<ClientContentInfo>() };
-			}
-
-			throw ex;
-		});
+		return GetLocalCache(manifestId).GetManifest();
 	}
 
 	public void UpdateTags(ClientManifest manifest, string manifestId)
@@ -69,18 +63,18 @@ public class ContentService
 		}
 
 		var localTags = new TagsLocalFile(tags, manifestId);
-		_contentLocal.UpdateTags(localTags);
+		GetLocalCache(manifestId).UpdateTags(localTags);
 	}
 
-	public async Promise<List<ContentDocument>> PullContent(ClientManifest manifest, bool saveToDisk = true)
+	public async Promise<List<ContentDocument>> PullContent(ClientManifest manifest,string manifestId, bool saveToDisk = true)
 	{
 		var contents = new List<ContentDocument>(manifest.entries.Count);
 
 		foreach (var contentInfo in manifest.entries)
 		{
-			if (ContentLocal.HasSameVersion(contentInfo))
+			if (GetLocalCache(manifestId).HasSameVersion(contentInfo))
 			{
-				contents.Add(ContentLocal.GetContent(contentInfo.contentId));
+				contents.Add(GetLocalCache(manifestId).GetContent(contentInfo.contentId));
 				continue;
 			}
 
@@ -91,7 +85,7 @@ public class ContentService
 				contents.Add(result);
 				if (saveToDisk)
 				{
-					await ContentLocal.UpdateContent(result, contentInfo);
+					await GetLocalCache(manifestId).UpdateContent(result);
 				}
 			}
 			catch (Exception e)
@@ -105,8 +99,8 @@ public class ContentService
 
 	public async Task DisplayStatusTable(string manifestId, bool showUpToDate, int limit, int skipAmount)
 	{
-		var contentManifest = await GetManifest(manifestId);
-		var localContentStatus = ContentLocal.GetLocalContentStatus(contentManifest);
+		_ = await GetManifest(manifestId);
+		var localContentStatus = GetLocalCache(manifestId).GetLocalContentStatus();
 		var totalCount = localContentStatus.Count;
 		var table = new Table();
 		table.AddColumn("Current status");
@@ -136,23 +130,20 @@ public class ContentService
 	{
 		if (string.IsNullOrWhiteSpace(manifestId))
 		{
-			manifestId = "global";
+			throw new CliException($"This is not a valid manifestID: \"{manifestId}\"");
 		}
 
-		var clientManifest = await GetManifest(manifestId);
-		var contentSaveResponse = await PublishChangedContent(clientManifest);
-		var contentManifest = await PublishNewManifest(contentSaveResponse, clientManifest, manifestId);
+		var contentSaveResponse = await PublishChangedContent(manifestId);
+		var contentManifest = await PublishNewManifest(contentSaveResponse, manifestId);
 
 		return contentManifest;
 	}
 
-	private async Promise<ContentManifest> PublishNewManifest(ContentSaveResponse contentSaveResponse,
-		ClientManifest manifest, string manifestId)
+	private async Promise<ContentManifest> PublishNewManifest(ContentSaveResponse contentSaveResponse, string manifestId)
 	{
-		var localContent = ContentLocal
-			.GetLocalContentStatus(manifest)
-			.Where(content => content.status is not ContentStatus.Deleted).ToList();
-		var referenceSet = BuildLocalManifestReferenceSupersets(localContent, manifest);
+		var localCache = GetLocalCache(manifestId);
+			
+		var referenceSet = await localCache.BuildLocalManifestReferenceSupersets();
 		contentSaveResponse.content.ForEach(entry =>
 		{
 			var reference = new ManifestReferenceSuperset
@@ -168,62 +159,24 @@ public class ContentService
 			};
 			var key = reference.Key;
 
-			if (referenceSet.ContainsKey(key))
-			{
-				referenceSet[key] = reference;
-			}
-			else
-			{
-				referenceSet.Add(key, reference);
-			}
+			referenceSet[key] = reference;
 		});
 		var manifestRequest = new ManifestSaveRequest { id = manifestId, references = referenceSet.Values.ToList() };
 		return await _requester.RequestJson<ContentManifest>(Method.POST, $"/basic/content/manifest?id={manifestId}",
 			manifestRequest);
 	}
 
-	private async Promise<ContentSaveResponse> PublishChangedContent(ClientManifest contentManifest)
+	private async Promise<ContentSaveResponse> PublishChangedContent(string manifestId)
 	{
-		var localContent = ContentLocal.GetLocalContentStatus(contentManifest)
+		var contentLocal = GetLocalCache(manifestId);
+		var localContent = contentLocal.GetLocalContentStatus()
 			.Where(content => content.status is not (ContentStatus.Deleted or ContentStatus.UpToDate))
-			.Select(content => PrepareContentForPublish(_contentLocal.GetContent(content.contentId))).ToList();
+			.Select(content => contentLocal.PrepareContentForPublish(content.contentId)).ToList();
 
 
 		var dict = new ArrayDict { { "content", localContent.ToList() } };
 		var reqJson = Json.Serialize(dict, new StringBuilder());
 
 		return await _requester.Request<ContentSaveResponse>(Method.POST, "/basic/content", reqJson);
-	}
-
-	Dictionary<string, ManifestReferenceSuperset> BuildLocalManifestReferenceSupersets(List<LocalContent> localContents,
-		ClientManifest currentManifest)
-	{
-		var dict = new Dictionary<string, ManifestReferenceSuperset>();
-		foreach (var doc in
-		         localContents.Where(content => content.status != ContentStatus.Deleted)
-			         .Select(localContent => _contentLocal.GetContent(localContent.contentId)))
-		{
-			var definition = PrepareContentForPublish(doc);
-			var matchingContent = currentManifest.entries.FirstOrDefault(info => info.contentId.Equals(definition.id));
-			var publicVersion = ManifestReferenceSuperset.CreateFromDefinition(definition, matchingContent, true);
-			var privateVersion = ManifestReferenceSuperset.CreateFromDefinition(definition, matchingContent, false);
-			dict.Add(publicVersion.Key, publicVersion);
-			dict.Add(privateVersion.Key, privateVersion);
-		}
-
-		return dict;
-	}
-
-	ContentDefinition PrepareContentForPublish(ContentDocument document)
-	{
-		return new ContentDefinition
-		{
-			id = document.id,
-			checksum = document.CalculateChecksum(),
-			properties =
-				JsonSerializer.Serialize(document.properties, new JsonSerializerOptions { WriteIndented = false }),
-			tags = _contentLocal.GetTags(document.id),
-			lastChanged = 0
-		};
 	}
 }

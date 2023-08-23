@@ -19,7 +19,7 @@ public class ContentPublishCommand : AppCommand<ContentPublishCommandArgs>
 	public override async Task Handle(ContentPublishCommandArgs args)
 	{
 		_contentService = args.ContentService;
-		args.InitLocalContent();
+
 		await _contentService.PublishContentAndManifest(args.ManifestId);
 	}
 }

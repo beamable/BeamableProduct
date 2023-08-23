@@ -23,11 +23,10 @@ public class ContentCommand : AppCommand<ContentCommandArgs>
 	public override Task Handle(ContentCommandArgs args)
 	{
 		_contentService = args.ContentService;
-		args.InitLocalContent();
 
 		new Process
 		{
-			StartInfo = new ProcessStartInfo(_contentService.ContentLocal.ContentDirPath) { UseShellExecute = true }
+			StartInfo = new ProcessStartInfo(_contentService.GetLocalCache(args.ManifestId).ContentDirPath) { UseShellExecute = true }
 		}.Start();
 		return Task.CompletedTask;
 	}
@@ -36,9 +35,4 @@ public class ContentCommand : AppCommand<ContentCommandArgs>
 public class ContentCommandArgs : CommandArgs
 {
 	public string ManifestId;
-
-	public void InitLocalContent()
-	{
-		ContentService.ContentLocal.Init(string.IsNullOrWhiteSpace(ManifestId) ? "global" : ManifestId);
-	}
 }

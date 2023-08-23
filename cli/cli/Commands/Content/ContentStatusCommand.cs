@@ -24,7 +24,6 @@ public class ContentStatusCommand : AppCommand<ContentStatusCommandArgs>
 	public override async Task Handle(ContentStatusCommandArgs args)
 	{
 		_contentService = args.ContentService;
-		args.InitLocalContent();
 
 		await _contentService.DisplayStatusTable(args.ManifestId, args.showUpToDate, args.limit, args.skip);
 	}

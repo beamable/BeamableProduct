@@ -15,10 +15,10 @@ public class ContentPullCommand : AppCommand<ContentPullCommandArgs>
 	public override async Task Handle(ContentPullCommandArgs args)
 	{
 		_contentService = args.ContentService;
-		args.InitLocalContent();
+
 		var manifest = await _contentService.GetManifest(args.ManifestId);
 		_contentService.UpdateTags(manifest, args.ManifestId);
-		var result = await _contentService.PullContent(manifest);
+		var result = await _contentService.PullContent(manifest,args.ManifestId);
 		if (args.printOutput)
 		{
 			var json = JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });

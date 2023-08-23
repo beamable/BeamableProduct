@@ -19,13 +19,13 @@ public class ContentResetCommand : AppCommand<ContentResetCommandArgs>
 	public override async Task Handle(ContentResetCommandArgs args)
 	{
 		_contentService = args.ContentService;
-		args.InitLocalContent();
 
 		var manifest = await _contentService.GetManifest(args.ManifestId);
 		_contentService.UpdateTags(manifest, args.ManifestId);
-		_ = await _contentService.PullContent(manifest);
-		var localContent = _contentService.ContentLocal.GetLocalContentStatus(manifest).Where(content => content.status == ContentStatus.Created);
-		foreach (LocalContent content in localContent) _contentService.ContentLocal.Remove(content);
+		_ = await _contentService.PullContent(manifest, args.ManifestId);
+		var localCache = _contentService.GetLocalCache(args.ManifestId);
+		var localContent = localCache.GetLocalContentStatus().Where(content => content.status == ContentStatus.Created);
+		foreach (LocalContent content in localContent) localCache.Remove(content);
 
 	}
 }
