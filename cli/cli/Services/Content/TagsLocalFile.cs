@@ -7,15 +7,12 @@ namespace cli.Services.Content;
 [Serializable]
 public class TagsLocalFile
 {
-	private const string FILENAME_FORMAT = "localTags_{0}.json";
-	public string ManifestId { get; init; }
+	private const string FILENAME_FORMAT = "contentTags_{0}.json";
+	public string ManifestId { get; private init; }
 	public Dictionary<string, string[]> tags = new();
 	private string Filename => string.Format(FILENAME_FORMAT, ManifestId);
 
-	public TagsLocalFile()
-	{ }
-
-	public TagsLocalFile(Dictionary<string, List<string>> dict , string manifestId)
+	public TagsLocalFile(Dictionary<string, List<string>> dict, string manifestId)
 	{
 		ManifestId = manifestId;
 		foreach (string key in dict.Keys)
@@ -38,25 +35,34 @@ public class TagsLocalFile
 		return resultList.ToArray();
 	}
 
-	public void WriteToFile(string dir)
+	public void WriteToFile(string configDir)
 	{
-		var path = Path.Combine(dir, Filename);
-		var json = JsonConvert.SerializeObject(this, Formatting.Indented);
+		var path = Path.Combine(configDir, Filename);
+		var json = JsonConvert.SerializeObject(tags, Formatting.Indented);
 		File.WriteAllText(path, json, Encoding.UTF8);
 	}
 
-	public static TagsLocalFile ReadFromDirectory(string dir, string manifestId)
+	public static TagsLocalFile ReadFromDirectory(string configDir, string manifestId)
 	{
-		var tagsLocalFile = new TagsLocalFile { ManifestId = manifestId };
-		
-		var path = Path.Combine(dir, tagsLocalFile.Filename);
-		if (string.IsNullOrWhiteSpace(dir) || !File.Exists(path))
+		var tagsLocalFile = new TagsLocalFile(new(), manifestId);
+
+		var path = Path.Combine(configDir, tagsLocalFile.Filename);
+		if (string.IsNullOrWhiteSpace(configDir) || !File.Exists(path))
 		{
 			BeamableLogger.LogWarning("Tags file not found, using empty one");
 			return tagsLocalFile;
 		}
-		var jsonContent = File.ReadAllText(path);
-		tagsLocalFile = JsonConvert.DeserializeObject<TagsLocalFile>(jsonContent);
+
+		try
+		{
+			var jsonContent = File.ReadAllText(path);
+			tagsLocalFile.tags = JsonConvert.DeserializeObject<Dictionary<string, string[]>>(jsonContent);
+		}
+		catch (Exception e)
+		{
+			throw new CliException($"Failed to read \"{path}\" tag file. Exception: {e.Message}");
+		}
+
 		return tagsLocalFile;
 	}
 }
