@@ -43,64 +43,17 @@ public class ContentService
 			throw new CliException($"This is not a valid manifestID: \"{manifestId}\"");
 		}
 
-		return GetLocalCache(manifestId).GetManifest();
+		return GetLocalCache(manifestId).UpdateManifest();
 	}
 
-	public void UpdateTags(ClientManifest manifest, string manifestId)
+	public Promise<List<ContentDocument>> PullContent(string manifestId, bool saveToDisk = true)
 	{
-		Dictionary<string, List<string>> tags = new();
-		foreach (ClientContentInfo clientContentInfo in manifest.entries)
-		{
-			foreach (string tag in clientContentInfo.tags)
-			{
-				if (!tags.ContainsKey(tag))
-				{
-					tags[tag] = new List<string>();
-				}
-
-				tags[tag].Add(clientContentInfo.contentId);
-			}
-		}
-
-		var localTags = new TagsLocalFile(tags, manifestId);
-		GetLocalCache(manifestId).UpdateTags(localTags);
-	}
-
-	public async Promise<List<ContentDocument>> PullContent(ClientManifest manifest,string manifestId, bool saveToDisk = true)
-	{
-		var contents = new List<ContentDocument>(manifest.entries.Count);
-
-		foreach (var contentInfo in manifest.entries)
-		{
-			if (GetLocalCache(manifestId).HasSameVersion(contentInfo))
-			{
-				contents.Add(GetLocalCache(manifestId).GetContent(contentInfo.contentId));
-				continue;
-			}
-
-			try
-			{
-				var result = await _requester.CustomRequest(Method.GET, contentInfo.uri,
-					parser: s => JsonSerializer.Deserialize<ContentDocument>(s));
-				contents.Add(result);
-				if (saveToDisk)
-				{
-					await GetLocalCache(manifestId).UpdateContent(result);
-				}
-			}
-			catch (Exception e)
-			{
-				BeamableLogger.LogException(e);
-			}
-		}
-
-		return contents;
+		return GetLocalCache(manifestId).PullContent(saveToDisk);
 	}
 
 	public async Task DisplayStatusTable(string manifestId, bool showUpToDate, int limit, int skipAmount)
 	{
-		_ = await GetManifest(manifestId);
-		var localContentStatus = GetLocalCache(manifestId).GetLocalContentStatus();
+		var localContentStatus = await GetLocalCache(manifestId).GetLocalContentStatus();
 		var totalCount = localContentStatus.Count;
 		var table = new Table();
 		table.AddColumn("Current status");
@@ -169,12 +122,13 @@ public class ContentService
 	private async Promise<ContentSaveResponse> PublishChangedContent(string manifestId)
 	{
 		var contentLocal = GetLocalCache(manifestId);
-		var localContent = contentLocal.GetLocalContentStatus()
+		var localContent = await contentLocal.GetLocalContentStatus();
+		var changedContent =  localContent
 			.Where(content => content.status is not (ContentStatus.Deleted or ContentStatus.UpToDate))
 			.Select(content => contentLocal.PrepareContentForPublish(content.contentId)).ToList();
 
 
-		var dict = new ArrayDict { { "content", localContent.ToList() } };
+		var dict = new ArrayDict { { "content", changedContent } };
 		var reqJson = Json.Serialize(dict, new StringBuilder());
 
 		return await _requester.Request<ContentSaveResponse>(Method.POST, "/basic/content", reqJson);

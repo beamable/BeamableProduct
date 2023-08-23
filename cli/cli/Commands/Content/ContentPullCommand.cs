@@ -16,9 +16,10 @@ public class ContentPullCommand : AppCommand<ContentPullCommandArgs>
 	{
 		_contentService = args.ContentService;
 
-		var manifest = await _contentService.GetManifest(args.ManifestId);
-		_contentService.UpdateTags(manifest, args.ManifestId);
-		var result = await _contentService.PullContent(manifest,args.ManifestId);
+		var localCache = _contentService.GetLocalCache(args.ManifestId);
+		await localCache.UpdateTags();
+		var result = await localCache.PullContent();
+
 		if (args.printOutput)
 		{
 			var json = JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });

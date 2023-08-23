@@ -17,8 +17,7 @@ public class ContentLocalCache
 	private Dictionary<string, ContentDocument> _localAssets;
 	private TagsLocalFile _localTags;
 	private CliRequester _requester;
-
-	private ClientManifest Manifest { get; set; }
+	private ClientManifest _manifest;
 
 	private readonly ConfigService _configService;
 
@@ -31,15 +30,15 @@ public class ContentLocalCache
 
 	public string[] GetTags(string contentId) => _localTags.TagsForContent(contentId);
 
-	public List<LocalContent> GetLocalContentStatus()
+	public async Promise<List<LocalContent>> GetLocalContentStatus()
 	{
-		if (Manifest == null)
+		if (_manifest == null)
 		{
-			throw new CliException("Cannot show current local status due to missing Manifest information.");
+			_ = await UpdateManifest();
 		}
 		var resultList = new List<LocalContent>();
 
-		foreach (var pair in Assets.Where(pair => Manifest.entries.All(info => info.contentId != pair.Key)))
+		foreach (var pair in Assets.Where(pair => _manifest.entries.All(info => info.contentId != pair.Key)))
 		{
 			resultList.Add(new LocalContent
 			{
@@ -47,7 +46,7 @@ public class ContentLocalCache
 			});
 		}
 
-		foreach (ClientContentInfo contentManifestEntry in Manifest.entries)
+		foreach (ClientContentInfo contentManifestEntry in _manifest.entries)
 		{
 			ContentStatus localStatus;
 			var contentExistsLocally = Assets.ContainsKey(contentManifestEntry.contentId);
@@ -130,9 +129,24 @@ public class ContentLocalCache
 		}
 	}
 
-	public void UpdateTags(TagsLocalFile tags)
+	public async Promise UpdateTags()
 	{
-		_localTags = tags;
+		var manifest = await UpdateManifest();
+		Dictionary<string, List<string>> tags = new();
+		foreach (ClientContentInfo clientContentInfo in manifest.entries)
+		{
+			foreach (string tag in clientContentInfo.tags)
+			{
+				if (!tags.ContainsKey(tag))
+				{
+					tags[tag] = new List<string>();
+				}
+
+				tags[tag].Add(clientContentInfo.contentId);
+			}
+		}
+
+		_localTags = new TagsLocalFile(tags, ManifestId);;
 		_localTags.WriteToFile(BaseDirPath);
 	}
 
@@ -144,16 +158,16 @@ public class ContentLocalCache
 
 	public string GetContentPath(string id) => Path.Combine(ContentDirPath, $"{id}.json");
 
-	public async Promise<ClientManifest> GetManifest()
+	public async Promise<ClientManifest> UpdateManifest(bool forceUpdate = false)
 	{
-		if (Manifest != null)
+		if (_manifest != null && !forceUpdate)
 		{
-			return Manifest;
+			return _manifest;
 		}
 
 		string url = $"{ContentService.SERVICE}/manifest/public?id={ManifestId}";
 
-		Manifest = await _requester.Request(Method.GET, url, null, true, ClientManifest.ParseCSV, true).Recover(ex =>
+		_manifest = await _requester.Request(Method.GET, url, null, true, ClientManifest.ParseCSV, true).Recover(ex =>
 		{
 			if (ex is RequesterException { Status: 404 })
 			{
@@ -162,12 +176,12 @@ public class ContentLocalCache
 
 			throw ex;
 		}).ShowLoading();
-		return Manifest;
+		return _manifest;
 	}
 	public async Promise<Dictionary<string, ManifestReferenceSuperset>> BuildLocalManifestReferenceSupersets()
 	{
-		var manifest = await GetManifest();
-		var localContents = GetLocalContentStatus();
+		var manifest = await UpdateManifest();
+		var localContents = await GetLocalContentStatus();
 		var dict = new Dictionary<string, ManifestReferenceSuperset>();
 
 		foreach (var localContent in
@@ -198,5 +212,48 @@ public class ContentLocalCache
 			tags = tags,
 			lastChanged = 0
 		};
+	}
+
+	public async Promise<List<ContentDocument>> PullContent(bool saveToDisk = true)
+	{
+		var manifest = await UpdateManifest();
+		var contents = new List<ContentDocument>(manifest.entries.Count);
+
+		foreach (var contentInfo in manifest.entries)
+		{
+			if (HasSameVersion(contentInfo))
+			{
+				contents.Add(GetContent(contentInfo.contentId));
+				continue;
+			}
+
+			try
+			{
+				var result = await _requester.CustomRequest(Method.GET, contentInfo.uri,
+					parser: s => JsonSerializer.Deserialize<ContentDocument>(s));
+				contents.Add(result);
+				if (saveToDisk)
+				{
+					await UpdateContent(result);
+				}
+			}
+			catch (Exception e)
+			{
+				BeamableLogger.LogException(e);
+			}
+		}
+		return contents;
+	}
+
+	public async Promise RemoveLocalOnlyContent()
+	{
+		var localContents = await GetLocalContentStatus();
+		
+		var localOnlyContent = localContents.Where(content => content.status == ContentStatus.Created);
+		foreach (LocalContent localContent in localOnlyContent)
+		{
+			Remove(localContent);
+		}
+
 	}
 }
