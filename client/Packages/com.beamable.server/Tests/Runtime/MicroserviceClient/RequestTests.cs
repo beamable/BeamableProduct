@@ -378,10 +378,10 @@ namespace Beamable.Server.Tests.Runtime
 
 			MockRequester.MockRequest<int>(Method.POST,
 												 client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
-						 .WithBodyMatch<string>((body) => body.Equals("{\"num1\":10,\"num2\": 5}"))
+						 .WithBodyMatch<string>((body) => body.Equals("{\"num1\": \"10\",\"num2\": \"5\"}"))
 						 .WithResponse(15);
 
-			var req = client.Request<int>(ROUTE, new Dictionary<string, object> { { "num1", 10 }, { "num2", 5 } });
+			var req = client.Request<int>(ROUTE, new Dictionary<string, object> { { "num1", "10" }, { "num2", "5" } });
 
 			yield return req.ToYielder();
 			Assert.AreEqual(15, req.GetResult());
