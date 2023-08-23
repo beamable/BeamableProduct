@@ -11,14 +11,13 @@ public class ContentLocalCache
 {
 	public string ManifestId { get; }
 	public Dictionary<string, ContentDocument> Assets => _localAssets;
-	public string ContentDirPath => Path.Combine(BaseDirPath, "Content");
-	private string BaseDirPath => _configService.ConfigFilePath;
+	public string ContentDirPath => Path.Combine(BaseDirPath, ManifestId);
+	private string BaseDirPath => Path.Combine(_configService.ConfigFilePath, "Content");
 
 	private Dictionary<string, ContentDocument> _localAssets;
-	private TagsLocalFile _localTags;
+	private ContentTags _contentTags;
 	private CliRequester _requester;
 	private ClientManifest _manifest;
-
 	private readonly ConfigService _configService;
 
 	public ContentLocalCache(ConfigService configService, string manifestId, CliRequester requester)
@@ -28,7 +27,8 @@ public class ContentLocalCache
 		_configService = configService;
 	}
 
-	public string[] GetTags(string contentId) => _localTags.TagsForContent(contentId);
+	public Dictionary<string, TagStatus> GetContentTagsStatus(string contentId) =>
+		_contentTags.GetContentAllTagsStatus(contentId);
 
 	public async Promise<List<LocalContent>> GetLocalContentStatus()
 	{
@@ -36,13 +36,16 @@ public class ContentLocalCache
 		{
 			_ = await UpdateManifest();
 		}
+
 		var resultList = new List<LocalContent>();
 
 		foreach (var pair in Assets.Where(pair => _manifest.entries.All(info => info.contentId != pair.Key)))
 		{
 			resultList.Add(new LocalContent
 			{
-				contentId = pair.Key, status = ContentStatus.Created, tags = _localTags.TagsForContent(pair.Key)
+				contentId = pair.Key,
+				status = ContentStatus.Created,
+				tags = _contentTags.TagsForContent(pair.Key, false)
 			});
 		}
 
@@ -52,8 +55,8 @@ public class ContentLocalCache
 			var contentExistsLocally = Assets.ContainsKey(contentManifestEntry.contentId);
 			if (contentExistsLocally)
 			{
-				var sameTags = _localTags.TagsForContent(contentManifestEntry.contentId)
-					.All(contentManifestEntry.tags.Contains);
+				var sameTags = _contentTags.GetContentAllTagsStatus(contentManifestEntry.contentId)
+					.All(pair => pair.Value == TagStatus.LocalAndRemote);
 				localStatus = HasSameVersion(contentManifestEntry) && sameTags
 					? ContentStatus.UpToDate
 					: ContentStatus.Modified;
@@ -63,9 +66,7 @@ public class ContentLocalCache
 				localStatus = ContentStatus.Deleted;
 			}
 
-			var tags = contentExistsLocally
-				? _localTags.TagsForContent(contentManifestEntry.contentId)
-				: contentManifestEntry.tags;
+			var tags = _contentTags.TagsForContent(contentManifestEntry.contentId, !contentExistsLocally);
 			resultList.Add(new LocalContent
 			{
 				contentId = contentManifestEntry.contentId, status = localStatus, tags = tags
@@ -114,7 +115,7 @@ public class ContentLocalCache
 			_localAssets.Add(content.id, content);
 		}
 
-		_localTags = TagsLocalFile.ReadFromDirectory(BaseDirPath, ManifestId);
+		_contentTags = ContentTags.ReadFromDirectory(BaseDirPath, ManifestId);
 	}
 
 	public async Task UpdateContent(ContentDocument result)
@@ -129,25 +130,15 @@ public class ContentLocalCache
 		}
 	}
 
-	public async Promise UpdateTags()
+	public async Promise UpdateTags(bool saveToFile = true)
 	{
-		var manifest = await UpdateManifest();
-		Dictionary<string, List<string>> tags = new();
-		foreach (ClientContentInfo clientContentInfo in manifest.entries)
+		_ = await UpdateManifest();
+
+		if (saveToFile)
 		{
-			foreach (string tag in clientContentInfo.tags)
-			{
-				if (!tags.ContainsKey(tag))
-				{
-					tags[tag] = new List<string>();
-				}
-
-				tags[tag].Add(clientContentInfo.contentId);
-			}
+			_contentTags.UpdateRemoteTagsInfo(_manifest, true);
+			_contentTags.WriteToFile();
 		}
-
-		_localTags = new TagsLocalFile(tags, ManifestId);;
-		_localTags.WriteToFile(BaseDirPath);
 	}
 
 	public void Remove(LocalContent content)
@@ -176,8 +167,12 @@ public class ContentLocalCache
 
 			throw ex;
 		}).ShowLoading();
+
+		_contentTags.UpdateRemoteTagsInfo(_manifest, false);
+
 		return _manifest;
 	}
+
 	public async Promise<Dictionary<string, ManifestReferenceSuperset>> BuildLocalManifestReferenceSupersets()
 	{
 		var manifest = await UpdateManifest();
@@ -197,12 +192,12 @@ public class ContentLocalCache
 
 		return dict;
 	}
-	
+
 	public ContentDefinition PrepareContentForPublish(string contentId)
 	{
 		var document = GetContent(contentId);
-		var tags = GetTags(contentId);
-		
+		var tags = _contentTags.TagsForContent(contentId, false);
+
 		return new ContentDefinition
 		{
 			id = document!.id,
@@ -242,18 +237,18 @@ public class ContentLocalCache
 				BeamableLogger.LogException(e);
 			}
 		}
+
 		return contents;
 	}
 
 	public async Promise RemoveLocalOnlyContent()
 	{
 		var localContents = await GetLocalContentStatus();
-		
+
 		var localOnlyContent = localContents.Where(content => content.status == ContentStatus.Created);
 		foreach (LocalContent localContent in localOnlyContent)
 		{
 			Remove(localContent);
 		}
-
 	}
 }

@@ -4,7 +4,6 @@ using Beamable.Common.Content;
 using Beamable.Serialization.SmallerJSON;
 using Spectre.Console;
 using System.Text;
-using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace cli.Services.Content;
 
@@ -53,7 +52,8 @@ public class ContentService
 
 	public async Task DisplayStatusTable(string manifestId, bool showUpToDate, int limit, int skipAmount)
 	{
-		var localContentStatus = await GetLocalCache(manifestId).GetLocalContentStatus();
+		var contentCache = GetLocalCache(manifestId);
+		var localContentStatus = await contentCache.GetLocalContentStatus();
 		var totalCount = localContentStatus.Count;
 		var table = new Table();
 		table.AddColumn("Current status");
@@ -70,10 +70,27 @@ public class ContentService
 			AnsiConsole.MarkupLine("[green]Your local content is up to date with remote.[/]");
 			return;
 		}
+		
 
 		var range = localContentStatus.Skip(skipAmount).Take(limit > 0 ? limit : DEFAULT_TABLE_LIMIT).ToList();
-		range.ForEach(
-			content => table.AddRow(content.StatusString(), content.contentId, string.Join(",", content.tags)));
+		foreach (var content in range)
+		{
+			var tags = contentCache.GetContentTagsStatus(content.contentId).Select(pair =>
+			{
+				switch (pair.Value)
+				{
+					case TagStatus.LocalOnly:
+						return $"[green]{pair.Key}[/]";
+					case TagStatus.RemoteOnly:
+						return $"[red]{pair.Key}[/]";
+					case TagStatus.LocalAndRemote:
+						return pair.Key;
+					default:
+						throw new ArgumentOutOfRangeException();
+				}
+			});
+			table.AddRow(content.StatusString(), content.contentId, string.Join(",", tags));
+		}
 		AnsiConsole.Write(table);
 		AnsiConsole.WriteLine($"Content: {range.Count} out of {totalCount}");
 	}
