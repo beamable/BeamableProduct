@@ -60,7 +60,7 @@ namespace Beamable.Server
 			return await MicroserviceClientHelper.Request<T>(Provider, requester, serviceName, endpoint, serializedFields);
 		}
 
-		protected async Promise<T> Request<T>(string serviceName, string endpoint, Dictionary<string, string> serializedFields)
+		protected async Promise<T> Request<T>(string serviceName, string endpoint, Dictionary<string, object> serializedFields)
 		{
 			var requester = _requester ?? await API.Instance.Map(b => b.Requester);
 			return await MicroserviceClientHelper.Request<T>(Provider, requester, serviceName, endpoint, serializedFields);
@@ -369,7 +369,7 @@ namespace Beamable.Server
 												  IBeamableRequester requester,
 												  string serviceName,
 												  string endpoint,
-												  Dictionary<string, string> serializedFields)
+												  Dictionary<string, object> serializedFields)
 		{
 			Promise<string> prefixPromise = PrefixPromise<T>(provider, serviceName);
 			var prefix = await prefixPromise;

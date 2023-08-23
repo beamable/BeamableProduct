@@ -250,7 +250,7 @@ namespace Beamable.Server.Generator
 			genMethod.Name = info.MethodInfo.Name;
 
 			// the input arguments...
-			var serializationFields = new Dictionary<string, string>();
+			var serializationFields = new Dictionary<string, object>();
 			var methodParams = info.MethodInfo.GetParameters();
 			for (var i = 0; i < methodParams.Length; i++)
 			{
@@ -260,23 +260,11 @@ namespace Beamable.Server.Generator
 				parameterTypes.Add(paramType);
 				genMethod.Parameters.Add(new CodeParameterDeclarationExpression(paramType, paramName));
 
-				var serializationFieldName = $"serialized_{paramName}";
-				var declare = new CodeParameterDeclarationExpression(typeof(string), serializationFieldName);
-				serializationFields.Add(paramName, serializationFieldName);
+				var rawFieldName = $"raw_{paramName}";
+				var declare = new CodeParameterDeclarationExpression(typeof(object), rawFieldName);
+				serializationFields.Add(paramName, rawFieldName);
 
-				var serializeInvoke = new CodeMethodInvokeExpression(
-					new CodeMethodReferenceExpression(
-						new CodeThisReferenceExpression(),
-						"SerializeArgument",
-						new CodeTypeReference[]
-						{
-						  new CodeTypeReference(paramType),
-						}), new CodeExpression[]
-					{
-					new CodeArgumentReferenceExpression(paramName),
-					});
-
-				var assignment = new CodeAssignStatement(declare, serializeInvoke);
+				var assignment = new CodeAssignStatement(declare, new CodeArgumentReferenceExpression(paramName));
 				genMethod.Statements.Add(assignment);
 			}
 
@@ -328,14 +316,14 @@ namespace Beamable.Server.Generator
 			const string serializedFieldVariableName = "serializedFields";
 
 			// Create a dictionary and add key-value pairs
-			var dictionaryType = new CodeTypeReference(typeof(Dictionary<string, string>));
+			var dictionaryType = new CodeTypeReference(typeof(Dictionary<string, object>));
 			var dictionaryDeclaration = new CodeVariableDeclarationStatement(
 				dictionaryType, serializedFieldVariableName,
 				new CodeObjectCreateExpression(dictionaryType)
 			);
 			genMethod.Statements.Add(dictionaryDeclaration);
 
-			foreach (KeyValuePair<string, string> kvp in serializationFields)
+			foreach (KeyValuePair<string, object> kvp in serializationFields)
 			{
 				// Add key-value pairs to the dictionary
 				genMethod.Statements.Add(
@@ -343,7 +331,7 @@ namespace Beamable.Server.Generator
 						new CodeVariableReferenceExpression(serializedFieldVariableName),
 						"Add",
 						new CodePrimitiveExpression(kvp.Key),
-						new CodeVariableReferenceExpression(kvp.Value)
+						new CodeVariableReferenceExpression((string)kvp.Value)
 					)
 				);
 			}

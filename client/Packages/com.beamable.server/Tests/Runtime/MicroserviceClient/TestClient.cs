@@ -36,7 +36,7 @@ namespace Beamable.Server.Tests.Runtime
 			return base.Request<T>(_serviceName, endpoint, serializedFields);
 		}
 
-		public Promise<T> Request<T>(string endpoint, Dictionary<string, string> serializedFields)
+		public Promise<T> Request<T>(string endpoint, Dictionary<string, object> serializedFields)
 		{
 			return base.Request<T>(_serviceName, endpoint, serializedFields);
 		}
