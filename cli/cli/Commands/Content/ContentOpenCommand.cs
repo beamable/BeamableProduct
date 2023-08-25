@@ -15,6 +15,8 @@ public class ContentOpenCommand : AppCommand<ContentOpenCommandArgs>
 	public override void Configure()
 	{
 		var contentId = new Argument<string>(nameof(ContentOpenCommandArgs.contentId));
+		AddOption(ContentCommand.MANIFEST_OPTION,
+			(args, s) => args.ManifestId = s);
 		AddArgument(contentId, (args, i) => args.contentId = i);
 	}
 
@@ -22,9 +24,11 @@ public class ContentOpenCommand : AppCommand<ContentOpenCommandArgs>
 	{
 		_contentService = args.ContentService;
 
+		var localContent = _contentService.GetLocalCache(args.ManifestId);
+
 		var path = string.IsNullOrWhiteSpace(args.contentId)
-			? _contentService.ContentLocal.ContentDirPath
-			: _contentService.ContentLocal.GetContentPath(args.contentId);
+			? localContent.ContentDirPath
+			: localContent.GetContentPath(args.contentId);
 		if (File.Exists(path))
 		{
 			new Process
@@ -40,7 +44,7 @@ public class ContentOpenCommand : AppCommand<ContentOpenCommandArgs>
 	}
 }
 
-public class ContentOpenCommandArgs : CommandArgs
+public class ContentOpenCommandArgs : ContentCommandArgs
 {
 	public string contentId;
 }
