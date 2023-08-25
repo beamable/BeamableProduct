@@ -12,13 +12,14 @@ public class ContentPublishCommand : AppCommand<ContentPublishCommandArgs>
 
 	public override void Configure()
 	{
-		AddOption(new ConfigurableOption("manifest-id", "Set the manifest to use, 'global' by default"),
+		AddOption(ContentCommand.MANIFEST_OPTION,
 			(args, s) => args.ManifestId = s);
 	}
 
 	public override async Task Handle(ContentPublishCommandArgs args)
 	{
 		_contentService = args.ContentService;
+
 		await _contentService.PublishContentAndManifest(args.ManifestId);
 	}
 }
