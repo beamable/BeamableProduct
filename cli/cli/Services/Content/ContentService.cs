@@ -70,7 +70,7 @@ public class ContentService
 			AnsiConsole.MarkupLine("[green]Your local content is up to date with remote.[/]");
 			return;
 		}
-		
+
 
 		var range = localContentStatus.Skip(skipAmount).Take(limit > 0 ? limit : DEFAULT_TABLE_LIMIT).ToList();
 		foreach (var content in range)
@@ -112,7 +112,7 @@ public class ContentService
 	private async Promise<ContentManifest> PublishNewManifest(ContentSaveResponse contentSaveResponse, string manifestId)
 	{
 		var localCache = GetLocalCache(manifestId);
-			
+
 		var referenceSet = await localCache.BuildLocalManifestReferenceSupersets();
 		contentSaveResponse.content.ForEach(entry =>
 		{
@@ -140,7 +140,7 @@ public class ContentService
 	{
 		var contentLocal = GetLocalCache(manifestId);
 		var localContent = await contentLocal.GetLocalContentStatus();
-		var changedContent =  localContent
+		var changedContent = localContent
 			.Where(content => content.status is not (ContentStatus.Deleted or ContentStatus.UpToDate))
 			.Select(content => contentLocal.PrepareContentForPublish(content.contentId)).ToList();
 

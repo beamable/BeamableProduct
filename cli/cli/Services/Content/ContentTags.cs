@@ -41,13 +41,13 @@ public class ContentTags
 				tags[tag].Add(clientContentInfo.contentId);
 			}
 		}
-		
+
 		remoteTags = new();
 		if (overrideLocalTags)
 		{
 			localTags = new();
 		}
-		
+
 		foreach (string key in tags.Keys)
 		{
 			remoteTags[key] = tags[key].ToArray();
@@ -64,7 +64,7 @@ public class ContentTags
 		var tags = isRemote ? remoteTags.Keys : localTags.Keys;
 		foreach (var tag in tags)
 		{
-			if (isRemote ? remoteTags[tag].Contains(contentId): localTags[tag].Contains(contentId))
+			if (isRemote ? remoteTags[tag].Contains(contentId) : localTags[tag].Contains(contentId))
 			{
 				resultList.Add(tag);
 			}
@@ -72,7 +72,7 @@ public class ContentTags
 
 		return resultList.ToArray();
 	}
-	public Dictionary<string,TagStatus> GetContentAllTagsStatus(string contentId)
+	public Dictionary<string, TagStatus> GetContentAllTagsStatus(string contentId)
 	{
 		var dict = new Dictionary<string, TagStatus>();
 		var localContentTags = TagsForContent(contentId, false);
@@ -99,7 +99,7 @@ public class ContentTags
 
 	public static ContentTags ReadFromDirectory(string configDir, string manifestId)
 	{
-		var tagsLocalFile = new ContentTags(manifestId,configDir);
+		var tagsLocalFile = new ContentTags(manifestId, configDir);
 
 		var path = Path.Combine(configDir, tagsLocalFile.Filename);
 		if (string.IsNullOrWhiteSpace(configDir) || !File.Exists(path))
