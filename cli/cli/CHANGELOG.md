@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed Powershell users having blue-on-blue text when selecting options.
 
+### Changed
+- `run-nbomber` cli command accepts a json file as body for request instead of an argument.
+
 ## [1.17.3]
 
 ### Added
