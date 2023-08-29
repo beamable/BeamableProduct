@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Support for storing locally content from multiple namespaces.
 
+### Changed
+- `run-nbomber` cli command accepts a json file as body for request instead of an argument.
+
 ## [1.17.3]
 
 ### Added
