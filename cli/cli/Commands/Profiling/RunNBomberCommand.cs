@@ -108,8 +108,15 @@ public class RunNBomberCommand : AppCommand<RunNBomberCommandArgs>
 	{
 		jsonContent = string.Empty;
 		if (!IsJsonFile(filePath)) return false;
-		jsonContent = ReadJsonFile(filePath);
-		return true;
+		try
+		{
+			jsonContent = ReadJsonFile(filePath);
+			return true;
+		}
+		catch (Exception)
+		{
+			return false;
+		}
 	}
 
 	private static bool IsJsonFile(string filePath)
@@ -122,8 +129,16 @@ public class RunNBomberCommand : AppCommand<RunNBomberCommandArgs>
 	private static string ReadJsonFile(string filePath)
 	{
 		if (string.IsNullOrWhiteSpace(filePath)) return string.Empty;
-		string jsonContent = File.ReadAllText(filePath);
-		return jsonContent;
+		try
+		{
+			string jsonContent = File.ReadAllText(filePath);
+			return jsonContent;
+		}
+		catch (FileNotFoundException e)
+		{
+			BeamableLogger.LogError(e.Message);
+			throw;
+		}
 	}
 
 	private static bool IsValidJson(ref string jsonContent)
