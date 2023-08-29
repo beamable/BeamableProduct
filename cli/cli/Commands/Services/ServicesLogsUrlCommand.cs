@@ -38,8 +38,12 @@ public class ServicesLogsUrlCommand : AppCommand<ServicesLogsUrlCommandArgs>
 		// Only allow selecting from services we know are enabled remotely (serviceName maps to Beamo Ids)
 		var existingBeamoIds = currentRemoteManifest.manifest.Select(c => c.serviceName).ToList();
 		// If we don't have a given BeamoId or if the given one is not currently remotely deployed ask for one.
-		if (string.IsNullOrEmpty(args.BeamoId) || currentRemoteManifest.manifest.FindIndex(c => c.serviceName == args.BeamoId) == -1)
-			args.BeamoId = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Choose the [lightskyblue1]Beamo-O Service[/] to Modify:").AddChoices(existingBeamoIds));
+		if (string.IsNullOrEmpty(args.BeamoId) ||
+		    currentRemoteManifest.manifest.FindIndex(c => c.serviceName == args.BeamoId) == -1)
+			args.BeamoId = AnsiConsole.Prompt(new SelectionPrompt<string>()
+				.Title("Choose the [lightskyblue1]Beamo-O Service[/] to Modify:")
+				.AddChoices(existingBeamoIds)
+				.HighlightStyle(new Style(Color.Pink1)));
 
 		var response = await AnsiConsole.Status()
 			.Spinner(Spinner.Known.Default)

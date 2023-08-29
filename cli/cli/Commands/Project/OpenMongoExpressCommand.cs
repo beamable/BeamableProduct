@@ -101,7 +101,8 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
 				.Title("Select the storage to use:")
 				.PageSize(10)
 				.MoreChoicesText("[grey](Move up and down to reveal more storage)[/]")
-				.AddChoices(storages.Select(serviceDef => serviceDef.BeamoId)));
+				.AddChoices(storages.Select(serviceDef => serviceDef.BeamoId))
+				.HighlightStyle(new Style(Color.Pink1)));
 
 		await new BeamCommandAssistantBuilder("project open-mongo", args.AppContext)
 			.AddArgument(serviceName)

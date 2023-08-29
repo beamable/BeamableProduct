@@ -44,7 +44,9 @@ public class ServicesPromoteCommand : AppCommand<ServicesPromoteCommandArgs>
 		var realms = await _realms.GetRealms(_ctx.Pid);
 		var possiblePids = realms.Select(r => r.Pid);
 		if (string.IsNullOrEmpty(args.SourcePid))
-			args.SourcePid = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Choose the [lightskyblue1]PID[/] to Promote to the current realm:").AddChoices(possiblePids));
+			args.SourcePid = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Choose the [lightskyblue1]PID[/] to Promote to the current realm:")
+				.AddChoices(possiblePids)
+				.HighlightStyle(new Style(Color.Pink1)));
 
 		var response = await AnsiConsole.Status()
 			.Spinner(Spinner.Known.Default)

@@ -163,7 +163,8 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 		if (args.ProtocolType == null)
 			args.ProtocolType = AnsiConsole.Prompt(new SelectionPrompt<BeamoProtocolType>()
 				.Title("What [green]Beam-O Protocol Type[/] does the container respect?")
-				.AddChoices(BeamoProtocolType.EmbeddedMongoDb, BeamoProtocolType.HttpMicroservice));
+				.AddChoices(BeamoProtocolType.EmbeddedMongoDb, BeamoProtocolType.HttpMicroservice)
+				.HighlightStyle(new Style(Color.Pink1)));
 
 		// Handle Dependencies Option
 		if (!EnsureServiceDependencies(existingBeamoIds, ref args.ServiceDependencies))
@@ -239,6 +240,7 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 				.Title("Service Dependencies")
 				.InstructionsText("Select any number of other Beam-O containers as dependencies of this one. We check for cyclical dependencies so don't worry.")
 				.AddChoices(existingBeamoIds)
+				.HighlightStyle(new Style(Color.Pink1))
 				.NotRequired();
 
 			foreach (var serviceDependency in existingDeps)
@@ -295,6 +297,7 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 		var curr = currentLogLevel.HasValue ? $"(Current: {currentLogLevel.Value.ToString()})" : "";
 		httpArgs.LocalLogLevel ??= AnsiConsole.Prompt(new SelectionPrompt<LogEventLevel?>()
 			.Title($"Choose the [lightskyblue1]LogLevel[/] {curr}:")
+			.HighlightStyle(new Style(Color.Pink1))
 			.AddChoices(Enum.GetValues<LogEventLevel>().Cast<LogEventLevel?>())
 		);
 	}

@@ -76,6 +76,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
 			.InstructionsText("Which services will use this storage?\n[grey](Press [blue]<space>[/] to toggle, " +
 							  "[green]<enter>[/] to accept)[/]")
 			.AddChoices(choices)
+			.HighlightStyle(new Style(Color.Pink1))
 			.NotRequired();
 		foreach (string choice in choices)
 		{

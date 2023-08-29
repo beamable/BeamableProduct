@@ -59,6 +59,7 @@ public class AddServiceToSolutionCommand : AppCommand<SolutionCommandArgs>
 						new SelectionPrompt<string>()
 							.Title("Select solution file You would like new project add to:")
 							.AddChoices(solutionFiles)
+							.HighlightStyle(new Style(Color.Pink1))
 					);
 
 					if (selection == "cancel")

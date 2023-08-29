@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Support for storing locally content from multiple namespaces.
 
+### Fixed
+
+- Fixed Powershell users having blue-on-blue text when selecting options.
+
 ## [1.17.3]
 
 ### Added

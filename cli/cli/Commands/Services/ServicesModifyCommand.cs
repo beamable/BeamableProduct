@@ -73,7 +73,9 @@ public class ServicesModifyCommand : AppCommand<ServicesModifyCommandArgs>
 		var existingBeamoIds = _localBeamo.BeamoManifest.ServiceDefinitions.Select(c => c.BeamoId).ToList();
 		{
 			if (string.IsNullOrEmpty(args.BeamoId))
-				args.BeamoId = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Choose the [lightskyblue1]Beamo-O Service[/] to Modify:").AddChoices(existingBeamoIds));
+				args.BeamoId = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Choose the [lightskyblue1]Beamo-O Service[/] to Modify:")
+					.AddChoices(existingBeamoIds)
+					.HighlightStyle(new Style(Color.Pink1)));
 		}
 
 		var serviceDefinition = _localBeamo.BeamoManifest.ServiceDefinitions.First(sd => sd.BeamoId == args.BeamoId);

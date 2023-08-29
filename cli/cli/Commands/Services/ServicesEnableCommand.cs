@@ -37,11 +37,12 @@ public class ServicesEnableCommand : AppCommand<ServicesEnableCommandArgs>
 		AddOption(BEAM_SERVICE_OPTION_IGNORE_DEPENDENCIES, (args, i) => args.IgnoreDependencies = i);
 	}
 
-	public static bool EnsureEnableOnRemoteDeploy(ref bool enabled, bool current = false)
+	private static bool EnsureEnableOnRemoteDeploy(ref bool enabled, bool current = false)
 	{
 		enabled = AnsiConsole.Prompt(new SelectionPrompt<bool>()
 			.Title($"Do you wish for us to try and run this service when you deploy it remotely? [lightskyblue1](Current: {current})[/]")
-			.AddChoices(new[] { true, false }));
+			.AddChoices(new[] { true, false })
+			.HighlightStyle(new Style(Color.Pink1)));
 
 		return true;
 	}
@@ -60,7 +61,9 @@ public class ServicesEnableCommand : AppCommand<ServicesEnableCommandArgs>
 		if (string.IsNullOrEmpty(args.BeamoId))
 		{
 			args.BeamoId = AnsiConsole.Prompt(new SelectionPrompt<string>()
-				.Title("Choose the [lightskyblue1]Beamo-O Service[/] to Modify:").AddChoices(existingBeamoIds));
+				.Title("Choose the [lightskyblue1]Beamo-O Service[/] to Modify:")
+				.AddChoices(existingBeamoIds)
+				.HighlightStyle(new Style(Color.Pink1)));
 		}
 
 		var serviceDefinition = _localBeamo.BeamoManifest.ServiceDefinitions.FirstOrDefault(sd => sd.BeamoId == args.BeamoId);
