@@ -52,7 +52,7 @@ public class UpdateUnityBeamPackageCommand : AppCommand<UpdateUnityBeamPackageCo
 				directory = AnsiConsole.Prompt(new SelectionPrompt<string>()
 					.Title("Select Unity Project to update")
 					.AddChoices(defaultPaths)
-					.HighlightStyle(new Style(Color.Pink1)));
+					.AddBeamHightlight());
 				break;
 		}
 

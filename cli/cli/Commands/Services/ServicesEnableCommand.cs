@@ -1,5 +1,6 @@
 ﻿using Beamable.Common;
 using cli.Services;
+using cli.Utils;
 using Newtonsoft.Json;
 using Serilog.Events;
 using Spectre.Console;
@@ -42,7 +43,7 @@ public class ServicesEnableCommand : AppCommand<ServicesEnableCommandArgs>
 		enabled = AnsiConsole.Prompt(new SelectionPrompt<bool>()
 			.Title($"Do you wish for us to try and run this service when you deploy it remotely? [lightskyblue1](Current: {current})[/]")
 			.AddChoices(new[] { true, false })
-			.HighlightStyle(new Style(Color.Pink1)));
+			.AddBeamHightlight());
 
 		return true;
 	}
@@ -63,7 +64,7 @@ public class ServicesEnableCommand : AppCommand<ServicesEnableCommandArgs>
 			args.BeamoId = AnsiConsole.Prompt(new SelectionPrompt<string>()
 				.Title("Choose the [lightskyblue1]Beamo-O Service[/] to Modify:")
 				.AddChoices(existingBeamoIds)
-				.HighlightStyle(new Style(Color.Pink1)));
+				.AddBeamHightlight());
 		}
 
 		var serviceDefinition = _localBeamo.BeamoManifest.ServiceDefinitions.FirstOrDefault(sd => sd.BeamoId == args.BeamoId);

@@ -65,7 +65,7 @@ public class ProjectClientHelper<TProjectClient> where TProjectClient : IProject
 					new SelectionPrompt<string>()
 						.Title($"Select the {_projectClientTypeName} project to link, or continue to search manually")
 						.AddChoices(defaultPaths)
-						.HighlightStyle(new Style(Color.Pink1))
+						.AddBeamHightlight()
 				);
 				if (selectionPath != "continue")
 				{
@@ -92,7 +92,7 @@ public class ProjectClientHelper<TProjectClient> where TProjectClient : IProject
 				new SelectionPrompt<string>()
 					.Title($"This doesn't look like a {_projectClientTypeName} project. Where is it from here?")
 					.AddChoices(subDirs)
-					.HighlightStyle(new Style(Color.Pink1))
+					.AddBeamHightlight()
 			);
 
 			directory = Path.Combine(directory, dirSelection);

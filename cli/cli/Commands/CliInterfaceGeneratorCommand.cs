@@ -2,6 +2,7 @@ using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using cli.Services;
 using cli.Unreal;
+using cli.Utils;
 using JetBrains.Annotations;
 using Serilog;
 using Spectre.Console;
@@ -50,7 +51,7 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 		args.Engine = string.IsNullOrEmpty(args.Engine)
 			? AnsiConsole.Ask<SelectionPrompt<string>>("")
 				.AddChoices("unity", "unreal")
-				.HighlightStyle(new Style(Color.Pink1)).Show(AnsiConsole.Console)
+				.AddBeamHightlight().Show(AnsiConsole.Console)
 			: args.Engine;
 		ICliGenerator generator = args.Engine.ToLower() switch
 		{

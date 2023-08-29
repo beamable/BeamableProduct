@@ -1,4 +1,5 @@
 ﻿using cli.Services;
+using cli.Utils;
 using Newtonsoft.Json;
 using Serilog.Events;
 using Spectre.Console;
@@ -46,7 +47,7 @@ public class ServicesMetricsUrlCommand : AppCommand<ServicesMetricsUrlCommandArg
 		if (string.IsNullOrEmpty(args.BeamoId) || currentRemoteManifest.manifest.FindIndex(c => c.serviceName == args.BeamoId) == -1)
 			args.BeamoId = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Choose the [lightskyblue1]Beamo-O Service[/] to Modify:")
 				.AddChoices(existingBeamoIds)
-				.HighlightStyle(new Style(Color.Pink1)));
+				.AddBeamHightlight());
 
 		// If we don't have a metric, default to CPU
 		if (string.IsNullOrEmpty(args.MetricName))

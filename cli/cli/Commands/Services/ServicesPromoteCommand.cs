@@ -1,5 +1,6 @@
 ﻿using Beamable.Common.Api.Realms;
 using cli.Services;
+using cli.Utils;
 using Newtonsoft.Json;
 using Serilog.Events;
 using Spectre.Console;
@@ -46,7 +47,7 @@ public class ServicesPromoteCommand : AppCommand<ServicesPromoteCommandArgs>
 		if (string.IsNullOrEmpty(args.SourcePid))
 			args.SourcePid = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("Choose the [lightskyblue1]PID[/] to Promote to the current realm:")
 				.AddChoices(possiblePids)
-				.HighlightStyle(new Style(Color.Pink1)));
+				.AddBeamHightlight());
 
 		var response = await AnsiConsole.Status()
 			.Spinner(Spinner.Known.Default)

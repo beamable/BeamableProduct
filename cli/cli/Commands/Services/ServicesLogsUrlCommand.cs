@@ -1,4 +1,5 @@
 ﻿using cli.Services;
+using cli.Utils;
 using Newtonsoft.Json;
 using Serilog.Events;
 using Spectre.Console;
@@ -43,7 +44,7 @@ public class ServicesLogsUrlCommand : AppCommand<ServicesLogsUrlCommandArgs>
 			args.BeamoId = AnsiConsole.Prompt(new SelectionPrompt<string>()
 				.Title("Choose the [lightskyblue1]Beamo-O Service[/] to Modify:")
 				.AddChoices(existingBeamoIds)
-				.HighlightStyle(new Style(Color.Pink1)));
+				.AddBeamHightlight());
 
 		var response = await AnsiConsole.Status()
 			.Spinner(Spinner.Known.Default)

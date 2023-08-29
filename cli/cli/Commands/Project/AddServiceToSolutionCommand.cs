@@ -1,4 +1,5 @@
 ﻿using Beamable.Common.Semantics;
+using cli.Utils;
 using Spectre.Console;
 using System.CommandLine;
 
@@ -59,7 +60,7 @@ public class AddServiceToSolutionCommand : AppCommand<SolutionCommandArgs>
 						new SelectionPrompt<string>()
 							.Title("Select solution file You would like new project add to:")
 							.AddChoices(solutionFiles)
-							.HighlightStyle(new Style(Color.Pink1))
+							.AddBeamHightlight()
 					);
 
 					if (selection == "cancel")
