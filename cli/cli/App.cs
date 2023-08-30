@@ -78,7 +78,6 @@ public class App
 		services.AddSingleton<ConfigService>();
 		services.AddSingleton<BeamoService>();
 		services.AddSingleton<BeamoLocalSystem>();
-		services.AddSingleton<ContentLocalCache>();
 		services.AddSingleton<ContentService>();
 		services.AddSingleton<CliEnvironment>();
 		services.AddSingleton<SwaggerService>();
@@ -159,7 +158,7 @@ public class App
 		Commands.AddCommand<UpdateUnityBeamPackageCommand, UpdateUnityBeamPackageCommandArgs, ProjectCommand>();
 		Commands.AddCommand<ShareCodeCommand, ShareCodeCommandArgs, ProjectCommand>();
 		Commands.AddCommand<CheckStatusCommand, CheckStatusCommandArgs, ProjectCommand>();
-		Commands.AddCommand<AddServiceToSolutionCommand, AddServiceToSolutionCommandArgs, ProjectCommand>();
+		Commands.AddCommand<AddServiceToSolutionCommand, SolutionCommandArgs, ProjectCommand>();
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Commands.AddRootCommand<BaseRequestGetCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestPutCommand, BaseRequestArgs>();
