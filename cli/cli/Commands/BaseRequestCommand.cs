@@ -51,8 +51,7 @@ public abstract class BaseRequestCommand : AppCommand<BaseRequestArgs>
 				new Panel(new JsonText(response))
 					.Header($"{args.uri}")
 					.Collapse()
-					.RoundedBorder()
-					.BorderColor(Color.Blue));
+					.RoundedBorder());
 		}
 		catch (Exception e)
 		{

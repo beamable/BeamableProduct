@@ -24,8 +24,7 @@ public class AccountMeCommand : AppCommand<AccountMeCommandArgs>
 				new Panel(new JsonText(JsonConvert.SerializeObject(response)))
 					.Header("Server response")
 					.Collapse()
-					.RoundedBorder()
-					.BorderColor(Color.Blue));
+					.RoundedBorder());
 		}
 		catch (Exception e)
 		{
