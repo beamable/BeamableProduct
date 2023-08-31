@@ -32,12 +32,14 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 	private IAppContext _ctx;
 	private BeamoLocalSystem _localBeamo;
 	private BeamoService _remoteBeamo;
+	private ServicesListCommand _servicesListCommand;
 	private IAliasService _aliasService;
 
-	public ServicesDeployCommand() :
+	public ServicesDeployCommand(ServicesListCommand servicesListCommand) :
 		base("deploy",
 			"Deploys services remotely to the current realm")
 	{
+		_servicesListCommand = servicesListCommand;
 	}
 
 	public override void Configure()
@@ -73,7 +75,9 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 		var isDockerRunning = await _localBeamo.CheckIsRunning();
 		if (!isDockerRunning)
 		{
-			throw new CliException("Docker is not running in this machine. Please start Docker before running this command.", Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_DOCKER_NOT_RUNNING, true);
+			throw new CliException(
+				"Docker is not running in this machine. Please start Docker before running this command.",
+				Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_DOCKER_NOT_RUNNING, true);
 		}
 
 		var cid = _ctx.Cid;
@@ -94,12 +98,14 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 
 		try
 		{
+			await _servicesListCommand.Handle(new ServicesListCommandArgs { Provider = args.Provider, Remote = true });
 			await _localBeamo.SynchronizeInstanceStatusWithDocker(_localBeamo.BeamoManifest,
 				_localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
 			await _localBeamo.StartListeningToDocker();
 		}
-		catch
+		catch (Exception e)
 		{
+			AnsiConsole.WriteLine(e.Message);
 			return;
 		}
 
