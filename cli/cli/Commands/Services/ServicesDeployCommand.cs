@@ -85,7 +85,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 				cid = aliasResolve.Cid.GetOrElse(() => throw new CliException("Invalid alias"));
 				_ctx.Set(cid, _ctx.Pid, _ctx.Host);
 			}
-			catch (Exception e)
+			catch (Exception)
 			{
 				AnsiConsole.WriteLine($"Unable to resolve alias for '{cid}'");
 				return;
