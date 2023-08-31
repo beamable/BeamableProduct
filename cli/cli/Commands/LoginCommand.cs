@@ -66,6 +66,12 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 				await Handle(args);
 				return;
 			}
+			catch (Exception e)
+			{
+				Log.Verbose(e.Message + " " + e.StackTrace);
+				BeamableLogger.LogError(e.Message);
+				return;
+			}
 
 			args.username = username;
 			args.password = password;
@@ -82,7 +88,12 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 				await Handle(args);
 				return;
 			}
-
+			catch (Exception e)
+			{
+				Log.Verbose(e.Message + " " + e.StackTrace);
+				BeamableLogger.LogError(e.Message);
+				return;
+			}
 		}
 		Successful = HandleResponse(args, response);
 	}

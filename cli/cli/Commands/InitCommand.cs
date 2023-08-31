@@ -54,7 +54,7 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 		_realmsApi = args.RealmsApi;
 
 		if (!_retry) AnsiConsole.Write(new FigletText("Beam").Color(Color.Red));
-		else _ctx.Set("", _ctx.Pid, _ctx.Host);
+		else _ctx.Set(string.Empty, _ctx.Pid, _ctx.Host);
 
 		var host = _configService.SetConfigString(Constants.CONFIG_PLATFORM, GetHost(args));
 		var cid = await GetCid(args);
@@ -67,12 +67,16 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 				var aliasResolve = await _aliasService.Resolve(cid).ShowLoading("Resolving alias...");
 				cid = aliasResolve.Cid.GetOrElse(() => throw new CliException("Invalid alias"));
 			}
-			catch (RequesterException e)
+			catch (RequesterException)
 			{
-				BeamableLogger.LogError(e.Message);
 				AnsiConsole.WriteLine($"Organization not found for '{cid}', try again");
 				_retry = true;
 				await Handle(args);
+				return;
+			}
+			catch (Exception e)
+			{
+				BeamableLogger.LogError(e.Message);
 				return;
 			}
 		}
