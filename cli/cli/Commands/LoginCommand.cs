@@ -69,7 +69,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 			catch (Exception e)
 			{
 				Log.Verbose(e.Message + " " + e.StackTrace);
-				BeamableLogger.LogError(e.Message);
+				BeamableLogger.LogError($"Login failed with Exception: {e.Message}");
 				return;
 			}
 
@@ -84,6 +84,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 			}
 			catch (RequesterException e)
 			{
+				Log.Verbose(e.Message + " " + e.StackTrace);
 				AnsiConsole.WriteLine($"Login failed: {e.RequestError.message} Try again");
 				await Handle(args);
 				return;
@@ -91,7 +92,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 			catch (Exception e)
 			{
 				Log.Verbose(e.Message + " " + e.StackTrace);
-				BeamableLogger.LogError(e.Message);
+				BeamableLogger.LogError($"Login failed with Exception: {e.Message}");
 				return;
 			}
 		}
