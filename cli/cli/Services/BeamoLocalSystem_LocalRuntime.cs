@@ -285,6 +285,13 @@ public partial class BeamoLocalSystem
 		return protocol.VerifyCanBeBuiltLocally(_configService);
 	}
 
+	/// <summary>
+	/// Check which service definitions can be deployed, those that are enabled and still exists.
+	/// </summary>
+	/// <param name="localManifest">The current local manifest with both http and storage services definitions</param>
+	/// <param name="beamoIds">A list of services names that are going to be checked, if null all the services defined in the local manifest
+	/// will be checked instead.</param>
+	/// <returns></returns>
 	public List<BeamoServiceDefinition> GetServiceDefinitionsThatCanBeDeployed(BeamoLocalManifest localManifest, string[] beamoIds = null)
 	{
 		beamoIds ??= localManifest.ServiceDefinitions.Select(c => c.BeamoId).ToArray();

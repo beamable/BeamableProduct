@@ -41,6 +41,10 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	private IRealmsApi _realmApi;
 
+	/// <summary>
+	/// The requester used to make requests to the beamale API.
+	/// This is used to get information from microservices that are running locally during the deploy.
+	/// </summary>
 	private IBeamableRequester _beamableRequester;
 
 	/// <summary>
