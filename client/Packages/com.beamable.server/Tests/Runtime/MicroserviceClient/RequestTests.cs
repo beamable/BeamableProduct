@@ -3,6 +3,7 @@ using Beamable.Common.Content;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Tests.Runtime;
 using NUnit.Framework;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -13,6 +14,12 @@ namespace Beamable.Server.Tests.Runtime
 	public class RequestTests : BeamableTest
 	{
 		private const string ROUTE = "test";
+
+		public enum EnumTest
+		{
+			EnumValueTest1,
+			EnumValueTest2
+		}
 
 		[UnityTest]
 		public IEnumerator CanDeserializeList_OfInt()
@@ -57,6 +64,22 @@ namespace Beamable.Server.Tests.Runtime
 
 			yield return req.ToYielder();
 			Assert.AreEqual(new Dictionary<string, string> { { "one", "15" }, { "two", "151" }, { "three", "125" } }, req.GetResult());
+		}
+
+		[UnityTest]
+		public IEnumerator CanDeserializeEnumValues()
+		{
+			var client = new TestClient(ROUTE);
+			int enumValue = (int)Convert.ChangeType(EnumTest.EnumValueTest1, typeof(int));
+
+			MockRequester.MockRequest<EnumTest>(Method.POST,
+												client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+						 .WithRawResponse(enumValue.ToString());
+
+			var req = client.Request<EnumTest>(ROUTE, new string[] { });
+
+			yield return req.ToYielder();
+			Assert.AreEqual(EnumTest.EnumValueTest1, req.GetResult());
 		}
 
 		[UnityTest]

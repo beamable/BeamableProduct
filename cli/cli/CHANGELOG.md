@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Support for storing locally content from multiple namespaces.
+- Filter out storage objects from `beam services enable` selection wizard.
+
+### Changed
+- `run-nbomber` cli command accepts a json file as body for request instead of an argument.
+
 ## [1.17.3]
 
 ### Added
