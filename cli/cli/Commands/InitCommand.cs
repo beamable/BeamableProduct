@@ -21,6 +21,7 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 	private IAliasService _aliasService;
 	private IAppContext _ctx;
 	private ConfigService _configService;
+	private bool _retry = false;
 
 	public InitCommand(LoginCommand loginCommand)
 		: base("init", "Initialize a new Beamable project in the current directory")
@@ -52,9 +53,8 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 		_aliasService = args.AliasService;
 		_realmsApi = args.RealmsApi;
 
-		AnsiConsole.Write(
-			new FigletText("Beam")
-				.Color(Color.Red));
+		if (!_retry) AnsiConsole.Write(new FigletText("Beam").Color(Color.Red));
+		else _ctx.Set("", _ctx.Pid, _ctx.Host);
 
 		var host = _configService.SetConfigString(Constants.CONFIG_PLATFORM, GetHost(args));
 		var cid = await GetCid(args);
@@ -62,18 +62,29 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 
 		if (!AliasHelper.IsCid(cid))
 		{
-			var aliasResolve = await _aliasService.Resolve(cid).ShowLoading("Resolving alias...");
-			cid = aliasResolve.Cid.GetOrElse(() => throw new CliException("Invalid alias"));
+			try
+			{
+				var aliasResolve = await _aliasService.Resolve(cid).ShowLoading("Resolving alias...");
+				cid = aliasResolve.Cid.GetOrElse(() => throw new CliException("Invalid alias"));
+			}
+			catch (RequesterException e)
+			{
+				BeamableLogger.LogError(e.Message);
+				AnsiConsole.WriteLine($"Organization not found for '{cid}', try again");
+				_retry = true;
+				await Handle(args);
+				return;
+			}
 		}
 
 		_configService.SetConfigString(Constants.CONFIG_CID, cid);
 		var success = await GetPidAndAuth(args, cid, host);
 		if (!success)
 		{
-			AnsiConsole.MarkupLine("Failure! :thumbs_down:");
+			AnsiConsole.MarkupLine(":thumbs_down: Failure! try again");
 			return;
 		}
-		AnsiConsole.MarkupLine("Success! :thumbs_up: Here are your connection details");
+		AnsiConsole.MarkupLine(":thumbs_up: Success! Here are your connection details");
 		BeamableLogger.Log(args.ConfigService.ConfigFilePath);
 		BeamableLogger.Log($"cid=[{args.AppContext.Cid}] pid=[{args.AppContext.Pid}]");
 		BeamableLogger.Log(args.ConfigService.PrettyPrint());

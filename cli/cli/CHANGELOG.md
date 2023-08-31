@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Support for storing locally content from multiple namespaces.
 - Filter out storage objects from `beam services enable` selection wizard.
+- Ability to retry again if alias or username or password is entered incorrectly.
 
 ### Changed
 - `run-nbomber` cli command accepts a json file as body for request instead of an argument.
