@@ -57,13 +57,17 @@ public class ServicesEnableCommand : AppCommand<ServicesEnableCommandArgs>
 			BeamableLogger.LogError("There are no services in BeamoManifest.");
 		}
 
-		// Handle Beamo Id Option 
-		var existingBeamoIds = _localBeamo.BeamoManifest.ServiceDefinitions.Select(c => c.BeamoId).ToList();
+		// Handle Microservice Beamo Id Option 
+		var existingMicroserviceBeamoIds = _localBeamo.BeamoManifest.ServiceDefinitions
+			.Where(c => c.Protocol == BeamoProtocolType.HttpMicroservice)
+			.Select(c => c.BeamoId)
+			.ToList();
+
 		if (string.IsNullOrEmpty(args.BeamoId))
 		{
 			args.BeamoId = AnsiConsole.Prompt(new SelectionPrompt<string>()
 				.Title("Choose the [lightskyblue1]Beamo-O Service[/] to Modify:")
-				.AddChoices(existingBeamoIds)
+				.AddChoices(existingMicroserviceBeamoIds));
 				.AddBeamHightlight());
 		}
 
