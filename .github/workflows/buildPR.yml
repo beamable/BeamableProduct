@@ -84,6 +84,8 @@ jobs:
         dotnet-version: ['6.0.x','7.0.x' ]
     steps:
       - uses: actions/checkout@v3
+        with:
+          path: src/${{ matrix.dotnet-version }}
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3
         with:
@@ -96,11 +98,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget
       - name: Install dependencies
-        run: dotnet restore cli/tests
+        run: dotnet restore src/${{ matrix.dotnet-version }}/cli/tests
       - name: Build
-        run: dotnet build --configuration Release --no-restore cli/tests
+        run: dotnet build --configuration Release --no-restore src/${{ matrix.dotnet-version }}/cli/tests
       - name: Test
-        run: dotnet test --configuration Release --no-restore cli/tests
+        run: dotnet test --configuration Release --no-restore src/${{ matrix.dotnet-version }}/cli/tests
   testAllModes:
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
