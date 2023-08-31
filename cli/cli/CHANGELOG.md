@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fixed `beam services deploy` doesn't deploy to the same realm after deleting a previously uploaded service.
+- Validate cid and resolve alias to cid on Microservice deploy.
 
 ### Changed
 - `run-nbomber` cli command accepts a json file as body for request instead of an argument.
