@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for storing locally content from multiple namespaces.
 - Filter out storage objects from `beam services enable` selection wizard.
 
+### Fixed
+- Fixed `beam services deploy` doesn't deploy to the same realm after deleting a previously uploaded service.
+
 ### Changed
 - `run-nbomber` cli command accepts a json file as body for request instead of an argument.
 
