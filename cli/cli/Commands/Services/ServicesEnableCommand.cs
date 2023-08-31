@@ -67,7 +67,7 @@ public class ServicesEnableCommand : AppCommand<ServicesEnableCommandArgs>
 		{
 			args.BeamoId = AnsiConsole.Prompt(new SelectionPrompt<string>()
 				.Title("Choose the [lightskyblue1]Beamo-O Service[/] to Modify:")
-				.AddChoices(existingMicroserviceBeamoIds));
+				.AddChoices(existingMicroserviceBeamoIds)
 				.AddBeamHightlight());
 		}
 
