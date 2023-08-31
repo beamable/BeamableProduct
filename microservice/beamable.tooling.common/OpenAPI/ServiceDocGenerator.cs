@@ -104,19 +104,22 @@ public class ServiceDocGenerator
 		foreach (Type it in interfaces)
 		{
 			if (!it.IsGenericType) continue;
+
+			if (!FederationComponentNames.FederationComponentToName.TryGetValue(it.GetGenericTypeDefinition(), out string typeName))
+			{
+				continue;
+			}
 			
 			var federatedType = it.GetGenericArguments()[0];
 
 			if (Activator.CreateInstance(federatedType) is IThirdPartyCloudIdentity identity)
 			{
-				if (FederationComponentNames.FederationComponentToName.TryGetValue(it.GetGenericTypeDefinition(), out string typeName))
-				{
-					string componentName = $"{typeName}/{identity?.UniqueName}";
-					apiComponents.Add(new OpenApiString(componentName));
-				}
+				string componentName = $"{typeName}/{identity?.UniqueName}";
+				apiComponents.Add(new OpenApiString(componentName));
 			}
 		}
-		doc.Extensions.Add("x-federated-components", apiComponents);
+		const string federatedKey = Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_KEY;
+		doc.Extensions.Add(federatedKey, apiComponents);
 		
 		var allTypes = SchemaGenerator.FindAllComplexTypes(methods).ToList();
 		

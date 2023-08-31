@@ -106,7 +106,8 @@ public partial class BeamoLocalSystem
 			var request = await _beamableRequester.Request(Method.GET, url, null, true, (s => s));
 
 			JObject requestObj = JObject.Parse(request);
-			List<JToken> federatedComponentsToken = requestObj["x-federated-components"]?.Children().ToList();
+			string federatedKey = Beamable.Common.Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_KEY;
+			List<JToken> federatedComponentsToken = requestObj[federatedKey]?.Children().ToList();
 			List<string> federatedComponents = new List<string>();
 
 			foreach (JToken token in federatedComponentsToken)
@@ -187,14 +188,18 @@ public partial class BeamoLocalSystem
 				if (!perServiceComments.TryGetValue(httpSd.BeamoId, out var httpSdComments))
 					httpSdComments = string.Empty;
 
-				List<string> componentsList;
+				List<ServiceComponent> componentsList;
 				if (federatedComponentsByName.TryGetValue(httpSd.BeamoId, out List<string> list))
 				{
-					componentsList = list;
+					componentsList = list.Select(v => new ServiceComponent()
+					{
+						name = v
+					}).ToList();
 				}
 				else
 				{
-					componentsList = new List<string>();
+					var remoteServiceReference = remoteManifest.manifest.FirstOrDefault(s => s.serviceName == httpSd.BeamoId);
+					componentsList = remoteServiceReference?.components ?? new List<ServiceComponent>();
 				}
 
 				return new ServiceReference()
@@ -210,10 +215,7 @@ public partial class BeamoLocalSystem
 						.Where(beamoId => localManifest.ServiceDefinitions.First(sd => sd.BeamoId == beamoId).Protocol == BeamoProtocolType.EmbeddedMongoDb)
 						.Select(beamoId => new ServiceDependency() { id = beamoId, storageType = "mongov1" }).ToList(),
 					comments = httpSdComments,
-					components = componentsList.Select(v => new ServiceComponent()
-					{
-						name = v
-					}).ToList()
+					components = componentsList
 				};
 			}).ToList();
 
