@@ -81,11 +81,9 @@ jobs:
       cancel-in-progress: true
     strategy:
       matrix:
-        dotnet-version: ['6.0.x','7.0.x' ]
+        dotnet-version: ['7.0.x' ]
     steps:
       - uses: actions/checkout@v3
-        with:
-          path: src/${{ matrix.dotnet-version }}
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3
         with:
@@ -96,13 +94,13 @@ jobs:
           # Look to see if there is a cache hit for the corresponding requirements file
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.dotnet-version }}-nuget
+            ${{ runner.os }}-nuget
       - name: Install dependencies
-        run: dotnet restore src/${{ matrix.dotnet-version }}/cli/tests
+        run: dotnet restore cli/tests
       - name: Build
-        run: dotnet build --configuration Release --no-restore src/${{ matrix.dotnet-version }}/cli/tests
+        run: dotnet build --configuration Release --no-restore cli/tests
       - name: Test
-        run: dotnet test --configuration Release --no-restore src/${{ matrix.dotnet-version }}/cli/tests
+        run: dotnet test --configuration Release --no-restore cli/tests
   testAllModes:
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
