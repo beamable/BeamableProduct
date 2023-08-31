@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Filter out storage objects from `beam services enable` selection wizard.
 
 ### Fixed
-- Validate cid and resolve alias to cid on microservice deploy.
+- Validate cid and resolve alias to cid on Microservice deploy.
 
 ### Changed
 - `run-nbomber` cli command accepts a json file as body for request instead of an argument.
