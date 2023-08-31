@@ -69,7 +69,7 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 			}
 			catch (RequesterException)
 			{
-				AnsiConsole.WriteLine($"Organization not found for '{cid}', try again");
+				BeamableLogger.LogError($"Organization not found for '{cid}', try again");
 				_retry = true;
 				await Handle(args);
 				return;
