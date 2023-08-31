@@ -33,13 +33,11 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 	private BeamoLocalSystem _localBeamo;
 	private BeamoService _remoteBeamo;
 	private IAliasService _aliasService;
-	private InitCommand _initCommand;
 
-	public ServicesDeployCommand(InitCommand initCommand) :
+	public ServicesDeployCommand() :
 		base("deploy",
 			"Deploys services remotely to the current realm")
 	{
-		_initCommand = initCommand;
 	}
 
 	public override void Configure()
@@ -87,15 +85,9 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 				cid = aliasResolve.Cid.GetOrElse(() => throw new CliException("Invalid alias"));
 				_ctx.Set(cid, _ctx.Pid, _ctx.Host);
 			}
-			catch (RequesterException)
-			{
-				AnsiConsole.WriteLine($"Organization not found for '{cid}', try again");
-				await _initCommand.Handle(new InitCommandArgs { Provider = args.Provider, saveToFile = true });
-				return;
-			}
 			catch (Exception e)
 			{
-				BeamableLogger.LogError(e.Message);
+				AnsiConsole.WriteLine($"Unable to resolve alias for '{cid}'");
 				return;
 			}
 		}
