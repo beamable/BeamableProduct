@@ -1,4 +1,5 @@
-﻿using Beamable.Common.Api.Realms;
+﻿using Beamable.Common.Api;
+using Beamable.Common.Api.Realms;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using Newtonsoft.Json;
@@ -40,6 +41,8 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	private IRealmsApi _realmApi;
 
+	private IBeamableRequester _beamableRequester;
+
 	/// <summary>
 	/// An instance of the docker client so that it can communicate with Docker for Windows and Docker for Mac ---- really, it should talk to any docker daemon.
 	/// </summary>
@@ -55,12 +58,13 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	private readonly CancellationTokenSource _dockerListeningThreadCancel;
 
-	public BeamoLocalSystem(ConfigService configService, IAppContext ctx, IRealmsApi realmsApi, BeamoService beamo)
+	public BeamoLocalSystem(ConfigService configService, IAppContext ctx, IRealmsApi realmsApi, BeamoService beamo, IBeamableRequester beamableRequester)
 	{
 		_configService = configService;
 		_ctx = ctx;
 		_beamo = beamo;
 		_realmApi = realmsApi;
+		_beamableRequester = beamableRequester;
 
 		// We use a 60 second timeout because the Docker Daemon is VERY slow... If you ever see an "The operation was cancelled" message that happens inconsistently,
 		// try changing this value before going down the rabbit hole.
