@@ -1,12 +1,16 @@
 using Beamable.Common;
 using Beamable.Common.Content;
+using Beamable.Common.Reflection;
+using beamable.common.Runtime;
 using Beamable.Server;
 using Beamable.Server.Common;
 using Beamable.Server.Common.XmlDocs;
 using beamable.tooling.common.Microservice;
 using microservice.Common;
 using Microsoft.OpenApi;
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Extensions;
+using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
 using System.Reflection;
@@ -92,6 +96,30 @@ public class ServiceDocGenerator
 				}
 			}
 		};
+		doc.Extensions = new Dictionary<string, IOpenApiExtension>();
+
+		var interfaces = microserviceType.GetInterfaces();
+		var apiComponents = new OpenApiArray();
+		
+		foreach (Type it in interfaces)
+		{
+			if (!it.IsGenericType) continue;
+
+			if (!FederationComponentNames.FederationComponentToName.TryGetValue(it.GetGenericTypeDefinition(), out string typeName))
+			{
+				continue;
+			}
+			
+			var federatedType = it.GetGenericArguments()[0];
+
+			if (Activator.CreateInstance(federatedType) is IThirdPartyCloudIdentity identity)
+			{
+				string componentName = $"{typeName}/{identity?.UniqueName}";
+				apiComponents.Add(new OpenApiString(componentName));
+			}
+		}
+		const string federatedKey = Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_KEY;
+		doc.Extensions.Add(federatedKey, apiComponents);
 		
 		var allTypes = SchemaGenerator.FindAllComplexTypes(methods).ToList();
 		

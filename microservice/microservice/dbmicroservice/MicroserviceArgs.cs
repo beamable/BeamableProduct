@@ -37,6 +37,7 @@ namespace Beamable.Server
 		public LogOutputType LogOutputType { get; }
 		public string LogOutputPath { get; }
 		public bool EnableDangerousDeflateOptions { get; }
+		public string MetadataUrl { get; }
 	}
 
 	public enum LogOutputType
@@ -78,6 +79,7 @@ namespace Beamable.Server
 		public LogOutputType LogOutputType { get; set; }
 		public string LogOutputPath { get; set; }
 		public bool EnableDangerousDeflateOptions { get; set; }
+		public string MetadataUrl { get; set; }
 	}
 
 	public static class MicroserviceArgsExtensions
@@ -117,7 +119,8 @@ namespace Beamable.Server
 				HealthPort = args.HealthPort,
 				LogOutputType = args.LogOutputType,
 				LogOutputPath = args.LogOutputPath,
-				EnableDangerousDeflateOptions = args.EnableDangerousDeflateOptions
+				EnableDangerousDeflateOptions = args.EnableDangerousDeflateOptions,
+				MetadataUrl = args.MetadataUrl
 			};
 
 			configurator?.Invoke(next);
@@ -222,5 +225,6 @@ namespace Beamable.Server
 		public int SendChunkSize => GetIntFromEnvironmentVariable("WS_SEND_CHUNK_SIZE", 65536);
 		public string SdkVersionBaseBuild => File.ReadAllText(".beamablesdkversion").Trim();
 		public bool EnableDangerousDeflateOptions => IsEnvironmentVariableTrue("WS_ENABLE_DANGEROUS_DEFLATE_OPTIONS");
+		public string MetadataUrl => Environment.GetEnvironmentVariable("ECS_CONTAINER_METADATA_URI_V4");
 	}
 }

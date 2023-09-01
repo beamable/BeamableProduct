@@ -51,7 +51,8 @@ jobs:
           
           echo "starting profiler"
           cd ../../../..
-          beam profile run-nbomber standalone-microservice add '{"a":3,"b":4}' --include-prefix false --rps 30
+          echo '{"a":3,"b":4}' > payload.json
+          beam profile run-nbomber standalone-microservice add --body ./payload.json --include-prefix false --rps 30
           echo "jobs"
           jobs -p
           echo "kill"

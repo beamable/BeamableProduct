@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.Server.Tests.Runtime
@@ -31,6 +32,11 @@ namespace Beamable.Server.Tests.Runtime
 		public override IDependencyProvider Provider => _provider;
 
 		public Promise<T> Request<T>(string endpoint, string[] serializedFields)
+		{
+			return base.Request<T>(_serviceName, endpoint, serializedFields);
+		}
+
+		public Promise<T> Request<T>(string endpoint, Dictionary<string, object> serializedFields)
 		{
 			return base.Request<T>(_serviceName, endpoint, serializedFields);
 		}
