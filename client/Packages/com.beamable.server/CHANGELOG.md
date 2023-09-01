@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.0]
+
 ### Changed
 
 - Change Unity client code to serialize messages as an object instead of payload string array
