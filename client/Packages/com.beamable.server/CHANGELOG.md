@@ -9,15 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.18.0]
 
+### Added
+
+- `IUsageApi` is available
+
 ### Changed
 
 - Change Unity client code to serialize messages as an object instead of payload string array
 
 ## [1.17.3]
-
-### Added
-
-- `IUsageApi` is available
 
 ### Fixed
 
