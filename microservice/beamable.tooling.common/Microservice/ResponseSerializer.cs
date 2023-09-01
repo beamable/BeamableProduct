@@ -98,7 +98,14 @@ namespace Beamable.Server
                 }
             }
 
+            var type = result.GetType();
+            if (type.IsEnum)
+            {
+	            response.body = Convert.ChangeType(result, typeof(int)).ToString();
+            }
+            
             var json = JsonConvert.SerializeObject(response, UnitySerializationSettings.Instance);
+            
             return json;
         }
     }

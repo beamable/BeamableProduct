@@ -55,6 +55,8 @@ namespace Beamable.Common
 				public const int MAX_ROW = 4;
 				public const float ROW_HEIGHT = 50;
 
+				public const string MICROSERVICE_FEDERATED_COMPONENTS_KEY = "x-federated-components";
+
 				public static string GetBuildButtonString(bool includeDebugTools, string text) => includeDebugTools
 					? $"{BUILD_DEBUG_PREFIX} {text}"
 					: text;

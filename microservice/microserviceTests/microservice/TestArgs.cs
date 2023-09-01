@@ -125,5 +125,6 @@ namespace microserviceTests.microservice
       public LogOutputType LogOutputType => LogOutputType.DEFAULT;
       public string LogOutputPath { get; }
       public bool EnableDangerousDeflateOptions => false;
+      public string MetadataUrl { get; }
    }
 }
