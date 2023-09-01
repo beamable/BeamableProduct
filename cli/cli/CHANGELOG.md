@@ -11,18 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Support for storing locally content from multiple namespaces.
+- Support for storing local content from multiple namespaces.
 - Filter out storage objects from `beam services enable` selection wizard.
 
 ### Fixed
-- Fixed `beam services deploy` doesn't deploy to the same realm after deleting a previously uploaded service.
+- `beam services deploy` fetches current realm snapshot before deploy, allowing publication of new services without old services.
 - Validate cid and resolve alias to cid on Microservice deploy.
+- Standalone microservices now write federated components to the manifest when deployed.
 
 ### Changed
 - `run-nbomber` cli command accepts a json file as body for request instead of an argument.
-
-### Fixed
-- Standalone microservices not writing federated components to the manifest when deployed.
 
 ## [1.17.3]
 
