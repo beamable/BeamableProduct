@@ -133,8 +133,8 @@ public struct ContainerMetadata
 [Serializable]
 public struct ContainerLimits
 {
-	public int CPU;
-	public int Memory;
+	public double CPU;
+	public double Memory;
 }
 	
 [Serializable]
