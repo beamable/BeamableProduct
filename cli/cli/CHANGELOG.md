@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Support for storing locally content from multiple namespaces.
 - Filter out storage objects from `beam services enable` selection wizard.
+- `beam project new` now have --disable flag to create service as disabled on publish.
 
 ### Fixed
 - Fixed `beam services deploy` doesn't deploy to the same realm after deleting a previously uploaded service.
