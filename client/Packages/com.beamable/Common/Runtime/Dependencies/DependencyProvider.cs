@@ -410,7 +410,7 @@ namespace Beamable.Common.Dependencies
 				descriptors.Clear();
 			}
 
-			
+
 			await DisposeServices(SingletonCache.Values.Distinct());
 			await DisposeServices(ScopeCache.Values.Distinct());
 
