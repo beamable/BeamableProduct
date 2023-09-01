@@ -47,30 +47,17 @@ namespace Beamable.Connection
 			return _onConnectPromise;
 		}
 
-		public Promise Disconnect()
+		public async Promise Disconnect()
 		{
 			_disconnecting = true;
-#if !UNITY_WEBGL || UNITY_EDITOR
-			if (_dispatchMessagesRoutine != null)
-			{
-				_coroutineService.StopCoroutine(_dispatchMessagesRoutine);
-			}
-#endif
-			var p = new Promise();
-			_webSocket
-				.Close()
-				.ContinueWith(result =>
-				{
-					if (result.IsFaulted)
-					{
-						p.CompleteError(result.Exception);
-					}
-					else
-					{
-						p.CompleteSuccess();
-					}
-				});
-			return p;
+
+			await _webSocket.Close();
+			#if !UNITY_WEBGL || UNITY_EDITOR
+								if (_dispatchMessagesRoutine != null)
+								{
+									_coroutineService.StopCoroutine(_dispatchMessagesRoutine);
+								}
+			#endif
 		}
 
 		private Promise DoConnect()
@@ -97,7 +84,7 @@ namespace Beamable.Connection
 			{
 				if (state == UnityEditor.PlayModeStateChange.ExitingPlayMode)
 				{
-					Disconnect();
+					var _ = Disconnect();
 				}
 			};
 #endif
