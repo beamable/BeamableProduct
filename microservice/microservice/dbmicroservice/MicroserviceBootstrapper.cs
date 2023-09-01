@@ -34,11 +34,14 @@ using Beamable.Server.Api.Scheduler;
 using Beamable.Server.Api.Social;
 using Beamable.Server.Api.Stats;
 using Beamable.Server.Api.Tournament;
+using Beamable.Server.Api.Usage;
 using Beamable.Server.Common;
 using Beamable.Server.Content;
+using Beamable.Server.Ecs;
 using Core.Server.Common;
 using microservice;
 using microservice.Common;
+using microservice.dbmicroservice;
 using Microsoft.Extensions.DependencyInjection;
 using NetMQ;
 using Newtonsoft.Json;
@@ -65,6 +68,8 @@ namespace Beamable.Server
 	    public static ReflectionCache ReflectionCache;
 	    public static ContentService ContentService;
 	    public static List<BeamableMicroService> Instances = new List<BeamableMicroService>();
+
+	    public static IUsageApi EcsService;
 
 	    private static DebugLogSink ConfigureLogging(IMicroserviceArgs args, MicroserviceAttribute attr)
         {
@@ -213,6 +218,7 @@ namespace Beamable.Server
 			        .AddSingleton(attribute)
 			        .AddSingleton<IBeamSchedulerContext, SchedulerContext>()
 			        .AddSingleton<BeamScheduler>()
+			        .AddSingleton<IUsageApi>(EcsService)
 			        .AddScoped<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
 			        .AddScoped<IRealmInfo>(provider => provider.GetService<IMicroserviceArgs>())
 			        .AddScoped<IBeamableRequester>(p => p.GetService<MicroserviceRequester>())
@@ -416,14 +422,39 @@ namespace Beamable.Server
 	        return res.Cid.Value;
         }
 
+        public static async Task ConfigureUsageService(IMicroserviceArgs args)
+        {
+	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+
+	        if (!inDocker)
+	        {
+		        EcsService = new LocalUsageService();
+	        }
+	        else
+	        {
+		        if (string.IsNullOrEmpty(args.MetadataUrl))
+		        {
+			        EcsService = new DockerService();
+		        }
+		        else
+		        {
+			        EcsService = new EcsService(new HttpClient());
+		        }
+	        }
+
+	        await EcsService.Init();
+        }
+
         public static async Task Start<TMicroService>() where TMicroService : Microservice
         {
 	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
 	        var envArgs = new EnviornmentArgs();
+			
 	        var pipeSink = ConfigureLogging(envArgs, attribute);
 	        ConfigureUncaughtExceptions();
 	        ConfigureUnhandledError();
 	        ConfigureDiscovery(envArgs, attribute);
+	        await ConfigureUsageService(envArgs);
 	        ReflectionCache = ConfigureReflectionCache();
 	        
 	        // configure the root service scope, and then build the root service provider.

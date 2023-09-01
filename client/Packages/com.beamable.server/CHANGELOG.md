@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.17.3]
 
+### Added
+
+- `IUsageApi` is available
+
 ### Fixed
 
 - Microservice docker logs no longer put quotes around every log parameter
