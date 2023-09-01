@@ -78,7 +78,7 @@ public class EcsService : IUsageApi
 	
 	private async Task<ContainerMetadata> GetContainerMetadata()
 	{
-		var metadataStr = await _client.GetStringAsync(EcsUrl);
+		var metadataStr = await _client.GetStringAsync(EcsUrl + "/task");
 		var metadata = JsonConvert.DeserializeObject<ContainerMetadata>(metadataStr);
 		return metadata;
 	}
