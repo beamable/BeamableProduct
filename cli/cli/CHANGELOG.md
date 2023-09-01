@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.0]
+
 ### Added
 
 - Support for storing locally content from multiple namespaces.
@@ -18,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `run-nbomber` cli command accepts a json file as body for request instead of an argument.
+
+### Fixed
+- Standalone microservices not writing federated components to the manifest when deployed.
 
 ## [1.17.3]
 
