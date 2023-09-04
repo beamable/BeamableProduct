@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Beamable.Editor.Models.Schedules
 {
@@ -112,9 +113,9 @@ namespace Beamable.Editor.Models.Schedules
 			if (fromHour == 0 && toHour == 0 && fromMinute == 0 && toMinute == 0)
 			{
 				var definition = new ScheduleDefinition(
-					allRange,
-					allRange,
-					allRange,
+					new List<string> { "1" },
+					new List<string> { "0" },
+					new List<string> { "0" },
 					allRange,
 					allRange,
 					allRange,
