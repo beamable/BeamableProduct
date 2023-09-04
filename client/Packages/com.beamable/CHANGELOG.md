@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- Fixed `Listing Scheduler` all day - daily set to first second of the first hour daily.
+- Fixed listing schedule all day set to first second of the first hour daily.
 
 ## [1.18.0]
 
