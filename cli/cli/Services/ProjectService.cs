@@ -442,8 +442,7 @@ COPY {commonProjectName}/. .
 
 	static Task RunDotnetCommand(string arguments)
 	{
-		return CliExtensions.GetDotnetCommand(arguments).WithValidation(CommandResultValidation.None)
-			.ExecuteAsyncAndLog().Task;
+		return CliExtensions.GetDotnetCommand(arguments).ExecuteAsyncAndLog().Task;
 	}
 }
 
