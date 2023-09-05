@@ -15,12 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Filter out storage objects from `beam services enable` selection wizard.
 
 ### Fixed
+
 - `beam services deploy` fetches current realm snapshot before deploy, allowing publication of new services without old services.
 - Validate cid and resolve alias to cid on Microservice deploy.
 - Standalone microservices now write federated components to the manifest when deployed.
-- Creating a new project with NET 6.0 no longer fails to install templates. 
+- Creating a new project with NET 6.0 no longer fails to install templates.
 
 ### Changed
+
 - `run-nbomber` cli command accepts a json file as body for request instead of an argument.
 
 ## [1.17.3]
