@@ -72,7 +72,7 @@ public class ServicesEnableCommand : AppCommand<ServicesEnableCommandArgs>
 
 		if (serviceDefinition == null)
 		{
-			var root = new Tree($"Could not find find [bold][red]{args.BeamoId}[/][/] service. These are available services:");
+			var root = new Tree($"Could not find [bold][red]{args.BeamoId}[/][/] service. These are available services:");
 			foreach (var beamoServiceDefinition in _localBeamo.BeamoManifest.ServiceDefinitions)
 			{
 				root.AddNode($"[[{beamoServiceDefinition.Protocol.ToString()}]] [bold]{beamoServiceDefinition.BeamoId}[/]");
