@@ -146,7 +146,7 @@ public class ProjectService
 				"Before you can continue, you must install the Beamable templates by running - " +
 				"dotnet new install beamable.templates");
 		}
-		
+
 		const string packageName = "beamable.templates";
 
 		if (!string.IsNullOrEmpty(currentlyInstalledVersion))
@@ -166,7 +166,7 @@ public class ProjectService
 
 		if (!isTemplateInstalled)
 		{
-			Log.Verbose("[ExitCode:{ResultExitCode}] Command output: {InstallStream}",result.ExitCode, installStream);
+			Log.Verbose("[ExitCode:{ResultExitCode}] Command output: {InstallStream}", result.ExitCode, installStream);
 			throw new CliException("Installation of Beamable templates failed, please attempt the installation again.");
 		}
 	}
@@ -459,13 +459,13 @@ COPY {commonProjectName}/. .
 public static class CliExtensions
 {
 
-		public static Command GetDotnetCommand(string arguments)
+	public static Command GetDotnetCommand(string arguments)
+	{
+		return Cli.Wrap("dotnet").WithEnvironmentVariables(new Dictionary<string, string>
 		{
-			return Cli.Wrap("dotnet").WithEnvironmentVariables(new Dictionary<string, string>
-			{
-				["DOTNET_CLI_UI_LANGUAGE"] = "en"
-			}).WithArguments(arguments);
-		}
+			["DOTNET_CLI_UI_LANGUAGE"] = "en"
+		}).WithArguments(arguments);
+	}
 
 	public static CommandTask<CommandResult> ExecuteAsyncAndLog(this Command command)
 	{

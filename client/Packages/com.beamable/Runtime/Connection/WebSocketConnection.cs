@@ -52,12 +52,12 @@ namespace Beamable.Connection
 			_disconnecting = true;
 
 			await _webSocket.Close();
-			#if !UNITY_WEBGL || UNITY_EDITOR
-								if (_dispatchMessagesRoutine != null)
-								{
-									_coroutineService.StopCoroutine(_dispatchMessagesRoutine);
-								}
-			#endif
+#if !UNITY_WEBGL || UNITY_EDITOR
+			if (_dispatchMessagesRoutine != null)
+			{
+				_coroutineService.StopCoroutine(_dispatchMessagesRoutine);
+			}
+#endif
 		}
 
 		private Promise DoConnect()
