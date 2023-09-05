@@ -48,6 +48,11 @@ public class ProjectData
 
 public class ProjectService
 {
+#if NET7_0_OR_GREATER
+	const string UNINSTALL_COMMAND = "new uninstall";
+#else
+	const string UNINSTALL_COMMAND = "new --uninstall";
+#endif
 	private readonly ConfigService _configService;
 	private readonly VersionService _versionService;
 
@@ -145,11 +150,13 @@ public class ProjectService
 				"Before you can continue, you must install the Beamable templates by running - " +
 				"dotnet new install beamable.templates");
 		}
+		
+		const string packageName = "beamable.templates";
 
 		if (!string.IsNullOrEmpty(currentlyInstalledVersion))
 		{
 			// there are already templates installed, so un-install them first.
-			await RunDotnetCommand("new uninstall beamable.templates");
+			await RunDotnetCommand($"{UNINSTALL_COMMAND} {packageName}");
 		}
 
 #if NET7_0_OR_GREATER
@@ -158,12 +165,16 @@ public class ProjectService
 		const string installCommand = "new --install";
 #endif
 
-		var isTemplateInstalled = await CliExtensions.GetDotnetCommand($"{installCommand} beamable.templates::{version}")
+		var installStream = new StringBuilder();
+		var isTemplateInstalled = await CliExtensions.GetDotnetCommand($"{installCommand} {packageName}::{version}")
 			.WithValidation(CommandResultValidation.None)
+			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(installStream))
+			.WithStandardErrorPipe(PipeTarget.ToStringBuilder(installStream))
 			.ExecuteAsyncAndLog().Select(res => res.ExitCode == 0).Task;
 
 		if (!isTemplateInstalled)
 		{
+			Log.Verbose("Command output: {InstallStream}", installStream);
 			throw new CliException("Installation of Beamable templates failed, please attempt the installation again.");
 		}
 	}
@@ -171,12 +182,8 @@ public class ProjectService
 	public static async Task<DotnetTemplateInfo> GetTemplateInfo()
 	{
 		var templateStream = new StringBuilder();
-#if NET7_0_OR_GREATER
-		const string uninstallCommand = "new uninstall";
-#else
-		const string uninstallCommand = "new --uninstall";
-#endif
-		await CliExtensions.GetDotnetCommand(uninstallCommand)
+
+		await CliExtensions.GetDotnetCommand(UNINSTALL_COMMAND)
 			.WithValidation(CommandResultValidation.None)
 			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(templateStream))
 			.ExecuteBufferedAsync();
@@ -460,13 +467,13 @@ COPY {commonProjectName}/. .
 public static class CliExtensions
 {
 
-	public static Command GetDotnetCommand(string arguments)
-	{
-		return Cli.Wrap("dotnet").WithEnvironmentVariables(new Dictionary<string, string>
+		public static Command GetDotnetCommand(string arguments)
 		{
-			["DOTNET_CLI_UI_LANGUAGE"] = "en"
-		}).WithArguments(arguments);
-	}
+			return Cli.Wrap("dotnet").WithEnvironmentVariables(new Dictionary<string, string>
+			{
+				["DOTNET_CLI_UI_LANGUAGE"] = "en"
+			}).WithArguments(arguments);
+		}
 
 	public static CommandTask<CommandResult> ExecuteAsyncAndLog(this Command command)
 	{
