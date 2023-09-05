@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Fixed
+ - WHen executing a microservice that depends on a storage through the IDE, the storage was not booting up in docker.
+
 ## [1.18.0]
 
 ### Added

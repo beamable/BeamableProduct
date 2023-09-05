@@ -44,7 +44,7 @@ public partial class BeamoLocalSystem
 						throw new ArgumentOutOfRangeException();
 				}
 
-				var inspectResponse = await _client.Images.InspectImageAsync(imageToInspect);
+				var inspectResponse = await _client.Images.InspectImageAsync(imageToInspect.ToLower());
 				sd.ImageId = inspectResponse.ID;
 			}
 			catch
