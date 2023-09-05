@@ -7,9 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.0]
+
 ### Fixed
 
 - Fixed `HttpUtility` throwing compilation error in Unity.
+- `Reset` command works for realms configured to use Beamable notification channel.
+
+### Added
+
+- `IBeamableDisposableOrder` interface allows services to dispose in configurable order. 
 
 ## [1.17.3]
 

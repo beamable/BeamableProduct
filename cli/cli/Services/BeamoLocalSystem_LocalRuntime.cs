@@ -286,19 +286,31 @@ public partial class BeamoLocalSystem
 	}
 
 	/// <summary>
+	/// Check which service definitions can be deployed, those that are enabled and still exists.
+	/// </summary>
+	/// <param name="localManifest">The current local manifest with both http and storage services definitions</param>
+	/// <param name="beamoIds">A list of services names that are going to be checked, if null all the services defined in the local manifest
+	/// will be checked instead.</param>
+	/// <returns></returns>
+	public List<BeamoServiceDefinition> GetServiceDefinitionsThatCanBeDeployed(BeamoLocalManifest localManifest, string[] beamoIds = null)
+	{
+		beamoIds ??= localManifest.ServiceDefinitions.Select(c => c.BeamoId).ToArray();
+		
+		return beamoIds
+			.Select(reqId => localManifest.ServiceDefinitions.First(sd => sd.BeamoId == reqId))
+			.Where(VerifyCanBeBuiltLocally)
+			.ToList();
+	}
+
+	/// <summary>
 	/// Using the given <paramref name="localManifest"/>, builds and deploys all services with the given <paramref name="deployBeamoIds"/> to the local docker engine.
 	/// If <paramref name="deployBeamoIds"/> is null, will deploy ALL services. Also, this does check for cyclical dependencies before running the deployment.
 	/// </summary>
 	public async Task DeployToLocal(BeamoLocalManifest localManifest, string[] deployBeamoIds = null, bool forceAmdCpuArchitecture = false, Action<string, float> buildPullImageProgress = null,
 		Action<string> onServiceDeployCompleted = null)
 	{
-		deployBeamoIds ??= localManifest.ServiceDefinitions.Select(c => c.BeamoId).ToArray();
-
 		// Get all services that must be deployed (and that are not just known remotely --- as in, have their local protocols correctly configured).
-		var serviceDefinitionsToDeploy = deployBeamoIds
-			.Select(reqId => localManifest.ServiceDefinitions.First(sd => sd.BeamoId == reqId))
-			.Where(VerifyCanBeBuiltLocally)
-			.ToList();
+		var serviceDefinitionsToDeploy = GetServiceDefinitionsThatCanBeDeployed(localManifest, deployBeamoIds);
 
 		// Guarantee they each don't have cyclical dependencies.
 		{

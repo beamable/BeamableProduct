@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
+using beamable.common.Runtime;
 using Beamable.Editor.Environment;
 using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.UI.Model;
@@ -61,13 +62,7 @@ namespace Beamable.Server.Editor
 
 			static Registry()
 			{
-				_federationComponentToName = new Dictionary<Type, string>
-				{
-					[typeof(IFederatedLogin<>)] = "IFederatedLogin",
-					[typeof(IFederatedInventory<>)] = "IFederatedInventory",
-					[typeof(ISupportsFederatedLogin<>)] = "IFederatedLogin",
-					[typeof(IFederatedInventory<>)] = "IFederatedInventory"
-				};
+				_federationComponentToName = FederationComponentNames.FederationComponentToName;
 
 				MICROSERVICE_BASE_TYPE = new BaseTypeOfInterest(typeof(Microservice));
 				MICROSERVICE_CLIENT_BASE_TYPE = new BaseTypeOfInterest(typeof(MicroserviceClient));
