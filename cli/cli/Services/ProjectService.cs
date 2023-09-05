@@ -152,7 +152,13 @@ public class ProjectService
 			await RunDotnetCommand("new uninstall beamable.templates");
 		}
 
-		var isTemplateInstalled = await CliExtensions.GetDotnetCommand($"new install beamable.templates::{version}")
+#if NET7_0_OR_GREATER
+		const string installCommand = "new install";
+#else
+		const string installCommand = "new --install";
+#endif
+
+		var isTemplateInstalled = await CliExtensions.GetDotnetCommand($"{installCommand} beamable.templates::{version}")
 			.WithValidation(CommandResultValidation.None)
 			.ExecuteAsyncAndLog().Select(res => res.ExitCode == 0).Task;
 
