@@ -23,6 +23,7 @@ public abstract class BaseRequestCommand : AppCommand<BaseRequestArgs>
 		AddOption(new HeaderOption(), (args, i) => args.customHeaders.AddRange(i));
 		AddOption(new BodyPathOption(), (args, i) => args.bodyPath = i);
 		AddOption(new CustomerScopedOption(), (args, b) => args.customerScoped = b);
+		AddOption(new PlainOutputOption(), (args, b) => args.plainOutput = b);
 	}
 
 	public override async Task Handle(BaseRequestArgs args)
@@ -47,11 +48,18 @@ public abstract class BaseRequestCommand : AppCommand<BaseRequestArgs>
 			var response = await _requester.CustomRequest(Method, args.uri, body, true,
 					s => s, args.customerScoped, args.customHeaders)
 				.ShowLoading("Sending Request..");
-			AnsiConsole.Write(
-				new Panel(new JsonText(response))
-					.Header($"{args.uri}")
-					.Collapse()
-					.RoundedBorder());
+			if (args.plainOutput)
+			{
+				AnsiConsole.WriteLine(response);
+			}
+			else
+			{
+				AnsiConsole.Write(
+					new Panel(new JsonText(response))
+						.Header($"{args.uri}")
+						.Collapse()
+						.RoundedBorder());
+			}
 		}
 		catch (Exception e)
 		{
@@ -67,4 +75,5 @@ public class BaseRequestArgs : CommandArgs
 	public string uri;
 	public string bodyPath;
 	public bool customerScoped;
+	public bool plainOutput;
 }
