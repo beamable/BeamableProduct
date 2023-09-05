@@ -171,7 +171,12 @@ public class ProjectService
 	public static async Task<DotnetTemplateInfo> GetTemplateInfo()
 	{
 		var templateStream = new StringBuilder();
-		await CliExtensions.GetDotnetCommand("new uninstall")
+#if NET7_0_OR_GREATER
+		const string uninstallCommand = "new uninstall";
+#else
+		const string uninstallCommand = "new --uninstall";
+#endif
+		await CliExtensions.GetDotnetCommand(uninstallCommand)
 			.WithValidation(CommandResultValidation.None)
 			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(templateStream))
 			.ExecuteBufferedAsync();
