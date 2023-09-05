@@ -48,6 +48,7 @@ public class ProjectData
 
 public class ProjectService
 {
+	private const string UNINSTALL_COMMAND = "new --uninstall";
 	private readonly ConfigService _configService;
 	private readonly VersionService _versionService;
 
@@ -145,19 +146,27 @@ public class ProjectService
 				"Before you can continue, you must install the Beamable templates by running - " +
 				"dotnet new install beamable.templates");
 		}
+		
+		const string packageName = "beamable.templates";
 
 		if (!string.IsNullOrEmpty(currentlyInstalledVersion))
 		{
 			// there are already templates installed, so un-install them first.
-			await RunDotnetCommand("new uninstall beamable.templates");
+			await RunDotnetCommand($"{UNINSTALL_COMMAND} {packageName}");
 		}
 
-		var isTemplateInstalled = await CliExtensions.GetDotnetCommand($"new install beamable.templates::{version}")
+
+		var installStream = new StringBuilder();
+		var result = await CliExtensions.GetDotnetCommand($"new --install {packageName}::{version}")
 			.WithValidation(CommandResultValidation.None)
-			.ExecuteAsyncAndLog().Select(res => res.ExitCode == 0).Task;
+			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(installStream))
+			.WithStandardErrorPipe(PipeTarget.ToStringBuilder(installStream))
+			.ExecuteAsyncAndLog().Task;
+		var isTemplateInstalled = result.ExitCode == 0;
 
 		if (!isTemplateInstalled)
 		{
+			Log.Verbose("[ExitCode:{ResultExitCode}] Command output: {InstallStream}",result.ExitCode, installStream);
 			throw new CliException("Installation of Beamable templates failed, please attempt the installation again.");
 		}
 	}
@@ -165,7 +174,8 @@ public class ProjectService
 	public static async Task<DotnetTemplateInfo> GetTemplateInfo()
 	{
 		var templateStream = new StringBuilder();
-		await CliExtensions.GetDotnetCommand("new uninstall")
+
+		await CliExtensions.GetDotnetCommand(UNINSTALL_COMMAND)
 			.WithValidation(CommandResultValidation.None)
 			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(templateStream))
 			.ExecuteBufferedAsync();
@@ -449,13 +459,13 @@ COPY {commonProjectName}/. .
 public static class CliExtensions
 {
 
-	public static Command GetDotnetCommand(string arguments)
-	{
-		return Cli.Wrap("dotnet").WithEnvironmentVariables(new Dictionary<string, string>
+		public static Command GetDotnetCommand(string arguments)
 		{
-			["DOTNET_CLI_UI_LANGUAGE"] = "en"
-		}).WithArguments(arguments);
-	}
+			return Cli.Wrap("dotnet").WithEnvironmentVariables(new Dictionary<string, string>
+			{
+				["DOTNET_CLI_UI_LANGUAGE"] = "en"
+			}).WithArguments(arguments);
+		}
 
 	public static CommandTask<CommandResult> ExecuteAsyncAndLog(this Command command)
 	{
