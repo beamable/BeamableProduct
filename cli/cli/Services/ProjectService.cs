@@ -48,11 +48,7 @@ public class ProjectData
 
 public class ProjectService
 {
-#if NET7_0_OR_GREATER
-	const string UNINSTALL_COMMAND = "new uninstall";
-#else
-	const string UNINSTALL_COMMAND = "new --uninstall";
-#endif
+	private const string UNINSTALL_COMMAND = "new --uninstall";
 	private readonly ConfigService _configService;
 	private readonly VersionService _versionService;
 
@@ -159,22 +155,18 @@ public class ProjectService
 			await RunDotnetCommand($"{UNINSTALL_COMMAND} {packageName}");
 		}
 
-#if NET7_0_OR_GREATER
-		const string installCommand = "new install";
-#else
-		const string installCommand = "new --install";
-#endif
 
 		var installStream = new StringBuilder();
-		var isTemplateInstalled = await CliExtensions.GetDotnetCommand($"{installCommand} {packageName}::{version}")
+		var result = await CliExtensions.GetDotnetCommand($"new --install {packageName}::{version}")
 			.WithValidation(CommandResultValidation.None)
 			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(installStream))
 			.WithStandardErrorPipe(PipeTarget.ToStringBuilder(installStream))
-			.ExecuteAsyncAndLog().Select(res => res.ExitCode == 0).Task;
+			.ExecuteAsyncAndLog().Task;
+		var isTemplateInstalled = result.ExitCode == 0;
 
 		if (!isTemplateInstalled)
 		{
-			Log.Verbose("Command output: {InstallStream}", installStream);
+			Log.Verbose("[ExitCode:{ResultExitCode}] Command output: {InstallStream}",result.ExitCode, installStream);
 			throw new CliException("Installation of Beamable templates failed, please attempt the installation again.");
 		}
 	}
