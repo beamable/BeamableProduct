@@ -1,9 +1,12 @@
-﻿using Beamable.Server.Common;
+﻿using Beamable.Server.Api.Usage;
+using Beamable.Server.Common;
+using Beamable.Server.Ecs;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
 using EmbedIO;
 using EmbedIO.Routing;
 using EmbedIO.WebApi;
+using Newtonsoft.Json;
 using Serilog;
 using Swan.Logging;
 using System;
@@ -38,11 +41,29 @@ namespace Beamable.Server {
 		{
 			private readonly BeamableMicroService _beamableService;
 			private readonly DebugLogSink _debugLogSink;
+			private IUsageApi _ecsService;
 
 			public SampleController(BeamableMicroService service, DebugLogSink debugLogSink)
 			{
+				_ecsService = service.Provider.GetService<IUsageApi>();
 				_beamableService = service;
 				_debugLogSink = debugLogSink;
+			}
+
+			[Route(HttpVerbs.Get, "/metadata")]
+			public async Task<string> GetMetadata()
+			{
+				var metadata = _ecsService.GetMetadata();
+				var json = JsonConvert.SerializeObject(metadata);
+				return json;
+			}
+			
+			[Route(HttpVerbs.Get, "/usage")]
+			public async Task<string> GetUsage()
+			{
+				var usage = _ecsService.GetUsage();
+				var json = JsonConvert.SerializeObject(usage);
+				return json;
 			}
 
 			[Route(HttpVerbs.Get, "/logs")]

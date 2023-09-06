@@ -724,6 +724,7 @@ namespace Beamable.Endel
 				{
 					await m_Socket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, m_CancellationToken);
 				}
+				await new WaitForUpdate(_coroutineService); // dispatch back onto main thread
 			}
 		}
 #endif
