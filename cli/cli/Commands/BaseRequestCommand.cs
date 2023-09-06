@@ -65,7 +65,7 @@ public abstract class BaseRequestCommand : AppCommand<BaseRequestArgs>
 		{
 			throw new CliException($"Failed request: {e.Message}");
 		}
-		
+
 	}
 }
 

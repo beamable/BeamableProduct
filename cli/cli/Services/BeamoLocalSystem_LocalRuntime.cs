@@ -295,7 +295,7 @@ public partial class BeamoLocalSystem
 	public List<BeamoServiceDefinition> GetServiceDefinitionsThatCanBeDeployed(BeamoLocalManifest localManifest, string[] beamoIds = null)
 	{
 		beamoIds ??= localManifest.ServiceDefinitions.Select(c => c.BeamoId).ToArray();
-		
+
 		return beamoIds
 			.Select(reqId => localManifest.ServiceDefinitions.First(sd => sd.BeamoId == reqId))
 			.Where(VerifyCanBeBuiltLocally)
