@@ -100,7 +100,7 @@ public partial class BeamoLocalSystem
 			{
 				continue;
 			}
-			
+
 			var url =
 				$"/basic/{_beamableRequester.Cid}.{_beamableRequester.Pid}.{MachineHelper.GetUniqueDeviceId()}micro_{sd.BeamoId}/admin/Docs";
 			var request = await _beamableRequester.Request(Method.GET, url, null, true, (s => s));
@@ -118,7 +118,7 @@ public partial class BeamoLocalSystem
 
 			federatedComponentByServiceName[sd.BeamoId] = federatedComponents;
 		}
-		
+
 
 		// Upload working containers to docker registry
 		var beamoIds = localManifest.ServiceDefinitions.Select(sd => sd.BeamoId).ToArray();
