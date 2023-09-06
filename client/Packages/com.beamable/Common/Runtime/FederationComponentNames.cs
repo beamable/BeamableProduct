@@ -1,8 +1,7 @@
-using Beamable.Common;
 using System;
 using System.Collections.Generic;
 
-namespace beamable.common.Runtime
+namespace Beamable.Common.Runtime
 {
 	public static class FederationComponentNames
 	{
