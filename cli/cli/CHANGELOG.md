@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed if older version of templates are installed, allow `beam project new` continue without installing latest templates
+
 ## [1.18.0]
 
 ### Added

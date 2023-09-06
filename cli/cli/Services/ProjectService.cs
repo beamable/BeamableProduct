@@ -113,6 +113,10 @@ public class ProjectService
 		}
 	}
 
+	/// <param name="currentlyInstalledVersion">
+	/// The current installed version of the templates
+	/// A null string will imply there are no templates installed
+	/// </param>
 	/// <param name="version">
 	/// The version of the template to install.
 	/// A null string will imply the "latest" version.
@@ -124,27 +128,30 @@ public class ProjectService
 	private static async Task PromptAndInstallTemplates(string currentlyInstalledVersion, string version)
 	{
 		// lets get user consent before auto installing beamable templates
-		var question = "";
-		if (string.IsNullOrEmpty(currentlyInstalledVersion))
+		string question;
+		bool noTemplatesInstalled = string.IsNullOrEmpty(currentlyInstalledVersion);
+		if (noTemplatesInstalled)
 		{
 			question =
 				"Beamable templates are currently not installed. Would you like to proceed with installing the Beamable templates?";
 		}
 		else
 		{
-			var latestMsg = string.IsNullOrEmpty(version) ? "the latest version" : $"version {version}";
+			string latestMsg = string.IsNullOrEmpty(version) ? "the latest version" : $"version {version}";
 			question =
 				$"Beamable templates are currently installed as {currentlyInstalledVersion}. Would you like to proceed with installing {latestMsg}";
 		}
 
-		var canInstallTemplates =
-			AnsiConsole.Confirm(question);
+		bool canInstallTemplates = AnsiConsole.Confirm(question);
 
-		if (!canInstallTemplates)
+		switch (canInstallTemplates)
 		{
-			throw new CliException(
-				"Before you can continue, you must install the Beamable templates by running - " +
-				"dotnet new install beamable.templates");
+			case false when noTemplatesInstalled:
+				throw new CliException(
+					"Before you can continue, you must install the Beamable templates by running - " +
+					"dotnet new --install beamable.templates");
+			case false:
+				return;
 		}
 
 		const string packageName = "beamable.templates";
@@ -154,7 +161,6 @@ public class ProjectService
 			// there are already templates installed, so un-install them first.
 			await RunDotnetCommand($"{UNINSTALL_COMMAND} {packageName}");
 		}
-
 
 		var installStream = new StringBuilder();
 		var result = await CliExtensions.GetDotnetCommand($"new --install {packageName}::{version}")
