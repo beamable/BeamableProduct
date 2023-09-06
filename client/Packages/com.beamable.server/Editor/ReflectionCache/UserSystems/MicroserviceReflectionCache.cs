@@ -2,7 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
-using beamable.common.Runtime;
+using Beamable.Common.Runtime;
 using Beamable.Editor.Environment;
 using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.UI.Model;
