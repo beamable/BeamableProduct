@@ -15,11 +15,11 @@ MonoBehaviour:
   homePage: {fileID: 635883761041762135, guid: 80d7aca177d2e46c99b3a9ad78ba1f4b, type: 3}
   switchPage: {fileID: 1866921629370963832, guid: 23d2567f3a29b4477af3cc8c84491c4f,
     type: 3}
-  registerPage: {fileID: 3900907450136079334, guid: aba581a96c2d0477ba0249bde04d6942,
+  registerPage: {fileID: 1288881448726138315, guid: aba581a96c2d0477ba0249bde04d6942,
     type: 3}
   recoverPage: {fileID: 2997690909840400873, guid: f289fec3496fb40c8a647a4898c02a98,
     type: 3}
-  ForgotPasswordPage: {fileID: 8743961837005025987, guid: fc605d94e6ce54f3d85409a739926759,
+  forgotPasswordPage: {fileID: 8743961837005025987, guid: fc605d94e6ce54f3d85409a739926759,
     type: 3}
   avatarDisplayTemplate: {fileID: 3330863476543736892, guid: 500262a6d8ef54f4ba45b549c1d4a2df,
     type: 3}

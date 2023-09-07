@@ -25,6 +25,7 @@ public class RegisterEmailPage : MonoBehaviour, ILightComponent
 
 		promptText.text = "Enter email";
 		
+		
 		cancelButton.HandleClicked(async () =>
 		{
 			await ctx.GotoPage<AccountManagementExample>();
