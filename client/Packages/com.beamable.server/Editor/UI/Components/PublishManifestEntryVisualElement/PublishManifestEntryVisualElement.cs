@@ -164,7 +164,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			var tooltip = string.IsNullOrWhiteSpace(additionalTooltip)
 				? CHECKBOX_TOOLTIP
-				: $"\n\nOn/Off state is in fixed state due to:\n{additionalTooltip}";
+				: $"On/Off state is in fixed state due to:\n{additionalTooltip}";
 			SetCheckboxTooltip(tooltip);
 
 			if (Model is ManifestEntryModel && !isSilentUpdate)
