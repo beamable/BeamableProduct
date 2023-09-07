@@ -1,0 +1,52 @@
+using Beamable;
+using Beamable.Avatars;
+using Beamable.Common;
+using Beamable.Common.Dependencies;
+using Beamable.Modules.Generics;
+using Beamable.Player;
+using Beamable.Runtime.LightBeam;
+using System;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class AccountDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerAccount>
+{
+	[Header("Scene References")]
+	public TMP_Text playerIdLabel;
+	public TMP_Text aliasLabel;
+	public TMP_Text emailLabel;
+
+	public Image avatarImage;
+	
+	public Button changeAccountButton;
+	
+	private PlayerAccount _model;
+	private LightContext _ctx;
+
+	public Promise OnInstantiated(LightContext ctx, PlayerAccount model)
+	{
+		_ctx = ctx;
+		_model = model;
+		model.OnUpdated += Refresh;
+		Refresh();
+
+		return Promise.Success;
+	}
+
+	void Refresh()
+	{
+		playerIdLabel.text = _model.GamerTag.ToString();
+		aliasLabel.text = _model.Alias ?? "Anonymous";
+		emailLabel.text = _model.Email ?? "";
+		avatarImage.sprite = _ctx.Scope.GetService<AvatarConfiguration>().GetAvatarSprite(_model.Avatar);
+	}
+	
+	private void OnDestroy()
+	{
+		if (_model == null) return;
+		_model.OnUpdated -= Refresh;
+	}
+
+}
+
