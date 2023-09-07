@@ -13,7 +13,7 @@ public class AccountExampleConfig : ScriptableObject
 	public AccountSwitchPage switchPage;
 	public RegisterEmailPage registerPage;
 	public RecoverEmailPage recoverPage;
-	public ForgotPasswordPage ForgotPasswordPage;
+	public ForgotPasswordPage forgotPasswordPage;
 
 	public AvatarDisplayBehaviour avatarDisplayTemplate;
 	public AccountDisplayBehaviour accountDisplayTemplate;
@@ -27,7 +27,7 @@ public static class AccountUtil
 		builder.AddSingleton(config);
 
 		builder.AddLightComponent(config.homePage);
-		builder.AddLightComponent<ForgotPasswordPage, ForgotPasswordModel>(config.ForgotPasswordPage);
+		builder.AddLightComponent<ForgotPasswordPage, ForgotPasswordModel>(config.forgotPasswordPage);
 		builder.AddLightComponent<RecoverEmailPage, RecoverEmailPageModel>(config.recoverPage);
 		builder.AddLightComponent(config.registerPage);
 		builder.AddLightComponent<AccountSwitchPage, PlayerAccount>(config.switchPage);

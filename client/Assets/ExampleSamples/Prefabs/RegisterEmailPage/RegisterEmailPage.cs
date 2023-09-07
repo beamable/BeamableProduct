@@ -8,6 +8,7 @@ using UnityEngine.UI;
 
 public class RegisterEmailPage : MonoBehaviour, ILightComponent
 {
+	[Header("Scene References")]
 	public TMP_InputField emailInput;
 	public TMP_InputField passwordInput;
 	public TMP_Text promptText;
