@@ -22,13 +22,13 @@ public class LightBeamBuilds
 		{
 			switch (args[i])
 			{
-				case "LIGHTBEAM_NAME":
+				case "-LIGHTBEAM_NAME":
 					lightBeamName = args[i + 1];
 					break;
-				case "LIGHTBEAM_SCENE_PATH":
+				case "-LIGHTBEAM_SCENE_PATH":
 					scenePath = args[i + 1];
 					break;
-				case "LIGHTBEAM_BUILD_PATH":
+				case "-LIGHTBEAM_BUILD_PATH":
 					outputDir = args[i + 1];
 					break;
 			}
