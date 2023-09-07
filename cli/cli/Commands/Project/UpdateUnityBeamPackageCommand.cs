@@ -50,7 +50,9 @@ public class UpdateUnityBeamPackageCommand : AppCommand<UpdateUnityBeamPackageCo
 				throw new CliException("Could not found Unity project");
 			default:
 				directory = AnsiConsole.Prompt(new SelectionPrompt<string>()
-					.Title("Select Unity Project to update").AddChoices(defaultPaths));
+					.Title("Select Unity Project to update")
+					.AddChoices(defaultPaths)
+					.AddBeamHightlight());
 				break;
 		}
 

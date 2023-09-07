@@ -52,6 +52,7 @@ public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>, IResul
 					.NotRequired()
 					.InstructionsText("Select any number of Beam-O Service Ids to reset.")
 					.AddChoices(choices)
+					.AddBeamHightlight()
 				).ToArray();
 			}
 			else

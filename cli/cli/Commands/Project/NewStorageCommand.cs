@@ -1,4 +1,5 @@
 using Beamable.Common.Semantics;
+using cli.Utils;
 using Serilog;
 using Spectre.Console;
 using System.CommandLine;
@@ -76,6 +77,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
 			.InstructionsText("Which services will use this storage?\n[grey](Press [blue]<space>[/] to toggle, " +
 							  "[green]<enter>[/] to accept)[/]")
 			.AddChoices(choices)
+			.AddBeamHightlight()
 			.NotRequired();
 		foreach (string choice in choices)
 		{
