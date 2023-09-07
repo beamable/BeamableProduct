@@ -17,7 +17,7 @@ on:
 jobs:
 
   build:
-    name: Build for ${{ matrix.scene }}
+    name: Build for ${{ matrix.lightBeam }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     concurrency:
@@ -86,13 +86,11 @@ jobs:
       - uses: game-ci/unity-builder@v2.1.2
         timeout-minutes: 60
         env:
-          LIGHTBEAM_NAME: ${{matrix.lightBeam}}
-          LIGHTBEAM_SCENE_PATH: ${{matrix.scenePath}}
-          LIGHTBEAM_BUILD_PATH: ${{matrix.buildPath}}
           UNITY_EMAIL: ${{ secrets[matrix.unityEmailOverride] || secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets[matrix.unityPasswordOverride] || secrets.UNITY_PASSWORD }}
           UNITY_SERIAL: ${{ secrets[matrix.unitySerialOverride] || secrets.UNITY_SERIAL }}
         with:
+          customParameters: -LIGHTBEAM_NAME ${{matrix.lightBeam}} -LIGHTBEAM_SCENE_PATH ${{matrix.scenePath}} -LIGHTBEAM_BUILD_PATH ${{matrix.buildPath}}
           targetPlatform: ${{ matrix.targetPlatform }}
           unityVersion: ${{ matrix.unityVersion }}
           projectPath: ${{ matrix.projectPath }}
