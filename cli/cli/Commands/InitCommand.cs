@@ -179,6 +179,7 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 			new SelectionPrompt<string>()
 				.Title("What [green]game[/] are you using?")
 				.AddChoices(gameChoices)
+				.AddBeamHightlight()
 		);
 		var game = games.FirstOrDefault(g => g.DisplayName.Replace("[PROD]", "") == gameSelection);
 
@@ -190,6 +191,7 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 			new SelectionPrompt<string>()
 				.Title("What [green]realm[/] are you using?")
 				.AddChoices(realmChoices)
+				.AddBeamHightlight()
 		);
 		var realm = realms.FirstOrDefault(g => g.DisplayName.Replace("[", "").Replace("]", "") == realmSelection);
 		return realm.Pid;
@@ -225,6 +227,7 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 				new SelectionPrompt<string>()
 					.Title("What Beamable [green]environment[/] would you like to use?")
 					.AddChoices(prod, staging, dev, custom)
+					.AddBeamHightlight()
 			);
 
 		// If we were given a host that is a path, let's just return it.

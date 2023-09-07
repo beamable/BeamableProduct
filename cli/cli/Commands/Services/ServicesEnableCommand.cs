@@ -1,5 +1,6 @@
 ﻿using Beamable.Common;
 using cli.Services;
+using cli.Utils;
 using Newtonsoft.Json;
 using Serilog.Events;
 using Spectre.Console;
@@ -37,11 +38,12 @@ public class ServicesEnableCommand : AppCommand<ServicesEnableCommandArgs>
 		AddOption(BEAM_SERVICE_OPTION_IGNORE_DEPENDENCIES, (args, i) => args.IgnoreDependencies = i);
 	}
 
-	public static bool EnsureEnableOnRemoteDeploy(ref bool enabled, bool current = false)
+	private static bool EnsureEnableOnRemoteDeploy(ref bool enabled, bool current = false)
 	{
 		enabled = AnsiConsole.Prompt(new SelectionPrompt<bool>()
 			.Title($"Do you wish for us to try and run this service when you deploy it remotely? [lightskyblue1](Current: {current})[/]")
-			.AddChoices(new[] { true, false }));
+			.AddChoices(new[] { true, false })
+			.AddBeamHightlight());
 
 		return true;
 	}
@@ -65,7 +67,8 @@ public class ServicesEnableCommand : AppCommand<ServicesEnableCommandArgs>
 		{
 			args.BeamoId = AnsiConsole.Prompt(new SelectionPrompt<string>()
 				.Title("Choose the [lightskyblue1]Beamo-O Service[/] to Modify:")
-				.AddChoices(existingMicroserviceBeamoIds));
+				.AddChoices(existingMicroserviceBeamoIds)
+				.AddBeamHightlight());
 		}
 
 		var serviceDefinition = _localBeamo.BeamoManifest.ServiceDefinitions.FirstOrDefault(sd => sd.BeamoId == args.BeamoId);
