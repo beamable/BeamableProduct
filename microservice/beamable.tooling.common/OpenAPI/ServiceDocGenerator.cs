@@ -1,7 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Common.Reflection;
-using beamable.common.Runtime;
+using Beamable.Common.Runtime;
 using Beamable.Server;
 using Beamable.Server.Common;
 using Beamable.Server.Common.XmlDocs;

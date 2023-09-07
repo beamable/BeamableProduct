@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using cli.Utils;
 using Spectre.Console;
+using Spectre.Console.Json;
 using System.CommandLine;
 
 namespace cli;
@@ -22,6 +23,7 @@ public abstract class BaseRequestCommand : AppCommand<BaseRequestArgs>
 		AddOption(new HeaderOption(), (args, i) => args.customHeaders.AddRange(i));
 		AddOption(new BodyPathOption(), (args, i) => args.bodyPath = i);
 		AddOption(new CustomerScopedOption(), (args, b) => args.customerScoped = b);
+		AddOption(new PlainOutputOption(), (args, b) => args.plainOutput = b);
 	}
 
 	public override async Task Handle(BaseRequestArgs args)
@@ -41,10 +43,29 @@ public abstract class BaseRequestCommand : AppCommand<BaseRequestArgs>
 			body = await File.ReadAllTextAsync(args.bodyPath);
 		}
 
-		var response = await _requester.CustomRequest(Method, args.uri, body, true,
-													  s => s, args.customerScoped, args.customHeaders)
-									   .ShowLoading("Sending Request..");
-		AnsiConsole.WriteLine(response);
+		try
+		{
+			var response = await _requester.CustomRequest(Method, args.uri, body, true,
+					s => s, args.customerScoped, args.customHeaders)
+				.ShowLoading("Sending Request..");
+			if (args.plainOutput)
+			{
+				AnsiConsole.WriteLine(response);
+			}
+			else
+			{
+				AnsiConsole.Write(
+					new Panel(new JsonText(response))
+						.Header($"{args.uri}")
+						.Collapse()
+						.RoundedBorder());
+			}
+		}
+		catch (Exception e)
+		{
+			throw new CliException($"Failed request: {e.Message}");
+		}
+
 	}
 }
 
@@ -54,4 +75,5 @@ public class BaseRequestArgs : CommandArgs
 	public string uri;
 	public string bodyPath;
 	public bool customerScoped;
+	public bool plainOutput;
 }

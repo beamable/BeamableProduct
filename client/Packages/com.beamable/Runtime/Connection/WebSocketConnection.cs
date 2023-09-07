@@ -52,12 +52,12 @@ namespace Beamable.Connection
 			_disconnecting = true;
 
 			await _webSocket.Close();
-			#if !UNITY_WEBGL || UNITY_EDITOR
-								if (_dispatchMessagesRoutine != null)
-								{
-									_coroutineService.StopCoroutine(_dispatchMessagesRoutine);
-								}
-			#endif
+#if !UNITY_WEBGL || UNITY_EDITOR
+			if (_dispatchMessagesRoutine != null)
+			{
+				_coroutineService.StopCoroutine(_dispatchMessagesRoutine);
+			}
+#endif
 		}
 
 		private Promise DoConnect()
@@ -70,11 +70,19 @@ namespace Beamable.Connection
 		private static WebSocket CreateWebSocket(string address, IAccessToken token, CoroutineService coroutineService)
 		{
 			var subprotocols = new List<string>();
+#if !UNITY_WEBGL
 			var headers = new Dictionary<string, string>
 			{
 				{"Authorization", $"Bearer {token.Token}"}
 			};
 			return new WebSocket(address, subprotocols, headers, coroutineService);
+#else
+			if(!string.IsNullOrWhiteSpace(token.Token))
+			{
+				address += "?access_token=" + token.Token;
+			}
+			return new WebSocket(address, subprotocols, null, coroutineService);
+#endif
 		}
 
 		private void SetUpEventCallbacks()

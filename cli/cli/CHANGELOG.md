@@ -7,20 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed if older version of templates are installed, allow `beam project new` continue without installing latest templates
+
 ## [1.18.0]
 
 ### Added
 
 - Support for storing local content from multiple namespaces.
 - Filter out storage objects from `beam services enable` selection wizard.
+- `beam project new` now have --disable flag to create service as disabled on publish.
+- Ability to retry again if alias or username or password is entered incorrectly.
 
 ### Fixed
+
 - `beam services deploy` fetches current realm snapshot before deploy, allowing publication of new services without old services.
 - Validate cid and resolve alias to cid on Microservice deploy.
 - Standalone microservices now write federated components to the manifest when deployed.
-- Creating a new project with NET 6.0 no longer fails to install templates. 
+- Creating a new project with NET 6.0 no longer fails to install templates.
+
+### Fixed
+
+- Fixed Powershell users having blue-on-blue text when selecting options.
 
 ### Changed
+
 - `run-nbomber` cli command accepts a json file as body for request instead of an argument.
 
 ## [1.17.3]
