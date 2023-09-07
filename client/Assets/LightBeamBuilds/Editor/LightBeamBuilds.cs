@@ -14,6 +14,7 @@ public class LightBeamBuilds
 
 		var args = Environment.GetCommandLineArgs();
 
+		Debug.Log("LIGHTBEAM_ARGS " + string.Join(",", args));
 		string lightBeamName = null;
 		string scenePath = null;
 		string outputDir = null;
