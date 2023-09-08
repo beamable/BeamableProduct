@@ -17,7 +17,10 @@ public class LightBeamBuilds
 		// var config = Resources.Load<LightBeamSceneConfigObject>("SceneConfig");
 		var config = AssetDatabase.LoadAssetAtPath<LightBeamSceneConfigObject>("Assets/LightBeamBuilds/Resources/SceneConfig.asset");
 
-		Debug.Log("LIGHTBEAM_CONFIG " + (config?.name ?? "<null>"));
+		var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>("Assets/LightBeamBuilds/Resources/SceneConfig.asset");
+
+		Debug.Log("LIGHTBEAM_CONFIG " + (asset?.name ?? "<null>"));
+		Debug.Log("LIGHTBEAM_CONFIG " + (asset?.GetType().Name ?? "<no type>"));
 	}
 	public static void BuildAll()
 	{
@@ -26,8 +29,11 @@ public class LightBeamBuilds
 		// var config = AssetDatabase.LoadAssetAtPath<LightBeamSceneConfigObject>(configPath);
 
 		AssetDatabase.ImportAsset("Assets/LightBeamBuilds/Resources/SceneConfig.asset");
+		var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>("Assets/LightBeamBuilds/Resources/SceneConfig.asset");
+		
 		var config = AssetDatabase.LoadAssetAtPath<LightBeamSceneConfigObject>("Assets/LightBeamBuilds/Resources/SceneConfig.asset");
-		Debug.Log("LIGHTBEAM_CONFIG " + (config?.name ?? "<null>"));
+		Debug.Log("LIGHTBEAM_CONFIG " + (asset?.name ?? "<null>"));
+		Debug.Log("LIGHTBEAM_CONFIG " + (asset?.GetType().Name ?? "<no type>"));
 		var args = Environment.GetCommandLineArgs();
 
 		Debug.Log("LIGHTBEAM_ARGS " + string.Join(",", args));
