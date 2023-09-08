@@ -35,13 +35,8 @@ public class LightBeamSceneConfigObject : ScriptableObject
 	#if UNITY_EDITOR
 	public List<LightBeamEditorScene> editorScenes;
 
-	static LightBeamSceneConfigObject()
-	{
-		Debug.Log("LIGHTBEAM_STATIC_CONST");
-	}
 	private void OnValidate()
 	{
-		Debug.Log("LIGHTBEAM_VALIDATE");
 		scenes = editorScenes.Select(x =>
 		{
 			var scene = new LightBeamRuntimeScene {label = x.name};

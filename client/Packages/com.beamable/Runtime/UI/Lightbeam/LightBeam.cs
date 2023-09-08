@@ -113,7 +113,9 @@ namespace Beamable.Runtime.LightBeam
 
 		public static Promise<T> ShowLoading<T>(this Promise<T> promise, LightContext context)
 		{
-			return ShowLoading(promise.ToPromise(), context).Map(_ => promise.GetResult());
+			return ShowLoading(promise.ToPromise(), context)
+				.Map(_ => promise.GetResult())
+				.Error(ex => throw ex);
 		}
 		public static Promise ShowLoading<T>(this T promise, LightContext context)
 			where T : Promise<Unit>
@@ -304,7 +306,31 @@ namespace Beamable.Runtime.LightBeam
 
 			// now we need to find a model...
 			model = null;
-			if (LightBeamUtilExtensions.Hints.TryGetValue("pageModel", out var pageModelJson)) { }
+
+			var interfaces = pageType.GetInterfaces();
+			foreach (var interfaceType in interfaces)
+			{
+				if (!interfaceType.IsGenericType) continue;
+				if (interfaceType.GetGenericTypeDefinition() != typeof(ILightComponent<>)) continue;
+
+				var modelType = interfaceType.GetGenericArguments()[0];
+				model = Activator.CreateInstance(modelType);
+				break;
+			}
+
+			if (model != null)
+			{
+				foreach (var kvp in args)
+				{
+					if (!kvp.Key.StartsWith("d_")) continue;
+					var key = kvp.Key.Substring("d_".Length);
+					
+					var json = $"{{\"{key}\": {kvp.Value} }}";
+					JsonUtility.FromJsonOverwrite(json, model);
+				}
+				
+			}
+			
 
 			return true;
 
@@ -319,7 +345,7 @@ namespace Beamable.Runtime.LightBeam
 			
 			if (TryGetTypes(provider, LightBeamUtilExtensions.Hints, out var pageType, out var model))
 			{
-				await provider.SetLightComponent(pageType, ctx.Root, model);
+				await provider.SetLightComponent(pageType, ctx.Root, model).ShowLoading(ctx);
 			}
 			else
 			{
@@ -334,26 +360,9 @@ namespace Beamable.Runtime.LightBeam
 			var ctx = provider.GetService<LightContext>();
 			await ctx.LoadingFadeIn();
 
-			var pageType = typeof(TDefault);
-			var scope = (IDependencyProviderScope)provider;
-
-			object model = null;
-			
-			if (!LightBeamUtilExtensions.Hints.TryGetValue("pageType", out var pageTypeStr))
+			if (TryGetTypes(provider, LightBeamUtilExtensions.Hints, out var pageType, out var model))
 			{
-				var service = scope.SingletonServices.FirstOrDefault(
-					x => x.Interface.Name.Equals(pageTypeStr, StringComparison.InvariantCultureIgnoreCase));
-
-				pageType = service.Interface;
-				
-				// now we need to find a model...
-				model = null;
-				if (LightBeamUtilExtensions.Hints.TryGetValue("pageModel", out var pageModelJson))
-				{
-					
-				}
-
-				await provider.SetLightComponent(pageType, ctx.Root, model);
+				await provider.SetLightComponent(pageType, ctx.Root, model).ShowLoading(ctx);
 			}
 			else
 			{
@@ -397,28 +406,27 @@ namespace Beamable.Runtime.LightBeam
 			var instance = resolver(container);
 			return instance;
 		}
-		
-		public static Promise<object> NewLightComponent(
-			this IDependencyProvider provider,
-			Type componentType,
-			Transform container)
+
+		public static Promise<object> NewLightComponent(this IDependencyProvider provider,
+		                                                Type componentType,
+		                                                Transform container)
 		{
 			var resolver = provider.GetService<CurriedLightBeamViewResolver>();
 			var instance = resolver(container, componentType, null);
 			return instance;
 		}
-		
-		public static Promise<object> NewLightComponent(
-			this IDependencyProvider provider,
-			Type componentType,
-			Transform container,
-			object model)
+
+		public static Promise<object> NewLightComponent(this IDependencyProvider provider,
+		                                                Type componentType,
+		                                                Transform container,
+		                                                object model)
 		{
 			var resolver = provider.GetService<CurriedLightBeamViewResolver>();
+
 			var instance = resolver(container, componentType, model);
 			return instance;
 		}
-		
+
 		public static void AddLightComponent<T, TModel>(this IDependencyBuilder builder, T template)
 			where T : MonoBehaviour, ILightComponent<TModel>
 		{
@@ -439,7 +447,7 @@ namespace Beamable.Runtime.LightBeam
 						else
 						{
 							var resolver = (CurriedLightBeamViewResolver) oldCurry.Factory(p);
-							return resolver(container, type, model);
+							return await resolver(container, type, model);
 						}
 					}
 					var instance = Object.Instantiate(template, container);
@@ -485,7 +493,7 @@ namespace Beamable.Runtime.LightBeam
 						else
 						{
 							var resolver = (CurriedLightBeamViewResolver) oldCurry.Factory(p);
-							return resolver(container, type, model);
+							return await resolver(container, type, model);
 						}
 					}
 					var instance = Object.Instantiate(template, container);

@@ -75,7 +75,11 @@ public class LightBeamBooter : MonoBehaviour
 		    return scene.sceneName;
 	    }
 	    
-	    Debug.LogWarning("no parsable scene arg");
+	    Debug.LogWarning($"no parsable scene arg- There are {config.scenes} scenes...");
+	    foreach (var existing in config.scenes)
+	    {
+		    Debug.LogWarning("\t" + existing.label);
+	    }
 	    return null;
 
     }
