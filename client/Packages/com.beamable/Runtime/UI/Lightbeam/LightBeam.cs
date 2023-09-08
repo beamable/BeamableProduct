@@ -3,6 +3,8 @@ using Beamable.Common.Dependencies;
 using Beamable.Coroutines;
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -51,14 +53,18 @@ namespace Beamable.Runtime.LightBeam
 		Promise OnInstantiated(LightContext context, T model);
 	}
 
-	public delegate Promise<T> LightBeamViewResolver<T, TModel>(Transform container, TModel model)
+	public delegate Promise<T> LightBeamViewResolver<T, in TModel>(Transform container, TModel model)
                                           		where T : ILightComponent<TModel>;
 	
 	public delegate Promise<T> LightBeamViewResolver<T>(Transform container)
 		where T : ILightComponent;
 
+	public delegate Promise LightBeamViewResolver(Transform container, Type componentType);
+
 	public static class LightBeamUtilExtensions
 	{
+		public static Dictionary<string, string> Hints = new Dictionary<string, string>();
+		
 		public static void Clear(this Transform transform)
 		{
 			for (var i = 0; i < transform.childCount; i++)
@@ -135,8 +141,15 @@ namespace Beamable.Runtime.LightBeam
 		
 		public static async Promise ShowLoading(this Promise promise, LightContext context)
 		{
+			if (context.LoadingBlocker == null)
+			{
+				await promise;
+				return;
+			}
+			
+			
 			var service = context.Scope.GetService<CoroutineService>();
-
+			
 			service.StopAll("loading");
 			service.StartNew("loading", Animate());
 			IEnumerator Animate()
@@ -208,6 +221,7 @@ namespace Beamable.Runtime.LightBeam
 	
 	public static class LightBeamDependencyExtensions
 	{
+		
 		public static async Promise<LightContext> InitLightBeams<T>(this T lightBeam,
 		                                                            RectTransform root,
 		                                                            CanvasGroup loadingBlocker,
@@ -252,6 +266,30 @@ namespace Beamable.Runtime.LightBeam
 		{
 			container.Clear();
 			return provider.NewLightComponent<T>(container);
+		}
+
+		public static async Promise Start<TDefault, TModel>(this IDependencyProvider provider, TModel defaultModel)
+			where TDefault : MonoBehaviour, ILightComponent<TModel>
+		{
+				
+			var ctx = provider.GetService<LightContext>();
+			await ctx.LoadingFadeIn();
+
+			var pageType = typeof(TDefault);
+			var scope = (IDependencyProviderScope)provider;
+			
+			if (!LightBeamUtilExtensions.Hints.TryGetValue("pageType", out var pageTypeStr))
+			{
+				var service = scope.SingletonServices.FirstOrDefault(
+					x => x.Interface.Name.Equals(pageTypeStr, StringComparison.InvariantCultureIgnoreCase));
+
+				pageType = service.Interface;
+				
+				
+			}
+		
+			// return await provider.SetLightComponent<T, TModel>(ctx.Root, model).ShowLoading(ctx);
+
 		}
 
 		public static async Promise<T> GotoPage<T, TModel>(this IDependencyProvider provider, TModel model)
