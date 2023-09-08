@@ -26,7 +26,7 @@ public class ForgotPasswordPage : MonoBehaviour, ILightComponent<ForgotPasswordM
 	public async Promise OnInstantiated(LightContext context, ForgotPasswordModel model)
 	{
 		await context.BeamContext.Accounts.ResetPassword(model.email);
-
+		
 		promptText.text = $"Enter the code sent to {model.email}, and enter a new password.";
 		
 		cancelButton.HandleClicked(async () =>

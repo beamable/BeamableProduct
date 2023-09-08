@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 
 public class LightBeamBooter : MonoBehaviour
@@ -47,7 +48,7 @@ public class LightBeamBooter : MonoBehaviour
 				    queryArgs[parts[0]] = "";
 				    break;
 			    case 2:
-				    queryArgs[parts[0]] = parts[1];
+				    queryArgs[parts[0]] = UnityWebRequest.UnEscapeURL(parts[1]);
 				    break;
 			    default:
 				    break;

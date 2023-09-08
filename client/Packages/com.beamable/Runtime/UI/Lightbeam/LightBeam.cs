@@ -466,6 +466,7 @@ namespace Beamable.Runtime.LightBeam
 					await instance.OnInstantiated(p.GetService<LightContext>(), model);
 					return instance;
 				});
+				
 
 				return resolver;
 			});
