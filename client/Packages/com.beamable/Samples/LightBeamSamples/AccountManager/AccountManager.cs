@@ -30,6 +30,7 @@ public class AccountManager : MonoBehaviour
 			builder.AddLightComponent<AccountDetailsBehaviour, PlayerAccount>(config.accountDetailsTemplate);
 		});
 
-		await ctx.Scope.Start<RegisterEmailPage>();
+		LightBeamUtilExtensions.Hints["pageType"] = nameof(RegisterEmailPage);
+		await ctx.Scope.Start<AccountManagementExample>();
 	}
 }
