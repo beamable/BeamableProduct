@@ -1,10 +1,17 @@
 ﻿using cli.Services.Content;
+using System.CommandLine;
 using System.Diagnostics;
 
 namespace cli.Content.Tag;
 
 public class ContentTagCommand : AppCommand<ContentTagCommandArgs>
 {
+	public static readonly ConfigurableOptionFlag REGEX_OPTION =
+		new("treat-as-regex", "Treat content argument as regex pattern");
+	public static readonly Argument<string> TAG_ARGUMENT = new Argument<string>("tag", "tag argument");
+
+	public static readonly Argument<string> CONTENT_ARGUMENT =
+		new Argument<string>("content", "accepts content ids separated by commas or regex pattern when used in combination with \"treat-as-regex\" option");
 		private ContentService _contentService;
 
 		public ContentTagCommand() : base("tag", "opens tags file")

@@ -3,6 +3,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Content;
 using cli.Utils;
 using JetBrains.Annotations;
+using Serilog;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -32,9 +33,18 @@ public class ContentLocalCache
 
 	public IEnumerable<string> ContentMatchingRegex(string pattern)
 	{
-		var regex = new Regex(pattern);
+		try
+		{
+			var regex = new Regex(pattern);
 
-		return _localAssets.Keys.Where(id=> regex.IsMatch(id));
+			return _localAssets.Keys.Where(id => regex.IsMatch(id));
+		}
+		catch (ArgumentException)
+		{
+			BeamableLogger.LogError("{Pattern} is not a valid regex!", pattern);
+		}
+
+		return new List<string>();
 	}
 
 	public Dictionary<string, TagStatus> GetContentTagsStatus(string contentId) =>

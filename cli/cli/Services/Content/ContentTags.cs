@@ -59,15 +59,24 @@ public class ContentTags
 		}
 	}
 
-	public void AddTagToContent(string contentId, string tag)
+	public bool AddTagToContent(string contentId, string tag)
 	{
 		var list = localTags.TryGetValue(tag, out string[] tags) ? tags.ToList() : new List<string>();
 
 		if(list.Any(contentId.Equals))
-			return;
+			return false;
 
 		list.Add(contentId);
 		localTags[tag] = list.ToArray();
+		return true;
+	}
+
+	public bool RemoveTagFromContent(string contentId, string tag)
+	{
+		if(!localTags.ContainsKey(tag)) return false;
+		var tagsLength = localTags[tag].Length;
+		localTags[tag] = localTags[tag].ToList().Where(s => !s.Equals(contentId)).ToArray();
+		return tagsLength != localTags[tag].Length;
 	}
 
 	public string[] TagsForContent(string contentId, bool isRemote)

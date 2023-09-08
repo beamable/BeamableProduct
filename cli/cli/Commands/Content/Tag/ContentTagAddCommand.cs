@@ -1,14 +1,10 @@
-﻿using cli.Services.Content;
-using Serilog;
-using System.CommandLine;
+﻿using Beamable.Common;
+using cli.Services.Content;
 
 namespace cli.Content.Tag;
 
 public class ContentTagAddCommand : AppCommand<ContentTagAddCommandArgs>
 {
-	public static readonly ConfigurableOptionFlag REGEX_OPTION =
-		new("treat-as-regex", "Treat content argument as regex pattern");
-
 	private ContentService _contentService;
 
 	public ContentTagAddCommand() : base("add", "adds tag to content")
@@ -17,10 +13,10 @@ public class ContentTagAddCommand : AppCommand<ContentTagAddCommandArgs>
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("content"), (args, s) => args.content = s);
-		AddArgument(new Argument<string>("tag"), (args, s) => args.tag = s);
+		AddArgument(ContentTagCommand.CONTENT_ARGUMENT, (args, s) => args.content = s);
+		AddArgument(ContentTagCommand.TAG_ARGUMENT, (args, s) => args.tag = s);
 		AddOption(ContentCommand.MANIFEST_OPTION, (args, s) => args.ManifestId = s);
-		AddOption(REGEX_OPTION, (args, b) => args.treatAsRegex = b);
+		AddOption(ContentTagCommand.REGEX_OPTION, (args, b) => args.treatAsRegex = b);
 	}
 
 	public override Task Handle(ContentTagAddCommandArgs args)
@@ -30,13 +26,17 @@ public class ContentTagAddCommand : AppCommand<ContentTagAddCommandArgs>
 
 
 		var contentIds = args.GetContentsList(local);
+		var addedValues = new List<string>();
 		
 		foreach (var id in contentIds)
 		{
-			local.Tags.AddTagToContent(id, args.tag);
+			if (local.Tags.AddTagToContent(id, args.tag))
+			{
+				addedValues.Add(id);
+			}
 		}
 		local.Tags.WriteToFile();
-		Log.Information("Added tag {ArgsTag} to content ({ContentIdsCount}): {Join}", args.tag, contentIds.Count, string.Join(", ",contentIds));
+		BeamableLogger.Log("Added tag {ArgsTag} to content ({AddedValuesCount}): {Join}", args.tag, addedValues.Count, string.Join(", ",addedValues));
 		return Task.CompletedTask;
 	}
 }
