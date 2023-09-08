@@ -1,5 +1,7 @@
 
 using Beamable.Common;
+using Beamable.Common.Api.Content;
+using Beamable.Common.Inventory;
 using Beamable.Player;
 using Beamable.Runtime.LightBeam;
 using Beamable.UI.Scripts;
@@ -13,24 +15,31 @@ public class CurrencyViewBehaviour : MonoBehaviour, ILightComponent<PlayerCurren
 	[Header("Scene References")]
 	public TMP_Text valueText;
 	public Image iconImage;
-	private PlayerCurrency _model;
+	
+	[Header("Runtime data")]
+	public PlayerCurrency data;
 
 	public async Promise OnInstantiated(LightContext context, PlayerCurrency model)
 	{
-		_model = model;
+		data = model;
 		model.OnUpdated += Refresh;
 		Refresh();
-		iconImage.sprite = await model.Content.icon.LoadSprite();
+
+		var contentService = context.BeamContext.Content;
+		var content = await contentService.GetContent<CurrencyContent>(new CurrencyRef(model.CurrencyId));
+		var sprite = await content.icon.LoadSprite() ;
+		iconImage.sprite = sprite;
 	}
 
 	private void OnDestroy()
 	{
-		_model.OnUpdated -= Refresh;
+		if (data == null) return;
+		data.OnUpdated -= Refresh;
 	}
 
 	void Refresh()
 	{
-		valueText.text = _model.Amount.ToString();
+		valueText.text = data.Amount.ToString();
 	}
 }
 

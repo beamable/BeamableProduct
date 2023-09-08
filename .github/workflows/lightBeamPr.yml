@@ -28,6 +28,7 @@ jobs:
       matrix:
         lightBeam:
           - accountManager
+          - currencyHud
         targetPlatform:
           - WebGL
         unityVersion:
@@ -38,6 +39,9 @@ jobs:
           - lightBeam: accountManager
             scenePath: Packages/com.beamable/Samples/LightBeamSamples/AccountManager/Sample_AccountManager.unity
             buildPath: distAccountManager
+          - lightBeam: currencyHud
+            scenePath: Packages/com.beamable/Samples/LightBeamSamples/CurrencyHud/Sample_CurrencyHud.unity
+            buildPath: distCurrencyHud
     steps:
       - uses: actions/checkout@v3
         with:
