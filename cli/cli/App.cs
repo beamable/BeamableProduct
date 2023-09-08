@@ -216,6 +216,7 @@ public class App
 
 		Commands.AddCommand<ContentTagCommand, ContentTagCommandArgs, ContentCommand>();
 		Commands.AddCommand<ContentTagAddCommand, ContentTagAddCommandArgs, ContentTagCommand>();
+		Commands.AddCommand<ContentTagRemoveCommand, ContentTagAddCommandArgs, ContentTagCommand>();
 
 		commandConfigurator?.Invoke(Commands);
 

@@ -8,7 +8,7 @@ public class ContentTagRemoveCommand : AppCommand<ContentTagAddCommandArgs>
 
 	private ContentService _contentService;
 
-	public ContentTagRemoveCommand() : base("rm", "removes tag from content")
+	public ContentTagRemoveCommand() : base("rm", "Removes tag from content")
 	{
 	}
 

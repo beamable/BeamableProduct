@@ -7,7 +7,7 @@ public class ContentTagAddCommand : AppCommand<ContentTagAddCommandArgs>
 {
 	private ContentService _contentService;
 
-	public ContentTagAddCommand() : base("add", "adds tag to content")
+	public ContentTagAddCommand() : base("add", "Adds tag to content")
 	{
 	}
 
