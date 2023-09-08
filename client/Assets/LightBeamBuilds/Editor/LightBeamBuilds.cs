@@ -58,7 +58,8 @@ public class LightBeamBuilds
 			scenes = new[] {scenePath},
 			locationPathName = outputDir,
 			target = BuildTarget.WebGL,
-			options = BuildOptions.ShowBuiltPlayer | BuildOptions.AutoRunPlayer
+			options = BuildOptions.None,
+			
 		};
 
 		BuildReport report = BuildPipeline.BuildPlayer(buildPlayerOptions);
