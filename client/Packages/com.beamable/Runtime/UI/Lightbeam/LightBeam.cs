@@ -362,7 +362,7 @@ namespace Beamable.Runtime.LightBeam
 
 			if (TryGetTypes(provider, LightBeamUtilExtensions.Hints, out var pageType, out var model))
 			{
-				await provider.SetLightComponent(pageType, ctx.Root, model).ShowLoading(ctx);
+				await provider.SetLightComponent(pageType, ctx.Root, model).ShowLoading(ctx).ShowLoading(ctx);
 			}
 			else
 			{
