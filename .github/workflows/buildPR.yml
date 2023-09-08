@@ -3,9 +3,7 @@ name: PR Build
 on:
   pull_request:
     branches:
-      - 'main'
-      - 'staging'
-      - 'production'
+      - 'does not exist'
     paths-ignore:
       - 'rfc/**'
       - '.github/**'
