@@ -77,11 +77,6 @@ jobs:
         run: |
           rm -rf /github/workspace/dist
         shell: bash
-      - name: Check Asset
-        continue-on-error: true
-        run: |
-          ls -a ${{ matrix.projectPath }}/Assets/LightBeamBuilds/Resources
-        shell: bash
       - uses: game-ci/unity-builder@v2.1.2
         timeout-minutes: 60
         env:
@@ -102,6 +97,11 @@ jobs:
         run: |
           chmod +x ./build/save_base_image.sh
           UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/save_base_image.sh
+        shell: bash
+      - name: Check Asset
+        continue-on-error: true
+        run: |
+          ls -a ${{ matrix.projectPath }}/dist
         shell: bash
       - name: upload
         if: ${{ matrix.targetPlatform == 'WebGL' }}

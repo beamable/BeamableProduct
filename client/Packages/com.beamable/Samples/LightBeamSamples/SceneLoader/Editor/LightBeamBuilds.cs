@@ -28,18 +28,9 @@ public class LightBeamBuilds
 	{
 		AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
 		var config = Resources.Load<LightBeamSceneConfigObject>("SceneConfig");
-		//
-		// var assets = AssetDatabase.FindAssets($"t:{typeof(LightBeamSceneConfigObject).FullName}");
-		// Debug.Log("LIGHTBEAM_FOUND : " + assets.Length);
-		// foreach (var path in assets)
-		// {
-		// 	Debug.Log("  LIGHTBEAM_ASSET " + path);
-		// }
-		// config = AssetDatabase.LoadAssetAtPath<LightBeamSceneConfigObject>(assets[0]);
-
 		if (config == null)
 		{
-			Debug.Log("LIGHTBEAM_NO_CIG");
+			Debug.Log("LIGHTBEAM_NO");
 			return;
 		}
 		Debug.Log("LIGHTBEAM_CONFIG " + config.name);
@@ -57,6 +48,7 @@ public class LightBeamBuilds
 					break;
 			}
 		}
+		Debug.Log("LIGHTBEAM_OUTPUT " + outputDir);
 
 		var scenePaths = config.scenes.Select(x => x.scenePath).ToList();
 		BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions
