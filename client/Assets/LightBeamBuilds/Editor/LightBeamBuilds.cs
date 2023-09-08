@@ -9,10 +9,16 @@ using UnityEngine;
 
 public class LightBeamBuilds
 {
-
+	[MenuItem("LightBeam/Check Config")]
+	public static void CheckConfig()
+	{
+		var configPath = "Packages/com.beamable/Samples/LightBeamSamples/SceneLoader/Resources/SceneConfig.asset";
+		var config = AssetDatabase.LoadAssetAtPath<LightBeamSceneConfigObject>(configPath);
+		Debug.Log("LIGHTBEAM_CONFIG " + (config?.name ?? "<null>"));
+	}
 	public static void BuildAll()
 	{
-		var configPath = "Packages/com.beamable/Samples/LightBeamSamples/SceneLoader/SceneConfig.asset";
+		var configPath = "Packages/com.beamable/Samples/LightBeamSamples/SceneLoader/Resources/SceneConfig.asset";
 		var config = AssetDatabase.LoadAssetAtPath<LightBeamSceneConfigObject>(configPath);
 		Debug.Log("LIGHTBEAM_CONFIG " + (config?.name ?? "<null>"));
 		var args = Environment.GetCommandLineArgs();

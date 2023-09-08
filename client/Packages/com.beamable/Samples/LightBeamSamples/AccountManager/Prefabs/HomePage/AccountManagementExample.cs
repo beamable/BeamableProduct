@@ -17,6 +17,7 @@ public class AccountManagementExample : MonoBehaviour, ILightComponent
 	
 	public async Promise OnInstantiated(LightContext ctx)
 	{
+		
 		// clear old data
 		playerAccountContainer.Clear();
 		playerDetailsContainer.Clear();

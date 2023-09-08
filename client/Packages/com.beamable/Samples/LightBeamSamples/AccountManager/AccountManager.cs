@@ -1,4 +1,6 @@
 
+using Beamable.Avatars;
+using Beamable.Player;
 using Beamable.Runtime.LightBeam;
 using UnityEngine;
 
@@ -15,7 +17,17 @@ public class AccountManager : MonoBehaviour
 	{
 		var ctx = await this.InitLightBeams(root, loadingBlocker, builder =>
 		{
-			builder.RegisterAccountPages(config);
+			builder.AddSingleton(config);
+
+			builder.AddLightComponent(config.homePage);
+			builder.AddLightComponent(config.registerPage);
+			builder.AddLightComponent<ForgotPasswordPage, ForgotPasswordModel>(config.forgotPasswordPage);
+			builder.AddLightComponent<RecoverEmailPage, RecoverEmailPageModel>(config.recoverPage);
+			builder.AddLightComponent<AccountSwitchPage, PlayerAccount>(config.switchPage);
+		
+			builder.AddLightComponent<AvatarDisplayBehaviour, AccountAvatar>(config.avatarDisplayTemplate);
+			builder.AddLightComponent<AccountDisplayBehaviour, PlayerAccount>(config.accountDisplayTemplate);
+			builder.AddLightComponent<AccountDetailsBehaviour, PlayerAccount>(config.accountDetailsTemplate);
 		});
 
 		await ctx.Scope.GotoPage<AccountManagementExample>();

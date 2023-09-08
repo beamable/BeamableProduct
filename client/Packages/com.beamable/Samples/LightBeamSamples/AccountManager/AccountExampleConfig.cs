@@ -19,21 +19,3 @@ public class AccountExampleConfig : ScriptableObject
 	public AccountDisplayBehaviour accountDisplayTemplate;
 	public AccountDetailsBehaviour accountDetailsTemplate;
 }
-
-public static class AccountUtil
-{
-	public static void RegisterAccountPages(this IDependencyBuilder builder, AccountExampleConfig config)
-	{
-		builder.AddSingleton(config);
-
-		builder.AddLightComponent(config.homePage);
-		builder.AddLightComponent<ForgotPasswordPage, ForgotPasswordModel>(config.forgotPasswordPage);
-		builder.AddLightComponent<RecoverEmailPage, RecoverEmailPageModel>(config.recoverPage);
-		builder.AddLightComponent(config.registerPage);
-		builder.AddLightComponent<AccountSwitchPage, PlayerAccount>(config.switchPage);
-		
-		builder.AddLightComponent<AvatarDisplayBehaviour, AccountAvatar>(config.avatarDisplayTemplate);
-		builder.AddLightComponent<AccountDisplayBehaviour, PlayerAccount>(config.accountDisplayTemplate);
-		builder.AddLightComponent<AccountDetailsBehaviour, PlayerAccount>(config.accountDetailsTemplate);
-	}
-}
