@@ -108,11 +108,11 @@ jobs:
         if: ${{ matrix.targetPlatform != 'WebGL' }}
         with:
           name: Build-${{ matrix.lightBeam }}
-          path: ${{ matrix.buildPath }}/**
+          path: ${{ matrix.projectPath }}/${{ matrix.buildPath }}/**
           retention-days: 3
       - name: upload
         if: ${{ matrix.targetPlatform == 'WebGL' }}
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ matrix.buildPath }} s3://${{secrets.AWS_BUCKET_BUILDS}}/uploads/${{github.sha}}/${{matrix.lightBeam}} --acl public-read
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ matrix.projectPath }}/${{ matrix.buildPath }} s3://${{secrets.AWS_BUCKET_BUILDS}}/uploads/${{github.sha}}/${{matrix.lightBeam}} --acl public-read
       - uses: github-actions-up-and-running/pr-comment@v1.0.1
         if: ${{ matrix.targetPlatform == 'WebGL' && github.event_name == 'pull_request' }}
         with:
