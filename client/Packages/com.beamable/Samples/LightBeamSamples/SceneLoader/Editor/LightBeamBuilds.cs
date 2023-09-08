@@ -30,8 +30,7 @@ public class LightBeamBuilds
 		var config = Resources.Load<LightBeamSceneConfigObject>("SceneConfig");
 		if (config == null)
 		{
-			Debug.Log("LIGHTBEAM_NO");
-			return;
+			throw new Exception("LIGHTBEAM_NO_CONFIG");
 		}
 		Debug.Log("LIGHTBEAM_CONFIG " + config.name);
 		
