@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Ensure that Storage is enabled based on the status of its dependent services.
+
 ## [1.18.0]
 
 ### Added

@@ -58,8 +58,15 @@ namespace Beamable.Editor.UI.Components
 			UpdateLook();
 		}
 
+		public void SetCheckboxClickable(bool clickable)
+		{
+			SetEnabled(clickable);
+		}
+
 		void UpdateLook()
 		{
+			EnableInClassList("enabled", Value);
+			EnableInClassList("disabled", !Value);
 			_onNotifier.visible = Value;
 		}
 	}
