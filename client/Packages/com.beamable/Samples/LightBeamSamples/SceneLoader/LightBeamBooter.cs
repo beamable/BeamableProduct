@@ -6,21 +6,24 @@ using UnityEngine.SceneManagement;
 
 public class LightBeamBooter : MonoBehaviour
 {
+	[Header("Asset References")]
+	public LightBeamSceneConfigObject config;
+	
     // Start is called before the first frame update
     void Start()
     {
-	    var index = GetSceneIndex();
+	    var index = GetSceneName(config);
 	    SceneManager.LoadSceneAsync(index);
     }
 
-    static int GetSceneIndex()
+    static string GetSceneName(LightBeamSceneConfigObject config)
     {
 	    var url = Application.absoluteURL;
 	    var queryStartIndex = url.IndexOf("?", StringComparison.Ordinal);
 	    if (queryStartIndex == -1)
 	    {
 		    Debug.LogWarning("no query args");
-		    return 1;
+		    return null;
 	    }
 
 	    var queryStr = url.Substring(queryStartIndex + 1); // consume the ?
@@ -47,19 +50,16 @@ public class LightBeamBooter : MonoBehaviour
 	    if (!queryArgs.TryGetValue("scene", out var sceneName))
 	    {
 		    Debug.LogWarning("no scene arg");
-
-		    return 1;
-	    } 
-	    
-	    // pretend the sceneName is an int, for now.
-	    if (int.TryParse(sceneName, out var sceneIndex))
-	    {
-		    Debug.Log($"found scene name=[{sceneName}] index=[{sceneIndex}]");
-		    return sceneIndex;
+		    return null;
 	    }
 
+	    if (config.TryGetScene(sceneName, out var scene))
+	    {
+		    return scene.sceneName;
+	    }
+	    
 	    Debug.LogWarning("no parsable scene arg");
-	    return 1;
+	    return null;
 
     }
 
