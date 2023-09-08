@@ -1,0 +1,3 @@
+<linker>
+    <assembly fullname="Beamable.LightBeam.Boot" preserve="all"/>
+</linker>

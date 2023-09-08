@@ -18,23 +18,32 @@ public class LightBeamBuilds
 		// var config = AssetDatabase.LoadAssetAtPath<LightBeamSceneConfigObject>("Assets/LightBeamBuilds/Resources/SceneConfig.asset");
 
 		// var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>("Assets/LightBeamBuilds/Resources/SceneConfig.asset");
-
+		var assets = AssetDatabase.FindAssets($"t:{typeof(LightBeamSceneConfigObject).FullName}");
+		Debug.Log("FOUND : " + assets.Length);
 		Debug.Log("LIGHTBEAM_CONFIG " + (config?.name ?? "<null>"));
 		// Debug.Log("LIGHTBEAM_CONFIG " + (asset?.GetType().Name ?? "<no type>"));
 	}
+	
 	public static void BuildAll()
 	{
 		AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
-		// var configPath = "Packages/com.beamable/Samples/LightBeamSamples/SceneLoader/Resources/SceneConfig.asset";
-		// var config = AssetDatabase.LoadAssetAtPath<LightBeamSceneConfigObject>(configPath);
 		var config = Resources.Load<LightBeamSceneConfigObject>("SceneConfig");
+		//
+		// var assets = AssetDatabase.FindAssets($"t:{typeof(LightBeamSceneConfigObject).FullName}");
+		// Debug.Log("LIGHTBEAM_FOUND : " + assets.Length);
+		// foreach (var path in assets)
+		// {
+		// 	Debug.Log("  LIGHTBEAM_ASSET " + path);
+		// }
+		// config = AssetDatabase.LoadAssetAtPath<LightBeamSceneConfigObject>(assets[0]);
 
-		// AssetDatabase.ImportAsset("Assets/LightBeamBuilds/Resources/SceneConfig.asset");
-		// var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>("Assets/LightBeamBuilds/Resources/SceneConfig.asset");
+		if (config == null)
+		{
+			Debug.Log("LIGHTBEAM_NO_CIG");
+			return;
+		}
+		Debug.Log("LIGHTBEAM_CONFIG " + config.name);
 		
-		// var config = AssetDatabase.LoadAssetAtPath<LightBeamSceneConfigObject>("Assets/LightBeamBuilds/Resources/SceneConfig.asset");
-		Debug.Log("LIGHTBEAM_CONFIG " + (config?.name ?? "<null>"));
-		// Debug.Log("LIGHTBEAM_CONFIG " + (asset?.GetType().Name ?? "<no type>"));
 		var args = Environment.GetCommandLineArgs();
 
 		Debug.Log("LIGHTBEAM_ARGS " + string.Join(",", args));
