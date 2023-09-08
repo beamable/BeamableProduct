@@ -237,16 +237,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 				if (x.Model is StorageEntryModel storageModel)
 				{
 					x.EnableState.SetCheckboxClickable(false);
-					if(!_storageDependsOnServiceRepresentation.ContainsKey(storageModel))
+					if (!_storageDependsOnServiceRepresentation.ContainsKey(storageModel))
 					{
-						x.UpdateEnableState(false,false,CHECKBOX_TOOLTIP_NO_DEP_ENABLED);
+						x.UpdateEnableState(false, false, CHECKBOX_TOOLTIP_NO_DEP_ENABLED);
 					}
 				}
 
 				foreach (var dependency in dependencies)
 				{
 					if (!(dependency.Model is StorageEntryModel storageEntryModel) ||
-					    !(x.Model is ManifestEntryModel serviceModel))
+						!(x.Model is ManifestEntryModel serviceModel))
 						continue;
 
 					if (_storageDependsOnServiceRepresentation.ContainsKey(storageEntryModel))
@@ -315,7 +315,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 					? CHECKBOX_TOOLTIP_DEPENDENCY_ON_SERVICE
 					: CHECKBOX_TOOLTIP_NO_DEP_ENABLED;
 				x.UpdateEnableState(isAnyDependentServiceEnabled, false, tooltipText);
-					
+
 			});
 		}
 
