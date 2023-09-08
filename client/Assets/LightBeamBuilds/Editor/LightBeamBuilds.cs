@@ -14,7 +14,7 @@ public class LightBeamBuilds
 	{
 		// var configPath = "Packages/com.beamable/Samples/LightBeamSamples/SceneLoader/Resources/SceneConfig.asset";
 		// var config = AssetDatabase.LoadAssetAtPath<LightBeamSceneConfigObject>(configPath);
-		var config = Resources.Load<LightBeamSceneConfigObject>("");
+		var config = Resources.Load<LightBeamSceneConfigObject>("SceneConfig");
 
 		Debug.Log("LIGHTBEAM_CONFIG " + (config?.name ?? "<null>"));
 	}
@@ -23,7 +23,7 @@ public class LightBeamBuilds
 
 		// var configPath = "Packages/com.beamable/Samples/LightBeamSamples/SceneLoader/Resources/SceneConfig.asset";
 		// var config = AssetDatabase.LoadAssetAtPath<LightBeamSceneConfigObject>(configPath);
-		var config = Resources.Load<LightBeamSceneConfigObject>("");
+		var config = Resources.Load<LightBeamSceneConfigObject>("SceneConfig");
 
 		Debug.Log("LIGHTBEAM_CONFIG " + (config?.name ?? "<null>"));
 		var args = Environment.GetCommandLineArgs();
