@@ -1,3 +1,7 @@
 {
-	"name": "Beamable.LightBeam.Boot"
+	"name": "Beamable.LightBeam.Boot",
+	"references": [
+		"Unity.Beamable",
+		"Unity.Beamable.Runtime.Common"
+	]
 }

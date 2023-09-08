@@ -1,3 +1,4 @@
+using Beamable.Runtime.LightBeam;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -12,18 +13,24 @@ public class LightBeamBooter : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-	    var index = GetSceneName(config);
+	    var args = GetArgs();
+	    var index = GetSceneName(args, config);
+	    // var hint = GetSampleHint(args);
+	    
+	    // store the hint?
+	    LightBeamUtilExtensions.Hints = args;
+	    
 	    SceneManager.LoadSceneAsync(index);
     }
 
-    static string GetSceneName(LightBeamSceneConfigObject config)
+    static Dictionary<string, string> GetArgs()
     {
 	    var url = Application.absoluteURL;
 	    var queryStartIndex = url.IndexOf("?", StringComparison.Ordinal);
 	    if (queryStartIndex == -1)
 	    {
 		    Debug.LogWarning("no query args");
-		    return null;
+		    return new Dictionary<string, string>();
 	    }
 
 	    var queryStr = url.Substring(queryStartIndex + 1); // consume the ?
@@ -47,7 +54,17 @@ public class LightBeamBooter : MonoBehaviour
 		    }
 	    }
 
-	    if (!queryArgs.TryGetValue("scene", out var sceneName))
+	    return queryArgs;
+    }
+
+    static string GetSampleHint(Dictionary<string, string> args)
+    {
+	    return args.TryGetValue("hint", out var hint) ? hint : null;
+    }
+
+    static string GetSceneName(Dictionary<string, string> args, LightBeamSceneConfigObject config)
+    {
+	    if (!args.TryGetValue("scene", out var sceneName))
 	    {
 		    Debug.LogWarning("no scene arg");
 		    return null;
