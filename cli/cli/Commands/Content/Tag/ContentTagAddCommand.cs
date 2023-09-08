@@ -27,23 +27,16 @@ public class ContentTagAddCommand : AppCommand<ContentTagAddCommandArgs>
 	{
 		_contentService = args.ContentService;
 		var local = _contentService.GetLocalCache(args.ManifestId);
-		
-		
-		var contentIds = args.treatAsRegex
-			? local.ContentMatchingRegex(args.content).ToList()
-			: new List<string>() { args.content };
 
-		if (!args.treatAsRegex && local.GetContent(args.content) == null || contentIds.Count == 0)
-		{
-			throw new CliException("Could not find any matching content.");
-		}
 
+		var contentIds = args.GetContentsList(local);
+		
 		foreach (var id in contentIds)
 		{
 			local.Tags.AddTagToContent(id, args.tag);
 		}
 		local.Tags.WriteToFile();
-		Log.Information("Added tag `{ArgsTag} to content ({ContentIdsCount}): {Join}", args.tag, contentIds.Count, string.Join(",",contentIds));
+		Log.Information("Added tag {ArgsTag} to content ({ContentIdsCount}): {Join}", args.tag, contentIds.Count, string.Join(", ",contentIds));
 		return Task.CompletedTask;
 	}
 }
@@ -53,4 +46,24 @@ public class ContentTagAddCommandArgs : ContentTagCommandArgs
 	public string content;
 	public string tag;
 	public bool treatAsRegex;
+
+	public List<string> GetContentsList(ContentLocalCache cache)
+	{
+		var result = treatAsRegex
+			? cache.ContentMatchingRegex(content).ToList()
+			: content.Split(",").ToList();
+
+		if (result.Count == 0)
+		{
+			throw new CliException("Could not find any matching content.");
+		}
+
+		var wrongContent = result.Where(id => cache.GetContent(id) == null).ToList();
+		if (wrongContent.Count != 0)
+		{
+			throw new CliException($"Could not find content: {string.Join(", ",wrongContent)}");
+		}
+
+		return result;
+	}
 }
