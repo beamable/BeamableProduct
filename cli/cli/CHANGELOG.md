@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed if older version of templates are installed, allow `beam project new` continue without installing latest templates
+- Detect no services found scenario in `beam services ps`.
+- Fixed Powershell users having blue-on-blue text when selecting options.
 
 ## [1.18.0]
 
@@ -30,10 +32,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Validate cid and resolve alias to cid on Microservice deploy.
 - Standalone microservices now write federated components to the manifest when deployed.
 - Creating a new project with NET 6.0 no longer fails to install templates.
-
-### Fixed
-
-- Fixed Powershell users having blue-on-blue text when selecting options.
 
 ### Changed
 
