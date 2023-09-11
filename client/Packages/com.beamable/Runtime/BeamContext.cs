@@ -73,6 +73,7 @@ namespace Beamable
 	[Serializable]
 	public class BeamContext : IPlatformService, IGameObjectContext, IObservedPlayer, IBeamableDisposableOrder, IDependencyNameProvider, IDependencyScopeNameProvider
 	{
+		const string DEFAULT_CONTEXT_KEY = "beamDefaultContext";
 
 		#region Internal State
 		/// <summary>
@@ -114,7 +115,7 @@ namespace Beamable
 
 		public bool IsInitialized => _initPromise != null;
 
-		public bool IsDefault => string.IsNullOrEmpty(PlayerCode);
+		public bool IsDefault => IsDefaultPlayerCode(PlayerCode);
 
 		private IDependencyProviderScope _serviceScope;
 		private bool _isStopped;
@@ -262,6 +263,8 @@ namespace Beamable
 		private IHeartbeatService _heartbeatService;
 		private BeamableBehaviour _behaviour;
 		private OfflineCache _offlineCache;
+		private static bool IsDefaultPlayerCode(string code) => DefaultPlayerCode == code;
+		private static string DefaultPlayerCode => PlayerPrefs.GetString(DEFAULT_CONTEXT_KEY, string.Empty);
 
 		#endregion
 
@@ -293,7 +296,7 @@ namespace Beamable
 		/// <returns>New instance of the <see cref="BeamContext"/></returns>
 		public static BeamContext CreateAuthorizedContext(string playerCode, TokenResponse token)
 		{
-			bool isDefault = string.IsNullOrWhiteSpace(playerCode);
+			bool isDefault = IsDefaultPlayerCode(playerCode);
 			if (isDefault || _playerCodeToContext.ContainsKey(playerCode))
 			{
 #if UNITY_EDITOR
@@ -738,10 +741,10 @@ namespace Beamable
 			IDependencyBuilder dependencyBuilder = null
 			)
 		{
-			const string contextKey = "beamDefaultContext";
+			var isFirstContext = _playerCodeToContext.Count == 0;
 
 			dependencyBuilder = dependencyBuilder ?? Beam.DependencyBuilder;
-			playerCode = playerCode ?? PlayerPrefs.GetString(contextKey, string.Empty);
+			playerCode ??= isFirstContext ? string.Empty : DefaultPlayerCode;
 			// get the cid & pid if not given
 			var cid = ConfigDatabase.GetString("cid");
 			var pid = ConfigDatabase.GetString("pid");
@@ -758,10 +761,9 @@ namespace Beamable
 			}
 
 #if !BEAMABLE_DISABLE_BEAM_CONTEXT_DEFAULT_OVERRIDE
-			var isFirstContext = _playerCodeToContext.Count == 0;
 			if (isFirstContext)
 			{
-				PlayerPrefs.SetString(contextKey, playerCode);
+				PlayerPrefs.SetString(DEFAULT_CONTEXT_KEY, playerCode);
 			}
 #endif
 
