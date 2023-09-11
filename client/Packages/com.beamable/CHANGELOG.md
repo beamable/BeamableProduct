@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Websocket connection authentication in WebGL builds.
+- Fixed ContentRef property drawer on Unity 2021 LTS.
 
 ## [1.18.0]
 
