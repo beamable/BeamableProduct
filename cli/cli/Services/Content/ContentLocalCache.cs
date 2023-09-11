@@ -3,7 +3,9 @@ using Beamable.Common.Api;
 using Beamable.Common.Content;
 using cli.Utils;
 using JetBrains.Annotations;
+using Serilog;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace cli.Services.Content;
 
@@ -12,12 +14,14 @@ public class ContentLocalCache
 	public string ManifestId { get; }
 	public Dictionary<string, ContentDocument> Assets => _localAssets;
 	public string ContentDirPath => Path.Combine(BaseDirPath, ManifestId);
+	public ContentTags Tags => _contentTags;
+
 	private string BaseDirPath => Path.Combine(_configService.ConfigFilePath, "Content");
 
 	private Dictionary<string, ContentDocument> _localAssets;
 	private ContentTags _contentTags;
-	private CliRequester _requester;
 	private ClientManifest _manifest;
+	private readonly CliRequester _requester;
 	private readonly ConfigService _configService;
 
 	public ContentLocalCache(ConfigService configService, string manifestId, CliRequester requester)
@@ -25,6 +29,22 @@ public class ContentLocalCache
 		ManifestId = manifestId;
 		_requester = requester;
 		_configService = configService;
+	}
+
+	public IEnumerable<string> ContentMatchingRegex(string pattern)
+	{
+		try
+		{
+			var regex = new Regex(pattern);
+
+			return _localAssets.Keys.Where(id => regex.IsMatch(id));
+		}
+		catch (ArgumentException)
+		{
+			BeamableLogger.LogError("{Pattern} is not a valid regex!", pattern);
+		}
+
+		return new List<string>();
 	}
 
 	public Dictionary<string, TagStatus> GetContentTagsStatus(string contentId) =>
@@ -69,9 +89,7 @@ public class ContentLocalCache
 			var tags = _contentTags.TagsForContent(contentManifestEntry.contentId, !contentExistsLocally);
 			resultList.Add(new LocalContent
 			{
-				contentId = contentManifestEntry.contentId,
-				status = localStatus,
-				tags = tags
+				contentId = contentManifestEntry.contentId, status = localStatus, tags = tags
 			});
 		}
 
@@ -182,7 +200,7 @@ public class ContentLocalCache
 		var dict = new Dictionary<string, ManifestReferenceSuperset>();
 
 		foreach (var localContent in
-				 localContents.Where(content => content.status != ContentStatus.Deleted))
+		         localContents.Where(content => content.status != ContentStatus.Deleted))
 		{
 			var definition = PrepareContentForPublish(localContent.contentId);
 			var matchingContent = manifest.entries.FirstOrDefault(info => info.contentId.Equals(definition.id));

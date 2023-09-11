@@ -80,9 +80,9 @@ public class ContentService
 				switch (pair.Value)
 				{
 					case TagStatus.LocalOnly:
-						return $"[green]{pair.Key}[/]";
+						return $"[green][[+]]{pair.Key}[/]";
 					case TagStatus.RemoteOnly:
-						return $"[red]{pair.Key}[/]";
+						return $"[red][[-]]{pair.Key}[/]";
 					case TagStatus.LocalAndRemote:
 						return pair.Key;
 					default:
