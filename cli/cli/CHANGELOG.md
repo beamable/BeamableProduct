@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Filter out storage objects from `beam services enable` selection wizard.
 - `beam project new` now have --disable flag to create service as disabled on publish.
 - Ability to retry again if alias or username or password is entered incorrectly.
+- Commands which require config to work will be cancelled if no config is available.
 
 ### Fixed
 
