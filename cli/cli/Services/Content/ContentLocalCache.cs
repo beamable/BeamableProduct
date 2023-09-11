@@ -89,7 +89,9 @@ public class ContentLocalCache
 			var tags = _contentTags.TagsForContent(contentManifestEntry.contentId, !contentExistsLocally);
 			resultList.Add(new LocalContent
 			{
-				contentId = contentManifestEntry.contentId, status = localStatus, tags = tags
+				contentId = contentManifestEntry.contentId,
+				status = localStatus,
+				tags = tags
 			});
 		}
 
@@ -200,7 +202,7 @@ public class ContentLocalCache
 		var dict = new Dictionary<string, ManifestReferenceSuperset>();
 
 		foreach (var localContent in
-		         localContents.Where(content => content.status != ContentStatus.Deleted))
+				 localContents.Where(content => content.status != ContentStatus.Deleted))
 		{
 			var definition = PrepareContentForPublish(localContent.contentId);
 			var matchingContent = manifest.entries.FirstOrDefault(info => info.contentId.Equals(definition.id));
