@@ -126,7 +126,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 				}
 
 				this.SendResults(localServiceListResult);
-				if(manifest.manifest.Count > 0)
+				if (manifest.manifest.Count > 0)
 				{
 					AnsiConsole.Write(table);
 				}
@@ -212,7 +212,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 				}
 
 				this.SendResults(localServiceListResult);
-				if(serviceDefinitions.Count > 0)
+				if (serviceDefinitions.Count > 0)
 				{
 					AnsiConsole.Write(table);
 				}
