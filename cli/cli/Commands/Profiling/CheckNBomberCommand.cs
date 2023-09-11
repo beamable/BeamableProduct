@@ -11,7 +11,7 @@ public class CheckNBomberCommandArgs : CommandArgs
 	public double failLimit;
 	public double p95Limit;
 }
-public class CheckNBomberCommand : AppCommand<CheckNBomberCommandArgs>
+public class CheckNBomberCommand : AppCommand<CheckNBomberCommandArgs>, IStandaloneCommand
 {
 	public CheckNBomberCommand() : base("check-nbomber", "Read the results of a n-bomber .csv file and determine if there are errors")
 	{
