@@ -2,7 +2,7 @@
 
 namespace cli.Content;
 
-public class ContentStatusCommand : AppCommand<ContentStatusCommandArgs>
+public class ContentStatusCommand : AppCommand<ContentStatusCommandArgs>, IRequireExistingConfig
 {
 	private ContentService _contentService;
 	public ContentStatusCommand() : base("status", "Show current status of the content")

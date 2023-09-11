@@ -2,7 +2,7 @@
 
 namespace cli.Content;
 
-public class ContentPublishCommand : AppCommand<ContentPublishCommandArgs>
+public class ContentPublishCommand : AppCommand<ContentPublishCommandArgs>, IRequireExistingConfig
 {
 	private ContentService _contentService;
 

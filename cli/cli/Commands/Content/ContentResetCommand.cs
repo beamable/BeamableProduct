@@ -2,7 +2,7 @@
 
 namespace cli.Content;
 
-public class ContentResetCommand : AppCommand<ContentResetCommandArgs>
+public class ContentResetCommand : AppCommand<ContentResetCommandArgs>, IRequireExistingConfig
 {
 	private ContentService _contentService;
 

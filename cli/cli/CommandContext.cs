@@ -23,6 +23,8 @@ public interface IEmptyResult : IResultProvider
 
 }
 
+public interface IRequireExistingConfig {}
+
 
 public class DefaultStreamResultChannel : IResultChannel
 {

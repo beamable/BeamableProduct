@@ -3,7 +3,7 @@ using cli.Services.Content;
 
 namespace cli.Content.Tag;
 
-public class ContentTagAddCommand : AppCommand<ContentTagAddCommandArgs>
+public class ContentTagAddCommand : AppCommand<ContentTagAddCommandArgs>, IRequireExistingConfig
 {
 	private ContentService _contentService;
 

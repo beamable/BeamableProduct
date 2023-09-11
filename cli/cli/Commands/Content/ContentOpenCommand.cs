@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace cli.Content;
 
-public class ContentOpenCommand : AppCommand<ContentOpenCommandArgs>
+public class ContentOpenCommand : AppCommand<ContentOpenCommandArgs>, IRequireExistingConfig
 {
 	private ContentService _contentService;
 
