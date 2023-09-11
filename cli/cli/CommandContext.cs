@@ -23,8 +23,10 @@ public interface IEmptyResult : IResultProvider
 
 }
 
-public interface IRequireExistingConfig {}
-
+/// <summary>
+/// Specifies that command does not require config to work correctly.
+/// </summary>
+public interface IStandaloneCommand {}
 
 public class DefaultStreamResultChannel : IResultChannel
 {

@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace cli.Content.Tag;
 
-public class ContentTagCommand : AppCommand<ContentTagCommandArgs>, IRequireExistingConfig
+public class ContentTagCommand : AppCommand<ContentTagCommandArgs>
 {
 	public static readonly ConfigurableOptionFlag REGEX_OPTION =
 		new("treat-as-regex", "Treat content argument as regex pattern");

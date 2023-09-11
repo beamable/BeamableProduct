@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace cli.Content;
 
-public class ContentPullCommand : AppCommand<ContentPullCommandArgs>, IRequireExistingConfig
+public class ContentPullCommand : AppCommand<ContentPullCommandArgs>
 {
 	private ContentService _contentService;
 	public ContentPullCommand() : base("pull", "Pulls currently deployed content")

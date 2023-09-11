@@ -3,7 +3,7 @@ using cli.Services.Content;
 
 namespace cli.Content.Tag;
 
-public class ContentTagRemoveCommand : AppCommand<ContentTagAddCommandArgs>, IRequireExistingConfig
+public class ContentTagRemoveCommand : AppCommand<ContentTagAddCommandArgs>
 {
 
 	private ContentService _contentService;
