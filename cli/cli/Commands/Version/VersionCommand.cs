@@ -14,7 +14,7 @@ public class VersionCommandArgs : CommandArgs
 }
 
 
-public class VersionCommand : AppCommand<VersionCommandArgs>
+public class VersionCommand : AppCommand<VersionCommandArgs>, IStandaloneCommand
 {
 	public VersionCommand() : base("version", "Commands for managing the CLI version")
 	{
