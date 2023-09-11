@@ -38,7 +38,7 @@ public class NewSolutionCommandArgs : SolutionCommandArgs
 	public string directory;
 }
 
-public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
+public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>, IStandaloneCommand
 {
 	private readonly InitCommand _initCommand;
 	private readonly AddUnityClientOutputCommand _addUnityCommand;
