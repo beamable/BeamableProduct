@@ -12,26 +12,26 @@ public class ContentTagCommand : AppCommand<ContentTagCommandArgs>
 
 	public static readonly Argument<string> CONTENT_ARGUMENT =
 		new Argument<string>("content", "Accepts content ids separated by commas or regex pattern when used in combination with \"treat-as-regex\" option");
-		private ContentService _contentService;
+	private ContentService _contentService;
 
-		public ContentTagCommand() : base("tag", "Opens tags file")
-		{
-		}
+	public ContentTagCommand() : base("tag", "Opens tags file")
+	{
+	}
 
-		public override void Configure()
-		{
-			AddOption(ContentCommand.MANIFEST_OPTION, (args, s) => args.ManifestId = s);
-		}
+	public override void Configure()
+	{
+		AddOption(ContentCommand.MANIFEST_OPTION, (args, s) => args.ManifestId = s);
+	}
 
-		public override Task Handle(ContentTagCommandArgs args)
+	public override Task Handle(ContentTagCommandArgs args)
+	{
+		_contentService = args.ContentService;
+		new Process
 		{
-			_contentService = args.ContentService;
-			new Process
-			{
-				StartInfo = new ProcessStartInfo(_contentService.GetLocalCache(args.ManifestId).Tags.FullPath) { UseShellExecute = true }
-			}.Start();
-			return Task.CompletedTask;
-		}
+			StartInfo = new ProcessStartInfo(_contentService.GetLocalCache(args.ManifestId).Tags.FullPath) { UseShellExecute = true }
+		}.Start();
+		return Task.CompletedTask;
+	}
 }
 
 public class ContentTagCommandArgs : ContentCommandArgs

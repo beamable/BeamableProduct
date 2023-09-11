@@ -19,22 +19,22 @@ public class ContentTagRemoveCommand : AppCommand<ContentTagAddCommandArgs>
 		AddOption(ContentCommand.MANIFEST_OPTION, (args, s) => args.ManifestId = s);
 		AddOption(ContentTagCommand.REGEX_OPTION, (args, b) => args.treatAsRegex = b);
 	}
-	
+
 	public override Task Handle(ContentTagAddCommandArgs args)
 	{
 		_contentService = args.ContentService;
 		var local = _contentService.GetLocalCache(args.ManifestId);
-		
+
 		var contentIds = args.GetContentsList(local);
 		var removedValues = new List<string>();
-		
+
 		foreach (var id in contentIds)
 		{
-			if(local.Tags.RemoveTagFromContent(id, args.tag))
+			if (local.Tags.RemoveTagFromContent(id, args.tag))
 				removedValues.Add(id);
 		}
 		local.Tags.WriteToFile();
-		BeamableLogger.Log("Removed tag {ArgsTag} from content ({RemovedValuesCount}): {Join}", args.tag, removedValues.Count, string.Join(", ",removedValues));
+		BeamableLogger.Log("Removed tag {ArgsTag} from content ({RemovedValuesCount}): {Join}", args.tag, removedValues.Count, string.Join(", ", removedValues));
 		return Task.CompletedTask;
 	}
 }

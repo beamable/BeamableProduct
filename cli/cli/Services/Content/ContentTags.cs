@@ -63,7 +63,7 @@ public class ContentTags
 	{
 		var list = localTags.TryGetValue(tag, out string[] tags) ? tags.ToList() : new List<string>();
 
-		if(list.Any(contentId.Equals))
+		if (list.Any(contentId.Equals))
 			return false;
 
 		list.Add(contentId);
@@ -73,7 +73,7 @@ public class ContentTags
 
 	public bool RemoveTagFromContent(string contentId, string tag)
 	{
-		if(!localTags.ContainsKey(tag)) return false;
+		if (!localTags.ContainsKey(tag)) return false;
 		var tagsLength = localTags[tag].Length;
 		localTags[tag] = localTags[tag].ToList().Where(s => !s.Equals(contentId)).ToArray();
 		return tagsLength != localTags[tag].Length;
