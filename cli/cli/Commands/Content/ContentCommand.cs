@@ -7,7 +7,7 @@ namespace cli.Content;
 public class ContentCommand : AppCommand<ContentCommandArgs>
 {
 	public static readonly Option<string> MANIFEST_OPTION =
-		new("manifest-id", () => "global", "Set the manifest to use, 'global' by default");
+		new("--manifest-id", () => "global", "Set the manifest to use, 'global' by default");
 
 	private ContentService _contentService;
 

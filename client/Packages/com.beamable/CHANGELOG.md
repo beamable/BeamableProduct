@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Websocket connection authentication in WebGL builds.
+- Fixed ContentRef property drawer on Unity 2021 LTS.
+
 ## [1.18.0]
 
 ### Fixed
@@ -16,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `IBeamableDisposableOrder` interface allows services to dispose in configurable order. 
+- `IBeamableDisposableOrder` interface allows services to dispose in configurable order.
 
 ## [1.17.3]
 

@@ -18,7 +18,8 @@ public class ContentTags
 	public string ManifestId { get; }
 	public Dictionary<string, string[]> localTags = new();
 	public Dictionary<string, string[]> remoteTags = new();
-	private string Filename => string.Format(FILENAME_FORMAT, ManifestId);
+	public string Filename => string.Format(FILENAME_FORMAT, ManifestId);
+	public string FullPath => Path.Combine(_configDir, Filename);
 
 	ContentTags(string manifestId, string configDir)
 	{
@@ -56,6 +57,26 @@ public class ContentTags
 				localTags[key] = remoteTags[key];
 			}
 		}
+	}
+
+	public bool AddTagToContent(string contentId, string tag)
+	{
+		var list = localTags.TryGetValue(tag, out string[] tags) ? tags.ToList() : new List<string>();
+
+		if (list.Any(contentId.Equals))
+			return false;
+
+		list.Add(contentId);
+		localTags[tag] = list.ToArray();
+		return true;
+	}
+
+	public bool RemoveTagFromContent(string contentId, string tag)
+	{
+		if (!localTags.ContainsKey(tag)) return false;
+		var tagsLength = localTags[tag].Length;
+		localTags[tag] = localTags[tag].ToList().Where(s => !s.Equals(contentId)).ToArray();
+		return tagsLength != localTags[tag].Length;
 	}
 
 	public string[] TagsForContent(string contentId, bool isRemote)
@@ -101,8 +122,7 @@ public class ContentTags
 	{
 		var tagsLocalFile = new ContentTags(manifestId, configDir);
 
-		var path = Path.Combine(configDir, tagsLocalFile.Filename);
-		if (string.IsNullOrWhiteSpace(configDir) || !File.Exists(path))
+		if (string.IsNullOrWhiteSpace(configDir) || !File.Exists(tagsLocalFile.FullPath))
 		{
 			BeamableLogger.LogWarning("Tags file not found, using empty one");
 			return tagsLocalFile;
@@ -110,12 +130,12 @@ public class ContentTags
 
 		try
 		{
-			var jsonContent = File.ReadAllText(path);
+			var jsonContent = File.ReadAllText(tagsLocalFile.FullPath);
 			tagsLocalFile.localTags = JsonConvert.DeserializeObject<Dictionary<string, string[]>>(jsonContent);
 		}
 		catch (Exception e)
 		{
-			throw new CliException($"Failed to read \"{path}\" tag file. Exception: {e.Message}");
+			throw new CliException($"Failed to read \"{tagsLocalFile.FullPath}\" tag file. Exception: {e.Message}");
 		}
 
 		return tagsLocalFile;
