@@ -738,8 +738,10 @@ namespace Beamable
 			IDependencyBuilder dependencyBuilder = null
 			)
 		{
+			const string contextKey = "beamDefaultContext";
+
 			dependencyBuilder = dependencyBuilder ?? Beam.DependencyBuilder;
-			playerCode = playerCode ?? "";
+			playerCode = playerCode ?? PlayerPrefs.GetString(contextKey, string.Empty);
 			// get the cid & pid if not given
 			var cid = ConfigDatabase.GetString("cid");
 			var pid = ConfigDatabase.GetString("pid");
@@ -754,6 +756,14 @@ namespace Beamable
 
 				return existingContext;
 			}
+
+#if !BEAMABLE_DISABLE_BEAM_CONTEXT_DEFAULT_OVERRIDE
+			var isFirstContext = _playerCodeToContext.Count == 0;
+			if (isFirstContext)
+			{
+				PlayerPrefs.SetString(contextKey, playerCode);
+			}
+#endif
 
 			var ctx = new BeamContext();
 			ctx.Init(cid, pid, playerCode, beamable, dependencyBuilder);

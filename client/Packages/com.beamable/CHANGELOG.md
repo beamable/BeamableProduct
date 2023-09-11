@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Websocket connection authentication in WebGL builds.
 
+### Changed
+
+- If we call `BeamContext.ForPlayer` before `BeamContext.Default` playerCode passed to first call becomes default one.
+Game maker can use `BEAMABLE_DISABLE_BEAM_CONTEXT_DEFAULT_OVERRIDE` to restore previous behaviour.
+
 ## [1.18.0]
 
 ### Fixed
