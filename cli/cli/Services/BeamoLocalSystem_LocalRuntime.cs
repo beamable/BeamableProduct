@@ -345,7 +345,9 @@ public partial class BeamoLocalSystem
 			if (builtLayer.TryGetValue(BeamoProtocolType.EmbeddedMongoDb, out var microStorageContainers))
 				runContainerTasks.AddRange(microStorageContainers.Select(async sd =>
 				{
+					Log.Information("Started deploying service: " + sd.BeamoId);
 					await RunLocalEmbeddedMongoDb(sd, localManifest.EmbeddedMongoDbLocalProtocols[sd.BeamoId]);
+					Log.Information("Finished deploying service: " + sd.BeamoId);
 					onServiceDeployCompleted?.Invoke(sd.BeamoId);
 				}));
 
