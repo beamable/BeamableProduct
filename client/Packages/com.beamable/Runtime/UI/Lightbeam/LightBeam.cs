@@ -222,10 +222,57 @@ namespace Beamable.Runtime.LightBeam
 			}
 		}
 	}
+
+	public static class BeamContextExtensions
+	{
+		
+		// public Promise<T> NewLightComponent<T, TModel>(Transform container,
+		//                                                TModel model)
+		// 	where T : MonoBehaviour, ILightComponent<TModel> =>
+		// 	Scope.NewLightComponent<T, TModel>(container, model);
+		//
+		//
+		// public Promise<T> SetLightComponent<T, TModel>(Transform container,
+		//                                                TModel model)
+		// 	where T : MonoBehaviour, ILightComponent<TModel> =>
+		// 	Scope.SetLightComponent<T, TModel>(container, model);
+		//
+		// public Promise<T> GotoPage<T, TModel>(TModel model)
+		// 	where T : MonoBehaviour, ILightComponent<TModel> =>
+		// 	Scope.GotoPage<T, TModel>(model);
+
+		public static Promise<T> GotoPage<T>(this BeamContext ctx) where T : MonoBehaviour, ILightComponent
+			=> ctx.ServiceProvider.GotoPage<T>();
+	}
 	
 	public static class LightBeamDependencyExtensions
 	{
-		
+		public static async Promise<BeamContext> InitLightBeams(this BeamContext beamContext,
+		                                                            RectTransform root,
+		                                                            CanvasGroup loadingBlocker,
+		                                                            Action<IDependencyBuilder> scopeConfigurator)
+		{
+			var lightContext = new LightContext
+			{
+				BeamContext = beamContext,
+				Root = root,
+				LoadingBlocker = loadingBlocker
+			};
+			var scope = beamContext.ServiceProvider.Fork(builder =>
+			{
+				builder.AddScoped(lightContext);
+				scopeConfigurator?.Invoke(builder);
+			});
+			lightContext.Scope = scope;
+			await beamContext.OnReady.ShowLoading(lightContext);
+			return beamContext;
+		}
+
+		public static void GotoPage(this BeamContext ctx)
+		{
+			
+		}
+
 		public static async Promise<LightContext> InitLightBeams<T>(this T lightBeam,
 		                                                            RectTransform root,
 		                                                            CanvasGroup loadingBlocker,

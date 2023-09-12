@@ -14,6 +14,9 @@ public class AccountManagementExample : MonoBehaviour, ILightComponent
 	public Button registerEmailButton;
 	public Button findAccountButton;
 	public Button createNewAccountButton;
+
+	public AccountDisplayBehaviour widget;
+	
 	
 	public async Promise OnInstantiated(LightContext ctx)
 	{
@@ -57,10 +60,29 @@ public class AccountManagementExample : MonoBehaviour, ILightComponent
 		});
 		
 		// create all the prefab instances for the other accounts
+		// foreach (var account in ctx.BeamContext.Accounts)
+		// {
+		// 	if (account.GamerTag == currentAccount.GamerTag) continue; // skip current account
+		// 	var component = await ctx.NewLightComponent<AccountDisplayBehaviour, PlayerAccount>(playerAccountContainer, account);
+		// 	component.changeAccountButton.HandleClicked(async () =>
+		// 	{
+		// 		await ctx.GotoPage<AccountSwitchPage, PlayerAccount>(account);
+		// 	});
+		// }
+		
 		foreach (var account in ctx.BeamContext.Accounts)
 		{
 			if (account.GamerTag == currentAccount.GamerTag) continue; // skip current account
-			var component = await ctx.NewLightComponent<AccountDisplayBehaviour, PlayerAccount>(playerAccountContainer, account);
+
+			var component = Object.Instantiate(widget, playerAccountContainer);
+			// TODO: handle deeplinking somehow?
+			await component.OnInstantiated(ctx, account);
+			
+			// component = BeamUtil.Instantiate(widget, container)
+			// component.OnInstantiated(account) 
+			
+			
+			// var component = await ctx.NewLightComponent<AccountDisplayBehaviour, PlayerAccount>(playerAccountContainer, account);
 			component.changeAccountButton.HandleClicked(async () =>
 			{
 				await ctx.GotoPage<AccountSwitchPage, PlayerAccount>(account);
