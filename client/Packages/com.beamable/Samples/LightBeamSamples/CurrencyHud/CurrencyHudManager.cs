@@ -33,7 +33,7 @@ public class CurrencyHudManager : MonoBehaviour
 
 		var currency = context.Inventory.GetCurrency(currencyRef);
 		container.Clear();
-		await context.Instantiate<CurrencyViewBehaviour, PlayerCurrency>(container, currency).ShowLoading(context);
+		await context.NewLightComponent<CurrencyViewBehaviour, PlayerCurrency>(container, currency).ShowLoading(context);
 		
 		infoText.text = $@"PlayerId=[{context.PlayerId}]
 The currency shown in the top-right is the currency=[{currencyRef.Id}]";

@@ -53,8 +53,9 @@ public class AccountManagementExample : MonoBehaviour, ILightComponent
 		await currentAccountDisplay.OnInstantiated(ctx, currentAccount);
 		currentAccountDisplay.changeAccountButton.HandleClicked(async () =>
 		{
-			
-			var details = await ctx.Instantiate<AccountDetailsBehaviour, PlayerAccount>(playerDetailsContainer, currentAccount);
+
+			var details = await ctx.Instantiate(config.accountDetailsTemplate, playerAccountContainer, currentAccount);
+			// var details = await ctx.Instantiate<AccountDetailsBehaviour, PlayerAccount>(playerDetailsContainer, currentAccount);
 			details.cancelButton.HandleClicked(() =>
 			{
 				playerDetailsContainer.Clear();

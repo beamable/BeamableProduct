@@ -2,10 +2,8 @@
 using Beamable;
 using Beamable.Avatars;
 using Beamable.Common;
-using Beamable.Common.Dependencies;
 using Beamable.Player;
 using Beamable.Runtime.LightBeam;
-using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -21,6 +19,9 @@ public class AccountDetailsBehaviour : MonoBehaviour, ILightComponent<PlayerAcco
 	public Button cancelButton;
 	public Button saveButton;
 
+	[Header("Asset References")]
+	public AccountExampleConfig config;
+
 	[Header("Runtime Data")]
 	public AccountAvatar selectedAvatar;
 	
@@ -35,7 +36,7 @@ public class AccountDetailsBehaviour : MonoBehaviour, ILightComponent<PlayerAcco
 		avatarContainer.Clear();
 		foreach (var avatar in avatarConfig.Avatars)
 		{
-			var instance = await ctx.Instantiate<AvatarDisplayBehaviour, AccountAvatar>(avatarContainer, avatar);
+			var instance = await ctx.Instantiate(config.avatarDisplayTemplate, avatarContainer, avatar);
 			
 			instance.mainButton.HandleClicked(  () =>
 			{

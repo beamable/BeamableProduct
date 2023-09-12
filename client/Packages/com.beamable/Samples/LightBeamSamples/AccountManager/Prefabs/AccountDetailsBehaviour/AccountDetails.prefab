@@ -1791,6 +1791,7 @@ MonoBehaviour:
   avatarContainer: {fileID: 2728377460735814433}
   cancelButton: {fileID: 1198140188466453939}
   saveButton: {fileID: 5112672574930004688}
+  config: {fileID: 11400000, guid: 9524dae84fe3847659378e99fa61f1b3, type: 2}
   selectedAvatar:
     Name: 
     Sprite: {fileID: 0}

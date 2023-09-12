@@ -2,6 +2,7 @@
     "name": "LightBeam.CurrencyHud",
     "references": [
         "Unity.Beamable",
+        "Beamable.Platform",
         "Unity.Beamable.Runtime.Common",
         "Unity.Beamable.Customer.Common",
         "Unity.TextMeshPro",

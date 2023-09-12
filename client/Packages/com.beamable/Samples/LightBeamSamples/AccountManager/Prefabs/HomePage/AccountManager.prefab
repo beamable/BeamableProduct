@@ -677,6 +677,7 @@ MonoBehaviour:
   registerEmailButton: {fileID: 1467752946869178721}
   findAccountButton: {fileID: 888253477287272221}
   createNewAccountButton: {fileID: 838369600746299621}
+  config: {fileID: 11400000, guid: 9524dae84fe3847659378e99fa61f1b3, type: 2}
 --- !u!222 &635883761041762152
 CanvasRenderer:
   m_ObjectHideFlags: 0

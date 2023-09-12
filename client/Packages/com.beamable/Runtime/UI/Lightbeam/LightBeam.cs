@@ -4,7 +4,6 @@ using Beamable.Coroutines;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using TMPro;
 using UnityEngine;
@@ -57,12 +56,12 @@ namespace Beamable.Runtime.LightBeam
 				Object.Destroy(transform.GetChild(i).gameObject);
 			}
 		}
-
-		public static async Promise<T> Instantiate<T, TModel>(this T template, BeamContext context, Transform container, TModel model)
-			where T : Component, ILightComponent<TModel>
+		
+		public static async Promise<T> Instantiate<T>(this BeamContext context, T template, Transform container)
+			where T : Component, ILightComponent
 		{
 			var instance = Object.Instantiate(template, container);
-			await instance.OnInstantiated(context, model);
+			await instance.OnInstantiated(context);
 			return instance;
 		}
 		
@@ -239,36 +238,36 @@ namespace Beamable.Runtime.LightBeam
 			return ctx.ServiceProvider.GotoPage<T>();
 		}
 
-		public static Promise<T> Instantiate<T, TModel>(
+		public static Promise<T> NewLightComponent<T, TModel>(
 			this BeamContext ctx,
 			Transform container,
 			TModel model)
 			where T : MonoBehaviour, ILightComponent<TModel>
 		{
-			return ctx.ServiceProvider.Instantiate<T, TModel>(container, model);
+			return ctx.ServiceProvider.NewLightComponent<T, TModel>(container, model);
 		}
 		
-		public static Promise<T> Instantiate<T>(
+		public static Promise<T> NewLightComponent<T>(
 			this BeamContext ctx,
 			Transform container)
 			where T : MonoBehaviour, ILightComponent
 		{
-			return ctx.ServiceProvider.Instantiate<T>(container);
+			return ctx.ServiceProvider.NewLightComponent<T>(container);
 		}
 
-		public static Promise<object> Instantiate(this BeamContext ctx,
+		public static Promise<object> NewLightComponent(this BeamContext ctx,
 		                                                Type componentType,
 		                                                Transform container)
 		{
-			return ctx.ServiceProvider.Instantiate(componentType, container);
+			return ctx.ServiceProvider.NewLightComponent(componentType, container);
 		}
 
-		public static Promise<object> Instantiate(this BeamContext ctx,
+		public static Promise<object> NewLightComponent(this BeamContext ctx,
 		                                                Type componentType,
 		                                                Transform container,
 		                                                object model)
 		{
-			return ctx.ServiceProvider.Instantiate(componentType, container, model);
+			return ctx.ServiceProvider.NewLightComponent(componentType, container, model);
 		}
 	}
 	
@@ -357,11 +356,11 @@ namespace Beamable.Runtime.LightBeam
 			lightContext.Root.Clear();
 			if (TryGetTypes(provider, LightBeamUtilExtensions.Hints, out var pageType, out var model))
 			{
-				await provider.Instantiate(pageType, lightContext.Root, model).ShowLoading(beamContext);
+				await provider.NewLightComponent(pageType, lightContext.Root, model).ShowLoading(beamContext);
 			}
 			else
 			{
-				await provider.Instantiate<TDefault>(lightContext.Root).ShowLoading(beamContext);
+				await provider.NewLightComponent<TDefault>(lightContext.Root).ShowLoading(beamContext);
 			}
 		}
 		
@@ -375,11 +374,11 @@ namespace Beamable.Runtime.LightBeam
 			ctx.Root.Clear();
 			if (TryGetTypes(provider, LightBeamUtilExtensions.Hints, out var pageType, out var model))
 			{
-				await provider.Instantiate(pageType, ctx.Root, model).ShowLoading(beamContext);
+				await provider.NewLightComponent(pageType, ctx.Root, model).ShowLoading(beamContext);
 			}
 			else
 			{
-				await provider.Instantiate<TDefault, TModel>(ctx.Root, defaultModel).ShowLoading(beamContext);
+				await provider.NewLightComponent<TDefault, TModel>(ctx.Root, defaultModel).ShowLoading(beamContext);
 			}
 		}
 
@@ -390,7 +389,7 @@ namespace Beamable.Runtime.LightBeam
 			var beamContext = provider.GetService<BeamContext>();
 			await beamContext.LoadingFadeIn();
 			ctx.Root.Clear();
-			return await provider.Instantiate<T, TModel>(ctx.Root, model).ShowLoading(beamContext);
+			return await provider.NewLightComponent<T, TModel>(ctx.Root, model).ShowLoading(beamContext);
 		}
 		
 		public static async Promise<T> GotoPage<T>(this IDependencyProvider provider)
@@ -400,10 +399,10 @@ namespace Beamable.Runtime.LightBeam
 			var ctx = provider.GetService<LightContext>();
 			await beamContext.LoadingFadeIn();
 			ctx.Root.Clear();
-			return await provider.Instantiate<T>(ctx.Root).ShowLoading(beamContext);
+			return await provider.NewLightComponent<T>(ctx.Root).ShowLoading(beamContext);
 		}
 
-		public static Promise<T> Instantiate<T, TModel>(
+		public static Promise<T> NewLightComponent<T, TModel>(
 			this IDependencyProvider provider,
 			Transform container,
 			TModel model)
@@ -414,7 +413,7 @@ namespace Beamable.Runtime.LightBeam
 			return instance;
 		}
 		
-		public static Promise<T> Instantiate<T>(
+		public static Promise<T> NewLightComponent<T>(
 			this IDependencyProvider provider,
 			Transform container)
 			where T : MonoBehaviour, ILightComponent
@@ -424,7 +423,7 @@ namespace Beamable.Runtime.LightBeam
 			return instance;
 		}
 
-		public static Promise<object> Instantiate(this IDependencyProvider provider,
+		public static Promise<object> NewLightComponent(this IDependencyProvider provider,
 		                                                Type componentType,
 		                                                Transform container)
 		{
@@ -433,7 +432,7 @@ namespace Beamable.Runtime.LightBeam
 			return instance;
 		}
 
-		public static Promise<object> Instantiate(this IDependencyProvider provider,
+		public static Promise<object> NewLightComponent(this IDependencyProvider provider,
 		                                                Type componentType,
 		                                                Transform container,
 		                                                object model)

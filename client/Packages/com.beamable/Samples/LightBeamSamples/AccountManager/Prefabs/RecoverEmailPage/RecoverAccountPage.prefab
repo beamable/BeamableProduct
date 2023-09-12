@@ -1350,6 +1350,7 @@ MonoBehaviour:
   switchButton: {fileID: 2187383849610242940}
   forgotPasswordButton: {fileID: 2624370509062126163}
   accountPreviewContainer: {fileID: 1474521836844146725}
+  config: {fileID: 11400000, guid: 9524dae84fe3847659378e99fa61f1b3, type: 2}
   recoveryOperation:
     error: 0
     realmAlreadyHasGamerTag: 0

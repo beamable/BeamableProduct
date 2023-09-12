@@ -28,7 +28,7 @@ public class AdminManager : MonoBehaviour
 	{
 		if (Input.GetKeyDown(KeyCode.Tilde))
 		{
-			_ctx.GotoPage<ConsoleBehaviour>();
+			// _ctx.GotoPage<ConsoleBehaviour>();
 		}
 	}
 }

@@ -32,6 +32,9 @@ public class RecoverEmailPage : MonoBehaviour, ILightComponent<RecoverEmailPageM
 
 	public Transform accountPreviewContainer;
 
+	[Header("Asset References")]
+	public AccountExampleConfig config;
+	
 	[Header("Runtime data")]
 	public PlayerRecoveryOperation recoveryOperation;
 	
@@ -118,7 +121,7 @@ public class RecoverEmailPage : MonoBehaviour, ILightComponent<RecoverEmailPageM
 			                    forgotPasswordButton);
 
 			accountPreviewContainer.Clear();
-			await ctx.Instantiate<AccountDisplayBehaviour, PlayerAccount>(accountPreviewContainer, recoveryOperation.account);
+			await ctx.Instantiate(config.accountDisplayTemplate, accountPreviewContainer, recoveryOperation.account);
 			
 			this.EnableObjects(switchButton);
 		}

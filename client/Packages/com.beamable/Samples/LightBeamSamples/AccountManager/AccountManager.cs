@@ -19,7 +19,7 @@ public class AccountManager : MonoBehaviour
 		// TODO: try/catch
         
 		var beamContext = BeamContext.Default;
-		var ctx = await beamContext.CreateLightBeam(root, loadingBlocker, builder =>
+		await beamContext.CreateLightBeam(root, loadingBlocker, builder =>
 		{
 			builder.AddLightComponent<AccountManagementExample>(config.homePage);
 			builder.AddLightComponent<RegisterEmailPage>(config.registerPage);
@@ -27,12 +27,11 @@ public class AccountManager : MonoBehaviour
 			builder.AddLightComponent<RecoverEmailPage, RecoverEmailPageModel>(config.recoverPage);
 			builder.AddLightComponent<AccountSwitchPage, PlayerAccount>(config.switchPage);
 			
-			builder.AddLightComponent<AvatarDisplayBehaviour, AccountAvatar>(config.avatarDisplayTemplate);
-			builder.AddLightComponent<AccountDisplayBehaviour, PlayerAccount>(config.accountDisplayTemplate);
-			builder.AddLightComponent<AccountDetailsBehaviour, PlayerAccount>(config.accountDetailsTemplate);
+			// builder.AddLightComponent<AvatarDisplayBehaviour, AccountAvatar>(config.avatarDisplayTemplate);
+			// builder.AddLightComponent<AccountDisplayBehaviour, PlayerAccount>(config.accountDisplayTemplate);
+			// builder.AddLightComponent<AccountDetailsBehaviour, PlayerAccount>(config.accountDetailsTemplate);
 		});
-		await beamContext.OnReady.ShowLoading(null);
-		await ctx.ServiceProvider.Start<AccountManagementExample>();
+		await beamContext.ServiceProvider.Start<AccountManagementExample>();
 	}
 
 	
