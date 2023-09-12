@@ -2,6 +2,9 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Pooling;
 using Beamable.Serialization;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine.Networking;
 
 namespace Beamable.Api
 {
