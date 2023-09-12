@@ -20,7 +20,7 @@ namespace Beamable.Tests.Runtime.QueryBuilderTests
 		[Test]
 		public void Simple()
 		{
-			var args = new Dictionary<string, object> {{"x", "hello"}};
+			var args = new Dictionary<string, string> {{"x", "hello"}};
 
 			var qb = new QueryBuilder(new SimpleUrlEscaper(), args);
 			var str = qb.ToString();
@@ -31,7 +31,7 @@ namespace Beamable.Tests.Runtime.QueryBuilderTests
 		[Test]
 		public void PhoneNumber()
 		{
-			var args = new Dictionary<string, object> {{"x", "+15081234567"}};
+			var args = new Dictionary<string, string> {{"x", "+15081234567"}};
 
 			var qb = new QueryBuilder(new SimpleUrlEscaper(), args);
 			var str = qb.ToString();
@@ -42,7 +42,7 @@ namespace Beamable.Tests.Runtime.QueryBuilderTests
 		[Test]
 		public void Multiple()
 		{
-			var args = new Dictionary<string, object>
+			var args = new Dictionary<string, string>
 			{
 				{"x", "hello"},
 				{"y", "world"}
@@ -53,11 +53,39 @@ namespace Beamable.Tests.Runtime.QueryBuilderTests
 			
 			Assert.AreEqual(str, "?x=hello&y=world");
 		}
+		
+		
+		[Test]
+		public void Indexer()
+		{
+			var qb = new QueryBuilder(new SimpleUrlEscaper());
+			qb["x"] = "hello";
+			qb["y"] = "world";
+			var str = qb.ToString();
+			
+			Assert.AreEqual(str, "?x=hello&y=world");
+		}
 
+		
+		[Test]
+		public void NullsAreIgnored()
+		{
+			var qb = new QueryBuilder(new SimpleUrlEscaper(), new Dictionary<string, string>
+			{
+				["z"] = "hello"
+			});
+			qb["y"] = null;
+			qb["x"] = "world";
+			var str = qb.ToString();
+			
+			Assert.AreEqual(str, "?z=hello&x=world");
+		}
+
+		
 		[Test]
 		public void Empty()
 		{
-			var args = new Dictionary<string, object>();
+			var args = new Dictionary<string, string>();
 			var qb = new QueryBuilder(new SimpleUrlEscaper(), args);
 			var str = qb.ToString();
 			Assert.AreEqual(str, "");

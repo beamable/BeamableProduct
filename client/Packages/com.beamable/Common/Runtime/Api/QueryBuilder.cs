@@ -10,7 +10,7 @@ namespace Beamable.Common.Api
 	public class QueryBuilder
 	{
 		private readonly IUrlEscaper _requester;
-		private readonly IDictionary<string, object> _dictionary;
+		private readonly IDictionary<string, string> _dictionary;
 
 		/// <summary>
 		/// Create a new query builder.
@@ -18,10 +18,10 @@ namespace Beamable.Common.Api
 		/// </summary>
 		/// <param name="requester">Any type that can url-encode parameters</param>
 		/// <param name="dictionary">an existing dictionary of parameters to encode</param>
-		public QueryBuilder(IUrlEscaper requester, IDictionary<string, object> dictionary=null)
+		public QueryBuilder(IUrlEscaper requester, IDictionary<string, string> dictionary=null)
 		{
 			_requester = requester;
-			_dictionary = dictionary ?? new Dictionary<string, object>();
+			_dictionary = dictionary ?? new Dictionary<string, string>();
 		}
 
 		/// <summary>
@@ -29,8 +29,17 @@ namespace Beamable.Common.Api
 		/// </summary>
 		/// <param name="key"></param>
 		/// <param name="value"></param>
-		public void Add(string key, object value) => _dictionary.Add(key, value);
+		public void Add(string key, string value) => _dictionary.Add(key, value);
 
+		/// <summary>
+		/// Get and set the query args by key indexer
+		/// </summary>
+		/// <param name="key"></param>
+		public string this[string key]
+		{
+			get => _dictionary[key];
+			set => _dictionary[key] = value;
+		}
 		/// <summary>
 		/// Convert the query arg builder into an a query arg string.
 		/// The query arg will include the `?` character if required.
@@ -44,14 +53,14 @@ namespace Beamable.Common.Api
 				return "";
 			}
 
-			var parts = new string[_dictionary.Count];
-			var index = 0;
+			var parts = new List<string>();
 			foreach (var kvp in _dictionary)
 			{
-				var part = ($"{kvp.Key}={_requester.EscapeURL(kvp.Value.ToString())}");
-				parts[index++] = part;
+				if (string.IsNullOrEmpty(kvp.Value)) continue;
+				var part = ($"{kvp.Key}={_requester.EscapeURL(kvp.Value)}");
+				parts.Add(part);
 			}
-
+			
 			var queryArgs = string.Join("&", parts);
 			return "?" + queryArgs;
 		}
@@ -66,7 +75,7 @@ namespace Beamable.Common.Api
 		/// <param name="escaper"></param>
 		/// <param name="args"></param>
 		/// <returns></returns>
-		public static QueryBuilder CreateQueryArgBuilder(this IUrlEscaper escaper, Dictionary<string, object> args=null)
+		public static QueryBuilder CreateQueryArgBuilder(this IUrlEscaper escaper, Dictionary<string, string> args=null)
 		{
 			return new QueryBuilder(escaper, args);
 		}

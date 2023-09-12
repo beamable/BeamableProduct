@@ -51,7 +51,7 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<bool> IsThirdPartyAvailable(AuthThirdParty thirdParty, string token)
 		{
-			var qb = _requester.CreateQueryArgBuilder(new Dictionary<string, object>
+			var qb = _requester.CreateQueryArgBuilder(new Dictionary<string, string>
 			{
 				["thirdParty"] = thirdParty.GetString(),
 				["token"] = token
@@ -150,7 +150,7 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<User> RemoveThirdPartyAssociation(AuthThirdParty thirdParty, string token)
 		{
-			var qb = _requester.CreateQueryArgBuilder(new Dictionary<string, object>
+			var qb = _requester.CreateQueryArgBuilder(new Dictionary<string, string>
 			{
 				["thirdParty"] = thirdParty.GetString(), 
 				["token"] = token
@@ -406,7 +406,7 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<bool> IsExternalIdentityAvailable(string providerService, string externalToken, string providerNamespace = null)
 		{
-			var qb = Requester.CreateQueryArgBuilder(new Dictionary<string, object>
+			var qb = Requester.CreateQueryArgBuilder(new Dictionary<string, string>
 			{
 				["provider_service"] = providerService,
 				["user_id"] = externalToken,
