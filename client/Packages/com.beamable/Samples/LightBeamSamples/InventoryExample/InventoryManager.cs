@@ -1,4 +1,5 @@
 
+using Beamable;
 using Beamable.Runtime.LightBeam;
 using System;
 using UnityEngine;
@@ -10,11 +11,8 @@ public class InventoryManager : MonoBehaviour
 	
 	private async void Start()
 	{
-		var ctx = await this.InitLightBeams(root, loading, builder =>
-		{
-			
-		});
-		
-		
+		var context = BeamContext.InParent(this);
+		await context.CreateLightBeam(root, loading, (builder) => { });
+
 	}
 }

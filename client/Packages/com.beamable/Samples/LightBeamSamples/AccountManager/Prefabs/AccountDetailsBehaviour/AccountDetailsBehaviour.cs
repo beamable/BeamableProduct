@@ -1,4 +1,5 @@
 
+using Beamable;
 using Beamable.Avatars;
 using Beamable.Common;
 using Beamable.Common.Dependencies;
@@ -23,18 +24,18 @@ public class AccountDetailsBehaviour : MonoBehaviour, ILightComponent<PlayerAcco
 	[Header("Runtime Data")]
 	public AccountAvatar selectedAvatar;
 	
-	public async Promise OnInstantiated(LightContext ctx, PlayerAccount model)
+	public async Promise OnInstantiated(BeamContext ctx, PlayerAccount model)
 	{
 		aliasInput.text = model.Alias;
 
-		var avatarConfig = ctx.Scope.GetService<AvatarConfiguration>();
+		var avatarConfig = ctx.ServiceProvider.GetService<AvatarConfiguration>();
 		selectedAvatar = avatarConfig.FindAvatar(model.Avatar);
 		avatarImage.sprite = avatarConfig.GetAvatarSprite(model.Avatar);
 		
 		avatarContainer.Clear();
 		foreach (var avatar in avatarConfig.Avatars)
 		{
-			var instance = await ctx.NewLightComponent<AvatarDisplayBehaviour, AccountAvatar>(avatarContainer, avatar);
+			var instance = await ctx.Instantiate<AvatarDisplayBehaviour, AccountAvatar>(avatarContainer, avatar);
 			
 			instance.mainButton.HandleClicked(  () =>
 			{

@@ -1,4 +1,5 @@
 
+using Beamable;
 using Beamable.Avatars;
 using Beamable.Common;
 using Beamable.Runtime.LightBeam;
@@ -11,9 +12,9 @@ public class AvatarDisplayBehaviour : MonoBehaviour, ILightComponent<AccountAvat
 	public Image avatarImage;
 	private AvatarConfiguration _config;
 
-	public Promise OnInstantiated(LightContext context, AccountAvatar model)
+	public Promise OnInstantiated(BeamContext context, AccountAvatar model)
 	{
-		_config = context.Scope.GetService<AvatarConfiguration>();
+		_config = context.ServiceProvider.GetService<AvatarConfiguration>();
 		avatarImage.sprite = (model?.Sprite) ?? _config.Avatars[0].Sprite;
 		return Promise.Success;
 	}

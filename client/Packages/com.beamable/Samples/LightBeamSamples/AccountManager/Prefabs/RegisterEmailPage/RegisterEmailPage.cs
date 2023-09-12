@@ -1,4 +1,5 @@
 
+using Beamable;
 using Beamable.Common;
 using Beamable.Runtime.LightBeam;
 using System;
@@ -17,7 +18,7 @@ public class RegisterEmailPage : MonoBehaviour, ILightComponent
 	public Button submitButton;
 	public Button cancelButton;
 	
-	public Promise OnInstantiated(LightContext ctx)
+	public Promise OnInstantiated(BeamContext ctx)
 	{
 		submitButton.gameObject.SetActive(false);
 		checkEmailButton.gameObject.SetActive(true);
@@ -44,9 +45,9 @@ public class RegisterEmailPage : MonoBehaviour, ILightComponent
 		return Promise.Success;
 	}
 
-	async Promise CheckEmail(LightContext ctx, string email)
+	async Promise CheckEmail(BeamContext ctx, string email)
 	{
-		var isEmailAvailable = await ctx.BeamContext.Accounts.IsEmailAvailable(email);
+		var isEmailAvailable = await ctx.Accounts.IsEmailAvailable(email);
 
 		if (isEmailAvailable)
 		{
@@ -63,9 +64,9 @@ public class RegisterEmailPage : MonoBehaviour, ILightComponent
 		}
 	}
 
-	async Promise RegisterEmail(LightContext ctx, string email, string password)
+	async Promise RegisterEmail(BeamContext ctx, string email, string password)
 	{
-		var operation = await ctx.BeamContext.Accounts.AddEmail(email, password);
+		var operation = await ctx.Accounts.AddEmail(email, password);
 		if (operation.isSuccess)
 		{
 			await ctx.GotoPage<AccountManagementExample>();

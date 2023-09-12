@@ -1,4 +1,5 @@
 
+using Beamable;
 using Beamable.Common;
 using Beamable.Player;
 using Beamable.Runtime.LightBeam;
@@ -34,7 +35,7 @@ public class RecoverEmailPage : MonoBehaviour, ILightComponent<RecoverEmailPageM
 	[Header("Runtime data")]
 	public PlayerRecoveryOperation recoveryOperation;
 	
-	public Promise OnInstantiated(LightContext context, RecoverEmailPageModel model)
+	public Promise OnInstantiated(BeamContext context, RecoverEmailPageModel model)
 	{
 		promptText.text = "Login into email";
 		
@@ -73,15 +74,15 @@ public class RecoverEmailPage : MonoBehaviour, ILightComponent<RecoverEmailPageM
 		switchButton.HandleClicked("switching...", async () =>
 		{
 			await recoveryOperation.account.SwitchToAccount();
-			await context.Scope.GotoPage<AccountManagementExample>();
+			await context.GotoPage<AccountManagementExample>();
 		});
 		
 		return Promise.Success;
 	}
 
-	async Promise CheckForAccount(LightContext ctx, string email)
+	async Promise CheckForAccount(BeamContext ctx, string email)
 	{
-		var unknownEmail = await ctx.BeamContext.Accounts.IsEmailAvailable(email);
+		var unknownEmail = await ctx.Accounts.IsEmailAvailable(email);
 		if (unknownEmail)
 		{
 			promptText.text = "Account does not exist. Try again.";
@@ -98,9 +99,9 @@ public class RecoverEmailPage : MonoBehaviour, ILightComponent<RecoverEmailPageM
 		}
 	}
 	
-	async Promise Login(LightContext ctx, string email, string password)
+	async Promise Login(BeamContext ctx, string email, string password)
 	{
-		recoveryOperation = await ctx.BeamContext.Accounts.RecoverAccountWithEmail(email, password);
+		recoveryOperation = await ctx.Accounts.RecoverAccountWithEmail(email, password);
 
 		if (recoveryOperation.isSuccess)
 		{
@@ -116,7 +117,8 @@ public class RecoverEmailPage : MonoBehaviour, ILightComponent<RecoverEmailPageM
 			                    loginButton,
 			                    forgotPasswordButton);
 
-			await ctx.SetLightComponent<AccountDisplayBehaviour, PlayerAccount>(accountPreviewContainer, recoveryOperation.account);
+			accountPreviewContainer.Clear();
+			await ctx.Instantiate<AccountDisplayBehaviour, PlayerAccount>(accountPreviewContainer, recoveryOperation.account);
 			
 			this.EnableObjects(switchButton);
 		}

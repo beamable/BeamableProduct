@@ -1,4 +1,5 @@
 
+using Beamable;
 using Beamable.AccountManagement;
 using Beamable.Common;
 using Beamable.Common.Dependencies;
@@ -16,25 +17,25 @@ public class AccountSwitchPage : MonoBehaviour, ILightComponent<PlayerAccount>
 	public Button switchButton;
 	public Button deleteButton;
 	
-	public Promise OnInstantiated(LightContext ctx, PlayerAccount account)
+	public Promise OnInstantiated(BeamContext ctx, PlayerAccount account)
 	{
 		accountDisplay.OnInstantiated(ctx, account);
 		
 		cancelButton.HandleClicked(async () =>
 		{
-			await ctx.Scope.GotoPage<AccountManagementExample>();
+			await ctx.GotoPage<AccountManagementExample>();
 		});
 		
 		switchButton.HandleClicked("switching...", async () =>
 		{
 			await account.SwitchToAccount();
-			await ctx.Scope.GotoPage<AccountManagementExample>();
+			await ctx.GotoPage<AccountManagementExample>();
 		});
 		
 		deleteButton.HandleClicked("deleting...", async () =>
 		{
 			await account.Remove();
-			await ctx.Scope.GotoPage<AccountManagementExample>();
+			await ctx.GotoPage<AccountManagementExample>();
 		});
 		
 		return Promise.Success;

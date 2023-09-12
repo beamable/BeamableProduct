@@ -1,4 +1,5 @@
 
+using Beamable;
 using Beamable.Common;
 using Beamable.Runtime.LightBeam;
 using System;
@@ -23,9 +24,9 @@ public class ForgotPasswordPage : MonoBehaviour, ILightComponent<ForgotPasswordM
 	public Button cancelButton;
 	public Button submitButton;
 
-	public async Promise OnInstantiated(LightContext context, ForgotPasswordModel model)
+	public async Promise OnInstantiated(BeamContext context, ForgotPasswordModel model)
 	{
-		await context.BeamContext.Accounts.ResetPassword(model.email);
+		await context.Accounts.ResetPassword(model.email);
 		
 		promptText.text = $"Enter the code sent to {model.email}, and enter a new password.";
 		
@@ -41,7 +42,7 @@ public class ForgotPasswordPage : MonoBehaviour, ILightComponent<ForgotPasswordM
 		{
 			var newPassword = passwordInput.text;
 			var code = codeInput.text;
-			var res = await context.BeamContext.Accounts.ConfirmPassword(code, newPassword);
+			var res = await context.Accounts.ConfirmPassword(code, newPassword);
 
 			if (res.isSuccess)
 			{

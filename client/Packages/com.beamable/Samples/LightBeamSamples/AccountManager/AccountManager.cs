@@ -19,8 +19,7 @@ public class AccountManager : MonoBehaviour
 		// TODO: try/catch
         
 		var beamContext = BeamContext.Default;
-		await beamContext.OnReady.ShowLoading(null);
-		var ctx = await beamContext.InitLightBeams(null ,loadingBlocker, builder =>
+		var ctx = await beamContext.CreateLightBeam(root, loadingBlocker, builder =>
 		{
 			builder.AddLightComponent<AccountManagementExample>(config.homePage);
 			builder.AddLightComponent<RegisterEmailPage>(config.registerPage);
@@ -32,38 +31,10 @@ public class AccountManager : MonoBehaviour
 			builder.AddLightComponent<AccountDisplayBehaviour, PlayerAccount>(config.accountDisplayTemplate);
 			builder.AddLightComponent<AccountDetailsBehaviour, PlayerAccount>(config.accountDetailsTemplate);
 		});
-		
-        await ctx.GotoPage<AccountManagementExample>();
+		await beamContext.OnReady.ShowLoading(null);
+		await ctx.ServiceProvider.Start<AccountManagementExample>();
 	}
 
-	// var ctx = await this.InitLightBeams(root, loadingBlocker, builder =>
-	// {
-	// 	builder.AddSingleton(config);
-	// 		
-	// 	// builder.AddSingleton<>()
-	// 	/*
-	// 	 * how will I write UI?
-	// 	 * when are these components available? When can I use them?
-	//   * how can I animate component entry?
-	// 	 */
-	//
-	// 	builder.AddLightComponent<AccountManagementExample>(config.homePage);
-	// 	builder.AddLightComponent<RegisterEmailPage>(config.registerPage);
-	// 	builder.AddLightComponent<ForgotPasswordPage, ForgotPasswordModel>(config.forgotPasswordPage);
-	// 	builder.AddLightComponent<RecoverEmailPage, RecoverEmailPageModel>(config.recoverPage);
-	// 	builder.AddLightComponent<AccountSwitchPage, PlayerAccount>(config.switchPage);
-	// 	
-	// 	builder.AddLightComponent<AvatarDisplayBehaviour, AccountAvatar>(config.avatarDisplayTemplate);
-	// 	builder.AddLightComponent<AccountDisplayBehaviour, PlayerAccount>(config.accountDisplayTemplate);
-	// 	builder.AddLightComponent<AccountDetailsBehaviour, PlayerAccount>(config.accountDetailsTemplate);
-	// });
-	//
-	//
-	// 	await ctx.GotoPage<AccountManagementExample>();
-	// }
-	//
-	
-	
 	
 	// await ctx.BeamContext.Accounts.Refresh().ShowLoading(ctx);
 	// LightBeamUtilExtensions.Hints["pageType"] = nameof(RecoverEmailPage);

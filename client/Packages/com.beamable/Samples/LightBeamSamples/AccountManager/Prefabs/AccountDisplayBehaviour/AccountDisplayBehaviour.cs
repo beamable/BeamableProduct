@@ -22,9 +22,9 @@ public class AccountDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerAcco
 	public Button changeAccountButton;
 	
 	private PlayerAccount _model;
-	private LightContext _ctx;
+	private BeamContext _ctx;
 
-	public Promise OnInstantiated(LightContext ctx, PlayerAccount model)
+	public Promise OnInstantiated(BeamContext ctx, PlayerAccount model)
 	{
 		_ctx = ctx;
 		_model = model;
@@ -39,7 +39,7 @@ public class AccountDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerAcco
 		playerIdLabel.text = _model.GamerTag.ToString();
 		aliasLabel.text = _model.Alias ?? "Anonymous";
 		emailLabel.text = _model.Email ?? "";
-		avatarImage.sprite = _ctx.Scope.GetService<AvatarConfiguration>().GetAvatarSprite(_model.Avatar);
+		avatarImage.sprite = _ctx.ServiceProvider.GetService<AvatarConfiguration>().GetAvatarSprite(_model.Avatar);
 	}
 	
 	private void OnDestroy()
