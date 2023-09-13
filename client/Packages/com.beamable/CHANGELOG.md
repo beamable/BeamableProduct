@@ -11,10 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Websocket connection authentication in WebGL builds.
 - Fixed ContentRef property drawer on Unity 2021 LTS.
+- `PlayerAccounts.Current` updates correctly after account switching.
 
 ### Changed
 
 - `Promise.Sequence` return `List<T>` in the same order as input `List<Promise<T>>`.
+- `PlayerAccounts.Current` is a distinct instance from any element in the `PlayerAccounts` list.
+
 
 ## [1.18.0]
 
