@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Websocket connection authentication in WebGL builds.
 - Fixed ContentRef property drawer on Unity 2021 LTS.
 
+### Changed
+
+- `Promise.Sequence` return `List<T>` in the same order as input `List<Promise<T>>`.
+
 ## [1.18.0]
 
 ### Fixed
