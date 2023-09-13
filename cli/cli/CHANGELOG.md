@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed if older version of templates are installed, allow `beam project new` continue without installing latest templates
 - Detect no services found scenario in `beam services ps`.
 - Fixed Powershell users having blue-on-blue text when selecting options.
+- When executing a microservice that depends on a storage through the IDE, the storage was not booting up in docker.
+- Add more information logs when executing C#MS through the IDE.
 
 ## [1.18.0]
 

@@ -49,12 +49,12 @@ namespace Beamable.standalone_microservice
 			if (inDocker) return;
 			
 			MicroserviceAttribute attribute = typeof(TMicroservice).GetCustomAttribute<MicroserviceAttribute>();
-			var serviceName = attribute.MicroserviceName.ToLower();
+			var serviceName = attribute.MicroserviceName;
 			
 			using var process = new Process();
 
 			process.StartInfo.FileName = "beam";
-			process.StartInfo.Arguments = $"--log fatal project generate-env {serviceName} . --auto-deploy --include-prefix=false --instance-count=10";
+			process.StartInfo.Arguments = $"project generate-env {serviceName} . --auto-deploy --include-prefix=false --instance-count=10";
 			process.StartInfo.RedirectStandardOutput = true;
 			process.StartInfo.RedirectStandardError = true;
 			process.StartInfo.CreateNoWindow = true;

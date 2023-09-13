@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Ensure that Storage is enabled based on the status of its dependent services.
 
+### Added
+
+- Added `MicroserviceBootstrapper.Prepare<BeamService>()` method
+
 ## [1.18.0]
 
 ### Added

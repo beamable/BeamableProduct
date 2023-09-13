@@ -17,7 +17,7 @@ public class CliInterfaceGeneratorCommandArgs : CommandArgs
 	public bool Concat;
 	public string Engine;
 }
-public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorCommandArgs>
+public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorCommandArgs>, IStandaloneCommand
 {
 	private readonly IDependencyProviderScope _commandScope;
 

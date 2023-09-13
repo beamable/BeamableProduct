@@ -50,13 +50,14 @@ using Serilog.Core;
 using Serilog.Events;
 using Serilog.Formatting.Display;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading;
-using UnityEngine;
 using Constants = Beamable.Common.Constants;
+using Debug = UnityEngine.Debug;
 
 namespace Beamable.Server
 {
@@ -443,6 +444,43 @@ namespace Beamable.Server
 	        }
 
 	        await EcsService.Init();
+        }
+        
+        /// <summary>
+        /// This method can be called before the start of the microservice to inject some CLI information.
+        /// This is only used to execute a microservice through the IDE.
+        /// </summary>
+        /// <param name="customArgs">Optional string with args to be used instead of the default ones.</param>
+        /// <typeparam name="TMicroservice">The type of the microservice calling this method.</typeparam>
+        /// <exception cref="Exception">Exception raised in case the generate-env command fails.</exception>
+        public static async Task Prepare<TMicroservice>(string customArgs = null) where TMicroservice : Microservice
+        {
+	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+	        if (inDocker) return;
+			
+	        MicroserviceAttribute attribute = typeof(TMicroservice).GetCustomAttribute<MicroserviceAttribute>();
+	        var serviceName = attribute.MicroserviceName;
+	        
+	        customArgs ??= ". --auto-deploy";
+			
+	        using var process = new Process();
+
+	        process.StartInfo.FileName = "beam";
+	        process.StartInfo.Arguments = $"project generate-env {serviceName} {customArgs}";
+	        process.StartInfo.RedirectStandardOutput = true;
+	        process.StartInfo.RedirectStandardError = true;
+	        process.StartInfo.CreateNoWindow = true;
+	        process.StartInfo.UseShellExecute = false;
+
+	        process.Start();
+	        await process.WaitForExitAsync();
+			
+	        var result = await process.StandardOutput.ReadToEndAsync();
+	        Console.WriteLine(result);
+	        if (process.ExitCode != 0)
+	        {
+		        throw new Exception($"Failed to generate-env message=[{result}]");
+	        }
         }
 
         public static async Task Start<TMicroService>() where TMicroService : Microservice
