@@ -175,7 +175,7 @@ namespace Beamable.Common.Api
 	/// ![img beamable-logo]
 	///
 	/// </summary>
-	public interface IBeamableRequester
+	public interface IBeamableRequester : IUrlEscaper
 	{
 		/// <summary>
 		/// The <see cref="IAccessToken"/> the <see cref="IBeamableRequester"/> will use when making network calls
@@ -241,7 +241,10 @@ namespace Beamable.Common.Api
 		/// <param name="tokenResponse">A <see cref="TokenResponse"/> that will be used to create the <see cref="AccessToken"/> for the resulting requester.</param>
 		/// <returns>A new <see cref="IBeamableRequester"/></returns>
 		IBeamableRequester WithAccessToken(TokenResponse tokenResponse);
+	}
 
+	public interface IUrlEscaper
+	{
 		/// <summary>
 		/// A utility method that will url escape a string.
 		/// </summary>
