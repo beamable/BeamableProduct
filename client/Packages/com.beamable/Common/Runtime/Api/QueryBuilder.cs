@@ -56,7 +56,7 @@ namespace Beamable.Common.Api
 			var parts = new List<string>();
 			foreach (var kvp in _dictionary)
 			{
-				if (string.IsNullOrEmpty(kvp.Value)) continue;
+				if (kvp.Value == null) continue;
 				var part = ($"{kvp.Key}={_requester.EscapeURL(kvp.Value)}");
 				parts.Add(part);
 			}
