@@ -48,6 +48,7 @@ public class ProjectData
 
 public class ProjectService
 {
+	private const string UNINSTALL_COMMAND = "new --uninstall";
 	private readonly ConfigService _configService;
 	private readonly VersionService _versionService;
 
@@ -112,6 +113,10 @@ public class ProjectService
 		}
 	}
 
+	/// <param name="currentlyInstalledVersion">
+	/// The current installed version of the templates
+	/// A null string will imply there are no templates installed
+	/// </param>
 	/// <param name="version">
 	/// The version of the template to install.
 	/// A null string will imply the "latest" version.
@@ -123,41 +128,51 @@ public class ProjectService
 	private static async Task PromptAndInstallTemplates(string currentlyInstalledVersion, string version)
 	{
 		// lets get user consent before auto installing beamable templates
-		var question = "";
-		if (string.IsNullOrEmpty(currentlyInstalledVersion))
+		string question;
+		bool noTemplatesInstalled = string.IsNullOrEmpty(currentlyInstalledVersion);
+		if (noTemplatesInstalled)
 		{
 			question =
 				"Beamable templates are currently not installed. Would you like to proceed with installing the Beamable templates?";
 		}
 		else
 		{
-			var latestMsg = string.IsNullOrEmpty(version) ? "the latest version" : $"version {version}";
+			string latestMsg = string.IsNullOrEmpty(version) ? "the latest version" : $"version {version}";
 			question =
 				$"Beamable templates are currently installed as {currentlyInstalledVersion}. Would you like to proceed with installing {latestMsg}";
 		}
 
-		var canInstallTemplates =
-			AnsiConsole.Confirm(question);
+		bool canInstallTemplates = AnsiConsole.Confirm(question);
 
-		if (!canInstallTemplates)
+		switch (canInstallTemplates)
 		{
-			throw new CliException(
-				"Before you can continue, you must install the Beamable templates by running - " +
-				"dotnet new install beamable.templates");
+			case false when noTemplatesInstalled:
+				throw new CliException(
+					"Before you can continue, you must install the Beamable templates by running - " +
+					"dotnet new --install beamable.templates");
+			case false:
+				return;
 		}
+
+		const string packageName = "beamable.templates";
 
 		if (!string.IsNullOrEmpty(currentlyInstalledVersion))
 		{
 			// there are already templates installed, so un-install them first.
-			await RunDotnetCommand("new uninstall beamable.templates");
+			await RunDotnetCommand($"{UNINSTALL_COMMAND} {packageName}");
 		}
 
-		var isTemplateInstalled = await CliExtensions.GetDotnetCommand($"new install beamable.templates::{version}")
+		var installStream = new StringBuilder();
+		var result = await CliExtensions.GetDotnetCommand($"new --install {packageName}::{version}")
 			.WithValidation(CommandResultValidation.None)
-			.ExecuteAsyncAndLog().Select(res => res.ExitCode == 0).Task;
+			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(installStream))
+			.WithStandardErrorPipe(PipeTarget.ToStringBuilder(installStream))
+			.ExecuteAsyncAndLog().Task;
+		var isTemplateInstalled = result.ExitCode == 0;
 
 		if (!isTemplateInstalled)
 		{
+			Log.Verbose("[ExitCode:{ResultExitCode}] Command output: {InstallStream}", result.ExitCode, installStream);
 			throw new CliException("Installation of Beamable templates failed, please attempt the installation again.");
 		}
 	}
@@ -165,7 +180,8 @@ public class ProjectService
 	public static async Task<DotnetTemplateInfo> GetTemplateInfo()
 	{
 		var templateStream = new StringBuilder();
-		await CliExtensions.GetDotnetCommand("new uninstall")
+
+		await CliExtensions.GetDotnetCommand(UNINSTALL_COMMAND)
 			.WithValidation(CommandResultValidation.None)
 			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(templateStream))
 			.ExecuteBufferedAsync();

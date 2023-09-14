@@ -11,7 +11,7 @@ namespace Beamable.Server.Api.Usage
 	{
 		/// <returns>the latest <see cref="ServiceUsage"/> data.</returns>
 		ServiceUsage GetUsage();
-		
+
 		/// <returns>the <see cref="ServiceMetadata"/> d</returns>
 		ServiceMetadata GetMetadata();
 
@@ -29,17 +29,17 @@ namespace Beamable.Server.Api.Usage
 		/// the average cpu usage %. It is "observed", because it may not be accurate to what Amazon Web Services things is true. 
 		/// </summary>
 		public double observedCpuAverage;
-		
+
 		/// <summary>
 		/// the average memory usage %
 		/// </summary>
 		public double memoryAverage;
-		
+
 		/// <summary>
 		/// the latest cpu usage %. It may not be accurate to what AWS uses.
 		/// </summary>
 		public double latestCpuUsage;
-		
+
 		/// <summary>
 		/// The latest mem usage %
 		/// </summary>
@@ -53,7 +53,7 @@ namespace Beamable.Server.Api.Usage
 		/// Where is the service running?
 		/// </summary>
 		public ServiceEnvironment environment;
-		
+
 		/// <summary>
 		/// A unique id for this instance
 		/// </summary>
