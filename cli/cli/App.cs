@@ -265,6 +265,9 @@ public class App
 		{
 			switch (ex)
 			{
+				case RequesterException requesterException:
+					Console.WriteLine($"[[{requesterException.Uri}]]request error with response code: {requesterException.Status} and message: {requesterException.RequestError.message}");
+					break;
 				case CliException cliException:
 					if (cliException.ReportOnStdOut)
 					{
