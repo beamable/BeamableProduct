@@ -45,14 +45,15 @@ namespace Beamable.Api.Payments
 			{
 				switch (Application.platform)
 				{
+					// TD744831 - Hard coded provider IDs in PaymentService artificially constrain custom payment implementations
 					case RuntimePlatform.IPhonePlayer:
 						return "itunes";
 					case RuntimePlatform.Android:
 						return "googleplay";
-					case RuntimePlatform.OSXPlayer:
-						return "macos";
 					case RuntimePlatform.WindowsPlayer:
 						return "windows";
+					case RuntimePlatform.OSXPlayer:
+						return "windows";  // We treat MacOS as "windows" because the backend API does not recognize "macos" and we want this not to trickle down to "unknown". ~ACM 2023-09-14
 					default:
 #if UNITY_EDITOR
 						return "test";
