@@ -7,6 +7,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Common.Semantics;
 using cli.Commands.Project;
 using cli.Content;
+using cli.Content.Tag;
 using cli.Docs;
 using cli.Dotnet;
 using cli.Services;
@@ -22,7 +23,6 @@ using Serilog.Sinks.SpectreConsole;
 using Spectre.Console;
 using System.CommandLine;
 using System.CommandLine.Builder;
-using System.CommandLine.Help;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 
@@ -213,6 +213,10 @@ public class App
 		Commands.AddCommand<ContentOpenCommand, ContentOpenCommandArgs, ContentCommand>();
 		Commands.AddCommand<ContentPublishCommand, ContentPublishCommandArgs, ContentCommand>();
 		Commands.AddCommand<ContentResetCommand, ContentResetCommandArgs, ContentCommand>();
+
+		Commands.AddCommand<ContentTagCommand, ContentTagCommandArgs, ContentCommand>();
+		Commands.AddCommand<ContentTagAddCommand, ContentTagAddCommandArgs, ContentTagCommand>();
+		Commands.AddCommand<ContentTagRemoveCommand, ContentTagAddCommandArgs, ContentTagCommand>();
 
 		commandConfigurator?.Invoke(Commands);
 

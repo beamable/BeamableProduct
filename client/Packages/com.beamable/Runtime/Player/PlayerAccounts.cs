@@ -1879,26 +1879,41 @@ namespace Beamable.Player
 					existing.Update(token);
 					existing.TryTriggerUpdate();
 					next.Add(existing);
-					if (user.id == _ctx.PlayerId)
-					{
-						if (Current == null) Current = existing;
-						Current.Update(existing);
-					}
 				}
 				else
 				{
 					var newAccount = new PlayerAccount(this, token, user, statValues);
 					gamerTagToAccount.Add(user.id, newAccount);
 					next.Add(newAccount);
-
-					if (user.id == _ctx.PlayerId)
-					{
-						if (Current == null) Current = newAccount;
-						Current.Update(newAccount);
-					}
 				}
 			}
 
+			foreach (var account in next)
+			{
+				if (account.GamerTag != _ctx.PlayerId) continue;
+
+				if (Current == null)
+				{
+					// must clone the instance, otherwise, later when account switches will happen, references will point to old objects
+					var tokenClone = JsonUtility.FromJson<BeamableToken>(JsonUtility.ToJson(account.token));
+					var userClone = JsonUtility.FromJson<User>(JsonUtility.ToJson(account._user));
+					UserExtensions.StatCollection statClone = new UserExtensions.StatCollection();
+					foreach (var kvp in account._stats)
+					{
+						statClone[kvp.Key] = kvp.Value;
+					}
+					
+					Current = new PlayerAccount(this, tokenClone, userClone, statClone);
+				}
+				else
+				{
+					Current.Update(account);
+				}
+
+				break;
+			}
+			
+			
 			SetData(next);
 		}
 	}

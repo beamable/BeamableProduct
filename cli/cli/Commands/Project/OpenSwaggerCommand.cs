@@ -85,7 +85,8 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 				.Title("Select the service name to use:")
 				.PageSize(10)
 				.MoreChoicesText("[grey](Move up and down to reveal more service name)[/]")
-				.AddChoices(serviceDefinitions.Select(serviceDef => serviceDef.BeamoId)));
+				.AddChoices(serviceDefinitions.Select(serviceDef => serviceDef.BeamoId))
+				.AddBeamHightlight());
 
 		await new BeamCommandAssistantBuilder("project open-swagger", args.AppContext)
 			.AddArgument(serviceName)
