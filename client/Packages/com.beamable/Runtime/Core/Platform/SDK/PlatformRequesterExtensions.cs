@@ -2,7 +2,6 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Pooling;
 using Beamable.Serialization;
-
 namespace Beamable.Api
 {
 	public static class BeamableRequesterExtensions
