@@ -25,7 +25,6 @@ namespace Beamable.Editor
 		Promise<EditorAccountInfo> Login(string nextCid, AccessToken cidToken);
 		void Logout(bool clearRealmPid);
 		ReadonlyOptionalString Cid { get; }
-		void ApplyConfigValuesToRuntime();
 		void SetRealm(EditorAccountInfo editorAccount, RealmView game, string realmPid);
 		void WriteUnsetConfigValues();
 		Promise<bool> SwitchToConfigDefaults();
