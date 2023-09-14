@@ -73,8 +73,6 @@ namespace Beamable
 	[Serializable]
 	public class BeamContext : IPlatformService, IGameObjectContext, IObservedPlayer, IBeamableDisposableOrder, IDependencyNameProvider, IDependencyScopeNameProvider
 	{
-		const string DEFAULT_CONTEXT_KEY = "beamDefaultContext";
-
 		#region Internal State
 		/// <summary>
 		/// The <see cref="PlayerCode"/> is the name of a player's slot on the device. The <see cref="Default"/> context uses an empty string,
@@ -264,7 +262,7 @@ namespace Beamable
 		private BeamableBehaviour _behaviour;
 		private OfflineCache _offlineCache;
 		private static bool IsDefaultPlayerCode(string code) => DefaultPlayerCode == code;
-		private static string DefaultPlayerCode => PlayerPrefs.GetString(DEFAULT_CONTEXT_KEY, string.Empty);
+		private static string DefaultPlayerCode { get; set; }
 
 		#endregion
 
@@ -763,7 +761,7 @@ namespace Beamable
 #if !BEAMABLE_DISABLE_BEAM_CONTEXT_DEFAULT_OVERRIDE
 			if (isFirstContext)
 			{
-				PlayerPrefs.SetString(DEFAULT_CONTEXT_KEY, playerCode);
+				DefaultPlayerCode = playerCode;
 			}
 #endif
 
