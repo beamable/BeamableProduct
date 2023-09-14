@@ -742,10 +742,9 @@ namespace Beamable
 			IDependencyBuilder dependencyBuilder = null
 			)
 		{
-			var isFirstContext = _playerCodeToContext.Count == 0;
 
 			dependencyBuilder = dependencyBuilder ?? Beam.DependencyBuilder;
-			playerCode ??= isFirstContext ? string.Empty : DefaultPlayerCode;
+			playerCode ??= DefaultPlayerCode;
 			// get the cid & pid if not given
 			var cid = ConfigDatabase.GetString("cid");
 			var pid = ConfigDatabase.GetString("pid");
@@ -762,7 +761,7 @@ namespace Beamable
 			}
 
 #if BEAMABLE_ENABLE_BEAM_CONTEXT_DEFAULT_OVERRIDE
-			if (isFirstContext)
+			if (_playerCodeToContext.Count == 0)
 			{
 				DefaultPlayerCode = playerCode;
 			}
