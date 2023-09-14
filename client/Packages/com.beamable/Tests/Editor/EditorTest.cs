@@ -1,7 +1,9 @@
 using Beamable.Api;
+using Beamable.Common;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
 using Beamable.Editor.Toolbox.Models;
+using Beamable.Tests.Runtime;
 using System.Collections;
 using UnityEngine.TestTools;
 
@@ -32,6 +34,11 @@ namespace Beamable.Editor.Tests
 		{
 			var builder = BeamEditorDependencies.DependencyBuilder.Clone();
 			builder.ReplaceSingleton<IWebsiteHook, MockWebsiteHook>();
+			builder.ReplaceSingleton<IRuntimeConfigProvider>(new TestConfigProvider
+			{
+				Cid = "000",
+				Pid = "111"
+			});
 			builder.ReplaceSingleton<IAccountService, MockAccountService>(provider =>
 			{
 				var service = new MockAccountService();

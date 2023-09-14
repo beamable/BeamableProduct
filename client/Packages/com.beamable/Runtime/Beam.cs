@@ -82,6 +82,11 @@ namespace Beamable
 		/// </summary>
 		public static IDependencyBuilder DependencyBuilder;
 
+		/// <summary>
+		/// Controls the CID/PID connection strings for the game.
+		/// However, this should not be used directly. Instead,
+		/// Use <see cref="ChangePid"/> to change the PID at runtime.
+		/// </summary>
 		public static DefaultRuntimeConfigProvider RuntimeConfigProvider;
 		public static ReflectionCache ReflectionCache;
 		public static IBeamHintGlobalStorage RuntimeGlobalStorage;
