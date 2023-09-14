@@ -43,16 +43,23 @@ namespace Beamable.Api.Payments
 		{
 			get
 			{
-				if (Application.platform == RuntimePlatform.IPhonePlayer) { return "itunes"; }
-				else if (Application.platform == RuntimePlatform.Android) { return "googleplay"; }
-				else
+				switch (Application.platform)
 				{
+					case RuntimePlatform.IPhonePlayer:
+						return "itunes";
+					case RuntimePlatform.Android:
+						return "googleplay";
+					case RuntimePlatform.WindowsPlayer:
+						return "windows";
+					case RuntimePlatform.OSXPlayer:
+						return "windows";  // We return "windows" instead of "macos" because the backend API supports "windows" as an ID but does not support "macos" and we do not want this to trickle through to the "unknown" case.
+					default:
 #if UNITY_EDITOR
-                    return "test";
+						return "test";
 #elif USE_STEAMWORKS
-                    return "steam";
+						return "steam";
 #else
-					return "bogus";
+						return "unknown";
 #endif
 				}
 			}
