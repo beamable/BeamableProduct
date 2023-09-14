@@ -262,8 +262,11 @@ namespace Beamable
 		private BeamableBehaviour _behaviour;
 		private OfflineCache _offlineCache;
 		private static bool IsDefaultPlayerCode(string code) => DefaultPlayerCode == code;
+#if BEAMABLE_ENABLE_BEAM_CONTEXT_DEFAULT_OVERRIDE
 		private static string DefaultPlayerCode { get; set; }
-
+#else
+		private static string DefaultPlayerCode => string.Empty;
+#endif
 		#endregion
 
 		#region events
@@ -758,7 +761,7 @@ namespace Beamable
 				return existingContext;
 			}
 
-#if !BEAMABLE_DISABLE_BEAM_CONTEXT_DEFAULT_OVERRIDE
+#if BEAMABLE_ENABLE_BEAM_CONTEXT_DEFAULT_OVERRIDE
 			if (isFirstContext)
 			{
 				DefaultPlayerCode = playerCode;

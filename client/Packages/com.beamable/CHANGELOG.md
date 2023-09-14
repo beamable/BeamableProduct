@@ -13,10 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Websocket connection authentication in WebGL builds.
 - Fixed ContentRef property drawer on Unity 2021 LTS.
 
-### Changed
+### Added
 
-- If we call `BeamContext.ForPlayer` before `BeamContext.Default` playerCode passed to first call becomes default one.
-Game maker can use `BEAMABLE_DISABLE_BEAM_CONTEXT_DEFAULT_OVERRIDE` to restore previous behaviour.
+- Opt-in behaviour- if we call `BeamContext.ForPlayer` before `BeamContext.Default` playerCode passed to first call becomes default one.
+Game maker can use `BEAMABLE_ENABLE_BEAM_CONTEXT_DEFAULT_OVERRIDE` to enable that behaviour.
 
 ## [1.18.0]
 
