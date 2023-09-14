@@ -152,7 +152,7 @@ namespace Beamable.Common.Api.Auth
 		{
 			var qb = _requester.CreateQueryArgBuilder(new Dictionary<string, string>
 			{
-				["thirdParty"] = thirdParty.GetString(), 
+				["thirdParty"] = thirdParty.GetString(),
 				["token"] = token
 			});
 			return _requester.Request<User>(Method.DELETE,
@@ -411,7 +411,7 @@ namespace Beamable.Common.Api.Auth
 				["provider_service"] = providerService,
 				["user_id"] = externalToken,
 			});
-			
+
 			if (!string.IsNullOrWhiteSpace(providerNamespace))
 				qb.Add("provider_namespace", providerNamespace);
 
