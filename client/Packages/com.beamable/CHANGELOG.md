@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `IsThirdPartyAvailable`, `RemoveThirdPartyAssociation`, and `IsExternalIdentityAvailable` methods no longer use invalid query args.
 - Websocket connection authentication in WebGL builds.
+- Fixed ContentRef property drawer on Unity 2021 LTS.
 
 ### Changed
 

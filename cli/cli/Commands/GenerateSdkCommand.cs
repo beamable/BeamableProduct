@@ -20,7 +20,7 @@ public enum GenerateSdkConflictResolutionStrategy
 	RenameUncommonConflicts
 }
 
-public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>
+public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>, IStandaloneCommand
 {
 	private SwaggerService _swagger;
 
