@@ -8,8 +8,8 @@ namespace Beamable.Tests.Runtime.PromiseTests
 {
 	public class SequenceTests
 	{
-		
-		
+
+
 		[UnityTest]
 		public IEnumerator Sequence_Order()
 		{
@@ -26,7 +26,7 @@ namespace Beamable.Tests.Runtime.PromiseTests
 			// complete the promises out of order.
 			yield return null;
 			p1.CompleteSuccess(5);
-			
+
 			yield return null;
 			p2.CompleteSuccess(7);
 
