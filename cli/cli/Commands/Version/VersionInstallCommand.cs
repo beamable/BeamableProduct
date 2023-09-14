@@ -12,7 +12,7 @@ public class VersionInstallCommandArgs : CommandArgs
 	public bool quiet;
 }
 
-public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
+public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>, IStandaloneCommand
 {
 	public VersionInstallCommand() : base("install", "Install a different version of the CLI")
 	{

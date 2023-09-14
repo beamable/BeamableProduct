@@ -14,7 +14,7 @@ public class InitCommandArgs : LoginCommandArgs
 	public string pid;
 }
 
-public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStreamResultChannel, InitCommandResult>
+public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStreamResultChannel, InitCommandResult>, IStandaloneCommand
 {
 	private readonly LoginCommand _loginCommand;
 	private IRealmsApi _realmsApi;

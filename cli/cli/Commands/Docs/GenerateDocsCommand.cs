@@ -13,7 +13,7 @@ public class GenerateDocsCommandArgs : CommandArgs
 }
 
 
-public class GenerateDocsCommand : AppCommand<GenerateDocsCommandArgs>
+public class GenerateDocsCommand : AppCommand<GenerateDocsCommandArgs>, IStandaloneCommand
 {
 
 	public GenerateDocsCommand() : base("docs", "Generate CLI documentation")
