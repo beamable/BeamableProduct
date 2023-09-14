@@ -20,6 +20,7 @@ namespace Beamable.Server
 			}
 		}
 
+		[Obsolete]
 		public static void UseServicePrefix(string serviceName)
 		{
 			var values = GetValues();
@@ -30,6 +31,7 @@ namespace Beamable.Server
 			}
 		}
 
+		[Obsolete]
 		public static void ClearServicePrefix(string serviceName)
 		{
 			var values = GetValues();
@@ -37,6 +39,7 @@ namespace Beamable.Server
 			SetValues(values);
 		}
 
+		[Obsolete]
 		public static string GetServicePrefix(string serviceName)
 		{
 #if !UNITY_EDITOR
@@ -48,6 +51,7 @@ namespace Beamable.Server
 #endif
 		}
 
+		[Obsolete]
 		static void SetValues(Dictionary<string, string> values)
 		{
 			var cid = ConfigDatabase.GetString("cid");
@@ -64,6 +68,7 @@ namespace Beamable.Server
 			PlayerPrefs.SetString(key, str);
 		}
 
+		[Obsolete]
 		static Dictionary<string, string> GetValues()
 		{
 			var cid = ConfigDatabase.GetString("cid");

@@ -190,23 +190,8 @@ namespace Beamable.Editor
 			_saveHandle?.Save();
 		}
 
-		public void ApplyConfigValuesToRuntime()
-		{
-			if (cid.HasValue)
-			{
-				// the config-database uses player-prefs as overrides,
-				//  so we can take advantage of that and set the local env's
-				//  cid/pid to whats in the editor state as its serialized out
-				//  as playmode initiates. 
-				GetAccountForCid(cid.Value, out var account);
-				PlayerPrefs.SetString("cid", cid.Value);
-				PlayerPrefs.SetString("pid", account.realmPid.Value);
-			}
-		}
-
 		public void WriteUnsetConfigValues()
 		{
-			ApplyConfigValuesToRuntime();
 			var needsWrite = false;
 			var nextCid = ConfigDefaultsService.Cid.GetNonEmptyOrElse(() =>
 			{
@@ -270,7 +255,6 @@ namespace Beamable.Editor
 			{
 				account.Refresh();
 			}
-			ApplyConfigValuesToRuntime();
 		}
 
 		public void SetRealm(EditorAccountInfo editorAccount, RealmView game, string realmPid)

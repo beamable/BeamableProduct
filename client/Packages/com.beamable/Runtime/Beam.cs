@@ -82,6 +82,7 @@ namespace Beamable
 		/// </summary>
 		public static IDependencyBuilder DependencyBuilder;
 
+		public static DefaultRuntimeConfigProvider RuntimeConfigProvider;
 		public static ReflectionCache ReflectionCache;
 		public static IBeamHintGlobalStorage RuntimeGlobalStorage;
 
@@ -256,8 +257,11 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(ContentConfiguration.Instance);
 			DependencyBuilder.AddSingleton(CoreConfiguration.Instance);
 			DependencyBuilder.AddSingleton<IAuthSettings>(AccountManagementConfiguration.Instance);
-			DependencyBuilder.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
+			DependencyBuilder.AddSingleton<OfflineCache>(p => new OfflineCache(p.GetService<IRuntimeConfigProvider>(), CoreConfiguration.Instance.UseOfflineCache));
 
+
+			RuntimeConfigProvider = new DefaultRuntimeConfigProvider(new ConfigDatabaseProvider());
+			DependencyBuilder.AddSingleton<IRuntimeConfigProvider>(RuntimeConfigProvider);
 			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 
@@ -363,7 +367,7 @@ namespace Beamable
 		public static async Promise ChangePid(string pid, string sceneQualifier = "0")
 		{
 			await StopAllContexts();
-			ConfigDatabase.SetString("pid", pid, persist: false); // setting persist to false means the new pid won't be stored in player prefs.
+			RuntimeConfigProvider.Pid = pid;
 			await ResetToScene(sceneQualifier);
 		}
 

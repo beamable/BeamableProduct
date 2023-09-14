@@ -64,10 +64,12 @@ using UnityEditor.Compilation;
 
 namespace Beamable
 {
+	[BeamContextSystem]
 	public static class BeamEditorDependencies
 	{
 		public static IDependencyBuilder DependencyBuilder;
 
+		
 		static BeamEditorDependencies()
 		{
 			DependencyBuilder = new DependencyBuilder();
@@ -99,7 +101,7 @@ namespace Beamable
 
 			DependencyBuilder.AddSingleton<IWebsiteHook, WebsiteHook>();
 			DependencyBuilder.AddSingleton<IToolboxViewService, ToolboxViewService>();
-			DependencyBuilder.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
+			DependencyBuilder.AddSingleton<OfflineCache>(p => new OfflineCache(p.GetService<IRuntimeConfigProvider>(), CoreConfiguration.Instance.UseOfflineCache));
 
 			DependencyBuilder.AddSingleton<ServiceStorage>();
 			DependencyBuilder.AddSingleton(() => BeamableEnvironment.Data);
@@ -125,8 +127,26 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<BeamCli>();
 
 			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
+			DependencyBuilder.AddSingleton<IRuntimeConfigProvider, EditorRuntimeConfigProvider>();
 
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
+		}
+
+		[RegisterBeamableDependencies(-999, RegistrationOrigin.RUNTIME)]
+		public static void RegisterRuntime(IDependencyBuilder builder)
+		{
+			try
+			{
+				var editorCtx = BeamEditorContext.Default;
+				var fallback = editorCtx.ServiceScope.GetService<IRuntimeConfigProvider>();
+
+				Beam.RuntimeConfigProvider = new DefaultRuntimeConfigProvider(fallback);
+				builder.ReplaceSingleton<IRuntimeConfigProvider>(Beam.RuntimeConfigProvider);
+			}
+			catch (Exception ex)
+			{
+				Debug.Log(ex.Message);
+			}
 		}
 	}
 
@@ -677,7 +697,6 @@ namespace Beamable
 			var cid = EditorAccount.CustomerView.Cid;
 			var pid = EditorAccount.realmPid.Value;
 			WriteConfig(alias, pid, cid: cid);
-			EditorAccountService.ApplyConfigValuesToRuntime();
 		}
 
 		[Obsolete]
@@ -701,6 +720,7 @@ namespace Beamable
 			requester.Host = host;
 		}
 
+		[Obsolete]
 		private static string GetCustomContainerPrefix()
 		{
 			return ConfigDatabase.TryGetString("containerPrefix", out var customPrefix) ? customPrefix : null;

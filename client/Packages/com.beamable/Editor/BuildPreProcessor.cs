@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Config;
 using Beamable.Content;
 using Beamable.Editor.Content;
@@ -99,8 +100,15 @@ namespace Beamable.Editor
 		private static bool CheckForConfigDefaultsAlignment(out string warningMessage)
 		{
 			warningMessage = string.Empty;
-			ConfigDatabase.Init(forceReload: true);
-			if (!ConfigDatabase.TryGetString("cid", out var cid, allowSessionOverrides: false) || string.IsNullOrEmpty(cid))
+
+			var provider = new ConfigDatabaseProvider();
+			var runtimeCid = provider.Cid;
+			var runtimePid = provider.Pid;
+			
+			var editorCtx = BeamEditorContext.Default;
+			var editorProvider = editorCtx.ServiceScope.GetService<IRuntimeConfigProvider>();
+			
+			if (string.IsNullOrEmpty(runtimeCid))
 			{
 				var error = $@"BEAMABLE ERROR: No CID was detected!
 Without a CID, the Beamable SDK will not be able to connect to any Beamable Cloud. 
@@ -111,7 +119,7 @@ popup, click the 'Save Config-Defaults' button.";
 				throw new BuildFailedException(error);
 			}
 
-			if (!ConfigDatabase.TryGetString("pid", out var pid, allowSessionOverrides: false) || string.IsNullOrEmpty(pid))
+			if (string.IsNullOrEmpty(runtimePid))
 			{
 				var error = $@"BEAMABLE ERROR: No PID was detected!
 Without a PID, the Beamable SDK will not be able to connect to any Beamable Cloud. 
@@ -122,17 +130,17 @@ popup, click the 'Save Config-Defaults' button.";
 				throw new BuildFailedException(error);
 			}
 
-			var runtimeCid = ConfigDatabase.GetString("cid");
-			var runtimePid = ConfigDatabase.GetString("pid");
+			var editorCid = editorProvider.Cid;
+			var editorPid = editorProvider.Pid;
 
-			var cidsMatch = runtimeCid == cid;
-			var pidsMatch = runtimePid == pid;
+			var cidsMatch = runtimeCid == editorCid;
+			var pidsMatch = runtimePid == editorPid;
 
 			if (!cidsMatch || !pidsMatch)
 			{
 				warningMessage = $@"BEAMABLE WARNING: CID/PID Mismatch Detected!
-The editor environment is using a cid=[{runtimeCid}] and pid=[{runtimePid}]. These values are assigned in Toolbox.
-However, the built target will use a cid=[{cid}] and pid=[{pid}]. These values are assigned in the config-defaults.txt file.
+The editor environment is using a cid=[{editorCid}] and pid=[{editorPid}]. These values are assigned in Toolbox.
+However, the built target will use a cid=[{runtimeCid}] and pid=[{runtimePid}]. These values are assigned in the config-defaults.txt file.
 These values do not match. This means that you are building the game
 for a different Beamable environment than the editor is currently using. Be careful! 
 In the Beamable Toolbox, click on the account icon, and then in the account summary
