@@ -18,7 +18,7 @@ namespace Beamable.Common.Api
 		/// </summary>
 		/// <param name="requester">Any type that can url-encode parameters</param>
 		/// <param name="dictionary">an existing dictionary of parameters to encode</param>
-		public QueryBuilder(IUrlEscaper requester, IDictionary<string, string> dictionary=null)
+		public QueryBuilder(IUrlEscaper requester, IDictionary<string, string> dictionary = null)
 		{
 			_requester = requester;
 			_dictionary = dictionary ?? new Dictionary<string, string>();
@@ -60,7 +60,7 @@ namespace Beamable.Common.Api
 				var part = ($"{kvp.Key}={_requester.EscapeURL(kvp.Value)}");
 				parts.Add(part);
 			}
-			
+
 			var queryArgs = string.Join("&", parts);
 			return "?" + queryArgs;
 		}
@@ -75,7 +75,7 @@ namespace Beamable.Common.Api
 		/// <param name="escaper"></param>
 		/// <param name="args"></param>
 		/// <returns></returns>
-		public static QueryBuilder CreateQueryArgBuilder(this IUrlEscaper escaper, Dictionary<string, string> args=null)
+		public static QueryBuilder CreateQueryArgBuilder(this IUrlEscaper escaper, Dictionary<string, string> args = null)
 		{
 			return new QueryBuilder(escaper, args);
 		}
