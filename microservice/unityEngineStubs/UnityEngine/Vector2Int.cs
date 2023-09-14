@@ -72,7 +72,7 @@ namespace UnityEngine {
     {
       get
       {
-        return MathF.Sqrt(sqrMagnitude);
+        return Mathf.Sqrt(sqrMagnitude);
       }
     }
 

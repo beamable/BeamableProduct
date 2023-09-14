@@ -29,7 +29,8 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<User> SetLanguage(string languageCodeISO6391)
 		{
-			return _requester.Request<User>(Method.PUT, $"{ACCOUNT_URL}/me?language={languageCodeISO6391}");
+			var encodedLanguageCode = _requester.EscapeURL(languageCodeISO6391);
+			return _requester.Request<User>(Method.PUT, $"{ACCOUNT_URL}/me?language={encodedLanguageCode}");
 		}
 
 		public virtual async Promise<User> GetUser(TokenResponse token)
@@ -50,10 +51,15 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<bool> IsThirdPartyAvailable(AuthThirdParty thirdParty, string token)
 		{
+			var qb = _requester.CreateQueryArgBuilder(new Dictionary<string, string>
+			{
+				["thirdParty"] = thirdParty.GetString(),
+				["token"] = token
+			});
 			return _requester
 				   .Request<AvailabilityResponse>(
 					   Method.GET,
-					   $"{ACCOUNT_URL}/available/third-party?thirdParty={thirdParty.GetString()}&token={token}", null,
+					   $"{ACCOUNT_URL}/available/third-party{qb}", null,
 					   false)
 				   .Map(resp => resp.available);
 		}
@@ -62,7 +68,6 @@ namespace Beamable.Common.Api.Auth
 		{
 			var req = new CreateUserRequest { grant_type = "guest" };
 			return _requester.Request<TokenResponse>(Method.POST, TOKEN_URL, req, false);
-			//return _requester.RequestForm<TokenResponse>(TOKEN_URL, form, false);
 		}
 
 		[Serializable]
@@ -145,8 +150,13 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<User> RemoveThirdPartyAssociation(AuthThirdParty thirdParty, string token)
 		{
+			var qb = _requester.CreateQueryArgBuilder(new Dictionary<string, string>
+			{
+				["thirdParty"] = thirdParty.GetString(), 
+				["token"] = token
+			});
 			return _requester.Request<User>(Method.DELETE,
-											$"{ACCOUNT_URL}/me/third-party?thirdParty={thirdParty.GetString()}&token={token}",
+											$"{ACCOUNT_URL}/me/third-party{qb}",
 											null, true);
 		}
 
@@ -394,11 +404,20 @@ namespace Beamable.Common.Api.Auth
 			throw new Exception("Problem with challenge token parsing");
 		}
 
-		public Promise<bool> IsExternalIdentityAvailable(string providerService, string externalToken, string[] namespaces = null)
+		public Promise<bool> IsExternalIdentityAvailable(string providerService, string externalToken, string providerNamespace = null)
 		{
+			var qb = Requester.CreateQueryArgBuilder(new Dictionary<string, string>
+			{
+				["provider_service"] = providerService,
+				["user_id"] = externalToken,
+			});
+			
+			if (!string.IsNullOrWhiteSpace(providerNamespace))
+				qb.Add("provider_namespace", providerNamespace);
+
 			return Requester.Request<AvailabilityResponse>(
 				Method.GET,
-				$"{ACCOUNT_URL}/available/external_identity?provider_service={providerService}&user_id={externalToken}?provider_namespace={namespaces}",
+				$"{ACCOUNT_URL}/available/external_identity{qb}",
 				null, false).Map(response => response.available);
 		}
 	}

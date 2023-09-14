@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Dependencies;
+using Beamable.Server.Common;
 using Serilog;
 using Serilog.Events;
 using System.CommandLine.Binding;
@@ -57,7 +58,7 @@ public class DefaultAppContext : IAppContext
 	public IAccessToken Token => _token;
 	private CliToken _token;
 
-	private string _cid, _pid, _host, _dir;
+	private string _cid, _pid, _host;
 	private string _refreshToken;
 
 	public string Cid => _cid;
@@ -92,17 +93,19 @@ public class DefaultAppContext : IAppContext
 		// Configure log level from option
 		{
 			var logLevelOption = bindingContext.ParseResult.GetValueForOption(_logOption);
-			if (!string.IsNullOrEmpty(logLevelOption))
-				App.LogLevel.MinimumLevel = LogLevel = (LogEventLevel)Enum.Parse(typeof(LogEventLevel), logLevelOption, true);
-			else if (!string.IsNullOrEmpty(_environment.LogLevel))
-				App.LogLevel.MinimumLevel = LogLevel = (LogEventLevel)Enum.Parse(typeof(LogEventLevel), _environment.LogLevel, true);
-			else
+
+			if (string.IsNullOrEmpty(logLevelOption))
 			{
-#if BEAMABLE_DEVELOPER
-				App.LogLevel.MinimumLevel = LogLevel = LogEventLevel.Debug;
-#else
-				App.LogLevel.MinimumLevel = LogLevel = = LogEventLevel.Warning
-#endif
+				App.LogLevel.MinimumLevel = LogEventLevel.Information;
+			}
+			else if (LogUtil.TryParseLogLevel(logLevelOption, out var level))
+			{
+				App.LogLevel.MinimumLevel = level;
+			}
+			else if (!string.IsNullOrEmpty(_environment.LogLevel) &&
+					 LogUtil.TryParseLogLevel(_environment.LogLevel, out level))
+			{
+				App.LogLevel.MinimumLevel = level;
 			}
 		}
 		_configService.Init(bindingContext);

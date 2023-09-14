@@ -1,4 +1,5 @@
-﻿using Beamable.Common.Api.Realms;
+﻿using Beamable.Common.Api;
+using Beamable.Common.Api.Realms;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using Newtonsoft.Json;
@@ -41,6 +42,12 @@ public partial class BeamoLocalSystem
 	private IRealmsApi _realmApi;
 
 	/// <summary>
+	/// The requester used to make requests to the beamale API.
+	/// This is used to get information from microservices that are running locally during the deploy.
+	/// </summary>
+	private IBeamableRequester _beamableRequester;
+
+	/// <summary>
 	/// An instance of the docker client so that it can communicate with Docker for Windows and Docker for Mac ---- really, it should talk to any docker daemon.
 	/// </summary>
 	private readonly DockerClient _client;
@@ -55,12 +62,13 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	private readonly CancellationTokenSource _dockerListeningThreadCancel;
 
-	public BeamoLocalSystem(ConfigService configService, IAppContext ctx, IRealmsApi realmsApi, BeamoService beamo)
+	public BeamoLocalSystem(ConfigService configService, IAppContext ctx, IRealmsApi realmsApi, BeamoService beamo, IBeamableRequester beamableRequester)
 	{
 		_configService = configService;
 		_ctx = ctx;
 		_beamo = beamo;
 		_realmApi = realmsApi;
+		_beamableRequester = beamableRequester;
 
 		// We use a 60 second timeout because the Docker Daemon is VERY slow... If you ever see an "The operation was cancelled" message that happens inconsistently,
 		// try changing this value before going down the rabbit hole.
@@ -148,19 +156,20 @@ public partial class BeamoLocalSystem
 	/// <param name="localConstructor">A task that will prepare the default parameters for the local protocol we are creating the service with.</param>
 	/// <param name="remoteConstructor">A task that will prepare the default parameters for the remote protocol we are creating the service with.</param>
 	/// <param name="cancellationToken">A cancellation token that we pass into both local and remote tasks. Can be used to cancel both tasks.</param>
+	/// <param name="shouldServiceBeEnabled">Should service be enabled/disabled when adding service definition</param>
 	/// <typeparam name="TLocal">The type of the <see cref="IBeamoLocalProtocol"/> that this service definition uses.</typeparam>
 	/// <typeparam name="TRemote">The type of the <see cref="IBeamoRemoteProtocol"/> that this service definition uses.</typeparam>
 	/// <returns>The created service definition.</returns>
 	private async Task<BeamoServiceDefinition> AddServiceDefinition<TLocal, TRemote>(string beamoId, BeamoProtocolType type, string[] beamoIdDependencies,
-		LocalProtocolModifier<TLocal> localConstructor, RemoteProtocolModifier<TRemote> remoteConstructor, CancellationToken cancellationToken)
+		LocalProtocolModifier<TLocal> localConstructor, RemoteProtocolModifier<TRemote> remoteConstructor, CancellationToken cancellationToken, bool shouldServiceBeEnabled = true)
 		where TLocal : class, IBeamoLocalProtocol, new() where TRemote : class, IBeamoRemoteProtocol, new() =>
-		await AddServiceDefinition(BeamoManifest, beamoId, type, beamoIdDependencies, localConstructor, remoteConstructor, cancellationToken);
+		await AddServiceDefinition(BeamoManifest, beamoId, type, beamoIdDependencies, localConstructor, remoteConstructor, cancellationToken, shouldServiceBeEnabled);
 
 	/// <summary>
 	/// <inheritdoc cref="AddServiceDefinition{TLocal,TRemote}(string,cli.Services.BeamoProtocolType,string[],cli.Services.LocalProtocolModifier{TLocal},cli.Services.RemoteProtocolModifier{TRemote},System.Threading.CancellationToken)"/>
 	/// </summary>
 	private static async Task<BeamoServiceDefinition> AddServiceDefinition<TLocal, TRemote>(BeamoLocalManifest beamoLocalManifest, string beamoId, BeamoProtocolType type, string[] beamoIdDependencies,
-		LocalProtocolModifier<TLocal> localConstructor, RemoteProtocolModifier<TRemote> remoteConstructor, CancellationToken cancellationToken)
+		LocalProtocolModifier<TLocal> localConstructor, RemoteProtocolModifier<TRemote> remoteConstructor, CancellationToken cancellationToken, bool shouldServiceBeEnabled = true)
 		where TLocal : class, IBeamoLocalProtocol, new() where TRemote : class, IBeamoRemoteProtocol, new()
 	{
 		// Verify that we aren't creating a non-unique beamo id.
@@ -177,7 +186,7 @@ public partial class BeamoLocalSystem
 			Protocol = type,
 			DependsOnBeamoIds = beamoIdDependencies,
 			ImageId = string.Empty,
-			ShouldBeEnabledOnRemote = false,
+			ShouldBeEnabledOnRemote = shouldServiceBeEnabled,
 		};
 
 		// Register the services before initializing protocols so that the protocol initialization can know about the service.

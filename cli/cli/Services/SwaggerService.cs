@@ -424,7 +424,7 @@ public class SwaggerService
 
 		var processors = new List<Func<OpenApiDocumentResult, List<OpenApiDocumentResult>>>
 		{
-			Rewrite204StatusCodeTo200,
+			RewriteStatusCodesTo200,
 			ReduceProtoActorMimeTypes,
 			RewriteInlineResultSchemasAsReferences,
 			SplitTagsIntoSeparateDocuments,
@@ -486,9 +486,10 @@ public class SwaggerService
 		return json;
 	}
 
-	private static List<OpenApiDocumentResult> Rewrite204StatusCodeTo200(OpenApiDocumentResult swagger)
+	private static List<OpenApiDocumentResult> RewriteStatusCodesTo200(OpenApiDocumentResult swagger)
 	{
 		const string STATUS_200 = "200";
+		const string STATUS_201 = "201";
 		const string STATUS_204 = "204";
 		const string APPLICATION_JSON = "application/json";
 
@@ -503,6 +504,30 @@ public class SwaggerService
 				if (!op.Value.Responses.ContainsKey(STATUS_200) && op.Value.Responses.ContainsKey(STATUS_204))
 				{
 					op.Value.Responses.Remove(STATUS_204);
+					op.Value.Responses[STATUS_200] = new OpenApiResponse
+					{
+						Content = new Dictionary<string, OpenApiMediaType>
+						{
+							[APPLICATION_JSON] = new OpenApiMediaType
+							{
+								Schema = new OpenApiSchema()
+							}
+						}
+					};
+				}
+
+				if (!op.Value.Responses.ContainsKey(STATUS_200) && op.Value.Responses.ContainsKey(STATUS_201))
+				{
+					var content201 = op.Value.Responses[STATUS_201].Content;
+					op.Value.Responses.Remove(STATUS_201);
+					op.Value.Responses[STATUS_200] = new OpenApiResponse
+					{
+						Content = content201
+					};
+				}
+
+				if (op.Value.Responses.ContainsKey(STATUS_200) && op.Value.Responses[STATUS_200].Content.Count == 0)
+				{
 					op.Value.Responses[STATUS_200] = new OpenApiResponse
 					{
 						Content = new Dictionary<string, OpenApiMediaType>
@@ -654,6 +679,7 @@ public class SwaggerService
 
 	private static List<OpenApiDocumentResult> SplitTagsIntoSeparateDocuments(OpenApiDocumentResult swagger)
 	{
+		var tagsToSkip = Array.Empty<string>();
 		var output = new List<OpenApiDocumentResult>();
 
 		var opCount = 0;
@@ -728,6 +754,8 @@ public class SwaggerService
 			var referencedSchemas = new Dictionary<string, OpenApiSchema>();
 			var schemasToExplore = new Queue<OpenApiSchema>();
 
+			if (tagsToSkip.Contains(tagToPathSet.Key))
+				continue;
 			clonedDocument.Info.Title = $"{tagToPathSet.Key} Actor";
 			clonedDocument.Components = new OpenApiComponents();
 			clonedDocument.Components.Schemas = referencedSchemas;

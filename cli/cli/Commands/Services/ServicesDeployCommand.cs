@@ -1,6 +1,9 @@
 ﻿using Beamable.Common;
+using Beamable.Common.Api;
+using Beamable.Common.Api.Realms;
 using Beamable.Common.BeamCli;
 using cli.Services;
+using cli.Utils;
 using Newtonsoft.Json;
 using Serilog;
 using Spectre.Console;
@@ -29,11 +32,14 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 	private IAppContext _ctx;
 	private BeamoLocalSystem _localBeamo;
 	private BeamoService _remoteBeamo;
+	private ServicesListCommand _servicesListCommand;
+	private IAliasService _aliasService;
 
-	public ServicesDeployCommand() :
+	public ServicesDeployCommand(ServicesListCommand servicesListCommand) :
 		base("deploy",
 			"Deploys services remotely to the current realm")
 	{
+		_servicesListCommand = servicesListCommand;
 	}
 
 	public override void Configure()
@@ -64,21 +70,42 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 		_ctx = args.AppContext;
 		_localBeamo = args.BeamoLocalSystem;
 		_remoteBeamo = args.BeamoService;
+		_aliasService = args.AliasService;
 
 		var isDockerRunning = await _localBeamo.CheckIsRunning();
 		if (!isDockerRunning)
 		{
-			throw new CliException("Docker is not running in this machine. Please start Docker before running this command.", Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_DOCKER_NOT_RUNNING, true);
+			throw new CliException(
+				"Docker is not running in this machine. Please start Docker before running this command.",
+				Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_DOCKER_NOT_RUNNING, true);
+		}
+
+		var cid = _ctx.Cid;
+		if (!AliasHelper.IsCid(cid))
+		{
+			try
+			{
+				var aliasResolve = await _aliasService.Resolve(cid).ShowLoading("Resolving alias...");
+				cid = aliasResolve.Cid.GetOrElse(() => throw new CliException("Invalid alias"));
+				_ctx.Set(cid, _ctx.Pid, _ctx.Host);
+			}
+			catch (Exception)
+			{
+				AnsiConsole.WriteLine($"Unable to resolve alias for '{cid}'");
+				return;
+			}
 		}
 
 		try
 		{
+			await _servicesListCommand.Handle(new ServicesListCommandArgs { Provider = args.Provider, Remote = true });
 			await _localBeamo.SynchronizeInstanceStatusWithDocker(_localBeamo.BeamoManifest,
 				_localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
 			await _localBeamo.StartListeningToDocker();
 		}
-		catch
+		catch (Exception e)
 		{
+			AnsiConsole.WriteLine(e.Message);
 			return;
 		}
 

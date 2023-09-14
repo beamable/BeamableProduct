@@ -69,6 +69,65 @@ namespace Beamable.Common.Api.Inventory
 	}
 
 	/// <summary>
+	/// This type defines the %Inventory feature's federated create request.
+	///
+	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
+	///
+	/// #### Related Links
+	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature-overview">Inventory</a> feature documentation
+	/// - See Beamable.Api.Inventory.InventoryService script reference
+	///
+	/// ![img beamable-logo]
+	///
+	/// </summary>
+	[Serializable]
+	public class FederatedItemCreateRequest
+	{
+		public string contentId;
+		public SerializableDictionaryStringToString properties;
+		public string requestId = Guid.NewGuid().ToString();
+	}
+
+	/// <summary>
+	/// This type defines the %Inventory feature's federated delete request.
+	///
+	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
+	///
+	/// #### Related Links
+	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature-overview">Inventory</a> feature documentation
+	/// - See Beamable.Api.Inventory.InventoryService script reference
+	///
+	/// ![img beamable-logo]
+	///
+	/// </summary>
+	[Serializable]
+	public class FederatedItemDeleteRequest
+	{
+		public string contentId;
+		public string proxyId;
+	}
+
+	/// <summary>
+	/// This type defines the %Inventory feature's federated update request.
+	///
+	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
+	///
+	/// #### Related Links
+	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature-overview">Inventory</a> feature documentation
+	/// - See Beamable.Api.Inventory.InventoryService script reference
+	///
+	/// ![img beamable-logo]
+	///
+	/// </summary>
+	[Serializable]
+	public class FederatedItemUpdateRequest
+	{
+		public string contentId;
+		public string proxyId;
+		public SerializableDictionaryStringToString properties;
+	}
+
+	/// <summary>
 	/// This type defines the %Inventory feature's updates.
 	///
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"

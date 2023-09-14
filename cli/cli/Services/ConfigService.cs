@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using JetBrains.Annotations;
 using Markdig.Helpers;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
@@ -10,16 +11,26 @@ using System.Text;
 namespace cli;
 
 
+
+[Serializable]
+public enum Vcs
+{
+	Git,
+	// ReSharper disable once InconsistentNaming
+	SVN,
+	P4
+}
+
 public class ConfigService
 {
 	private readonly CliEnvironment _environment;
 	private readonly ConfigDirOption _configDirOption;
 	public string WorkingDirectory => _dir;
 	public bool? ConfigFileExists { get; private set; }
-	public string? ConfigFilePath { get; private set; }
+	[CanBeNull] public string ConfigFilePath { get; private set; }
 	public string BaseDirectory => Path.GetDirectoryName(ConfigFilePath);
 
-	private Dictionary<string, string>? _config;
+	[CanBeNull] private Dictionary<string, string> _config;
 
 	private string _dir;
 
@@ -120,7 +131,8 @@ public class ConfigService
 
 	public string PrettyPrint() => JsonConvert.SerializeObject(_config, Formatting.Indented);
 
-	public string? GetConfigString(string key, string? defaultValue = null)
+	[CanBeNull]
+	public string GetConfigString(string key, [CanBeNull] string defaultValue = null)
 	{
 		if (_config?.TryGetValue(key, out var value) ?? false)
 		{
@@ -155,13 +167,13 @@ public class ConfigService
 		File.WriteAllText(fullPath, json);
 	}
 
-	public void CreateIgnoreFile()
+	public void CreateIgnoreFile(Vcs system = Vcs.Git, bool forceCreate = false)
 	{
 		if (string.IsNullOrEmpty(ConfigFilePath))
 			throw new CliException("No beamable project exists. Please use beam init");
-		
-		string ignoreFilePath = Path.Combine(ConfigFilePath, Constants.CONFIG_IGNORE_FILE_NAME);
-		if (File.Exists(ignoreFilePath))
+
+		string ignoreFilePath = GetIgnoreFilePath(system);
+		if (File.Exists(ignoreFilePath) && !forceCreate)
 			return;
 
 		var builder = new StringBuilder();
@@ -171,7 +183,9 @@ public class ConfigService
 			builder.Append(fileName.EndsWith(".json") ? fileName : fileName + ".json");
 			builder.Append(Environment.NewLine);
 		}
-		File.WriteAllText(ignoreFilePath,builder.ToString());
+		File.WriteAllText(ignoreFilePath, builder.ToString());
+
+		BeamableLogger.Log($"Generated ignore file at {ignoreFilePath}");
 	}
 
 	public bool ReadTokenFromFile(out CliToken response)
@@ -251,9 +265,9 @@ public class ConfigService
 		return false;
 	}
 
-	bool TryToReadConfigFile(string? folderPath, out Dictionary<string, string> result)
+	bool TryToReadConfigFile([CanBeNull] string folderPath, out Dictionary<string, string> result)
 	{
-		string fullPath = Path.Combine(folderPath, Constants.CONFIG_DEFAULTS_FILE_NAME);
+		string fullPath = Path.Combine(folderPath ?? string.Empty, Constants.CONFIG_DEFAULTS_FILE_NAME);
 		result = new Dictionary<string, string>();
 		if (File.Exists(fullPath))
 		{
@@ -265,4 +279,13 @@ public class ConfigService
 
 		return false;
 	}
+
+	string GetIgnoreFilePath(Vcs system) =>
+		system switch
+		{
+			Vcs.Git => Path.Combine(ConfigFilePath, Constants.CONFIG_GIT_IGNORE_FILE_NAME),
+			Vcs.SVN => Path.Combine(ConfigFilePath, Constants.CONFIG_SVN_IGNORE_FILE_NAME),
+			Vcs.P4 => Path.Combine(ConfigFilePath, Constants.CONFIG_P4_IGNORE_FILE_NAME),
+			_ => throw new ArgumentOutOfRangeException(nameof(system), system, $"VCS {system} is not supported")
+		};
 }

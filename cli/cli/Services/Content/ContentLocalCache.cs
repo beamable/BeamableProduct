@@ -1,61 +1,100 @@
-﻿using Beamable.Common.Content;
+﻿using Beamable.Common;
+using Beamable.Common.Api;
+using Beamable.Common.Content;
+using cli.Utils;
+using JetBrains.Annotations;
+using Serilog;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace cli.Services.Content;
 
 public class ContentLocalCache
 {
-	private readonly IAppContext _context;
-	private Dictionary<string, ContentDocument> _localAssets;
-	private TagsLocalFile _localTags;
-	public string ContentDirPath => Path.Combine(_context.WorkingDirectory, Constants.CONFIG_FOLDER, "Content");
-	private string BaseDirPath => Path.Combine(_context.WorkingDirectory, Constants.CONFIG_FOLDER);
-
+	public string ManifestId { get; }
 	public Dictionary<string, ContentDocument> Assets => _localAssets;
+	public string ContentDirPath => Path.Combine(BaseDirPath, ManifestId);
+	public ContentTags Tags => _contentTags;
 
-	public Dictionary<string, ClientManifest> Manifests => _manifests;
+	private string BaseDirPath => Path.Combine(_configService.ConfigFilePath, "Content");
 
-	private readonly Dictionary<string, ClientManifest> _manifests = new();
+	private Dictionary<string, ContentDocument> _localAssets;
+	private ContentTags _contentTags;
+	private ClientManifest _manifest;
+	private readonly CliRequester _requester;
+	private readonly ConfigService _configService;
 
-	public ContentLocalCache(IAppContext context)
+	public ContentLocalCache(ConfigService configService, string manifestId, CliRequester requester)
 	{
-		_context = context;
+		ManifestId = manifestId;
+		_requester = requester;
+		_configService = configService;
 	}
 
-	public string[] GetTags(string contentId) => _localTags.TagsForContent(contentId);
-
-	public void UpdateManifest(string manifestId, ClientManifest manifest)
+	public IEnumerable<string> ContentMatchingRegex(string pattern)
 	{
-		_manifests[manifestId] = manifest;
+		try
+		{
+			var regex = new Regex(pattern);
+
+			return _localAssets.Keys.Where(id => regex.IsMatch(id));
+		}
+		catch (ArgumentException)
+		{
+			BeamableLogger.LogError("{Pattern} is not a valid regex!", pattern);
+		}
+
+		return new List<string>();
 	}
 
-	public List<LocalContent> GetLocalContentStatus(ClientManifest manifest)
+	public Dictionary<string, TagStatus> GetContentTagsStatus(string contentId) =>
+		_contentTags.GetContentAllTagsStatus(contentId);
+
+	public async Promise<List<LocalContent>> GetLocalContentStatus()
 	{
+		if (_manifest == null)
+		{
+			_ = await UpdateManifest();
+		}
+
 		var resultList = new List<LocalContent>();
 
-		foreach (var pair in Assets.Where(pair => manifest.entries.All(info => info.contentId != pair.Key)))
+		foreach (var pair in Assets.Where(pair => _manifest.entries.All(info => info.contentId != pair.Key)))
 		{
-			resultList.Add(new LocalContent { contentId = pair.Key, status = ContentStatus.Created, tags = _localTags.TagsForContent(pair.Key) });
+			resultList.Add(new LocalContent
+			{
+				contentId = pair.Key,
+				status = ContentStatus.Created,
+				tags = _contentTags.TagsForContent(pair.Key, false)
+			});
 		}
-		foreach (ClientContentInfo contentManifestEntry in manifest.entries)
+
+		foreach (ClientContentInfo contentManifestEntry in _manifest.entries)
 		{
 			ContentStatus localStatus;
 			var contentExistsLocally = Assets.ContainsKey(contentManifestEntry.contentId);
 			if (contentExistsLocally)
 			{
-				var sameTags = _localTags.TagsForContent(contentManifestEntry.contentId).All(contentManifestEntry.tags.Contains);
-				localStatus = HasSameVersion(contentManifestEntry) && sameTags ? ContentStatus.UpToDate : ContentStatus.Modified;
+				var sameTags = _contentTags.GetContentAllTagsStatus(contentManifestEntry.contentId)
+					.All(pair => pair.Value == TagStatus.LocalAndRemote);
+				localStatus = HasSameVersion(contentManifestEntry) && sameTags
+					? ContentStatus.UpToDate
+					: ContentStatus.Modified;
 			}
 			else
 			{
 				localStatus = ContentStatus.Deleted;
 			}
 
-			var tags = contentExistsLocally
-				? _localTags.TagsForContent(contentManifestEntry.contentId)
-				: contentManifestEntry.tags;
-			resultList.Add(new LocalContent { contentId = contentManifestEntry.contentId, status = localStatus, tags = tags });
+			var tags = _contentTags.TagsForContent(contentManifestEntry.contentId, !contentExistsLocally);
+			resultList.Add(new LocalContent
+			{
+				contentId = contentManifestEntry.contentId,
+				status = localStatus,
+				tags = tags
+			});
 		}
+
 		resultList.Sort((a, b) => a.status.CompareTo(b.status));
 
 		return resultList;
@@ -72,7 +111,8 @@ public class ContentLocalCache
 		return false;
 	}
 
-	public ContentDocument? GetContent(string id)
+	[CanBeNull]
+	public ContentDocument GetContent(string id)
 	{
 		var content = ContentDocument.AtPath(GetContentPath(id));
 		return content;
@@ -88,6 +128,7 @@ public class ContentLocalCache
 		{
 			Directory.CreateDirectory(ContentDirPath);
 		}
+
 		_localAssets = new Dictionary<string, ContentDocument>();
 
 		foreach (var path in Directory.EnumerateFiles(ContentDirPath, "*json"))
@@ -95,7 +136,8 @@ public class ContentLocalCache
 			var content = ContentDocument.AtPath(path);
 			_localAssets.Add(content.id, content);
 		}
-		_localTags = TagsLocalFile.ReadFromFile(BaseDirPath);
+
+		_contentTags = ContentTags.ReadFromDirectory(BaseDirPath, ManifestId);
 	}
 
 	public async Task UpdateContent(ContentDocument result)
@@ -103,16 +145,22 @@ public class ContentLocalCache
 		var path = Path.Combine(ContentDirPath, $"{result.id}.json");
 		if (result.properties != null)
 		{
-			var value = JsonSerializer.Serialize(result.properties.Value, new JsonSerializerOptions { WriteIndented = true });
+			var value = JsonSerializer.Serialize(result.properties.Value,
+				new JsonSerializerOptions { WriteIndented = true });
 			_localAssets[result.id] = result;
 			await File.WriteAllTextAsync(path, value);
 		}
 	}
 
-	public void UpdateTags(TagsLocalFile tags)
+	public async Promise UpdateTags(bool saveToFile = true)
 	{
-		_localTags = tags;
-		_localTags.WriteToFile(BaseDirPath);
+		_ = await UpdateManifest();
+
+		if (saveToFile)
+		{
+			_contentTags.UpdateRemoteTagsInfo(_manifest, true);
+			_contentTags.WriteToFile();
+		}
 	}
 
 	public void Remove(LocalContent content)
@@ -122,4 +170,107 @@ public class ContentLocalCache
 	}
 
 	public string GetContentPath(string id) => Path.Combine(ContentDirPath, $"{id}.json");
+
+	public async Promise<ClientManifest> UpdateManifest(bool forceUpdate = false)
+	{
+		if (_manifest != null && !forceUpdate)
+		{
+			return _manifest;
+		}
+
+		string url = $"{ContentService.SERVICE}/manifest/public?id={ManifestId}";
+
+		_manifest = await _requester.Request(Method.GET, url, null, true, ClientManifest.ParseCSV, true).Recover(ex =>
+		{
+			if (ex is RequesterException { Status: 404 })
+			{
+				return new ClientManifest { entries = new List<ClientContentInfo>() };
+			}
+
+			throw ex;
+		}).ShowLoading();
+
+		_contentTags.UpdateRemoteTagsInfo(_manifest, false);
+
+		return _manifest;
+	}
+
+	public async Promise<Dictionary<string, ManifestReferenceSuperset>> BuildLocalManifestReferenceSupersets()
+	{
+		var manifest = await UpdateManifest();
+		var localContents = await GetLocalContentStatus();
+		var dict = new Dictionary<string, ManifestReferenceSuperset>();
+
+		foreach (var localContent in
+				 localContents.Where(content => content.status != ContentStatus.Deleted))
+		{
+			var definition = PrepareContentForPublish(localContent.contentId);
+			var matchingContent = manifest.entries.FirstOrDefault(info => info.contentId.Equals(definition.id));
+			var publicVersion = ManifestReferenceSuperset.CreateFromDefinition(definition, matchingContent, true);
+			var privateVersion = ManifestReferenceSuperset.CreateFromDefinition(definition, matchingContent, false);
+			dict.Add(publicVersion.Key, publicVersion);
+			dict.Add(privateVersion.Key, privateVersion);
+		}
+
+		return dict;
+	}
+
+	public ContentDefinition PrepareContentForPublish(string contentId)
+	{
+		var document = GetContent(contentId);
+		var tags = _contentTags.TagsForContent(contentId, false);
+
+		return new ContentDefinition
+		{
+			id = document!.id,
+			checksum = document.CalculateChecksum(),
+			properties =
+				JsonSerializer.Serialize(document.properties, new JsonSerializerOptions { WriteIndented = false }),
+			tags = tags,
+			lastChanged = 0
+		};
+	}
+
+	public async Promise<List<ContentDocument>> PullContent(bool saveToDisk = true)
+	{
+		var manifest = await UpdateManifest();
+		var contents = new List<ContentDocument>(manifest.entries.Count);
+
+		foreach (var contentInfo in manifest.entries)
+		{
+			if (HasSameVersion(contentInfo))
+			{
+				contents.Add(GetContent(contentInfo.contentId));
+				continue;
+			}
+
+			try
+			{
+				var result = await _requester.CustomRequest(Method.GET, contentInfo.uri,
+					parser: s => JsonSerializer.Deserialize<ContentDocument>(s));
+				contents.Add(result);
+				if (saveToDisk)
+				{
+					await UpdateContent(result);
+				}
+			}
+			catch (Exception e)
+			{
+				BeamableLogger.LogException(e);
+			}
+		}
+
+		return contents;
+	}
+
+	public async Promise RemoveLocalOnlyContent()
+	{
+		var localContents = await GetLocalContentStatus();
+
+		var localOnlyContent = localContents.Where(content => content.status == ContentStatus.Created);
+		foreach (LocalContent localContent in localOnlyContent)
+		{
+			Remove(localContent);
+		}
+	}
 }

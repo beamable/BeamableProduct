@@ -1,6 +1,5 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.IO;
 
@@ -37,6 +36,8 @@ namespace Beamable.Server
 		public int RequestCancellationTimeoutSeconds { get; }
 		public LogOutputType LogOutputType { get; }
 		public string LogOutputPath { get; }
+		public bool EnableDangerousDeflateOptions { get; }
+		public string MetadataUrl { get; }
 	}
 
 	public enum LogOutputType
@@ -45,316 +46,200 @@ namespace Beamable.Server
 	}
 
 	public class MicroserviceArgs : IMicroserviceArgs
-   {
-	   public IDependencyProviderScope ServiceScope { get; set; }
-	   public int HealthPort { get; set; }
-	   public string CustomerID { get; set; }
-	   public string ProjectName { get; set; }
-	   public string Secret { get; set; }
-	   public string Host { get; set; }
-	   public string NamePrefix { get; set; }
-	   public string SdkVersionBaseBuild { get; set; }
-	   public string SdkVersionExecution { get; set; }
-	   public bool WatchToken { get; set; }
-	   public bool DisableCustomInitializationHooks { get; set; }
-	   public string LogLevel { get; set; }
-	   public bool DisableLogTruncate { get; set; }
-	   public int LogTruncateLimit { get; set; }
-	   public int LogMaxCollectionSize { get; set; }
-	   public int LogMaxDepth { get; set; }
-	   public int LogDestructureMaxLength { get; set; }
-	   public bool RateLimitWebsocket { get; set; }
-	   public int RateLimitWebsocketTokens { get; set; }
-	   public int RateLimitWebsocketPeriodSeconds { get; set; }
-	   public int RateLimitWebsocketTokensPerPeriod { get; set; }
-	   public int RateLimitWebsocketMaxQueueSize { get; set; }
-	   public double RateLimitCPUMultiplierLow { get; set; }
-	   public double RateLimitCPUMultiplierHigh { get; set; }
-	   public int RateLimitCPUOffset { get; set; }
-	   public int ReceiveChunkSize { get; set; }
-	   public int SendChunkSize { get; set; }
-	   public int BeamInstanceCount { get; set; }
-	   public int RequestCancellationTimeoutSeconds { get; set; }
-	   public LogOutputType LogOutputType { get; set; }
-	   public string LogOutputPath { get; set; }
-   }
+	{
+		public IDependencyProviderScope ServiceScope { get; set; }
+		public int HealthPort { get; set; }
+		public string CustomerID { get; set; }
+		public string ProjectName { get; set; }
+		public string Secret { get; set; }
+		public string Host { get; set; }
+		public string NamePrefix { get; set; }
+		public string SdkVersionBaseBuild { get; set; }
+		public string SdkVersionExecution { get; set; }
+		public bool WatchToken { get; set; }
+		public bool DisableCustomInitializationHooks { get; set; }
+		public string LogLevel { get; set; }
+		public bool DisableLogTruncate { get; set; }
+		public int LogTruncateLimit { get; set; }
+		public int LogMaxCollectionSize { get; set; }
+		public int LogMaxDepth { get; set; }
+		public int LogDestructureMaxLength { get; set; }
+		public bool RateLimitWebsocket { get; set; }
+		public int RateLimitWebsocketTokens { get; set; }
+		public int RateLimitWebsocketPeriodSeconds { get; set; }
+		public int RateLimitWebsocketTokensPerPeriod { get; set; }
+		public int RateLimitWebsocketMaxQueueSize { get; set; }
+		public double RateLimitCPUMultiplierLow { get; set; }
+		public double RateLimitCPUMultiplierHigh { get; set; }
+		public int RateLimitCPUOffset { get; set; }
+		public int ReceiveChunkSize { get; set; }
+		public int SendChunkSize { get; set; }
+		public int BeamInstanceCount { get; set; }
+		public int RequestCancellationTimeoutSeconds { get; set; }
+		public LogOutputType LogOutputType { get; set; }
+		public string LogOutputPath { get; set; }
+		public bool EnableDangerousDeflateOptions { get; set; }
+		public string MetadataUrl { get; set; }
+	}
 
-   public static class MicroserviceArgsExtensions
-   {
-      public static IMicroserviceArgs Copy(this IMicroserviceArgs args, Action<MicroserviceArgs> configurator=null)
-      {
-         var next = new MicroserviceArgs
-         {
-	         ServiceScope = args.ServiceScope,
-            CustomerID = args.CustomerID,
-            ProjectName = args.ProjectName,
-            Secret = args.Secret,
-            Host = args.Host,
-            NamePrefix = args.NamePrefix,
-            SdkVersionBaseBuild = args.SdkVersionBaseBuild,
-            SdkVersionExecution = args.SdkVersionExecution,
-            WatchToken = args.WatchToken,
-            DisableCustomInitializationHooks = args.DisableCustomInitializationHooks,
-            LogLevel = args.LogLevel,
-            LogMaxDepth = args.LogMaxDepth,
-            LogTruncateLimit = args.LogTruncateLimit,
-            LogDestructureMaxLength = args.LogDestructureMaxLength,
-            LogMaxCollectionSize = args.LogMaxCollectionSize,
-            DisableLogTruncate = args.DisableLogTruncate,
-            RateLimitWebsocket = args.RateLimitWebsocket,
-            RateLimitWebsocketTokens = args.RateLimitWebsocketTokens,
-            RateLimitWebsocketMaxQueueSize = args.RateLimitWebsocketMaxQueueSize,
-            RateLimitWebsocketPeriodSeconds = args.RateLimitWebsocketPeriodSeconds,
-            RateLimitWebsocketTokensPerPeriod = args.RateLimitWebsocketTokensPerPeriod,
-            SendChunkSize = args.SendChunkSize,
-            ReceiveChunkSize = args.ReceiveChunkSize,
-            RateLimitCPUMultiplierLow = args.RateLimitCPUMultiplierLow,
-            RateLimitCPUMultiplierHigh = args.RateLimitCPUMultiplierHigh,
-            RateLimitCPUOffset = args.RateLimitCPUOffset,
-            BeamInstanceCount = args.BeamInstanceCount,
-            RequestCancellationTimeoutSeconds = args.RequestCancellationTimeoutSeconds,
-            HealthPort = args.HealthPort,
-            LogOutputType = args.LogOutputType,
-            LogOutputPath = args.LogOutputPath
-         };
-         
-         configurator?.Invoke(next);
-         return next;
-      }
-   }
+	public static class MicroserviceArgsExtensions
+	{
+		public static IMicroserviceArgs Copy(this IMicroserviceArgs args, Action<MicroserviceArgs> configurator = null)
+		{
+			var next = new MicroserviceArgs
+			{
+				ServiceScope = args.ServiceScope,
+				CustomerID = args.CustomerID,
+				ProjectName = args.ProjectName,
+				Secret = args.Secret,
+				Host = args.Host,
+				NamePrefix = args.NamePrefix,
+				SdkVersionBaseBuild = args.SdkVersionBaseBuild,
+				SdkVersionExecution = args.SdkVersionExecution,
+				WatchToken = args.WatchToken,
+				DisableCustomInitializationHooks = args.DisableCustomInitializationHooks,
+				LogLevel = args.LogLevel,
+				LogMaxDepth = args.LogMaxDepth,
+				LogTruncateLimit = args.LogTruncateLimit,
+				LogDestructureMaxLength = args.LogDestructureMaxLength,
+				LogMaxCollectionSize = args.LogMaxCollectionSize,
+				DisableLogTruncate = args.DisableLogTruncate,
+				RateLimitWebsocket = args.RateLimitWebsocket,
+				RateLimitWebsocketTokens = args.RateLimitWebsocketTokens,
+				RateLimitWebsocketMaxQueueSize = args.RateLimitWebsocketMaxQueueSize,
+				RateLimitWebsocketPeriodSeconds = args.RateLimitWebsocketPeriodSeconds,
+				RateLimitWebsocketTokensPerPeriod = args.RateLimitWebsocketTokensPerPeriod,
+				SendChunkSize = args.SendChunkSize,
+				ReceiveChunkSize = args.ReceiveChunkSize,
+				RateLimitCPUMultiplierLow = args.RateLimitCPUMultiplierLow,
+				RateLimitCPUMultiplierHigh = args.RateLimitCPUMultiplierHigh,
+				RateLimitCPUOffset = args.RateLimitCPUOffset,
+				BeamInstanceCount = args.BeamInstanceCount,
+				RequestCancellationTimeoutSeconds = args.RequestCancellationTimeoutSeconds,
+				HealthPort = args.HealthPort,
+				LogOutputType = args.LogOutputType,
+				LogOutputPath = args.LogOutputPath,
+				EnableDangerousDeflateOptions = args.EnableDangerousDeflateOptions,
+				MetadataUrl = args.MetadataUrl
+			};
+			configurator?.Invoke(next);
+			return next;
+		}
+	}
 
-   public class EnvironmentArgs : IMicroserviceArgs
-   {
-      public string CustomerID => Environment.GetEnvironmentVariable("CID");
-      public string ProjectName => Environment.GetEnvironmentVariable("PID");
-      public IDependencyProviderScope ServiceScope { get; }
-      public int HealthPort {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("HEALTH_PORT"), out var val))
-		      {
-			      val = Constants.Features.Services.HEALTH_PORT;
-		      }
-		      return val;
-	      }
-      }
-      public string Host => Environment.GetEnvironmentVariable("HOST");
-      public string Secret => Environment.GetEnvironmentVariable("SECRET");
-      public string NamePrefix => Environment.GetEnvironmentVariable("NAME_PREFIX") ?? "";
-      public string SdkVersionExecution => Environment.GetEnvironmentVariable("BEAMABLE_SDK_VERSION_EXECUTION") ?? "";
-      public bool WatchToken => (Environment.GetEnvironmentVariable("WATCH_TOKEN")?.ToLowerInvariant() ?? "") == "true";
-      public bool DisableCustomInitializationHooks => (Environment.GetEnvironmentVariable("DISABLE_CUSTOM_INITIALIZATION_HOOKS")?.ToLowerInvariant() ?? "") == "true";
+	public class EnvironmentArgs : IMicroserviceArgs
+	{
+		public string CustomerID => Environment.GetEnvironmentVariable("CID");
+		public string ProjectName => Environment.GetEnvironmentVariable("PID");
+		public IDependencyProviderScope ServiceScope { get; }
 
-      public int RequestCancellationTimeoutSeconds {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("REQUEST_TIMEOUT_SECONDS"), out var val))
-		      {
-			      val = 10;
-		      }
-		      return val;
-	      }
-      }
+		public int HealthPort
+		{
+			get
+			{
+				if (!int.TryParse(Environment.GetEnvironmentVariable("HEALTH_PORT"), out var val))
+				{
+					val = Constants.Features.Services.HEALTH_PORT;
+				}
 
-      public LogOutputType LogOutputType
-      {
-	      get
-	      {
-		      if (!string.IsNullOrEmpty(LogOutputPath))
-		      {
-			      return LogOutputType.FILE;
-		      }
-		      var arg = Environment.GetEnvironmentVariable("LOG_TYPE")?.ToLowerInvariant();
-		      switch (arg)
-		      {
-			      case "structured":
-				      return LogOutputType.STRUCTURED;
-			      case "unstructured":
-				      return LogOutputType.UNSTRUCTURED;
-			      case "file":
-				      return LogOutputType.FILE;
-			      default:
-				      return LogOutputType.DEFAULT;
-		      }
-	      }
-      }
+				return val;
+			}
+		}
 
-      public string LogOutputPath => Environment.GetEnvironmentVariable("LOG_PATH");
-      public string LogLevel => Environment.GetEnvironmentVariable("LOG_LEVEL") ?? "debug";
+		public string Host => Environment.GetEnvironmentVariable("HOST");
+		public string Secret => Environment.GetEnvironmentVariable("SECRET");
+		public string NamePrefix => Environment.GetEnvironmentVariable("NAME_PREFIX") ?? "";
+		public string SdkVersionExecution => Environment.GetEnvironmentVariable("BEAMABLE_SDK_VERSION_EXECUTION") ?? "";
 
-      public bool DisableLogTruncate => (Environment.GetEnvironmentVariable("DISABLE_LOG_TRUNCATE")?.ToLowerInvariant() ?? "") == "true";
+		public bool WatchToken =>
+			(Environment.GetEnvironmentVariable("WATCH_TOKEN")?.ToLowerInvariant() ?? "") == "true";
 
-      public int LogTruncateLimit
-      {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("LOG_TRUNCATE_LIMIT"), out var val))
-		      {
-			      val = 1000;
-		      }
+		public bool DisableCustomInitializationHooks =>
+			(Environment.GetEnvironmentVariable("DISABLE_CUSTOM_INITIALIZATION_HOOKS")?.ToLowerInvariant() ?? "") ==
+			"true";
 
-		      return val;
-	      }
-      }
-      public int LogMaxCollectionSize {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("LOG_DESTRUCTURE_MAX_COLLECTION_SIZE"), out var val))
-		      {
-			      val = 15;
-		      }
+		static bool IsEnvironmentVariableTrue(string key) =>
+			(Environment.GetEnvironmentVariable(key)?.ToLowerInvariant() ?? string.Empty) == "true";
 
-		      return val;
-	      }
-      }
-      public int LogMaxDepth{
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("LOG_DESTRUCTURE_MAX_DEPTH"), out var val))
-		      {
-			      val = 3;
-		      }
+		static int GetIntFromEnvironmentVariable(string key, int defaultValue)
+		{
+			if (!int.TryParse(Environment.GetEnvironmentVariable(key), out int val))
+			{
+				val = defaultValue;
+			}
 
-		      return val;
-	      }
-      }
+			return val;
+		}
 
-      public int LogDestructureMaxLength
-      {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("LOG_DESTRUCTURE_MAX_LENGTH"), out var val))
-		      {
-			      val = 250;
-		      }
+		static double GetDoubleFromEnvironmentVariable(string key, double defaultValue)
+		{
+			if (!double.TryParse(Environment.GetEnvironmentVariable(key), out double val))
+			{
+				val = defaultValue;
+			}
 
-		      return val;
-	      }
-      }
+			return val;
+		}
 
-      /// <summary>
-      /// By default, rate limiting is on, so if you pass anything to WS_DISABLE_RATE_LIMIT, it'll disable it.
-      /// </summary>
-      public bool RateLimitWebsocket => string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WS_DISABLE_RATE_LIMIT"));
+		public int RequestCancellationTimeoutSeconds => GetIntFromEnvironmentVariable("REQUEST_TIMEOUT_SECONDS", 10);
 
-      public int RateLimitWebsocketTokens
-      {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_TOKENS"), out var limit))
-		      {
-			      limit = 1000;
-		      }
-		      return limit;
-	      }
-      }
+		public LogOutputType LogOutputType
+		{
+			get
+			{
+				if (!string.IsNullOrEmpty(LogOutputPath))
+				{
+					return LogOutputType.FILE;
+				}
 
-      public int RateLimitWebsocketPeriodSeconds 
-      {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_PERIOD_SECONDS"), out var limit))
-		      {
-			      limit = 1;
-		      }
-		      return limit;
-	      }
-      }
-      public int RateLimitWebsocketTokensPerPeriod 
-      {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_TOKENS_PER_PERIOD"), out var limit))
-		      {
-			      limit = 1000;
-		      }
-		      return limit;
-	      }
-      }
-      
-      public int BeamInstanceCount 
-      {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("BEAM_INSTANCE_COUNT"), out var limit))
-		      {
-			      limit = 10;
-		      }
-		      return limit;
-	      }
-      }
+				var arg = Environment.GetEnvironmentVariable("LOG_TYPE")?.ToLowerInvariant();
+				switch (arg)
+				{
+					case "structured":
+						return LogOutputType.STRUCTURED;
+					case "unstructured":
+						return LogOutputType.UNSTRUCTURED;
+					case "file":
+						return LogOutputType.FILE;
+					default:
+						return LogOutputType.DEFAULT;
+				}
+			}
+		}
 
-      public int RateLimitWebsocketMaxQueueSize
-      {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_MAX_QUEUE_SIZE"), out var limit))
-		      {
-			      limit = 100000;
-		      }
-		      return limit;
-	      }
-      }
+		public string LogOutputPath => Environment.GetEnvironmentVariable("LOG_PATH");
+		public string LogLevel => Environment.GetEnvironmentVariable("LOG_LEVEL") ?? "debug";
+		public bool DisableLogTruncate => IsEnvironmentVariableTrue("DISABLE_LOG_TRUNCATE");
+		public int LogTruncateLimit => GetIntFromEnvironmentVariable("LOG_TRUNCATE_LIMIT", 1000);
+		public int LogMaxCollectionSize => GetIntFromEnvironmentVariable("LOG_DESTRUCTURE_MAX_COLLECTION_SIZE", 15);
+		public int LogMaxDepth => GetIntFromEnvironmentVariable("LOG_DESTRUCTURE_MAX_DEPTH", 3);
 
-      public double RateLimitCPUMultiplierLow
-      {
-	      get
-	      {
-		      if (!double.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_CPU_MULT_LOW"), out var limit))
-		      {
-			      limit = -.2;
-		      }
-		      return limit;
-	      }
-      }
+		public int LogDestructureMaxLength => GetIntFromEnvironmentVariable("LOG_DESTRUCTURE_MAX_LENGTH", 250);
 
-      public double RateLimitCPUMultiplierHigh
-      {
-	      get
-	      {
-		      if (!double.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_CPU_MULT_HIGH"), out var limit))
-		      {
-			      limit = .1;
-		      }
-		      return limit;
-	      }
-      }
+		/// <summary>
+		/// By default, rate limiting is on, so if you pass anything to WS_DISABLE_RATE_LIMIT, it'll disable it.
+		/// </summary>
+		public bool RateLimitWebsocket =>
+			string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WS_DISABLE_RATE_LIMIT"));
 
-      public int RateLimitCPUOffset 
-      {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RATE_LIMIT_CPU_OFFSET"), out var limit))
-		      {
-			      limit = 0;
-		      }
-		      return limit;
-	      }
-      }
+		public int RateLimitWebsocketTokens => GetIntFromEnvironmentVariable("WS_RATE_LIMIT_TOKENS", 1000);
+		public int RateLimitWebsocketPeriodSeconds => GetIntFromEnvironmentVariable("WS_RATE_LIMIT_PERIOD_SECONDS", 1);
 
+		public int RateLimitWebsocketTokensPerPeriod =>
+			GetIntFromEnvironmentVariable("WS_RATE_LIMIT_TOKENS_PER_PERIOD", 1000);
 
-      public int ReceiveChunkSize {
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_RECEIVE_CHUNK_SIZE"), out var limit))
-		      {
-			      limit = 65536;
-		      }
-		      return limit;
-	      }
-      }
+		public int BeamInstanceCount => GetIntFromEnvironmentVariable("BEAM_INSTANCE_COUNT", 10);
 
-      public int SendChunkSize{
-	      get
-	      {
-		      if (!int.TryParse(Environment.GetEnvironmentVariable("WS_SEND_CHUNK_SIZE"), out var limit))
-		      {
-			      limit = 65536;
-		      }
-		      return limit;
-	      }
-      }
+		public int RateLimitWebsocketMaxQueueSize =>
+			GetIntFromEnvironmentVariable("WS_RATE_LIMIT_MAX_QUEUE_SIZE", 100000);
 
-      public string SdkVersionBaseBuild => File.ReadAllText(".beamablesdkversion").Trim();
-   }
+		public double RateLimitCPUMultiplierLow => GetDoubleFromEnvironmentVariable("WS_RATE_LIMIT_CPU_MULT_LOW", -.2);
+		public double RateLimitCPUMultiplierHigh => GetDoubleFromEnvironmentVariable("WS_RATE_LIMIT_CPU_MULT_HIGH", .1);
+		public int RateLimitCPUOffset => GetIntFromEnvironmentVariable("WS_RATE_LIMIT_CPU_OFFSET", 0);
+		public int ReceiveChunkSize => GetIntFromEnvironmentVariable("WS_RECEIVE_CHUNK_SIZE", 65536);
+		public int SendChunkSize => GetIntFromEnvironmentVariable("WS_SEND_CHUNK_SIZE", 65536);
+		public string SdkVersionBaseBuild => File.ReadAllText(".beamablesdkversion").Trim();
+		public bool EnableDangerousDeflateOptions => IsEnvironmentVariableTrue("WS_ENABLE_DANGEROUS_DEFLATE_OPTIONS");
+		public string MetadataUrl => Environment.GetEnvironmentVariable("ECS_CONTAINER_METADATA_URI_V4");
+	}
 }

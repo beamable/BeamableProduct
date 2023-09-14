@@ -49,11 +49,23 @@ public partial class BeamoLocalSystem
 		var existingInstance = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.ContainerName.Contains(containerName));
 		if (existingInstance != null)
 		{
-			if (existingInstance.IsRunning)
-				return true;
+			if (existingInstance.ImageId == image)
+			{
+				// the image is the same, so we can re-use it.
+				if (existingInstance.IsRunning)
+				{
+					// since the exact right image is already running for this container; do nothing.
+					return true;
+				}
 
+				return await RunContainer(containerName);
+			}
+			else
+			{
+				// the image is not correct, so we need to erase the old container before recreating it.
+				await DeleteContainer(containerName);
+			}
 
-			return await RunContainer(containerName);
 		}
 
 		_ = await CreateContainer(image, containerName, healthConfig, autoRemoveWhenStopped, portBindings, volumes, bindMounts, environmentVars);
@@ -161,7 +173,7 @@ public partial class BeamoLocalSystem
 	/// <see cref="BeamoServiceDefinition.DockerBuildContextPath"/> and <see cref="BeamoServiceDefinition.RelativeDockerfilePath"/>.  
 	/// </summary>
 	/// <returns>The image id that was created/pulled.</returns>
-	public async Task<string> PrepareBeamoServiceImage(BeamoServiceDefinition serviceDefinition, Action<string, float> messageHandler)
+	public async Task<string> PrepareBeamoServiceImage(BeamoServiceDefinition serviceDefinition, Action<string, float> messageHandler, bool forceAmdCpuArchitecture = false)
 	{
 		switch (serviceDefinition.Protocol)
 		{
@@ -177,13 +189,14 @@ public partial class BeamoLocalSystem
 			case BeamoProtocolType.HttpMicroservice:
 			{
 				var localProtocol = BeamoManifest.HttpMicroserviceLocalProtocols[serviceDefinition.BeamoId];
-				serviceDefinition.ImageId = await BuildAndCreateImage(serviceDefinition.BeamoId,
+				serviceDefinition.ImageId = await BuildAndCreateImage(serviceDefinition.BeamoId.ToLower(),
 					localProtocol.DockerBuildContextPath,
 					localProtocol.RelativeDockerfilePath,
 					progress =>
 					{
 						messageHandler?.Invoke(serviceDefinition.BeamoId, progress);
-					});
+					},
+					forceAmdCpuArchitecture: forceAmdCpuArchitecture);
 				break;
 			}
 			default:
@@ -198,7 +211,7 @@ public partial class BeamoLocalSystem
 	/// It inspects the created image and returns it's ID.
 	/// </summary>
 	public async Task<string> BuildAndCreateImage(string imageName, string dockerBuildContextPath, string dockerfilePathInBuildContext, Action<float> progressUpdateHandler,
-		string containerImageTag = "latest")
+		string containerImageTag = "latest", bool forceAmdCpuArchitecture = false)
 	{
 		dockerBuildContextPath = _configService.GetRelativePath(dockerBuildContextPath);
 
@@ -209,8 +222,20 @@ public partial class BeamoLocalSystem
 			var progress = 0f;
 			try
 			{
+				var parameters = new ImageBuildParameters
+				{
+					Tags = new[] { tag },
+					Dockerfile = dockerfilePathInBuildContext.Replace("\\", "/"),
+					Labels = new Dictionary<string, string>() { { "beamoId", imageName } },
+					Pull = "pull",
+				};
+				if (forceAmdCpuArchitecture)
+				{
+					parameters.Platform = "linux/amd64";
+					Log.Debug($"Forcing CPU architecture arch=[{parameters.Platform}]");
+				}
 				await _client.Images.BuildImageFromDockerfileAsync(
-					new ImageBuildParameters { Tags = new[] { tag }, Dockerfile = dockerfilePathInBuildContext.Replace("\\", "/"), Labels = new Dictionary<string, string>() { { "beamoId", imageName } }, },
+					parameters,
 					stream,
 					null,
 					new Dictionary<string, string>(),
@@ -279,7 +304,7 @@ public partial class BeamoLocalSystem
 			}
 
 			var builtImage = await _client.Images.InspectImageAsync(tag);
-
+			Log.Debug($"Built image=[{builtImage.ID}] for arch=[{builtImage.Architecture}]");
 			return builtImage.ID;
 		}
 	}

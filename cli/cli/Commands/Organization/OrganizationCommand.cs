@@ -6,7 +6,7 @@ public class OrganizationCommandArgs : CommandArgs
 {
 
 }
-public class OrganizationCommand : AppCommand<OrganizationCommandArgs>
+public class OrganizationCommand : AppCommand<OrganizationCommandArgs>, IStandaloneCommand
 {
 	public OrganizationCommand() : base("org", "Commands related to beamable organizations")
 	{

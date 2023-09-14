@@ -14,11 +14,11 @@ public class VersionCommandArgs : CommandArgs
 }
 
 
-public class VersionCommand : AppCommand<VersionCommandArgs>
+public class VersionCommand : AppCommand<VersionCommandArgs>, IStandaloneCommand
 {
 	public VersionCommand() : base("version", "Commands for managing the CLI version")
 	{
-		
+
 	}
 
 	public override void Configure()
@@ -46,7 +46,7 @@ public class VersionCommand : AppCommand<VersionCommandArgs>
 
 		if (args.showTemplates)
 		{
-			
+
 			Print("templates", info.templateVersion);
 		}
 
@@ -55,8 +55,8 @@ public class VersionCommand : AppCommand<VersionCommandArgs>
 			Print("install-type", info.installType.ToString());
 		}
 
-		
-		
+
+
 		void Print(string label, string data)
 		{
 			if (args.output == "log")
@@ -69,6 +69,6 @@ public class VersionCommand : AppCommand<VersionCommandArgs>
 			}
 		}
 	}
-	
+
 
 }

@@ -25,6 +25,9 @@ public struct UnrealPropertyDeclaration
 	/// If this property represents a Semantic Type (<see cref="UnrealSourceGenerator.UNREAL_ALL_SEMTYPES"/>), this contains the underlying primitive type that we expect to receive.
 	/// For example, <see cref="UnrealSourceGenerator.UNREAL_U_SEMTYPE_CID"/> can be either a '<see cref="UnrealSourceGenerator.UNREAL_STRING"/>' or a '<see cref="UnrealSourceGenerator.UNREAL_LONG"/>'
 	/// for (de)serialization purposes. In each declaration, this variable would hold either of those values so that we can appropriately call the serialize functions.
+	///
+	/// There's one exception to this --- for semantic types that are not defined in the spec (ie: <see cref="UnrealSourceGenerator.UNREAL_OPTIONAL_U_REPTYPE_CLIENTPERMISSION"/>),
+	/// this is always an FString and the semantic type is expected to inherit from FBeamJsonSerializable first (FBeamSemanticType as a second inheritance). 
 	/// </summary>
 	public string SemTypeSerializationType;
 
@@ -41,6 +44,9 @@ public struct UnrealPropertyDeclaration
 		helperDict.Add(nameof(NonOptionalTypeName), NonOptionalTypeName);
 		helperDict.Add(nameof(NonOptionalTypeNameRelevantTemplateParam), NonOptionalTypeNameRelevantTemplateParam);
 		helperDict.Add(nameof(BriefCommentString), BriefCommentString);
+
+		if (string.IsNullOrEmpty(SemTypeSerializationType))
+			SemTypeSerializationType = UnrealSourceGenerator.UNREAL_STRING;
 		helperDict.Add(nameof(SemTypeSerializationType), SemTypeSerializationType);
 	}
 
@@ -189,7 +195,7 @@ public struct UnrealPropertyDeclaration
 		if (UnrealSourceGenerator.UNREAL_ALL_SEMTYPES.Contains(unrealType))
 			return SEMTYPE_U_PROPERTY_SERIALIZE;
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
+		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX) || UnrealSourceGenerator.UNREAL_ALL_REPTYPES.Any(unrealType.Contains))
 			return U_OBJECT_U_PROPERTY_SERIALIZE;
 
 		return PRIMITIVE_U_PROPERTY_SERIALIZE;
@@ -211,7 +217,7 @@ public struct UnrealPropertyDeclaration
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_ENUM_PREFIX))
 			return U_ENUM_U_PROPERTY_DESERIALIZE;
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
+		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX) || UnrealSourceGenerator.UNREAL_ALL_REPTYPES.Any(unrealType.Contains))
 			return U_OBJECT_U_PROPERTY_DESERIALIZE;
 
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_MAP))

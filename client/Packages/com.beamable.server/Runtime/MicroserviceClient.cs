@@ -6,6 +6,7 @@ using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -54,6 +55,12 @@ namespace Beamable.Server
 		public virtual IDependencyProvider Provider => _ctx?.ServiceProvider ?? BeamContext.Default.ServiceProvider;
 
 		protected async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
+		{
+			var requester = _requester ?? await API.Instance.Map(b => b.Requester);
+			return await MicroserviceClientHelper.Request<T>(Provider, requester, serviceName, endpoint, serializedFields);
+		}
+
+		protected async Promise<T> Request<T>(string serviceName, string endpoint, Dictionary<string, object> serializedFields)
 		{
 			var requester = _requester ?? await API.Instance.Map(b => b.Requester);
 			return await MicroserviceClientHelper.Request<T>(Provider, requester, serviceName, endpoint, serializedFields);
@@ -111,6 +118,9 @@ namespace Beamable.Server
 					var outputJson = "[" + string.Join(",", output) + "]";
 					return outputJson;
 				}
+				case Enum prim:
+					var result = Convert.ChangeType(prim, typeof(int));
+					return result.ToString();
 				case bool prim:
 					return prim ? "true" : "false";
 				case long prim:
@@ -121,6 +131,8 @@ namespace Beamable.Server
 					return prim.ToString();
 				case int prim:
 					return prim.ToString();
+				case decimal prim:
+					return prim.ToString(CultureInfo.InvariantCulture);
 				case Vector2Int prim:
 					return JsonUtility.ToJson(new Vector2IntEx(prim));
 				case Vector3Int prim:
@@ -170,12 +182,20 @@ namespace Beamable.Server
 					return (T)(object)bool.Parse(json);
 				case int _:
 					return (T)(object)int.Parse(json);
+				case decimal _:
+					return (T)(object)decimal.Parse(json);
 				case Vector2Int _:
 					return (T)(object)Vector2IntEx.DeserializeToVector2(json);
 				case Vector3Int _:
 					return (T)(object)Vector3IntEx.DeserializeToVector3(json);
 				case InventoryView _:
 					return (T)(object)InventoryViewEx.DeserializeToInventoryView(json);
+			}
+
+			if (type.IsEnum)
+			{
+				var stringValue = json.Replace("\"", string.Empty);
+				return (T)Enum.ToObject(typeof(T), int.Parse(stringValue));
 			}
 
 			if (typeof(IDictionary).IsAssignableFrom(type))
@@ -189,6 +209,10 @@ namespace Beamable.Server
 				else if (typeof(Dictionary<string, double>) == type)
 				{
 					result = ConvertArrayDictToDictionary<double>(arrayDict);
+				}
+				else if (typeof(Dictionary<string, decimal>) == type)
+				{
+					result = ConvertArrayDictToDictionary<decimal>(arrayDict);
 				}
 				else if (typeof(Dictionary<string, float>) == type)
 				{
@@ -331,6 +355,31 @@ namespace Beamable.Server
 				return result;
 			}
 
+			Promise<string> prefixPromise = PrefixPromise<T>(provider, serviceName);
+			var prefix = await prefixPromise;
+			var url = CreateUrl(requester.AccessToken.Cid, requester.AccessToken.Pid, serviceName, endpoint, prefix);
+			var req = new RequestObject
+			{
+				payload = argArray
+			};
+			return await requester.Request<T>(Method.POST, url, req, parser: Parser);
+		}
+
+		public static async Promise<T> Request<T>(IDependencyProvider provider,
+												  IBeamableRequester requester,
+												  string serviceName,
+												  string endpoint,
+												  Dictionary<string, object> serializedFields)
+		{
+			Promise<string> prefixPromise = PrefixPromise<T>(provider, serviceName);
+			var prefix = await prefixPromise;
+			var url = CreateUrl(requester.AccessToken.Cid, requester.AccessToken.Pid, serviceName, endpoint, prefix);
+			var req = SerializeArgument(serializedFields);
+			return await requester.Request(Method.POST, url, req, parser: DeserializeResult<T>);
+		}
+
+		private static Promise<string> PrefixPromise<T>(IDependencyProvider provider, string serviceName)
+		{
 			if (!serviceNameToPrefixPromise.TryGetValue(serviceName, out var prefixPromise))
 			{
 				// need to resolve the IPrefixService
@@ -345,17 +394,7 @@ namespace Beamable.Server
 				}
 			}
 
-			var prefix = await prefixPromise;
-			var url = CreateUrl(requester.AccessToken.Cid, requester.AccessToken.Pid, serviceName, endpoint, prefix);
-
-			var req = new RequestObject
-			{
-				payload = argArray
-			};
-			return await requester.Request<T>(Method.POST, url, req, parser: Parser);
+			return prefixPromise;
 		}
-
-
 	}
-
 }

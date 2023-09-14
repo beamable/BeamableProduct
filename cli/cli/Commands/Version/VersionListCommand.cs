@@ -10,9 +10,9 @@ public class VersionListCommandArgs : CommandArgs
 	public bool includeRc;
 	public bool includeProd;
 }
-public class VersionListCommand : AppCommand<VersionListCommandArgs>
+public class VersionListCommand : AppCommand<VersionListCommandArgs>, IStandaloneCommand
 {
-	public VersionListCommand() : base("ps", "Show the most recent available versions")
+	public VersionListCommand() : base("list", "Show the most recent available versions")
 	{
 	}
 
@@ -21,6 +21,7 @@ public class VersionListCommand : AppCommand<VersionListCommandArgs>
 		AddOption(new Option<int>("--limit", () => 10, "How many package versions to display"), (args, i) => args.limit = i);
 		AddOption(new Option<bool>("--include-rc", () => false, "Should release candidates be shown"), (args, i) => args.includeRc = i);
 		AddOption(new Option<bool>("--include-release", () => true, "Should stable releases be shown"), (args, i) => args.includeProd = i);
+		AddAlias("ls");
 	}
 
 	public override async Task Handle(VersionListCommandArgs args)
@@ -44,7 +45,7 @@ public class VersionListCommand : AppCommand<VersionListCommandArgs>
 				return;
 		}
 
-		
+
 		var set = data.TakeLast(args.limit).Reverse();
 
 		foreach (var q in set)

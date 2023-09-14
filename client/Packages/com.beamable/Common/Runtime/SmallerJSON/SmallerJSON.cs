@@ -27,6 +27,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using UnityEngine;
 
@@ -930,6 +931,33 @@ namespace Beamable.Serialization.SmallerJSON
 				builder.Append('\"');
 			}
 
+			private static void SerializeClass(object obj, StringBuilder builder)
+			{
+				FieldInfo[] fields = obj.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance);
+				PropertyInfo[] properties = obj.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+				builder.Append("{");
+
+				// Serialize fields
+				for (int i = 0; i < fields.Length; i++)
+				{
+					FieldInfo field = fields[i];
+					builder.Append($"\"{field.Name}\":{Serialize(field.GetValue(obj), new StringBuilder())}");
+
+					if (i < fields.Length - 1 || properties.Length > 0) builder.Append(",");
+				}
+
+				// Serialize properties
+				for (int i = 0; i < properties.Length; i++)
+				{
+					PropertyInfo property = properties[i];
+					builder.Append($"\"{property.Name}\":{Serialize(property.GetValue(obj), new StringBuilder())}");
+
+					if (i < properties.Length - 1) builder.Append(",");
+				}
+
+				builder.Append("}");
+			}
+
 			private static void SerializeOther(object value, StringBuilder builder)
 			{
 				// NOTE: decimals lose precision during serialization.
@@ -968,6 +996,10 @@ namespace Beamable.Serialization.SmallerJSON
 				else if (value is IRawJsonProvider provider)
 				{
 					SerializeRaw(provider, builder);
+				}
+				else if (value is { } obj)
+				{
+					SerializeClass(obj, builder);
 				}
 				else
 				{

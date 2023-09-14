@@ -85,7 +85,7 @@ public:
 #include ""JsonObjectConverter.h""
 #include ""Serialization/JsonSerializerMacros.h""
 		
-inline TSharedPtr<FMonitoredProcess> U₢{nameof(CommandName)}₢Command::RunImpl(const TArray<FString>& CommandParams, const FBeamOperationHandle& Op)
+TSharedPtr<FMonitoredProcess> U₢{nameof(CommandName)}₢Command::RunImpl(const TArray<FString>& CommandParams, const FBeamOperationHandle& Op)
 {{
 	FString Params = (""₢{nameof(CommandKeywords)}₢"");
 	for (const auto& CommandParam : CommandParams)

@@ -411,10 +411,10 @@ public static class UnityHelper
 			return null; // TODO: support application/csv for content
 		}
 
-		bool isCsv = false;
+		// bool isCsv = false;
 		if (!response.Content.TryGetValue("application/json", out var mediaResponse))
 		{
-			isCsv = true;
+			// isCsv = true;
 			if (!response.Content.TryGetValue("text/csv", out mediaResponse))
 			{
 				return null;
@@ -1569,7 +1569,6 @@ public static class UnityHelper
 				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.ffffffZ"));
 				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.fffffffzzz"));
 				return true;
-				break;
 			case "object" when schema.AdditionalPropertiesAllowed:
 				var method = new CodeMethodReferenceExpression(new CodeArgumentReferenceExpression(PARAM_SERIALIZER),
 					nameof(JsonSerializable.IStreamSerializer.SerializeDictionary));
@@ -1710,7 +1709,6 @@ public class GenSchema
 			case ("array", _, _) when Schema?.Items?.OneOf?.Count > 0:
 				var className = UnityHelper.OneOfClassName(Schema.Items.OneOf);
 				return new GenCodeTypeReference(className, 1);
-				break;
 			case ("array", _, _) when Schema.Items.Reference == null:
 				var genElem = new GenSchema(Schema.Items);
 				var elemType = genElem.GetTypeReference();
@@ -1724,7 +1722,6 @@ public class GenSchema
 				return new GenCodeTypeReference(referenceId);
 			case (_, _, _) when Schema.OneOf?.Count > 0:
 				return new GenCodeTypeReference(UnityHelper.OneOfClassName(Schema.OneOf));
-				break;
 			case ("object", _, _) when Schema.Reference == null && Schema.AdditionalPropertiesAllowed:
 				var genValues = new GenSchema(Schema.AdditionalProperties);
 				var genType = genValues.GetTypeReference();

@@ -5,7 +5,70 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- `IsThirdPartyAvailable`, `RemoveThirdPartyAssociation`, and `IsExternalIdentityAvailable` methods no longer use invalid query args.
+- Websocket connection authentication in WebGL builds.
+- Fixed ContentRef property drawer on Unity 2021 LTS.
+
+## [1.18.0]
+
+### Fixed
+
+- Fixed `HttpUtility` throwing compilation error in Unity.
+- `Reset` command works for realms configured to use Beamable notification channel.
+
+### Added
+
+- `IBeamableDisposableOrder` interface allows services to dispose in configurable order.
+
+## [1.17.3]
+
+### Added
+
+- Add email validation
+
+### Fixed
+
+- Fixed wrong error code when providing wrong password while logging in.
+- Fixed error when trying to get enum type from Microservice.
+
+## [1.17.2]
+
+### Fixed
+
+- Announcements clientData not being deserialized correctly.
+
+## [1.17.1]
+
+### Fixed
+
+- Content types from SAMS are visible in Content Manager in Unity.
+
+## [1.17.0]
+
+### Fixed
+
+- `IsExternalIdentityAvailable` no longer returns 'true' if user_id is already in use by another player and contains special characters
+- `IsThirdPartyAvailable` no longer returns 'true' if user_id is already in use by another player and contains special characters
+- Avoid early initialization of `BeamEditor` when `Resources` are not available in Editor.
+- Missing `TextReference` exception in the `LoadingIndicator` when entering and exiting Playmode quickly
+- Disposed `CoroutineService` exception in the `BeamMainThreadUtil` when entering and exiting Playmode quickly
+- `PlayerAccounts.SwitchAccount` method make sure that data is initialized before switching account
+
+### Changed
+
+- `IsExternalIdentityAvailable` takes an optional string `providerNamespace` instead of an optional string[] for `namespaces` parameter.
+- `PlayerAccounts.IsExternalIdentityAvailable` resolves the `providerNamespace` automatically from parametrized type.
+- `TextAreaAttribute` added to `EmailContent` body.
+
 ## [1.16.2]
+
+### Added
+
+- new `RecoverAccountWithRefreshToken` methods in the `PlayerAccounts` class.
 
 ### Fixed
 

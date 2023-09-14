@@ -74,11 +74,34 @@ namespace Beamable.Common.Scheduler
 		/// <summary>
 		/// After a <see cref="Job"/> has been scheduled using the <see cref="CreateJob(string,string,Beamable.Common.Scheduler.ISchedulableAction,Beamable.Common.Scheduler.ISchedulerTrigger[],Beamable.Common.Scheduler.RetryPolicy)"/>
 		/// method, it will exist forever. This method will remove the job and cancel all upcoming executions.
+		///
+		/// After a job is deleted, its job activity cannot be seen.
+		/// Consider using the <see cref="CancelJob"/> function instead. 
+		/// <para>
+		/// <b> Be aware </b> that this will not stop any currently executing jobs. 
+		/// </para>
 		/// </summary>
 		/// <param name="jobId">The <see cref="Job.id"/> of a scheduled <see cref="Job"/></param>
 		public async Promise DeleteJob(string jobId)
 		{
 			await _api.DeleteJob(jobId);
+		}
+
+		/// <summary>
+		/// After a <see cref="Job"/> has been scheduled using the <see cref="CreateJob(string,string,Beamable.Common.Scheduler.ISchedulableAction,Beamable.Common.Scheduler.ISchedulerTrigger[],Beamable.Common.Scheduler.RetryPolicy)"/>
+		/// method, it will exist forever. This method will remove all the job triggers, like <see cref="CronEvent"/> or <see cref="ExactTimeEvent"/>s.
+		/// Without any events, the job will never be executed again.
+		/// However, unlike, <see cref="DeleteJob(Beamable.Common.Scheduler.Job)"/>, the job still exists,
+		/// and therefor, methods like, <see cref="GetJobActivity"/> will still be available.
+		///
+		/// <para>
+		/// <b> Be aware </b> that this will not stop any currently executing jobs. 
+		/// </para>
+		/// </summary>
+		/// <param name="jobId">The <see cref="Job.id"/> of a scheduled <see cref="Job"/></param>
+		public async Promise CancelJob(string jobId)
+		{
+			await _api.PutJobCancel(jobId);
 		}
 
 		/// <summary>
@@ -220,7 +243,10 @@ namespace Beamable.Common.Scheduler
 				ISchedulerTrigger[] triggers,
 				RetryPolicy retryPolicy = null)
 			{
-				retryPolicy ??= new RetryPolicy();
+				if (retryPolicy == null)
+				{
+					retryPolicy = new RetryPolicy();
+				}
 				return new JobDefinitionSaveRequest
 				{
 					name = new OptionalString(name),

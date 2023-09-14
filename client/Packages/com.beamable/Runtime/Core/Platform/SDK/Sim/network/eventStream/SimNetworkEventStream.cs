@@ -32,7 +32,7 @@ namespace Beamable.Experimental.Api.Sim
 		public event Action<SimFaultResult> OnErrorFailed;
 #pragma warning restore CS0067
 		/// <summary>
-		/// The gamertag of the current player
+		/// The player id of the current player
 		/// </summary>
 		public string ClientId { get; private set; }
 		public bool Ready { get; private set; }

@@ -71,7 +71,7 @@ namespace Beamable
 	/// </para>
 	/// </summary>
 	[Serializable]
-	public class BeamContext : IPlatformService, IGameObjectContext, IObservedPlayer, IBeamableDisposable, IDependencyNameProvider, IDependencyScopeNameProvider
+	public class BeamContext : IPlatformService, IGameObjectContext, IObservedPlayer, IBeamableDisposableOrder, IDependencyNameProvider, IDependencyScopeNameProvider
 	{
 
 		#region Internal State
@@ -894,6 +894,7 @@ namespace Beamable
 
 		string IDependencyNameProvider.DependencyProviderName => PlayerCode;
 		string IDependencyScopeNameProvider.DependencyScopeName => PlayerId.ToString();
+		int IBeamableDisposableOrder.DisposeOrder => 100;
 	}
 
 	[Serializable]

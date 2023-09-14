@@ -187,7 +187,7 @@ namespace Beamable.Server.Generator
 			var interfaces = Descriptor.Type.GetInterfaces();
 			foreach (var type in interfaces)
 			{
-				if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IFederatedLogin<>))
+				if (type.IsGenericType && type.GetGenericTypeDefinition().FullName == typeof(IFederatedLogin<>).FullName)
 				{
 					var genericType = type.GetGenericArguments()[0];
 					var baseReference = new CodeTypeReference(typeof(ISupportsFederatedLogin<>));
@@ -202,7 +202,7 @@ namespace Beamable.Server.Generator
 			var interfaces = Descriptor.Type.GetInterfaces();
 			foreach (var type in interfaces)
 			{
-				if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IFederatedInventory<>))
+				if (type.IsGenericType && type.GetGenericTypeDefinition().FullName == typeof(IFederatedInventory<>).FullName)
 				{
 					var genericType = type.GetGenericArguments()[0];
 					var baseReference = new CodeTypeReference(typeof(ISupportsFederatedInventory<>));
@@ -250,7 +250,7 @@ namespace Beamable.Server.Generator
 			genMethod.Name = info.MethodInfo.Name;
 
 			// the input arguments...
-			var serializationFields = new List<string>();
+			var serializationFields = new Dictionary<string, object>();
 			var methodParams = info.MethodInfo.GetParameters();
 			for (var i = 0; i < methodParams.Length; i++)
 			{
@@ -260,23 +260,11 @@ namespace Beamable.Server.Generator
 				parameterTypes.Add(paramType);
 				genMethod.Parameters.Add(new CodeParameterDeclarationExpression(paramType, paramName));
 
-				var serializationFieldName = $"serialized_{paramName}";
-				var declare = new CodeParameterDeclarationExpression(typeof(string), serializationFieldName);
-				serializationFields.Add(serializationFieldName);
+				var rawFieldName = $"raw_{paramName}";
+				var declare = new CodeParameterDeclarationExpression(typeof(object), rawFieldName);
+				serializationFields.Add(paramName, rawFieldName);
 
-				var serializeInvoke = new CodeMethodInvokeExpression(
-					new CodeMethodReferenceExpression(
-						new CodeThisReferenceExpression(),
-						"SerializeArgument",
-						new CodeTypeReference[]
-						{
-						  new CodeTypeReference(paramType),
-						}), new CodeExpression[]
-					{
-					new CodeArgumentReferenceExpression(paramName),
-					});
-
-				var assignment = new CodeAssignStatement(declare, serializeInvoke);
+				var assignment = new CodeAssignStatement(declare, new CodeArgumentReferenceExpression(paramName));
 				genMethod.Statements.Add(assignment);
 			}
 
@@ -325,13 +313,28 @@ namespace Beamable.Server.Generator
 
 			// servicePath = $"micro_{Descriptor.Name}/{servicePath}"; // micro is the feature name, so we don't accidently stop out an existing service.
 
+			const string serializedFieldVariableName = "serializedFields";
 
-			var serializedFieldVariableName = "serializedFields";
-			var fieldDeclare = new CodeParameterDeclarationExpression(typeof(string[]), serializedFieldVariableName);
-			var fieldReferences = serializationFields.Select(f => new CodeVariableReferenceExpression(f)).ToArray();
-			var fieldCreate = new CodeArrayCreateExpression(typeof(string[]), fieldReferences);
+			// Create a dictionary and add key-value pairs
+			var dictionaryType = new CodeTypeReference(typeof(Dictionary<string, object>));
+			var dictionaryDeclaration = new CodeVariableDeclarationStatement(
+				dictionaryType, serializedFieldVariableName,
+				new CodeObjectCreateExpression(dictionaryType)
+			);
+			genMethod.Statements.Add(dictionaryDeclaration);
 
-			genMethod.Statements.Add(new CodeAssignStatement(fieldDeclare, fieldCreate));
+			foreach (KeyValuePair<string, object> kvp in serializationFields)
+			{
+				// Add key-value pairs to the dictionary
+				genMethod.Statements.Add(
+					new CodeMethodInvokeExpression(
+						new CodeVariableReferenceExpression(serializedFieldVariableName),
+						"Add",
+						new CodePrimitiveExpression(kvp.Key),
+						new CodeVariableReferenceExpression((string)kvp.Value)
+					)
+				);
+			}
 
 			var requestInvokeExpr = new CodeMethodInvokeExpression(
 				new CodeMethodReferenceExpression(

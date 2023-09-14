@@ -68,11 +68,15 @@ namespace Beamable.Common.Content
 	[Agnostic]
 	public class EmailContent : ContentObject
 	{
+		private const int MIN_LINES = 10;
+		private const int MAX_LINES = 20;
+
 		[Tooltip(ContentObject.TooltipSubject1)]
 		[CannotBeBlank]
 		public string subject;
 
 		[Tooltip(ContentObject.TooltipBody1)]
+		[TextAreaAttribute(MIN_LINES, MAX_LINES)]
 		public string body;
 	}
 }

@@ -339,8 +339,6 @@ public class DocService
 		var doc = Markdown.Parse(file);
 
 		var titleToMarkdown = new Dictionary<string, string>();
-		var start = 0;
-		var end = 0;
 		HeadingBlock latestHeader = null;
 		foreach (var block in doc)
 		{
@@ -428,7 +426,6 @@ public class DocService
 		);
 
 		var path = commandDesc.executionPath.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-		string parentSlug = null;
 		string slug = "beam";
 		if (path.Length > 1)
 		{

@@ -248,6 +248,11 @@ namespace Beamable
 																	.Union(Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems"))
 																	.Where(system => system.Enabled)
 																	.ToList();
+			if (reflectionSystemObjects.Count < 1)
+			{
+				EditorApplication.delayCall += Initialize;
+				return;
+			}
 			reflectionSystemObjects.Sort((reflectionSys1, reflectionSys2) => reflectionSys1.Priority.CompareTo(reflectionSys2.Priority));
 
 			// Inject them into the ReflectionCache system in the correct order.
@@ -321,7 +326,9 @@ namespace Beamable
 			BeamEditorContextDependencies.AddSingleton(_ => EditorReflectionCache);
 			BeamEditorContextDependencies.AddSingleton(_ => HintGlobalStorage);
 			BeamEditorContextDependencies.AddSingleton(_ => HintPreferencesManager);
-			EditorReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(BeamEditorContextDependencies, RegistrationOrigin.EDITOR);
+
+			GetReflectionSystem<BeamReflectionCache.Registry>()
+				.LoadCustomDependencies(BeamEditorContextDependencies, RegistrationOrigin.EDITOR);
 
 			var hintReflectionSystem = GetReflectionSystem<BeamHintReflectionCache.Registry>();
 			foreach (var globallyAccessibleHintSystem in hintReflectionSystem.GloballyAccessibleHintSystems)

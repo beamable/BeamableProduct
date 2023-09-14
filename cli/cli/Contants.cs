@@ -4,9 +4,11 @@ public static class Constants
 {
 	public const string CONFIG_FOLDER = ".beamable";
 	public const string CONFIG_DEFAULTS_FILE_NAME = "config-defaults.json";
-	public const string CONFIG_IGNORE_FILE_NAME = ".gitignore";
+	public const string CONFIG_GIT_IGNORE_FILE_NAME = ".gitignore";
+	public const string CONFIG_SVN_IGNORE_FILE_NAME = ".svnignore";
+	public const string CONFIG_P4_IGNORE_FILE_NAME = ".p4ignore";
 	public const string CONFIG_TOKEN_FILE_NAME = "user-token.json";
-	
+
 	/// <summary>
 	/// The full-path to where we are storing the <see cref="BeamoManifest"/>.
 	/// TODO: This part will get abstracted out --- probably into <see cref="ConfigService"/> --- so that we can move this to the Beamable.Common library or some shared space.
@@ -20,8 +22,8 @@ public static class Constants
 	/// </summary>
 	// private readonly string _beamoLocalRuntimeFile;
 	public const string BEAMO_LOCAL_RUNTIME_FILE_NAME = "beamoLocalRuntime";
-	
-	public static readonly string[] FILES_TO_IGNORE = new []{CONFIG_TOKEN_FILE_NAME, BEAMO_LOCAL_MANIFEST_FILE_NAME,BEAMO_LOCAL_RUNTIME_FILE_NAME };
+
+	public static readonly string[] FILES_TO_IGNORE = new[] { CONFIG_TOKEN_FILE_NAME, BEAMO_LOCAL_RUNTIME_FILE_NAME };
 
 	public const string PLATFORM_DEV = "https://dev.api.beamable.com";
 	public const string PLATFORM_STAGING = "https://staging.api.beamable.com";

@@ -31,9 +31,9 @@ namespace Beamable.Api.Sessions
 		Promise<EmptyResponse> StartSession(User user, string advertisingId, string locale = null);
 
 		/// <summary>
-		/// Get the current <see cref="Session"/> of a player by their gamertag.
+		/// Get the current <see cref="Session"/> of a player by their player ids.
 		/// </summary>
-		/// <param name="gamerTag">The gamertag of the player to find the <see cref="Session"/> for.</param>
+		/// <param name="gamerTag">The player id of the player to find the <see cref="Session"/> for.</param>
 		/// <returns>A <see cref="Promise{T}"/> containing the player's <see cref="Session"/></returns>
 		Promise<Session> GetHeartbeat(long gamerTag);
 

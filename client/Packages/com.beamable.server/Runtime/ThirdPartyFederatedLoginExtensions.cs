@@ -50,11 +50,11 @@ namespace Beamable.Server
 		public static Promise<bool> IsExternalIdentityAvailable<T>(this ISupportsFederatedLogin<T> client, string token)
 			where T : IThirdPartyCloudIdentity, new()
 		{
-			var serviceNamespace = GetServiceNamespace<T>();
+			var providerService = client.ServiceName;
+			var providerNamespace = GetServiceNamespace<T>();
 			var api = client.Provider.GetService<IAuthApi>();
-			string[] namespaces = { serviceNamespace };
 
-			return api.IsExternalIdentityAvailable(client.ServiceName, token, namespaces);
+			return api.IsExternalIdentityAvailable(providerService, token, providerNamespace);
 		}
 	}
 }

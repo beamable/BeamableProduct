@@ -13,7 +13,6 @@ using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
 using Beamable.Common.Scheduler;
-using Beamable.Server;
 using Beamable.Server.Api;
 using Beamable.Server.Api.Announcements;
 using Beamable.Server.Api.Calendars;
@@ -34,10 +33,13 @@ using Beamable.Server.Api.Scheduler;
 using Beamable.Server.Api.Social;
 using Beamable.Server.Api.Stats;
 using Beamable.Server.Api.Tournament;
+using Beamable.Server.Api.Usage;
 using Beamable.Server.Common;
 using Beamable.Server.Content;
+using Beamable.Server.Ecs;
 using Core.Server.Common;
 using microservice;
+using microservice.dbmicroservice;
 using Microsoft.Extensions.DependencyInjection;
 using NetMQ;
 using Newtonsoft.Json;
@@ -46,12 +48,13 @@ using Serilog.Core;
 using Serilog.Events;
 using Serilog.Formatting.Display;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
-using UnityEngine;
 using Constants = Beamable.Common.Constants;
+using Debug = UnityEngine.Debug;
 
 namespace Beamable.Server
 {
@@ -63,6 +66,8 @@ namespace Beamable.Server
 	    public static ReflectionCache ReflectionCache;
 	    public static ContentService ContentService;
 	    public static List<BeamableMicroService> Instances = new List<BeamableMicroService>();
+
+	    public static IUsageApi EcsService;
 
 	    private static DebugLogSink ConfigureLogging(IMicroserviceArgs args, MicroserviceAttribute attr)
         {
@@ -214,6 +219,7 @@ namespace Beamable.Server
 			        .AddSingleton(attribute)
 			        .AddSingleton<IBeamSchedulerContext, SchedulerContext>()
 			        .AddSingleton<BeamScheduler>()
+			        .AddSingleton<IUsageApi>(EcsService)
 			        .AddScoped<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
 			        .AddScoped<IRealmInfo>(provider => provider.GetService<IMicroserviceArgs>())
 			        .AddScoped<IBeamableRequester>(p => p.GetService<MicroserviceRequester>())
@@ -417,15 +423,76 @@ namespace Beamable.Server
 	        return res.Cid.Value;
         }
 
+        public static async Task ConfigureUsageService(IMicroserviceArgs args)
+        {
+	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+
+	        if (!inDocker)
+	        {
+		        EcsService = new LocalUsageService();
+	        }
+	        else
+	        {
+		        if (string.IsNullOrEmpty(args.MetadataUrl))
+		        {
+			        EcsService = new DockerService();
+		        }
+		        else
+		        {
+			        EcsService = new EcsService(new HttpClient());
+		        }
+	        }
+
+	        await EcsService.Init();
+        }
+        
+        /// <summary>
+        /// This method can be called before the start of the microservice to inject some CLI information.
+        /// This is only used to execute a microservice through the IDE.
+        /// </summary>
+        /// <param name="customArgs">Optional string with args to be used instead of the default ones.</param>
+        /// <typeparam name="TMicroservice">The type of the microservice calling this method.</typeparam>
+        /// <exception cref="Exception">Exception raised in case the generate-env command fails.</exception>
+        public static async Task Prepare<TMicroservice>(string customArgs = null) where TMicroservice : Microservice
+        {
+	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+	        if (inDocker) return;
+			
+	        MicroserviceAttribute attribute = typeof(TMicroservice).GetCustomAttribute<MicroserviceAttribute>();
+	        var serviceName = attribute.MicroserviceName;
+	        
+	        customArgs ??= ". --auto-deploy";
+			
+	        using var process = new Process();
+
+	        process.StartInfo.FileName = "beam";
+	        process.StartInfo.Arguments = $"project generate-env {serviceName} {customArgs}";
+	        process.StartInfo.RedirectStandardOutput = true;
+	        process.StartInfo.RedirectStandardError = true;
+	        process.StartInfo.CreateNoWindow = true;
+	        process.StartInfo.UseShellExecute = false;
+
+	        process.Start();
+	        await process.WaitForExitAsync();
+			
+	        var result = await process.StandardOutput.ReadToEndAsync();
+	        Console.WriteLine(result);
+	        if (process.ExitCode != 0)
+	        {
+		        throw new Exception($"Failed to generate-env message=[{result}]");
+	        }
+        }
+
         public static async Task Start<TMicroService>() where TMicroService : Microservice
         {
 	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
-
 	        var envArgs = new EnvironmentArgs();
+
 	        var pipeSink = ConfigureLogging(envArgs, attribute);
 	        ConfigureUncaughtExceptions();
 	        ConfigureUnhandledError();
 	        ConfigureDiscovery(envArgs, attribute);
+	        await ConfigureUsageService(envArgs);
 	        ReflectionCache = ConfigureReflectionCache();
 	        
 	        // configure the root service scope, and then build the root service provider.
@@ -521,14 +588,13 @@ namespace Beamable.Server
 	    {
 		    foreach (var singleProp in logEvent.Properties)
 		    {
-			    var typeName = singleProp.Value?.ToString();
+			    var stringifiedPropValue = singleProp.Value?.ToString();
 
-			    if (typeName != null && typeName.Length > _width)
+			    if (stringifiedPropValue != null && stringifiedPropValue.Length > _width)
 			    {
-				    typeName = typeName.Substring(0, _width) + "...";
+				    stringifiedPropValue = stringifiedPropValue.Substring(0, _width) + "...";
+				    logEvent.AddOrUpdateProperty(propertyFactory.CreateProperty(singleProp.Key, stringifiedPropValue));
 			    }
-
-			    logEvent.AddOrUpdateProperty(propertyFactory.CreateProperty(singleProp.Key, typeName));
 		    }
 
 	    }

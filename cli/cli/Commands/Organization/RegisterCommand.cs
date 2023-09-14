@@ -16,7 +16,7 @@ public class RegisterCommandArgs : CommandArgs
 	public bool agreedToLegal;
 }
 
-public class RegisterCommand : AppCommand<RegisterCommandArgs>
+public class RegisterCommand : AppCommand<RegisterCommandArgs>, IStandaloneCommand
 {
 	private readonly InitCommand _initCommand;
 	private readonly LoginCommand _loginCommand;
@@ -40,7 +40,6 @@ public class RegisterCommand : AppCommand<RegisterCommandArgs>
 	{
 		AnsiConsole.Write(
 			new FigletText("Beam")
-				.LeftAligned()
 				.Color(Color.Red));
 
 		AnsiConsole.WriteLine("Welcome to Beamable. You are creating a new Beamable organization. If you already have an org, use the 'beam init' command to sign in.");
@@ -94,61 +93,61 @@ public class RegisterCommand : AppCommand<RegisterCommandArgs>
 		await _loginCommand.Handle(loginArgs);
 	}
 
-	private async Task<string> GetAlias(RegisterCommandArgs args)
+	private Task<string> GetAlias(RegisterCommandArgs args)
 	{
 		if (!string.IsNullOrEmpty(args.alias))
-			return args.alias;
+			return Task.FromResult(args.alias);
 
-		return AnsiConsole.Prompt(
+		return Task.FromResult(AnsiConsole.Prompt(
 			new TextPrompt<string>("Please enter your [green]alias[/]:")
 				.PromptStyle("green")
-		);
+		));
 	}
 
 
-	private async Task<string> GetUsername(RegisterCommandArgs args)
+	private Task<string> GetUsername(RegisterCommandArgs args)
 	{
 		if (!string.IsNullOrEmpty(args.username))
-			return args.username;
+			return Task.FromResult(args.username);
 
-		return AnsiConsole.Prompt(
+		return Task.FromResult(AnsiConsole.Prompt(
 			new TextPrompt<string>("Please enter your [green]username[/]:")
 				.PromptStyle("green")
-		);
+		));
 	}
 
-	private async Task<string> GetGame(RegisterCommandArgs args)
+	private Task<string> GetGame(RegisterCommandArgs args)
 	{
 		if (!string.IsNullOrEmpty(args.gameName))
-			return args.gameName;
+			return Task.FromResult(args.gameName);
 
-		return AnsiConsole.Prompt(
+		return Task.FromResult(AnsiConsole.Prompt(
 			new TextPrompt<string>("Please enter your [green]game[/]:")
 				.PromptStyle("green")
-		);
+		));
 	}
 
-	private async Task<string> GetPassword(RegisterCommandArgs args)
+	private Task<string> GetPassword(RegisterCommandArgs args)
 	{
 		if (!string.IsNullOrEmpty(args.password))
-			return args.password;
+			return Task.FromResult(args.password);
 
-		return AnsiConsole.Prompt(
+		return Task.FromResult(AnsiConsole.Prompt(
 			new TextPrompt<string>("Please enter your [green]password[/]:")
 				.Secret()
 				.PromptStyle("green")
-		);
+		));
 	}
 
-	private async Task<bool> GetLegal(RegisterCommandArgs args)
+	private Task<bool> GetLegal(RegisterCommandArgs args)
 	{
-		if (args.agreedToLegal) return true;
+		if (args.agreedToLegal) return Task.FromResult(true);
 
-		return AnsiConsole.Prompt(new ConfirmationPrompt($"Have you read, and accept the following? " +
-														 $"\nlicense {Beamable.Common.Constants.LINK_LICENSE} " +
-														 $"\nterms of service {Beamable.Common.Constants.LINK_TERMS_OF_SERVICE} " +
-														 $"\nprivacy {Beamable.Common.Constants.LINK_PRIVACY} " +
-														 $"\n"));
+		return Task.FromResult(AnsiConsole.Prompt(new ConfirmationPrompt($"Have you read, and accept the following? " +
+																		 $"\nlicense {Beamable.Common.Constants.LINK_LICENSE} " +
+																		 $"\nterms of service {Beamable.Common.Constants.LINK_TERMS_OF_SERVICE} " +
+																		 $"\nprivacy {Beamable.Common.Constants.LINK_PRIVACY} " +
+																		 $"\n")));
 	}
 
 }

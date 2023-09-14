@@ -164,6 +164,10 @@ namespace Beamable.Server
 
 		public ISchedulerBuilderFinal OnCron(string cronExpression)
 		{
+			if (!CronValidation.TryValidate(cronExpression, out var message))
+			{
+				throw new CronInvalidException(cronExpression, message);
+			}
 			var trigger = new CronEvent(cronExpression);
 			_triggers.Add(trigger);
 			return this;

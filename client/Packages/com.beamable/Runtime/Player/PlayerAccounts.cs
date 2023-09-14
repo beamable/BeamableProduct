@@ -107,8 +107,8 @@ namespace Beamable.Player
 		private string _subtext;
 
 		/// <summary>
-		/// The gamerTag for the given player.
-		/// GamerTags are associated with a specific realm.
+		/// The player id for the given player.
+		/// Player ids are associated with a specific realm.
 		/// This value should not be modified.
 		/// </summary>
 		public long GamerTag => _gamerTag;
@@ -774,7 +774,7 @@ namespace Beamable.Player
 		public bool isSuccess => error == PlayerRecoveryError.NONE;
 
 		/// <summary>
-		/// If the account already had a gamerTag in the current realm, then this value be true.
+		/// If the account already had a player id in the current realm, then this value be true.
 		/// When this value is false, it implies that the account exists in the CID scope, but not
 		/// in the current PID scope. 
 		/// </summary>
@@ -1028,6 +1028,8 @@ namespace Beamable.Player
 		/// <param name="account"></param>
 		public async Promise SwitchToAccount(PlayerAccount account)
 		{
+			await OnReady;
+
 			_storage.StoreDeviceRefreshToken(_ctx.Cid, _ctx.Pid,
 											 new AccessToken(_storage, _ctx.Cid, _ctx.Pid, _ctx.AccessToken.Token,
 															 _ctx.AccessToken.RefreshToken, 1));
@@ -1157,6 +1159,43 @@ namespace Beamable.Player
 			return RecoverAccount((auth, merge) => auth.LoginThirdParty(thirdParty, token, merge));
 		}
 
+
+		/// <summary>
+		/// Find an existing account by a <see cref="TokenResponse"/>.
+		///
+		/// Depending on the state of the realm, this method may produce different behaviour.
+		/// The returned <see cref="PlayerRecoveryOperation"/> will either contain the <see cref="PlayerAccount"/>
+		/// for the given <see cref="TokenResponse"/>, or it will have a <see cref="PlayerRecoveryError"/> value.
+		///
+		/// </summary>
+		/// <param name="tokenResponse">
+		/// The auth token.
+		/// </param>
+		/// <returns>A <see cref="PlayerRecoveryOperation"/> containing the <see cref="PlayerAccount"/> or a <see cref="PlayerRecoveryError"/> value.</returns>
+		public Promise<PlayerRecoveryOperation> RecoverAccountWithRefreshToken(
+			TokenResponse tokenResponse)
+		{
+			return RecoverAccountWithRefreshToken(tokenResponse.refresh_token);
+		}
+
+		/// <summary>
+		/// Find an existing account by a refresh token from a <see cref="TokenResponse"/>.
+		///
+		/// Depending on the state of the realm, this method may produce different behaviour.
+		/// The returned <see cref="PlayerRecoveryOperation"/> will either contain the <see cref="PlayerAccount"/>
+		/// for the given <see cref="TokenResponse"/>, or it will have a <see cref="PlayerRecoveryError"/> value.
+		///
+		/// </summary>
+		/// <param name="refreshToken">
+		/// The refresh token from a <see cref="TokenResponse"/>.
+		/// </param>
+		/// <returns>A <see cref="PlayerRecoveryOperation"/> containing the <see cref="PlayerAccount"/> or a <see cref="PlayerRecoveryError"/> value.</returns>
+		public Promise<PlayerRecoveryOperation> RecoverAccountWithRefreshToken(
+			string refreshToken)
+		{
+			return RecoverAccount((auth, _) => auth.LoginRefreshToken(refreshToken));
+		}
+
 		private async Promise<PlayerRecoveryOperation> RecoverAccount(
 			Func<IAuthService, bool, Promise<TokenResponse>> loginFunction)
 		{
@@ -1177,6 +1216,10 @@ namespace Beamable.Player
 			catch (PlayerRecoveryException ex)
 			{
 				return new PlayerRecoveryOperation(ex, PlayerRecoveryError.INSUFFICIENT_DATA);
+			}
+			catch (PlatformRequesterException ex) when (ex.Error.status == 401 || ex.Error.status == 403)
+			{
+				return new PlayerRecoveryOperation(ex, PlayerRecoveryError.UNKNOWN_CREDENTIALS);
 			}
 			catch (Exception ex)
 			{
@@ -1541,25 +1584,24 @@ namespace Beamable.Player
 				account = Current;
 			}
 
-			var service = GetAuthServiceForAccount(account);
-
-			var client = _provider.GetService<TService>();
-			var ident = new TCloudIdentity();
+			var authService = GetAuthServiceForAccount(account);
+			var providerService = _provider.GetService<TService>().ServiceName;
+			var providerNamespace = new TCloudIdentity().UniqueName;
 
 			if (!account.TryGetExternalIdentity<TCloudIdentity, TService>(out var identity))
 			{
 				return account;
 			}
 
-			await service.DetachIdentity(client.ServiceName, identity.userId, ident.UniqueName);
-			var user = await service.GetUser();
+			await authService.DetachIdentity(providerService, identity.userId, providerNamespace);
+			var user = await authService.GetUser();
 			account.Update(user);
 			account.TryTriggerUpdate();
 
 			return account;
 		}
 
-		public async Promise<bool> IsExternalIdentityAvailable<TCloudIdentity, TService>(string token, PlayerAccount account = null, string[] namespaces = null)
+		public async Promise<bool> IsExternalIdentityAvailable<TCloudIdentity, TService>(string token, PlayerAccount account = null)
 			where TCloudIdentity : IThirdPartyCloudIdentity, new()
 			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity>
 		{
@@ -1568,10 +1610,11 @@ namespace Beamable.Player
 				account = Current;
 			}
 
-			var service = GetAuthServiceForAccount(account);
-			var client = _provider.GetService<TService>();
+			var authService = GetAuthServiceForAccount(account);
+			var providerService = _provider.GetService<TService>().ServiceName;
+			var providerNamespace = new TCloudIdentity().UniqueName;
 
-			return await service.IsExternalIdentityAvailable(client.ServiceName, token, namespaces);
+			return await authService.IsExternalIdentityAvailable(providerService, token, providerNamespace);
 		}
 
 		/// <summary>

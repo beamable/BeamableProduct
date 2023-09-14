@@ -40,7 +40,7 @@ public class Tests
 	[Test]
 	public void NamingPass()
 	{
-		void CheckNaming(string commandName, string description, string optionName = null)
+		void CheckNaming(string commandName, string description, string? optionName = null)
 		{
 			const string KEBAB_CASE_PATTERN = "^([a-z]|[0-9])+(?:[-]([a-z]|[0-9])+)*$";
 			var isOption = !string.IsNullOrWhiteSpace(optionName);
@@ -60,7 +60,7 @@ public class Tests
 				Assert.Fail($"{logPrefix} description should not end with dot.");
 			}
 
-			var valueToCheck = isOption ? optionName : commandName;
+			var valueToCheck = isOption ? optionName! : commandName;
 			var match = Regex.Match(valueToCheck, KEBAB_CASE_PATTERN);
 			Assert.AreEqual(match.Success, true, $"{valueToCheck} does not match kebab case naming.");
 		}
@@ -82,7 +82,7 @@ public class Tests
 
 		foreach (var command in commandsList)
 		{
-			CheckNaming(command.Name, command.Description);
+			CheckNaming(command.Name, command.Description!);
 
 			var sameDescriptionCommand = commandsList.FirstOrDefault(c =>
 				c.Name != command.Name &&
@@ -96,7 +96,7 @@ public class Tests
 
 			foreach (Option option in command.Options)
 			{
-				CheckNaming(command.Name, option.Description, option.Name);
+				CheckNaming(command.Name, option.Description!, option.Name);
 			}
 		}
 
