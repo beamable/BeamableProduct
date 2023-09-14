@@ -137,11 +137,10 @@ namespace Beamable
 		{
 			try
 			{
-				var editorCtx = BeamEditorContext.Default;
-				var fallback = editorCtx.ServiceScope.GetService<IRuntimeConfigProvider>();
-
-				Beam.RuntimeConfigProvider = new DefaultRuntimeConfigProvider(fallback);
-				builder.ReplaceSingleton<IRuntimeConfigProvider>(Beam.RuntimeConfigProvider);
+				builder.AddSingleton(
+					_ => new EditorStorageLayer(new EditorFilesystemAccessor()));
+				builder.AddGlobalStorage<AccountService, EditorStorageLayer>();
+				builder.ReplaceSingleton<IRuntimeConfigProvider, EditorRuntimeConfigProvider>();
 			}
 			catch (Exception ex)
 			{
