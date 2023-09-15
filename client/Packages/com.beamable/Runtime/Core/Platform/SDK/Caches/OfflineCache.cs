@@ -18,7 +18,7 @@ namespace Beamable.Api.Caches
 		public OfflineCache(IRuntimeConfigProvider configProvider, bool useOfflineCache = true)
 		{
 			UseOfflineCache = useOfflineCache;
-			_offlineCacheRootDir = Path.Combine(Application.persistentDataPath, _offlineCacheRoot, _offlineCacheDir, configProvider.Cid, configProvider.Pid, Application.version);
+			_offlineCacheRootDir = Path.Combine(Application.persistentDataPath, _offlineCacheRoot, _offlineCacheDir, configProvider.Cid ?? "", configProvider.Pid ?? "", Application.version);
 			// Flush cache that wasn't created with this version of the game.
 			FlushInvalidCache();
 		}

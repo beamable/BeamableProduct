@@ -140,19 +140,13 @@ namespace Beamable
 			{
 				var editorCtx = BeamEditorContext.Default;
 				var accountService = editorCtx.ServiceScope.GetService<AccountService>();
-				
 				if (accountService != null && (accountService.Cid?.HasValue ?? false))
 				{
 					var provider = new EditorRuntimeConfigProvider(accountService);
 					Beam.RuntimeConfigProvider ??= new DefaultRuntimeConfigProvider(provider);
 					Beam.RuntimeConfigProvider.Fallback = provider;
-
+				
 					builder.ReplaceSingleton<IRuntimeConfigProvider>(Beam.RuntimeConfigProvider);
-					// Beam.RuntimeConfigProvider.SetFallback(provider);
-				}
-				else
-				{
-					Debug.Log("there isn't a valid account service");
 				}
 			}
 			catch (Exception ex)
@@ -162,7 +156,7 @@ namespace Beamable
 		}
 	}
 
-	[InitializeOnLoad, BeamContextSystem]
+	[BeamContextSystem]
 	public static class BeamEditor
 	{
 		public static CoreConfiguration CoreConfiguration { get; private set; }
