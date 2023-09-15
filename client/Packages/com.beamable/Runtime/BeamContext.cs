@@ -306,8 +306,10 @@ namespace Beamable
 				throw new BeamContextInitException(_playerCodeToContext[playerCode],
 												   new[] { new Exception($"BeamContext with \"{playerCode}\" prefix already exist.") });
 			}
-			string cid = ConfigDatabase.GetString("cid");
-			string pid = ConfigDatabase.GetString("pid");
+
+
+			string cid = Beam.RuntimeConfigProvider.Cid;
+			string pid = Beam.RuntimeConfigProvider.Pid;
 
 			var accessToken = new AccessToken(new AccessTokenStorage(playerCode), cid, pid, token.access_token,
 											  token.refresh_token, token.expires_in);
@@ -375,9 +377,17 @@ namespace Beamable
 			return ctx;
 		}
 
+		[Obsolete("You do not need to include the cid or pid anymore")]
 		protected void Init(string cid,
-							string pid,
-							string playerCode,
+		                    string pid,
+		                    string playerCode,
+		                    BeamableBehaviour behaviour,
+		                    IDependencyBuilder builder)
+		{
+			Init(playerCode, behaviour, builder);
+		}
+		
+		protected void Init(string playerCode,
 							BeamableBehaviour behaviour,
 							IDependencyBuilder builder)
 		{
@@ -433,7 +443,8 @@ namespace Beamable
 			_serviceScope = builder.Build();
 			oldScope?.Hydrate(_serviceScope);
 
-			InitServices(cid, pid);
+			var config = _serviceScope.GetService<IRuntimeConfigProvider>();
+			InitServices(config.Cid, config.Pid);
 			_behaviour.Initialize(this);
 			_initPromise = new Promise();
 
@@ -740,23 +751,20 @@ namespace Beamable
 		{
 			dependencyBuilder = dependencyBuilder ?? Beam.DependencyBuilder;
 			playerCode = playerCode ?? "";
-			// get the cid & pid if not given
-			var cid = ConfigDatabase.GetString("cid");
-			var pid = ConfigDatabase.GetString("pid");
 
 			// there should only be one context per playerCode.
 			if (_playerCodeToContext.TryGetValue(playerCode, out var existingContext))
 			{
 				if (existingContext.IsStopped)
 				{
-					existingContext.Init(cid, pid, playerCode, beamable, dependencyBuilder);
+					existingContext.Init(playerCode, beamable, dependencyBuilder);
 				}
 
 				return existingContext;
 			}
 
 			var ctx = new BeamContext();
-			ctx.Init(cid, pid, playerCode, beamable, dependencyBuilder);
+			ctx.Init(playerCode, beamable, dependencyBuilder);
 			_playerCodeToContext[playerCode] = ctx;
 			return ctx;
 		}

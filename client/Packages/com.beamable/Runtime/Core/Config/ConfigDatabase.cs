@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace Beamable.Config
 {
+	[Obsolete(nameof(ConfigDatabase) + " will be removed soon.")]
 	public static class ConfigDatabase
 	{
 		private static Dictionary<string, string> database = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
