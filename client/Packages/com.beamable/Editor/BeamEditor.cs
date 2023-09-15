@@ -141,7 +141,7 @@ namespace Beamable
 				var editorCtx = BeamEditorContext.Default;
 				var accountService = editorCtx.ServiceScope.GetService<AccountService>();
 				
-				if (accountService != null && accountService.Cid.HasValue)
+				if (accountService != null && (accountService.Cid?.HasValue ?? false))
 				{
 					var provider = new EditorRuntimeConfigProvider(accountService);
 					Beam.RuntimeConfigProvider ??= new DefaultRuntimeConfigProvider(provider);
