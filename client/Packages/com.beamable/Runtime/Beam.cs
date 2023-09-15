@@ -87,7 +87,24 @@ namespace Beamable
 		/// However, this should not be used directly. Instead,
 		/// Use <see cref="ChangePid"/> to change the PID at runtime.
 		/// </summary>
-		public static DefaultRuntimeConfigProvider RuntimeConfigProvider;
+		public static DefaultRuntimeConfigProvider RuntimeConfigProvider
+		{
+			get
+			{
+				if (_runtimeConfigProvider == null)
+				{
+					_runtimeConfigProvider = new DefaultRuntimeConfigProvider(new ConfigDatabaseProvider());
+				}
+				return _runtimeConfigProvider;
+			}
+			set
+			{
+				_runtimeConfigProvider = value;
+			}
+		}
+
+		private static DefaultRuntimeConfigProvider _runtimeConfigProvider;
+		
 		public static ReflectionCache ReflectionCache;
 		public static IBeamHintGlobalStorage RuntimeGlobalStorage;
 

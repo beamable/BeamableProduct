@@ -22,15 +22,15 @@ namespace Beamable.Common
 
 	public class DefaultRuntimeConfigProvider : IRuntimeConfigProvider
 	{
-		private IRuntimeConfigProvider _fallback;
+		public IRuntimeConfigProvider Fallback { get; set; }
 
 		/// <inheritdoc cref="IRuntimeConfigProvider.Cid"/>
-		public string Cid => _cid ?? _fallback.Cid;
+		public string Cid => _cid ?? Fallback.Cid;
 
 		/// <inheritdoc cref="IRuntimeConfigProvider.Pid"/>
 		public string Pid
 		{
-			get => _pid ?? _fallback.Pid;
+			get => _pid ?? Fallback.Pid;
 			set => _pid = value;
 		}
 
@@ -38,12 +38,8 @@ namespace Beamable.Common
 
 		public DefaultRuntimeConfigProvider(IRuntimeConfigProvider fallback)
 		{
-			_fallback = fallback;
+			Fallback = fallback;
 		}
 
-		public void SetFallback(IRuntimeConfigProvider fallback)
-		{
-			_fallback = fallback;
-		}
 	}
 }

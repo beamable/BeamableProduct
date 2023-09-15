@@ -145,7 +145,14 @@ namespace Beamable
 				{
 					var provider = new EditorRuntimeConfigProvider(accountService);
 					Beam.RuntimeConfigProvider ??= new DefaultRuntimeConfigProvider(provider);
-					Beam.RuntimeConfigProvider.SetFallback(provider);
+					Beam.RuntimeConfigProvider.Fallback = provider;
+
+					builder.ReplaceSingleton<IRuntimeConfigProvider>(Beam.RuntimeConfigProvider);
+					// Beam.RuntimeConfigProvider.SetFallback(provider);
+				}
+				else
+				{
+					Debug.Log("there isn't a valid account service");
 				}
 			}
 			catch (Exception ex)
@@ -362,7 +369,7 @@ namespace Beamable
 			// Set flag of SocialsImporter
 			BeamableSocialsImporter.SetFlag();
 
-			async void InitDefaultContext()
+			async Promise InitDefaultContext()
 			{
 				await BeamEditorContext.Default.InitializePromise;
 
@@ -384,7 +391,7 @@ namespace Beamable
 				}
 			}
 
-			InitDefaultContext();
+			InitDefaultContext().Error(Debug.LogError);
 		}
 
 		public static T GetReflectionSystem<T>() where T : IReflectionSystem => EditorReflectionCache.GetFirstSystemOfType<T>();
@@ -557,6 +564,9 @@ namespace Beamable
 
 			async Promise Initialize()
 			{
+				
+				try
+				{
 				var configService = ServiceScope.GetService<ConfigDefaultsService>();
 				var initResult = await EditorAccountService.TryInit();
 				var account = initResult.account;
@@ -596,8 +606,14 @@ namespace Beamable
 
 				await RefreshRealmSecret();
 
-				var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
-
+					var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
+				}
+				catch (Exception ex)
+				{
+					Debug.Log("ERROR ON LOAD CONTEXT");
+					Debug.LogError(ex);
+					throw;
+				}
 			}
 
 			InitializePromise = Initialize().ToPromise();
