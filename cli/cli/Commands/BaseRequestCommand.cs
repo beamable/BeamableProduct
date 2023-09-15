@@ -43,27 +43,20 @@ public abstract class BaseRequestCommand : AppCommand<BaseRequestArgs>
 			body = await File.ReadAllTextAsync(args.bodyPath);
 		}
 
-		try
+		var response = await _requester.CustomRequest(Method, args.uri, body, true,
+				s => s, args.customerScoped, args.customHeaders)
+			.ShowLoading("Sending Request..");
+		if (args.plainOutput)
 		{
-			var response = await _requester.CustomRequest(Method, args.uri, body, true,
-					s => s, args.customerScoped, args.customHeaders)
-				.ShowLoading("Sending Request..");
-			if (args.plainOutput)
-			{
-				AnsiConsole.WriteLine(response);
-			}
-			else
-			{
-				AnsiConsole.Write(
-					new Panel(new JsonText(response))
-						.Header($"{args.uri}")
-						.Collapse()
-						.RoundedBorder());
-			}
+			AnsiConsole.WriteLine(response);
 		}
-		catch (Exception e)
+		else
 		{
-			throw new CliException($"Failed request: {e.Message}");
+			AnsiConsole.Write(
+				new Panel(new JsonText(response))
+					.Header($"{args.uri}")
+					.Collapse()
+					.RoundedBorder());
 		}
 
 	}
