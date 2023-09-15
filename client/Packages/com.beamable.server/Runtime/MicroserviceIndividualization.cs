@@ -9,16 +9,7 @@ namespace Beamable.Server
 	{
 		private const string PlayerPrefPrefix = "BeamableMicroservicePrefixes";
 
-		public static string Prefix
-		{
-			get
-			{
-				if (ConfigDatabase.TryGetString("containerPrefix", out var customPrefix) &&
-					!string.IsNullOrWhiteSpace(customPrefix))
-					return customPrefix;
-				return SystemInfo.deviceUniqueIdentifier;
-			}
-		}
+		public static string Prefix => SystemInfo.deviceUniqueIdentifier;
 
 		[Obsolete]
 		public static void UseServicePrefix(string serviceName)

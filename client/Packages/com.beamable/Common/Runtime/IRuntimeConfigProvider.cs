@@ -25,7 +25,7 @@ namespace Beamable.Common
 		public IRuntimeConfigProvider Fallback { get; set; }
 
 		/// <inheritdoc cref="IRuntimeConfigProvider.Cid"/>
-		public string Cid => _cid ?? Fallback.Cid;
+		public string Cid => Fallback.Cid;
 
 		/// <inheritdoc cref="IRuntimeConfigProvider.Pid"/>
 		public string Pid
@@ -34,7 +34,7 @@ namespace Beamable.Common
 			set => _pid = value;
 		}
 
-		private string _cid, _pid;
+		private string _pid;
 
 		public DefaultRuntimeConfigProvider(IRuntimeConfigProvider fallback)
 		{

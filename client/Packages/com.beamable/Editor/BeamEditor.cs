@@ -239,16 +239,6 @@ namespace Beamable
 			// Reload the current environment data
 			BeamableEnvironment.ReloadEnvironment();
 
-			try
-			{
-				ConfigDatabase.Init();
-			}
-			catch (FileNotFoundException)
-			{
-				// if the file doesn't exist, then the config database will be empty. 
-				// and in the editor case, this is valid. 
-			}
-
 			// If we ever get to this point, we are guaranteed to run the initialization until the end so we...
 			// Initialize Editor instances of Reflection and Assistant services
 			EditorReflectionCache = new ReflectionCache();
@@ -558,9 +548,6 @@ namespace Beamable
 
 			async Promise Initialize()
 			{
-				
-				try
-				{
 				var configService = ServiceScope.GetService<ConfigDefaultsService>();
 				var initResult = await EditorAccountService.TryInit();
 				var account = initResult.account;
@@ -585,7 +572,8 @@ namespace Beamable
 
 				requester.Host = BeamableEnvironment.ApiUrl;
 
-				ServiceScope.GetService<BeamableVsp>().TryToEmitAttribution("login"); // this will no-op if the package isn't a VSP package.
+				ServiceScope.GetService<BeamableVsp>()
+				            .TryToEmitAttribution("login"); // this will no-op if the package isn't a VSP package.
 
 				var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
 				var accessToken = await accessTokenStorage.LoadTokenForCustomer(cid);
@@ -600,13 +588,8 @@ namespace Beamable
 
 				await RefreshRealmSecret();
 
-					var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
-				}
-				catch (Exception ex)
-				{
-					Debug.LogError(ex);
-					throw;
-				}
+				var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
+
 			}
 
 			InitializePromise = Initialize().ToPromise();

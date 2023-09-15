@@ -17,8 +17,8 @@ namespace Beamable.Tests.Runtime
 {
 	public class TestConfigProvider : IRuntimeConfigProvider
 	{
-		public string Cid { get; set; } = "123";
-		public string Pid { get; set; } = "testPid";
+		public string Cid { get; set; } = BeamableTest.DEFAULT_CID;
+		public string Pid { get; set; } = BeamableTest.DEFAULT_PID;
 	}
 	
 	public class MockBeamContext : BeamContext

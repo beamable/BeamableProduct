@@ -11,6 +11,7 @@ namespace Beamable.Config
 	{
 		public string cid;
 		public string pid;
+		public string alias;
 	}
 	
 	public class ConfigDatabaseProvider : IRuntimeConfigProvider
@@ -20,18 +21,18 @@ namespace Beamable.Config
 		public string Cid => data?.cid;
 		public string Pid => data?.pid;
 
-		private ConfigData data;
+		private readonly ConfigData data = GetConfigData();
 
-		public ConfigDatabaseProvider()
+		public static string GetFullPath(string fileName=null) =>
+			Path.Combine("Assets", "Beamable", "Resources", $"{fileName ?? CONFIG_DEFAULTS_NAME}.txt");
+
+		public static ConfigData GetConfigData()
 		{
 			var json = GetFileContent(CONFIG_DEFAULTS_NAME);
-			data = JsonUtility.FromJson<ConfigData>(json);
+			return JsonUtility.FromJson<ConfigData>(json);
 		}
-
-		private static string GetFullPath(string fileName) =>
-			Path.Combine("Assets", "Beamable", "Resources", $"{fileName}.txt");
-
-		private static string GetFileContent(string fileName)
+		
+		public static string GetFileContent(string fileName)
 		{
 #if UNITY_EDITOR
 			var fullPath = GetFullPath(fileName);
@@ -50,6 +51,17 @@ namespace Beamable.Config
 			}
 
 			return asset.text;
+		}
+
+		public static bool HasConfigFile(string filename=null)
+		{
+			filename ??= CONFIG_DEFAULTS_NAME;
+			// this is hardly efficient, but if it is done infrequently enough, it should be fine
+#if UNITY_EDITOR
+			return File.Exists(GetFullPath(filename)) || Resources.Load<TextAsset>(filename) != null;
+#else
+			return Resources.Load<TextAsset>(filename) != null;
+#endif
 		}
 	}
 }

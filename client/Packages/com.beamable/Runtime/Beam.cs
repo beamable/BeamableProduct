@@ -142,16 +142,6 @@ namespace Beamable
 			// Set the default promise error handlers
 			PromiseExtensions.SetupDefaultHandler();
 
-			// The config-database is what sits inside of config-defaults
-			try
-			{
-				ConfigDatabase.Init();
-			}
-			catch (FileNotFoundException) when (!Application.isEditor)
-			{
-				Debug.LogError("Failed to find 'config-defaults' file. This should never be seen here. If you do, please file a bug-report.");
-			}
-
 			// register all services that are not context specific.
 			DependencyBuilder = new DependencyBuilder();
 
