@@ -24,8 +24,6 @@ namespace Beamable.Server
 		public List<BaseTypeOfInterest> BaseTypesOfInterest => BASE_TYPES_OF_INTEREST;
 		public List<AttributeOfInterest> AttributesOfInterest => ATTRIBUTES_OF_INTEREST;
 
-		public List<PendingMongoIndexData> PendingMongoIndexesData => _pendingMongoIndexesData;
-
 		static MongoIndexesReflectionCache()
 		{
 			ICOLLECTION_ELEMENT_TYPE = new BaseTypeOfInterest(typeof(StorageDocument));
@@ -68,19 +66,14 @@ namespace Beamable.Server
 
 					foreach (MemberInfo memberInfo in typeInfo.DeclaredMembers)
 					{
-						foreach (CustomAttributeData attributeData in memberInfo.CustomAttributes)
+						var mongoAttributes = memberInfo.GetCustomAttributes<MongoIndexAttribute>();
+						foreach (MongoIndexAttribute attributeData in mongoAttributes)
 						{
-							if (attributeData.AttributeType != typeof(MongoIndexAttribute))
-								continue;
-
-							var mongoIndexType =
-								(MongoIndexesExtension.IndexType)attributeData.ConstructorArguments[0].Value;
-							var mongoIndexName = (string)attributeData.ConstructorArguments[1].Value;
-							var fieldInfo = (FieldInfo)memberInfo;
-
+							var mongoIndexType = attributeData.IndexType;
+							var mongoIndexName = attributeData.IndexName;
 							var indexDetails = new MongoIndexDetails
 							{
-								Field = fieldInfo.Name, IndexType = mongoIndexType, IndexName = mongoIndexName
+								Field = memberInfo.Name, IndexType = mongoIndexType, IndexName = mongoIndexName
 							};
 
 							pendingIndexData.Indexes.Add(indexDetails);
@@ -119,8 +112,7 @@ namespace Beamable.Server
 				Type mongoCollectionType = typeof(IMongoCollection<>);
 				Type mongoCollectionGenericType = mongoCollectionType.MakeGenericType(data.Collection);
 
-				IEnumerable<Type> enumerable = typeof(MongoIndexesExtension).Assembly.GetTypes();
-				Type mongoDbExtensionsType = enumerable.First(t => t.Name == nameof(MongoIndexesExtension));
+				Type mongoDbExtensionsType = typeof(MongoIndexesExtension);
 
 				MethodInfo methodInfo =
 					mongoDbExtensionsType.GetMethod(nameof(MongoIndexesExtension.CreateSingleIndex));
@@ -136,11 +128,11 @@ namespace Beamable.Server
 					Promise promise = Convert(collectionGenericObject, mongoCollectionGenericType);
 					await promise;
 
-					MethodInfo resultFromPromiseMethod = GetType().GetMethod("GetResultFromPromise",
+					MethodInfo resultFromPromiseMethod = GetType().GetMethod(nameof(GetResultFromPromise),
 						BindingFlags.Instance | BindingFlags.Public);
 					MethodInfo resultFromPromiseGeneric =
 						resultFromPromiseMethod?.MakeGenericMethod(mongoCollectionGenericType);
-					object collection = resultFromPromiseGeneric?.Invoke(this, new[] { collectionGenericObject });
+					object collection = resultFromPromiseGeneric?.Invoke(null, new[] { collectionGenericObject });
 
 					foreach (MongoIndexDetails details in data.Indexes)
 					{
@@ -174,7 +166,7 @@ namespace Beamable.Server
 			}
 		}
 
-		public T GetResultFromPromise<T>(object promise)
+		public static T GetResultFromPromise<T>(object promise)
 		{
 			Promise<T> convertedPromise = (Promise<T>)promise;
 			return convertedPromise.GetResult();

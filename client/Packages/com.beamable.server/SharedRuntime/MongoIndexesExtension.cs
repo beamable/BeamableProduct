@@ -198,10 +198,13 @@ namespace Beamable.Mongo
 		                                         IndexKeysDefinition<T> indexKeysDefinition,
 		                                         string indexName) where T : StorageDocument
 		{
-			var indexManager = collection.Indexes;
 			var model =
-				new CreateIndexModel<T>(indexKeysDefinition, new CreateIndexOptions {Name = indexName});
-			await indexManager.CreateOneAsync(model);
+				new CreateIndexModel<T>(indexKeysDefinition, new CreateIndexOptions
+				{
+					Name = indexName,
+					
+				});
+			await collection.Indexes.CreateOneAsync(model);
 		}
 	}
 }

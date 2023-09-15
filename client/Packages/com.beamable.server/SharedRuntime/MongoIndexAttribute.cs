@@ -5,13 +5,13 @@ namespace Beamable.Mongo
 	[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
 	public class MongoIndexAttribute : Attribute
 	{
-		private readonly MongoIndexesExtension.IndexType _indexType;
-		private readonly string _indexName;
+		public readonly MongoIndexesExtension.IndexType IndexType;
+		public readonly string IndexName;
 		
 		public MongoIndexAttribute(MongoIndexesExtension.IndexType indexType, string indexName)
 		{
-			_indexType = indexType;
-			_indexName = indexName;
+			IndexType = indexType;
+			IndexName = indexName;
 		}
 	}
 }
