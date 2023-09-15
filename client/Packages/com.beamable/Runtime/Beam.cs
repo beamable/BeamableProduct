@@ -265,7 +265,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<OfflineCache>(p => new OfflineCache(p.GetService<IRuntimeConfigProvider>(), CoreConfiguration.Instance.UseOfflineCache));
 
 
-			RuntimeConfigProvider = new DefaultRuntimeConfigProvider(new ConfigDatabaseProvider());
+			RuntimeConfigProvider ??= new DefaultRuntimeConfigProvider(new ConfigDatabaseProvider());
 			DependencyBuilder.AddSingleton<IRuntimeConfigProvider>(RuntimeConfigProvider);
 			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);

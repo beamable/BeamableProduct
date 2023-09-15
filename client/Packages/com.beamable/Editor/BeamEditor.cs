@@ -127,6 +127,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<BeamCli>();
 
 			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
+
 			DependencyBuilder.AddSingleton<IRuntimeConfigProvider, EditorRuntimeConfigProvider>();
 
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
@@ -137,10 +138,15 @@ namespace Beamable
 		{
 			try
 			{
-				builder.AddSingleton(
-					_ => new EditorStorageLayer(new EditorFilesystemAccessor()));
-				builder.AddGlobalStorage<AccountService, EditorStorageLayer>();
-				builder.ReplaceSingleton<IRuntimeConfigProvider, EditorRuntimeConfigProvider>();
+				var editorCtx = BeamEditorContext.Default;
+				var accountService = editorCtx.ServiceScope.GetService<AccountService>();
+				
+				if (accountService != null && accountService.Cid.HasValue)
+				{
+					var provider = new EditorRuntimeConfigProvider(accountService);
+					Beam.RuntimeConfigProvider ??= new DefaultRuntimeConfigProvider(provider);
+					Beam.RuntimeConfigProvider.SetFallback(provider);
+				}
 			}
 			catch (Exception ex)
 			{
