@@ -30,7 +30,6 @@ namespace Beamable.Editor.Environment
 				FileUtil.DeleteFileOrDirectory(OVERRIDE_PATH);
 				FileUtil.DeleteFileOrDirectory(OVERRIDE_PATH + ".meta");
 				Logout();
-				ConfigDatabase.DeleteConfigDatabase();
 				EditorUtility.RequestScriptReload();
 				AssetDatabase.Refresh();
 			}
@@ -45,7 +44,6 @@ namespace Beamable.Editor.Environment
 		{
 			var json = JsonSerializable.ToJson(data);
 			File.WriteAllText(OVERRIDE_PATH, json);
-			ConfigDatabase.DeleteConfigDatabase();
 			Logout();
 			EditorUtility.RequestScriptReload();
 			AssetDatabase.Refresh();

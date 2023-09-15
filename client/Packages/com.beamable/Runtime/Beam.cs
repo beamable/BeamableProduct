@@ -82,6 +82,29 @@ namespace Beamable
 		/// </summary>
 		public static IDependencyBuilder DependencyBuilder;
 
+		/// <summary>
+		/// Controls the CID/PID connection strings for the game.
+		/// However, this should not be used directly. Instead,
+		/// Use <see cref="ChangePid"/> to change the PID at runtime.
+		/// </summary>
+		public static DefaultRuntimeConfigProvider RuntimeConfigProvider
+		{
+			get
+			{
+				if (_runtimeConfigProvider == null)
+				{
+					_runtimeConfigProvider = new DefaultRuntimeConfigProvider(new ConfigDatabaseProvider());
+				}
+				return _runtimeConfigProvider;
+			}
+			set
+			{
+				_runtimeConfigProvider = value;
+			}
+		}
+
+		private static DefaultRuntimeConfigProvider _runtimeConfigProvider;
+		
 		public static ReflectionCache ReflectionCache;
 		public static IBeamHintGlobalStorage RuntimeGlobalStorage;
 
@@ -118,16 +141,6 @@ namespace Beamable
 
 			// Set the default promise error handlers
 			PromiseExtensions.SetupDefaultHandler();
-
-			// The config-database is what sits inside of config-defaults
-			try
-			{
-				ConfigDatabase.Init();
-			}
-			catch (FileNotFoundException) when (!Application.isEditor)
-			{
-				Debug.LogError("Failed to find 'config-defaults' file. This should never be seen here. If you do, please file a bug-report.");
-			}
 
 			// register all services that are not context specific.
 			DependencyBuilder = new DependencyBuilder();
@@ -256,8 +269,11 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(ContentConfiguration.Instance);
 			DependencyBuilder.AddSingleton(CoreConfiguration.Instance);
 			DependencyBuilder.AddSingleton<IAuthSettings>(AccountManagementConfiguration.Instance);
-			DependencyBuilder.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
+			DependencyBuilder.AddSingleton<OfflineCache>(p => new OfflineCache(p.GetService<IRuntimeConfigProvider>(), CoreConfiguration.Instance.UseOfflineCache));
 
+
+			RuntimeConfigProvider ??= new DefaultRuntimeConfigProvider(new ConfigDatabaseProvider());
+			DependencyBuilder.AddSingleton<IRuntimeConfigProvider>(RuntimeConfigProvider);
 			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 
@@ -363,7 +379,7 @@ namespace Beamable
 		public static async Promise ChangePid(string pid, string sceneQualifier = "0")
 		{
 			await StopAllContexts();
-			ConfigDatabase.SetString("pid", pid, persist: false); // setting persist to false means the new pid won't be stored in player prefs.
+			RuntimeConfigProvider.Pid = pid;
 			await ResetToScene(sceneQualifier);
 		}
 

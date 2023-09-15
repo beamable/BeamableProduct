@@ -4,6 +4,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Editor.BeamCli;
 using Beamable.Editor.BeamCli.Commands;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Beamable.Server.Editor
 {
@@ -19,7 +20,7 @@ namespace Beamable.Server.Editor
 		// public MicroserviceDiscovery(IBeamableRequester requester, BeamCli cli)
 		{
 
-			var _ = Start();
+			Start().Error(Debug.LogError);
 		}
 
 		public async Promise Start()

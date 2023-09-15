@@ -17,7 +17,7 @@ namespace Beamable.Tests.Modules.Stats.StatObjectTests
 		protected override void OnSetupBeamable()
 		{
 			base.OnSetupBeamable();
-			MockApi.StatsService = new StatsService(MockPlatform, MockRequester, null, UnityUserDataCache<Dictionary<string, string>>.CreateInstance, new OfflineCache());
+			MockApi.StatsService = new StatsService(MockPlatform, MockRequester, null, UnityUserDataCache<Dictionary<string, string>>.CreateInstance, new OfflineCache(new TestConfigProvider()));
 		}
 
 		[Test]
