@@ -19,7 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Promise.Sequence` return `List<T>` in the same order as input `List<Promise<T>>`.
 - `PlayerAccounts.Current` is a distinct instance from any element in the `PlayerAccounts` list.
 
-
 ## [1.18.0]
 
 ### Fixed
