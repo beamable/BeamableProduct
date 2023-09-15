@@ -156,7 +156,7 @@ namespace Beamable
 		}
 	}
 
-	[BeamContextSystem]
+	[InitializeOnLoad, BeamContextSystem]
 	public static class BeamEditor
 	{
 		public static CoreConfiguration CoreConfiguration { get; private set; }
@@ -604,7 +604,6 @@ namespace Beamable
 				}
 				catch (Exception ex)
 				{
-					Debug.Log("ERROR ON LOAD CONTEXT");
 					Debug.LogError(ex);
 					throw;
 				}
