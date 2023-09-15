@@ -20,7 +20,7 @@ namespace Beamable.Tests.Runtime
 		public string Cid { get; set; } = BeamableTest.DEFAULT_CID;
 		public string Pid { get; set; } = BeamableTest.DEFAULT_PID;
 	}
-	
+
 	public class MockBeamContext : BeamContext
 	{
 		private static Action<IDependencyBuilder> _mutateDependencies;
