@@ -37,11 +37,7 @@ namespace Beamable.Api.Connectivity
 			_provider = provider;
 
 			_delay = new WaitForSeconds(_secondsBetweenCheck);
-			if (!ConfigDatabase.TryGetString(HEALTH_ROUTE_CONFIG_KEY, out var route))
-			{
-				route = DEFAULT_HEALTH_PATH;
-			}
-			ConnectivityRoute = route;
+			ConnectivityRoute = DEFAULT_HEALTH_PATH;
 			coroutineService.StartCoroutine(MonitorConnectivity());
 		}
 

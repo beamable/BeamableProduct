@@ -1902,7 +1902,7 @@ namespace Beamable.Player
 					{
 						statClone[kvp.Key] = kvp.Value;
 					}
-					
+
 					Current = new PlayerAccount(this, tokenClone, userClone, statClone);
 				}
 				else
@@ -1912,8 +1912,8 @@ namespace Beamable.Player
 
 				break;
 			}
-			
-			
+
+
 			SetData(next);
 		}
 	}
