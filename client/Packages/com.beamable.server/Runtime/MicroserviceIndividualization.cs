@@ -9,17 +9,9 @@ namespace Beamable.Server
 	{
 		private const string PlayerPrefPrefix = "BeamableMicroservicePrefixes";
 
-		public static string Prefix
-		{
-			get
-			{
-				if (ConfigDatabase.TryGetString("containerPrefix", out var customPrefix) &&
-					!string.IsNullOrWhiteSpace(customPrefix))
-					return customPrefix;
-				return SystemInfo.deviceUniqueIdentifier;
-			}
-		}
+		public static string Prefix => SystemInfo.deviceUniqueIdentifier;
 
+		[Obsolete]
 		public static void UseServicePrefix(string serviceName)
 		{
 			var values = GetValues();
@@ -30,6 +22,7 @@ namespace Beamable.Server
 			}
 		}
 
+		[Obsolete]
 		public static void ClearServicePrefix(string serviceName)
 		{
 			var values = GetValues();
@@ -37,6 +30,7 @@ namespace Beamable.Server
 			SetValues(values);
 		}
 
+		[Obsolete]
 		public static string GetServicePrefix(string serviceName)
 		{
 #if !UNITY_EDITOR
@@ -48,6 +42,7 @@ namespace Beamable.Server
 #endif
 		}
 
+		[Obsolete]
 		static void SetValues(Dictionary<string, string> values)
 		{
 			var cid = ConfigDatabase.GetString("cid");
@@ -64,6 +59,7 @@ namespace Beamable.Server
 			PlayerPrefs.SetString(key, str);
 		}
 
+		[Obsolete]
 		static Dictionary<string, string> GetValues()
 		{
 			var cid = ConfigDatabase.GetString("cid");
