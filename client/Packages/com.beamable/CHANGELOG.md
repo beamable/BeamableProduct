@@ -5,13 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.18.1]
 
 ### Fixed
 
 - `IsThirdPartyAvailable`, `RemoveThirdPartyAssociation`, and `IsExternalIdentityAvailable` methods no longer use invalid query args.
 - Websocket connection authentication in WebGL builds.
 - Fixed ContentRef property drawer on Unity 2021 LTS.
+- `PlayerAccounts.Current` updates correctly after account switching.
+
+### Changed
+
+- `Promise.Sequence` return `List<T>` in the same order as input `List<Promise<T>>`.
+- `PlayerAccounts.Current` is a distinct instance from any element in the `PlayerAccounts` list.
+- `PlayerPrefs` are no longer the source of truth for CID/PID. Instead, use the `IRuntimeConfigProvider`.
+- `ConfigDatabase` is no longer used to store and load CID/PID. 
+
+### Removed
+- Broken Console commands, `config set`, `config reset`, and `config useful`.
+- `ConfigDatabase` is deprecated.  
 
 ## [1.18.0]
 
