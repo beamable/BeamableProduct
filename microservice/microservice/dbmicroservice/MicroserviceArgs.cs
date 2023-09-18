@@ -132,31 +132,15 @@ namespace Beamable.Server
 		public string CustomerID => Environment.GetEnvironmentVariable("CID");
 		public string ProjectName => Environment.GetEnvironmentVariable("PID");
 		public IDependencyProviderScope ServiceScope { get; }
-
-		public int HealthPort
-		{
-			get
-			{
-				if (!int.TryParse(Environment.GetEnvironmentVariable("HEALTH_PORT"), out var val))
-				{
-					val = Constants.Features.Services.HEALTH_PORT;
-				}
-
-				return val;
-			}
-		}
-
+		public int HealthPort => GetIntFromEnvironmentVariable("HEALTH_PORT", Constants.Features.Services.HEALTH_PORT);
 		public string Host => Environment.GetEnvironmentVariable("HOST");
 		public string Secret => Environment.GetEnvironmentVariable("SECRET");
 		public string NamePrefix => Environment.GetEnvironmentVariable("NAME_PREFIX") ?? "";
 		public string SdkVersionExecution => Environment.GetEnvironmentVariable("BEAMABLE_SDK_VERSION_EXECUTION") ?? "";
-
-		public bool WatchToken =>
-			(Environment.GetEnvironmentVariable("WATCH_TOKEN")?.ToLowerInvariant() ?? "") == "true";
+		public bool WatchToken => IsEnvironmentVariableTrue("WATCH_TOKEN");
 
 		public bool DisableCustomInitializationHooks =>
-			(Environment.GetEnvironmentVariable("DISABLE_CUSTOM_INITIALIZATION_HOOKS")?.ToLowerInvariant() ?? "") ==
-			"true";
+			IsEnvironmentVariableTrue("DISABLE_CUSTOM_INITIALIZATION_HOOKS");
 
 		static bool IsEnvironmentVariableTrue(string key) =>
 			(Environment.GetEnvironmentVariable(key)?.ToLowerInvariant() ?? string.Empty) == "true";
