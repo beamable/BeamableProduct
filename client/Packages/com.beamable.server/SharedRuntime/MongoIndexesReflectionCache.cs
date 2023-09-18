@@ -94,12 +94,10 @@ namespace Beamable.Server
 
 		public void SetStorage(IBeamHintGlobalStorage hintGlobalStorage) { }
 
-		public async void SetupStorage(IStorageObjectConnectionProvider connectionProvider)
+		public async Promise SetupStorage(IStorageObjectConnectionProvider connectionProvider)
 		{
 			foreach (PendingMongoIndexData data in _pendingMongoIndexesData)
 			{
-				BeamableLogger.Log($"Working on: {data.Database}");
-
 				MethodInfo getCollectionMethod =
 					typeof(IStorageObjectConnectionProvider).GetMethods()
 					                                        .Where(method =>
@@ -136,8 +134,6 @@ namespace Beamable.Server
 
 					foreach (MongoIndexDetails details in data.Indexes)
 					{
-						BeamableLogger.Log($"Creating index: {details.IndexType}-{details.Field}-{details.IndexName}");
-
 						if (collection == null)
 						{
 							continue;
@@ -155,7 +151,6 @@ namespace Beamable.Server
 						}
 
 						await someResult.ConfigureAwait(false);
-						BeamableLogger.Log($"Index: {details.IndexType}-{details.Field}-{details.IndexName} has been created");
 					}
 				}
 				catch (Exception e)

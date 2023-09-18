@@ -189,7 +189,7 @@ namespace Beamable.Server
          
          if (!_args.DisableCustomInitializationHooks && !_ranCustomUserInitializationHooks)
          {
-	         SetupStorage();
+	         await SetupStorage();
          }
 
          await SetupWebsocket(socket, _serviceAttribute.EnableEagerContentLoading);
@@ -199,7 +199,7 @@ namespace Beamable.Server
          }
       }
       
-      private void SetupStorage()
+      private async Promise SetupStorage()
       {
 	      var reflectionCache = Provider.GetService<ReflectionCache>();
 	      var mongoIndexesReflectionCache = reflectionCache.GetFirstSystemOfType<MongoIndexesReflectionCache>();
@@ -207,8 +207,7 @@ namespace Beamable.Server
 	      IStorageObjectConnectionProvider connectionProvider =
 		      Provider.GetService<IStorageObjectConnectionProvider>();
 
-	      Log.Debug("Setting up a storage");
-	      mongoIndexesReflectionCache.SetupStorage(connectionProvider);
+	      await mongoIndexesReflectionCache.SetupStorage(connectionProvider);
       }
 
       public async Task RunForever()
