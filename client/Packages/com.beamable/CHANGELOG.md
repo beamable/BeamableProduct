@@ -25,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Broken Console commands, `config set`, `config reset`, and `config useful`.
 - `ConfigDatabase` is deprecated.  
 
+### Added
+
+- Opt-in behaviour- if we call `BeamContext.ForPlayer` before `BeamContext.Default` playerCode passed to first call becomes default one.
+Game maker can use `BEAMABLE_ENABLE_BEAM_CONTEXT_DEFAULT_OVERRIDE` to enable that behaviour.
+
 ## [1.18.0]
 
 ### Fixed
