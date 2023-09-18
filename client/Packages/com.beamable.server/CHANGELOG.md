@@ -85,7 +85,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - `Quaternion` method implementations no longer work in Microservices using netstandard2.0
->>>>>>> main
 
 ## [1.16.1]
 
