@@ -55,10 +55,9 @@ namespace Beamable.Server.Editor
 #if !BEAMABLE_DEVELOPER
 		[HideInInspector]
 #endif
+		[Obsolete]
 		[Tooltip("When you run a microservice in the Editor, the prefix controls the flow of traffic. By default, the prefix is your MAC address. If two developers use the same prefix, their microservices will share traffic. The prefix is ignored for games running outside of the Editor."), Delayed]
 		public string CustomContainerPrefix;
-
-		private string _cachedContainerPrefix = null;
 
 		[Tooltip("When you build a microservice, any ContentType class will automatically be referenced if this field is set to true. Beamable recommends that you put your ContentTypes into a shared assembly definition instead.")]
 		public bool AutoReferenceContent = false;
@@ -257,12 +256,6 @@ namespace Beamable.Server.Editor
 		private void OnValidate()
 		{
 			ServiceCodeHandlesOnLastDomainReload = ServiceCodeHandlesOnLastDomainReload ?? new List<BeamServiceCodeHandle>();
-
-			if (CustomContainerPrefix != _cachedContainerPrefix)
-			{
-				_cachedContainerPrefix = CustomContainerPrefix;
-				ConfigDatabase.SetString("containerPrefix", _cachedContainerPrefix, true, true);
-			}
 
 			if (_dockerCommandCached != DockerCommand || _dockerCheckCached != DockerDesktopCheckInMicroservicesWindow)
 			{
