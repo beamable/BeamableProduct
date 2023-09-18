@@ -57,7 +57,7 @@ namespace Beamable.Editor
 				pid = pid,
 			};
 
-			string path = ConfigDatabase.GetFullPath("config-defaults");
+			var path = ConfigDatabaseProvider.GetFullPath();
 			var asJson = JsonUtility.ToJson(config, true);
 
 			var writeConfig = true;
@@ -95,19 +95,6 @@ namespace Beamable.Editor
 				}
 
 				File.WriteAllText(path, asJson);
-
-
-				AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
-				try
-				{
-					ConfigDatabase.Init();
-				}
-				catch (FileNotFoundException)
-				{
-					Debug.LogError("Failed to find 'config-defaults' file from EditorAPI.SaveConfig. This should never be seen here. If you do, please file a bug-report.");
-				}
-
-				AssetDatabase.Refresh();
 			}
 		}
 
@@ -118,16 +105,17 @@ namespace Beamable.Editor
 		/// </summary>
 		public async Promise LoadFromDisk()
 		{
-			var hasFile = ConfigDatabase.HasConfigFile(ConfigDatabase.GetConfigFileName());
-
+			bool hasFile = ConfigDatabaseProvider.HasConfigFile();
+	
 			if (!hasFile)
 			{
 				return;
 			}
 
-			_alias = LoadConfigStringFromDisk(Constants.Features.Config.ALIAS_KEY);
-			_cid = LoadConfigStringFromDisk(Constants.Features.Config.CID_KEY);
-			_pid = LoadConfigStringFromDisk(Constants.Features.Config.PID_KEY);
+			var data = ConfigDatabaseProvider.GetConfigData();
+			_alias = OptionalString.FromString(data.alias);
+			_cid = OptionalString.FromString(data.cid);
+			_pid = OptionalString.FromString(data.pid);
 
 			// check that the alias is valid
 			try
@@ -165,25 +153,6 @@ namespace Beamable.Editor
 				_cid.Clear();
 			}
 		}
-
-		/// <summary>
-		/// Given a key, return an optional value loaded from the config-defaults file.
-		/// If the key exists, but has an empty value, the returned optional is blank.
-		/// </summary>
-		/// <param name="key"></param>
-		/// <returns></returns>
-		private static OptionalString LoadConfigStringFromDisk(string key)
-		{
-			if (ConfigDatabase.TryGetString(key, out var value, allowSessionOverrides: false) && !string.IsNullOrWhiteSpace(value))
-			{
-				return new OptionalString(value);
-			}
-			else
-			{
-				return new OptionalString();
-			}
-		}
-
 
 	}
 }
