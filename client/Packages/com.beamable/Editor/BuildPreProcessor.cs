@@ -104,10 +104,10 @@ namespace Beamable.Editor
 			var provider = new ConfigDatabaseProvider();
 			var runtimeCid = provider.Cid;
 			var runtimePid = provider.Pid;
-			
+
 			var editorCtx = BeamEditorContext.Default;
 			var editorProvider = editorCtx.ServiceScope.GetService<IRuntimeConfigProvider>();
-			
+
 			if (string.IsNullOrEmpty(runtimeCid))
 			{
 				var error = $@"BEAMABLE ERROR: No CID was detected!

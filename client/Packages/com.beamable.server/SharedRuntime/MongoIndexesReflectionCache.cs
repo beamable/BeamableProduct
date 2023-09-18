@@ -29,9 +29,9 @@ namespace Beamable.Server
 			ICOLLECTION_ELEMENT_TYPE = new BaseTypeOfInterest(typeof(StorageDocument));
 			MONGO_INDEX_ATTRIBUTE =
 				new AttributeOfInterest(typeof(MongoIndexAttribute), new Type[] { },
-				                        new[] {typeof(StorageDocument)});
-			BASE_TYPES_OF_INTEREST = new List<BaseTypeOfInterest> {ICOLLECTION_ELEMENT_TYPE};
-			ATTRIBUTES_OF_INTEREST = new List<AttributeOfInterest> {MONGO_INDEX_ATTRIBUTE};
+										new[] { typeof(StorageDocument) });
+			BASE_TYPES_OF_INTEREST = new List<BaseTypeOfInterest> { ICOLLECTION_ELEMENT_TYPE };
+			ATTRIBUTES_OF_INTEREST = new List<AttributeOfInterest> { MONGO_INDEX_ATTRIBUTE };
 		}
 
 		public void ClearCachedReflectionData()
@@ -50,7 +50,7 @@ namespace Beamable.Server
 				List<Type> interfaces = typeInfo.GetInterfaces().ToList();
 
 				List<Type> properInterfaces = interfaces.FindAll(i => i.IsGenericType && i.GetGenericTypeDefinition() ==
-					                                                 typeof(ICollectionElement<>));
+																	 typeof(ICollectionElement<>));
 
 				if (properInterfaces.Count == 0)
 					continue;
@@ -61,7 +61,9 @@ namespace Beamable.Server
 
 					var pendingIndexData = new PendingMongoIndexData
 					{
-						Database = databaseType, Collection = typeInfo, Indexes = new List<MongoIndexDetails>()
+						Database = databaseType,
+						Collection = typeInfo,
+						Indexes = new List<MongoIndexDetails>()
 					};
 
 					foreach (MemberInfo memberInfo in typeInfo.DeclaredMembers)
@@ -73,7 +75,9 @@ namespace Beamable.Server
 							var mongoIndexName = attributeData.IndexName;
 							var indexDetails = new MongoIndexDetails
 							{
-								Field = memberInfo.Name, IndexType = mongoIndexType, IndexName = mongoIndexName
+								Field = memberInfo.Name,
+								IndexType = mongoIndexType,
+								IndexName = mongoIndexName
 							};
 
 							pendingIndexData.Indexes.Add(indexDetails);
@@ -86,7 +90,8 @@ namespace Beamable.Server
 		}
 
 		public void OnAttributeOfInterestFound(AttributeOfInterest attributeType,
-		                                       IReadOnlyList<MemberAttribute> cachedMemberAttributes) { }
+											   IReadOnlyList<MemberAttribute> cachedMemberAttributes)
+		{ }
 
 		public void OnSetupForCacheGeneration() { }
 
@@ -100,12 +105,12 @@ namespace Beamable.Server
 			{
 				MethodInfo getCollectionMethod =
 					typeof(IStorageObjectConnectionProvider).GetMethods()
-					                                        .Where(method =>
-						                                               method.Name ==
-						                                               nameof(IStorageObjectConnectionProvider
-							                                                      .GetCollection) &&
-						                                               method.GetParameters().Length == 0)
-					                                        .FirstOrDefault(x => x.IsGenericMethod);
+															.Where(method =>
+																	   method.Name ==
+																	   nameof(IStorageObjectConnectionProvider
+																				  .GetCollection) &&
+																	   method.GetParameters().Length == 0)
+															.FirstOrDefault(x => x.IsGenericMethod);
 
 				Type mongoCollectionType = typeof(IMongoCollection<>);
 				Type mongoCollectionGenericType = mongoCollectionType.MakeGenericType(data.Collection);
@@ -171,7 +176,7 @@ namespace Beamable.Server
 		{
 			var genMethod = GetType().GetMethod(nameof(ConvertGeneric), BindingFlags.Instance | BindingFlags.Public);
 			var method = genMethod.MakeGenericMethod(elementType);
-			var res = method.Invoke(this, new object[]{obj});
+			var res = method.Invoke(this, new object[] { obj });
 			var resPromise = (Promise)res;
 			await resPromise;
 		}
@@ -181,7 +186,7 @@ namespace Beamable.Server
 			await cast;
 		}
 	}
-	
+
 	public class PendingMongoIndexData
 	{
 		public Type Database { get; set; }
