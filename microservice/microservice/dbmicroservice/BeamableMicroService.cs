@@ -10,58 +10,30 @@ using System.Runtime.CompilerServices;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Leaderboards;
-using Beamable.Common.Assistant;
-using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
-using Beamable.Server.Api;
-using Beamable.Server.Api.Announcements;
-using Beamable.Server.Api.Calendars;
-using Beamable.Server.Api.Chat;
-using Beamable.Server.Api.Events;
-using Beamable.Server.Api.Groups;
-using Beamable.Server.Api.Inventory;
-using Beamable.Server.Api.Leaderboards;
-using Beamable.Server.Api.Mail;
-using Beamable.Server.Api.Social;
-using Beamable.Server.Api.Stats;
-using Beamable.Server.Api.Tournament;
-using Beamable.Server.Api.CloudData;
 using Beamable.Server.Api.RealmConfig;
-using Beamable.Server.Api.Commerce;
-using Beamable.Server.Api.Payments;
-using Beamable.Server.Common;
-using Beamable.Server.Content;
 using beamable.tooling.common.Microservice;
 using Core.Server.Common;
 using microservice;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using ContentService = Beamable.Server.Content.ContentService;
-using ServiceDescriptor = Microsoft.Extensions.DependencyInjection.ServiceDescriptor;
 #if DB_MICROSERVICE
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common.Api.Content;
-using Beamable.Common.Api.Stats;
 using Beamable.Common.Reflection;
-using Beamable.Experimental.Api.Chat;
-using Beamable.Server.Api.Content;
-using Beamable.Server.Api.Notifications;
 using microservice.Common;
 using Newtonsoft.Json;
 using Serilog;
-
 using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json;
 using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server
 {
-
    public class MicroserviceNonceResponse
    {
       public string nonce;
@@ -214,12 +186,28 @@ namespace Beamable.Server
          // Connect and Run
          _webSocketPromise = AttemptConnection();
          var socket = await _webSocketPromise;
+         
+         if (!_args.DisableCustomInitializationHooks && !_ranCustomUserInitializationHooks)
+         {
+	         await SetupStorage();
+         }
 
          await SetupWebsocket(socket, _serviceAttribute.EnableEagerContentLoading);
          if (!_serviceAttribute.EnableEagerContentLoading)
          {
 	         var _ = contentService.Init();
          }
+      }
+      
+      private async Promise SetupStorage()
+      {
+	      var reflectionCache = Provider.GetService<ReflectionCache>();
+	      var mongoIndexesReflectionCache = reflectionCache.GetFirstSystemOfType<MongoIndexesReflectionCache>();
+		
+	      IStorageObjectConnectionProvider connectionProvider =
+		      Provider.GetService<IStorageObjectConnectionProvider>();
+
+	      await mongoIndexesReflectionCache.SetupStorage(connectionProvider);
       }
 
       public async Task RunForever()

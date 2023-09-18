@@ -73,7 +73,6 @@ namespace Beamable
 	[Serializable]
 	public class BeamContext : IPlatformService, IGameObjectContext, IObservedPlayer, IBeamableDisposableOrder, IDependencyNameProvider, IDependencyScopeNameProvider
 	{
-
 		#region Internal State
 		/// <summary>
 		/// The <see cref="PlayerCode"/> is the name of a player's slot on the device. The <see cref="Default"/> context uses an empty string,
@@ -114,7 +113,7 @@ namespace Beamable
 
 		public bool IsInitialized => _initPromise != null;
 
-		public bool IsDefault => string.IsNullOrEmpty(PlayerCode);
+		public bool IsDefault => IsDefaultPlayerCode(PlayerCode);
 
 		private IDependencyProviderScope _serviceScope;
 		private bool _isStopped;
@@ -262,7 +261,12 @@ namespace Beamable
 		private IHeartbeatService _heartbeatService;
 		private BeamableBehaviour _behaviour;
 		private OfflineCache _offlineCache;
-
+		private static bool IsDefaultPlayerCode(string code) => DefaultPlayerCode == code;
+#if BEAMABLE_ENABLE_BEAM_CONTEXT_DEFAULT_OVERRIDE
+		private static string DefaultPlayerCode { get; set; }
+#else
+		private static string DefaultPlayerCode => string.Empty;
+#endif
 		#endregion
 
 		#region events
@@ -293,7 +297,7 @@ namespace Beamable
 		/// <returns>New instance of the <see cref="BeamContext"/></returns>
 		public static BeamContext CreateAuthorizedContext(string playerCode, TokenResponse token)
 		{
-			bool isDefault = string.IsNullOrWhiteSpace(playerCode);
+			bool isDefault = IsDefaultPlayerCode(playerCode);
 			if (isDefault || _playerCodeToContext.ContainsKey(playerCode))
 			{
 #if UNITY_EDITOR
@@ -749,8 +753,10 @@ namespace Beamable
 			IDependencyBuilder dependencyBuilder = null
 			)
 		{
+
 			dependencyBuilder = dependencyBuilder ?? Beam.DependencyBuilder;
-			playerCode = playerCode ?? "";
+
+			playerCode ??= DefaultPlayerCode;
 
 			// there should only be one context per playerCode.
 			if (_playerCodeToContext.TryGetValue(playerCode, out var existingContext))
@@ -762,6 +768,13 @@ namespace Beamable
 
 				return existingContext;
 			}
+
+#if BEAMABLE_ENABLE_BEAM_CONTEXT_DEFAULT_OVERRIDE
+			if (_playerCodeToContext.Count == 0)
+			{
+				DefaultPlayerCode = playerCode;
+			}
+#endif
 
 			var ctx = new BeamContext();
 			ctx.Init(playerCode, beamable, dependencyBuilder);

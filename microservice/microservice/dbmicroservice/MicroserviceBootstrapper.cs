@@ -13,7 +13,6 @@ using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
 using Beamable.Common.Scheduler;
-using Beamable.Server;
 using Beamable.Server.Api;
 using Beamable.Server.Api.Announcements;
 using Beamable.Server.Api.Calendars;
@@ -40,7 +39,6 @@ using Beamable.Server.Content;
 using Beamable.Server.Ecs;
 using Core.Server.Common;
 using microservice;
-using microservice.Common;
 using microservice.dbmicroservice;
 using Microsoft.Extensions.DependencyInjection;
 using NetMQ;
@@ -55,7 +53,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
-using System.Threading;
 using Constants = Beamable.Common.Constants;
 using Debug = UnityEngine.Debug;
 
@@ -186,11 +183,14 @@ namespace Beamable.Server
 
         public static ReflectionCache ConfigureReflectionCache()
         {
-	        
 	        var reflectionCache = new ReflectionCache();
 	        var contentTypeReflectionCache = new ContentTypeReflectionCache();
+	        var mongoIndexesReflectionCache = new MongoIndexesReflectionCache();
+	        
 	        reflectionCache.RegisterTypeProvider(contentTypeReflectionCache);
 	        reflectionCache.RegisterReflectionSystem(contentTypeReflectionCache);
+	        reflectionCache.RegisterTypeProvider(mongoIndexesReflectionCache);
+	        reflectionCache.RegisterReflectionSystem(mongoIndexesReflectionCache);
 	        reflectionCache.SetStorage(new BeamHintGlobalStorage());
 
 	        var relevantAssemblyNames = AppDomain.CurrentDomain.GetAssemblies().Where(asm => !asm.GetName().Name.StartsWith("System.") &&
@@ -486,8 +486,8 @@ namespace Beamable.Server
         public static async Task Start<TMicroService>() where TMicroService : Microservice
         {
 	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
-	        var envArgs = new EnviornmentArgs();
-			
+	        var envArgs = new EnvironmentArgs();
+
 	        var pipeSink = ConfigureLogging(envArgs, attribute);
 	        ConfigureUncaughtExceptions();
 	        ConfigureUnhandledError();

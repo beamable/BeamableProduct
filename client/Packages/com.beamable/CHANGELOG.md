@@ -5,7 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.18.1]
+## [Unreleased]
+
+## [1.19.0]
 
 ### Fixed
 
@@ -16,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Changed the unknown `PaymentService.ProviderId` value from "bogus" to "unknown".
+- Payment ProviderId can be changed by injecting a custom `IPaymentServiceOptions` into the Beam Context scope.
 - `Promise.Sequence` return `List<T>` in the same order as input `List<Promise<T>>`.
 - `PlayerAccounts.Current` is a distinct instance from any element in the `PlayerAccounts` list.
 - `PlayerPrefs` are no longer the source of truth for CID/PID. Instead, use the `IRuntimeConfigProvider`.
@@ -24,6 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Broken Console commands, `config set`, `config reset`, and `config useful`.
 - `ConfigDatabase` is deprecated.  
+
+### Added
+
+- Script symbol, `BEAMABLE_ENABLE_BEAM_CONTEXT_DEFAULT_OVERRIDE` will set `BeamContext.Default`'s PlayerCode to the PlayerCode used to creat the first `BeamContext`, such as through `BeamContext.ForPlayer()`.
 
 ## [1.18.0]
 
