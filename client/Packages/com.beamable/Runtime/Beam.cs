@@ -197,6 +197,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<ICloudDataApi>(provider => provider.GetService<CloudDataService>());
 			DependencyBuilder.AddSingleton<CloudDataApi>(provider => provider.GetService<CloudDataService>());
 			DependencyBuilder.AddSingleton<PaymentService>();
+			DependencyBuilder.AddSingleton<IPaymentServiceOptions, DefaultPaymentServiceOptions>();
 			DependencyBuilder.AddSingleton<GroupsService>();
 			DependencyBuilder.AddSingleton<EventsService>();
 			DependencyBuilder.AddSingleton<ITournamentApi>(p => p.GetService<TournamentService>());

@@ -28,41 +28,17 @@ namespace Beamable.Api.Payments
 	public class PaymentService : PaymentsApi
 	{
 		private IPlatformService _platform;
+		private readonly IPaymentServiceOptions _options;
 
-		public PaymentService(IPlatformService platform, IPlatformRequester requester) : base(requester)
+		public PaymentService(IPlatformService platform, IPlatformRequester requester, IPaymentServiceOptions options) : base(requester)
 		{
 			_platform = platform;
+			_options = options;
 			_requester = requester;
 			platform.Notification.Subscribe("commerce.coupons_updated", payload =>
 			{
 				RefreshCoupons();
 			});
-		}
-
-		private static string ProviderId
-		{
-			get
-			{
-				switch (Application.platform)
-				{
-					case RuntimePlatform.IPhonePlayer:
-						return "itunes";
-					case RuntimePlatform.Android:
-						return "googleplay";
-					case RuntimePlatform.WindowsPlayer:
-						return "windows";
-					case RuntimePlatform.OSXPlayer:
-						return "windows";  // We return "windows" instead of "macos" because the backend API supports "windows" as an ID but does not support "macos" and we do not want this to trickle through to the "unknown" case.
-					default:
-#if UNITY_EDITOR
-						return "test";
-#elif USE_STEAMWORKS
-						return "steam";
-#else
-						return "unknown";
-#endif
-				}
-			}
 		}
 
 		/// <summary>
@@ -74,7 +50,7 @@ namespace Beamable.Api.Payments
 		{
 			return _requester.Request<EmptyResponse>(
 			   Method.POST,
-			   $"/basic/payments/{ProviderId}/purchase/track",
+			   $"/basic/payments/{_options.ProviderId}/purchase/track",
 			   trackPurchaseRequest
 			);
 		}
@@ -87,7 +63,7 @@ namespace Beamable.Api.Payments
 		{
 			return _requester.Request<PurchaseResponse>(
 			   Method.POST,
-			   $"/basic/payments/{ProviderId}/purchase/begin",
+			   $"/basic/payments/{_options.ProviderId}/purchase/begin",
 			   new BeginPurchaseRequest(purchaseId)
 			);
 		}
@@ -101,7 +77,7 @@ namespace Beamable.Api.Payments
 		{
 			return _requester.Request<EmptyResponse>(
 			   Method.POST,
-			   $"/basic/payments/{ProviderId}/purchase/complete",
+			   $"/basic/payments/{_options.ProviderId}/purchase/complete",
 			   new CompleteTransactionRequest(transaction)
 			);
 		}
@@ -114,7 +90,7 @@ namespace Beamable.Api.Payments
 		{
 			return _requester.Request<EmptyResponse>(
 			   Method.POST,
-			   $"/basic/payments/{ProviderId}/purchase/cancel",
+			   $"/basic/payments/{_options.ProviderId}/purchase/cancel",
 			   new CancelPurchaseRequest(txid)
 			);
 		}
@@ -128,7 +104,7 @@ namespace Beamable.Api.Payments
 		{
 			return _requester.Request<EmptyResponse>(
 			   Method.POST,
-			   $"/basic/payments/{ProviderId}/purchase/fail",
+			   $"/basic/payments/{_options.ProviderId}/purchase/fail",
 			   new FailPurchaseRequest(txid, reason)
 			);
 		}
