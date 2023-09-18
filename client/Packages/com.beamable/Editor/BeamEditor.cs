@@ -120,6 +120,8 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<EditorStorageLayer>();
 			DependencyBuilder.AddSingleton<IBeamableFilesystemAccessor, EditorFilesystemAccessor>();
 			DependencyBuilder.AddGlobalStorage<AccountService, EditorStorageLayer>();
+			DependencyBuilder.AddGlobalStorage<DotnetContext, EditorStorageLayer>();
+			DependencyBuilder.AddGlobalStorage<BeamCliInstaller, EditorStorageLayer>();
 			DependencyBuilder.AddSingleton<IAccountService>(p => p.GetService<AccountService>());
 
 			DependencyBuilder.AddSingleton<BeamCommands>();
