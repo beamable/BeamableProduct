@@ -129,19 +129,6 @@ namespace Beamable.Server
 
 	public class EnvironmentArgs : IMicroserviceArgs
 	{
-		public string CustomerID => Environment.GetEnvironmentVariable("CID");
-		public string ProjectName => Environment.GetEnvironmentVariable("PID");
-		public IDependencyProviderScope ServiceScope { get; }
-		public int HealthPort => GetIntFromEnvironmentVariable("HEALTH_PORT", Constants.Features.Services.HEALTH_PORT);
-		public string Host => Environment.GetEnvironmentVariable("HOST");
-		public string Secret => Environment.GetEnvironmentVariable("SECRET");
-		public string NamePrefix => Environment.GetEnvironmentVariable("NAME_PREFIX") ?? "";
-		public string SdkVersionExecution => Environment.GetEnvironmentVariable("BEAMABLE_SDK_VERSION_EXECUTION") ?? "";
-		public bool WatchToken => IsEnvironmentVariableTrue("WATCH_TOKEN");
-
-		public bool DisableCustomInitializationHooks =>
-			IsEnvironmentVariableTrue("DISABLE_CUSTOM_INITIALIZATION_HOOKS");
-
 		static bool IsEnvironmentVariableTrue(string key) =>
 			(Environment.GetEnvironmentVariable(key)?.ToLowerInvariant() ?? string.Empty) == "true";
 
@@ -164,6 +151,19 @@ namespace Beamable.Server
 
 			return val;
 		}
+		
+		public string CustomerID => Environment.GetEnvironmentVariable("CID");
+		public string ProjectName => Environment.GetEnvironmentVariable("PID");
+		public IDependencyProviderScope ServiceScope { get; }
+		public int HealthPort => GetIntFromEnvironmentVariable("HEALTH_PORT", Constants.Features.Services.HEALTH_PORT);
+		public string Host => Environment.GetEnvironmentVariable("HOST");
+		public string Secret => Environment.GetEnvironmentVariable("SECRET");
+		public string NamePrefix => Environment.GetEnvironmentVariable("NAME_PREFIX") ?? "";
+		public string SdkVersionExecution => Environment.GetEnvironmentVariable("BEAMABLE_SDK_VERSION_EXECUTION") ?? "";
+		public bool WatchToken => IsEnvironmentVariableTrue("WATCH_TOKEN");
+
+		public bool DisableCustomInitializationHooks =>
+			IsEnvironmentVariableTrue("DISABLE_CUSTOM_INITIALIZATION_HOOKS");
 
 		public int RequestCancellationTimeoutSeconds => GetIntFromEnvironmentVariable("REQUEST_TIMEOUT_SECONDS", 10);
 
