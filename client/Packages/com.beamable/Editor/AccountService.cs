@@ -223,7 +223,7 @@ namespace Beamable.Editor
 				if (GetAccountForCid(nextCid, out var account))
 				{
 					needsWrite = true;
-					return account.CustomerView.Alias;
+					return account?.CustomerView?.Alias;
 				}
 
 				return null;
