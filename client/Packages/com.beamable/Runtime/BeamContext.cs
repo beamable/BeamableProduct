@@ -383,14 +383,14 @@ namespace Beamable
 
 		[Obsolete("You do not need to include the cid or pid anymore")]
 		protected void Init(string cid,
-		                    string pid,
-		                    string playerCode,
-		                    BeamableBehaviour behaviour,
-		                    IDependencyBuilder builder)
+							string pid,
+							string playerCode,
+							BeamableBehaviour behaviour,
+							IDependencyBuilder builder)
 		{
 			Init(playerCode, behaviour, builder);
 		}
-		
+
 		protected void Init(string playerCode,
 							BeamableBehaviour behaviour,
 							IDependencyBuilder builder)
