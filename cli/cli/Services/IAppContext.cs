@@ -52,6 +52,7 @@ public class DefaultAppContext : IAppContext
 	private readonly ConfigService _configService;
 	private readonly CliEnvironment _environment;
 	private readonly EnableReporterOption _reporterOption;
+	private readonly SkipStandaloneValidationOption _skipValidationOption;
 	public bool IsDryRun { get; private set; }
 	public bool UseFatalAsReportingChannel { get; private set; }
 
@@ -70,7 +71,7 @@ public class DefaultAppContext : IAppContext
 
 	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, HostOption hostOption,
 		AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption, ConfigDirOption configDirOption,
-		ConfigService configService, CliEnvironment environment, EnableReporterOption reporterOption)
+		ConfigService configService, CliEnvironment environment, EnableReporterOption reporterOption, SkipStandaloneValidationOption skipValidationOption)
 	{
 		_dryRunOption = dryRunOption;
 		_cidOption = cidOption;
@@ -83,6 +84,7 @@ public class DefaultAppContext : IAppContext
 		_configService = configService;
 		_environment = environment;
 		_reporterOption = reporterOption;
+		_skipValidationOption = skipValidationOption;
 	}
 
 	public void Apply(BindingContext bindingContext)
