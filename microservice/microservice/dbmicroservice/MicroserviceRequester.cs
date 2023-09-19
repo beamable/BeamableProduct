@@ -356,7 +356,7 @@ namespace Beamable.Server
 
    }
 
-   public class MicroserviceRequester : IBeamableRequester
+   public class MicroserviceRequester : IRequester
    {
       private readonly IMicroserviceArgs _env;
       protected readonly RequestContext _requestContext;
@@ -532,6 +532,11 @@ namespace Beamable.Server
       public IBeamableRequester WithAccessToken(TokenResponse tokenResponse)
       {
          throw new NotImplementedException();
+      }
+
+      public Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> req)
+      {
+	      throw new NotImplementedException();
       }
 
       public string EscapeURL(string url)
