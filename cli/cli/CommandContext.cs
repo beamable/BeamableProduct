@@ -158,6 +158,8 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider
 	protected virtual void BindBaseContext(IServiceProvider provider, TArgs args, BindingContext bindingContext)
 	{
 		args.Dryrun = bindingContext.ParseResult.GetValueForOption(provider.GetRequiredService<DryRunOption>());
+		args.IgnoreStandaloneValidation =
+			bindingContext.ParseResult.GetValueForOption(provider.GetRequiredService<SkipStandaloneValidationOption>());
 	}
 
 	public class Binder : BinderBase<TArgs>
