@@ -48,7 +48,8 @@ namespace Beamable.Editor.BeamCli.Commands
 				host = BeamableEnvironment.ApiUrl,
 				refreshToken = _requester?.AccessToken?.RefreshToken,
 				log = "Information",
-				reporterUseFatal = true
+				reporterUseFatal = true,
+				skipStandaloneValidation = true
 			};
 			return beamArgs;
 		}

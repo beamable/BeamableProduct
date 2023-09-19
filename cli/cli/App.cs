@@ -113,6 +113,7 @@ public class App
 
 		// add global options
 		Commands.AddSingleton<DryRunOption>();
+		Commands.AddSingleton<SkipStandaloneValidationOption>();
 		Commands.AddSingleton<CidOption>();
 		Commands.AddSingleton<PidOption>();
 		Commands.AddSingleton<ConfigDirOption>();
@@ -135,6 +136,7 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
 			root.AddGlobalOption(provider.GetRequiredService<EnableReporterOption>());
+			root.AddGlobalOption(provider.GetRequiredService<SkipStandaloneValidationOption>());
 			root.Description = "A CLI for interacting with the Beamable Cloud.";
 			return root;
 		});
