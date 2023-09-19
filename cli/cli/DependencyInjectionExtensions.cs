@@ -42,7 +42,8 @@ public static class DependencyInjectionExtensions
 					resultProvider.Reporter = new DataReporterService(args.AppContext);
 				}
 
-				if (command is not IStandaloneCommand && args.ConfigService.ConfigFileExists.GetValueOrDefault(false) != true)
+				
+				if (!args.IgnoreStandaloneValidation && command is not IStandaloneCommand && args.ConfigService.ConfigFileExists.GetValueOrDefault(false) != true)
 				{
 					throw new CliException("Could not find any .beamable config folder which is required for this command.");
 				}
