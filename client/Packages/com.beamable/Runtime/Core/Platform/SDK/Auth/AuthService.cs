@@ -129,7 +129,7 @@ namespace Beamable.Api.Auth
 		const string DEVICE_ID_URI = ACCOUNT_URL + "/me";
 		const string DEVICE_DELETE_URI = ACCOUNT_URL + "/me/device";
 
-		public AuthService(IBeamableRequester requester, IDeviceIdResolver deviceIdResolver = null, IAuthSettings settings = null) : base(requester, settings)
+		public AuthService(IRequester requester, IDeviceIdResolver deviceIdResolver = null, IAuthSettings settings = null) : base(requester, settings)
 		{
 			_deviceIdResolver = deviceIdResolver ?? new DefaultDeviceIdResolver();
 		}

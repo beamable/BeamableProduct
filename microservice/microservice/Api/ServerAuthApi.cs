@@ -14,7 +14,7 @@ namespace Beamable.Server.Api
       public IBeamableRequester Requester { get; }
       public RequestContext Context { get; }
 
-      public ServerAuthApi(IBeamableRequester requester, RequestContext context) : base(requester)
+      public ServerAuthApi(IRequester requester, RequestContext context) : base(requester)
       {
          Requester = requester;
          Context = context;

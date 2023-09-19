@@ -223,6 +223,7 @@ namespace Beamable.Server
 			        .AddScoped<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
 			        .AddScoped<IRealmInfo>(provider => provider.GetService<IMicroserviceArgs>())
 			        .AddScoped<IBeamableRequester>(p => p.GetService<MicroserviceRequester>())
+			        .AddScoped<IRequester>(p => p.GetService<MicroserviceRequester>())
 			        .AddScoped<IHttpRequester, MicroserviceHttpRequester>(() =>
 			        {
 				        HttpClientHandler handler = new HttpClientHandler()
