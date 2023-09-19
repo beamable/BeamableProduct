@@ -125,9 +125,8 @@ namespace Beamable.Server
 
 					Promise promise = Convert(collectionGenericObject, mongoCollectionGenericType);
 					await promise;
-
-					MethodInfo resultFromPromiseMethod = GetType().GetMethod(nameof(GetResultFromPromise),
-						BindingFlags.Instance | BindingFlags.Public);
+					MethodInfo resultFromPromiseMethod = typeof(MongoIndexesReflectionCache).GetMethod(nameof(GetResultFromPromise),
+						BindingFlags.Static | BindingFlags.Public);
 					MethodInfo resultFromPromiseGeneric =
 						resultFromPromiseMethod?.MakeGenericMethod(mongoCollectionGenericType);
 					object collection = resultFromPromiseGeneric?.Invoke(null, new[] { collectionGenericObject });
