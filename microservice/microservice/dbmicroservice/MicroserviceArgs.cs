@@ -122,13 +122,12 @@ namespace Beamable.Server
 				EnableDangerousDeflateOptions = args.EnableDangerousDeflateOptions,
 				MetadataUrl = args.MetadataUrl
 			};
-
 			configurator?.Invoke(next);
 			return next;
 		}
 	}
 
-	public class EnviornmentArgs : IMicroserviceArgs
+	public class EnvironmentArgs : IMicroserviceArgs
 	{
 		static bool IsEnvironmentVariableTrue(string key) =>
 			(Environment.GetEnvironmentVariable(key)?.ToLowerInvariant() ?? string.Empty) == "true";
@@ -152,7 +151,7 @@ namespace Beamable.Server
 
 			return val;
 		}
-
+		
 		public string CustomerID => Environment.GetEnvironmentVariable("CID");
 		public string ProjectName => Environment.GetEnvironmentVariable("PID");
 		public IDependencyProviderScope ServiceScope { get; }

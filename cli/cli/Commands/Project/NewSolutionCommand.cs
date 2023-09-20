@@ -12,6 +12,7 @@ public class SolutionCommandArgs : CommandArgs
 	public ServiceName ProjectName;
 	public bool SkipCommon;
 	public string SpecifiedVersion;
+	public bool Disabled;
 }
 
 public class SkipCommonOptionFlag : ConfigurableOptionFlag
@@ -37,7 +38,7 @@ public class NewSolutionCommandArgs : SolutionCommandArgs
 	public string directory;
 }
 
-public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
+public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>, IStandaloneCommand
 {
 	private readonly InitCommand _initCommand;
 	private readonly AddUnityClientOutputCommand _addUnityCommand;
@@ -60,9 +61,9 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 		AddOption(new SkipCommonOptionFlag(), (args, i) => args.SkipCommon = i);
 		AddOption(new Option<ServiceName>("--solution-name", "The name of the solution of the new project"),
 			(args, i) => args.SolutionName = i);
-		AddOption(
-			new SpecificVersionOption(),
-			(args, i) => args.SpecifiedVersion = i);
+		AddOption(new SpecificVersionOption(), (args, i) => args.SpecifiedVersion = i);
+		AddOption(new Option<bool>("--disable", "Create service that is disabled on publish"),
+			(args, i) => args.Disabled = i);
 	}
 
 	public override async Task Handle(NewSolutionCommandArgs args)
@@ -103,7 +104,8 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>
 			projectDirectory,
 			projectDockerfilePath,
 			new string[] { },
-			CancellationToken.None);
+			CancellationToken.None,
+			!args.Disabled);
 
 		if (!args.SkipCommon)
 		{

@@ -11,12 +11,12 @@ namespace Beamable.Common.Api.Auth
 		protected const string TOKEN_URL = "/basic/auth/token";
 		public const string ACCOUNT_URL = "/basic/accounts";
 
-		private IBeamableRequester _requester;
+		private IRequester _requester;
 		private readonly IAuthSettings _settings;
 
 		public IBeamableRequester Requester => _requester;
 
-		public AuthApi(IBeamableRequester requester, IAuthSettings settings = null)
+		public AuthApi(IRequester requester, IAuthSettings settings = null)
 		{
 			_requester = requester;
 			_settings = settings ?? new DefaultAuthSettings();
@@ -51,11 +51,15 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<bool> IsThirdPartyAvailable(AuthThirdParty thirdParty, string token)
 		{
-			string query = _requester.EscapeURL($"thirdParty={thirdParty.GetString()}&token={token}");
+			var qb = _requester.CreateQueryArgBuilder(new Dictionary<string, string>
+			{
+				["thirdParty"] = thirdParty.GetString(),
+				["token"] = token
+			});
 			return _requester
 				   .Request<AvailabilityResponse>(
 					   Method.GET,
-					   $"{ACCOUNT_URL}/available/third-party?{query}", null,
+					   $"{ACCOUNT_URL}/available/third-party{qb}", null,
 					   false)
 				   .Map(resp => resp.available);
 		}
@@ -146,9 +150,13 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<User> RemoveThirdPartyAssociation(AuthThirdParty thirdParty, string token)
 		{
-			string query = _requester.EscapeURL($"thirdParty={thirdParty.GetString()}&token={token}");
+			var qb = _requester.CreateQueryArgBuilder(new Dictionary<string, string>
+			{
+				["thirdParty"] = thirdParty.GetString(),
+				["token"] = token
+			});
 			return _requester.Request<User>(Method.DELETE,
-											$"{ACCOUNT_URL}/me/third-party?{query}",
+											$"{ACCOUNT_URL}/me/third-party{qb}",
 											null, true);
 		}
 
@@ -229,8 +237,16 @@ namespace Beamable.Common.Api.Auth
 																	  string alias)
 		{
 			var request = new CustomerRegistrationRequest(email, password, projectName, customerName, alias);
-			return _requester.Request<CustomerRegistrationResponse>(Method.POST, "/basic/realms/customer", request,
-																	false);
+			return _requester.BeamableRequest(new SDKRequesterOptions<CustomerRegistrationResponse>
+			{
+				method = Method.POST,
+				body = request,
+				disableScopeHeaders = true,
+				includeAuthHeader = true,
+				uri = "/basic/realms/customer"
+			});
+			// return _requester.Request<CustomerRegistrationResponse>(Method.POST, "/basic/realms/customer", request,
+																	// false);
 		}
 
 		public Promise<CurrentProjectResponse> GetCurrentProject()
@@ -398,14 +414,18 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<bool> IsExternalIdentityAvailable(string providerService, string externalToken, string providerNamespace = null)
 		{
-			string query = _requester.EscapeURL($"provider_service={providerService}&user_id={externalToken}");
+			var qb = Requester.CreateQueryArgBuilder(new Dictionary<string, string>
+			{
+				["provider_service"] = providerService,
+				["user_id"] = externalToken,
+			});
 
 			if (!string.IsNullOrWhiteSpace(providerNamespace))
-				query += _requester.EscapeURL($"&{providerNamespace}");
+				qb.Add("provider_namespace", providerNamespace);
 
 			return Requester.Request<AvailabilityResponse>(
 				Method.GET,
-				$"{ACCOUNT_URL}/available/external_identity?{query}",
+				$"{ACCOUNT_URL}/available/external_identity{qb}",
 				null, false).Map(response => response.available);
 		}
 	}

@@ -10,7 +10,7 @@ public class VersionListCommandArgs : CommandArgs
 	public bool includeRc;
 	public bool includeProd;
 }
-public class VersionListCommand : AppCommand<VersionListCommandArgs>
+public class VersionListCommand : AppCommand<VersionListCommandArgs>, IStandaloneCommand
 {
 	public VersionListCommand() : base("list", "Show the most recent available versions")
 	{

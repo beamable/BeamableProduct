@@ -46,6 +46,7 @@ namespace Beamable.Common
 				public const string CHECKBOX_TOOLTIP = "Enable/disable the service";
 				public const string CHECKBOX_TOOLTIP_ARCHIVED_STORAGE = "At least one dependent StorageObject is archived.";
 				public const string CHECKBOX_TOOLTIP_DEPENDENCY_ON_SERVICE = "Depends on at least one Microservice.";
+				public const string CHECKBOX_TOOLTIP_NO_DEP_ENABLED = "No enabled services have dependencies to this storage.";
 
 				public const int CMD_RESULT_CODE_DOCKER_NOT_RUNNING = 500;
 				public const int CMD_RESULT_CODE_CONTAINER_NOT_RUNNING = 501;
