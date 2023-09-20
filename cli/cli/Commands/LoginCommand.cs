@@ -59,10 +59,17 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 				response = await _authApi.Login(username, password, false, args.customerScoped)
 					.ShowLoading("Authorizing...");
 			}
+			catch (RequesterException e) when (e.RequestError.status == 401) // for invalid credentials
+			{
+				Log.Verbose(e.Message + " " + e.StackTrace);
+				BeamableLogger.LogError($"Login failed: {e.RequestError.message} Try again");
+				await Handle(args);
+				return;
+			}
 			catch (Exception e)
 			{
 				Log.Verbose(e.Message + " " + e.StackTrace);
-				BeamableLogger.LogError($"Login failed with Exception: {e.Message}");
+				BeamableLogger.LogError($"Login failed: {e.Message}");
 				return;
 			}
 
@@ -75,12 +82,19 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 			{
 				response = await _authApi.LoginRefreshToken(args.refreshToken).ShowLoading("Authorizing...");
 			}
+			catch (RequesterException e)
+			{
+				Log.Verbose(e.Message + " " + e.StackTrace);
+				AnsiConsole.WriteLine($"Login failed: {e.RequestError.message} Try again");
+				await Handle(args);
+				return;
+			}
 			catch (Exception e)
 			{
+				Log.Verbose(e.Message + " " + e.StackTrace);
 				BeamableLogger.LogError($"Login failed with Exception: {e.Message}");
 				return;
 			}
-
 		}
 		Successful = HandleResponse(args, response);
 	}

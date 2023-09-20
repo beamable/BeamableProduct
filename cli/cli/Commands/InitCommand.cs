@@ -14,13 +14,14 @@ public class InitCommandArgs : LoginCommandArgs
 	public string pid;
 }
 
-public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStreamResultChannel, InitCommandResult>
+public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStreamResultChannel, InitCommandResult>, IStandaloneCommand
 {
 	private readonly LoginCommand _loginCommand;
 	private IRealmsApi _realmsApi;
 	private IAliasService _aliasService;
 	private IAppContext _ctx;
 	private ConfigService _configService;
+	private bool _retry = false;
 
 	public InitCommand(LoginCommand loginCommand)
 		: base("init", "Initialize a new Beamable project in the current directory")
@@ -52,9 +53,8 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 		_aliasService = args.AliasService;
 		_realmsApi = args.RealmsApi;
 
-		AnsiConsole.Write(
-			new FigletText("Beam")
-				.Color(Color.Red));
+		if (!_retry) AnsiConsole.Write(new FigletText("Beam").Color(Color.Red));
+		else _ctx.Set(string.Empty, _ctx.Pid, _ctx.Host);
 
 		var host = _configService.SetConfigString(Constants.CONFIG_PLATFORM, GetHost(args));
 		var cid = await GetCid(args);
@@ -62,18 +62,33 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 
 		if (!AliasHelper.IsCid(cid))
 		{
-			var aliasResolve = await _aliasService.Resolve(cid).ShowLoading("Resolving alias...");
-			cid = aliasResolve.Cid.GetOrElse(() => throw new CliException("Invalid alias"));
+			try
+			{
+				var aliasResolve = await _aliasService.Resolve(cid).ShowLoading("Resolving alias...");
+				cid = aliasResolve.Cid.GetOrElse(() => throw new CliException("Invalid alias"));
+			}
+			catch (RequesterException)
+			{
+				BeamableLogger.LogError($"Organization not found for '{cid}', try again");
+				_retry = true;
+				await Handle(args);
+				return;
+			}
+			catch (Exception e)
+			{
+				BeamableLogger.LogError(e.Message);
+				return;
+			}
 		}
 
 		_configService.SetConfigString(Constants.CONFIG_CID, cid);
 		var success = await GetPidAndAuth(args, cid, host);
 		if (!success)
 		{
-			AnsiConsole.MarkupLine("Failure! :thumbs_down:");
+			AnsiConsole.MarkupLine(":thumbs_down: Failure! try again");
 			return;
 		}
-		AnsiConsole.MarkupLine("Success! :thumbs_up: Here are your connection details");
+		AnsiConsole.MarkupLine(":thumbs_up: Success! Here are your connection details");
 		BeamableLogger.Log(args.ConfigService.ConfigFilePath);
 		BeamableLogger.Log($"cid=[{args.AppContext.Cid}] pid=[{args.AppContext.Pid}]");
 		BeamableLogger.Log(args.ConfigService.PrettyPrint());
@@ -164,6 +179,7 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 			new SelectionPrompt<string>()
 				.Title("What [green]game[/] are you using?")
 				.AddChoices(gameChoices)
+				.AddBeamHightlight()
 		);
 		var game = games.FirstOrDefault(g => g.DisplayName.Replace("[PROD]", "") == gameSelection);
 
@@ -175,6 +191,7 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 			new SelectionPrompt<string>()
 				.Title("What [green]realm[/] are you using?")
 				.AddChoices(realmChoices)
+				.AddBeamHightlight()
 		);
 		var realm = realms.FirstOrDefault(g => g.DisplayName.Replace("[", "").Replace("]", "") == realmSelection);
 		return realm.Pid;
@@ -210,6 +227,7 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 				new SelectionPrompt<string>()
 					.Title("What Beamable [green]environment[/] would you like to use?")
 					.AddChoices(prod, staging, dev, custom)
+					.AddBeamHightlight()
 			);
 
 		// If we were given a host that is a path, let's just return it.

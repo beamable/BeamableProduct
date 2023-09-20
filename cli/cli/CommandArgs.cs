@@ -16,6 +16,7 @@ public abstract class CommandArgs
 	}
 
 	public bool Dryrun { get; set; }
+	public bool IgnoreStandaloneValidation { get; set; }
 	public IServiceProvider Provider { get; set; }
 
 	public IDependencyProvider DependencyProvider => Provider.GetService<IDependencyProvider>();

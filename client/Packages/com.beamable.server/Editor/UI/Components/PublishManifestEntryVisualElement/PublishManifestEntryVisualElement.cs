@@ -35,6 +35,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public bool IsLocal => _isLocal;
 
 		public ServicePublishState PublishState { get; private set; }
+
 		public ILoadingBar LoadingBar
 		{
 			get
@@ -43,6 +44,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				return _loadingBar;
 			}
 		}
+
 		public BeamableCheckboxVisualElement EnableState { get; private set; }
 
 		private Image _checkImage;
@@ -159,18 +161,22 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			Model.Enabled = isEnabled;
 			EnableState.SetWithoutNotify(isEnabled);
-			EnableState.EnableInClassList("enabled", isEnabled);
-			EnableState.EnableInClassList("disabled", !isEnabled);
 
-			var tooltip = CHECKBOX_TOOLTIP;
-			if (!string.IsNullOrWhiteSpace(additionalTooltip))
-				tooltip += $"\n\nOn/Off state is in fixed state due to:\n{additionalTooltip}";
-			_enableColumn.tooltip = tooltip;
-			EnableState.tooltip = tooltip;
+			var tooltip = string.IsNullOrWhiteSpace(additionalTooltip)
+				? CHECKBOX_TOOLTIP
+				: $"On/Off state is in fixed state due to:\n{additionalTooltip}";
+			SetCheckboxTooltip(tooltip);
 
 			if (Model is ManifestEntryModel && !isSilentUpdate)
 				OnEnableStateChanged?.Invoke(Model);
 		}
+
+		public void SetCheckboxTooltip(string value)
+		{
+			_enableColumn.tooltip = value;
+			EnableState.tooltip = value;
+		}
+
 		private void OnLabelSizeChanged(GeometryChangedEvent evt)
 		{
 			var width = evt.newRect.width;
@@ -186,12 +192,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_serviceName.tooltip = string.Empty;
 			_serviceName.text = Model.Name;
 		}
+
 		public void HandlePublishStarted()
 		{
 			EnableState.SetEnabled(false);
 			// _sizeDropdown.SetEnabled(false);
 			_commentField.SetEnabled(false);
 		}
+
 		public void UpdateStatus(ServicePublishState state)
 		{
 			switch (state)
@@ -221,6 +229,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_currentPublishState = CheckImageClasses[state];
 			AddToClassList(_currentPublishState);
 		}
+
 		public int CompareTo(PublishManifestEntryVisualElement other)
 		{
 			if (IsRemote)
@@ -232,6 +241,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			return GetPublishStateOrder(PublishState).CompareTo(GetPublishStateOrder(other.PublishState));
 		}
+
 		public int GetPublishStateOrder(ServicePublishState state)
 		{
 			switch (state)

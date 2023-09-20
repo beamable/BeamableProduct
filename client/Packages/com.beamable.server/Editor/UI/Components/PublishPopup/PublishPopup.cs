@@ -50,12 +50,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 					SelectionIndex = 3;
 					break;
 			}
+
 			if (SelectionIndex != -1)
 				Animate(new Vector3(_offset * SelectionIndex, 0, 0));
 		}
 
-		private void Animate(Vector3 to)
-			=> Animate(to, _animDuration);
+		private void Animate(Vector3 to) => Animate(to, _animDuration);
+
 		private void Animate(Vector3 to, int duration) =>
 			_animatedElement.experimental.animation.Position(to, duration);
 
@@ -79,6 +80,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 	public class PublishPopup : MicroserviceComponent
 	{
 		public new class UxmlFactory : UxmlFactory<PublishPopup, UxmlTraits> { }
+
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			private UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
@@ -136,6 +138,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private ServicePublishStateAnimator _serviceServicePublishStateAnimator;
 
 		public PublishPopup() : base(nameof(PublishPopup)) { }
+
 		public override void Refresh()
 		{
 			base.Refresh();
@@ -231,9 +234,19 @@ namespace Beamable.Editor.Microservice.UI.Components
 					}
 				}
 
+				if (x.Model is StorageEntryModel storageModel)
+				{
+					x.EnableState.SetCheckboxClickable(false);
+					if (!_storageDependsOnServiceRepresentation.ContainsKey(storageModel))
+					{
+						x.UpdateEnableState(false, false, CHECKBOX_TOOLTIP_NO_DEP_ENABLED);
+					}
+				}
+
 				foreach (var dependency in dependencies)
 				{
-					if (!(dependency.Model is StorageEntryModel storageEntryModel) || !(x.Model is ManifestEntryModel serviceModel))
+					if (!(dependency.Model is StorageEntryModel storageEntryModel) ||
+						!(x.Model is ManifestEntryModel serviceModel))
 						continue;
 
 					if (_storageDependsOnServiceRepresentation.ContainsKey(storageEntryModel))
@@ -298,9 +311,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 					return;
 
 				var isAnyDependentServiceEnabled = _storageDependsOnServiceRepresentation[storageEntryModel].Any(y => y.Enabled);
-				x.EnableState.SetEnabled(!isAnyDependentServiceEnabled);
-				if (isAnyDependentServiceEnabled)
-					x.UpdateEnableState(true, additionalTooltip: CHECKBOX_TOOLTIP_DEPENDENCY_ON_SERVICE);
+				var tooltipText = isAnyDependentServiceEnabled
+					? CHECKBOX_TOOLTIP_DEPENDENCY_ON_SERVICE
+					: CHECKBOX_TOOLTIP_NO_DEP_ENABLED;
+				x.UpdateEnableState(isAnyDependentServiceEnabled, false, tooltipText);
+
 			});
 		}
 
@@ -309,6 +324,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			parent.name = "PublishWindowContainer";
 			parent.AddStyleSheet(UssPath);
 		}
+
 		public void PrepareForPublish()
 		{
 			_arrowLeft.SetEnabled(false);
@@ -401,6 +417,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_primarySubmitButton.Disable();
 			OnSubmit?.Invoke(Model, (message) => _logger.Model.Logs.AddMessage(message));
 		}
+
 		private void HandleServiceDeployStatusChanged(IDescriptor descriptor, ServicePublishState state)
 		{
 			if (!_publishManifestElements.TryGetValue(descriptor.Name, out var element))
@@ -418,18 +435,22 @@ namespace Beamable.Editor.Microservice.UI.Components
 					break;
 			}
 		}
+
 		private void HandleServiceDeployProgress(IDescriptor descriptor)
 		{
 			_mainLoadingBar.Progress = CalculateProgress();
 		}
+
 		public void HandleServiceDeployed(IDescriptor descriptor)
 		{
 			EditorPrefs.SetBool(GetPublishedKey(descriptor.Name), true);
 			_servicesToPublish.FirstOrDefault(x => x.Model.Name == descriptor.Name)?.LoadingBar?.UpdateProgress(1);
 			HandleServiceDeployProgress(descriptor);
 		}
+
 		private void HandleDeployFailed(ManifestModel _, string __) => HandleDeployEnded(false);
 		private void HandleDeploySuccess(ManifestModel _, int __) => HandleDeployEnded(true);
+
 		private void HandleDeployEnded(bool success)
 		{
 			if (success)
@@ -454,6 +475,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 					continue;
 				desc.Logs.OnMessagesUpdated -= cb;
 			}
+
 			_logForwardActions.Clear();
 			base.OnDestroy();
 		}

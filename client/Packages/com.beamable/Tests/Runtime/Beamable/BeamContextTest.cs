@@ -56,6 +56,8 @@ namespace Beamable.Tests.Runtime
 			builder.RemoveIfExists<IBeamablePurchaser>();
 			builder.RemoveIfExists<IContentApi>();
 			builder.AddSingleton<IContentApi>(MockContent);
+			builder.RemoveIfExists<IRuntimeConfigProvider>();
+			builder.AddSingleton<IRuntimeConfigProvider>(new TestConfigProvider());
 			builder.RemoveIfExists<IBeamableFilesystemAccessor>();
 			builder.AddSingleton<IBeamableFilesystemAccessor>(() =>
 			{

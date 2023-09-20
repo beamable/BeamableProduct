@@ -7,6 +7,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Common.Semantics;
 using cli.Commands.Project;
 using cli.Content;
+using cli.Content.Tag;
 using cli.Docs;
 using cli.Dotnet;
 using cli.Services;
@@ -22,7 +23,6 @@ using Serilog.Sinks.SpectreConsole;
 using Spectre.Console;
 using System.CommandLine;
 using System.CommandLine.Builder;
-using System.CommandLine.Help;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 
@@ -113,6 +113,7 @@ public class App
 
 		// add global options
 		Commands.AddSingleton<DryRunOption>();
+		Commands.AddSingleton<SkipStandaloneValidationOption>();
 		Commands.AddSingleton<CidOption>();
 		Commands.AddSingleton<PidOption>();
 		Commands.AddSingleton<ConfigDirOption>();
@@ -135,6 +136,7 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
 			root.AddGlobalOption(provider.GetRequiredService<EnableReporterOption>());
+			root.AddGlobalOption(provider.GetRequiredService<SkipStandaloneValidationOption>());
 			root.Description = "A CLI for interacting with the Beamable Cloud.";
 			return root;
 		});
@@ -214,6 +216,10 @@ public class App
 		Commands.AddCommand<ContentPublishCommand, ContentPublishCommandArgs, ContentCommand>();
 		Commands.AddCommand<ContentResetCommand, ContentResetCommandArgs, ContentCommand>();
 
+		Commands.AddCommand<ContentTagCommand, ContentTagCommandArgs, ContentCommand>();
+		Commands.AddCommand<ContentTagAddCommand, ContentTagAddCommandArgs, ContentTagCommand>();
+		Commands.AddCommand<ContentTagRemoveCommand, ContentTagAddCommandArgs, ContentTagCommand>();
+
 		commandConfigurator?.Invoke(Commands);
 
 		// customize
@@ -265,6 +271,9 @@ public class App
 		{
 			switch (ex)
 			{
+				case RequesterException requesterException:
+					Console.WriteLine($"[[{requesterException.Uri}]]request error with response code: {requesterException.Status} and message: {requesterException.RequestError.message}");
+					break;
 				case CliException cliException:
 					if (cliException.ReportOnStdOut)
 					{

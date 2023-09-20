@@ -2,7 +2,6 @@
     "name": "Unity.Beamable.Server.Runtime",
     "references": [
         "Beamable.Config",
-        "Beamable.JsonSerializable",
         "Beamable.SmallerJSON",
         "Beamable.Platform",
         "Unity.Beamable.Runtime.Common",
@@ -15,7 +14,11 @@
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
-    "precompiledReferences": [],
+    "precompiledReferences": [
+        "MongoDB.Driver.dll",
+        "MongoDB.Driver.Core.dll",
+        "MongoDB.Bson.dll"
+    ],
     "autoReferenced": true,
     "defineConstraints": []
 }

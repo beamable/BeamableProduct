@@ -4,6 +4,8 @@
  * TODO: Always run the mongo-express data-explorer tool as part of the local deployment protocol. 
  */
 
+using Serilog;
+
 namespace cli.Services;
 
 public partial class BeamoLocalSystem
@@ -69,9 +71,18 @@ public partial class BeamoLocalSystem
 		// Configures the default mongo image's health check. 
 		var cmdStr = $"--interval=5s --timeout=3s CMD /etc/init.d/mongodb status || exit 1";
 
-		// Creates and runs the container. This container will auto destroy when it stops.
-		// TODO: Make the auto destruction optional to help CS identify issues in the wild.
-		await CreateAndRunContainer(imageId, containerName, cmdStr, true, portBindings, volumes, bindMounts, environmentVariables);
+		try
+		{
+			// Creates and runs the container. This container will auto destroy when it stops.
+			// TODO: Make the auto destruction optional to help CS identify issues in the wild.
+			await CreateAndRunContainer(imageId, containerName, cmdStr, true, portBindings, volumes, bindMounts,
+				environmentVariables);
+		}
+		catch (Exception e)
+		{
+			Log.Error("An error occured while deploying service: " + serviceDefinition.BeamoId);
+			Log.Error(e.Message);
+		}
 	}
 
 	/// <summary>
