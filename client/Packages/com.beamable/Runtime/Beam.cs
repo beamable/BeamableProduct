@@ -153,6 +153,7 @@ namespace Beamable
 				(manager, provider) => manager.Initialize(provider.GetService<IPlatformService>(), provider));
 			DependencyBuilder.AddSingleton<IBeamableRequester, PlatformRequester>(
 				provider => provider.GetService<PlatformRequester>());
+			DependencyBuilder.AddSingleton<IRequester>(p => p.GetService<PlatformRequester>());
 			DependencyBuilder.AddSingleton<IHttpRequester>(p => p.GetService<PlatformRequester>());
 			DependencyBuilder.AddSingleton(BeamableEnvironment.Data);
 			DependencyBuilder.AddSingleton<IPlatformRequesterHostResolver>(() => BeamableEnvironment.Data);
@@ -210,6 +211,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<ICloudDataApi>(provider => provider.GetService<CloudDataService>());
 			DependencyBuilder.AddSingleton<CloudDataApi>(provider => provider.GetService<CloudDataService>());
 			DependencyBuilder.AddSingleton<PaymentService>();
+			DependencyBuilder.AddSingleton<IPaymentServiceOptions, DefaultPaymentServiceOptions>();
 			DependencyBuilder.AddSingleton<GroupsService>();
 			DependencyBuilder.AddSingleton<EventsService>();
 			DependencyBuilder.AddSingleton<ITournamentApi>(p => p.GetService<TournamentService>());
