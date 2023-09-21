@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changed the unknown `PaymentService.ProviderId` value from "bogus" to "unknown".
 - Payment ProviderId can be changed by injecting a custom `IPaymentServiceOptions` into the Beam Context scope.
 - `Promise.Sequence` return `List<T>` in the same order as input `List<Promise<T>>`.
-- `PlayerAccounts.Current` is a distinct instance from any element in the `PlayerAccounts` list.
+- `PlayerAccounts.Current` is its own instance, as opposed to a reference into the `PlayerAccounts` list.
 - `PlayerPrefs` are no longer the source of truth for CID/PID. Instead, use the `IRuntimeConfigProvider`.
 - `ConfigDatabase` is no longer used to store and load CID/PID. 
 
