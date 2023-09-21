@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ConfigDatabase` is no longer used to store and load CID/PID. 
 
 ### Removed
-- Broken Console commands, `config set`, `config reset`, and `config useful`.
+- Broken Console commands, `config set`, `config reset`, and `config usefile`.
 - `ConfigDatabase` is deprecated.  
 
 ### Added
