@@ -104,7 +104,7 @@ namespace Beamable
 		}
 
 		private static DefaultRuntimeConfigProvider _runtimeConfigProvider;
-		
+
 		public static ReflectionCache ReflectionCache;
 		public static IBeamHintGlobalStorage RuntimeGlobalStorage;
 
