@@ -107,7 +107,7 @@ namespace Beamable.Common.Content
 
 				/* PRIMITIVE TYPES... */
 				case Enum e:
-					return Convert.ChangeType(arg, typeof(int)).ToString();
+					return Json.Serialize(arg.ToString(), new StringBuilder());
 				case bool b:
 				case long l:
 				case string s:
@@ -294,8 +294,10 @@ namespace Beamable.Common.Content
 					return contentRef;
 
 				/* PRIMITIVES TYPES */
-				case string enumValue when typeof(Enum).IsAssignableFrom(type):
-					return Enum.Parse(type, enumValue);
+				case string stringEnumValue when typeof(Enum).IsAssignableFrom(type):
+					return Enum.Parse(type, stringEnumValue);
+				case long longEnumValue when typeof(Enum).IsAssignableFrom(type):
+					return Enum.ToObject(type, (int)longEnumValue);
 				case string _:
 					return preParsedValue;
 				case float _:
