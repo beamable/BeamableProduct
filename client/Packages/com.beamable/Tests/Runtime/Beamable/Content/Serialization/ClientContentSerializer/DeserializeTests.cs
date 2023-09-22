@@ -939,6 +939,25 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 
 			Assert.AreEqual(TestEnum.B, o.e);
 		}
+		
+		[Test]
+		public void Enum_int()
+		{
+			var json = @"{
+   ""id"": ""test.nothing"",
+   ""version"": """",
+   ""properties"": {
+      ""e"": {
+         ""data"": 1
+      }
+   }
+}";
+
+			var s = new TestSerializer();
+			var o = s.Deserialize<EnumContent>(json);
+
+			Assert.AreEqual(TestEnum.B, o.e);
+		}
 
 		[Test]
 		public void CustomContentField_Works()

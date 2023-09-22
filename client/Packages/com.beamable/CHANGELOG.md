@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+ - New enum serialization wasn't compatible with older versions of published content, so it was reverted.
+
 ## [1.19.0]
 
 ### Fixed
