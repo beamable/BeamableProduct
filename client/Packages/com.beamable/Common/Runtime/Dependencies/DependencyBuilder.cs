@@ -12,15 +12,6 @@ namespace Beamable.Common.Dependencies
 		Singleton
 	}
 
-	public interface IHasRegisteredServices
-	{
-		List<ServiceDescriptor> GetTransientServices();
-		List<ServiceDescriptor> GetScopedServices();
-		List<ServiceDescriptor> GetSingletonServices();
-
-		// void AddServiceDescriptor(ServiceDescriptor descriptor);
-	}
-	
 	/// <summary>
 	/// The <see cref="IDependencyBuilder"/> is part of the Beamable dependency injection system.
 	/// It is used to describe a set of services that <i>will</i> exist, but the builder never actually creates any service instance.
@@ -30,9 +21,23 @@ namespace Beamable.Common.Dependencies
 	///
 	/// Before you finalize the builder, add services to the builder.
 	/// </summary>
-	public interface IDependencyBuilder : IHasRegisteredServices
+	public interface IDependencyBuilder
 	{
-
+		/// <summary>
+		/// Get the list of registered transient services. Transient services can be added with methods such as <see cref="AddTransient{T}(System.Func{Beamable.Common.Dependencies.IDependencyProvider,T})"/>
+		/// </summary>
+		List<ServiceDescriptor> GetTransientServices();
+		
+		/// <summary>
+		/// Get the list of registered scoped services. Scoped services can be added with methods such as <see cref="AddScoped{T}(System.Func{Beamable.Common.Dependencies.IDependencyProvider,T})"/>
+		/// </summary>
+		List<ServiceDescriptor> GetScopedServices();
+		
+		/// <summary>
+		/// Get the list of registered singleton services. Singleton services can be added with methods such as <see cref="AddSingleton{T}(System.Func{Beamable.Common.Dependencies.IDependencyProvider,T})"/>
+		/// </summary>
+		List<ServiceDescriptor> GetSingletonServices();
+		
 		/// <summary>
 		/// Add a transient service to the <see cref="IDependencyBuilder"/>.
 		/// A transient service will be re-instantiated everytime it is requested from <see cref="IDependencyProvider.GetService"/>.
@@ -446,9 +451,9 @@ namespace Beamable.Common.Dependencies
 		public List<ServiceDescriptor> ScopedServices { get; protected set; } = new List<ServiceDescriptor>();
 		public List<ServiceDescriptor> SingletonServices { get; protected set; } = new List<ServiceDescriptor>();
 
-		List<ServiceDescriptor> IHasRegisteredServices.GetTransientServices() => TransientServices;
-		List<ServiceDescriptor> IHasRegisteredServices.GetScopedServices() => ScopedServices;
-		List<ServiceDescriptor> IHasRegisteredServices.GetSingletonServices() => SingletonServices;
+		List<ServiceDescriptor> IDependencyBuilder.GetTransientServices() => TransientServices;
+		List<ServiceDescriptor> IDependencyBuilder.GetScopedServices() => ScopedServices;
+		List<ServiceDescriptor> IDependencyBuilder.GetSingletonServices() => SingletonServices;
 		
 		public IDependencyBuilder AddTransient<TInterface, TImpl>(Func<IDependencyProvider, TInterface> factory) where TImpl : TInterface
 		{

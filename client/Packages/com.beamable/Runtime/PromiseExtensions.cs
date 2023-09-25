@@ -1,20 +1,14 @@
 using Beamable.Common;
-using Beamable.Common.Dependencies;
-using Beamable.Common.Runtime.Collections;
 using Beamable.Coroutines;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Beamable
 {
 	public static class PromiseExtensions
 	{
-		// private static IConcurrentDictionary<long, Task> _uncaughtTasks = new ConcurrentDictionary<long, Task>();
-
 		public static Promise WaitForAllUncaughtHandlers()
 		{
 			var handler = Beam.GlobalScope.GetService<DefaultUncaughtPromiseQueue>();
