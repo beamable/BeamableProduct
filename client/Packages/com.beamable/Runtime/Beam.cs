@@ -82,6 +82,10 @@ namespace Beamable
 		/// </summary>
 		public static IDependencyBuilder DependencyBuilder;
 
+		
+		public static IDependencyBuilder GlobalDependencyBuilder;
+		public static IDependencyProvider GlobalScope;
+
 		/// <summary>
 		/// Controls the CID/PID connection strings for the game.
 		/// However, this should not be used directly. Instead,
@@ -138,10 +142,23 @@ namespace Beamable
 			ReflectionCache.SetStorage(RuntimeGlobalStorage);
 #endif
 			ReflectionCache.GenerateReflectionCache(CoreConfiguration.Instance.AssembliesToSweep);
+			
+			// create a global dependency builder.
+			GlobalDependencyBuilder = new DependencyBuilder();
+			GlobalDependencyBuilder.AddSingleton<IGameObjectContext, BeamableGlobalGameObject>();
+			GlobalDependencyBuilder.AddComponentSingleton<CoroutineService>();
+			GlobalDependencyBuilder.AddSingleton<ICoroutineService>(p => p.GetService<CoroutineService>());
+			GlobalDependencyBuilder.AddSingleton<DefaultUncaughtPromiseQueue>();
+			
+			// allow customization to the global scope
+			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(GlobalDependencyBuilder, RegistrationOrigin.RUNTIME_GLOBAL);
 
+			// create the global scope
+			GlobalScope = GlobalDependencyBuilder.Build(new BuildOptions {allowHydration = true});
+			
 			// Set the default promise error handlers
 			PromiseExtensions.SetupDefaultHandler();
-
+			
 			// register all services that are not context specific.
 			DependencyBuilder = new DependencyBuilder();
 

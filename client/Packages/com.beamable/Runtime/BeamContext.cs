@@ -444,7 +444,9 @@ namespace Beamable
 			RegisterServices(builder);
 
 			var oldScope = _serviceScope;
-			_serviceScope = builder.Build();
+
+			_serviceScope = Beam.GlobalScope.Fork(builder);
+			
 			oldScope?.Hydrate(_serviceScope);
 
 			var config = _serviceScope.GetService<IRuntimeConfigProvider>();

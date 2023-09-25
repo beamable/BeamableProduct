@@ -12,6 +12,15 @@ namespace Beamable.Common.Dependencies
 		Singleton
 	}
 
+	public interface IHasRegisteredServices
+	{
+		List<ServiceDescriptor> GetTransientServices();
+		List<ServiceDescriptor> GetScopedServices();
+		List<ServiceDescriptor> GetSingletonServices();
+
+		// void AddServiceDescriptor(ServiceDescriptor descriptor);
+	}
+	
 	/// <summary>
 	/// The <see cref="IDependencyBuilder"/> is part of the Beamable dependency injection system.
 	/// It is used to describe a set of services that <i>will</i> exist, but the builder never actually creates any service instance.
@@ -21,7 +30,7 @@ namespace Beamable.Common.Dependencies
 	///
 	/// Before you finalize the builder, add services to the builder.
 	/// </summary>
-	public interface IDependencyBuilder
+	public interface IDependencyBuilder : IHasRegisteredServices
 	{
 
 		/// <summary>
@@ -437,8 +446,10 @@ namespace Beamable.Common.Dependencies
 		public List<ServiceDescriptor> ScopedServices { get; protected set; } = new List<ServiceDescriptor>();
 		public List<ServiceDescriptor> SingletonServices { get; protected set; } = new List<ServiceDescriptor>();
 
-
-
+		List<ServiceDescriptor> IHasRegisteredServices.GetTransientServices() => TransientServices;
+		List<ServiceDescriptor> IHasRegisteredServices.GetScopedServices() => ScopedServices;
+		List<ServiceDescriptor> IHasRegisteredServices.GetSingletonServices() => SingletonServices;
+		
 		public IDependencyBuilder AddTransient<TInterface, TImpl>(Func<IDependencyProvider, TInterface> factory) where TImpl : TInterface
 		{
 			TransientServices.Add(new ServiceDescriptor
