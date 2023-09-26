@@ -357,6 +357,7 @@ namespace Beamable
 		/// Using the authorization associated with the current context, observe the public data of another player
 		/// </summary>
 		/// <param name="otherPlayerId"></param>
+		[Obsolete("?")]
 		public IObservedPlayer ObservePlayer(long otherPlayerId)
 		{
 			return Fork(builder =>
@@ -444,7 +445,9 @@ namespace Beamable
 			RegisterServices(builder);
 
 			var oldScope = _serviceScope;
-			_serviceScope = builder.Build();
+
+			_serviceScope = Beam.GlobalScope.Fork(builder);
+			
 			oldScope?.Hydrate(_serviceScope);
 
 			var config = _serviceScope.GetService<IRuntimeConfigProvider>();
