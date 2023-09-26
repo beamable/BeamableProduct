@@ -248,35 +248,6 @@ namespace Beamable.Runtime.LightBeam
 			await ctx.OnReady.ShowLoading(lightContext);
 			return lightContext;
 		}
-		
-		public static async Promise<LightContext> InitLightBeams<T>(this T lightBeam,
-		                                                            RectTransform root,
-		                                                            CanvasGroup loadingBlocker,
-		                                                            Action<IDependencyBuilder> scopeConfigurator)
-			where T : Component
-		{
-			var ctx = BeamContext.InParent(lightBeam);
-			var lightContext = new LightContext
-			{
-				BeamContext = ctx,
-				Root = root,
-				LoadingBlocker = loadingBlocker
-			};
-			var scope = ctx.ServiceProvider.Fork(builder =>
-			{
-				builder.AddScoped(lightContext);
-				scopeConfigurator?.Invoke(builder);
-			});
-			lightContext.Scope = scope;
-
-			await ctx.OnReady.ShowLoading(lightContext);
-			return lightContext;
-		}
-
-		public static async Promise DestroyLightBeams(LightContext context)
-		{
-			await context.Scope.Dispose();
-		}
 
 		public static Promise<T> SetLightComponent<T, TModel>(this IDependencyProvider provider,
 		                                             Transform container,

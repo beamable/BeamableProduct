@@ -4,7 +4,7 @@ using Beamable.Runtime.LightBeam;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class AccountManagementExample : MonoBehaviour, ILightComponent
+public class HomePage : MonoBehaviour, ILightComponent
 {
 	[Header("Scene References")]
 	public Transform playerAccountContainer;
@@ -36,7 +36,7 @@ public class AccountManagementExample : MonoBehaviour, ILightComponent
 		{
 			var newAccount = await ctx.BeamContext.Accounts.CreateNewAccount();
 			await newAccount.SwitchToAccount();
-			await ctx.GotoPage<AccountManagementExample>();
+			await ctx.GotoPage<HomePage>();
 		});
 		
 		// set up the find account button

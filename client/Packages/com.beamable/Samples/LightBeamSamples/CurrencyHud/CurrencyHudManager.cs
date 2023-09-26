@@ -1,4 +1,5 @@
 
+using Beamable;
 using Beamable.Common.Inventory;
 using Beamable.Player;
 using Beamable.Runtime.LightBeam;
@@ -24,7 +25,8 @@ public class CurrencyHudManager : MonoBehaviour
 	
 	private async void Start()
 	{
-		var context = await this.InitLightBeams(container, loading, builder =>
+		var beamContext = BeamContext.Default;
+		var context = await beamContext.InitLightBeams(container, loading, builder =>
 		{
 			builder.AddLightComponent<CurrencyViewBehaviour, PlayerCurrency>(currencyViewTemplate);
 		});

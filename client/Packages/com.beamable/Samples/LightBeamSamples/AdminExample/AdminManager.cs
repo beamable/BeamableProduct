@@ -1,4 +1,5 @@
 
+using Beamable;
 using Beamable.Runtime.LightBeam;
 using System;
 using UnityEngine;
@@ -16,7 +17,8 @@ public class AdminManager : MonoBehaviour
 
 	async void Start()
 	{
-		_ctx = await this.InitLightBeams(root, loading, builder =>
+		var beamContext = BeamContext.Default;
+		_ctx = await beamContext.InitLightBeams(root, loading, builder =>
 		{
 			builder.AddLightComponent(consoleTemplate);
 		});

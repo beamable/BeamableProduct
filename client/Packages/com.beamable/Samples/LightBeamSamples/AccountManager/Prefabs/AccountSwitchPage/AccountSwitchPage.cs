@@ -22,19 +22,19 @@ public class AccountSwitchPage : MonoBehaviour, ILightComponent<PlayerAccount>
 		
 		cancelButton.HandleClicked(async () =>
 		{
-			await ctx.Scope.GotoPage<AccountManagementExample>();
+			await ctx.Scope.GotoPage<HomePage>();
 		});
 		
 		switchButton.HandleClicked("switching...", async () =>
 		{
 			await account.SwitchToAccount();
-			await ctx.Scope.GotoPage<AccountManagementExample>();
+			await ctx.Scope.GotoPage<HomePage>();
 		});
 		
 		deleteButton.HandleClicked("deleting...", async () =>
 		{
 			await account.Remove();
-			await ctx.Scope.GotoPage<AccountManagementExample>();
+			await ctx.Scope.GotoPage<HomePage>();
 		});
 		
 		return Promise.Success;

@@ -49,7 +49,7 @@ public class RecoverEmailPage : MonoBehaviour, ILightComponent<RecoverEmailPageM
 		
 		cancelButton.HandleClicked(async () =>
 		{
-			await context.GotoPage<AccountManagementExample>();
+			await context.GotoPage<HomePage>();
 		});
 		
 		forgotPasswordButton.HandleClicked(async () =>
@@ -73,7 +73,7 @@ public class RecoverEmailPage : MonoBehaviour, ILightComponent<RecoverEmailPageM
 		switchButton.HandleClicked("switching...", async () =>
 		{
 			await recoveryOperation.account.SwitchToAccount();
-			await context.Scope.GotoPage<AccountManagementExample>();
+			await context.Scope.GotoPage<HomePage>();
 		});
 		
 		return Promise.Success;

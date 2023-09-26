@@ -52,6 +52,6 @@ public class AccountManager : MonoBehaviour
 
 		// LightBeamUtilExtensions.Hints["pageType"] = nameof(RecoverEmailPage);
 		// LightBeamUtilExtensions.Hints["d_email"] = "\"dingus\"";
-		await lightBeam.Scope.Start<AccountManagementExample>();
+		await lightBeam.Scope.Start<HomePage>();
 	}
 }

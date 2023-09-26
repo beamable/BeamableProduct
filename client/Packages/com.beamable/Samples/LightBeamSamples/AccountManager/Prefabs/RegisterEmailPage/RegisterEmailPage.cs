@@ -28,7 +28,7 @@ public class RegisterEmailPage : MonoBehaviour, ILightComponent
 		
 		cancelButton.HandleClicked(async () =>
 		{
-			await ctx.GotoPage<AccountManagementExample>();
+			await ctx.GotoPage<HomePage>();
 		});
 		
 		checkEmailButton.HandleClicked("checking...", async () =>
@@ -68,7 +68,7 @@ public class RegisterEmailPage : MonoBehaviour, ILightComponent
 		var operation = await ctx.BeamContext.Accounts.AddEmail(email, password);
 		if (operation.isSuccess)
 		{
-			await ctx.GotoPage<AccountManagementExample>();
+			await ctx.GotoPage<HomePage>();
 		}
 		else
 		{

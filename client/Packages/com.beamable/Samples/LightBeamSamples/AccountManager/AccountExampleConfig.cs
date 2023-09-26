@@ -9,7 +9,7 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Beamable/Examples/Account Example Config")]
 public class AccountExampleConfig : ScriptableObject
 {
-	public AccountManagementExample homePage;
+	public HomePage homePage;
 	public AccountSwitchPage switchPage;
 	public RegisterEmailPage registerPage;
 	public RecoverEmailPage recoverPage;
