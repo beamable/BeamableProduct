@@ -80,7 +80,7 @@
 
     <!-- Nuget references -->
     <ItemGroup>
-        <PackageReference Include="Beamable.Microservice.Runtime" Version="1.15.0-PREVIEW.RC1" />
+        <PackageReference Include="Beamable.Microservice.Runtime" Version="1.19.1" />
         
         <PackageReference Include="EmbedIO" Version="3.4.*" />
         <PackageReference Include="LoxSmoke.DocXml" Version="3.4.*" />
