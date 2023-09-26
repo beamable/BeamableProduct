@@ -16,7 +16,7 @@ public class RegisterCommandArgs : CommandArgs
 	public bool agreedToLegal;
 }
 
-public class RegisterCommand : AppCommand<RegisterCommandArgs>
+public class RegisterCommand : AppCommand<RegisterCommandArgs>, IStandaloneCommand
 {
 	private readonly InitCommand _initCommand;
 	private readonly LoginCommand _loginCommand;

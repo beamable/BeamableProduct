@@ -18,6 +18,7 @@ using Beamable.Common.Reflection;
 using Beamable.Config;
 using Beamable.Console;
 using Beamable.Content;
+using Beamable.Coroutines;
 using Beamable.Editor;
 using Beamable.Editor.Assistant;
 using Beamable.Editor.BeamCli;
@@ -64,10 +65,12 @@ using UnityEditor.Compilation;
 
 namespace Beamable
 {
+	[BeamContextSystem]
 	public static class BeamEditorDependencies
 	{
 		public static IDependencyBuilder DependencyBuilder;
 
+		
 		static BeamEditorDependencies()
 		{
 			DependencyBuilder = new DependencyBuilder();
@@ -99,7 +102,7 @@ namespace Beamable
 
 			DependencyBuilder.AddSingleton<IWebsiteHook, WebsiteHook>();
 			DependencyBuilder.AddSingleton<IToolboxViewService, ToolboxViewService>();
-			DependencyBuilder.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
+			DependencyBuilder.AddSingleton<OfflineCache>(p => new OfflineCache(p.GetService<IRuntimeConfigProvider>(), CoreConfiguration.Instance.UseOfflineCache));
 
 			DependencyBuilder.AddSingleton<ServiceStorage>();
 			DependencyBuilder.AddSingleton(() => BeamableEnvironment.Data);
@@ -126,7 +129,38 @@ namespace Beamable
 
 			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
 
+			DependencyBuilder.AddSingleton<IRuntimeConfigProvider, EditorRuntimeConfigProvider>();
+
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
+		}
+
+		[RegisterBeamableDependencies(-999, RegistrationOrigin.RUNTIME_GLOBAL)]
+		public static void RegisterGlobalRuntime(IDependencyBuilder builder)
+		{
+			builder.RemoveIfExists<ICoroutineService>();
+			builder.AddSingleton<ICoroutineService, BeamableDispatcher>();
+		}
+
+		[RegisterBeamableDependencies(-999, RegistrationOrigin.RUNTIME)]
+		public static void RegisterRuntime(IDependencyBuilder builder)
+		{
+			try
+			{
+				var editorCtx = BeamEditorContext.Default;
+				var accountService = editorCtx.ServiceScope.GetService<AccountService>();
+				if (accountService != null && (accountService.Cid?.HasValue ?? false))
+				{
+					var provider = new EditorRuntimeConfigProvider(accountService);
+					Beam.RuntimeConfigProvider ??= new DefaultRuntimeConfigProvider(provider);
+					Beam.RuntimeConfigProvider.Fallback = provider;
+				
+					builder.ReplaceSingleton<IRuntimeConfigProvider>(Beam.RuntimeConfigProvider);
+				}
+			}
+			catch (Exception ex)
+			{
+				Debug.Log(ex.Message);
+			}
 		}
 	}
 
@@ -212,16 +246,6 @@ namespace Beamable
 
 			// Reload the current environment data
 			BeamableEnvironment.ReloadEnvironment();
-
-			try
-			{
-				ConfigDatabase.Init();
-			}
-			catch (FileNotFoundException)
-			{
-				// if the file doesn't exist, then the config database will be empty. 
-				// and in the editor case, this is valid. 
-			}
 
 			// If we ever get to this point, we are guaranteed to run the initialization until the end so we...
 			// Initialize Editor instances of Reflection and Assistant services
@@ -337,7 +361,7 @@ namespace Beamable
 			// Set flag of SocialsImporter
 			BeamableSocialsImporter.SetFlag();
 
-			async void InitDefaultContext()
+			async Promise InitDefaultContext()
 			{
 				await BeamEditorContext.Default.InitializePromise;
 
@@ -359,7 +383,7 @@ namespace Beamable
 				}
 			}
 
-			InitDefaultContext();
+			InitDefaultContext().Error(Debug.LogError);
 		}
 
 		public static T GetReflectionSystem<T>() where T : IReflectionSystem => EditorReflectionCache.GetFirstSystemOfType<T>();
@@ -556,7 +580,8 @@ namespace Beamable
 
 				requester.Host = BeamableEnvironment.ApiUrl;
 
-				ServiceScope.GetService<BeamableVsp>().TryToEmitAttribution("login"); // this will no-op if the package isn't a VSP package.
+				ServiceScope.GetService<BeamableVsp>()
+				            .TryToEmitAttribution("login"); // this will no-op if the package isn't a VSP package.
 
 				var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
 				var accessToken = await accessTokenStorage.LoadTokenForCustomer(cid);
@@ -677,7 +702,6 @@ namespace Beamable
 			var cid = EditorAccount.CustomerView.Cid;
 			var pid = EditorAccount.realmPid.Value;
 			WriteConfig(alias, pid, cid: cid);
-			EditorAccountService.ApplyConfigValuesToRuntime();
 		}
 
 		[Obsolete]
@@ -701,6 +725,7 @@ namespace Beamable
 			requester.Host = host;
 		}
 
+		[Obsolete]
 		private static string GetCustomContainerPrefix()
 		{
 			return ConfigDatabase.TryGetString("containerPrefix", out var customPrefix) ? customPrefix : null;

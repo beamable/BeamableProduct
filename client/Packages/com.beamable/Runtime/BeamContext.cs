@@ -73,7 +73,6 @@ namespace Beamable
 	[Serializable]
 	public class BeamContext : IPlatformService, IGameObjectContext, IObservedPlayer, IBeamableDisposableOrder, IDependencyNameProvider, IDependencyScopeNameProvider
 	{
-
 		#region Internal State
 		/// <summary>
 		/// The <see cref="PlayerCode"/> is the name of a player's slot on the device. The <see cref="Default"/> context uses an empty string,
@@ -114,7 +113,7 @@ namespace Beamable
 
 		public bool IsInitialized => _initPromise != null;
 
-		public bool IsDefault => string.IsNullOrEmpty(PlayerCode);
+		public bool IsDefault => IsDefaultPlayerCode(PlayerCode);
 
 		private IDependencyProviderScope _serviceScope;
 		private bool _isStopped;
@@ -262,7 +261,12 @@ namespace Beamable
 		private IHeartbeatService _heartbeatService;
 		private BeamableBehaviour _behaviour;
 		private OfflineCache _offlineCache;
-
+		private static bool IsDefaultPlayerCode(string code) => DefaultPlayerCode == code;
+#if BEAMABLE_ENABLE_BEAM_CONTEXT_DEFAULT_OVERRIDE
+		private static string DefaultPlayerCode { get; set; }
+#else
+		private static string DefaultPlayerCode => string.Empty;
+#endif
 		#endregion
 
 		#region events
@@ -293,7 +297,7 @@ namespace Beamable
 		/// <returns>New instance of the <see cref="BeamContext"/></returns>
 		public static BeamContext CreateAuthorizedContext(string playerCode, TokenResponse token)
 		{
-			bool isDefault = string.IsNullOrWhiteSpace(playerCode);
+			bool isDefault = IsDefaultPlayerCode(playerCode);
 			if (isDefault || _playerCodeToContext.ContainsKey(playerCode))
 			{
 #if UNITY_EDITOR
@@ -306,8 +310,10 @@ namespace Beamable
 				throw new BeamContextInitException(_playerCodeToContext[playerCode],
 												   new[] { new Exception($"BeamContext with \"{playerCode}\" prefix already exist.") });
 			}
-			string cid = ConfigDatabase.GetString("cid");
-			string pid = ConfigDatabase.GetString("pid");
+
+
+			string cid = Beam.RuntimeConfigProvider.Cid;
+			string pid = Beam.RuntimeConfigProvider.Pid;
 
 			var accessToken = new AccessToken(new AccessTokenStorage(playerCode), cid, pid, token.access_token,
 											  token.refresh_token, token.expires_in);
@@ -351,6 +357,7 @@ namespace Beamable
 		/// Using the authorization associated with the current context, observe the public data of another player
 		/// </summary>
 		/// <param name="otherPlayerId"></param>
+		[Obsolete("?")]
 		public IObservedPlayer ObservePlayer(long otherPlayerId)
 		{
 			return Fork(builder =>
@@ -375,9 +382,17 @@ namespace Beamable
 			return ctx;
 		}
 
+		[Obsolete("You do not need to include the cid or pid anymore")]
 		protected void Init(string cid,
-							string pid,
-							string playerCode,
+		                    string pid,
+		                    string playerCode,
+		                    BeamableBehaviour behaviour,
+		                    IDependencyBuilder builder)
+		{
+			Init(playerCode, behaviour, builder);
+		}
+		
+		protected void Init(string playerCode,
 							BeamableBehaviour behaviour,
 							IDependencyBuilder builder)
 		{
@@ -430,10 +445,13 @@ namespace Beamable
 			RegisterServices(builder);
 
 			var oldScope = _serviceScope;
-			_serviceScope = builder.Build();
+
+			_serviceScope = Beam.GlobalScope.Fork(builder);
+			
 			oldScope?.Hydrate(_serviceScope);
 
-			InitServices(cid, pid);
+			var config = _serviceScope.GetService<IRuntimeConfigProvider>();
+			InitServices(config.Cid, config.Pid);
 			_behaviour.Initialize(this);
 			_initPromise = new Promise();
 
@@ -738,25 +756,31 @@ namespace Beamable
 			IDependencyBuilder dependencyBuilder = null
 			)
 		{
+
 			dependencyBuilder = dependencyBuilder ?? Beam.DependencyBuilder;
-			playerCode = playerCode ?? "";
-			// get the cid & pid if not given
-			var cid = ConfigDatabase.GetString("cid");
-			var pid = ConfigDatabase.GetString("pid");
+
+			playerCode ??= DefaultPlayerCode;
 
 			// there should only be one context per playerCode.
 			if (_playerCodeToContext.TryGetValue(playerCode, out var existingContext))
 			{
 				if (existingContext.IsStopped)
 				{
-					existingContext.Init(cid, pid, playerCode, beamable, dependencyBuilder);
+					existingContext.Init(playerCode, beamable, dependencyBuilder);
 				}
 
 				return existingContext;
 			}
 
+#if BEAMABLE_ENABLE_BEAM_CONTEXT_DEFAULT_OVERRIDE
+			if (_playerCodeToContext.Count == 0)
+			{
+				DefaultPlayerCode = playerCode;
+			}
+#endif
+
 			var ctx = new BeamContext();
-			ctx.Init(cid, pid, playerCode, beamable, dependencyBuilder);
+			ctx.Init(playerCode, beamable, dependencyBuilder);
 			_playerCodeToContext[playerCode] = ctx;
 			return ctx;
 		}

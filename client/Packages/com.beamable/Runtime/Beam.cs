@@ -61,7 +61,6 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
 
-///Modified
 namespace Beamable
 {
 	/// <summary>
@@ -83,6 +82,51 @@ namespace Beamable
 		/// </summary>
 		public static IDependencyBuilder DependencyBuilder;
 
+		/// <summary>
+		/// This is the global <see cref="IDependencyBuilder"/>.
+		/// By default, this will contain services and scopes that can exist without any <see cref="BeamContext"/>.
+		/// The builder is used to create the <see cref="GlobalScope"/>.
+		/// <para>
+		/// You can register your own types by creating a static method, marking it with the <see cref="RegisterBeamableDependenciesAttribute"/>,
+		/// marking the attribute with the <see cref="RegistrationOrigin.RUNTIME_GLOBAL"/> arg,
+		/// and having it accept a single parameter of <see cref="IDependencyBuilder"/>. The instance you are given is the <see cref="GlobalDependencyBuilder"/>.
+		/// </para>
+		/// </summary>
+		public static IDependencyBuilder GlobalDependencyBuilder;
+		
+		/// <summary>
+		/// The global scope is shared for all <see cref="BeamContext"/> instances.
+		/// Every <see cref="BeamContext"/> is a child scope of the global scope.
+		/// The global scope contains services that do not any <see cref="BeamContext"/> information to exist.
+		/// The scope is created from the <see cref="GlobalDependencyBuilder"/>
+		/// </summary>
+		public static IDependencyProvider GlobalScope;
+
+		private static IDependencyProviderScope _globalProviderScope;
+
+		/// <summary>
+		/// Controls the CID/PID connection strings for the game.
+		/// However, this should not be used directly. Instead,
+		/// Use <see cref="ChangePid"/> to change the PID at runtime.
+		/// </summary>
+		public static DefaultRuntimeConfigProvider RuntimeConfigProvider
+		{
+			get
+			{
+				if (_runtimeConfigProvider == null)
+				{
+					_runtimeConfigProvider = new DefaultRuntimeConfigProvider(new ConfigDatabaseProvider());
+				}
+				return _runtimeConfigProvider;
+			}
+			set
+			{
+				_runtimeConfigProvider = value;
+			}
+		}
+
+		private static DefaultRuntimeConfigProvider _runtimeConfigProvider;
+		
 		public static ReflectionCache ReflectionCache;
 		public static IBeamHintGlobalStorage RuntimeGlobalStorage;
 
@@ -116,20 +160,23 @@ namespace Beamable
 			ReflectionCache.SetStorage(RuntimeGlobalStorage);
 #endif
 			ReflectionCache.GenerateReflectionCache(CoreConfiguration.Instance.AssembliesToSweep);
+			
+			// create a global dependency builder.
+			GlobalDependencyBuilder = new DependencyBuilder();
+			GlobalDependencyBuilder.AddSingleton<IGameObjectContext, BeamableGlobalGameObject>();
+			GlobalDependencyBuilder.AddComponentSingleton<CoroutineService>();
+			GlobalDependencyBuilder.AddSingleton<ICoroutineService>(p => p.GetService<CoroutineService>());
+			GlobalDependencyBuilder.AddSingleton<DefaultUncaughtPromiseQueue>();
+			
+			// allow customization to the global scope
+			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(GlobalDependencyBuilder, RegistrationOrigin.RUNTIME_GLOBAL);
 
+			// create the global scope
+			GlobalScope = _globalProviderScope = GlobalDependencyBuilder.Build();
+			
 			// Set the default promise error handlers
 			PromiseExtensions.SetupDefaultHandler();
-
-			// The config-database is what sits inside of config-defaults
-			try
-			{
-				ConfigDatabase.Init();
-			}
-			catch (FileNotFoundException) when (!Application.isEditor)
-			{
-				Debug.LogError("Failed to find 'config-defaults' file. This should never be seen here. If you do, please file a bug-report.");
-			}
-
+			
 			// register all services that are not context specific.
 			DependencyBuilder = new DependencyBuilder();
 
@@ -141,6 +188,7 @@ namespace Beamable
 				(manager, provider) => manager.Initialize(provider.GetService<IPlatformService>(), provider));
 			DependencyBuilder.AddSingleton<IBeamableRequester, PlatformRequester>(
 				provider => provider.GetService<PlatformRequester>());
+			DependencyBuilder.AddSingleton<IRequester>(p => p.GetService<PlatformRequester>());
 			DependencyBuilder.AddSingleton<IHttpRequester>(p => p.GetService<PlatformRequester>());
 			DependencyBuilder.AddSingleton(BeamableEnvironment.Data);
 			DependencyBuilder.AddSingleton<IPlatformRequesterHostResolver>(() => BeamableEnvironment.Data);
@@ -198,6 +246,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<ICloudDataApi>(provider => provider.GetService<CloudDataService>());
 			DependencyBuilder.AddSingleton<CloudDataApi>(provider => provider.GetService<CloudDataService>());
 			DependencyBuilder.AddSingleton<PaymentService>();
+			DependencyBuilder.AddSingleton<IPaymentServiceOptions, DefaultPaymentServiceOptions>();
 			DependencyBuilder.AddSingleton<GroupsService>();
 			DependencyBuilder.AddSingleton<EventsService>();
 			DependencyBuilder.AddSingleton<ITournamentApi>(p => p.GetService<TournamentService>());
@@ -258,8 +307,11 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(AvatarConfiguration.Instance);
 			DependencyBuilder.AddSingleton(CoreConfiguration.Instance);
 			DependencyBuilder.AddSingleton<IAuthSettings>(AccountManagementConfiguration.Instance);
-			DependencyBuilder.AddSingleton<OfflineCache>(() => new OfflineCache(CoreConfiguration.Instance.UseOfflineCache));
+			DependencyBuilder.AddSingleton<OfflineCache>(p => new OfflineCache(p.GetService<IRuntimeConfigProvider>(), CoreConfiguration.Instance.UseOfflineCache));
 
+
+			RuntimeConfigProvider ??= new DefaultRuntimeConfigProvider(new ConfigDatabaseProvider());
+			DependencyBuilder.AddSingleton<IRuntimeConfigProvider>(RuntimeConfigProvider);
 			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 
@@ -356,6 +408,24 @@ namespace Beamable
 		}
 
 		/// <summary>
+		/// Completely stop Beamable, including the <see cref="GlobalScope"/> and all <see cref="BeamContext"/>s.
+		/// Then, reloads the <see cref="GlobalScope"/> but does not reload any <see cref="BeamContext"/>s.
+		/// <param name="sceneQualifier">The string should either be a scene name, or the stringified int of a scene build index. If null is given, the scene is not reloaded.</param>
+		/// </summary>
+		public static async Promise RestartBeamable(string sceneQualifier = "0")
+		{
+			await StopAllContexts();
+			await _globalProviderScope.Dispose();
+
+			GlobalScope = _globalProviderScope = GlobalDependencyBuilder.Build();
+
+			if (!string.IsNullOrEmpty(sceneQualifier))
+			{
+				await ResetToScene(sceneQualifier);
+			}
+		}
+
+		/// <summary>
 		/// Changes the current PID value for the game, and resets the game to the given scene defined by <see cref="sceneQualifier"/>.
 		/// When the next <see cref="BeamContext"/> loads, it will use the same CID as before, but the
 		/// PID will be the value given to this function.
@@ -365,7 +435,7 @@ namespace Beamable
 		public static async Promise ChangePid(string pid, string sceneQualifier = "0")
 		{
 			await StopAllContexts();
-			ConfigDatabase.SetString("pid", pid, persist: false); // setting persist to false means the new pid won't be stored in player prefs.
+			RuntimeConfigProvider.Pid = pid;
 			await ResetToScene(sceneQualifier);
 		}
 

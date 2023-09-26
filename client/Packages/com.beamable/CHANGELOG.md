@@ -7,9 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Global dependency injection scope
+
+### Changed
+- Uncaught promises use dead letter queue
+
+## [1.19.1]
+
+### Fixed
+ - New enum serialization wasn't compatible with older versions of published content, so it was reverted.
+
+### Fixed
+ - New enum serialization wasn't compatible with older versions of published content, so it was reverted.
+
+## [1.19.0]
+
 ### Fixed
 
+- `IsThirdPartyAvailable`, `RemoveThirdPartyAssociation`, and `IsExternalIdentityAvailable` methods no longer use invalid query args.
 - Websocket connection authentication in WebGL builds.
+- Fixed ContentRef property drawer on Unity 2021 LTS.
+- `PlayerAccounts.Current` updates correctly after account switching.
+
+### Changed
+
+- Changed the unknown `PaymentService.ProviderId` value from "bogus" to "unknown".
+- Payment ProviderId can be changed by injecting a custom `IPaymentServiceOptions` into the Beam Context scope.
+- `Promise.Sequence` return `List<T>` in the same order as input `List<Promise<T>>`.
+- `PlayerAccounts.Current` is its own instance, as opposed to a reference into the `PlayerAccounts` list.
+- `PlayerPrefs` are no longer the source of truth for CID/PID. Instead, use the `IRuntimeConfigProvider`.
+- `ConfigDatabase` is no longer used to store and load CID/PID. 
+
+### Removed
+- Broken Console commands, `config set`, `config reset`, and `config usefile`.
+- `ConfigDatabase` is deprecated.  
+
+### Added
+
+- Script symbol, `BEAMABLE_ENABLE_BEAM_CONTEXT_DEFAULT_OVERRIDE` will set `BeamContext.Default`'s PlayerCode to the PlayerCode used to creat the first `BeamContext`, such as through `BeamContext.ForPlayer()`.
 
 ## [1.18.0]
 

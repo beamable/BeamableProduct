@@ -312,6 +312,7 @@ namespace Beamable.Server
 			public TList items = default;
 		}
 
+		[Obsolete]
 		public static string CreateUrl(string cid, string pid, string serviceName, string endpoint)
 		{
 			var prefix = _prefix ?? (_prefix = MicroserviceIndividualization.GetServicePrefix(serviceName));

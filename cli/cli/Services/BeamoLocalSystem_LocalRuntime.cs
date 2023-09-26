@@ -44,7 +44,7 @@ public partial class BeamoLocalSystem
 						throw new ArgumentOutOfRangeException();
 				}
 
-				var inspectResponse = await _client.Images.InspectImageAsync(imageToInspect);
+				var inspectResponse = await _client.Images.InspectImageAsync(imageToInspect.ToLower());
 				sd.ImageId = inspectResponse.ID;
 			}
 			catch
@@ -345,7 +345,9 @@ public partial class BeamoLocalSystem
 			if (builtLayer.TryGetValue(BeamoProtocolType.EmbeddedMongoDb, out var microStorageContainers))
 				runContainerTasks.AddRange(microStorageContainers.Select(async sd =>
 				{
+					Log.Information("Started deploying service: " + sd.BeamoId);
 					await RunLocalEmbeddedMongoDb(sd, localManifest.EmbeddedMongoDbLocalProtocols[sd.BeamoId]);
+					Log.Information("Finished deploying service: " + sd.BeamoId);
 					onServiceDeployCompleted?.Invoke(sd.BeamoId);
 				}));
 

@@ -6,6 +6,11 @@ using UnityEngine;
 
 namespace Beamable.Coroutines
 {
+	public interface ICoroutineService
+	{
+		void Run(string context, IEnumerator enumerator);
+	}
+	
 	/// <summary>
 	/// The <see cref="CoroutineService"/> allows any system to start a Unity coroutine, even if that system is not
 	/// a MonoBehaviour or associated with a GameObject.
@@ -15,11 +20,16 @@ namespace Beamable.Coroutines
 	/// Use the <see cref="StartNew"/> method to start a coroutine.
 	/// </summary>
 	[EditorServiceResolver(typeof(EditorSingletonMonoBehaviourServiceResolver<CoroutineService>))]
-	public class CoroutineService : MonoBehaviour
+	public class CoroutineService : MonoBehaviour, ICoroutineService
 	{
 		private Dictionary<string, List<IEnumerator>> coroutines = new Dictionary<string, List<IEnumerator>>();
 		private event Action _everySecond;
 
+		public void Run(string context, IEnumerator enumerator)
+		{
+			var _ = StartNew(context, enumerator);
+		}
+		
 		/// <summary>
 		/// Start a new Coroutine.
 		/// The Coroutine will be attached to the GameObject that the <see cref="CoroutineService"/> is connected to.

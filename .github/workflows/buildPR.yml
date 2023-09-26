@@ -288,11 +288,11 @@ jobs:
           name: Build-${{ matrix.targetPlatform }}
           path: dist/**
           retention-days: 3
-      - name: upload
-        if: ${{ matrix.targetPlatform == 'WebGL' }}
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./dist/WebGL s3://${{secrets.AWS_BUCKET_BUILDS}}/uploads/${{github.sha}} --acl public-read
-      - uses: github-actions-up-and-running/pr-comment@v1.0.1
-        if: ${{ matrix.targetPlatform == 'WebGL' && github.event_name == 'pull_request' }}
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          message: Have a ${{ matrix.targetPlatform }} build, friend. [${{github.sha}}](https://beamable-product-github-builds.s3.us-west-2.amazonaws.com/uploads/${{github.sha}}/index.html)
+#      - name: upload
+#        if: ${{ matrix.targetPlatform == 'WebGL' }}
+#        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./dist/WebGL s3://${{secrets.AWS_BUCKET_BUILDS}}/uploads/${{github.sha}} --acl public-read
+#      - uses: github-actions-up-and-running/pr-comment@v1.0.1
+#        if: ${{ matrix.targetPlatform == 'WebGL' && github.event_name == 'pull_request' }}
+#        with:
+#          repo-token: ${{ secrets.GITHUB_TOKEN }}
+#          message: Have a ${{ matrix.targetPlatform }} build, friend. [${{github.sha}}](https://beamable-product-github-builds.s3.us-west-2.amazonaws.com/uploads/${{github.sha}}/index.html)
