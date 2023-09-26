@@ -57,53 +57,7 @@ namespace Beamable.Runtime.LightBeams
 			return lightContext;
 		}
 
-		static bool TryGetTypes(IDependencyProvider provider, Dictionary<string, string> args, out Type pageType, out object model)
-		{
-			pageType = null;
-			model = null;
-			if (!LightBeamUtilExtensions.Hints.TryGetValue("pageType", out var pageTypeStr))
-			{
-				return false;
-			}
-
-			var scope = (IDependencyProviderScope)provider;
-			var service = scope.SingletonServices.FirstOrDefault(
-				x => x.Interface.Name.Equals(pageTypeStr, StringComparison.InvariantCultureIgnoreCase));
-
-			pageType = service.Interface;
-
-			// now we need to find a model...
-			model = null;
-
-			var interfaces = pageType.GetInterfaces();
-			foreach (var interfaceType in interfaces)
-			{
-				if (!interfaceType.IsGenericType) continue;
-				if (interfaceType.GetGenericTypeDefinition() != typeof(ILightComponent<>)) continue;
-
-				var modelType = interfaceType.GetGenericArguments()[0];
-				model = Activator.CreateInstance(modelType);
-				break;
-			}
-
-			if (model != null)
-			{
-				foreach (var kvp in args)
-				{
-					if (!kvp.Key.StartsWith("d_")) continue;
-					var key = kvp.Key.Substring("d_".Length);
-					
-					var json = $"{{\"{key}\": {kvp.Value} }}";
-					JsonUtility.FromJsonOverwrite(json, model);
-				}
-				
-			}
-			
-
-			return true;
-
-		}
-
+		/// <inheritdoc cref="Start{TDefault, TModel}"/>
 		public static async Promise Start<TDefault>(this IDependencyProvider provider)
 			where TDefault : MonoBehaviour, ILightComponent
 		{
@@ -114,7 +68,7 @@ namespace Beamable.Runtime.LightBeams
 			ctx.Root.Clear();
 			if (TryGetTypes(provider, LightBeamUtilExtensions.Hints, out var pageType, out var model))
 			{
-				await provider.Instantiate(pageType, ctx.Root, model).ShowLoading(ctx);
+				await Instantiate(provider, pageType, ctx.Root, model).ShowLoading(ctx);
 			}
 			else
 			{
@@ -122,6 +76,24 @@ namespace Beamable.Runtime.LightBeams
 			}
 		}
 		
+		/// <summary>
+		/// Start the <see cref="LightBeam"/> UI to a page defined by <typeparamref name="TDefault"/>.
+		/// <para>
+		/// Clear the content of the <see cref="LightBeam.Root"/> and spawn
+		/// an instance of the given <see cref="ILightComponent"/> as the main GameObject
+		/// in the <see cref="LightBeam.Root"/>.
+		///
+		/// The <see cref="LightBeam.LoadingBlocker"/> will fade in as this function's <see cref="Promise"/>
+		/// completes, and then it will fade out.
+		/// </para>
+		/// <para>
+		/// If deep links have been specified in the app URL, they may override the starting page and model data.
+		/// </para>
+		/// </summary>
+		/// <param name="provider">A <see cref="IDependencyProvider"/> that has the <typeparamref name="T"/> registered. </param>
+		/// <param name="defaultModel">The data model required for the <see cref="ILightComponent"/></param>
+		/// <typeparam name="TDefault"></typeparam>
+		/// <typeparam name="TModel"></typeparam>
 		public static async Promise Start<TDefault, TModel>(this IDependencyProvider provider, TModel defaultModel)
 			where TDefault : MonoBehaviour, ILightComponent<TModel>
 		{
@@ -132,7 +104,7 @@ namespace Beamable.Runtime.LightBeams
 			ctx.Root.Clear();
 			if (TryGetTypes(provider, LightBeamUtilExtensions.Hints, out var pageType, out var model))
 			{
-				await provider.Instantiate(pageType, ctx.Root, model).ShowLoading(ctx).ShowLoading(ctx);
+				await Instantiate(provider, pageType, ctx.Root, model).ShowLoading(ctx).ShowLoading(ctx);
 			}
 			else
 			{
@@ -140,6 +112,19 @@ namespace Beamable.Runtime.LightBeams
 			}
 		}
 
+		/// <summary>
+		/// Clear the content of the <see cref="LightBeam.Root"/> and spawn
+		/// an instance of the given <see cref="ILightComponent"/> as the main GameObject
+		/// in the <see cref="LightBeam.Root"/>.
+		///
+		/// The <see cref="LightBeam.LoadingBlocker"/> will fade in as this function's <see cref="Promise"/>
+		/// completes, and then it will fade out.
+		/// </summary>
+		/// <param name="provider">A <see cref="IDependencyProvider"/> that has the <typeparamref name="T"/> registered. </param>
+		/// <param name="model">The data model required for the <see cref="ILightComponent"/></param>
+		/// <typeparam name="T">A type of <see cref="ILightComponent"/></typeparam>
+		/// <typeparam name="TModel">arbitrary data that will be given to the new <see cref="ILightComponent"/></typeparam>
+		/// <returns>A <see cref="Promise"/> that completes with when the new <see cref="ILightComponent.OnInstantiated"/> method completes.</returns>
 		public static async Promise<T> GotoPage<T, TModel>(this IDependencyProvider provider, TModel model)
 			where T : MonoBehaviour, ILightComponent<TModel>
 		{
@@ -149,6 +134,7 @@ namespace Beamable.Runtime.LightBeams
 			return await provider.Instantiate<T, TModel>(ctx.Root, model).ShowLoading(ctx);
 		}
 		
+		/// <inheritdoc cref="GotoPage{T,TModel}"/>
 		public static async Promise<T> GotoPage<T>(this IDependencyProvider provider)
 			where T : MonoBehaviour, ILightComponent
 		{
@@ -159,15 +145,16 @@ namespace Beamable.Runtime.LightBeams
 		}
 
 		/// <summary>
-		/// Create a GameObject with the given <see cref="AddLightComponent{T}"/> type.
+		/// Create a GameObject with the given <typeparamref name="T"/> component.
 		/// The <see cref="ILightComponent{T}.OnInstantiated"/> function will be called.
+		/// The light component must have been registered using the <see cref="AddLightComponent{T,TModel}"/> method.
 		/// </summary>
-		/// <param name="provider"></param>
-		/// <param name="container"></param>
-		/// <param name="model"></param>
-		/// <typeparam name="T"></typeparam>
-		/// <typeparam name="TModel"></typeparam>
-		/// <returns></returns>
+		/// <param name="provider">A <see cref="IDependencyProvider"/> that has the <typeparamref name="T"/> registered. </param>
+		/// <param name="container">The parent <see cref="Transform"/> where the GameObject will be spawned</param>
+		/// <param name="model">The <typeparamref name="TModel"/> data that will be passed to the new <typeparamref name="T"/> instance</param>
+		/// <typeparam name="T">A type of <see cref="ILightComponent"/></typeparam>
+		/// <typeparam name="TModel">arbitrary data that will be given to the new <see cref="ILightComponent"/></typeparam>
+		/// <returns>A <see cref="Promise"/> that completes with when the new <see cref="ILightComponent.OnInstantiated"/> method completes.</returns>
 		public static Promise<T> Instantiate<T, TModel>(
 			this IDependencyProvider provider,
 			Transform container,
@@ -179,6 +166,7 @@ namespace Beamable.Runtime.LightBeams
 			return instance;
 		}
 		
+		/// <inheritdoc cref="Instantiate{T,TModel}"/>
 		public static Promise<T> Instantiate<T>(
 			this IDependencyProvider provider,
 			Transform container)
@@ -189,26 +177,15 @@ namespace Beamable.Runtime.LightBeams
 			return instance;
 		}
 
-		public static Promise<object> Instantiate(this IDependencyProvider provider,
-		                                                Type componentType,
-		                                                Transform container)
-		{
-			var resolver = provider.GetService<CurriedLightBeamViewResolver>();
-			var instance = resolver(container, componentType, null);
-			return instance;
-		}
 
-		public static Promise<object> Instantiate(this IDependencyProvider provider,
-		                                                Type componentType,
-		                                                Transform container,
-		                                                object model)
-		{
-			var resolver = provider.GetService<CurriedLightBeamViewResolver>();
-
-			var instance = resolver(container, componentType, model);
-			return instance;
-		}
-
+		/// <summary>
+		/// Register a <see cref="ILightComponent"/> UI component for the <see cref="LightBeam"/>.
+		/// After registering the component, it can be instantiated by using the <see cref="LightBeam.Instantiate{T}"/> method.
+		/// </summary>
+		/// <param name="builder">The <see cref="IDependencyBuilder"/> for the <see cref="LightBeam"/></param>
+		/// <param name="template">An asset reference to a GameObject prefab that will be instantiated when the <see cref="LightBeam.Instantiate{T}"/> method is used.</param>
+		/// <typeparam name="T">The type of the <see cref="ILightComponent"/></typeparam>
+		/// <typeparam name="TModel">The data type for the <see cref="ILightComponent"/></typeparam>
 		public static void AddLightComponent<T, TModel>(this IDependencyBuilder builder, T template)
 			where T : MonoBehaviour, ILightComponent<TModel>
 		{
@@ -256,6 +233,7 @@ namespace Beamable.Runtime.LightBeams
 			builder.AddSingleton(template);
 		}
 		
+		/// <inheritdoc cref="AddLightComponent{T,TModel}"/>
 		public static void AddLightComponent<T>(this IDependencyBuilder builder, T template)
 			where T : MonoBehaviour, ILightComponent
 		{
@@ -302,6 +280,73 @@ namespace Beamable.Runtime.LightBeams
 			builder.AddSingleton(template);
 		}
 		
+		
+		private static Promise<object> Instantiate(IDependencyProvider provider,
+		                                           Type componentType,
+		                                           Transform container)
+		{
+			var resolver = provider.GetService<CurriedLightBeamViewResolver>();
+			var instance = resolver(container, componentType, null);
+			return instance;
+		}
+
+		private static Promise<object> Instantiate(IDependencyProvider provider,
+		                                           Type componentType,
+		                                           Transform container,
+		                                           object model)
+		{
+			var resolver = provider.GetService<CurriedLightBeamViewResolver>();
+
+			var instance = resolver(container, componentType, model);
+			return instance;
+		}
+		
+		
+		static bool TryGetTypes(IDependencyProvider provider, Dictionary<string, string> args, out Type pageType, out object model)
+		{
+			pageType = null;
+			model = null;
+			if (!LightBeamUtilExtensions.Hints.TryGetValue("pageType", out var pageTypeStr))
+			{
+				return false;
+			}
+
+			var scope = (IDependencyProviderScope)provider;
+			var service = scope.SingletonServices.FirstOrDefault(
+				x => x.Interface.Name.Equals(pageTypeStr, StringComparison.InvariantCultureIgnoreCase));
+
+			pageType = service.Interface;
+
+			// now we need to find a model...
+			model = null;
+
+			var interfaces = pageType.GetInterfaces();
+			foreach (var interfaceType in interfaces)
+			{
+				if (!interfaceType.IsGenericType) continue;
+				if (interfaceType.GetGenericTypeDefinition() != typeof(ILightComponent<>)) continue;
+
+				var modelType = interfaceType.GetGenericArguments()[0];
+				model = Activator.CreateInstance(modelType);
+				break;
+			}
+
+			if (model != null)
+			{
+				foreach (var kvp in args)
+				{
+					if (!kvp.Key.StartsWith("d_")) continue;
+					var key = kvp.Key.Substring("d_".Length);
+					
+					var json = $"{{\"{key}\": {kvp.Value} }}";
+					JsonUtility.FromJsonOverwrite(json, model);
+				}
+				
+			}
+			
+
+			return true;
+		}
 		
 		delegate Promise<T> LightBeamViewResolver<T, in TModel>(Transform container, TModel model)
 			where T : ILightComponent<TModel>;

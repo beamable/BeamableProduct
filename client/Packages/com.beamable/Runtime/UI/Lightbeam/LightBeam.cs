@@ -44,11 +44,13 @@ namespace Beamable.Runtime.LightBeams
 		public CanvasGroup LoadingBlocker { get; set; }
 		
 
+		/// <inheritdoc cref="LightBeamDependencyExtensions.Instantiate{T, TModel}"/>
 		public Promise<T> Instantiate<T, TModel>(Transform container,
 		                                               TModel model)
 			where T : MonoBehaviour, ILightComponent<TModel> =>
 			Scope.Instantiate<T, TModel>(container, model);
 		
+		/// <inheritdoc cref="LightBeamDependencyExtensions.Instantiate{T}"/>
 		public Promise<T> Instantiate<T>(Transform container)
 			where T : MonoBehaviour, ILightComponent =>
 			Scope.Instantiate<T>(container);
