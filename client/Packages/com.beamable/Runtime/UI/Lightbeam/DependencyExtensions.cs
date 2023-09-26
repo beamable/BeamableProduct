@@ -8,10 +8,32 @@ using Object = UnityEngine.Object;
 
 namespace Beamable.Runtime.LightBeams
 {
-
 	public static class LightBeamDependencyExtensions
 	{
-
+		/// <summary>
+		/// Creates a slim <see cref="LightBeam"/> UI data object.
+		/// </summary>
+		/// <param name="ctx">
+		/// The <see cref="BeamContext"/> that will be used to populate the data in the <see cref="LightBeam"/>.
+		/// For example, use <see cref="BeamContext.Default"/> to get started quickly.
+		/// The 
+		/// </param>
+		/// <param name="root">
+		/// The content <see cref="RectTransform"/> for the UI. GameObjects will be spawned and removed from
+		/// this transform as the UI pages are changed.
+		/// </param>
+		/// <param name="loadingBlocker">
+		/// The <see cref="CanvasGroup"/> that will be faded in and out as the pages change.
+		/// Page changes are asynchronous, and therefor automatically show a loading screen. 
+		/// </param>
+		/// <param name="scopeConfiguration"></param>
+		/// A <see cref="LightBeam"/> UI should use dependency injection to load <see cref="ILightComponent"/>s.
+		/// Those components can be registered here.
+		/// The resulting <see cref="LightBeam.Scope"/> property may be used to access the registered components.
+		/// <returns>
+		/// A <see cref="Promise"/> that contains the created <see cref="LightBeam"/>.
+		/// The <see cref="Promise"/> will complete when the given <see cref="BeamContext"/> is ready.
+		/// </returns>
 		public static async Promise<LightBeam> CreateLightBeam(
 			this BeamContext ctx,
 			RectTransform root,
@@ -136,6 +158,16 @@ namespace Beamable.Runtime.LightBeams
 			return await provider.Instantiate<T>(ctx.Root).ShowLoading(ctx);
 		}
 
+		/// <summary>
+		/// Create a GameObject with the given <see cref="AddLightComponent{T}"/> type.
+		/// The <see cref="ILightComponent{T}.OnInstantiated"/> function will be called.
+		/// </summary>
+		/// <param name="provider"></param>
+		/// <param name="container"></param>
+		/// <param name="model"></param>
+		/// <typeparam name="T"></typeparam>
+		/// <typeparam name="TModel"></typeparam>
+		/// <returns></returns>
 		public static Promise<T> Instantiate<T, TModel>(
 			this IDependencyProvider provider,
 			Transform container,
@@ -269,5 +301,14 @@ namespace Beamable.Runtime.LightBeams
 
 			builder.AddSingleton(template);
 		}
+		
+		
+		delegate Promise<T> LightBeamViewResolver<T, in TModel>(Transform container, TModel model)
+			where T : ILightComponent<TModel>;
+	
+		delegate Promise<T> LightBeamViewResolver<T>(Transform container)
+			where T : ILightComponent;
+
+		delegate Promise<object> CurriedLightBeamViewResolver(Transform container, Type componentType, object model);
 	}
 }

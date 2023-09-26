@@ -10,10 +10,13 @@ using Object = UnityEngine.Object;
 
 namespace Beamable.Runtime.LightBeams
 {
-public static class LightBeamUtilExtensions
+	public static class LightBeamUtilExtensions
 	{
 		public static Dictionary<string, string> Hints = new Dictionary<string, string>();
 		
+		/// <summary>
+		/// Remove all child gameObjects from the given transform
+		/// </summary>
 		public static void Clear(this Transform transform)
 		{
 			for (var i = 0; i < transform.childCount; i++)
@@ -22,6 +25,12 @@ public static class LightBeamUtilExtensions
 			}
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="_"></param>
+		/// <param name="enabled"></param>
+		/// <param name="objects"></param>
 		public static void EnableObjects(this ILightRoot _, bool enabled, params Component[] objects)
 		{
 			foreach (var component in objects)

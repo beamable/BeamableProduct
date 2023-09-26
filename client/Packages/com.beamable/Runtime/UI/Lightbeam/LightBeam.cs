@@ -13,17 +13,45 @@ using Object = UnityEngine.Object;
 
 namespace Beamable.Runtime.LightBeams
 {
+	/// <summary>
+	/// A <see cref="LightBeam"/> is a data structure that contains basic information
+	/// for a slim Unity UI.
+	/// To create a <see cref="LightBeam"/>, use the <see cref="LightBeamDependencyExtensions.CreateLightBeam"/> function.
+	/// </summary>
 	public class LightBeam
 	{
+		/// <summary>
+		/// The <see cref="BeamContext"/> used to populate the data for the given <see cref="LightBeam"/> UI.
+		/// </summary>
 		public BeamContext BeamContext { get; set; }
+		
+		/// <summary>
+		/// A child scope from the <see cref="BeamContext"/>'s dependency scope.
+		/// This scope contains all the registered <see cref="ILightComponent"/> services.
+		/// </summary>
 		public IDependencyProviderScope Scope { get; set; }
+		
+		/// <summary>
+		/// The transform that is used as the top level of the UI.
+		/// GameObjects will be created and removed from this transform as
+		/// the UI changes pages. 
+		/// </summary>
 		public RectTransform Root { get; set; }
+		
+		/// <summary>
+		/// When page changes happen, the <see cref="CanvasGroup"/> will be faded in and out.
+		/// </summary>
 		public CanvasGroup LoadingBlocker { get; set; }
 		
+
 		public Promise<T> Instantiate<T, TModel>(Transform container,
 		                                               TModel model)
 			where T : MonoBehaviour, ILightComponent<TModel> =>
 			Scope.Instantiate<T, TModel>(container, model);
+		
+		public Promise<T> Instantiate<T>(Transform container)
+			where T : MonoBehaviour, ILightComponent =>
+			Scope.Instantiate<T>(container);
 		
 		public Promise<T> GotoPage<T, TModel>(TModel model)
 			where T : MonoBehaviour, ILightComponent<TModel> =>
@@ -38,24 +66,34 @@ namespace Beamable.Runtime.LightBeams
 		
 	}
 	
+	/// <summary>
+	/// A component that can be registered in a <see cref="LightBeam"/> UI.
+	/// Critically, when the <see cref="LightBeam.Instantiate{T}"/> creates a
+	/// GameObject with this component, the <see cref="OnInstantiated"/> method is
+	/// executed.
+	/// </summary>
 	public interface ILightComponent : ILightRoot
 	{
+		/// <summary>
+		/// Initializes the instance.
+		/// </summary>
+		/// <param name="beam">
+		/// The <see cref="LightBeam"/> that created the instance. 
+		/// </param>
+		/// <returns>
+		/// A <see cref="Promise"/> that should complete when the component is ready to
+		/// be shown.
+		/// </returns>
 		Promise OnInstantiated(LightBeam beam);
 	}
 	
+	/// <inheritdoc cref="ILightComponent"/>
+	/// <typeparam name="T">The type of the data model that is required to create the instance</typeparam>
 	public interface ILightComponent<in T> : ILightRoot
 	{
+		/// <inheritdoc cref="ILightComponent.OnInstantiated"/>
+		/// <param name="model">Data that should be used to configure the instance</param>
 		Promise OnInstantiated(LightBeam beam, T model);
 	}
-
-	public delegate Promise<T> LightBeamViewResolver<T, in TModel>(Transform container, TModel model)
-                                          		where T : ILightComponent<TModel>;
-	
-	public delegate Promise<T> LightBeamViewResolver<T>(Transform container)
-		where T : ILightComponent;
-
-	public delegate Promise<object> CurriedLightBeamViewResolver(Transform container, Type componentType, object model);
-
-	
 }
 
