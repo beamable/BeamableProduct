@@ -351,8 +351,13 @@ namespace Beamable.Server
             await ProvideService(QualifiedName);
 
             HasInitialized = true;
-            var url = BuildSwaggerUrl();
-            var portalUrlLogline = string.IsNullOrEmpty(url) ? url : $"portalURL={url}";
+
+            var portalUrlLogline = "";
+            if (TryBuildPortalUrl(out string url))
+            {
+	            portalUrlLogline = $"portalURL={url}";
+            }
+            
             Log.Information(Logs.READY_FOR_TRAFFIC_PREFIX + "baseVersion={baseVersion} executionVersion={executionVersion} {portalUrlLogline}", _args.SdkVersionBaseBuild, _args.SdkVersionExecution, portalUrlLogline);
             realmService.UpdateLogLevel();
 
@@ -367,7 +372,7 @@ namespace Beamable.Server
 
       }
 
-      private string BuildSwaggerUrl()
+      private bool TryBuildPortalUrl(out string portalUrl)
       {
 	      var cid = _args.CustomerID;
 	      var pid = _args.ProjectName;
@@ -376,7 +381,8 @@ namespace Beamable.Server
 
 	      if (string.IsNullOrEmpty(refreshToken))
 	      {
-		      return "";
+		      portalUrl = "";
+		      return false;
 	      }
 	      
 	      var queryArgs = new List<string>
@@ -389,9 +395,9 @@ namespace Beamable.Server
 		      .Replace("wss", "https")
 		      .Replace("dev.", "dev-")
 		      .Replace("api", "portal");
-	      var url = $"{treatedHost}/{cid}/games/{pid}/realms/{pid}/microservices/{microName}/docs?{joinedQueryString}";
+	      portalUrl = $"{treatedHost}/{cid}/games/{pid}/realms/{pid}/microservices/{microName}/docs?{joinedQueryString}";
 	      
-	      return url;
+	      return true;
       }
 
 
