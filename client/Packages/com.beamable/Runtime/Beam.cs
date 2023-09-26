@@ -92,7 +92,7 @@ namespace Beamable
 		/// </para>
 		/// </summary>
 		public static IDependencyBuilder GlobalDependencyBuilder;
-		
+
 		/// <summary>
 		/// The global scope is shared for all <see cref="BeamContext"/> instances.
 		/// Every <see cref="BeamContext"/> is a child scope of the global scope.
@@ -125,7 +125,7 @@ namespace Beamable
 		}
 
 		private static DefaultRuntimeConfigProvider _runtimeConfigProvider;
-		
+
 		public static ReflectionCache ReflectionCache;
 		public static IBeamHintGlobalStorage RuntimeGlobalStorage;
 
@@ -159,23 +159,23 @@ namespace Beamable
 			ReflectionCache.SetStorage(RuntimeGlobalStorage);
 #endif
 			ReflectionCache.GenerateReflectionCache(CoreConfiguration.Instance.AssembliesToSweep);
-			
+
 			// create a global dependency builder.
 			GlobalDependencyBuilder = new DependencyBuilder();
 			GlobalDependencyBuilder.AddSingleton<IGameObjectContext, BeamableGlobalGameObject>();
 			GlobalDependencyBuilder.AddComponentSingleton<CoroutineService>();
 			GlobalDependencyBuilder.AddSingleton<ICoroutineService>(p => p.GetService<CoroutineService>());
 			GlobalDependencyBuilder.AddSingleton<DefaultUncaughtPromiseQueue>();
-			
+
 			// allow customization to the global scope
 			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(GlobalDependencyBuilder, RegistrationOrigin.RUNTIME_GLOBAL);
 
 			// create the global scope
 			GlobalScope = _globalProviderScope = GlobalDependencyBuilder.Build();
-			
+
 			// Set the default promise error handlers
 			PromiseExtensions.SetupDefaultHandler();
-			
+
 			// register all services that are not context specific.
 			DependencyBuilder = new DependencyBuilder();
 
