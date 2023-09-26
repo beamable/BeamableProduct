@@ -1,10 +1,8 @@
 
 using Beamable.Avatars;
 using Beamable.Common;
-using Beamable.Common.Dependencies;
 using Beamable.Player;
-using Beamable.Runtime.LightBeam;
-using System;
+using Beamable.Runtime.LightBeams;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -23,7 +21,7 @@ public class AccountDetailsBehaviour : MonoBehaviour, ILightComponent<PlayerAcco
 	[Header("Runtime Data")]
 	public AccountAvatar selectedAvatar;
 	
-	public async Promise OnInstantiated(LightContext ctx, PlayerAccount model)
+	public async Promise OnInstantiated(LightBeam ctx, PlayerAccount model)
 	{
 		aliasInput.text = model.Alias;
 
@@ -34,7 +32,7 @@ public class AccountDetailsBehaviour : MonoBehaviour, ILightComponent<PlayerAcco
 		avatarContainer.Clear();
 		foreach (var avatar in avatarConfig.Avatars)
 		{
-			var instance = await ctx.NewLightComponent<AvatarDisplayBehaviour, AccountAvatar>(avatarContainer, avatar);
+			var instance = await ctx.Instantiate<AvatarDisplayBehaviour, AccountAvatar>(avatarContainer, avatar);
 			
 			instance.mainButton.HandleClicked(  () =>
 			{

@@ -625,7 +625,7 @@ GameObject:
   - component: {fileID: 635883761041762152}
   - component: {fileID: 635883761041762153}
   m_Layer: 5
-  m_Name: AccountManager
+  m_Name: HomePage
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -674,6 +674,7 @@ MonoBehaviour:
   playerAccountContainer: {fileID: 635883761074615706}
   playerDetailsContainer: {fileID: 635883760918774199}
   currentAccountDisplay: {fileID: 4756061755204858272}
+  x: {fileID: 635883761150512471}
   registerEmailButton: {fileID: 1467752946869178721}
   findAccountButton: {fileID: 888253477287272221}
   createNewAccountButton: {fileID: 838369600746299621}

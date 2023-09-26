@@ -1,11 +1,7 @@
-using Beamable;
 using Beamable.Avatars;
 using Beamable.Common;
-using Beamable.Common.Dependencies;
-using Beamable.Modules.Generics;
 using Beamable.Player;
-using Beamable.Runtime.LightBeam;
-using System;
+using Beamable.Runtime.LightBeams;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -22,9 +18,9 @@ public class AccountDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerAcco
 	public Button changeAccountButton;
 	
 	private PlayerAccount _model;
-	private LightContext _ctx;
+	private LightBeam _ctx;
 
-	public Promise OnInstantiated(LightContext ctx, PlayerAccount model)
+	public Promise OnInstantiated(LightBeam ctx, PlayerAccount model)
 	{
 		_ctx = ctx;
 		_model = model;

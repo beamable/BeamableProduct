@@ -2,7 +2,8 @@
 	"name": "Beamable.LightBeam.Boot",
 	"references": [
 		"Unity.Beamable",
-		"Unity.Beamable.Runtime.Common"
+		"Unity.Beamable.Runtime.Common",
+		"Unity.Beamable.LightBeams"
 	],
 	"includePlatforms": [],
 	"excludePlatforms": [],

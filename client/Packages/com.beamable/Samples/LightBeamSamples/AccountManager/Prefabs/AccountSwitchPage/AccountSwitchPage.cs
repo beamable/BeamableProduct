@@ -3,7 +3,7 @@ using Beamable.AccountManagement;
 using Beamable.Common;
 using Beamable.Common.Dependencies;
 using Beamable.Player;
-using Beamable.Runtime.LightBeam;
+using Beamable.Runtime.LightBeams;
 using System;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,7 +16,7 @@ public class AccountSwitchPage : MonoBehaviour, ILightComponent<PlayerAccount>
 	public Button switchButton;
 	public Button deleteButton;
 	
-	public Promise OnInstantiated(LightContext ctx, PlayerAccount account)
+	public Promise OnInstantiated(LightBeam ctx, PlayerAccount account)
 	{
 		accountDisplay.OnInstantiated(ctx, account);
 		

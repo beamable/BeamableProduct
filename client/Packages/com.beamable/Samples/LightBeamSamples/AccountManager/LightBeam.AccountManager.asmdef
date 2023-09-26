@@ -4,7 +4,8 @@
         "Unity.Beamable",
         "Unity.Beamable.Runtime.Common",
         "Unity.Beamable.Customer.Common",
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "Unity.Beamable.LightBeams"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

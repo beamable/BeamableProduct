@@ -1,6 +1,6 @@
 using Beamable.Common;
 using Beamable.Player;
-using Beamable.Runtime.LightBeam;
+using Beamable.Runtime.LightBeams;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -15,7 +15,7 @@ public class HomePage : MonoBehaviour, ILightComponent
 	public Button findAccountButton;
 	public Button createNewAccountButton;
 	
-	public async Promise OnInstantiated(LightContext ctx)
+	public async Promise OnInstantiated(LightBeam ctx)
 	{
 		
 		// clear old data
@@ -49,7 +49,7 @@ public class HomePage : MonoBehaviour, ILightComponent
 		await currentAccountDisplay.OnInstantiated(ctx, currentAccount);
 		currentAccountDisplay.changeAccountButton.HandleClicked(async () =>
 		{
-			var details = await ctx.NewLightComponent<AccountDetailsBehaviour, PlayerAccount>(playerDetailsContainer, currentAccount);
+			var details = await ctx.Instantiate<AccountDetailsBehaviour, PlayerAccount>(playerDetailsContainer, currentAccount);
 			details.cancelButton.HandleClicked(() =>
 			{
 				playerDetailsContainer.Clear();
@@ -60,7 +60,7 @@ public class HomePage : MonoBehaviour, ILightComponent
 		foreach (var account in ctx.BeamContext.Accounts)
 		{
 			if (account.GamerTag == currentAccount.GamerTag) continue; // skip current account
-			var component = await ctx.NewLightComponent<AccountDisplayBehaviour, PlayerAccount>(playerAccountContainer, account);
+			var component = await ctx.Instantiate<AccountDisplayBehaviour, PlayerAccount>(playerAccountContainer, account);
 			component.changeAccountButton.HandleClicked(async () =>
 			{
 				await ctx.GotoPage<AccountSwitchPage, PlayerAccount>(account);

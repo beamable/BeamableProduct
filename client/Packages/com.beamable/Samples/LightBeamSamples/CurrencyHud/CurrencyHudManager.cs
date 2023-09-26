@@ -2,9 +2,7 @@
 using Beamable;
 using Beamable.Common.Inventory;
 using Beamable.Player;
-using Beamable.Runtime.LightBeam;
-using System;
-using System.Collections.Generic;
+using Beamable.Runtime.LightBeams;
 using TMPro;
 using UnityEngine;
 
@@ -26,13 +24,14 @@ public class CurrencyHudManager : MonoBehaviour
 	private async void Start()
 	{
 		var beamContext = BeamContext.Default;
-		var context = await beamContext.InitLightBeams(container, loading, builder =>
+		var context = await beamContext.CreateLightBeam(container, loading, builder =>
 		{
 			builder.AddLightComponent<CurrencyViewBehaviour, PlayerCurrency>(currencyViewTemplate);
 		});
 
 		var currency = context.BeamContext.Inventory.GetCurrency(currencyRef);
-		await context.SetLightComponent<CurrencyViewBehaviour, PlayerCurrency>(container, currency).ShowLoading(context);
+		container.Clear();
+		await context.Instantiate<CurrencyViewBehaviour, PlayerCurrency>(container, currency).ShowLoading(context);
 
 		infoText.text = $@"PlayerId=[{context.BeamContext.PlayerId}]
 The currency shown in the top-right is the currency=[{currencyRef.Id}]";

@@ -1,6 +1,6 @@
 
 using Beamable.Common;
-using Beamable.Runtime.LightBeam;
+using Beamable.Runtime.LightBeams;
 using System;
 using TMPro;
 using UnityEngine;
@@ -23,15 +23,15 @@ public class ForgotPasswordPage : MonoBehaviour, ILightComponent<ForgotPasswordM
 	public Button cancelButton;
 	public Button submitButton;
 
-	public async Promise OnInstantiated(LightContext context, ForgotPasswordModel model)
+	public async Promise OnInstantiated(LightBeam beam, ForgotPasswordModel model)
 	{
-		await context.BeamContext.Accounts.ResetPassword(model.email);
+		await beam.BeamContext.Accounts.ResetPassword(model.email);
 		
 		promptText.text = $"Enter the code sent to {model.email}, and enter a new password.";
 		
 		cancelButton.HandleClicked(async () =>
 		{
-			await context.GotoPage<RecoverEmailPage, RecoverEmailPageModel>(new RecoverEmailPageModel
+			await beam.GotoPage<RecoverEmailPage, RecoverEmailPageModel>(new RecoverEmailPageModel
 			{
 				email = model.email
 			});
@@ -41,11 +41,11 @@ public class ForgotPasswordPage : MonoBehaviour, ILightComponent<ForgotPasswordM
 		{
 			var newPassword = passwordInput.text;
 			var code = codeInput.text;
-			var res = await context.BeamContext.Accounts.ConfirmPassword(code, newPassword);
+			var res = await beam.BeamContext.Accounts.ConfirmPassword(code, newPassword);
 
 			if (res.isSuccess)
 			{
-				await context.GotoPage<RecoverEmailPage, RecoverEmailPageModel>(new RecoverEmailPageModel
+				await beam.GotoPage<RecoverEmailPage, RecoverEmailPageModel>(new RecoverEmailPageModel
 				{
 					email = model.email,
 					password = newPassword

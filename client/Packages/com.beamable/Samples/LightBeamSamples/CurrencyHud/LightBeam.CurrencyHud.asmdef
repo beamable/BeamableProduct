@@ -5,7 +5,8 @@
         "Unity.Beamable.Runtime.Common",
         "Unity.Beamable.Customer.Common",
         "Unity.TextMeshPro",
-        "Unity.Addressables"
+        "Unity.Addressables",
+        "Unity.Beamable.LightBeams"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

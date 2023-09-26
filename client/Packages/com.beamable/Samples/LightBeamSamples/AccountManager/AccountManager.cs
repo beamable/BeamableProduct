@@ -2,7 +2,7 @@
 using Beamable;
 using Beamable.Avatars;
 using Beamable.Player;
-using Beamable.Runtime.LightBeam;
+using Beamable.Runtime.LightBeams;
 using UnityEngine;
 
 public class AccountManager : MonoBehaviour
@@ -18,7 +18,7 @@ public class AccountManager : MonoBehaviour
 	{
 
 		var beamContext = BeamContext.Default;
-		var lightBeam = await beamContext.InitLightBeams(root, loadingBlocker, builder =>
+		var lightBeam = await beamContext.CreateLightBeam(root, loadingBlocker, builder =>
 		{
 			builder.AddSingleton(config);
 

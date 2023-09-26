@@ -1,6 +1,6 @@
 
 using Beamable.Common;
-using Beamable.Runtime.LightBeam;
+using Beamable.Runtime.LightBeams;
 using System;
 using TMPro;
 using UnityEngine;
@@ -17,7 +17,7 @@ public class RegisterEmailPage : MonoBehaviour, ILightComponent
 	public Button submitButton;
 	public Button cancelButton;
 	
-	public Promise OnInstantiated(LightContext ctx)
+	public Promise OnInstantiated(LightBeam ctx)
 	{
 		submitButton.gameObject.SetActive(false);
 		checkEmailButton.gameObject.SetActive(true);
@@ -44,7 +44,7 @@ public class RegisterEmailPage : MonoBehaviour, ILightComponent
 		return Promise.Success;
 	}
 
-	async Promise CheckEmail(LightContext ctx, string email)
+	async Promise CheckEmail(LightBeam ctx, string email)
 	{
 		var isEmailAvailable = await ctx.BeamContext.Accounts.IsEmailAvailable(email);
 
@@ -63,7 +63,7 @@ public class RegisterEmailPage : MonoBehaviour, ILightComponent
 		}
 	}
 
-	async Promise RegisterEmail(LightContext ctx, string email, string password)
+	async Promise RegisterEmail(LightBeam ctx, string email, string password)
 	{
 		var operation = await ctx.BeamContext.Accounts.AddEmail(email, password);
 		if (operation.isSuccess)

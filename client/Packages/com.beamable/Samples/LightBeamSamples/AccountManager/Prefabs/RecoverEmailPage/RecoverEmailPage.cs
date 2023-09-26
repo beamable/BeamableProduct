@@ -1,7 +1,7 @@
 
 using Beamable.Common;
 using Beamable.Player;
-using Beamable.Runtime.LightBeam;
+using Beamable.Runtime.LightBeams;
 using System;
 using TMPro;
 using UnityEngine;
@@ -34,7 +34,7 @@ public class RecoverEmailPage : MonoBehaviour, ILightComponent<RecoverEmailPageM
 	[Header("Runtime data")]
 	public PlayerRecoveryOperation recoveryOperation;
 	
-	public Promise OnInstantiated(LightContext context, RecoverEmailPageModel model)
+	public Promise OnInstantiated(LightBeam beam, RecoverEmailPageModel model)
 	{
 		promptText.text = "Login into email";
 		
@@ -49,12 +49,12 @@ public class RecoverEmailPage : MonoBehaviour, ILightComponent<RecoverEmailPageM
 		
 		cancelButton.HandleClicked(async () =>
 		{
-			await context.GotoPage<HomePage>();
+			await beam.GotoPage<HomePage>();
 		});
 		
 		forgotPasswordButton.HandleClicked(async () =>
 		{
-			await context.GotoPage<ForgotPasswordPage, ForgotPasswordModel>(new ForgotPasswordModel
+			await beam.GotoPage<ForgotPasswordPage, ForgotPasswordModel>(new ForgotPasswordModel
 			{
 				email = emailInput.text
 			});
@@ -62,24 +62,24 @@ public class RecoverEmailPage : MonoBehaviour, ILightComponent<RecoverEmailPageM
 		
 		checkEmailButton.HandleClicked("checking...", async () =>
 		{
-			await CheckForAccount(context, emailInput.text);
+			await CheckForAccount(beam, emailInput.text);
 		});
 		
 		loginButton.HandleClicked("logging in...", async () =>
 		{
-			await Login(context, emailInput.text, passwordInput.text);
+			await Login(beam, emailInput.text, passwordInput.text);
 		});
 		
 		switchButton.HandleClicked("switching...", async () =>
 		{
 			await recoveryOperation.account.SwitchToAccount();
-			await context.Scope.GotoPage<HomePage>();
+			await beam.Scope.GotoPage<HomePage>();
 		});
 		
 		return Promise.Success;
 	}
 
-	async Promise CheckForAccount(LightContext ctx, string email)
+	async Promise CheckForAccount(LightBeam ctx, string email)
 	{
 		var unknownEmail = await ctx.BeamContext.Accounts.IsEmailAvailable(email);
 		if (unknownEmail)
@@ -98,7 +98,7 @@ public class RecoverEmailPage : MonoBehaviour, ILightComponent<RecoverEmailPageM
 		}
 	}
 	
-	async Promise Login(LightContext ctx, string email, string password)
+	async Promise Login(LightBeam ctx, string email, string password)
 	{
 		recoveryOperation = await ctx.BeamContext.Accounts.RecoverAccountWithEmail(email, password);
 
@@ -116,7 +116,8 @@ public class RecoverEmailPage : MonoBehaviour, ILightComponent<RecoverEmailPageM
 			                    loginButton,
 			                    forgotPasswordButton);
 
-			await ctx.SetLightComponent<AccountDisplayBehaviour, PlayerAccount>(accountPreviewContainer, recoveryOperation.account);
+			accountPreviewContainer.Clear();
+			await ctx.Instantiate<AccountDisplayBehaviour, PlayerAccount>(accountPreviewContainer, recoveryOperation.account);
 			
 			this.EnableObjects(switchButton);
 		}
