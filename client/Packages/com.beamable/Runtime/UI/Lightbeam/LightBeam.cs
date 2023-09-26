@@ -225,6 +225,29 @@ namespace Beamable.Runtime.LightBeam
 	
 	public static class LightBeamDependencyExtensions
 	{
+
+		public static async Promise<LightContext> InitLightBeams(
+			this BeamContext ctx,
+			RectTransform root,
+			CanvasGroup loadingBlocker,
+			Action<IDependencyBuilder> scopeConfiguration)
+		{
+			var lightContext = new LightContext
+			{
+				BeamContext = ctx,
+				Root = root,
+				LoadingBlocker = loadingBlocker
+			};
+			var scope = ctx.ServiceProvider.Fork(builder =>
+			{
+				builder.AddScoped(lightContext);
+				scopeConfiguration?.Invoke(builder);
+			});
+			lightContext.Scope = scope;
+
+			await ctx.OnReady.ShowLoading(lightContext);
+			return lightContext;
+		}
 		
 		public static async Promise<LightContext> InitLightBeams<T>(this T lightBeam,
 		                                                            RectTransform root,
