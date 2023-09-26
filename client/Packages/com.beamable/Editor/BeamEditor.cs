@@ -18,6 +18,7 @@ using Beamable.Common.Reflection;
 using Beamable.Config;
 using Beamable.Console;
 using Beamable.Content;
+using Beamable.Coroutines;
 using Beamable.Editor;
 using Beamable.Editor.Assistant;
 using Beamable.Editor.BeamCli;
@@ -131,6 +132,13 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IRuntimeConfigProvider, EditorRuntimeConfigProvider>();
 
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
+		}
+
+		[RegisterBeamableDependencies(-999, RegistrationOrigin.RUNTIME_GLOBAL)]
+		public static void RegisterGlobalRuntime(IDependencyBuilder builder)
+		{
+			builder.RemoveIfExists<ICoroutineService>();
+			builder.AddSingleton<ICoroutineService, BeamableDispatcher>();
 		}
 
 		[RegisterBeamableDependencies(-999, RegistrationOrigin.RUNTIME)]

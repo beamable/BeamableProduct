@@ -16,7 +16,8 @@ namespace Beamable.Common.Dependencies
 	public enum RegistrationOrigin
 	{
 		RUNTIME = 1,
-		EDITOR = 2
+		EDITOR = 2,
+		RUNTIME_GLOBAL = 4
 	}
 
 	/// <summary>

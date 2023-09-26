@@ -53,6 +53,9 @@ namespace Beamable.Common.Dependencies
 		/// <param name="configure">Optionally, you can pass a configuration function that registers new services specific to the child provider.</param>
 		/// <returns>A new <see cref="IDependencyProviderScope"/></returns>
 		IDependencyProviderScope Fork(Action<IDependencyBuilder> configure = null);
+		
+		/// <inheritdoc cref="Fork(System.Action{Beamable.Common.Dependencies.IDependencyBuilder})"/>
+		IDependencyProviderScope Fork(IDependencyBuilder configuration);
 	}
 
 	public static class IDependencyProviderScopeExtensions
@@ -511,6 +514,16 @@ namespace Beamable.Common.Dependencies
 					Factory = p => factory(p, kvp.Value)
 				});
 			}
+		}
+
+		public IDependencyProviderScope Fork(IDependencyBuilder builder)
+		{
+			return Fork(existing =>
+			{
+				existing.GetTransientServices().AddRange(builder.GetTransientServices().Select(x => x.Clone()));
+				existing.GetScopedServices().AddRange(builder.GetScopedServices().Select(x => x.Clone()));
+				existing.GetSingletonServices().AddRange(builder.GetSingletonServices().Select(x => x.Clone()));
+			});
 		}
 
 		public IDependencyProviderScope Fork(Action<IDependencyBuilder> configure = null)
