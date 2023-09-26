@@ -4,9 +4,13 @@ using UnityEngine;
 
 namespace Beamable
 {
+	/// <summary>
+	/// This class will create a global GameObject for the global dependency injection scope
+	/// available in <see cref="Beam.GlobalScope"/>
+	/// </summary>
 	public class BeamableGlobalGameObject : IGameObjectContext, IBeamableDisposableOrder
 	{
-		private BeamableGlobalBehaviour _instance;
+		private GameObject _instance;
 
 		public GameObject GameObject
 		{
@@ -15,11 +19,9 @@ namespace Beamable
 				if (!Application.isPlaying) return null;
 				
 				if (_instance) return _instance.gameObject;
-				var gob = new GameObject("GlobalBeamable");
+				var gob = new GameObject("BeamableGlobal");
 				Object.DontDestroyOnLoad(gob);
-				gob.hideFlags = HideFlags.HideAndDontSave;
-				
-				_instance = gob.AddComponent<BeamableGlobalBehaviour>();
+				gob.hideFlags = HideFlags.DontSave;
 				return gob;
 			}
 		}

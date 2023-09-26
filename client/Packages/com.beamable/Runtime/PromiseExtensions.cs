@@ -191,8 +191,14 @@ namespace Beamable
 		public Promise WaitForAllHandlers()
 		{
 			var p = new Promise();
+			var timeoutAt = Time.realtimeSinceStartup + .5f; // half a second into the future
 			IEnumerator Wait()
 			{
+				if (Time.realtimeSinceStartup > timeoutAt)
+				{
+					p.CompleteError(new Exception($"There are cascading failures in the uncaught promise handling. The {nameof(WaitForAllHandlers)} function has timed out."));
+					yield break;
+				}
 				while (failedPromises.Count > 0)
 				{
 					yield return null;

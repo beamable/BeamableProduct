@@ -520,9 +520,9 @@ namespace Beamable.Common.Dependencies
 		{
 			return Fork(existing =>
 			{
-				existing.GetTransientServices().AddRange(builder.GetTransientServices());
-				existing.GetScopedServices().AddRange(builder.GetScopedServices());
-				existing.GetSingletonServices().AddRange(builder.GetSingletonServices());
+				existing.GetTransientServices().AddRange(builder.GetTransientServices().Select(x => x.Clone()));
+				existing.GetScopedServices().AddRange(builder.GetScopedServices().Select(x => x.Clone()));
+				existing.GetSingletonServices().AddRange(builder.GetSingletonServices().Select(x => x.Clone()));
 			});
 		}
 
