@@ -38,6 +38,7 @@ namespace Beamable.Server
 		public string LogOutputPath { get; }
 		public bool EnableDangerousDeflateOptions { get; }
 		public string MetadataUrl { get; }
+		public string RefreshToken { get; }
 	}
 
 	public enum LogOutputType
@@ -80,6 +81,7 @@ namespace Beamable.Server
 		public string LogOutputPath { get; set; }
 		public bool EnableDangerousDeflateOptions { get; set; }
 		public string MetadataUrl { get; set; }
+		public string RefreshToken { get; set; }
 	}
 
 	public static class MicroserviceArgsExtensions
@@ -88,6 +90,7 @@ namespace Beamable.Server
 		{
 			var next = new MicroserviceArgs
 			{
+				RefreshToken = args.RefreshToken,
 				ServiceScope = args.ServiceScope,
 				CustomerID = args.CustomerID,
 				ProjectName = args.ProjectName,
@@ -151,7 +154,8 @@ namespace Beamable.Server
 
 			return val;
 		}
-		
+
+		public string RefreshToken => Environment.GetEnvironmentVariable("REFRESH_TOKEN");
 		public string CustomerID => Environment.GetEnvironmentVariable("CID");
 		public string ProjectName => Environment.GetEnvironmentVariable("PID");
 		public IDependencyProviderScope ServiceScope { get; }

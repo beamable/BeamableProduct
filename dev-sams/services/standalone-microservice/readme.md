@@ -51,9 +51,6 @@ The `standalone_microservice.csproj` file has a few configuration options that c
     <!-- The tool path for the beamCLI. "dotnet beam" will refer to the local project tool, and "beam" would install to a globally installed tool -->
     <BeamableTool>dotnet beam</BeamableTool>
 
-    <!-- When "true", this will open a website to the local swagger page for the running service -->
-    <OpenLocalSwaggerOnRun>true</OpenLocalSwaggerOnRun>
-
     <!-- When "true", this will auto-generate client code to any linked unity projects -->
     <GenerateClientCode>true</GenerateClientCode>
 </PropertyGroup>
@@ -64,13 +61,6 @@ By default, both standalone_microservice and standalone_microserviceLibrary have
 However, it is likely that `beam` is installed as a global tool, and as such, the `BeamableTool` value
 could be changed `beam`. 
 
-#### OpenLocalSwaggerOnRun
-If the `OpenLocalSwaggerOnRun` setting is set to `false`, then the local swagger will not open when the project is
-built. However, it can be opened manually by the following shell command. Optionally, pass the `--remote` flag to open the
-remote swagger. 
-```shell
-beam project open-swagger standalone_microservice
-```
 
 ### Connecting to a Unity Project
 The project can be linked to a number of Unity Projects. The `./beamable/.linkedProjects.json` file 

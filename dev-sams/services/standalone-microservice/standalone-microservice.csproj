@@ -4,9 +4,6 @@
         <!-- The tool path for the beamCLI. "dotnet beam" will refer to the local project tool, and "beam" would install to a globally installed tool -->
         <BeamableTool>beam</BeamableTool>
 
-        <!-- When "true", this will open a website to the local swagger page for the running service -->
-        <OpenLocalSwaggerOnRun>false</OpenLocalSwaggerOnRun>
-
         <!-- When "true", this will auto-generate client code to any linked unity projects -->
         <GenerateClientCode>false</GenerateClientCode>
     </PropertyGroup>
@@ -32,13 +29,6 @@
 <!--        <DocumentationFile>serviceDocs.xml</DocumentationFile>-->
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
-    
-
-    <!-- After the build completes, we can open the local swagger page to make it easy to test endpoints -->
-    <Target Name="open-swagger" AfterTargets="Build" Condition="$(OpenLocalSwaggerOnRun)==true AND $(DOTNET_RUNNING_IN_CONTAINER)!=true">
-        <Message Text="Opening local swagger docs..." Importance="high" />
-        <Exec Command="$(BeamableTool) project open-swagger $(AssemblyName)" />
-    </Target>
 
     <!-- After the build completes, we should auto-generate client code to any linked projects -->
     <Target Name="generate-client" AfterTargets="Build" Condition="$(GenerateClientCode)==true AND $(DOTNET_RUNNING_IN_CONTAINER)!=true">

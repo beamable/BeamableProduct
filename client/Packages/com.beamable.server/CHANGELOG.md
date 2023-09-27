@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 no changes
 
+### Changed
+- Removed `OpenLocalSwaggerOnRun` property from csproj template.
+- Added URL for the micro service portal page in it's informtion log.
+
 ## [1.19.0]
 
 ### Changed

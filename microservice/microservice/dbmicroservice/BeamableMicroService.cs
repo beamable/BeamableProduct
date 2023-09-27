@@ -24,6 +24,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common.Api.Content;
+using Beamable.Common.Api.Realms;
 using Beamable.Common.Reflection;
 using microservice.Common;
 using Newtonsoft.Json;
@@ -350,7 +351,14 @@ namespace Beamable.Server
             await ProvideService(QualifiedName);
 
             HasInitialized = true;
-            Log.Information(Logs.READY_FOR_TRAFFIC_PREFIX + "baseVersion={baseVersion} executionVersion={executionVersion}", _args.SdkVersionBaseBuild, _args.SdkVersionExecution);
+
+            var portalUrlLogline = "";
+            if (TryBuildPortalUrl(out string url))
+            {
+	            portalUrlLogline = $"portalURL={url}";
+            }
+            
+            Log.Information(Logs.READY_FOR_TRAFFIC_PREFIX + "baseVersion={baseVersion} executionVersion={executionVersion} {portalUrlLogline}", _args.SdkVersionBaseBuild, _args.SdkVersionExecution, portalUrlLogline);
             realmService.UpdateLogLevel();
 
             _serviceInitialized.CompleteSuccess(PromiseBase.Unit);
@@ -362,6 +370,34 @@ namespace Beamable.Server
             Environment.Exit(EXIT_CODE_FAILED_AUTH);
          }
 
+      }
+
+      private bool TryBuildPortalUrl(out string portalUrl)
+      {
+	      var cid = _args.CustomerID;
+	      var pid = _args.ProjectName;
+	      var microName = _serviceAttribute.MicroserviceName;
+	      var refreshToken = _args.RefreshToken;
+
+	      if (string.IsNullOrEmpty(refreshToken))
+	      {
+		      portalUrl = "";
+		      return false;
+	      }
+	      
+	      var queryArgs = new List<string>
+	      {
+		      $"refresh_token={refreshToken}",
+		      $"prefix={_args.NamePrefix}"
+	      };
+	      var joinedQueryString = string.Join("&", queryArgs);
+	      var treatedHost = _args.Host.Replace("/socket", "")
+		      .Replace("wss", "https")
+		      .Replace("dev.", "dev-")
+		      .Replace("api", "portal");
+	      portalUrl = $"{treatedHost}/{cid}/games/{pid}/realms/{pid}/microservices/{microName}/docs?{joinedQueryString}";
+	      
+	      return true;
       }
 
 
