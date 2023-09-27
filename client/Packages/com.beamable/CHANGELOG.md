@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Uncaught promises use dead letter queue
 
+### Removed
+- Beamable Unity Style Sheet (BUSS) 
+- Theme Manager
+
 ## [1.19.1]
 
 ### Fixed
