@@ -141,7 +141,7 @@ namespace Beamable
 			builder.AddSingleton<ICoroutineService, BeamableDispatcher>();
 		}
 
-		[RegisterBeamableDependencies(-999, RegistrationOrigin.RUNTIME)]
+		[RegisterBeamableDependencies(-999, RegistrationOrigin.RUNTIME_GLOBAL)]
 		public static void RegisterRuntime(IDependencyBuilder builder)
 		{
 			try
@@ -151,10 +151,9 @@ namespace Beamable
 				if (accountService != null && (accountService.Cid?.HasValue ?? false))
 				{
 					var provider = new EditorRuntimeConfigProvider(accountService);
-					Beam.RuntimeConfigProvider ??= new DefaultRuntimeConfigProvider(provider);
-					Beam.RuntimeConfigProvider.Fallback = provider;
-				
-					builder.ReplaceSingleton<IRuntimeConfigProvider>(Beam.RuntimeConfigProvider);
+					var defaultProvider = new DefaultRuntimeConfigProvider(provider);
+					builder.ReplaceSingleton<IRuntimeConfigProvider>(defaultProvider);
+					builder.ReplaceSingleton<DefaultRuntimeConfigProvider>(defaultProvider);
 				}
 			}
 			catch (Exception ex)
