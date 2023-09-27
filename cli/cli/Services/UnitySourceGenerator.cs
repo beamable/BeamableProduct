@@ -390,6 +390,8 @@ public static class UnityHelper
 
 		var httpMethod = Method.GET;
 
+		var requesterReference = new CodeVariableReferenceExpression("_requester");
+
 		switch (operation.Key)
 		{
 			case OperationType.Get:
@@ -582,9 +584,11 @@ public static class UnityHelper
 				case ParameterLocation.Path:
 					var paramToStr = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(param.Name),
 						nameof(object.ToString));
+					var pathEscaped = new CodeMethodInvokeExpression(requesterReference,
+						nameof(IBeamableRequester.EscapeURL), paramToStr);
 					var replace = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(varUrl),
 						nameof(string.Replace), new CodePrimitiveExpression($"{{{param.Name}}}"),
-						paramToStr);
+						pathEscaped);
 
 					method.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(varUrl),
 						replace));
@@ -596,10 +600,11 @@ public static class UnityHelper
 						var toStringExpr =
 							new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(param.Name),
 								nameof(object.ToString));
+						var escaped = new CodeMethodInvokeExpression(requesterReference,
+							nameof(IBeamableRequester.EscapeURL), toStringExpr);
 						var expr = new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)),
 							nameof(string.Concat), new CodePrimitiveExpression($"{param.Name}="),
-							toStringExpr);
-
+							escaped);
 						var methodInvoke = new CodeMethodInvokeExpression(queryListRef,
 							nameof(List<string>.Add), expr);
 						queryStatements.Add(new CodeExpressionStatement(methodInvoke));
@@ -679,7 +684,7 @@ public static class UnityHelper
 
 
 		// make the request itself.
-		var requestCommand = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression("_requester"),
+		var requestCommand = new CodeMethodInvokeExpression(requesterReference,
 			nameof(IBeamableRequester.Request));
 		requestCommand.Method.TypeArguments.Add(responseType);
 
