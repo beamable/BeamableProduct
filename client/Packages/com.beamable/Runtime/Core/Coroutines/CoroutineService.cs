@@ -10,7 +10,7 @@ namespace Beamable.Coroutines
 	{
 		void Run(string context, IEnumerator enumerator);
 	}
-	
+
 	/// <summary>
 	/// The <see cref="CoroutineService"/> allows any system to start a Unity coroutine, even if that system is not
 	/// a MonoBehaviour or associated with a GameObject.
@@ -29,7 +29,7 @@ namespace Beamable.Coroutines
 		{
 			var _ = StartNew(context, enumerator);
 		}
-		
+
 		/// <summary>
 		/// Start a new Coroutine.
 		/// The Coroutine will be attached to the GameObject that the <see cref="CoroutineService"/> is connected to.

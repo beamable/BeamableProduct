@@ -27,17 +27,17 @@ namespace Beamable.Common.Dependencies
 		/// Get the list of registered transient services. Transient services can be added with methods such as <see cref="AddTransient{T}(System.Func{Beamable.Common.Dependencies.IDependencyProvider,T})"/>
 		/// </summary>
 		List<ServiceDescriptor> GetTransientServices();
-		
+
 		/// <summary>
 		/// Get the list of registered scoped services. Scoped services can be added with methods such as <see cref="AddScoped{T}(System.Func{Beamable.Common.Dependencies.IDependencyProvider,T})"/>
 		/// </summary>
 		List<ServiceDescriptor> GetScopedServices();
-		
+
 		/// <summary>
 		/// Get the list of registered singleton services. Singleton services can be added with methods such as <see cref="AddSingleton{T}(System.Func{Beamable.Common.Dependencies.IDependencyProvider,T})"/>
 		/// </summary>
 		List<ServiceDescriptor> GetSingletonServices();
-		
+
 		/// <summary>
 		/// Add a transient service to the <see cref="IDependencyBuilder"/>.
 		/// A transient service will be re-instantiated everytime it is requested from <see cref="IDependencyProvider.GetService"/>.
@@ -454,7 +454,7 @@ namespace Beamable.Common.Dependencies
 		List<ServiceDescriptor> IDependencyBuilder.GetTransientServices() => TransientServices;
 		List<ServiceDescriptor> IDependencyBuilder.GetScopedServices() => ScopedServices;
 		List<ServiceDescriptor> IDependencyBuilder.GetSingletonServices() => SingletonServices;
-		
+
 		public IDependencyBuilder AddTransient<TInterface, TImpl>(Func<IDependencyProvider, TInterface> factory) where TImpl : TInterface
 		{
 			TransientServices.Add(new ServiceDescriptor
