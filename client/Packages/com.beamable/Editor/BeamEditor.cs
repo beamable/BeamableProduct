@@ -70,7 +70,7 @@ namespace Beamable
 	{
 		public static IDependencyBuilder DependencyBuilder;
 
-		
+
 		static BeamEditorDependencies()
 		{
 			DependencyBuilder = new DependencyBuilder();
@@ -580,7 +580,7 @@ namespace Beamable
 				requester.Host = BeamableEnvironment.ApiUrl;
 
 				ServiceScope.GetService<BeamableVsp>()
-				            .TryToEmitAttribution("login"); // this will no-op if the package isn't a VSP package.
+							.TryToEmitAttribution("login"); // this will no-op if the package isn't a VSP package.
 
 				var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
 				var accessToken = await accessTokenStorage.LoadTokenForCustomer(cid);
