@@ -108,23 +108,26 @@ namespace Beamable
 		/// However, this should not be used directly. Instead,
 		/// Use <see cref="ChangePid"/> to change the PID at runtime.
 		/// </summary>
-		public static DefaultRuntimeConfigProvider RuntimeConfigProvider
-		{
-			get
-			{
-				if (_runtimeConfigProvider == null)
-				{
-					_runtimeConfigProvider = new DefaultRuntimeConfigProvider(new ConfigDatabaseProvider());
-				}
-				return _runtimeConfigProvider;
-			}
-			set
-			{
-				_runtimeConfigProvider = value;
-			}
-		}
+		// [Obsolete]
+		public static DefaultRuntimeConfigProvider RuntimeConfigProvider =>
+			GlobalScope.GetService<DefaultRuntimeConfigProvider>();
+		// public static DefaultRuntimeConfigProvider RuntimeConfigProvider
+		// {
+		// 	get
+		// 	{
+		// 		if (_runtimeConfigProvider == null)
+		// 		{
+		// 			_runtimeConfigProvider = new DefaultRuntimeConfigProvider(new ConfigDatabaseProvider());
+		// 		}
+		// 		return _runtimeConfigProvider;
+		// 	}
+		// 	set
+		// 	{
+		// 		_runtimeConfigProvider = value;
+		// 	}
+		// }
 
-		private static DefaultRuntimeConfigProvider _runtimeConfigProvider;
+		// private static DefaultRuntimeConfigProvider _runtimeConfigProvider;
 		
 		public static ReflectionCache ReflectionCache;
 		public static IBeamHintGlobalStorage RuntimeGlobalStorage;
@@ -166,6 +169,9 @@ namespace Beamable
 			GlobalDependencyBuilder.AddComponentSingleton<CoroutineService>();
 			GlobalDependencyBuilder.AddSingleton<ICoroutineService>(p => p.GetService<CoroutineService>());
 			GlobalDependencyBuilder.AddSingleton<DefaultUncaughtPromiseQueue>();
+			GlobalDependencyBuilder.AddSingleton(new DefaultRuntimeConfigProvider(new ConfigDatabaseProvider()));
+			GlobalDependencyBuilder.AddSingleton<IRuntimeConfigProvider>(
+				p => p.GetService<DefaultRuntimeConfigProvider>());
 			
 			// allow customization to the global scope
 			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(GlobalDependencyBuilder, RegistrationOrigin.RUNTIME_GLOBAL);
@@ -306,10 +312,6 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(CoreConfiguration.Instance);
 			DependencyBuilder.AddSingleton<IAuthSettings>(AccountManagementConfiguration.Instance);
 			DependencyBuilder.AddSingleton<OfflineCache>(p => new OfflineCache(p.GetService<IRuntimeConfigProvider>(), CoreConfiguration.Instance.UseOfflineCache));
-
-
-			RuntimeConfigProvider ??= new DefaultRuntimeConfigProvider(new ConfigDatabaseProvider());
-			DependencyBuilder.AddSingleton<IRuntimeConfigProvider>(RuntimeConfigProvider);
 			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 
