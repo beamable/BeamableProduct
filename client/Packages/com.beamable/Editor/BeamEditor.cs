@@ -151,9 +151,6 @@ namespace Beamable
 				if (accountService != null && (accountService.Cid?.HasValue ?? false))
 				{
 					var provider = new EditorRuntimeConfigProvider(accountService);
-					// Beam.RuntimeConfigProvider ??= new DefaultRuntimeConfigProvider(provider);
-					//Beam.RuntimeConfigProvider.Fallback = provider;
-
 					var defaultProvider = new DefaultRuntimeConfigProvider(provider);
 					builder.ReplaceSingleton<IRuntimeConfigProvider>(defaultProvider);
 					builder.ReplaceSingleton<DefaultRuntimeConfigProvider>(defaultProvider);
