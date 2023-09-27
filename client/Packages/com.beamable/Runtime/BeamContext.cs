@@ -212,6 +212,8 @@ namespace Beamable
 		/// </summary>
 		public PlayerInventory Inventory => ServiceProvider.GetService<PlayerInventory>();
 
+		public PlayerLeaderboards Leaderboards => ServiceProvider.GetService<PlayerLeaderboards>();
+
 		/// <summary>
 		/// Access the <see cref="IContentApi"/> for this player.
 		/// </summary>

@@ -291,6 +291,7 @@ namespace Beamable
 			DependencyBuilder.AddScoped<PlayerStats>();
 			DependencyBuilder.AddScoped<PlayerLobby>();
 			DependencyBuilder.AddScoped<PlayerParty>();
+			DependencyBuilder.AddScoped<PlayerLeaderboards>();
 			DependencyBuilder.AddScoped<PlayerAccounts>();
 			DependencyBuilder.AddScopedStorage<PlayerInventory, OfflineCacheStorageLayer>();
 			DependencyBuilder.AddSingleton<OfflineCacheStorageLayer>();
