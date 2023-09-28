@@ -8,10 +8,6 @@
     background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Content_Manager_light 1.png");
 }
 
-#skinningIcon{
-    background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Skinning_light.png");
-}
-
 #globalConfigIcon{
     background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Config_Light.png");
 }

@@ -15,11 +15,6 @@
             <engine:Label text="Content" class="buttonText"/>
         </engine:Button>
 
-        <engine:Button class="boundedButton" name="skinning">
-            <engine:Image name="skinningIcon"/>
-            <engine:Label text="Skinning" class="buttonText"/>
-        </engine:Button>
-
         <engine:Button class="boundedButton" name="globalConfig">
             <engine:Image name="globalConfigIcon"/>
             <engine:Label text="Config" class="buttonText"/>

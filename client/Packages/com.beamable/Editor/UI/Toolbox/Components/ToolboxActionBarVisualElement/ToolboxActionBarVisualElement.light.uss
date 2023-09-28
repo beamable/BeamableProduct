@@ -7,10 +7,6 @@
     background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Content_Manager_dark.png");
 }
 
-#skinningIcon{
-    background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Skinning_dark.png");
-}
-
 #globalConfigIcon{
     background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Config_dark.png");
 }

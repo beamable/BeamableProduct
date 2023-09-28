@@ -17,7 +17,6 @@
 		public static class Commons
 		{
 			public const string OBSOLETE_WILL_BE_REMOVED = "This is no longer supported, and will be removed in the future.";
-			public const string OBSOLETE_BUSS_INTRODUCED = "Not used after introducing BUSS system";
 			public const string OPEN = "Open";
 
 			public const string OFFLINE = "offline";
@@ -87,8 +86,6 @@
 				public const string URL_DOC_WINDOW_CONTENT_NAMESPACES = URL_BEAMABLE_DOCS_WEBSITE + "/content-manager#namespaces";
 				public const string URL_DOC_WINDOW_CONFIG_MANAGER = URL_BEAMABLE_DOCS_WEBSITE + "/configuration-manager-overview";
 				public const string URL_DOC_WINDOW_TOOLBOX = URL_BEAMABLE_DOCS_WEBSITE + "/unity-toolbox";
-
-				public const string URL_DOC_BUSS_THEME_MANAGER = URL_BEAMABLE_DOCS_WEBSITE + "/theme-manager-overview";
 			}
 		}
 		public static class MenuItems
@@ -100,18 +97,13 @@
 					public const string BEAMABLE = "Beamable";
 					public const string CONTENT_MANAGER = "Content Manager";
 					public const string CONFIG_MANAGER = "Configuration Manager";
-					public const string THEME_MANAGER = "Theme Manager";
 					public const string MICROSERVICES_MANAGER = "Microservices Manager";
 					public const string PORTAL = "Portal";
 					public const string TOOLBOX = "Toolbox";
 					public const string ENVIRONMENT = "Beamable Environment";
 					public const string SAMPLE_UTILITY = "Sample Utilities";
 					public const string BEAMABLE_ASSISTANT = BEAMABLE + " Assistant";
-					public const string BUSS = BEAMABLE + " Styles";
-					public const string BUSS_SHEET_EDITOR = "Sheet Inspector";
-					public const string BUSS_WIZARD = "Theme Wizard";
 					public const string LOGIN = "Beamable Login";
-					public const string SDF_GENERATOR = "SDF Generator";
 				}
 				public static class Paths
 				{
@@ -133,10 +125,6 @@
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_BEAMABLE_DEVELOPER_SAMPLES = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + "/Samples";
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_UNITY = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + "/Unity";
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_THEME_MANAGER = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + "/Theme Manager";
-
-					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_BUSS = "/New BUSS";
-					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_SDF_GENERATOR =
-						MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + MENU_ITEM_PATH_WINDOW_BEAMABLE_BUSS + "/Open SDF Generator";
 
 				}
 				public static class Orders
