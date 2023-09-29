@@ -285,10 +285,18 @@ namespace Beamable.Common.Player
 
 		public AbsObservableReadonlyList()
 		{
-			OnUpdated += () =>
-			{
-				OnDataUpdated?.Invoke(_data.ToList());
-			};
+			SetupDataListener();
+		}
+
+		protected void SetupDataListener()
+		{
+			OnUpdated -= InvokeDataUpdated;
+			OnUpdated += InvokeDataUpdated;
+		}
+
+		private void InvokeDataUpdated()
+		{
+			OnDataUpdated?.Invoke(_data.ToList());
 		}
 
 		public override int GetBroadcastChecksum()
