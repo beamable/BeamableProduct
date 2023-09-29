@@ -11,7 +11,9 @@ using Beamable.Common.Player;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using UnityEditor.VersionControl;
 using UnityEngine;
+using UnityEngine.SocialPlatforms.Impl;
 
 namespace Beamable.Player
 {
@@ -273,7 +275,11 @@ namespace Beamable.Player
 
 			_connectivity = provider.GetService<IConnectivityService>();
 			_connectivity.OnConnectivityChanged += OnConnectionChanged;
-			_connectivity.OnReconnectOnce(UpdateLocalScore);
+			_connectivity.OnReconnectOnce(async () =>
+			{
+				await UpdateLocalScore();
+				await SetPendingScore();
+			});
 			
 			// hydrate nested data structures 
 			(_topScores as IPlayerScoreListFriend)?.Hydrate(this, _provider);
@@ -281,20 +287,17 @@ namespace Beamable.Player
 
 			_nearbyScores.playerId = _userContext.UserId;
 			(_nearbyScores as IPlayerScoreListFriend)?.Hydrate(this, _provider);
-
-			foreach (var kvp in _playerCollectionViews)
-			{
-				(kvp.Value as IPlayerScoreListFriend)?.Hydrate(this, _provider);
-			}
 		}
 
 		private void OnConnectionChanged(bool hasConnection)
 		{
 			if (!hasConnection) return; // nothing to do
-			if (_pendingScoreRequest == null) return; // nothing to do
+			if (!HasPendingScoreRequest) return; // nothing to do
 
 			var _ = SetPendingScore();
 		}
+
+		bool HasPendingScoreRequest => _pendingScoreRequest != null && _pendingScoreRequest.id > 0;
 
 		void IPlayerLeaderboardFriend.Hydrate(IDependencyProvider provider) => Hydrate(provider);
 		
@@ -342,7 +345,9 @@ namespace Beamable.Player
 		/// </param>
 		public async Promise SetScore(double score, Dictionary<string, string> stats=null)
 		{
-			_pendingScoreRequest = new LeaderboardAddRequest {id = _userContext.UserId, score = score};
+			
+			var request = new LeaderboardAddRequest {id = _userContext.UserId, score = score};
+			CreateRequestObject(request);
 			PrepareStats(stats);
 			await SetPendingScore();
 		}
@@ -368,12 +373,13 @@ namespace Beamable.Player
 		/// </param>
 		public async Promise IncrementScore(double change, Dictionary<string, string> stats = null)
 		{
-			_pendingScoreRequest = new LeaderboardAddRequest
+			var request = new LeaderboardAddRequest
 			{
 				id = _userContext.UserId,
 			    score = change
 			};
-			_pendingScoreRequest.increment.Set(true);
+			request.increment.Set(true);
+			CreateRequestObject(request);
 			PrepareStats(stats);
 			await SetPendingScore();
 		}
@@ -404,16 +410,67 @@ namespace Beamable.Player
 		/// </param>
 		public async Promise IncrementScore(double change, double minScore, double maxScore, Dictionary<string, string> stats = null)
 		{
-			_pendingScoreRequest = new LeaderboardAddRequest
+			var request = new LeaderboardAddRequest
 			{
 				id = _userContext.UserId,
 				score = change
 			};
-			_pendingScoreRequest.increment.Set(true);
-			_pendingScoreRequest.minScore.Set(minScore);
-			_pendingScoreRequest.maxScore.Set(maxScore);
+			request.increment.Set(true);
+			request.minScore.Set(minScore);
+			request.maxScore.Set(maxScore);
+			CreateRequestObject(request);
 			PrepareStats(stats);
 			await SetPendingScore();
+		}
+
+
+		void CreateRequestObject(LeaderboardAddRequest next)
+		{
+			if (!HasPendingScoreRequest)
+			{
+				_pendingScoreRequest = next;
+				return;
+			}
+
+			_pendingScoreRequest.id = next.id;
+
+			var nextIncrement = next.increment.GetOrElse(false);
+			var wasIncrement = _pendingScoreRequest.increment.GetOrElse(false);
+
+			if (nextIncrement && wasIncrement)
+			{
+				_pendingScoreRequest.score += next.score;
+			} else if (nextIncrement && !wasIncrement)
+			{
+				// we cannot make it an increment, because it will inc by the previous SET score
+				_pendingScoreRequest.score += next.score;
+			} else if (!nextIncrement && !wasIncrement)
+			{
+				_pendingScoreRequest.score = next.score;
+			} else if (!nextIncrement && wasIncrement)
+			{
+				// we are switching to an increment, but we cannot do that, because we don't know what the score used to be
+				// so we'll fake it
+				var current = myStandings.GetOrThrow(
+					() => new InvalidOperationException("Indeterminate behaviour for offline leaderboard mocking."))
+				           .score;
+				
+				// we need to simulate the aggregate add so far...
+				current += _pendingScoreRequest.score;
+				
+				// add the delta that would put the score at the desired value.
+				_pendingScoreRequest.score += (next.score - current);
+
+			}
+
+			if (next.minScore.HasValue)
+			{
+				_pendingScoreRequest.score = next.score < next.minScore.Value ? next.minScore.Value : next.score;
+			}
+			if (next.maxScore.HasValue)
+			{
+				_pendingScoreRequest.score = next.score > next.maxScore.Value ? next.maxScore.Value : next.score;
+			}
 		}
 
 		void PrepareStats(Dictionary<string, string> stats=null)
@@ -434,12 +491,19 @@ namespace Beamable.Player
 
 		async Promise SetPendingScore()
 		{
-			if (_pendingScoreRequest == null) return;
-			
-			var info = await GetLocalAssignment(true);
-			await _api.ObjectPutEntry(info.leaderboardId, _pendingScoreRequest);
-			await UpdateLocalScore();
-			_pendingScoreRequest = null;
+			try
+			{
+				if (!HasPendingScoreRequest) return;
+
+				var info = await GetLocalAssignment(true);
+				await _api.ObjectPutEntry(info.leaderboardId, _pendingScoreRequest);
+				await UpdateLocalScore();
+				_pendingScoreRequest = null;
+			}
+			finally
+			{
+				collection.Save();
+			}
 		}
 
 		void IPlayerLeaderboardFriend.SetSize(long size)
