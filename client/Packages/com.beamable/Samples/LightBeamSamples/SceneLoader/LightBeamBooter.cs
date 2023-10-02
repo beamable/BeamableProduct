@@ -34,13 +34,13 @@ public class LightBeamBooter : MonoBehaviour
 	    }
 
 	    var queryStr = url.Substring(queryStartIndex + 1); // consume the ?
-	    var queryArgStrs = queryStr.Split('&', StringSplitOptions.RemoveEmptyEntries);
+	    var queryArgStrs = queryStr.Split(new char[]{'&'}, StringSplitOptions.RemoveEmptyEntries);
 
 	    var queryArgs = new Dictionary<string, string>();
 	    
 	    foreach (var query in queryArgStrs)
 	    {
-		    var parts = query.Split('=', StringSplitOptions.RemoveEmptyEntries);
+		    var parts = query.Split(new char[]{'='}, StringSplitOptions.RemoveEmptyEntries);
 		    switch (parts.Length)
 		    {
 			    case 1:
