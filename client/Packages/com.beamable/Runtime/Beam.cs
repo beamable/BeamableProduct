@@ -19,6 +19,7 @@ using Beamable.Api.Payments;
 using Beamable.Api.Sessions;
 using Beamable.Api.Stats;
 using Beamable.Api.Tournaments;
+using Beamable.Avatars;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Announcements;
@@ -291,6 +292,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.CustomParameterProvider);
 			DependencyBuilder.AddSingleton(ContentConfiguration.Instance.ParameterProvider);
 			DependencyBuilder.AddSingleton(ContentConfiguration.Instance);
+			DependencyBuilder.AddSingleton(AvatarConfiguration.Instance);
 			DependencyBuilder.AddSingleton(CoreConfiguration.Instance);
 			DependencyBuilder.AddSingleton<IAuthSettings>(AccountManagementConfiguration.Instance);
 			DependencyBuilder.AddSingleton<OfflineCache>(p => new OfflineCache(p.GetService<IRuntimeConfigProvider>(), CoreConfiguration.Instance.UseOfflineCache));

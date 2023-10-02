@@ -705,6 +705,35 @@ namespace Beamable.Player
 		}
 	}
 
+	[Serializable]
+	public class PasswordResetResult
+	{
+		public bool isSuccess => innerException == null;
+
+		public Exception innerException;
+
+		public PasswordResetConfirmError error;
+
+		public PasswordResetResult()
+		{
+			error = PasswordResetConfirmError.NONE;
+		}
+		
+		public PasswordResetResult(Exception exception)
+		{
+			innerException = exception;
+			switch (innerException)
+			{
+				case PlatformRequesterException ex when ex.Status == 400:
+					error = PasswordResetConfirmError.BAD_CODE;
+					break;
+				default:
+					error = PasswordResetConfirmError.INVALID;
+					break;
+			}
+		}
+	}
+	
 	/// <summary>
 	/// The <see cref="PasswordResetConfirmOperation"/> contain the results
 	/// or a password confirmation.
@@ -978,7 +1007,15 @@ namespace Beamable.Player
 		/// represents that no error occured.
 		/// </summary>
 		NONE,
+		
+		/// <summary>
+		/// represents that an invalid code was given
+		/// </summary>
+		BAD_CODE,
+		
+		INVALID,
 	}
+	
 
 
 	[Serializable]
@@ -1258,6 +1295,27 @@ namespace Beamable.Player
 			return res;
 		}
 
+		public async Promise ResetPassword(string email)
+		{
+			var service = GetAuthServiceForAccount(Current);
+			await service.IssuePasswordUpdate(email);
+
+		}
+
+		public async Promise<PasswordResetResult> ConfirmPassword(string code, string newPassword)
+		{
+			var service = GetAuthServiceForAccount(Current);
+			try
+			{
+				await service.ConfirmPasswordUpdate(code, newPassword);
+				return new PasswordResetResult();
+			}
+			catch (Exception ex)
+			{
+				return new PasswordResetResult(ex);
+			}
+		}
+		
 		/// <summary>
 		/// Initiates a password reset flow for the given <see cref="PlayerAccount"/>.
 		/// If the given account does not have an email credential, the resulting

@@ -1,0 +1,20 @@
+{
+    "name": "LightBeam.CurrencyHud",
+    "references": [
+        "Unity.Beamable",
+        "Unity.Beamable.Runtime.Common",
+        "Unity.Beamable.Customer.Common",
+        "Unity.TextMeshPro",
+        "Unity.Addressables",
+        "Unity.Beamable.LightBeams"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

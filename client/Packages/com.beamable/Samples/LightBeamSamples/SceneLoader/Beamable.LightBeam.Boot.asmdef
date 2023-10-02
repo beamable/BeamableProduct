@@ -1,0 +1,17 @@
+{
+	"name": "Beamable.LightBeam.Boot",
+	"references": [
+		"Unity.Beamable",
+		"Unity.Beamable.Runtime.Common",
+		"Unity.Beamable.LightBeams"
+	],
+	"includePlatforms": [],
+	"excludePlatforms": [],
+	"allowUnsafeCode": false,
+	"overrideReferences": false,
+	"precompiledReferences": [],
+	"autoReferenced": true,
+	"defineConstraints": [],
+	"versionDefines": [],
+	"noEngineReferences": false
+}

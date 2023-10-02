@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Global dependency injection scope
+- LightBeam UI framework
 
 ### Changed
 - Uncaught promises use dead letter queue
