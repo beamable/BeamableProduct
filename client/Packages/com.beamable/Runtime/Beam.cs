@@ -93,7 +93,7 @@ namespace Beamable
 		/// </para>
 		/// </summary>
 		public static IDependencyBuilder GlobalDependencyBuilder;
-		
+
 		/// <summary>
 		/// The global scope is shared for all <see cref="BeamContext"/> instances.
 		/// Every <see cref="BeamContext"/> is a child scope of the global scope.
@@ -111,7 +111,7 @@ namespace Beamable
 		/// </summary>
 		public static DefaultRuntimeConfigProvider RuntimeConfigProvider =>
 			GlobalScope.GetService<DefaultRuntimeConfigProvider>();
-		
+
 		public static ReflectionCache ReflectionCache;
 		public static IBeamHintGlobalStorage RuntimeGlobalStorage;
 
@@ -145,7 +145,7 @@ namespace Beamable
 			ReflectionCache.SetStorage(RuntimeGlobalStorage);
 #endif
 			ReflectionCache.GenerateReflectionCache(CoreConfiguration.Instance.AssembliesToSweep);
-			
+
 			// create a global dependency builder.
 			GlobalDependencyBuilder = new DependencyBuilder();
 			GlobalDependencyBuilder.AddSingleton<IGameObjectContext, BeamableGlobalGameObject>();
@@ -155,16 +155,16 @@ namespace Beamable
 			GlobalDependencyBuilder.AddSingleton(new DefaultRuntimeConfigProvider(new ConfigDatabaseProvider()));
 			GlobalDependencyBuilder.AddSingleton<IRuntimeConfigProvider>(
 				p => p.GetService<DefaultRuntimeConfigProvider>());
-			
+
 			// allow customization to the global scope
 			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(GlobalDependencyBuilder, RegistrationOrigin.RUNTIME_GLOBAL);
 
 			// create the global scope
 			GlobalScope = _globalProviderScope = GlobalDependencyBuilder.Build();
-			
+
 			// Set the default promise error handlers
 			PromiseExtensions.SetupDefaultHandler();
-			
+
 			// register all services that are not context specific.
 			DependencyBuilder = new DependencyBuilder();
 
