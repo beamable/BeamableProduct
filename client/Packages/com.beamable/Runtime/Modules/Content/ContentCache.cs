@@ -9,7 +9,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 using static Beamable.Common.Constants.Features.Content;
 using Debug = UnityEngine.Debug;
@@ -277,8 +276,9 @@ namespace Beamable.Content
 		private static string ContentPath(IBeamableFilesystemAccessor fsa)
 		{
 			var pid = Beam.RuntimeConfigProvider.Pid;
+			var cid = Beam.RuntimeConfigProvider.Cid;
 			
-			return $"{fsa.GetPersistentDataPathWithoutTrailingSlash()}/{pid}/content/content.json";
+			return $"{fsa.GetPersistentDataPathWithoutTrailingSlash()}/{pid}-{cid}/content/content.json";
 		}
 
 		private static TContent DeserializeContent(ClientContentInfo info, string raw)
