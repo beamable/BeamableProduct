@@ -79,8 +79,7 @@ namespace Beamable.Player
 		
 		internal IPlayerLeaderboardsFriend collection;
 		private IConnectivityService _connectivity;
-
-	
+		
 		// don't cache these views.
 		private PlayerCollectionScoresListDictionary _playerCollectionViews =
 			new PlayerCollectionScoresListDictionary();
@@ -197,7 +196,7 @@ namespace Beamable.Player
 		/// leaderboard view. If the player is not in the leaderboard, there will be no
 		/// entry in the resulting view.</param>
 		/// <returns>A <see cref="PlayerCollectionScoresList"/> for the given players</returns>
-		public PlayerCollectionScoresList GetViewForPlayers(params long[] playerIds)
+		public PlayerCollectionScoresList GetScoresForPlayers(params long[] playerIds)
 		{
 			var hash = 1L;
 			foreach (var id in playerIds)
@@ -224,7 +223,7 @@ namespace Beamable.Player
 		/// <param name="playerId">The playerId of the player to find nearby scores</param>
 		/// <param name="size">The number of entries to return</param>
 		/// <returns>A <see cref="PlayerFocusScoresList"/> for the given players</returns>
-		public PlayerFocusScoresList GetViewForPlayer(long playerId, int size = 10)
+		public PlayerFocusScoresList GetScoresNearPlayer(long playerId, int size = 10)
 		{
 			var viewName = $"playerHash_{playerId}";
 			if (!_playerViews.TryGetValue(viewName, out var view))
@@ -236,6 +235,7 @@ namespace Beamable.Player
 			return view.LoadCount(size);
 		}
 		
+		// TODO: move to shared code somewhere
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		static long CombineHashCodes(long h1, long h2)
 		{
@@ -703,7 +703,7 @@ namespace Beamable.Player
 		/// <summary>
 		/// The optional stats associated with an entry
 		/// </summary>
-		public OptionalArrayOfRankEntryStat stats;
+		public OptionalArrayOfRankEntryStat stats = new OptionalArrayOfRankEntryStat();
 
 		public PlayerLeaderboardEntry()
 		{

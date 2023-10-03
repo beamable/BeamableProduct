@@ -18,11 +18,13 @@ namespace Beamable.Player
 		{
 			var promiseSeq = await Promise.Sequence(
 				_api.ObjectGetFriends(info.leaderboardId),
-				_api.ObjectGetView(info.leaderboardId, max: 0, outlier: _ctx.UserId)
+				_api.ObjectGetView(objectId: info.leaderboardId,
+				                   max: 0, 
+				                   outlier: _ctx.UserId)
 			);
 
-			var self = promiseSeq[1].lb.rankgt;
 			var friends = promiseSeq[0].lb.rankings;
+			var self = promiseSeq[1].lb.rankgt;
 			var selfRankFound = false;
 
 			foreach (var friend in friends)
