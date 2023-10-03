@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31581dd653d643b7a3d39e84d67d4d99, type: 3}
+  m_Name: AccountConfig
+  m_EditorClassIdentifier: 
+  homePage: {fileID: 635883761041762135, guid: 80d7aca177d2e46c99b3a9ad78ba1f4b, type: 3}
+  switchPage: {fileID: 1866921629370963832, guid: 23d2567f3a29b4477af3cc8c84491c4f,
+    type: 3}
+  registerPage: {fileID: 1288881448726138315, guid: aba581a96c2d0477ba0249bde04d6942,
+    type: 3}
+  recoverPage: {fileID: 2997690909840400873, guid: f289fec3496fb40c8a647a4898c02a98,
+    type: 3}
+  forgotPasswordPage: {fileID: 8743961837005025987, guid: fc605d94e6ce54f3d85409a739926759,
+    type: 3}
+  avatarDisplayTemplate: {fileID: 3330863476543736892, guid: 500262a6d8ef54f4ba45b549c1d4a2df,
+    type: 3}
+  accountDisplayTemplate: {fileID: 5391917194244900919, guid: c93ecd8cc429541b494a8a7f80462167,
+    type: 3}
+  accountDetailsTemplate: {fileID: 3382090336825846308, guid: dc585c46f9ce94b11b37f6a7584425aa,
+    type: 3}

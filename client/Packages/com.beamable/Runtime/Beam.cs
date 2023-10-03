@@ -19,6 +19,7 @@ using Beamable.Api.Payments;
 using Beamable.Api.Sessions;
 using Beamable.Api.Stats;
 using Beamable.Api.Tournaments;
+using Beamable.Avatars;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Announcements;
@@ -92,7 +93,7 @@ namespace Beamable
 		/// </para>
 		/// </summary>
 		public static IDependencyBuilder GlobalDependencyBuilder;
-		
+
 		/// <summary>
 		/// The global scope is shared for all <see cref="BeamContext"/> instances.
 		/// Every <see cref="BeamContext"/> is a child scope of the global scope.
@@ -110,7 +111,7 @@ namespace Beamable
 		/// </summary>
 		public static DefaultRuntimeConfigProvider RuntimeConfigProvider =>
 			GlobalScope.GetService<DefaultRuntimeConfigProvider>();
-		
+
 		public static ReflectionCache ReflectionCache;
 		public static IBeamHintGlobalStorage RuntimeGlobalStorage;
 
@@ -144,7 +145,7 @@ namespace Beamable
 			ReflectionCache.SetStorage(RuntimeGlobalStorage);
 #endif
 			ReflectionCache.GenerateReflectionCache(CoreConfiguration.Instance.AssembliesToSweep);
-			
+
 			// create a global dependency builder.
 			GlobalDependencyBuilder = new DependencyBuilder();
 			GlobalDependencyBuilder.AddSingleton<IGameObjectContext, BeamableGlobalGameObject>();
@@ -154,16 +155,16 @@ namespace Beamable
 			GlobalDependencyBuilder.AddSingleton(new DefaultRuntimeConfigProvider(new ConfigDatabaseProvider()));
 			GlobalDependencyBuilder.AddSingleton<IRuntimeConfigProvider>(
 				p => p.GetService<DefaultRuntimeConfigProvider>());
-			
+
 			// allow customization to the global scope
 			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(GlobalDependencyBuilder, RegistrationOrigin.RUNTIME_GLOBAL);
 
 			// create the global scope
 			GlobalScope = _globalProviderScope = GlobalDependencyBuilder.Build();
-			
+
 			// Set the default promise error handlers
 			PromiseExtensions.SetupDefaultHandler();
-			
+
 			// register all services that are not context specific.
 			DependencyBuilder = new DependencyBuilder();
 
@@ -291,6 +292,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.CustomParameterProvider);
 			DependencyBuilder.AddSingleton(ContentConfiguration.Instance.ParameterProvider);
 			DependencyBuilder.AddSingleton(ContentConfiguration.Instance);
+			DependencyBuilder.AddSingleton(AvatarConfiguration.Instance);
 			DependencyBuilder.AddSingleton(CoreConfiguration.Instance);
 			DependencyBuilder.AddSingleton<IAuthSettings>(AccountManagementConfiguration.Instance);
 			DependencyBuilder.AddSingleton<OfflineCache>(p => new OfflineCache(p.GetService<IRuntimeConfigProvider>(), CoreConfiguration.Instance.UseOfflineCache));

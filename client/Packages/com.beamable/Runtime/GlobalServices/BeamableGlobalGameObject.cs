@@ -17,7 +17,7 @@ namespace Beamable
 			get
 			{
 				if (!Application.isPlaying) return null;
-				
+
 				if (_instance) return _instance.gameObject;
 				var gob = new GameObject("BeamableGlobal");
 				Object.DontDestroyOnLoad(gob);
