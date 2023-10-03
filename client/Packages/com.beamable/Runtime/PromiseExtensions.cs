@@ -158,7 +158,7 @@ namespace Beamable
 
 		public override bool keepWaiting => !_promise.IsCompleted;
 	}
-	
+
 	public class DefaultUncaughtPromiseQueue
 	{
 		private readonly ICoroutineService _coroutineService;
@@ -169,7 +169,7 @@ namespace Beamable
 			public Exception exception;
 			public Promise checkedPromise;
 		}
-		
+
 		private Queue<FailedPromise> failedPromises;
 
 		public DefaultUncaughtPromiseQueue(ICoroutineService coroutineService)
@@ -178,7 +178,7 @@ namespace Beamable
 			failedPromises = new Queue<FailedPromise>();
 			coroutineService.Run("uncaught-promise-dlq", Loop());
 		}
-		
+
 		public void Handle(PromiseBase promise, Exception ex)
 		{
 			failedPromises.Enqueue(new FailedPromise
@@ -217,7 +217,7 @@ namespace Beamable
 				{
 					var failedPromise = failedPromises.Dequeue();
 					if (failedPromise.promise.HadAnyErrbacks) continue;
-					
+
 					Beamable.Common.BeamableLogger.LogException(new UncaughtPromiseException(failedPromise.promise, failedPromise.exception));
 				}
 				yield return null;

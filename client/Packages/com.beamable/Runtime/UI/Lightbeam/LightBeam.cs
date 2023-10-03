@@ -24,37 +24,37 @@ namespace Beamable.Runtime.LightBeams
 		/// The <see cref="BeamContext"/> used to populate the data for the given <see cref="LightBeam"/> UI.
 		/// </summary>
 		public BeamContext BeamContext { get; set; }
-		
+
 		/// <summary>
 		/// A child scope from the <see cref="BeamContext"/>'s dependency scope.
 		/// This scope contains all the registered <see cref="ILightComponent"/> services.
 		/// </summary>
 		public IDependencyProviderScope Scope { get; set; }
-		
+
 		/// <summary>
 		/// The transform that is used as the top level of the UI.
 		/// GameObjects will be created and removed from this transform as
 		/// the UI changes pages. 
 		/// </summary>
 		public RectTransform Root { get; set; }
-		
+
 		/// <summary>
 		/// When page changes happen, the <see cref="CanvasGroup"/> will be faded in and out.
 		/// </summary>
 		public CanvasGroup LoadingBlocker { get; set; }
-		
+
 
 		/// <inheritdoc cref="LightBeamDependencyExtensions.Instantiate{T, TModel}"/>
 		public Promise<T> Instantiate<T, TModel>(Transform container,
-		                                               TModel model)
+													   TModel model)
 			where T : MonoBehaviour, ILightComponent<TModel> =>
 			Scope.Instantiate<T, TModel>(container, model);
-		
+
 		/// <inheritdoc cref="LightBeamDependencyExtensions.Instantiate{T}"/>
 		public Promise<T> Instantiate<T>(Transform container)
 			where T : MonoBehaviour, ILightComponent =>
 			Scope.Instantiate<T>(container);
-		
+
 		public Promise<T> GotoPage<T, TModel>(TModel model)
 			where T : MonoBehaviour, ILightComponent<TModel> =>
 			Scope.GotoPage<T, TModel>(model);
@@ -65,9 +65,9 @@ namespace Beamable.Runtime.LightBeams
 
 	public interface ILightRoot
 	{
-		
+
 	}
-	
+
 	/// <summary>
 	/// A component that can be registered in a <see cref="LightBeam"/> UI.
 	/// Critically, when the <see cref="LightBeam.Instantiate{T}"/> creates a
@@ -88,7 +88,7 @@ namespace Beamable.Runtime.LightBeams
 		/// </returns>
 		Promise OnInstantiated(LightBeam beam);
 	}
-	
+
 	/// <inheritdoc cref="ILightComponent"/>
 	/// <typeparam name="T">The type of the data model that is required to create the instance</typeparam>
 	public interface ILightComponent<in T> : ILightRoot

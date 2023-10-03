@@ -9,6 +9,6 @@ namespace Beamable.Common
 	/// <typeparam name="T">Constrained to <see cref="MongoStorageObject"/></typeparam>
 	public interface ICollectionElement<T> where T : MongoStorageObject
 	{
-		
+
 	}
 }

@@ -13,7 +13,7 @@ namespace Beamable.Config
 		public string pid;
 		public string alias;
 	}
-	
+
 	public class ConfigDatabaseProvider : IRuntimeConfigProvider
 	{
 		private const string CONFIG_DEFAULTS_NAME = "config-defaults";
@@ -23,7 +23,7 @@ namespace Beamable.Config
 
 		private readonly ConfigData data = GetConfigData();
 
-		public static string GetFullPath(string fileName=null) =>
+		public static string GetFullPath(string fileName = null) =>
 			Path.Combine("Assets", "Beamable", "Resources", $"{fileName ?? CONFIG_DEFAULTS_NAME}.txt");
 
 		public static ConfigData GetConfigData()
@@ -31,7 +31,7 @@ namespace Beamable.Config
 			var json = GetFileContent(CONFIG_DEFAULTS_NAME);
 			return JsonUtility.FromJson<ConfigData>(json);
 		}
-		
+
 		public static string GetFileContent(string fileName)
 		{
 #if UNITY_EDITOR
@@ -47,13 +47,13 @@ namespace Beamable.Config
 			if (asset == null)
 			{
 				return "{}"; // empty json.
-				// throw new FileNotFoundException("Cannot find config file in Resource directory", fileName);
+							 // throw new FileNotFoundException("Cannot find config file in Resource directory", fileName);
 			}
 
 			return asset.text;
 		}
 
-		public static bool HasConfigFile(string filename=null)
+		public static bool HasConfigFile(string filename = null)
 		{
 			filename ??= CONFIG_DEFAULTS_NAME;
 			// this is hardly efficient, but if it is done infrequently enough, it should be fine

@@ -23,7 +23,7 @@ public class LightBeamBuilds
 		Debug.Log("LIGHTBEAM_CONFIG " + (config?.name ?? "<null>"));
 		// Debug.Log("LIGHTBEAM_CONFIG " + (asset?.GetType().Name ?? "<no type>"));
 	}
-	
+
 	public static void BuildAll()
 	{
 		AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
@@ -33,7 +33,7 @@ public class LightBeamBuilds
 			throw new Exception("LIGHTBEAM_NO_CONFIG");
 		}
 		Debug.Log("LIGHTBEAM_CONFIG " + config.name);
-		
+
 		var args = Environment.GetCommandLineArgs();
 
 		Debug.Log("LIGHTBEAM_ARGS " + string.Join(",", args));
@@ -56,7 +56,7 @@ public class LightBeamBuilds
 			locationPathName = outputDir,
 			target = BuildTarget.WebGL,
 			options = BuildOptions.None,
-			
+
 		};
 
 		BuildReport report = BuildPipeline.BuildPlayer(buildPlayerOptions);
@@ -73,12 +73,12 @@ public class LightBeamBuilds
 		}
 
 	}
-	
+
 	[MenuItem("LightBeam/Build All")]
 	public static void BuildLightBeamProject()
 	{
 
-		
+
 		var args = Environment.GetCommandLineArgs();
 
 		Debug.Log("LIGHTBEAM_ARGS " + string.Join(",", args));
@@ -100,7 +100,7 @@ public class LightBeamBuilds
 					break;
 			}
 		}
-		
+
 		// var lightBeamName = Environment.GetEnvironmentVariable("LIGHTBEAM_NAME");
 		// var scenePath = Environment.GetEnvironmentVariable("LIGHTBEAM_SCENE_PATH");
 		// var outputDir = Environment.GetEnvironmentVariable("LIGHTBEAM_BUILD_PATH");
@@ -108,25 +108,25 @@ public class LightBeamBuilds
 		Debug.Log($"LIGHTBEAM NAME=[{lightBeamName}]");
 		Debug.Log($"LIGHTBEAM SCENE=[{scenePath}]");
 		Debug.Log($"LIGHTBEAM BUILD=[{outputDir}]");
-		
+
 		if (string.IsNullOrEmpty(scenePath))
 		{
 			throw new Exception("no scene specified");
 		}
-		
+
 		if (string.IsNullOrEmpty(outputDir))
 		{
 			throw new Exception("no output specified");
 		}
-		
+
 		BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions
 		{
 			// scenes = new[] {"Packages/com.beamable/Samples/LightBeamSamples/AccountManager/Sample_AccountManager.unity"},
-			scenes = new[] {scenePath},
+			scenes = new[] { scenePath },
 			locationPathName = outputDir,
 			target = BuildTarget.WebGL,
 			options = BuildOptions.None,
-			
+
 		};
 
 		BuildReport report = BuildPipeline.BuildPlayer(buildPlayerOptions);

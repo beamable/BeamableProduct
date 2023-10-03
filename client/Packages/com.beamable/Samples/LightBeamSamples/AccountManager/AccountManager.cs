@@ -10,10 +10,10 @@ public class AccountManager : MonoBehaviour
 	[Header("Scene references")]
 	public RectTransform root;
 	public CanvasGroup loadingBlocker;
-	
+
 	[Header("Asset references")]
 	public AccountExampleConfig config;
-	
+
 	async void Start()
 	{
 
@@ -27,7 +27,7 @@ public class AccountManager : MonoBehaviour
 			builder.AddLightComponent<ForgotPasswordPage, ForgotPasswordModel>(config.forgotPasswordPage);
 			builder.AddLightComponent<RecoverEmailPage, RecoverEmailPageModel>(config.recoverPage);
 			builder.AddLightComponent<AccountSwitchPage, PlayerAccount>(config.switchPage);
-		
+
 			builder.AddLightComponent<AvatarDisplayBehaviour, AccountAvatar>(config.avatarDisplayTemplate);
 			builder.AddLightComponent<AccountDisplayBehaviour, PlayerAccount>(config.accountDisplayTemplate);
 			builder.AddLightComponent<AccountDetailsBehaviour, PlayerAccount>(config.accountDetailsTemplate);

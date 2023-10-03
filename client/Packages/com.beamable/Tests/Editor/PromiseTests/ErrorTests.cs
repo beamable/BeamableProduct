@@ -522,7 +522,7 @@ namespace Beamable.Editor.Tests.PromiseTests
 
 			var task = PromiseExtensions.WaitForAllUncaughtHandlers();
 			yield return task.ToYielder();
-			
+
 			Assert.IsTrue(errorCallbackRan);
 			Assert.AreEqual(knownEx, errorEx);
 		}

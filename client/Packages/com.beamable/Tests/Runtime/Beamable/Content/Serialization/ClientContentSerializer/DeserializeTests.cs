@@ -939,7 +939,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 
 			Assert.AreEqual(TestEnum.B, o.e);
 		}
-		
+
 		[Test]
 		public void Enum_int()
 		{

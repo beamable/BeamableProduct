@@ -106,7 +106,7 @@ namespace Beamable.Editor
 		public async Promise LoadFromDisk()
 		{
 			bool hasFile = ConfigDatabaseProvider.HasConfigFile();
-	
+
 			if (!hasFile)
 			{
 				return;

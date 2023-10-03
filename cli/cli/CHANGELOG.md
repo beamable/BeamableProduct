@@ -8,7 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Changed
- - Templates update with refactor to improve it receiving updates and fixes in the future.
+
+- Templates update with refactor to improve it receiving updates and fixes in the future.
 
 ## [1.19.1]
 

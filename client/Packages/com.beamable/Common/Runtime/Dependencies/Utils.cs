@@ -41,7 +41,7 @@ namespace Beamable.Common.Dependencies
 
 		public ServiceDescriptor Clone()
 		{
-			return new ServiceDescriptor {Interface = Interface, Implementation = Implementation, Factory = Factory};
+			return new ServiceDescriptor { Interface = Interface, Implementation = Implementation, Factory = Factory };
 		}
 	}
 }

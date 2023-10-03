@@ -14,7 +14,7 @@ namespace Beamable.Tests.Runtime
 	{
 		public const string DEFAULT_PID = "testPid";
 		public const string DEFAULT_CID = "123";
-		
+
 		protected MockPlatformAPI MockRequester;
 		protected User MockPlatformUser;
 		protected MockBeamableApi MockApi;
@@ -24,7 +24,7 @@ namespace Beamable.Tests.Runtime
 		[SetUp]
 		public void SetupBeamable()
 		{
-			
+
 			MockApi = new MockBeamableApi();
 			MockPlatform = new MockPlatformService();
 			MockPlatformUser = new User { id = 12 };

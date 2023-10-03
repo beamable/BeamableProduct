@@ -387,7 +387,7 @@ namespace Beamable.Common.Content
 
 			return optional;
 		}
-		
+
 		public OptionalString()
 		{
 

@@ -31,8 +31,8 @@ public class LightBeamSceneConfigObject : ScriptableObject
 
 		return false;
 	}
-	
-	#if UNITY_EDITOR
+
+#if UNITY_EDITOR
 	public List<LightBeamEditorScene> editorScenes;
 
 	private void OnValidate()
@@ -49,8 +49,8 @@ public class LightBeamSceneConfigObject : ScriptableObject
 			return scene;
 		}).ToList();
 	}
-	#endif
-	
+#endif
+
 }
 
 [Serializable]

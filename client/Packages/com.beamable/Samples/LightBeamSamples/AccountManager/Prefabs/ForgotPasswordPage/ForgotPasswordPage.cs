@@ -19,16 +19,16 @@ public class ForgotPasswordPage : MonoBehaviour, ILightComponent<ForgotPasswordM
 	public TMP_Text promptText;
 	public TMP_InputField codeInput;
 	public TMP_InputField passwordInput;
-	
+
 	public Button cancelButton;
 	public Button submitButton;
 
 	public async Promise OnInstantiated(LightBeam beam, ForgotPasswordModel model)
 	{
 		await beam.BeamContext.Accounts.ResetPassword(model.email);
-		
+
 		promptText.text = $"Enter the code sent to {model.email}, and enter a new password.";
-		
+
 		cancelButton.HandleClicked(async () =>
 		{
 			await beam.GotoPage<RecoverEmailPage, RecoverEmailPageModel>(new RecoverEmailPageModel
@@ -36,7 +36,7 @@ public class ForgotPasswordPage : MonoBehaviour, ILightComponent<ForgotPasswordM
 				email = model.email
 			});
 		});
-		
+
 		submitButton.HandleClicked("checking...", async () =>
 		{
 			var newPassword = passwordInput.text;
@@ -57,7 +57,7 @@ public class ForgotPasswordPage : MonoBehaviour, ILightComponent<ForgotPasswordM
 				passwordInput.text = "";
 				promptText.text = "There was a problem. Try again";
 			}
-			
+
 		});
 
 	}

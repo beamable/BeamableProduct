@@ -13,7 +13,7 @@ namespace Beamable.Runtime.LightBeams
 	public static class LightBeamUtilExtensions
 	{
 		public static Dictionary<string, string> Hints = new Dictionary<string, string>();
-		
+
 		/// <summary>
 		/// Remove all child gameObjects from the given transform
 		/// </summary>
@@ -38,12 +38,12 @@ namespace Beamable.Runtime.LightBeams
 				component.gameObject.SetActive(enabled);
 			}
 		}
-		
+
 		public static void EnableObjects(this ILightRoot root, params Component[] objects)
 		{
 			root.EnableObjects(true, objects);
 		}
-		
+
 		public static void DisableObjects(this ILightRoot root, params Component[] objects)
 		{
 			root.EnableObjects(false, objects);
@@ -98,7 +98,7 @@ namespace Beamable.Runtime.LightBeams
 
 			await promise;
 		}
-		
+
 		public static async Promise ShowLoading(this Promise promise, LightBeam beam)
 		{
 			if (beam.LoadingBlocker == null)
@@ -106,10 +106,10 @@ namespace Beamable.Runtime.LightBeams
 				await promise;
 				return;
 			}
-			
-			
+
+
 			var service = beam.Scope.GetService<CoroutineService>();
-			
+
 			service.StopAll("loading");
 			service.StartNew("loading", Animate());
 			IEnumerator Animate()
@@ -123,12 +123,12 @@ namespace Beamable.Runtime.LightBeams
 					if (!isWorking()) break;
 					yield return p;
 				}
-				
+
 				while (isWorking())
 				{
 					yield return null;
 				}
-				
+
 				var fadeOut = Lerp(x => beam.LoadingBlocker.alpha = x, 1, 0);
 				foreach (var p in fadeOut)
 				{
@@ -137,18 +137,18 @@ namespace Beamable.Runtime.LightBeams
 
 				beam.LoadingBlocker.gameObject.SetActive(false);
 			}
-			
+
 			await promise;
 		}
-		
-		static IEnumerable Lerp( Action<float> valueCallback, float start, float end, float delay=0,float duration=.1f, Action cb=null)
+
+		static IEnumerable Lerp(Action<float> valueCallback, float start, float end, float delay = 0, float duration = .1f, Action cb = null)
 		{
 			yield return new WaitForSecondsRealtime(delay);
 			var startTime = Time.realtimeSinceStartup;
 			var endTime = startTime + duration;
 			valueCallback(start);
 			var resolution = new WaitForSecondsRealtime(.01f);
-			while ( Time.realtimeSinceStartup <= endTime)
+			while (Time.realtimeSinceStartup <= endTime)
 			{
 				var r = 1 - (endTime - Time.realtimeSinceStartup) / (endTime - startTime);
 				var value = Mathf.Lerp(start, end, r);
@@ -178,5 +178,5 @@ namespace Beamable.Runtime.LightBeams
 			}
 		}
 	}
-	
+
 }

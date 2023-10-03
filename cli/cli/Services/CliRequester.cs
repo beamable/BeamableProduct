@@ -74,7 +74,7 @@ public class CliRequester : IRequester
 			await using Stream stream = await result.Content.ReadAsStreamAsync();
 			using var reader = new StreamReader(stream, Encoding.UTF8);
 			var rawResponse = await reader.ReadToEndAsync();
-		
+
 			if (typeof(T) == typeof(string) && rawResponse is T response)
 			{
 				return response;

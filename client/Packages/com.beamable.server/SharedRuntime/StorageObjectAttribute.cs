@@ -9,7 +9,7 @@ namespace Beamable.Server
 	{
 		public string StorageName { get; }
 		public string SourcePath { get; }
-		
+
 		public string[] Names => new[] { StorageName };
 
 		public StorageObjectAttribute(string storageName, [System.Runtime.CompilerServices.CallerFilePath]

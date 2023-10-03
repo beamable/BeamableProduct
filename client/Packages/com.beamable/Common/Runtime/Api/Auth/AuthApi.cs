@@ -246,7 +246,7 @@ namespace Beamable.Common.Api.Auth
 				uri = "/basic/realms/customer"
 			});
 			// return _requester.Request<CustomerRegistrationResponse>(Method.POST, "/basic/realms/customer", request,
-																	// false);
+			// false);
 		}
 
 		public Promise<CurrentProjectResponse> GetCurrentProject()

@@ -14,37 +14,37 @@ public class HomePage : MonoBehaviour, ILightComponent
 	public Button registerEmailButton;
 	public Button findAccountButton;
 	public Button createNewAccountButton;
-	
+
 	public async Promise OnInstantiated(LightBeam ctx)
 	{
-		
+
 		// clear old data
 		playerAccountContainer.Clear();
 		playerDetailsContainer.Clear();
-		
+
 		await ctx.BeamContext.Accounts.Refresh();
 		var currentAccount = ctx.BeamContext.Accounts.Current;
-		
+
 		// set up the register button
 		registerEmailButton.interactable = !currentAccount.HasEmail;
 		registerEmailButton.HandleClicked(async () =>
 		{
 			await ctx.GotoPage<RegisterEmailPage>();
 		});
-		
+
 		createNewAccountButton.HandleClicked(async () =>
 		{
 			var newAccount = await ctx.BeamContext.Accounts.CreateNewAccount();
 			await newAccount.SwitchToAccount();
 			await ctx.GotoPage<HomePage>();
 		});
-		
+
 		// set up the find account button
 		findAccountButton.HandleClicked(async () =>
 		{
 			await ctx.GotoPage<RecoverEmailPage, RecoverEmailPageModel>(null);
 		});
-		
+
 		// set up the account detail page
 		await currentAccountDisplay.OnInstantiated(ctx, currentAccount);
 		currentAccountDisplay.changeAccountButton.HandleClicked(async () =>
@@ -55,7 +55,7 @@ public class HomePage : MonoBehaviour, ILightComponent
 				playerDetailsContainer.Clear();
 			});
 		});
-		
+
 		// create all the prefab instances for the other accounts
 		foreach (var account in ctx.BeamContext.Accounts)
 		{

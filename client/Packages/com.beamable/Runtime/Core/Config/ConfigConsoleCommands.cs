@@ -28,7 +28,7 @@ namespace Beamable.Config
 			{
 				return Console.Help(nameof(Config));
 			}
-			
+
 			var config = _provider.GetService<IRuntimeConfigProvider>();
 
 

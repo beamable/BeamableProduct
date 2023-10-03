@@ -7,7 +7,7 @@ namespace Beamable.Mongo
 	{
 		public readonly MongoIndexesExtension.IndexType IndexType;
 		public readonly string IndexName;
-		
+
 		public MongoIndexAttribute(MongoIndexesExtension.IndexType indexType, string indexName)
 		{
 			IndexType = indexType;
