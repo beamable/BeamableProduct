@@ -14,9 +14,9 @@ public class AccountDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerAcco
 	public TMP_Text emailLabel;
 
 	public Image avatarImage;
-	
+
 	public Button changeAccountButton;
-	
+
 	private PlayerAccount _model;
 	private LightBeam _ctx;
 
@@ -37,7 +37,7 @@ public class AccountDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerAcco
 		emailLabel.text = _model.Email ?? "";
 		avatarImage.sprite = _ctx.Scope.GetService<AvatarConfiguration>().GetAvatarSprite(_model.Avatar);
 	}
-	
+
 	private void OnDestroy()
 	{
 		if (_model == null) return;

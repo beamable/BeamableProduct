@@ -12,11 +12,11 @@ public class RegisterEmailPage : MonoBehaviour, ILightComponent
 	public TMP_InputField emailInput;
 	public TMP_InputField passwordInput;
 	public TMP_Text promptText;
-	
+
 	public Button checkEmailButton;
 	public Button submitButton;
 	public Button cancelButton;
-	
+
 	public Promise OnInstantiated(LightBeam ctx)
 	{
 		submitButton.gameObject.SetActive(false);
@@ -24,18 +24,18 @@ public class RegisterEmailPage : MonoBehaviour, ILightComponent
 		passwordInput.gameObject.SetActive(false);
 
 		promptText.text = "Enter email";
-		
-		
+
+
 		cancelButton.HandleClicked(async () =>
 		{
 			await ctx.GotoPage<HomePage>();
 		});
-		
+
 		checkEmailButton.HandleClicked("checking...", async () =>
 		{
 			await CheckEmail(ctx, emailInput.text);
 		});
-		
+
 		submitButton.HandleClicked("registering...", async () =>
 		{
 			await RegisterEmail(ctx, emailInput.text, passwordInput.text);

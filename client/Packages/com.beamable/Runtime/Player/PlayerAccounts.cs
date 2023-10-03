@@ -718,7 +718,7 @@ namespace Beamable.Player
 		{
 			error = PasswordResetConfirmError.NONE;
 		}
-		
+
 		public PasswordResetResult(Exception exception)
 		{
 			innerException = exception;
@@ -733,7 +733,7 @@ namespace Beamable.Player
 			}
 		}
 	}
-	
+
 	/// <summary>
 	/// The <see cref="PasswordResetConfirmOperation"/> contain the results
 	/// or a password confirmation.
@@ -1007,15 +1007,15 @@ namespace Beamable.Player
 		/// represents that no error occured.
 		/// </summary>
 		NONE,
-		
+
 		/// <summary>
 		/// represents that an invalid code was given
 		/// </summary>
 		BAD_CODE,
-		
+
 		INVALID,
 	}
-	
+
 
 
 	[Serializable]
@@ -1315,7 +1315,7 @@ namespace Beamable.Player
 				return new PasswordResetResult(ex);
 			}
 		}
-		
+
 		/// <summary>
 		/// Initiates a password reset flow for the given <see cref="PlayerAccount"/>.
 		/// If the given account does not have an email credential, the resulting

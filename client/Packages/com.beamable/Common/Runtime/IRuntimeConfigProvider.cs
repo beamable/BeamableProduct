@@ -13,7 +13,7 @@ namespace Beamable.Common
 		/// The CID is the customer id, or organization id. 
 		/// </summary>
 		string Cid { get; }
-		
+
 		/// <summary>
 		/// The PID is the project id, or realm id.
 		/// </summary>
