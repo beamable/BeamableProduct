@@ -20,10 +20,12 @@ namespace Beamable.Player
 	[Serializable]
 	public class PlayerFocusScoresList : PlayerScoreList
 	{
+		private const long UNASSIGNED = -1;
+		
 		/// <summary>
 		/// The playerId that the leaderboard view is centered around. 
 		/// </summary>
-		public long playerId = -1;
+		public long playerId = UNASSIGNED;
 		
 		public PlayerFocusScoresList(IPlayerLeaderboardFriend board, IDependencyProvider provider)
 			: base(board, provider)
@@ -33,7 +35,7 @@ namespace Beamable.Player
 
 		protected override void OnHydrate()
 		{
-			if (playerId == -1)
+			if (playerId == UNASSIGNED)
 			{
 				playerId = _ctx.UserId;
 			}
@@ -41,7 +43,10 @@ namespace Beamable.Player
 
 		protected override Promise<LeaderBoardViewResponse> CreateRequest(LeaderboardAssignmentInfo info)
 		{
-			return _api.ObjectGetView(info.leaderboardId, focus: playerId, max: viewSize, outlier: _ctx.UserId);
+			return _api.ObjectGetView(objectId: info.leaderboardId,
+			                          focus: playerId, 
+			                          max: viewSize, 
+			                          outlier: _ctx.UserId);
 		}
 
 		public PlayerFocusScoresList LoadCount(int totalSize)

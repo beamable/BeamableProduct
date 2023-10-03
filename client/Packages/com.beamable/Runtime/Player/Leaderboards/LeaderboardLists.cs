@@ -29,7 +29,6 @@ namespace Beamable.Player
 		protected IUserContext _ctx;
 		protected CoroutineService _coroutineService;
 
-		[FormerlySerializedAs("viewSize")]
 		[SerializeField]
 		protected int _viewSize = 10;
 		
