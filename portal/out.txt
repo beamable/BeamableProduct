@@ -1,8 +1,0 @@
-
-> portal@1.0.0 start /Users/chris/Perforce/disruptor_engine_channa/portal
-> npm run cleanup && cross-env NODE_ENV=development rollup --config --watch
-
-
-> portal@1.0.0 cleanup /Users/chris/Perforce/disruptor_engine_channa/portal
-> rimraf ./dist
-
