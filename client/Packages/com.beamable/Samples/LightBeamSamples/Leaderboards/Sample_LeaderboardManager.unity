@@ -173,8 +173,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 889e0cbbf8d248908560d196362d70f1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  leaderboardRef:
-    Id: leaderboards.xyz
+  model:
+    LeaderboardRef:
+      Id: leaderboards.xyz
+    viewState: 0
+    useMockData: 0
   root: {fileID: 1412789052}
   loadingBlocker: {fileID: 2307906666623612511}
   homePageTemplate: {fileID: 5194064418745056708, guid: 897d719ba61c24129b0c2def4145ae8a,

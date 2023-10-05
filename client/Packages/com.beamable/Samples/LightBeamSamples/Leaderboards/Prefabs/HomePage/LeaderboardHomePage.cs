@@ -13,6 +13,7 @@ public class LeaderboardHomePageModel
 {
 	public LeaderboardRef LeaderboardRef;
 	public LeaderboardHomePageViewState viewState;
+	public bool useMockData;
 }
 
 public enum LeaderboardHomePageViewState
@@ -52,13 +53,13 @@ public class LeaderboardHomePage : MonoBehaviour, ILightComponent<LeaderboardHom
 		switch (model.viewState)
 		{
 			case LeaderboardHomePageViewState.TopScores:
-				await RenderScores(beam, leaderboard.TopScores.LoadCount(5));
+				await RenderScores(beam, leaderboard.TopScores.LoadCount(25));
 				break;
 			case LeaderboardHomePageViewState.Friends:
-				await RenderScores(beam, leaderboard.FriendScores.LoadCount(5));
+				await RenderScores(beam, leaderboard.FriendScores.LoadCount(25));
 				break;
 			case LeaderboardHomePageViewState.Nearby:
-				await RenderScores(beam, leaderboard.NearbyScores.LoadCount(5));
+				await RenderScores(beam, leaderboard.NearbyScores.LoadCount(25));
 				break;
 		}
 	}
