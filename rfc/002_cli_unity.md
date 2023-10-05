@@ -2,9 +2,7 @@
 
 ## Summary
 
-The TLDR is that I think we can move ahead with integrating SAMs into Unity with the CLI without solving the CLI bundling or authentication problems.
-1. Auth should come last, and
-2. Bundling should come as we need a feature that itself doesn't already enforce the existence of the CLI.
+Beamable 2.0 will have a hard dependency on the Beam CLI and Dotnet LTS. The Beamable SDK will automatically install Dotnet and the CLI to the /Library folder of each Unity project.
 
 ## Motivation
 
@@ -14,193 +12,53 @@ By integrating the CLI into Unity, we will be able to
 
 ## Implementation
 
+As part of the `BeamEditorContext`'s initialization, the SDK will perform 2 resolution phases, one for Dotnet, and then a second for the Beam CLI. 
 
-Today, the CLI integrates into Unity by existing on the machine. If `beam` is an accessible command, then the Beamable SDK will attempt to use it for Standalone Microservice request routing (using `beam project ps`). 
+### Resolving Dotnet
 
-There are critical CLI integration points to design and consider.
+The Beam SDK will require Dotnet LTS (likely dotnet8 by the time of launch), and it will attempt to load the Dotnet LTS major version from a set of paths.
 
-1. Should the CLI be bundled with the SDK? If so, how?
-2. Should the CLI take over the responsibility of authentication with Beamable? 
-3. How can the SDK utilize the SDK?
-
-However, these three questions are _separate_. We can solve them at different times. 
-We can make considerable progress without doing everything at once.
-
-We should follow this sequencing of events for further integrating the CLI with Unity.
-
-1. Integrate with Standalone Microservices
-    - view and manage SAMs
-    - eject Unity C#MS as SAMs
-2. Implement a strong assumption that the CLI is always available with the SDK, instead of _possibly_ being available via a global dotnet tool.
-3. Refactor existing systems to use the CLI for backing implementation instead of custom Unity solutions
-    - Content
-    - Unity C#MS & Docker
-    - Auth
-
-Contrary to recent thinking, the _last_ step of the integration is shifting authentication responsibility to the CLI. Our current goal is to integrate SAMs into the Unity editor. The Beam CLI is required to faciliate SAMs regardless, and it will be available on the machine by default, thus removing the need to think about bundling straight away. The Unity `config-defaults.txt` system is annoying and error prone, but _mostly_ works. We can forward all Unity authentication details to each CLI invocation. Essentially, the CLI will operate without a `config-default.json` file or `user-token.json` file. 
-
-The value of replacing the Unity `config-default.txt` scheme with the CLI is in simplifying the Unity authentication process. It is not a requirement, it is a desire. We can authenticate the CLI without making this refactor. 
-
-Until we reach a bundled CLI, we rely on a globally installed CLI. 
-**Version mismatches are possible here!**
-
-
-### Integrating SAMs
-
-At a high level, Unity should be able to display Standalone Microservices, and offer the ability to eject existing Unity backed services. However, the editor should not show _both_ Unity backed services and Standalone at the same time. Managing a set of services from Unity, and a different set from elsewhere will create confusion and bugs. Microservice deployment would be especially confusing if there was a partial CLI based manifest, and a partial Unity backed service list. Instead, the Unity editor should allow using standard Unity backed services, or entirely switching to use Standalone Microservices.
-
-
-The following requirements need to met for a full SAMs integration with Unity.
-
-1. Unity needs to be aware of SAM `.sln`s 
-    - SAMs are aware of Unity Projects through the `.linkedProjects.json` file.
-    - See the section, "Unity SAM Awareness"
-2. The Microservice Manager should show a card for each Standalone Microservice and Microstorage. If there are existing Unity C#MS or StorageObjects, a warning should be displayed suggesting an _Ejection_, and no cards should be shown.
-    - Microservices and Microstorages should be runnable. Running a Standalone Microservice should use new CLI commands
-        - `beam project run <service> # proxies out to dotnet run`  
-        - `beam project stop <service> # list processes and kill`
-    - Microservices and Microstorages should display logs with log filtering
-        - `beam project logs` already exists.
-    - Microservices and Microstorages should indicate that they are Standalone. 
-    - Microservices and Microstorages should support the open-swagger/open-data button
-        - `beam project open-swagger <service>` already exists
-        - `beam project open-mongo <storage>` already exists
-    - Microservices and Microstorages should support the open code button
-3. The Microservice Manager should support the ability to eject _the entire_ set of current Unity C#MS and StorageObjects. This is only available when the CLI is detected.
-    - The developer must select a location for the ejection site.
-    - `beam project new` will be run at the site,
-    - Each Microservice will run as `beam project add`, 
-    - Each Microstrage will run as `beam project new-storage`
-    - The new `.beamable` project will use `beam project add-unity-project`
-4. The developer must be able to remove the configuration and remove the Ejection state from the Microservice Manager.  
-
-
-### Unity SAM Awareness
-
-
-### State Sync
-Traditionally, in a SAM solution, the developer may use `beam config` to see what CID/PID they are connected to, and then run their SAM relative to that CID/PID combo. If there is a linked Unity project, and that project is setup to to use the same CID/PID combo, the through `beam project ps`, Unity can direct traffic to the local SAM. 
-
-However, if either Unity or the SAM solution change the CID/PID combo, the traffic will not be routable, because they are considered to be different project realms. 
-
-For a tight integration of SAM and Unity, we should ensure that CID/PID changes in Unity proliferate to the linked SAM solution, and vice verca, changing the CID/PID in the SAM solution should proliferate to the linked Unity project. The design goal is that the user's action is always honored as the source of truth. 
-
-Let us consider each site separately.
-
-#### Changing CID/PID from the SAM
-
-The developer can change the CID/PID in a `.beamable` folder either by manually changing the files, or by using a command such as `beam init`. When the Standalone Microservice starts, we already run a `beam generate-env` command from within the C#MS process. At this point, we should identify any linked Unity projects, and adjust the Unity's project CID/PID/Auth combo to point to the same realm. This should happen automatically, but may be disabled if the (new) `--share-auth-with-linked-projects` flag is disabled. We can extract this as a separate command to be used at the developer's discrection,
-
-```shell
-beam unity set-config-defaults <path-to-unity> <cid> <pid> <email> <access_token> <refresh_token> [--for-build]
+```
+$BEAMABLE_DOTNET_PATH
+/Library/BeamableEditor/Dotnet
+/<system_default_install_location>
 ```
 
-The command will need to change the connection settings and auth in given Unity project.
+If Dotnet is found at the environment variable, $BEAMABLE_DOTNET_PATH, then the Dotnet resolution phase is complete.
 
-_At this point, I have a few different ideas for implementation, here they are..._
+If Dotnet is found in the /Library folder, then the Dotnet resolution phase is complete. However, Beamable will run a background task checking for any patch updates to the LTS version. 
 
-_idea 1_
+If Dotnet is found in the default install location, then the Dotnet resolution phase is complete.
 
-In the Unity project, the `/Library/BeamableEditor/beamable/editorStorage/singleton_AccountService_global.json` file contains JSON that defines the currently selected cid. It also contains a list of customers with their associated cid values. For each customer, there is a set of metadata defining the selected realm and game. There is also a user object describing the signed in developer, and list of realms that can be configured. The `beam unity set-config-defaults` command needs to ingest this file, and modify it such that the given connection strings are selected in the file. Ideally, the code that manages this file can be moved to the `/Common/Runtime` folder so that the same code is managing the file in Unity and in the CLI.
+If Dotnet is not found in either location, then the SDK will show a popup to the developer with the following text,
 
-However, the actual access tokens are not found in the previous `singleton_AccountService_global.json` file. The tokens are present in `PlayerPrefs`, accessible through the Unity `AccessTokenStorage` class with a "editor" prefix. The CLI will need to find a way to write to the `PlayerPrefs`. 
+> Beamable Requires Dotnet 8 
 
-_idea 2: (because that last one was a doozie)_ 
+> Dotnet 8 will automatically be installed for this project. By default, Beamable will keep this installation up to date for the latest security patches. The install will be local to this Unity project only. Check the documentation for more information. 
 
-The Unity SDK is already using a standard `beam project ps` command to receive ZMQ updates about local Standalone Microservices. We can create a variant of `beam project ps` called `beam unity listen` that will encompass `beam project ps`, but add new ZMQ message types. The `beam unity set-config-defaults` command send a ZMQ message to a listening Unity project. The message will include the new connection details, and the Unity SDK will use the existing _Switch Realm_ and _Login/Logout_ methods it has. 
+The popup only shows a link to documentation, and an _Okay_ button. Upon clicking the button, the popup transforms into a loading screen while the SDK installs Dotnet in the background using Microsoft's install script. 
 
-However, if Unity is not currently running when the developer runs the `beam unity set-config-defaults` command, then the ZMQ channel is not open, the Unity will miss the message and therefor remain on an old realm. In this scenario, when the Beamable SDK initalizes, it should recongize all linked SAM solutions, recognize a difference in CID/PID combo, and offer a log message explaining the situation. The log message should contain information on steps to sync the states. This scenario is not incredibly harmful, because if the user stops, and re-runs the Standalone Microservice after opening Unity, the `beam unity set-config-defaults` command is likely to execute again, and switch the Unity profile. 
+When the installation is done, the resolution phase starts from the beginning, and we expect to find the Dotnet installation in the /Library folder. 
 
-If Unity receives a set-config-defaults message in Playmode, it should log a warning in the console, and ignore the message, because we cannot support switching realms during Playmode. 
+### Resolving Beam CLI
 
-#### Changing CID/PID from Unity
+The Beam SDK will require the Beam CLI, and it will attempt to load the CLI from the following path,
 
-The developer can change the Cid/Pid in Unity by logging out and in, or by using the realm switcher. 
-<todo>
+```
+/Library/BeamableEditor/BeamCLI/<sdk-version>/beam
+```
 
+If the `beam` command exists in the /Library, then the `beam version` command is run to confirm the built program uses the same version as the currently installed UPM SDK.
 
-### Bundling the CLI with the SDK
+If the version is not aligned, or if no `beam` command exists in /Library, then the SDK will automatically install the correct version. This operation should be quick enough that we don't _need_ a loading bar, but we should present one regardless. 
 
-If the CLI is always available with the SDK, we can begin to replace existing SDK features in favor of the CLI. If the CLI is not available, and we make the assumption it is, then we will be introducing a new source of bug and configuration concern.
+If the `BEAMABLE_DEVELOPER` flag is enabled, then the CLI resolution starts instead by checking if the `CoreConfiguration.UseGlobalBeamCLI` is set to true. The `CoreConfiguration.UseGlobalBeamCLI` field is only present when the developer flag is set. If the field is true, then the CLI resolution will look for the CLI on the global path, instead of the /Library path.
 
-The CLI depends on `dotnet`. Currently, developers do not need to install `dotnet` unless they want to _debug_ their Unity backed C#MS. Normally, the CLI can be installed with `dotnet tool install --global Beamable.Tools --version 1.16.1`. However, if `dotnet` is not available, then obviously this approach will fail.
+### Usage
 
-This leads the SDK towards a cascading approach to resolving a CLI. In all cases, the SDK should attempt to find a version of the CLI with the same matching version number. 
+When both the Dotnet Resolution and Beam CLI Resolution are completed, the paths for each tool must be stored in the Editor Beam Context as memory values. They should not be saved to disk, because they should be recomputed every domain reload. 
 
-This is the series of steps the SDK will use to resolve the CLI location...
-1. If the CLI is not already available, continue...
-2. Attempt `dotnet tool install Beamable.Tools --tool-path /Temp/Beam/Cli/<version> --version <version>`. If this fails due to no dotnet, continue...
-3. Prompt the Developer with a message, "Beamable needs to install Beam CLI <version>. This can happen automatically if `dotnet` is available. However, no `dotnet` framework was detected. Without `dotnet`, Beamable can download a prebuilt binary of the CLI. However, the binary is larger and harder to manage than the variant available with the `dotnet` framework. Would you like to download `dotnet` to continue with the regular CLI installation flow?". 
-    - A "Yes" answer will install `dotnet` as quietly as possible. This may not be very quiet. 
-    - A "No" answer will start a download from Beamable's CDN, to the user's `/Temp/Beam/Cli/<version>` directory.
+The CLI SDK must accept parameters for Dotnet's path, and the CLI's path. 
+The CLI implementation must use the given Dotnet path in place of all global calls to Dotnet. 
 
-In the CDN case, we will need to modify our build & deploy process for the Beamable SDK to automatically build and deploy self contained variants fo the CLI for linux, mac, and windows, all between x86 and ARM based CPU architectures. The deployed CLIs will be uploaded to an AWS S3 Bucket. The S3 bucket should be accessible through a CloudFront CDN layer.
-
-Ultimately, the CLI is available as a lazily resolved asset.
-
-### Replacing existing Unity systems with CLI
-<Todo>
-
-
-
-
-
-----
-
-# notes from July 5th
-
-## benefits
-1. only do the work once
-2. feature parity
-3. we get to avoid building 3 products, in favor of building 1 product with 2 views.
-
-## unknowns
-1. how are we structuing engine specific data relative to the CLI? 
-    - Unity has data it needs to integrate with Content with a native-esque workflow. Where does that data live? Naively, the data lives in Unity! However, that immediately invalidates the "DRY" principle of data! Which is the source of truth? 
-    - Maybe we shift the entire responsibilty to the CLI, and the CLI is aware of the engine. The engine _always_ proxies through the CLI. 
-2. How much of the data is owned by the CLI, and how much is owned by the engine view? Until we answer this question, we shouldn't commit any tech. 
-    - Question: we've already done integration work- should this have been colored by the answer to this question? 
-3. If the CLI is the source of truth, how do we handle multi-engine versions? If we bug-fix the CLI to solve an issue in Unity, does that warrant a version bump for Unreal? This has Beamable Developer workflow implications. And this has user facing 'how do I get updates?' implications. 
-
-
-## Content
-1. content schemas would help with validation. If we had them, Unity/Unreal/Godot could use the schemas. 
-    - this is blocked by getting a lot of backend support for building out schemas. 
-2. Multiple sources-of-truths are bad, so we should find a way for 1 source of truth. (CLI). 
-
-
-## Process
-
-option 1. Incremental.
-- do some work, ticketize, evalulate result, may or may not continue. 
-
-option 2. Project. 
-- there are milestones, map out the unkowns, and the next big release is the CLI integration. It involes everyone! 
-
-Pedro is not in favor of incremental, because in his experience, the project never reaches the ideal "finished" state. The code is in limbo between old/new systems. Because it takes time, we need to support old and new systems, and fix bugs in both places, and we risk customers depending on old code. 
-Buss, EasyFeatures, ReflectionCache are all unfinished examples at Beamable, though this situation happens at every tech company. 
-
-Acknowledge that the Project approach takes a lot of _time_, and its not without its own issues. 
-
-Peter
-- Buss morphed from incremental to project approach, because the buss branch _is_ the project branch. Somewhere along the way, we lost the motivation/focus/time to support the project. 
-- ReflectionCache example maybe due to Pedro's shift to Unreal focus. 
-- EasyFeatures were dependent on Buss, and Buss was blocked? 
-
-Pedro
-- Peter's take on the examples proves Pedro's point that the incremental approach doesn't work. The efforts were never structured. The incremental approach relies on individuals- a project relies on the team's focus. 
-
-Luke
-- strike forces were meant to be project approach-
-Pedro
-- practically, strike forces are not projects
-- A project has a well structured plan, it has milestones that the team is aware of, it has dependencies on other people, and those people are aware of those. We've never had those things in the strike forces. The strike forces have not done those things. 
-
-Luke
-- Disagree- there _were_ milestones
-
--- regardless of cause, previous projects have stalled and output is small. If we try the same thing with CLI, why should we expect it to be different? 
-
-Releases and actions can be incremental! 
-But "thinking" should be project based. We need a clear plan and view of the end goal at all points. That view may change as we build, but we shouldn't start releasing code without a clear view of the end goal. This vision needs to be documented and put into words.
-- Peter is on board- maybe for different large features, we should have design/tech retrospectives. Maybe we should have these meetings on other features like Buss. For example, is UIToolkit > Buss ? 
+There should be a new _Project Settings / Core / Dotnet_ section that shows the current paths for Dotnet and the Beam CLI. 
