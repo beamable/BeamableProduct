@@ -32,8 +32,6 @@ public class LeaderboardManager : MonoBehaviour
 		
 		// TODO: add mock leaderboard API
 		builder.AddLeaderboardDecorator(api => new FakeLeaderboardApi(api));
-		builder.AddSingletonDecorator<StatsService, IResolvableStatsApi, FakeStatsService>(
-			api => new FakeStatsService(api));
 		
 		var beamContext = BeamContext.Default;
 		

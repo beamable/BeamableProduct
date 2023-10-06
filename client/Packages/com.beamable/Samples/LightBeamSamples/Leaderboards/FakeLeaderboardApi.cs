@@ -62,19 +62,4 @@ namespace Samples.LightBeamSamples.Leaderboards
 			}
 		}
 	}
-
-	public class FakeStatsService : UnityStatsApiDecorator
-	{
-		public FakeStatsService(IResolvableStatsApi api) : base(api)
-		{
-			
-		}
-
-		public override async Promise<Dictionary<long, Dictionary<string, string>>> Resolve(string prefix, List<long> gamerTags)
-		{
-			var res = await base.Resolve(prefix, gamerTags);
-
-			return res;
-		}
-	}
 }

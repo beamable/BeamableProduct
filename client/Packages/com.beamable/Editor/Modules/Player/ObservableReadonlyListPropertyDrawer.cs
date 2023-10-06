@@ -9,12 +9,22 @@ namespace Beamable.Editor.Player
 	{
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
 		{
-			return EditorGUI.GetPropertyHeight(property.FindPropertyRelative("_data"), label, true);
+			var dataProperty = property.FindPropertyRelative("_data");
+			if (dataProperty == null ) return base.GetPropertyHeight(property, label);
+			
+			return EditorGUI.GetPropertyHeight(dataProperty, label, true);
 		}
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 		{
+			var dataProperty = property.FindPropertyRelative("_data");
+			if (dataProperty == null)
+			{
+				base.OnGUI(position, property, label);
+				return;
+			}
+
 			GUI.enabled = false;
-			EditorGUI.PropertyField(position, property.FindPropertyRelative("_data"), label, true);
+			EditorGUI.PropertyField(position, dataProperty, label, true);
 			GUI.enabled = true;
 		}
 	}

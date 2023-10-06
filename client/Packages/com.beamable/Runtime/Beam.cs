@@ -199,6 +199,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IContentApi>(provider => provider.GetService<ContentService>());
 			DependencyBuilder.AddSingleton<IMailApi, MailService>();
 			DependencyBuilder.AddScoped<InventoryService>();
+			
 			DependencyBuilder.AddScoped<IStatsApi>(p => p.GetService<StatsService>());
 			DependencyBuilder.AddScoped<StatsService>(provider =>
 														  new StatsService(
@@ -278,6 +279,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<Promise<IBeamablePurchaser>>(provider => new Promise<IBeamablePurchaser>());
 			DependencyBuilder.AddSingleton<PlayerAnnouncements>();
 			DependencyBuilder.AddScoped<PlayerStats>();
+			DependencyBuilder.AddScoped<PlayerStats2>();
 			DependencyBuilder.AddScoped<PlayerLobby>();
 			DependencyBuilder.AddScoped<PlayerParty>();
 			DependencyBuilder.AddScopedStorage<PlayerLeaderboards, OfflineCacheStorageLayer>();

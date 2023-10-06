@@ -166,6 +166,8 @@ namespace Beamable
 				? _playerStats
 				: (_playerStats = _serviceScope.GetService<PlayerStats>());
 
+		public PlayerStats2 Stats2 => _serviceScope.GetService<PlayerStats2>();
+
 		/// <summary>
 		/// Access the <see cref="PlayerLobby"/> for this context.
 		/// </summary>

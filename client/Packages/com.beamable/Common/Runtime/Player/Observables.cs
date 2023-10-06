@@ -87,7 +87,12 @@ namespace Beamable.Common.Player
 		}
 	}
 
-	public abstract class AbsRefreshableObservable : DefaultObservable, IRefreshable
+	public abstract class AbsRefreshableObservable : AbsRefreshableObservableRoot
+	{
+		
+	}
+
+	public abstract class AbsRefreshableObservableRoot : DefaultObservable, IRefreshable
 	{
 		/// <summary>
 		/// An event that happens when the <see cref="Refresh"/> method starts.
