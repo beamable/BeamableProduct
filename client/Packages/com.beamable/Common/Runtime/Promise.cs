@@ -277,6 +277,13 @@ namespace Beamable.Common
 			Error(other.CompleteError);
 			return this;
 		}
+		
+		public Promise<T> Merge(Promise other)
+		{
+			Then(x => other.CompleteSuccess(Unit));
+			Error(other.CompleteError);
+			return this;
+		}
 
 		/// <summary>
 		/// Call to register a failure completion handler callback for the %Promise

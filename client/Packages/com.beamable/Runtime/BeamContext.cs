@@ -160,12 +160,7 @@ namespace Beamable
 			_announcements?.IsInitialized ?? false
 				? _announcements
 				: (_announcements = _serviceScope.GetService<PlayerAnnouncements>());
-
-		// public PlayerCurrencyGroup Currencies =>
-		// 	_currency?.IsInitialized ?? false
-		// 		? _currency
-		// 		: (_currency = _serviceScope.GetService<PlayerCurrencyGroup>());
-
+		
 		public PlayerStats Stats =>
 			_playerStats?.IsInitialized ?? false
 				? _playerStats
@@ -211,6 +206,8 @@ namespace Beamable
 		/// </para>
 		/// </summary>
 		public PlayerInventory Inventory => ServiceProvider.GetService<PlayerInventory>();
+
+		public PlayerLeaderboards Leaderboards => ServiceProvider.GetService<PlayerLeaderboards>();
 
 		/// <summary>
 		/// Access the <see cref="IContentApi"/> for this player.
