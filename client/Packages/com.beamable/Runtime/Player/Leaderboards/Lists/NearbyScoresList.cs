@@ -9,28 +9,28 @@ using System;
 
 namespace Beamable.Player
 {
-	
+
 	[Serializable]
-	public class PlayerFocusScoresListDictionary 
+	public class PlayerFocusScoresListDictionary
 		: SerializableDictionaryStringToSomething<PlayerFocusScoresList>
 	{
-		
+
 	}
-	
+
 	[Serializable]
 	public class PlayerFocusScoresList : PlayerScoreList
 	{
 		private const long UNASSIGNED = -1;
-		
+
 		/// <summary>
 		/// The playerId that the leaderboard view is centered around. 
 		/// </summary>
 		public long playerId = UNASSIGNED;
-		
+
 		public PlayerFocusScoresList(IPlayerLeaderboardFriend board, IDependencyProvider provider)
 			: base(board, provider)
 		{
-			
+
 		}
 
 		protected override void OnHydrate()
@@ -44,9 +44,9 @@ namespace Beamable.Player
 		protected override Promise<LeaderBoardViewResponse> CreateRequest(LeaderboardAssignmentInfo info)
 		{
 			return _api.ObjectGetView(objectId: info.leaderboardId,
-			                          focus: playerId, 
-			                          max: viewSize, 
-			                          outlier: _ctx.UserId);
+									  focus: playerId,
+									  max: viewSize,
+									  outlier: _ctx.UserId);
 		}
 
 		public PlayerFocusScoresList LoadCount(int totalSize)
