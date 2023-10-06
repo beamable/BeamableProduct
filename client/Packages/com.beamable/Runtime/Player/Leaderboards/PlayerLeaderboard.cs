@@ -11,9 +11,7 @@ using Beamable.Common.Player;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using UnityEditor.VersionControl;
 using UnityEngine;
-using UnityEngine.SocialPlatforms.Impl;
 
 namespace Beamable.Player
 {
