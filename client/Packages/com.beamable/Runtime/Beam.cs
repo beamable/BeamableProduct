@@ -278,6 +278,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<Promise<IBeamablePurchaser>>(provider => new Promise<IBeamablePurchaser>());
 			DependencyBuilder.AddSingleton<PlayerAnnouncements>();
 			DependencyBuilder.AddScoped<PlayerStats>();
+			DependencyBuilder.AddScoped<PlayerChat>();
 			DependencyBuilder.AddScoped<PlayerLobby>();
 			DependencyBuilder.AddScoped<PlayerParty>();
 			DependencyBuilder.AddScopedStorage<PlayerLeaderboards, OfflineCacheStorageLayer>();

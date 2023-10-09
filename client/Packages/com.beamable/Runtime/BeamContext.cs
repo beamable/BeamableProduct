@@ -198,6 +198,11 @@ namespace Beamable
 		private PlayerAccounts _playerAccounts;
 
 		/// <summary>
+		/// Access the player's chat
+		/// </summary>
+		public PlayerChat Chat => ServiceProvider.GetService<PlayerChat>();
+
+		/// <summary>
 		/// <para>
 		/// Access the player's inventory
 		/// </para>
