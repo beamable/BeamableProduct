@@ -13,7 +13,7 @@ public class CurrencyViewBehaviour : MonoBehaviour, ILightComponent<PlayerCurren
 	[Header("Scene References")]
 	public TMP_Text valueText;
 	public Image iconImage;
-	
+
 	[Header("Runtime data")]
 	public PlayerCurrency data;
 
@@ -25,7 +25,7 @@ public class CurrencyViewBehaviour : MonoBehaviour, ILightComponent<PlayerCurren
 
 		var contentService = beam.BeamContext.Content;
 		var content = await contentService.GetContent<CurrencyContent>(new CurrencyRef(model.CurrencyId));
-		var sprite = await content.icon.LoadSprite() ;
+		var sprite = await content.icon.LoadSprite();
 		iconImage.sprite = sprite;
 	}
 

@@ -61,10 +61,10 @@ namespace Beamable.Runtime.LightBeams
 		public static async Promise Start<TDefault>(this IDependencyProvider provider)
 			where TDefault : MonoBehaviour, ILightComponent
 		{
-			
+
 			var ctx = provider.GetService<LightBeam>();
 			await ctx.LoadingFadeIn();
-			
+
 			ctx.Root.Clear();
 			if (TryGetTypes(provider, LightBeamUtilExtensions.Hints, out var pageType, out var model))
 			{
@@ -75,7 +75,7 @@ namespace Beamable.Runtime.LightBeams
 				await provider.Instantiate<TDefault>(ctx.Root).ShowLoading(ctx);
 			}
 		}
-		
+
 		/// <summary>
 		/// Start the <see cref="LightBeam"/> UI to a page defined by <typeparamref name="TDefault"/>.
 		/// <para>
@@ -97,7 +97,7 @@ namespace Beamable.Runtime.LightBeams
 		public static async Promise Start<TDefault, TModel>(this IDependencyProvider provider, TModel defaultModel)
 			where TDefault : MonoBehaviour, ILightComponent<TModel>
 		{
-				
+
 			var ctx = provider.GetService<LightBeam>();
 			await ctx.LoadingFadeIn();
 
@@ -133,7 +133,7 @@ namespace Beamable.Runtime.LightBeams
 			ctx.Root.Clear();
 			return await provider.Instantiate<T, TModel>(ctx.Root, model).ShowLoading(ctx);
 		}
-		
+
 		/// <inheritdoc cref="GotoPage{T,TModel}"/>
 		public static async Promise<T> GotoPage<T>(this IDependencyProvider provider)
 			where T : MonoBehaviour, ILightComponent
@@ -165,7 +165,7 @@ namespace Beamable.Runtime.LightBeams
 			var instance = resolver(container, model);
 			return instance;
 		}
-		
+
 		/// <inheritdoc cref="Instantiate{T,TModel}"/>
 		public static Promise<T> Instantiate<T>(
 			this IDependencyProvider provider,
@@ -191,7 +191,7 @@ namespace Beamable.Runtime.LightBeams
 		{
 			var rawBuilder = builder as DependencyBuilder;
 			rawBuilder.TryGetSingleton(typeof(CurriedLightBeamViewResolver), out var oldCurry);
-			
+
 			builder.RemoveIfExists<CurriedLightBeamViewResolver>();
 			builder.AddSingleton(p =>
 			{
@@ -205,7 +205,7 @@ namespace Beamable.Runtime.LightBeams
 						}
 						else
 						{
-							var resolver = (CurriedLightBeamViewResolver) oldCurry.Factory(p);
+							var resolver = (CurriedLightBeamViewResolver)oldCurry.Factory(p);
 							return await resolver(container, type, model);
 						}
 					}
@@ -216,7 +216,7 @@ namespace Beamable.Runtime.LightBeams
 
 				return curry;
 			});
-			
+
 			builder.AddSingleton(p =>
 			{
 				LightBeamViewResolver<T, TModel> resolver = new LightBeamViewResolver<T, TModel>(async (container, model) =>
@@ -225,21 +225,21 @@ namespace Beamable.Runtime.LightBeams
 					await instance.OnInstantiated(p.GetService<LightBeam>(), model);
 					return instance;
 				});
-				
+
 
 				return resolver;
 			});
-			
+
 			builder.AddSingleton(template);
 		}
-		
+
 		/// <inheritdoc cref="AddLightComponent{T,TModel}"/>
 		public static void AddLightComponent<T>(this IDependencyBuilder builder, T template)
 			where T : MonoBehaviour, ILightComponent
 		{
 			var rawBuilder = builder as DependencyBuilder;
 			rawBuilder.TryGetSingleton(typeof(CurriedLightBeamViewResolver), out var oldCurry);
-			
+
 			builder.RemoveIfExists<CurriedLightBeamViewResolver>();
 			builder.AddSingleton(p =>
 			{
@@ -253,7 +253,7 @@ namespace Beamable.Runtime.LightBeams
 						}
 						else
 						{
-							var resolver = (CurriedLightBeamViewResolver) oldCurry.Factory(p);
+							var resolver = (CurriedLightBeamViewResolver)oldCurry.Factory(p);
 							return await resolver(container, type, model);
 						}
 					}
@@ -264,7 +264,7 @@ namespace Beamable.Runtime.LightBeams
 
 				return curry;
 			});
-			
+
 			builder.AddSingleton(p =>
 			{
 				LightBeamViewResolver<T> resolver = new LightBeamViewResolver<T>(async (container) =>
@@ -279,11 +279,11 @@ namespace Beamable.Runtime.LightBeams
 
 			builder.AddSingleton(template);
 		}
-		
-		
+
+
 		private static Promise<object> Instantiate(IDependencyProvider provider,
-		                                           Type componentType,
-		                                           Transform container)
+												   Type componentType,
+												   Transform container)
 		{
 			var resolver = provider.GetService<CurriedLightBeamViewResolver>();
 			var instance = resolver(container, componentType, null);
@@ -291,17 +291,17 @@ namespace Beamable.Runtime.LightBeams
 		}
 
 		private static Promise<object> Instantiate(IDependencyProvider provider,
-		                                           Type componentType,
-		                                           Transform container,
-		                                           object model)
+												   Type componentType,
+												   Transform container,
+												   object model)
 		{
 			var resolver = provider.GetService<CurriedLightBeamViewResolver>();
 
 			var instance = resolver(container, componentType, model);
 			return instance;
 		}
-		
-		
+
+
 		static bool TryGetTypes(IDependencyProvider provider, Dictionary<string, string> args, out Type pageType, out object model)
 		{
 			pageType = null;
@@ -337,20 +337,20 @@ namespace Beamable.Runtime.LightBeams
 				{
 					if (!kvp.Key.StartsWith("d_")) continue;
 					var key = kvp.Key.Substring("d_".Length);
-					
+
 					var json = $"{{\"{key}\": {kvp.Value} }}";
 					JsonUtility.FromJsonOverwrite(json, model);
 				}
-				
+
 			}
-			
+
 
 			return true;
 		}
-		
+
 		delegate Promise<T> LightBeamViewResolver<T, in TModel>(Transform container, TModel model)
 			where T : ILightComponent<TModel>;
-	
+
 		delegate Promise<T> LightBeamViewResolver<T>(Transform container)
 			where T : ILightComponent;
 

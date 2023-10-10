@@ -29,7 +29,6 @@ namespace Beamable.Player
 			var _ = Refresh();
 			return this;
 		}
-
 		
 		public new async Promise<PlayerTopScoresList> Refresh()
 		{

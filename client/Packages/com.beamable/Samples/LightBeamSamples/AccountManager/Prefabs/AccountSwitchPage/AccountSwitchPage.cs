@@ -15,28 +15,28 @@ public class AccountSwitchPage : MonoBehaviour, ILightComponent<PlayerAccount>
 	public Button cancelButton;
 	public Button switchButton;
 	public Button deleteButton;
-	
+
 	public Promise OnInstantiated(LightBeam ctx, PlayerAccount account)
 	{
 		accountDisplay.OnInstantiated(ctx, account);
-		
+
 		cancelButton.HandleClicked(async () =>
 		{
 			await ctx.Scope.GotoPage<HomePage>();
 		});
-		
+
 		switchButton.HandleClicked("switching...", async () =>
 		{
 			await account.SwitchToAccount();
 			await ctx.Scope.GotoPage<HomePage>();
 		});
-		
+
 		deleteButton.HandleClicked("deleting...", async () =>
 		{
 			await account.Remove();
 			await ctx.Scope.GotoPage<HomePage>();
 		});
-		
+
 		return Promise.Success;
 	}
 }

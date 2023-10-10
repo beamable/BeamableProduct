@@ -14,13 +14,13 @@ public class CurrencyHudManager : MonoBehaviour
 	[Header("Scene References")]
 	public RectTransform container;
 	public CanvasGroup loading;
-	
+
 	public TMP_Text infoText;
-	
+
 	[Header("Asset References")]
 	public CurrencyViewBehaviour currencyViewTemplate;
 
-	
+
 	private async void Start()
 	{
 		var beamContext = BeamContext.Default;
