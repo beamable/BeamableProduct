@@ -277,7 +277,7 @@ namespace Beamable.Common
 			Error(other.CompleteError);
 			return this;
 		}
-		
+
 		public Promise<T> Merge(Promise other)
 		{
 			Then(x => other.CompleteSuccess(Unit));

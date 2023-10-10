@@ -266,8 +266,9 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public ContainerUploadData PrepareContainerUploader(string cid, string gamePid, string realmPid, string token, string beamoId, string dockerRegistryUrl, BeamoServiceDefinition beamoService)
 	{
-		var containerUploadData = new ContainerUploadData {
-			Md5 = MD5.Create(), 
+		var containerUploadData = new ContainerUploadData
+		{
+			Md5 = MD5.Create(),
 			Client = new HttpClient
 			{
 				Timeout = Timeout.InfiniteTimeSpan
