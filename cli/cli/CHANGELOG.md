@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- `beam services deploy` no longer times out.
+
 ### Changed
 
 - Templates update with refactor to improve it receiving updates and fixes in the future.
