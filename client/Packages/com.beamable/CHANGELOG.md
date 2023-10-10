@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.19.2]
 
-no changes
+### Fixed
+- Content cache data is now saved in a namespaced path.
 
 ## [1.19.1]
 
