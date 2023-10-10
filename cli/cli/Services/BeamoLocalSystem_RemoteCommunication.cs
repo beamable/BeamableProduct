@@ -266,7 +266,13 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public ContainerUploadData PrepareContainerUploader(string cid, string gamePid, string realmPid, string token, string beamoId, string dockerRegistryUrl, BeamoServiceDefinition beamoService)
 	{
-		var containerUploadData = new ContainerUploadData { Md5 = MD5.Create(), Client = new HttpClient() };
+		var containerUploadData = new ContainerUploadData {
+			Md5 = MD5.Create(), 
+			Client = new HttpClient
+			{
+				Timeout = Timeout.InfiniteTimeSpan
+			}
+		};
 		containerUploadData.Client.DefaultRequestHeaders.Add("x-ks-clientid", cid);
 		containerUploadData.Client.DefaultRequestHeaders.Add("x-ks-projectid", realmPid);
 		containerUploadData.Client.DefaultRequestHeaders.Add("x-ks-token", token);
