@@ -14,7 +14,7 @@ on:
         default: false
 
 jobs:
-  private-cloud:
+  run-terraform:
     runs-on: ubuntu-latest
     
     defaults:
@@ -33,7 +33,7 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ vars.AWS_REGION }}
+        aws-region: ${{ secrets.AWS_REGION }}
         mask-aws-account-id: false
     
     - uses: hashicorp/setup-terraform@v2
@@ -46,7 +46,7 @@ jobs:
         terraform init \
          -backend-config="bucket=beamable-tfstate" \
          -backend-config="key=state/lightbeam-${{ github.event.inputs.environment }}.tfstate" \
-         -backend-config="region=${{ vars.AWS_REGION }}" 
+         -backend-config="region=${{ secrets.AWS_REGION }}" 
 
     - name: Terraform Validate
       id: validate
