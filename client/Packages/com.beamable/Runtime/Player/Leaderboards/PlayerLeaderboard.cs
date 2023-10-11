@@ -5,8 +5,8 @@ using Beamable.Api.Connectivity;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
-using Beamable.Common.Leaderboards;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Leaderboards;
 using Beamable.Common.Player;
 using System;
 using System.Collections.Generic;
@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace Beamable.Player
 {
-	
+
 	public interface IPlayerLeaderboardFriend
 	{
 		string boardId { get; }
@@ -26,7 +26,7 @@ namespace Beamable.Player
 		Promise<LeaderboardAssignmentInfo> GetAssignment(bool joinBoard);
 		void Hydrate(IDependencyProvider provider);
 	}
-	
+
 	/// <summary>
 	/// A <see cref="PlayerLeaderboard"/> contains scores and metadata for a Beamable player leaderboard.
 	/// Use the <see cref="TopScores"/> property to see the high scores for the leaderboard.
@@ -40,13 +40,13 @@ namespace Beamable.Player
 		private IUserContext _userContext;
 		private PlayerStats _statsApi;
 		private Promise<LeaderboardAssignmentInfo> _assignment;
-		
+
 		/// <summary>
 		/// The leaderboard id
 		/// </summary>
 		public string boardId;
 		string IPlayerLeaderboardFriend.boardId => boardId;
-		
+
 		/// <summary>
 		/// The size of the leaderboard. This represents how many players are participating on the leaderboard.
 		/// The size may not match <see cref="TopScores"/> or <see cref="NearbyScores"/>, because
@@ -57,8 +57,8 @@ namespace Beamable.Player
 		/// <summary>
 		/// A <see cref="PlayerLeaderboardEntry"/> for the current player's standings in the leaderboard.
 		/// </summary>
-		public OptionalPlayerLeaderboardEntry myStandings = new OptionalPlayerLeaderboardEntry(); 
-		
+		public OptionalPlayerLeaderboardEntry myStandings = new OptionalPlayerLeaderboardEntry();
+
 		/// <summary>
 		/// A <see cref="PlayerLeaderboardEntry"/> for the current player's standings among their friends.
 		/// Friends can be created using the <see cref="PlayerSocial"/> SDK, available through the <see cref="BeamContext.Social"/> accessor.
@@ -67,25 +67,25 @@ namespace Beamable.Player
 
 		[SerializeField]
 		private LeaderboardAddRequest _pendingScoreRequest;
-		
+
 		[SerializeField]
 		private PlayerTopScoresList _topScores;
 		[SerializeField]
 		private PlayerFocusScoresList _nearbyScores;
 		[SerializeField]
 		private PlayerFriendScoresList _friendScores;
-		
+
 		internal IPlayerLeaderboardsFriend collection;
 		private IConnectivityService _connectivity;
-		
+
 		// don't cache these views.
 		private PlayerCollectionScoresListDictionary _playerCollectionViews =
 			new PlayerCollectionScoresListDictionary();
-		
+
 		// don't cache these views either
-		private PlayerFocusScoresListDictionary _playerViews = 
+		private PlayerFocusScoresListDictionary _playerViews =
 			new PlayerFocusScoresListDictionary();
-		
+
 		public PlayerLeaderboard(IDependencyProvider provider)
 		{
 			_provider = provider;
@@ -119,7 +119,7 @@ namespace Beamable.Player
 			}
 		}
 
-		
+
 		/// <summary>
 		/// A <see cref="PlayerFocusScoresList"/> view for the scores on the leaderboard that are
 		/// near the current player. The view will have scores above and below the current player's entry.
@@ -148,8 +148,8 @@ namespace Beamable.Player
 				return _nearbyScores;
 			}
 		}
-		
-		
+
+
 		/// <summary>
 		/// A <see cref="PlayerFriendScoresList"/> view for the scores of the current player's
 		/// friends. 
@@ -232,7 +232,7 @@ namespace Beamable.Player
 			view.playerId = playerId;
 			return view.LoadCount(size);
 		}
-		
+
 		// TODO: move to shared code somewhere
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		static long CombineHashCodes(long h1, long h2)
@@ -240,20 +240,21 @@ namespace Beamable.Player
 			return (((h1 << 5) + h1) ^ h2);
 		}
 
-		private Promise<LeaderboardAssignmentInfo> RefreshAssignment(bool joinBoard=false)
+		private Promise<LeaderboardAssignmentInfo> RefreshAssignment(bool joinBoard = false)
 		{
 			_assignment = _api.GetAssignment(boardId, joinBoard)
-			                  .Recover(ex =>
-			                  {
-				                  if (ex is PlatformRequesterException err && err.Error.status == 404)
-				                  {
-					                  return new LeaderboardAssignmentInfo
-					                  {
-						                  leaderboardId = boardId, playerId = _userContext.UserId
-					                  };
-				                  }
-				                  throw ex;
-			                  });
+							  .Recover(ex =>
+							  {
+								  if (ex is PlatformRequesterException err && err.Error.status == 404)
+								  {
+									  return new LeaderboardAssignmentInfo
+									  {
+										  leaderboardId = boardId,
+										  playerId = _userContext.UserId
+									  };
+								  }
+								  throw ex;
+							  });
 			return _assignment;
 		}
 
@@ -278,7 +279,7 @@ namespace Beamable.Player
 				await UpdateLocalScore();
 				await SetPendingScore();
 			});
-			
+
 			// hydrate nested data structures 
 			(_topScores as IPlayerScoreListFriend)?.Hydrate(this, _provider);
 			(_friendScores as IPlayerScoreListFriend)?.Hydrate(this, _provider);
@@ -298,7 +299,7 @@ namespace Beamable.Player
 		bool HasPendingScoreRequest => _pendingScoreRequest != null && _pendingScoreRequest.id > 0;
 
 		void IPlayerLeaderboardFriend.Hydrate(IDependencyProvider provider) => Hydrate(provider);
-		
+
 		async Promise<LeaderboardAssignmentInfo> GetLocalAssignment(bool joinBoard)
 		{
 			if (_assignment == null)
@@ -323,7 +324,7 @@ namespace Beamable.Player
 				SetCurrentScore(rank.Value);
 			}
 		}
-		
+
 		/// <summary>
 		/// <bold> This method requires that the board supports client authoritative writes. In content, that is specified with the <see cref="LeaderboardContent.permissions"/> field.</bold>
 		/// <para>
@@ -341,16 +342,16 @@ namespace Beamable.Player
 		/// Every leaderboard entry has a set of stats, <see cref="PlayerLeaderboardEntry.stats"/>, that can hold
 		/// metadata about the entry.
 		/// </param>
-		public async Promise SetScore(double score, Dictionary<string, string> stats=null)
+		public async Promise SetScore(double score, Dictionary<string, string> stats = null)
 		{
-			
-			var request = new LeaderboardAddRequest {id = _userContext.UserId, score = score};
+
+			var request = new LeaderboardAddRequest { id = _userContext.UserId, score = score };
 			CreateRequestObject(request);
 			PrepareStats(stats);
 			await SetPendingScore();
 		}
 
-		
+
 		/// <summary>
 		/// <bold> This method requires that the board supports client authoritative writes. In content, that is specified with the <see cref="LeaderboardContent.permissions"/> field.</bold>
 		/// <para>
@@ -374,14 +375,14 @@ namespace Beamable.Player
 			var request = new LeaderboardAddRequest
 			{
 				id = _userContext.UserId,
-			    score = change
+				score = change
 			};
 			request.increment.Set(true);
 			CreateRequestObject(request);
 			PrepareStats(stats);
 			await SetPendingScore();
 		}
-		
+
 		/// <summary>
 		/// <bold> This method requires that the board supports client authoritative writes. In content, that is specified with the <see cref="LeaderboardContent.permissions"/> field.</bold>
 		/// <para>
@@ -438,24 +439,27 @@ namespace Beamable.Player
 			if (nextIncrement && wasIncrement)
 			{
 				_pendingScoreRequest.score += next.score;
-			} else if (nextIncrement && !wasIncrement)
+			}
+			else if (nextIncrement && !wasIncrement)
 			{
 				// we cannot make it an increment, because it will inc by the previous SET score
 				_pendingScoreRequest.score += next.score;
-			} else if (!nextIncrement && !wasIncrement)
+			}
+			else if (!nextIncrement && !wasIncrement)
 			{
 				_pendingScoreRequest.score = next.score;
-			} else if (!nextIncrement && wasIncrement)
+			}
+			else if (!nextIncrement && wasIncrement)
 			{
 				// we are switching to an increment, but we cannot do that, because we don't know what the score used to be
 				// so we'll fake it
 				var current = myStandings.GetOrThrow(
 					() => new InvalidOperationException("Indeterminate behaviour for offline leaderboard mocking."))
-				           .score;
-				
+						   .score;
+
 				// we need to simulate the aggregate add so far...
 				current += _pendingScoreRequest.score;
-				
+
 				// add the delta that would put the score at the desired value.
 				_pendingScoreRequest.score += (next.score - current);
 
@@ -471,7 +475,7 @@ namespace Beamable.Player
 			}
 		}
 
-		void PrepareStats(Dictionary<string, string> stats=null)
+		void PrepareStats(Dictionary<string, string> stats = null)
 		{
 			MapOfString statMap = null;
 			_pendingScoreRequest.stats.Clear();
@@ -522,7 +526,7 @@ namespace Beamable.Player
 				myStandings.Value.score = entry.score;
 				myStandings.Value.stats = entry.stats;
 			}
-			
+
 			myStandings.Value.Update();
 			collection.Save();
 		}
@@ -550,14 +554,14 @@ namespace Beamable.Player
 	}
 
 	[Serializable]
-	public class OptionalPlayerLeaderboardEntry 
+	public class OptionalPlayerLeaderboardEntry
 		: Optional<PlayerLeaderboardEntry>, IObservable, ISerializationCallbackReceiver
 	{
 		public event Action OnUpdated;
 		public event Action<OptionalPlayerLeaderboardEntry> OnDataUpdated;
 		private long lastBroadcastChecksum;
 		private bool lastHadValue;
-		
+
 		public OptionalPlayerLeaderboardEntry(PlayerLeaderboardEntry entry)
 		{
 			Value = entry;
@@ -567,7 +571,7 @@ namespace Beamable.Player
 		}
 		public OptionalPlayerLeaderboardEntry()
 		{
-			
+
 		}
 
 		public void Update()
@@ -575,7 +579,8 @@ namespace Beamable.Player
 			if (!HasValue && lastHadValue)
 			{
 				Invoke();
-			} else if (HasValue && !lastHadValue)
+			}
+			else if (HasValue && !lastHadValue)
 			{
 				Invoke();
 			}
@@ -588,7 +593,7 @@ namespace Beamable.Player
 			}
 
 			lastHadValue = HasValue;
-			
+
 		}
 
 		void Invoke()
@@ -618,7 +623,7 @@ namespace Beamable.Player
 
 		public void OnBeforeSerialize()
 		{
-			
+
 		}
 
 		public void OnAfterDeserialize()
@@ -630,7 +635,7 @@ namespace Beamable.Player
 	}
 
 	[Serializable]
-	public class PlayerLeaderboardEntry 
+	public class PlayerLeaderboardEntry
 		: DefaultObservable
 #if UNITY_EDITOR
 		, ISerializationCallbackReceiver
@@ -659,7 +664,7 @@ namespace Beamable.Player
 				return false;
 			}
 
-			return Equals((PlayerLeaderboardEntry) obj);
+			return Equals((PlayerLeaderboardEntry)obj);
 		}
 
 		public override int GetHashCode()
@@ -673,31 +678,31 @@ namespace Beamable.Player
 				return hashCode;
 			}
 		}
-		
+
 		#endregion
 #if UNITY_EDITOR
 		[SerializeField]
 		[HideInInspector]
 		private string displayName;
 #endif
-		
+
 		/// <summary>
 		/// The player Id for the owner of this entry
 		/// </summary>
 		public long playerId;
-		
+
 		/// <summary>
 		/// The rank of the entry. Lower ranks represent higher scores.
 		/// Entries are 1 indexed, so don't expect to see an entry of 0
 		/// unless the entry instance has only been instantiated without network initialization.
 		/// </summary>
 		public long rank;
-		
+
 		/// <summary>
 		/// The score of the entry. Higher scores represent better ranks.
 		/// </summary>
 		public double score;
-		
+
 		/// <summary>
 		/// The optional stats associated with an entry
 		/// </summary>
@@ -705,7 +710,7 @@ namespace Beamable.Player
 
 		public PlayerLeaderboardEntry()
 		{
-			
+
 		}
 
 		public PlayerLeaderboardEntry(RankEntry entry)
@@ -738,7 +743,7 @@ namespace Beamable.Player
 			hash = CombineHashCodes(hash, playerId.GetHashCode());
 			return hash;
 		}
-		
+
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		static int CombineHashCodes(int h1, int h2)
 		{
@@ -760,7 +765,7 @@ namespace Beamable.Player
 	[Serializable]
 	public class LeaderboardDictionary : SerializableDictionaryStringToSomething<PlayerLeaderboard>
 	{
-		
+
 	}
-	
+
 }

@@ -110,31 +110,31 @@ namespace Beamable.Content
 		{
 			var cacheId = GetCacheKey(requestedInfo);
 			var fetchedContent = FetchContentFromCDN(requestedInfo)
-		                     .Map(raw =>
-		                     {
-			                     // Write the content to disk
-			                     UpdateDiskFile(requestedInfo, raw);
-			                     return DeserializeContent(requestedInfo, raw);
-		                     })
-		                     .Error(err =>
-		                     {
-			                     _cache.Remove(cacheId);
-			                     PlatformLogger.Log(
-				                     $"ContentCache: Failed to resolve {requestedInfo.contentId} {requestedInfo.version} {requestedInfo.uri} ; ERR={err}");
-		                     });
+							 .Map(raw =>
+							 {
+								 // Write the content to disk
+								 UpdateDiskFile(requestedInfo, raw);
+								 return DeserializeContent(requestedInfo, raw);
+							 })
+							 .Error(err =>
+							 {
+								 _cache.Remove(cacheId);
+								 PlatformLogger.Log(
+									 $"ContentCache: Failed to resolve {requestedInfo.contentId} {requestedInfo.version} {requestedInfo.uri} ; ERR={err}");
+							 });
 			SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, fetchedContent));
 			return fetchedContent;
 		}
 
 		private bool TryGetValueFromDisk(ClientContentInfo info, out TContent content,
-		                                 IBeamableFilesystemAccessor fsa)
+										 IBeamableFilesystemAccessor fsa)
 		{
 			var filePath = ContentPath(fsa);
 			if (!File.Exists(filePath))
 			{
 				DownloadContent(info);
 			}
-			
+
 			if (File.Exists(filePath) && _contentService.ContentDataInfo == null)
 			{
 				var fileContent = File.ReadAllText(filePath);
@@ -224,7 +224,7 @@ namespace Beamable.Content
 		{
 			yield return new WaitForSeconds(WriteToFileDelay);
 			var filePath = ContentPath(_filesystemAccessor);
-			
+
 			// Ensure the directory is created
 			Directory.CreateDirectory(Path.GetDirectoryName(filePath));
 			File.WriteAllText(filePath, JsonUtility.ToJson(_contentService.ContentDataInfo));
@@ -277,7 +277,7 @@ namespace Beamable.Content
 		{
 			var pid = Beam.RuntimeConfigProvider.Pid;
 			var cid = Beam.RuntimeConfigProvider.Cid;
-			
+
 			return $"{fsa.GetPersistentDataPathWithoutTrailingSlash()}/{pid}-{cid}/content/content.json";
 		}
 
