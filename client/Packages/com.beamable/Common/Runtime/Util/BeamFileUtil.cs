@@ -5,15 +5,16 @@ namespace Beamable.Common.Util
 {
 	public partial class BeamUtil
 	{
+		private static readonly char[] InvalidFileChars = Path.GetInvalidFileNameChars();
+		
 		/// <summary>
 		/// replaces all invalid file name characters with a dash
 		/// </summary>
 		public static string SanitizeStringForPath(string str)
 		{
-			if (string.IsNullOrWhitespace(str)) return str;
+			if (string.IsNullOrEmpty(str)) return str;
 			
-			var invalidChars = Path.GetInvalidFileNameChars();
-			foreach (var invalidChar in invalidChars)
+			foreach (var invalidChar in InvalidFileChars)
 			{
 				str = str.Replace(invalidChar, '-');
 			}
