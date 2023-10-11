@@ -17,6 +17,7 @@ using Beamable.Common.Api.Presence;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Spew;
+using Beamable.Common.Util;
 using Beamable.Config;
 using Beamable.Connection;
 using Beamable.Content.Utility;
@@ -918,7 +919,7 @@ namespace Beamable
 			return Promise.Success;
 		}
 
-		string IDependencyNameProvider.DependencyProviderName => PlayerCode;
+		string IDependencyNameProvider.DependencyProviderName => BeamUtil.SanitizeStringForPath(PlayerCode);
 		string IDependencyScopeNameProvider.DependencyScopeName => PlayerId.ToString();
 		int IBeamableDisposableOrder.DisposeOrder => 100;
 	}
