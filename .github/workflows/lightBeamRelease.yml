@@ -70,6 +70,10 @@ jobs:
           else
             echo "Tag Pushed: ${{ steps.isCronOrManual.outputs.customTag }}"
           fi
+      - name: Display Trigger Context
+        run: echo ${{steps.setTriggerContext.outputs.triggerContext}}
+      - name: Display Triggered Type
+        run: echo ${{ steps.isCronOrManual.outputs.triggered}}
       - uses: actions/checkout@v3
         name: Checkout Main
         if: ${{ steps.isCronOrManualOrTag.outputs.triggered != 'tag' }}
