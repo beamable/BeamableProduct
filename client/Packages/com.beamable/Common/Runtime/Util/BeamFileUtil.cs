@@ -10,8 +10,7 @@ namespace Beamable.Common.Util
 		/// </summary>
 		public static string SanitizeStringForPath(string str)
 		{
-			if (str == null) return null;
-			if (str == String.Empty) return String.Empty;
+			if (string.IsNullOrWhitespace(str)) return str;
 			
 			var invalidChars = Path.GetInvalidFileNameChars();
 			foreach (var invalidChar in invalidChars)
