@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Content cache data is now saved in a namespaced path.
+- Inventory is available on WebGL builds, and `IDependencyNameProvider.DependencyProviderName` uses a sanitized `PlayerCode`.
 
 ## [1.19.1]
 
