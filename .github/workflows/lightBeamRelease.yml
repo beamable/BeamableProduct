@@ -1,0 +1,137 @@
+name: LightBeam Release
+
+on:
+  push:
+    tags:
+      - '*'
+  schedule:
+    - cron: '0 0 * * *'  # Runs daily at midnight UTC (adjust to your desired schedule)
+  workflow_dispatch:
+    inputs:
+      customTag:
+        description: 'Custom tag for manual dispatch'
+        required: false
+
+jobs:
+
+  build:
+    name: Lightbeams
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    concurrency:
+      group: device-builds-${{ github.head_ref }}
+      cancel-in-progress: true
+    strategy:
+      fail-fast: false
+      matrix:
+        targetPlatform:
+          - WebGL
+        unityVersion:
+          - 2022.3.0f1
+        projectPath:
+          - client
+    steps:
+      - name: Check if triggered by cron or manual
+        id: isCronOrManual
+        run: |
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            echo "::set-output name=triggered::cron"
+            datestring=nightly-$(date -u +"%Y%m%d%H%M%S")
+            echo "::set-output name=customTag::${datestring}"
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "::set-output name=triggered::manual"
+            customTag="${{ github.event.inputs.customTag }}"
+            echo "::set-output name=customTag::${customTag}"
+          else
+            echo "::set-output name=triggered::tag"
+            tagname="${{ github.ref }}"
+            echo "::set-output name=customTag::${tagname/refs\/tags\//}"
+          fi
+
+      - name: Display Outputs
+        run: |
+          if [[ "${{ steps.isCronOrManual.outputs.triggered }}" == "cron" ]]; then
+            echo "Nightly Build Date String: ${{ steps.isCronOrManual.outputs.customTag }}"
+          elif [[ "${{ steps.isCronOrManual.outputs.triggered }}" == "manual" ]]; then
+            echo "Custom Tag for Manual Dispatch: ${{ steps.isCronOrManual.outputs.customTag }}"
+          else
+            echo "Tag Pushed: ${{ steps.isCronOrManual.outputs.customTag }}"
+          fi
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: true
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Prepare Config-Defaults
+        run: |
+          chmod +x ./build/create_config_defaults.sh
+          ./build/create_config_defaults.sh
+        shell: bash
+      - name: Cache Docker Layers
+        uses: actions/cache@v2
+        id: cache_docker
+        with:
+          path: ./docker-cache
+          key: Docker-gzipped-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
+          restore-keys: |
+            Docker-gzipped-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
+      - name: Load Docker Image If Exits
+        if: ${{ steps.cache_docker.outputs.cache-hit }}
+        continue-on-error: true
+        run: |
+          chmod +x ./build/prepare_base_image.sh
+          UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/prepare_base_image.sh
+        shell: bash
+      - name: Cache Unity Folders
+        uses: actions/cache@v2
+        with:
+          path: |
+            ${{ matrix.projectPath }}/Library
+            ${{ matrix.projectPath }}/Temp
+            ${{ matrix.projectPath }}/obj
+          key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
+          restore-keys: |
+            Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
+      - name: Clean the build directory
+        continue-on-error: true
+        run: |
+          rm -rf /github/workspace/dist
+        shell: bash
+      - uses: game-ci/unity-builder@v2.1.2
+        timeout-minutes: 60
+        env:
+          UNITY_EMAIL: ${{ secrets[matrix.unityEmailOverride] || secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets[matrix.unityPasswordOverride] || secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets[matrix.unitySerialOverride] || secrets.UNITY_SERIAL }}
+        with:
+          customParameters: -LIGHTBEAM_BUILD_PATH dist
+          targetPlatform: ${{ matrix.targetPlatform }}
+          unityVersion: ${{ matrix.unityVersion }}
+          projectPath: ${{ matrix.projectPath }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          allowDirtyBuild: true
+          buildMethod: LightBeamBuilds.BuildAll
+
+      - name: Save Docker Image If Exits
+        if: ${{ !steps.cache_docker.outputs.cache-hit }}
+        run: |
+          chmod +x ./build/save_base_image.sh
+          UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/save_base_image.sh
+        shell: bash
+      - name: Check Asset
+        continue-on-error: true
+        run: |
+          ls -a ${{ matrix.projectPath }}/dist
+        shell: bash
+      - name: upload
+        if: ${{ matrix.targetPlatform == 'WebGL' }}
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ matrix.projectPath }}/dist s3://${{secrets.AWS_BUCKET_BUILDS}}/testbuild/${{ steps.isCronOrManual.outputs.customTag }}/game --acl public-read
+      # - uses: github-actions-up-and-running/pr-comment@v1.0.1
+      #   if: ${{ matrix.targetPlatform == 'WebGL' && github.event_name == 'pull_request' }}
+      #   with:
+      #     repo-token: ${{ secrets.GITHUB_TOKEN }}
+      #     message: Lightbeam [link](https://beamable-product-github-builds.s3.us-west-2.amazonaws.com/uploads/${{github.sha}}/game/index.html)
