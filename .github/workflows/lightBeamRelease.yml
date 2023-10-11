@@ -47,6 +47,19 @@ jobs:
             tagname="${{ github.ref }}"
             echo "::set-output name=customTag::${tagname/refs\/tags\//}"
           fi
+      - name: Set trigger context
+        id: setTriggerContext
+        run: |
+          if [[ "${{ steps.isCronOrManualOrTag.outputs.triggered }}" == "cron" ]]; then
+            triggerContext="nightly"
+          elif [[ "${{ steps.isCronOrManualOrTag.outputs.triggered }}" == "manual" ]]; then
+            triggerContext="manual"
+          elif [[ "${{ steps.isCronOrManualOrTag.outputs.tagname }}" == *"PREVIEW"* ]]; then
+            triggerContext="preview"
+          else
+            triggerContext="production"
+          fi
+          echo "::set-output name=triggerContext::${triggerContext}"
 
       - name: Display Outputs
         run: |
@@ -58,9 +71,20 @@ jobs:
             echo "Tag Pushed: ${{ steps.isCronOrManual.outputs.customTag }}"
           fi
       - uses: actions/checkout@v3
+        name: Checkout Main
+        if: ${{ steps.isCronOrManualOrTag.outputs.triggered != 'tag' }}
         with:
           fetch-depth: 0
           lfs: true
+          ref: main
+      - uses: actions/checkout@v3
+        name: Checkout Tag
+        if: ${{ steps.isCronOrManualOrTag.outputs.triggered == 'tag' }}
+        with:
+          fetch-depth: 0
+          lfs: true
+          ref: ${{ steps.isCronOrManualOrTag.outputs.tagname }}
+        
       - name: Login to Docker Hub
         uses: docker/login-action@v1
         with:
@@ -127,11 +151,8 @@ jobs:
         run: |
           ls -a ${{ matrix.projectPath }}/dist
         shell: bash
-      - name: upload
-        if: ${{ matrix.targetPlatform == 'WebGL' }}
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ matrix.projectPath }}/dist s3://${{secrets.AWS_BUCKET_BUILDS}}/testbuild/${{ steps.isCronOrManual.outputs.customTag }}/game --acl public-read
-      # - uses: github-actions-up-and-running/pr-comment@v1.0.1
-      #   if: ${{ matrix.targetPlatform == 'WebGL' && github.event_name == 'pull_request' }}
-      #   with:
-      #     repo-token: ${{ secrets.GITHUB_TOKEN }}
-      #     message: Lightbeam [link](https://beamable-product-github-builds.s3.us-west-2.amazonaws.com/uploads/${{github.sha}}/game/index.html)
+      - name: upload named version
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ matrix.projectPath }}/dist s3://${{secrets.AWS_BUCKET_BUILDS}}/version/${{ steps.isCronOrManual.outputs.customTag }}/game --acl public-read
+      - name: upload alias version
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ matrix.projectPath }}/dist s3://${{secrets.AWS_BUCKET_BUILDS}}/${{ steps.setTriggerContext.outputs.triggerContext }}/game --acl public-read
+  
