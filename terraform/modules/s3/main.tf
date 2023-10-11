@@ -88,10 +88,9 @@ resource "aws_s3_bucket_policy" "lightbeam" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid: "BucketReadObjects",
-        Effect = "Allow",
-        Principal = "*",
-        Action = "*",
+        Effect = "Allow"
+        Principal = "*"
+        Action = "*"
         Resource = [
           "${aws_s3_bucket.lightbeam.arn}/*",
           "${aws_s3_bucket.lightbeam.arn}"
