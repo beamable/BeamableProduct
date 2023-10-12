@@ -58,8 +58,12 @@ jobs:
 
     - name: Terraform Plan
       id: plan
-      run: terraform plan -no-color -destroy -out ./tfplan
+      run: terraform plan -no-color -out ./tfplan
       continue-on-error: true
+
+    - name: Review Plan
+      run: |
+         cat ./tfplan
 
     - name: Terraform Apply
       continue-on-error: true
