@@ -61,10 +61,6 @@ jobs:
       run: terraform plan -no-color -out ./tfplan
       continue-on-error: true
 
-    - name: Review Plan
-      run: |
-         cat ./tfplan
-
     - name: Terraform Apply
       continue-on-error: true
       if: ${{ github.event.inputs.apply_terraform == 'true' }}
