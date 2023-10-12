@@ -1,0 +1,37 @@
+<Project >
+    <!-- Set the /bin and /obj folder outputs to be in the Temp folder -->
+    <PropertyGroup>
+        <HiddenBinPath>$(SolutionDir)/Temp/customerCommonChris/bin</HiddenBinPath>
+        <HiddenObjPath>$(SolutionDir)/Temp/customerCommonChris/obj</HiddenObjPath>
+        <BaseOutputPath>$(HiddenBinPath)</BaseOutputPath>
+        <BaseIntermediateOutputPath>$(HiddenObjPath)</BaseIntermediateOutputPath>
+        <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
+        <AppendRuntimeIdentifierToOutputPath>true</AppendRuntimeIdentifierToOutputPath>
+    </PropertyGroup>
+    
+    <!-- Import the modern .net sdk build properties. This must be after /bin/obj and before the project settings.-->
+    <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+
+
+    <!-- Project settings -->
+    <PropertyGroup>
+        <TargetFramework>netstandard2.1</TargetFramework>
+        <ImplicitlyExpandNETStandardFacades>false</ImplicitlyExpandNETStandardFacades>
+        <ImplicitlyExpandDesignTimeFacades>false</ImplicitlyExpandDesignTimeFacades>
+        <EnableDefaultItems>false</EnableDefaultItems>
+    </PropertyGroup>
+    
+    <!-- Nuget references -->
+    <ItemGroup>
+        <PackageReference Include="Beamable.UnityEngine"/>
+    </ItemGroup>
+    
+    <!-- Local C# files -->
+    <ItemGroup>
+        <Compile Include="Igloo.cs" />
+        <Compile Include="Sample.cs" />
+    </ItemGroup>
+
+    <!-- Import the modern .net targets. This must be last.-->
+    <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
+</Project>
