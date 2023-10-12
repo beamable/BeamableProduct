@@ -54,7 +54,8 @@ jobs:
 
     - name: Terraform Debug
       run: |
-        terraform import module.s3.aws_route53_record.lightbeam_record Z02087992MJOM97JM6EAZ_lightbeams.beamable.com_CNAME
+        terraform import module.s3.aws_cloudfront_distribution.lightbeam E3WCWLOU0CURK
+    # terraform import module.s3.aws_route53_record.lightbeam_record Z02087992MJOM97JM6EAZ_lightbeams.beamable.com_CNAME
     # terraform import module.s3.aws_s3_bucket.lightbeam beamable-lightbeams
     # terraform import module.s3.aws_s3_bucket_acl.lightbeam E3WCWLOU0CURK
 
