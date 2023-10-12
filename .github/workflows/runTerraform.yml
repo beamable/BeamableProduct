@@ -52,21 +52,15 @@ jobs:
       id: validate
       run: terraform validate -no-color
 
+    - name: Terraform Debug
+      run: |
+         terraform state list 
+         
     - name: Terraform Plan
       id: plan
       run: terraform plan -no-color
       continue-on-error: true
 
-    - name: Terraform Import 
-      id: import
-      run: |
-        terraform import aws_s3_bucket.lightbeam beamable-lightbeams
-
-    - name: Terraform Show 
-      id: show
-      run: |
-        terraform show
-      
     - name: Terraform Apply
       if: ${{ github.event.inputs.apply_terraform == 'true' }}
       run: terraform apply -auto-approve
