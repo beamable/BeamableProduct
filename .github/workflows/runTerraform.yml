@@ -52,15 +52,6 @@ jobs:
       id: validate
       run: terraform validate -no-color
 
-    - name: Terraform Debug
-      run: |
-        terraform import module.s3.aws_cloudfront_distribution.lightbeam E3WCWLOU0CURK
-    # terraform import module.s3.aws_route53_record.lightbeam_record Z02087992MJOM97JM6EAZ_lightbeams.beamable.com_CNAME
-    # terraform import module.s3.aws_s3_bucket.lightbeam beamable-lightbeams
-    # terraform import module.s3.aws_s3_bucket_acl.lightbeam E3WCWLOU0CURK
-
-    #unexpected format of ID ("d1m7wbva8zi4q8.cloudfront.net"), expected ZONEID_RECORDNAME_TYPE_SET-IDENTIFIER (e.g. Z4KAPRWWNC7JR_dev.example.com_NS_dev), where SET-IDENTIFIER is optional
-
     - name: Terraform Plan
       id: plan
       run: terraform plan -no-color -out ./tfplan
