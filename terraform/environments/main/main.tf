@@ -7,6 +7,11 @@ terraform {
   }
 }
 
+terraform {
+  backend "s3" {
+  }
+}
+
 variable "ROOT_DOMAIN_NAME" {
   type    = string
 }
