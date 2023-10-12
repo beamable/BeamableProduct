@@ -35,17 +35,17 @@ jobs:
         id: isCronOrManual
         run: |
           if [[ "${{ github.event_name }}" == "schedule" ]]; then
-            echo "::set-output name=triggered::cron"
+            echo "triggered=cron" >> $GITHUB_OUTPUT
             datestring=nightly-$(date -u +"%Y%m%d%H%M%S")
-            echo "::set-output name=customTag::${datestring}"
+            echo "customTag=${datestring}" >> $GITHUB_OUTPUT
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "::set-output name=triggered::manual"
+            echo "triggered=manual" >> $GITHUB_OUTPUT
             customTag="${{ github.event.inputs.customTag }}"
-            echo "::set-output name=customTag::${customTag}"
+            echo "customTag=${customTag}" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=triggered::tag"
+            echo "triggered=tag" >> $GITHUB_OUTPUT
             tagname="${{ github.ref }}"
-            echo "::set-output name=customTag::${tagname/refs\/tags\//}"
+            echo "customTag=${tagname/refs\/tags\//}" >> $GITHUB_OUTPUT
           fi
       - name: Set trigger context
         id: setTriggerContext
@@ -59,7 +59,7 @@ jobs:
           else
             triggerContext="production"
           fi
-          echo "::set-output name=triggerContext::${triggerContext}"
+          echo "triggerContext=${triggerContext}" >> $GITHUB_OUTPUT
 
       - name: Display Outputs
         run: |
@@ -72,6 +72,8 @@ jobs:
           fi
       - name: Display Trigger Context
         run: echo ${{steps.setTriggerContext.outputs.triggerContext}}
+      - name: Display Custom Tag
+        run: echo ${{ steps.isCronOrManual.outputs.customTag}}
       - name: Display Triggered Type
         run: echo ${{ steps.isCronOrManual.outputs.triggered}}
       - uses: actions/checkout@v3
@@ -156,7 +158,7 @@ jobs:
           ls -a ${{ matrix.projectPath }}/dist
         shell: bash
       - name: upload named version
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ matrix.projectPath }}/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/version/${{ steps.isCronOrManual.outputs.customTag }}/game --acl public-read
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ matrix.projectPath }}/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/version/${{ steps.isCronOrManual.outputs.customTag }} --acl public-read
       - name: upload alias version
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ matrix.projectPath }}/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/${{ steps.setTriggerContext.outputs.triggerContext }}/game --acl public-read
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ matrix.projectPath }}/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/${{ steps.setTriggerContext.outputs.triggerContext }} --acl public-read
   
