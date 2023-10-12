@@ -48,6 +48,15 @@ jobs:
          -backend-config="key=state/lightbeam-${{ github.event.inputs.environment }}.tfstate" \
          -backend-config="region=${{ secrets.AWS_REGION }}" 
 
+    - name: Terraform Validate
+      id: validate
+      run: terraform validate -no-color
+
+    - name: Terraform Plan
+      id: plan
+      run: terraform plan -no-color
+      continue-on-error: true
+
     - name: Terraform Import 
       id: import
       run: |
@@ -57,15 +66,6 @@ jobs:
       id: show
       run: |
         terraform show
-
-    - name: Terraform Validate
-      id: validate
-      run: terraform validate -no-color
-
-    - name: Terraform Plan
-      id: plan
-      run: terraform plan -no-color
-      continue-on-error: true
       
     - name: Terraform Apply
       if: ${{ github.event.inputs.apply_terraform == 'true' }}
