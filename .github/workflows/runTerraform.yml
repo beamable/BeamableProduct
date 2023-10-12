@@ -58,7 +58,7 @@ jobs:
 
     - name: Terraform Plan
       id: plan
-      run: terraform plan -no-color -destory -out ./tfplan
+      run: terraform plan -no-color -destroy -out ./tfplan
       continue-on-error: true
 
     - name: Terraform Apply
