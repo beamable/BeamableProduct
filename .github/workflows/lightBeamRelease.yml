@@ -50,11 +50,11 @@ jobs:
       - name: Set trigger context
         id: setTriggerContext
         run: |
-          if [[ "${{ steps.isCronOrManualOrTag.outputs.triggered }}" == "cron" ]]; then
+          if [[ "${{ steps.isCronOrManual.outputs.triggered }}" == "cron" ]]; then
             triggerContext="nightly"
-          elif [[ "${{ steps.isCronOrManualOrTag.outputs.triggered }}" == "manual" ]]; then
+          elif [[ "${{ steps.isCronOrManual.outputs.triggered }}" == "manual" ]]; then
             triggerContext="manual"
-          elif [[ "${{ steps.isCronOrManualOrTag.outputs.tagname }}" == *"PREVIEW"* ]]; then
+          elif [[ "${{ steps.isCronOrManual.outputs.customTag }}" == *"PREVIEW"* ]]; then
             triggerContext="preview"
           else
             triggerContext="production"
