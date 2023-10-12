@@ -52,16 +52,16 @@ jobs:
       id: validate
       run: terraform validate -no-color
 
-    - name: Terraform Debug
-      run: |
-         terraform destory
+    # - name: Terraform Debug
+    #   run: |
+    #      terraform destory
 
     - name: Terraform Plan
       id: plan
-      run: terraform plan -no-color
+      run: terraform plan -no-color -destory -out ./tfplan
       continue-on-error: true
 
     - name: Terraform Apply
       continue-on-error: true
       if: ${{ github.event.inputs.apply_terraform == 'true' }}
-      run: terraform apply -auto-approve
+      run: terraform apply -auto-approve ./tfplan
