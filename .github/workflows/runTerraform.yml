@@ -52,11 +52,12 @@ jobs:
       id: validate
       run: terraform validate -no-color
 
-    # - name: Terraform Debug
-    #   run: |
-    #      terraform import module.s3.aws_s3_bucket_acl.lightbeam E3WCWLOU0CURK
-
+    - name: Terraform Debug
+      run: |
+        terraform import module.s3.aws_route53_record.lightbeam_record d1m7wbva8zi4q8.cloudfront.net
     # terraform import module.s3.aws_s3_bucket.lightbeam beamable-lightbeams
+
+    # terraform import module.s3.aws_s3_bucket_acl.lightbeam E3WCWLOU0CURK
 
     - name: Terraform Plan
       id: plan
