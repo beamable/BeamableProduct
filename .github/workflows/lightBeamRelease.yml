@@ -163,7 +163,7 @@ jobs:
           CLOUD_DISTRO=E3WCWLOU0CURK
           CALLER_REFERENCE=$(date -u +"%Y%m%d%H%M%S")
           echo '{"DistributionId":"'${CLOUD_DISTRO}'","InvalidationBatch":{"CallerReference":"'${CALLER_REFERENCE}'","Paths":{"Quantity":1,"Items":["/${{ steps.setTriggerContext.outputs.triggerContext }}/*"]}}}' >> cloudfront-invalidation.json
-     - name: Preview Cloudfront Invalidation 
+      - name: Preview Cloudfront Invalidation 
         run: |
           cat cloudfront-invalidation.json
       - name: Do Cloudfront Invalidation
