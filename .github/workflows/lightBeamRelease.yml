@@ -158,4 +158,13 @@ jobs:
         run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ matrix.projectPath }}/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/version/${{ steps.isCronOrManual.outputs.customTag }} --acl public-read
       - name: upload alias version
         run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./${{ matrix.projectPath }}/dist s3://${{secrets.AWS_LIGHTBEAM_S3_BUCKET}}/${{ steps.setTriggerContext.outputs.triggerContext }} --acl public-read
-  
+      - name: Prepare Cloudfront Invalidation 
+        run: |
+          CLOUD_DISTRO=E3WCWLOU0CURK
+          CALLER_REFERENCE=$(date -u +"%Y%m%d%H%M%S")
+          echo '{"DistributionId":"'${CLOUD_DISTRO}'","InvalidationBatch":{"CallerReference":"'${CALLER_REFERENCE}'","Paths":{"Quantity":1,"Items":["/${{ steps.setTriggerContext.outputs.triggerContext }}/*"]}}}' >> cloudfront-invalidation.json
+     - name: Preview Cloudfront Invalidation 
+        run: |
+          cat cloudfront-invalidation.json
+      - name: Do Cloudfront Invalidation
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws cloudfront create-invalidation --cli-input-json file://cloudfront-invalidation.json
