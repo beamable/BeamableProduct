@@ -48,6 +48,16 @@ jobs:
          -backend-config="key=state/lightbeam-${{ github.event.inputs.environment }}.tfstate" \
          -backend-config="region=${{ secrets.AWS_REGION }}" 
 
+    - name: Terraform Import 
+      id: import
+      run: |
+        terraform import aws_s3_bucket.lightbeam beamable-lightbeams
+
+    - name: Terraform Show 
+      id: show
+      run: |
+        terraform show
+
     - name: Terraform Validate
       id: validate
       run: terraform validate -no-color
