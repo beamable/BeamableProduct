@@ -63,11 +63,11 @@ namespace Beamable.BSAT.Test.CloudSaving
 			try
 			{
 				_cloudSavingService = _ctx.Api.CloudSavingService;
-				if (!_cloudSavingService.isInitializing)
+				if (!_cloudSavingService.IsInitializing)
 					await _cloudSavingService.Init();
 				else
 				{
-					TestableDebug.LogError($"Cannot call Init() when isInitializing = {_cloudSavingService.isInitializing}");
+					TestableDebug.LogError($"Cannot call Init() when isInitializing = {_cloudSavingService.IsInitializing}");
 					return TestResult.Failed;
 				}
 				return TestResult.Passed;

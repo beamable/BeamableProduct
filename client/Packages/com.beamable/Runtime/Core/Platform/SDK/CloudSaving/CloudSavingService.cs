@@ -31,20 +31,6 @@ namespace Beamable.Api.CloudSaving
 	public class CloudSavingService : PlatformSubscribable<ManifestResponse, ManifestResponse>
 	{
 		private const string ServiceName = "cloudsaving";
-		private ManifestResponse _localManifest;
-		private IPlatformService _platform;
-		private PlatformRequester _requester;
-		private WaitForSecondsRealtime _delay;
-		private CoroutineService _coroutineService;
-		private ConcurrentDictionary<string, string> _pendingUploads = new ConcurrentDictionary<string, string>();
-		private ConcurrentDictionary<string, string> _previouslyProcessedFiles = new ConcurrentDictionary<string, string>();
-		private IEnumerator _fileWatchingRoutine;
-		private IEnumerator _fileWebRequestRoutine;
-		private IConnectivityService _connectivityService;
-		private List<Func<Promise<Unit>>> _ProcessFilesPromiseList = new List<Func<Promise<Unit>>>();
-		private string _manifestPath => Path.Combine(localCloudDataPath.manifestPath, "cloudDataManifest.json");
-		private LocalCloudDataPath localCloudDataPath => new LocalCloudDataPath(_platform);
-		private Promise<Unit> _initDone;
 
 		/// <summary>
 		/// An event with a <see cref="ManifestResponse"/> parameter.
@@ -68,7 +54,21 @@ namespace Beamable.Api.CloudSaving
 		/// The <see cref="CloudSavingService"/> needs to initialize before you should read or write files from the <see cref="LocalCloudDataFullPath"/>.
 		/// This field is a guard that is true when the <see cref="Init"/> method is running, and false otherwise.
 		/// </summary>
-		public bool isInitializing = false;
+		public bool IsInitializing { get; private set; }
+		
+		
+		private ManifestResponse _localManifest;
+		private IPlatformService _platform;
+		private PlatformRequester _requester;
+		private CoroutineService _coroutineService;
+		private ConcurrentDictionary<string, string> _pendingUploads = new ConcurrentDictionary<string, string>();
+		private ConcurrentDictionary<string, string> _previouslyProcessedFiles = new ConcurrentDictionary<string, string>();
+		private IEnumerator _fileWebRequestRoutine;
+		private IConnectivityService _connectivityService;
+		private List<Func<Promise<Unit>>> _ProcessFilesPromiseList = new List<Func<Promise<Unit>>>();
+		private string _manifestPath => Path.Combine(localCloudDataPath.manifestPath, "cloudDataManifest.json");
+		private LocalCloudDataPath localCloudDataPath => new LocalCloudDataPath(_platform);
+		private Promise<Unit> _initDone;
 
 		public CloudSavingService(IPlatformService platform, PlatformRequester requester,
 		   CoroutineService coroutineService, IDependencyProvider provider) : base(provider, ServiceName)
@@ -76,12 +76,11 @@ namespace Beamable.Api.CloudSaving
 			_platform = platform;
 			_requester = requester;
 			_coroutineService = coroutineService;
-			_connectivityService = provider.GetService<IConnectivityService>();
 		}
 
 		/// <summary>
 		/// The <see cref="CloudSavingService"/> must initialize before you should read or write any files from the <see cref="LocalCloudDataFullPath"/>.
-		/// This method will start the initialization process. The <see cref="isInitializing"/> field value will be true when this method is running.
+		/// This method will start the initialization process. The <see cref="IsInitializing"/> field value will be true when this method is running.
 		/// </summary>
 		/// <param name="pollingIntervalSecs">
 		/// When a file is <i>written</i> to the <see cref="LocalCloudDataFullPath"/> path, it will be backed up on the Beamable server.
@@ -90,22 +89,19 @@ namespace Beamable.Api.CloudSaving
 		/// <returns>A <see cref="Promise"/> representing when the initialization has completed. </returns>
 		public Promise<Unit> Init(int pollingIntervalSecs = 10)
 		{
-			if (isInitializing) { return _initDone; }
+			if (IsInitializing) { return _initDone; }
 
 			_initDone = new Promise<Unit>();
 
-			isInitializing = true;
+			IsInitializing = true;
 
-			_delay = new WaitForSecondsRealtime(pollingIntervalSecs);
+			var initSteps = new List<Func<Promise<Unit>>>();
 
-			var _initSteps = new List<Func<Promise<Unit>>>();
+			initSteps.Add(new Func<Promise<Unit>>(() => StopWebRequestRoutine()));
+			initSteps.Add(new Func<Promise<Unit>>(() => ClearQueuesAndLocalManifest()));
+			initSteps.Add(new Func<Promise<Unit>>(() => LoadLocalManifest()));
 
-			_initSteps.Add(new Func<Promise<Unit>>(() => StopFileWatcherRoutine()));
-			_initSteps.Add(new Func<Promise<Unit>>(() => StopWebRequestRoutine()));
-			_initSteps.Add(new Func<Promise<Unit>>(() => ClearQueuesAndLocalManifest()));
-			_initSteps.Add(new Func<Promise<Unit>>(() => LoadLocalManifest()));
-
-			return Promise.ExecuteSerially(_initSteps).FlatMap(_ =>
+			return Promise.ExecuteSerially(initSteps).FlatMap(_ =>
 			{
 				Directory.CreateDirectory(LocalCloudDataFullPath);
 
@@ -117,14 +113,12 @@ namespace Beamable.Api.CloudSaving
 				 {
 					 //DO NOT REMOVE THIS, WE NEED THIS TO GET DEFAULT NOTIFICATIONS
 				 });
-
-					_fileWatchingRoutine = StartFileSystemWatchingCoroutine();
 					_platform.Notification.Subscribe(
 					"cloudsaving.datareplaced",
 					OnReplacedNtf
 				 );
 					_initDone.CompleteSuccess(PromiseBase.Unit);
-					isInitializing = false;
+					IsInitializing = false;
 					return _initDone;
 				});
 			});
@@ -151,39 +145,6 @@ namespace Beamable.Api.CloudSaving
 			return DownloadUserData(manifestResponse);
 		}
 
-		private IEnumerator StartFileSystemWatchingCoroutine()
-		{
-			var routine = WatchDirectoryForChanges();
-			_coroutineService.StartCoroutine(routine);
-			return routine;
-		}
-
-		private IEnumerator WatchDirectoryForChanges()
-		{
-			while (true)
-			{
-				yield return _delay;
-
-				if (!_connectivityService.HasConnectivity)
-				{
-					continue;
-				}
-				_pendingUploads.Clear();
-				if (Directory.Exists(LocalCloudDataFullPath))
-				{
-					foreach (var filepath in Directory.GetFiles(LocalCloudDataFullPath, "*.*", SearchOption.AllDirectories))
-					{
-						yield return SetPendingUploads(filepath);
-					}
-				}
-
-				if (_pendingUploads.Count > 0)
-				{
-					yield return UploadUserData();
-				}
-			}
-		}
-
 		private void InvokeError(string reason, Exception inner)
 		{
 			OnError?.Invoke(new CloudSavingError(reason, inner));
@@ -205,16 +166,15 @@ namespace Beamable.Api.CloudSaving
 		/// <returns>A <see cref="Promise"/> representing when the reboot completes</returns>
 		public Promise<Unit> ReinitializeUserData(int pollingIntervalSecs = 10)
 		{
-			if (isInitializing) { return _initDone; }
+			if (IsInitializing) { return _initDone; }
 
-			var _initSteps = new List<Func<Promise<Unit>>>();
-			_initSteps.Add(() => StopFileWatcherRoutine());
-			_initSteps.Add(() => StopWebRequestRoutine());
-			_initSteps.Add(() => ClearQueuesAndLocalManifest());
-			_initSteps.Add(() => DeleteLocalUserData());
-			_initSteps.Add(() => Init(pollingIntervalSecs));
+			var initSteps = new List<Func<Promise<Unit>>>();
+			initSteps.Add(() => StopWebRequestRoutine());
+			initSteps.Add(() => ClearQueuesAndLocalManifest());
+			initSteps.Add(() => DeleteLocalUserData());
+			initSteps.Add(() => Init(pollingIntervalSecs));
 
-			return Promise.ExecuteSerially(_initSteps);
+			return Promise.ExecuteSerially(initSteps);
 
 		}
 
@@ -236,14 +196,6 @@ namespace Beamable.Api.CloudSaving
 			});
 		}
 
-		private Promise<Unit> StopFileWatcherRoutine()
-		{
-			if (_fileWatchingRoutine != null)
-			{
-				_coroutineService.StopCoroutine(_fileWatchingRoutine);
-			}
-			return PromiseBase.SuccessfulUnit;
-		}
 		private Promise<Unit> StopWebRequestRoutine()
 		{
 			if (_fileWebRequestRoutine != null)
@@ -252,6 +204,7 @@ namespace Beamable.Api.CloudSaving
 			}
 			return PromiseBase.SuccessfulUnit;
 		}
+
 		private Promise<Unit> LoadLocalManifest()
 		{
 			if (File.Exists(_manifestPath))
@@ -428,7 +381,15 @@ namespace Beamable.Api.CloudSaving
 		{
 			var newManifestDict = new ConcurrentDictionary<string, string>();
 
-			if (_localManifest != null && !response.replacement)
+			if (_localManifest == null || response.replacement)
+			{
+				foreach (var s3Object in response.manifest)
+				{
+					var fullPathToFile = Path.Combine(LocalCloudDataFullPath, s3Object.key);
+					newManifestDict[fullPathToFile] = s3Object.eTag;
+				}
+			}
+			else
 			{
 				foreach (var s3Object in _localManifest.manifest)
 				{
@@ -440,22 +401,13 @@ namespace Beamable.Api.CloudSaving
 				{
 					var fullPathToFile = Path.Combine(LocalCloudDataFullPath, s3Object.key);
 
-					string hash;
-					var hasBeenDownloaded = _previouslyProcessedFiles.TryGetValue(fullPathToFile, out hash);
-					var localContentMatchesServer = !String.IsNullOrEmpty(hash) && s3Object.eTag.Equals(hash);
+					var hasBeenDownloaded = _previouslyProcessedFiles.TryGetValue(fullPathToFile, out string hash);
+					var localContentMatchesServer = !string.IsNullOrWhiteSpace(hash) && s3Object.eTag.Equals(hash);
 
 					if (!hasBeenDownloaded || !localContentMatchesServer)
 					{
 						newManifestDict[fullPathToFile] = s3Object.eTag;
 					}
-				}
-			}
-			else
-			{
-				foreach (var s3Object in response.manifest)
-				{
-					var fullPathToFile = Path.Combine(LocalCloudDataFullPath, s3Object.key);
-					newManifestDict[fullPathToFile] = s3Object.eTag;
 				}
 			}
 
@@ -523,6 +475,7 @@ namespace Beamable.Api.CloudSaving
 								   tempFile,
 								   s3Request);
 		}
+
 		private string GetTempFileName()
 		{
 			//Create a temp file ID for downloading CloudSaving data before we try and replace the local data
@@ -530,6 +483,7 @@ namespace Beamable.Api.CloudSaving
 			var fullPathToTempFile = Path.Combine(localCloudDataPath.temp, guid);
 			return fullPathToTempFile;
 		}
+
 		private Promise<Unit> MakeRequestToS3(string filename, string fullPathToTempFile, UnityWebRequest request)
 		{
 			var result = new Promise<Unit>();
@@ -706,7 +660,7 @@ namespace Beamable.Api.CloudSaving
 			{
 				int numBytesToRead = Convert.ToInt32(fs.Length);
 				oFileBytes = new byte[(numBytesToRead)];
-				fs.Read(oFileBytes, 0, numBytesToRead);
+				int _ = fs.Read(oFileBytes, 0, numBytesToRead);
 			}
 
 			return oFileBytes;
@@ -753,28 +707,29 @@ namespace Beamable.Api.CloudSaving
 		{
 			return key.Remove(0, path.Length + 1).Replace(@"\", "/");
 		}
-		private Promise<Unit> SetPendingUploads(string filePath)
+
+		private Promise<bool> CheckAndAddPendingUpload(string filePath)
 		{
 			return GenerateChecksum(filePath).FlatMap(checksum =>
 			{
 
-				var checksumEqual = _previouslyProcessedFiles.ContainsKey(filePath) && !String.IsNullOrEmpty(_previouslyProcessedFiles[filePath]) && _previouslyProcessedFiles[filePath].Equals(checksum);
-				var missingKey = !_previouslyProcessedFiles.ContainsKey(filePath) || String.IsNullOrEmpty(_previouslyProcessedFiles[filePath]);
+				var checksumEqual = _previouslyProcessedFiles.ContainsKey(filePath) && !string.IsNullOrEmpty(_previouslyProcessedFiles[filePath]) && _previouslyProcessedFiles[filePath].Equals(checksum);
+				var missingKey = !_previouslyProcessedFiles.ContainsKey(filePath) || string.IsNullOrEmpty(_previouslyProcessedFiles[filePath]);
 				var fileLengthNotZero = new FileInfo(filePath).Length > 0;
-				if ((!checksumEqual || missingKey) && fileLengthNotZero)
+				bool shouldBeUploaded = (!checksumEqual || missingKey) && fileLengthNotZero;
+				if (shouldBeUploaded)
 				{
 					_pendingUploads[filePath] = checksum;
 				}
-				return Promise<Unit>.Successful(PromiseBase.Unit);
+				return Promise<bool>.Successful(shouldBeUploaded);
 			});
 		}
 		private Promise<Unit> DeleteLocalUserData()
 		{
-			var _initSteps = new List<Func<Promise<Unit>>>();
-			_initSteps.Add(new Func<Promise<Unit>>(() => StopFileWatcherRoutine()));
-			_initSteps.Add(new Func<Promise<Unit>>(() => ClearQueuesAndLocalManifest()));
+			var initSteps = new List<Func<Promise<Unit>>>();
+			initSteps.Add(new Func<Promise<Unit>>(() => ClearQueuesAndLocalManifest()));
 
-			return Promise.ExecuteSerially(_initSteps).FlatMap(initDone =>
+			return Promise.ExecuteSerially(initSteps).FlatMap(initDone =>
 			{
 
 
@@ -783,18 +738,19 @@ namespace Beamable.Api.CloudSaving
 					File.Delete(_manifestPath);
 				}
 
-				if (Directory.Exists(localCloudDataPath.manifestPath))
+				if (!Directory.Exists(localCloudDataPath.manifestPath))
 				{
-					try
-					{
-						Directory.Delete(localCloudDataPath.manifestPath, true);
-					}
-					catch (IOException deleteFailed)
-					{
-						Debug.LogError($"Deletion failed because the files were open, trying again: {deleteFailed}");
-						throw deleteFailed;
-					}
+					return Promise<Unit>.Successful(initDone);
+				}
 
+				try
+				{
+					Directory.Delete(localCloudDataPath.manifestPath, true);
+				}
+				catch (IOException deleteFailed)
+				{
+					Debug.LogError($"Deletion failed because the files were open, trying again: {deleteFailed}");
+					throw;
 				}
 				return Promise<Unit>.Successful(initDone);
 			}).Error(ProvideErrorCallback(nameof(GetPresignedURL)));
