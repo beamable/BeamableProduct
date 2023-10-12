@@ -54,7 +54,7 @@ namespace Beamable.Api.CloudSaving
 		/// The <see cref="CloudSavingService"/> needs to initialize before you should read or write files from the <see cref="LocalCloudDataFullPath"/>.
 		/// This field is a guard that is true when the <see cref="Init"/> method is running, and false otherwise.
 		/// </summary>
-		public bool IsInitializing { get; private set; }
+		public bool IsInitializing => _initDone != null && !_initDone.IsCompleted;
 		
 		
 		private ManifestResponse _localManifest;
@@ -82,18 +82,12 @@ namespace Beamable.Api.CloudSaving
 		/// The <see cref="CloudSavingService"/> must initialize before you should read or write any files from the <see cref="LocalCloudDataFullPath"/>.
 		/// This method will start the initialization process. The <see cref="IsInitializing"/> field value will be true when this method is running.
 		/// </summary>
-		/// <param name="pollingIntervalSecs">
-		/// When a file is <i>written</i> to the <see cref="LocalCloudDataFullPath"/> path, it will be backed up on the Beamable server.
-		/// The <see cref="pollingIntervalSecs"/> controls how often Beamable checks for new or updated files on the local device.
-		/// </param>
 		/// <returns>A <see cref="Promise"/> representing when the initialization has completed. </returns>
-		public Promise<Unit> Init(int pollingIntervalSecs = 10)
+		public Promise<Unit> Init()
 		{
 			if (IsInitializing) { return _initDone; }
 
 			_initDone = new Promise<Unit>();
-
-			IsInitializing = true;
 
 			var initSteps = new List<Func<Promise<Unit>>>();
 
@@ -118,11 +112,82 @@ namespace Beamable.Api.CloudSaving
 					OnReplacedNtf
 				 );
 					_initDone.CompleteSuccess(PromiseBase.Unit);
-					IsInitializing = false;
 					return _initDone;
 				});
 			});
 		}
+
+		/// <summary>
+		/// This method will clear all local user data, and re-fetch everything from the Beamable server.
+		/// The <see cref="Init"/> method will be called as part of this execution.
+		/// </summary>
+		/// <returns>A <see cref="Promise"/> representing when the reboot completes</returns>
+		public Promise<Unit> ReinitializeUserData()
+		{
+			if (IsInitializing) { return _initDone; }
+
+			var initSteps = new List<Func<Promise<Unit>>>();
+			initSteps.Add(() => StopWebRequestRoutine());
+			initSteps.Add(() => ClearQueuesAndLocalManifest());
+			initSteps.Add(() => DeleteLocalUserData());
+			initSteps.Add(() => Init());
+
+			return Promise.ExecuteSerially(initSteps);
+
+		}
+
+		/// <summary>
+		/// <b> You shouldn't need to call this method, because this will be called by the <see cref="Init"/> method </b>
+		/// This method will be marked as Obsolete in the future.
+		/// </summary>
+		/// <returns></returns>
+		/// <exception cref="Exception"></exception>
+		public Promise<ManifestResponse> EnsureRemoteManifest()
+		{
+			return FetchUserManifest().RecoverWith(error =>
+			{
+				if (error is PlatformRequesterException notFound && notFound.Status == 404)
+				{
+					return CreateEmptyManifest();
+				}
+				throw error;
+			});
+		}
+
+		public async Promise Save<T>(string key, T content, Func<T, string> serializer = null, bool autoUpload = false)
+		{
+			await this.Write<T>(key, content, serializer);
+			bool isPendingUpload = await CheckAndAddPendingUpload(key);
+			if (!autoUpload || !isPendingUpload)
+			{
+				return;
+			}
+			await UploadUserData();
+		}
+
+		public async Promise Save(string key, string content, bool autoUpload = false)
+		{
+			await this.WriteFileString(key, content);
+			bool isPendingUpload = await CheckAndAddPendingUpload(key);
+			if (!autoUpload || !isPendingUpload)
+			{
+				return;
+			}
+			await UploadUserData();
+		}
+
+		public Promise<string> Load(string key)
+		{
+			return this.ReadFileString(key).Map(file =>
+			{
+				if (file.Exists)
+					return file.Data;
+				
+				BeamableLogger.LogError($"Save with key: \"{key}\" does not exist, returning empty string.");
+				return string.Empty;
+			});
+		}
+		
 		private Promise<Unit> ClearQueuesAndLocalManifest()
 		{
 			_pendingUploads.Clear();
@@ -153,47 +218,6 @@ namespace Beamable.Api.CloudSaving
 		private Action<Exception> ProvideErrorCallback(string methodName)
 		{
 			return (ex) => { InvokeError($"{methodName} Failed: {ex?.Message ?? "unknown reason"}", ex); };
-		}
-
-		/// <summary>
-		/// This method will clear all local user data, and re-fetch everything from the Beamable server.
-		/// The <see cref="Init"/> method will be called as part of this execution.
-		/// </summary>
-		/// <param name="pollingIntervalSecs">
-		/// When a file is <i>written</i> to the <see cref="LocalCloudDataFullPath"/> path, it will be backed up on the Beamable server.
-		/// The <see cref="pollingIntervalSecs"/> controls how often Beamable checks for new or updated files on the local device.
-		/// </param>
-		/// <returns>A <see cref="Promise"/> representing when the reboot completes</returns>
-		public Promise<Unit> ReinitializeUserData(int pollingIntervalSecs = 10)
-		{
-			if (IsInitializing) { return _initDone; }
-
-			var initSteps = new List<Func<Promise<Unit>>>();
-			initSteps.Add(() => StopWebRequestRoutine());
-			initSteps.Add(() => ClearQueuesAndLocalManifest());
-			initSteps.Add(() => DeleteLocalUserData());
-			initSteps.Add(() => Init(pollingIntervalSecs));
-
-			return Promise.ExecuteSerially(initSteps);
-
-		}
-
-		/// <summary>
-		/// <b> You shouldn't need to call this method, because this will be called by the <see cref="Init"/> method </b>
-		/// This method will be marked as Obsolete in the future.
-		/// </summary>
-		/// <returns></returns>
-		/// <exception cref="Exception"></exception>
-		public Promise<ManifestResponse> EnsureRemoteManifest()
-		{
-			return FetchUserManifest().RecoverWith(error =>
-			{
-				if (error is PlatformRequesterException notFound && notFound.Status == 404)
-				{
-					return CreateEmptyManifest();
-				}
-				throw error;
-			});
 		}
 
 		private Promise<Unit> StopWebRequestRoutine()
