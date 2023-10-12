@@ -52,9 +52,9 @@ jobs:
       id: validate
       run: terraform validate -no-color
 
-    # - name: Terraform Debug
-    #   run: |
-    #      terraform destory
+    - name: Terraform Debug
+      run: |
+         terraform import aws_s3_bucket.lightbeam beamable-lightbeams
 
     - name: Terraform Plan
       id: plan
