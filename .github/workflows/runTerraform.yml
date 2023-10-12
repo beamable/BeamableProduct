@@ -54,7 +54,7 @@ jobs:
 
     - name: Terraform Debug
       run: |
-         terraform import 'aws_s3_bucket.lightbeam' beamable-lightbeams
+         terraform import module.s3.aws_s3_bucket.lightbeam beamable-lightbeams
 
     - name: Terraform Plan
       id: plan
