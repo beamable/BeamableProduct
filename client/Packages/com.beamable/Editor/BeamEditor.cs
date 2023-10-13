@@ -238,7 +238,7 @@ namespace Beamable
 			// Reload the current environment data
 			BeamableEnvironment.ReloadEnvironment();
 			
-			DotnetUtil.InitializeDotnet();
+			BeamCliUtil.InitializeBeamCli();
 
 			// If we ever get to this point, we are guaranteed to run the initialization until the end so we...
 			// Initialize Editor instances of Reflection and Assistant services
@@ -497,7 +497,7 @@ namespace Beamable
 		public IPlatformRequester Requester => ServiceScope.GetService<PlatformRequester>();
 		public BeamableDispatcher Dispatcher => ServiceScope.GetService<BeamableDispatcher>();
 		public IAccountService EditorAccountService => ServiceScope.GetService<IAccountService>();
-
+		public BeamCommands Cli => ServiceScope.GetService<BeamCli>().Command;
 		public CustomerView CurrentCustomer => EditorAccount?.CustomerView;
 		public RealmView CurrentRealm => EditorAccount?.CurrentRealm?.GetOrElse(() => null);
 		public RealmView ProductionRealm => EditorAccount?.CurrentGame?.GetOrElse(() => null);

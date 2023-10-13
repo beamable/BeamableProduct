@@ -1,4 +1,5 @@
 using Beamable.Common;
+using System;
 using System.Diagnostics;
 using System.IO;
 using UnityEditor;
@@ -9,10 +10,11 @@ namespace Beamable.Editor.Dotnet
 	public static partial class DotnetUtil
 	{
 		private const int REQUIRED_MAJOR_VERSION = 6;
+		
 		private const string ENV_VAR_DOTNET_LOCATION = "BEAMABLE_DOTNET_PATH";
 		private const string DOTNET_LIBRARY_PATH = "Library/BeamableEditor/Dotnet";
 		
-		private static readonly string DOTNET_GLOBAL_PATH = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".dotnet");
+		public static readonly string DOTNET_GLOBAL_PATH = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".dotnet");
 		
 		
 		/// <summary>
@@ -28,12 +30,28 @@ namespace Beamable.Editor.Dotnet
 		public static string DotnetHome { get; private set; }
 		public static string DotnetPath => Path.Combine(DotnetHome, "dotnet");
 
+		/// <summary>
+		/// Beamable 2.0+ requires Dotnet.
+		/// This method will ensure Dotnet exists for use with the Unity SDK.
+		/// Dotnet is searched for in the following directories
+		/// <list type="bullet">
+		/// <item> the value of a local ENV variable, BEAMABLE_DOTNET_PATH </item>
+		/// <item> in the /Library folder of the current Unity project </item>
+		/// <item> in the default install directory for Dotnet </item>
+		/// </list>
+		///
+		/// The first location where Dotnet is found will be used. However,
+		/// Dotnet must be the correct version, major version 6. If that version is
+		/// not installed, then this method assumes Dotnet is not available.
+		///
+		/// If Dotnet is not available, this method will install the correct version of Dotnet
+		/// into the /Library folder of the current Unity project. 
+		/// </summary>
 		public static void InitializeDotnet()
 		{
 			if (TryGetDotnetFilePath(out var path))
 			{
 				DotnetHome = path;
-				Debug.Log("--- DOTNET AT " + DotnetHome);
 			}
 			else
 			{
@@ -41,11 +59,10 @@ namespace Beamable.Editor.Dotnet
 				if (TryGetDotnetFilePath(out path))
 				{
 					DotnetHome = path;
-					Debug.Log("--- DOTNET INSTALLED AT " + path);
 				}
 				else
 				{
-					Debug.LogError("----- NO DOTNET FOUND");
+					throw new Exception("Beamable unable to start because no Dotnet exists");
 				}
 			}
 		}
@@ -60,7 +77,6 @@ namespace Beamable.Editor.Dotnet
 			RunInstallScript();
 			
 			EditorUtility.ClearProgressBar();
-			
 		}
 		
 		static bool TryGetDotnetFilePath(out string filePath)
@@ -79,11 +95,10 @@ namespace Beamable.Editor.Dotnet
 
 				if (!CheckVersion(dotnetPath))
 				{
-					Debug.Log("Wrong version number");
+					Debug.LogWarning($"Ignoring version of dotnet at {path} due to incorrect version number.");
 					continue;
 				}
 				
-				// ah, dotnet exists at this path
 				filePath = path;
 				return true;
 			}
@@ -97,7 +112,7 @@ namespace Beamable.Editor.Dotnet
 			var proc = new Process();
 			proc.StartInfo = new ProcessStartInfo
 			{
-				FileName = dotnetPath, 
+				FileName = Path.GetFullPath(dotnetPath), 
 				Arguments = "--version",
 				UseShellExecute = false, 
 				RedirectStandardOutput = true,

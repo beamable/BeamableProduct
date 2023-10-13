@@ -32,7 +32,7 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>, ISta
 	public override async Task Handle(VersionInstallCommandArgs args)
 	{
 		var service = args.DependencyProvider.GetService<VersionService>();
-		var currentVersionInfo = await service.GetInformationData();
+		var currentVersionInfo = await service.GetInformationData(args.ProjectService);
 
 		if (currentVersionInfo.installType != VersionService.VersionInstallType.GlobalTool)
 		{
@@ -74,7 +74,7 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>, ISta
 			}
 		}
 
-		await CliExtensions.GetDotnetCommand($"tool update Beamable.Tools --global --version {packageVersion.originalVersion}")
+		await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, $"tool update Beamable.Tools --global --version {packageVersion.originalVersion}")
 			.WithValidation(CommandResultValidation.ZeroExitCode)
 			.ExecuteAsyncAndLog();
 

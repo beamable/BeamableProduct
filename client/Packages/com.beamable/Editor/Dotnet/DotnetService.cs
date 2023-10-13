@@ -9,17 +9,6 @@ namespace Beamable.Editor.Dotnet
 {
 	public class DotnetService
 	{
-		[MenuItem("DOTNET/Test1")]
-		public static async void Test1()
-		{
-			var ctx = BeamEditorContext.Default;
-			await ctx.InitializePromise;
-			var service = ctx.ServiceScope.GetService<DotnetService>();
-			await service.Run("--version");
-			Debug.Log("--DONE!");
-		}
-		
-		
 		private readonly BeamableDispatcher _dispatcher;
 
 		public DotnetService(BeamableDispatcher dispatcher)
