@@ -24,12 +24,12 @@
     {
       "displayName": "Account Management",
       "description": "Contains a simple user interface demonstrating how to use the Beamable Accounts SDK.",
-      "path": "Samples/LightBeamSamples/AccountManager"
+      "path": "SAMPLES_PATH/LightBeamSamples/AccountManager"
     },
     {
       "displayName": "Currency HUD",
       "description": "Contains a tiny user interface demonstrating how to show a Beamable Currency.",
-      "path": "Samples/LightBeamSamples/CurrencyHud"
+      "path": "SAMPLES_PATH/LightBeamSamples/CurrencyHud"
     }
   ]
 }
