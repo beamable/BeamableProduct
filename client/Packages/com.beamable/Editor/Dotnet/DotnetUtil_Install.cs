@@ -68,7 +68,7 @@ namespace Beamable.Editor.Dotnet
 		{
 #if UNITY_EDITOR_WIN
 			return true;
-#endif
+#else
 			string cmd;
 			if (recursive)
 				cmd = $"chmod -R {permissions} {filePath}";
@@ -87,6 +87,7 @@ namespace Beamable.Editor.Dotnet
 			{
 				return false;
 			}
+#endif
 		}
 		
 		static bool RunInstallScript()
@@ -100,9 +101,8 @@ namespace Beamable.Editor.Dotnet
 				process.StartInfo.FileName = "sh";
 				process.StartInfo.Arguments = $"-c '{command}'";
 #else
-					_process.StartInfo.FileName = "cmd.exe";
-					_process.StartInfo.Arguments = $"/C {command}";
-																																																																																																									                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           $"/C {command}"; //  "/C " + command + " > " + commandoutputfile + "'"; // TODO: I haven't tested this since refactor.
+					process.StartInfo.FileName = "cmd.exe";
+					process.StartInfo.Arguments = $"/C {command}"; //  "/C " + command + " > " + commandoutputfile + "'"; // TODO: I haven't tested this since refactor.
 #endif
 				// Configure the process using the StartInfo properties.
 				process.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal;
