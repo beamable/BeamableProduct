@@ -23,8 +23,13 @@ for row in $(cat ./package.json | jq -r '.samples[] | @base64'); do
 
     # # move the source path to the dst path
     mkdir -p $dstPath
+    echo "---"
     ls $sourcePath
-    mv "./${sourcePath}/*" "./${dstPath}"
+    echo "---"
+    ls $dstPath
+    echo "---"
+    pwd
+    mv "${sourcePath}/*" "./${dstPath}"
 
     # # update the package json file
     sed -i 's,'$path','$dstPath',' package.json
