@@ -3,6 +3,10 @@
 mkdir -p Samples~
 echo "Converting samples into UPM samples"
 ls
+echo "---"
+ls Samples
+echo "---"
+ls Samples/LightBeamSamples/AccountManager
 # for the package, we need to identify the files listed in the ./package.json's Samples section
 for row in $(cat ./package.json | jq -r '.samples[] | @base64'); do
 
@@ -19,7 +23,7 @@ for row in $(cat ./package.json | jq -r '.samples[] | @base64'); do
 
     # # move the source path to the dst path
     mkdir -p $dstPath
-    mv "${sourcePath}/*" $dstPath
+    mv -r "./${sourcePath}/*" "./${dstPath}"
 
     # # update the package json file
     sed -i 's,'$path','$dstPath',' package.json
