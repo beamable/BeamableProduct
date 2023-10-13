@@ -26,7 +26,7 @@ namespace Beamable.Editor.Dotnet
 #if UNITY_EDITOR_WIN
 		const string DOWNLOAD_URL = WIN_DOWNLOAD_URL;
 		const string SCRIPT_NAME = WIN_SCRIPT_NAME;
-#elif  UNITY_EDITOR_OSX
+#else
 		const string DOWNLOAD_URL = MAC_DOWNLOAD_URL;
 		const string SCRIPT_NAME = MAC_SCRIPT_NAME;
 #endif
