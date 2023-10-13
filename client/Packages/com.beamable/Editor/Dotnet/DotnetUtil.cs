@@ -12,7 +12,7 @@ namespace Beamable.Editor.Dotnet
 		private const string ENV_VAR_DOTNET_LOCATION = "BEAMABLE_DOTNET_PATH";
 		private const string DOTNET_LIBRARY_PATH = "Library/BeamableEditor/Dotnet";
 		
-		private static readonly string DOTNET_GLOBAL_PATH = Path.Join(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".dotnet");
+		private static readonly string DOTNET_GLOBAL_PATH = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".dotnet");
 		
 		
 		/// <summary>
@@ -71,7 +71,7 @@ namespace Beamable.Editor.Dotnet
 			{
 				if (path == null) continue;
 				
-				var dotnetPath = Path.Join(path, "dotnet");
+				var dotnetPath = Path.Combine(path, "dotnet");
 				if (!CheckForDotnetAtPath(dotnetPath))
 				{
 					continue;

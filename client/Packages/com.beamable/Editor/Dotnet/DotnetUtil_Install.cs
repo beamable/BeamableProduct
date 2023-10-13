@@ -21,7 +21,7 @@ namespace Beamable.Editor.Dotnet
 			"dotnet-install.sh";
 
 		private const string DOTNET_LIBRARY_INSTALL_SCRIPT_HOME = "Library/BeamableEditor/DotnetInstall";
-		private static string DotnetInstallScriptPath => Path.Join(DOTNET_LIBRARY_INSTALL_SCRIPT_HOME, SCRIPT_NAME);
+		private static string DotnetInstallScriptPath => Path.Combine(DOTNET_LIBRARY_INSTALL_SCRIPT_HOME, SCRIPT_NAME);
 		
 #if UNITY_EDITOR_WIN
 		const string DOWNLOAD_URL = WIN_DOWNLOAD_URL;
