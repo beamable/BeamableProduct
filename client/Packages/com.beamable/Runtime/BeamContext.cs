@@ -161,7 +161,7 @@ namespace Beamable
 			_announcements?.IsInitialized ?? false
 				? _announcements
 				: (_announcements = _serviceScope.GetService<PlayerAnnouncements>());
-		
+
 		public PlayerStats Stats =>
 			_playerStats?.IsInitialized ?? false
 				? _playerStats
