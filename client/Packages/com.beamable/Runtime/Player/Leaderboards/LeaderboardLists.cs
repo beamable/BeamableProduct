@@ -19,9 +19,9 @@ namespace Beamable.Player
 		void Hydrate(IPlayerLeaderboardFriend board,
 					 IDependencyProvider provider);
 	}
-	
+
 	[Serializable]
-	public abstract class PlayerScoreList : 
+	public abstract class PlayerScoreList :
 		AbsObservableReadonlyList<PlayerLeaderboardEntry>, IPlayerScoreListFriend
 	{
 		protected IPlayerLeaderboardFriend _board;
@@ -31,25 +31,25 @@ namespace Beamable.Player
 
 		[SerializeField]
 		protected int _viewSize = 10;
-		
+
 		/// <summary>
 		/// The number of entries in the leaderboard view list
 		/// </summary>
 		public int viewSize => _viewSize;
-		
+
 		/// <summary>
 		/// The leaderboard id of the view list
 		/// </summary>
 		public string boardId => _board.boardId;
-		
+
 
 		protected PlayerScoreList(IPlayerLeaderboardFriend board, IDependencyProvider provider) : base()
 		{
 			Hydrate(board, provider);
 		}
 
-		protected void Hydrate(IPlayerLeaderboardFriend board, 
-		                    IDependencyProvider provider)
+		protected void Hydrate(IPlayerLeaderboardFriend board,
+							IDependencyProvider provider)
 		{
 			SetupDataListener();
 			_board = board;
@@ -61,7 +61,7 @@ namespace Beamable.Player
 
 		protected virtual void OnHydrate()
 		{
-			
+
 		}
 
 		void IPlayerScoreListFriend.Hydrate(IPlayerLeaderboardFriend board, IDependencyProvider provider) =>
@@ -92,7 +92,7 @@ namespace Beamable.Player
 			{
 				_board.SetCurrentScore(result.lb.rankgt);
 			}
-			
+
 			var dict = new Dictionary<long, PlayerLeaderboardEntry>();
 			foreach (var curr in this)
 			{
@@ -117,7 +117,7 @@ namespace Beamable.Player
 					next.Add(newScore);
 				}
 			}
-			
+
 			SetData(next);
 			_board.Save();
 		}
@@ -150,8 +150,8 @@ namespace Beamable.Player
 					clone.RemoveAt(Count - 1);
 					entry = new PlayerLeaderboardEntry
 					{
-						playerId = playerId, 
-						rank = last.rank, 
+						playerId = playerId,
+						rank = last.rank,
 						score = score
 					};
 					clone.Add(entry);
@@ -162,8 +162,8 @@ namespace Beamable.Player
 					return false;
 				}
 			}
-			
-			
+
+
 			/* there are only three cases
 			   1. the player stays in the same rank, and we just update the score&stats
 			   2. the player moves up in rank, and we need to downshift N players
@@ -203,7 +203,7 @@ namespace Beamable.Player
 			{
 				return true; // no move needed!
 			}
-			
+
 			clone ??= this.ToList();
 			clone.RemoveAt(playerStartIndex);
 			clone.Insert(moveIndex, entry);
@@ -212,5 +212,5 @@ namespace Beamable.Player
 		}
 	}
 
-	
+
 }
