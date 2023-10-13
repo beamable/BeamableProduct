@@ -2,6 +2,7 @@
 
 mkdir -p Samples~
 echo "Converting samples into UPM samples"
+ls
 # for the package, we need to identify the files listed in the ./package.json's Samples section
 for row in $(cat ./package.json | jq -r '.samples[] | @base64'); do
 
@@ -17,12 +18,14 @@ for row in $(cat ./package.json | jq -r '.samples[] | @base64'); do
     echo "Converting samples - found dst ${dstPath}"
 
     # # move the source path to the dst path
-    mv $sourcePath $dstPath
+    mkdir -p $dstPath
+    mv "${sourcePath}/*" $dstPath
 
     # # update the package json file
     sed -i 's,'$path','$dstPath',' package.json
 done
 
+ls
 # delete the /Samples directory
 rm -rf Samples/
 rm Samples.meta
