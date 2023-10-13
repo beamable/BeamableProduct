@@ -6,7 +6,7 @@ echo "Converting samples into UPM samples"
 for row in $(cat ./package.json | jq -r '.samples[] | @base64'); do
 
     _jq() {
-     echo ${row} | base64 --decode | jq -r ${1}
+     echo ${row} | base64 -d | jq -r ${1}
     }
     path=$(_jq '.path')
     sourcePath="${path/SAMPLES_PATH/Samples}"
