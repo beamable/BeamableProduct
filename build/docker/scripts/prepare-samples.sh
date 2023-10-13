@@ -18,24 +18,18 @@ for row in $(cat ./package.json | jq -r '.samples[] | @base64'); do
     dstPath="${path/SAMPLES_PATH/Samples~}"
 
     echo "Converting samples - found path ${path}"
-    echo "Converting samples - found sound ${sourcePath}"
+    echo "Converting samples - found source ${sourcePath}"
     echo "Converting samples - found dst ${dstPath}"
-
-    # # move the source path to the dst path
-    mkdir -p $dstPath
-    echo "---"
-    ls $sourcePath
-    echo "---"
-    ls $dstPath
-    echo "---"
-    pwd
-    mv "${sourcePath}/*" "./${dstPath}"
 
     # # update the package json file
     sed -i 's,'$path','$dstPath',' package.json
 done
 
+# move all samples into samples~
 ls
+echo "moving"
+mv Samples/* Samples~
+
 # delete the /Samples directory
 rm -rf Samples/
 rm Samples.meta
