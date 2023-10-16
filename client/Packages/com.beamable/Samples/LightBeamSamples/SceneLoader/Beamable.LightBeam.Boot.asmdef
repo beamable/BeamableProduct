@@ -1,17 +1,19 @@
 {
-	"name": "Beamable.LightBeam.Boot",
-	"references": [
-		"Unity.Beamable",
-		"Unity.Beamable.Runtime.Common",
-		"Unity.Beamable.LightBeams"
-	],
-	"includePlatforms": [],
-	"excludePlatforms": [],
-	"allowUnsafeCode": false,
-	"overrideReferences": false,
-	"precompiledReferences": [],
-	"autoReferenced": true,
-	"defineConstraints": [],
-	"versionDefines": [],
-	"noEngineReferences": false
+    "name": "Beamable.LightBeam.Boot",
+    "rootNamespace": "",
+    "references": [
+        "Unity.Beamable",
+        "Unity.Beamable.Runtime.Common",
+        "Unity.Beamable.LightBeams",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }
