@@ -24,7 +24,8 @@ namespace Beamable.Editor.Modules.EditorConfig
 		[Tooltip("These are advanced Beamable editor features. Please only use these if you are confident in what you are doing.")]
 		public AdvancedSettings Advanced = new AdvancedSettings();
 
-		[Tooltip("These are advanced Beamable CLI features. Please only use these if you are confident in what oyu are doing.")]
+		[Tooltip("These are advanced Beamable CLI features. It should not be changed without deeper understanding of Beamable internals.")]
+
 		public OptionalAdvancedCliSettings AdvancedCli = new OptionalAdvancedCliSettings();
 		
 		public override void OnFreshCopy()
