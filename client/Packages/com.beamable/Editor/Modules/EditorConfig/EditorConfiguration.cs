@@ -172,7 +172,8 @@ namespace Beamable.Editor.Modules.EditorConfig
 			[Tooltip("when true, the SDK will attempt to use a globally installed beam CLI. However, no version checks are performed.")]
 			public bool UseGlobalCLI;
 			
-			[Tooltip("when using a developer version of the SDK, the version is 0.0.0, which is not a valid CLI version. In that event, this field controls what version of the CLI will be installed.")]
+			[Tooltip("When using a developer version of the SDK, the version is 0.0.0, which is not a valid CLI version. In that event, this field controls what version of the CLI will be installed.")]
+
 			public string DefaultCLIVersion;
 		}
 
