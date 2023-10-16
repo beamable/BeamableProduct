@@ -9,25 +9,25 @@ using System.Collections.Generic;
 namespace Beamable.Player
 {
 	[Serializable]
-	public class PlayerCollectionScoresListDictionary 
+	public class PlayerCollectionScoresListDictionary
 		: SerializableDictionaryStringToSomething<PlayerCollectionScoresList>
 	{
-		
+
 	}
-	
-	
+
+
 	[Serializable]
 	public class PlayerCollectionScoresList : PlayerScoreList
 	{
 		private const string ID_SPLITTER = ",";
-		
+
 		/// <summary>
 		/// The set of playerIds represented in this leaderboard view.
 		/// </summary>
 		public long[] playerIds = new long[] { };
-		
+
 		public PlayerCollectionScoresList(IPlayerLeaderboardFriend board, IDependencyProvider provider) : base(board, provider) { }
-		
+
 		protected override async Promise<LeaderBoardViewResponse> CreateRequest(LeaderboardAssignmentInfo info)
 		{
 			using var sb = StringBuilderPool.StaticPool.Spawn();
@@ -42,7 +42,7 @@ namespace Beamable.Player
 			var view = await _api.ObjectGetRanks(idList, info.leaderboardId);
 			return view;
 		}
-		
+
 		public new async Promise<PlayerCollectionScoresList> Refresh()
 		{
 			await base.Refresh();

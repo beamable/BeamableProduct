@@ -13,14 +13,14 @@ namespace Beamable.Player
 			: base(board, provider)
 		{
 		}
-		
+
 		protected override async Promise<LeaderBoardViewResponse> CreateRequest(LeaderboardAssignmentInfo info)
 		{
 			var promiseSeq = await Promise.Sequence(
 				_api.ObjectGetFriends(info.leaderboardId),
 				_api.ObjectGetView(objectId: info.leaderboardId,
-				                   max: 0, 
-				                   outlier: _ctx.UserId)
+								   max: 0,
+								   outlier: _ctx.UserId)
 			);
 
 			var friends = promiseSeq[0].lb.rankings;
@@ -31,7 +31,7 @@ namespace Beamable.Player
 			{
 				friend.rank++; // for some reason, the server uses rank index
 			}
-			
+
 			if (self.HasValue)
 			{
 				for (var i = 0; i < friends.Length; i++)
@@ -41,13 +41,13 @@ namespace Beamable.Player
 						self.Value.rank = friends[i].rank;
 						selfRankFound = true;
 					}
-			
+
 					if (selfRankFound)
 					{
 						friends[i].rank++; // account for inserted player rank
 					}
 				}
-			
+
 				if (!selfRankFound)
 				{
 					self.Value.rank = friends.Length;
