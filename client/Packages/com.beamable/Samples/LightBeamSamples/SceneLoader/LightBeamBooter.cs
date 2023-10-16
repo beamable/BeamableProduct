@@ -9,18 +9,40 @@ public class LightBeamBooter : MonoBehaviour
 {
 	[Header("Asset References")]
 	public LightBeamSceneConfigObject config;
-
+	public SceneDisplayBehaviour sceneDisplayTemplate;
+	
+	[Header("Scene References")]
+	public RectTransform sceneContainer;
+	public CanvasGroup loadingBlocker;
+	
 	// Start is called before the first frame update
 	void Start()
 	{
+		loadingBlocker.gameObject.SetActive(true);
+		loadingBlocker.alpha = 1;
+		
+		
 		var args = GetArgs();
-		var index = GetSceneName(args, config);
-		// var hint = GetSampleHint(args);
-
-		// store the hint?
 		LightBeamUtilExtensions.Hints = args;
 
-		SceneManager.LoadSceneAsync(index);
+		var index = GetSceneName(args, config);
+
+		if (string.IsNullOrEmpty(index))
+		{
+			loadingBlocker.alpha = 0;
+			loadingBlocker.gameObject.SetActive(false);
+			
+			sceneContainer.Clear();
+			for (var i = 1 ; i < config.scenes.Count; i ++)
+			{
+				var instance = Instantiate(sceneDisplayTemplate, sceneContainer);
+				instance.Configure(config.scenes[i]);
+			}
+		}
+		else
+		{
+			SceneManager.LoadSceneAsync(index);
+		}
 	}
 
 	static Dictionary<string, string> GetArgs()
