@@ -210,7 +210,6 @@ namespace Beamable
 
 			// Ensures we have the latest assembly definitions and paths are all correctly setup.
 			CoreConfiguration.OnValidate();
-			
 			// Apply the defined configuration for how users want to uncaught promises (with no .Error callback attached) in Beamable promises.
 			if (!Application.isPlaying)
 			{
