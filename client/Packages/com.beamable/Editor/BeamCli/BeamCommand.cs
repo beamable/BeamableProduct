@@ -4,6 +4,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
+using Beamable.Editor.Dotnet;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -49,7 +50,8 @@ namespace Beamable.Editor.BeamCli.Commands
 				refreshToken = _requester?.AccessToken?.RefreshToken,
 				log = "Information",
 				reporterUseFatal = true,
-				skipStandaloneValidation = true
+				skipStandaloneValidation = true,
+				dotnetPath = DotnetUtil.DotnetPath
 			};
 			return beamArgs;
 		}
@@ -237,16 +239,7 @@ namespace Beamable.Editor.BeamCli
 
 		public void SetCommand(string command)
 		{
-#if UNITY_EDITOR_WIN
-			const string homePathEnv = "USERPROFILE";
-#else
-			const string homePathEnv = "HOME";
-#endif
-			var home = System.Environment.GetEnvironmentVariable(homePathEnv);
-
-			var defaultDotnetToolPath = Path.Combine(home, ".dotnet", "tools", "beam");
-			var beamLocation = CoreConfiguration.Instance.BeamCLIPath.GetOrElse(defaultDotnetToolPath);
-
+			var beamLocation = BeamCliUtil.CLI_PATH;
 			Command = beamLocation + command.Substring("beam".Length);
 		}
 

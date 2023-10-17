@@ -23,6 +23,7 @@ using Beamable.Editor.BeamCli;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.Config;
 using Beamable.Editor.Content;
+using Beamable.Editor.Dotnet;
 using Beamable.Editor.Environment;
 using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Modules.EditorConfig;
@@ -116,6 +117,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<BeamCommands>();
 			DependencyBuilder.AddGlobalStorage<BeamCommandFactory, EditorStorageLayer>();
 			DependencyBuilder.AddSingleton<BeamCli>();
+			DependencyBuilder.AddSingleton<DotnetService>();
 
 			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
 
@@ -175,6 +177,7 @@ namespace Beamable
 
 		static void Initialize()
 		{
+			
 			if (IsInitialized) return;
 			// Attempts to load all Module Configurations --- If they fail, we delay BeamEditor initialization until they don't fail.
 			// The ONLY fail case is:
@@ -207,7 +210,6 @@ namespace Beamable
 
 			// Ensures we have the latest assembly definitions and paths are all correctly setup.
 			CoreConfiguration.OnValidate();
-
 			// Apply the defined configuration for how users want to uncaught promises (with no .Error callback attached) in Beamable promises.
 			if (!Application.isPlaying)
 			{
@@ -234,6 +236,8 @@ namespace Beamable
 
 			// Reload the current environment data
 			BeamableEnvironment.ReloadEnvironment();
+			
+			BeamCliUtil.InitializeBeamCli();
 
 			// If we ever get to this point, we are guaranteed to run the initialization until the end so we...
 			// Initialize Editor instances of Reflection and Assistant services
@@ -492,7 +496,7 @@ namespace Beamable
 		public IPlatformRequester Requester => ServiceScope.GetService<PlatformRequester>();
 		public BeamableDispatcher Dispatcher => ServiceScope.GetService<BeamableDispatcher>();
 		public IAccountService EditorAccountService => ServiceScope.GetService<IAccountService>();
-
+		public BeamCommands Cli => ServiceScope.GetService<BeamCli>().Command;
 		public CustomerView CurrentCustomer => EditorAccount?.CustomerView;
 		public RealmView CurrentRealm => EditorAccount?.CurrentRealm?.GetOrElse(() => null);
 		public RealmView ProductionRealm => EditorAccount?.CurrentGame?.GetOrElse(() => null);
