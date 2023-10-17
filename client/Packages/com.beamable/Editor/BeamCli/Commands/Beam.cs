@@ -24,6 +24,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public bool reporterUseFatal;
 		/// <summary>skips the check for commands that require beam config directories.</summary>
 		public bool skipStandaloneValidation;
+		/// <summary>a custom location for dotnet</summary>
+		public string dotnetPath;
 		/// <summary>Show version information</summary>
 		public bool version;
 		/// <summary>Show help and usage information</summary>
@@ -77,6 +79,11 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.skipStandaloneValidation != default(bool)))
 			{
 				genBeamCommandArgs.Add(("--skip-standalone-validation=" + this.skipStandaloneValidation));
+			}
+			// If the dotnetPath value was not default, then add it to the list of args.
+			if ((this.dotnetPath != default(string)))
+			{
+				genBeamCommandArgs.Add(("--dotnet-path=" + this.dotnetPath));
 			}
 			// If the version value was not default, then add it to the list of args.
 			if ((this.version != default(bool)))

@@ -125,6 +125,7 @@ public class App
 		Commands.AddSingleton<RefreshTokenOption>();
 		Commands.AddSingleton<LogOption>();
 		Commands.AddSingleton<EnableReporterOption>();
+		Commands.AddSingleton<DotnetPathOption>();
 		Commands.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
@@ -137,6 +138,7 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
 			root.AddGlobalOption(provider.GetRequiredService<EnableReporterOption>());
 			root.AddGlobalOption(provider.GetRequiredService<SkipStandaloneValidationOption>());
+			root.AddGlobalOption(provider.GetRequiredService<DotnetPathOption>());
 			root.Description = "A CLI for interacting with the Beamable Cloud.";
 			return root;
 		});

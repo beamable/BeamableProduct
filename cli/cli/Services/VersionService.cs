@@ -55,7 +55,7 @@ public class VersionService
 
 	}
 
-	public async Task<VersionInfo> GetInformationData()
+	public async Task<VersionInfo> GetInformationData(ProjectService projectService)
 	{
 		var info = new VersionInfo();
 
@@ -64,7 +64,7 @@ public class VersionService
 		info.version = versionInfo.FileVersion;
 		info.location = Environment.ProcessPath;
 
-		var templateInfo = await ProjectService.GetTemplateInfo();
+		var templateInfo = await projectService.GetTemplateInfo();
 		info.templateVersion = templateInfo.HasTemplates ? templateInfo.templateVersion : "<no templates installed>";
 
 		var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);

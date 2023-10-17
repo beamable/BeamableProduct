@@ -24,6 +24,7 @@ public interface IAppContext
 	public string Pid { get; }
 	public string Host { get; }
 	public bool UseFatalAsReportingChannel { get; }
+	public string DotnetPath { get; }
 	public string WorkingDirectory { get; }
 	public IAccessToken Token { get; }
 	public string RefreshToken { get; }
@@ -53,8 +54,11 @@ public class DefaultAppContext : IAppContext
 	private readonly CliEnvironment _environment;
 	private readonly EnableReporterOption _reporterOption;
 	private readonly SkipStandaloneValidationOption _skipValidationOption;
+	private readonly DotnetPathOption _dotnetPathOption;
 	public bool IsDryRun { get; private set; }
 	public bool UseFatalAsReportingChannel { get; private set; }
+	
+	public string DotnetPath { get; private set; }
 
 	public IAccessToken Token => _token;
 	private CliToken _token;
@@ -71,7 +75,8 @@ public class DefaultAppContext : IAppContext
 
 	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, HostOption hostOption,
 		AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption, ConfigDirOption configDirOption,
-		ConfigService configService, CliEnvironment environment, EnableReporterOption reporterOption, SkipStandaloneValidationOption skipValidationOption)
+		ConfigService configService, CliEnvironment environment, EnableReporterOption reporterOption, SkipStandaloneValidationOption skipValidationOption,
+		DotnetPathOption dotnetPathOption)
 	{
 		_dryRunOption = dryRunOption;
 		_cidOption = cidOption;
@@ -85,6 +90,7 @@ public class DefaultAppContext : IAppContext
 		_environment = environment;
 		_reporterOption = reporterOption;
 		_skipValidationOption = skipValidationOption;
+		_dotnetPathOption = dotnetPathOption;
 	}
 
 	public void Apply(BindingContext bindingContext)
@@ -92,6 +98,12 @@ public class DefaultAppContext : IAppContext
 		UseFatalAsReportingChannel = bindingContext.ParseResult.GetValueForOption(_reporterOption);
 		IsDryRun = bindingContext.ParseResult.GetValueForOption(_dryRunOption);
 
+		DotnetPath = bindingContext.ParseResult.GetValueForOption(_dotnetPathOption);
+		if (string.IsNullOrEmpty(DotnetPath))
+		{
+			DotnetPath = "dotnet";
+		}
+		
 		// Configure log level from option
 		{
 			var logLevelOption = bindingContext.ParseResult.GetValueForOption(_logOption);

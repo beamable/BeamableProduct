@@ -13,8 +13,13 @@ public class VersionCommandArgs : CommandArgs
 	public string output;
 }
 
+public class VersionResults
+{
+	public string version, location, type, templates;
+}
 
-public class VersionCommand : AppCommand<VersionCommandArgs>, IStandaloneCommand
+
+public class VersionCommand : AppCommand<VersionCommandArgs>, IStandaloneCommand, IResultSteam<DefaultStreamResultChannel, VersionResults>
 {
 	public VersionCommand() : base("version", "Commands for managing the CLI version")
 	{
@@ -32,7 +37,7 @@ public class VersionCommand : AppCommand<VersionCommandArgs>, IStandaloneCommand
 
 	public override async Task Handle(VersionCommandArgs args)
 	{
-		var info = await args.DependencyProvider.GetService<VersionService>().GetInformationData();
+		var info = await args.DependencyProvider.GetService<VersionService>().GetInformationData(args.ProjectService);
 
 		if (args.showVersion)
 		{
@@ -55,7 +60,13 @@ public class VersionCommand : AppCommand<VersionCommandArgs>, IStandaloneCommand
 			Print("install-type", info.installType.ToString());
 		}
 
-
+		this.SendResults(new VersionResults
+		{
+			location = info.location,
+			templates = info.templateVersion,
+			type = info.installType.ToString(),
+			version = info.version
+		});
 
 		void Print(string label, string data)
 		{

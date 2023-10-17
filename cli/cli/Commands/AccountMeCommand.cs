@@ -1,3 +1,4 @@
+using Beamable.Common.Api.Auth;
 using cli.Utils;
 using Newtonsoft.Json;
 using Spectre.Console;
@@ -10,7 +11,7 @@ public class AccountMeCommandArgs : CommandArgs
 	public bool plainOutput;
 }
 
-public class AccountMeCommand : AppCommand<AccountMeCommandArgs>
+public class AccountMeCommand : AppCommand<AccountMeCommandArgs>, IResultSteam<DefaultStreamResultChannel, User>
 {
 	public AccountMeCommand() : base("me", "Temp command to get current account") { }
 
@@ -24,6 +25,7 @@ public class AccountMeCommand : AppCommand<AccountMeCommandArgs>
 		try
 		{
 			var response = await args.AuthApi.GetUser().ShowLoading("Sending Request...");
+			this.SendResults(response);
 			var json = JsonConvert.SerializeObject(response);
 			if (args.plainOutput)
 			{

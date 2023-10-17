@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Uncaught promises use dead letter queue
 - Cid and Pid are stored in `Beam.GlobalScope`
+- Dotnet is automatically installed to the project's /Library folder
+- Beam CLI is automatically installed to the project's /Library folder
 
 ### Fixed
 
