@@ -1,4 +1,3 @@
-using Beamable.Editor.Assistant;
 using UnityEngine;
 
 namespace Beamable.Editor.ToolbarExtender
@@ -9,7 +8,7 @@ namespace Beamable.Editor.ToolbarExtender
 #if BEAMABLE_DEVELOPER
 	[CreateAssetMenu(fileName = "OpenMicroserviceManagerMenuItem", menuName = "Beamable/Assistant/Toolbar Menu Items/Microservice Manager Window", order = BeamableMenuItemScriptableObjectCreationOrder + 1)]
 #endif
-	public class BeamableMicroserviceManagerMenuItem : BeamableAssistantMenuItem
+	public class BeamableMicroserviceManagerMenuItem : BeamableToolbarMenuItem
 	{
 		public override void OnItemClicked(BeamEditorContext beamableApi)
 		{

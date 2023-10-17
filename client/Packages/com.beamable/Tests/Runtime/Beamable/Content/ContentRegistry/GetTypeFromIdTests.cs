@@ -1,4 +1,3 @@
-using Beamable.Common.Assistant;
 using Beamable.Common.Content;
 using Beamable.Common.Reflection;
 using Beamable.Tests.Content.Serialization.Support;
@@ -18,11 +17,9 @@ namespace Beamable.Tests.Content.ContentRegistryTests
 		public void Setup()
 		{
 			reflectionCache = new ReflectionCache();
-			var hintStorage = new BeamHintGlobalStorage();
 			cache = new ContentTypeReflectionCache();
 			reflectionCache.RegisterTypeProvider(cache);
 			reflectionCache.RegisterReflectionSystem(cache);
-			reflectionCache.SetStorage(hintStorage);
 
 			var assembliesToSweep = AppDomain.CurrentDomain.GetAssemblies().Select(asm => asm.GetName().Name).ToList();
 			reflectionCache.GenerateReflectionCache(assembliesToSweep);
