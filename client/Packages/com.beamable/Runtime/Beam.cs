@@ -34,7 +34,6 @@ using Beamable.Common.Api.Presence;
 using Beamable.Common.Api.Social;
 using Beamable.Common.Api.Stats;
 using Beamable.Common.Api.Tournaments;
-using Beamable.Common.Assistant;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
@@ -113,14 +112,10 @@ namespace Beamable
 			GlobalScope.GetService<DefaultRuntimeConfigProvider>();
 
 		public static ReflectionCache ReflectionCache;
-		public static IBeamHintGlobalStorage RuntimeGlobalStorage;
 
 		static Beam()
 		{
 			ReflectionCache = new ReflectionCache();
-#if UNITY_EDITOR
-			RuntimeGlobalStorage = new BeamHintGlobalStorage();
-#endif
 
 			var reflectionSystemObjects = Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems")
 												   .Where(system => system.Enabled)
@@ -138,12 +133,7 @@ namespace Beamable
 			ReflectionCache.RegisterTypeProvider(contentReflectionCache);
 			ReflectionCache.RegisterReflectionSystem(contentReflectionCache);
 
-			// Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance when in the editor. When not in the editor, the storage should really not
-			// be used and
-			// Finally, calls the Generate Reflection cache
-#if UNITY_EDITOR
-			ReflectionCache.SetStorage(RuntimeGlobalStorage);
-#endif
+			// Also initializes the Reflection Cache system and calls the Generate Reflection cache
 			ReflectionCache.GenerateReflectionCache(CoreConfiguration.Instance.AssembliesToSweep);
 
 			// create a global dependency builder.

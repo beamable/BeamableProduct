@@ -8,7 +8,6 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Api.Stats;
-using Beamable.Common.Assistant;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
@@ -192,7 +191,6 @@ namespace Beamable.Server
 	        reflectionCache.RegisterReflectionSystem(contentTypeReflectionCache);
 	        reflectionCache.RegisterTypeProvider(mongoIndexesReflectionCache);
 	        reflectionCache.RegisterReflectionSystem(mongoIndexesReflectionCache);
-	        reflectionCache.SetStorage(new BeamHintGlobalStorage());
 
 	        var relevantAssemblyNames = AppDomain.CurrentDomain.GetAssemblies().Where(asm => !asm.GetName().Name.StartsWith("System.") &&
 			        !asm.GetName().Name.StartsWith("nunit.") &&

@@ -8,7 +8,6 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
-using Beamable.Common.Assistant;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using Beamable.Common.Dependencies;
@@ -18,7 +17,6 @@ using Beamable.Console;
 using Beamable.Content;
 using Beamable.Coroutines;
 using Beamable.Editor;
-using Beamable.Editor.Assistant;
 using Beamable.Editor.BeamCli;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.Config;
@@ -28,7 +26,6 @@ using Beamable.Editor.Environment;
 using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Modules.EditorConfig;
 using Beamable.Editor.Modules.Hubspot;
-using Beamable.Editor.Reflection;
 using Beamable.Editor.ToolbarExtender;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI;
@@ -160,8 +157,6 @@ namespace Beamable
 	{
 		public static CoreConfiguration CoreConfiguration { get; private set; }
 		public static ReflectionCache EditorReflectionCache { get; private set; }
-		public static IBeamHintGlobalStorage HintGlobalStorage { get; private set; }
-		public static IBeamHintPreferencesManager HintPreferencesManager { get; private set; }
 		public static bool IsInitialized { get; private set; }
 
 		public static IDependencyBuilder BeamEditorContextDependencies;
@@ -240,13 +235,8 @@ namespace Beamable
 			BeamCliUtil.InitializeBeamCli();
 
 			// If we ever get to this point, we are guaranteed to run the initialization until the end so we...
-			// Initialize Editor instances of Reflection and Assistant services
+			// Initialize Editor instances of Reflection service
 			EditorReflectionCache = new ReflectionCache();
-			HintGlobalStorage = new BeamHintGlobalStorage();
-			HintPreferencesManager = new BeamHintPreferencesManager(new List<BeamHintHeader>()
-			{
-				// insert hints that should auto-block, here. At the moment, there are none!
-			});
 
 			// Load up all Asset-based IReflectionSystem (injected via ReflectionSystemObject instances). This was made to solve a cross-package injection problem.
 			// It doubles as a no-code way for users to inject their own IReflectionSystem into our pipeline.
@@ -286,69 +276,14 @@ namespace Beamable
 			// Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance
 			// (that gets propagated down to any IReflectionSystem that also implements IBeamHintProvider).
 			// Finally, calls the Generate Reflection cache
-			EditorReflectionCache.SetStorage(HintGlobalStorage);
 			EditorReflectionCache.GenerateReflectionCache(coreConfiguration.AssembliesToSweep);
-
-			// Hook up editor play-mode-warning feature.
-			async void OnPlayModeStateChanged(PlayModeStateChange change)
-			{
-				if (!coreConfiguration.EnablePlayModeWarning) return;
-
-				if (change == PlayModeStateChange.ExitingEditMode)
-				{
-					HintPreferencesManager.SplitHintsByPlayModeWarningPreferences(HintGlobalStorage.All, out var toWarnHints, out _);
-					var hintsToWarnAbout = toWarnHints.ToList();
-					if (hintsToWarnAbout.Count > 0)
-					{
-						var msg = string.Join("\n", hintsToWarnAbout.Select(hint => $"- {hint.Header.Id}"));
-
-						var res = EditorUtility.DisplayDialogComplex("Beamable Assistant",
-																	 "There are pending Beamable Validations.\n" + "These Hints may cause problems during runtime:\n\n" + $"{msg}\n\n" +
-																	 "Do you wish to stop entering playmode and see these validations?", "Yes, I want to stop and go see validations.",
-																	 "No, I'll take my chances and don't bother me about these specific hints anymore.",
-																	 "No, I'll take my chances and don't bother me ever again about any hints.");
-
-						if (res == 0)
-						{
-							EditorApplication.isPlaying = false;
-							await BeamableAssistantWindow.Init();
-						}
-						else if (res == 1)
-						{
-							foreach (var hint in hintsToWarnAbout) HintPreferencesManager.SetHintPlayModeWarningPreferences(hint, BeamHintPlayModeWarningPreference.Disabled);
-						}
-						else if (res == 2)
-						{
-							coreConfiguration.EnablePlayModeWarning = false;
-						}
-					}
-				}
-			}
-
-			EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
-			EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
-
-			// Set up Globally Accessible Hint System Dependencies and then call init
-			foreach (var hintSystem in GetReflectionSystem<BeamHintReflectionCache.Registry>().GloballyAccessibleHintSystems)
-			{
-				hintSystem.SetStorage(HintGlobalStorage);
-				hintSystem.SetPreferencesManager(HintPreferencesManager);
-
-				hintSystem.OnInitialized();
-			}
 
 			// Initialize BeamEditorContext dependencies
 			BeamEditorContextDependencies = BeamEditorDependencies.DependencyBuilder.Clone();
 			BeamEditorContextDependencies.AddSingleton(_ => EditorReflectionCache);
-			BeamEditorContextDependencies.AddSingleton(_ => HintGlobalStorage);
-			BeamEditorContextDependencies.AddSingleton(_ => HintPreferencesManager);
 
 			GetReflectionSystem<BeamReflectionCache.Registry>()
 				.LoadCustomDependencies(BeamEditorContextDependencies, RegistrationOrigin.EDITOR);
-
-			var hintReflectionSystem = GetReflectionSystem<BeamHintReflectionCache.Registry>();
-			foreach (var globallyAccessibleHintSystem in hintReflectionSystem.GloballyAccessibleHintSystems)
-				BeamEditorContextDependencies.AddSingleton(globallyAccessibleHintSystem.GetType(), () => globallyAccessibleHintSystem);
 
 			// Set flag of SocialsImporter
 			BeamableSocialsImporter.SetFlag();
@@ -379,31 +314,6 @@ namespace Beamable
 		}
 
 		public static T GetReflectionSystem<T>() where T : IReflectionSystem => EditorReflectionCache.GetFirstSystemOfType<T>();
-
-		[Conditional("UNITY_EDITOR")]
-		// ReSharper disable once RedundantAssignment
-		public static void GetBeamHintSystem<T>(ref T foundProvider) where T : IBeamHintSystem
-		{
-			var hintReflectionSystem = GetReflectionSystem<BeamHintReflectionCache.Registry>();
-			foundProvider = hintReflectionSystem.GloballyAccessibleHintSystems.Where(a => a is T).Cast<T>().FirstOrDefault();
-		}
-
-		[RegisterBeamableDependencies(), Conditional("UNITY_EDITOR")]
-		public static void ConditionallyRegisterBeamHintsAsServices(IDependencyBuilder builder)
-		{
-			foreach (var hintSystemConstructor in GetReflectionSystem<BeamHintReflectionCache.Registry>().BeamContextAccessibleHintSystems)
-			{
-				builder.AddSingleton(hintSystemConstructor.DeclaringType, () =>
-				{
-					var builtObj = (IBeamHintSystem)hintSystemConstructor.Invoke(null);
-					builtObj.SetPreferencesManager(HintPreferencesManager);
-					builtObj.SetStorage(HintGlobalStorage);
-
-					builtObj.OnInitialized();
-					return builtObj;
-				});
-			}
-		}
 
 		/// <summary>
 		/// Utility function to delay an initialization call (from within any of Unity's callbacks) until we have initialized our default <see cref="BeamEditorContext"/>.

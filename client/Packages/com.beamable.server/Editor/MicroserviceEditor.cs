@@ -90,6 +90,7 @@ namespace Beamable.Server.Editor
 				}
 
 
+				BeamEditorContext.Default.ServiceScope.GetService<BeamServicesCodeWatcher>().OnInitialized();
 				TryToPreloadBaseImage();
 				TryToPreloadMongoImage();
 

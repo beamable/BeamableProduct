@@ -1,4 +1,3 @@
-using Beamable.Common.Assistant;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -51,13 +50,6 @@ namespace Beamable.Common.Reflection
 		/// The list of all <see cref="MemberInfo"/> and <see cref="Attribute"/> instances matching <paramref name="attributeType"/> that were found in the assembly sweep.
 		/// </param>
 		void OnAttributeOfInterestFound(AttributeOfInterest attributeType, IReadOnlyList<MemberAttribute> cachedMemberAttributes);
-
-		/// <summary>
-		/// Injection point for reflections systems that wish to generate hints. Leave without implementation if no hints are generated.
-		/// <para/>
-		/// Remember to wrap hint code in "#if UNITY_EDITOR" directives as this storage instance is null during non-editor builds.
-		/// </summary>
-		void SetStorage(IBeamHintGlobalStorage hintGlobalStorage);
 	}
 
 	/// <summary>
@@ -168,12 +160,6 @@ namespace Beamable.Common.Reflection
 				new List<AttributeOfInterest>(PRE_ALLOC_SYSTEM_AND_PROVIDER_AMOUNT),
 				new Dictionary<AttributeOfInterest, List<MemberAttribute>>(PRE_ALLOC_TYPE_CACHES_AMOUNT)
 			);
-		}
-
-		public void SetStorage(IBeamHintGlobalStorage hintGlobalStorage)
-		{
-			foreach (var userSystem in _registeredCacheUserSystems)
-				userSystem.SetStorage(hintGlobalStorage);
 		}
 
 		/// <summary>

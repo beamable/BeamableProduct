@@ -1,5 +1,4 @@
 using Beamable.Common;
-using Beamable.Common.Assistant;
 using Beamable.Editor;
 using Beamable.Editor.Microservice.UI;
 using Beamable.Editor.UI;
@@ -26,31 +25,13 @@ namespace Beamable.Server.Editor.DockerCommands
 		public static bool DockerNotInstalled
 		{
 			get => EditorPrefs.GetBool("DockerNotInstalled", true);
-			protected set
-			{
-				var globalHintStorage = BeamEditor.HintGlobalStorage;
-				if (value)
-					globalHintStorage.AddOrReplaceHint(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER, BeamHintIds.ID_INSTALL_DOCKER_PROCESS);
-				else
-					globalHintStorage.RemoveHint(new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER, BeamHintIds.ID_INSTALL_DOCKER_PROCESS));
-
-				EditorPrefs.SetBool("DockerNotInstalled", value);
-			}
+			protected set => EditorPrefs.SetBool("DockerNotInstalled", value);
 		}
 
 		public static bool DockerNotRunning
 		{
 			get => SessionState.GetBool("DockerNotRunning", true);
-			set
-			{
-				var globalHintStorage = BeamEditor.HintGlobalStorage;
-				if (!DockerNotInstalled && value)
-					globalHintStorage.AddOrReplaceHint(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER, BeamHintIds.ID_DOCKER_PROCESS_NOT_RUNNING);
-				else
-					globalHintStorage.RemoveHint(new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER, BeamHintIds.ID_DOCKER_PROCESS_NOT_RUNNING));
-
-				SessionState.SetBool("DockerNotRunning", value);
-			}
+			set => SessionState.SetBool("DockerNotRunning", value);
 		}
 
 		public virtual bool DockerRequired => true;
