@@ -1,4 +1,3 @@
-using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
 using System;
 using System.Collections.Generic;
@@ -53,13 +52,6 @@ namespace Beamable.Common.Content
 		private Dictionary<string, Type> _contentTypeToClass = new Dictionary<string, Type>();
 		private Dictionary<Type, string> _classToContentType = new Dictionary<Type, string>();
 
-		private IBeamHintGlobalStorage _hintStorage;
-
-		public void SetStorage(IBeamHintGlobalStorage hintGlobalStorage)
-		{
-			_hintStorage = hintGlobalStorage;
-		}
-
 		public void ClearCachedReflectionData()
 		{
 			_contentTypeToClass.Clear();
@@ -84,23 +76,8 @@ namespace Beamable.Common.Content
 				// manually remove the ContentObject from the warnings set.
 				warnings.RemoveAll(r => r.Pair.Info == typeof(ContentObject));
 
-#if UNITY_EDITOR
-				// Warning level validations that happen for the content type attribute.
-				if (warnings.Count > 0)
-				{
-					var hint = new BeamHintHeader(BeamHintType.Hint, BeamHintDomains.BEAM_CONTENT_CODE_MISUSE, BeamHintIds.ID_CONTENT_TYPE_ATTRIBUTE_MISSING);
-					_hintStorage.AddOrReplaceHint(hint, warnings);
-				}
-#endif
-
-#if UNITY_EDITOR
-				// Error level validations that happen for the content type attribute.
-				if (errors.Count > 0)
-				{
-					var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CONTENT_CODE_MISUSE, BeamHintIds.ID_INVALID_CONTENT_TYPE_ATTRIBUTE);
-					_hintStorage.AddOrReplaceHint(hint, errors);
-				}
-#endif
+				// TODO: [AssistantRemoval] Add (ID_CONTENT_TYPE_ATTRIBUTE_MISSING) as a Static Check.
+				// TODO: [AssistantRemoval] Add (ID_INVALID_CONTENT_TYPE_ATTRIBUTE) as a Static Check.
 
 				contentTypeAttributePairs.AddRange(valid.Select(a => a.Pair));
 			}
@@ -113,14 +90,7 @@ namespace Beamable.Common.Content
 
 				validationResults.SplitValidationResults(out var valid, out _, out var errors);
 
-#if UNITY_EDITOR
-				// Error validation for attributes placed on invalid classes/types over which they have no effect.
-				if (errors.Count > 0)
-				{
-					var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CONTENT_CODE_MISUSE, BeamHintIds.ID_INVALID_CONTENT_FORMERLY_SERIALIZED_AS_ATTRIBUTE);
-					_hintStorage.AddOrReplaceHint(hint, errors);
-				}
-#endif
+				// TODO: [AssistantRemoval] Add (ID_INVALID_CONTENT_FORMERLY_SERIALIZED_AS_ATTRIBUTE) as a Static Check.
 
 				formerContentTypeAttributePairs.AddRange(valid.Where(a => a.Pair.Attribute != null).Select(a => a.Pair));
 			}
@@ -136,23 +106,8 @@ namespace Beamable.Common.Content
 																						 out _,
 																						 out var errors);
 
-#if UNITY_EDITOR
-				// Print out any errors due to incorrect names
-				if (errors.Count > 0)
-				{
-					var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CONTENT_CODE_MISUSE, BeamHintIds.ID_INVALID_CONTENT_TYPE_ATTRIBUTE);
-					_hintStorage.AddOrReplaceHint(hint, errors);
-				}
-#endif
-
-#if UNITY_EDITOR
-				// Print out any errors due to name collisions.
-				if (nameValidationResults.PerNameCollisions.Count > 0)
-				{
-					var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CONTENT_CODE_MISUSE, BeamHintIds.ID_CONTENT_TYPE_NAME_COLLISION);
-					_hintStorage.AddOrReplaceHint(hint, nameValidationResults.PerNameCollisions);
-				}
-#endif
+				// TODO: [AssistantRemoval] Add (ID_INVALID_CONTENT_TYPE_ATTRIBUTE) as a Static Check --- use errors list here.
+				// TODO: [AssistantRemoval] Add (ID_CONTENT_TYPE_NAME_COLLISION) as a Static Check --- use nameValidationResults list here.
 
 				var contentTypeToClassDict = new Dictionary<string, Type>();
 				var classToContentTypeDict = new Dictionary<Type, string>();
