@@ -303,7 +303,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 #if !UNITY_2022_1_OR_NEWER && UNITY_2019_1_OR_NEWER
 			var beamableToolbarButtonEnd = rightRect.xMax -= space; // Space between collab and Beamable Toolbar
-			var beamableToolbarButtonStart = rightRect.xMax -= beamableToolbarWidth; // Beamable Toolbar Button
+			var beamableToolbarButtonStart = rightRect.xMax -= beamableToolbarButtonWidth; // Beamable Toolbar Button
 			var beamableToolbarButtonRect = new Rect(beamableToolbarButtonStart, rightRect.y + 2, beamableToolbarButtonEnd - beamableToolbarButtonStart, dropdownHeight);
 			var btnTexture = _noHintsTexture;
 
