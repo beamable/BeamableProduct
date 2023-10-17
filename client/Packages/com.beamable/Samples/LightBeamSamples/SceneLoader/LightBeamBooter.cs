@@ -10,18 +10,18 @@ public class LightBeamBooter : MonoBehaviour
 	[Header("Asset References")]
 	public LightBeamSceneConfigObject config;
 	public SceneDisplayBehaviour sceneDisplayTemplate;
-	
+
 	[Header("Scene References")]
 	public RectTransform sceneContainer;
 	public CanvasGroup loadingBlocker;
-	
+
 	// Start is called before the first frame update
 	void Start()
 	{
 		loadingBlocker.gameObject.SetActive(true);
 		loadingBlocker.alpha = 1;
-		
-		
+
+
 		var args = GetArgs();
 		LightBeamUtilExtensions.Hints = args;
 
@@ -31,9 +31,9 @@ public class LightBeamBooter : MonoBehaviour
 		{
 			loadingBlocker.alpha = 0;
 			loadingBlocker.gameObject.SetActive(false);
-			
+
 			sceneContainer.Clear();
-			for (var i = 1 ; i < config.scenes.Count; i ++)
+			for (var i = 1; i < config.scenes.Count; i++)
 			{
 				var instance = Instantiate(sceneDisplayTemplate, sceneContainer);
 				instance.Configure(config.scenes[i]);
