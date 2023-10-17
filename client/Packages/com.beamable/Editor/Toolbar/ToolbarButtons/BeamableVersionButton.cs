@@ -16,7 +16,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 		public BeamableVersionButton() :
 			base(
-				$"{BEAMABLE_PACKAGE_EDITOR_ASSISTANT}/{nameof(BeamableVersionButton)}/{nameof(BeamableVersionButton)}.uss",
+				$"{BEAMABLE_PACKAGE_EDITOR_TOOLBAR}/{nameof(BeamableVersionButton)}/{nameof(BeamableVersionButton)}.uss",
 				false)
 		{
 		}
@@ -53,7 +53,7 @@ namespace Beamable.Editor.ToolbarExtender
 		{
 			BeamEditorContext editorAPI = BeamEditorContext.Default;
 
-			var menuItemsSearchInFolders = BeamEditor.CoreConfiguration.BeamableAssistantMenuItemsPath
+			var menuItemsSearchInFolders = BeamEditor.CoreConfiguration.BeamableMenuItemsPath
 			                                         .Where(Directory.Exists).ToArray();
 			var menuItemsGuids = BeamableAssetDatabase.FindAssets<BeamableToolbarMenuItem>(menuItemsSearchInFolders);
 
@@ -102,7 +102,7 @@ namespace Beamable.Editor.ToolbarExtender
 		{
 			var noHintsTexture =
 				AssetDatabase.LoadAssetAtPath<Sprite>(
-					"Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info.png");
+					"Packages/com.beamable/Editor/UI/Toolbar/Icons/info.png");
 
 			return noHintsTexture;
 		}

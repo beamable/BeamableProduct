@@ -9,7 +9,7 @@ namespace Beamable.Editor.ToolbarExtender
 	/// <summary>
 	/// A sample button that can be used as a reference to understand how to extend the Unity editor's toolbar.  
 	/// </summary>
-	[CreateAssetMenu(menuName = "Beamable/Assistant/Sample Toolbar Button", fileName = "SampleBeamableButton", order = MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_LAST)]
+	[CreateAssetMenu(menuName = "Beamable/Toolbar/Sample Toolbar Button", fileName = "SampleBeamableButton", order = MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_LAST)]
 	public class SampleBeamableButton : BeamableToolbarButton
 	{
 		public override bool ShouldDisplayButton(BeamEditorContext editorAPI) => editorAPI.HasCustomer;

@@ -5,10 +5,10 @@ using UnityEngine;
 namespace Beamable.Editor.ToolbarExtender
 {
 	/// <summary>
-	/// Menu Item that opens the <see cref="BeamableAssistantWindow"/> when clicked.
+	/// Menu Item that opens the <see cref="CoreConfiguration"/> when clicked.
 	/// </summary>
 #if BEAMABLE_DEVELOPER
-	[CreateAssetMenu(fileName = "OpenConfigurationManagerMenuItem", menuName = "Beamable/Assistant/Toolbar Menu Items/Configuration Manager Window", order = BeamableMenuItemScriptableObjectCreationOrder)]
+	[CreateAssetMenu(fileName = "OpenConfigurationManagerMenuItem", menuName = "Beamable/Toolbar/Menu Items/Configuration Manager Window", order = BeamableMenuItemScriptableObjectCreationOrder)]
 #endif
 	public class BeamableConfigurationManagerMenuItem : BeamableToolbarMenuItem
 	{

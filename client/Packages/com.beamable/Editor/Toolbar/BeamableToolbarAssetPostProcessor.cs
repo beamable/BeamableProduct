@@ -9,7 +9,7 @@ using Beamable.Editor.ToolbarExtender;
 namespace Beamable.Editor
 {
 	/// <summary>
-	/// An asset post-processor that reloads and re-builds Beamable Assistant-related data defined in relevant scriptable objects.
+	/// An asset post-processor that reloads and re-builds Beamable Toolbar-related data defined in relevant scriptable objects.
 	/// </summary>
 	public class BeamableToolbarAssetPostProcessor : AssetPostprocessor
 	{

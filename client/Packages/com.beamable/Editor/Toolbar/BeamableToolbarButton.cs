@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Beamable.Editor.ToolbarExtender
 {
 	/// <summary>
-	/// Scriptable object that gets loaded from <see cref="CoreConfiguration.BeamableAssistantToolbarButtonsPaths"/>s when the <see cref="BeamableToolbarExtender"/> initializes
+	/// Scriptable object that gets loaded from <see cref="CoreConfiguration.BeamableToolbarButtonsPaths"/>s when the <see cref="BeamableToolbarExtender"/> initializes
 	/// or one of these is re-imported.
 	///
 	/// <para/>

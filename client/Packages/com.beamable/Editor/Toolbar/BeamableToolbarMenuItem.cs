@@ -3,12 +3,12 @@ using UnityEngine;
 namespace Beamable.Editor.ToolbarExtender
 {
 	/// <summary>
-	/// Scriptable object that gets loaded from <see cref="CoreConfiguration.BeamableAssistantMenuItemsPath"/>s when the <see cref="BeamableToolbarExtender"/> initializes
+	/// Scriptable object that gets loaded from <see cref="CoreConfiguration.BeamableMenuItemsPath"/>s when the <see cref="BeamableToolbarExtender"/> initializes
 	/// or one of these is re-imported.
 	///
 	/// <para/>
 	///
-	/// These can be used to add items to our Beamable Assistant button that lives in our <see cref="BeamableToolbarExtender"/>. 
+	/// These can be used to add items to our Beamable Toolbar button that lives in our <see cref="BeamableToolbarExtender"/>. 
 	/// </summary>
 	public abstract class BeamableToolbarMenuItem : ScriptableObject
 	{

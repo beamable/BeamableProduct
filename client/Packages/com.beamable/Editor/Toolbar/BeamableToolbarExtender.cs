@@ -81,7 +81,7 @@ namespace Beamable.Editor.ToolbarExtender
 			_editorAPI = api;
 
 			// Load and inject Beamable Menu Items (necessary due to multiple package split of SDK) --- sort them by specified order, and alphabetically when tied.
-			var menuItemsSearchInFolders = BeamEditor.CoreConfiguration.BeamableAssistantMenuItemsPath.Where(Directory.Exists).ToArray();
+			var menuItemsSearchInFolders = BeamEditor.CoreConfiguration.BeamableMenuItemsPath.Where(Directory.Exists).ToArray();
 			var menuItemsGuids = BeamableAssetDatabase.FindAssets<BeamableToolbarMenuItem>(menuItemsSearchInFolders);
 			_assistantMenuItems = menuItemsGuids.Select(guid => AssetDatabase.LoadAssetAtPath<BeamableToolbarMenuItem>(AssetDatabase.GUIDToAssetPath(guid))).ToList();
 			_assistantMenuItems.Sort((mi1, mi2) =>
@@ -93,12 +93,12 @@ namespace Beamable.Editor.ToolbarExtender
 			});
 
 #if !UNITY_2022_1_OR_NEWER && UNITY_2019_1_OR_NEWER
-			_noHintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info.png");
-			_hintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info hit.png");
-			_validationTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info valu.png");
+			_noHintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/Toolbar/Icons/info.png");
+			_hintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/Toolbar/Icons/info hit.png");
+			_validationTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/Toolbar/Icons/info valu.png");
 #endif
 
-			var toolbarButtonsSearchInFolders = BeamEditor.CoreConfiguration.BeamableAssistantToolbarButtonsPaths.Where(Directory.Exists).ToArray();
+			var toolbarButtonsSearchInFolders = BeamEditor.CoreConfiguration.BeamableToolbarButtonsPaths.Where(Directory.Exists).ToArray();
 			var toolbarButtonsGuids = BeamableAssetDatabase.FindAssets<BeamableToolbarButton>(toolbarButtonsSearchInFolders);
 			var toolbarButtons = toolbarButtonsGuids.Select(guid => AssetDatabase.LoadAssetAtPath<BeamableToolbarButton>(AssetDatabase.GUIDToAssetPath(guid))).ToList();
 
@@ -151,7 +151,7 @@ namespace Beamable.Editor.ToolbarExtender
 		public const float dropdownHeight = 18;
 #endif
 
-		public const float beamableAssistantWidth = 145;
+		public const float beamableToolbarButtonWidth = 145;
 #if UNITY_2019_1_OR_NEWER
 		public const float playPauseStopWidth = 140;
 #else
@@ -302,12 +302,12 @@ namespace Beamable.Editor.ToolbarExtender
 #endif
 
 #if !UNITY_2022_1_OR_NEWER && UNITY_2019_1_OR_NEWER
-			var beamableAssistantEnd = rightRect.xMax -= space; // Space between collab and Beamable Assistant
-			var beamableAssistantStart = rightRect.xMax -= beamableAssistantWidth; // Beamable Assistant Button
-			var beamableAssistantButtonRect = new Rect(beamableAssistantStart, rightRect.y + 2, beamableAssistantEnd - beamableAssistantStart, dropdownHeight);
+			var beamableToolbarButtonEnd = rightRect.xMax -= space; // Space between collab and Beamable Toolbar
+			var beamableToolbarButtonStart = rightRect.xMax -= beamableToolbarWidth; // Beamable Toolbar Button
+			var beamableToolbarButtonRect = new Rect(beamableToolbarButtonStart, rightRect.y + 2, beamableToolbarButtonEnd - beamableToolbarButtonStart, dropdownHeight);
 			var btnTexture = _noHintsTexture;
 
-			GUILayout.BeginArea(beamableAssistantButtonRect);
+			GUILayout.BeginArea(beamableToolbarButtonRect);
 			var version = BeamableEnvironment.SdkVersion;
 			var versionStr = $"Beamable {version}";
 			if (version.IsReleaseCandidate)
@@ -319,7 +319,7 @@ namespace Beamable.Editor.ToolbarExtender
 				versionStr = $"BeamDev {version.NightlyTime}";
 			}
 			var titleContent = new GUIContent(versionStr, btnTexture);
-			if (GUILayout.Button(titleContent, GUILayout.Width(beamableAssistantEnd - beamableAssistantStart), GUILayout.Height(dropdownHeight)))
+			if (GUILayout.Button(titleContent, GUILayout.Width(beamableToolbarButtonEnd - beamableToolbarButtonStart), GUILayout.Height(dropdownHeight)))
 			{
 				// create the menu and add items to it
 				var menu = new GenericMenu();
