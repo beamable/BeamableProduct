@@ -43,6 +43,8 @@ public class LightBeamSceneConfigObject : ScriptableObject
 			if (x.scene)
 			{
 				scene.sceneName = x.scene.name;
+				scene.about = x.about;
+				scene.title = x.title;
 				scene.scenePath = AssetDatabase.GetAssetPath(x.scene);
 			}
 
@@ -57,6 +59,8 @@ public class LightBeamSceneConfigObject : ScriptableObject
 public struct LightBeamRuntimeScene
 {
 	public string label;
+	public string about;
+	public string title;
 	public string sceneName;
 	public string scenePath;
 }
@@ -66,6 +70,9 @@ public struct LightBeamRuntimeScene
 public struct LightBeamEditorScene
 {
 	public string name;
+	public string title;
+	[TextArea]
+	public string about;
 	public SceneAsset scene;
 }
 
