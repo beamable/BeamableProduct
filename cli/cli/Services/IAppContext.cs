@@ -57,7 +57,7 @@ public class DefaultAppContext : IAppContext
 	private readonly DotnetPathOption _dotnetPathOption;
 	public bool IsDryRun { get; private set; }
 	public bool UseFatalAsReportingChannel { get; private set; }
-	
+
 	public string DotnetPath { get; private set; }
 
 	public IAccessToken Token => _token;
@@ -103,7 +103,7 @@ public class DefaultAppContext : IAppContext
 		{
 			DotnetPath = "dotnet";
 		}
-		
+
 		// Configure log level from option
 		{
 			var logLevelOption = bindingContext.ParseResult.GetValueForOption(_logOption);

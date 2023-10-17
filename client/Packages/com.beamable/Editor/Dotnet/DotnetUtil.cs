@@ -10,23 +10,23 @@ namespace Beamable.Editor.Dotnet
 	public static partial class DotnetUtil
 	{
 		private const int REQUIRED_MAJOR_VERSION = 6;
-		
+
 		private const string ENV_VAR_DOTNET_LOCATION = "BEAMABLE_DOTNET_PATH";
 		private const string DOTNET_LIBRARY_PATH = "Library/BeamableEditor/Dotnet";
-		
+
 		public static readonly string DOTNET_GLOBAL_PATH = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".dotnet");
-		
-		
+
+
 		/// <summary>
 		/// this list is in order precedence 
 		/// </summary>
 		static string[] _dotnetLocationCandidates = new string[]
 		{
-			System.Environment.GetEnvironmentVariable(ENV_VAR_DOTNET_LOCATION), 
+			System.Environment.GetEnvironmentVariable(ENV_VAR_DOTNET_LOCATION),
 			DOTNET_LIBRARY_PATH,
 			DOTNET_GLOBAL_PATH
 		};
-		
+
 		public static string DotnetHome { get; private set; }
 		public static string DotnetPath => Path.Combine(DotnetHome, "dotnet");
 
@@ -69,24 +69,24 @@ namespace Beamable.Editor.Dotnet
 
 		static void InstallDotnetToLibrary()
 		{
-			
+
 			EditorUtility.DisplayProgressBar("Downloading Dotnet", "Getting install script", .1f);
 			DownloadInstallScript();
-			
+
 			EditorUtility.DisplayProgressBar("Downloading Dotnet", "installing dotnet in your Library folder", .2f);
 			RunInstallScript();
-			
+
 			EditorUtility.ClearProgressBar();
 		}
-		
+
 		static bool TryGetDotnetFilePath(out string filePath)
 		{
 			filePath = null;
-			
+
 			foreach (var path in _dotnetLocationCandidates)
 			{
 				if (path == null) continue;
-				
+
 				var dotnetPath = Path.Combine(path, "dotnet");
 				if (!CheckForDotnetAtPath(dotnetPath))
 				{
@@ -98,26 +98,26 @@ namespace Beamable.Editor.Dotnet
 					Debug.LogWarning($"Ignoring version of dotnet at {path} due to incorrect version number.");
 					continue;
 				}
-				
+
 				filePath = path;
 				return true;
 			}
 
 			return false;
 		}
-		
-		
+
+
 		static bool CheckVersion(string dotnetPath)
 		{
 			var proc = new Process();
 			proc.StartInfo = new ProcessStartInfo
 			{
-				FileName = Path.GetFullPath(dotnetPath), 
+				FileName = Path.GetFullPath(dotnetPath),
 				Arguments = "--version",
-				UseShellExecute = false, 
+				UseShellExecute = false,
 				RedirectStandardOutput = true,
 			};
-			
+
 			proc.Start();
 			proc.WaitForExit();
 			var output = proc.StandardOutput.ReadToEnd();
@@ -128,7 +128,7 @@ namespace Beamable.Editor.Dotnet
 			}
 
 			return version.Major == REQUIRED_MAJOR_VERSION;
-		} 
+		}
 
 		static bool CheckForDotnetAtPath(string dotnetPath)
 		{

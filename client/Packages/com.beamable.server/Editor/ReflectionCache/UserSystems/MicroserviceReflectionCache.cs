@@ -94,7 +94,7 @@ namespace Beamable.Server.Editor
 			public readonly List<IDescriptor> AllDescriptors = new List<IDescriptor>();
 
 			public readonly List<MicroserviceClientInfo> ClientInfos = new List<MicroserviceClientInfo>();
-			
+
 			public void ClearCachedReflectionData()
 			{
 				_serviceToBuilder.Clear();
@@ -224,7 +224,7 @@ namespace Beamable.Server.Editor
 					clientCallableValidationResults.SplitValidationResults(out var clientCallablesValid,
 																		   out var clientCallableWarnings,
 																		   out var clientCallableErrors);
-					
+
 					// TODO: [AssistantRemoval] ID_CLIENT_CALLABLE_ASYNC_VOID --- this can be a Static Analyzer.
 					// TODO: [AssistantRemoval] ID_CLIENT_CALLABLE_UNSUPPORTED_PARAMETERS --- this can be a Static Analyzer.
 

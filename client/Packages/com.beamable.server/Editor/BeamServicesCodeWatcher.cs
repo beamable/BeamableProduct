@@ -66,7 +66,7 @@ namespace Beamable.Server.Editor
 			builder.RemoveIfExists<BeamServicesCodeWatcher>();
 			builder.AddSingleton<BeamServicesCodeWatcher, BeamServicesCodeWatcher>();
 		}
-		
+
 		public AssemblyDefinitionInfoCollection CachedUnityAssemblies { get; private set; }
 		HashSet<string> CachedStorageAsmNames { get; set; }
 

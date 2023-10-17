@@ -172,7 +172,7 @@ namespace Beamable
 
 		static void Initialize()
 		{
-			
+
 			if (IsInitialized) return;
 			// Attempts to load all Module Configurations --- If they fail, we delay BeamEditor initialization until they don't fail.
 			// The ONLY fail case is:
@@ -231,7 +231,7 @@ namespace Beamable
 
 			// Reload the current environment data
 			BeamableEnvironment.ReloadEnvironment();
-			
+
 			BeamCliUtil.InitializeBeamCli();
 
 			// If we ever get to this point, we are guaranteed to run the initialization until the end so we...
