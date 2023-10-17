@@ -62,27 +62,26 @@ namespace Beamable.Editor.BeamCli
 			// we need dotnet before we can initialize the CLI
 			DotnetUtil.InitializeDotnet();
 
-			if (USE_GLOBAL)
+			if (USE_GLOBAL || File.Exists(CLI_PATH))
 			{
-				return; // if using global, we make no promises about anything. 
+				// if using global, we make no promises about anything. 
+				// or, if the cli exists, we are good 
+				return; 
 			}
 			
-			Directory.CreateDirectory(CLI_VERSIONED_HOME);
+			// need to install the CLI
+			var installResult = InstallTool();
 			
-			if (!File.Exists(CLI_PATH))
+			if (!installResult || !File.Exists(CLI_PATH))
 			{
-				// need to install
-				InstallTool();
-			}
-
-			if (!File.Exists(CLI_PATH))
-			{
+				// if the CLI still doesn't exist at the path, something went wrong.
 				throw new Exception("Beamable could not install the Beam CLI");
 			}
 		}
 		
 		static bool InstallTool()
 		{
+			Directory.CreateDirectory(CLI_VERSIONED_HOME);
 			var proc = new Process();
 			var fullDirectory = Path.GetFullPath(CLI_VERSIONED_HOME);
 			proc.StartInfo = new ProcessStartInfo
