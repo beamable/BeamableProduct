@@ -101,6 +101,21 @@ resource "aws_s3_bucket_policy" "lightbeam" {
   })
 }
 
+resource "aws_s3_bucket_lifecycle_configuration" "lightbeam" {
+  bucket = aws_s3_bucket.lightbeam.id
+  rule {
+    id = "nightly retention"
+    expiration {
+      days = 7
+    }
+
+    filter {
+      prefix = "version/night-"
+    }
+    status = "Enabled"
+  }
+}
+
 resource "aws_s3_bucket_public_access_block" "lightbeam" {
   bucket = aws_s3_bucket.lightbeam.id
 

@@ -12,15 +12,15 @@ namespace Beamable.Player
 		public PlayerTopScoresList(IPlayerLeaderboardFriend board, IDependencyProvider provider)
 			: base(board, provider)
 		{
-			
+
 		}
-		
+
 		protected override Promise<LeaderBoardViewResponse> CreateRequest(LeaderboardAssignmentInfo info)
 		{
-			return _api.ObjectGetView(objectId: info.leaderboardId, 
-			                          from: 0, 
-			                          max: viewSize, 
-			                          outlier: _ctx.UserId);
+			return _api.ObjectGetView(objectId: info.leaderboardId,
+									  from: 0,
+									  max: viewSize,
+									  outlier: _ctx.UserId);
 		}
 
 		public PlayerTopScoresList LoadCount(int totalSize)
@@ -29,7 +29,7 @@ namespace Beamable.Player
 			var _ = Refresh();
 			return this;
 		}
-		
+
 		public new async Promise<PlayerTopScoresList> Refresh()
 		{
 			await base.Refresh();

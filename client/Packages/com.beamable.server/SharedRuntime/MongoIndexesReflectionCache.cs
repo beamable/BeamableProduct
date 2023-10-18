@@ -1,5 +1,4 @@
 ﻿using Beamable.Common;
-using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
 using Beamable.Mongo;
 using MongoDB.Driver;
@@ -96,8 +95,6 @@ namespace Beamable.Server
 		public void OnSetupForCacheGeneration() { }
 
 		public void OnReflectionCacheBuilt(PerBaseTypeCache perBaseTypeCache, PerAttributeCache perAttributeCache) { }
-
-		public void SetStorage(IBeamHintGlobalStorage hintGlobalStorage) { }
 
 		public async Promise SetupStorage(IStorageObjectConnectionProvider connectionProvider)
 		{

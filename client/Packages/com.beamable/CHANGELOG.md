@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Uncaught promises use dead letter queue
 - Cid and Pid are stored in `Beam.GlobalScope`
+- Dotnet is automatically installed to the project's /Library folder
+- Beam CLI is automatically installed to the project's /Library folder
 
 ### Fixed
 
@@ -26,10 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Beamable Unity Style Sheet (BUSS)
 - Theme Manager
+- Beamable Assistant
 
 ## [1.19.2]
 
 ### Fixed
+
 - Content cache data is now saved in a namespaced path.
 - Inventory is available on WebGL builds, and `IDependencyNameProvider.DependencyProviderName` uses a sanitized `PlayerCode`.
 

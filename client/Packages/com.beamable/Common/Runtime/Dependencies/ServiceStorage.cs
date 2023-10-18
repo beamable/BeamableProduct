@@ -1,5 +1,4 @@
 using Beamable.Common.Api;
-using Beamable.Common.Assistant;
 using System;
 
 namespace Beamable.Common.Dependencies

@@ -5,13 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `--dotnet-path` option is available to override dotnet installation location.
+
 ## [1.19.2]
 
 ### Fixed
+
 - `beam services deploy` no longer times out.
 
 ### Changed
- - Templates update with refactor to improve it receiving updates and fixes in the future.
+
+- Templates update with refactor to improve it receiving updates and fixes in the future.
 
 ## [1.19.1]
 
