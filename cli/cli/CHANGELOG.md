@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.19.5]
 
+### Added
+
+- Auto generation handles trials and session services.
+
 ### Changed
 
 - API code-gen now generates structs with properly initialized fields.
