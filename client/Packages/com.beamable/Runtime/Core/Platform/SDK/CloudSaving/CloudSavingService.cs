@@ -11,6 +11,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -29,7 +30,11 @@ namespace Beamable.Api.CloudSaving
 	///
 	/// </summary>
 	public class CloudSavingService : PlatformSubscribable<ManifestResponse, ManifestResponse>
+	// TODO replace PlatformSubscribable with NotificationService on "cloudsaving.refresh",
+	// PlayerInventory/PlayerSocial is a example of that
 	{
+		
+		// TODO lets try the observableDictionary for files entries
 		private const string ServiceName = "cloudsaving";
 
 		/// <summary>
@@ -82,10 +87,13 @@ namespace Beamable.Api.CloudSaving
 		/// The <see cref="CloudSavingService"/> must initialize before you should read or write any files from the <see cref="LocalCloudDataFullPath"/>.
 		/// This method will start the initialization process. The <see cref="IsInitializing"/> field value will be true when this method is running.
 		/// </summary>
+		/// <param name="force"></param>
 		/// <returns>A <see cref="Promise"/> representing when the initialization has completed. </returns>
-		public Promise<Unit> Init()
+		public Promise<Unit> Init(bool force = false)
 		{
-			if (IsInitializing) { return _initDone; }
+			Debug.Log("Init called");
+			if (IsInitializing || ((_initDone?.IsCompleted ?? false) && !force)) { return _initDone; }
+			Debug.Log("Init started");
 
 			_initDone = new Promise<Unit>();
 
@@ -130,7 +138,7 @@ namespace Beamable.Api.CloudSaving
 			initSteps.Add(() => StopWebRequestRoutine());
 			initSteps.Add(() => ClearQueuesAndLocalManifest());
 			initSteps.Add(() => DeleteLocalUserData());
-			initSteps.Add(() => Init());
+			initSteps.Add(() => Init(true));
 
 			return Promise.ExecuteSerially(initSteps);
 
@@ -154,29 +162,20 @@ namespace Beamable.Api.CloudSaving
 			});
 		}
 
-		public async Promise Save<T>(string key, T content, Func<T, string> serializer = null, bool autoUpload = false)
+		public async Promise Set<T>(string key, T content, Func<T, string> serializer = null, bool autoUpload = false)
 		{
 			await this.Write<T>(key, content, serializer);
-			bool isPendingUpload = await CheckAndAddPendingUpload(key);
-			if (!autoUpload || !isPendingUpload)
-			{
-				return;
-			}
-			await UploadUserData();
+			await AfterSaveChecks(key,autoUpload);
 		}
 
-		public async Promise Save(string key, string content, bool autoUpload = false)
+		public async Promise Set(string key, string content, bool autoUpload = false)
 		{
 			await this.WriteFileString(key, content);
-			bool isPendingUpload = await CheckAndAddPendingUpload(key);
-			if (!autoUpload || !isPendingUpload)
-			{
-				return;
-			}
-			await UploadUserData();
+			await AfterSaveChecks(key,autoUpload);
+
 		}
 
-		public Promise<string> Load(string key)
+		public Promise<string> Get(string key)
 		{
 			return this.ReadFileString(key).Map(file =>
 			{
@@ -187,7 +186,29 @@ namespace Beamable.Api.CloudSaving
 				return string.Empty;
 			});
 		}
-		
+
+		public Promise<T> Get<T>(string key, Func<string, T> deserializer = null)
+		{
+			return this.Read(key, deserializer).Map(file =>
+			{
+				if (file.Exists)
+					return file.Data;
+			
+				BeamableLogger.LogError($"Save with key: \"{key}\" does not exist, returning default value.");
+				return default;
+			});
+		}
+
+		private async Task AfterSaveChecks(string key, bool autoUpload)
+		{
+			bool isPendingUpload = await CheckAndAddPendingUpload(this.GetLocalizedPath(key));
+			if (!autoUpload || !isPendingUpload)
+			{
+				return;
+			}
+			await UploadUserData();
+		}
+
 		private Promise<Unit> ClearQueuesAndLocalManifest()
 		{
 			_pendingUploads.Clear();
@@ -785,11 +806,12 @@ namespace Beamable.Api.CloudSaving
 			return "/basic/cloudsaving";
 		}
 
-		private static Promise<string> GenerateChecksum(string content)
+		private Promise<string> GenerateChecksum(string content)
 		{
 			using (var md5 = MD5.Create())
 			{
-				using (var stream = new FileStream(content, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+				var path = content.StartsWith(LocalCloudDataFullPath) ? content : this.GetLocalizedPath(content);
+				using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
 				{
 					return Promise<string>.Successful(BitConverter.ToString(md5.ComputeHash(stream)).Replace("-", string.Empty));
 				}
