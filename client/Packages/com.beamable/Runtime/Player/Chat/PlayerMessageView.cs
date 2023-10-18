@@ -11,10 +11,10 @@ namespace Beamable.Player
 		[SerializeField]
 		private TextMeshProUGUI message;
 
-		public void SetData(string player, string message)
+		public void SetData(string player, string text)
 		{
-			this.playerName.text = $"{player}: ";
-			this.message.text = message;
+			playerName.text = $"{player}: ";
+			message.text = text;
 		}
 	}
 }
