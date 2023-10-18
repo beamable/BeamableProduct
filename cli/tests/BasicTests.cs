@@ -191,6 +191,21 @@ public class Tests
 		Assert.AreEqual(0, status);
 	}
 
+	
+	[Test]
+	public async Task GenerateSession()
+	{
+		var status = await Cli.RunAsyncWithParams(builder =>
+		{
+			var mock = new Mock<ISwaggerStreamDownloader>();
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic") && x.Contains("session"))))
+				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.SessionBasic));
+			builder.ReplaceSingleton<ISwaggerStreamDownloader>(mock.Object);
+		}, "oapi", "generate", "--filter", "session,t:basic", "--engine", "unity");
+		Assert.AreEqual(0, status);
+	}
+
+	
 	[Test]
 	public async Task GenerateProtoActor()
 	{
