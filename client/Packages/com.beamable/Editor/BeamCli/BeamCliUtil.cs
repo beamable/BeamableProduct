@@ -30,7 +30,7 @@ namespace Beamable.Editor.BeamCli
 				return config.AdvancedCli.Value.DefaultCLIVersion;
 			}
 		}
-		
+
 		private static string CLI_VERSIONED_HOME
 		{
 			get
@@ -53,7 +53,7 @@ namespace Beamable.Editor.BeamCli
 		}
 
 		public static string CLI_PATH => Path.Combine(CLI_VERSIONED_HOME, "beam");
-		
+
 		/// <summary>
 		/// Installs the Beam CLI into the /Library folder of the current project.
 		/// </summary>
@@ -66,19 +66,19 @@ namespace Beamable.Editor.BeamCli
 			{
 				// if using global, we make no promises about anything. 
 				// or, if the cli exists, we are good 
-				return; 
+				return;
 			}
-			
+
 			// need to install the CLI
 			var installResult = InstallTool();
-			
+
 			if (!installResult || !File.Exists(CLI_PATH))
 			{
 				// if the CLI still doesn't exist at the path, something went wrong.
 				throw new Exception("Beamable could not install the Beam CLI");
 			}
 		}
-		
+
 		static bool InstallTool()
 		{
 			Directory.CreateDirectory(CLI_VERSIONED_HOME);
@@ -86,10 +86,10 @@ namespace Beamable.Editor.BeamCli
 			var fullDirectory = Path.GetFullPath(CLI_VERSIONED_HOME);
 			proc.StartInfo = new ProcessStartInfo
 			{
-				FileName = DotnetUtil.DotnetPath, 
+				FileName = DotnetUtil.DotnetPath,
 				WorkingDirectory = "Library",
 				Arguments = $"tool install beamable.tools --tool-path {fullDirectory}",
-				UseShellExecute = false, 
+				UseShellExecute = false,
 				RedirectStandardOutput = true,
 				RedirectStandardError = true
 			};
@@ -102,6 +102,6 @@ namespace Beamable.Editor.BeamCli
 				Debug.LogError("Unable to install BeamCLI: " + error + " / " + output);
 			}
 			return proc.ExitCode == 0;
-		} 
+		}
 	}
 }
