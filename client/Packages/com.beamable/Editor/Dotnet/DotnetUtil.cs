@@ -14,8 +14,11 @@ namespace Beamable.Editor.Dotnet
 		private const string ENV_VAR_DOTNET_LOCATION = "BEAMABLE_DOTNET_PATH";
 		private const string DOTNET_LIBRARY_PATH = "Library/BeamableEditor/Dotnet";
 		
+#if UNITY_EDITOR_WIN
+		public static readonly string DOTNET_GLOBAL_PATH = "C:\\Program Files\\dotnet";
+#else
 		public static readonly string DOTNET_GLOBAL_PATH = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".dotnet");
-		
+#endif
 		
 		/// <summary>
 		/// this list is in order precedence 
