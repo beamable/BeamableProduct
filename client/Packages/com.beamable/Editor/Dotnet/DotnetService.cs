@@ -129,10 +129,10 @@ namespace Beamable.Editor.Dotnet
 						var p = new Promise();
 
 						await _status.Task;
-						_dispatcher.Schedule( () =>
-						{
-							p.CompleteSuccess();
-						});
+						_dispatcher.Schedule(() =>
+					   {
+						   p.CompleteSuccess();
+					   });
 						await p;
 
 						if (_exitCode != 0)
