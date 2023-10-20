@@ -4,6 +4,20 @@
 
 In Beamable SDK 2.0, Microservices will change to adopt the best practices learned from Standalone Microservices. The UI and workflow of Microservice Manager will remain mostly unchanged, but the file structure and backend implementation of the SDK will change to use Standalone Microservice concepts. Beamable users upgrading from 1.0 will be forced through a migration flow.
 
+Much of this RFC has been adapted to JIRA tickets,
+
+https://disruptorbeam.atlassian.net/browse/BEAM-3882
+https://disruptorbeam.atlassian.net/browse/BEAM-3883
+https://disruptorbeam.atlassian.net/browse/BEAM-3884
+https://disruptorbeam.atlassian.net/browse/BEAM-3885
+https://disruptorbeam.atlassian.net/browse/BEAM-3886
+https://disruptorbeam.atlassian.net/browse/BEAM-3887
+https://disruptorbeam.atlassian.net/browse/BEAM-3888
+https://disruptorbeam.atlassian.net/browse/BEAM-3891
+https://disruptorbeam.atlassian.net/browse/BEAM-3892
+https://disruptorbeam.atlassian.net/browse/BEAM-3893
+https://disruptorbeam.atlassian.net/browse/BEAM-3895
+
 ## Motivation
 
 Originally, Unity Microservices were built to serve Unity game developers who may not have experience in C#/Dotnet projects outside of Unity. As such, we hid away a lot of advanced features of Dotnet. We also emposed a large design constraint on our customers that their Microservice code had to be _both_ net6 compatible, _and_ Unity compatible. We've found that customers building games quickly run up against roadblocks emposed by these constraints. 
