@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - `--dotnet-path` option is available to override dotnet installation location.
 - Auto generation handles trials and session services.
 

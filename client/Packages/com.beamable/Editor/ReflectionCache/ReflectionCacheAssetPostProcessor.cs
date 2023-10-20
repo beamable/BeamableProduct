@@ -46,7 +46,7 @@ namespace Beamable.Editor.Reflection
 				}
 
 				BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems(reimportedReflectionTypes);
-				
+
 
 				AssetDatabase.Refresh();
 			}

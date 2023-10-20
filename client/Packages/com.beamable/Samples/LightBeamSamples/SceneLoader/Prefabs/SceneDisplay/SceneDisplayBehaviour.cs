@@ -12,14 +12,14 @@ public class SceneDisplayBehaviour : MonoBehaviour
 	public TMP_Text titleLabel;
 	public TMP_Text aboutLabel;
 	public Button playButton;
-	
-    public void Configure(LightBeamRuntimeScene scene)
-    {
-	    titleLabel.SetText(scene.title);
-	    aboutLabel.SetText(scene.about);
-	    playButton.HandleClicked(() =>
-	    {
-		    SceneManager.LoadSceneAsync(scene.sceneName);
-	    });
-    }
+
+	public void Configure(LightBeamRuntimeScene scene)
+	{
+		titleLabel.SetText(scene.title);
+		aboutLabel.SetText(scene.about);
+		playButton.HandleClicked(() =>
+		{
+			SceneManager.LoadSceneAsync(scene.sceneName);
+		});
+	}
 }

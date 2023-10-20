@@ -27,7 +27,7 @@ namespace Beamable.Editor.Modules.EditorConfig
 		[Tooltip("These are advanced Beamable CLI features. It should not be changed without deeper understanding of Beamable internals.")]
 
 		public OptionalAdvancedCliSettings AdvancedCli = new OptionalAdvancedCliSettings();
-		
+
 		public override void OnFreshCopy()
 		{
 			var existing = GetDefineSymbols();
@@ -173,7 +173,7 @@ namespace Beamable.Editor.Modules.EditorConfig
 			[Tooltip("When true, the SDK will attempt to use a globally installed beam CLI. However, no version checks are performed.")]
 
 			public bool UseGlobalCLI;
-			
+
 			[Tooltip("When using a developer version of the SDK, the version is 0.0.0, which is not a valid CLI version. In that event, this field controls what version of the CLI will be installed.")]
 
 			public string DefaultCLIVersion;
@@ -182,7 +182,7 @@ namespace Beamable.Editor.Modules.EditorConfig
 		[Serializable]
 		public class OptionalAdvancedCliSettings : Optional<AdvancedCliSettings>
 		{
-			
+
 		}
 	}
 }

@@ -87,12 +87,12 @@ namespace Beamable
 		[Header("Beamable Toolbar")]
 		[Tooltip("Enable this to receive a warning (toggle-able per Beam Hint Validation) when entering playmode.\n\n" +
 				 "This aims to help you enforce project workflows and guarantee people are not wasting time chasing issues that we can identify for you.")]
-		public bool EnablePlayModeWarning;		
+		public bool EnablePlayModeWarning;
 		[Tooltip("Register all paths in which we'll need to look for BeamableToolbarMenuItem assets.\n" +
-		         "We don't look everywhere as that could impact editor experience on larger projects.")]
-		public List<string> BeamableMenuItemsPath = new List<string>();		
+				 "We don't look everywhere as that could impact editor experience on larger projects.")]
+		public List<string> BeamableMenuItemsPath = new List<string>();
 		[Tooltip("Register all paths in which we'll need to look for BeamableToolbarButton assets.\n" +
-		         "We don't look everywhere as that could impact editor experience on larger projects.")]
+				 "We don't look everywhere as that could impact editor experience on larger projects.")]
 		public List<string> BeamableToolbarButtonsPaths = new List<string>();
 
 
