@@ -11,7 +11,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -23,11 +22,6 @@ namespace Beamable.Api.CloudSaving
 	[Serializable]
 	public class PlayerSaves : AbsObservableReadonlyDictionary<string, SerializableDictionaryStringToString>, IStorageHandler<PlayerSaves>
 	{
-		/// <summary>
-		/// An event with a <see cref="CloudSavingError"/> parameter.
-		/// This event triggers anytime there is an error in the <see cref="CloudSavingService"/>
-		/// </summary>
-		public Action<CloudSavingError> OnError;
 
 		private readonly IPlatformService _platform;
 		private readonly INotificationService _notificationService;
@@ -160,6 +154,7 @@ namespace Beamable.Api.CloudSaving
 
 			foreach (var key in allFilesAndDirectories)
 			{
+				uploadMap.TryAdd(key, key);
 				var contentLength = _saves[key].Length;
 				var lastModified =
 					long.Parse(DateTime.Now.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture));
@@ -334,9 +329,9 @@ namespace Beamable.Api.CloudSaving
 											   string endpoint)
 		{
 			var promiseList = new ConcurrentDictionary<string, Func<Promise<Unit>>>();
-			return GetPresignedURL(request, endpoint).FlatMap(presignedURLS =>
+			return GetPresignedURL(request, endpoint).FlatMap(presignedUrls =>
 			{
-				int responseAmount = presignedURLS.response.Count;
+				int responseAmount = presignedUrls.response.Count;
 				if (responseAmount == 0)
 				{
 					return PromiseBase.SuccessfulUnit;
@@ -345,7 +340,7 @@ namespace Beamable.Api.CloudSaving
 				for (int i = 0; i < responseAmount; i++)
 				{
 					//MD5_Checksum : PresignedURL
-					s3Response[presignedURLS.response[i].objectKey] = presignedURLS.response[i];
+					s3Response[presignedUrls.response[i].objectKey] = presignedUrls.response[i];
 				}
 
 				foreach (var kv in fileNameToKey)
@@ -554,7 +549,7 @@ namespace Beamable.Api.CloudSaving
 
 		private void InvokeError(string reason, Exception inner)
 		{
-			OnError?.Invoke(new CloudSavingError(reason, inner));
+			// OnError?.Invoke(new CloudSavingError(reason, inner));
 		}
 
 		private Action<Exception> ProvideErrorCallback(string methodName)
