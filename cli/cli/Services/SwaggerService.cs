@@ -10,6 +10,7 @@ using Microsoft.OpenApi.Readers;
 using Microsoft.OpenApi.Writers;
 using Newtonsoft.Json;
 using Serilog;
+using SharpYaml.Tokens;
 using System.Collections;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -28,9 +29,6 @@ public class SwaggerService
 	// TODO: make a PLAT ticket to give us back all openAPI spec info
 	public static readonly BeamableApiDescriptor[] Apis = new BeamableApiDescriptor[]
 	{
-		// these are currently broken...
-		// BeamableApis.BasicService("trails"),
-		
 		// the proto-actor stack!
 		BeamableApis.ProtoActor(),
 
@@ -69,6 +67,8 @@ public class SwaggerService
 		BeamableApis.ObjectService("announcements"),
 		BeamableApis.BasicService("mail"),
 		BeamableApis.ObjectService("mail"),
+		BeamableApis.BasicService("session").WithRename("User", "SessionUser"),
+		BeamableApis.BasicService("trials").WithRename("\"ref\"", "\"reference\""),
 	};
 
 	public SwaggerService(IAppContext context, ISwaggerStreamDownloader downloader, SourceGeneratorListProvider generators)
@@ -383,16 +383,23 @@ public class SwaggerService
 		var tasks = new List<Task<OpenApiDocumentResult>>();
 		foreach (var api in openApis)
 		{
+			var pinnedApi = api;
 			tasks.Add(Task.Run(async () =>
 			{
 				var url = $"{_context.Host}/{api.RelativeUrl}";
 				try
 				{
 					var stream = await downloader.GetStreamAsync(url);
+					var sr = new StreamReader(stream);
+					var content = await sr.ReadToEndAsync();
 
+					foreach (var (oldName, newName) in pinnedApi.schemaRenames)
+					{
+						content = content.Replace(oldName, newName);
+					}
 
 					var res = new OpenApiDocumentResult();
-					res.Document = new OpenApiStreamReader().Read(stream, out res.Diagnostic);
+					res.Document = new OpenApiStringReader().Read(content, out res.Diagnostic);
 					foreach (var warning in res.Diagnostic.Warnings)
 					{
 						Log.Warning("found warning for {url}. {message} . from {pointer}", url, warning.Message,
@@ -429,6 +436,7 @@ public class SwaggerService
 			RewriteInlineResultSchemasAsReferences,
 			SplitTagsIntoSeparateDocuments,
 			AddTitlesToAllSchemasIfNone,
+			RewriteObjectEnumsAsStrings,
 			Reserailize
 		};
 
@@ -484,6 +492,27 @@ public class SwaggerService
 		var json = sw.ToString();
 		schema.Title = oldTitle;
 		return json;
+	}
+
+	private static List<OpenApiDocumentResult> RewriteObjectEnumsAsStrings(OpenApiDocumentResult swagger)
+	{
+		foreach (var schema in swagger.Document.Components.Schemas)
+		{
+			foreach (var kvp in schema.Value.Properties)
+			{
+				var propertySchema = kvp.Value;
+				var isObject = propertySchema.Type == "object";
+				var isFormatUnknown = propertySchema.Format == "unknown";
+				var isEnum = propertySchema.Enum != null && propertySchema.Enum.Count > 0;
+
+				if (isObject && isFormatUnknown && isEnum)
+				{
+					propertySchema.Type = "string";
+					propertySchema.Format = null;
+				}
+			}
+		}
+		return new List<OpenApiDocumentResult> { swagger };
 	}
 
 	private static List<OpenApiDocumentResult> RewriteStatusCodesTo200(OpenApiDocumentResult swagger)
@@ -880,6 +909,15 @@ public class BeamableApiDescriptor
 	public BeamableApiSource Source;
 	public string RelativeUrl;
 	public string Service;
+
+	public Dictionary<string, string> schemaRenames = new Dictionary<string, string>();
+
+	public BeamableApiDescriptor WithRename(string old, string next)
+	{
+		schemaRenames[old] = next;
+		return this;
+	}
+
 	public string FileName => $"{BeamableApiSourceExtensions.ToDisplay(Source)}_{Service}.json";
 }
 
