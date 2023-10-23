@@ -6,6 +6,7 @@ using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
+using Beamable.Server.Editor.Usam;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -115,6 +116,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			if (isInit)
 			{
+				// TODO: Chris: this we can get access to data via DI
+				var srvc = Provider.GetService<CodeService>();
+				foreach (var service in srvc.Services)
+				{
+					_mainVisualElement.Add(new Label($"{service.name} / {service.dockerfilePath}"));
+				}
+				
 				CreateNewServiceElement(ServiceType.MicroService, new CreateMicroserviceVisualElement());
 				CreateNewServiceElement(ServiceType.StorageObject, new CreateStorageObjectVisualElement());
 				_modelToVisual.Clear();
