@@ -68,11 +68,6 @@ namespace Beamable.Server.Editor.Usam
 
 						if (EditorGUI.EndChangeCheck())
 						{
-							// Undo.RegisterImporterUndo(_serviceAsset.fileName, "Blach");
-
-							// Undo.RegisterFullObjectHierarchyUndo()
-							
-							// _sob.ApplyModifiedProperties();
 							Undo.RecordObject(assetJson, "Change Beam Service");
 							_sob.ApplyModifiedPropertiesWithoutUndo();
 							var json = JsonUtility.ToJson(_serviceAsset.data);
@@ -81,10 +76,6 @@ namespace Beamable.Server.Editor.Usam
 							File.WriteAllText(assetJson.fileName, json);
 							EditorUtility.SetDirty(target);
 							assetJson.json = json;
-							
-							// JsonUtility.FromJsonOverwrite(assetJson.json, _serviceAsset.data);
-							// AssetDatabase.ImportAsset();
-							
 							_sob = new SerializedObject(_serviceAsset);
 						}
 					} while (property.NextVisible(false));
@@ -96,27 +87,5 @@ namespace Beamable.Server.Editor.Usam
 			
 		}
 
-		void Draw(SerializedObject sob)
-		{
-			var rootProperty = sob.FindProperty(nameof(BeamServiceAsset.data));
-			var property = rootProperty;
-			property.NextVisible(true);
-
-			do
-			{
-				EditorGUI.BeginChangeCheck();
-				EditorGUILayout.PropertyField(property);
-				
-				
-
-				if (EditorGUI.EndChangeCheck())
-				{
-					Debug.Log("VALUE CHANGED!");
-					sob.ApplyModifiedProperties();
-					// var asset = (BeamServiceAsset)target;
-					// asset.Write();
-				}
-			} while (property.NextVisible(false));
-		}
 	}
 }
