@@ -209,7 +209,8 @@ namespace Beamable
 			DependencyBuilder.AddScoped<IPresenceApi>(provider => new PresenceService(
 				// the presence service needs a special instance of the beamable api requester
 				provider.GetService<IBeamableApiRequester>(),
-				provider.GetService<IUserContext>()));
+				provider.GetService<IUserContext>(),
+				provider.GetService<IBeamState>()));
 			DependencyBuilder.AddSingleton<AnalyticsTracker>(provider =>
 																 new AnalyticsTracker(
 																	 provider.GetService<IPlatformService>(),

@@ -9,11 +9,13 @@ namespace Beamable.Common.Api.Presence
 	{
 		private readonly IRequester _requester;
 		private readonly IUserContext _userContext;
+		private readonly IBeamState _beamState;
 
-		public PresenceService(IRequester requester, IUserContext userContext)
+		public PresenceService(IRequester requester, IUserContext userContext, IBeamState beamState)
 		{
 			_requester = requester;
 			_userContext = userContext;
+			_beamState = beamState;
 		}
 
 		public Promise<EmptyResponse> SendHeartbeat()
@@ -59,8 +61,10 @@ namespace Beamable.Common.Api.Presence
 		}
 
 		public bool ConnectivityCheckingEnabled { get; set; }
-		public Promise<bool> ForceCheck()
+		public async Promise<bool> ForceCheck()
 		{
+			await _beamState.OnPlayerReady;
+			
 			/*
 			 * if the ConnectivityCheckingEnabled is enabled, then we DON'T want the request
 			 * to include the pre-check. But if the ConnectivityCheckingEnabled is disabled,
@@ -68,16 +72,19 @@ namespace Beamable.Common.Api.Presence
 			 */
 			var useConnectivityPreCheck = !ConnectivityCheckingEnabled;
 
-			return _requester.BeamableRequest(new SDKRequesterOptions<EmptyResponse>
-			{
-				method = Method.PUT,
-				uri = $"/players/{_userContext.UserId}/presence",
-				includeAuthHeader = true,
-				useConnectivityPreCheck =
-					useConnectivityPreCheck // the magic sauce to allow this to ignore the connectivity
-			})
-			 .Map(_ => true)
-			 .RecoverFromNoConnectivity(() => false); // if no connection happens, that is fine, just carry on.
+			var response = await _requester.BeamableRequest(new SDKRequesterOptions<EmptyResponse>
+			                               {
+				                               method = Method.PUT,
+				                               uri = $"/players/{_userContext.UserId}/presence",
+				                               includeAuthHeader = true,
+				                               useConnectivityPreCheck =
+					                               useConnectivityPreCheck // the magic sauce to allow this to ignore the connectivity
+			                               })
+			                               .Map(_ => true)
+			                               .RecoverFromNoConnectivity(
+				                               () =>
+					                               false); // if no connection happens, that is fine, just carry on.
+			return response;
 		}
 	}
 
