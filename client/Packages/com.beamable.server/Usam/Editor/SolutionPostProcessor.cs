@@ -19,21 +19,11 @@ namespace Beamable.Server.Editor.Usam
 		private const string GLOBAL_HOOK = "GlobalSection(ProjectConfigurationPlatforms) = postSolution";
 		private const string PROJECT_HOOK = "# Visual Studio 2010";
 		
-		private static readonly string Template = $@"
-Project(""{{{KEY_TYPE_GUID}}}"") = ""{KEY_NAME}"", ""{KEY_PROJECT_PATH}"", ""{{{KEY_INSTANCE_GUID}}}""
-EndProject
-Global
-	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{{{KEY_INSTANCE_GUID}}}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{{{KEY_INSTANCE_GUID}}}.Debug|Any CPU.Build.0 = Debug|Any CPU
-	EndGlobalSection
-EndGlobal";
-		
 		private static readonly string PROJECT_TEMPLATE = $@"
 Project(""{{{KEY_TYPE_GUID}}}"") = ""{KEY_NAME}"", ""{KEY_PROJECT_PATH}"", ""{{{KEY_INSTANCE_GUID}}}""
 EndProject";
 		
-		private static readonly string PROJECT_GLOBAL_CONTENT = $@"
+		private static readonly string PROJECT_GLOBAL_TEMPLATE = $@"
 		{{{KEY_INSTANCE_GUID}}}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{{{KEY_INSTANCE_GUID}}}.Debug|Any CPU.Build.0 = Debug|Any CPU
 ";
@@ -41,6 +31,7 @@ EndProject";
 		public static string OnGeneratedSlnSolution(string path, string content)
 		{
 			var files = CodeService.GetBeamServices();
+			// TODO: Validate that these files actually exist/map to valid projects
 			foreach (var signpost in files)
 			{
 				content = InjectProject(content, signpost.name, signpost.relativeProjectFile);
@@ -72,13 +63,13 @@ EndProject";
 			byte[] hash = md5.ComputeHash(Encoding.UTF8.GetBytes(name + projectPath));
 			var instanceGuid = new Guid(hash).ToString();
 			
-			
+			// TODO: What happens if the developer moves their project to another folder?
 
 			projectSection = PROJECT_TEMPLATE.Replace(KEY_TYPE_GUID, PROJECT_TYPE_CSHARP)
 			                                 .Replace(KEY_INSTANCE_GUID, instanceGuid)
 			                                 .Replace(KEY_NAME, name)
 			                                 .Replace(KEY_PROJECT_PATH, projectPath);
-			globalSection = PROJECT_GLOBAL_CONTENT.Replace(KEY_TYPE_GUID, PROJECT_TYPE_CSHARP)
+			globalSection = PROJECT_GLOBAL_TEMPLATE.Replace(KEY_TYPE_GUID, PROJECT_TYPE_CSHARP)
 			                                 .Replace(KEY_INSTANCE_GUID, instanceGuid)
 			                                 .Replace(KEY_NAME, name)
 			                                 .Replace(KEY_PROJECT_PATH, projectPath);

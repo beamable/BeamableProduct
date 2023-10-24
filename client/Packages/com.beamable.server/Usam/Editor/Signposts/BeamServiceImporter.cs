@@ -71,7 +71,6 @@ namespace Beamable.Server.Editor.Usam
 							Undo.RecordObject(assetJson, "Change Beam Service");
 							_sob.ApplyModifiedPropertiesWithoutUndo();
 							var json = JsonUtility.ToJson(_serviceAsset.data);
-							Debug.Log(json);
 							
 							File.WriteAllText(assetJson.fileName, json);
 							EditorUtility.SetDirty(target);
