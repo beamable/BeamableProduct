@@ -19,6 +19,7 @@ namespace Beamable.Server.Editor.Usam
 		public List<ServiceInfo> Services = new List<ServiceInfo>();
 		
 		private static readonly List<string> IgnoreFolderSuffixes = new List<string> {"~", "obj", "bin"};
+		private List<BeamServiceSignpost> _services;
 
 		public CodeService(BeamCommands cli)
 		{
@@ -29,7 +30,11 @@ namespace Beamable.Server.Editor.Usam
 		public async Promise Init()
 		{
 			Debug.Log("Running init");
-			await SetManifest(_cli);
+			_services = GetBeamServices();
+			
+			SetSolution(_services);
+			
+			await SetManifest(_cli, _services);
 			await RefreshServices();
 			Debug.Log("Done");
 		}
@@ -45,10 +50,49 @@ namespace Beamable.Server.Editor.Usam
 			await ps.Run();
 		}
 
-
-		public static async Promise SetManifest(BeamCommands cli)
+		/// <summary>
+		/// Update the sln file to add references to known beam services.
+		/// This may cause a script reload if the sln file needs to regenerate
+		/// </summary>
+		/// <param name="services"></param>
+		public static void SetSolution(List<BeamServiceSignpost> services)
 		{
-			var files = GetBeamServices();
+			// find the local sln file
+			var slnPath = FindFirstSolutionFile();
+			if (!File.Exists(slnPath))
+			{
+				Debug.Log("No script file, so def reloading");
+				UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
+			}
+			
+			var contents = File.ReadAllText(slnPath);
+
+			var generatedContent = SolutionPostProcessor.OnGeneratedSlnSolution(slnPath, contents);
+			var areDifferent = generatedContent != contents; // TODO: is there a better way to check if the solution file needs to be regenerated? This feels like it could become a bottleneck.
+			if (areDifferent)
+			{
+				// force the sln file to be re-generated, by deleting it. // TODO: we'll need to "unlock" the file in certain VCS
+				File.Delete(slnPath);
+				UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
+			}
+		}
+
+		private static string FindFirstSolutionFile()
+		{
+			var files = Directory.GetFiles(".");
+			foreach (var file in files)
+			{
+				if (Path.GetExtension(file) == ".sln")
+				{
+					return file;
+				}
+			}
+
+			return null;
+		}
+
+		public static async Promise SetManifest(BeamCommands cli, List<BeamServiceSignpost> files)
+		{
 			var args = new ServicesSetLocalManifestArgs();
 			args.localHttpNames = new string[files.Count];
 			args.localHttpContexts = new string[files.Count];
