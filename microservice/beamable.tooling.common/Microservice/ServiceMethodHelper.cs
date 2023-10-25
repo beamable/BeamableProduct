@@ -139,7 +139,10 @@ namespace Beamable.Server
 		      {
 			      if (typeof(string) == pType)
 			      {
-				      return json.Substring(1, json.Length - 2); // peel off the quotes
+				      // first try use SmallerJSON for handling escape chars passed from Unity
+				      return (string)Serialization.SmallerJSON.Json.Deserialize(json) ?? 
+				             // or just peel off the quotes
+				            json.Substring(1, json.Length - 2);
 			      }
 
 			      var deserializeObject =
