@@ -16,8 +16,10 @@ namespace Beamable.Editor.Dotnet
 
 #if UNITY_EDITOR_WIN
 		public static readonly string DOTNET_GLOBAL_PATH = "C:\\Program Files\\dotnet";
+		public static readonly string DOTNET_EXEC = "dotnet.exe";
 #else
 		public static readonly string DOTNET_GLOBAL_PATH = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".dotnet");
+		public static readonly string DOTNET_EXEC = "dotnet";
 #endif
 
 		/// <summary>
@@ -90,15 +92,15 @@ namespace Beamable.Editor.Dotnet
 			{
 				if (path == null) continue;
 
-				var dotnetPath = Path.Combine(path, "dotnet");
+				var dotnetPath = Path.Combine(path, DOTNET_EXEC);
 				if (!CheckForDotnetAtPath(dotnetPath))
 				{
 					continue;
 				}
 
-				if (!CheckVersion(dotnetPath))
+				if (!CheckVersion(dotnetPath, out var majorVersion))
 				{
-					Debug.LogWarning($"Ignoring version of dotnet at {path} due to incorrect version number.");
+					Debug.LogWarning($"Ignoring version of dotnet at {path} due to incorrect version number. Founded: {majorVersion}, required: {REQUIRED_MAJOR_VERSION}");
 					continue;
 				}
 
@@ -110,8 +112,9 @@ namespace Beamable.Editor.Dotnet
 		}
 
 
-		static bool CheckVersion(string dotnetPath)
+		static bool CheckVersion(string dotnetPath, out int majorVersion)
 		{
+			majorVersion = -1;
 			var proc = new Process();
 			proc.StartInfo = new ProcessStartInfo
 			{
@@ -125,12 +128,14 @@ namespace Beamable.Editor.Dotnet
 			proc.WaitForExit();
 			var output = proc.StandardOutput.ReadToEnd();
 
-			if (!PackageVersion.TryFromSemanticVersionString(output, out var version))
+			if (!PackageVersion.TryFromSemanticVersionString(output, out var findedVersion))
 			{
 				return false;
 			}
 
-			return version.Major == REQUIRED_MAJOR_VERSION;
+			majorVersion = findedVersion.Major;
+
+			return majorVersion == REQUIRED_MAJOR_VERSION;
 		}
 
 		static bool CheckForDotnetAtPath(string dotnetPath)
