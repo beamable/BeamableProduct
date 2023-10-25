@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Beamable.Editor.BeamCli
 {
-	public class BeamCli
+	public class BeamCli : ILoadWithContext
 	{
 		private readonly IDependencyProvider _provider;
 		private readonly BeamEditorContext _ctx;
@@ -55,7 +55,7 @@ namespace Beamable.Editor.BeamCli
 				host = BeamableEnvironment.ApiUrl,
 			});
 			await initCommand.Run();
-			Debug.Log("comitted .beamable/config-defaults.json");
+			Debug.Log("saved .beamable/config-defaults.json");
 
 
 			var linkCommand = Command.ProjectAddUnityProject(new ProjectAddUnityProjectArgs
@@ -65,6 +65,7 @@ namespace Beamable.Editor.BeamCli
 			});
 			await linkCommand.Run();
 			Debug.Log("linked project");
+			
 		}
 	}
 }
