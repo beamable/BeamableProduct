@@ -5,7 +5,7 @@ namespace cli.Commands.Project;
 
 public class ListCommandArgs : CommandArgs
 {
-	
+
 }
 
 [Serializable]
@@ -35,7 +35,7 @@ public class ListCommand : AppCommand<ListCommandArgs>, IResultSteam<DefaultStre
 			dockerfilePath = x.Value.RelativeDockerfilePath,
 			dockerBuildPath = x.Value.DockerBuildContextPath
 		}).ToList();
-		
+
 		this.SendResults(new ListCommandResult
 		{
 			localServices = services
