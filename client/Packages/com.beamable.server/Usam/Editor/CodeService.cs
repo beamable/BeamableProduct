@@ -19,6 +19,7 @@ namespace Beamable.Server.Editor.Usam
 		public List<ServiceInfo> Services = new List<ServiceInfo>();
 		
 		private static readonly List<string> IgnoreFolderSuffixes = new List<string> {"~", "obj", "bin"};
+		private List<BeamServiceSignpost> _services;
 
 		public CodeService(BeamCommands cli)
 		{
@@ -26,10 +27,15 @@ namespace Beamable.Server.Editor.Usam
 			OnReady = Init();
 		}
 		
+		
 		public async Promise Init()
 		{
 			Debug.Log("Running init");
-			await SetManifest(_cli);
+			_services = GetBeamServices();
+			// TODO: we need validation. What happens if the .beamservice files point to non-existent files
+			SetSolution(_services);
+			
+			await SetManifest(_cli, _services);
 			await RefreshServices();
 			Debug.Log("Done");
 		}
@@ -45,10 +51,50 @@ namespace Beamable.Server.Editor.Usam
 			await ps.Run();
 		}
 
-
-		public static async Promise SetManifest(BeamCommands cli)
+		/// <summary>
+		/// Update the sln file to add references to known beam services.
+		/// This may cause a script reload if the sln file needs to regenerate
+		/// </summary>
+		/// <param name="services"></param>
+		public static void SetSolution(List<BeamServiceSignpost> services)
 		{
-			var files = GetBeamServices();
+			// find the local sln file
+			var slnPath = FindFirstSolutionFile();
+			if (string.IsNullOrEmpty(slnPath) || !File.Exists(slnPath))
+			{
+				Debug.Log("Beam. No script file, so reloading scripts");
+				UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
+				return; // once scripts reload, the current invocation of scripts end.
+			}
+			
+			var contents = File.ReadAllText(slnPath);
+
+			var generatedContent = SolutionPostProcessor.OnGeneratedSlnSolution(slnPath, contents);
+			var areDifferent = generatedContent != contents; // TODO: is there a better way to check if the solution file needs to be regenerated? This feels like it could become a bottleneck.
+			if (areDifferent)
+			{
+				// force the sln file to be re-generated, by deleting it. // TODO: we'll need to "unlock" the file in certain VCS
+				File.Delete(slnPath);
+				UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
+			}
+		}
+
+		private static string FindFirstSolutionFile()
+		{
+			var files = Directory.GetFiles(".");
+			foreach (var file in files)
+			{
+				if (Path.GetExtension(file) == ".sln")
+				{
+					return file;
+				}
+			}
+
+			return null;
+		}
+
+		public static async Promise SetManifest(BeamCommands cli, List<BeamServiceSignpost> files)
+		{
 			var args = new ServicesSetLocalManifestArgs();
 			args.localHttpNames = new string[files.Count];
 			args.localHttpContexts = new string[files.Count];
@@ -96,24 +142,22 @@ namespace Beamable.Server.Editor.Usam
 		
 		private static void ScanDirectoryRecursive(string directoryPath, string targetExtension, List<string> excludeFolders, HashSet<string> foundFiles)
 		{
+			// TODO: ChatGPT wrote this, but actually, it should use a queue<string> to do a non-stack-recursive BFS over the file system
 			if (!Directory.Exists(directoryPath))
 			{
 				return;
 			}
 
-			try
-			{
-				foreach (var file in Directory.GetFiles(directoryPath))
-				{
-					if (Path.GetExtension(file) == targetExtension)
-					{
-						foundFiles.Add(file);
-					}
-				}
 
-				foreach (var subdirectory in Directory.GetDirectories(directoryPath))
+			var directories = new Queue<string>();
+			directories.Enqueue(directoryPath);
+
+			while (directories.Count > 0)
+			{
+				try
 				{
-					var folderName = Path.GetFileName(subdirectory);
+					var dir = directories.Dequeue();
+					var folderName = Path.GetFileName(dir);
 
 					var exclude = false;
 					foreach (var excludeSuffix in excludeFolders)
@@ -126,13 +170,24 @@ namespace Beamable.Server.Editor.Usam
 					}
 
 					if (exclude) continue;
-					ScanDirectoryRecursive(subdirectory, targetExtension, excludeFolders, foundFiles);
 
+					foreach (var file in Directory.GetFiles(dir))
+					{
+						if (Path.GetExtension(file) == targetExtension)
+						{
+							foundFiles.Add(file);
+						}
+					}
+
+					foreach (var subDir in Directory.GetDirectories(dir))
+					{
+						directories.Enqueue(subDir);
+					}
+				} 
+				catch (UnauthorizedAccessException ex)
+				{
+					Debug.LogError($"Beam Error accessing {directoryPath}: {ex.Message}");
 				}
-			}
-			catch (UnauthorizedAccessException ex)
-			{
-				Debug.LogError($"Beam Error accessing {directoryPath}: {ex.Message}");
 			}
 		}
 		
