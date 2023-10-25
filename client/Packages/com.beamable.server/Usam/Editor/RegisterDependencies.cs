@@ -10,9 +10,6 @@ namespace Beamable.Server.Editor.Usam
 		public static void Register(IDependencyBuilder builder)
 		{
 			builder.AddSingleton<CodeService>();
-			// builder.LoadSingleton(provider => new MicroservicesDataModel(provider.GetService<BeamEditorContext>()));
-			// builder.AddSingleton<MicroserviceManager>();
-			// builder.AddSingleton<MicroserviceDiscovery>();
 		}
 
 	}
