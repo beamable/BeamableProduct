@@ -2,6 +2,7 @@
 using System.IO;
 using UnityEngine.Assertions;
 using Beamable.Common.Dependencies;
+using System;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -59,7 +60,51 @@ namespace Beamable.Editor.UI.Common
 			Refresh();
 		}
 
-		public virtual void Refresh() { }
+		public void Refresh(BeamEditorContext ctx)
+		{
+			_provider = ctx.ServiceScope;
+			Refresh();
+		}
+
+		public virtual void Refresh()
+		{
+			if (TryGetProviderFromParent(out var provider))
+			{
+				userData = provider;
+				_provider = provider;
+			}
+		}
+		
+		bool TryGetProviderFromParent(out IDependencyProvider provider)
+		{
+			provider = null;
+			if (_provider != null)
+			{
+				provider = _provider;
+				return true;
+			}
+
+			var p = parent;
+
+			while (p != null)
+			{
+				if (parent.userData is IDependencyProvider parentProvider)
+				{
+					provider = parentProvider;
+					return true;
+				}
+
+				if (parent is BeamableBasicVisualElement beamParent)
+				{
+					provider = beamParent.Provider;
+					return true;
+				}
+
+				p = p.parent;
+			}
+
+			return false;
+		}
 
 		protected virtual void OnDestroy() { }
 
