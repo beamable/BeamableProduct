@@ -6,12 +6,12 @@ namespace Beamable.Editor.BeamCli.Commands
     
     public class ServicesSetLocalManifestArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
-        /// <summary>local http service names</summary>
+        /// <summary>Local http service names</summary>
         public string[] localHttpNames;
-        /// <summary>local http service docker build contexts</summary>
+        /// <summary>Local http service docker build contexts</summary>
         public string[] localHttpContexts;
-        /// <summary>local http service relative docker file paths</summary>
-        public string[] localHttpDockerfiles;
+        /// <summary>Local http service relative docker file paths</summary>
+        public string[] localHttpDockerFiles;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -23,7 +23,7 @@ namespace Beamable.Editor.BeamCli.Commands
                 for (int i = 0; (i < this.localHttpNames.Length); i = (i + 1))
                 {
                     // The parameter allows multiple values
-                    genBeamCommandArgs.Add(("--localHttpNames=" + this.localHttpNames[i]));
+                    genBeamCommandArgs.Add(("--local-http-names=" + this.localHttpNames[i]));
                 }
             }
             // If the localHttpContexts value was not default, then add it to the list of args.
@@ -32,16 +32,16 @@ namespace Beamable.Editor.BeamCli.Commands
                 for (int i = 0; (i < this.localHttpContexts.Length); i = (i + 1))
                 {
                     // The parameter allows multiple values
-                    genBeamCommandArgs.Add(("--localHttpContexts=" + this.localHttpContexts[i]));
+                    genBeamCommandArgs.Add(("--local-http-contexts=" + this.localHttpContexts[i]));
                 }
             }
-            // If the localHttpDockerfiles value was not default, then add it to the list of args.
-            if ((this.localHttpDockerfiles != default(string[])))
+            // If the localHttpDockerFiles value was not default, then add it to the list of args.
+            if ((this.localHttpDockerFiles != default(string[])))
             {
-                for (int i = 0; (i < this.localHttpDockerfiles.Length); i = (i + 1))
+                for (int i = 0; (i < this.localHttpDockerFiles.Length); i = (i + 1))
                 {
                     // The parameter allows multiple values
-                    genBeamCommandArgs.Add(("--localHttpDockerfiles=" + this.localHttpDockerfiles[i]));
+                    genBeamCommandArgs.Add(("--local-http-docker-files=" + this.localHttpDockerFiles[i]));
                 }
             }
             string genBeamCommandStr = "";

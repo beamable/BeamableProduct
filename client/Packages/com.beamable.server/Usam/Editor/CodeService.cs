@@ -52,13 +52,13 @@ namespace Beamable.Server.Editor.Usam
 			var args = new ServicesSetLocalManifestArgs();
 			args.localHttpNames = new string[files.Count];
 			args.localHttpContexts = new string[files.Count];
-			args.localHttpDockerfiles = new string[files.Count];
+			args.localHttpDockerFiles = new string[files.Count];
 			// TODO: add some validation to check that these files actually make sense
 			for (var i = 0; i < files.Count; i++)
 			{
 				args.localHttpNames[i] = files[i].name;
 				args.localHttpContexts[i] = files[i].assetRelativePath; // TODO: this isn't always true. It is probably actually the case that we want to the copy the Unity project, and set the Dockerfile route
-				args.localHttpDockerfiles[i] = files[i].relativeDockerFile;
+				args.localHttpDockerFiles[i] = files[i].relativeDockerFile;
 			}
 
 			var command = cli.ServicesSetLocalManifest(args);

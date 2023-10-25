@@ -23,21 +23,21 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 
 	public override void Configure()
 	{
-		var names = new Option<List<string>>("--localHttpNames", "local http service names")
+		var names = new Option<List<string>>("--local-http-names", "Local http service names")
 		{
 			Arity = ArgumentArity.ZeroOrMore, AllowMultipleArgumentsPerToken = true
 		};
 		AddOption(names, (x, i) => x.localHttpNames = i);
 		
 		
-		var contextPaths = new Option<List<string>>("--localHttpContexts", "local http service docker build contexts")
+		var contextPaths = new Option<List<string>>("--local-http-contexts", "Local http service docker build contexts")
 		{
 			Arity = ArgumentArity.ZeroOrMore, AllowMultipleArgumentsPerToken = true
 		};
 		AddOption(contextPaths, (x, i) => x.localHttpBuildContextPaths = i);
 		
 		
-		var dockerFiles = new Option<List<string>>("--localHttpDockerfiles", "local http service relative docker file paths")
+		var dockerFiles = new Option<List<string>>("--local-http-docker-files", "Local http service relative docker file paths")
 		{
 			Arity = ArgumentArity.ZeroOrMore, AllowMultipleArgumentsPerToken = true
 		};

@@ -17,7 +17,7 @@ public class ListCommandResult
 public class ListCommand : AppCommand<ListCommandArgs>, IResultSteam<DefaultStreamResultChannel, ListCommandResult>
 {
 	public ListCommand() : base("list",
-		"get a list of microservices")
+		"Get a list of microservices")
 	{
 	}
 
