@@ -481,30 +481,33 @@ namespace Beamable.Server
         public static bool TryFindBeamableFolder(out string beamableFolderPath)
         {
 	        beamableFolderPath = null;
-	        var found = false;
 	        var curr = Directory.GetCurrentDirectory();
-	        while (true)
+	        var searchingForParent = true;
+
+	        do
 	        {
 		        var directories = Directory.GetDirectories(curr);
 		        foreach (var dir in directories)
 		        {
 			        var pathName = Path.GetFileName(dir);
-			        if (pathName == ".beamable")
-			        {
-				        beamableFolderPath = Path.GetFullPath(curr);
-				        return true;
-			        }
+			        if (pathName != ".beamable") continue;
+
+			        beamableFolderPath = Path.GetFullPath(curr);
+			        return true;
 		        }
-			
 
 		        var parent = Directory.GetParent(curr);
 		        if (!(parent?.Exists ?? false))
 		        {
-			        return false;
+			        searchingForParent = false;
 		        }
+		        else
+		        {
+			        curr = parent.FullName;
+		        }
+	        } while (searchingForParent);
 
-		        curr = parent.FullName;
-	        }
+	        return false;
         }
 
         
