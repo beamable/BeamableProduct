@@ -46,7 +46,7 @@ namespace Beamable.Editor.BeamCli
 		public async Promise Init()
 		{
 			await _ctx.OnReady;
-			var command = Command.Init(new InitArgs
+			var initCommand = Command.Init(new InitArgs
 			{
 				saveToFile = true,
 				refreshToken = _ctx.Requester.Token.RefreshToken,
@@ -54,8 +54,17 @@ namespace Beamable.Editor.BeamCli
 				pid = _ctx.Requester.Pid,
 				host = BeamableEnvironment.ApiUrl,
 			});
-			await command.Run();
+			await initCommand.Run();
 			Debug.Log("comitted .beamable/config-defaults.json");
+
+
+			var linkCommand = Command.ProjectAddUnityProject(new ProjectAddUnityProjectArgs
+			{
+				quiet = true, 
+				path = "."
+			});
+			await linkCommand.Run();
+			Debug.Log("linked project");
 		}
 	}
 }
