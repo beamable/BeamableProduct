@@ -5,12 +5,8 @@ using System.CommandLine;
 
 namespace cli.Dotnet;
 
-public class AddUnrealClientOutputCommandArgs : CommandArgs
-{
-	public string path;
-}
 
-public class AddUnrealClientOutputCommand : AppCommand<AddUnrealClientOutputCommandArgs>
+public class AddUnrealClientOutputCommand : AppCommand<AddProjectClientOutputCommandArgs>
 {
 	public AddUnrealClientOutputCommand() : base("add-unreal-project", "Add a unreal project to this beamable cli project")
 	{
@@ -21,7 +17,7 @@ public class AddUnrealClientOutputCommand : AppCommand<AddUnrealClientOutputComm
 		AddArgument(new Argument<string>("path", "Relative path to the Unreal project"), (args, i) => args.path = i);
 	}
 
-	public override Task Handle(AddUnrealClientOutputCommandArgs args)
+	public override Task Handle(AddProjectClientOutputCommandArgs args)
 	{
 		var unrealProjectClient = new ProjectClientHelper<UnrealProjectClient>();
 		var workingDir = Directory.GetCurrentDirectory();

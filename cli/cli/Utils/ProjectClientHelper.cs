@@ -1,4 +1,5 @@
 using Beamable.Common;
+using cli.Dotnet;
 using Spectre.Console;
 
 namespace cli.Utils;
@@ -48,13 +49,16 @@ public class ProjectClientHelper<TProjectClient> where TProjectClient : IProject
 	}
 
 	public bool SuggestProjectClientTypeCandidates<T>(IEnumerable<string> expectedParentDirectories, T args)
-		where T : CommandArgs
+		where T : AddProjectClientOutputCommandArgs
 	{
 		var defaultPaths = GetProjectClientTypeCandidates(expectedParentDirectories).ToList();
 		switch (defaultPaths.Count)
 		{
 			// if there is only one detected file, offer to use that.
-			case 1 when AnsiConsole.Confirm($"Automatically found {defaultPaths[0]}. Add as {_projectClientTypeName} project?"):
+			case 1 when !args.quiet && AnsiConsole.Confirm($"Automatically found {defaultPaths[0]}. Add as {_projectClientTypeName} project?"):
+				_client.AddProject(defaultPaths[0], args);
+				return true;
+			case 1 when args.quiet:
 				_client.AddProject(defaultPaths[0], args);
 				return true;
 			// if there are many detected files, offer up a list of them

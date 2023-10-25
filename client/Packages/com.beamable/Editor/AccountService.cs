@@ -23,6 +23,7 @@ namespace Beamable.Editor
 
 		Promise<AccountServiceInitResult> TryInit();
 		Promise<EditorAccountInfo> Login(string nextCid, AccessToken cidToken);
+		void OnUserChanged(Func<EditorAccountInfo, Promise> cb);
 		void Logout(bool clearRealmPid);
 		ReadonlyOptionalString Cid { get; }
 		void SetRealm(EditorAccountInfo editorAccount, RealmView game, string realmPid);
@@ -43,6 +44,8 @@ namespace Beamable.Editor
 				return editorAccounts?.FirstOrDefault(a => a?.cid?.Equals(cid.Value) ?? false);
 			}
 		}
+
+		public List<Func<EditorAccountInfo, Promise>> _onUserChangeCallbacks = new List<Func<EditorAccountInfo, Promise>>();
 
 		private readonly IDependencyProviderScope _scope;
 
@@ -138,6 +141,21 @@ namespace Beamable.Editor
 			_saveHandle?.Save();
 		}
 
+		public void OnUserChanged(Func<EditorAccountInfo, Promise> cb)
+		{
+			_onUserChangeCallbacks.Add(cb);
+		}
+
+		async Promise InvokeUserChangeCallbacks()
+		{
+			var promises = new List<Promise<Unit>>();
+			foreach (var cb in _onUserChangeCallbacks)
+			{
+				promises.Add(cb(Account));
+			}
+			await Promise.Sequence(promises);
+		}
+
 		public async Promise<EditorAccountInfo> Login(string nextCid, AccessToken cidToken)
 		{
 			var requester = _scope.InstantiateService<IPlatformRequester>();
@@ -164,6 +182,7 @@ namespace Beamable.Editor
 
 			WriteUnsetConfigValues();
 			_saveHandle?.Save();
+			await InvokeUserChangeCallbacks();
 			return account;
 		}
 
@@ -187,6 +206,7 @@ namespace Beamable.Editor
 				Requester.Pid = null;
 			}
 			_saveHandle?.Save();
+			var _ = InvokeUserChangeCallbacks();
 		}
 
 		public void WriteUnsetConfigValues()
@@ -260,6 +280,7 @@ namespace Beamable.Editor
 		{
 			editorAccount.SetRealm(game.Pid, realmPid);
 			_saveHandle?.Save();
+			var _ = InvokeUserChangeCallbacks();
 		}
 	}
 

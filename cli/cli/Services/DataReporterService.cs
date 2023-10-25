@@ -1,7 +1,10 @@
+using Beamable.Common;
 using Beamable.Common.BeamCli;
 using Beamable.Server.Common;
+using cli.Commands.Project;
 using Newtonsoft.Json;
 using Serilog;
+using Serilog.Events;
 using UnityEngine;
 
 namespace cli.Services;
@@ -18,9 +21,8 @@ public class DataReporterService
 	public void Report(string rawMessage)
 	{
 		if (!_appContext.UseFatalAsReportingChannel) return;
+		Log.Fatal("{open}{message}{close}", Reporting.PATTERN_START, rawMessage, Reporting.PATTERN_END);
 
-		var encoded = Reporting.EncodeMessage(rawMessage);
-		Log.Fatal(encoded);
 	}
 
 	public void Report<T>(string type, T data)
@@ -31,7 +33,16 @@ public class DataReporterService
 			type = type,
 			ts = DateTimeOffset.Now.ToUnixTimeMilliseconds()
 		};
-		var json = JsonConvert.SerializeObject(pt, UnitySerializationSettings.Instance);
-		Report(json);
+		try
+		{
+			var json = JsonConvert.SerializeObject(pt, UnitySerializationSettings.Instance);
+			Report(json);
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine("ERROR: " + ex.GetType().Name);
+			Log.Information(ex.Message);
+			throw;
+		}
 	}
 }

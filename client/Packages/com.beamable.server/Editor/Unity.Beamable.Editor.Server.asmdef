@@ -14,7 +14,8 @@
         "Unity.Beamable",
         "Unity.Beamable.Editor",
         "Unity.Addressables",
-        "Unity.EditorCoroutines.Editor"
+        "Unity.EditorCoroutines.Editor",
+        "Unity.Beamable.Editor.Usam"
     ],
     "includePlatforms": [
         "Editor"

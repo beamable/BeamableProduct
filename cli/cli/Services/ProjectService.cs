@@ -437,7 +437,7 @@ COPY {commonProjectName}/. .
 			true);
 		if (addUnityProject)
 		{
-			await addUnityCommand.Handle(new AddUnityClientOutputCommandArgs { path = ".", Provider = provider });
+			await addUnityCommand.Handle(new AddProjectClientOutputCommandArgs { path = ".", Provider = provider });
 		}
 
 		// ask if we should link a Unreal project
@@ -447,7 +447,7 @@ COPY {commonProjectName}/. .
 		if (addUnrealProject)
 		{
 			await addUnrealCommand.Handle(
-				new AddUnrealClientOutputCommandArgs() { path = ".", Provider = provider });
+				new AddProjectClientOutputCommandArgs() { path = ".", Provider = provider });
 		}
 	}
 
