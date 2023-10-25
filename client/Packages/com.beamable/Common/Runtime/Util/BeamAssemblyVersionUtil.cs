@@ -7,7 +7,7 @@ namespace Beamable.Common.Util
 	{
 		/// <inheritdoc cref="GetVersion"/>
 		public static string GetVersion<T>() => GetVersion(typeof(T));
-		
+
 		/// <summary>
 		/// Get the version number of the Beamable assembly that provides the given type.
 		/// When Beamable assemblies are built, they use the <code> InformationalVersion </code> msbuild attribute
