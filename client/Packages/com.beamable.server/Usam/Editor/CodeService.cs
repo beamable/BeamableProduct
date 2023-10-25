@@ -57,7 +57,7 @@ namespace Beamable.Server.Editor.Usam
 			for (var i = 0; i < files.Count; i++)
 			{
 				args.localHttpNames[i] = files[i].name;
-				args.localHttpContexts[i] = files[i].assetRelativePath; // TODO: this isn't always true. It is probably actually the case that we want to the copy the Unity project, and set the Dockerfile route
+				args.localHttpContexts[i] = files[i].assetRelativePath; 
 				args.localHttpDockerFiles[i] = files[i].relativeDockerFile;
 			}
 
