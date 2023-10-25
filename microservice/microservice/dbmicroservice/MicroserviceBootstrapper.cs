@@ -12,6 +12,7 @@ using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
 using Beamable.Common.Scheduler;
+using Beamable.Common.Util;
 using Beamable.Server.Api;
 using Beamable.Server.Api.Announcements;
 using Beamable.Server.Api.Calendars;
@@ -48,6 +49,7 @@ using Serilog.Events;
 using Serilog.Formatting.Display;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -447,6 +449,69 @@ namespace Beamable.Server
         }
         
         /// <summary>
+        /// Get the local execution path of the beam CLI.
+        /// If there is a Library/BeamableEditor/BeamCLI/(version)/beam file, then
+        /// that will be used.
+        /// However, if that file does not exist, then a global "beam" will be used.
+        /// </summary>
+        /// <returns></returns>
+        public static string GetBeamProgram()
+        {
+	        if (TryFindBeamableFolder(out var beamableFolderPath))
+	        {
+		        var unityPath = Path.Combine(beamableFolderPath, 
+			        "Library", 
+			        "BeamableEditor",
+			        "BeamCLI", 
+			        BeamAssemblyVersionUtil.GetVersion<Promise>(),
+			        "beam");
+		        if (File.Exists(unityPath))
+		        {
+			        return unityPath;
+		        }
+	        }
+	        return "beam"; // use global
+        }
+
+        /// <summary>
+        /// Ascend local folders until a .beamable folder is found.
+        /// </summary>
+        /// <param name="beamableFolderPath"></param>
+        /// <returns></returns>
+        public static bool TryFindBeamableFolder(out string beamableFolderPath)
+        {
+	        beamableFolderPath = null;
+	        var curr = Directory.GetCurrentDirectory();
+	        var searchingForParent = true;
+
+	        do
+	        {
+		        var directories = Directory.GetDirectories(curr);
+		        foreach (var dir in directories)
+		        {
+			        var pathName = Path.GetFileName(dir);
+			        if (pathName != ".beamable") continue;
+
+			        beamableFolderPath = Path.GetFullPath(curr);
+			        return true;
+		        }
+
+		        var parent = Directory.GetParent(curr);
+		        if (!(parent?.Exists ?? false))
+		        {
+			        searchingForParent = false;
+		        }
+		        else
+		        {
+			        curr = parent.FullName;
+		        }
+	        } while (searchingForParent);
+
+	        return false;
+        }
+
+        
+        /// <summary>
         /// This method can be called before the start of the microservice to inject some CLI information.
         /// This is only used to execute a microservice through the IDE.
         /// </summary>
@@ -465,7 +530,8 @@ namespace Beamable.Server
 			
 	        using var process = new Process();
 
-	        process.StartInfo.FileName = "beam";
+	        
+	        process.StartInfo.FileName = GetBeamProgram();
 	        process.StartInfo.Arguments = $"project generate-env {serviceName} {customArgs}";
 	        process.StartInfo.RedirectStandardOutput = true;
 	        process.StartInfo.RedirectStandardError = true;
