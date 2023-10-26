@@ -52,7 +52,12 @@ namespace Beamable.Editor.BeamCli
 			}
 		}
 
-		public static string CLI_PATH => Path.Combine(CLI_VERSIONED_HOME, "beam");
+		public static string CLI_PATH => Path.Combine(CLI_VERSIONED_HOME, EXEC);
+#if UNITY_EDITOR_WIN
+		private const string EXEC = "beam.exe";
+#else
+		private const string EXEC = "beam";
+#endif
 
 		/// <summary>
 		/// Installs the Beam CLI into the /Library folder of the current project.
