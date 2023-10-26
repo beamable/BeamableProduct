@@ -20,6 +20,17 @@ namespace Beamable.Editor.BeamCli
 			}
 		}
 
+		static bool USE_SRC
+		{
+			get
+			{
+				var config = EditorConfiguration.Instance;
+				if (config == null || !config.AdvancedCli.HasValue) return false;
+
+				return config.AdvancedCli.Value.UseFromSource.HasValue;
+			}
+		}
+
 		private static string DEFAULT_VERSION
 		{
 			get
@@ -35,6 +46,12 @@ namespace Beamable.Editor.BeamCli
 		{
 			get
 			{
+
+				if (USE_SRC)
+				{
+					return Path.Combine(DotnetUtil.DOTNET_GLOBAL_PATH,
+					                    $"dotnet run --project {EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value} -- ");
+				}
 				if (USE_GLOBAL)
 				{
 					return Path.Combine(DotnetUtil.DOTNET_GLOBAL_PATH, "tools");
@@ -52,7 +69,17 @@ namespace Beamable.Editor.BeamCli
 			}
 		}
 
-		public static string CLI_PATH => Path.Combine(CLI_VERSIONED_HOME, "beam");
+		public static string CLI_PATH
+		{
+			get
+			{
+				if (USE_SRC)
+				{
+					return CLI_VERSIONED_HOME;
+				}
+				return Path.Combine(CLI_VERSIONED_HOME, "beam");
+			}
+		}
 
 		/// <summary>
 		/// Installs the Beam CLI into the /Library folder of the current project.
@@ -62,7 +89,7 @@ namespace Beamable.Editor.BeamCli
 			// we need dotnet before we can initialize the CLI
 			DotnetUtil.InitializeDotnet();
 
-			if (USE_GLOBAL || File.Exists(CLI_PATH))
+			if (USE_SRC || USE_GLOBAL || File.Exists(CLI_PATH))
 			{
 				// if using global, we make no promises about anything. 
 				// or, if the cli exists, we are good 
