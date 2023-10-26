@@ -10,6 +10,6 @@ namespace Beamable.Server.Editor.Usam
 		public string fileName;
 		public string json;
 
-		
+
 	}
 }

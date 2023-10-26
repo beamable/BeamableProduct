@@ -123,7 +123,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				{
 					_mainVisualElement.Add(new Label($"{service.name} / {service.dockerfilePath}"));
 				}
-				
+
 				CreateNewServiceElement(ServiceType.MicroService, new CreateMicroserviceVisualElement());
 				CreateNewServiceElement(ServiceType.StorageObject, new CreateStorageObjectVisualElement());
 				_modelToVisual.Clear();

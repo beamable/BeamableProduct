@@ -134,7 +134,7 @@ namespace Beamable.Editor.Microservice.UI
 			_windowRoot.name = nameof(_windowRoot);
 			_windowRoot.TryAddScrollViewAsMainElement();
 			_windowRoot.userData = ActiveContext.ServiceScope;
-			
+
 			root.Add(_windowRoot);
 
 			_actionBarVisualElement = root.Q<ActionBarVisualElement>("actionBarVisualElement");

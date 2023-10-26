@@ -60,12 +60,12 @@ namespace Beamable.Editor.BeamCli
 
 			var linkCommand = Command.ProjectAddUnityProject(new ProjectAddUnityProjectArgs
 			{
-				quiet = true, 
+				quiet = true,
 				path = "."
 			});
 			await linkCommand.Run();
 			Debug.Log("linked project");
-			
+
 		}
 	}
 }

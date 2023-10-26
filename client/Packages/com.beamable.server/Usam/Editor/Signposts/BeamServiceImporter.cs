@@ -11,7 +11,7 @@ namespace Beamable.Server.Editor.Usam
 		public override void OnImportAsset(AssetImportContext ctx)
 		{
 			var filePath = ctx.assetPath;
-			
+
 			var contents = File.ReadAllText(filePath);
 
 
@@ -20,9 +20,9 @@ namespace Beamable.Server.Editor.Usam
 			instance.json = contents;
 			ctx.AddObjectToAsset("data", instance);
 			ctx.SetMainObject(instance);
-			
+
 		}
-		
+
 	}
 
 	[CustomEditor(typeof(BeamServiceImporter))]
@@ -36,7 +36,7 @@ namespace Beamable.Server.Editor.Usam
 
 		public override void OnInspectorGUI()
 		{
-			
+
 			base.OnInspectorGUI();
 
 			if (assetTarget is BeamServiceAssetJson assetJson)
@@ -50,7 +50,7 @@ namespace Beamable.Server.Editor.Usam
 					_serviceAsset.data ??= new BeamServiceSignpost();
 					JsonUtility.FromJsonOverwrite(assetJson.json, _serviceAsset.data);
 					_sob = new SerializedObject(_serviceAsset);
-					
+
 				}
 
 				if (_sob != null)
@@ -63,15 +63,15 @@ namespace Beamable.Server.Editor.Usam
 					{
 						EditorGUI.BeginChangeCheck();
 						EditorGUILayout.PropertyField(property);
-				
-				
+
+
 
 						if (EditorGUI.EndChangeCheck())
 						{
 							Undo.RecordObject(assetJson, "Change Beam Service");
 							_sob.ApplyModifiedPropertiesWithoutUndo();
 							var json = JsonUtility.ToJson(_serviceAsset.data);
-							
+
 							File.WriteAllText(assetJson.fileName, json);
 							EditorUtility.SetDirty(target);
 							assetJson.json = json;
@@ -81,9 +81,9 @@ namespace Beamable.Server.Editor.Usam
 
 				}
 			}
-			
-			
-			
+
+
+
 		}
 
 	}
