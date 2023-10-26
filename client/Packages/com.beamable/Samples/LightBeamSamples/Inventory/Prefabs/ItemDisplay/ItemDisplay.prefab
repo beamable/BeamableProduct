@@ -322,6 +322,7 @@ MonoBehaviour:
   typeText: {fileID: 5391917194349311978}
   idText: {fileID: 2098431368448208046}
   icon: {fileID: 6824748995669277367}
+  infoButton: {fileID: 2094128065665422485}
 --- !u!1 &5391917194349311972
 GameObject:
   m_ObjectHideFlags: 0

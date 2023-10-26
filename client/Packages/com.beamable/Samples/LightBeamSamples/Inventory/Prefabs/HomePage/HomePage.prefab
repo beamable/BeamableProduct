@@ -94,7 +94,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   itemsContainer: {fileID: 5739712124588241270}
+  itemsParent: {fileID: 4413159332508254334}
   currenciesContainer: {fileID: 464270301072575444}
+  currenciesParent: {fileID: 4802707391504907910}
   showCurrencies: {fileID: 7097799627446739624}
   showItems: {fileID: 4960568938097421393}
   playerId: {fileID: 3740735114327516456}
@@ -1540,7 +1542,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 360, y: 50}
+  m_SizeDelta: {x: 540, y: 50}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!222 &3134619846263849889
 CanvasRenderer:
@@ -1604,8 +1606,8 @@ MonoBehaviour:
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 1
-  m_HorizontalAlignment: 1
-  m_VerticalAlignment: 256
+  m_HorizontalAlignment: 2
+  m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_wordSpacing: 0

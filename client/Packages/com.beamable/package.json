@@ -30,6 +30,11 @@
       "displayName": "Currency HUD",
       "description": "Contains a tiny user interface demonstrating how to show a Beamable Currency.",
       "path": "SAMPLES_PATH/LightBeamSamples/CurrencyHud"
+    },
+    {
+      "displayName": "Inventory Management",
+      "description": "Contains a modest user interface demonstrating how to access and how inventory items and currencies.",
+      "path": "SAMPLES_PATH/LightBeamSamples/Inventory"
     }
   ]
 }

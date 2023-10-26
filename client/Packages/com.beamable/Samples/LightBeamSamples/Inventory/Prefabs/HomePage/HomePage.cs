@@ -10,7 +10,9 @@ public class HomePage : MonoBehaviour, ILightComponent
 {
 	[Header("Scene References")]
 	public Transform itemsContainer;
+	public GameObject itemsParent;
 	public Transform currenciesContainer;
+	public GameObject currenciesParent;
 	public Button showCurrencies;
 	public Button showItems;
 	public TextMeshProUGUI playerId;
@@ -23,6 +25,7 @@ public class HomePage : MonoBehaviour, ILightComponent
 		ClearAllData();
 
 		playerId.text = $"Player Id: {ctx.BeamContext.PlayerId}";
+		Debug.Log(playerId.text);
 
 		await ShowAllItems();
 		
@@ -37,9 +40,12 @@ public class HomePage : MonoBehaviour, ILightComponent
 		});
 	}
 
+	//TODO: change all of this to Promise
 	private async Task ShowAllItems()
 	{
 		ClearAllData();
+		itemsParent.SetActive(true);
+		
 		var items = _ctx.BeamContext.Inventory.GetItems();
 		await items.Refresh();
 
@@ -52,6 +58,8 @@ public class HomePage : MonoBehaviour, ILightComponent
 	private async Task ShowAllCurrencies()
 	{
 		ClearAllData();
+		currenciesParent.SetActive(true);
+		
 		var currencies = _ctx.BeamContext.Inventory.GetCurrencies();
 		await currencies.Refresh();
 		
@@ -64,6 +72,8 @@ public class HomePage : MonoBehaviour, ILightComponent
 	private void ClearAllData()
 	{
 		itemsContainer.Clear();
+		itemsParent.SetActive(false);
 		currenciesContainer.Clear();
+		currenciesParent.SetActive(false);
 	}
 }

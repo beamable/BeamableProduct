@@ -22,6 +22,9 @@ public class InventoryManager : MonoBehaviour
 			builder.AddLightComponent(config.homePage);
 			builder.AddLightComponent<ItemDisplayBehaviour, PlayerItem>(config.itemDisplay);
 			builder.AddLightComponent<CurrencyDisplayBehaviour, PlayerCurrency>(config.currencyDisplay);
+			builder.AddLightComponent<CurrencyInfoBehaviour, PlayerCurrency>(config.currencyInfo);
+			builder.AddLightComponent<PropertyDisplayBehaviour, PropertyDisplayData>(config.propertyDisplay);
+			builder.AddLightComponent<ItemInfoPage, PlayerItem>(config.itemPage);
 		});
 		
 		await lightBeam.Scope.Start<HomePage>();

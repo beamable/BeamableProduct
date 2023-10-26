@@ -12,6 +12,7 @@ public class CurrencyDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerCur
 	public TextMeshProUGUI typeText;
 	public TextMeshProUGUI idText;
 	public Image icon;
+	public Button infoButton;
 	
 	private PlayerCurrency _model;
 	private LightBeam _ctx;
@@ -23,15 +24,27 @@ public class CurrencyDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerCur
 
 		model.OnUpdated += Refresh;
 		Refresh();
+		
+		infoButton.HandleClicked(() =>
+		{
+			beam.GotoPage<CurrencyInfoBehaviour, PlayerCurrency>(model);
+		});
 	    
 		return Promise.Success;
 	}
 
-	private async void Refresh()
+	private void Refresh()
 	{
 		typeText.text = $"Name: {_model.Content.name}";
 		idText.text = $"Amount: {_model.Amount}";
 
-		icon.sprite = _model.Content.icon.Asset != null ? await _model.Content.icon.LoadSprite() : null;
+		icon.sprite = null;
+		if (_model.Content.icon.Asset != null)
+		{
+			_model.Content.icon.LoadSprite().Then((sprite) =>
+			{
+				icon.sprite = sprite;
+			});
+		}
 	}
 }

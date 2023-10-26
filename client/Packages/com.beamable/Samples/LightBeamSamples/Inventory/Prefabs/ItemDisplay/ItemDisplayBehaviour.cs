@@ -12,6 +12,7 @@ public class ItemDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerItem>
 	public TextMeshProUGUI typeText;
 	public TextMeshProUGUI idText;
 	public Image icon;
+	public Button infoButton;
 	
 	private PlayerItem _model;
 	private LightBeam _ctx;
@@ -24,14 +25,26 @@ public class ItemDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerItem>
 	    model.OnUpdated += Refresh;
 	    Refresh();
 	    
+	    infoButton.HandleClicked(() =>
+	    {
+		    beam.GotoPage<ItemInfoPage, PlayerItem>(model);
+	    });
+	    
 	    return Promise.Success;
     }
 
-    private async void Refresh()
+    private void Refresh()
     {
 	    typeText.text = $"Name: {_model.Content.name}";
 	    idText.text = $"Id: {_model.Content.Id}";
 
-	    icon.sprite = _model.Content.icon.Asset != null ? await _model.Content.icon.LoadSprite() : null;
+	    icon.sprite = null;
+	    if (_model.Content.icon.Asset != null)
+	    {
+		    _model.Content.icon.LoadSprite().Then((sprite) =>
+		    {
+			    icon.sprite = sprite;
+		    });
+	    }
     }
 }

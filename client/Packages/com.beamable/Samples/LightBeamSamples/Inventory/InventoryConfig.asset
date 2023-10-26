@@ -17,3 +17,9 @@ MonoBehaviour:
     type: 3}
   currencyDisplay: {fileID: 8581922213366114740, guid: b77895e168ab44fe3afb46107a02e625,
     type: 3}
+  currencyInfo: {fileID: 8960383678925863220, guid: cf1640e74ac614d43b09983a6a0e3ee4,
+    type: 3}
+  itemPage: {fileID: 1342061553593370603, guid: 039852a4ecf9041d4983d10672a54ee2,
+    type: 3}
+  propertyDisplay: {fileID: 7696821008437321390, guid: d14951143c1344fb5b50fd571ced7be4,
+    type: 3}
