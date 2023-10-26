@@ -64,7 +64,7 @@ namespace Beamable.Editor.Tests
 
 		public void OnUserChanged(Func<EditorAccountInfo, Promise> cb)
 		{
-			
+
 		}
 
 		public void Logout(bool clearRealmPid)

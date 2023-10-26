@@ -74,7 +74,7 @@ namespace Beamable.Editor.UI.Common
 				_provider = provider;
 			}
 		}
-		
+
 		bool TryGetProviderFromParent(out IDependencyProvider provider)
 		{
 			provider = null;
