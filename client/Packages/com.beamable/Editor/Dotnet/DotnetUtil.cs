@@ -1,7 +1,9 @@
 using Beamable.Common;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using Debug = UnityEngine.Debug;
 
@@ -18,7 +20,8 @@ namespace Beamable.Editor.Dotnet
 		public static readonly string DOTNET_GLOBAL_PATH = "C:\\Program Files\\dotnet";
 		public static readonly string DOTNET_EXEC = "dotnet.exe";
 #else
-		public static readonly string DOTNET_GLOBAL_PATH = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".dotnet");
+		public static readonly string DOTNET_GLOBAL_PATH =
+									                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".dotnet");
 		public static readonly string DOTNET_EXEC = "dotnet";
 #endif
 
@@ -27,8 +30,7 @@ namespace Beamable.Editor.Dotnet
 		/// </summary>
 		static string[] _dotnetLocationCandidates = new string[]
 		{
-			System.Environment.GetEnvironmentVariable(ENV_VAR_DOTNET_LOCATION),
-			DOTNET_LIBRARY_PATH,
+			System.Environment.GetEnvironmentVariable(ENV_VAR_DOTNET_LOCATION), DOTNET_LIBRARY_PATH,
 			DOTNET_GLOBAL_PATH
 		};
 
@@ -74,7 +76,6 @@ namespace Beamable.Editor.Dotnet
 
 		static void InstallDotnetToLibrary()
 		{
-
 			EditorUtility.DisplayProgressBar("Downloading Dotnet", "Getting install script", .1f);
 			DownloadInstallScript();
 
@@ -100,7 +101,8 @@ namespace Beamable.Editor.Dotnet
 
 				if (!CheckVersion(dotnetPath, out var majorVersion))
 				{
-					Debug.LogWarning($"Ignoring version of dotnet at {path} due to incorrect version number. Founded: {majorVersion}, required: {REQUIRED_MAJOR_VERSION}");
+					Debug.LogWarning(
+						$"Ignoring version of dotnet at {path} due to incorrect version number. Founded: {majorVersion}, required: {REQUIRED_MAJOR_VERSION}");
 					continue;
 				}
 
@@ -111,7 +113,6 @@ namespace Beamable.Editor.Dotnet
 			return false;
 		}
 
-
 		static bool CheckVersion(string dotnetPath, out int majorVersion)
 		{
 			majorVersion = -1;
@@ -119,16 +120,27 @@ namespace Beamable.Editor.Dotnet
 			proc.StartInfo = new ProcessStartInfo
 			{
 				FileName = Path.GetFullPath(dotnetPath),
-				Arguments = "--version",
+				Arguments = "--info",
 				UseShellExecute = false,
-				RedirectStandardOutput = true,
+				RedirectStandardOutput = true
 			};
+			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
 
 			proc.Start();
 			proc.WaitForExit();
-			var output = proc.StandardOutput.ReadToEnd();
+			var output = proc.StandardOutput.ReadToEnd().Replace("\r\n", "\n");
+			var dir = Path.GetDirectoryName(dotnetPath);
+			var start = output.IndexOf("NET SDKs installed:", StringComparison.Ordinal);
+			var length = output.IndexOf("NET runtimes installed:", StringComparison.Ordinal) - start;
+			var line = output.Substring(start, length).Split('\n').First(s => s.Contains(dir));
+			if (string.IsNullOrWhiteSpace(line))
+			{
+				return false;
+			}
 
-			if (!PackageVersion.TryFromSemanticVersionString(output, out var findedVersion))
+			var result = line.Split(' ').FirstOrDefault(s => !string.IsNullOrWhiteSpace(s));
+
+			if (!PackageVersion.TryFromSemanticVersionString(result, out var findedVersion))
 			{
 				return false;
 			}
