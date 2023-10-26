@@ -48,7 +48,7 @@ namespace Beamable.Editor.UI.Components
 			this.AddStyleSheet(UssPath);
 
 			Add(Root);
-			
+
 			Root?.Query<VisualElement>(className: "--image-scale-to-fit").ForEach(elem =>
 			{
 				elem?.SetBackgroundScaleModeToFit();

@@ -51,7 +51,7 @@ public class App
 
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
 		configureLogger ??= config =>
-			config.WriteTo.Console(outputTemplate:"{Timestamp:HH:mm:ss} [{Level:u4}] {Message:l}{NewLine}{Exception}")
+			config.WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss} [{Level:u4}] {Message:l}{NewLine}{Exception}")
 				.MinimumLevel.ControlledBy(LogLevel)
 				.CreateLogger();
 		// configureLogger ??= config => config.WriteTo.Spectre("{Timestamp:HH:mm:ss} [{Level:u4}] {Message:l}{NewLine}{Exception}")
@@ -214,8 +214,8 @@ public class App
 		Commands.AddCommand<ServicesPromoteCommand, ServicesPromoteCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesGetConnectionStringCommand, ServicesGetConnectionStringCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesSetManifestCommand, ServicesSetManifestCommandArgs, ServicesCommand>();
-		
-		
+
+
 		// content commands
 		Commands.AddRootCommand<ContentCommand, ContentCommandArgs>();
 		Commands.AddCommand<ContentPullCommand, ContentPullCommandArgs, ContentCommand>();
