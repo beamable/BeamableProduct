@@ -254,7 +254,6 @@ namespace Beamable.Editor.BeamCli
 			_hasExecuted = true;
 			try
 			{
-
 				using (_process = new System.Diagnostics.Process())
 				{
 #if UNITY_EDITOR && !UNITY_EDITOR_WIN

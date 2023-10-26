@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Editor.Modules.EditorConfig;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -21,7 +22,8 @@ namespace Beamable.Editor.Dotnet
 		public static readonly string DOTNET_EXEC = "dotnet.exe";
 #else
 		public static readonly string DOTNET_GLOBAL_PATH =
-									                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".dotnet");
+			Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".dotnet");
+		
 		public static readonly string DOTNET_EXEC = "dotnet";
 #endif
 
@@ -33,6 +35,7 @@ namespace Beamable.Editor.Dotnet
 			System.Environment.GetEnvironmentVariable(ENV_VAR_DOTNET_LOCATION), DOTNET_LIBRARY_PATH,
 			DOTNET_GLOBAL_PATH
 		};
+		
 
 		public static string DotnetHome { get; private set; }
 		public static string DotnetPath => Path.Combine(DotnetHome, "dotnet");
@@ -80,8 +83,17 @@ namespace Beamable.Editor.Dotnet
 			DownloadInstallScript();
 
 			EditorUtility.DisplayProgressBar("Downloading Dotnet", "installing dotnet in your Library folder", .2f);
-			RunInstallScript();
+			RunInstallScript("6.0");
 
+			if (EditorConfiguration.Instance != null && EditorConfiguration.Instance.AdvancedCli.HasValue)
+			{
+				if (EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.HasNonEmptyValue)
+				{
+					RunInstallScript("7.0");
+				}
+			}
+
+			
 			EditorUtility.ClearProgressBar();
 		}
 
@@ -120,12 +132,15 @@ namespace Beamable.Editor.Dotnet
 			proc.StartInfo = new ProcessStartInfo
 			{
 				FileName = Path.GetFullPath(dotnetPath),
+				WorkingDirectory = Path.GetFullPath(Path.GetDirectoryName(dotnetPath)),
 				Arguments = "--info",
 				UseShellExecute = false,
 				RedirectStandardOutput = true
 			};
+			
 			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
-
+			
+			
 			proc.Start();
 			proc.WaitForExit();
 			var output = proc.StandardOutput.ReadToEnd().Replace("\r\n", "\n");
@@ -138,6 +153,7 @@ namespace Beamable.Editor.Dotnet
 				return false;
 			}
 
+			
 			var result = line.Split(' ').FirstOrDefault(s => !string.IsNullOrWhiteSpace(s));
 
 			if (!PackageVersion.TryFromSemanticVersionString(result, out var findedVersion))
