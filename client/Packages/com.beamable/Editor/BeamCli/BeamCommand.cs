@@ -234,12 +234,17 @@ namespace Beamable.Editor.BeamCli
 		{
 			if (data == null) return;
 			if (!AutoLogErrors) return;
-			Debug.LogError(data);
+			Debug.LogError(_command + " " + data);
 		}
 
 		public void SetCommand(string command)
 		{
 			var beamLocation = BeamCliUtil.CLI_PATH;
+
+#if UNITY_EDITOR_WIN
+			beamLocation = $"\"{beamLocation}\"";
+#endif
+			
 			Command = beamLocation + command.Substring("beam".Length);
 		}
 

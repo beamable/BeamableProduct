@@ -86,18 +86,19 @@ namespace Beamable.Editor.BeamCli
 			var fullDirectory = Path.GetFullPath(CLI_VERSIONED_HOME);
 			proc.StartInfo = new ProcessStartInfo
 			{
-				FileName = DotnetUtil.DotnetPath,
-				WorkingDirectory = "Library",
-				Arguments = $"tool install beamable.tools --tool-path {fullDirectory}",
+				FileName = Path.GetFullPath(DotnetUtil.DotnetPath),
+				WorkingDirectory = Path.GetFullPath("Library"),
+				Arguments = $"tool install beamable.tools --tool-path \"{fullDirectory}\"",
 				UseShellExecute = false,
 				RedirectStandardOutput = true,
 				RedirectStandardError = true
 			};
+			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
 			proc.Start();
 			proc.WaitForExit();
 			var output = proc.StandardOutput.ReadToEnd();
 			var error = proc.StandardError.ReadToEnd();
-			if (!string.IsNullOrEmpty(error))
+			if (!string.IsNullOrWhiteSpace(error))
 			{
 				Debug.LogError("Unable to install BeamCLI: " + error + " / " + output);
 			}
