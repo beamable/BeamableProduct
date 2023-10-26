@@ -234,7 +234,7 @@ namespace Beamable.Editor.BeamCli
 		{
 			if (data == null) return;
 			if (!AutoLogErrors) return;
-			Debug.LogError(_command + " " + data);
+			Debug.LogError(data);
 		}
 
 		public void SetCommand(string command)
