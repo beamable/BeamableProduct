@@ -36,6 +36,9 @@ EndProject";
 			{
 				content = InjectProject(content, signpost.name, signpost.relativeProjectFile);
 			}
+
+			content = InjectProject(content, "tunacan",
+			              "/Users/chrishanna/Documents/Github/BeamableProduct/client/Library/BeamableEditor/GeneratedProjects/Tunacan/Tunacan.csproj");
 			return content;
 		}
 		
