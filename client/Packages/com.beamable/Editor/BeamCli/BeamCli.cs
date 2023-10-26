@@ -46,6 +46,7 @@ namespace Beamable.Editor.BeamCli
 		public async Promise Init()
 		{
 			await _ctx.OnReady;
+			if (_ctx.Requester == null || _ctx.Requester.Token == null) return;
 			var initCommand = Command.Init(new InitArgs
 			{
 				saveToFile = true,
