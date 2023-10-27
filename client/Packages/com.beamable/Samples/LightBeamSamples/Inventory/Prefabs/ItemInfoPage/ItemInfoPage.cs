@@ -26,8 +26,11 @@ public class ItemInfoPage : MonoBehaviour, ILightComponent<PlayerItem>
 	{
 		_beam = beam;
 		_model = model;
-		model.OnUpdated += Refresh;
-		Refresh();
+		model.OnUpdated += () =>
+		{
+			var _ = Refresh();
+		};
+		var _ = Refresh();
 		
 		backButton.HandleClicked(() =>
 		{
@@ -37,32 +40,31 @@ public class ItemInfoPage : MonoBehaviour, ILightComponent<PlayerItem>
 		return Promise.Success;
 	}
 	
-	private void Refresh()
+	private async Promise Refresh()
 	{
 		propertiesContainer.Clear();
 		
 		if (_model.Content.icon.Asset != null)
 		{
-			_model.Content.icon.LoadSprite().Then((sprite) =>
-			{
-				icon.sprite = sprite;
-			});
+			icon.sprite = await _model.Content.icon.LoadSprite();
 		}
 		
 		id.text = _model.ContentId;
 		type.text = _model.Content.name;
 		
-		
-		
-		
 		createdDate.text = $"Created: {GetDateTimeFromInt(_model.CreatedAt)}";
 		updatedDate.text = $"Updated: {GetDateTimeFromInt(_model.UpdatedAt)}";
 
+		var promises = new List<Promise<PropertyDisplayBehaviour>>();
 		foreach (KeyValuePair<string,string> property in _model.Properties)
 		{
 			var data = new PropertyDisplayData() {Key = property.Key, Value = property.Value};
-			_beam.Instantiate<PropertyDisplayBehaviour, PropertyDisplayData>(propertiesContainer, data);
+			var p = _beam.Instantiate<PropertyDisplayBehaviour, PropertyDisplayData>(propertiesContainer, data);
+			promises.Add(p);
 		}
+		
+		var sequence = Promise.Sequence(promises);
+		await sequence;
 	}
 	
 	private static string GetDateTimeFromInt(long dateAsLong)

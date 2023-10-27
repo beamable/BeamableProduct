@@ -29,8 +29,11 @@ public class CurrencyInfoBehaviour : MonoBehaviour, ILightComponent<PlayerCurren
 	{
 		_beam = beam;
 		_model = model;
-		model.OnUpdated += Refresh;
-		Refresh();
+		model.OnUpdated += () =>
+		{
+			var _ = Refresh();
+		};
+		var _ = Refresh();
 		
 		backButton.HandleClicked(() =>
 		{
@@ -40,25 +43,28 @@ public class CurrencyInfoBehaviour : MonoBehaviour, ILightComponent<PlayerCurren
 		return Promise.Success;
 	}
 
-	private void Refresh()
+	private async Promise Refresh()
 	{
 		propertiesContainer.Clear();
 		
 		if (_model.Content.icon.Asset != null)
 		{
-			_model.Content.icon.LoadSprite().Then((sprite) =>
-			{
-				currencyIcon.sprite = sprite;
-			});
+			currencyIcon.sprite = await _model.Content.icon.LoadSprite();
 		}
 
 		currencyId.text = _model.CurrencyId;
 		amount.text = $"Amount: {_model.Amount.ToString()}";
 
+		var promises = new List<Promise<PropertyDisplayBehaviour>>();
+		
 		foreach (KeyValuePair<string,string> property in _model.Properties)
 		{
 			var data = new PropertyDisplayData() {Key = property.Key, Value = property.Value};
-			_beam.Instantiate<PropertyDisplayBehaviour, PropertyDisplayData>(propertiesContainer, data);
+			var p = _beam.Instantiate<PropertyDisplayBehaviour, PropertyDisplayData>(propertiesContainer, data);
+			promises.Add(p);
 		}
+
+		var sequence = Promise.Sequence(promises);
+		await sequence;
 	}
 }
