@@ -47,7 +47,7 @@ public class CurrencyInfoBehaviour : MonoBehaviour, ILightComponent<PlayerCurren
 	{
 		propertiesContainer.Clear();
 		
-		if (_model.Content.icon.Asset != null)
+		if (_model.Content.icon != null && _model.Content.icon.Asset != null)
 		{
 			currencyIcon.sprite = await _model.Content.icon.LoadSprite();
 		}

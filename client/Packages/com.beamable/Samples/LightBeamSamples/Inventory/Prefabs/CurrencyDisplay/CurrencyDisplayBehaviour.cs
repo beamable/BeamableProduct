@@ -37,7 +37,7 @@ public class CurrencyDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerCur
 		idText.text = $"Amount: {_model.Amount}";
 
 		icon.sprite = null;
-		if (_model.Content.icon.Asset != null)
+		if (_model.Content.icon != null && _model.Content.icon.Asset != null)
 		{
 			_model.Content.icon.LoadSprite().Then((sprite) =>
 			{

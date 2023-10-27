@@ -40,20 +40,12 @@ public class ItemDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerItem>
 	    idText.text = $"Id: {_model.Content.Id}";
 
 	    icon.sprite = null;
-	    if (_model.Content.icon.Asset != null)
+	    if (_model.Content.icon != null && _model.Content.icon.Asset != null)
 	    {
-		    try
+		    _model.Content.icon.LoadSprite().Then((sprite) =>
 		    {
-			    _model.Content.icon.LoadSprite().Then((sprite) =>
-			    {
-				    icon.sprite = sprite;
-			    });
-		    }
-		    catch (Exception e)
-		    {
-			    Debug.Log("Inventory Sample: couldn't load item icon: " + e);
-		    }
-		    
+			    icon.sprite = sprite;
+		    });
 	    }
     }
 }

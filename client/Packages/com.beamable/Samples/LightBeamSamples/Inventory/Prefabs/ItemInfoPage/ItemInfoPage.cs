@@ -44,7 +44,7 @@ public class ItemInfoPage : MonoBehaviour, ILightComponent<PlayerItem>
 	{
 		propertiesContainer.Clear();
 		
-		if (_model.Content.icon.Asset != null)
+		if (_model.Content.icon != null && _model.Content.icon.Asset != null)
 		{
 			icon.sprite = await _model.Content.icon.LoadSprite();
 		}
