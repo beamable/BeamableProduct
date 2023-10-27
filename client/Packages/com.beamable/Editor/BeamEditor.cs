@@ -403,8 +403,8 @@ namespace Beamable
 		public Promise InitializePromise { get; private set; }
 		public Promise OnReady => InitializePromise;
 		public Promise<BeamEditorContext> Instance => InitializePromise?.Map(_ => this);
-		
-		
+
+
 		public ContentIO ContentIO => ServiceScope.GetService<ContentIO>();
 		public ContentDatabase ContentDatabase => ServiceScope.GetService<ContentDatabase>();
 		public IPlatformRequester Requester => ServiceScope.GetService<PlatformRequester>();

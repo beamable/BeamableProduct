@@ -12,13 +12,13 @@ namespace Beamable.Server.Editor.Usam
 	public class CodeService : ILoadWithContext
 	{
 		private readonly BeamCommands _cli;
-		
-		
+
+
 		public Promise OnReady { get; }
 
 		public List<ServiceInfo> Services = new List<ServiceInfo>();
-		
-		private static readonly List<string> IgnoreFolderSuffixes = new List<string> {"~", "obj", "bin"};
+
+		private static readonly List<string> IgnoreFolderSuffixes = new List<string> { "~", "obj", "bin" };
 		private List<BeamServiceSignpost> _services;
 
 		public CodeService(BeamCommands cli)
@@ -26,15 +26,15 @@ namespace Beamable.Server.Editor.Usam
 			_cli = cli;
 			OnReady = Init();
 		}
-		
-		
+
+
 		public async Promise Init()
 		{
 			Debug.Log("Running init");
 			_services = GetBeamServices();
 			// TODO: we need validation. What happens if the .beamservice files point to non-existent files
 			SetSolution(_services);
-			
+
 			await SetManifest(_cli, _services);
 			await RefreshServices();
 			Debug.Log("Done");
@@ -66,7 +66,7 @@ namespace Beamable.Server.Editor.Usam
 				UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
 				return; // once scripts reload, the current invocation of scripts end.
 			}
-			
+
 			var contents = File.ReadAllText(slnPath);
 
 			var generatedContent = SolutionPostProcessor.OnGeneratedSlnSolution(slnPath, contents);
@@ -103,14 +103,14 @@ namespace Beamable.Server.Editor.Usam
 			for (var i = 0; i < files.Count; i++)
 			{
 				args.localHttpNames[i] = files[i].name;
-				args.localHttpContexts[i] = files[i].assetRelativePath; 
+				args.localHttpContexts[i] = files[i].assetRelativePath;
 				args.localHttpDockerFiles[i] = files[i].relativeDockerFile;
 			}
 
 			var command = cli.ServicesSetLocalManifest(args);
 			await command.Run();
-		} 
-		
+		}
+
 
 		public static List<BeamServiceSignpost> GetBeamServices()
 		{
@@ -118,7 +118,7 @@ namespace Beamable.Server.Editor.Usam
 			var data = GetSignpostData<BeamServiceSignpost>(files);
 			return data;
 		}
-		
+
 		public static List<T> GetSignpostData<T>(IEnumerable<string> files)
 		{
 			var output = new List<T>();
@@ -134,12 +134,12 @@ namespace Beamable.Server.Editor.Usam
 		private static IEnumerable<string> GetSignpostFiles(string extension)
 		{
 			var files = new HashSet<string>();
-			
+
 			ScanDirectoryRecursive("Assets", extension, IgnoreFolderSuffixes, files);
 			ScanDirectoryRecursive("Packages", extension, IgnoreFolderSuffixes, files);
 			return files;
 		}
-		
+
 		private static void ScanDirectoryRecursive(string directoryPath, string targetExtension, List<string> excludeFolders, HashSet<string> foundFiles)
 		{
 			// TODO: ChatGPT wrote this, but actually, it should use a queue<string> to do a non-stack-recursive BFS over the file system
@@ -183,14 +183,14 @@ namespace Beamable.Server.Editor.Usam
 					{
 						directories.Enqueue(subDir);
 					}
-				} 
+				}
 				catch (UnauthorizedAccessException ex)
 				{
 					Debug.LogError($"Beam Error accessing {directoryPath}: {ex.Message}");
 				}
 			}
 		}
-		
-		
+
+
 	}
 }

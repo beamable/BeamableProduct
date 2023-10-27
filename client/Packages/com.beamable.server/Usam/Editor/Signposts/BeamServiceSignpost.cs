@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Beamable.Server.Editor.Usam
 {
 	[Serializable]
-	public class BeamServiceSignpost 
+	public class BeamServiceSignpost
 	{
 		public string name;
 		public string assetRelativePath;
