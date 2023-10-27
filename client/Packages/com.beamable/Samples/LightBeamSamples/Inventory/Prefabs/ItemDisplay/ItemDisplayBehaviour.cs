@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Player;
 using Beamable.Runtime.LightBeams;
 using Beamable.UI.Scripts;
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -41,10 +42,18 @@ public class ItemDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerItem>
 	    icon.sprite = null;
 	    if (_model.Content.icon.Asset != null)
 	    {
-		    _model.Content.icon.LoadSprite().Then((sprite) =>
+		    try
 		    {
-			    icon.sprite = sprite;
-		    });
+			    _model.Content.icon.LoadSprite().Then((sprite) =>
+			    {
+				    icon.sprite = sprite;
+			    });
+		    }
+		    catch (Exception e)
+		    {
+			    Debug.Log("Inventory Sample: couldn't load item icon: " + e);
+		    }
+		    
 	    }
     }
 }
