@@ -25,7 +25,6 @@ public class HomePage : MonoBehaviour, ILightComponent
 		ClearAllData();
 
 		playerId.text = $"Player Id: {ctx.BeamContext.PlayerId}";
-		Debug.Log(playerId.text);
 
 		await ShowAllItems();
 		
@@ -40,8 +39,7 @@ public class HomePage : MonoBehaviour, ILightComponent
 		});
 	}
 
-	//TODO: change all of this to Promise
-	private async Task ShowAllItems()
+	private async Promise ShowAllItems()
 	{
 		ClearAllData();
 		itemsParent.SetActive(true);
@@ -55,7 +53,7 @@ public class HomePage : MonoBehaviour, ILightComponent
 		}
 	}
 
-	private async Task ShowAllCurrencies()
+	private async Promise ShowAllCurrencies()
 	{
 		ClearAllData();
 		currenciesParent.SetActive(true);

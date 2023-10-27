@@ -56,8 +56,8 @@ public class ItemInfoPage : MonoBehaviour, ILightComponent<PlayerItem>
 		
 		
 		
-		createdDate.text = $"Created: {GetDateTimeFromInt(_model.CreatedAt)?.ToShortDateString()}";
-		updatedDate.text = $"Updated: {GetDateTimeFromInt(_model.UpdatedAt)?.ToShortDateString()}";
+		createdDate.text = $"Created: {GetDateTimeFromInt(_model.CreatedAt)}";
+		updatedDate.text = $"Updated: {GetDateTimeFromInt(_model.UpdatedAt)}";
 
 		foreach (KeyValuePair<string,string> property in _model.Properties)
 		{
@@ -66,29 +66,8 @@ public class ItemInfoPage : MonoBehaviour, ILightComponent<PlayerItem>
 		}
 	}
 	
-	private static DateTime? GetDateTimeFromInt(long? dateAsLong, bool hasTime = true)
+	private static string GetDateTimeFromInt(long dateAsLong)
 	{
-		if (dateAsLong.HasValue && dateAsLong > 0)
-		{
-			if (hasTime)
-			{
-				// sometimes input is 14 digit and sometimes 16
-				var numberOfDigits = (int)Math.Floor(Math.Log10(dateAsLong.Value) + 1);
-
-				if (numberOfDigits > 14)
-				{
-					dateAsLong /= (int)Math.Pow(10, (numberOfDigits - 14));
-				}
-			}
-
-			if (DateTime.TryParseExact(dateAsLong.ToString(), hasTime ? "yyyyMMddHHmmss" : "yyyyMMdd",
-			                           CultureInfo.InvariantCulture,
-			                           DateTimeStyles.None, out DateTime dt))
-			{
-				return dt;
-			}
-		}
-
-		return null;
+		return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(dateAsLong).ToShortDateString();
 	}
 }
