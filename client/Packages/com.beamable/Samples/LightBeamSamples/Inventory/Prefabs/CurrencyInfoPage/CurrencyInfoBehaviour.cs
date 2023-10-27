@@ -2,7 +2,6 @@ using Beamable.Common;
 using Beamable.Player;
 using Beamable.Runtime.LightBeams;
 using Beamable.UI.Scripts;
-using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -55,8 +54,6 @@ public class CurrencyInfoBehaviour : MonoBehaviour, ILightComponent<PlayerCurren
 
 		currencyId.text = _model.CurrencyId;
 		amount.text = $"Amount: {_model.Amount.ToString()}";
-		// dateCreated.text = $"Created: {_model.Content.Created}";
-		// dateUpdated.text = $"Updated: {DateTime.Now.ToShortDateString()}";
 
 		foreach (KeyValuePair<string,string> property in _model.Properties)
 		{

@@ -15,11 +15,9 @@ public class CurrencyDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerCur
 	public Button infoButton;
 	
 	private PlayerCurrency _model;
-	private LightBeam _ctx;
 
 	public Promise OnInstantiated(LightBeam beam, PlayerCurrency model)
 	{
-		_ctx = beam;
 		_model = model;
 
 		model.OnUpdated += Refresh;

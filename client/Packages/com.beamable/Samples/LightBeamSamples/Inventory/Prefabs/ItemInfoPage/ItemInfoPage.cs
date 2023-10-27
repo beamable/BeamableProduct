@@ -4,7 +4,6 @@ using Beamable.Runtime.LightBeams;
 using Beamable.UI.Scripts;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;

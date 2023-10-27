@@ -1,7 +1,6 @@
 using Beamable.Common;
 using Beamable.Player;
 using Beamable.Runtime.LightBeams;
-using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
