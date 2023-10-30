@@ -163,13 +163,13 @@ namespace Beamable.Server.Editor.Usam
 		
 		static string GenerateCompileSourceEntry(string source, string csProjDir)
 		{
-			source = Path.GetRelativePath(csProjDir, source);
+			source = PackageUtil.GetRelativePath(csProjDir, source);
 			return SOURCE_TEMPLATE.Replace(KEY_INCLUDE, source);
 		}
 
 		static string GenerateDllReferenceEntry(string dllPath, string csProjDir)
 		{
-			dllPath = Path.GetRelativePath(csProjDir, dllPath);
+			dllPath = PackageUtil.GetRelativePath(csProjDir, dllPath);
 			var name = Path.GetFileNameWithoutExtension(dllPath);
 			return DLL_TEMPLATE.Replace(KEY_INCLUDE, name)
 			                   .Replace(KEY_HINT, dllPath);
