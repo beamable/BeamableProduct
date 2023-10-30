@@ -44,6 +44,8 @@ namespace Beamable
 				throw new ArgumentNullException("toPath");
 			}
 
+			fromPath = Path.GetFullPath(fromPath);
+			toPath = Path.GetFullPath(toPath);
 			Uri fromUri = new Uri(AppendDirectorySeparatorChar(fromPath));
 			Uri toUri = new Uri(AppendDirectorySeparatorChar(toPath));
 
