@@ -22,7 +22,7 @@ jobs:
           dotnet-version: 6.0.x
       - name: Install Dotnet Counters
         run: |
-          dotnet tool install --global dotnet-counters
+          dotnet tool install --global dotnet-counters --version 7.0.447801
       - name: Build and Install BEAM CLI 
         working-directory: ./cli/cli
         run: |
