@@ -23,7 +23,7 @@ namespace Beamable.Editor.Dotnet
 #else
 		public static readonly string DOTNET_GLOBAL_PATH =
 			Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".dotnet");
-		
+
 		public static readonly string DOTNET_EXEC = "dotnet";
 #endif
 
@@ -35,7 +35,7 @@ namespace Beamable.Editor.Dotnet
 			System.Environment.GetEnvironmentVariable(ENV_VAR_DOTNET_LOCATION), DOTNET_LIBRARY_PATH,
 			DOTNET_GLOBAL_PATH
 		};
-		
+
 
 		public static string DotnetHome { get; private set; }
 		public static string DotnetPath => Path.Combine(DotnetHome, "dotnet");
@@ -93,7 +93,7 @@ namespace Beamable.Editor.Dotnet
 				}
 			}
 
-			
+
 			EditorUtility.ClearProgressBar();
 		}
 
@@ -142,10 +142,10 @@ namespace Beamable.Editor.Dotnet
 				UseShellExecute = false,
 				RedirectStandardOutput = true
 			};
-			
+
 			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
-			
-			
+
+
 			proc.Start();
 			proc.WaitForExit();
 			var output = proc.StandardOutput.ReadToEnd().Replace("\r\n", "\n");
@@ -158,7 +158,7 @@ namespace Beamable.Editor.Dotnet
 				return false;
 			}
 
-			
+
 			var result = line.Split(' ').FirstOrDefault(s => !string.IsNullOrWhiteSpace(s));
 
 			if (!PackageVersion.TryFromSemanticVersionString(result, out var findedVersion))
