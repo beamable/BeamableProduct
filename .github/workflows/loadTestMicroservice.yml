@@ -43,7 +43,7 @@ jobs:
 
           echo "starting counters"
           mkdir ../../../../reports
-          dotnet-counters collect --diagnostic-port ~/myport.sock --refresh-interval 3 --counters System.Runtime[:cpu-usage],System.Runtime[:working-set] --format json --output ../../../../reports/counter.json &
+          dotnet-counters collect --diagnostic-port ~/myport.sock --refresh-interval 3 --counters System.Runtime[cpu-usage] --format json --output ../../../../reports/counter.json &
           
           echo "starting service"
           mkdir ../../../../logs
