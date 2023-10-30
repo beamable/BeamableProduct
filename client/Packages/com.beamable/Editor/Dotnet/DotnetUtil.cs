@@ -127,7 +127,12 @@ namespace Beamable.Editor.Dotnet
 
 		static bool CheckVersion(string dotnetPath, out int majorVersion)
 		{
-			majorVersion = -1;
+			var key = $"DOTNET_VERSION_{dotnetPath}";
+			majorVersion = SessionState.GetInt(key, -1);
+			if (majorVersion > 0)
+			{
+				return majorVersion == REQUIRED_MAJOR_VERSION;
+			}
 			var proc = new Process();
 			proc.StartInfo = new ProcessStartInfo
 			{
@@ -162,6 +167,7 @@ namespace Beamable.Editor.Dotnet
 			}
 
 			majorVersion = findedVersion.Major;
+			SessionState.SetInt(key, majorVersion);
 
 			return majorVersion == REQUIRED_MAJOR_VERSION;
 		}

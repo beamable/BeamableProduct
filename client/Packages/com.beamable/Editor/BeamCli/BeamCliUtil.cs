@@ -77,7 +77,8 @@ namespace Beamable.Editor.BeamCli
 				{
 					return CLI_VERSIONED_HOME;
 				}
-				return Path.Combine(CLI_VERSIONED_HOME, "beam");
+
+				return Path.Combine(CLI_VERSIONED_HOME, EXEC);
 			}
 		}
 
