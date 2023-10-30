@@ -43,7 +43,7 @@ jobs:
 
           echo "starting counters"
           mkdir ../../../../reports
-          dotnet-counters collect --diagnostic-port ~/myport.sock --refresh-interval 15 --format json --output ../../../../reports/counter.json &
+          dotnet-counters collect --diagnostic-port ~/myport.sock --refresh-interval 3 --format json --output ../../../../reports/counter.json &
           
           echo "starting service"
           mkdir ../../../../logs
