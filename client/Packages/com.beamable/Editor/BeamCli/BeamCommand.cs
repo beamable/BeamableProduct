@@ -244,7 +244,7 @@ namespace Beamable.Editor.BeamCli
 #if UNITY_EDITOR_WIN
 			beamLocation = $"\"{Path.GetFullPath(beamLocation)}\"";
 #endif
-			
+
 			Command = beamLocation + command.Substring("beam".Length);
 		}
 

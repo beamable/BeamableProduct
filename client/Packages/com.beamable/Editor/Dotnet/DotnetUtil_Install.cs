@@ -54,7 +54,7 @@ namespace Beamable.Editor.Dotnet
 
 			Directory.CreateDirectory(DOTNET_LIBRARY_INSTALL_SCRIPT_HOME);
 			var scriptPath = DotnetInstallScriptPath;
-			
+
 			File.WriteAllText(scriptPath, script);
 			if (!Chmod(scriptPath, "+x"))
 			{
@@ -93,10 +93,10 @@ namespace Beamable.Editor.Dotnet
 		static bool RunInstallScript(string version)
 		{
 			Directory.CreateDirectory(DOTNET_LIBRARY_PATH);
-			
+
 			using (var process = new System.Diagnostics.Process())
 			{
-				
+
 #if UNITY_EDITOR && !UNITY_EDITOR_WIN
 				var command = $"{DotnetInstallScriptPath} --install-dir {DOTNET_LIBRARY_PATH} --no-path --channel {version}";
 				process.StartInfo.FileName = "sh";
