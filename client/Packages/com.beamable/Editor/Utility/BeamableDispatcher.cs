@@ -16,7 +16,7 @@ namespace Beamable.Editor
 	public class BeamableDispatcher : IBeamableDisposable, ICoroutineService
 	{
 		public const string DEFAULT_QUEUE_NAME = "beamable";
-		private Dictionary<string, Queue<Action>> _workQueues;
+		private Dictionary<string, Queue<Func<Promise>>> _workQueues;
 		private Dictionary<string, EditorCoroutine> _runningSchedulers;
 		private bool _forceStop;
 
@@ -24,12 +24,12 @@ namespace Beamable.Editor
 
 		public BeamableDispatcher()
 		{
-			_workQueues = new Dictionary<string, Queue<Action>>();
+			_workQueues = new Dictionary<string, Queue<Func<Promise>>>();
 			_runningSchedulers = new Dictionary<string, EditorCoroutine>();
 			Start(DEFAULT_QUEUE_NAME);
 		}
 
-		IEnumerator Scheduler(string queueName, Queue<Action> workQueue)
+		IEnumerator Scheduler(string queueName, Queue<Func<Promise>> workQueue)
 		{
 			while (_workQueues.ContainsKey(queueName) && !_forceStop)
 			{
@@ -39,31 +39,50 @@ namespace Beamable.Editor
 
 				if (_forceStop) break;
 
-				Queue<Action> pendingWork;
+				Queue<Func<Promise>> pendingWork;
 				lock (workQueue)
 				{
-					pendingWork = new Queue<Action>(workQueue);
+					pendingWork = new Queue<Func<Promise>>(workQueue);
 					workQueue.Clear();
 				}
 
 				// Debug.Log("Scheduler has " + pendingWork.Count + " things to do");
 				foreach (var workItem in pendingWork)
 				{
+					Promise promise = null;
 					try
 					{
 						// Debug.Log("Doing work");
-						workItem?.Invoke();
+						promise = workItem?.Invoke();
+						promise.Error(ex =>
+						{
+							Debug.LogError(ex);
+						});
 					}
 					catch (Exception ex)
 					{
 						Debug.LogError($"Failed scheduled work. queue=[{queueName}]");
 						Debug.LogException(ex);
 					}
+					
+					yield return new PromiseYieldInstruction(promise);
 				}
 			}
 			// Debug.Log("Scheduler exited");
 
 			_runningSchedulers.Remove(queueName);
+		}
+		
+		public class PromiseYieldInstruction : CustomYieldInstruction
+		{
+			private readonly Promise _promise;
+
+			public PromiseYieldInstruction(Promise promise)
+			{
+				_promise = promise;
+			}
+
+			public override bool keepWaiting => !(_promise.IsCompleted || _promise.IsFailed);
 		}
 
 		/// <summary>
@@ -80,7 +99,7 @@ namespace Beamable.Editor
 				return false;
 			}
 
-			var queue = new Queue<Action>();
+			var queue = new Queue<Func<Promise>>();
 			_workQueues.Add(queueName, queue);
 			var coroutine = EditorCoroutineUtility.StartCoroutine(Scheduler(queueName, queue), this);
 			_runningSchedulers[queueName] = coroutine;
@@ -110,6 +129,7 @@ namespace Beamable.Editor
 		/// </summary>
 		/// <param name="work">The piece of work to execute later.</param>
 		public void Schedule(Action work) => Schedule(DEFAULT_QUEUE_NAME, work);
+		public void Schedule(Func<Promise> work) => Schedule(DEFAULT_QUEUE_NAME, work);
 
 		/// <summary>
 		/// Schedule a piece of work to happen on the main Unity thread.
@@ -119,6 +139,15 @@ namespace Beamable.Editor
 		/// <param name="work">The piece of work to execute later.</param>
 		/// <exception cref="Exception">If the <see cref="Start"/> method has not been called with the given queueName, an exception will be thrown.</exception>
 		public void Schedule(string queueName, Action work)
+		{
+			Schedule(queueName, () =>
+			{
+				work();
+				return Promise.Success;
+			});
+		}
+
+		public void Schedule(string queueName, Func<Promise> work)
 		{
 			if (_forceStop)
 			{
@@ -154,9 +183,9 @@ namespace Beamable.Editor
 
 		private class WaitForWork : CustomYieldInstruction
 		{
-			private readonly Queue<Action> _workQueue;
+			private readonly Queue<Func<Promise>> _workQueue;
 
-			public WaitForWork(Queue<Action> workQueue)
+			public WaitForWork(Queue<Func<Promise>> workQueue)
 			{
 				_workQueue = workQueue;
 			}

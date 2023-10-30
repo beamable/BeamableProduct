@@ -32,10 +32,14 @@ namespace Beamable.Server.Editor.Usam
 		{
 			Debug.Log("Running init");
 			_services = GetBeamServices();
+			Debug.Log("have services");
 			// TODO: we need validation. What happens if the .beamservice files point to non-existent files
 			SetSolution(_services);
+			Debug.Log("setsolution");
 
 			await SetManifest(_cli, _services);
+			Debug.Log("setmanifest");
+
 			await RefreshServices();
 			Debug.Log("Done");
 		}
@@ -106,10 +110,13 @@ namespace Beamable.Server.Editor.Usam
 				args.localHttpContexts[i] = files[i].assetRelativePath;
 				args.localHttpDockerFiles[i] = files[i].relativeDockerFile;
 			}
-
+			
 			
 			var command = cli.ServicesSetLocalManifest(args);
-			await command.Run();
+			await command.Run().Error(ex =>
+			{
+				Debug.LogError(ex);
+			});
 		}
 
 
