@@ -38,7 +38,7 @@ namespace Beamable.Editor.Dotnet
 
 
 		public static string DotnetHome { get; private set; }
-		public static string DotnetPath => Path.Combine(DotnetHome, "dotnet");
+		public static string DotnetPath => Path.Combine(DotnetHome, DOTNET_EXEC);
 
 		/// <summary>
 		/// Beamable 2.0+ requires Dotnet.
