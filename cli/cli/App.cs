@@ -51,9 +51,10 @@ public class App
 
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
 		// configureLogger ??= config => config.WriteTo.Console()
-		configureLogger ??= config => config.WriteTo.Spectre("{Timestamp:HH:mm:ss} [{Level:u4}] {Message:lj}{NewLine}{Exception}")
-			.MinimumLevel.ControlledBy(LogLevel)
-			.CreateLogger();
+		configureLogger ??= config =>
+			config.WriteTo.Console(outputTemplate:"{Timestamp:HH:mm:ss} [{Level:u4}] {Message:l}{NewLine}{Exception}")
+				.MinimumLevel.ControlledBy(LogLevel)
+				.CreateLogger();
 		Log.Logger = configureLogger(new LoggerConfiguration());
 
 		BeamableLogProvider.Provider = new CliSerilogProvider();
