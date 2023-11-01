@@ -52,8 +52,6 @@ EndProject";
 				var referenceName = reference.name;
 				content = InjectProject(content, referenceName, CsharpProjectUtil.GenerateCsharpProjectFilename(reference));
 			}
-			// content = InjectProject(content, "tunacan",
-			//               "/Users/chrishanna/Documents/Github/BeamableProduct/client/Library/BeamableEditor/GeneratedProjects/Tunacan/Tunacan.csproj");
 			return content;
 		}
 

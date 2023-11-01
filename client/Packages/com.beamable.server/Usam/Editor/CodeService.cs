@@ -110,7 +110,7 @@ namespace Beamable.Server.Editor.Usam
 				args.localHttpContexts[i] = files[i].assetRelativePath;
 				args.localHttpDockerFiles[i] = files[i].relativeDockerFile;
 			}
-			
+
 			
 			var command = cli.ServicesSetLocalManifest(args);
 			await command.Run().Error(ex =>
