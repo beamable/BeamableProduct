@@ -19,8 +19,7 @@ public class DataReporterService
 	{
 		if (!_appContext.UseFatalAsReportingChannel) return;
 
-		var encoded = Reporting.EncodeMessage(rawMessage);
-		Log.Fatal(encoded);
+		Log.Fatal("{open}{message}{close}", Reporting.PATTERN_START, rawMessage, Reporting.PATTERN_END);
 	}
 
 	public void Report<T>(string type, T data)
