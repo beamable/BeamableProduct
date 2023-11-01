@@ -1,5 +1,6 @@
 using Beamable;
 using Beamable.Common;
+using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.UI;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.Usam;
@@ -34,12 +35,34 @@ namespace Beamable.Editor.Microservice.UI2
 
 		public override bool ShowLoading => true;
 
+		private VisualElement _windowRoot;
+		private ActionBarVisualElement _actionBarVisualElement;
+		private MicroserviceBreadcrumbsVisualElement _microserviceBreadcrumbsVisualElement;
+		
+		
 		protected override void Build()
 		{
 			// ActiveContext.ServiceScope.
 			var root = this.GetRootVisualContainer();
 			root.Clear();
-			root.Add(new Label("Ready"));
+			
+			var uiAsset =
+				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{Constants.Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uxml");
+			_windowRoot = uiAsset.CloneTree();
+			_windowRoot.AddStyleSheet($"{Constants.Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uss");
+			_windowRoot.name = nameof(_windowRoot);
+			_windowRoot.TryAddScrollViewAsMainElement();
+			_windowRoot.userData = ActiveContext.ServiceScope;
+
+			root.Add(_windowRoot);
+
+			_actionBarVisualElement = root.Q<ActionBarVisualElement>("actionBarVisualElement");
+			_actionBarVisualElement.Refresh();
+			// _actionBarVisualElement.UpdateButtonsState(Model.AllLocalServices.Count(x => !x.IsArchived));
+
+			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
+			_microserviceBreadcrumbsVisualElement.Refresh();
+
 		}
 
 		public override async Promise OnLoad()

@@ -203,43 +203,44 @@ namespace Beamable.Editor.UI
 				var root = this.GetRootVisualContainer();
 				root.Clear();
 				
-				Build();
+				await BuildAsync();
 			}
 			
 			dispatcher.Schedule(async () =>
 			{
-				if (InitializedConfig.RequireLoggedUser)
+				try
 				{
-					if (ActiveContext.IsAuthenticated)
+					if (InitializedConfig.RequireLoggedUser)
 					{
-						await Setup();
+						if (ActiveContext.IsAuthenticated)
+						{
+							await Setup();
+						}
+						else
+						{
+							BuildWhenNotAuthenticated();
+						}
 					}
 					else
 					{
-						BuildWhenNotAuthenticated();
+						await Setup();
 					}
 				}
-				else
+				catch (Exception ex)
 				{
-					await Setup();
+					Debug.LogError(ex);
+					Debug.LogError("Cannot load window");
 				}
-				// await ();
 			});
-			
-			// if (InitializedConfig.RequireLoggedUser)
-			// {
-			// 	if (ActiveContext.IsAuthenticated)
-			// 		Build();
-			// 	else
-			// 		BuildWhenNotAuthenticated();
-			//
-			// 	return;
-			// }
-
-			// Build();
 		}
 
 		protected abstract void Build();
+
+		protected virtual Promise BuildAsync()
+		{
+			Build();
+			return Promise.Success;
+		}
 
 		protected virtual void BuildWhenNotAuthenticated()
 		{
