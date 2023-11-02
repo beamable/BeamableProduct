@@ -6,22 +6,22 @@ namespace Beamable.Server.Editor.Usam
 {
 	public class AssemblyUtil
 	{
-		
-		
+
+
 		private static Assembly[] _assemblies;
 		private static Dictionary<string, Assembly> _nameToAssembly;
 		private static Dictionary<Assembly, Assembly[]> _assemblyGraph;
 
 		private static HashSet<Assembly> _referencedAssemblies = new HashSet<Assembly>();
 
-		private static string[] _invalidAssemblyPrefixes = new string[] {"UnityEngine.", "UnityEditor."};
+		private static string[] _invalidAssemblyPrefixes = new string[] { "UnityEngine.", "UnityEditor." };
 
 		public static HashSet<Assembly> ReferencedAssemblies => _referencedAssemblies;
-		
+
 		public static void Reload()
 		{
 			_assemblies = CompilationPipeline.GetAssemblies();
-			
+
 			// CompilationPipeline.
 			// Create a dictionary to store the assembly dependencies
 			_assemblyGraph = new Dictionary<Assembly, Assembly[]>();
@@ -34,7 +34,7 @@ namespace Beamable.Server.Editor.Usam
 				_nameToAssembly[assemblyName] = assembly;
 				_assemblyGraph[assembly] = assembly.assemblyReferences;
 			}
-			
+
 			var beamServices = CodeService.GetBeamServices();
 			foreach (var service in beamServices)
 			{
@@ -49,7 +49,7 @@ namespace Beamable.Server.Editor.Usam
 				}
 			}
 		}
-		
+
 		static bool IsValidAssemblyReference(Assembly assembly)
 		{
 			foreach (var prefix in _invalidAssemblyPrefixes)
@@ -59,7 +59,7 @@ namespace Beamable.Server.Editor.Usam
 
 			return true;
 		}
-		
+
 		static IEnumerable<Assembly> GetDeeplyReferencedAssemblies(Assembly assembly)
 		{
 			var references = _assemblyGraph[assembly];

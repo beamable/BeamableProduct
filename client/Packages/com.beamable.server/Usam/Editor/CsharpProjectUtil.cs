@@ -11,7 +11,7 @@ namespace Beamable.Server.Editor.Usam
 {
 	public static class CsharpProjectUtil
 	{
-		
+
 		private const string KEY_COMPILED_FILES = "[COMPILED_FILES]";
 		private const string KEY_OTHER_PROJECTS = "[PROJECT_REFS]";
 		private const string KEY_DLL_REFERENCES = "[DLL_REFS]";
@@ -89,39 +89,39 @@ namespace Beamable.Server.Editor.Usam
 		{
 			return Path.Combine(GenerateCsharpProjectPath(assembly), assembly.name + ".csproj");
 		}
-		
+
 		public static string GenerateCsharpProject(Assembly assembly, string csProjDir)
 		{
 			var sourceFiles = string.Join(Environment.NewLine + "\t\t",
-			            assembly.sourceFiles.Select(x => GenerateCompileSourceEntry(x, csProjDir)));
+						assembly.sourceFiles.Select(x => GenerateCompileSourceEntry(x, csProjDir)));
 
 			var assemblyReferences = GetValidAssemblyReferences(assembly);
-			var projectReferences = string.Join(Environment.NewLine+ "\t\t",
-			                                    assemblyReferences.Select(
-				                                    x => GenerateProjectReferenceEntry(x, csProjDir)));
+			var projectReferences = string.Join(Environment.NewLine + "\t\t",
+												assemblyReferences.Select(
+													x => GenerateProjectReferenceEntry(x, csProjDir)));
 
 			var sdkVersion = BeamableEnvironment.SdkVersion;
-			
-			
+
+
 
 			var dlls = GetValidDllReferences(assembly);
-			var dllReferences = string.Join(Environment.NewLine+ "\t\t",
-			                                dlls.Select(x => GenerateDllReferenceEntry(x, csProjDir)));
-			
+			var dllReferences = string.Join(Environment.NewLine + "\t\t",
+											dlls.Select(x => GenerateDllReferenceEntry(x, csProjDir)));
+
 			var file = TEMPLATE
 					.Replace(KEY_COMPILED_FILES, sourceFiles)
 					.Replace(KEY_OTHER_PROJECTS, projectReferences)
 					.Replace(KEY_DLL_REFERENCES, dllReferences)
 					.Replace(KEY_BEAMABLE_VERSION, sdkVersion.ToString())
 				;
-			
+
 			return file;
 		}
-		
+
 		static IEnumerable<string> GetValidDllReferences(Assembly assembly)
 		{
 			var projectRoot = UnityEngine.Application.dataPath.Substring(0, UnityEngine.Application.dataPath.Length - "/Assets".Length);
-			
+
 			foreach (var dll in assembly.compiledAssemblyReferences)
 			{
 				if (!dll.StartsWith(projectRoot)) continue;
@@ -133,7 +133,7 @@ namespace Beamable.Server.Editor.Usam
 
 		static IEnumerable<Assembly> GetValidAssemblyReferences(Assembly assembly)
 		{
-			var invalidPrefixes = new string[] {"Unity.", "UnityEditor.", "UnityEngine."};
+			var invalidPrefixes = new string[] { "Unity.", "UnityEditor.", "UnityEngine." };
 			foreach (var reference in assembly.assemblyReferences)
 			{
 				var name = reference.name;
@@ -160,7 +160,7 @@ namespace Beamable.Server.Editor.Usam
 			var path = Path.Combine("..", reference.name, reference.name + ".csproj");
 			return PROJECT_TEMPLATE.Replace(KEY_INCLUDE, path);
 		}
-		
+
 		static string GenerateCompileSourceEntry(string source, string csProjDir)
 		{
 			source = PackageUtil.GetRelativePath(csProjDir, source);
@@ -172,7 +172,7 @@ namespace Beamable.Server.Editor.Usam
 			dllPath = PackageUtil.GetRelativePath(csProjDir, dllPath);
 			var name = Path.GetFileNameWithoutExtension(dllPath);
 			return DLL_TEMPLATE.Replace(KEY_INCLUDE, name)
-			                   .Replace(KEY_HINT, dllPath);
+							   .Replace(KEY_HINT, dllPath);
 		}
 	}
 }

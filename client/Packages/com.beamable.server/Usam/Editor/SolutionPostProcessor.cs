@@ -29,15 +29,15 @@ EndProject";
 		{{{KEY_INSTANCE_GUID}}}.Debug|Any CPU.Build.0 = Debug|Any CPU
 ";
 
-		
-		
+
+
 		private static bool OnPreGeneratingCSProjectFiles()
 		{
 			AssemblyUtil.Reload();
 			CsharpProjectUtil.GenerateAllReferencedAssemblies();
 			return false; // if we don't return false, then this methods PREVENTS Unity from generating csproj files what-so-ever.
 		}
-		
+
 		public static string OnGeneratedSlnSolution(string path, string content)
 		{
 			var files = CodeService.GetBeamServices();
