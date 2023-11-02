@@ -25,5 +25,10 @@ namespace Beamable.Server
         {
             throw new NotImplementedException("This isn't available in a C#MS context, sorry.");
         }
+
+        public IDependencyProviderScope Fork(IDependencyBuilder configuration)
+        {
+	        throw new NotImplementedException("This isn't available in a C#MS context, sorry.");
+        }
     }
 }

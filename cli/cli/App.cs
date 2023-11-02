@@ -126,6 +126,7 @@ public class App
 		Commands.AddSingleton<RefreshTokenOption>();
 		Commands.AddSingleton<LogOption>();
 		Commands.AddSingleton<EnableReporterOption>();
+		Commands.AddSingleton<DotnetPathOption>();
 		Commands.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
@@ -138,6 +139,7 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
 			root.AddGlobalOption(provider.GetRequiredService<EnableReporterOption>());
 			root.AddGlobalOption(provider.GetRequiredService<SkipStandaloneValidationOption>());
+			root.AddGlobalOption(provider.GetRequiredService<DotnetPathOption>());
 			root.Description = "A CLI for interacting with the Beamable Cloud.";
 			return root;
 		});
@@ -149,6 +151,7 @@ public class App
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
 		Commands.AddRootCommand<ProjectCommand, ProjectCommandArgs>();
 		Commands.AddCommand<NewSolutionCommand, NewSolutionCommandArgs, ProjectCommand>();
+		Commands.AddCommand<ListCommand, ListCommandArgs, ProjectCommand>();
 		Commands.AddCommand<NewStorageCommand, NewStorageCommandArgs, ProjectCommand>();
 		Commands.AddCommand<GenerateEnvFileCommand, GenerateEnvFileCommandArgs, ProjectCommand>();
 		Commands.AddCommand<GenerateIgnoreFileCommand, GenerateIgnoreFileCommandArgs, ProjectCommand>();
@@ -156,8 +159,8 @@ public class App
 		Commands.AddCommand<OpenSwaggerCommand, OpenSwaggerCommandArgs, ProjectCommand>();
 		Commands.AddCommand<TailLogsCommand, TailLogsCommandArgs, ProjectCommand>();
 		Commands.AddCommand<OpenMongoExpressCommand, OpenMongoExpressCommandArgs, ProjectCommand>();
-		Commands.AddCommand<AddUnityClientOutputCommand, AddUnityClientOutputCommandArgs, ProjectCommand>();
-		Commands.AddCommand<AddUnrealClientOutputCommand, AddUnrealClientOutputCommandArgs, ProjectCommand>();
+		Commands.AddCommand<AddUnityClientOutputCommand, AddProjectClientOutputCommandArgs, ProjectCommand>();
+		Commands.AddCommand<AddUnrealClientOutputCommand, AddProjectClientOutputCommandArgs, ProjectCommand>();
 		Commands.AddCommand<UpdateUnityBeamPackageCommand, UpdateUnityBeamPackageCommandArgs, ProjectCommand>();
 		Commands.AddCommand<ShareCodeCommand, ShareCodeCommandArgs, ProjectCommand>();
 		Commands.AddCommand<CheckStatusCommand, CheckStatusCommandArgs, ProjectCommand>();
@@ -208,6 +211,8 @@ public class App
 		Commands.AddCommand<ServicesMetricsUrlCommand, ServicesMetricsUrlCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesPromoteCommand, ServicesPromoteCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesGetConnectionStringCommand, ServicesGetConnectionStringCommandArgs, ServicesCommand>();
+		Commands.AddCommand<ServicesSetManifestCommand, ServicesSetManifestCommandArgs, ServicesCommand>();
+
 
 		// content commands
 		Commands.AddRootCommand<ContentCommand, ContentCommandArgs>();

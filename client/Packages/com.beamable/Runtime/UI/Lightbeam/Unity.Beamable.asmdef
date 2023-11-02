@@ -1,0 +1,23 @@
+{
+    "name": "Unity.Beamable.LightBeams",
+    "references": [
+        "Beamable.Coroutines",
+        "Beamable.Platform",
+        "Beamable.Service",
+        "Beamable.SmallerJSON",
+        "Beamable.Runtime.Input",
+        "Unity.Addressables",
+        "Unity.ResourceManager",
+        "Unity.TextMeshPro",
+        "Unity.Beamable.Runtime.Common",
+        "Unity.Beamable"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": []
+}

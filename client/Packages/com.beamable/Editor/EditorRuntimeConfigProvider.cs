@@ -34,12 +34,12 @@ namespace Beamable.Editor
 				return pid;
 			}
 		}
-		
+
 		public EditorRuntimeConfigProvider(AccountService accounts)
 		{
 			_accounts = accounts;
 		}
 	}
-	
+
 
 }

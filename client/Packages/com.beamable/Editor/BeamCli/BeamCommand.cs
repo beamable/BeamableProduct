@@ -4,6 +4,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
+using Beamable.Editor.Dotnet;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -49,7 +50,8 @@ namespace Beamable.Editor.BeamCli.Commands
 				refreshToken = _requester?.AccessToken?.RefreshToken,
 				log = "Information",
 				reporterUseFatal = true,
-				skipStandaloneValidation = true
+				skipStandaloneValidation = true,
+				dotnetPath = DotnetUtil.DotnetPath
 			};
 			return beamArgs;
 		}
@@ -230,22 +232,18 @@ namespace Beamable.Editor.BeamCli
 
 		private void ProcessStandardErr(string data)
 		{
-			if (data == null) return;
+			if (string.IsNullOrWhiteSpace(data)) return;
 			if (!AutoLogErrors) return;
 			Debug.LogError(data);
 		}
 
 		public void SetCommand(string command)
 		{
-#if UNITY_EDITOR_WIN
-			const string homePathEnv = "USERPROFILE";
-#else
-			const string homePathEnv = "HOME";
-#endif
-			var home = System.Environment.GetEnvironmentVariable(homePathEnv);
+			var beamLocation = BeamCliUtil.CLI_PATH;
 
-			var defaultDotnetToolPath = Path.Combine(home, ".dotnet", "tools", "beam");
-			var beamLocation = CoreConfiguration.Instance.BeamCLIPath.GetOrElse(defaultDotnetToolPath);
+#if UNITY_EDITOR_WIN
+			beamLocation = $"\"{Path.GetFullPath(beamLocation)}\"";
+#endif
 
 			Command = beamLocation + command.Substring("beam".Length);
 		}
@@ -256,7 +254,6 @@ namespace Beamable.Editor.BeamCli
 			_hasExecuted = true;
 			try
 			{
-
 				using (_process = new System.Diagnostics.Process())
 				{
 #if UNITY_EDITOR && !UNITY_EDITOR_WIN

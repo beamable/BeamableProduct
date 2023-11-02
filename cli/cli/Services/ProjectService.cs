@@ -51,15 +51,17 @@ public class ProjectService
 	private const string UNINSTALL_COMMAND = "new --uninstall";
 	private readonly ConfigService _configService;
 	private readonly VersionService _versionService;
+	private readonly IAppContext _app;
 
 	private ProjectData _projects;
 
 	public bool? ConfigFileExists { get; }
 
-	public ProjectService(ConfigService configService, VersionService versionService)
+	public ProjectService(ConfigService configService, VersionService versionService, IAppContext app)
 	{
 		_configService = configService;
 		_versionService = versionService;
+		_app = app;
 		_projects = configService.LoadDataFile<ProjectData>(".linkedProjects");
 		ConfigFileExists = _configService.ConfigFileExists;
 	}
@@ -102,7 +104,7 @@ public class ProjectService
 		_configService.SaveDataFile(".linkedProjects", _projects);
 	}
 
-	public static async Task EnsureCanUseTemplates(string version)
+	public async Task EnsureCanUseTemplates(string version)
 	{
 		var info = await GetTemplateInfo();
 
@@ -125,7 +127,7 @@ public class ProjectService
 	/// See for details, https://www.nuget.org/packages/Beamable.Templates, but not all versions exist.
 	/// This may cause the command to fail, but in that case, that is expected.
 	/// </param>
-	private static async Task PromptAndInstallTemplates(string currentlyInstalledVersion, string version)
+	private async Task PromptAndInstallTemplates(string currentlyInstalledVersion, string version)
 	{
 		// lets get user consent before auto installing beamable templates
 		string question;
@@ -163,7 +165,7 @@ public class ProjectService
 		}
 
 		var installStream = new StringBuilder();
-		var result = await CliExtensions.GetDotnetCommand($"new --install {packageName}::{version}")
+		var result = await CliExtensions.GetDotnetCommand(_app.DotnetPath, $"new --install {packageName}::{version}")
 			.WithValidation(CommandResultValidation.None)
 			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(installStream))
 			.WithStandardErrorPipe(PipeTarget.ToStringBuilder(installStream))
@@ -177,11 +179,11 @@ public class ProjectService
 		}
 	}
 
-	public static async Task<DotnetTemplateInfo> GetTemplateInfo()
+	public async Task<DotnetTemplateInfo> GetTemplateInfo()
 	{
 		var templateStream = new StringBuilder();
 
-		await CliExtensions.GetDotnetCommand(UNINSTALL_COMMAND)
+		await CliExtensions.GetDotnetCommand(_app.DotnetPath, UNINSTALL_COMMAND)
 			.WithValidation(CommandResultValidation.None)
 			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(templateStream))
 			.ExecuteBufferedAsync();
@@ -435,7 +437,7 @@ COPY {commonProjectName}/. .
 			true);
 		if (addUnityProject)
 		{
-			await addUnityCommand.Handle(new AddUnityClientOutputCommandArgs { path = ".", Provider = provider });
+			await addUnityCommand.Handle(new AddProjectClientOutputCommandArgs { path = ".", Provider = provider });
 		}
 
 		// ask if we should link a Unreal project
@@ -445,7 +447,7 @@ COPY {commonProjectName}/. .
 		if (addUnrealProject)
 		{
 			await addUnrealCommand.Handle(
-				new AddUnrealClientOutputCommandArgs() { path = ".", Provider = provider });
+				new AddProjectClientOutputCommandArgs() { path = ".", Provider = provider });
 		}
 	}
 
@@ -456,18 +458,18 @@ COPY {commonProjectName}/. .
 		return nugetPackages.Last().packageVersion;
 	}
 
-	static Task RunDotnetCommand(string arguments)
+	Task RunDotnetCommand(string arguments)
 	{
-		return CliExtensions.GetDotnetCommand(arguments).ExecuteAsyncAndLog().Task;
+		return CliExtensions.GetDotnetCommand(_app.DotnetPath, arguments).ExecuteAsyncAndLog().Task;
 	}
 }
 
 public static class CliExtensions
 {
 
-	public static Command GetDotnetCommand(string arguments)
+	public static Command GetDotnetCommand(string dotnetPath, string arguments)
 	{
-		return Cli.Wrap("dotnet").WithEnvironmentVariables(new Dictionary<string, string>
+		return Cli.Wrap(dotnetPath).WithEnvironmentVariables(new Dictionary<string, string>
 		{
 			["DOTNET_CLI_UI_LANGUAGE"] = "en"
 		}).WithArguments(arguments);

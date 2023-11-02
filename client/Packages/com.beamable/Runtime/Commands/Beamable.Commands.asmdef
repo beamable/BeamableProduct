@@ -1,0 +1,14 @@
+{
+    "name": "Beamable.Commands",
+    "references": [
+        "Unity.Beamable.Runtime.Common"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": []
+}

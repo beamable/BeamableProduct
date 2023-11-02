@@ -9,7 +9,7 @@
     <!--  Settings for Beamable Build  -->
     <PropertyGroup>
         <!-- The tool path for the beamCLI. "dotnet beam" will refer to the local project tool, and "beam" would install to a globally installed tool -->
-        <BeamableTool>beam</BeamableTool>
+        <BeamableTool Condition="$(BeamableTool) == ''">beam</BeamableTool>
 
         <!-- When "true", this will copy the built project and associated dependencies to linked Unity projects -->
         <CopyToLinkedProjects>true</CopyToLinkedProjects>
