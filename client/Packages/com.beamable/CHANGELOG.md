@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Theme Manager
 - Beamable Assistant
 
+## [1.19.4]
+
+no changes
+
 ## [1.19.3]
 
 no changes
