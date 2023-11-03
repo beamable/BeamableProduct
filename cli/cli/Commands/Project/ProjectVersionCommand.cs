@@ -24,7 +24,7 @@ public class ProjectVersionCommand : AppCommand<ProjectVersionCommandArgs>, IRes
 	public override void Configure()
 	{
 		AddOption(new Option<string>("--requested-version", "Request specific version of Beamable packages."),
-			(args, i) => args.requestedVersion = i.Trim());
+			(args, i) => args.requestedVersion = string.IsNullOrWhiteSpace(i) ? string.Empty : i.Trim());
 	}
 
 	public override async Task Handle(ProjectVersionCommandArgs args)
@@ -52,30 +52,32 @@ public class ProjectVersionCommand : AppCommand<ProjectVersionCommandArgs>, IRes
 					var splitedLine = line.Split(" ",
 						StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).ToList();
 					var packageIndex = splitedLine.FindIndex(s => s.StartsWith("Beamable."));
-					var package = new BeamablePackageInProject()
-					{
-						projectPath = projectPath,
-						packageName = splitedLine[packageIndex],
-						packageVersion = splitedLine[packageIndex + 1]
-					};
-					results.Add(package);
+					var packageName = splitedLine[packageIndex];
+					var packageVersion = splitedLine[packageIndex + 1];
 
 					if (!string.IsNullOrWhiteSpace(args.requestedVersion) &&
-					    !args.requestedVersion.Equals(package.packageVersion))
+					    !args.requestedVersion.Equals(packageVersion))
 					{
 						buffer.Clear();
-						await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, $"add package {package.packageName} --version \"{args.requestedVersion}\"")
+						await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, $"add package {packageName} --version \"{args.requestedVersion}\"")
 							.WithWorkingDirectory(projectPath)
 							.WithStandardOutputPipe(PipeTarget.ToStringBuilder(buffer)).ExecuteAsync();
 						AnsiConsole.WriteLine(buffer.ToString());
+						packageVersion = args.requestedVersion;
 					}
+					results.Add(new BeamablePackageInProject()
+					{
+						projectPath = projectPath,
+						packageName = packageName,
+						packageVersion = packageVersion
+					});
 				}
 			}
 		}
 		var json = JsonConvert.SerializeObject(results);
 		AnsiConsole.Write(
 			new Panel(new JsonText(json))
-				.Header("Server response")
+				.Header("Projects versions")
 				.Collapse()
 				.RoundedBorder());
 		this.SendResults(BeamablePackageInProject.ToResult(results));
