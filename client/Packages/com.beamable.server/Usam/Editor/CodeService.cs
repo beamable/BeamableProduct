@@ -37,7 +37,21 @@ namespace Beamable.Server.Editor.Usam
 
 			await SetManifest(_cli, _services);
 			await RefreshServices();
+			await UpdateServicesVersions();
 			Debug.Log("Done");
+		}
+
+		public async Promise UpdateServicesVersions()
+		{
+			var versions = _cli.ProjectVersion(new ProjectVersionArgs(){
+				requestedVersion = null// replace it with required version
+			});
+			versions.OnStreamProjectVersionCommandResult(result =>
+			{
+				Debug.Log("Versions uptaded");
+				//
+			});
+			await versions.Run();
 		}
 
 		public async Promise RefreshServices()
