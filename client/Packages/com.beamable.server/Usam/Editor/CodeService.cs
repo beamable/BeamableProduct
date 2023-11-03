@@ -43,12 +43,21 @@ namespace Beamable.Server.Editor.Usam
 
 		public async Promise UpdateServicesVersions()
 		{
-			var versions = _cli.ProjectVersion(new ProjectVersionArgs(){
-				requestedVersion = null// replace it with required version
+			var version = new BeamVersionResults();
+			await _cli.Version(new VersionArgs()
+			{
+				showVersion = true, showLocation = true, showTemplates = true, showType = true
+			}).OnStreamVersionResults(result =>
+			{
+				Debug.Log($"Version: {result.data.version}");
+				version = result.data;
+			}).Run();
+			var versions = _cli.ProjectVersion(new ProjectVersionArgs{
+				requestedVersion = version?.version ?? "1.19.4"
 			});
 			versions.OnStreamProjectVersionCommandResult(result =>
 			{
-				Debug.Log("Versions uptaded");
+				Debug.Log("Versions updated");
 				//
 			});
 			await versions.Run();
