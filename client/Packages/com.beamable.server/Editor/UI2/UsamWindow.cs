@@ -1,6 +1,7 @@
 using Beamable;
 using Beamable.Common;
 using Beamable.Editor.Microservice.UI.Components;
+using Beamable.Editor.Microservice.UI2.Components;
 using Beamable.Editor.UI;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.Usam;
@@ -62,7 +63,16 @@ namespace Beamable.Editor.Microservice.UI2
 
 			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
 			_microserviceBreadcrumbsVisualElement.Refresh();
-
+			var ssa = root.Q("microserviceContentVisualElement");
+			OnLoad().Then(_ =>
+			{
+				foreach (var info in _codeService.Services)
+				{
+					var el = new StandaloneMicroserviceVisualElement() {Info = info};
+					ssa.Add(el);
+					el.Refresh();
+				}
+			});
 		}
 
 		public override async Promise OnLoad()
