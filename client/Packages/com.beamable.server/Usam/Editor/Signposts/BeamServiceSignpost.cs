@@ -13,5 +13,4 @@ namespace Beamable.Server.Editor.Usam
 
 		public string[] assemblyReferences;
 	}
-
 }

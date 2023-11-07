@@ -104,14 +104,14 @@ public class ProjectService
 		_configService.SaveDataFile(".linkedProjects", _projects);
 	}
 
-	public async Task EnsureCanUseTemplates(string version)
+	public async Task EnsureCanUseTemplates(string version, bool quiet = false)
 	{
 		var info = await GetTemplateInfo();
 
 		if (!info.HasTemplates ||
 			!string.Equals(version, info.templateVersion, StringComparison.CurrentCultureIgnoreCase))
 		{
-			await PromptAndInstallTemplates(info.templateVersion, version);
+			await PromptAndInstallTemplates(info.templateVersion, version, quiet);
 		}
 	}
 
@@ -127,7 +127,11 @@ public class ProjectService
 	/// See for details, https://www.nuget.org/packages/Beamable.Templates, but not all versions exist.
 	/// This may cause the command to fail, but in that case, that is expected.
 	/// </param>
-	private async Task PromptAndInstallTemplates(string currentlyInstalledVersion, string version)
+	/// <param name="quiet">
+	/// If true, it will skip asking in prompt if user wants to update to the latest version,
+	/// and just assumes that it should install or update it.
+	/// </param>
+	private async Task PromptAndInstallTemplates(string currentlyInstalledVersion, string version, bool quiet = false)
 	{
 		// lets get user consent before auto installing beamable templates
 		string question;
@@ -144,7 +148,7 @@ public class ProjectService
 				$"Beamable templates are currently installed as {currentlyInstalledVersion}. Would you like to proceed with installing {latestMsg}";
 		}
 
-		bool canInstallTemplates = AnsiConsole.Confirm(question);
+		bool canInstallTemplates = quiet || AnsiConsole.Confirm(question);
 
 		switch (canInstallTemplates)
 		{
@@ -264,11 +268,11 @@ public class ProjectService
 	public Task<string> CreateNewSolution(NewSolutionCommandArgs args)
 	{
 		return CreateNewSolution(args.directory, args.SolutionName, args.ProjectName,
-			!args.SkipCommon, args.SpecifiedVersion);
+			!args.SkipCommon, args.SpecifiedVersion, args.Quiet);
 	}
 
 	public async Task<string> CreateNewSolution(string directory, string solutionName, string projectName,
-		bool createCommonLibrary = true, string version = "")
+		bool createCommonLibrary = true, string version = "", bool quiet = false)
 	{
 		if (string.IsNullOrEmpty(directory))
 		{
@@ -288,7 +292,7 @@ public class ProjectService
 		}
 
 		// check that we have the templates available
-		await EnsureCanUseTemplates(usedVersion);
+		await EnsureCanUseTemplates(usedVersion, quiet);
 
 		// create the solution
 		await RunDotnetCommand($"new sln -n \"{solutionName}\" -o \"{solutionPath}\"");
