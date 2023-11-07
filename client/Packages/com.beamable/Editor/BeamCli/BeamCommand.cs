@@ -232,7 +232,7 @@ namespace Beamable.Editor.BeamCli
 
 		private void ProcessStandardErr(string data)
 		{
-			if (data == null) return;
+			if (string.IsNullOrWhiteSpace(data)) return;
 			if (!AutoLogErrors) return;
 			Debug.LogError(data);
 		}
@@ -244,7 +244,7 @@ namespace Beamable.Editor.BeamCli
 #if UNITY_EDITOR_WIN
 			beamLocation = $"\"{Path.GetFullPath(beamLocation)}\"";
 #endif
-			
+
 			Command = beamLocation + command.Substring("beam".Length);
 		}
 

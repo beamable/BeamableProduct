@@ -23,7 +23,7 @@ namespace Beamable.Editor.Dotnet
 #else
 		public static readonly string DOTNET_GLOBAL_PATH =
 			Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".dotnet");
-		
+
 		public static readonly string DOTNET_EXEC = "dotnet";
 #endif
 
@@ -35,10 +35,10 @@ namespace Beamable.Editor.Dotnet
 			System.Environment.GetEnvironmentVariable(ENV_VAR_DOTNET_LOCATION), DOTNET_LIBRARY_PATH,
 			DOTNET_GLOBAL_PATH
 		};
-		
+
 
 		public static string DotnetHome { get; private set; }
-		public static string DotnetPath => Path.Combine(DotnetHome, "dotnet");
+		public static string DotnetPath => Path.Combine(DotnetHome, DOTNET_EXEC);
 
 		/// <summary>
 		/// Beamable 2.0+ requires Dotnet.
@@ -93,7 +93,7 @@ namespace Beamable.Editor.Dotnet
 				}
 			}
 
-			
+
 			EditorUtility.ClearProgressBar();
 		}
 
@@ -127,7 +127,12 @@ namespace Beamable.Editor.Dotnet
 
 		static bool CheckVersion(string dotnetPath, out int majorVersion)
 		{
-			majorVersion = -1;
+			var key = $"DOTNET_VERSION_{dotnetPath}";
+			majorVersion = SessionState.GetInt(key, -1);
+			if (majorVersion > 0)
+			{
+				return majorVersion == REQUIRED_MAJOR_VERSION;
+			}
 			var proc = new Process();
 			proc.StartInfo = new ProcessStartInfo
 			{
@@ -137,10 +142,10 @@ namespace Beamable.Editor.Dotnet
 				UseShellExecute = false,
 				RedirectStandardOutput = true
 			};
-			
+
 			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
-			
-			
+
+
 			proc.Start();
 			proc.WaitForExit();
 			var output = proc.StandardOutput.ReadToEnd().Replace("\r\n", "\n");
@@ -153,7 +158,7 @@ namespace Beamable.Editor.Dotnet
 				return false;
 			}
 
-			
+
 			var result = line.Split(' ').FirstOrDefault(s => !string.IsNullOrWhiteSpace(s));
 
 			if (!PackageVersion.TryFromSemanticVersionString(result, out var findedVersion))
@@ -162,6 +167,7 @@ namespace Beamable.Editor.Dotnet
 			}
 
 			majorVersion = findedVersion.Major;
+			SessionState.SetInt(key, majorVersion);
 
 			return majorVersion == REQUIRED_MAJOR_VERSION;
 		}
