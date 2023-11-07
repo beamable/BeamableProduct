@@ -23,7 +23,7 @@ public class ProjectVersionCommand : AppCommand<ProjectVersionCommandArgs>, IRes
 
 	public override void Configure()
 	{
-		AddOption(new Option<string>("--requested-version", "Request specific version of Beamable packages."),
+		AddOption(new Option<string>("--requested-version", "Request specific version of Beamable packages"),
 			(args, i) => args.requestedVersion = string.IsNullOrWhiteSpace(i) ? string.Empty : i.Trim());
 	}
 
@@ -45,8 +45,8 @@ public class ProjectVersionCommand : AppCommand<ProjectVersionCommandArgs>, IRes
 				await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, "list package")
 					.WithWorkingDirectory(projectPath)
 					.WithStandardOutputPipe(PipeTarget.ToStringBuilder(buffer)).ExecuteAsync();
-				var result = buffer.ToString().Replace("\r\n","\n").Split("\n").Where(s=>s.Contains("> Beamable.")).ToList();
-				
+				var result = buffer.ToString().Replace("\r\n", "\n").Split("\n").Where(s => s.Contains("> Beamable.")).ToList();
+
 				foreach (var line in result)
 				{
 					var splitedLine = line.Split(" ",
@@ -56,7 +56,7 @@ public class ProjectVersionCommand : AppCommand<ProjectVersionCommandArgs>, IRes
 					var packageVersion = splitedLine[packageIndex + 1];
 
 					if (!string.IsNullOrWhiteSpace(args.requestedVersion) &&
-					    !args.requestedVersion.Equals(packageVersion))
+						!args.requestedVersion.Equals(packageVersion))
 					{
 						buffer.Clear();
 						await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, $"add package {packageName} --version \"{args.requestedVersion}\"")
