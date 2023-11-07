@@ -37,7 +37,34 @@ namespace Beamable.Server.Editor.Usam
 
 			await SetManifest(_cli, _services);
 			await RefreshServices();
+			await UpdateServicesVersions();
 			Debug.Log("Done");
+		}
+
+		public async Promise UpdateServicesVersions()
+		{
+			var version = new BeamVersionResults();
+			await _cli.Version(new VersionArgs()
+			{
+				showVersion = true, showLocation = true, showTemplates = true, showType = true
+			}).OnStreamVersionResults(result =>
+			{
+				Debug.Log($"Version: {result.data.version}");
+				version = result.data;
+			}).Run();
+   			if(string.IsNullOrEmpty(version?.version))
+	  		{
+	 			Debug.Log("Could not detect current version, skipping");
+	 		}
+			var versions = _cli.ProjectVersion(new ProjectVersionArgs{
+				requestedVersion = version?.version
+			});
+			versions.OnStreamProjectVersionCommandResult(result =>
+			{
+				Debug.Log("Versions updated");
+				//
+			});
+			await versions.Run();
 		}
 
 		public async Promise RefreshServices()
