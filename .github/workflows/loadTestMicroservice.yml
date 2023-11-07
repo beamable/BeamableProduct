@@ -90,7 +90,7 @@ jobs:
           echo COUNTERS OUTPUT: ${{steps.counters.outputs.log}}
       - name: Summary
         run: |
-          echo "### Hello world! :rocket:" >> $GITHUB_STEP_SUMMAR
+          echo "### Test results! :rocket:" >> $GITHUB_STEP_SUMMARY
           echo NBOMBER OUTPUT: ${{steps.nbomber.outputs.log}} >> $GITHUB_STEP_SUMMARY
           echo COUNTERS OUTPUT: ${{steps.counters.outputs.log}}>> $GITHUB_STEP_SUMMARY
       - name: Post to a Slack channel
