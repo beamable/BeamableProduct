@@ -52,8 +52,12 @@ namespace Beamable.Server.Editor.Usam
 				Debug.Log($"Version: {result.data.version}");
 				version = result.data;
 			}).Run();
+   			if(string.IsNullOrEmpty(version?.version))
+	  		{
+	 			Debug.Log("Could not detect current version, skipping");
+	 		}
 			var versions = _cli.ProjectVersion(new ProjectVersionArgs{
-				requestedVersion = version?.version ?? "1.19.4"
+				requestedVersion = version?.version
 			});
 			versions.OnStreamProjectVersionCommandResult(result =>
 			{
