@@ -24,6 +24,7 @@ public class LightBeamBuilds
 		// Debug.Log("LIGHTBEAM_CONFIG " + (asset?.GetType().Name ?? "<no type>"));
 	}
 
+	[MenuItem("LightBeam/Build All")]
 	public static void BuildAll()
 	{
 		AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
@@ -47,16 +48,30 @@ public class LightBeamBuilds
 					break;
 			}
 		}
+
+		//If there was no outputDir coming from args, then use the default
+		if (string.IsNullOrEmpty(outputDir))
+		{
+			outputDir = "dist";
+		}
+		
 		Debug.Log("LIGHTBEAM_OUTPUT " + outputDir);
 
 		var scenePaths = config.scenes.Select(x => x.scenePath).ToList();
-		BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions
+
+		BuildOptions options;
+		#if UNITY_EDITOR
+		options = BuildOptions.AutoRunPlayer;
+		#else
+		options = BuildOPtions.None;
+		#endif
+
+			BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions
 		{
 			scenes = scenePaths.ToArray(),
 			locationPathName = outputDir,
 			target = BuildTarget.WebGL,
-			options = BuildOptions.None,
-
+			options = options
 		};
 
 		BuildReport report = BuildPipeline.BuildPlayer(buildPlayerOptions);
@@ -72,74 +87,5 @@ public class LightBeamBuilds
 			Debug.Log("Build failed");
 		}
 
-	}
-
-	[MenuItem("LightBeam/Build All")]
-	public static void BuildLightBeamProject()
-	{
-
-
-		var args = Environment.GetCommandLineArgs();
-
-		Debug.Log("LIGHTBEAM_ARGS " + string.Join(",", args));
-		string lightBeamName = null;
-		string scenePath = null;
-		string outputDir = null;
-		for (var i = 0; i < args.Length - 1; i++)
-		{
-			switch (args[i])
-			{
-				case "-LIGHTBEAM_NAME":
-					lightBeamName = args[i + 1];
-					break;
-				case "-LIGHTBEAM_SCENE_PATH":
-					scenePath = args[i + 1];
-					break;
-				case "-LIGHTBEAM_BUILD_PATH":
-					outputDir = args[i + 1];
-					break;
-			}
-		}
-
-		// var lightBeamName = Environment.GetEnvironmentVariable("LIGHTBEAM_NAME");
-		// var scenePath = Environment.GetEnvironmentVariable("LIGHTBEAM_SCENE_PATH");
-		// var outputDir = Environment.GetEnvironmentVariable("LIGHTBEAM_BUILD_PATH");
-
-		Debug.Log($"LIGHTBEAM NAME=[{lightBeamName}]");
-		Debug.Log($"LIGHTBEAM SCENE=[{scenePath}]");
-		Debug.Log($"LIGHTBEAM BUILD=[{outputDir}]");
-
-		if (string.IsNullOrEmpty(scenePath))
-		{
-			throw new Exception("no scene specified");
-		}
-
-		if (string.IsNullOrEmpty(outputDir))
-		{
-			throw new Exception("no output specified");
-		}
-
-		BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions
-		{
-			// scenes = new[] {"Packages/com.beamable/Samples/LightBeamSamples/AccountManager/Sample_AccountManager.unity"},
-			scenes = new[] { scenePath },
-			locationPathName = outputDir,
-			target = BuildTarget.WebGL,
-			options = BuildOptions.None,
-
-		};
-
-		BuildReport report = BuildPipeline.BuildPlayer(buildPlayerOptions);
-		BuildSummary summary = report.summary;
-
-		if (summary.result == BuildResult.Succeeded)
-		{
-			Debug.Log("Build succeeded: " + summary.totalSize + " bytes");
-		}
-
-		if (summary.result == BuildResult.Failed)
-		{
-			Debug.Log("Build failed");
-		}
 	}
 }
