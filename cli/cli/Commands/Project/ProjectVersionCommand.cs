@@ -23,7 +23,7 @@ public class ProjectVersionCommand : AppCommand<ProjectVersionCommandArgs>, IRes
 
 	public override void Configure()
 	{
-		AddOption(new Option<string>("--requested-version", "Request specific version of Beamable packages."),
+		AddOption(new Option<string>("--requested-version", "Request specific version of Beamable packages"),
 			(args, i) => args.requestedVersion = string.IsNullOrWhiteSpace(i) ? string.Empty : i.Trim());
 	}
 
