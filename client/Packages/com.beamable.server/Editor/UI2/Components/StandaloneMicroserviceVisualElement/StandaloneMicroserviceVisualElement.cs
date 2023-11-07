@@ -100,8 +100,8 @@ namespace Beamable.Editor.Microservice.UI2.Components
 				// 	Constants.Tooltips.Microservice.MICROSERVICE : Constants.Tooltips.Microservice.STORAGE_OBJECT;
 			}
 
-			// Model.OnLogsAttachmentChanged -= CreateLogSection;
-			// Model.OnLogsAttachmentChanged += CreateLogSection;
+			_visualsModel.OnLogsAttachmentChanged -= CreateLogSection;
+			_visualsModel.OnLogsAttachmentChanged += CreateLogSection;
 			//
 			// Model.Builder.OnIsRunningChanged -= HandleIsRunningChanged;
 			// Model.Builder.OnIsRunningChanged += HandleIsRunningChanged;
@@ -109,7 +109,7 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			// Model.Builder.OnBuildingProgress -= HandleStartingProgress;
 			// Model.Builder.OnBuildingProgress += HandleStartingProgress;
 
-			// _separator.Setup(OnDrag);
+			_separator.Setup(OnDrag);
 			_separator.Refresh();
 
 			_foldButton.clickable.clicked += HandleCollapseButton;
