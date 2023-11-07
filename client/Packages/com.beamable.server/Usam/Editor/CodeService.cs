@@ -46,17 +46,21 @@ namespace Beamable.Server.Editor.Usam
 			var version = new BeamVersionResults();
 			await _cli.Version(new VersionArgs()
 			{
-				showVersion = true, showLocation = true, showTemplates = true, showType = true
+				showVersion = true,
+				showLocation = true,
+				showTemplates = true,
+				showType = true
 			}).OnStreamVersionResults(result =>
 			{
 				Debug.Log($"Version: {result.data.version}");
 				version = result.data;
 			}).Run();
-   			if(string.IsNullOrEmpty(version?.version))
-	  		{
-	 			Debug.Log("Could not detect current version, skipping");
-	 		}
-			var versions = _cli.ProjectVersion(new ProjectVersionArgs{
+			if (string.IsNullOrEmpty(version?.version))
+			{
+				Debug.Log("Could not detect current version, skipping");
+			}
+			var versions = _cli.ProjectVersion(new ProjectVersionArgs
+			{
 				requestedVersion = version?.version
 			});
 			versions.OnStreamProjectVersionCommandResult(result =>
