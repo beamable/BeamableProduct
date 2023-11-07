@@ -54,19 +54,19 @@ public class LightBeamBuilds
 		{
 			outputDir = "dist";
 		}
-		
+
 		Debug.Log("LIGHTBEAM_OUTPUT " + outputDir);
 
 		var scenePaths = config.scenes.Select(x => x.scenePath).ToList();
 
 		BuildOptions options;
-		#if UNITY_EDITOR
+#if UNITY_EDITOR
 		options = BuildOptions.AutoRunPlayer;
-		#else
+#else
 		options = BuildOPtions.None;
-		#endif
+#endif
 
-			BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions
+		BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions
 		{
 			scenes = scenePaths.ToArray(),
 			locationPathName = outputDir,
