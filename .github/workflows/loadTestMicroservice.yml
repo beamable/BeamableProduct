@@ -88,6 +88,11 @@ jobs:
       - name: Debug Counters Output
         run: |
           echo COUNTERS OUTPUT: ${{steps.counters.outputs.log}}
+      - name: Summary
+        run: |
+          echo "### Hello world! :rocket:" >> $GITHUB_STEP_SUMMAR
+          echo NBOMBER OUTPUT: ${{steps.nbomber.outputs.log}} >> $GITHUB_STEP_SUMMARY
+          echo COUNTERS OUTPUT: ${{steps.counters.outputs.log}}>> $GITHUB_STEP_SUMMARY
       - name: Post to a Slack channel
         id: slack
         if: ${{!contains(steps.nbomber.outputs.log, 'No issues found') || !contains(steps.counters.outputs.log, 'No issues found')}}
