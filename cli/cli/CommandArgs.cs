@@ -16,8 +16,6 @@ public abstract class CommandArgs
 	}
 
 	public bool Dryrun { get; set; }
-
-	public bool Quiet { get; set; }
 	public bool IgnoreStandaloneValidation { get; set; }
 	public IServiceProvider Provider { get; set; }
 

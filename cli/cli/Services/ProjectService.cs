@@ -268,7 +268,7 @@ public class ProjectService
 	public Task<string> CreateNewSolution(NewSolutionCommandArgs args)
 	{
 		return CreateNewSolution(args.directory, args.SolutionName, args.ProjectName,
-			!args.SkipCommon, args.SpecifiedVersion, args.Quiet);
+			!args.SkipCommon, args.SpecifiedVersion, args.quiet);
 	}
 
 	public async Task<string> CreateNewSolution(string directory, string solutionName, string projectName,
