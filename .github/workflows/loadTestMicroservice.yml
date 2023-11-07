@@ -6,7 +6,7 @@ on:
       - 'main'
     paths-ignore:
       - 'rfc/**'
-      # - '.github/**'
+      - '.github/**'
 jobs:
   runPerfTest:
     timeout-minutes: 4
