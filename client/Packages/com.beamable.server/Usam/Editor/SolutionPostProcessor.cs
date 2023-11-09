@@ -3,6 +3,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using UnityEditor;
+using UnityEditor.Compilation;
 using UnityEngine;
 
 namespace Beamable.Server.Editor.Usam
@@ -28,6 +29,15 @@ EndProject";
 		{{{KEY_INSTANCE_GUID}}}.Debug|Any CPU.Build.0 = Debug|Any CPU
 ";
 
+
+
+		private static bool OnPreGeneratingCSProjectFiles()
+		{
+			AssemblyUtil.Reload();
+			CsharpProjectUtil.GenerateAllReferencedAssemblies();
+			return false; // if we don't return false, then this methods PREVENTS Unity from generating csproj files what-so-ever.
+		}
+
 		public static string OnGeneratedSlnSolution(string path, string content)
 		{
 			var files = CodeService.GetBeamServices();
@@ -35,6 +45,12 @@ EndProject";
 			foreach (var signpost in files)
 			{
 				content = InjectProject(content, signpost.name, signpost.relativeProjectFile);
+			}
+
+			foreach (var reference in AssemblyUtil.ReferencedAssemblies)
+			{
+				var referenceName = reference.name;
+				content = InjectProject(content, referenceName, CsharpProjectUtil.GenerateCsharpProjectFilename(reference));
 			}
 			return content;
 		}

@@ -232,7 +232,7 @@ namespace Beamable.Editor.BeamCli
 
 		private void ProcessStandardErr(string data)
 		{
-			if (data == null) return;
+			if (string.IsNullOrWhiteSpace(data)) return;
 			if (!AutoLogErrors) return;
 			Debug.LogError(data);
 		}
@@ -355,7 +355,12 @@ namespace Beamable.Editor.BeamCli
 
 						if (_exitCode != 0)
 						{
-							throw new Exception("Cli failed");
+#if BEAMABLE_DEVELOPER
+							var message = $"Cli failed {_command}";
+#else
+							var message = "Cli failed";
+#endif
+							throw new Exception(message);
 						}
 					}
 					finally

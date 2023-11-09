@@ -121,6 +121,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				// TODO: we need to await! (but it is probably loaded)
 				foreach (var service in srvc.Services)
 				{
+
 					_mainVisualElement.Add(new Label($"{service.name} / {service.dockerfilePath}"));
 				}
 

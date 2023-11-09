@@ -10,6 +10,7 @@ namespace Beamable.Server.Editor.Usam
 		public string assetRelativePath;
 		public string relativeDockerFile;
 		public string relativeProjectFile;
-	}
 
+		public string[] assemblyReferences;
+	}
 }

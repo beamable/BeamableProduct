@@ -1,6 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
-using Beamable.Editor.BeamCli;
+using Beamable.Common.Semantics;
 using Beamable.Editor.BeamCli.Commands;
 using System;
 using System.Collections.Generic;
@@ -37,7 +37,38 @@ namespace Beamable.Server.Editor.Usam
 
 			await SetManifest(_cli, _services);
 			await RefreshServices();
+			await UpdateServicesVersions();
 			Debug.Log("Done");
+		}
+
+		public async Promise UpdateServicesVersions()
+		{
+			var version = new BeamVersionResults();
+			await _cli.Version(new VersionArgs()
+			{
+				showVersion = true,
+				showLocation = true,
+				showTemplates = true,
+				showType = true
+			}).OnStreamVersionResults(result =>
+			{
+				Debug.Log($"Version: {result.data.version}");
+				version = result.data;
+			}).Run();
+			if (string.IsNullOrEmpty(version?.version))
+			{
+				Debug.Log("Could not detect current version, skipping");
+			}
+			var versions = _cli.ProjectVersion(new ProjectVersionArgs
+			{
+				requestedVersion = version?.version
+			});
+			versions.OnStreamProjectVersionCommandResult(result =>
+			{
+				Debug.Log("Versions updated");
+				//
+			});
+			await versions.Run();
 		}
 
 		public async Promise RefreshServices()
@@ -49,6 +80,22 @@ namespace Beamable.Server.Editor.Usam
 				Services.AddRange(cb.data.localServices);
 			});
 			await ps.Run();
+		}
+		
+		/// <summary>
+		/// Regenerates the files: Program.cs, Dockerfile and .csproj. Then copy these files
+		/// to the desired Standalone Microservice.
+		/// </summary>
+		/// <param name="signPost">The signpost asset that references to the project in which wants to regenerate the files.</param>
+		public async Promise RegenerateProjectFiles(BeamServiceSignpost signPost)
+		{
+			var tempPath = $"Temp/{signPost.name}";
+			var projName = new ServiceName(signPost.name);
+			var projPath = signPost.relativeDockerFile.Replace("/Dockerfile", "");
+
+			var args = new ProjectRegenerateArgs() { name = projName, output = tempPath, copyPath = projPath};
+			var command =_cli.ProjectRegenerate(args);
+			await command.Run();
 		}
 
 		/// <summary>
@@ -106,6 +153,7 @@ namespace Beamable.Server.Editor.Usam
 				args.localHttpContexts[i] = files[i].assetRelativePath;
 				args.localHttpDockerFiles[i] = files[i].relativeDockerFile;
 			}
+
 
 			var command = cli.ServicesSetLocalManifest(args);
 			await command.Run();

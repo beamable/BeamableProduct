@@ -8,7 +8,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	{
 		/// <summary>Relative path to the Unity project</summary>
 		public string path;
-		/// <summary>when true, automatically accept path suggestions</summary>
+		/// <summary>When true, automatically accept path suggestions</summary>
 		public bool quiet;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()

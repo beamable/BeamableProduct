@@ -50,11 +50,15 @@ namespace Beamable.Editor.BeamCli
 				if (USE_SRC)
 				{
 					return Path.Combine(DotnetUtil.DotnetHome,
-										$"dotnet run -f net6.0 --project {EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value} -- ");
+										$"dotnet run --no-build -f net6.0 --project {EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value} -- ");
 				}
 				if (USE_GLOBAL)
 				{
+#if UNITY_EDITOR_WIN
+					return System.Environment.ExpandEnvironmentVariables("%USERPROFILE%\\.dotnet\\tools");
+#else
 					return Path.Combine(DotnetUtil.DOTNET_GLOBAL_PATH, "tools");
+#endif
 				}
 				const string CLI_LIBRARY = "Library/BeamableEditor/BeamCLI";
 				var requiredVersion = BeamableEnvironment.SdkVersion;
