@@ -50,7 +50,7 @@ namespace Beamable.Editor.BeamCli
 				if (USE_SRC)
 				{
 					return Path.Combine(DotnetUtil.DotnetHome,
-										$"dotnet run -f net6.0 --project {EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value} -- ");
+										$"dotnet run --no-build -f net6.0 --project {EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value} -- ");
 				}
 				if (USE_GLOBAL)
 				{
