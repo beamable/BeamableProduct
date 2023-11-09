@@ -14,5 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   homePage: {fileID: 1228780518275338343, guid: e7b4d74932cbb4527aa8927fb193bac2,
     type: 3}
-  friendsBehaviour: {fileID: 6832771266131410803, guid: c0060c25b921e4f32b314d92051e016d,
+  playerFriendsBehaviour: {fileID: 6832771266131410803, guid: c0060c25b921e4f32b314d92051e016d,
+    type: 3}
+  friendBehaviour: {fileID: 2195835797981052562, guid: f379f4eaeb4994e9cacf2ec65e4c27af,
+    type: 3}
+  receivedInviteBehaviour: {fileID: 8183982957754874837, guid: 8539a039716614099a903c159f63fc63,
+    type: 3}
+  blockedPlayerBehaviour: {fileID: 5633970071149154559, guid: e894fbeec7d4c4ddeb7e381f94deca73,
+    type: 3}
+  sentInviteBehaviour: {fileID: 8055574340754450258, guid: b7caf857adc8343059bd0c48792da4a8,
     type: 3}
