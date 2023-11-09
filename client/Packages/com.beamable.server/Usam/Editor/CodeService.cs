@@ -5,6 +5,8 @@ using Beamable.Editor.BeamCli.Commands;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using UnityEditor;
 using UnityEngine;
 
 namespace Beamable.Server.Editor.Usam
@@ -14,9 +16,9 @@ namespace Beamable.Server.Editor.Usam
 		private readonly BeamCommands _cli;
 
 
-		public Promise OnReady { get; }
-
-		public List<ServiceInfo> Services = new List<ServiceInfo>();
+		public Promise OnReady { get; private set; }
+		public bool IsDockerRunning { get; private set; }
+		public List<ServiceInfo> Services { get; private set; } = new List<ServiceInfo>();
 
 		private static readonly List<string> IgnoreFolderSuffixes = new List<string> { "~", "obj", "bin" };
 		private List<BeamServiceSignpost> _services;
@@ -48,7 +50,7 @@ namespace Beamable.Server.Editor.Usam
 		public async Promise UpdateServicesVersions()
 		{
 			var version = new BeamVersionResults();
-			await _cli.Version(new VersionArgs()
+			var versionCommand = _cli.Version(new VersionArgs()
 			{
 				showVersion = true,
 				showLocation = true,
@@ -56,12 +58,14 @@ namespace Beamable.Server.Editor.Usam
 				showType = true
 			}).OnStreamVersionResults(result =>
 			{
-				Debug.Log($"Version: {result.data.version}");
 				version = result.data;
-			}).Run();
+			});
+			await versionCommand.Run().Error(Debug.LogException);
+			
 			if (string.IsNullOrEmpty(version?.version))
 			{
 				Debug.Log("Could not detect current version, skipping");
+				return;
 			}
 			var versions = _cli.ProjectVersion(new ProjectVersionArgs
 			{
@@ -69,21 +73,32 @@ namespace Beamable.Server.Editor.Usam
 			});
 			versions.OnStreamProjectVersionCommandResult(result =>
 			{
-				Debug.Log("Versions updated");
-				//
+				EditorApplication.delayCall += () =>
+				{
+					Debug.Log("Versions updated");
+				};
 			});
-			await versions.Run();
+			await versions.Run().Error(Debug.LogException);
 		}
 
 		public async Promise RefreshServices()
 		{
+			var ps2 = _cli.ServicesPs(new ServicesPsArgs() {json = false, remote = true});
+			BeamServiceListResult result = null;
+			ps2.OnStreamServiceListResult(cb =>
+			{
+				result = cb.data;
+				IsDockerRunning = cb.data.IsDockerRunning;
+			});
+			await ps2.Run().Error(Debug.LogException);
+
 			var ps = _cli.ProjectList();
 			ps.OnStreamListCommandResult(cb =>
 			{
 				Services.Clear();
-				Services.AddRange(cb.data.localServices);
+				Services.AddRange(cb.data.localServices.Where(i => !string.IsNullOrEmpty(i.dockerfilePath)));
 			});
-			await ps.Run();
+			await ps.Run().Error(Debug.LogException);
 		}
 
 		/// <summary>
