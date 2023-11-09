@@ -1,6 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
-using Beamable.Editor.BeamCli;
+using Beamable.Common.Semantics;
 using Beamable.Editor.BeamCli.Commands;
 using System;
 using System.Collections.Generic;
@@ -80,6 +80,22 @@ namespace Beamable.Server.Editor.Usam
 				Services.AddRange(cb.data.localServices);
 			});
 			await ps.Run();
+		}
+		
+		/// <summary>
+		/// Regenerates the files: Program.cs, Dockerfile and .csproj. Then copy these files
+		/// to the desired Standalone Microservice.
+		/// </summary>
+		/// <param name="signPost">The signpost asset that references to the project in which wants to regenerate the files.</param>
+		public async Promise RegenerateProjectFiles(BeamServiceSignpost signPost)
+		{
+			var tempPath = $"Temp/{signPost.name}";
+			var projName = new ServiceName(signPost.name);
+			var projPath = signPost.relativeDockerFile.Replace("/Dockerfile", "");
+
+			var args = new ProjectRegenerateArgs() { name = projName, output = tempPath, copyPath = projPath};
+			var command =_cli.ProjectRegenerate(args);
+			await command.Run();
 		}
 
 		/// <summary>
