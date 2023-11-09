@@ -403,8 +403,8 @@ public:
 	virtual void BuildRoute(FString& RouteString) const override;
 	virtual void BuildBody(FString& BodyString) const override;
 
-	UFUNCTION(BlueprintPure, BlueprintInternalUseOnly, Category=""Beam|Backend|₢{nameof(NamespacedOwnerServiceName)}₢"", DisplayName=""Beam - Make ₢{nameof(GlobalNamespacedEndpointName)}₢"",  meta=(DefaultToSelf=""RequestOwner"", AdvancedDisplay=""₢{nameof(_makeHiddenParameterNames)}₢RequestOwner""))
-	static U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Make(₢{nameof(_makeParameterDeclaration)}₢UObject* RequestOwner);
+	UFUNCTION(BlueprintPure, BlueprintInternalUseOnly, Category=""Beam|Backend|₢{nameof(NamespacedOwnerServiceName)}₢"", DisplayName=""Beam - Make ₢{nameof(GlobalNamespacedEndpointName)}₢"",  meta=(DefaultToSelf=""RequestOwner"", AdvancedDisplay=""₢{nameof(_makeHiddenParameterNames)}₢RequestOwner"", AutoCreateRefTerm=""CustomHeaders""))
+	static U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Make(₢{nameof(_makeParameterDeclaration)}₢UObject* RequestOwner, TMap<FString, FString> CustomHeaders);
 }};
 
 UDELEGATE(BlueprintAuthorityOnly)
@@ -438,9 +438,10 @@ void U₢{nameof(GlobalNamespacedEndpointName)}₢Request::BuildBody(FString& Bo
 	₢{nameof(_buildBodyImpl)}₢
 }}
 
-U₢{nameof(GlobalNamespacedEndpointName)}₢Request* U₢{nameof(GlobalNamespacedEndpointName)}₢Request::Make(₢{nameof(_makeParameterDeclaration)}₢UObject* RequestOwner)
+U₢{nameof(GlobalNamespacedEndpointName)}₢Request* U₢{nameof(GlobalNamespacedEndpointName)}₢Request::Make(₢{nameof(_makeParameterDeclaration)}₢UObject* RequestOwner, TMap<FString, FString> CustomHeaders)
 {{
 	U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Req = NewObject<U₢{nameof(GlobalNamespacedEndpointName)}₢Request>(RequestOwner);
+	Req->CustomHeaders = TMap{{CustomHeaders}};
 
 	// Pass in Path and Query Parameters (Blank if no path parameters exist)
 	₢{nameof(_makeNonBodyImpl)}₢

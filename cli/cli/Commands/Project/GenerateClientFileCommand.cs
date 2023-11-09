@@ -116,16 +116,13 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 				if (args.ProjectService.GetLinkedUnrealProjects().Count > 0)
 				{
 					var gen = new ServiceDocGenerator();
-					var oapiDocument = gen.Generate(type, attribute, null);
-
+					var oapiDocument = gen.Generate(type, attribute, null, true);
 
 					foreach (var unrealProjectData in args.ProjectService.GetLinkedUnrealProjects())
 					{
 						var unrealGenerator = new UnrealSourceGenerator();
 						var docs = new List<OpenApiDocument>() { oapiDocument };
-						var orderedSchemas = SwaggerService.ExtractAllSchemas(docs,
-							GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
-
+						var orderedSchemas = SwaggerService.ExtractAllSchemas(docs, GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
 						var previousGenerationFilePath = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.BeamableBackendGenerationPassFile);
 
 						// Set up the generator to generate code with the correct output path for the AutoGen folders.
