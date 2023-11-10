@@ -1,4 +1,3 @@
-using Beamable;
 using Beamable.Common;
 using Beamable.Player;
 using Beamable.Runtime.LightBeams;
@@ -22,10 +21,10 @@ public class PlayerFriendsBehaviour : MonoBehaviour, ILightComponent<FriendsDisp
 	public Button copyButton;
 	public TMP_InputField friendIdInput;
 	public Button addFriendButton;
-	public Button showFriendsButton;
-	public Button showReceivedInvitesButton;
-	public Button showSentInvitesButton;
-	public Button showBlockedButton;
+	public SelectorButtonBehaviour showFriendsButton;
+	public SelectorButtonBehaviour showReceivedInvitesButton;
+	public SelectorButtonBehaviour showSentInvitesButton;
+	public SelectorButtonBehaviour showBlockedButton;
 
 	private PlayerSocial _social;
 	private LightBeam _context;
@@ -44,22 +43,7 @@ public class PlayerFriendsBehaviour : MonoBehaviour, ILightComponent<FriendsDisp
 			#endif
 		});
 		
-		addFriendButton.HandleClicked( async () =>
-		{
-			var friendId = friendIdInput.text;
-
-			if (string.IsNullOrEmpty(friendId))
-			{
-				Debug.Log("[FRIENDS] Friend id is either null or empty.");
-			}
-
-			await _social.Invite(long.Parse(friendId)).Error((e) =>
-			{
-				Debug.Log("[FRIENDS] An exception occurred while trying to add player: ");
-				Debug.LogException(e);
-			});
-			Debug.Log("[FRIENDS] Finished adding friend");
-		});
+		addFriendButton.HandleClicked(AddFriendCallback);
 		
 		showFriendsButton.HandleClicked(async () =>
 		{
@@ -81,6 +65,31 @@ public class PlayerFriendsBehaviour : MonoBehaviour, ILightComponent<FriendsDisp
 			await UpdateBlockedList();
 		});
 
+		RegisterUpdateCallbacks();
+
+		await UpdateFriendsList();
+	}
+
+	private async Promise AddFriendCallback()
+	{
+		var friendId = friendIdInput.text;
+
+		if (string.IsNullOrEmpty(friendId))
+		{
+			Debug.Log("[FRIENDS] Friend id is either null or empty.");
+			return;
+		}
+
+		await _social.Invite(long.Parse(friendId)).Error((e) =>
+		{
+			Debug.Log("[FRIENDS] An exception occurred while trying to add player: ");
+			Debug.LogException(e);
+		});
+		Debug.Log("[FRIENDS] Finished adding friend");
+	}
+
+	private void RegisterUpdateCallbacks()
+	{
 		_social.Friends.OnUpdated += () =>
 		{
 			
@@ -101,12 +110,20 @@ public class PlayerFriendsBehaviour : MonoBehaviour, ILightComponent<FriendsDisp
 		{
 			var _ = UpdateSentInviteList();
 		};
+	}
 
-		await UpdateFriendsList();
+	private void ResetSelectorButtonsState()
+	{
+		showBlockedButton.SetState(false);
+		showFriendsButton.SetState(false);
+		showReceivedInvitesButton.SetState(false);
+		showSentInvitesButton.SetState(false);
 	}
 
 	private async Promise UpdateSentInviteList()
 	{
+		ResetSelectorButtonsState();
+		showSentInvitesButton.SetState(true);
 		displayListContainer.Clear();
 		
 		var promises = new List<Promise<SentInviteDisplayBehaviour>>();
@@ -122,6 +139,8 @@ public class PlayerFriendsBehaviour : MonoBehaviour, ILightComponent<FriendsDisp
 
 	private async Promise UpdateBlockedList()
 	{
+		ResetSelectorButtonsState();
+		showBlockedButton.SetState(true);
 		displayListContainer.Clear();
 		
 		var promises = new List<Promise<BlockedPlayersDisplayBehaviour>>();
@@ -137,6 +156,8 @@ public class PlayerFriendsBehaviour : MonoBehaviour, ILightComponent<FriendsDisp
 
 	private async Promise UpdateFriendsList()
 	{
+		ResetSelectorButtonsState();
+		showFriendsButton.SetState(true);
 		displayListContainer.Clear();
 		
 		var promises = new List<Promise<FriendDisplayBehaviour>>();
@@ -152,6 +173,8 @@ public class PlayerFriendsBehaviour : MonoBehaviour, ILightComponent<FriendsDisp
 
 	private async Promise UpdateReceivedInviteList()
 	{
+		ResetSelectorButtonsState();
+		showReceivedInvitesButton.SetState(true);
 		displayListContainer.Clear();
 		
 		var promises = new List<Promise<ReceivedInviteDisplayBehaviour>>();
