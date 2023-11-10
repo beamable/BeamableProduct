@@ -362,7 +362,12 @@ namespace Beamable.Editor.BeamCli
 
 						if (_exitCode != 0)
 						{
-							throw new Exception($"Cli failed: {_command}");
+#if BEAMABLE_DEVELOPER
+							var message = $"Cli failed {_command}";
+#else
+							var message = "Cli failed";
+#endif
+							throw new Exception(message);
 						}
 					}
 					finally
