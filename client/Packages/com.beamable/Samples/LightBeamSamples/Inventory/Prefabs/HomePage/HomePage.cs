@@ -17,7 +17,7 @@ public class HomePage : MonoBehaviour, ILightComponent
 	public TextMeshProUGUI playerId;
 
 	private LightBeam _ctx;
-	
+
 	public async Promise OnInstantiated(LightBeam ctx)
 	{
 		_ctx = ctx;
@@ -26,12 +26,12 @@ public class HomePage : MonoBehaviour, ILightComponent
 		playerId.text = $"Player Id: {ctx.BeamContext.PlayerId}";
 
 		await ShowAllItems();
-		
+
 		showCurrencies.HandleClicked(async () =>
 		{
 			await ShowAllCurrencies();
 		});
-		
+
 		showItems.HandleClicked(async () =>
 		{
 			await ShowAllItems();
@@ -42,7 +42,7 @@ public class HomePage : MonoBehaviour, ILightComponent
 	{
 		ClearAllData();
 		itemsParent.SetActive(true);
-		
+
 		var items = _ctx.BeamContext.Inventory.GetItems();
 		await items.Refresh();
 
@@ -56,10 +56,10 @@ public class HomePage : MonoBehaviour, ILightComponent
 	{
 		ClearAllData();
 		currenciesParent.SetActive(true);
-		
+
 		var currencies = _ctx.BeamContext.Inventory.GetCurrencies();
 		await currencies.Refresh();
-		
+
 		foreach (var currency in currencies)
 		{
 			await _ctx.Instantiate<CurrencyDisplayBehaviour, PlayerCurrency>(currenciesContainer, currency);
