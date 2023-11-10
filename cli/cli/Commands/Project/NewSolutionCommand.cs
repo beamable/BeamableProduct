@@ -39,7 +39,7 @@ public class NewSolutionCommandArgs : SolutionCommandArgs
 	public bool quiet;
 }
 
-public class QuietNameOption: Option<bool>
+public class QuietNameOption : Option<bool>
 {
 	public QuietNameOption() : base("--quiet", () => false, "When true, automatically accept path suggestions")
 	{

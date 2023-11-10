@@ -10,12 +10,12 @@ public class PropertyDisplayBehaviour : MonoBehaviour, ILightComponent<PropertyD
 	[Header("Scene references")]
 	public TextMeshProUGUI key;
 	public TextMeshProUGUI value;
-	
+
 	public Promise OnInstantiated(LightBeam beam, PropertyDisplayData model)
 	{
 		key.text = $"Key: {model.Key}";
 		value.text = $"Value: {model.Value}";
-		
+
 		return Promise.Success;
 	}
 }

@@ -24,7 +24,7 @@ public class CurrencyInfoBehaviour : MonoBehaviour, ILightComponent<PlayerCurren
 
 	private LightBeam _beam;
 	private PlayerCurrency _model;
-	
+
 	public Promise OnInstantiated(LightBeam beam, PlayerCurrency model)
 	{
 		_beam = beam;
@@ -34,19 +34,19 @@ public class CurrencyInfoBehaviour : MonoBehaviour, ILightComponent<PlayerCurren
 			var _ = Refresh();
 		};
 		var _ = Refresh();
-		
+
 		backButton.HandleClicked(() =>
 		{
 			beam.GotoPage<HomePage>();
 		});
-		
+
 		return Promise.Success;
 	}
 
 	private async Promise Refresh()
 	{
 		propertiesContainer.Clear();
-		
+
 		if (_model.Content.icon != null && _model.Content.icon.Asset != null)
 		{
 			currencyIcon.sprite = await _model.Content.icon.LoadSprite();
@@ -56,10 +56,10 @@ public class CurrencyInfoBehaviour : MonoBehaviour, ILightComponent<PlayerCurren
 		amount.text = $"Amount: {_model.Amount.ToString()}";
 
 		var promises = new List<Promise<PropertyDisplayBehaviour>>();
-		
-		foreach (KeyValuePair<string,string> property in _model.Properties)
+
+		foreach (KeyValuePair<string, string> property in _model.Properties)
 		{
-			var data = new PropertyDisplayData() {Key = property.Key, Value = property.Value};
+			var data = new PropertyDisplayData() { Key = property.Key, Value = property.Value };
 			var p = _beam.Instantiate<PropertyDisplayBehaviour, PropertyDisplayData>(propertiesContainer, data);
 			promises.Add(p);
 		}

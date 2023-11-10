@@ -13,7 +13,7 @@ public class CurrencyDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerCur
 	public TextMeshProUGUI idText;
 	public Image icon;
 	public Button infoButton;
-	
+
 	private PlayerCurrency _model;
 
 	public Promise OnInstantiated(LightBeam beam, PlayerCurrency model)
@@ -22,12 +22,12 @@ public class CurrencyDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerCur
 
 		model.OnUpdated += Refresh;
 		Refresh();
-		
+
 		infoButton.HandleClicked(() =>
 		{
 			beam.GotoPage<CurrencyInfoBehaviour, PlayerCurrency>(model);
 		});
-	    
+
 		return Promise.Success;
 	}
 

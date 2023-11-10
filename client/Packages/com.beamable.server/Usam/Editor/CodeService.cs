@@ -81,7 +81,7 @@ namespace Beamable.Server.Editor.Usam
 			});
 			await ps.Run();
 		}
-		
+
 		/// <summary>
 		/// Regenerates the files: Program.cs, Dockerfile and .csproj. Then copy these files
 		/// to the desired Standalone Microservice.
@@ -93,8 +93,8 @@ namespace Beamable.Server.Editor.Usam
 			var projName = new ServiceName(signPost.name);
 			var projPath = signPost.relativeDockerFile.Replace("/Dockerfile", "");
 
-			var args = new ProjectRegenerateArgs() { name = projName, output = tempPath, copyPath = projPath};
-			var command =_cli.ProjectRegenerate(args);
+			var args = new ProjectRegenerateArgs() { name = projName, output = tempPath, copyPath = projPath };
+			var command = _cli.ProjectRegenerate(args);
 			await command.Run();
 		}
 
