@@ -27,7 +27,7 @@ public struct UnrealPropertyDeclaration
 	/// for (de)serialization purposes. In each declaration, this variable would hold either of those values so that we can appropriately call the serialize functions.
 	///
 	/// There's one exception to this --- for semantic types that are not defined in the spec (ie: <see cref="UnrealSourceGenerator.UNREAL_OPTIONAL_U_REPTYPE_CLIENTPERMISSION"/>),
-	/// this is always an FString and the semantic type is expected to inherit from FBeamJsonSerializable first (FBeamSemanticType as a second inheritance). 
+	/// this is always an FString and the semantic type is expected to inherit from FBeamJsonSerializableUStruct/IBeamJsonSerializableUObject first (FBeamSemanticType as a second inheritance). 
 	/// </summary>
 	public string SemTypeSerializationType;
 
@@ -52,7 +52,7 @@ public struct UnrealPropertyDeclaration
 
 	public const string U_PROPERTY_DECLARATION =
 		$@"UPROPERTY(EditAnywhere, BlueprintReadWrite, DisplayName=""₢{nameof(PropertyDisplayName)}₢"", Category=""Beam"")
-	₢{nameof(PropertyUnrealType)}₢ ₢{nameof(PropertyName)}₢;";
+	₢{nameof(PropertyUnrealType)}₢ ₢{nameof(PropertyName)}₢ = {{}};";
 
 
 	public const string PRIMITIVE_U_PROPERTY_SERIALIZE = @$"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢);";

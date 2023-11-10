@@ -701,7 +701,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(Subsyste
 	
     int64 OutRequestId;
 	CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(GetDefault<UBeamCoreSettings>()->TargetRealm, RetryConfig, Backend->CurrentConnectivityStatus, Request, Handler, OutRequestId, OpHandle, CallingContext);
-	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, GetDefault<UBeamCoreSettings>()->TargetRealm, -1, FUserSlot(), None}};
+	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, GetDefault<UBeamCoreSettings>()->TargetRealm, -1, FUserSlot(), AS_None}};
 }}
 ";
 
@@ -735,7 +735,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(Subsyste
 
     int64 OutRequestId;
 	CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(AuthenticatedUser.RealmHandle, RetryConfig, AuthenticatedUser.AuthToken, Backend->CurrentConnectivityStatus, Request, Handler, OutRequestId, OpHandle, CallingContext);
-	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, AuthenticatedUser.RealmHandle, -1, UserSlot, None}};
+	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, AuthenticatedUser.RealmHandle, -1, UserSlot, AS_None}};
 }}
 ";
 
@@ -764,7 +764,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::₢{nameof(SubsystemNam
 	
 	int64 OutRequestId = 0;
 	BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(GetDefault<UBeamCoreSettings>()->TargetRealm, RetryConfig, Backend->CurrentConnectivityStatus, Request, OnSuccess, OnError, OnComplete, OutRequestId, OpHandle, CallingContext);
-	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, GetDefault<UBeamCoreSettings>()->TargetRealm, -1, FUserSlot(), None}};
+	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, GetDefault<UBeamCoreSettings>()->TargetRealm, -1, FUserSlot(), AS_None}};
 }}
 ";
 
@@ -797,7 +797,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::₢{nameof(SubsystemNam
 
 	int64 OutRequestId;
 	BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(AuthenticatedUser.RealmHandle, RetryConfig, AuthenticatedUser.AuthToken, Backend->CurrentConnectivityStatus, Request, OnSuccess, OnError, OnComplete, OutRequestId, OpHandle, CallingContext);	
-	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, AuthenticatedUser.RealmHandle, -1, UserSlot, None}};
+	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, AuthenticatedUser.RealmHandle, -1, UserSlot, AS_None}};
 }}
 ";
 
