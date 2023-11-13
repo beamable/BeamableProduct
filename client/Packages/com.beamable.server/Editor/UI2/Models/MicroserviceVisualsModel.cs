@@ -12,26 +12,26 @@ namespace Beamable.Editor.Microservice.UI2.Models
 		float ElementHeight { get; set; }
 		bool IsSelected { get; set; }
 		bool IsCollapsed { get; set; }
-		
+
 		Action OnLogsDetached { get; set; }
 		Action OnLogsAttached { get; set; }
 		Action<bool> OnLogsAttachmentChanged { get; set; }
 		Action<bool> OnSelectionChanged { get; set; }
 		Action OnSortChanged { get; set; }
 		LogMessageStore Logs { get; }
-		
+
 		void DetachLogs();
 		void AttachLogs();
 		void PopulateMoreDropdown(ContextualMenuPopulateEvent evt);
 	}
-	
+
 	[Serializable]
 	public class MicroserviceVisualsModel : IMicroserviceVisualsModel
 	{
 		private const float DEFAULT_HEIGHT = 300.0f;
 
 		public bool AreLogsAttached { get; set; }
-		
+
 		public float ElementHeight
 		{
 			get => _visualHeight;
@@ -51,19 +51,19 @@ namespace Beamable.Editor.Microservice.UI2.Models
 			get => _isCollapsed;
 			set => _isCollapsed = value;
 		}
-		
+
 		public Action OnLogsDetached { get; set; }
 		public Action OnLogsAttached { get; set; }
 		public Action<bool> OnLogsAttachmentChanged { get; set; }
 		public Action<bool> OnSelectionChanged { get; set; }
 		public Action OnSortChanged { get; set; }
 		public LogMessageStore Logs => _logs;
-		
+
 		[SerializeField] private LogMessageStore _logs = new LogMessageStore();
 		[SerializeField] private bool _isSelected;
 		[SerializeField] private bool _isCollapsed = false;
 		[SerializeField] private float _visualHeight = DEFAULT_HEIGHT;
-		[SerializeField]public string name;
+		[SerializeField] public string name;
 
 		public static MicroserviceVisualsModel GetModel(string name)
 		{
@@ -80,12 +80,13 @@ namespace Beamable.Editor.Microservice.UI2.Models
 						return model;
 					}
 				}
-				
-			}catch
+
+			}
+			catch
 			{
 				//
 			}
-			model = new MicroserviceVisualsModel() {name = name};
+			model = new MicroserviceVisualsModel() { name = name };
 			return model;
 		}
 
@@ -94,7 +95,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 			string json = JsonUtility.ToJson(this);
 			EditorPrefs.SetString(GetKey(name), json);
 		}
-		
+
 		public void DetachLogs()
 		{
 			if (!AreLogsAttached) return;

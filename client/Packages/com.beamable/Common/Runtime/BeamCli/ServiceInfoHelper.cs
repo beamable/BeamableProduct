@@ -21,7 +21,7 @@ namespace Beamable.Common.BeamCli
 					System.Diagnostics.Process.Start(solutionFiles[0]);
 					break;
 				default:
-					Debug.LogError($"Found multiple solution files: {string.Join(",",solutionFiles)}");
+					Debug.LogError($"Found multiple solution files: {string.Join(",", solutionFiles)}");
 					break;
 			}
 		}

@@ -209,7 +209,7 @@ namespace Beamable.Editor.BeamCli
 					_messageBuffer = _messageBuffer.Substring(startIndex + Reporting.PATTERN_START.Length);
 				}
 			}
-			
+
 			if (_isMessageInProgress)
 			{
 				var endPatternIndex = _messageBuffer.IndexOf(Reporting.PATTERN_END, StringComparison.Ordinal);

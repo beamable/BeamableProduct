@@ -61,7 +61,7 @@ namespace Beamable.Server.Editor.Usam
 				version = result.data;
 			});
 			await versionCommand.Run().Error(Debug.LogException);
-			
+
 			if (string.IsNullOrEmpty(version?.version))
 			{
 				Debug.Log("Could not detect current version, skipping");
@@ -83,7 +83,7 @@ namespace Beamable.Server.Editor.Usam
 
 		public async Promise RefreshServices()
 		{
-			var ps2 = _cli.ServicesPs(new ServicesPsArgs() {json = false, remote = true});
+			var ps2 = _cli.ServicesPs(new ServicesPsArgs() { json = false, remote = true });
 			BeamServiceListResult result = null;
 			ps2.OnStreamServiceListResult(cb =>
 			{
