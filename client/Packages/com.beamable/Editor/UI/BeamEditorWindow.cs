@@ -115,7 +115,7 @@ namespace Beamable.Editor.UI
 			{
 				ShowFullWindowLoading();
 			}
-			
+
 			BeamEditor.DelayedInitializationCall(() =>
 			{
 				BuildWithDefaultContext();
@@ -138,12 +138,12 @@ namespace Beamable.Editor.UI
 		{
 			// TODO: render for loading...
 			await OnLoad();
-			
+
 			OnRender();
 		}
 
 		public virtual bool ShowLoading => false;
-		
+
 		public virtual Promise OnLoad()
 		{
 			return Promise.Success;
@@ -151,7 +151,7 @@ namespace Beamable.Editor.UI
 
 		public virtual void OnRender()
 		{
-			
+
 		}
 
 		public virtual void OnDestroy() => IsInstantiated = false;
@@ -202,10 +202,10 @@ namespace Beamable.Editor.UI
 				await Load();
 				var root = this.GetRootVisualContainer();
 				root.Clear();
-				
+
 				await BuildAsync();
 			}
-			
+
 			dispatcher.Schedule(async () =>
 			{
 				try

@@ -14,14 +14,14 @@ namespace Beamable.Editor.Microservice.UI2.Components
 {
 	public class StandaloneMicroserviceVisualElement : BeamableVisualElement
 	{
-		
+
 		private const float MIN_HEIGHT = 240.0f;
 		private const float MAX_HEIGHT = 500.0f;
 		private const float DETACHED_HEIGHT = 30.0f;
 		protected const float DEFAULT_HEADER_HEIGHT = 30.0f;
 		private MicroserviceVisualsModel _visualsModel;
 		public ServiceInfo Info { get; set; }
-		
+
 		protected LoadingBarElement _loadingBar;
 		protected VisualElement _moreBtn;
 		protected Button _startButton;
@@ -38,12 +38,13 @@ namespace Beamable.Editor.Microservice.UI2.Components
 		private Label _serviceName;
 		private VisualElement _openDocsBtn;
 		private VisualElement _openScriptBtn;
-		
+
 		public new class UxmlFactory : UxmlFactory<StandaloneMicroserviceVisualElement, UxmlTraits> { }
 
 		public StandaloneMicroserviceVisualElement() :
 			base(
-				$"{Constants.Directories.BEAMABLE_SERVER_PACKAGE_EDITOR}/UI2/Components/{nameof(StandaloneMicroserviceVisualElement)}/{nameof(StandaloneMicroserviceVisualElement)}") { }
+				$"{Constants.Directories.BEAMABLE_SERVER_PACKAGE_EDITOR}/UI2/Components/{nameof(StandaloneMicroserviceVisualElement)}/{nameof(StandaloneMicroserviceVisualElement)}")
+		{ }
 
 		public override void Refresh()
 		{
@@ -90,7 +91,7 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			_openDocsBtn.AddManipulator(new Clickable(OpenLocalDocs));
 			// _openDocsBtn.SetEnabled(Model.IsRunning);
 			_openDocsBtn.tooltip = "View Documentation";
-			
+
 			_serviceName.text = _serviceName.tooltip = Info.name;
 
 			if (_serviceIcon != null)
@@ -175,11 +176,11 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			var layoutHeight = _rootVisualElement.layout.height;
 			SetHeight(layoutHeight + value);
 		}
-		
+
 		protected void UpdateRemoteStatusIcon(string customStatusClassName = "")
 		{
 			_serviceIcon.ClearClassList();
-			
+
 			var statusClassName = string.IsNullOrWhiteSpace(customStatusClassName)
 				? $"{ServiceType.MicroService}_remoteDisabled"
 				// ? IsRemoteEnabled
@@ -215,7 +216,7 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			var url = $"{BeamableEnvironment.PortalUrl}/{de.CurrentCustomer.Alias}/games/{de.ProductionRealm.Pid}/realms/{de.CurrentRealm.Pid}/microservices/{Info.name}/docs?prefix={MicroserviceIndividualization.Prefix}&refresh_token={de.Requester.Token.RefreshToken}";
 			Application.OpenURL(url);
 		}
-		
+
 
 		private void HandleCollapseButton()
 		{

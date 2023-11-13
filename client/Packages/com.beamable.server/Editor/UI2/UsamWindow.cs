@@ -39,14 +39,14 @@ namespace Beamable.Editor.Microservice.UI2
 		private VisualElement _windowRoot;
 		private ActionBarVisualElement _actionBarVisualElement;
 		private MicroserviceBreadcrumbsVisualElement _microserviceBreadcrumbsVisualElement;
-		
-		
+
+
 		protected override void Build()
 		{
 			// ActiveContext.ServiceScope.
 			var root = this.GetRootVisualContainer();
 			root.Clear();
-			
+
 			var uiAsset =
 				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{Constants.Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uxml");
 			_windowRoot = uiAsset.CloneTree();
@@ -68,7 +68,7 @@ namespace Beamable.Editor.Microservice.UI2
 			{
 				foreach (var info in _codeService.Services)
 				{
-					var el = new StandaloneMicroserviceVisualElement() {Info = info};
+					var el = new StandaloneMicroserviceVisualElement() { Info = info };
 					ssa.Add(el);
 					el.Refresh();
 				}
@@ -78,8 +78,8 @@ namespace Beamable.Editor.Microservice.UI2
 		public override async Promise OnLoad()
 		{
 			_codeService = Scope.GetService<CodeService>();
-			
-			
+
+
 			await _codeService.OnReady;
 		}
 	}
