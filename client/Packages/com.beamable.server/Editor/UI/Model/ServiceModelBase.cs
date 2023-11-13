@@ -1,4 +1,5 @@
-﻿using Beamable.Server.Editor;
+﻿using Beamable.Editor.Microservice.UI2.Models;
+using Beamable.Server.Editor;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -32,7 +33,7 @@ namespace Beamable.Editor.UI.Model
 
 		public LogMessageStore Logs => _logs;
 
-		public float VisualElementHeight
+		public float ElementHeight
 		{
 			get => _visualHeight;
 			set => _visualHeight = value;
@@ -43,6 +44,7 @@ namespace Beamable.Editor.UI.Model
 		public ServiceType ServiceType => Descriptor.ServiceType;
 		public string Name => Descriptor.Name;
 		public virtual bool IsArchived { get; protected set; }
+
 
 		public bool IsSelected
 		{

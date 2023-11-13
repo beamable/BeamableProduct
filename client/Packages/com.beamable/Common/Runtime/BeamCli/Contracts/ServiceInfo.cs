@@ -8,6 +8,5 @@ namespace Beamable.Common.BeamCli.Contracts
 		public string name;
 		public string dockerBuildPath;
 		public string dockerfilePath;
-
 	}
 }
