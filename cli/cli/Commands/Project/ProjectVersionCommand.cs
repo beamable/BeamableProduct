@@ -29,7 +29,7 @@ public class ProjectVersionCommand : AppCommand<ProjectVersionCommandArgs>, IRes
 
 	public override async Task Handle(ProjectVersionCommandArgs args)
 	{
-		var projectList = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.Values.ToList();
+		var projectList = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.Values.Where(p=> !string.IsNullOrWhiteSpace(p.RelativeDockerfilePath)).ToList();
 		List<BeamablePackageInProject> results = new();
 		foreach (var project in projectList)
 		{

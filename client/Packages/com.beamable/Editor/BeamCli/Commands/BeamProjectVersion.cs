@@ -6,7 +6,7 @@ namespace Beamable.Editor.BeamCli.Commands
 
 	public class ProjectVersionArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>Request specific version of Beamable packages.</summary>
+		/// <summary>Request specific version of Beamable packages</summary>
 		public string requestedVersion;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()

@@ -8,7 +8,7 @@ namespace cli.Commands.Project;
 public class RegenerateSolutionFilesCommand : AppCommand<RegenerateSolutionFilesCommandArgs>, IStandaloneCommand, IEmptyResult
 {
 	public RegenerateSolutionFilesCommand() :
-		base("regenerate", "Regenerate the solution csproj, Dockerfile and Program.cs files.")
+		base("regenerate", "Regenerate the solution csproj, Dockerfile and Program.cs files")
 	{
 	}
 
@@ -17,7 +17,7 @@ public class RegenerateSolutionFilesCommand : AppCommand<RegenerateSolutionFiles
 		AddArgument(new ServiceNameArgument(), (args, i) => args.ProjectName = i);
 		AddArgument(new Argument<string>("output", () => string.Empty, description: "Where the temp project will be created"),
 			(args, i) => args.tempDirectory = i);
-		AddArgument(new Argument<string>("copy-path", () => string.Empty, description: "The path to where the files will be copied to."),
+		AddArgument(new Argument<string>("copy-path", () => string.Empty, description: "The path to where the files will be copied to"),
 			(args, i) => args.projectDirectory = i);
 		AddOption(new SkipCommonOptionFlag(), (args, i) => args.SkipCommon = i);
 		AddOption(new Option<ServiceName>("--solution-name", "The name of the solution of the new project"),
