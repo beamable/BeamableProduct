@@ -35,6 +35,11 @@
       "displayName": "Inventory Management",
       "description": "Contains a modest user interface demonstrating how to access and how inventory items and currencies.",
       "path": "SAMPLES_PATH/LightBeamSamples/Inventory"
+    },
+    {
+      "displayName": "Friends HUD",
+      "description": "Contains a humble user interface demonstrating how to use social features to add, remove, block friends.",
+      "path": "SAMPLES_PATH/LightBeamSamples/FriendsManager"
     }
   ]
 }

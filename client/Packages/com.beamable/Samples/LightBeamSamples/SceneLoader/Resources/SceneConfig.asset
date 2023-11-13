@@ -35,6 +35,12 @@ MonoBehaviour:
     title: Inventory Management
     sceneName: Sample_InventoryManager
     scenePath: Packages/com.beamable/Samples/LightBeamSamples/Inventory/Sample_InventoryManager.unity
+  - label: friends
+    about: Contains a humble user interface demonstrating how to use social features
+      to add, remove, block friends.
+    title: Friends Hud
+    sceneName: Sample_FriendsManager
+    scenePath: Packages/com.beamable/Samples/LightBeamSamples/FriendsManager/Sample_FriendsManager.unity
   editorScenes:
   - name: boot
     title: 
@@ -54,3 +60,8 @@ MonoBehaviour:
     about: Contains a modest user interface demonstrating how to access and how inventory
       items and currencies.
     scene: {fileID: 102900000, guid: f9d893bd375e8429ebcc07120873a85b, type: 3}
+  - name: friends
+    title: Friends Hud
+    about: Contains a humble user interface demonstrating how to use social features
+      to add, remove, block friends.
+    scene: {fileID: 102900000, guid: dee51f5a283164b649282ea3f20aabbe, type: 3}
