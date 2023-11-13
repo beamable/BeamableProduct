@@ -164,8 +164,8 @@ namespace Beamable.Editor.BeamCli
 		protected int _exitCode = -1;
 		private bool _hasExecuted;
 
-		private string messageBuffer = "";
-		private bool isMessageInProgress;
+		private string _messageBuffer = string.Empty;
+		private bool _isMessageInProgress;
 
 		// private Dictionary<string, List<Action<string>>
 
@@ -199,32 +199,39 @@ namespace Beamable.Editor.BeamCli
 		{
 			if (message == null) return;
 
-			messageBuffer += message;
-			if (!isMessageInProgress)
+			_messageBuffer += message;
+			if (!_isMessageInProgress)
 			{
-				var startIndex = messageBuffer.IndexOf(Reporting.PATTERN_START, StringComparison.Ordinal);
+				var startIndex = _messageBuffer.IndexOf(Reporting.PATTERN_START, StringComparison.Ordinal);
 				if (startIndex >= 0)
 				{
-					isMessageInProgress = true;
-					messageBuffer = messageBuffer.Substring(startIndex + Reporting.PATTERN_START.Length);
+					_isMessageInProgress = true;
+					_messageBuffer = _messageBuffer.Substring(startIndex + Reporting.PATTERN_START.Length);
 				}
 			}
-			else if (isMessageInProgress)
+			
+			if (_isMessageInProgress)
 			{
-				var startIndex = messageBuffer.IndexOf(Reporting.PATTERN_END, StringComparison.Ordinal);
-				if (startIndex >= 0)
+				var endPatternIndex = _messageBuffer.IndexOf(Reporting.PATTERN_END, StringComparison.Ordinal);
+				if (endPatternIndex >= 0)
 				{
-					isMessageInProgress = false;
-					var found = messageBuffer.Substring(0, startIndex);
-					messageBuffer = messageBuffer.Substring(startIndex + Reporting.PATTERN_END.Length);
+					_isMessageInProgress = false;
+					var found = _messageBuffer.Substring(0, endPatternIndex);
+					_messageBuffer = _messageBuffer.Substring(endPatternIndex + Reporting.PATTERN_END.Length);
 					// Debug.LogWarning(found);
-
-					var pt = JsonUtility.FromJson<ReportDataPointDescription>(found);
-					if (pt != null)
+					try
 					{
-						pt.json = found;
-						_points.Add(pt);
-						_callbacks?.Invoke(pt);
+						var pt = JsonUtility.FromJson<ReportDataPointDescription>(found);
+						if (pt != null)
+						{
+							pt.json = found;
+							_points.Add(pt);
+							_callbacks?.Invoke(pt);
+						}
+					}
+					catch (Exception e)
+					{
+						Debug.LogException(e);
 					}
 				}
 			}

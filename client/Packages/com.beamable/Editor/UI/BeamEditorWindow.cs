@@ -1,13 +1,16 @@
 using Beamable.Common;
+using Beamable.Common.Dependencies;
 using Beamable.Editor.Login.UI;
 using Beamable.Editor.NoUser;
 using Beamable.Editor.Toolbox.UI;
+using Beamable.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.Experimental.UIElements;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Beamable.Editor.UI
 {
@@ -50,6 +53,11 @@ namespace Beamable.Editor.UI
 		/// Reference to the current <see cref="BeamEditorContext"/> that is feeding this window with data.
 		/// </summary>
 		public BeamEditorContext ActiveContext;
+
+		/// <summary>
+		/// Computed reference to the current dependency scope for the <see cref="ActiveContext"/>
+		/// </summary>
+		public IDependencyProviderScope Scope => ActiveContext?.ServiceScope;
 
 		/// <summary>
 		/// Creates, initializes then waits for the window instance to be completely ready for use before returning that instance.
@@ -101,6 +109,13 @@ namespace Beamable.Editor.UI
 
 		public virtual void OnEnable()
 		{
+			// TODO: render for loading
+
+			if (ShowLoading)
+			{
+				ShowFullWindowLoading();
+			}
+			
 			BeamEditor.DelayedInitializationCall(() =>
 			{
 				BuildWithDefaultContext();
@@ -117,6 +132,26 @@ namespace Beamable.Editor.UI
 				else
 					FullyInitializedWindowPromise.CompleteSuccess();
 			}, true, CustomDelayClause);
+		}
+
+		public async Promise Load()
+		{
+			// TODO: render for loading...
+			await OnLoad();
+			
+			OnRender();
+		}
+
+		public virtual bool ShowLoading => false;
+		
+		public virtual Promise OnLoad()
+		{
+			return Promise.Success;
+		}
+
+		public virtual void OnRender()
+		{
+			
 		}
 
 		public virtual void OnDestroy() => IsInstantiated = false;
@@ -160,20 +195,52 @@ namespace Beamable.Editor.UI
 		{
 			ActiveContext = context ?? ActiveContext;
 
-			if (InitializedConfig.RequireLoggedUser)
+			var dispatcher = ActiveContext.ServiceScope.GetService<BeamableDispatcher>();
+
+			async Promise Setup()
 			{
-				if (ActiveContext.IsAuthenticated)
-					Build();
-				else
-					BuildWhenNotAuthenticated();
-
-				return;
+				await Load();
+				var root = this.GetRootVisualContainer();
+				root.Clear();
+				
+				await BuildAsync();
 			}
-
-			Build();
+			
+			dispatcher.Schedule(async () =>
+			{
+				try
+				{
+					if (InitializedConfig.RequireLoggedUser)
+					{
+						if (ActiveContext.IsAuthenticated)
+						{
+							await Setup();
+						}
+						else
+						{
+							BuildWhenNotAuthenticated();
+						}
+					}
+					else
+					{
+						await Setup();
+					}
+				}
+				catch (Exception ex)
+				{
+					Debug.LogError(ex);
+					Debug.LogError("Cannot load window");
+				}
+			});
 		}
 
 		protected abstract void Build();
+
+		protected virtual Promise BuildAsync()
+		{
+			Build();
+			return Promise.Success;
+		}
 
 		protected virtual void BuildWhenNotAuthenticated()
 		{
@@ -185,6 +252,14 @@ namespace Beamable.Editor.UI
 				BuildWithContext();
 			};
 			root.Add(noUserVisualElement);
+		}
+
+		protected virtual void ShowFullWindowLoading()
+		{
+			var root = this.GetRootVisualContainer();
+			root.Clear();
+			var label = new Label("Loading...");
+			root.Add(label);
 		}
 	}
 
