@@ -3,6 +3,7 @@ using Beamable.Common.Dependencies;
 using cli.Unreal;
 using cli.Utils;
 using Microsoft.OpenApi;
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Exceptions;
 using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Models;
@@ -442,6 +443,7 @@ public class SwaggerService
 			SplitTagsIntoSeparateDocuments,
 			AddTitlesToAllSchemasIfNone,
 			RewriteObjectEnumsAsStrings,
+			DetectNonSelfReferentialTypes,
 			Reserailize
 		};
 
@@ -912,6 +914,37 @@ public class SwaggerService
 			output.Add(mergedResult);
 		}
 		return output;
+	}
+
+	private static List<OpenApiDocumentResult> DetectNonSelfReferentialTypes(OpenApiDocumentResult swagger)
+	{
+		foreach ((string key, OpenApiSchema value) in swagger.Document.Components.Schemas)
+		{
+			var recursiveCheck = new Stack<OpenApiSchema>();
+			
+			foreach ((_, OpenApiSchema propertySchema) in value.Properties) 
+				recursiveCheck.Push(propertySchema);
+
+			bool isSelfReferential = false;
+			OpenApiSchema curr = null;
+			while (recursiveCheck.TryPop(out curr))
+			{
+				if (curr.Reference != null && value.Reference != null && curr.Reference.Id.Equals(value.Reference.Id))
+				{
+					isSelfReferential = true;
+				}
+				
+				foreach ((_, OpenApiSchema propertySchema) in curr.Properties)
+					recursiveCheck.Push(propertySchema);
+			}
+
+			if (isSelfReferential)
+			{
+				value.Extensions.Add(Constants.EXTENSION_BEAMABLE_SELF_REFERENTIAL_TYPE, new OpenApiString(Constants.EXTENSION_BEAMABLE_SELF_REFERENTIAL_TYPE));
+			}
+		}
+
+		return new List<OpenApiDocumentResult> { swagger };
 	}
 
 

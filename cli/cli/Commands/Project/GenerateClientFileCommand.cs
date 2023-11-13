@@ -128,10 +128,10 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 						// Set up the generator to generate code with the correct output path for the AutoGen folders.
 						UnrealSourceGenerator.exportMacro = unrealProjectData.CoreProjectName.ToUpper() + "_API";
 						UnrealSourceGenerator.blueprintExportMacro = unrealProjectData.BlueprintNodesProjectName.ToUpper() + "_API";
-						UnrealSourceGenerator.headerFileOutputPath = unrealProjectData.MsCoreHeaderPath + "/";
-						UnrealSourceGenerator.cppFileOutputPath = unrealProjectData.MsCoreCppPath + "/";
-						UnrealSourceGenerator.blueprintHeaderFileOutputPath = unrealProjectData.MsBlueprintNodesHeaderPath + "/Public/";
-						UnrealSourceGenerator.blueprintCppFileOutputPath = unrealProjectData.MsBlueprintNodesCppPath + "/Private/";
+						UnrealSourceGenerator.headerFileOutputPath = unrealProjectData.MsCoreHeaderPath;
+						UnrealSourceGenerator.cppFileOutputPath = unrealProjectData.MsCoreCppPath;
+						UnrealSourceGenerator.blueprintHeaderFileOutputPath = unrealProjectData.MsBlueprintNodesHeaderPath;
+						UnrealSourceGenerator.blueprintCppFileOutputPath = unrealProjectData.MsBlueprintNodesCppPath;
 						UnrealSourceGenerator.genType = UnrealSourceGenerator.GenerationType.Microservice;
 						UnrealSourceGenerator.previousGenerationPassesData = JsonConvert.DeserializeObject<PreviousGenerationPassesData>(File.ReadAllText(previousGenerationFilePath));
 						UnrealSourceGenerator.currentGenerationPassDataFilePath = $"{unrealProjectData.CoreProjectName}_GenerationPass";
