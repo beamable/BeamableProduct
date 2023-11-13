@@ -40,6 +40,8 @@ public class PlayerFriendsBehaviour : MonoBehaviour, ILightComponent<FriendsDisp
 		{
 			#if UNITY_EDITOR
 			EditorGUIUtility.systemCopyBuffer = model.playerId.ToString();
+			#else
+			GUIUtility.systemCopyBuffer = model.playerId.ToString();
 			#endif
 		});
 		
