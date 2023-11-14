@@ -42,7 +42,7 @@ public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>, IStandalon
 			(args, val) => args.Filter = val);
 
 		AddOption(new Option<string>("--engine", () => "",
-				"Filter which engine code we should generate (unity | unreal). An empty string matches everything"),
+				$"Filter which engine code we should generate ({SwaggerService.TARGET_ENGINE_NAME_UNITY} | {SwaggerService.TARGET_ENGINE_NAME_UNREAL}). An empty string matches everything"),
 			(args, val) => args.Engine = val);
 
 		AddOption(new Option<GenerateSdkConflictResolutionStrategy>("--conflict-strategy", () => GenerateSdkConflictResolutionStrategy.None,
