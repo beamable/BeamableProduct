@@ -74,7 +74,7 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>, ISta
 			}
 		}
 
-		await CliExtensions.GetDotnetCommand($"tool update Beamable.Tools --global --version {packageVersion.originalVersion}")
+		await CliExtensions.GetDotnetCommand("dotnet",$"tool update Beamable.Tools --global --version {packageVersion.originalVersion}")
 			.WithValidation(CommandResultValidation.ZeroExitCode)
 			.ExecuteAsyncAndLog();
 

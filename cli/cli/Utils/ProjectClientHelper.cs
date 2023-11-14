@@ -1,4 +1,5 @@
 using Beamable.Common;
+using cli.Dotnet;
 using Spectre.Console;
 
 namespace cli.Utils;

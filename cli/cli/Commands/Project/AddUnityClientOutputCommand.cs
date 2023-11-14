@@ -5,12 +5,12 @@ using System.CommandLine;
 
 namespace cli.Dotnet;
 
-public class AddUnityClientOutputCommandArgs : CommandArgs
+public class AddProjectClientOutputCommandArgs : CommandArgs
 {
 	public string path;
 }
 
-public class AddUnityClientOutputCommand : AppCommand<AddUnityClientOutputCommandArgs>
+public class AddUnityClientOutputCommand : AppCommand<AddProjectClientOutputCommandArgs>
 {
 	public AddUnityClientOutputCommand() : base("add-unity-project", "Add a unity project to this beamable cli project")
 	{
@@ -21,7 +21,7 @@ public class AddUnityClientOutputCommand : AppCommand<AddUnityClientOutputComman
 		AddArgument(new Argument<string>("path", "Relative path to the Unity project"), (args, i) => args.path = i);
 	}
 
-	public override Task Handle(AddUnityClientOutputCommandArgs args)
+	public override Task Handle(AddProjectClientOutputCommandArgs args)
 	{
 		var unityProjectClient = new ProjectClientHelper<UnityProjectClient>();
 		var workingDir = Directory.GetCurrentDirectory();
