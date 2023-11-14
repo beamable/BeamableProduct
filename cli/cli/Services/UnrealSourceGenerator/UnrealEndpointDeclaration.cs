@@ -403,8 +403,8 @@ public:
 	virtual void BuildRoute(FString& RouteString) const override;
 	virtual void BuildBody(FString& BodyString) const override;
 
-	UFUNCTION(BlueprintPure, BlueprintInternalUseOnly, Category=""Beam|Backend|₢{nameof(NamespacedOwnerServiceName)}₢"", DisplayName=""Beam - Make ₢{nameof(GlobalNamespacedEndpointName)}₢"",  meta=(DefaultToSelf=""RequestOwner"", AdvancedDisplay=""₢{nameof(_makeHiddenParameterNames)}₢RequestOwner""))
-	static U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Make(₢{nameof(_makeParameterDeclaration)}₢UObject* RequestOwner);
+	UFUNCTION(BlueprintPure, BlueprintInternalUseOnly, Category=""Beam|Backend|₢{nameof(NamespacedOwnerServiceName)}₢"", DisplayName=""Beam - Make ₢{nameof(GlobalNamespacedEndpointName)}₢"",  meta=(DefaultToSelf=""RequestOwner"", AdvancedDisplay=""₢{nameof(_makeHiddenParameterNames)}₢RequestOwner"", AutoCreateRefTerm=""CustomHeaders""))
+	static U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Make(₢{nameof(_makeParameterDeclaration)}₢UObject* RequestOwner, TMap<FString, FString> CustomHeaders);
 }};
 
 UDELEGATE(BlueprintAuthorityOnly)
@@ -438,9 +438,10 @@ void U₢{nameof(GlobalNamespacedEndpointName)}₢Request::BuildBody(FString& Bo
 	₢{nameof(_buildBodyImpl)}₢
 }}
 
-U₢{nameof(GlobalNamespacedEndpointName)}₢Request* U₢{nameof(GlobalNamespacedEndpointName)}₢Request::Make(₢{nameof(_makeParameterDeclaration)}₢UObject* RequestOwner)
+U₢{nameof(GlobalNamespacedEndpointName)}₢Request* U₢{nameof(GlobalNamespacedEndpointName)}₢Request::Make(₢{nameof(_makeParameterDeclaration)}₢UObject* RequestOwner, TMap<FString, FString> CustomHeaders)
 {{
 	U₢{nameof(GlobalNamespacedEndpointName)}₢Request* Req = NewObject<U₢{nameof(GlobalNamespacedEndpointName)}₢Request>(RequestOwner);
+	Req->CustomHeaders = TMap{{CustomHeaders}};
 
 	// Pass in Path and Query Parameters (Blank if no path parameters exist)
 	₢{nameof(_makeNonBodyImpl)}₢
@@ -700,7 +701,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(Subsyste
 	
     int64 OutRequestId;
 	CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(GetDefault<UBeamCoreSettings>()->TargetRealm, RetryConfig, Backend->CurrentConnectivityStatus, Request, Handler, OutRequestId, OpHandle, CallingContext);
-	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, GetDefault<UBeamCoreSettings>()->TargetRealm, -1, FUserSlot(), None}};
+	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, GetDefault<UBeamCoreSettings>()->TargetRealm, -1, FUserSlot(), AS_None}};
 }}
 ";
 
@@ -734,7 +735,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::CPP_₢{nameof(Subsyste
 
     int64 OutRequestId;
 	CPP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(AuthenticatedUser.RealmHandle, RetryConfig, AuthenticatedUser.AuthToken, Backend->CurrentConnectivityStatus, Request, Handler, OutRequestId, OpHandle, CallingContext);
-	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, AuthenticatedUser.RealmHandle, -1, UserSlot, None}};
+	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, AuthenticatedUser.RealmHandle, -1, UserSlot, AS_None}};
 }}
 ";
 
@@ -763,7 +764,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::₢{nameof(SubsystemNam
 	
 	int64 OutRequestId = 0;
 	BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(GetDefault<UBeamCoreSettings>()->TargetRealm, RetryConfig, Backend->CurrentConnectivityStatus, Request, OnSuccess, OnError, OnComplete, OutRequestId, OpHandle, CallingContext);
-	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, GetDefault<UBeamCoreSettings>()->TargetRealm, -1, FUserSlot(), None}};
+	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, GetDefault<UBeamCoreSettings>()->TargetRealm, -1, FUserSlot(), AS_None}};
 }}
 ";
 
@@ -796,7 +797,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::₢{nameof(SubsystemNam
 
 	int64 OutRequestId;
 	BP_₢{nameof(SubsystemNamespacedEndpointName)}₢Impl(AuthenticatedUser.RealmHandle, RetryConfig, AuthenticatedUser.AuthToken, Backend->CurrentConnectivityStatus, Request, OnSuccess, OnError, OnComplete, OutRequestId, OpHandle, CallingContext);	
-	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, AuthenticatedUser.RealmHandle, -1, UserSlot, None}};
+	OutRequestContext = FBeamRequestContext{{OutRequestId, RetryConfig, AuthenticatedUser.RealmHandle, -1, UserSlot, AS_None}};
 }}
 ";
 

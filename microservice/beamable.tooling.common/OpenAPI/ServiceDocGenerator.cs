@@ -62,15 +62,16 @@ public class ServiceDocGenerator
 		var attr = typeof(TMicroservice).GetCustomAttribute(typeof(MicroserviceAttribute)) as MicroserviceAttribute;
 		return Generate(typeof(TMicroservice), attr, adminRoutes);
 	}
-	
+
 	/// <summary>
 	/// Generates OpenAPI documentation for a specified microservice type.
 	/// </summary>
 	/// <param name="microserviceType">The type of the microservice to generate documentation for.</param>
 	/// <param name="attribute">The MicroserviceAttribute associated with the microservice.</param>
 	/// <param name="adminRoutes">The administrative routes associated with the microservice.</param>
+	/// <param name="excludeFederationCallbackEndpoints">When true, does not generate the doc for any endpoints coming from federation. Used primarily for code-generating in-SDK client code for Microservices.</param>
 	/// <returns>An OpenApiDocument containing the generated documentation.</returns>
-	public OpenApiDocument Generate(Type microserviceType, MicroserviceAttribute attribute, AdminRoutes adminRoutes)
+	public OpenApiDocument Generate(Type microserviceType, MicroserviceAttribute attribute, AdminRoutes adminRoutes, bool excludeFederationCallbackEndpoints = false)
 	{
 		if (!microserviceType.IsAssignableTo(typeof(Microservice)))
 		{
@@ -131,6 +132,9 @@ public class ServiceDocGenerator
 
 		foreach (var method in methods)
 		{
+			// Skip out all federated callbacks IF the caller of this function asked us to do so.
+			if(excludeFederationCallbackEndpoints && method.IsFederatedCallbackMethod) continue;
+			
 			var comments = DocsLoader.GetMethodComments(method.Method);
 			var parameterNameToComment = comments.Parameters.ToDictionary(kvp => kvp.Name, kvp => kvp.Text);
 			

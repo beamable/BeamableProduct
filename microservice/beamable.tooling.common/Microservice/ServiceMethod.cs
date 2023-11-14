@@ -31,6 +31,11 @@ namespace Beamable.Server
 	public class ServiceMethod
 	{
 		/// <summary>
+		/// Whether or not this is a method that is meant to be called by the beamable backend as part of one of our federated flows (<see cref="FederatedLoginCallableGenerator"/>).
+		/// </summary>
+		public bool IsFederatedCallbackMethod { get; init; }
+		
+		/// <summary>
 		/// The tag associated with the service method.
 		/// </summary>
 		public string Tag { get; init; }
