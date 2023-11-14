@@ -82,3 +82,4 @@ public class RegenerateSolutionFilesCommand : AppCommand<RegenerateSolutionFiles
 		di.Delete(true);
 	}
 }
+

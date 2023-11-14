@@ -20,16 +20,53 @@ public class ProjectData
 
 	public struct Unreal : IEquatable<string>, IEquatable<Unreal>
 	{
+		/// <summary>
+		/// Name for the project's core module (the module every other module has access to).
+		/// This will be used to generate the ______API UE Macros for the generated types.
+		/// </summary>
 		public string CoreProjectName;
+
+		/// <summary>
+		/// Name for the project's blueprint nodes module (the module every other module has access to).
+		/// This will be used to generate the ______API UE Macros for the generated blueprint nodes types.
+		///
+		/// This is always <see cref="CoreProjectName"/> + "BlueprintNodes".
+		/// </summary>
 		public string BlueprintNodesProjectName;
 
+		/// <summary>
+		/// Path to the entire project folder from the .beamableFolder.
+		/// </summary>
 		public string Path;
+
+		/// <summary>
+		/// Path, relative to <see cref="Path"/>, to the "Source" directory of the project.
+		/// </summary>
 		public string SourceFilesPath;
 
+		/// <summary>
+		/// Path relative to <see cref="SourceFilesPath"/> for where we should put the Autogen folder for header files.
+		/// </summary>
 		public string MsCoreHeaderPath;
+
+		/// <summary>
+		/// Path relative to <see cref="SourceFilesPath"/> for where we should put the Autogen folder for cpp files.
+		/// </summary>
 		public string MsCoreCppPath;
+
+		/// <summary>
+		/// Path relative to <see cref="SourceFilesPath"/> for where we should put the Autogen folder for header blueprint node files.
+		/// </summary>
 		public string MsBlueprintNodesHeaderPath;
+
+		/// <summary>
+		/// Path relative to <see cref="SourceFilesPath"/> for where we should put the Autogen folder for cpp blueprint node files.
+		/// </summary>
 		public string MsBlueprintNodesCppPath;
+
+		/// <summary>
+		/// Path to the <see cref="PreviousGenerationPassesData"/> for the client's current plugin.
+		/// </summary>
 		public string BeamableBackendGenerationPassFile;
 
 
@@ -37,7 +74,7 @@ public class ProjectData
 		public bool Equals(Unreal other) => Path == other.Path;
 
 		public override bool Equals(object obj) => (obj is Unreal unreal && Equals(unreal)) ||
-												   (obj is string unrealPath && Equals(unrealPath));
+		                                           (obj is string unrealPath && Equals(unrealPath));
 
 		public override int GetHashCode() => (Path != null ? Path.GetHashCode() : 0);
 
@@ -82,24 +119,32 @@ public class ProjectService
 		_configService.SaveDataFile(".linkedProjects", _projects);
 	}
 
-	public void AddUnrealProject(string relativePath)
+	public void AddUnrealProject(string projectPath, string msClientModuleName, string blueprintNodesModuleName, bool msClientModuleIsPublicPrivate, bool blueprintNodesModuleIsPublicPrivate)
 	{
-		var projectName = Path.GetFileName(_configService.WorkingDirectory);
-		var msPath = $"{projectName}";
-		var msBlueprintPath = $"{projectName}BlueprintNodes";
-
+		var msHeaderPath = msClientModuleName;
+		msHeaderPath += msClientModuleIsPublicPrivate ? "\\Public\\" : "\\";
+		
+		var msCppPath = msClientModuleName;
+		msCppPath += msClientModuleIsPublicPrivate ? "\\Private\\" : "\\";
+		
+		var bpNodesHeaderPath = blueprintNodesModuleName;
+		bpNodesHeaderPath += blueprintNodesModuleIsPublicPrivate ? "\\Public\\" : "\\";
+		
+		var bpNodesCppPath = blueprintNodesModuleName;
+		bpNodesCppPath += blueprintNodesModuleIsPublicPrivate ? "\\Private\\" : "\\";
+		
 		_projects.unrealProjectsPaths.Add(new ProjectData.Unreal()
 		{
-			CoreProjectName = projectName,
-			BlueprintNodesProjectName = $"{projectName}BlueprintNodes",
-			Path = relativePath,
-			SourceFilesPath = relativePath + $"\\Source\\",
-			MsCoreHeaderPath = msPath,
-			MsCoreCppPath = msPath,
-			MsBlueprintNodesHeaderPath = msBlueprintPath,
-			MsBlueprintNodesCppPath = msBlueprintPath,
-			BeamableBackendGenerationPassFile = relativePath +
-												$"\\Plugins\\BeamableCore\\Source\\{UnrealSourceGenerator.currentGenerationPassDataFilePath}.json"
+			CoreProjectName = msClientModuleName,
+			BlueprintNodesProjectName = blueprintNodesModuleName,
+			Path = projectPath,
+			SourceFilesPath = projectPath + $"\\Source\\",
+			MsCoreHeaderPath = msHeaderPath,
+			MsCoreCppPath = msCppPath,
+			MsBlueprintNodesHeaderPath = bpNodesHeaderPath,
+			MsBlueprintNodesCppPath = bpNodesCppPath,
+			BeamableBackendGenerationPassFile = projectPath +
+			                                    $"\\Plugins\\BeamableCore\\Source\\{UnrealSourceGenerator.currentGenerationPassDataFilePath}.json"
 		});
 		_configService.SaveDataFile(".linkedProjects", _projects);
 	}
@@ -109,7 +154,7 @@ public class ProjectService
 		var info = await GetTemplateInfo();
 
 		if (!info.HasTemplates ||
-			!string.Equals(version, info.templateVersion, StringComparison.CurrentCultureIgnoreCase))
+		    !string.Equals(version, info.templateVersion, StringComparison.CurrentCultureIgnoreCase))
 		{
 			await PromptAndInstallTemplates(info.templateVersion, version, quiet);
 		}
@@ -278,6 +323,7 @@ public class ProjectService
 		{
 			directory = solutionName;
 		}
+
 		string usedVersion = string.IsNullOrWhiteSpace(version) ? await GetVersion() : version;
 
 		var solutionPath = Path.Combine(_configService.WorkingDirectory, directory);
@@ -451,7 +497,7 @@ COPY {commonProjectName}/. .
 		if (addUnrealProject)
 		{
 			await addUnrealCommand.Handle(
-				new AddProjectClientOutputCommandArgs() { path = ".", Provider = provider });
+				new UnrealAddProjectClientOutputCommandArgs() { path = ".", Provider = provider });
 		}
 	}
 
@@ -470,13 +516,9 @@ COPY {commonProjectName}/. .
 
 public static class CliExtensions
 {
-
 	public static Command GetDotnetCommand(string dotnetPath, string arguments)
 	{
-		return Cli.Wrap(dotnetPath).WithEnvironmentVariables(new Dictionary<string, string>
-		{
-			["DOTNET_CLI_UI_LANGUAGE"] = "en"
-		}).WithArguments(arguments);
+		return Cli.Wrap(dotnetPath).WithEnvironmentVariables(new Dictionary<string, string> { ["DOTNET_CLI_UI_LANGUAGE"] = "en" }).WithArguments(arguments);
 	}
 
 	public static CommandTask<CommandResult> ExecuteAsyncAndLog(this Command command)
