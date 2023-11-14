@@ -55,7 +55,7 @@ namespace Beamable.Server
          }
          return new ServiceMethodCollection(output);
       }
-	   
+
 	   /// <summary>
 	   /// Creates a service method based on provided parameters.
 	   /// </summary>
@@ -66,15 +66,17 @@ namespace Beamable.Server
 	   /// <param name="requiredUser">Indicates if a required user is needed.</param>
 	   /// <param name="requiredScopes">The set of required scopes.</param>
 	   /// <param name="method">The method information for the service method.</param>
+	   /// <param name="isFederatedCallbackMethod">Whether or not this method is meant to be used only as part of a federated flow (<see cref="FederatedLoginCallableGenerator"/>).</param>
 	   /// <returns>The created service method.</returns>
-      public static ServiceMethod CreateMethod(
+	   public static ServiceMethod CreateMethod(
 	      MicroserviceAttribute serviceAttribute,
 	      ServiceMethodProvider provider,
 	      string path,
 	      string tag,
 	      bool requiredUser,
 	      HashSet<string> requiredScopes,
-	      MethodInfo method)
+	      MethodInfo method,
+	      bool isFederatedCallbackMethod = false)
       {
 	      var swaggerCategoryAttribute = method.GetCustomAttribute<SwaggerCategoryAttribute>();
 	      if (swaggerCategoryAttribute != null)
@@ -112,7 +114,8 @@ namespace Beamable.Server
 		      Method = method,
 		      Executor = executor,
 		      ResponseSerializer = responseSerializer,
-		      Tag = tag
+		      Tag = tag,
+		      IsFederatedCallbackMethod = isFederatedCallbackMethod,
 	      };
 	      return serviceMethod;
       }

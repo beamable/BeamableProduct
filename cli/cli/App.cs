@@ -161,7 +161,7 @@ public class App
 		Commands.AddCommand<TailLogsCommand, TailLogsCommandArgs, ProjectCommand>();
 		Commands.AddCommand<OpenMongoExpressCommand, OpenMongoExpressCommandArgs, ProjectCommand>();
 		Commands.AddCommand<AddUnityClientOutputCommand, AddProjectClientOutputCommandArgs, ProjectCommand>();
-		Commands.AddCommand<AddUnrealClientOutputCommand, AddProjectClientOutputCommandArgs, ProjectCommand>();
+		Commands.AddCommand<AddUnrealClientOutputCommand, UnrealAddProjectClientOutputCommandArgs, ProjectCommand>();
 		Commands.AddCommand<UpdateUnityBeamPackageCommand, UpdateUnityBeamPackageCommandArgs, ProjectCommand>();
 		Commands.AddCommand<ProjectVersionCommand, ProjectVersionCommandArgs, ProjectCommand>();
 		Commands.AddCommand<ShareCodeCommand, ShareCodeCommandArgs, ProjectCommand>();
