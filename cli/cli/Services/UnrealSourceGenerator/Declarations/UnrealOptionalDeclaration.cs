@@ -36,12 +36,12 @@ public struct UnrealOptionalDeclaration
 
 // Has Native Make/Break require static blueprint pure functions to present as nodes that
 // don't require an execution pin connection. This is super relevant for Blueprint UX. 
-USTRUCT(BlueprintType, meta=(HasNativeMake=""BeamableCore.₢{nameof(NamespacedTypeName)}₢Library.MakeOptional"", BeamOptionalType=""₢{nameof(ValueUnrealTypeName)}₢""))
+USTRUCT(BlueprintType, meta=(HasNativeMake=""/Script/BeamableCore.₢{nameof(NamespacedTypeName)}₢Library.MakeOptional"", BeamOptionalType=""₢{nameof(ValueUnrealTypeName)}₢""))
 struct ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ ₢{nameof(UnrealTypeName)}₢ : public FBeamOptional
 {{
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, EditAnywhere)
 	₢{nameof(ValueUnrealTypeName)}₢ Val;
 
 	₢{nameof(UnrealTypeName)}₢();

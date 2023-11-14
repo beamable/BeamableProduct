@@ -72,7 +72,8 @@ public class FederatedInventoryCallbackGenerator : ICallableGenerator
 					tag,
 					false,
 					new HashSet<string>(new []{"*"}),
-					method);
+					method,
+					true);
 
 				output.Add(serviceMethod);
 			}
@@ -129,7 +130,8 @@ public class FederatedLoginCallableGenerator : ICallableGenerator
 				tag,
 				false,
 				new HashSet<string>(new []{"*"}),
-				method);
+				method,
+				true);
 
 			output.Add(serviceMethod);
 		}		

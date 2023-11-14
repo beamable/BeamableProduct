@@ -116,25 +116,22 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 				if (args.ProjectService.GetLinkedUnrealProjects().Count > 0)
 				{
 					var gen = new ServiceDocGenerator();
-					var oapiDocument = gen.Generate(type, attribute, null);
-
+					var oapiDocument = gen.Generate(type, attribute, null, true);
 
 					foreach (var unrealProjectData in args.ProjectService.GetLinkedUnrealProjects())
 					{
 						var unrealGenerator = new UnrealSourceGenerator();
 						var docs = new List<OpenApiDocument>() { oapiDocument };
-						var orderedSchemas = SwaggerService.ExtractAllSchemas(docs,
-							GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
-
+						var orderedSchemas = SwaggerService.ExtractAllSchemas(docs, GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
 						var previousGenerationFilePath = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.BeamableBackendGenerationPassFile);
 
 						// Set up the generator to generate code with the correct output path for the AutoGen folders.
 						UnrealSourceGenerator.exportMacro = unrealProjectData.CoreProjectName.ToUpper() + "_API";
 						UnrealSourceGenerator.blueprintExportMacro = unrealProjectData.BlueprintNodesProjectName.ToUpper() + "_API";
-						UnrealSourceGenerator.headerFileOutputPath = unrealProjectData.MsCoreHeaderPath + "/";
-						UnrealSourceGenerator.cppFileOutputPath = unrealProjectData.MsCoreCppPath + "/";
-						UnrealSourceGenerator.blueprintHeaderFileOutputPath = unrealProjectData.MsBlueprintNodesHeaderPath + "/Public/";
-						UnrealSourceGenerator.blueprintCppFileOutputPath = unrealProjectData.MsBlueprintNodesCppPath + "/Private/";
+						UnrealSourceGenerator.headerFileOutputPath = unrealProjectData.MsCoreHeaderPath;
+						UnrealSourceGenerator.cppFileOutputPath = unrealProjectData.MsCoreCppPath;
+						UnrealSourceGenerator.blueprintHeaderFileOutputPath = unrealProjectData.MsBlueprintNodesHeaderPath;
+						UnrealSourceGenerator.blueprintCppFileOutputPath = unrealProjectData.MsBlueprintNodesCppPath;
 						UnrealSourceGenerator.genType = UnrealSourceGenerator.GenerationType.Microservice;
 						UnrealSourceGenerator.previousGenerationPassesData = JsonConvert.DeserializeObject<PreviousGenerationPassesData>(File.ReadAllText(previousGenerationFilePath));
 						UnrealSourceGenerator.currentGenerationPassDataFilePath = $"{unrealProjectData.CoreProjectName}_GenerationPass";

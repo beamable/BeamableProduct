@@ -87,7 +87,7 @@ public:
 		
 TSharedPtr<FMonitoredProcess> U₢{nameof(CommandName)}₢Command::RunImpl(const TArray<FString>& CommandParams, const FBeamOperationHandle& Op)
 {{
-	FString Params = (""₢{nameof(CommandKeywords)}₢"");
+	FString Params = (""₢{nameof(CommandKeywords)}₢ --reporter-use-fatal"");
 	for (const auto& CommandParam : CommandParams)
 		Params.Appendf(TEXT("" %s""), *CommandParam);
 	Params = PrepareParams(Params);
@@ -136,7 +136,7 @@ public struct UnrealCliStreamDeclaration
 
 	public void IntoProcessDict(Dictionary<string, string> dictionary)
 	{
-		var properties = string.Join("\n\t", StreamDataProperties.Select(p => $"UPROPERTY()\n\t{p.PropertyUnrealType} {p.PropertyName};"));
+		var properties = string.Join("\n\t", StreamDataProperties.Select(p => $"UPROPERTY()\n\t{p.PropertyUnrealType} {p.PropertyName} = {{}};"));
 
 		dictionary.Clear();
 		dictionary.Add(nameof(CommandName), CommandName);
@@ -206,7 +206,10 @@ public class UnrealCliGenerator : ICliGenerator
 					// For the default stream, we don't add it to the type name
 					var streamChannel = rs.channel == "stream" ? "" : rs.channel.Sanitize().Capitalize();
 
-					var streamDataProperties = rs.runtimeType.GetFields().Select(fieldInfo => new UnrealPropertyDeclaration() { PropertyName = fieldInfo.Name, PropertyUnrealType = UnrealSourceGenerator.GetUnrealTypeFromReflectionType(fieldInfo.FieldType) }).ToList();
+					var streamDataProperties = rs.runtimeType.GetFields()
+						.Select(fieldInfo => new UnrealPropertyDeclaration() { PropertyName = fieldInfo.Name, PropertyUnrealType = UnrealSourceGenerator.GetUnrealTypeFromReflectionType(fieldInfo.FieldType) })
+						.Where(p => p.PropertyUnrealType != null)
+						.ToList();
 
 					return new UnrealCliStreamDeclaration()
 					{
@@ -222,8 +225,8 @@ public class UnrealCliGenerator : ICliGenerator
 			var dict = new Dictionary<string, string>();
 
 			cliCommandDeclaration.IntoProcessDict(dict);
-			files.Add(new GeneratedFileDescriptor() { FileName = $"BeamableCoreEditor/Public/Subsystems/CLI/Autogen/{commandName}Command.h", Content = UnrealCliCommandDeclaration.HEADER_COMMAND_TEMPLATE.ProcessReplacement(dict) });
-			files.Add(new GeneratedFileDescriptor() { FileName = $"BeamableCoreEditor/Public/Subsystems/CLI/Autogen/{commandName}Command.cpp", Content = UnrealCliCommandDeclaration.CPP_COMMAND_TEMPLATE.ProcessReplacement(dict) });
+			files.Add(new GeneratedFileDescriptor() { FileName = $"BeamableCoreRuntimeEditor/Public/Subsystems/CLI/Autogen/{commandName}Command.h", Content = UnrealCliCommandDeclaration.HEADER_COMMAND_TEMPLATE.ProcessReplacement(dict) });
+			files.Add(new GeneratedFileDescriptor() { FileName = $"BeamableCoreRuntimeEditor/Public/Subsystems/CLI/Autogen/{commandName}Command.cpp", Content = UnrealCliCommandDeclaration.CPP_COMMAND_TEMPLATE.ProcessReplacement(dict) });
 		}
 
 

@@ -106,7 +106,7 @@ public static class UnityHelper
 		{
 			// build all the types associated with this model...
 			var types = UnityHelper.GenerateDeclarations(schema.Name, schema.Schema);
-			nameToTypes.Add(schema.Name, types);
+			nameToTypes.TryAdd(schema.Name, types);
 
 			// and always add the root model type...
 			root.Types.Add(types.Model);
