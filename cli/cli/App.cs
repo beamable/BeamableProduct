@@ -156,8 +156,8 @@ public class App
 		Commands.AddCommand<OpenSwaggerCommand, OpenSwaggerCommandArgs, ProjectCommand>();
 		Commands.AddCommand<TailLogsCommand, TailLogsCommandArgs, ProjectCommand>();
 		Commands.AddCommand<OpenMongoExpressCommand, OpenMongoExpressCommandArgs, ProjectCommand>();
-		Commands.AddCommand<AddUnityClientOutputCommand, AddUnityClientOutputCommandArgs, ProjectCommand>();
-		Commands.AddCommand<AddUnrealClientOutputCommand, AddUnrealClientOutputCommandArgs, ProjectCommand>();
+		Commands.AddCommand<AddUnityClientOutputCommand, AddProjectClientOutputCommandArgs, ProjectCommand>();
+		Commands.AddCommand<AddUnrealClientOutputCommand, UnrealAddProjectClientOutputCommandArgs, ProjectCommand>();
 		Commands.AddCommand<UpdateUnityBeamPackageCommand, UpdateUnityBeamPackageCommandArgs, ProjectCommand>();
 		Commands.AddCommand<ShareCodeCommand, ShareCodeCommandArgs, ProjectCommand>();
 		Commands.AddCommand<CheckStatusCommand, CheckStatusCommandArgs, ProjectCommand>();
