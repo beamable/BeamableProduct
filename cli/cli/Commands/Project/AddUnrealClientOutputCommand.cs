@@ -54,7 +54,8 @@ public class AddUnrealClientOutputCommand : AppCommand<UnrealAddProjectClientOut
 				return Task.CompletedTask;
 			}
 		}
-		
+
+		unrealProjectClient.AddProject(directory, args);
 		return Task.CompletedTask;
 	}
 }

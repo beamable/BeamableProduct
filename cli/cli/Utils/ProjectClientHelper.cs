@@ -171,4 +171,9 @@ public class ProjectClientHelper<TProjectClient> where TProjectClient : IProject
 			return false;
 		}
 	}
+
+	public void AddProject<T>(string directory, T args) where T : AddProjectClientOutputCommandArgs
+	{
+		_client.AddProject(directory, args);
+	}
 }
