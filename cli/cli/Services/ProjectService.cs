@@ -208,7 +208,7 @@ public class ProjectService
 		}
 
 		var installStream = new StringBuilder();
-		var result = await CliExtensions.GetDotnetCommand($"new --install {packageName}::{version}")
+		var result = await CliExtensions.GetDotnetCommand("dotnet",$"new --install {packageName}::{version}")
 			.WithValidation(CommandResultValidation.None)
 			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(installStream))
 			.WithStandardErrorPipe(PipeTarget.ToStringBuilder(installStream))
@@ -226,7 +226,7 @@ public class ProjectService
 	{
 		var templateStream = new StringBuilder();
 
-		await CliExtensions.GetDotnetCommand(UNINSTALL_COMMAND)
+		await CliExtensions.GetDotnetCommand("dotnet",UNINSTALL_COMMAND)
 			.WithValidation(CommandResultValidation.None)
 			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(templateStream))
 			.ExecuteBufferedAsync();
@@ -481,7 +481,7 @@ COPY {commonProjectName}/. .
 			true);
 		if (addUnityProject)
 		{
-			await addUnityCommand.Handle(new AddUnityClientOutputCommandArgs { path = ".", Provider = provider });
+			await addUnityCommand.Handle(new AddProjectClientOutputCommandArgs { path = ".", Provider = provider });
 		}
 
 		// ask if we should link a Unreal project
@@ -491,7 +491,6 @@ COPY {commonProjectName}/. .
 		if (addUnrealProject)
 		{
 			await addUnrealCommand.Handle(
-				new AddUnrealClientOutputCommandArgs() { path = ".", Provider = provider });
 				new UnrealAddProjectClientOutputCommandArgs() { path = ".", Provider = provider });
 		}
 	}
@@ -505,7 +504,7 @@ COPY {commonProjectName}/. .
 
 	static Task RunDotnetCommand(string arguments)
 	{
-		return CliExtensions.GetDotnetCommand(arguments).ExecuteAsyncAndLog().Task;
+		return CliExtensions.GetDotnetCommand("dotnet",arguments).ExecuteAsyncAndLog().Task;
 	}
 }
 
