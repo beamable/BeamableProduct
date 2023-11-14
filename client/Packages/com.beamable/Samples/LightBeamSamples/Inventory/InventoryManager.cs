@@ -26,7 +26,7 @@ public class InventoryManager : MonoBehaviour
 			builder.AddLightComponent<PropertyDisplayBehaviour, PropertyDisplayData>(config.propertyDisplay);
 			builder.AddLightComponent<ItemInfoPage, PlayerItem>(config.itemPage);
 		});
-		
+
 		await lightBeam.Scope.Start<HomePage>();
 	}
 }

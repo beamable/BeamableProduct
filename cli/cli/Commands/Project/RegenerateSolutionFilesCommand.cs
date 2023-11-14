@@ -7,7 +7,7 @@ namespace cli.Commands.Project;
 
 public class RegenerateSolutionFilesCommand : AppCommand<RegenerateSolutionFilesCommandArgs>, IStandaloneCommand, IEmptyResult
 {
-	public RegenerateSolutionFilesCommand() : 
+	public RegenerateSolutionFilesCommand() :
 		base("regenerate", "Regenerate the solution csproj, Dockerfile and Program.cs files")
 	{
 	}
@@ -17,7 +17,7 @@ public class RegenerateSolutionFilesCommand : AppCommand<RegenerateSolutionFiles
 		AddArgument(new ServiceNameArgument(), (args, i) => args.ProjectName = i);
 		AddArgument(new Argument<string>("output", () => string.Empty, description: "Where the temp project will be created"),
 			(args, i) => args.tempDirectory = i);
-		AddArgument(new Argument<string>("copy-path", () => string.Empty, description: "The path to where the files will be copied to."),
+		AddArgument(new Argument<string>("copy-path", () => string.Empty, description: "The path to where the files will be copied to"),
 			(args, i) => args.projectDirectory = i);
 		AddOption(new SkipCommonOptionFlag(), (args, i) => args.SkipCommon = i);
 		AddOption(new Option<ServiceName>("--solution-name", "The name of the solution of the new project"),
@@ -28,7 +28,7 @@ public class RegenerateSolutionFilesCommand : AppCommand<RegenerateSolutionFiles
 	public override async Task Handle(RegenerateSolutionFilesCommandArgs args)
 	{
 		BeamableLogger.Log("Start creating a temporary project!");
-		
+
 		args.SolutionName = string.IsNullOrEmpty(args.SolutionName) ? args.ProjectName : args.SolutionName;
 
 		var solutionArgs = new NewSolutionCommandArgs()
@@ -38,7 +38,7 @@ public class RegenerateSolutionFilesCommand : AppCommand<RegenerateSolutionFiles
 			ProjectName = args.ProjectName,
 			quiet = true,
 		};
-		
+
 		//Create the temporary project to have the files to copy
 		var path = await args.ProjectService.CreateNewSolution(solutionArgs);
 
@@ -56,12 +56,12 @@ public class RegenerateSolutionFilesCommand : AppCommand<RegenerateSolutionFiles
 			var filePath = $"{path}/services/{args.SolutionName}/{fileName}";
 			File.Copy(filePath, $"{args.projectDirectory}/{fileName}", true);
 		}
-		
+
 		BeamableLogger.Log($"Finished copying files.");
-		
+
 		//Starts erasing the temporary project created
 		DeleteTempProject(path);
-		
+
 		BeamableLogger.Log($"Files regenerated successfully!");
 	}
 
@@ -82,3 +82,4 @@ public class RegenerateSolutionFilesCommand : AppCommand<RegenerateSolutionFiles
 		di.Delete(true);
 	}
 }
+
