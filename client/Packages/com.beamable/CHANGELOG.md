@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.19.5]
 
-no changes
+### Added
+
+- OpenAPI `TournamentEntry` has new fields: `nextStageChange` and `previousStageChange`.
 
 ## [1.19.4]
 
