@@ -26,7 +26,7 @@ public class AccountManager : MonoBehaviour
 			builder.AddLightComponent<BlockedPlayersDisplayBehaviour, BlockedPlayer>(config.blockedPlayerBehaviour);
 			builder.AddLightComponent<SentInviteDisplayBehaviour, SentFriendInvite>(config.sentInviteBehaviour);
 		});
-		
+
 		await lightBeam.Scope.Start<HomePage>();
 	}
 }
