@@ -8,7 +8,7 @@ namespace cli.Commands.Project;
 public class RegenerateSolutionFilesCommand : AppCommand<RegenerateSolutionFilesCommandArgs>, IStandaloneCommand, IEmptyResult
 {
 	public RegenerateSolutionFilesCommand() : 
-		base("regenerate", "Regenerate the solution csproj, Dockerfile and Program.cs files.")
+		base("regenerate", "Regenerate the solution csproj, Dockerfile and Program.cs files")
 	{
 	}
 
