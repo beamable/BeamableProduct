@@ -4,10 +4,13 @@ using Beamable.Common.Semantics;
 using Beamable.Editor.BeamCli.Commands;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using Usam;
+using Debug = UnityEngine.Debug;
 
 namespace Beamable.Server.Editor.Usam
 {
@@ -15,12 +18,14 @@ namespace Beamable.Server.Editor.Usam
 	{
 		private readonly BeamCommands _cli;
 
-
 		public Promise OnReady { get; private set; }
 		public bool IsDockerRunning { get; private set; }
-		public List<ServiceInfo> Services { get; private set; } = new List<ServiceInfo>();
+		public IList<ServiceInfo> Services => ServiceDefinitions.Select(d => d.ServiceInfo).ToList();
 
-		private static readonly List<string> IgnoreFolderSuffixes = new List<string> { "~", "obj", "bin" };
+		public List<IBeamoServiceDefinition> ServiceDefinitions { get; private set; } =
+			new List<IBeamoServiceDefinition>();
+
+		private static readonly List<string> IgnoreFolderSuffixes = new List<string> {"~", "obj", "bin"};
 		private List<BeamServiceSignpost> _services;
 
 		public CodeService(BeamCommands cli)
@@ -29,22 +34,44 @@ namespace Beamable.Server.Editor.Usam
 			OnReady = Init();
 		}
 
+		[Conditional("BEAMABLE_DEVELOPER")]
+		static void LogVerbose(string log, bool isError = false)
+		{
+			var text = $"<b>[{nameof(CodeService)}]</b> {log}";
+			if (isError)
+				EditorApplication.delayCall += () => Debug.LogError(text);
+			else
+				EditorApplication.delayCall += () => Debug.Log(text);
+		}
+
+		static void LogExceptionVerbose(Exception e)
+		{
+			var text = $"<b>[{nameof(CodeService)}]</b> {e}";
+#if BEAMABLE_DEVELOPER
+			Debug.LogError(text);
+#endif
+		}
 
 		public async Promise Init()
 		{
-			Debug.Log("Running init");
+			LogVerbose("Running init");
 			_services = GetBeamServices();
-			Debug.Log("have services");
+			LogVerbose("Have services");
 			// TODO: we need validation. What happens if the .beamservice files point to non-existent files
 			SetSolution(_services);
-			Debug.Log("setsolution");
+			LogVerbose("Solution set done");
 
+			LogVerbose("Set manifest start");
 			await SetManifest(_cli, _services);
-			Debug.Log("setmanifest");
+			LogVerbose("set manifest ended");
 
+			LogVerbose("refresh services start");
 			await RefreshServices();
+			LogVerbose("refresh services end");
+			LogVerbose("Update services version start");
 			await UpdateServicesVersions();
-			Debug.Log("Done");
+			LogVerbose("Update services version end");
+			LogVerbose("Completed");
 		}
 
 		public async Promise UpdateServicesVersions()
@@ -60,45 +87,99 @@ namespace Beamable.Server.Editor.Usam
 			{
 				version = result.data;
 			});
-			await versionCommand.Run().Error(Debug.LogException);
+			await versionCommand.Run().Error(LogExceptionVerbose);
 
-			if (string.IsNullOrEmpty(version?.version))
+			if (string.IsNullOrEmpty(version?.version) || version.version.Contains("0.0.0"))
 			{
-				Debug.Log("Could not detect current version, skipping");
+				LogVerbose("Could not detect current version, skipping");
 				return;
 			}
-			var versions = _cli.ProjectVersion(new ProjectVersionArgs
-			{
-				requestedVersion = version?.version
-			});
+
+			var versions = _cli.ProjectVersion(new ProjectVersionArgs {requestedVersion = version?.version});
 			versions.OnStreamProjectVersionCommandResult(result =>
 			{
 				EditorApplication.delayCall += () =>
 				{
-					Debug.Log("Versions updated");
+					LogVerbose($"Versions updated: {result.data.packageVersions[0]}");
 				};
 			});
-			await versions.Run().Error(Debug.LogException);
+			await versions.Run().Error(LogExceptionVerbose);
 		}
 
 		public async Promise RefreshServices()
 		{
-			var ps2 = _cli.ServicesPs(new ServicesPsArgs() { json = false, remote = true });
-			BeamServiceListResult result = null;
-			ps2.OnStreamServiceListResult(cb =>
+			try
 			{
-				result = cb.data;
-				IsDockerRunning = cb.data.IsDockerRunning;
-			});
-			await ps2.Run().Error(Debug.LogException);
+				var ps = _cli.ServicesPs(new ServicesPsArgs() {json = false, remote = true});
+				ps.OnStreamServiceListResult(cb =>
+				{
+					IsDockerRunning = cb.data.IsDockerRunning;
+					LogVerbose($"Found {cb.data.BeamoIds.Count} remote services");
+					PopulateData(cb.data);
+				});
+				await ps.Run();
+			}
+			catch
+			{
+				LogVerbose("Could not list remote services, skip", true);
+				return;
+			}
 
-			var ps = _cli.ProjectList();
-			ps.OnStreamListCommandResult(cb =>
+			if (!IsDockerRunning)
 			{
-				Services.Clear();
-				Services.AddRange(cb.data.localServices.Where(i => !string.IsNullOrEmpty(i.dockerfilePath)));
-			});
-			await ps.Run().Error(Debug.LogException);
+				LogVerbose("Docker is not running, skip", true);
+				return;
+			}
+
+			try
+			{
+				var ps = _cli.ServicesPs(new ServicesPsArgs {json = false, remote = false});
+				ps.OnStreamServiceListResult(cb =>
+				{
+					IsDockerRunning = cb.data.IsDockerRunning;
+					LogVerbose($"Found {cb.data.BeamoIds.Count} remote services");
+					PopulateData(cb.data);
+				});
+				await ps.Run();
+			}
+			catch
+			{
+				LogVerbose("Could not list local services, skip", true);
+				return;
+			}
+		}
+
+		private void PopulateData(BeamServiceListResult objData)
+		{
+			for (int i = 0; i < objData.BeamoIds.Count; i++)
+			{
+				LogVerbose($"Handling {objData.BeamoIds[i]} started");
+				var dataIndex =
+					ServiceDefinitions.FindIndex(definition => definition.BeamoId.Equals(objData.BeamoIds[i]));
+				if (dataIndex < 0)
+				{
+					ServiceDefinitions.Add(new BeamoServiceDefinition
+					{
+						ServiceInfo = new ServiceInfo() {name = objData.BeamoIds[i]}
+					});
+					dataIndex = ServiceDefinitions.Count - 1;
+				}
+
+				ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = objData.ShouldBeEnabledOnRemote[i];
+				if (objData.IsLocal)
+				{
+					ServiceDefinitions[dataIndex].IsRunningLocaly =
+						objData.RunningState[i] ? ServiceStatus.Running : ServiceStatus.NotRunning;
+				}
+				else
+				{
+					ServiceDefinitions[dataIndex].IsRunningOnRemote =
+						objData.RunningState[i] ? ServiceStatus.Running : ServiceStatus.NotRunning;
+				}
+
+				ServiceDefinitions[dataIndex].ImageId = objData.ImageIds[i];
+				LogVerbose($"Handling {objData.BeamoIds[i]} ended");
+			}
 		}
 
 		/// <summary>
@@ -112,7 +193,7 @@ namespace Beamable.Server.Editor.Usam
 			var projName = new ServiceName(signPost.name);
 			var projPath = signPost.relativeDockerFile.Replace("/Dockerfile", "");
 
-			var args = new ProjectRegenerateArgs() { name = projName, output = tempPath, copyPath = projPath };
+			var args = new ProjectRegenerateArgs() {name = projName, output = tempPath, copyPath = projPath};
 			var command = _cli.ProjectRegenerate(args);
 			await command.Run();
 		}
@@ -128,7 +209,7 @@ namespace Beamable.Server.Editor.Usam
 			var slnPath = FindFirstSolutionFile();
 			if (string.IsNullOrEmpty(slnPath) || !File.Exists(slnPath))
 			{
-				Debug.Log("Beam. No script file, so reloading scripts");
+				LogVerbose("Beam. No script file, so reloading scripts");
 				UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
 				return; // once scripts reload, the current invocation of scripts end.
 			}
@@ -136,7 +217,9 @@ namespace Beamable.Server.Editor.Usam
 			var contents = File.ReadAllText(slnPath);
 
 			var generatedContent = SolutionPostProcessor.OnGeneratedSlnSolution(slnPath, contents);
-			var areDifferent = generatedContent != contents; // TODO: is there a better way to check if the solution file needs to be regenerated? This feels like it could become a bottleneck.
+			var areDifferent =
+				generatedContent !=
+				contents; // TODO: is there a better way to check if the solution file needs to be regenerated? This feels like it could become a bottleneck.
 			if (areDifferent)
 			{
 				// force the sln file to be re-generated, by deleting it. // TODO: we'll need to "unlock" the file in certain VCS
@@ -173,14 +256,9 @@ namespace Beamable.Server.Editor.Usam
 				args.localHttpDockerFiles[i] = files[i].relativeDockerFile;
 			}
 
-
 			var command = cli.ServicesSetLocalManifest(args);
-			await command.Run().Error(ex =>
-			{
-				Debug.LogError(ex);
-			});
+			await command.Run().Error(LogExceptionVerbose);
 		}
-
 
 		public static List<BeamServiceSignpost> GetBeamServices()
 		{
@@ -198,6 +276,7 @@ namespace Beamable.Server.Editor.Usam
 				var data = JsonUtility.FromJson<T>(json);
 				output.Add(data);
 			}
+
 			return output;
 		}
 
@@ -210,14 +289,16 @@ namespace Beamable.Server.Editor.Usam
 			return files;
 		}
 
-		private static void ScanDirectoryRecursive(string directoryPath, string targetExtension, List<string> excludeFolders, HashSet<string> foundFiles)
+		private static void ScanDirectoryRecursive(string directoryPath,
+		                                           string targetExtension,
+		                                           List<string> excludeFolders,
+		                                           HashSet<string> foundFiles)
 		{
 			// TODO: ChatGPT wrote this, but actually, it should use a queue<string> to do a non-stack-recursive BFS over the file system
 			if (!Directory.Exists(directoryPath))
 			{
 				return;
 			}
-
 
 			var directories = new Queue<string>();
 			directories.Enqueue(directoryPath);
@@ -256,11 +337,41 @@ namespace Beamable.Server.Editor.Usam
 				}
 				catch (UnauthorizedAccessException ex)
 				{
-					Debug.LogError($"Beam Error accessing {directoryPath}: {ex.Message}");
+					LogVerbose($"Beam Error accessing {directoryPath}: {ex.Message}", true);
 				}
 			}
 		}
 
+		public async Promise Stop(IEnumerable<BeamoServiceDefinition> definitions)
+		{
+			try
+			{
+				var cmd = _cli.ServicesStop(new ServicesStopArgs()
+				{
+					ids = definitions.Select(definition => definition.BeamoId).ToArray()
+				});
+				await cmd.Run();
+			}
+			catch (Exception e)
+			{
+				LogExceptionVerbose(e);
+			}
+		}
 
+		public async Promise Run(IEnumerable<BeamoServiceDefinition> definitions)
+		{
+			try
+			{
+				var cmd = _cli.ServicesRun(new ServicesRunArgs()
+				{
+					ids = definitions.Select(definition => definition.BeamoId).ToArray()
+				});
+				await cmd.Run();
+			}
+			catch (Exception e)
+			{
+				LogExceptionVerbose(e);
+			}
+		}
 	}
 }

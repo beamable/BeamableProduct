@@ -7,6 +7,7 @@ using Beamable.Server.Editor;
 using Beamable.Server.Editor.Usam;
 using UnityEditor;
 using UnityEngine.UIElements;
+using Usam;
 
 namespace Beamable.Editor.Microservice.UI2
 {
@@ -66,9 +67,9 @@ namespace Beamable.Editor.Microservice.UI2
 			var ssa = root.Q("microserviceContentVisualElement");
 			OnLoad().Then(_ =>
 			{
-				foreach (var info in _codeService.Services)
+				foreach (BeamoServiceDefinition beamoServiceDefinition in _codeService.ServiceDefinitions)
 				{
-					var el = new StandaloneMicroserviceVisualElement() { Info = info };
+					var el = new StandaloneMicroserviceVisualElement() { Info = beamoServiceDefinition };
 					ssa.Add(el);
 					el.Refresh();
 				}
