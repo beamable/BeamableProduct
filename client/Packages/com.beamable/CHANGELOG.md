@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Beamable Unity Style Sheet (BUSS)
 - Theme Manager
 - Beamable Assistant
+- OpenAPI for Chatv2 and Matchmaking 
 
 ## [1.19.4]
 
