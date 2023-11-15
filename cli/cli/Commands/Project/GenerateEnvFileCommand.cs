@@ -47,6 +47,7 @@ public class GenerateEnvFileCommand : AppCommand<GenerateEnvFileCommandArgs>
 		var pid = args.AppContext.Pid;
 		var prefix = args.includePrefix ? MachineHelper.GetUniqueDeviceId() : "";
 		var host = args.AppContext.Host.Replace("http", "ws") + "/socket";
+		var refreshToken = args.AppContext.RefreshToken;
 
 
 		var fileContent = @$"SECRET={secret}
@@ -55,6 +56,7 @@ CID={cid}
 PID={pid}
 NAME_PREFIX={prefix}
 BEAM_INSTANCE_COUNT={args.instanceCount}
+REFRESH_TOKEN={refreshToken}
 ";
 
 

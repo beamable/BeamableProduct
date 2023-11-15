@@ -88,15 +88,17 @@ public class ProjectService
 	private const string UNINSTALL_COMMAND = "new --uninstall";
 	private readonly ConfigService _configService;
 	private readonly VersionService _versionService;
+	private readonly IAppContext _app;
 
 	private ProjectData _projects;
 
 	public bool? ConfigFileExists { get; }
 
-	public ProjectService(ConfigService configService, VersionService versionService)
+	public ProjectService(ConfigService configService, VersionService versionService, IAppContext app)
 	{
 		_configService = configService;
 		_versionService = versionService;
+		_app = app;
 		_projects = configService.LoadDataFile<ProjectData>(".linkedProjects");
 		ConfigFileExists = _configService.ConfigFileExists;
 	}
@@ -147,14 +149,14 @@ public class ProjectService
 		_configService.SaveDataFile(".linkedProjects", _projects);
 	}
 
-	public static async Task EnsureCanUseTemplates(string version)
+	public async Task EnsureCanUseTemplates(string version, bool quiet = false)
 	{
 		var info = await GetTemplateInfo();
 
 		if (!info.HasTemplates ||
 		    !string.Equals(version, info.templateVersion, StringComparison.CurrentCultureIgnoreCase))
 		{
-			await PromptAndInstallTemplates(info.templateVersion, version);
+			await PromptAndInstallTemplates(info.templateVersion, version, quiet);
 		}
 	}
 
@@ -170,7 +172,11 @@ public class ProjectService
 	/// See for details, https://www.nuget.org/packages/Beamable.Templates, but not all versions exist.
 	/// This may cause the command to fail, but in that case, that is expected.
 	/// </param>
-	private static async Task PromptAndInstallTemplates(string currentlyInstalledVersion, string version)
+	/// <param name="quiet">
+	/// If true, it will skip asking in prompt if user wants to update to the latest version,
+	/// and just assumes that it should install or update it.
+	/// </param>
+	private async Task PromptAndInstallTemplates(string currentlyInstalledVersion, string version, bool quiet = false)
 	{
 		// lets get user consent before auto installing beamable templates
 		string question;
@@ -187,7 +193,7 @@ public class ProjectService
 				$"Beamable templates are currently installed as {currentlyInstalledVersion}. Would you like to proceed with installing {latestMsg}";
 		}
 
-		bool canInstallTemplates = AnsiConsole.Confirm(question);
+		bool canInstallTemplates = quiet || AnsiConsole.Confirm(question);
 
 		switch (canInstallTemplates)
 		{
@@ -208,7 +214,7 @@ public class ProjectService
 		}
 
 		var installStream = new StringBuilder();
-		var result = await CliExtensions.GetDotnetCommand("dotnet",$"new --install {packageName}::{version}")
+		var result = await CliExtensions.GetDotnetCommand(_app.DotnetPath, $"new --install {packageName}::{version}")
 			.WithValidation(CommandResultValidation.None)
 			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(installStream))
 			.WithStandardErrorPipe(PipeTarget.ToStringBuilder(installStream))
@@ -222,11 +228,11 @@ public class ProjectService
 		}
 	}
 
-	public static async Task<DotnetTemplateInfo> GetTemplateInfo()
+	public async Task<DotnetTemplateInfo> GetTemplateInfo()
 	{
 		var templateStream = new StringBuilder();
 
-		await CliExtensions.GetDotnetCommand("dotnet",UNINSTALL_COMMAND)
+		await CliExtensions.GetDotnetCommand(_app.DotnetPath, UNINSTALL_COMMAND)
 			.WithValidation(CommandResultValidation.None)
 			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(templateStream))
 			.ExecuteBufferedAsync();
@@ -307,11 +313,11 @@ public class ProjectService
 	public Task<string> CreateNewSolution(NewSolutionCommandArgs args)
 	{
 		return CreateNewSolution(args.directory, args.SolutionName, args.ProjectName,
-			!args.SkipCommon, args.SpecifiedVersion);
+			!args.SkipCommon, args.SpecifiedVersion, args.quiet);
 	}
 
 	public async Task<string> CreateNewSolution(string directory, string solutionName, string projectName,
-		bool createCommonLibrary = true, string version = "")
+		bool createCommonLibrary = true, string version = "", bool quiet = false)
 	{
 		if (string.IsNullOrEmpty(directory))
 		{
@@ -332,7 +338,7 @@ public class ProjectService
 		}
 
 		// check that we have the templates available
-		await EnsureCanUseTemplates(usedVersion);
+		await EnsureCanUseTemplates(usedVersion, quiet);
 
 		// create the solution
 		await RunDotnetCommand($"new sln -n \"{solutionName}\" -o \"{solutionPath}\"");
@@ -502,9 +508,9 @@ COPY {commonProjectName}/. .
 		return nugetPackages.Last().packageVersion;
 	}
 
-	static Task RunDotnetCommand(string arguments)
+	Task RunDotnetCommand(string arguments)
 	{
-		return CliExtensions.GetDotnetCommand("dotnet",arguments).ExecuteAsyncAndLog().Task;
+		return CliExtensions.GetDotnetCommand(_app.DotnetPath, arguments).ExecuteAsyncAndLog().Task;
 	}
 }
 

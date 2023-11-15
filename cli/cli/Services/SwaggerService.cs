@@ -403,7 +403,7 @@ public class SwaggerService
 					{
 						content = content.Replace(oldName, newName);
 					}
-					
+
 					var res = new OpenApiDocumentResult();
 					res.Document = new OpenApiStringReader().Read(content, out res.Diagnostic);
 					foreach (var warning in res.Diagnostic.Warnings)
@@ -521,7 +521,7 @@ public class SwaggerService
 		}
 		return new List<OpenApiDocumentResult> { swagger };
 	}
-	
+
 	private static List<OpenApiDocumentResult> RewriteStatusCodesTo200(OpenApiDocumentResult swagger)
 	{
 		const string STATUS_200 = "200";

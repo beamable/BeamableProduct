@@ -1,6 +1,5 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Api.Auth;
-using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
 using System;
 using System.Collections.Generic;
@@ -33,8 +32,6 @@ namespace Beamable.Reflection
 			private static readonly BaseTypeOfInterest I_THIRD_PARTY_CLOUD_IDENTITY_INTERFACE = new BaseTypeOfInterest(
 				typeof(IThirdPartyCloudIdentity));
 
-			private IBeamHintGlobalStorage _hintGlobalStorage;
-
 			public List<string> ThirdPartiesOptions { get; private set; } = new List<string>();
 
 			public List<BaseTypeOfInterest> BaseTypesOfInterest =>
@@ -62,7 +59,7 @@ namespace Beamable.Reflection
 
 				return list;
 			}
-			public void SetStorage(IBeamHintGlobalStorage hintGlobalStorage) => _hintGlobalStorage = hintGlobalStorage;
+
 			public void ClearCachedReflectionData() { }
 			public void OnAttributeOfInterestFound(AttributeOfInterest attributeType,
 												   IReadOnlyList<MemberAttribute> cachedMemberAttributes)

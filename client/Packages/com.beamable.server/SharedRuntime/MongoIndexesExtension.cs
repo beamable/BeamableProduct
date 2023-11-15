@@ -27,15 +27,15 @@ namespace Beamable.Mongo
 		/// <param name="indexName">(Optional) Custom index name, if left empty index will be named after <see cref="IndexType"/> passed formatted to lower</param>
 		/// <typeparam name="T">Constrained to a class that derives from <see cref="StorageDocument"/></typeparam>
 		public static async Task CreateSingleIndex<T>(this IMongoCollection<T> collection,
-		                                              IndexType type,
-		                                              string fieldName,
-		                                              string indexName = "") where T : StorageDocument
+													  IndexType type,
+													  string fieldName,
+													  string indexName = "") where T : StorageDocument
 		{
 			var indexKeysDefinition = BuildDefinition<T>(type, fieldName);
 			await collection.CreateIndex(indexKeysDefinition,
-			                             string.IsNullOrEmpty(indexName) ? type.ToString().ToLower() : indexName);
+										 string.IsNullOrEmpty(indexName) ? type.ToString().ToLower() : indexName);
 		}
-		
+
 		/// <summary>
 		/// Method to create compound index containing set of supported mongo indexes
 		/// </summary>
@@ -44,8 +44,8 @@ namespace Beamable.Mongo
 		/// <param name="indexName">(Optional) Custom index name, if left empty index will be named as default "compound" name</param>
 		/// <typeparam name="T">Constrained to a class that derives from <see cref="StorageDocument"/></typeparam>
 		public static async Task CreateCompoundIndex<T>(this IMongoCollection<T> collection,
-		                                                Dictionary<IndexType, string> indexes,
-		                                                string indexName = "compound") where T : StorageDocument
+														Dictionary<IndexType, string> indexes,
+														string indexName = "compound") where T : StorageDocument
 		{
 			var definitions = new List<IndexKeysDefinition<T>>();
 
@@ -67,8 +67,8 @@ namespace Beamable.Mongo
 		/// <param name="indexName">(Optional) Custom index name, if left empty index will be named as default "ascending" name</param>
 		/// <typeparam name="T">Constrained to a class that derives from <see cref="StorageDocument"/></typeparam>
 		public static async Task CreateAscendingIndex<T>(this IMongoCollection<T> collection,
-		                                                 string fieldName,
-		                                                 string indexName = "ascending")
+														 string fieldName,
+														 string indexName = "ascending")
 			where T : StorageDocument
 		{
 			var indexKeysDefinition = BuildDefinition<T>(IndexType.Ascending, fieldName);
@@ -83,8 +83,8 @@ namespace Beamable.Mongo
 		/// <param name="indexName">(Optional) Custom index name, if left empty index will be named as default "descending" name</param>
 		/// <typeparam name="T">Constrained to a class that derives from <see cref="StorageDocument"/></typeparam>
 		public static async Task CreateDescendingIndex<T>(this IMongoCollection<T> collection,
-		                                                  string fieldName,
-		                                                  string indexName = "descending")
+														  string fieldName,
+														  string indexName = "descending")
 			where T : StorageDocument
 		{
 			var indexKeysDefinition = BuildDefinition<T>(IndexType.Descending, fieldName);
@@ -99,8 +99,8 @@ namespace Beamable.Mongo
 		/// <param name="indexName">(Optional) Custom index name, if left empty index will be named as default "text" name</param>
 		/// <typeparam name="T">Constrained to a class that derives from <see cref="StorageDocument"/></typeparam>
 		public static async Task CreateTextIndex<T>(this IMongoCollection<T> collection,
-		                                            string fieldName,
-		                                            string indexName = "text")
+													string fieldName,
+													string indexName = "text")
 			where T : StorageDocument
 		{
 			var indexKeysDefinition = BuildDefinition<T>(IndexType.Text, fieldName);
@@ -115,8 +115,8 @@ namespace Beamable.Mongo
 		/// <param name="indexName">(Optional) Custom index name, if left empty index will be named as default "geo2D" name</param>
 		/// <typeparam name="T">Constrained to a class that derives from <see cref="StorageDocument"/></typeparam>
 		public static async Task CreateGeo2DIndex<T>(this IMongoCollection<T> collection,
-		                                             string fieldName,
-		                                             string indexName = "geo2D")
+													 string fieldName,
+													 string indexName = "geo2D")
 			where T : StorageDocument
 		{
 			var indexKeysDefinition = BuildDefinition<T>(IndexType.Geo2D, fieldName);
@@ -131,8 +131,8 @@ namespace Beamable.Mongo
 		/// <param name="indexName">(Optional) Custom index name, if left empty index will be named as default "geo2DSphere" name</param>
 		/// <typeparam name="T">Constrained to a class that derives from <see cref="StorageDocument"/></typeparam>
 		public static async Task CreateGeo2DSphereIndex<T>(this IMongoCollection<T> collection,
-		                                                   string fieldName,
-		                                                   string indexName = "geo2Dsphere")
+														   string fieldName,
+														   string indexName = "geo2Dsphere")
 			where T : StorageDocument
 		{
 			var indexKeysDefinition = BuildDefinition<T>(IndexType.Geo2DSphere, fieldName);
@@ -147,8 +147,8 @@ namespace Beamable.Mongo
 		/// <param name="indexName">(Optional) Custom index name, if left empty index will be named as default "hashed" name</param>
 		/// <typeparam name="T">Constrained to a class that derives from <see cref="StorageDocument"/></typeparam>
 		public static async Task CreateHashedIndex<T>(this IMongoCollection<T> collection,
-		                                              string fieldName,
-		                                              string indexName = "hashed")
+													  string fieldName,
+													  string indexName = "hashed")
 			where T : StorageDocument
 		{
 			var indexKeysDefinition = BuildDefinition<T>(IndexType.Hashed, fieldName);
@@ -163,14 +163,14 @@ namespace Beamable.Mongo
 		/// <param name="indexName">(Optional) Custom index name, if left empty index will be named as default "wildcard" name</param>
 		/// <typeparam name="T">Constrained to a class that derives from <see cref="StorageDocument"/></typeparam>
 		public static async Task CreateWildcardIndex<T>(this IMongoCollection<T> collection,
-		                                                string fieldName,
-		                                                string indexName = "wildcard")
+														string fieldName,
+														string indexName = "wildcard")
 			where T : StorageDocument
 		{
 			var indexKeysDefinition = BuildDefinition<T>(IndexType.Wildcard, fieldName);
 			await collection.CreateIndex(indexKeysDefinition, indexName);
 		}
-		
+
 		private static IndexKeysDefinition<T> BuildDefinition<T>(IndexType type, string fieldName)
 		{
 			switch (type)
@@ -195,14 +195,14 @@ namespace Beamable.Mongo
 		}
 
 		private static async Task CreateIndex<T>(this IMongoCollection<T> collection,
-		                                         IndexKeysDefinition<T> indexKeysDefinition,
-		                                         string indexName) where T : StorageDocument
+												 IndexKeysDefinition<T> indexKeysDefinition,
+												 string indexName) where T : StorageDocument
 		{
 			var model =
 				new CreateIndexModel<T>(indexKeysDefinition, new CreateIndexOptions
 				{
 					Name = indexName,
-					
+
 				});
 			await collection.Indexes.CreateOneAsync(model);
 		}

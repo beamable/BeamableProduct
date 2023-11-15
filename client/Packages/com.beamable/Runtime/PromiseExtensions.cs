@@ -1,23 +1,18 @@
 using Beamable.Common;
-using Beamable.Common.Runtime.Collections;
 using Beamable.Coroutines;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Beamable
 {
 	public static class PromiseExtensions
 	{
-		private static IConcurrentDictionary<long, Task> _uncaughtTasks = new ConcurrentDictionary<long, Task>();
-
-		public static async Task WaitForAllUncaughtHandlers()
+		public static Promise WaitForAllUncaughtHandlers()
 		{
-			var tasks = _uncaughtTasks.Select(k => k.Value).Where(t => t != null).ToArray();
-			await Task.WhenAll(tasks);
+			var handler = Beam.GlobalScope.GetService<DefaultUncaughtPromiseQueue>();
+			return handler.WaitForAllHandlers();
 		}
 
 		/// <summary>
@@ -30,27 +25,8 @@ namespace Beamable
 
 		private static void PromiseBaseOnPotentialOnPotentialUncaughtError(PromiseBase promise, Exception ex)
 		{
-			var id = promise.GetHashCode();
-			// we need to wait one frame before logging anything.
-			async Task DelayedCheck()
-			{
-				var startFrame = Time.frameCount;
-				var maxIter = 3; // TODO: really, we need a none BeamContext specific coroutine service to run this on, but then in Editor we need to proxy... Complicated...
-				while (maxIter-- > 0 && Time.frameCount == startFrame)
-				{
-					await Task.Yield();
-				}
-
-				// execute check.
-				if (!promise.HadAnyErrbacks)
-				{
-					Beamable.Common.BeamableLogger.LogException(new UncaughtPromiseException(promise, ex));
-				}
-
-				_uncaughtTasks.Remove(id);
-			}
-			var task = DelayedCheck(); // we don't want to await this call.
-			_uncaughtTasks.TryAdd(id, task);
+			var handler = Beam.GlobalScope.GetService<DefaultUncaughtPromiseQueue>();
+			handler.Handle(promise, ex);
 		}
 
 		/// <summary>
@@ -181,5 +157,71 @@ namespace Beamable
 		}
 
 		public override bool keepWaiting => !_promise.IsCompleted;
+	}
+
+	public class DefaultUncaughtPromiseQueue
+	{
+		private readonly ICoroutineService _coroutineService;
+
+		struct FailedPromise
+		{
+			public PromiseBase promise;
+			public Exception exception;
+			public Promise checkedPromise;
+		}
+
+		private Queue<FailedPromise> failedPromises;
+
+		public DefaultUncaughtPromiseQueue(ICoroutineService coroutineService)
+		{
+			_coroutineService = coroutineService;
+			failedPromises = new Queue<FailedPromise>();
+			coroutineService.Run("uncaught-promise-dlq", Loop());
+		}
+
+		public void Handle(PromiseBase promise, Exception ex)
+		{
+			failedPromises.Enqueue(new FailedPromise
+			{
+				promise = promise,
+				exception = ex,
+			});
+		}
+
+		public Promise WaitForAllHandlers()
+		{
+			var p = new Promise();
+			var timeoutAt = Time.realtimeSinceStartup + .5f; // half a second into the future
+			IEnumerator Wait()
+			{
+				if (Time.realtimeSinceStartup > timeoutAt)
+				{
+					p.CompleteError(new Exception($"There are cascading failures in the uncaught promise handling. The {nameof(WaitForAllHandlers)} function has timed out."));
+					yield break;
+				}
+				while (failedPromises.Count > 0)
+				{
+					yield return null;
+				}
+				p.CompleteSuccess();
+			}
+			_coroutineService.Run("uncaught-promise-dlq", Wait());
+			return p;
+		}
+
+		IEnumerator Loop()
+		{
+			while (true)
+			{
+				while (failedPromises.Count > 0)
+				{
+					var failedPromise = failedPromises.Dequeue();
+					if (failedPromise.promise.HadAnyErrbacks) continue;
+
+					Beamable.Common.BeamableLogger.LogException(new UncaughtPromiseException(failedPromise.promise, failedPromise.exception));
+				}
+				yield return null;
+			}
+		}
 	}
 }

@@ -1,6 +1,5 @@
 using Beamable.Common;
 using Beamable.Common.Api;
-using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
 using Beamable.Common.Runtime;
 using Beamable.Editor.Environment;
@@ -94,12 +93,7 @@ namespace Beamable.Server.Editor
 			public readonly List<MicroserviceDescriptor> Descriptors = new List<MicroserviceDescriptor>();
 			public readonly List<IDescriptor> AllDescriptors = new List<IDescriptor>();
 
-			public readonly List<MicroserviceClientInfo> ClientInfos =
-				new List<MicroserviceClientInfo>();
-
-			private IBeamHintGlobalStorage _hintStorage;
-
-			public void SetStorage(IBeamHintGlobalStorage hintGlobalStorage) => _hintStorage = hintGlobalStorage;
+			public readonly List<MicroserviceClientInfo> ClientInfos = new List<MicroserviceClientInfo>();
 
 			public void ClearCachedReflectionData()
 			{
@@ -175,13 +169,7 @@ namespace Beamable.Server.Editor
 					validationResults.SplitValidationResults(out _, out _, out var microserviceAttrErrors);
 
 					// Register a hint with all its validation errors as the context object
-					if (microserviceAttrErrors.Count > 0)
-					{
-						var hint = new BeamHintHeader(BeamHintType.Validation,
-													  BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE,
-													  BeamHintIds.ID_MICROSERVICE_ATTRIBUTE_MISSING);
-						_hintStorage.AddOrReplaceHint(hint, microserviceAttrErrors);
-					}
+					// TODO: [AssistantRemoval] ID_MICROSERVICE_ATTRIBUTE_MISSING --- this can be a Static Analyzer.
 				}
 
 				void ParseStorageObjectSubTypes(IReadOnlyList<MemberInfo> cachedStorageObjectSubTypes)
@@ -201,13 +189,7 @@ namespace Beamable.Server.Editor
 					validationResults.SplitValidationResults(out _, out _, out var storageObjAttrErrors);
 
 					// Register a hint with all its validation errors as the context object
-					if (storageObjAttrErrors.Count > 0)
-					{
-						var hint = new BeamHintHeader(BeamHintType.Validation,
-													  BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE,
-													  BeamHintIds.ID_STORAGE_OBJECT_ATTRIBUTE_MISSING);
-						_hintStorage.AddOrReplaceHint(hint, storageObjAttrErrors);
-					}
+					// TODO: [AssistantRemoval] ID_STORAGE_OBJECT_ATTRIBUTE_MISSING --- this can be a Static Analyzer.
 				}
 			}
 
@@ -227,13 +209,7 @@ namespace Beamable.Server.Editor
 						.GetAndValidateUniqueNamingAttributes<MicroserviceAttribute>();
 
 					// Registers a hint with all name collisions found.
-					if (uniqueNameValidationResults.PerNameCollisions.Count > 0)
-					{
-						var hint = new BeamHintHeader(BeamHintType.Validation,
-													  BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE,
-													  BeamHintIds.ID_MICROSERVICE_NAME_COLLISION);
-						_hintStorage.AddOrReplaceHint(hint, uniqueNameValidationResults.PerNameCollisions);
-					}
+					// TODO: [AssistantRemoval] ID_MICROSERVICE_NAME_COLLISION --- this can be a Static Analyzer.
 
 					// Get all ClientCallables
 					var clientCallableValidationResults = cachedMicroserviceAttributes
@@ -248,21 +224,9 @@ namespace Beamable.Server.Editor
 					clientCallableValidationResults.SplitValidationResults(out var clientCallablesValid,
 																		   out var clientCallableWarnings,
 																		   out var clientCallableErrors);
-					if (clientCallableWarnings.Count > 0)
-					{
-						var hint = new BeamHintHeader(BeamHintType.Hint,
-													  BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE,
-													  BeamHintIds.ID_CLIENT_CALLABLE_ASYNC_VOID);
-						_hintStorage.AddOrReplaceHint(hint, clientCallableWarnings);
-					}
 
-					if (clientCallableErrors.Count > 0)
-					{
-						var hint = new BeamHintHeader(BeamHintType.Validation,
-													  BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE,
-													  BeamHintIds.ID_CLIENT_CALLABLE_UNSUPPORTED_PARAMETERS);
-						_hintStorage.AddOrReplaceHint(hint, clientCallableErrors);
-					}
+					// TODO: [AssistantRemoval] ID_CLIENT_CALLABLE_ASYNC_VOID --- this can be a Static Analyzer.
+					// TODO: [AssistantRemoval] ID_CLIENT_CALLABLE_UNSUPPORTED_PARAMETERS --- this can be a Static Analyzer.
 
 					// Builds a lookup of DeclaringType => MemberAttribute.
 					var validClientCallablesLookup = clientCallablesValid
@@ -382,13 +346,7 @@ namespace Beamable.Server.Editor
 						.GetAndValidateUniqueNamingAttributes<StorageObjectAttribute>();
 
 					// Registers a hint with all name collisions found.
-					if (uniqueNameValidationResults.PerNameCollisions.Count > 0)
-					{
-						var hint = new BeamHintHeader(BeamHintType.Validation,
-													  BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE,
-													  BeamHintIds.ID_STORAGE_OBJECT_NAME_COLLISION);
-						_hintStorage.AddOrReplaceHint(hint, uniqueNameValidationResults.PerNameCollisions);
-					}
+					// TODO: [AssistantRemoval] ID_STORAGE_OBJECT_NAME_COLLISION --- this can be a Static Analyzer.
 
 					// Register all configured storage object
 					foreach (var storageObjectValResults in uniqueNameValidationResults.PerAttributeNameValidations)

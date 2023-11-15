@@ -36,6 +36,21 @@ public class SpecificVersionOption : Option<string>
 public class NewSolutionCommandArgs : SolutionCommandArgs
 {
 	public string directory;
+	public bool quiet;
+}
+
+public class QuietNameOption : Option<bool>
+{
+	public QuietNameOption() : base("--quiet", () => false, "When true, automatically accept path suggestions")
+	{
+		AddAlias("-q");
+	}
+}
+
+public class RegenerateSolutionFilesCommandArgs : SolutionCommandArgs
+{
+	public string tempDirectory;
+	public string projectDirectory;
 }
 
 public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>, IStandaloneCommand
@@ -64,6 +79,7 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>, IStandalon
 		AddOption(new SpecificVersionOption(), (args, i) => args.SpecifiedVersion = i);
 		AddOption(new Option<bool>("--disable", "Create service that is disabled on publish"),
 			(args, i) => args.Disabled = i);
+		AddOption(new QuietNameOption(), (args, i) => args.quiet = i);
 	}
 
 	public override async Task Handle(NewSolutionCommandArgs args)

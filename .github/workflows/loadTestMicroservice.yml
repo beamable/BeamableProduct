@@ -15,14 +15,14 @@ jobs:
       group: stresstest-${{ github.head_ref }}
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup .NET Core SDK
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 6.0.x
       - name: Install Dotnet Counters
         run: |
-          dotnet tool install --global dotnet-counters
+          dotnet tool install --global dotnet-counters --version 7.0.447801
       - name: Build and Install BEAM CLI 
         working-directory: ./cli/cli
         run: |
@@ -71,34 +71,39 @@ jobs:
           path: |
             ./stress-tests/standalone-microservice/services/reports
       - name: Check Dotnet Counters
-        id: checkCounters
+        id: counters
         continue-on-error: true
         working-directory: ./stress-tests/standalone-microservice/services/reports
         run: |
-          echo "counters_log='$(beam profile check-counters ./counter.json --cpu-limit 35)'" >> $GITHUB_ENV
+          echo "log='$(beam profile check-counters ./counter.json --cpu-limit 35)'" >> $GITHUB_OUTPUT
       - name: Check NBomber
-        id: checkNbomber
+        id: nbomber
         continue-on-error: true
         working-directory: ./stress-tests/standalone-microservice/services/reports
         run: |
-          echo "nbomber_log='$(beam profile check-nbomber ./report.csv --p95-limit 9000)'" >> $GITHUB_ENV
+          echo "log='$(beam profile check-nbomber ./report.csv --p95-limit 9000)'" >> $GITHUB_OUTPUT
       - name: Debug NBomber Output
         run: |
-          echo NBOMBER OUTPUT: ${{env.nbomber_log}}
+          echo NBOMBER OUTPUT: ${{steps.nbomber.outputs.log}}
       - name: Debug Counters Output
         run: |
-          echo COUNTERS OUTPUT: ${{env.counters_log}}
+          echo COUNTERS OUTPUT: ${{steps.counters.outputs.log}}
+      - name: Summary
+        run: |
+          echo "### Test results! :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo NBOMBER OUTPUT: ${{steps.nbomber.outputs.log}} >> $GITHUB_STEP_SUMMARY
+          echo COUNTERS OUTPUT: ${{steps.counters.outputs.log}}>> $GITHUB_STEP_SUMMARY
       - name: Post to a Slack channel
         id: slack
-        if: ${{!contains(env.nbomber_log, 'No issues found') || !contains(env.counters_log, 'No issues found')}}
+        if: ${{!contains(steps.nbomber.outputs.log, 'No issues found') || !contains(steps.counters.outputs.log, 'No issues found')}}
         uses: slackapi/slack-github-action@v1.21.0
         with:
           channel-id: C0409CMRKA9
-          slack-message: "Automated C#MS smoke tests failed! \nbomber: ${{env.nbomber_log}} \ncounters: ${{env.counters_log}} \n https://github.com/beamable/BeamableProduct/actions/runs/${{ github.run_id }} "
+          slack-message: "Automated C#MS smoke tests failed! \nbomber: ${{steps.nbomber.outputs.log}} \ncounters: ${{steps.counters.outputs.log}} \n https://github.com/beamable/BeamableProduct/actions/runs/${{ github.run_id }} "
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
       - name: Fail if checks failed
-        if: ${{!contains(env.nbomber_log, 'No issues found') || !contains(env.counters_log, 'No issues found')}}
+        if: ${{!contains(steps.nbomber.outputs.log, 'No issues found') || !contains(steps.counters.outputs.log, 'No issues found')}}
         run: |
-          echo bomber: ${{env.nbomber_log}} counters: ${{env.counters_log}}
+          echo bomber: ${{steps.nbomber.outputs.log}} counters: ${{steps.counters.outputs.log}}
           exit 1
