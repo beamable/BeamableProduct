@@ -5,7 +5,7 @@ on:
     branches:
       - 'main'
       - 'staging'
-      - 'production'
+      - 'productio*'
     paths-ignore:
       - 'rfc/**'
       - '.github/**'
