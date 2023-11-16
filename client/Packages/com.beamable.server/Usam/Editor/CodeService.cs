@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Semantics;
+using Beamable.Editor;
 using Beamable.Editor.BeamCli.Commands;
 using System;
 using System.Collections.Generic;
@@ -17,8 +18,8 @@ namespace Beamable.Server.Editor.Usam
 	public class CodeService : ILoadWithContext
 	{
 		private readonly BeamCommands _cli;
+		private readonly BeamableDispatcher _dispatcher;
 
-		public event Action<string> OnServiceUpdated;
 		public Promise OnReady { get; private set; }
 		public bool IsDockerRunning { get; private set; }
 		public IList<ServiceInfo> Services => ServiceDefinitions.Select(d => d.ServiceInfo).ToList();
@@ -29,9 +30,10 @@ namespace Beamable.Server.Editor.Usam
 		private static readonly List<string> IgnoreFolderSuffixes = new List<string> {"~", "obj", "bin"};
 		private List<BeamServiceSignpost> _services;
 
-		public CodeService(BeamCommands cli)
+		public CodeService(BeamCommands cli, BeamableDispatcher dispatcher)
 		{
 			_cli = cli;
+			_dispatcher = dispatcher;
 			OnReady = Init();
 		}
 
@@ -119,7 +121,7 @@ namespace Beamable.Server.Editor.Usam
 				{
 					IsDockerRunning = cb.data.IsDockerRunning;
 					LogVerbose($"Found {cb.data.BeamoIds.Count} remote services");
-					PopulateData(cb.data);
+					_dispatcher.Schedule(()=>PopulateData(cb.data));
 				});
 				await ps.Run();
 			}
@@ -142,7 +144,7 @@ namespace Beamable.Server.Editor.Usam
 				{
 					IsDockerRunning = cb.data.IsDockerRunning;
 					LogVerbose($"Found {cb.data.BeamoIds.Count} local services");
-					PopulateData(cb.data);
+					_dispatcher.Schedule(()=>PopulateData(cb.data));
 				});
 				await ps.Run();
 			}
@@ -176,15 +178,15 @@ namespace Beamable.Server.Editor.Usam
 				{
 					ServiceDefinitions[dataIndex].IsRunningLocaly =
 						objData.RunningState[i] ? ServiceStatus.Running : ServiceStatus.NotRunning;
+					ServiceDefinitions[dataIndex].ImageId = objData.ImageIds[i];
 				}
 				else
 				{
 					ServiceDefinitions[dataIndex].IsRunningOnRemote =
 						objData.RunningState[i] ? ServiceStatus.Running : ServiceStatus.NotRunning;
 				}
-
-				ServiceDefinitions[dataIndex].ImageId = objData.ImageIds[i];
-				OnServiceUpdated?.Invoke(name);
+				
+				_dispatcher.Schedule(ServiceDefinitions[dataIndex].CallUpdate);
 				LogVerbose($"Handling {name} ended");
 			}
 		}
@@ -349,7 +351,7 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 
-		public async Promise Stop(IEnumerable<BeamoServiceDefinition> definitions)
+		public async Promise Stop(IEnumerable<IBeamoServiceDefinition> definitions)
 		{
 			try
 			{
@@ -365,7 +367,7 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 
-		public async Promise Run(IEnumerable<BeamoServiceDefinition> definitions)
+		public async Promise Run(IEnumerable<IBeamoServiceDefinition> definitions)
 		{
 			try
 			{

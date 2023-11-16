@@ -1,5 +1,6 @@
 ﻿using Beamable.Common.BeamCli.Contracts;
 using Beamable.Server.Editor;
+using System;
 
 namespace Usam
 {
@@ -11,6 +12,7 @@ namespace Usam
 	}
 	public interface IBeamoServiceDefinition
 	{
+		public event Action<IBeamoServiceDefinition> Updated;
 		/// <summary>
 		/// The id that this service will be know, both locally and remotely.
 		/// </summary>
@@ -42,5 +44,7 @@ namespace Usam
 		public ServiceStatus IsRunningOnRemote { get; set; }
 		
 		ServiceInfo ServiceInfo { get; set; }
+
+		public void CallUpdate();
 	}
 }

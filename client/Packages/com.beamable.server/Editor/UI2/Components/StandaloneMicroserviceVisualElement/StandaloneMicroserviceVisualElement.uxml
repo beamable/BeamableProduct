@@ -5,6 +5,7 @@
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xmlns:beamable="Beamable.Editor.UI.Components"
         xmlns:beamableMS="Beamable.Editor.Microservice.UI.Components"
+        xmlns:beamo="Beamable.Editor.Microservice.UI2.Components"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="mainVisualElement">
@@ -19,15 +20,15 @@
             <engine:VisualElement name="logHeader">
 
                 <engine:VisualElement class="leftArea" name="leftArea">
-                    <engine:Image name="serviceIcon"/>
+                    <beamo:ServiceIcon name="serviceIcon"/>
                     <engine:Label name="serviceName"/>
                     <engine:TextField name="microserviceNewTitle" class="title" text="ANGIE'S TEST"/>
                 </engine:VisualElement>
 
                 <engine:VisualElement class="centerArea" name="centerArea">
-                    <engine:Button name="startBtn" class="confirmBtn noMarginNoPaddingNoBorder">
+                    <beamo:StartButton name="startBtn" class="confirmBtn noMarginNoPaddingNoBorder">
                         <engine:VisualElement name="buildImage"/>
-                    </engine:Button>
+                    </beamo:StartButton>
                 </engine:VisualElement>
 
                 <engine:VisualElement class="rightArea" name="rightArea">

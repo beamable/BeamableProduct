@@ -9,6 +9,7 @@ using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.Usam;
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Usam;
@@ -23,11 +24,10 @@ namespace Beamable.Editor.Microservice.UI2.Components
 		private const float DETACHED_HEIGHT = 30.0f;
 		protected const float DEFAULT_HEADER_HEIGHT = 30.0f;
 		private MicroserviceVisualsModel _visualsModel;
-		public BeamoServiceDefinition Model { get; set; }
+		public IBeamoServiceDefinition Model { get; set; }
 
 		protected LoadingBarElement _loadingBar;
 		protected VisualElement _moreBtn;
-		protected Button _startButton;
 		protected MicroserviceVisualElementSeparator _separator;
 		private VisualElement _logContainerElement;
 		private LogVisualElement _logElement;
@@ -37,7 +37,6 @@ namespace Beamable.Editor.Microservice.UI2.Components
 		private VisualElement _serviceCard;
 		private Button _foldButton;
 		private VisualElement _foldIcon;
-		protected Image _serviceIcon;
 		private Label _serviceName;
 		private VisualElement _openDocsBtn;
 		private VisualElement _openScriptBtn;
@@ -60,17 +59,21 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			QueryVisualElements();
 			_codeService = Context.ServiceScope.GetService<CodeService>();
 			UpdateVisualElements();
-			
+			var query = Root.Query().Where(v => v is IBeamoServiceElement).ToList().Select(v=> v as IBeamoServiceElement);
+			foreach (var el in query)
+			{
+				el?.FeedData(Model, Context);
+			}
 		}
 
 		protected virtual void QueryVisualElements()
 		{
 			UiBlockingPromise = new Promise();
 			UiBlockingPromise.CompleteSuccess();
+			
 			_rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
 			Root.Q("microserviceNewTitle")?.RemoveFromHierarchy();
 			_moreBtn = Root.Q<VisualElement>("moreBtn");
-			_startButton = Root.Q<Button>("startBtn");
 			_logContainerElement = Root.Q<VisualElement>("logContainer");
 			_header = Root.Q("logHeader");
 			_separator = Root.Q<MicroserviceVisualElementSeparator>("separator");
@@ -79,7 +82,6 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			_serviceCard.Add(_loadingBar);
 			_foldButton = Root.Q<Button>("foldButton");
 			_foldIcon = Root.Q("foldIcon");
-			_serviceIcon = Root.Q<Image>("serviceIcon");
 			_serviceName = Root.Q<Label>("serviceName");
 			_openDocsBtn = Root.Q<VisualElement>("openDocsBtn");
 			_openScriptBtn = Root.Q<VisualElement>("openScriptBtn");
@@ -87,10 +89,8 @@ namespace Beamable.Editor.Microservice.UI2.Components
 		}
 		protected virtual void UpdateVisualElements()
 		{
-			_codeService.OnServiceUpdated -= HandleServiceUpdate;
-			_codeService.OnServiceUpdated += HandleServiceUpdate;
-			_startButton.clickable.clicked -= HandleStartButtonClicked;
-			_startButton.clickable.clicked += HandleStartButtonClicked;
+			Model.Updated -= HandleServiceUpdate;
+			Model.Updated += HandleServiceUpdate;
 			_loadingBar.Hidden = true;
 			_loadingBar.Refresh();
 			_loadingBar.PlaceBehind(Root.Q("SubTitle"));
@@ -108,13 +108,6 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			_openDocsBtn.tooltip = "View Documentation";
 
 			_serviceName.text = _serviceName.tooltip = Model.BeamoId;
-
-			if (_serviceIcon != null)
-			{
-				_serviceIcon.tooltip = Constants.Tooltips.Microservice.MICROSERVICE;
-				// _serviceIcon.tooltip = Model.Descriptor.ServiceType == ServiceType.MicroService ?
-				// 	Constants.Tooltips.Microservice.MICROSERVICE : Constants.Tooltips.Microservice.STORAGE_OBJECT;
-			}
 
 			_visualsModel.OnLogsAttachmentChanged -= CreateLogSection;
 			_visualsModel.OnLogsAttachmentChanged += CreateLogSection;
@@ -137,27 +130,10 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			ChangeCollapseState();
 		}
 
-		private void HandleServiceUpdate(string id)
+		private void HandleServiceUpdate(IBeamoServiceDefinition definition)
 		{
-			if (id.Equals(Model.BeamoId))
-			{
-				UpdateLocalStatus();
-			}
-		}
-
-		private void HandleStartButtonClicked()
-		{
-			UiBlockingPromise = new Promise();
-			Action<Unit> callback = _ => _codeService.RefreshServices().Then(_=>UiBlockingPromise.CompleteSuccess());
+			Model = definition;
 			UpdateLocalStatus();
-			if (Model.IsRunningLocaly == ServiceStatus.Running)
-			{
-				_codeService.Stop(new []{Model}).Then(callback);
-			}
-			else
-			{
-				_codeService.Run(new []{Model}).Then(callback);
-			}
 		}
 		protected void HandleProgressFinished(bool gotError) => _header.EnableInClassList("failed", gotError);
 
@@ -205,20 +181,6 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			SetHeight(layoutHeight + value);
 		}
 
-		protected void UpdateRemoteStatusIcon(string customStatusClassName = "")
-		{
-			_serviceIcon.ClearClassList();
-
-			var statusClassName = string.IsNullOrWhiteSpace(customStatusClassName)
-				? IsRemoteEnabled
-					? $"{Model.ServiceType}_remoteEnabled"
-					: $"{Model.ServiceType}_remoteDisabled"
-				: $"{Model.ServiceType}_{customStatusClassName}";
-
-			_serviceIcon.tooltip = IsRemoteEnabled ? Constants.Tooltips.Microservice.ICON_REMOTE_RUNNING : Constants.Tooltips.Microservice.ICON_REMOTE_DISABLE;
-			_serviceIcon.AddToClassList(statusClassName);
-		}
-
 		private void SetHeight(float newHeight)
 		{
 			_visualsModel.ElementHeight = Mathf.Clamp(newHeight, MIN_HEIGHT, MAX_HEIGHT);
@@ -228,15 +190,10 @@ namespace Beamable.Editor.Microservice.UI2.Components
             _rootVisualElement.style.height = StyleValue<float>.Create(_visualsModel.ElementHeight);
 #endif
 		}
-		protected virtual void UpdateButtons()
-		{
-			UpdateLocalStatusIcon();
-		}
 		protected virtual void UpdateLocalStatus()
 		{
 			_header.EnableInClassList("running", Model.IsRunningLocaly == ServiceStatus.Running);
 			_openDocsBtn.SetEnabled(Model.IsRunningLocaly == ServiceStatus.Running);
-			UpdateButtons();
 		}
 
 		public void OpenLocalDocs()
@@ -260,15 +217,6 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			_foldIcon.EnableInClassList("unfoldIcon", !_visualsModel.IsCollapsed);
 			_rootVisualElement.EnableInClassList("folded", _visualsModel.IsCollapsed);
 			_mainParent.EnableInClassList("folded", _visualsModel.IsCollapsed);
-		}
-		
-		protected void UpdateLocalStatusIcon()
-		{
-			_serviceIcon.ClearClassList();
-			// _header.EnableInClassList("building", isBuilding);
-			_startButton.EnableInClassList("building", !UiBlockingPromise.IsCompleted);
-			_startButton.EnableInClassList("running", Model.IsRunningLocaly == ServiceStatus.Running);
-			UpdateRemoteStatusIcon();
 		}
 	}
 }
