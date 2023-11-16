@@ -11,21 +11,21 @@ public class FriendDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerFrien
 	public TextMeshProUGUI friendIdLabel;
 	public Button unfriendButton;
 	public Button blockButton;
-	
+
 	public Promise OnInstantiated(LightBeam beam, PlayerFriend model)
 	{
 		friendIdLabel.text = model.playerId.ToString();
-		
+
 		unfriendButton.HandleClicked(async () =>
 		{
 			await model.Unfriend();
 		});
-		
+
 		blockButton.HandleClicked(async () =>
 		{
 			await model.Block();
 		});
-		
+
 		return Promise.Success;
 	}
 }
