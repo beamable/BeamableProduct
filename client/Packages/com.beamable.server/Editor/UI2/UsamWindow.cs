@@ -61,17 +61,21 @@ namespace Beamable.Editor.Microservice.UI2
 			_actionBarVisualElement = root.Q<ActionBarVisualElement>("actionBarVisualElement");
 			_actionBarVisualElement.Refresh();
 			_actionBarVisualElement.OnRefreshButtonClicked += HandleRefreshButtonClicked;
-			// _actionBarVisualElement.UpdateButtonsState(Model.AllLocalServices.Count(x => !x.IsArchived));
 
 			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
 			_microserviceBreadcrumbsVisualElement.Refresh();
-			var ssa = root.Q("microserviceContentVisualElement");
+			var scrollView = new ScrollView(ScrollViewMode.Vertical);
+			var emptyContainer = new VisualElement {name = "listRoot"};
+			
+			var microserviceContentVisualElement = root.Q("microserviceContentVisualElement");
+			microserviceContentVisualElement.Add(scrollView);
+			scrollView.Add(emptyContainer);
 			OnLoad().Then(_ =>
 			{
 				foreach (BeamoServiceDefinition beamoServiceDefinition in _codeService.ServiceDefinitions)
 				{
 					var el = new StandaloneMicroserviceVisualElement() { Model = beamoServiceDefinition };
-					ssa.Add(el);
+					emptyContainer.Add(el);
 					el.Refresh();
 				}
 			});
