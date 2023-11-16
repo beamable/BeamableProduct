@@ -12,10 +12,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `--dotnet-path` option is available to override dotnet installation location.
 - Auto generation handles trials and session services.
 
+## [1.19.5]
+
+### Added
+
+- Auto generation handles trials and session services.
+
+### Changed
+
+- API code-gen now generates structs with properly initialized fields.
+
 ## [1.19.4]
 
 ### Fixed
-
 - `--reporter-use-fatal` channel supports JSON strings
 
 ## [1.19.3]
