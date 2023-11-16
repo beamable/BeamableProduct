@@ -18,6 +18,7 @@ namespace Beamable.Server.Editor.Usam
 	{
 		private readonly BeamCommands _cli;
 
+		public event Action<string> OnServiceUpdated;
 		public Promise OnReady { get; private set; }
 		public bool IsDockerRunning { get; private set; }
 		public IList<ServiceInfo> Services => ServiceDefinitions.Select(d => d.ServiceInfo).ToList();
@@ -65,12 +66,14 @@ namespace Beamable.Server.Editor.Usam
 			await SetManifest(_cli, _services);
 			LogVerbose("set manifest ended");
 
-			LogVerbose("refresh services start");
 			await RefreshServices();
-			LogVerbose("refresh services end");
-			LogVerbose("Update services version start");
-			await UpdateServicesVersions();
-			LogVerbose("Update services version end");
+			const string updatedServicesKey = "BeamUpdatedServices";
+			if(!SessionState.GetBool(updatedServicesKey, false)){
+				LogVerbose("Update services version start");
+				await UpdateServicesVersions();
+				SessionState.SetBool(updatedServicesKey,true);
+				LogVerbose("Update services version end");
+			}
 			LogVerbose("Completed");
 		}
 
@@ -108,6 +111,7 @@ namespace Beamable.Server.Editor.Usam
 
 		public async Promise RefreshServices()
 		{
+			LogVerbose("refresh services start");
 			try
 			{
 				var ps = _cli.ServicesPs(new ServicesPsArgs() {json = false, remote = true});
@@ -137,7 +141,7 @@ namespace Beamable.Server.Editor.Usam
 				ps.OnStreamServiceListResult(cb =>
 				{
 					IsDockerRunning = cb.data.IsDockerRunning;
-					LogVerbose($"Found {cb.data.BeamoIds.Count} remote services");
+					LogVerbose($"Found {cb.data.BeamoIds.Count} local services");
 					PopulateData(cb.data);
 				});
 				await ps.Run();
@@ -147,20 +151,22 @@ namespace Beamable.Server.Editor.Usam
 				LogVerbose("Could not list local services, skip", true);
 				return;
 			}
+			LogVerbose("refresh services end");
 		}
 
 		private void PopulateData(BeamServiceListResult objData)
 		{
 			for (int i = 0; i < objData.BeamoIds.Count; i++)
 			{
-				LogVerbose($"Handling {objData.BeamoIds[i]} started");
+				var name = objData.BeamoIds[i];
+				LogVerbose($"Handling {name} started");
 				var dataIndex =
-					ServiceDefinitions.FindIndex(definition => definition.BeamoId.Equals(objData.BeamoIds[i]));
+					ServiceDefinitions.FindIndex(definition => definition.BeamoId.Equals(name));
 				if (dataIndex < 0)
 				{
 					ServiceDefinitions.Add(new BeamoServiceDefinition
 					{
-						ServiceInfo = new ServiceInfo() {name = objData.BeamoIds[i]}
+						ServiceInfo = new ServiceInfo() {name = name}
 					});
 					dataIndex = ServiceDefinitions.Count - 1;
 				}
@@ -178,7 +184,8 @@ namespace Beamable.Server.Editor.Usam
 				}
 
 				ServiceDefinitions[dataIndex].ImageId = objData.ImageIds[i];
-				LogVerbose($"Handling {objData.BeamoIds[i]} ended");
+				OnServiceUpdated?.Invoke(name);
+				LogVerbose($"Handling {name} ended");
 			}
 		}
 

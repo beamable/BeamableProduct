@@ -60,6 +60,7 @@ namespace Beamable.Editor.Microservice.UI2
 
 			_actionBarVisualElement = root.Q<ActionBarVisualElement>("actionBarVisualElement");
 			_actionBarVisualElement.Refresh();
+			_actionBarVisualElement.OnRefreshButtonClicked += HandleRefreshButtonClicked;
 			// _actionBarVisualElement.UpdateButtonsState(Model.AllLocalServices.Count(x => !x.IsArchived));
 
 			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
@@ -69,11 +70,17 @@ namespace Beamable.Editor.Microservice.UI2
 			{
 				foreach (BeamoServiceDefinition beamoServiceDefinition in _codeService.ServiceDefinitions)
 				{
-					var el = new StandaloneMicroserviceVisualElement() { Info = beamoServiceDefinition };
+					var el = new StandaloneMicroserviceVisualElement() { Model = beamoServiceDefinition };
 					ssa.Add(el);
 					el.Refresh();
 				}
 			});
+		}
+
+		private void HandleRefreshButtonClicked()
+		{
+			_codeService = Scope.GetService<CodeService>();
+			_codeService.RefreshServices().Then(_ => { });
 		}
 
 		public override async Promise OnLoad()
