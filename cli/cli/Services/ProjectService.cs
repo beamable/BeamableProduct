@@ -74,7 +74,7 @@ public class ProjectData
 		public bool Equals(Unreal other) => Path == other.Path;
 
 		public override bool Equals(object obj) => (obj is Unreal unreal && Equals(unreal)) ||
-		                                           (obj is string unrealPath && Equals(unrealPath));
+												   (obj is string unrealPath && Equals(unrealPath));
 
 		public override int GetHashCode() => (Path != null ? Path.GetHashCode() : 0);
 
@@ -123,16 +123,16 @@ public class ProjectService
 	{
 		var msHeaderPath = msClientModuleName;
 		msHeaderPath += msClientModuleIsPublicPrivate ? "\\Public\\" : "\\";
-		
+
 		var msCppPath = msClientModuleName;
 		msCppPath += msClientModuleIsPublicPrivate ? "\\Private\\" : "\\";
-		
+
 		var bpNodesHeaderPath = blueprintNodesModuleName;
 		bpNodesHeaderPath += blueprintNodesModuleIsPublicPrivate ? "\\Public\\" : "\\";
-		
+
 		var bpNodesCppPath = blueprintNodesModuleName;
 		bpNodesCppPath += blueprintNodesModuleIsPublicPrivate ? "\\Private\\" : "\\";
-		
+
 		_projects.unrealProjectsPaths.Add(new ProjectData.Unreal()
 		{
 			CoreProjectName = msClientModuleName,
@@ -144,7 +144,7 @@ public class ProjectService
 			MsBlueprintNodesHeaderPath = bpNodesHeaderPath,
 			MsBlueprintNodesCppPath = bpNodesCppPath,
 			BeamableBackendGenerationPassFile = projectPath +
-			                                    $"\\Plugins\\BeamableCore\\Source\\{UnrealSourceGenerator.currentGenerationPassDataFilePath}.json"
+												$"\\Plugins\\BeamableCore\\Source\\{UnrealSourceGenerator.currentGenerationPassDataFilePath}.json"
 		});
 		_configService.SaveDataFile(".linkedProjects", _projects);
 	}
@@ -154,7 +154,7 @@ public class ProjectService
 		var info = await GetTemplateInfo();
 
 		if (!info.HasTemplates ||
-		    !string.Equals(version, info.templateVersion, StringComparison.CurrentCultureIgnoreCase))
+			!string.Equals(version, info.templateVersion, StringComparison.CurrentCultureIgnoreCase))
 		{
 			await PromptAndInstallTemplates(info.templateVersion, version, quiet);
 		}

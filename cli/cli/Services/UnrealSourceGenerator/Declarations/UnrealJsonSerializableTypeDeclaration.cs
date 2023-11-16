@@ -201,10 +201,10 @@ public struct UnrealJsonSerializableTypeDeclaration
 	public string DefaultValueHelpersInclude;
 	public ResponseBodyType IsResponseBodyType;
 	public bool IsSelfReferential;
-	
+
 	public List<PolymorphicWrappedData> PolymorphicWrappedTypes;
 	public bool IsPolymorphicWrapper => PolymorphicWrappedTypes?.Count > 0;
-	
+
 
 	private string _responseBodyIncludes;
 	private string _inheritResponseBodyInterface;
