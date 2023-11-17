@@ -28,40 +28,40 @@ public class PlayerFriendsBehaviour : MonoBehaviour, ILightComponent<FriendsDisp
 
 	private PlayerSocial _social;
 	private LightBeam _context;
-	
+
 	public async Promise OnInstantiated(LightBeam beam, FriendsDisplayModel model)
 	{
 		playerIdLabel.text = $"Player Id: {model.playerId}";
 
 		_social = model.social;
 		_context = beam;
-		
+
 		copyButton.HandleClicked(() =>
 		{
-			#if UNITY_EDITOR
+#if UNITY_EDITOR
 			EditorGUIUtility.systemCopyBuffer = model.playerId.ToString();
-			#else
+#else
 			GUIUtility.systemCopyBuffer = model.playerId.ToString();
-			#endif
+#endif
 		});
-		
+
 		addFriendButton.HandleClicked(AddFriendCallback);
-		
+
 		showFriendsButton.HandleClicked(async () =>
 		{
 			await UpdateFriendsList();
 		});
-		
+
 		showReceivedInvitesButton.HandleClicked(async () =>
 		{
 			await UpdateReceivedInviteList();
 		});
-		
+
 		showSentInvitesButton.HandleClicked(async () =>
 		{
 			await UpdateSentInviteList();
 		});
-		
+
 		showBlockedButton.HandleClicked(async () =>
 		{
 			await UpdateBlockedList();
@@ -94,7 +94,7 @@ public class PlayerFriendsBehaviour : MonoBehaviour, ILightComponent<FriendsDisp
 	{
 		_social.Friends.OnUpdated += () =>
 		{
-			
+
 			var _ = UpdateFriendsList();
 		};
 
@@ -102,12 +102,12 @@ public class PlayerFriendsBehaviour : MonoBehaviour, ILightComponent<FriendsDisp
 		{
 			var _ = UpdateReceivedInviteList();
 		};
-		
+
 		_social.Blocked.OnUpdated += () =>
 		{
 			var _ = UpdateBlockedList();
 		};
-		
+
 		_social.SentInvites.OnUpdated += () =>
 		{
 			var _ = UpdateSentInviteList();
@@ -127,12 +127,12 @@ public class PlayerFriendsBehaviour : MonoBehaviour, ILightComponent<FriendsDisp
 		ResetSelectorButtonsState();
 		showSentInvitesButton.SetState(true);
 		displayListContainer.Clear();
-		
+
 		var promises = new List<Promise<SentInviteDisplayBehaviour>>();
 
 		foreach (SentFriendInvite invite in _social.SentInvites)
 		{
-			var p =  _context.Instantiate<SentInviteDisplayBehaviour, SentFriendInvite>(displayListContainer, invite);
+			var p = _context.Instantiate<SentInviteDisplayBehaviour, SentFriendInvite>(displayListContainer, invite);
 			promises.Add(p);
 		}
 		var sequence = Promise.Sequence(promises);
@@ -144,12 +144,12 @@ public class PlayerFriendsBehaviour : MonoBehaviour, ILightComponent<FriendsDisp
 		ResetSelectorButtonsState();
 		showBlockedButton.SetState(true);
 		displayListContainer.Clear();
-		
+
 		var promises = new List<Promise<BlockedPlayersDisplayBehaviour>>();
 
 		foreach (BlockedPlayer blockedPlayer in _social.Blocked)
 		{
-			var p =  _context.Instantiate<BlockedPlayersDisplayBehaviour, BlockedPlayer>(displayListContainer, blockedPlayer);
+			var p = _context.Instantiate<BlockedPlayersDisplayBehaviour, BlockedPlayer>(displayListContainer, blockedPlayer);
 			promises.Add(p);
 		}
 		var sequence = Promise.Sequence(promises);
@@ -161,12 +161,12 @@ public class PlayerFriendsBehaviour : MonoBehaviour, ILightComponent<FriendsDisp
 		ResetSelectorButtonsState();
 		showFriendsButton.SetState(true);
 		displayListContainer.Clear();
-		
+
 		var promises = new List<Promise<FriendDisplayBehaviour>>();
 
 		foreach (PlayerFriend friend in _social.Friends)
 		{
-			var p =  _context.Instantiate<FriendDisplayBehaviour, PlayerFriend>(displayListContainer, friend);
+			var p = _context.Instantiate<FriendDisplayBehaviour, PlayerFriend>(displayListContainer, friend);
 			promises.Add(p);
 		}
 		var sequence = Promise.Sequence(promises);
@@ -178,7 +178,7 @@ public class PlayerFriendsBehaviour : MonoBehaviour, ILightComponent<FriendsDisp
 		ResetSelectorButtonsState();
 		showReceivedInvitesButton.SetState(true);
 		displayListContainer.Clear();
-		
+
 		var promises = new List<Promise<ReceivedInviteDisplayBehaviour>>();
 
 		foreach (ReceivedFriendInvite invite in _social.ReceivedInvites)

@@ -10,16 +10,16 @@ public class BlockedPlayersDisplayBehaviour : MonoBehaviour, ILightComponent<Blo
 	[Header("Scene References")]
 	public TextMeshProUGUI playerIdLabel;
 	public Button unblockButton;
-	
+
 	public Promise OnInstantiated(LightBeam beam, BlockedPlayer model)
 	{
 		playerIdLabel.text = $"Player Id: {model.playerId}";
-		
+
 		unblockButton.HandleClicked(async () =>
 		{
 			await model.Unblock();
 		});
-		
+
 		return Promise.Success;
 	}
 }

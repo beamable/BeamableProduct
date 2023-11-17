@@ -11,21 +11,21 @@ public class ReceivedInviteDisplayBehaviour : MonoBehaviour, ILightComponent<Rec
 	public TextMeshProUGUI playerIdLabel;
 	public Button acceptButton;
 	public Button blockButton;
-	
+
 	public Promise OnInstantiated(LightBeam beam, ReceivedFriendInvite model)
 	{
 		playerIdLabel.text = model.invitingPlayerId.ToString();
-		
+
 		acceptButton.HandleClicked(async () =>
 		{
 			await model.AcceptInvite();
 		});
-		
+
 		blockButton.HandleClicked(async () =>
 		{
 			await model.BlockSender();
 		});
-		
+
 		return Promise.Success;
 	}
 }

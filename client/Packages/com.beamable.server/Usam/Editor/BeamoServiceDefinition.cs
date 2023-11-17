@@ -14,7 +14,7 @@ namespace Usam
 		public bool ShouldBeEnabledOnRemote { get; set; } = true;
 		public ServiceStatus IsRunningLocaly { get; set; } = ServiceStatus.Unknown;
 		public ServiceStatus IsRunningOnRemote { get; set; } = ServiceStatus.Unknown;
-		public ServiceInfo ServiceInfo  { get; set; }
+		public ServiceInfo ServiceInfo { get; set; }
 		public void CallUpdate() => Updated?.Invoke(this);
 	}
 }

@@ -35,7 +35,7 @@ public class UnrealProjectClient : IProjectClient
 	{
 		var unrealArgs = args as UnrealAddProjectClientOutputCommandArgs;
 		if (unrealArgs == null) throw new Exception("didn't work");
-		
+
 		var msModuleName = unrealArgs.msModuleName;
 		if (string.IsNullOrEmpty(msModuleName)) msModuleName = AnsiConsole.Prompt(new TextPrompt<string>("Enter the Runtime module name to which we'll add the generated Microservice Client subsystem:"));
 		var msModulePath = Path.Combine(unrealArgs.ConfigService.BaseDirectory, relativePath + @"\Source\", msModuleName);
@@ -60,7 +60,7 @@ public class UnrealProjectClient : IProjectClient
 
 		var msModulePublicPrivate = unrealArgs.msModulePublicPrivate ?? AnsiConsole.Prompt(new ConfirmationPrompt($"Does the selected Runtime module ({msModuleName}) split files between Public/Private folders?"));
 		var bpNodesPublicPrivate = unrealArgs.bpModulePublicPrivate ?? AnsiConsole.Prompt(new ConfirmationPrompt($"Does the selected UncookedOnly module ({bpNodesModuleName}) split files between Public/Private folders?"));
-		
+
 		unrealArgs.ProjectService.AddUnrealProject(relativePath, msModuleName, bpNodesModuleName, msModulePublicPrivate, bpNodesPublicPrivate);
 	}
 }

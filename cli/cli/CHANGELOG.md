@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.19.4]
 
 ### Fixed
+
 - `--reporter-use-fatal` channel supports JSON strings
 
 ## [1.19.3]

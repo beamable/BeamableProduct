@@ -59,7 +59,7 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			QueryVisualElements();
 			_codeService = Context.ServiceScope.GetService<CodeService>();
 			UpdateVisualElements();
-			var query = Root.Query().Where(v => v is IBeamoServiceElement).ToList().Select(v=> v as IBeamoServiceElement);
+			var query = Root.Query().Where(v => v is IBeamoServiceElement).ToList().Select(v => v as IBeamoServiceElement);
 			foreach (var el in query)
 			{
 				el?.FeedData(Model, Context);
@@ -70,7 +70,7 @@ namespace Beamable.Editor.Microservice.UI2.Components
 		{
 			UiBlockingPromise = new Promise();
 			UiBlockingPromise.CompleteSuccess();
-			
+
 			_rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
 			Root.Q("microserviceNewTitle")?.RemoveFromHierarchy();
 			_moreBtn = Root.Q<VisualElement>("moreBtn");

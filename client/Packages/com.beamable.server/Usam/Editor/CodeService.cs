@@ -27,7 +27,7 @@ namespace Beamable.Server.Editor.Usam
 		public List<IBeamoServiceDefinition> ServiceDefinitions { get; private set; } =
 			new List<IBeamoServiceDefinition>();
 
-		private static readonly List<string> IgnoreFolderSuffixes = new List<string> {"~", "obj", "bin"};
+		private static readonly List<string> IgnoreFolderSuffixes = new List<string> { "~", "obj", "bin" };
 		private List<BeamServiceSignpost> _services;
 
 		public CodeService(BeamCommands cli, BeamableDispatcher dispatcher)
@@ -38,19 +38,19 @@ namespace Beamable.Server.Editor.Usam
 		}
 
 
-		[Conditional("BEAM_CODE_SERVICE_LOGS"),Conditional("BEAMABLE_DEVELOPER")]
+		[Conditional("BEAM_CODE_SERVICE_LOGS"), Conditional("BEAMABLE_DEVELOPER")]
 		static void LogVerbose(string log, bool isError = false)
 		{
-			const string logFormat = "<b>["+nameof(CodeService)+"]</b> {0}";
+			const string logFormat = "<b>[" + nameof(CodeService) + "]</b> {0}";
 			var text = string.Format(logFormat, log);
-			if(isError)
+			if (isError)
 				BeamEditorContext.Default.Dispatcher.Schedule(() => Debug.LogError(text));
 			else
 				BeamEditorContext.Default.Dispatcher.Schedule(() => Debug.Log(text));
 
 		}
 
-		static void LogExceptionVerbose(Exception e) => LogVerbose(e.ToString(),true);
+		static void LogExceptionVerbose(Exception e) => LogVerbose(e.ToString(), true);
 
 		public async Promise Init()
 		{
@@ -67,10 +67,11 @@ namespace Beamable.Server.Editor.Usam
 
 			await RefreshServices();
 			const string updatedServicesKey = "BeamUpdatedServices";
-			if(!SessionState.GetBool(updatedServicesKey, false)){
+			if (!SessionState.GetBool(updatedServicesKey, false))
+			{
 				LogVerbose("Update services version start");
 				await UpdateServicesVersions();
-				SessionState.SetBool(updatedServicesKey,true);
+				SessionState.SetBool(updatedServicesKey, true);
 				LogVerbose("Update services version end");
 			}
 			LogVerbose("Completed");
@@ -97,7 +98,7 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
-			var versions = _cli.ProjectVersion(new ProjectVersionArgs {requestedVersion = version?.version});
+			var versions = _cli.ProjectVersion(new ProjectVersionArgs { requestedVersion = version?.version });
 			versions.OnStreamProjectVersionCommandResult(result =>
 			{
 				LogVerbose($"Versions updated: {result.data.packageVersions[0]}");
@@ -110,12 +111,12 @@ namespace Beamable.Server.Editor.Usam
 			LogVerbose("refresh services start");
 			try
 			{
-				var ps = _cli.ServicesPs(new ServicesPsArgs() {json = false, remote = true});
+				var ps = _cli.ServicesPs(new ServicesPsArgs() { json = false, remote = true });
 				ps.OnStreamServiceListResult(cb =>
 				{
 					IsDockerRunning = cb.data.IsDockerRunning;
 					LogVerbose($"Found {cb.data.BeamoIds.Count} remote services");
-					_dispatcher.Schedule(()=>PopulateData(cb.data));
+					_dispatcher.Schedule(() => PopulateData(cb.data));
 				});
 				await ps.Run();
 			}
@@ -133,12 +134,12 @@ namespace Beamable.Server.Editor.Usam
 
 			try
 			{
-				var ps = _cli.ServicesPs(new ServicesPsArgs {json = false, remote = false});
+				var ps = _cli.ServicesPs(new ServicesPsArgs { json = false, remote = false });
 				ps.OnStreamServiceListResult(cb =>
 				{
 					IsDockerRunning = cb.data.IsDockerRunning;
 					LogVerbose($"Found {cb.data.BeamoIds.Count} local services");
-					_dispatcher.Schedule(()=>PopulateData(cb.data));
+					_dispatcher.Schedule(() => PopulateData(cb.data));
 				});
 				await ps.Run();
 			}
@@ -162,7 +163,7 @@ namespace Beamable.Server.Editor.Usam
 				{
 					ServiceDefinitions.Add(new BeamoServiceDefinition
 					{
-						ServiceInfo = new ServiceInfo() {name = name}
+						ServiceInfo = new ServiceInfo() { name = name }
 					});
 					dataIndex = ServiceDefinitions.Count - 1;
 				}
@@ -179,7 +180,7 @@ namespace Beamable.Server.Editor.Usam
 					ServiceDefinitions[dataIndex].IsRunningOnRemote =
 						objData.RunningState[i] ? ServiceStatus.Running : ServiceStatus.NotRunning;
 				}
-				
+
 				_dispatcher.Schedule(ServiceDefinitions[dataIndex].CallUpdate);
 				LogVerbose($"Handling {name} ended");
 			}
@@ -196,7 +197,7 @@ namespace Beamable.Server.Editor.Usam
 			var projName = new ServiceName(signPost.name);
 			var projPath = signPost.relativeDockerFile.Replace("/Dockerfile", "");
 
-			var args = new ProjectRegenerateArgs() {name = projName, output = tempPath, copyPath = projPath};
+			var args = new ProjectRegenerateArgs() { name = projName, output = tempPath, copyPath = projPath };
 			var command = _cli.ProjectRegenerate(args);
 			await command.Run();
 		}
@@ -293,9 +294,9 @@ namespace Beamable.Server.Editor.Usam
 		}
 
 		private static void ScanDirectoryRecursive(string directoryPath,
-		                                           string targetExtension,
-		                                           List<string> excludeFolders,
-		                                           HashSet<string> foundFiles)
+												   string targetExtension,
+												   List<string> excludeFolders,
+												   HashSet<string> foundFiles)
 		{
 			// TODO: ChatGPT wrote this, but actually, it should use a queue<string> to do a non-stack-recursive BFS over the file system
 			if (!Directory.Exists(directoryPath))
