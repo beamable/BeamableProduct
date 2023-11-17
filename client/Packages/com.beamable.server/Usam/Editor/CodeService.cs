@@ -37,23 +37,20 @@ namespace Beamable.Server.Editor.Usam
 			OnReady = Init();
 		}
 
-		[Conditional("BEAMABLE_DEVELOPER")]
+
+		[Conditional("BEAM_CODE_SERVICE_LOGS"),Conditional("BEAMABLE_DEVELOPER")]
 		static void LogVerbose(string log, bool isError = false)
 		{
-			var text = $"<b>[{nameof(CodeService)}]</b> {log}";
-			if (isError)
-				EditorApplication.delayCall += () => Debug.LogError(text);
+			const string logFormat = "<b>["+nameof(CodeService)+"]</b> {0}";
+			var text = string.Format(logFormat, log);
+			if(isError)
+				BeamEditorContext.Default.Dispatcher.Schedule(() => Debug.LogError(text));
 			else
-				EditorApplication.delayCall += () => Debug.Log(text);
+				BeamEditorContext.Default.Dispatcher.Schedule(() => Debug.Log(text));
+
 		}
 
-		static void LogExceptionVerbose(Exception e)
-		{
-			var text = $"<b>[{nameof(CodeService)}]</b> {e}";
-#if BEAMABLE_DEVELOPER
-			Debug.LogError(text);
-#endif
-		}
+		static void LogExceptionVerbose(Exception e) => LogVerbose(e.ToString(),true);
 
 		public async Promise Init()
 		{
@@ -103,10 +100,7 @@ namespace Beamable.Server.Editor.Usam
 			var versions = _cli.ProjectVersion(new ProjectVersionArgs {requestedVersion = version?.version});
 			versions.OnStreamProjectVersionCommandResult(result =>
 			{
-				EditorApplication.delayCall += () =>
-				{
-					LogVerbose($"Versions updated: {result.data.packageVersions[0]}");
-				};
+				LogVerbose($"Versions updated: {result.data.packageVersions[0]}");
 			});
 			await versions.Run().Error(LogExceptionVerbose);
 		}
