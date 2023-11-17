@@ -1,13 +1,11 @@
-using Beamable;
 using Beamable.Common;
 using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.Microservice.UI2.Components;
 using Beamable.Editor.UI;
-using Beamable.Server.Editor;
+using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.Usam;
 using UnityEditor;
 using UnityEngine.UIElements;
-using Usam;
 
 namespace Beamable.Editor.Microservice.UI2
 {

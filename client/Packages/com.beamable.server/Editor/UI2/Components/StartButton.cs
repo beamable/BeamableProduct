@@ -1,9 +1,8 @@
 ﻿using Beamable.Common;
+using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.Usam;
 using System;
-using UnityEngine;
 using UnityEngine.UIElements;
-using Usam;
 
 namespace Beamable.Editor.Microservice.UI2.Components
 {
@@ -28,20 +27,20 @@ namespace Beamable.Editor.Microservice.UI2.Components
 		{
 			_definition = definition;
 			EnableInClassList("building", enabledSelf);
-			var isRunning = _definition.IsRunningLocaly == ServiceStatus.Running;
+			var isRunning = _definition.IsRunningLocaly == BeamoServiceStatus.Running;
 			EnableInClassList("running", isRunning);
 		}
 
 		private void HandleStartButtonClicked()
 		{
 			Action<Unit> callback = _ => _codeService.RefreshServices().Then(_ => { });
-			if (_definition.IsRunningLocaly == ServiceStatus.Running)
+			if (_definition.IsRunningLocaly == BeamoServiceStatus.Running)
 			{
-				_codeService.Stop(new[] { _definition }).Then(callback);
+				_definition.Builder.TryToStart().ToPromise().Then(callback);
 			}
 			else
 			{
-				_codeService.Run(new[] { _definition }).Then(callback);
+				_definition.Builder.TryToStop().ToPromise().Then(callback);
 			}
 		}
 	}

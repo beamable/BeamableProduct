@@ -1,18 +1,14 @@
 ﻿using Beamable.Common;
 using Beamable.Common.BeamCli;
-using Beamable.Common.BeamCli.Contracts;
 using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.Microservice.UI2.Models;
 using Beamable.Editor.UI.Components;
-using Beamable.Modules.Generics;
+using Beamable.Editor.UI.Model;
 using Beamable.Server;
-using Beamable.Server.Editor;
 using Beamable.Server.Editor.Usam;
-using System;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
-using Usam;
 
 namespace Beamable.Editor.Microservice.UI2.Components
 {
@@ -42,9 +38,6 @@ namespace Beamable.Editor.Microservice.UI2.Components
 		private VisualElement _openScriptBtn;
 		private CodeService _codeService;
 
-		private bool IsRemoteEnabled => Model.IsRunningOnRemote == ServiceStatus.Running;
-		private Promise UiBlockingPromise;
-
 		public new class UxmlFactory : UxmlFactory<StandaloneMicroserviceVisualElement, UxmlTraits> { }
 
 		public StandaloneMicroserviceVisualElement() :
@@ -68,9 +61,6 @@ namespace Beamable.Editor.Microservice.UI2.Components
 
 		protected virtual void QueryVisualElements()
 		{
-			UiBlockingPromise = new Promise();
-			UiBlockingPromise.CompleteSuccess();
-
 			_rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
 			Root.Q("microserviceNewTitle")?.RemoveFromHierarchy();
 			_moreBtn = Root.Q<VisualElement>("moreBtn");
@@ -89,6 +79,9 @@ namespace Beamable.Editor.Microservice.UI2.Components
 		}
 		protected virtual void UpdateVisualElements()
 		{
+			_loadingBar.Hidden = true;
+			_loadingBar.Refresh();
+			_loadingBar.PlaceBehind(Root.Q("SubTitle"));
 			Model.Updated -= HandleServiceUpdate;
 			Model.Updated += HandleServiceUpdate;
 			_loadingBar.Hidden = true;
@@ -192,8 +185,8 @@ namespace Beamable.Editor.Microservice.UI2.Components
 		}
 		protected virtual void UpdateLocalStatus()
 		{
-			_header.EnableInClassList("running", Model.IsRunningLocaly == ServiceStatus.Running);
-			_openDocsBtn.SetEnabled(Model.IsRunningLocaly == ServiceStatus.Running);
+			_header.EnableInClassList("running", Model.IsRunningLocaly == BeamoServiceStatus.Running);
+			_openDocsBtn.SetEnabled(Model.IsRunningLocaly == BeamoServiceStatus.Running);
 		}
 
 		public void OpenLocalDocs()
