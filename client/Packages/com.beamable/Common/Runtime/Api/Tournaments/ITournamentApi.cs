@@ -269,6 +269,36 @@ namespace Beamable.Common.Api.Tournaments
 		public double score;
 
 		/// <summary>
+		/// Tier is the coarse-grained segmentation of tournaments, akin to
+		/// leagues such as bronze, silver, and gold. Tiers are numbered ascending
+		/// from 0.
+		/// </summary>
+		public int tier;
+
+		/// <summary>
+		/// Stage is the fine-grained segmentation of tournament tiers. Some
+		/// tournaments are defined with just one stage per tier and some are
+		/// defined with multiple stages per tier.
+		/// </summary>
+		public int stage;
+
+		/// <summary>
+		/// Next stage change is like stageChange, and is in fact synonymous with
+		/// stage change when the cycle in question is the current cycle. When
+		/// looking at past cycles, nextStageChange shows the historical delta
+		/// from that cycle to the cycle after it. If nextStageChange is not known,
+		/// this field will be absent.
+		/// </summary>
+		public Optional<int> nextStageChange;
+
+		/// <summary>
+		/// Previous stage change is a historical record of how the player got to
+		/// the current tier and stage they occupy. If the player was not present
+		/// in the previous cycle of the tournament, this field will be absent.
+		/// </summary>
+		public Optional<int> previousStageChange;
+
+		/// <summary>
 		/// The <see cref="TournamentRewardCurrency"/>s that the player will be granted after the cycle completes.
 		/// In order to claim the currency, the player must call <see cref="ITournamentApi.ClaimAllRewards"/>
 		/// </summary>
