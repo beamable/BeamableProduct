@@ -32,17 +32,17 @@ namespace Usam
 		/// Whether or not this service should be enabled when we deploy remotely.
 		/// </summary>
 		public bool ShouldBeEnabledOnRemote { get; set; }
-		
+
 		/// <summary>
 		/// Current service status on local computer.
 		/// </summary>
 		public ServiceStatus IsRunningLocaly { get; set; }
-		
+
 		/// <summary>
 		/// Current service status on server.
 		/// </summary>
 		public ServiceStatus IsRunningOnRemote { get; set; }
-		
+
 		ServiceInfo ServiceInfo { get; set; }
 
 		public void CallUpdate();
