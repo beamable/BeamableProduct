@@ -65,8 +65,8 @@ namespace Beamable.Editor.Microservice.UI2
 			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
 			_microserviceBreadcrumbsVisualElement.Refresh();
 			var scrollView = new ScrollView(ScrollViewMode.Vertical);
-			var emptyContainer = new VisualElement {name = "listRoot"};
-			
+			var emptyContainer = new VisualElement { name = "listRoot" };
+
 			var microserviceContentVisualElement = root.Q("microserviceContentVisualElement");
 			microserviceContentVisualElement.Add(scrollView);
 			scrollView.Add(emptyContainer);

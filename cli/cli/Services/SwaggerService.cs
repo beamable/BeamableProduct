@@ -90,9 +90,9 @@ public class SwaggerService
 		var openApiDocuments = await DownloadBeamableApis(filter);
 
 		var allResults = openApiDocuments.Where(r => !r.Descriptor.SkippedSDKs.Contains(targetEngine));
-		
-		var allDocuments = targetEngine == TARGET_ENGINE_NAME_UNREAL 
-				? allResults.Where(r => !r.Document.Info.Title.Contains("Scheduler")).Select(r => r.Document).ToList() 
+
+		var allDocuments = targetEngine == TARGET_ENGINE_NAME_UNREAL
+				? allResults.Where(r => !r.Document.Info.Title.Contains("Scheduler")).Select(r => r.Document).ToList()
 				: allResults.Select(r => r.Document).ToList();
 		var context = new DefaultGenerationContext
 		{
@@ -877,15 +877,15 @@ public class SwaggerService
 			{ new[] { "Match", "Ticket" }, "Matchmaking" },
 			{ new[] { "PlayerPresence", "Player" }, "Player" },
 		};
-		
+
 		foreach ((string[] existingDocsTitles, string mergedDocTitle) in joiningTags)
 		{
 			var docs = output.Where(o => existingDocsTitles.Contains(o.Document.Info.Title.Split(" ")[0])).ToList();
-			
+
 			var outputString = swagger.Document.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
 			var clonedDocument = new OpenApiStringReader().Read(outputString, out var diag);
 
-			
+
 			clonedDocument.Info.Title = $"{mergedDocTitle} Actor";
 			clonedDocument.Components = new OpenApiComponents();
 			clonedDocument.Components.Schemas = new Dictionary<string, OpenApiSchema>();
@@ -902,9 +902,9 @@ public class SwaggerService
 					clonedDocument.Components.Schemas.TryAdd(openApiSchema.Key, openApiSchema.Value);
 				}
 			}
-			
+
 			foreach (OpenApiDocumentResult res in docs) output.Remove(res);
-			
+
 			var mergedResult = new OpenApiDocumentResult
 			{
 				Descriptor = swagger.Descriptor,
@@ -921,8 +921,8 @@ public class SwaggerService
 		foreach ((string key, OpenApiSchema value) in swagger.Document.Components.Schemas)
 		{
 			var recursiveCheck = new Stack<OpenApiSchema>();
-			
-			foreach ((_, OpenApiSchema propertySchema) in value.Properties) 
+
+			foreach ((_, OpenApiSchema propertySchema) in value.Properties)
 				recursiveCheck.Push(propertySchema);
 
 			bool isSelfReferential = false;
@@ -933,7 +933,7 @@ public class SwaggerService
 				{
 					isSelfReferential = true;
 				}
-				
+
 				foreach ((_, OpenApiSchema propertySchema) in curr.Properties)
 					recursiveCheck.Push(propertySchema);
 			}
