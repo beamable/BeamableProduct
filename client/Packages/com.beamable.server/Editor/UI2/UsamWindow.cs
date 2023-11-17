@@ -7,6 +7,7 @@ using Beamable.Server.Editor;
 using Beamable.Server.Editor.Usam;
 using UnityEditor;
 using UnityEngine.UIElements;
+using Usam;
 
 namespace Beamable.Editor.Microservice.UI2
 {
@@ -59,20 +60,31 @@ namespace Beamable.Editor.Microservice.UI2
 
 			_actionBarVisualElement = root.Q<ActionBarVisualElement>("actionBarVisualElement");
 			_actionBarVisualElement.Refresh();
-			// _actionBarVisualElement.UpdateButtonsState(Model.AllLocalServices.Count(x => !x.IsArchived));
+			_actionBarVisualElement.OnRefreshButtonClicked += HandleRefreshButtonClicked;
 
 			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
 			_microserviceBreadcrumbsVisualElement.Refresh();
-			var ssa = root.Q("microserviceContentVisualElement");
+			var scrollView = new ScrollView(ScrollViewMode.Vertical);
+			var emptyContainer = new VisualElement {name = "listRoot"};
+			
+			var microserviceContentVisualElement = root.Q("microserviceContentVisualElement");
+			microserviceContentVisualElement.Add(scrollView);
+			scrollView.Add(emptyContainer);
 			OnLoad().Then(_ =>
 			{
-				foreach (var info in _codeService.Services)
+				foreach (BeamoServiceDefinition beamoServiceDefinition in _codeService.ServiceDefinitions)
 				{
-					var el = new StandaloneMicroserviceVisualElement() { Info = info };
-					ssa.Add(el);
+					var el = new StandaloneMicroserviceVisualElement() { Model = beamoServiceDefinition };
+					emptyContainer.Add(el);
 					el.Refresh();
 				}
 			});
+		}
+
+		private void HandleRefreshButtonClicked()
+		{
+			_codeService = Scope.GetService<CodeService>();
+			_codeService.RefreshServices().Then(_ => { });
 		}
 
 		public override async Promise OnLoad()
