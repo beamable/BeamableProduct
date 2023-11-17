@@ -56,7 +56,6 @@ namespace Beamable.Editor.BeamCli
 				host = BeamableEnvironment.ApiUrl,
 			});
 			await initCommand.Run();
-			Debug.Log("saved .beamable/config-defaults.json");
 
 
 			var linkCommand = Command.ProjectAddUnityProject(new ProjectAddUnityProjectArgs
@@ -65,8 +64,6 @@ namespace Beamable.Editor.BeamCli
 				path = "."
 			});
 			await linkCommand.Run();
-			Debug.Log("linked project");
-
 		}
 	}
 }

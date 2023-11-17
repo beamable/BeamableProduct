@@ -118,12 +118,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				// TODO: Chris: this we can get access to data via DI
 				var srvc = Provider.GetService<CodeService>();
-				// TODO: we need to await! (but it is probably loaded)
-				foreach (var service in srvc.Services)
-				{
-
-					_mainVisualElement.Add(new Label($"{service.name} / {service.dockerfilePath}"));
-				}
 
 				CreateNewServiceElement(ServiceType.MicroService, new CreateMicroserviceVisualElement());
 				CreateNewServiceElement(ServiceType.StorageObject, new CreateStorageObjectVisualElement());
