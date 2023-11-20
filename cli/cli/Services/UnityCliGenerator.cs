@@ -241,7 +241,7 @@ public class UnityCliGenerator : ICliGenerator
 		catch (UnityCliGenerationException ex)
 		{
 			Log.Error($"path=[{descriptor.executionPath}] message=[{ex.Message}]");
-			throw ex;
+			throw;
 		}
 
 
