@@ -75,6 +75,7 @@ public class FederatedInventoryCallbackGenerator : ICallableGenerator
 					method,
 					true);
 
+				Log.Debug("Found Federated method. FederatedPath={FederatedPath}, MethodName={MethodName}", path, serviceMethod.Method.Name);
 				output.Add(serviceMethod);
 			}
 		}		
@@ -132,7 +133,8 @@ public class FederatedLoginCallableGenerator : ICallableGenerator
 				new HashSet<string>(new []{"*"}),
 				method,
 				true);
-
+			
+			Log.Debug("Found Federated method. FederatedPath={FederatedPath}, MethodName={MethodName}", path, serviceMethod.Method.Name);
 			output.Add(serviceMethod);
 		}		
 		
