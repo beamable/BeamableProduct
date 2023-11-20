@@ -36,11 +36,11 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			Action<Unit> callback = _ => _codeService.RefreshServices().Then(_ => { });
 			if (_definition.IsRunningLocaly == BeamoServiceStatus.Running)
 			{
-				_definition.Builder.TryToStart().ToPromise().Then(callback);
+				_definition.Builder.TryToStop().ToPromise().Then(callback);
 			}
 			else
 			{
-				_definition.Builder.TryToStop().ToPromise().Then(callback);
+				_definition.Builder.TryToStart().ToPromise().Then(callback);
 			}
 		}
 	}
