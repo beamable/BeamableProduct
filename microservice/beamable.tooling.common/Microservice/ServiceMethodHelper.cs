@@ -219,7 +219,7 @@ namespace Beamable.Server
             var attribute = method.GetCustomAttribute<CallableAttribute>();
             if (attribute == null)
             {
-	            Log.Warning($"Skipped {method.Name}");
+	            Log.Debug($"Skipped {method.Name}");
 	            continue;
             }
 
