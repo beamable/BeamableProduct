@@ -116,7 +116,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 				if (args.ProjectService.GetLinkedUnrealProjects().Count > 0)
 				{
 					var gen = new ServiceDocGenerator();
-					var oapiDocument = gen.Generate(type, attribute, null, true);
+					var oapiDocument = gen.Generate(type, attribute, null, false);
 
 					foreach (var unrealProjectData in args.ProjectService.GetLinkedUnrealProjects())
 					{
