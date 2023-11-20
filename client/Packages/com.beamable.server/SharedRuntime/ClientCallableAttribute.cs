@@ -147,6 +147,16 @@ namespace Beamable.Server
 	}
 
 	[AttributeUsage(AttributeTargets.Method)]
+	public class ServerCallableAttribute : CallableAttribute
+	{
+		public ServerCallableAttribute(string pathnameOverride = "") : base(
+			pathnameOverride,
+			requireAuthenticatedUser: false,
+			requiredScopes: new[] { "*" })
+		{ }
+	}
+
+	[AttributeUsage(AttributeTargets.Method)]
 	public class CustomResponseSerializationAttribute : Attribute
 	{
 		public virtual string SerializeResponse(object raw)

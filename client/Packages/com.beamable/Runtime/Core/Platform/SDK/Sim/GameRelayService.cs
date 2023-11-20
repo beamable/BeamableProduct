@@ -196,7 +196,7 @@ namespace Beamable.Experimental.Api.Sim
 		public string type;
 
 		/// <summary>
-		/// The gamertag that spawned this event
+		/// The player id that spawned this event
 		/// </summary>
 		public long origin;
 

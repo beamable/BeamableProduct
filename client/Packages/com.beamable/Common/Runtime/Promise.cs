@@ -12,7 +12,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 
-#if !DISABLE_BEAMABLE_ASYNCMETHODBUILDER && !UNITY_2021_2_OR_NEWER
+#if (!DISABLE_BEAMABLE_ASYNCMETHODBUILDER && !UNITY_2021_2_OR_NEWER) || (NETSTANDARD2_0)
 namespace System.Runtime.CompilerServices
 {
 	public sealed class AsyncMethodBuilderAttribute : Attribute
@@ -274,6 +274,13 @@ namespace Beamable.Common
 		public Promise<T> Merge(Promise<T> other)
 		{
 			Then(other.CompleteSuccess);
+			Error(other.CompleteError);
+			return this;
+		}
+
+		public Promise<T> Merge(Promise other)
+		{
+			Then(x => other.CompleteSuccess(Unit));
 			Error(other.CompleteError);
 			return this;
 		}
@@ -697,11 +704,16 @@ namespace Beamable.Common
 		public static Promise<List<T>> Sequence<T>(IList<Promise<T>> promises)
 		{
 			var result = new Promise<List<T>>();
-			var replies = new ConcurrentDictionary<int, T>();
-
-			if (promises == null || promises.Count == 0)
+			var replies = new List<T>();
+			var completeCount = new AtomicInt();
+			for (var i = 0; i < promises.Count; i++)
 			{
-				result.CompleteSuccess(replies.Values.ToList());
+				replies.Add(default);
+			}
+
+			if (promises.Count == 0)
+			{
+				result.CompleteSuccess(replies);
 				return result;
 			}
 
@@ -709,13 +721,14 @@ namespace Beamable.Common
 			{
 				var index = i;
 
-				promises[i].Then(reply =>
+				promises[index].Then(reply =>
 				{
-					replies.TryAdd(index, reply);
+					replies[index] = reply;
+					completeCount.Increment();
 
-					if (replies.Count == promises.Count)
+					if (completeCount.Value == promises.Count)
 					{
-						result.CompleteSuccess(replies.Values.ToList());
+						result.CompleteSuccess(replies);
 					}
 				}).Error(err => result.CompleteError(err));
 			}

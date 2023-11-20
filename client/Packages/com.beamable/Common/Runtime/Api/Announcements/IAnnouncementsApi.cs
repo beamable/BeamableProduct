@@ -1,6 +1,12 @@
 using Beamable.Common.Announcements;
+using Beamable.Common.Content;
+using Beamable.Common.Inventory;
+using Beamable.Serialization;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Beamable.Common.Api.Announcements
 {
@@ -79,9 +85,13 @@ namespace Beamable.Common.Api.Announcements
 
 
 	[Serializable]
-	public class AnnouncementQueryResponse
+	public class AnnouncementQueryResponse : JsonSerializable.ISerializable
 	{
 		public List<AnnouncementView> announcements;
+		public void Serialize(JsonSerializable.IStreamSerializer s)
+		{
+			s.SerializeList(nameof(announcements), ref announcements);
+		}
 	}
 
 	/// <summary>
@@ -89,7 +99,7 @@ namespace Beamable.Common.Api.Announcements
 	/// It contains details describing the current state of a particular announcement.
 	/// </summary>
 	[Serializable]
-	public class AnnouncementView : CometClientData
+	public class AnnouncementView : CometClientData, JsonSerializable.ISerializable
 	{
 		/// <summary>
 		/// The runtime id of the announcement. This is not guaranteed to be the same as the content's id that spawned the announcement.
@@ -158,13 +168,13 @@ namespace Beamable.Common.Api.Announcements
 		public List<AnnouncementAttachment> attachments;
 
 		/// <summary>
-		/// An announcement cna have rewards that the player can claim with the <see cref="IAnnouncementsApi.Claim(string)"/> method.
+		/// An announcement can have rewards that the player can claim with the <see cref="IAnnouncementsApi.Claim(string)"/> method.
 		/// The <see cref="AnnouncementPlayerRewards"/> is the set of rewards that the player will get when they claim the announcement.
 		/// The contents of this field align with the values of the <see cref="AnnouncementContent.gift"/> field.
 		///  <b>Be careful!</b> Player rewards can also exist in the <see cref="attachments"/> field.
 		/// In the future, this field will replace the <see cref="attachments"/> field entirely.
 		/// </summary>
-		public AnnouncementPlayerRewards gift;
+		public PlayerRewardView gift = new PlayerRewardView();
 
 		/// <summary>
 		/// You can mark an announcement as "read" so that it doesn't appear as "new" for the player. This field shows if the
@@ -194,8 +204,173 @@ namespace Beamable.Common.Api.Announcements
 		{
 			endDateTime = DateTime.UtcNow.AddSeconds(secondsRemaining);
 		}
+
+		public void Serialize(JsonSerializable.IStreamSerializer s)
+		{
+			s.Serialize(nameof(id), ref id);
+			s.Serialize(nameof(channel), ref channel);
+			s.Serialize(nameof(startDate), ref startDate);
+			s.Serialize(nameof(endDate), ref endDate);
+			s.Serialize(nameof(secondsRemaining), ref secondsRemaining);
+			s.Serialize(nameof(title), ref title);
+			s.Serialize(nameof(summary), ref summary);
+			s.Serialize(nameof(body), ref body);
+			s.Serialize(nameof(isRead), ref isRead);
+			s.Serialize(nameof(isClaimed), ref isClaimed);
+			s.SerializeList(nameof(attachments), ref attachments);
+			s.Serialize(nameof(gift), ref gift);
+			s.SerializeArray(nameof(clientDataList), ref clientDataList);
+		}
 	}
 
+	public static class AnnouncementSerializationUtil
+	{
+		public static AnnouncementQueryResponse DeserializeQueryResponse(string json)
+		{
+			var res = JsonSerializable.FromJson<AnnouncementQueryResponse>(json);
+			return res;
+		}
+	}
+
+
+	[System.Serializable]
+	public class PlayerRewardCurrencyChangeView : JsonSerializable.ISerializable
+	{
+		public CurrencyRef symbol = new CurrencyRef();
+		public long amount;
+
+		public void Serialize(JsonSerializable.IStreamSerializer s)
+		{
+			if (s.HasKey(nameof(symbol))
+				|| symbol != default(CurrencyRef))
+			{
+				s.Serialize(nameof(symbol), ref symbol.Id);
+			}
+
+			s.Serialize(nameof(amount), ref amount);
+		}
+	}
+
+
+	[Serializable]
+	public class PlayerRewardNewItemView : JsonSerializable.ISerializable
+	{
+		public ItemRef symbol = new ItemRef();
+		public OptionalSerializableDictionaryStringToString properties = new OptionalSerializableDictionaryStringToString();
+
+		public void Serialize(JsonSerializable.IStreamSerializer s)
+		{
+			if (s.HasKey(nameof(symbol))
+				|| symbol != default(ItemRef))
+			{
+				s.Serialize(nameof(symbol), ref symbol.Id);
+			}
+
+			if ((s.HasKey(nameof(properties))
+				 || ((properties != default(OptionalSerializableDictionaryStringToString))
+					 && properties.HasValue)))
+			{
+				s.SerializeDictionary<SerializableDictionaryStringToString, string>(nameof(properties), ref properties.Value);
+				properties.HasValue = true;
+			}
+		}
+	}
+
+
+	[Serializable]
+	public class PlayerRewardListOfCurrencyChangeView : DisplayableList<PlayerRewardCurrencyChangeView>
+	{
+		public List<PlayerRewardCurrencyChangeView> listData = new List<PlayerRewardCurrencyChangeView>();
+
+		protected override IList InternalList => listData;
+		public override string GetListPropertyPath() => nameof(listData);
+	}
+
+
+
+	[Serializable]
+	public class PlayerRewardListOfNewItemView : DisplayableList<PlayerRewardNewItemView>
+	{
+		public List<PlayerRewardNewItemView> listData = new List<PlayerRewardNewItemView>();
+
+		protected override IList InternalList => listData;
+		public override string GetListPropertyPath() => nameof(listData);
+	}
+
+
+	[Serializable]
+	public class OptionalPlayerRewardCurrencyChangeView : Optional<PlayerRewardListOfCurrencyChangeView>
+	{
+		public OptionalPlayerRewardCurrencyChangeView()
+		{
+			Value = new PlayerRewardListOfCurrencyChangeView();
+		}
+	}
+
+	[Serializable]
+	public class OptionalPlayerRewardNewItemView : Optional<PlayerRewardListOfNewItemView>
+	{
+		public OptionalPlayerRewardNewItemView()
+		{
+			Value = new PlayerRewardListOfNewItemView();
+		}
+	}
+
+	[Serializable]
+	public class PlayerRewardView : JsonSerializable.ISerializable
+	{
+		public OptionalString description = new OptionalString();
+		public OptionalBool applyVipBonus = new OptionalBool();
+		public OptionalPlayerRewardCurrencyChangeView currencies = new OptionalPlayerRewardCurrencyChangeView();
+		public OptionalPlayerRewardNewItemView items = new OptionalPlayerRewardNewItemView();
+
+		/// <summary>
+		/// Check if there are any currencies or items in this <see cref="PlayerReward"/>
+		/// </summary>
+		/// <returns>true if there are any rewards, false otherwise.</returns>
+		public virtual bool HasAnyReward()
+		{
+			var anyCurrencies = currencies.GetOrElse(() => null)?.Count > 0;
+			var anyItems = items?.GetOrElse(() => null)?.Count > 0;
+			return anyCurrencies || anyItems;
+		}
+
+
+		public void Serialize(JsonSerializable.IStreamSerializer s)
+		{
+			if ((s.HasKey(nameof(applyVipBonus))
+				 || ((applyVipBonus != default(OptionalBool))
+					 && applyVipBonus.HasValue)))
+			{
+				s.Serialize(nameof(applyVipBonus), ref applyVipBonus.Value);
+				applyVipBonus.HasValue = true;
+			}
+
+			if ((s.HasKey(nameof(description))
+				 || ((description != default(OptionalString))
+					 && description.HasValue)))
+			{
+				s.Serialize(nameof(description), ref description.Value);
+				description.HasValue = true;
+			}
+
+			if ((s.HasKey("changeCurrencies")
+				 || ((currencies != default(OptionalPlayerRewardCurrencyChangeView))
+					 && currencies.HasValue)))
+			{
+				s.SerializeList("changeCurrencies", ref currencies.Value.listData);
+				currencies.HasValue = true;
+			}
+
+			if ((s.HasKey("addItems")
+				 || ((items != default(OptionalPlayerRewardNewItemView))
+					 && items.HasValue)))
+			{
+				s.SerializeList("addItems", ref items.Value.listData);
+				items.HasValue = true;
+			}
+		}
+	}
 
 	[Serializable]
 	public class AnnouncementRequest

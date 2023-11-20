@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
 
@@ -19,6 +19,7 @@
     <ToolCommandName>beam</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
     <LangVersion>10</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -41,6 +42,7 @@
     <PackageReference Include="Csv" Version="2.0.93" />
     <PackageReference Include="Docker.DotNet" Version="3.125.14" />
     <PackageReference Include="JetBrains.Annotations" Version="2022.3.1" />
+    <PackageReference Include="Markdig" Version="0.31.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0-preview.4.22229.4" />
     <PackageReference Include="Microsoft.OpenApi" Version="1.6.3" />
     <PackageReference Include="Microsoft.OpenApi.Readers" Version="1.3.2" />
@@ -48,12 +50,14 @@
     <PackageReference Include="NBomber.Http" Version="4.1.0" />
     <PackageReference Include="NetMQ" Version="4.0.1.11" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="Serilog" Version="2.10.0" />
+    <PackageReference Include="Serilog" Version="3.0.1" />
     <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.0" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
-    <PackageReference Include="Serilog.Sinks.SpectreConsole" Version="0.3.3" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="4.2.0-dev-00918" />
+<!--    <PackageReference Include="Serilog.Sinks.SpectreConsole" Version="0.3.3" />-->
+    <PackageReference Include="Serilog.Sinks.Spectre" Version="0.4.1" />
     <PackageReference Include="SharpZipLib" Version="1.3.3" />
-    <PackageReference Include="Spectre.Console" Version="0.45.0" />
+    <PackageReference Include="Spectre.Console" Version="0.47.0" />
+    <PackageReference Include="Spectre.Console.Json" Version="0.47.0" />
     <PackageReference Include="System.CodeDom" Version="6.0.0" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta3.22114.1" />
   </ItemGroup>
@@ -69,15 +73,27 @@
     <Folder Include="nupkg" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="Docs\**\*.md" />
+    <EmbeddedResource Include="Docs\**\*.md" />
+  </ItemGroup>
 
-  <Target Name="PrepTools" BeforeTargets="Build" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true">
+
+  <Target Name="PrepTools" BeforeTargets="Pack" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true">
     <Exec Command="dotnet tool restore" />
   </Target>
-  <Target Name="BuildCLIInterface" AfterTargets="Build" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true">
-    <Exec Condition="'$(IsWindows)'!='true'" Command="./$(OutDir)/$(AssemblyName) generate-interface --engine unity --output=../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
-    <Exec Condition="'$(IsWindows)'=='true'" Command=".\$(OutDir)$(AssemblyName) generate-interface --engine unity --output=..\..\client\Packages\com.beamable\Editor\BeamCli\Commands" />
-    <Exec Command="dotnet tool run dotnet-format ../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
+  <Target Name="BuildCLIInterface" AfterTargets="Pack" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true AND $(SKIP_GENERATION)!=true">
+    <Message Importance="high" Text="OutDir: $(OutputPath)" />
 
+    <!-- Unix-Based -->
+    <Exec Condition="'$(IsWindows)'!='true' And Exists('$(OutputPath)net6.0/')" Command="./$(OutputPath)net6.0/$(AssemblyName) generate-interface --engine unity --output=../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
+    <Exec Condition="'$(IsWindows)'!='true' And Exists('$(OutputPath)net7.0/')" Command="./$(OutputPath)net7.0/$(AssemblyName) generate-interface --engine unity --output=../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
+
+    <!-- Windows-Based -->
+    <Exec Condition="'$(IsWindows)'=='true' And Exists('$(OutputPath)net6.0\')" Command=".\$(OutputPath)net6.0\$(AssemblyName) generate-interface --engine unity --output=..\..\client\Packages\com.beamable\Editor\BeamCli\Commands" />
+    <Exec Condition="'$(IsWindows)'=='true' And Exists('$(OutputPath)net7.0\')" Command=".\$(OutputPath)net7.0\$(AssemblyName) generate-interface --engine unity --output=..\..\client\Packages\com.beamable\Editor\BeamCli\Commands" />
+
+    <Exec Command="dotnet tool run dotnet-format ../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
   </Target>
 
 </Project>

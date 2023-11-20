@@ -56,6 +56,11 @@ namespace Beamable.Tournaments
 			return Promise<TournamentInfo>.Successful(Info).WaitForSeconds(RandomLatencyTime);
 		}
 
+		public Promise<TournamentInfo> GetRunningTournamentInfo(string tournamentContentId)
+		{
+			return Promise<TournamentInfo>.Successful(Info).WaitForSeconds(RandomLatencyTime);
+		}
+
 		public Promise<TournamentInfoResponse> GetAllTournaments(string contentId = null, int? cycle = null, bool? isRunning = null)
 		{
 			return Promise<TournamentInfoResponse>.Successful(new TournamentInfoResponse

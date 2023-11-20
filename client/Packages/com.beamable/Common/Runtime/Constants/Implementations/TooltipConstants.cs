@@ -36,20 +36,10 @@
 				public const string ICON_UP_TO_DATE = "Up to date";
 			}
 
-			public static partial class Buss
-			{
-				public const string UNDO = "Undo";
-				public const string WIZARD_SYSTEM = "Wizard System";
-				public const string ERASE_ALL_STYLE = "Erase all style";
-				public const string REFRESH = "Refresh";
-				public const string MORE = "More";
-				public const string OPTIONS = "Options";
-			}
 
 			public static partial class Toolbox
 			{
 				public const string CONTENT = "Content";
-				public const string THEME_MANAGER = "Theme Manager";
 				public const string CONFIG = "Config";
 				public const string DOCUMENT = "Document";
 				public const string MICROSERVICE = "Microservice";

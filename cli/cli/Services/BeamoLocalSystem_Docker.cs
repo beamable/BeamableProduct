@@ -4,6 +4,7 @@
  */
 
 using Beamable.Common;
+using Docker.DotNet;
 using Docker.DotNet.Models;
 using ICSharpCode.SharpZipLib.Tar;
 using Newtonsoft.Json;
@@ -16,6 +17,22 @@ namespace cli.Services;
 
 public partial class BeamoLocalSystem
 {
+	/// <summary>
+	/// Checks if Docker is running locally.
+	/// </summary>
+	/// <returns></returns>
+	public async Task<bool> CheckIsRunning()
+	{
+		try
+		{
+			await _client.System.PingAsync();
+			return true;
+		}
+		catch
+		{
+			return false;
+		}
+	}
 
 	/// <summary>
 	/// Uses the given image (name or id) to create/replace the container with the given name and configurations.
@@ -32,11 +49,23 @@ public partial class BeamoLocalSystem
 		var existingInstance = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.ContainerName.Contains(containerName));
 		if (existingInstance != null)
 		{
-			if (existingInstance.IsRunning)
-				return true;
+			if (existingInstance.ImageId == image)
+			{
+				// the image is the same, so we can re-use it.
+				if (existingInstance.IsRunning)
+				{
+					// since the exact right image is already running for this container; do nothing.
+					return true;
+				}
 
+				return await RunContainer(containerName);
+			}
+			else
+			{
+				// the image is not correct, so we need to erase the old container before recreating it.
+				await DeleteContainer(containerName);
+			}
 
-			return await RunContainer(containerName);
 		}
 
 		_ = await CreateContainer(image, containerName, healthConfig, autoRemoveWhenStopped, portBindings, volumes, bindMounts, environmentVars);
@@ -88,6 +117,7 @@ public partial class BeamoLocalSystem
 		{
 			createParams.Healthcheck = new HealthConfig() { Test = new List<string>() { healthcheckCmd } };
 		}
+
 		hostConfig.AutoRemove = autoRemoveWhenStopped;
 
 		// Build env vars
@@ -128,6 +158,7 @@ public partial class BeamoLocalSystem
 			{
 				Log.Warning(warning);
 			}
+
 			return response.ID;
 		}
 		catch (Exception e)
@@ -142,7 +173,7 @@ public partial class BeamoLocalSystem
 	/// <see cref="BeamoServiceDefinition.DockerBuildContextPath"/> and <see cref="BeamoServiceDefinition.RelativeDockerfilePath"/>.  
 	/// </summary>
 	/// <returns>The image id that was created/pulled.</returns>
-	public async Task<string> PrepareBeamoServiceImage(BeamoServiceDefinition serviceDefinition, Action<string, float> messageHandler)
+	public async Task<string> PrepareBeamoServiceImage(BeamoServiceDefinition serviceDefinition, Action<string, float> messageHandler, bool forceAmdCpuArchitecture = false)
 	{
 		switch (serviceDefinition.Protocol)
 		{
@@ -158,13 +189,14 @@ public partial class BeamoLocalSystem
 			case BeamoProtocolType.HttpMicroservice:
 			{
 				var localProtocol = BeamoManifest.HttpMicroserviceLocalProtocols[serviceDefinition.BeamoId];
-				serviceDefinition.ImageId = await BuildAndCreateImage(serviceDefinition.BeamoId,
+				serviceDefinition.ImageId = await BuildAndCreateImage(serviceDefinition.BeamoId.ToLower(),
 					localProtocol.DockerBuildContextPath,
 					localProtocol.RelativeDockerfilePath,
 					progress =>
 					{
 						messageHandler?.Invoke(serviceDefinition.BeamoId, progress);
-					});
+					},
+					forceAmdCpuArchitecture: forceAmdCpuArchitecture);
 				break;
 			}
 			default:
@@ -179,25 +211,31 @@ public partial class BeamoLocalSystem
 	/// It inspects the created image and returns it's ID.
 	/// </summary>
 	public async Task<string> BuildAndCreateImage(string imageName, string dockerBuildContextPath, string dockerfilePathInBuildContext, Action<float> progressUpdateHandler,
-		string containerImageTag = "latest")
+		string containerImageTag = "latest", bool forceAmdCpuArchitecture = false)
 	{
 		dockerBuildContextPath = _configService.GetRelativePath(dockerBuildContextPath);
 
 
 		using (var stream = CreateTarballForDirectory(dockerBuildContextPath))
 		{
-
 			var tag = $"{imageName}:{containerImageTag}";
 			var progress = 0f;
 			try
 			{
+				var parameters = new ImageBuildParameters
+				{
+					Tags = new[] { tag },
+					Dockerfile = dockerfilePathInBuildContext.Replace("\\", "/"),
+					Labels = new Dictionary<string, string>() { { "beamoId", imageName } },
+					Pull = "pull",
+				};
+				if (forceAmdCpuArchitecture)
+				{
+					parameters.Platform = "linux/amd64";
+					Log.Debug($"Forcing CPU architecture arch=[{parameters.Platform}]");
+				}
 				await _client.Images.BuildImageFromDockerfileAsync(
-					new ImageBuildParameters
-					{
-						Tags = new[] { tag },
-						Dockerfile = dockerfilePathInBuildContext.Replace("\\", "/"),
-						Labels = new Dictionary<string, string>() { { "beamoId", imageName } },
-					},
+					parameters,
 					stream,
 					null,
 					new Dictionary<string, string>(),
@@ -266,7 +304,7 @@ public partial class BeamoLocalSystem
 			}
 
 			var builtImage = await _client.Images.InspectImageAsync(tag);
-
+			Log.Debug($"Built image=[{builtImage.ID}] for arch=[{builtImage.Architecture}]");
 			return builtImage.ID;
 		}
 	}
@@ -275,106 +313,9 @@ public partial class BeamoLocalSystem
 	/// Pulls the image with the given <paramref name="imageName"/>:<paramref name="imageTag"/> into the local docker engine from remote docker repositories.
 	/// It inspects the pulled image and returns its id, after the pull is done.
 	/// </summary>
-	public async Task<string> PullAndCreateImage(string publicImageName, Action<float> progressUpdateHandler)
+	public Task<string> PullAndCreateImage(string publicImageName, Action<float> progressUpdateHandler)
 	{
-		// Since we get progress updates in a multi-threaded way, this needs to be a concurrent dictionary
-		var progressDict = new ConcurrentDictionary<string, (float downloadProgress, float extractProgress)>();
-		await _client.Images.CreateImageAsync(new ImagesCreateParameters() { FromImage = publicImageName, },
-			null,
-			new Progress<JSONMessage>(message =>
-			{
-				/*
-				 * A parser for this JSONMessage format that outputs a single "complete percentage" value every time a new message is received.
-				 * There's some setup required for this:
-				 * 1) whenever receive a new message, see if id is already in dictionary --- if not, add it with 0 percentages.
-				 * 2) Check if the "status" is Downloading/Extracting and increment the percentage accordingly
-				 * 3) Calculate the total percentage as the average of the 2 percentages.
-				 * 4) Invoke the handler
-				 * 
-				 * Reference of each type of message:
-				 * {"status":"Pulling from library/mongo","id":"latest"}
-				 * {"status":"Pulling fs layer","progressDetail":{},"id":"20cec14c8f9e"}
-				 * {"status":"Waiting","progressDetail":{},"id":"38c3018eb09a"}
-				 * {"status":"Downloading","progressDetail":{"current":1834,"total":1834},"progress":"[==================================================>]  1.834kB/1.834kB","id":"97ef66a8492a"}
-				 * {"status":"Verifying Checksum","progressDetail":{},"id":"97ef66a8492a"}
-				 * {"status":"Download complete","progressDetail":{},"id":"97ef66a8492a"}
-				 * {"status":"Extracting","progressDetail":{"current":11501568,"total":28572632},"progress":"[====================>                              ]   11.5MB/28.57MB","id":"d7bfe07ed847"}
-				 * {"status":"Pull complete","progressDetail":{},"id":"d7bfe07ed847"}
-				 * {"status":"Digest: sha256:82302b06360729842acd27ab8a91c90e244f17e464fcfd366b7427af652c5559"}
-				 * {"status":"Status: Downloaded newer image for mongo:latest"}
-				 */
-
-				var id = message.ID;
-				var status = message.Status;
-
-				// Skip messages with no ids or the pulling messages... We skip the pulling messages as one of them has an id that shouldn't be in the dictionary and the rest are redundant
-				if (string.IsNullOrEmpty(id) || status.StartsWith("Pulling from"))
-					return;
-
-				// Ensures we are tracking the progress of this id
-				progressDict.TryAdd(id, (0f, 0f));
-
-				// {"status":"Downloading","progressDetail":{"current":208640380,"total":210625220},"progress":"[=================================================> ]  208.6MB/210.6MB","id":"be887b845d3f"}
-				if (status == "Downloading")
-				{
-					var current = message.Progress.Current;
-					var total = message.Progress.Total;
-					(_, float extractProgress) = progressDict[id];
-
-					// We make sure that we complete the progress only when we receive the "Download complete" status update by faking it
-					var newProgress = (float)current / total;
-					if (Math.Abs(newProgress - 1) < float.Epsilon)
-						newProgress -= float.Epsilon;
-
-					progressDict[id] = (newProgress, extractProgress);
-				}
-
-				// We force the status to be 1 when we get the download complete message for any given id.
-				// {"status":"Download complete","progressDetail":{},"id":"be887b845d3f"}
-				else if (status == "Download complete")
-				{
-					(_, float extractProgress) = progressDict[id];
-					progressDict[id] = (1, extractProgress);
-				}
-				// {"status":"Extracting","progressDetail":{"current":210625220,"total":210625220},"progress":"[==================================================>]  210.6MB/210.6MB","id":"be887b845d3f"}
-				else if (status == "Extracting")
-				{
-					var current = message.Progress.Current;
-					var total = message.Progress.Total;
-					(float downloadProgress, _) = progressDict[id];
-
-					// We make sure that we complete the progress only when we receive the "Pull complete" status update by faking it
-					var newProgress = (float)current / total;
-					if (Math.Abs(newProgress - 1) < float.Epsilon)
-						newProgress -= float.Epsilon;
-
-					progressDict[id] = (downloadProgress, newProgress);
-				}
-				// {"status":"Pull complete","progressDetail":{},"id":"e5543880b183"}
-				else if (status == "Pull complete")
-				{
-					progressDict[id] = (1, 1);
-				}
-
-				var progressAvg = 0f;
-				foreach ((_, (float downloadProgress, float extractProgress)) in progressDict)
-				{
-					progressAvg += (downloadProgress + extractProgress) / 2f;
-				}
-
-				progressAvg /= progressDict.Count;
-
-				progressUpdateHandler?.Invoke(progressAvg);
-			}));
-
-		// Find the image that was downloaded
-		var builtImage = await _client.Images.InspectImageAsync(publicImageName);
-
-		// Notify that the image is available locally
-		progressUpdateHandler?.Invoke(1f);
-
-		// Return the image id.
-		return builtImage.ID;
+		return _client.PullAndCreateImage(publicImageName, progressUpdateHandler);
 	}
 
 	/// <summary>
@@ -581,6 +522,123 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public async Task<Stream> SaveImage(BeamoServiceDefinition serviceDefinition) =>
 		await _client.Images.SaveImageAsync(serviceDefinition.ImageId, CancellationToken.None);
+}
 
+public static class DockerClientHelper
+{
+	public static async Task<string> PullAndCreateImage(this DockerClient client, string publicImageName, Action<float> progressUpdateHandler)
+	{
+		// Since we get progress updates in a multi-threaded way, this needs to be a concurrent dictionary
+		var progressDict = new ConcurrentDictionary<string, (float downloadProgress, float extractProgress)>();
+		await client.Images.CreateImageAsync(new ImagesCreateParameters() { FromImage = publicImageName, },
+			null,
+			new Progress<JSONMessage>(message =>
+			{
+				/*
+				 * A parser for this JSONMessage format that outputs a single "complete percentage" value every time a new message is received.
+				 * There's some setup required for this:
+				 * 1) whenever receive a new message, see if id is already in dictionary --- if not, add it with 0 percentages.
+				 * 2) Check if the "status" is Downloading/Extracting and increment the percentage accordingly
+				 * 3) Calculate the total percentage as the average of the 2 percentages.
+				 * 4) Invoke the handler
+				 * 
+				 * Reference of each type of message:
+				 * {"status":"Pulling from library/mongo","id":"latest"}
+				 * {"status":"Pulling fs layer","progressDetail":{},"id":"20cec14c8f9e"}
+				 * {"status":"Waiting","progressDetail":{},"id":"38c3018eb09a"}
+				 * {"status":"Downloading","progressDetail":{"current":1834,"total":1834},"progress":"[==================================================>]  1.834kB/1.834kB","id":"97ef66a8492a"}
+				 * {"status":"Verifying Checksum","progressDetail":{},"id":"97ef66a8492a"}
+				 * {"status":"Download complete","progressDetail":{},"id":"97ef66a8492a"}
+				 * {"status":"Extracting","progressDetail":{"current":11501568,"total":28572632},"progress":"[====================>                              ]   11.5MB/28.57MB","id":"d7bfe07ed847"}
+				 * {"status":"Pull complete","progressDetail":{},"id":"d7bfe07ed847"}
+				 * {"status":"Digest: sha256:82302b06360729842acd27ab8a91c90e244f17e464fcfd366b7427af652c5559"}
+				 * {"status":"Status: Downloaded newer image for mongo:latest"}
+				 */
 
+				var id = message.ID;
+				var status = message.Status;
+
+				// Skip messages with no ids or the pulling messages... We skip the pulling messages as one of them has an id that shouldn't be in the dictionary and the rest are redundant
+				if (string.IsNullOrEmpty(id) || status.StartsWith("Pulling from"))
+					return;
+
+				// Ensures we are tracking the progress of this id
+				progressDict.TryAdd(id, (0f, 0f));
+
+				// {"status":"Downloading","progressDetail":{"current":208640380,"total":210625220},"progress":"[=================================================> ]  208.6MB/210.6MB","id":"be887b845d3f"}
+				if (status == "Downloading")
+				{
+					var current = message.Progress.Current;
+					var total = message.Progress.Total;
+					(_, float extractProgress) = progressDict[id];
+
+					// We make sure that we complete the progress only when we receive the "Download complete" status update by faking it
+					var newProgress = (float)current / total;
+					if (Math.Abs(newProgress - 1) < float.Epsilon)
+						newProgress -= float.Epsilon;
+
+					progressDict[id] = (newProgress, extractProgress);
+				}
+
+				// We force the status to be 1 when we get the download complete message for any given id.
+				// {"status":"Download complete","progressDetail":{},"id":"be887b845d3f"}
+				else if (status == "Download complete")
+				{
+					(_, float extractProgress) = progressDict[id];
+					progressDict[id] = (1, extractProgress);
+				}
+				// {"status":"Extracting","progressDetail":{"current":210625220,"total":210625220},"progress":"[==================================================>]  210.6MB/210.6MB","id":"be887b845d3f"}
+				else if (status == "Extracting")
+				{
+					var current = message.Progress.Current;
+					var total = message.Progress.Total;
+					(float downloadProgress, _) = progressDict[id];
+
+					// We make sure that we complete the progress only when we receive the "Pull complete" status update by faking it
+					var newProgress = (float)current / total;
+					if (Math.Abs(newProgress - 1) < float.Epsilon)
+						newProgress -= float.Epsilon;
+
+					progressDict[id] = (downloadProgress, newProgress);
+				}
+				// {"status":"Pull complete","progressDetail":{},"id":"e5543880b183"}
+				else if (status == "Pull complete")
+				{
+					progressDict[id] = (1, 1);
+				}
+
+				var progressAvg = 0f;
+				foreach ((_, (float downloadProgress, float extractProgress)) in progressDict)
+				{
+					progressAvg += (downloadProgress + extractProgress) / 2f;
+				}
+
+				progressAvg /= progressDict.Count;
+
+				progressUpdateHandler?.Invoke(progressAvg);
+			}));
+
+		// Find the image that was downloaded
+		var builtImage = await client.Images.InspectImageAsync(publicImageName);
+
+		// Notify that the image is available locally
+		progressUpdateHandler?.Invoke(1f);
+
+		// Return the image id.
+		return builtImage.ID;
+	}
+
+	public static async Task<bool> HasImageWithTag(this DockerClient client, string tag)
+	{
+		var imagesList = await client.Images.ListImagesAsync(new ImagesListParameters());
+		foreach (ImagesListResponse image in imagesList)
+		{
+			if (image?.RepoTags == null)
+				continue;
+			if (image.RepoTags.Any(s => s.Contains(tag)))
+				return true;
+		}
+
+		return false;
+	}
 }

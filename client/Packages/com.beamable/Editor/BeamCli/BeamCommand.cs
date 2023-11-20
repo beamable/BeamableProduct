@@ -4,10 +4,13 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
+using Beamable.Editor.Dotnet;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
+using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -46,7 +49,9 @@ namespace Beamable.Editor.BeamCli.Commands
 				host = BeamableEnvironment.ApiUrl,
 				refreshToken = _requester?.AccessToken?.RefreshToken,
 				log = "Information",
-				reporterUseFatal = true
+				reporterUseFatal = true,
+				skipStandaloneValidation = true,
+				dotnetPath = DotnetUtil.DotnetPath
 			};
 			return beamArgs;
 		}
@@ -78,6 +83,16 @@ namespace Beamable.Editor.BeamCli
 		public BeamCommandFactory(BeamableDispatcher dispatcher)
 		{
 			_dispatcher = dispatcher;
+
+			AssemblyReloadEvents.beforeAssemblyReload -= ClearAll;
+			AssemblyReloadEvents.afterAssemblyReload -= ClearAll;
+			AssemblyReloadEvents.beforeAssemblyReload += ClearAll;
+			AssemblyReloadEvents.afterAssemblyReload += ClearAll;
+			EditorApplication.wantsToQuit += () =>
+			{
+				ClearAll();
+				return true;
+			};
 		}
 
 		public IBeamCommand Create()
@@ -149,8 +164,8 @@ namespace Beamable.Editor.BeamCli
 		protected int _exitCode = -1;
 		private bool _hasExecuted;
 
-		private string messageBuffer = "";
-		private bool isMessageInProgress;
+		private string _messageBuffer = string.Empty;
+		private bool _isMessageInProgress;
 
 		// private Dictionary<string, List<Action<string>>
 
@@ -184,33 +199,39 @@ namespace Beamable.Editor.BeamCli
 		{
 			if (message == null) return;
 
-			messageBuffer += message;
-
-			if (!isMessageInProgress)
+			_messageBuffer += message;
+			if (!_isMessageInProgress)
 			{
-				var startIndex = messageBuffer.IndexOf(Reporting.PATTERN_START, StringComparison.Ordinal);
+				var startIndex = _messageBuffer.IndexOf(Reporting.PATTERN_START, StringComparison.Ordinal);
 				if (startIndex >= 0)
 				{
-					isMessageInProgress = true;
-					messageBuffer = messageBuffer.Substring(startIndex + Reporting.PATTERN_START.Length);
+					_isMessageInProgress = true;
+					_messageBuffer = _messageBuffer.Substring(startIndex + Reporting.PATTERN_START.Length);
 				}
 			}
-			else if (isMessageInProgress)
-			{
-				var startIndex = messageBuffer.IndexOf(Reporting.PATTERN_END, StringComparison.Ordinal);
-				if (startIndex >= 0)
-				{
-					isMessageInProgress = false;
-					var found = messageBuffer.Substring(0, startIndex);
-					messageBuffer = messageBuffer.Substring(startIndex + Reporting.PATTERN_END.Length);
-					// Debug.LogWarning(found);
 
-					var pt = JsonUtility.FromJson<ReportDataPointDescription>(found);
-					if (pt != null)
+			if (_isMessageInProgress)
+			{
+				var endPatternIndex = _messageBuffer.IndexOf(Reporting.PATTERN_END, StringComparison.Ordinal);
+				if (endPatternIndex >= 0)
+				{
+					_isMessageInProgress = false;
+					var found = _messageBuffer.Substring(0, endPatternIndex);
+					_messageBuffer = _messageBuffer.Substring(endPatternIndex + Reporting.PATTERN_END.Length);
+					// Debug.LogWarning(found);
+					try
 					{
-						pt.json = found;
-						_points.Add(pt);
-						_callbacks?.Invoke(pt);
+						var pt = JsonUtility.FromJson<ReportDataPointDescription>(found);
+						if (pt != null)
+						{
+							pt.json = found;
+							_points.Add(pt);
+							_callbacks?.Invoke(pt);
+						}
+					}
+					catch (Exception e)
+					{
+						Debug.LogException(e);
 					}
 				}
 			}
@@ -218,14 +239,20 @@ namespace Beamable.Editor.BeamCli
 
 		private void ProcessStandardErr(string data)
 		{
-			if (data == null) return;
+			if (string.IsNullOrWhiteSpace(data)) return;
 			if (!AutoLogErrors) return;
 			Debug.LogError(data);
 		}
 
 		public void SetCommand(string command)
 		{
-			Command = command;
+			var beamLocation = BeamCliUtil.CLI_PATH;
+
+#if UNITY_EDITOR_WIN
+			beamLocation = $"\"{Path.GetFullPath(beamLocation)}\"";
+#endif
+
+			Command = beamLocation + command.Substring("beam".Length);
 		}
 
 		public async Promise Run()
@@ -234,7 +261,6 @@ namespace Beamable.Editor.BeamCli
 			_hasExecuted = true;
 			try
 			{
-
 				using (_process = new System.Diagnostics.Process())
 				{
 #if UNITY_EDITOR && !UNITY_EDITOR_WIN
@@ -262,7 +288,7 @@ namespace Beamable.Editor.BeamCli
 						   await Task.Delay(1); // give 1 ms for log messages to eep out
 						   if (_dispatcher.IsForceStopped)
 						   {
-							   _process.Kill();
+							   KillProc();
 							   return;
 						   }
 						   _dispatcher.Schedule(() =>
@@ -290,7 +316,7 @@ namespace Beamable.Editor.BeamCli
 						{
 							if (_dispatcher.IsForceStopped)
 							{
-								_process.Kill();
+								KillProc();
 								return;
 							}
 							_dispatcher.Schedule(() =>
@@ -309,7 +335,7 @@ namespace Beamable.Editor.BeamCli
 						{
 							if (_dispatcher.IsForceStopped)
 							{
-								_process.Kill();
+								KillProc();
 								return;
 							}
 							_dispatcher.Schedule(() =>
@@ -336,7 +362,12 @@ namespace Beamable.Editor.BeamCli
 
 						if (_exitCode != 0)
 						{
-							throw new Exception("Cli failed");
+#if BEAMABLE_DEVELOPER
+							var message = $"Cli failed {_command}";
+#else
+							var message = "Cli failed";
+#endif
+							throw new Exception(message);
 						}
 					}
 					finally
@@ -352,6 +383,24 @@ namespace Beamable.Editor.BeamCli
 				// Debug.LogException(e);
 				throw;
 			}
+		}
+
+		private void KillProc()
+		{
+			if (_process.HasExited)
+			{
+				return;
+			}
+
+			try
+			{
+				_process.Kill();
+			}
+			catch
+			{
+				Debug.LogWarning($"Unable to kill beamCLI process. This <i>may</i> mean that there are pending beamCLI tasks on your machine. \n command=[{_command}]");
+			}
+
 		}
 
 

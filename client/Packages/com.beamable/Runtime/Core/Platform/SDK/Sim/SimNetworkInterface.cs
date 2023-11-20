@@ -45,7 +45,7 @@ namespace Beamable.Experimental.Api.Sim
 
 		/// <summary>
 		/// Get a unique id for the client which is consistent across the network.
-		/// Often, this will be the gamertag of the client's player.
+		/// Often, this will be the player id of the client's player.
 		/// </summary>
 		string ClientId { get; }
 

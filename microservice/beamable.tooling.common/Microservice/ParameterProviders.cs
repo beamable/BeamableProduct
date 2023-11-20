@@ -1,22 +1,37 @@
-using System.Collections.Generic;
 using System.Text.Json;
 
 namespace Beamable.Server
 {
+	/// <summary>
+	/// Represents a provider for method parameters.
+	/// </summary>
    public interface IParameterProvider
    {
+	   /// <summary>
+	   /// Gets the parameters for a specified service method.
+	   /// </summary>
+	   /// <param name="method">The service method for which to retrieve parameters.</param>
+	   /// <returns>An array of method parameters.</returns>
       object[] GetParameters(ServiceMethod method);
    }
 
+	/// <summary>
+	/// Provides adaptive method parameters based on the microservice request context.
+	/// </summary>
    public class AdaptiveParameterProvider : IParameterProvider
    {
 	   private MicroserviceRequestContext _ctx;
 
+	   /// <summary>
+	   /// Initializes a new instance of the <see cref="AdaptiveParameterProvider"/> class.
+	   /// </summary>
+	   /// <param name="ctx">The microservice request context used for parameter adaptation.</param>
 	   public AdaptiveParameterProvider(MicroserviceRequestContext ctx)
 	   {
 		   _ctx = ctx;
 	   }
 
+	   /// <inheritdoc />
 	   public object[] GetParameters(ServiceMethod method)
 	   {
 		   var hasPayloadProperty = _ctx.BodyElement.TryGetProperty("payload", out var payloadElem);
@@ -24,7 +39,7 @@ namespace Beamable.Server
 		   var isPayloadArray = hasPayloadProperty && payloadElem.ValueKind == JsonValueKind.Array;
 
 		   var methodHasPayloadField = method.ParameterNames.Contains("payload");
-		   IParameterProvider internalProvider = null;
+		   IParameterProvider internalProvider;
 		   if (hasPayloadProperty && methodHasPayloadField)
 		   {
 			   if (!isPayloadArray)
@@ -37,7 +52,7 @@ namespace Beamable.Server
 				   throw new ParameterLegacyException();
 			   }
 		   }
-		   else if (hasPayloadProperty && !methodHasPayloadField)
+		   else if (hasPayloadProperty)
 		   {
 			   internalProvider = new PayloadArrayParameterProvider(_ctx.BodyElement);
 		   }
@@ -50,17 +65,25 @@ namespace Beamable.Server
 	   }
    }
 
+	/// <summary>
+	/// Provides method parameters based on a JSON payload array.
+	/// </summary>
    public class PayloadArrayParameterProvider : IParameterProvider
    {
 	   private readonly JsonElement _bodyElement;
 	   private List<string> jsonArgs;
 
+	   /// <summary>
+	   /// Initializes a new instance of the <see cref="PayloadArrayParameterProvider"/> class.
+	   /// </summary>
+	   /// <param name="bodyElement">The JSON element representing the payload array.</param>
       public PayloadArrayParameterProvider(JsonElement bodyElement)
       {
 	      _bodyElement = bodyElement;
 	      jsonArgs = new List<string>();
       }
 
+      /// <inheritdoc />
       public object[] GetParameters(ServiceMethod method)
       {
 	      if (_bodyElement.TryGetProperty("payload", out var payloadString))
@@ -102,6 +125,9 @@ namespace Beamable.Server
    }
 
 
+	/// <summary>
+	/// Provides method parameters based on named parameters in a JSON payload.
+	/// </summary>
    public class NamedParameterProvider : IParameterProvider
    {
 	   private readonly JsonElement _bodyElement;
@@ -111,11 +137,16 @@ namespace Beamable.Server
       //    _bodyDoc = JsonDocument.Parse(ctx.Body);
       // }
 
+      /// <summary>
+      /// Initializes a new instance of the <see cref="NamedParameterProvider"/> class.
+      /// </summary>
+      /// <param name="bodyElement">The JSON element representing the payload with named parameters.</param>
       public NamedParameterProvider(JsonElement bodyElement)
       {
 	      _bodyElement = bodyElement;
       }
 
+      /// <inheritdoc />
       public object[] GetParameters(ServiceMethod method)
       {
          var args = new object[method.Deserializers.Count];

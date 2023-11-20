@@ -23,9 +23,9 @@ namespace Beamable.Editor
 
 		Promise<AccountServiceInitResult> TryInit();
 		Promise<EditorAccountInfo> Login(string nextCid, AccessToken cidToken);
+		void OnUserChanged(Func<EditorAccountInfo, Promise> cb);
 		void Logout(bool clearRealmPid);
 		ReadonlyOptionalString Cid { get; }
-		void ApplyConfigValuesToRuntime();
 		void SetRealm(EditorAccountInfo editorAccount, RealmView game, string realmPid);
 		void WriteUnsetConfigValues();
 		Promise<bool> SwitchToConfigDefaults();
@@ -44,6 +44,8 @@ namespace Beamable.Editor
 				return editorAccounts?.FirstOrDefault(a => a?.cid?.Equals(cid.Value) ?? false);
 			}
 		}
+
+		public List<Func<EditorAccountInfo, Promise>> _onUserChangeCallbacks = new List<Func<EditorAccountInfo, Promise>>();
 
 		private readonly IDependencyProviderScope _scope;
 
@@ -139,6 +141,21 @@ namespace Beamable.Editor
 			_saveHandle?.Save();
 		}
 
+		public void OnUserChanged(Func<EditorAccountInfo, Promise> cb)
+		{
+			_onUserChangeCallbacks.Add(cb);
+		}
+
+		async Promise InvokeUserChangeCallbacks()
+		{
+			var promises = new List<Promise<Unit>>();
+			foreach (var cb in _onUserChangeCallbacks)
+			{
+				promises.Add(cb(Account));
+			}
+			await Promise.Sequence(promises);
+		}
+
 		public async Promise<EditorAccountInfo> Login(string nextCid, AccessToken cidToken)
 		{
 			var requester = _scope.InstantiateService<IPlatformRequester>();
@@ -165,6 +182,7 @@ namespace Beamable.Editor
 
 			WriteUnsetConfigValues();
 			_saveHandle?.Save();
+			await InvokeUserChangeCallbacks();
 			return account;
 		}
 
@@ -188,25 +206,11 @@ namespace Beamable.Editor
 				Requester.Pid = null;
 			}
 			_saveHandle?.Save();
-		}
-
-		public void ApplyConfigValuesToRuntime()
-		{
-			if (cid.HasValue)
-			{
-				// the config-database uses player-prefs as overrides,
-				//  so we can take advantage of that and set the local env's
-				//  cid/pid to whats in the editor state as its serialized out
-				//  as playmode initiates. 
-				GetAccountForCid(cid.Value, out var account);
-				PlayerPrefs.SetString("cid", cid.Value);
-				PlayerPrefs.SetString("pid", account.realmPid.Value);
-			}
+			var _ = InvokeUserChangeCallbacks();
 		}
 
 		public void WriteUnsetConfigValues()
 		{
-			ApplyConfigValuesToRuntime();
 			var needsWrite = false;
 			var nextCid = ConfigDefaultsService.Cid.GetNonEmptyOrElse(() =>
 			{
@@ -239,7 +243,7 @@ namespace Beamable.Editor
 				if (GetAccountForCid(nextCid, out var account))
 				{
 					needsWrite = true;
-					return account.CustomerView.Alias;
+					return account?.CustomerView?.Alias;
 				}
 
 				return null;
@@ -270,13 +274,13 @@ namespace Beamable.Editor
 			{
 				account.Refresh();
 			}
-			ApplyConfigValuesToRuntime();
 		}
 
 		public void SetRealm(EditorAccountInfo editorAccount, RealmView game, string realmPid)
 		{
 			editorAccount.SetRealm(game.Pid, realmPid);
 			_saveHandle?.Save();
+			var _ = InvokeUserChangeCallbacks();
 		}
 	}
 

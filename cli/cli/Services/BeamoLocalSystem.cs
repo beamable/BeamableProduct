@@ -1,4 +1,5 @@
-﻿using Beamable.Common.Api.Realms;
+﻿using Beamable.Common.Api;
+using Beamable.Common.Api.Realms;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using Newtonsoft.Json;
@@ -15,26 +16,11 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public readonly BeamoLocalManifest BeamoManifest;
 
-	/// <summary>
-	/// The full-path to where we are storing the <see cref="BeamoManifest"/>.
-	/// TODO: This part will get abstracted out --- probably into <see cref="ConfigService"/> --- so that we can move this to the Beamable.Common library or some shared space.
-	/// </summary>
-	// private readonly string _beamoLocalManifestFile;
-	private const string beamoLocalManifestFileName = "beamoLocalManifest";
-
 
 	/// <summary>
 	/// The current local state of containers, associated with the <see cref="BeamoLocalManifest.ServiceDefinitions"/>, keept in sync with the <see cref="_beamoLocalRuntimeFile"/> json file.
 	/// </summary>
 	public readonly BeamoLocalRuntime BeamoRuntime;
-
-	/// <summary>
-	/// The full-path to where we are storing the <see cref="BeamoRuntime"/> data. We need to serialize runtime data as, in most cases, we'll need to survive domain reloads or multiple runs of the cli.
-	/// TODO: This part will get abstracted out --- probably into <see cref="ConfigService"/> --- so that we can move this to the Beamable.Common library or some shared space.
-	/// </summary>
-	// private readonly string _beamoLocalRuntimeFile;
-	private const string beamoLocalRuntimeFileName = "beamoLocalRuntime";
-
 
 	private readonly ConfigService _configService;
 
@@ -56,6 +42,12 @@ public partial class BeamoLocalSystem
 	private IRealmsApi _realmApi;
 
 	/// <summary>
+	/// The requester used to make requests to the beamale API.
+	/// This is used to get information from microservices that are running locally during the deploy.
+	/// </summary>
+	private IBeamableRequester _beamableRequester;
+
+	/// <summary>
 	/// An instance of the docker client so that it can communicate with Docker for Windows and Docker for Mac ---- really, it should talk to any docker daemon.
 	/// </summary>
 	private readonly DockerClient _client;
@@ -70,12 +62,13 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	private readonly CancellationTokenSource _dockerListeningThreadCancel;
 
-	public BeamoLocalSystem(ConfigService configService, IAppContext ctx, IRealmsApi realmsApi, BeamoService beamo)
+	public BeamoLocalSystem(ConfigService configService, IAppContext ctx, IRealmsApi realmsApi, BeamoService beamo, IBeamableRequester beamableRequester)
 	{
 		_configService = configService;
 		_ctx = ctx;
 		_beamo = beamo;
 		_realmApi = realmsApi;
+		_beamableRequester = beamableRequester;
 
 		// We use a 60 second timeout because the Docker Daemon is VERY slow... If you ever see an "The operation was cancelled" message that happens inconsistently,
 		// try changing this value before going down the rabbit hole.
@@ -83,7 +76,7 @@ public partial class BeamoLocalSystem
 			.CreateClient();
 
 		// Load or create the local manifest
-		BeamoManifest = _configService.LoadDataFile<BeamoLocalManifest>(beamoLocalManifestFileName, () => new BeamoLocalManifest()
+		BeamoManifest = _configService.LoadDataFile<BeamoLocalManifest>(Constants.BEAMO_LOCAL_MANIFEST_FILE_NAME, () => new BeamoLocalManifest()
 		{
 			ServiceDefinitions = new List<BeamoServiceDefinition>(8),
 			HttpMicroserviceLocalProtocols = new BeamoLocalProtocolMap<HttpMicroserviceLocalProtocol>(),
@@ -92,7 +85,7 @@ public partial class BeamoLocalSystem
 			EmbeddedMongoDbRemoteProtocols = new BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol>(),
 		});
 		// Load or create the local runtime data
-		BeamoRuntime = _configService.LoadDataFile<BeamoLocalRuntime>(beamoLocalRuntimeFileName, () =>
+		BeamoRuntime = _configService.LoadDataFile<BeamoLocalRuntime>(Constants.BEAMO_LOCAL_RUNTIME_FILE_NAME, () =>
 			new BeamoLocalRuntime() { ExistingLocalServiceInstances = new List<BeamoServiceInstance>(8) });
 
 		// Make a cancellation token source to cancel the docker event stream we listen for updates. See StartListeningToDocker.
@@ -102,8 +95,8 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// Persists the current state of <see cref="BeamoManifest"/> out to disk. TODO: Make this persistence part agnostic of where this is running so we can use it in Unity as well, maybe?
 	/// </summary>
-	public void SaveBeamoLocalManifest() => _configService.SaveDataFile(beamoLocalManifestFileName, BeamoManifest);
-	public void SaveBeamoLocalRuntime() => _configService.SaveDataFile(beamoLocalRuntimeFileName, BeamoRuntime);
+	public void SaveBeamoLocalManifest() => _configService.SaveDataFile(Constants.BEAMO_LOCAL_MANIFEST_FILE_NAME, BeamoManifest);
+	public void SaveBeamoLocalRuntime() => _configService.SaveDataFile(Constants.BEAMO_LOCAL_RUNTIME_FILE_NAME, BeamoRuntime);
 	/// <summary>
 	/// Checks to see if the service id matches the <see cref="BeamoServiceIdRegex"/>.
 	/// </summary>
@@ -163,19 +156,20 @@ public partial class BeamoLocalSystem
 	/// <param name="localConstructor">A task that will prepare the default parameters for the local protocol we are creating the service with.</param>
 	/// <param name="remoteConstructor">A task that will prepare the default parameters for the remote protocol we are creating the service with.</param>
 	/// <param name="cancellationToken">A cancellation token that we pass into both local and remote tasks. Can be used to cancel both tasks.</param>
+	/// <param name="shouldServiceBeEnabled">Should service be enabled/disabled when adding service definition</param>
 	/// <typeparam name="TLocal">The type of the <see cref="IBeamoLocalProtocol"/> that this service definition uses.</typeparam>
 	/// <typeparam name="TRemote">The type of the <see cref="IBeamoRemoteProtocol"/> that this service definition uses.</typeparam>
 	/// <returns>The created service definition.</returns>
 	private async Task<BeamoServiceDefinition> AddServiceDefinition<TLocal, TRemote>(string beamoId, BeamoProtocolType type, string[] beamoIdDependencies,
-		LocalProtocolModifier<TLocal> localConstructor, RemoteProtocolModifier<TRemote> remoteConstructor, CancellationToken cancellationToken)
+		LocalProtocolModifier<TLocal> localConstructor, RemoteProtocolModifier<TRemote> remoteConstructor, CancellationToken cancellationToken, bool shouldServiceBeEnabled = true)
 		where TLocal : class, IBeamoLocalProtocol, new() where TRemote : class, IBeamoRemoteProtocol, new() =>
-		await AddServiceDefinition(BeamoManifest, beamoId, type, beamoIdDependencies, localConstructor, remoteConstructor, cancellationToken);
+		await AddServiceDefinition(BeamoManifest, beamoId, type, beamoIdDependencies, localConstructor, remoteConstructor, cancellationToken, shouldServiceBeEnabled);
 
 	/// <summary>
 	/// <inheritdoc cref="AddServiceDefinition{TLocal,TRemote}(string,cli.Services.BeamoProtocolType,string[],cli.Services.LocalProtocolModifier{TLocal},cli.Services.RemoteProtocolModifier{TRemote},System.Threading.CancellationToken)"/>
 	/// </summary>
 	private static async Task<BeamoServiceDefinition> AddServiceDefinition<TLocal, TRemote>(BeamoLocalManifest beamoLocalManifest, string beamoId, BeamoProtocolType type, string[] beamoIdDependencies,
-		LocalProtocolModifier<TLocal> localConstructor, RemoteProtocolModifier<TRemote> remoteConstructor, CancellationToken cancellationToken)
+		LocalProtocolModifier<TLocal> localConstructor, RemoteProtocolModifier<TRemote> remoteConstructor, CancellationToken cancellationToken, bool shouldServiceBeEnabled = true)
 		where TLocal : class, IBeamoLocalProtocol, new() where TRemote : class, IBeamoRemoteProtocol, new()
 	{
 		// Verify that we aren't creating a non-unique beamo id.
@@ -192,7 +186,7 @@ public partial class BeamoLocalSystem
 			Protocol = type,
 			DependsOnBeamoIds = beamoIdDependencies,
 			ImageId = string.Empty,
-			ShouldBeEnabledOnRemote = false,
+			ShouldBeEnabledOnRemote = shouldServiceBeEnabled,
 		};
 
 		// Register the services before initializing protocols so that the protocol initialization can know about the service.
@@ -364,6 +358,15 @@ public class BeamoLocalManifest
 	/// These are map individual <see cref="BeamoServiceDefinition.BeamoId"/>s to their protocol data. Since we don't allow changing protocols we don't ever need to move the services' protocol data between these.
 	/// </summary>
 	public BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol> EmbeddedMongoDbRemoteProtocols;
+
+	public void Clear()
+	{
+		ServiceDefinitions.Clear();
+		HttpMicroserviceLocalProtocols.Clear();
+		HttpMicroserviceRemoteProtocols.Clear();
+		EmbeddedMongoDbLocalProtocols.Clear();
+		EmbeddedMongoDbRemoteProtocols.Clear();
+	}
 }
 
 public class BeamoServiceDefinition

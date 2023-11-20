@@ -2,6 +2,8 @@ using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using cli.Services;
 using cli.Unreal;
+using cli.Utils;
+using JetBrains.Annotations;
 using Serilog;
 using Spectre.Console;
 using System.CommandLine;
@@ -11,11 +13,11 @@ namespace cli;
 
 public class CliInterfaceGeneratorCommandArgs : CommandArgs
 {
-	public string? OutputPath;
+	[CanBeNull] public string OutputPath;
 	public bool Concat;
 	public string Engine;
 }
-public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorCommandArgs>
+public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorCommandArgs>, IStandaloneCommand
 {
 	private readonly IDependencyProviderScope _commandScope;
 
@@ -42,76 +44,24 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 
 	public override Task Handle(CliInterfaceGeneratorCommandArgs args)
 	{
-		var ctx = args.DependencyProvider.GetService<InvocationContext>();
-
-		var allCommands = new List<BeamCommandDescriptor>();
-		var rootCommand = ctx.Parser.Configuration.RootCommand;
-		var rootBeamCommand = new BeamCommandDescriptor
-		{
-			executionPath = "beam", // the root command is special and has the tool name, not the assembly name
-			command = rootCommand
-		};
-
-		// traverse the tree and create more BeamCommands
-		var queue = new Queue<BeamCommandDescriptor>();
-		queue.Enqueue(rootBeamCommand);
-		var safety = 99999; // if ever have more than 99999 commands, send help.
-		while (safety-- > 0 && queue.Count > 0)
-		{
-			var curr = queue.Dequeue();
-			allCommands.Add(curr);
-
-
-			foreach (var subCommand in curr.command.Subcommands)
-			{
-				var subBeamCommand = new BeamCommandDescriptor
-				{
-					executionPath = $"{curr.executionPath} {subCommand.Name}",
-					command = subCommand,
-					parent = curr,
-					hasValidOutput = subCommand.GetType().IsAssignableTo(typeof(IEmptyResult))
-				};
-
-
-				// find result streams...
-				var interfaces = subCommand.GetType().GetInterfaces();
-				foreach (var interfaceType in interfaces)
-				{
-					if (!interfaceType.IsGenericType) continue;
-					if (interfaceType.GetGenericTypeDefinition() != typeof(IResultSteam<,>)) continue;
-					var genArgs = interfaceType.GetGenericArguments();
-
-					var channelType = genArgs[0];
-					var resultType = genArgs[1];
-
-					subBeamCommand.hasValidOutput = true;
-					subBeamCommand.resultStreams.Add(new BeamCommandResultDescriptor
-					{
-						channel = (Activator.CreateInstance(channelType) as IResultChannel)?.ChannelName,
-						runtimeType = resultType
-					});
-				}
-
-
-				queue.Enqueue(subBeamCommand);
-			}
-		}
+		var generatorContext = args.DependencyProvider.GetService<CliGenerator>().GetCliContext();
 
 		// now we have all the beam commands and their call sites
 		// proxy out to a generator... for now, its unity... but someday it'll be unity or unreal.
-		args.Engine = string.IsNullOrEmpty(args.Engine) ? AnsiConsole.Ask<SelectionPrompt<string>>("").AddChoices("unity", "unreal").Show(AnsiConsole.Console) : args.Engine;
+		args.Engine = string.IsNullOrEmpty(args.Engine)
+			? AnsiConsole.Ask<SelectionPrompt<string>>("")
+				.AddChoices("unity", "unreal")
+				.AddBeamHightlight().Show(AnsiConsole.Console)
+			: args.Engine;
 		ICliGenerator generator = args.Engine.ToLower() switch
 		{
 			"unity" => args.DependencyProvider.GetService<UnityCliGenerator>(),
 			"unreal" => args.DependencyProvider.GetService<UnrealCliGenerator>(),
+			// ReSharper disable once NotResolvedInText
 			_ => throw new ArgumentOutOfRangeException("Should be impossible!")
 		};
 
-		var output = generator.Generate(new CliGeneratorContext
-		{
-			Root = rootBeamCommand,
-			Commands = allCommands
-		});
+		var output = generator.Generate(generatorContext);
 
 
 		var outputData = !string.IsNullOrEmpty(args.OutputPath);
@@ -174,17 +124,27 @@ public class BeamCommandDescriptor
 	public string executionPath;
 	public Command command;
 	public BeamCommandDescriptor parent;
+	public List<BeamCommandDescriptor> children = new List<BeamCommandDescriptor>();
 	public bool hasValidOutput;
 	public List<BeamCommandResultDescriptor> resultStreams = new List<BeamCommandResultDescriptor>();
 
 
-	public string ExecutionPathAsCapitalizedStringWithoutBeam()
+	public string ExecutionPathAsCapitalizedStringWithoutBeam(string separater = "")
 	{
 		var words = executionPath.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 		if (words.Length == 1) return "Beam";
-		return string.Join("", words.Skip(1).Select(w => w.Capitalize()));
+		return string.Join(separater, words.Skip(1).Select(w => w.Capitalize()));
 	}
 
+	public string GetSlug()
+	{
+		var path = executionPath.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+		if (path.Length == 1)
+		{
+			return "beam";
+		}
+		return string.Join("-", path.Skip(1));
+	}
 }
 
 public class BeamCommandResultDescriptor

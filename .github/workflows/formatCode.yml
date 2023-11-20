@@ -19,15 +19,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v2
-      - name: Install dotnet-format
-        run: dotnet tool install --global --version 5.1.250801 dotnet-format
+        uses: actions/checkout@v3
       - name: Format files in client
         id: format-client
-        run: dotnet-format -f client/Packages
+        run: ./format-code.sh
       - name: Format files in cli
         id: format-cli
-        run: dotnet-format -f cli
+        run: ./format-code.sh cli
 #       - name: Format files in microservice
 #         id: format-microservices
 #         run: dotnet-format -f microservice
@@ -41,6 +39,7 @@ jobs:
           command: fix
           globs: |
             client/Packages/**/CHANGELOG.md
+            cli/cli/CHANGELOG.md
       - name: check headcommit message
         id: commit
         run: |

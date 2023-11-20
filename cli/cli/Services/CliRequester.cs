@@ -69,8 +69,7 @@ public class CliRequester : IRequester
 			throw new RequesterException("Cli", method.ToReadableString(), uri, (int)result.StatusCode, rawResponse);
 		}
 
-		T parsed = default(T);
-		if (result.Content != null)
+		T parsed;
 		{
 			await using Stream stream = await result.Content.ReadAsStreamAsync();
 			using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -102,21 +101,33 @@ public class CliRequester : IRequester
 		{
 			switch (error)
 			{
-				// when code?.Error?.error == "InvalidTokenError" || code?.Error?.error == "ExpiredTokenError":
-				case RequesterException e when e.RequestError.error is "InvalidTokenError" or "ExpiredTokenError" || e.Status == 403 || AccessToken.ExpiresAt < DateTime.Now:
-					BeamableLogger.Log("Got failure for token " + AccessToken.Token + " because " + e.RequestError.error);
+				case RequesterException e when e.RequestError.error is "TimeOutError":
+					BeamableLogger.LogWarning("Timeout error, retrying in few seconds... ");
+					return Task.Delay(TimeSpan.FromSeconds(5)).ToPromise().FlatMap(_ =>
+							Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
+				case RequesterException e when e.RequestError.error is "InvalidTokenError" or "ExpiredTokenError" ||
+											   e.Status == 403 ||
+											   (!string.IsNullOrWhiteSpace(AccessToken.RefreshToken) &&
+												AccessToken.ExpiresAt < DateTime.Now):
+					BeamableLogger.Log(
+						"Got failure for token " + AccessToken.Token + " because " + e.RequestError.error);
 					var authService = new AuthApi(this);
 					return authService.LoginRefreshToken(AccessToken.RefreshToken).Map(rsp =>
 						{
-							BeamableLogger.Log($"Got new token: access=[{rsp.access_token}] refresh=[{rsp.refresh_token}] type=[{rsp.token_type}] ");
+							BeamableLogger.Log(
+								$"Got new token: access=[{rsp.access_token}] refresh=[{rsp.refresh_token}] type=[{rsp.token_type}] ");
 							_ctx.UpdateToken(rsp);
 							return PromiseBase.Unit;
 						})
 						.FlatMap(_ => Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
+				case RequesterException { Status: > 500 and < 510 }:
+					BeamableLogger.LogWarning($"Problems with host {_ctx.Host}, trying again in few seconds...");
+					return Task.Delay(TimeSpan.FromSeconds(5)).ToPromise().FlatMap(_ =>
+						Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
 			}
 
 			return Promise<T>.Failed(error);
-		}); ;
+		});
 	}
 
 	private static HttpRequestMessage PrepareRequest(Method method, string basePath, string uri, object body = null)
@@ -169,7 +180,6 @@ public class CliRequester : IRequester
 
 	public Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> req)
 	{
-
 		return Request<T>(req.Method, req.uri, req.body, req.includeAuthHeader, req.parser, req.useCache);
 	}
 
@@ -184,5 +194,4 @@ public class CliRequester : IRequester
 			_ => throw new ArgumentOutOfRangeException(nameof(method), method, null)
 		};
 	}
-
 }

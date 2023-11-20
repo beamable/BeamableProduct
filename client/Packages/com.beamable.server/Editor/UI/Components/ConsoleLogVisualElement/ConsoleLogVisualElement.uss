@@ -1,8 +1,11 @@
-#mainVisualElement{
+TemplateContainer {
     flex-direction: row;
     align-content: stretch;
     -unity-overflow-clip-box: padding-box;
     overflow: hidden;
+    flex-grow: 1;
+    max-width: 100%;
+    position: relative;
 }
 
 Label {
@@ -11,10 +14,6 @@ Label {
     margin-top: 0px;
     margin-right: 0px;
     margin-left: 0px;
-}
-
-#description {
-
 }
 
 #time {

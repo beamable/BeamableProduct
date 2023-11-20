@@ -200,8 +200,11 @@ public struct UnrealJsonSerializableTypeDeclaration
 	public string JsonUtilsInclude;
 	public string DefaultValueHelpersInclude;
 	public ResponseBodyType IsResponseBodyType;
+	public bool IsSelfReferential;
+
 	public List<PolymorphicWrappedData> PolymorphicWrappedTypes;
 	public bool IsPolymorphicWrapper => PolymorphicWrappedTypes?.Count > 0;
+
 
 	private string _responseBodyIncludes;
 	private string _inheritResponseBodyInterface;
@@ -451,7 +454,7 @@ void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FSt
 #include ""₢{nameof(NamespacedTypeName)}₢.generated.h""
 
 UCLASS(BlueprintType, Category=""Beam"")
-class ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ U₢{nameof(NamespacedTypeName)}₢ : public UObject, public FBeamJsonSerializable₢{nameof(_inheritResponseBodyInterface)}₢
+class ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ U₢{nameof(NamespacedTypeName)}₢ : public UObject, public IBeamJsonSerializableUObject₢{nameof(_inheritResponseBodyInterface)}₢
 {{
 	GENERATED_BODY()
 

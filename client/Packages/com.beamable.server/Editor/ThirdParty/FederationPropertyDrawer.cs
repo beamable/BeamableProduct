@@ -12,7 +12,7 @@ namespace Beamable.Server.Editor
 	{
 		private const int PADDING = 2;
 
-		private List<MicroserviceDescriptor> _filteredDescriptors;
+		private List<MicroserviceClientInfo> _filteredDescriptors;
 		private readonly List<FederationOption> _options = new List<FederationOption>();
 
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
@@ -26,7 +26,7 @@ namespace Beamable.Server.Editor
 
 			if (_filteredDescriptors == null)
 			{
-				_filteredDescriptors = serviceRegistry.Descriptors
+				_filteredDescriptors = serviceRegistry.ClientInfos
 													  .FindAll(descriptor => descriptor.IsUsedForFederation)
 													  .ToList();
 			}
@@ -91,15 +91,15 @@ namespace Beamable.Server.Editor
 			}
 		}
 
-		private void BuildOptions(List<MicroserviceDescriptor> descriptors)
+		private void BuildOptions(List<MicroserviceClientInfo> descriptors)
 		{
 			_options.Clear();
 
 			foreach (var descriptor in descriptors)
 			{
-				foreach (var federatedNamespace in descriptor.FederatedNamespaces)
+				foreach (var federatedNamespace in descriptor.FederationComponents.Select(x => x.identity.UniqueName))
 				{
-					_options.Add(new FederationOption { Microservice = descriptor.Name, Namespace = federatedNamespace });
+					_options.Add(new FederationOption { Microservice = descriptor.ServiceName, Namespace = federatedNamespace });
 				}
 			}
 		}

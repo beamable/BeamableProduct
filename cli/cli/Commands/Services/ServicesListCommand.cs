@@ -46,8 +46,45 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 		var titleText = !args.Remote ? "Local Services Status" : "Remote Services Status";
 		AnsiConsole.MarkupLine($"[lightskyblue1]{titleText}[/]");
 
+
 		// Declare style for column headers
 		var columnNameStyle = new Style(Color.SlateBlue1);
+
+		var isDockerRunning = await _localBeamo.CheckIsRunning();
+		var serviceDefinitions = _localBeamo.BeamoManifest.ServiceDefinitions;
+		var localServiceListResult = new ServiceListResult(!args.Remote, isDockerRunning, serviceDefinitions.Count);
+		if (!isDockerRunning)
+		{
+			if (args.Remote)
+			{
+				throw new CliException("Docker is not running in this machine. Please start Docker before running this command.", Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_DOCKER_NOT_RUNNING, true);
+			}
+
+			var table = new Table();
+			var beamoIdColumn = new TableColumn(new Markup("Beam-O Id", columnNameStyle));
+			var imageNameColumn = new TableColumn(new Markup("Image Id", columnNameStyle));
+			var shouldBeRunningColumn = new TableColumn(new Markup("Should be Running", columnNameStyle));
+			var isRunningColumn = new TableColumn(new Markup("Is Running", columnNameStyle));
+			table.AddColumn(beamoIdColumn).AddColumn(imageNameColumn).AddColumn(shouldBeRunningColumn).AddColumn(isRunningColumn);
+			foreach (var sd in serviceDefinitions)
+			{
+				var beamoIdMarkup = new Markup($"[green]{sd.BeamoId}[/]");
+				var imageIdMarkup = new Markup($"{sd.TruncImageId}");
+				var shouldBeEnabledOnDeployMarkup = new Markup(sd.ShouldBeEnabledOnRemote ? "[green]Enable[/]" : "[red]Disable[/]");
+				var isRemoteOnlyMarkup = new Markup(_localBeamo.VerifyCanBeBuiltLocally(sd) ? "[green]True[/]" : "[red]False[/]");
+				localServiceListResult.AddLocal(sd.BeamoId, sd.ShouldBeEnabledOnRemote, false, sd.Protocol.ToString(), sd.ImageId,
+					"", "", new[] { "" }, new[] { "" }, sd.DependsOnBeamoIds);
+
+				table.AddRow(new TableRow(new[] { beamoIdMarkup, imageIdMarkup, shouldBeEnabledOnDeployMarkup, isRemoteOnlyMarkup, }));
+			}
+
+			this.SendResults(localServiceListResult);
+
+			var warning = new Panel("No docker running --- the running information here is not up-to-date!") { Header = new PanelHeader("NO DOCKER RUNNING") };
+			AnsiConsole.Write(warning);
+			AnsiConsole.Write(table);
+			return;
+		}
 
 		if (args.Remote)
 		{
@@ -72,7 +109,6 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 				var isRunningColumn = new TableColumn(new Markup("Is Running", columnNameStyle));
 				table.AddColumn(beamoIdColumn).AddColumn(imageNameColumn).AddColumn(shouldBeRunningColumn).AddColumn(isRunningColumn);
 
-				var localServiceListResult = new ServiceListResult(false, manifest.manifest.Count);
 				foreach (var responseService in manifest.manifest)
 				{
 					var beamoId = new Markup(responseService.serviceName);
@@ -90,7 +126,14 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 				}
 
 				this.SendResults(localServiceListResult);
-				AnsiConsole.Write(table);
+				if (manifest.manifest.Count > 0)
+				{
+					AnsiConsole.Write(table);
+				}
+				else
+				{
+					AnsiConsole.WriteLine("No services found");
+				}
 			}
 			else
 			{
@@ -107,7 +150,6 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 
 			if (!args.AsJson)
 			{
-				var serviceDefinitions = _localBeamo.BeamoManifest.ServiceDefinitions;
 				var runningServiceInstances = _localBeamo.BeamoRuntime.ExistingLocalServiceInstances;
 
 				var table = new Table();
@@ -120,7 +162,6 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 				var canBeBuiltLocally = new TableColumn(new Markup("Can be Built Locally", columnNameStyle));
 
 				table.AddColumn(beamoIdColumn).AddColumn(imageNameColumn).AddColumn(containersColumn).AddColumn(shouldEnableOnRemoteDeployColumn).AddColumn(canBeBuiltLocally);
-				var localServiceListResult = new ServiceListResult(true, serviceDefinitions.Count);
 				foreach (var sd in serviceDefinitions)
 				{
 					var beamoIdMarkup = new Markup($"[green]{sd.BeamoId}[/]");
@@ -171,7 +212,14 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 				}
 
 				this.SendResults(localServiceListResult);
-				AnsiConsole.Write(table);
+				if (serviceDefinitions.Count > 0)
+				{
+					AnsiConsole.Write(table);
+				}
+				else
+				{
+					AnsiConsole.WriteLine("No services found");
+				}
 			}
 			else
 			{
@@ -188,6 +236,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 public class ServiceListResult
 {
 	public bool IsLocal;
+	public bool IsDockerRunning;
 
 	public List<string> BeamoIds;
 	public List<bool> ShouldBeEnabledOnRemote;
@@ -203,9 +252,11 @@ public class ServiceListResult
 
 	public List<string> Dependencies;
 
-	public ServiceListResult(bool local, int allocateCount)
+	public ServiceListResult(bool local, bool isDockerRunning, int allocateCount)
 	{
 		IsLocal = local;
+		IsDockerRunning = isDockerRunning;
+
 		BeamoIds = new List<string>(allocateCount);
 
 		ShouldBeEnabledOnRemote = new List<bool>(allocateCount);

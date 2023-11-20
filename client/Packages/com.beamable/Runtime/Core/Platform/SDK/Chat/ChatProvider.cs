@@ -169,7 +169,7 @@ namespace Beamable.Experimental.Api.Chat
 		/// <summary>
 		/// Ask the provider to create a private room consisting of the provided list of players.
 		/// </summary>
-		/// <param name="gamerTags">GamerTags of players who should be in the room.</param>
+		/// <param name="gamerTags">Player ids of players who should be in the room.</param>
 		public abstract Promise<Room> CreatePrivateRoom(List<long> gamerTags);
 
 		/// <summary>

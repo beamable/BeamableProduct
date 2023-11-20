@@ -1,7 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Api;
-using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
+using Beamable.Common.Runtime;
 using Beamable.Editor.Environment;
 using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.UI.Model;
@@ -49,6 +49,7 @@ namespace Beamable.Server.Editor
 		public class Registry : IReflectionSystem
 		{
 			private static readonly BaseTypeOfInterest MICROSERVICE_BASE_TYPE;
+			private static readonly BaseTypeOfInterest MICROSERVICE_CLIENT_BASE_TYPE;
 			private static readonly BaseTypeOfInterest MONGO_STORAGE_OBJECT_BASE_TYPE;
 			private static readonly List<BaseTypeOfInterest> BASE_TYPES_OF_INTEREST;
 
@@ -60,13 +61,10 @@ namespace Beamable.Server.Editor
 
 			static Registry()
 			{
-				_federationComponentToName = new Dictionary<Type, string>
-				{
-					[typeof(IFederatedLogin<>)] = "IFederatedLogin",
-					[typeof(IFederatedInventory<>)] = "IFederatedInventory",
-				};
+				_federationComponentToName = FederationComponentNames.FederationComponentToName;
 
 				MICROSERVICE_BASE_TYPE = new BaseTypeOfInterest(typeof(Microservice));
+				MICROSERVICE_CLIENT_BASE_TYPE = new BaseTypeOfInterest(typeof(MicroserviceClient));
 				MICROSERVICE_ATTRIBUTE =
 					new AttributeOfInterest(typeof(MicroserviceAttribute), new Type[] { },
 											new[] { typeof(Microservice) });
@@ -77,7 +75,7 @@ namespace Beamable.Server.Editor
 											new[] { typeof(StorageObject) });
 
 				BASE_TYPES_OF_INTEREST =
-					new List<BaseTypeOfInterest>() { MICROSERVICE_BASE_TYPE, MONGO_STORAGE_OBJECT_BASE_TYPE };
+					new List<BaseTypeOfInterest>() { MICROSERVICE_BASE_TYPE, MONGO_STORAGE_OBJECT_BASE_TYPE, MICROSERVICE_CLIENT_BASE_TYPE };
 				ATTRIBUTES_OF_INTEREST =
 					new List<AttributeOfInterest>() { MICROSERVICE_ATTRIBUTE, STORAGE_OBJECT_ATTRIBUTE };
 			}
@@ -95,9 +93,7 @@ namespace Beamable.Server.Editor
 			public readonly List<MicroserviceDescriptor> Descriptors = new List<MicroserviceDescriptor>();
 			public readonly List<IDescriptor> AllDescriptors = new List<IDescriptor>();
 
-			private IBeamHintGlobalStorage _hintStorage;
-
-			public void SetStorage(IBeamHintGlobalStorage hintGlobalStorage) => _hintStorage = hintGlobalStorage;
+			public readonly List<MicroserviceClientInfo> ClientInfos = new List<MicroserviceClientInfo>();
 
 			public void ClearCachedReflectionData()
 			{
@@ -128,6 +124,34 @@ namespace Beamable.Server.Editor
 				if (baseType.Equals(MONGO_STORAGE_OBJECT_BASE_TYPE))
 					ParseStorageObjectSubTypes(cachedSubTypes);
 
+				if (baseType.Equals(MICROSERVICE_CLIENT_BASE_TYPE))
+					ParseMicroserviceClientSubTypes(cachedSubTypes);
+
+				void ParseMicroserviceClientSubTypes(IReadOnlyList<MemberInfo> cachedMicroserviceClientSubtypes)
+				{
+					foreach (var member in cachedMicroserviceClientSubtypes)
+					{
+						switch (member)
+						{
+							case Type memberType:
+								try
+								{
+									ClientInfos.Add(CreateClientInfo(memberType));
+
+								}
+								catch (InvalidOperationException ex)
+								{
+									Debug.LogWarning($"Unable to create {nameof(MicroserviceClientInfo)} for {memberType}. Reason=[{ex.Message}]");
+								}
+
+								break;
+							default:
+								Debug.LogWarning($"Unknown member type for Microservice client in reflection cache. member=[{member}] ");
+								break;
+						}
+					}
+				}
+
 				void ParseMicroserviceSubTypes(IReadOnlyList<MemberInfo> cachedMicroserviceSubtypes)
 				{
 					var validationResults = cachedMicroserviceSubtypes
@@ -145,13 +169,7 @@ namespace Beamable.Server.Editor
 					validationResults.SplitValidationResults(out _, out _, out var microserviceAttrErrors);
 
 					// Register a hint with all its validation errors as the context object
-					if (microserviceAttrErrors.Count > 0)
-					{
-						var hint = new BeamHintHeader(BeamHintType.Validation,
-													  BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE,
-													  BeamHintIds.ID_MICROSERVICE_ATTRIBUTE_MISSING);
-						_hintStorage.AddOrReplaceHint(hint, microserviceAttrErrors);
-					}
+					// TODO: [AssistantRemoval] ID_MICROSERVICE_ATTRIBUTE_MISSING --- this can be a Static Analyzer.
 				}
 
 				void ParseStorageObjectSubTypes(IReadOnlyList<MemberInfo> cachedStorageObjectSubTypes)
@@ -171,13 +189,7 @@ namespace Beamable.Server.Editor
 					validationResults.SplitValidationResults(out _, out _, out var storageObjAttrErrors);
 
 					// Register a hint with all its validation errors as the context object
-					if (storageObjAttrErrors.Count > 0)
-					{
-						var hint = new BeamHintHeader(BeamHintType.Validation,
-													  BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE,
-													  BeamHintIds.ID_STORAGE_OBJECT_ATTRIBUTE_MISSING);
-						_hintStorage.AddOrReplaceHint(hint, storageObjAttrErrors);
-					}
+					// TODO: [AssistantRemoval] ID_STORAGE_OBJECT_ATTRIBUTE_MISSING --- this can be a Static Analyzer.
 				}
 			}
 
@@ -197,13 +209,7 @@ namespace Beamable.Server.Editor
 						.GetAndValidateUniqueNamingAttributes<MicroserviceAttribute>();
 
 					// Registers a hint with all name collisions found.
-					if (uniqueNameValidationResults.PerNameCollisions.Count > 0)
-					{
-						var hint = new BeamHintHeader(BeamHintType.Validation,
-													  BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE,
-													  BeamHintIds.ID_MICROSERVICE_NAME_COLLISION);
-						_hintStorage.AddOrReplaceHint(hint, uniqueNameValidationResults.PerNameCollisions);
-					}
+					// TODO: [AssistantRemoval] ID_MICROSERVICE_NAME_COLLISION --- this can be a Static Analyzer.
 
 					// Get all ClientCallables
 					var clientCallableValidationResults = cachedMicroserviceAttributes
@@ -218,21 +224,9 @@ namespace Beamable.Server.Editor
 					clientCallableValidationResults.SplitValidationResults(out var clientCallablesValid,
 																		   out var clientCallableWarnings,
 																		   out var clientCallableErrors);
-					if (clientCallableWarnings.Count > 0)
-					{
-						var hint = new BeamHintHeader(BeamHintType.Hint,
-													  BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE,
-													  BeamHintIds.ID_CLIENT_CALLABLE_ASYNC_VOID);
-						_hintStorage.AddOrReplaceHint(hint, clientCallableWarnings);
-					}
 
-					if (clientCallableErrors.Count > 0)
-					{
-						var hint = new BeamHintHeader(BeamHintType.Validation,
-													  BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE,
-													  BeamHintIds.ID_CLIENT_CALLABLE_UNSUPPORTED_PARAMETERS);
-						_hintStorage.AddOrReplaceHint(hint, clientCallableErrors);
-					}
+					// TODO: [AssistantRemoval] ID_CLIENT_CALLABLE_ASYNC_VOID --- this can be a Static Analyzer.
+					// TODO: [AssistantRemoval] ID_CLIENT_CALLABLE_UNSUPPORTED_PARAMETERS --- this can be a Static Analyzer.
 
 					// Builds a lookup of DeclaringType => MemberAttribute.
 					var validClientCallablesLookup = clientCallablesValid
@@ -352,13 +346,7 @@ namespace Beamable.Server.Editor
 						.GetAndValidateUniqueNamingAttributes<StorageObjectAttribute>();
 
 					// Registers a hint with all name collisions found.
-					if (uniqueNameValidationResults.PerNameCollisions.Count > 0)
-					{
-						var hint = new BeamHintHeader(BeamHintType.Validation,
-													  BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE,
-													  BeamHintIds.ID_STORAGE_OBJECT_NAME_COLLISION);
-						_hintStorage.AddOrReplaceHint(hint, uniqueNameValidationResults.PerNameCollisions);
-					}
+					// TODO: [AssistantRemoval] ID_STORAGE_OBJECT_NAME_COLLISION --- this can be a Static Analyzer.
 
 					// Register all configured storage object
 					foreach (var storageObjectValResults in uniqueNameValidationResults.PerAttributeNameValidations)
@@ -388,6 +376,50 @@ namespace Beamable.Server.Editor
 						AllDescriptors.Add(descriptor);
 					}
 				}
+			}
+
+			private static MicroserviceClientInfo CreateClientInfo(Type clientType)
+			{
+
+				var clientCons = clientType.GetConstructor(new Type[] { typeof(BeamContext) });
+				var clientInstance = (MicroserviceClient)clientCons?.Invoke(new object[] { null });
+
+				var info = new MicroserviceClientInfo();
+
+				if (clientInstance is IHaveServiceName serviceName)
+				{
+					info.ServiceName = serviceName.ServiceName;
+				}
+				else
+				{
+					throw new InvalidOperationException(
+						$"the autogenerated microservice does not have {nameof(IHaveServiceName)} implemented");
+				}
+
+				var interfaces = clientType.GetInterfaces();
+				foreach (var it in interfaces)
+				{
+					if (!it.IsGenericType) continue;
+
+					if (!_federationComponentToName.TryGetValue(it.GetGenericTypeDefinition(),
+																out var typeName))
+					{
+						continue;
+					}
+
+					var federatedType = it.GetGenericArguments()[0];
+					if (Activator.CreateInstance(federatedType) is IThirdPartyCloudIdentity identity)
+					{
+						info.FederationComponents.Add(new FederationComponent
+						{
+							identity = identity,
+							interfaceType = it,
+							typeName = typeName
+						});
+					}
+				}
+
+				return info;
 			}
 
 			#region Service Deployment

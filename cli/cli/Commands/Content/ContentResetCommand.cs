@@ -12,20 +12,18 @@ public class ContentResetCommand : AppCommand<ContentResetCommandArgs>
 
 	public override void Configure()
 	{
-		AddOption(new ConfigurableOption("manifest-id", "Set the manifest to use, 'global' by default"),
+		AddOption(ContentCommand.MANIFEST_OPTION,
 			(args, s) => args.ManifestId = s);
 	}
 
 	public override async Task Handle(ContentResetCommandArgs args)
 	{
 		_contentService = args.ContentService;
+		var localCache = _contentService.GetLocalCache(args.ManifestId);
 
-		var manifest = await _contentService.GetManifest(args.ManifestId);
-		_contentService.UpdateTags(manifest);
-		var _ = await _contentService.PullContent(manifest);
-		var localContent = _contentService.ContentLocal.GetLocalContentStatus(manifest).Where(content => content.status == ContentStatus.Created);
-		foreach (LocalContent content in localContent) _contentService.ContentLocal.Remove(content);
-
+		await localCache.UpdateTags();
+		_ = await localCache.PullContent();
+		await localCache.RemoveLocalOnlyContent();
 	}
 }
 

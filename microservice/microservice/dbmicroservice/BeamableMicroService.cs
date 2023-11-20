@@ -10,58 +10,31 @@ using System.Runtime.CompilerServices;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Leaderboards;
-using Beamable.Common.Assistant;
-using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
-using Beamable.Server.Api;
-using Beamable.Server.Api.Announcements;
-using Beamable.Server.Api.Calendars;
-using Beamable.Server.Api.Chat;
-using Beamable.Server.Api.Events;
-using Beamable.Server.Api.Groups;
-using Beamable.Server.Api.Inventory;
-using Beamable.Server.Api.Leaderboards;
-using Beamable.Server.Api.Mail;
-using Beamable.Server.Api.Social;
-using Beamable.Server.Api.Stats;
-using Beamable.Server.Api.Tournament;
-using Beamable.Server.Api.CloudData;
 using Beamable.Server.Api.RealmConfig;
-using Beamable.Server.Api.Commerce;
-using Beamable.Server.Api.Payments;
-using Beamable.Server.Common;
-using Beamable.Server.Content;
 using beamable.tooling.common.Microservice;
 using Core.Server.Common;
 using microservice;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using ContentService = Beamable.Server.Content.ContentService;
-using ServiceDescriptor = Microsoft.Extensions.DependencyInjection.ServiceDescriptor;
 #if DB_MICROSERVICE
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common.Api.Content;
-using Beamable.Common.Api.Stats;
+using Beamable.Common.Api.Realms;
 using Beamable.Common.Reflection;
-using Beamable.Experimental.Api.Chat;
-using Beamable.Server.Api.Content;
-using Beamable.Server.Api.Notifications;
 using microservice.Common;
 using Newtonsoft.Json;
 using Serilog;
-
 using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json;
 using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server
 {
-
    public class MicroserviceNonceResponse
    {
       public string nonce;
@@ -214,12 +187,28 @@ namespace Beamable.Server
          // Connect and Run
          _webSocketPromise = AttemptConnection();
          var socket = await _webSocketPromise;
+         
+         if (!_args.DisableCustomInitializationHooks && !_ranCustomUserInitializationHooks)
+         {
+	         await SetupStorage();
+         }
 
          await SetupWebsocket(socket, _serviceAttribute.EnableEagerContentLoading);
          if (!_serviceAttribute.EnableEagerContentLoading)
          {
 	         var _ = contentService.Init();
          }
+      }
+      
+      private async Promise SetupStorage()
+      {
+	      var reflectionCache = Provider.GetService<ReflectionCache>();
+	      var mongoIndexesReflectionCache = reflectionCache.GetFirstSystemOfType<MongoIndexesReflectionCache>();
+		
+	      IStorageObjectConnectionProvider connectionProvider =
+		      Provider.GetService<IStorageObjectConnectionProvider>();
+
+	      await mongoIndexesReflectionCache.SetupStorage(connectionProvider);
       }
 
       public async Task RunForever()
@@ -362,7 +351,14 @@ namespace Beamable.Server
             await ProvideService(QualifiedName);
 
             HasInitialized = true;
-            Log.Information(Logs.READY_FOR_TRAFFIC_PREFIX + "baseVersion={baseVersion} executionVersion={executionVersion}", _args.SdkVersionBaseBuild, _args.SdkVersionExecution);
+
+            var portalUrlLogline = "";
+            if (TryBuildPortalUrl(out string url))
+            {
+	            portalUrlLogline = $"portalURL={url}";
+            }
+            
+            Log.Information(Logs.READY_FOR_TRAFFIC_PREFIX + "baseVersion={baseVersion} executionVersion={executionVersion} {portalUrlLogline}", _args.SdkVersionBaseBuild, _args.SdkVersionExecution, portalUrlLogline);
             realmService.UpdateLogLevel();
 
             _serviceInitialized.CompleteSuccess(PromiseBase.Unit);
@@ -376,11 +372,39 @@ namespace Beamable.Server
 
       }
 
+      private bool TryBuildPortalUrl(out string portalUrl)
+      {
+	      var cid = _args.CustomerID;
+	      var pid = _args.ProjectName;
+	      var microName = _serviceAttribute.MicroserviceName;
+	      var refreshToken = _args.RefreshToken;
+
+	      if (string.IsNullOrEmpty(refreshToken))
+	      {
+		      portalUrl = "";
+		      return false;
+	      }
+	      
+	      var queryArgs = new List<string>
+	      {
+		      $"refresh_token={refreshToken}",
+		      $"prefix={_args.NamePrefix}"
+	      };
+	      var joinedQueryString = string.Join("&", queryArgs);
+	      var treatedHost = _args.Host.Replace("/socket", "")
+		      .Replace("wss", "https")
+		      .Replace("dev.", "dev-")
+		      .Replace("api", "portal");
+	      portalUrl = $"{treatedHost}/{cid}/games/{pid}/realms/{pid}/microservices/{microName}/docs?{joinedQueryString}";
+	      
+	      return true;
+      }
+
 
 
       /// <summary>
       /// Handles custom initialization hooks. Makes the following assumptions:
-      ///   - User defined at least one <see cref="InitializeServicesAttribute"/> over a static async method that returns a <see cref="Promise{Unit}"/> and receives a <see cref="IServiceInitializer"/>.
+      ///   - User defined at least one <see cref="InitializeServicesAttribute"/> over a static async method that returns a <see cref="Promise{Unit}"/> or a <see cref="Promise"/> and receives a <see cref="IServiceInitializer"/>.
       ///   - Any exception will fail loudly and prevent the C#MS from receiving traffic.
       /// <para/>
       /// </summary>
@@ -443,9 +467,13 @@ namespace Beamable.Server
             {
                promise = (Promise<Unit>)initializationMethod.Invoke(null, new object[] { serviceInitializers });
             }
+            else if (resultType == typeof(Promise))
+            {
+	            promise = (Promise)initializationMethod.Invoke(null, new object[] { serviceInitializers });
+            }
             else
             {
-               BeamableLogger.LogWarning($"Skipping method with [{nameof(InitializeServicesAttribute)}] since it isn't a synchronous [void] method, a [{nameof(Task)}] or a [{nameof(Promise<Unit>)}]");
+               BeamableLogger.LogWarning($"Skipping method with [{nameof(InitializeServicesAttribute)}] since it isn't a synchronous [void] method, a [{nameof(Task)}], a [{nameof(Promise)}] or a [{nameof(Promise<Unit>)}]");
                continue;
             }
 

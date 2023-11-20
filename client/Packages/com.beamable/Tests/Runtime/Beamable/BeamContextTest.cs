@@ -1,11 +1,15 @@
 using Beamable.Api.Payments;
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Platform.Tests;
 using Beamable.Platform.Tests.Content;
 using NUnit.Framework;
 using System;
+using System.IO;
+using Tests.Runtime.Beamable;
+using UnityEditor;
 
 namespace Beamable.Tests.Runtime
 {
@@ -52,6 +56,15 @@ namespace Beamable.Tests.Runtime
 			builder.RemoveIfExists<IBeamablePurchaser>();
 			builder.RemoveIfExists<IContentApi>();
 			builder.AddSingleton<IContentApi>(MockContent);
+			builder.RemoveIfExists<IRuntimeConfigProvider>();
+			builder.AddSingleton<IRuntimeConfigProvider>(new TestConfigProvider());
+			builder.RemoveIfExists<IBeamableFilesystemAccessor>();
+			builder.AddSingleton<IBeamableFilesystemAccessor>(() =>
+			{
+				var dir = FileUtil.GetUniqueTempPathInProject();
+				Directory.CreateDirectory(dir);
+				return new MockFileAccessor(dir);
+			});
 		}
 	}
 }

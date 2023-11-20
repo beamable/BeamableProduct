@@ -1,5 +1,4 @@
 using Beamable.Common;
-using Beamable.Common.Assistant;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
 using System;
@@ -58,8 +57,6 @@ namespace Beamable.Reflection
 			private HashSet<string> _allTypesContainingDependencyFunctions;
 			private HashSet<string> _allSampleTypesContainingDependencyFunctions;
 
-			private IBeamHintGlobalStorage _hintGlobalStorage;
-
 			public Registry()
 			{
 				_registerBeamableDependencyFunctions = new List<MemberAttribute>();
@@ -98,13 +95,10 @@ namespace Beamable.Reflection
 				var validMembers = cachedMemberAttributes;
 
 				// Run the validation and add hints if in editor.
+				// TODO: [AssistantRemoval]  use error list as basis for (ID_UNSUPPORTED_REGISTER_BEAMABLE_DEPENDENCY_SIGNATURE) as a Static Check.
 #if UNITY_EDITOR
 				var validationResults = cachedMemberAttributes.Validate();
 				validationResults.SplitValidationResults(out var valid, out var warning, out var error);
-
-				if (error.Count > 0)
-					_hintGlobalStorage.AddOrReplaceHint(BeamHintType.Validation, BeamHintDomains.BEAM_INIT, BeamHintIds.ID_UNSUPPORTED_REGISTER_BEAMABLE_DEPENDENCY_SIGNATURE, error);
-
 				validMembers = valid.Select(v => v.Pair).ToList();
 #endif
 
@@ -134,8 +128,6 @@ namespace Beamable.Reflection
 #endif
 
 			}
-
-			public void SetStorage(IBeamHintGlobalStorage hintGlobalStorage) => _hintGlobalStorage = hintGlobalStorage;
 
 			/// <summary>
 			/// Runs all functions annotated with <see cref="RegisterBeamableDependenciesAttribute"/>, in their correct order, with the given <paramref name="builderToConfigure"/>.

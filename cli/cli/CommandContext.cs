@@ -2,8 +2,11 @@ using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using cli.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
+using Spectre.Console;
 using System.CommandLine;
 using System.CommandLine.Binding;
+using UnityEngine;
 
 namespace cli;
 
@@ -22,6 +25,10 @@ public interface IEmptyResult : IResultProvider
 
 }
 
+/// <summary>
+/// Specifies that command does not require config to work correctly.
+/// </summary>
+public interface IStandaloneCommand { }
 
 public class DefaultStreamResultChannel : IResultChannel
 {
@@ -95,7 +102,7 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider
 		return arg;
 	}
 
-	protected void AddOption<T>(Option<T> arg, Action<TArgs, T> binder)
+	protected Option<T> AddOption<T>(Option<T> arg, Action<TArgs, T> binder)
 	{
 		ArgValidator<T> validator = CommandProvider.CanBuildService<ArgValidator<T>>()
 			? CommandProvider.GetService<ArgValidator<T>>()
@@ -124,6 +131,7 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider
 
 		_bindingActions.Add(set);
 		base.AddOption(arg);
+		return arg;
 	}
 
 	/// <summary>
@@ -152,6 +160,8 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider
 	protected virtual void BindBaseContext(IServiceProvider provider, TArgs args, BindingContext bindingContext)
 	{
 		args.Dryrun = bindingContext.ParseResult.GetValueForOption(provider.GetRequiredService<DryRunOption>());
+		args.IgnoreStandaloneValidation =
+			bindingContext.ParseResult.GetValueForOption(provider.GetRequiredService<SkipStandaloneValidationOption>());
 	}
 
 	public class Binder : BinderBase<TArgs>

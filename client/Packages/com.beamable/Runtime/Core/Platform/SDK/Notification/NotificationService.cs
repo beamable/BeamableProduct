@@ -89,7 +89,7 @@ namespace Beamable.Api.Notification
 					LocalRelay = new GoogleLocalNotificationRelay();
 					NotificationLogger.Log("Local notifications using Google provider.");
 					break;
-#if UNITY_IOS
+#if UNITY_IOS && (NOTIFICATIONS_PACKAGE || !UNITY_2022_1_OR_NEWER)
             case RuntimePlatform.IPhonePlayer:
 #if NOTIFICATIONS_PACKAGE
 	            StartCoroutine(RequestAuthorization());

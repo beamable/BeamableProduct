@@ -15,11 +15,13 @@ jobs:
       group: generate-${{ github.head_ref }}
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup .NET Core SDK
-        uses: actions/setup-dotnet@v1.7.2
+        uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 6.0.x
+          dotnet-version: |
+            6.0.x
+            7.0.x
       - name: Install dotnet-format
         run: dotnet tool install --global --version 5.1.250801 dotnet-format
       - name: Build CLI 
@@ -27,7 +29,7 @@ jobs:
           dotnet build ./cli/cli 
       - name: Generate API
         run: |
-          dotnet run --project ./cli/cli -- --host https://dev.api.beamable.com oapi generate --engine unity --conflict-strategy RenameUncommonConflicts --output ./client/Packages/com.beamable/Common/Runtime/OpenApi
+          dotnet run --framework net6.0 --project ./cli/cli -- --host https://dev.api.beamable.com oapi generate --engine unity --conflict-strategy RenameUncommonConflicts --output ./client/Packages/com.beamable/Common/Runtime/OpenApi
       - name: Format files
         id: format
         run: dotnet-format -f ./client/Packages/com.beamable/Common/Runtime/OpenApi

@@ -33,7 +33,6 @@ public class LoadingIndicator : MonoBehaviour
 
 		if (_currentSession == null)
 		{
-			//ServiceManager.Resolve<CoroutineService>().StartCoroutine(ShowAfterFlashProtection());
 			BeamContext.Default.ServiceProvider.GetService<CoroutineService>()
 					   .StartCoroutine(ShowAfterFlashProtection());
 
@@ -48,6 +47,11 @@ public class LoadingIndicator : MonoBehaviour
 
 	public void Hide()
 	{
+		if (!this) // if this component has been removed by the Unity lifecycle, then we shouldn't do anything...
+		{
+			return;
+		}
+
 		_currentSession = null;
 
 		if (_sessionQueue.Count == 0)

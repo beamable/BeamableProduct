@@ -1,15 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <!-- Unity can handle netstandard2.0 libraries -->
-        <TargetFramework>netstandard2.0</TargetFramework>
+        <!-- Unity 2021 can handle netstandard2.1 libraries -->
+        <TargetFramework>netstandard2.1</TargetFramework>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
 
     <!--  Settings for Beamable Build  -->
     <PropertyGroup>
         <!-- The tool path for the beamCLI. "dotnet beam" will refer to the local project tool, and "beam" would install to a globally installed tool -->
-        <BeamableTool>beam</BeamableTool>
+        <BeamableTool Condition="$(BeamableTool) == ''">beam</BeamableTool>
 
         <!-- When "true", this will copy the built project and associated dependencies to linked Unity projects -->
         <CopyToLinkedProjects>true</CopyToLinkedProjects>

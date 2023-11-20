@@ -3,6 +3,7 @@ using Beamable.Common.Dependencies;
 using cli.Unreal;
 using cli.Utils;
 using Microsoft.OpenApi;
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Exceptions;
 using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Models;
@@ -10,6 +11,7 @@ using Microsoft.OpenApi.Readers;
 using Microsoft.OpenApi.Writers;
 using Newtonsoft.Json;
 using Serilog;
+using SharpYaml.Tokens;
 using System.Collections;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -28,9 +30,6 @@ public class SwaggerService
 	// TODO: make a PLAT ticket to give us back all openAPI spec info
 	public static readonly BeamableApiDescriptor[] Apis = new BeamableApiDescriptor[]
 	{
-		// these are currently broken...
-		// BeamableApis.BasicService("trails"),
-		
 		// the proto-actor stack!
 		BeamableApis.ProtoActor(),
 
@@ -60,8 +59,8 @@ public class SwaggerService
 		BeamableApis.BasicService("notification"),
 		BeamableApis.BasicService("realms"),
 		BeamableApis.BasicService("social"),
-		BeamableApis.ObjectService("chatV2"),
-		BeamableApis.ObjectService("matchmaking"),
+		// TODO: At the moment, this relies on pubnub and we are moving away from it; add this back in once done.
+		BeamableApis.ObjectService("chatV2").WithoutSDKs(TARGET_ENGINE_NAME_UNITY, TARGET_ENGINE_NAME_UNREAL),
 		BeamableApis.BasicService("commerce"),
 		BeamableApis.ObjectService("commerce"),
 		BeamableApis.ObjectService("calendars"),
@@ -69,6 +68,9 @@ public class SwaggerService
 		BeamableApis.ObjectService("announcements"),
 		BeamableApis.BasicService("mail"),
 		BeamableApis.ObjectService("mail"),
+		BeamableApis.BasicService("session").WithRename("User", "SessionUser"),
+		// INFO: At the moment, this is unsupported in UE-generation due to it generating a recursively referenced type (which breaks due to circular #includes). 
+		BeamableApis.BasicService("trials").WithRename("\"ref\"", "\"reference\"").WithoutSDKs(TARGET_ENGINE_NAME_UNREAL),
 	};
 
 	public SwaggerService(IAppContext context, ISwaggerStreamDownloader downloader, SourceGeneratorListProvider generators)
@@ -87,7 +89,11 @@ public class SwaggerService
 		// TODO: we should be able to specify if we want to generate from downloading, or from using a cached source.
 		var openApiDocuments = await DownloadBeamableApis(filter);
 
-		var allDocuments = openApiDocuments.Select(r => r.Document).ToList();
+		var allResults = openApiDocuments.Where(r => !r.Descriptor.SkippedSDKs.Contains(targetEngine));
+
+		var allDocuments = targetEngine == TARGET_ENGINE_NAME_UNREAL
+				? allResults.Where(r => !r.Document.Info.Title.Contains("Scheduler")).Select(r => r.Document).ToList()
+				: allResults.Select(r => r.Document).ToList();
 		var context = new DefaultGenerationContext
 		{
 			Documents = allDocuments,
@@ -383,16 +389,23 @@ public class SwaggerService
 		var tasks = new List<Task<OpenApiDocumentResult>>();
 		foreach (var api in openApis)
 		{
+			var pinnedApi = api;
 			tasks.Add(Task.Run(async () =>
 			{
 				var url = $"{_context.Host}/{api.RelativeUrl}";
 				try
 				{
 					var stream = await downloader.GetStreamAsync(url);
+					var sr = new StreamReader(stream);
+					var content = await sr.ReadToEndAsync();
 
+					foreach (var (oldName, newName) in pinnedApi.schemaRenames)
+					{
+						content = content.Replace(oldName, newName);
+					}
 
 					var res = new OpenApiDocumentResult();
-					res.Document = new OpenApiStreamReader().Read(stream, out res.Diagnostic);
+					res.Document = new OpenApiStringReader().Read(content, out res.Diagnostic);
 					foreach (var warning in res.Diagnostic.Warnings)
 					{
 						Log.Warning("found warning for {url}. {message} . from {pointer}", url, warning.Message,
@@ -424,11 +437,13 @@ public class SwaggerService
 
 		var processors = new List<Func<OpenApiDocumentResult, List<OpenApiDocumentResult>>>
 		{
-			Rewrite204StatusCodeTo200,
+			RewriteStatusCodesTo200,
 			ReduceProtoActorMimeTypes,
 			RewriteInlineResultSchemasAsReferences,
 			SplitTagsIntoSeparateDocuments,
 			AddTitlesToAllSchemasIfNone,
+			RewriteObjectEnumsAsStrings,
+			DetectNonSelfReferentialTypes,
 			Reserailize
 		};
 
@@ -486,9 +501,31 @@ public class SwaggerService
 		return json;
 	}
 
-	private static List<OpenApiDocumentResult> Rewrite204StatusCodeTo200(OpenApiDocumentResult swagger)
+	private static List<OpenApiDocumentResult> RewriteObjectEnumsAsStrings(OpenApiDocumentResult swagger)
+	{
+		foreach (var schema in swagger.Document.Components.Schemas)
+		{
+			foreach (var kvp in schema.Value.Properties)
+			{
+				var propertySchema = kvp.Value;
+				var isObject = propertySchema.Type == "object";
+				var isFormatUnknown = propertySchema.Format == "unknown";
+				var isEnum = propertySchema.Enum != null && propertySchema.Enum.Count > 0;
+
+				if (isObject && isFormatUnknown && isEnum)
+				{
+					propertySchema.Type = "string";
+					propertySchema.Format = null;
+				}
+			}
+		}
+		return new List<OpenApiDocumentResult> { swagger };
+	}
+
+	private static List<OpenApiDocumentResult> RewriteStatusCodesTo200(OpenApiDocumentResult swagger)
 	{
 		const string STATUS_200 = "200";
+		const string STATUS_201 = "201";
 		const string STATUS_204 = "204";
 		const string APPLICATION_JSON = "application/json";
 
@@ -503,6 +540,30 @@ public class SwaggerService
 				if (!op.Value.Responses.ContainsKey(STATUS_200) && op.Value.Responses.ContainsKey(STATUS_204))
 				{
 					op.Value.Responses.Remove(STATUS_204);
+					op.Value.Responses[STATUS_200] = new OpenApiResponse
+					{
+						Content = new Dictionary<string, OpenApiMediaType>
+						{
+							[APPLICATION_JSON] = new OpenApiMediaType
+							{
+								Schema = new OpenApiSchema()
+							}
+						}
+					};
+				}
+
+				if (!op.Value.Responses.ContainsKey(STATUS_200) && op.Value.Responses.ContainsKey(STATUS_201))
+				{
+					var content201 = op.Value.Responses[STATUS_201].Content;
+					op.Value.Responses.Remove(STATUS_201);
+					op.Value.Responses[STATUS_200] = new OpenApiResponse
+					{
+						Content = content201
+					};
+				}
+
+				if (op.Value.Responses.ContainsKey(STATUS_200) && op.Value.Responses[STATUS_200].Content.Count == 0)
+				{
 					op.Value.Responses[STATUS_200] = new OpenApiResponse
 					{
 						Content = new Dictionary<string, OpenApiMediaType>
@@ -634,7 +695,7 @@ public class SwaggerService
 						else
 						{
 							// no good, we have a new form of serialization
-							throw new CliException("Operations that return inline schemas may not have different schemas that collide under the operation method and tag", true, true);
+							throw new CliException("Operations that return inline schemas may not have different schemas that collide under the operation method and tag");
 						}
 
 					}
@@ -654,6 +715,7 @@ public class SwaggerService
 
 	private static List<OpenApiDocumentResult> SplitTagsIntoSeparateDocuments(OpenApiDocumentResult swagger)
 	{
+		var tagsToSkip = Array.Empty<string>();
 		var output = new List<OpenApiDocumentResult>();
 
 		var opCount = 0;
@@ -672,8 +734,7 @@ public class SwaggerService
 					var hasInvalidTags = tags?.Count > 1;
 					if (hasInvalidTags)
 					{
-						throw new CliException(
-							"Swagger docs are not allowed to have more than 1 tag in each operation.", true, true);
+						throw new CliException("Swagger docs are not allowed to have more than 1 tag in each operation.");
 					}
 
 					var hasTags = tags?.Count == 1;
@@ -687,9 +748,7 @@ public class SwaggerService
 					}
 					else if (tag != tags[0].Name)
 					{
-						throw new CliException(
-							"If an operation has a tag, then all operations in the same path must have the same tag. ",
-							true, true);
+						throw new CliException("If an operation has a tag, then all operations in the same path must have the same tag. ");
 					}
 				}
 
@@ -714,8 +773,7 @@ public class SwaggerService
 
 			if (opsWithTagsCount != opCount)
 			{
-				throw new CliException(
-					"If a swagger doc has a tag in an operation, then every operation must have a tag.", true, true);
+				throw new CliException("If a swagger doc has a tag in an operation, then every operation must have a tag.");
 			}
 
 		}
@@ -732,6 +790,8 @@ public class SwaggerService
 			var referencedSchemas = new Dictionary<string, OpenApiSchema>();
 			var schemasToExplore = new Queue<OpenApiSchema>();
 
+			if (tagsToSkip.Contains(tagToPathSet.Key))
+				continue;
 			clonedDocument.Info.Title = $"{tagToPathSet.Key} Actor";
 			clonedDocument.Components = new OpenApiComponents();
 			clonedDocument.Components.Schemas = referencedSchemas;
@@ -800,18 +860,91 @@ public class SwaggerService
 
 				var referencedSchema = swagger.Document.Components.Schemas[curr.Reference.Id];
 				referencedSchemas[curr.Reference.Id] = referencedSchema;
-
+				schemasToExplore.Enqueue(referencedSchema);
 			}
 
-			output.Add(new OpenApiDocumentResult
+			var openApiDocumentResult = new OpenApiDocumentResult
 			{
 				Descriptor = swagger.Descriptor,
 				Diagnostic = diag,
 				Document = clonedDocument
-			});
+			};
+			output.Add(openApiDocumentResult);
+		}
 
+		var joiningTags = new Dictionary<string[], string>()
+		{
+			{ new[] { "Match", "Ticket" }, "Matchmaking" },
+			{ new[] { "PlayerPresence", "Player" }, "Player" },
+		};
+
+		foreach ((string[] existingDocsTitles, string mergedDocTitle) in joiningTags)
+		{
+			var docs = output.Where(o => existingDocsTitles.Contains(o.Document.Info.Title.Split(" ")[0])).ToList();
+
+			var outputString = swagger.Document.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
+			var clonedDocument = new OpenApiStringReader().Read(outputString, out var diag);
+
+
+			clonedDocument.Info.Title = $"{mergedDocTitle} Actor";
+			clonedDocument.Components = new OpenApiComponents();
+			clonedDocument.Components.Schemas = new Dictionary<string, OpenApiSchema>();
+			clonedDocument.Paths = new OpenApiPaths();
+			foreach (OpenApiDocumentResult openApiDocumentResult in docs)
+			{
+				foreach (KeyValuePair<string, OpenApiPathItem> keyValuePair in openApiDocumentResult.Document.Paths)
+				{
+					clonedDocument.Paths.TryAdd(keyValuePair.Key, keyValuePair.Value);
+				}
+
+				foreach (KeyValuePair<string, OpenApiSchema> openApiSchema in openApiDocumentResult.Document.Components.Schemas)
+				{
+					clonedDocument.Components.Schemas.TryAdd(openApiSchema.Key, openApiSchema.Value);
+				}
+			}
+
+			foreach (OpenApiDocumentResult res in docs) output.Remove(res);
+
+			var mergedResult = new OpenApiDocumentResult
+			{
+				Descriptor = swagger.Descriptor,
+				Diagnostic = diag,
+				Document = clonedDocument
+			};
+			output.Add(mergedResult);
 		}
 		return output;
+	}
+
+	private static List<OpenApiDocumentResult> DetectNonSelfReferentialTypes(OpenApiDocumentResult swagger)
+	{
+		foreach ((string key, OpenApiSchema value) in swagger.Document.Components.Schemas)
+		{
+			var recursiveCheck = new Stack<OpenApiSchema>();
+
+			foreach ((_, OpenApiSchema propertySchema) in value.Properties)
+				recursiveCheck.Push(propertySchema);
+
+			bool isSelfReferential = false;
+			OpenApiSchema curr = null;
+			while (recursiveCheck.TryPop(out curr))
+			{
+				if (curr.Reference != null && value.Reference != null && curr.Reference.Id.Equals(value.Reference.Id))
+				{
+					isSelfReferential = true;
+				}
+
+				foreach ((_, OpenApiSchema propertySchema) in curr.Properties)
+					recursiveCheck.Push(propertySchema);
+			}
+
+			if (isSelfReferential)
+			{
+				value.Extensions.Add(Constants.EXTENSION_BEAMABLE_SELF_REFERENTIAL_TYPE, new OpenApiString(Constants.EXTENSION_BEAMABLE_SELF_REFERENTIAL_TYPE));
+			}
+		}
+
+		return new List<OpenApiDocumentResult> { swagger };
 	}
 
 
@@ -849,6 +982,8 @@ public class SwaggerService
 
 	}
 
+	public const string TARGET_ENGINE_NAME_UNITY = "unity";
+	public const string TARGET_ENGINE_NAME_UNREAL = "unreal";
 }
 
 public class BeamableApiDescriptor
@@ -856,6 +991,22 @@ public class BeamableApiDescriptor
 	public BeamableApiSource Source;
 	public string RelativeUrl;
 	public string Service;
+	public string[] SkippedSDKs = Array.Empty<string>();
+
+	public Dictionary<string, string> schemaRenames = new Dictionary<string, string>();
+
+	public BeamableApiDescriptor WithRename(string old, string next)
+	{
+		schemaRenames[old] = next;
+		return this;
+	}
+
+	public BeamableApiDescriptor WithoutSDKs(params string[] SDKs)
+	{
+		SkippedSDKs = SDKs;
+		return this;
+	}
+
 	public string FileName => $"{BeamableApiSourceExtensions.ToDisplay(Source)}_{Service}.json";
 }
 

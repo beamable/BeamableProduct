@@ -1,18 +1,26 @@
 using Beamable.Common;
 using Beamable.Common.Content;
+using Beamable.Common.Reflection;
+using Beamable.Common.Runtime;
 using Beamable.Server;
 using Beamable.Server.Common;
 using Beamable.Server.Common.XmlDocs;
 using beamable.tooling.common.Microservice;
 using microservice.Common;
 using Microsoft.OpenApi;
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Extensions;
+using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
+using Serilog;
 using System.Reflection;
 
 namespace Beamable.Tooling.Common.OpenAPI;
 
+/// <summary>
+/// Generates OpenAPI documentation for a microservice.
+/// </summary>
 public class ServiceDocGenerator
 {
 	private const string JSON_CONTENT_TYPE = "application/json";
@@ -44,13 +52,27 @@ public class ServiceDocGenerator
 		Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = SCOPE }
 	};
 	
+	/// <summary>
+	/// Generates OpenAPI documentation for a specified microservice type.
+	/// </summary>
+	/// <typeparam name="TMicroservice">The type of the microservice to generate documentation for.</typeparam>
+	/// <param name="adminRoutes">The administrative routes associated with the microservice.</param>
+	/// <returns>An OpenApiDocument containing the generated documentation.</returns>
 	public OpenApiDocument Generate<TMicroservice>(AdminRoutes adminRoutes) where TMicroservice: Microservice
 	{
 		var attr = typeof(TMicroservice).GetCustomAttribute(typeof(MicroserviceAttribute)) as MicroserviceAttribute;
 		return Generate(typeof(TMicroservice), attr, adminRoutes);
 	}
-	
-	public OpenApiDocument Generate(Type microserviceType, MicroserviceAttribute attribute, AdminRoutes adminRoutes)
+
+	/// <summary>
+	/// Generates OpenAPI documentation for a specified microservice type.
+	/// </summary>
+	/// <param name="microserviceType">The type of the microservice to generate documentation for.</param>
+	/// <param name="attribute">The MicroserviceAttribute associated with the microservice.</param>
+	/// <param name="adminRoutes">The administrative routes associated with the microservice.</param>
+	/// <param name="excludeFederationCallbackEndpoints">When true, does not generate the doc for any endpoints coming from federation. Used primarily for code-generating in-SDK client code for Microservices.</param>
+	/// <returns>An OpenApiDocument containing the generated documentation.</returns>
+	public OpenApiDocument Generate(Type microserviceType, MicroserviceAttribute attribute, AdminRoutes adminRoutes, bool excludeFederationCallbackEndpoints = false)
 	{
 		if (!microserviceType.IsAssignableTo(typeof(Microservice)))
 		{
@@ -59,6 +81,16 @@ public class ServiceDocGenerator
 
 		var coll = RouteTableGeneration.BuildRoutes(microserviceType, attribute, adminRoutes, _ => null);
 		var methods = coll.Methods.ToList();
+		for (var i = methods.Count - 1; i >= 0; i--)
+		{
+			// Skip out all federated callbacks IF the caller of this function asked us to do so.
+			if(excludeFederationCallbackEndpoints && methods[i].IsFederatedCallbackMethod)
+			{
+				Log.Debug("Removing federated callback {MethodName} that made through the check", methods[i].Method.Name);
+				methods.RemoveAt(i);
+			}
+		}
+		
 		var doc = new OpenApiDocument {
 			Info = new OpenApiInfo
 			{
@@ -76,17 +108,43 @@ public class ServiceDocGenerator
 				}
 			}
 		};
+		doc.Extensions = new Dictionary<string, IOpenApiExtension>();
+
+		var interfaces = microserviceType.GetInterfaces();
+		var apiComponents = new OpenApiArray();
+		
+		foreach (Type it in interfaces)
+		{
+			if (!it.IsGenericType) continue;
+
+			if (!FederationComponentNames.FederationComponentToName.TryGetValue(it.GetGenericTypeDefinition(), out string typeName))
+			{
+				continue;
+			}
+			
+			var federatedType = it.GetGenericArguments()[0];
+
+			if (Activator.CreateInstance(federatedType) is IThirdPartyCloudIdentity identity)
+			{
+				string componentName = $"{typeName}/{identity?.UniqueName}";
+				apiComponents.Add(new OpenApiString(componentName));
+			}
+		}
+		const string federatedKey = Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_KEY;
+		doc.Extensions.Add(federatedKey, apiComponents);
 		
 		var allTypes = SchemaGenerator.FindAllComplexTypes(methods).ToList();
 		
 		foreach (var type in allTypes)
 		{
 			var schema = SchemaGenerator.Convert(type);
+			Log.Debug("Adding Schema to Microservice OAPI docs. Type={TypeName}", type.FullName);
 			doc.Components.Schemas.Add(SchemaGenerator.GetQualifiedReferenceName(type), schema);
 		}
 
 		foreach (var method in methods)
 		{
+			Log.Debug("Adding to Docs method {MethodName}", method.Method.Name);
 			var comments = DocsLoader.GetMethodComments(method.Method);
 			var parameterNameToComment = comments.Parameters.ToDictionary(kvp => kvp.Name, kvp => kvp.Text);
 			
@@ -184,6 +242,11 @@ public class ServiceDocGenerator
 		return doc;
 	}
 
+	/// <summary>
+	/// Retrieves the inner type from a Task or Promise type.
+	/// </summary>
+	/// <param name="type">The original type, potentially wrapped in Task or Promise.</param>
+	/// <returns>The inner type if wrapped, or the original type if not.</returns>
 	public static Type GetTypeFromPromiseOrTask(Type type)
 	{
 		if (type.IsGenericType)
@@ -200,6 +263,11 @@ public class ServiceDocGenerator
 		return type;
 	}
 
+	/// <summary>
+	/// Determines whether a given type represents an empty response type.
+	/// </summary>
+	/// <param name="type">The type to check.</param>
+	/// <returns><c>true</c> if the type represents an empty response, otherwise <c>false</c>.</returns>
 	public static bool IsEmptyResponseType(Type type)
 	{
 		var isPromise = type == typeof(Promise);

@@ -73,6 +73,7 @@ public class RequiredOneOfInterface
 	public string interfaceName;
 	public IList<OpenApiSchema> childTypeSchemas;
 	public CodeTypeDeclaration type;
+	public CodeTypeDeclaration optionalType;
 	public CodeTypeDeclaration serializationFactoryType;
 }
 
@@ -105,7 +106,7 @@ public static class UnityHelper
 		{
 			// build all the types associated with this model...
 			var types = UnityHelper.GenerateDeclarations(schema.Name, schema.Schema);
-			nameToTypes.Add(schema.Name, types);
+			nameToTypes.TryAdd(schema.Name, types);
 
 			// and always add the root model type...
 			root.Types.Add(types.Model);
@@ -116,6 +117,7 @@ public static class UnityHelper
 				if (!oneOfs.ContainsKey(oneOf.interfaceName))
 				{
 					root.Types.Add(oneOf.type);
+					root.Types.Add(oneOf.optionalType);
 					root.Types.Add(oneOf.serializationFactoryType);
 					oneOfs.Add(oneOf.interfaceName, oneOf);
 				}
@@ -388,6 +390,8 @@ public static class UnityHelper
 
 		var httpMethod = Method.GET;
 
+		var requesterReference = new CodeVariableReferenceExpression("_requester");
+
 		switch (operation.Key)
 		{
 			case OperationType.Get:
@@ -409,10 +413,10 @@ public static class UnityHelper
 			return null; // TODO: support application/csv for content
 		}
 
-		bool isCsv = false;
+		// bool isCsv = false;
 		if (!response.Content.TryGetValue("application/json", out var mediaResponse))
 		{
-			isCsv = true;
+			// isCsv = true;
 			if (!response.Content.TryGetValue("text/csv", out mediaResponse))
 			{
 				return null;
@@ -580,9 +584,11 @@ public static class UnityHelper
 				case ParameterLocation.Path:
 					var paramToStr = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(param.Name),
 						nameof(object.ToString));
+					var pathEscaped = new CodeMethodInvokeExpression(requesterReference,
+						nameof(IBeamableRequester.EscapeURL), paramToStr);
 					var replace = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(varUrl),
 						nameof(string.Replace), new CodePrimitiveExpression($"{{{param.Name}}}"),
-						paramToStr);
+						pathEscaped);
 
 					method.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(varUrl),
 						replace));
@@ -594,10 +600,11 @@ public static class UnityHelper
 						var toStringExpr =
 							new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(param.Name),
 								nameof(object.ToString));
+						var escaped = new CodeMethodInvokeExpression(requesterReference,
+							nameof(IBeamableRequester.EscapeURL), toStringExpr);
 						var expr = new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)),
 							nameof(string.Concat), new CodePrimitiveExpression($"{param.Name}="),
-							toStringExpr);
-
+							escaped);
 						var methodInvoke = new CodeMethodInvokeExpression(queryListRef,
 							nameof(List<string>.Add), expr);
 						queryStatements.Add(new CodeExpressionStatement(methodInvoke));
@@ -677,7 +684,7 @@ public static class UnityHelper
 
 
 		// make the request itself.
-		var requestCommand = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression("_requester"),
+		var requestCommand = new CodeMethodInvokeExpression(requesterReference,
 			nameof(IBeamableRequester.Request));
 		requestCommand.Method.TypeArguments.Add(responseType);
 
@@ -1037,6 +1044,37 @@ public static class UnityHelper
 		return null;
 	}
 
+	public static CodeTypeDeclaration GenerateOptionalDecl(string name)
+	{
+		var type = new CodeTypeDeclaration($"Optional{SanitizeClassName(name)}");
+
+		// make sure the model is serializable
+		type.CustomAttributes.Add(
+			new CodeAttributeDeclaration(new CodeTypeReference(typeof(SerializableAttribute))));
+
+		var baseType = new CodeTypeReference(typeof(Optional<>));
+		type.BaseTypes.Add(baseType);
+		var genericType = new CodeTypeReference(SanitizeClassName(name));
+		baseType.TypeArguments.Add(genericType);
+
+		// add a default constructor...
+		var defaultCons = new CodeConstructor();
+		defaultCons.Attributes = MemberAttributes.Public;
+		type.Members.Add(defaultCons);
+
+		// add a constructor that accepts a value...
+		var typedCons = new CodeConstructor();
+		typedCons.Parameters.Add(new CodeParameterDeclarationExpression(genericType, "value"));
+		typedCons.Attributes = MemberAttributes.Public;
+		typedCons.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(nameof(Optional.HasValue)),
+			new CodePrimitiveExpression(true)));
+		typedCons.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(nameof(Optional<int>.Value)),
+			new CodeVariableReferenceExpression("value")));
+		type.Members.Add(typedCons);
+
+		return type;
+	}
+
 	/// <summary>
 	/// The Optional captures a type like
 	/// <code>
@@ -1058,33 +1096,7 @@ public static class UnityHelper
 			case ("string", _) when schema.Enum?.Count > 0:
 			case ("array", _):
 			case ("object", _):
-				var type = new CodeTypeDeclaration($"Optional{SanitizeClassName(name)}");
-
-				// make sure the model is serializable
-				type.CustomAttributes.Add(
-					new CodeAttributeDeclaration(new CodeTypeReference(typeof(SerializableAttribute))));
-
-				var baseType = new CodeTypeReference(typeof(Optional<>));
-				type.BaseTypes.Add(baseType);
-				var genericType = new CodeTypeReference(SanitizeClassName(name));
-				baseType.TypeArguments.Add(genericType);
-
-				// add a default constructor...
-				var defaultCons = new CodeConstructor();
-				defaultCons.Attributes = MemberAttributes.Public;
-				type.Members.Add(defaultCons);
-
-				// add a constructor that accepts a value...
-				var typedCons = new CodeConstructor();
-				typedCons.Parameters.Add(new CodeParameterDeclarationExpression(genericType, "value"));
-				typedCons.Attributes = MemberAttributes.Public;
-				typedCons.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(nameof(Optional.HasValue)),
-					new CodePrimitiveExpression(true)));
-				typedCons.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(nameof(Optional<int>.Value)),
-					new CodeVariableReferenceExpression("value")));
-				type.Members.Add(typedCons);
-
-				return type;
+				return GenerateOptionalDecl(name);
 		}
 		// we don't need anything, because the primitive types are already included in the code base.
 		return null;
@@ -1215,6 +1227,33 @@ public static class UnityHelper
 		type.CustomAttributes.Add(
 			new CodeAttributeDeclaration(new CodeTypeReference(typeof(SerializableAttribute))));
 
+
+
+		if (schema.Items != null)
+		{
+			// if the base type is a list, then add the list base class.
+			if (schema.Items?.Reference?.Id != null)
+			{
+				type.BaseTypes.Add(new CodeTypeReference(typeof(List<>))
+				{
+					TypeArguments = { new CodeTypeReference(SanitizeClassName(schema.Items.Reference.Id)) }
+				});
+				if (schema.Properties.Count > 0)
+				{
+					throw new Exception(
+						$"Cannot have a model type that is a list, and has properties. name=[{name}] model=[{schema.Title}] ");
+				}
+			}
+			else
+			{
+				var gen = new GenSchema(schema.Items);
+
+				var baseType = gen.GetTypeReference();
+				type.BaseTypes.Add(new CodeTypeReference(typeof(List<>)) { TypeArguments = { baseType } }
+				);
+			}
+		}
+
 		// add the serialization interface
 		type.BaseTypes.Add(new CodeTypeReference(typeof(JsonSerializable.ISerializable)));
 
@@ -1235,7 +1274,11 @@ public static class UnityHelper
 			// construct some primitive information about this field.
 			var fieldApiName = property.Key;
 			var fieldSchema = property.Value;
-			var isRequired = schema.Required.Contains(fieldApiName);
+
+			var isPolymorphArray = fieldSchema.Items?.OneOf?.Count > 0;
+			var isPolymorphObject = fieldSchema.OneOf?.Count > 0;
+			var isPolymorph = isPolymorphArray || isPolymorphObject;
+			var isRequired = isPolymorph || schema.Required.Contains(fieldApiName);
 
 			// add the field to the model type.
 			var field = GenerateField(fieldApiName, fieldSchema, isRequired);
@@ -1265,6 +1308,7 @@ public static class UnityHelper
 				var interfaceName = OneOfClassName(oneOf);
 				var innerInterface = new CodeTypeDeclaration(interfaceName) { IsInterface = true };
 				innerInterface.BaseTypes.Add(new CodeTypeReference(typeof(JsonSerializable.ISerializable)));
+				innerInterface.IsPartial = true;
 
 				var factoryName = interfaceName + "Factory";
 				var factoryType = new CodeTypeDeclaration(factoryName);
@@ -1286,7 +1330,7 @@ public static class UnityHelper
 
 					if (!(childTypeProperty.Default is OpenApiString openApiStr))
 					{
-						throw new Exception("Cannot construct oneOf to types that do not have internal type field as a valid string");
+						openApiStr = new OpenApiString(childClassName);
 					}
 					var statement = new CodeExpressionStatement(new CodeMethodInvokeExpression(
 						method: new CodeMethodReferenceExpression(new CodeThisReferenceExpression(), nameof(JsonSerializable.TypeLookupFactory<JsonSerializable.ISerializable>.Add))
@@ -1302,20 +1346,20 @@ public static class UnityHelper
 					interfaceName = interfaceName,
 					childTypeSchemas = oneOf,
 					type = innerInterface,
+					optionalType = GenerateOptionalDecl(interfaceName),
 					serializationFactoryType = factoryType
 				};
 
 			}
 
-			if (fieldSchema.OneOf?.Count > 0)
-			{
-				// TODO: put this back in when we support scheduler polymorphism
-				// polymorphicFields.Add(HandleOneOf(fieldSchema.OneOf));
-			}
-
-			if (fieldSchema.Items?.OneOf?.Count > 0)
+			if (isPolymorphArray)
 			{
 				polymorphicFields.Add(HandleOneOf(fieldSchema.Items.OneOf));
+			}
+
+			if (isPolymorphObject)
+			{
+				polymorphicFields.Add(HandleOneOf(fieldSchema.OneOf));
 			}
 		}
 
@@ -1335,10 +1379,6 @@ public static class UnityHelper
 		var field = new CodeMemberField();
 
 		field.Name = SanitizeFieldName(fieldName);
-		if (fieldName == "variants")
-		{
-			GenSchema.breakit = true;
-		}
 		field.Type = isRequired ? fieldSchema.GetTypeReference() : fieldSchema.GetOptionalTypeReference();
 		field.Attributes = MemberAttributes.Public;
 
@@ -1521,6 +1561,19 @@ public static class UnityHelper
 
 
 				return true;
+			case "string" when schema.Format == "date-time":
+				// use the default serialize method.
+				methodExpr = new CodeMethodReferenceExpression(new CodeArgumentReferenceExpression(PARAM_SERIALIZER),
+					nameof(JsonSerializable.IStreamSerializer.Serialize));
+				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ssZ"));
+				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.fZ"));
+				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.ffZ"));
+				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.fffZ"));
+				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.ffffZ"));
+				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.fffffZ"));
+				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.ffffffZ"));
+				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.fffffffzzz"));
+				return true;
 			case "object" when schema.AdditionalPropertiesAllowed:
 				var method = new CodeMethodReferenceExpression(new CodeArgumentReferenceExpression(PARAM_SERIALIZER),
 					nameof(JsonSerializable.IStreamSerializer.SerializeDictionary));
@@ -1547,8 +1600,9 @@ public static class UnityHelper
 				// we just cannot support the serialization of unspecified object types, so don't serialize.
 				var isTypeEmptyOrObject = string.IsNullOrEmpty(schema.Type) || schema.Type == "object";
 				var hasReference = schema.Reference != null;
+				var isPolyMorph = schema.OneOf?.Count > 0;
 
-				if (isTypeEmptyOrObject && !hasReference) return false;
+				if (isTypeEmptyOrObject && !hasReference && !isPolyMorph) return false;
 
 				// use the default serialize method.
 				methodExpr = new CodeMethodReferenceExpression(new CodeArgumentReferenceExpression(PARAM_SERIALIZER),
@@ -1653,7 +1707,6 @@ public class GenSchema
 		return typeRef;
 	}
 
-	public static bool breakit;
 	public GenCodeTypeReference GetTypeReference()
 	{
 		switch (Schema?.Type, Schema?.Format, Schema?.Reference?.Id)
@@ -1661,7 +1714,6 @@ public class GenSchema
 			case ("array", _, _) when Schema?.Items?.OneOf?.Count > 0:
 				var className = UnityHelper.OneOfClassName(Schema.Items.OneOf);
 				return new GenCodeTypeReference(className, 1);
-				break;
 			case ("array", _, _) when Schema.Items.Reference == null:
 				var genElem = new GenSchema(Schema.Items);
 				var elemType = genElem.GetTypeReference();
@@ -1673,6 +1725,8 @@ public class GenSchema
 				return new GenCodeTypeReference(referenceType, 1);
 			case var (_, _, referenceId) when !string.IsNullOrEmpty(referenceId):
 				return new GenCodeTypeReference(referenceId);
+			case (_, _, _) when Schema.OneOf?.Count > 0:
+				return new GenCodeTypeReference(UnityHelper.OneOfClassName(Schema.OneOf));
 			case ("object", _, _) when Schema.Reference == null && Schema.AdditionalPropertiesAllowed:
 				var genValues = new GenSchema(Schema.AdditionalProperties);
 				var genType = genValues.GetTypeReference();
@@ -1692,6 +1746,8 @@ public class GenSchema
 				return new GenCodeTypeReference(typeof(Guid));
 			case ("string", "byte", _):
 				return new GenCodeTypeReference(typeof(byte));
+			case ("string", "date-time", _):
+				return new GenCodeTypeReference(typeof(DateTime));
 			case ("string", _, _) when (Schema?.Extensions.TryGetValue("x-beamable-object-id", out var ext) ?? false):
 				return new GenCodeTypeReference(typeof(string));
 			case ("System.String", _, _):

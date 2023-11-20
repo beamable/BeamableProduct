@@ -4,7 +4,7 @@ public class ProfilingCommandArgs : CommandArgs
 {
 
 }
-public class ProfilingCommand : AppCommand<ProfilingCommandArgs>
+public class ProfilingCommand : AppCommand<ProfilingCommandArgs>, IStandaloneCommand
 {
 	public ProfilingCommand() : base("profile", "Commands for inspecting profiling reports")
 	{

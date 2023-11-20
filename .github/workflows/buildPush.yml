@@ -19,11 +19,11 @@ jobs:
       cancel-in-progress: true
     strategy:
       matrix:
-        dotnet-version: ['6.0.x' ]
+        dotnet-version: ['6.0.x', '7.0.x' ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
-        uses: actions/setup-dotnet@v1.7.2
+        uses: actions/setup-dotnet@v3
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
       - uses: actions/cache@v2
@@ -58,9 +58,17 @@ jobs:
         unityVersion:
           - 2020.3.19f1
           - 2021.3.2f1
-          - 2022.2.11f1
+          - 2022.3.0f1
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.0.x'
+      - name: Build and Install BEAM CLI 
+        working-directory: ./cli/cli
+        run: |
+          ./install.sh
       - name: Login to Docker Hub
         uses: docker/login-action@v1
         with:
@@ -133,11 +141,11 @@ jobs:
           - iOS
           - StandaloneOSX
         unityVersion:
-          - 2022.2.11f1
+          - 2022.3.0f1
         projectPath:
           - client
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
           lfs: true
@@ -262,7 +270,7 @@ jobs:
       USYM_UPLOAD_AUTH_TOKEN: foo
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/download-artifact@v2
         with:
           name: Build-iOS

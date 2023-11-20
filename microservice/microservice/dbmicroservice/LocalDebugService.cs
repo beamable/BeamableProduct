@@ -1,10 +1,19 @@
-﻿using System.Net.WebSockets;
+﻿using Beamable.Server.Api.Usage;
+using Beamable.Server.Common;
+using Beamable.Server.Ecs;
+using System.Net.WebSockets;
 using System.Threading.Tasks;
 using EmbedIO;
 using EmbedIO.Routing;
 using EmbedIO.WebApi;
+using Newtonsoft.Json;
 using Serilog;
 using Swan.Logging;
+using System;
+using System.Collections.Concurrent;
+using System.IO;
+using System.Text;
+using System.Threading;
 using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server {
@@ -15,12 +24,12 @@ namespace Beamable.Server {
 		private readonly BeamableMicroService _beamableService;
 		private WebServer _server;
 
-		public ContainerDiagnosticService(IMicroserviceArgs args, BeamableMicroService service)
+		public ContainerDiagnosticService(IMicroserviceArgs args, BeamableMicroService service, DebugLogSink debugLogSink)
 		{
 			ConsoleLogger.Instance.LogLevel = LogLevel.Error;
 			_beamableService = service;
 			_server = new WebServer(args.HealthPort)
-				.WithWebApi("/", m => m.WithController(() => new SampleController(service)));
+				.WithWebApi("/", m => m.WithController(() => new SampleController(service, debugLogSink)));
 		}
 
 		public async Task Run()
@@ -31,9 +40,51 @@ namespace Beamable.Server {
 		public class SampleController : WebApiController 
 		{
 			private readonly BeamableMicroService _beamableService;
-			public SampleController(BeamableMicroService service)
+			private readonly DebugLogSink _debugLogSink;
+			private IUsageApi _ecsService;
+
+			public SampleController(BeamableMicroService service, DebugLogSink debugLogSink)
 			{
+				_ecsService = service.Provider.GetService<IUsageApi>();
 				_beamableService = service;
+				_debugLogSink = debugLogSink;
+			}
+
+			[Route(HttpVerbs.Get, "/metadata")]
+			public async Task<string> GetMetadata()
+			{
+				var metadata = _ecsService.GetMetadata();
+				var json = JsonConvert.SerializeObject(metadata);
+				return json;
+			}
+			
+			[Route(HttpVerbs.Get, "/usage")]
+			public async Task<string> GetUsage()
+			{
+				var usage = _ecsService.GetUsage();
+				var json = JsonConvert.SerializeObject(usage);
+				return json;
+			}
+
+			[Route(HttpVerbs.Get, "/logs")]
+			public string StreamLogs()
+			{
+				this.Response.ContentType = "text/event-stream";
+
+				var index = 0;
+				using var writer = this.HttpContext.OpenResponseText();
+				while (!HttpContext.CancellationToken.IsCancellationRequested)
+				{
+					if (!_debugLogSink.TryGetNextMessage(ref index, out var message))
+					{
+						Thread.Sleep(10);
+						continue;
+						
+					}
+					writer.WriteLine($"data: {message}");
+					writer.Flush();
+				}
+				return "";
 			}
 			
 			[Route(HttpVerbs.Any, "/health")]

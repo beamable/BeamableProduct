@@ -1,3 +1,11 @@
 ﻿#statusIcon.debug {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/debug_Gray.png");
 }
+
+ConsoleLogVisualElement {
+    background-color: rgba(0,0,0,0);
+}
+
+ConsoleLogVisualElement.oddRow {
+    background-color: #3f3f3f;
+}

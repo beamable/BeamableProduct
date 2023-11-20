@@ -1,4 +1,5 @@
-﻿namespace cli.Unreal;
+﻿#pragma warning disable CS0649
+namespace cli.Unreal;
 
 public struct UnrealApiSubsystemDeclaration
 {
@@ -20,7 +21,7 @@ public struct UnrealApiSubsystemDeclaration
 	public List<UnrealEndpointDeclaration> AuthenticatedEndpointUFunctionWithRetryDeclarations;
 
 	private string _baseTypeDeclaration;
-	private string _assigneMicroserviceId;
+	private string _assignMicroserviceId;
 
 	public List<UnrealEndpointDeclaration> GetAllEndpoints() => EndpointRawFunctionDeclarations
 		.Union(AuthenticatedEndpointRawFunctionDeclarations)
@@ -85,14 +86,14 @@ public struct UnrealApiSubsystemDeclaration
 			return ufunctionDeclaration;
 		}));
 
-		var isMSGen = UnrealSourceGenerator.genType == UnrealSourceGenerator.GenerationType.Microservice;
+		var isMsGen = UnrealSourceGenerator.genType == UnrealSourceGenerator.GenerationType.Microservice;
 
 		helperDict.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
-		helperDict.Add(nameof(_assigneMicroserviceId), isMSGen ? $"MicroserviceName = TEXT(\"{ServiceName}\");" : "");
-		helperDict.Add(nameof(_baseTypeDeclaration), isMSGen ? "UBeamMicroserviceClientSubsystem" : "UEngineSubsystem");
+		helperDict.Add(nameof(_assignMicroserviceId), isMsGen ? $"MicroserviceName = TEXT(\"{ServiceName}\");" : "");
+		helperDict.Add(nameof(_baseTypeDeclaration), isMsGen ? "UBeamMicroserviceClientSubsystem" : "UEngineSubsystem");
 		helperDict.Add(nameof(SubsystemName), SubsystemName);
 
-		if (isMSGen) IncludeStatements.Add(@"#include ""BeamBackend/BeamMicroserviceClientSubsystem.h""");
+		if (isMsGen) IncludeStatements.Add(@"#include ""BeamBackend/BeamMicroserviceClientSubsystem.h""");
 		helperDict.Add(nameof(IncludeStatements), string.Join("\n", IncludeStatements));
 
 		helperDict.Add(nameof(EndpointRawFunctionDeclarations), endpointRawFunctions);
@@ -172,7 +173,7 @@ public struct UnrealApiSubsystemDeclaration
 		helperDict.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
 		helperDict.Add(nameof(UnrealSourceGenerator.headerFileOutputPath), UnrealSourceGenerator.headerFileOutputPath);
 		helperDict.Add(nameof(SubsystemName), SubsystemName);
-		helperDict.Add(nameof(_assigneMicroserviceId), isMSGen ? $"MicroserviceName = TEXT(\"{ServiceName}\");" : "");
+		helperDict.Add(nameof(_assignMicroserviceId), isMSGen ? $"MicroserviceName = TEXT(\"{ServiceName}\");" : "");
 
 		helperDict.Add(nameof(EndpointRawFunctionDeclarations), endpointRawFunctions);
 		helperDict.Add(nameof(AuthenticatedEndpointRawFunctionDeclarations), authEndpointRawFunctions);
@@ -253,7 +254,7 @@ void UBeam₢{nameof(SubsystemName)}₢Api::Initialize(FSubsystemCollectionBase&
 	Backend = Cast<UBeamBackend>(Collection.InitializeDependency(UBeamBackend::StaticClass()));
 	RequestTracker = Cast<UBeamRequestTracker>(Collection.InitializeDependency(UBeamRequestTracker::StaticClass()));
 	ResponseCache = Cast<UBeamResponseCache>(Collection.InitializeDependency(UBeamResponseCache::StaticClass()));
-	₢{nameof(_assigneMicroserviceId)}₢
+	₢{nameof(_assignMicroserviceId)}₢
 }}
 
 void UBeam₢{nameof(SubsystemName)}₢Api::Deinitialize()

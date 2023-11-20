@@ -11,12 +11,12 @@ namespace Beamable.Common.Api.Auth
 		protected const string TOKEN_URL = "/basic/auth/token";
 		public const string ACCOUNT_URL = "/basic/accounts";
 
-		private IBeamableRequester _requester;
+		private IRequester _requester;
 		private readonly IAuthSettings _settings;
 
 		public IBeamableRequester Requester => _requester;
 
-		public AuthApi(IBeamableRequester requester, IAuthSettings settings = null)
+		public AuthApi(IRequester requester, IAuthSettings settings = null)
 		{
 			_requester = requester;
 			_settings = settings ?? new DefaultAuthSettings();
@@ -29,7 +29,8 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<User> SetLanguage(string languageCodeISO6391)
 		{
-			return _requester.Request<User>(Method.PUT, $"{ACCOUNT_URL}/me?language={languageCodeISO6391}");
+			var encodedLanguageCode = _requester.EscapeURL(languageCodeISO6391);
+			return _requester.Request<User>(Method.PUT, $"{ACCOUNT_URL}/me?language={encodedLanguageCode}");
 		}
 
 		public virtual async Promise<User> GetUser(TokenResponse token)
@@ -50,10 +51,15 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<bool> IsThirdPartyAvailable(AuthThirdParty thirdParty, string token)
 		{
+			var qb = _requester.CreateQueryArgBuilder(new Dictionary<string, string>
+			{
+				["thirdParty"] = thirdParty.GetString(),
+				["token"] = token
+			});
 			return _requester
 				   .Request<AvailabilityResponse>(
 					   Method.GET,
-					   $"{ACCOUNT_URL}/available/third-party?thirdParty={thirdParty.GetString()}&token={token}", null,
+					   $"{ACCOUNT_URL}/available/third-party{qb}", null,
 					   false)
 				   .Map(resp => resp.available);
 		}
@@ -62,7 +68,6 @@ namespace Beamable.Common.Api.Auth
 		{
 			var req = new CreateUserRequest { grant_type = "guest" };
 			return _requester.Request<TokenResponse>(Method.POST, TOKEN_URL, req, false);
-			//return _requester.RequestForm<TokenResponse>(TOKEN_URL, form, false);
 		}
 
 		[Serializable]
@@ -145,8 +150,13 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<User> RemoveThirdPartyAssociation(AuthThirdParty thirdParty, string token)
 		{
+			var qb = _requester.CreateQueryArgBuilder(new Dictionary<string, string>
+			{
+				["thirdParty"] = thirdParty.GetString(),
+				["token"] = token
+			});
 			return _requester.Request<User>(Method.DELETE,
-											$"{ACCOUNT_URL}/me/third-party?thirdParty={thirdParty.GetString()}&token={token}",
+											$"{ACCOUNT_URL}/me/third-party{qb}",
 											null, true);
 		}
 
@@ -227,8 +237,16 @@ namespace Beamable.Common.Api.Auth
 																	  string alias)
 		{
 			var request = new CustomerRegistrationRequest(email, password, projectName, customerName, alias);
-			return _requester.Request<CustomerRegistrationResponse>(Method.POST, "/basic/realms/customer", request,
-																	false);
+			return _requester.BeamableRequest(new SDKRequesterOptions<CustomerRegistrationResponse>
+			{
+				method = Method.POST,
+				body = request,
+				disableScopeHeaders = true,
+				includeAuthHeader = true,
+				uri = "/basic/realms/customer"
+			});
+			// return _requester.Request<CustomerRegistrationResponse>(Method.POST, "/basic/realms/customer", request,
+			// false);
 		}
 
 		public Promise<CurrentProjectResponse> GetCurrentProject()
@@ -273,9 +291,18 @@ namespace Beamable.Common.Api.Auth
 				{
 					var res = new ExternalLoginResponse();
 
-					var authResult = JsonUtility.FromJson<ExternalAuthenticationResponse>(json);
+					var externalLoginResponse = JsonUtility.FromJson<ExternalLoginAuthenticationResponse>(json);
+					var authResult = new ExternalAuthenticationResponse();
+					if (externalLoginResponse.token_type == "challenge")
+					{
+						authResult = new ExternalAuthenticationResponse
+						{
+							challenge = externalLoginResponse.challenge_token,
+							challenge_ttl = externalLoginResponse.expires_in
+						};
+					}
 
-					if (authResult?.challenge?.Length > 0)
+					if (authResult.challenge?.Length > 0)
 					{
 						// the response object is requesting a further challenge to be made.
 						res.challenge.Set(authResult);
@@ -385,11 +412,20 @@ namespace Beamable.Common.Api.Auth
 			throw new Exception("Problem with challenge token parsing");
 		}
 
-		public Promise<bool> IsExternalIdentityAvailable(string providerService, string externalToken, string[] namespaces = null)
+		public Promise<bool> IsExternalIdentityAvailable(string providerService, string externalToken, string providerNamespace = null)
 		{
+			var qb = Requester.CreateQueryArgBuilder(new Dictionary<string, string>
+			{
+				["provider_service"] = providerService,
+				["user_id"] = externalToken,
+			});
+
+			if (!string.IsNullOrWhiteSpace(providerNamespace))
+				qb.Add("provider_namespace", providerNamespace);
+
 			return Requester.Request<AvailabilityResponse>(
 				Method.GET,
-				$"{ACCOUNT_URL}/available/external_identity?provider_service={providerService}&user_id={externalToken}?provider_namespace={namespaces}",
+				$"{ACCOUNT_URL}/available/external_identity{qb}",
 				null, false).Map(response => response.available);
 		}
 	}
@@ -841,6 +877,14 @@ namespace Beamable.Common.Api.Auth
 		public string user_id;
 		public string challenge;
 		public int challenge_ttl;
+	}
+
+	[Serializable]
+	public class ExternalLoginAuthenticationResponse
+	{
+		public int expires_in;
+		public string token_type;
+		public string challenge_token;
 	}
 
 	[Serializable]

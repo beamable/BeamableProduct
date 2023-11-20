@@ -8,10 +8,10 @@
 
         <TargetFramework>net6.0</TargetFramework>
         <AssemblyName>Beamable.Server</AssemblyName>
-        <DefineConstants>
-            BEAMABLE_IGNORE_MONGO_MOCKS
-        </DefineConstants>
+    </PropertyGroup>
 
+    <PropertyGroup>
+        <DefineConstants>$(DefineConstants);BEAMABLE_IGNORE_MONGO_MOCKS</DefineConstants>
     </PropertyGroup>
 
     <ItemGroup>
@@ -24,6 +24,10 @@
 
         <Reference Include="MongoDB.Driver">
             <HintPath>..\Editor\ThirdParty\Mongo\MongoDB.Driver.dll</HintPath>
+        </Reference>
+
+        <Reference Include="MongoDB.Driver.Core">
+            <HintPath>..\Editor\ThirdParty\Mongo\MongoDB.Driver.Core.dll</HintPath>
         </Reference>
 
         <Reference Include="MongoDB.Bson">

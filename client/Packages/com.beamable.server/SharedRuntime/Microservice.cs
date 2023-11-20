@@ -136,7 +136,7 @@ namespace Beamable.Server
 			// require admin privs.
 			if (requireAdminUser)
 			{
-				Context.CheckAdmin();
+				Context.AssertAdmin();
 			}
 
 			var newCtx = new RequestContext(

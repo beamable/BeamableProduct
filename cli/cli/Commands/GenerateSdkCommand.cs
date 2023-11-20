@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using Serilog;
 using System.CommandLine;
 
@@ -6,8 +7,7 @@ namespace cli;
 public class GenerateSdkCommandArgs : CommandArgs
 {
 	public bool Concat;
-	public string? OutputPath;
-
+	[CanBeNull] public string OutputPath;
 	public string Filter;
 	public string Engine;
 	public GenerateSdkConflictResolutionStrategy ResolutionStrategy;
@@ -20,7 +20,7 @@ public enum GenerateSdkConflictResolutionStrategy
 	RenameUncommonConflicts
 }
 
-public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>
+public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>, IStandaloneCommand
 {
 	private SwaggerService _swagger;
 
@@ -42,7 +42,7 @@ public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>
 			(args, val) => args.Filter = val);
 
 		AddOption(new Option<string>("--engine", () => "",
-				"Filter which engine code we should generate (unity | unreal). An empty string matches everything"),
+				$"Filter which engine code we should generate ({SwaggerService.TARGET_ENGINE_NAME_UNITY} | {SwaggerService.TARGET_ENGINE_NAME_UNREAL}). An empty string matches everything"),
 			(args, val) => args.Engine = val);
 
 		AddOption(new Option<GenerateSdkConflictResolutionStrategy>("--conflict-strategy", () => GenerateSdkConflictResolutionStrategy.None,

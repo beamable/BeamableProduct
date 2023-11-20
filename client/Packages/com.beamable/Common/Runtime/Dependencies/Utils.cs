@@ -18,12 +18,30 @@ namespace Beamable.Common.Dependencies
 	}
 
 	/// <summary>
+	/// <inheritdoc cref="IBeamableDisposable"/>
+	/// </summary>
+	public interface IBeamableDisposableOrder : IBeamableDisposable
+	{
+		/// <summary>
+		/// By default, all services are disposed in one group, and therefor, cannot have dependencies on eachother
+		/// when disposing.
+		/// However, if the service is critical and other services require it for shutdown, then the <see cref="DisposeOrder"/>
+		/// flag can be used. The higher the number, the more important the service is, and the later in the dispose cycle it will occur.
+		/// </summary>
+		int DisposeOrder { get; }
+	}
+
+	/// <summary>
 	/// Describes how to create a service instance
 	/// </summary>
 	public class ServiceDescriptor
 	{
 		public Type Interface, Implementation;
 		public Func<IDependencyProvider, object> Factory;
-	}
 
+		public ServiceDescriptor Clone()
+		{
+			return new ServiceDescriptor { Interface = Interface, Implementation = Implementation, Factory = Factory };
+		}
+	}
 }

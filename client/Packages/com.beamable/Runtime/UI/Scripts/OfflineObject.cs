@@ -9,16 +9,17 @@ public class OfflineObject : MonoBehaviour
 {
 	public UIBehaviour Component;
 
-	private IConnectivityService Connectivity => _beamContext.ServiceProvider.GetService<IConnectivityService>();
+	private IConnectivityService _connectivity;
 	private BeamContext _beamContext;
 
 	private async void Start()
 	{
 		_beamContext = BeamContext.InParent(this);
 		await _beamContext.OnReady;
-		Connectivity.OnConnectivityChanged += ToggleOfflineMode;
+		_connectivity = _beamContext.ServiceProvider.GetService<IConnectivityService>();
+		_connectivity.OnConnectivityChanged += ToggleOfflineMode;
 		ObtainSupportedComponent();
-		if (!Connectivity.HasConnectivity)
+		if (!_connectivity.HasConnectivity)
 		{
 			ToggleOfflineMode(false);
 		}
@@ -60,7 +61,7 @@ public class OfflineObject : MonoBehaviour
 	{
 		if (_beamContext != null && !_beamContext.IsStopped)
 		{
-			Connectivity.OnConnectivityChanged -= ToggleOfflineMode;
+			_connectivity.OnConnectivityChanged -= ToggleOfflineMode;
 		}
 
 		Destroy(this);

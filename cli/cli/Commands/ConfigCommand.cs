@@ -9,7 +9,7 @@ public class ConfigCommandArgs : CommandArgs
 
 public class ConfigCommand : AppCommand<ConfigCommandArgs>, IResultSteam<DefaultStreamResultChannel, ConfigCommandResult>
 {
-	public ConfigCommand() : base("config", "List the current configuration")
+	public ConfigCommand() : base("config", "List the current beamable configuration")
 	{
 	}
 

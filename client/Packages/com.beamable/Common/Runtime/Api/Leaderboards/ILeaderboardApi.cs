@@ -51,105 +51,177 @@ namespace Beamable.Common.Api.Leaderboards
 		Promise<RankEntry> GetUser(string boardId, long gamerTag);
 
 		/// <summary>
-		/// Get a view with ranking of a specific leaderboard
+		/// Get a view with rankings from a specific leaderboard.
 		/// </summary>
-		/// <param name="leaderBoard"></param>
-		/// <param name="from"></param>
-		/// <param name="max"></param>
-		/// <param name="focus"></param>
-		/// <param name="outlier"></param>
-		/// <returns></returns>
+		/// <param name="leaderBoard">
+		/// The leaderboard from which to gather entries.
+		/// </param>
+		/// <param name="from">
+		/// The Starting Rank you wish to have in the <see cref="LeaderBoardView"/>.
+		/// Is ignore when <paramref name="focus"/> is given.
+		/// </param>
+		/// <param name="max">
+		/// Number of ranks <paramref name="from"/>. Moves towards the lowest rank; as in, if <paramref name="from"/> is 20 and <paramref name="max"/> is 10, you'll get ranks 20~30.
+		/// </param>
+		/// <param name="focus">
+		/// A user's GamerTag that'll be used as the middle <see cref="RankEntry"/> of the resulting <see cref="LeaderBoardView"/>.
+		/// Will take <paramref name="max"/>/2 from above the focus user and <paramref name="max"/>/2 from below the focus user.
+		/// It is inclusive. As in, if focus is at rank 50 and you pass in max as 10, you'll get ranks 40~61.
+		/// If there are not enough entries in the leaderboard either above or below you, the corresponding '<paramref name="max"/>/2' will be truncated. 
+		/// </param>
+		/// <param name="outlier">
+		/// A GamerTag whose rank entry is guaranteed to be included. Will be stored in <see cref="LeaderBoardView.rankgt"/>.
+		/// </param>
 		Promise<LeaderBoardView> GetBoard(LeaderboardRef leaderBoard, int from, int max, long? focus = null, long? outlier = null);
 
 		/// <summary>
 		/// Get a view with ranking of a specific leaderboard
 		/// </summary>
-		/// <param name="boardId"></param>
-		/// <param name="from"></param>
-		/// <param name="max"></param>
-		/// <param name="focus"></param>
-		/// <param name="outlier"></param>
-		/// <returns></returns>
+		/// <param name="boardId">
+		/// The id for the leaderboard from which to gather entries.
+		/// </param>
+		/// <param name="from">
+		/// The Starting Rank you wish to have in the <see cref="LeaderBoardView"/>.
+		/// Is ignore when <paramref name="focus"/> is given.
+		/// </param>
+		/// <param name="max">
+		/// Number of ranks <paramref name="from"/>. Moves towards the lowest rank; as in, if <paramref name="from"/> is 20 and <paramref name="max"/> is 10, you'll get ranks 20~30.
+		/// </param>
+		/// <param name="focus">
+		/// A user's GamerTag that'll be used as the middle <see cref="RankEntry"/> of the resulting <see cref="LeaderBoardView"/>.
+		/// Will take <paramref name="max"/>/2 from above the focus user and <paramref name="max"/>/2 from below the focus user.
+		/// It is inclusive. As in, if focus is at rank 50 and you pass in max as 10, you'll get ranks 40~61.
+		/// If there are not enough entries in the leaderboard either above or below you, the corresponding '<paramref name="max"/>/2' will be truncated. 
+		/// </param>
+		/// <param name="outlier">
+		/// A GamerTag whose rank entry is guaranteed to be included. Will be stored in <see cref="LeaderBoardView.rankgt"/>.
+		/// </param>
 		Promise<LeaderBoardView> GetBoard(string boardId, int from, int max, long? focus = null, long? outlier = null);
 
 		/// <summary>
-		/// For partitioned or cohorted leaderboards
+		/// For partitioned or cohorted leaderboards.
 		/// Get a view with rankings of child leaderboard the current player is assigned to
 		/// </summary>
-		/// <param name="leaderBoard"></param>
-		/// <param name="from"></param>
-		/// <param name="max"></param>
-		/// <param name="focus"></param>
-		/// <param name="outlier"></param>
-		/// <returns></returns>
+		/// <param name="leaderBoard">
+		/// The leaderboard from which to gather entries.  
+		/// </param>
+		/// <param name="from">
+		/// The Starting Rank you wish to have in the <see cref="LeaderBoardView"/>.
+		/// Is ignore when <paramref name="focus"/> is given.
+		/// </param>
+		/// <param name="max">
+		/// Number of ranks <paramref name="from"/>. Moves towards the lowest rank; as in, if <paramref name="from"/> is 20 and <paramref name="max"/> is 10, you'll get ranks 20~30.
+		/// </param>
+		/// <param name="focus">
+		/// A user's GamerTag that'll be used as the middle <see cref="RankEntry"/> of the resulting <see cref="LeaderBoardView"/>.
+		/// Will take <paramref name="max"/>/2 from above the focus user and <paramref name="max"/>/2 from below the focus user.
+		/// It is inclusive. As in, if focus is at rank 50 and you pass in max as 10, you'll get ranks 40~61.
+		/// If there are not enough entries in the leaderboard either above or below you, the corresponding '<paramref name="max"/>/2' will be truncated. 
+		/// </param>
+		/// <param name="outlier">
+		/// A GamerTag whose rank entry is guaranteed to be included. Will be stored in <see cref="LeaderBoardView.rankgt"/>.
+		/// </param>
+		/// <returns>
+		/// A leaderboard view containing only the entries in the partition of the requesting user.
+		/// </returns>
 		Promise<LeaderBoardView> GetAssignedBoard(LeaderboardRef leaderBoard, int from, int max, long? focus = null, long? outlier = null);
 
 		/// <summary>
 		/// For partitioned or cohorted leaderboards
 		/// Get a view with rankings of child leaderboard the current player is assigned to
 		/// </summary>
-		/// <param name="boardId"></param>
-		/// <param name="from"></param>
-		/// <param name="max"></param>
-		/// <param name="focus"></param>
-		/// <param name="outlier"></param>
-		/// <returns></returns>
+		/// <param name="boardId">
+		/// The id for the leaderboard from which to gather entries.
+		/// </param>
+		/// <param name="from">
+		/// The Starting Rank you wish to have in the <see cref="LeaderBoardView"/>.
+		/// Is ignore when <paramref name="focus"/> is given.
+		/// </param>
+		/// <param name="max">
+		/// Number of ranks <paramref name="from"/>. Moves towards the lowest rank; as in, if <paramref name="from"/> is 20 and <paramref name="max"/> is 10, you'll get ranks 20~30.
+		/// </param>
+		/// <param name="focus">
+		/// A user's GamerTag that'll be used as the middle <see cref="RankEntry"/> of the resulting <see cref="LeaderBoardView"/>.
+		/// Will take <paramref name="max"/>/2 from above the focus user and <paramref name="max"/>/2 from below the focus user.
+		/// It is inclusive. As in, if focus is at rank 50 and you pass in max as 10, you'll get ranks 40~61.
+		/// If there are not enough entries in the leaderboard either above or below you, the corresponding '<paramref name="max"/>/2' will be truncated. 
+		/// </param>
+		/// <param name="outlier">
+		/// A GamerTag whose rank entry is guaranteed to be included. Will be stored in <see cref="LeaderBoardView.rankgt"/>.
+		/// </param>
+		/// <returns>
+		/// A leaderboard view containing only the entries in the partition of the requesting user.
+		/// </returns>
 		Promise<LeaderBoardView> GetAssignedBoard(string boardId, int from, int max, long? focus = null, long? outlier = null);
 
 		/// <summary>
-		/// Get a specific list of rankings by player id/gamertag from a leaderboard
+		/// Get a specific list of rankings by player id from a leaderboard
 		/// </summary>
-		/// <param name="leaderBoard"></param>
-		/// <param name="ids"></param>
-		/// <returns></returns>
+		/// <param name="leaderBoard">
+		/// The leaderboard from which to gather entries.  
+		/// </param>
+		/// <param name="ids">The list of GamerTags whose <see cref="RankEntry"/> we should get.</param>
 		Promise<LeaderBoardView> GetRanks(LeaderboardRef leaderBoard, List<long> ids);
 
 		/// <summary>
-		/// Get a specific list of rankings by player id/gamertag from a leaderboard
+		/// Get a specific list of rankings by player id from a leaderboard
 		/// </summary>
-		/// <param name="boardId"></param>
-		/// <param name="ids"></param>
-		/// <returns></returns>
+		/// <param name="boardId">
+		/// The leaderboard from which to gather entries.  
+		/// </param>
+		/// <param name="ids">The list of GamerTags whose <see cref="RankEntry"/> we should get.</param>
 		Promise<LeaderBoardView> GetRanks(string boardId, List<long> ids);
 
 		/// <summary>
 		/// Replace the score of the current player
 		/// Cohorted and Partitioned leaderboards will automatically update the correct child leaderboard
 		/// </summary>
-		/// <param name="leaderBoard"></param>
-		/// <param name="score"></param>
-		/// <param name="stats"></param>
-		/// <returns></returns>
+		/// <param name="stats">
+		/// Arbitrary key/value pair associated with the current score entry of the requesting user.
+		///
+		/// Can be used to cache alias/avatar and other useful information to reduce API calls required to get the leaderboard data.
+		/// Can also be used store properties that inform how the score gets updated. Ie: rate of growth in idle games.
+		/// A special key exists: "_finalScore". Whatever is in this value, will be used as the score when the leaderboard gets frozen (<see cref="FreezeLeaderboard"/>).
+		/// </param>
 		Promise<EmptyResponse> SetScore(LeaderboardRef leaderBoard, double score, IDictionary<string, object> stats = null);
 
 		/// <summary>
 		/// Replace the score of the current player
 		/// Cohorted and Partitioned leaderboards will automatically update the correct child leaderboard
 		/// </summary>
-		/// <param name="boardId"></param>
-		/// <param name="score"></param>
-		/// <param name="stats"></param>
-		/// <returns></returns>
+		/// <param name="stats">
+		/// Arbitrary key/value pair associated with the current score entry of the requesting user.
+		///
+		/// Can be used to cache alias/avatar and other useful information to reduce API calls required to get the leaderboard data.
+		/// Can also be used store properties that inform how the score gets updated. Ie: rate of growth in idle games.
+		/// A special key exists: "_finalScore". Whatever is in this value, will be used as the score when the leaderboard gets frozen (<see cref="FreezeLeaderboard"/>).
+		/// </param>
 		Promise<EmptyResponse> SetScore(string boardId, double score, IDictionary<string, object> stats = null);
 
 		/// <summary>
 		/// Increment (add to) the score of the current player
 		/// Cohorted and Partitioned leaderboards will automatically update the correct child leaderboard
 		/// </summary>
-		/// <param name="leaderBoard"></param>
-		/// <param name="score"></param>
-		/// <param name="stats"></param>
-		/// <returns></returns>
+		/// <param name="stats">
+		/// Arbitrary key/value pair associated with the current score entry of the requesting user.
+		///
+		/// Can be used to cache alias/avatar and other useful information to reduce API calls required to get the leaderboard data.
+		/// Can also be used store properties that inform how the score gets updated. Ie: rate of growth in idle games.
+		/// A special key exists: "_finalScore". Whatever is in this value, will be used as the score when the leaderboard gets frozen (<see cref="FreezeLeaderboard"/>).
+		/// </param>
 		Promise<EmptyResponse> IncrementScore(LeaderboardRef leaderBoard, double score, IDictionary<string, object> stats = null);
 
 		/// <summary>
 		/// Increment (add to) the score of the current player
 		/// Cohorted and Partitioned leaderboards will automatically update the correct child leaderboard
 		/// </summary>
-		/// <param name="boardId"></param>
-		/// <param name="score"></param>
-		/// <param name="stats"></param>
-		/// <returns></returns>
+		/// <param name="stats">
+		/// Arbitrary key/value pair associated with the current score entry of the requesting user.
+		///
+		/// Can be used to cache alias/avatar and other useful information to reduce API calls required to get the leaderboard data.
+		/// Can also be used store properties that inform how the score gets updated. Ie: rate of growth in idle games.
+		/// A special key exists: "_finalScore". Whatever is in this value, will be used as the score when the leaderboard gets frozen (<see cref="FreezeLeaderboard"/>).
+		/// </param>
 		Promise<EmptyResponse> IncrementScore(string boardId, double score, IDictionary<string, object> stats = null);
 
 		/// <summary>
@@ -168,9 +240,9 @@ namespace Beamable.Common.Api.Leaderboards
 
 		/// <summary>
 		/// Freeze given leaderboard which in effect will block submitting new scores.
+		/// Don't use this outside of Debug/Admin client-side code unless you are aware of the implication:
+		/// A client would be able to freeze the leaderboard for all other players.
 		/// </summary>
-		/// <param name="boardId"></param>
-		/// <returns></returns>
 		Promise<EmptyResponse> FreezeLeaderboard(string boardId);
 	}
 
@@ -178,7 +250,7 @@ namespace Beamable.Common.Api.Leaderboards
 	public class RankEntry
 	{
 		/// <summary>
-		/// The gamertag of the player for this entry
+		/// The player id of the player for this entry
 		/// </summary>
 		public long gt;
 
@@ -307,6 +379,11 @@ namespace Beamable.Common.Api.Leaderboards
 			}
 			set => _rankgt = value;
 		}
+
+		/// <summary>
+		/// Empty if no outlier was given to <see cref="ILeaderboardApi.GetBoard(Beamable.Common.Leaderboards.LeaderboardRef,int,int,System.Nullable{long},System.Nullable{long})"/>.
+		/// Otherwise, this is the rank entry for the outlier.
+		/// </summary>
 		private RankEntry _rankgt;
 
 		/// <summary>
@@ -316,9 +393,9 @@ namespace Beamable.Common.Api.Leaderboards
 		public List<RankEntry> rankings;
 
 		/// <summary>
-		/// Convert the <see cref="rankings"/> list into a dictionary from gamertag to <see cref="RankEntry"/>.
+		/// Convert the <see cref="rankings"/> list into a dictionary from player id to <see cref="RankEntry"/>.
 		/// </summary>
-		/// <returns>A dictionary where each key is a gamertag, pointing the <see cref="RankEntry"/> for that player.</returns>
+		/// <returns>A dictionary where each key is a player id, pointing the <see cref="RankEntry"/> for that player.</returns>
 		public Dictionary<long, RankEntry> ToDictionary()
 		{
 			Dictionary<long, RankEntry> result = new Dictionary<long, RankEntry>();
@@ -353,7 +430,6 @@ namespace Beamable.Common.Api.Leaderboards
 	{
 		public string boardId;
 	}
-
 
 	[System.Serializable]
 	public class ListLeaderboardResult

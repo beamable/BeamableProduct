@@ -59,7 +59,7 @@ namespace UnityEngine {
         }
 
         public static float Sqrt(float a) {
-            return MathF.Sqrt(a);
+            return (float)Math.Sqrt(a);
         }
 
         public static float Clamp01(float a) {
@@ -92,8 +92,12 @@ namespace UnityEngine {
             return a == b ? 0f : Clamp01((t - a) / (b - a));
         }
 
-        public static float Acos(float a) => MathF.Acos(a);
+        public static float Acos(float a) => (float)Math.Acos(a);
 
-        public static float Abs(float a) => MathF.Abs(a);
+        public static float Abs(float a) => Math.Abs(a);
+
+        public static float Sin(float a) => (float)Math.Sin(a);
+
+        public static float Atan2(float a, float b) => (float)Math.Atan2(a, b);
     }
 }

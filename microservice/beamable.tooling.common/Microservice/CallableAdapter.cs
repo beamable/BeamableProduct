@@ -7,13 +7,26 @@ using UnityEngine;
 
 namespace Beamable.Server;
 
+/// <summary>
+/// Represents a generator that scans a type for service methods and generates callable methods.
+/// </summary>
 public interface ICallableGenerator
 {
+	/// <summary>
+	/// Scans a type for service methods and generates callable methods.
+	/// </summary>
+	/// <param name="serviceAttribute">The MicroserviceAttribute associated with the microservice.</param>
+	/// <param name="provider">The service method provider to scan for methods.</param>
+	/// <returns>A list of generated callable service methods.</returns>
 	List<ServiceMethod> ScanType(MicroserviceAttribute serviceAttribute, ServiceMethodProvider provider);
 }
 
+/// <summary>
+/// Generates callable methods for federated inventory functionality.
+/// </summary>
 public class FederatedInventoryCallbackGenerator : ICallableGenerator
 {
+	/// <inheritdoc />
 	public List<ServiceMethod> ScanType(MicroserviceAttribute serviceAttribute, ServiceMethodProvider provider)
 	{
 		var type = provider.instanceType;
@@ -59,8 +72,10 @@ public class FederatedInventoryCallbackGenerator : ICallableGenerator
 					tag,
 					false,
 					new HashSet<string>(new []{"*"}),
-					method);
+					method,
+					true);
 
+				Log.Debug("Found Federated method. FederatedPath={FederatedPath}, MethodName={MethodName}", path, serviceMethod.Method.Name);
 				output.Add(serviceMethod);
 			}
 		}		
@@ -69,8 +84,12 @@ public class FederatedInventoryCallbackGenerator : ICallableGenerator
 	}
 }
 
+/// <summary>
+/// Generates callable methods for federated login functionality.
+/// </summary>
 public class FederatedLoginCallableGenerator : ICallableGenerator
 {
+	/// <inheritdoc />
 	public List<ServiceMethod> ScanType(MicroserviceAttribute serviceAttribute, ServiceMethodProvider provider)
 	{
 		var type = provider.instanceType;
@@ -112,8 +131,10 @@ public class FederatedLoginCallableGenerator : ICallableGenerator
 				tag,
 				false,
 				new HashSet<string>(new []{"*"}),
-				method);
-
+				method,
+				true);
+			
+			Log.Debug("Found Federated method. FederatedPath={FederatedPath}, MethodName={MethodName}", path, serviceMethod.Method.Name);
 			output.Add(serviceMethod);
 		}		
 		

@@ -118,7 +118,6 @@ namespace Beamable.Console
 
 		private void Update()
 		{
-			var _ = BeamContext.ForPlayer(_playerCode).OnReady;
 			if (!_isInitialized) return;
 
 			if (_showNextTick)
@@ -430,6 +429,7 @@ namespace Beamable.Console
 		{
 			_isActive = true;
 			canvas.enabled = true;
+			txtInput.gameObject.SetActive(true);
 			txtInput.text = "";
 			txtInput.Select();
 			txtInput.ActivateInputField();

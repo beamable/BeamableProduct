@@ -636,11 +636,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void Enum()
 		{
-			var c = new EnumContent
-			{
-				Id = "test.nothing",
-				e = TestEnum.B
-			};
+			var c = new EnumContent { Id = "test.nothing", e = TestEnum.B };
 			var expected = @"{
    ""id"": ""test.nothing"",
    ""version"": """",

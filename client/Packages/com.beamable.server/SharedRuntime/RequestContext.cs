@@ -43,7 +43,7 @@ namespace Beamable.Server
 		public int Status { get; }
 
 		/// <summary>
-		/// The gamertag of the user that initiated this request. Be aware that this number can be 0 if there was no authorization header on the original request.
+		/// The player id of the user that initiated this request. Be aware that this number can be 0 if there was no authorization header on the original request.
 		/// </summary>
 		public long UserId
 		{
@@ -87,11 +87,27 @@ namespace Beamable.Server
 			return missingCount == 0;
 		}
 
+		[Obsolete("Use " + nameof(AssertAdmin) + " instead")]
 		public void CheckAdmin()
 		{
 			if (!HasScopes("*"))
 				throw new MissingScopesException(Scopes);
 		}
+
+		/// <summary>
+		/// Throws an exception in case the user does not have the admin scope.
+		/// </summary>
+		/// <exception cref="MissingScopesException"></exception>
+		public void AssertAdmin()
+		{
+			if (!IsAdmin)
+				throw new MissingScopesException(Scopes);
+		}
+
+		/// <summary>
+		/// Returns true if the user is the admin, false otherwise.
+		/// </summary>
+		public bool IsAdmin => HasScopes("*");
 
 		/// <summary>
 		/// If the request is cancelled or times out, calling this method will trigger an exception.

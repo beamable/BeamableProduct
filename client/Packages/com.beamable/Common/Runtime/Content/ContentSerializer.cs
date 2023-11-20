@@ -107,7 +107,7 @@ namespace Beamable.Common.Content
 
 				/* PRIMITIVE TYPES... */
 				case Enum e:
-					return Json.Serialize(arg, new StringBuilder());
+					return Json.Serialize(arg.ToString(), new StringBuilder());
 				case bool b:
 				case long l:
 				case string s:
@@ -294,8 +294,10 @@ namespace Beamable.Common.Content
 					return contentRef;
 
 				/* PRIMITIVES TYPES */
-				case string enumValue when typeof(Enum).IsAssignableFrom(type):
-					return Enum.Parse(type, enumValue);
+				case string stringEnumValue when typeof(Enum).IsAssignableFrom(type):
+					return Enum.Parse(type, stringEnumValue);
+				case long longEnumValue when typeof(Enum).IsAssignableFrom(type):
+					return Enum.ToObject(type, (int)longEnumValue);
 				case string _:
 					return preParsedValue;
 				case float _:
@@ -731,7 +733,7 @@ namespace Beamable.Common.Content
 						{
 							if (!disableExceptions)
 							{
-								Debug.LogError($"Failed to deserialize field. type=[{type.Name}] field-name=[{field.SerializedName}] field-type=[{field.FieldType}] data=[{dataValue}]");
+								Debug.LogError($"Failed to deserialize field. type=[{type.Name}] field-name=[{field.SerializedName}] field-type=[{field.FieldType}] data=[{dataValue}] exception-type=[{e?.GetType().Name}] exception-message=[{e?.Message}] exception-stack=[{e?.StackTrace}]");
 								throw;
 							}
 							else

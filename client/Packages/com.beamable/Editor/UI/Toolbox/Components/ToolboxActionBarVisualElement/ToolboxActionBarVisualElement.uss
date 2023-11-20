@@ -50,13 +50,6 @@
     align-self: center;
 }
 
-#skinningIcon{
-    top: 4px;
-    width: 12px;
-    height: 12px;
-    align-self: center;
-}
-
 #globalConfigIcon{
     top: 4px;
     width: 12px;

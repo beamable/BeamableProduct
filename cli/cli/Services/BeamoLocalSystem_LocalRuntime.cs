@@ -5,6 +5,8 @@
 
 using Beamable.Common;
 using Docker.DotNet.Models;
+using Serilog;
+using System.Text;
 
 namespace cli.Services;
 
@@ -42,7 +44,7 @@ public partial class BeamoLocalSystem
 						throw new ArgumentOutOfRangeException();
 				}
 
-				var inspectResponse = await _client.Images.InspectImageAsync(imageToInspect);
+				var inspectResponse = await _client.Images.InspectImageAsync(imageToInspect.ToLower());
 				sd.ImageId = inspectResponse.ID;
 			}
 			catch
@@ -97,6 +99,7 @@ public partial class BeamoLocalSystem
 				existingServiceInstances.Add(new BeamoServiceInstance
 				{
 					BeamoId = beamoId,
+					ImageId = dockerContainer.ImageID,
 					ContainerId = containerId,
 					ContainerName = containerName,
 					ActivePortBindings = ports,
@@ -119,7 +122,16 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// Kick off a long running task that receives updates from the docker engine.
 	/// </summary>
-	public async Task StartListeningToDocker(Action<string, string> onServiceContainerStateChange = null)
+	public Task StartListeningToDocker(Action<string, string> onServiceContainerStateChange = null)
+	{
+		return StartListeningToDockerRaw((beamoId, action, _) =>
+			onServiceContainerStateChange?.Invoke(beamoId, action));
+	}
+
+	/// <summary>
+	/// Kick off a long running task that receives updates from the docker engine.
+	/// </summary>
+	public async Task StartListeningToDockerRaw(Action<string, string, Message> onServiceContainerStateChange = null)
 	{
 		// Cancel the thread if it's already running.
 		if (_dockerListeningThread != null && !_dockerListeningThread.IsCompleted)
@@ -136,6 +148,7 @@ public partial class BeamoLocalSystem
 		{
 			var messageType = message.Type;
 			var messageAction = message.Action;
+			Log.Verbose($"Docker Message type=[{messageType}] action=[{messageAction}] id=[{message.ID}]");
 
 			switch (messageType, messageAction)
 			{
@@ -156,6 +169,7 @@ public partial class BeamoLocalSystem
 
 						var newServiceInstance = new BeamoServiceInstance()
 						{
+							ImageId = containerData.Image,
 							BeamoId = beamoId,
 							ContainerId = message.ID,
 							ContainerName = containerName,
@@ -163,7 +177,7 @@ public partial class BeamoLocalSystem
 							IsRunning = false
 						};
 						BeamoRuntime.ExistingLocalServiceInstances.Add(newServiceInstance);
-						onServiceContainerStateChange?.Invoke(beamoId, messageAction);
+						onServiceContainerStateChange?.Invoke(beamoId, messageAction, message);
 					}
 
 					break;
@@ -176,7 +190,7 @@ public partial class BeamoLocalSystem
 						var wasDestroyed = si.ContainerId == message.ID;
 						if (wasDestroyed)
 						{
-							onServiceContainerStateChange?.Invoke(si.BeamoId, messageAction);
+							onServiceContainerStateChange?.Invoke(si.BeamoId, messageAction, message);
 						}
 						return wasDestroyed;
 					});
@@ -189,7 +203,7 @@ public partial class BeamoLocalSystem
 					if (beamoServiceInstance != null)
 					{
 						beamoServiceInstance.IsRunning = true;
-						onServiceContainerStateChange?.Invoke(beamoServiceInstance.BeamoId, messageAction);
+						onServiceContainerStateChange?.Invoke(beamoServiceInstance.BeamoId, messageAction, message);
 					}
 					// TODO: Detect when people containers are running but their dependencies are not. Output a list of warnings that people can then print out.
 					break;
@@ -201,7 +215,7 @@ public partial class BeamoLocalSystem
 					if (beamoServiceInstance != null)
 					{
 						beamoServiceInstance.IsRunning = false;
-						onServiceContainerStateChange?.Invoke(beamoServiceInstance.BeamoId, messageAction);
+						onServiceContainerStateChange?.Invoke(beamoServiceInstance.BeamoId, messageAction, message);
 					}
 					// TODO: Detect when people containers are running but their dependencies are not. Output a list of warnings that people can then print out.
 					break;
@@ -257,7 +271,7 @@ public partial class BeamoLocalSystem
 	// }
 
 	/// <summary>
-	/// <inheritdoc cref="VerifyCanBeBuiltLocally(cli.BeamoServiceDefinition)"/>.
+	/// <inheritdoc cref="VerifyCanBeBuiltLocally(BeamoServiceDefinition)"/>.
 	/// </summary>
 	private bool VerifyCanBeBuiltLocally(BeamoLocalManifest manifest, BeamoServiceDefinition toCheck)
 	{
@@ -272,19 +286,31 @@ public partial class BeamoLocalSystem
 	}
 
 	/// <summary>
-	/// Using the given <paramref name="localManifest"/>, builds and deploys all services with the given <paramref name="deployBeamoIds"/> to the local docker engine.
-	/// If <paramref name="deployBeamoIds"/> is null, will deploy ALL services. Also, this does check for cyclical dependencies before running the deployment.
+	/// Check which service definitions can be deployed, those that are enabled and still exists.
 	/// </summary>
-	public async Task DeployToLocal(BeamoLocalManifest localManifest, string[] deployBeamoIds = null, Action<string, float> buildPullImageProgress = null,
-		Action<string> onServiceDeployCompleted = null)
+	/// <param name="localManifest">The current local manifest with both http and storage services definitions</param>
+	/// <param name="beamoIds">A list of services names that are going to be checked, if null all the services defined in the local manifest
+	/// will be checked instead.</param>
+	/// <returns></returns>
+	public List<BeamoServiceDefinition> GetServiceDefinitionsThatCanBeDeployed(BeamoLocalManifest localManifest, string[] beamoIds = null)
 	{
-		deployBeamoIds ??= localManifest.ServiceDefinitions.Select(c => c.BeamoId).ToArray();
+		beamoIds ??= localManifest.ServiceDefinitions.Select(c => c.BeamoId).ToArray();
 
-		// Get all services that must be deployed (and that are not just known remotely --- as in, have their local protocols correctly configured).
-		var serviceDefinitionsToDeploy = deployBeamoIds
+		return beamoIds
 			.Select(reqId => localManifest.ServiceDefinitions.First(sd => sd.BeamoId == reqId))
 			.Where(VerifyCanBeBuiltLocally)
 			.ToList();
+	}
+
+	/// <summary>
+	/// Using the given <paramref name="localManifest"/>, builds and deploys all services with the given <paramref name="deployBeamoIds"/> to the local docker engine.
+	/// If <paramref name="deployBeamoIds"/> is null, will deploy ALL services. Also, this does check for cyclical dependencies before running the deployment.
+	/// </summary>
+	public async Task DeployToLocal(BeamoLocalManifest localManifest, string[] deployBeamoIds = null, bool forceAmdCpuArchitecture = false, Action<string, float> buildPullImageProgress = null,
+		Action<string> onServiceDeployCompleted = null)
+	{
+		// Get all services that must be deployed (and that are not just known remotely --- as in, have their local protocols correctly configured).
+		var serviceDefinitionsToDeploy = GetServiceDefinitionsThatCanBeDeployed(localManifest, deployBeamoIds);
 
 		// Guarantee they each don't have cyclical dependencies.
 		{
@@ -302,7 +328,7 @@ public partial class BeamoLocalSystem
 
 		// Builds all images for all services that are defined and can be built locally.
 		var prepareImages = new List<Task>(localManifest.ServiceDefinitions.Where(VerifyCanBeBuiltLocally)
-			.Select(c => PrepareBeamoServiceImage(c, buildPullImageProgress)));
+			.Select(c => PrepareBeamoServiceImage(c, buildPullImageProgress, forceAmdCpuArchitecture)));
 		await Task.WhenAll(prepareImages);
 
 
@@ -319,7 +345,9 @@ public partial class BeamoLocalSystem
 			if (builtLayer.TryGetValue(BeamoProtocolType.EmbeddedMongoDb, out var microStorageContainers))
 				runContainerTasks.AddRange(microStorageContainers.Select(async sd =>
 				{
+					Log.Information("Started deploying service: " + sd.BeamoId);
 					await RunLocalEmbeddedMongoDb(sd, localManifest.EmbeddedMongoDbLocalProtocols[sd.BeamoId]);
+					Log.Information("Finished deploying service: " + sd.BeamoId);
 					onServiceDeployCompleted?.Invoke(sd.BeamoId);
 				}));
 
@@ -407,6 +435,32 @@ public partial class BeamoLocalSystem
 		// Build them into a list of indices into the unsorted list of containers (the parameter list)
 		builtLayers = layers.ToArray();
 	}
+
+	public async IAsyncEnumerable<string> TailLogs(string containerId)
+	{
+		// _client.Containers.GetContainerLogsAsync()
+#pragma warning disable CS0618
+		var stream = await _client.Containers.GetContainerLogsAsync(containerId, new ContainerLogsParameters
+		{
+			ShowStdout = true,
+			ShowStderr = true,
+			Follow = true,
+		});
+#pragma warning restore CS0618
+
+		// stream.
+		if (stream == null)
+		{
+			yield break;
+		}
+
+		using var reader = new StreamReader(stream, Encoding.UTF8);
+		while (!reader.EndOfStream)
+		{
+			var line = await reader.ReadLineAsync();
+			yield return line?.Substring(8); // substring 8 because of a strange encoding issue in docker dotnet.
+		}
+	}
 }
 
 public class BeamoLocalRuntime
@@ -419,6 +473,7 @@ public class BeamoServiceInstance : IEquatable<BeamoServiceInstance>
 	public string BeamoId;
 	public string ContainerId;
 	public string ContainerName;
+	public string ImageId;
 	public List<DockerPortBinding> ActivePortBindings;
 
 	public bool IsRunning;

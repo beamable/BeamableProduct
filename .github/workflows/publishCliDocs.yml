@@ -1,0 +1,41 @@
+name: Publish CLI Docs
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        type: string
+        description: Commit hash to deploy
+        default: main
+
+jobs:
+  generate:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    concurrency:
+      group: publish-cli
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v3
+        with: 
+          ref: ${{ github.event.inputs.commit }}
+      - name: Setup .NET Core SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: |
+            6.0.x
+            7.0.x
+      - name: Build CLI 
+        run: |
+          dotnet build ./cli/cli 
+      - name: Build and Publish Docs
+        run: |
+          dotnet run --framework net6.0 --project ./cli/cli -- docs --readme-key ${{secrets.README_API_KEY}} --guide-slug cli-guides --command-slug cli-command-reference
+      - name: Post to a Slack channel
+        id: slack
+        uses: slackapi/slack-github-action@v1.21.0
+        with:
+          channel-id: C01300W32CS
+          slack-message: "CLI Docs have been published! commit=[${{ github.event.inputs.commit }}]"
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

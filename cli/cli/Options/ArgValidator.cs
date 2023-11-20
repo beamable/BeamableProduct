@@ -12,9 +12,7 @@ namespace cli
 
 		public T GetValue(OptionResult parse)
 		{
-			if (parse == null) return default;
-			
-			var strValue = parse.GetValueOrDefault<string>();
+			var strValue = parse == null ? string.Empty : parse.GetValueOrDefault<string>();
 			try
 			{
 				return _factory(strValue);

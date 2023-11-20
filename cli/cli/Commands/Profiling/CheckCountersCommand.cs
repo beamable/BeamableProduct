@@ -11,7 +11,7 @@ public class CheckCountersCommandArgs : CommandArgs
 	public double memMaxLimitMb;
 }
 
-public class CheckCountersCommand : AppCommand<CheckCountersCommandArgs>
+public class CheckCountersCommand : AppCommand<CheckCountersCommandArgs>, IStandaloneCommand
 {
 	public CheckCountersCommand() : base("check-counters", "Read the results of a dotnet-counters json file and determine if there are errors")
 	{
@@ -71,7 +71,7 @@ public class CheckCountersCommand : AppCommand<CheckCountersCommandArgs>
 
 		if (warnings.Count > 0)
 		{
-			throw new CliException(string.Join(",", warnings.Select(w => w.ToString())), true, true);
+			throw new CliException(string.Join(",", warnings.Select(w => w.ToString())));
 		}
 
 		BeamableLogger.Log("No issues found.");

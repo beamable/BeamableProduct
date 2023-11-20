@@ -2,7 +2,753 @@ namespace tests;
 
 public static class OpenApiFixtures
 {
-
+	public const string SessionBasic = @"{
+    ""info"": {
+        ""title"": ""session basic"",
+        ""version"": ""1.0"",
+        ""contact"": {
+            ""name"": ""Beamable Support"",
+            ""url"": ""https://api.beamable.com"",
+            ""email"": ""support@beamable.com""
+        }
+    },
+    ""servers"": [
+        {
+            ""url"": ""https://api.beamable.com""
+        }
+    ],
+    ""paths"": {
+        ""/basic/session/heartbeat"": {
+            ""post"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/SessionHeartbeat""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/session/history"": {
+            ""get"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/SessionHistoryResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""parameters"": [
+                    {
+                        ""name"": ""dbid"",
+                        ""in"": ""query"",
+                        ""schema"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int64""
+                        },
+                        ""required"": true
+                    },
+                    {
+                        ""name"": ""month"",
+                        ""in"": ""query"",
+                        ""schema"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int32""
+                        },
+                        ""required"": false
+                    },
+                    {
+                        ""name"": ""year"",
+                        ""in"": ""query"",
+                        ""schema"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int32""
+                        },
+                        ""required"": false
+                    }
+                ],
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": [],
+                        ""developer"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/session/status"": {
+            ""get"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/OnlineStatusResponses""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""parameters"": [
+                    {
+                        ""name"": ""playerIds"",
+                        ""in"": ""query"",
+                        ""schema"": {
+                            ""type"": ""string""
+                        },
+                        ""required"": true
+                    },
+                    {
+                        ""name"": ""intervalSecs"",
+                        ""in"": ""query"",
+                        ""schema"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int64""
+                        },
+                        ""required"": true
+                    }
+                ],
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": [],
+                        ""tester"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/session/client/history"": {
+            ""get"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/SessionClientHistoryResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""parameters"": [
+                    {
+                        ""name"": ""month"",
+                        ""in"": ""query"",
+                        ""schema"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int32""
+                        },
+                        ""required"": false
+                    },
+                    {
+                        ""name"": ""year"",
+                        ""in"": ""query"",
+                        ""schema"": {
+                            ""type"": ""integer"",
+                            ""format"": ""int32""
+                        },
+                        ""required"": false
+                    }
+                ],
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": []
+                    }
+                ]
+            }
+        },
+        ""/basic/session/"": {
+            ""post"": {
+                ""responses"": {
+                    ""200"": {
+                        ""description"": """",
+                        ""content"": {
+                            ""application/json"": {
+                                ""schema"": {
+                                    ""$ref"": ""#/components/schemas/StartSessionResponse""
+                                }
+                            }
+                        }
+                    },
+                    ""400"": {
+                        ""description"": ""Bad Request""
+                    }
+                },
+                ""requestBody"": {
+                    ""content"": {
+                        ""application/json"": {
+                            ""schema"": {
+                                ""$ref"": ""#/components/schemas/StartSessionRequest""
+                            }
+                        }
+                    }
+                },
+                ""security"": [
+                    {
+                        ""scope"": [],
+                        ""user"": []
+                    }
+                ]
+            }
+        }
+    },
+    ""components"": {
+        ""schemas"": {
+            ""SessionHistoryRequest"": {
+                ""properties"": {
+                    ""dbid"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    },
+                    ""month"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int32""
+                    },
+                    ""year"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int32""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Session History Request"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""dbid""
+                ]
+            },
+            ""SessionHeartbeat"": {
+                ""properties"": {
+                    ""gt"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    },
+                    ""heartbeat"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Session Heartbeat"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""gt""
+                ]
+            },
+            ""Era"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""value"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int32""
+                    }
+                },
+                ""required"": [
+                    ""value""
+                ]
+            },
+            ""OnlineStatusResponses"": {
+                ""properties"": {
+                    ""players"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""$ref"": ""#/components/schemas/PlayerOnlineStatusResponse""
+                        }
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Online Status Responses"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""players""
+                ]
+            },
+            ""SessionHistoryResponse"": {
+                ""properties"": {
+                    ""payments"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""type"": ""string""
+                        }
+                    },
+                    ""totalPaid"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""$ref"": ""#/components/schemas/PaymentTotal""
+                        }
+                    },
+                    ""sessions"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""type"": ""string""
+                        }
+                    },
+                    ""date"": {
+                        ""$ref"": ""#/components/schemas/LocalDate""
+                    },
+                    ""installDate"": {
+                        ""type"": ""string""
+                    },
+                    ""daysPlayed"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int32""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Session History Response"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""date"",
+                    ""sessions"",
+                    ""payments"",
+                    ""totalPaid"",
+                    ""daysPlayed""
+                ]
+            },
+            ""LocalDate"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""dayOfYear"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int32""
+                    },
+                    ""leapYear"": {
+                        ""type"": ""boolean""
+                    },
+                    ""chronology"": {
+                        ""$ref"": ""#/components/schemas/IsoChronology""
+                    },
+                    ""dayOfWeek"": {
+                        ""type"": ""object"",
+                        ""format"": ""unknown"",
+                        ""enum"": [
+                            ""SATURDAY"",
+                            ""MONDAY"",
+                            ""THURSDAY"",
+                            ""TUESDAY"",
+                            ""FRIDAY"",
+                            ""WEDNESDAY"",
+                            ""SUNDAY""
+                        ]
+                    },
+                    ""monthValue"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int32""
+                    },
+                    ""dayOfMonth"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int32""
+                    },
+                    ""year"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int32""
+                    },
+                    ""era"": {
+                        ""$ref"": ""#/components/schemas/Era""
+                    },
+                    ""month"": {
+                        ""type"": ""object"",
+                        ""format"": ""unknown"",
+                        ""enum"": [
+                            ""DECEMBER"",
+                            ""APRIL"",
+                            ""JULY"",
+                            ""SEPTEMBER"",
+                            ""JUNE"",
+                            ""FEBRUARY"",
+                            ""OCTOBER"",
+                            ""AUGUST"",
+                            ""NOVEMBER"",
+                            ""MARCH"",
+                            ""MAY"",
+                            ""JANUARY""
+                        ]
+                    }
+                },
+                ""required"": [
+                    ""year"",
+                    ""month"",
+                    ""dayOfYear"",
+                    ""dayOfWeek"",
+                    ""monthValue"",
+                    ""dayOfMonth"",
+                    ""chronology"",
+                    ""leapYear"",
+                    ""era""
+                ]
+            },
+            ""StartSessionRequest"": {
+                ""properties"": {
+                    ""source"": {
+                        ""type"": ""string""
+                    },
+                    ""customParams"": {
+                        ""type"": ""object"",
+                        ""additionalProperties"": {
+                            ""type"": ""string""
+                        }
+                    },
+                    ""shard"": {
+                        ""type"": ""string""
+                    },
+                    ""locale"": {
+                        ""type"": ""string""
+                    },
+                    ""deviceParams"": {
+                        ""type"": ""object"",
+                        ""additionalProperties"": {
+                            ""type"": ""string""
+                        }
+                    },
+                    ""language"": {
+                        ""$ref"": ""#/components/schemas/SessionLanguageContext""
+                    },
+                    ""time"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    },
+                    ""platform"": {
+                        ""type"": ""string""
+                    },
+                    ""gamer"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    },
+                    ""device"": {
+                        ""type"": ""string""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Start Session Request"",
+                ""type"": ""object""
+            },
+            ""CohortEntry"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""trial"": {
+                        ""type"": ""string""
+                    },
+                    ""cohort"": {
+                        ""type"": ""string""
+                    }
+                },
+                ""required"": [
+                    ""trial"",
+                    ""cohort""
+                ]
+            },
+            ""OnlineStatusRequest"": {
+                ""properties"": {
+                    ""playerIds"": {
+                        ""type"": ""string""
+                    },
+                    ""intervalSecs"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Online Status Request"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""playerIds"",
+                    ""intervalSecs""
+                ]
+            },
+            ""SessionClientHistoryRequest"": {
+                ""properties"": {
+                    ""month"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int32""
+                    },
+                    ""year"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int32""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Session Client History Request"",
+                ""type"": ""object""
+            },
+            ""PlayerOnlineStatusResponse"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""playerId"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    },
+                    ""online"": {
+                        ""type"": ""boolean""
+                    },
+                    ""lastSeen"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    }
+                },
+                ""required"": [
+                    ""playerId"",
+                    ""online"",
+                    ""lastSeen""
+                ]
+            },
+            ""GamerTag"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""tag"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    },
+                    ""alias"": {
+                        ""type"": ""string""
+                    },
+                    ""added"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    },
+                    ""trials"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""$ref"": ""#/components/schemas/CohortEntry""
+                        }
+                    },
+                    ""platform"": {
+                        ""type"": ""string""
+                    },
+                    ""user"": {
+                        ""$ref"": ""#/components/schemas/User""
+                    }
+                },
+                ""required"": [
+                    ""tag"",
+                    ""platform""
+                ]
+            },
+            ""User"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""name"": {
+                        ""type"": ""string""
+                    },
+                    ""email"": {
+                        ""type"": ""string""
+                    },
+                    ""gamerTag"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    },
+                    ""username"": {
+                        ""type"": ""string""
+                    },
+                    ""lastName"": {
+                        ""type"": ""string""
+                    },
+                    ""firstName"": {
+                        ""type"": ""string""
+                    },
+                    ""id"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    },
+                    ""cid"": {
+                        ""type"": ""string""
+                    },
+                    ""lang"": {
+                        ""type"": ""string""
+                    },
+                    ""heartbeat"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    },
+                    ""password"": {
+                        ""type"": ""string""
+                    }
+                },
+                ""required"": [
+                    ""id"",
+                    ""email"",
+                    ""firstName"",
+                    ""lastName"",
+                    ""username"",
+                    ""gamerTag"",
+                    ""lang"",
+                    ""name""
+                ]
+            },
+            ""SessionLanguageContext"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""code"": {
+                        ""type"": ""string""
+                    },
+                    ""ctx"": {
+                        ""type"": ""string""
+                    }
+                },
+                ""required"": [
+                    ""code"",
+                    ""ctx""
+                ]
+            },
+            ""IsoChronology"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""id"": {
+                        ""type"": ""string""
+                    },
+                    ""calendarType"": {
+                        ""type"": ""string""
+                    }
+                },
+                ""required"": [
+                    ""id"",
+                    ""calendarType""
+                ]
+            },
+            ""SessionClientHistoryResponse"": {
+                ""properties"": {
+                    ""date"": {
+                        ""$ref"": ""#/components/schemas/LocalDate""
+                    },
+                    ""sessions"": {
+                        ""type"": ""array"",
+                        ""items"": {
+                            ""type"": ""string""
+                        }
+                    },
+                    ""installDate"": {
+                        ""type"": ""string""
+                    },
+                    ""daysPlayed"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int32""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Session Client History Response"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""date"",
+                    ""sessions"",
+                    ""daysPlayed""
+                ]
+            },
+            ""PaymentTotal"": {
+                ""type"": ""object"",
+                ""additionalProperties"": false,
+                ""properties"": {
+                    ""currencyCode"": {
+                        ""type"": ""string""
+                    },
+                    ""totalRevenue"": {
+                        ""type"": ""integer"",
+                        ""format"": ""int64""
+                    }
+                },
+                ""required"": [
+                    ""totalRevenue""
+                ]
+            },
+            ""StartSessionResponse"": {
+                ""properties"": {
+                    ""result"": {
+                        ""type"": ""string""
+                    },
+                    ""gamer"": {
+                        ""$ref"": ""#/components/schemas/GamerTag""
+                    }
+                },
+                ""additionalProperties"": false,
+                ""title"": ""Start Session Response"",
+                ""type"": ""object"",
+                ""required"": [
+                    ""result""
+                ]
+            }
+        },
+        ""securitySchemes"": {
+            ""admin"": {
+                ""type"": ""custom"",
+                ""description"": ""Requires privileged user with an admin scope.""
+            },
+            ""scope"": {
+                ""type"": ""apiKey"",
+                ""name"": ""X-DE-SCOPE"",
+                ""in"": ""header"",
+                ""description"": ""Customer and project scope. This should contain the '<customer-id>.<project-id>'.""
+            },
+            ""userRequired"": {
+                ""type"": ""apiKey"",
+                ""name"": ""X-DE-GAMERTAG"",
+                ""in"": ""header"",
+                ""description"": ""Gamer Tag of the player.""
+            },
+            ""developer"": {
+                ""type"": ""custom"",
+                ""description"": ""Requires privileged user with an developer scope.""
+            },
+            ""tester"": {
+                ""type"": ""custom"",
+                ""description"": ""Requires privileged user with an tester scope.""
+            },
+            ""api"": {
+                ""type"": ""apiKey"",
+                ""name"": ""X-DE-SIGNATURE"",
+                ""in"": ""header"",
+                ""description"": ""Signed Request authentication using project secret key.""
+            },
+            ""user"": {
+                ""type"": ""http"",
+                ""description"": ""Bearer authentication with an player access token in the Authorization header."",
+                ""scheme"": ""bearer"",
+                ""bearerFormat"": ""Bearer <Access Token>""
+            }
+        }
+    },
+    ""security"": [],
+    ""externalDocs"": {
+        ""description"": ""Beamable Documentation"",
+        ""url"": ""https://docs.beamable.com""
+    },
+    ""openapi"": ""3.0.2""
+}";
 	#region proto-actor
 
 	public const string ProtoActor = @"{
@@ -14,7 +760,8 @@ public static class OpenApiFixtures
       ""url"": ""https://beamable.com/contact-us"",
       ""email"": ""support@beamable.com""
     },
-    ""version"": ""1.0""
+    ""version"": ""1.0"",
+    ""x-beamable-semantic-type"": ""Semantic type information for use in automatic SDK generation""
   },
   ""servers"": [
     {
@@ -149,7 +896,8 @@ public static class OpenApiFixtures
             ""name"": ""MatchType"",
             ""in"": ""query"",
             ""schema"": {
-              ""type"": ""string""
+              ""type"": ""string"",
+              ""x-beamable-semantic-type"": ""ContentId""
             }
           }
         ],
@@ -1169,7 +1917,7 @@ public static class OpenApiFixtures
             ""content"": {
               ""application/json"": {
                 ""schema"": {
-                  ""$ref"": ""#/components/schemas/JobDefinitionSaveResponse""
+                  ""$ref"": ""#/components/schemas/JobDefinition""
                 }
               }
             }
@@ -1215,7 +1963,7 @@ public static class OpenApiFixtures
                 ""schema"": {
                   ""type"": ""array"",
                   ""items"": {
-                    ""$ref"": ""#/components/schemas/JobDefinitionResponse""
+                    ""$ref"": ""#/components/schemas/JobDefinition""
                   }
                 }
               }
@@ -1245,7 +1993,7 @@ public static class OpenApiFixtures
             ""content"": {
               ""application/json"": {
                 ""schema"": {
-                  ""$ref"": ""#/components/schemas/JobDefinitionResponse""
+                  ""$ref"": ""#/components/schemas/JobDefinition""
                 }
               }
             }
@@ -1489,7 +2237,8 @@ public static class OpenApiFixtures
         ""properties"": {
           ""playerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           },
           ""tags"": {
             ""type"": ""array"",
@@ -1524,7 +2273,8 @@ public static class OpenApiFixtures
         ""properties"": {
           ""playerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           }
         },
         ""additionalProperties"": false
@@ -1546,7 +2296,8 @@ public static class OpenApiFixtures
           },
           ""matchType"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""ContentId""
           },
           ""playerTags"": {
             ""type"": ""array"",
@@ -1576,7 +2327,8 @@ public static class OpenApiFixtures
           },
           ""leader"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           },
           ""maxSize"": {
             ""type"": ""integer"",
@@ -1588,6 +2340,9 @@ public static class OpenApiFixtures
       ""CronTrigger"": {
         ""type"": ""object"",
         ""properties"": {
+          ""type"": {
+            ""type"": ""string""
+          },
           ""expression"": {
             ""type"": ""string""
           }
@@ -1597,6 +2352,9 @@ public static class OpenApiFixtures
       ""ExactTrigger"": {
         ""type"": ""object"",
         ""properties"": {
+          ""type"": {
+            ""type"": ""string""
+          },
           ""executeAt"": {
             ""type"": ""string"",
             ""format"": ""date-time""
@@ -1607,6 +2365,9 @@ public static class OpenApiFixtures
       ""HttpCall"": {
         ""type"": ""object"",
         ""properties"": {
+          ""type"": {
+            ""type"": ""string""
+          },
           ""uri"": {
             ""type"": ""string""
           },
@@ -1636,29 +2397,8 @@ public static class OpenApiFixtures
         ""properties"": {
           ""playerId"": {
             ""type"": ""string"",
-            ""nullable"": true
-          }
-        },
-        ""additionalProperties"": false
-      },
-      ""JobActionDto"": {
-        ""type"": ""object"",
-        ""properties"": {
-          ""type"": {
-            ""type"": ""string""
-          },
-          ""value"": {
-            ""oneOf"": [
-              {
-                ""$ref"": ""#/components/schemas/HttpCall""
-              },
-              {
-                ""$ref"": ""#/components/schemas/PublishMessage""
-              },
-              {
-                ""$ref"": ""#/components/schemas/ServiceCall""
-              }
-            ]
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           }
         },
         ""additionalProperties"": false
@@ -1689,7 +2429,7 @@ public static class OpenApiFixtures
         },
         ""additionalProperties"": false
       },
-      ""JobDefinitionResponse"": {
+      ""JobDefinition"": {
         ""type"": ""object"",
         ""properties"": {
           ""id"": {
@@ -1698,14 +2438,34 @@ public static class OpenApiFixtures
           ""name"": {
             ""type"": ""string""
           },
+          ""owner"": {
+            ""type"": ""string""
+          },
           ""triggers"": {
             ""type"": ""array"",
             ""items"": {
-              ""$ref"": ""#/components/schemas/JobTriggerDto""
+              ""oneOf"": [
+                {
+                  ""$ref"": ""#/components/schemas/CronTrigger""
+                },
+                {
+                  ""$ref"": ""#/components/schemas/ExactTrigger""
+                }
+              ]
             }
           },
           ""jobAction"": {
-            ""$ref"": ""#/components/schemas/JobActionDto""
+            ""oneOf"": [
+              {
+                ""$ref"": ""#/components/schemas/HttpCall""
+              },
+              {
+                ""$ref"": ""#/components/schemas/PublishMessage""
+              },
+              {
+                ""$ref"": ""#/components/schemas/ServiceCall""
+              }
+            ]
           },
           ""retryPolicy"": {
             ""$ref"": ""#/components/schemas/JobRetryPolicy""
@@ -1734,11 +2494,28 @@ public static class OpenApiFixtures
           ""triggers"": {
             ""type"": ""array"",
             ""items"": {
-              ""$ref"": ""#/components/schemas/JobTriggerDto""
+              ""oneOf"": [
+                {
+                  ""$ref"": ""#/components/schemas/CronTrigger""
+                },
+                {
+                  ""$ref"": ""#/components/schemas/ExactTrigger""
+                }
+              ]
             }
           },
           ""jobAction"": {
-            ""$ref"": ""#/components/schemas/JobActionDto""
+            ""oneOf"": [
+              {
+                ""$ref"": ""#/components/schemas/HttpCall""
+              },
+              {
+                ""$ref"": ""#/components/schemas/PublishMessage""
+              },
+              {
+                ""$ref"": ""#/components/schemas/ServiceCall""
+              }
+            ]
           },
           ""retryPolicy"": {
             ""$ref"": ""#/components/schemas/JobRetryPolicy""
@@ -1746,15 +2523,6 @@ public static class OpenApiFixtures
           ""source"": {
             ""type"": ""string"",
             ""nullable"": true
-          }
-        },
-        ""additionalProperties"": false
-      },
-      ""JobDefinitionSaveResponse"": {
-        ""type"": ""object"",
-        ""properties"": {
-          ""jobId"": {
-            ""type"": ""string""
           }
         },
         ""additionalProperties"": false
@@ -1822,25 +2590,6 @@ public static class OpenApiFixtures
         ],
         ""type"": ""string""
       },
-      ""JobTriggerDto"": {
-        ""type"": ""object"",
-        ""properties"": {
-          ""type"": {
-            ""type"": ""string""
-          },
-          ""value"": {
-            ""oneOf"": [
-              {
-                ""$ref"": ""#/components/schemas/CronTrigger""
-              },
-              {
-                ""$ref"": ""#/components/schemas/ExactTrigger""
-              }
-            ]
-          }
-        },
-        ""additionalProperties"": false
-      },
       ""JoinLobby"": {
         ""type"": ""object"",
         ""properties"": {
@@ -1878,7 +2627,8 @@ public static class OpenApiFixtures
         ""properties"": {
           ""playerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           }
         },
         ""additionalProperties"": false
@@ -1938,7 +2688,8 @@ public static class OpenApiFixtures
         ""properties"": {
           ""playerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           },
           ""tags"": {
             ""type"": ""array"",
@@ -2013,7 +2764,8 @@ public static class OpenApiFixtures
         ""properties"": {
           ""id"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""ContentId""
           },
           ""teams"": {
             ""type"": ""array"",
@@ -2055,7 +2807,8 @@ public static class OpenApiFixtures
           },
           ""playerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           }
         },
         ""additionalProperties"": false
@@ -2073,7 +2826,8 @@ public static class OpenApiFixtures
           },
           ""playerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           },
           ""status"": {
             ""$ref"": ""#/components/schemas/PresenceStatus""
@@ -2114,7 +2868,8 @@ public static class OpenApiFixtures
           },
           ""leader"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           },
           ""members"": {
             ""type"": ""array"",
@@ -2122,7 +2877,8 @@ public static class OpenApiFixtures
               ""type"": ""string""
             },
             ""nullable"": true,
-            ""readOnly"": true
+            ""readOnly"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           },
           ""maxSize"": {
             ""type"": ""integer"",
@@ -2220,7 +2976,8 @@ public static class OpenApiFixtures
         ""properties"": {
           ""playerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           }
         },
         ""additionalProperties"": false
@@ -2228,6 +2985,9 @@ public static class OpenApiFixtures
       ""PublishMessage"": {
         ""type"": ""object"",
         ""properties"": {
+          ""type"": {
+            ""type"": ""string""
+          },
           ""topic"": {
             ""type"": ""string""
           },
@@ -2256,11 +3016,13 @@ public static class OpenApiFixtures
           },
           ""customerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""Cid""
           },
           ""realmId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""Pid""
           }
         },
         ""additionalProperties"": false
@@ -2270,7 +3032,8 @@ public static class OpenApiFixtures
         ""properties"": {
           ""playerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           }
         },
         ""additionalProperties"": false
@@ -2280,7 +3043,8 @@ public static class OpenApiFixtures
         ""properties"": {
           ""playerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           },
           ""tags"": {
             ""type"": ""array"",
@@ -2306,11 +3070,13 @@ public static class OpenApiFixtures
           },
           ""customerId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""Cid""
           },
           ""realmId"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""Pid""
           }
         },
         ""additionalProperties"": false
@@ -2328,6 +3094,9 @@ public static class OpenApiFixtures
       ""ServiceCall"": {
         ""type"": ""object"",
         ""properties"": {
+          ""type"": {
+            ""type"": ""string""
+          },
           ""uri"": {
             ""type"": ""string""
           },
@@ -2393,7 +3162,8 @@ public static class OpenApiFixtures
               ""type"": ""string""
             },
             ""nullable"": true,
-            ""readOnly"": true
+            ""readOnly"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           }
         },
         ""additionalProperties"": false
@@ -2443,11 +3213,13 @@ public static class OpenApiFixtures
               ""type"": ""string""
             },
             ""nullable"": true,
-            ""readOnly"": true
+            ""readOnly"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           },
           ""matchType"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""ContentId""
           },
           ""matchId"": {
             ""type"": ""string"",
@@ -2497,7 +3269,8 @@ public static class OpenApiFixtures
               ""type"": ""string""
             },
             ""nullable"": true,
-            ""readOnly"": true
+            ""readOnly"": true,
+            ""x-beamable-semantic-type"": ""GamerTag""
           },
           ""matchTypes"": {
             ""type"": ""array"",
@@ -2505,7 +3278,8 @@ public static class OpenApiFixtures
               ""type"": ""string""
             },
             ""nullable"": true,
-            ""readOnly"": true
+            ""readOnly"": true,
+            ""x-beamable-semantic-type"": ""ContentId""
           },
           ""maxWaitDurationSecs"": {
             ""type"": ""integer"",
@@ -2552,7 +3326,8 @@ public static class OpenApiFixtures
           },
           ""matchType"": {
             ""type"": ""string"",
-            ""nullable"": true
+            ""nullable"": true,
+            ""x-beamable-semantic-type"": ""ContentId""
           },
           ""maxPlayers"": {
             ""type"": ""integer"",
