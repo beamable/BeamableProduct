@@ -1,5 +1,4 @@
 using Beamable.Common.Content;
-using Beamable.Serialization;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -245,7 +244,7 @@ namespace Beamable.Common.Api.Tournaments
 
 
 	[System.Serializable]
-	public class TournamentEntry : JsonSerializable.ISerializable
+	public class TournamentEntry
 	{
 		/// <summary>
 		/// The player id of the player this entry represents
@@ -290,44 +289,20 @@ namespace Beamable.Common.Api.Tournaments
 		/// from that cycle to the cycle after it. If nextStageChange is not known,
 		/// this field will be absent.
 		/// </summary>
-		public OptionalInt nextStageChange = new OptionalInt();
+		public int? nextStageChange;
 
 		/// <summary>
 		/// Previous stage change is a historical record of how the player got to
 		/// the current tier and stage they occupy. If the player was not present
 		/// in the previous cycle of the tournament, this field will be absent.
 		/// </summary>
-		public OptionalInt previousStageChange = new OptionalInt();
+		public int? previousStageChange;
 
 		/// <summary>
 		/// The <see cref="TournamentRewardCurrency"/>s that the player will be granted after the cycle completes.
 		/// In order to claim the currency, the player must call <see cref="ITournamentApi.ClaimAllRewards"/>
 		/// </summary>
 		public List<TournamentRewardCurrency> currencyRewards;
-
-		public void Serialize(JsonSerializable.IStreamSerializer s)
-		{
-			s.Serialize(nameof(playerId), ref playerId);
-			s.Serialize(nameof(rank), ref rank);
-			s.Serialize(nameof(stageChange), ref stageChange);
-			s.Serialize(nameof(score), ref score);
-			s.Serialize(nameof(tier), ref tier);
-			s.Serialize(nameof(stage), ref stage);
-			s.SerializeList(nameof(currencyRewards), ref currencyRewards);
-			
-			if ((s.HasKey(nameof(nextStageChange))
-			     || ((nextStageChange != default(OptionalInt))
-			         && nextStageChange.HasValue)))
-			{
-				s.Serialize(nameof(nextStageChange), ref nextStageChange.Value);
-			}
-			if ((s.HasKey(nameof(previousStageChange))
-			     || ((previousStageChange != default(OptionalInt))
-			         && previousStageChange.HasValue)))
-			{
-				s.Serialize(nameof(previousStageChange), ref previousStageChange.Value);
-			}
-		}
 	}
 
 	[System.Serializable]
