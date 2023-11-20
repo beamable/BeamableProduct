@@ -13,6 +13,7 @@ using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
+using Serilog;
 using System.Reflection;
 
 namespace Beamable.Tooling.Common.OpenAPI;
@@ -80,6 +81,16 @@ public class ServiceDocGenerator
 
 		var coll = RouteTableGeneration.BuildRoutes(microserviceType, attribute, adminRoutes, _ => null);
 		var methods = coll.Methods.ToList();
+		for (var i = methods.Count - 1; i >= 0; i--)
+		{
+			// Skip out all federated callbacks IF the caller of this function asked us to do so.
+			if(excludeFederationCallbackEndpoints && methods[i].IsFederatedCallbackMethod)
+			{
+				Log.Debug("Removing federated callback {MethodName} that made through the check", methods[i].Method.Name);
+				methods.RemoveAt(i);
+			}
+		}
+		
 		var doc = new OpenApiDocument {
 			Info = new OpenApiInfo
 			{
@@ -127,14 +138,13 @@ public class ServiceDocGenerator
 		foreach (var type in allTypes)
 		{
 			var schema = SchemaGenerator.Convert(type);
+			Log.Debug("Adding Schema to Microservice OAPI docs. Type={TypeName}", type.FullName);
 			doc.Components.Schemas.Add(SchemaGenerator.GetQualifiedReferenceName(type), schema);
 		}
 
 		foreach (var method in methods)
 		{
-			// Skip out all federated callbacks IF the caller of this function asked us to do so.
-			if(excludeFederationCallbackEndpoints && method.IsFederatedCallbackMethod) continue;
-			
+			Log.Debug("Adding to Docs method {MethodName}", method.Method.Name);
 			var comments = DocsLoader.GetMethodComments(method.Method);
 			var parameterNameToComment = comments.Parameters.ToDictionary(kvp => kvp.Name, kvp => kvp.Text);
 			

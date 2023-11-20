@@ -217,7 +217,11 @@ namespace Beamable.Server
          foreach (var method in allMethods)
          {
             var attribute = method.GetCustomAttribute<CallableAttribute>();
-            if (attribute == null) continue;
+            if (attribute == null)
+            {
+	            Log.Warning($"Skipped {method.Name}");
+	            continue;
+            }
 
             var tag = provider.pathPrefix == "admin/" ? "Admin" : "Uncategorized";
             var swaggerCategoryAttribute = method.GetCustomAttribute<SwaggerCategoryAttribute>();
