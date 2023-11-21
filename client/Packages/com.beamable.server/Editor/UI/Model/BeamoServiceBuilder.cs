@@ -14,19 +14,18 @@ namespace Beamable.Editor.UI.Model
 
 		public Task TryToStart()
 		{
-			return BeamableTaskExtensions.TaskFromPromise(CodeService.Run(new[] {BeamoId}));
+			return CodeService.Run(new[] {BeamoId}).TaskFromPromise();
 		}
 
 		public Task TryToStop()
 		{
-			return BeamableTaskExtensions.TaskFromPromise(CodeService.Stop(new[] {BeamoId}));
+			return CodeService.Stop(new[] {BeamoId}).TaskFromPromise();
 		}
 
 		public Task TryToRestart()
 		{
-			return BeamableTaskExtensions.TaskFromPromise(
-				CodeService.Run(new[] {BeamoId})
-				           .Map(_=>CodeService.Run(new[] {BeamoId})));
+			return CodeService.Run(new[] {BeamoId})
+			                  .Map(_=>CodeService.Run(new[] {BeamoId})).TaskFromPromise();
 		}
 		public string BeamoId { get; set; }
 		public Action<bool> OnIsRunningChanged { get; set; }
