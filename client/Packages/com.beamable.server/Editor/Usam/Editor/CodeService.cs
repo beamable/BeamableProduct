@@ -3,6 +3,7 @@ using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Semantics;
 using Beamable.Editor;
 using Beamable.Editor.BeamCli.Commands;
+using Beamable.Editor.Microservice.UI2.Models;
 using Beamable.Editor.UI.Model;
 using System;
 using System.Collections.Generic;
@@ -27,7 +28,7 @@ namespace Beamable.Server.Editor.Usam
 
 		private static readonly List<string> IgnoreFolderSuffixes = new List<string> { "~", "obj", "bin" };
 		private List<BeamServiceSignpost> _services;
-
+		
 		public CodeService(BeamCommands cli, BeamableDispatcher dispatcher)
 		{
 			_cli = cli;
@@ -171,7 +172,7 @@ namespace Beamable.Server.Editor.Usam
 				ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = objData.ShouldBeEnabledOnRemote[i];
 				if (objData.IsLocal)
 				{
-					ServiceDefinitions[dataIndex].IsRunningLocaly =
+					ServiceDefinitions[dataIndex].IsRunningLocally =
 						objData.RunningState[i] ? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
 					ServiceDefinitions[dataIndex].ImageId = objData.ImageIds[i];
 				}
@@ -356,6 +357,16 @@ namespace Beamable.Server.Editor.Usam
 					ids = beamoIds.ToArray()
 				});
 				await cmd.Run();
+				
+				foreach (string id in beamoIds)
+				{
+					var def = ServiceDefinitions.FirstOrDefault(d=>d.BeamoId.Equals(id));
+					if (def != null)
+					{
+						def.IsRunningLocally = BeamoServiceStatus.NotRunning;
+						def.CallUpdate();
+					}
+				}
 			}
 			catch (Exception e)
 			{
@@ -383,6 +394,11 @@ namespace Beamable.Server.Editor.Usam
 						var def = ServiceDefinitions.FirstOrDefault(d=>d.BeamoId.Equals(id));
 						def?.Builder.OnBuildingProgress?.Invoke((int)100,100);
 						def?.Builder.OnBuildingFinished?.Invoke(cb.data.Success);
+						if (def != null)
+						{
+							def.IsRunningLocally = cb.data.Success? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
+							def.CallUpdate();
+						}
 					}
 					LogVerbose($"OnStreamServiceRunReportResult.{cb.data.Success}: {cb.data.FailureReason}");
 				});

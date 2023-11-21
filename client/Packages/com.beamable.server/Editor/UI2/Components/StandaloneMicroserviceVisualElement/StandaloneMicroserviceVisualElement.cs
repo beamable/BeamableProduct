@@ -47,10 +47,10 @@ namespace Beamable.Editor.Microservice.UI2.Components
 
 		public override void Refresh()
 		{
+			_codeService = Context.ServiceScope.GetService<CodeService>();
 			_visualsModel = MicroserviceVisualsModel.GetModel(Model.BeamoId);
 			base.Refresh();
 			QueryVisualElements();
-			_codeService = Context.ServiceScope.GetService<CodeService>();
 			UpdateVisualElements();
 			var query = Root.Query().Where(v => v is IBeamoServiceElement).ToList().Select(v => v as IBeamoServiceElement);
 			foreach (var el in query)
@@ -185,8 +185,8 @@ namespace Beamable.Editor.Microservice.UI2.Components
 		}
 		protected virtual void UpdateLocalStatus()
 		{
-			_header.EnableInClassList("running", Model.IsRunningLocaly == BeamoServiceStatus.Running);
-			_openDocsBtn.SetEnabled(Model.IsRunningLocaly == BeamoServiceStatus.Running);
+			_header.EnableInClassList("running", Model.IsRunningLocally == BeamoServiceStatus.Running);
+			_openDocsBtn.SetEnabled(Model.IsRunningLocally == BeamoServiceStatus.Running);
 		}
 
 		public void OpenLocalDocs()

@@ -27,14 +27,14 @@ namespace Beamable.Editor.Microservice.UI2.Components
 		{
 			_definition = definition;
 			EnableInClassList("building", enabledSelf);
-			var isRunning = _definition.IsRunningLocaly == BeamoServiceStatus.Running;
+			var isRunning = _definition.IsRunningLocally == BeamoServiceStatus.Running;
 			EnableInClassList("running", isRunning);
 		}
 
 		private void HandleStartButtonClicked()
 		{
 			Action<Unit> callback = _ => _codeService.RefreshServices().Then(_ => { });
-			if (_definition.IsRunningLocaly == BeamoServiceStatus.Running)
+			if (_definition.IsRunningLocally == BeamoServiceStatus.Running)
 			{
 				_definition.Builder.TryToStop().ToPromise().Then(callback);
 			}

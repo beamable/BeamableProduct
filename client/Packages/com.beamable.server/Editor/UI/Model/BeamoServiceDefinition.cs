@@ -13,7 +13,7 @@ namespace Beamable.Editor.UI.Model
 		public ServiceType ServiceType { get; set; } = ServiceType.MicroService;
 		public string ImageId { get; set; } = string.Empty;
 		public bool ShouldBeEnabledOnRemote { get; set; } = true;
-		public BeamoServiceStatus IsRunningLocaly { get; set; } = BeamoServiceStatus.Unknown;
+		public BeamoServiceStatus IsRunningLocally { get; set; } = BeamoServiceStatus.Unknown;
 		public BeamoServiceStatus IsRunningOnRemote { get; set; } = BeamoServiceStatus.Unknown;
 		public ServiceInfo ServiceInfo { get; set; }
 		public void CallUpdate() => Updated?.Invoke(this);

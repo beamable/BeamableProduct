@@ -38,7 +38,7 @@ namespace Beamable.Editor.UI.Model
 		/// <summary>
 		/// Current service status on local computer.
 		/// </summary>
-		public BeamoServiceStatus IsRunningLocaly { get; set; }
+		public BeamoServiceStatus IsRunningLocally { get; set; }
 
 		/// <summary>
 		/// Current service status on server.

@@ -6,23 +6,26 @@ using UnityEngine.UIElements;
 
 namespace Beamable.Editor.Microservice.UI2.Models
 {
-	public interface IMicroserviceVisualsModel
+	public interface IServiceLogsVisualModel
 	{
 		bool AreLogsAttached { get; }
+		Action OnLogsDetached { get; set; }
+		Action OnLogsAttached { get; set; }
+		LogMessageStore Logs { get; }
+		
+		void DetachLogs();
+		void AttachLogs();
+		Action<bool> OnLogsAttachmentChanged { get; set; }
+		void PopulateMoreDropdown(ContextualMenuPopulateEvent evt);
+	}
+	public interface IMicroserviceVisualsModel : IServiceLogsVisualModel
+	{
 		float ElementHeight { get; set; }
 		bool IsSelected { get; set; }
 		bool IsCollapsed { get; set; }
 
-		Action OnLogsDetached { get; set; }
-		Action OnLogsAttached { get; set; }
-		Action<bool> OnLogsAttachmentChanged { get; set; }
 		Action<bool> OnSelectionChanged { get; set; }
 		Action OnSortChanged { get; set; }
-		LogMessageStore Logs { get; }
-
-		void DetachLogs();
-		void AttachLogs();
-		void PopulateMoreDropdown(ContextualMenuPopulateEvent evt);
 	}
 
 	[Serializable]
