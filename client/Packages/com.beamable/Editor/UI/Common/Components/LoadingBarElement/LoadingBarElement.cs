@@ -234,9 +234,9 @@ namespace Beamable.Editor.UI.Components
 
 		private void UpdateClasses()
 		{
-			EnableInClassList("hidden",Hidden);
+			EnableInClassList("hidden", Hidden);
 			EnableInClassList("smallBar", _smallBar);
-			EnableInClassList("failed",Failed);
+			EnableInClassList("failed", Failed);
 		}
 	}
 }

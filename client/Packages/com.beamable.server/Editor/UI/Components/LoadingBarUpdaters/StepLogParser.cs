@@ -14,7 +14,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public override string StepText => $"(Building {base.StepText} MS {_name})";
 		public override string ProcessName => $"Building MS {_name}";
 
-		public StepLogParser(ILoadingBar loadingBar, IBeamableBuilder builder,string name, Task task) : base(loadingBar)
+		public StepLogParser(ILoadingBar loadingBar, IBeamableBuilder builder, string name, Task task) : base(loadingBar)
 		{
 			_builder = builder;
 			_name = name;
