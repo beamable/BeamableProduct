@@ -21,7 +21,7 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			_name = name;
 			LoadingBar.UpdateProgress(0f, $"({ProcessName})");
 			
-			_builder.OnStartingProgress += HandleBuildingProgress;
+			_builder.OnStartingProgress -= HandleBuildingProgress;
 			_builder.OnStartingFinished += HandleBuildingFinished;
 		}
 
