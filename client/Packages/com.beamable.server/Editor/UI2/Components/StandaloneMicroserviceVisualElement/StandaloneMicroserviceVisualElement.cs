@@ -79,13 +79,11 @@ namespace Beamable.Editor.Microservice.UI2.Components
 		}
 		protected virtual void UpdateVisualElements()
 		{
-			_loadingBar.Hidden = true;
-			_loadingBar.Refresh();
-			_loadingBar.PlaceBehind(Root.Q("SubTitle"));
 			Model.Updated -= HandleServiceUpdate;
 			Model.Updated += HandleServiceUpdate;
-			_loadingBar.Hidden = true;
 			_loadingBar.Refresh();
+			new BeamoStepLogParser(_loadingBar, Model.Builder, Model.BeamoId);
+			_loadingBar.Hidden = true;
 			_loadingBar.PlaceBehind(Root.Q("SubTitle"));
 
 			// var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
@@ -97,7 +95,7 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			_openScriptBtn.tooltip = "Open C# Code";
 
 			_openDocsBtn.AddManipulator(new Clickable(OpenLocalDocs));
-			// _openDocsBtn.SetEnabled(Model.IsRunning);
+			_openDocsBtn.SetEnabled(Model.IsRunningLocally == BeamoServiceStatus.Running);
 			_openDocsBtn.tooltip = "View Documentation";
 
 			_serviceName.text = _serviceName.tooltip = Model.BeamoId;
@@ -107,10 +105,8 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			//
 			// Model.Builder.OnIsRunningChanged -= HandleIsRunningChanged;
 			// Model.Builder.OnIsRunningChanged += HandleIsRunningChanged;
-			//
-			// Model.Builder.OnBuildingProgress -= HandleStartingProgress;
-			// Model.Builder.OnBuildingProgress += HandleStartingProgress;
-
+			Model.Builder.OnStartingFinished += HandleProgressFinished;
+			Model.Builder.OnStartingFinished -= HandleProgressFinished;
 			_separator.Setup(OnDrag);
 			_separator.Refresh();
 

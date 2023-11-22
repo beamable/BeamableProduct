@@ -384,7 +384,7 @@ namespace Beamable.Server.Editor.Usam
 				});
 				cmd.OnLocal_progressServiceRunProgressResult(cb =>
 				{
-					ServiceDefinitions.FirstOrDefault(d=>d.BeamoId.Equals(cb.data.BeamoId))?.Builder.OnBuildingProgress?.Invoke((int)cb.data.LocalDeployProgress,100);
+					ServiceDefinitions.FirstOrDefault(d=>d.BeamoId.Equals(cb.data.BeamoId))?.Builder.OnStartingProgress?.Invoke((int)cb.data.LocalDeployProgress,100);
 					LogVerbose($"OnLocal_progressServiceRunProgressResult.{cb.data.BeamoId}: {cb.data.LocalDeployProgress}");
 				});
 				cmd.OnStreamServiceRunReportResult(cb =>
@@ -392,8 +392,8 @@ namespace Beamable.Server.Editor.Usam
 					foreach (string id in beamoIds)
 					{
 						var def = ServiceDefinitions.FirstOrDefault(d=>d.BeamoId.Equals(id));
-						def?.Builder.OnBuildingProgress?.Invoke((int)100,100);
-						def?.Builder.OnBuildingFinished?.Invoke(cb.data.Success);
+						def?.Builder.OnStartingProgress?.Invoke((int)100,100);
+						def?.Builder.OnStartingFinished?.Invoke(cb.data.Success);
 						if (def != null)
 						{
 							def.IsRunningLocally = cb.data.Success? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
