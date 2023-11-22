@@ -1,4 +1,4 @@
-﻿using Usam;
+﻿using Beamable.Editor.UI.Model;
 
 namespace Beamable.Editor.Microservice.UI2.Components
 {

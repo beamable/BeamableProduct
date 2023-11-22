@@ -10,7 +10,7 @@ namespace Beamable.Editor.BeamCli.Commands
 		public Beamable.Common.Semantics.ServiceName name;
 		/// <summary>Where the temp project will be created</summary>
 		public string output;
-		/// <summary>The path to where the files will be copied to.</summary>
+		/// <summary>The path to where the files will be copied to</summary>
 		public string copyPath;
 		/// <summary>If you should create a common library</summary>
 		public bool skipCommon;

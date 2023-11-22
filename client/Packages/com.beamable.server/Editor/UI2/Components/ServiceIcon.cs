@@ -1,7 +1,6 @@
 ﻿using Beamable.Common;
-using Beamable.Server.Editor;
+using Beamable.Editor.UI.Model;
 using UnityEngine.UIElements;
-using Usam;
 
 namespace Beamable.Editor.Microservice.UI2.Components
 {
@@ -21,12 +20,12 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			ClearClassList();
 
 			var statusClassName = string.IsNullOrWhiteSpace(_customStatusClassName)
-				? model.IsRunningOnRemote == ServiceStatus.Running
+				? model.IsRunningOnRemote == BeamoServiceStatus.Running
 					? $"{model.ServiceType}_remoteEnabled"
 					: $"{model.ServiceType}_remoteDisabled"
 				: $"{model.ServiceType}_{_customStatusClassName}";
 
-			tooltip = model.IsRunningOnRemote == ServiceStatus.Running ? Constants.Tooltips.Microservice.ICON_REMOTE_RUNNING : Constants.Tooltips.Microservice.ICON_REMOTE_DISABLE;
+			tooltip = model.IsRunningOnRemote == BeamoServiceStatus.Running ? Constants.Tooltips.Microservice.ICON_REMOTE_RUNNING : Constants.Tooltips.Microservice.ICON_REMOTE_DISABLE;
 			AddToClassList(statusClassName);
 			AddToClassList(model.ServiceType.ToString());
 		}
