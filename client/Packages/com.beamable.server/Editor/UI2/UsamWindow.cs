@@ -68,7 +68,7 @@ namespace Beamable.Editor.Microservice.UI2
 			var emptyContainer = new VisualElement { name = "listRoot" };
 
 			var microserviceContentVisualElement = root.Q("microserviceContentVisualElement");
-			microserviceContentVisualElement.Add(new VisualElement{name="announcementList"});
+			microserviceContentVisualElement.Add(new VisualElement { name = "announcementList" });
 			microserviceContentVisualElement.Add(scrollView);
 			scrollView.Add(emptyContainer);
 			OnLoad().Then(_ =>
@@ -78,7 +78,7 @@ namespace Beamable.Editor.Microservice.UI2
 					ShowDockerNotRunningAnnouncement();
 					return;
 				}
-				
+
 				foreach (BeamoServiceDefinition beamoServiceDefinition in _codeService.ServiceDefinitions)
 				{
 					var el = new StandaloneMicroserviceVisualElement() { Model = beamoServiceDefinition };
@@ -90,7 +90,7 @@ namespace Beamable.Editor.Microservice.UI2
 
 		private void ShowDockerNotRunningAnnouncement()
 		{
-			var dockerAnnouncement = new DockerAnnouncementModel(){IsDockerInstalled = true, OnInstall = Build};
+			var dockerAnnouncement = new DockerAnnouncementModel() { IsDockerInstalled = true, OnInstall = Build };
 			var announcementList = _windowRoot.Q<VisualElement>("announcementList");
 			announcementList.Clear();
 
