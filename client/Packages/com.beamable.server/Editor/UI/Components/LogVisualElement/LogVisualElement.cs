@@ -45,7 +45,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			}
 		}
-		public IMicroserviceVisualsModel Model { get; set; }
+		public IServiceLogsVisualModel Model { get; set; }
 		public event Action OnDetachLogs;
 		public bool EnableMoreButton = true;
 		public bool EnableDetatchButton = true;

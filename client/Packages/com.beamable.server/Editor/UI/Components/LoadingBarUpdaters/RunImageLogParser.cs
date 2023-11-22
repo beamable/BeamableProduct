@@ -6,23 +6,25 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class RunImageLogParser : LoadingBarUpdater
 	{
-		private readonly ServiceModelBase _model;
+		private readonly IBeamableBuilder _builder;
+		private readonly string _name;
 
-		public override string StepText => $"(Starting {base.StepText} MS {_model.Name})";
-		public override string ProcessName => $"Starting MS {_model?.Descriptor?.Name}";
+		public override string StepText => $"(Starting {base.StepText} MS {_name})";
+		public override string ProcessName => $"Starting MS {_name}";
 		protected override void OnKill()
 		{
-			_model.Builder.OnStartingFinished -= HandleStartingFinished;
-			_model.Builder.OnStartingProgress -= HandleStartingProgress;
+			_builder.OnStartingFinished -= HandleStartingFinished;
+			_builder.OnStartingProgress -= HandleStartingProgress;
 		}
 
-		public RunImageLogParser(ILoadingBar loadingBar, ServiceModelBase model) : base(loadingBar)
+		public RunImageLogParser(ILoadingBar loadingBar, IBeamableBuilder builder, string name) : base(loadingBar)
 		{
-			_model = model;
+			_builder = builder;
+			_name = name;
 			TotalSteps = MicroserviceLogHelper.RunLogsSteps;
 			LoadingBar.UpdateProgress(0f, $"({ProcessName})");
-			_model.Builder.OnStartingFinished += HandleStartingFinished;
-			_model.Builder.OnStartingProgress += HandleStartingProgress;
+			_builder.OnStartingFinished += HandleStartingFinished;
+			_builder.OnStartingProgress += HandleStartingProgress;
 		}
 
 		private void HandleStartingFinished(bool success)

@@ -1,13 +1,13 @@
-using Beamable;
 using Beamable.Common;
 using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.Microservice.UI2.Components;
+using Beamable.Editor.Toolbox.Components;
+using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI;
-using Beamable.Server.Editor;
+using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.Usam;
 using UnityEditor;
 using UnityEngine.UIElements;
-using Usam;
 
 namespace Beamable.Editor.Microservice.UI2
 {
@@ -68,10 +68,17 @@ namespace Beamable.Editor.Microservice.UI2
 			var emptyContainer = new VisualElement { name = "listRoot" };
 
 			var microserviceContentVisualElement = root.Q("microserviceContentVisualElement");
+			microserviceContentVisualElement.Add(new VisualElement{name="announcementList"});
 			microserviceContentVisualElement.Add(scrollView);
 			scrollView.Add(emptyContainer);
 			OnLoad().Then(_ =>
 			{
+				if (!_codeService.IsDockerRunning)
+				{
+					ShowDockerNotRunningAnnouncement();
+					return;
+				}
+				
 				foreach (BeamoServiceDefinition beamoServiceDefinition in _codeService.ServiceDefinitions)
 				{
 					var el = new StandaloneMicroserviceVisualElement() { Model = beamoServiceDefinition };
@@ -81,10 +88,21 @@ namespace Beamable.Editor.Microservice.UI2
 			});
 		}
 
+		private void ShowDockerNotRunningAnnouncement()
+		{
+			var dockerAnnouncement = new DockerAnnouncementModel(){IsDockerInstalled = true, OnInstall = Build};
+			var announcementList = _windowRoot.Q<VisualElement>("announcementList");
+			announcementList.Clear();
+
+			var element = new DockerAnnouncementVisualElement() { DockerAnnouncementModel = dockerAnnouncement };
+			announcementList.Add(element);
+			element.Refresh();
+		}
+
 		private void HandleRefreshButtonClicked()
 		{
 			_codeService = Scope.GetService<CodeService>();
-			_codeService.RefreshServices().Then(_ => { });
+			_codeService.RefreshServices().Then(_ => Build());
 		}
 
 		public override async Promise OnLoad()

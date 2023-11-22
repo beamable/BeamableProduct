@@ -234,30 +234,9 @@ namespace Beamable.Editor.UI.Components
 
 		private void UpdateClasses()
 		{
-			if (_smallBar)
-			{
-				AddToClassList("smallBar");
-			}
-			else
-			{
-				RemoveFromClassList("smallBar");
-			}
-			if (Failed)
-			{
-				AddToClassList("failed");
-			}
-			else
-			{
-				RemoveFromClassList("failed");
-			}
-			if (Hidden)
-			{
-				AddToClassList("hidden");
-			}
-			else
-			{
-				RemoveFromClassList("hidden");
-			}
+			EnableInClassList("hidden",Hidden);
+			EnableInClassList("smallBar", _smallBar);
+			EnableInClassList("failed",Failed);
 		}
 	}
 }
