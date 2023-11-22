@@ -24,7 +24,7 @@ namespace Beamable.Editor.UI.Model
 
 		public Task TryToRestart()
 		{
-			return CodeService.Run(new[] {BeamoId})
+			return CodeService.Stop(new[] {BeamoId})
 			                  .Map(_=>CodeService.Run(new[] {BeamoId})).TaskFromPromise();
 		}
 		public string BeamoId { get; set; }
