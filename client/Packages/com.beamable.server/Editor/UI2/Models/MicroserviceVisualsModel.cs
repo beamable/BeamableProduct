@@ -1,4 +1,6 @@
-﻿using Beamable.Editor.UI.Model;
+﻿using Beamable.Editor.BeamCli.Commands;
+using Beamable.Editor.UI.Model;
+using Beamable.Server.Editor.Usam;
 using System;
 using UnityEditor;
 using UnityEngine;
@@ -70,7 +72,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 
 		public static MicroserviceVisualsModel GetModel(string name)
 		{
-			MicroserviceVisualsModel model;
+			MicroserviceVisualsModel model = null;
 			try
 			{
 				var key = GetKey(name);
@@ -78,19 +80,53 @@ namespace Beamable.Editor.Microservice.UI2.Models
 				{
 					string json = EditorPrefs.GetString(key, string.Empty);
 					model = JsonUtility.FromJson<MicroserviceVisualsModel>(json);
-					if (model != null)
-					{
-						return model;
-					}
+				}
+				if (model == null)
+				{
+					model = new MicroserviceVisualsModel() { name = name };
 				}
 
+				BeamEditorContext.Default.ServiceScope.GetService<CodeService>().OnLogMessage -= model.HandleLogMessage;
+				BeamEditorContext.Default.ServiceScope.GetService<CodeService>().OnLogMessage += model.HandleLogMessage;
 			}
 			catch
 			{
 				//
 			}
-			model = new MicroserviceVisualsModel() { name = name };
 			return model;
+		}
+
+		private void HandleLogMessage(string arg1, BeamTailLogMessage arg2)
+		{
+			if (arg1 == name && !string.IsNullOrWhiteSpace(arg2.message))
+			{
+				Logs.AddMessage(FromBeamTailLog(arg2));
+			}
+		}
+
+		static LogMessage FromBeamTailLog(BeamTailLogMessage message)
+		{
+			LogLevel logLevel;
+			switch (message.logLevel.ToLowerInvariant())
+			{
+				case "debug":
+					logLevel = LogLevel.DEBUG;
+					break;
+				case "info":
+					logLevel = LogLevel.INFO;
+					break;
+				case "warning":
+					logLevel = LogLevel.WARNING;
+					break;
+				case "fatal":
+					logLevel = LogLevel.FATAL;
+					break;
+				default:
+					logLevel = LogLevel.ERROR;
+					break;
+			}
+
+			return new LogMessage() {Message = message.message, Level = logLevel, Timestamp = message.timeStamp};
 		}
 
 		public void Save()
