@@ -27,7 +27,7 @@ namespace Beamable.Server.Editor.Usam
 		public List<IBeamoServiceDefinition> ServiceDefinitions { get; private set; } =
 			new List<IBeamoServiceDefinition>();
 
-		private static readonly List<string> IgnoreFolderSuffixes = new List<string> {"~", "obj", "bin"};
+		private static readonly List<string> IgnoreFolderSuffixes = new List<string> { "~", "obj", "bin" };
 		private List<BeamServiceSignpost> _services;
 		private List<Promise> _logsCommands = new List<Promise>();
 
@@ -100,7 +100,7 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
-			var versions = _cli.ProjectVersion(new ProjectVersionArgs {requestedVersion = version?.version});
+			var versions = _cli.ProjectVersion(new ProjectVersionArgs { requestedVersion = version?.version });
 			versions.OnStreamProjectVersionCommandResult(result =>
 			{
 				LogVerbose($"Versions updated: {result.data.packageVersions[0]}");
@@ -113,7 +113,7 @@ namespace Beamable.Server.Editor.Usam
 			LogVerbose("refresh services start");
 			try
 			{
-				var ps = _cli.ServicesPs(new ServicesPsArgs() {json = false, remote = true});
+				var ps = _cli.ServicesPs(new ServicesPsArgs() { json = false, remote = true });
 				ps.OnStreamServiceListResult(cb =>
 				{
 					IsDockerRunning = cb.data.IsDockerRunning;
@@ -136,7 +136,7 @@ namespace Beamable.Server.Editor.Usam
 
 			try
 			{
-				var ps = _cli.ServicesPs(new ServicesPsArgs {json = false, remote = false});
+				var ps = _cli.ServicesPs(new ServicesPsArgs { json = false, remote = false });
 				ps.OnStreamServiceListResult(cb =>
 				{
 					IsDockerRunning = cb.data.IsDockerRunning;
@@ -175,7 +175,7 @@ namespace Beamable.Server.Editor.Usam
 						}
 					});
 					dataIndex = ServiceDefinitions.Count - 1;
-					ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder() {BeamoId = name};
+					ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder() { BeamoId = name };
 				}
 
 				ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = objData.ShouldBeEnabledOnRemote[i];
@@ -207,7 +207,7 @@ namespace Beamable.Server.Editor.Usam
 			var projName = new ServiceName(signPost.name);
 			var projPath = signPost.relativeDockerFile.Replace("/Dockerfile", "");
 
-			var args = new ProjectRegenerateArgs() {name = projName, output = tempPath, copyPath = projPath};
+			var args = new ProjectRegenerateArgs() { name = projName, output = tempPath, copyPath = projPath };
 			var command = _cli.ProjectRegenerate(args);
 			await command.Run();
 		}
@@ -218,7 +218,8 @@ namespace Beamable.Server.Editor.Usam
 			{
 				var logs = _cli.ProjectLogs(new ProjectLogsArgs
 				{
-					service = new ServiceName(definition.BeamoId), reconnect = true
+					service = new ServiceName(definition.BeamoId),
+					reconnect = true
 				});
 				logs.OnStreamTailLogMessage(point =>
 				{
@@ -321,9 +322,9 @@ namespace Beamable.Server.Editor.Usam
 		}
 
 		private static void ScanDirectoryRecursive(string directoryPath,
-		                                           string targetExtension,
-		                                           List<string> excludeFolders,
-		                                           HashSet<string> foundFiles)
+												   string targetExtension,
+												   List<string> excludeFolders,
+												   HashSet<string> foundFiles)
 		{
 			// TODO: ChatGPT wrote this, but actually, it should use a queue<string> to do a non-stack-recursive BFS over the file system
 			if (!Directory.Exists(directoryPath))
@@ -377,7 +378,7 @@ namespace Beamable.Server.Editor.Usam
 		{
 			try
 			{
-				var cmd = _cli.ServicesStop(new ServicesStopArgs() {ids = beamoIds.ToArray()});
+				var cmd = _cli.ServicesStop(new ServicesStopArgs() { ids = beamoIds.ToArray() });
 				await cmd.Run();
 
 				foreach (string id in beamoIds)
@@ -400,11 +401,11 @@ namespace Beamable.Server.Editor.Usam
 		{
 			try
 			{
-				var cmd = _cli.ServicesRun(new ServicesRunArgs() {ids = beamoIds.ToArray()});
+				var cmd = _cli.ServicesRun(new ServicesRunArgs() { ids = beamoIds.ToArray() });
 				cmd.OnLocal_progressServiceRunProgressResult(cb =>
 				{
 					ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(cb.data.BeamoId))?.Builder
-					                  .OnStartingProgress?.Invoke((int)cb.data.LocalDeployProgress, 100);
+									  .OnStartingProgress?.Invoke((int)cb.data.LocalDeployProgress, 100);
 					LogVerbose(
 						$"OnLocal_progressServiceRunProgressResult.{cb.data.BeamoId}: {cb.data.LocalDeployProgress}");
 				});

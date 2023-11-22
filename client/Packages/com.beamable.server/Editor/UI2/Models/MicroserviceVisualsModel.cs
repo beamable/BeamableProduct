@@ -14,7 +14,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 		Action OnLogsDetached { get; set; }
 		Action OnLogsAttached { get; set; }
 		LogMessageStore Logs { get; }
-		
+
 		void DetachLogs();
 		void AttachLogs();
 		Action<bool> OnLogsAttachmentChanged { get; set; }
@@ -126,7 +126,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 					break;
 			}
 
-			return new LogMessage() {Message = message.message, Level = logLevel, Timestamp = message.timeStamp};
+			return new LogMessage() { Message = message.message, Level = logLevel, Timestamp = message.timeStamp };
 		}
 
 		public void Save()

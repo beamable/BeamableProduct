@@ -13,7 +13,7 @@ namespace Beamable.Editor.UI.Model
 	public interface IBeamoServiceDefinition
 	{
 		IBeamableBuilder Builder { get; set; }
-		
+
 		public event Action<IBeamoServiceDefinition> Updated;
 		/// <summary>
 		/// The id that this service will be know, both locally and remotely.

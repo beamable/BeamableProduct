@@ -16,6 +16,6 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string timeStamp => __t;
 		public string message => __m;
 		public string logLevel => __l;
-		public string raw  => __raw;
+		public string raw => __raw;
 	}
 }
