@@ -161,9 +161,10 @@ namespace Beamable.Server.Editor.Usam
 					ServiceDefinitions.FindIndex(definition => definition.BeamoId.Equals(name));
 				if (dataIndex < 0)
 				{
+					var service = _services.FirstOrDefault(s => s.name == name);
 					ServiceDefinitions.Add(new BeamoServiceDefinition
 					{
-						ServiceInfo = new ServiceInfo() { name = name }
+						ServiceInfo = new ServiceInfo() { name = name, dockerBuildPath = service?.assetRelativePath, dockerfilePath = service?.relativeDockerFile}
 					});
 					dataIndex = ServiceDefinitions.Count - 1;
 					ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder(){BeamoId = name};
