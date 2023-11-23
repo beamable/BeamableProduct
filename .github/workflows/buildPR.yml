@@ -26,12 +26,12 @@ jobs:
       matrix:
         dotnet-version: ['6.0.x', '7.0.x' ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: ~/.nuget/packages
           # Look to see if there is a cache hit for the corresponding requirements file
@@ -55,12 +55,12 @@ jobs:
       matrix:
         dotnet-version: ['6.0.x', '7.0.x' ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: ~/.nuget/packages
           # Look to see if there is a cache hit for the corresponding requirements file
@@ -83,12 +83,12 @@ jobs:
       matrix:
         dotnet-version: ['6.0.x','7.0.x' ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: ~/.nuget/packages
           # Look to see if there is a cache hit for the corresponding requirements file
@@ -130,7 +130,7 @@ jobs:
             unityPasswordOverride: UNITY_PASSWORD_BUILD
             unitySerialOverride: UNITY_SERIAL_BUILD
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3
         with:
@@ -148,7 +148,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Cache Docker Layers
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         id: cache_docker
         with:
           path: ./docker-cache
@@ -163,7 +163,7 @@ jobs:
           UNITY_VERSION=${{ matrix.unityVersion }} ./build/prepare_base_image.sh
         shell: bash
       - name: Cache Unity Folders
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ matrix.projectPath }}/Library
           key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
@@ -227,7 +227,7 @@ jobs:
             unityPasswordOverride: UNITY_PASSWORD_BUILD
             unitySerialOverride: UNITY_SERIAL_BUILD
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           lfs: true
@@ -242,7 +242,7 @@ jobs:
           ./build/create_config_defaults.sh
         shell: bash
       - name: Cache Docker Layers
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         id: cache_docker
         with:
           path: ./docker-cache
@@ -257,7 +257,7 @@ jobs:
           UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/prepare_base_image.sh
         shell: bash
       - name: Cache Unity Folders
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ${{ matrix.projectPath }}/Library

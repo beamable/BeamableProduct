@@ -73,14 +73,14 @@ jobs:
         run: echo ${{ steps.isCronOrManual.outputs.customTag}}
       - name: Display Triggered Type
         run: echo ${{ steps.isCronOrManual.outputs.triggered}}
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         name: Checkout Main
         if: ${{ steps.isCronOrManualOrTag.outputs.triggered != 'tag' }}
         with:
           fetch-depth: 0
           lfs: true
           ref: main
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         name: Checkout Tag
         if: ${{ steps.isCronOrManualOrTag.outputs.triggered == 'tag' }}
         with:
@@ -89,7 +89,7 @@ jobs:
           ref: ${{ steps.isCronOrManualOrTag.outputs.tagname }}
         
       - name: Login to Docker Hub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -99,7 +99,7 @@ jobs:
           ./build/create_config_defaults.sh
         shell: bash
       - name: Cache Docker Layers
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         id: cache_docker
         with:
           path: ./docker-cache
@@ -114,7 +114,7 @@ jobs:
           UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/prepare_base_image.sh
         shell: bash
       - name: Cache Unity Folders
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ${{ matrix.projectPath }}/Library
