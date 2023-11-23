@@ -113,7 +113,7 @@ namespace Beamable
 
 			DependencyBuilder.AddSingleton<BeamCommands>();
 			DependencyBuilder.AddGlobalStorage<BeamCommandFactory, EditorStorageLayer>();
-			DependencyBuilder.AddSingleton<IBeamCli,BeamCli>();
+			DependencyBuilder.AddSingleton<BeamCli>();
 			DependencyBuilder.AddSingleton<DotnetService>();
 
 			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
@@ -410,7 +410,7 @@ namespace Beamable
 		public IPlatformRequester Requester => ServiceScope.GetService<PlatformRequester>();
 		public BeamableDispatcher Dispatcher => ServiceScope.GetService<BeamableDispatcher>();
 		public IAccountService EditorAccountService => ServiceScope.GetService<IAccountService>();
-		public BeamCommands Cli => ServiceScope.GetService<IBeamCli>().Command;
+		public BeamCommands Cli => ServiceScope.GetService<BeamCli>().Command;
 		public CustomerView CurrentCustomer => EditorAccount?.CustomerView;
 		public RealmView CurrentRealm => EditorAccount?.CurrentRealm?.GetOrElse(() => null);
 		public RealmView ProductionRealm => EditorAccount?.CurrentGame?.GetOrElse(() => null);

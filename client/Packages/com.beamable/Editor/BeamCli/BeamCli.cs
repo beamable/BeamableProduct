@@ -6,15 +6,7 @@ using UnityEngine;
 
 namespace Beamable.Editor.BeamCli
 {
-	public interface IBeamCli
-	{
-		Promise OnReady { get; }
-		public BeamCommands Command { get; }
-		Promise<bool> IsAvailable();
-		Promise Init();
-	}
-	
-	public class BeamCli : ILoadWithContext, IBeamCli
+	public class BeamCli : ILoadWithContext
 	{
 		private readonly IDependencyProvider _provider;
 		private readonly BeamEditorContext _ctx;
