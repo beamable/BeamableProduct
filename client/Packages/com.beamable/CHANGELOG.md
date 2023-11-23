@@ -31,6 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Beamable Assistant
 - OpenAPI for Chatv2 and Matchmaking
 
+## [1.19.7]
+
+### Fixed
+
+- Classes in microservices calls serialize correctly.
+
 ## [1.19.6]
 
 ### Added
