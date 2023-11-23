@@ -23,6 +23,7 @@ namespace Beamable.Editor.Tests.Toolbox
 		[UnityTest]
 		public IEnumerator TextboxKeystrokeTest()
 		{
+			yield return Provider.GetService<BeamCli.BeamCli>().OnReady;
 			IToolboxViewService model = Provider.GetService<IToolboxViewService>();
 
 			ToolboxActionBarVisualElement tbActionBar = new ToolboxActionBarVisualElement();
