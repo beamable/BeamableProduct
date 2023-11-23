@@ -31,6 +31,11 @@ no changes
 
 no changes
 
+### Changed
+
+- Removed `OpenLocalSwaggerOnRun` property from csproj template.
+- Added URL for the micro service portal page in it's informtion log.
+
 ## [1.19.0]
 
 ### Changed
@@ -121,7 +126,6 @@ no changes
 
 - Set of CRUD methods for `IMongoCollection` and `IStorageObjectConnectionProvider`
 
-
 ## [1.16.0]
 
 ### Added
@@ -138,7 +142,6 @@ no changes
 
 - Generated OpenAPI document for Microservices includes qualified naming extensions.
 - If Docker is not installed, calling Microservices from Editor still work.
-
 
 ## [1.15.0]
 

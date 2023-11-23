@@ -21,3 +21,12 @@ MonoBehaviour:
     DisableBeamableListPropertyDrawers: 0
     RunAsBeamableDeveloper: 1
     DisableBeamableDateStringPropertyDrawers: 0
+    DisableBeamableCidPidWarningsOnBuild: 0
+  AdvancedCli:
+    HasValue: 1
+    Value:
+      UseGlobalCLI: 0
+      DefaultCLIVersion: 
+      UseFromSource:
+        HasValue: 1
+        Value: ../cli/cli/cli.csproj

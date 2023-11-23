@@ -1,3 +1,4 @@
+using Beamable.Common.Content;
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -22,6 +23,10 @@ namespace Beamable.Editor.Modules.EditorConfig
 
 		[Tooltip("These are advanced Beamable editor features. Please only use these if you are confident in what you are doing.")]
 		public AdvancedSettings Advanced = new AdvancedSettings();
+
+		[Tooltip("These are advanced Beamable CLI features. It should not be changed without deeper understanding of Beamable internals.")]
+
+		public OptionalAdvancedCliSettings AdvancedCli = new OptionalAdvancedCliSettings();
 
 		public override void OnFreshCopy()
 		{
@@ -133,7 +138,6 @@ namespace Beamable.Editor.Modules.EditorConfig
 		[Serializable]
 		public class AdvancedSettings
 		{
-
 			[Tooltip("[Danger] Beamable overrides the Inspector for any ContentObject class. If you wish to disable Beamable content inspector features, use this property.")]
 			public bool DisableContentInspector;
 
@@ -160,6 +164,24 @@ namespace Beamable.Editor.Modules.EditorConfig
 
 			[Tooltip("[Danger] When you build the game but the config-default.txt CID/PID is different than the currently selected CID/PID in the Toolbox, then a warning will be displayed. This option disables that warning.")]
 			public bool DisableBeamableCidPidWarningsOnBuild;
+
+		}
+
+		[Serializable]
+		public class AdvancedCliSettings
+		{
+			[Tooltip("When true, the SDK will attempt to use a globally installed beam CLI. However, no version checks are performed.")]
+			public bool UseGlobalCLI;
+
+			[Tooltip("When using a developer version of the SDK, the version is 0.0.0, which is not a valid CLI version. In that event, this field controls what version of the CLI will be installed.")]
+			public string DefaultCLIVersion;
+
+			public OptionalString UseFromSource = new OptionalString();
+		}
+
+		[Serializable]
+		public class OptionalAdvancedCliSettings : Optional<AdvancedCliSettings>
+		{
 
 		}
 	}

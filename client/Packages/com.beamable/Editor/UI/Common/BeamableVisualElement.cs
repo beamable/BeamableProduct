@@ -1,6 +1,7 @@
 using Beamable.Editor.UI.Common;
 using System.IO;
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.Assertions;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -36,6 +37,7 @@ namespace Beamable.Editor.UI.Components
 
 		public override void Refresh()
 		{
+			base.Refresh();
 			Destroy();
 			Clear();
 
@@ -51,6 +53,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				elem?.SetBackgroundScaleModeToFit();
 			});
+
 		}
 	}
 }

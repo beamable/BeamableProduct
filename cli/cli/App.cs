@@ -52,7 +52,7 @@ public class App
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
 		// configureLogger ??= config => config.WriteTo.Console()
 		configureLogger ??= config =>
-			config.WriteTo.Console(outputTemplate:"{Timestamp:HH:mm:ss} [{Level:u4}] {Message:l}{NewLine}{Exception}")
+			config.WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss} [{Level:u4}] {Message:l}{NewLine}{Exception}")
 				.MinimumLevel.ControlledBy(LogLevel)
 				.CreateLogger();
 		Log.Logger = configureLogger(new LoggerConfiguration());
@@ -126,6 +126,7 @@ public class App
 		Commands.AddSingleton<RefreshTokenOption>();
 		Commands.AddSingleton<LogOption>();
 		Commands.AddSingleton<EnableReporterOption>();
+		Commands.AddSingleton<DotnetPathOption>();
 		Commands.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
@@ -138,6 +139,7 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
 			root.AddGlobalOption(provider.GetRequiredService<EnableReporterOption>());
 			root.AddGlobalOption(provider.GetRequiredService<SkipStandaloneValidationOption>());
+			root.AddGlobalOption(provider.GetRequiredService<DotnetPathOption>());
 			root.Description = "A CLI for interacting with the Beamable Cloud.";
 			return root;
 		});
@@ -149,6 +151,8 @@ public class App
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
 		Commands.AddRootCommand<ProjectCommand, ProjectCommandArgs>();
 		Commands.AddCommand<NewSolutionCommand, NewSolutionCommandArgs, ProjectCommand>();
+		Commands.AddCommand<RegenerateSolutionFilesCommand, RegenerateSolutionFilesCommandArgs, ProjectCommand>();
+		Commands.AddCommand<ListCommand, ListCommandArgs, ProjectCommand>();
 		Commands.AddCommand<NewStorageCommand, NewStorageCommandArgs, ProjectCommand>();
 		Commands.AddCommand<GenerateEnvFileCommand, GenerateEnvFileCommandArgs, ProjectCommand>();
 		Commands.AddCommand<GenerateIgnoreFileCommand, GenerateIgnoreFileCommandArgs, ProjectCommand>();
@@ -159,6 +163,7 @@ public class App
 		Commands.AddCommand<AddUnityClientOutputCommand, AddProjectClientOutputCommandArgs, ProjectCommand>();
 		Commands.AddCommand<AddUnrealClientOutputCommand, UnrealAddProjectClientOutputCommandArgs, ProjectCommand>();
 		Commands.AddCommand<UpdateUnityBeamPackageCommand, UpdateUnityBeamPackageCommandArgs, ProjectCommand>();
+		Commands.AddCommand<ProjectVersionCommand, ProjectVersionCommandArgs, ProjectCommand>();
 		Commands.AddCommand<ShareCodeCommand, ShareCodeCommandArgs, ProjectCommand>();
 		Commands.AddCommand<CheckStatusCommand, CheckStatusCommandArgs, ProjectCommand>();
 		Commands.AddCommand<AddServiceToSolutionCommand, SolutionCommandArgs, ProjectCommand>();
@@ -208,6 +213,8 @@ public class App
 		Commands.AddCommand<ServicesMetricsUrlCommand, ServicesMetricsUrlCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesPromoteCommand, ServicesPromoteCommandArgs, ServicesCommand>();
 		Commands.AddCommand<ServicesGetConnectionStringCommand, ServicesGetConnectionStringCommandArgs, ServicesCommand>();
+		Commands.AddCommand<ServicesSetManifestCommand, ServicesSetManifestCommandArgs, ServicesCommand>();
+
 
 		// content commands
 		Commands.AddRootCommand<ContentCommand, ContentCommandArgs>();
