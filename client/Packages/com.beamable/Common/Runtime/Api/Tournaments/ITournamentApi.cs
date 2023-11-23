@@ -289,14 +289,14 @@ namespace Beamable.Common.Api.Tournaments
 		/// from that cycle to the cycle after it. If nextStageChange is not known,
 		/// this field will be absent.
 		/// </summary>
-		public Optional<int> nextStageChange;
+		public int? nextStageChange;
 
 		/// <summary>
 		/// Previous stage change is a historical record of how the player got to
 		/// the current tier and stage they occupy. If the player was not present
 		/// in the previous cycle of the tournament, this field will be absent.
 		/// </summary>
-		public Optional<int> previousStageChange;
+		public int? previousStageChange;
 
 		/// <summary>
 		/// The <see cref="TournamentRewardCurrency"/>s that the player will be granted after the cycle completes.
