@@ -1,4 +1,6 @@
 
+using UnityEngine;
+
 namespace Beamable.Editor.BeamCli.Commands
 {
 	using Beamable.Common;
@@ -7,9 +9,13 @@ namespace Beamable.Editor.BeamCli.Commands
 	[System.SerializableAttribute()]
 	public class BeamTailLogMessage
 	{
-		public string timeStamp;
-		public string message;
-		public string logLevel;
-		public string raw;
+		[SerializeField] string __t;
+		[SerializeField] string __m;
+		[SerializeField] string __l;
+		[SerializeField] string __raw;
+		public string timeStamp => __t;
+		public string message => __m;
+		public string logLevel => __l;
+		public string raw => __raw;
 	}
 }

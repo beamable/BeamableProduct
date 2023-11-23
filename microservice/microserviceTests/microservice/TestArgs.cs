@@ -126,5 +126,6 @@ namespace microserviceTests.microservice
       public string LogOutputPath { get; }
       public bool EnableDangerousDeflateOptions => false;
       public string MetadataUrl { get; }
+	  public string RefreshToken { get; }
    }
 }

@@ -61,6 +61,14 @@ jobs:
           - 2022.3.0f1
     steps:
       - uses: actions/checkout@v3
+      - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.0.x'
+      - name: Build and Install BEAM CLI 
+        working-directory: ./cli/cli
+        run: |
+          ./install.sh
       - name: Login to Docker Hub
         uses: docker/login-action@v1
         with:

@@ -1,5 +1,4 @@
-﻿using Beamable.Common.Assistant;
-using Beamable.Editor.UI.Model;
+﻿using Beamable.Editor.UI.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -91,15 +90,8 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		protected override void Resolve()
 		{
-			var globalHintStorage = BeamEditor.HintGlobalStorage;
-			if (!DockerNotInstalled && _overlapingPorts)
-				globalHintStorage.AddOrReplaceHint(BeamHintType.Validation,
-												   BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
-												   BeamHintIds.ID_DOCKER_OVERLAPPING_PORTS);
-			else
-				globalHintStorage.RemoveHint(new BeamHintHeader(BeamHintType.Validation,
-																BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
-																BeamHintIds.ID_DOCKER_OVERLAPPING_PORTS));
+			// TODO: [AssistantRemoval] We need to decide what the UX for this case will be:
+			//  ID_DOCKER_OVERLAPPING_PORTS, defined by: !DockerNotInstalled && _overlapingPorts
 			Promise.CompleteSuccess(_status);
 		}
 	}

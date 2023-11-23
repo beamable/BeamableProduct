@@ -35,7 +35,7 @@ public class UnrealProjectClient : IProjectClient
 	{
 		var unrealArgs = args as UnrealAddProjectClientOutputCommandArgs;
 		if (unrealArgs == null) throw new Exception("didn't work");
-		
+
 		var msModuleName = unrealArgs.msModuleName;
 		if (string.IsNullOrEmpty(msModuleName)) msModuleName = AnsiConsole.Prompt(new TextPrompt<string>("Enter the Runtime module name to which we'll add the generated Microservice Client subsystem:"));
 		var msModulePath = Path.Combine(unrealArgs.ConfigService.BaseDirectory, relativePath + @"\Source\", msModuleName);
@@ -60,7 +60,7 @@ public class UnrealProjectClient : IProjectClient
 
 		var msModulePublicPrivate = unrealArgs.msModulePublicPrivate ?? AnsiConsole.Prompt(new ConfirmationPrompt($"Does the selected Runtime module ({msModuleName}) split files between Public/Private folders?"));
 		var bpNodesPublicPrivate = unrealArgs.bpModulePublicPrivate ?? AnsiConsole.Prompt(new ConfirmationPrompt($"Does the selected UncookedOnly module ({bpNodesModuleName}) split files between Public/Private folders?"));
-		
+
 		unrealArgs.ProjectService.AddUnrealProject(relativePath, msModuleName, bpNodesModuleName, msModulePublicPrivate, bpNodesPublicPrivate);
 	}
 }
@@ -77,13 +77,16 @@ public class ProjectClientHelper<TProjectClient> where TProjectClient : IProject
 	}
 
 	public bool SuggestProjectClientTypeCandidates<T>(IEnumerable<string> expectedParentDirectories, T args)
-		where T : CommandArgs
+		where T : AddProjectClientOutputCommandArgs
 	{
 		var defaultPaths = GetProjectClientTypeCandidates(expectedParentDirectories).ToList();
 		switch (defaultPaths.Count)
 		{
 			// if there is only one detected file, offer to use that.
-			case 1 when AnsiConsole.Confirm($"Automatically found {defaultPaths[0]}. Add as {_projectClientTypeName} project?"):
+			case 1 when !args.quiet && AnsiConsole.Confirm($"Automatically found {defaultPaths[0]}. Add as {_projectClientTypeName} project?"):
+				_client.AddProject(defaultPaths[0], args);
+				return true;
+			case 1 when args.quiet:
 				_client.AddProject(defaultPaths[0], args);
 				return true;
 			// if there are many detected files, offer up a list of them

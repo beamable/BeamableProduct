@@ -32,7 +32,7 @@ namespace Beamable
 		/// <summary>
 		/// In NetCore 2.0, there is a system function for this, but Unity 2019 & 2020 don't support it. So here is
 		/// a shim from https://stackoverflow.com/questions/275689/how-to-get-relative-path-from-absolute-path
-		private static string GetRelativePath(string fromPath, string toPath)
+		public static string GetRelativePath(string fromPath, string toPath)
 		{
 			if (string.IsNullOrEmpty(fromPath))
 			{
@@ -44,6 +44,8 @@ namespace Beamable
 				throw new ArgumentNullException("toPath");
 			}
 
+			fromPath = Path.GetFullPath(fromPath);
+			toPath = Path.GetFullPath(toPath);
 			Uri fromUri = new Uri(AppendDirectorySeparatorChar(fromPath));
 			Uri toUri = new Uri(AppendDirectorySeparatorChar(toPath));
 

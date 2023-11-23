@@ -82,7 +82,7 @@
   <Target Name="PrepTools" BeforeTargets="Pack" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true">
     <Exec Command="dotnet tool restore" />
   </Target>
-  <Target Name="BuildCLIInterface" AfterTargets="Pack" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true">
+  <Target Name="BuildCLIInterface" AfterTargets="Pack" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true AND $(SKIP_GENERATION)!=true">
     <Message Importance="high" Text="OutDir: $(OutputPath)" />
 
     <!-- Unix-Based -->

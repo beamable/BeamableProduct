@@ -219,11 +219,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void SetHeight(float newHeight)
 		{
-			Model.VisualElementHeight = Mathf.Clamp(newHeight, MIN_HEIGHT, MAX_HEIGHT);
+			Model.ElementHeight = Mathf.Clamp(newHeight, MIN_HEIGHT, MAX_HEIGHT);
 #if UNITY_2019_1_OR_NEWER
-            _rootVisualElement.style.height = new StyleLength(Model.VisualElementHeight);
+            _rootVisualElement.style.height = new StyleLength(Model.ElementHeight);
 #elif UNITY_2018
-            _rootVisualElement.style.height = StyleValue<float>.Create(Model.VisualElementHeight);
+            _rootVisualElement.style.height = StyleValue<float>.Create(Model.ElementHeight);
 #endif
 		}
 
@@ -251,7 +251,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			if (areLogsAttached)
 			{
 				CreateLogElement();
-				SetHeight(Model.VisualElementHeight);
+				SetHeight(Model.ElementHeight);
 			}
 		}
 		private void CreateLogElement()
@@ -265,7 +265,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void OnLogsDetached()
 		{
 			_logElement.OnDetachLogs -= OnLogsDetached;
-			Model.VisualElementHeight = _rootVisualElement.layout.height;
+			Model.ElementHeight = _rootVisualElement.layout.height;
 
 #if UNITY_2019_1_OR_NEWER
             _rootVisualElement.style.height = new StyleLength(DETACHED_HEIGHT);
@@ -277,7 +277,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected virtual void SetupProgressBarForStart(Task task)
 		{
 			// We have two ways. Either store reference or return instance as event parameter
-			new RunImageLogParser(_loadingBar, Model);
+			new RunImageLogParser(_loadingBar, Model.Builder, Model.Name);
 		}
 		private void OnStartFailed()
 		{

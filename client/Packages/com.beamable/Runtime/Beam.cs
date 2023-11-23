@@ -19,6 +19,7 @@ using Beamable.Api.Payments;
 using Beamable.Api.Sessions;
 using Beamable.Api.Stats;
 using Beamable.Api.Tournaments;
+using Beamable.Avatars;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Announcements;
@@ -33,7 +34,6 @@ using Beamable.Common.Api.Presence;
 using Beamable.Common.Api.Social;
 using Beamable.Common.Api.Stats;
 using Beamable.Common.Api.Tournaments;
-using Beamable.Common.Assistant;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
@@ -60,7 +60,6 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
 
-///Modified
 namespace Beamable
 {
 	/// <summary>
@@ -83,37 +82,40 @@ namespace Beamable
 		public static IDependencyBuilder DependencyBuilder;
 
 		/// <summary>
+		/// This is the global <see cref="IDependencyBuilder"/>.
+		/// By default, this will contain services and scopes that can exist without any <see cref="BeamContext"/>.
+		/// The builder is used to create the <see cref="GlobalScope"/>.
+		/// <para>
+		/// You can register your own types by creating a static method, marking it with the <see cref="RegisterBeamableDependenciesAttribute"/>,
+		/// marking the attribute with the <see cref="RegistrationOrigin.RUNTIME_GLOBAL"/> arg,
+		/// and having it accept a single parameter of <see cref="IDependencyBuilder"/>. The instance you are given is the <see cref="GlobalDependencyBuilder"/>.
+		/// </para>
+		/// </summary>
+		public static IDependencyBuilder GlobalDependencyBuilder;
+
+		/// <summary>
+		/// The global scope is shared for all <see cref="BeamContext"/> instances.
+		/// Every <see cref="BeamContext"/> is a child scope of the global scope.
+		/// The global scope contains services that do not any <see cref="BeamContext"/> information to exist.
+		/// The scope is created from the <see cref="GlobalDependencyBuilder"/>
+		/// </summary>
+		public static IDependencyProvider GlobalScope;
+
+		private static IDependencyProviderScope _globalProviderScope;
+
+		/// <summary>
 		/// Controls the CID/PID connection strings for the game.
 		/// However, this should not be used directly. Instead,
 		/// Use <see cref="ChangePid"/> to change the PID at runtime.
 		/// </summary>
-		public static DefaultRuntimeConfigProvider RuntimeConfigProvider
-		{
-			get
-			{
-				if (_runtimeConfigProvider == null)
-				{
-					_runtimeConfigProvider = new DefaultRuntimeConfigProvider(new ConfigDatabaseProvider());
-				}
-				return _runtimeConfigProvider;
-			}
-			set
-			{
-				_runtimeConfigProvider = value;
-			}
-		}
+		public static DefaultRuntimeConfigProvider RuntimeConfigProvider =>
+			GlobalScope.GetService<DefaultRuntimeConfigProvider>();
 
-		private static DefaultRuntimeConfigProvider _runtimeConfigProvider;
-		
 		public static ReflectionCache ReflectionCache;
-		public static IBeamHintGlobalStorage RuntimeGlobalStorage;
 
 		static Beam()
 		{
 			ReflectionCache = new ReflectionCache();
-#if UNITY_EDITOR
-			RuntimeGlobalStorage = new BeamHintGlobalStorage();
-#endif
 
 			var reflectionSystemObjects = Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems")
 												   .Where(system => system.Enabled)
@@ -131,13 +133,24 @@ namespace Beamable
 			ReflectionCache.RegisterTypeProvider(contentReflectionCache);
 			ReflectionCache.RegisterReflectionSystem(contentReflectionCache);
 
-			// Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance when in the editor. When not in the editor, the storage should really not
-			// be used and
-			// Finally, calls the Generate Reflection cache
-#if UNITY_EDITOR
-			ReflectionCache.SetStorage(RuntimeGlobalStorage);
-#endif
+			// Also initializes the Reflection Cache system and calls the Generate Reflection cache
 			ReflectionCache.GenerateReflectionCache(CoreConfiguration.Instance.AssembliesToSweep);
+
+			// create a global dependency builder.
+			GlobalDependencyBuilder = new DependencyBuilder();
+			GlobalDependencyBuilder.AddSingleton<IGameObjectContext, BeamableGlobalGameObject>();
+			GlobalDependencyBuilder.AddComponentSingleton<CoroutineService>();
+			GlobalDependencyBuilder.AddSingleton<ICoroutineService>(p => p.GetService<CoroutineService>());
+			GlobalDependencyBuilder.AddSingleton<DefaultUncaughtPromiseQueue>();
+			GlobalDependencyBuilder.AddSingleton(new DefaultRuntimeConfigProvider(new ConfigDatabaseProvider()));
+			GlobalDependencyBuilder.AddSingleton<IRuntimeConfigProvider>(
+				p => p.GetService<DefaultRuntimeConfigProvider>());
+
+			// allow customization to the global scope
+			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(GlobalDependencyBuilder, RegistrationOrigin.RUNTIME_GLOBAL);
+
+			// create the global scope
+			GlobalScope = _globalProviderScope = GlobalDependencyBuilder.Build();
 
 			// Set the default promise error handlers
 			PromiseExtensions.SetupDefaultHandler();
@@ -257,6 +270,7 @@ namespace Beamable
 			DependencyBuilder.AddScoped<PlayerStats>();
 			DependencyBuilder.AddScoped<PlayerLobby>();
 			DependencyBuilder.AddScoped<PlayerParty>();
+			DependencyBuilder.AddScopedStorage<PlayerLeaderboards, OfflineCacheStorageLayer>();
 			DependencyBuilder.AddScoped<PlayerAccounts>();
 			DependencyBuilder.AddScopedStorage<PlayerInventory, OfflineCacheStorageLayer>();
 			DependencyBuilder.AddSingleton<OfflineCacheStorageLayer>();
@@ -269,13 +283,10 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.CustomParameterProvider);
 			DependencyBuilder.AddSingleton(ContentConfiguration.Instance.ParameterProvider);
 			DependencyBuilder.AddSingleton(ContentConfiguration.Instance);
+			DependencyBuilder.AddSingleton(AvatarConfiguration.Instance);
 			DependencyBuilder.AddSingleton(CoreConfiguration.Instance);
 			DependencyBuilder.AddSingleton<IAuthSettings>(AccountManagementConfiguration.Instance);
 			DependencyBuilder.AddSingleton<OfflineCache>(p => new OfflineCache(p.GetService<IRuntimeConfigProvider>(), CoreConfiguration.Instance.UseOfflineCache));
-
-
-			RuntimeConfigProvider ??= new DefaultRuntimeConfigProvider(new ConfigDatabaseProvider());
-			DependencyBuilder.AddSingleton<IRuntimeConfigProvider>(RuntimeConfigProvider);
 			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 
@@ -368,6 +379,24 @@ namespace Beamable
 			foreach (var ctx in BeamContext.All)
 			{
 				await ctx.Stop();
+			}
+		}
+
+		/// <summary>
+		/// Completely stop Beamable, including the <see cref="GlobalScope"/> and all <see cref="BeamContext"/>s.
+		/// Then, reloads the <see cref="GlobalScope"/> but does not reload any <see cref="BeamContext"/>s.
+		/// <param name="sceneQualifier">The string should either be a scene name, or the stringified int of a scene build index. If null is given, the scene is not reloaded.</param>
+		/// </summary>
+		public static async Promise RestartBeamable(string sceneQualifier = "0")
+		{
+			await StopAllContexts();
+			await _globalProviderScope.Dispose();
+
+			GlobalScope = _globalProviderScope = GlobalDependencyBuilder.Build();
+
+			if (!string.IsNullOrEmpty(sceneQualifier))
+			{
+				await ResetToScene(sceneQualifier);
 			}
 		}
 

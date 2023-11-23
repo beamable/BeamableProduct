@@ -733,7 +733,7 @@ namespace Beamable.Common.Content
 						{
 							if (!disableExceptions)
 							{
-								Debug.LogError($"Failed to deserialize field. type=[{type.Name}] field-name=[{field.SerializedName}] field-type=[{field.FieldType}] data=[{dataValue}]");
+								Debug.LogError($"Failed to deserialize field. type=[{type.Name}] field-name=[{field.SerializedName}] field-type=[{field.FieldType}] data=[{dataValue}] exception-type=[{e?.GetType().Name}] exception-message=[{e?.Message}] exception-stack=[{e?.StackTrace}]");
 								throw;
 							}
 							else

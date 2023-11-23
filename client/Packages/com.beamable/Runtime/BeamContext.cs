@@ -162,11 +162,6 @@ namespace Beamable
 				? _announcements
 				: (_announcements = _serviceScope.GetService<PlayerAnnouncements>());
 
-		// public PlayerCurrencyGroup Currencies =>
-		// 	_currency?.IsInitialized ?? false
-		// 		? _currency
-		// 		: (_currency = _serviceScope.GetService<PlayerCurrencyGroup>());
-
 		public PlayerStats Stats =>
 			_playerStats?.IsInitialized ?? false
 				? _playerStats
@@ -212,6 +207,8 @@ namespace Beamable
 		/// </para>
 		/// </summary>
 		public PlayerInventory Inventory => ServiceProvider.GetService<PlayerInventory>();
+
+		public PlayerLeaderboards Leaderboards => ServiceProvider.GetService<PlayerLeaderboards>();
 
 		/// <summary>
 		/// Access the <see cref="IContentApi"/> for this player.
@@ -358,6 +355,7 @@ namespace Beamable
 		/// Using the authorization associated with the current context, observe the public data of another player
 		/// </summary>
 		/// <param name="otherPlayerId"></param>
+		[Obsolete("?")]
 		public IObservedPlayer ObservePlayer(long otherPlayerId)
 		{
 			return Fork(builder =>
@@ -384,14 +382,14 @@ namespace Beamable
 
 		[Obsolete("You do not need to include the cid or pid anymore")]
 		protected void Init(string cid,
-		                    string pid,
-		                    string playerCode,
-		                    BeamableBehaviour behaviour,
-		                    IDependencyBuilder builder)
+							string pid,
+							string playerCode,
+							BeamableBehaviour behaviour,
+							IDependencyBuilder builder)
 		{
 			Init(playerCode, behaviour, builder);
 		}
-		
+
 		protected void Init(string playerCode,
 							BeamableBehaviour behaviour,
 							IDependencyBuilder builder)
@@ -445,7 +443,9 @@ namespace Beamable
 			RegisterServices(builder);
 
 			var oldScope = _serviceScope;
-			_serviceScope = builder.Build();
+
+			_serviceScope = Beam.GlobalScope.Fork(builder);
+
 			oldScope?.Hydrate(_serviceScope);
 
 			var config = _serviceScope.GetService<IRuntimeConfigProvider>();

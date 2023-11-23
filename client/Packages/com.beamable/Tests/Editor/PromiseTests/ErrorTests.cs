@@ -190,8 +190,7 @@ namespace Beamable.Editor.Tests.PromiseTests
 			p.CompleteError(knownEx);
 
 			var task = PromiseExtensions.WaitForAllUncaughtHandlers();
-			while (!task.IsCompleted) { yield return null; }
-			if (task.IsFaulted) { throw task.Exception; }
+			yield return task.ToYielder();
 
 			Assert.IsTrue(ranDefault);
 		}
@@ -229,8 +228,7 @@ namespace Beamable.Editor.Tests.PromiseTests
 			p.CompleteError(knownEx);
 
 			var task = PromiseExtensions.WaitForAllUncaughtHandlers();
-			while (!task.IsCompleted) { yield return null; }
-			if (task.IsFaulted) { throw task.Exception; }
+			yield return task.ToYielder();
 
 			Assert.IsTrue(ranDefault && eventRuns.All(ran => ran));
 		}
@@ -281,8 +279,7 @@ namespace Beamable.Editor.Tests.PromiseTests
 			});
 
 			var task = PromiseExtensions.WaitForAllUncaughtHandlers();
-			while (!task.IsCompleted) { yield return null; }
-			if (task.IsFaulted) { throw task.Exception; }
+			yield return task.ToYielder();
 
 			Assert.IsTrue(eventRan);
 		}
@@ -307,8 +304,7 @@ namespace Beamable.Editor.Tests.PromiseTests
 			p.CompleteError(knownEx);
 
 			var task = PromiseExtensions.WaitForAllUncaughtHandlers();
-			while (!task.IsCompleted) { yield return null; }
-			if (task.IsFaulted) { throw task.Exception; }
+			yield return task.ToYielder();
 
 			Assert.IsTrue(logRan);
 		}
@@ -362,9 +358,7 @@ namespace Beamable.Editor.Tests.PromiseTests
 			});
 
 			var task = PromiseExtensions.WaitForAllUncaughtHandlers();
-			while (!task.IsCompleted) { yield return null; }
-			if (task.IsFaulted) { throw task.Exception; }
-
+			yield return task.ToYielder();
 
 			Assert.IsTrue(errorCallbackRan);
 			Assert.AreEqual(knownEx, errorEx);
@@ -389,8 +383,7 @@ namespace Beamable.Editor.Tests.PromiseTests
 			var p = Promise<int>.Failed(knownEx).FlatMap(Promise<int>.Successful);
 
 			var task = PromiseExtensions.WaitForAllUncaughtHandlers();
-			while (!task.IsCompleted) { yield return null; }
-			if (task.IsFaulted) { throw task.Exception; }
+			yield return task.ToYielder();
 
 
 			Assert.IsTrue(logRan);
@@ -420,8 +413,7 @@ namespace Beamable.Editor.Tests.PromiseTests
 				   errorEx = ex;
 			   });
 			var task = PromiseExtensions.WaitForAllUncaughtHandlers();
-			while (!task.IsCompleted) { yield return null; }
-			if (task.IsFaulted) { throw task.Exception; }
+			yield return task.ToYielder();
 
 			Assert.IsTrue(errorCallbackRan);
 			Assert.AreEqual(knownEx, errorEx);
@@ -447,8 +439,7 @@ namespace Beamable.Editor.Tests.PromiseTests
 			   .FlatMap(_ => Promise<int>.Failed(knownEx));
 
 			var task = PromiseExtensions.WaitForAllUncaughtHandlers();
-			while (!task.IsCompleted) { yield return null; }
-			if (task.IsFaulted) { throw task.Exception; }
+			yield return task.ToYielder();
 
 			Assert.IsTrue(logRan);
 		}
@@ -477,8 +468,7 @@ namespace Beamable.Editor.Tests.PromiseTests
 			});
 
 			var task = PromiseExtensions.WaitForAllUncaughtHandlers();
-			while (!task.IsCompleted) { yield return null; }
-			if (task.IsFaulted) { throw task.Exception; }
+			yield return task.ToYielder();
 
 			Assert.IsTrue(errorCallbackRan);
 		}
@@ -502,8 +492,7 @@ namespace Beamable.Editor.Tests.PromiseTests
 			var p = Promise<int>.Successful(0).Map<int>(_ => throw knownEx);
 
 			var task = PromiseExtensions.WaitForAllUncaughtHandlers();
-			while (!task.IsCompleted) { yield return null; }
-			if (task.IsFaulted) { throw task.Exception; }
+			yield return task.ToYielder();
 
 			Assert.IsTrue(logRan);
 		}
@@ -532,9 +521,7 @@ namespace Beamable.Editor.Tests.PromiseTests
 			});
 
 			var task = PromiseExtensions.WaitForAllUncaughtHandlers();
-			while (!task.IsCompleted) { yield return null; }
-			if (task.IsFaulted) { throw task.Exception; }
-
+			yield return task.ToYielder();
 
 			Assert.IsTrue(errorCallbackRan);
 			Assert.AreEqual(knownEx, errorEx);
@@ -559,8 +546,7 @@ namespace Beamable.Editor.Tests.PromiseTests
 
 			var p = Promise<int>.Failed(knownEx).Map(Promise<int>.Successful);
 			var task = PromiseExtensions.WaitForAllUncaughtHandlers();
-			while (!task.IsCompleted) { yield return null; }
-			if (task.IsFaulted) { throw task.Exception; }
+			yield return task.ToYielder();
 
 			Assert.IsTrue(logRan);
 		}
@@ -587,8 +573,7 @@ namespace Beamable.Editor.Tests.PromiseTests
 			});
 
 			var task = PromiseExtensions.WaitForAllUncaughtHandlers();
-			while (!task.IsCompleted) { yield return null; }
-			if (task.IsFaulted) { throw task.Exception; }
+			yield return task.ToYielder();
 
 			Assert.IsTrue(recoverRan);
 		}
