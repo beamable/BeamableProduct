@@ -933,26 +933,30 @@ namespace Beamable.Serialization.SmallerJSON
 
 			private static void SerializeClass(object obj, StringBuilder builder)
 			{
-				FieldInfo[] fields = obj.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance);
-				PropertyInfo[] properties = obj.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
-				builder.Append("{");
+				Type serializeFieldType = typeof(SerializeField);
+				Type compilerGeneratedType = typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute);
+				Type type = obj.GetType();
 
+				FieldInfo[] fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+				builder.Append("{");
+				bool isFirst = true;
 				// Serialize fields
 				for (int i = 0; i < fields.Length; i++)
 				{
 					FieldInfo field = fields[i];
+					var hasSerializeField = field.GetCustomAttribute(serializeFieldType) != null;
+					// For now I've disabled the inclusion of the compiler generated fields but it could be enabled later on.
+					// For now it means it will not include BackingField for properties to have feature parity with JsonUtility.
+					var isGeneratedByCompiler = field.GetCustomAttribute(compilerGeneratedType) != null;
+					var canBeSerialized = (hasSerializeField || !field.IsNotSerialized) && !isGeneratedByCompiler;
+					if (!canBeSerialized)
+						continue;
+					if (!isFirst)
+					{
+						builder.Append(",");
+					}
 					builder.Append($"\"{field.Name}\":{Serialize(field.GetValue(obj), new StringBuilder())}");
-
-					if (i < fields.Length - 1 || properties.Length > 0) builder.Append(",");
-				}
-
-				// Serialize properties
-				for (int i = 0; i < properties.Length; i++)
-				{
-					PropertyInfo property = properties[i];
-					builder.Append($"\"{property.Name}\":{Serialize(property.GetValue(obj), new StringBuilder())}");
-
-					if (i < properties.Length - 1) builder.Append(",");
+					isFirst = false;
 				}
 
 				builder.Append("}");
