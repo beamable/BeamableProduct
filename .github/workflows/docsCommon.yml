@@ -44,7 +44,7 @@ jobs:
         run: |
           tar cfz docs-html.tar.gz ./client/Packages/html
         shell: bash
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         name: Keep Artifact
         if: always()
         with:

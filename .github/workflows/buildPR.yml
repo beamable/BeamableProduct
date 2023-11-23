@@ -40,7 +40,7 @@ jobs:
             ${{ runner.os }}-nuget
       - name: Build a Nuget package
         run: dotnet pack ./microservice/microservice -c Release -o ./nuget-build -p:NuspecFile=Microservice.nuspec -p:PackageVersion=0.0.0 /p:CombinedVersion=0.0.0
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: Microservice Nuget Package
           path: ./nuget-build
@@ -169,7 +169,7 @@ jobs:
           key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
           restore-keys: |
             Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
-      - uses: game-ci/unity-test-runner@v2
+      - uses: game-ci/unity-test-runner@v4
         id: tests
         timeout-minutes: 30
         env:
@@ -184,7 +184,7 @@ jobs:
           artifactsPath: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: always()
         with:
           name: Test results for ${{ matrix.unityVersion }} ${{ matrix.testMode }}

@@ -56,9 +56,9 @@ jobs:
           - playmode
           - editmode
         unityVersion:
-          - 2020.3.19f1
-          - 2021.3.2f1
-          - 2022.3.0f1
+          - 2020.3.48f1
+          - 2021.3.29f1
+          - 2022.3.7f1
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
@@ -96,7 +96,7 @@ jobs:
           key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
           restore-keys: |
             Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
-      - uses: game-ci/unity-test-runner@v2
+      - uses: game-ci/unity-test-runner@v4
         id: tests
         timeout-minutes: 20
         env:
@@ -111,7 +111,7 @@ jobs:
           artifactsPath: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: always()
         with:
           name: Test results for ${{ matrix.unityVersion }} ${{ matrix.testMode }}
@@ -141,7 +141,7 @@ jobs:
           - iOS
           - StandaloneOSX
         unityVersion:
-          - 2022.3.0f1
+          - 2022.3.7f1
         projectPath:
           - client
     steps:
@@ -184,7 +184,7 @@ jobs:
           key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
           restore-keys: |
             Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
-      - uses: game-ci/unity-builder@v2.0.4
+      - uses: game-ci/unity-builder@v4
         if: ${{ github.ref == 'refs/heads/main' }}
         timeout-minutes: 30
         env:
@@ -202,7 +202,7 @@ jobs:
           allowDirtyBuild: true
           buildsPath: dist
           buildMethod: BuildSampleProject.Development
-      - uses: game-ci/unity-builder@v2.0.4
+      - uses: game-ci/unity-builder@v4
         if: ${{ github.ref == 'refs/heads/staging' }}
         timeout-minutes: 30
         env:
@@ -220,7 +220,7 @@ jobs:
           allowDirtyBuild: true
           buildsPath: dist
           buildMethod: BuildSampleProject.Staging
-      - uses: game-ci/unity-builder@v2.0.4
+      - uses: game-ci/unity-builder@v4
         if: ${{ github.ref == 'refs/heads/production' }}
         timeout-minutes: 30
         env:
@@ -245,7 +245,7 @@ jobs:
           chmod +x ./build/save_base_image.sh
           UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/save_base_image.sh
         shell: bash
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: ${{ matrix.targetPlatform != 'WebGL' }}
         with:
           name: Build-${{ matrix.targetPlatform }}
@@ -315,7 +315,7 @@ jobs:
           mobileprovision-path: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductProd.mobileprovision
           code-signing-identity: 'iPhone Distribution: Beamable, Inc (A6C4565DLF)'
           team-id: A6C4565DLF
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: beamableproduct.ipa
           path: '/Users/runner/work/BeamableProduct/BeamableProduct/output.ipa'
