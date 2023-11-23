@@ -11,7 +11,7 @@ no changes
 
 ## [1.19.6]
 
-no changes[CHANGELOG.md](..%2F..%2F..%2F..%2FBeam2021%2Fcli%2Fcli%2FCHANGELOG.md)
+no changes
 
 ## [1.19.5]
 
