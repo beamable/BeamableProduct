@@ -3,7 +3,7 @@ using Beamable.Player;
 using Beamable.Runtime.LightBeams;
 using UnityEngine;
 
-public class AccountManager : MonoBehaviour
+public class FriendsManager : MonoBehaviour
 {
 	[Header("Scene references")]
 	public RectTransform root;
