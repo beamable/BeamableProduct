@@ -13,8 +13,6 @@ namespace Beamable.Editor.Microservice.UI2.Models
 		[SerializeField] private List<MicroserviceVisualsModel> _visualModels = new List<MicroserviceVisualsModel>();
 		public List<MicroserviceVisualsModel> VisualModels => _visualModels;
 
-		private static string GetKey(string name) => $"Beamable{nameof(MicroserviceVisualsModel)}{name}";
-
 		public MicroserviceVisualsModel GetModel(string name)
 		{
 			var existingModel = VisualModels.FirstOrDefault(m => m.name == name);
