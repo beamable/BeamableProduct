@@ -70,38 +70,23 @@ namespace Beamable.Editor.Microservice.UI2.Models
 		[SerializeField] private float _visualHeight = DEFAULT_HEIGHT;
 		[SerializeField] public string name;
 
-		public static MicroserviceVisualsModel GetModel(string name)
-		{
-			MicroserviceVisualsModel model = null;
-			try
-			{
-				var key = GetKey(name);
-				if (EditorPrefs.HasKey(key))
-				{
-					string json = EditorPrefs.GetString(key, string.Empty);
-					model = JsonUtility.FromJson<MicroserviceVisualsModel>(json);
-				}
-				if (model == null)
-				{
-					model = new MicroserviceVisualsModel() { name = name };
-				}
-
-				BeamEditorContext.Default.ServiceScope.GetService<CodeService>().OnLogMessage -= model.HandleLogMessage;
-				BeamEditorContext.Default.ServiceScope.GetService<CodeService>().OnLogMessage += model.HandleLogMessage;
-			}
-			catch
-			{
-				//
-			}
-			return model;
-		}
-
 		private void HandleLogMessage(string arg1, BeamTailLogMessage arg2)
 		{
 			if (arg1 == name && !string.IsNullOrWhiteSpace(arg2.message))
 			{
 				Logs.AddMessage(FromBeamTailLog(arg2));
 			}
+		}
+
+		public void Disconnect()
+		{
+			BeamEditorContext.Default.ServiceScope.GetService<CodeService>().OnLogMessage -= HandleLogMessage;
+		}
+
+		public void ConnectToLogMessages()
+		{
+			BeamEditorContext.Default.ServiceScope.GetService<CodeService>().OnLogMessage -= HandleLogMessage;
+			BeamEditorContext.Default.ServiceScope.GetService<CodeService>().OnLogMessage += HandleLogMessage;
 		}
 
 		static LogMessage FromBeamTailLog(BeamTailLogMessage message)
@@ -129,12 +114,6 @@ namespace Beamable.Editor.Microservice.UI2.Models
 			return new LogMessage() { Message = message.message, Level = logLevel, Timestamp = message.timeStamp };
 		}
 
-		public void Save()
-		{
-			string json = JsonUtility.ToJson(this);
-			EditorPrefs.SetString(GetKey(name), json);
-		}
-
 		public void DetachLogs()
 		{
 			if (!AreLogsAttached) return;
@@ -153,8 +132,8 @@ namespace Beamable.Editor.Microservice.UI2.Models
 
 		public virtual void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
 		{
+			evt.menu.AppendAction("TEST ACTION", action => {});
 		}
 
-		private static string GetKey(string name) => $"Beamable{nameof(MicroserviceVisualsModel)}{name}";
 	}
 }

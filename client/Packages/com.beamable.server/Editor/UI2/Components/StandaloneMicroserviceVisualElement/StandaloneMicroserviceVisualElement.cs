@@ -48,7 +48,7 @@ namespace Beamable.Editor.Microservice.UI2.Components
 		public override void Refresh()
 		{
 			_codeService = Context.ServiceScope.GetService<CodeService>();
-			_visualsModel = MicroserviceVisualsModel.GetModel(Model.BeamoId);
+			_visualsModel = Context.ServiceScope.GetService<UsamDataModel>().GetModel(Model.BeamoId);
 			base.Refresh();
 			QueryVisualElements();
 			UpdateVisualElements();
