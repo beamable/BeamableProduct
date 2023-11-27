@@ -7,4 +7,6 @@ public class LobbyExampleConfig : ScriptableObject
 	public CreateLobbyDisplayBehaviour createLobbyDisplay;
 	public FindLobbyDisplayBehaviour findLobbyDislay;
 	public LobbyDisplayBehaviour lobbyDisplay;
+	public LobbyDetailsDisplayBehaviour lobbyDetailsDisplay;
+	public PlayerIdDisplayBehaviour playerIdDisplay;
 }

@@ -10,6 +10,7 @@ public class CreateLobbyDisplayBehaviour : MonoBehaviour, ILightComponent
 {
 	[Header("Scene References")]
 	public TMP_InputField nameInput;
+	public TMP_InputField descriptionInput;
 	public Toggle closedToggle;
 	public Button createLobbyBtn;
 	public Button backButton;
@@ -45,7 +46,7 @@ public class CreateLobbyDisplayBehaviour : MonoBehaviour, ILightComponent
 
 		LobbyRestriction restrictionLevel = closedToggle.isOn ? LobbyRestriction.Closed : LobbyRestriction.Open;
 		
-		await _ctx.Lobby.Create(nameInput.text, restrictionLevel);
+		await _ctx.Lobby.Create(nameInput.text, restrictionLevel, description: descriptionInput.text);
 		await _lightBeam.GotoPage<HomePage>();
 	}
 }

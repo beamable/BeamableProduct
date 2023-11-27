@@ -1,6 +1,5 @@
 using Beamable;
 using Beamable.Experimental.Api.Lobbies;
-using Beamable.Player;
 using Beamable.Runtime.LightBeams;
 using UnityEngine;
 
@@ -24,6 +23,8 @@ public class LobbyManager : MonoBehaviour
 			builder.AddLightComponent(config.createLobbyDisplay);
 			builder.AddLightComponent(config.findLobbyDislay);
 			builder.AddLightComponent<LobbyDisplayBehaviour, Lobby>(config.lobbyDisplay);
+			builder.AddLightComponent<LobbyDetailsDisplayBehaviour, Lobby>(config.lobbyDetailsDisplay);
+			builder.AddLightComponent<PlayerIdDisplayBehaviour, LobbyPlayer>(config.playerIdDisplay);
 		});
 
 		await lightBeam.Scope.Start<HomePage>();

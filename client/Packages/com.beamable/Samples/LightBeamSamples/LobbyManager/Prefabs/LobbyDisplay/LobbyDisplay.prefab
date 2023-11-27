@@ -232,6 +232,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lobbyNameLabel: {fileID: 3201258678514102582}
+  enterDetailsButton: {fileID: 6111512848902063015}
 --- !u!1 &5860924953156096988
 GameObject:
   m_ObjectHideFlags: 0
