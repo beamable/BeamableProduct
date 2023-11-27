@@ -169,9 +169,6 @@ jobs:
           key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
           restore-keys: |
             Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
-      - name: Use global CLI
-        run: |
-          sed -i 's/UseGlobalCLI: 0/UseGlobalCLI: 1/g' client/Assets/Beamable/Resources/EditorConfiguration.asset
       - uses: game-ci/unity-test-runner@v4
         id: tests
         timeout-minutes: 30
