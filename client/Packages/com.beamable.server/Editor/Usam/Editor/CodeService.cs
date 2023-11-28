@@ -189,8 +189,6 @@ namespace Beamable.Server.Editor.Usam
 					ServiceDefinitions[dataIndex].IsRunningOnRemote =
 						objData.RunningState[i] ? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
 				}
-
-				ServiceDefinitions[dataIndex].CallUpdate();
 				LogVerbose($"Handling {name} ended");
 			}
 		}
