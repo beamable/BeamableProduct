@@ -9,4 +9,5 @@ public class LobbyExampleConfig : ScriptableObject
 	public LobbyDisplayBehaviour lobbyDisplay;
 	public LobbyDetailsDisplayBehaviour lobbyDetailsDisplay;
 	public PlayerIdDisplayBehaviour playerIdDisplay;
+	public PlayerLobbyBehaviour playerLobby;
 }

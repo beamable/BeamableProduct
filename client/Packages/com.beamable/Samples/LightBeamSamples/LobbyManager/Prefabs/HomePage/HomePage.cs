@@ -1,29 +1,45 @@
 using Beamable;
 using Beamable.Common;
+using Beamable.Player;
 using Beamable.Runtime.LightBeams;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
+
+public class PlayerLobbyData
+{
+	public PlayerLobby playerLobby;
+	public long playerId;
+}
 
 public class HomePage : MonoBehaviour, ILightComponent
 {
 	[Header("Scene References")]
-	public Button createLobbyBtn;
-	public Button findLobbyBtn;
-	public Button enterLobbyBtn;
+	public Transform displaysContainer;
+	public List<string> playersNames;
 
-	public Promise OnInstantiated(LightBeam ctx)
+	private LightBeam _beam;
+	
+	public async Promise OnInstantiated(LightBeam beam)
 	{
-		createLobbyBtn.HandleClicked(() =>
+		_beam = beam;
+		displaysContainer.Clear();
+
+		var promises = new List<Promise<Unit>>();
+
+		foreach (string playerName in playersNames)
 		{
-			ctx.GotoPage<CreateLobbyDisplayBehaviour>();
-		});
-		
-		findLobbyBtn.HandleClicked(() =>
-		{
-			ctx.GotoPage<FindLobbyDisplayBehaviour>();
-		});
-		
-		return Promise.Success;
+			Promise p = CreatePlayerLobby(playerName);
+			promises.Add(p);
+		}
+		Promise<List<Unit>> sequence = Promise.Sequence(promises);
+		await sequence;
+	}
+
+	private async Promise CreatePlayerLobby(string playerName)
+	{
+		BeamContext context = BeamContext.ForPlayer(playerName);
+		await context.OnReady;
+		PlayerLobbyData data = new PlayerLobbyData() {playerLobby = context.Lobby, playerId = context.PlayerId};
+		await _beam.Instantiate<PlayerLobbyBehaviour, PlayerLobbyData>(displaysContainer, data);
 	}
 }

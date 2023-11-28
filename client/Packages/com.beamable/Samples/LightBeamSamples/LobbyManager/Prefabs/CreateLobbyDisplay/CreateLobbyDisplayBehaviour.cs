@@ -1,12 +1,13 @@
 using Beamable;
 using Beamable.Common;
 using Beamable.Experimental.Api.Lobbies;
+using Beamable.Player;
 using Beamable.Runtime.LightBeams;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class CreateLobbyDisplayBehaviour : MonoBehaviour, ILightComponent
+public class CreateLobbyDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerLobby>
 {
 	[Header("Scene References")]
 	public TMP_InputField nameInput;
@@ -15,12 +16,12 @@ public class CreateLobbyDisplayBehaviour : MonoBehaviour, ILightComponent
 	public Button createLobbyBtn;
 	public Button backButton;
 
-	private BeamContext _ctx;
+	private PlayerLobby _playerLobby;
 	private LightBeam _lightBeam;
 	
-	public Promise OnInstantiated(LightBeam beam)
+	public Promise OnInstantiated(LightBeam beam, PlayerLobby model)
 	{
-		_ctx = beam.BeamContext;
+		_playerLobby = model;
 		_lightBeam = beam;
 		
 		createLobbyBtn.HandleClicked(async () =>
@@ -46,7 +47,7 @@ public class CreateLobbyDisplayBehaviour : MonoBehaviour, ILightComponent
 
 		LobbyRestriction restrictionLevel = closedToggle.isOn ? LobbyRestriction.Closed : LobbyRestriction.Open;
 		
-		await _ctx.Lobby.Create(nameInput.text, restrictionLevel, description: descriptionInput.text);
+		await _playerLobby.Create(nameInput.text, restrictionLevel, description: descriptionInput.text);
 		await _lightBeam.GotoPage<HomePage>();
 	}
 }

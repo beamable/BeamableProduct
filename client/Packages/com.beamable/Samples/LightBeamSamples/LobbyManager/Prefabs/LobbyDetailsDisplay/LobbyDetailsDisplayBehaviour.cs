@@ -36,7 +36,7 @@ public class LobbyDetailsDisplayBehaviour : MonoBehaviour, ILightComponent<Lobby
 		
 		backButton.HandleClicked(async () =>
 		{
-			await beam.GotoPage<FindLobbyDisplayBehaviour>();
+			await beam.GotoPage<HomePage>();
 		});
 	}
 }
