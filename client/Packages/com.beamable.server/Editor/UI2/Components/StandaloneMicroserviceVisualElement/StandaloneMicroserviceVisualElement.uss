@@ -252,3 +252,10 @@ RemoteMicroserviceVisualElement > TemplateContainer > #mainVisualElement {
     height: 30px;
     margin-bottom: 20px;
 }
+
+TemplateContainer{
+    flex-grow:1;
+}
+ScrollView{
+    flex-grow:1;
+}

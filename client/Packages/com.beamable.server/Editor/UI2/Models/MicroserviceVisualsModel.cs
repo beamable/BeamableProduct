@@ -2,8 +2,8 @@
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.Usam;
 using System;
-using UnityEditor;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UIElements;
 
 namespace Beamable.Editor.Microservice.UI2.Models
@@ -26,6 +26,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 		bool IsSelected { get; set; }
 		bool IsCollapsed { get; set; }
 
+		string Name { get; }
 		Action<bool> OnSelectionChanged { get; set; }
 		Action OnSortChanged { get; set; }
 	}
@@ -36,6 +37,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 		private const float DEFAULT_HEIGHT = 300.0f;
 
 		public bool AreLogsAttached { get; set; }
+		public string Name => _name;
 
 		public float ElementHeight
 		{
@@ -68,11 +70,11 @@ namespace Beamable.Editor.Microservice.UI2.Models
 		[SerializeField] private bool _isSelected;
 		[SerializeField] private bool _isCollapsed = false;
 		[SerializeField] private float _visualHeight = DEFAULT_HEIGHT;
-		[SerializeField] public string name;
+		[FormerlySerializedAs("name")] [SerializeField] public string _name;
 
 		private void HandleLogMessage(string arg1, BeamTailLogMessage arg2)
 		{
-			if (arg1 == name && !string.IsNullOrWhiteSpace(arg2.message))
+			if (arg1 == _name && !string.IsNullOrWhiteSpace(arg2.message))
 			{
 				Logs.AddMessage(FromBeamTailLog(arg2));
 			}

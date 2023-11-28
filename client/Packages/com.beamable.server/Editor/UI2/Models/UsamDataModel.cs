@@ -15,9 +15,9 @@ namespace Beamable.Editor.Microservice.UI2.Models
 
 		public MicroserviceVisualsModel GetModel(string name)
 		{
-			var existingModel = VisualModels.FirstOrDefault(m => m.name == name);
+			var existingModel = VisualModels.FirstOrDefault(m => m._name == name);
 			if (existingModel != null) return existingModel;
-			var model = new MicroserviceVisualsModel() {name = name};
+			var model = new MicroserviceVisualsModel() {_name = name};
 
 			model.ConnectToLogMessages();
 			VisualModels.Add(model);
