@@ -239,6 +239,9 @@ namespace Beamable.Server.Editor.Usam
 		/// <param name="services"></param>
 		public static void SetSolution(List<BeamServiceSignpost> services)
 		{
+			// if there is nothing to add there is no need for an update
+			if (services == null || services.Count == 0)
+				return;
 			// find the local sln file
 			var slnPath = FindFirstSolutionFile();
 			if (string.IsNullOrEmpty(slnPath) || !File.Exists(slnPath))
