@@ -1,11 +1,14 @@
 using Beamable.Common;
+using Beamable.Editor.Microservice.UI;
 using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.Microservice.UI2.Components;
+using Beamable.Editor.Microservice.UI2.Models;
 using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.Usam;
+using System.Runtime.Remoting.Contexts;
 using UnityEditor;
 using UnityEngine.UIElements;
 
@@ -14,6 +17,7 @@ namespace Beamable.Editor.Microservice.UI2
 	public class UsamWindow : BeamEditorWindow<UsamWindow>
 	{
 		private CodeService _codeService;
+		private UsamDataModel _dataModel;
 
 		static UsamWindow()
 		{
@@ -73,6 +77,7 @@ namespace Beamable.Editor.Microservice.UI2
 			scrollView.Add(emptyContainer);
 			OnLoad().Then(_ =>
 			{
+				_dataModel = Scope.GetService<UsamDataModel>();
 				if (!_codeService.IsDockerRunning)
 				{
 					ShowDockerNotRunningAnnouncement();
@@ -81,8 +86,15 @@ namespace Beamable.Editor.Microservice.UI2
 
 				foreach (BeamoServiceDefinition beamoServiceDefinition in _codeService.ServiceDefinitions)
 				{
+					var model = _dataModel.GetModel(beamoServiceDefinition.BeamoId);
 					var el = new StandaloneMicroserviceVisualElement() { Model = beamoServiceDefinition };
 					emptyContainer.Add(el);
+
+					model.OnLogsDetached += () => { ServiceLogWindow.ShowService(model); };
+					if (!model.AreLogsAttached)
+					{
+						ServiceLogWindow.ShowService(model);
+					}
 					el.Refresh();
 				}
 			});

@@ -181,17 +181,14 @@ namespace Beamable.Server.Editor.Usam
 				ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = objData.ShouldBeEnabledOnRemote[i];
 				if (objData.IsLocal)
 				{
-					ServiceDefinitions[dataIndex].IsRunningLocally =
-						objData.RunningState[i] ? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
 					ServiceDefinitions[dataIndex].ImageId = objData.ImageIds[i];
+					ServiceDefinitions[dataIndex].Builder.IsRunning = objData.RunningState[i];
 				}
 				else
 				{
 					ServiceDefinitions[dataIndex].IsRunningOnRemote =
 						objData.RunningState[i] ? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
 				}
-
-				ServiceDefinitions[dataIndex].CallUpdate();
 				LogVerbose($"Handling {name} ended");
 			}
 		}
@@ -212,6 +209,12 @@ namespace Beamable.Server.Editor.Usam
 			await command.Run();
 		}
 
+		public Promise GenerateClientCode(string id)
+		{
+			/// BEAM-3931
+			return Promise.Success;
+		}
+
 		public void ConnectToLogs()
 		{
 			foreach (IBeamoServiceDefinition definition in ServiceDefinitions)
@@ -223,8 +226,7 @@ namespace Beamable.Server.Editor.Usam
 				});
 				logs.OnStreamTailLogMessage(point =>
 				{
-					LogVerbose($"[LOG]{definition.BeamoId}: {point.data.message}");
-					OnLogMessage?.Invoke(definition.BeamoId, point.data);
+					_dispatcher.Schedule(() => OnLogMessage?.Invoke(definition.BeamoId, point.data));
 				});
 				_logsCommands.Add(logs.Run());
 			}
@@ -237,6 +239,9 @@ namespace Beamable.Server.Editor.Usam
 		/// <param name="services"></param>
 		public static void SetSolution(List<BeamServiceSignpost> services)
 		{
+			// if there is nothing to add there is no need for an update
+			if (services == null || services.Count == 0)
+				return;
 			// find the local sln file
 			var slnPath = FindFirstSolutionFile();
 			if (string.IsNullOrEmpty(slnPath) || !File.Exists(slnPath))
@@ -386,10 +391,23 @@ namespace Beamable.Server.Editor.Usam
 					var def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(id));
 					if (def != null)
 					{
-						def.IsRunningLocally = BeamoServiceStatus.NotRunning;
-						def.CallUpdate();
+						def.Builder.IsRunning = false;
 					}
 				}
+			}
+			catch (Exception e)
+			{
+				LogExceptionVerbose(e);
+			}
+		}
+
+		public async Promise OpenSwagger(string beamoId, bool remote = false)
+		{
+			try
+			{
+				var cmd = _cli.ProjectOpenSwagger(
+					new ProjectOpenSwaggerArgs() { remote = remote, serviceName = new ServiceName(beamoId) });
+				await cmd.Run();
 			}
 			catch (Exception e)
 			{
@@ -406,8 +424,6 @@ namespace Beamable.Server.Editor.Usam
 				{
 					ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(cb.data.BeamoId))?.Builder
 									  .OnStartingProgress?.Invoke((int)cb.data.LocalDeployProgress, 100);
-					LogVerbose(
-						$"OnLocal_progressServiceRunProgressResult.{cb.data.BeamoId}: {cb.data.LocalDeployProgress}");
 				});
 				cmd.OnStreamServiceRunReportResult(cb =>
 				{
@@ -418,13 +434,9 @@ namespace Beamable.Server.Editor.Usam
 						def?.Builder.OnStartingFinished?.Invoke(cb.data.Success);
 						if (def != null)
 						{
-							def.IsRunningLocally =
-								cb.data.Success ? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
-							def.CallUpdate();
+							def.Builder.IsRunning = cb.data.Success;
 						}
 					}
-
-					LogVerbose($"OnStreamServiceRunReportResult.{cb.data.Success}: {cb.data.FailureReason}");
 				});
 				await cmd.Run();
 			}
