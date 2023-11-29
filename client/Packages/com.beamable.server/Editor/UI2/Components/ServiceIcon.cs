@@ -7,11 +7,12 @@ namespace Beamable.Editor.Microservice.UI2.Components
 	public class ServiceIcon : Image, IBeamoServiceElement
 	{
 		private string _customStatusClassName;
+		private IBeamoServiceDefinition _model;
+
 		public new class UxmlFactory : UxmlFactory<ServiceIcon, UxmlTraits> { }
 		public void FeedData(IBeamoServiceDefinition model, BeamEditorContext context)
 		{
-			model.Updated -= HandleModelUpdate;
-			model.Updated += HandleModelUpdate;
+			_model = model;
 			HandleModelUpdate(model);
 		}
 

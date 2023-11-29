@@ -21,7 +21,7 @@ public class GenerateClientFileCommandArgs : CommandArgs
 	public bool outputToLinkedProjects = true;
 }
 
-public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArgs>
+public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArgs>, IEmptyResult
 {
 	public GenerateClientFileCommand() : base("generate-client", "Generate a C# client file based on a built C# microservice dll directory")
 	{

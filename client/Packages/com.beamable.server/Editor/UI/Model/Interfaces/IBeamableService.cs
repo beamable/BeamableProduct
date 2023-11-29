@@ -17,7 +17,6 @@ namespace Beamable.Editor.UI.Model
 		bool IsRunning { get; }
 		ServiceType ServiceType { get; }
 		IDescriptor Descriptor { get; }
-		string Name { get; }
 		bool IsArchived { get; }
 		Action<float, long, long> OnDeployProgress { get; set; }
 

@@ -51,7 +51,7 @@ namespace Beamable.Editor.BeamCli.Commands
 				log = "Information",
 				reporterUseFatal = true,
 				skipStandaloneValidation = true,
-				dotnetPath = DotnetUtil.DotnetPath
+				dotnetPath = DotnetUtil.IsUsingGlobalDotnet ? default : DotnetUtil.DotnetPath
 			};
 			return beamArgs;
 		}
