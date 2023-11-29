@@ -122,11 +122,16 @@ namespace Beamable.Editor.BeamCli
 			Directory.CreateDirectory(CLI_VERSIONED_HOME);
 			var proc = new Process();
 			var fullDirectory = Path.GetFullPath(CLI_VERSIONED_HOME);
+			var installCommand = $"tool install beamable.tools --tool-path \"{fullDirectory}\"";
+			if (!BeamableEnvironment.SdkVersion.ToString().Equals("0.0.0"))
+			{
+				installCommand += $"--version {BeamableEnvironment.SdkVersion}";
+			}
 			proc.StartInfo = new ProcessStartInfo
 			{
 				FileName = Path.GetFullPath(DotnetUtil.DotnetPath),
 				WorkingDirectory = Path.GetFullPath("Library"),
-				Arguments = $"tool install beamable.tools --tool-path \"{fullDirectory}\"",
+				Arguments = installCommand,
 				UseShellExecute = false,
 				RedirectStandardOutput = true,
 				RedirectStandardError = true
