@@ -400,8 +400,6 @@ namespace Beamable.Server.Editor.Usam
 				{
 					ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(cb.data.BeamoId))?.Builder
 					                  .OnStartingProgress?.Invoke((int)cb.data.LocalDeployProgress, 100);
-					LogVerbose(
-						$"OnLocal_progressServiceRunProgressResult.{cb.data.BeamoId}: {cb.data.LocalDeployProgress}");
 				});
 				cmd.OnStreamServiceRunReportResult(cb =>
 				{
@@ -415,8 +413,6 @@ namespace Beamable.Server.Editor.Usam
 							def.Builder.IsRunning = cb.data.Success;
 						}
 					}
-
-					LogVerbose($"OnStreamServiceRunReportResult.{cb.data.Success}: {cb.data.FailureReason}");
 				});
 				await cmd.Run();
 			}
