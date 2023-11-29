@@ -111,25 +111,14 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>, IStandalon
 			createdNewWorkingDir = true;
 		}
 
-		// Find path to service folders: either it is in the working directory, or it will be inside 'args.name\\services' from the working directory.
-		string projectDirectory = args.ConfigService.GetServicesDir(args, path);
-		string projectDockerfilePath = Path.Combine(args.ProjectName, "Dockerfile");
-
-		// now that a .beamable folder has been created, setup the beamo manifest
-		var sd = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value,
-			projectDirectory,
-			projectDockerfilePath,
-			new string[] { },
-			CancellationToken.None,
-			!args.Disabled);
-
+		var sd = await args.ProjectService.AddDefinitonToNewService(args,path);
+		
 		if (!args.SkipCommon)
 		{
 			var service = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[sd.BeamoId];
 			await args.ProjectService.CreateCommon(args.ConfigService, args.ProjectName, service.RelativeDockerfilePath,
 				service.DockerBuildContextPath);
 		}
-
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
 		args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 

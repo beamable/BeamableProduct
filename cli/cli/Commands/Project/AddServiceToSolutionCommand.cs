@@ -74,19 +74,10 @@ public class AddServiceToSolutionCommand : AppCommand<SolutionCommandArgs>
 			}
 		}
 
-		string projectPath =
-			await args.ProjectService.AddToSolution(args);
-		string projectDirectory = args.ConfigService.GetServicesDir(args, projectPath);
-		string projectDockerfilePath = Path.Combine(args.ProjectName, "Dockerfile");
-
-		// now that a .beamable folder has been created, setup the beamo manifest
-		var sd = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value,
-			projectDirectory,
-			projectDockerfilePath,
-			new string[] { },
-			CancellationToken.None,
-			!args.Disabled);
-
+		string path = await args.ProjectService.AddToSolution(args);
+		
+		var sd = await args.ProjectService.AddDefinitonToNewService(args,path);
+		
 		if (!args.SkipCommon)
 		{
 			var service = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[sd.BeamoId];
