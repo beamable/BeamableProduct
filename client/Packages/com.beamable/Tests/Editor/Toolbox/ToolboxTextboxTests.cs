@@ -17,7 +17,6 @@ namespace Beamable.Editor.Tests.Toolbox
 	{
 		protected override void Configure(IDependencyBuilder builder)
 		{
-			builder.RemoveIfExists<BeamCli.BeamCli>();
 			builder.ReplaceSingleton<IToolboxViewService, MockToolboxViewService>();
 		}
 
