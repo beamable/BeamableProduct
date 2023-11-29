@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Experimental.Api.Lobbies;
 using Beamable.Runtime.LightBeams;
+using System.Collections.Generic;
 using TMPro;
 
 #if UNITY_EDITOR
@@ -17,28 +18,29 @@ public class LobbyDetailsDisplayBehaviour : MonoBehaviour, ILightComponent<Lobby
 	public TextMeshProUGUI lobbyId;
 	public Button lobbyIdCopyButton;
 	public TextMeshProUGUI lobbyDescription;
-	public TextMeshProUGUI lobbyRestriction;
 	public TextMeshProUGUI lobbyHost;
 	public TextMeshProUGUI lobbyPasscode;
+	public Button lobbyPasscodeCopyButton;
 	public Transform playersListContainer;
 	public Button backButton;
+
+	private Lobby _model;
+	private LightBeam _beam;
 	
 	public async Promise OnInstantiated(LightBeam beam, Lobby model)
 	{
+		_beam = beam;
+		_model = model;
+		
 		lobbyName.text = $"Lobby Name: {model.name}";
 		lobbyId.text = $"Lobby Id: {model.lobbyId}";
 		lobbyDescription.text = model.description;
-		// lobbyRestriction.text = model.restriction;
-		// lobbyHost.text = model.host;
-		// lobbyPasscode.text = model.passcode;
+		lobbyPasscode.text = $"Passcode: {model.passcode}";
+		lobbyHost.text = $"Host: {model.host}";
 		
 		playersListContainer.Clear();
 
-		//TODO: optmize this
-		foreach (LobbyPlayer lobbyPlayer in model.players)
-		{
-			await beam.Instantiate<PlayerIdDisplayBehaviour, LobbyPlayer>(playersListContainer, lobbyPlayer);
-		}
+		await InstantiatePlayers();
 		
 		lobbyIdCopyButton.HandleClicked(() =>
 		{
@@ -49,9 +51,30 @@ public class LobbyDetailsDisplayBehaviour : MonoBehaviour, ILightComponent<Lobby
 #endif
 		});
 		
+		lobbyPasscodeCopyButton.HandleClicked(() =>
+		{
+#if UNITY_EDITOR
+			EditorGUIUtility.systemCopyBuffer = model.passcode;
+#else
+			GUIUtility.systemCopyBuffer = model.passcode;
+#endif
+		});
+		
 		backButton.HandleClicked(async () =>
 		{
 			await beam.GotoPage<HomePage>();
 		});
+	}
+
+	private async Promise InstantiatePlayers()
+	{
+		var promises = new List<Promise<PlayerIdDisplayBehaviour>>();
+		foreach (LobbyPlayer lobbyPlayer in _model.players)
+		{
+			Promise<PlayerIdDisplayBehaviour> p = _beam.Instantiate<PlayerIdDisplayBehaviour, LobbyPlayer>(playersListContainer, lobbyPlayer);
+			promises.Add(p);
+		}
+		Promise<List<PlayerIdDisplayBehaviour>> sequence = Promise.Sequence(promises);
+		await sequence;
 	}
 }

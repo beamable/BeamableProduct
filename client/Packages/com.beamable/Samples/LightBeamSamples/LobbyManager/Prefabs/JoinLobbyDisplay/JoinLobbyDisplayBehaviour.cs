@@ -9,6 +9,7 @@ public class JoinLobbyDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerLo
 {
 	[Header("Scene References")]
 	public TMP_InputField lobbyIdInput;
+	public TMP_InputField passcodeInput;
 	public Button backButton;
 	public Button joinButton;
 
@@ -32,20 +33,49 @@ public class JoinLobbyDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerLo
 
 	private async Promise JoinLobby()
 	{
-		if (string.IsNullOrEmpty(lobbyIdInput.text))
+		if (string.IsNullOrEmpty(lobbyIdInput.text) && string.IsNullOrEmpty(passcodeInput.text))
 		{
-			Debug.Log("[Lobby] The lobby id should contain a valid string.");
+			Debug.Log("[Lobby] The lobby id or the passcode should contain a valid string.");
 			return;
 		}
 
 		try
 		{
-			await _lobby.Join(lobbyIdInput.text);
+			if (!string.IsNullOrEmpty(lobbyIdInput.text))
+			{
+				await _lobby.Join(lobbyIdInput.text);
+			}
+			else
+			{
+				await _lobby.JoinByPasscode(passcodeInput.text);
+			}
+			
 			await _beam.GotoPage<HomePage>();
 		}
 		catch(PromiseException e)
 		{
 			Debug.Log("[Lobby] Couldn't join the lobby! " + e.Message);
+		}
+	}
+
+	private void Update()
+	{
+		if (!string.IsNullOrEmpty(lobbyIdInput.text))
+		{
+			passcodeInput.text = string.Empty;
+			passcodeInput.readOnly = true;
+		}
+		
+		if (!string.IsNullOrEmpty(passcodeInput.text))
+		{
+			lobbyIdInput.text = string.Empty;
+			lobbyIdInput.readOnly = true;
+		}
+
+		if (string.IsNullOrEmpty(passcodeInput.text) && string.IsNullOrEmpty(lobbyIdInput.text))
+		{
+			passcodeInput.readOnly = false;
+			lobbyIdInput.readOnly = false;
 		}
 	}
 }

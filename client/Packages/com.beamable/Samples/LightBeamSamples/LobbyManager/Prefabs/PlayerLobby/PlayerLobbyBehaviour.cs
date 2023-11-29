@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Experimental.Api.Lobbies;
 using Beamable.Player;
 using Beamable.Runtime.LightBeams;
 using TMPro;
@@ -12,6 +13,7 @@ public class PlayerLobbyBehaviour : MonoBehaviour, ILightComponent<PlayerLobbyDa
 	public Button createLobbyBtn;
 	public Button findLobbyBtn;
 	public Button joinLobbyBtn;
+	public Button myLobbyBtn;
 	
 	public Promise OnInstantiated(LightBeam beam, PlayerLobbyData model)
 	{
@@ -30,6 +32,17 @@ public class PlayerLobbyBehaviour : MonoBehaviour, ILightComponent<PlayerLobbyDa
 		joinLobbyBtn.HandleClicked(async () =>
 		{
 			await beam.GotoPage<JoinLobbyDisplayBehaviour, PlayerLobby>(model.playerLobby);
+		});
+		
+		myLobbyBtn.HandleClicked(async () =>
+		{
+			if (!model.playerLobby.IsInLobby)
+			{
+				Debug.Log("[Lobby] You are not currently in a lobby!");
+				return;
+			}
+			
+			await beam.GotoPage<LobbyDetailsDisplayBehaviour, Lobby>(model.playerLobby.Value);
 		});
 		
 		return Promise.Success;
