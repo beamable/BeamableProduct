@@ -80,8 +80,8 @@ public class ConfigService
 	{
 		return Path.Combine(BaseDirectory, relativePath);
 	}
-	
-	
+
+
 	public string GetServicesDir(SolutionCommandArgs args, string newSolutionPath)
 	{
 		string result = string.Empty;

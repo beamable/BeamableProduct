@@ -123,7 +123,7 @@ namespace Beamable.Editor.Microservice.UI2.Components
 		protected void HandleProgressFinished(bool gotError)
 		{
 			_header.EnableInClassList("failed", gotError);
-			
+
 		}
 
 		private void CreateLogSection(bool areLogsAttached)

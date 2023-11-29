@@ -44,7 +44,7 @@ namespace Beamable.Editor.UI.Model
 				BeamEditorContext.Default.Dispatcher.Schedule(() => OnIsRunningChanged?.Invoke(value));
 			}
 		}
-		
+
 		private CodeService CodeService => BeamEditorContext.Default.ServiceScope.GetService<CodeService>();
 		private bool _isRunning;
 	}
