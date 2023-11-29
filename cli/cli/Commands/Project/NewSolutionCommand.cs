@@ -111,8 +111,8 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>, IStandalon
 			createdNewWorkingDir = true;
 		}
 
-		var sd = await args.ProjectService.AddDefinitonToNewService(args,path);
-		
+		var sd = await args.ProjectService.AddDefinitonToNewService(args, path);
+
 		if (!args.SkipCommon)
 		{
 			var service = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[sd.BeamoId];
