@@ -11,6 +11,7 @@ public class PlayerLobbyBehaviour : MonoBehaviour, ILightComponent<PlayerLobbyDa
 	public TextMeshProUGUI playerIdLabel;
 	public Button createLobbyBtn;
 	public Button findLobbyBtn;
+	public Button joinLobbyBtn;
 	
 	public Promise OnInstantiated(LightBeam beam, PlayerLobbyData model)
 	{
@@ -24,6 +25,11 @@ public class PlayerLobbyBehaviour : MonoBehaviour, ILightComponent<PlayerLobbyDa
 		findLobbyBtn.HandleClicked(async () =>
 		{
 			await beam.GotoPage<FindLobbyDisplayBehaviour, PlayerLobby>(model.playerLobby);
+		});
+		
+		joinLobbyBtn.HandleClicked(async () =>
+		{
+			await beam.GotoPage<JoinLobbyDisplayBehaviour, PlayerLobby>(model.playerLobby);
 		});
 		
 		return Promise.Success;

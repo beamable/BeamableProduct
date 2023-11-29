@@ -1,4 +1,5 @@
-using Beamable;using Beamable.Player;
+using Beamable;
+using Beamable.Player;
 using Beamable.Runtime.LightBeams;
 using UnityEngine;
 using Lobby = Beamable.Experimental.Api.Lobbies.Lobby;
@@ -16,7 +17,7 @@ public class LobbyManager : MonoBehaviour
 	async void Start()
 	{
 		var beamContext = BeamContext.Default;
-		var lightBeam = await beamContext.CreateLightBeam(root, loadingBlocker, builder =>
+		LightBeam lightBeam = await beamContext.CreateLightBeam(root, loadingBlocker, builder =>
 		{
 			builder.AddSingleton(config);
 
@@ -27,6 +28,7 @@ public class LobbyManager : MonoBehaviour
 			builder.AddLightComponent<LobbyDetailsDisplayBehaviour, Lobby>(config.lobbyDetailsDisplay);
 			builder.AddLightComponent<PlayerIdDisplayBehaviour, LobbyPlayer>(config.playerIdDisplay);
 			builder.AddLightComponent<PlayerLobbyBehaviour, PlayerLobbyData>(config.playerLobby);
+			builder.AddLightComponent<JoinLobbyDisplayBehaviour, PlayerLobby>(config.joinLobbyDisplay);
 		});
 
 		await lightBeam.Scope.Start<HomePage>();

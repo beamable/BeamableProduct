@@ -26,3 +26,5 @@ MonoBehaviour:
     type: 3}
   playerLobby: {fileID: 8640145385084694826, guid: deb82f223236e4b748e13185fc0d02bc,
     type: 3}
+  joinLobbyDisplay: {fileID: 7683427985257366957, guid: 9e43f609911fd4a0a983a700492cf274,
+    type: 3}

@@ -9,11 +9,13 @@ public class LobbyDisplayBehaviour : MonoBehaviour, ILightComponent<Lobby>
 {
 	[Header("Scene References")]
 	public TextMeshProUGUI lobbyNameLabel;
+	public TextMeshProUGUI lobbyIdLabel;
 	public Button enterDetailsButton;
 	
 	public Promise OnInstantiated(LightBeam beam, Lobby model)
 	{
-		lobbyNameLabel.text = model.name;
+		lobbyNameLabel.text = $"Name: {model.name}";
+		lobbyIdLabel.text = $"Id: {model.lobbyId}";
 		
 		enterDetailsButton.HandleClicked(async () =>
 		{

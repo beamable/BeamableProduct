@@ -2,6 +2,11 @@ using Beamable.Common;
 using Beamable.Experimental.Api.Lobbies;
 using Beamable.Runtime.LightBeams;
 using TMPro;
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,6 +15,7 @@ public class LobbyDetailsDisplayBehaviour : MonoBehaviour, ILightComponent<Lobby
 	[Header("Scene References")]
 	public TextMeshProUGUI lobbyName;
 	public TextMeshProUGUI lobbyId;
+	public Button lobbyIdCopyButton;
 	public TextMeshProUGUI lobbyDescription;
 	public TextMeshProUGUI lobbyRestriction;
 	public TextMeshProUGUI lobbyHost;
@@ -33,6 +39,15 @@ public class LobbyDetailsDisplayBehaviour : MonoBehaviour, ILightComponent<Lobby
 		{
 			await beam.Instantiate<PlayerIdDisplayBehaviour, LobbyPlayer>(playersListContainer, lobbyPlayer);
 		}
+		
+		lobbyIdCopyButton.HandleClicked(() =>
+		{
+#if UNITY_EDITOR
+			EditorGUIUtility.systemCopyBuffer = model.lobbyId;
+#else
+			GUIUtility.systemCopyBuffer = model.lobbyId;
+#endif
+		});
 		
 		backButton.HandleClicked(async () =>
 		{

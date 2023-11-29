@@ -10,4 +10,5 @@ public class LobbyExampleConfig : ScriptableObject
 	public LobbyDetailsDisplayBehaviour lobbyDetailsDisplay;
 	public PlayerIdDisplayBehaviour playerIdDisplay;
 	public PlayerLobbyBehaviour playerLobby;
+	public JoinLobbyDisplayBehaviour joinLobbyDisplay;
 }

@@ -3,6 +3,7 @@ using Beamable.Common;
 using Beamable.Player;
 using Beamable.Runtime.LightBeams;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class PlayerLobbyData
@@ -24,13 +25,8 @@ public class HomePage : MonoBehaviour, ILightComponent
 		_beam = beam;
 		displaysContainer.Clear();
 
-		var promises = new List<Promise<Unit>>();
+		List<Promise<Unit>> promises = playersNames.Select(CreatePlayerLobby).Cast<Promise<Unit>>().ToList();
 
-		foreach (string playerName in playersNames)
-		{
-			Promise p = CreatePlayerLobby(playerName);
-			promises.Add(p);
-		}
 		Promise<List<Unit>> sequence = Promise.Sequence(promises);
 		await sequence;
 	}
@@ -39,7 +35,7 @@ public class HomePage : MonoBehaviour, ILightComponent
 	{
 		BeamContext context = BeamContext.ForPlayer(playerName);
 		await context.OnReady;
-		PlayerLobbyData data = new PlayerLobbyData() {playerLobby = context.Lobby, playerId = context.PlayerId};
+		var data = new PlayerLobbyData() {playerLobby = context.Lobby, playerId = context.PlayerId};
 		await _beam.Instantiate<PlayerLobbyBehaviour, PlayerLobbyData>(displaysContainer, data);
 	}
 }
