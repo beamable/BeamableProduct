@@ -402,7 +402,7 @@ namespace Beamable.Server.Editor.Usam
 			try
 			{
 				var cmd = _cli.ProjectOpenSwagger(
-					new ProjectOpenSwaggerArgs() {remote = remote, serviceName = new ServiceName(beamoId)});
+					new ProjectOpenSwaggerArgs() { remote = remote, serviceName = new ServiceName(beamoId) });
 				await cmd.Run();
 			}
 			catch (Exception e)
@@ -419,7 +419,7 @@ namespace Beamable.Server.Editor.Usam
 				cmd.OnLocal_progressServiceRunProgressResult(cb =>
 				{
 					ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(cb.data.BeamoId))?.Builder
-					                  .OnStartingProgress?.Invoke((int)cb.data.LocalDeployProgress, 100);
+									  .OnStartingProgress?.Invoke((int)cb.data.LocalDeployProgress, 100);
 				});
 				cmd.OnStreamServiceRunReportResult(cb =>
 				{

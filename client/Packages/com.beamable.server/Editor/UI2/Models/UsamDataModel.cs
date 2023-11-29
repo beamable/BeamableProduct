@@ -21,7 +21,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 				existingModel.Connect();
 				return existingModel;
 			}
-			var model = new MicroserviceVisualsModel() {_name = name};
+			var model = new MicroserviceVisualsModel() { _name = name };
 
 			model.Connect();
 			VisualModels.Add(model);
