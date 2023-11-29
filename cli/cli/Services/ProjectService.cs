@@ -425,7 +425,7 @@ public class ProjectService
 
 			// restore the microservice tools
 			await RunDotnetCommand(
-				$"tool restore --tool-manifest \"{Path.Combine(projectName, ".config", "dotnet-tools.json")}\"");
+				$"tool restore --tool-manifest \"{Path.Combine(projectPath, ".config", "dotnet-tools.json")}\"");
 		}
 
 		// add the microservice to the solution

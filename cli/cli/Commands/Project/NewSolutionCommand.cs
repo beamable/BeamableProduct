@@ -112,7 +112,7 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>, IStandalon
 		}
 
 		// Find path to service folders: either it is in the working directory, or it will be inside 'args.name\\services' from the working directory.
-		string projectDirectory = GetServicesDir(args, path);
+		string projectDirectory = args.ConfigService.GetServicesDir(args, path);
 		string projectDockerfilePath = Path.Combine(args.ProjectName, "Dockerfile");
 
 		// now that a .beamable folder has been created, setup the beamo manifest
@@ -144,47 +144,5 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>, IStandalon
 		BeamableLogger.Log("A new Beamable microservice project has been created successfully!");
 		AnsiConsole.MarkupLine($"To get started:\n[lime]cd {path}[/]");
 		AnsiConsole.MarkupLine($"Then open [lime]{solutionName}.sln[/] in your IDE and run the project");
-	}
-
-	private static string GetServicesDir(NewSolutionCommandArgs args, string newSolutionPath)
-	{
-		string result = string.Empty;
-		//using try catch because of the Directory.EnumerateDirectories behaviour
-		try
-		{
-			var list = Directory.EnumerateDirectories(args.ConfigService.BaseDirectory,
-				$"{args.SolutionName}\\services",
-				SearchOption.AllDirectories).ToList();
-			if (list.Count > 0)
-			{
-				result = Path.GetRelativePath(args.ConfigService.BaseDirectory, list.First());
-			}
-		}
-		catch
-		{
-			//
-		}
-
-		try
-		{
-			if (string.IsNullOrWhiteSpace(result))
-			{
-				var list = Directory.EnumerateDirectories(newSolutionPath, "services",
-					SearchOption.AllDirectories).ToList();
-				result = Path.GetRelativePath(args.ConfigService.BaseDirectory, list.First());
-			}
-		}
-		catch
-		{
-			//
-		}
-
-		if (string.IsNullOrWhiteSpace(result))
-		{
-			const string SERVICES_PATH_ERROR = "Could not find Solution services path!";
-			Log.Error(SERVICES_PATH_ERROR);
-		}
-
-		return result;
 	}
 }
