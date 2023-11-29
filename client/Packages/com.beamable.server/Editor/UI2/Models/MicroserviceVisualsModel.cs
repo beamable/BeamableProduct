@@ -1,9 +1,12 @@
-﻿using Beamable.Editor.BeamCli.Commands;
+﻿using Beamable.Common.BeamCli;
+using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.Usam;
 using System;
+using System.IO;
+using System.Linq;
+using UnityEditor;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UIElements;
 
 namespace Beamable.Editor.Microservice.UI2.Models
@@ -80,6 +83,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 		[SerializeField] private float _visualHeight = DEFAULT_HEIGHT;
 		[SerializeField] public string _name;
 		[SerializeField] private bool _areLogsAttached = true;
+		private IBeamoServiceDefinition _serviceDefinition;
 
 		private void HandleLogMessage(string arg1, BeamTailLogMessage arg2)
 		{
@@ -94,8 +98,10 @@ namespace Beamable.Editor.Microservice.UI2.Models
 			BeamEditorContext.Default.ServiceScope.GetService<CodeService>().OnLogMessage -= HandleLogMessage;
 		}
 
-		public void ConnectToLogMessages()
+		public void Connect()
 		{
+			_serviceDefinition = BeamEditorContext.Default.ServiceScope.GetService<CodeService>().ServiceDefinitions
+			                 .FirstOrDefault(def => def.ServiceInfo.name == Name);
 			BeamEditorContext.Default.ServiceScope.GetService<CodeService>().OnLogMessage -= HandleLogMessage;
 			BeamEditorContext.Default.ServiceScope.GetService<CodeService>().OnLogMessage += HandleLogMessage;
 		}
@@ -144,9 +150,61 @@ namespace Beamable.Editor.Microservice.UI2.Models
 
 		public virtual void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
 		{
+
+			var existsOnRemote = _serviceDefinition.IsRunningOnRemote == BeamoServiceStatus.Running;
+			var imageSuffix = !string.IsNullOrWhiteSpace(_serviceDefinition.ImageId) ? string.Empty : " (Build first)";
+			var localCategory = _serviceDefinition.IsRunningLocally ? "Local" : "Local (not running)";
+			var remoteCategory = existsOnRemote ? "Cloud" : "Cloud (not deployed)";
+			evt.menu.BeamableAppendAction($"Reveal build directory{imageSuffix}", pos =>
+			{
+				var full = Path.GetFullPath(_serviceDefinition.ServiceInfo.dockerBuildPath);
+				EditorUtility.RevealInFinder(full);
+			});
+
+			// evt.menu.BeamableAppendAction($"Run Snyk Tests{hasImageSuffix}", pos => RunSnykTests(), string.IsNullOrWhiteSpace(_serviceDefinition.ImageId));
+
+			// evt.menu.BeamableAppendAction($"{localCategory}/Open in CLI", pos => OpenInCli(), IsRunning);
+			evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenDocs(false), _serviceDefinition.IsRunningLocally);
+			// if (_serviceDescriptor.IsSourceCodeAvailableLocally())
+			// {
+			// 	evt.menu.BeamableAppendAction($"{localCategory}/Regenerate {_serviceDescriptor.Name}Client.cs", pos =>
+			// 	{
+			// 		BeamServicesCodeWatcher.GenerateClientSourceCode(_serviceDescriptor, true);
+			// 	});
+			// }
+
+			evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => { OpenOnRemote("docs/"); }, existsOnRemote);
+			evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => { OpenOnRemote("metrics"); }, existsOnRemote);
+			evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => { OpenDocs(true); }, existsOnRemote);
+			// evt.menu.BeamableAppendAction($"Visual Studio Code/Copy Debug Configuration{debugToolsSuffix}", pos => { CopyVSCodeDebugTool(); }, IncludeDebugTools);
+			evt.menu.BeamableAppendAction($"Open C# Code", _ => _serviceDefinition.ServiceInfo.OpenCode());
+			// evt.menu.BeamableAppendAction("Build", pos => Build());
+
 			if (!AreLogsAttached)
 			{
 				evt.menu.BeamableAppendAction($"Reattach Logs", pos => AttachLogs());
+			}
+		}
+		
+
+		protected void OpenRemoteDocs() => OpenOnRemote("docs");
+		protected void OpenRemoteMetrics() => OpenOnRemote("metrics");
+		protected void OpenOnRemote(string relativePath)
+		{
+			var api = BeamEditorContext.Default;
+			var path =
+				$"{BeamableEnvironment.PortalUrl}/{api.CurrentCustomer.Alias}/" +
+				$"games/{api.ProductionRealm.Pid}/realms/{api.CurrentRealm.Pid}/" +
+				$"microservices/{_serviceDefinition.BeamoId}/{relativePath}?refresh_token={api.Requester.Token.RefreshToken}";
+			Application.OpenURL(path);
+		}
+		
+		private void OpenDocs(bool remote)
+		{
+			if(_serviceDefinition.IsRunningLocally)
+			{
+				BeamEditorContext.Default.ServiceScope.GetService<CodeService>()
+				                 .OpenSwagger(_serviceDefinition.BeamoId, remote).Then(_ => { });
 			}
 		}
 	}

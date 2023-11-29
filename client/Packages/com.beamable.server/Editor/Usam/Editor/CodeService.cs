@@ -391,6 +391,20 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 
+		public async Promise OpenSwagger(string beamoId, bool remote = false)
+		{
+			try
+			{
+				var cmd = _cli.ProjectOpenSwagger(
+					new ProjectOpenSwaggerArgs() {remote = remote, serviceName = new ServiceName(beamoId)});
+				await cmd.Run();
+			}
+			catch (Exception e)
+			{
+				LogExceptionVerbose(e);
+			}
+		}
+
 		public async Promise Run(IEnumerable<string> beamoIds)
 		{
 			try

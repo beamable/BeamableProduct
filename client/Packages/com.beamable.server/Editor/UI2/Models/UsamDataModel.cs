@@ -16,10 +16,14 @@ namespace Beamable.Editor.Microservice.UI2.Models
 		public MicroserviceVisualsModel GetModel(string name)
 		{
 			var existingModel = VisualModels.FirstOrDefault(m => m._name == name);
-			if (existingModel != null) return existingModel;
+			if (existingModel != null)
+			{
+				existingModel.Connect();
+				return existingModel;
+			}
 			var model = new MicroserviceVisualsModel() {_name = name};
 
-			model.ConnectToLogMessages();
+			model.Connect();
 			VisualModels.Add(model);
 			_saveHandle?.Save();
 			return model;
@@ -42,7 +46,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 		{
 			foreach (var model in _visualModels)
 			{
-				model.ConnectToLogMessages();
+				model.Connect();
 			}
 		}
 	}
