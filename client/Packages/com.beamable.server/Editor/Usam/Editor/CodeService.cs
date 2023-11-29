@@ -219,7 +219,6 @@ namespace Beamable.Server.Editor.Usam
 				});
 				logs.OnStreamTailLogMessage(point =>
 				{
-					LogVerbose($"[LOG]{definition.BeamoId}: {point.data.message}");
 					_dispatcher.Schedule(() => OnLogMessage?.Invoke(definition.BeamoId, point.data));
 				});
 				_logsCommands.Add(logs.Run());
