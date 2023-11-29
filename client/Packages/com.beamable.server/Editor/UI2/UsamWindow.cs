@@ -89,7 +89,7 @@ namespace Beamable.Editor.Microservice.UI2
 					var model = _dataModel.GetModel(beamoServiceDefinition.BeamoId);
 					var el = new StandaloneMicroserviceVisualElement() { Model = beamoServiceDefinition };
 					emptyContainer.Add(el);
-					
+
 					model.OnLogsDetached += () => { ServiceLogWindow.ShowService(model); };
 					if (!model.AreLogsAttached)
 					{
