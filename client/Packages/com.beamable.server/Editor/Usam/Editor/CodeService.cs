@@ -209,6 +209,12 @@ namespace Beamable.Server.Editor.Usam
 			await command.Run();
 		}
 
+		public Promise GenerateClientCode(string id)
+		{
+			/// BEAM-3931
+			return Promise.Success;
+		}
+
 		public void ConnectToLogs()
 		{
 			foreach (IBeamoServiceDefinition definition in ServiceDefinitions)

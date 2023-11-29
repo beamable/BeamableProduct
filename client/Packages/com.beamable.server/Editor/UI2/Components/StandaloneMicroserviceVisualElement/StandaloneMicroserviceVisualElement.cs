@@ -101,8 +101,8 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			//
 			Model.Builder.OnIsRunningChanged -= HandleIsRunningChanged;
 			Model.Builder.OnIsRunningChanged += HandleIsRunningChanged;
-			Model.Builder.OnStartingFinished += HandleProgressFinished;
 			Model.Builder.OnStartingFinished -= HandleProgressFinished;
+			Model.Builder.OnStartingFinished += HandleProgressFinished;
 			_separator.Setup(OnDrag);
 			_separator.Refresh();
 

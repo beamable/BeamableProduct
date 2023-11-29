@@ -85,11 +85,11 @@ namespace Beamable.Editor.Microservice.UI2.Models
 		[SerializeField] private bool _areLogsAttached = true;
 		private IBeamoServiceDefinition _serviceDefinition;
 
-		private void HandleLogMessage(string arg1, BeamTailLogMessage arg2)
+		private void HandleLogMessage(string serviceName, BeamTailLogMessage log)
 		{
-			if (arg1 == _name && !string.IsNullOrWhiteSpace(arg2.message))
+			if (serviceName == _name && !string.IsNullOrWhiteSpace(log.message))
 			{
-				Logs.AddMessage(FromBeamTailLog(arg2));
+				Logs.AddMessage(FromBeamTailLog(log));
 			}
 		}
 
@@ -160,25 +160,20 @@ namespace Beamable.Editor.Microservice.UI2.Models
 				var full = Path.GetFullPath(_serviceDefinition.ServiceInfo.dockerBuildPath);
 				EditorUtility.RevealInFinder(full);
 			});
-
-			// evt.menu.BeamableAppendAction($"Run Snyk Tests{hasImageSuffix}", pos => RunSnykTests(), string.IsNullOrWhiteSpace(_serviceDefinition.ImageId));
-
-			// evt.menu.BeamableAppendAction($"{localCategory}/Open in CLI", pos => OpenInCli(), IsRunning);
 			evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenDocs(false), _serviceDefinition.IsRunningLocally);
-			// if (_serviceDescriptor.IsSourceCodeAvailableLocally())
-			// {
-			// 	evt.menu.BeamableAppendAction($"{localCategory}/Regenerate {_serviceDescriptor.Name}Client.cs", pos =>
-			// 	{
-			// 		BeamServicesCodeWatcher.GenerateClientSourceCode(_serviceDescriptor, true);
-			// 	});
-			// }
+			if (_serviceDefinition.ServiceInfo != null)
+			{
+				evt.menu.BeamableAppendAction($"{localCategory}/Regenerate {_serviceDefinition.BeamoId}Client.cs", pos =>
+				{
+					BeamEditorContext.Default.ServiceScope.GetService<CodeService>().GenerateClientCode(_name)
+					                 .Then(_ => { });
+				});
+			}
 
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => { OpenOnRemote("docs/"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => { OpenOnRemote("metrics"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => { OpenDocs(true); }, existsOnRemote);
-			// evt.menu.BeamableAppendAction($"Visual Studio Code/Copy Debug Configuration{debugToolsSuffix}", pos => { CopyVSCodeDebugTool(); }, IncludeDebugTools);
 			evt.menu.BeamableAppendAction($"Open C# Code", _ => _serviceDefinition.ServiceInfo.OpenCode());
-			// evt.menu.BeamableAppendAction("Build", pos => Build());
 
 			if (!AreLogsAttached)
 			{
