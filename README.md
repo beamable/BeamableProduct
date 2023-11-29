@@ -11,5 +11,4 @@ Project Structure
 * `client/` - Unity source of Beamable itself
 * `jenkins/` - supporting files for Jenkins builds of Beamable
 * `plugins/` - source code for native Android and iOS plugins
-* `portal/` - JS and TS source of the Beamable administrative portal
 
