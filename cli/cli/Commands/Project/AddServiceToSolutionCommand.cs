@@ -75,9 +75,9 @@ public class AddServiceToSolutionCommand : AppCommand<SolutionCommandArgs>
 		}
 
 		string path = await args.ProjectService.AddToSolution(args);
-		
-		var sd = await args.ProjectService.AddDefinitonToNewService(args,path);
-		
+
+		var sd = await args.ProjectService.AddDefinitonToNewService(args, path);
+
 		if (!args.SkipCommon)
 		{
 			var service = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[sd.BeamoId];

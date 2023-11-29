@@ -101,7 +101,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 		public void Connect()
 		{
 			_serviceDefinition = BeamEditorContext.Default.ServiceScope.GetService<CodeService>().ServiceDefinitions
-			                 .FirstOrDefault(def => def.ServiceInfo.name == Name);
+							 .FirstOrDefault(def => def.ServiceInfo.name == Name);
 			BeamEditorContext.Default.ServiceScope.GetService<CodeService>().OnLogMessage -= HandleLogMessage;
 			BeamEditorContext.Default.ServiceScope.GetService<CodeService>().OnLogMessage += HandleLogMessage;
 		}
@@ -128,7 +128,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 					break;
 			}
 
-			return new LogMessage() {Message = message.message, Level = logLevel, Timestamp = message.timeStamp};
+			return new LogMessage() { Message = message.message, Level = logLevel, Timestamp = message.timeStamp };
 		}
 
 		public void DetachLogs()
@@ -166,7 +166,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 				evt.menu.BeamableAppendAction($"{localCategory}/Regenerate {_serviceDefinition.BeamoId}Client.cs", pos =>
 				{
 					BeamEditorContext.Default.ServiceScope.GetService<CodeService>().GenerateClientCode(_name)
-					                 .Then(_ => { });
+									 .Then(_ => { });
 				});
 			}
 
@@ -180,7 +180,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 				evt.menu.BeamableAppendAction($"Reattach Logs", pos => AttachLogs());
 			}
 		}
-		
+
 
 		protected void OpenRemoteDocs() => OpenOnRemote("docs");
 		protected void OpenRemoteMetrics() => OpenOnRemote("metrics");
@@ -193,13 +193,13 @@ namespace Beamable.Editor.Microservice.UI2.Models
 				$"microservices/{_serviceDefinition.BeamoId}/{relativePath}?refresh_token={api.Requester.Token.RefreshToken}";
 			Application.OpenURL(path);
 		}
-		
+
 		private void OpenDocs(bool remote)
 		{
-			if(_serviceDefinition.IsRunningLocally)
+			if (_serviceDefinition.IsRunningLocally)
 			{
 				BeamEditorContext.Default.ServiceScope.GetService<CodeService>()
-				                 .OpenSwagger(_serviceDefinition.BeamoId, remote).Then(_ => { });
+								 .OpenSwagger(_serviceDefinition.BeamoId, remote).Then(_ => { });
 			}
 		}
 	}
