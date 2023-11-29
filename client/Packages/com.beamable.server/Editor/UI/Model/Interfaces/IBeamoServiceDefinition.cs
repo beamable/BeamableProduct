@@ -14,7 +14,6 @@ namespace Beamable.Editor.UI.Model
 	{
 		IBeamableBuilder Builder { get; set; }
 
-		public event Action<IBeamoServiceDefinition> Updated;
 		/// <summary>
 		/// The id that this service will be know, both locally and remotely.
 		/// </summary>
@@ -38,7 +37,7 @@ namespace Beamable.Editor.UI.Model
 		/// <summary>
 		/// Current service status on local computer.
 		/// </summary>
-		public BeamoServiceStatus IsRunningLocally { get; set; }
+		public bool IsRunningLocally { get; }
 
 		/// <summary>
 		/// Current service status on server.
@@ -46,7 +45,5 @@ namespace Beamable.Editor.UI.Model
 		public BeamoServiceStatus IsRunningOnRemote { get; set; }
 
 		ServiceInfo ServiceInfo { get; set; }
-
-		public void CallUpdate();
 	}
 }
