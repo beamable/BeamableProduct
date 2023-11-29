@@ -20,6 +20,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 		Action<bool> OnLogsAttachmentChanged { get; set; }
 		void PopulateMoreDropdown(ContextualMenuPopulateEvent evt);
 	}
+
 	public interface IMicroserviceVisualsModel : IServiceLogsVisualModel
 	{
 		float ElementHeight { get; set; }
@@ -36,7 +37,12 @@ namespace Beamable.Editor.Microservice.UI2.Models
 	{
 		private const float DEFAULT_HEIGHT = 300.0f;
 
-		public bool AreLogsAttached { get; set; }
+		public bool AreLogsAttached
+		{
+			get => _areLogsAttached;
+			protected set => _areLogsAttached = value;
+		}
+
 		public string Name => _name;
 
 		public float ElementHeight
@@ -44,6 +50,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 			get => _visualHeight;
 			set => _visualHeight = value;
 		}
+
 		public bool IsSelected
 		{
 			get => _isSelected;
@@ -53,6 +60,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 				OnSelectionChanged?.Invoke(value);
 			}
 		}
+
 		public bool IsCollapsed
 		{
 			get => _isCollapsed;
@@ -70,7 +78,8 @@ namespace Beamable.Editor.Microservice.UI2.Models
 		[SerializeField] private bool _isSelected;
 		[SerializeField] private bool _isCollapsed = false;
 		[SerializeField] private float _visualHeight = DEFAULT_HEIGHT;
-		[FormerlySerializedAs("name")] [SerializeField] public string _name;
+		[SerializeField] public string _name;
+		[SerializeField] private bool _areLogsAttached = true;
 
 		private void HandleLogMessage(string arg1, BeamTailLogMessage arg2)
 		{
@@ -113,7 +122,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 					break;
 			}
 
-			return new LogMessage() { Message = message.message, Level = logLevel, Timestamp = message.timeStamp };
+			return new LogMessage() {Message = message.message, Level = logLevel, Timestamp = message.timeStamp};
 		}
 
 		public void DetachLogs()
@@ -124,6 +133,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 			OnLogsDetached?.Invoke();
 			OnLogsAttachmentChanged?.Invoke(false);
 		}
+
 		public void AttachLogs()
 		{
 			if (AreLogsAttached) return;
@@ -134,8 +144,10 @@ namespace Beamable.Editor.Microservice.UI2.Models
 
 		public virtual void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
 		{
-			evt.menu.AppendAction("TEST ACTION", action => {});
+			if (!AreLogsAttached)
+			{
+				evt.menu.BeamableAppendAction($"Reattach Logs", pos => AttachLogs());
+			}
 		}
-
 	}
 }
