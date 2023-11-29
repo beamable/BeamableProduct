@@ -26,7 +26,7 @@ namespace Beamable.Server.Editor
 		public async Promise Start()
 		{
 			await BeamEditorContext.Default.InitializePromise;
-			var cli = BeamEditorContext.Default.ServiceScope.GetService<BeamCli>();
+			var cli = BeamEditorContext.Default.ServiceScope.GetService<IBeamCli>();
 
 			_command = cli.Command.ProjectPs();
 			_command.OnStreamServiceDiscoveryEvent(Handle);
