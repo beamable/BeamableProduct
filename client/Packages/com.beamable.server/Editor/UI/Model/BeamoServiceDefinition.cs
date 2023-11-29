@@ -8,14 +8,12 @@ namespace Beamable.Editor.UI.Model
 	public class BeamoServiceDefinition : IBeamoServiceDefinition
 	{
 		public IBeamableBuilder Builder { get; set; }
-		public event Action<IBeamoServiceDefinition> Updated;
 		public string BeamoId => ServiceInfo.name;
 		public ServiceType ServiceType { get; set; } = ServiceType.MicroService;
 		public string ImageId { get; set; } = string.Empty;
 		public bool ShouldBeEnabledOnRemote { get; set; } = true;
-		public BeamoServiceStatus IsRunningLocally { get; set; } = BeamoServiceStatus.Unknown;
+		public bool IsRunningLocally => Builder.IsRunning;
 		public BeamoServiceStatus IsRunningOnRemote { get; set; } = BeamoServiceStatus.Unknown;
 		public ServiceInfo ServiceInfo { get; set; }
-		public void CallUpdate() => Updated?.Invoke(this);
 	}
 }

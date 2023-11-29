@@ -15,12 +15,13 @@ namespace Beamable.Editor.Dotnet
 		private const int REQUIRED_MAJOR_VERSION = 6;
 
 		private const string ENV_VAR_DOTNET_LOCATION = "BEAMABLE_DOTNET_PATH";
-		private const string DOTNET_LIBRARY_PATH = "Library/BeamableEditor/Dotnet";
 
 #if UNITY_EDITOR_WIN
+		private const string DOTNET_LIBRARY_PATH = "Library\\BeamableEditor\\Dotnet";
 		public static readonly string DOTNET_GLOBAL_PATH = "C:\\Program Files\\dotnet";
 		public static readonly string DOTNET_EXEC = "dotnet.exe";
 #else
+		private const string DOTNET_LIBRARY_PATH = "Library/BeamableEditor/Dotnet";
 		public static readonly string DOTNET_GLOBAL_PATH =
 			Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".dotnet");
 
@@ -32,13 +33,14 @@ namespace Beamable.Editor.Dotnet
 		/// </summary>
 		static string[] _dotnetLocationCandidates = new string[]
 		{
-			System.Environment.GetEnvironmentVariable(ENV_VAR_DOTNET_LOCATION), DOTNET_LIBRARY_PATH,
+			System.Environment.GetEnvironmentVariable(ENV_VAR_DOTNET_LOCATION), 
+			DOTNET_LIBRARY_PATH,
 			DOTNET_GLOBAL_PATH
 		};
 
-
 		public static string DotnetHome { get; private set; }
 		public static string DotnetPath => Path.Combine(DotnetHome, DOTNET_EXEC);
+		public static bool IsUsingGlobalDotnet => DotnetHome.Equals(DOTNET_GLOBAL_PATH);
 
 		/// <summary>
 		/// Beamable 2.0+ requires Dotnet.
