@@ -108,8 +108,8 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
 			var isDep = dependencies.Any(d => d == serviceFolder);
 			if (!isDep) continue;
 
-			dockerfilePath = Path.Combine(service.Value.DockerBuildContextPath, dockerfilePath);
-			var dockerfileText = File.ReadAllText(dockerfilePath);
+			dockerfilePath = args.ConfigService.GetFullPath(Path.Combine(service.Value.DockerBuildContextPath, dockerfilePath));
+			var dockerfileText = await File.ReadAllTextAsync(dockerfilePath);
 
 			const string search =
 				"# <BEAM-CLI-INSERT-FLAG:COPY> do not delete this line. It is used by the beam CLI to insert custom actions";
@@ -118,7 +118,7 @@ COPY {args.storageName}/. .
 {search}";
 			Log.Information($"Updating service=[{service.Key}] Dockerfile to include storage reference");
 			dockerfileText = dockerfileText.Replace(search, replacement);
-			File.WriteAllText(dockerfilePath, dockerfileText);
+			await File.WriteAllTextAsync(dockerfilePath, dockerfileText);
 		}
 
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
