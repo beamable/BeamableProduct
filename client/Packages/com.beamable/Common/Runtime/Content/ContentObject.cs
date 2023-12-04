@@ -155,6 +155,7 @@ namespace Beamable.Common.Content
 		internal const string TooltipValue1 = "The value";
 		internal const string TooltipVipBonus1 = "The bonus";
 		internal const string TooltipVipTier1 = "The vip tier";
+		internal const string TooltipFederatedGameServerNamespace = "Federated game server namespace";
 
 		internal const string TooltipWaitAfterMinReachedSecs1 =
 		   "The wait time after the minimum players is reached, in seconds.";
