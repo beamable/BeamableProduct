@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Experimental.Api.Lobbies;
 using Beamable.Player;
 using Beamable.Runtime.LightBeams;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -16,11 +17,15 @@ public class FindLobbyDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerLo
 		LobbyQueryResponse response = await model.FindLobbies();
 
 		lobbiesContainer.Clear();
+		var promises = new List<Promise<LobbyDisplayBehaviour>>();
 		foreach (Lobby lobby in response.results)
 		{
-			//improve this with sequence
-			await beam.Instantiate<LobbyDisplayBehaviour, Lobby>(lobbiesContainer, lobby);
+			Promise<LobbyDisplayBehaviour> p = beam.Instantiate<LobbyDisplayBehaviour, Lobby>(lobbiesContainer, lobby);
+			promises.Add(p);
 		}
+		
+		Promise<List<LobbyDisplayBehaviour>> sequence = Promise.Sequence(promises);
+		await sequence;
 		
 		backButton.HandleClicked(async () =>
 		{

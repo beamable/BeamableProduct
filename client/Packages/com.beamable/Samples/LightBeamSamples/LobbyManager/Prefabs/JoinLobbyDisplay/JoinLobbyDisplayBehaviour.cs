@@ -20,6 +20,9 @@ public class JoinLobbyDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerLo
 	{
 		_lobby = model;
 		_beam = beam;
+
+		lobbyIdInput.onValueChanged.AddListener(OnIdInputChanged);
+		passcodeInput.onValueChanged.AddListener(OnPasscodeInputChanged);
 		
 		backButton.HandleClicked(async () =>
 		{
@@ -58,23 +61,30 @@ public class JoinLobbyDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerLo
 		}
 	}
 
-	private void Update()
+	private void OnIdInputChanged(string updatedValue)
 	{
-		if (!string.IsNullOrEmpty(lobbyIdInput.text))
+		if (!string.IsNullOrEmpty(updatedValue))
 		{
 			passcodeInput.text = string.Empty;
 			passcodeInput.readOnly = true;
 		}
-		
-		if (!string.IsNullOrEmpty(passcodeInput.text))
+		else
+		{
+			passcodeInput.text = string.Empty;
+			passcodeInput.readOnly = false;
+		}
+	}
+
+	private void OnPasscodeInputChanged(string updatedValue)
+	{
+		if (!string.IsNullOrEmpty(updatedValue))
 		{
 			lobbyIdInput.text = string.Empty;
 			lobbyIdInput.readOnly = true;
 		}
-
-		if (string.IsNullOrEmpty(passcodeInput.text) && string.IsNullOrEmpty(lobbyIdInput.text))
+		else
 		{
-			passcodeInput.readOnly = false;
+			lobbyIdInput.text = string.Empty;
 			lobbyIdInput.readOnly = false;
 		}
 	}
