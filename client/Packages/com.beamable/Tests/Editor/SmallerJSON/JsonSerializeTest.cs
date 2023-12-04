@@ -20,6 +20,18 @@ namespace Beamable.Editor.Tests.SmallerJson
 			Assert.AreEqual(jsonSerializedUnity, smallerJsonSerialized);
 		}
 
+		[Test]
+		public void ClassWithEnumTest()
+		{
+			var instance = new TestClassWithEnum();
+			instance.testInt = 45;
+			instance.myTestEnum = MyTestEnum.Three;
+			instance.testString = "Super instance";
+			var jsonSerializedUnity = JsonUtility.ToJson(instance);
+			var smallerJsonSerialized = Json.Serialize(instance, new StringBuilder());
+			Assert.AreEqual(jsonSerializedUnity, smallerJsonSerialized);
+		}
+
 
 		[Serializable]
 		public class CustomComplexClass
@@ -48,6 +60,22 @@ namespace Beamable.Editor.Tests.SmallerJson
 			[SerializeField] private string _displayName;
 			[SerializeField] private string _firstName;
 			[SerializeField] private string _lastName;
+		}
+
+		[Serializable]
+		public class TestClassWithEnum
+		{
+			public string testString;
+			public MyTestEnum myTestEnum;
+			public int testInt;
+		}
+
+		[Serializable]
+		public enum MyTestEnum
+		{
+			One,
+			Two,
+			Three
 		}
 	}
 }

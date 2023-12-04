@@ -1001,6 +1001,11 @@ namespace Beamable.Serialization.SmallerJSON
 				{
 					SerializeRaw(provider, builder);
 				}
+				else if (value is Enum)
+				{
+					var result = Convert.ChangeType(value, typeof(int));
+					builder.Append(result);
+				}
 				else if (value is { } obj)
 				{
 					SerializeClass(obj, builder);
