@@ -23,14 +23,14 @@ public class JoinLobbyDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerLo
 
 		lobbyIdInput.onValueChanged.AddListener(OnIdInputChanged);
 		passcodeInput.onValueChanged.AddListener(OnPasscodeInputChanged);
-		
+
 		backButton.HandleClicked(async () =>
 		{
 			await beam.GotoPage<HomePage>();
 		});
-		
+
 		joinButton.HandleClicked(JoinLobby);
-		
+
 		return Promise.Success;
 	}
 
@@ -52,10 +52,10 @@ public class JoinLobbyDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerLo
 			{
 				await _lobby.JoinByPasscode(passcodeInput.text);
 			}
-			
+
 			await _beam.GotoPage<HomePage>();
 		}
-		catch(PromiseException e)
+		catch (PromiseException e)
 		{
 			Debug.Log("[Lobby] Couldn't join the lobby! " + e.Message);
 		}

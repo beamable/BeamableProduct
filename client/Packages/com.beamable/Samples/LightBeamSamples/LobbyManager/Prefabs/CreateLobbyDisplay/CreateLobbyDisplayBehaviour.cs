@@ -18,22 +18,22 @@ public class CreateLobbyDisplayBehaviour : MonoBehaviour, ILightComponent<Player
 
 	private PlayerLobby _playerLobby;
 	private LightBeam _lightBeam;
-	
+
 	public Promise OnInstantiated(LightBeam beam, PlayerLobby model)
 	{
 		_playerLobby = model;
 		_lightBeam = beam;
-		
+
 		createLobbyBtn.HandleClicked(async () =>
 		{
 			await CreateLobby();
 		});
-		
+
 		backButton.HandleClicked(async () =>
 		{
 			await _lightBeam.GotoPage<HomePage>();
 		});
-		
+
 		return Promise.Success;
 	}
 
@@ -46,7 +46,7 @@ public class CreateLobbyDisplayBehaviour : MonoBehaviour, ILightComponent<Player
 		}
 
 		LobbyRestriction restrictionLevel = closedToggle.isOn ? LobbyRestriction.Closed : LobbyRestriction.Open;
-		
+
 		await _playerLobby.Create(nameInput.text, restrictionLevel, description: descriptionInput.text);
 		await _lightBeam.GotoPage<HomePage>();
 	}

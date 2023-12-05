@@ -26,22 +26,22 @@ public class LobbyDetailsDisplayBehaviour : MonoBehaviour, ILightComponent<Lobby
 
 	private Lobby _model;
 	private LightBeam _beam;
-	
+
 	public async Promise OnInstantiated(LightBeam beam, Lobby model)
 	{
 		_beam = beam;
 		_model = model;
-		
+
 		lobbyName.text = $"Lobby Name: {model.name}";
 		lobbyId.text = $"Lobby Id: {model.lobbyId}";
 		lobbyDescription.text = model.description;
 		lobbyPasscode.text = $"Passcode: {model.passcode}";
 		lobbyHost.text = $"Host: {model.host}";
-		
+
 		playersListContainer.Clear();
 
 		await InstantiatePlayers();
-		
+
 		lobbyIdCopyButton.HandleClicked(() =>
 		{
 #if UNITY_EDITOR
@@ -50,7 +50,7 @@ public class LobbyDetailsDisplayBehaviour : MonoBehaviour, ILightComponent<Lobby
 			GUIUtility.systemCopyBuffer = model.lobbyId;
 #endif
 		});
-		
+
 		lobbyPasscodeCopyButton.HandleClicked(() =>
 		{
 #if UNITY_EDITOR
@@ -59,7 +59,7 @@ public class LobbyDetailsDisplayBehaviour : MonoBehaviour, ILightComponent<Lobby
 			GUIUtility.systemCopyBuffer = model.passcode;
 #endif
 		});
-		
+
 		backButton.HandleClicked(async () =>
 		{
 			await beam.GotoPage<HomePage>();
