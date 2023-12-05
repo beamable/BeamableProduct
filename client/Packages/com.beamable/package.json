@@ -40,6 +40,11 @@
       "displayName": "Friends HUD",
       "description": "Contains a humble user interface demonstrating how to use social features to add, remove, block friends.",
       "path": "SAMPLES_PATH/LightBeamSamples/FriendsManager"
+    },
+    {
+      "displayName": "Lobby Management",
+      "description": "Contains a unostentatious user interface demonstrating how to use the API for creating, joining and managing lobbies.",
+      "path": "SAMPLES_PATH/LightBeamSamples/LobbyManager"
     }
   ]
 }
