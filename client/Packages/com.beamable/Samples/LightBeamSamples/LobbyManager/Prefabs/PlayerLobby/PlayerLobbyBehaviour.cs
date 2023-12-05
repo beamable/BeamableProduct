@@ -22,27 +22,27 @@ public class PlayerLobbyBehaviour : MonoBehaviour, ILightComponent<PlayerLobbyDa
 	private LightBeam _beam;
 	private PlayerLobbyData _lobbyData;
 	private PlayerLobby _lobby;
-	
+
 	public Promise OnInstantiated(LightBeam beam, PlayerLobbyData model)
 	{
 		_beam = beam;
 		_lobbyData = model;
 		_lobby = model.playerLobby;
-		
+
 		UpdatePlayerInformation(model);
 
 		_lobby.OnDataUpdated += DataUpdateCallback;
-		
+
 		createLobbyBtn.HandleClicked(async () =>
 		{
 			await beam.GotoPage<CreateLobbyDisplayBehaviour, PlayerLobby>(model.playerLobby);
 		});
-		
+
 		findLobbyBtn.HandleClicked(async () =>
 		{
 			await beam.GotoPage<FindLobbyDisplayBehaviour, PlayerLobby>(model.playerLobby);
 		});
-		
+
 		myLobbyBtn.HandleClicked(async () =>
 		{
 			if (!model.playerLobby.IsInLobby)
@@ -50,7 +50,7 @@ public class PlayerLobbyBehaviour : MonoBehaviour, ILightComponent<PlayerLobbyDa
 				Debug.Log("[Lobby] You are not currently in a lobby!");
 				return;
 			}
-			
+
 			await beam.GotoPage<LobbyDetailsDisplayBehaviour, Lobby>(model.playerLobby.Value);
 		});
 
@@ -62,7 +62,7 @@ public class PlayerLobbyBehaviour : MonoBehaviour, ILightComponent<PlayerLobbyDa
 		{
 			ChangeButtonToJoinLobby();
 		}
-		
+
 		return Promise.Success;
 	}
 
@@ -74,7 +74,7 @@ public class PlayerLobbyBehaviour : MonoBehaviour, ILightComponent<PlayerLobbyDa
 			await _beam.GotoPage<JoinLobbyDisplayBehaviour, PlayerLobby>(_lobby);
 		});
 	}
-	
+
 	private void ChangeButtonToLeaveLobby()
 	{
 		joinLeaveButtonLabel.text = "Leave";
@@ -97,7 +97,7 @@ public class PlayerLobbyBehaviour : MonoBehaviour, ILightComponent<PlayerLobbyDa
 	private void UpdatePlayerInformation(PlayerLobbyData model)
 	{
 		int amount = model.playerLobby.IsInLobby ? model.playerLobby.Value.players.Count : 0;
-		
+
 		UpdatePlayerInformation(model.playerId, model.playerName, model.playerLobby.IsInLobby, amount);
 	}
 
@@ -106,7 +106,7 @@ public class PlayerLobbyBehaviour : MonoBehaviour, ILightComponent<PlayerLobbyDa
 		playerIdLabel.text = $"Player Id: {playerId.ToString()}";
 		gamerTagLabel.text = $"Player Name: {playerName}";
 		lobbyStatusLabel.text = $"Is in Lobby: {isInLobby.ToString()}";
-		
+
 		playersAmountLabel.text = $"Players amount in Lobby: {amount}";
 	}
 }

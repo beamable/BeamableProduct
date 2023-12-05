@@ -11,7 +11,7 @@ public class PlayerIdDisplayBehaviour : MonoBehaviour, ILightComponent<LobbyPlay
 	public Promise OnInstantiated(LightBeam beam, LobbyPlayer model)
 	{
 		playerId.text = $"Id: {model.playerId}";
-		
+
 		return Promise.Success;
 	}
 }
