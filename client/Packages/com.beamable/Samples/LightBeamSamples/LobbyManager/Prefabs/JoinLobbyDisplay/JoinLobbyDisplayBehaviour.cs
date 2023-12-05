@@ -63,29 +63,13 @@ public class JoinLobbyDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerLo
 
 	private void OnIdInputChanged(string updatedValue)
 	{
-		if (!string.IsNullOrEmpty(updatedValue))
-		{
-			passcodeInput.text = string.Empty;
-			passcodeInput.readOnly = true;
-		}
-		else
-		{
-			passcodeInput.text = string.Empty;
-			passcodeInput.readOnly = false;
-		}
+		passcodeInput.text = string.Empty;
+		passcodeInput.readOnly = !string.IsNullOrEmpty(updatedValue);
 	}
 
 	private void OnPasscodeInputChanged(string updatedValue)
 	{
-		if (!string.IsNullOrEmpty(updatedValue))
-		{
-			lobbyIdInput.text = string.Empty;
-			lobbyIdInput.readOnly = true;
-		}
-		else
-		{
-			lobbyIdInput.text = string.Empty;
-			lobbyIdInput.readOnly = false;
-		}
+		lobbyIdInput.text = string.Empty;
+		lobbyIdInput.readOnly = !string.IsNullOrEmpty(updatedValue);
 	}
 }
