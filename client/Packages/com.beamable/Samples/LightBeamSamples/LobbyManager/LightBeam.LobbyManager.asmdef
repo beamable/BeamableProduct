@@ -1,0 +1,20 @@
+{
+    "name": "LightBeam.LobbyManager",
+    "rootNamespace": "",
+    "references": [
+        "Unity.Beamable",
+        "Unity.Beamable.Runtime.Common",
+        "Unity.Beamable.Customer.Common",
+        "Unity.TextMeshPro",
+        "Unity.Beamable.LightBeams"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

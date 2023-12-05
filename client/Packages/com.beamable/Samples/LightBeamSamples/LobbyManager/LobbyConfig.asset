@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd7469472c1de45818000ec3e9011711, type: 3}
+  m_Name: LobbyConfig
+  m_EditorClassIdentifier: 
+  homePage: {fileID: 8347906190293275121, guid: fb97f7738d40b4eab877502e69e313d8,
+    type: 3}
+  createLobbyDisplay: {fileID: 3627771421499675444, guid: 5269a63f3bc10419dae45a6b40e2ff14,
+    type: 3}
+  findLobbyDislay: {fileID: 1369416413926480417, guid: 4504226d85da74f74be7299dd148420d,
+    type: 3}
+  lobbyDisplay: {fileID: -8447604953349447420, guid: 97fc9d5b140594839b240a2b48815f3a,
+    type: 3}
+  lobbyDetailsDisplay: {fileID: 6889122251671763699, guid: 9f406a5d8cdc9484ea369af99d372cca,
+    type: 3}
+  playerIdDisplay: {fileID: 5222365097898083520, guid: e7e0cf06f87674486b004325a8a16554,
+    type: 3}
+  playerLobby: {fileID: 8640145385084694826, guid: deb82f223236e4b748e13185fc0d02bc,
+    type: 3}
+  joinLobbyDisplay: {fileID: 7683427985257366957, guid: 9e43f609911fd4a0a983a700492cf274,
+    type: 3}
