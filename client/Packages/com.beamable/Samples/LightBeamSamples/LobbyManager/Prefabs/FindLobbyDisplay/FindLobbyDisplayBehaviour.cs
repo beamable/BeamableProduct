@@ -11,7 +11,7 @@ public class FindLobbyDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerLo
 	[Header("Scene References")]
 	public Transform lobbiesContainer;
 	public Button backButton;
-	
+
 	public async Promise OnInstantiated(LightBeam beam, PlayerLobby model)
 	{
 		LobbyQueryResponse response = await model.FindLobbies();
@@ -23,14 +23,14 @@ public class FindLobbyDisplayBehaviour : MonoBehaviour, ILightComponent<PlayerLo
 			Promise<LobbyDisplayBehaviour> p = beam.Instantiate<LobbyDisplayBehaviour, Lobby>(lobbiesContainer, lobby);
 			promises.Add(p);
 		}
-		
+
 		Promise<List<LobbyDisplayBehaviour>> sequence = Promise.Sequence(promises);
 		await sequence;
-		
+
 		backButton.HandleClicked(async () =>
 		{
 			await beam.GotoPage<HomePage>();
 		});
-		
+
 	}
 }

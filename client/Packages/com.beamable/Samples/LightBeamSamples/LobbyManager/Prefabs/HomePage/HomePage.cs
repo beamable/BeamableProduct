@@ -21,7 +21,7 @@ public class HomePage : MonoBehaviour, ILightComponent
 	public List<string> playersNames;
 
 	private LightBeam _beam;
-	
+
 	public async Promise OnInstantiated(LightBeam beam)
 	{
 		_beam = beam;
@@ -42,26 +42,29 @@ public class HomePage : MonoBehaviour, ILightComponent
 	{
 		BeamContext context = BeamContext.ForPlayer(playerName);
 		await context.OnReady;
-		var data = new PlayerLobbyData() {playerLobby = context.Lobby, playerId = context.PlayerId, playerName = context.PlayerCode};
+		var data = new PlayerLobbyData() { playerLobby = context.Lobby, playerId = context.PlayerId, playerName = context.PlayerCode };
 		await _beam.Instantiate<PlayerLobbyBehaviour, PlayerLobbyData>(displaysContainer, data);
 	}
-	
-	private void SortChildrenByName(Transform container) {
+
+	private void SortChildrenByName(Transform container)
+	{
 		List<Transform> children = new List<Transform>();
-		for (int i = container.childCount - 1; i >= 0; i--) {
+		for (int i = container.childCount - 1; i >= 0; i--)
+		{
 			Transform child = container.GetChild(i);
 			children.Add(child);
 			child.SetParent(null);
 		}
-		
+
 		children.Sort((Transform t1, Transform t2) =>
 		{
 			var p1 = t1.GetComponent<PlayerLobbyBehaviour>();
 			var p2 = t2.GetComponent<PlayerLobbyBehaviour>();
 			return string.Compare(p1.gamerTagLabel.text, p2.gamerTagLabel.text, StringComparison.Ordinal);
 		});
-		
-		foreach (Transform child in children) {
+
+		foreach (Transform child in children)
+		{
 			child.SetParent(container);
 		}
 	}
