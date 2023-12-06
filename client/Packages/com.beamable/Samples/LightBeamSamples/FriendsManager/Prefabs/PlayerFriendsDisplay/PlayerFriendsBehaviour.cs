@@ -3,7 +3,9 @@ using Beamable.Player;
 using Beamable.Runtime.LightBeams;
 using System.Collections.Generic;
 using TMPro;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using UnityEngine;
 using UnityEngine.UI;
 
