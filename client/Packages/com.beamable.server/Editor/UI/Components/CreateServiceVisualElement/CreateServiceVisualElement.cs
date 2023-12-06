@@ -8,19 +8,13 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-#if UNITY_2018
-using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
-#elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
-#endif
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class CreateServiceVisualElement : MicroserviceComponent
 	{
-		public CreateServiceVisualElement() : base(nameof(CreateServiceBaseVisualElement)) { }
+		public CreateServiceVisualElement() : base(nameof(CreateServiceVisualElement)) { }
 
 		protected string NewServiceName { get; set; }
 		protected string ScriptName { get; }

@@ -75,10 +75,6 @@ namespace Beamable.Editor.Microservice.UI2
 
 			var microserviceContentVisualElement = root.Q("microserviceContentVisualElement");
 			microserviceContentVisualElement.Add(new VisualElement { name = "announcementList" });
-			_createServiceElement = new CreateServiceVisualElement(){ServiceType = ServiceType.MicroService};
-			_createServiceElement.Refresh();
-			_createServiceElement.SetHidden(true);
-			microserviceContentVisualElement.Add(_createServiceElement);
 			microserviceContentVisualElement.Add(scrollView);
 			scrollView.Add(emptyContainer);
 			OnLoad().Then(_ =>
@@ -108,7 +104,9 @@ namespace Beamable.Editor.Microservice.UI2
 
 		private void HandleCreateNewClicked(ServiceType obj)
 		{
-			_createServiceElement.SetHidden(false);
+			_createServiceElement = new CreateServiceVisualElement(){ServiceType = obj};
+			_createServiceElement.Refresh(_actionBarVisualElement.Refresh);
+			this.GetRootVisualContainer().Q("microserviceContentVisualElement").Insert(0,_createServiceElement);
 		}
 
 		private void ShowDockerNotRunningAnnouncement()
