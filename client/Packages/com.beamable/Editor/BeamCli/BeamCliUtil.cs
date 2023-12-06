@@ -125,7 +125,7 @@ namespace Beamable.Editor.BeamCli
 			var installCommand = $"tool install beamable.tools --tool-path \"{fullDirectory}\"";
 			if (!BeamableEnvironment.SdkVersion.ToString().Equals("0.0.0"))
 			{
-				installCommand += $"--version {BeamableEnvironment.SdkVersion}";
+				installCommand += $" --version {BeamableEnvironment.SdkVersion}";
 			}
 			proc.StartInfo = new ProcessStartInfo
 			{
