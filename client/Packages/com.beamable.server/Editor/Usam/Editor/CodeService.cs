@@ -433,9 +433,19 @@ namespace Beamable.Server.Editor.Usam
 
 		public async Promise Run(IEnumerable<string> beamoIds)
 		{
+			var listToRun = beamoIds.ToList();
+			foreach (var id in beamoIds)
+			{
+				var signin = _services.FirstOrDefault(signpost => signpost.name == id);
+				if (signin != null)
+				{
+					listToRun.AddRange(signin.dependedStorages.ToArray());
+				}
+			}
 			try
 			{
-				var cmd = _cli.ServicesRun(new ServicesRunArgs() { ids = beamoIds.ToArray() });
+				
+				var cmd = _cli.ServicesRun(new ServicesRunArgs() { ids = listToRun.ToArray() });
 				cmd.OnLocal_progressServiceRunProgressResult(cb =>
 				{
 					ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(cb.data.BeamoId))?.Builder
