@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Server;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -11,20 +12,55 @@ namespace Beamable.Microservices
 	public class HathoraGameServices : Microservice, IFederatedGameServer<HathoraIdentity>
 	{
 		// TODO: Should probably move these to a configuration file in the future
-		public const string appId = "app-51bbe218-6490-4c72-abac-42903444e328";
-		public const string appSecret = "secret-68b338e4-0b8e-4905-957d-a1103e804c02";
+		private const string appId = "app-51bbe218-6490-4c72-abac-42903444e328";
+		private const string appSecret = "secret-68b338e4-0b8e-4905-957d-a1103e804c02";
+		// TODO: This likely needs to be configurable. Not sure where the best place to put that is.
+		private const string defaultRegion = "Seattle";
+		private static Uri hathoraBaseUri = new Uri("https://api.hathora.dev");
 
-		public HttpClient http = new HttpClient();
+		private HttpClient http = new HttpClient();
 
 		public async Promise<ServerInfo> CreateGameServer(CreateGameServerRequest lobby)
 		{
-			await Task.CompletedTask;
-			return new ServerInfo {globalData = new Dictionary<string, string> {{"test", "test"}}};
+			string roomId = lobby.lobby.lobbyId;
+			ConnectionInfo response = await CreateGameServer(roomId, defaultRegion);
+
+			while (response.status != "active")
+			{
+				response = await GetConnectionInfo(roomId);
+				await Task.Delay(TimeSpan.FromSeconds(.5));
+			}
+
+			return new ServerInfo
+			{
+				globalData = new Dictionary<string, string>
+				{
+					{"roomId", response.roomId},
+					{"host", response.exposedPort.host},
+					{"name", response.exposedPort.name},
+					{"port", response.exposedPort.port.ToString() },
+					{"transportType", response.exposedPort.transportType}
+				}
+			};
 		}
 
-		private Task<ConnectionInfo> CreateGameServer()
+		private async Task<ConnectionInfo> CreateGameServer(string roomId, string region)
 		{
-			throw new NotImplementedException();
+			var createUri = new Uri(hathoraBaseUri, $"/rooms/v2/{appId}/create?roomId={roomId}") ;
+			var body = new CreateRoomRequest
+			{
+				region = region
+			};
+			var content = new StringContent(JsonConvert.SerializeObject(body));
+			HttpResponseMessage response = await http.PostAsync(createUri, content);
+			return JsonConvert.DeserializeObject<ConnectionInfo>(await response.Content.ReadAsStringAsync());
+		}
+
+		private async Task<ConnectionInfo> GetConnectionInfo(string roomId)
+		{
+			var getUri = new Uri(hathoraBaseUri, $"/rooms/v2/{appId}/connectioninfo/{roomId}");
+			HttpResponseMessage response = await http.GetAsync(getUri);
+			return JsonConvert.DeserializeObject<ConnectionInfo>(await response.Content.ReadAsStringAsync());
 		}
 	}
 
@@ -34,20 +70,27 @@ namespace Beamable.Microservices
 	}
 
 	[Serializable]
+	public class CreateRoomRequest
+	{
+		public string roomConfig;
+		public string region;
+	}
+
+	[Serializable]
 	public class PortInfo
 	{
-		public string Host { get; set; }
-		public string Name { get; set; }
-		public int Port { get; set; }
-		public int TransportType { get; set; }
+		public string host;
+		public string name;
+		public int port;
+		public string transportType;
 	}
 
 	[Serializable]
 	public class ConnectionInfo
 	{
-		public string RoomId { get; set; }
-		public string Status { get; set; }
-		public PortInfo ExposedPort { get; set; }
-		public List<PortInfo> AdditionalExposedPorts { get; set; }
+		public string roomId;
+		public string status;
+		public PortInfo exposedPort;
+		public List<PortInfo> additionalExposedPorts;
 	}
 }
