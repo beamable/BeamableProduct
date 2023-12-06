@@ -11,6 +11,7 @@ public class ServicesSetManifestCommandArgs : CommandArgs
 	public List<string> localHttpNames;
 	public List<string> localHttpBuildContextPaths;
 	public List<string> localHttpRelativeDockerfilePaths;
+	public List<string> storageDependencies;
 }
 
 
@@ -45,6 +46,14 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 			AllowMultipleArgumentsPerToken = true
 		};
 		AddOption(dockerFiles, (x, i) => x.localHttpRelativeDockerfilePaths = i);
+
+
+		var storageDeps = new Option<List<string>>("--storage-dependencies", "Local http service required storage, use format <service-name>:<storage-name>")
+		{
+			Arity = ArgumentArity.ZeroOrMore,
+			AllowMultipleArgumentsPerToken = true
+		};
+		AddOption(storageDeps, (x, i) => x.storageDependencies = i);
 	}
 
 	public override async Task Handle(ServicesSetManifestCommandArgs args)
@@ -60,6 +69,30 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 			throw new CliException("Invalid service count, must have equal parameter counts");
 		}
 
+		var storages = new Dictionary<string, List<string>>();
+		foreach (string storageDependency in args.storageDependencies)
+		{
+			var splitted = storageDependency.Split(':');
+			if (splitted.Length != 2)
+			{
+				throw new CliException($"Invalid storage dependency argument format: {storageDependency}");
+			}
+
+			var storage = splitted[1];
+			var depService = splitted[0];
+
+			if (!args.localHttpNames.Any(s=>s.Equals(depService)))
+			{
+				throw new CliException($"Invalid storage dependency argument, could not find service: {depService}");
+			}
+
+			if (!storages.ContainsKey(storage))
+			{
+				storages.Add(storage,new List<string>());
+			}
+			storages[storage].Add(depService);
+		}
+
 		for (var i = 0; i < args.localHttpNames.Count; i++)
 		{
 			var name = args.localHttpNames[i];
@@ -73,8 +106,12 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 				dockerPath,
 				new string[] { },
 				CancellationToken.None);
+		}
 
-
+		foreach (KeyValuePair<string,List<string>> storageWithDeps in storages)
+		{
+			await args.BeamoLocalSystem.AddDefinition_EmbeddedMongoDb(storageWithDeps.Key, "mongo:latest",
+				storageWithDeps.Value.ToArray(), CancellationToken.None);
 		}
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
 	}
