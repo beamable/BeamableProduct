@@ -178,6 +178,13 @@ namespace Beamable.Server.Editor.Usam
 					ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder() { BeamoId = name };
 				}
 
+				if(objData.IsLocal)
+				{
+					ServiceDefinitions[dataIndex].ServiceType =
+						objData.ProtocolTypes[i].Equals("HttpMicroservice", StringComparison.InvariantCultureIgnoreCase)
+							? ServiceType.MicroService
+							: ServiceType.StorageObject;
+				}
 				ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = objData.ShouldBeEnabledOnRemote[i];
 				if (objData.IsLocal)
 				{
@@ -282,6 +289,7 @@ namespace Beamable.Server.Editor.Usam
 		public static async Promise SetManifest(BeamCommands cli, List<BeamServiceSignpost> files)
 		{
 			var args = new ServicesSetLocalManifestArgs();
+			var dependedStorages = new List<string>();
 			args.localHttpNames = new string[files.Count];
 			args.localHttpContexts = new string[files.Count];
 			args.localHttpDockerFiles = new string[files.Count];
@@ -291,7 +299,15 @@ namespace Beamable.Server.Editor.Usam
 				args.localHttpNames[i] = files[i].name;
 				args.localHttpContexts[i] = files[i].assetRelativePath;
 				args.localHttpDockerFiles[i] = files[i].relativeDockerFile;
+				if(files[i].dependedStorages != null)
+				{
+					foreach (var storage in files[i].dependedStorages)
+					{
+						dependedStorages.Add($"{files[i].name}:{storage}");
+					}
+				}
 			}
+			args.storageDependencies = dependedStorages.ToArray();
 
 			var command = cli.ServicesSetLocalManifest(args);
 			await command.Run().Error(LogExceptionVerbose);

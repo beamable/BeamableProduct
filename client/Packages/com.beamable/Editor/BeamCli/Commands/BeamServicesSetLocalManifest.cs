@@ -12,6 +12,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string[] localHttpContexts;
 		/// <summary>Local http service relative docker file paths</summary>
 		public string[] localHttpDockerFiles;
+		/// <summary>Local http service required storage, use format <service-name>:<storage-name></summary>
+		public string[] storageDependencies;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -42,6 +44,15 @@ namespace Beamable.Editor.BeamCli.Commands
 				{
 					// The parameter allows multiple values
 					genBeamCommandArgs.Add(("--local-http-docker-files=" + this.localHttpDockerFiles[i]));
+				}
+			}
+			// If the storageDependencies value was not default, then add it to the list of args.
+			if ((this.storageDependencies != default(string[])))
+			{
+				for (int i = 0; (i < this.storageDependencies.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--storage-dependencies=" + this.storageDependencies[i]));
 				}
 			}
 			string genBeamCommandStr = "";
