@@ -93,6 +93,12 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 			storages[storage].Add(depService);
 		}
 
+
+		foreach (KeyValuePair<string,List<string>> storageWithDeps in storages)
+		{
+			await args.BeamoLocalSystem.AddDefinition_EmbeddedMongoDb(storageWithDeps.Key, "mongo:latest",
+				new string[]{}, CancellationToken.None);
+		}
 		for (var i = 0; i < args.localHttpNames.Count; i++)
 		{
 			var name = args.localHttpNames[i];
@@ -101,17 +107,13 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 
 			Log.Debug($"name=[{name}] path=[{contextPath}] dockerfile=[{dockerPath}]");
 
+			var serviceStorages = storages.Where(pair => pair.Value.Contains(name)).Select(pair => pair.Key).ToArray();
+
 			var sd = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(name,
 				contextPath,
 				dockerPath,
-				new string[] { },
+				serviceStorages,
 				CancellationToken.None);
-		}
-
-		foreach (KeyValuePair<string,List<string>> storageWithDeps in storages)
-		{
-			await args.BeamoLocalSystem.AddDefinition_EmbeddedMongoDb(storageWithDeps.Key, "mongo:latest",
-				storageWithDeps.Value.ToArray(), CancellationToken.None);
 		}
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
 	}
