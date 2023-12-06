@@ -15,12 +15,20 @@ namespace Beamable.Server.Clients
     
     
     /// <summary> A generated client for <see cref="Beamable.Server.CacheDependentMS"/> </summary
-    public sealed class CacheDependentMSClient : MicroserviceClient
+    public sealed class CacheDependentMSClient : MicroserviceClient, Beamable.Common.IHaveServiceName
     {
         
         public CacheDependentMSClient(BeamContext context = null) : 
                 base(context)
         {
+        }
+        
+        public string ServiceName
+        {
+            get
+            {
+                return "CacheDependentMS";
+            }
         }
         
         /// <summary>
@@ -29,7 +37,7 @@ namespace Beamable.Server.Clients
         /// </summary>
         public Beamable.Common.Promise<Beamable.Common.Api.Leaderboards.LeaderBoardView> GetCachedView()
         {
-            string[] serializedFields = new string[0];
+            System.Collections.Generic.Dictionary<string, object> serializedFields = new System.Collections.Generic.Dictionary<string, object>();
             return this.Request<Beamable.Common.Api.Leaderboards.LeaderBoardView>("CacheDependentMS", "GetCachedView", serializedFields);
         }
         
@@ -39,9 +47,9 @@ namespace Beamable.Server.Clients
         /// </summary>
         public Beamable.Common.Promise<Beamable.Common.Api.Leaderboards.LeaderBoardView> GetCachedView2(int testParameters)
         {
-            string serialized_testParameters = this.SerializeArgument<int>(testParameters);
-            string[] serializedFields = new string[] {
-                    serialized_testParameters};
+            object raw_testParameters = testParameters;
+            System.Collections.Generic.Dictionary<string, object> serializedFields = new System.Collections.Generic.Dictionary<string, object>();
+            serializedFields.Add("testParameters", raw_testParameters);
             return this.Request<Beamable.Common.Api.Leaderboards.LeaderBoardView>("CacheDependentMS", "GetCachedView2", serializedFields);
         }
         
@@ -51,9 +59,9 @@ namespace Beamable.Server.Clients
         /// </summary>
         public Beamable.Common.Promise<Beamable.Common.Unit> AsyncVoidTestMethod(int testParameters)
         {
-            string serialized_testParameters = this.SerializeArgument<int>(testParameters);
-            string[] serializedFields = new string[] {
-                    serialized_testParameters};
+            object raw_testParameters = testParameters;
+            System.Collections.Generic.Dictionary<string, object> serializedFields = new System.Collections.Generic.Dictionary<string, object>();
+            serializedFields.Add("testParameters", raw_testParameters);
             return this.Request<Beamable.Common.Unit>("CacheDependentMS", "AsyncVoidTestMethod", serializedFields);
         }
         
@@ -63,9 +71,9 @@ namespace Beamable.Server.Clients
         /// </summary>
         public Beamable.Common.Promise<Beamable.Common.Unit> TestUnsupportedParameters(System.Action testAction)
         {
-            string serialized_testAction = this.SerializeArgument<System.Action>(testAction);
-            string[] serializedFields = new string[] {
-                    serialized_testAction};
+            object raw_testAction = testAction;
+            System.Collections.Generic.Dictionary<string, object> serializedFields = new System.Collections.Generic.Dictionary<string, object>();
+            serializedFields.Add("testAction", raw_testAction);
             return this.Request<Beamable.Common.Unit>("CacheDependentMS", "TestUnsupportedParameters", serializedFields);
         }
         
@@ -75,11 +83,11 @@ namespace Beamable.Server.Clients
         /// </summary>
         public Beamable.Common.Promise<Beamable.Common.Unit> TestUnsupportedParameters2(System.Threading.Tasks.Task testTask, Beamable.Common.Promise testPromise)
         {
-            string serialized_testTask = this.SerializeArgument<System.Threading.Tasks.Task>(testTask);
-            string serialized_testPromise = this.SerializeArgument<Beamable.Common.Promise>(testPromise);
-            string[] serializedFields = new string[] {
-                    serialized_testTask,
-                    serialized_testPromise};
+            object raw_testTask = testTask;
+            object raw_testPromise = testPromise;
+            System.Collections.Generic.Dictionary<string, object> serializedFields = new System.Collections.Generic.Dictionary<string, object>();
+            serializedFields.Add("testTask", raw_testTask);
+            serializedFields.Add("testPromise", raw_testPromise);
             return this.Request<Beamable.Common.Unit>("CacheDependentMS", "TestUnsupportedParameters2", serializedFields);
         }
     }

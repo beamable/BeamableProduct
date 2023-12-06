@@ -12,20 +12,131 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a96b3852b93843ef94fc3401214399e, type: 3}
   m_Name: MicroserviceConfiguration
   m_EditorClassIdentifier: 
-  Microservices: []
+  Microservices:
+  - ServiceName: CacheDependentMS
+    Enabled: 1
+    Archived: 1
+    TemplateId: small
+    CustomDockerFileStrings: 
+    IncludeDebugTools: 0
+    DebugData:
+      Username: root
+      Password: Password!
+      SshPort: 11100
+    LastBuiltCheckSum: 
+    RobotId: 
+  - ServiceName: HathoraGameService
+    Enabled: 1
+    Archived: 1
+    TemplateId: small
+    CustomDockerFileStrings: 
+    IncludeDebugTools: 0
+    DebugData:
+      Username: root
+      Password: Password!
+      SshPort: 11101
+    LastBuiltCheckSum: 
+    RobotId: 
+  - ServiceName: FederatedGameServer
+    Enabled: 1
+    Archived: 1
+    TemplateId: small
+    CustomDockerFileStrings: 
+    IncludeDebugTools: 0
+    DebugData:
+      Username: root
+      Password: Password!
+      SshPort: 11102
+    LastBuiltCheckSum: 
+    RobotId: 
+  - ServiceName: HathoraFederatedGameService
+    Enabled: 1
+    Archived: 0
+    TemplateId: small
+    CustomDockerFileStrings: 
+    IncludeDebugTools: 0
+    DebugData:
+      Username: root
+      Password: Password!
+      SshPort: 11103
+    LastBuiltCheckSum: 
+    RobotId: 
   StorageObjects: []
-  ServiceCodeHandlesOnLastDomainReload: []
+  ServiceCodeHandlesOnLastDomainReload:
+  - ServiceName: CacheDependentMS
+    CodeClass: 1
+    CodeDirectory: Assets/Beamable/Microservices/CacheDependentMS
+    AsmDefInfo:
+      Name: Beamable.Microservice.CacheDependentMS
+      References:
+      - Unity.Beamable.Runtime.Common
+      - Unity.Beamable.Server.Runtime
+      - Unity.Beamable.Server.Runtime.Shared
+      - Unity.Beamable
+      - Beamable.SmallerJSON
+      - Unity.Beamable.Customer.Common
+      DllReferences:
+      - DnsClient.dll
+      - MongoDB.Bson.dll
+      - MongoDB.Driver.Core.dll
+      - MongoDB.Driver.dll
+      - MongoDB.Libmongocrypt.dll
+      - System.Buffers.dll
+      - System.Runtime.CompilerServices.Unsafe.dll
+      - SharpCompress.dll
+      Location: Assets/Beamable/Microservices/CacheDependentMS/Beamable.Microservice.CacheDependentMS.asmdef
+      IncludePlatforms: []
+      AutoReferenced: 0
+    Checksum: 3F54983E830F00D97D682919A87D2DBD
+  - ServiceName: HathoraFederatedGameService
+    CodeClass: 1
+    CodeDirectory: Assets/Beamable/Microservices/HathoraFederatedGameService
+    AsmDefInfo:
+      Name: Beamable.Microservice.HathoraFederatedGameService
+      References:
+      - Unity.Beamable.Runtime.Common
+      - Unity.Beamable.Server.Runtime
+      - Unity.Beamable.Server.Runtime.Shared
+      - Unity.Beamable
+      - Beamable.SmallerJSON
+      - Unity.Beamable.Server.Runtime.Common
+      - Unity.Beamable.Server.Runtime.Mocks
+      - Unity.Beamable.Customer.Common
+      DllReferences: []
+      Location: Assets/Beamable/Microservices/HathoraFederatedGameService/Beamable.Microservice.HathoraFederatedGameService.asmdef
+      IncludePlatforms: []
+      AutoReferenced: 0
+    Checksum: 3F27DD1D0590FBCCAF0FB34FA7659E39
+  - ServiceName: Unity.Beamable.Customer.Common
+    CodeClass: 3
+    CodeDirectory: Assets/Beamable/Common
+    AsmDefInfo:
+      Name: Unity.Beamable.Customer.Common
+      References:
+      - Unity.Beamable.Runtime.Common
+      - Unity.Beamable.Server.Runtime
+      - Unity.Beamable.Server.Runtime.Common
+      - Unity.Beamable.Server.Runtime.Mocks
+      - Beamable.SmallerJSON
+      DllReferences: []
+      Location: Assets/Beamable/Common/Unity.Beamable.Customer.Common.asmdef
+      IncludePlatforms: []
+      AutoReferenced: 0
+    Checksum: BF46316048149E9BE237C5E563CFB6C3
   LastBuiltDockerImagesCodeHandles: []
-  ServiceDependencyChecksums: []
   CustomContainerPrefix: 
   AutoReferenceContent: 0
   AutoBuildCommonAssembly: 1
   EnsureMongoAssemblyDependencies: 1
   ColorLogs: 0
-  DisableDockerBuildkit: 1
+  DisableDockerBuildkit: 0
   DockerDesktopCheckInMicroservicesWindow: 1
   EnableHotModuleReload: 1
   EnableAutoPrune: 1
+  EnablePrePublishHealthCheck: 1
+  PrePublishHealthCheckTimeout:
+    HasValue: 0
+    Value: 0
   RiderDebugTools:
     HasValue: 0
     Value:

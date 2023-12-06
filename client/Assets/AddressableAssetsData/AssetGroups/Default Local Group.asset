@@ -16,43 +16,7 @@ MonoBehaviour:
   m_Data:
     m_SerializedData: []
   m_GUID: 7d7a79ba61a474aafb15d6f0f842dbf0
-  m_SerializeEntries:
-  - m_GUID: dc43ab446476b430d84767a390e03c07
-    m_Address: Assets/DemoGame/Sprites/monkey with hat.png
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    m_MainAsset: {fileID: 0}
-    m_TargetAsset: {fileID: 0}
-  - m_GUID: c5b1231600aba4803920f2047ad637ba
-    m_Address: Assets/DemoGame/Sprites/hat1.png
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    m_MainAsset: {fileID: 0}
-    m_TargetAsset: {fileID: 0}
-  - m_GUID: d27b78ca9e34349c5924dcb6f0b6c4af
-    m_Address: Assets/DemoGame/Sprites/crown.png
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    m_MainAsset: {fileID: 0}
-    m_TargetAsset: {fileID: 0}
-  - m_GUID: 6dd22b6b353824e5892489a76b132116
-    m_Address: Assets/DemoGame/Sprites/hats.001.png
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    m_MainAsset: {fileID: 0}
-    m_TargetAsset: {fileID: 0}
-  - m_GUID: 3ecad80ceb6dc42babb1380a1968d428
-    m_Address: Assets/DemoGame/Sprites/hats.002.png
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    m_MainAsset: {fileID: 0}
-    m_TargetAsset: {fileID: 0}
-  - m_GUID: 6633eb2c9333148e0a28130b39a10a43
-    m_Address: Assets/DemoGame/Sprites/hats.004.png
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    m_MainAsset: {fileID: 0}
-    m_TargetAsset: {fileID: 0}
+  m_SerializeEntries: []
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: f99416f38263c4e9696259092c72dcbd, type: 2}
   m_SchemaSet:
