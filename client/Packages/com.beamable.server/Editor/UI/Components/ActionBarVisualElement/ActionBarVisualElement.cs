@@ -2,6 +2,7 @@ using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
+using Beamable.Server.Editor.Usam;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -55,12 +56,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Button _infoButton;
 		private Button _publish;
 		private Button _dependencies;
+		private CodeService _codeService;
 
 		public event Action OnInfoButtonClicked;
 
 		public bool HasPublishPermissions => BeamEditorContext.Default.Permissions.CanPublishMicroservices;
-		bool IsDockerActive => !(DockerCommand.DockerNotInstalled ||
-								 (MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow && DockerCommand.DockerNotRunning));
+		bool IsDockerActive => _codeService.IsDockerRunning;
 		bool CanHaveDependencies => IsDockerActive && Model.localServices.Count(x => !x.IsArchived) > 0 &&
 									Model.localStorages.Count(x => !x.IsArchived) > 0;
 
@@ -68,6 +69,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public override void Refresh()
 		{
+			_codeService = Context.ServiceScope.GetService<CodeService>();
 			base.Refresh();
 			_refreshButton = Root.Q<Button>("refreshButton");
 			_refreshButton.clickable.clicked += () => { OnRefreshButtonClicked?.Invoke(); };

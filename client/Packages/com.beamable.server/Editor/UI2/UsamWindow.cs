@@ -7,6 +7,7 @@ using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI;
 using Beamable.Editor.UI.Model;
+using Beamable.Server.Editor;
 using Beamable.Server.Editor.Usam;
 using System.Runtime.Remoting.Contexts;
 using UnityEditor;
@@ -44,7 +45,7 @@ namespace Beamable.Editor.Microservice.UI2
 		private VisualElement _windowRoot;
 		private ActionBarVisualElement _actionBarVisualElement;
 		private MicroserviceBreadcrumbsVisualElement _microserviceBreadcrumbsVisualElement;
-
+		private CreateServiceVisualElement _createServiceElement;
 
 		protected override void Build()
 		{
@@ -65,6 +66,7 @@ namespace Beamable.Editor.Microservice.UI2
 			_actionBarVisualElement = root.Q<ActionBarVisualElement>("actionBarVisualElement");
 			_actionBarVisualElement.Refresh();
 			_actionBarVisualElement.OnRefreshButtonClicked += HandleRefreshButtonClicked;
+			_actionBarVisualElement.OnCreateNewClicked += HandleCreateNewClicked;
 
 			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
 			_microserviceBreadcrumbsVisualElement.Refresh();
@@ -73,6 +75,10 @@ namespace Beamable.Editor.Microservice.UI2
 
 			var microserviceContentVisualElement = root.Q("microserviceContentVisualElement");
 			microserviceContentVisualElement.Add(new VisualElement { name = "announcementList" });
+			_createServiceElement = new CreateServiceVisualElement(){ServiceType = ServiceType.MicroService};
+			_createServiceElement.Refresh();
+			_createServiceElement.SetHidden(true);
+			microserviceContentVisualElement.Add(_createServiceElement);
 			microserviceContentVisualElement.Add(scrollView);
 			scrollView.Add(emptyContainer);
 			OnLoad().Then(_ =>
@@ -98,6 +104,11 @@ namespace Beamable.Editor.Microservice.UI2
 					el.Refresh();
 				}
 			});
+		}
+
+		private void HandleCreateNewClicked(ServiceType obj)
+		{
+			_createServiceElement.SetHidden(false);
 		}
 
 		private void ShowDockerNotRunningAnnouncement()
