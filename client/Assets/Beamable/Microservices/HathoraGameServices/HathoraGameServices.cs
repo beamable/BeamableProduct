@@ -1,10 +1,10 @@
 using Beamable.Common;
 using Beamable.Server;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace Beamable.Microservices
 {
@@ -51,16 +51,16 @@ namespace Beamable.Microservices
 			{
 				region = region
 			};
-			var content = new StringContent(JsonConvert.SerializeObject(body));
+			var content = new StringContent(JsonUtility.ToJson(body));
 			HttpResponseMessage response = await http.PostAsync(createUri, content);
-			return JsonConvert.DeserializeObject<ConnectionInfo>(await response.Content.ReadAsStringAsync());
+			return JsonUtility.FromJson<ConnectionInfo>(await response.Content.ReadAsStringAsync());
 		}
 
 		private async Task<ConnectionInfo> GetConnectionInfo(string roomId)
 		{
 			var getUri = new Uri(hathoraBaseUri, $"/rooms/v2/{appId}/connectioninfo/{roomId}");
 			HttpResponseMessage response = await http.GetAsync(getUri);
-			return JsonConvert.DeserializeObject<ConnectionInfo>(await response.Content.ReadAsStringAsync());
+			return JsonUtility.FromJson<ConnectionInfo>(await response.Content.ReadAsStringAsync());
 		}
 	}
 

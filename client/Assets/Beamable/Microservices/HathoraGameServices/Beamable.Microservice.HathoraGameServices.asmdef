@@ -1,17 +1,25 @@
 {
-   "references":[
-     "Unity.Beamable.Runtime.Common",
-    "Unity.Beamable.Server.Runtime",
-    "Unity.Beamable.Server.Runtime.Shared",
-    "Unity.Beamable",
-    "Beamable.SmallerJSON",
-    "Unity.Beamable.Server.Runtime.Common",
-    "Unity.Beamable.Server.Runtime.Mocks",
-    "Unity.Beamable.Customer.Common"
-  ],
-  "name":"Beamable.Microservice.HathoraGameServices",
-  "autoReferenced":false,
-  "includePlatforms":[
-     "Editor"
-  ]
+    "name": "Beamable.Microservice.HathoraGameServices",
+    "rootNamespace": "",
+    "references": [
+        "Unity.Beamable.Runtime.Common",
+        "Unity.Beamable.Server.Runtime",
+        "Unity.Beamable.Server.Runtime.Shared",
+        "Unity.Beamable",
+        "Beamable.SmallerJSON",
+        "Unity.Beamable.Server.Runtime.Common",
+        "Unity.Beamable.Server.Runtime.Mocks",
+        "Unity.Beamable.Customer.Common"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }
