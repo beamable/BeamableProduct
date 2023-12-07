@@ -9,5 +9,12 @@ public class MatchmakingTest : MonoBehaviour
     async void Start()
     {
 	    await BeamContext.Default.OnReady;
+	    var matchmaking = await BeamContext.Default.Api.Experimental.MatchmakingService.StartMatchmaking(
+		    "game_types.test",
+		    readyHandler: handle =>
+		    {
+			    Debug.Log(handle.Match.matchId);
+		    }
+	    );
     }
 }
