@@ -261,7 +261,7 @@ namespace Beamable
 		private OfflineCache _offlineCache;
 		private static bool IsDefaultPlayerCode(string code) => DefaultPlayerCode == code;
 #if BEAMABLE_ENABLE_BEAM_CONTEXT_DEFAULT_OVERRIDE
-		private static string DefaultPlayerCode { get; set; }
+		private static string DefaultPlayerCode { get; set; } = string.Empty;
 #else
 		private static string DefaultPlayerCode => string.Empty;
 #endif
