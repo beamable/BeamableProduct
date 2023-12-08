@@ -31,7 +31,8 @@ namespace Beamable.Server.Editor.Usam
 		private List<BeamServiceSignpost> _services;
 		private List<Promise> _logsCommands = new List<Promise>();
 
-		private const string STANDALONE_MICROSERVICES_PATH = "Assets/Beamable/StandaloneMicroservices~/";
+		private const string BEAMABLE_PATH = "Assets/Beamable/";
+		private static readonly string StandaloneMicroservicesPath = $"{BEAMABLE_PATH}StandaloneMicroservices~/";
 
 		public CodeService(BeamCommands cli, BeamableDispatcher dispatcher)
 		{
@@ -219,7 +220,7 @@ namespace Beamable.Server.Editor.Usam
 		{
 			LogVerbose($"Starting creation of service {serviceName}");
 
-			var outputPath = $"{STANDALONE_MICROSERVICES_PATH}{serviceName}/";
+			var outputPath = $"{StandaloneMicroservicesPath}{serviceName}/";
 
 			if (Directory.Exists(outputPath))
 			{
@@ -231,6 +232,25 @@ namespace Beamable.Server.Editor.Usam
 			var args = new ProjectNewArgs {solutionName = service, quiet = true, name = service, output = outputPath};
 			ProjectNewWrapper command = _cli.ProjectNew(args);
 			await command.Run();
+			
+			string dockerFilePath = $"{outputPath}services/{serviceName}/Dockerfile";
+			string projectFilePath = $"{outputPath}services/{serviceName}/{serviceName}.csproj";
+			var signpost = new BeamServiceSignpost()
+			{
+				name = serviceName,
+				assetRelativePath = ".",
+				relativeDockerFile = dockerFilePath,
+				relativeProjectFile = projectFilePath
+			};
+			string signpostPath = $"{BEAMABLE_PATH}{serviceName}.beamservice";
+			string signpostJson = JsonUtility.ToJson(signpost);
+			
+			LogVerbose($"Writing data to {serviceName}.beamservice file");
+			await File.WriteAllTextAsync(signpostPath, signpostJson);
+			
+			LogVerbose($"Starting the initialization of CodeService");
+			// Re-initializing the CodeService to make sure all files are with the right information
+			await Init();
 			
 			LogVerbose($"Finished creation of service {serviceName}");
 		}
