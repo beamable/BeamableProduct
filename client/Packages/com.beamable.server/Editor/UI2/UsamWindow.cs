@@ -83,7 +83,6 @@ namespace Beamable.Editor.Microservice.UI2
 			microserviceContentVisualElement.Add(new VisualElement { name = "announcementList" });
 			
 			_createServiceElement = new CreateServiceVisualElement();
-			_createServiceElement.OnCreateServiceFinished += OnServiceCreatedFinished;
 			_createServiceElement.SetHidden(true);
 			microserviceContentVisualElement.Add(_createServiceElement);
 			
@@ -114,14 +113,6 @@ namespace Beamable.Editor.Microservice.UI2
 			});
 
 			_actionBarVisualElement.OnCreateNewClicked += HandleCreateNewButtonClicked;
-		}
-
-		private void OnServiceCreatedFinished()
-		{
-			// Is there a better way to do this? this is now updating the window with the new added MS, once
-			// we have all the flow with the signpost creation, we will need to do this as well, but maybe there
-			// is a more optimal way then refreshing everything?
-			HandleRefreshButtonClicked();
 		}
 
 		private void ShowDockerNotRunningAnnouncement()

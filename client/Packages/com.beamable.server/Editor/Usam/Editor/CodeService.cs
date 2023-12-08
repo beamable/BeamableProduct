@@ -246,7 +246,7 @@ namespace Beamable.Server.Editor.Usam
 			string signpostJson = JsonUtility.ToJson(signpost);
 			
 			LogVerbose($"Writing data to {serviceName}.beamservice file");
-			await File.WriteAllTextAsync(signpostPath, signpostJson);
+			File.WriteAllText(signpostPath, signpostJson);
 			
 			LogVerbose($"Starting the initialization of CodeService");
 			// Re-initializing the CodeService to make sure all files are with the right information
