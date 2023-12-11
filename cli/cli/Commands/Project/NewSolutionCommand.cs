@@ -53,7 +53,7 @@ public class RegenerateSolutionFilesCommandArgs : SolutionCommandArgs
 	public string projectDirectory;
 }
 
-public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>, IStandaloneCommand
+public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>, IStandaloneCommand, IEmptyResult
 {
 	private readonly InitCommand _initCommand;
 	private readonly AddUnityClientOutputCommand _addUnityCommand;
@@ -122,7 +122,10 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>, IStandalon
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
 		args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 
-		await args.ProjectService.LinkProjects(_addUnityCommand, _addUnrealCommand, args.Provider);
+		if (!args.quiet)
+		{
+			await args.ProjectService.LinkProjects(_addUnityCommand, _addUnrealCommand, args.Provider);
+		}
 
 		if (createdNewWorkingDir) HandleCreatedNewWorkingDirectory(currentPath, path, args.SolutionName);
 	}
