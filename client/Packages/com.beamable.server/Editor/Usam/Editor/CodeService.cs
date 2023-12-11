@@ -437,7 +437,7 @@ namespace Beamable.Server.Editor.Usam
 			foreach (var id in beamoIds)
 			{
 				var signin = _services.FirstOrDefault(signpost => signpost.name == id);
-				if (signin != null)
+				if (signin?.dependedStorages != null)
 				{
 					listToRun.AddRange(signin.dependedStorages.ToArray());
 				}
