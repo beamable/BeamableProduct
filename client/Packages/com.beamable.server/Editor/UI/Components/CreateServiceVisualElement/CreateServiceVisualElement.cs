@@ -3,12 +3,19 @@ using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
+using Beamable.Server.Editor.Usam;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+#if UNITY_2018
+using UnityEngine.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements;
+#elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
+using UnityEditor.UIElements;
+#endif
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
@@ -16,12 +23,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 	{
 		public CreateServiceVisualElement() : base(nameof(CreateServiceVisualElement)) { }
 
-		protected string NewServiceName { get; set; }
-		protected string ScriptName { get; }
-		public ServiceType ServiceType { get; set; }
+		public string NewServiceName { get; set; }
+		public string ScriptName { get; }
+		public ServiceType ServiceType { get; } = SERVICE_TYPE;
 
 		public Action OnClose;
 		public event Action OnCreateServiceClicked;
+		public event Action OnCreateServiceFinished;
 
 		protected ServiceCreateDependentService _serviceCreateDependentService;
 
@@ -36,17 +44,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private FormConstraint _isNameSizedRight;
 		private FormConstraint _isNameUnique;
 
+		private const ServiceType SERVICE_TYPE = ServiceType.MicroService;
+
 		public void Refresh(Action onClose)
 		{
 			OnClose = onClose;
-			Refresh();
-		}
-		public override void Refresh()
-		{
 			base.Refresh();
 			QueryVisualElements();
 			UpdateVisualElements();
 		}
+		
 		private void QueryVisualElements()
 		{
 			_serviceIcon = Root.Q<VisualElement>("serviceIcon");
@@ -102,15 +109,24 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			var additionalReferences = _serviceCreateDependentService?.GetReferences();
 			_createBtn.SetText("Creating...");
-			_createBtn.Load(new Promise()); // spin forever, because a re-compile will save us!
 			NewServiceName = _nameTextField.value;
+			_createBtn.Load(CreateService(NewServiceName, additionalReferences));
 			OnCreateServiceClicked?.Invoke();
-			EditorApplication.delayCall += () => CreateService(NewServiceName, additionalReferences);
 		}
 
-		protected void CreateService(string serviceName, List<ServiceModelBase> additionalReferences = null) { }
-		protected void InitCreateDependentService(){}
-		protected bool ShouldShowCreateDependentService { get; }
+		private async Promise CreateService(string serviceName, List<ServiceModelBase> additionalReferences = null)
+		{
+			var codeService = BeamEditorContext.Default.ServiceScope.GetService<CodeService>();
+			await codeService.CreateMicroservice(serviceName);
+			OnCreateServiceFinished?.Invoke();
+		}
+
+		private void InitCreateDependentService()
+		{
+			//TODO
+		}
+		
+		private bool ShouldShowCreateDependentService { get; }
 
 		private void HandleNameLabelFocus(FocusEvent evt)
 		{

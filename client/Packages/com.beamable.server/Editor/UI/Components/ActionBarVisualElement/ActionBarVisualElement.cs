@@ -1,3 +1,4 @@
+using Beamable.Editor.Microservice.UI2.Components;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
@@ -67,6 +68,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			_codeService = Context.ServiceScope.GetService<CodeService>();
 			base.Refresh();
+
+			_codeService = Context.ServiceScope.GetService<CodeService>();
+
 			_refreshButton = Root.Q<Button>("refreshButton");
 			_refreshButton.clickable.clicked += () => { OnRefreshButtonClicked?.Invoke(); };
 			_refreshButton.tooltip = Tooltips.Microservice.REFRESH;
