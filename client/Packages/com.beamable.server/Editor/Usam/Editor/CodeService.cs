@@ -232,13 +232,14 @@ namespace Beamable.Server.Editor.Usam
 			var args = new ProjectNewArgs {solutionName = service, quiet = true, name = service, output = outputPath};
 			ProjectNewWrapper command = _cli.ProjectNew(args);
 			await command.Run();
-			
-			string dockerFilePath = $"{outputPath}services/{serviceName}/Dockerfile";
-			string projectFilePath = $"{outputPath}services/{serviceName}/{serviceName}.csproj";
+
+			string relativePath = $"{outputPath}services";
+			string dockerFilePath = $"{serviceName}/Dockerfile";
+			string projectFilePath = $"../{serviceName}.sln";
 			var signpost = new BeamServiceSignpost()
 			{
 				name = serviceName,
-				assetRelativePath = ".",
+				assetRelativePath = relativePath,
 				relativeDockerFile = dockerFilePath,
 				relativeProjectFile = projectFilePath
 			};
