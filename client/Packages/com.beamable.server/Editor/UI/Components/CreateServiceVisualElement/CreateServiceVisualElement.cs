@@ -53,7 +53,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			QueryVisualElements();
 			UpdateVisualElements();
 		}
-		
+
 		private void QueryVisualElements()
 		{
 			_serviceIcon = Root.Q<VisualElement>("serviceIcon");
@@ -125,7 +125,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			//TODO
 		}
-		
+
 		private bool ShouldShowCreateDependentService { get; }
 
 		private void HandleNameLabelFocus(FocusEvent evt)
