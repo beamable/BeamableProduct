@@ -227,9 +227,9 @@ namespace Beamable.Server.Editor.Usam
 				LogVerbose($"The service {serviceName} already exists!");
 				return;
 			}
-			
+
 			var service = new ServiceName(serviceName);
-			var args = new ProjectNewArgs {solutionName = service, quiet = true, name = service, output = outputPath};
+			var args = new ProjectNewArgs { solutionName = service, quiet = true, name = service, output = outputPath };
 			ProjectNewWrapper command = _cli.ProjectNew(args);
 			await command.Run();
 
@@ -245,14 +245,14 @@ namespace Beamable.Server.Editor.Usam
 			};
 			string signpostPath = $"{BEAMABLE_PATH}{serviceName}.beamservice";
 			string signpostJson = JsonUtility.ToJson(signpost);
-			
+
 			LogVerbose($"Writing data to {serviceName}.beamservice file");
 			File.WriteAllText(signpostPath, signpostJson);
-			
+
 			LogVerbose($"Starting the initialization of CodeService");
 			// Re-initializing the CodeService to make sure all files are with the right information
 			await Init();
-			
+
 			LogVerbose($"Finished creation of service {serviceName}");
 		}
 
