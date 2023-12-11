@@ -31,6 +31,9 @@ namespace Beamable.Server.Editor.Usam
 		private List<BeamServiceSignpost> _services;
 		private List<Promise> _logsCommands = new List<Promise>();
 
+		private const string BEAMABLE_PATH = "Assets/Beamable/";
+		private static readonly string StandaloneMicroservicesPath = $"{BEAMABLE_PATH}StandaloneMicroservices~/";
+
 		public CodeService(BeamCommands cli, BeamableDispatcher dispatcher)
 		{
 			_cli = cli;
@@ -207,6 +210,50 @@ namespace Beamable.Server.Editor.Usam
 			var args = new ProjectRegenerateArgs() { name = projName, output = tempPath, copyPath = projPath };
 			var command = _cli.ProjectRegenerate(args);
 			await command.Run();
+		}
+
+		/// <summary>
+		/// Creates a new Standalone Microservice inside a hidden folder from Unity.
+		/// </summary>
+		/// <param name="serviceName"> The name of the Microservice to be created.</param>
+		public async Promise CreateMicroservice(string serviceName)
+		{
+			LogVerbose($"Starting creation of service {serviceName}");
+
+			var outputPath = $"{StandaloneMicroservicesPath}{serviceName}/";
+
+			if (Directory.Exists(outputPath))
+			{
+				LogVerbose($"The service {serviceName} already exists!");
+				return;
+			}
+			
+			var service = new ServiceName(serviceName);
+			var args = new ProjectNewArgs {solutionName = service, quiet = true, name = service, output = outputPath};
+			ProjectNewWrapper command = _cli.ProjectNew(args);
+			await command.Run();
+
+			string relativePath = $"{outputPath}services";
+			string dockerFilePath = $"{serviceName}/Dockerfile";
+			string projectFilePath = $"../{serviceName}.sln";
+			var signpost = new BeamServiceSignpost()
+			{
+				name = serviceName,
+				assetRelativePath = relativePath,
+				relativeDockerFile = dockerFilePath,
+				relativeProjectFile = projectFilePath
+			};
+			string signpostPath = $"{BEAMABLE_PATH}{serviceName}.beamservice";
+			string signpostJson = JsonUtility.ToJson(signpost);
+			
+			LogVerbose($"Writing data to {serviceName}.beamservice file");
+			File.WriteAllText(signpostPath, signpostJson);
+			
+			LogVerbose($"Starting the initialization of CodeService");
+			// Re-initializing the CodeService to make sure all files are with the right information
+			await Init();
+			
+			LogVerbose($"Finished creation of service {serviceName}");
 		}
 
 		public Promise GenerateClientCode(string id)
