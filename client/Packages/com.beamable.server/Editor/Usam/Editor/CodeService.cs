@@ -3,6 +3,7 @@ using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Semantics;
 using Beamable.Editor;
 using Beamable.Editor.BeamCli.Commands;
+using Beamable.Editor.Dotnet;
 using Beamable.Editor.UI.Model;
 using System;
 using System.Collections.Generic;
@@ -256,10 +257,14 @@ namespace Beamable.Server.Editor.Usam
 			LogVerbose($"Finished creation of service {serviceName}");
 		}
 
-		public Promise GenerateClientCode(string id)
+		public async Promise GenerateClientCode(string id)
 		{
-			/// BEAM-3931
-			return Promise.Success;
+			//TODO change this to receive dotnet service from the CodeService initialization
+			var dotnetService = BeamEditorContext.Default.ServiceScope.GetService<DotnetService>();
+
+			var path = $"Assets/Beamable/StandaloneMicroservices~/{id}/";
+			var buildCommand = $"build {path}";
+			await dotnetService.Run(buildCommand);
 		}
 
 		public void ConnectToLogs()
