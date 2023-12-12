@@ -10,7 +10,8 @@ namespace Beamable.Common.Runtime
 			[typeof(IFederatedLogin<>)] = "IFederatedLogin",
 			[typeof(IFederatedInventory<>)] = "IFederatedInventory",
 			[typeof(ISupportsFederatedLogin<>)] = "IFederatedLogin",
-			[typeof(IFederatedInventory<>)] = "IFederatedInventory"
+			[typeof(IFederatedInventory<>)] = "IFederatedInventory",
+			[typeof(IFederatedGameServer<>)] = "IFederatedGameServer"
 		};
 	}
 }
