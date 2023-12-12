@@ -92,6 +92,9 @@ namespace Beamable.Common.Content
 		[MustBePositive]
 		public OptionalInt matchingIntervalSecs;
 
+		[Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipFederatedGameServerNamespace)]
+		public OptionalString federatedGameServerNamespace;
+
 		[Tooltip(ContentObject.TooltipLeaderboardUpdate1)]
 		public List<LeaderboardUpdate> leaderboardUpdates;
 
