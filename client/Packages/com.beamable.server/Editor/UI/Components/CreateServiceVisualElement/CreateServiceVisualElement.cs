@@ -25,7 +25,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public string NewServiceName { get; set; }
 		public string ScriptName { get; }
-		public ServiceType ServiceType { get; } = SERVICE_TYPE;
+		public ServiceType ServiceType { get; set; } = SERVICE_TYPE;
 
 		public Action OnClose;
 		public event Action OnCreateServiceClicked;

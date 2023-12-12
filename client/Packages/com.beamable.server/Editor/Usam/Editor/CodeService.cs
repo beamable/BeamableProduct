@@ -56,6 +56,8 @@ namespace Beamable.Server.Editor.Usam
 
 		public async Promise Init()
 		{
+			if (EditorApplication.isPlayingOrWillChangePlaymode)
+				return;
 			LogVerbose("Running init");
 			_services = GetBeamServices();
 			LogVerbose("Have services");
@@ -127,6 +129,7 @@ namespace Beamable.Server.Editor.Usam
 			}
 			catch
 			{
+				IsDockerRunning = false;
 				LogVerbose("Could not list remote services, skip", true);
 				return;
 			}
