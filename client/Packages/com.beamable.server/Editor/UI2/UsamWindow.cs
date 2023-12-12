@@ -69,11 +69,13 @@ namespace Beamable.Editor.Microservice.UI2
 			_actionBarVisualElement = root.Q<ActionBarVisualElement>("actionBarVisualElement");
 			_actionBarVisualElement.Refresh();
 			_actionBarVisualElement.UpdateButtonsState(_codeService.ServiceDefinitions.Count);
-			
+
 			_actionBarVisualElement.OnRefreshButtonClicked += HandleRefreshButtonClicked;
 			_actionBarVisualElement.OnCreateNewClicked += HandleCreateNewClicked;
 
 			
+
+
 
 			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
 			_microserviceBreadcrumbsVisualElement.Refresh();
@@ -82,11 +84,11 @@ namespace Beamable.Editor.Microservice.UI2
 
 			var microserviceContentVisualElement = root.Q("microserviceContentVisualElement");
 			microserviceContentVisualElement.Add(new VisualElement { name = "announcementList" });
-			
+
 			_createServiceElement = new CreateServiceVisualElement();
 			_createServiceElement.SetHidden(true);
 			microserviceContentVisualElement.Add(_createServiceElement);
-			
+
 			microserviceContentVisualElement.Add(_scrollView);
 			_scrollView.Add(emptyContainer);
 			OnLoad().Then(_ =>
@@ -114,13 +116,6 @@ namespace Beamable.Editor.Microservice.UI2
 			});
 
 			_actionBarVisualElement.OnCreateNewClicked += HandleCreateNewButtonClicked;
-		}
-
-		private void HandleCreateNewClicked(ServiceType obj)
-		{
-			_createServiceElement = new CreateServiceVisualElement(){ServiceType = obj};
-			_createServiceElement.Refresh(_actionBarVisualElement.Refresh);
-			this.GetRootVisualContainer().Q("microserviceContentVisualElement").Insert(0,_createServiceElement);
 		}
 
 		private void ShowDockerNotRunningAnnouncement()
