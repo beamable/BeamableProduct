@@ -421,7 +421,7 @@ public class ProjectService
 
 			// restore the microservice tools
 			await RunDotnetCommand(
-				$"tool restore --tool-manifest \"{Path.Combine(projectName, ".config", "dotnet-tools.json")}\"");
+				$"tool restore --tool-manifest \"{Path.Combine(projectPath, ".config", "dotnet-tools.json")}\"");
 		}
 
 		// add the microservice to the solution
@@ -450,6 +450,21 @@ public class ProjectService
 		}
 
 		return projectPath;
+	}
+
+	public Task<BeamoServiceDefinition> AddDefinitonToNewService(SolutionCommandArgs args, string path)
+	{
+		// Find path to service folders: either it is in the working directory, or it will be inside 'args.name\\services' from the working directory.
+		string projectDirectory = args.ConfigService.GetServicesDir(args, path);
+		string projectDockerfilePath = Path.Combine(args.ProjectName, "Dockerfile");
+
+		// now that a .beamable folder has been created, setup the beamo manifest
+		return args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value,
+			projectDirectory,
+			projectDockerfilePath,
+			new string[] { },
+			CancellationToken.None,
+			!args.Disabled);
 	}
 
 

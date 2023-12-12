@@ -2,19 +2,18 @@
 using Beamable.Server.Editor;
 using System;
 
-namespace Usam
+namespace Beamable.Editor.UI.Model
 {
 	[Serializable]
 	public class BeamoServiceDefinition : IBeamoServiceDefinition
 	{
-		public event Action<IBeamoServiceDefinition> Updated;
+		public IBeamableBuilder Builder { get; set; }
 		public string BeamoId => ServiceInfo.name;
 		public ServiceType ServiceType { get; set; } = ServiceType.MicroService;
 		public string ImageId { get; set; } = string.Empty;
 		public bool ShouldBeEnabledOnRemote { get; set; } = true;
-		public ServiceStatus IsRunningLocaly { get; set; } = ServiceStatus.Unknown;
-		public ServiceStatus IsRunningOnRemote { get; set; } = ServiceStatus.Unknown;
+		public bool IsRunningLocally => Builder.IsRunning;
+		public BeamoServiceStatus IsRunningOnRemote { get; set; } = BeamoServiceStatus.Unknown;
 		public ServiceInfo ServiceInfo { get; set; }
-		public void CallUpdate() => Updated?.Invoke(this);
 	}
 }

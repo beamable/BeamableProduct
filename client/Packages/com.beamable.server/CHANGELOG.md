@@ -10,11 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Microservices upload to Beamable ECR instead of custom Docker registry.
 
+## [1.19.7]
+
+no changes
+
 ## [1.19.6]
 
-### Added
-
-- Classic SDK `TournamentEntry` has new fields: `tier`, `stage`, `nextStageChange`, and `previousStageChange`.
+no changes
 
 ## [1.19.5]
 

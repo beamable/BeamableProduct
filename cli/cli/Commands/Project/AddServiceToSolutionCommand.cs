@@ -74,14 +74,9 @@ public class AddServiceToSolutionCommand : AppCommand<SolutionCommandArgs>
 			}
 		}
 
-		string projectPath =
-			await args.ProjectService.AddToSolution(args);
+		string path = await args.ProjectService.AddToSolution(args);
 
-		var sd = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value,
-			projectPath,
-			Path.Combine(args.ProjectName, "Dockerfile"),
-			new string[] { },
-			CancellationToken.None);
+		var sd = await args.ProjectService.AddDefinitonToNewService(args, path);
 
 		if (!args.SkipCommon)
 		{

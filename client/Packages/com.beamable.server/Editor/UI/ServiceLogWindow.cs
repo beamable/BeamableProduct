@@ -1,24 +1,19 @@
 using Beamable.Common;
 using Beamable.Editor.Microservice.UI.Components;
+using Beamable.Editor.Microservice.UI2.Models;
 using Beamable.Editor.UI.Model;
 using System;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-#if UNITY_2018
-using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
-#elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
-#endif
 
 namespace Beamable.Editor.Microservice.UI
 {
 	[System.Serializable]
 	public class ServiceLogWindow : EditorWindow
 	{
-		public static void ShowService(ServiceModelBase service)
+		public static void ShowService(IMicroserviceVisualsModel service)
 		{
 			var existing = Resources.FindObjectsOfTypeAll<ServiceLogWindow>().ToList().FirstOrDefault(w => w._serviceName.Equals(service.Name));
 			if (existing != null)
@@ -37,7 +32,7 @@ namespace Beamable.Editor.Microservice.UI
 		private VisualElement _windowRoot;
 
 		[NonSerialized] // we need this to get repulled every time, so that the event registration lines up.
-		private ServiceModelBase _model;
+		private IMicroserviceVisualsModel _model;
 
 		[SerializeField]
 		private string _serviceName;
@@ -57,6 +52,10 @@ namespace Beamable.Editor.Microservice.UI
 				if (_model == null)
 				{
 					_model = MicroservicesDataModel.Instance.GetModel<ServiceModelBase>(_serviceName);
+				}
+				if (_model == null)
+				{
+					_model = BeamEditorContext.Default.ServiceScope.GetService<UsamDataModel>().GetModel(_serviceName);
 				}
 				_model.DetachLogs(); // take note of the fact that logs are detached...
 				RegisterEvents();
@@ -81,7 +80,7 @@ namespace Beamable.Editor.Microservice.UI
 			}
 		}
 
-		private void SetModel(ServiceModelBase model)
+		private void SetModel(IMicroserviceVisualsModel model)
 		{
 			_model = model;
 			_serviceName = model.Name;

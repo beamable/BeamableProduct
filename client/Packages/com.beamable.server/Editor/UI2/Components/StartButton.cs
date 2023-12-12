@@ -1,9 +1,8 @@
 ﻿using Beamable.Common;
+using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.Usam;
 using System;
-using UnityEngine;
 using UnityEngine.UIElements;
-using Usam;
 
 namespace Beamable.Editor.Microservice.UI2.Components
 {
@@ -16,32 +15,33 @@ namespace Beamable.Editor.Microservice.UI2.Components
 
 		public void FeedData(IBeamoServiceDefinition definition, BeamEditorContext editorContext)
 		{
-			HandleUpdate(definition);
-			_definition.Updated -= HandleUpdate;
-			_definition.Updated += HandleUpdate;
+			_definition = definition;
+			_definition.Builder.OnIsRunningChanged -= RefreshLocalStatus;
+			_definition.Builder.OnIsRunningChanged += RefreshLocalStatus;
 			clickable.clicked -= HandleStartButtonClicked;
 			clickable.clicked += HandleStartButtonClicked;
 			_codeService = editorContext.ServiceScope.GetService<CodeService>();
 		}
 
-		private void HandleUpdate(IBeamoServiceDefinition definition)
+		private void RefreshLocalStatus(bool obj) => HandleUpdate();
+
+		private void HandleUpdate()
 		{
-			_definition = definition;
 			EnableInClassList("building", enabledSelf);
-			var isRunning = _definition.IsRunningLocaly == ServiceStatus.Running;
+			var isRunning = _definition.IsRunningLocally;
 			EnableInClassList("running", isRunning);
 		}
 
 		private void HandleStartButtonClicked()
 		{
 			Action<Unit> callback = _ => _codeService.RefreshServices().Then(_ => { });
-			if (_definition.IsRunningLocaly == ServiceStatus.Running)
+			if (_definition.IsRunningLocally)
 			{
-				_codeService.Stop(new[] { _definition }).Then(callback);
+				_definition.Builder.TryToStop().ToPromise().Then(callback);
 			}
 			else
 			{
-				_codeService.Run(new[] { _definition }).Then(callback);
+				_definition.Builder.TryToStart().ToPromise().Then(callback);
 			}
 		}
 	}

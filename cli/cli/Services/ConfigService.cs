@@ -1,10 +1,12 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using cli.Dotnet;
 using JetBrains.Annotations;
 using Markdig.Helpers;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
+using Serilog;
 using System.CommandLine.Binding;
 using System.Text;
 
@@ -67,6 +69,59 @@ public class ConfigService
 		var path = Path.Combine(fullRoot, relativePath);
 		path = Path.GetRelativePath(Directory.GetCurrentDirectory(), path);
 		return path;
+	}
+
+	/// <summary>
+	/// Returns the full of that will be make from combining parent directory of a config and a relative path
+	/// </summary>
+	/// <param name="relativePath">path relative to the config parent folder</param>
+	/// <returns></returns>
+	public string GetFullPath(string relativePath)
+	{
+		return Path.Combine(BaseDirectory, relativePath);
+	}
+
+
+	public string GetServicesDir(SolutionCommandArgs args, string newSolutionPath)
+	{
+		string result = string.Empty;
+		//using try catch because of the Directory.EnumerateDirectories behaviour
+		try
+		{
+			var list = Directory.EnumerateDirectories(BaseDirectory,
+				$"{args.SolutionName}\\services",
+				SearchOption.AllDirectories).ToList();
+			if (list.Count > 0)
+			{
+				result = Path.GetRelativePath(BaseDirectory, list.First());
+			}
+		}
+		catch
+		{
+			//
+		}
+
+		try
+		{
+			if (string.IsNullOrWhiteSpace(result))
+			{
+				var list = Directory.EnumerateDirectories(newSolutionPath, "services",
+					SearchOption.AllDirectories).ToList();
+				result = Path.GetRelativePath(BaseDirectory, list.First());
+			}
+		}
+		catch
+		{
+			//
+		}
+
+		if (string.IsNullOrWhiteSpace(result))
+		{
+			const string SERVICES_PATH_ERROR = "Could not find Solution services path!";
+			Log.Error(SERVICES_PATH_ERROR);
+		}
+
+		return result;
 	}
 
 	public void SaveDataFile<T>(string fileName, T data)

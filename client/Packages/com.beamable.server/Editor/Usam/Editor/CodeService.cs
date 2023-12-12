@@ -3,6 +3,7 @@ using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Semantics;
 using Beamable.Editor;
 using Beamable.Editor.BeamCli.Commands;
+using Beamable.Editor.UI.Model;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,7 +11,6 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using Usam;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Server.Editor.Usam
@@ -21,14 +21,18 @@ namespace Beamable.Server.Editor.Usam
 		private readonly BeamableDispatcher _dispatcher;
 
 		public Promise OnReady { get; private set; }
+		public Action<string, BeamTailLogMessage> OnLogMessage;
 		public bool IsDockerRunning { get; private set; }
-		public IList<ServiceInfo> Services => ServiceDefinitions.Select(d => d.ServiceInfo).ToList();
 
 		public List<IBeamoServiceDefinition> ServiceDefinitions { get; private set; } =
 			new List<IBeamoServiceDefinition>();
 
 		private static readonly List<string> IgnoreFolderSuffixes = new List<string> { "~", "obj", "bin" };
 		private List<BeamServiceSignpost> _services;
+		private List<Promise> _logsCommands = new List<Promise>();
+
+		private const string BEAMABLE_PATH = "Assets/Beamable/";
+		private static readonly string StandaloneMicroservicesPath = $"{BEAMABLE_PATH}StandaloneMicroservices~/";
 
 		public CodeService(BeamCommands cli, BeamableDispatcher dispatcher)
 		{
@@ -36,7 +40,6 @@ namespace Beamable.Server.Editor.Usam
 			_dispatcher = dispatcher;
 			OnReady = Init();
 		}
-
 
 		[Conditional("BEAM_CODE_SERVICE_LOGS"), Conditional("BEAMABLE_DEVELOPER")]
 		static void LogVerbose(string log, bool isError = false)
@@ -47,7 +50,6 @@ namespace Beamable.Server.Editor.Usam
 				BeamEditorContext.Default.Dispatcher.Schedule(() => Debug.LogError(text));
 			else
 				BeamEditorContext.Default.Dispatcher.Schedule(() => Debug.Log(text));
-
 		}
 
 		static void LogExceptionVerbose(Exception e) => LogVerbose(e.ToString(), true);
@@ -66,6 +68,7 @@ namespace Beamable.Server.Editor.Usam
 			LogVerbose("set manifest ended");
 
 			await RefreshServices();
+			LogVerbose($"There are {ServiceDefinitions.Count} Service definitions");
 			const string updatedServicesKey = "BeamUpdatedServices";
 			if (!SessionState.GetBool(updatedServicesKey, false))
 			{
@@ -74,6 +77,8 @@ namespace Beamable.Server.Editor.Usam
 				SessionState.SetBool(updatedServicesKey, true);
 				LogVerbose("Update services version end");
 			}
+
+			ConnectToLogs();
 			LogVerbose("Completed");
 		}
 
@@ -148,6 +153,7 @@ namespace Beamable.Server.Editor.Usam
 				LogVerbose("Could not list local services, skip", true);
 				return;
 			}
+
 			LogVerbose("refresh services end");
 		}
 
@@ -161,27 +167,31 @@ namespace Beamable.Server.Editor.Usam
 					ServiceDefinitions.FindIndex(definition => definition.BeamoId.Equals(name));
 				if (dataIndex < 0)
 				{
+					var service = _services.FirstOrDefault(s => s.name == name);
 					ServiceDefinitions.Add(new BeamoServiceDefinition
 					{
-						ServiceInfo = new ServiceInfo() { name = name }
+						ServiceInfo = new ServiceInfo()
+						{
+							name = name,
+							dockerBuildPath = service?.assetRelativePath,
+							dockerfilePath = service?.relativeDockerFile
+						}
 					});
 					dataIndex = ServiceDefinitions.Count - 1;
+					ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder() { BeamoId = name };
 				}
 
 				ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = objData.ShouldBeEnabledOnRemote[i];
 				if (objData.IsLocal)
 				{
-					ServiceDefinitions[dataIndex].IsRunningLocaly =
-						objData.RunningState[i] ? ServiceStatus.Running : ServiceStatus.NotRunning;
 					ServiceDefinitions[dataIndex].ImageId = objData.ImageIds[i];
+					ServiceDefinitions[dataIndex].Builder.IsRunning = objData.RunningState[i];
 				}
 				else
 				{
 					ServiceDefinitions[dataIndex].IsRunningOnRemote =
-						objData.RunningState[i] ? ServiceStatus.Running : ServiceStatus.NotRunning;
+						objData.RunningState[i] ? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
 				}
-
-				_dispatcher.Schedule(ServiceDefinitions[dataIndex].CallUpdate);
 				LogVerbose($"Handling {name} ended");
 			}
 		}
@@ -203,12 +213,82 @@ namespace Beamable.Server.Editor.Usam
 		}
 
 		/// <summary>
+		/// Creates a new Standalone Microservice inside a hidden folder from Unity.
+		/// </summary>
+		/// <param name="serviceName"> The name of the Microservice to be created.</param>
+		public async Promise CreateMicroservice(string serviceName)
+		{
+			LogVerbose($"Starting creation of service {serviceName}");
+
+			var outputPath = $"{StandaloneMicroservicesPath}{serviceName}/";
+
+			if (Directory.Exists(outputPath))
+			{
+				LogVerbose($"The service {serviceName} already exists!");
+				return;
+			}
+
+			var service = new ServiceName(serviceName);
+			var args = new ProjectNewArgs { solutionName = service, quiet = true, name = service, output = outputPath };
+			ProjectNewWrapper command = _cli.ProjectNew(args);
+			await command.Run();
+
+			string relativePath = $"{outputPath}services";
+			string dockerFilePath = $"{serviceName}/Dockerfile";
+			string projectFilePath = $"../{serviceName}.sln";
+			var signpost = new BeamServiceSignpost()
+			{
+				name = serviceName,
+				assetRelativePath = relativePath,
+				relativeDockerFile = dockerFilePath,
+				relativeProjectFile = projectFilePath
+			};
+			string signpostPath = $"{BEAMABLE_PATH}{serviceName}.beamservice";
+			string signpostJson = JsonUtility.ToJson(signpost);
+
+			LogVerbose($"Writing data to {serviceName}.beamservice file");
+			File.WriteAllText(signpostPath, signpostJson);
+
+			LogVerbose($"Starting the initialization of CodeService");
+			// Re-initializing the CodeService to make sure all files are with the right information
+			await Init();
+
+			LogVerbose($"Finished creation of service {serviceName}");
+		}
+
+		public Promise GenerateClientCode(string id)
+		{
+			/// BEAM-3931
+			return Promise.Success;
+		}
+
+		public void ConnectToLogs()
+		{
+			foreach (IBeamoServiceDefinition definition in ServiceDefinitions)
+			{
+				var logs = _cli.ProjectLogs(new ProjectLogsArgs
+				{
+					service = new ServiceName(definition.BeamoId),
+					reconnect = true
+				});
+				logs.OnStreamTailLogMessage(point =>
+				{
+					_dispatcher.Schedule(() => OnLogMessage?.Invoke(definition.BeamoId, point.data));
+				});
+				_logsCommands.Add(logs.Run());
+			}
+		}
+
+		/// <summary>
 		/// Update the sln file to add references to known beam services.
 		/// This may cause a script reload if the sln file needs to regenerate
 		/// </summary>
 		/// <param name="services"></param>
 		public static void SetSolution(List<BeamServiceSignpost> services)
 		{
+			// if there is nothing to add there is no need for an update
+			if (services == null || services.Count == 0)
+				return;
 			// find the local sln file
 			var slnPath = FindFirstSolutionFile();
 			if (string.IsNullOrEmpty(slnPath) || !File.Exists(slnPath))
@@ -346,14 +426,34 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 
-		public async Promise Stop(IEnumerable<IBeamoServiceDefinition> definitions)
+		public async Promise Stop(IEnumerable<string> beamoIds)
 		{
 			try
 			{
-				var cmd = _cli.ServicesStop(new ServicesStopArgs()
+				var cmd = _cli.ServicesStop(new ServicesStopArgs() { ids = beamoIds.ToArray() });
+				await cmd.Run();
+
+				foreach (string id in beamoIds)
 				{
-					ids = definitions.Select(definition => definition.BeamoId).ToArray()
-				});
+					var def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(id));
+					if (def != null)
+					{
+						def.Builder.IsRunning = false;
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				LogExceptionVerbose(e);
+			}
+		}
+
+		public async Promise OpenSwagger(string beamoId, bool remote = false)
+		{
+			try
+			{
+				var cmd = _cli.ProjectOpenSwagger(
+					new ProjectOpenSwaggerArgs() { remote = remote, serviceName = new ServiceName(beamoId) });
 				await cmd.Run();
 			}
 			catch (Exception e)
@@ -362,13 +462,28 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 
-		public async Promise Run(IEnumerable<IBeamoServiceDefinition> definitions)
+		public async Promise Run(IEnumerable<string> beamoIds)
 		{
 			try
 			{
-				var cmd = _cli.ServicesRun(new ServicesRunArgs()
+				var cmd = _cli.ServicesRun(new ServicesRunArgs() { ids = beamoIds.ToArray() });
+				cmd.OnLocal_progressServiceRunProgressResult(cb =>
 				{
-					ids = definitions.Select(definition => definition.BeamoId).ToArray()
+					ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(cb.data.BeamoId))?.Builder
+									  .OnStartingProgress?.Invoke((int)cb.data.LocalDeployProgress, 100);
+				});
+				cmd.OnStreamServiceRunReportResult(cb =>
+				{
+					foreach (string id in beamoIds)
+					{
+						var def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(id));
+						def?.Builder.OnStartingProgress?.Invoke((int)100, 100);
+						def?.Builder.OnStartingFinished?.Invoke(cb.data.Success);
+						if (def != null)
+						{
+							def.Builder.IsRunning = cb.data.Success;
+						}
+					}
 				});
 				await cmd.Run();
 			}

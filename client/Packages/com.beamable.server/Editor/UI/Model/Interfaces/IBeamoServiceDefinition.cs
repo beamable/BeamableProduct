@@ -2,9 +2,9 @@
 using Beamable.Server.Editor;
 using System;
 
-namespace Usam
+namespace Beamable.Editor.UI.Model
 {
-	public enum ServiceStatus
+	public enum BeamoServiceStatus
 	{
 		Unknown,
 		Running,
@@ -12,7 +12,8 @@ namespace Usam
 	}
 	public interface IBeamoServiceDefinition
 	{
-		public event Action<IBeamoServiceDefinition> Updated;
+		IBeamableBuilder Builder { get; set; }
+
 		/// <summary>
 		/// The id that this service will be know, both locally and remotely.
 		/// </summary>
@@ -36,15 +37,13 @@ namespace Usam
 		/// <summary>
 		/// Current service status on local computer.
 		/// </summary>
-		public ServiceStatus IsRunningLocaly { get; set; }
+		public bool IsRunningLocally { get; }
 
 		/// <summary>
 		/// Current service status on server.
 		/// </summary>
-		public ServiceStatus IsRunningOnRemote { get; set; }
+		public BeamoServiceStatus IsRunningOnRemote { get; set; }
 
 		ServiceInfo ServiceInfo { get; set; }
-
-		public void CallUpdate();
 	}
 }

@@ -24,7 +24,7 @@ jobs:
       group: doxygen-${{ github.head_ref }}
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Resolve S3 Destination
         run: |
           S3=${{inputs.s3Dest}}
@@ -44,7 +44,7 @@ jobs:
         run: |
           tar cfz docs-html.tar.gz ./client/Packages/html
         shell: bash
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         name: Keep Artifact
         if: always()
         with:
