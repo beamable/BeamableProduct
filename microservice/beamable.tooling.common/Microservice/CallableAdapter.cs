@@ -146,7 +146,9 @@ public class FederatedLoginCallableGenerator : ICallableGenerator
 /// </summary>
 public class FederatedGameServerCallableGenerator : ICallableGenerator
 {
+    /// <inheritdoc />
 	public List<ServiceMethod> ScanType(MicroserviceAttribute serviceAttribute, ServiceMethodProvider provider)
+
 	{
 		var type = provider.instanceType;
 		var output = new List<ServiceMethod>();
