@@ -91,7 +91,14 @@ namespace Beamable.Server.Editor.Uploader
 				var beamable = BeamEditorContext.Default;
 				await beamable.InitializePromise;
 
-				var uploader = new ContainerUploader(beamable, this, descriptor, imageId);
+				var uploader = new ECRUploaderService(
+					cid: beamable.Requester.Cid,
+					pid: beamable.Requester.Pid,
+					token: beamable.Requester.Token.Token,
+					productionPid: beamable.ProductionRealm.Pid,
+					serviceName: descriptor.Name,
+					imageId: imageId
+				);
 				await uploader.Upload(folder, token);
 
 				onSuccess?.Invoke();

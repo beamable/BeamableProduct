@@ -4,6 +4,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
+using Beamable.Server;
 using Beamable.Common.Semantics;
 using cli.Commands.Project;
 using cli.Content;
@@ -25,6 +26,7 @@ using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
+using UnityEngine;
 
 namespace cli;
 
@@ -59,6 +61,7 @@ public class App
 
 		BeamableLogProvider.Provider = new CliSerilogProvider();
 		CliSerilogProvider.LogContext.Value = Log.Logger;
+		Debug.Instance = new BeamableLoggerDebug();
 	}
 
 	/// <summary>

@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- Microservices upload to Beamable ECR instead of custom Docker registry.
+
 ## [1.19.7]
 
 no changes
@@ -160,7 +165,6 @@ no changes
 - Microservices can be started with an alias in the CID environment variable.
 
 ### Added
-
 - Runtime log level switching. In RealmConfig, use a key for `service_logs|serviceName=logLevel`.
 
 ## [1.14.0]

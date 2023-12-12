@@ -319,10 +319,6 @@ public class ProjectService
 	public async Task<string> CreateNewSolution(string directory, string solutionName, string projectName,
 		bool createCommonLibrary = true, string version = "", bool quiet = false)
 	{
-		if (string.IsNullOrEmpty(directory))
-		{
-			directory = solutionName;
-		}
 
 		string usedVersion = string.IsNullOrWhiteSpace(version) ? await GetVersion() : version;
 

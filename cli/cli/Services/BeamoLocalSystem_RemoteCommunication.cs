@@ -10,6 +10,9 @@ using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Common.Reflection;
 using Beamable.Serialization.SmallerJSON;
+
+using Beamable.Server;
+using Serilog;
 using cli.Utils;
 using ICSharpCode.SharpZipLib.Tar;
 using Newtonsoft.Json.Linq;
@@ -311,8 +314,10 @@ public partial class BeamoLocalSystem
 					var tar = TarArchive.CreateInputTarArchive(stream, Encoding.Default);
 					tar.ExtractContents(folder);
 
-					var uploader = PrepareContainerUploader(cid, gamePid, realmPid, accessToken, sd.BeamoId, dockerRegistryUrl, sd);
-					await Upload(uploader, folder, cancellationToken, onContainerUploadProgress);
+					var service = new ECRUploaderService(cid, realmPid, gamePid, accessToken, sd.BeamoId, sd.TruncImageId, dockerRegistryUrl);
+					service.OnProgress += onContainerUploadProgress;
+					await service.Upload(folder, cancellationToken);
+					
 					onContainerUploadCompleted?.Invoke(sd.BeamoId, true);
 				}
 				catch (Exception ex)
@@ -329,55 +334,7 @@ public partial class BeamoLocalSystem
 
 		await Task.WhenAll(uploadTasks);
 	}
-
-	/// <summary>
-	/// Upload a Docker image that has been expanded into a folder.
-	/// </summary>
-	/// <param name="folder">The filesystem path to the expanded image.</param>
-	private static async Task Upload(ContainerUploadData data, string folder, CancellationToken token, Action<string, float> onContainerUploadProgress = null)
-	{
-		token.ThrowIfCancellationRequested();
-		var manifest = DockerManifest.FromBytes(await File.ReadAllBytesAsync($"{folder}/manifest.json", token));
-		var uploadManifest = new Dictionary<string, object>
-		{
-			{ "schemaVersion", 2 }, { "mediaType", MEDIA_MANIFEST }, { "config", new Dictionary<string, object> { { "mediaType", MEDIA_CONFIG } } }, { "layers", new List<object>() },
-		};
-		var config = (Dictionary<string, object>)uploadManifest["config"];
-		var layers = (List<object>)uploadManifest["layers"];
-
-		// Upload the config JSON as a blob.
-		data.PartsAmount = manifest.layers.Length + 1;
-		data.PartsCompleted = 0;
-		onContainerUploadProgress?.Invoke(data.ServiceDefinition.BeamoId, (float)data.PartsCompleted / data.PartsAmount);
-
-		// Upload the file blob --- increase part and notify progress callback
-		var configResult = (await UploadFileBlob(data, $"{folder}/{manifest.config}", token));
-		token.ThrowIfCancellationRequested();
-		data.PartsCompleted += 1;
-		onContainerUploadProgress?.Invoke(data.ServiceDefinition.BeamoId, (float)data.PartsCompleted / data.PartsAmount);
-
-		config["digest"] = configResult.Digest;
-		config["size"] = configResult.Size;
-
-		// Upload all layer blobs.
-		var uploadIndexToJob = new SortedDictionary<int, Task<Dictionary<string, object>>>();
-		for (var i = 0; i < manifest.layers.Length; i++)
-		{
-			var layer = manifest.layers[i];
-			uploadIndexToJob.Add(i, UploadLayer(data, onContainerUploadProgress, $"{folder}/{layer}", token));
-		}
-
-		await Task.Run(() => Task.WhenAll(uploadIndexToJob.Values), token);
-		token.ThrowIfCancellationRequested();
-		foreach (var kvp in uploadIndexToJob)
-		{
-			layers.Add(kvp.Value.Result);
-		}
-
-		// Upload manifest JSON.
-		await UploadManifestJson(data, uploadManifest, data.ServiceDefinition.TruncImageId);
-	}
-
+	
 	/// <summary>
 	/// Upload one layer of a Docker image, adding its digest to the upload
 	/// manifest when complete.

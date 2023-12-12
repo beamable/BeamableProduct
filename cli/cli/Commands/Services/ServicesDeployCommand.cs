@@ -21,7 +21,7 @@ public class ServicesDeployCommandArgs : LoginCommandArgs
 
 	public string RemoteComment;
 	public string[] RemoteServiceComments;
-	public string dockerRegistryUrl;
+	public string registryUrl;
 }
 
 public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
@@ -55,14 +55,13 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 
 		AddOption(new Option<string>("--comment", () => "", $"Associates this comment along with the published Manifest. You'll be able to read it via the Beamable Portal"),
 			(args, i) => args.RemoteComment = i);
+		AddOption(new Option<string>("--registry-url", $"Requires --remote flag. Override the default registry upload url"),
+			(args, i) => args.registryUrl = i);
 
 		AddOption(new Option<string[]>("--service-comments", Array.Empty<string>, $"Any number of strings in the format BeamoId::Comment" +
 																				  $"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal")
 		{ AllowMultipleArgumentsPerToken = true },
 			(args, i) => args.RemoteServiceComments = i);
-
-		AddOption(new Option<string>("--docker-registry-url", "A custom docker registry url to use when uploading. By default, the result from the beamo/registry network call will be used, " +
-															  "with minor string manipulation to add https scheme, remove port specificatino, and add /v2 "), (args, i) => args.dockerRegistryUrl = i);
 	}
 
 	public override async Task Handle(ServicesDeployCommandArgs args)
@@ -176,8 +175,8 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 		}
 
 		// Get where we need to upload based on which platform env we are targeting
-		var dockerRegistryUrl = args.dockerRegistryUrl;
-		if (string.IsNullOrEmpty(dockerRegistryUrl))
+		var dockerRegistryUrl = args.registryUrl;
+		if (string.IsNullOrWhiteSpace(dockerRegistryUrl))
 		{
 			dockerRegistryUrl = await _remoteBeamo.GetDockerImageRegistryUri();
 		}

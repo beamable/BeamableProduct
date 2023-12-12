@@ -87,6 +87,11 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>, IStandalon
 		// Default the solution name to the project name.
 		args.SolutionName = string.IsNullOrEmpty(args.SolutionName) ? args.ProjectName : args.SolutionName;
 
+		if (string.IsNullOrEmpty(args.directory))
+		{
+			args.directory = args.SolutionName;
+		}
+
 		// in the current directory, create a project using dotnet. 
 		var path = await args.ProjectService.CreateNewSolution(args);
 

@@ -75,7 +75,6 @@ public class RunNBomberCommand : AppCommand<RunNBomberCommandArgs>
 				{
 					request = request.WithHeader("Authorization", $"Bearer {args.authHeader}");
 				}
-
 				// HttpCompletionOption: https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httpcompletionoption?view=net-7.0
 
 				var clientArgs = new HttpClientArgs(
