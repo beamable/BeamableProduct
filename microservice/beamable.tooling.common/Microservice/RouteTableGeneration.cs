@@ -37,7 +37,8 @@ public static class RouteTableGeneration
 			new ICallableGenerator[]
 			{
 				new FederatedLoginCallableGenerator(),
-				new FederatedInventoryCallbackGenerator()
+				new FederatedInventoryCallbackGenerator(),
+				new FederatedGameServerCallableGenerator()
 			},
 			generators
 			);

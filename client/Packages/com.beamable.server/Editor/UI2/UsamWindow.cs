@@ -7,9 +7,11 @@ using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI;
 using Beamable.Editor.UI.Model;
+using Beamable.Server.Editor;
 using Beamable.Server.Editor.Usam;
 using System.Runtime.Remoting.Contexts;
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Beamable.Editor.Microservice.UI2
@@ -44,7 +46,9 @@ namespace Beamable.Editor.Microservice.UI2
 		private VisualElement _windowRoot;
 		private ActionBarVisualElement _actionBarVisualElement;
 		private MicroserviceBreadcrumbsVisualElement _microserviceBreadcrumbsVisualElement;
+		private CreateServiceVisualElement _createServiceElement;
 
+		private ScrollView _scrollView;
 
 		protected override void Build()
 		{
@@ -64,17 +68,26 @@ namespace Beamable.Editor.Microservice.UI2
 
 			_actionBarVisualElement = root.Q<ActionBarVisualElement>("actionBarVisualElement");
 			_actionBarVisualElement.Refresh();
+			_actionBarVisualElement.UpdateButtonsState(_codeService.ServiceDefinitions.Count);
+
 			_actionBarVisualElement.OnRefreshButtonClicked += HandleRefreshButtonClicked;
+
+
 
 			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
 			_microserviceBreadcrumbsVisualElement.Refresh();
-			var scrollView = new ScrollView(ScrollViewMode.Vertical);
+			_scrollView = new ScrollView(ScrollViewMode.Vertical);
 			var emptyContainer = new VisualElement { name = "listRoot" };
 
 			var microserviceContentVisualElement = root.Q("microserviceContentVisualElement");
 			microserviceContentVisualElement.Add(new VisualElement { name = "announcementList" });
-			microserviceContentVisualElement.Add(scrollView);
-			scrollView.Add(emptyContainer);
+
+			_createServiceElement = new CreateServiceVisualElement();
+			_createServiceElement.SetHidden(true);
+			microserviceContentVisualElement.Add(_createServiceElement);
+
+			microserviceContentVisualElement.Add(_scrollView);
+			_scrollView.Add(emptyContainer);
 			OnLoad().Then(_ =>
 			{
 				_dataModel = Scope.GetService<UsamDataModel>();
@@ -98,6 +111,8 @@ namespace Beamable.Editor.Microservice.UI2
 					el.Refresh();
 				}
 			});
+
+			_actionBarVisualElement.OnCreateNewClicked += HandleCreateNewButtonClicked;
 		}
 
 		private void ShowDockerNotRunningAnnouncement()
@@ -115,6 +130,12 @@ namespace Beamable.Editor.Microservice.UI2
 		{
 			_codeService = Scope.GetService<CodeService>();
 			_codeService.RefreshServices().Then(_ => Build());
+		}
+
+		private void HandleCreateNewButtonClicked(ServiceType serviceType)
+		{
+			_createServiceElement.Refresh(_actionBarVisualElement.Refresh);
+			EditorApplication.delayCall += () => _scrollView.verticalScroller.value = 0f;
 		}
 
 		public override async Promise OnLoad()
