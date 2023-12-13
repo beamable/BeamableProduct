@@ -8,14 +8,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
-#if UNITY_2018
-using UnityEngine.Experimental.UIElements;
-#elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
-#endif
-
 using static Beamable.Common.Constants;
+using Debug = UnityEngine.Debug;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
@@ -70,6 +65,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public override void Refresh()
 		{
+			_codeService = Context.ServiceScope.GetService<CodeService>();
 			base.Refresh();
 
 			_codeService = Context.ServiceScope.GetService<CodeService>();

@@ -20,7 +20,6 @@ namespace Beamable.Server.Editor.Usam
 			instance.json = contents;
 			ctx.AddObjectToAsset("data", instance);
 			ctx.SetMainObject(instance);
-
 		}
 
 	}
