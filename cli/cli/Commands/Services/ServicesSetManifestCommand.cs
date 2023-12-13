@@ -81,23 +81,23 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 			var storage = splitted[1];
 			var depService = splitted[0];
 
-			if (!args.localHttpNames.Any(s=>s.Equals(depService)))
+			if (!args.localHttpNames.Any(s => s.Equals(depService)))
 			{
 				throw new CliException($"Invalid storage dependency argument, could not find service: {depService}");
 			}
 
 			if (!storages.ContainsKey(storage))
 			{
-				storages.Add(storage,new List<string>());
+				storages.Add(storage, new List<string>());
 			}
 			storages[storage].Add(depService);
 		}
 
 
-		foreach (KeyValuePair<string,List<string>> storageWithDeps in storages)
+		foreach (KeyValuePair<string, List<string>> storageWithDeps in storages)
 		{
 			await args.BeamoLocalSystem.AddDefinition_EmbeddedMongoDb(storageWithDeps.Key, "mongo:latest",
-				new string[]{}, CancellationToken.None);
+				new string[] { }, CancellationToken.None);
 		}
 		for (var i = 0; i < args.localHttpNames.Count; i++)
 		{
