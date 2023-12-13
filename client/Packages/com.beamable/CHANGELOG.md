@@ -33,9 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.19.8]
 
-### Changed 
+### Changed
 
-- `TournamentAPI` service starts using OpenApi bindings for `GetStandings` and `GetGlobalStandings` calls. 
+- `TournamentAPI` service starts using OpenApi bindings for `GetStandings` and `GetGlobalStandings` calls.
 
 ### Fixed
 
