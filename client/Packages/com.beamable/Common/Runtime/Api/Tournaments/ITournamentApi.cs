@@ -433,7 +433,7 @@ namespace Beamable.Common.Api.Tournaments
 
 		public static TournamentRewardCurrency FromOpenApi(TournamentCurrencyReward entry)
 		{
-			return new TournamentRewardCurrency {amount = (int) entry.amount, symbol = entry.symbol};
+			return new TournamentRewardCurrency { amount = (int)entry.amount, symbol = entry.symbol };
 		}
 	}
 
