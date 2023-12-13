@@ -130,8 +130,9 @@ public class Tests
 		var ctx = new SwaggerService.DefaultGenerationContext
 		{
 			Documents = docs,
-			OrderedSchemas = orderedSchemas
-		};
+			OrderedSchemas = orderedSchemas,
+			ReplacementTypes = new Dictionary<string, ReplacementTypeInfo>()
+		};		
 		var descriptors = generator.Generate(ctx);
 
 		Console.WriteLine("----- OUTPUT ----");
