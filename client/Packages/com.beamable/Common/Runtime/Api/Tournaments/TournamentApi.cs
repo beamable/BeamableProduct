@@ -80,23 +80,23 @@ namespace Beamable.Common.Api.Tournaments
 		public Promise<TournamentStandingsResponse> GetGlobalStandings(string tournamentId, int cycle = -1, int from = -1,
 		   int max = -1, int focus = -1)
 		{
-			var cycleValue = new Optional<int>() {HasValue = cycle > 0, Value = cycle > 0 ? cycle : default};
-			var fromValue = new Optional<int>() {HasValue = from > 0, Value = from > 0 ? from : default};
-			var maxValue = new Optional<int>() {HasValue = max > 0, Value = max > 0 ? max : default};
-			var focusValue = new Optional<long>() {HasValue = focus > 0, Value = focus > 0 ? focus : default};
+			var cycleValue = new Optional<int>() { HasValue = cycle > 0, Value = cycle > 0 ? cycle : default };
+			var fromValue = new Optional<int>() { HasValue = from > 0, Value = from > 0 ? from : default };
+			var maxValue = new Optional<int>() { HasValue = max > 0, Value = max > 0 ? max : default };
+			var focusValue = new Optional<long>() { HasValue = focus > 0, Value = focus > 0 ? focus : default };
 			return WithEmptyResultsOn404(_openApi.GetGlobal(tournamentId, null, cycleValue, focusValue, fromValue, maxValue)
-			                                     .Map(TournamentStandingsResponse.FromOpenApi));
+												 .Map(TournamentStandingsResponse.FromOpenApi));
 		}
 
 		public Promise<TournamentStandingsResponse> GetStandings(string tournamentId, int cycle = -1, int from = -1,
 		   int max = -1, int focus = -1)
 		{
-			var cycleValue = new Optional<int>() {HasValue = cycle > 0, Value = cycle > 0 ? cycle : default};
-			var fromValue = new Optional<int>() {HasValue = from > 0, Value = from > 0 ? from : default};
-			var maxValue = new Optional<int>() {HasValue = max > 0, Value = max > 0 ? max : default};
-			var focusValue = new Optional<long>() {HasValue = focus > 0, Value = focus > 0 ? focus : default};
+			var cycleValue = new Optional<int>() { HasValue = cycle > 0, Value = cycle > 0 ? cycle : default };
+			var fromValue = new Optional<int>() { HasValue = from > 0, Value = from > 0 ? from : default };
+			var maxValue = new Optional<int>() { HasValue = max > 0, Value = max > 0 ? max : default };
+			var focusValue = new Optional<long>() { HasValue = focus > 0, Value = focus > 0 ? focus : default };
 			return WithEmptyResultsOn404(_openApi.GetStandings(tournamentId, null, cycleValue, focusValue, fromValue, maxValue)
-			                                     .Map(TournamentStandingsResponse.FromOpenApi));
+												 .Map(TournamentStandingsResponse.FromOpenApi));
 		}
 
 		private Promise<TournamentStandingsResponse> WithEmptyResultsOn404(Promise<TournamentStandingsResponse> promise)
