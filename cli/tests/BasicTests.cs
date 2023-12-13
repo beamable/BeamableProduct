@@ -132,7 +132,7 @@ public class Tests
 			Documents = docs,
 			OrderedSchemas = orderedSchemas,
 			ReplacementTypes = new Dictionary<string, ReplacementTypeInfo>()
-		};		
+		};
 		var descriptors = generator.Generate(ctx);
 
 		Console.WriteLine("----- OUTPUT ----");

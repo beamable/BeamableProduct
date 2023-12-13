@@ -116,7 +116,7 @@ public class SwaggerService
 				UnrealSourceGenerator.blueprintHeaderFileOutputPath = "BeamableCoreBlueprintNodes/Public/BeamFlow/ApiRequest/";
 				UnrealSourceGenerator.blueprintCppFileOutputPath = "BeamableCoreBlueprintNodes/Private/BeamFlow/ApiRequest/";
 				UnrealSourceGenerator.previousGenerationPassesData = new PreviousGenerationPassesData();
-				
+
 				// TODO: Add a command parameter that builds this from either a file or a CSV format. Figure out how to consistently load the file for the SDK replacement types into the UE SAMS client generation
 				context.ReplacementTypes = new Dictionary<string, ReplacementTypeInfo>
 				{
@@ -987,7 +987,7 @@ public class SwaggerService
 	{
 		public IReadOnlyList<OpenApiDocument> Documents { get; init; }
 		public IReadOnlyList<NamedOpenApiSchema> OrderedSchemas { get; init; }
-		
+
 		public IReadOnlyDictionary<string, ReplacementTypeInfo> ReplacementTypes { get; set; }
 	}
 
@@ -1218,7 +1218,7 @@ public struct ReplacementTypeInfo
 	/// The OAPI Reference Id we are replacing.
 	/// </summary>
 	public string ReferenceId;
-	
+
 	/// <summary>
 	/// The type we are replacing the default output type with.
 	///
@@ -1226,7 +1226,7 @@ public struct ReplacementTypeInfo
 	/// UNITY => Unsupported.
 	/// </summary>
 	public string EngineReplacementType;
-	
+
 	/// <summary>
 	/// The optional type we are replacing the default output type with.
 	///
@@ -1234,7 +1234,7 @@ public struct ReplacementTypeInfo
 	/// UNITY => Unsupported.
 	/// </summary>
 	public string EngineOptionalReplacementType;
-	
+
 	/// <summary>
 	/// Data required to correctly import the hand-written type in places that would reference the default output type.
 	///
