@@ -73,6 +73,15 @@ namespace Beamable.Editor.BeamCli
 			}
 		}
 
+		public static string CLI_ACTUAL_PATH
+		{
+			get
+			{
+				string toolsPath = Path.Combine(DotnetUtil.DOTNET_GLOBAL_PATH, "tools");
+				return Path.Combine(toolsPath, EXEC);
+			}
+		}
+
 		public static string CLI_PATH
 		{
 			get

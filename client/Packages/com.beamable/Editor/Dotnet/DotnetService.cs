@@ -1,6 +1,7 @@
 using Beamable.Common;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
 using UnityEditor;
 using Debug = UnityEngine.Debug;
@@ -16,7 +17,7 @@ namespace Beamable.Editor.Dotnet
 			_dispatcher = dispatcher;
 		}
 
-		public string DotnetPath => DotnetUtil.DotnetPath;
+		public string DotnetPath => Path.GetFullPath(DotnetUtil.DotnetPath);
 
 		private Process _process;
 		protected virtual bool CaptureStandardBuffers => true;
@@ -56,6 +57,7 @@ namespace Beamable.Editor.Dotnet
 					_process.StartInfo.RedirectStandardError = CaptureStandardBuffers;
 					_process.StartInfo.CreateNoWindow = true;
 					_process.StartInfo.UseShellExecute = false;
+					
 
 					_status = new TaskCompletionSource<int>();
 					_standardOutComplete = new TaskCompletionSource<int>();
