@@ -317,7 +317,7 @@ namespace Beamable.Common.Api.Tournaments
 				tier = entry.tier,
 				stage = entry.stage,
 				nextStageChange = entry.nextStageChange.GetOrElse(null),
-				previousStageChange = entry.nextStageChange.GetOrElse(null),
+				previousStageChange = entry.previousStageChange.GetOrElse(null),
 				currencyRewards = entry.currencyRewards.Select(TournamentRewardCurrency.FromOpenApi).ToList(),
 			};
 		}
