@@ -90,8 +90,8 @@ public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>, IStandalon
 		}
 
 		// Make it a clean generation every time.
-		if(outputData) Directory.Delete(args.OutputPath, true);
-		
+		if (outputData) Directory.Delete(args.OutputPath, true);
+
 		foreach (var file in output)
 		{
 			if (outputData)
