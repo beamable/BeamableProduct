@@ -184,7 +184,7 @@ namespace Beamable.Server.Editor.Usam
 					ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder() { BeamoId = name };
 				}
 
-				if(objData.IsLocal)
+				if (objData.IsLocal)
 				{
 					ServiceDefinitions[dataIndex].ServiceType =
 						objData.ProtocolTypes[i].Equals("HttpMicroservice", StringComparison.InvariantCultureIgnoreCase)
@@ -349,7 +349,7 @@ namespace Beamable.Server.Editor.Usam
 				args.localHttpNames[i] = files[i].name;
 				args.localHttpContexts[i] = files[i].assetRelativePath;
 				args.localHttpDockerFiles[i] = files[i].relativeDockerFile;
-				if(files[i].dependedStorages != null)
+				if (files[i].dependedStorages != null)
 				{
 					foreach (var storage in files[i].dependedStorages)
 					{
@@ -494,7 +494,7 @@ namespace Beamable.Server.Editor.Usam
 			}
 			try
 			{
-				
+
 				var cmd = _cli.ServicesRun(new ServicesRunArgs() { ids = listToRun.ToArray() });
 				cmd.OnLocal_progressServiceRunProgressResult(cb =>
 				{
