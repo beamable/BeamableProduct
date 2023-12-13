@@ -7,6 +7,7 @@ namespace cli;
 public class GenerateSdkCommandArgs : CommandArgs
 {
 	public bool Concat;
+	public bool CleanFirst;
 	[CanBeNull] public string OutputPath;
 	public string Filter;
 	public string Engine;
@@ -48,6 +49,10 @@ public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>, IStandalon
 		AddOption(new Option<GenerateSdkConflictResolutionStrategy>("--conflict-strategy", () => GenerateSdkConflictResolutionStrategy.None,
 			"When multiple openAPI documents identify a schema with the same name, this flag controls how the conflict is resolved"),
 			(args, val) => args.ResolutionStrategy = val);
+		
+		AddOption(new Option<bool>("--clean-first", () => true,
+				"When true and the output path exists removes content of directory before writing new content"),
+			(args, val) => args.CleanFirst = val);
 	}
 
 	public override async Task Handle(GenerateSdkCommandArgs args)
@@ -90,7 +95,7 @@ public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>, IStandalon
 		}
 
 		// Make it a clean generation every time.
-		if (outputData) Directory.Delete(args.OutputPath, true);
+		if (outputData && args.CleanFirst) Directory.Delete(args.OutputPath, true);
 
 		foreach (var file in output)
 		{
