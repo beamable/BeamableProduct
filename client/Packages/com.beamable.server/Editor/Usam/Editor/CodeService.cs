@@ -56,6 +56,8 @@ namespace Beamable.Server.Editor.Usam
 
 		public async Promise Init()
 		{
+			if (EditorApplication.isPlayingOrWillChangePlaymode)
+				return;
 			LogVerbose("Running init");
 			_services = GetBeamServices();
 			LogVerbose("Have services");
@@ -127,6 +129,7 @@ namespace Beamable.Server.Editor.Usam
 			}
 			catch
 			{
+				IsDockerRunning = false;
 				LogVerbose("Could not list remote services, skip", true);
 				return;
 			}
@@ -181,6 +184,13 @@ namespace Beamable.Server.Editor.Usam
 					ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder() { BeamoId = name };
 				}
 
+				if(objData.IsLocal)
+				{
+					ServiceDefinitions[dataIndex].ServiceType =
+						objData.ProtocolTypes[i].Equals("HttpMicroservice", StringComparison.InvariantCultureIgnoreCase)
+							? ServiceType.MicroService
+							: ServiceType.StorageObject;
+				}
 				ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = objData.ShouldBeEnabledOnRemote[i];
 				if (objData.IsLocal)
 				{
@@ -329,6 +339,7 @@ namespace Beamable.Server.Editor.Usam
 		public static async Promise SetManifest(BeamCommands cli, List<BeamServiceSignpost> files)
 		{
 			var args = new ServicesSetLocalManifestArgs();
+			var dependedStorages = new List<string>();
 			args.localHttpNames = new string[files.Count];
 			args.localHttpContexts = new string[files.Count];
 			args.localHttpDockerFiles = new string[files.Count];
@@ -338,7 +349,15 @@ namespace Beamable.Server.Editor.Usam
 				args.localHttpNames[i] = files[i].name;
 				args.localHttpContexts[i] = files[i].assetRelativePath;
 				args.localHttpDockerFiles[i] = files[i].relativeDockerFile;
+				if(files[i].dependedStorages != null)
+				{
+					foreach (var storage in files[i].dependedStorages)
+					{
+						dependedStorages.Add($"{files[i].name}:{storage}");
+					}
+				}
 			}
+			args.storageDependencies = dependedStorages.ToArray();
 
 			var command = cli.ServicesSetLocalManifest(args);
 			await command.Run().Error(LogExceptionVerbose);
@@ -464,9 +483,19 @@ namespace Beamable.Server.Editor.Usam
 
 		public async Promise Run(IEnumerable<string> beamoIds)
 		{
+			var listToRun = beamoIds.ToList();
+			foreach (var id in beamoIds)
+			{
+				var signin = _services.FirstOrDefault(signpost => signpost.name == id);
+				if (signin?.dependedStorages?.Length > 0)
+				{
+					listToRun.AddRange(signin.dependedStorages.ToArray());
+				}
+			}
 			try
 			{
-				var cmd = _cli.ServicesRun(new ServicesRunArgs() { ids = beamoIds.ToArray() });
+				
+				var cmd = _cli.ServicesRun(new ServicesRunArgs() { ids = listToRun.ToArray() });
 				cmd.OnLocal_progressServiceRunProgressResult(cb =>
 				{
 					ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(cb.data.BeamoId))?.Builder

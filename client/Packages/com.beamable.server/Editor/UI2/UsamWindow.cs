@@ -71,9 +71,6 @@ namespace Beamable.Editor.Microservice.UI2
 			_actionBarVisualElement.UpdateButtonsState(_codeService.ServiceDefinitions.Count);
 
 			_actionBarVisualElement.OnRefreshButtonClicked += HandleRefreshButtonClicked;
-
-
-
 			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
 			_microserviceBreadcrumbsVisualElement.Refresh();
 			_scrollView = new ScrollView(ScrollViewMode.Vertical);

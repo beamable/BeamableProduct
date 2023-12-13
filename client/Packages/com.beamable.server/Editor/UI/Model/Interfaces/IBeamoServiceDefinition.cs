@@ -22,7 +22,7 @@ namespace Beamable.Editor.UI.Model
 		/// <summary>
 		/// The type this service represents.
 		/// </summary>
-		ServiceType ServiceType { get; }
+		ServiceType ServiceType { get; set; }
 
 		/// <summary>
 		/// This is what we need for deployment.

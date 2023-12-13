@@ -9,7 +9,7 @@ namespace Beamable.Editor.UI.Model
 	{
 		public IBeamableBuilder Builder { get; set; }
 		public string BeamoId => ServiceInfo.name;
-		public ServiceType ServiceType { get; set; } = ServiceType.MicroService;
+		public ServiceType ServiceType { get; set; }
 		public string ImageId { get; set; } = string.Empty;
 		public bool ShouldBeEnabledOnRemote { get; set; } = true;
 		public bool IsRunningLocally => Builder.IsRunning;
