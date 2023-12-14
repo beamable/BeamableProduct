@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using UnityEditor;
 using Debug = UnityEngine.Debug;
 
@@ -98,41 +99,19 @@ namespace Beamable.Editor.BeamCli
        /// <summary>
        /// Installs the Beam CLI into the /Library folder of the current project.
        /// </summary>
-       public static async Promise InitializeBeamCli()
+       public static void InitializeBeamCli()
        {
           // we need dotnet before we can initialize the CLI
           DotnetUtil.InitializeDotnet();
           
           if (USE_SRC)
           {
-	          if(!string.IsNullOrWhiteSpace(CLI_VERSIONED_HOME)) 
+	          if (CheckForBuildedSource())
 		          return;
 
-	          var dotnetService = BeamEditorContext.Default.ServiceScope.GetService<DotnetService>();
-	          await dotnetService.Run(
-		          $"dotnet build --no-build -f net6.0 --project {EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value}");
-	          
-             if(File.Exists(EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value))
-             {
-                try
-                {
-                   List<string> exeFile = Directory
-                                          .EnumerateFiles(
-	                                          Path.GetDirectoryName(EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value) ?? string.Empty,
-	                                          EXEC.Replace("beam","Beamable.Tools"), SearchOption.AllDirectories).ToList();
-                   if (exeFile.Count > 0)
-                   {
-                      SessionState.SetString(SRC_BEAM, Path.GetFullPath(exeFile[0]));
-                   }
-                }
-                catch (Exception e)
-                {
-                   //da duck?!
-                   Debug.LogException(e);
-                }
-                
-             }
-             // search for exe 
+	          BuildTool();
+	          if (CheckForBuildedSource())
+		          return;
           }
 
           if (USE_GLOBAL || File.Exists(CLI_PATH))
@@ -152,6 +131,64 @@ namespace Beamable.Editor.BeamCli
           }
        }
 
+       private static bool CheckForBuildedSource()
+       {
+	       if (!USE_SRC)
+	       {
+		       SessionState.EraseString(SRC_BEAM);
+		       return false;
+	       }
+
+	       if (!File.Exists(EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value))
+	       {
+		       SessionState.EraseString(SRC_BEAM);
+		       return false;
+	       }
+
+	       try
+	       {
+		       List<string> exeFile = Directory
+		                              .EnumerateFiles(
+			                              Path.GetDirectoryName(EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value) ?? string.Empty,
+			                              EXEC.Replace("beam","Beamable.Tools"), SearchOption.AllDirectories).ToList();
+		       if (exeFile.Count > 0)
+		       {
+			       SessionState.SetString(SRC_BEAM, Path.GetFullPath(exeFile[0]));
+			       return true;
+		       }
+	       }
+	       catch (Exception e)
+	       {
+		       //da duck?!
+		       Debug.LogException(e);
+	       }
+	       SessionState.EraseString(SRC_BEAM);
+	       return false;
+       }
+       
+       static void BuildTool()
+       {
+	       var proc = new Process();
+           
+	       proc.StartInfo = new ProcessStartInfo
+	       {
+		       FileName = Path.GetFullPath(DotnetUtil.DotnetPath),
+		       WorkingDirectory = Path.GetFullPath("Library"),
+		       Arguments = $"build --no-build -f net6.0 --project {EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value}",
+		       UseShellExecute = false,
+		       RedirectStandardOutput = true,
+		       RedirectStandardError = true
+	       };
+	       proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
+	       proc.Start();
+	       proc.WaitForExit();
+	       var output = proc.StandardOutput.ReadToEnd();
+	       var error = proc.StandardError.ReadToEnd();
+	       if (!string.IsNullOrWhiteSpace(error))
+	       {
+		       Debug.LogError("Unable to install BeamCLI: " + error + " / " + output);
+	       }
+       }
 
        static bool InstallTool()
        {

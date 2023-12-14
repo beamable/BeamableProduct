@@ -163,14 +163,14 @@ namespace Beamable
 
 		static BeamEditor()
 		{
-			_ = Initialize();
+			Initialize();
 			AssemblyReloadEvents.beforeAssemblyReload += () =>
 			{
 				BeamEditorContext.StopAll().Wait();
 			};
 		}
 
-		static async Promise Initialize()
+		static void Initialize()
 		{
 
 			if (IsInitialized) return;
@@ -201,7 +201,7 @@ namespace Beamable
 			{
 				EditorApplication.delayCall += () =>
 				{
-					_ = Initialize();
+					Initialize();
 				};
 				return;
 			}
@@ -237,13 +237,13 @@ namespace Beamable
 
 			try
 			{
-				await BeamCliUtil.InitializeBeamCli();
+				BeamCliUtil.InitializeBeamCli();
 			}
 			catch
 			{
 				EditorApplication.delayCall += () =>
 				{
-					_ = Initialize();
+					Initialize();
 				};
 				return;
 			}
@@ -272,7 +272,7 @@ namespace Beamable
 			{
 				EditorApplication.delayCall += () =>
 				{
-					_ = Initialize();
+					Initialize();
 				};
 				return;
 			}
@@ -327,7 +327,7 @@ namespace Beamable
 				}
 			}
 
-			await InitDefaultContext().Error(Debug.LogError);
+			InitDefaultContext().Error(Debug.LogError);
 		}
 
 		public static T GetReflectionSystem<T>() where T : IReflectionSystem => EditorReflectionCache.GetFirstSystemOfType<T>();
