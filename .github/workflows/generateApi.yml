@@ -29,7 +29,7 @@ jobs:
           dotnet build ./cli/cli 
       - name: Generate API
         run: |
-          dotnet run --framework net6.0 --project ./cli/cli -- --host https://dev.api.beamable.com oapi generate --engine unity --conflict-strategy RenameUncommonConflicts --output ./client/Packages/com.beamable/Common/Runtime/OpenApi
+          dotnet run --framework net6.0 --project ./cli/cli -- --host https://dev.api.beamable.com oapi generate --engine unity --conflict-strategy RenameUncommonConflicts --output ./client/Packages/com.beamable/Common/Runtime/OpenApi --cleaning-strategy RemoveCsFiles
       - name: Format files
         id: format
         run: dotnet-format -f ./client/Packages/com.beamable/Common/Runtime/OpenApi
