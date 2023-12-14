@@ -57,7 +57,7 @@ namespace Beamable.Editor.Dotnet
 					_process.StartInfo.RedirectStandardError = CaptureStandardBuffers;
 					_process.StartInfo.CreateNoWindow = true;
 					_process.StartInfo.UseShellExecute = false;
-					
+					_process.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
 
 					_status = new TaskCompletionSource<int>();
 					_standardOutComplete = new TaskCompletionSource<int>();
