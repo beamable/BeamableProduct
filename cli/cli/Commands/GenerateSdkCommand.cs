@@ -7,10 +7,18 @@ namespace cli;
 public class GenerateSdkCommandArgs : CommandArgs
 {
 	public bool Concat;
+	public CleaningStrategy CleaningStrategy;
 	[CanBeNull] public string OutputPath;
 	public string Filter;
 	public string Engine;
 	public GenerateSdkConflictResolutionStrategy ResolutionStrategy;
+}
+
+public enum CleaningStrategy
+{
+	RemoveDir,
+	RemoveCsFiles,
+	DoNotClean,
 }
 
 public enum GenerateSdkConflictResolutionStrategy
@@ -31,23 +39,30 @@ public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>, IStandalon
 	public override void Configure()
 	{
 		AddOption(new Option<bool>("--concat", () => false,
-			"When true, all the generated code will be in one file. When false, there will be multiple files"),
-			(args, val) => args.Concat = val); // TODO: In C#, we can concat, but in C++/js, it could make no sense to support concat
+				"When true, all the generated code will be in one file. When false, there will be multiple files"),
+			(args, val) =>
+				args.Concat =
+					val); // TODO: In C#, we can concat, but in C++/js, it could make no sense to support concat
 		AddOption(new Option<string>("--output", () => null,
-			"When null or empty, the generated code will be sent to standard-out. When there is a output value, the file or files will be written to the path"),
+				"When null or empty, the generated code will be sent to standard-out. When there is a output value, the file or files will be written to the path"),
 			(args, val) => args.OutputPath = val);
 
 		AddOption(new Option<string>("--filter", () => null,
-			"Filter which open apis to generate. An empty string matches everything"),
+				"Filter which open apis to generate. An empty string matches everything"),
 			(args, val) => args.Filter = val);
 
 		AddOption(new Option<string>("--engine", () => "",
 				$"Filter which engine code we should generate ({SwaggerService.TARGET_ENGINE_NAME_UNITY} | {SwaggerService.TARGET_ENGINE_NAME_UNREAL}). An empty string matches everything"),
 			(args, val) => args.Engine = val);
 
-		AddOption(new Option<GenerateSdkConflictResolutionStrategy>("--conflict-strategy", () => GenerateSdkConflictResolutionStrategy.None,
-			"When multiple openAPI documents identify a schema with the same name, this flag controls how the conflict is resolved"),
+		AddOption(new Option<GenerateSdkConflictResolutionStrategy>("--conflict-strategy",
+				() => GenerateSdkConflictResolutionStrategy.None,
+				"When multiple openAPI documents identify a schema with the same name, this flag controls how the conflict is resolved"),
 			(args, val) => args.ResolutionStrategy = val);
+
+		AddOption(new Option<CleaningStrategy>("--cleaning-strategy", () => CleaningStrategy.RemoveDir,
+				"Specifies what should happened with directory output"),
+			(args, val) => args.CleaningStrategy = val);
 	}
 
 	public override async Task Handle(GenerateSdkCommandArgs args)
@@ -58,24 +73,16 @@ public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>, IStandalon
 		var output = await _swagger.Generate(filter, args.Engine, args.ResolutionStrategy);
 
 		var outputData = !string.IsNullOrEmpty(args.OutputPath);
-		// TODO: rewrite as a pattern match
 		if (outputData)
 		{
-			var isFile = args.OutputPath.EndsWith(".cs");
-			if (args.Concat)
+			switch (args.OutputPath.EndsWith(".cs"), args.Concat)
 			{
-				// the output path needs to be a file.
-				if (!isFile)
-				{
+				case (false, true):
 					throw new CliException("when concat is enabled, output path must end in .cs");
-				}
-			}
-			else
-			{
-				if (isFile)
-				{
+				case (true, false):
 					throw new CliException("when concat is disabled, output path must be a directory");
-				}
+				default:
+					break;
 			}
 		}
 
@@ -90,7 +97,27 @@ public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>, IStandalon
 		}
 
 		// Make it a clean generation every time.
-		if (outputData) Directory.Delete(args.OutputPath, true);
+		if (outputData)
+		{
+			switch (args.CleaningStrategy)
+			{
+				case CleaningStrategy.RemoveDir:
+					Directory.Delete(args.OutputPath, true);
+					break;
+				case CleaningStrategy.RemoveCsFiles when !args.Concat:
+					var files = Directory.GetFiles(args.OutputPath, "*.cs", SearchOption.AllDirectories);
+					foreach (var file in files)
+					{
+						File.Delete(file);
+					}
+
+					break;
+				case CleaningStrategy.DoNotClean:
+					break;
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
+		}
 
 		foreach (var file in output)
 		{
