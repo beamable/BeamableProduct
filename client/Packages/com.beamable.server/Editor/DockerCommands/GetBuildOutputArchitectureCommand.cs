@@ -41,7 +41,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			for (int i = 0; i < available.Length; i++)
 			{
 				if (!_result.Contains(available[i]) && available[i].Contains("linux/"))
-					_result.Add(available[i].Replace(",", string.Empty));
+					_result.Add(available[i].Replace(",", string.Empty).Replace("*", string.Empty));
 			}
 		}
 
