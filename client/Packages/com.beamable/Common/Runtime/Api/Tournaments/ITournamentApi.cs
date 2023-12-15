@@ -316,9 +316,9 @@ namespace Beamable.Common.Api.Tournaments
 				score = entry.score,
 				tier = entry.tier,
 				stage = entry.stage,
-				nextStageChange = entry.nextStageChange.GetOrElse(null),
-				previousStageChange = entry.previousStageChange.GetOrElse(null),
-				currencyRewards = entry.currencyRewards.Select(TournamentRewardCurrency.FromOpenApi).ToList(),
+				nextStageChange = (bool)entry.nextStageChange?.HasValue ? entry.nextStageChange.Value : (int?) null,
+				previousStageChange = (bool)entry.previousStageChange?.HasValue ? entry.previousStageChange.Value : (int?) null,
+				currencyRewards = entry.currencyRewards?.Select(TournamentRewardCurrency.FromOpenApi).ToList() ?? new List<TournamentRewardCurrency>(),
 			};
 		}
 	}
@@ -390,8 +390,8 @@ namespace Beamable.Common.Api.Tournaments
 		{
 			return new TournamentStandingsResponse()
 			{
-				me = entry.me.HasValue ? TournamentEntry.FromOpenApi(entry.me.Value) : null,
-				entries = entry.entries.Select(TournamentEntry.FromOpenApi).ToList()
+				me = (bool)entry.me?.HasValue ? TournamentEntry.FromOpenApi(entry.me.Value) : null,
+				entries = entry.entries?.Select(TournamentEntry.FromOpenApi).ToList() ?? new List<TournamentEntry>()
 			};
 		}
 	}
