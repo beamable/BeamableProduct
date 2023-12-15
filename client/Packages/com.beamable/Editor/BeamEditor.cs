@@ -199,7 +199,10 @@ namespace Beamable
 			// Solves a specific issue on first installation of package ---
 			catch (ModuleConfigurationNotReadyException)
 			{
-				EditorApplication.delayCall += Initialize;
+				EditorApplication.delayCall += () =>
+				{
+					Initialize();
+				};
 				return;
 			}
 
@@ -238,7 +241,10 @@ namespace Beamable
 			}
 			catch
 			{
-				EditorApplication.delayCall += Initialize;
+				EditorApplication.delayCall += () =>
+				{
+					Initialize();
+				};
 				return;
 			}
 
@@ -264,7 +270,10 @@ namespace Beamable
 																	.ToList();
 			if (reflectionSystemObjects.Count < 1)
 			{
-				EditorApplication.delayCall += Initialize;
+				EditorApplication.delayCall += () =>
+				{
+					Initialize();
+				};
 				return;
 			}
 			reflectionSystemObjects.Sort((reflectionSys1, reflectionSys2) => reflectionSys1.Priority.CompareTo(reflectionSys2.Priority));
