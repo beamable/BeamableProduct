@@ -22,12 +22,9 @@ namespace Beamable.Editor.Dotnet
 		public static readonly string DOTNET_EXEC = "dotnet.exe";
 #else
 		private const string DOTNET_LIBRARY_PATH = "Library/BeamableEditor/Dotnet";
-#if UNITY_EDITOR_LINUX
 		public static readonly string DOTNET_GLOBAL_PATH =
 			Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile), ".dotnet");
-#else
-		public static readonly string DOTNET_GLOBAL_PATH = "/usr/share/dotnet";
-#endif
+
 		public static readonly string DOTNET_EXEC = "dotnet";
 #endif
 
