@@ -139,33 +139,20 @@ namespace Beamable.Server
 		      var parameterAttribute = parameter.GetCustomAttribute<ParameterAttribute>();
 		      var parameterName = parameterAttribute?.ParameterNameOverride ?? parameter.Name;
 
-		      ParameterDeserializer deserializer = (json) =>
+		      ParameterDeserializer deserializer;
+		      if (typeof(string) == pType)
 		      {
-			      if (typeof(string) == pType)
+			      deserializer = DeserializeStringParameter;
+		      }
+		      else
+		      {
+			      deserializer = json => 
 			      {
-				      if (string.IsNullOrWhiteSpace(json))
-					      return json;
-				      // first try use SmallerJSON for handling escape chars passed from Unity
-				      var smallerJson = Serialization.SmallerJSON.Json.Deserialize(json);
-
-				      if (smallerJson is string result)
-				      {
-					      return result;
-				      }
-
-				      if (smallerJson is Serialization.SmallerJSON.ArrayDict dict)
-				      {
-					      return Serialization.SmallerJSON.Json.Serialize(dict, new StringBuilder());
-				      }
-
-				      // or just peel off the quotes
-				      return json.Substring(1, json.Length - 2);
-			      }
-
-			      var deserializeObject =
-				      JsonConvert.DeserializeObject(json, pType, UnitySerializationSettings.Instance);
-			      return deserializeObject;
-		      };
+				      var deserializeObject =
+					      JsonConvert.DeserializeObject(json, pType, UnitySerializationSettings.Instance);
+				      return deserializeObject;
+			      };
+		      }
 		      if (namedDeserializers.ContainsKey(parameterName))
 		      {
 			      throw new BeamableMicroserviceException(
@@ -220,7 +207,33 @@ namespace Beamable.Server
 	      }
       }
 
-      private static List<ServiceMethod> ScanType(MicroserviceAttribute serviceAttribute, ServiceMethodProvider provider)
+	   /// <summary>
+	   /// Deserializes string type parameter
+	   /// </summary>
+	   /// <param name="json"></param>
+	   /// <returns></returns>
+	   public static object DeserializeStringParameter(string json)
+	   {
+		   if (string.IsNullOrWhiteSpace(json))
+			   return json;
+		   // first try use SmallerJSON for handling escape chars passed from Unity
+		   var smallerJson = Serialization.SmallerJSON.Json.Deserialize(json);
+
+		   if (smallerJson is string result)
+		   {
+			   return result;
+		   }
+
+		   if (smallerJson is Serialization.SmallerJSON.ArrayDict dict)
+		   {
+			   return Serialization.SmallerJSON.Json.Serialize(dict, new StringBuilder());
+		   }
+
+		   // or just peel off the quotes
+		   return json.Substring(1, json.Length - 2);
+	   }
+
+	   private static List<ServiceMethod> ScanType(MicroserviceAttribute serviceAttribute, ServiceMethodProvider provider)
       {
          var type = provider.instanceType;
          var output = new List<ServiceMethod>();
