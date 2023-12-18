@@ -25,8 +25,8 @@ MonoBehaviour:
   AdvancedCli:
     HasValue: 1
     Value:
-      UseGlobalCLI: 0
+      UseGlobalCLI: 1
       DefaultCLIVersion: 
       UseFromSource:
-        HasValue: 1
+        HasValue: 0
         Value: ../cli/cli/cli.csproj
