@@ -143,6 +143,8 @@ namespace Beamable.Server
 		      {
 			      if (typeof(string) == pType)
 			      {
+				      if (string.IsNullOrWhiteSpace(json))
+					      return json;
 				      // first try use SmallerJSON for handling escape chars passed from Unity
 				      var smallerJson = Serialization.SmallerJSON.Json.Deserialize(json);
 
