@@ -9,6 +9,7 @@ using Beamable.Server.Common;
 using microservice.Extensions;
 using Newtonsoft.Json;
 using Serilog;
+using System.Text;
 using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server
@@ -143,9 +144,20 @@ namespace Beamable.Server
 			      if (typeof(string) == pType)
 			      {
 				      // first try use SmallerJSON for handling escape chars passed from Unity
-				      return (string)Serialization.SmallerJSON.Json.Deserialize(json) ?? 
-				             // or just peel off the quotes
-				            json.Substring(1, json.Length - 2);
+				      var smallerJson = Serialization.SmallerJSON.Json.Deserialize(json);
+
+				      if (smallerJson is string result)
+				      {
+					      return result;
+				      }
+
+				      if (smallerJson is Serialization.SmallerJSON.ArrayDict dict)
+				      {
+					      return Serialization.SmallerJSON.Json.Serialize(dict, new StringBuilder());
+				      }
+
+				      // or just peel off the quotes
+				      return json.Substring(1, json.Length - 2);
 			      }
 
 			      var deserializeObject =
