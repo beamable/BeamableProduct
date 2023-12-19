@@ -59,6 +59,11 @@ namespace Beamable.Experimental.Api.Lobbies
 		public LobbyRestriction Restriction => (LobbyRestriction)Enum.Parse(typeof(LobbyRestriction), restriction);
 
 		/// <summary>
+		/// Arbitrary key -> value pairs associated with this lobby.
+		/// </summary>
+		public Dictionary<string, string> data;
+
+		/// <summary>
 		/// Update the state of the current lobby with the data from another lobby instance.
 		/// This will trigger the observable callbacks.
 		/// </summary>
