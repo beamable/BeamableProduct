@@ -137,7 +137,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 						UnrealSourceGenerator.currentGenerationPassDataFilePath = $"{unrealProjectData.CoreProjectName}_GenerationPass";
 						var unrealFileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext
 						{
-							Documents = docs, 
+							Documents = docs,
 							OrderedSchemas = orderedSchemas,
 							ReplacementTypes = new Dictionary<string, ReplacementTypeInfo>
 							{
