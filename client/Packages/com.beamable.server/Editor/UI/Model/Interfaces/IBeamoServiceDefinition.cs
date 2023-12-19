@@ -12,6 +12,11 @@ namespace Beamable.Editor.UI.Model
 	}
 	public interface IBeamoServiceDefinition
 	{
+		/// <summary>
+		/// Is this a local service or an only remote service.
+		/// </summary>
+		public bool IsLocal { get; set; }
+		
 		IBeamableBuilder Builder { get; set; }
 
 		/// <summary>

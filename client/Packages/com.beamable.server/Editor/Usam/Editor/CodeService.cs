@@ -182,7 +182,8 @@ namespace Beamable.Server.Editor.Usam
 						{
 							name = name,
 							dockerBuildPath = service?.assetRelativePath,
-							dockerfilePath = service?.relativeDockerFile
+							dockerfilePath = service?.relativeDockerFile,
+							dependencies = service != null ? service.dependedStorages.ToList() : new List<string>()
 						}
 					});
 					dataIndex = ServiceDefinitions.Count - 1;
@@ -207,6 +208,8 @@ namespace Beamable.Server.Editor.Usam
 					ServiceDefinitions[dataIndex].IsRunningOnRemote =
 						objData.RunningState[i] ? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
 				}
+
+				ServiceDefinitions[dataIndex].IsLocal = objData.IsLocal;
 				LogVerbose($"Handling {name} ended");
 			}
 		}
@@ -305,6 +308,24 @@ namespace Beamable.Server.Editor.Usam
 			await command.Run();
 
 			LogVerbose($"Finished generating client code for service: {id}");
+		}
+
+		/// <summary>
+		/// Get the information of if this service is local or remote.
+		/// </summary>
+		/// <param name="serviceName">The name of the service</param>
+		/// <returns>Returns true if the service is local or false if remote.</returns>
+		public bool GetServiceIsLocal(string serviceName)
+		{
+			foreach (IBeamoServiceDefinition service in ServiceDefinitions)
+			{
+				if (service.BeamoId.Equals(serviceName))
+				{
+					return service.IsLocal;
+				}
+			}
+
+			return false;
 		}
 
 		public void ConnectToLogs()

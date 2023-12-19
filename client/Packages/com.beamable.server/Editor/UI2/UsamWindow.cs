@@ -110,6 +110,13 @@ namespace Beamable.Editor.Microservice.UI2
 			});
 
 			_actionBarVisualElement.OnCreateNewClicked += HandleCreateNewButtonClicked;
+			_actionBarVisualElement.OnPublishClicked += HandlePublishButtonClicked;
+		}
+
+		private void HandlePublishButtonClicked()
+		{
+			Debug.Log("NOW HANDLING PUBLISHING STUFF");
+			PublishStandaloneWindow.ShowPublishWindow(this, ActiveContext);
 		}
 
 		private void ShowDockerNotRunningAnnouncement()

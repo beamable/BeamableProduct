@@ -1,0 +1,66 @@
+﻿.card {
+    background-color: #eaeaea;
+}
+
+#logContainer > LogVisualElement {
+    background-color: #C8C8C8;
+}
+
+#userDescription > TextInput {
+    background-color: #d9d9d9;
+}
+
+#separator {
+    background-color: #d9d9d9;
+}
+
+#cancelBtn > TemplateContainer > Button {
+    background-color: rgba(0,0,0,0);
+    border-color: #000000;
+    color: #000000;
+}
+
+.HeaderSeparatorImage {
+    background-color: #a5a6a6;
+}
+
+#infoCardGradientLeft {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/left-to-right-gradient.light.png");
+}
+
+#infoCardGradientRight {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/right-to-left-gradient.light.png");
+}
+
+.infoCardsBorder {
+    background-color: #cbcbcb;
+}
+
+#clear {
+    background-color: #d9d9d9;
+}
+
+#docImage {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Info_Dark.png");
+}
+
+#infoTitle,
+#docReference {
+    background-color: #C4C4C4;
+}
+
+#docReference:hover {
+    background-color: #bbbbbb;
+}
+
+#arrowLeft > Image {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Page Previous light.png");
+}
+
+#arrowRight > Image {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/next light.png");
+}
+
+#infoCardStep3 {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/step_3_upload_all_dark.png");
+}
