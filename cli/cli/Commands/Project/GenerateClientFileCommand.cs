@@ -135,7 +135,32 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 						UnrealSourceGenerator.genType = UnrealSourceGenerator.GenerationType.Microservice;
 						UnrealSourceGenerator.previousGenerationPassesData = JsonConvert.DeserializeObject<PreviousGenerationPassesData>(File.ReadAllText(previousGenerationFilePath));
 						UnrealSourceGenerator.currentGenerationPassDataFilePath = $"{unrealProjectData.CoreProjectName}_GenerationPass";
-						var unrealFileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext { Documents = docs, OrderedSchemas = orderedSchemas });
+						var unrealFileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext
+						{
+							Documents = docs, 
+							OrderedSchemas = orderedSchemas,
+							ReplacementTypes = new Dictionary<string, ReplacementTypeInfo>
+							{
+								{
+									"ClientPermission", new ReplacementTypeInfo
+									{
+										ReferenceId = "ClientPermission", EngineReplacementType = "FBeamClientPermission", EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamClientPermission", EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamClientPermission.h""",
+									}
+								},
+								{
+									"ExternalIdentity", new ReplacementTypeInfo
+									{
+										ReferenceId = "ExternalIdentity", EngineReplacementType = "FBeamExternalIdentity", EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamExternalIdentity", EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamExternalIdentity.h""",
+									}
+								},
+								{
+									"Tag", new ReplacementTypeInfo
+									{
+										ReferenceId = "Tag", EngineReplacementType = "FBeamTag", EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamTag", EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamTag.h""",
+									}
+								}
+							}
+						});
 
 						var hasOutputPath = !string.IsNullOrEmpty(args.outputDirectory);
 						for (int i = 0; i < unrealFileDescriptors.Count; i++)
