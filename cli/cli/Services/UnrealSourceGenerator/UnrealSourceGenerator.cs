@@ -51,31 +51,6 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	public const string UNREAL_U_BEAM_PLAIN_TEXT_RESPONSE_TYPE = "UBeamPlainTextResponseBody*";
 	// End of Special Case Types
 
-
-	
-	public const string UNREAL_U_BEAM_PLAIN_TEXT_RESPONSE_TYPE = "UBeamPlainTextResponseBody*";
-	// End of Special Case Types
-
-	
-	/// <summary>
-	/// These overrides are applied in <see cref="GetNamespacedSerializableTypeFromSchema"/> so that we can override the names of schemas (literal schemas that show up in the content/schemas path of the JSON)
-	/// that'll exist in Unreal as a UObject that can be deserialized. Embedded schemas (such as the ones required for polymorphic fields using OneOf) are overriden by <see cref="POLYMORPHIC_WRAPPER_TYPE_OVERRIDES"/>.
-	/// TODO: Over time, we should probably move this into its own partial file of this type.
-	/// </summary>
-	public static readonly Dictionary<string, string> NAMESPACED_TYPES_OVERRIDES;
-
-	/// <summary>
-	/// These overrides are applied in <see cref="GetNamespacedServiceNameFromApiDoc"/> so that we can override specific endpoint names for things that make more sense on the client.
-	/// TODO: Over time, we should probably move this into its own partial file of this type.
-	/// </summary>
-	public static readonly Dictionary<string, string> NAMESPACED_ENDPOINT_OVERRIDES;
-
-	/// <summary>
-	/// These overrides are applied using <see cref="GetUnrealTypeFromSchema"/>. This is used for types that we only discover in the middle of processing the schemas for a document.
-	/// Things like Optionals, BeamArray/Map and any polymorphic type (schema containing 'OneOf').
-	/// TODO: Over time, we should probably move this into its own partial file of this type.
-	/// </summary>
-	public static readonly Dictionary<string, string> POLYMORPHIC_WRAPPER_TYPE_OVERRIDES;
 	/// <summary>
 	/// These overrides are applied in <see cref="GetNamespacedSerializableTypeFromSchema"/> so that we can override the names of schemas (literal schemas that show up in the content/schemas path of the JSON)
 	/// that'll exist in Unreal as a UObject that can be deserialized. Embedded schemas (such as the ones required for polymorphic fields using OneOf) are overriden by <see cref="POLYMORPHIC_WRAPPER_TYPE_OVERRIDES"/>.
