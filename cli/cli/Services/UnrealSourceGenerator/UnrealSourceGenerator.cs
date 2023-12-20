@@ -51,6 +51,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	public const string UNREAL_U_BEAM_PLAIN_TEXT_RESPONSE_TYPE = "UBeamPlainTextResponseBody*";
 	// End of Special Case Types
 
+
 	/// <summary>
 	/// These overrides are applied in <see cref="GetNamespacedSerializableTypeFromSchema"/> so that we can override the names of schemas (literal schemas that show up in the content/schemas path of the JSON)
 	/// that'll exist in Unreal as a UObject that can be deserialized. Embedded schemas (such as the ones required for polymorphic fields using OneOf) are overriden by <see cref="POLYMORPHIC_WRAPPER_TYPE_OVERRIDES"/>.
@@ -1156,13 +1157,13 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 							kSemTypeDeclarationPointsLog.AppendLine($"{paramFieldHandle},{unrealProperty.PropertyUnrealType},{unrealProperty.PropertyNamespacedType},{unrealProperty.SemTypeSerializationType}");
 							unrealProperty.SemTypeSerializationType = UNREAL_STRING;
 						}
-						
+
 						// If this field's type is a replacement type, we log it out.
 						if (AllReplacementTypes.Contains(unrealProperty.PropertyUnrealType))
 						{
 							kReplacementTypeDeclarationPointsLog.AppendLine($"{paramFieldHandle},{unrealProperty.PropertyUnrealType},{unrealProperty.PropertyNamespacedType}");
 						}
-						
+
 						// If this field's type is a self referential type, we log it out.
 						if (IsSelfReferentialType(openApiDocument, paramSchema))
 						{
@@ -1446,18 +1447,6 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				schemaName = $"{serviceName.Capitalize()}{serviceTitle.Capitalize()}{schemaName}";
 			}
 		}
-		
-		// Override the schema name if any is configured.
-		schemaName = NAMESPACED_TYPES_OVERRIDES.TryGetValue(schemaName, out var overridenName) ? overridenName : schemaName;
-		
-		schemaName += schemaName.EndsWith("Request") ? "Body" : "";
-		
-		// Adjust the schema name if its a CSV Row
-		schemaName = isCsvRow ? $"{schemaName}TableRow" : schemaName;
-		
-		// Adjust the schema name if its being generated for a Microservice.
-		var isMsGen = genType == GenerationType.Microservice;
-		schemaName = isMsGen ? $"{parentDoc.Info.Title.Sanitize()}{schemaName}" : schemaName;
 
 		// Override the schema name if any is configured.
 		schemaName = NAMESPACED_TYPES_OVERRIDES.TryGetValue(schemaName, out var overridenName) ? overridenName : schemaName;
