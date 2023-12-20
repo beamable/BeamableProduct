@@ -206,6 +206,7 @@ public struct UnrealJsonSerializableTypeDeclaration
 	public bool IsPolymorphicWrapper => PolymorphicWrappedTypes?.Count > 0;
 
 
+
 	private string _responseBodyIncludes;
 	private string _inheritResponseBodyInterface;
 	private string _declareResponseBodyInterface;
