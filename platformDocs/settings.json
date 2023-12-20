@@ -1,0 +1,3 @@
+{
+    "modules": ["mermaid", "jira-tickets", "attachment_link", "table_of_contents"]
+}
