@@ -23,13 +23,13 @@ namespace Beamable.Editor.Tests.Toolbox
 		[UnityTest]
 		public IEnumerator TextboxKeystrokeTest()
 		{
-			IToolboxViewService model = Provider.GetService<IToolboxViewService>();
+			var model = Provider.GetService<IToolboxViewService>();
 
-			ToolboxActionBarVisualElement tbActionBar = new ToolboxActionBarVisualElement();
+			var tbActionBar = new ToolboxActionBarVisualElement();
 			tbActionBar.Refresh(Provider);
 
 			var search = tbActionBar.Q<SearchBarVisualElement>();
-			TextField text = search.Q<TextField>();
+			var text = search.Q<TextField>();
 
 			var window = tbActionBar.MountForTest();
 

@@ -36,9 +36,24 @@ public class SpecificVersionOption : Option<string>
 public class NewSolutionCommandArgs : SolutionCommandArgs
 {
 	public string directory;
+	public bool quiet;
 }
 
-public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>, IStandaloneCommand
+public class QuietNameOption : Option<bool>
+{
+	public QuietNameOption() : base("--quiet", () => false, "When true, automatically accept path suggestions")
+	{
+		AddAlias("-q");
+	}
+}
+
+public class RegenerateSolutionFilesCommandArgs : SolutionCommandArgs
+{
+	public string tempDirectory;
+	public string projectDirectory;
+}
+
+public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>, IStandaloneCommand, IEmptyResult
 {
 	private readonly InitCommand _initCommand;
 	private readonly AddUnityClientOutputCommand _addUnityCommand;
@@ -64,6 +79,7 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>, IStandalon
 		AddOption(new SpecificVersionOption(), (args, i) => args.SpecifiedVersion = i);
 		AddOption(new Option<bool>("--disable", "Create service that is disabled on publish"),
 			(args, i) => args.Disabled = i);
+		AddOption(new QuietNameOption(), (args, i) => args.quiet = i);
 	}
 
 	public override async Task Handle(NewSolutionCommandArgs args)
@@ -95,17 +111,7 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>, IStandalon
 			createdNewWorkingDir = true;
 		}
 
-		// Find path to service folders: either it is in the working directory, or it will be inside 'args.name\\services' from the working directory.
-		string projectDirectory = GetServicesDir(args, path);
-		string projectDockerfilePath = Path.Combine(args.ProjectName, "Dockerfile");
-
-		// now that a .beamable folder has been created, setup the beamo manifest
-		var sd = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value,
-			projectDirectory,
-			projectDockerfilePath,
-			new string[] { },
-			CancellationToken.None,
-			!args.Disabled);
+		var sd = await args.ProjectService.AddDefinitonToNewService(args, path);
 
 		if (!args.SkipCommon)
 		{
@@ -113,11 +119,13 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>, IStandalon
 			await args.ProjectService.CreateCommon(args.ConfigService, args.ProjectName, service.RelativeDockerfilePath,
 				service.DockerBuildContextPath);
 		}
-
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
 		args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 
-		await args.ProjectService.LinkProjects(_addUnityCommand, _addUnrealCommand, args.Provider);
+		if (!args.quiet)
+		{
+			await args.ProjectService.LinkProjects(_addUnityCommand, _addUnrealCommand, args.Provider);
+		}
 
 		if (createdNewWorkingDir) HandleCreatedNewWorkingDirectory(currentPath, path, args.SolutionName);
 	}
@@ -128,47 +136,5 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>, IStandalon
 		BeamableLogger.Log("A new Beamable microservice project has been created successfully!");
 		AnsiConsole.MarkupLine($"To get started:\n[lime]cd {path}[/]");
 		AnsiConsole.MarkupLine($"Then open [lime]{solutionName}.sln[/] in your IDE and run the project");
-	}
-
-	private static string GetServicesDir(NewSolutionCommandArgs args, string newSolutionPath)
-	{
-		string result = string.Empty;
-		//using try catch because of the Directory.EnumerateDirectories behaviour
-		try
-		{
-			var list = Directory.EnumerateDirectories(args.ConfigService.BaseDirectory,
-				$"{args.SolutionName}\\services",
-				SearchOption.AllDirectories).ToList();
-			if (list.Count > 0)
-			{
-				result = Path.GetRelativePath(args.ConfigService.BaseDirectory, list.First());
-			}
-		}
-		catch
-		{
-			//
-		}
-
-		try
-		{
-			if (string.IsNullOrWhiteSpace(result))
-			{
-				var list = Directory.EnumerateDirectories(newSolutionPath, "services",
-					SearchOption.AllDirectories).ToList();
-				result = Path.GetRelativePath(args.ConfigService.BaseDirectory, list.First());
-			}
-		}
-		catch
-		{
-			//
-		}
-
-		if (string.IsNullOrWhiteSpace(result))
-		{
-			const string SERVICES_PATH_ERROR = "Could not find Solution services path!";
-			Log.Error(SERVICES_PATH_ERROR);
-		}
-
-		return result;
 	}
 }

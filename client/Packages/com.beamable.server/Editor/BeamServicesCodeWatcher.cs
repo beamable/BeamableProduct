@@ -1,6 +1,7 @@
 using Beamable.Common;
-using Beamable.Common.Assistant;
+using Beamable.Common.Dependencies;
 using Beamable.Common.Spew;
+using Beamable.Editor;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.DockerCommands;
 using System;
@@ -53,24 +54,21 @@ namespace Beamable.Server.Editor
 	}
 
 	// ReSharper disable once ClassNeverInstantiated.Global
-	public class BeamServicesCodeWatcher : IBeamHintSystem
+	[BeamContextSystem]
+	public class BeamServicesCodeWatcher
 	{
 		private const int CLEANUP_CONTAINERS_TIMEOUT = 3;
-		public static BeamServicesCodeWatcher Default
+		public static BeamServicesCodeWatcher Default => BeamEditorContext.Default.ServiceScope.GetService<BeamServicesCodeWatcher>();
+
+		[RegisterBeamableDependencies(-999, RegistrationOrigin.EDITOR)]
+		public static void RegisterWithEditorContext(IDependencyBuilder builder)
 		{
-			get
-			{
-				var codeWatcher = default(BeamServicesCodeWatcher);
-				BeamEditor.GetBeamHintSystem(ref codeWatcher);
-				return codeWatcher;
-			}
+			builder.RemoveIfExists<BeamServicesCodeWatcher>();
+			builder.AddSingleton<BeamServicesCodeWatcher, BeamServicesCodeWatcher>();
 		}
 
 		public AssemblyDefinitionInfoCollection CachedUnityAssemblies { get; private set; }
 		HashSet<string> CachedStorageAsmNames { get; set; }
-
-		private IBeamHintPreferencesManager PreferencesManager;
-		private IBeamHintGlobalStorage GlobalStorage;
 
 		private List<BeamServiceCodeHandle> LatestCodeHandles;
 		private Task CheckSumCalculation;
@@ -185,9 +183,6 @@ namespace Beamable.Server.Editor
 			CheckSumCalculation = Task.WhenAll(tasks);
 			CachedStorageAsmNames = GetStorageAsmNames();
 		}
-
-		public void SetPreferencesManager(IBeamHintPreferencesManager preferencesManager) => PreferencesManager = preferencesManager;
-		public void SetStorage(IBeamHintGlobalStorage hintGlobalStorage) => GlobalStorage = hintGlobalStorage;
 
 		public void UpdateBuiltImageCodeHandles(string serviceName)
 		{
@@ -336,17 +331,7 @@ namespace Beamable.Server.Editor
 			}
 			else
 			{
-				if (servicesInNeedOfImageRebuild.Count > 0)
-				{
-					GlobalStorage.AddOrReplaceHint(BeamHintType.Hint,
-												   BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
-												   BeamHintIds.ID_CHANGES_NOT_DEPLOYED_TO_LOCAL_DOCKER,
-												   servicesInNeedOfImageRebuild);
-				}
-				else
-				{
-					GlobalStorage.RemoveAllHints(idRegex: BeamHintIds.ID_CHANGES_NOT_DEPLOYED_TO_LOCAL_DOCKER);
-				}
+				// TODO: [AssistantRemoval] Figure out UX for this case (ID_CHANGES_NOT_DEPLOYED_TO_LOCAL_DOCKER --- when you have changes to your running local microservice and don't have hot-reload on).
 			}
 		}
 

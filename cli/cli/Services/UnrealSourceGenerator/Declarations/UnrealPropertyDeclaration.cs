@@ -79,7 +79,7 @@ public struct UnrealPropertyDeclaration
 
 	public const string U_STRUCT_U_PROPERTY_DESERIALIZE =
 		$@"UBeamJsonUtils::DeserializeUStruct<₢{nameof(PropertyUnrealType)}₢>(""₢{nameof(RawFieldName)}₢"", Bag, ₢{nameof(PropertyName)}₢, OuterOwner);";
-	
+
 	public const string U_OBJECT_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeUObject<₢{nameof(PropertyUnrealType)}₢>(""₢{nameof(RawFieldName)}₢"", ₢{nameof(PropertyName)}₢, Serializer);";
 
@@ -209,6 +209,18 @@ public struct UnrealPropertyDeclaration
 			return PRIMITIVE_U_PROPERTY_SERIALIZE;
 		}
 
+		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_STRING) ||
+			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_BYTE) ||
+			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_SHORT) ||
+			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_INT) ||
+			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_LONG) ||
+			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_BOOL) ||
+			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_FLOAT) ||
+			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_DOUBLE))
+		{
+			return PRIMITIVE_U_PROPERTY_SERIALIZE;
+		}
+
 		// Semantic types serialization
 		if (UnrealSourceGenerator.UNREAL_ALL_SEMTYPES.Contains(unrealType))
 			return SEMTYPE_U_PROPERTY_SERIALIZE;
@@ -216,6 +228,9 @@ public struct UnrealPropertyDeclaration
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
 			return U_OBJECT_U_PROPERTY_SERIALIZE;
 		
+		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_STRUCT_PREFIX))
+			return U_STRUCT_U_PROPERTY_SERIALIZE;
+
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_STRUCT_PREFIX))
 			return U_STRUCT_U_PROPERTY_SERIALIZE;
 
@@ -284,9 +299,15 @@ public struct UnrealPropertyDeclaration
 		// Semantic types serialization
 		if (UnrealSourceGenerator.UNREAL_ALL_SEMTYPES.Contains(unrealType))
 			return SEMTYPE_U_PROPERTY_DESERIALIZE;
+
+		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
+			return U_OBJECT_U_PROPERTY_DESERIALIZE;
 		
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
 			return U_OBJECT_U_PROPERTY_DESERIALIZE;
+
+		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_STRUCT_PREFIX))
+			return U_STRUCT_U_PROPERTY_DESERIALIZE;
 
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_STRUCT_PREFIX))
 			return U_STRUCT_U_PROPERTY_DESERIALIZE;

@@ -46,19 +46,7 @@ namespace Beamable.Editor.Reflection
 				}
 
 				BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems(reimportedReflectionTypes);
-				BeamEditor.EditorReflectionCache.SetStorage(BeamEditor.HintGlobalStorage);
 
-				if (reimportedReflectionTypes.Contains(typeof(BeamHintReflectionCache.Registry)))
-				{
-					// Set up Globally Accessible Hint System Dependencies and then call init
-					foreach (var hintSystem in BeamEditor.GetReflectionSystem<BeamHintReflectionCache.Registry>().GloballyAccessibleHintSystems)
-					{
-						hintSystem.SetStorage(BeamEditor.HintGlobalStorage);
-						hintSystem.SetPreferencesManager(BeamEditor.HintPreferencesManager);
-
-						hintSystem.OnInitialized();
-					}
-				}
 
 				AssetDatabase.Refresh();
 			}
@@ -67,17 +55,6 @@ namespace Beamable.Editor.Reflection
 			{
 				//UnityEditor.MonoScript
 				BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems();
-				BeamEditor.EditorReflectionCache.SetStorage(BeamEditor.HintGlobalStorage);
-
-				// Set up Globally Accessible Hint System Dependencies and then call init
-				foreach (var hintSystem in BeamEditor.GetReflectionSystem<BeamHintReflectionCache.Registry>().GloballyAccessibleHintSystems)
-				{
-					hintSystem.SetStorage(BeamEditor.HintGlobalStorage);
-					hintSystem.SetPreferencesManager(BeamEditor.HintPreferencesManager);
-
-					hintSystem.OnInitialized();
-				}
-
 				AssetDatabase.Refresh();
 			}
 		}

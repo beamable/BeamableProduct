@@ -192,7 +192,7 @@ public class Tests
 		Assert.AreEqual(0, status);
 	}
 
-	
+
 	[Test]
 	public async Task GenerateSession()
 	{
@@ -206,7 +206,7 @@ public class Tests
 		Assert.AreEqual(0, status);
 	}
 
-	
+
 	[Test]
 	public async Task GenerateProtoActor()
 	{

@@ -26,12 +26,12 @@ jobs:
       matrix:
         dotnet-version: ['6.0.x', '7.0.x' ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: ~/.nuget/packages
           # Look to see if there is a cache hit for the corresponding requirements file
@@ -40,7 +40,7 @@ jobs:
             ${{ runner.os }}-nuget
       - name: Build a Nuget package
         run: dotnet pack ./microservice/microservice -c Release -o ./nuget-build -p:NuspecFile=Microservice.nuspec -p:PackageVersion=0.0.0 /p:CombinedVersion=0.0.0
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: Microservice Nuget Package
           path: ./nuget-build
@@ -52,15 +52,16 @@ jobs:
       group: base-image-tests-${{ github.head_ref }}-${{ matrix.dotnet-version }}
       cancel-in-progress: true
     strategy:
+      max-parallel: 1
       matrix:
         dotnet-version: ['6.0.x', '7.0.x' ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: ~/.nuget/packages
           # Look to see if there is a cache hit for the corresponding requirements file
@@ -80,15 +81,16 @@ jobs:
       group: cli-tests-${{ github.head_ref }}-${{ matrix.dotnet-version }}
       cancel-in-progress: true
     strategy:
+      max-parallel: 1
       matrix:
         dotnet-version: ['6.0.x','7.0.x' ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: ~/.nuget/packages
           # Look to see if there is a cache hit for the corresponding requirements file
@@ -117,27 +119,38 @@ jobs:
           - playmode
           - editmode
         unityVersion:
-          - 2020.3.19f1
-          - 2021.3.2f1
-          - 2022.3.0f1
+          - 2020.3.48f1
+          - 2021.3.29f1
+          - 2022.3.7f1
         include:
-          - unityVersion: 2020.3.19f1
+          - unityVersion: 2020.3.48f1
             unityEmailOverride: UNITY_EMAIL_DEVOPS
             unityPasswordOverride: UNITY_PASSWORD_DEVOPS
             unitySerialOverride: UNITY_SERIAL_DEVOPS
-          - unityVersion: 2021.3.2f1
+          - unityVersion: 2021.3.29f1
             unityEmailOverride: UNITY_EMAIL_BUILD
             unityPasswordOverride: UNITY_PASSWORD_BUILD
             unitySerialOverride: UNITY_SERIAL_BUILD
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.0.x'
+      - name: Build and Install BEAM CLI 
+        working-directory: ./cli/cli
+        run: |
+          SKIP_GENERATION=true ./install.sh
+      - name: Check Beam CLI
+        run: |
+          beam version
       - name: Login to Docker Hub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Cache Docker Layers
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         id: cache_docker
         with:
           path: ./docker-cache
@@ -152,13 +165,13 @@ jobs:
           UNITY_VERSION=${{ matrix.unityVersion }} ./build/prepare_base_image.sh
         shell: bash
       - name: Cache Unity Folders
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ matrix.projectPath }}/Library
           key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
           restore-keys: |
             Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
-      - uses: game-ci/unity-test-runner@v2
+      - uses: game-ci/unity-test-runner@v4
         id: tests
         timeout-minutes: 30
         env:
@@ -173,7 +186,7 @@ jobs:
           artifactsPath: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: always()
         with:
           name: Test results for ${{ matrix.unityVersion }} ${{ matrix.testMode }}
@@ -197,13 +210,13 @@ jobs:
       fail-fast: false
       matrix:
         targetPlatform:
-          - WebGL
+#          - WebGL Disabled due to existing lightbeam sample action
           - Android
           - StandaloneWindows
           - iOS
           - StandaloneOSX
         unityVersion:
-          - 2022.3.0f1
+          - 2022.3.7f1
         projectPath:
           - client
         include:
@@ -216,12 +229,12 @@ jobs:
             unityPasswordOverride: UNITY_PASSWORD_BUILD
             unitySerialOverride: UNITY_SERIAL_BUILD
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           lfs: true
       - name: Login to Docker Hub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -231,7 +244,7 @@ jobs:
           ./build/create_config_defaults.sh
         shell: bash
       - name: Cache Docker Layers
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         id: cache_docker
         with:
           path: ./docker-cache
@@ -246,7 +259,7 @@ jobs:
           UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/prepare_base_image.sh
         shell: bash
       - name: Cache Unity Folders
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ${{ matrix.projectPath }}/Library
@@ -260,7 +273,7 @@ jobs:
         run: |
           rm -rf /github/workspace/dist
         shell: bash
-      - uses: game-ci/unity-builder@v2.1.2
+      - uses: game-ci/unity-builder@v4.0.1
         timeout-minutes: 60
         env:
           UNITY_EMAIL: ${{ secrets[matrix.unityEmailOverride] || secrets.UNITY_EMAIL }}

@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
+using Beamable.Coroutines;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -12,7 +13,7 @@ namespace Beamable.Editor
 	/// The dispatcher allows you to enqueue work to happen on the main unity thread without waiting for editor render frames.
 	/// Use the <see cref="Schedule(System.Action)"/> method to schedule work.
 	/// </summary>
-	public class BeamableDispatcher : IBeamableDisposable
+	public class BeamableDispatcher : IBeamableDisposable, ICoroutineService
 	{
 		public const string DEFAULT_QUEUE_NAME = "beamable";
 		private Dictionary<string, Queue<Action>> _workQueues;
@@ -163,5 +164,9 @@ namespace Beamable.Editor
 			public override bool keepWaiting => _workQueue.Count == 0;
 		}
 
+		public void Run(string context, IEnumerator enumerator)
+		{
+			EditorCoroutineUtility.StartCoroutine(enumerator, this);
+		}
 	}
 }

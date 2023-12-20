@@ -47,11 +47,35 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	public const string UNREAL_U_STRUCT_PREFIX = "F";
 	public const string UNREAL_U_POLY_WRAPPER_PREFIX = "UOneOf_";
 	public const string UNREAL_U_BEAM_NODE_PREFIX = "UK2BeamNode";
+
+	public const string UNREAL_U_BEAM_PLAIN_TEXT_RESPONSE_TYPE = "UBeamPlainTextResponseBody*";
+	// End of Special Case Types
+
+
 	
 	public const string UNREAL_U_BEAM_PLAIN_TEXT_RESPONSE_TYPE = "UBeamPlainTextResponseBody*";
 	// End of Special Case Types
 
 	
+	/// <summary>
+	/// These overrides are applied in <see cref="GetNamespacedSerializableTypeFromSchema"/> so that we can override the names of schemas (literal schemas that show up in the content/schemas path of the JSON)
+	/// that'll exist in Unreal as a UObject that can be deserialized. Embedded schemas (such as the ones required for polymorphic fields using OneOf) are overriden by <see cref="POLYMORPHIC_WRAPPER_TYPE_OVERRIDES"/>.
+	/// TODO: Over time, we should probably move this into its own partial file of this type.
+	/// </summary>
+	public static readonly Dictionary<string, string> NAMESPACED_TYPES_OVERRIDES;
+
+	/// <summary>
+	/// These overrides are applied in <see cref="GetNamespacedServiceNameFromApiDoc"/> so that we can override specific endpoint names for things that make more sense on the client.
+	/// TODO: Over time, we should probably move this into its own partial file of this type.
+	/// </summary>
+	public static readonly Dictionary<string, string> NAMESPACED_ENDPOINT_OVERRIDES;
+
+	/// <summary>
+	/// These overrides are applied using <see cref="GetUnrealTypeFromSchema"/>. This is used for types that we only discover in the middle of processing the schemas for a document.
+	/// Things like Optionals, BeamArray/Map and any polymorphic type (schema containing 'OneOf').
+	/// TODO: Over time, we should probably move this into its own partial file of this type.
+	/// </summary>
+	public static readonly Dictionary<string, string> POLYMORPHIC_WRAPPER_TYPE_OVERRIDES;
 	/// <summary>
 	/// These overrides are applied in <see cref="GetNamespacedSerializableTypeFromSchema"/> so that we can override the names of schemas (literal schemas that show up in the content/schemas path of the JSON)
 	/// that'll exist in Unreal as a UObject that can be deserialized. Embedded schemas (such as the ones required for polymorphic fields using OneOf) are overriden by <see cref="POLYMORPHIC_WRAPPER_TYPE_OVERRIDES"/>.
@@ -119,7 +143,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// Exists so we don't keep reallocating while building the field names.
 	/// </summary>
 	private static readonly StringBuilder kSemTypeDeclarationPointsLog = new(4096);
-	
+
 	/// <summary>
 	/// Exists so we don't keep reallocating while building the field names.
 	/// </summary>
@@ -129,7 +153,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// Exists so we don't keep reallocating while building the field names.
 	/// </summary>
 	private static readonly StringBuilder kSelfReferentialTypeDeclarationPointsLog = new(4096);
-	
+
 	static UnrealSourceGenerator()
 	{
 		NAMESPACED_TYPES_OVERRIDES = new() { { "Player", "PlayerId" }, { "DeleteRole", "DeleteRoleRequestBody" } };
@@ -250,7 +274,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 		kReplacementTypeDeclarationPointsLog.Clear();
 		kReplacementTypeDeclarationPointsLog.AppendLine("Handle,PropertyUnrealType,PropertyNamespacedType");
-		
+
 		kSelfReferentialTypeDeclarationPointsLog.Clear();
 		kSelfReferentialTypeDeclarationPointsLog.AppendLine("Handle,PropertyUnrealType,PropertyNamespacedType");
 
@@ -704,7 +728,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					{
 						kSelfReferentialTypeDeclarationPointsLog.AppendLine($"{handle},{uPropertyDeclarationData.PropertyUnrealType},{uPropertyDeclarationData.PropertyNamespacedType}");
 					}
-					
+
 					// If this field's type is a replacement type, we log it out.
 					if (AllReplacementTypes.Contains(unrealType))
 					{
@@ -724,7 +748,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 							ValueUnrealTypeIncludeStatement = GetIncludeStatementForUnrealType(nonOptionalUnrealType)
 						};
 						optionalTypes.Add(optionalDeclaration);
-						
+
 						// If this field's type is a replacement type, we log it out.
 						if (AllReplacementTypes.Contains(optionalDeclaration.ValueUnrealTypeName))
 						{
@@ -774,7 +798,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 						wrapper.ValueUnrealTypeIncludeStatement = GetIncludeStatementForUnrealType(wrapper.ValueUnrealTypeName);
 
 						arrayWrapperTypes.Add(wrapper);
-						
+
 						// If this field's type is a replacement type, we log it out.
 						if (AllReplacementTypes.Contains(wrapper.ValueUnrealTypeName))
 						{
@@ -802,7 +826,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 						wrapper.ValueUnrealTypeIncludeStatement = GetIncludeStatementForUnrealType(wrapper.ValueUnrealTypeName);
 
 						mapWrapperTypes.Add(wrapper);
-						
+
 						// If this field's type is a replacement type, we log it out.
 						if (AllReplacementTypes.Contains(wrapper.ValueUnrealTypeName))
 						{
@@ -1460,9 +1484,21 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		var isMsGen = genType == GenerationType.Microservice;
 		schemaName = isMsGen ? $"{parentDoc.Info.Title.Sanitize()}{schemaName}" : schemaName;
 
+		// Override the schema name if any is configured.
+		schemaName = NAMESPACED_TYPES_OVERRIDES.TryGetValue(schemaName, out var overridenName) ? overridenName : schemaName;
+
+		schemaName += schemaName.EndsWith("Request") ? "Body" : "";
+
+		// Adjust the schema name if its a CSV Row
+		schemaName = isCsvRow ? $"{schemaName}TableRow" : schemaName;
+
+		// Adjust the schema name if its being generated for a Microservice.
+		var isMsGen = genType == GenerationType.Microservice;
+		schemaName = isMsGen ? $"{parentDoc.Info.Title.Sanitize()}{schemaName}" : schemaName;
+
 		// Adjust the schema name if it is an optional schema
 		schemaName = isOptional ? $"Optional{schemaName}" : schemaName;
-		
+
 		// Return the namespaced name.
 		return schemaName;
 	}

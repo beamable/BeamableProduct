@@ -4,7 +4,6 @@ using Beamable.Editor.Environment;
 using Beamable.Editor.Login.UI;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.Toolbox.UI.Components;
-using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
@@ -18,7 +17,6 @@ using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
 #endif
 
 using static Beamable.Common.Constants;
@@ -71,10 +69,6 @@ namespace Beamable.Editor.Toolbox.Components
 			var contentButton = Root.Q<Button>("contentManager");
 			contentButton.clickable.clicked += async () => { await ContentManagerWindow.Init(); };
 			contentButton.tooltip = Tooltips.Toolbox.CONTENT;
-
-			var skinningButton = Root.Q<Button>("skinning");
-			skinningButton.clickable.clicked += ThemeManager.Init;
-			skinningButton.tooltip = Tooltips.Toolbox.THEME_MANAGER;
 
 			var globalConfigButton = Root.Q<Button>("globalConfig");
 			globalConfigButton.clickable.clicked += () =>

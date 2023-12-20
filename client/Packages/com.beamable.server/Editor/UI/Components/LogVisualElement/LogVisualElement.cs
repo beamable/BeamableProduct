@@ -8,6 +8,7 @@ using System.Text;
 using UnityEditor;
 using UnityEngine;
 using Beamable.Editor;
+using Beamable.Editor.Microservice.UI2.Models;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements.StyleSheets;
 using UnityEngine.Experimental.UIElements;
@@ -44,7 +45,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			}
 		}
-		public ServiceModelBase Model { get; set; }
+		public IServiceLogsVisualModel Model { get; set; }
 		public event Action OnDetachLogs;
 		public bool EnableMoreButton = true;
 		public bool EnableDetatchButton = true;

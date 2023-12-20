@@ -133,6 +133,7 @@ namespace Beamable.Editor.Microservice.UI
 			_windowRoot.AddStyleSheet($"{Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uss");
 			_windowRoot.name = nameof(_windowRoot);
 			_windowRoot.TryAddScrollViewAsMainElement();
+			_windowRoot.userData = ActiveContext.ServiceScope;
 
 			root.Add(_windowRoot);
 
