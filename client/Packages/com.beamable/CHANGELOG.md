@@ -12,7 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Global dependency injection scope
 - Leaderboard PSDK
 - LightBeam UI framework
-- Support for FederatedGameServer microservices
 
 ### Changed
 
@@ -31,6 +30,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Theme Manager
 - Beamable Assistant
 - OpenAPI for Chatv2 and Matchmaking
+
+## [1.19.9]
+
+### Added
+
+- Support for FederatedGameServer microservices
+
 
 ## [1.19.8]
 
