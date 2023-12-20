@@ -12,13 +12,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Publish Markdown to Confluence
-        uses: markdown-confluence/publish@v1
+      - uses: actions/setup-node@v4
         with:
-          confluenceBaseUrl: https://disruptorbeam.atlassian.net
-          confluenceParentId: 2947842049
-          atlassianUserName: "piotr@beamable.com"
-          atlassianApiToken: "ATATT3xFfGF0AK3pH5a3NaS-110Gded4sjKlR0Np6lDQX_QVIttERUslhjCOqb9vvqdl01Ob8HZ0uzbGijKQGpUipDT_x5NeVivX1JKYhA-DECTeJHgt_NU1ssqHtjGboGPcegPolPQ69NaXVvOVPbnns-Soj-AElsxnL5cawKlu0E6YwJnDNeQ=DE6076B8"
-          folderToPublish: platformDocs
-          contentRoot: /platformDocs
-          configFile: /platformDocs/.markdown-confluence.json
+          node-version: 18
+      - name: Publish Markdown to Confluence
+        working-directory: ./platformDocs
+        env:
+          ATLASSIAN_TOKEN: "ATATT3xFfGF0AK3pH5a3NaS-110Gded4sjKlR0Np6lDQX_QVIttERUslhjCOqb9vvqdl01Ob8HZ0uzbGijKQGpUipDT_x5NeVivX1JKYhA-DECTeJHgt_NU1ssqHtjGboGPcegPolPQ69NaXVvOVPbnns-Soj-AElsxnL5cawKlu0E6YwJnDNeQ=DE6076B8"
+        run: npx @markdown-confluence/cli
