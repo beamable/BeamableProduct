@@ -74,7 +74,7 @@ public class ProjectData
 		public bool Equals(Unreal other) => Path == other.Path;
 
 		public override bool Equals(object obj) => (obj is Unreal unreal && Equals(unreal)) ||
-		                                           (obj is string unrealPath && Equals(unrealPath));
+												   (obj is string unrealPath && Equals(unrealPath));
 
 		public override int GetHashCode() => (Path != null ? Path.GetHashCode() : 0);
 
@@ -154,7 +154,7 @@ public class ProjectService
 		var info = await GetTemplateInfo();
 
 		if (!info.HasTemplates ||
-		    !string.Equals(version, info.templateVersion, StringComparison.CurrentCultureIgnoreCase))
+			!string.Equals(version, info.templateVersion, StringComparison.CurrentCultureIgnoreCase))
 		{
 			await PromptAndInstallTemplates(info.templateVersion, version, quiet);
 		}
