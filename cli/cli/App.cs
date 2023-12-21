@@ -288,17 +288,12 @@ public class App
 				case CliException cliException:
 					if (cliException.ReportOnStdOut)
 					{
-						var error = Diagnostic.Error(cliException.Message)
-							.WithCode($"{cliException.NonZeroOrOneExitCode:0000.##}");
-						if (!string.IsNullOrWhiteSpace(cliException.AdditionalNote))
-						{
-							error = error.WithNote(cliException.AdditionalNote);
-						}
 						// Create a new report
 						var report = new Report(
 							new EmbeddedResourceRepository(
 								typeof(Program).Assembly));
-						report.AddDiagnostic(error);
+						foreach(var error in cliException.Reports)
+							report.AddDiagnostic(error);
 						report.Render(AnsiConsole.Console);
 					}
 					else
