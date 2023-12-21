@@ -3,6 +3,7 @@ using Beamable.Common.Dependencies;
 using cli.Unreal;
 using cli.Utils;
 using Microsoft.OpenApi;
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Exceptions;
 using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Models;
@@ -10,6 +11,7 @@ using Microsoft.OpenApi.Readers;
 using Microsoft.OpenApi.Writers;
 using Newtonsoft.Json;
 using Serilog;
+using SharpYaml.Tokens;
 using System.Collections;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -28,9 +30,6 @@ public class SwaggerService
 	// TODO: make a PLAT ticket to give us back all openAPI spec info
 	public static readonly BeamableApiDescriptor[] Apis = new BeamableApiDescriptor[]
 	{
-		// these are currently broken...
-		// BeamableApis.BasicService("trails"),
-		
 		// the proto-actor stack!
 		BeamableApis.ProtoActor(),
 
@@ -60,8 +59,8 @@ public class SwaggerService
 		BeamableApis.BasicService("notification"),
 		BeamableApis.BasicService("realms"),
 		BeamableApis.BasicService("social"),
-		BeamableApis.ObjectService("chatV2"),
-		BeamableApis.ObjectService("matchmaking"),
+		// TODO: At the moment, this relies on pubnub and we are moving away from it; add this back in once done.
+		BeamableApis.ObjectService("chatV2").WithoutSDKs(TARGET_ENGINE_NAME_UNITY, TARGET_ENGINE_NAME_UNREAL),
 		BeamableApis.BasicService("commerce"),
 		BeamableApis.ObjectService("commerce"),
 		BeamableApis.ObjectService("calendars"),
@@ -69,6 +68,9 @@ public class SwaggerService
 		BeamableApis.ObjectService("announcements"),
 		BeamableApis.BasicService("mail"),
 		BeamableApis.ObjectService("mail"),
+		BeamableApis.BasicService("session").WithRename("User", "SessionUser"),
+		// INFO: At the moment, this is unsupported in UE-generation due to it generating a recursively referenced type (which breaks due to circular #includes). 
+		BeamableApis.BasicService("trials").WithRename("\"ref\"", "\"reference\"").WithoutSDKs(TARGET_ENGINE_NAME_UNREAL),
 	};
 
 	public SwaggerService(IAppContext context, ISwaggerStreamDownloader downloader, SourceGeneratorListProvider generators)
@@ -87,11 +89,16 @@ public class SwaggerService
 		// TODO: we should be able to specify if we want to generate from downloading, or from using a cached source.
 		var openApiDocuments = await DownloadBeamableApis(filter);
 
-		var allDocuments = openApiDocuments.Select(r => r.Document).ToList();
+		var allResults = openApiDocuments.Where(r => !r.Descriptor.SkippedSDKs.Contains(targetEngine));
+
+		var allDocuments = targetEngine == TARGET_ENGINE_NAME_UNREAL
+				? allResults.Where(r => !r.Document.Info.Title.Contains("Scheduler")).Select(r => r.Document).ToList()
+				: allResults.Select(r => r.Document).ToList();
 		var context = new DefaultGenerationContext
 		{
 			Documents = allDocuments,
-			OrderedSchemas = ExtractAllSchemas(allDocuments, resolutionStrategy)
+			OrderedSchemas = ExtractAllSchemas(allDocuments, resolutionStrategy),
+			ReplacementTypes = new Dictionary<string, ReplacementTypeInfo>(),
 		};
 
 		// TODO: FILTER we shouldn't really be using _all_ the given generators, we should be selecting between one based on an input argument.
@@ -101,12 +108,39 @@ public class SwaggerService
 			// Set the paths to mirror the folder structure of the BeamableCore plugin's "Source" folder
 			// The reason we do this is so that we can simply copy/paste the result of the generation over the Source folder.
 			// For a "clean install" all the user has to do is go to these paths and delete the AutoGen folder, code-gen again and then copy/paste the results
-			// on the "Source" folder of the plugin (or, in SAMS case, the project) 
-			UnrealSourceGenerator.headerFileOutputPath = "BeamableCore/Public/";
-			UnrealSourceGenerator.cppFileOutputPath = "BeamableCore/Private/";
-			UnrealSourceGenerator.blueprintHeaderFileOutputPath = "BeamableCoreBlueprintNodes/Public/BeamFlow/ApiRequest/";
-			UnrealSourceGenerator.blueprintCppFileOutputPath = "BeamableCoreBlueprintNodes/Private/BeamFlow/ApiRequest/";
-			UnrealSourceGenerator.previousGenerationPassesData = new PreviousGenerationPassesData();
+			// on the "Source" folder of the plugin (or, in SAMS case, the project)
+			if (targetEngine == TARGET_ENGINE_NAME_UNREAL)
+			{
+				UnrealSourceGenerator.headerFileOutputPath = "BeamableCore/Public/";
+				UnrealSourceGenerator.cppFileOutputPath = "BeamableCore/Private/";
+				UnrealSourceGenerator.blueprintHeaderFileOutputPath = "BeamableCoreBlueprintNodes/Public/BeamFlow/ApiRequest/";
+				UnrealSourceGenerator.blueprintCppFileOutputPath = "BeamableCoreBlueprintNodes/Private/BeamFlow/ApiRequest/";
+				UnrealSourceGenerator.previousGenerationPassesData = new PreviousGenerationPassesData();
+
+				// TODO: Add a command parameter that builds this from either a file or a CSV format. Figure out how to consistently load the file for the SDK replacement types into the UE SAMS client generation
+				context.ReplacementTypes = new Dictionary<string, ReplacementTypeInfo>
+				{
+					{
+						"ClientPermission", new ReplacementTypeInfo
+						{
+							ReferenceId = "ClientPermission", EngineReplacementType = "FBeamClientPermission", EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamClientPermission", EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamClientPermission.h""",
+						}
+					},
+					{
+						"ExternalIdentity", new ReplacementTypeInfo
+						{
+							ReferenceId = "ExternalIdentity", EngineReplacementType = "FBeamExternalIdentity", EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamExternalIdentity", EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamExternalIdentity.h""",
+						}
+					},
+					{
+						"Tag", new ReplacementTypeInfo
+						{
+							ReferenceId = "Tag", EngineReplacementType = "FBeamTag", EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamTag", EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamTag.h""",
+						}
+					}
+				};
+			}
+
 			files.AddRange(generator.Generate(context));
 		}
 
@@ -383,16 +417,23 @@ public class SwaggerService
 		var tasks = new List<Task<OpenApiDocumentResult>>();
 		foreach (var api in openApis)
 		{
+			var pinnedApi = api;
 			tasks.Add(Task.Run(async () =>
 			{
 				var url = $"{_context.Host}/{api.RelativeUrl}";
 				try
 				{
 					var stream = await downloader.GetStreamAsync(url);
+					var sr = new StreamReader(stream);
+					var content = await sr.ReadToEndAsync();
 
+					foreach (var (oldName, newName) in pinnedApi.schemaRenames)
+					{
+						content = content.Replace(oldName, newName);
+					}
 
 					var res = new OpenApiDocumentResult();
-					res.Document = new OpenApiStreamReader().Read(stream, out res.Diagnostic);
+					res.Document = new OpenApiStringReader().Read(content, out res.Diagnostic);
 					foreach (var warning in res.Diagnostic.Warnings)
 					{
 						Log.Warning("found warning for {url}. {message} . from {pointer}", url, warning.Message,
@@ -429,6 +470,8 @@ public class SwaggerService
 			RewriteInlineResultSchemasAsReferences,
 			SplitTagsIntoSeparateDocuments,
 			AddTitlesToAllSchemasIfNone,
+			RewriteObjectEnumsAsStrings,
+			DetectNonSelfReferentialTypes,
 			Reserailize
 		};
 
@@ -484,6 +527,27 @@ public class SwaggerService
 		var json = sw.ToString();
 		schema.Title = oldTitle;
 		return json;
+	}
+
+	private static List<OpenApiDocumentResult> RewriteObjectEnumsAsStrings(OpenApiDocumentResult swagger)
+	{
+		foreach (var schema in swagger.Document.Components.Schemas)
+		{
+			foreach (var kvp in schema.Value.Properties)
+			{
+				var propertySchema = kvp.Value;
+				var isObject = propertySchema.Type == "object";
+				var isFormatUnknown = propertySchema.Format == "unknown";
+				var isEnum = propertySchema.Enum != null && propertySchema.Enum.Count > 0;
+
+				if (isObject && isFormatUnknown && isEnum)
+				{
+					propertySchema.Type = "string";
+					propertySchema.Format = null;
+				}
+			}
+		}
+		return new List<OpenApiDocumentResult> { swagger };
 	}
 
 	private static List<OpenApiDocumentResult> RewriteStatusCodesTo200(OpenApiDocumentResult swagger)
@@ -827,15 +891,88 @@ public class SwaggerService
 				schemasToExplore.Enqueue(referencedSchema);
 			}
 
-			output.Add(new OpenApiDocumentResult
+			var openApiDocumentResult = new OpenApiDocumentResult
 			{
 				Descriptor = swagger.Descriptor,
 				Diagnostic = diag,
 				Document = clonedDocument
-			});
+			};
+			output.Add(openApiDocumentResult);
+		}
 
+		var joiningTags = new Dictionary<string[], string>()
+		{
+			{ new[] { "Match", "Ticket" }, "Matchmaking" },
+			{ new[] { "PlayerPresence", "Player" }, "Player" },
+		};
+
+		foreach ((string[] existingDocsTitles, string mergedDocTitle) in joiningTags)
+		{
+			var docs = output.Where(o => existingDocsTitles.Contains(o.Document.Info.Title.Split(" ")[0])).ToList();
+
+			var outputString = swagger.Document.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
+			var clonedDocument = new OpenApiStringReader().Read(outputString, out var diag);
+
+
+			clonedDocument.Info.Title = $"{mergedDocTitle} Actor";
+			clonedDocument.Components = new OpenApiComponents();
+			clonedDocument.Components.Schemas = new Dictionary<string, OpenApiSchema>();
+			clonedDocument.Paths = new OpenApiPaths();
+			foreach (OpenApiDocumentResult openApiDocumentResult in docs)
+			{
+				foreach (KeyValuePair<string, OpenApiPathItem> keyValuePair in openApiDocumentResult.Document.Paths)
+				{
+					clonedDocument.Paths.TryAdd(keyValuePair.Key, keyValuePair.Value);
+				}
+
+				foreach (KeyValuePair<string, OpenApiSchema> openApiSchema in openApiDocumentResult.Document.Components.Schemas)
+				{
+					clonedDocument.Components.Schemas.TryAdd(openApiSchema.Key, openApiSchema.Value);
+				}
+			}
+
+			foreach (OpenApiDocumentResult res in docs) output.Remove(res);
+
+			var mergedResult = new OpenApiDocumentResult
+			{
+				Descriptor = swagger.Descriptor,
+				Diagnostic = diag,
+				Document = clonedDocument
+			};
+			output.Add(mergedResult);
 		}
 		return output;
+	}
+
+	private static List<OpenApiDocumentResult> DetectNonSelfReferentialTypes(OpenApiDocumentResult swagger)
+	{
+		foreach ((string key, OpenApiSchema value) in swagger.Document.Components.Schemas)
+		{
+			var recursiveCheck = new Stack<OpenApiSchema>();
+
+			foreach ((_, OpenApiSchema propertySchema) in value.Properties)
+				recursiveCheck.Push(propertySchema);
+
+			bool isSelfReferential = false;
+			OpenApiSchema curr = null;
+			while (recursiveCheck.TryPop(out curr))
+			{
+				if (curr.Reference != null && value.Reference != null && curr.Reference.Id.Equals(value.Reference.Id))
+				{
+					isSelfReferential = true;
+				}
+
+				foreach ((_, OpenApiSchema propertySchema) in curr.Properties)
+					recursiveCheck.Push(propertySchema);
+			}
+
+			if (isSelfReferential)
+			{
+				value.Extensions.Add(Constants.EXTENSION_BEAMABLE_SELF_REFERENTIAL_TYPE, new OpenApiString(Constants.EXTENSION_BEAMABLE_SELF_REFERENTIAL_TYPE));
+			}
+		}
+
+		return new List<OpenApiDocumentResult> { swagger };
 	}
 
 
@@ -850,6 +987,8 @@ public class SwaggerService
 	{
 		public IReadOnlyList<OpenApiDocument> Documents { get; init; }
 		public IReadOnlyList<NamedOpenApiSchema> OrderedSchemas { get; init; }
+
+		public IReadOnlyDictionary<string, ReplacementTypeInfo> ReplacementTypes { get; set; }
 	}
 
 	/// <summary>
@@ -873,6 +1012,8 @@ public class SwaggerService
 
 	}
 
+	public const string TARGET_ENGINE_NAME_UNITY = "unity";
+	public const string TARGET_ENGINE_NAME_UNREAL = "unreal";
 }
 
 public class BeamableApiDescriptor
@@ -880,6 +1021,22 @@ public class BeamableApiDescriptor
 	public BeamableApiSource Source;
 	public string RelativeUrl;
 	public string Service;
+	public string[] SkippedSDKs = Array.Empty<string>();
+
+	public Dictionary<string, string> schemaRenames = new Dictionary<string, string>();
+
+	public BeamableApiDescriptor WithRename(string old, string next)
+	{
+		schemaRenames[old] = next;
+		return this;
+	}
+
+	public BeamableApiDescriptor WithoutSDKs(params string[] SDKs)
+	{
+		SkippedSDKs = SDKs;
+		return this;
+	}
+
 	public string FileName => $"{BeamableApiSourceExtensions.ToDisplay(Source)}_{Service}.json";
 }
 
@@ -1052,6 +1209,42 @@ public class GeneratedFileDescriptor
 	public string Content;
 }
 
+/// <summary>
+/// Data required for us to replace the default type output by the code-gen process with a hand-written type inside the target engine's SDK.
+/// </summary>
+public struct ReplacementTypeInfo
+{
+	/// <summary>
+	/// The OAPI Reference Id we are replacing.
+	/// </summary>
+	public string ReferenceId;
+
+	/// <summary>
+	/// The type we are replacing the default output type with.
+	///
+	/// UNREAL => This is the UnrealType (FBeamTag or UBeamTag* if you want to replace the default UTag* that would be generated by ReferenceId=Tag)
+	/// UNITY => Unsupported.
+	/// </summary>
+	public string EngineReplacementType;
+
+	/// <summary>
+	/// The optional type we are replacing the default output type with.
+	///
+	/// UNREAL => This is the Optional UnrealType (FOptionalBeamTag ---- this gets created for you)
+	/// UNITY => Unsupported.
+	/// </summary>
+	public string EngineOptionalReplacementType;
+
+	/// <summary>
+	/// Data required to correctly import the hand-written type in places that would reference the default output type.
+	///
+	/// UNREAL => This is the full include line for the type (#include "BeamBackend/ReplacementTypes/BeamTag.h").
+	/// UNITY => Unsupported.
+	/// </summary>
+	public string EngineImport;
+}
+
+
 public interface IGenerationContext
 {
 	/// <summary>
@@ -1063,7 +1256,14 @@ public interface IGenerationContext
 	/// All of the open API schema objects across all of the <see cref="Documents"/>.
 	/// </summary>
 	IReadOnlyList<NamedOpenApiSchema> OrderedSchemas { get; }
+
+	/// <summary>
+	/// Dictionary keyed by the OAPI Reference Id of the type you want to replace.
+	/// The value is the information necessary for replacing that type in the generation.
+	/// </summary>
+	IReadOnlyDictionary<string, ReplacementTypeInfo> ReplacementTypes { get; }
 }
+
 
 public class OpenApiSchemaComparer : IEqualityComparer<OpenApiSchema>
 {

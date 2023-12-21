@@ -5,6 +5,106 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.9]
+
+### Fixed
+
+- Fix issue that was causing error while publishing microservice in apple silicon cpu architectures.
+- Deserializing string field containing json in microservices compatibility improvements.
+
+## [1.19.8]
+
+no changes
+
+## [1.19.7]
+
+no changes
+
+## [1.19.6]
+
+no changes
+
+## [1.19.5]
+
+no changes
+
+## [1.19.4]
+
+no changes
+
+## [1.19.3]
+
+### Fixed
+
+- Deserializing string field containing json in microservices to remove extra quotes.
+
+## [1.19.2]
+
+no changes
+
+## [1.19.1]
+
+no changes
+
+### Changed
+
+- Removed `OpenLocalSwaggerOnRun` property from csproj template.
+- Added URL for the micro service portal page in it's informtion log.
+
+## [1.19.0]
+
+### Changed
+
+- Ensure that Storage is enabled based on the status of its dependent services.
+
+### Added
+
+- Added `MicroserviceBootstrapper.Prepare<BeamService>()` method
+- MongoDbExtensions class that supports mongo indexes creation
+- `ICollectionElement` interface and `MongoIndexAttribute` to support automatic index creation during microservice startup
+
+## [1.18.0]
+
+### Added
+
+- `IUsageApi` is available
+
+### Changed
+
+- Change Unity client code to serialize messages as an object instead of payload string array
+
+## [1.17.3]
+
+### Fixed
+
+- Microservice docker logs no longer put quotes around every log parameter
+
+### Changed
+
+- Microservice "sending request" debug log messages is easier to read
+
+## [1.17.2]
+
+### Added
+
+- Supporting deleted and updated items in `IFederatedLogin`
+
+## [1.17.1]
+
+### Added
+
+- `Context` now has a property `IsAdmin`
+
+### Fixed
+
+- Standalone Microservices that implement `IFederatedLogin<>` or `IFederatedInventory<>` now appear as federation options in linked Unity projects.
+- `GetTournamentInfo` is now obsolete, should use `GetRunningTournamentInfo` that returns the actual running cycle tournament info.
+
+### Changed
+
+- `Context.CheckAdmin()` is now obsolete, should use `Context.AssertAdmin()`.
+- The `InitializeServicesAttribute` methods should be able to return a `Promise` instead of only a `Promise<Unit>`.
+
 ## [1.17.0]
 
 ### Added
@@ -12,6 +112,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `[Callable]` methods can accept and return `decimal` primitives
 - Beamable.Common nuget package is available for netstandard2.0
 - `CancelJob` function in `BeamScheduler`
+- `Context` now has a property `IsAdmin`
 
 ### Fixed
 
@@ -24,6 +125,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `StorageDocument.Id` is now `public` and can be written to manually.
 - Cron expressions given to `BeamScheduler` are validated using `CronValidation.TryValidate` utility.
 - `ICronBuilder.ToString()` results in a cron expression instead of the default C# `ToString()` class name.
+- `Context.CheckAdmin()` is now obsolete, should use `Context.AssertAdmin()`.
 
 ### Removed
 

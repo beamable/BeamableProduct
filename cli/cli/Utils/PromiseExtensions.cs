@@ -1,4 +1,5 @@
 using Beamable.Common;
+using JetBrains.Annotations;
 using Spectre.Console;
 
 namespace cli.Utils;
@@ -6,7 +7,7 @@ namespace cli.Utils;
 public static class PromiseExtensions
 {
 	public static Promise<T> ShowLoading<T>(this Promise<T> self, string message = "loading...",
-		Spinner? spinner = null)
+		[CanBeNull] Spinner spinner = null)
 	{
 		spinner ??= Spinner.Known.Default;
 		return AnsiConsole.Status()

@@ -21,7 +21,7 @@ public class GenerateClientFileCommandArgs : CommandArgs
 	public bool outputToLinkedProjects = true;
 }
 
-public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArgs>
+public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArgs>, IEmptyResult
 {
 	public GenerateClientFileCommand() : base("generate-client", "Generate a C# client file based on a built C# microservice dll directory")
 	{
@@ -116,29 +116,51 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 				if (args.ProjectService.GetLinkedUnrealProjects().Count > 0)
 				{
 					var gen = new ServiceDocGenerator();
-					var oapiDocument = gen.Generate(type, attribute, null);
-
+					var oapiDocument = gen.Generate(type, attribute, null, true);
 
 					foreach (var unrealProjectData in args.ProjectService.GetLinkedUnrealProjects())
 					{
 						var unrealGenerator = new UnrealSourceGenerator();
 						var docs = new List<OpenApiDocument>() { oapiDocument };
-						var orderedSchemas = SwaggerService.ExtractAllSchemas(docs,
-							GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
-
+						var orderedSchemas = SwaggerService.ExtractAllSchemas(docs, GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
 						var previousGenerationFilePath = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.BeamableBackendGenerationPassFile);
 
 						// Set up the generator to generate code with the correct output path for the AutoGen folders.
 						UnrealSourceGenerator.exportMacro = unrealProjectData.CoreProjectName.ToUpper() + "_API";
 						UnrealSourceGenerator.blueprintExportMacro = unrealProjectData.BlueprintNodesProjectName.ToUpper() + "_API";
-						UnrealSourceGenerator.headerFileOutputPath = unrealProjectData.MsCoreHeaderPath + "/";
-						UnrealSourceGenerator.cppFileOutputPath = unrealProjectData.MsCoreCppPath + "/";
-						UnrealSourceGenerator.blueprintHeaderFileOutputPath = unrealProjectData.MsBlueprintNodesHeaderPath + "/Public/";
-						UnrealSourceGenerator.blueprintCppFileOutputPath = unrealProjectData.MsBlueprintNodesCppPath + "/Private/";
+						UnrealSourceGenerator.headerFileOutputPath = unrealProjectData.MsCoreHeaderPath;
+						UnrealSourceGenerator.cppFileOutputPath = unrealProjectData.MsCoreCppPath;
+						UnrealSourceGenerator.blueprintHeaderFileOutputPath = unrealProjectData.MsBlueprintNodesHeaderPath;
+						UnrealSourceGenerator.blueprintCppFileOutputPath = unrealProjectData.MsBlueprintNodesCppPath;
 						UnrealSourceGenerator.genType = UnrealSourceGenerator.GenerationType.Microservice;
 						UnrealSourceGenerator.previousGenerationPassesData = JsonConvert.DeserializeObject<PreviousGenerationPassesData>(File.ReadAllText(previousGenerationFilePath));
 						UnrealSourceGenerator.currentGenerationPassDataFilePath = $"{unrealProjectData.CoreProjectName}_GenerationPass";
-						var unrealFileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext { Documents = docs, OrderedSchemas = orderedSchemas });
+						var unrealFileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext
+						{
+							Documents = docs,
+							OrderedSchemas = orderedSchemas,
+							ReplacementTypes = new Dictionary<string, ReplacementTypeInfo>
+							{
+								{
+									"ClientPermission", new ReplacementTypeInfo
+									{
+										ReferenceId = "ClientPermission", EngineReplacementType = "FBeamClientPermission", EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamClientPermission", EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamClientPermission.h""",
+									}
+								},
+								{
+									"ExternalIdentity", new ReplacementTypeInfo
+									{
+										ReferenceId = "ExternalIdentity", EngineReplacementType = "FBeamExternalIdentity", EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamExternalIdentity", EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamExternalIdentity.h""",
+									}
+								},
+								{
+									"Tag", new ReplacementTypeInfo
+									{
+										ReferenceId = "Tag", EngineReplacementType = "FBeamTag", EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamTag", EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamTag.h""",
+									}
+								}
+							}
+						});
 
 						var hasOutputPath = !string.IsNullOrEmpty(args.outputDirectory);
 						for (int i = 0; i < unrealFileDescriptors.Count; i++)

@@ -10,25 +10,94 @@ using Newtonsoft.Json.Linq;
 namespace Beamable.Server
 {
 
+	/// <summary>
+	/// Delegate representing a method that deserializes parameters from JSON format.
+	/// </summary>
+	/// <param name="json">The JSON string containing the parameter data.</param>
+	/// <returns>The deserialized parameter object.</returns>
 	public delegate object ParameterDeserializer(string json);
 
+	/// <summary>
+	/// Delegate representing an asynchronous method invocation.
+	/// </summary>
+	/// <param name="target">The object on which to invoke the method.</param>
+	/// <param name="args">The arguments to pass to the method.</param>
+	/// <returns>A task representing the asynchronous execution of the method.</returns>
 	public delegate Task MethodInvocation(object target, object[] args);
 
+	/// <summary>
+	/// Represents a service method with its associated metadata and behavior.
+	/// </summary>
 	public class ServiceMethod
 	{
+		/// <summary>
+		/// Whether or not this is a method that is meant to be called by the beamable backend as part of one of our federated flows (<see cref="FederatedLoginCallableGenerator"/>).
+		/// </summary>
+		public bool IsFederatedCallbackMethod { get; init; }
+		
+		/// <summary>
+		/// The tag associated with the service method.
+		/// </summary>
 		public string Tag { get; init; }
+
+		/// <summary>
+		/// The path associated with the service method.
+		/// </summary>
 		public string Path { get; init; }
+
+		/// <summary>
+		/// Factory function to create an instance of the service method's target.
+		/// </summary>
 		public Func<RequestContext, object> InstanceFactory;
+
+		/// <summary>
+		/// The set of required scopes for accessing the service method.
+		/// </summary>
 		public HashSet<string> RequiredScopes { get; init; }
+
+		/// <summary>
+		/// Indicates whether an authenticated user is required to access the service method.
+		/// </summary>
 		public bool RequireAuthenticatedUser { get; init; }
+
+		/// <summary>
+		/// List of parameter information for the service method.
+		/// </summary>
 		public List<ParameterInfo> ParameterInfos { get; init; }
+
+		/// <summary>
+		/// The method to be invoked for the service.
+		/// </summary>
 		public MethodInfo Method { get; init; }
+
+		/// <summary>
+		/// List of parameter deserializers for the service method.
+		/// </summary>
 		public List<ParameterDeserializer> Deserializers;
+
+		/// <summary>
+		/// List of parameter names for the service method.
+		/// </summary>
 		public List<string> ParameterNames { get; init; }
+
+		/// <summary>
+		/// Dictionary mapping parameter names to their corresponding deserializers.
+		/// </summary>
 		public Dictionary<string, ParameterDeserializer> ParameterDeserializers;
+
+		/// <summary>
+		/// The method invocation delegate for the service method.
+		/// </summary>
 		public MethodInvocation Executor;
+
+		/// <summary>
+		/// The response serializer for the service method.
+		/// </summary>
 		public IResponseSerializer ResponseSerializer;
 
+		/// <summary>
+		/// Gets the arguments for the method invocation from the provided parameter provider.
+		/// </summary>
 		private object[] GetArgs(RequestContext ctx, IParameterProvider parameterProvider)
 		{
 			try
@@ -42,6 +111,9 @@ namespace Beamable.Server
 			}
 		}
 
+		/// <summary>
+		/// Executes the service method with the provided request context and parameter provider.
+		/// </summary>
 		public async Task<object> Execute(RequestContext ctx, IParameterProvider parameterProvider)
 		{
 			var args = GetArgs(ctx, parameterProvider);

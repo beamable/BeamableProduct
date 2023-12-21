@@ -9,9 +9,14 @@ using UnityEngine;
 
 namespace Beamable.Server.Common
 {
+	/// <summary>
+	/// Custom JSON serialization settings optimized for Unity applications.
+	/// </summary>
     public class UnitySerializationSettings : JsonSerializerSettings
     {
-        private static UnitySerializationSettings _instance;
+	    /// <summary>
+	    /// Gets the singleton instance of <see cref="UnitySerializationSettings"/>.
+	    /// </summary>
         public static UnitySerializationSettings Instance => _instance ??= new UnitySerializationSettings
         {
 			Converters = new List<JsonConverter>
@@ -29,14 +34,22 @@ namespace Beamable.Server.Common
             ContractResolver = UnityJsonContractResolver.Instance
         };
 
+        private static UnitySerializationSettings _instance;
+
         private UnitySerializationSettings()
         {
 
         }
     }
 
+	/// <summary>
+	/// Custom JSON converter for JsonUtility that uses Newtonsoft.Json for serialization and deserialization.
+	/// </summary>
     public class JsonUtilityConverter : JsonUtility.IConverter
     {
+	    /// <summary>
+	    /// Initializes the custom JSON converter by setting it as the active converter for JsonUtility.
+	    /// </summary>
         public static void Init()
         {
             JsonUtility.Converter = new JsonUtilityConverter();
@@ -44,13 +57,31 @@ namespace Beamable.Server.Common
 
         private JsonUtilityConverter() { }
 
+        /// <summary>
+        /// Serializes an object to JSON format.
+        /// </summary>
+        /// <param name="data">The object to be serialized.</param>
+        /// <returns>The JSON representation of the object.</returns>
         public string ToJson(object data) => JsonConvert.SerializeObject(data, UnitySerializationSettings.Instance);
 
+        /// <summary>
+        /// Deserializes JSON into an object of the specified type.
+        /// </summary>
+        /// <typeparam name="T">The type of the object to deserialize.</typeparam>
+        /// <param name="json">The JSON string to be deserialized.</param>
+        /// <returns>The deserialized object of type T.</returns>
         public T FromJson<T>(string json) => JsonConvert.DeserializeObject<T>(json, UnitySerializationSettings.Instance);
     }
 
+	/// <summary>
+	/// Custom JSON converter for serializing and deserializing dictionaries with string keys and values of type T.
+	/// </summary>
+	/// <typeparam name="T">The type of values in the dictionary.</typeparam>
     public class StringToSomethingDictionaryConverter<T> : JsonConverter<SerializableDictionaryStringToSomething<T>>
     {
+	    /// <summary>
+	    /// Writes the dictionary to JSON format.
+	    /// </summary>
 	    public override void WriteJson(JsonWriter writer, SerializableDictionaryStringToSomething<T> value, JsonSerializer serializer)
 	    {
 		    // default to serializing an array...
@@ -63,6 +94,9 @@ namespace Beamable.Server.Common
 		    serializer.Serialize(writer, list);
 	    }
 
+	    /// <summary>
+	    /// Reads the JSON and converts it back to a dictionary.
+	    /// </summary>
 	    public override SerializableDictionaryStringToSomething<T> ReadJson(JsonReader reader, Type objectType,
 		    SerializableDictionaryStringToSomething<T> existingValue, bool hasExistingValue, JsonSerializer serializer)
 	    {
@@ -111,15 +145,33 @@ namespace Beamable.Server.Common
 			    : HandleObjectVariant();
 	    }
 
+	    /// <summary>
+	    /// Class representing a key-value pair for dictionary serialization.
+	    /// </summary>
 	    public class KeyValue
 	    {
+		    /// <summary>
+		    /// The key of the dictionary entry.
+		    /// </summary>
 		    public string name;
+		    /// <summary>
+		    /// The value associated with the key.
+		    /// </summary>
 		    public T value;
 	    }
 
+	    /// <summary>
+	    /// Class representing keys and values for dictionary serialization.
+	    /// </summary>
 	    public class KeysAndValues
 	    {
+		    /// <summary>
+		    /// An array of keys in the dictionary.
+		    /// </summary>
 		    public string[] keys = Array.Empty<string>();
+		    /// <summary>
+		    /// An array of values in the dictionary.
+		    /// </summary>
 		    public T[] values = Array.Empty<T>();
 	    }
     }
@@ -133,10 +185,20 @@ namespace Beamable.Server.Common
     {
 	    private readonly ThreadLocal<bool> _skip = new ThreadLocal<bool>(() => false);
 
+	    /// <summary>
+	    /// Indicates whether the converter can read JSON.
+	    /// </summary>
 	    public override bool CanRead => !_skip.Value || (_skip.Value = false);
 
+	    /// <summary>
+	    /// Indicates whether the converter can write JSON.
+	    /// </summary>
 	    public override bool CanWrite => !_skip.Value || (_skip.Value = false);
 
+#pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
+	    /// <summary>
+	    /// Reads JSON and invokes deserialization with callback methods.
+	    /// </summary>
 	    public override ISerializationCallbackReceiver ReadJson(JsonReader reader, Type objectType,
 		    ISerializationCallbackReceiver? existingValue, bool hasExistingValue, JsonSerializer serializer)
 	    {
@@ -149,6 +211,9 @@ namespace Beamable.Server.Common
 		    return result;
 	    }
 
+	    /// <summary>
+	    /// Writes JSON and invokes serialization with callback methods.
+	    /// </summary>
 	    public override void WriteJson(JsonWriter writer, ISerializationCallbackReceiver? value,
 		    JsonSerializer serializer)
 	    {
@@ -166,20 +231,33 @@ namespace Beamable.Server.Common
 
 		    serializer.Converters.Insert(thisIndex, this);
 	    }
+#pragma warning restore CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
 
+	    /// <summary>
+	    /// Disposes of the thread-local skip flag.
+	    /// </summary>
 	    public void Dispose()
 	    {
 		    _skip.Dispose();
 	    }
     }
 
+    /// <summary>
+    /// Custom contract resolver for JSON serialization in Unity, allowing for proper handling of SerializeField attributes.
+    /// </summary>
     public class UnityJsonContractResolver : DefaultContractResolver
     {
         private static UnityJsonContractResolver _instance;
+        /// <summary>
+        /// Singleton instance of the UnityJsonContractResolver.
+        /// </summary>
         public static UnityJsonContractResolver Instance => _instance ??= new UnityJsonContractResolver();
 
         private UnityJsonContractResolver() { }
 
+        /// <summary>
+        /// Creates a list of JSON properties for the given type with proper handling of SerializeField attributes.
+        /// </summary>
         protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
         {
             var baseProps = base.CreateProperties(type, memberSerialization);
@@ -199,6 +277,9 @@ namespace Beamable.Server.Common
             return baseProps;
         }
 
+        /// <summary>
+        /// Gets a list of serialized fields for a given type.
+        /// </summary>
         public static List<FieldInfo> GetSerializedFields(Type objectType)
         {
 	        IEnumerable<FieldInfo> GetAllFields(Type t)
@@ -229,6 +310,11 @@ namespace Beamable.Server.Common
 	        return validFields.ToList();
         }
         
+        /// <summary>
+        /// Gets a list of serializable members for a given type.
+        /// </summary>
+        /// <param name="objectType">The type for which to retrieve serializable members.</param>
+        /// <returns>A list of MemberInfo objects representing the serializable members.</returns>
         protected override List<MemberInfo> GetSerializableMembers(Type objectType)
         {
 	        return GetSerializedFields(objectType).Cast<MemberInfo>().ToList();

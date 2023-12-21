@@ -107,8 +107,8 @@ namespace Beamable.Player
 		private string _subtext;
 
 		/// <summary>
-		/// The gamerTag for the given player.
-		/// GamerTags are associated with a specific realm.
+		/// The player id for the given player.
+		/// Player ids are associated with a specific realm.
 		/// This value should not be modified.
 		/// </summary>
 		public long GamerTag => _gamerTag;
@@ -705,6 +705,35 @@ namespace Beamable.Player
 		}
 	}
 
+	[Serializable]
+	public class PasswordResetResult
+	{
+		public bool isSuccess => innerException == null;
+
+		public Exception innerException;
+
+		public PasswordResetConfirmError error;
+
+		public PasswordResetResult()
+		{
+			error = PasswordResetConfirmError.NONE;
+		}
+
+		public PasswordResetResult(Exception exception)
+		{
+			innerException = exception;
+			switch (innerException)
+			{
+				case PlatformRequesterException ex when ex.Status == 400:
+					error = PasswordResetConfirmError.BAD_CODE;
+					break;
+				default:
+					error = PasswordResetConfirmError.INVALID;
+					break;
+			}
+		}
+	}
+
 	/// <summary>
 	/// The <see cref="PasswordResetConfirmOperation"/> contain the results
 	/// or a password confirmation.
@@ -774,7 +803,7 @@ namespace Beamable.Player
 		public bool isSuccess => error == PlayerRecoveryError.NONE;
 
 		/// <summary>
-		/// If the account already had a gamerTag in the current realm, then this value be true.
+		/// If the account already had a player id in the current realm, then this value be true.
 		/// When this value is false, it implies that the account exists in the CID scope, but not
 		/// in the current PID scope. 
 		/// </summary>
@@ -978,7 +1007,15 @@ namespace Beamable.Player
 		/// represents that no error occured.
 		/// </summary>
 		NONE,
+
+		/// <summary>
+		/// represents that an invalid code was given
+		/// </summary>
+		BAD_CODE,
+
+		INVALID,
 	}
+
 
 
 	[Serializable]
@@ -1217,6 +1254,10 @@ namespace Beamable.Player
 			{
 				return new PlayerRecoveryOperation(ex, PlayerRecoveryError.INSUFFICIENT_DATA);
 			}
+			catch (PlatformRequesterException ex) when (ex.Error.status == 401 || ex.Error.status == 403)
+			{
+				return new PlayerRecoveryOperation(ex, PlayerRecoveryError.UNKNOWN_CREDENTIALS);
+			}
 			catch (Exception ex)
 			{
 				return new PlayerRecoveryOperation(ex, PlayerRecoveryError.UNKNOWN_ERROR);
@@ -1252,6 +1293,27 @@ namespace Beamable.Player
 			await service.ConfirmPasswordUpdate(code, newPassword);
 			await Refresh();
 			return res;
+		}
+
+		public async Promise ResetPassword(string email)
+		{
+			var service = GetAuthServiceForAccount(Current);
+			await service.IssuePasswordUpdate(email);
+
+		}
+
+		public async Promise<PasswordResetResult> ConfirmPassword(string code, string newPassword)
+		{
+			var service = GetAuthServiceForAccount(Current);
+			try
+			{
+				await service.ConfirmPasswordUpdate(code, newPassword);
+				return new PasswordResetResult();
+			}
+			catch (Exception ex)
+			{
+				return new PasswordResetResult(ex);
+			}
 		}
 
 		/// <summary>
@@ -1875,25 +1937,40 @@ namespace Beamable.Player
 					existing.Update(token);
 					existing.TryTriggerUpdate();
 					next.Add(existing);
-					if (user.id == _ctx.PlayerId)
-					{
-						if (Current == null) Current = existing;
-						Current.Update(existing);
-					}
 				}
 				else
 				{
 					var newAccount = new PlayerAccount(this, token, user, statValues);
 					gamerTagToAccount.Add(user.id, newAccount);
 					next.Add(newAccount);
-
-					if (user.id == _ctx.PlayerId)
-					{
-						if (Current == null) Current = newAccount;
-						Current.Update(newAccount);
-					}
 				}
 			}
+
+			foreach (var account in next)
+			{
+				if (account.GamerTag != _ctx.PlayerId) continue;
+
+				if (Current == null)
+				{
+					// must clone the instance, otherwise, later when account switches will happen, references will point to old objects
+					var tokenClone = JsonUtility.FromJson<BeamableToken>(JsonUtility.ToJson(account.token));
+					var userClone = JsonUtility.FromJson<User>(JsonUtility.ToJson(account._user));
+					UserExtensions.StatCollection statClone = new UserExtensions.StatCollection();
+					foreach (var kvp in account._stats)
+					{
+						statClone[kvp.Key] = kvp.Value;
+					}
+
+					Current = new PlayerAccount(this, tokenClone, userClone, statClone);
+				}
+				else
+				{
+					Current.Update(account);
+				}
+
+				break;
+			}
+
 
 			SetData(next);
 		}

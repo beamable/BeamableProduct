@@ -75,7 +75,7 @@ namespace Beamable.Server.Api.Leaderboards
 		/// <summary>
 		/// Get a list of all the leaderboards that a specific player is participating in.
 		/// </summary>
-		/// <param name="gamerTag">The gamertag of the player to find leaderboards for.</param>
+		/// <param name="gamerTag">The Player id of the player to find leaderboards for.</param>
 		/// <returns>A <see cref="Promise"/> containing a <see cref="GetPlayerLeaderboardsResponse"/> that has a set of <see cref="LeaderBoardView"/>s</returns>
 		Promise<GetPlayerLeaderboardsResponse> GetPlayerLeaderboards(long gamerTag);
 
@@ -83,7 +83,7 @@ namespace Beamable.Server.Api.Leaderboards
 		/// Call to remove the player's entry from the leaderboard.
 		/// </summary>
 		/// <param name="leaderboardId">The ID of leaderboard from which the player's entry should be removed</param>
-		/// <param name="gamerTag">The gamertag of the player.</param>
+		/// <param name="gamerTag">The Player id of the player.</param>
 		/// <returns></returns>
 		Promise<EmptyResponse> RemovePlayerEntry(string leaderboardId, long gamerTag);
 	}

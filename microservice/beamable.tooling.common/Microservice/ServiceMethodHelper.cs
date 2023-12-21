@@ -9,19 +9,40 @@ using Beamable.Server.Common;
 using microservice.Extensions;
 using Newtonsoft.Json;
 using Serilog;
+using System.Text;
 using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server
 {
-   public struct ServiceMethodProvider
-   {
-      public Type instanceType;
-      public Func<RequestContext, object> factory;
-      public string pathPrefix;
-   }
+	/// <summary>
+	/// Represents a provider for service methods.
+	/// </summary>
+	public struct ServiceMethodProvider
+	{
+		/// <summary>
+		/// The instance type associated with the service methods.
+		/// </summary>
+		public Type instanceType;
 
+		/// <summary>
+		/// The factory function to create service method instances.
+		/// </summary>
+		public Func<RequestContext, object> factory;
+
+		/// <summary>
+		/// The path prefix for the service methods.
+		/// </summary>
+		public string pathPrefix;
+	}
+
+	/// <summary>
+	/// Helper class for managing service methods.
+	/// </summary>
    public static class ServiceMethodHelper
    {
+	   /// <summary>
+	   /// Scans for service methods based on various providers and generators.
+	   /// </summary>
       public static ServiceMethodCollection Scan(MicroserviceAttribute serviceAttribute, ICallableGenerator[] generators, params ServiceMethodProvider[] serviceMethodProviders)
       {
          var output = new List<ServiceMethod>();
@@ -36,15 +57,27 @@ namespace Beamable.Server
          return new ServiceMethodCollection(output);
       }
 
-
-      public static ServiceMethod CreateMethod(
+	   /// <summary>
+	   /// Creates a service method based on provided parameters.
+	   /// </summary>
+	   /// <param name="serviceAttribute">The microservice attribute associated with the service.</param>
+	   /// <param name="provider">The service method provider.</param>
+	   /// <param name="path">The path for the service method.</param>
+	   /// <param name="tag">The tag for the service method.</param>
+	   /// <param name="requiredUser">Indicates if a required user is needed.</param>
+	   /// <param name="requiredScopes">The set of required scopes.</param>
+	   /// <param name="method">The method information for the service method.</param>
+	   /// <param name="isFederatedCallbackMethod">Whether or not this method is meant to be used only as part of a federated flow (<see cref="FederatedLoginCallableGenerator"/>).</param>
+	   /// <returns>The created service method.</returns>
+	   public static ServiceMethod CreateMethod(
 	      MicroserviceAttribute serviceAttribute,
 	      ServiceMethodProvider provider,
 	      string path,
 	      string tag,
 	      bool requiredUser,
 	      HashSet<string> requiredScopes,
-	      MethodInfo method)
+	      MethodInfo method,
+	      bool isFederatedCallbackMethod = false)
       {
 	      var swaggerCategoryAttribute = method.GetCustomAttribute<SwaggerCategoryAttribute>();
 	      if (swaggerCategoryAttribute != null)
@@ -82,7 +115,8 @@ namespace Beamable.Server
 		      Method = method,
 		      Executor = executor,
 		      ResponseSerializer = responseSerializer,
-		      Tag = tag
+		      Tag = tag,
+		      IsFederatedCallbackMethod = isFederatedCallbackMethod,
 	      };
 	      return serviceMethod;
       }
@@ -105,17 +139,20 @@ namespace Beamable.Server
 		      var parameterAttribute = parameter.GetCustomAttribute<ParameterAttribute>();
 		      var parameterName = parameterAttribute?.ParameterNameOverride ?? parameter.Name;
 
-		      ParameterDeserializer deserializer = (json) =>
+		      ParameterDeserializer deserializer;
+		      if (typeof(string) == pType)
 		      {
-			      if (typeof(string) == pType)
+			      deserializer = DeserializeStringParameter;
+		      }
+		      else
+		      {
+			      deserializer = json => 
 			      {
-				      return json.Substring(1, json.Length - 2); // peel off the quotes
-			      }
-
-			      var deserializeObject =
-				      JsonConvert.DeserializeObject(json, pType, UnitySerializationSettings.Instance);
-			      return deserializeObject;
-		      };
+				      var deserializeObject =
+					      JsonConvert.DeserializeObject(json, pType, UnitySerializationSettings.Instance);
+				      return deserializeObject;
+			      };
+		      }
 		      if (namedDeserializers.ContainsKey(parameterName))
 		      {
 			      throw new BeamableMicroserviceException(
@@ -170,7 +207,33 @@ namespace Beamable.Server
 	      }
       }
 
-      private static List<ServiceMethod> ScanType(MicroserviceAttribute serviceAttribute, ServiceMethodProvider provider)
+	   /// <summary>
+	   /// Deserializes string type parameter
+	   /// </summary>
+	   /// <param name="json"></param>
+	   /// <returns></returns>
+	   public static object DeserializeStringParameter(string json)
+	   {
+		   if (string.IsNullOrWhiteSpace(json))
+			   return json;
+		   // first try use SmallerJSON for handling escape chars passed from Unity
+		   var smallerJson = Serialization.SmallerJSON.Json.Deserialize(json);
+
+		   if (smallerJson is string result)
+		   {
+			   return result;
+		   }
+
+		   if (smallerJson is Serialization.SmallerJSON.ArrayDict dict)
+		   {
+			   return Serialization.SmallerJSON.Json.Serialize(dict, new StringBuilder());
+		   }
+
+		   // or just peel off the quotes
+		   return json.Substring(1, json.Length - 2);
+	   }
+
+	   private static List<ServiceMethod> ScanType(MicroserviceAttribute serviceAttribute, ServiceMethodProvider provider)
       {
          var type = provider.instanceType;
          var output = new List<ServiceMethod>();
@@ -181,7 +244,11 @@ namespace Beamable.Server
          foreach (var method in allMethods)
          {
             var attribute = method.GetCustomAttribute<CallableAttribute>();
-            if (attribute == null) continue;
+            if (attribute == null)
+            {
+	            Log.Debug($"Skipped {method.Name}");
+	            continue;
+            }
 
             var tag = provider.pathPrefix == "admin/" ? "Admin" : "Uncategorized";
             var swaggerCategoryAttribute = method.GetCustomAttribute<SwaggerCategoryAttribute>();

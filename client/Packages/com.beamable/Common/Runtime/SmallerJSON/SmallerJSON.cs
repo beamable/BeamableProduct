@@ -27,6 +27,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using UnityEngine;
 
@@ -930,6 +931,37 @@ namespace Beamable.Serialization.SmallerJSON
 				builder.Append('\"');
 			}
 
+			private static void SerializeClass(object obj, StringBuilder builder)
+			{
+				Type serializeFieldType = typeof(SerializeField);
+				Type compilerGeneratedType = typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute);
+				Type type = obj.GetType();
+
+				FieldInfo[] fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+				builder.Append("{");
+				bool isFirst = true;
+				// Serialize fields
+				for (int i = 0; i < fields.Length; i++)
+				{
+					FieldInfo field = fields[i];
+					var hasSerializeField = field.GetCustomAttribute(serializeFieldType) != null;
+					// For now I've disabled the inclusion of the compiler generated fields but it could be enabled later on.
+					// For now it means it will not include BackingField for properties to have feature parity with JsonUtility.
+					var isGeneratedByCompiler = field.GetCustomAttribute(compilerGeneratedType) != null;
+					var canBeSerialized = (hasSerializeField || !field.IsNotSerialized) && !isGeneratedByCompiler;
+					if (!canBeSerialized)
+						continue;
+					if (!isFirst)
+					{
+						builder.Append(",");
+					}
+					builder.Append($"\"{field.Name}\":{Serialize(field.GetValue(obj), new StringBuilder())}");
+					isFirst = false;
+				}
+
+				builder.Append("}");
+			}
+
 			private static void SerializeOther(object value, StringBuilder builder)
 			{
 				// NOTE: decimals lose precision during serialization.
@@ -968,6 +1000,15 @@ namespace Beamable.Serialization.SmallerJSON
 				else if (value is IRawJsonProvider provider)
 				{
 					SerializeRaw(provider, builder);
+				}
+				else if (value is Enum)
+				{
+					var result = Convert.ChangeType(value, typeof(int));
+					builder.Append(result);
+				}
+				else if (value is { } obj)
+				{
+					SerializeClass(obj, builder);
 				}
 				else
 				{

@@ -20,8 +20,11 @@ public partial class BeamoLocalSystem
 	/// <param name="dockerfilePath">A path inside the given Docker Build Context (<paramref name="projectPath"/>) that'll be used to run the build.</param>
 	/// <param name="dependencyBeamIds">Other existing services that this depends on. Any dependency is guaranteed to be running by the time this service attempts to start up.</param>
 	/// <param name="cancellationToken">A cancellation token to stop the registration.</param>
+	/// <param name="shouldServiceBeEnabled">Should service be enabled/disabled when adding service definition</param>
 	/// <returns>A valid <see cref="BeamoServiceDefinition"/> with the default values of the protocol.</returns>
-	public async Task<BeamoServiceDefinition> AddDefinition_HttpMicroservice(string beamId, string projectPath, string dockerfilePath, string[] dependencyBeamIds, CancellationToken cancellationToken)
+	public async Task<BeamoServiceDefinition> AddDefinition_HttpMicroservice(string beamId, string projectPath,
+		string dockerfilePath, string[] dependencyBeamIds, CancellationToken cancellationToken,
+		bool shouldServiceBeEnabled = true)
 	{
 		dependencyBeamIds ??= Array.Empty<string>();
 		return await AddServiceDefinition<HttpMicroserviceLocalProtocol, HttpMicroserviceRemoteProtocol>(
@@ -35,7 +38,8 @@ public partial class BeamoLocalSystem
 				protocol.RelativeDockerfilePath = dockerfilePath;
 			},
 			PrepareDefaultRemoteProtocol_HttpMicroservice,
-			cancellationToken);
+			cancellationToken,
+			shouldServiceBeEnabled);
 	}
 
 	public async Task<List<DockerEnvironmentVariable>> GetLocalConnectionStrings(BeamoLocalManifest localManifest, string host = "gateway.docker.internal")
@@ -193,14 +197,13 @@ public partial class BeamoLocalSystem
 	/// Implementation of <see cref="LocalProtocolModifier{TLocal}"/> that applies the default values of the <see cref="HttpMicroserviceLocalProtocol"/>.
 	/// <see cref="AddServiceDefinition{TLocal,TRemote}"/> and <see cref="TryUpdateLocalProtocol{TLocal}"/> to understand how this gets called. 
 	/// </summary>
-	private async Task PrepareDefaultLocalProtocol_HttpMicroservice(BeamoServiceDefinition owner, HttpMicroserviceLocalProtocol local)
+	private Task PrepareDefaultLocalProtocol_HttpMicroservice(BeamoServiceDefinition owner, HttpMicroserviceLocalProtocol local)
 	{
-
-
 		local.CustomPortBindings = new List<DockerPortBinding>();
 		local.CustomVolumes = new List<DockerVolume>();
 		local.CustomBindMounts = new List<DockerBindMount>();
 		local.CustomEnvironmentVariables = new List<DockerEnvironmentVariable>();
+		return Task.CompletedTask;
 	}
 
 	/// <summary>

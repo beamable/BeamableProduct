@@ -8,10 +8,10 @@
 
         <TargetFramework>net6.0</TargetFramework>
         <AssemblyName>Beamable.Server</AssemblyName>
-        <DefineConstants>
-            BEAMABLE_IGNORE_MONGO_MOCKS
-        </DefineConstants>
+    </PropertyGroup>
 
+    <PropertyGroup>
+        <DefineConstants>$(DefineConstants);BEAMABLE_IGNORE_MONGO_MOCKS</DefineConstants>
     </PropertyGroup>
 
     <ItemGroup>

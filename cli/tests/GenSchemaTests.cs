@@ -72,7 +72,7 @@ public class GenSchemaTests
 		Assert.AreEqual(1, tRef.ArrayRank);
 		Assert.AreEqual(elementExpected.FullName, tRef.BaseType);
 		Assert.AreEqual(0, tRef.TypeArguments.Count);
-		Assert.AreEqual(elementExpected.FullName, tRef.ArrayElementType.BaseType);
+		Assert.AreEqual(elementExpected.FullName, tRef.ArrayElementType!.BaseType);
 
 		var optionalTRef = gen.GetOptionalTypeReference();
 
@@ -100,7 +100,7 @@ public class GenSchemaTests
 		Assert.AreEqual(1, tRef.ArrayRank);
 		Assert.AreEqual(refId, tRef.BaseType);
 		Assert.AreEqual(0, tRef.TypeArguments.Count);
-		Assert.AreEqual(refId, tRef.ArrayElementType.BaseType);
+		Assert.AreEqual(refId, tRef.ArrayElementType!.BaseType);
 	}
 
 	[TestCase("integer", null, typeof(int), TestName = "primitive map int")]

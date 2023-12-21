@@ -6,12 +6,10 @@ namespace cli.Services;
 
 public class VersionService
 {
-	private readonly ProjectService _projectService;
 	private readonly HttpClient _httpClient;
 
-	public VersionService(ProjectService projectService)
+	public VersionService()
 	{
-		_projectService = projectService;
 		_httpClient = new HttpClient();
 	}
 
@@ -26,7 +24,8 @@ public class VersionService
 		public string packageVersion;
 	}
 
-	public async Task<NugetPackages[]> GetBeamableToolPackageVersions(string packageName = "beamable.tools")
+	public async Task<NugetPackages[]> GetBeamableToolPackageVersions(bool replaceDashWithDot = true,
+		string packageName = "beamable.tools")
 	{
 		var url = $"https://api.nuget.org/v3-flatcontainer/{packageName}/index.json";
 		var message = await _httpClient.GetAsync(url);
@@ -46,7 +45,9 @@ public class VersionService
 			packageVersions[i] = new NugetPackages
 			{
 				originalVersion = response.versions[i],
-				packageVersion = response.versions[i].Replace("-", ".")
+				packageVersion = replaceDashWithDot
+					? response.versions[i].Replace("-", ".")
+					: response.versions[i]
 			};
 		}
 
@@ -54,7 +55,7 @@ public class VersionService
 
 	}
 
-	public async Task<VersionInfo> GetInformationData()
+	public async Task<VersionInfo> GetInformationData(ProjectService projectService)
 	{
 		var info = new VersionInfo();
 
@@ -63,7 +64,7 @@ public class VersionService
 		info.version = versionInfo.FileVersion;
 		info.location = Environment.ProcessPath;
 
-		var templateInfo = await _projectService.GetTemplateInfo();
+		var templateInfo = await projectService.GetTemplateInfo();
 		info.templateVersion = templateInfo.HasTemplates ? templateInfo.templateVersion : "<no templates installed>";
 
 		var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);

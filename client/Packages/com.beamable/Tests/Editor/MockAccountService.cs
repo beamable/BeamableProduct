@@ -62,6 +62,11 @@ namespace Beamable.Editor.Tests
 			return Promise<EditorAccountInfo>.Successful(AccountInfo);
 		}
 
+		public void OnUserChanged(Func<EditorAccountInfo, Promise> cb)
+		{
+
+		}
+
 		public void Logout(bool clearRealmPid)
 		{
 

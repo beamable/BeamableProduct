@@ -1,4 +1,5 @@
 using Beamable.Common.Semantics;
+using cli.Utils;
 using Serilog;
 using Spectre.Console;
 using System.CommandLine;
@@ -44,32 +45,14 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
 
 		if (string.IsNullOrEmpty(args.slnPath))
 		{
-			throw new CliException("Was not able to infer sln file, please provide one with --sln.",
+			throw new CliException($"Was not able to infer sln file, please provide one with --sln.",
 				Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_SOLUTION_NOT_FOUND, true);
 		}
 
 		if (!File.Exists(args.slnPath))
 		{
-			string correctSlnPath = string.Empty;
-			string dir = Path.GetDirectoryName(args.slnPath);
-			if (!string.IsNullOrWhiteSpace(dir))
-			{
-				var files = Directory.GetFiles(dir);
-				var slnFiles = files.Where(f => f.EndsWith(".sln")).ToArray();
-				if (slnFiles.Length == 1)
-				{
-					correctSlnPath = slnFiles[0];
-				}
-			}
-
-			var exception = new CliException($"No sln file found at path=[{args.slnPath}]",
+			throw new CliException($"No sln file found at path=[{args.slnPath}]",
 				Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_SOLUTION_NOT_FOUND, true);
-			if(!string.IsNullOrWhiteSpace(correctSlnPath))
-			{
-				exception.AdditionalNote = $"Try using \"{correctSlnPath}\" as --sln option value";
-			}
-
-			throw exception;
 		}
 
 		Log.Information(
@@ -94,6 +77,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
 			.InstructionsText("Which services will use this storage?\n[grey](Press [blue]<space>[/] to toggle, " +
 							  "[green]<enter>[/] to accept)[/]")
 			.AddChoices(choices)
+			.AddBeamHightlight()
 			.NotRequired();
 		foreach (string choice in choices)
 		{
@@ -124,8 +108,8 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
 			var isDep = dependencies.Any(d => d == serviceFolder);
 			if (!isDep) continue;
 
-			dockerfilePath = Path.Combine(service.Value.DockerBuildContextPath, dockerfilePath);
-			var dockerfileText = File.ReadAllText(dockerfilePath);
+			dockerfilePath = args.ConfigService.GetFullPath(Path.Combine(service.Value.DockerBuildContextPath, dockerfilePath));
+			var dockerfileText = await File.ReadAllTextAsync(dockerfilePath);
 
 			const string search =
 				"# <BEAM-CLI-INSERT-FLAG:COPY> do not delete this line. It is used by the beam CLI to insert custom actions";
@@ -134,7 +118,7 @@ COPY {args.storageName}/. .
 {search}";
 			Log.Information($"Updating service=[{service.Key}] Dockerfile to include storage reference");
 			dockerfileText = dockerfileText.Replace(search, replacement);
-			File.WriteAllText(dockerfilePath, dockerfileText);
+			await File.WriteAllTextAsync(dockerfilePath, dockerfileText);
 		}
 
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();

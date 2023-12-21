@@ -106,7 +106,7 @@ public static class UnityHelper
 		{
 			// build all the types associated with this model...
 			var types = UnityHelper.GenerateDeclarations(schema.Name, schema.Schema);
-			nameToTypes.Add(schema.Name, types);
+			nameToTypes.TryAdd(schema.Name, types);
 
 			// and always add the root model type...
 			root.Types.Add(types.Model);
@@ -390,6 +390,8 @@ public static class UnityHelper
 
 		var httpMethod = Method.GET;
 
+		var requesterReference = new CodeVariableReferenceExpression("_requester");
+
 		switch (operation.Key)
 		{
 			case OperationType.Get:
@@ -411,10 +413,10 @@ public static class UnityHelper
 			return null; // TODO: support application/csv for content
 		}
 
-		bool isCsv = false;
+		// bool isCsv = false;
 		if (!response.Content.TryGetValue("application/json", out var mediaResponse))
 		{
-			isCsv = true;
+			// isCsv = true;
 			if (!response.Content.TryGetValue("text/csv", out mediaResponse))
 			{
 				return null;
@@ -582,9 +584,11 @@ public static class UnityHelper
 				case ParameterLocation.Path:
 					var paramToStr = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(param.Name),
 						nameof(object.ToString));
+					var pathEscaped = new CodeMethodInvokeExpression(requesterReference,
+						nameof(IBeamableRequester.EscapeURL), paramToStr);
 					var replace = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(varUrl),
 						nameof(string.Replace), new CodePrimitiveExpression($"{{{param.Name}}}"),
-						paramToStr);
+						pathEscaped);
 
 					method.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(varUrl),
 						replace));
@@ -596,10 +600,11 @@ public static class UnityHelper
 						var toStringExpr =
 							new CodeMethodInvokeExpression(new CodeVariableReferenceExpression(param.Name),
 								nameof(object.ToString));
+						var escaped = new CodeMethodInvokeExpression(requesterReference,
+							nameof(IBeamableRequester.EscapeURL), toStringExpr);
 						var expr = new CodeMethodInvokeExpression(new CodeTypeReferenceExpression(typeof(string)),
 							nameof(string.Concat), new CodePrimitiveExpression($"{param.Name}="),
-							toStringExpr);
-
+							escaped);
 						var methodInvoke = new CodeMethodInvokeExpression(queryListRef,
 							nameof(List<string>.Add), expr);
 						queryStatements.Add(new CodeExpressionStatement(methodInvoke));
@@ -679,7 +684,7 @@ public static class UnityHelper
 
 
 		// make the request itself.
-		var requestCommand = new CodeMethodInvokeExpression(new CodeVariableReferenceExpression("_requester"),
+		var requestCommand = new CodeMethodInvokeExpression(requesterReference,
 			nameof(IBeamableRequester.Request));
 		requestCommand.Method.TypeArguments.Add(responseType);
 
@@ -1569,7 +1574,6 @@ public static class UnityHelper
 				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.ffffffZ"));
 				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.fffffffzzz"));
 				return true;
-				break;
 			case "object" when schema.AdditionalPropertiesAllowed:
 				var method = new CodeMethodReferenceExpression(new CodeArgumentReferenceExpression(PARAM_SERIALIZER),
 					nameof(JsonSerializable.IStreamSerializer.SerializeDictionary));
@@ -1710,7 +1714,6 @@ public class GenSchema
 			case ("array", _, _) when Schema?.Items?.OneOf?.Count > 0:
 				var className = UnityHelper.OneOfClassName(Schema.Items.OneOf);
 				return new GenCodeTypeReference(className, 1);
-				break;
 			case ("array", _, _) when Schema.Items.Reference == null:
 				var genElem = new GenSchema(Schema.Items);
 				var elemType = genElem.GetTypeReference();
@@ -1724,7 +1727,6 @@ public class GenSchema
 				return new GenCodeTypeReference(referenceId);
 			case (_, _, _) when Schema.OneOf?.Count > 0:
 				return new GenCodeTypeReference(UnityHelper.OneOfClassName(Schema.OneOf));
-				break;
 			case ("object", _, _) when Schema.Reference == null && Schema.AdditionalPropertiesAllowed:
 				var genValues = new GenSchema(Schema.AdditionalProperties);
 				var genType = genValues.GetTypeReference();

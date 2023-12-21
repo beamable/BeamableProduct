@@ -2,8 +2,9 @@ using Beamable.Common.Content;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using UnityEngine;
-
+using UnityEngine.Serialization;
 using static Beamable.Common.Constants.MenuItems.Assets;
 
 namespace Beamable
@@ -20,17 +21,13 @@ namespace Beamable
 		public const string BEAMABLE_EDITOR_REFLECTION_SYSTEM_PATH = "Packages/com.beamable/Editor/ReflectionCache/UserSystems";
 		public const string BEAMABLE_EDITOR_SERVER_REFLECTION_SYSTEM_PATH = "Packages/com.beamable.server/Editor/ReflectionCache/UserSystems";
 
-		public const string PROJECT_ASSISTANT_MENU_ITEM_PATH = "Assets/Beamable/Editor/Assistant/MenuItems";
-		public const string BEAMABLE_ASSISTANT_MENU_ITEM_PATH = "Packages/com.beamable/Editor/BeamableAssistant/MenuItems";
-		public const string BEAMABLE_SERVER_ASSISTANT_MENU_ITEM_PATH = "Packages/com.beamable.server/Editor/BeamableAssistant/MenuItems";
+		public const string PROJECT_ASSISTANT_MENU_ITEM_PATH = "Assets/Beamable/Editor/Toolbar/MenuItems";
+		public const string BEAMABLE_ASSISTANT_MENU_ITEM_PATH = "Packages/com.beamable/Editor/Toolbar/MenuItems";
+		public const string BEAMABLE_SERVER_ASSISTANT_MENU_ITEM_PATH = "Packages/com.beamable.server/Editor/Toolbar/MenuItems";
 
-		public const string PROJECT_ASSISTANT_TOOLBAR_BUTTON_PATH = "Assets/Beamable/Editor/Assistant/ToolbarButtons";
-		public const string BEAMABLE_ASSISTANT_TOOLBAR_BUTTON_PATH = "Packages/com.beamable/Editor/BeamableAssistant/ToolbarButtons";
-		public const string BEAMABLE_SERVER_ASSISTANT_TOOLBAR_BUTTON_PATH = "Packages/com.beamable.server/Editor/BeamableAssistant/ToolbarButtons";
-
-		public const string PROJECT_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH = "Assets/Beamable/Editor/Assistant/Hint/HintDetails";
-		public const string BEAMABLE_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH = "Packages/com.beamable/Editor/BeamableAssistant/BeamHints/BeamHintDetailConfigs";
-		public const string BEAMABLE_SERVER_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH = "Packages/com.beamable.server/Editor/BeamableAssistant/BeamHints/BeamHintDetailConfigs";
+		public const string PROJECT_ASSISTANT_TOOLBAR_BUTTON_PATH = "Assets/Beamable/Editor/Toolbar/ToolbarButtons";
+		public const string BEAMABLE_ASSISTANT_TOOLBAR_BUTTON_PATH = "Packages/com.beamable/Editor/Toolbar/ToolbarButtons";
+		public const string BEAMABLE_SERVER_ASSISTANT_TOOLBAR_BUTTON_PATH = "Packages/com.beamable.server/Editor/Toolbar/ToolbarButtons";
 
 		public enum OfflineStrategy { Optimistic, Disable }
 
@@ -87,19 +84,16 @@ namespace Beamable
 				 "online, the buffer will be replayed. If this isn't desirable, you should disable the feature.")]
 		public OfflineStrategy InventoryOfflineMode = OfflineStrategy.Optimistic;
 
-		[Header("Beamable Assistant")]
+		[Header("Beamable Toolbar")]
 		[Tooltip("Enable this to receive a warning (toggle-able per Beam Hint Validation) when entering playmode.\n\n" +
 				 "This aims to help you enforce project workflows and guarantee people are not wasting time chasing issues that we can identify for you.")]
 		public bool EnablePlayModeWarning;
-		[Tooltip("Register all paths in which we'll need to look for BeamableAssistantMenuItem assets.\n" +
+		[Tooltip("Register all paths in which we'll need to look for BeamableToolbarMenuItem assets.\n" +
 				 "We don't look everywhere as that could impact editor experience on larger projects.")]
-		public List<string> BeamableAssistantMenuItemsPath = new List<string>();
+		public List<string> BeamableMenuItemsPath = new List<string>();
 		[Tooltip("Register all paths in which we'll need to look for BeamableToolbarButton assets.\n" +
 				 "We don't look everywhere as that could impact editor experience on larger projects.")]
-		public List<string> BeamableAssistantToolbarButtonsPaths = new List<string>();
-		[Tooltip("Register all paths in which we'll need to look for BeamableToolbarButton assets.\n" +
-				 "We don't look everywhere as that could impact editor experience on larger projects.")]
-		public List<string> BeamableAssistantHintDetailConfigPaths = new List<string>();
+		public List<string> BeamableToolbarButtonsPaths = new List<string>();
 
 
 		[Header("Reflection Systems")]
@@ -109,10 +103,6 @@ namespace Beamable
 
 		[Tooltip("Register any assemblies you wish to ignore from the assembly sweep.")]
 		public List<string> AssembliesToSweep = new List<string>();
-
-		[Tooltip("By default, Unity will look for the Beam CLI as a globally installed dotnet tool. If you wish to override this, you can " +
-				 "specify the full path here. The path should include the executable file.")]
-		public OptionalString BeamCLIPath = new OptionalString();
 
 		public void OnValidate()
 		{
@@ -127,68 +117,75 @@ namespace Beamable
 				ReflectionSystemPaths.Add(BEAMABLE_EDITOR_SERVER_REFLECTION_SYSTEM_PATH);
 
 
-			// Ensure default paths exist for Beamable Assistant Menu Items
-			if (!BeamableAssistantMenuItemsPath.Contains(PROJECT_ASSISTANT_MENU_ITEM_PATH))
-				BeamableAssistantMenuItemsPath.Add(PROJECT_ASSISTANT_MENU_ITEM_PATH);
+			// Ensure default paths exist for Beamable Toolbar Menu Items
+			if (!BeamableMenuItemsPath.Contains(PROJECT_ASSISTANT_MENU_ITEM_PATH))
+				BeamableMenuItemsPath.Add(PROJECT_ASSISTANT_MENU_ITEM_PATH);
 
-			if (!BeamableAssistantMenuItemsPath.Contains(BEAMABLE_ASSISTANT_MENU_ITEM_PATH))
-				BeamableAssistantMenuItemsPath.Add(BEAMABLE_ASSISTANT_MENU_ITEM_PATH);
+			if (!BeamableMenuItemsPath.Contains(BEAMABLE_ASSISTANT_MENU_ITEM_PATH))
+				BeamableMenuItemsPath.Add(BEAMABLE_ASSISTANT_MENU_ITEM_PATH);
 
-			if (!BeamableAssistantMenuItemsPath.Contains(BEAMABLE_SERVER_ASSISTANT_MENU_ITEM_PATH))
-				BeamableAssistantMenuItemsPath.Add(BEAMABLE_SERVER_ASSISTANT_MENU_ITEM_PATH);
+			if (!BeamableMenuItemsPath.Contains(BEAMABLE_SERVER_ASSISTANT_MENU_ITEM_PATH))
+				BeamableMenuItemsPath.Add(BEAMABLE_SERVER_ASSISTANT_MENU_ITEM_PATH);
 
-			// Ensure default paths exist for Beamable Assistant Toolbar Buttons
-			if (!BeamableAssistantToolbarButtonsPaths.Contains(PROJECT_ASSISTANT_TOOLBAR_BUTTON_PATH))
-				BeamableAssistantToolbarButtonsPaths.Add(PROJECT_ASSISTANT_TOOLBAR_BUTTON_PATH);
+			// Ensure default paths exist for Beamable ToolbarButtons
+			if (!BeamableToolbarButtonsPaths.Contains(PROJECT_ASSISTANT_TOOLBAR_BUTTON_PATH))
+				BeamableToolbarButtonsPaths.Add(PROJECT_ASSISTANT_TOOLBAR_BUTTON_PATH);
 
-			if (!BeamableAssistantToolbarButtonsPaths.Contains(BEAMABLE_ASSISTANT_TOOLBAR_BUTTON_PATH))
-				BeamableAssistantToolbarButtonsPaths.Add(BEAMABLE_ASSISTANT_TOOLBAR_BUTTON_PATH);
+			if (!BeamableToolbarButtonsPaths.Contains(BEAMABLE_ASSISTANT_TOOLBAR_BUTTON_PATH))
+				BeamableToolbarButtonsPaths.Add(BEAMABLE_ASSISTANT_TOOLBAR_BUTTON_PATH);
 
-			if (!BeamableAssistantToolbarButtonsPaths.Contains(BEAMABLE_SERVER_ASSISTANT_TOOLBAR_BUTTON_PATH))
-				BeamableAssistantToolbarButtonsPaths.Add(BEAMABLE_SERVER_ASSISTANT_TOOLBAR_BUTTON_PATH);
-
-			// Ensure default paths exist for Beamable Assistant HintDetails Configs
-			if (!BeamableAssistantHintDetailConfigPaths.Contains(PROJECT_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH))
-				BeamableAssistantHintDetailConfigPaths.Add(PROJECT_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH);
-
-			if (!BeamableAssistantHintDetailConfigPaths.Contains(BEAMABLE_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH))
-				BeamableAssistantHintDetailConfigPaths.Add(BEAMABLE_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH);
-
-			if (!BeamableAssistantHintDetailConfigPaths.Contains(BEAMABLE_SERVER_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH))
-				BeamableAssistantHintDetailConfigPaths.Add(BEAMABLE_SERVER_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH);
+			if (!BeamableToolbarButtonsPaths.Contains(BEAMABLE_SERVER_ASSISTANT_TOOLBAR_BUTTON_PATH))
+				BeamableToolbarButtonsPaths.Add(BEAMABLE_SERVER_ASSISTANT_TOOLBAR_BUTTON_PATH);
 
 			ReflectionSystemPaths = ReflectionSystemPaths.Distinct().ToList();
-			BeamableAssistantMenuItemsPath = BeamableAssistantMenuItemsPath.Distinct().ToList();
-			BeamableAssistantToolbarButtonsPaths = BeamableAssistantToolbarButtonsPaths.Distinct().ToList();
-			BeamableAssistantHintDetailConfigPaths = BeamableAssistantHintDetailConfigPaths.Distinct().ToList();
+			BeamableMenuItemsPath = BeamableMenuItemsPath.Distinct().ToList();
+			BeamableToolbarButtonsPaths = BeamableToolbarButtonsPaths.Distinct().ToList();
 
+			RebuildAssembliesToSweep();
+		}
+
+		/// <summary>
+		/// Updates content of <see cref="AssembliesToSweep"/>
+		/// which is later passed to <see cref="Beamable.Common.Reflection.ReflectionCache"/>.
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private void RebuildAssembliesToSweep()
+		{
 #if UNITY_EDITOR
-			
-			// it's reflection-bruteForce but looks like it gives the same result as CompilationPipeline.GetAssemblies()
-			
-			var coreAssembly = System.Reflection.Assembly.Load("UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
-			var getAssembliesMethodInfo = coreAssembly?.GetType("UnityEngine.ScriptingRuntime")?.GetMethod("GetAllUserAssemblies");
-			
-			if (getAssembliesMethodInfo != null)
+			string[] assemblyNames =  GetAllUserAssemblies();
+
+			for (int i = 0; i < assemblyNames.Length; i++)
 			{
-				string[] assemblyNames =  (string[])getAssembliesMethodInfo.Invoke(null, null);
+				var nameWithoutEx = Path.GetFileNameWithoutExtension(assemblyNames[i]);
 
-				for (int i = 0; i < assemblyNames.Length; i++)
+				if(AssembliesToSweep.Contains(nameWithoutEx))
+					continue;
+
+				var shouldAddAssembly = !assemblyNames[i].Contains("Packages/") && !assemblyNames[i].Contains("Assets/");
+
+				if (shouldAddAssembly)
 				{
-					var nameWithoutEx = Path.GetFileNameWithoutExtension(assemblyNames[i]);
+					AssembliesToSweep.Add(nameWithoutEx);
+				}
+			}
+			var commonDllsDir = new DirectoryInfo(Beamable.Common.Constants.Directories.SAMS_COMMON_DLL_DIR);
 
-					if (!AssembliesToSweep.Contains(nameWithoutEx) && !assemblyNames[i].Contains("Packages/") && !assemblyNames[i].Contains("Assets/"))
+			if (commonDllsDir.Exists)
+			{
+				FileInfo[] files = commonDllsDir.GetFiles();
+				for (int i = 0; i < files.Length; i++)
+				{
+					var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(files[i].Name);
+					if (files[i].Extension.Equals(".dll") && !AssembliesToSweep.Contains(fileNameWithoutExtension))
 					{
-						AssembliesToSweep.Add(nameWithoutEx);
+						AssembliesToSweep.Add(fileNameWithoutExtension);
 					}
 				}
 			}
-			
 #if BEAMABLE_DEVELOPER
-
 			for (int i = 0; i < AssembliesToSweep.Count; i++)
 			{
-				if (AssembliesToSweep[i].Contains("Test") &&
+				if (AssembliesToSweep[i].Contains("UnityEditor.Test") &&
 				    !AssembliesToSweep[i].Contains("Beamable.Microservice") &&
 				    !AssembliesToSweep[i].Contains("Beamable.Storage"))
 				{
@@ -199,6 +196,26 @@ namespace Beamable
 #endif
 			AssembliesToSweep.Sort();
 #endif
+		}
+
+		/// <summary>
+		/// it's reflection-bruteForce but looks like it gives the same result as CompilationPipeline.GetAssemblies()
+		/// </summary>
+		/// <returns>Array with paths to assemblies</returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		static string[] GetAllUserAssemblies()
+		{
+#if UNITY_EDITOR
+			var coreAssembly = System.Reflection.Assembly.Load("UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
+			var getAssembliesMethodInfo = coreAssembly?.GetType("UnityEngine.ScriptingRuntime")?.GetMethod("GetAllUserAssemblies");
+
+			if (getAssembliesMethodInfo != null)
+			{
+				string[] assemblyNames =  (string[])getAssembliesMethodInfo.Invoke(null, null);
+				return assemblyNames;
+			}
+#endif
+			return new string[] { };
 		}
 	}
 }

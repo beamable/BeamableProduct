@@ -7,27 +7,28 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class StepLogParser : LoadingBarUpdater
 	{
-		private readonly ServiceModelBase _model;
+		private readonly IBeamableBuilder _builder;
+		private readonly string _name;
 		private readonly Task _task;
 
-		public override string StepText => $"(Building {base.StepText} MS {_model.Name})";
-		public override string ProcessName => $"Building MS {_model?.Descriptor?.Name}";
+		public override string StepText => $"(Building {base.StepText} MS {_name})";
+		public override string ProcessName => $"Building MS {_name}";
 
-		public StepLogParser(ILoadingBar loadingBar, ServiceModelBase model, Task task) : base(loadingBar)
+		public StepLogParser(ILoadingBar loadingBar, IBeamableBuilder builder, string name, Task task) : base(loadingBar)
 		{
-			_model = model;
+			_builder = builder;
+			_name = name;
 			_task = task;
 
 			LoadingBar.UpdateProgress(0f, $"({ProcessName})");
 
-			_model.Builder.OnBuildingFinished += HandleBuildingFinished;
-			_model.Builder.OnBuildingProgress += HandleBuildingProgress;
+			_builder.OnBuildingFinished += HandleBuildingFinished;
+			_builder.OnBuildingProgress += HandleBuildingProgress;
 			task?.ContinueWith(_ => Kill());
 		}
 
 		private void HandleBuildingProgress(int currentStep, int totalSteps)
 		{
-			var message = _model.Logs.Messages.LastOrDefault()?.Message;
 			Step = currentStep;
 			TotalSteps = totalSteps;
 			LoadingBar.UpdateProgress((currentStep - 1f) / totalSteps, StepText);
@@ -56,8 +57,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 				GotError = true;
 				LoadingBar.UpdateProgress(0f, "(Error)", true);
 			}
-			_model.Builder.OnBuildingFinished -= HandleBuildingFinished;
-			_model.Builder.OnBuildingProgress -= HandleBuildingProgress;
+			_builder.OnBuildingFinished -= HandleBuildingFinished;
+			_builder.OnBuildingProgress -= HandleBuildingProgress;
 		}
 	}
 }

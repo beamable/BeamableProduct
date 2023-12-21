@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using Serilog;
 using Spectre.Console;
 using System.CommandLine;
+// ReSharper disable InconsistentNaming
 
 namespace cli;
 
@@ -28,8 +29,6 @@ public class ServiceDiscoveryEvent
 public class CheckStatusCommand : AppCommand<CheckStatusCommandArgs>
 	, IResultSteam<DefaultStreamResultChannel, ServiceDiscoveryEvent>
 {
-	private NetMQBeacon _beacon;
-
 	private Dictionary<string, (long, ServiceDiscoveryEntry)> _nameToEntryWithTimestamp =
 		new Dictionary<string, (long, ServiceDiscoveryEntry)>();
 

@@ -27,7 +27,7 @@ public struct UnrealPropertyDeclaration
 	/// for (de)serialization purposes. In each declaration, this variable would hold either of those values so that we can appropriately call the serialize functions.
 	///
 	/// There's one exception to this --- for semantic types that are not defined in the spec (ie: <see cref="UnrealSourceGenerator.UNREAL_OPTIONAL_U_REPTYPE_CLIENTPERMISSION"/>),
-	/// this is always an FString and the semantic type is expected to inherit from FBeamJsonSerializable first (FBeamSemanticType as a second inheritance). 
+	/// this is always an FString and the semantic type is expected to inherit from FBeamJsonSerializableUStruct/IBeamJsonSerializableUObject first (FBeamSemanticType as a second inheritance). 
 	/// </summary>
 	public string SemTypeSerializationType;
 
@@ -52,7 +52,7 @@ public struct UnrealPropertyDeclaration
 
 	public const string U_PROPERTY_DECLARATION =
 		$@"UPROPERTY(EditAnywhere, BlueprintReadWrite, DisplayName=""₢{nameof(PropertyDisplayName)}₢"", Category=""Beam"")
-	₢{nameof(PropertyUnrealType)}₢ ₢{nameof(PropertyName)}₢;";
+	₢{nameof(PropertyUnrealType)}₢ ₢{nameof(PropertyName)}₢ = {{}};";
 
 
 	public const string PRIMITIVE_U_PROPERTY_SERIALIZE = @$"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢);";
@@ -73,6 +73,12 @@ public struct UnrealPropertyDeclaration
 
 	public const string U_ENUM_U_PROPERTY_DESERIALIZE =
 		$@"₢{nameof(PropertyName)}₢ = U₢{nameof(PropertyNamespacedType)}₢Library::SerializationNameTo₢{nameof(PropertyNamespacedType)}₢(Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢"")));";
+
+	public const string U_STRUCT_U_PROPERTY_SERIALIZE =
+		$@"UBeamJsonUtils::SerializeUStruct<₢{nameof(PropertyUnrealType)}₢>(""₢{nameof(RawFieldName)}₢"", ₢{nameof(PropertyName)}₢, Serializer);";
+
+	public const string U_STRUCT_U_PROPERTY_DESERIALIZE =
+		$@"UBeamJsonUtils::DeserializeUStruct<₢{nameof(PropertyUnrealType)}₢>(""₢{nameof(RawFieldName)}₢"", Bag, ₢{nameof(PropertyName)}₢, OuterOwner);";
 
 	public const string U_OBJECT_U_PROPERTY_SERIALIZE =
 		$@"UBeamJsonUtils::SerializeUObject<₢{nameof(PropertyUnrealType)}₢>(""₢{nameof(RawFieldName)}₢"", ₢{nameof(PropertyName)}₢, Serializer);";
@@ -191,12 +197,42 @@ public struct UnrealPropertyDeclaration
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_GUID))
 			return GUID_U_PROPERTY_SERIALIZE;
 
+		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_STRING) ||
+			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_BYTE) ||
+			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_SHORT) ||
+			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_INT) ||
+			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_LONG) ||
+			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_BOOL) ||
+			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_FLOAT) ||
+			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_DOUBLE))
+		{
+			return PRIMITIVE_U_PROPERTY_SERIALIZE;
+		}
+
+		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_STRING) ||
+			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_BYTE) ||
+			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_SHORT) ||
+			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_INT) ||
+			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_LONG) ||
+			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_BOOL) ||
+			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_FLOAT) ||
+			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_DOUBLE))
+		{
+			return PRIMITIVE_U_PROPERTY_SERIALIZE;
+		}
+
 		// Semantic types serialization
 		if (UnrealSourceGenerator.UNREAL_ALL_SEMTYPES.Contains(unrealType))
 			return SEMTYPE_U_PROPERTY_SERIALIZE;
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX) || UnrealSourceGenerator.UNREAL_ALL_REPTYPES.Any(unrealType.Contains))
+		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
 			return U_OBJECT_U_PROPERTY_SERIALIZE;
+
+		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_STRUCT_PREFIX))
+			return U_STRUCT_U_PROPERTY_SERIALIZE;
+
+		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_STRUCT_PREFIX))
+			return U_STRUCT_U_PROPERTY_SERIALIZE;
 
 		return PRIMITIVE_U_PROPERTY_SERIALIZE;
 	}
@@ -217,8 +253,6 @@ public struct UnrealPropertyDeclaration
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_ENUM_PREFIX))
 			return U_ENUM_U_PROPERTY_DESERIALIZE;
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX) || UnrealSourceGenerator.UNREAL_ALL_REPTYPES.Any(unrealType.Contains))
-			return U_OBJECT_U_PROPERTY_DESERIALIZE;
 
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_MAP))
 		{
@@ -265,6 +299,18 @@ public struct UnrealPropertyDeclaration
 		// Semantic types serialization
 		if (UnrealSourceGenerator.UNREAL_ALL_SEMTYPES.Contains(unrealType))
 			return SEMTYPE_U_PROPERTY_DESERIALIZE;
+
+		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
+			return U_OBJECT_U_PROPERTY_DESERIALIZE;
+
+		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
+			return U_OBJECT_U_PROPERTY_DESERIALIZE;
+
+		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_STRUCT_PREFIX))
+			return U_STRUCT_U_PROPERTY_DESERIALIZE;
+
+		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_STRUCT_PREFIX))
+			return U_STRUCT_U_PROPERTY_DESERIALIZE;
 
 		return STRING_U_PROPERTY_DESERIALIZE;
 	}

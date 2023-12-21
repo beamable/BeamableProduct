@@ -11,9 +11,16 @@ using UnityEngine;
 
 namespace Beamable.Tooling.Common.OpenAPI;
 
+/// <summary>
+/// Generates OpenAPI schema definitions for complex types.
+/// </summary>
 public class SchemaGenerator
 {
-
+	/// <summary>
+	/// Finds all complex types used in the specified service methods.
+	/// </summary>
+	/// <param name="methods">The collection of service methods to analyze.</param>
+	/// <returns>An enumeration of complex types found in the service methods.</returns>
 	public static IEnumerable<Type> FindAllComplexTypes(IEnumerable<ServiceMethod> methods)
 	{
 		// construct a queue of types that we will need to search over for other types... These types are the entry points into the search.
@@ -80,13 +87,26 @@ public class SchemaGenerator
 		}
 	}
 
+	/// <summary>
+	/// Traverses the type hierarchy starting from the specified type <typeparamref name="T"/>.
+	/// </summary>
+	/// <typeparam name="T">The type from which to start the traversal.</typeparam>
+	/// <returns>An enumeration of types in the hierarchy.</returns>
 	public static IEnumerable<Type> Traverse<T>() => Traverse(typeof(T));
+
+	/// <summary>
+	/// Traverses the type hierarchy starting from the specified runtime type.
+	/// </summary>
+	/// <param name="runtimeType">The runtime type from which to start the traversal.</param>
+	/// <returns>An enumeration of types in the hierarchy.</returns>
 	public static IEnumerable<Type> Traverse(Type runtimeType)
 	{
 		yield return runtimeType;
 	}
 
-	
+	/// <summary>
+	/// Converts a runtime type into an OpenAPI schema.
+	/// </summary>
 	public static OpenApiSchema Convert(Type runtimeType, int depth = 1)
 	{
 
@@ -95,7 +115,6 @@ public class SchemaGenerator
 			case {} x when x.IsAssignableTo(typeof(Optional)):
 				var instance = Activator.CreateInstance(runtimeType) as Optional;
 				return Convert(instance.GetOptionalType());
-				break;
 			case {} x when x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Optional<>):
 				return Convert(x.GetGenericArguments()[0]);
 			case { } x when x.IsGenericType && x.GetGenericTypeDefinition() == typeof(Nullable<>):
@@ -197,6 +216,9 @@ public class SchemaGenerator
 		}
 	}
 
+	/// <summary>
+	/// Gets the fully qualified reference name for a runtime type.
+	/// </summary>
 	public static string GetQualifiedReferenceName(Type runtimeType)
 	{
 		return runtimeType.FullName.Replace("+", ".");

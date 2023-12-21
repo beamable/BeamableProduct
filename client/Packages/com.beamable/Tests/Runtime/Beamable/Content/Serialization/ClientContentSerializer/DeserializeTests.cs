@@ -1,5 +1,4 @@
 using Beamable.Common.Announcements;
-using Beamable.Common.Assistant;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Common.Reflection;
@@ -25,11 +24,9 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		public void Setup()
 		{
 			var reflectionCache = new ReflectionCache();
-			var hintStorage = new BeamHintGlobalStorage();
 			cache = new ContentTypeReflectionCache();
 			reflectionCache.RegisterTypeProvider(cache);
 			reflectionCache.RegisterReflectionSystem(cache);
-			reflectionCache.SetStorage(hintStorage);
 
 			var assembliesToSweep = AppDomain.CurrentDomain.GetAssemblies().Select(asm => asm.GetName().Name).ToList();
 			reflectionCache.GenerateReflectionCache(assembliesToSweep);
@@ -930,6 +927,25 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    ""properties"": {
       ""e"": {
          ""data"": ""B""
+      }
+   }
+}";
+
+			var s = new TestSerializer();
+			var o = s.Deserialize<EnumContent>(json);
+
+			Assert.AreEqual(TestEnum.B, o.e);
+		}
+
+		[Test]
+		public void Enum_int()
+		{
+			var json = @"{
+   ""id"": ""test.nothing"",
+   ""version"": """",
+   ""properties"": {
+      ""e"": {
+         ""data"": 1
       }
    }
 }";

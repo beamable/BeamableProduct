@@ -244,10 +244,10 @@ namespace Beamable.Endel
 	        WebSocketFactory.Initialize ();
 	      }
 
-	      int instanceId = WebSocketFactory.BeamableWebSocketAllocate (url);
-	      WebSocketFactory.instances.Add (instanceId, this);
+	      int id = WebSocketFactory.BeamableWebSocketAllocate (url);
+	      WebSocketFactory.instances.Add (id, this);
 
-	      this.instanceId = instanceId;
+	      this.instanceId = id;
 	    }
 
 	    public WebSocket (string url, string subprotocol, Dictionary<string, string> headers = null) {
@@ -255,12 +255,12 @@ namespace Beamable.Endel
 	        WebSocketFactory.Initialize ();
 	      }
 
-	      int instanceId = WebSocketFactory.BeamableWebSocketAllocate (url);
-	      WebSocketFactory.instances.Add (instanceId, this);
+	      int id = WebSocketFactory.BeamableWebSocketAllocate (url);
+	      WebSocketFactory.instances.Add (id, this);
 
-	      WebSocketFactory.BeamableWebSocketAddSubProtocol(instanceId, subprotocol);
+	      WebSocketFactory.BeamableWebSocketAddSubProtocol(id, subprotocol);
 
-	      this.instanceId = instanceId;
+	      this.instanceId = id;
 	    }
 
 	    public WebSocket (string url, List<string> subprotocols, Dictionary<string, string> headers = null, CoroutineService coroutineService = null) {
@@ -269,14 +269,14 @@ namespace Beamable.Endel
 	        WebSocketFactory.Initialize ();
 	      }
 
-	      int instanceId = WebSocketFactory.BeamableWebSocketAllocate (url);
-	      WebSocketFactory.instances.Add (instanceId, this);
+	      int id = WebSocketFactory.BeamableWebSocketAllocate (url);
+	      WebSocketFactory.instances.Add (id, this);
 
 	      foreach (string subprotocol in subprotocols) {
-	        WebSocketFactory.BeamableWebSocketAddSubProtocol(instanceId, subprotocol);
+	        WebSocketFactory.BeamableWebSocketAddSubProtocol(id, subprotocol);
 	      }
 
-	      this.instanceId = instanceId;
+	      instanceId = id;
 	    }
 
 	    ~WebSocket () {
@@ -724,6 +724,7 @@ namespace Beamable.Endel
 				{
 					await m_Socket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, m_CancellationToken);
 				}
+				await new WaitForUpdate(_coroutineService); // dispatch back onto main thread
 			}
 		}
 #endif

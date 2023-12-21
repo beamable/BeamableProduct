@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Dependencies;
+using Beamable.Server.Common;
 using Serilog;
 using Serilog.Events;
 using System.CommandLine.Binding;
@@ -23,6 +24,7 @@ public interface IAppContext
 	public string Pid { get; }
 	public string Host { get; }
 	public bool UseFatalAsReportingChannel { get; }
+	public string DotnetPath { get; }
 	public string WorkingDirectory { get; }
 	public IAccessToken Token { get; }
 	public string RefreshToken { get; }
@@ -51,13 +53,17 @@ public class DefaultAppContext : IAppContext
 	private readonly ConfigService _configService;
 	private readonly CliEnvironment _environment;
 	private readonly EnableReporterOption _reporterOption;
+	private readonly SkipStandaloneValidationOption _skipValidationOption;
+	private readonly DotnetPathOption _dotnetPathOption;
 	public bool IsDryRun { get; private set; }
 	public bool UseFatalAsReportingChannel { get; private set; }
+
+	public string DotnetPath { get; private set; }
 
 	public IAccessToken Token => _token;
 	private CliToken _token;
 
-	private string _cid, _pid, _host, _dir;
+	private string _cid, _pid, _host;
 	private string _refreshToken;
 
 	public string Cid => _cid;
@@ -69,7 +75,8 @@ public class DefaultAppContext : IAppContext
 
 	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, HostOption hostOption,
 		AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption, ConfigDirOption configDirOption,
-		ConfigService configService, CliEnvironment environment, EnableReporterOption reporterOption)
+		ConfigService configService, CliEnvironment environment, EnableReporterOption reporterOption, SkipStandaloneValidationOption skipValidationOption,
+		DotnetPathOption dotnetPathOption)
 	{
 		_dryRunOption = dryRunOption;
 		_cidOption = cidOption;
@@ -82,6 +89,8 @@ public class DefaultAppContext : IAppContext
 		_configService = configService;
 		_environment = environment;
 		_reporterOption = reporterOption;
+		_skipValidationOption = skipValidationOption;
+		_dotnetPathOption = dotnetPathOption;
 	}
 
 	public void Apply(BindingContext bindingContext)
@@ -89,20 +98,28 @@ public class DefaultAppContext : IAppContext
 		UseFatalAsReportingChannel = bindingContext.ParseResult.GetValueForOption(_reporterOption);
 		IsDryRun = bindingContext.ParseResult.GetValueForOption(_dryRunOption);
 
+		DotnetPath = bindingContext.ParseResult.GetValueForOption(_dotnetPathOption);
+		if (string.IsNullOrEmpty(DotnetPath))
+		{
+			DotnetPath = "dotnet";
+		}
+
 		// Configure log level from option
 		{
 			var logLevelOption = bindingContext.ParseResult.GetValueForOption(_logOption);
-			if (!string.IsNullOrEmpty(logLevelOption))
-				App.LogLevel.MinimumLevel = LogLevel = (LogEventLevel)Enum.Parse(typeof(LogEventLevel), logLevelOption, true);
-			else if (!string.IsNullOrEmpty(_environment.LogLevel))
-				App.LogLevel.MinimumLevel = LogLevel = (LogEventLevel)Enum.Parse(typeof(LogEventLevel), _environment.LogLevel, true);
-			else
+
+			if (string.IsNullOrEmpty(logLevelOption))
 			{
-#if BEAMABLE_DEVELOPER
-				App.LogLevel.MinimumLevel = LogLevel = LogEventLevel.Debug;
-#else
-				App.LogLevel.MinimumLevel = LogLevel = = LogEventLevel.Warning
-#endif
+				App.LogLevel.MinimumLevel = LogEventLevel.Information;
+			}
+			else if (LogUtil.TryParseLogLevel(logLevelOption, out var level))
+			{
+				App.LogLevel.MinimumLevel = level;
+			}
+			else if (!string.IsNullOrEmpty(_environment.LogLevel) &&
+					 LogUtil.TryParseLogLevel(_environment.LogLevel, out level))
+			{
+				App.LogLevel.MinimumLevel = level;
 			}
 		}
 		_configService.Init(bindingContext);

@@ -219,6 +219,7 @@ namespace Beamable.Common.Api.Announcements
 			s.Serialize(nameof(isClaimed), ref isClaimed);
 			s.SerializeList(nameof(attachments), ref attachments);
 			s.Serialize(nameof(gift), ref gift);
+			s.SerializeArray(nameof(clientDataList), ref clientDataList);
 		}
 	}
 

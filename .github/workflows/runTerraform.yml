@@ -1,0 +1,63 @@
+name: Terraform
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: 'Environment'
+        options:
+          - main
+      apply_terraform:
+        type: boolean
+        description: 'Apply Terraform Changes'
+        default: false
+
+jobs:
+  run-terraform:
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: "terraform/environments/${{ github.event.inputs.environment }}"
+
+    steps:
+    - uses: Firenza/secrets-to-env@v1.2.0
+      with:
+        secrets: ${{ toJSON(secrets) }}
+        
+    - uses: actions/checkout@v4.5.2
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+        mask-aws-account-id: false
+    
+    - uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.3.7
+
+    - name: Terraform Init
+      id: init
+      run: |
+        terraform init \
+         -backend-config="bucket=beamable-tfstate" \
+         -backend-config="key=state/lightbeam-${{ github.event.inputs.environment }}.tfstate" \
+         -backend-config="region=${{ secrets.AWS_REGION }}" 
+
+    - name: Terraform Validate
+      id: validate
+      run: terraform validate -no-color
+
+    - name: Terraform Plan
+      id: plan
+      run: terraform plan -no-color -out ./tfplan
+      continue-on-error: true
+
+    - name: Terraform Apply
+      continue-on-error: true
+      if: ${{ github.event.inputs.apply_terraform == 'true' }}
+      run: terraform apply -auto-approve ./tfplan

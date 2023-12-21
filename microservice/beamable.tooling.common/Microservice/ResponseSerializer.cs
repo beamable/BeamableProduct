@@ -7,20 +7,37 @@ using Newtonsoft.Json.Linq;
 
 namespace Beamable.Server
 {
-    public interface IResponseSerializer
-    {
+	/// <summary>
+	/// Represents a response serializer interface.
+	/// </summary>
+	public interface IResponseSerializer
+	{
+		/// <summary>
+		/// Serializes a response using the specified request context and result object.
+		/// </summary>
+		/// <param name="ctx">The request context associated with the response.</param>
+		/// <param name="result">The result object to be serialized.</param>
+		/// <returns>The serialized response as a string.</returns>
         string SerializeResponse(RequestContext ctx, object result);
     }
 
-    public class CustomResponseSerializer : IResponseSerializer
-    {
-        private readonly CustomResponseSerializationAttribute _attribute;
+	/// <summary>
+	/// Custom response serializer based on a specified attribute.
+	/// </summary>
+	public class CustomResponseSerializer : IResponseSerializer
+	{
+		private readonly CustomResponseSerializationAttribute _attribute;
 
+		/// <summary>
+		/// Initializes a new instance of the <see cref="CustomResponseSerializer"/> class.
+		/// </summary>
+		/// <param name="attribute">The custom response serialization attribute.</param>
         public CustomResponseSerializer(CustomResponseSerializationAttribute attribute)
         {
             _attribute = attribute;
         }
 
+        /// <inheritdoc />
         public string SerializeResponse(RequestContext ctx, object result)
         {
             var raw = _attribute.SerializeResponse(result);
@@ -28,15 +45,23 @@ namespace Beamable.Server
         }
     }
 
-    public class DefaultResponseSerializer : IResponseSerializer
-    {
-        private readonly bool _useLegacySerialization;
+	/// <summary>
+	/// Default response serializer implementation.
+	/// </summary>
+	public class DefaultResponseSerializer : IResponseSerializer
+	{
+		private readonly bool _useLegacySerialization;
 
+		/// <summary>
+		/// Initializes a new instance of the <see cref="DefaultResponseSerializer"/> class.
+		/// </summary>
+		/// <param name="useLegacySerialization">Whether to use legacy serialization.</param>
         public DefaultResponseSerializer(bool useLegacySerialization)
         {
             _useLegacySerialization = useLegacySerialization;
         }
 
+        /// <inheritdoc />
         public string SerializeResponse(RequestContext ctx, object result)
         {
             var response = new GatewayResponse
@@ -73,7 +98,14 @@ namespace Beamable.Server
                 }
             }
 
+            var type = result.GetType();
+            if (type.IsEnum)
+            {
+	            response.body = Convert.ChangeType(result, typeof(int)).ToString();
+            }
+            
             var json = JsonConvert.SerializeObject(response, UnitySerializationSettings.Instance);
+            
             return json;
         }
     }

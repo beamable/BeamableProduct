@@ -13,6 +13,7 @@ namespace cli;
 public class ServicesRunCommandArgs : LoginCommandArgs
 {
 	public string[] BeamoIdsToDeploy;
+	public bool forceAmdCpuArchitecture = false;
 }
 
 public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
@@ -32,6 +33,10 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 	{
 		AddOption(new Option<string[]>("--ids", "The ids for the services you wish to deploy. Ignoring this option deploys all services") { AllowMultipleArgumentsPerToken = true },
 			(args, i) => args.BeamoIdsToDeploy = i.Length == 0 ? null : i);
+		AddOption(
+			new Option<bool>(new string[] { "--force-amd-cpu-arch", "-fcpu" }, () => false,
+				"Force the services to run with amd64 CPU architecture, useful when deploying from computers with ARM architecture"),
+			(args, i) => args.forceAmdCpuArchitecture = i);
 	}
 
 	public override async Task Handle(ServicesRunCommandArgs args)
@@ -66,6 +71,7 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 				try
 				{
 					await _localBeamo.DeployToLocal(_localBeamo.BeamoManifest, args.BeamoIdsToDeploy,
+						forceAmdCpuArchitecture: args.forceAmdCpuArchitecture,
 						(beamoId, progress) =>
 						{
 							var progressTask = allProgressTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));

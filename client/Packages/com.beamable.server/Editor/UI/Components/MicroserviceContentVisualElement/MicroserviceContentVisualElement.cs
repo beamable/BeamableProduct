@@ -1,13 +1,12 @@
 using Beamable.Common;
 using Beamable.Common.Api.Realms;
-using Beamable.Common.Assistant;
-using Beamable.Editor.Assistant;
 using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
+using Beamable.Server.Editor.Usam;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -117,6 +116,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			if (isInit)
 			{
+				// TODO: Chris: this we can get access to data via DI
+				var srvc = Provider.GetService<CodeService>();
+
 				CreateNewServiceElement(ServiceType.MicroService, new CreateMicroserviceVisualElement());
 				CreateNewServiceElement(ServiceType.StorageObject, new CreateStorageObjectVisualElement());
 				_modelToVisual.Clear();
@@ -351,23 +353,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			if (DockerCommand.DockerNotInstalled)
 			{
-				dockerAnnouncement.OnInstall = async () =>
-				{
-					var window = await BeamableAssistantWindow.Init();
-					window.ExpandHint(new BeamHintHeader(BeamHintType.Validation,
-														 BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
-														 BeamHintIds.ID_INSTALL_DOCKER_PROCESS));
-				};
+				// TODO: [AssistantRemoval] ID_INSTALL_DOCKER_PROCESS --- checking for docker installation might go to the CLI pipeline?
 			}
 			else
 			{
-				dockerAnnouncement.OnInstall = async () =>
-				{
-					var window = await BeamableAssistantWindow.Init();
-					window.ExpandHint(new BeamHintHeader(BeamHintType.Validation,
-														 BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
-														 BeamHintIds.ID_DOCKER_PROCESS_NOT_RUNNING));
-				};
+				// TODO: [AssistantRemoval] ID_INSTALL_DOCKER_PROCESS --- checking for docker running/not might go to the CLI pipeline and only when publishing?
 			}
 
 			var element = new DockerAnnouncementVisualElement() { DockerAnnouncementModel = dockerAnnouncement };

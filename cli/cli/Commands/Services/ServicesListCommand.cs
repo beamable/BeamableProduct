@@ -128,7 +128,14 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 				}
 
 				this.SendResults(localServiceListResult);
-				AnsiConsole.Write(table);
+				if (manifest.manifest.Count > 0)
+				{
+					AnsiConsole.Write(table);
+				}
+				else
+				{
+					AnsiConsole.WriteLine("No services found");
+				}
 			}
 			else
 			{
@@ -207,7 +214,14 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 				}
 
 				this.SendResults(localServiceListResult);
-				AnsiConsole.Write(table);
+				if (serviceDefinitions.Count > 0)
+				{
+					AnsiConsole.Write(table);
+				}
+				else
+				{
+					AnsiConsole.WriteLine("No services found");
+				}
 			}
 			else
 			{

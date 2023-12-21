@@ -2,6 +2,8 @@ using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using cli.Services;
 using cli.Unreal;
+using cli.Utils;
+using JetBrains.Annotations;
 using Serilog;
 using Spectre.Console;
 using System.CommandLine;
@@ -11,11 +13,11 @@ namespace cli;
 
 public class CliInterfaceGeneratorCommandArgs : CommandArgs
 {
-	public string? OutputPath;
+	[CanBeNull] public string OutputPath;
 	public bool Concat;
 	public string Engine;
 }
-public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorCommandArgs>
+public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorCommandArgs>, IStandaloneCommand
 {
 	private readonly IDependencyProviderScope _commandScope;
 
@@ -46,11 +48,16 @@ public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorComm
 
 		// now we have all the beam commands and their call sites
 		// proxy out to a generator... for now, its unity... but someday it'll be unity or unreal.
-		args.Engine = string.IsNullOrEmpty(args.Engine) ? AnsiConsole.Ask<SelectionPrompt<string>>("").AddChoices("unity", "unreal").Show(AnsiConsole.Console) : args.Engine;
+		args.Engine = string.IsNullOrEmpty(args.Engine)
+			? AnsiConsole.Ask<SelectionPrompt<string>>("")
+				.AddChoices("unity", "unreal")
+				.AddBeamHightlight().Show(AnsiConsole.Console)
+			: args.Engine;
 		ICliGenerator generator = args.Engine.ToLower() switch
 		{
 			"unity" => args.DependencyProvider.GetService<UnityCliGenerator>(),
 			"unreal" => args.DependencyProvider.GetService<UnrealCliGenerator>(),
+			// ReSharper disable once NotResolvedInText
 			_ => throw new ArgumentOutOfRangeException("Should be impossible!")
 		};
 

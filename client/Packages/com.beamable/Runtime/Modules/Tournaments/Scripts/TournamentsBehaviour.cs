@@ -326,7 +326,7 @@ namespace Beamable.Tournaments
 		{
 			return API.Instance.FlatMap(de =>
 			{
-				return Tournament.Resolve().FlatMap(content => de.TournamentsService.GetTournamentInfo(content.Id));
+				return Tournament.Resolve().FlatMap(content => de.TournamentsService.GetRunningTournamentInfo(content.Id));
 			});
 
 		}
@@ -584,7 +584,7 @@ namespace Beamable.Tournaments
 						return Promise<TournamentContent>.Successful(emptyContent);
 					})
 					.FlatMap(content =>
-					de.TournamentsService.GetTournamentInfo(content.Id)
+					de.TournamentsService.GetRunningTournamentInfo(content.Id)
 						.FlatMap(info => de.TournamentsService.JoinTournament(info.tournamentId)
 							.Map(status => new TournamentBundle
 							{

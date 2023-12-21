@@ -15,8 +15,11 @@ namespace Beamable.Editor.BeamCli.Commands
 		{
 			// Create a list of arguments for the command
 			System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
-			// Add the serviceName value to the list of args.
-			genBeamCommandArgs.Add(this.serviceName);
+			// If the serviceName value was not default, then add it to the list of args.
+			if ((this.serviceName != default(Beamable.Common.Semantics.ServiceName)))
+			{
+				genBeamCommandArgs.Add(this.serviceName);
+			}
 			// If the remote value was not default, then add it to the list of args.
 			if ((this.remote != default(bool)))
 			{

@@ -17,6 +17,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		/// <summary>Any number of strings in the format BeamoId::Comment
 		///Associates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal</summary>
 		public string[] serviceComments;
+		/// <summary>A custom docker registry url to use when uploading. By default, the result from the beamo/registry network call will be used, with minor string manipulation to add https scheme, remove port specificatino, and add /v2 </summary>
+		public string dockerRegistryUrl;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -58,6 +60,11 @@ namespace Beamable.Editor.BeamCli.Commands
 					// The parameter allows multiple values
 					genBeamCommandArgs.Add(("--service-comments=" + this.serviceComments[i]));
 				}
+			}
+			// If the dockerRegistryUrl value was not default, then add it to the list of args.
+			if ((this.dockerRegistryUrl != default(string)))
+			{
+				genBeamCommandArgs.Add(("--docker-registry-url=" + this.dockerRegistryUrl));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

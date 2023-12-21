@@ -69,8 +69,7 @@ public class CliRequester : IRequester
 			throw new RequesterException("Cli", method.ToReadableString(), uri, (int)result.StatusCode, rawResponse);
 		}
 
-		T parsed = default(T);
-		if (result.Content != null)
+		T parsed;
 		{
 			await using Stream stream = await result.Content.ReadAsStreamAsync();
 			using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -121,10 +120,14 @@ public class CliRequester : IRequester
 							return PromiseBase.Unit;
 						})
 						.FlatMap(_ => Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
+				case RequesterException { Status: > 500 and < 510 }:
+					BeamableLogger.LogWarning($"Problems with host {_ctx.Host}, trying again in few seconds...");
+					return Task.Delay(TimeSpan.FromSeconds(5)).ToPromise().FlatMap(_ =>
+						Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
 			}
 
 			return Promise<T>.Failed(error);
-		}); ;
+		});
 	}
 
 	private static HttpRequestMessage PrepareRequest(Method method, string basePath, string uri, object body = null)

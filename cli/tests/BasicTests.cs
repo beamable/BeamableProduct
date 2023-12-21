@@ -40,7 +40,7 @@ public class Tests
 	[Test]
 	public void NamingPass()
 	{
-		void CheckNaming(string commandName, string description, string optionName = null)
+		void CheckNaming(string commandName, string description, string? optionName = null)
 		{
 			const string KEBAB_CASE_PATTERN = "^([a-z]|[0-9])+(?:[-]([a-z]|[0-9])+)*$";
 			var isOption = !string.IsNullOrWhiteSpace(optionName);
@@ -60,7 +60,7 @@ public class Tests
 				Assert.Fail($"{logPrefix} description should not end with dot.");
 			}
 
-			var valueToCheck = isOption ? optionName : commandName;
+			var valueToCheck = isOption ? optionName! : commandName;
 			var match = Regex.Match(valueToCheck, KEBAB_CASE_PATTERN);
 			Assert.AreEqual(match.Success, true, $"{valueToCheck} does not match kebab case naming.");
 		}
@@ -82,7 +82,7 @@ public class Tests
 
 		foreach (var command in commandsList)
 		{
-			CheckNaming(command.Name, command.Description);
+			CheckNaming(command.Name, command.Description!);
 
 			var sameDescriptionCommand = commandsList.FirstOrDefault(c =>
 				c.Name != command.Name &&
@@ -96,7 +96,7 @@ public class Tests
 
 			foreach (Option option in command.Options)
 			{
-				CheckNaming(command.Name, option.Description, option.Name);
+				CheckNaming(command.Name, option.Description!, option.Name);
 			}
 		}
 
@@ -130,7 +130,8 @@ public class Tests
 		var ctx = new SwaggerService.DefaultGenerationContext
 		{
 			Documents = docs,
-			OrderedSchemas = orderedSchemas
+			OrderedSchemas = orderedSchemas,
+			ReplacementTypes = new Dictionary<string, ReplacementTypeInfo>()
 		};
 		var descriptors = generator.Generate(ctx);
 
@@ -190,6 +191,21 @@ public class Tests
 		}, "oapi", "generate", "--filter", "content,t:basic", "--engine", "unity");
 		Assert.AreEqual(0, status);
 	}
+
+
+	[Test]
+	public async Task GenerateSession()
+	{
+		var status = await Cli.RunAsyncWithParams(builder =>
+		{
+			var mock = new Mock<ISwaggerStreamDownloader>();
+			mock.Setup(x => x.GetStreamAsync(It.Is<string>(x => x.Contains("basic") && x.Contains("session"))))
+				.ReturnsAsync(GenerateStreamFromString(OpenApiFixtures.SessionBasic));
+			builder.ReplaceSingleton<ISwaggerStreamDownloader>(mock.Object);
+		}, "oapi", "generate", "--filter", "session,t:basic", "--engine", "unity");
+		Assert.AreEqual(0, status);
+	}
+
 
 	[Test]
 	public async Task GenerateProtoActor()

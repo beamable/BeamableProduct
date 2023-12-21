@@ -376,6 +376,18 @@ namespace Beamable.Common.Content
 	[Agnostic]
 	public class OptionalString : Optional<string>
 	{
+		public static OptionalString FromString(string value)
+		{
+			var optional = new OptionalString();
+
+			if (value != null)
+			{
+				optional.Set(value);
+			}
+
+			return optional;
+		}
+
 		public OptionalString()
 		{
 

@@ -12,7 +12,7 @@ public class VersionInstallCommandArgs : CommandArgs
 	public bool quiet;
 }
 
-public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
+public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>, IStandaloneCommand
 {
 	public VersionInstallCommand() : base("install", "Install a different version of the CLI")
 	{
@@ -32,7 +32,7 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 	public override async Task Handle(VersionInstallCommandArgs args)
 	{
 		var service = args.DependencyProvider.GetService<VersionService>();
-		var currentVersionInfo = await service.GetInformationData();
+		var currentVersionInfo = await service.GetInformationData(args.ProjectService);
 
 		if (currentVersionInfo.installType != VersionService.VersionInstallType.GlobalTool)
 		{
@@ -74,8 +74,7 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 			}
 		}
 
-		await Cli.Wrap("dotnet")
-			.WithArguments($"tool update Beamable.Tools --global --version {packageVersion.originalVersion}")
+		await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, $"tool update Beamable.Tools --global --version {packageVersion.originalVersion}")
 			.WithValidation(CommandResultValidation.ZeroExitCode)
 			.ExecuteAsyncAndLog();
 

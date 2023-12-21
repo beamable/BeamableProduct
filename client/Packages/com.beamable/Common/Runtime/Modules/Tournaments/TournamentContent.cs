@@ -182,10 +182,13 @@ namespace Beamable.Common.Tournaments
 		[MustBeDateString]
 		public string anchorTimeUTC = "2020-01-01T12:00:00Z";
 
+#pragma warning disable CS0169
 		[IgnoreContentField]
 		[SerializeField]
 		[TimeSpanDisplay(nameof(cycleDuration))]
+		// ReSharper disable once InconsistentNaming
 		private int cycleText;
+#pragma warning restore CS0169
 
 		[Tooltip("ISO duration string. How long does each tournament cycle last? Default is 1 Day.")]
 		[MustBeTimeSpanDuration]

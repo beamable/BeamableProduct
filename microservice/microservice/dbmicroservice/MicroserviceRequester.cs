@@ -356,7 +356,7 @@ namespace Beamable.Server
 
    }
 
-   public class MicroserviceRequester : IBeamableRequester
+   public class MicroserviceRequester : IRequester
    {
       private readonly IMicroserviceArgs _env;
       protected readonly RequestContext _requestContext;
@@ -480,7 +480,8 @@ namespace Beamable.Server
             msg = Json.Serialize(dict, stringBuilder.Builder);
          }
 
-         Log.Debug("sending request {msg}", msg);
+         var truncatedMsg = msg.Substring(0, Math.Min(_env.LogTruncateLimit, msg.Length));
+         Log.Debug("sending request " + truncatedMsg);
          _socketContext.Daemon.BumpRequestCounter();
          return _socketContext.SendMessageSafely(msg, _waitForAuthorization).FlatMap(_ =>
 	         {
@@ -489,8 +490,7 @@ namespace Beamable.Server
 				         if (ex is UnauthenticatedException unAuth && unAuth.Error.service == "gateway")
 				         {
 					         // need to wait for authentication to finish...
-					         Log.Debug("Request {id} and {msg} failed with 403. Will reauth and and retry.", req.id,
-						         msg);
+					         Log.Debug($"Request {{id}} and {truncatedMsg} failed with 403. Will reauth and and retry.", req.id);
 
 					         _socketContext.Daemon.WakeAuthThread();
 					         var waitForAuth = WaitForAuthorization(message: msg).ToPromise();
@@ -532,6 +532,11 @@ namespace Beamable.Server
       public IBeamableRequester WithAccessToken(TokenResponse tokenResponse)
       {
          throw new NotImplementedException();
+      }
+
+      public Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> req)
+      {
+	      throw new NotImplementedException();
       }
 
       public string EscapeURL(string url)

@@ -11,7 +11,7 @@ public class ContentStatusCommand : AppCommand<ContentStatusCommandArgs>
 
 	public override void Configure()
 	{
-		AddOption(new ConfigurableOption("manifest-id", "Set the manifest to use, 'global' by default"),
+		AddOption(ContentCommand.MANIFEST_OPTION,
 			(args, s) => args.ManifestId = s);
 		AddOption(new ConfigurableOptionFlag("show-up-to-date", "Show up to date content"),
 			(args, b) => args.showUpToDate = b);
@@ -24,6 +24,7 @@ public class ContentStatusCommand : AppCommand<ContentStatusCommandArgs>
 	public override async Task Handle(ContentStatusCommandArgs args)
 	{
 		_contentService = args.ContentService;
+
 		await _contentService.DisplayStatusTable(args.ManifestId, args.showUpToDate, args.limit, args.skip);
 	}
 }

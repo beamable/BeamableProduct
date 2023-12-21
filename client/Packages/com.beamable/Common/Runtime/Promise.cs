@@ -278,6 +278,13 @@ namespace Beamable.Common
 			return this;
 		}
 
+		public Promise<T> Merge(Promise other)
+		{
+			Then(x => other.CompleteSuccess(Unit));
+			Error(other.CompleteError);
+			return this;
+		}
+
 		/// <summary>
 		/// Call to register a failure completion handler callback for the %Promise
 		/// </summary>
@@ -697,11 +704,16 @@ namespace Beamable.Common
 		public static Promise<List<T>> Sequence<T>(IList<Promise<T>> promises)
 		{
 			var result = new Promise<List<T>>();
-			var replies = new ConcurrentDictionary<int, T>();
-
-			if (promises == null || promises.Count == 0)
+			var replies = new List<T>();
+			var completeCount = new AtomicInt();
+			for (var i = 0; i < promises.Count; i++)
 			{
-				result.CompleteSuccess(replies.Values.ToList());
+				replies.Add(default);
+			}
+
+			if (promises.Count == 0)
+			{
+				result.CompleteSuccess(replies);
 				return result;
 			}
 
@@ -709,13 +721,14 @@ namespace Beamable.Common
 			{
 				var index = i;
 
-				promises[i].Then(reply =>
+				promises[index].Then(reply =>
 				{
-					replies.TryAdd(index, reply);
+					replies[index] = reply;
+					completeCount.Increment();
 
-					if (replies.Count == promises.Count)
+					if (completeCount.Value == promises.Count)
 					{
-						result.CompleteSuccess(replies.Values.ToList());
+						result.CompleteSuccess(replies);
 					}
 				}).Error(err => result.CompleteError(err));
 			}

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 namespace Beamable.Common.Api
 {
 	/// <summary>
-	/// A <see cref="UserDataCache{T}"/> is a utility class that stores some generic type per player gamertag.
+	/// A <see cref="UserDataCache{T}"/> is a utility class that stores some generic type per player PlayerId.
 	/// </summary>
 	/// <typeparam name="T"></typeparam>
 	public abstract class UserDataCache<T>
@@ -16,8 +16,8 @@ namespace Beamable.Common.Api
 		public delegate UserDataCache<T> FactoryFunction(string name, long ttlMs, CacheResolver resolver, IDependencyProvider provider);
 
 		/// <summary>
-		/// A <see cref="UserDataCache{T}"/> has a mapping from player gamertags to some generic type per player.
-		/// This function takes a set of gamertags, and fetches the latest data for each.
+		/// A <see cref="UserDataCache{T}"/> has a mapping from player playerIds to some generic type per player.
+		/// This function takes a set of player ids, and fetches the latest data for each.
 		/// </summary>
 		public delegate Promise<Dictionary<long, T>> CacheResolver(List<long> gamerTags);
 
@@ -25,7 +25,7 @@ namespace Beamable.Common.Api
 		/// Get the given player's data.
 		/// If the data does not exist in the cache yet, the <see cref="CacheResolver"/> function will be triggered to resolve the data.
 		/// </summary>
-		/// <param name="gamerTag">The gamertag for the player to get data for.</param>
+		/// <param name="gamerTag">The playerid for the player to get data for.</param>
 		/// <returns>A <see cref="Promise{T}"/> containing the player data.</returns>
 		public abstract Promise<T> Get(long gamerTag);
 
@@ -33,14 +33,14 @@ namespace Beamable.Common.Api
 		/// Get multiple players' data.
 		/// If the players do not have the data in the cache yet, the <see cref="CacheResolver"/> function will be triggered to resolve all the data.
 		/// </summary>
-		/// <param name="gamerTags">A set of gamertags</param>
-		/// <returns>A <see cref="Promise{T}"/> containing a dictionary from gamertag to player data</returns>
+		/// <param name="gamerTags">A set of playerIds</param>
+		/// <returns>A <see cref="Promise{T}"/> containing a dictionary from player id to player data</returns>
 		public abstract Promise<Dictionary<long, T>> GetBatch(List<long> gamerTags);
 
 		/// <summary>
 		/// Manually set the player data
 		/// </summary>
-		/// <param name="gamerTag">The gamertag of the player to set data for</param>
+		/// <param name="gamerTag">The player id of the player to set data for</param>
 		/// <param name="data">The player's new data, which will overwrite the old data.</param>
 		public abstract void Set(long gamerTag, T data);
 
@@ -48,7 +48,7 @@ namespace Beamable.Common.Api
 		/// Remove a player from the cache. The next time this player's data is requested, the <see cref="CacheResolver"/> will be used
 		/// to get the latest data for the player
 		/// </summary>
-		/// <param name="gamerTag">The gamertag of the player to remove from the cache</param>
+		/// <param name="gamerTag">The player id of the player to remove from the cache</param>
 		public abstract void Remove(long gamerTag);
 
 		/// <summary>

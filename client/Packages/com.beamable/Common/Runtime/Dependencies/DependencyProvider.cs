@@ -53,6 +53,9 @@ namespace Beamable.Common.Dependencies
 		/// <param name="configure">Optionally, you can pass a configuration function that registers new services specific to the child provider.</param>
 		/// <returns>A new <see cref="IDependencyProviderScope"/></returns>
 		IDependencyProviderScope Fork(Action<IDependencyBuilder> configure = null);
+
+		/// <inheritdoc cref="Fork(System.Action{Beamable.Common.Dependencies.IDependencyBuilder})"/>
+		IDependencyProviderScope Fork(IDependencyBuilder configuration);
 	}
 
 	public static class IDependencyProviderScopeExtensions
@@ -337,7 +340,6 @@ namespace Beamable.Common.Dependencies
 			throw new Exception($"Service not found {t.Name}");
 		}
 
-		List<Promise<Unit>> disposalPromises = new List<Promise<Unit>>();
 		List<Promise<Unit>> childRemovalPromises = new List<Promise<Unit>>();
 
 		// ReSharper disable Unity.PerformanceAnalysis
@@ -346,7 +348,6 @@ namespace Beamable.Common.Dependencies
 			if (_isDestroying || _destroyed) return; // don't dispose twice!
 			_isDestroying = true;
 
-			disposalPromises.Clear();
 			childRemovalPromises.Clear();
 
 
@@ -368,20 +369,35 @@ namespace Beamable.Common.Dependencies
 
 			await Promise.Sequence(childRemovalPromises);
 
-			void DisposeServices(IEnumerable<object> services)
+			async Promise DisposeServices(IEnumerable<object> services)
 			{
 				var clonedList = new List<object>(services);
-				foreach (var service in clonedList)
+				var groups = clonedList.GroupBy(x =>
 				{
-					if (service == null) continue;
-					if (service is IBeamableDisposable disposable)
+					if (x is IBeamableDisposableOrder disposableOrder)
+						return disposableOrder.DisposeOrder;
+					return 0;
+				});
+				groups = groups.OrderBy(x => x.Key);
+				foreach (var group in groups)
+				{
+					var promises = new List<Promise<Unit>>();
+
+					foreach (var service in group)
 					{
-						var promise = disposable.OnDispose();
-						if (promise != null)
+						if (service == null) continue;
+						if (service is IBeamableDisposable disposable)
 						{
-							disposalPromises.Add(promise);
+							var promise = disposable.OnDispose();
+							if (promise != null)
+							{
+								promises.Add(promise);
+							}
 						}
 					}
+
+					var final = Promise.Sequence(promises);
+					await final;
 				}
 			}
 
@@ -398,11 +414,8 @@ namespace Beamable.Common.Dependencies
 			}
 
 
-
-			DisposeServices(SingletonCache.Values.Distinct());
-			DisposeServices(ScopeCache.Values.Distinct());
-
-			await Promise.Sequence(disposalPromises);
+			await DisposeServices(SingletonCache.Values.Distinct());
+			await DisposeServices(ScopeCache.Values.Distinct());
 
 			SingletonCache.Clear();
 			ScopeCache.Clear();
@@ -501,6 +514,16 @@ namespace Beamable.Common.Dependencies
 					Factory = p => factory(p, kvp.Value)
 				});
 			}
+		}
+
+		public IDependencyProviderScope Fork(IDependencyBuilder builder)
+		{
+			return Fork(existing =>
+			{
+				existing.GetTransientServices().AddRange(builder.GetTransientServices().Select(x => x.Clone()));
+				existing.GetScopedServices().AddRange(builder.GetScopedServices().Select(x => x.Clone()));
+				existing.GetSingletonServices().AddRange(builder.GetSingletonServices().Select(x => x.Clone()));
+			});
 		}
 
 		public IDependencyProviderScope Fork(Action<IDependencyBuilder> configure = null)
