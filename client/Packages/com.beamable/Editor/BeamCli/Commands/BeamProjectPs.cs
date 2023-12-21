@@ -41,7 +41,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	}
 	public class ProjectPsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
-		public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamServiceDiscoveryEvent(System.Action<ReportDataPoint<BeamServiceDiscoveryEvent>> cb)
+		public virtual ProjectPsWrapper OnStreamServiceDiscoveryEvent(System.Action<ReportDataPoint<BeamServiceDiscoveryEvent>> cb)
 		{
 			this.Command.On("stream", cb);
 			return this;

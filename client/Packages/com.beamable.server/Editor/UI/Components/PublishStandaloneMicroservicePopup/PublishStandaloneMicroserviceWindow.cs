@@ -5,6 +5,7 @@ using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI;
 using Beamable.Server.Editor.UI.Components;
+using Beamable.Server.Editor.Usam;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,55 +29,38 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private static PublishStandaloneWindow Instance { get; set; }
 		private static bool IsAlreadyOpened => Instance != null;
 
+		public BeamEditorContext editorContext;
+
 		public static PublishStandaloneWindow ShowPublishWindow(EditorWindow parent, BeamEditorContext editorContext)
 		{
 			if (IsAlreadyOpened)
 				return null;
 
+			
+
 			var wnd = CreateInstance<PublishStandaloneWindow>();
+			
+			wnd.editorContext = editorContext;
 
 			wnd.name = PUBLISH;
 			wnd.titleContent = new GUIContent(PUBLISH);
 			wnd.ShowUtility();
-			wnd._model = new ManifestModel();
 
-			//TODO this should be changed to a different cache of the services data?
-			var servicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-			var loadPromise = servicesRegistry.GenerateUploadModel();
-
-			wnd._publishPopup = new PublishStandaloneMicroservicePopup { Model = wnd._model, InitPromise = loadPromise, Registry = servicesRegistry };
+			wnd._publishPopup = new PublishStandaloneMicroservicePopup();
 			wnd.Refresh();
 
 			wnd.minSize = wnd.maxSize = new Vector2(MIN_SIZE.x, MIN_SIZE.y + Mathf.Clamp(MicroservicesDataModel.Instance.AllUnarchivedServices.Count, 1, MAX_ROW) * ROW_HEIGHT); ;
 			wnd.position = BeamablePopupWindow.GetCenterOnMainWin(wnd);
 
-			loadPromise.Then(model =>
-			{
-				wnd._model = model;
-				wnd._publishPopup.Model = model;
-				wnd.RefreshElement();
-			});
-
 			return wnd;
 		}
 
-		private ManifestModel _model;
 		private PublishStandaloneMicroservicePopup _publishPopup;
 
 		private void OnEnable()
 		{
 			Instance = this;
 			if (!isSet) return;
-
-			//TODO more access to the MRC here
-			var servicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-			servicesRegistry.GenerateUploadModel().Then(model =>
-			{
-				_model = model;
-				_publishPopup = new PublishStandaloneMicroservicePopup() { Model = _model, InitPromise = Promise<ManifestModel>.Successful(model), Registry = servicesRegistry };
-				Refresh();
-				RefreshElement();
-			});
 		}
 
 		private void RefreshElement()
@@ -96,7 +80,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				WindowStateUtility.EnableAllWindows();
 				Close();
 			};
-			_publishPopup.OnSubmit +=  (model, logger) =>
+			_publishPopup.OnSubmit +=  async (logger) =>
 			{
 				/*
 				 * We need to build each image...
@@ -109,6 +93,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 				//await microservicesRegistry.Deploy(model, _tokenSource.Token, _publishPopup.HandleServiceDeployed, logger);
 				
 				//TODO publish here using the CLI or calling CodeSErvice stuff
+				Debug.Log("STARTING PUBLISHING");
+				WindowStateUtility.DisableAllWindows(new[] { PUBLISH });
+				_publishPopup.PrepareForPublish();
+				var publishService = editorContext.ServiceScope.GetService<PublishService>();
+				await publishService.PublishServices();
+				Debug.Log("FINISHED PUBLISHING");
 			};
 
 			container.Add(_publishPopup);

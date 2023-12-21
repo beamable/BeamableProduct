@@ -109,11 +109,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 
 		public Action OnCloseRequested;
-		public Action<ManifestModel, Action<LogMessage>> OnSubmit;
-
-		public ManifestModel Model { get; set; }
-		public Promise<ManifestModel> InitPromise { get; set; }
-		public MicroserviceReflectionCache.Registry Registry { get; set; }
+		public Action<Action<LogMessage>> OnSubmit;
 
 		private VisualElement _servicesList;
 		private TextField _userDescription;
@@ -146,13 +142,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public override void Refresh()
 		{
 			base.Refresh();
+			
+			CodeService codeService = ((IServiceProvider)Context.ServiceScope).GetService<CodeService>();
 
 			var loadingIndicator = Root.Q<LoadingIndicatorVisualElement>();
 			loadingIndicator.SetText("Fetching Beamable Cloud Data");
-			Assert.IsNotNull(InitPromise, "The InitPromise must be set before calling Refresh()");
-			loadingIndicator.SetPromise(InitPromise, Root.Q("mainVisualElement"));
-			
-			CodeService codeService = ((IServiceProvider)Context.ServiceScope).GetService<CodeService>();
+			Assert.IsNotNull(codeService.OnReady, "The InitPromise must be set before calling Refresh()");
+			loadingIndicator.SetPromise(codeService.OnReady, Root.Q("mainVisualElement"));
 
 			if (codeService.ServiceDefinitions.Count == 0)
 				return;
@@ -175,7 +171,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 						Name = serviceDefinition.BeamoId,
 						Archived = false,
 						TemplateId = "small",
-						Dependencies = allDependencies
+						Dependencies = allDependencies,
+						Enabled = serviceDefinition.ShouldBeEnabledOnRemote
 					};
 					_allUnarchivedServices.Add(entryModel);
 				}
@@ -188,7 +185,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 						Type = "mongov1", // TODO need to know the type of the storage
 						Name = serviceDefinition.BeamoId,
 						Archived = false,
-						TemplateId = "small"
+						TemplateId = "small",
+						Enabled = serviceDefinition.ShouldBeEnabledOnRemote
 					};
 					_allUnarchivedServices.Add(storageModel);
 				}
@@ -196,6 +194,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 
 			//var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			var publishService = Context.ServiceScope.GetService<PublishService>();
 
 			_serviceServicePublishStateAnimator = new ServicePublishStateAnimator(Root.Q("infoCards"));
 
@@ -203,12 +202,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 			//TODO Create a publisher service for USAM that CodeService have control of using DI
 			// serviceRegistry.OnServiceDeployStatusChanged -= HandleServiceDeployStatusChanged;
 			// serviceRegistry.OnServiceDeployStatusChanged += HandleServiceDeployStatusChanged;
-			// serviceRegistry.OnServiceDeployProgress -= HandleServiceDeployProgress;
-			// serviceRegistry.OnServiceDeployProgress += HandleServiceDeployProgress;
-			// serviceRegistry.OnDeployFailed -= HandleDeployFailed;
-			// serviceRegistry.OnDeployFailed += HandleDeployFailed;
-			// serviceRegistry.OnDeploySuccess -= HandleDeploySuccess;
-			// serviceRegistry.OnDeploySuccess += HandleDeploySuccess;
+			//serviceRegistry.OnServiceDeployProgress -= HandleServiceDeployProgress;
+			//serviceRegistry.OnServiceDeployProgress += HandleServiceDeployProgress;
+			publishService.OnDeployFailed -= HandleDeployFailed;
+			publishService.OnDeployFailed += HandleDeployFailed;
+			publishService.OnDeploySuccess -= HandleDeploySuccess;
+			publishService.OnDeploySuccess += HandleDeploySuccess;
 			// serviceRegistry.OnProgressInfoUpdated -= HandleProgressInfoUpdated;
 			// serviceRegistry.OnProgressInfoUpdated += HandleProgressInfoUpdated;
 
@@ -265,7 +264,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			
 			orderedElements.ForEach(x =>
 			{
-				//TODO this depends on the dependencies list to be working
 				var dependencies = GetAllDependencies(x.Model);
 				if (x.Model is ManifestEntryModel service)
 				{
@@ -321,7 +319,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_userDescription = Root.Q<TextField>("userDescription");
 			_userDescription.AddPlaceholder("Description here...");
-			_userDescription.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
+			//_userDescription.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
 
 			_cancelButton = Root.Q<PrimaryButtonVisualElement>("cancelBtn");
 			_cancelButton.Button.clickable.clicked += () => OnCloseRequested?.Invoke();
@@ -379,28 +377,26 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_arrowRight.SetEnabled(false);
 			_mainLoadingBar.Hidden = false;
 
+			var publisher = Context.ServiceScope.GetService<PublishService>();
+
 			foreach (var kvp in _publishManifestElements)
 			{
-				//TODO this needs to be changed to use the right data model and make sure
-				// that all the data we need is in that model
-				var serviceModel = MicroservicesDataModel.Instance.GetModel<ServiceModelBase>(kvp.Key);
+				var serviceModel = _allUnarchivedServices.Find((x) => x.Name == kvp.Key);
 				if (serviceModel == null)
 				{
 					Debug.LogError($"Cannot find model: {kvp.Key}");
 					continue;
 				}
 
-				if (serviceModel.IsArchived)
-					continue;
-
-				if (serviceModel is MongoStorageModel || !kvp.Value.Model.Enabled || (kvp.Value.IsRemote && !kvp.Value.IsLocal))
+				if (serviceModel is StorageEntryModel || !kvp.Value.Model.Enabled || (kvp.Value.IsRemote && !kvp.Value.IsLocal))
 				{
 					kvp.Value.UpdateStatus(ServicePublishState.Published);
 					continue;
 				}
 
 				kvp.Value.UpdateStatus(ServicePublishState.Unpublished);
-				new DeployMSLogParser(kvp.Value.LoadingBar, serviceModel); //TODO this would likely change as well because the model will change
+				
+				new DeployStandaloneMSLogParser(kvp.Value.LoadingBar, kvp.Key, publisher);
 				_servicesToPublish.Add(kvp.Value);
 			}
 		}
@@ -467,7 +463,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_primarySubmitButton.SetText("Publishing...");
 			_primarySubmitButton.Disable();
-			OnSubmit?.Invoke(Model, (message) => _logger.Model.Logs.AddMessage(message));
+			OnSubmit?.Invoke((message) => _logger.Model.Logs.AddMessage(message));
 		}
 
 		private void HandleServiceDeployStatusChanged(IDescriptor descriptor, ServicePublishState state)
@@ -500,8 +496,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			HandleServiceDeployProgress(descriptor);
 		}
 
-		private void HandleDeployFailed(ManifestModel _, string __) => HandleDeployEnded(false);
-		private void HandleDeploySuccess(ManifestModel _, int __) => HandleDeployEnded(true);
+		private void HandleDeployFailed(string __) => HandleDeployEnded(false);
+		private void HandleDeploySuccess() => HandleDeployEnded(true);
 
 		private void HandleDeployEnded(bool success)
 		{

@@ -328,6 +328,24 @@ namespace Beamable.Server.Editor.Usam
 			return false;
 		}
 
+		/// <summary>
+		/// Get if the service should or not be enable on remote.
+		/// </summary>
+		/// <param name="serviceName">The name of the service</param>
+		/// <returns>True if should be enable and false if not.</returns>
+		public bool GetServiceShouldBeEnable(string serviceName)
+		{
+			foreach (IBeamoServiceDefinition service in ServiceDefinitions)
+			{
+				if (service.BeamoId.Equals(serviceName))
+				{
+					return service.ShouldBeEnabledOnRemote;
+				}
+			}
+
+			return false;
+		}
+
 		public void ConnectToLogs()
 		{
 			foreach (IBeamoServiceDefinition definition in ServiceDefinitions)
@@ -392,6 +410,40 @@ namespace Beamable.Server.Editor.Usam
 			return null;
 		}
 
+		/// <summary>
+		/// Set the local manifest with the currenct information in the ServiceDefinitions variable.
+		/// </summary>
+		public async Promise SetManifest()
+		{
+			var args = new ServicesSetLocalManifestArgs();
+			var dependedStorages = new List<string>();
+			List<IBeamoServiceDefinition> files = ServiceDefinitions;
+			
+			args.localHttpNames = new string[files.Count];
+			args.localHttpContexts = new string[files.Count];
+			args.localHttpDockerFiles = new string[files.Count];
+			args.shouldBeEnable = new string[files.Count];
+			// TODO: add some validation to check that these files actually make sense
+			for (var i = 0; i < files.Count; i++)
+			{
+				args.localHttpNames[i] = files[i].BeamoId;
+				args.localHttpContexts[i] = files[i].ServiceInfo.dockerBuildPath;
+				args.localHttpDockerFiles[i] = files[i].ServiceInfo.dockerfilePath;
+				args.shouldBeEnable[i] = files[i].ShouldBeEnabledOnRemote.ToString();
+				if (files[i].ServiceInfo.dependencies != null)
+				{
+					foreach (string storage in files[i].ServiceInfo.dependencies)
+					{
+						dependedStorages.Add($"{files[i].BeamoId}:{storage}");
+					}
+				}
+			}
+			args.storageDependencies = dependedStorages.ToArray();
+
+			var command = _cli.ServicesSetLocalManifest(args);
+			await command.Run().Error(LogExceptionVerbose);
+		}
+
 		public static async Promise SetManifest(BeamCommands cli, List<BeamServiceSignpost> files)
 		{
 			var args = new ServicesSetLocalManifestArgs();
@@ -399,12 +451,14 @@ namespace Beamable.Server.Editor.Usam
 			args.localHttpNames = new string[files.Count];
 			args.localHttpContexts = new string[files.Count];
 			args.localHttpDockerFiles = new string[files.Count];
+			args.shouldBeEnable = new string[files.Count];
 			// TODO: add some validation to check that these files actually make sense
 			for (var i = 0; i < files.Count; i++)
 			{
 				args.localHttpNames[i] = files[i].name;
 				args.localHttpContexts[i] = files[i].assetRelativePath;
 				args.localHttpDockerFiles[i] = files[i].relativeDockerFile;
+				args.shouldBeEnable[i] = true.ToString(); //TODO not sure what value should be put in here, this would set all to true without new modifications
 				if (files[i].dependedStorages != null)
 				{
 					foreach (var storage in files[i].dependedStorages)
