@@ -143,9 +143,12 @@ public class ContentLocalCache
 			{
 				var loc = new Location((int)e.LineNumber.GetValueOrDefault(0),
 					(int)e.BytePositionInLine.GetValueOrDefault(0));
-				var extraReport = new Diagnostic("Invalid content JSON")
-					.WithLabel(new Label(path,loc,e.Message));
-				throw new CliException("Invalid content JSON",121,true,null,new []{extraReport});
+				var label = new Label(path, loc, e.Message).WithNote("Edit content file and try again.");
+				var extraReport = new Diagnostic("Content file does not contain valid JSON")
+					.WithLabel(label);
+				throw new CliException("Invalid content JSON",
+					Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_INVALID_CONTENT,
+					true,null,new[]{extraReport});
 			}
 		}
 
