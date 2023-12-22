@@ -71,7 +71,8 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 		args.BeamoLocalSystem.BeamoManifest.Clear();
 
 		var arityMatch = (args.localHttpRelativeDockerfilePaths.Count == args.localHttpNames.Count) &&
-						 (args.localHttpRelativeDockerfilePaths.Count == args.localHttpBuildContextPaths.Count);
+						 (args.localHttpRelativeDockerfilePaths.Count == args.localHttpBuildContextPaths.Count) &&
+						 (args.localHttpRelativeDockerfilePaths.Count == args.shouldServiceBeEnabled.Count);
 		if (!arityMatch)
 		{
 			throw new CliException("Invalid service count, must have equal parameter counts");

@@ -95,7 +95,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 				//TODO publish here using the CLI or calling CodeSErvice stuff
 				Debug.Log("STARTING PUBLISHING");
 				WindowStateUtility.DisableAllWindows(new[] { PUBLISH });
-				_publishPopup.PrepareForPublish();
+				await _publishPopup.PrepareForPublish();
+				
 				var publishService = editorContext.ServiceScope.GetService<PublishService>();
 				await publishService.PublishServices();
 				Debug.Log("FINISHED PUBLISHING");

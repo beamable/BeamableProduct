@@ -371,13 +371,17 @@ namespace Beamable.Editor.Microservice.UI.Components
 			parent.AddStyleSheet(UssPath);
 		}
 
-		public void PrepareForPublish()
+		public async Promise PrepareForPublish()
 		{
 			_arrowLeft.SetEnabled(false);
 			_arrowRight.SetEnabled(false);
 			_mainLoadingBar.Hidden = false;
 
+			var codeService = Context.ServiceScope.GetService<CodeService>();
 			var publisher = Context.ServiceScope.GetService<PublishService>();
+			
+			codeService.UpdateServicesEnableState(_allUnarchivedServices);
+			await codeService.SetManifest();
 
 			foreach (var kvp in _publishManifestElements)
 			{

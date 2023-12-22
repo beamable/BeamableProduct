@@ -1,3 +1,4 @@
+using Beamable.Api.CloudSaving;
 using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Semantics;
@@ -6,6 +7,7 @@ using Beamable.Editor.BeamCli;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.Dotnet;
 using Beamable.Editor.UI.Model;
+using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -411,30 +413,49 @@ namespace Beamable.Server.Editor.Usam
 		}
 
 		/// <summary>
+		/// Update all service definitions with new enable state from editor window.
+		/// </summary>
+		/// <param name="allServices">All models of services that are not archived.</param>
+		public void UpdateServicesEnableState(List<IEntryModel> allServices)
+		{
+			foreach (IEntryModel service in allServices)
+			{
+				IBeamoServiceDefinition localDefinition = ServiceDefinitions.Find((s) => s.BeamoId == service.Name);
+				if (localDefinition != null)
+				{
+					localDefinition.ShouldBeEnabledOnRemote = service.Enabled;
+				}
+			}
+		}
+
+		/// <summary>
 		/// Set the local manifest with the currenct information in the ServiceDefinitions variable.
 		/// </summary>
 		public async Promise SetManifest()
 		{
 			var args = new ServicesSetLocalManifestArgs();
 			var dependedStorages = new List<string>();
-			List<IBeamoServiceDefinition> files = ServiceDefinitions;
+			int servicesCount = _services.Count;
 			
-			args.localHttpNames = new string[files.Count];
-			args.localHttpContexts = new string[files.Count];
-			args.localHttpDockerFiles = new string[files.Count];
-			args.shouldBeEnable = new string[files.Count];
+			args.localHttpNames = new string[servicesCount];
+			args.localHttpContexts = new string[servicesCount];
+			args.localHttpDockerFiles = new string[servicesCount];
+			args.shouldBeEnable = new string[servicesCount];
 			// TODO: add some validation to check that these files actually make sense
-			for (var i = 0; i < files.Count; i++)
+			for (var i = 0; i < servicesCount; i++)
 			{
-				args.localHttpNames[i] = files[i].BeamoId;
-				args.localHttpContexts[i] = files[i].ServiceInfo.dockerBuildPath;
-				args.localHttpDockerFiles[i] = files[i].ServiceInfo.dockerfilePath;
-				args.shouldBeEnable[i] = files[i].ShouldBeEnabledOnRemote.ToString();
-				if (files[i].ServiceInfo.dependencies != null)
+				args.localHttpNames[i] = _services[i].name;
+				args.localHttpContexts[i] = _services[i].assetRelativePath;
+				args.localHttpDockerFiles[i] = _services[i].relativeDockerFile;
+
+				string name = _services[i].name;
+				bool shouldBeEnable = ServiceDefinitions.Find((d) => d.BeamoId == name).ShouldBeEnabledOnRemote;
+				args.shouldBeEnable[i] = shouldBeEnable.ToString();
+				if (_services[i].dependedStorages != null)
 				{
-					foreach (string storage in files[i].ServiceInfo.dependencies)
+					foreach (var storage in _services[i].dependedStorages)
 					{
-						dependedStorages.Add($"{files[i].BeamoId}:{storage}");
+						dependedStorages.Add($"{_services[i].name}:{storage}");
 					}
 				}
 			}
@@ -448,6 +469,7 @@ namespace Beamable.Server.Editor.Usam
 		{
 			var args = new ServicesSetLocalManifestArgs();
 			var dependedStorages = new List<string>();
+			
 			args.localHttpNames = new string[files.Count];
 			args.localHttpContexts = new string[files.Count];
 			args.localHttpDockerFiles = new string[files.Count];
