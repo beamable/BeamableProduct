@@ -267,8 +267,17 @@ namespace Beamable.Editor.BeamCli
                _process.StartInfo.FileName = "sh";
                _process.StartInfo.Arguments = $"-c '{Command}'";
 #else
-					_process.StartInfo.FileName = "cmd.exe";
-					_process.StartInfo.Arguments = $"/C {_command}"; //  "/C " + _command + " > " + commandoutputfile + "'"; // TODO: I haven't tested this since refactor.
+					if (_command.Contains(".dll"))
+					{
+						_process.StartInfo.FileName = DotnetUtil.DotnetPath;
+						_process.StartInfo.Arguments = _command;
+					}
+					else
+					{
+						_process.StartInfo.FileName = "cmd.exe";
+						_process.StartInfo.Arguments =
+							$"/C {_command}"; //  "/C " + _command + " > " + commandoutputfile + "'"; // TODO: I haven't tested this since refactor.
+					}
 #endif
 					// Configure the process using the StartInfo properties.
 					_process.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal;

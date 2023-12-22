@@ -160,12 +160,11 @@ namespace Beamable.Editor.BeamCli
 				List<string> exeFile = Directory
 									   .EnumerateFiles(
 										   dir,
-										   EXEC.Replace("beam", "Beamable.Tools"), SearchOption.AllDirectories).ToList();
+										   "Beamable.Tools.dll", SearchOption.AllDirectories).ToList();
 
 				if (exeFile.Count > 0)
 				{
-					var exe = exeFile.FirstOrDefault(s => s.Contains("publish")) ?? exeFile[0];
-					SessionState.SetString(SRC_BEAM, Path.GetFullPath(exe));
+					SessionState.SetString(SRC_BEAM, Path.GetFullPath(exeFile[0]));
 					return true;
 				}
 			}
@@ -187,11 +186,12 @@ namespace Beamable.Editor.BeamCli
 			{
 				FileName = Path.GetFullPath(DotnetUtil.DotnetPath),
 				WorkingDirectory = dir,
-				Arguments = "publish -c Release --self-contained -p:PublishReadyToRun=true -f net6.0",
+				Arguments = "build -c Release -f net6.0",
 				UseShellExecute = false,
 				RedirectStandardOutput = true,
 				RedirectStandardError = true
 			};
+			proc.StartInfo.CreateNoWindow = true;
 			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
 			VerboseLog("Build tool from scratch");
 			proc.Start();
