@@ -96,6 +96,13 @@ namespace Beamable.Editor.BeamCli
 #else
 		private const string EXEC = "beam";
 #endif
+		
+		[System.Diagnostics.Conditional("SPEW_ALL")]
+		static void VerboseLog(string log)
+		{
+			BeamableLogger.Log($"<b>[{nameof(BeamCliUtil)}]</b> {log}");
+		}
+		
 		/// <summary>
 		/// Installs the Beam CLI into the /Library folder of the current project.
 		/// </summary>
@@ -106,10 +113,12 @@ namespace Beamable.Editor.BeamCli
 
 			if (USE_SRC)
 			{
+				VerboseLog("Check for built source");
 				if (CheckForBuildedSource())
 					return;
 
 				BuildTool();
+				VerboseLog("Check for built source ");
 				if (CheckForBuildedSource())
 					return;
 			}
@@ -147,13 +156,16 @@ namespace Beamable.Editor.BeamCli
 
 			try
 			{
+				var dir = Path.Combine(Directory.GetCurrentDirectory(),Path.GetDirectoryName(EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value));
 				List<string> exeFile = Directory
 									   .EnumerateFiles(
-										   Path.GetDirectoryName(EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value) ?? string.Empty,
+										   dir,
 										   EXEC.Replace("beam", "Beamable.Tools"), SearchOption.AllDirectories).ToList();
+
 				if (exeFile.Count > 0)
 				{
-					SessionState.SetString(SRC_BEAM, Path.GetFullPath(exeFile[0]));
+					var exe = exeFile.FirstOrDefault(s => s.Contains("publish")) ?? exeFile[0];
+					SessionState.SetString(SRC_BEAM, Path.GetFullPath(exe));
 					return true;
 				}
 			}
@@ -169,17 +181,19 @@ namespace Beamable.Editor.BeamCli
 		static void BuildTool()
 		{
 			var proc = new Process();
+			var dir = Path.Combine(Directory.GetCurrentDirectory(),Path.GetDirectoryName(EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value));
 
 			proc.StartInfo = new ProcessStartInfo
 			{
 				FileName = Path.GetFullPath(DotnetUtil.DotnetPath),
-				WorkingDirectory = Path.GetFullPath("Library"),
-				Arguments = $"build --no-build -f net6.0 --project {EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value}",
+				WorkingDirectory = dir,
+				Arguments = "publish -c Release --self-contained -p:PublishReadyToRun=true -f net6.0",
 				UseShellExecute = false,
 				RedirectStandardOutput = true,
 				RedirectStandardError = true
 			};
 			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
+			VerboseLog("Build tool from scratch");
 			proc.Start();
 			proc.WaitForExit();
 			var output = proc.StandardOutput.ReadToEnd();

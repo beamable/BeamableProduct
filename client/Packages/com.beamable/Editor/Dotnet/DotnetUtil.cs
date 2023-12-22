@@ -34,6 +34,7 @@ namespace Beamable.Editor.Dotnet
 		static string[] _dotnetLocationCandidates = new string[]
 		{
 			System.Environment.GetEnvironmentVariable(ENV_VAR_DOTNET_LOCATION),
+			System.Environment.GetEnvironmentVariable("DOTNET_ROOT"),
 			DOTNET_LIBRARY_PATH,
 			DOTNET_GLOBAL_PATH
 		};
