@@ -1,4 +1,3 @@
-
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
@@ -42,6 +41,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			{
 				// if there is no cid or pid, oh well.
 			}
+
 			var beamArgs = new BeamArgs
 			{
 				cid = cid,
@@ -72,7 +72,6 @@ namespace Beamable.Editor.BeamCli.Commands
 
 namespace Beamable.Editor.BeamCli
 {
-
 	public class BeamCommandFactory : IBeamCommandFactory
 	{
 		private readonly BeamableDispatcher _dispatcher;
@@ -107,11 +106,11 @@ namespace Beamable.Editor.BeamCli
 		}
 	}
 
-
 	[Serializable]
 	public class BeamCommandPidCollection
 	{
 		public List<int> pids = new List<int>();
+
 		public void Add(int pid)
 		{
 			pids.Add(pid);
@@ -135,6 +134,7 @@ namespace Beamable.Editor.BeamCli
 					// unable to kill process
 				}
 			}
+
 			pids.Clear();
 		}
 	}
@@ -171,6 +171,7 @@ namespace Beamable.Editor.BeamCli
 
 		private List<ReportDataPointDescription> _points = new List<ReportDataPointDescription>();
 		private Action<ReportDataPointDescription> _callbacks = (_) => { };
+
 		public BeamCommand(BeamableDispatcher dispatcher, BeamCommandPidCollection collection = null)
 		{
 			_dispatcher = dispatcher;
@@ -263,13 +264,22 @@ namespace Beamable.Editor.BeamCli
 			{
 				using (_process = new System.Diagnostics.Process())
 				{
+					if (_command.Contains(".dll"))
+					{
+						_process.StartInfo.FileName = DotnetUtil.DotnetPath;
+						_process.StartInfo.Arguments = _command;
+					}
+					else
+					{
 #if UNITY_EDITOR && !UNITY_EDITOR_WIN
-               _process.StartInfo.FileName = "sh";
-               _process.StartInfo.Arguments = $"-c '{Command}'";
+						_process.StartInfo.FileName = "sh";
+						_process.StartInfo.Arguments = $"-c '{Command}'";
 #else
-					_process.StartInfo.FileName = "cmd.exe";
-					_process.StartInfo.Arguments = $"/C {_command}"; //  "/C " + _command + " > " + commandoutputfile + "'"; // TODO: I haven't tested this since refactor.
+						_process.StartInfo.FileName = "cmd.exe";
+						_process.StartInfo.Arguments =
+							$"/C {_command}"; //  "/C " + _command + " > " + commandoutputfile + "'"; // TODO: I haven't tested this since refactor.
 #endif
+					}
 					// Configure the process using the StartInfo properties.
 					_process.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal;
 					_process.EnableRaisingEvents = true;
@@ -284,25 +294,26 @@ namespace Beamable.Editor.BeamCli
 					EventHandler eh = (s, e) =>
 					{
 						Task.Run(async () =>
-					   {
-						   await Task.Delay(1); // give 1 ms for log messages to eep out
-						   if (_dispatcher.IsForceStopped)
-						   {
-							   KillProc();
-							   return;
-						   }
-						   _dispatcher.Schedule(() =>
-						   {
-							   // there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
-							   // _hasExited = true;
-							   _exitCode = _process.ExitCode;
+						{
+							await Task.Delay(1); // give 1 ms for log messages to eep out
+							if (_dispatcher.IsForceStopped)
+							{
+								KillProc();
+								return;
+							}
 
-							   // OnExit?.Invoke(_process.ExitCode);
-							   // HandleOnExit();
+							_dispatcher.Schedule(() =>
+							{
+								// there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
+								// _hasExited = true;
+								_exitCode = _process.ExitCode;
 
-							   _status.TrySetResult(0);
-						   });
-					   });
+								// OnExit?.Invoke(_process.ExitCode);
+								// HandleOnExit();
+
+								_status.TrySetResult(0);
+							});
+						});
 					};
 
 					_process.Exited += eh;
@@ -319,6 +330,7 @@ namespace Beamable.Editor.BeamCli
 								KillProc();
 								return;
 							}
+
 							_dispatcher.Schedule(() =>
 							{
 								try
@@ -338,6 +350,7 @@ namespace Beamable.Editor.BeamCli
 								KillProc();
 								return;
 							}
+
 							_dispatcher.Schedule(() =>
 							{
 								try
@@ -375,7 +388,6 @@ namespace Beamable.Editor.BeamCli
 						_process.Exited -= eh;
 						_collection?.Remove(pid);
 					}
-
 				}
 			}
 			catch (Exception)
@@ -398,11 +410,9 @@ namespace Beamable.Editor.BeamCli
 			}
 			catch
 			{
-				Debug.LogWarning($"Unable to kill beamCLI process. This <i>may</i> mean that there are pending beamCLI tasks on your machine. \n command=[{_command}]");
+				Debug.LogWarning(
+					$"Unable to kill beamCLI process. This <i>may</i> mean that there are pending beamCLI tasks on your machine. \n command=[{_command}]");
 			}
-
 		}
-
-
 	}
 }
