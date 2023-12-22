@@ -14,7 +14,7 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string[] localHttpDockerFiles;
 		/// <summary>Local http service required storage, use format <service-name>:<storage-name></summary>
 		public string[] storageDependencies;
-		/// <summary>If this service should be enable on remote.</summary>
+		/// <summary>If this service should be enable on remote</summary>
 		public string[] shouldBeEnable;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()

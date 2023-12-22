@@ -56,7 +56,7 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 		};
 		AddOption(storageDeps, (x, i) => x.storageDependencies = i);
 		
-		var shouldBeEnabled = new Option<List<string>>("--should-be-enable", "If this service should be enable on remote.")
+		var shouldBeEnabled = new Option<List<string>>("--should-be-enable", "If this service should be enable on remote")
 		{
 			Arity = ArgumentArity.ZeroOrMore,
 			AllowMultipleArgumentsPerToken = true
