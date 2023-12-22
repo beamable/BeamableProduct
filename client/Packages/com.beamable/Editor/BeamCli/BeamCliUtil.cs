@@ -113,12 +113,10 @@ namespace Beamable.Editor.BeamCli
 
 			if (USE_SRC)
 			{
-				VerboseLog("Check for built source");
 				if (CheckForBuildedSource())
 					return;
 
 				BuildTool();
-				VerboseLog("Check for built source ");
 				if (CheckForBuildedSource())
 					return;
 			}
@@ -148,23 +146,29 @@ namespace Beamable.Editor.BeamCli
 				return false;
 			}
 
-			if (!File.Exists(EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value))
+			var configPath = EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource!.Value;
+			VerboseLog("Check for built source");
+
+			if (!File.Exists(configPath))
 			{
+				VerboseLog($"CLI project file specified in config({configPath} ) does not exist, returning false");
 				SessionState.EraseString(SRC_BEAM);
 				return false;
 			}
 
 			try
 			{
-				var dir = Path.Combine(Directory.GetCurrentDirectory(),Path.GetDirectoryName(EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value));
-				List<string> exeFile = Directory
+				var baseDir = Path.GetDirectoryName(configPath);
+				var dir = Path.Combine(Directory.GetCurrentDirectory(),baseDir!);
+				var exeFile = Directory
 									   .EnumerateFiles(
 										   dir,
-										   "Beamable.Tools.dll", SearchOption.AllDirectories).ToList();
+										   "Beamable.Tools.dll", SearchOption.AllDirectories).FirstOrDefault();
 
-				if (exeFile.Count > 0)
+				if (!string.IsNullOrWhiteSpace(exeFile))
 				{
-					SessionState.SetString(SRC_BEAM, Path.GetFullPath(exeFile[0]));
+					VerboseLog($"Founded tool dll file at {exeFile[0]}");
+					SessionState.SetString(SRC_BEAM, Path.GetFullPath(exeFile));
 					return true;
 				}
 			}
@@ -173,6 +177,7 @@ namespace Beamable.Editor.BeamCli
 				//da duck?!
 				Debug.LogException(e);
 			}
+			VerboseLog($"Tool dll file not found.");
 			SessionState.EraseString(SRC_BEAM);
 			return false;
 		}
