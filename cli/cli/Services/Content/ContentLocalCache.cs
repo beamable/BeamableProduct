@@ -2,6 +2,7 @@
 using Beamable.Common.Api;
 using Beamable.Common.Content;
 using cli.Utils;
+using Errata;
 using JetBrains.Annotations;
 using Serilog;
 using System.Text.Json;
@@ -133,8 +134,19 @@ public class ContentLocalCache
 
 		foreach (var path in Directory.EnumerateFiles(ContentDirPath, "*json"))
 		{
-			var content = ContentDocument.AtPath(path);
-			_localAssets.Add(content.id, content);
+			try
+			{
+				var content = ContentDocument.AtPath(path);
+				_localAssets.Add(content.id, content);
+			}
+			catch (JsonException e)
+			{
+				var loc = new Location((int)e.LineNumber.GetValueOrDefault(0),
+					(int)e.BytePositionInLine.GetValueOrDefault(0));
+				var extraReport = new Diagnostic("Invalid content JSON")
+					.WithLabel(new Label(path,loc,e.Message));
+				throw new CliException("Invalid content JSON",121,true,null,new []{extraReport});
+			}
 		}
 
 		_contentTags = ContentTags.ReadFromDirectory(BaseDirPath, ManifestId);

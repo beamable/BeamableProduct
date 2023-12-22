@@ -13,6 +13,7 @@ using cli.Dotnet;
 using cli.Services;
 using cli.Services.Content;
 using cli.Unreal;
+using cli.Utils;
 using cli.Version;
 using Errata;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,8 +27,6 @@ using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 
 namespace cli;
 
@@ -290,7 +289,7 @@ public class App
 					{
 						// Create a new report
 						var report = new Report(
-							new EmbeddedResourceRepository(
+							new BeamResourceRepository(
 								typeof(Program).Assembly));
 						foreach(var error in cliException.Reports)
 							report.AddDiagnostic(error);
@@ -322,45 +321,5 @@ public class App
 	{
 		var prog = GetProgram();
 		return prog.InvokeAsync(args);
-	}
-}
-public sealed class EmbeddedResourceRepository : ISourceRepository
-{
-	private readonly Dictionary<string, Source> _lookup;
-	private readonly Assembly _assembly;
-
-	public EmbeddedResourceRepository(Assembly assembly)
-	{
-		_lookup = new Dictionary<string, Source>(StringComparer.OrdinalIgnoreCase);
-		_assembly = assembly;
-	}
-	static Stream LoadResourceStream(Assembly assembly, string resourceName)
-	{
-		if (assembly is null)
-		{
-			throw new ArgumentNullException(nameof(assembly));
-		}
-
-		if (resourceName is null)
-		{
-			throw new ArgumentNullException(nameof(resourceName));
-		}
-
-		resourceName = resourceName.Replace("/", ".");
-		return assembly.GetManifestResourceStream(resourceName);
-	}
-	public bool TryGet(string id, [NotNullWhen(true)] out Source source)
-	{
-		if (_lookup.TryGetValue(id, out source))
-		{
-			return true;
-		}
-
-		using var stream = LoadResourceStream(_assembly, id);
-		using var reader = new StreamReader(stream);
-		source = new Source(id, reader.ReadToEnd().Replace("\r\n", "\n"));
-		_lookup[id] = source;
-
-		return true;
 	}
 }
