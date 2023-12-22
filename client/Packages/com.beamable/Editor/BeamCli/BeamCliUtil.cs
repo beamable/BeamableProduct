@@ -96,13 +96,13 @@ namespace Beamable.Editor.BeamCli
 #else
 		private const string EXEC = "beam";
 #endif
-		
+
 		[System.Diagnostics.Conditional("SPEW_ALL")]
 		static void VerboseLog(string log)
 		{
 			BeamableLogger.Log($"<b>[{nameof(BeamCliUtil)}]</b> {log}");
 		}
-		
+
 		/// <summary>
 		/// Installs the Beam CLI into the /Library folder of the current project.
 		/// </summary>
@@ -159,7 +159,7 @@ namespace Beamable.Editor.BeamCli
 			try
 			{
 				var baseDir = Path.GetDirectoryName(configPath);
-				var dir = Path.Combine(Directory.GetCurrentDirectory(),baseDir!);
+				var dir = Path.Combine(Directory.GetCurrentDirectory(), baseDir!);
 				var exeFile = Directory
 									   .EnumerateFiles(
 										   dir,
@@ -185,7 +185,7 @@ namespace Beamable.Editor.BeamCli
 		static void BuildTool()
 		{
 			var proc = new Process();
-			var dir = Path.Combine(Directory.GetCurrentDirectory(),Path.GetDirectoryName(EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value));
+			var dir = Path.Combine(Directory.GetCurrentDirectory(), Path.GetDirectoryName(EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value));
 
 			proc.StartInfo = new ProcessStartInfo
 			{
