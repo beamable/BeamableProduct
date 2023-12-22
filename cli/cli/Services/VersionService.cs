@@ -59,9 +59,7 @@ public class VersionService
 	{
 		var info = new VersionInfo();
 
-		var asm = Assembly.GetEntryAssembly();
-		var versionInfo = System.Diagnostics.FileVersionInfo.GetVersionInfo(asm.Location);
-		info.version = versionInfo.FileVersion;
+		info.version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0";
 		info.location = Environment.ProcessPath;
 
 		var templateInfo = await projectService.GetTemplateInfo();
