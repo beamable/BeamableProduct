@@ -68,37 +68,44 @@ namespace Beamable.Server
 			_requester = requester;
 		}
 
-
 		public async Promise<IMongoDatabase> GetDatabase<TStorage>(bool useCache = true) where TStorage : MongoStorageObject
 		{
 			if (!useCache)
 			{
 				_databaseCache.TryRemove(typeof(TStorage), out _);
 			}
+			
+			try
+			{
+				var db = await _databaseCache.GetOrAdd(typeof(TStorage), (type) =>
+				{
+					string storageName = string.Empty;
+					var attributes = type.GetCustomAttributes(true);
+					foreach (var attribute in attributes)
+					{
+						if (attribute is StorageObjectAttribute storageAttr)
+						{
+							storageName = storageAttr.StorageName;
+							break;
+						}
+					}
 
-			var db = await _databaseCache.GetOrAdd(typeof(TStorage), (type) =>
-		   {
-			   string storageName = string.Empty;
-			   var attributes = type.GetCustomAttributes(true);
-			   foreach (var attribute in attributes)
-			   {
-				   if (attribute is StorageObjectAttribute storageAttr)
-				   {
-					   storageName = storageAttr.StorageName;
-					   break;
-				   }
-			   }
+					if (string.IsNullOrEmpty(storageName))
+					{
+						throw new MicroserviceException(500, "DatabaseException", "Database storage name not found.");
+					}
 
-			   if (string.IsNullOrEmpty(storageName))
-			   {
-				   BeamableLogger.LogError($"Cannot find storage name for type {type} ");
-				   return null;
-			   }
+					return GetDatabaseByStorageName(storageName);
+				});
 
-			   return GetDatabaseByStorageName(storageName);
-		   });
-
-			return db;
+				return db;
+			} 
+			catch (Exception ex)
+			{
+				BeamableLogger.LogError($"Failed to get IMongoDatabase instance for type {typeof(TStorage)} with error: {ex.Message}");
+				_databaseCache.TryRemove(typeof(TStorage), out _);
+				throw;
+			}
 		}
 
 		public Promise<IMongoCollection<TCollection>> GetCollection<TStorage, TCollection>()
