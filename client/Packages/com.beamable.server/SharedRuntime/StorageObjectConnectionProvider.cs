@@ -92,7 +92,7 @@ namespace Beamable.Server
 
 					if (string.IsNullOrEmpty(storageName))
 					{
-						throw new MicroserviceException(500, "DatabaseException", "Database storage name not found.");
+						throw new StorageNotFoundException(storageName);
 					}
 
 					return GetDatabaseByStorageName(storageName);
@@ -114,6 +114,7 @@ namespace Beamable.Server
 		{
 			return GetCollection<TStorage, TCollection>(typeof(TCollection).Name);
 		}
+		
 		public async Promise<IMongoCollection<TCollection>> GetCollection<TStorage, TCollection>(string collectionName)
 			where TStorage : MongoStorageObject
 			where TCollection : StorageDocument
@@ -139,16 +140,13 @@ namespace Beamable.Server
 			string connectionString = Environment.GetEnvironmentVariable(connStringName);
 			if (string.IsNullOrEmpty(connectionString))
 			{
-				// try to get the data from the running database.
-				// TODO: cache this connection string for 30 minutes
 				var res = await _requester.Request<ConnectionString>(Method.GET, "basic/beamo/storage/connection");
 				connectionString = res.connectionString;
 			}
 
 			if (string.IsNullOrEmpty(connectionString))
 			{
-				BeamableLogger.LogError(
-					$"Connection string to storage '{storageName}' is empty or not present in environment variables.");
+				throw new ConnectionStringException(storageName);
 			}
 			return connectionString;
 		}
@@ -157,6 +155,18 @@ namespace Beamable.Server
 		public class ConnectionString
 		{
 			public string connectionString;
+		}
+
+		[Serializable]
+		public class StorageNotFoundException : MicroserviceException
+		{
+			public StorageNotFoundException(string storageName) : base(500, "StorageNotFound", $"Database storage name '{storageName}' not found.") {}
+		}
+		
+		[Serializable]
+		public class ConnectionStringException : MicroserviceException
+		{
+			public ConnectionStringException(string storageName) : base(500, "InvalidConnectionString", $"Connection string for storage name '{storageName}' is null or empty.") {}
 		}
 	}
 }
