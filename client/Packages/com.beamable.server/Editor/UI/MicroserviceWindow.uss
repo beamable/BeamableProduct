@@ -13,6 +13,8 @@
 }
 #microserviceContentVisualElement {
     flex-grow: 1;
+    padding-bottom: 10px;
+    padding-top: 10px;
 }
 
 #loadingBar {

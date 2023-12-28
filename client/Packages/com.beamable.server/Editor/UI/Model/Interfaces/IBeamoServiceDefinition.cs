@@ -45,5 +45,6 @@ namespace Beamable.Editor.UI.Model
 		public BeamoServiceStatus IsRunningOnRemote { get; set; }
 
 		ServiceInfo ServiceInfo { get; set; }
+		bool ExistLocally { get; }
 	}
 }

@@ -241,6 +241,7 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
 
 TemplateContainer > #mainVisualElement{
     margin-right: 10px;
+    margin-bottom: 20px;
 }
 
 RemoteMicroserviceVisualElement .separator {
