@@ -160,20 +160,20 @@ namespace Beamable.Editor.Microservice.UI2.Models
 				var full = Path.GetFullPath(_serviceDefinition.ServiceInfo.dockerBuildPath);
 				EditorUtility.RevealInFinder(full);
 			});
-			if(_serviceDefinition.ExistLocally)
+			if (_serviceDefinition.ExistLocally)
 			{
 				evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenDocs(false),
-				                              _serviceDefinition.IsRunningLocally);
+											  _serviceDefinition.IsRunningLocally);
 				if (_serviceDefinition.ServiceInfo != null)
 				{
 					evt.menu.BeamableAppendAction($"{localCategory}/Regenerate {_serviceDefinition.BeamoId}Client.cs",
-					                              pos =>
-					                              {
-						                              BeamEditorContext
-							                              .Default.ServiceScope.GetService<CodeService>()
-							                              .GenerateClientCode(_name)
-							                              .Then(_ => { });
-					                              });
+												  pos =>
+												  {
+													  BeamEditorContext
+														  .Default.ServiceScope.GetService<CodeService>()
+														  .GenerateClientCode(_name)
+														  .Then(_ => { });
+												  });
 				}
 			}
 

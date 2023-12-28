@@ -113,7 +113,7 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			CreateLogSection(_visualsModel.AreLogsAttached);
 			UpdateLocalStatus();
 			ChangeCollapseState();
-			
+
 			if (Model.ExistLocally)
 			{
 				return;
