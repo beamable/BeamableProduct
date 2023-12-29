@@ -74,7 +74,7 @@ namespace Beamable.Server
 			{
 				_databaseCache.TryRemove(typeof(TStorage), out _);
 			}
-			
+
 			try
 			{
 				var db = await _databaseCache.GetOrAdd(typeof(TStorage), (type) =>
@@ -99,7 +99,7 @@ namespace Beamable.Server
 				});
 
 				return db;
-			} 
+			}
 			catch (Exception ex)
 			{
 				BeamableLogger.LogError($"Failed to get IMongoDatabase instance for type {typeof(TStorage)} with error: {ex.Message}");
@@ -114,7 +114,7 @@ namespace Beamable.Server
 		{
 			return GetCollection<TStorage, TCollection>(typeof(TCollection).Name);
 		}
-		
+
 		public async Promise<IMongoCollection<TCollection>> GetCollection<TStorage, TCollection>(string collectionName)
 			where TStorage : MongoStorageObject
 			where TCollection : StorageDocument
@@ -160,13 +160,13 @@ namespace Beamable.Server
 		[Serializable]
 		public class StorageNotFoundException : MicroserviceException
 		{
-			public StorageNotFoundException(string storageName) : base(500, "StorageNotFound", $"Database storage name '{storageName}' not found.") {}
+			public StorageNotFoundException(string storageName) : base(500, "StorageNotFound", $"Database storage name '{storageName}' not found.") { }
 		}
-		
+
 		[Serializable]
 		public class ConnectionStringException : MicroserviceException
 		{
-			public ConnectionStringException(string storageName) : base(500, "InvalidConnectionString", $"Connection string for storage name '{storageName}' is null or empty.") {}
+			public ConnectionStringException(string storageName) : base(500, "InvalidConnectionString", $"Connection string for storage name '{storageName}' is null or empty.") { }
 		}
 	}
 }
