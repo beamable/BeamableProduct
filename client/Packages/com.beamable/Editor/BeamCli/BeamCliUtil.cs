@@ -117,7 +117,7 @@ namespace Beamable.Editor.BeamCli
 					return;
 
 				BuildTool();
-				
+
 				if (CheckForBuildedSource(outputNotFoundError: true))
 					return;
 			}
@@ -166,11 +166,11 @@ namespace Beamable.Editor.BeamCli
 				if (Directory.Exists(cliBuildPath))
 				{
 					var cliBuildArtifacts = Directory.EnumerateFiles(
-						cliBuildPath, 
-						"Beamable.Tools.dll", 
+						cliBuildPath,
+						"Beamable.Tools.dll",
 						SearchOption.AllDirectories
 					);
-				
+
 					var exeFile = cliBuildArtifacts.FirstOrDefault();
 					if (!string.IsNullOrWhiteSpace(exeFile))
 					{
@@ -189,7 +189,7 @@ namespace Beamable.Editor.BeamCli
 			{
 				Debug.LogException(e);
 			}
-			
+
 			SessionState.EraseString(SRC_BEAM);
 			return false;
 		}
@@ -206,7 +206,7 @@ namespace Beamable.Editor.BeamCli
 				BeamableLogger.LogError($"Failed to build CLI from source. Working directory '{cliAbsolutePath}' does not exist.");
 				return;
 			}
-			
+
 			var proc = new Process();
 			proc.StartInfo = new ProcessStartInfo
 			{
@@ -221,7 +221,7 @@ namespace Beamable.Editor.BeamCli
 			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
 			proc.Start();
 			proc.WaitForExit();
-			
+
 			var stdout = proc.StandardOutput.ReadToEnd();
 			var stderr = proc.StandardError.ReadToEnd();
 			if (!string.IsNullOrWhiteSpace(stderr) || proc.ExitCode > 0)
@@ -241,7 +241,7 @@ namespace Beamable.Editor.BeamCli
 				BeamableLogger.LogError("Unable to install BeamCLI from package: the provided cli home directory is blank.");
 				return false;
 			}
-			
+
 			Directory.CreateDirectory(CLI_VERSIONED_HOME);
 			var proc = new Process();
 			var fullDirectory = Path.GetFullPath(CLI_VERSIONED_HOME);
