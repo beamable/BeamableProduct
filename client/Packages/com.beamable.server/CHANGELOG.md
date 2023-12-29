@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+
 - `StorageObjectConnectionProvider` will remove `IMongoDatabase` from cache when `GetDatabase()` throws an exception, ensuring the service does not cache transient errors.
 
 ## [1.19.9]
