@@ -318,6 +318,11 @@ namespace Beamable.Microservice.Tests.Socket
         {
             return req => req.AuthFailure();
         }
+        
+        public static TestSocketResponseGenerator TimeoutFailure()
+        {
+            return req => req.Timeout();
+        }
 
         public static TestSocketResponseGenerator Custom(TestSocketResponseGenerator generator)
         {
@@ -579,6 +584,20 @@ namespace Beamable.Microservice.Tests.Socket
                     service = "gateway"
                 }
             };
+        }
+        
+        public static WebsocketResponse Timeout(this WebsocketResponse res)
+        {
+	        return new WebsocketResponse
+	        {
+		        id = res.id,
+		        from = 0,
+		        status = 504,
+		        body = new WebsocketErrorResponse
+		        {
+			        service = "gateway"
+		        }
+	        };
         }
     }
 
