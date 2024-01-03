@@ -4,6 +4,16 @@
         <PackageId>Beamable.Common</PackageId>
         <Authors>Beamable Team</Authors>
         <Company>Beamable</Company>
+        <PackageTags>Beamable;Game Server;Unity;Unreal;Games;Microservice</PackageTags>
+        <PackageProjectUrl>https://beamable.com</PackageProjectUrl>
+        <PackageIconUrl>https://beamable.com/wp-content/uploads/2024/01/kY9wLmfZ_400x400.jpg</PackageIconUrl>
+        <PackageReleaseNotes>https://beamable.github.io/changes/</PackageReleaseNotes>
+        <PackageLicenseUrl>https://beamable.com/license</PackageLicenseUrl>
+        <Description>
+            The Beamable.Common package contains the standard Beamable code that powers
+            The Beamable Unity SDK, as well as Beamable C# Microservices. 
+        </Description>
+        
 
         <DefineConstants>DB_MICROSERVICE;DISABLE_BEAMABLE_ASYNCMETHODBUILDER;BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES</DefineConstants>
         <AssemblyName>Unity.Beamable.Runtime.Common</AssemblyName>
