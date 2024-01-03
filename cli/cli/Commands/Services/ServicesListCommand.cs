@@ -1,4 +1,5 @@
 ﻿using cli.Services;
+using cli.Utils;
 using Newtonsoft.Json;
 using Spectre.Console;
 using Spectre.Console.Rendering;
@@ -57,7 +58,8 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 		{
 			if (args.Remote)
 			{
-				throw new CliException("Docker is not running in this machine. Please start Docker before running this command.", Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_DOCKER_NOT_RUNNING, true);
+				throw CliExceptions.DOCKER_NOT_RUNNING;
+
 			}
 
 			var table = new Table();

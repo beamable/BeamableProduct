@@ -13,12 +13,15 @@ using cli.Dotnet;
 using cli.Services;
 using cli.Services.Content;
 using cli.Unreal;
+using cli.Utils;
 using cli.Version;
+using Errata;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.Spectre;
+using Spectre.Console;
 using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Invocation;
@@ -283,7 +286,13 @@ public class App
 				case CliException cliException:
 					if (cliException.ReportOnStdOut)
 					{
-						Console.WriteLine(cliException.Message);
+						// Create a new report
+						var report = new Report(
+							new BeamResourceRepository(
+								typeof(Program).Assembly));
+						foreach (var error in cliException.Reports)
+							report.AddDiagnostic(error);
+						report.Render(AnsiConsole.Console);
 					}
 					else
 					{

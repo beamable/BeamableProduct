@@ -458,7 +458,8 @@ public partial class BeamoLocalSystem
 		while (!reader.EndOfStream)
 		{
 			var line = await reader.ReadLineAsync();
-			yield return line?.Substring(8); // substring 8 because of a strange encoding issue in docker dotnet.
+			if (line?.Length > 8)
+				yield return line[8..]; // substring 8 because of a strange encoding issue in docker dotnet.
 		}
 	}
 }

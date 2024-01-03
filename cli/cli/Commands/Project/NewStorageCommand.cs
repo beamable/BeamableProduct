@@ -51,8 +51,23 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
 
 		if (!File.Exists(args.slnPath))
 		{
-			throw new CliException($"No sln file found at path=[{args.slnPath}]",
-				Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_SOLUTION_NOT_FOUND, true);
+			string correctSlnPath = string.Empty;
+			string dir = Path.GetDirectoryName(args.slnPath);
+			if (!string.IsNullOrWhiteSpace(dir))
+			{
+				var files = Directory.GetFiles(dir);
+				var slnFiles = files.Where(f => f.EndsWith(".sln")).ToArray();
+				if (slnFiles.Length == 1)
+				{
+					correctSlnPath = slnFiles[0];
+				}
+			}
+
+			var exception = new CliException($"No sln file found at path=[{args.slnPath}]",
+				Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_SOLUTION_NOT_FOUND, true,
+				string.IsNullOrWhiteSpace(correctSlnPath) ? null : $"Try using \"{correctSlnPath}\" as --sln option value");
+
+			throw exception;
 		}
 
 		Log.Information(
