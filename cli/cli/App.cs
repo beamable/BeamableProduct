@@ -21,6 +21,7 @@ using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.Spectre;
+using Spectre.Console;
 using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Invocation;
