@@ -13,7 +13,7 @@
             The Beamable.Common package contains the standard Beamable code that powers
             The Beamable Unity SDK, as well as Beamable C# Microservices. 
         </Description>
-        
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
         <DefineConstants>DB_MICROSERVICE;DISABLE_BEAMABLE_ASYNCMETHODBUILDER;BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES</DefineConstants>
         <AssemblyName>Unity.Beamable.Runtime.Common</AssemblyName>
