@@ -21,8 +21,8 @@
         <OutputType>Library</OutputType>
         <VersionPrefix>$(VersionPrefix)</VersionPrefix>
         <PackageOutputPath>./nupkg</PackageOutputPath>
-        <TargetFrameworks>netstandard2.0;net6.0;net7.0;netstandard2.1</TargetFrameworks>
-        <LangVersion>8.0</LangVersion>
+        <LangVersion>8</LangVersion>
+        <TargetFramework>netstandard2.0</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>

@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Updates the Serilog and Spectre dependencies.
+- Updated dotnet framework dependencies to maximize and enforce compatibility (minimum dotnet 6)
 
 ### Fixed
 
