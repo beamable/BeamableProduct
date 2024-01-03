@@ -14,6 +14,7 @@
             The Beamable Unity SDK, as well as Beamable C# Microservices. 
         </Description>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <NoWarn>$(NoWarn);1591</NoWarn>
 
         <DefineConstants>DB_MICROSERVICE;DISABLE_BEAMABLE_ASYNCMETHODBUILDER;BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES</DefineConstants>
         <AssemblyName>Unity.Beamable.Runtime.Common</AssemblyName>
