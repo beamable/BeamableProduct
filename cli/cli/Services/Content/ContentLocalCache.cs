@@ -148,7 +148,7 @@ public class ContentLocalCache
 					.WithLabel(label);
 				throw new CliException("Invalid content JSON",
 					Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_INVALID_CONTENT,
-					true,null,new[]{extraReport});
+					true, null, new[] { extraReport });
 			}
 		}
 

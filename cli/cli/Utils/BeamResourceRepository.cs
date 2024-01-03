@@ -38,7 +38,7 @@ public sealed class BeamResourceRepository : ISourceRepository
 
 		if (File.Exists(id))
 		{
-			source = new Source(id, File.ReadAllText(id).Replace("\r\n","\n"));
+			source = new Source(id, File.ReadAllText(id).Replace("\r\n", "\n"));
 			_lookup[id] = source;
 			return true;
 		}
