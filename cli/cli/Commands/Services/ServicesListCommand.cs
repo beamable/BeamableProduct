@@ -59,7 +59,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 			if (args.Remote)
 			{
 				throw CliExceptions.DOCKER_NOT_RUNNING;
-				
+
 			}
 
 			var table = new Table();

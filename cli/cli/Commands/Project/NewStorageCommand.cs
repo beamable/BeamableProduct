@@ -64,7 +64,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
 			}
 
 			var exception = new CliException($"No sln file found at path=[{args.slnPath}]",
-				Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_SOLUTION_NOT_FOUND, true, 
+				Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_SOLUTION_NOT_FOUND, true,
 				string.IsNullOrWhiteSpace(correctSlnPath) ? null : $"Try using \"{correctSlnPath}\" as --sln option value");
 
 			throw exception;

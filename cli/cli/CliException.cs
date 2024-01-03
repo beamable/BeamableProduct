@@ -25,19 +25,19 @@ public class CliException : Exception
 	{
 		NonZeroOrOneExitCode = nonZeroOrOneExitCode;
 		ReportOnStdOut = useStdOut;
-		
+
 		var baseReport = Diagnostic.Error(message)
 			.WithCode($"{nonZeroOrOneExitCode:0000.##}");
 		if (!string.IsNullOrWhiteSpace(additionalNote))
 		{
 			baseReport.WithNote(additionalNote);
 		}
-		Reports = new List<Diagnostic>(){baseReport};
+		Reports = new List<Diagnostic>() { baseReport };
 		if (additionalReports != null)
 		{
 			Reports.AddRange(additionalReports);
 		}
-		
+
 		Debug.Assert(NonZeroOrOneExitCode > 1, "NonZeroOrOneExitCode must be > 1 --- 0 is OK and 1 is \"private exception\" (not meant to be exposed to our cli-interface layer). In Engine, we check for these exceptions and ask for a bug report.");
 	}
 }

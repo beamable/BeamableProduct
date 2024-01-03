@@ -290,7 +290,7 @@ public class App
 						var report = new Report(
 							new BeamResourceRepository(
 								typeof(Program).Assembly));
-						foreach(var error in cliException.Reports)
+						foreach (var error in cliException.Reports)
 							report.AddDiagnostic(error);
 						report.Render(AnsiConsole.Console);
 					}
