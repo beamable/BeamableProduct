@@ -6,8 +6,9 @@
         <Authors>Beamable Team</Authors>
         <Company>Beamable</Company>
 
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>netstandard2.0</TargetFramework>
         <AssemblyName>Beamable.Server.Common</AssemblyName>
+        <LangVersion>8</LangVersion>
     </PropertyGroup>
 
     <PropertyGroup>
