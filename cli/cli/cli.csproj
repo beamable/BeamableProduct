@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
 
@@ -20,6 +18,8 @@
     <PackageOutputPath>./nupkg</PackageOutputPath>
     <LangVersion>10</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <TargetFramework>net6.0</TargetFramework>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -40,8 +40,8 @@
   <ItemGroup>
     <PackageReference Include="CliWrap" Version="3.6.0" />
     <PackageReference Include="Csv" Version="2.0.93" />
-    <PackageReference Include="Docker.DotNet" Version="3.125.14" />
     <PackageReference Include="Errata" Version="0.12.0" />
+    <PackageReference Include="Docker.DotNet" Version="3.125.14" />
     <PackageReference Include="JetBrains.Annotations" Version="2022.3.1" />
     <PackageReference Include="Markdig" Version="0.31.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0-preview.4.22229.4" />

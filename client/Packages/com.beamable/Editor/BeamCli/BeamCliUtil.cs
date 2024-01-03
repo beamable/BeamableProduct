@@ -117,7 +117,8 @@ namespace Beamable.Editor.BeamCli
 					return;
 
 				BuildTool();
-				if (CheckForBuildedSource())
+
+				if (CheckForBuildedSource(outputNotFoundError: true))
 					return;
 			}
 
@@ -138,7 +139,7 @@ namespace Beamable.Editor.BeamCli
 			}
 		}
 
-		private static bool CheckForBuildedSource()
+		private static bool CheckForBuildedSource(bool outputNotFoundError = false)
 		{
 			if (!USE_SRC)
 			{
@@ -158,39 +159,59 @@ namespace Beamable.Editor.BeamCli
 
 			try
 			{
-				var baseDir = Path.GetDirectoryName(configPath);
-				var dir = Path.Combine(Directory.GetCurrentDirectory(), baseDir!);
-				var exeFile = Directory
-									   .EnumerateFiles(
-										   dir,
-										   "Beamable.Tools.dll", SearchOption.AllDirectories).FirstOrDefault();
+				var cliRelativePath = Path.GetDirectoryName(configPath);
+				var cliAbsolutePath = Path.GetFullPath(cliRelativePath!);
+				var cliBuildPath = Path.Combine(cliAbsolutePath, "bin");
 
-				if (!string.IsNullOrWhiteSpace(exeFile))
+				if (Directory.Exists(cliBuildPath))
 				{
-					VerboseLog($"Founded tool dll file at {exeFile[0]}");
-					SessionState.SetString(SRC_BEAM, Path.GetFullPath(exeFile));
-					return true;
+					var cliBuildArtifacts = Directory.EnumerateFiles(
+						cliBuildPath,
+						"Beamable.Tools.dll",
+						SearchOption.AllDirectories
+					);
+
+					var exeFile = cliBuildArtifacts.FirstOrDefault();
+					if (!string.IsNullOrWhiteSpace(exeFile))
+					{
+						VerboseLog($"Found Beamable.Tools.dll at {exeFile[0]}");
+						SessionState.SetString(SRC_BEAM, Path.GetFullPath(exeFile));
+						return true;
+					}
+				}
+
+				if (outputNotFoundError)
+				{
+					BeamableLogger.LogError($"Beamable.Tools.dll (CLI artifact) not found in '{cliBuildPath}'. Please build dll from CLI solution, or change EditorConfiguration to use global installed cli binary.");
 				}
 			}
 			catch (Exception e)
 			{
-				//da duck?!
 				Debug.LogException(e);
 			}
-			VerboseLog($"Tool dll file not found.");
+
 			SessionState.EraseString(SRC_BEAM);
 			return false;
 		}
 
 		static void BuildTool()
 		{
-			var proc = new Process();
-			var dir = Path.Combine(Directory.GetCurrentDirectory(), Path.GetDirectoryName(EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value));
+			VerboseLog("Building CLI from source...");
+			var configPath = EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value;
+			var cliRelativePath = Path.GetDirectoryName(configPath);
+			var cliAbsolutePath = Path.GetFullPath(cliRelativePath!);
 
+			if (!Directory.Exists(cliAbsolutePath))
+			{
+				BeamableLogger.LogError($"Failed to build CLI from source. Working directory '{cliAbsolutePath}' does not exist.");
+				return;
+			}
+
+			var proc = new Process();
 			proc.StartInfo = new ProcessStartInfo
 			{
 				FileName = Path.GetFullPath(DotnetUtil.DotnetPath),
-				WorkingDirectory = dir,
+				WorkingDirectory = cliAbsolutePath,
 				Arguments = "build -c Release -f net6.0",
 				UseShellExecute = false,
 				RedirectStandardOutput = true,
@@ -198,19 +219,29 @@ namespace Beamable.Editor.BeamCli
 			};
 			proc.StartInfo.CreateNoWindow = true;
 			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
-			VerboseLog("Build tool from scratch");
 			proc.Start();
 			proc.WaitForExit();
-			var output = proc.StandardOutput.ReadToEnd();
-			var error = proc.StandardError.ReadToEnd();
-			if (!string.IsNullOrWhiteSpace(error))
+
+			var stdout = proc.StandardOutput.ReadToEnd();
+			var stderr = proc.StandardError.ReadToEnd();
+			if (!string.IsNullOrWhiteSpace(stderr) || proc.ExitCode > 0)
 			{
-				Debug.LogError("Unable to install BeamCLI: " + error + " / " + output);
+				var output = "";
+				output += string.IsNullOrEmpty(stderr) ? "" : $"stderr: {stderr}\n";
+				output += string.IsNullOrEmpty(stdout) ? "" : $"stdout: {stdout}";
+				BeamableLogger.LogError($"Failed to build CLI from source.\n{output}");
 			}
+			VerboseLog($"Building CLI completed with exit code '{proc.ExitCode}'.");
 		}
 
 		static bool InstallTool()
 		{
+			if (string.IsNullOrEmpty(CLI_VERSIONED_HOME))
+			{
+				BeamableLogger.LogError("Unable to install BeamCLI from package: the provided cli home directory is blank.");
+				return false;
+			}
+
 			Directory.CreateDirectory(CLI_VERSIONED_HOME);
 			var proc = new Process();
 			var fullDirectory = Path.GetFullPath(CLI_VERSIONED_HOME);
