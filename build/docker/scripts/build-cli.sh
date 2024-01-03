@@ -35,7 +35,7 @@ else
     dotnet pack ./cli/cli --configuration Release --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION
     dotnet pack ./client/Packages/com.beamable/Common --configuration Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION
     dotnet pack ./microservice/unityEngineStubs --configuration Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION
-    dotnet pack ./microservice/microservice -c Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg  --version-suffix=${SUFFIX-""} /p:NuspecFile=Microservice.nuspec /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION /p:InformationalVersion=$VERSION
+    dotnet pack ./microservice/microservice -c Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg --version-suffix=${SUFFIX-""} /p:NuspecFile=Microservice.nuspec /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION /p:InformationalVersion=$VERSION
 fi
 
 echo "Installing built package..."
