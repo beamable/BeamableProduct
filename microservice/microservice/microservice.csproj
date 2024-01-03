@@ -6,9 +6,19 @@
     <NuspecProperties>version=$(CombinedVersion)</NuspecProperties>
 
     <VersionPrefix>$(VersionPrefix)</VersionPrefix>
-    <Authors>Beamable Team</Authors>
 
+    <Authors>Beamable Team</Authors>
     <Company>Beamable</Company>
+    <PackageTags>Beamable;Game Server;Unity;Unreal;Games;Microservice</PackageTags>
+    <PackageProjectUrl>https://beamable.com</PackageProjectUrl>
+    <PackageIconUrl>https://beamable.com/wp-content/uploads/2024/01/kY9wLmfZ_400x400.jpg</PackageIconUrl>
+    <PackageReleaseNotes>https://beamable.github.io/changes/</PackageReleaseNotes>
+    <PackageLicenseUrl>https://beamable.com/license</PackageLicenseUrl>
+    <Description>
+      The Beamable.Microservice package contains the code required for running C# Microservices.
+    </Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
 
     <DefineConstants>DB_MICROSERVICE;DISABLE_BEAMABLE_ASYNCMETHODBUILDER;BEAMABLE_IGNORE_MONGO_MOCKS</DefineConstants>
 

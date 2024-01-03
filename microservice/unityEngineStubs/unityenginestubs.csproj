@@ -8,6 +8,17 @@
       <AssemblyName>Beamable.Tools</AssemblyName>
       <Authors>Beamable Team</Authors>
       <Company>Beamable</Company>
+      <PackageTags>Beamable;Game Server;Unity;Unreal;Games;Microservice</PackageTags>
+      <PackageProjectUrl>https://beamable.com</PackageProjectUrl>
+      <PackageIconUrl>https://beamable.com/wp-content/uploads/2024/01/kY9wLmfZ_400x400.jpg</PackageIconUrl>
+      <PackageReleaseNotes>https://beamable.github.io/changes/</PackageReleaseNotes>
+      <PackageLicenseUrl>https://beamable.com/license</PackageLicenseUrl>
+      <Description>
+         The Beamable.UnityEngine code contains mock classes that act as psuedo replacements for Unity primitive types.
+      </Description>
+      <GenerateDocumentationFile>true</GenerateDocumentationFile>
+      <NoWarn>$(NoWarn);1591</NoWarn>
+      
       <VersionPrefix>$(VersionPrefix)</VersionPrefix>
       <PackageOutputPath>./nupkg</PackageOutputPath>
       <AssemblyName>UnityEngine</AssemblyName>
