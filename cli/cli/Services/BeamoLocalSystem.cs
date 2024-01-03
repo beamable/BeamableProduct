@@ -309,7 +309,7 @@ public delegate Task LocalProtocolModifier<in TLocal>(BeamoServiceDefinition own
 /// <summary>
 /// A function that takes in the <see cref="BeamoServiceDefinition"/> plus it's associated Remote Protocol so that it can make changes to the protocol instance.
 /// </summary>
-/// <typeparam name="TLocal">The type of <see cref="IBeamoRemoteProtocol"/> associated with the given <see cref="BeamoServiceDefinition.Protocol"/>.</typeparam>
+/// <typeparam name="TRemote">The type of <see cref="IBeamoRemoteProtocol"/> associated with the given <see cref="BeamoServiceDefinition.Protocol"/>.</typeparam>
 public delegate Task RemoteProtocolModifier<in TRemote>(BeamoServiceDefinition owner, TRemote protocol) where TRemote : IBeamoRemoteProtocol;
 
 
