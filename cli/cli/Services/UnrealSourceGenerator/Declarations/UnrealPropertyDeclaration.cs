@@ -197,29 +197,6 @@ public struct UnrealPropertyDeclaration
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_GUID))
 			return GUID_U_PROPERTY_SERIALIZE;
 		
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_STRING) ||
-		    unrealType.StartsWith(UnrealSourceGenerator.UNREAL_BYTE) ||
-		    unrealType.StartsWith(UnrealSourceGenerator.UNREAL_SHORT) ||
-		    unrealType.StartsWith(UnrealSourceGenerator.UNREAL_INT) ||
-		    unrealType.StartsWith(UnrealSourceGenerator.UNREAL_LONG) ||
-		    unrealType.StartsWith(UnrealSourceGenerator.UNREAL_BOOL) ||
-		    unrealType.StartsWith(UnrealSourceGenerator.UNREAL_FLOAT) ||
-		    unrealType.StartsWith(UnrealSourceGenerator.UNREAL_DOUBLE))
-		{
-			return PRIMITIVE_U_PROPERTY_SERIALIZE;
-		}
-
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_STRING) ||
-			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_BYTE) ||
-			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_SHORT) ||
-			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_INT) ||
-			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_LONG) ||
-			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_BOOL) ||
-			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_FLOAT) ||
-			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_DOUBLE))
-		{
-			return PRIMITIVE_U_PROPERTY_SERIALIZE;
-		}
 
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_STRING) ||
 			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_BYTE) ||
@@ -240,12 +217,6 @@ public struct UnrealPropertyDeclaration
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
 			return U_OBJECT_U_PROPERTY_SERIALIZE;
 		
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_STRUCT_PREFIX))
-			return U_STRUCT_U_PROPERTY_SERIALIZE;
-
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_STRUCT_PREFIX))
-			return U_STRUCT_U_PROPERTY_SERIALIZE;
-
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_STRUCT_PREFIX))
 			return U_STRUCT_U_PROPERTY_SERIALIZE;
 
@@ -326,12 +297,6 @@ public struct UnrealPropertyDeclaration
 
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
 			return U_OBJECT_U_PROPERTY_DESERIALIZE;
-
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_STRUCT_PREFIX))
-			return U_STRUCT_U_PROPERTY_DESERIALIZE;
-
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_STRUCT_PREFIX))
-			return U_STRUCT_U_PROPERTY_DESERIALIZE;
 
 		return STRING_U_PROPERTY_DESERIALIZE;
 	}
