@@ -13,7 +13,6 @@
     <Company>Beamable</Company>
     <PackageTags>Beamable;Game Server;Unity;Unreal;Games;Microservice;CLI</PackageTags>
     <PackageProjectUrl>https://beamable.com</PackageProjectUrl>
-    <PackageIcon>https://beamable.com/wp-content/uploads/2024/01/kY9wLmfZ_400x400.jpg</PackageIcon>
     <PackageReleaseNotes>https://beamable.github.io/changes/</PackageReleaseNotes>
     <Description>
       The Beamable.Tools package is a dotnet tool that connects to the Beamable API and allows developers
