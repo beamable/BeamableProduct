@@ -35,7 +35,7 @@ public partial class BeamoLocalSystem
 	{
 		var existingMongoServices = BeamoManifest.ServiceDefinitions.Where(sd => sd.Protocol == BeamoProtocolType.EmbeddedMongoDb).ToList();
 		foreach (var storageReference
-				 in remoteManifest.storageReference)
+		         in remoteManifest.storageReference)
 		{
 			// If we don't have a service storage with that id stored locally, let's make one
 			if (existingMongoServices.All(sd => sd.BeamoId != storageReference.id))
@@ -101,22 +101,24 @@ public partial class BeamoLocalSystem
 				continue;
 			}
 
-			var url =
-				$"/basic/{_beamableRequester.Cid}.{_beamableRequester.Pid}.{MachineHelper.GetUniqueDeviceId()}micro_{sd.BeamoId}/admin/Docs";
+			var url = $"/basic/{_beamableRequester.Cid}.{_beamableRequester.Pid}.{MachineHelper.GetUniqueDeviceId()}micro_{sd.BeamoId}/admin/Docs";
 			var request = await _beamableRequester.Request(Method.GET, url, null, true, (s => s));
 
-			JObject requestObj = JObject.Parse(request);
-			string federatedKey = Beamable.Common.Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_KEY;
-			List<JToken> federatedComponentsToken = requestObj[federatedKey]?.Children().ToList();
-			List<string> federatedComponents = new List<string>();
-
-			foreach (JToken token in federatedComponentsToken)
+			var requestObj = JObject.Parse(request);
+			var federatedKey = Beamable.Common.Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_KEY;
+			if (requestObj.TryGetValue(federatedKey, out var federatedJsonBlob))
 			{
-				string component = token.ToString();
-				federatedComponents.Add(component);
-			}
+				var federatedComponents = new List<string>();
+				var federatedComponentsToken = federatedJsonBlob.Children().ToList();
+				foreach (JToken token in federatedComponentsToken)
+				{
+					string component = token.ToString();
+					federatedComponents.Add(component);
+				}
 
-			federatedComponentByServiceName[sd.BeamoId] = federatedComponents;
+				if (!federatedComponentByServiceName.TryAdd(sd.BeamoId, federatedComponents))
+					throw new CliException($"Found a Service with an already existing name here. This should be impossible. SERVICE_ID={sd.BeamoId}");
+			}
 		}
 
 
@@ -191,10 +193,7 @@ public partial class BeamoLocalSystem
 				List<ServiceComponent> componentsList;
 				if (federatedComponentsByName.TryGetValue(httpSd.BeamoId, out List<string> list))
 				{
-					componentsList = list.Select(v => new ServiceComponent()
-					{
-						name = v
-					}).ToList();
+					componentsList = list.Select(v => new ServiceComponent() { name = v }).ToList();
 				}
 				else
 				{
@@ -266,14 +265,7 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public ContainerUploadData PrepareContainerUploader(string cid, string gamePid, string realmPid, string token, string beamoId, string dockerRegistryUrl, BeamoServiceDefinition beamoService)
 	{
-		var containerUploadData = new ContainerUploadData
-		{
-			Md5 = MD5.Create(),
-			Client = new HttpClient
-			{
-				Timeout = Timeout.InfiniteTimeSpan
-			}
-		};
+		var containerUploadData = new ContainerUploadData { Md5 = MD5.Create(), Client = new HttpClient { Timeout = Timeout.InfiniteTimeSpan } };
 		containerUploadData.Client.DefaultRequestHeaders.Add("x-ks-clientid", cid);
 		containerUploadData.Client.DefaultRequestHeaders.Add("x-ks-projectid", realmPid);
 		containerUploadData.Client.DefaultRequestHeaders.Add("x-ks-token", token);
