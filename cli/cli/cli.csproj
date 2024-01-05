@@ -15,7 +15,6 @@
     <PackageProjectUrl>https://beamable.com</PackageProjectUrl>
     <PackageIconUrl>https://beamable.com/wp-content/uploads/2024/01/kY9wLmfZ_400x400.jpg</PackageIconUrl>
     <PackageReleaseNotes>https://beamable.github.io/changes/</PackageReleaseNotes>
-    <PackageLicenseUrl>https://beamable.com/license</PackageLicenseUrl>
     <Description>
       The Beamable.Tools package is a dotnet tool that connects to the Beamable API and allows developers
       to manage their Beamable resources via the CLI.
