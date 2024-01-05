@@ -1379,10 +1379,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                    MessageResponder.NoResponse(),
                    MessageFrequency.Exactly(failureCount),
                    "success-after-failure"
-                )
-                ;
-
-
+                );
             }), contentResolver);
 
             await ms.Start<SimpleMicroservice>(new TestArgs());

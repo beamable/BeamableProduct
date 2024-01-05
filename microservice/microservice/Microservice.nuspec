@@ -4,12 +4,19 @@
         <id>Beamable.Microservice.Runtime</id>
         <version>$version$</version>
         <title>$title$</title>
-        <authors>Beamable</authors>
+        <authors>Beamable Team</authors>
         <owners>Beamable</owners>
-        <description>This package contains the Beamable Microservice base code.</description>
+        <description>The Beamable.Microservice.Runtime package contains the code required for running C# Microservices.</description>
+        <tags>Beamable;Game Server;Unity;Unreal;Games;Microservice</tags>
+        <projectUrl>https://beamable.com</projectUrl>
+        <iconUrl>https://beamable.com/wp-content/uploads/2024/01/kY9wLmfZ_400x400.jpg</iconUrl>
+        <releaseNotes>https://beamable.github.io/changes/</releaseNotes>
+        <licenseUrl>https://beamable.com/license</licenseUrl>
+
         <dependencies>
             <group targetFramework="net6.0" />
         </dependencies>
+        
         <dependencies>
             <dependency id="EmbedIO" version="3.4.*" />
             <dependency id="LoxSmoke.DocXml" version="3.4.*" />
@@ -32,5 +39,15 @@
         <file src="bin\Release\net6.0\Beamable.*.dll" target="lib\net6.0" />
         <file src="bin\Release\net6.0\BeamableMicroserviceBase.dll" target="lib\net6.0" />
         <file src="bin\Release\net6.0\UnityEngine.dll" target="lib\net6.0" />
+
+        <file src="bin\Release\net6.0\Unity.Beamable.*.pdb" target="lib\net6.0" />
+        <file src="bin\Release\net6.0\Beamable.*.pdb" target="lib\net6.0" />
+        <file src="bin\Release\net6.0\BeamableMicroserviceBase.pdb" target="lib\net6.0" />
+        <file src="bin\Release\net6.0\UnityEngine.pdb" target="lib\net6.0" />
+
+        <file src="bin\Release\net6.0\Unity.Beamable.*.xml" target="lib\net6.0" />
+        <file src="bin\Release\net6.0\Beamable.*.xml" target="lib\net6.0" />
+        <file src="bin\Release\net6.0\BeamableMicroserviceBase.xml" target="lib\net6.0" />
+        <file src="bin\Release\net6.0\UnityEngine.xml" target="lib\net6.0" />
     </files>
 </package>

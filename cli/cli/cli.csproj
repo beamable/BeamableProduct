@@ -13,6 +13,15 @@
     <AssemblyName>Beamable.Tools</AssemblyName>
     <Authors>Beamable Team</Authors>
     <Company>Beamable</Company>
+    <PackageTags>Beamable;Game Server;Unity;Unreal;Games;Microservice;CLI</PackageTags>
+    <PackageProjectUrl>https://beamable.com</PackageProjectUrl>
+    <PackageReleaseNotes>https://beamable.github.io/changes/</PackageReleaseNotes>
+    <Description>
+      The Beamable.Tools package is a dotnet tool that connects to the Beamable API and allows developers
+      to manage their Beamable resources via the CLI.
+    </Description>
+<!--    <GenerateDocumentationFile>true</GenerateDocumentationFile>-->
+    <NoWarn>$(NoWarn);1591;1574;1572;1587;1573</NoWarn>
     <VersionPrefix>$(VersionPrefix)</VersionPrefix>
 
     <PackAsTool>true</PackAsTool>
@@ -41,6 +50,7 @@
     <PackageReference Include="CliWrap" Version="3.6.0" />
     <PackageReference Include="Csv" Version="2.0.93" />
     <PackageReference Include="Docker.DotNet" Version="3.125.14" />
+    <PackageReference Include="Errata" Version="0.12.0" />
     <PackageReference Include="JetBrains.Annotations" Version="2022.3.1" />
     <PackageReference Include="Markdig" Version="0.31.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0-preview.4.22229.4" />
