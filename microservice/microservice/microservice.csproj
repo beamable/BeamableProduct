@@ -6,8 +6,8 @@
     <NuspecProperties>version=$(CombinedVersion)</NuspecProperties>
 
     <VersionPrefix>$(VersionPrefix)</VersionPrefix>
-    <Authors>Beamable Team</Authors>
 
+    <Authors>Beamable Team</Authors>
     <Company>Beamable</Company>
 
     <DefineConstants>DB_MICROSERVICE;DISABLE_BEAMABLE_ASYNCMETHODBUILDER;BEAMABLE_IGNORE_MONGO_MOCKS</DefineConstants>
