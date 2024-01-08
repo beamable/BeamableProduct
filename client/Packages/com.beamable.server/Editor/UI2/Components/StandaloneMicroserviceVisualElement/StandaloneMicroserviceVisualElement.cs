@@ -113,6 +113,21 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			CreateLogSection(_visualsModel.AreLogsAttached);
 			UpdateLocalStatus();
 			ChangeCollapseState();
+
+			if (Model.ExistLocally)
+			{
+				return;
+			}
+
+			Root.Q<Button>("startBtn").RemoveFromHierarchy();
+			Root.Q<VisualElement>("logContainer").RemoveFromHierarchy();
+			Root.Q("collapseContainer")?.RemoveFromHierarchy();
+			Root.Q("statusSeparator")?.RemoveFromHierarchy();
+			Root.Q<VisualElement>("openDocsBtn")?.RemoveFromHierarchy();
+			Root.Q<VisualElement>("openScriptBtn")?.RemoveFromHierarchy();
+			Root.Q<MicroserviceVisualElementSeparator>("separator")?.RemoveFromHierarchy();
+			Root.Q("foldContainer").visible = false;
+			Root.Q<VisualElement>("mainVisualElement").style.SetHeight(DEFAULT_HEADER_HEIGHT);
 		}
 
 		private void HandleIsRunningChanged(bool _)

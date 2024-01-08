@@ -9,9 +9,9 @@ export SUFFIX=$(echo $VERSION_SUFFIX | tr . -)
 echo $SUFFIX
 if [ -z "$SUFFIX" ]
 then 
-    dotnet pack -c Release --include-source --include-symbols /p:NuspecFile=Microservice.nuspec /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION
+    dotnet pack -c Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg /p:NuspecFile=Microservice.nuspec /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION
 else
-    dotnet pack -c Release --include-source --include-symbols  --version-suffix=${SUFFIX-""} /p:NuspecFile=Microservice.nuspec /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION
+    dotnet pack -c Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg  --version-suffix=${SUFFIX-""} /p:NuspecFile=Microservice.nuspec /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION
 fi
 
 echo "Checking for publish"
@@ -22,4 +22,5 @@ then
     exit $?
 else
     dotnet nuget push ./bin/Release/Beamable.Microservice.Runtime.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
+    dotnet nuget push ./bin/Release/Beamable.Microservice.Runtime.${VERSION}.snupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
 fi
