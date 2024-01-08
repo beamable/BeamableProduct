@@ -90,16 +90,16 @@ namespace Beamable
 to automatically refresh the store content.
 
 However, the value of the nextDeltaSeconds may be too small, and result in overly chatty networking.
-To prevent excess networking, the CommerceListingRefreshSecondsMin"" value is used as a
+To prevent excess networking, the CommerceListingRefreshSecondsMinimum value is used as a
 minimum number of seconds to wait before automatically refreshing the store.
 
 When this value is 0, there is effectively no minimum wait period.
 
 The default is 60 seconds.
 ")]
-		public int CommerceListingRefreshSecondsMin = 60;
+		public int CommerceListingRefreshSecondsMinimum = 60;
 		
-		int ICommerceConfig.CommerceListingRefreshSecondsMin => CommerceListingRefreshSecondsMin;
+		int ICommerceConfig.CommerceListingRefreshSecondsMinimum => CommerceListingRefreshSecondsMinimum;
 		
 		[Header("Beamable Toolbar")]
 		[Tooltip("Enable this to receive a warning (toggle-able per Beam Hint Validation) when entering playmode.\n\n" +

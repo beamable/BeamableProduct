@@ -37,7 +37,7 @@ namespace Beamable.Api.Commerce
 				
 				if (store.nextDeltaSeconds > 0)
 				{
-					var delta = Math.Max(store.nextDeltaSeconds, _config.CommerceListingRefreshSecondsMin);
+					var delta = Math.Max(store.nextDeltaSeconds, _config.CommerceListingRefreshSecondsMinimum);
 					ScheduleRefresh(delta, store.symbol);
 				}
 			}
