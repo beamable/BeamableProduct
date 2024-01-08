@@ -19,6 +19,7 @@ public class InstantiateTests
 		
 		// this assertion makes sure the stack trace isn't starting with the re-capture/throw in the DI framework, 
 		//  but instead, is coming from the actual site of failure.
+		Console.WriteLine("STACK:" + ex.StackTrace);
 		Assert.That(ex.StackTrace.StartsWith("   at tests.DI.InstantiateTests.FailsOnConstructor..ctor()"));
 	}
 	
@@ -36,7 +37,8 @@ public class InstantiateTests
 		
 		// this assertion makes sure the stack trace isn't starting with the re-capture/throw in the DI framework, 
 		//  but instead, is coming from the actual site of failure.
-		Assert.That(ex.StackTrace.StartsWith("   at tests.DI.InstantiateTests.<>c.<ArgFailsOnConstructor>b__1_0(IDependencyProvider p) in /Users/chrishanna/Documents/Github/BeamableProduct/cli/tests/DI/InstantiateTests.cs:line 29"));
+		Console.WriteLine("STACK:" + ex.StackTrace);
+		Assert.That(ex.StackTrace.StartsWith("   at tests.DI.InstantiateTests.<>c.<ArgFailsOnConstructor>b__1_0(IDependencyProvider p)"));
 	}
 
 	class FailsOnConstructor
