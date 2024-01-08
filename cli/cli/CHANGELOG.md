@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `project add` Dockerfile path fixes.
 - `project new-storage` path fixes.
+- Stack traces from Dependency Injection, `GetService`, show inner stack trace instead of Reflection based stack trace.
 
 
 ## [1.19.10]
