@@ -21,6 +21,23 @@ public class InstantiateTests
 		//  but instead, is coming from the actual site of failure.
 		Assert.That(ex.StackTrace.StartsWith("   at tests.DI.InstantiateTests.FailsOnConstructor..ctor()"));
 	}
+	
+	[Test]
+	public void ArgFailsOnConstructor()
+	{
+		var builder = new DependencyBuilder();
+		builder.AddSingleton<FailsOnConstructor>(p => throw new NotImplementedException("haha"));
+		builder.AddSingleton<UsesFailingDep>();
+
+		var provider = builder.Build();
+
+		var ex = Assert.Throws<NotImplementedException>(
+			() => provider.GetService<UsesFailingDep>());
+		
+		// this assertion makes sure the stack trace isn't starting with the re-capture/throw in the DI framework, 
+		//  but instead, is coming from the actual site of failure.
+		Assert.That(ex.StackTrace.StartsWith("   at tests.DI.InstantiateTests.<>c.<ArgFailsOnConstructor>b__1_0(IDependencyProvider p) in /Users/chrishanna/Documents/Github/BeamableProduct/cli/tests/DI/InstantiateTests.cs:line 29"));
+	}
 
 	class FailsOnConstructor
 	{
@@ -28,6 +45,19 @@ public class InstantiateTests
 		{
 			var array = new int[2];
 			var x = array[4]; // THROW IndexOutOfRangeException
+		}
+
+		public FailsOnConstructor(int x)
+		{
+			
+		}
+	}
+
+	class UsesFailingDep
+	{
+		public UsesFailingDep(FailsOnConstructor service)
+		{
+			
 		}
 	}
 }
