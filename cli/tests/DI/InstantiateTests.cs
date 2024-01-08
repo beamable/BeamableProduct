@@ -46,11 +46,6 @@ public class InstantiateTests
 			var array = new int[2];
 			var x = array[4]; // THROW IndexOutOfRangeException
 		}
-
-		public FailsOnConstructor(int x)
-		{
-			
-		}
 	}
 
 	class UsesFailingDep
