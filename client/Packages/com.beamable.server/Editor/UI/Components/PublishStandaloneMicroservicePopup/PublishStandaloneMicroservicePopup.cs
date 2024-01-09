@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Common.BeamCli;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server;
@@ -125,7 +126,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private VisualElement _docReference;
 
 		private Dictionary<string, PublishManifestEntryVisualElement> _publishManifestElements;
-		private readonly Dictionary<IBeamableService, Action> _logForwardActions = new Dictionary<IBeamableService, Action>();
 		private readonly List<PublishManifestEntryVisualElement> _servicesToPublish = new List<PublishManifestEntryVisualElement>();
 
 		private readonly Dictionary<StorageEntryModel, List<ManifestEntryModel>> _storageDependsOnServiceRepresentation =
@@ -413,37 +413,31 @@ namespace Beamable.Editor.Microservice.UI.Components
 				EnableDetatchButton = false,
 				EnableMoreButton = false
 			};
-
-			//TODO change this to not use MicroservicesDataModel and use CodeService instead
-			//TODO this whole implementation is going to change!
-			foreach (var desc in MicroservicesDataModel.Instance.AllLocalServices.Where(x => !x.IsArchived))
-			{
-				void ForwardLog()
-				{
-					var message = desc.Logs.Messages.LastOrDefault();
-					if (message == null)
-						return;
-
-					var copiedMessage = new LogMessage
-					{
-						Level = message.Level,
-						IsBoldMessage = message.IsBoldMessage,
-						Message = $"{desc.Name} - {message.Message}",
-						MessageColor = message.MessageColor,
-						Parameters = message.Parameters,
-						ParameterText = message.ParameterText,
-						PostfixMessageIcon = message.PostfixMessageIcon,
-						Timestamp = message.Timestamp
-					};
-					_logger.Model.Logs.AddMessage(copiedMessage);
-				}
-				_logForwardActions.Add(desc, ForwardLog);
-				desc.Logs.OnMessagesUpdated += ForwardLog;
-			}
+			
+			var publishService = Context.ServiceScope.GetService<PublishService>();
+			publishService.OnDeployLogMessage -= HandleLogMessage;
+			publishService.OnDeployLogMessage += HandleLogMessage;
 
 			Root.Q("logContainer").Add(_logger);
 			_logger.Refresh();
 		}
+
+		private void HandleLogMessage(LogLevel level, string message, string timeStamp)
+		{
+			var copiedMessage = new LogMessage
+			{
+				Level = level,
+				IsBoldMessage = false,
+				Message = message,
+				MessageColor = Color.white,
+				Parameters = new Dictionary<string, object>(),
+				ParameterText = string.Empty,
+				PostfixMessageIcon = null,
+				Timestamp = timeStamp
+			};
+			_logger.Model.Logs.AddMessage(copiedMessage);
+		}
+
 		private float CalculateProgress() => _servicesToPublish.Count == 0 ? 0f : _servicesToPublish.Average(x => x.LoadingBar.Progress);
 
 		private static string GetPublishedKey(string serviceName) => string.Format(MicroserviceReflectionCache.Registry.SERVICE_PUBLISHED_KEY, serviceName);
@@ -519,17 +513,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		protected override void OnDestroy()
 		{
-			//TODO change this to match the log implementation we end up using for this
-			foreach (var desc in MicroservicesDataModel.Instance.AllLocalServices.Where(x => !x.IsArchived))
-			{
-				if (!_logForwardActions.TryGetValue(desc, out var cb))
-					continue;
-				if (desc.Logs == null)
-					continue;
-				desc.Logs.OnMessagesUpdated -= cb;
-			}
-
-			_logForwardActions.Clear();
+			var publishService = Context.ServiceScope.GetService<PublishService>();
+			publishService.OnDeployLogMessage -= HandleLogMessage;
 			base.OnDestroy();
 		}
 	}

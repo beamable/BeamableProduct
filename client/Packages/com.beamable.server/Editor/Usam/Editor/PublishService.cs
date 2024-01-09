@@ -14,6 +14,7 @@ namespace Beamable.Server.Editor.Usam
 		public Action<string> OnDeployFailed;
 		public Action OnDeploySuccess;
 		public Action<string, double, double> OnDeployProgress;
+		public Action<LogLevel, string, string> OnDeployLogMessage;
 
 		public PublishService(BeamCommands cli, CodeService codeService)
 		{
@@ -38,7 +39,11 @@ namespace Beamable.Server.Editor.Usam
 				OnDeployFailed?.Invoke(cb.data.FailureReason);
 			}).OnRemote_progressServiceRemoteDeployProgressResult((cb) =>
 			{
-				OnDeployProgress?.Invoke(cb.data.BeamoId, cb.data.BuildAndTestProgress, cb.data.ContainerUploadProgress);
+				OnDeployProgress?.Invoke(cb.data.BeamoId, cb.data.BuildAndTestProgress,
+				                         cb.data.ContainerUploadProgress);
+			}).OnStreamServiceDeployLogResult((cb) =>
+			{
+				OnDeployLogMessage?.Invoke(cb.data.Level, cb.data.Message, cb.data.TimeStamp);
 			});
 			await deployer.Run();
 		}

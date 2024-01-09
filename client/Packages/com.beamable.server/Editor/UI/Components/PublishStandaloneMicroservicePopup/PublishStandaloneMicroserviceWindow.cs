@@ -36,8 +36,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			if (IsAlreadyOpened)
 				return null;
 
-			
-
 			var wnd = CreateInstance<PublishStandaloneWindow>();
 			
 			wnd.editorContext = editorContext;
@@ -82,24 +80,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 			};
 			_publishPopup.OnSubmit +=  async (logger) =>
 			{
-				/*
-				 * We need to build each image...
-				 * upload each image that is different than whats in the manifest...
-				 * upload the manifest file...
-				 */
-				//WindowStateUtility.DisableAllWindows(new[] { PUBLISH });
-				//_publishPopup.PrepareForPublish();
-				//var microservicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-				//await microservicesRegistry.Deploy(model, _tokenSource.Token, _publishPopup.HandleServiceDeployed, logger);
-				
-				//TODO publish here using the CLI or calling CodeSErvice stuff
-				Debug.Log("STARTING PUBLISHING");
 				WindowStateUtility.DisableAllWindows(new[] { PUBLISH });
 				await _publishPopup.PrepareForPublish();
 				
 				var publishService = editorContext.ServiceScope.GetService<PublishService>();
 				await publishService.PublishServices();
-				Debug.Log("FINISHED PUBLISHING");
 			};
 
 			container.Add(_publishPopup);
