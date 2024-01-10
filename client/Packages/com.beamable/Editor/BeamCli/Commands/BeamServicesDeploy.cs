@@ -107,9 +107,9 @@ namespace Beamable.Editor.BeamCli.Commands
 			this.Command.On("remote_progress", cb);
 			return this;
 		}
-		public virtual ServicesDeployWrapper OnStreamServiceDeployLogResult(System.Action<ReportDataPoint<BeamServiceDeployLogResult>> cb)
+		public virtual ServicesDeployWrapper OnLogsServiceDeployLogResult(System.Action<ReportDataPoint<BeamServiceDeployLogResult>> cb)
 		{
-			this.Command.On("stream", cb);
+			this.Command.On("logs", cb);
 			return this;
 		}
 	}

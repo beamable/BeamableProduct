@@ -27,7 +27,7 @@ public class ServicesDeployCommandArgs : LoginCommandArgs
 public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 	IResultSteam<DefaultStreamResultChannel, ServiceDeployReportResult>,
 	IResultSteam<ServiceRemoteDeployProgressResult, ServiceRemoteDeployProgressResult>,
-	IResultSteam<DefaultStreamResultChannel, ServiceDeployLogResult>
+	IResultSteam<ServiceDeployLogResult, ServiceDeployLogResult>
 {
 	private IAppContext _ctx;
 	private BeamoLocalSystem _localBeamo;
@@ -83,9 +83,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 		{
 			try
 			{
-				this.SendResults<DefaultStreamResultChannel, ServiceDeployLogResult>(
-					new ServiceDeployLogResult() { Message = "Resolving alias...", Level = LogLevel.INFO, TimeStamp = DateTime.Now.ToString("HH:mm:ss")}
-				);
+				LogToSendResult("Resolving alias...", LogLevel.INFO);
 				var aliasResolve = await _aliasService.Resolve(cid).ShowLoading("Resolving alias...");
 				cid = aliasResolve.Cid.GetOrElse(() => throw new CliException("Invalid alias"));
 				_ctx.Set(cid, _ctx.Pid, _ctx.Host);
@@ -94,9 +92,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 			{
 				var msg = $"Unable to resolve alias for '{cid}'";
 				AnsiConsole.WriteLine(msg);
-				this.SendResults<DefaultStreamResultChannel, ServiceDeployLogResult>(
-					new ServiceDeployLogResult() { Message = msg, Level = LogLevel.ERROR, TimeStamp = DateTime.Now.ToString("HH:mm:ss")}
-				);
+				LogToSendResult(msg, LogLevel.ERROR);
 				return;
 			}
 		}
@@ -110,14 +106,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 		}
 		catch (Exception e)
 		{
-			this.SendResults<DefaultStreamResultChannel, ServiceDeployLogResult>(
-				new ServiceDeployLogResult()
-				{
-					Message = e.Message,
-					Level = LogLevel.ERROR, 
-					TimeStamp = DateTime.Now.ToString("HH:mm:ss")
-				}
-			);
+			LogToSendResult(e.Message, LogLevel.ERROR);
 			AnsiConsole.WriteLine(e.Message);
 			return;
 		}
@@ -134,14 +123,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 			{
 				var errMsg =
 					"A problem occurred while deserializing the given file. Please ensure the file exists and is a valid ServiceManifest.";
-				this.SendResults<DefaultStreamResultChannel, ServiceDeployLogResult>(
-					new ServiceDeployLogResult()
-					{
-						Message = errMsg,
-						Level = LogLevel.ERROR, 
-						TimeStamp = DateTime.Now.ToString("HH:mm:ss")
-					}
-				);
+				LogToSendResult(errMsg, LogLevel.ERROR);
 				AnsiConsole.MarkupLine($"[red]{errMsg}[/]");
 				AnsiConsole.WriteException(e);
 				return;
@@ -154,14 +136,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 			catch (Exception e)
 			{
 				var errMsg = "A problem occurred while deploying the given file.";
-				this.SendResults<DefaultStreamResultChannel, ServiceDeployLogResult>(
-					new ServiceDeployLogResult()
-					{
-						Message = errMsg,
-						Level = LogLevel.ERROR, 
-						TimeStamp = DateTime.Now.ToString("HH:mm:ss")
-					}
-				);
+				LogToSendResult(errMsg, LogLevel.ERROR);
 				AnsiConsole.MarkupLine($"[red]{errMsg}[/]");
 				AnsiConsole.WriteException(e);
 				return;
@@ -171,9 +146,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 		}
 
 		// Enable the list of BeamoIds that were given
-		this.SendResults<DefaultStreamResultChannel, ServiceDeployLogResult>(
-			new ServiceDeployLogResult() { Message = "Enabling given BeamoIds to enable", Level = LogLevel.INFO, TimeStamp = DateTime.Now.ToString("HH:mm:ss")}
-		);
+		LogToSendResult("Enabling given BeamoIds to enable", LogLevel.INFO);
 		args.BeamoIdsToEnable ??= Array.Empty<string>();
 		foreach (string beamoId in args.BeamoIdsToEnable)
 		{
@@ -182,9 +155,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 		}
 
 		// Disable the list of BeamoIds that were given
-		this.SendResults<DefaultStreamResultChannel, ServiceDeployLogResult>(
-			new ServiceDeployLogResult() { Message = "Disabling given BeamoIds to disable", Level = LogLevel.INFO, TimeStamp = DateTime.Now.ToString("HH:mm:ss")}
-		);
+		LogToSendResult("Disabling given BeamoIds to disable", LogLevel.INFO);
 		args.BeamoIdsToDisable ??= Array.Empty<string>();
 		foreach (string beamoId in args.BeamoIdsToDisable)
 		{
@@ -193,14 +164,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 		}
 
 		// Parse and prepare per-service comments dictionary (BeamoId => CommentString) 
-		this.SendResults<DefaultStreamResultChannel, ServiceDeployLogResult>(
-			new ServiceDeployLogResult()
-			{
-				Message = "Parse and prepare per-service comments dictionary", 
-				Level = LogLevel.INFO, 
-				TimeStamp = DateTime.Now.ToString("HH:mm:ss")
-			}
-		);
+		LogToSendResult("Parse and prepare per-service comments dictionary", LogLevel.INFO);
 		var perServiceComments = new Dictionary<string, string>();
 		for (var i = 0; i < args.RemoteServiceComments.Length; i++)
 		{
@@ -209,14 +173,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 			{
 				var errMsg =
 					$"Given service comment argument [{commentArg}] doesn't respect the 'BeamoId::Comment' format!";
-				this.SendResults<DefaultStreamResultChannel, ServiceDeployLogResult>(
-					new ServiceDeployLogResult()
-					{
-						Message = errMsg, 
-						Level = LogLevel.ERROR, 
-						TimeStamp = DateTime.Now.ToString("HH:mm:ss")
-					}
-				);
+				LogToSendResult(errMsg, LogLevel.ERROR);
 				throw new ArgumentOutOfRangeException($"{nameof(args.RemoteServiceComments)}[{i}]", errMsg);
 			}
 
@@ -228,14 +185,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 			{
 				var errMsg = $"ID [{id}] in the given service comment argument [{commentArg}] " +
 				             $"doesn't match any of the registered services [{string.Join(",", _localBeamo.BeamoManifest.ServiceDefinitions.Select(sd => sd.BeamoId))}]!";
-				this.SendResults<DefaultStreamResultChannel, ServiceDeployLogResult>(
-					new ServiceDeployLogResult()
-					{
-						Message = errMsg, 
-						Level = LogLevel.ERROR, 
-						TimeStamp = DateTime.Now.ToString("HH:mm:ss")
-					}
-				);
+				LogToSendResult(errMsg, LogLevel.ERROR);
 				throw new ArgumentOutOfRangeException($"{nameof(args.RemoteServiceComments)}[{i}]", errMsg);
 			}
 
@@ -243,14 +193,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 		}
 
 		// Get where we need to upload based on which platform env we are targeting
-		this.SendResults<DefaultStreamResultChannel, ServiceDeployLogResult>(
-			new ServiceDeployLogResult()
-			{
-				Message = "Getting docker registry url...", 
-				Level = LogLevel.INFO, 
-				TimeStamp = DateTime.Now.ToString("HH:mm:ss")
-			}
-		);
+		LogToSendResult("Getting docker registry url...", LogLevel.INFO);
 		var dockerRegistryUrl = args.dockerRegistryUrl;
 		if (string.IsNullOrEmpty(dockerRegistryUrl))
 		{
@@ -283,14 +226,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 
 				var atLeastOneFailed = false;
 
-				this.SendResults<DefaultStreamResultChannel, ServiceDeployLogResult>(
-					new ServiceDeployLogResult()
-					{
-						Message = "Starting deployment...", 
-						Level = LogLevel.INFO, 
-						TimeStamp = DateTime.Now.ToString("HH:mm:ss")
-					}
-				);
+				LogToSendResult("Starting deployment...", LogLevel.INFO);
 				_ = await _localBeamo.DeployToRemote(_localBeamo.BeamoManifest, _localBeamo.BeamoRuntime, dockerRegistryUrl,
 					args.RemoteComment ?? string.Empty,
 					perServiceComments,
@@ -323,6 +259,9 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 						if (progressTask != null)
 						{
 							progressTask.Increment(progressTask.MaxValue - progressTask.Value);
+							this.SendResults<ServiceRemoteDeployProgressResult, ServiceRemoteDeployProgressResult>(
+								new ServiceRemoteDeployProgressResult() { BeamoId = beamoId, BuildAndTestProgress = progressTask.MaxValue , ContainerUploadProgress = progressTask.Value }
+							);
 							progressTask.Description = successful ? $"Success: {progressTask?.Description}" : $"Failure: {progressTask?.Description}";
 							atLeastOneFailed |= !successful;
 						}
@@ -336,33 +275,24 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 				// After deploying to remote, we need to stop the services we deployed locally.
 				await _localBeamo.StopExistingLocalServiceInstances();
 				
-				this.SendResults<DefaultStreamResultChannel, ServiceDeployLogResult>(
-					new ServiceDeployLogResult()
-					{
-						Message = "Finished deployment", 
-						Level = LogLevel.INFO, 
-						TimeStamp = DateTime.Now.ToString("HH:mm:ss")
-					}
-				);
+				LogToSendResult("Finished deployment", LogLevel.INFO);
 
-				this.SendResults<DefaultStreamResultChannel, ServiceDeployLogResult>(
-					new ServiceDeployLogResult()
-					{
-						Message = "Saving manifests", 
-						Level = LogLevel.INFO, 
-						TimeStamp = DateTime.Now.ToString("HH:mm:ss")
-					}
-				);
+				LogToSendResult("Saving manifests", LogLevel.INFO);
 				_localBeamo.SaveBeamoLocalManifest();
 				_localBeamo.SaveBeamoLocalRuntime();
 			});
 
 		await _localBeamo.StopListeningToDocker();
-		this.SendResults<DefaultStreamResultChannel, ServiceDeployLogResult>(
+		LogToSendResult("Process completed", LogLevel.INFO);
+	}
+
+	private void LogToSendResult(string msg, LogLevel level)
+	{
+		this.SendResults<ServiceDeployLogResult, ServiceDeployLogResult>(
 			new ServiceDeployLogResult()
 			{
-				Message = "Process completed", 
-				Level = LogLevel.INFO, 
+				Message = msg, 
+				Level = level, 
 				TimeStamp = DateTime.Now.ToString("HH:mm:ss")
 			}
 		);
@@ -385,8 +315,10 @@ public class ServiceDeployReportResult
 	public string FailureReason;
 }
 
-public class ServiceDeployLogResult
+public class ServiceDeployLogResult : IResultChannel
 {
+	public string ChannelName => "logs";
+	
 	public string Message;
 	public LogLevel Level;
 	public string TimeStamp;

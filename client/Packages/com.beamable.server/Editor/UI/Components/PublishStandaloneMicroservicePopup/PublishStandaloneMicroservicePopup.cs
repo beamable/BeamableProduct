@@ -204,12 +204,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 			// serviceRegistry.OnServiceDeployStatusChanged += HandleServiceDeployStatusChanged;
 			//serviceRegistry.OnServiceDeployProgress -= HandleServiceDeployProgress;
 			//serviceRegistry.OnServiceDeployProgress += HandleServiceDeployProgress;
+			publishService.OnDeployStateProgress -= HandleServiceDeployStatusChanged;
+			publishService.OnDeployStateProgress += HandleServiceDeployStatusChanged;
 			publishService.OnDeployFailed -= HandleDeployFailed;
 			publishService.OnDeployFailed += HandleDeployFailed;
 			publishService.OnDeploySuccess -= HandleDeploySuccess;
 			publishService.OnDeploySuccess += HandleDeploySuccess;
-			// serviceRegistry.OnProgressInfoUpdated -= HandleProgressInfoUpdated;
-			// serviceRegistry.OnProgressInfoUpdated += HandleProgressInfoUpdated;
+			publishService.OnProgressInfoUpdated -= HandleProgressInfoUpdated;
+			publishService.OnProgressInfoUpdated += HandleProgressInfoUpdated;
 
 			_mainLoadingBar = Root.Q<LoadingBarElement>("mainLoadingBar");
 			_mainLoadingBar.SmallBar = true;
@@ -464,9 +466,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			OnSubmit?.Invoke((message) => _logger.Model.Logs.AddMessage(message));
 		}
 
-		private void HandleServiceDeployStatusChanged(IDescriptor descriptor, ServicePublishState state)
+		private void HandleServiceDeployStatusChanged(string beamoId, ServicePublishState state)
 		{
-			if (!_publishManifestElements.TryGetValue(descriptor.Name, out var element))
+			if (!_publishManifestElements.TryGetValue(beamoId, out var element))
 				return;
 
 			element?.UpdateStatus(state);

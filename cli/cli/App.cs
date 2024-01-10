@@ -54,7 +54,7 @@ public class App
 		// configureLogger ??= config => config.WriteTo.Console()
 		
 		configureLogger ??= config =>
-			config.WriteTo.Console()
+			config.WriteTo.Console(outputTemplate:"{Timestamp:HH:mm:ss} [{Level:u4}] {Message:l}{NewLine}{Exception}")
 				.MinimumLevel.ControlledBy(LogLevel)
 				.CreateLogger();
 		Log.Logger = configureLogger(new LoggerConfiguration());
