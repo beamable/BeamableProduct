@@ -167,20 +167,20 @@ namespace Beamable.Common.Api.Realms
 			}
 		}
 
-		public Promise<RealmConfigView> GetRealmConfig()
+		public Promise<RealmConfigData> GetRealmConfig()
 		{
 			return _requester.Request<GetRealmConfigDTO>(Method.GET, $"/basic/realms/config", useCache: true)
-				.Map(resp => new RealmConfigView
+				.Map(resp => new RealmConfigData
 				{
 					Config = resp.config
 				});
 		}
 
-		public Promise<bool> UpdateRealmConfig(RealmConfigView request)
+		public Promise<bool> UpdateRealmConfig(Dictionary<string, string> request)
 		{
 			try
 			{
-				var payload = new GetRealmConfigDTO { config = request.Config };
+				var payload = new GetRealmConfigDTO { config = request };
 				return _requester.Request<CommonResponse>(Method.PUT, $"/basic/realms/config", body: payload)
 					.Map(resp => resp.result == "ok");
 			}
@@ -192,9 +192,55 @@ namespace Beamable.Common.Api.Realms
 		}
 	}
 
+	public class RealmConfigData
+	{
+		public Dictionary<string, string> Config;
+		public List<RealmConfigView> ConvertToView(List<string> namespaceFilter = default)
+		{
+			const char configSeparator = '|';
+			var groupedConfig = new Dictionary<string, Dictionary<string, string>>();
+			foreach (var keyValue in Config)
+			{
+				string namespaceKey = "";
+				string configKey = "";
+
+				if (keyValue.Key.Contains(configSeparator))
+				{
+					var keyParts = keyValue.Key.Split(configSeparator);
+					namespaceKey = keyParts[0];
+					configKey = keyParts[1];
+				}
+				else
+				{
+					configKey = keyValue.Key;
+				}
+
+
+				if (namespaceFilter?.Count > 0 && !namespaceFilter.Contains(namespaceKey))
+				{
+					continue;
+				}
+
+				if (!groupedConfig.ContainsKey(namespaceKey))
+				{
+					groupedConfig[namespaceKey] = new Dictionary<string, string>();
+				}
+
+				groupedConfig[namespaceKey][configKey] = keyValue.Value;
+			}
+
+			return groupedConfig.Select(pair => new RealmConfigView
+			{
+				Namespace = pair.Key,
+				Config = pair.Value
+			}).OrderBy(pair => pair.Namespace).ToList();
+		}
+	}
+
 	[Serializable]
 	public class RealmConfigView
 	{
+		public string Namespace;
 		public Dictionary<string, string> Config;
 	}
 

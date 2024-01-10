@@ -5,41 +5,46 @@ using JetBrains.Annotations;
 using Newtonsoft.Json;
 using Spectre.Console;
 using Spectre.Console.Json;
-using System.CommandLine;
 
 namespace cli;
 
 public class RealmConfigSetCommandArgs : CommandArgs
 {
 	public bool plainOutput;
-	public string name;
-	public string value;
+	public List<string> keyValuePairs = new();
 }
 
-public class RealmConfigSetCommand : AppCommand<RealmConfigSetCommandArgs>, IResultSteam<DefaultStreamResultChannel, RealmConfigView>
+public class RealmConfigSetCommand : AppCommand<RealmConfigSetCommandArgs>, IResultSteam<DefaultStreamResultChannel, RealmConfigData>
 {
-	public RealmConfigSetCommand() : base("set", "Set realm config value") { }
+	public RealmConfigSetCommand() : base("set", "Set realm config values") { }
 
 	public override void Configure()
 	{
 		AddOption(new PlainOutputOption(), (args, b) => args.plainOutput = b);
-		AddOption(new Option<string>("--name", "The realm config name."),
-			(args, i) => args.name = i);
-		AddOption(new Option<string>("--value", "The realm config value."),
-			(args, i) => args.value = i);
+		AddOption(new RealmConfigKeyValueOption(),(args, b) => args.keyValuePairs = b.ToList());
 	}
 
 	public override async Task Handle(RealmConfigSetCommandArgs args)
 	{
-		var currentConfig = await GetRealmConfig(args);
-		var configName = await GetConfigName(args);
-		var configValue = await GetConfigValue(args);
-		currentConfig.Config[configName] = configValue;
-		await args.RealmsApi.UpdateRealmConfig(currentConfig);
-		await DisplayRealmConfig(args, currentConfig);
+		try
+		{
+			var currentConfig = await GetRealmConfig(args);
+			foreach (var pair in args.keyValuePairs)
+			{
+				var data = RealmConfigInputParser.Parse(pair);
+				currentConfig.Config[data.NamespaceKey()] = data.Value;
+			}
+			await args.RealmsApi.UpdateRealmConfig(currentConfig.Config);
+			await DisplayRealmConfig(args, currentConfig);
+		}
+		catch (ArgumentException e)
+		{
+			AnsiConsole.MarkupLine($"[red]Provide a list of realm config key/value pairs in a 'namespace|key::value' format.[/]");
+			AnsiConsole.WriteException(e);
+		}
 	}
 
-	private async Promise<RealmConfigView> GetRealmConfig(RealmConfigSetCommandArgs args)
+	private async Promise<RealmConfigData> GetRealmConfig(RealmConfigSetCommandArgs args)
 	{
 		try
 		{
@@ -51,11 +56,11 @@ public class RealmConfigSetCommand : AppCommand<RealmConfigSetCommandArgs>, IRes
 		}
 	}
 
-	private async Task DisplayRealmConfig(RealmConfigSetCommandArgs args, [CanBeNull] RealmConfigView data = null)
+	private async Task DisplayRealmConfig(RealmConfigSetCommandArgs args, [CanBeNull] RealmConfigData data = null)
 	{
 		data ??= await GetRealmConfig(args);
 		this.SendResults(data);
-		var json = JsonConvert.SerializeObject(data);
+		var json = JsonConvert.SerializeObject(data.ConvertToView());
 		if (args.plainOutput)
 		{
 			AnsiConsole.WriteLine(json);
@@ -68,27 +73,5 @@ public class RealmConfigSetCommand : AppCommand<RealmConfigSetCommandArgs>, IRes
 					.Collapse()
 					.RoundedBorder());
 		}
-	}
-
-	private Task<string> GetConfigName(RealmConfigSetCommandArgs args)
-	{
-		if (!string.IsNullOrEmpty(args.name))
-			return Task.FromResult(args.name);
-
-		return Task.FromResult(AnsiConsole.Prompt(
-			new TextPrompt<string>("Please enter realm config [green]name[/]:")
-				.PromptStyle("green")
-		));
-	}
-
-	private Task<string> GetConfigValue(RealmConfigSetCommandArgs args)
-	{
-		if (!string.IsNullOrEmpty(args.value))
-			return Task.FromResult(args.value);
-
-		return Task.FromResult(AnsiConsole.Prompt(
-			new TextPrompt<string>("Please enter realm config [green]value[/]:")
-				.PromptStyle("green")
-		));
 	}
 }

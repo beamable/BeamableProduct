@@ -5,40 +5,46 @@ using JetBrains.Annotations;
 using Newtonsoft.Json;
 using Spectre.Console;
 using Spectre.Console.Json;
-using System.CommandLine;
 
 namespace cli;
 
 public class RealmConfigRemoveCommandArgs : CommandArgs
 {
 	public bool plainOutput;
-	public string name;
+	public List<string> keys = new();
 }
 
-public class RealmConfigRemoveCommand : AppCommand<RealmConfigRemoveCommandArgs>, IResultSteam<DefaultStreamResultChannel, RealmConfigView>
+public class RealmConfigRemoveCommand : AppCommand<RealmConfigRemoveCommandArgs>, IResultSteam<DefaultStreamResultChannel, RealmConfigData>
 {
-	public RealmConfigRemoveCommand() : base("remove", "Remove realm config value") { }
+	public RealmConfigRemoveCommand() : base("remove", "Remove realm config values") { }
 
 	public override void Configure()
 	{
 		AddOption(new PlainOutputOption(), (args, b) => args.plainOutput = b);
-		AddOption(new Option<string>("--name", "The realm config name."),
-			(args, i) => args.name = i);
+		AddOption(new RealmConfigKeyOption(),(args, b) => args.keys = b.ToList());
 	}
 
 	public override async Task Handle(RealmConfigRemoveCommandArgs args)
 	{
-		var currentConfig = await GetRealmConfig(args);
-		var configName = await GetConfigName(args);
-		if (currentConfig.Config.ContainsKey(configName))
+		try
 		{
-			currentConfig.Config.Remove(configName);
+			var currentConfig = await GetRealmConfig(args);
+			foreach (var key in args.keys)
+			{
+				var data = RealmConfigInputParser.Parse(key);
+				currentConfig.Config.Remove(data.NamespaceKey());
+			}
+			await args.RealmsApi.UpdateRealmConfig(currentConfig.Config);
+			await DisplayRealmConfig(args, currentConfig);
 		}
-		await args.RealmsApi.UpdateRealmConfig(currentConfig);
-		await DisplayRealmConfig(args, currentConfig);
+		catch (ArgumentException e)
+		{
+			AnsiConsole.MarkupLine($"[red]Provide a list of realm config keys in a 'namespace|key' format.[/]");
+			AnsiConsole.WriteException(e);
+		}
 	}
 
-	private async Promise<RealmConfigView> GetRealmConfig(RealmConfigRemoveCommandArgs args)
+	private async Promise<RealmConfigData> GetRealmConfig(RealmConfigRemoveCommandArgs args)
 	{
 		try
 		{
@@ -50,11 +56,11 @@ public class RealmConfigRemoveCommand : AppCommand<RealmConfigRemoveCommandArgs>
 		}
 	}
 
-	private async Task DisplayRealmConfig(RealmConfigRemoveCommandArgs args, [CanBeNull] RealmConfigView data = null)
+	private async Task DisplayRealmConfig(RealmConfigRemoveCommandArgs args, [CanBeNull] RealmConfigData data = null)
 	{
 		data ??= await GetRealmConfig(args);
 		this.SendResults(data);
-		var json = JsonConvert.SerializeObject(data);
+		var json = JsonConvert.SerializeObject(data.ConvertToView());
 		if (args.plainOutput)
 		{
 			AnsiConsole.WriteLine(json);
@@ -67,16 +73,5 @@ public class RealmConfigRemoveCommand : AppCommand<RealmConfigRemoveCommandArgs>
 					.Collapse()
 					.RoundedBorder());
 		}
-	}
-
-	private Task<string> GetConfigName(RealmConfigRemoveCommandArgs args)
-	{
-		if (!string.IsNullOrEmpty(args.name))
-			return Task.FromResult(args.name);
-
-		return Task.FromResult(AnsiConsole.Prompt(
-			new TextPrompt<string>("Please enter realm config [green]name[/]:")
-				.PromptStyle("green")
-		));
 	}
 }
