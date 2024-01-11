@@ -131,6 +131,7 @@ namespace Beamable.Editor.Dotnet
 				process.BeginOutputReadLine();
 				process.BeginErrorReadLine();
 				process.WaitForExit();
+				Debug.Log("WHYISDEVBROKEN: install proc ended.");
 				return process.ExitCode == 0;
 			}
 		}

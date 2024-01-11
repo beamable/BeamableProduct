@@ -110,6 +110,7 @@ namespace Beamable.Editor.BeamCli
 		{
 			// we need dotnet before we can initialize the CLI
 			DotnetUtil.InitializeDotnet();
+			Debug.Log("WHYISDEVBROKEN: done with dotnet.");
 
 			if (USE_SRC)
 			{
