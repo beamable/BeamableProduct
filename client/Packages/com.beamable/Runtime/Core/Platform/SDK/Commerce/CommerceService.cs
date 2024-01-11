@@ -2,6 +2,7 @@ using Beamable.Api.Payments;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
+using System;
 
 namespace Beamable.Api.Commerce
 {
@@ -19,8 +20,11 @@ namespace Beamable.Api.Commerce
 	/// </summary>
 	public class CommerceService : PlatformSubscribable<GetOffersResponse, PlayerStoreView>
 	{
+		private ICommerceConfig _config;
+		
 		public CommerceService(IDependencyProvider provider, IBeamableRequester requester) : base(provider, "commerce")
 		{
+			_config = provider.GetService<ICommerceConfig>();
 		}
 
 		protected override void OnRefresh(GetOffersResponse data)
@@ -30,9 +34,11 @@ namespace Beamable.Api.Commerce
 				store.Init();
 
 				Notify(store.symbol, store);
+				
 				if (store.nextDeltaSeconds > 0)
 				{
-					ScheduleRefresh(store.nextDeltaSeconds, store.symbol);
+					var delta = Math.Max(store.nextDeltaSeconds, _config.CommerceListingRefreshSecondsMinimum);
+					ScheduleRefresh(delta, store.symbol);
 				}
 			}
 		}
