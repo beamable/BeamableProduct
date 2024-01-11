@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Runtime.ExceptionServices;
 
 namespace Beamable.Common.Dependencies
 {
@@ -650,8 +652,16 @@ namespace Beamable.Common.Dependencies
 				}
 			}
 
-			var instance = cons?.Invoke(values);
-			return instance;
+			try
+			{
+				var instance = cons?.Invoke(values);
+				return instance;
+			}
+			catch (TargetInvocationException ex) when (ex.InnerException != null)
+			{
+				ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+				throw new InvalidOperationException("Cannot reach this line");
+			}
 		}
 
 		public IDependencyProviderScope Build(BuildOptions options = null)
