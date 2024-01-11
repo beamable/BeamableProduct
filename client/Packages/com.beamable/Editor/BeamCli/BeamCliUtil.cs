@@ -211,10 +211,13 @@ namespace Beamable.Editor.BeamCli
 		static void BuildTool()
 		{
 			VerboseLog("Building CLI from source...");
+			BeamableLogger.LogError("I am a known error");
+
 			var configPath = EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value;
 			var cliRelativePath = Path.GetDirectoryName(configPath);
 			var cliAbsolutePath = Path.GetFullPath(cliRelativePath!);
 
+			BeamableLogger.Log($"WHYISDEVBROKEN: {configPath} -- {cliRelativePath} -- {cliAbsolutePath} -- {DotnetUtil.DotnetPath}");
 			if (!Directory.Exists(cliAbsolutePath))
 			{
 				BeamableLogger.LogError($"Failed to build CLI from source. Working directory '{cliAbsolutePath}' does not exist.");
@@ -234,7 +237,11 @@ namespace Beamable.Editor.BeamCli
 			proc.StartInfo.CreateNoWindow = true;
 			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
 			proc.Start();
+			
+			BeamableLogger.Log("WHYISDEVBROKEN: running the install, yo");
+
 			proc.WaitForExit();
+			BeamableLogger.Log("WHYISDEVBROKEN: ran the install, yo");
 
 			var stdout = proc.StandardOutput.ReadToEnd();
 			var stderr = proc.StandardError.ReadToEnd();
