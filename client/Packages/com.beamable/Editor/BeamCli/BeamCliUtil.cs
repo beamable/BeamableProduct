@@ -97,7 +97,7 @@ namespace Beamable.Editor.BeamCli
 		private const string EXEC = "beam";
 #endif
 
-		[System.Diagnostics.Conditional("SPEW_ALL")]
+		// [System.Diagnostics.Conditional("SPEW_ALL")]
 		static void VerboseLog(string log)
 		{
 			BeamableLogger.Log($"<b>[{nameof(BeamCliUtil)}]</b> {log}");
@@ -116,13 +116,25 @@ namespace Beamable.Editor.BeamCli
 			if (USE_SRC)
 			{
 				if (CheckForBuildedSource())
+				{
+					Debug.Log("WHYISDEVBROKEN: built source already exists");
 					return;
+				}
 
 				BuildTool();
+				Debug.Log("WHYISDEVBROKEN: built tool");
 
 				if (CheckForBuildedSource(outputNotFoundError: true))
+				{
+					Debug.Log("WHYISDEVBROKEN: built source okay dokes");
 					return;
+				}
+				
+				Debug.Log("WHYISDEVBROKEN: hmm, uh oh");
+
 			}
+
+			Debug.Log($"WHYISDEVBROKEN: take 2. useSrc={USE_SRC} useGlobal={USE_GLOBAL} cliPath={ File.Exists(CLI_PATH)}");
 
 			if (USE_GLOBAL || File.Exists(CLI_PATH))
 			{
