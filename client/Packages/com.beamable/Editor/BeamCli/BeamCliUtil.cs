@@ -237,14 +237,20 @@ namespace Beamable.Editor.BeamCli
 			proc.StartInfo.CreateNoWindow = true;
 			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
 			var stdErr = "";
-			proc.OutputDataReceived += (sender, args) => Debug.Log("WHYISDEVBROKEN: (cli stdout) " + args.Data);
+			var stdOut = "";
+			proc.OutputDataReceived += (sender, args) =>
+			{
+				if (!string.IsNullOrEmpty(args.Data))
+				{
+					stdOut += args.Data;
+				}
+			};
 			proc.ErrorDataReceived += (sender, args) =>
 			{
 				if (!string.IsNullOrEmpty(args.Data))
 				{
 					stdErr += args.Data;
 				}
-				Debug.Log("WHYISDEVBROKEN: (cli stderr) " + args.Data);
 			};
 
 			proc.Start();
@@ -258,6 +264,10 @@ namespace Beamable.Editor.BeamCli
 			
 			// var stdout = proc.StandardOutput.ReadToEnd();
 			// var stderr = proc.StandardError.ReadToEnd();
+			if (!string.IsNullOrWhiteSpace(stdOut))
+			{
+				BeamableLogger.Log("INSTALL OUTPUT: " + stdOut);
+			}
 			if (!string.IsNullOrWhiteSpace(stdErr) || proc.ExitCode > 0)
 			{
 				var output = "";
