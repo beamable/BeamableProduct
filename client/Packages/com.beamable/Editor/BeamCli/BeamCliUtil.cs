@@ -236,8 +236,12 @@ namespace Beamable.Editor.BeamCli
 			};
 			proc.StartInfo.CreateNoWindow = true;
 			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
+			proc.OutputDataReceived += (sender, args) => Debug.Log("WHYISDEVBROKEN: (cli stdout) " + args);
+			proc.ErrorDataReceived += (sender, args) => Debug.Log("WHYISDEVBROKEN: (cli stderr) " + args);
+
 			proc.Start();
-			
+			proc.BeginErrorReadLine();
+			proc.BeginOutputReadLine();
 			BeamableLogger.Log("WHYISDEVBROKEN: running the install, yo");
 
 			proc.WaitForExit();
