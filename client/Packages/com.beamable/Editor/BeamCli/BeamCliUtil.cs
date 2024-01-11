@@ -236,8 +236,16 @@ namespace Beamable.Editor.BeamCli
 			};
 			proc.StartInfo.CreateNoWindow = true;
 			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
-			proc.OutputDataReceived += (sender, args) => Debug.Log("WHYISDEVBROKEN: (cli stdout) " + args);
-			proc.ErrorDataReceived += (sender, args) => Debug.Log("WHYISDEVBROKEN: (cli stderr) " + args);
+			var stdErr = "";
+			proc.OutputDataReceived += (sender, args) => Debug.Log("WHYISDEVBROKEN: (cli stdout) " + args.Data);
+			proc.ErrorDataReceived += (sender, args) =>
+			{
+				if (!string.IsNullOrEmpty(args.Data))
+				{
+					stdErr += args.Data;
+				}
+				Debug.Log("WHYISDEVBROKEN: (cli stderr) " + args.Data);
+			};
 
 			proc.Start();
 			proc.BeginErrorReadLine();
@@ -247,13 +255,14 @@ namespace Beamable.Editor.BeamCli
 			proc.WaitForExit();
 			BeamableLogger.Log("WHYISDEVBROKEN: ran the install, yo");
 
-			var stdout = proc.StandardOutput.ReadToEnd();
-			var stderr = proc.StandardError.ReadToEnd();
-			if (!string.IsNullOrWhiteSpace(stderr) || proc.ExitCode > 0)
+			
+			// var stdout = proc.StandardOutput.ReadToEnd();
+			// var stderr = proc.StandardError.ReadToEnd();
+			if (!string.IsNullOrWhiteSpace(stdErr) || proc.ExitCode > 0)
 			{
 				var output = "";
-				output += string.IsNullOrEmpty(stderr) ? "" : $"stderr: {stderr}\n";
-				output += string.IsNullOrEmpty(stdout) ? "" : $"stdout: {stdout}";
+				output += string.IsNullOrEmpty(stdErr) ? "" : $"stderr: {stdErr}\n";
+				// output += string.IsNullOrEmpty(stdout) ? "" : $"stdout: {stdout}";
 				BeamableLogger.LogError($"Failed to build CLI from source.\n{output}");
 			}
 			VerboseLog($"Building CLI completed with exit code '{proc.ExitCode}'.");
