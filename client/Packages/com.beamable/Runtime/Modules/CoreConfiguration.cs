@@ -1,3 +1,4 @@
+using Beamable.Api.Commerce;
 using Beamable.Common.Content;
 using System.Collections.Generic;
 using System.IO;
@@ -15,7 +16,7 @@ namespace Beamable
 		menuName = Paths.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
 				   "Core Configuration")]
 #endif
-	public class CoreConfiguration : ModuleConfigurationObject
+	public class CoreConfiguration : ModuleConfigurationObject, ICommerceConfig
 	{
 		public const string PROJECT_EDITOR_REFLECTION_SYSTEM_PATH = "Assets/Beamable/Editor/ReflectionCache/UserSystems";
 		public const string BEAMABLE_EDITOR_REFLECTION_SYSTEM_PATH = "Packages/com.beamable/Editor/ReflectionCache/UserSystems";
@@ -84,6 +85,22 @@ namespace Beamable
 				 "online, the buffer will be replayed. If this isn't desirable, you should disable the feature.")]
 		public OfflineStrategy InventoryOfflineMode = OfflineStrategy.Optimistic;
 
+		
+		[Tooltip(@"The CommerceService will use the PlayerStoreView.nextDeltaSeconds value
+to automatically refresh the store content.
+
+However, the value of the nextDeltaSeconds may be too small, and result in overly chatty networking.
+To prevent excess networking, the CommerceListingRefreshSecondsMinimum value is used as a
+minimum number of seconds to wait before automatically refreshing the store.
+
+When this value is 0, there is effectively no minimum wait period.
+
+The default is 60 seconds.
+")]
+		public int CommerceListingRefreshSecondsMinimum = 60;
+		
+		int ICommerceConfig.CommerceListingRefreshSecondsMinimum => CommerceListingRefreshSecondsMinimum;
+		
 		[Header("Beamable Toolbar")]
 		[Tooltip("Enable this to receive a warning (toggle-able per Beam Hint Validation) when entering playmode.\n\n" +
 				 "This aims to help you enforce project workflows and guarantee people are not wasting time chasing issues that we can identify for you.")]
@@ -217,5 +234,6 @@ namespace Beamable
 #endif
 			return new string[] { };
 		}
+
 	}
 }
