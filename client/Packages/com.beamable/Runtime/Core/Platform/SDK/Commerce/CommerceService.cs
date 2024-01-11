@@ -21,7 +21,7 @@ namespace Beamable.Api.Commerce
 	public class CommerceService : PlatformSubscribable<GetOffersResponse, PlayerStoreView>
 	{
 		private ICommerceConfig _config;
-		
+
 		public CommerceService(IDependencyProvider provider, IBeamableRequester requester) : base(provider, "commerce")
 		{
 			_config = provider.GetService<ICommerceConfig>();
@@ -34,7 +34,7 @@ namespace Beamable.Api.Commerce
 				store.Init();
 
 				Notify(store.symbol, store);
-				
+
 				if (store.nextDeltaSeconds > 0)
 				{
 					var delta = Math.Max(store.nextDeltaSeconds, _config.CommerceListingRefreshSecondsMinimum);
