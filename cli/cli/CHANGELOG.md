@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `--dotnet-path` option is available to override dotnet installation location.
+
+### Changed
+
+- Updates the Serilog and Spectre dependencies.
+- Updated dotnet framework dependencies to maximize and enforce compatibility (minimum dotnet 6)
+
+### Fixed
+
+- `project add` Dockerfile path fixes.
+- `project new-storage` path fixes.
+
+## [1.19.11]
+
+### Added
+- `beam config realm` command suite for working with realm config via the CLI.
+
+### Fixed
+- Stack traces from Dependency Injection, `GetService`, show inner stack trace instead of Reflection based stack trace.
+
 ## [1.19.10]
 
 ### Fixed

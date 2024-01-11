@@ -9,5 +9,7 @@ namespace Beamable.Common.Api.Realms
 		Promise<RealmView> GetRealm();
 		Promise<List<RealmView>> GetRealms(RealmView game = null);
 		Promise<List<RealmView>> GetRealms(string pid);
+		Promise<RealmConfigData> GetRealmConfig();
+		Promise<bool> UpdateRealmConfig(Dictionary<string, string> request);
 	}
 }
