@@ -42,7 +42,6 @@ no changes
 
 - Support for FederatedGameServer microservices
 
-
 ## [1.19.8]
 
 ### Changed
