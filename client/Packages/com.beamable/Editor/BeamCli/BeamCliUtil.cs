@@ -112,6 +112,7 @@ namespace Beamable.Editor.BeamCli
 			DotnetUtil.InitializeDotnet();
 			Debug.Log("WHYISDEVBROKEN: done with dotnet.");
 
+			Debug.Log($"WHYISDEVBROKEN: useSrc={USE_SRC} useGlobal={USE_GLOBAL} cliPath={ File.Exists(CLI_PATH)}");
 			if (USE_SRC)
 			{
 				if (CheckForBuildedSource())

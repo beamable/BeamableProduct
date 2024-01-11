@@ -239,8 +239,9 @@ namespace Beamable
 			{
 				BeamCliUtil.InitializeBeamCli();
 			}
-			catch
+			catch (Exception ex)
 			{
+				Debug.Log("WHYISDEVBROKEN: Failure in init beamCLI " + ex.Message);
 				EditorApplication.delayCall += () =>
 				{
 					Initialize();
