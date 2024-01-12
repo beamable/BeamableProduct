@@ -199,7 +199,6 @@ namespace Beamable.Editor.BeamCli
 		static void BuildTool()
 		{
 			VerboseLog("Building CLI from source...");
-			BeamableLogger.LogError("I am a known error");
 
 			var configPath = EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value;
 			var cliRelativePath = Path.GetDirectoryName(configPath);
