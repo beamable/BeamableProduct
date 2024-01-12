@@ -113,13 +113,7 @@ namespace Beamable.Editor.Dotnet
 				process.StartInfo.RedirectStandardError = true;
 				process.StartInfo.CreateNoWindow = true;
 				process.StartInfo.UseShellExecute = false;
-
-
-				process.OutputDataReceived += (sender, data) =>
-				{
-					if (data == null || string.IsNullOrEmpty(data.Data)) return;
-					Debug.Log("DOTNET LOG INSTALL: " + data.Data);
-				};
+				
 				process.ErrorDataReceived += (sender, data) =>
 				{
 					if (data == null || string.IsNullOrEmpty(data.Data)) return;
@@ -131,7 +125,6 @@ namespace Beamable.Editor.Dotnet
 				process.BeginOutputReadLine();
 				process.BeginErrorReadLine();
 				process.WaitForExit();
-				Debug.Log("WHYISDEVBROKEN: install proc ended.");
 				return process.ExitCode == 0;
 			}
 		}

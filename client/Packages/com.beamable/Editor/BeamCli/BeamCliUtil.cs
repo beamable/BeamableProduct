@@ -97,7 +97,7 @@ namespace Beamable.Editor.BeamCli
 		private const string EXEC = "beam";
 #endif
 
-		// [System.Diagnostics.Conditional("SPEW_ALL")]
+		[System.Diagnostics.Conditional("SPEW_ALL")]
 		static void VerboseLog(string log)
 		{
 			BeamableLogger.Log($"<b>[{nameof(BeamCliUtil)}]</b> {log}");
@@ -110,31 +110,19 @@ namespace Beamable.Editor.BeamCli
 		{
 			// we need dotnet before we can initialize the CLI
 			DotnetUtil.InitializeDotnet();
-			Debug.Log("WHYISDEVBROKEN: done with dotnet.");
-
-			Debug.Log($"WHYISDEVBROKEN: useSrc={USE_SRC} useGlobal={USE_GLOBAL} cliPath={ File.Exists(CLI_PATH)}");
 			if (USE_SRC)
 			{
 				if (CheckForBuildedSource())
 				{
-					Debug.Log("WHYISDEVBROKEN: built source already exists");
 					return;
 				}
 
 				BuildTool();
-				Debug.Log("WHYISDEVBROKEN: built tool");
-
 				if (CheckForBuildedSource(outputNotFoundError: true))
 				{
-					Debug.Log("WHYISDEVBROKEN: built source okay dokes");
 					return;
 				}
-				
-				Debug.Log("WHYISDEVBROKEN: hmm, uh oh");
-
 			}
-
-			Debug.Log($"WHYISDEVBROKEN: take 2. useSrc={USE_SRC} useGlobal={USE_GLOBAL} cliPath={ File.Exists(CLI_PATH)}");
 
 			if (USE_GLOBAL || File.Exists(CLI_PATH))
 			{
@@ -217,7 +205,6 @@ namespace Beamable.Editor.BeamCli
 			var cliRelativePath = Path.GetDirectoryName(configPath);
 			var cliAbsolutePath = Path.GetFullPath(cliRelativePath!);
 
-			BeamableLogger.Log($"WHYISDEVBROKEN: {configPath} -- {cliRelativePath} -- {cliAbsolutePath} -- {DotnetUtil.DotnetPath}");
 			if (!Directory.Exists(cliAbsolutePath))
 			{
 				BeamableLogger.LogError($"Failed to build CLI from source. Working directory '{cliAbsolutePath}' does not exist.");
@@ -256,23 +243,13 @@ namespace Beamable.Editor.BeamCli
 			proc.Start();
 			proc.BeginErrorReadLine();
 			proc.BeginOutputReadLine();
-			BeamableLogger.Log("WHYISDEVBROKEN: running the install, yo");
-
 			proc.WaitForExit();
-			BeamableLogger.Log("WHYISDEVBROKEN: ran the install, yo");
 
 			
-			// var stdout = proc.StandardOutput.ReadToEnd();
-			// var stderr = proc.StandardError.ReadToEnd();
-			if (!string.IsNullOrWhiteSpace(stdOut))
-			{
-				BeamableLogger.Log("INSTALL OUTPUT: " + stdOut);
-			}
 			if (!string.IsNullOrWhiteSpace(stdErr) || proc.ExitCode > 0)
 			{
 				var output = "";
 				output += string.IsNullOrEmpty(stdErr) ? "" : $"stderr: {stdErr}\n";
-				// output += string.IsNullOrEmpty(stdout) ? "" : $"stdout: {stdout}";
 				BeamableLogger.LogError($"Failed to build CLI from source.\n{output}");
 			}
 			VerboseLog($"Building CLI completed with exit code '{proc.ExitCode}'.");
