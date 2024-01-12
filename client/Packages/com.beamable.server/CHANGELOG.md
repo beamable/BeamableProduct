@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `admin/metadata` route will return sdk version and other metadata about a running service.
 
 ## [1.19.10]
 
