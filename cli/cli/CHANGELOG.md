@@ -7,10 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- `--dotnet-path` option is available to override dotnet installation location.
-
 ### Changed
 
 - Updates the Serilog and Spectre dependencies.
@@ -20,8 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `project add` Dockerfile path fixes.
 - `project new-storage` path fixes.
-- Stack traces from Dependency Injection, `GetService`, show inner stack trace instead of Reflection based stack trace.
 
+## [1.19.11]
+
+### Added
+- `beam config realm` command suite for working with realm config via the CLI.
+
+### Fixed
+- Stack traces from Dependency Injection, `GetService`, show inner stack trace instead of Reflection based stack trace.
 
 ## [1.19.10]
 
