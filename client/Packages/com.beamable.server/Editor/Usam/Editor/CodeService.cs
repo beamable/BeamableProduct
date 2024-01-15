@@ -272,6 +272,10 @@ namespace Beamable.Server.Editor.Usam
 			LogVerbose($"Starting the initialization of CodeService");
 			// Re-initializing the CodeService to make sure all files are with the right information
 			await Init();
+			
+			//Shoudln't we generate client code at the end of the creation?
+			//For some reason this this line is never reached after the Init. And if put bfore Init, it doesn't work
+			//await GenerateClientCode(serviceName);
 
 			LogVerbose($"Finished creation of service {serviceName}");
 		}
@@ -288,8 +292,8 @@ namespace Beamable.Server.Editor.Usam
 			var service = _services.FirstOrDefault(s => s.name == id);
 
 			var microservicePath = Path.Combine(service.assetRelativePath, service.relativeProjectFile);
-			var beamPath = BeamCliUtil.CLI_PATH;
-			var buildCommand = $"build \"{microservicePath}\" /p:BeamableTool={beamPath}";
+			var beamPath = BeamCliUtil.CLI_PATH.Replace(".dll", "");
+			var buildCommand = $"build \"{microservicePath}\" /p:BeamableTool={beamPath} /p:GenerateClientCode=false";
 
 			LogVerbose($"Starting build service: {id} using command: {buildCommand}");
 			await _dotnetService.Run(buildCommand);

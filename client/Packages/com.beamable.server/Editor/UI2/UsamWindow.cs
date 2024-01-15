@@ -115,7 +115,6 @@ namespace Beamable.Editor.Microservice.UI2
 
 		private void HandlePublishButtonClicked()
 		{
-			Debug.Log("NOW HANDLING PUBLISHING STUFF");
 			PublishStandaloneWindow.ShowPublishWindow(this, ActiveContext);
 		}
 
