@@ -110,16 +110,18 @@ namespace Beamable.Editor.BeamCli
 		{
 			// we need dotnet before we can initialize the CLI
 			DotnetUtil.InitializeDotnet();
-
 			if (USE_SRC)
 			{
 				if (CheckForBuildedSource())
+				{
 					return;
+				}
 
 				BuildTool();
-
 				if (CheckForBuildedSource(outputNotFoundError: true))
+				{
 					return;
+				}
 			}
 
 			if (USE_GLOBAL || File.Exists(CLI_PATH))
@@ -197,6 +199,7 @@ namespace Beamable.Editor.BeamCli
 		static void BuildTool()
 		{
 			VerboseLog("Building CLI from source...");
+
 			var configPath = EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.Value;
 			var cliRelativePath = Path.GetDirectoryName(configPath);
 			var cliAbsolutePath = Path.GetFullPath(cliRelativePath!);
@@ -219,16 +222,33 @@ namespace Beamable.Editor.BeamCli
 			};
 			proc.StartInfo.CreateNoWindow = true;
 			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
+			var stdErr = "";
+			var stdOut = "";
+			proc.OutputDataReceived += (sender, args) =>
+			{
+				if (!string.IsNullOrEmpty(args.Data))
+				{
+					stdOut += args.Data;
+				}
+			};
+			proc.ErrorDataReceived += (sender, args) =>
+			{
+				if (!string.IsNullOrEmpty(args.Data))
+				{
+					stdErr += args.Data;
+				}
+			};
+
 			proc.Start();
+			proc.BeginErrorReadLine();
+			proc.BeginOutputReadLine();
 			proc.WaitForExit();
 
-			var stdout = proc.StandardOutput.ReadToEnd();
-			var stderr = proc.StandardError.ReadToEnd();
-			if (!string.IsNullOrWhiteSpace(stderr) || proc.ExitCode > 0)
+			
+			if (!string.IsNullOrWhiteSpace(stdErr) || proc.ExitCode > 0)
 			{
 				var output = "";
-				output += string.IsNullOrEmpty(stderr) ? "" : $"stderr: {stderr}\n";
-				output += string.IsNullOrEmpty(stdout) ? "" : $"stdout: {stdout}";
+				output += string.IsNullOrEmpty(stdErr) ? "" : $"stderr: {stdErr}\n";
 				BeamableLogger.LogError($"Failed to build CLI from source.\n{output}");
 			}
 			VerboseLog($"Building CLI completed with exit code '{proc.ExitCode}'.");
