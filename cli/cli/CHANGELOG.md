@@ -20,14 +20,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.19.11]
 
 ### Added
+
 - `beam config realm` command suite for working with realm config via the CLI.
 
 ### Fixed
+
 - Stack traces from Dependency Injection, `GetService`, show inner stack trace instead of Reflection based stack trace.
 
 ## [1.19.10]
 
 ### Fixed
+
 - fixed issue an issue that would cause an NRE if an existing service had no federated component when running services deploy command
 
 ## [1.19.9]

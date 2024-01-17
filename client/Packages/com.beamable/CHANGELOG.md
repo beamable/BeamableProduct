@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.19.11]
 
 ### Fixed
+
 - `CommerceService` uses `CoreConfiguration.CommerceListingRefreshSecondsMinimum` field to set a minimum delay between fetching store updates. The delay defaults to once a minute.
 
 ## [1.19.10]
