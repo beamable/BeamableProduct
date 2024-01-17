@@ -5,11 +5,11 @@ export docker_platform=${BEAMABLE_MICROSERVICE_ARCH-"linux/amd64"}
 
 # build latest copy of shared library.
 # on windows, this won't work. We need a separate script for windows.
-/usr/local/share/dotnet/dotnet publish ../client/Packages/com.beamable/Common --framework net6.0 -c release -o $lib_path
-/usr/local/share/dotnet/dotnet publish ../client/Packages/com.beamable.server/SharedRuntime --framework net6.0 -c release -o $lib_path
-/usr/local/share/dotnet/dotnet publish ../client/Packages/com.beamable.server/Runtime/Common --framework net6.0 -c release -o $lib_path
-/usr/local/share/dotnet/dotnet publish ./unityEngineStubs --framework net6.0  -c release -o $lib_path
-/usr/local/share/dotnet/dotnet publish ./beamable.tooling.common --framework net6.0 -c release -o $lib_path
+/usr/local/share/dotnet/dotnet publish ../client/Packages/com.beamable/Common -c release -o $lib_path
+/usr/local/share/dotnet/dotnet publish ../client/Packages/com.beamable.server/SharedRuntime -c release -o $lib_path
+/usr/local/share/dotnet/dotnet publish ../client/Packages/com.beamable.server/Runtime/Common -c release -o $lib_path
+/usr/local/share/dotnet/dotnet publish ./unityEngineStubs  -c release -o $lib_path
+/usr/local/share/dotnet/dotnet publish ./beamable.tooling.common -c release -o $lib_path
 
 # optionally uncomment to run tests on build
 # /usr/local/share/dotnet/dotnet test ./microserviceTests/
