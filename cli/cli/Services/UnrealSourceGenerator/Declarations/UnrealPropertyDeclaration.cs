@@ -56,7 +56,7 @@ public struct UnrealPropertyDeclaration
 
 
 	public const string PRIMITIVE_U_PROPERTY_SERIALIZE = @$"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢);";
-	public const string GUID_U_PROPERTY_SERIALIZE = @$"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢.ToString());";
+	public const string GUID_U_PROPERTY_SERIALIZE = @$"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢.ToString(EGuidFormats::DigitsWithHyphensLower));";
 
 	public const string STRING_U_PROPERTY_DESERIALIZE = $@"₢{nameof(PropertyName)}₢ = Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢""));";
 	public const string INT8_U_PROPERTY_DESERIALIZE = $@"₢{nameof(PropertyName)}₢ = static_cast<int8>(Bag->GetIntegerField(""₢{nameof(RawFieldName)}₢""));";
