@@ -15,7 +15,8 @@ namespace Beamable.Editor.UI.Model
 
 		public Task TryToStart()
 		{
-			return CodeService.Run(new[] { BeamoId }).TaskFromPromise();
+			//return CodeService.Run(new[] { BeamoId }).TaskFromPromise();
+			return CodeService.RunStandaloneMicroservice(BeamoId).TaskFromPromise();
 		}
 
 		public Task TryToStop()
