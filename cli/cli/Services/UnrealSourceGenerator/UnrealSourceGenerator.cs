@@ -724,7 +724,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					if (nonOptionalUnrealType.Contains(UNREAL_WRAPPER_ARRAY) || nonOptionalUnrealType.Contains(UNREAL_WRAPPER_MAP))
 					{
 						var wrapper = MakeWrapperDeclaration(nonOptionalUnrealType);
-						arrayWrapperTypes.Add(wrapper);
+						
+						if(nonOptionalUnrealType.Contains(UNREAL_WRAPPER_ARRAY)) arrayWrapperTypes.Add(wrapper);
+						if(nonOptionalUnrealType.Contains(UNREAL_WRAPPER_MAP)) mapWrapperTypes.Add(wrapper);
 
 						// If this field's type is a replacement type, we log it out.
 						if (AllReplacementTypes.Contains(wrapper.ValueUnrealTypeName))
@@ -1297,8 +1299,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			overridenWrapperType = UnrealPropertyDeclaration.ExtractSecondTemplateParamFromType(unrealType);
 		}
 		else
+		{
 			throw new Exception(
 				"Should never see this. If you do, this means someone is using a polymorphic return value in an unsupported way. Figure out which way and add support for it here.");
+		}
 
 		var ptrWrappedTypes = nonOverridenPolyWrapperType.Substring(nonOverridenPolyWrapperType.IndexOf('_') + 1).Split("_")
 			.Select(nonPtrWrappedTypes => nonPtrWrappedTypes.EndsWith("*") ? nonPtrWrappedTypes : $"{nonPtrWrappedTypes}*")
