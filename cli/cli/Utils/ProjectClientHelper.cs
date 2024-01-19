@@ -34,34 +34,54 @@ public class UnrealProjectClient : IProjectClient
 	public void AddProject<T>(string relativePath, T args) where T : CommandArgs
 	{
 		var unrealArgs = args as UnrealAddProjectClientOutputCommandArgs;
-		if (unrealArgs == null) throw new Exception("didn't work");
-		
-		var msModuleName = unrealArgs.msModuleName;
-		if (string.IsNullOrEmpty(msModuleName)) msModuleName = AnsiConsole.Prompt(new TextPrompt<string>("Enter the Runtime module name to which we'll add the generated Microservice Client subsystem:"));
-		var msModulePath = Path.Combine(unrealArgs.ConfigService.BaseDirectory, relativePath + @"\Source\", msModuleName);
-		if (!Directory.Exists(msModulePath))
-		{
-			AnsiConsole.Write(new Text($"Module entered was not found in {msModulePath}.", new Style(Color.Red)));
-			return;
-		}
-		// TODO: It'd be nice to add a validation that the entered module was in-fact a Runtime module.
-		// TODO: We can do this by looking at the .uproject file.
+		if (unrealArgs == null) throw new Exception("Something went wrong. Please report this to Beamable customer service.");
 
-		var bpNodesModuleName = unrealArgs.bpModuleName;
-		if (string.IsNullOrEmpty(bpNodesModuleName)) bpNodesModuleName = AnsiConsole.Prompt(new TextPrompt<string>("Enter the UncookedOnly module name to which we'll add the generated Microservice Client's helper BP Nodes:").DefaultValue($"{msModuleName}BlueprintNodes"));
-		var bpNodesModulePath = Path.Combine(unrealArgs.ConfigService.BaseDirectory, relativePath + @"\Source\", bpNodesModuleName);
-		if (!Directory.Exists(bpNodesModulePath))
-		{
-			AnsiConsole.Write(new Text($"Module entered was not found in {bpNodesModulePath}.", new Style(Color.Red)));
-			return;
-		}
-		// TODO: It'd be nice to add a validation that the entered module was in-fact an UncookedOnly module.
-		// TODO: We can do this by looking at the .uproject file.
+		var unrealRootDir = new DirectoryInfo(relativePath);
+		var isUnrealRoot = unrealRootDir.GetFiles().Any(f => f.Extension.Contains(".uproject"));
+		if (!isUnrealRoot) throw new Exception("Found an invalid Unreal root directory. Something went wrong. Please report this to Beamable customer service.");
 
-		var msModulePublicPrivate = unrealArgs.msModulePublicPrivate ?? AnsiConsole.Prompt(new ConfirmationPrompt($"Does the selected Runtime module ({msModuleName}) split files between Public/Private folders?"));
-		var bpNodesPublicPrivate = unrealArgs.bpModulePublicPrivate ?? AnsiConsole.Prompt(new ConfirmationPrompt($"Does the selected UncookedOnly module ({bpNodesModuleName}) split files between Public/Private folders?"));
-		
-		unrealArgs.ProjectService.AddUnrealProject(relativePath, msModuleName, bpNodesModuleName, msModulePublicPrivate, bpNodesPublicPrivate);
+		// If the project is using our OSS plugin, we don't need to ask for the module name or BP name (as the MS code gets injected into the plugin itself). 
+		var isUsingOss = unrealRootDir.GetDirectories("Plugins/OnlineSubsystemBeamable").Any();
+		if (isUsingOss)
+		{
+			unrealArgs.ProjectService.AddUnrealProjectWithOss(relativePath);
+		}
+		else
+		{
+			var msModuleName = unrealArgs.msModuleName;
+			if (string.IsNullOrEmpty(msModuleName))
+				msModuleName = AnsiConsole.Prompt(new TextPrompt<string>("Enter the Runtime module name to which we'll add the generated Microservice Client subsystem:"));
+			var msModulePath = Path.Combine(unrealArgs.ConfigService.BaseDirectory, relativePath + @"\Source\", msModuleName);
+			if (!Directory.Exists(msModulePath))
+			{
+				AnsiConsole.Write(new Text($"Module entered was not found in {msModulePath}.", new Style(Color.Red)));
+				return;
+			}
+			// TODO: It'd be nice to add a validation that the entered module was in-fact a Runtime module.
+			// TODO: We can do this by looking at the .uproject file.
+
+			var bpNodesModuleName = unrealArgs.bpModuleName;
+			if (string.IsNullOrEmpty(bpNodesModuleName))
+				bpNodesModuleName =
+					AnsiConsole.Prompt(
+						new TextPrompt<string>("Enter the UncookedOnly module name to which we'll add the generated Microservice Client's helper BP Nodes:").DefaultValue(
+							$"{msModuleName}Bp"));
+			var bpNodesModulePath = Path.Combine(unrealArgs.ConfigService.BaseDirectory, relativePath + @"\Source\", bpNodesModuleName);
+			if (!Directory.Exists(bpNodesModulePath))
+			{
+				AnsiConsole.Write(new Text($"Module entered was not found in {bpNodesModulePath}.", new Style(Color.Red)));
+				return;
+			}
+			// TODO: It'd be nice to add a validation that the entered module was in-fact an UncookedOnly module.
+			// TODO: We can do this by looking at the .uproject file.
+
+			var msModulePublicPrivate = unrealArgs.msModulePublicPrivate ??
+			                            AnsiConsole.Prompt(new ConfirmationPrompt($"Does the selected Runtime module ({msModuleName}) split files between Public/Private folders?"));
+			var bpNodesPublicPrivate = unrealArgs.bpModulePublicPrivate ??
+			                           AnsiConsole.Prompt(new ConfirmationPrompt($"Does the selected UncookedOnly module ({bpNodesModuleName}) split files between Public/Private folders?"));
+
+			unrealArgs.ProjectService.AddUnrealProject(relativePath, msModuleName, bpNodesModuleName, msModulePublicPrivate, bpNodesPublicPrivate);
+		}
 	}
 }
 
