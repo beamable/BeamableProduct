@@ -113,7 +113,7 @@ namespace Beamable.Editor.Dotnet
 				process.StartInfo.RedirectStandardError = true;
 				process.StartInfo.CreateNoWindow = true;
 				process.StartInfo.UseShellExecute = false;
-				
+
 				process.ErrorDataReceived += (sender, data) =>
 				{
 					if (data == null || string.IsNullOrEmpty(data.Data)) return;

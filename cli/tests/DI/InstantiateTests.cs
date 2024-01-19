@@ -16,13 +16,13 @@ public class InstantiateTests
 
 		var ex = Assert.Throws<IndexOutOfRangeException>(
 			() => provider.GetService<FailsOnConstructor>());
-		
+
 		// this assertion makes sure the stack trace isn't starting with the re-capture/throw in the DI framework, 
 		//  but instead, is coming from the actual site of failure.
 		Console.WriteLine("STACK:" + ex.StackTrace);
 		Assert.That(ex.StackTrace.StartsWith("   at tests.DI.InstantiateTests.FailsOnConstructor..ctor()"));
 	}
-	
+
 	[Test]
 	public void ArgFailsOnConstructor()
 	{
@@ -34,7 +34,7 @@ public class InstantiateTests
 
 		var ex = Assert.Throws<NotImplementedException>(
 			() => provider.GetService<UsesFailingDep>());
-		
+
 		// this assertion makes sure the stack trace isn't starting with the re-capture/throw in the DI framework, 
 		//  but instead, is coming from the actual site of failure.
 		Console.WriteLine("STACK:" + ex.StackTrace);
@@ -54,7 +54,7 @@ public class InstantiateTests
 	{
 		public UsesFailingDep(FailsOnConstructor service)
 		{
-			
+
 		}
 	}
 }

@@ -21,7 +21,7 @@ public class RealmConfigSetCommand : AppCommand<RealmConfigSetCommandArgs>, IRes
 	public override void Configure()
 	{
 		AddOption(new PlainOutputOption(), (args, b) => args.plainOutput = b);
-		AddOption(new RealmConfigKeyValueOption(),(args, b) => args.keyValuePairs = b.ToList());
+		AddOption(new RealmConfigKeyValueOption(), (args, b) => args.keyValuePairs = b.ToList());
 	}
 
 	public override async Task Handle(RealmConfigSetCommandArgs args)

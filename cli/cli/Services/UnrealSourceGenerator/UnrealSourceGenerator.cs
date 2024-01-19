@@ -518,17 +518,17 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		listOfAlreadyDeclaredTypes.AddRange(AllReplacementTypesNamespacedNames);
 
 		// Predeclare things that we always want
-		if(genType != GenerationType.Microservice)
+		if (genType != GenerationType.Microservice)
 		{
 			// Declare primitive optional and arrays
 			{
 				var wrapper = MakeWrapperDeclaration("FArrayOfString");
 				arrayWrapperTypes.Add(wrapper);
-				
+
 				var optionalDeclaration = MakeOptionalDeclaration(UNREAL_OPTIONAL_STRING, UNREAL_STRING);
 				optionalTypes.Add(optionalDeclaration);
 			}
-			
+
 			// Declare replacement type optionals
 			{
 				for (int i = 0; i < AllReplacementTypes.Count; i++)
@@ -541,7 +541,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				}
 			}
 		}
-		
+
 		// Convert the schema into the generation format
 		foreach (var namedOpenApiSchema in namedOpenApiSchemata)
 		{
@@ -686,9 +686,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					if (unrealType.StartsWith(UNREAL_OPTIONAL))
 					{
 						var optionalDeclaration = MakeOptionalDeclaration(unrealType, nonOptionalUnrealType);
-						
+
 						// Only add it if its not there already 
-						if(optionalTypes.All(d => !d.UnrealTypeName.Equals(unrealType))) optionalTypes.Add(optionalDeclaration);
+						if (optionalTypes.All(d => !d.UnrealTypeName.Equals(unrealType))) optionalTypes.Add(optionalDeclaration);
 
 						// If this field's type is a replacement type, we log it out.
 						if (AllReplacementTypes.Contains(optionalDeclaration.ValueUnrealTypeName))
@@ -717,16 +717,16 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 							kReplacementTypeDeclarationPointsLog.AppendLine($"{handle},{uPropertyDeclarationData.PropertyUnrealType},{uPropertyDeclarationData.PropertyNamespacedType}");
 						}
 					}
-					
+
 
 					// Wrapper types can only appear inside Non-Optional declarations of TMap/TArray ---
 					// as such, we can find all of them by checking them against the NonOptionalUnrealType.
 					if (nonOptionalUnrealType.Contains(UNREAL_WRAPPER_ARRAY) || nonOptionalUnrealType.Contains(UNREAL_WRAPPER_MAP))
 					{
 						var wrapper = MakeWrapperDeclaration(nonOptionalUnrealType);
-						
-						if(nonOptionalUnrealType.Contains(UNREAL_WRAPPER_ARRAY)) arrayWrapperTypes.Add(wrapper);
-						if(nonOptionalUnrealType.Contains(UNREAL_WRAPPER_MAP)) mapWrapperTypes.Add(wrapper);
+
+						if (nonOptionalUnrealType.Contains(UNREAL_WRAPPER_ARRAY)) arrayWrapperTypes.Add(wrapper);
+						if (nonOptionalUnrealType.Contains(UNREAL_WRAPPER_MAP)) mapWrapperTypes.Add(wrapper);
 
 						// If this field's type is a replacement type, we log it out.
 						if (AllReplacementTypes.Contains(wrapper.ValueUnrealTypeName))
@@ -734,7 +734,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 							kReplacementTypeDeclarationPointsLog.AppendLine($"{handle},{uPropertyDeclarationData.PropertyUnrealType},{uPropertyDeclarationData.PropertyNamespacedType}");
 						}
 					}
-					
+
 					AddJsonAndDefaultValueHelperIncludesIfNecessary(unrealType, ref serializableTypeDeclaration);
 
 					serializableTypeDeclaration.PropertyIncludes.Add(GetIncludeStatementForUnrealType(unrealType));
@@ -1271,7 +1271,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		}
 	}
 
-	
+
 	/// <summary>
 	/// This takes in a normal unreal type/non-overriden unreal type pair of either:
 	/// - UOneOf_
@@ -1385,19 +1385,21 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// </summary>
 	private static UnrealEnumDeclaration MakeEnumDeclaration(string unrealType, List<string> enumValuesNames)
 	{
-		var enumDecl = new UnrealEnumDeclaration { UnrealTypeName = unrealType,
-			NamespacedTypeName = GetNamespacedTypeNameFromUnrealType(unrealType), 
+		var enumDecl = new UnrealEnumDeclaration
+		{
+			UnrealTypeName = unrealType,
+			NamespacedTypeName = GetNamespacedTypeNameFromUnrealType(unrealType),
 			EnumValues = enumValuesNames
 		};
 		return enumDecl;
 	}
 
-    
+
 	/// <summary>
 	/// This decides whether or not we'll need the cpp to include the BeamJsonUtils.h; we only need to do that if we have complex types (Containers or Wrappers).
 	/// This also decides whether or not we need DefaultValueHelper.h; we need to do this for deserializing some of the primitive UE types (<see cref="IsUnrealPrimitiveType"/>). 
 	/// </summary>
-	private static void AddJsonAndDefaultValueHelperIncludesIfNecessary(string unrealType, ref UnrealJsonSerializableTypeDeclaration serializableTypeData, 
+	private static void AddJsonAndDefaultValueHelperIncludesIfNecessary(string unrealType, ref UnrealJsonSerializableTypeDeclaration serializableTypeData,
 		bool forceJson = false, bool forceDefaultHelper = false)
 	{
 		// If this is a field that will require BeamJsonUtils for deserialization --- add it to the list of includes of this type.

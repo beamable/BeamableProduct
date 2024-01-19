@@ -18,7 +18,7 @@ public class RealmConfigCommand : AppCommand<RealmConfigCommandArgs>, IResultSte
 	public override void Configure()
 	{
 		AddOption(new PlainOutputOption(), (args, b) => args.plainOutput = b);
-		AddOption(new RealmConfigNamespaceOption(),(args, b) => args.namespaces = b.ToList());
+		AddOption(new RealmConfigNamespaceOption(), (args, b) => args.namespaces = b.ToList());
 	}
 
 	public override async Task Handle(RealmConfigCommandArgs args)

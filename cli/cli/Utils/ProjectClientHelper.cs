@@ -76,9 +76,9 @@ public class UnrealProjectClient : IProjectClient
 			// TODO: We can do this by looking at the .uproject file.
 
 			var msModulePublicPrivate = unrealArgs.msModulePublicPrivate ??
-			                            AnsiConsole.Prompt(new ConfirmationPrompt($"Does the selected Runtime module ({msModuleName}) split files between Public/Private folders?"));
+										AnsiConsole.Prompt(new ConfirmationPrompt($"Does the selected Runtime module ({msModuleName}) split files between Public/Private folders?"));
 			var bpNodesPublicPrivate = unrealArgs.bpModulePublicPrivate ??
-			                           AnsiConsole.Prompt(new ConfirmationPrompt($"Does the selected UncookedOnly module ({bpNodesModuleName}) split files between Public/Private folders?"));
+									   AnsiConsole.Prompt(new ConfirmationPrompt($"Does the selected UncookedOnly module ({bpNodesModuleName}) split files between Public/Private folders?"));
 
 			unrealArgs.ProjectService.AddUnrealProject(relativePath, msModuleName, bpNodesModuleName, msModulePublicPrivate, bpNodesPublicPrivate);
 		}

@@ -21,7 +21,7 @@ public class RealmConfigRemoveCommand : AppCommand<RealmConfigRemoveCommandArgs>
 	public override void Configure()
 	{
 		AddOption(new PlainOutputOption(), (args, b) => args.plainOutput = b);
-		AddOption(new RealmConfigKeyOption(),(args, b) => args.keys = b.ToList());
+		AddOption(new RealmConfigKeyOption(), (args, b) => args.keys = b.ToList());
 	}
 
 	public override async Task Handle(RealmConfigRemoveCommandArgs args)

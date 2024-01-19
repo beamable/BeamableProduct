@@ -96,9 +96,9 @@ When this value is 0, there is effectively no minimum wait period.
 The default is 60 seconds.
 ")]
 		public int CommerceListingRefreshSecondsMinimum = 60;
-		
+
 		int ICommerceConfig.CommerceListingRefreshSecondsMinimum => CommerceListingRefreshSecondsMinimum;
-		
+
 		[Header("Beamable Toolbar")]
 		[Tooltip("Enable this to receive a warning (toggle-able per Beam Hint Validation) when entering playmode.\n\n" +
 				 "This aims to help you enforce project workflows and guarantee people are not wasting time chasing issues that we can identify for you.")]

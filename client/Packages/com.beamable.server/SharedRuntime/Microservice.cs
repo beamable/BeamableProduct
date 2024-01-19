@@ -77,7 +77,7 @@ namespace Beamable.Server
 		///
 		/// </summary>
 		protected IDependencyProvider Provider => _serviceProvider;
-		
+
 		[Obsolete("Use " + nameof(Provider) + " instead.")]
 		protected IDependencyProvider ServiceProvider => _serviceProvider;
 

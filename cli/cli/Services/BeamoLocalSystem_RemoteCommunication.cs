@@ -35,7 +35,7 @@ public partial class BeamoLocalSystem
 	{
 		var existingMongoServices = BeamoManifest.ServiceDefinitions.Where(sd => sd.Protocol == BeamoProtocolType.EmbeddedMongoDb).ToList();
 		foreach (var storageReference
-		         in remoteManifest.storageReference)
+				 in remoteManifest.storageReference)
 		{
 			// If we don't have a service storage with that id stored locally, let's make one
 			if (existingMongoServices.All(sd => sd.BeamoId != storageReference.id))

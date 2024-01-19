@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Better validation and error messages for add-unreal-project command code-path;
 - Unreal Microservice client generation now correctly identifies whether or not the OSS UE Plugin is there and, if so, it'll add the microservices code to that module instead.
 - Unreal Microservice client generation now checks whether or not the linked project is using the OnlineSubsystemBeamable plugin and, if so, checks if it is configured correctly. This catches the case where people add the OSS after the Microservice was already added to the project modules;
@@ -30,14 +31,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.19.11]
 
 ### Added
+
 - `beam config realm` command suite for working with realm config via the CLI.
 
 ### Fixed
+
 - Stack traces from Dependency Injection, `GetService`, show inner stack trace instead of Reflection based stack trace.
 
 ## [1.19.10]
 
 ### Fixed
+
 - fixed issue an issue that would cause an NRE if an existing service had no federated component when running services deploy command
 
 ## [1.19.9]
