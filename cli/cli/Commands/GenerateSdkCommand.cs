@@ -101,10 +101,26 @@ public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>, IStandalon
 		{
 			switch (args.CleaningStrategy)
 			{
+				case CleaningStrategy.RemoveDir when args.Engine == SwaggerService.TARGET_ENGINE_NAME_UNREAL:
+				{
+					// We always clean up the output directory's AutoGen folder  --- every file we create is in the AutoGen folder.
+					var outputDirInfo = new DirectoryInfo(args.OutputPath);
+					var autoGenDirs = outputDirInfo.GetDirectories("AutoGen", SearchOption.AllDirectories);
+					foreach (DirectoryInfo directoryInfo in autoGenDirs)
+					{
+						// We don't clean up the CLI Autogen folder in this command.
+						if(directoryInfo.Parent!.ToString().Contains("CLI")) continue;
+						Directory.Delete(directoryInfo.ToString(), true);
+					}
+					break;
+				}
 				case CleaningStrategy.RemoveDir:
+				{
 					Directory.Delete(args.OutputPath, true);
 					break;
+				}
 				case CleaningStrategy.RemoveCsFiles when !args.Concat:
+				{
 					var files = Directory.GetFiles(args.OutputPath, "*.cs", SearchOption.AllDirectories);
 					foreach (var file in files)
 					{
@@ -112,10 +128,15 @@ public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>, IStandalon
 					}
 
 					break;
+				}
 				case CleaningStrategy.DoNotClean:
+				{
 					break;
+				}
 				default:
+				{
 					throw new ArgumentOutOfRangeException();
+				}
 			}
 		}
 
