@@ -1,4 +1,8 @@
+using Beamable.Common.Dependencies;
+using Beamable.Common.Util;
+using beamable.server;
 using Beamable.Server;
+using Beamable.Server.Api.Usage;
 using Beamable.Tooling.Common.OpenAPI;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Extensions;
@@ -26,6 +30,13 @@ namespace microservice.Common
 	   /// </summary>
 	   public string PublicHost { get; set; }
 	   
+	   /// <summary>
+	   /// The dependency provider for the entire service
+	   /// </summary>
+	   public IServiceProvider GlobalProvider { get; set; }
+	   
+	   public string sdkVersionBaseBuild { get; set; }
+	   public string sdkVersionExecution { get; set; }
 	   
       /// <summary>
       /// A simple method to check if the microservice can send and receive network traffic.
@@ -62,6 +73,39 @@ namespace microservice.Common
 	      var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
 
 	      return outputString;
+      }
+
+      /// <summary>
+      /// Fetch various Beamable SDK metadata for the Microservice
+      /// </summary>
+      /// <remarks>
+      /// <para>
+      /// The sdkVersion is the Beamable SDK version used for the Microservice.
+      /// </para>
+      /// <para>
+      /// the instanceId is the AWS ARN when deployed, the local docker imageId when running locally in docker.
+      /// </para>
+      /// </remarks>
+      /// <returns>Metadata for the service</returns>
+      [Callable]
+      public MicroserviceRuntimeMetadata Metadata()
+      {
+	      var version = BeamAssemblyVersionUtil.GetVersion<AdminRoutes>();
+	      var usageApi = GlobalProvider.GetService<IUsageApi>();
+	      var metadata = usageApi.GetMetadata();
+	      return new MicroserviceRuntimeMetadata
+	      {
+		      instanceId = metadata.instanceId,
+		      sdkVersion = version,
+		      sdkExecutionVersion = sdkVersionExecution,
+		      sdkBaseBuildVersion = sdkVersionBaseBuild,
+		      serviceName = MicroserviceAttribute.MicroserviceName,
+#pragma warning disable CS0618 // Type or member is obsolete
+		      useLegacySerialization = MicroserviceAttribute.UseLegacySerialization,
+#pragma warning restore CS0618 // Type or member is obsolete
+		      disableAllBeamableEvents = MicroserviceAttribute.DisableAllBeamableEvents,
+		      enableEagerContentLoading = MicroserviceAttribute.EnableEagerContentLoading
+	      };
       }
    }
 }
