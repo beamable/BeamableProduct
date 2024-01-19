@@ -402,6 +402,10 @@ namespace Beamable.Server.Editor.Usam
 		{
 			var files = GetSignpostFiles(".beamservice");
 			var data = GetSignpostData<BeamServiceSignpost>(files);
+			foreach (BeamServiceSignpost signpost in data)
+			{
+				signpost.assetRelativePath = BeamServiceSignpost.GetRelativePath(signpost.assetRelativePath);
+			}
 			return data;
 		}
 
@@ -423,7 +427,7 @@ namespace Beamable.Server.Editor.Usam
 			var files = new HashSet<string>();
 
 			ScanDirectoryRecursive("Assets", extension, IgnoreFolderSuffixes, files);
-			ScanDirectoryRecursive("Packages", extension, IgnoreFolderSuffixes, files);
+			ScanDirectoryRecursive(Path.Combine(new[]{"Library","PackageCache"}), extension, IgnoreFolderSuffixes, files);
 			return files;
 		}
 
