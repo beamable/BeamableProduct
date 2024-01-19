@@ -276,7 +276,7 @@ public struct UnrealEndpointDeclaration
 				}
 				else if (UnrealSourceGenerator.UNREAL_GUID.Contains(routeParameterDeclaration.PropertyUnrealType))
 				{
-					return $"Route = Route.Replace(TEXT(\"{{id}}\"), *Id.ToString(EGuidFormats::DigitsLower));";
+					return $"Route = Route.Replace(TEXT(\"{{id}}\"), *Id.ToString(EGuidFormats::DigitsWithHyphensLower));";
 				}
 
 				// We fail the gen loudly if we ever see a type that doesn't match this. It should be impossible.
@@ -803,7 +803,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::₢{nameof(SubsystemNam
 
 	private const string BUILD_BODY_IMPLEMENTATION = @"ensureAlways(Body);
 
-	TUnrealJsonSerializer JsonSerializer = TJsonStringWriter<TCondensedJsonPrintPolicy<wchar_t>>::Create(&BodyString);
+	TUnrealJsonSerializer JsonSerializer = TJsonStringWriter<TCondensedJsonPrintPolicy<TCHAR>>::Create(&BodyString);
 	Body->BeamSerialize(JsonSerializer);
 	JsonSerializer->Close();";
 
