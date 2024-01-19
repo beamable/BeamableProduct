@@ -20,9 +20,11 @@ public class DataReporterService
 
 	public void Report(string rawMessage)
 	{
-		if (!_appContext.UseFatalAsReportingChannel) return;
-
-		Log.Fatal("{open}{message}{close}", Reporting.PATTERN_START, rawMessage, Reporting.PATTERN_END);
+		if (_appContext.UsePipeOutput || _appContext.ShowRawOutput)
+		{
+			// std out
+			Console.WriteLine(rawMessage);
+		}
 	}
 
 	public void Report<T>(string type, T data)

@@ -51,9 +51,8 @@ public class App
 		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
 
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
-		// configureLogger ??= config => config.WriteTo.Console()
 		configureLogger ??= config =>
-			config.WriteTo.Spectre(outputTemplate: "{Timestamp:HH:mm:ss} [{Level:u4}] {Message:l}{NewLine}{Exception}")
+			config.WriteTo.Console(standardErrorFromLevel: LogEventLevel.Verbose)
 				.MinimumLevel.ControlledBy(LogLevel)
 				.CreateLogger();
 		Log.Logger = configureLogger(new LoggerConfiguration());
@@ -126,7 +125,8 @@ public class App
 		Commands.AddSingleton<AccessTokenOption>();
 		Commands.AddSingleton<RefreshTokenOption>();
 		Commands.AddSingleton<LogOption>();
-		Commands.AddSingleton<EnableReporterOption>();
+		Commands.AddSingleton<ShowRawOutput>();
+		Commands.AddSingleton<ShowPrettyOutput>();
 		Commands.AddSingleton<DotnetPathOption>();
 		Commands.AddSingleton(provider =>
 		{
@@ -138,7 +138,8 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
-			root.AddGlobalOption(provider.GetRequiredService<EnableReporterOption>());
+			root.AddGlobalOption(provider.GetRequiredService<ShowRawOutput>());
+			root.AddGlobalOption(provider.GetRequiredService<ShowPrettyOutput>());
 			root.AddGlobalOption(provider.GetRequiredService<SkipStandaloneValidationOption>());
 			root.AddGlobalOption(provider.GetRequiredService<DotnetPathOption>());
 			root.Description = "A CLI for interacting with the Beamable Cloud.";
@@ -293,8 +294,17 @@ public class App
 						var report = new Report(
 							new BeamResourceRepository(
 								typeof(Program).Assembly));
-						foreach (var error in cliException.Reports)
-							report.AddDiagnostic(error);
+						if (cliException.Reports != null)
+						{
+							foreach (var error in cliException.Reports)
+								report.AddDiagnostic(error);
+						}
+						else
+						{
+							// if there are no custom reports for the exception, default to the message.
+							report.AddDiagnostic(new Diagnostic(cliException.Message));
+						}
+
 						report.Render(AnsiConsole.Console);
 					}
 					else

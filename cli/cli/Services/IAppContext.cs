@@ -5,6 +5,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Server.Common;
 using Serilog;
 using Serilog.Events;
+using Spectre.Console;
 using System.CommandLine.Binding;
 
 namespace cli;
@@ -23,7 +24,9 @@ public interface IAppContext
 	public string Cid { get; }
 	public string Pid { get; }
 	public string Host { get; }
-	public bool UseFatalAsReportingChannel { get; }
+	public bool UsePipeOutput { get; }
+	public bool ShowRawOutput { get; }
+	public bool ShowPrettyOutput { get; }
 	public string DotnetPath { get; }
 	public string WorkingDirectory { get; }
 	public IAccessToken Token { get; }
@@ -52,11 +55,14 @@ public class DefaultAppContext : IAppContext
 	private readonly ConfigDirOption _configDirOption;
 	private readonly ConfigService _configService;
 	private readonly CliEnvironment _environment;
-	private readonly EnableReporterOption _reporterOption;
+	private readonly ShowRawOutput _showRawOption;
+	private readonly ShowPrettyOutput _showPrettyOption;
 	private readonly SkipStandaloneValidationOption _skipValidationOption;
 	private readonly DotnetPathOption _dotnetPathOption;
 	public bool IsDryRun { get; private set; }
-	public bool UseFatalAsReportingChannel { get; private set; }
+	public bool UsePipeOutput { get; private set; }
+	public bool ShowRawOutput { get; private set; }
+	public bool ShowPrettyOutput { get; private set; }
 
 	public string DotnetPath { get; private set; }
 
@@ -65,6 +71,7 @@ public class DefaultAppContext : IAppContext
 
 	private string _cid, _pid, _host;
 	private string _refreshToken;
+	private BindingContext _bindingContext;
 
 	public string Cid => _cid;
 	public string Pid => _pid;
@@ -75,8 +82,8 @@ public class DefaultAppContext : IAppContext
 
 	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, HostOption hostOption,
 		AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption, ConfigDirOption configDirOption,
-		ConfigService configService, CliEnvironment environment, EnableReporterOption reporterOption, SkipStandaloneValidationOption skipValidationOption,
-		DotnetPathOption dotnetPathOption)
+		ConfigService configService, CliEnvironment environment, ShowRawOutput showRawOption, SkipStandaloneValidationOption skipValidationOption,
+		DotnetPathOption dotnetPathOption, ShowPrettyOutput showPrettyOption)
 	{
 		_dryRunOption = dryRunOption;
 		_cidOption = cidOption;
@@ -88,14 +95,83 @@ public class DefaultAppContext : IAppContext
 		_configDirOption = configDirOption;
 		_configService = configService;
 		_environment = environment;
-		_reporterOption = reporterOption;
+		_showRawOption = showRawOption;
+		_showPrettyOption = showPrettyOption;
 		_skipValidationOption = skipValidationOption;
 		_dotnetPathOption = dotnetPathOption;
 	}
 
+	void SetupOutputStrategy()
+	{
+		// by default, set logs to INFO
+		App.LogLevel.MinimumLevel = LogEventLevel.Information;
+		
+		TextWriter spectreOutput = Console.Error;
+		var invisibleStream = new StringWriter();
+
+		if (ShowRawOutput)
+		{
+			// when --raw is included, there are no logs by default
+			App.LogLevel.MinimumLevel = LogEventLevel.Fatal; 
+			
+			// the user has asked for raw output, which means by default, pretty must be request.
+			if (ShowPrettyOutput)
+			{
+				spectreOutput = Console.Error;
+			}
+			else
+			{
+				spectreOutput = invisibleStream;
+			}
+		}
+
+		if (UsePipeOutput)
+		{
+			// the user is piping the raw data, which means by default, there is nothing on stderr, 
+			//  unless pretty print has been requested
+			if (ShowPrettyOutput)
+			{
+				spectreOutput = Console.Error;
+			}
+			else
+			{
+				spectreOutput = invisibleStream;
+			}
+		}
+		
+		AnsiConsole.Console = AnsiConsole.Create(new AnsiConsoleSettings
+		{
+			Out = new AnsiConsoleOutput(spectreOutput)
+		});
+		
+		
+		// Configure log level from option
+		{
+			var logLevelOption = _bindingContext.ParseResult.GetValueForOption(_logOption);
+
+			if (string.IsNullOrEmpty(logLevelOption))
+			{
+				// do nothing.
+			}
+			else if (LogUtil.TryParseLogLevel(logLevelOption, out var level))
+			{
+				App.LogLevel.MinimumLevel = level;
+			}
+			else if (!string.IsNullOrEmpty(_environment.LogLevel) &&
+			         LogUtil.TryParseLogLevel(_environment.LogLevel, out level))
+			{
+				App.LogLevel.MinimumLevel = level;
+			}
+		}
+	}
+	
 	public void Apply(BindingContext bindingContext)
 	{
-		UseFatalAsReportingChannel = bindingContext.ParseResult.GetValueForOption(_reporterOption);
+		_bindingContext = bindingContext;
+		ShowRawOutput = bindingContext.ParseResult.GetValueForOption(_showRawOption);
+		ShowPrettyOutput = bindingContext.ParseResult.GetValueForOption(_showPrettyOption);
+		UsePipeOutput = Console.IsOutputRedirected;
+
 		IsDryRun = bindingContext.ParseResult.GetValueForOption(_dryRunOption);
 
 		DotnetPath = bindingContext.ParseResult.GetValueForOption(_dotnetPathOption);
@@ -104,24 +180,9 @@ public class DefaultAppContext : IAppContext
 			DotnetPath = "dotnet";
 		}
 
-		// Configure log level from option
-		{
-			var logLevelOption = bindingContext.ParseResult.GetValueForOption(_logOption);
+		SetupOutputStrategy();
 
-			if (string.IsNullOrEmpty(logLevelOption))
-			{
-				App.LogLevel.MinimumLevel = LogEventLevel.Information;
-			}
-			else if (LogUtil.TryParseLogLevel(logLevelOption, out var level))
-			{
-				App.LogLevel.MinimumLevel = level;
-			}
-			else if (!string.IsNullOrEmpty(_environment.LogLevel) &&
-					 LogUtil.TryParseLogLevel(_environment.LogLevel, out level))
-			{
-				App.LogLevel.MinimumLevel = level;
-			}
-		}
+		
 		_configService.Init(bindingContext);
 
 		if (!_configService.TryGetSetting(out _cid, bindingContext, _cidOption))
