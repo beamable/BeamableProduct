@@ -7,6 +7,7 @@ using CliWrap.Buffered;
 using JetBrains.Annotations;
 using Serilog;
 using Spectre.Console;
+using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -69,7 +70,6 @@ public class ProjectData
 		/// </summary>
 		public string BeamableBackendGenerationPassFile;
 
-
 		public bool Equals(string other) => Path.Equals(other);
 		public bool Equals(Unreal other) => Path == other.Path;
 
@@ -117,37 +117,114 @@ public class ProjectService
 		_configService.SaveDataFile(".linkedProjects", _projects);
 	}
 
-	public void AddUnrealProject(string projectPath, string msClientModuleName, string blueprintNodesModuleName, bool msClientModuleIsPublicPrivate, bool blueprintNodesModuleIsPublicPrivate)
+	public void AddUnrealProjectWithOss(string projectPath)
 	{
-		var msHeaderPath = msClientModuleName;
-		msHeaderPath += msClientModuleIsPublicPrivate ? "\\Public\\" : "\\";
-		
-		var msCppPath = msClientModuleName;
-		msCppPath += msClientModuleIsPublicPrivate ? "\\Private\\" : "\\";
-		
-		var bpNodesHeaderPath = blueprintNodesModuleName;
-		bpNodesHeaderPath += blueprintNodesModuleIsPublicPrivate ? "\\Public\\" : "\\";
-		
-		var bpNodesCppPath = blueprintNodesModuleName;
-		bpNodesCppPath += blueprintNodesModuleIsPublicPrivate ? "\\Private\\" : "\\";
-		
-		_projects.unrealProjectsPaths.Add(new ProjectData.Unreal()
-		{
-			CoreProjectName = msClientModuleName,
-			BlueprintNodesProjectName = blueprintNodesModuleName,
-			Path = projectPath,
-			SourceFilesPath = projectPath + $"\\Source\\",
-			MsCoreHeaderPath = msHeaderPath,
-			MsCoreCppPath = msCppPath,
-			MsBlueprintNodesHeaderPath = bpNodesHeaderPath,
-			MsBlueprintNodesCppPath = bpNodesCppPath,
-			BeamableBackendGenerationPassFile = projectPath +
-			                                    $"\\Plugins\\BeamableCore\\Source\\{UnrealSourceGenerator.currentGenerationPassDataFilePath}.json"
-		});
+		// Always ensure that we store things relative to the root of the UE project (not the repo)
+		var unrealRootPath = EnsureUnrealRootPath(projectPath);
+
+		// Ensure we have the OSS as a plugin.
+		var foundOss = unrealRootPath.GetDirectories("Plugins/OnlineSubsystemBeamable").Any();
+		if (!foundOss) throw new CliException("The selected UE project does not contain the OnlineSubsystemBeamable plugin. You should never see this. If you do, report a bug.");
+
+		// Find beamable folder (it must exist either as a parent of the UE project root OR inside the UE project root folder.
+		var beamableFolderPath = FindBeamableFolderPath(unrealRootPath);
+
+		// The path must always be stored relative to the .beamable folder as we run commands always through that.
+		projectPath = Path.GetRelativePath(beamableFolderPath.ToString(), unrealRootPath.ToString());
+		projectPath = projectPath.StartsWith(".") ? projectPath.Substring(1) : projectPath;
+		projectPath = projectPath.StartsWith("/") ? projectPath.Substring(1) : projectPath;
+
+		// Configure the ProjectData for Unreal
+		var projData = new ProjectData.Unreal();
+		projData.Path = projectPath;
+		projData.SourceFilesPath = projectPath + "Plugins/OnlineSubsystemBeamable/Source/";
+
+		projData.CoreProjectName = "OnlineSubsystemBeamable";
+		projData.BlueprintNodesProjectName = "OnlineSubsystemBeamableBp";
+
+		// These are defined relative to the SourceFilesPath
+		projData.MsCoreHeaderPath = projData.CoreProjectName + "/Public/Customer/";
+		projData.MsCoreCppPath = projData.CoreProjectName + "/Private/Customer/";
+		projData.MsBlueprintNodesHeaderPath = projData.BlueprintNodesProjectName + "/Public/Customer/";
+		projData.MsBlueprintNodesCppPath = projData.BlueprintNodesProjectName + "/Private/Customer/";
+
+		projData.BeamableBackendGenerationPassFile = projectPath + $"Plugins/BeamableCore/Source/{UnrealSourceGenerator.currentGenerationPassDataFilePath}.json";
+
+		// Save it
+		_projects.unrealProjectsPaths.Add(projData);
 		_configService.SaveDataFile(".linkedProjects", _projects);
 	}
 
-	public static async Task EnsureCanUseTemplates(string version)
+	public void AddUnrealProject(string projectPath, string msClientModuleName, string blueprintNodesModuleName, bool msClientModuleIsPublicPrivate, bool blueprintNodesModuleIsPublicPrivate)
+	{
+		// Always ensure that we store things relative to the root of the UE project (not the repo)
+		var unrealRootPath = EnsureUnrealRootPath(projectPath);
+
+		// Ensure we DON'T have the OSS as a plugin.
+		var foundOss = unrealRootPath.GetDirectories("Plugins/OnlineSubsystemBeamable").Any();
+		if (foundOss) throw new CliException("The selected UE project contains the OnlineSubsystemBeamable plugin. If you're a customer seeing this, please report a bug.");
+
+		// Find beamable folder (it must exist either as a parent of the UE project root OR inside the UE project root folder.
+		var beamableFolderPath = FindBeamableFolderPath(unrealRootPath);
+
+		// The path must always be stored relative to the .beamable folder as we run commands always through that.
+		projectPath = Path.GetRelativePath(beamableFolderPath.ToString(), unrealRootPath.ToString());
+		projectPath = projectPath.StartsWith(".") ? projectPath.Substring(1) : projectPath;
+		projectPath = projectPath.StartsWith("/") ? projectPath.Substring(1) : projectPath;
+
+		var projData = new ProjectData.Unreal() { };
+
+		var pathToBackendGenerationJson = $"Plugins/BeamableCore/Source/{UnrealSourceGenerator.currentGenerationPassDataFilePath}.json";
+		projData.Path = projectPath;
+		projData.SourceFilesPath = projectPath + (string.IsNullOrEmpty(projectPath) ? "Source/" : "/Source/");
+
+		projData.CoreProjectName = msClientModuleName;
+		projData.BlueprintNodesProjectName = blueprintNodesModuleName;
+
+		// These are defined relative to the SourceFilesPath
+		projData.MsCoreHeaderPath = projData.CoreProjectName + (msClientModuleIsPublicPrivate ? "/Public/" : "/");
+		projData.MsCoreCppPath = projData.CoreProjectName + (msClientModuleIsPublicPrivate ? "/Private/" : "/");
+		projData.MsBlueprintNodesHeaderPath = projData.BlueprintNodesProjectName + (blueprintNodesModuleIsPublicPrivate ? "/Public/" : "/");
+		projData.MsBlueprintNodesCppPath = projData.BlueprintNodesProjectName + (blueprintNodesModuleIsPublicPrivate ? "/Private/" : "/");
+
+		projData.BeamableBackendGenerationPassFile = projectPath + pathToBackendGenerationJson;
+
+		_projects.unrealProjectsPaths.Add(projData);
+		_configService.SaveDataFile(".linkedProjects", _projects);
+	}
+
+	private static DirectoryInfo EnsureUnrealRootPath(string projectPath)
+	{
+		var unrealRootPath = new DirectoryInfo(projectPath);
+		var isUnrealRoot = unrealRootPath.GetFiles().Any(f => f.Extension.Contains(".uproject"));
+		// We expect the path given here to be an unreal root path.
+		if (!isUnrealRoot) throw new CliException("The selected path is not the root of an Unreal project folder. (If you're a customer seeing this, report a bug).");
+		return unrealRootPath;
+	}
+
+	private static DirectoryInfo FindBeamableFolderPath(DirectoryInfo unrealRootPath)
+	{
+		var parent = unrealRootPath;
+		bool containsBeamableFolder;
+		do
+		{
+			containsBeamableFolder = (bool)parent?.GetDirectories().Any(d => d.Name.EndsWith(".beamable"));
+			parent = !containsBeamableFolder ? parent.Parent : parent;
+		} while (parent != null && !containsBeamableFolder);
+
+		// You should not see this ever, but... if you do; the error explains the problem. 
+		if (!containsBeamableFolder)
+		{
+			throw new CliException(
+				"There is no .beamable folder as a parent of this UE project (or inside it)." +
+				" Please run the CLI from a directory inside your UE project root OR from a parent folder that is also inside your source-control repo.");
+		}
+
+		return parent;
+	}
+
+
+	public async Task EnsureCanUseTemplates(string version, bool quiet = false)
 	{
 		var info = await GetTemplateInfo();
 
