@@ -136,9 +136,9 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 							if (unrealProjectData.CoreProjectName != "OnlineSubsystemBeamable" || !unrealProjectData.SourceFilesPath.StartsWith("Plugins/OnlineSubsystemBeamable"))
 							{
 								throw new CliException("You've added the OnlineSubsystemBeamable (OSB) plugin after you had already linked your Unreal Project." +
-								                       "Please delete your '.beamable/.linkedProjects.json' file and re-run 'beam project add-unreal-project'." +
-								                       "When using the OSB plugin, MS files are generated into the plugin's Customer folder; so, please delete your AutoGen folders from their " +
-								                       "previous location (outside of the plugin).");
+													   "Please delete your '.beamable/.linkedProjects.json' file and re-run 'beam project add-unreal-project'." +
+													   "When using the OSB plugin, MS files are generated into the plugin's Customer folder; so, please delete your AutoGen folders from their " +
+													   "previous location (outside of the plugin).");
 							}
 						}
 
@@ -208,7 +208,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 							string filePath = allFilesToCreate[i];
 							var path = Path.GetDirectoryName(filePath);
 							if (path == null) throw new CliException($"Parent path for file {filePath} is null. If you're a customer seeing this, report a bug.");
-							
+
 							Directory.CreateDirectory(path);
 							File.WriteAllText(filePath, unrealFileDescriptors[i].Content);
 						}
@@ -273,7 +273,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 			{
 				var existingContent = File.ReadAllText(outputPath);
 				if (string.Compare(existingContent, descriptors[i].Content, CultureInfo.InvariantCulture,
-					    CompareOptions.IgnoreSymbols) == 0)
+						CompareOptions.IgnoreSymbols) == 0)
 				{
 					identicalFileCounter++;
 					continue;
