@@ -1,4 +1,5 @@
 using Beamable.Server.Api.Usage;
+using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
@@ -52,7 +53,7 @@ public class DockerService : IUsageApi
 
 		p.Start();
 		await p.WaitForExitAsync();
-		_metadata.instanceId = (await p.StandardOutput.ReadToEndAsync()).ReplaceLineEndings();
+		_metadata.instanceId = (await p.StandardOutput.ReadToEndAsync()).ReplaceLineEndings(String.Empty);
 		
 	}
 }
