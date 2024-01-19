@@ -109,7 +109,7 @@ public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>, IStandalon
 					foreach (DirectoryInfo directoryInfo in autoGenDirs)
 					{
 						// We don't clean up the CLI Autogen folder in this command.
-						if(directoryInfo.Parent!.ToString().Contains("CLI")) continue;
+						if (directoryInfo.Parent!.ToString().Contains("CLI")) continue;
 						Directory.Delete(directoryInfo.ToString(), true);
 					}
 					break;
