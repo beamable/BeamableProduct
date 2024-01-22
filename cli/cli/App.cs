@@ -95,6 +95,7 @@ public class App
 		services.AddSingleton<DocService>();
 		services.AddSingleton<CliGenerator>();
 		services.AddSingleton<VersionService>();
+		services.AddSingleton<IDataReporterService, DataReporterService>();
 
 		OpenApiRegistration.RegisterOpenApis(services);
 

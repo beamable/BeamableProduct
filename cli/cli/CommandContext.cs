@@ -12,7 +12,7 @@ namespace cli;
 
 public interface IResultProvider
 {
-	public DataReporterService Reporter { get; set; }
+	public IDataReporterService Reporter { get; set; }
 }
 
 public interface IResultSteam<TChannel, TData> : IResultProvider
@@ -109,8 +109,8 @@ public abstract class AtomicCommand<TArgs, TResult> : AppCommand<TArgs>, IResult
 		var result = await GetResult(args);
 		if (result == null) return;
 		
-		IResultSteam<DefaultStreamResultChannel, TResult> self = this;
-		self.Reporter.Report(_channel.ChannelName, result);
+		var reporter = args.Provider.GetService<IDataReporterService>();
+		reporter.Report(_channel.ChannelName, result);
 	}
 
 	public abstract Task<TResult> GetResult(TArgs args);
@@ -132,7 +132,7 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider
 {
 	private List<Action<BindingContext, TArgs>> _bindingActions = new List<Action<BindingContext, TArgs>>();
 
-	DataReporterService IResultProvider.Reporter { get; set; }
+	IDataReporterService IResultProvider.Reporter { get; set; }
 	public IDependencyProvider CommandProvider { get; set; }
 
 	protected AppCommand(string name, string description = null) : base(name, description)

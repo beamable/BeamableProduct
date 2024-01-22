@@ -7,6 +7,8 @@ using Serilog;
 using Serilog.Events;
 using Spectre.Console;
 using System.CommandLine.Binding;
+using System.CommandLine.IO;
+using UnityEngine;
 
 namespace cli;
 
@@ -139,11 +141,13 @@ public class DefaultAppContext : IAppContext
 			}
 		}
 		
-		AnsiConsole.Console = AnsiConsole.Create(new AnsiConsoleSettings
+		if (AnsiConsole.Console.GetType().Assembly == typeof(AnsiConsole).Assembly)
 		{
-			Out = new AnsiConsoleOutput(spectreOutput)
-		});
-		
+			AnsiConsole.Console = AnsiConsole.Create(new AnsiConsoleSettings
+			{
+				Out = new AnsiConsoleOutput(spectreOutput)
+			});
+		}
 		
 		// Configure log level from option
 		{

@@ -9,7 +9,12 @@ using UnityEngine;
 
 namespace cli.Services;
 
-public class DataReporterService
+public interface IDataReporterService
+{
+	void Report<T>(string type, T data);
+}
+
+public class DataReporterService : IDataReporterService
 {
 	private readonly IAppContext _appContext;
 
