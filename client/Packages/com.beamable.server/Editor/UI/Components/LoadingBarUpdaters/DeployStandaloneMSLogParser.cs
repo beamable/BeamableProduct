@@ -28,13 +28,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_serviceName = name;
 			_publisher = publisher;
 			Step = 0;
-			TotalSteps = 1;
+			TotalSteps = 200;
 			successLogs = globalSuccessLogs.Select(l => string.Format(l, _serviceName)).ToArray();
 			failureLogs = globalFailureLogs.Select(l => string.Format(l, _serviceName)).ToArray();
 
-			OnProgress(name, 0, 0);
+			OnProgress(name, 0, 200);
 			
-			publisher.OnDeployProgress += OnProgress;
+			publisher.OnServiceDeployProgress += OnProgress;
 			Application.logMessageReceived += HandleLog;
 		}
 
@@ -59,15 +59,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 				return;
 			}
 			
-			TotalSteps = 0; //Not sure what to put here
-			Step = 0; // here neither
-			LoadingBar.UpdateProgress((float)buildProgress);
-			//TODO and the upload progress?
+			Step = (int)(buildProgress + uploadProgress);
+			LoadingBar.UpdateProgress((float)(uploadProgress + buildProgress) / 200);
 		}
 
 		protected override void OnKill()
 		{
-			_publisher.OnDeployProgress -= OnProgress;
+			_publisher.OnServiceDeployProgress -= OnProgress;
 			Application.logMessageReceived -= HandleLog;
 		}
 	}

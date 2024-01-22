@@ -135,7 +135,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private readonly Color _infoColor = new Color(0f, 146f / 255, 255f / 255);
 		private readonly Color _errorColor = new Color(217f / 255, 55f / 255, 55f / 255);
-		private ServicePublishStateAnimator _serviceServicePublishStateAnimator;
+		private StandaloneServicePublishStateAnimator _serviceServicePublishStateAnimator;
 
 		public PublishStandaloneMicroservicePopup() : base(nameof(PublishStandaloneMicroservicePopup)) { }
 
@@ -196,7 +196,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			//var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			var publishService = Context.ServiceScope.GetService<PublishService>();
 
-			_serviceServicePublishStateAnimator = new ServicePublishStateAnimator(Root.Q("infoCards"));
+			_serviceServicePublishStateAnimator = new StandaloneServicePublishStateAnimator(Root.Q("infoCards"));
 
 			//TODO ask about these guys, should we implement new ones in the CodeService? Should we change the behaviour of them in this registry class?
 			//TODO Create a publisher service for USAM that CodeService have control of using DI
@@ -204,12 +204,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 			// serviceRegistry.OnServiceDeployStatusChanged += HandleServiceDeployStatusChanged;
 			//serviceRegistry.OnServiceDeployProgress -= HandleServiceDeployProgress;
 			//serviceRegistry.OnServiceDeployProgress += HandleServiceDeployProgress;
+			publishService.OnDeployStateProgress -= HandleServiceDeployStatusChanged;
+			publishService.OnDeployStateProgress += HandleServiceDeployStatusChanged;
 			publishService.OnDeployFailed -= HandleDeployFailed;
 			publishService.OnDeployFailed += HandleDeployFailed;
 			publishService.OnDeploySuccess -= HandleDeploySuccess;
 			publishService.OnDeploySuccess += HandleDeploySuccess;
-			// serviceRegistry.OnProgressInfoUpdated -= HandleProgressInfoUpdated;
-			// serviceRegistry.OnProgressInfoUpdated += HandleProgressInfoUpdated;
+			publishService.OnProgressInfoUpdated -= HandleProgressInfoUpdated;
+			publishService.OnProgressInfoUpdated += HandleProgressInfoUpdated;
 
 			_mainLoadingBar = Root.Q<LoadingBarElement>("mainLoadingBar");
 			_mainLoadingBar.SmallBar = true;
@@ -337,7 +339,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private List<PublishManifestEntryVisualElement> GetAllDependencies(IEntryModel model)
 		{
-			//TODO this might not need to change at all depending if we use these data models
 			var dependenciesToUpdate = new List<PublishManifestEntryVisualElement>();
 			if (model is ManifestEntryModel serviceModel)
 			{
@@ -464,12 +465,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 			OnSubmit?.Invoke((message) => _logger.Model.Logs.AddMessage(message));
 		}
 
-		private void HandleServiceDeployStatusChanged(IDescriptor descriptor, ServicePublishState state)
+		private void HandleServiceDeployStatusChanged(string beamoId, ServicePublishState state)
 		{
-			if (!_publishManifestElements.TryGetValue(descriptor.Name, out var element))
+			if (!_publishManifestElements.TryGetValue(beamoId, out var element))
 				return;
 
-			element?.UpdateStatus(state);
+			if (element.PublishState == ServicePublishState.Published)
+				return;
+			
+			element.UpdateStatus(state);
 			switch (state)
 			{
 				case ServicePublishState.Failed:
