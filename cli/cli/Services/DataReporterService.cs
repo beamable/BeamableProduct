@@ -33,10 +33,10 @@ public class DataReporterService : IDataReporterService
 		if (_alreadySentFirstMessage)
 		{
 			// print out a delimiter.
-			Console.WriteLine(Reporting.MESSAGE_DELIMITER);
+			Console.Out.WriteLine(Reporting.MESSAGE_DELIMITER);
 		}
 		
-		Console.WriteLine(rawMessage);
+		Console.Out.WriteLine(rawMessage);
 		_alreadySentFirstMessage = true;
 	}
 
