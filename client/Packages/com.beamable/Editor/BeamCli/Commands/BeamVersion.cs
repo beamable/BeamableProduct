@@ -14,8 +14,6 @@ namespace Beamable.Editor.BeamCli.Commands
         public bool showTemplates;
         /// <summary>Displays the executing CLI install type</summary>
         public bool showType;
-        /// <summary>How to display the information, anything other than log will print straight to console with no labels</summary>
-        public string output;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -40,11 +38,6 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.showType != default(bool)))
             {
                 genBeamCommandArgs.Add(("--show-type=" + this.showType));
-            }
-            // If the output value was not default, then add it to the list of args.
-            if ((this.output != default(string)))
-            {
-                genBeamCommandArgs.Add(("--output=" + this.output));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces

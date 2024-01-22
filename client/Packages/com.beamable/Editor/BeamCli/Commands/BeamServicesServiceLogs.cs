@@ -4,23 +4,19 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common;
     using Beamable.Common.BeamCli;
     
-    public class ProjectLogsArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+    public class ServicesServiceLogsArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
-        /// <summary>The name of the service to view logs for</summary>
-        public Beamable.Common.Semantics.ServiceName service;
-        /// <summary>If the service stops, and reconnect is enabled, then the logs command will wait for the service to restart and then reattach to logs</summary>
-        public bool reconnect;
+        /// <summary>The Unique Id for this service within this Beamable CLI context</summary>
+        public string id;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
-            // Add the service value to the list of args.
-            genBeamCommandArgs.Add(this.service);
-            // If the reconnect value was not default, then add it to the list of args.
-            if ((this.reconnect != default(bool)))
+            // If the id value was not default, then add it to the list of args.
+            if ((this.id != default(string)))
             {
-                genBeamCommandArgs.Add(("--reconnect=" + this.reconnect));
+                genBeamCommandArgs.Add(("--id=" + this.id));
             }
             string genBeamCommandStr = "";
             // Join all the args with spaces
@@ -30,30 +26,30 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class BeamCommands
     {
-        public virtual ProjectLogsWrapper ProjectLogs(ProjectLogsArgs logsArgs)
+        public virtual ServicesServiceLogsWrapper ServicesServiceLogs(ServicesServiceLogsArgs serviceLogsArgs)
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             genBeamCommandArgs.Add("beam");
             genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
-            genBeamCommandArgs.Add("project");
-            genBeamCommandArgs.Add("logs");
-            genBeamCommandArgs.Add(logsArgs.Serialize());
+            genBeamCommandArgs.Add("services");
+            genBeamCommandArgs.Add("service-logs");
+            genBeamCommandArgs.Add(serviceLogsArgs.Serialize());
             // Create an instance of an IBeamCommand
             Beamable.Common.BeamCli.IBeamCommand command = this._factory.Create();
             // Join all the command paths and args into one string
             string genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
             // Configure the command with the command string
             command.SetCommand(genBeamCommandStr);
-            ProjectLogsWrapper genBeamCommandWrapper = new ProjectLogsWrapper();
+            ServicesServiceLogsWrapper genBeamCommandWrapper = new ServicesServiceLogsWrapper();
             genBeamCommandWrapper.Command = command;
             // Return the command!
             return genBeamCommandWrapper;
         }
     }
-    public class ProjectLogsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+    public class ServicesServiceLogsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamTailLogMessageForClient(System.Action<ReportDataPoint<BeamTailLogMessageForClient>> cb)
+        public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamGetSignedUrlResponse(System.Action<ReportDataPoint<BeamGetSignedUrlResponse>> cb)
         {
             this.Command.On("stream", cb);
             return this;
