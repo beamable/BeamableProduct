@@ -178,6 +178,9 @@ public class App
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Commands.AddCommand<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
 		Commands.AddCommand<ConfigGetSecret, ConfigGetSecretArgs, ConfigCommand>();
+		Commands.AddCommand<RealmConfigCommand, RealmConfigCommandArgs, ConfigCommand>();
+		Commands.AddCommand<RealmConfigSetCommand, RealmConfigSetCommandArgs, RealmConfigCommand>();
+		Commands.AddCommand<RealmConfigRemoveCommand, RealmConfigRemoveCommandArgs, RealmConfigCommand>();
 		Commands.AddRootCommand<LoginCommand, LoginCommandArgs>();
 		Commands.AddRootCommand<OpenAPICommand, OpenAPICommandArgs>();
 		Commands.AddCommand<GenerateSdkCommand, GenerateSdkCommandArgs, OpenAPICommand>();

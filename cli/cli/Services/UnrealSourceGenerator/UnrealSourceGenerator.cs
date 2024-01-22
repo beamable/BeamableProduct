@@ -226,6 +226,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 	private static Dictionary<string, string> ReplacementTypesIncludes;
 	private static List<string> AllReplacementTypes;
+	private static List<string> AllOptionalReplacementTypes;
 	private static List<string> AllReplacementTypesNamespacedNames;
 
 	public enum GenerationType { BasicObject, Microservice }
@@ -242,6 +243,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		ReplacementTypes = context.ReplacementTypes;
 		ReplacementTypesIncludes = ReplacementTypes.ToDictionary(g => g.Value.EngineReplacementType, g => g.Value.EngineImport);
 		AllReplacementTypes = ReplacementTypes.Select(kvp => kvp.Value.EngineReplacementType).ToList();
+		AllOptionalReplacementTypes = ReplacementTypes.Select(kvp => kvp.Value.EngineOptionalReplacementType).ToList();
 		AllReplacementTypesNamespacedNames = AllReplacementTypes.Select(GetNamespacedTypeNameFromUnrealType).ToList();
 
 		// Prepare Logs
@@ -515,6 +517,31 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		// Add replacement types so that we don't generate them when we see them
 		listOfAlreadyDeclaredTypes.AddRange(AllReplacementTypesNamespacedNames);
 
+		// Predeclare things that we always want
+		if (genType != GenerationType.Microservice)
+		{
+			// Declare primitive optional and arrays
+			{
+				var wrapper = MakeWrapperDeclaration("FArrayOfString");
+				arrayWrapperTypes.Add(wrapper);
+
+				var optionalDeclaration = MakeOptionalDeclaration(UNREAL_OPTIONAL_STRING, UNREAL_STRING);
+				optionalTypes.Add(optionalDeclaration);
+			}
+
+			// Declare replacement type optionals
+			{
+				for (int i = 0; i < AllReplacementTypes.Count; i++)
+				{
+					var replacementUnrealType = AllReplacementTypes[i];
+					var replacementOptionalType = AllOptionalReplacementTypes[i];
+
+					var optionalDeclaration = MakeOptionalDeclaration(replacementOptionalType, replacementUnrealType);
+					optionalTypes.Add(optionalDeclaration);
+				}
+			}
+		}
+
 		// Convert the schema into the generation format
 		foreach (var namedOpenApiSchema in namedOpenApiSchemata)
 		{
@@ -532,8 +559,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			// TODO: Declare this instead of serialized type
 			if (schemaUnrealType.StartsWith(UNREAL_U_ENUM_PREFIX))
 			{
-				var enumDecl = new UnrealEnumDeclaration { UnrealTypeName = schemaUnrealType, NamespacedTypeName = schemaNamespacedType, EnumValues = schema.Enum.OfType<OpenApiString>().Select(v => v.Value).ToList() };
-
+				var enumValuesNames = schema.Enum.OfType<OpenApiString>().Select(v => v.Value).ToList();
+				var enumDecl = MakeEnumDeclaration(schemaUnrealType, enumValuesNames);
 				enumTypes.Add(enumDecl);
 			}
 			else if (IsCsvRowSchema(namedOpenApiSchema.Document, schema))
@@ -622,51 +649,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					// Check if this field is an poly wrapper field, or polymorphic array/map. If it is, we need to build up a new serializable type for it.
 					if (nonOverridenUnrealType.Contains(UNREAL_U_POLY_WRAPPER_PREFIX))
 					{
-						string nonOverridenPolyWrapperType, overridenWrapperType;
-						if (nonOverridenUnrealType.StartsWith(UNREAL_U_POLY_WRAPPER_PREFIX))
-						{
-							nonOverridenPolyWrapperType = nonOverridenUnrealType;
-							overridenWrapperType = unrealType;
-						}
-						else if (nonOverridenUnrealType.StartsWith(UNREAL_ARRAY))
-						{
-							nonOverridenPolyWrapperType = UnrealPropertyDeclaration.ExtractFirstTemplateParamFromType(nonOverridenUnrealType);
-							overridenWrapperType = UnrealPropertyDeclaration.ExtractFirstTemplateParamFromType(unrealType);
-						}
-						else if (nonOverridenUnrealType.StartsWith(UNREAL_MAP))
-						{
-							nonOverridenPolyWrapperType = UnrealPropertyDeclaration.ExtractSecondTemplateParamFromType(nonOverridenUnrealType);
-							overridenWrapperType = UnrealPropertyDeclaration.ExtractSecondTemplateParamFromType(unrealType);
-						}
-						else
-							throw new Exception(
-								"Should never see this. If you do, this means someone is using a polymorphic return value in an unsupported way. Figure out which way and add support for it here.");
-
-						var ptrWrappedTypes = nonOverridenPolyWrapperType.Substring(nonOverridenPolyWrapperType.IndexOf('_') + 1).Split("_")
-							.Select(nonPtrWrappedTypes => nonPtrWrappedTypes.EndsWith("*") ? nonPtrWrappedTypes : $"{nonPtrWrappedTypes}*")
-							.ToArray();
-						Console.Write(string.Join(", ", ptrWrappedTypes));
-
-						var polyWrapperDecl = new UnrealJsonSerializableTypeDeclaration
-						{
-							UnrealTypeName = overridenWrapperType,
-							NamespacedTypeName = GetNamespacedTypeNameFromUnrealType(overridenWrapperType),
-							PolymorphicWrappedTypes =
-								ptrWrappedTypes.Select(s => new PolymorphicWrappedData { UnrealType = s, ExpectedTypeValue = polymorphicWrappedSchemaExpectedTypeValues[s] })
-									.ToList(),
-							UPropertyDeclarations = ptrWrappedTypes.Select(s => new UnrealPropertyDeclaration
-							{
-								PropertyUnrealType = s,
-								PropertyName = polymorphicWrappedSchemaExpectedTypeValues[s].Capitalize(),
-								RawFieldName = polymorphicWrappedSchemaExpectedTypeValues[s],
-								PropertyDisplayName = polymorphicWrappedSchemaExpectedTypeValues[s].Capitalize(),
-								NonOptionalTypeName = GetNamespacedTypeNameFromUnrealType(s),
-							}).ToList(),
-							PropertyIncludes = ptrWrappedTypes.Select(GetIncludeStatementForUnrealType).ToList(),
-						};
-
-						// We only need this include if we have any array, wrapper or optional types --- since this is a template it's worth not including it to keep compile times as small as we can have them.
-						polyWrapperDecl.JsonUtilsInclude = "#include \"Serialization/BeamJsonUtils.h\"";
+						var polyWrapperDecl = MakePolymorphicWrapperDeclaration(unrealType, nonOverridenUnrealType);
 						polymorphicWrappersDeclarations.Add(polyWrapperDecl);
 					}
 
@@ -699,31 +682,13 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 						kSemTypeDeclarationPointsLog.AppendLine($"{handle},{uPropertyDeclarationData.PropertyUnrealType},{uPropertyDeclarationData.PropertyNamespacedType},{uPropertyDeclarationData.SemTypeSerializationType}");
 					}
 
-					// If this field's type is a self referential type, we log it out.
-					if (IsSelfReferentialType(namedOpenApiSchema.Document, fieldSchema))
-					{
-						kSelfReferentialTypeDeclarationPointsLog.AppendLine($"{handle},{uPropertyDeclarationData.PropertyUnrealType},{uPropertyDeclarationData.PropertyNamespacedType}");
-					}
-
-					// If this field's type is a replacement type, we log it out.
-					if (AllReplacementTypes.Contains(unrealType))
-					{
-						kReplacementTypeDeclarationPointsLog.AppendLine($"{handle},{uPropertyDeclarationData.PropertyUnrealType},{uPropertyDeclarationData.PropertyNamespacedType}");
-					}
-
 					// Check if this is an optional type, if it is --- declare it. (We don't support optional arrays of poly wrappers)
 					if (unrealType.StartsWith(UNREAL_OPTIONAL))
 					{
-						var optionalDeclaration = new UnrealOptionalDeclaration
-						{
-							UnrealTypeName = unrealType,
-							NamespacedTypeName = GetNamespacedTypeNameFromUnrealType(unrealType),
-							UnrealTypeIncludeStatement = GetIncludeStatementForUnrealType(unrealType),
-							ValueUnrealTypeName = nonOptionalUnrealType,
-							ValueNamespacedTypeName = GetNamespacedTypeNameFromUnrealType(nonOptionalUnrealType),
-							ValueUnrealTypeIncludeStatement = GetIncludeStatementForUnrealType(nonOptionalUnrealType)
-						};
-						optionalTypes.Add(optionalDeclaration);
+						var optionalDeclaration = MakeOptionalDeclaration(unrealType, nonOptionalUnrealType);
+
+						// Only add it if its not there already 
+						if (optionalTypes.All(d => !d.UnrealTypeName.Equals(unrealType))) optionalTypes.Add(optionalDeclaration);
 
 						// If this field's type is a replacement type, we log it out.
 						if (AllReplacementTypes.Contains(optionalDeclaration.ValueUnrealTypeName))
@@ -753,65 +718,42 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 						}
 					}
 
+
+					// Wrapper types can only appear inside Non-Optional declarations of TMap/TArray ---
+					// as such, we can find all of them by checking them against the NonOptionalUnrealType.
+					if (nonOptionalUnrealType.Contains(UNREAL_WRAPPER_ARRAY) || nonOptionalUnrealType.Contains(UNREAL_WRAPPER_MAP))
+					{
+						var wrapper = MakeWrapperDeclaration(nonOptionalUnrealType);
+
+						if (nonOptionalUnrealType.Contains(UNREAL_WRAPPER_ARRAY)) arrayWrapperTypes.Add(wrapper);
+						if (nonOptionalUnrealType.Contains(UNREAL_WRAPPER_MAP)) mapWrapperTypes.Add(wrapper);
+
+						// If this field's type is a replacement type, we log it out.
+						if (AllReplacementTypes.Contains(wrapper.ValueUnrealTypeName))
+						{
+							kReplacementTypeDeclarationPointsLog.AppendLine($"{handle},{uPropertyDeclarationData.PropertyUnrealType},{uPropertyDeclarationData.PropertyNamespacedType}");
+						}
+					}
+
 					AddJsonAndDefaultValueHelperIncludesIfNecessary(unrealType, ref serializableTypeDeclaration);
-
-					// Wrapper types can only appear inside Non-Optional declarations of TMap/TArray ---
-					// as such, we can find all of them by checking them against the NonOptionalUnrealType.
-					if (nonOptionalUnrealType.Contains(UNREAL_WRAPPER_ARRAY))
-					{
-						var wrapper = new UnrealWrapperContainerDeclaration();
-
-						// If it's a TMap we want the second parameter, if it's an array we want the first template parameter.
-						wrapper.UnrealTypeName = nonOptionalUnrealType.StartsWith(UNREAL_MAP)
-							? UnrealPropertyDeclaration.ExtractSecondTemplateParamFromType(nonOptionalUnrealType)
-							: UnrealPropertyDeclaration.ExtractFirstTemplateParamFromType(nonOptionalUnrealType);
-						wrapper.ValueUnrealTypeName = GetWrappedUnrealTypeFromUnrealWrapperType(wrapper.UnrealTypeName);
-
-						wrapper.NamespacedTypeName = GetNamespacedTypeNameFromUnrealType(wrapper.UnrealTypeName);
-						wrapper.UnrealTypeIncludeStatement = GetIncludeStatementForUnrealType(wrapper.UnrealTypeName);
-
-						wrapper.ValueNamespacedTypeName = GetNamespacedTypeNameFromUnrealType(wrapper.ValueUnrealTypeName);
-						wrapper.ValueUnrealTypeIncludeStatement = GetIncludeStatementForUnrealType(wrapper.ValueUnrealTypeName);
-
-						arrayWrapperTypes.Add(wrapper);
-
-						// If this field's type is a replacement type, we log it out.
-						if (AllReplacementTypes.Contains(wrapper.ValueUnrealTypeName))
-						{
-							kReplacementTypeDeclarationPointsLog.AppendLine($"{handle},{uPropertyDeclarationData.PropertyUnrealType},{uPropertyDeclarationData.PropertyNamespacedType}");
-						}
-					}
-
-					// Wrapper types can only appear inside Non-Optional declarations of TMap/TArray ---
-					// as such, we can find all of them by checking them against the NonOptionalUnrealType.
-					if (nonOptionalUnrealType.Contains(UNREAL_WRAPPER_MAP))
-					{
-						var wrapper = new UnrealWrapperContainerDeclaration();
-
-						// If it's a TMap we want the second parameter, if it's an array we want the first template parameter.
-						wrapper.UnrealTypeName = nonOptionalUnrealType.StartsWith(UNREAL_MAP)
-							? UnrealPropertyDeclaration.ExtractSecondTemplateParamFromType(nonOptionalUnrealType)
-							: UnrealPropertyDeclaration.ExtractFirstTemplateParamFromType(nonOptionalUnrealType);
-
-						wrapper.ValueUnrealTypeName = GetWrappedUnrealTypeFromUnrealWrapperType(wrapper.UnrealTypeName);
-
-						wrapper.NamespacedTypeName = GetNamespacedTypeNameFromUnrealType(wrapper.UnrealTypeName);
-						wrapper.UnrealTypeIncludeStatement = GetIncludeStatementForUnrealType(wrapper.UnrealTypeName);
-
-						wrapper.ValueNamespacedTypeName = GetNamespacedTypeNameFromUnrealType(wrapper.ValueUnrealTypeName);
-						wrapper.ValueUnrealTypeIncludeStatement = GetIncludeStatementForUnrealType(wrapper.ValueUnrealTypeName);
-
-						mapWrapperTypes.Add(wrapper);
-
-						// If this field's type is a replacement type, we log it out.
-						if (AllReplacementTypes.Contains(wrapper.ValueUnrealTypeName))
-						{
-							kReplacementTypeDeclarationPointsLog.AppendLine($"{handle},{uPropertyDeclarationData.PropertyUnrealType},{uPropertyDeclarationData.PropertyNamespacedType}");
-						}
-					}
 
 					serializableTypeDeclaration.PropertyIncludes.Add(GetIncludeStatementForUnrealType(unrealType));
 					serializableTypeDeclaration.UPropertyDeclarations.Add(uPropertyDeclarationData);
+
+					// INFO: We are just checking for some interesting properties here...
+					{
+						// If this field's type is a self referential type, we log it out.
+						if (IsSelfReferentialType(namedOpenApiSchema.Document, fieldSchema))
+						{
+							kSelfReferentialTypeDeclarationPointsLog.AppendLine($"{handle},{uPropertyDeclarationData.PropertyUnrealType},{uPropertyDeclarationData.PropertyNamespacedType}");
+						}
+
+						// If this field's type is a replacement type, we log it out.
+						if (AllReplacementTypes.Contains(unrealType))
+						{
+							kReplacementTypeDeclarationPointsLog.AppendLine($"{handle},{uPropertyDeclarationData.PropertyUnrealType},{uPropertyDeclarationData.PropertyNamespacedType}");
+						}
+					}
 
 					kSchemaGenerationBuilder.Clear();
 				}
@@ -823,7 +765,6 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			}
 		}
 	}
-
 
 	/*
 	 * GENERATION HELPER FUNCTIONS ---- THESE ARE SIMPLY HERE TO MAKE IT EASIER TO GO THROUGH THE GENERATION ALGORITHM AND TO DOCUMENT IMPORTANT CONCEPTS OF THE ALGORITHM.
@@ -1330,8 +1271,136 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		}
 	}
 
-	private static void AddJsonAndDefaultValueHelperIncludesIfNecessary(string unrealType, ref UnrealJsonSerializableTypeDeclaration serializableTypeData, bool forceJson = false,
-		bool forceDefaultHelper = false)
+
+	/// <summary>
+	/// This takes in a normal unreal type/non-overriden unreal type pair of either:
+	/// - UOneOf_
+	/// - TArray{UOneOf_}
+	/// - TMap{FString, UOneOf_}
+	///
+	/// It'll then handle converting that signature and generating the declaration data, including applying name overrides if they exist.
+	/// </summary>
+	private static UnrealJsonSerializableTypeDeclaration MakePolymorphicWrapperDeclaration(string unrealType, string nonOverridenUnrealType)
+	{
+		string nonOverridenPolyWrapperType, overridenWrapperType;
+		if (nonOverridenUnrealType.StartsWith(UNREAL_U_POLY_WRAPPER_PREFIX))
+		{
+			nonOverridenPolyWrapperType = nonOverridenUnrealType;
+			overridenWrapperType = unrealType;
+		}
+		else if (nonOverridenUnrealType.StartsWith(UNREAL_ARRAY))
+		{
+			nonOverridenPolyWrapperType = UnrealPropertyDeclaration.ExtractFirstTemplateParamFromType(nonOverridenUnrealType);
+			overridenWrapperType = UnrealPropertyDeclaration.ExtractFirstTemplateParamFromType(unrealType);
+		}
+		else if (nonOverridenUnrealType.StartsWith(UNREAL_MAP))
+		{
+			nonOverridenPolyWrapperType = UnrealPropertyDeclaration.ExtractSecondTemplateParamFromType(nonOverridenUnrealType);
+			overridenWrapperType = UnrealPropertyDeclaration.ExtractSecondTemplateParamFromType(unrealType);
+		}
+		else
+		{
+			throw new Exception(
+				"Should never see this. If you do, this means someone is using a polymorphic return value in an unsupported way. Figure out which way and add support for it here.");
+		}
+
+		var ptrWrappedTypes = nonOverridenPolyWrapperType.Substring(nonOverridenPolyWrapperType.IndexOf('_') + 1).Split("_")
+			.Select(nonPtrWrappedTypes => nonPtrWrappedTypes.EndsWith("*") ? nonPtrWrappedTypes : $"{nonPtrWrappedTypes}*")
+			.ToArray();
+		Console.Write(string.Join(", ", ptrWrappedTypes));
+
+		var polyWrapperDecl = new UnrealJsonSerializableTypeDeclaration
+		{
+			UnrealTypeName = overridenWrapperType,
+			NamespacedTypeName = GetNamespacedTypeNameFromUnrealType(overridenWrapperType),
+			PolymorphicWrappedTypes =
+				ptrWrappedTypes.Select(s => new PolymorphicWrappedData { UnrealType = s, ExpectedTypeValue = polymorphicWrappedSchemaExpectedTypeValues[s] })
+					.ToList(),
+			UPropertyDeclarations = ptrWrappedTypes.Select(s => new UnrealPropertyDeclaration
+			{
+				PropertyUnrealType = s,
+				PropertyName = polymorphicWrappedSchemaExpectedTypeValues[s].Capitalize(),
+				RawFieldName = polymorphicWrappedSchemaExpectedTypeValues[s],
+				PropertyDisplayName = polymorphicWrappedSchemaExpectedTypeValues[s].Capitalize(),
+				NonOptionalTypeName = GetNamespacedTypeNameFromUnrealType(s),
+			}).ToList(),
+			PropertyIncludes = ptrWrappedTypes.Select(GetIncludeStatementForUnrealType).ToList(),
+			// We only need this include if we have any array, wrapper or optional types --- since this is a template it's worth not including it to keep compile times as small as we can have them.
+			JsonUtilsInclude = "#include \"Serialization/BeamJsonUtils.h\""
+		};
+		return polyWrapperDecl;
+	}
+
+	/// <summary>
+	/// The given type can be in one of three formats:
+	/// - TMap{FString, FArrayOf|FMapOf}
+	/// - TArray{FArrayOf|FMapOf}
+	/// - FArrayOf|FMapOf
+	///
+	/// This function fills out a declaration that will ensure the file containing the FArrayOf|FMapOf type exists.
+	/// </summary>
+	private static UnrealWrapperContainerDeclaration MakeWrapperDeclaration(string nonOptionalUnrealType)
+	{
+		var wrapper = new UnrealWrapperContainerDeclaration();
+		// If it's a TMap we want the second parameter, if it's an array we want the first template parameter. If its just the type, we use it.
+		if (nonOptionalUnrealType.StartsWith(UNREAL_MAP)) wrapper.UnrealTypeName = UnrealPropertyDeclaration.ExtractSecondTemplateParamFromType(nonOptionalUnrealType);
+		else if (nonOptionalUnrealType.StartsWith(UNREAL_ARRAY)) wrapper.UnrealTypeName = UnrealPropertyDeclaration.ExtractFirstTemplateParamFromType(nonOptionalUnrealType);
+		else if (nonOptionalUnrealType.StartsWith(UNREAL_WRAPPER_MAP) || nonOptionalUnrealType.StartsWith(UNREAL_WRAPPER_ARRAY)) wrapper.UnrealTypeName = nonOptionalUnrealType;
+		else throw new CliException($"The does not contain a wrapper type in its signature; TYPE={nonOptionalUnrealType}. If you're a customer please report a bug.");
+
+		wrapper.ValueUnrealTypeName = GetWrappedUnrealTypeFromUnrealWrapperType(wrapper.UnrealTypeName);
+
+		wrapper.NamespacedTypeName = GetNamespacedTypeNameFromUnrealType(wrapper.UnrealTypeName);
+		wrapper.UnrealTypeIncludeStatement = GetIncludeStatementForUnrealType(wrapper.UnrealTypeName);
+
+		wrapper.ValueNamespacedTypeName = GetNamespacedTypeNameFromUnrealType(wrapper.ValueUnrealTypeName);
+		wrapper.ValueUnrealTypeIncludeStatement = GetIncludeStatementForUnrealType(wrapper.ValueUnrealTypeName);
+		return wrapper;
+	}
+
+	/// <summary>
+	/// The Unreal Type is the optional type in the form of: <see cref="UNREAL_OPTIONAL"/>.
+	/// The Non-Optional Unreal type is whatever type the Optional is wrapping (in unreal-type form).
+	///
+	/// This function will fill out the optional declaration as needed.
+	/// </summary>
+	private static UnrealOptionalDeclaration MakeOptionalDeclaration(string unrealType, string nonOptionalUnrealType)
+	{
+		return new UnrealOptionalDeclaration
+		{
+			UnrealTypeName = unrealType,
+			NamespacedTypeName = GetNamespacedTypeNameFromUnrealType(unrealType),
+			UnrealTypeIncludeStatement = GetIncludeStatementForUnrealType(unrealType),
+			ValueUnrealTypeName = nonOptionalUnrealType,
+			ValueNamespacedTypeName = GetNamespacedTypeNameFromUnrealType(nonOptionalUnrealType),
+			ValueUnrealTypeIncludeStatement = GetIncludeStatementForUnrealType(nonOptionalUnrealType)
+		};
+	}
+
+	/// <summary>
+	/// This function takes in an Enum unreal type in the form of:
+	/// - E____
+	///
+	/// With that unreal type and the list of possible values for the enum, it creates the declaration for it. 
+	/// </summary>
+	private static UnrealEnumDeclaration MakeEnumDeclaration(string unrealType, List<string> enumValuesNames)
+	{
+		var enumDecl = new UnrealEnumDeclaration
+		{
+			UnrealTypeName = unrealType,
+			NamespacedTypeName = GetNamespacedTypeNameFromUnrealType(unrealType),
+			EnumValues = enumValuesNames
+		};
+		return enumDecl;
+	}
+
+
+	/// <summary>
+	/// This decides whether or not we'll need the cpp to include the BeamJsonUtils.h; we only need to do that if we have complex types (Containers or Wrappers).
+	/// This also decides whether or not we need DefaultValueHelper.h; we need to do this for deserializing some of the primitive UE types (<see cref="IsUnrealPrimitiveType"/>). 
+	/// </summary>
+	private static void AddJsonAndDefaultValueHelperIncludesIfNecessary(string unrealType, ref UnrealJsonSerializableTypeDeclaration serializableTypeData,
+		bool forceJson = false, bool forceDefaultHelper = false)
 	{
 		// If this is a field that will require BeamJsonUtils for deserialization --- add it to the list of includes of this type.
 		if (forceJson || IsUnrealContainerOrWrapperType(unrealType))

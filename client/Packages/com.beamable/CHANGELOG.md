@@ -5,10 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.19.10]
-
-no changes
-
 ## [Unreleased]
 
 ### Added
@@ -36,12 +32,21 @@ no changes
 - Beamable Assistant
 - OpenAPI for Chatv2 and Matchmaking
 
+## [1.19.11]
+
+### Fixed
+
+- `CommerceService` uses `CoreConfiguration.CommerceListingRefreshSecondsMinimum` field to set a minimum delay between fetching store updates. The delay defaults to once a minute.
+
+## [1.19.10]
+
+no changes
+
 ## [1.19.9]
 
 ### Added
 
 - Support for FederatedGameServer microservices
-
 
 ## [1.19.8]
 
