@@ -283,17 +283,21 @@ namespace Beamable.Server.Editor.Usam
 		public async Promise RunStandaloneMicroservice(string id)
 		{
 			LogVerbose($"Start generating client code for service: {id}");
-
+			
 
 			var service = _services.FirstOrDefault(s => s.name == id);
 
 			var microserviceProjectPath = Path.Combine(service.assetRelativePath, service.relativeProjectFile);
 			var beamPath = BeamCliUtil.CLI_PATH.Replace(".dll", "");
 			var buildCommand = $"build \"{microserviceProjectPath}\" /p:BeamableTool={beamPath} /p:GenerateClientCode=false";
+			
+			//Environment.SetEnvironmentVariable("BEAM_PATH", beamPath);
+			Environment.SetEnvironmentVariable("DOTNET_RUNNING_ON_ENGINE", "true");
+			Environment.SetEnvironmentVariable("BEAM_PATH", beamPath);
 
 			LogVerbose($"Starting build service: {id} using command: {buildCommand}");
 			await _dotnetService.Run(buildCommand);
-
+			LogVerbose($"BEAM PATH: {beamPath}");
 			var microserviceFullPath = Path.GetFullPath(Path.Combine(service.assetRelativePath, id));
 			buildCommand = $"run --project {microserviceFullPath}";
 
