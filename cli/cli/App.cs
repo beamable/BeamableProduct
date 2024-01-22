@@ -3,6 +3,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
+using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Semantics;
 using cli.Commands.Project;
@@ -17,13 +18,14 @@ using cli.Utils;
 using cli.Version;
 using Errata;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
-using Serilog.Sinks.Spectre;
 using Spectre.Console;
 using System.CommandLine;
 using System.CommandLine.Builder;
+using System.CommandLine.Help;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 
@@ -51,8 +53,8 @@ public class App
 		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
 
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
-		configureLogger ??= config =>
-			config.WriteTo.Console(standardErrorFromLevel: LogEventLevel.Verbose)
+		configureLogger ??= config => 
+			config.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss:ffff} {Level:u3}] {Message:lj}{NewLine}{Exception}", standardErrorFromLevel: LogEventLevel.Verbose)
 				.MinimumLevel.ControlledBy(LogLevel)
 				.CreateLogger();
 		Log.Logger = configureLogger(new LoggerConfiguration());
@@ -93,6 +95,7 @@ public class App
 		services.AddSingleton<DocService>();
 		services.AddSingleton<CliGenerator>();
 		services.AddSingleton<VersionService>();
+		services.AddSingleton<IDataReporterService, DataReporterService>();
 
 		OpenApiRegistration.RegisterOpenApis(services);
 
@@ -280,6 +283,18 @@ public class App
 		commandLineBuilder.UseDefaults();
 		commandLineBuilder.UseSuggestDirective();
 		commandLineBuilder.UseTypoCorrections();
+		commandLineBuilder.UseHelpBuilder(context =>
+		{
+			var builder = new HelpBuilder(LocalizationResources.Instance, 100);
+			builder.CustomizeLayout(c =>
+			{
+				var defaultLayout = HelpBuilder.Default.GetLayout().ToList();
+
+				defaultLayout.Add(PrintOutputHelp);
+				return defaultLayout;
+			});
+			return builder;
+		});
 		commandLineBuilder.UseExceptionHandler((ex, context) =>
 		{
 			switch (ex)
@@ -321,6 +336,66 @@ public class App
 			}
 		});
 		return commandLineBuilder.Build();
+	}
+
+	static void PrintOutputHelp(HelpContext context)
+	{
+		switch (context.Command)
+		{
+			case ISingleResult singleResult:
+				var resultType = singleResult.ResultType;
+				context.Output.WriteLine("");
+				context.Output.WriteLine("Raw Output:");
+				if (singleResult.IsSingleReturn)
+				{
+					context.Output.WriteLine($"  Returns a single {resultType.Name} object, which may resemble the following...");
+				}
+				else
+				{
+					context.Output.WriteLine($"  Returns a stream of {resultType.Name} objects, which each may resemble the following...");
+				}
+
+				var data = new ReportDataPoint { data = singleResult.CreateEmptyInstance(), type = "stream", ts = DateTimeOffset.Now.ToUnixTimeMilliseconds() };
+				var json = JsonConvert.SerializeObject(data, Formatting.Indented);
+				context.Output.WriteLine("  " + json.ReplaceLineEndings("\n  "));
+				break;
+			default:
+				// we need to explicitly check for interface implementations... 
+				var genType = typeof(IResultSteam<,>);
+				var commandType = context.Command.GetType();
+				var allInterfaces = commandType.GetInterfaces();
+				var resultStreamTypeArgs = new List<Type[]>();
+				foreach (var subInterface in allInterfaces)
+				{
+					if (!subInterface.IsGenericType) continue;
+					if (subInterface.GetGenericTypeDefinition() != genType) continue;
+
+					var genArgs = subInterface.GetGenericArguments();
+					resultStreamTypeArgs.Add(genArgs);
+					
+				}
+
+				if (resultStreamTypeArgs.Count == 0) break;
+				
+				// okay, there is an undocumented result stream.
+
+				context.Output.WriteLine("Raw Output:");
+				foreach (var resultStream in resultStreamTypeArgs)
+				{
+					var channelType = resultStream[0];
+					var dataType = resultStream[1];
+
+					var channelInstance = (IResultChannel)Activator.CreateInstance(channelType);
+					
+					context.Output.WriteLine($"  Returns a stream of {dataType.Name} objects on the {channelInstance.ChannelName} stream, which each may resemble the following...");
+					var resultStreamData = new ReportDataPoint { data = Activator.CreateInstance(dataType), type = channelInstance.ChannelName, ts = DateTimeOffset.Now.ToUnixTimeMilliseconds() };
+					var resultStreamJson = JsonConvert.SerializeObject(resultStreamData, Formatting.Indented);
+					context.Output.WriteLine("  " + resultStreamJson.ReplaceLineEndings("\n  "));
+					context.Output.WriteLine("  ");
+				}
+				
+				break;
+		}
 	}
 
 	public virtual int Run(string[] args)

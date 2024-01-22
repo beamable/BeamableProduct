@@ -4,7 +4,7 @@ using Spectre.Console;
 
 namespace cli;
 
-public class ServicesManifestsCommand : AppCommand<ServicesManifestsArgs>
+public class ServicesManifestsCommand : AtomicCommand<ServicesManifestsArgs, ServiceManifestOutput>
 {
 	private BeamoService _beamoService;
 
@@ -17,18 +17,20 @@ public class ServicesManifestsCommand : AppCommand<ServicesManifestsArgs>
 		AddOption(new SkipOption(), (args, i) => args.skip = i);
 	}
 
-	public override async Task Handle(ServicesManifestsArgs args)
+	public override async Task<ServiceManifestOutput> GetResult(ServicesManifestsArgs args)
 	{
 		_beamoService = args.BeamoService;
 
-		var response = await AnsiConsole.Status()
+		List<ServiceManifest> response = await AnsiConsole.Status()
 										.Spinner(Spinner.Known.Default)
 										.StartAsync("Sending Request...", async ctx =>
 
 														await _beamoService.GetManifests()
 										);
 		response = response.Skip(args.skip).Take(args.limit > 0 ? args.limit : int.MaxValue).ToList();
-		Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
+
+		var result = new ServiceManifestOutput { manifests = response };
+		return PrintResult(result);
 	}
 }
 
@@ -36,4 +38,9 @@ public class ServicesManifestsArgs : CommandArgs
 {
 	public int limit = 0;
 	public int skip = 0;
+}
+
+public class ServiceManifestOutput
+{
+	public List<ServiceManifest> manifests;
 }

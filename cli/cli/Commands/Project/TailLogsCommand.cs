@@ -16,7 +16,7 @@ public class TailLogsCommandArgs : CommandArgs
 }
 
 
-class TailLogMessage
+public class TailLogMessage
 {
 	[JsonProperty("__t")]
 	public string timeStamp;
@@ -31,7 +31,28 @@ class TailLogMessage
 	public string raw;
 }
 
-public class TailLogsCommand : AppCommand<TailLogsCommandArgs>, IResultSteam<DefaultStreamResultChannel, TailLogMessage>
+public class TailLogMessageForClient
+{
+	public string raw;
+	public string logLevel;
+	public string message;
+	public string timeStamp;
+
+	public TailLogMessageForClient()
+	{
+		
+	}
+
+	public TailLogMessageForClient(TailLogMessage original)
+	{
+		logLevel = original.logLevel;
+		raw = original.raw;
+		timeStamp = original.timeStamp;
+		message = original.message;
+	}
+}
+
+public class TailLogsCommand : StreamCommand<TailLogsCommandArgs, TailLogMessageForClient>
 {
 	public TailLogsCommand() : base("logs", "Tail the logs of a microservice")
 	{
@@ -81,7 +102,7 @@ public class TailLogsCommand : AppCommand<TailLogsCommandArgs>, IResultSteam<Def
 		var parsed = JsonConvert.DeserializeObject<TailLogMessage>(logMessage);
 		Log.Information($"[{parsed.logLevel}] {parsed.message}");
 		parsed.raw = logMessage;
-		this.SendResults(parsed);
+		SendResults(new TailLogMessageForClient(parsed));
 	}
 
 

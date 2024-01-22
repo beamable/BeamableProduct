@@ -11,7 +11,12 @@ public class ServicesRegistryCommandArgs : LoginCommandArgs
 {
 }
 
-public class ServicesRegistryCommand : AppCommand<ServicesRegistryCommandArgs>
+public class ServicesRegistryOutput
+{
+	public string registryUrl;
+}
+
+public class ServicesRegistryCommand : AtomicCommand<ServicesRegistryCommandArgs, ServicesRegistryOutput>
 {
 	private BeamoService _remoteBeamo;
 
@@ -26,16 +31,17 @@ public class ServicesRegistryCommand : AppCommand<ServicesRegistryCommandArgs>
 	{
 	}
 
-	public override async Task Handle(ServicesRegistryCommandArgs args)
+	public override async Task<ServicesRegistryOutput> GetResult(ServicesRegistryCommandArgs args)
 	{
 		_remoteBeamo = args.BeamoService;
 
-		var response = await AnsiConsole.Status()
+		string response = await AnsiConsole.Status()
 			.Spinner(Spinner.Known.Default)
 			.StartAsync("Sending Request...", async ctx =>
 				await _remoteBeamo.GetDockerImageRegistry()
 			);
 
-		Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
+		Console.Error.WriteLine(response);
+		return new ServicesRegistryOutput { registryUrl = response };
 	}
 }

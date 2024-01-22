@@ -26,8 +26,7 @@ public class ServiceDiscoveryEvent
 	public string containerId;
 }
 
-public class CheckStatusCommand : AppCommand<CheckStatusCommandArgs>
-	, IResultSteam<DefaultStreamResultChannel, ServiceDiscoveryEvent>
+public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, ServiceDiscoveryEvent>
 {
 	private Dictionary<string, (long, ServiceDiscoveryEntry)> _nameToEntryWithTimestamp =
 		new Dictionary<string, (long, ServiceDiscoveryEntry)>();
@@ -56,7 +55,7 @@ public class CheckStatusCommand : AppCommand<CheckStatusCommandArgs>
 			{
 				Log.Information($"{evt.service} is available prefix=[{evt.prefix}] docker=[{evt.isContainer}]");
 			}
-			this.SendResults(evt);
+			SendResults(evt);
 		}
 	}
 
