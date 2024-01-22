@@ -53,8 +53,8 @@ public class App
 		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
 
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
-		configureLogger ??= config =>
-			config.WriteTo.Console(standardErrorFromLevel: LogEventLevel.Verbose)
+		configureLogger ??= config => 
+			config.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss:ffff} {Level:u3}] {Message:lj}{NewLine}{Exception}", standardErrorFromLevel: LogEventLevel.Verbose)
 				.MinimumLevel.ControlledBy(LogLevel)
 				.CreateLogger();
 		Log.Logger = configureLogger(new LoggerConfiguration());

@@ -10,7 +10,6 @@ public class VersionCommandArgs : CommandArgs
 	public bool showVersion = true;
 	public bool showLocation = true;
 	public bool showType = true;
-	public string output;
 }
 
 public class VersionResults
@@ -32,7 +31,6 @@ public class VersionCommand : AtomicCommand<VersionCommandArgs, VersionResults>,
 		AddOption(new Option<bool>("--show-location", () => true, "Displays the executing CLI install location"), (args, i) => args.showLocation = i);
 		AddOption(new Option<bool>("--show-templates", () => true, "Displays available Beamable template version"), (args, i) => args.showTemplates = i);
 		AddOption(new Option<bool>("--show-type", () => true, "Displays the executing CLI install type"), (args, i) => args.showType = i);
-		AddOption(new Option<string>("--output", () => "log", "How to display the information, anything other than log will print straight to console with no labels"), (args, i) => args.output = i);
 	}
 
 	public override async Task<VersionResults> GetResult(VersionCommandArgs args)
@@ -70,14 +68,7 @@ public class VersionCommand : AtomicCommand<VersionCommandArgs, VersionResults>,
 
 		void Print(string label, string data)
 		{
-			if (args.output == "log")
-			{
-				Log.Information($"{label} -- {data}");
-			}
-			else
-			{
-				Console.WriteLine(data);
-			}
+			Log.Information($"{label} -- {data}");
 		}
 	}
 

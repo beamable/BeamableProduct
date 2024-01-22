@@ -2,6 +2,7 @@ using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using cli.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using Serilog;
 using Spectre.Console;
 using System.CommandLine;
@@ -111,6 +112,12 @@ public abstract class AtomicCommand<TArgs, TResult> : AppCommand<TArgs>, IResult
 		
 		var reporter = args.Provider.GetService<IDataReporterService>();
 		reporter.Report(_channel.ChannelName, result);
+	}
+
+	protected TResult PrintResult(TResult result)
+	{
+		Console.Error.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+		return result;
 	}
 
 	public abstract Task<TResult> GetResult(TArgs args);
