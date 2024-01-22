@@ -19,7 +19,7 @@ public class VersionResults
 }
 
 
-public class VersionCommand : AppCommand<VersionCommandArgs>, IStandaloneCommand, IResultSteam<DefaultStreamResultChannel, VersionResults>
+public class VersionCommand : AtomicCommand<VersionCommandArgs, VersionResults>, IStandaloneCommand
 {
 	public VersionCommand() : base("version", "Commands for managing the CLI version")
 	{
@@ -35,7 +35,7 @@ public class VersionCommand : AppCommand<VersionCommandArgs>, IStandaloneCommand
 		AddOption(new Option<string>("--output", () => "log", "How to display the information, anything other than log will print straight to console with no labels"), (args, i) => args.output = i);
 	}
 
-	public override async Task Handle(VersionCommandArgs args)
+	public override async Task<VersionResults> GetResult(VersionCommandArgs args)
 	{
 		var info = await args.DependencyProvider.GetService<VersionService>().GetInformationData(args.ProjectService);
 
@@ -60,13 +60,13 @@ public class VersionCommand : AppCommand<VersionCommandArgs>, IStandaloneCommand
 			Print("install-type", info.installType.ToString());
 		}
 
-		this.SendResults(new VersionResults
+		return new VersionResults
 		{
 			location = info.location,
 			templates = info.templateVersion,
 			type = info.installType.ToString(),
 			version = info.version
-		});
+		};
 
 		void Print(string label, string data)
 		{
