@@ -41,7 +41,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	}
 	public class ProjectListWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
-		public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamListCommandResult(System.Action<ReportDataPoint<BeamListCommandResult>> cb)
+		public virtual ProjectListWrapper OnStreamListCommandResult(System.Action<ReportDataPoint<BeamListCommandResult>> cb)
 		{
 			this.Command.On("stream", cb);
 			return this;

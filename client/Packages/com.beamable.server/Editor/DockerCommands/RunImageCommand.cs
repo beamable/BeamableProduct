@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Common.BeamCli;
 using Beamable.Config;
 using Beamable.Editor.Environment;
 using Beamable.Editor.UI.Model;

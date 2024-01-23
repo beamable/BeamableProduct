@@ -1,3 +1,4 @@
+using Beamable.Common.BeamCli;
 using Beamable.Editor.UI.Model;
 using System.Collections.Generic;
 using UnityEngine;

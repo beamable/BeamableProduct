@@ -59,7 +59,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	}
 	public class ServicesResetWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
-		public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamServicesResetResult(System.Action<ReportDataPoint<BeamServicesResetResult>> cb)
+		public virtual ServicesResetWrapper OnStreamServicesResetResult(System.Action<ReportDataPoint<BeamServicesResetResult>> cb)
 		{
 			this.Command.On("stream", cb);
 			return this;
