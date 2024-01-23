@@ -8,6 +8,7 @@ using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Serilog;
 using System.CommandLine;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -125,16 +126,35 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 						var orderedSchemas = SwaggerService.ExtractAllSchemas(docs, GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
 						var previousGenerationFilePath = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.BeamableBackendGenerationPassFile);
 
+						// We expect to find the OSS at the Plugin directory.
+						var expectedOssPath = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.Path, "Plugins/OnlineSubsystemBeamable");
+						var isOSSInLinkedProject = Directory.Exists(expectedOssPath);
+
 						// Set up the generator to generate code with the correct output path for the AutoGen folders.
+						if (isOSSInLinkedProject)
+						{
+							if (unrealProjectData.CoreProjectName != "OnlineSubsystemBeamable" || !unrealProjectData.SourceFilesPath.StartsWith("Plugins/OnlineSubsystemBeamable"))
+							{
+								throw new CliException("You've added the OnlineSubsystemBeamable (OSB) plugin after you had already linked your Unreal Project." +
+													   "Please delete your '.beamable/.linkedProjects.json' file and re-run 'beam project add-unreal-project'." +
+													   "When using the OSB plugin, MS files are generated into the plugin's Customer folder; so, please delete your AutoGen folders from their " +
+													   "previous location (outside of the plugin).");
+							}
+						}
+
 						UnrealSourceGenerator.exportMacro = unrealProjectData.CoreProjectName.ToUpper() + "_API";
+
 						UnrealSourceGenerator.blueprintExportMacro = unrealProjectData.BlueprintNodesProjectName.ToUpper() + "_API";
-						UnrealSourceGenerator.headerFileOutputPath = unrealProjectData.MsCoreHeaderPath;
-						UnrealSourceGenerator.cppFileOutputPath = unrealProjectData.MsCoreCppPath;
 						UnrealSourceGenerator.blueprintHeaderFileOutputPath = unrealProjectData.MsBlueprintNodesHeaderPath;
 						UnrealSourceGenerator.blueprintCppFileOutputPath = unrealProjectData.MsBlueprintNodesCppPath;
+
+						UnrealSourceGenerator.headerFileOutputPath = unrealProjectData.MsCoreHeaderPath;
+						UnrealSourceGenerator.cppFileOutputPath = unrealProjectData.MsCoreCppPath;
+
 						UnrealSourceGenerator.genType = UnrealSourceGenerator.GenerationType.Microservice;
 						UnrealSourceGenerator.previousGenerationPassesData = JsonConvert.DeserializeObject<PreviousGenerationPassesData>(File.ReadAllText(previousGenerationFilePath));
 						UnrealSourceGenerator.currentGenerationPassDataFilePath = $"{unrealProjectData.CoreProjectName}_GenerationPass";
+
 						var unrealFileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext
 						{
 							Documents = docs,
@@ -144,39 +164,89 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 								{
 									"ClientPermission", new ReplacementTypeInfo
 									{
-										ReferenceId = "ClientPermission", EngineReplacementType = "FBeamClientPermission", EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamClientPermission", EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamClientPermission.h""",
+										ReferenceId = "ClientPermission",
+										EngineReplacementType = "FBeamClientPermission",
+										EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamClientPermission",
+										EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamClientPermission.h""",
 									}
 								},
 								{
 									"ExternalIdentity", new ReplacementTypeInfo
 									{
-										ReferenceId = "ExternalIdentity", EngineReplacementType = "FBeamExternalIdentity", EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamExternalIdentity", EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamExternalIdentity.h""",
+										ReferenceId = "ExternalIdentity",
+										EngineReplacementType = "FBeamExternalIdentity",
+										EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamExternalIdentity",
+										EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamExternalIdentity.h""",
 									}
 								},
 								{
 									"Tag", new ReplacementTypeInfo
 									{
-										ReferenceId = "Tag", EngineReplacementType = "FBeamTag", EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamTag", EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamTag.h""",
+										ReferenceId = "Tag",
+										EngineReplacementType = "FBeamTag",
+										EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamTag",
+										EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamTag.h""",
 									}
 								}
 							}
 						});
 
 						var hasOutputPath = !string.IsNullOrEmpty(args.outputDirectory);
-						for (int i = 0; i < unrealFileDescriptors.Count; i++)
-						{
-							string outputPath;
-							if (hasOutputPath)
-							{
-								outputPath = Path.Combine(args.outputDirectory, $"{unrealFileDescriptors[i].FileName}");
-							}
-							else
-							{
-								outputPath = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.SourceFilesPath, $"{unrealFileDescriptors[i].FileName}");
-							}
+						var outputDir = args.outputDirectory;
+						if (!hasOutputPath) outputDir = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.SourceFilesPath);
 
-							Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
-							File.WriteAllText(outputPath, unrealFileDescriptors[i].Content);
+						var allFilesToCreate = unrealFileDescriptors.Select(fd => Path.Join(outputDir, $"{fd.FileName}")).ToList();
+						// We need to run the "generate project files if any file was created"
+						var needsProjectFilesRebuild = !allFilesToCreate.All(File.Exists);
+						// We always clean up the output directory's AutoGen folders  --- every file we create is in the AutoGen folder.
+						var outputDirInfo = new DirectoryInfo(outputDir);
+						var autoGenDirs = outputDirInfo.GetDirectories("AutoGen", SearchOption.AllDirectories);
+						foreach (DirectoryInfo directoryInfo in autoGenDirs) Directory.Delete(directoryInfo.ToString(), true);
+
+						for (int i = 0; i < allFilesToCreate.Count; i++)
+						{
+							string filePath = allFilesToCreate[i];
+							var path = Path.GetDirectoryName(filePath);
+							if (path == null) throw new CliException($"Parent path for file {filePath} is null. If you're a customer seeing this, report a bug.");
+
+							Directory.CreateDirectory(path);
+							File.WriteAllText(filePath, unrealFileDescriptors[i].Content);
+						}
+
+						// Run the Regenerate Project Files utility for the project (so that create files are automatically updated in IDEs).
+						if (needsProjectFilesRebuild)
+							RunGenerateProjectFiles(Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.Path));
+
+						static void RunGenerateProjectFiles(string unrealRoot)
+						{
+							// go into the unreal root
+							var cmd = $"cd {unrealRoot};";
+							// Get the name of the uproject
+							cmd += @"$uproject = Get-ChildItem ""*.uproject"" -Name;";
+							// Get the path to the UnrealEngine version for this project (this is stored here as-per UE -- https://forums.unrealengine.com/t/generate-vs-project-files-by-command-line/277707/18).
+							cmd += @"$bin = & { (Get-ItemProperty 'Registry::HKEY_CLASSES_ROOT\Unreal.ProjectFile\shell\rungenproj' -Name 'Icon' ).'Icon' };";
+							// Build the actual command to run at this path and pipe it into the cmd.exe.
+							cmd += @"$bin + ' -projectfiles %cd%\' + $uproject | cmd.exe";
+
+							// Run the command and print the result
+							var output = ExecutePowershellCommand(cmd);
+							Console.WriteLine(output);
+						}
+
+
+						static string ExecutePowershellCommand(string command)
+						{
+							var processStartInfo = new ProcessStartInfo();
+							processStartInfo.FileName = "powershell.exe";
+							processStartInfo.Arguments = $"-Command \"{command}\"";
+							processStartInfo.UseShellExecute = false;
+							processStartInfo.RedirectStandardOutput = true;
+
+							using var process = new Process();
+							process.StartInfo = processStartInfo;
+							process.Start();
+							string output = process.StandardOutput.ReadToEnd();
+							return output;
 						}
 
 						return Task.CompletedTask;

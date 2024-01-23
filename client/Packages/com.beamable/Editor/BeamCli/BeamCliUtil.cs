@@ -244,7 +244,7 @@ namespace Beamable.Editor.BeamCli
 			proc.BeginOutputReadLine();
 			proc.WaitForExit();
 
-			
+
 			if (!string.IsNullOrWhiteSpace(stdErr) || proc.ExitCode > 0)
 			{
 				var output = "";
