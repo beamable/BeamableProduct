@@ -33,7 +33,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			failureLogs = globalFailureLogs.Select(l => string.Format(l, _serviceName)).ToArray();
 
 			OnProgress(name, 0, 200);
-			
+
 			publisher.OnServiceDeployProgress += OnProgress;
 			Application.logMessageReceived += HandleLog;
 		}
@@ -58,7 +58,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				return;
 			}
-			
+
 			Step = (int)(buildProgress + uploadProgress);
 			LoadingBar.UpdateProgress((float)(uploadProgress + buildProgress) / 200);
 		}
