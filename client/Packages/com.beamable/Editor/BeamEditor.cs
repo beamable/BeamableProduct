@@ -173,8 +173,8 @@ namespace Beamable
 		private static int initializeAttemptCount = 0;
 		private static List<Exception> initializationExceptions = new List<Exception>();
 		private const int WARN_ON_INITIALIZE_ATTEMPT = 50;
-		
-		
+
+
 		static void Initialize()
 		{
 
@@ -189,7 +189,7 @@ namespace Beamable
 					Debug.LogWarning($"-- {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
 				}
 			}
-			
+
 			// Attempts to load all Module Configurations --- If they fail, we delay BeamEditor initialization until they don't fail.
 			// The ONLY fail case is:
 			//   - On first import or "re-import all", Resources and AssetDatabase don't know about the existence of these instances when this code runs for a couple of frames.

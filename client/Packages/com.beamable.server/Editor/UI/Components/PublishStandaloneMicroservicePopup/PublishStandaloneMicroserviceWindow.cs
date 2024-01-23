@@ -85,6 +85,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				
 				var publishService = editorContext.ServiceScope.GetService<PublishService>();
 				await publishService.PublishServices();
+				publishService.Init();
 			};
 
 			container.Add(_publishPopup);

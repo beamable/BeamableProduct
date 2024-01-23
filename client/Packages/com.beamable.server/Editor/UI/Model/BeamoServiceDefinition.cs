@@ -7,7 +7,7 @@ namespace Beamable.Editor.UI.Model
 	[Serializable]
 	public class BeamoServiceDefinition : IBeamoServiceDefinition
 	{
-		public bool IsLocal { get; set; }
+		public bool HasLocalSource { get; set; }
 		public IBeamableBuilder Builder { get; set; }
 		public string BeamoId => ServiceInfo.name;
 		public ServiceType ServiceType { get; set; }
