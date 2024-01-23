@@ -84,8 +84,6 @@ namespace Beamable
 				 "in a buffer and optimistically simulate the effects locally in memory. When your player comes back " +
 				 "online, the buffer will be replayed. If this isn't desirable, you should disable the feature.")]
 		public OfflineStrategy InventoryOfflineMode = OfflineStrategy.Optimistic;
-
-		
 		[Tooltip(@"The CommerceService will use the PlayerStoreView.nextDeltaSeconds value
 to automatically refresh the store content.
 
@@ -98,9 +96,9 @@ When this value is 0, there is effectively no minimum wait period.
 The default is 60 seconds.
 ")]
 		public int CommerceListingRefreshSecondsMinimum = 60;
-		
+
 		int ICommerceConfig.CommerceListingRefreshSecondsMinimum => CommerceListingRefreshSecondsMinimum;
-		
+
 		[Header("Beamable Toolbar")]
 		[Tooltip("Enable this to receive a warning (toggle-able per Beam Hint Validation) when entering playmode.\n\n" +
 				 "This aims to help you enforce project workflows and guarantee people are not wasting time chasing issues that we can identify for you.")]

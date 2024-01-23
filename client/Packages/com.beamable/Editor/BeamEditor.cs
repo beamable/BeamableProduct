@@ -170,10 +170,26 @@ namespace Beamable
 			};
 		}
 
+		private static int initializeAttemptCount = 0;
+		private static List<Exception> initializationExceptions = new List<Exception>();
+		private const int WARN_ON_INITIALIZE_ATTEMPT = 50;
+
+
 		static void Initialize()
 		{
 
 			if (IsInitialized) return;
+			initializeAttemptCount++;
+
+			if (initializeAttemptCount > WARN_ON_INITIALIZE_ATTEMPT)
+			{
+				Debug.LogWarning($"Beamable Editor is struggling to initialize. Attempt=[{initializeAttemptCount}] exception-count=[{initializationExceptions.Count}]");
+				foreach (var ex in initializationExceptions)
+				{
+					Debug.LogWarning($"-- {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+				}
+			}
+
 			// Attempts to load all Module Configurations --- If they fail, we delay BeamEditor initialization until they don't fail.
 			// The ONLY fail case is:
 			//   - On first import or "re-import all", Resources and AssetDatabase don't know about the existence of these instances when this code runs for a couple of frames.
@@ -197,8 +213,9 @@ namespace Beamable
 				_ = TournamentsConfiguration.Instance;
 			}
 			// Solves a specific issue on first installation of package ---
-			catch (ModuleConfigurationNotReadyException)
+			catch (ModuleConfigurationNotReadyException ex)
 			{
+				initializationExceptions.Add(ex);
 				EditorApplication.delayCall += () =>
 				{
 					Initialize();
@@ -239,8 +256,9 @@ namespace Beamable
 			{
 				BeamCliUtil.InitializeBeamCli();
 			}
-			catch
+			catch (Exception ex)
 			{
+				initializationExceptions.Add(ex);
 				EditorApplication.delayCall += () =>
 				{
 					Initialize();

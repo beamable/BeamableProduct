@@ -26,6 +26,7 @@ using System.Threading.Tasks;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Reflection;
+using Beamable.Server.Api.Usage;
 using microservice.Common;
 using Newtonsoft.Json;
 using Serilog;
@@ -297,10 +298,14 @@ namespace Beamable.Server
       {
 	      var adminRoutes = new AdminRoutes
 	      {
+		      sdkVersionBaseBuild = _args.SdkVersionBaseBuild,
+		      sdkVersionExecution = _args.SdkVersionExecution,
+		      GlobalProvider = Provider,
 		      MicroserviceAttribute = _serviceAttribute, 
 		      MicroserviceType = MicroserviceType,
 		      PublicHost = $"{_args.Host.Replace("wss://", "https://").Replace("/socket", "")}/basic/{_args.CustomerID}.{_args.ProjectName}.{QualifiedName}/"
 	      };
+	      
 	      ServiceMethods = RouteTableGeneration.BuildRoutes(MicroserviceType, _serviceAttribute, adminRoutes, BuildServiceInstance);
       }
 

@@ -56,7 +56,7 @@ public struct UnrealPropertyDeclaration
 
 
 	public const string PRIMITIVE_U_PROPERTY_SERIALIZE = @$"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢);";
-	public const string GUID_U_PROPERTY_SERIALIZE = @$"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢.ToString());";
+	public const string GUID_U_PROPERTY_SERIALIZE = @$"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢.ToString(EGuidFormats::DigitsWithHyphensLower));";
 
 	public const string STRING_U_PROPERTY_DESERIALIZE = $@"₢{nameof(PropertyName)}₢ = Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢""));";
 	public const string INT8_U_PROPERTY_DESERIALIZE = $@"₢{nameof(PropertyName)}₢ = static_cast<int8>(Bag->GetIntegerField(""₢{nameof(RawFieldName)}₢""));";
@@ -193,10 +193,10 @@ public struct UnrealPropertyDeclaration
 			var isSemType = UnrealSourceGenerator.UNREAL_ALL_SEMTYPES_NAMESPACED_NAMES.Any(unrealType.Contains);
 			return isSemType ? ARRAY_SEMTYPE_U_PROPERTY_SERIALIZE : ARRAY_U_PROPERTY_SERIALIZE;
 		}
-		
+
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_GUID))
 			return GUID_U_PROPERTY_SERIALIZE;
-		
+
 
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_STRING) ||
 			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_BYTE) ||
@@ -216,7 +216,7 @@ public struct UnrealPropertyDeclaration
 
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
 			return U_OBJECT_U_PROPERTY_SERIALIZE;
-		
+
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_STRUCT_PREFIX))
 			return U_STRUCT_U_PROPERTY_SERIALIZE;
 
@@ -251,7 +251,7 @@ public struct UnrealPropertyDeclaration
 			var isSemType = UnrealSourceGenerator.UNREAL_ALL_SEMTYPES_NAMESPACED_NAMES.Any(unrealType.Contains);
 			return isSemType ? ARRAY_SEMTYPE_U_PROPERTY_DESERIALIZE : ARRAY_U_PROPERTY_DESERIALIZE;
 		}
-		
+
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_STRING))
 			return STRING_U_PROPERTY_DESERIALIZE;
 
@@ -285,7 +285,7 @@ public struct UnrealPropertyDeclaration
 		// Semantic types serialization
 		if (UnrealSourceGenerator.UNREAL_ALL_SEMTYPES.Contains(unrealType))
 			return SEMTYPE_U_PROPERTY_DESERIALIZE;
-		
+
 		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
 			return U_OBJECT_U_PROPERTY_DESERIALIZE;
 

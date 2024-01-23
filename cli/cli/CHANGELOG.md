@@ -9,7 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `--dotnet-path` option is available to override dotnet installation location.
+- Better validation and error messages for add-unreal-project command code-path;
+- Unreal Microservice client generation now correctly identifies whether or not the OSS UE Plugin is there and, if so, it'll add the microservices code to that module instead.
+- Unreal Microservice client generation now checks whether or not the linked project is using the OnlineSubsystemBeamable plugin and, if so, checks if it is configured correctly. This catches the case where people add the OSS after the Microservice was already added to the project modules;
+- CLI will now check if its necessary to run Unreal's Generate VS Project Files command after generating client code and, if so, will run and wait for it as part of the generate-client command (it is needed when new client callables are added/removed);
 
 ### Changed
 
@@ -20,12 +23,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `project add` Dockerfile path fixes.
 - `project new-storage` path fixes.
-- Stack traces from Dependency Injection, `GetService`, show inner stack trace instead of Reflection based stack trace.
+- Fixed issue that caused paths not to be stored relative to the `.beamable` folder correctly
+- Fixed issue that caused incorrect `\\` to be used instead of `/`
+- Fixed serializer generation to correctly use `TCHAR` as opposed to `wchar_t`
+- Fixed `FGuid` serialization to always serialize with digits + hyphen + lower case;
 
+## [1.19.11]
+
+### Added
+
+- `beam config realm` command suite for working with realm config via the CLI.
+
+### Fixed
+
+- Stack traces from Dependency Injection, `GetService`, show inner stack trace instead of Reflection based stack trace.
 
 ## [1.19.10]
 
 ### Fixed
+
 - fixed issue an issue that would cause an NRE if an existing service had no federated component when running services deploy command
 
 ## [1.19.9]
