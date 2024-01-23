@@ -204,7 +204,7 @@ namespace Beamable.Editor.UI.Model
 			return time.ToString("HH:mm:ss");
 		}
 	}
-	
+
 	public enum LogLevel
 	{
 		FATAL,

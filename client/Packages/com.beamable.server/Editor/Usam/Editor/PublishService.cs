@@ -39,7 +39,7 @@ namespace Beamable.Server.Editor.Usam
 			OnDeployLogMessage = null;
 			OnProgressInfoUpdated = null;
 		}
-		
+
 
 		/// <summary>
 		/// Publish all services that are configured in the local manifest file.
@@ -64,14 +64,15 @@ namespace Beamable.Server.Editor.Usam
 				var beamoId = cb.data.BeamoId;
 				var buildProgress = cb.data.BuildAndTestProgress;
 				var uploadProgress = cb.data.ContainerUploadProgress;
-				
+
 				OnServiceDeployProgress?.Invoke(beamoId, buildProgress, uploadProgress);
-				
+
 				if (buildProgress != 0 && uploadProgress == 0)
 				{
 					OnProgressInfoUpdated?.Invoke($"[{beamoId}] Building image", ServicePublishState.Verifying);
 					OnDeployStateProgress?.Invoke(beamoId, ServicePublishState.Verifying);
-				} else if (uploadProgress != 0)
+				}
+				else if (uploadProgress != 0)
 				{
 					if (Math.Abs(uploadProgress - 100D) < 0.5)
 					{
@@ -80,14 +81,15 @@ namespace Beamable.Server.Editor.Usam
 					else
 					{
 						OnProgressInfoUpdated?.Invoke($"[{beamoId}] Uploading image",
-						                              ServicePublishState.InProgress);
+													  ServicePublishState.InProgress);
 						OnDeployStateProgress?.Invoke(beamoId, ServicePublishState.InProgress);
 					}
-				}else if (buildProgress == 0 && uploadProgress == 0)
+				}
+				else if (buildProgress == 0 && uploadProgress == 0)
 				{
 					OnDeployStateProgress?.Invoke(beamoId, ServicePublishState.Unpublished);
 				}
-				
+
 			}).OnLogsServiceDeployLogResult((cb) =>
 			{
 				OnDeployLogMessage?.Invoke(cb.data.Level, cb.data.Message, cb.data.TimeStamp);

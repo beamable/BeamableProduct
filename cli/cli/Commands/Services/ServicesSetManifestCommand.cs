@@ -55,7 +55,7 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 			AllowMultipleArgumentsPerToken = true
 		};
 		AddOption(storageDeps, (x, i) => x.storageDependencies = i);
-		
+
 		var shouldBeEnabled = new Option<List<string>>("--should-be-enable", "If this service should be enable on remote")
 		{
 			Arity = ArgumentArity.ZeroOrMore,
@@ -128,8 +128,8 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 			Log.Debug($"name=[{name}] path=[{contextPath}] dockerfile=[{dockerPath}]");
 
 			var serviceStorages = storages.Where(pair => pair.Value.Contains(name)).Select(pair => pair.Key).ToArray();
-			
-			
+
+
 
 			var sd = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(name,
 				contextPath,
