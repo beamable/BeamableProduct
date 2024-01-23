@@ -272,7 +272,7 @@ namespace Beamable.Server.Editor.Usam
 			LogVerbose($"Starting the initialization of CodeService");
 			// Re-initializing the CodeService to make sure all files are with the right information
 			await Init();
-			
+
 			//Shoudln't we generate client code at the end of the creation?
 			//For some reason this this line is never reached after the Init. And if put bfore Init, it doesn't work
 			//await GenerateClientCode(serviceName);
@@ -469,12 +469,12 @@ namespace Beamable.Server.Editor.Usam
 			var args = new ServicesSetLocalManifestArgs();
 			var dependedStorages = new List<string>();
 			int servicesCount = definitions.Count;
-			
+
 			args.localHttpNames = new string[servicesCount];
 			args.localHttpContexts = new string[servicesCount];
 			args.localHttpDockerFiles = new string[servicesCount];
 			args.shouldBeEnable = new string[servicesCount];
-			
+
 			// TODO: add some validation to check that these files actually make sense
 			for (var i = 0; i < servicesCount; i++)
 			{
@@ -501,7 +501,7 @@ namespace Beamable.Server.Editor.Usam
 		{
 			var args = new ServicesSetLocalManifestArgs();
 			var dependedStorages = new List<string>();
-			
+
 			args.localHttpNames = new string[files.Count];
 			args.localHttpContexts = new string[files.Count];
 			args.localHttpDockerFiles = new string[files.Count];

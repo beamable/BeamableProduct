@@ -143,7 +143,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public override void Refresh()
 		{
 			base.Refresh();
-			
+
 			CodeService codeService = ((IServiceProvider)Context.ServiceScope).GetService<CodeService>();
 
 			var loadingIndicator = Root.Q<LoadingIndicatorVisualElement>();
@@ -155,7 +155,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				return;
 
 			_allUnarchivedServices = new List<IEntryModel>();
-			
+
 			foreach (IBeamoServiceDefinition serviceDefinition in codeService.ServiceDefinitions)
 			{
 				if (serviceDefinition.ServiceType == ServiceType.MicroService)
@@ -165,7 +165,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 					{
 						allDependencies.Add(new ServiceDependency { id = dependency, storageType = "storage" });
 					}
-					
+
 					var entryModel = new ManifestEntryModel()
 					{
 						Comment = "",
@@ -191,7 +191,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 					};
 					_allUnarchivedServices.Add(storageModel);
 				}
-				
+
 			}
 
 			var publishService = Context.ServiceScope.GetService<PublishService>();
@@ -257,7 +257,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 															.ThenByDescending(x => x.IsLocal && !x.IsRemote)
 															.ToList();
 
-			
+
 			orderedElements.ForEach(x =>
 			{
 				var dependencies = GetAllDependencies(x.Model);
@@ -375,7 +375,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var codeService = Context.ServiceScope.GetService<CodeService>();
 			var publisher = Context.ServiceScope.GetService<PublishService>();
 			var cli = Context.ServiceScope.GetService<BeamCommands>();
-			
+
 			codeService.UpdateServicesEnableState(_allUnarchivedServices);
 			await CodeService.SetManifest(cli, codeService.ServiceDefinitions);
 
@@ -395,7 +395,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				}
 
 				kvp.Value.UpdateStatus(ServicePublishState.Unpublished);
-				
+
 				new DeployStandaloneMSLogParser(kvp.Value.LoadingBar, kvp.Key, publisher);
 				_servicesToPublish.Add(kvp.Value);
 			}
@@ -409,7 +409,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				EnableDetatchButton = false,
 				EnableMoreButton = false
 			};
-			
+
 			var publishService = Context.ServiceScope.GetService<PublishService>();
 			publishService.OnDeployLogMessage -= HandleLogMessage;
 			publishService.OnDeployLogMessage += HandleLogMessage;
@@ -427,7 +427,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				Debug.LogError($"Could not parse log level of value: {level}");
 				return;
 			}
-			
+
 			var copiedMessage = new LogMessage
 			{
 				Level = enumLevel,
@@ -475,7 +475,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			if (element.PublishState == ServicePublishState.Published)
 				return;
-			
+
 			element.UpdateStatus(state);
 			switch (state)
 			{
