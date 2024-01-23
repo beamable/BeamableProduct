@@ -8,7 +8,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	public class BeamServiceDeployLogResult
 	{
 		public string Message;
-		public Beamable.Common.BeamCli.LogLevel Level;
+		public string Level;
 		public string TimeStamp;
 	}
 }

@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.BeamCli;
+using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server;
@@ -193,17 +194,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 				
 			}
 
-			//var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			var publishService = Context.ServiceScope.GetService<PublishService>();
 
 			_serviceServicePublishStateAnimator = new StandaloneServicePublishStateAnimator(Root.Q("infoCards"));
 
-			//TODO ask about these guys, should we implement new ones in the CodeService? Should we change the behaviour of them in this registry class?
-			//TODO Create a publisher service for USAM that CodeService have control of using DI
-			// serviceRegistry.OnServiceDeployStatusChanged -= HandleServiceDeployStatusChanged;
-			// serviceRegistry.OnServiceDeployStatusChanged += HandleServiceDeployStatusChanged;
-			//serviceRegistry.OnServiceDeployProgress -= HandleServiceDeployProgress;
-			//serviceRegistry.OnServiceDeployProgress += HandleServiceDeployProgress;
 			publishService.OnDeployStateProgress -= HandleServiceDeployStatusChanged;
 			publishService.OnDeployStateProgress += HandleServiceDeployStatusChanged;
 			publishService.OnDeployFailed -= HandleDeployFailed;
@@ -380,9 +374,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			var codeService = Context.ServiceScope.GetService<CodeService>();
 			var publisher = Context.ServiceScope.GetService<PublishService>();
+			var cli = Context.ServiceScope.GetService<BeamCommands>();
 			
 			codeService.UpdateServicesEnableState(_allUnarchivedServices);
-			await codeService.SetManifest();
+			await CodeService.SetManifest(cli, codeService.ServiceDefinitions);
 
 			foreach (var kvp in _publishManifestElements)
 			{
@@ -423,11 +418,19 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_logger.Refresh();
 		}
 
-		private void HandleLogMessage(LogLevel level, string message, string timeStamp)
+		private void HandleLogMessage(string level, string message, string timeStamp)
 		{
+			var parsed = Enum.TryParse(level, out LogLevel enumLevel);
+
+			if (!parsed)
+			{
+				Debug.LogError($"Could not parse log level of value: {level}");
+				return;
+			}
+			
 			var copiedMessage = new LogMessage
 			{
-				Level = level,
+				Level = enumLevel,
 				IsBoldMessage = false,
 				Message = message,
 				MessageColor = Color.white,

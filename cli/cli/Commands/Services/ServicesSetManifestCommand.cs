@@ -122,6 +122,7 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 			catch
 			{
 				//Do nothing, something that can't be formatted to bool was passed, in that case leave it to be the default
+				Log.Debug($"No valid value for shouldServiceBeEnabled was passed. Using default of {shouldBeEnabled} for service {name}");
 			}
 
 			Log.Debug($"name=[{name}] path=[{contextPath}] dockerfile=[{dockerPath}]");

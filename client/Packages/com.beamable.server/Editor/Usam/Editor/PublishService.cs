@@ -18,7 +18,7 @@ namespace Beamable.Server.Editor.Usam
 		public Action OnDeploySuccess;
 		public Action<string, ServicePublishState> OnDeployStateProgress;
 		public Action<string, double, double> OnServiceDeployProgress;
-		public Action<LogLevel, string, string> OnDeployLogMessage;
+		public Action<string, string, string> OnDeployLogMessage;
 		public Action<string, ServicePublishState> OnProgressInfoUpdated;
 
 		public PublishService(BeamCommands cli, CodeService codeService)
@@ -26,6 +26,20 @@ namespace Beamable.Server.Editor.Usam
 			_cli = cli;
 			_codeService = codeService;
 		}
+
+		/// <summary>
+		/// Clean up all actions in order to make sure everything is fine for a next publish.
+		/// </summary>
+		public void Init()
+		{
+			OnDeployFailed = null;
+			OnDeploySuccess = null;
+			OnDeployStateProgress = null;
+			OnServiceDeployProgress = null;
+			OnDeployLogMessage = null;
+			OnProgressInfoUpdated = null;
+		}
+		
 
 		/// <summary>
 		/// Publish all services that are configured in the local manifest file.

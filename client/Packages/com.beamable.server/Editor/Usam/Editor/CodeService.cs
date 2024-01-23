@@ -211,7 +211,7 @@ namespace Beamable.Server.Editor.Usam
 						objData.RunningState[i] ? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
 				}
 
-				ServiceDefinitions[dataIndex].IsLocal = objData.IsLocal;
+				ServiceDefinitions[dataIndex].HasLocalSource = objData.IsLocal;
 				LogVerbose($"Handling {name} ended");
 			}
 		}
@@ -327,11 +327,13 @@ namespace Beamable.Server.Editor.Usam
 			{
 				if (service.BeamoId.Equals(serviceName))
 				{
-					return service.IsLocal;
+					return service.HasLocalSource;
 				}
 			}
 
-			return false;
+			var allServices = String.Join(", ", ServiceDefinitions.Select(s => s.BeamoId));
+			throw new EntryPointNotFoundException(
+				$"The service {serviceName} was not found! The current list of services is: {allServices}");
 		}
 
 		/// <summary>
@@ -349,7 +351,9 @@ namespace Beamable.Server.Editor.Usam
 				}
 			}
 
-			return false;
+			var allServices = String.Join(", ", ServiceDefinitions.Select(s => s.BeamoId));
+			throw new EntryPointNotFoundException(
+				$"The service {serviceName} was not found! The current list of services is: {allServices}");
 		}
 
 		public void ConnectToLogs()
@@ -433,39 +437,38 @@ namespace Beamable.Server.Editor.Usam
 		}
 
 		/// <summary>
-		/// Set the local manifest with the currenct information in the ServiceDefinitions variable.
+		/// Set the local manifest with the current information in the ServiceDefinitions variable.
 		/// </summary>
-		public async Promise SetManifest()
+		public static async Promise SetManifest(BeamCommands cli, List<IBeamoServiceDefinition> definitions)
 		{
 			var args = new ServicesSetLocalManifestArgs();
 			var dependedStorages = new List<string>();
-			int servicesCount = _services.Count;
+			int servicesCount = definitions.Count;
 			
 			args.localHttpNames = new string[servicesCount];
 			args.localHttpContexts = new string[servicesCount];
 			args.localHttpDockerFiles = new string[servicesCount];
 			args.shouldBeEnable = new string[servicesCount];
+			
 			// TODO: add some validation to check that these files actually make sense
 			for (var i = 0; i < servicesCount; i++)
 			{
-				args.localHttpNames[i] = _services[i].name;
-				args.localHttpContexts[i] = _services[i].assetRelativePath;
-				args.localHttpDockerFiles[i] = _services[i].relativeDockerFile;
+				args.localHttpNames[i] = definitions[i].BeamoId;
+				args.localHttpContexts[i] = definitions[i].ServiceInfo.dockerBuildPath;  //assetRelativePath;
+				args.localHttpDockerFiles[i] = definitions[i].ServiceInfo.dockerfilePath;  //relativeDockerFile;
 
-				string name = _services[i].name;
-				bool shouldBeEnable = ServiceDefinitions.Find((d) => d.BeamoId == name).ShouldBeEnabledOnRemote;
-				args.shouldBeEnable[i] = shouldBeEnable.ToString();
-				if (_services[i].dependedStorages != null)
+				args.shouldBeEnable[i] = definitions[i].ShouldBeEnabledOnRemote.ToString();
+				if (definitions[i].ServiceInfo.dependencies != null)
 				{
-					foreach (var storage in _services[i].dependedStorages)
+					foreach (var storage in definitions[i].ServiceInfo.dependencies)
 					{
-						dependedStorages.Add($"{_services[i].name}:{storage}");
+						dependedStorages.Add($"{definitions[i].BeamoId}:{storage}");
 					}
 				}
 			}
 			args.storageDependencies = dependedStorages.ToArray();
 
-			var command = _cli.ServicesSetLocalManifest(args);
+			var command = cli.ServicesSetLocalManifest(args);
 			await command.Run().Error(LogExceptionVerbose);
 		}
 
