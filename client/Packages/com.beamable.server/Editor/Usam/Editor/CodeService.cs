@@ -427,6 +427,7 @@ namespace Beamable.Server.Editor.Usam
 			var files = new HashSet<string>();
 
 			ScanDirectoryRecursive("Assets", extension, IgnoreFolderSuffixes, files);
+			ScanDirectoryRecursive("Packages", extension, IgnoreFolderSuffixes, files);
 			ScanDirectoryRecursive(Path.Combine(new[]{"Library","PackageCache"}), extension, IgnoreFolderSuffixes, files);
 			return files;
 		}
