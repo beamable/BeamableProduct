@@ -285,6 +285,7 @@ namespace Beamable.Content
 		{
 			var content = _serializer.Deserialize<TContent>(raw);
 			content.SetManifestID(info.manifestID);
+			content.Tags = info.tags;
 			return content;
 		}
 
