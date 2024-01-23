@@ -4,7 +4,7 @@ namespace Beamable.Common.BeamCli
 {
 	public static class Reporting
 	{
-		public const string PATTERN = "__@#!REPORT!#@__";
+		private const string PATTERN = "__@#!REPORT!#@__";
 		public const string PATTERN_START = "<" + PATTERN + ">";
 		public const string PATTERN_END = "</" + PATTERN + ">";
 

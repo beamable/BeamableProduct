@@ -60,12 +60,12 @@ namespace Beamable.Editor.BeamCli.Commands
 	}
 	public class ServicesRunWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
-		public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamServiceRunReportResult(System.Action<ReportDataPoint<BeamServiceRunReportResult>> cb)
+		public virtual ServicesRunWrapper OnStreamServiceRunReportResult(System.Action<ReportDataPoint<BeamServiceRunReportResult>> cb)
 		{
 			this.Command.On("stream", cb);
 			return this;
 		}
-		public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnLocal_progressServiceRunProgressResult(System.Action<ReportDataPoint<BeamServiceRunProgressResult>> cb)
+		public virtual ServicesRunWrapper OnLocal_progressServiceRunProgressResult(System.Action<ReportDataPoint<BeamServiceRunProgressResult>> cb)
 		{
 			this.Command.On("local_progress", cb);
 			return this;

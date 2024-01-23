@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:engine="UnityEngine.Experimental.UIElements"
+        xmlns:beamable="Beamable.Editor.UI.Components"
+        xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
+        xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
+
+    <engine:VisualElement>
+        <beamable:LoadingIndicatorVisualElement>
+            <beamable:LoadingSpinnerVisualElement/>
+        </beamable:LoadingIndicatorVisualElement>
+    </engine:VisualElement>
+
+    <engine:VisualElement name="mainVisualElement">
+
+        <beamable:LoadingBarElement name="mainLoadingBar"/>
+
+        <engine:VisualElement name="infoContainer">
+            <engine:VisualElement>
+                <engine:Label name="infoTitle"/>
+                <engine:VisualElement name="docReference">
+                    <engine:Image name="docImage"/>
+                </engine:VisualElement>
+            </engine:VisualElement>
+            <engine:VisualElement name="infoCardsContainer">
+                <engine:VisualElement name="infoCardsBody">
+                    <engine:VisualElement name="infoCards">
+                        <engine:Image name="infoCardStep1" class="card"/>
+                        <engine:Image name="infoCardStep2" class="card"/>
+                        <engine:Image name="infoCardStep3" class="card"/>
+                        <engine:Image name="infoCardStep4" class="card"/>
+                    </engine:VisualElement>
+                </engine:VisualElement>
+                <engine:VisualElement class="infoCardsBorder">
+                    <engine:VisualElement name="arrowLeft">
+                        <engine:Image name="arrowImage"/>
+                    </engine:VisualElement>
+                </engine:VisualElement>
+                <engine:VisualElement name="infoCardGradientLeft" class="infoCardsGradient"/>
+                <engine:VisualElement name="infoCardShowArea"/>
+                <engine:VisualElement name="infoCardGradientRight" class="infoCardsGradient"/>
+                <engine:VisualElement class="infoCardsBorder">
+                    <engine:VisualElement name="arrowRight">
+                        <engine:Image name="arrowImage"/>
+                    </engine:VisualElement>
+                </engine:VisualElement>
+            </engine:VisualElement>
+            <engine:VisualElement name="infoDetails">
+                <engine:Label name="infoDescription"/>
+            </engine:VisualElement>
+        </engine:VisualElement>
+        
+        <engine:VisualElement name="servicesContainer">
+            <engine:VisualElement name="servicesHeaders">
+                <engine:VisualElement name="enableC" class="column">
+                    <engine:Image class="HeaderSeparatorImage"/>
+                    <engine:Label text="On/Off" class="SubTitleText"/>
+                </engine:VisualElement>
+                <engine:VisualElement name="nameC" class="column">
+                    <engine:Image class="HeaderSeparatorImage"/>
+                    <engine:Label text="Name" class="SubTitleText"/>
+                </engine:VisualElement>
+                <engine:VisualElement name="knownLocationC" class="column">
+                    <engine:Image class="HeaderSeparatorImage"/>
+                    <engine:Label text="Known Location" class="SubTitleText"/>
+                </engine:VisualElement>
+                <engine:VisualElement name="dependenciesC" class="column">
+                    <engine:Image class="HeaderSeparatorImage"/>
+                    <engine:Label text="Dependencies" class="SubTitleText"/>
+                </engine:VisualElement>
+<!--                <engine:VisualElement name="sizeC" class="column">-->
+<!--                    <engine:Image class="HeaderSeparatorImage"/>-->
+<!--                    <engine:Label text="Size" class="SubTitleText"/>-->
+<!--                </engine:VisualElement>-->
+                <engine:VisualElement name="commentsC" class="column">
+                    <engine:Image class="HeaderSeparatorImage"/>
+                    <engine:Label text="Comments" class="SubTitleText"/>
+                </engine:VisualElement>
+                <engine:VisualElement name="statusC" class="column">
+                    <engine:Image class="HeaderSeparatorImage"/>
+                    <engine:Label text="Status" class="SubTitleText"/>
+                </engine:VisualElement>
+            </engine:VisualElement>
+            <engine:VisualElement name="separator"/>
+            <engine:VisualElement name="servicesList"/>
+        </engine:VisualElement>
+
+        <engine:VisualElement name="logContainer"/>
+
+        <engine:VisualElement name="bottomBarContainer">
+            <engine:TextField name="userDescription"/>
+            <beamable:PrimaryButtonVisualElement name="cancelBtn" text="Cancel"/>
+            <beamable:PrimaryButtonVisualElement name="continueBtn" text="Publish"/>
+        </engine:VisualElement>
+
+    </engine:VisualElement>
+
+</engine:UXML>

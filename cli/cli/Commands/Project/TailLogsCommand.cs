@@ -89,7 +89,10 @@ public class TailLogsCommand : AppCommand<TailLogsCommandArgs>, IResultSteam<Def
 	{
 		await foreach (var line in beamo.TailLogs(containerId))
 		{
-			HandleLog(line);
+			if (!string.IsNullOrEmpty(line))
+			{
+				HandleLog(line);
+			}
 		}
 	}
 
@@ -118,7 +121,12 @@ public class TailLogsCommand : AppCommand<TailLogsCommandArgs>, IResultSteam<Def
 					{
 						var line = await reader.ReadLineAsync();
 						var _ = await reader.ReadLineAsync(); // skip new line.
-						HandleLog(line?.Substring("data: ".Length));
+
+						var substrLength = "data: ".Length;
+						if (line?.Length > substrLength)
+						{
+							HandleLog(line[substrLength..]);
+						}
 					}
 				}
 				else

@@ -1,0 +1,237 @@
+#mainVisualElement, TemplateContainer, #PublishWindowContainer, PublishPopup, #ContentViewport {
+    flex-grow: 1;
+    flex-direction: column;
+    align-content: stretch;
+}
+
+#infoContainer {
+    height: 220px;
+    align-items: center;
+}
+
+#infoContainer > VisualElement {
+    flex-grow: 1;
+    flex-direction: row;
+}
+
+#infoTitle {
+    flex-direction: row;
+    flex-grow: 1;
+    padding-left: 40px;
+    padding-top: 10px;
+    font-size: 16px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+#docReference {
+    width: 40px;
+    align-items: center;
+    justify-content: center;
+    cursor: link;
+}
+
+#docImage {
+    width: 8px;
+    height: 15px;
+    cursor: link;
+}
+
+#infoCardsContainer {
+    height: 150px;
+    flex-direction: row;
+    flex-grow: 1;
+    align-items: center;
+}
+
+#infoCardsBody {
+    flex-grow: 1;
+    height: 150px;
+    position: absolute;
+}
+
+#infoCards {
+    flex-direction: row;
+    flex-grow: 1;
+    align-items: center;
+    left: 300px;
+}
+
+#infoCardShowArea {
+    width: 400px;
+    height: 150px;
+}
+
+.infoCardsGradient {
+    width: 140px;
+    height: 150px;
+}
+
+.infoCardsBorder {
+    flex-grow: 1;
+    height: 150px;
+}
+
+#infoDetails {
+    font-size: 15px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+#infoDescription {
+    height: 20px;
+    max-height: 20px;
+    max-width: 800px;
+}
+
+#infoCardStep1 {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/step_1_turn_on.png");
+}
+
+#infoCardStep2 {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/step_2_build_and_verify.png");
+}
+
+#infoCardStep4 {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/step_4_send_updated.png");
+}
+
+#servicesContainer {
+    padding-top: 30px;
+    padding-bottom: 10px;
+}
+
+#servicesHeaders{
+    padding-left: 20px;
+    padding-right: 20px;
+    height: 20px;
+    flex-direction: row;
+}
+
+#servicesHeaders > VisualElement > Label {
+    padding-left: 5px;
+}
+
+#separator {
+    margin-top: 10px;
+    margin-bottom: 5px;
+    height: 10px;
+}
+
+#enableC {
+    min-width: 15px;
+    flex-grow: 1;
+}
+
+#nameC {
+    flex-grow: 3;
+}
+
+#knownLocationC {
+    flex-grow: 3;
+}
+
+#dependenciesC {
+    flex-grow: 3;
+}
+
+#dependenciesList > TemplateContainer > #mainVisualElement {
+    justify-content: center;
+}
+
+#sizeC {
+    flex-grow: 2;
+}
+
+#commentsC {
+    flex-grow: 3;
+}
+
+#statusC {
+    flex-grow: 2;
+}
+
+#logContainer {
+    height: 200px;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-bottom: 10px;
+}
+
+#logContainer > LogVisualElement {
+    flex-grow: 1;
+}
+
+#bottomBarContainer {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 17px;
+    padding-right: 17px;
+    flex-direction: row;
+    height: 50px;
+}
+
+#bottomBarContainer Button {
+    flex-grow: 1;
+    align-self: center;
+    height: 30px;
+    width: 120px;
+    cursor: link;
+}
+
+#userDescription {
+    flex-grow: 9;
+    height: 30px;
+}
+
+.card {
+    height: 120px;
+    width: 220px;
+    margin-left: 40px;
+    margin-right: 40px;
+    border-radius: 2px;
+}
+
+.column {
+    flex-direction: row;
+    font-size: 13px;
+    -unity-font-style: bold;
+    width: 0px;
+}
+
+.HeaderSeparatorImage {
+    height: 20px;
+    width: 2px;
+}
+
+.error {
+    color: #d93737;
+}
+
+LoadingBarElement.hidden {
+    height: 0px;
+    min-height: 0px;
+    max-height: 0px;
+}
+
+.card-error {
+    border-width: 2px;
+    border-color: #d93737;
+}
+
+
+#arrowLeft, #arrowRight{
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+    cursor: link;
+}
+
+#arrowLeft > Image,
+#arrowRight > Image {
+    height: 50px;
+    width: 50px;
+    cursor: link;
+}

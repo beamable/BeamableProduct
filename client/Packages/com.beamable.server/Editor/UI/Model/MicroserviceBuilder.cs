@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Common.BeamCli;
 using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
