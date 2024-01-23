@@ -37,7 +37,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				return null;
 
 			var wnd = CreateInstance<PublishStandaloneWindow>();
-			
+
 			wnd.editorContext = editorContext;
 
 			wnd.name = PUBLISH;
@@ -78,15 +78,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 				WindowStateUtility.EnableAllWindows();
 				Close();
 			};
-			_publishPopup.OnSubmit +=  async (logger) =>
-			{
-				WindowStateUtility.DisableAllWindows(new[] { PUBLISH });
-				await _publishPopup.PrepareForPublish();
-				
-				var publishService = editorContext.ServiceScope.GetService<PublishService>();
-				await publishService.PublishServices();
-				publishService.Init();
-			};
+			_publishPopup.OnSubmit += async (logger) =>
+		   {
+			   WindowStateUtility.DisableAllWindows(new[] { PUBLISH });
+			   await _publishPopup.PrepareForPublish();
+
+			   var publishService = editorContext.ServiceScope.GetService<PublishService>();
+			   await publishService.PublishServices();
+			   publishService.Init();
+		   };
 
 			container.Add(_publishPopup);
 			_publishPopup.PrepareParent();

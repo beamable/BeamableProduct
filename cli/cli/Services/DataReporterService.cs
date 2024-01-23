@@ -20,7 +20,7 @@ public class DataReporterService
 
 	public void Report(string rawMessage)
 	{
-		if (!_appContext.UseFatalAsReportingChannel) 
+		if (!_appContext.UseFatalAsReportingChannel)
 			return;
 
 		Log.Fatal(Reporting.EncodeMessage(rawMessage));

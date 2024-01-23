@@ -16,7 +16,7 @@ namespace Beamable.Editor.UI.Model
 		/// Is this a local service or an only remote service.
 		/// </summary>
 		public bool HasLocalSource { get; set; }
-		
+
 		IBeamableBuilder Builder { get; set; }
 
 		/// <summary>

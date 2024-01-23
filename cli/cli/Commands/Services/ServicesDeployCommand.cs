@@ -184,7 +184,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 			if (_localBeamo.BeamoManifest.ServiceDefinitions.FindIndex(sd => sd.BeamoId == id) == -1)
 			{
 				var errMsg = $"ID [{id}] in the given service comment argument [{commentArg}] " +
-				             $"doesn't match any of the registered services [{string.Join(",", _localBeamo.BeamoManifest.ServiceDefinitions.Select(sd => sd.BeamoId))}]!";
+							 $"doesn't match any of the registered services [{string.Join(",", _localBeamo.BeamoManifest.ServiceDefinitions.Select(sd => sd.BeamoId))}]!";
 				LogToSendResult(errMsg, "ERROR");
 				throw new ArgumentOutOfRangeException($"{nameof(args.RemoteServiceComments)}[{i}]", errMsg);
 			}
@@ -260,7 +260,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 						{
 							progressTask.Increment(progressTask.MaxValue - progressTask.Value);
 							this.SendResults<ServiceRemoteDeployProgressResult, ServiceRemoteDeployProgressResult>(
-								new ServiceRemoteDeployProgressResult() { BeamoId = beamoId, BuildAndTestProgress = progressTask.MaxValue , ContainerUploadProgress = progressTask.Value }
+								new ServiceRemoteDeployProgressResult() { BeamoId = beamoId, BuildAndTestProgress = progressTask.MaxValue, ContainerUploadProgress = progressTask.Value }
 							);
 							progressTask.Description = successful ? $"Success: {progressTask?.Description}" : $"Failure: {progressTask?.Description}";
 							atLeastOneFailed |= !successful;
@@ -274,7 +274,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 
 				// After deploying to remote, we need to stop the services we deployed locally.
 				await _localBeamo.StopExistingLocalServiceInstances();
-				
+
 				LogToSendResult("Finished deployment", "INFO");
 
 				LogToSendResult("Saving manifests", "INFO");
@@ -291,8 +291,8 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 		this.SendResults<ServiceDeployLogResult, ServiceDeployLogResult>(
 			new ServiceDeployLogResult()
 			{
-				Message = msg, 
-				Level = level, 
+				Message = msg,
+				Level = level,
 				TimeStamp = DateTime.Now.ToString("HH:mm:ss")
 			}
 		);
@@ -318,7 +318,7 @@ public class ServiceDeployReportResult
 public class ServiceDeployLogResult : IResultChannel
 {
 	public string ChannelName => "logs";
-	
+
 	public string Message;
 	public string Level;
 	public string TimeStamp;
