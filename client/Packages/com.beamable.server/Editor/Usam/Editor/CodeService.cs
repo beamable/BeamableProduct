@@ -122,7 +122,7 @@ namespace Beamable.Server.Editor.Usam
 
 		public async Promise RefreshServices()
 		{
-			LogVerbose("refresh services start");
+			LogVerbose("refresh remote services start");
 			try
 			{
 				var ps = _cli.ServicesPs(new ServicesPsArgs() { json = false, remote = true });
@@ -130,7 +130,7 @@ namespace Beamable.Server.Editor.Usam
 				{
 					IsDockerRunning = cb.data.IsDockerRunning;
 					LogVerbose($"Found {cb.data.BeamoIds.Count} remote services");
-					_dispatcher.Schedule(() => PopulateData(cb.data));
+					_dispatcher.Schedule(() => PopulateDataWithRemote(cb.data));
 				});
 				await ps.Run();
 			}
@@ -141,33 +141,47 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
-			if (!IsDockerRunning)
-			{
-				LogVerbose("Docker is not running, skip", true);
-				return;
-			}
-
-			try
-			{
-				var ps = _cli.ServicesPs(new ServicesPsArgs { json = false, remote = false });
-				ps.OnStreamServiceListResult(cb =>
-				{
-					IsDockerRunning = cb.data.IsDockerRunning;
-					LogVerbose($"Found {cb.data.BeamoIds.Count} local services");
-					_dispatcher.Schedule(() => PopulateData(cb.data));
-				});
-				await ps.Run();
-			}
-			catch
-			{
-				LogVerbose("Could not list local services, skip", true);
-				return;
-			}
-
-			LogVerbose("refresh services end");
+			LogVerbose("refresh remote services end");
+			
+			LogVerbose("refresh local services start");
+			
+			PopulateDataWithLocal();
+			
+			LogVerbose("refresh local services end");
 		}
 
-		private void PopulateData(BeamServiceListResult objData)
+		private void PopulateDataWithLocal()
+		{
+			_services = GetBeamServices();
+
+			for (int i = 0; i < _services.Count; i++)
+			{
+				var name = _services[i].name;
+				var dataIndex =
+					ServiceDefinitions.FindIndex(definition => definition.BeamoId.Equals(name));
+				if (dataIndex < 0)
+				{
+					ServiceDefinitions.Add(new BeamoServiceDefinition
+					{
+						ServiceInfo = new ServiceInfo()
+						{
+							name = name,
+							dockerBuildPath = _services[i].assetRelativePath,
+							dockerfilePath = _services[i].relativeDockerFile,
+							dependencies = _services[i].dependedStorages.ToList()
+						}
+					});
+					dataIndex = ServiceDefinitions.Count - 1;
+					ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder() { BeamoId = name };
+					ServiceDefinitions[dataIndex].ServiceType = ServiceType.MicroService; //For now we only have microservice and not storages
+					ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = true; //TODO should read this from manifest or have it stored somewhere
+					ServiceDefinitions[dataIndex].HasLocalSource = true;
+				}
+			}
+		}
+		
+
+		private void PopulateDataWithRemote(BeamServiceListResult objData)
 		{
 			for (int i = 0; i < objData.BeamoIds.Count; i++)
 			{
@@ -191,25 +205,10 @@ namespace Beamable.Server.Editor.Usam
 					dataIndex = ServiceDefinitions.Count - 1;
 					ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder() { BeamoId = name };
 				}
-
-				if (objData.IsLocal)
-				{
-					ServiceDefinitions[dataIndex].ServiceType =
-						objData.ProtocolTypes[i].Equals("HttpMicroservice", StringComparison.InvariantCultureIgnoreCase)
-							? ServiceType.MicroService
-							: ServiceType.StorageObject;
-				}
+				
 				ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = objData.ShouldBeEnabledOnRemote[i];
-				if (objData.IsLocal)
-				{
-					ServiceDefinitions[dataIndex].ImageId = objData.ImageIds[i];
-					ServiceDefinitions[dataIndex].Builder.IsRunning = objData.RunningState[i];
-				}
-				else
-				{
-					ServiceDefinitions[dataIndex].IsRunningOnRemote =
+				ServiceDefinitions[dataIndex].IsRunningOnRemote =
 						objData.RunningState[i] ? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
-				}
 
 				ServiceDefinitions[dataIndex].HasLocalSource = objData.IsLocal;
 				LogVerbose($"Handling {name} ended");
