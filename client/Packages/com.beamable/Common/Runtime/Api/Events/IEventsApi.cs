@@ -88,7 +88,21 @@ namespace Beamable.Common.Api.Events
 
 		public void Init()
 		{
-			endTime = DateTime.UtcNow.AddSeconds(secondsRemaining);
+			long secondsToAdd = allPhases.Sum(t => t.durationSeconds);
+			endTime = GetStartDate().AddSeconds(secondsToAdd);
+		}
+		
+		public DateTime GetStartDate()
+		{
+			int index = id.LastIndexOf(".", StringComparison.InvariantCultureIgnoreCase);
+			var dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+
+			if (index > 0 && long.TryParse(id.Substring(index+1), out long startTimestamp))
+			{
+				return dateTime.AddMilliseconds(startTimestamp);
+			}
+
+			return dateTime;
 		}
 	}
 
