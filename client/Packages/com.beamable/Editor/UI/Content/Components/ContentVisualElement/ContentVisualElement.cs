@@ -216,7 +216,7 @@ namespace Beamable.Editor.Content.Components
 					CancelName();
 					break;
 				case KeyCode.Return:
-					CommitName();
+					BeamEditorContext.Default.Dispatcher.Schedule(CommitName);
 					break;
 			}
 		}
@@ -228,7 +228,7 @@ namespace Beamable.Editor.Content.Components
 
 		private void NameLabel_OnBlur(BlurEvent evt)
 		{
-			CommitName();
+			BeamEditorContext.Default.Dispatcher.Schedule(CommitName);
 		}
 
 		private void CommitName()
@@ -264,18 +264,18 @@ namespace Beamable.Editor.Content.Components
 
 		public void CheckName()
 		{
-			var name = _nameTextField.value;
+			var contentName = _nameTextField.value;
 			var content = ContentItemDescriptor?.GetContent();
-			if (content != null && ContentNameValidationException.HasNameValidationErrors(content, name, out var errors))
+			if (content != null && ContentNameValidationException.HasNameValidationErrors(content, contentName, out var errors))
 			{
 				foreach (var error in errors)
 				{
-					var replaceWith = error.InvalidChar == ' ' ? "_" : "";
-					name = name.Replace(error.InvalidChar.ToString(), replaceWith);
+					var replaceWith = error.InvalidChar == ' ' ? "_" : string.Empty;
+					contentName = contentName.Replace(error.InvalidChar.ToString(), replaceWith);
 				}
 			}
 
-			_nameTextField.value = name;
+			_nameTextField.value = contentName;
 		}
 
 		private void OnMouseDownEvent(MouseDownEvent evt)
