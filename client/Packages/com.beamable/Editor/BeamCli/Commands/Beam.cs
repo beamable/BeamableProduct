@@ -20,9 +20,9 @@ namespace Beamable.Editor.BeamCli.Commands
         public string log;
         /// <summary>Directory to use for configuration</summary>
         public string dir;
-        /// <summary>When enabled, machine-readable JSON will be logged to the console. Note, when the command is being piped, this option has no effect.</summary>
+        /// <summary>Output raw JSON to standard out. This happens by default when the command is being piped</summary>
         public bool raw;
-        /// <summary>When enabled, any available higher level console graphics will be displayed on the console. Note, this is the default behaviour, except when the command is being piped.</summary>
+        /// <summary>Output syntax highlighted box text. This happens by default when the command is not piped</summary>
         public bool pretty;
         /// <summary>skips the check for commands that require beam config directories.</summary>
         public bool skipStandaloneValidation;

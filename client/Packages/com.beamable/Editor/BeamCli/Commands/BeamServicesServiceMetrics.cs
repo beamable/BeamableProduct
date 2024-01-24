@@ -56,7 +56,7 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public class ServicesServiceMetricsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamGetSignedUrlResponse(System.Action<ReportDataPoint<BeamGetSignedUrlResponse>> cb)
+        public virtual ServicesServiceMetricsWrapper OnStreamGetSignedUrlResponse(System.Action<ReportDataPoint<BeamGetSignedUrlResponse>> cb)
         {
             this.Command.On("stream", cb);
             return this;

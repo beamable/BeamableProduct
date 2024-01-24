@@ -48,7 +48,7 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public class MeWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamUser(System.Action<ReportDataPoint<Beamable.Common.Api.Auth.User>> cb)
+        public virtual MeWrapper OnStreamUser(System.Action<ReportDataPoint<Beamable.Common.Api.Auth.User>> cb)
         {
             this.Command.On("stream", cb);
             return this;

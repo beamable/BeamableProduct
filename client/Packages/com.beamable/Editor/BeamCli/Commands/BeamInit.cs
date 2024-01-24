@@ -111,7 +111,7 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public class InitWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamInitCommandResult(System.Action<ReportDataPoint<BeamInitCommandResult>> cb)
+        public virtual InitWrapper OnStreamInitCommandResult(System.Action<ReportDataPoint<BeamInitCommandResult>> cb)
         {
             this.Command.On("stream", cb);
             return this;

@@ -5,10 +5,8 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common.BeamCli;
     
     [System.SerializableAttribute()]
-    public class BeamServiceDeployLogResult
+    public class BeamCheckPerfCommandOutput
     {
-        public string Message;
-        public string Level;
-        public string TimeStamp;
+        public string message;
     }
 }

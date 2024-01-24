@@ -53,7 +53,7 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public class ProjectLogsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamTailLogMessageForClient(System.Action<ReportDataPoint<BeamTailLogMessageForClient>> cb)
+        public virtual ProjectLogsWrapper OnStreamTailLogMessageForClient(System.Action<ReportDataPoint<BeamTailLogMessageForClient>> cb)
         {
             this.Command.On("stream", cb);
             return this;

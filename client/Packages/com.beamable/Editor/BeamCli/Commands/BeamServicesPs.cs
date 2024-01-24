@@ -56,7 +56,7 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public class ServicesPsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamServiceListResult(System.Action<ReportDataPoint<BeamServiceListResult>> cb)
+        public virtual ServicesPsWrapper OnStreamServiceListResult(System.Action<ReportDataPoint<BeamServiceListResult>> cb)
         {
             this.Command.On("stream", cb);
             return this;

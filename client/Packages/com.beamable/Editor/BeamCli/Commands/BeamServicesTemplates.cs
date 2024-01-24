@@ -41,7 +41,7 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public class ServicesTemplatesWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamServicesTemplatesCommandOutput(System.Action<ReportDataPoint<BeamServicesTemplatesCommandOutput>> cb)
+        public virtual ServicesTemplatesWrapper OnStreamServicesTemplatesCommandOutput(System.Action<ReportDataPoint<BeamServicesTemplatesCommandOutput>> cb)
         {
             this.Command.On("stream", cb);
             return this;

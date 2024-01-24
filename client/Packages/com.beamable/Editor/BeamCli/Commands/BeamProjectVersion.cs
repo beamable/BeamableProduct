@@ -49,7 +49,7 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public class ProjectVersionWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamProjectVersionCommandResult(System.Action<ReportDataPoint<BeamProjectVersionCommandResult>> cb)
+        public virtual ProjectVersionWrapper OnStreamProjectVersionCommandResult(System.Action<ReportDataPoint<BeamProjectVersionCommandResult>> cb)
         {
             this.Command.On("stream", cb);
             return this;

@@ -56,7 +56,7 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public class ServicesManifestsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamServiceManifestOutput(System.Action<ReportDataPoint<BeamServiceManifestOutput>> cb)
+        public virtual ServicesManifestsWrapper OnStreamServiceManifestOutput(System.Action<ReportDataPoint<BeamServiceManifestOutput>> cb)
         {
             this.Command.On("stream", cb);
             return this;
