@@ -11,7 +11,12 @@ public class ServicesUploadApiCommandArgs : LoginCommandArgs
 {
 }
 
-public class ServicesUploadApiCommand : AppCommand<ServicesUploadApiCommandArgs>
+public class ServicesUploadApiOutput
+{
+	public string uploadUrl;
+}
+
+public class ServicesUploadApiCommand : AtomicCommand<ServicesUploadApiCommandArgs, ServicesUploadApiOutput>
 {
 	private BeamoService _remoteBeamo;
 
@@ -25,16 +30,17 @@ public class ServicesUploadApiCommand : AppCommand<ServicesUploadApiCommandArgs>
 	{
 	}
 
-	public override async Task Handle(ServicesUploadApiCommandArgs args)
+	public override async Task<ServicesUploadApiOutput> GetResult(ServicesUploadApiCommandArgs args)
 	{
 		_remoteBeamo = args.BeamoService;
 
-		var response = await AnsiConsole.Status()
+		string response = await AnsiConsole.Status()
 			.Spinner(Spinner.Known.Default)
 			.StartAsync("Sending Request...", async ctx =>
 				await _remoteBeamo.GetUploadApi()
 			);
 
-		Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
+		Console.Error.WriteLine(response);
+		return new ServicesUploadApiOutput { uploadUrl = response };
 	}
 }

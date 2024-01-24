@@ -11,9 +11,14 @@ public class RealmConfigCommandArgs : CommandArgs
 	public List<string> namespaces = new();
 }
 
-public class RealmConfigCommand : AppCommand<RealmConfigCommandArgs>, IResultSteam<DefaultStreamResultChannel, RealmConfigData>
+public class RealmConfigCommand : AtomicCommand<RealmConfigCommandArgs, RealmConfigData>
 {
 	public RealmConfigCommand() : base("realm", "Get current realm config values") { }
+
+	protected override RealmConfigData GetHelpInstance()
+	{
+		return new RealmConfigData { Config = new Dictionary<string, string> { ["thor_rpc|useHttp"] = "true" } };
+	}
 
 	public override void Configure()
 	{
@@ -21,12 +26,12 @@ public class RealmConfigCommand : AppCommand<RealmConfigCommandArgs>, IResultSte
 		AddOption(new RealmConfigNamespaceOption(), (args, b) => args.namespaces = b.ToList());
 	}
 
-	public override async Task Handle(RealmConfigCommandArgs args)
+	public override async Task<RealmConfigData> GetResult(RealmConfigCommandArgs args)
 	{
 		try
 		{
 			var data = await args.RealmsApi.GetRealmConfig();
-			this.SendResults(data);
+			
 			var json = JsonConvert.SerializeObject(data.ConvertToView(args.namespaces));
 			if (args.plainOutput)
 			{
@@ -40,6 +45,8 @@ public class RealmConfigCommand : AppCommand<RealmConfigCommandArgs>, IResultSte
 						.Collapse()
 						.RoundedBorder());
 			}
+
+			return data;
 		}
 		catch (Exception e)
 		{

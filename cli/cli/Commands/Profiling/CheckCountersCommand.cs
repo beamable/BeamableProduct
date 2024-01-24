@@ -11,7 +11,7 @@ public class CheckCountersCommandArgs : CommandArgs
 	public double memMaxLimitMb;
 }
 
-public class CheckCountersCommand : AppCommand<CheckCountersCommandArgs>, IStandaloneCommand
+public class CheckCountersCommand : AtomicCommand<CheckCountersCommandArgs, CheckPerfCommandOutput>, IStandaloneCommand
 {
 	public CheckCountersCommand() : base("check-counters", "Read the results of a dotnet-counters json file and determine if there are errors")
 	{
@@ -24,7 +24,7 @@ public class CheckCountersCommand : AppCommand<CheckCountersCommandArgs>, IStand
 		AddOption(new Option<double>("--mem-limit", () => 160, "The max mem spike limit MB"), (arg, i) => arg.memMaxLimitMb = i);
 	}
 
-	public override Task Handle(CheckCountersCommandArgs args)
+	public override Task<CheckPerfCommandOutput> GetResult(CheckCountersCommandArgs args)
 	{
 		/*
 		 * Check for spikes
@@ -75,7 +75,8 @@ public class CheckCountersCommand : AppCommand<CheckCountersCommandArgs>, IStand
 		}
 
 		BeamableLogger.Log("No issues found.");
-		return Task.CompletedTask;
+		return Task.FromResult(new CheckPerfCommandOutput { message = "No issues found." });
+
 	}
 }
 
