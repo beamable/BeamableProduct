@@ -14,7 +14,7 @@ public class ServicesMetricsUrlCommandArgs : LoginCommandArgs
 	public string MetricName;
 }
 
-public class ServicesMetricsUrlCommand : AppCommand<ServicesMetricsUrlCommandArgs>
+public class ServicesMetricsUrlCommand : AtomicCommand<ServicesMetricsUrlCommandArgs, GetSignedUrlResponse>
 {
 	public static readonly Option<string> METRIC_NAME_OPTION_ID = new("--metric", "Set to 'cpu' or 'memory'");
 
@@ -35,7 +35,7 @@ public class ServicesMetricsUrlCommand : AppCommand<ServicesMetricsUrlCommandArg
 		AddOption(METRIC_NAME_OPTION_ID, (args, s) => args.MetricName = s);
 	}
 
-	public override async Task Handle(ServicesMetricsUrlCommandArgs args)
+	public override async Task<GetSignedUrlResponse> GetResult(ServicesMetricsUrlCommandArgs args)
 	{
 		_localBeamo = args.BeamoLocalSystem;
 		_remoteBeamo = args.BeamoService;
@@ -53,12 +53,12 @@ public class ServicesMetricsUrlCommand : AppCommand<ServicesMetricsUrlCommandArg
 		if (string.IsNullOrEmpty(args.MetricName))
 			args.MetricName = "cpu";
 
-		var response = await AnsiConsole.Status()
+		GetSignedUrlResponse response = await AnsiConsole.Status()
 			.Spinner(Spinner.Known.Default)
 			.StartAsync("Sending Request...", async ctx =>
 				await _remoteBeamo.GetMetricsUrl(args.BeamoId, args.MetricName)
 			);
 
-		Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
+		return PrintResult(response);
 	}
 }

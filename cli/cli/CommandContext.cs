@@ -2,6 +2,7 @@ using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using cli.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using Serilog;
 using Spectre.Console;
 using System.CommandLine;
@@ -12,7 +13,7 @@ namespace cli;
 
 public interface IResultProvider
 {
-	public DataReporterService Reporter { get; set; }
+	public IDataReporterService Reporter { get; set; }
 }
 
 public interface IResultSteam<TChannel, TData> : IResultProvider
@@ -43,15 +44,102 @@ public static class ResultStreamExtensions
 		var channel = new TChannel(); // TODO: cache.
 		self.Reporter?.Report(channel.ChannelName, data);
 	}
+
+	[Obsolete("AtomicCommands should not use this function")]
+	public static void SendResults<TArgs, TResult>(this AtomicCommand<TArgs, TResult> self, TResult _) 
+		where TArgs : CommandArgs
+		where TResult : new()
+	{
+		throw new InvalidOperationException(
+			"An atomic command cannot use the SendResults function directly. Instead, only 1 value can be returned via the return statement");
+	}
 }
 
+public interface ISingleResult
+{
+	Type ResultType { get; }
+	object CreateEmptyInstance();
+	bool IsSingleReturn { get; }
+}
+
+public abstract class StreamCommand<TArgs, TResult> : AppCommand<TArgs>,
+	IResultSteam<DefaultStreamResultChannel, TResult>, ISingleResult
+	where TArgs : CommandArgs
+	where TResult : new()
+{
+	private DefaultStreamResultChannel _channel;
+
+	protected StreamCommand(string name, string description = null) : base(name, description)
+	{
+		_channel = new DefaultStreamResultChannel();
+	}
+
+	protected void SendResults(TResult result)
+	{
+		IResultSteam<DefaultStreamResultChannel, TResult> self = this;
+		self.Reporter.Report(_channel.ChannelName, result);
+	}
+	
+	public Type ResultType => typeof(TResult);
+	public object CreateEmptyInstance()
+	{
+		return GetHelpInstance() ?? new TResult();
+	}
+
+	public bool IsSingleReturn => false;
+
+	protected virtual TResult GetHelpInstance()
+	{
+		return default;
+	}
+}
+
+public abstract class AtomicCommand<TArgs, TResult> : AppCommand<TArgs>, IResultSteam<DefaultStreamResultChannel, TResult>, ISingleResult
+	where TArgs : CommandArgs
+	where TResult : new()
+{
+	private DefaultStreamResultChannel _channel;
+
+	protected AtomicCommand(string name, string description = null) : base(name, description)
+	{
+		_channel = new DefaultStreamResultChannel();
+	}
+
+	public override async Task Handle(TArgs args)
+	{
+		var result = await GetResult(args);
+		if (result == null) return;
+		
+		var reporter = args.Provider.GetService<IDataReporterService>();
+		reporter.Report(_channel.ChannelName, result);
+	}
+
+	protected TResult PrintResult(TResult result)
+	{
+		Console.Error.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+		return result;
+	}
+
+	public abstract Task<TResult> GetResult(TArgs args);
+	public Type ResultType => typeof(TResult);
+	public bool IsSingleReturn => true;
+	public object CreateEmptyInstance()
+	{
+		return GetHelpInstance() ?? new TResult();
+	}
+
+	protected virtual TResult GetHelpInstance()
+	{
+		return default;
+	}
+}
 
 public abstract partial class AppCommand<TArgs> : Command, IResultProvider
 	where TArgs : CommandArgs
 {
 	private List<Action<BindingContext, TArgs>> _bindingActions = new List<Action<BindingContext, TArgs>>();
 
-	DataReporterService IResultProvider.Reporter { get; set; }
+	IDataReporterService IResultProvider.Reporter { get; set; }
 	public IDependencyProvider CommandProvider { get; set; }
 
 	protected AppCommand(string name, string description = null) : base(name, description)

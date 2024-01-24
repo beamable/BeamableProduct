@@ -10,7 +10,6 @@ public class VersionCommandArgs : CommandArgs
 	public bool showVersion = true;
 	public bool showLocation = true;
 	public bool showType = true;
-	public string output;
 }
 
 public class VersionResults
@@ -19,7 +18,7 @@ public class VersionResults
 }
 
 
-public class VersionCommand : AppCommand<VersionCommandArgs>, IStandaloneCommand, IResultSteam<DefaultStreamResultChannel, VersionResults>
+public class VersionCommand : AtomicCommand<VersionCommandArgs, VersionResults>, IStandaloneCommand
 {
 	public VersionCommand() : base("version", "Commands for managing the CLI version")
 	{
@@ -32,10 +31,9 @@ public class VersionCommand : AppCommand<VersionCommandArgs>, IStandaloneCommand
 		AddOption(new Option<bool>("--show-location", () => true, "Displays the executing CLI install location"), (args, i) => args.showLocation = i);
 		AddOption(new Option<bool>("--show-templates", () => true, "Displays available Beamable template version"), (args, i) => args.showTemplates = i);
 		AddOption(new Option<bool>("--show-type", () => true, "Displays the executing CLI install type"), (args, i) => args.showType = i);
-		AddOption(new Option<string>("--output", () => "log", "How to display the information, anything other than log will print straight to console with no labels"), (args, i) => args.output = i);
 	}
 
-	public override async Task Handle(VersionCommandArgs args)
+	public override async Task<VersionResults> GetResult(VersionCommandArgs args)
 	{
 		var info = await args.DependencyProvider.GetService<VersionService>().GetInformationData(args.ProjectService);
 
@@ -60,24 +58,17 @@ public class VersionCommand : AppCommand<VersionCommandArgs>, IStandaloneCommand
 			Print("install-type", info.installType.ToString());
 		}
 
-		this.SendResults(new VersionResults
+		return new VersionResults
 		{
 			location = info.location,
 			templates = info.templateVersion,
 			type = info.installType.ToString(),
 			version = info.version
-		});
+		};
 
 		void Print(string label, string data)
 		{
-			if (args.output == "log")
-			{
-				Log.Information($"{label} -- {data}");
-			}
-			else
-			{
-				Console.WriteLine(data);
-			}
+			Log.Information($"{label} -- {data}");
 		}
 	}
 

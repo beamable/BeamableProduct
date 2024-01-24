@@ -11,7 +11,7 @@ public class AccountMeCommandArgs : CommandArgs
 	public bool plainOutput;
 }
 
-public class AccountMeCommand : AppCommand<AccountMeCommandArgs>, IResultSteam<DefaultStreamResultChannel, User>
+public class AccountMeCommand : AtomicCommand<AccountMeCommandArgs, User>
 {
 	public AccountMeCommand() : base("me", "Temp command to get current account") { }
 
@@ -20,12 +20,26 @@ public class AccountMeCommand : AppCommand<AccountMeCommandArgs>, IResultSteam<D
 		AddOption(new PlainOutputOption(), (args, b) => args.plainOutput = b);
 	}
 
-	public override async Task Handle(AccountMeCommandArgs args)
+	protected override User GetHelpInstance()
+	{
+		return new User
+		{
+			email = "user@example.com",
+			deviceIds = new List<string>(),
+			scopes = new List<string>(),
+			language = "en",
+			thirdPartyAppAssociations = new List<string>(),
+			external = new List<ExternalIdentity>
+			{
+			}
+		};
+	}
+
+	public override async Task<User> GetResult(AccountMeCommandArgs args)
 	{
 		try
 		{
 			var response = await args.AuthApi.GetUser().ShowLoading("Sending Request...");
-			this.SendResults(response);
 			var json = JsonConvert.SerializeObject(response);
 			if (args.plainOutput)
 			{
@@ -39,6 +53,8 @@ public class AccountMeCommand : AppCommand<AccountMeCommandArgs>, IResultSteam<D
 						.Collapse()
 						.RoundedBorder());
 			}
+
+			return response;
 		}
 		catch (Exception e)
 		{

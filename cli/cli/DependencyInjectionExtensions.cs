@@ -39,7 +39,7 @@ public static class DependencyInjectionExtensions
 			{
 				if (command is IResultProvider resultProvider)
 				{
-					resultProvider.Reporter = new DataReporterService(args.AppContext);
+					resultProvider.Reporter = args.Provider.GetService<IDataReporterService>();
 				}
 
 

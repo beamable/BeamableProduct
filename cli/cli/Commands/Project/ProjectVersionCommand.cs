@@ -13,7 +13,7 @@ public class ProjectVersionCommandArgs : CommandArgs
 	public string requestedVersion;
 }
 
-public class ProjectVersionCommand : AppCommand<ProjectVersionCommandArgs>, IResultSteam<DefaultStreamResultChannel, ProjectVersionCommandResult>
+public class ProjectVersionCommand : AtomicCommand<ProjectVersionCommandArgs, ProjectVersionCommandResult>
 {
 	public ProjectVersionCommand() : base(
 		"version",
@@ -27,7 +27,7 @@ public class ProjectVersionCommand : AppCommand<ProjectVersionCommandArgs>, IRes
 			(args, i) => args.requestedVersion = string.IsNullOrWhiteSpace(i) ? string.Empty : i.Trim());
 	}
 
-	public override async Task Handle(ProjectVersionCommandArgs args)
+	public override async Task<ProjectVersionCommandResult> GetResult(ProjectVersionCommandArgs args)
 	{
 		var projectList = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.Values.Where(p => !string.IsNullOrWhiteSpace(p.RelativeDockerfilePath)).ToList();
 		List<BeamablePackageInProject> results = new();
@@ -80,7 +80,7 @@ public class ProjectVersionCommand : AppCommand<ProjectVersionCommandArgs>, IRes
 				.Header("Projects versions")
 				.Collapse()
 				.RoundedBorder());
-		this.SendResults(BeamablePackageInProject.ToResult(results));
+		return BeamablePackageInProject.ToResult(results);
 	}
 }
 

@@ -28,11 +28,12 @@ namespace Beamable.Editor.BeamCli
 		public async Promise<bool> IsAvailable()
 		{
 			var comm = new BeamCommand(_provider.GetService<BeamableDispatcher>());
-			comm.SetCommand("beam --version");
+
+			var instance = Command.Version(new VersionArgs());
 			comm.AutoLogErrors = false;
 			try
 			{
-				await comm.Run();
+				await instance.Run();
 				return true;
 			}
 			catch

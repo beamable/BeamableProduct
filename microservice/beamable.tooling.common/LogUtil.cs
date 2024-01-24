@@ -26,6 +26,7 @@ public static class LogUtil
 
 			case "f":
 			case "fatal":
+			case "none":
 				serilogLevel = LogEventLevel.Fatal;
 				return true;
 			case "e":

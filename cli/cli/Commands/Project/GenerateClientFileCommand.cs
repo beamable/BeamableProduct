@@ -229,8 +229,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 							cmd += @"$bin + ' -projectfiles %cd%\' + $uproject | cmd.exe";
 
 							// Run the command and print the result
-							var output = ExecutePowershellCommand(cmd);
-							Console.WriteLine(output);
+							var _ = ExecutePowershellCommand(cmd);
 						}
 
 

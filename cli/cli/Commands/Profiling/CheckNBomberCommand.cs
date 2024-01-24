@@ -5,13 +5,18 @@ using System.CommandLine;
 
 namespace cli;
 
+public class CheckPerfCommandOutput
+{
+	public string message;
+}
+
 public class CheckNBomberCommandArgs : CommandArgs
 {
 	public string nBomberJsonFilePath;
 	public double failLimit;
 	public double p95Limit;
 }
-public class CheckNBomberCommand : AppCommand<CheckNBomberCommandArgs>, IStandaloneCommand
+public class CheckNBomberCommand : AtomicCommand<CheckNBomberCommandArgs, CheckPerfCommandOutput>, IStandaloneCommand
 {
 	public CheckNBomberCommand() : base("check-nbomber", "Read the results of a n-bomber .csv file and determine if there are errors")
 	{
@@ -24,7 +29,7 @@ public class CheckNBomberCommand : AppCommand<CheckNBomberCommandArgs>, IStandal
 		AddOption(new Option<double>("--p95-limit", () => 2500, "The max p95 in ms"), (arg, i) => arg.p95Limit = i);
 	}
 
-	public override Task Handle(CheckNBomberCommandArgs args)
+	public override Task<CheckPerfCommandOutput> GetResult(CheckNBomberCommandArgs args)
 	{
 		var csv = File.ReadAllText(args.nBomberJsonFilePath);
 		var lines = CsvReader.ReadFromText(csv);
@@ -60,6 +65,6 @@ public class CheckNBomberCommand : AppCommand<CheckNBomberCommandArgs>, IStandal
 		}
 
 		BeamableLogger.Log("No issues found.");
-		return Task.CompletedTask;
+		return Task.FromResult(new CheckPerfCommandOutput { message = "No issues found." });
 	}
 }

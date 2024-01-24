@@ -454,7 +454,7 @@ public class SwaggerService
 				catch (Exception ex)
 				{
 
-					Log.Fatal(url + " / " + ex.Message);
+					Log.Error(url + " / " + ex.Message);
 					throw;
 				}
 			}));

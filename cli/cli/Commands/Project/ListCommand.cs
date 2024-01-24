@@ -14,7 +14,7 @@ public class ListCommandResult
 	public List<ServiceInfo> localServices;
 }
 
-public class ListCommand : AppCommand<ListCommandArgs>, IResultSteam<DefaultStreamResultChannel, ListCommandResult>
+public class ListCommand : AtomicCommand<ListCommandArgs, ListCommandResult>
 {
 	public ListCommand() : base("list",
 		"Get a list of microservices")
@@ -25,7 +25,7 @@ public class ListCommand : AppCommand<ListCommandArgs>, IResultSteam<DefaultStre
 	{
 	}
 
-	public override Task Handle(ListCommandArgs args)
+	public override Task<ListCommandResult> GetResult(ListCommandArgs args)
 	{
 		Log.Information("Running list command " + args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Count);
 
@@ -36,12 +36,8 @@ public class ListCommand : AppCommand<ListCommandArgs>, IResultSteam<DefaultStre
 			dockerBuildPath = x.Value.DockerBuildContextPath
 		}).ToList();
 
-		this.SendResults(new ListCommandResult
-		{
-			localServices = services
-		});
 		Log.Information("Sent list command " + args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Count);
 
-		return Task.CompletedTask;
+		return Task.FromResult(new ListCommandResult { localServices = services });
 	}
 }

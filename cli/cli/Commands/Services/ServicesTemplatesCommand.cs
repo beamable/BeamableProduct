@@ -11,7 +11,12 @@ public class ServicesTemplatesCommandArgs : LoginCommandArgs
 {
 }
 
-public class ServicesTemplatesCommand : AppCommand<ServicesTemplatesCommandArgs>
+public class ServicesTemplatesCommandOutput
+{
+	public List<ServiceTemplate> templates;
+}
+
+public class ServicesTemplatesCommand : AtomicCommand<ServicesTemplatesCommandArgs, ServicesTemplatesCommandOutput>
 {
 	private BeamoService _remoteBeamo;
 
@@ -26,15 +31,16 @@ public class ServicesTemplatesCommand : AppCommand<ServicesTemplatesCommandArgs>
 	{
 	}
 
-	public override async Task Handle(ServicesTemplatesCommandArgs args)
+	public override async Task<ServicesTemplatesCommandOutput> GetResult(ServicesTemplatesCommandArgs args)
 	{
 		_remoteBeamo = args.BeamoService;
-		var response = await AnsiConsole.Status()
+		List<ServiceTemplate> response = await AnsiConsole.Status()
 			.Spinner(Spinner.Known.Default)
 			.StartAsync("Sending Request...", async ctx =>
 				await _remoteBeamo.GetTemplates()
 			);
 
-		Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
+		var result = new ServicesTemplatesCommandOutput { templates = response };
+		return PrintResult(result);
 	}
 }
