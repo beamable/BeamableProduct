@@ -78,6 +78,7 @@ namespace Beamable.Common.Api.Events
 		public double score;
 		public long rank;
 		public long secondsRemaining;
+		[Obsolete("endTime is obsolete and will be removed in the future. Use GetEndTime instead.")]
 		public DateTime endTime;
 		public List<EventReward> scoreRewards;
 		public List<EventReward> rankRewards;
@@ -88,8 +89,9 @@ namespace Beamable.Common.Api.Events
 
 		public void Init()
 		{
-			long secondsToAdd = allPhases.Sum(t => t.durationSeconds);
-			endTime = GetStartDate().AddSeconds(secondsToAdd);
+#pragma warning disable CS0618 // Type or member is obsolete
+			endTime = GetEndDate();
+#pragma warning restore CS0618 // Type or member is obsolete
 		}
 		
 		public DateTime GetStartDate()
@@ -104,6 +106,9 @@ namespace Beamable.Common.Api.Events
 
 			return dateTime;
 		}
+
+		public DateTime GetEndDate() => GetStartDate().AddSeconds(allPhases.Sum(t => t.durationSeconds));
+
 	}
 
 	[Serializable]
