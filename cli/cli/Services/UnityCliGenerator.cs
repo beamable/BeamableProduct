@@ -367,7 +367,7 @@ public class UnityCliGenerator : ICliGenerator
 			{
 				Name = $"On{result.channel.Capitalize()}{result.runtimeType.Name}",
 				Attributes = MemberAttributes.Public,
-				ReturnType = type.BaseTypes[0]
+				ReturnType = new CodeTypeReference(type.Name)
 			};
 
 			var argTypeRef = new CodeTypeReference($"System.Action<ReportDataPoint<{GetResultClassName(result.runtimeType)}>>");
