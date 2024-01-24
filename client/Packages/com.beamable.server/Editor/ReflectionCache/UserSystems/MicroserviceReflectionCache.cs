@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.BeamCli;
 using Beamable.Common.Reflection;
 using Beamable.Common.Runtime;
 using Beamable.Editor.Environment;

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Beamable.Common.BeamCli.Contracts
 {
@@ -8,5 +9,6 @@ namespace Beamable.Common.BeamCli.Contracts
 		public string name;
 		public string dockerBuildPath;
 		public string dockerfilePath;
+		public List<string> dependencies;
 	}
 }

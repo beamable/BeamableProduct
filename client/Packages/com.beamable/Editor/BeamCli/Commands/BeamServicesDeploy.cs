@@ -97,14 +97,19 @@ namespace Beamable.Editor.BeamCli.Commands
 	}
 	public class ServicesDeployWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
-		public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamServiceDeployReportResult(System.Action<ReportDataPoint<BeamServiceDeployReportResult>> cb)
+		public virtual ServicesDeployWrapper OnStreamServiceDeployReportResult(System.Action<ReportDataPoint<BeamServiceDeployReportResult>> cb)
 		{
 			this.Command.On("stream", cb);
 			return this;
 		}
-		public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnRemote_progressServiceRemoteDeployProgressResult(System.Action<ReportDataPoint<BeamServiceRemoteDeployProgressResult>> cb)
+		public virtual ServicesDeployWrapper OnRemote_progressServiceRemoteDeployProgressResult(System.Action<ReportDataPoint<BeamServiceRemoteDeployProgressResult>> cb)
 		{
 			this.Command.On("remote_progress", cb);
+			return this;
+		}
+		public virtual ServicesDeployWrapper OnLogsServiceDeployLogResult(System.Action<ReportDataPoint<BeamServiceDeployLogResult>> cb)
+		{
+			this.Command.On("logs", cb);
 			return this;
 		}
 	}

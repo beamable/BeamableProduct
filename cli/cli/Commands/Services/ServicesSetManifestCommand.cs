@@ -12,6 +12,7 @@ public class ServicesSetManifestCommandArgs : CommandArgs
 	public List<string> localHttpBuildContextPaths;
 	public List<string> localHttpRelativeDockerfilePaths;
 	public List<string> storageDependencies;
+	public List<string> shouldServiceBeEnabled;
 }
 
 
@@ -54,6 +55,13 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 			AllowMultipleArgumentsPerToken = true
 		};
 		AddOption(storageDeps, (x, i) => x.storageDependencies = i);
+
+		var shouldBeEnabled = new Option<List<string>>("--should-be-enable", "If this service should be enable on remote")
+		{
+			Arity = ArgumentArity.ZeroOrMore,
+			AllowMultipleArgumentsPerToken = true
+		};
+		AddOption(shouldBeEnabled, (x, i) => x.shouldServiceBeEnabled = i);
 	}
 
 	public override async Task Handle(ServicesSetManifestCommandArgs args)
@@ -63,7 +71,8 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 		args.BeamoLocalSystem.BeamoManifest.Clear();
 
 		var arityMatch = (args.localHttpRelativeDockerfilePaths.Count == args.localHttpNames.Count) &&
-						 (args.localHttpRelativeDockerfilePaths.Count == args.localHttpBuildContextPaths.Count);
+						 (args.localHttpRelativeDockerfilePaths.Count == args.localHttpBuildContextPaths.Count) &&
+						 (args.localHttpRelativeDockerfilePaths.Count == args.shouldServiceBeEnabled.Count);
 		if (!arityMatch)
 		{
 			throw new CliException("Invalid service count, must have equal parameter counts");
@@ -104,16 +113,30 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 			var name = args.localHttpNames[i];
 			var contextPath = args.localHttpBuildContextPaths[i];
 			var dockerPath = args.localHttpRelativeDockerfilePaths[i];
+			var shouldBeEnabled = true;
+
+			try
+			{
+				shouldBeEnabled = bool.Parse(args.shouldServiceBeEnabled[i]);
+			}
+			catch
+			{
+				//Do nothing, something that can't be formatted to bool was passed, in that case leave it to be the default
+				Log.Debug($"No valid value for shouldServiceBeEnabled was passed. Using default of {shouldBeEnabled} for service {name}");
+			}
 
 			Log.Debug($"name=[{name}] path=[{contextPath}] dockerfile=[{dockerPath}]");
 
 			var serviceStorages = storages.Where(pair => pair.Value.Contains(name)).Select(pair => pair.Key).ToArray();
 
+
+
 			var sd = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(name,
 				contextPath,
 				dockerPath,
 				serviceStorages,
-				CancellationToken.None);
+				CancellationToken.None,
+				shouldBeEnabled);
 		}
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
 	}
