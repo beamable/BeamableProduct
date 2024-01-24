@@ -15,7 +15,7 @@ public class DataReporterService : IDataReporterService
 	private readonly IAppContext _appContext;
 
 	private bool _alreadySentFirstMessage;
-	
+
 	public DataReporterService(IAppContext appContext)
 	{
 		_appContext = appContext;
@@ -28,14 +28,14 @@ public class DataReporterService : IDataReporterService
 		{
 			return;
 		}
-		
+
 		// the reporter use stdout, so that messages may be easily piped into other processes. 
 		if (_alreadySentFirstMessage)
 		{
 			// print out a delimiter.
 			Console.Out.WriteLine(Reporting.MESSAGE_DELIMITER);
 		}
-		
+
 		Console.Out.WriteLine(rawMessage);
 		_alreadySentFirstMessage = true;
 	}

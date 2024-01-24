@@ -46,7 +46,7 @@ public static class ResultStreamExtensions
 	}
 
 	[Obsolete("AtomicCommands should not use this function")]
-	public static void SendResults<TArgs, TResult>(this AtomicCommand<TArgs, TResult> self, TResult _) 
+	public static void SendResults<TArgs, TResult>(this AtomicCommand<TArgs, TResult> self, TResult _)
 		where TArgs : CommandArgs
 		where TResult : new()
 	{
@@ -79,7 +79,7 @@ public abstract class StreamCommand<TArgs, TResult> : AppCommand<TArgs>,
 		IResultSteam<DefaultStreamResultChannel, TResult> self = this;
 		self.Reporter.Report(_channel.ChannelName, result);
 	}
-	
+
 	public Type ResultType => typeof(TResult);
 	public object CreateEmptyInstance()
 	{
@@ -109,7 +109,7 @@ public abstract class AtomicCommand<TArgs, TResult> : AppCommand<TArgs>, IResult
 	{
 		var result = await GetResult(args);
 		if (result == null) return;
-		
+
 		var reporter = args.Provider.GetService<IDataReporterService>();
 		reporter.Report(_channel.ChannelName, result);
 	}

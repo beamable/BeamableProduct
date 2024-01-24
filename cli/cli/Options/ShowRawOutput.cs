@@ -15,6 +15,6 @@ public class ShowPrettyOutput : Option<bool>
 	public ShowPrettyOutput()
 		: base("--pretty", "Output syntax highlighted box text. This happens by default when the command is not piped")
 	{
-		
+
 	}
 }

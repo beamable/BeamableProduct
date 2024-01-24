@@ -14,7 +14,7 @@ public class RealmConfigRemoveCommandArgs : CommandArgs
 	public List<string> keys = new();
 }
 
-public class RealmConfigRemoveCommand : AtomicCommand<RealmConfigRemoveCommandArgs,RealmConfigData>
+public class RealmConfigRemoveCommand : AtomicCommand<RealmConfigRemoveCommandArgs, RealmConfigData>
 {
 	public RealmConfigRemoveCommand() : base("remove", "Remove realm config values") { }
 
@@ -60,7 +60,7 @@ public class RealmConfigRemoveCommand : AtomicCommand<RealmConfigRemoveCommandAr
 	private async Task<RealmConfigData> DisplayRealmConfig(RealmConfigRemoveCommandArgs args, [CanBeNull] RealmConfigData data = null)
 	{
 		data ??= await GetRealmConfig(args);
-		
+
 		var json = JsonConvert.SerializeObject(data.ConvertToView());
 		if (args.plainOutput)
 		{
