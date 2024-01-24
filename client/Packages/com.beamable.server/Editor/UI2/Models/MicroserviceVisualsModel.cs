@@ -85,7 +85,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 		[SerializeField] private bool _areLogsAttached = true;
 		private IBeamoServiceDefinition _serviceDefinition;
 
-		private void HandleLogMessage(string serviceName, BeamTailLogMessage log)
+		private void HandleLogMessage(string serviceName, BeamTailLogMessageForClient log)
 		{
 			if (serviceName == _name && !string.IsNullOrWhiteSpace(log.message))
 			{
@@ -106,7 +106,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 			BeamEditorContext.Default.ServiceScope.GetService<CodeService>().OnLogMessage += HandleLogMessage;
 		}
 
-		static LogMessage FromBeamTailLog(BeamTailLogMessage message)
+		static LogMessage FromBeamTailLog(BeamTailLogMessageForClient message)
 		{
 			LogLevel logLevel;
 			switch (message.logLevel.ToLowerInvariant())

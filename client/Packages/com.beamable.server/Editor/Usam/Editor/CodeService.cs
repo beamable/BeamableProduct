@@ -26,7 +26,7 @@ namespace Beamable.Server.Editor.Usam
 		private readonly DotnetService _dotnetService;
 
 		public Promise OnReady { get; private set; }
-		public Action<string, BeamTailLogMessage> OnLogMessage;
+		public Action<string, BeamTailLogMessageForClient> OnLogMessage;
 		public bool IsDockerRunning { get; private set; }
 
 		public List<IBeamoServiceDefinition> ServiceDefinitions { get; private set; } =
@@ -390,7 +390,7 @@ namespace Beamable.Server.Editor.Usam
 					service = new ServiceName(definition.BeamoId),
 					reconnect = true
 				});
-				logs.OnStreamTailLogMessage(point =>
+				logs.OnStreamTailLogMessageForClient(point =>
 				{
 					_dispatcher.Schedule(() => OnLogMessage?.Invoke(definition.BeamoId, point.data));
 				});
