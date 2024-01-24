@@ -50,7 +50,7 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public class ServicesPromoteWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamManifestChecksums(System.Action<ReportDataPoint<BeamManifestChecksums>> cb)
+        public virtual ServicesPromoteWrapper OnStreamManifestChecksums(System.Action<ReportDataPoint<BeamManifestChecksums>> cb)
         {
             this.Command.On("stream", cb);
             return this;

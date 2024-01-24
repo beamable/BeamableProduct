@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Common.BeamCli;
 using Beamable.Editor.UI.Model;
 using Beamable.Serialization.SmallerJSON;
 using System;

@@ -14,6 +14,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public string[] localHttpDockerFiles;
         /// <summary>Local http service required storage, use format <service-name>:<storage-name></summary>
         public string[] storageDependencies;
+        /// <summary>If this service should be enable on remote</summary>
+        public string[] shouldBeEnable;
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
         {
@@ -53,6 +55,15 @@ namespace Beamable.Editor.BeamCli.Commands
                 {
                     // The parameter allows multiple values
                     genBeamCommandArgs.Add(("--storage-dependencies=" + this.storageDependencies[i]));
+                }
+            }
+            // If the shouldBeEnable value was not default, then add it to the list of args.
+            if ((this.shouldBeEnable != default(string[])))
+            {
+                for (int i = 0; (i < this.shouldBeEnable.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--should-be-enable=" + this.shouldBeEnable[i]));
                 }
             }
             string genBeamCommandStr = "";

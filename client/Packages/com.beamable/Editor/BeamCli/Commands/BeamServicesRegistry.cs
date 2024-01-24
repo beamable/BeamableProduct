@@ -41,7 +41,7 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public class ServicesRegistryWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamServicesRegistryOutput(System.Action<ReportDataPoint<BeamServicesRegistryOutput>> cb)
+        public virtual ServicesRegistryWrapper OnStreamServicesRegistryOutput(System.Action<ReportDataPoint<BeamServicesRegistryOutput>> cb)
         {
             this.Command.On("stream", cb);
             return this;

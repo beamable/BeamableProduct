@@ -40,7 +40,7 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public class ConfigWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamConfigCommandResult(System.Action<ReportDataPoint<BeamConfigCommandResult>> cb)
+        public virtual ConfigWrapper OnStreamConfigCommandResult(System.Action<ReportDataPoint<BeamConfigCommandResult>> cb)
         {
             this.Command.On("stream", cb);
             return this;

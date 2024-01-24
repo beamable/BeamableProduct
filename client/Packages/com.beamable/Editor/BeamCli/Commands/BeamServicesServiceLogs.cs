@@ -49,7 +49,7 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public class ServicesServiceLogsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamGetSignedUrlResponse(System.Action<ReportDataPoint<BeamGetSignedUrlResponse>> cb)
+        public virtual ServicesServiceLogsWrapper OnStreamGetSignedUrlResponse(System.Action<ReportDataPoint<BeamGetSignedUrlResponse>> cb)
         {
             this.Command.On("stream", cb);
             return this;

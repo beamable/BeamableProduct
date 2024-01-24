@@ -41,7 +41,7 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public class ServicesUploadApiWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual Beamable.Common.BeamCli.BeamCommandWrapper OnStreamServicesUploadApiOutput(System.Action<ReportDataPoint<BeamServicesUploadApiOutput>> cb)
+        public virtual ServicesUploadApiWrapper OnStreamServicesUploadApiOutput(System.Action<ReportDataPoint<BeamServicesUploadApiOutput>> cb)
         {
             this.Command.On("stream", cb);
             return this;
