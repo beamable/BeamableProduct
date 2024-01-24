@@ -26,6 +26,8 @@ namespace Beamable.Editor.Dotnet
 
 		protected int _exitCode = -1;
 
+		private bool _purposelyBeingExited;
+
 		private void ProcessStandardOut(string message)
 		{
 			if (message == null) return;
@@ -37,6 +39,11 @@ namespace Beamable.Editor.Dotnet
 			if (data == null) return;
 			if (!AutoLogErrors) return;
 			UnityEngine.Debug.LogError(data);
+		}
+
+		public void SetPurposelyExit()
+		{
+			_purposelyBeingExited = true;
 		}
 
 		public async Promise Run(string command)
@@ -137,8 +144,9 @@ namespace Beamable.Editor.Dotnet
 					   });
 						await p;
 
-						if (_exitCode != 0)
+						if (_exitCode != 0 && !_purposelyBeingExited)
 						{
+							_purposelyBeingExited = false;
 							throw new Exception("Cli failed");
 						}
 					}

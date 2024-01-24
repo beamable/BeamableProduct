@@ -204,7 +204,7 @@ namespace Beamable.Editor.BeamCli
 			if (delimIndex > -1)
 			{
 				var buffer = _messageBuffer.Substring(0, delimIndex);
-				_messageBuffer = _messageBuffer.Substring(delimIndex + Reporting.MESSAGE_DELIMITER.Length + 1);
+				_messageBuffer = _messageBuffer.Substring(delimIndex + Reporting.MESSAGE_DELIMITER.Length);
 				TryParseMessage(buffer);
 			}
 		}

@@ -301,7 +301,16 @@ namespace Beamable.Server.Editor.Usam
 			buildCommand = $"run --project {microserviceFullPath}";
 
 			LogVerbose($"Running service: {id} using command: {buildCommand}");
-			await _dotnetService.Run(buildCommand); //TODO check: how to stop this?
+			_ = _dotnetService.Run(buildCommand);
+			
+			var def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(id));
+				
+			def?.Builder.OnStartingProgress?.Invoke((int)100, 100);
+			def?.Builder.OnStartingFinished?.Invoke(true);
+			if (def != null)
+			{
+				def.Builder.IsRunning = true;
+			}
 		}
 
 		/// <summary>
@@ -606,6 +615,28 @@ namespace Beamable.Server.Editor.Usam
 					LogVerbose($"Beam Error accessing {directoryPath}: {ex.Message}", true);
 				}
 			}
+		}
+
+		public Promise StopStandaloneMicroservice(IEnumerable<string> beamoIds)
+		{
+			foreach (string id in beamoIds)
+			{
+				//This is a bit ugly, happens that the C#MS running process name are their ids
+				// Is there a better way to handle this?
+				_dotnetService.SetPurposelyExit();
+				foreach (Process process in Process.GetProcessesByName(id))
+				{
+					process.Kill();
+				}
+				
+				var def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(id));
+				if (def != null)
+				{
+					def.Builder.IsRunning = false;
+				}
+			}
+
+			return Promise.Success;
 		}
 
 		public async Promise Stop(IEnumerable<string> beamoIds)

@@ -15,13 +15,12 @@ namespace Beamable.Editor.UI.Model
 
 		public Task TryToStart()
 		{
-			//return CodeService.Run(new[] { BeamoId }).TaskFromPromise();
 			return CodeService.RunStandaloneMicroservice(BeamoId).TaskFromPromise();
 		}
 
 		public Task TryToStop()
 		{
-			return CodeService.Stop(new[] { BeamoId }).TaskFromPromise();
+			return CodeService.StopStandaloneMicroservice(new[] { BeamoId }).TaskFromPromise();
 		}
 
 		public Task TryToRestart()
