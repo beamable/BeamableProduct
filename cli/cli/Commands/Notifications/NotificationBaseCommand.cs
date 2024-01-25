@@ -2,7 +2,7 @@ namespace cli.Notifications;
 
 public class NotificationCommandArgs : CommandArgs
 {
-	
+
 }
 public class NotificationBaseCommand : AppCommand<NotificationCommandArgs>
 {
