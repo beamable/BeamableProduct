@@ -286,9 +286,14 @@ namespace Beamable.Server.Editor.Usam
 
 			var service = _services.FirstOrDefault(s => s.name == id);
 
-			var microserviceProjectPath = Path.Combine(service.assetRelativePath, service.relativeProjectFile);
+			if (service == null)
+			{
+				LogVerbose($"The service {id} is not listed.", true);
+				return;
+			}
+;
 			var beamPath = BeamCliUtil.CLI_PATH.Replace(".dll", "");
-			var buildCommand = $"build \"{microserviceProjectPath}\" /p:BeamableTool={beamPath} /p:GenerateClientCode=false";
+			var buildCommand = $"build \"{service.SolutionPath}\" /p:BeamableTool={beamPath} /p:GenerateClientCode=false";
 			
 			//Environment.SetEnvironmentVariable("BEAM_PATH", beamPath);
 			Environment.SetEnvironmentVariable("DOTNET_RUNNING_ON_ENGINE", "true");
@@ -297,7 +302,7 @@ namespace Beamable.Server.Editor.Usam
 			LogVerbose($"Starting build service: {id} using command: {buildCommand}");
 			await _dotnetService.Run(buildCommand);
 			LogVerbose($"BEAM PATH: {beamPath}");
-			var microserviceFullPath = Path.GetFullPath(Path.Combine(service.assetRelativePath, id));
+			var microserviceFullPath = Path.GetFullPath(service.CsprojPath);
 			buildCommand = $"run --project {microserviceFullPath}";
 
 			LogVerbose($"Running service: {id} using command: {buildCommand}");

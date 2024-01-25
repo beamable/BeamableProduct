@@ -457,12 +457,8 @@ namespace Beamable.Server
         /// <returns></returns>
         public static string GetBeamProgram()
         {
-	        var inEngine = Environment.GetEnvironmentVariable("DOTNET_RUNNING_ON_ENGINE") == "true";
-
-	        if (inEngine)
-	        {
-		        return Environment.GetEnvironmentVariable("BEAM_PATH");
-	        }
+	        var beamPathOverride = Environment.GetEnvironmentVariable("BEAM_PATH");
+	        if ( !String.IsNullOrEmpty(beamPathOverride) ) return beamPathOverride;
 	        
 	        if (TryFindBeamableFolder(out var beamableFolderPath))
 	        {
