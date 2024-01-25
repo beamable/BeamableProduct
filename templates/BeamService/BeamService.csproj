@@ -34,7 +34,7 @@
     </PropertyGroup>
 
     <!-- After the build completes, we should auto-generate client code to any linked projects -->
-    <Target Name="generate-client" AfterTargets="Build" Condition="$(GenerateClientCode)==true AND $(DOTNET_RUNNING_IN_CONTAINER)!=true">
+    <Target Name="generate-client" AfterTargets="Build" Condition="$(GenerateClientCode)==true AND $(DOTNET_RUNNING_IN_CONTAINER)!=true AND $(DOTNET_RUNNING_ON_ENGINE)!=true">
         <Message Text="Generating client files..." Importance="high" />
         <Exec Command="$(BeamableTool) project generate-client $(OutDir)/$(AssemblyName).dll --output-links" />
     </Target>
