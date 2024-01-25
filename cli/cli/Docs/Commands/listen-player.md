@@ -14,3 +14,12 @@ Only realms with beam notifications are supported. This realm currently has pubn
 Try setting the realm config to beam with this command, 
 ""beam config realm set --key-values 'notification|publisher::beamable'""
 ```
+
+To get started with the command, make sure you have the [CLI configured](doc:cli-getting-started),
+and an available player. 
+
+1. Run `beam me` to get access to the player's `playerId`. 
+2. Use the portal, and navigate to the player's inventory page.
+3. Run `beam listen player`, and leave the program running. This starts the listening process.
+4. On the portal, change the player's currency value. Alternatively, send the player some mail.
+5. On the console, notice the event is received. 
