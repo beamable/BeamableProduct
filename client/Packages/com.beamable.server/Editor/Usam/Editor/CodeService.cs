@@ -295,18 +295,15 @@ namespace Beamable.Server.Editor.Usam
 			var beamPath = BeamCliUtil.CLI_PATH.Replace(".dll", "");
 			var buildCommand = $"build \"{service.SolutionPath}\" /p:BeamableTool={beamPath} /p:GenerateClientCode=false";
 			
-			//Environment.SetEnvironmentVariable("BEAM_PATH", beamPath);
-			Environment.SetEnvironmentVariable("DOTNET_RUNNING_ON_ENGINE", "true");
 			Environment.SetEnvironmentVariable("BEAM_PATH", beamPath);
 
 			LogVerbose($"Starting build service: {id} using command: {buildCommand}");
 			await _dotnetService.Run(buildCommand);
-			LogVerbose($"BEAM PATH: {beamPath}");
 			var microserviceFullPath = Path.GetFullPath(service.CsprojPath);
-			buildCommand = $"run --project {microserviceFullPath}";
+			var runCommand = $"run --project {microserviceFullPath} --property:CopyToLinkedProjects=false;GenerateClientCode=false";
 
-			LogVerbose($"Running service: {id} using command: {buildCommand}");
-			_ = _dotnetService.Run(buildCommand);
+			LogVerbose($"Running service: {id} using command: {runCommand}");
+			_ = _dotnetService.Run(runCommand);
 			
 			var def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(id));
 				
