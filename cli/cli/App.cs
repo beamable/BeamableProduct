@@ -53,7 +53,7 @@ public class App
 		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
 
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
-		configureLogger ??= config => 
+		configureLogger ??= config =>
 			config.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss:ffff} {Level:u3}] {Message:lj}{NewLine}{Exception}", standardErrorFromLevel: LogEventLevel.Verbose)
 				.MinimumLevel.ControlledBy(LogLevel)
 				.CreateLogger();
@@ -372,11 +372,11 @@ public class App
 
 					var genArgs = subInterface.GetGenericArguments();
 					resultStreamTypeArgs.Add(genArgs);
-					
+
 				}
 
 				if (resultStreamTypeArgs.Count == 0) break;
-				
+
 				// okay, there is an undocumented result stream.
 
 				context.Output.WriteLine("Raw Output:");
@@ -386,14 +386,14 @@ public class App
 					var dataType = resultStream[1];
 
 					var channelInstance = (IResultChannel)Activator.CreateInstance(channelType);
-					
+
 					context.Output.WriteLine($"  Returns a stream of {dataType.Name} objects on the {channelInstance.ChannelName} stream, which each may resemble the following...");
 					var resultStreamData = new ReportDataPoint { data = Activator.CreateInstance(dataType), type = channelInstance.ChannelName, ts = DateTimeOffset.Now.ToUnixTimeMilliseconds() };
 					var resultStreamJson = JsonConvert.SerializeObject(resultStreamData, Formatting.Indented);
 					context.Output.WriteLine("  " + resultStreamJson.ReplaceLineEndings("\n  "));
 					context.Output.WriteLine("  ");
 				}
-				
+
 				break;
 		}
 	}

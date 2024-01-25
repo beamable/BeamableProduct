@@ -31,7 +31,7 @@ public class RealmConfigCommand : AtomicCommand<RealmConfigCommandArgs, RealmCon
 		try
 		{
 			var data = await args.RealmsApi.GetRealmConfig();
-			
+
 			var json = JsonConvert.SerializeObject(data.ConvertToView(args.namespaces));
 			if (args.plainOutput)
 			{

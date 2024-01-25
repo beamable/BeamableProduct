@@ -84,7 +84,7 @@ public class UnityCliGenerator : ICliGenerator
 		{
 			var curr = toExplore.Dequeue();
 			if (output.Contains(curr)) continue; // we have already seen this type.
-			
+
 			var assembly = curr.Assembly;
 			if (assembly != validAssembly) continue; // skip this type, it cannot be generated.
 			var fields = UnityJsonContractResolver.GetSerializedFields(curr);
@@ -157,7 +157,7 @@ public class UnityCliGenerator : ICliGenerator
 
 		return new CodeTypeReference(runtimeType);
 	}
-	
+
 	public static string GetResultClassName(Type runtimeType)
 	{
 		if (runtimeType.Namespace.StartsWith("Beamable.Common"))
