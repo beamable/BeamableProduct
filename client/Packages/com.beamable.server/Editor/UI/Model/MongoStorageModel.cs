@@ -1,4 +1,5 @@
-﻿using Beamable.Editor.UI.Components;
+﻿using Beamable.Common;
+using Beamable.Editor.UI.Components;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.ManagerClient;
 using System;
@@ -53,8 +54,8 @@ namespace Beamable.Editor.UI.Model
 
 		public Action<ServiceStorageReference> OnRemoteReferenceEnriched;
 
-		public override event Action<Task> OnStart;
-		public override event Action<Task> OnStop;
+		public override event Action<Promise> OnStart;
+		public override event Action<Promise> OnStop;
 
 		public static MongoStorageModel CreateNew(StorageObjectDescriptor descriptor, MicroservicesDataModel dataModel)
 		{
@@ -68,14 +69,14 @@ namespace Beamable.Editor.UI.Model
 			};
 		}
 
-		public override Task Start()
+		public override Promise Start()
 		{
 			OnLogsAttached?.Invoke();
 			var task = ServiceBuilder.TryToStart();
 			OnStart?.Invoke(task);
 			return task;
 		}
-		public override Task Stop()
+		public override Promise Stop()
 		{
 			var task = ServiceBuilder.TryToStop();
 			OnStop?.Invoke(task);

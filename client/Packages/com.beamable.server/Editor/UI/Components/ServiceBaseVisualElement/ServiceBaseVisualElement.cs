@@ -274,7 +274,7 @@ namespace Beamable.Editor.Microservice.UI.Components
                 StyleValue<float>.Create(DETACHED_HEIGHT);
 #endif
 		}
-		protected virtual void SetupProgressBarForStart(Task task)
+		protected virtual void SetupProgressBarForStart(Promise task)
 		{
 			// We have two ways. Either store reference or return instance as event parameter
 			new RunImageLogParser(_loadingBar, Model.Builder, Model.Name);
@@ -283,10 +283,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			OnServiceStartFailed?.Invoke();
 		}
-		protected virtual void SetupProgressBarForStop(Task task)
+		protected virtual void SetupProgressBarForStop(Promise task)
 		{
 			var parser = new StopImageLogParser(_loadingBar, Model) { OnFailure = OnStopFailed };
-			task?.ContinueWith(_ =>
+			task?.Then(_ =>
 			{
 				_loadingBar.Hidden = true;
 				parser.Kill();
