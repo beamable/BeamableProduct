@@ -23,7 +23,7 @@ public class NotificationServerCommand : StreamCommand<NotificationServerCommand
 {
 
 	public NotificationServerCommand() 
-		: base("server", "listen to server events")
+		: base("server", "Listen to server events")
 	{
 	}
 

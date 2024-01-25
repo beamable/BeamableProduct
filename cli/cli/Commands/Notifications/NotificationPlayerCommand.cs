@@ -39,7 +39,7 @@ class NotificationPlayerModel
 public class NotificationPlayerCommand : StreamCommand<NotificationPlayerCommandArgs, NotificationPlayerOutput>
 {
 	public NotificationPlayerCommand()
-		: base("player", "listen for player notifications")
+		: base("player", "Listen for player notifications")
 	{
 	}
 

@@ -6,7 +6,7 @@ public class NotificationCommandArgs : CommandArgs
 }
 public class NotificationBaseCommand : AppCommand<NotificationCommandArgs>
 {
-	public NotificationBaseCommand() : base("listen", "listen to events")
+	public NotificationBaseCommand() : base("listen", "Listen to events")
 	{
 	}
 
