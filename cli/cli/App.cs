@@ -11,6 +11,7 @@ using cli.Content;
 using cli.Content.Tag;
 using cli.Docs;
 using cli.Dotnet;
+using cli.Notifications;
 using cli.Services;
 using cli.Services.Content;
 using cli.Unreal;
@@ -188,6 +189,10 @@ public class App
 		Commands.AddRootCommand<OpenAPICommand, OpenAPICommandArgs>();
 		Commands.AddCommand<GenerateSdkCommand, GenerateSdkCommandArgs, OpenAPICommand>();
 		Commands.AddCommand<DownloadOpenAPICommand, DownloadOpenAPICommandArgs, OpenAPICommand>();
+		
+		Commands.AddRootCommand<NotificationBaseCommand, NotificationCommandArgs>();
+		Commands.AddCommand<NotificationServerCommand, NotificationServerCommandArgs, NotificationBaseCommand>();
+		Commands.AddCommand<NotificationPlayerCommand, NotificationPlayerCommandArgs, NotificationBaseCommand>();
 
 		Commands.AddRootCommand<ProfilingCommand, ProfilingCommandArgs>();
 		Commands.AddCommand<CheckCountersCommand, CheckCountersCommandArgs, ProfilingCommand>();

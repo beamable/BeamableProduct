@@ -5,6 +5,7 @@ using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Server.Common;
 using Newtonsoft.Json;
+using Serilog;
 using System.Text;
 
 namespace cli;
@@ -33,7 +34,7 @@ public class CliRequester : IRequester
 	public async Promise<T> CustomRequest<T>(Method method, string uri, object body = null, bool includeAuthHeader = true,
 										  Func<string, T> parser = null, bool customerScoped = false, IEnumerable<string> customHeaders = null)
 	{
-		BeamableLogger.Log($"{method} call: {uri}");
+		Log.Verbose($"{method} call: {uri}");
 
 		using HttpClient client = GetClient(includeAuthHeader, AccessToken?.Pid ?? Pid, AccessToken?.Cid ?? Cid, AccessToken, customerScoped);
 		var request = PrepareRequest(method, _ctx.Host, uri, body);
@@ -49,17 +50,17 @@ public class CliRequester : IRequester
 			}
 		}
 
-		CliSerilogProvider.Instance.Debug($"Calling: {request}");
+		Log.Verbose($"Calling: {request}");
 
 		if (_ctx.IsDryRun)
 		{
-			BeamableLogger.Log($"DRYRUN ENABLED: NO NETWORKING ALLOWED.");
+			Log.Verbose($"DRYRUN ENABLED: NO NETWORKING ALLOWED.");
 			return default(T);
 		}
 
 		var result = await client.SendAsync(request);
 
-		CliSerilogProvider.Instance.Debug($"RESULT: {result}");
+		Log.Verbose($"RESULT: {result}");
 
 		if (!result.IsSuccessStatusCode)
 		{
