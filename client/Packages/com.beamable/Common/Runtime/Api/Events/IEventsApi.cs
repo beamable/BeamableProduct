@@ -94,12 +94,12 @@ namespace Beamable.Common.Api.Events
 			endTime = GetEndDate();
 #pragma warning restore CS0618 // Type or member is obsolete
 		}
-		
+
 		public DateTime GetStartDate()
 		{
 			int index = id.LastIndexOf(".", StringComparison.InvariantCultureIgnoreCase);
 
-			if (index > 0 && long.TryParse(id.Substring(index+1), out long startTimestamp))
+			if (index > 0 && long.TryParse(id.Substring(index + 1), out long startTimestamp))
 			{
 				return UNIX_DAWN_OF_TIME.AddMilliseconds(startTimestamp);
 			}
