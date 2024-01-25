@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Using a Beam CLI built from source in Unity will provide more helpful logs in case of failures
 - Renaming content in newer Unity versions works correctly
 - `ContentCache` now updates content tags after deserializing content.
+- Fixed `EventView` end time calculation.
 
 ### Removed
 
@@ -33,6 +34,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Theme Manager
 - Beamable Assistant
 - OpenAPI for Chatv2 and Matchmaking
+
+### Changed
+
+- Marked `EventView` `endTime` field as obsolete, suggest using `GetEndTime` method instead.
 
 ## [1.19.11]
 
