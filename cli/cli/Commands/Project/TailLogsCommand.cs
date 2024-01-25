@@ -40,7 +40,7 @@ public class TailLogMessageForClient
 
 	public TailLogMessageForClient()
 	{
-		
+
 	}
 
 	public TailLogMessageForClient(TailLogMessage original)

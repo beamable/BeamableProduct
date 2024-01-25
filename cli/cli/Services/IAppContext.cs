@@ -107,15 +107,15 @@ public class DefaultAppContext : IAppContext
 	{
 		// by default, set logs to INFO
 		App.LogLevel.MinimumLevel = LogEventLevel.Information;
-		
+
 		TextWriter spectreOutput = Console.Error;
 		var invisibleStream = new StringWriter();
 
 		if (ShowRawOutput)
 		{
 			// when --raw is included, there are no logs by default
-			App.LogLevel.MinimumLevel = LogEventLevel.Fatal; 
-			
+			App.LogLevel.MinimumLevel = LogEventLevel.Fatal;
+
 			// the user has asked for raw output, which means by default, pretty must be request.
 			if (ShowPrettyOutput)
 			{
@@ -140,7 +140,7 @@ public class DefaultAppContext : IAppContext
 				spectreOutput = invisibleStream;
 			}
 		}
-		
+
 		if (AnsiConsole.Console.GetType().Assembly == typeof(AnsiConsole).Assembly)
 		{
 			AnsiConsole.Console = AnsiConsole.Create(new AnsiConsoleSettings
@@ -148,7 +148,7 @@ public class DefaultAppContext : IAppContext
 				Out = new AnsiConsoleOutput(spectreOutput)
 			});
 		}
-		
+
 		// Configure log level from option
 		{
 			var logLevelOption = _bindingContext.ParseResult.GetValueForOption(_logOption);
@@ -162,13 +162,13 @@ public class DefaultAppContext : IAppContext
 				App.LogLevel.MinimumLevel = level;
 			}
 			else if (!string.IsNullOrEmpty(_environment.LogLevel) &&
-			         LogUtil.TryParseLogLevel(_environment.LogLevel, out level))
+					 LogUtil.TryParseLogLevel(_environment.LogLevel, out level))
 			{
 				App.LogLevel.MinimumLevel = level;
 			}
 		}
 	}
-	
+
 	public void Apply(BindingContext bindingContext)
 	{
 		_bindingContext = bindingContext;
@@ -186,7 +186,7 @@ public class DefaultAppContext : IAppContext
 
 		SetupOutputStrategy();
 
-		
+
 		_configService.Init(bindingContext);
 
 		if (!_configService.TryGetSetting(out _cid, bindingContext, _cidOption))

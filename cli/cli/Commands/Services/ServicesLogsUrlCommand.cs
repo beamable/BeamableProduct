@@ -53,7 +53,7 @@ public class ServicesLogsUrlCommand : AtomicCommand<ServicesLogsUrlCommandArgs, 
 				await _remoteBeamo.GetLogsUrl(args.BeamoId)
 			);
 
-		
+
 		return PrintResult(response);
 	}
 }

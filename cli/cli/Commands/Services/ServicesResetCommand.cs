@@ -141,7 +141,7 @@ public class ServicesResetCommand : AtomicCommand<ServicesResetCommandArgs, Serv
 					await Task.WhenAll(actualTasks);
 				});
 		}
-		
+
 		_localBeamo.SaveBeamoLocalManifest();
 		_localBeamo.SaveBeamoLocalRuntime();
 		await _localBeamo.StopListeningToDocker();
