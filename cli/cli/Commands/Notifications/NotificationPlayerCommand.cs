@@ -46,7 +46,7 @@ public class NotificationPlayerCommand : StreamCommand<NotificationPlayerCommand
 	public override void Configure()
 	{
 		AddOption(new Option<string>(new string[] { "--context", "-c" }, () => ".*",
-			"a regex to filter for notification channels"), (args, s) => args.contextRegexStr = s);
+			"A regex to filter for notification channels"), (args, s) => args.contextRegexStr = s);
 	}
 
 	public override async Task Handle(NotificationPlayerCommandArgs args)
