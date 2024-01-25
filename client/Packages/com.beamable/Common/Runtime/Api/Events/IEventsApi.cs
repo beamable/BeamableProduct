@@ -72,6 +72,7 @@ namespace Beamable.Common.Api.Events
 	[Serializable]
 	public class EventView
 	{
+		static readonly DateTime UNIX_DAWN_OF_TIME = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 		public string id;
 		public string name;
 		public string leaderboardId;
@@ -97,14 +98,13 @@ namespace Beamable.Common.Api.Events
 		public DateTime GetStartDate()
 		{
 			int index = id.LastIndexOf(".", StringComparison.InvariantCultureIgnoreCase);
-			var dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
 			if (index > 0 && long.TryParse(id.Substring(index+1), out long startTimestamp))
 			{
-				return dateTime.AddMilliseconds(startTimestamp);
+				return UNIX_DAWN_OF_TIME.AddMilliseconds(startTimestamp);
 			}
 
-			return dateTime;
+			return UNIX_DAWN_OF_TIME;
 		}
 
 		public DateTime GetEndDate() => GetStartDate().AddSeconds(allPhases.Sum(t => t.durationSeconds));

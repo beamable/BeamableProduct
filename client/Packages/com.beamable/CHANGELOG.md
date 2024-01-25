@@ -35,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Beamable Assistant
 - OpenAPI for Chatv2 and Matchmaking
 
+### Changed
+
+- Marked `EventView` `endTime` field as obsolete, suggest using `GetEndTime` method instead.
+
 ## [1.19.11]
 
 ### Fixed
