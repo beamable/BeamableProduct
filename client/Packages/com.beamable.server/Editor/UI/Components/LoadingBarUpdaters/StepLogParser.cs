@@ -1,4 +1,5 @@
-﻿using Beamable.Editor.UI.Components;
+﻿using Beamable.Common;
+using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using System.Linq;
 using System.Threading.Tasks;
@@ -9,12 +10,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 	{
 		private readonly IBeamableBuilder _builder;
 		private readonly string _name;
-		private readonly Task _task;
+		private readonly Promise<bool> _task;
 
 		public override string StepText => $"(Building {base.StepText} MS {_name})";
 		public override string ProcessName => $"Building MS {_name}";
 
-		public StepLogParser(ILoadingBar loadingBar, IBeamableBuilder builder, string name, Task task) : base(loadingBar)
+		public StepLogParser(ILoadingBar loadingBar, IBeamableBuilder builder, string name, Promise<bool> task) : base(loadingBar)
 		{
 			_builder = builder;
 			_name = name;
@@ -24,7 +25,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_builder.OnBuildingFinished += HandleBuildingFinished;
 			_builder.OnBuildingProgress += HandleBuildingProgress;
-			task?.ContinueWith(_ => Kill());
+			task?.Then(_ => Kill());
 		}
 
 		private void HandleBuildingProgress(int currentStep, int totalSteps)
@@ -52,7 +53,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		protected override void OnKill()
 		{
-			if (_task?.IsFaulted ?? false)
+			if (_task?.HadAnyErrbacks ?? false)
 			{
 				GotError = true;
 				LoadingBar.UpdateProgress(0f, "(Error)", true);

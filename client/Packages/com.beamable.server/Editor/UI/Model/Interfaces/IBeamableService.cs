@@ -1,4 +1,5 @@
-﻿using Beamable.Editor.Microservice.UI2.Models;
+﻿using Beamable.Common;
+using Beamable.Editor.Microservice.UI2.Models;
 using Beamable.Server.Editor;
 using System;
 using System.Threading.Tasks;
@@ -20,11 +21,11 @@ namespace Beamable.Editor.UI.Model
 		bool IsArchived { get; }
 		Action<float, long, long> OnDeployProgress { get; set; }
 
-		event Action<Task> OnStart;
-		event Action<Task> OnStop;
+		event Action<Promise> OnStart;
+		event Action<Promise> OnStop;
 
 		void Refresh(IDescriptor descriptor);
-		Task Start();
-		Task Stop();
+		Promise Start();
+		Promise Stop();
 	}
 }

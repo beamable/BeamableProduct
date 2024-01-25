@@ -128,20 +128,20 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public override IDescriptor Descriptor =>
 			throw new NotImplementedException("Accumulator doesn't have descriptor");
 #pragma warning disable CS0067
-		public override event Action<Task> OnStart;
-		public override event Action<Task> OnStop;
+		public override event Action<Promise> OnStart;
+		public override event Action<Promise> OnStop;
 #pragma warning restore CS0067
 		public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
 		{
 			// don't do anything.
 		}
 
-		public override Task Start()
+		public override Promise Start()
 		{
 			throw new NotImplementedException();
 		}
 
-		public override Task Stop()
+		public override Promise Stop()
 		{
 			throw new NotImplementedException();
 		}

@@ -89,7 +89,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			base.UpdateLocalStatus();
 			UpdateLocalStatusIcon(_microserviceModel.IsRunning, _microserviceModel.IsBuilding);
 		}
-		private void SetupProgressBarForBuildAndStart(Task task)
+		private void SetupProgressBarForBuildAndStart(Promise task)
 		{
 			var groupLoadingBar = new GroupLoadingBarUpdater("Build and Run", _loadingBar, false,
 															 new StepLogParser(new VirtualLoadingBar(), Model.Builder, Model.Name, null),
@@ -97,7 +97,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			groupLoadingBar.OnKilledEvent += () => HandleProgressFinished(groupLoadingBar.GotError);
 		}
-		private void SetupProgressBarForBuildAndRestart(Task task)
+		private void SetupProgressBarForBuildAndRestart(Promise task)
 		{
 			var groupLoadingBar = new GroupLoadingBarUpdater("Build and Rerun", _loadingBar, false,
 															 new StepLogParser(new VirtualLoadingBar(), Model.Builder, Model.Name, null),
@@ -106,7 +106,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			groupLoadingBar.OnKilledEvent += () => HandleProgressFinished(groupLoadingBar.GotError);
 		}
-		private void SetupProgressBarForBuild(Task task)
+		private void SetupProgressBarForBuild(Promise<bool> task)
 		{
 			new StepLogParser(_loadingBar, Model.Builder, Model.Name, task);
 		}

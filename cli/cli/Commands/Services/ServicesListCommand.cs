@@ -54,13 +54,8 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 		var isDockerRunning = await _localBeamo.CheckIsRunning();
 		var serviceDefinitions = _localBeamo.BeamoManifest.ServiceDefinitions;
 		var localServiceListResult = new ServiceListResult(!args.Remote, isDockerRunning, serviceDefinitions.Count);
-		if (!isDockerRunning)
+		if (!isDockerRunning && !args.Remote)
 		{
-			if (args.Remote)
-			{
-				throw CliExceptions.DOCKER_NOT_RUNNING;
-
-			}
 
 			var table = new Table();
 			var beamoIdColumn = new TableColumn(new Markup("Beam-O Id", columnNameStyle));

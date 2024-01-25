@@ -457,6 +457,9 @@ namespace Beamable.Server
         /// <returns></returns>
         public static string GetBeamProgram()
         {
+	        var beamPathOverride = Environment.GetEnvironmentVariable("BEAM_PATH");
+	        if ( !String.IsNullOrEmpty(beamPathOverride) ) return beamPathOverride;
+	        
 	        if (TryFindBeamableFolder(out var beamableFolderPath))
 	        {
 		        var unityPath = Path.Combine(beamableFolderPath, 
@@ -594,7 +597,9 @@ namespace Beamable.Server
 		            var runningDebugTask = localDebug.Run();
 	            }
 	            
-	            if (!string.Equals(args.SdkVersionExecution, args.SdkVersionBaseBuild))
+	            //In case that SdkVersionExecution is null or empty, we are executing it locally with dotnet and
+	            //therefore getting dependencies through nuget, so not required to check versions mismatch.
+	            if (!string.IsNullOrEmpty(args.SdkVersionExecution) && !string.Equals(args.SdkVersionExecution, args.SdkVersionBaseBuild))
 	            {
 		            Log.Fatal(
 			            "Version mismatch. Image built with {buildVersion}, but is executing with {executionVersion}. This is a fatal mistake.",

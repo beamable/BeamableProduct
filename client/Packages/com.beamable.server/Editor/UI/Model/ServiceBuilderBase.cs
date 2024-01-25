@@ -1,4 +1,5 @@
-﻿using Beamable.Server.Editor;
+﻿using Beamable.Common;
+using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using System;
 using System.Threading.Tasks;
@@ -59,7 +60,7 @@ namespace Beamable.Editor.UI.Model
 
 		protected abstract Task<RunImageCommand> PrepareRunCommand();
 
-		public async Task TryToStart()
+		public async Promise TryToStart()
 		{
 			// if the service is already running; don't do anything.
 			if (IsRunning) return;
@@ -92,7 +93,7 @@ namespace Beamable.Editor.UI.Model
 			}
 		}
 
-		public async Task TryToStop()
+		public async Promise TryToStop()
 		{
 			if (_isStopping) return;
 
@@ -109,7 +110,7 @@ namespace Beamable.Editor.UI.Model
 			}
 		}
 
-		public async Task TryToRestart()
+		public async Promise TryToRestart()
 		{
 			if (IsRunning)
 			{

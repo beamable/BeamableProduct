@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Editor.BeamCli;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -26,6 +27,8 @@ namespace Beamable.Editor.Dotnet
 
 		protected int _exitCode = -1;
 
+		private bool _purposelyBeingExited;
+
 		private void ProcessStandardOut(string message)
 		{
 			if (message == null) return;
@@ -37,6 +40,11 @@ namespace Beamable.Editor.Dotnet
 			if (data == null) return;
 			if (!AutoLogErrors) return;
 			UnityEngine.Debug.LogError(data);
+		}
+
+		public void SetPurposelyExit()
+		{
+			_purposelyBeingExited = true;
 		}
 
 		public async Promise Run(string command)
@@ -58,6 +66,7 @@ namespace Beamable.Editor.Dotnet
 					_process.StartInfo.CreateNoWindow = true;
 					_process.StartInfo.UseShellExecute = false;
 					_process.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
+					_process.StartInfo.Environment.Add("BEAM_PATH", BeamCliUtil.CLI_PATH.Replace(".dll", ""));
 
 					_status = new TaskCompletionSource<int>();
 					_standardOutComplete = new TaskCompletionSource<int>();
@@ -137,8 +146,9 @@ namespace Beamable.Editor.Dotnet
 					   });
 						await p;
 
-						if (_exitCode != 0)
+						if (_exitCode != 0 && !_purposelyBeingExited)
 						{
+							_purposelyBeingExited = false;
 							throw new Exception("Cli failed");
 						}
 					}

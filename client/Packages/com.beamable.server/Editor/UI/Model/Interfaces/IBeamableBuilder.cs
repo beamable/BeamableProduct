@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Beamable.Common;
+using System;
 using System.Threading.Tasks;
 
 namespace Beamable.Editor.UI.Model
@@ -12,8 +13,8 @@ namespace Beamable.Editor.UI.Model
 		Action<bool> OnBuildingFinished { get; set; }
 		bool IsRunning { get; set; }
 		Task CheckIfIsRunning();
-		Task TryToStart();
-		Task TryToStop();
-		Task TryToRestart();
+		Promise TryToStart();
+		Promise TryToStop();
+		Promise TryToRestart();
 	}
 }

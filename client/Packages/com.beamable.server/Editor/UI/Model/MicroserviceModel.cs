@@ -81,11 +81,11 @@ namespace Beamable.Editor.UI.Model
 		public Action<ServiceReference> OnRemoteReferenceEnriched;
 		public Action<ServiceStatus> OnRemoteStatusEnriched;
 
-		public override event Action<Task> OnStart;
-		public override event Action<Task> OnStop;
-		public event Action<Task> OnBuildAndRestart;
-		public event Action<Task> OnBuildAndStart;
-		public event Action<Task> OnBuild;
+		public override event Action<Promise> OnStart;
+		public override event Action<Promise> OnStop;
+		public event Action<Promise> OnBuildAndRestart;
+		public event Action<Promise> OnBuildAndStart;
+		public event Action<Promise<bool>> OnBuild;
 		public event Action<Promise<Unit>> OnDockerLoginRequired;
 
 		public static MicroserviceModel CreateNew(MicroserviceDescriptor descriptor, MicroservicesDataModel dataModel)
@@ -100,14 +100,14 @@ namespace Beamable.Editor.UI.Model
 			};
 		}
 
-		public override Task Start()
+		public override Promise Start()
 		{
 			OnLogsAttached?.Invoke();
 			var task = ServiceBuilder.TryToStart();
 			OnStart?.Invoke(task);
 			return task;
 		}
-		public override Task Stop()
+		public override Promise Stop()
 		{
 			var task = ServiceBuilder.TryToStop();
 			OnStop?.Invoke(task);
@@ -120,19 +120,19 @@ namespace Beamable.Editor.UI.Model
 				OpenLocalDocs();
 		}
 
-		public Task BuildAndRestart()
+		public Promise BuildAndRestart()
 		{
 			var task = ServiceBuilder.TryToBuildAndRestart(IncludeDebugTools);
 			OnBuildAndRestart?.Invoke(task);
 			return task;
 		}
-		public Task BuildAndStart()
+		public Promise BuildAndStart()
 		{
 			var task = ServiceBuilder.TryToBuildAndStart(IncludeDebugTools);
 			OnBuildAndStart?.Invoke(task);
 			return task;
 		}
-		public Task Build()
+		public Promise<bool> Build()
 		{
 			var task = ServiceBuilder.TryToBuild(IncludeDebugTools);
 			OnBuild?.Invoke(task);

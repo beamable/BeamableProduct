@@ -99,7 +99,7 @@ namespace Beamable.Editor.UI.Model
 			return new RunServiceCommand(descriptor, cid, pid, secret, connectionStrings, isWatch, _BuildShouldRunCustomInitializationHooks);
 		}
 
-		public async Task<bool> TryToBuild(bool includeDebuggingTools)
+		public async Promise<bool> TryToBuild(bool includeDebuggingTools)
 		{
 			await TryToStop();
 			if (IsBuilding) return true;
@@ -182,7 +182,7 @@ namespace Beamable.Editor.UI.Model
 				throw;
 			}
 		}
-		public async Task TryToBuildAndRestart(bool includeDebuggingTools)
+		public async Promise TryToBuildAndRestart(bool includeDebuggingTools)
 		{
 			bool isBuilt = await TryToBuild(includeDebuggingTools);
 
@@ -191,7 +191,7 @@ namespace Beamable.Editor.UI.Model
 			else
 				await TryToStop();
 		}
-		public async Task TryToBuildAndStart(bool includeDebuggingTools)
+		public async Promise TryToBuildAndStart(bool includeDebuggingTools)
 		{
 			bool isBuilded = await TryToBuild(includeDebuggingTools);
 
