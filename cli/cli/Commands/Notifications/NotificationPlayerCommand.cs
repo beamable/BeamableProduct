@@ -28,7 +28,7 @@ class NotificationPlayerModel
 	public string messageFull;
 	public string context;
 
-	public NotificationPlayerModel(){}
+	public NotificationPlayerModel() { }
 	public NotificationPlayerModel(string messageFull, string context)
 	{
 		this.messageFull = messageFull;
@@ -52,14 +52,14 @@ public class NotificationPlayerCommand : StreamCommand<NotificationPlayerCommand
 	public override async Task Handle(NotificationPlayerCommandArgs args)
 	{
 		var regex = new Regex(args.contextRegexStr);
-		
-		
+
+
 		var ws = new ClientWebSocket();
 		var cancelToken = new CancellationToken();
 		var config = await args.DependencyProvider.GetService<IRealmsApi>().GetClientDefaults();
-		
+
 		Log.Debug($"provider=[{config.websocketConfig.provider}] url=[{config.websocketConfig.uri.Value}]");
-		
+
 		if (config.websocketConfig.provider == "pubnub")
 		{
 			throw new CliException(
@@ -92,6 +92,6 @@ Try setting the realm config to beam with this command,
 				payload = message.messageFull
 			});
 		}
-		
+
 	}
 }

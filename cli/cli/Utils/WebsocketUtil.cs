@@ -40,7 +40,7 @@ public class WebsocketUtil
 
 		var messageBuffer = Encoding.UTF8.GetBytes(message);
 		var messagesCount = (int)Math.Ceiling((double)messageBuffer.Length / SEND_CHUNK_SIZE);
-		
+
 		for (var i = 0; i < messagesCount; i++)
 		{
 			var offset = (SEND_CHUNK_SIZE * i);

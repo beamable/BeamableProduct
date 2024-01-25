@@ -189,7 +189,7 @@ public class App
 		Commands.AddRootCommand<OpenAPICommand, OpenAPICommandArgs>();
 		Commands.AddCommand<GenerateSdkCommand, GenerateSdkCommandArgs, OpenAPICommand>();
 		Commands.AddCommand<DownloadOpenAPICommand, DownloadOpenAPICommandArgs, OpenAPICommand>();
-		
+
 		Commands.AddRootCommand<NotificationBaseCommand, NotificationCommandArgs>();
 		Commands.AddCommand<NotificationServerCommand, NotificationServerCommandArgs, NotificationBaseCommand>();
 		Commands.AddCommand<NotificationPlayerCommand, NotificationPlayerCommandArgs, NotificationBaseCommand>();

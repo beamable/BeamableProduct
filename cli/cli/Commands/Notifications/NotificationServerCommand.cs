@@ -11,7 +11,7 @@ namespace cli.Notifications;
 
 public class NotificationServerCommandArgs : CommandArgs
 {
-	
+
 }
 
 public class NotificationServerOutput
@@ -22,19 +22,19 @@ public class NotificationServerOutput
 public class NotificationServerCommand : StreamCommand<NotificationServerCommandArgs, NotificationServerOutput>
 {
 
-	public NotificationServerCommand() 
+	public NotificationServerCommand()
 		: base("server", "Listen to server events")
 	{
 	}
 
 	public override void Configure()
 	{
-		
+
 	}
 
 	public override async Task Handle(NotificationServerCommandArgs args)
 	{
-		
+
 		var socketAddress = GetSocketUrl(args.AppContext.Host);
 		var secret = await GetRealmSecret(args);
 		Log.Debug($"Connecting to {socketAddress} / {secret}");
@@ -50,7 +50,7 @@ public class NotificationServerCommand : StreamCommand<NotificationServerCommand
 			var message = await WebsocketUtil.ReadMessage(ws, cancelToken);
 			var messageObj = JsonConvert.DeserializeObject<EventMessage>(message);
 			var bodyJson = JsonConvert.SerializeObject(messageObj.body);
-			Log.Information($"{messageObj.path} -- {bodyJson}" );
+			Log.Information($"{messageObj.path} -- {bodyJson}");
 			SendResults(new NotificationServerOutput
 			{
 				path = messageObj.path,
@@ -81,7 +81,9 @@ public class NotificationServerCommand : StreamCommand<NotificationServerCommand
 		Log.Debug($"Authorizing WS connection at ThreadID = {Thread.CurrentThread.ManagedThreadId}");
 		var nonceRequest = JsonConvert.SerializeObject(new
 		{
-			id = 1, method = "get", path = "gateway/nonce",
+			id = 1,
+			method = "get",
+			path = "gateway/nonce",
 		});
 		Log.Debug($"Sending nonce {nonceRequest}");
 		await WebsocketUtil.SendMessageAsync(ws, nonceRequest, cancellationToken);
@@ -97,7 +99,9 @@ public class NotificationServerCommand : StreamCommand<NotificationServerCommand
 			path = "gateway/auth",
 			body = new
 			{
-				cid, pid, signature = sig
+				cid,
+				pid,
+				signature = sig
 			}
 		});
 		await WebsocketUtil.SendMessageAsync(ws, authRequest, cancellationToken);
@@ -122,7 +126,8 @@ public class NotificationServerCommand : StreamCommand<NotificationServerCommand
 			path = "gateway/provider",
 			body = new
 			{
-				type = "event", evtWhitelist = new string[] { "content.manifest", "realm-config.refresh" }
+				type = "event",
+				evtWhitelist = new string[] { "content.manifest", "realm-config.refresh" }
 			}
 		};
 		var reqJson = JsonConvert.SerializeObject(reqObject);
@@ -131,14 +136,14 @@ public class NotificationServerCommand : StreamCommand<NotificationServerCommand
 		await WebsocketUtil.SendMessageAsync(ws, reqJson, cancelToken);
 		var resultJson = await WebsocketUtil.ReadMessage(ws, cancelToken);
 		Log.Debug($"Received {resultJson}");
-		
+
 		var registerResult = JsonConvert.DeserializeObject<AuthResult>(resultJson);
 		if (registerResult.status != 200)
 		{
 			throw new CliException($"Could not register with Beamable status=[{registerResult.status}]");
 		}
 	}
-	
+
 	private static string GetSocketUrl(string apiUrl)
 	{
 		string url = apiUrl
