@@ -118,7 +118,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_startAll.SetEnabled(IsDockerActive && servicesAmount > 0);
 			_publish.SetEnabled(canPublish);
 			_dependencies.SetEnabled(CanHaveDependencies);
-			_createNew.SetEnabled(IsDockerActive);
 
 			if (!canPublish)
 			{

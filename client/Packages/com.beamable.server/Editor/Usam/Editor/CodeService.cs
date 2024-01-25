@@ -279,7 +279,7 @@ namespace Beamable.Server.Editor.Usam
 			LogVerbose($"Finished creation of service {serviceName}");
 		}
 
-		public async Promise RunStandaloneMicroservice(string id)
+		public Promise RunStandaloneMicroservice(string id)
 		{
 			LogVerbose($"Start generating client code for service: {id}");
 			
@@ -289,16 +289,9 @@ namespace Beamable.Server.Editor.Usam
 			if (service == null)
 			{
 				LogVerbose($"The service {id} is not listed.", true);
-				return;
+				throw new Exception("Service is invalid.");
 			}
-;
-			var beamPath = BeamCliUtil.CLI_PATH.Replace(".dll", "");
-			var buildCommand = $"build \"{service.SolutionPath}\" /p:BeamableTool={beamPath} /p:GenerateClientCode=false";
 			
-			Environment.SetEnvironmentVariable("BEAM_PATH", beamPath);
-
-			LogVerbose($"Starting build service: {id} using command: {buildCommand}");
-			await _dotnetService.Run(buildCommand);
 			var microserviceFullPath = Path.GetFullPath(service.CsprojPath);
 			var runCommand = $"run --project {microserviceFullPath} --property:CopyToLinkedProjects=false;GenerateClientCode=false";
 
@@ -313,6 +306,8 @@ namespace Beamable.Server.Editor.Usam
 			{
 				def.Builder.IsRunning = true;
 			}
+
+			return Promise.Success;
 		}
 
 		/// <summary>

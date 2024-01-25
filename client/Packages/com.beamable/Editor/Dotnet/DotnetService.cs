@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Editor.BeamCli;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -65,6 +66,7 @@ namespace Beamable.Editor.Dotnet
 					_process.StartInfo.CreateNoWindow = true;
 					_process.StartInfo.UseShellExecute = false;
 					_process.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
+					_process.StartInfo.Environment.Add("BEAM_PATH", BeamCliUtil.CLI_PATH.Replace(".dll", ""));
 
 					_status = new TaskCompletionSource<int>();
 					_standardOutComplete = new TaskCompletionSource<int>();
