@@ -13,20 +13,23 @@ namespace Beamable.Editor.UI.Model
 			return Task.CompletedTask;
 		}
 
-		public Task TryToStart()
+		public Promise TryToStart()
 		{
-			return CodeService.RunStandaloneMicroservice(BeamoId).TaskFromPromise();
+			return CodeService.RunStandaloneMicroservice(BeamoId);
 		}
 
-		public Task TryToStop()
+		public Promise TryToStop()
 		{
-			return CodeService.StopStandaloneMicroservice(new[] { BeamoId }).TaskFromPromise();
+			return CodeService.StopStandaloneMicroservice(new[] { BeamoId });
 		}
 
-		public Task TryToRestart()
+		public Promise TryToRestart()
 		{
-			return CodeService.Stop(new[] { BeamoId })
-							  .Map(_ => CodeService.Run(new[] { BeamoId })).TaskFromPromise();
+			return CodeService.StopStandaloneMicroservice(new[] { BeamoId })
+							  .Then(p =>
+							  {
+								  _ = CodeService.RunStandaloneMicroservice(BeamoId);
+							  }).ToPromise();
 		}
 		public string BeamoId { get; set; }
 		public Action<bool> OnIsRunningChanged { get; set; }

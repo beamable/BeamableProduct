@@ -83,12 +83,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 			UpdateRemoteStatusIcon();
 		}
 
-		protected override void SetupProgressBarForStart(Task _)
+		protected override void SetupProgressBarForStart(Promise _)
 		{
 			// left blank for no loading bar
 		}
 
-		protected override void SetupProgressBarForStop(Task _)
+		protected override void SetupProgressBarForStop(Promise _)
 		{
 			// left blank for no loading bar
 		}

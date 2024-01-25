@@ -1,4 +1,5 @@
-﻿using Beamable.Editor.Microservice.UI2.Models;
+﻿using Beamable.Common;
+using Beamable.Editor.Microservice.UI2.Models;
 using Beamable.Server.Editor;
 using System;
 using System.IO;
@@ -73,8 +74,8 @@ namespace Beamable.Editor.UI.Model
 		public Action OnSortChanged { get; set; }
 		public Action<float, long, long> OnDeployProgress { get; set; }
 
-		public abstract event Action<Task> OnStart;
-		public abstract event Action<Task> OnStop;
+		public abstract event Action<Promise> OnStart;
+		public abstract event Action<Promise> OnStop;
 
 		public void DetachLogs()
 		{
@@ -94,8 +95,8 @@ namespace Beamable.Editor.UI.Model
 
 		public abstract void PopulateMoreDropdown(ContextualMenuPopulateEvent evt);
 		public abstract void Refresh(IDescriptor descriptor);
-		public abstract Task Start();
-		public abstract Task Stop();
+		public abstract Promise Start();
+		public abstract Promise Stop();
 
 		public async void Archive(bool deleteAllFiles)
 		{
