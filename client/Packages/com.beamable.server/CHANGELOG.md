@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Microservices with `.dll` references will match based on filename, instead of first matching suffix. This fixes a common `Newtonsoft.Json` collision between Unity.Plastic and Unity.Newtonsoft.
+
 ### Added
 
 - `admin/metadata` route will return sdk version and other metadata about a running service.
