@@ -8,6 +8,7 @@ using MongoDB.Bson;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -490,7 +491,8 @@ namespace Beamable.Server
 			{
 				var importer = importers.FirstOrDefault(i =>
 				{
-					var isMatch = i.assetPath.EndsWith(dllReference);
+					var fileName = Path.GetFileName(i.assetPath);
+					var isMatch = dllReference == fileName;
 					return isMatch;
 				});
 				if (importer == null)
