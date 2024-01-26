@@ -49,9 +49,8 @@ namespace Beamable.Editor.BeamCli.Commands
 				host = BeamableEnvironment.ApiUrl,
 				refreshToken = _requester?.AccessToken?.RefreshToken,
 				log = "Information",
-				// raw = true,
 				skipStandaloneValidation = true,
-				dotnetPath = DotnetUtil.IsUsingGlobalDotnet ? default : DotnetUtil.DotnetPath
+				dotnetPath = DotnetUtil.DotnetPath
 			};
 			return beamArgs;
 		}
