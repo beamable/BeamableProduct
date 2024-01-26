@@ -134,6 +134,12 @@ public abstract class AtomicCommand<TArgs, TResult> : AppCommand<TArgs>, IResult
 	}
 }
 
+public class DefaultErrorStream : IResultChannel
+{
+	public const string CHANNEL = "error";
+	public string ChannelName => CHANNEL;
+}
+
 public abstract partial class AppCommand<TArgs> : Command, IResultProvider
 	where TArgs : CommandArgs
 {

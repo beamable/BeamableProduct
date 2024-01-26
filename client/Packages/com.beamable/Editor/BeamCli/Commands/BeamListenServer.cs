@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common;
     using Beamable.Common.BeamCli;
     
-    public class ConfigArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+    public class ListenServerArgs : Beamable.Common.BeamCli.IBeamCommandArgs
     {
         /// <summary>Serializes the arguments for command line usage.</summary>
         public virtual string Serialize()
@@ -19,28 +19,29 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class BeamCommands
     {
-        public virtual ConfigWrapper Config()
+        public virtual ListenServerWrapper ListenServer()
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             genBeamCommandArgs.Add("beam");
             genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
-            genBeamCommandArgs.Add("config");
+            genBeamCommandArgs.Add("listen");
+            genBeamCommandArgs.Add("server");
             // Create an instance of an IBeamCommand
             Beamable.Common.BeamCli.IBeamCommand command = this._factory.Create();
             // Join all the command paths and args into one string
             string genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
             // Configure the command with the command string
             command.SetCommand(genBeamCommandStr);
-            ConfigWrapper genBeamCommandWrapper = new ConfigWrapper();
+            ListenServerWrapper genBeamCommandWrapper = new ListenServerWrapper();
             genBeamCommandWrapper.Command = command;
             // Return the command!
             return genBeamCommandWrapper;
         }
     }
-    public class ConfigWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+    public class ListenServerWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
     {
-        public virtual ConfigWrapper OnStreamConfigCommandResult(System.Action<ReportDataPoint<BeamConfigCommandResult>> cb)
+        public virtual ListenServerWrapper OnStreamNotificationServerOutput(System.Action<ReportDataPoint<BeamNotificationServerOutput>> cb)
         {
             this.Command.On("stream", cb);
             return this;

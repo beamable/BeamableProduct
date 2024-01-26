@@ -8,6 +8,8 @@ namespace cli.Services;
 public interface IDataReporterService
 {
 	void Report<T>(string type, T data);
+
+	void Exception(Exception ex, int exitCode, string invocationContext);
 }
 
 public class DataReporterService : IDataReporterService
@@ -59,5 +61,19 @@ public class DataReporterService : IDataReporterService
 			Log.Information(ex.Message);
 			throw;
 		}
+	}
+
+	public void Exception(Exception ex, int exitCode, string invocationContext)
+	{
+		var result = new ErrorOutput
+		{
+			exitCode = exitCode,
+			invocation = invocationContext,
+			message = ex?.Message,
+			stackTrace = ex?.StackTrace,
+			typeName = ex?.GetType().Name,
+			fullTypeName = ex?.GetType().FullName
+		};
+		Report(DefaultErrorStream.CHANNEL, result);
 	}
 }

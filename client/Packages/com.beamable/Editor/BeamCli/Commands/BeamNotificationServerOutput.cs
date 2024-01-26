@@ -5,8 +5,9 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common.BeamCli;
     
     [System.SerializableAttribute()]
-    public class BeamListCommandResult
+    public class BeamNotificationServerOutput
     {
-        public System.Collections.Generic.List<Beamable.Common.BeamCli.Contracts.ServiceInfo> localServices;
+        public string path;
+        public string body;
     }
 }
