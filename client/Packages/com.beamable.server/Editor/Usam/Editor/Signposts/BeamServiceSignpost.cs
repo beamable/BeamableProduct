@@ -9,7 +9,7 @@ namespace Beamable.Server.Editor.Usam
 	{
 		public string SolutionPath => Path.Combine(assetRelativePath, relativeProjectFile);
 		public string CsprojPath => Path.Combine(assetRelativePath, name);
-		
+
 		public string name;
 		public string assetRelativePath;
 		public string relativeDockerFile;
