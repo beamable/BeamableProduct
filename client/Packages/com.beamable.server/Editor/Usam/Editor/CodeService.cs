@@ -485,6 +485,11 @@ namespace Beamable.Server.Editor.Usam
 				}
 			}
 			
+			if (servicesCount == 0)
+			{
+				LogVerbose("There are no services to write to a manifest!");
+				return;
+			}
 
 			args.localHttpNames = new string[servicesCount];
 			args.localHttpContexts = new string[servicesCount];
@@ -520,6 +525,12 @@ namespace Beamable.Server.Editor.Usam
 		{
 			var args = new ServicesSetLocalManifestArgs();
 			var dependedStorages = new List<string>();
+
+			if (files.Count == 0)
+			{
+				LogVerbose("There are no services to write to a manifest!");
+				return;
+			}
 
 			args.localHttpNames = new string[files.Count];
 			args.localHttpContexts = new string[files.Count];
