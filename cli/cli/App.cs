@@ -302,10 +302,12 @@ public class App
 		});
 		commandLineBuilder.UseExceptionHandler((ex, context) =>
 		{
+	
+			
 			switch (ex)
 			{
 				case RequesterException requesterException:
-					Console.WriteLine($"[[{requesterException.Uri}]]request error with response code: {requesterException.Status} and message: {requesterException.RequestError.message}");
+					Console.Error.WriteLine($"[[{requesterException.Uri}]]request error with response code: {requesterException.Status} and message: {requesterException.RequestError.message}");
 					break;
 				case CliException cliException:
 					if (cliException.ReportOnStdOut)
@@ -338,6 +340,15 @@ public class App
 					Console.Error.WriteLine(ex.Message);
 					Console.Error.WriteLine(ex.StackTrace);
 					break;
+			}
+			
+			var provider = context.BindingContext.GetService<AppServices>();
+			var appContext = provider.GetService<IAppContext>();
+			if (appContext.UsePipeOutput || appContext.ShowRawOutput)
+			{
+				var reporter = provider.GetService<IDataReporterService>();
+				
+				reporter.Exception(ex, context.ExitCode, context.BindingContext.ParseResult.Diagram());
 			}
 		});
 		return commandLineBuilder.Build();

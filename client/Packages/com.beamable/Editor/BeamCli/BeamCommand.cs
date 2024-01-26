@@ -170,10 +170,23 @@ namespace Beamable.Editor.BeamCli
 		private List<ReportDataPointDescription> _points = new List<ReportDataPointDescription>();
 		private Action<ReportDataPointDescription> _callbacks = (_) => { };
 
+		private List<ErrorOutput> _errors = new List<ErrorOutput>();
+		
 		public BeamCommand(BeamableDispatcher dispatcher, BeamCommandPidCollection collection = null)
 		{
 			_dispatcher = dispatcher;
 			_collection = collection;
+
+			On<ErrorOutput>("error", cb =>
+			{
+				// accumulate standard errors...
+				_errors.Add(cb.data);
+			});
+		}
+
+		public IBeamCommand OnError(Action<ReportDataPoint<ErrorOutput>> cb)
+		{
+			return On<ErrorOutput>("error", cb);
 		}
 
 		public IBeamCommand On<T>(string type, Action<ReportDataPoint<T>> cb)
@@ -248,8 +261,7 @@ namespace Beamable.Editor.BeamCli
 		{
 			if (string.IsNullOrEmpty(Command)) throw new InvalidOperationException("must set command before running");
 			_hasExecuted = true;
-			try
-			{
+			
 				using (_process = new System.Diagnostics.Process())
 				{
 					if (_command.Contains(".dll"))
@@ -364,12 +376,7 @@ namespace Beamable.Editor.BeamCli
 						TryParseMessage(_messageBuffer);
 						if (_exitCode != 0)
 						{
-#if BEAMABLE_DEVELOPER
-							var message = $"Cli failed {_command}";
-#else
-							var message = "Cli failed";
-#endif
-							throw new Exception(message);
+							throw new CliInvocationException(_command, _errors);
 						}
 					}
 					finally
@@ -378,12 +385,8 @@ namespace Beamable.Editor.BeamCli
 						_collection?.Remove(pid);
 					}
 				}
-			}
-			catch (Exception)
-			{
-				// Debug.LogException(e);
-				throw;
-			}
+			
+			
 		}
 
 		private void KillProc()
