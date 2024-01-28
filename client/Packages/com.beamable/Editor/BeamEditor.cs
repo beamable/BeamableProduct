@@ -174,13 +174,6 @@ namespace Beamable
 
 		static BeamEditor()
 		{
-			// force the Beam global scope to be created first.
-			var globalScope = Beam.GlobalScope;
-			if (globalScope == null)
-			{
-				Debug.LogError("Beamable global scope is not ready");
-			}
-			
 			Initialize();
 			AssemblyReloadEvents.beforeAssemblyReload += () =>
 			{
