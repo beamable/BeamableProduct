@@ -136,7 +136,6 @@ namespace Beamable
 			// take whatever the current registration is.
 			var existingRegistration = builder.GetSingletonServices().FirstOrDefault(x => x.Implementation == typeof(IRuntimeConfigProvider));
 			
-			builder.AddSingleton<EditorRuntimeConfigProvider>();
 			builder.ReplaceSingleton<IRuntimeConfigProvider, EditorRuntimeConfigProviderFallthrough>(
 				p => new EditorRuntimeConfigProviderFallthrough(
 					p,
