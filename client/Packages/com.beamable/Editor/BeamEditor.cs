@@ -134,13 +134,9 @@ namespace Beamable
 		public static void RegisterRuntime(IDependencyBuilder builder)
 		{
 			// take whatever the current registration is.
-			var existingRegistration = builder.GetSingletonServices().FirstOrDefault(x => x.Implementation == typeof(IRuntimeConfigProvider));
+			// var existingRegistration = builder.GetSingletonServices().FirstOrDefault(x => x.Implementation == typeof(IRuntimeConfigProvider));
 			
-			builder.ReplaceSingleton<IRuntimeConfigProvider, EditorRuntimeConfigProviderFallthrough>(
-				p => new EditorRuntimeConfigProviderFallthrough(
-					p,
-					BeamEditorContext.Default,
-					existingRegistration));
+			builder.ReplaceSingleton<IRuntimeConfigProvider, EditorRuntimeConfigProviderFallthrough>();
 			
 			// builder.RemoveIfExists<DefaultRuntimeConfigProvider>();
 			// builder.AddSingleton<DefaultRuntimeConfigProvider>(p => p.GetService<IRuntimeConfigProvider>());

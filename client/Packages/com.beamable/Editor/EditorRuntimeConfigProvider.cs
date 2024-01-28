@@ -10,20 +10,14 @@ namespace Beamable.Editor
 		public string Cid { get; private set; }
 		public string Pid { get; private set; }
 
-		public EditorRuntimeConfigProviderFallthrough(IDependencyProvider provider, BeamEditorContext editorCtx, ServiceDescriptor runtimeProviderDescriptor)
+		public EditorRuntimeConfigProviderFallthrough()
 		{
-			// var original = (IRuntimeConfigProvider) runtimeProviderDescriptor.Factory.Invoke(provider);
-			var accountService = editorCtx.ServiceScope.GetService<AccountService>();
+			var accountService = BeamEditorContext.Default.ServiceScope.GetService<AccountService>();
 			var editorProvider = new EditorRuntimeConfigProvider(accountService);
 			if (accountService != null && (accountService.Cid?.HasValue ?? false))
 			{
 				Cid = editorProvider.Cid;
 				Pid = editorProvider.Pid;
-			}
-			else
-			{
-				// Cid = original.Cid;
-				// Pid = original.Pid;
 			}
 		}
 	}
