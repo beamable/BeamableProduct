@@ -133,22 +133,34 @@ namespace Beamable
 		[RegisterBeamableDependencies(-999, RegistrationOrigin.RUNTIME_GLOBAL)]
 		public static void RegisterRuntime(IDependencyBuilder builder)
 		{
-			try
-			{
-				var editorCtx = BeamEditorContext.Default;
-				var accountService = editorCtx.ServiceScope.GetService<AccountService>();
-				if (accountService != null && (accountService.Cid?.HasValue ?? false))
-				{
-					var provider = new EditorRuntimeConfigProvider(accountService);
-					var defaultProvider = new DefaultRuntimeConfigProvider(provider);
-					builder.ReplaceSingleton<IRuntimeConfigProvider>(defaultProvider);
-					builder.ReplaceSingleton<DefaultRuntimeConfigProvider>(defaultProvider);
-				}
-			}
-			catch (Exception ex)
-			{
-				Debug.Log(ex.Message);
-			}
+			// take whatever the current registration is.
+			var existingRegistration = builder.GetSingletonServices().FirstOrDefault(x => x.Implementation == typeof(IRuntimeConfigProvider));
+			
+			builder.AddSingleton<EditorRuntimeConfigProvider>();
+			builder.ReplaceSingleton<IRuntimeConfigProvider, EditorRuntimeConfigProviderFallthrough>(
+				p => new EditorRuntimeConfigProviderFallthrough(
+					p,
+					BeamEditorContext.Default,
+					existingRegistration));
+			
+			// builder.RemoveIfExists<DefaultRuntimeConfigProvider>();
+			// builder.AddSingleton<DefaultRuntimeConfigProvider>(p => p.GetService<IRuntimeConfigProvider>());
+			// try
+			// {
+			// 	var editorCtx = BeamEditorContext.Default; // This gets called from the Beam static constructor- and this internall is going to boot up the service provider- but it won't be assigned yet.
+			// 	var accountService = editorCtx.ServiceScope.GetService<AccountService>();
+			// 	if (accountService != null && (accountService.Cid?.HasValue ?? false))
+			// 	{
+			// 		var provider = new EditorRuntimeConfigProvider(accountService);
+			// 		var defaultProvider = new DefaultRuntimeConfigProvider(provider);
+			// 		builder.ReplaceSingleton<IRuntimeConfigProvider>(defaultProvider);
+			// 		builder.ReplaceSingleton<DefaultRuntimeConfigProvider>(defaultProvider);
+			// 	}
+			// }
+			// catch (Exception ex)
+			// {
+			// 	Debug.Log(ex.Message);
+			// }
 		}
 	}
 
@@ -163,6 +175,13 @@ namespace Beamable
 
 		static BeamEditor()
 		{
+			// force the Beam global scope to be created first.
+			var globalScope = Beam.GlobalScope;
+			if (globalScope == null)
+			{
+				Debug.LogError("Beamable global scope is not ready");
+			}
+			
 			Initialize();
 			AssemblyReloadEvents.beforeAssemblyReload += () =>
 			{

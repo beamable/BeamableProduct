@@ -142,9 +142,8 @@ namespace Beamable
 			GlobalDependencyBuilder.AddComponentSingleton<CoroutineService>();
 			GlobalDependencyBuilder.AddSingleton<ICoroutineService>(p => p.GetService<CoroutineService>());
 			GlobalDependencyBuilder.AddSingleton<DefaultUncaughtPromiseQueue>();
-			GlobalDependencyBuilder.AddSingleton(new DefaultRuntimeConfigProvider(new ConfigDatabaseProvider()));
-			GlobalDependencyBuilder.AddSingleton<IRuntimeConfigProvider>(
-				p => p.GetService<DefaultRuntimeConfigProvider>());
+			GlobalDependencyBuilder.AddSingleton<IRuntimeConfigProvider, ConfigDatabaseProvider>();
+			GlobalDependencyBuilder.AddSingleton<DefaultRuntimeConfigProvider>();
 
 			// allow customization to the global scope
 			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(GlobalDependencyBuilder, RegistrationOrigin.RUNTIME_GLOBAL);

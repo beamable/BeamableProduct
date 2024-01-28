@@ -4,6 +4,30 @@ using System;
 
 namespace Beamable.Editor
 {
+
+	public class EditorRuntimeConfigProviderFallthrough : IRuntimeConfigProvider
+	{
+		public string Cid { get; private set; }
+		public string Pid { get; private set; }
+
+		public EditorRuntimeConfigProviderFallthrough(IDependencyProvider provider, BeamEditorContext editorCtx, ServiceDescriptor runtimeProviderDescriptor)
+		{
+			var editorProvider = provider.GetService<EditorRuntimeConfigProvider>();
+			var original = (IRuntimeConfigProvider) runtimeProviderDescriptor.Factory.Invoke(provider);
+			var accountService = editorCtx.ServiceScope.GetService<AccountService>();
+			if (accountService != null && (accountService.Cid?.HasValue ?? false))
+			{
+				Cid = editorProvider.Cid;
+				Pid = editorProvider.Pid;
+			}
+			else
+			{
+				Cid = original.Cid;
+				Pid = original.Pid;
+			}
+		}
+	}
+	
 	public class EditorRuntimeConfigProvider : IRuntimeConfigProvider
 	{
 		private readonly AccountService _accounts;
