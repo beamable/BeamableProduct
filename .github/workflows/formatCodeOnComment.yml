@@ -44,21 +44,21 @@ jobs:
             client/Packages/**/CHANGELOG.md
             cli/cli/CHANGELOG.md
       - uses: EndBug/add-and-commit@v9
-        if: ${{ steps.format-changes.outputs.any == 'true' && !github.ref_protected }}
+        if: ${{ steps.format-changes.outputs.any == 'true' }}
         with:
           message: Format code
           committer_name: GitHub Actions
           committer_email: 41898282+github-actions[bot]@users.noreply.github.com
       - name: Comment PR
         uses: thollander/actions-comment-pull-request@v2
-        if: ${{ steps.format-changes.outputs.any == 'true' && !github.ref_protected }}
+        if: ${{ steps.format-changes.outputs.any == 'true' }}
         with:
           message: |
             Formatting completed!
           pr_number: ${{ github.event.issue.number }}
       - name: Comment PR
         uses: thollander/actions-comment-pull-request@v2
-        if: ${{ steps.format-changes.outputs.any == 'false' && !github.ref_protected }}
+        if: ${{ steps.format-changes.outputs.any == 'false' }}
         with:
           message: |
             No need for formatting ;)
