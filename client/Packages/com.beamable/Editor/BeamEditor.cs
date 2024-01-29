@@ -117,9 +117,6 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<DotnetService>();
 
 			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
-
-			DependencyBuilder.AddSingleton<IRuntimeConfigProvider, EditorRuntimeConfigProvider>();
-
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 		}
 
@@ -133,32 +130,9 @@ namespace Beamable
 		[RegisterBeamableDependencies(-999, RegistrationOrigin.RUNTIME_GLOBAL)]
 		public static void RegisterRuntime(IDependencyBuilder builder)
 		{
-			// take whatever the current registration is.
-			// var existingRegistration = builder.GetSingletonServices().FirstOrDefault(x => x.Implementation == typeof(IRuntimeConfigProvider));
-			
-			
 			builder.AddSingleton(_ => new EditorStorageLayer(new EditorFilesystemAccessor()));
 			builder.AddGlobalStorage<AccountServerData, EditorStorageLayer>(_ => GlobalServiceStorageUtil.GetKey(typeof(AccountService)));
-			builder.ReplaceSingleton<IRuntimeConfigProvider, EditorRuntimeConfigProviderFallthrough>();
-			
-			// builder.RemoveIfExists<DefaultRuntimeConfigProvider>();
-			// builder.AddSingleton<DefaultRuntimeConfigProvider>(p => p.GetService<IRuntimeConfigProvider>());
-			// try
-			// {
-			// 	var editorCtx = BeamEditorContext.Default; // This gets called from the Beam static constructor- and this internall is going to boot up the service provider- but it won't be assigned yet.
-			// 	var accountService = editorCtx.ServiceScope.GetService<AccountService>();
-			// 	if (accountService != null && (accountService.Cid?.HasValue ?? false))
-			// 	{
-			// 		var provider = new EditorRuntimeConfigProvider(accountService);
-			// 		var defaultProvider = new DefaultRuntimeConfigProvider(provider);
-			// 		builder.ReplaceSingleton<IRuntimeConfigProvider>(defaultProvider);
-			// 		builder.ReplaceSingleton<DefaultRuntimeConfigProvider>(defaultProvider);
-			// 	}
-			// }
-			// catch (Exception ex)
-			// {
-			// 	Debug.Log(ex.Message);
-			// }
+			builder.ReplaceSingleton<IRuntimeConfigProvider, EditorRuntimeConfigProvider>();
 		}
 	}
 
