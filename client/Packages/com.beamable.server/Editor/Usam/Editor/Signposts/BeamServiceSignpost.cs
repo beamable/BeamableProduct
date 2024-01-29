@@ -6,7 +6,7 @@ using UnityEngine;
 namespace Beamable.Server.Editor.Usam
 {
 	[Serializable]
-	public class BeamServiceSignpost
+	public class BeamServiceSignpost : ISignpostData
 	{
 		public string SolutionPath => Path.Combine(assetRelativePath, relativeProjectFile);
 		public string CsprojPath => Path.Combine(assetRelativePath, name);
@@ -19,10 +19,10 @@ namespace Beamable.Server.Editor.Usam
 		public string[] assemblyReferences;
 		public string[] dependedStorages;
 
-		public static string GetRelativePath(string assetRelativePath)
+		public void AfterDeserialize()
 		{
 			const string packages = "Packages/";
-			if (!assetRelativePath.StartsWith(packages)) return assetRelativePath;
+			if (!assetRelativePath.StartsWith(packages)) return;
 
 			var package = assetRelativePath.Replace(packages, string.Empty);
 			var stopIndex = package.IndexOf("/", StringComparison.Ordinal);
@@ -31,13 +31,12 @@ namespace Beamable.Server.Editor.Usam
 			var dir = cacheFolder.Exists ? cacheFolder.GetDirectories(package).FirstOrDefault() : null;
 			if (dir == null)
 			{
-				return assetRelativePath;
+				return;
 			}
 
 			var result = dir.FullName;
 			result = result.Replace(Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar, string.Empty);
-			result = assetRelativePath.Replace($"Packages/{package}", result);
-			return result;
+			assetRelativePath = assetRelativePath.Replace($"Packages/{package}", result);
 		}
 	}
 }

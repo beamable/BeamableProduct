@@ -536,20 +536,18 @@ namespace Beamable.Server.Editor.Usam
 		{
 			var files = GetSignpostFiles(".beamservice");
 			var data = GetSignpostData<BeamServiceSignpost>(files);
-			foreach (BeamServiceSignpost signpost in data)
-			{
-				signpost.assetRelativePath = BeamServiceSignpost.GetRelativePath(signpost.assetRelativePath);
-			}
 			return data;
 		}
+		
 
-		public static List<T> GetSignpostData<T>(IEnumerable<string> files)
+		public static List<T> GetSignpostData<T>(IEnumerable<string> files) where T : ISignpostData
 		{
 			var output = new List<T>();
 			foreach (var file in files)
 			{
 				var json = File.ReadAllText(file);
 				var data = JsonUtility.FromJson<T>(json);
+				data.AfterDeserialize();
 				output.Add(data);
 			}
 
