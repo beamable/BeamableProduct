@@ -48,7 +48,7 @@ namespace Beamable.Common.Dependencies
 			return builder;
 		}
 
-		public static IDependencyBuilder AddGlobalStorage<T, TStorageLayer>(this IDependencyBuilder builder, Func<Type, string> keyFunction=null)
+		public static IDependencyBuilder AddGlobalStorage<T, TStorageLayer>(this IDependencyBuilder builder, Func<Type, string> keyFunction = null)
 			where TStorageLayer : IStorageLayer
 		{
 			builder.AddSingleton<T>(provider =>
@@ -192,7 +192,7 @@ namespace Beamable.Common.Dependencies
 			return $"singleton_{inputType.Name}_global";
 		}
 	}
-	
+
 	public class GlobalServiceStorage<TStorageLayer> : ServiceStorage<TStorageLayer>
 		where TStorageLayer : IStorageLayer
 	{
@@ -210,7 +210,7 @@ namespace Beamable.Common.Dependencies
 				_keyFunction = GlobalServiceStorageUtil.GetKey;
 			}
 		}
-		
+
 		protected override string GetKey<T>()
 		{
 			return _keyFunction?.Invoke(typeof(T));
