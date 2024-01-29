@@ -1,0 +1,65 @@
+name: Format check on command
+
+on:
+  issue_comment:                                     
+    types: [created, edited, deleted]
+
+jobs:
+  dotnet-format:
+    if:  ${{ contains(github.event.comment.html_url, '/pull/') && contains(github.event.comment.body, '/format-code') }}    # check if the comments come from pull request, exclude those from issue.
+    runs-on: ubuntu-latest
+    steps:
+      - id: 'get-branch'
+        run: echo ::set-output name=branch::$(gh pr view $PR_NO --repo $REPO --json headRefName --jq '.headRefName')
+        env:
+          REPO: ${{ github.repository }}
+          PR_NO: ${{ github.event.issue.number }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Comment PR
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            Formatting requested...
+          pr_number: ${{ github.event.issue.number }}
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.get-branch.outputs.branch }}
+          fetch-depth: 0
+      - name: Format files in client
+        id: format-client
+        run: ./format-code.sh
+      - name: Format files in cli
+        id: format-cli
+        run: ./format-code.sh cli
+      - name: Format results
+        run: echo ::set-output name=any::$(if [ -n "$(git status --porcelain)" ]; then echo "true"; else echo "false"; fi)
+        id: format-changes
+      - name: Lint changelogs
+        uses: DavidAnson/markdownlint-cli2-action@v10
+        continue-on-error: true
+        with:
+          command: fix
+          globs: |
+            client/Packages/**/CHANGELOG.md
+            cli/cli/CHANGELOG.md
+      - uses: EndBug/add-and-commit@v9
+        if: ${{ steps.format-changes.outputs.any == 'true' && !github.ref_protected }}
+        with:
+          message: Format code
+          committer_name: GitHub Actions
+          committer_email: 41898282+github-actions[bot]@users.noreply.github.com
+      - name: Comment PR
+        uses: thollander/actions-comment-pull-request@v2
+        if: ${{ steps.format-changes.outputs.any == 'true' && !github.ref_protected }}
+        with:
+          message: |
+            Formatting completed!
+          pr_number: ${{ github.event.issue.number }}
+      - name: Comment PR
+        uses: thollander/actions-comment-pull-request@v2
+        if: ${{ steps.format-changes.outputs.any == 'false' && !github.ref_protected }}
+        with:
+          message: |
+            No need for formatting ;)
+          pr_number: ${{ github.event.issue.number }}
