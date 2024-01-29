@@ -32,9 +32,6 @@ jobs:
       - name: Format files in cli
         id: format-cli
         run: ./format-code.sh cli
-#       - name: Format files in microservice
-#         id: format-microservices
-#         run: dotnet-format -f microservice
       - name: Format results
         run: echo ::set-output name=any::$(if [ -n "$(git status --porcelain)" ]; then echo "true"; else echo "false"; fi)
         id: format-changes
