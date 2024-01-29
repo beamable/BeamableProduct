@@ -296,7 +296,7 @@ namespace Beamable.Editor.BeamCli
 					Task.Run(async () =>
 					{
 						await Task.Delay(1); // give 1 ms for log messages to eep out
-							if (_dispatcher.IsForceStopped)
+						if (_dispatcher.IsForceStopped)
 						{
 							KillProc();
 							return;
@@ -304,14 +304,14 @@ namespace Beamable.Editor.BeamCli
 
 						_dispatcher.Schedule(() =>
 						{
-								// there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
-								// _hasExited = true;
-								_exitCode = _process.ExitCode;
+							// there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
+							// _hasExited = true;
+							_exitCode = _process.ExitCode;
 
-								// OnExit?.Invoke(_process.ExitCode);
-								// HandleOnExit();
+							// OnExit?.Invoke(_process.ExitCode);
+							// HandleOnExit();
 
-								_status.TrySetResult(0);
+							_status.TrySetResult(0);
 						});
 					});
 				};
