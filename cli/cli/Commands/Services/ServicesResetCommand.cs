@@ -12,7 +12,7 @@ public class ServicesResetCommandArgs : LoginCommandArgs
 	public string Target;
 }
 
-public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>, IResultSteam<DefaultStreamResultChannel, ServicesResetCommand.ServicesResetResult>
+public class ServicesResetCommand : AtomicCommand<ServicesResetCommandArgs, ServicesResetCommand.ServicesResetResult>
 {
 	private BeamoLocalSystem _localBeamo;
 
@@ -33,7 +33,7 @@ public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>, IResul
 												   $"'protocols' will reset all the protocol data for the selected Beamo Services back to default parameters"), (args, i) => args.Target = i);
 	}
 
-	public override async Task Handle(ServicesResetCommandArgs args)
+	public override async Task<ServicesResetCommand.ServicesResetResult> GetResult(ServicesResetCommandArgs args)
 	{
 		_localBeamo = args.BeamoLocalSystem;
 
@@ -70,7 +70,7 @@ public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>, IResul
 				.WithOption(true, "--dir", directory)
 				.WithOption(args.BeamoIdsToReset.Length > 0, "--ids", args.BeamoIdsToReset)
 				.RunAsync();
-			return;
+			return null;
 		}
 
 		if (args.BeamoIdsToReset.Contains("_All_"))
@@ -142,15 +142,10 @@ public class ServicesResetCommand : AppCommand<ServicesResetCommandArgs>, IResul
 				});
 		}
 
-		this.SendResults(new ServicesResetResult
-		{
-			Target = args.Target,
-			Ids = args.BeamoIdsToReset.ToList(),
-		});
-
 		_localBeamo.SaveBeamoLocalManifest();
 		_localBeamo.SaveBeamoLocalRuntime();
 		await _localBeamo.StopListeningToDocker();
+		return new ServicesResetResult { Target = args.Target, Ids = args.BeamoIdsToReset.ToList(), };
 	}
 
 

@@ -14,7 +14,8 @@ public class InitCommandArgs : LoginCommandArgs
 	public string pid;
 }
 
-public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStreamResultChannel, InitCommandResult>, IStandaloneCommand
+public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
+	IStandaloneCommand
 {
 	private readonly LoginCommand _loginCommand;
 	private IRealmsApi _realmsApi;
@@ -46,7 +47,7 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 		AddOption(new PrintToConsoleOption(), (args, b) => args.printToConsole = b);
 	}
 
-	public override async Task Handle(InitCommandArgs args)
+	public override async Task<InitCommandResult> GetResult(InitCommandArgs args)
 	{
 		_ctx = args.AppContext;
 		_configService = args.ConfigService;
@@ -71,13 +72,12 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 			{
 				BeamableLogger.LogError($"Organization not found for '{cid}', try again");
 				_retry = true;
-				await Handle(args);
-				return;
+				return await GetResult(args);
 			}
 			catch (Exception e)
 			{
 				BeamableLogger.LogError(e.Message);
-				return;
+				throw;
 			}
 		}
 
@@ -86,18 +86,18 @@ public class InitCommand : AppCommand<InitCommandArgs>, IResultSteam<DefaultStre
 		if (!success)
 		{
 			AnsiConsole.MarkupLine(":thumbs_down: Failure! try again");
-			return;
+			throw new CliException("invalid authorization");
 		}
 		AnsiConsole.MarkupLine(":thumbs_up: Success! Here are your connection details");
 		BeamableLogger.Log(args.ConfigService.ConfigFilePath);
 		BeamableLogger.Log($"cid=[{args.AppContext.Cid}] pid=[{args.AppContext.Pid}]");
 		BeamableLogger.Log(args.ConfigService.PrettyPrint());
-		this.SendResults(new InitCommandResult()
+		return new InitCommandResult()
 		{
 			host = args.ConfigService.GetConfigString(Constants.CONFIG_PLATFORM),
 			cid = args.ConfigService.GetConfigString(Constants.CONFIG_CID),
 			pid = args.ConfigService.GetConfigString(Constants.CONFIG_PID)
-		});
+		};
 	}
 
 	private async Task<bool> GetPidAndAuth(InitCommandArgs args, string cid, string host)

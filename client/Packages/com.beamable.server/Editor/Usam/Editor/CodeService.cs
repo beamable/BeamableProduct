@@ -1,3 +1,4 @@
+using Beamable.Api.CloudSaving;
 using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Semantics;
@@ -6,6 +7,7 @@ using Beamable.Editor.BeamCli;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.Dotnet;
 using Beamable.Editor.UI.Model;
+using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -24,7 +26,7 @@ namespace Beamable.Server.Editor.Usam
 		private readonly DotnetService _dotnetService;
 
 		public Promise OnReady { get; private set; }
-		public Action<string, BeamTailLogMessage> OnLogMessage;
+		public Action<string, BeamTailLogMessageForClient> OnLogMessage;
 		public bool IsDockerRunning { get; private set; }
 
 		public List<IBeamoServiceDefinition> ServiceDefinitions { get; private set; } =
@@ -120,7 +122,7 @@ namespace Beamable.Server.Editor.Usam
 
 		public async Promise RefreshServices()
 		{
-			LogVerbose("refresh services start");
+			LogVerbose("refresh remote services start");
 			try
 			{
 				var ps = _cli.ServicesPs(new ServicesPsArgs() { json = false, remote = true });
@@ -128,7 +130,7 @@ namespace Beamable.Server.Editor.Usam
 				{
 					IsDockerRunning = cb.data.IsDockerRunning;
 					LogVerbose($"Found {cb.data.BeamoIds.Count} remote services");
-					_dispatcher.Schedule(() => PopulateData(cb.data));
+					_dispatcher.Schedule(() => PopulateDataWithRemote(cb.data));
 				});
 				await ps.Run();
 			}
@@ -139,33 +141,47 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
-			if (!IsDockerRunning)
-			{
-				LogVerbose("Docker is not running, skip", true);
-				return;
-			}
-
-			try
-			{
-				var ps = _cli.ServicesPs(new ServicesPsArgs { json = false, remote = false });
-				ps.OnStreamServiceListResult(cb =>
-				{
-					IsDockerRunning = cb.data.IsDockerRunning;
-					LogVerbose($"Found {cb.data.BeamoIds.Count} local services");
-					_dispatcher.Schedule(() => PopulateData(cb.data));
-				});
-				await ps.Run();
-			}
-			catch
-			{
-				LogVerbose("Could not list local services, skip", true);
-				return;
-			}
-
-			LogVerbose("refresh services end");
+			LogVerbose("refresh remote services end");
+			
+			LogVerbose("refresh local services start");
+			
+			PopulateDataWithLocal();
+			
+			LogVerbose("refresh local services end");
 		}
 
-		private void PopulateData(BeamServiceListResult objData)
+		private void PopulateDataWithLocal()
+		{
+			_services = GetBeamServices();
+
+			for (int i = 0; i < _services.Count; i++)
+			{
+				var name = _services[i].name;
+				var dataIndex =
+					ServiceDefinitions.FindIndex(definition => definition.BeamoId.Equals(name));
+				if (dataIndex < 0)
+				{
+					ServiceDefinitions.Add(new BeamoServiceDefinition
+					{
+						ServiceInfo = new ServiceInfo()
+						{
+							name = name,
+							dockerBuildPath = _services[i].assetRelativePath,
+							dockerfilePath = _services[i].relativeDockerFile,
+							dependencies = _services[i].dependedStorages.ToList()
+						}
+					});
+					dataIndex = ServiceDefinitions.Count - 1;
+					ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder() { BeamoId = name };
+					ServiceDefinitions[dataIndex].ServiceType = ServiceType.MicroService; //For now we only have microservice and not storages
+					ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = true; //TODO should read this from manifest or have it stored somewhere
+					ServiceDefinitions[dataIndex].HasLocalSource = true;
+				}
+			}
+		}
+		
+
+		private void PopulateDataWithRemote(BeamServiceListResult objData)
 		{
 			for (int i = 0; i < objData.BeamoIds.Count; i++)
 			{
@@ -182,31 +198,19 @@ namespace Beamable.Server.Editor.Usam
 						{
 							name = name,
 							dockerBuildPath = service?.assetRelativePath,
-							dockerfilePath = service?.relativeDockerFile
+							dockerfilePath = service?.relativeDockerFile,
+							dependencies = service != null ? service.dependedStorages.ToList() : new List<string>()
 						}
 					});
 					dataIndex = ServiceDefinitions.Count - 1;
 					ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder() { BeamoId = name };
 				}
-
-				if (objData.IsLocal)
-				{
-					ServiceDefinitions[dataIndex].ServiceType =
-						objData.ProtocolTypes[i].Equals("HttpMicroservice", StringComparison.InvariantCultureIgnoreCase)
-							? ServiceType.MicroService
-							: ServiceType.StorageObject;
-				}
+				
 				ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = objData.ShouldBeEnabledOnRemote[i];
-				if (objData.IsLocal)
-				{
-					ServiceDefinitions[dataIndex].ImageId = objData.ImageIds[i];
-					ServiceDefinitions[dataIndex].Builder.IsRunning = objData.RunningState[i];
-				}
-				else
-				{
-					ServiceDefinitions[dataIndex].IsRunningOnRemote =
+				ServiceDefinitions[dataIndex].IsRunningOnRemote =
 						objData.RunningState[i] ? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
-				}
+
+				ServiceDefinitions[dataIndex].HasLocalSource = objData.IsLocal;
 				LogVerbose($"Handling {name} ended");
 			}
 		}
@@ -268,7 +272,42 @@ namespace Beamable.Server.Editor.Usam
 			// Re-initializing the CodeService to make sure all files are with the right information
 			await Init();
 
+			//Shoudln't we generate client code at the end of the creation?
+			//For some reason this this line is never reached after the Init. And if put bfore Init, it doesn't work
+			//await GenerateClientCode(serviceName);
+
 			LogVerbose($"Finished creation of service {serviceName}");
+		}
+
+		public Promise RunStandaloneMicroservice(string id)
+		{
+			LogVerbose($"Start generating client code for service: {id}");
+			
+
+			var service = _services.FirstOrDefault(s => s.name == id);
+
+			if (service == null)
+			{
+				LogVerbose($"The service {id} is not listed.", true);
+				throw new Exception("Service is invalid.");
+			}
+			
+			var microserviceFullPath = Path.GetFullPath(service.CsprojPath);
+			var runCommand = $"run --project {microserviceFullPath} --property:CopyToLinkedProjects=false;GenerateClientCode=false";
+
+			LogVerbose($"Running service: {id} using command: {runCommand}");
+			_ = _dotnetService.Run(runCommand);
+			
+			var def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(id));
+				
+			def?.Builder.OnStartingProgress?.Invoke((int)100, 100);
+			def?.Builder.OnStartingFinished?.Invoke(true);
+			if (def != null)
+			{
+				def.Builder.IsRunning = true;
+			}
+
+			return Promise.Success;
 		}
 
 		/// <summary>
@@ -283,8 +322,8 @@ namespace Beamable.Server.Editor.Usam
 			var service = _services.FirstOrDefault(s => s.name == id);
 
 			var microservicePath = Path.Combine(service.assetRelativePath, service.relativeProjectFile);
-			var beamPath = BeamCliUtil.CLI_PATH;
-			var buildCommand = $"build \"{microservicePath}\" /p:BeamableTool={beamPath}";
+			var beamPath = BeamCliUtil.CLI_PATH.Replace(".dll", "");
+			var buildCommand = $"build \"{microservicePath}\" /p:BeamableTool={beamPath} /p:GenerateClientCode=false";
 
 			LogVerbose($"Starting build service: {id} using command: {buildCommand}");
 			await _dotnetService.Run(buildCommand);
@@ -307,6 +346,46 @@ namespace Beamable.Server.Editor.Usam
 			LogVerbose($"Finished generating client code for service: {id}");
 		}
 
+		/// <summary>
+		/// Get the information of if this service is local or remote.
+		/// </summary>
+		/// <param name="serviceName">The name of the service</param>
+		/// <returns>Returns true if the service is local or false if remote.</returns>
+		public bool GetServiceIsLocal(string serviceName)
+		{
+			foreach (IBeamoServiceDefinition service in ServiceDefinitions)
+			{
+				if (service.BeamoId.Equals(serviceName))
+				{
+					return service.HasLocalSource;
+				}
+			}
+
+			var allServices = String.Join(", ", ServiceDefinitions.Select(s => s.BeamoId));
+			throw new EntryPointNotFoundException(
+				$"The service {serviceName} was not found! The current list of services is: {allServices}");
+		}
+
+		/// <summary>
+		/// Get if the service should or not be enable on remote.
+		/// </summary>
+		/// <param name="serviceName">The name of the service</param>
+		/// <returns>True if should be enable and false if not.</returns>
+		public bool GetServiceShouldBeEnable(string serviceName)
+		{
+			foreach (IBeamoServiceDefinition service in ServiceDefinitions)
+			{
+				if (service.BeamoId.Equals(serviceName))
+				{
+					return service.ShouldBeEnabledOnRemote;
+				}
+			}
+
+			var allServices = String.Join(", ", ServiceDefinitions.Select(s => s.BeamoId));
+			throw new EntryPointNotFoundException(
+				$"The service {serviceName} was not found! The current list of services is: {allServices}");
+		}
+
 		public void ConnectToLogs()
 		{
 			foreach (IBeamoServiceDefinition definition in ServiceDefinitions)
@@ -316,7 +395,7 @@ namespace Beamable.Server.Editor.Usam
 					service = new ServiceName(definition.BeamoId),
 					reconnect = true
 				});
-				logs.OnStreamTailLogMessage(point =>
+				logs.OnStreamTailLogMessageForClient(point =>
 				{
 					_dispatcher.Schedule(() => OnLogMessage?.Invoke(definition.BeamoId, point.data));
 				});
@@ -371,19 +450,74 @@ namespace Beamable.Server.Editor.Usam
 			return null;
 		}
 
+		/// <summary>
+		/// Update all service definitions with new enable state from editor window.
+		/// </summary>
+		/// <param name="allServices">All models of services that are not archived.</param>
+		public void UpdateServicesEnableState(List<IEntryModel> allServices)
+		{
+			foreach (IEntryModel service in allServices)
+			{
+				IBeamoServiceDefinition localDefinition = ServiceDefinitions.Find((s) => s.BeamoId == service.Name);
+				if (localDefinition != null)
+				{
+					localDefinition.ShouldBeEnabledOnRemote = service.Enabled;
+				}
+			}
+		}
+
+		/// <summary>
+		/// Set the local manifest with the current information in the ServiceDefinitions variable.
+		/// </summary>
+		public static async Promise SetManifest(BeamCommands cli, List<IBeamoServiceDefinition> definitions)
+		{
+			var args = new ServicesSetLocalManifestArgs();
+			var dependedStorages = new List<string>();
+			int servicesCount = definitions.Count;
+
+			args.localHttpNames = new string[servicesCount];
+			args.localHttpContexts = new string[servicesCount];
+			args.localHttpDockerFiles = new string[servicesCount];
+			args.shouldBeEnable = new string[servicesCount];
+
+			// TODO: add some validation to check that these files actually make sense
+			for (var i = 0; i < servicesCount; i++)
+			{
+				args.localHttpNames[i] = definitions[i].BeamoId;
+				args.localHttpContexts[i] = definitions[i].ServiceInfo.dockerBuildPath;  //assetRelativePath;
+				args.localHttpDockerFiles[i] = definitions[i].ServiceInfo.dockerfilePath;  //relativeDockerFile;
+
+				args.shouldBeEnable[i] = definitions[i].ShouldBeEnabledOnRemote.ToString();
+				if (definitions[i].ServiceInfo.dependencies != null)
+				{
+					foreach (var storage in definitions[i].ServiceInfo.dependencies)
+					{
+						dependedStorages.Add($"{definitions[i].BeamoId}:{storage}");
+					}
+				}
+			}
+			args.storageDependencies = dependedStorages.ToArray();
+
+			var command = cli.ServicesSetLocalManifest(args);
+			await command.Run().Error(LogExceptionVerbose);
+		}
+
 		public static async Promise SetManifest(BeamCommands cli, List<BeamServiceSignpost> files)
 		{
 			var args = new ServicesSetLocalManifestArgs();
 			var dependedStorages = new List<string>();
+
 			args.localHttpNames = new string[files.Count];
 			args.localHttpContexts = new string[files.Count];
 			args.localHttpDockerFiles = new string[files.Count];
+			args.shouldBeEnable = new string[files.Count];
 			// TODO: add some validation to check that these files actually make sense
 			for (var i = 0; i < files.Count; i++)
 			{
 				args.localHttpNames[i] = files[i].name;
 				args.localHttpContexts[i] = files[i].assetRelativePath;
 				args.localHttpDockerFiles[i] = files[i].relativeDockerFile;
+				args.shouldBeEnable[i] = true.ToString(); //TODO not sure what value should be put in here, this would set all to true without new modifications
 				if (files[i].dependedStorages != null)
 				{
 					foreach (var storage in files[i].dependedStorages)
@@ -483,6 +617,28 @@ namespace Beamable.Server.Editor.Usam
 					LogVerbose($"Beam Error accessing {directoryPath}: {ex.Message}", true);
 				}
 			}
+		}
+
+		public Promise StopStandaloneMicroservice(IEnumerable<string> beamoIds)
+		{
+			foreach (string id in beamoIds)
+			{
+				//This is a bit ugly, happens that the C#MS running process name are their ids
+				// Is there a better way to handle this?
+				_dotnetService.SetPurposelyExit();
+				foreach (Process process in Process.GetProcessesByName(id))
+				{
+					process.Kill();
+				}
+				
+				var def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(id));
+				if (def != null)
+				{
+					def.Builder.IsRunning = false;
+				}
+			}
+
+			return Promise.Success;
 		}
 
 		public async Promise Stop(IEnumerable<string> beamoIds)

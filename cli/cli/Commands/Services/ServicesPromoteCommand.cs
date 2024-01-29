@@ -14,7 +14,7 @@ public class ServicesPromoteCommandArgs : LoginCommandArgs
 	public string SourcePid;
 }
 
-public class ServicesPromoteCommand : AppCommand<ServicesPromoteCommandArgs>
+public class ServicesPromoteCommand : AtomicCommand<ServicesPromoteCommandArgs, ManifestChecksums>
 {
 	public static readonly Option<string> SOURCE_PID_OPTION = new("--source-pid", "The PID for the realm from which you wish to pull the manifest from. " +
 																				 "\nThe current realm you are signed into will be updated to match the manifest in the given realm");
@@ -35,7 +35,7 @@ public class ServicesPromoteCommand : AppCommand<ServicesPromoteCommandArgs>
 		AddOption(SOURCE_PID_OPTION, (args, s) => args.SourcePid = s);
 	}
 
-	public override async Task Handle(ServicesPromoteCommandArgs args)
+	public override async Task<ManifestChecksums> GetResult(ServicesPromoteCommandArgs args)
 	{
 
 		_ctx = args.AppContext;
@@ -49,12 +49,12 @@ public class ServicesPromoteCommand : AppCommand<ServicesPromoteCommandArgs>
 				.AddChoices(possiblePids)
 				.AddBeamHightlight());
 
-		var response = await AnsiConsole.Status()
+		ManifestChecksums response = await AnsiConsole.Status()
 			.Spinner(Spinner.Known.Default)
 			.StartAsync("Sending Request...", async ctx =>
 				await _remoteBeamo.Promote(args.SourcePid)
 			);
 
-		Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
+		return PrintResult(response);
 	}
 }

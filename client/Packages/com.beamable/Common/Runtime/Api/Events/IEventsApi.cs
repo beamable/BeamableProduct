@@ -72,12 +72,14 @@ namespace Beamable.Common.Api.Events
 	[Serializable]
 	public class EventView
 	{
+		static readonly DateTime UNIX_DAWN_OF_TIME = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 		public string id;
 		public string name;
 		public string leaderboardId;
 		public double score;
 		public long rank;
 		public long secondsRemaining;
+		[Obsolete("endTime is obsolete and will be removed in the future. Use GetEndTime instead.")]
 		public DateTime endTime;
 		public List<EventReward> scoreRewards;
 		public List<EventReward> rankRewards;
@@ -88,8 +90,25 @@ namespace Beamable.Common.Api.Events
 
 		public void Init()
 		{
-			endTime = DateTime.UtcNow.AddSeconds(secondsRemaining);
+#pragma warning disable CS0618 // Type or member is obsolete
+			endTime = GetEndDate();
+#pragma warning restore CS0618 // Type or member is obsolete
 		}
+
+		public DateTime GetStartDate()
+		{
+			int index = id.LastIndexOf(".", StringComparison.InvariantCultureIgnoreCase);
+
+			if (index > 0 && long.TryParse(id.Substring(index + 1), out long startTimestamp))
+			{
+				return UNIX_DAWN_OF_TIME.AddMilliseconds(startTimestamp);
+			}
+
+			return UNIX_DAWN_OF_TIME;
+		}
+
+		public DateTime GetEndDate() => GetStartDate().AddSeconds(allPhases.Sum(t => t.durationSeconds));
+
 	}
 
 	[Serializable]

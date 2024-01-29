@@ -88,11 +88,6 @@ namespace Beamable.Editor.Microservice.UI2
 			OnLoad().Then(_ =>
 			{
 				_dataModel = Scope.GetService<UsamDataModel>();
-				if (!_codeService.IsDockerRunning)
-				{
-					ShowDockerNotRunningAnnouncement();
-					return;
-				}
 
 				foreach (BeamoServiceDefinition beamoServiceDefinition in _codeService.ServiceDefinitions)
 				{
@@ -110,6 +105,12 @@ namespace Beamable.Editor.Microservice.UI2
 			});
 
 			_actionBarVisualElement.OnCreateNewClicked += HandleCreateNewButtonClicked;
+			_actionBarVisualElement.OnPublishClicked += HandlePublishButtonClicked;
+		}
+
+		private void HandlePublishButtonClicked()
+		{
+			PublishStandaloneWindow.ShowPublishWindow(this, ActiveContext);
 		}
 
 		private void ShowDockerNotRunningAnnouncement()

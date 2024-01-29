@@ -49,9 +49,8 @@ namespace Beamable.Editor.BeamCli.Commands
 				host = BeamableEnvironment.ApiUrl,
 				refreshToken = _requester?.AccessToken?.RefreshToken,
 				log = "Information",
-				reporterUseFatal = true,
 				skipStandaloneValidation = true,
-				dotnetPath = DotnetUtil.IsUsingGlobalDotnet ? default : DotnetUtil.DotnetPath
+				dotnetPath = DotnetUtil.DotnetPath
 			};
 			return beamArgs;
 		}
@@ -157,10 +156,9 @@ namespace Beamable.Editor.BeamCli
 
 		private Process _process;
 		protected virtual bool CaptureStandardBuffers => true;
-		public bool AutoLogErrors { get; set; } = true;
+		public bool AutoLogErrors { get; set; } = false;
 		private TaskCompletionSource<int> _status, _standardOutComplete;
 
-		// private bool _hasExited;
 		protected int _exitCode = -1;
 		private bool _hasExecuted;
 
@@ -172,10 +170,23 @@ namespace Beamable.Editor.BeamCli
 		private List<ReportDataPointDescription> _points = new List<ReportDataPointDescription>();
 		private Action<ReportDataPointDescription> _callbacks = (_) => { };
 
+		private List<ErrorOutput> _errors = new List<ErrorOutput>();
+		
 		public BeamCommand(BeamableDispatcher dispatcher, BeamCommandPidCollection collection = null)
 		{
 			_dispatcher = dispatcher;
 			_collection = collection;
+
+			On<ErrorOutput>("error", cb =>
+			{
+				// accumulate standard errors...
+				_errors.Add(cb.data);
+			});
+		}
+
+		public IBeamCommand OnError(Action<ReportDataPoint<ErrorOutput>> cb)
+		{
+			return On<ErrorOutput>("error", cb);
 		}
 
 		public IBeamCommand On<T>(string type, Action<ReportDataPoint<T>> cb)
@@ -201,40 +212,30 @@ namespace Beamable.Editor.BeamCli
 			if (message == null) return;
 
 			_messageBuffer += message;
-			if (!_isMessageInProgress)
+			var delimIndex = _messageBuffer.IndexOf(Reporting.MESSAGE_DELIMITER, StringComparison.InvariantCulture);
+			if (delimIndex > -1)
 			{
-				var startIndex = _messageBuffer.IndexOf(Reporting.PATTERN_START, StringComparison.Ordinal);
-				if (startIndex >= 0)
+				var buffer = _messageBuffer.Substring(0, delimIndex);
+				_messageBuffer = _messageBuffer.Substring(delimIndex + Reporting.MESSAGE_DELIMITER.Length);
+				TryParseMessage(buffer);
+			}
+		}
+
+		void TryParseMessage(string buffer)
+		{
+			try
+			{
+				var pt = JsonUtility.FromJson<ReportDataPointDescription>(buffer);
+				if (pt != null)
 				{
-					_isMessageInProgress = true;
-					_messageBuffer = _messageBuffer.Substring(startIndex + Reporting.PATTERN_START.Length);
+					pt.json = buffer;
+					_points.Add(pt);
+					_callbacks?.Invoke(pt);
 				}
 			}
-
-			if (_isMessageInProgress)
+			catch (Exception e)
 			{
-				var endPatternIndex = _messageBuffer.IndexOf(Reporting.PATTERN_END, StringComparison.Ordinal);
-				if (endPatternIndex >= 0)
-				{
-					_isMessageInProgress = false;
-					var found = _messageBuffer.Substring(0, endPatternIndex);
-					_messageBuffer = _messageBuffer.Substring(endPatternIndex + Reporting.PATTERN_END.Length);
-					// Debug.LogWarning(found);
-					try
-					{
-						var pt = JsonUtility.FromJson<ReportDataPointDescription>(found);
-						if (pt != null)
-						{
-							pt.json = found;
-							_points.Add(pt);
-							_callbacks?.Invoke(pt);
-						}
-					}
-					catch (Exception e)
-					{
-						Debug.LogException(e);
-					}
-				}
+				Debug.LogException(e);
 			}
 		}
 
@@ -260,8 +261,7 @@ namespace Beamable.Editor.BeamCli
 		{
 			if (string.IsNullOrEmpty(Command)) throw new InvalidOperationException("must set command before running");
 			_hasExecuted = true;
-			try
-			{
+			
 				using (_process = new System.Diagnostics.Process())
 				{
 					if (_command.Contains(".dll"))
@@ -373,14 +373,10 @@ namespace Beamable.Editor.BeamCli
 
 						await _status.Task;
 
+						TryParseMessage(_messageBuffer);
 						if (_exitCode != 0)
 						{
-#if BEAMABLE_DEVELOPER
-							var message = $"Cli failed {_command}";
-#else
-							var message = "Cli failed";
-#endif
-							throw new Exception(message);
+							throw new CliInvocationException(_command, _errors);
 						}
 					}
 					finally
@@ -389,12 +385,8 @@ namespace Beamable.Editor.BeamCli
 						_collection?.Remove(pid);
 					}
 				}
-			}
-			catch (Exception)
-			{
-				// Debug.LogException(e);
-				throw;
-			}
+			
+			
 		}
 
 		private void KillProc()

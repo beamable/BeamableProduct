@@ -14,7 +14,7 @@ public class RealmConfigSetCommandArgs : CommandArgs
 	public List<string> keyValuePairs = new();
 }
 
-public class RealmConfigSetCommand : AppCommand<RealmConfigSetCommandArgs>, IResultSteam<DefaultStreamResultChannel, RealmConfigData>
+public class RealmConfigSetCommand : AtomicCommand<RealmConfigSetCommandArgs, RealmConfigData>
 {
 	public RealmConfigSetCommand() : base("set", "Set realm config values") { }
 
@@ -24,7 +24,7 @@ public class RealmConfigSetCommand : AppCommand<RealmConfigSetCommandArgs>, IRes
 		AddOption(new RealmConfigKeyValueOption(), (args, b) => args.keyValuePairs = b.ToList());
 	}
 
-	public override async Task Handle(RealmConfigSetCommandArgs args)
+	public override async Task<RealmConfigData> GetResult(RealmConfigSetCommandArgs args)
 	{
 		try
 		{
@@ -35,12 +35,13 @@ public class RealmConfigSetCommand : AppCommand<RealmConfigSetCommandArgs>, IRes
 				currentConfig.Config[data.NamespaceKey()] = data.Value;
 			}
 			await args.RealmsApi.UpdateRealmConfig(currentConfig.Config);
-			await DisplayRealmConfig(args, currentConfig);
+			return await DisplayRealmConfig(args, currentConfig);
 		}
 		catch (ArgumentException e)
 		{
 			AnsiConsole.MarkupLine($"[red]Provide a list of realm config key/value pairs in a 'namespace|key::value' format.[/]");
 			AnsiConsole.WriteException(e);
+			throw;
 		}
 	}
 
@@ -56,10 +57,9 @@ public class RealmConfigSetCommand : AppCommand<RealmConfigSetCommandArgs>, IRes
 		}
 	}
 
-	private async Task DisplayRealmConfig(RealmConfigSetCommandArgs args, [CanBeNull] RealmConfigData data = null)
+	private async Task<RealmConfigData> DisplayRealmConfig(RealmConfigSetCommandArgs args, [CanBeNull] RealmConfigData data = null)
 	{
 		data ??= await GetRealmConfig(args);
-		this.SendResults(data);
 		var json = JsonConvert.SerializeObject(data.ConvertToView());
 		if (args.plainOutput)
 		{
@@ -73,5 +73,7 @@ public class RealmConfigSetCommand : AppCommand<RealmConfigSetCommandArgs>, IRes
 					.Collapse()
 					.RoundedBorder());
 		}
+
+		return data;
 	}
 }

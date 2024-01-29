@@ -1,6 +1,7 @@
 ﻿using cli.Services;
 using cli.Utils;
 using Newtonsoft.Json;
+using Serilog;
 using Serilog.Events;
 using Spectre.Console;
 using Spectre.Console.Rendering;
@@ -13,7 +14,7 @@ public class ServicesLogsUrlCommandArgs : LoginCommandArgs
 	public string BeamoId;
 }
 
-public class ServicesLogsUrlCommand : AppCommand<ServicesLogsUrlCommandArgs>
+public class ServicesLogsUrlCommand : AtomicCommand<ServicesLogsUrlCommandArgs, GetSignedUrlResponse>
 {
 	private BeamoLocalSystem _localBeamo;
 	private BeamoService _remoteBeamo;
@@ -30,7 +31,7 @@ public class ServicesLogsUrlCommand : AppCommand<ServicesLogsUrlCommandArgs>
 		AddOption(ServicesRegisterCommand.BEAM_SERVICE_OPTION_ID, (args, s) => args.BeamoId = s);
 	}
 
-	public override async Task Handle(ServicesLogsUrlCommandArgs args)
+	public override async Task<GetSignedUrlResponse> GetResult(ServicesLogsUrlCommandArgs args)
 	{
 		_localBeamo = args.BeamoLocalSystem;
 		_remoteBeamo = args.BeamoService;
@@ -46,12 +47,13 @@ public class ServicesLogsUrlCommand : AppCommand<ServicesLogsUrlCommandArgs>
 				.AddChoices(existingBeamoIds)
 				.AddBeamHightlight());
 
-		var response = await AnsiConsole.Status()
+		GetSignedUrlResponse response = await AnsiConsole.Status()
 			.Spinner(Spinner.Known.Default)
 			.StartAsync("Sending Request...", async ctx =>
 				await _remoteBeamo.GetLogsUrl(args.BeamoId)
 			);
 
-		Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
+
+		return PrintResult(response);
 	}
 }

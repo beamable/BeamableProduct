@@ -14,7 +14,7 @@ public class RealmConfigRemoveCommandArgs : CommandArgs
 	public List<string> keys = new();
 }
 
-public class RealmConfigRemoveCommand : AppCommand<RealmConfigRemoveCommandArgs>, IResultSteam<DefaultStreamResultChannel, RealmConfigData>
+public class RealmConfigRemoveCommand : AtomicCommand<RealmConfigRemoveCommandArgs, RealmConfigData>
 {
 	public RealmConfigRemoveCommand() : base("remove", "Remove realm config values") { }
 
@@ -24,7 +24,7 @@ public class RealmConfigRemoveCommand : AppCommand<RealmConfigRemoveCommandArgs>
 		AddOption(new RealmConfigKeyOption(), (args, b) => args.keys = b.ToList());
 	}
 
-	public override async Task Handle(RealmConfigRemoveCommandArgs args)
+	public override async Task<RealmConfigData> GetResult(RealmConfigRemoveCommandArgs args)
 	{
 		try
 		{
@@ -35,12 +35,13 @@ public class RealmConfigRemoveCommand : AppCommand<RealmConfigRemoveCommandArgs>
 				currentConfig.Config.Remove(data.NamespaceKey());
 			}
 			await args.RealmsApi.UpdateRealmConfig(currentConfig.Config);
-			await DisplayRealmConfig(args, currentConfig);
+			return await DisplayRealmConfig(args, currentConfig);
 		}
 		catch (ArgumentException e)
 		{
 			AnsiConsole.MarkupLine($"[red]Provide a list of realm config keys in a 'namespace|key' format.[/]");
 			AnsiConsole.WriteException(e);
+			throw;
 		}
 	}
 
@@ -56,10 +57,10 @@ public class RealmConfigRemoveCommand : AppCommand<RealmConfigRemoveCommandArgs>
 		}
 	}
 
-	private async Task DisplayRealmConfig(RealmConfigRemoveCommandArgs args, [CanBeNull] RealmConfigData data = null)
+	private async Task<RealmConfigData> DisplayRealmConfig(RealmConfigRemoveCommandArgs args, [CanBeNull] RealmConfigData data = null)
 	{
 		data ??= await GetRealmConfig(args);
-		this.SendResults(data);
+
 		var json = JsonConvert.SerializeObject(data.ConvertToView());
 		if (args.plainOutput)
 		{
@@ -73,5 +74,7 @@ public class RealmConfigRemoveCommand : AppCommand<RealmConfigRemoveCommandArgs>
 					.Collapse()
 					.RoundedBorder());
 		}
+
+		return data;
 	}
 }

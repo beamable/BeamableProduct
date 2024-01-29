@@ -7,6 +7,7 @@ public class LogOption : ConfigurableOption
 {
 	public LogOption() : base("log", "Extra logs gets printed out")
 	{
+		AddAlias("--logs");
 	}
 
 	public override IEnumerable<CompletionItem> GetCompletions(CompletionContext context) =>

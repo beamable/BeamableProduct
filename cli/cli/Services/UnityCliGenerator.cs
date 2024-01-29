@@ -42,7 +42,7 @@ public class UnityCliGenerator : ICliGenerator
 			files.Add(Generate(command));
 		}
 
-		var resultTypes = context.Commands.SelectMany(command => command.resultStreams.Select(s => s.runtimeType));
+		var resultTypes = RecurseTypes(context.Commands.SelectMany(command => command.resultStreams.Select(s => s.runtimeType)));
 
 		foreach (var resultType in resultTypes)
 		{
@@ -68,6 +68,42 @@ public class UnityCliGenerator : ICliGenerator
 
 
 		return files;
+	}
+
+	public static List<Type> RecurseTypes(IEnumerable<Type> inputTypes)
+	{
+		var output = new HashSet<Type>();
+		var toExplore = new Queue<Type>();
+		foreach (var inputType in inputTypes)
+		{
+			toExplore.Enqueue(inputType);
+		}
+
+		var validAssembly = typeof(UnityCliGenerator).Assembly;
+		while (toExplore.Count > 0)
+		{
+			var curr = toExplore.Dequeue();
+			if (output.Contains(curr)) continue; // we have already seen this type.
+
+			var assembly = curr.Assembly;
+			if (assembly != validAssembly) continue; // skip this type, it cannot be generated.
+			var fields = UnityJsonContractResolver.GetSerializedFields(curr);
+			foreach (var field in fields)
+			{
+				toExplore.Enqueue(field.FieldType);
+				if (field.FieldType.IsGenericType)
+				{
+					var genericArgs = field.FieldType.GetGenericArguments();
+					foreach (var genericArg in genericArgs)
+					{
+						toExplore.Enqueue(genericArg);
+					}
+				}
+			}
+			output.Add(curr);
+		}
+
+		return output.ToList();
 	}
 
 	public static GeneratedFileDescriptor Generate(BeamCommandDescriptor command)
@@ -97,6 +133,31 @@ public class UnityCliGenerator : ICliGenerator
 	{
 		return ConvertToSnakeCase(descriptor.ExecutionPathAsCapitalizedStringWithoutBeam() + "Wrapper");
 	}
+
+	public static CodeTypeReference GetFieldReference(Type runtimeType)
+	{
+		if (runtimeType.Assembly == typeof(UnityCliGenerator).Assembly)
+		{
+			return new CodeTypeReference(GetResultClassName(runtimeType));
+		}
+
+		if (runtimeType.IsGenericType)
+		{
+			var def = runtimeType.GetGenericTypeDefinition();
+			if (def.IsAssignableFrom(typeof(List<>)))
+			{
+				var genArg = runtimeType.GetGenericArguments()[0];
+				var elementReference = GetFieldReference(genArg);
+				var listReference = new CodeTypeReference(typeof(List<>));
+				listReference.TypeArguments.Add(elementReference);
+				return listReference;
+				// return new CodeTypeReference(elementReference, 1);
+			}
+		}
+
+		return new CodeTypeReference(runtimeType);
+	}
+
 	public static string GetResultClassName(Type runtimeType)
 	{
 		if (runtimeType.Namespace.StartsWith("Beamable.Common"))
@@ -279,7 +340,7 @@ public class UnityCliGenerator : ICliGenerator
 			var fieldDecl = new CodeMemberField
 			{
 				Name = field.Name,
-				Type = new CodeTypeReference(field.FieldType),
+				Type = GetFieldReference(field.FieldType),
 				Attributes = MemberAttributes.Public
 			};
 			type.Members.Add(fieldDecl);
@@ -306,7 +367,7 @@ public class UnityCliGenerator : ICliGenerator
 			{
 				Name = $"On{result.channel.Capitalize()}{result.runtimeType.Name}",
 				Attributes = MemberAttributes.Public,
-				ReturnType = type.BaseTypes[0]
+				ReturnType = new CodeTypeReference(type.Name)
 			};
 
 			var argTypeRef = new CodeTypeReference($"System.Action<ReportDataPoint<{GetResultClassName(result.runtimeType)}>>");
