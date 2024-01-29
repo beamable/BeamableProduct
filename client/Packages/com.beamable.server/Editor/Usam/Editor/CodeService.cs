@@ -122,6 +122,7 @@ namespace Beamable.Server.Editor.Usam
 
 		public async Promise RefreshServices()
 		{
+			ServiceDefinitions.Clear();
 			LogVerbose("refresh remote services start");
 			try
 			{
@@ -473,7 +474,22 @@ namespace Beamable.Server.Editor.Usam
 		{
 			var args = new ServicesSetLocalManifestArgs();
 			var dependedStorages = new List<string>();
-			int servicesCount = definitions.Count;
+			int servicesCount = 0;
+			
+			//check how many services exist locally
+			foreach (IBeamoServiceDefinition def in definitions)
+			{
+				if (!string.IsNullOrEmpty(def.ServiceInfo.dockerfilePath))
+				{
+					servicesCount++;
+				}
+			}
+			
+			if (servicesCount == 0)
+			{
+				LogVerbose("There are no services to write to a manifest!");
+				return;
+			}
 
 			args.localHttpNames = new string[servicesCount];
 			args.localHttpContexts = new string[servicesCount];
@@ -483,9 +499,12 @@ namespace Beamable.Server.Editor.Usam
 			// TODO: add some validation to check that these files actually make sense
 			for (var i = 0; i < servicesCount; i++)
 			{
+				if (string.IsNullOrEmpty(definitions[i].ServiceInfo.dockerfilePath))
+					continue;
+					
 				args.localHttpNames[i] = definitions[i].BeamoId;
-				args.localHttpContexts[i] = definitions[i].ServiceInfo.dockerBuildPath;  //assetRelativePath;
-				args.localHttpDockerFiles[i] = definitions[i].ServiceInfo.dockerfilePath;  //relativeDockerFile;
+				args.localHttpContexts[i] = definitions[i].ServiceInfo.dockerBuildPath;
+				args.localHttpDockerFiles[i] = definitions[i].ServiceInfo.dockerfilePath;
 
 				args.shouldBeEnable[i] = definitions[i].ShouldBeEnabledOnRemote.ToString();
 				if (definitions[i].ServiceInfo.dependencies != null)
@@ -506,6 +525,12 @@ namespace Beamable.Server.Editor.Usam
 		{
 			var args = new ServicesSetLocalManifestArgs();
 			var dependedStorages = new List<string>();
+
+			if (files.Count == 0)
+			{
+				LogVerbose("There are no services to write to a manifest!");
+				return;
+			}
 
 			args.localHttpNames = new string[files.Count];
 			args.localHttpContexts = new string[files.Count];
