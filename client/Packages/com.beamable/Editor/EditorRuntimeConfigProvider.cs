@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
 using System;
+using UnityEngine;
 
 namespace Beamable.Editor
 {
@@ -10,15 +11,11 @@ namespace Beamable.Editor
 		public string Cid { get; private set; }
 		public string Pid { get; private set; }
 
-		public EditorRuntimeConfigProviderFallthrough()
+		public EditorRuntimeConfigProviderFallthrough(AccountServerData accountData)
 		{
-			var accountService = BeamEditorContext.Default.ServiceScope.GetService<AccountService>();
-			var editorProvider = new EditorRuntimeConfigProvider(accountService);
-			if (accountService != null && (accountService.Cid?.HasValue ?? false))
-			{
-				Cid = editorProvider.Cid;
-				Pid = editorProvider.Pid;
-			}
+			Cid = accountData.cid.Value;
+			Pid = accountData.Account?.realmPid?.Value;
+			Debug.Log($"_------_ CID=[{Cid}] PID=[{Pid}]");
 		}
 	}
 	

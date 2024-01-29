@@ -136,6 +136,9 @@ namespace Beamable
 			// take whatever the current registration is.
 			// var existingRegistration = builder.GetSingletonServices().FirstOrDefault(x => x.Implementation == typeof(IRuntimeConfigProvider));
 			
+			
+			builder.AddSingleton(_ => new EditorStorageLayer(new EditorFilesystemAccessor()));
+			builder.AddGlobalStorage<AccountServerData, EditorStorageLayer>(_ => GlobalServiceStorageUtil.GetKey(typeof(AccountService)));
 			builder.ReplaceSingleton<IRuntimeConfigProvider, EditorRuntimeConfigProviderFallthrough>();
 			
 			// builder.RemoveIfExists<DefaultRuntimeConfigProvider>();
