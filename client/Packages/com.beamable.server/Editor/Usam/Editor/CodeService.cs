@@ -143,11 +143,11 @@ namespace Beamable.Server.Editor.Usam
 			}
 
 			LogVerbose("refresh remote services end");
-			
+
 			LogVerbose("refresh local services start");
-			
+
 			PopulateDataWithLocal();
-			
+
 			LogVerbose("refresh local services end");
 		}
 
@@ -180,7 +180,7 @@ namespace Beamable.Server.Editor.Usam
 				}
 			}
 		}
-		
+
 
 		private void PopulateDataWithRemote(BeamServiceListResult objData)
 		{
@@ -206,7 +206,7 @@ namespace Beamable.Server.Editor.Usam
 					dataIndex = ServiceDefinitions.Count - 1;
 					ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder() { BeamoId = name };
 				}
-				
+
 				ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = objData.ShouldBeEnabledOnRemote[i];
 				ServiceDefinitions[dataIndex].IsRunningOnRemote =
 						objData.RunningState[i] ? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
@@ -283,7 +283,7 @@ namespace Beamable.Server.Editor.Usam
 		public Promise RunStandaloneMicroservice(string id)
 		{
 			LogVerbose($"Start generating client code for service: {id}");
-			
+
 
 			var service = _services.FirstOrDefault(s => s.name == id);
 
@@ -292,15 +292,15 @@ namespace Beamable.Server.Editor.Usam
 				LogVerbose($"The service {id} is not listed.", true);
 				throw new Exception("Service is invalid.");
 			}
-			
+
 			var microserviceFullPath = Path.GetFullPath(service.CsprojPath);
 			var runCommand = $"run --project {microserviceFullPath} --property:CopyToLinkedProjects=false;GenerateClientCode=false";
 
 			LogVerbose($"Running service: {id} using command: {runCommand}");
 			_ = _dotnetService.Run(runCommand);
-			
+
 			var def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(id));
-				
+
 			def?.Builder.OnStartingProgress?.Invoke((int)100, 100);
 			def?.Builder.OnStartingFinished?.Invoke(true);
 			if (def != null)
@@ -475,7 +475,7 @@ namespace Beamable.Server.Editor.Usam
 			var args = new ServicesSetLocalManifestArgs();
 			var dependedStorages = new List<string>();
 			int servicesCount = 0;
-			
+
 			//check how many services exist locally
 			foreach (IBeamoServiceDefinition def in definitions)
 			{
@@ -484,7 +484,7 @@ namespace Beamable.Server.Editor.Usam
 					servicesCount++;
 				}
 			}
-			
+
 			if (servicesCount == 0)
 			{
 				LogVerbose("There are no services to write to a manifest!");
@@ -501,7 +501,7 @@ namespace Beamable.Server.Editor.Usam
 			{
 				if (string.IsNullOrEmpty(definitions[i].ServiceInfo.dockerfilePath))
 					continue;
-					
+
 				args.localHttpNames[i] = definitions[i].BeamoId;
 				args.localHttpContexts[i] = definitions[i].ServiceInfo.dockerBuildPath;
 				args.localHttpDockerFiles[i] = definitions[i].ServiceInfo.dockerfilePath;
@@ -563,7 +563,7 @@ namespace Beamable.Server.Editor.Usam
 			var data = GetSignpostData<BeamServiceSignpost>(files);
 			return data;
 		}
-		
+
 
 		public static List<T> GetSignpostData<T>(IEnumerable<string> files) where T : ISignpostData
 		{
@@ -585,7 +585,7 @@ namespace Beamable.Server.Editor.Usam
 
 			ScanDirectoryRecursive("Assets", extension, IgnoreFolderSuffixes, files);
 			ScanDirectoryRecursive("Packages", extension, IgnoreFolderSuffixes, files);
-			ScanDirectoryRecursive(Path.Combine(new[]{"Library","PackageCache"}), extension, IgnoreFolderSuffixes, files);
+			ScanDirectoryRecursive(Path.Combine(new[] { "Library", "PackageCache" }), extension, IgnoreFolderSuffixes, files);
 			return files;
 		}
 
@@ -653,7 +653,7 @@ namespace Beamable.Server.Editor.Usam
 				{
 					process.Kill();
 				}
-				
+
 				var def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(id));
 				if (def != null)
 				{
