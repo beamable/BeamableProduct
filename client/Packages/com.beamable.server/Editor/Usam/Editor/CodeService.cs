@@ -35,6 +35,7 @@ namespace Beamable.Server.Editor.Usam
 		private static readonly List<string> IgnoreFolderSuffixes = new List<string> { "~", "obj", "bin" };
 		private List<BeamServiceSignpost> _services;
 		private List<Promise> _logsCommands = new List<Promise>();
+		private string _projectVersion;
 
 		private const string BEAMABLE_PATH = "Assets/Beamable/";
 		private const string MICROSERVICE_DLL_PATH = "bin/Debug/net6.0"; // is this true for all platforms and dotnet installations?
@@ -106,7 +107,7 @@ namespace Beamable.Server.Editor.Usam
 			});
 			await versionCommand.Run().Error(LogExceptionVerbose);
 
-			if (string.IsNullOrEmpty(version?.version) || version.version.Contains("0.0.0"))
+			if (string.IsNullOrEmpty(version?.version) || version.version.Contains("1.0.0"))
 			{
 				LogVerbose("Could not detect current version, skipping");
 				return;
@@ -115,7 +116,8 @@ namespace Beamable.Server.Editor.Usam
 			var versions = _cli.ProjectVersion(new ProjectVersionArgs { requestedVersion = version?.version });
 			versions.OnStreamProjectVersionCommandResult(result =>
 			{
-				LogVerbose($"Versions updated: {result.data.packageVersions[0]}");
+				_projectVersion = result.data.packageVersions[0];
+				LogVerbose($"Versions updated: {_projectVersion}");
 			});
 			await versions.Run().Error(LogExceptionVerbose);
 		}
@@ -249,7 +251,10 @@ namespace Beamable.Server.Editor.Usam
 			}
 
 			var service = new ServiceName(serviceName);
-			var args = new ProjectNewArgs { solutionName = service, quiet = true, name = service, output = outputPath };
+			var args = new ProjectNewArgs
+			{
+				solutionName = service, quiet = true, name = service, output = outputPath, version = _projectVersion
+			};
 			ProjectNewWrapper command = _cli.ProjectNew(args);
 			await command.Run();
 

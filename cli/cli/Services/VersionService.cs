@@ -1,3 +1,4 @@
+using Beamable.Common.Util;
 using Newtonsoft.Json;
 using Serilog;
 using System.Reflection;
@@ -59,9 +60,7 @@ public class VersionService
 	{
 		var info = new VersionInfo();
 
-		var asm = Assembly.GetEntryAssembly();
-		var versionInfo = System.Diagnostics.FileVersionInfo.GetVersionInfo(asm.Location);
-		info.version = versionInfo.FileVersion;
+		info.version = BeamAssemblyVersionUtil.GetVersion<BeamoService>();
 		info.location = Environment.ProcessPath;
 
 		var templateInfo = await projectService.GetTemplateInfo();
