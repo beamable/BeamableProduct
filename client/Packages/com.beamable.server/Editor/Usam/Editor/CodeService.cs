@@ -697,6 +697,21 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 
+		public void OpenMicroserviceFile(string serviceName)
+		{
+			IBeamoServiceDefinition def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(serviceName));
+
+			if (def == null)
+			{
+				LogVerbose("Service does not exist!");
+				return;
+			}
+			
+			var path = Path.GetDirectoryName(def.ServiceInfo.dockerBuildPath);
+			var fileName = $@"{path}/services/{serviceName}/{serviceName}.cs";
+			EditorUtility.OpenWithDefaultApp(fileName);
+		}
+
 		public async Promise Run(IEnumerable<string> beamoIds)
 		{
 			var listToRun = beamoIds.ToList();
