@@ -1,5 +1,6 @@
 # Local developer files.
 .p4config
+/ProjectsSource/
 
 # Unity3D generated files.
 /client/Library/
