@@ -66,6 +66,13 @@ namespace Beamable.Server {
 				return json;
 			}
 
+			[Route(HttpVerbs.Get, "/stop")]
+			public string Stop(string reason)
+			{
+				System.Environment.Exit(0);
+				return "stopping";
+			}
+
 			[Route(HttpVerbs.Get, "/logs")]
 			public string StreamLogs()
 			{

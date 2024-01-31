@@ -131,6 +131,8 @@ public class DiscoveryService
 		}
 
 		await _localSystem.StopListeningToDocker();
+		
+		
 	}
 
 	public static ServiceDiscoveryEvent CreateEvent(ServiceDiscoveryEntry entry, bool isRunning)

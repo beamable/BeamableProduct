@@ -3,6 +3,7 @@ using cli.Utils;
 using Newtonsoft.Json;
 using Spectre.Console;
 using Spectre.Console.Json;
+#pragma warning disable CS0162 // Unreachable code detected
 
 namespace cli;
 
