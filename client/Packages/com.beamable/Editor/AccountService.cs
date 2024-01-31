@@ -32,10 +32,11 @@ namespace Beamable.Editor
 		void Clear();
 	}
 
-	public class AccountService : IAccountService, IStorageHandler<AccountService>, Beamable.Common.Dependencies.IServiceStorable
+	public class AccountServerData
 	{
-
-
+		public OptionalString cid = new OptionalString();
+		public List<EditorAccountInfo> editorAccounts = new List<EditorAccountInfo>();
+		
 		public EditorAccountInfo Account
 		{
 			get
@@ -44,16 +45,15 @@ namespace Beamable.Editor
 				return editorAccounts?.FirstOrDefault(a => a?.cid?.Equals(cid.Value) ?? false);
 			}
 		}
-
+	}
+	
+	public class AccountService : AccountServerData, IAccountService, IStorageHandler<AccountService>, Beamable.Common.Dependencies.IServiceStorable
+	{
 		public List<Func<EditorAccountInfo, Promise>> _onUserChangeCallbacks = new List<Func<EditorAccountInfo, Promise>>();
-
 		private readonly IDependencyProviderScope _scope;
-
-		public OptionalString cid = new OptionalString();
-
+		
 		public ReadonlyOptionalString Cid => new ReadonlyOptionalString(cid);
 
-		public List<EditorAccountInfo> editorAccounts = new List<EditorAccountInfo>();
 
 		private StorageHandle<AccountService> _saveHandle;
 		private ConfigDefaultsService ConfigDefaultsService => _scope.GetService<ConfigDefaultsService>();

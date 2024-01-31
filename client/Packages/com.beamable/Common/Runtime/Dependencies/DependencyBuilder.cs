@@ -647,7 +647,11 @@ namespace Beamable.Common.Dependencies
 				}
 				catch (Exception ex)
 				{
-					BeamableLogger.LogError($"Could not create instance of type=[{type.FullName}] because parameter index=[{i}] name=[{parameters[i].Name}] of type=[{parameters[i].ParameterType}] could not instantiate due to message=[{ex.Message}]");
+					BeamableLogger.LogError($"Could not create instance of type=[{type.FullName}] because parameter index=[{i}] name=[{parameters[i].Name}] of type=[{parameters[i].ParameterType}] could not instantiate due to message=[{ex.Message}]. Stack=[\n{ex.StackTrace}]");
+					if (ex.InnerException != null)
+					{
+						ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+					}
 					throw;
 				}
 			}
