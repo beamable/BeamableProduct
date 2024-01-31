@@ -302,8 +302,8 @@ public class App
 		});
 		commandLineBuilder.UseExceptionHandler((ex, context) =>
 		{
-	
-			
+
+
 			switch (ex)
 			{
 				case RequesterException requesterException:
@@ -341,13 +341,13 @@ public class App
 					Console.Error.WriteLine(ex.StackTrace);
 					break;
 			}
-			
+
 			var provider = context.BindingContext.GetService<AppServices>();
 			var appContext = provider.GetService<IAppContext>();
 			if (appContext.UsePipeOutput || appContext.ShowRawOutput)
 			{
 				var reporter = provider.GetService<IDataReporterService>();
-				
+
 				reporter.Exception(ex, context.ExitCode, context.BindingContext.ParseResult.Diagram());
 			}
 		});
