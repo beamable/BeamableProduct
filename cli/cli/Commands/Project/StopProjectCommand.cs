@@ -83,7 +83,7 @@ public class StopProjectCommand : AtomicCommand<StopProjectCommandArgs, StopProj
 	{
 		using var client = new HttpClient();
 		// Set up the HTTP GET request
-		var request = new HttpRequestMessage(HttpMethod.Post, $"http://localhost:{evt.healthPort}/stop?reason=cli-request");
+		var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:{evt.healthPort}/stop?reason=cli-request");
 		var response = await client.SendAsync(request);
 		if (!response.IsSuccessStatusCode)
 		{

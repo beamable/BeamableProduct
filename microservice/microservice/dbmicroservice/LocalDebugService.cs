@@ -1,4 +1,5 @@
-﻿using Beamable.Server.Api.Usage;
+﻿using Beamable.Common;
+using Beamable.Server.Api.Usage;
 using Beamable.Server.Common;
 using Beamable.Server.Ecs;
 using System.Net.WebSockets;
@@ -67,9 +68,14 @@ namespace Beamable.Server {
 			}
 
 			[Route(HttpVerbs.Get, "/stop")]
-			public string Stop(string reason)
+			public string Stop([QueryField]string reason)
 			{
-				System.Environment.Exit(0);
+				Task.Run(async () =>
+				{
+					await Task.Delay(100);
+					BeamableLogger.Log($"Stopping service through debug-server due to reason=[{reason}]");
+					Environment.Exit(0);
+				});
 				return "stopping";
 			}
 

@@ -5,14 +5,14 @@ namespace cli.Services;
 
 public class ProjectLogsService
 {
-	public static async Task Handle(TailLogsCommandArgs args, Action<string> handleLog)
+	public static async Task Handle(TailLogsCommandArgs args, Action<string> handleLog, CancellationToken token=default)
 	{
-		while (args.reconnect)
+		while (args.reconnect && !token.IsCancellationRequested)
 		{
 			var discovery = args.DependencyProvider.GetService<DiscoveryService>();
 
 			ServiceDiscoveryEvent startEvt = null;
-			await foreach (var evt in discovery.StartDiscovery())
+			await foreach (var evt in discovery.StartDiscovery(default, token))
 			{
 				if (evt.service == args.service && evt.isRunning)
 				{
@@ -21,16 +21,23 @@ public class ProjectLogsService
 				}
 			}
 
-			if (startEvt.isContainer)
+			if (startEvt == null)
 			{
-				await TailDockerContainer(startEvt.containerId, args.BeamoLocalSystem, handleLog);
+				Log.Verbose("no start event found");
 			}
 			else
 			{
-				await TailProcess(startEvt, handleLog);
-			}
+				if (startEvt.isContainer)
+				{
+					await TailDockerContainer(startEvt.containerId, args.BeamoLocalSystem, handleLog);
+				}
+				else
+				{
+					await TailProcess(startEvt, handleLog);
+				}
 
-			Log.Verbose($"{args.service} has stopped.");
+				Log.Verbose($"{args.service} has stopped.");
+			}
 
 			await discovery.Stop();
 

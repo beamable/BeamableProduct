@@ -59,13 +59,11 @@ public class RunProjectCommand : StreamCommand<RunProjectCommandArgs, RunProject
 		Log.Debug($"Found service definition, ctx=[{service.DockerBuildContextPath}] dockerfile=[{service.RelativeDockerfilePath}]");
 		var dockerfilePath = Path.Combine(args.ConfigService.GetRelativePath(service.DockerBuildContextPath), service.RelativeDockerfilePath);
 		var projectPath = Path.GetDirectoryName(dockerfilePath);
-		var logPath = Path.Combine(args.ConfigService.ConfigFilePath, "temp", $"{serviceName}-logs.txt");
+		var logPath = Path.Combine(args.ConfigService.ConfigFilePath, "temp", "logs", $"{serviceName}-{DateTimeOffset.Now.ToUnixTimeMilliseconds()}-logs.txt");
 		Log.Debug($"service path=[{projectPath}]");
 		
-		var stdOutBuffer = new StringBuilder();
-		var stdErrBuffer = new StringBuilder();
-
 		var commandStr = $"watch --non-interactive --project {projectPath} run --property:CopyToLinkedProjects=false;GenerateClientCode=false --";
+		using var cts = new CancellationTokenSource();
 		var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, commandStr)
 			.WithEnvironmentVariables(new Dictionary<string, string>
 			{
@@ -86,9 +84,14 @@ public class RunProjectCommand : StreamCommand<RunProjectCommandArgs, RunProject
 				   
 				 */
 				// Log.Information(line);
+				if (line.Trim() == "dotnet watch : Exited")
+				{
+					cts.Cancel();
+				}
+				
 				Console.Error.WriteLine("(watch) " + line);
 			}))
-			.ExecuteAsync();
+			.ExecuteAsync(cts.Token);
 
 
 		var tailArgs = args.Create<TailLogsCommandArgs>();
@@ -99,12 +102,18 @@ public class RunProjectCommand : StreamCommand<RunProjectCommandArgs, RunProject
 		{
 			var parsed = JsonConvert.DeserializeObject<TailLogMessage>(logMessage);
 			Console.Error.WriteLine($"[{parsed.logLevel}] {parsed.message}");
-			//Log.Information($"(service)[{parsed.logLevel}] {parsed.message}");
 			parsed.raw = logMessage;
-			// SendResults(new TailLogMessageForClient(parsed));
-		});
-		
-		await command;
+		}, cts.Token);
+
+		try
+		{
+			await command;
+		}
+		catch (OperationCanceledException)
+		{
+			Log.Debug("watch command was cancelled.");
+		}
+
 		await logCommand;
 
 	}
