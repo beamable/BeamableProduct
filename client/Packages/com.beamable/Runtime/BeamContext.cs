@@ -72,7 +72,7 @@ namespace Beamable
 	/// </para>
 	/// </summary>
 	[Serializable]
-	public class BeamContext : IPlatformService, IGameObjectContext, IObservedPlayer, IBeamableDisposableOrder, IDependencyNameProvider, IDependencyScopeNameProvider
+	public class BeamContext : IPlatformService, IGameObjectContext, IObservedPlayer, IBeamableDisposableOrder, IDependencyNameProvider, IDependencyScopeNameProvider, IBeamState
 	{
 		#region Internal State
 		/// <summary>
@@ -120,6 +120,7 @@ namespace Beamable
 		private bool _isStopped;
 		private GameObject _gob;
 		private Promise _initPromise;
+		private Promise _playerReadyPromise = new Promise();
 		private BeamContext _parent;
 		private HashSet<BeamContext> _children = new HashSet<BeamContext>();
 
@@ -330,6 +331,10 @@ namespace Beamable
 		/// <returns>The same instance, but now mutated for the new authorized user</returns>
 		public async Promise<BeamContext> ChangeAuthorizedPlayer(TokenResponse token)
 		{
+			var promiseRef = _playerReadyPromise;
+			_playerReadyPromise = new Promise();
+			var _ =_playerReadyPromise.Merge(promiseRef);
+			
 			if (AuthorizedUser != null)
 			{
 				OnUserLoggingOut?.Invoke(AuthorizedUser);
@@ -346,7 +351,7 @@ namespace Beamable
 				await Accounts.Refresh();
 			}
 			OnReloadUser?.Invoke();
-
+			
 			return ctx;
 		}
 
@@ -510,6 +515,7 @@ namespace Beamable
 			builder.AddSingleton<IBeamableAPI>(provider => Api);
 			builder.AddSingleton<BeamContext>(this);
 			builder.AddSingleton<IPlatformService>(this);
+			builder.AddSingleton<IBeamState>(this);
 			builder.AddSingleton<IGameObjectContext>(this);
 			builder.AddScoped<IDependencyScopeNameProvider>(this);
 			builder.AddSingleton<IDependencyNameProvider>(this);
@@ -644,6 +650,7 @@ namespace Beamable
 			{
 				var user = await _authService.GetUser();
 				AuthorizedUser.Value = user;
+				_playerReadyPromise.CompleteSuccess();
 			}
 
 			async Promise SetupNewSession()
@@ -727,7 +734,7 @@ namespace Beamable
 					var rsp = await _authService.LoginRefreshToken(AccessToken.RefreshToken);
 					await SaveToken(rsp);
 				}
-
+				
 				await SetupGetUser();
 				var connection = SetupBeamableNotificationChannel();
 				var session = SetupNewSession();
@@ -880,6 +887,8 @@ namespace Beamable
 
 		User IPlatformService.User => AuthorizedUser.Value;
 		public Promise<Unit> OnReady => _initPromise;
+
+		Promise<Unit> IBeamState.OnPlayerReady => _playerReadyPromise;
 
 		/// <summary>
 		/// A <see cref="Promise{T}"/> that is completed when the <see cref="BeamContext"/> is ready to be used.
