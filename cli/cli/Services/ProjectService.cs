@@ -367,11 +367,11 @@ public class ProjectService
 		await RunDotnetCommand($"add {projectPath} reference {referencePath}");
 	}
 
-	public async Task CreateNewStorage(string slnFilePath, string storageName)
+	public async Task<string> CreateNewStorage(string slnFilePath, string storageName)
 	{
 		var slnDirectory = Path.GetDirectoryName(slnFilePath);
 		var rootServicesPath = Path.Combine(slnDirectory, "services");
-		var storagePath = Path.Combine(rootServicesPath, storageName);
+		var storagePath = _configService.GetRelativePath(Path.Combine(rootServicesPath, storageName));
 
 		if (Directory.Exists(storagePath))
 		{
@@ -385,6 +385,8 @@ public class ProjectService
 
 		// add the new project as a reference to the solution
 		await RunDotnetCommand($"sln {slnFilePath} add {storagePath}");
+
+		return storagePath;
 	}
 
 	public Task<string> CreateNewSolution(NewSolutionCommandArgs args)

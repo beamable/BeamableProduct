@@ -2,11 +2,13 @@
 using Beamable.Common.BeamCli;
 using cli.Services;
 using cli.Utils;
+using Errata;
 using Newtonsoft.Json;
 using Serilog;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 using System.CommandLine;
+using System.Text;
 
 namespace cli;
 
@@ -62,6 +64,37 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 
 		// If no ids were given, run all registered services in docker 
 		args.BeamoIdsToDeploy ??= _localBeamo.BeamoManifest.ServiceDefinitions.Select(c => c.BeamoId).ToArray();
+
+		var failedId = args.BeamoIdsToDeploy.Where(id => !_localBeamo.VerifyCanBeBuiltLocally(id)).ToList();
+		if (failedId.Any())
+		{
+			var diagnostics = new List<Diagnostic>();
+			foreach (string id in failedId)
+			{
+				if (_localBeamo.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(id, out var microservice))
+				{
+					var path = args.ConfigService.GetRelativePath(microservice.DockerBuildContextPath);
+					if (!Directory.Exists(path))
+						diagnostics.Add(new Diagnostic($"[{id}] DockerBuildContext doesn't exist: [{path}]"));
+					var dockerfilePath = Path.Combine(path, microservice.RelativeDockerfilePath);
+					if (!File.Exists(dockerfilePath))
+						diagnostics.Add(new Diagnostic($"[{id}] No Dockerfile found at path: [{dockerfilePath}]"));
+				}
+				else if (_localBeamo.BeamoManifest.EmbeddedMongoDbLocalProtocols.TryGetValue(id, out var storage))
+				{
+					if (!storage.BaseImage.Contains("mongo:"))
+						diagnostics.Add(new Diagnostic($"[{id}] Base Image [{storage.BaseImage}] must be a version of mongo."));
+					if (string.IsNullOrWhiteSpace(storage.ProjectDirectory))
+					{
+						diagnostics.Add(new Diagnostic($"[{id}] Project path in config is null or empty"));
+					}
+					else if(!Directory.Exists(args.ConfigService.GetRelativePath(storage.ProjectDirectory)))
+						diagnostics.Add(new Diagnostic($"[{id}] Wrong project path in config: {storage.ProjectDirectory}"));
+						
+				}
+			}
+			throw new CliException($"Some of the services could not be run locally: {string.Join(',',failedId)}", 555,true,null,diagnostics);
+		}
 
 		await AnsiConsole
 			.Progress()

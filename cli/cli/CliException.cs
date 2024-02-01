@@ -21,7 +21,7 @@ public class CliException : Exception
 		ReportOnStdOut = true;
 	}
 
-	public CliException(string message, int nonZeroOrOneExitCode, bool useStdOut, string additionalNote = null, Diagnostic[] additionalReports = null) : base(message)
+	public CliException(string message, int nonZeroOrOneExitCode, bool useStdOut, string additionalNote = null, IEnumerable<Diagnostic> additionalReports = null) : base(message)
 	{
 		NonZeroOrOneExitCode = nonZeroOrOneExitCode;
 		ReportOnStdOut = useStdOut;

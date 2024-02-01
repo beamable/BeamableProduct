@@ -70,10 +70,10 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 
 		args.BeamoLocalSystem.BeamoManifest.Clear();
 
-		var arityMatch = (args.localHttpRelativeDockerfilePaths.Count == args.localHttpNames.Count) &&
+		var parityMatch = (args.localHttpRelativeDockerfilePaths.Count == args.localHttpNames.Count) &&
 						 (args.localHttpRelativeDockerfilePaths.Count == args.localHttpBuildContextPaths.Count) &&
 						 (args.localHttpRelativeDockerfilePaths.Count == args.shouldServiceBeEnabled.Count);
-		if (!arityMatch)
+		if (!parityMatch)
 		{
 			throw new CliException("Invalid service count, must have equal parameter counts");
 		}
@@ -131,7 +131,7 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 
 
 
-			var sd = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(name,
+			_ = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(name,
 				contextPath,
 				dockerPath,
 				serviceStorages,

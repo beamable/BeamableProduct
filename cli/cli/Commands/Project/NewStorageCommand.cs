@@ -135,11 +135,12 @@ COPY {args.storageName}/. .
 			dockerfileText = dockerfileText.Replace(search, replacement);
 			await File.WriteAllTextAsync(dockerfilePath, dockerfileText);
 		}
-
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
 
 		// add the project itself
-		await args.ProjectService.CreateNewStorage(args.slnPath, args.storageName);
+		var storagePath = await args.ProjectService.CreateNewStorage(args.slnPath, args.storageName);
+		args.BeamoLocalSystem.BeamoManifest.EmbeddedMongoDbLocalProtocols[args.storageName].ProjectDirectory = storagePath;
+		args.BeamoLocalSystem.SaveBeamoLocalManifest();
 
 		foreach (var dependency in dependencies)
 		{

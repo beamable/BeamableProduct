@@ -138,6 +138,7 @@ public partial class BeamoLocalSystem
 	}
 }
 
+[Serializable]
 public class EmbeddedMongoDbLocalProtocol : IBeamoLocalProtocol
 {
 	public string BaseImage;
@@ -149,13 +150,16 @@ public class EmbeddedMongoDbLocalProtocol : IBeamoLocalProtocol
 
 	public string DataVolumeInContainerPath;
 	public string FilesVolumeInContainerPath;
-
-	public bool VerifyCanBeBuiltLocally(ConfigService _)
+	public string ProjectDirectory;
+	public bool VerifyCanBeBuiltLocally(ConfigService configService)
 	{
 		if (!BaseImage.Contains("mongo:"))
 			throw new Exception($"Base Image [{BaseImage}] must be a version of mongo.");
-
-		return !string.IsNullOrEmpty(BaseImage);
+		if (string.IsNullOrWhiteSpace(BaseImage) || string.IsNullOrWhiteSpace(ProjectDirectory))
+			return false;
+		
+		var path = configService.GetRelativePath(ProjectDirectory);
+		return Directory.Exists(path);
 	}
 }
 
