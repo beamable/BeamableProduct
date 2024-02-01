@@ -14,7 +14,11 @@ namespace Beamable.Server.Api.Events
 
       public override Promise<EventsGetResponse> GetCurrent(string scope = "")
       {
-         return _getter.RequestData(Requester, Ctx, SERVICE_NAME, scope);
+         return _getter.RequestData(Requester, Ctx, SERVICE_NAME, scope).Map(response =>
+         {
+	         response.Init();
+	         return response;
+         });
       }
    }
 }
