@@ -3,8 +3,6 @@ using cli.Utils;
 using Newtonsoft.Json;
 using Spectre.Console;
 using Spectre.Console.Json;
-#pragma warning disable CS0162 // Unreachable code detected
-
 namespace cli;
 
 public class AccountMeCommandArgs : CommandArgs
@@ -14,7 +12,7 @@ public class AccountMeCommandArgs : CommandArgs
 
 public class AccountMeCommand : AtomicCommand<AccountMeCommandArgs, User>
 {
-	public AccountMeCommand() : base("me", "Temp command to get current account") { }
+	public AccountMeCommand() : base("me", "Fetch the current account") { }
 
 	public override void Configure()
 	{
