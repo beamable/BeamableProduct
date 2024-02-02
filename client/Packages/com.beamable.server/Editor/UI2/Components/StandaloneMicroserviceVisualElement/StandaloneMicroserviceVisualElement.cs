@@ -87,7 +87,10 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			_moreBtn.tooltip = Constants.Tooltips.Microservice.MORE;
 			_moreBtn.AddManipulator(manipulator);
 
-			_openScriptBtn.AddManipulator(new Clickable(Model.ServiceInfo.OpenCode));
+			_openScriptBtn.AddManipulator(new Clickable(() =>
+			{
+				BeamEditorContext.Default.ServiceScope.GetService<CodeService>().OpenMicroserviceFile(Model.BeamoId);
+			}));
 			_openScriptBtn.tooltip = "Open C# Code";
 
 			_openDocsBtn.AddManipulator(new Clickable(OpenLocalDocs));
@@ -197,9 +200,8 @@ namespace Beamable.Editor.Microservice.UI2.Components
 
 		public void OpenLocalDocs()
 		{
-			var de = BeamEditorContext.Default;
-			var url = $"{BeamableEnvironment.PortalUrl}/{de.CurrentCustomer.Alias}/games/{de.ProductionRealm.Pid}/realms/{de.CurrentRealm.Pid}/microservices/{Model.BeamoId}/docs?prefix={MicroserviceIndividualization.Prefix}&refresh_token={de.Requester.Token.RefreshToken}";
-			Application.OpenURL(url);
+			BeamEditorContext.Default.ServiceScope.GetService<CodeService>()
+			                 .OpenSwagger(Model.BeamoId).Then(_ => { });
 		}
 
 
