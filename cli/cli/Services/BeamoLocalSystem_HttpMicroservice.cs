@@ -29,7 +29,6 @@ public partial class BeamoLocalSystem
 		return await AddServiceDefinition<HttpMicroserviceLocalProtocol, HttpMicroserviceRemoteProtocol>(
 			beamId,
 			BeamoProtocolType.HttpMicroservice,
-			Array.Empty<string>(),
 			async (definition, protocol) =>
 			{
 				await PrepareDefaultLocalProtocol_HttpMicroservice(definition, protocol);
@@ -94,7 +93,7 @@ public partial class BeamoLocalSystem
 	/// Runs a service locally, enforcing the <see cref="BeamoProtocolType.HttpMicroservice"/> protocol.
 	/// </summary>
 	public async Task RunLocalHttpMicroservice(BeamoServiceDefinition serviceDefinition,
-		HttpMicroserviceLocalProtocol localProtocol, BeamoLocalManifest localManifest)
+		HttpMicroserviceLocalProtocol localProtocol, BeamoLocalSystem localSystem)
 	{
 		const string ENV_CID = "CID";
 		const string ENV_PID = "PID";
@@ -148,20 +147,18 @@ public partial class BeamoLocalSystem
 
 
 		// add in connection string environment vars for mongo storage dependencies
-		if (serviceDefinition.DependsOnBeamoIds != null)
+		var dependencies = await localSystem.GetDependencies(serviceDefinition.BeamoId);
+		foreach (var dependencyId in dependencies)
 		{
-			foreach (var dependencyId in serviceDefinition.DependsOnBeamoIds)
+			try
 			{
-				try
-				{
-					var connectionEnvVar = await GetLocalConnectionString(localManifest, dependencyId);
-					environmentVariables.Add(connectionEnvVar);
-				}
-				catch (Exception ex)
-				{
-					BeamableLogger.LogException(ex);
-					continue;
-				}
+				var connectionEnvVar = await GetLocalConnectionString(localSystem.BeamoManifest, dependencyId);
+				environmentVariables.Add(connectionEnvVar);
+			}
+			catch (Exception ex)
+			{
+				BeamableLogger.LogException(ex);
+				continue;
 			}
 		}
 

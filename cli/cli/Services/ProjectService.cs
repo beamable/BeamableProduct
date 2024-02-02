@@ -195,23 +195,6 @@ public class ProjectService
 		_configService.SaveDataFile(".linkedProjects", _projects);
 	}
 
-	public async Task<List<string>> GetBeamoIdsDependencies(BeamoLocalManifest manifest, string beamoId, string projectExtension = "csproj")
-	{
-		var serviceDefinition = manifest.ServiceDefinitions.FirstOrDefault(s => s.BeamoId == beamoId);
-		var path = _configService.GetRelativePath(serviceDefinition!.ProjectDirectory);
-		path = Path.Combine(path, $"{beamoId}.{projectExtension}");
-		var (cmd,builder) = await CliExtensions.RunWithOutput(_app.DotnetPath, $"list {path} reference");
-		if (cmd.ExitCode != 0)
-		{
-			throw new CliException($"Getting service dependencies failed, command output: {builder}");
-		}
-		// TODO improve it, for now it is naive, if there is related project with same name as one of the services it will treat it as it is connected
-		var dependencies = builder.ToString().Split(Environment.NewLine).Where(line => line.EndsWith(projectExtension))
-			.Select(Path.GetFileNameWithoutExtension).Where(candidate => manifest.ServiceDefinitions.Any(definition => definition.BeamoId==candidate)).ToList();
-		
-		return dependencies;
-	}
-
 	private static DirectoryInfo EnsureUnrealRootPath(string projectPath)
 	{
 		var unrealRootPath = new DirectoryInfo(projectPath);

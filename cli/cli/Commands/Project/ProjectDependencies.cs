@@ -17,7 +17,7 @@ public class ProjectDependencies : AppCommand<ProjectDependenciesArgs>
 
 	public override async Task Handle(ProjectDependenciesArgs args)
 	{
-		var deps = await args.ProjectService.GetBeamoIdsDependencies(args.BeamoLocalSystem.BeamoManifest, args.ProjectName);
+		var deps = await args.BeamoLocalSystem.GetDependencies(args.ProjectName);
 		Log.Information("{0} dependencies: {1}",args.ProjectName,string.Join(',',deps));
 	}
 }

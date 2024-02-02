@@ -100,19 +100,6 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
 		}
 		var dependencies = AnsiConsole.Prompt(prompt).ToArray();
 
-
-		foreach (var service in args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions)
-		{
-			var isDep = dependencies.Any(d => d.ToLowerInvariant().Equals(service.BeamoId.ToLowerInvariant()));
-			if (!isDep) continue;
-			var next = service.DependsOnBeamoIds.ToList();
-			next.Add(storageDef.BeamoId);
-
-			Log.Information(
-				$"Adding storage=[{storageDef.BeamoId}] to service=[{service.BeamoId}] {nameof(service.DependsOnBeamoIds)} array.");
-			service.DependsOnBeamoIds = next.ToArray();
-		}
-
 		foreach (var service in services)
 		{
 			var dockerfilePath = service.Value.RelativeDockerfilePath;

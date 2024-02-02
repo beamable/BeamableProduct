@@ -24,7 +24,6 @@ public partial class BeamoLocalSystem
 		return await AddServiceDefinition<EmbeddedMongoDbLocalProtocol, EmbeddedMongoDbRemoteProtocol>(
 			beamId,
 			BeamoProtocolType.EmbeddedMongoDb,
-			Array.Empty<string>(),
 			async (definition, protocol) =>
 			{
 				await PrepareDefaultLocalProtocol_EmbeddedMongoDb(definition, protocol);

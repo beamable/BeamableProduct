@@ -97,7 +97,7 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 				var allProgressTasks = args.BeamoIdsToDeploy.Where(id => _localBeamo.VerifyCanBeBuiltLocally(id)).Select(id => ctx.AddTask($"Deploying Service {id}")).ToList();
 				try
 				{
-					await _localBeamo.DeployToLocal(_localBeamo.BeamoManifest, args.BeamoIdsToDeploy,
+					await _localBeamo.DeployToLocal(_localBeamo, args.BeamoIdsToDeploy,
 						forceAmdCpuArchitecture: args.forceAmdCpuArchitecture,
 						(beamoId, progress) =>
 						{
