@@ -16,7 +16,7 @@ namespace Beamable.Common.BeamCli
 			Errors = errors;
 		}
 	}
-	
+
 	[Serializable]
 	public class ErrorOutput
 	{
