@@ -15,6 +15,7 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public readonly BeamoLocalManifest BeamoManifest;
 
+	public readonly Dictionary<BeamoServiceDefinition,List<string>> ServicesDependencies = new();
 
 	/// <summary>
 	/// The current local state of containers, associated with the <see cref="BeamoLocalManifest.ServiceDefinitions"/>, keept in sync with the <see cref="_beamoLocalRuntimeFile"/> json file.
@@ -163,18 +164,27 @@ COPY {dependency.BeamoId}/. .";
 			dockerfileText = dockerfileText.Replace(search, replacement);
 			await File.WriteAllTextAsync(dockerfilePath, dockerfileText);
 		}
+		ServicesDependencies.Clear();
 	}
 
+	/// <summary>
+	/// Retrieves the dependencies of each Beamo service defined in the BeamoManifest.
+	/// </summary>
+	/// <param name="projectExtension">The extension of the project file (default: 'csproj').</param>
+	/// <returns>A dictionary where the key is a BeamoServiceDefinition and the value is a list of its dependencies.</returns>
 	public async Task<Dictionary<BeamoServiceDefinition,List<string>>> GetAllBeamoIdsDependencies(string projectExtension = "csproj")
 	{
-		var dict = new Dictionary<BeamoServiceDefinition,List<string>>();
+		
 		foreach (var definition in BeamoManifest.ServiceDefinitions)
 		{
-			var entry = await GetDependencies(definition.BeamoId, projectExtension);
-			dict.Add(definition,entry);
+			if(!ServicesDependencies.ContainsKey(definition))
+			{
+				var entry = await GetDependencies(definition.BeamoId, projectExtension);
+				ServicesDependencies.Add(definition, entry);
+			}
 		}
 
-		return dict;
+		return ServicesDependencies;
 	}
 	
 	/// <summary>
@@ -410,7 +420,6 @@ public class BeamoLocalManifest
 	/// </summary>
 	public List<BeamoServiceDefinition> ServiceDefinitions;
 
-
 	/// <summary>
 	/// These are map individual <see cref="BeamoServiceDefinition.BeamoId"/>s to their protocol data. Since we don't allow changing protocols we don't ever need to move the services' protocol data between these.
 	/// </summary>
@@ -431,7 +440,7 @@ public class BeamoLocalManifest
 	/// These are map individual <see cref="BeamoServiceDefinition.BeamoId"/>s to their protocol data. Since we don't allow changing protocols we don't ever need to move the services' protocol data between these.
 	/// </summary>
 	public BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol> EmbeddedMongoDbRemoteProtocols;
-
+	
 	public void Clear()
 	{
 		ServiceDefinitions.Clear();
