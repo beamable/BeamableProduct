@@ -402,6 +402,11 @@ public class BeamoServiceDefinition
 	public bool ShouldBeEnabledOnRemote;
 
 	/// <summary>
+	/// Path to the directory containing project file(csproj).
+	/// </summary>
+	public string ProjectDirectory;
+
+	/// <summary>
 	/// Defines two services as being equal simply by using their <see cref="BeamoServiceDefinition.BeamoId"/>.
 	/// </summary>
 	public struct IdEquality : IEqualityComparer<BeamoServiceDefinition>
