@@ -367,11 +367,17 @@ public class ProjectService
 		await RunDotnetCommand($"add {projectPath} reference {referencePath}");
 	}
 
-	public async Task<string> CreateNewStorage(string slnFilePath, string storageName)
+	public string GeneratePathForProject(string slnFilePath, string beamId)
 	{
 		var slnDirectory = Path.GetDirectoryName(slnFilePath);
 		var rootServicesPath = Path.Combine(slnDirectory, "services");
-		var storagePath = _configService.GetRelativePath(Path.Combine(rootServicesPath, storageName));
+		var path = _configService.GetRelativePath(Path.Combine(rootServicesPath, beamId));
+		return path;
+	}
+
+	public async Task<string> CreateNewStorage(string slnFilePath, string storageName)
+	{
+		var storagePath = GeneratePathForProject(slnFilePath,storageName);
 
 		if (Directory.Exists(storagePath))
 		{
@@ -545,7 +551,6 @@ public class ProjectService
 		return args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value,
 			projectDirectory,
 			projectDockerfilePath,
-			new string[] { },
 			CancellationToken.None,
 			!args.Disabled);
 	}

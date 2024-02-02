@@ -11,7 +11,7 @@ public class ServicesSetManifestCommandArgs : CommandArgs
 	public List<string> localHttpNames;
 	public List<string> localHttpBuildContextPaths;
 	public List<string> localHttpRelativeDockerfilePaths;
-	public List<string> storageDependencies;
+	public List<string> storageDependenciesPaths;
 	public List<string> shouldServiceBeEnabled;
 }
 
@@ -49,12 +49,12 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 		AddOption(dockerFiles, (x, i) => x.localHttpRelativeDockerfilePaths = i);
 
 
-		var storageDeps = new Option<List<string>>("--storage-dependencies", "Local http service required storage, use format <service-name>:<storage-name>")
+		var storageDeps = new Option<List<string>>("--storage-paths", "Local http service required storage, use format <service-name>:<storage-name>")
 		{
 			Arity = ArgumentArity.ZeroOrMore,
 			AllowMultipleArgumentsPerToken = true
 		};
-		AddOption(storageDeps, (x, i) => x.storageDependencies = i);
+		AddOption(storageDeps, (x, i) => x.storageDependenciesPaths = i);
 
 		var shouldBeEnabled = new Option<List<string>>("--should-be-enable", "If this service should be enable on remote")
 		{
@@ -78,35 +78,11 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 			throw new CliException("Invalid service count, must have equal parameter counts");
 		}
 
-		var storages = new Dictionary<string, List<string>>();
-		foreach (string storageDependency in args.storageDependencies)
+		foreach (var storagePath in args.storageDependenciesPaths)
 		{
-			var splitted = storageDependency.Split(':');
-			if (splitted.Length != 2)
-			{
-				throw new CliException($"Invalid storage dependency argument format: {storageDependency}");
-			}
-
-			var storage = splitted[1];
-			var depService = splitted[0];
-
-			if (!args.localHttpNames.Any(s => s.Equals(depService)))
-			{
-				throw new CliException($"Invalid storage dependency argument, could not find service: {depService}");
-			}
-
-			if (!storages.ContainsKey(storage))
-			{
-				storages.Add(storage, new List<string>());
-			}
-			storages[storage].Add(depService);
-		}
-
-
-		foreach (KeyValuePair<string, List<string>> storageWithDeps in storages)
-		{
-			await args.BeamoLocalSystem.AddDefinition_EmbeddedMongoDb(storageWithDeps.Key, "mongo:latest",
-				new string[] { }, CancellationToken.None);
+			var storageName = Directory.GetDirectories(storagePath).Last();
+			await args.BeamoLocalSystem.AddDefinition_EmbeddedMongoDb(storageName, "mongo:latest",
+				storageName, CancellationToken.None);
 		}
 		for (var i = 0; i < args.localHttpNames.Count; i++)
 		{
@@ -127,14 +103,9 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 
 			Log.Debug($"name=[{name}] path=[{contextPath}] dockerfile=[{dockerPath}]");
 
-			var serviceStorages = storages.Where(pair => pair.Value.Contains(name)).Select(pair => pair.Key).ToArray();
-
-
-
 			_ = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(name,
 				contextPath,
 				dockerPath,
-				serviceStorages,
 				CancellationToken.None,
 				shouldBeEnabled);
 		}

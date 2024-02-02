@@ -39,7 +39,7 @@ public partial class BeamoLocalSystem
 		{
 			// If we don't have a service storage with that id stored locally, let's make one
 			if (existingMongoServices.All(sd => sd.BeamoId != storageReference.id))
-				await AddDefinition_EmbeddedMongoDb(storageReference.id, null, Array.Empty<string>(), CancellationToken.None);
+				await AddDefinition_EmbeddedMongoDb(storageReference.id, null, null, CancellationToken.None);
 		}
 
 		var existingHttpServices = BeamoManifest.ServiceDefinitions.Where(sd => sd.Protocol == BeamoProtocolType.HttpMicroservice).ToList();

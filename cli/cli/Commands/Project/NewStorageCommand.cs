@@ -73,7 +73,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
 		Log.Information(
 			$"Registering local project... 'beam services register --id {args.storageName} --type EmbeddedMongoDb'");
 		var storageDef = await args.BeamoLocalSystem.AddDefinition_EmbeddedMongoDb(args.storageName, "mongo:latest",
-			new string[] { },
+			args.ProjectService.GeneratePathForProject(args.slnPath, args.storageName),
 			CancellationToken.None);
 
 
@@ -138,8 +138,7 @@ COPY {args.storageName}/. .
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
 
 		// add the project itself
-		var storagePath = await args.ProjectService.CreateNewStorage(args.slnPath, args.storageName);
-		args.BeamoLocalSystem.BeamoManifest.EmbeddedMongoDbLocalProtocols[args.storageName].ProjectDirectory = storagePath;
+		_ = await args.ProjectService.CreateNewStorage(args.slnPath, args.storageName);
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
 
 		foreach (var dependency in dependencies)

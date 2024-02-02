@@ -18,17 +18,17 @@ public partial class BeamoLocalSystem
 	/// <param name="dependencyBeamIds">Other existing services that this depends on. Any dependency is guaranteed to be running by the time this service attempts to start up.</param>
 	/// <param name="cancellationToken">A cancellation token to stop the registration.</param>
 	/// <returns>A valid <see cref="BeamoServiceDefinition"/> with the default values of the protocol.</returns>
-	public async Task<BeamoServiceDefinition> AddDefinition_EmbeddedMongoDb(string beamId, string baseImage, string[] dependencyBeamIds, CancellationToken cancellationToken)
+	public async Task<BeamoServiceDefinition> AddDefinition_EmbeddedMongoDb(string beamId, string baseImage, string projectPath, CancellationToken cancellationToken)
 	{
-		dependencyBeamIds ??= Array.Empty<string>();
 		baseImage ??= "mongo:latest";
 		return await AddServiceDefinition<EmbeddedMongoDbLocalProtocol, EmbeddedMongoDbRemoteProtocol>(
 			beamId,
 			BeamoProtocolType.EmbeddedMongoDb,
-			dependencyBeamIds,
+			Array.Empty<string>(),
 			async (definition, protocol) =>
 			{
 				await PrepareDefaultLocalProtocol_EmbeddedMongoDb(definition, protocol);
+				definition.ProjectDirectory = projectPath;
 				if (!string.IsNullOrEmpty(baseImage))
 					protocol.BaseImage = baseImage;
 			},

@@ -82,14 +82,8 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 				}
 				else if (_localBeamo.BeamoManifest.EmbeddedMongoDbLocalProtocols.TryGetValue(id, out var storage))
 				{
-					if (!storage.BaseImage.Contains("mongo:"))
+					if ((bool)!storage.BaseImage?.Contains("mongo:"))
 						diagnostics.Add(new Diagnostic($"[{id}] Base Image [{storage.BaseImage}] must be a version of mongo."));
-					if (string.IsNullOrWhiteSpace(storage.ProjectDirectory))
-					{
-						diagnostics.Add(new Diagnostic($"[{id}] Project path in config is null or empty"));
-					}
-					else if(!Directory.Exists(args.ConfigService.GetRelativePath(storage.ProjectDirectory)))
-						diagnostics.Add(new Diagnostic($"[{id}] Wrong project path in config: {storage.ProjectDirectory}"));
 						
 				}
 			}
