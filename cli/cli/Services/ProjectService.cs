@@ -369,9 +369,9 @@ public class ProjectService
 
 	public async Task CreateNewStorage(string slnFilePath, string storageName)
 	{
-		var slnDirectory = Path.GetDirectoryName(slnFilePath);
+		var slnDirectory = Path.GetDirectoryName(slnFilePath)!;
 		var rootServicesPath = Path.Combine(slnDirectory, "services");
-		var storagePath = Path.Combine(rootServicesPath, storageName);
+		var storagePath = _configService.GetRelativePath(Path.Combine(rootServicesPath, storageName));
 
 		if (Directory.Exists(storagePath))
 		{
