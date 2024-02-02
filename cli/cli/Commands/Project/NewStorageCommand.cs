@@ -100,38 +100,17 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
 		}
 		var dependencies = AnsiConsole.Prompt(prompt).ToArray();
 
-		foreach (var service in services)
-		{
-			var dockerfilePath = service.Value.RelativeDockerfilePath;
-			Log.Information("Docker file path is " + dockerfilePath);
-			var serviceFolder = Path.GetDirectoryName(dockerfilePath);
-			Log.Information("Docker file folder is " + serviceFolder);
-
-			var isDep = dependencies.Any(d => d == serviceFolder);
-			if (!isDep) continue;
-
-			dockerfilePath = args.ConfigService.GetFullPath(Path.Combine(service.Value.DockerBuildContextPath, dockerfilePath));
-			var dockerfileText = await File.ReadAllTextAsync(dockerfilePath);
-
-			const string search =
-				"# <BEAM-CLI-INSERT-FLAG:COPY> do not delete this line. It is used by the beam CLI to insert custom actions";
-			var replacement = @$"WORKDIR /subsrc/{args.storageName}
-COPY {args.storageName}/. .
-{search}";
-			Log.Information($"Updating service=[{service.Key}] Dockerfile to include storage reference");
-			dockerfileText = dockerfileText.Replace(search, replacement);
-			await File.WriteAllTextAsync(dockerfilePath, dockerfileText);
-		}
-		args.BeamoLocalSystem.SaveBeamoLocalManifest();
-
 		// add the project itself
 		_ = await args.ProjectService.CreateNewStorage(args.slnPath, args.storageName);
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
 
 		foreach (var dependency in dependencies)
 		{
-			Log.Information($"Adding {args.storageName} reference to {dependency}. ");
-			await args.ProjectService.AddProjectReference(args.slnPath, dependency, args.storageName);
+			if(args.BeamoLocalSystem.BeamoManifest.TryGetDefinition(dependency, out var dependencyDefinition))
+			{
+				Log.Information("Adding {ArgsStorageName} reference to {Dependency}. ", args.storageName, dependency);
+				await args.BeamoLocalSystem.AddProjectDependency(dependencyDefinition, storageDef);
+			}
 		}
 	}
 }

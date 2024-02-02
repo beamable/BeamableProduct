@@ -5,8 +5,8 @@
 
 using Beamable.Common;
 using cli.Utils;
-using Newtonsoft.Json;
 using Serilog;
+using System.Text.RegularExpressions;
 
 namespace cli.Services;
 
@@ -36,8 +36,8 @@ public partial class BeamoLocalSystem
 				protocol.RelativeDockerfilePath = dockerfilePath;
 				if (!string.IsNullOrWhiteSpace(projectPath) && !string.IsNullOrWhiteSpace(dockerfilePath))
 				{
-					definition.ProjectDirectory = Path.Combine(projectPath, dockerfilePath)
-						.TrimEnd("/Dockerfile".ToArray()).TrimEnd("\\Dockerfile".ToArray());
+					definition.ProjectDirectory = Path.Combine(projectPath, dockerfilePath);
+					definition.ProjectDirectory = Regex.Replace(definition.ProjectDirectory, @"(/|\\)Dockerfile$", string.Empty);
 				}
 			},
 			PrepareDefaultRemoteProtocol_HttpMicroservice,

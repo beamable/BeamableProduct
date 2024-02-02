@@ -2,7 +2,6 @@
 using Beamable.Common.Api.Realms;
 using Docker.DotNet;
 using Docker.DotNet.Models;
-using Newtonsoft.Json;
 using System.Text.RegularExpressions;
 
 namespace cli.Services;
@@ -107,9 +106,16 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// Get list of <see cref="BeamoId"/>s that this service depends on.
 	/// </summary>
+	/// <param name="beamoServiceId">The identifier of the Beamo service.</param>
+	/// <param name="projectExtension">The extension of the project files. Default is "csproj".</param>
+	/// <returns>Returns a list of <see cref="BeamoId"/>s that this service depends on.</returns>
 	public async Task<List<string>> GetDependencies(string beamoServiceId, string projectExtension = "csproj")
 	{
 		var serviceDefinition = BeamoManifest.ServiceDefinitions.FirstOrDefault(s => s.BeamoId == beamoServiceId);
+		if (string.IsNullOrWhiteSpace(serviceDefinition?.ProjectDirectory))
+		{
+			return new List<string>();
+		}
 		var path = _configService.GetRelativePath(serviceDefinition!.ProjectDirectory);
 		path = Path.Combine(path, $"{beamoServiceId}.{projectExtension}");
 		var (cmd,builder) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, $"list {path} reference");
@@ -122,6 +128,41 @@ public partial class BeamoLocalSystem
 			.Select(Path.GetFileNameWithoutExtension).Where(candidate => BeamoManifest.ServiceDefinitions.Any(definition => definition.BeamoId==candidate)).ToList();
 		
 		return dependencies;
+	}
+
+	public async Task AddProjectDependency(BeamoServiceDefinition project, BeamoServiceDefinition dependency)
+	{
+		if (project.Protocol != BeamoProtocolType.HttpMicroservice ||
+		    dependency.Protocol != BeamoProtocolType.EmbeddedMongoDb)
+		{
+			throw new CliException(
+				$"Currently the only supported dependencies are {nameof(BeamoProtocolType.HttpMicroservice)} depending on {nameof(BeamoProtocolType.EmbeddedMongoDb)}");
+		}
+		var projectPath = _configService.GetRelativePath(project.ProjectDirectory);
+		var dependencyPath = _configService.GetRelativePath(dependency.ProjectDirectory);
+		var command = $"add {projectPath} reference {dependencyPath}";
+		var(cmd, result) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, command,Directory.GetCurrentDirectory());
+		if (cmd.ExitCode != 0)
+		{
+			throw new CliException($"Failed to add project dependency, output of \"dotnet {command}\": {result}");
+		}
+
+		var service = BeamoManifest.HttpMicroserviceLocalProtocols[project.BeamoId];
+		var dockerfilePath = service.RelativeDockerfilePath;
+		dockerfilePath = _configService.GetFullPath(Path.Combine(service.DockerBuildContextPath, dockerfilePath));
+		var dockerfileText = await File.ReadAllTextAsync(dockerfilePath);
+
+		const string search =
+			"# <BEAM-CLI-INSERT-FLAG:COPY> do not delete this line. It is used by the beam CLI to insert custom actions";
+		string toAdd =@$"WORKDIR /subsrc/{dependency.BeamoId}
+COPY {dependency.BeamoId}/. .";
+		var replacement = @$"{toAdd}
+{search}";
+		if(!dockerfileText.Replace("\r\n","\n").Contains(toAdd))
+		{
+			dockerfileText = dockerfileText.Replace(search, replacement);
+			await File.WriteAllTextAsync(dockerfilePath, dockerfileText);
+		}
 	}
 
 	public async Task<Dictionary<BeamoServiceDefinition,List<string>>> GetAllBeamoIdsDependencies(string projectExtension = "csproj")
@@ -398,6 +439,21 @@ public class BeamoLocalManifest
 		HttpMicroserviceRemoteProtocols.Clear();
 		EmbeddedMongoDbLocalProtocols.Clear();
 		EmbeddedMongoDbRemoteProtocols.Clear();
+	}
+
+	/// <summary>
+	/// Tries to get the definition of a Beamo service based on the provided BeamoId.
+	/// </summary>
+	/// <param name="beamoId">The BeamoId of the service.</param>
+	/// <param name="definition">When this method returns, contains the BeamoServiceDefinition associated with the specified BeamoId, if found; otherwise, null.</param>
+	/// <returns>
+	/// true if the service definition is found; otherwise, false.
+	/// </returns>
+	public bool TryGetDefinition(string beamoId, out BeamoServiceDefinition definition)
+	{
+		definition = ServiceDefinitions.FirstOrDefault(definition => definition.BeamoId == beamoId);
+		
+		return definition != null;
 	}
 }
 
