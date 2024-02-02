@@ -97,6 +97,7 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public void SaveBeamoLocalManifest() => _configService.SaveDataFile(Constants.BEAMO_LOCAL_MANIFEST_FILE_NAME, BeamoManifest);
 	public void SaveBeamoLocalRuntime() => _configService.SaveDataFile(Constants.BEAMO_LOCAL_RUNTIME_FILE_NAME, BeamoRuntime);
+
 	/// <summary>
 	/// Checks to see if the service id matches the <see cref="BeamoServiceIdRegex"/>.
 	/// </summary>

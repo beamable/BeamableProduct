@@ -157,6 +157,7 @@ public class App
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
 		Commands.AddRootCommand<ProjectCommand, ProjectCommandArgs>();
 		Commands.AddCommand<NewSolutionCommand, NewSolutionCommandArgs, ProjectCommand>();
+		Commands.AddCommand<ProjectDependencies, ProjectDependenciesArgs, ProjectCommand>();
 		Commands.AddCommand<RegenerateSolutionFilesCommand, RegenerateSolutionFilesCommandArgs, ProjectCommand>();
 		Commands.AddCommand<ListCommand, ListCommandArgs, ProjectCommand>();
 		Commands.AddCommand<NewStorageCommand, NewStorageCommandArgs, ProjectCommand>();

@@ -29,23 +29,26 @@ public class ProjectVersionCommand : AtomicCommand<ProjectVersionCommandArgs, Pr
 
 	public override async Task<ProjectVersionCommandResult> GetResult(ProjectVersionCommandArgs args)
 	{
-		var projectList = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.Values.Where(p => !string.IsNullOrWhiteSpace(p.RelativeDockerfilePath)).ToList();
+		var projectList = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.Values
+			.Where(p => !string.IsNullOrWhiteSpace(p.RelativeDockerfilePath)).ToList();
 		List<BeamablePackageInProject> results = new();
 		foreach (var project in projectList)
 		{
-			var buffer = new StringBuilder();
-			var solutionPath = Directory.GetParent(Path.Combine(args.ConfigService.BaseDirectory, project.RelativeDockerfilePath));
-			await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, "sln list").WithWorkingDirectory(solutionPath.FullName)
-				.WithStandardOutputPipe(PipeTarget.ToStringBuilder(buffer)).ExecuteAsync();
+			var solutionPath =
+				Directory.GetParent(Path.Combine(args.ConfigService.BaseDirectory, project.RelativeDockerfilePath));
+
+			var (_, buffer) =
+				await CliExtensions.RunWithOutput(args.AppContext.DotnetPath, "sln list",
+					solutionPath!.FullName);
+
 			var projectsPaths = buffer.ToString().Replace("\r\n", "\n").Split("\n").Where(s => s.EndsWith(".csproj"))
-				.Select(p => Directory.GetParent(Path.Combine(solutionPath.FullName, p)).FullName).ToList();
+				.Select(p => Directory.GetParent(Path.Combine(solutionPath.FullName, p))!.FullName).ToList();
 			foreach (string projectPath in projectsPaths)
 			{
-				buffer.Clear();
-				await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, "list package")
-					.WithWorkingDirectory(projectPath)
-					.WithStandardOutputPipe(PipeTarget.ToStringBuilder(buffer)).ExecuteAsync();
-				var result = buffer.ToString().Replace("\r\n", "\n").Split("\n").Where(s => s.Contains("> Beamable.")).ToList();
+				(_, buffer) =
+					await CliExtensions.RunWithOutput(args.AppContext.DotnetPath, "list package", projectPath);
+				var result = buffer.ToString().Replace("\r\n", "\n").Split("\n").Where(s => s.Contains("> Beamable."))
+					.ToList();
 
 				foreach (var line in result)
 				{
@@ -56,24 +59,22 @@ public class ProjectVersionCommand : AtomicCommand<ProjectVersionCommandArgs, Pr
 					var packageVersion = splitedLine[packageIndex + 1];
 
 					if (!string.IsNullOrWhiteSpace(args.requestedVersion) &&
-						!args.requestedVersion.Equals(packageVersion))
+					    !args.requestedVersion.Equals(packageVersion))
 					{
-						buffer.Clear();
-						await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, $"add package {packageName} --version \"{args.requestedVersion}\"")
-							.WithWorkingDirectory(projectPath)
-							.WithStandardOutputPipe(PipeTarget.ToStringBuilder(buffer)).ExecuteAsync();
+						(_, buffer) = await CliExtensions.RunWithOutput(args.AppContext.DotnetPath,
+								$"add package {packageName} --version \"{args.requestedVersion}\"", projectPath);
 						AnsiConsole.WriteLine(buffer.ToString());
 						packageVersion = args.requestedVersion;
 					}
+
 					results.Add(new BeamablePackageInProject()
 					{
-						projectPath = projectPath,
-						packageName = packageName,
-						packageVersion = packageVersion
+						projectPath = projectPath, packageName = packageName, packageVersion = packageVersion
 					});
 				}
 			}
 		}
+
 		var json = JsonConvert.SerializeObject(results);
 		AnsiConsole.Write(
 			new Panel(new JsonText(json))
@@ -83,7 +84,6 @@ public class ProjectVersionCommand : AtomicCommand<ProjectVersionCommandArgs, Pr
 		return BeamablePackageInProject.ToResult(results);
 	}
 }
-
 
 [Serializable]
 public class BeamablePackageInProject

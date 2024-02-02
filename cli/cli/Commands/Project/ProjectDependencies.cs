@@ -1,0 +1,28 @@
+﻿using Beamable.Common.Semantics;
+using cli.Dotnet;
+using Serilog;
+
+namespace cli.Commands.Project;
+
+public class ProjectDependencies : AppCommand<ProjectDependenciesArgs>
+{
+	public ProjectDependencies() : base("dependencies", "List project dependencies")
+	{
+	}
+
+	public override void Configure()
+	{
+		AddArgument(new ServiceNameArgument("Name of the service"), (args, i) => args.ProjectName = i);
+	}
+
+	public override async Task Handle(ProjectDependenciesArgs args)
+	{
+		var deps = await args.ProjectService.GetBeamoIdsDependencies(args.BeamoLocalSystem.BeamoManifest, args.ProjectName);
+		Log.Information("{0} dependencies: {1}",args.ProjectName,string.Join(',',deps));
+	}
+}
+
+public class ProjectDependenciesArgs : CommandArgs
+{
+	public ServiceName ProjectName;
+}
