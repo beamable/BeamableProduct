@@ -359,7 +359,7 @@ public class ProjectService
 
 	public string GeneratePathForProject(string slnFilePath, string beamId)
 	{
-		var slnDirectory = Path.GetDirectoryName(slnFilePath);
+		var slnDirectory = Path.GetDirectoryName(slnFilePath)!;
 		var rootServicesPath = Path.Combine(slnDirectory, "services");
 		var path = _configService.GetRelativePath(Path.Combine(rootServicesPath, beamId));
 		return path;
