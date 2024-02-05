@@ -1,7 +1,9 @@
 using Beamable.Common.Semantics;
+using cli.Dotnet;
 using cli.Services;
 using Serilog;
 using System.CommandLine;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Net;
 
@@ -9,74 +11,70 @@ namespace cli.Commands.Project;
 
 public class StopProjectCommandArgs : CommandArgs
 {
-	public ServiceName serviceId;
+	public List<string> services = new List<string>();
 }
 
 public class StopProjectCommandOutput
 {
+	public string serviceName;
 	public bool didStop;
 }
 
-public class StopProjectCommand : AtomicCommand<StopProjectCommandArgs, StopProjectCommandOutput>
+public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProjectCommandOutput>
 {
 	public StopProjectCommand() : base("stop", "Stop a running service")
 	{
 	}
 
 	public override void Configure()
-	{
-		AddArgument(new Argument<ServiceName>(
-				name: "service id", description: "The id of the project to stop", getDefaultValue: () => default),
-			(args, i) => args.serviceId = i);
+	{	
+		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
 	}
 
-	public override async Task<StopProjectCommandOutput> GetResult(StopProjectCommandArgs args)
+	public override async Task Handle(StopProjectCommandArgs args)
 	{
-		var localServices = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols;
-
-		HttpMicroserviceLocalProtocol service = null;
-		string serviceName = args.serviceId;
-		if (string.IsNullOrEmpty(args.serviceId) && localServices.Count == 1)
-		{
-			var onlyServiceKvp = localServices.FirstOrDefault();
-			service = onlyServiceKvp.Value;
-			serviceName = onlyServiceKvp.Key;
-			Log.Warning($"No service id given, but because only 1 service exists, proceeding automatically with id=[{serviceName}]");
-		} else if (!localServices.TryGetValue(args.serviceId, out service))
-		{
-			throw new CliException(
-				$"The given id=[{args.serviceId}] does not match any local services in the local beamo manifest.");
-		}
-
-		
+		ProjectCommand.FinalizeServicesArg(args, ref args.services);
+		var serviceSet = new HashSet<string>(args.services);
 		var discovery = args.DependencyProvider.GetService<DiscoveryService>();
-
-		ServiceDiscoveryEvent startEvt = null;
+		var evtTable = new Dictionary<string, ServiceDiscoveryEvent>();
 		await foreach (var evt in discovery.StartDiscovery(TimeSpan.FromSeconds(1)))
 		{
-			if (evt.service == serviceName && evt.isRunning)
+			if (!serviceSet.Contains(evt.service)) continue; // we don't care about this service, because we aren't stopping it.
+
+			if (!evtTable.ContainsKey(evt.service))
 			{
-				startEvt = evt;
-				break;
+				evtTable[evt.service] = evt;
+				if (evtTable.Keys.Count == serviceSet.Count)
+				{
+					// we've found all the required services...
+					break;
+				}
 			}
+			
 		}
 		await discovery.Stop();
 
-		if (startEvt == null)
+		foreach ((string serviceName, ServiceDiscoveryEvent serviceEvt) in evtTable)
 		{
-			Log.Warning($"the {serviceName} was not running, so it could not be stopped.");
-			return new StopProjectCommandOutput { didStop = false };
+			if (serviceEvt.isContainer)
+			{
+				Log.Warning($"Skipping service=[{serviceName}]. this command is only intended to work for locally running services in dotnet. Please use `docker stop` instead.");
+				SendResults(new StopProjectCommandOutput
+				{
+					didStop = false,
+					serviceName = serviceName
+				});
+				continue;
+			}
+			
+			await SendKillMessage(serviceEvt);
+			Log.Information($"stopped {serviceName}.");
+			SendResults(new StopProjectCommandOutput
+			{
+				serviceName = serviceName,
+				didStop = true
+			});
 		}
-
-		if (startEvt.isContainer)
-		{
-			Log.Warning("this command is only intended to work for locally running services in dotnet. Please use `docker stop` instead.");
-			return new StopProjectCommandOutput { didStop = false };
-		}
-
-		await SendKillMessage(startEvt);
-		Log.Information("stopped.");
-		return new StopProjectCommandOutput { didStop = true };
 	}
 
 	async Task SendKillMessage(ServiceDiscoveryEvent evt)

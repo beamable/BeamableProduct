@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `--raw` option will output commands in machine readable JSON format
 - `beam listen player` command monitors notifications sent to the logged in CLI user
 - `beam listen server` command monitors server events
+- `beam project run` command will run a dotnet project
+- `beam project stop` will stop running dotnet projects
+- `beam project build` will build a dotnet project
 
 ### Changed
 

@@ -1,11 +1,9 @@
 using Beamable.Common.Semantics;
+using cli.Dotnet;
 using cli.Services;
-using cli.Utils;
 using CliWrap;
-using CliWrap.Buffered;
 using Newtonsoft.Json;
 using Serilog;
-using System.CommandLine;
 using System.Text;
 
 namespace cli.Commands.Project;
@@ -13,16 +11,11 @@ namespace cli.Commands.Project;
 
 public class RunProjectCommandArgs : CommandArgs
 {
-	public ServiceName serviceId;
+	public List<string> services = new List<string>();
+	public bool watch;
 }
 
-public class RunProjectCommandOutput
-{
-	
-}
-
-
-public class RunProjectCommand : StreamCommand<RunProjectCommandArgs, RunProjectCommandOutput>
+public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 {
 	public RunProjectCommand() 
 		: base("run", "Run a project")
@@ -31,39 +24,73 @@ public class RunProjectCommand : StreamCommand<RunProjectCommandArgs, RunProject
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<ServiceName>(
-			name: "service id", description: "The id of the project to run", getDefaultValue: () => default),
-			(args, i) => args.serviceId = i);
+		ProjectCommand.AddWatchOption(this, (args, i) => args.watch = i);
+		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
 	}
 
 	public override async Task Handle(RunProjectCommandArgs args)
 	{
-		
-		var localServices = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols;
+		ProjectCommand.FinalizeServicesArg(args, ref args.services);
 
-		HttpMicroserviceLocalProtocol service = null;
-		string serviceName = args.serviceId;
-		if (string.IsNullOrEmpty(args.serviceId) && localServices.Count == 1)
+		var serviceTable = new Dictionary<string, HttpMicroserviceLocalProtocol>();
+		var cancelTable = new Dictionary<string, CancellationTokenSource>();
+		foreach (var serviceName in args.services)
 		{
-			var onlyServiceKvp = localServices.FirstOrDefault();
-			service = onlyServiceKvp.Value;
-			serviceName = onlyServiceKvp.Key;
-			Log.Warning($"No service id given, but because only 1 service exists, proceeding automatically with id=[{serviceName}]");
-		} else if (!localServices.TryGetValue(args.serviceId, out service))
-		{
-			throw new CliException(
-				$"The given id=[{args.serviceId}] does not match any local services in the local beamo manifest.");
+			if (!args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(serviceName,
+				    out var service))
+			{
+				throw new CliException($"No service definition available locally for service=[{serviceName}]");
+			}
+
+			cancelTable[serviceName] = new CancellationTokenSource();
+			serviceTable[serviceName] = service;
 		}
-		
+		var runTasks = new List<Task>();
+		Log.Debug("starting services");
+
+		foreach ((string serviceName, HttpMicroserviceLocalProtocol service) in serviceTable)
+		{
+			runTasks.Add(RunService(args, serviceName, service, cancelTable[serviceName]));
+		}
+
+		await Task.WhenAll(runTasks);
+	}
+
+
+	static async Task RunService(RunProjectCommandArgs args, string serviceName, HttpMicroserviceLocalProtocol service, CancellationTokenSource tokenSource)
+	{
 		
 		Log.Debug($"Found service definition, ctx=[{service.DockerBuildContextPath}] dockerfile=[{service.RelativeDockerfilePath}]");
 		var dockerfilePath = Path.Combine(args.ConfigService.GetRelativePath(service.DockerBuildContextPath), service.RelativeDockerfilePath);
 		var projectPath = Path.GetDirectoryName(dockerfilePath);
 		var logPath = Path.Combine(args.ConfigService.ConfigFilePath, "temp", "logs", $"{serviceName}-{DateTimeOffset.Now.ToUnixTimeMilliseconds()}-logs.txt");
 		Log.Debug($"service path=[{projectPath}]");
-		
-		var commandStr = $"watch --non-interactive --project {projectPath} run --property:CopyToLinkedProjects=false;GenerateClientCode=false --";
-		using var cts = new CancellationTokenSource();
+
+		var watchPart = args.watch
+			? $"watch --project {projectPath} run"
+			: "run";
+		var commandStr = $"{watchPart}";
+	
+		int killCounter = 1;
+
+		var monitorTask = Task.Run(async () =>
+		{
+			while (!tokenSource.IsCancellationRequested)
+			{
+				await Task.Delay(50);
+				if (killCounter == 0)
+				{
+					Log.Debug("stopping dotnet watch");
+					tokenSource.Cancel();
+				}
+			}
+		});
+
+		var stdErrBuilder = new StringBuilder();
+		await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, "--version")
+			.WithStandardOutputPipe(PipeTarget.ToDelegate(x => Log.Debug($"dotnet version: {x}")))
+			.ExecuteAsync();
+		Log.Debug($"Running {args.AppContext.DotnetPath} {commandStr}");
 		var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, commandStr)
 			.WithEnvironmentVariables(new Dictionary<string, string>
 			{
@@ -72,26 +99,28 @@ public class RunProjectCommand : StreamCommand<RunProjectCommandArgs, RunProject
 				["LOG_PATH"] = logPath,
 				["WATCH_TOKEN"] = "true"
 			})
+			.WithStandardErrorPipe(PipeTarget.ToDelegate(line =>
+			{
+				stdErrBuilder.Append(line);
+				Console.Error.WriteLine("(watch error) " + line);
+			}))
 			.WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
 			{
-				// TODO: capture build errors
-
-				/*
-				 * [07:25:54:5669 INF] dotnet watch : Started
-				   [07:25:55:3243 INF] 
-				   [07:25:55:5786 INF] dotnet watch : File changed: ./tuna.cs.
-				   [07:25:55:7005 INF] dotnet watch : /Users/chrishanna/Documents/SAM/tuna/services/tuna/tuna.cs(13,16): error CS1525: Invalid expression term ';'
-				   
-				 */
-				// Log.Information(line);
 				if (line.Trim() == "dotnet watch : Exited")
 				{
-					cts.Cancel();
+					// check the kill counter in a *short* while to see if dotnet noticed a file change
+					killCounter--;
 				}
-				
+
+				if (line.Trim().StartsWith("dotnet watch : File changed:"))
+				{
+					// if we see this line, then we need to prevent the shutdown
+					killCounter = 1;
+				}
 				Console.Error.WriteLine("(watch) " + line);
 			}))
-			.ExecuteAsync(cts.Token);
+			.WithValidation(CommandResultValidation.None)
+			.ExecuteAsync(tokenSource.Token);
 
 
 		var tailArgs = args.Create<TailLogsCommandArgs>();
@@ -103,11 +132,12 @@ public class RunProjectCommand : StreamCommand<RunProjectCommandArgs, RunProject
 			var parsed = JsonConvert.DeserializeObject<TailLogMessage>(logMessage);
 			Console.Error.WriteLine($"[{parsed.logLevel}] {parsed.message}");
 			parsed.raw = logMessage;
-		}, cts.Token);
+		}, tokenSource.Token);
 
 		try
 		{
 			await command;
+			tokenSource.Cancel();
 		}
 		catch (OperationCanceledException)
 		{
@@ -115,6 +145,7 @@ public class RunProjectCommand : StreamCommand<RunProjectCommandArgs, RunProject
 		}
 
 		await logCommand;
+		await monitorTask;
 
 	}
 }
