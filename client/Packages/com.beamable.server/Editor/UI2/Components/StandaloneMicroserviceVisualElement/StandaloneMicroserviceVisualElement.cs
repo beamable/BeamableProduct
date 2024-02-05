@@ -201,7 +201,7 @@ namespace Beamable.Editor.Microservice.UI2.Components
 		public void OpenLocalDocs()
 		{
 			BeamEditorContext.Default.ServiceScope.GetService<CodeService>()
-			                 .OpenSwagger(Model.BeamoId).Then(_ => { });
+							 .OpenSwagger(Model.BeamoId).Then(_ => { });
 		}
 
 
