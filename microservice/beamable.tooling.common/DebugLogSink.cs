@@ -1,6 +1,7 @@
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Formatting;
+using System.Collections.Concurrent;
 
 namespace Beamable.Server.Common;
 
@@ -12,11 +13,11 @@ public class DebugLogSink : ILogEventSink
 	/// <summary>
 	/// List to store captured log messages.
 	/// </summary>
-	public List<string> messages = new List<string>();
+	public ConcurrentQueue<string> messages = new ConcurrentQueue<string>(); 
 
 	private readonly ITextFormatter _formatProvider;
 	private int _messageCount = 0;
-	private const int MAX_MESSAGE_BUFFER = 5;
+	private const int MAX_MESSAGE_BUFFER = 30;
 	private readonly StringWriter _writer;
 	
 	/// <summary>
@@ -41,15 +42,8 @@ public class DebugLogSink : ILogEventSink
 	/// <returns>True if there is a log message, false otherwise.</returns>
 	public bool TryGetNextMessage(ref int pointer, out string message)
 	{
-		if (_messageCount - MAX_MESSAGE_BUFFER > pointer)
+		if (messages.TryDequeue(out message))
 		{
-			pointer = _messageCount - MAX_MESSAGE_BUFFER;
-		}
-		
-		if (pointer < _messageCount)
-		{
-			var index = pointer % MAX_MESSAGE_BUFFER;
-			message = messages[index];
 			pointer++;
 			return true;
 		}
@@ -68,12 +62,15 @@ public class DebugLogSink : ILogEventSink
 		_formatProvider.Format(logEvent, _writer);
 		_writer.Flush();
 		var str = _writer.GetStringBuilder().ToString();
-		messages.Add(str);
+		messages.Enqueue(str);
 		_messageCount++;
 		
 		while (messages.Count > MAX_MESSAGE_BUFFER)
 		{
-			messages.RemoveAt(0);
+			if(messages.TryDequeue(out _))
+			{
+				_messageCount--;
+			}
 		}
 	}
 }

@@ -115,7 +115,7 @@ namespace Beamable.Server
             if (!inDocker)
             {
 	            debugLogSink = new DebugLogSink(new MicroserviceLogFormatter());
-	            logConfig.WriteTo.Sink(debugLogSink);
+	            logConfig = logConfig.WriteTo.Sink(debugLogSink);
             }
             
             switch (args.LogOutputType)
