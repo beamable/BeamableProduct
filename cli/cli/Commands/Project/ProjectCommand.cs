@@ -29,7 +29,7 @@ public class ProjectCommand : AppCommand<ProjectCommandArgs>
 	{
 		var option = new Option<bool>(
 			name: "--watch",
-			description: "when true, the command will run forever and watch the state of the program.");
+			description: "When true, the command will run forever and watch the state of the program");
 		option.AddAlias("-w");
 		command.AddOption(option, binder);
 	}
@@ -39,7 +39,7 @@ public class ProjectCommand : AppCommand<ProjectCommandArgs>
 	{
 		command.AddOption(new Option<List<string>>(
 			name: "--ids",
-			description: "the list of services to build, defaults to all local services.")
+			description: "The list of services to build, defaults to all local services")
 		{
 			AllowMultipleArgumentsPerToken = true,
 			Arity = ArgumentArity.ZeroOrMore
