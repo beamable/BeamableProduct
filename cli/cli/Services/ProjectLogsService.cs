@@ -1,12 +1,20 @@
 using cli.Commands.Project;
+using Newtonsoft.Json;
 using Serilog;
 
 namespace cli.Services;
 
 public class ProjectLogsService
 {
-	public static async Task Handle(TailLogsCommandArgs args, Action<string> handleLog, CancellationToken token=default)
+	public static async Task Handle(TailLogsCommandArgs args, Action<TailLogMessage> handleLog, CancellationToken token=default)
 	{
+		void LogHandler(string logMessage)
+		{
+			var parsed = JsonConvert.DeserializeObject<TailLogMessage>(logMessage);
+			parsed.raw = logMessage;
+			handleLog(parsed);
+		}
+		
 		while (args.reconnect && !token.IsCancellationRequested)
 		{
 			var discovery = args.DependencyProvider.GetService<DiscoveryService>();
@@ -29,11 +37,11 @@ public class ProjectLogsService
 			{
 				if (startEvt.isContainer)
 				{
-					await TailDockerContainer(startEvt.containerId, args.BeamoLocalSystem, handleLog);
+					await TailDockerContainer(startEvt.containerId, args.BeamoLocalSystem, LogHandler);
 				}
 				else
 				{
-					await TailProcess(startEvt, handleLog);
+					await TailProcess(startEvt, LogHandler);
 				}
 
 				Log.Verbose($"{args.service} has stopped.");

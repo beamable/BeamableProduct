@@ -70,11 +70,9 @@ public class TailLogsCommand : StreamCommand<TailLogsCommandArgs, TailLogMessage
 		await ProjectLogsService.Handle(args, HandleLog);
 	}
 
-	void HandleLog(string logMessage)
+	void HandleLog(TailLogMessage logMessage)
 	{
-		var parsed = JsonConvert.DeserializeObject<TailLogMessage>(logMessage);
-		Log.Information($"[{parsed.logLevel}] {parsed.message}");
-		parsed.raw = logMessage;
-		SendResults(new TailLogMessageForClient(parsed));
+		Log.Information($"[{logMessage.logLevel}] {logMessage.message}");
+		SendResults(new TailLogMessageForClient(logMessage));
 	}
 }

@@ -70,15 +70,27 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 			? $"watch --project {projectPath} run"
 			: "run";
 		var commandStr = $"{watchPart}";
-	
-		int killCounter = 1;
-
+		
+		/* dotnet watch has odd semantics around process exiting...
+		 *  when the watch-command needs to restart the app, it will kill the old
+		 *  process and start a new one, causing the "Exited" log to print.
+		 *  However, if we kill the process remotely, we get the exact same
+		 *  "Exited" log line, making it hard to know if the process exited
+		 *  because the watch-command wanted it to, or if we actually wanted it to
+		 *  die.
+		 *
+		 *  Because of this, we'll keep a task running watching for the existence
+		 *  of the SECOND dotnetwatch log, about a file changing. When that log
+		 *  is detected within a short duration after the Exited log line, then
+		 *  it is safe to assume we DO NOT want to shut the process down. 
+		 */
+		var keepProcessAlive = true;
 		var monitorTask = Task.Run(async () =>
 		{
 			while (!tokenSource.IsCancellationRequested)
 			{
 				await Task.Delay(50);
-				if (killCounter == 0)
+				if (keepProcessAlive == false)
 				{
 					Log.Debug("stopping dotnet watch");
 					tokenSource.Cancel();
@@ -108,14 +120,14 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 			{
 				if (line.Trim() == "dotnet watch : Exited")
 				{
-					// check the kill counter in a *short* while to see if dotnet noticed a file change
-					killCounter--;
+					// check in a *short* while to see if dotnet noticed a file change
+					keepProcessAlive = false;
 				}
 
 				if (line.Trim().StartsWith("dotnet watch : File changed:"))
 				{
 					// if we see this line, then we need to prevent the shutdown
-					killCounter = 1;
+					keepProcessAlive = true;
 				}
 				Console.Error.WriteLine("(watch) " + line);
 			}))
@@ -129,9 +141,7 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 
 		var logCommand = ProjectLogsService.Handle(tailArgs, logMessage =>
 		{
-			var parsed = JsonConvert.DeserializeObject<TailLogMessage>(logMessage);
-			Console.Error.WriteLine($"[{parsed.logLevel}] {parsed.message}");
-			parsed.raw = logMessage;
+			Console.Error.WriteLine($"[{logMessage.logLevel}] {logMessage.message}");
 		}, tokenSource.Token);
 
 		try
