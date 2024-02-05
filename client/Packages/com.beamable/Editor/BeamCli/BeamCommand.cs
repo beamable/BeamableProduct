@@ -207,35 +207,71 @@ namespace Beamable.Editor.BeamCli
 			return this;
 		}
 
-		private void ProcessStandardOut(string message)
+		public static bool CheckForData(ref string buffer, out ReportDataPointDescription serializedData, out string jsonRaw)
 		{
-			if (message == null) return;
+			string[] data = buffer.Split(Reporting.MESSAGE_DELIMITER);
 
-			_messageBuffer += message;
-			var delimIndex = _messageBuffer.IndexOf(Reporting.MESSAGE_DELIMITER, StringComparison.InvariantCulture);
-			if (delimIndex > -1)
+			if (data.Length > 1)
 			{
-				var buffer = _messageBuffer.Substring(0, delimIndex);
-				_messageBuffer = _messageBuffer.Substring(delimIndex + Reporting.MESSAGE_DELIMITER.Length);
-				TryParseMessage(buffer);
-			}
-		}
-
-		void TryParseMessage(string buffer)
-		{
-			try
-			{
-				var pt = JsonUtility.FromJson<ReportDataPointDescription>(buffer);
-				if (pt != null)
+				try
 				{
-					pt.json = buffer;
-					_points.Add(pt);
-					_callbacks?.Invoke(pt);
+					serializedData = JsonUtility.FromJson<ReportDataPointDescription>(data[0]);
+					buffer = string.Join("", data[1..]);
+					jsonRaw = data[0];
+					return true;
+				}catch (Exception e) //this case we have full data but there is some error in the json
+				{
+					Debug.LogError(e.Message);
+					serializedData = null;
+					jsonRaw = string.Empty;
+					return false;
 				}
 			}
-			catch (Exception e)
+			
+			if (!buffer.Contains(Reporting.MESSAGE_DELIMITER))
 			{
-				Debug.LogException(e);
+				try
+				{
+					serializedData = JsonUtility.FromJson<ReportDataPointDescription>(data[0]);
+					buffer = string.Empty;
+					jsonRaw = data[0];
+					return true;
+				}
+				catch
+				{
+					// in this case, data is just incomplete, so we ignore
+				}
+			}
+			else
+			{
+				try
+				{
+					serializedData = JsonUtility.FromJson<ReportDataPointDescription>(data[0]);
+					buffer = string.Empty;
+					jsonRaw = data[0];
+					return true;
+				}catch (Exception e) //in this case json is wrong
+				{
+					Debug.LogError(e.Message);
+				}
+			}
+			
+			serializedData = null;
+			jsonRaw = string.Empty;
+			return false;
+		}
+
+		private void ProcessStandardOut(string message)
+		{
+			if (string.IsNullOrEmpty(message)) return;
+
+			_messageBuffer += message;
+
+			if (CheckForData(ref _messageBuffer, out ReportDataPointDescription data, out string jsonRaw))
+			{
+				data.json = jsonRaw;
+				_points.Add(data);
+				_callbacks?.Invoke(data);
 			}
 		}
 
@@ -373,7 +409,6 @@ namespace Beamable.Editor.BeamCli
 
 						await _status.Task;
 
-						TryParseMessage(_messageBuffer);
 						if (_exitCode != 0)
 						{
 							throw new CliInvocationException(_command, _errors);
