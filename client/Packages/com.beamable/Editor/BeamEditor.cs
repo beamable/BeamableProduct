@@ -115,11 +115,9 @@ namespace Beamable
 			DependencyBuilder.AddGlobalStorage<BeamCommandFactory, EditorStorageLayer>();
 			DependencyBuilder.AddSingleton<BeamCli>();
 			DependencyBuilder.AddSingleton<DotnetService>();
+			DependencyBuilder.AddSingleton<IRuntimeConfigProvider>(p => new EditorRuntimeConfigProvider(p.GetService<AccountService>()));
 
 			DependencyBuilder.AddSingleton<SingletonDependencyList<ILoadWithContext>>();
-
-			DependencyBuilder.AddSingleton<IRuntimeConfigProvider, EditorRuntimeConfigProvider>();
-
 			OpenApiRegistration.RegisterOpenApis(DependencyBuilder);
 		}
 
@@ -133,22 +131,9 @@ namespace Beamable
 		[RegisterBeamableDependencies(-999, RegistrationOrigin.RUNTIME_GLOBAL)]
 		public static void RegisterRuntime(IDependencyBuilder builder)
 		{
-			try
-			{
-				var editorCtx = BeamEditorContext.Default;
-				var accountService = editorCtx.ServiceScope.GetService<AccountService>();
-				if (accountService != null && (accountService.Cid?.HasValue ?? false))
-				{
-					var provider = new EditorRuntimeConfigProvider(accountService);
-					var defaultProvider = new DefaultRuntimeConfigProvider(provider);
-					builder.ReplaceSingleton<IRuntimeConfigProvider>(defaultProvider);
-					builder.ReplaceSingleton<DefaultRuntimeConfigProvider>(defaultProvider);
-				}
-			}
-			catch (Exception ex)
-			{
-				Debug.Log(ex.Message);
-			}
+			builder.AddSingleton(_ => new EditorStorageLayer(new EditorFilesystemAccessor()));
+			builder.AddGlobalStorage<AccountServerData, EditorStorageLayer>(_ => GlobalServiceStorageUtil.GetKey(typeof(AccountService)));
+			builder.ReplaceSingleton<IRuntimeConfigProvider, EditorRuntimeConfigProvider>();
 		}
 	}
 

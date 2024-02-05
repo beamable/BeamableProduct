@@ -44,7 +44,7 @@ EndProject";
 			// TODO: Validate that these files actually exist/map to valid projects
 			foreach (var signpost in files)
 			{
-				content = InjectProject(content, signpost.name, signpost.relativeProjectFile);
+				content = InjectProject(content, signpost.name, signpost.CsprojFilePath );
 			}
 
 			foreach (var reference in AssemblyUtil.ReferencedAssemblies)

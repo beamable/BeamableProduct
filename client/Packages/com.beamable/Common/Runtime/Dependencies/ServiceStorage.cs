@@ -48,7 +48,7 @@ namespace Beamable.Common.Dependencies
 			return builder;
 		}
 
-		public static IDependencyBuilder AddGlobalStorage<T, TStorageLayer>(this IDependencyBuilder builder)
+		public static IDependencyBuilder AddGlobalStorage<T, TStorageLayer>(this IDependencyBuilder builder, Func<Type, string> keyFunction=null)
 			where TStorageLayer : IStorageLayer
 		{
 			builder.AddSingleton<T>(provider =>
@@ -75,7 +75,7 @@ namespace Beamable.Common.Dependencies
 
 			if (!builder.Has<GlobalServiceStorage<TStorageLayer>>())
 			{
-				builder.AddSingleton<GlobalServiceStorage<TStorageLayer>>();
+				builder.AddSingleton<GlobalServiceStorage<TStorageLayer>>(p => new GlobalServiceStorage<TStorageLayer>(p.GetService<TStorageLayer>(), keyFunction));
 			}
 
 			return builder;
@@ -185,16 +185,35 @@ namespace Beamable.Common.Dependencies
 		}
 	}
 
+	public static class GlobalServiceStorageUtil
+	{
+		public static string GetKey(Type inputType)
+		{
+			return $"singleton_{inputType.Name}_global";
+		}
+	}
+	
 	public class GlobalServiceStorage<TStorageLayer> : ServiceStorage<TStorageLayer>
 		where TStorageLayer : IStorageLayer
 	{
+		private readonly Func<Type, string> _keyFunction;
 
-		public GlobalServiceStorage(TStorageLayer storageLayer) : base(storageLayer)
+		public GlobalServiceStorage(TStorageLayer storageLayer) : this(storageLayer, null)
 		{
 		}
+
+		public GlobalServiceStorage(TStorageLayer storageLayer, Func<Type, string> keyFunction) : base(storageLayer)
+		{
+			_keyFunction = keyFunction;
+			if (_keyFunction == null)
+			{
+				_keyFunction = GlobalServiceStorageUtil.GetKey;
+			}
+		}
+		
 		protected override string GetKey<T>()
 		{
-			return $"singleton_{typeof(T).Name}_global";
+			return _keyFunction?.Invoke(typeof(T));
 		}
 	}
 
