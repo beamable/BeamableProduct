@@ -61,7 +61,7 @@ public class ProjectCommand : AppCommand<ProjectCommandArgs>
 		{
 			throw new CliException("No services are listed.");
 		}
-		
+
 		Log.Debug("using services " + string.Join(",", services));
 	}
 }

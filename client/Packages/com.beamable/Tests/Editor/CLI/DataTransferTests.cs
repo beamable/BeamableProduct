@@ -13,7 +13,7 @@ namespace Beamable.Editor.Tests.CLI
 		private string _validJson;
 		private string _invalidJson;
 		private string _incompleteData;
-		
+
 		[SetUp]
 		public void Setup()
 		{
@@ -28,20 +28,20 @@ namespace Beamable.Editor.Tests.CLI
 		{
 			var buffer = _validJson;
 			var success = BeamCommand.CheckForData(ref buffer, out var result, out _);
-			
+
 			Assert.IsTrue(success);
 		}
-		
+
 		[Test]
 		public void TestCommandCheckForData_JsonWithMoreData()
 		{
 			var buffer = _validJson + "\n\n{";
 			var success = BeamCommand.CheckForData(ref buffer, out var result, out _);
-			
+
 			Assert.IsTrue(success);
 			Assert.IsTrue(buffer.Equals("{"));
 		}
-		
+
 		[Test]
 		public void TestCommandCheckForData_IncompleteData()
 		{
@@ -51,7 +51,7 @@ namespace Beamable.Editor.Tests.CLI
 			Assert.IsFalse(success);
 			Assert.IsTrue(buffer.Equals(_incompleteData));
 		}
-		
+
 		[Test]
 		public void TestCommandCheckForData_WrongJson()
 		{

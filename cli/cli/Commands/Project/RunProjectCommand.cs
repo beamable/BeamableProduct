@@ -17,7 +17,7 @@ public class RunProjectCommandArgs : CommandArgs
 
 public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 {
-	public RunProjectCommand() 
+	public RunProjectCommand()
 		: base("run", "Run a project")
 	{
 	}
@@ -37,7 +37,7 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 		foreach (var serviceName in args.services)
 		{
 			if (!args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(serviceName,
-				    out var service))
+					out var service))
 			{
 				throw new CliException($"No service definition available locally for service=[{serviceName}]");
 			}
@@ -59,7 +59,7 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 
 	static async Task RunService(RunProjectCommandArgs args, string serviceName, HttpMicroserviceLocalProtocol service, CancellationTokenSource tokenSource)
 	{
-		
+
 		Log.Debug($"Found service definition, ctx=[{service.DockerBuildContextPath}] dockerfile=[{service.RelativeDockerfilePath}]");
 		var dockerfilePath = Path.Combine(args.ConfigService.GetRelativePath(service.DockerBuildContextPath), service.RelativeDockerfilePath);
 		var projectPath = Path.GetDirectoryName(dockerfilePath);
@@ -70,7 +70,7 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 			? $"watch --project {projectPath} run"
 			: "run";
 		var commandStr = $"{watchPart}";
-		
+
 		/* dotnet watch has odd semantics around process exiting...
 		 *  when the watch-command needs to restart the app, it will kill the old
 		 *  process and start a new one, causing the "Exited" log to print.
