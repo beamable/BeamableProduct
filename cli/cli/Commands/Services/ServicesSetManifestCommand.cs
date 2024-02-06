@@ -1,18 +1,15 @@
 using Beamable.Common;
-using Newtonsoft.Json;
 using Serilog;
 using System.CommandLine;
-using System.CommandLine.Binding;
+using System.Text.RegularExpressions;
 
 namespace cli;
 
 public class ServicesSetManifestCommandArgs : CommandArgs
 {
-	public List<string> localHttpNames;
-	public List<string> localHttpBuildContextPaths;
-	public List<string> localHttpRelativeDockerfilePaths;
-	public List<string> storageDependenciesPaths;
-	public List<string> shouldServiceBeEnabled;
+	public List<string> microservices;
+	public List<string> storages;
+	public List<string> disabledServices;
 }
 
 
@@ -25,85 +22,59 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 
 	public override void Configure()
 	{
-		var names = new Option<List<string>>("--local-http-names", "Local http service names")
+		var names = new Option<List<string>>("--services", "Local http services paths")
 		{
 			Arity = ArgumentArity.ZeroOrMore,
 			AllowMultipleArgumentsPerToken = true
 		};
-		AddOption(names, (x, i) => x.localHttpNames = i);
+		AddOption(names, (x, i) => x.microservices = i);
 
-
-		var contextPaths = new Option<List<string>>("--local-http-contexts", "Local http service docker build contexts")
+		var storageDeps = new Option<List<string>>("--storage-paths", "Local storages paths")
 		{
 			Arity = ArgumentArity.ZeroOrMore,
 			AllowMultipleArgumentsPerToken = true
 		};
-		AddOption(contextPaths, (x, i) => x.localHttpBuildContextPaths = i);
+		AddOption(storageDeps, (x, i) => x.storages = i);
 
-
-		var dockerFiles = new Option<List<string>>("--local-http-docker-files", "Local http service relative docker file paths")
+		var shouldBeEnabled = new Option<List<string>>("--disabled-services", "Names of the services that should be disabled on remote")
 		{
 			Arity = ArgumentArity.ZeroOrMore,
 			AllowMultipleArgumentsPerToken = true
 		};
-		AddOption(dockerFiles, (x, i) => x.localHttpRelativeDockerfilePaths = i);
-
-
-		var storageDeps = new Option<List<string>>("--storage-paths", "Local http service required storage, use format <service-name>:<storage-name>")
-		{
-			Arity = ArgumentArity.ZeroOrMore,
-			AllowMultipleArgumentsPerToken = true
-		};
-		AddOption(storageDeps, (x, i) => x.storageDependenciesPaths = i);
-
-		var shouldBeEnabled = new Option<List<string>>("--should-be-enable", "If this service should be enable on remote")
-		{
-			Arity = ArgumentArity.ZeroOrMore,
-			AllowMultipleArgumentsPerToken = true
-		};
-		AddOption(shouldBeEnabled, (x, i) => x.shouldServiceBeEnabled = i);
+		AddOption(shouldBeEnabled, (x, i) => x.disabledServices = i);
 	}
 
 	public override async Task Handle(ServicesSetManifestCommandArgs args)
 	{
 		BeamableLogger.Log("handling");
+		var nonExistingServices = args.microservices.Concat(args.storages)
+			.Where(p => !Directory.Exists(Path.Combine(args.ConfigService.BaseDirectory, p))).ToArray();
+		if (nonExistingServices.Length > 0)
+		{
+			throw new CliException(
+				$"The following services do not exist: {string.Join(", ", nonExistingServices)}");
+		}
 
 		args.BeamoLocalSystem.BeamoManifest.Clear();
 
-		var parityMatch = (args.localHttpRelativeDockerfilePaths.Count == args.localHttpNames.Count) &&
-						 (args.localHttpRelativeDockerfilePaths.Count == args.localHttpBuildContextPaths.Count) &&
-						 (args.localHttpRelativeDockerfilePaths.Count == args.shouldServiceBeEnabled.Count);
-		if (!parityMatch)
-		{
-			throw new CliException("Invalid service count, must have equal parameter counts");
-		}
-
-		foreach (var storagePath in args.storageDependenciesPaths)
+		foreach (var storagePath in args.storages)
 		{
 			var storageName = Directory.GetDirectories(storagePath).Last();
 			await args.BeamoLocalSystem.AddDefinition_EmbeddedMongoDb(storageName, "mongo:latest",
 				storageName, CancellationToken.None);
 		}
-		for (var i = 0; i < args.localHttpNames.Count; i++)
+
+		foreach (string microservice in args.microservices)
 		{
-			var name = args.localHttpNames[i];
-			var contextPath = args.localHttpBuildContextPaths[i];
-			var dockerPath = args.localHttpRelativeDockerfilePaths[i];
-			var shouldBeEnabled = true;
+			var microserviceName = Directory.GetDirectories(microservice).Last();
+			var contextPath = Regex.Replace(microservice, $@"(/|\\){microservice}", string.Empty);
+			var dockerPath = Path.Combine(microserviceName, "Dockerfile");
+			var shouldBeEnabled = !args.disabledServices.Contains(microservice);
 
-			try
-			{
-				shouldBeEnabled = bool.Parse(args.shouldServiceBeEnabled[i]);
-			}
-			catch
-			{
-				//Do nothing, something that can't be formatted to bool was passed, in that case leave it to be the default
-				Log.Debug($"No valid value for shouldServiceBeEnabled was passed. Using default of {shouldBeEnabled} for service {name}");
-			}
 
-			Log.Debug($"name=[{name}] path=[{contextPath}] dockerfile=[{dockerPath}]");
+			Log.Debug("name=[{MicroserviceName}] path=[{ContextPath}] dockerfile=[{DockerPath}]", microserviceName, contextPath, dockerPath);
 
-			_ = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(name,
+			_ = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(microserviceName,
 				contextPath,
 				dockerPath,
 				CancellationToken.None,

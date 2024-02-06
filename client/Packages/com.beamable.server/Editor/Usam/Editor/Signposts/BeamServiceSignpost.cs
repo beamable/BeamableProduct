@@ -18,7 +18,6 @@ namespace Beamable.Server.Editor.Usam
 		public string relativeProjectFile;
 
 		public string[] assemblyReferences;
-		public string[] dependedStorages;
 
 		public void AfterDeserialize()
 		{

@@ -171,7 +171,6 @@ namespace Beamable.Server.Editor.Usam
 							name = name,
 							dockerBuildPath = _services[i].assetRelativePath,
 							dockerfilePath = _services[i].relativeDockerFile,
-							dependencies = _services[i].dependedStorages.ToList()
 						}
 					});
 					dataIndex = ServiceDefinitions.Count - 1;
@@ -202,7 +201,6 @@ namespace Beamable.Server.Editor.Usam
 							name = name,
 							dockerBuildPath = service?.assetRelativePath,
 							dockerfilePath = service?.relativeDockerFile,
-							dependencies = service != null ? service.dependedStorages.ToList() : new List<string>()
 						}
 					});
 					dataIndex = ServiceDefinitions.Count - 1;
@@ -478,17 +476,8 @@ namespace Beamable.Server.Editor.Usam
 		public static async Promise SetManifest(BeamCommands cli, List<IBeamoServiceDefinition> definitions)
 		{
 			var args = new ServicesSetLocalManifestArgs();
-			var dependedStorages = new List<string>();
-			int servicesCount = 0;
-
 			//check how many services exist locally
-			foreach (IBeamoServiceDefinition def in definitions)
-			{
-				if (!string.IsNullOrEmpty(def.ServiceInfo.dockerfilePath))
-				{
-					servicesCount++;
-				}
-			}
+			int servicesCount = definitions.Count(definition=> !string.IsNullOrEmpty(definition.ServiceInfo.dockerfilePath));
 
 			if (servicesCount == 0)
 			{
@@ -496,31 +485,36 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
-			args.localHttpNames = new string[servicesCount];
-			args.localHttpContexts = new string[servicesCount];
-			args.localHttpDockerFiles = new string[servicesCount];
-			args.shouldBeEnable = new string[servicesCount];
-
+			var services = new List<string>();
+			var storages = new List<string>();
+			var disabledServices = new List<string>();
 			// TODO: add some validation to check that these files actually make sense
+			
 			for (var i = 0; i < servicesCount; i++)
 			{
 				if (string.IsNullOrEmpty(definitions[i].ServiceInfo.dockerfilePath))
 					continue;
-
-				args.localHttpNames[i] = definitions[i].BeamoId;
-				args.localHttpContexts[i] = definitions[i].ServiceInfo.dockerBuildPath;
-				args.localHttpDockerFiles[i] = definitions[i].ServiceInfo.dockerfilePath;
-
-				args.shouldBeEnable[i] = definitions[i].ShouldBeEnabledOnRemote.ToString();
-				if (definitions[i].ServiceInfo.dependencies != null)
+				switch (definitions[i].ServiceType)
 				{
-					foreach (var storage in definitions[i].ServiceInfo.dependencies)
-					{
-						dependedStorages.Add($"{definitions[i].BeamoId}:{storage}");
-					}
+					case ServiceType.MicroService:
+						services.Add(Path.Combine(definitions[i].ServiceInfo.dockerBuildPath,definitions[i].ServiceInfo.dockerfilePath));
+						break;
+					case ServiceType.StorageObject:
+						storages.Add(Path.Combine(definitions[i].ServiceInfo.dockerBuildPath,definitions[i].ServiceInfo.dockerfilePath));
+						break;
+					default:
+						throw new ArgumentOutOfRangeException();
+				}
+
+				if (!definitions[i].ShouldBeEnabledOnRemote)
+				{
+					disabledServices.Add(definitions[i].BeamoId);
 				}
 			}
-			args.storageDependencies = dependedStorages.ToArray();
+
+			if (services.Count > 0) args.services = services.ToArray();
+			if (storages.Count > 0) args.storagePaths = storages.ToArray();
+			if (disabledServices.Count > 0) args.disabledServices = disabledServices.ToArray();
 
 			var command = cli.ServicesSetLocalManifest(args);
 			await command.Run().Error(LogExceptionVerbose);
@@ -537,26 +531,19 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
-			args.localHttpNames = new string[files.Count];
-			args.localHttpContexts = new string[files.Count];
-			args.localHttpDockerFiles = new string[files.Count];
-			args.shouldBeEnable = new string[files.Count];
+			var services = new List<string>();
+			var storages = new List<string>();
+			var disabledServices = new List<string>();
 			// TODO: add some validation to check that these files actually make sense
+			
 			for (var i = 0; i < files.Count; i++)
 			{
-				args.localHttpNames[i] = files[i].name;
-				args.localHttpContexts[i] = files[i].assetRelativePath;
-				args.localHttpDockerFiles[i] = files[i].relativeDockerFile;
-				args.shouldBeEnable[i] = true.ToString(); //TODO not sure what value should be put in here, this would set all to true without new modifications
-				if (files[i].dependedStorages != null)
-				{
-					foreach (var storage in files[i].dependedStorages)
-					{
-						dependedStorages.Add($"{files[i].name}:{storage}");
-					}
-				}
+				services.Add(files[i].CsprojPath);
 			}
-			args.storageDependencies = dependedStorages.ToArray();
+
+			if (services.Count > 0) args.services = services.ToArray();
+			if (storages.Count > 0) args.storagePaths = storages.ToArray();
+			if (disabledServices.Count > 0) args.disabledServices = disabledServices.ToArray();
 
 			var command = cli.ServicesSetLocalManifest(args);
 			await command.Run().Error(LogExceptionVerbose);
@@ -723,17 +710,8 @@ namespace Beamable.Server.Editor.Usam
 		public async Promise Run(IEnumerable<string> beamoIds)
 		{
 			var listToRun = beamoIds.ToList();
-			foreach (var id in beamoIds)
-			{
-				var signin = _services.FirstOrDefault(signpost => signpost.name == id);
-				if (signin?.dependedStorages?.Length > 0)
-				{
-					listToRun.AddRange(signin.dependedStorages.ToArray());
-				}
-			}
 			try
 			{
-
 				var cmd = _cli.ServicesRun(new ServicesRunArgs() { ids = listToRun.ToArray() });
 				cmd.OnLocal_progressServiceRunProgressResult(cb =>
 				{
