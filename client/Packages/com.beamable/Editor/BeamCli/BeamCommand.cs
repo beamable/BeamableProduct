@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
@@ -171,7 +172,7 @@ namespace Beamable.Editor.BeamCli
 		private Action<ReportDataPointDescription> _callbacks = (_) => { };
 
 		private List<ErrorOutput> _errors = new List<ErrorOutput>();
-
+		
 		public BeamCommand(BeamableDispatcher dispatcher, BeamCommandPidCollection collection = null)
 		{
 			_dispatcher = dispatcher;
@@ -207,35 +208,73 @@ namespace Beamable.Editor.BeamCli
 			return this;
 		}
 
-		private void ProcessStandardOut(string message)
+		public static bool CheckForData(ref string buffer, out ReportDataPointDescription serializedData, out string jsonRaw)
 		{
-			if (message == null) return;
+			string[] data = buffer.Split(new string[] { Reporting.MESSAGE_DELIMITER }, StringSplitOptions.None);
 
-			_messageBuffer += message;
-			var delimIndex = _messageBuffer.IndexOf(Reporting.MESSAGE_DELIMITER, StringComparison.InvariantCulture);
-			if (delimIndex > -1)
+			if (data.Length > 1)
 			{
-				var buffer = _messageBuffer.Substring(0, delimIndex);
-				_messageBuffer = _messageBuffer.Substring(delimIndex + Reporting.MESSAGE_DELIMITER.Length);
-				TryParseMessage(buffer);
-			}
-		}
-
-		void TryParseMessage(string buffer)
-		{
-			try
-			{
-				var pt = JsonUtility.FromJson<ReportDataPointDescription>(buffer);
-				if (pt != null)
+				try
 				{
-					pt.json = buffer;
-					_points.Add(pt);
-					_callbacks?.Invoke(pt);
+					serializedData = JsonUtility.FromJson<ReportDataPointDescription>(data[0]);
+					var remainingData = data.Skip(1).ToArray();
+					
+					buffer = string.Join(Reporting.MESSAGE_DELIMITER, remainingData);
+					jsonRaw = data[0];
+					return true;
+				}catch (Exception e) //this case we have full data but there is some error in the json
+				{
+					Debug.LogError(e.Message);
+					serializedData = null;
+					jsonRaw = string.Empty;
+					return false;
 				}
 			}
-			catch (Exception e)
+			
+			if (!buffer.Contains(Reporting.MESSAGE_DELIMITER))
 			{
-				Debug.LogException(e);
+				try
+				{
+					serializedData = JsonUtility.FromJson<ReportDataPointDescription>(data[0]);
+					buffer = string.Empty;
+					jsonRaw = data[0];
+					return true;
+				}
+				catch
+				{
+					// in this case, data is just incomplete, so we ignore
+				}
+			}
+			else
+			{
+				try
+				{
+					serializedData = JsonUtility.FromJson<ReportDataPointDescription>(data[0]);
+					buffer = string.Empty;
+					jsonRaw = data[0];
+					return true;
+				}catch (Exception e) //in this case json is wrong
+				{
+					Debug.LogError(e.Message);
+				}
+			}
+			
+			serializedData = null;
+			jsonRaw = string.Empty;
+			return false;
+		}
+
+		private void ProcessStandardOut(string message)
+		{
+			if (string.IsNullOrEmpty(message)) return;
+
+			_messageBuffer += message;
+
+			if (CheckForData(ref _messageBuffer, out ReportDataPointDescription data, out string jsonRaw))
+			{
+				data.json = jsonRaw;
+				_points.Add(data);
+				_callbacks?.Invoke(data);
 			}
 		}
 
@@ -261,119 +300,118 @@ namespace Beamable.Editor.BeamCli
 		{
 			if (string.IsNullOrEmpty(Command)) throw new InvalidOperationException("must set command before running");
 			_hasExecuted = true;
-
-			using (_process = new System.Diagnostics.Process())
-			{
-				if (_command.Contains(".dll"))
+			
+				using (_process = new System.Diagnostics.Process())
 				{
-					_process.StartInfo.FileName = DotnetUtil.DotnetPath;
-					_process.StartInfo.Arguments = _command;
-				}
-				else
-				{
+					if (_command.Contains(".dll"))
+					{
+						_process.StartInfo.FileName = DotnetUtil.DotnetPath;
+						_process.StartInfo.Arguments = _command;
+					}
+					else
+					{
 #if UNITY_EDITOR && !UNITY_EDITOR_WIN
 						_process.StartInfo.FileName = "sh";
 						_process.StartInfo.Arguments = $"-c '{Command}'";
 #else
-					_process.StartInfo.FileName = "cmd.exe";
-					_process.StartInfo.Arguments =
-						$"/C {_command}"; //  "/C " + _command + " > " + commandoutputfile + "'"; // TODO: I haven't tested this since refactor.
+						_process.StartInfo.FileName = "cmd.exe";
+						_process.StartInfo.Arguments =
+							$"/C {_command}"; //  "/C " + _command + " > " + commandoutputfile + "'"; // TODO: I haven't tested this since refactor.
 #endif
-				}
-				// Configure the process using the StartInfo properties.
-				_process.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal;
-				_process.EnableRaisingEvents = true;
-				_process.StartInfo.RedirectStandardInput = true;
-				_process.StartInfo.RedirectStandardOutput = CaptureStandardBuffers;
-				_process.StartInfo.RedirectStandardError = CaptureStandardBuffers;
-				_process.StartInfo.CreateNoWindow = true;
-				_process.StartInfo.UseShellExecute = false;
-
-				_status = new TaskCompletionSource<int>();
-				_standardOutComplete = new TaskCompletionSource<int>();
-				EventHandler eh = (s, e) =>
-				{
-					Task.Run(async () =>
-					{
-						await Task.Delay(1); // give 1 ms for log messages to eep out
-						if (_dispatcher.IsForceStopped)
-						{
-							KillProc();
-							return;
-						}
-
-						_dispatcher.Schedule(() =>
-						{
-							// there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
-							// _hasExited = true;
-							_exitCode = _process.ExitCode;
-
-							// OnExit?.Invoke(_process.ExitCode);
-							// HandleOnExit();
-
-							_status.TrySetResult(0);
-						});
-					});
-				};
-
-				_process.Exited += eh;
-
-				var pid = 0;
-				try
-				{
+					}
+					// Configure the process using the StartInfo properties.
+					_process.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal;
 					_process.EnableRaisingEvents = true;
+					_process.StartInfo.RedirectStandardInput = true;
+					_process.StartInfo.RedirectStandardOutput = CaptureStandardBuffers;
+					_process.StartInfo.RedirectStandardError = CaptureStandardBuffers;
+					_process.StartInfo.CreateNoWindow = true;
+					_process.StartInfo.UseShellExecute = false;
 
-					_process.OutputDataReceived += (sender, args) =>
+					_status = new TaskCompletionSource<int>();
+					_standardOutComplete = new TaskCompletionSource<int>();
+					EventHandler eh = (s, e) =>
 					{
-						if (_dispatcher.IsForceStopped)
+						Task.Run(async () =>
 						{
-							KillProc();
-							return;
-						}
+							await Task.Delay(1); // give 1 ms for log messages to eep out
+							if (_dispatcher.IsForceStopped)
+							{
+								KillProc();
+								return;
+							}
 
-						_dispatcher.Schedule(() =>
-						{
-							try
+							_dispatcher.Schedule(() =>
 							{
-								ProcessStandardOut(args.Data);
-							}
-							catch (Exception ex)
-							{
-								Debug.LogException(ex);
-							}
-						});
-					};
-					_process.ErrorDataReceived += (sender, args) =>
-					{
-						if (_dispatcher.IsForceStopped)
-						{
-							KillProc();
-							return;
-						}
+								// there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
+								// _hasExited = true;
+								_exitCode = _process.ExitCode;
 
-						_dispatcher.Schedule(() =>
-						{
-							try
-							{
-								ProcessStandardErr(args.Data);
-							}
-							catch (Exception ex)
-							{
-								Debug.LogException(ex);
-							}
+								// OnExit?.Invoke(_process.ExitCode);
+								// HandleOnExit();
+
+								_status.TrySetResult(0);
+							});
 						});
 					};
 
-					_process.Start();
-					pid = _process.Id;
-					_collection?.Add(pid);
-					// _started = true;
-					_process.BeginOutputReadLine();
-					_process.BeginErrorReadLine();
+					_process.Exited += eh;
 
-					await _status.Task;
+					var pid = 0;
+					try
+					{
+						_process.EnableRaisingEvents = true;
 
-					TryParseMessage(_messageBuffer);
+						_process.OutputDataReceived += (sender, args) =>
+						{
+							if (_dispatcher.IsForceStopped)
+							{
+								KillProc();
+								return;
+							}
+
+							_dispatcher.Schedule(() =>
+							{
+								try
+								{
+									ProcessStandardOut(args.Data);
+								}
+								catch (Exception ex)
+								{
+									Debug.LogException(ex);
+								}
+							});
+						};
+						_process.ErrorDataReceived += (sender, args) =>
+						{
+							if (_dispatcher.IsForceStopped)
+							{
+								KillProc();
+								return;
+							}
+
+							_dispatcher.Schedule(() =>
+							{
+								try
+								{
+									ProcessStandardErr(args.Data);
+								}
+								catch (Exception ex)
+								{
+									Debug.LogException(ex);
+								}
+							});
+						};
+
+						_process.Start();
+						pid = _process.Id;
+						_collection?.Add(pid);
+						// _started = true;
+						_process.BeginOutputReadLine();
+						_process.BeginErrorReadLine();
+
+						await _status.Task;
+
 					if (_exitCode != 0)
 					{
 						throw new CliInvocationException(_command, _errors);
