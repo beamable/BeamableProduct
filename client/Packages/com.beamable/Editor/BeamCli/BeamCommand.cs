@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
@@ -209,14 +210,14 @@ namespace Beamable.Editor.BeamCli
 
 		public static bool CheckForData(ref string buffer, out ReportDataPointDescription serializedData, out string jsonRaw)
 		{
-			string[] data = buffer.Split(Reporting.MESSAGE_DELIMITER);
+			string[] data = buffer.Split(Reporting.MESSAGE_DELIMITER.ToArray());
 
 			if (data.Length > 1)
 			{
 				try
 				{
 					serializedData = JsonUtility.FromJson<ReportDataPointDescription>(data[0]);
-					buffer = string.Join("", data[1..]);
+					buffer = string.Join(Reporting.MESSAGE_DELIMITER, data.Skip(1).ToArray());
 					jsonRaw = data[0];
 					return true;
 				}catch (Exception e) //this case we have full data but there is some error in the json
