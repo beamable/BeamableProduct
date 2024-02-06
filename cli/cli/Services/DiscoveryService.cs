@@ -5,6 +5,7 @@ using NetMQ;
 using Newtonsoft.Json;
 using Serilog;
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 
 namespace cli.Services;
 
@@ -31,7 +32,7 @@ public class DiscoveryService
 		_beacon.Dispose();
 	}
 
-	public async IAsyncEnumerable<ServiceDiscoveryEvent> StartDiscovery(TimeSpan timeout = default)
+	public async IAsyncEnumerable<ServiceDiscoveryEvent> StartDiscovery(TimeSpan timeout = default, [EnumeratorCancellation] CancellationToken token=default)
 	{
 		_beacon = new NetMQBeacon();
 		_beacon.ConfigureAllInterfaces(Beamable.Common.Constants.Features.Services.DISCOVERY_PORT);
@@ -79,6 +80,11 @@ public class DiscoveryService
 			var nowTime = DateTimeOffset.Now;
 			var duration = nowTime - startTime;
 			if (timeout != default && timeout < duration)
+			{
+				break;
+			}
+
+			if (token.IsCancellationRequested)
 			{
 				break;
 			}
@@ -131,6 +137,8 @@ public class DiscoveryService
 		}
 
 		await _localSystem.StopListeningToDocker();
+		
+		
 	}
 
 	public static ServiceDiscoveryEvent CreateEvent(ServiceDiscoveryEntry entry, bool isRunning)

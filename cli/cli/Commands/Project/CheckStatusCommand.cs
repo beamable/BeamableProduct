@@ -1,19 +1,16 @@
-using Beamable.Common.BeamCli;
 using Beamable.Server;
-using Beamable.Server.Common;
+using cli.Dotnet;
 using cli.Services;
-using cli.Utils;
 using NetMQ;
-using Newtonsoft.Json;
 using Serilog;
-using Spectre.Console;
-using System.CommandLine;
+
 // ReSharper disable InconsistentNaming
 
 namespace cli;
 
 public class CheckStatusCommandArgs : CommandArgs
 {
+	public bool watch;
 }
 
 [Serializable]
@@ -40,12 +37,21 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, ServiceD
 
 	public override void Configure()
 	{
+		ProjectCommand.AddWatchOption(this, (args, i) => args.watch = i);
 	}
 
 	public override async Task Handle(CheckStatusCommandArgs args)
 	{
 		var discovery = args.DependencyProvider.GetService<DiscoveryService>();
-		await foreach (var evt in discovery.StartDiscovery())
+
+		TimeSpan timeout = TimeSpan.FromMilliseconds(Beamable.Common.Constants.Features.Services.DISCOVERY_RECEIVE_PERIOD_MS * 2);
+		if (args.watch)
+		{
+			timeout = default;
+		}
+		Log.Debug($"running status-check with watch=[{args.watch}] timeout=[{timeout.Milliseconds}]");
+		
+		await foreach (var evt in discovery.StartDiscovery(timeout))
 		{
 			if (!evt.isRunning)
 			{
@@ -57,6 +63,8 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, ServiceD
 			}
 			SendResults(evt);
 		}
+
+		await discovery.Stop();
 	}
 
 }
