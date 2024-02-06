@@ -409,19 +409,19 @@ namespace Beamable.Editor.BeamCli
 
 						await _status.Task;
 
-						if (_exitCode != 0)
-						{
-							throw new CliInvocationException(_command, _errors);
-						}
-					}
-					finally
+					if (_exitCode != 0)
 					{
-						_process.Exited -= eh;
-						_collection?.Remove(pid);
+						throw new CliInvocationException(_command, _errors);
 					}
 				}
-			
-			
+				finally
+				{
+					_process.Exited -= eh;
+					_collection?.Remove(pid);
+				}
+			}
+
+
 		}
 
 		private void KillProc()
