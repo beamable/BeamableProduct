@@ -156,6 +156,9 @@ public class App
 
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
 		Commands.AddRootCommand<ProjectCommand, ProjectCommandArgs>();
+		Commands.AddCommand<RunProjectCommand, RunProjectCommandArgs, ProjectCommand>();
+		Commands.AddCommand<StopProjectCommand, StopProjectCommandArgs, ProjectCommand>();
+		Commands.AddCommand<BuildProjectCommand, BuildProjectCommandArgs, ProjectCommand>();
 		Commands.AddCommand<NewSolutionCommand, NewSolutionCommandArgs, ProjectCommand>();
 		Commands.AddCommand<RegenerateSolutionFilesCommand, RegenerateSolutionFilesCommandArgs, ProjectCommand>();
 		Commands.AddCommand<ListCommand, ListCommandArgs, ProjectCommand>();

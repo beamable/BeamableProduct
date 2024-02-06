@@ -40,12 +40,12 @@ public class Tests
 	[Test]
 	public void NamingPass()
 	{
-		void CheckNaming(string commandName, string description, string? optionName = null)
+		void CheckNaming(Command command, string commandName, string description, string? optionName = null)
 		{
 			const string KEBAB_CASE_PATTERN = "^([a-z]|[0-9])+(?:[-]([a-z]|[0-9])+)*$";
 			var isOption = !string.IsNullOrWhiteSpace(optionName);
 			var logPrefix = isOption ?
-				$"{optionName} argument for command {commandName}" :
+				$"{optionName} argument for command {command.GetType().Name}" :
 				$"{commandName} command";
 			if (string.IsNullOrWhiteSpace(description))
 			{
@@ -82,7 +82,7 @@ public class Tests
 
 		foreach (var command in commandsList)
 		{
-			CheckNaming(command.Name, command.Description!);
+			CheckNaming(command, command.Name, command.Description!);
 
 			var sameDescriptionCommand = commandsList.FirstOrDefault(c =>
 				c.Name != command.Name &&
@@ -96,7 +96,7 @@ public class Tests
 
 			foreach (Option option in command.Options)
 			{
-				CheckNaming(command.Name, option.Description!, option.Name);
+				CheckNaming(command, command.Name, option.Description!, option.Name);
 			}
 		}
 
