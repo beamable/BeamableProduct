@@ -253,7 +253,11 @@ namespace Beamable.Server.Editor.Usam
 			var service = new ServiceName(serviceName);
 			var args = new ProjectNewArgs
 			{
-				solutionName = service, quiet = true, name = service, output = outputPath, version = _projectVersion
+				solutionName = service,
+				quiet = true,
+				name = service,
+				output = outputPath,
+				version = _projectVersion
 			};
 			ProjectNewWrapper command = _cli.ProjectNew(args);
 			await command.Run();
@@ -714,7 +718,7 @@ namespace Beamable.Server.Editor.Usam
 				LogVerbose("Service does not exist!");
 				return;
 			}
-			
+
 			var path = Path.GetDirectoryName(def.ServiceInfo.dockerBuildPath);
 			var fileName = $@"{path}/services/{serviceName}/{serviceName}.cs";
 			EditorUtility.OpenWithDefaultApp(fileName);

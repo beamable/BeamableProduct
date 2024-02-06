@@ -626,8 +626,8 @@ COPY {commonProjectName}/. .
 			service.RelativeDockerfilePath);
 		var projectPath = Path.GetDirectoryName(dockerfilePath);
 
-		var watchPart = args.watch 
-			? $"watch -q --project {projectPath} build --" 
+		var watchPart = args.watch
+			? $"watch -q --project {projectPath} build --"
 			: $"build {projectPath}";
 		var commandStr =
 			$"{watchPart} -p:ErrorLog=\"{errorPath}%2Cversion=2\"";
@@ -677,7 +677,7 @@ COPY {commonProjectName}/. .
 				if (result.Level is FailureLevel.Note or FailureLevel.None) continue;
 
 				var location = result.Locations.FirstOrDefault();
-				
+
 				outputs.Add(new ProjectErrorResult
 				{
 					level = result.Level.ToString(),
@@ -690,7 +690,7 @@ COPY {commonProjectName}/. .
 
 			return new ProjectErrorReport
 			{
-				errors = outputs, 
+				errors = outputs,
 				isSuccess = outputs.Count == 0
 			};
 		}
