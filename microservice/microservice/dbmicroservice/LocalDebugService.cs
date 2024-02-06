@@ -1,4 +1,5 @@
-﻿using Beamable.Server.Api.Usage;
+﻿using Beamable.Common;
+using Beamable.Server.Api.Usage;
 using Beamable.Server.Common;
 using Beamable.Server.Ecs;
 using System.Net.WebSockets;
@@ -64,6 +65,18 @@ namespace Beamable.Server {
 				var usage = _ecsService.GetUsage();
 				var json = JsonConvert.SerializeObject(usage);
 				return json;
+			}
+
+			[Route(HttpVerbs.Get, "/stop")]
+			public string Stop([QueryField]string reason)
+			{
+				Task.Run(async () =>
+				{
+					await Task.Delay(100);
+					BeamableLogger.Log($"Stopping service through debug-server due to reason=[{reason}]");
+					Environment.Exit(0);
+				});
+				return "stopping";
 			}
 
 			[Route(HttpVerbs.Get, "/logs")]
