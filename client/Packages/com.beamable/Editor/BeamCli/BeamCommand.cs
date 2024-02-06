@@ -210,14 +210,16 @@ namespace Beamable.Editor.BeamCli
 
 		public static bool CheckForData(ref string buffer, out ReportDataPointDescription serializedData, out string jsonRaw)
 		{
-			string[] data = buffer.Split(Reporting.MESSAGE_DELIMITER.ToArray());
+			string[] data = buffer.Split(new string[] { Reporting.MESSAGE_DELIMITER }, StringSplitOptions.None);
 
 			if (data.Length > 1)
 			{
 				try
 				{
 					serializedData = JsonUtility.FromJson<ReportDataPointDescription>(data[0]);
-					buffer = string.Join(Reporting.MESSAGE_DELIMITER, data.Skip(1).ToArray());
+					var remainingData = data.Skip(1).ToArray();
+					
+					buffer = string.Join(Reporting.MESSAGE_DELIMITER, remainingData);
 					jsonRaw = data[0];
 					return true;
 				}catch (Exception e) //this case we have full data but there is some error in the json
