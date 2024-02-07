@@ -46,7 +46,6 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 
 	public override async Task Handle(ServicesSetManifestCommandArgs args)
 	{
-		BeamableLogger.Log("handling");
 		var nonExistingServices = args.microservices.Concat(args.storages)
 			.Where(p => !Directory.Exists(Path.Combine(args.ConfigService.BaseDirectory, p))).ToArray();
 		if (nonExistingServices.Length > 0)
@@ -61,24 +60,23 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 		{
 			var storageName = Directory.GetDirectories(storagePath).Last();
 			await args.BeamoLocalSystem.AddDefinition_EmbeddedMongoDb(storageName, "mongo:latest",
-				storageName, CancellationToken.None);
+				storagePath, CancellationToken.None);
 		}
 
-		foreach (string microservice in args.microservices)
+		foreach (string microservicePath in args.microservices)
 		{
-			var microserviceName = Directory.GetDirectories(microservice).Last();
-			var contextPath = Regex.Replace(microservice, $@"(/|\\){microservice}", string.Empty);
-			var dockerPath = Path.Combine(microserviceName, "Dockerfile");
-			var shouldBeEnabled = !args.disabledServices.Contains(microservice);
+			var directoryInfo = new DirectoryInfo(Path.Combine(args.ConfigService.BaseDirectory, microservicePath));
+			var name = directoryInfo.Name;
+			var contextPath = args.ConfigService.GetRelativePath(directoryInfo.Parent!.FullName);
+			var dockerPath = Path.Combine(name, "Dockerfile");
+			var shouldBeEnabled = !args.disabledServices.Contains(name);
 
-
-			Log.Debug("name=[{MicroserviceName}] path=[{ContextPath}] dockerfile=[{DockerPath}]", microserviceName, contextPath, dockerPath);
-
-			_ = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(microserviceName,
+			_ = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(name,
 				contextPath,
 				dockerPath,
 				CancellationToken.None,
-				shouldBeEnabled);
+				shouldBeEnabled,
+				microservicePath);
 		}
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
 	}
