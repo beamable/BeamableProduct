@@ -15,6 +15,7 @@ namespace Beamable.Server.Editor
 		bool HasValidationWarning { get; }
 	}
 
+	[Serializable]
 	public enum ServiceType
 	{
 		MicroService,

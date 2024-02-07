@@ -12,7 +12,7 @@ public class NewStorageCommandArgs : CommandArgs
 	public string slnPath;
 }
 
-public class NewStorageCommand : AppCommand<NewStorageCommandArgs>
+public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 {
 	public NewStorageCommand() : base("new-storage", "Create and add a new Microstorage")
 	{

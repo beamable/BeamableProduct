@@ -166,6 +166,7 @@ namespace Beamable.Server.Editor.Usam
 				{
 					ServiceDefinitions.Add(new BeamoServiceDefinition
 					{
+						ServiceType = _services[i].serviceType,
 						ServiceInfo = new ServiceInfo()
 						{
 							name = name,
@@ -175,7 +176,7 @@ namespace Beamable.Server.Editor.Usam
 					});
 					dataIndex = ServiceDefinitions.Count - 1;
 					ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder() { BeamoId = name };
-					ServiceDefinitions[dataIndex].ServiceType = ServiceType.MicroService; //For now we only have microservice and not storages
+					
 					ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = true; //TODO should read this from manifest or have it stored somewhere
 					ServiceDefinitions[dataIndex].HasLocalSource = true;
 				}
@@ -233,10 +234,11 @@ namespace Beamable.Server.Editor.Usam
 		}
 
 		/// <summary>
-		/// Creates a new Standalone Microservice inside a hidden folder from Unity.
+		/// Creates a new Standalone Service inside a hidden folder from Unity.
 		/// </summary>
-		/// <param name="serviceName"> The name of the Microservice to be created.</param>
-		public async Promise CreateMicroservice(string serviceName)
+		/// <param name="serviceName"> The name of the Service to be created.</param>
+		/// <param name="serviceType"> The type of the Service to be created.</param>
+		public async Promise CreateService(string serviceName, ServiceType serviceType = ServiceType.MicroService)
 		{
 			LogVerbose($"Starting creation of service {serviceName}");
 
@@ -248,29 +250,58 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
+			BeamServiceSignpost signpost = null;
 			var service = new ServiceName(serviceName);
-			var args = new ProjectNewArgs
+			switch (serviceType)
 			{
-				solutionName = service, quiet = true, name = service, output = outputPath, version = _projectVersion
-			};
-			ProjectNewWrapper command = _cli.ProjectNew(args);
-			await command.Run();
+				case ServiceType.MicroService:
+				{
+					var args = new ProjectNewArgs
+					{
+						solutionName = service,
+						quiet = true,
+						name = service,
+						output = outputPath,
+						version = _projectVersion
+					};
+					ProjectNewWrapper command = _cli.ProjectNew(args);
+					await command.Run();
 
-			string relativePath = $"{outputPath}services";
-			string dockerFilePath = $"{serviceName}/Dockerfile";
-			string projectFilePath = $"../{serviceName}.sln";
-			var signpost = new BeamServiceSignpost()
-			{
-				name = serviceName,
-				assetRelativePath = relativePath,
-				relativeDockerFile = dockerFilePath,
-				relativeProjectFile = projectFilePath
-			};
+					string relativePath = $"{outputPath}services";
+					string dockerFilePath = $"{serviceName}/Dockerfile";
+					string projectFilePath = $"../{serviceName}.sln";
+					signpost = new BeamServiceSignpost()
+					{
+						name = serviceName,
+						assetRelativePath = relativePath,
+						relativeDockerFile = dockerFilePath,
+						relativeProjectFile = projectFilePath,
+						serviceType = ServiceType.MicroService
+					};
+				}
+					break;
+				case ServiceType.StorageObject:
+					var storageArgs = new ProjectNewStorageArgs
+					{
+						name = service
+					};
+					var storageCommand = _cli.ProjectNewStorage(storageArgs);
+					await storageCommand.Run();
+					signpost = new BeamServiceSignpost()
+					{
+						name = service,
+						serviceType = ServiceType.StorageObject
+					};
+					break;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(serviceType), serviceType, null);
+			}
+
 			string signpostPath = $"{BEAMABLE_PATH}{serviceName}.beamservice";
 			string signpostJson = JsonUtility.ToJson(signpost);
 
 			LogVerbose($"Writing data to {serviceName}.beamservice file");
-			File.WriteAllText(signpostPath, signpostJson);
+			await File.WriteAllTextAsync(signpostPath, signpostJson);
 
 			LogVerbose($"Starting the initialization of CodeService");
 			// Re-initializing the CodeService to make sure all files are with the right information
@@ -517,7 +548,14 @@ namespace Beamable.Server.Editor.Usam
 			if (disabledServices.Count > 0) args.disabledServices = disabledServices.ToArray();
 
 			var command = cli.ServicesSetLocalManifest(args);
-			await command.Run().Error(LogExceptionVerbose);
+			try
+			{
+				await command.Run();
+			}
+			catch (Exception e)
+			{
+				LogExceptionVerbose(e);
+			}
 		}
 
 		public static async Promise SetManifest(BeamCommands cli, List<BeamServiceSignpost> files)
