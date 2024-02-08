@@ -38,14 +38,14 @@ public sealed class BeamResourceRepository : ISourceRepository
 
 		if (File.Exists(id))
 		{
-			source = new Source(id, File.ReadAllText(id).Replace("\r\n", "\n"));
+			source = new Source(id, File.ReadAllText(id).ReplaceLineEndings("\n"));
 			_lookup[id] = source;
 			return true;
 		}
 
 		using var stream = LoadResourceStream(_assembly, id);
 		using var reader = new StreamReader(stream);
-		source = new Source(id, reader.ReadToEnd().Replace("\r\n", "\n"));
+		source = new Source(id, reader.ReadToEnd().ReplaceLineEndings("\n"));
 		_lookup[id] = source;
 
 		return true;

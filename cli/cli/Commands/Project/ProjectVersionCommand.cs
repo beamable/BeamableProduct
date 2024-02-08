@@ -41,13 +41,13 @@ public class ProjectVersionCommand : AtomicCommand<ProjectVersionCommandArgs, Pr
 				await CliExtensions.RunWithOutput(args.AppContext.DotnetPath, "sln list",
 					solutionPath!.FullName);
 
-			var projectsPaths = buffer.ToString().Replace("\r\n", "\n").Split("\n").Where(s => s.EndsWith(".csproj"))
+			var projectsPaths = buffer.ToString().ReplaceLineEndings("\n").Split("\n").Where(s => s.EndsWith(".csproj"))
 				.Select(p => Directory.GetParent(Path.Combine(solutionPath.FullName, p))!.FullName).ToList();
 			foreach (string projectPath in projectsPaths)
 			{
 				(_, buffer) =
 					await CliExtensions.RunWithOutput(args.AppContext.DotnetPath, "list package", projectPath);
-				var result = buffer.ToString().Replace("\r\n", "\n").Split("\n").Where(s => s.Contains("> Beamable."))
+				var result = buffer.ToString().ReplaceLineEndings("\n").Split("\n").Where(s => s.Contains("> Beamable."))
 					.ToList();
 
 				foreach (var line in result)

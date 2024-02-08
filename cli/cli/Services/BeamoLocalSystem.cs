@@ -159,7 +159,7 @@ public partial class BeamoLocalSystem
 COPY {dependency.BeamoId}/. .";
 		var replacement = @$"{toAdd}
 {search}";
-		if(!dockerfileText.Replace("\r\n","\n").Contains(toAdd))
+		if(!dockerfileText.ReplaceLineEndings("\n").Contains(toAdd))
 		{
 			dockerfileText = dockerfileText.Replace(search, replacement);
 			await File.WriteAllTextAsync(dockerfilePath, dockerfileText);
