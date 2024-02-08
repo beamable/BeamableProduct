@@ -16,6 +16,6 @@ namespace Beamable.Editor.UI.Model
 		public bool IsRunningLocally => Builder.IsRunning;
 		public BeamoServiceStatus IsRunningOnRemote { get; set; } = BeamoServiceStatus.Unknown;
 		public ServiceInfo ServiceInfo { get; set; }
-		public bool ExistLocally => !string.IsNullOrWhiteSpace(ServiceInfo?.dockerfilePath) && !string.IsNullOrWhiteSpace(ServiceInfo?.dockerBuildPath);
+		public bool ExistLocally => !string.IsNullOrWhiteSpace(ServiceInfo?.projectPath);
 	}
 }
