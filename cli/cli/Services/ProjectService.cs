@@ -309,7 +309,7 @@ public class ProjectService
 
 		var info = new DotnetTemplateInfo();
 
-		var buffer = templateStream.ToString().Replace("\r\n", "\n");
+		var buffer = templateStream.ToString().ReplaceLineEndings("\n");
 		string pattern =
 			@"Beamable\.Templates[\s\S]*?Version: (\d+\.\d+\.\d+(?:-\w+\.\w+\d*)?)[\s\S]*?Templates:\n((?:\s{3}.*\(.*\)\s+C#\n)+)";
 

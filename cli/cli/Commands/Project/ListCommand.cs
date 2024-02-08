@@ -1,4 +1,5 @@
 using Beamable.Common.BeamCli.Contracts;
+using cli.Services;
 using Serilog;
 
 namespace cli.Commands.Project;
@@ -12,6 +13,7 @@ public class ListCommandArgs : CommandArgs
 public class ListCommandResult
 {
 	public List<ServiceInfo> localServices;
+	public List<ServiceInfo> localStorages;
 }
 
 public class ListCommand : AtomicCommand<ListCommandArgs, ListCommandResult>
@@ -29,15 +31,15 @@ public class ListCommand : AtomicCommand<ListCommandArgs, ListCommandResult>
 	{
 		Log.Information("Running list command " + args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Count);
 
-		var services = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.Select(x => new ServiceInfo
-		{
-			name = x.Key,
-			dockerfilePath = x.Value.RelativeDockerfilePath,
-			dockerBuildPath = x.Value.DockerBuildContextPath
-		}).ToList();
+		var services = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions
+			.Where(definition => definition.Protocol == BeamoProtocolType.HttpMicroservice).Select(
+				definition => new ServiceInfo() { name = definition.BeamoId, projectPath = definition.ProjectDirectory });
+		var storages = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions
+			.Where(definition => definition.Protocol == BeamoProtocolType.EmbeddedMongoDb).Select(
+				definition => new ServiceInfo() { name = definition.BeamoId, projectPath = definition.ProjectDirectory });
 
 		Log.Information("Sent list command " + args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Count);
 
-		return Task.FromResult(new ListCommandResult { localServices = services });
+		return Task.FromResult(new ListCommandResult { localServices = services.ToList(), localStorages = storages.ToList() });
 	}
 }

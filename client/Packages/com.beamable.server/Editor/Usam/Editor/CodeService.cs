@@ -296,7 +296,7 @@ namespace Beamable.Server.Editor.Usam
 			string signpostJson = JsonUtility.ToJson(signpost);
 
 			LogVerbose($"Writing data to {serviceName}.beamservice file");
-			await File.WriteAllTextAsync(signpostPath, signpostJson);
+			File.WriteAllText(signpostPath, signpostJson);
 
 			LogVerbose($"Starting the initialization of CodeService");
 			// Re-initializing the CodeService to make sure all files are with the right information
@@ -341,9 +341,19 @@ namespace Beamable.Server.Editor.Usam
 
 
 			var service = _services.FirstOrDefault(s => s.name == id);
+			if (service?.serviceType == ServiceType.StorageObject)
+			{
+				return;
+			}
+
+			if (string.IsNullOrWhiteSpace(service?.CsprojPath))
+			{
+				LogVerbose("No file to generate");
+				return;
+			}
 
 			var beamPath = BeamCliUtil.CLI_PATH.Replace(".dll", "");
-			var buildCommand = $"build \"{service!.CsprojPath}\" /p:BeamableTool={beamPath} /p:GenerateClientCode=false";
+			var buildCommand = $"build \"{service.CsprojPath}\" /p:BeamableTool={beamPath} /p:GenerateClientCode=false";
 
 			LogVerbose($"Starting build service: {id} using command: {buildCommand}");
 			await _dotnetService.Run(buildCommand);
