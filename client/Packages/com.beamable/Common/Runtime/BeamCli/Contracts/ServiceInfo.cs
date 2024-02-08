@@ -7,7 +7,6 @@ namespace Beamable.Common.BeamCli.Contracts
 	public class ServiceInfo
 	{
 		public string name;
-		public string dockerBuildPath;
-		public string dockerfilePath;
+		public string projectPath;
 	}
 }

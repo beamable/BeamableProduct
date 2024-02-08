@@ -2,6 +2,6 @@
 {
 	public interface ISignpostData
 	{
-		void AfterDeserialize();
+		void AfterDeserialize(string filePath);
 	}
 }
