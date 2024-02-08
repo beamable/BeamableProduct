@@ -88,6 +88,7 @@ namespace Beamable.Server.Editor.Usam
 				LogVerbose("Update services version end");
 			}
 
+			CheckMicroserviceStatus();
 			ConnectToLogs();
 			LogVerbose("Completed");
 		}
@@ -327,15 +328,6 @@ namespace Beamable.Server.Editor.Usam
 			LogVerbose($"Running service: {id} using command: {runCommand}");
 			_ = _dotnetService.Run(runCommand);
 
-			var def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(id));
-
-			def?.Builder.OnStartingProgress?.Invoke((int)100, 100);
-			def?.Builder.OnStartingFinished?.Invoke(true);
-			if (def != null)
-			{
-				def.Builder.IsRunning = true;
-			}
-
 			return Promise.Success;
 		}
 
@@ -430,6 +422,22 @@ namespace Beamable.Server.Editor.Usam
 				_logsCommands.Add(logs.Run());
 			}
 		}
+
+		public void CheckMicroserviceStatus()
+		{
+			var projectPs = _cli.ProjectPs().OnStreamServiceDiscoveryEvent(cb =>
+			{
+				Debug.Log($"[{cb.data.service}] is running = {cb.data.isRunning}");
+				
+				var def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(cb.data.service));
+				if (def != null)
+				{
+					def.Builder.IsRunning = cb.data.isRunning;
+				}
+			});
+			projectPs.Run();
+		}
+		
 
 		/// <summary>
 		/// Update the sln file to add references to known beam services.
@@ -675,12 +683,6 @@ namespace Beamable.Server.Editor.Usam
 				foreach (Process process in Process.GetProcessesByName(id))
 				{
 					process.Kill();
-				}
-
-				var def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(id));
-				if (def != null)
-				{
-					def.Builder.IsRunning = false;
 				}
 			}
 

@@ -1,10 +1,13 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Semantics;
+using cli.Commands.Project;
 using cli.Dotnet;
 using cli.Unreal;
 using CliWrap;
 using CliWrap.Buffered;
 using JetBrains.Annotations;
+using Microsoft.CodeAnalysis.Sarif;
 using Serilog;
 using Spectre.Console;
 using System.Diagnostics;
@@ -601,6 +604,113 @@ COPY {commonProjectName}/. .
 	{
 		return CliExtensions.GetDotnetCommand(_app.DotnetPath, arguments).ExecuteAsyncAndLog().Task;
 	}
+
+	public static async Task WatchBuild(BuildProjectCommandArgs args, ServiceName serviceName, Action<ProjectErrorReport> onReport)
+	{
+		var localServices = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols;
+		if (!localServices.TryGetValue(serviceName, out var service))
+		{
+			throw new CliException(
+				$"The given id=[{serviceName}] does not match any local services in the local beamo manifest.");
+		}
+
+		var errorPath = Path.Combine(args.ConfigService.ConfigFilePath, "temp", "buildLogs",
+			$"{serviceName}.json");
+		var errorDir = Path.GetDirectoryName(errorPath);
+		Directory.CreateDirectory(errorDir);
+		Log.Debug($"error log path=[{errorPath}]");
+		var dockerfilePath = Path.Combine(args.ConfigService.GetRelativePath(service.DockerBuildContextPath),
+			service.RelativeDockerfilePath);
+		var projectPath = Path.GetDirectoryName(dockerfilePath);
+
+		var watchPart = args.watch 
+			? $"watch -q --project {projectPath} build --" 
+			: $"build {projectPath}";
+		var commandStr =
+			$"{watchPart} -p:ErrorLog=\"{errorPath}%2Cversion=2\"";
+		Log.Debug($"dotnet command=[{args.AppContext.DotnetPath} {commandStr}]");
+
+		using var cts = new CancellationTokenSource();
+
+		var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, commandStr)
+			.WithEnvironmentVariables(new Dictionary<string, string>
+			{
+				["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1",
+				["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1",
+			})
+			.WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
+			{
+				if (line.Trim() == "dotnet watch : Waiting for a file to change before restarting dotnet...")
+				{
+					// read the data file!
+					var report = ReadErrorReport(errorPath);
+					onReport?.Invoke(report);
+				}
+
+				Log.Information(line);
+			}))
+			.WithValidation(CommandResultValidation.None)
+			.ExecuteAsync(cts.Token);
+
+
+		await command;
+
+		if (!args.watch)
+		{
+			var report = ReadErrorReport(errorPath);
+			onReport?.Invoke(report);
+		}
+	}
+
+	static ProjectErrorReport ReadErrorReport(string errorLogPath)
+	{
+		Log.Debug("Reading SARIF report at " + errorLogPath);
+		try
+		{
+			var outputs = new List<ProjectErrorResult>();
+			SarifLog log = SarifLog.Load(errorLogPath);
+			foreach (var result in log.Results())
+			{
+				if (result.Level is FailureLevel.Note or FailureLevel.None) continue;
+
+				var location = result.Locations.FirstOrDefault();
+				
+				outputs.Add(new ProjectErrorResult
+				{
+					level = result.Level.ToString(),
+					formattedMessage = result.FormatForVisualStudio(),
+					uri = location?.PhysicalLocation?.ArtifactLocation?.Uri?.ToString() ?? "",
+					line = location?.PhysicalLocation?.Region?.StartLine ?? 0,
+					column = location?.PhysicalLocation?.Region?.StartColumn ?? 0
+				});
+			}
+
+			return new ProjectErrorReport
+			{
+				errors = outputs, 
+				isSuccess = outputs.Count == 0
+			};
+		}
+		catch (Exception ex)
+		{
+			Log.Error($"Failed to read SARIF report. type=[{ex.GetType().Name}] message=[{ex.Message}] stack=[{ex.StackTrace}] ");
+			throw new CliException($"Failed to read SARIF report. type=[{ex.GetType().Name}] message=[{ex.Message}] stack=[{ex.StackTrace}] ", 2, false);
+		}
+	}
+}
+
+public class ProjectErrorReport
+{
+	public bool isSuccess;
+	public List<ProjectErrorResult> errors = new List<ProjectErrorResult>();
+}
+public class ProjectErrorResult
+{
+	public string level;
+	public string formattedMessage;
+	public string uri;
+	public int line;
+	public int column;
 }
 
 public static class CliExtensions
