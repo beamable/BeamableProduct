@@ -20,6 +20,7 @@ public class ServicesRegisterCommandArgs : LoginCommandArgs
 
 	// Embedded Mongo args
 	public string BaseImage;
+	public string ProjectPath;
 }
 
 public struct HttpSpecificArgs
@@ -201,7 +202,6 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 				await _localBeamo.AddDefinition_HttpMicroservice(args.BeamoId,
 					httpArgs.LocalDockerBuildContext,
 					httpArgs.LocalDockerfileRelativePath,
-					args.ServiceDependencies,
 					CancellationToken.None);
 
 				// Update the created protocol based on the received arguments
@@ -217,7 +217,7 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 					if (string.IsNullOrEmpty(args.BaseImage))
 						args.BaseImage = AnsiConsole.Prompt(new TextPrompt<string>("Enter the base image name of a [lightskyblue1]Mongo Db[/] image:").DefaultValue("mongo:latest"));
 
-					await _localBeamo.AddDefinition_EmbeddedMongoDb(args.BeamoId, args.BaseImage, args.ServiceDependencies, CancellationToken.None);
+					await _localBeamo.AddDefinition_EmbeddedMongoDb(args.BeamoId, args.BaseImage, args.ProjectPath, CancellationToken.None);
 				}
 				break;
 			}

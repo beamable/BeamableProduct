@@ -39,7 +39,7 @@ public partial class BeamoLocalSystem
 		{
 			// If we don't have a service storage with that id stored locally, let's make one
 			if (existingMongoServices.All(sd => sd.BeamoId != storageReference.id))
-				await AddDefinition_EmbeddedMongoDb(storageReference.id, null, Array.Empty<string>(), CancellationToken.None);
+				await AddDefinition_EmbeddedMongoDb(storageReference.id, null, null, CancellationToken.None);
 		}
 
 		var existingHttpServices = BeamoManifest.ServiceDefinitions.Where(sd => sd.Protocol == BeamoProtocolType.HttpMicroservice).ToList();
@@ -53,7 +53,6 @@ public partial class BeamoLocalSystem
 				var sd = await AddDefinition_HttpMicroservice(httpReference.serviceName,
 					null,
 					null,
-					httpReference.dependencies.Select(d => d.id).ToArray(),
 					CancellationToken.None);
 
 				sd.ImageId = httpReference.imageId;
@@ -72,17 +71,19 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// Deploys services defined in the given <see cref="localManifest"/>.
 	/// </summary>
-	public async Task<ServiceManifest> DeployToRemote(BeamoLocalManifest localManifest, BeamoLocalRuntime localRuntime, string dockerRegistryUrl, string comments,
+	public async Task<ServiceManifest> DeployToRemote(BeamoLocalSystem localSystem, string dockerRegistryUrl, string comments,
 		Dictionary<string, string> perServiceComments, Action<string, float> buildPullImageProgress = null, Action<string> onServiceDeployCompleted = null,
 		Action<string, float> onContainerUploadProgress = null, Action<string, bool> onContainerUploadCompleted = null)
 	{
+		BeamoLocalManifest localManifest = localSystem.BeamoManifest;
+		BeamoLocalRuntime localRuntime = localSystem.BeamoRuntime;
 		// First Stop all Local Containers that are running
 		await Task.WhenAll(localRuntime.ExistingLocalServiceInstances.Select(async sd => await StopContainer(sd.ContainerId)));
 
 		// Then, let's try to deploy locally first.
 		try
 		{
-			await DeployToLocal(localManifest, null, true, buildPullImageProgress, onServiceDeployCompleted);
+			await DeployToLocal(localSystem, null, true, buildPullImageProgress, onServiceDeployCompleted);
 		}
 		// If we fail, log out a message and the exception that caused the failure
 		catch (Exception e)
@@ -132,7 +133,8 @@ public partial class BeamoLocalSystem
 		// If all is well with the local deployment, we convert the local manifest into the remote one
 		// TODO: When Beam-O gets upgraded, hopefully it'll use the same format locally. Then, we can rename this stuff to BeamoManifest and throw this x-form away.
 		var remoteManifest = new ServiceManifest();
-		WriteServiceManifestFromLocal(localManifest, comments, perServiceComments, remoteManifest, federatedComponentByServiceName);
+		var dependencies = await GetAllBeamoIdsDependencies();
+		WriteServiceManifestFromLocal(localManifest, comments, perServiceComments, remoteManifest, federatedComponentByServiceName, dependencies);
 
 		await _beamo.Deploy(remoteManifest);
 
@@ -152,7 +154,8 @@ public partial class BeamoLocalSystem
 	/// <paramref name="perServiceComments"/>.
 	/// </summary>
 	public static void WriteServiceManifestFromLocal(BeamoLocalManifest localManifest, string comments, Dictionary<string, string> perServiceComments,
-		ServiceManifest remoteManifest, Dictionary<string, List<string>> federatedComponentsByName)
+		ServiceManifest remoteManifest, Dictionary<string, List<string>> federatedComponentsByName,
+		Dictionary<BeamoServiceDefinition, List<string>> serviceDependencies)
 	{
 		// Setup comments
 		remoteManifest.comments = comments;
@@ -208,7 +211,7 @@ public partial class BeamoLocalSystem
 					templateId = "small",
 					containerHealthCheckPort = long.Parse(remoteProtocol.HealthCheckPort),
 					imageId = httpSd.TruncImageId,
-					dependencies = httpSd.DependsOnBeamoIds
+					dependencies = serviceDependencies[httpSd]
 						// For now, Beam-O only supports dependencies on Storage Objects (ie.:Embedded Mongo DBs).
 						// TODO: change this when Beam-O supports real dependency resolution across services.
 						.Where(beamoId => localManifest.ServiceDefinitions.First(sd => sd.BeamoId == beamoId).Protocol == BeamoProtocolType.EmbeddedMongoDb)

@@ -160,6 +160,7 @@ public class App
 		Commands.AddCommand<StopProjectCommand, StopProjectCommandArgs, ProjectCommand>();
 		Commands.AddCommand<BuildProjectCommand, BuildProjectCommandArgs, ProjectCommand>();
 		Commands.AddCommand<NewSolutionCommand, NewSolutionCommandArgs, ProjectCommand>();
+		Commands.AddCommand<ProjectDependencies, ProjectDependenciesArgs, ProjectCommand>();
 		Commands.AddCommand<RegenerateSolutionFilesCommand, RegenerateSolutionFilesCommandArgs, ProjectCommand>();
 		Commands.AddCommand<ListCommand, ListCommandArgs, ProjectCommand>();
 		Commands.AddCommand<NewStorageCommand, NewStorageCommandArgs, ProjectCommand>();

@@ -104,7 +104,8 @@ public class ServicesEnableCommand : AppCommand<ServicesEnableCommandArgs>
 		// If we are supposed to propagate the changes to all service dependencies, let's do that.
 		if (!args.IgnoreDependencies.Value)
 		{
-			foreach (var id in serviceDefinition.DependsOnBeamoIds)
+			var dependencies = await args.BeamoLocalSystem.GetDependencies(serviceDefinition.BeamoId);
+			foreach (var id in dependencies)
 			{
 				var dep = _localBeamo.BeamoManifest.ServiceDefinitions.First(sd => sd.BeamoId == id);
 				dep.ShouldBeEnabledOnRemote = args.EnableOnRemoteDeploy;

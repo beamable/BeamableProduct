@@ -132,6 +132,7 @@ namespace Beamable.Editor.Microservice.UI2
 
 		private void HandleCreateNewButtonClicked(ServiceType serviceType)
 		{
+			_createServiceElement.ServiceType = serviceType;
 			_createServiceElement.Refresh(_actionBarVisualElement.Refresh);
 			EditorApplication.delayCall += () => _scrollView.verticalScroller.value = 0f;
 		}

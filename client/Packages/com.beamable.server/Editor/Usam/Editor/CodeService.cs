@@ -167,17 +167,16 @@ namespace Beamable.Server.Editor.Usam
 				{
 					ServiceDefinitions.Add(new BeamoServiceDefinition
 					{
+						ServiceType = _services[i].serviceType,
 						ServiceInfo = new ServiceInfo()
 						{
 							name = name,
-							dockerBuildPath = _services[i].assetRelativePath,
-							dockerfilePath = _services[i].relativeDockerFile,
-							dependencies = _services[i].dependedStorages.ToList()
+							projectPath = _services[i].assetProjectPath,
 						}
 					});
 					dataIndex = ServiceDefinitions.Count - 1;
 					ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder() { BeamoId = name };
-					ServiceDefinitions[dataIndex].ServiceType = ServiceType.MicroService; //For now we only have microservice and not storages
+					
 					ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = true; //TODO should read this from manifest or have it stored somewhere
 					ServiceDefinitions[dataIndex].HasLocalSource = true;
 				}
@@ -201,9 +200,7 @@ namespace Beamable.Server.Editor.Usam
 						ServiceInfo = new ServiceInfo()
 						{
 							name = name,
-							dockerBuildPath = service?.assetRelativePath,
-							dockerfilePath = service?.relativeDockerFile,
-							dependencies = service != null ? service.dependedStorages.ToList() : new List<string>()
+							projectPath = service?.assetProjectPath,
 						}
 					});
 					dataIndex = ServiceDefinitions.Count - 1;
@@ -228,7 +225,7 @@ namespace Beamable.Server.Editor.Usam
 		{
 			var tempPath = $"Temp/{signPost.name}";
 			var projName = new ServiceName(signPost.name);
-			var projPath = signPost.relativeDockerFile.Replace("/Dockerfile", "");
+			var projPath = signPost.CsprojPath;
 
 			var args = new ProjectRegenerateArgs() { name = projName, output = tempPath, copyPath = projPath };
 			var command = _cli.ProjectRegenerate(args);
@@ -236,10 +233,11 @@ namespace Beamable.Server.Editor.Usam
 		}
 
 		/// <summary>
-		/// Creates a new Standalone Microservice inside a hidden folder from Unity.
+		/// Creates a new Standalone Service inside a hidden folder from Unity.
 		/// </summary>
-		/// <param name="serviceName"> The name of the Microservice to be created.</param>
-		public async Promise CreateMicroservice(string serviceName)
+		/// <param name="serviceName"> The name of the Service to be created.</param>
+		/// <param name="serviceType"> The type of the Service to be created.</param>
+		public async Promise CreateService(string serviceName, ServiceType serviceType = ServiceType.MicroService)
 		{
 			LogVerbose($"Starting creation of service {serviceName}");
 
@@ -251,24 +249,49 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
+			BeamServiceSignpost signpost = null;
 			var service = new ServiceName(serviceName);
-			var args = new ProjectNewArgs
+			switch (serviceType)
 			{
-				solutionName = service, quiet = true, name = service, output = outputPath, version = _projectVersion
-			};
-			ProjectNewWrapper command = _cli.ProjectNew(args);
-			await command.Run();
+				case ServiceType.MicroService:
+				{
+					var args = new ProjectNewArgs
+					{
+						solutionName = service,
+						quiet = true,
+						name = service,
+						output = outputPath,
+						version = _projectVersion
+					};
+					ProjectNewWrapper command = _cli.ProjectNew(args);
+					await command.Run();
 
-			string relativePath = $"{outputPath}services";
-			string dockerFilePath = $"{serviceName}/Dockerfile";
-			string projectFilePath = $"../{serviceName}.sln";
-			var signpost = new BeamServiceSignpost()
-			{
-				name = serviceName,
-				assetRelativePath = relativePath,
-				relativeDockerFile = dockerFilePath,
-				relativeProjectFile = projectFilePath
-			};
+					string relativePath = $"{outputPath}services";
+					signpost = new BeamServiceSignpost()
+					{
+						name = serviceName,
+						assetProjectPath = Path.Combine(relativePath,serviceName).Replace(StandaloneMicroservicesPath,string.Empty),
+						serviceType = ServiceType.MicroService
+					};
+				}
+					break;
+				case ServiceType.StorageObject:
+					var storageArgs = new ProjectNewStorageArgs
+					{
+						name = service
+					};
+					var storageCommand = _cli.ProjectNewStorage(storageArgs);
+					await storageCommand.Run();
+					signpost = new BeamServiceSignpost()
+					{
+						name = service,
+						serviceType = ServiceType.StorageObject
+					};
+					break;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(serviceType), serviceType, null);
+			}
+
 			string signpostPath = $"{BEAMABLE_PATH}{serviceName}.beamservice";
 			string signpostJson = JsonUtility.ToJson(signpost);
 
@@ -318,17 +341,26 @@ namespace Beamable.Server.Editor.Usam
 
 
 			var service = _services.FirstOrDefault(s => s.name == id);
+			if (service?.serviceType == ServiceType.StorageObject)
+			{
+				return;
+			}
 
-			var microservicePath = Path.Combine(service.assetRelativePath, service.relativeProjectFile);
+			if (string.IsNullOrWhiteSpace(service?.CsprojPath))
+			{
+				LogVerbose("No file to generate");
+				return;
+			}
+
 			var beamPath = BeamCliUtil.CLI_PATH.Replace(".dll", "");
-			var buildCommand = $"build \"{microservicePath}\" /p:BeamableTool={beamPath} /p:GenerateClientCode=false";
+			var buildCommand = $"build \"{service.CsprojPath}\" /p:BeamableTool={beamPath} /p:GenerateClientCode=false";
 
 			LogVerbose($"Starting build service: {id} using command: {buildCommand}");
 			await _dotnetService.Run(buildCommand);
 
 			LogVerbose($"Starting beam client code generator");
 
-			string dllPath = $"{service.assetRelativePath}/{id}/{MICROSERVICE_DLL_PATH}/{id}.dll";
+			string dllPath = $"{service.CsprojPath}/{MICROSERVICE_DLL_PATH}/{id}.dll";
 			string outputPath = Constants.Features.Services.AUTOGENERATED_CLIENT_PATH;
 
 			if (!Directory.Exists(outputPath))
@@ -486,17 +518,8 @@ namespace Beamable.Server.Editor.Usam
 		public static async Promise SetManifest(BeamCommands cli, List<IBeamoServiceDefinition> definitions)
 		{
 			var args = new ServicesSetLocalManifestArgs();
-			var dependedStorages = new List<string>();
-			int servicesCount = 0;
-
 			//check how many services exist locally
-			foreach (IBeamoServiceDefinition def in definitions)
-			{
-				if (!string.IsNullOrEmpty(def.ServiceInfo.dockerfilePath))
-				{
-					servicesCount++;
-				}
-			}
+			int servicesCount = definitions.Count(definition=> !string.IsNullOrEmpty(definition.ServiceInfo.projectPath));
 
 			if (servicesCount == 0)
 			{
@@ -504,34 +527,46 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
-			args.localHttpNames = new string[servicesCount];
-			args.localHttpContexts = new string[servicesCount];
-			args.localHttpDockerFiles = new string[servicesCount];
-			args.shouldBeEnable = new string[servicesCount];
-
+			var services = new List<string>();
+			var storages = new List<string>();
+			var disabledServices = new List<string>();
 			// TODO: add some validation to check that these files actually make sense
+			
 			for (var i = 0; i < servicesCount; i++)
 			{
-				if (string.IsNullOrEmpty(definitions[i].ServiceInfo.dockerfilePath))
+				if (string.IsNullOrEmpty(definitions[i].ServiceInfo.projectPath))
 					continue;
-
-				args.localHttpNames[i] = definitions[i].BeamoId;
-				args.localHttpContexts[i] = definitions[i].ServiceInfo.dockerBuildPath;
-				args.localHttpDockerFiles[i] = definitions[i].ServiceInfo.dockerfilePath;
-
-				args.shouldBeEnable[i] = definitions[i].ShouldBeEnabledOnRemote.ToString();
-				if (definitions[i].ServiceInfo.dependencies != null)
+				switch (definitions[i].ServiceType)
 				{
-					foreach (var storage in definitions[i].ServiceInfo.dependencies)
-					{
-						dependedStorages.Add($"{definitions[i].BeamoId}:{storage}");
-					}
+					case ServiceType.MicroService:
+						services.Add(definitions[i].ServiceInfo.projectPath);
+						break;
+					case ServiceType.StorageObject:
+						storages.Add(definitions[i].ServiceInfo.projectPath);
+						break;
+					default:
+						throw new ArgumentOutOfRangeException();
+				}
+
+				if (!definitions[i].ShouldBeEnabledOnRemote)
+				{
+					disabledServices.Add(definitions[i].BeamoId);
 				}
 			}
-			args.storageDependencies = dependedStorages.ToArray();
+
+			if (services.Count > 0) args.services = services.ToArray();
+			if (storages.Count > 0) args.storagePaths = storages.ToArray();
+			if (disabledServices.Count > 0) args.disabledServices = disabledServices.ToArray();
 
 			var command = cli.ServicesSetLocalManifest(args);
-			await command.Run().Error(LogExceptionVerbose);
+			try
+			{
+				await command.Run();
+			}
+			catch (Exception e)
+			{
+				LogExceptionVerbose(e);
+			}
 		}
 
 		public static async Promise SetManifest(BeamCommands cli, List<BeamServiceSignpost> files)
@@ -545,26 +580,19 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
-			args.localHttpNames = new string[files.Count];
-			args.localHttpContexts = new string[files.Count];
-			args.localHttpDockerFiles = new string[files.Count];
-			args.shouldBeEnable = new string[files.Count];
+			var services = new List<string>();
+			var storages = new List<string>();
+			var disabledServices = new List<string>();
 			// TODO: add some validation to check that these files actually make sense
+			
 			for (var i = 0; i < files.Count; i++)
 			{
-				args.localHttpNames[i] = files[i].name;
-				args.localHttpContexts[i] = files[i].assetRelativePath;
-				args.localHttpDockerFiles[i] = files[i].relativeDockerFile;
-				args.shouldBeEnable[i] = true.ToString(); //TODO not sure what value should be put in here, this would set all to true without new modifications
-				if (files[i].dependedStorages != null)
-				{
-					foreach (var storage in files[i].dependedStorages)
-					{
-						dependedStorages.Add($"{files[i].name}:{storage}");
-					}
-				}
+				services.Add(files[i].CsprojPath);
 			}
-			args.storageDependencies = dependedStorages.ToArray();
+
+			if (services.Count > 0) args.services = services.ToArray();
+			if (storages.Count > 0) args.storagePaths = storages.ToArray();
+			if (disabledServices.Count > 0) args.disabledServices = disabledServices.ToArray();
 
 			var command = cli.ServicesSetLocalManifest(args);
 			await command.Run().Error(LogExceptionVerbose);
@@ -585,7 +613,7 @@ namespace Beamable.Server.Editor.Usam
 			{
 				var json = File.ReadAllText(file);
 				var data = JsonUtility.FromJson<T>(json);
-				data.AfterDeserialize();
+				data.AfterDeserialize(file);
 				output.Add(data);
 			}
 
@@ -716,26 +744,15 @@ namespace Beamable.Server.Editor.Usam
 				LogVerbose("Service does not exist!");
 				return;
 			}
-			
-			var path = Path.GetDirectoryName(def.ServiceInfo.dockerBuildPath);
-			var fileName = $@"{path}/services/{serviceName}/{serviceName}.cs";
+			var fileName = $@"{def.ServiceInfo.projectPath}/{serviceName}.cs";
 			EditorUtility.OpenWithDefaultApp(fileName);
 		}
 
 		public async Promise Run(IEnumerable<string> beamoIds)
 		{
 			var listToRun = beamoIds.ToList();
-			foreach (var id in beamoIds)
-			{
-				var signin = _services.FirstOrDefault(signpost => signpost.name == id);
-				if (signin?.dependedStorages?.Length > 0)
-				{
-					listToRun.AddRange(signin.dependedStorages.ToArray());
-				}
-			}
 			try
 			{
-
 				var cmd = _cli.ServicesRun(new ServicesRunArgs() { ids = listToRun.ToArray() });
 				cmd.OnLocal_progressServiceRunProgressResult(cb =>
 				{

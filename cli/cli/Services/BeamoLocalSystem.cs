@@ -2,7 +2,6 @@
 using Beamable.Common.Api.Realms;
 using Docker.DotNet;
 using Docker.DotNet.Models;
-using Newtonsoft.Json;
 using System.Text.RegularExpressions;
 
 namespace cli.Services;
@@ -16,6 +15,7 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public readonly BeamoLocalManifest BeamoManifest;
 
+	public readonly Dictionary<BeamoServiceDefinition,List<string>> ServicesDependencies = new();
 
 	/// <summary>
 	/// The current local state of containers, associated with the <see cref="BeamoLocalManifest.ServiceDefinitions"/>, keept in sync with the <see cref="_beamoLocalRuntimeFile"/> json file.
@@ -97,12 +97,96 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public void SaveBeamoLocalManifest() => _configService.SaveDataFile(Constants.BEAMO_LOCAL_MANIFEST_FILE_NAME, BeamoManifest);
 	public void SaveBeamoLocalRuntime() => _configService.SaveDataFile(Constants.BEAMO_LOCAL_RUNTIME_FILE_NAME, BeamoRuntime);
+
 	/// <summary>
 	/// Checks to see if the service id matches the <see cref="BeamoServiceIdRegex"/>.
 	/// </summary>
 	public static bool ValidateBeamoServiceId_ValidCharacters(string beamoServiceId) =>
 		BeamoServiceIdRegex.IsMatch(beamoServiceId);
 
+	/// <summary>
+	/// Get list of <see cref="BeamoId"/>s that this service depends on.
+	/// </summary>
+	/// <param name="beamoServiceId">The identifier of the Beamo service.</param>
+	/// <param name="projectExtension">The extension of the project files. Default is "csproj".</param>
+	/// <returns>Returns a list of <see cref="BeamoId"/>s that this service depends on.</returns>
+	public async Task<List<string>> GetDependencies(string beamoServiceId, string projectExtension = "csproj")
+	{
+		var serviceDefinition = BeamoManifest.ServiceDefinitions.FirstOrDefault(s => s.BeamoId == beamoServiceId);
+		if (string.IsNullOrWhiteSpace(serviceDefinition?.ProjectDirectory))
+		{
+			return new List<string>();
+		}
+		var path = _configService.GetRelativePath(serviceDefinition!.ProjectDirectory);
+		path = Path.Combine(path, $"{beamoServiceId}.{projectExtension}");
+		var (cmd,builder) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, $"list {path} reference");
+		if (cmd.ExitCode != 0)
+		{
+			throw new CliException($"Getting service dependencies failed, command output: {builder}");
+		}
+		// TODO improve it, for now it is naive, if there is related project with same name as one of the services it will treat it as it is connected
+		var dependencies = builder.ToString().Split(Environment.NewLine).Where(line => line.EndsWith(projectExtension))
+			.Select(Path.GetFileNameWithoutExtension).Where(candidate => BeamoManifest.ServiceDefinitions.Any(definition => definition.BeamoId==candidate)).ToList();
+		
+		return dependencies;
+	}
+
+	public async Task AddProjectDependency(BeamoServiceDefinition project, BeamoServiceDefinition dependency)
+	{
+		if (project.Protocol != BeamoProtocolType.HttpMicroservice ||
+		    dependency.Protocol != BeamoProtocolType.EmbeddedMongoDb)
+		{
+			throw new CliException(
+				$"Currently the only supported dependencies are {nameof(BeamoProtocolType.HttpMicroservice)} depending on {nameof(BeamoProtocolType.EmbeddedMongoDb)}");
+		}
+		var projectPath = _configService.GetRelativePath(project.ProjectDirectory);
+		var dependencyPath = _configService.GetRelativePath(dependency.ProjectDirectory);
+		var command = $"add {projectPath} reference {dependencyPath}";
+		var(cmd, result) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, command,Directory.GetCurrentDirectory());
+		if (cmd.ExitCode != 0)
+		{
+			throw new CliException($"Failed to add project dependency, output of \"dotnet {command}\": {result}");
+		}
+
+		var service = BeamoManifest.HttpMicroserviceLocalProtocols[project.BeamoId];
+		var dockerfilePath = service.RelativeDockerfilePath;
+		dockerfilePath = _configService.GetFullPath(Path.Combine(service.DockerBuildContextPath, dockerfilePath));
+		var dockerfileText = await File.ReadAllTextAsync(dockerfilePath);
+
+		const string search =
+			"# <BEAM-CLI-INSERT-FLAG:COPY> do not delete this line. It is used by the beam CLI to insert custom actions";
+		string toAdd =@$"WORKDIR /subsrc/{dependency.BeamoId}
+COPY {dependency.BeamoId}/. .";
+		var replacement = @$"{toAdd}
+{search}";
+		if(!dockerfileText.ReplaceLineEndings("\n").Contains(toAdd))
+		{
+			dockerfileText = dockerfileText.Replace(search, replacement);
+			await File.WriteAllTextAsync(dockerfilePath, dockerfileText);
+		}
+		ServicesDependencies.Clear();
+	}
+
+	/// <summary>
+	/// Retrieves the dependencies of each Beamo service defined in the BeamoManifest.
+	/// </summary>
+	/// <param name="projectExtension">The extension of the project file (default: 'csproj').</param>
+	/// <returns>A dictionary where the key is a BeamoServiceDefinition and the value is a list of its dependencies.</returns>
+	public async Task<Dictionary<BeamoServiceDefinition,List<string>>> GetAllBeamoIdsDependencies(string projectExtension = "csproj")
+	{
+		
+		foreach (var definition in BeamoManifest.ServiceDefinitions)
+		{
+			if(!ServicesDependencies.ContainsKey(definition))
+			{
+				var entry = await GetDependencies(definition.BeamoId, projectExtension);
+				ServicesDependencies.Add(definition, entry);
+			}
+		}
+
+		return ServicesDependencies;
+	}
+	
 	/// <summary>
 	/// Checks if the given BeamO Service Id is already known in the current <see cref="BeamoManifest"/>.
 	/// </summary>
@@ -112,7 +196,7 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// Verifies, by expanding the dependency DAG from root, we don't see root again until we have walked through all dependencies.
 	/// </summary>
-	private static bool ValidateBeamoService_NoCyclicalDependencies(BeamoServiceDefinition root, List<BeamoServiceDefinition> registeredDependencies)
+	private async Task<bool> ValidateBeamoService_NoCyclicalDependencies(BeamoServiceDefinition root, List<BeamoServiceDefinition> registeredDependencies)
 	{
 		var depsToVisit = new Stack<BeamoServiceDefinition>();
 		depsToVisit.Push(root);
@@ -131,7 +215,7 @@ public partial class BeamoLocalSystem
 				break;
 
 			// Pushes dependencies of this service onto the stack
-			var deps = checking.DependsOnBeamoIds.Select(
+			var deps = (await GetDependencies(checking.BeamoId)).Select(
 					depId => registeredDependencies.FirstOrDefault(sd => sd.BeamoId == depId)
 				)
 				.Where(a => a != null)
@@ -152,7 +236,6 @@ public partial class BeamoLocalSystem
 	/// <param name="projectPath">If the container's image will be built locally, this is the path to the docker-build-context (prefer absolute path).</param>
 	/// <param name="dockerfilePath">If the container's image will be built locally, this is the relative path to a Dockerfile from inside the docker-build-context.</param>
 	/// <param name="baseImage">If the container's image should be pulled or used locally (not built), this is the image's name (in the "name:tag" form).</param>
-	/// <param name="beamoIdDependencies">The other Beam-O ids that this depends on. We validate for cyclical dependencies.</param>
 	/// <param name="localConstructor">A task that will prepare the default parameters for the local protocol we are creating the service with.</param>
 	/// <param name="remoteConstructor">A task that will prepare the default parameters for the remote protocol we are creating the service with.</param>
 	/// <param name="cancellationToken">A cancellation token that we pass into both local and remote tasks. Can be used to cancel both tasks.</param>
@@ -160,15 +243,15 @@ public partial class BeamoLocalSystem
 	/// <typeparam name="TLocal">The type of the <see cref="IBeamoLocalProtocol"/> that this service definition uses.</typeparam>
 	/// <typeparam name="TRemote">The type of the <see cref="IBeamoRemoteProtocol"/> that this service definition uses.</typeparam>
 	/// <returns>The created service definition.</returns>
-	private async Task<BeamoServiceDefinition> AddServiceDefinition<TLocal, TRemote>(string beamoId, BeamoProtocolType type, string[] beamoIdDependencies,
+	private async Task<BeamoServiceDefinition> AddServiceDefinition<TLocal, TRemote>(string beamoId, BeamoProtocolType type, 
 		LocalProtocolModifier<TLocal> localConstructor, RemoteProtocolModifier<TRemote> remoteConstructor, CancellationToken cancellationToken, bool shouldServiceBeEnabled = true)
 		where TLocal : class, IBeamoLocalProtocol, new() where TRemote : class, IBeamoRemoteProtocol, new() =>
-		await AddServiceDefinition(BeamoManifest, beamoId, type, beamoIdDependencies, localConstructor, remoteConstructor, cancellationToken, shouldServiceBeEnabled);
+		await AddServiceDefinition(BeamoManifest, beamoId, type, localConstructor, remoteConstructor, cancellationToken, shouldServiceBeEnabled);
 
 	/// <summary>
 	/// <inheritdoc cref="AddServiceDefinition{TLocal,TRemote}(string,cli.Services.BeamoProtocolType,string[],cli.Services.LocalProtocolModifier{TLocal},cli.Services.RemoteProtocolModifier{TRemote},System.Threading.CancellationToken)"/>
 	/// </summary>
-	private static async Task<BeamoServiceDefinition> AddServiceDefinition<TLocal, TRemote>(BeamoLocalManifest beamoLocalManifest, string beamoId, BeamoProtocolType type, string[] beamoIdDependencies,
+	private async Task<BeamoServiceDefinition> AddServiceDefinition<TLocal, TRemote>(BeamoLocalManifest beamoLocalManifest, string beamoId, BeamoProtocolType type,
 		LocalProtocolModifier<TLocal> localConstructor, RemoteProtocolModifier<TRemote> remoteConstructor, CancellationToken cancellationToken, bool shouldServiceBeEnabled = true)
 		where TLocal : class, IBeamoLocalProtocol, new() where TRemote : class, IBeamoRemoteProtocol, new()
 	{
@@ -184,7 +267,6 @@ public partial class BeamoLocalSystem
 		{
 			BeamoId = beamoId,
 			Protocol = type,
-			DependsOnBeamoIds = beamoIdDependencies,
 			ImageId = string.Empty,
 			ShouldBeEnabledOnRemote = shouldServiceBeEnabled,
 		};
@@ -193,8 +275,9 @@ public partial class BeamoLocalSystem
 		beamoLocalManifest.ServiceDefinitions.Add(serviceDefinition);
 
 		// Verify that we aren't creating cyclical dependencies
-		if (!ValidateBeamoService_NoCyclicalDependencies(serviceDefinition, beamoLocalManifest.ServiceDefinitions))
-			throw new ArgumentOutOfRangeException(nameof(beamoIdDependencies), "Attempting to register a service definition with a cyclical dependency. Please make sure that is not the case.");
+		var noCyclicalDeps = await ValidateBeamoService_NoCyclicalDependencies(serviceDefinition, beamoLocalManifest.ServiceDefinitions);
+		if (!noCyclicalDeps)
+			throw new ArgumentOutOfRangeException(nameof(serviceDefinition), "Attempting to register a service definition with a cyclical dependency. Please make sure that is not the case.");
 
 		// Set up local and remote protocol with their defaults.
 		var local = new TLocal();
@@ -337,7 +420,6 @@ public class BeamoLocalManifest
 	/// </summary>
 	public List<BeamoServiceDefinition> ServiceDefinitions;
 
-
 	/// <summary>
 	/// These are map individual <see cref="BeamoServiceDefinition.BeamoId"/>s to their protocol data. Since we don't allow changing protocols we don't ever need to move the services' protocol data between these.
 	/// </summary>
@@ -358,7 +440,7 @@ public class BeamoLocalManifest
 	/// These are map individual <see cref="BeamoServiceDefinition.BeamoId"/>s to their protocol data. Since we don't allow changing protocols we don't ever need to move the services' protocol data between these.
 	/// </summary>
 	public BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol> EmbeddedMongoDbRemoteProtocols;
-
+	
 	public void Clear()
 	{
 		ServiceDefinitions.Clear();
@@ -366,6 +448,21 @@ public class BeamoLocalManifest
 		HttpMicroserviceRemoteProtocols.Clear();
 		EmbeddedMongoDbLocalProtocols.Clear();
 		EmbeddedMongoDbRemoteProtocols.Clear();
+	}
+
+	/// <summary>
+	/// Tries to get the definition of a Beamo service based on the provided BeamoId.
+	/// </summary>
+	/// <param name="beamoId">The BeamoId of the service.</param>
+	/// <param name="definition">When this method returns, contains the BeamoServiceDefinition associated with the specified BeamoId, if found; otherwise, null.</param>
+	/// <returns>
+	/// true if the service definition is found; otherwise, false.
+	/// </returns>
+	public bool TryGetDefinition(string beamoId, out BeamoServiceDefinition definition)
+	{
+		definition = ServiceDefinitions.FirstOrDefault(definition => definition.BeamoId == beamoId);
+		
+		return definition != null;
 	}
 }
 
@@ -382,11 +479,6 @@ public class BeamoServiceDefinition
 	public BeamoProtocolType Protocol;
 
 	/// <summary>
-	/// List of <see cref="BeamoId"/>s that this service depends on.
-	/// </summary>
-	public string[] DependsOnBeamoIds;
-
-	/// <summary>
 	/// Gets the truncated version of the image id (used for deploying the service manifest to Beamo. TODO Ideally, we should make beamo use the full ID later...
 	/// </summary>
 	public string TruncImageId => ImageId.Contains(':') ? ImageId.Split(':')[1].Substring(0, 12) : ImageId;
@@ -400,6 +492,11 @@ public class BeamoServiceDefinition
 	/// Whether or not this service should be enabled when we deploy remotely.
 	/// </summary>
 	public bool ShouldBeEnabledOnRemote;
+
+	/// <summary>
+	/// Path to the directory containing project file(csproj).
+	/// </summary>
+	public string ProjectDirectory;
 
 	/// <summary>
 	/// Defines two services as being equal simply by using their <see cref="BeamoServiceDefinition.BeamoId"/>.

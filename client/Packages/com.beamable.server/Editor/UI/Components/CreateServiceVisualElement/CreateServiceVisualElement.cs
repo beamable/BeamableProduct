@@ -24,8 +24,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public CreateServiceVisualElement() : base(nameof(CreateServiceVisualElement)) { }
 
 		public string NewServiceName { get; set; }
-		public string ScriptName { get; }
-		public ServiceType ServiceType { get; } = SERVICE_TYPE;
+		public ServiceType ServiceType { get; set; }
 
 		public Action OnClose;
 		public event Action OnCreateServiceClicked;
@@ -43,8 +42,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private FormConstraint _isNameValid;
 		private FormConstraint _isNameSizedRight;
 		private FormConstraint _isNameUnique;
-
-		private const ServiceType SERVICE_TYPE = ServiceType.MicroService;
 
 		public void Refresh(Action onClose)
 		{
@@ -117,7 +114,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private async Promise CreateService(string serviceName, List<ServiceModelBase> additionalReferences = null)
 		{
 			var codeService = BeamEditorContext.Default.ServiceScope.GetService<CodeService>();
-			await codeService.CreateMicroservice(serviceName);
+			await codeService.CreateService(serviceName, ServiceType);
 			OnCreateServiceFinished?.Invoke();
 		}
 

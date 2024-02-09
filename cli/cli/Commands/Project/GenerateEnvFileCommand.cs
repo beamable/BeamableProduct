@@ -76,8 +76,9 @@ REFRESH_TOKEN={refreshToken}
 			{
 				await args.BeamoLocalSystem.SynchronizeInstanceStatusWithDocker(args.BeamoLocalSystem.BeamoManifest, args.BeamoLocalSystem.BeamoRuntime.ExistingLocalServiceInstances);
 				await args.BeamoLocalSystem.StartListeningToDocker();
-				Log.Information("Starting " + string.Join(",", service.DependsOnBeamoIds) + " " + sw.ElapsedMilliseconds);
-				await args.BeamoLocalSystem.DeployToLocal(args.BeamoLocalSystem.BeamoManifest, service.DependsOnBeamoIds);
+				var dependencies = await args.BeamoLocalSystem.GetDependencies(service.BeamoId);
+				Log.Information("Starting " + string.Join(",", dependencies) + " " + sw.ElapsedMilliseconds);
+				await args.BeamoLocalSystem.DeployToLocal(args.BeamoLocalSystem, dependencies.ToArray());
 				args.BeamoLocalSystem.SaveBeamoLocalManifest();
 				args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 				await args.BeamoLocalSystem.StopListeningToDocker();
@@ -88,7 +89,8 @@ REFRESH_TOKEN={refreshToken}
 
 		async Promise AppendDependencyVars()
 		{
-			foreach (var dependency in service.DependsOnBeamoIds)
+			var deps = await args.BeamoLocalSystem.GetDependencies(service.BeamoId);	
+			foreach (var dependency in deps)
 			{
 				try
 				{

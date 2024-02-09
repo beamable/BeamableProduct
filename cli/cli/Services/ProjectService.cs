@@ -293,12 +293,7 @@ public class ProjectService
 			await RunDotnetCommand($"{UNINSTALL_COMMAND} {packageName}");
 		}
 
-		var installStream = new StringBuilder();
-		var result = await CliExtensions.GetDotnetCommand(_app.DotnetPath, $"new --install {packageName}::{version}")
-			.WithValidation(CommandResultValidation.None)
-			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(installStream))
-			.WithStandardErrorPipe(PipeTarget.ToStringBuilder(installStream))
-			.ExecuteAsyncAndLog().Task;
+		var (result,installStream) = await CliExtensions.RunWithOutput(_app.DotnetPath, $"new --install {packageName}::{version}");
 		var isTemplateInstalled = result.ExitCode == 0;
 
 		if (!isTemplateInstalled)
@@ -310,16 +305,11 @@ public class ProjectService
 
 	public async Task<DotnetTemplateInfo> GetTemplateInfo()
 	{
-		var templateStream = new StringBuilder();
-
-		await CliExtensions.GetDotnetCommand(_app.DotnetPath, UNINSTALL_COMMAND)
-			.WithValidation(CommandResultValidation.None)
-			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(templateStream))
-			.ExecuteBufferedAsync();
+		var (_,templateStream) = await CliExtensions.RunWithOutput(_app.DotnetPath, UNINSTALL_COMMAND);
 
 		var info = new DotnetTemplateInfo();
 
-		var buffer = templateStream.ToString().Replace("\r\n", "\n");
+		var buffer = templateStream.ToString().ReplaceLineEndings("\n");
 		string pattern =
 			@"Beamable\.Templates[\s\S]*?Version: (\d+\.\d+\.\d+(?:-\w+\.\w+\d*)?)[\s\S]*?Templates:\n((?:\s{3}.*\(.*\)\s+C#\n)+)";
 
@@ -370,11 +360,17 @@ public class ProjectService
 		await RunDotnetCommand($"add {projectPath} reference {referencePath}");
 	}
 
-	public async Task CreateNewStorage(string slnFilePath, string storageName)
+	public string GeneratePathForProject(string slnFilePath, string beamId)
 	{
 		var slnDirectory = Path.GetDirectoryName(slnFilePath)!;
 		var rootServicesPath = Path.Combine(slnDirectory, "services");
-		var storagePath = _configService.GetRelativePath(Path.Combine(rootServicesPath, storageName));
+		var path = _configService.GetRelativePath(Path.Combine(rootServicesPath, beamId));
+		return path;
+	}
+
+	public async Task<string> CreateNewStorage(string slnFilePath, string storageName)
+	{
+		var storagePath = GeneratePathForProject(slnFilePath,storageName);
 
 		if (Directory.Exists(storagePath))
 		{
@@ -388,6 +384,8 @@ public class ProjectService
 
 		// add the new project as a reference to the solution
 		await RunDotnetCommand($"sln {slnFilePath} add {storagePath}");
+
+		return storagePath;
 	}
 
 	public Task<string> CreateNewSolution(NewSolutionCommandArgs args)
@@ -476,7 +474,7 @@ public class ProjectService
 
 	public Task<string> AddToSolution(SolutionCommandArgs args)
 	{
-		return args.ProjectService.AddToSolution(args.SolutionName, args.ProjectName, !args.SkipCommon,
+		return AddToSolution(args.SolutionName, args.ProjectName, !args.SkipCommon,
 			version: args.SpecifiedVersion);
 	}
 
@@ -546,7 +544,6 @@ public class ProjectService
 		return args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value,
 			projectDirectory,
 			projectDockerfilePath,
-			new string[] { },
 			CancellationToken.None,
 			!args.Disabled);
 	}
@@ -718,9 +715,28 @@ public class ProjectErrorResult
 
 public static class CliExtensions
 {
-	public static Command GetDotnetCommand(string dotnetPath, string arguments)
+	public static async Task<(CommandResult,StringBuilder)> RunWithOutput(string dotnetPath, string arguments, string workingDirectory = null)
 	{
-		return Cli.Wrap(dotnetPath).WithEnvironmentVariables(new Dictionary<string, string> { ["DOTNET_CLI_UI_LANGUAGE"] = "en" }).WithArguments(arguments);
+		var builder = new StringBuilder();
+		var result = await GetDotnetCommand(dotnetPath, arguments,workingDirectory)
+			.WithValidation(CommandResultValidation.None)
+			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(builder))
+			.WithStandardErrorPipe(PipeTarget.ToStringBuilder(builder))
+			.ExecuteAsync();
+		
+		return (result, builder);
+	}
+
+	public static Command GetDotnetCommand(string dotnetPath, string arguments, string workingDirectory = null)
+	{
+		var command = Cli.Wrap(dotnetPath)
+			.WithEnvironmentVariables(new Dictionary<string, string> { ["DOTNET_CLI_UI_LANGUAGE"] = "en" })
+			.WithArguments(arguments);
+		if (!string.IsNullOrWhiteSpace(workingDirectory))
+		{
+			command = command.WithWorkingDirectory(workingDirectory);
+		}
+		return command;
 	}
 
 	public static CommandTask<CommandResult> ExecuteAsyncAndLog(this Command command)
