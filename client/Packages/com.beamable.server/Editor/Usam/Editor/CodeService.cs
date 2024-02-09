@@ -435,7 +435,7 @@ namespace Beamable.Server.Editor.Usam
 
 		public void CheckMicroserviceStatus()
 		{
-			var projectPs = _cli.ProjectPs().OnStreamServiceDiscoveryEvent(cb =>
+			var projectPs = _cli.ProjectPs(new ProjectPsArgs()).OnStreamServiceDiscoveryEvent(cb =>
 			{
 				Debug.Log($"[{cb.data.service}] is running = {cb.data.isRunning}");
 				
