@@ -18,12 +18,14 @@ namespace Beamable.Editor.BeamCli.Commands
 			// If the output value was not default, then add it to the list of args.
 			if ((this.output != default(string)))
 			{
-				genBeamCommandArgs.Add(("--output=" + this.output));
+				genBeamCommandArgs.Add((("--output=\"" + this.output)
+								+ "\""));
 			}
 			// If the filter value was not default, then add it to the list of args.
 			if ((this.filter != default(string)))
 			{
-				genBeamCommandArgs.Add(("--filter=" + this.filter));
+				genBeamCommandArgs.Add((("--filter=\"" + this.filter)
+								+ "\""));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

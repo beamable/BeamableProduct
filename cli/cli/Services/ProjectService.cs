@@ -293,7 +293,7 @@ public class ProjectService
 			await RunDotnetCommand($"{UNINSTALL_COMMAND} {packageName}");
 		}
 
-		var (result,installStream) = await CliExtensions.RunWithOutput(_app.DotnetPath, $"new --install {packageName}::{version}");
+		var (result, installStream) = await CliExtensions.RunWithOutput(_app.DotnetPath, $"new --install {packageName}::{version}");
 		var isTemplateInstalled = result.ExitCode == 0;
 
 		if (!isTemplateInstalled)
@@ -305,7 +305,7 @@ public class ProjectService
 
 	public async Task<DotnetTemplateInfo> GetTemplateInfo()
 	{
-		var (_,templateStream) = await CliExtensions.RunWithOutput(_app.DotnetPath, UNINSTALL_COMMAND);
+		var (_, templateStream) = await CliExtensions.RunWithOutput(_app.DotnetPath, UNINSTALL_COMMAND);
 
 		var info = new DotnetTemplateInfo();
 
@@ -370,7 +370,7 @@ public class ProjectService
 
 	public async Task<string> CreateNewStorage(string slnFilePath, string storageName)
 	{
-		var storagePath = GeneratePathForProject(slnFilePath,storageName);
+		var storagePath = GeneratePathForProject(slnFilePath, storageName);
 
 		if (Directory.Exists(storagePath))
 		{
@@ -623,8 +623,8 @@ COPY {commonProjectName}/. .
 			service.RelativeDockerfilePath);
 		var projectPath = Path.GetDirectoryName(dockerfilePath);
 
-		var watchPart = args.watch 
-			? $"watch -q --project {projectPath} build --" 
+		var watchPart = args.watch
+			? $"watch -q --project {projectPath} build --"
 			: $"build {projectPath}";
 		var commandStr =
 			$"{watchPart} -p:ErrorLog=\"{errorPath}%2Cversion=2\"";
@@ -674,7 +674,7 @@ COPY {commonProjectName}/. .
 				if (result.Level is FailureLevel.Note or FailureLevel.None) continue;
 
 				var location = result.Locations.FirstOrDefault();
-				
+
 				outputs.Add(new ProjectErrorResult
 				{
 					level = result.Level.ToString(),
@@ -687,7 +687,7 @@ COPY {commonProjectName}/. .
 
 			return new ProjectErrorReport
 			{
-				errors = outputs, 
+				errors = outputs,
 				isSuccess = outputs.Count == 0
 			};
 		}
@@ -715,15 +715,15 @@ public class ProjectErrorResult
 
 public static class CliExtensions
 {
-	public static async Task<(CommandResult,StringBuilder)> RunWithOutput(string dotnetPath, string arguments, string workingDirectory = null)
+	public static async Task<(CommandResult, StringBuilder)> RunWithOutput(string dotnetPath, string arguments, string workingDirectory = null)
 	{
 		var builder = new StringBuilder();
-		var result = await GetDotnetCommand(dotnetPath, arguments,workingDirectory)
+		var result = await GetDotnetCommand(dotnetPath, arguments, workingDirectory)
 			.WithValidation(CommandResultValidation.None)
 			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(builder))
 			.WithStandardErrorPipe(PipeTarget.ToStringBuilder(builder))
 			.ExecuteAsync();
-		
+
 		return (result, builder);
 	}
 

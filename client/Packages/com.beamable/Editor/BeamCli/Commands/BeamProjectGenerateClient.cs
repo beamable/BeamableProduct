@@ -22,7 +22,8 @@ namespace Beamable.Editor.BeamCli.Commands
 			// If the outputDir value was not default, then add it to the list of args.
 			if ((this.outputDir != default(string)))
 			{
-				genBeamCommandArgs.Add(("--output-dir=" + this.outputDir));
+				genBeamCommandArgs.Add((("--output-dir=\"" + this.outputDir)
+								+ "\""));
 			}
 			// If the outputLinks value was not default, then add it to the list of args.
 			if ((this.outputLinks != default(bool)))

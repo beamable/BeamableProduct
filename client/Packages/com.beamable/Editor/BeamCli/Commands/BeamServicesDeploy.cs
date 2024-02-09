@@ -45,12 +45,14 @@ namespace Beamable.Editor.BeamCli.Commands
 			// If the fromFile value was not default, then add it to the list of args.
 			if ((this.fromFile != default(string)))
 			{
-				genBeamCommandArgs.Add(("--from-file=" + this.fromFile));
+				genBeamCommandArgs.Add((("--from-file=\"" + this.fromFile)
+								+ "\""));
 			}
 			// If the comment value was not default, then add it to the list of args.
 			if ((this.comment != default(string)))
 			{
-				genBeamCommandArgs.Add(("--comment=" + this.comment));
+				genBeamCommandArgs.Add((("--comment=\"" + this.comment)
+								+ "\""));
 			}
 			// If the serviceComments value was not default, then add it to the list of args.
 			if ((this.serviceComments != default(string[])))
@@ -64,7 +66,8 @@ namespace Beamable.Editor.BeamCli.Commands
 			// If the dockerRegistryUrl value was not default, then add it to the list of args.
 			if ((this.dockerRegistryUrl != default(string)))
 			{
-				genBeamCommandArgs.Add(("--docker-registry-url=" + this.dockerRegistryUrl));
+				genBeamCommandArgs.Add((("--docker-registry-url=\"" + this.dockerRegistryUrl)
+								+ "\""));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

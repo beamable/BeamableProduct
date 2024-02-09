@@ -176,7 +176,7 @@ namespace Beamable.Server.Editor.Usam
 					});
 					dataIndex = ServiceDefinitions.Count - 1;
 					ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder() { BeamoId = name };
-					
+
 					ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = true; //TODO should read this from manifest or have it stored somewhere
 					ServiceDefinitions[dataIndex].HasLocalSource = true;
 				}
@@ -270,11 +270,11 @@ namespace Beamable.Server.Editor.Usam
 					signpost = new BeamServiceSignpost()
 					{
 						name = serviceName,
-						assetProjectPath = Path.Combine(relativePath,serviceName).Replace(StandaloneMicroservicesPath,string.Empty),
+						assetProjectPath = Path.Combine(relativePath, serviceName).Replace(StandaloneMicroservicesPath, string.Empty),
 						serviceType = ServiceType.MicroService
 					};
 				}
-					break;
+				break;
 				case ServiceType.StorageObject:
 					var storageArgs = new ProjectNewStorageArgs
 					{
@@ -435,10 +435,10 @@ namespace Beamable.Server.Editor.Usam
 
 		public void CheckMicroserviceStatus()
 		{
-			var projectPs = _cli.ProjectPs().OnStreamServiceDiscoveryEvent(cb =>
+			var projectPs = _cli.ProjectPs(new ProjectPsArgs()).OnStreamServiceDiscoveryEvent(cb =>
 			{
 				Debug.Log($"[{cb.data.service}] is running = {cb.data.isRunning}");
-				
+
 				var def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(cb.data.service));
 				if (def != null)
 				{
@@ -447,7 +447,7 @@ namespace Beamable.Server.Editor.Usam
 			});
 			projectPs.Run();
 		}
-		
+
 
 		/// <summary>
 		/// Update the sln file to add references to known beam services.
@@ -519,7 +519,7 @@ namespace Beamable.Server.Editor.Usam
 		{
 			var args = new ServicesSetLocalManifestArgs();
 			//check how many services exist locally
-			int servicesCount = definitions.Count(definition=> !string.IsNullOrEmpty(definition.ServiceInfo.projectPath));
+			int servicesCount = definitions.Count(definition => !string.IsNullOrEmpty(definition.ServiceInfo.projectPath));
 
 			if (servicesCount == 0)
 			{
@@ -531,7 +531,7 @@ namespace Beamable.Server.Editor.Usam
 			var storages = new List<string>();
 			var disabledServices = new List<string>();
 			// TODO: add some validation to check that these files actually make sense
-			
+
 			for (var i = 0; i < servicesCount; i++)
 			{
 				if (string.IsNullOrEmpty(definitions[i].ServiceInfo.projectPath))
@@ -584,7 +584,7 @@ namespace Beamable.Server.Editor.Usam
 			var storages = new List<string>();
 			var disabledServices = new List<string>();
 			// TODO: add some validation to check that these files actually make sense
-			
+
 			for (var i = 0; i < files.Count; i++)
 			{
 				services.Add(files[i].CsprojPath);
