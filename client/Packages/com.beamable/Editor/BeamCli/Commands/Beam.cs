@@ -90,7 +90,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			// If the dotnetPath value was not default, then add it to the list of args.
 			if ((this.dotnetPath != default(string)))
 			{
-				genBeamCommandArgs.Add(("--dotnet-path=" + this.dotnetPath));
+				genBeamCommandArgs.Add(("--dotnet-path=\"" + this.dotnetPath + "\""));
 			}
 			// If the version value was not default, then add it to the list of args.
 			if ((this.version != default(bool)))

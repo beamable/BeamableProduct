@@ -84,7 +84,8 @@ public class ServicesModifyCommand : AppCommand<ServicesModifyCommandArgs>
 		// Remove ourselves from the list of beamo ids so we can use this list as the choices for the service dependency things
 		existingBeamoIds.Remove(args.BeamoId);
 		// Handle Dependencies Option
-		if (!EnsureServiceDependencies(existingBeamoIds, ref args.ServiceDependencies, serviceDefinition.DependsOnBeamoIds))
+		var dependencies = await _localBeamo.GetDependencies(args.BeamoId);
+		if (!EnsureServiceDependencies(existingBeamoIds, ref args.ServiceDependencies, dependencies.ToArray()))
 			return;
 
 		// Protocol specific stuff
@@ -117,7 +118,8 @@ public class ServicesModifyCommand : AppCommand<ServicesModifyCommandArgs>
 				EnsureRemoteHealthEndpointAndPort(ref httpArgs, new[] { remoteProtocol.HealthCheckEndpoint, remoteProtocol.HealthCheckPort });
 
 				// Update service dependencies
-				serviceDefinition.DependsOnBeamoIds = args.ServiceDependencies;
+				// TODO HANDLE THAT
+				// serviceDefinition.DependsOnBeamoIds = args.ServiceDependencies; 
 
 				// Update the created protocol based on the received arguments
 				await _localBeamo.TryUpdateLocalProtocol(args.BeamoId, UpdateHttpLocalProtocolFromArgs(httpArgs), CancellationToken.None);

@@ -53,6 +53,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 
 		var isDockerRunning = await _localBeamo.CheckIsRunning();
 		var serviceDefinitions = _localBeamo.BeamoManifest.ServiceDefinitions;
+		var dependenciesDict = await _localBeamo.GetAllBeamoIdsDependencies();
 		var localServiceListResult = new ServiceListResult(!args.Remote, isDockerRunning, serviceDefinitions.Count);
 		if (!isDockerRunning && !args.Remote)
 		{
@@ -70,7 +71,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 				var shouldBeEnabledOnDeployMarkup = new Markup(sd.ShouldBeEnabledOnRemote ? "[green]Enable[/]" : "[red]Disable[/]");
 				var isRemoteOnlyMarkup = new Markup(_localBeamo.VerifyCanBeBuiltLocally(sd) ? "[green]True[/]" : "[red]False[/]");
 				localServiceListResult.AddLocal(sd.BeamoId, sd.ShouldBeEnabledOnRemote, false, sd.Protocol.ToString(), sd.ImageId,
-					"", "", new[] { "" }, new[] { "" }, sd.DependsOnBeamoIds);
+					"", "", new[] { "" }, new[] { "" }, dependenciesDict[sd]);
 
 				table.AddRow(new TableRow(new[] { beamoIdMarkup, imageIdMarkup, shouldBeEnabledOnDeployMarkup, isRemoteOnlyMarkup, }));
 			}
@@ -204,7 +205,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 						"",
 						new[] { "" },
 						new[] { "" },
-						sd.DependsOnBeamoIds);
+						dependenciesDict[sd]);
 					table.AddRow(new TableRow(new[] { beamoIdMarkup, imageIdMarkup, containersRenderable, shouldBeEnabledOnDeployMarkup, isRemoteOnlyMarkup, }));
 				}
 

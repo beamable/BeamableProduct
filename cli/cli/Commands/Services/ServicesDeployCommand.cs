@@ -227,7 +227,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 				var atLeastOneFailed = false;
 
 				LogToSendResult("Starting deployment...", "INFO");
-				_ = await _localBeamo.DeployToRemote(_localBeamo.BeamoManifest, _localBeamo.BeamoRuntime, dockerRegistryUrl,
+				_ = await _localBeamo.DeployToRemote(_localBeamo, dockerRegistryUrl,
 					args.RemoteComment ?? string.Empty,
 					perServiceComments,
 					(beamoId, progress) =>

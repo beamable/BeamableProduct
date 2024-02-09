@@ -22,7 +22,7 @@ public class SkipCommonOptionFlag : ConfigurableOptionFlag
 
 public class ServiceNameArgument : Argument<ServiceName>
 {
-	public ServiceNameArgument() : base("name", "Name of the new project") { }
+	public ServiceNameArgument(string description = "Name of the new project") : base("name", description) { }
 }
 
 public class SpecificVersionOption : Option<string>

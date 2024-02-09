@@ -9,8 +9,8 @@ namespace Beamable.Common.BeamCli
 	{
 		public static void OpenCode(this ServiceInfo info)
 		{
-			var path = Path.GetDirectoryName(info.dockerBuildPath);
-			var solutionFiles = Directory.EnumerateFiles(path, "*.sln", SearchOption.AllDirectories).ToList();
+			var path = new DirectoryInfo(Path.GetFullPath(info.projectPath)).Parent;
+			var solutionFiles = Directory.EnumerateFiles(path!.FullName, "*.sln", SearchOption.AllDirectories).ToList();
 			switch (solutionFiles.Count)
 			{
 				case 0:

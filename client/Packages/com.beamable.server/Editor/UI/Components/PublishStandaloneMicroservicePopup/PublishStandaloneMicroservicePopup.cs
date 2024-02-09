@@ -160,11 +160,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				if (serviceDefinition.ServiceType == ServiceType.MicroService)
 				{
+					// TODO Make it work
 					var allDependencies = new List<ServiceDependency>();
-					foreach (string dependency in serviceDefinition.ServiceInfo.dependencies)
-					{
-						allDependencies.Add(new ServiceDependency { id = dependency, storageType = "storage" });
-					}
 
 					var entryModel = new ManifestEntryModel()
 					{

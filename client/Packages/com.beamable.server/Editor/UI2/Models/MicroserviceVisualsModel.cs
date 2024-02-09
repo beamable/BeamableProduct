@@ -157,7 +157,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 			var remoteCategory = existsOnRemote ? "Cloud" : "Cloud (not deployed)";
 			evt.menu.BeamableAppendAction($"Reveal build directory{imageSuffix}", pos =>
 			{
-				var full = Path.GetFullPath(_serviceDefinition.ServiceInfo.dockerBuildPath);
+				var full = Path.GetFullPath(_serviceDefinition.ServiceInfo.projectPath);
 				EditorUtility.RevealInFinder(full);
 			});
 			if (_serviceDefinition.ExistLocally)
