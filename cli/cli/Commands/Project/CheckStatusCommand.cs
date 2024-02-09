@@ -50,7 +50,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, ServiceD
 			timeout = default;
 		}
 		Log.Debug($"running status-check with watch=[{args.watch}] timeout=[{timeout.Milliseconds}]");
-		
+
 		await foreach (var evt in discovery.StartDiscovery(timeout))
 		{
 			if (!evt.isRunning)

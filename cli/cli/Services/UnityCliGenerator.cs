@@ -247,7 +247,7 @@ public class UnityCliGenerator : ICliGenerator
 
 				CodeMethodInvokeExpression addStatement;
 
-				if(parameter.Type.BaseType == "System.String")
+				if (parameter.Type.BaseType == "System.String")
 				{
 					var optionalValWithoutEscape =
 						new CodeBinaryOperatorExpression(new CodePrimitiveExpression("--" + option.Name + "=\""),
