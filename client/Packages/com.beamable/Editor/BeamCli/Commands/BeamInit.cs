@@ -34,32 +34,38 @@ namespace Beamable.Editor.BeamCli.Commands
 			// If the username value was not default, then add it to the list of args.
 			if ((this.username != default(string)))
 			{
-				genBeamCommandArgs.Add(("--username=" + this.username));
+				genBeamCommandArgs.Add((("--username=\"" + this.username)
+								+ "\""));
 			}
 			// If the password value was not default, then add it to the list of args.
 			if ((this.password != default(string)))
 			{
-				genBeamCommandArgs.Add(("--password=" + this.password));
+				genBeamCommandArgs.Add((("--password=\"" + this.password)
+								+ "\""));
 			}
 			// If the host value was not default, then add it to the list of args.
 			if ((this.host != default(string)))
 			{
-				genBeamCommandArgs.Add(("--host=" + this.host));
+				genBeamCommandArgs.Add((("--host=\"" + this.host)
+								+ "\""));
 			}
 			// If the cid value was not default, then add it to the list of args.
 			if ((this.cid != default(string)))
 			{
-				genBeamCommandArgs.Add(("--cid=" + this.cid));
+				genBeamCommandArgs.Add((("--cid=\"" + this.cid)
+								+ "\""));
 			}
 			// If the pid value was not default, then add it to the list of args.
 			if ((this.pid != default(string)))
 			{
-				genBeamCommandArgs.Add(("--pid=" + this.pid));
+				genBeamCommandArgs.Add((("--pid=\"" + this.pid)
+								+ "\""));
 			}
 			// If the refreshToken value was not default, then add it to the list of args.
 			if ((this.refreshToken != default(string)))
 			{
-				genBeamCommandArgs.Add(("--refresh-token=" + this.refreshToken));
+				genBeamCommandArgs.Add((("--refresh-token=\"" + this.refreshToken)
+								+ "\""));
 			}
 			// If the saveToEnvironment value was not default, then add it to the list of args.
 			if ((this.saveToEnvironment != default(bool)))

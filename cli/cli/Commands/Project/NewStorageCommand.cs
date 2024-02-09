@@ -106,7 +106,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 
 		foreach (var dependency in dependencies)
 		{
-			if(args.BeamoLocalSystem.BeamoManifest.TryGetDefinition(dependency, out var dependencyDefinition))
+			if (args.BeamoLocalSystem.BeamoManifest.TryGetDefinition(dependency, out var dependencyDefinition))
 			{
 				Log.Information("Adding {ArgsStorageName} reference to {Dependency}. ", args.storageName, dependency);
 				await args.BeamoLocalSystem.AddProjectDependency(dependencyDefinition, storageDef);

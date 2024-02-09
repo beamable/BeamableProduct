@@ -27,7 +27,7 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 	}
 
 	public override void Configure()
-	{	
+	{
 		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
 	}
 
@@ -50,7 +50,7 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 					break;
 				}
 			}
-			
+
 		}
 		await discovery.Stop();
 
@@ -66,7 +66,7 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 				});
 				continue;
 			}
-			
+
 			await SendKillMessage(serviceEvt);
 			Log.Information($"stopped {serviceName}.");
 			SendResults(new StopProjectCommandOutput

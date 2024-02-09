@@ -8,5 +8,6 @@ namespace Beamable.Editor.BeamCli.Commands
 	public class BeamListCommandResult
 	{
 		public System.Collections.Generic.List<Beamable.Common.BeamCli.Contracts.ServiceInfo> localServices;
+		public System.Collections.Generic.List<Beamable.Common.BeamCli.Contracts.ServiceInfo> localStorages;
 	}
 }

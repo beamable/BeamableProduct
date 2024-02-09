@@ -96,7 +96,8 @@ public partial class BeamoLocalSystem
 			var ports = dockerContainer.Ports.Select(p =>
 				new DockerPortBinding()
 				{
-					InContainerPort = p.PrivatePort.ToString(), LocalPort = p.PublicPort.ToString()
+					InContainerPort = p.PrivatePort.ToString(),
+					LocalPort = p.PublicPort.ToString()
 				}).ToList();
 
 			// If the container NOT already mapped to an existing BeamoServiceInstance, we map it. 
@@ -355,7 +356,7 @@ public partial class BeamoLocalSystem
 
 		var servicesDependencies = await localSystem.GetAllBeamoIdsDependencies();
 		// Build dependency layers split by protocol type.
-		SplitLayersByProtocolType(serviceDefinitionsToDeploy,servicesDependencies, out var builtLayers);
+		SplitLayersByProtocolType(serviceDefinitionsToDeploy, servicesDependencies, out var builtLayers);
 
 		// For each layer, run through the containers of each type on that layer and do what is needed to deploy them
 		// We already know that all containers are properly built here, so we just need to create the containers and run them.

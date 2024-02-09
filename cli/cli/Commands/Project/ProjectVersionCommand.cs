@@ -59,7 +59,7 @@ public class ProjectVersionCommand : AtomicCommand<ProjectVersionCommandArgs, Pr
 					var packageVersion = splitedLine[packageIndex + 1];
 
 					if (!string.IsNullOrWhiteSpace(args.requestedVersion) &&
-					    !args.requestedVersion.Equals(packageVersion))
+						!args.requestedVersion.Equals(packageVersion))
 					{
 						(_, buffer) = await CliExtensions.RunWithOutput(args.AppContext.DotnetPath,
 								$"add package {packageName} --version \"{args.requestedVersion}\"", projectPath);
@@ -69,7 +69,9 @@ public class ProjectVersionCommand : AtomicCommand<ProjectVersionCommandArgs, Pr
 
 					results.Add(new BeamablePackageInProject()
 					{
-						projectPath = projectPath, packageName = packageName, packageVersion = packageVersion
+						projectPath = projectPath,
+						packageName = packageName,
+						packageVersion = packageVersion
 					});
 				}
 			}

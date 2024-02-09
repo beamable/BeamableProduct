@@ -16,7 +16,8 @@ namespace Beamable.Editor.BeamCli.Commands
 			// If the requestedVersion value was not default, then add it to the list of args.
 			if ((this.requestedVersion != default(string)))
 			{
-				genBeamCommandArgs.Add(("--requested-version=" + this.requestedVersion));
+				genBeamCommandArgs.Add((("--requested-version=\"" + this.requestedVersion)
+								+ "\""));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

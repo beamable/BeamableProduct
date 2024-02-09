@@ -84,10 +84,10 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 				{
 					if ((bool)!storage.BaseImage?.Contains("mongo:"))
 						diagnostics.Add(new Diagnostic($"[{id}] Base Image [{storage.BaseImage}] must be a version of mongo."));
-						
+
 				}
 			}
-			throw new CliException($"Some of the services could not be run locally: {string.Join(',',failedId)}", 555,true,null,diagnostics);
+			throw new CliException($"Some of the services could not be run locally: {string.Join(',', failedId)}", 555, true, null, diagnostics);
 		}
 
 		await AnsiConsole

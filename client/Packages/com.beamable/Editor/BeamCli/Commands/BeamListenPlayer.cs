@@ -16,7 +16,8 @@ namespace Beamable.Editor.BeamCli.Commands
 			// If the context value was not default, then add it to the list of args.
 			if ((this.context != default(string)))
 			{
-				genBeamCommandArgs.Add(("--context=" + this.context));
+				genBeamCommandArgs.Add((("--context=\"" + this.context)
+								+ "\""));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

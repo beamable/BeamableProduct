@@ -45,32 +45,38 @@ namespace Beamable.Editor.BeamCli.Commands
 			// If the cid value was not default, then add it to the list of args.
 			if ((this.cid != default(string)))
 			{
-				genBeamCommandArgs.Add(("--cid=" + this.cid));
+				genBeamCommandArgs.Add((("--cid=\"" + this.cid)
+								+ "\""));
 			}
 			// If the pid value was not default, then add it to the list of args.
 			if ((this.pid != default(string)))
 			{
-				genBeamCommandArgs.Add(("--pid=" + this.pid));
+				genBeamCommandArgs.Add((("--pid=\"" + this.pid)
+								+ "\""));
 			}
 			// If the host value was not default, then add it to the list of args.
 			if ((this.host != default(string)))
 			{
-				genBeamCommandArgs.Add(("--host=" + this.host));
+				genBeamCommandArgs.Add((("--host=\"" + this.host)
+								+ "\""));
 			}
 			// If the refreshToken value was not default, then add it to the list of args.
 			if ((this.refreshToken != default(string)))
 			{
-				genBeamCommandArgs.Add(("--refresh-token=" + this.refreshToken));
+				genBeamCommandArgs.Add((("--refresh-token=\"" + this.refreshToken)
+								+ "\""));
 			}
 			// If the log value was not default, then add it to the list of args.
 			if ((this.log != default(string)))
 			{
-				genBeamCommandArgs.Add(("--log=" + this.log));
+				genBeamCommandArgs.Add((("--log=\"" + this.log)
+								+ "\""));
 			}
 			// If the dir value was not default, then add it to the list of args.
 			if ((this.dir != default(string)))
 			{
-				genBeamCommandArgs.Add(("--dir=" + this.dir));
+				genBeamCommandArgs.Add((("--dir=\"" + this.dir)
+								+ "\""));
 			}
 			// If the raw value was not default, then add it to the list of args.
 			if ((this.raw != default(bool)))
@@ -90,7 +96,8 @@ namespace Beamable.Editor.BeamCli.Commands
 			// If the dotnetPath value was not default, then add it to the list of args.
 			if ((this.dotnetPath != default(string)))
 			{
-				genBeamCommandArgs.Add(("--dotnet-path=\"" + this.dotnetPath + "\""));
+				genBeamCommandArgs.Add((("--dotnet-path=\"" + this.dotnetPath)
+								+ "\""));
 			}
 			// If the version value was not default, then add it to the list of args.
 			if ((this.version != default(bool)))

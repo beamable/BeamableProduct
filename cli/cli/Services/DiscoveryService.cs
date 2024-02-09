@@ -32,7 +32,7 @@ public class DiscoveryService
 		_beacon.Dispose();
 	}
 
-	public async IAsyncEnumerable<ServiceDiscoveryEvent> StartDiscovery(TimeSpan timeout = default, [EnumeratorCancellation] CancellationToken token=default)
+	public async IAsyncEnumerable<ServiceDiscoveryEvent> StartDiscovery(TimeSpan timeout = default, [EnumeratorCancellation] CancellationToken token = default)
 	{
 		_beacon = new NetMQBeacon();
 		_beacon.ConfigureAllInterfaces(Beamable.Common.Constants.Features.Services.DISCOVERY_PORT);
@@ -137,8 +137,8 @@ public class DiscoveryService
 		}
 
 		await _localSystem.StopListeningToDocker();
-		
-		
+
+
 	}
 
 	public static ServiceDiscoveryEvent CreateEvent(ServiceDiscoveryEntry entry, bool isRunning)

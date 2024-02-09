@@ -15,7 +15,7 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public readonly BeamoLocalManifest BeamoManifest;
 
-	public readonly Dictionary<BeamoServiceDefinition,List<string>> ServicesDependencies = new();
+	public readonly Dictionary<BeamoServiceDefinition, List<string>> ServicesDependencies = new();
 
 	/// <summary>
 	/// The current local state of containers, associated with the <see cref="BeamoLocalManifest.ServiceDefinitions"/>, keept in sync with the <see cref="_beamoLocalRuntimeFile"/> json file.
@@ -119,22 +119,22 @@ public partial class BeamoLocalSystem
 		}
 		var path = _configService.GetRelativePath(serviceDefinition!.ProjectDirectory);
 		path = Path.Combine(path, $"{beamoServiceId}.{projectExtension}");
-		var (cmd,builder) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, $"list {path} reference");
+		var (cmd, builder) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, $"list {path} reference");
 		if (cmd.ExitCode != 0)
 		{
 			throw new CliException($"Getting service dependencies failed, command output: {builder}");
 		}
 		// TODO improve it, for now it is naive, if there is related project with same name as one of the services it will treat it as it is connected
 		var dependencies = builder.ToString().Split(Environment.NewLine).Where(line => line.EndsWith(projectExtension))
-			.Select(Path.GetFileNameWithoutExtension).Where(candidate => BeamoManifest.ServiceDefinitions.Any(definition => definition.BeamoId==candidate)).ToList();
-		
+			.Select(Path.GetFileNameWithoutExtension).Where(candidate => BeamoManifest.ServiceDefinitions.Any(definition => definition.BeamoId == candidate)).ToList();
+
 		return dependencies;
 	}
 
 	public async Task AddProjectDependency(BeamoServiceDefinition project, BeamoServiceDefinition dependency)
 	{
 		if (project.Protocol != BeamoProtocolType.HttpMicroservice ||
-		    dependency.Protocol != BeamoProtocolType.EmbeddedMongoDb)
+			dependency.Protocol != BeamoProtocolType.EmbeddedMongoDb)
 		{
 			throw new CliException(
 				$"Currently the only supported dependencies are {nameof(BeamoProtocolType.HttpMicroservice)} depending on {nameof(BeamoProtocolType.EmbeddedMongoDb)}");
@@ -142,7 +142,7 @@ public partial class BeamoLocalSystem
 		var projectPath = _configService.GetRelativePath(project.ProjectDirectory);
 		var dependencyPath = _configService.GetRelativePath(dependency.ProjectDirectory);
 		var command = $"add {projectPath} reference {dependencyPath}";
-		var(cmd, result) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, command,Directory.GetCurrentDirectory());
+		var (cmd, result) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, command, Directory.GetCurrentDirectory());
 		if (cmd.ExitCode != 0)
 		{
 			throw new CliException($"Failed to add project dependency, output of \"dotnet {command}\": {result}");
@@ -155,11 +155,11 @@ public partial class BeamoLocalSystem
 
 		const string search =
 			"# <BEAM-CLI-INSERT-FLAG:COPY> do not delete this line. It is used by the beam CLI to insert custom actions";
-		string toAdd =@$"WORKDIR /subsrc/{dependency.BeamoId}
+		string toAdd = @$"WORKDIR /subsrc/{dependency.BeamoId}
 COPY {dependency.BeamoId}/. .";
 		var replacement = @$"{toAdd}
 {search}";
-		if(!dockerfileText.ReplaceLineEndings("\n").Contains(toAdd))
+		if (!dockerfileText.ReplaceLineEndings("\n").Contains(toAdd))
 		{
 			dockerfileText = dockerfileText.Replace(search, replacement);
 			await File.WriteAllTextAsync(dockerfilePath, dockerfileText);
@@ -172,12 +172,12 @@ COPY {dependency.BeamoId}/. .";
 	/// </summary>
 	/// <param name="projectExtension">The extension of the project file (default: 'csproj').</param>
 	/// <returns>A dictionary where the key is a BeamoServiceDefinition and the value is a list of its dependencies.</returns>
-	public async Task<Dictionary<BeamoServiceDefinition,List<string>>> GetAllBeamoIdsDependencies(string projectExtension = "csproj")
+	public async Task<Dictionary<BeamoServiceDefinition, List<string>>> GetAllBeamoIdsDependencies(string projectExtension = "csproj")
 	{
-		
+
 		foreach (var definition in BeamoManifest.ServiceDefinitions)
 		{
-			if(!ServicesDependencies.ContainsKey(definition))
+			if (!ServicesDependencies.ContainsKey(definition))
 			{
 				var entry = await GetDependencies(definition.BeamoId, projectExtension);
 				ServicesDependencies.Add(definition, entry);
@@ -186,7 +186,7 @@ COPY {dependency.BeamoId}/. .";
 
 		return ServicesDependencies;
 	}
-	
+
 	/// <summary>
 	/// Checks if the given BeamO Service Id is already known in the current <see cref="BeamoManifest"/>.
 	/// </summary>
@@ -243,7 +243,7 @@ COPY {dependency.BeamoId}/. .";
 	/// <typeparam name="TLocal">The type of the <see cref="IBeamoLocalProtocol"/> that this service definition uses.</typeparam>
 	/// <typeparam name="TRemote">The type of the <see cref="IBeamoRemoteProtocol"/> that this service definition uses.</typeparam>
 	/// <returns>The created service definition.</returns>
-	private async Task<BeamoServiceDefinition> AddServiceDefinition<TLocal, TRemote>(string beamoId, BeamoProtocolType type, 
+	private async Task<BeamoServiceDefinition> AddServiceDefinition<TLocal, TRemote>(string beamoId, BeamoProtocolType type,
 		LocalProtocolModifier<TLocal> localConstructor, RemoteProtocolModifier<TRemote> remoteConstructor, CancellationToken cancellationToken, bool shouldServiceBeEnabled = true)
 		where TLocal : class, IBeamoLocalProtocol, new() where TRemote : class, IBeamoRemoteProtocol, new() =>
 		await AddServiceDefinition(BeamoManifest, beamoId, type, localConstructor, remoteConstructor, cancellationToken, shouldServiceBeEnabled);
@@ -440,7 +440,7 @@ public class BeamoLocalManifest
 	/// These are map individual <see cref="BeamoServiceDefinition.BeamoId"/>s to their protocol data. Since we don't allow changing protocols we don't ever need to move the services' protocol data between these.
 	/// </summary>
 	public BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol> EmbeddedMongoDbRemoteProtocols;
-	
+
 	public void Clear()
 	{
 		ServiceDefinitions.Clear();
@@ -461,7 +461,7 @@ public class BeamoLocalManifest
 	public bool TryGetDefinition(string beamoId, out BeamoServiceDefinition definition)
 	{
 		definition = ServiceDefinitions.FirstOrDefault(definition => definition.BeamoId == beamoId);
-		
+
 		return definition != null;
 	}
 }

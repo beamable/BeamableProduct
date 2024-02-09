@@ -6,7 +6,7 @@ namespace cli.Services;
 
 public class ProjectLogsService
 {
-	public static async Task Handle(TailLogsCommandArgs args, Action<TailLogMessage> handleLog, CancellationToken token=default)
+	public static async Task Handle(TailLogsCommandArgs args, Action<TailLogMessage> handleLog, CancellationToken token = default)
 	{
 		void LogHandler(string logMessage)
 		{
@@ -14,7 +14,7 @@ public class ProjectLogsService
 			parsed.raw = logMessage;
 			handleLog(parsed);
 		}
-		
+
 		while (args.reconnect && !token.IsCancellationRequested)
 		{
 			var discovery = args.DependencyProvider.GetService<DiscoveryService>();

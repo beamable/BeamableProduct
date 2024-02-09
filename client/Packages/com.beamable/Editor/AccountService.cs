@@ -36,7 +36,7 @@ namespace Beamable.Editor
 	{
 		public OptionalString cid = new OptionalString();
 		public List<EditorAccountInfo> editorAccounts = new List<EditorAccountInfo>();
-		
+
 		public EditorAccountInfo Account
 		{
 			get
@@ -46,12 +46,12 @@ namespace Beamable.Editor
 			}
 		}
 	}
-	
+
 	public class AccountService : AccountServerData, IAccountService, IStorageHandler<AccountService>, Beamable.Common.Dependencies.IServiceStorable
 	{
 		public List<Func<EditorAccountInfo, Promise>> _onUserChangeCallbacks = new List<Func<EditorAccountInfo, Promise>>();
 		private readonly IDependencyProviderScope _scope;
-		
+
 		public ReadonlyOptionalString Cid => new ReadonlyOptionalString(cid);
 
 

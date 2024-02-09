@@ -89,7 +89,7 @@ REFRESH_TOKEN={refreshToken}
 
 		async Promise AppendDependencyVars()
 		{
-			var deps = await args.BeamoLocalSystem.GetDependencies(service.BeamoId);	
+			var deps = await args.BeamoLocalSystem.GetDependencies(service.BeamoId);
 			foreach (var dependency in deps)
 			{
 				try
