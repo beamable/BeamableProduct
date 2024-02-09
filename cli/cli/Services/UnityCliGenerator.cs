@@ -244,7 +244,6 @@ public class UnityCliGenerator : ICliGenerator
 					CodeBinaryOperatorType.IdentityInequality,
 					new CodeDefaultValueExpression(parameter.Type));
 				var conditional = new CodeConditionStatement(valueIsNotNullExpr);
-
 				CodeMethodInvokeExpression addStatement;
 
 				if (parameter.Type.BaseType == "System.String")
