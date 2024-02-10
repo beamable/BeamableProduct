@@ -52,8 +52,8 @@ public class ProjectCommand : AppCommand<ProjectCommandArgs>
 		{
 			services = args.BeamoLocalSystem
 				.BeamoManifest?
-				.ServiceDefinitions?
-				.Select(x => x.BeamoId)
+				.HttpMicroserviceLocalProtocols?
+				.Select(x => x.Key)
 				.ToList() ?? new List<string>();
 		}
 

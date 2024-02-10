@@ -156,6 +156,7 @@ public class App
 
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
 		Commands.AddRootCommand<ProjectCommand, ProjectCommandArgs>();
+		Commands.AddCommand<GenerateOApiCommand, GenerateOApiCommandArgs, ProjectCommand>();
 		Commands.AddCommand<RunProjectCommand, RunProjectCommandArgs, ProjectCommand>();
 		Commands.AddCommand<StopProjectCommand, StopProjectCommandArgs, ProjectCommand>();
 		Commands.AddCommand<BuildProjectCommand, BuildProjectCommandArgs, ProjectCommand>();
