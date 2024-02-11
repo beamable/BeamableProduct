@@ -1,12 +1,14 @@
 using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using cli.Services;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Serilog;
 using Spectre.Console;
 using System.CommandLine;
 using System.CommandLine.Binding;
+using System.CommandLine.Help;
 using UnityEngine;
 
 namespace cli;
@@ -140,6 +142,38 @@ public class DefaultErrorStream : IResultChannel
 	public string ChannelName => CHANNEL;
 }
 
+public abstract class CommandGroup<TArgs> : AppCommand<TArgs> 
+	where TArgs : CommandArgs
+{
+	public override bool AlwaysShowHelp => true;
+
+	protected CommandGroup([NotNull] string name, [CanBeNull] string description = null) : base(name, description)
+	{
+	}
+	
+	public override void Configure()
+	{
+		
+	}
+	
+	public override Task Handle(TArgs args)
+	{
+		throw new InvalidOperationException("command groups should never execute");
+	}
+}
+
+public class CommandGroupArgs : CommandArgs
+{
+	
+}
+
+public abstract class CommandGroup : CommandGroup<CommandGroupArgs>
+{
+	protected CommandGroup([NotNull] string name, [CanBeNull] string description = null) : base(name, description)
+	{
+	}
+}
+
 public abstract partial class AppCommand<TArgs> : Command, IResultProvider
 	where TArgs : CommandArgs
 {
@@ -147,6 +181,8 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider
 
 	IDataReporterService IResultProvider.Reporter { get; set; }
 	public IDependencyProvider CommandProvider { get; set; }
+
+	public virtual bool AlwaysShowHelp => false;
 
 	protected AppCommand(string name, string description = null) : base(name, description)
 	{

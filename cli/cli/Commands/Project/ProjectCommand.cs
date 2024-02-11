@@ -4,26 +4,14 @@ using System.CommandLine;
 
 namespace cli.Dotnet;
 
-public class ProjectCommandArgs : CommandArgs { }
-
-public class ProjectCommand : AppCommand<ProjectCommandArgs>
+public class ProjectCommand : CommandGroup
 {
 	public ProjectCommand() : base(
 		"project",
 		"Commands that relate to a standalone Beamable project")
 	{
 	}
-
-	public override void Configure()
-	{
-
-	}
-
-	public override Task Handle(ProjectCommandArgs args)
-	{
-		return Task.CompletedTask;
-	}
-
+	
 	public static void AddWatchOption<TArgs>(AppCommand<TArgs> command, Action<TArgs, bool> binder)
 		where TArgs : CommandArgs
 	{
