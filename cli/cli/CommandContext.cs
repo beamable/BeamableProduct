@@ -145,8 +145,6 @@ public class DefaultErrorStream : IResultChannel
 public abstract class CommandGroup<TArgs> : AppCommand<TArgs> 
 	where TArgs : CommandArgs
 {
-	public override bool AlwaysShowHelp => true;
-
 	protected CommandGroup([NotNull] string name, [CanBeNull] string description = null) : base(name, description)
 	{
 	}
@@ -158,7 +156,9 @@ public abstract class CommandGroup<TArgs> : AppCommand<TArgs>
 	
 	public override Task Handle(TArgs args)
 	{
-		throw new InvalidOperationException("command groups should never execute");
+		var helpBuilder = args.Provider.GetService<HelpBuilder>();
+		helpBuilder.Write(this, Console.Error);
+		return Task.CompletedTask;
 	}
 }
 
@@ -181,8 +181,6 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider
 
 	IDataReporterService IResultProvider.Reporter { get; set; }
 	public IDependencyProvider CommandProvider { get; set; }
-
-	public virtual bool AlwaysShowHelp => false;
 
 	protected AppCommand(string name, string description = null) : base(name, description)
 	{

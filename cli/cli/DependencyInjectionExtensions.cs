@@ -66,16 +66,8 @@ public static class DependencyInjectionExtensions
 					throw new CliException("Could not find any .beamable config folder which is required for this command.");
 				}
 
-				if (command.AlwaysShowHelp)
-				{
-					var helpBuilder = args.Provider.GetService<HelpBuilder>();
-					helpBuilder.Write(command, Console.Error);
-					return Task.CompletedTask;
-				}
-				else
-				{
-					return command.Handle(args);
-				}
+				return command.Handle(args);
+				
 			}, binder);
 			root.AddCommand(command);
 			return factory;
