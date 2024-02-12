@@ -39,5 +39,5 @@ public class ConfigCommandResult
 
 public class ConfigCommandArgs : CommandArgs
 {
-	
+
 }

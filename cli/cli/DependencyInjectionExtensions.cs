@@ -15,7 +15,7 @@ public static class DependencyInjectionExtensions
 	{
 		return AddSubCommandWithHandler<TCommand, TArgs, RootCommand>(collection);
 	}
-	
+
 	public static IDependencyBuilder AddRootCommand<TCommand>(this IDependencyBuilder collection)
 		where TCommand : CommandGroup
 	{
@@ -30,7 +30,7 @@ public static class DependencyInjectionExtensions
 	{
 		return collection.AddSubCommandWithHandler<TCommand, TArgs, TBaseCommand>();
 	}
-	
+
 	public static IDependencyBuilder AddSubCommandWithHandler<TCommand, TArgs, TBaseCommand>(this IDependencyBuilder collection)
 		where TArgs : CommandArgs
 		where TCommand : AppCommand<TArgs>
@@ -54,7 +54,7 @@ public static class DependencyInjectionExtensions
 			var binder = new AppCommand<TArgs>.Binder(command, commandProvider);
 			command.SetHandler((TArgs args) =>
 			{
-				
+
 				if (command is IResultProvider resultProvider)
 				{
 					resultProvider.Reporter = args.Provider.GetService<IDataReporterService>();
@@ -67,7 +67,7 @@ public static class DependencyInjectionExtensions
 				}
 
 				return command.Handle(args);
-				
+
 			}, binder);
 			root.AddCommand(command);
 			return factory;

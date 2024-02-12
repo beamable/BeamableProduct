@@ -113,7 +113,7 @@ public class App
 			throw new InvalidOperationException("The app has already been built, and cannot be configured anymore");
 
 		ConfigureLogging(configureLogger);
-		
+
 		Commands.AddSingleton(new ArgValidator<ServiceName>(arg => new ServiceName(arg)));
 
 		// add global options
@@ -277,11 +277,11 @@ public class App
 		helpBuilder.CustomizeLayout(c =>
 		{
 			var defaultLayout = HelpBuilder.Default.GetLayout().ToList();
-               
+
 			defaultLayout.Add(PrintOutputHelp);
 			return defaultLayout;
 		});
-		
+
 		var commandLineBuilder = new CommandLineBuilder(root);
 		commandLineBuilder.AddMiddleware(consoleContext =>
 		{

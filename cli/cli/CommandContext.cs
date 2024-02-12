@@ -142,18 +142,18 @@ public class DefaultErrorStream : IResultChannel
 	public string ChannelName => CHANNEL;
 }
 
-public abstract class CommandGroup<TArgs> : AppCommand<TArgs> 
+public abstract class CommandGroup<TArgs> : AppCommand<TArgs>
 	where TArgs : CommandArgs
 {
 	protected CommandGroup([NotNull] string name, [CanBeNull] string description = null) : base(name, description)
 	{
 	}
-	
+
 	public override void Configure()
 	{
-		
+
 	}
-	
+
 	public override Task Handle(TArgs args)
 	{
 		var helpBuilder = args.Provider.GetService<HelpBuilder>();
@@ -164,7 +164,7 @@ public abstract class CommandGroup<TArgs> : AppCommand<TArgs>
 
 public class CommandGroupArgs : CommandArgs
 {
-	
+
 }
 
 public abstract class CommandGroup : CommandGroup<CommandGroupArgs>
