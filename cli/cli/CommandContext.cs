@@ -1,12 +1,14 @@
 using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using cli.Services;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Serilog;
 using Spectre.Console;
 using System.CommandLine;
 using System.CommandLine.Binding;
+using System.CommandLine.Help;
 using UnityEngine;
 
 namespace cli;
@@ -138,6 +140,38 @@ public class DefaultErrorStream : IResultChannel
 {
 	public const string CHANNEL = "error";
 	public string ChannelName => CHANNEL;
+}
+
+public abstract class CommandGroup<TArgs> : AppCommand<TArgs> 
+	where TArgs : CommandArgs
+{
+	protected CommandGroup([NotNull] string name, [CanBeNull] string description = null) : base(name, description)
+	{
+	}
+	
+	public override void Configure()
+	{
+		
+	}
+	
+	public override Task Handle(TArgs args)
+	{
+		var helpBuilder = args.Provider.GetService<HelpBuilder>();
+		helpBuilder.Write(this, Console.Error);
+		return Task.CompletedTask;
+	}
+}
+
+public class CommandGroupArgs : CommandArgs
+{
+	
+}
+
+public abstract class CommandGroup : CommandGroup<CommandGroupArgs>
+{
+	protected CommandGroup([NotNull] string name, [CanBeNull] string description = null) : base(name, description)
+	{
+	}
 }
 
 public abstract partial class AppCommand<TArgs> : Command, IResultProvider

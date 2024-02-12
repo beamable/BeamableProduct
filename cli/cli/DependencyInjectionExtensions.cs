@@ -1,7 +1,9 @@
 using Beamable.Common.Dependencies;
 using cli.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using System.CommandLine;
+using System.CommandLine.Help;
 
 namespace cli;
 
@@ -11,10 +13,25 @@ public static class DependencyInjectionExtensions
 		where TArgs : CommandArgs
 		where TCommand : AppCommand<TArgs>
 	{
-		return AddCommand<TCommand, TArgs, RootCommand>(collection);
+		return AddSubCommandWithHandler<TCommand, TArgs, RootCommand>(collection);
+	}
+	
+	public static IDependencyBuilder AddRootCommand<TCommand>(this IDependencyBuilder collection)
+		where TCommand : CommandGroup
+	{
+		return AddSubCommandWithHandler<TCommand, CommandGroupArgs, RootCommand>(collection);
 	}
 
-	public static IDependencyBuilder AddCommand<TCommand, TArgs, TBaseCommand>(this IDependencyBuilder collection)
+	public static IDependencyBuilder AddSubCommand<TCommand, TArgs, TBaseCommand>(
+		this IDependencyBuilder collection)
+		where TArgs : CommandArgs
+		where TCommand : AppCommand<TArgs>
+		where TBaseCommand : CommandGroup
+	{
+		return collection.AddSubCommandWithHandler<TCommand, TArgs, TBaseCommand>();
+	}
+	
+	public static IDependencyBuilder AddSubCommandWithHandler<TCommand, TArgs, TBaseCommand>(this IDependencyBuilder collection)
 		where TArgs : CommandArgs
 		where TCommand : AppCommand<TArgs>
 		where TBaseCommand : Command
@@ -25,18 +42,19 @@ public static class DependencyInjectionExtensions
 			collection.AddTransient<TArgs>();
 		}
 
-		collection.AddSingleton<ICommandFactory<TCommand>>(provider =>
+		collection.AddSingleton<ICommandFactory<TCommand>>(commandProvider =>
 		{
 			// TODO: Benchmark this init. Even if its 2ms, thats too slow for when the CLI grows to cover the entire Beamable backend. (2ms * 100 commands = too long)
 			var factory = new CommandFactory<TCommand>();
-			var root = provider.GetRequiredService<TBaseCommand>();
-			var command = provider.GetRequiredService<TCommand>();
+			var root = commandProvider.GetRequiredService<TBaseCommand>();
+			var command = commandProvider.GetRequiredService<TCommand>();
 
-			command.CommandProvider = provider;
+			command.CommandProvider = commandProvider;
 			command.Configure();
-			var binder = new AppCommand<TArgs>.Binder(command, provider);
+			var binder = new AppCommand<TArgs>.Binder(command, commandProvider);
 			command.SetHandler((TArgs args) =>
 			{
+				
 				if (command is IResultProvider resultProvider)
 				{
 					resultProvider.Reporter = args.Provider.GetService<IDataReporterService>();
@@ -47,7 +65,9 @@ public static class DependencyInjectionExtensions
 				{
 					throw new CliException("Could not find any .beamable config folder which is required for this command.");
 				}
+
 				return command.Handle(args);
+				
 			}, binder);
 			root.AddCommand(command);
 			return factory;

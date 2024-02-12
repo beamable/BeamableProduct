@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace cli.Content;
 
-public class ContentCommand : AppCommand<ContentCommandArgs>
+public class ContentCommand : CommandGroup<ContentCommandArgs>
 {
 	public static readonly Option<string> MANIFEST_OPTION =
 		new("--manifest-id", () => "global", "Set the manifest to use, 'global' by default");

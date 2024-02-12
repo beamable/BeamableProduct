@@ -113,7 +113,7 @@ public class App
 			throw new InvalidOperationException("The app has already been built, and cannot be configured anymore");
 
 		ConfigureLogging(configureLogger);
-
+		
 		Commands.AddSingleton(new ArgValidator<ServiceName>(arg => new ServiceName(arg)));
 
 		// add global options
@@ -155,28 +155,29 @@ public class App
 		Commands.AddRootCommand<CliInterfaceGeneratorCommand, CliInterfaceGeneratorCommandArgs>();
 
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
-		Commands.AddRootCommand<ProjectCommand, ProjectCommandArgs>();
-		Commands.AddCommand<RunProjectCommand, RunProjectCommandArgs, ProjectCommand>();
-		Commands.AddCommand<StopProjectCommand, StopProjectCommandArgs, ProjectCommand>();
-		Commands.AddCommand<BuildProjectCommand, BuildProjectCommandArgs, ProjectCommand>();
-		Commands.AddCommand<NewSolutionCommand, NewSolutionCommandArgs, ProjectCommand>();
-		Commands.AddCommand<ProjectDependencies, ProjectDependenciesArgs, ProjectCommand>();
-		Commands.AddCommand<RegenerateSolutionFilesCommand, RegenerateSolutionFilesCommandArgs, ProjectCommand>();
-		Commands.AddCommand<ListCommand, ListCommandArgs, ProjectCommand>();
-		Commands.AddCommand<NewStorageCommand, NewStorageCommandArgs, ProjectCommand>();
-		Commands.AddCommand<GenerateEnvFileCommand, GenerateEnvFileCommandArgs, ProjectCommand>();
-		Commands.AddCommand<GenerateIgnoreFileCommand, GenerateIgnoreFileCommandArgs, ProjectCommand>();
-		Commands.AddCommand<GenerateClientFileCommand, GenerateClientFileCommandArgs, ProjectCommand>();
-		Commands.AddCommand<OpenSwaggerCommand, OpenSwaggerCommandArgs, ProjectCommand>();
-		Commands.AddCommand<TailLogsCommand, TailLogsCommandArgs, ProjectCommand>();
-		Commands.AddCommand<OpenMongoExpressCommand, OpenMongoExpressCommandArgs, ProjectCommand>();
-		Commands.AddCommand<AddUnityClientOutputCommand, AddProjectClientOutputCommandArgs, ProjectCommand>();
-		Commands.AddCommand<AddUnrealClientOutputCommand, UnrealAddProjectClientOutputCommandArgs, ProjectCommand>();
-		Commands.AddCommand<UpdateUnityBeamPackageCommand, UpdateUnityBeamPackageCommandArgs, ProjectCommand>();
-		Commands.AddCommand<ProjectVersionCommand, ProjectVersionCommandArgs, ProjectCommand>();
-		Commands.AddCommand<ShareCodeCommand, ShareCodeCommandArgs, ProjectCommand>();
-		Commands.AddCommand<CheckStatusCommand, CheckStatusCommandArgs, ProjectCommand>();
-		Commands.AddCommand<AddServiceToSolutionCommand, SolutionCommandArgs, ProjectCommand>();
+		Commands.AddRootCommand<ProjectCommand>();
+		Commands.AddSubCommand<GenerateOApiCommand, GenerateOApiCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<RunProjectCommand, RunProjectCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<StopProjectCommand, StopProjectCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<BuildProjectCommand, BuildProjectCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<NewSolutionCommand, NewSolutionCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<ProjectDependencies, ProjectDependenciesArgs, ProjectCommand>();
+		Commands.AddSubCommand<RegenerateSolutionFilesCommand, RegenerateSolutionFilesCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<ListCommand, ListCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<NewStorageCommand, NewStorageCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<GenerateEnvFileCommand, GenerateEnvFileCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<GenerateIgnoreFileCommand, GenerateIgnoreFileCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<GenerateClientFileCommand, GenerateClientFileCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<OpenSwaggerCommand, OpenSwaggerCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<TailLogsCommand, TailLogsCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<OpenMongoExpressCommand, OpenMongoExpressCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<AddUnityClientOutputCommand, AddProjectClientOutputCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<AddUnrealClientOutputCommand, UnrealAddProjectClientOutputCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<UpdateUnityBeamPackageCommand, UpdateUnityBeamPackageCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<ProjectVersionCommand, ProjectVersionCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<ShareCodeCommand, ShareCodeCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<CheckStatusCommand, CheckStatusCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<AddServiceToSolutionCommand, SolutionCommandArgs, ProjectCommand>();
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Commands.AddRootCommand<BaseRequestGetCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestPutCommand, BaseRequestArgs>();
@@ -184,66 +185,66 @@ public class App
 		Commands.AddRootCommand<BaseRequestDeleteCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<GenerateDocsCommand, GenerateDocsCommandArgs>();
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
-		Commands.AddCommand<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
-		Commands.AddCommand<ConfigGetSecret, ConfigGetSecretArgs, ConfigCommand>();
-		Commands.AddCommand<RealmConfigCommand, RealmConfigCommandArgs, ConfigCommand>();
-		Commands.AddCommand<RealmConfigSetCommand, RealmConfigSetCommandArgs, RealmConfigCommand>();
-		Commands.AddCommand<RealmConfigRemoveCommand, RealmConfigRemoveCommandArgs, RealmConfigCommand>();
+		Commands.AddSubCommandWithHandler<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
+		Commands.AddSubCommandWithHandler<ConfigGetSecret, ConfigGetSecretArgs, ConfigCommand>();
+		Commands.AddSubCommandWithHandler<RealmConfigCommand, RealmConfigCommandArgs, ConfigCommand>();
+		Commands.AddSubCommandWithHandler<RealmConfigSetCommand, RealmConfigSetCommandArgs, RealmConfigCommand>();
+		Commands.AddSubCommandWithHandler<RealmConfigRemoveCommand, RealmConfigRemoveCommandArgs, RealmConfigCommand>();
 		Commands.AddRootCommand<LoginCommand, LoginCommandArgs>();
-		Commands.AddRootCommand<OpenAPICommand, OpenAPICommandArgs>();
-		Commands.AddCommand<GenerateSdkCommand, GenerateSdkCommandArgs, OpenAPICommand>();
-		Commands.AddCommand<DownloadOpenAPICommand, DownloadOpenAPICommandArgs, OpenAPICommand>();
+		Commands.AddRootCommand<OpenAPICommand>();
+		Commands.AddSubCommand<GenerateSdkCommand, GenerateSdkCommandArgs, OpenAPICommand>();
+		Commands.AddSubCommand<DownloadOpenAPICommand, DownloadOpenAPICommandArgs, OpenAPICommand>();
 
-		Commands.AddRootCommand<NotificationBaseCommand, NotificationCommandArgs>();
-		Commands.AddCommand<NotificationServerCommand, NotificationServerCommandArgs, NotificationBaseCommand>();
-		Commands.AddCommand<NotificationPlayerCommand, NotificationPlayerCommandArgs, NotificationBaseCommand>();
+		Commands.AddRootCommand<NotificationBaseCommand>();
+		Commands.AddSubCommand<NotificationServerCommand, NotificationServerCommandArgs, NotificationBaseCommand>();
+		Commands.AddSubCommand<NotificationPlayerCommand, NotificationPlayerCommandArgs, NotificationBaseCommand>();
 
-		Commands.AddRootCommand<ProfilingCommand, ProfilingCommandArgs>();
-		Commands.AddCommand<CheckCountersCommand, CheckCountersCommandArgs, ProfilingCommand>();
-		Commands.AddCommand<CheckNBomberCommand, CheckNBomberCommandArgs, ProfilingCommand>();
-		Commands.AddCommand<RunNBomberCommand, RunNBomberCommandArgs, ProfilingCommand>();
+		Commands.AddRootCommand<ProfilingCommand>();
+		Commands.AddSubCommand<CheckCountersCommand, CheckCountersCommandArgs, ProfilingCommand>();
+		Commands.AddSubCommand<CheckNBomberCommand, CheckNBomberCommandArgs, ProfilingCommand>();
+		Commands.AddSubCommand<RunNBomberCommand, RunNBomberCommandArgs, ProfilingCommand>();
 
 		// version commands
 		Commands.AddRootCommand<VersionCommand, VersionCommandArgs>();
-		Commands.AddCommand<VersionListCommand, VersionListCommandArgs, VersionCommand>();
-		Commands.AddCommand<VersionInstallCommand, VersionInstallCommandArgs, VersionCommand>();
+		Commands.AddSubCommandWithHandler<VersionListCommand, VersionListCommandArgs, VersionCommand>();
+		Commands.AddSubCommandWithHandler<VersionInstallCommand, VersionInstallCommandArgs, VersionCommand>();
 
 		// org commands
-		Commands.AddRootCommand<OrganizationCommand, OrganizationCommandArgs>();
-		Commands.AddCommand<RegisterCommand, RegisterCommandArgs, OrganizationCommand>();
+		Commands.AddRootCommand<OrganizationCommand>();
+		Commands.AddSubCommand<RegisterCommand, RegisterCommandArgs, OrganizationCommand>();
 
 		// beamo commands
-		Commands.AddRootCommand<ServicesCommand, ServicesCommandArgs>();
-		Commands.AddCommand<ServicesManifestsCommand, ServicesManifestsArgs, ServicesCommand>();
-		Commands.AddCommand<ServicesListCommand, ServicesListCommandArgs, ServicesCommand>();
-		Commands.AddCommand<ServicesRegisterCommand, ServicesRegisterCommandArgs, ServicesCommand>();
-		Commands.AddCommand<ServicesModifyCommand, ServicesModifyCommandArgs, ServicesCommand>();
-		Commands.AddCommand<ServicesEnableCommand, ServicesEnableCommandArgs, ServicesCommand>();
-		Commands.AddCommand<ServicesDeployCommand, ServicesDeployCommandArgs, ServicesCommand>();
-		Commands.AddCommand<ServicesRunCommand, ServicesRunCommandArgs, ServicesCommand>();
-		Commands.AddCommand<ServicesResetCommand, ServicesResetCommandArgs, ServicesCommand>();
-		Commands.AddCommand<ServicesStopCommand, ServicesStopCommandArgs, ServicesCommand>();
-		Commands.AddCommand<ServicesTemplatesCommand, ServicesTemplatesCommandArgs, ServicesCommand>();
-		Commands.AddCommand<ServicesRegistryCommand, ServicesRegistryCommandArgs, ServicesCommand>();
-		Commands.AddCommand<ServicesUploadApiCommand, ServicesUploadApiCommandArgs, ServicesCommand>();
-		Commands.AddCommand<ServicesLogsUrlCommand, ServicesLogsUrlCommandArgs, ServicesCommand>();
-		Commands.AddCommand<ServicesMetricsUrlCommand, ServicesMetricsUrlCommandArgs, ServicesCommand>();
-		Commands.AddCommand<ServicesPromoteCommand, ServicesPromoteCommandArgs, ServicesCommand>();
-		Commands.AddCommand<ServicesGetConnectionStringCommand, ServicesGetConnectionStringCommandArgs, ServicesCommand>();
-		Commands.AddCommand<ServicesSetManifestCommand, ServicesSetManifestCommandArgs, ServicesCommand>();
+		Commands.AddRootCommand<ServicesCommand>();
+		Commands.AddSubCommand<ServicesManifestsCommand, ServicesManifestsArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesListCommand, ServicesListCommandArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesRegisterCommand, ServicesRegisterCommandArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesModifyCommand, ServicesModifyCommandArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesEnableCommand, ServicesEnableCommandArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesDeployCommand, ServicesDeployCommandArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesRunCommand, ServicesRunCommandArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesResetCommand, ServicesResetCommandArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesStopCommand, ServicesStopCommandArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesTemplatesCommand, ServicesTemplatesCommandArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesRegistryCommand, ServicesRegistryCommandArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesUploadApiCommand, ServicesUploadApiCommandArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesLogsUrlCommand, ServicesLogsUrlCommandArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesMetricsUrlCommand, ServicesMetricsUrlCommandArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesPromoteCommand, ServicesPromoteCommandArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesGetConnectionStringCommand, ServicesGetConnectionStringCommandArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesSetManifestCommand, ServicesSetManifestCommandArgs, ServicesCommand>();
 
 
 		// content commands
 		Commands.AddRootCommand<ContentCommand, ContentCommandArgs>();
-		Commands.AddCommand<ContentPullCommand, ContentPullCommandArgs, ContentCommand>();
-		Commands.AddCommand<ContentStatusCommand, ContentStatusCommandArgs, ContentCommand>();
-		Commands.AddCommand<ContentOpenCommand, ContentOpenCommandArgs, ContentCommand>();
-		Commands.AddCommand<ContentPublishCommand, ContentPublishCommandArgs, ContentCommand>();
-		Commands.AddCommand<ContentResetCommand, ContentResetCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentPullCommand, ContentPullCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentStatusCommand, ContentStatusCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentOpenCommand, ContentOpenCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentPublishCommand, ContentPublishCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentResetCommand, ContentResetCommandArgs, ContentCommand>();
 
-		Commands.AddCommand<ContentTagCommand, ContentTagCommandArgs, ContentCommand>();
-		Commands.AddCommand<ContentTagAddCommand, ContentTagAddCommandArgs, ContentTagCommand>();
-		Commands.AddCommand<ContentTagRemoveCommand, ContentTagAddCommandArgs, ContentTagCommand>();
+		Commands.AddSubCommandWithHandler<ContentTagCommand, ContentTagCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentTagAddCommand, ContentTagAddCommandArgs, ContentTagCommand>();
+		Commands.AddSubCommandWithHandler<ContentTagRemoveCommand, ContentTagAddCommandArgs, ContentTagCommand>();
 
 		commandConfigurator?.Invoke(Commands);
 
@@ -272,6 +273,15 @@ public class App
 	{
 		var root = CommandProvider.GetRequiredService<RootCommand>();
 
+		var helpBuilder = new HelpBuilder(LocalizationResources.Instance, 100);
+		helpBuilder.CustomizeLayout(c =>
+		{
+			var defaultLayout = HelpBuilder.Default.GetLayout().ToList();
+               
+			defaultLayout.Add(PrintOutputHelp);
+			return defaultLayout;
+		});
+		
 		var commandLineBuilder = new CommandLineBuilder(root);
 		commandLineBuilder.AddMiddleware(consoleContext =>
 		{
@@ -281,29 +291,18 @@ public class App
 				// add in the services that need to rely on the CLI parsing having completed
 				services.AddSingleton(consoleContext);
 				services.AddSingleton(consoleContext.BindingContext);
+				services.AddSingleton(helpBuilder);
 				ConfigureServices(services);
 			});
 			// we can take advantage of a feature of the CLI tool to use their slightly jank DI system to inject our DI system. DI in DI.
 			consoleContext.BindingContext.AddService(_ => new AppServices { duck = provider });
-
 			var appContext = provider.GetRequiredService<IAppContext>();
 			appContext.Apply(consoleContext.BindingContext);
 		}, MiddlewareOrder.Configuration);
 		commandLineBuilder.UseDefaults();
 		commandLineBuilder.UseSuggestDirective();
 		commandLineBuilder.UseTypoCorrections();
-		commandLineBuilder.UseHelpBuilder(context =>
-		{
-			var builder = new HelpBuilder(LocalizationResources.Instance, 100);
-			builder.CustomizeLayout(c =>
-			{
-				var defaultLayout = HelpBuilder.Default.GetLayout().ToList();
-
-				defaultLayout.Add(PrintOutputHelp);
-				return defaultLayout;
-			});
-			return builder;
-		});
+		commandLineBuilder.UseHelpBuilder(context => helpBuilder);
 		commandLineBuilder.UseExceptionHandler((ex, context) =>
 		{
 
