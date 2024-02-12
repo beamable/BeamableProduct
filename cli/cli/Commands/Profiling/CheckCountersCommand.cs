@@ -13,6 +13,8 @@ public class CheckCountersCommandArgs : CommandArgs
 
 public class CheckCountersCommand : AtomicCommand<CheckCountersCommandArgs, CheckPerfCommandOutput>, IStandaloneCommand
 {
+	public override bool IsForInternalUse => true;
+
 	public CheckCountersCommand() : base("check-counters", "Read the results of a dotnet-counters json file and determine if there are errors")
 	{
 	}

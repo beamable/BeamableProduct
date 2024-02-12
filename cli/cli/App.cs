@@ -29,6 +29,7 @@ using System.CommandLine.Builder;
 using System.CommandLine.Help;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
+using System.Reflection;
 
 namespace cli;
 
@@ -266,6 +267,33 @@ public class App
 		{
 			CommandProvider.GetService(factory.Interface);
 		}
+
+		// sort the commands
+		var root = CommandProvider.GetService<RootCommand>();
+		var subCommandField = typeof(Command).GetField("_subcommands", BindingFlags.Instance | BindingFlags.NonPublic);
+		var subCommands = (List<Command>)subCommandField.GetValue(root);
+		subCommands.Sort((a, b) =>
+		{
+			if (a is not IAppCommand aCommand)
+			{
+				return 0;
+			}
+
+			if (b is not IAppCommand bCommand)
+			{
+				return 0;
+			}
+
+			// all internal commands go at the end
+			if (aCommand.IsForInternalUse != bCommand.IsForInternalUse)
+			{
+				return bCommand.IsForInternalUse ? -1 : 1;
+			}
+
+			// and all commands are sorted by their order
+			return bCommand.Order.CompareTo(aCommand.Order);
+
+		});
 	}
 
 
@@ -274,11 +302,31 @@ public class App
 		var root = CommandProvider.GetRequiredService<RootCommand>();
 
 		var helpBuilder = new HelpBuilder(LocalizationResources.Instance, 100);
+		
 		helpBuilder.CustomizeLayout(c =>
 		{
 			var defaultLayout = HelpBuilder.Default.GetLayout().ToList();
                
 			defaultLayout.Add(PrintOutputHelp);
+			
+			defaultLayout.Insert(0, (ctx) =>
+			{
+				if (ctx.Command is not IAppCommand appCommand)
+				{
+					return;
+				}
+
+				if (appCommand.IsForInternalUse)
+				{
+					ctx.Output.WriteLine("Internal Use Warning!!!");
+					ctx.Output.WriteLine("  This command was designed to be used as an internal command for the Beamable team. ");
+					ctx.Output.WriteLine("  You may use the command, but please understand the command was not specifically ");
+					ctx.Output.WriteLine("  designed to be used outside of the Beamable team. The command structure may change ");
+					ctx.Output.WriteLine("  in the future. Happy spelunking!");
+				}
+
+			});
+			
 			return defaultLayout;
 		});
 		
