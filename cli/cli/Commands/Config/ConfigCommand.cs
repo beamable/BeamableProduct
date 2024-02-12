@@ -3,10 +3,6 @@ using Newtonsoft.Json;
 
 namespace cli;
 
-public class ConfigCommandArgs : CommandArgs
-{
-}
-
 public class ConfigCommand : AtomicCommand<ConfigCommandArgs, ConfigCommandResult>
 {
 	public ConfigCommand() : base("config", "List the current beamable configuration")
@@ -33,9 +29,15 @@ public class ConfigCommand : AtomicCommand<ConfigCommandArgs, ConfigCommandResul
 	}
 }
 
+
 public class ConfigCommandResult
 {
 	public string host;
 	public string cid;
 	public string pid;
+}
+
+public class ConfigCommandArgs : CommandArgs
+{
+	
 }
