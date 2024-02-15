@@ -19,15 +19,6 @@ public static class AnsiConsoleSinkExtensions
 	{
 		var formatter = new MessageTemplateTextFormatter(outputTemplate);
 		return sinkConfiguration.Sink(new AnsiConsoleSink(formatter));
-		// if (sinkConfiguration == null)
-		// 	throw new ArgumentNullException(nameof (sinkConfiguration));
-		// if (outputTemplate == null)
-		// 	throw new ArgumentNullException(nameof (outputTemplate));
-		// ConsoleTheme theme1 = applyThemeToRedirectedOutput || !System.Console.IsOutputRedirected && !System.Console.IsErrorRedirected ? theme ?? (ConsoleTheme) SystemConsoleThemes.Literate : ConsoleTheme.None;
-		// if (syncRoot == null)
-		// 	syncRoot = ConsoleLoggerConfigurationExtensions.DefaultSyncRoot;
-		// OutputTemplateRenderer formatter = new OutputTemplateRenderer(theme1, outputTemplate, formatProvider);
-		// return sinkConfiguration.Sink((ILogEventSink) new ConsoleSink(theme1, (ITextFormatter) formatter, standardErrorFromLevel, syncRoot), restrictedToMinimumLevel, levelSwitch);
 	}
 }
 
