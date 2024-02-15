@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime;
 using System.Text.Json;
+using System.Threading.Channels;
 using System.Threading.RateLimiting;
 using UnityEngine;
 
@@ -32,6 +33,12 @@ namespace Beamable.Server
 		}
 	}
 
+	public class WriteItem
+	{
+		public string message;
+		public Stopwatch stopWatch;
+		public Promise promise;
+	}
 
 	public class EasyWebSocket : IConnection
 
@@ -62,6 +69,8 @@ namespace Beamable.Server
 
 
 		private long messageNumber = 0;
+		private Channel<WriteItem> _sendChannel;
+		private Task _sendMessageTask;
 
 
 		public WebSocketState State => _ws.State;
@@ -86,6 +95,38 @@ namespace Beamable.Server
 			_uri = new Uri(uri);
 
 			_cancellationToken = _cancellationTokenSource.Token;
+
+
+			_sendChannel = Channel.CreateUnbounded<WriteItem>(new UnboundedChannelOptions
+			{
+				SingleReader = true,
+				SingleWriter = false,
+				AllowSynchronousContinuations = false
+			});
+
+			_sendMessageTask = Task.Run(async () =>
+			{
+				while (await _sendChannel.Reader.WaitToReadAsync())
+				{
+					var count = 0;
+					while (_sendChannel.Reader.TryRead(out var item))
+					{
+						count++;
+						if (count > 10)
+						{
+							/*
+							 * I don't understand why this needs to be here,
+							 * but it is still the case that without it, the frames get confused.
+							 */
+							await Task.Delay(1);
+							count = 0;
+						}
+						await SendMessageAsync(item.message, item.stopWatch);
+						item.promise.CompleteSuccess();
+					}
+				}
+			});
+
 		}
 
 
@@ -160,9 +201,13 @@ namespace Beamable.Server
 		/// Send a message to the WebSocket server.
 		/// </summary>
 		/// <param name="message">The message to send</param>
-		public Task SendMessage(string message, Stopwatch sw = null)
+		public async Task SendMessage(string message, Stopwatch sw = null)
 		{
-			return SendMessageAsync(message, sw);
+			// await _sendChannel.Writer.WaitToWriteAsync();
+			var item = new WriteItem { message = message, stopWatch = sw , promise = new Promise()};
+			await _sendChannel.Writer.WriteAsync(item);
+			
+			await item.promise;
 		}
 
 
@@ -172,6 +217,8 @@ namespace Beamable.Server
 		public async Task Close()
 		{
 			await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "shutting down", CancellationToken.None);
+			_sendChannel.Writer.Complete();
+			await _sendMessageTask;
 		}
 
 
@@ -279,6 +326,7 @@ namespace Beamable.Server
 
 					MemoryStream stream = new MemoryStream();
 					cpu.StartSample();
+					var byteCount = 0;
 					do
 					{
 						var segment = new ArraySegment<byte>(readSegment.Array);
@@ -294,6 +342,7 @@ namespace Beamable.Server
 						}
 						else
 						{
+							byteCount += result.Count;
 							await stream.WriteAsync(readSegment.Array, 0, result.Count);
 						}
 					} while (!result.EndOfMessage);
@@ -305,10 +354,22 @@ namespace Beamable.Server
 					}
 
 					stream.Seek(0, SeekOrigin.Begin);
-					var document = await JsonDocument.ParseAsync(stream);
+					var s = new StreamReader(stream);
+					
+					var data = await s.ReadToEndAsync();
+					stream.Seek(0, SeekOrigin.Begin);
+
+					JsonDocument document = null;
+					if (byteCount > 0)
+					{
+						document = await JsonDocument.ParseAsync(stream);
+					}
 					cpu.EndSample();
 
-					EmitMessage(document, sw);
+					if (document != null)
+					{
+						EmitMessage(document, sw);
+					}
 				}
 			}
 
