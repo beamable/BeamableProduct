@@ -174,17 +174,42 @@ public abstract class CommandGroup : CommandGroup<CommandGroupArgs>
 	}
 }
 
-public abstract partial class AppCommand<TArgs> : Command, IResultProvider
+public interface IAppCommand
+{
+	bool IsForInternalUse { get; }
+	int Order { get; }
+
+	public static string GetModifiedDescription(bool isForInternalUse, string description)
+	{
+		if (isForInternalUse)
+		{
+			return $"[INTERNAL] {description}";
+		}
+
+		return description;
+	}
+}
+
+public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IAppCommand
 	where TArgs : CommandArgs
 {
 	private List<Action<BindingContext, TArgs>> _bindingActions = new List<Action<BindingContext, TArgs>>();
+	private string _description;
 
+	public virtual bool IsForInternalUse => false;
+	public virtual int Order => 100;
+	
+	
 	IDataReporterService IResultProvider.Reporter { get; set; }
 	public IDependencyProvider CommandProvider { get; set; }
 
-	protected AppCommand(string name, string description = null) : base(name, description)
+	protected AppCommand(string name, string description = null) : base(name)
 	{
+		_description = description;
 	}
+
+	public override string Description { get => IAppCommand.GetModifiedDescription(IsForInternalUse, _description); set => _description = value; }
+
 
 	/// <summary>
 	/// Add an argument to the current command

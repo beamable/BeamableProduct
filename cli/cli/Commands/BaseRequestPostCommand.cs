@@ -5,7 +5,12 @@ namespace cli;
 
 public class BaseRequestPostCommand : BaseRequestCommand
 {
-	public BaseRequestPostCommand() : base("post", "Base POST request command") { }
+	public override bool IsForInternalUse => true;
+	public override int Order => 200;
+
+	public BaseRequestPostCommand() : base("post", "Base POST request command")
+	{
+	}
 	protected override Method Method => Method.POST;
 
 }

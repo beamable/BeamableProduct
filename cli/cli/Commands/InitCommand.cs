@@ -23,7 +23,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 	private IAppContext _ctx;
 	private ConfigService _configService;
 	private bool _retry = false;
-
+	
 	public InitCommand(LoginCommand loginCommand)
 		: base("init", "Initialize a new Beamable project in the current directory")
 	{

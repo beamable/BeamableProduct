@@ -5,7 +5,12 @@ namespace cli;
 
 public class BaseRequestDeleteCommand : BaseRequestCommand
 {
-	public BaseRequestDeleteCommand() : base("delete", "Base DELETE request command") { }
+	public override bool IsForInternalUse => true;
+	public override int Order => 200;
+
+	public BaseRequestDeleteCommand() : base("delete", "Base DELETE request command")
+	{
+	}
 	protected override Method Method => Method.DELETE;
 
 }

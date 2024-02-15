@@ -19,6 +19,8 @@ public class CliInterfaceGeneratorCommandArgs : CommandArgs
 }
 public class CliInterfaceGeneratorCommand : AppCommand<CliInterfaceGeneratorCommandArgs>, IStandaloneCommand
 {
+	public override bool IsForInternalUse => true;
+
 	private readonly IDependencyProviderScope _commandScope;
 
 	public CliInterfaceGeneratorCommand(IDependencyProviderScope commandScope) : base("generate-interface", "Generates C# code for interfacing with the CLI from Unity")
