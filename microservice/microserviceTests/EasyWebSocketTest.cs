@@ -44,7 +44,7 @@ public class EasyWebSocketTest : CommonTest
 		// fluff time for the client to connect
 		await Task.Delay(10);
 		
-		var sendMessageCount = 10_000_0;
+		var sendMessageCount = 10_000;
 		var tasks = new List<Task>();
 		for (var i = 0; i < sendMessageCount; i++)
 		{

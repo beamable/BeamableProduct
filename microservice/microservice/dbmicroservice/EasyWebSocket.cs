@@ -203,10 +203,8 @@ namespace Beamable.Server
 		/// <param name="message">The message to send</param>
 		public async Task SendMessage(string message, Stopwatch sw = null)
 		{
-			// await _sendChannel.Writer.WaitToWriteAsync();
 			var item = new WriteItem { message = message, stopWatch = sw , promise = new Promise()};
 			await _sendChannel.Writer.WriteAsync(item);
-			
 			await item.promise;
 		}
 
