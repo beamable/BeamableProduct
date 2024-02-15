@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Commands will use `--raw` output automatically when piped to another process
 - Root commands with no action will automatically print `--help`
 - `docs`, `profile`, `generate-interface` and http commands are marked as `[INTERNAL]`
+- Commands automatically save the latest log to the temp path.
 
 ### Fixed
 
