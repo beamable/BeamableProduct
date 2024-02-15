@@ -30,6 +30,8 @@ public enum GenerateSdkConflictResolutionStrategy
 
 public class GenerateSdkCommand : AppCommand<GenerateSdkCommandArgs>, IStandaloneCommand
 {
+	public override bool IsForInternalUse => true;
+
 	private SwaggerService _swagger;
 
 	public GenerateSdkCommand() : base("generate", "Generate Beamable client source code from open API documents")

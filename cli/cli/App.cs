@@ -18,17 +18,20 @@ using cli.Unreal;
 using cli.Utils;
 using cli.Version;
 using Errata;
+using Microsoft.CodeAnalysis.Sarif;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Spectre.Console;
+using Spectre.Console.Rendering;
 using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Help;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
+using System.Reflection;
 
 namespace cli;
 
@@ -48,20 +51,57 @@ public class App
 
 	public bool IsBuilt => CommandProvider != null;
 
-	private static void ConfigureLogging(Func<LoggerConfiguration, ILogger> configureLogger = null)
+	private static LogConfigData ConfigureLogging(Func<LoggerConfiguration, ILogger> configureLogger = null)
 	{
 		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
 		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
 
+		var tempFile = Path.Combine(Path.GetTempPath(), "beamCliLog.txt");
+		var shouldUseTempFile = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_CLI_NO_FILE_LOG"));
+		try
+		{
+			if (shouldUseTempFile)
+			{
+				File.Delete(tempFile);
+			}
+		}
+		catch
+		{
+			// if we cannot delete the temp file, then the worst outcome is that we are appending new data to it.
+		}
+
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
 		configureLogger ??= config =>
-			config.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss:ffff} {Level:u3}] {Message:lj}{NewLine}{Exception}", standardErrorFromLevel: LogEventLevel.Verbose)
-				.MinimumLevel.ControlledBy(LogLevel)
-				.CreateLogger();
+		{
+			var baseConfig = config.MinimumLevel.Verbose()
+				.WriteTo.Logger(subConfig =>
+					subConfig
+						.WriteTo.Console(
+							outputTemplate: "[{Timestamp:HH:mm:ss:ffff} {Level:u3}] {Message:lj}{NewLine}{Exception}",
+							standardErrorFromLevel: LogEventLevel.Verbose)
+						.MinimumLevel.ControlledBy(LogLevel)
+				);
+
+			if (shouldUseTempFile)
+			{
+				baseConfig.WriteTo.File(tempFile, LogEventLevel.Verbose);
+			}
+
+			return baseConfig.CreateLogger();
+		};
+			
+		
+		
 		Log.Logger = configureLogger(new LoggerConfiguration());
 
 		BeamableLogProvider.Provider = new CliSerilogProvider();
 		CliSerilogProvider.LogContext.Value = Log.Logger;
+
+		return new LogConfigData
+		{
+			shouldUseTempFile = shouldUseTempFile,
+			logFilePath = tempFile
+		};
 	}
 
 	/// <summary>
@@ -112,8 +152,9 @@ public class App
 		if (IsBuilt)
 			throw new InvalidOperationException("The app has already been built, and cannot be configured anymore");
 
-		ConfigureLogging(configureLogger);
-		
+		var logConfig = ConfigureLogging(configureLogger);
+
+		Commands.AddSingleton(logConfig);
 		Commands.AddSingleton(new ArgValidator<ServiceName>(arg => new ServiceName(arg)));
 
 		// add global options
@@ -266,6 +307,33 @@ public class App
 		{
 			CommandProvider.GetService(factory.Interface);
 		}
+
+		// sort the commands
+		var root = CommandProvider.GetService<RootCommand>();
+		var subCommandField = typeof(Command).GetField("_subcommands", BindingFlags.Instance | BindingFlags.NonPublic);
+		var subCommands = (List<Command>)subCommandField.GetValue(root);
+		subCommands.Sort((a, b) =>
+		{
+			if (a is not IAppCommand aCommand)
+			{
+				return 0;
+			}
+
+			if (b is not IAppCommand bCommand)
+			{
+				return 0;
+			}
+
+			// all internal commands go at the end
+			if (aCommand.IsForInternalUse != bCommand.IsForInternalUse)
+			{
+				return bCommand.IsForInternalUse ? -1 : 1;
+			}
+
+			// and all commands are sorted by their order
+			return bCommand.Order.CompareTo(aCommand.Order);
+
+		});
 	}
 
 
@@ -274,11 +342,31 @@ public class App
 		var root = CommandProvider.GetRequiredService<RootCommand>();
 
 		var helpBuilder = new HelpBuilder(LocalizationResources.Instance, 100);
+		
 		helpBuilder.CustomizeLayout(c =>
 		{
 			var defaultLayout = HelpBuilder.Default.GetLayout().ToList();
                
 			defaultLayout.Add(PrintOutputHelp);
+			
+			defaultLayout.Insert(0, (ctx) =>
+			{
+				if (ctx.Command is not IAppCommand appCommand)
+				{
+					return;
+				}
+
+				if (appCommand.IsForInternalUse)
+				{
+					ctx.Output.WriteLine("Internal Use Warning!!!");
+					ctx.Output.WriteLine("  This command was designed to be used as an internal command for the Beamable team. ");
+					ctx.Output.WriteLine("  You may use the command, but please understand the command was not specifically ");
+					ctx.Output.WriteLine("  designed to be used outside of the Beamable team. The command structure may change ");
+					ctx.Output.WriteLine("  in the future. Happy spelunking!");
+				}
+
+			});
+			
 			return defaultLayout;
 		});
 		
@@ -352,6 +440,14 @@ public class App
 				var reporter = provider.GetService<IDataReporterService>();
 
 				reporter.Exception(ex, context.ExitCode, context.BindingContext.ParseResult.Diagram());
+			}
+
+			var logConfigData = CommandProvider.GetService<LogConfigData>();
+			if (logConfigData.shouldUseTempFile)
+			{
+				Log.CloseAndFlush();
+				File.AppendAllText(logConfigData.logFilePath, ex.ToString());
+				Console.Error.WriteLine("Logs at\n  " + logConfigData.logFilePath);
 			}
 		});
 		return commandLineBuilder.Build();

@@ -12,6 +12,7 @@ public class AccountMeCommandArgs : CommandArgs
 
 public class AccountMeCommand : AtomicCommand<AccountMeCommandArgs, User>
 {
+	public override int Order => 200;
 	public AccountMeCommand() : base("me", "Fetch the current account") { }
 
 	public override void Configure()

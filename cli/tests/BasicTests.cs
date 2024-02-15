@@ -47,11 +47,12 @@ public class Tests
 			var logPrefix = isOption ?
 				$"{optionName} argument for command {command.GetType().Name}" :
 				$"{commandName} command";
+			logPrefix = $"command-type=[{command.GetType().Name}] " + logPrefix;
 			if (string.IsNullOrWhiteSpace(description))
 			{
 				Assert.Fail($"{logPrefix} description should be provided.");
 			}
-			if (!char.IsUpper(description[0]))
+			if (!char.IsUpper(description[0]) && description[0] != '[')
 			{
 				Assert.Fail($"{logPrefix} description should start with upper letter.");
 			}

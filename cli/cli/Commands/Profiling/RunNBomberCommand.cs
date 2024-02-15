@@ -25,6 +25,8 @@ public class RunNBomberCommandArgs : CommandArgs
 
 public class RunNBomberCommand : AppCommand<RunNBomberCommandArgs>
 {
+	public override bool IsForInternalUse => true;
+
 	public RunNBomberCommand() : base("run-nbomber", "Runs an n-bomber stress test for a given microservice method")
 	{
 	}

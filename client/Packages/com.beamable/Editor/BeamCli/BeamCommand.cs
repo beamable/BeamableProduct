@@ -329,6 +329,9 @@ namespace Beamable.Editor.BeamCli
 				_process.StartInfo.RedirectStandardError = CaptureStandardBuffers;
 				_process.StartInfo.CreateNoWindow = true;
 				_process.StartInfo.UseShellExecute = false;
+				
+				// prevent the beam CLI from saving any log information to file.
+				_process.StartInfo.Environment.Add("BEAM_CLI_NO_FILE_LOG", "1");
 
 				_status = new TaskCompletionSource<int>();
 				_standardOutComplete = new TaskCompletionSource<int>();

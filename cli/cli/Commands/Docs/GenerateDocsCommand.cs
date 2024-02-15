@@ -1,4 +1,5 @@
 using cli.Services;
+using cli.Utils;
 using Serilog;
 using System.CommandLine;
 
@@ -13,8 +14,10 @@ public class GenerateDocsCommandArgs : CommandArgs
 }
 
 
+
 public class GenerateDocsCommand : AppCommand<GenerateDocsCommandArgs>, IStandaloneCommand
 {
+	public override bool IsForInternalUse => true;
 
 	public GenerateDocsCommand() : base("docs", "Generate CLI documentation")
 	{

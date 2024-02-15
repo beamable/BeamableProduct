@@ -5,6 +5,11 @@ namespace cli;
 
 public class BaseRequestGetCommand : BaseRequestCommand
 {
-	public BaseRequestGetCommand() : base("get", "Base GET request command") { }
+	public override bool IsForInternalUse => true;
+	public override int Order => 200;
+
+	public BaseRequestGetCommand() : base("get", "Base GET request command")
+	{
+	}
 	protected override Method Method => Method.GET;
 }

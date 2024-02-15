@@ -5,6 +5,11 @@ namespace cli;
 
 public class BaseRequestPutCommand : BaseRequestCommand
 {
-	public BaseRequestPutCommand() : base("put", "Base PUT request command") { }
+	public override bool IsForInternalUse => true;
+	public override int Order => 200;
+
+	public BaseRequestPutCommand() : base("put", "Base PUT request command")
+	{
+	}
 	protected override Method Method => Method.PUT;
 }
