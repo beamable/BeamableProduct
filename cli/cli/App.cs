@@ -76,9 +76,7 @@ public class App
 			var baseConfig = config.MinimumLevel.Verbose()
 				.WriteTo.Logger(subConfig =>
 					subConfig
-						.WriteTo.Console(
-							outputTemplate: "[{Timestamp:HH:mm:ss:ffff} {Level:u3}] {Message:lj}{NewLine}{Exception}",
-							standardErrorFromLevel: LogEventLevel.Verbose)
+						.WriteTo.BeamAnsi("[{Timestamp:HH:mm:ss:ffff} {Level:u3}] {Message:lj}{NewLine}{Exception}")
 						.MinimumLevel.ControlledBy(LogLevel)
 				);
 

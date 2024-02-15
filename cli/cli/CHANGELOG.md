@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `project add` Dockerfile path fixes.
 - `project new-storage` path fixes.
+- Progress bars and logs do not appear side by side.
 
 ## [1.19.12]
 
