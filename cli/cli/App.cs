@@ -89,9 +89,9 @@ public class App
 
 			return baseConfig.CreateLogger();
 		};
-			
-		
-		
+
+
+
 		Log.Logger = configureLogger(new LoggerConfiguration());
 
 		BeamableLogProvider.Provider = new CliSerilogProvider();
@@ -342,13 +342,13 @@ public class App
 		var root = CommandProvider.GetRequiredService<RootCommand>();
 
 		var helpBuilder = new HelpBuilder(LocalizationResources.Instance, 100);
-		
+
 		helpBuilder.CustomizeLayout(c =>
 		{
 			var defaultLayout = HelpBuilder.Default.GetLayout().ToList();
-               
+
 			defaultLayout.Add(PrintOutputHelp);
-			
+
 			defaultLayout.Insert(0, (ctx) =>
 			{
 				if (ctx.Command is not IAppCommand appCommand)
@@ -366,10 +366,10 @@ public class App
 				}
 
 			});
-			
+
 			return defaultLayout;
 		});
-		
+
 		var commandLineBuilder = new CommandLineBuilder(root);
 		commandLineBuilder.AddMiddleware(consoleContext =>
 		{
