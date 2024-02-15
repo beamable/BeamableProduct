@@ -16,6 +16,7 @@ namespace microserviceTests;
 public class EasyWebSocketTest : CommonTest
 {
 	[Test]
+	[NonParallelizable]
 	public async Task TestSendingLotsOfStuff()
 	{
 		var port = 8787;
