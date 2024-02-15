@@ -352,11 +352,7 @@ namespace Beamable.Server
 					}
 
 					stream.Seek(0, SeekOrigin.Begin);
-					var s = new StreamReader(stream);
 					
-					var data = await s.ReadToEndAsync();
-					stream.Seek(0, SeekOrigin.Begin);
-
 					JsonDocument document = null;
 					if (byteCount > 0)
 					{
