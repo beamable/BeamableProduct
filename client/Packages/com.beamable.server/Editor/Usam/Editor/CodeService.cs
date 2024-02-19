@@ -237,7 +237,7 @@ namespace Beamable.Server.Editor.Usam
 		/// </summary>
 		/// <param name="serviceName"> The name of the Service to be created.</param>
 		/// <param name="serviceType"> The type of the Service to be created.</param>
-		public async Promise CreateService(string serviceName, ServiceType serviceType = ServiceType.MicroService)
+		public async Promise CreateService(string serviceName, ServiceType serviceType, List<IBeamoServiceDefinition> additionalReferences)
 		{
 			LogVerbose($"Starting creation of service {serviceName}");
 
@@ -257,7 +257,6 @@ namespace Beamable.Server.Editor.Usam
 				{
 					var args = new ProjectNewArgs
 					{
-						solutionName = service,
 						quiet = true,
 						name = service,
 						output = outputPath,
@@ -276,12 +275,23 @@ namespace Beamable.Server.Editor.Usam
 				}
 				break;
 				case ServiceType.StorageObject:
+
+					string[] deps = new string[additionalReferences.Count];
+					for (int i = 0; i < additionalReferences.Count; i++)
+					{
+						deps[i] = additionalReferences[i].BeamoId;
+					}
+					
 					var storageArgs = new ProjectNewStorageArgs
 					{
-						name = service
+						name = service,
+						quiet = true,
+						linkTo = deps,
+						outputPath = outputPath
 					};
 					var storageCommand = _cli.ProjectNewStorage(storageArgs);
 					await storageCommand.Run();
+					
 					signpost = new BeamServiceSignpost()
 					{
 						name = service,

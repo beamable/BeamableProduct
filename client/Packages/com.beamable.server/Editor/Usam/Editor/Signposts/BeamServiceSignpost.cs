@@ -20,7 +20,14 @@ namespace Beamable.Server.Editor.Usam
 		public void AfterDeserialize(string filePath)
 		{
 			var directoryPath = Path.GetDirectoryName(filePath);
-			assetProjectPath = Path.Combine(directoryPath, assetProjectPath);
+			if (directoryPath == null)
+			{
+				Debug.LogError("Failed to find file path.");
+				return;
+			}
+
+			var path = Path.Combine(directoryPath, "StandaloneMicroservices~/");
+				assetProjectPath = Path.Combine(path, assetProjectPath);
 		}
 	}
 }
