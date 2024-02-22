@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime;
 using System.Text.Json;
+using System.Threading.Channels;
 using System.Threading.RateLimiting;
 using UnityEngine;
 
@@ -32,6 +33,12 @@ namespace Beamable.Server
 		}
 	}
 
+	public class WriteItem
+	{
+		public string message;
+		public Stopwatch stopWatch;
+		public Promise promise;
+	}
 
 	public class EasyWebSocket : IConnection
 
@@ -62,6 +69,8 @@ namespace Beamable.Server
 
 
 		private long messageNumber = 0;
+		private Channel<WriteItem> _sendChannel;
+		private Task _sendMessageTask;
 
 
 		public WebSocketState State => _ws.State;
@@ -86,6 +95,70 @@ namespace Beamable.Server
 			_uri = new Uri(uri);
 
 			_cancellationToken = _cancellationTokenSource.Token;
+
+
+			_sendChannel = Channel.CreateUnbounded<WriteItem>(new UnboundedChannelOptions
+			{
+				SingleReader = true,
+				SingleWriter = false,
+				AllowSynchronousContinuations = false
+			});
+
+			_sendMessageTask = Task.Run(async () =>
+			{
+				while (await _sendChannel.Reader.WaitToReadAsync())
+				{
+					var count = 0;
+					while (_sendChannel.Reader.TryRead(out var item))
+					{
+						count++;
+						if (count > 10)
+						{
+							/*
+							 * I don't understand why this needs to be here,
+							 * but it is still the case that without it, the frames get confused.
+							 * The count-by-10 thing is just to wait "sometimes", not all the time.
+							 */
+							await Task.Delay(1);
+							count = 0;
+						}
+
+						if (_ws.State != WebSocketState.Open)
+						{
+							throw new Exception($"Connection is not open. state=[{_ws.State}]");
+						}
+
+						var messageBuffer = Encoding.UTF8.GetBytes(item.message);
+
+						var messagesCount = (int)Math.Ceiling((double)messageBuffer.Length / SendChunkSize);
+
+
+						for (var i = 0; i < messagesCount; i++)
+						{
+							var offset = (SendChunkSize * i);
+							var count1 = SendChunkSize;
+							var lastMessage = ((i + 1) == messagesCount);
+
+							if ((count1 * (i + 1)) > messageBuffer.Length)
+							{
+								count1 = messageBuffer.Length - offset;
+							}
+
+							await _ws.SendAsync(new ArraySegment<byte>(messageBuffer, offset, count1), WebSocketMessageType.Text,
+								lastMessage, _cancellationToken);
+						}
+
+						if (item.stopWatch != null)
+						{
+							item.stopWatch.Stop();
+							// Log.Debug($"client message time=[{sw.ElapsedMilliseconds}]");
+						}
+
+						item.promise.CompleteSuccess();
+					}
+				}
+			});
+
 		}
 
 
@@ -160,9 +233,11 @@ namespace Beamable.Server
 		/// Send a message to the WebSocket server.
 		/// </summary>
 		/// <param name="message">The message to send</param>
-		public Task SendMessage(string message, Stopwatch sw = null)
+		public async Task SendMessage(string message, Stopwatch sw = null)
 		{
-			return SendMessageAsync(message, sw);
+			var item = new WriteItem { message = message, stopWatch = sw , promise = new Promise()};
+			await _sendChannel.Writer.WriteAsync(item);
+			await item.promise;
 		}
 
 
@@ -171,42 +246,11 @@ namespace Beamable.Server
 		/// </summary>
 		public async Task Close()
 		{
+			_sendChannel.Writer.Complete(); // tell the channel, "no more!"
+			await _sendMessageTask; // wait for all sending messages to send
+			
+			// and now, close the websocket 
 			await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "shutting down", CancellationToken.None);
-		}
-
-
-		private async Task SendMessageAsync(string message, Stopwatch sw)
-		{
-			if (_ws.State != WebSocketState.Open)
-			{
-				throw new Exception($"Connection is not open. state=[{_ws.State}]");
-			}
-
-			var messageBuffer = Encoding.UTF8.GetBytes(message);
-
-			var messagesCount = (int)Math.Ceiling((double)messageBuffer.Length / SendChunkSize);
-
-
-			for (var i = 0; i < messagesCount; i++)
-			{
-				var offset = (SendChunkSize * i);
-				var count = SendChunkSize;
-				var lastMessage = ((i + 1) == messagesCount);
-
-				if ((count * (i + 1)) > messageBuffer.Length)
-				{
-					count = messageBuffer.Length - offset;
-				}
-
-				await _ws.SendAsync(new ArraySegment<byte>(messageBuffer, offset, count), WebSocketMessageType.Text,
-					lastMessage, _cancellationToken);
-			}
-
-			if (sw != null)
-			{
-				sw.Stop();
-				// Log.Debug($"client message time=[{sw.ElapsedMilliseconds}]");
-			}
 		}
 
 
@@ -279,6 +323,7 @@ namespace Beamable.Server
 
 					MemoryStream stream = new MemoryStream();
 					cpu.StartSample();
+					var byteCount = 0;
 					do
 					{
 						var segment = new ArraySegment<byte>(readSegment.Array);
@@ -294,6 +339,7 @@ namespace Beamable.Server
 						}
 						else
 						{
+							byteCount += result.Count;
 							await stream.WriteAsync(readSegment.Array, 0, result.Count);
 						}
 					} while (!result.EndOfMessage);
@@ -305,10 +351,18 @@ namespace Beamable.Server
 					}
 
 					stream.Seek(0, SeekOrigin.Begin);
-					var document = await JsonDocument.ParseAsync(stream);
+					
+					JsonDocument document = null;
+					if (byteCount > 0)
+					{
+						document = await JsonDocument.ParseAsync(stream);
+					}
 					cpu.EndSample();
 
-					EmitMessage(document, sw);
+					if (document != null)
+					{
+						EmitMessage(document, sw);
+					}
 				}
 			}
 

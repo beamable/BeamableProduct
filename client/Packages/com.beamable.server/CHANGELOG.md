@@ -13,6 +13,7 @@ no changes
 
 ### Fixed
 - Microservices with `.dll` references will match based on filename, instead of first matching suffix. This fixes a common `Newtonsoft.Json` collision between Unity.Plastic and Unity.Newtonsoft.
+- Microservices have improved thread-safety when sending messages to Beamable.
 
 ### Added
 
