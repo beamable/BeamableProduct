@@ -193,6 +193,8 @@ namespace Beamable.Editor.BeamCli
 			return this;
 		}
 
+		public string GetMessageBuffer() => messageBuffer;
+		
 		private void ProcessStandardOut(string message)
 		{
 			if (message == null) return;

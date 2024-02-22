@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using Beamable.Editor.BeamCli.Commands;
+using UnityEngine;
 
 namespace Beamable.Editor.BeamCli
 {
@@ -24,7 +25,26 @@ namespace Beamable.Editor.BeamCli
 			try
 			{
 				await comm.Run();
+				
+#if BEAMABLE_DEVELOPER
+				// if we are developers, then we should always use the latest beam version
 				return true;
+#else
+				// but if we are not developers, then the global version must match the SDK version.
+				var buffer = comm.GetMessageBuffer();
+				if (!PackageVersion.TryFromSemanticVersionString(buffer, out var version))
+				{
+					return false;
+				}
+				
+				if (BeamableEnvironment.SdkVersion != version)
+				{
+					return false;
+				}
+				
+				Debug.Log("Using CLI");
+				return true;
+#endif
 			}
 			catch
 			{
