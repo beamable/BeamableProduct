@@ -31,7 +31,7 @@ and then rebuild your Unity microservice code.
 
 In case you want to debug changes made in this project inside a microservice, you can run (inside the `client/` folder):
 ```
-./set-pacjages.sh
+./set-packages.sh
 ```
 
 This will create a local feed source for the beamable nuget packages, so you can change the version of the package
@@ -54,3 +54,9 @@ package, please reference the projects directly in your `csproj` files by adding
 
 These are assuming your microservice lives in the default USAM folder, make changes to these paths according to
 the actual location of your microservice.
+
+# Contributing 
+This project has the same [contribution policy](https://github.com/beamable/BeamableProduct/tree/main/README.md#Contributing) as the main repository.
+
+# License 
+This project has the same [license policy](https://github.com/beamable/BeamableProduct/tree/main/README.md#License) as the main repository.
