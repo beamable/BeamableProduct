@@ -73,13 +73,28 @@ namespace Beamable.Editor.Content
 			var buttonRect = new Rect(position.x + indent, position.y + 20, position.width - indent * 2, 20);
 
 			_schedule = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property) as Schedule;
-			_schedule.activeFrom = DateTime.UtcNow.ToString(DateUtility.ISO_FORMAT);
+			if (string.IsNullOrWhiteSpace(_schedule.activeFrom))
+			{
+				_schedule.activeFrom = DateTime.UtcNow.ToString(DateUtility.ISO_FORMAT);
+			}
 
 			var requestEdit = GUI.Button(buttonRect, "Edit Schedule");
 
 			var nextY = buttonRect.y + 20;
 			buttonRect = new Rect(buttonRect.x, nextY, buttonRect.width, 20);
 			nextY = buttonRect.y + 20;
+
+			// set the cron human readable strings if they aren't set.
+			foreach (var definition in _schedule.definitions)
+			{
+				if (!string.IsNullOrEmpty(definition.cronRawFormat))
+				{
+					continue;
+				}
+
+				definition.cronRawFormat = ExpressionDescriptor.ScheduleDefinitionToCron(definition);
+				definition.cronHumanFormat = ExpressionDescriptor.GetDescription(definition.cronRawFormat, out _);
+			}
 
 			for (var index = 0; index < _schedule.definitions.Count; index++)
 			{

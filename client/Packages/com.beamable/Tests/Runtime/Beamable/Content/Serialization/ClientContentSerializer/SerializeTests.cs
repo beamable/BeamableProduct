@@ -30,15 +30,15 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
-      ""x"": { ""data"": 3 },
       ""b"": { ""data"": true },
-      ""s"": { ""data"": ""test"" },
-      ""f"": { ""data"": 3.2 },
-      ""d"": { ""data"": 3.4 },
-      ""l"": { ""data"": 101 },
-      ""u"": { ""data"": 7 },
+      ""by"": { ""data"": 2 },
       ""c"": { ""data"": 35 },
-      ""by"": { ""data"": 2 }
+      ""d"": { ""data"": 3.4 },
+      ""f"": { ""data"": 3.2 },
+      ""l"": { ""data"": 101 },
+      ""s"": { ""data"": ""test"" },
+      ""u"": { ""data"": 7 },
+      ""x"": { ""data"": 3 }
    }
 }".Replace("\r\n", "").Replace("\n", "").Replace(" ", "");
 
@@ -70,17 +70,17 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
-      ""y"": { ""data"": 9 },
-      ""bb"": { ""data"": true },
-      ""x"": { ""data"": 3 },
       ""b"": { ""data"": true },
-      ""s"": { ""data"": ""test"" },
-      ""f"": { ""data"": 3.2 },
-      ""d"": { ""data"": 3.4 },
-      ""l"": { ""data"": 101 },
-      ""u"": { ""data"": 7 },
+      ""bb"": { ""data"": true },
+      ""by"": { ""data"": 2 },
       ""c"": { ""data"": 35 },
-      ""by"": { ""data"": 2 }
+      ""d"": { ""data"": 3.4 },
+      ""f"": { ""data"": 3.2 },
+      ""l"": { ""data"": 101 },
+      ""s"": { ""data"": ""test"" },
+      ""u"": { ""data"": 7 },
+      ""x"": { ""data"": 3 },
+      ""y"": { ""data"": 9 }
    }
 }".Replace("\r\n", "").Replace("\n", "").Replace(" ", "");
 
@@ -122,8 +122,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
-      ""y"": { ""data"": 2 },
-      ""x"": { ""data"": 3 }
+      ""x"": { ""data"": 3 },
+      ""y"": { ""data"": 2 }
    }
 }".Replace("\r\n", "").Replace("\n", "").Replace(" ", "");
 
@@ -154,15 +154,15 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    ""id"": ""test.nothing"",
    ""version"": ""123"",
    ""properties"": {
-      ""x"": { ""data"": 3 },
       ""b"": { ""data"": true },
-      ""s"": { ""data"": ""test"" },
-      ""f"": { ""data"": 3.2 },
-      ""d"": { ""data"": 3.4 },
-      ""l"": { ""data"": 101 },
-      ""u"": { ""data"": 7 },
+      ""by"": { ""data"": 2 },
       ""c"": { ""data"": 35 },
-      ""by"": { ""data"": 2 }
+      ""d"": { ""data"": 3.4 },
+      ""f"": { ""data"": 3.2 },
+      ""l"": { ""data"": 101 },
+      ""s"": { ""data"": ""test"" },
+      ""u"": { ""data"": 7 },
+      ""x"": { ""data"": 3 }
    }
 }".Replace("\r\n", "").Replace("\n", "").Replace(" ", "");
 
@@ -196,15 +196,15 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    ""version"": """",
    ""properties"": {
       ""sub"": { ""data"": {
-         ""x"":  3,
          ""b"":  true,
-         ""s"":  ""test"",
-         ""f"":  3.2,
-         ""d"":  3.4,
-         ""l"":  101,
-         ""u"": 7,
+         ""by"": 2,
          ""c"": 35,
-         ""by"": 2
+         ""d"":  3.4,
+         ""f"":  3.2,
+         ""l"":  101,
+         ""s"":  ""test"",
+         ""u"": 7,
+         ""x"":  3
       } }
    }
 }".Replace("\r\n", "").Replace("\n", "").Replace(" ", "");
@@ -332,10 +332,10 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    ""properties"": {
       ""color"": {
          ""data"": {
-            ""r"":1,
-            ""g"":0,
+            ""a"":1,
             ""b"":0,
-            ""a"":1
+            ""g"":0,
+            ""r"":1
          }
       }
    }
@@ -361,10 +361,10 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    ""properties"": {
       ""Color"": {
          ""data"": {
-            ""r"":1,
-            ""g"":0,
+            ""a"":1,
             ""b"":0,
-            ""a"":1
+            ""g"":0,
+            ""r"":1
          }
       }
    }
@@ -716,14 +716,15 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    ""id"":null,
    ""version"":"""",
    ""properties"":{
-   ""value"":{
-      ""data"":1
-      },
          ""nested"":{
             ""data"":{
                ""value"":1
             }
-         }
+         },
+   ""value"":{
+      ""data"":1
+      }
+
       }
    }".Replace("\r\n", "").Replace("\n", "").Replace(" ", "");
 			var json = s.Serialize(obj).Replace("\r\n", "").Replace("\n", "").Replace(" ", "");
@@ -814,15 +815,15 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    ""version"": """",
    ""properties"": {
       ""sub"": { ""data"": {
-         ""x"":  0,
          ""b"":  false,
-         ""s"":  null,
-         ""f"":  0,
-         ""d"":  0,
-         ""l"":  0,
-         ""u"": 0,
+         ""by"": 0,
          ""c"": 0,
-         ""by"": 0
+         ""d"":  0,
+         ""f"":  0,
+         ""l"":  0,
+         ""s"":  null,
+         ""u"": 0,
+         ""x"":  0
       } }
    }
 }".Replace("\r\n", "").Replace("\n", "").Replace(" ", "");

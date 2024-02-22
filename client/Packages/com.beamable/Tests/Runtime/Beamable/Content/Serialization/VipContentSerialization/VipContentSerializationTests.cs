@@ -27,7 +27,7 @@ namespace Beamable.Tests.Content.Serialization.VipContentSerialization
 			};
 			var json = ClientContentSerializer.SerializeContent(vip);
 
-			var expected = "{\"id\":\"vip.\",\"version\":\"\",\"properties\":{\"currency\":{\"data\":\"currency.gems\"},\"tiers\":{\"data\":[{\"name\":\"test\",\"qualifyThreshold\":1,\"disqualifyThreshold\":1,\"multipliers\":[]}]}}}";
+			var expected = "{\"id\":\"vip.\",\"version\":\"\",\"properties\":{\"currency\":{\"data\":\"currency.gems\"},\"tiers\":{\"data\":[{\"disqualifyThreshold\":1,\"multipliers\":[],\"name\":\"test\",\"qualifyThreshold\":1}]}}}";
 			Assert.AreEqual(expected, json);
 		}
 	}

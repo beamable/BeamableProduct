@@ -66,7 +66,7 @@ namespace Beamable.Common.Content
 			return "null";
 		}
 
-		protected string SerializeArgument(object arg, Type argType, ContentSerializerOptions options = null)
+		protected string SerializeArgument(object arg, Type argType)
 		{
 			// JSONUtility will serialize objects correctly, but doesn't handle primitives well.
 			if (arg == null)
@@ -132,17 +132,11 @@ namespace Beamable.Common.Content
 #endif
 
 				case AssetReference addressable:
-					var addressableDict = new ArrayDict();
-
-					if (!string.IsNullOrEmpty(addressable.AssetGUID))
+					var addressableDict = new ArrayDict
 					{
-						addressableDict.Add("referenceKey", addressable.AssetGUID);
-					}
-
-					if (!string.IsNullOrEmpty(addressable.SubObjectName))
-					{
-						addressableDict.Add("subObjectName", addressable.SubObjectName);
-					}
+						{"referenceKey", addressable.AssetGUID ?? ""},
+						{"subObjectName", addressable.SubObjectName ?? ""}
+					};
 
 					return Json.Serialize(addressableDict, new StringBuilder());
 
@@ -156,7 +150,7 @@ namespace Beamable.Common.Content
 					 * We can't use the JsonUtility.ToJson because we can't override certain types,
 					 *  like optionals, addressables, links or refs.
 					 */
-					var fields = GetFieldInfos(argType, options);
+					var fields = GetFieldInfos(argType);
 					var dict = new ArrayDict();
 					foreach (var field in fields)
 					{
@@ -183,7 +177,7 @@ namespace Beamable.Common.Content
 								continue; // skip field.
 							}
 						}
-						var fieldJson = SerializeArgument(fieldValue, fieldType, options);
+						var fieldJson = SerializeArgument(fieldValue, fieldType);
 						dict.Add(field.SerializedName, new PropertyValue { rawJson = fieldJson });
 					}
 
@@ -426,7 +420,7 @@ namespace Beamable.Common.Content
 			}
 		}
 
-		private List<FieldInfoWrapper> GetFieldInfos(Type type, ContentSerializerOptions options = null)
+		private List<FieldInfoWrapper> GetFieldInfos(Type type)
 		{
 			FieldInfoWrapper CreateFieldWrapper(FieldInfo field)
 			{
@@ -494,8 +488,8 @@ namespace Beamable.Common.Content
 
 			var ll = notIgnoredFields.Select(CreateFieldWrapper);
 
-			if (options != null && options.SortProperties)
-				ll = ll.OrderBy(n => n.SerializedName);
+			
+			ll = ll.OrderBy(n => n.SerializedName);
 
 			return ll.ToList();
 		}
@@ -511,17 +505,23 @@ namespace Beamable.Common.Content
 			}
 		}
 
+		[Obsolete("content serializer options are no longer supported.")]
+		public string SerializeProperties<TContent>(TContent content, ContentSerializerOptions options)
+			where TContent : IContentObject =>
+			SerializeProperties(content);
+		
 		/// <summary>
 		/// returns only the {} representing the properties object
 		/// </summary>
 		/// <param name="content"></param>
 		/// <typeparam name="TContent"></typeparam>
 		/// <returns></returns>
-		public string SerializeProperties<TContent>(TContent content, ContentSerializerOptions options = null)
+		public string SerializeProperties<TContent>(TContent content)
 		   where TContent : IContentObject
 
 		{
-			var fields = GetFieldInfos(content.GetType(), options)
+			
+			var fields = GetFieldInfos(content.GetType())
 			   .ToDictionary(f => f.SerializedName);
 			var propertyDict = new ArrayDict();
 
@@ -574,7 +574,7 @@ namespace Beamable.Common.Content
 						{
 							continue;
 						}
-						var jsonValue = SerializeArgument(fieldValue, fieldType, options);
+						var jsonValue = SerializeArgument(fieldValue, fieldType);
 						fieldDict.Add("data", new PropertyValue { rawJson = jsonValue });
 						propertyDict.Add(fieldName, fieldDict);
 						break;

@@ -915,7 +915,7 @@ namespace Beamable.Editor.Content
 
 			using (var md5 = MD5.Create())
 			{
-				var json = ClientContentSerializer.SerializeProperties(content, new ContentSerializerOptions() { SortProperties = true });
+				var json = ClientContentSerializer.SerializeProperties(content);
 				var bytes = Encoding.ASCII.GetBytes(json);
 				var hash = md5.ComputeHash(bytes);
 				var checksum = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
