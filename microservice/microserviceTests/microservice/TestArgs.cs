@@ -119,7 +119,7 @@ namespace microserviceTests.microservice
       public double RateLimitCPUMultiplierHigh => 0;
       public int RateLimitCPUOffset => 0;
       public int ReceiveChunkSize => 1024;
-      public int SendChunkSize => 1024;
+      public int SendChunkSize { get; set; } = 1024;
       public int BeamInstanceCount => 1;
       public int RequestCancellationTimeoutSeconds => 10;
       public LogOutputType LogOutputType => LogOutputType.DEFAULT;
