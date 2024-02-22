@@ -13,6 +13,7 @@ using cli.Dotnet;
 using cli.Services;
 using cli.Services.Content;
 using cli.Unreal;
+using cli.Utils;
 using cli.Version;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -52,9 +53,11 @@ public class App
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
 		// configureLogger ??= config => config.WriteTo.Console()
 		configureLogger ??= config =>
-			config.WriteTo.Console(outputTemplate:"{Timestamp:HH:mm:ss} [{Level:u4}] {Message:l}{NewLine}{Exception}")
+			config.WriteTo
+				.BeamAnsi("[{Timestamp:HH:mm:ss:ffff} {Level:u3}] {Message:lj}{NewLine}{Exception}")
 				.MinimumLevel.ControlledBy(LogLevel)
 				.CreateLogger();
+
 		Log.Logger = configureLogger(new LoggerConfiguration());
 
 		BeamableLogProvider.Provider = new CliSerilogProvider();
