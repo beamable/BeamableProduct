@@ -34,6 +34,7 @@ namespace Beamable.Server.Editor.Usam
 
 		private static readonly List<string> IgnoreFolderSuffixes = new List<string> { "~", "obj", "bin" };
 		private List<BeamServiceSignpost> _services;
+		private List<BeamStorageSignpost> _storages;
 		private List<Promise> _logsCommands = new List<Promise>();
 		private string _projectVersion;
 
@@ -69,12 +70,14 @@ namespace Beamable.Server.Editor.Usam
 			LogVerbose("Running init");
 			_services = GetBeamServices();
 			LogVerbose("Have services");
+			_storages = GetBeamStorages();
+			LogVerbose("Have storages");
 			// TODO: we need validation. What happens if the .beamservice files point to non-existent files
-			SetSolution(_services);
+			SetSolution(_services, _storages);
 			LogVerbose("Solution set done");
 
 			LogVerbose("Set manifest start");
-			await SetManifest(_cli, _services);
+			await SetManifest(_cli, _services, _storages);
 			LogVerbose("set manifest ended");
 
 			await RefreshServices();
@@ -126,17 +129,32 @@ namespace Beamable.Server.Editor.Usam
 		public async Promise RefreshServices()
 		{
 			ServiceDefinitions.Clear();
-			LogVerbose("refresh remote services start");
+			
 			try
 			{
-				var ps = _cli.ServicesPs(new ServicesPsArgs() { json = false, remote = true });
-				ps.OnStreamServiceListResult(cb =>
+				LogVerbose("refresh remote services from CLI start");
+				//Get remote only information from the CLI
+				var psRemote = _cli.ServicesPs(new ServicesPsArgs() { json = false, remote = true });
+				psRemote.OnStreamServiceListResult(cb =>
 				{
 					IsDockerRunning = cb.data.IsDockerRunning;
 					LogVerbose($"Found {cb.data.BeamoIds.Count} remote services");
 					_dispatcher.Schedule(() => PopulateDataWithRemote(cb.data));
 				});
-				await ps.Run();
+				await psRemote.Run();
+				LogVerbose("refresh remote services from CLI end");
+				
+				LogVerbose("refresh local services from CLI start");
+				//Get local only information from the CLI
+				var psLocal = _cli.ServicesPs(new ServicesPsArgs() { json = false, remote = false });
+				psLocal.OnStreamServiceListResult(cb =>
+				{
+					IsDockerRunning = cb.data.IsDockerRunning;
+					LogVerbose($"Found {cb.data.BeamoIds.Count} remote services");
+					_dispatcher.Schedule(() => PopulateDataWithRemote(cb.data));
+				});
+				await psLocal.Run();
+				LogVerbose("refresh local services from CLI end");
 			}
 			catch
 			{
@@ -145,7 +163,7 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
-			LogVerbose("refresh remote services end");
+			
 
 			LogVerbose("refresh local services start");
 
@@ -157,29 +175,16 @@ namespace Beamable.Server.Editor.Usam
 		private void PopulateDataWithLocal()
 		{
 			_services = GetBeamServices();
+			_storages = GetBeamStorages();
 
 			for (int i = 0; i < _services.Count; i++)
 			{
-				var name = _services[i].name;
-				var dataIndex =
-					ServiceDefinitions.FindIndex(definition => definition.BeamoId.Equals(name));
-				if (dataIndex < 0)
-				{
-					ServiceDefinitions.Add(new BeamoServiceDefinition
-					{
-						ServiceType = _services[i].serviceType,
-						ServiceInfo = new ServiceInfo()
-						{
-							name = name,
-							projectPath = _services[i].assetProjectPath,
-						}
-					});
-					dataIndex = ServiceDefinitions.Count - 1;
-					ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder() { BeamoId = name };
+				AddServiceDefinition(_services[i].name, _services[i].serviceType, _services[i].assetProjectPath, false);
+			}
 
-					ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = true; //TODO should read this from manifest or have it stored somewhere
-					ServiceDefinitions[dataIndex].HasLocalSource = true;
-				}
+			for (int i = 0; i < _storages.Count; i++)
+			{
+				AddServiceDefinition(_storages[i].name, ServiceType.StorageObject, _storages[i].assetProjectPath, false);
 			}
 		}
 
@@ -190,31 +195,68 @@ namespace Beamable.Server.Editor.Usam
 			{
 				var name = objData.BeamoIds[i];
 				LogVerbose($"Handling {name} started");
-				var dataIndex =
-					ServiceDefinitions.FindIndex(definition => definition.BeamoId.Equals(name));
-				if (dataIndex < 0)
+				
+				var runningState = objData.RunningState[i] ? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
+				var type = objData.ProtocolTypes[i].Equals("HttpMicroservice")
+					? ServiceType.MicroService
+					: ServiceType.StorageObject;
+				
+				var service = _services.FirstOrDefault(s => s.name == name);
+				var storage = _storages.FirstOrDefault(s => s.name == name);
+
+				string assetProjectPath = string.Empty;
+				
+				if (service != null)
 				{
-					var service = _services.FirstOrDefault(s => s.name == name);
-					ServiceDefinitions.Add(new BeamoServiceDefinition
-					{
-						ServiceInfo = new ServiceInfo()
-						{
-							name = name,
-							projectPath = service?.assetProjectPath,
-						}
-					});
-					dataIndex = ServiceDefinitions.Count - 1;
-					ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder() { BeamoId = name };
+					assetProjectPath = service.assetProjectPath;
 				}
-
-				ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = objData.ShouldBeEnabledOnRemote[i];
-				ServiceDefinitions[dataIndex].IsRunningOnRemote =
-						objData.RunningState[i] ? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
-
-				ServiceDefinitions[dataIndex].HasLocalSource = objData.IsLocal;
+				else if (storage != null)
+				{
+					assetProjectPath = storage.assetProjectPath;
+				}
+				
+				AddServiceDefinition(name, type, assetProjectPath, true, runningState,
+				                     objData.ShouldBeEnabledOnRemote[i], objData.IsLocal, objData.Dependencies[i]);
 				LogVerbose($"Handling {name} ended");
 			}
 		}
+
+		private void AddServiceDefinition(string name, ServiceType type, string assetProjectPath, bool fromRemote, BeamoServiceStatus status = BeamoServiceStatus.Unknown, 
+		                                  bool shouldBeEnableOnRemote = true, bool hasLocalSource = true, string dependencies = null)
+		{
+			List<string> depsList = dependencies?.Split(',').ToList();
+
+			if (depsList == null)
+			{
+				depsList = new List<string>();
+			}
+			
+			var dataIndex =
+				ServiceDefinitions.FindIndex(definition => definition.BeamoId.Equals(name));
+			if (dataIndex < 0)
+			{
+				ServiceDefinitions.Add(new BeamoServiceDefinition
+				{
+					ServiceType = type,
+					ServiceInfo = new ServiceInfo()
+					{
+						name = name,
+						projectPath = assetProjectPath,
+					}
+				});
+				dataIndex = ServiceDefinitions.Count - 1;
+				ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder() { BeamoId = name };
+				ServiceDefinitions[dataIndex].HasLocalSource = hasLocalSource;
+			}
+			
+			if (fromRemote)
+			{
+				ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = shouldBeEnableOnRemote;
+				ServiceDefinitions[dataIndex].IsRunningOnRemote = status;
+				ServiceDefinitions[dataIndex].Dependencies = depsList;
+			}
+		}
+		
 
 		/// <summary>
 		/// Regenerates the files: Program.cs, Dockerfile and .csproj. Then copy these files
@@ -233,90 +275,34 @@ namespace Beamable.Server.Editor.Usam
 		}
 
 		/// <summary>
-		/// Creates a new Standalone Service inside a hidden folder from Unity.
+		/// Creates a new Standalone Service or storage inside a hidden folder from Unity.
 		/// </summary>
-		/// <param name="serviceName"> The name of the Service to be created.</param>
-		/// <param name="serviceType"> The type of the Service to be created.</param>
-		public async Promise CreateService(string serviceName, ServiceType serviceType, List<IBeamoServiceDefinition> additionalReferences)
+		/// <param name="name"> The name of the Service/Storage to be created.</param>
+		/// <param name="type"> The type of the Service/Storage to be created.</param>
+		/// <param name="additionalReferences">A list with all references to link to this service.</param>
+		public async Promise CreateService(string name, ServiceType type, List<IBeamoServiceDefinition> additionalReferences)
 		{
-			LogVerbose($"Starting creation of service {serviceName}");
+			LogVerbose($"Starting creation of {name}");
 
-			var outputPath = $"{StandaloneMicroservicesPath}{serviceName}/";
+			var outputPath = $"{StandaloneMicroservicesPath}{name}/";
 
 			if (Directory.Exists(outputPath))
 			{
-				LogVerbose($"The service {serviceName} already exists!");
+				LogVerbose($"{name} already exists!");
 				return;
 			}
 
-			BeamServiceSignpost signpost = null;
-			var service = new ServiceName(serviceName);
-			switch (serviceType)
+			switch (type)
 			{
 				case ServiceType.MicroService:
-				{
-					var args = new ProjectNewArgs
-					{
-						quiet = true,
-						name = service,
-						output = outputPath,
-						version = _projectVersion
-					};
-					ProjectNewWrapper command = _cli.ProjectNew(args);
-					await command.Run();
-
-					string relativePath = $"{outputPath}services";
-					signpost = new BeamServiceSignpost()
-					{
-						name = serviceName,
-						assetProjectPath = Path.Combine(relativePath, serviceName).Replace(StandaloneMicroservicesPath, string.Empty),
-						serviceType = ServiceType.MicroService
-					};
-				}
-				break;
+					await CreateMicroService(name, outputPath, additionalReferences);
+					break;
 				case ServiceType.StorageObject:
-
-					string[] deps = new string[additionalReferences.Count];
-					for (int i = 0; i < additionalReferences.Count; i++)
-					{
-						deps[i] = additionalReferences[i].BeamoId;
-					}
-					
-					var storageArgs = new ProjectNewStorageArgs
-					{
-						name = service,
-						quiet = true,
-						linkTo = deps,
-						outputPath = outputPath
-					};
-					var storageCommand = _cli.ProjectNewStorage(storageArgs);
-					await storageCommand.Run();
-					
-					signpost = new BeamServiceSignpost()
-					{
-						name = service,
-						serviceType = ServiceType.StorageObject
-					};
+					await CreateStorage(name, outputPath, additionalReferences);
 					break;
 				default:
-					throw new ArgumentOutOfRangeException(nameof(serviceType), serviceType, null);
+					throw new ArgumentOutOfRangeException(nameof(type), type, null);
 			}
-
-			string signpostPath = $"{BEAMABLE_PATH}{serviceName}.beamservice";
-			string signpostJson = JsonUtility.ToJson(signpost);
-
-			LogVerbose($"Writing data to {serviceName}.beamservice file");
-			File.WriteAllText(signpostPath, signpostJson);
-
-			LogVerbose($"Starting the initialization of CodeService");
-			// Re-initializing the CodeService to make sure all files are with the right information
-			await Init();
-
-			//Shoudln't we generate client code at the end of the creation?
-			//For some reason this this line is never reached after the Init. And if put bfore Init, it doesn't work
-			//await GenerateClientCode(serviceName);
-
-			LogVerbose($"Finished creation of service {serviceName}");
 		}
 
 		public Promise RunStandaloneMicroservice(string id)
@@ -464,11 +450,12 @@ namespace Beamable.Server.Editor.Usam
 		/// This may cause a script reload if the sln file needs to regenerate
 		/// </summary>
 		/// <param name="services"></param>
-		public static void SetSolution(List<BeamServiceSignpost> services)
+		public static void SetSolution(List<BeamServiceSignpost> services, List<BeamStorageSignpost> storages)
 		{
 			// if there is nothing to add there is no need for an update
-			if (services == null || services.Count == 0)
+			if ((services == null || services.Count == 0) && (storages == null || storages.Count == 0))
 				return;
+			
 			// find the local sln file
 			var slnPath = FindFirstSolutionFile();
 			if (string.IsNullOrEmpty(slnPath) || !File.Exists(slnPath))
@@ -579,14 +566,13 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 
-		public static async Promise SetManifest(BeamCommands cli, List<BeamServiceSignpost> files)
+		public static async Promise SetManifest(BeamCommands cli, List<BeamServiceSignpost> servicesFiles, List<BeamStorageSignpost> storagesFiles)
 		{
 			var args = new ServicesSetLocalManifestArgs();
-			var dependedStorages = new List<string>();
 
-			if (files.Count == 0)
+			if (servicesFiles.Count == 0 || storagesFiles.Count == 0)
 			{
-				LogVerbose("There are no services to write to a manifest!");
+				LogVerbose("There are no services or storages to write to a manifest!");
 				return;
 			}
 
@@ -595,9 +581,14 @@ namespace Beamable.Server.Editor.Usam
 			var disabledServices = new List<string>();
 			// TODO: add some validation to check that these files actually make sense
 
-			for (var i = 0; i < files.Count; i++)
+			for (var i = 0; i < servicesFiles.Count; i++)
 			{
-				services.Add(files[i].CsprojPath);
+				services.Add(servicesFiles[i].CsprojPath);
+			}
+			
+			for (var i = 0; i < storagesFiles.Count; i++)
+			{
+				storages.Add(storagesFiles[i].CsprojPath);
 			}
 
 			if (services.Count > 0) args.services = services.ToArray();
@@ -615,6 +606,12 @@ namespace Beamable.Server.Editor.Usam
 			return data;
 		}
 
+		public static List<BeamStorageSignpost> GetBeamStorages()
+		{
+			var files = GetSignpostFiles(".beamstorage");
+			var data = GetSignpostData<BeamStorageSignpost>(files);
+			return data;
+		}
 
 		public static List<T> GetSignpostData<T>(IEnumerable<string> files) where T : ISignpostData
 		{
@@ -629,6 +626,92 @@ namespace Beamable.Server.Editor.Usam
 
 			return output;
 		}
+
+		private async Promise CreateStorage(string storageName, string outputPath, List<IBeamoServiceDefinition> additionalReferences)
+		{
+			var service = new ServiceName(storageName);
+			
+			string[] deps = new string[additionalReferences.Count];
+			for (int i = 0; i < additionalReferences.Count; i++)
+			{
+				deps[i] = additionalReferences[i].BeamoId;
+			}
+					
+			var storageArgs = new ProjectNewStorageArgs
+			{
+				name = service,
+				quiet = true,
+				linkTo = deps,
+				outputPath = outputPath
+			};
+			var storageCommand = _cli.ProjectNewStorage(storageArgs);
+			await storageCommand.Run();
+					
+			string relativePath = $"{outputPath}services";
+			BeamStorageSignpost signpost = new BeamStorageSignpost()
+			{
+				name = storageName,
+				assetProjectPath = Path.Combine(relativePath, storageName).Replace(StandaloneMicroservicesPath, string.Empty),
+				serviceType = ServiceType.StorageObject
+			};
+			
+			string signpostPath = $"{BEAMABLE_PATH}{storageName}.beamstorage";
+			string signpostJson = JsonUtility.ToJson(signpost);
+
+			LogVerbose($"Writing data to {storageName}.beamstorage file");
+			File.WriteAllText(signpostPath, signpostJson);
+
+			LogVerbose($"Starting the initialization of CodeService");
+			// Re-initializing the CodeService to make sure all files are with the right information
+			await Init();
+
+			//Shoudln't we generate client code at the end of the creation?
+			//For some reason this this line is never reached after the Init. And if put bfore Init, it doesn't work
+			//await GenerateClientCode(serviceName);
+
+			LogVerbose($"Finished creation of storage {storageName}");
+		}
+		
+
+		private async Promise CreateMicroService(string serviceName, string outputPath, List<IBeamoServiceDefinition> dependencies)
+		{
+			var service = new ServiceName(serviceName);
+			
+			var args = new ProjectNewArgs
+			{
+				quiet = true,
+				name = service,
+				output = outputPath,
+				version = _projectVersion
+			};
+			ProjectNewWrapper command = _cli.ProjectNew(args);
+			await command.Run();
+
+			string relativePath = $"{outputPath}services";
+			BeamServiceSignpost signpost = new BeamServiceSignpost()
+			{
+				name = serviceName,
+				assetProjectPath = Path.Combine(relativePath, serviceName).Replace(StandaloneMicroservicesPath, string.Empty),
+				serviceType = ServiceType.MicroService
+			};
+			
+			string signpostPath = $"{BEAMABLE_PATH}{serviceName}.beamservice";
+			string signpostJson = JsonUtility.ToJson(signpost);
+
+			LogVerbose($"Writing data to {serviceName}.beamservice file");
+			File.WriteAllText(signpostPath, signpostJson);
+
+			LogVerbose($"Starting the initialization of CodeService");
+			// Re-initializing the CodeService to make sure all files are with the right information
+			await Init();
+
+			//Shoudln't we generate client code at the end of the creation?
+			//For some reason this this line is never reached after the Init. And if put bfore Init, it doesn't work
+			//await GenerateClientCode(serviceName);
+
+			LogVerbose($"Finished creation of service {serviceName}");
+		}
+		
 
 		private static IEnumerable<string> GetSignpostFiles(string extension)
 		{

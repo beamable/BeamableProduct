@@ -1,6 +1,4 @@
 
-using UnityEngine;
-
 namespace Beamable.Editor.BeamCli.Commands
 {
 	using Beamable.Common;
@@ -72,7 +70,6 @@ namespace Beamable.Editor.BeamCli.Commands
 			Beamable.Common.BeamCli.IBeamCommand command = this._factory.Create();
 			// Join all the command paths and args into one string
 			string genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
-			Debug.Log("GABRIEL + " + genBeamCommandStr);
 			// Configure the command with the command string
 			command.SetCommand(genBeamCommandStr);
 			ProjectNewStorageWrapper genBeamCommandWrapper = new ProjectNewStorageWrapper();
