@@ -1573,6 +1573,8 @@ public static class UnityHelper
 				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.fffffZ"));
 				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.ffffffZ"));
 				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.fffffffzzz"));
+				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.ffffffffzzz"));
+				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.fffffffffzzz"));
 				return true;
 			case "object" when schema.AdditionalPropertiesAllowed:
 				var method = new CodeMethodReferenceExpression(new CodeArgumentReferenceExpression(PARAM_SERIALIZER),
