@@ -82,42 +82,49 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    ""id"": ""currency.gf.test.tuna"",
    ""version"": """",
    ""properties"": {
-      ""test"": { ""data"": ""foo"" },
- ""icon"": {
-         ""data"": null
-      },
-      ""clientPermission"": {
-         ""data"": {
-            ""write_self"": false
-         }
-      },
-""startingAmount"": {""data"": 0},
-""external"": {
-	""data"": {
-		""Value"": {
-			""service"": null,
-			""namespace"": null
-		},
-		""HasValue"": false
-	}
-},
-    ""spriteAssetName"": {
-         ""data"": ""spendable_tokens""
+
+      ""amountFormat"": {
+         ""data"": ""tuna""
       },
      ""bigIcons"": {
          ""data"": [
 
          ]
       },
+
+      ""clientPermission"": {
+         ""data"": {
+            ""write_self"": false
+         }
+      },
       ""currencyTags"": {
          ""data"": [
          ""shop""
             ]
       },
+""external"": {
+	""data"": {
+		""HasValue"": false,
+		""Value"": {
+			""namespace"": null,
+			""service"": null
+		}
+	}
+},
+ ""icon"": {
+         ""data"": null
+      },
 
-      ""amountFormat"": {
-         ""data"": ""tuna""
-      }
+    ""spriteAssetName"": {
+         ""data"": ""spendable_tokens""
+      },
+
+""startingAmount"": {""data"": 0},
+
+      ""test"": { ""data"": ""foo"" }
+
+
+
    }
 }".Replace("\r\n", "").Replace("\n", "").Replace(" ", "").Replace("\t", "");
 
