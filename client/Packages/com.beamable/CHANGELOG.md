@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - CLI is only used if the global CLI matches the exact SDK version.
 
+### Fixed
+- 502 and 504 requests containing HTML are received as `RequesterExceptions`.
+- Content alphabetizes fields on checksum calculation as well as publication.
+- Listing content `activeFrom` field no longer resets every time it is viewed in the Inspector.
+
 ## [1.19.14]
 
 ### Fixed
