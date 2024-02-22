@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace Beamable.Common.Content.Serialization
@@ -11,8 +12,12 @@ namespace Beamable.Common.Content.Serialization
 		public static string SerializeContent<TContent>(TContent content) where TContent : IContentObject, new() =>
 		   Instance.Serialize(content);
 
+		[Obsolete("content serializer options are no longer supported.")]
 		public new static string SerializeProperties<TContent>(TContent content, ContentSerializerOptions options = null) where TContent : IContentObject =>
 		   Instance.SerializeProperties(content, options);
+
+		public new static string SerializeProperties<TContent>(TContent content) where TContent : IContentObject =>
+			Instance.SerializeProperties(content);
 
 		protected override TContent CreateInstance<TContent>()
 		{
