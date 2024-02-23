@@ -66,7 +66,6 @@ public class CheckNBomberCommand : AtomicCommand<CheckNBomberCommandArgs, CheckP
 			throw new CliException(string.Join(",", warnings));
 		}
 
-		BeamableLogger.Log("No issues found.");
 		return Task.FromResult(new CheckPerfCommandOutput { message = "No issues found." });
 	}
 }

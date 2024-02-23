@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Serilog;
 using Spectre.Console;
+using Spectre.Console.Json;
 using System.CommandLine;
 using System.CommandLine.Binding;
 using System.CommandLine.Help;
@@ -114,12 +115,20 @@ public abstract class AtomicCommand<TArgs, TResult> : AppCommand<TArgs>, IResult
 
 		var reporter = args.Provider.GetService<IDataReporterService>();
 		reporter.Report(_channel.ChannelName, result);
+		
+		if (AutoLogOutput)
+		{
+			LogResult(result);
+		}
 	}
 
-	protected TResult PrintResult(TResult result)
+	protected virtual void LogResult(object result)
 	{
-		Console.Error.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
-		return result;
+		var json = JsonConvert.SerializeObject(result);
+		AnsiConsole.Write(
+			new Panel(new JsonText(json))
+				.Collapse()
+				.NoBorder());
 	}
 
 	public abstract Task<TResult> GetResult(TArgs args);
@@ -197,6 +206,7 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IApp
 	private string _description;
 
 	public virtual bool IsForInternalUse => false;
+	public virtual bool AutoLogOutput => true;
 	public virtual int Order => 100;
 	
 	

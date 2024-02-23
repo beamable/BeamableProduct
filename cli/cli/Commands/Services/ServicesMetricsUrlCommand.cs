@@ -59,6 +59,6 @@ public class ServicesMetricsUrlCommand : AtomicCommand<ServicesMetricsUrlCommand
 				await _remoteBeamo.GetMetricsUrl(args.BeamoId, args.MetricName)
 			);
 
-		return PrintResult(response);
+		return response;
 	}
 }

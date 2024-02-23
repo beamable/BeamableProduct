@@ -715,10 +715,10 @@ public class ProjectErrorResult
 
 public static class CliExtensions
 {
-	public static async Task<(CommandResult, StringBuilder)> RunWithOutput(string dotnetPath, string arguments, string workingDirectory = null)
+	public static async Task<(CommandResult, StringBuilder)> RunWithOutput(string dotnetPath, string arguments)
 	{
 		var builder = new StringBuilder();
-		var result = await GetDotnetCommand(dotnetPath, arguments, workingDirectory)
+		var result = await GetDotnetCommand(dotnetPath, arguments)
 			.WithValidation(CommandResultValidation.None)
 			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(builder))
 			.WithStandardErrorPipe(PipeTarget.ToStringBuilder(builder))
@@ -727,15 +727,11 @@ public static class CliExtensions
 		return (result, builder);
 	}
 
-	public static Command GetDotnetCommand(string dotnetPath, string arguments, string workingDirectory = null)
+	public static Command GetDotnetCommand(string dotnetPath, string arguments)
 	{
 		var command = Cli.Wrap(dotnetPath)
 			.WithEnvironmentVariables(new Dictionary<string, string> { ["DOTNET_CLI_UI_LANGUAGE"] = "en" })
 			.WithArguments(arguments);
-		if (!string.IsNullOrWhiteSpace(workingDirectory))
-		{
-			command = command.WithWorkingDirectory(workingDirectory);
-		}
 		return command;
 	}
 

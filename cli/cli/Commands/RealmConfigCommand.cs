@@ -7,12 +7,12 @@ namespace cli;
 
 public class RealmConfigCommandArgs : CommandArgs
 {
-	public bool plainOutput;
 	public List<string> namespaces = new();
 }
 
 public class RealmConfigCommand : AtomicCommand<RealmConfigCommandArgs, RealmConfigData>
 {
+	public override bool AutoLogOutput => false;
 	public RealmConfigCommand() : base("realm", "Get current realm config values") { }
 
 	protected override RealmConfigData GetHelpInstance()
@@ -22,7 +22,6 @@ public class RealmConfigCommand : AtomicCommand<RealmConfigCommandArgs, RealmCon
 
 	public override void Configure()
 	{
-		AddOption(new PlainOutputOption(), (args, b) => args.plainOutput = b);
 		AddOption(new RealmConfigNamespaceOption(), (args, b) => args.namespaces = b.ToList());
 	}
 
@@ -31,21 +30,7 @@ public class RealmConfigCommand : AtomicCommand<RealmConfigCommandArgs, RealmCon
 		try
 		{
 			var data = await args.RealmsApi.GetRealmConfig();
-
-			var json = JsonConvert.SerializeObject(data.ConvertToView(args.namespaces));
-			if (args.plainOutput)
-			{
-				AnsiConsole.WriteLine(json);
-			}
-			else
-			{
-				AnsiConsole.Write(
-					new Panel(new JsonText(json))
-						.Header("Server response")
-						.Collapse()
-						.RoundedBorder());
-			}
-
+			LogResult(data.ConvertToView(args.namespaces));
 			return data;
 		}
 		catch (Exception e)
