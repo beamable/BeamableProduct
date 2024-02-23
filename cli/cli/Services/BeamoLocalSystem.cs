@@ -125,8 +125,13 @@ public partial class BeamoLocalSystem
 			throw new CliException($"Getting service dependencies failed, command output: {builder}");
 		}
 		// TODO improve it, for now it is naive, if there is related project with same name as one of the services it will treat it as it is connected
-		var dependencies = builder.ToString().Split(Environment.NewLine).Where(line => line.EndsWith(projectExtension))
-			.Select(Path.GetFileNameWithoutExtension).Where(candidate => BeamoManifest.ServiceDefinitions.Any(definition => definition.BeamoId == candidate)).ToList();
+		var withExtension = builder.ToString().Split(Environment.NewLine);
+
+		var files = withExtension.Where(line => line.EndsWith(projectExtension)).ToList();
+		var correctedPaths = files.Select(file => file.Replace("\\", "/")).ToList();
+
+		var candidates = correctedPaths.Select(Path.GetFileNameWithoutExtension).ToList();
+		var dependencies = candidates.Where(candidate => BeamoManifest.ServiceDefinitions.Any(definition => definition.BeamoId == candidate)).ToList();
 
 		return dependencies;
 	}

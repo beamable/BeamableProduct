@@ -307,24 +307,12 @@ namespace Beamable.Server.Editor.Usam
 
 		public Promise RunStandaloneMicroservice(string id)
 		{
-			LogVerbose($"Start generating client code for service: {id}");
-
-
-			var service = _services.FirstOrDefault(s => s.name == id);
-
-			if (service == null)
+			ProjectRunWrapper runCommand = _cli.ProjectRun(new ProjectRunArgs()
 			{
-				LogVerbose($"The service {id} is not listed.", true);
-				throw new Exception("Service is invalid.");
-			}
-
-			var microserviceFullPath = Path.GetFullPath(service.CsprojPath);
-			var runCommand = $"run --project {microserviceFullPath} --property:CopyToLinkedProjects=false;GenerateClientCode=false";
-
-			LogVerbose($"Running service: {id} using command: {runCommand}");
-			_ = _dotnetService.Run(runCommand);
-
-			return Promise.Success;
+				ids = new[] {id},
+				watch = true
+			});
+			return runCommand.Run();
 		}
 
 		/// <summary>
@@ -525,7 +513,8 @@ namespace Beamable.Server.Editor.Usam
 			}
 
 			var services = new List<string>();
-			var storages = new List<string>();
+			var storagesPath = new List<string>();
+			var storagesNames = new List<string>();
 			var disabledServices = new List<string>();
 			// TODO: add some validation to check that these files actually make sense
 
@@ -539,7 +528,8 @@ namespace Beamable.Server.Editor.Usam
 						services.Add(definitions[i].ServiceInfo.projectPath);
 						break;
 					case ServiceType.StorageObject:
-						storages.Add(definitions[i].ServiceInfo.projectPath);
+						storagesPath.Add(definitions[i].ServiceInfo.projectPath);
+						storagesNames.Add(definitions[i].BeamoId);
 						break;
 					default:
 						throw new ArgumentOutOfRangeException();
@@ -552,7 +542,8 @@ namespace Beamable.Server.Editor.Usam
 			}
 
 			if (services.Count > 0) args.services = services.ToArray();
-			if (storages.Count > 0) args.storagePaths = storages.ToArray();
+			if (storagesPath.Count > 0) args.storagePaths = storagesPath.ToArray();
+			if (storagesNames.Count > 0) args.storageNames = storagesNames.ToArray();
 			if (disabledServices.Count > 0) args.disabledServices = disabledServices.ToArray();
 
 			var command = cli.ServicesSetLocalManifest(args);
@@ -577,7 +568,8 @@ namespace Beamable.Server.Editor.Usam
 			}
 
 			var services = new List<string>();
-			var storages = new List<string>();
+			var storagesPaths = new List<string>();
+			var storagesNames = new List<string>();
 			var disabledServices = new List<string>();
 			// TODO: add some validation to check that these files actually make sense
 
@@ -588,11 +580,13 @@ namespace Beamable.Server.Editor.Usam
 			
 			for (var i = 0; i < storagesFiles.Count; i++)
 			{
-				storages.Add(storagesFiles[i].CsprojPath);
+				storagesPaths.Add(storagesFiles[i].CsprojPath);
+				storagesNames.Add(storagesFiles[i].name);
 			}
 
 			if (services.Count > 0) args.services = services.ToArray();
-			if (storages.Count > 0) args.storagePaths = storages.ToArray();
+			if (storagesPaths.Count > 0) args.storagePaths = storagesPaths.ToArray();
+			if (storagesNames.Count > 0) args.storageNames = storagesNames.ToArray();
 			if (disabledServices.Count > 0) args.disabledServices = disabledServices.ToArray();
 
 			var command = cli.ServicesSetLocalManifest(args);
@@ -776,20 +770,10 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 
-		public Promise StopStandaloneMicroservice(IEnumerable<string> beamoIds)
+		public async Promise StopStandaloneMicroservice(IEnumerable<string> beamoIds)
 		{
-			foreach (string id in beamoIds)
-			{
-				//This is a bit ugly, happens that the C#MS running process name are their ids
-				// Is there a better way to handle this?
-				_dotnetService.SetPurposelyExit();
-				foreach (Process process in Process.GetProcessesByName(id))
-				{
-					process.Kill();
-				}
-			}
-
-			return Promise.Success;
+			var stop = _cli.ProjectStop(new ProjectStopArgs() {ids = beamoIds.ToArray()});
+			await stop.Run();
 		}
 
 		public async Promise Stop(IEnumerable<string> beamoIds)

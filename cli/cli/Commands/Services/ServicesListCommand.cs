@@ -106,8 +106,6 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 				var shouldBeRunningColumn = new TableColumn(new Markup("Should be Running", columnNameStyle));
 				var isRunningColumn = new TableColumn(new Markup("Is Running", columnNameStyle));
 				table.AddColumn(beamoIdColumn).AddColumn(imageNameColumn).AddColumn(shouldBeRunningColumn).AddColumn(isRunningColumn);
-				
-				var depsDict = await _localBeamo.GetAllBeamoIdsDependencies();
 
 				foreach (var def in serviceDefinitions)
 				{

@@ -2,7 +2,9 @@
     <!--  Settings for Beamable Build  -->
     <PropertyGroup>
         <!-- The tool path for the beamCLI. "dotnet beam" will refer to the local project tool, and "beam" would install to a globally installed tool -->
-        <BeamableTool Condition="$(BeamableTool) == ''">beam</BeamableTool>
+        <BeamableTool>$(BEAM_PATH)</BeamableTool>
+        <BeamableTool Condition="'$(BeamableTool)' == ''">beam</BeamableTool>
+        
 
         <!-- When "true", this will auto-generate client code to any linked unity projects -->
         <GenerateClientCode>true</GenerateClientCode>
