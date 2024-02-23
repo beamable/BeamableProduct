@@ -142,7 +142,7 @@ public partial class BeamoLocalSystem
 		var projectPath = _configService.GetRelativePath(project.ProjectDirectory);
 		var dependencyPath = _configService.GetRelativePath(dependency.ProjectDirectory);
 		var command = $"add {projectPath} reference {dependencyPath}";
-		var (cmd, result) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, command, Directory.GetCurrentDirectory());
+		var (cmd, result) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, command);
 		if (cmd.ExitCode != 0)
 		{
 			throw new CliException($"Failed to add project dependency, output of \"dotnet {command}\": {result}");

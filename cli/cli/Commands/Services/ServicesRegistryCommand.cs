@@ -20,6 +20,7 @@ public class ServicesRegistryCommand : AtomicCommand<ServicesRegistryCommandArgs
 {
 	private BeamoService _remoteBeamo;
 
+	public override bool AutoLogOutput => false;
 
 	public ServicesRegistryCommand() :
 		base("registry",

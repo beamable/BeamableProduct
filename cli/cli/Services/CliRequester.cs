@@ -110,12 +110,12 @@ public class CliRequester : IRequester
 											   e.Status == 403 ||
 											   (!string.IsNullOrWhiteSpace(AccessToken.RefreshToken) &&
 												AccessToken.ExpiresAt < DateTime.Now):
-					BeamableLogger.Log(
+					Log.Debug(
 						"Got failure for token " + AccessToken.Token + " because " + e.RequestError.error);
 					var authService = new AuthApi(this);
 					return authService.LoginRefreshToken(AccessToken.RefreshToken).Map(rsp =>
 						{
-							BeamableLogger.Log(
+							Log.Debug(
 								$"Got new token: access=[{rsp.access_token}] refresh=[{rsp.refresh_token}] type=[{rsp.token_type}] ");
 							_ctx.UpdateToken(rsp);
 							return PromiseBase.Unit;

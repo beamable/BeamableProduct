@@ -10,7 +10,6 @@ namespace cli;
 
 public class RealmConfigSetCommandArgs : CommandArgs
 {
-	public bool plainOutput;
 	public List<string> keyValuePairs = new();
 }
 
@@ -20,7 +19,6 @@ public class RealmConfigSetCommand : AtomicCommand<RealmConfigSetCommandArgs, Re
 
 	public override void Configure()
 	{
-		AddOption(new PlainOutputOption(), (args, b) => args.plainOutput = b);
 		AddOption(new RealmConfigKeyValueOption(), (args, b) => args.keyValuePairs = b.ToList());
 	}
 
@@ -35,7 +33,10 @@ public class RealmConfigSetCommand : AtomicCommand<RealmConfigSetCommandArgs, Re
 				currentConfig.Config[data.NamespaceKey()] = data.Value;
 			}
 			await args.RealmsApi.UpdateRealmConfig(currentConfig.Config);
-			return await DisplayRealmConfig(args, currentConfig);
+			
+			currentConfig = await GetRealmConfig(args);
+			LogResult(currentConfig.ConvertToView());
+			return currentConfig;
 		}
 		catch (ArgumentException e)
 		{
@@ -55,25 +56,5 @@ public class RealmConfigSetCommand : AtomicCommand<RealmConfigSetCommandArgs, Re
 		{
 			throw new CliException($"Failed to get realm config data due to error: {e.Message}");
 		}
-	}
-
-	private async Task<RealmConfigData> DisplayRealmConfig(RealmConfigSetCommandArgs args, [CanBeNull] RealmConfigData data = null)
-	{
-		data ??= await GetRealmConfig(args);
-		var json = JsonConvert.SerializeObject(data.ConvertToView());
-		if (args.plainOutput)
-		{
-			AnsiConsole.WriteLine(json);
-		}
-		else
-		{
-			AnsiConsole.Write(
-				new Panel(new JsonText(json))
-					.Header("Server response")
-					.Collapse()
-					.RoundedBorder());
-		}
-
-		return data;
 	}
 }

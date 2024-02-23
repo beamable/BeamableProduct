@@ -76,9 +76,7 @@ public class CheckCountersCommand : AtomicCommand<CheckCountersCommandArgs, Chec
 			throw new CliException(string.Join(",", warnings.Select(w => w.ToString())));
 		}
 
-		BeamableLogger.Log("No issues found.");
 		return Task.FromResult(new CheckPerfCommandOutput { message = "No issues found." });
-
 	}
 }
 

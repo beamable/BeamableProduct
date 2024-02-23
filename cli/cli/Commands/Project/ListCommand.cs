@@ -38,7 +38,7 @@ public class ListCommand : AtomicCommand<ListCommandArgs, ListCommandResult>
 			.Where(definition => definition.Protocol == BeamoProtocolType.EmbeddedMongoDb).Select(
 				definition => new ServiceInfo() { name = definition.BeamoId, projectPath = definition.ProjectDirectory });
 
-		Log.Information("Sent list command " + args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Count);
+		Log.Debug("Sent list command " + args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Count);
 
 		return Task.FromResult(new ListCommandResult { localServices = services.ToList(), localStorages = storages.ToList() });
 	}

@@ -41,6 +41,6 @@ public class ServicesTemplatesCommand : AtomicCommand<ServicesTemplatesCommandAr
 			);
 
 		var result = new ServicesTemplatesCommandOutput { templates = response };
-		return PrintResult(result);
+		return result;
 	}
 }

@@ -20,6 +20,8 @@ public class ServicesUploadApiCommand : AtomicCommand<ServicesUploadApiCommandAr
 {
 	private BeamoService _remoteBeamo;
 
+	public override bool AutoLogOutput => false;
+
 	public ServicesUploadApiCommand() :
 		base("upload-api",
 			"Gets the URL that we upload docker images into when deploying services remotely for this realm")

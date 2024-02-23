@@ -5,6 +5,7 @@ using Spectre.Console;
 using Spectre.Console.Json;
 using System.CommandLine;
 using System.Text;
+using Serilog;
 
 namespace cli.Commands.Project;
 
@@ -29,24 +30,29 @@ public class ProjectVersionCommand : AtomicCommand<ProjectVersionCommandArgs, Pr
 
 	public override async Task<ProjectVersionCommandResult> GetResult(ProjectVersionCommandArgs args)
 	{
+		
 		var projectList = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.Values
 			.Where(p => !string.IsNullOrWhiteSpace(p.RelativeDockerfilePath)).ToList();
 		List<BeamablePackageInProject> results = new();
+		Log.Debug($"discovered {projectList.Count} projects...");
 		foreach (var project in projectList)
 		{
 			var solutionPath =
 				Directory.GetParent(Path.Combine(args.ConfigService.BaseDirectory, project.RelativeDockerfilePath));
+			Log.Debug($"sln=[{solutionPath}]");
 
 			var (_, buffer) =
-				await CliExtensions.RunWithOutput(args.AppContext.DotnetPath, "sln list",
-					solutionPath!.FullName);
+				await CliExtensions.RunWithOutput(args.AppContext.DotnetPath, $"sln list {solutionPath!.FullName}");
 
 			var projectsPaths = buffer.ToString().ReplaceLineEndings("\n").Split("\n").Where(s => s.EndsWith(".csproj"))
 				.Select(p => Directory.GetParent(Path.Combine(solutionPath.FullName, p))!.FullName).ToList();
+			Log.Debug($"sln=[{solutionPath}] inner project reference count=[{projectsPaths.Count}]");
+
 			foreach (string projectPath in projectsPaths)
 			{
+				Log.Debug($"checking {projectPath}");
 				(_, buffer) =
-					await CliExtensions.RunWithOutput(args.AppContext.DotnetPath, "list package", projectPath);
+					await CliExtensions.RunWithOutput(args.AppContext.DotnetPath, $"list {projectPath} package");
 				var result = buffer.ToString().ReplaceLineEndings("\n").Split("\n").Where(s => s.Contains("> Beamable."))
 					.ToList();
 
@@ -58,11 +64,13 @@ public class ProjectVersionCommand : AtomicCommand<ProjectVersionCommandArgs, Pr
 					var packageName = splitedLine[packageIndex];
 					var packageVersion = splitedLine[packageIndex + 1];
 
+					Log.Debug($"result index=[{packageIndex}] name=[{packageName}] version=[{packageVersion}]");
+
 					if (!string.IsNullOrWhiteSpace(args.requestedVersion) &&
 						!args.requestedVersion.Equals(packageVersion))
 					{
 						(_, buffer) = await CliExtensions.RunWithOutput(args.AppContext.DotnetPath,
-								$"add package {packageName} --version \"{args.requestedVersion}\"", projectPath);
+								$"add {projectPath} package {packageName} --version \"{args.requestedVersion}\"");
 						AnsiConsole.WriteLine(buffer.ToString());
 						packageVersion = args.requestedVersion;
 					}
@@ -77,12 +85,6 @@ public class ProjectVersionCommand : AtomicCommand<ProjectVersionCommandArgs, Pr
 			}
 		}
 
-		var json = JsonConvert.SerializeObject(results);
-		AnsiConsole.Write(
-			new Panel(new JsonText(json))
-				.Header("Projects versions")
-				.Collapse()
-				.RoundedBorder());
 		return BeamablePackageInProject.ToResult(results);
 	}
 }
