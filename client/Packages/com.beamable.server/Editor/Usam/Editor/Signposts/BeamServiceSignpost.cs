@@ -28,7 +28,6 @@ namespace Beamable.Server.Editor.Usam
 
 			var path = Path.Combine(directoryPath, "StandaloneMicroservices~/");
 			assetProjectPath = Path.Combine(path, assetProjectPath);
-			Debug.Log("GABRIEL projPath SERVICE + " + assetProjectPath);
 		}
 	}
 }
