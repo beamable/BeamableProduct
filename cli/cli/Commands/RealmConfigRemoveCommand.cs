@@ -10,7 +10,6 @@ namespace cli;
 
 public class RealmConfigRemoveCommandArgs : CommandArgs
 {
-	public bool plainOutput;
 	public List<string> keys = new();
 }
 
@@ -20,9 +19,10 @@ public class RealmConfigRemoveCommand : AtomicCommand<RealmConfigRemoveCommandAr
 
 	public override void Configure()
 	{
-		AddOption(new PlainOutputOption(), (args, b) => args.plainOutput = b);
 		AddOption(new RealmConfigKeyOption(), (args, b) => args.keys = b.ToList());
 	}
+
+	public override bool AutoLogOutput => false;
 
 	public override async Task<RealmConfigData> GetResult(RealmConfigRemoveCommandArgs args)
 	{
@@ -35,7 +35,10 @@ public class RealmConfigRemoveCommand : AtomicCommand<RealmConfigRemoveCommandAr
 				currentConfig.Config.Remove(data.NamespaceKey());
 			}
 			await args.RealmsApi.UpdateRealmConfig(currentConfig.Config);
-			return await DisplayRealmConfig(args, currentConfig);
+			
+			currentConfig = await GetRealmConfig(args);
+			LogResult(currentConfig.ConvertToView());
+			return currentConfig;
 		}
 		catch (ArgumentException e)
 		{
@@ -55,26 +58,5 @@ public class RealmConfigRemoveCommand : AtomicCommand<RealmConfigRemoveCommandAr
 		{
 			throw new CliException($"Failed to get realm config data due to error: {e.Message}");
 		}
-	}
-
-	private async Task<RealmConfigData> DisplayRealmConfig(RealmConfigRemoveCommandArgs args, [CanBeNull] RealmConfigData data = null)
-	{
-		data ??= await GetRealmConfig(args);
-
-		var json = JsonConvert.SerializeObject(data.ConvertToView());
-		if (args.plainOutput)
-		{
-			AnsiConsole.WriteLine(json);
-		}
-		else
-		{
-			AnsiConsole.Write(
-				new Panel(new JsonText(json))
-					.Header("Server response")
-					.Collapse()
-					.RoundedBorder());
-		}
-
-		return data;
 	}
 }

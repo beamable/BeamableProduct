@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renaming content in newer Unity versions works correctly
 - `ContentCache` now updates content tags after deserializing content.
 - Fixed `EventView` end time calculation.
+- 502 and 504 requests containing HTML are received as `RequesterExceptions`.
+- Content alphabetizes fields on checksum calculation as well as publication.
+- Listing content `activeFrom` field no longer resets every time it is viewed in the Inspector.
 
 ### Removed
 

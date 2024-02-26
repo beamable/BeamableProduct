@@ -18,6 +18,8 @@ public class CheckNBomberCommandArgs : CommandArgs
 }
 public class CheckNBomberCommand : AtomicCommand<CheckNBomberCommandArgs, CheckPerfCommandOutput>, IStandaloneCommand
 {
+	public override bool IsForInternalUse => true;
+
 	public CheckNBomberCommand() : base("check-nbomber", "Read the results of a n-bomber .csv file and determine if there are errors")
 	{
 	}
@@ -64,7 +66,6 @@ public class CheckNBomberCommand : AtomicCommand<CheckNBomberCommandArgs, CheckP
 			throw new CliException(string.Join(",", warnings));
 		}
 
-		BeamableLogger.Log("No issues found.");
 		return Task.FromResult(new CheckPerfCommandOutput { message = "No issues found." });
 	}
 }

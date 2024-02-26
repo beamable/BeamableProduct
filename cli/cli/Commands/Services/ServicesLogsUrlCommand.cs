@@ -54,6 +54,6 @@ public class ServicesLogsUrlCommand : AtomicCommand<ServicesLogsUrlCommandArgs, 
 			);
 
 
-		return PrintResult(response);
+		return response;
 	}
 }

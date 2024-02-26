@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Serilog;
 using Spectre.Console;
+using Spectre.Console.Json;
 using System.CommandLine;
 using System.CommandLine.Binding;
 using System.CommandLine.Help;
@@ -114,12 +115,20 @@ public abstract class AtomicCommand<TArgs, TResult> : AppCommand<TArgs>, IResult
 
 		var reporter = args.Provider.GetService<IDataReporterService>();
 		reporter.Report(_channel.ChannelName, result);
+		
+		if (AutoLogOutput)
+		{
+			LogResult(result);
+		}
 	}
 
-	protected TResult PrintResult(TResult result)
+	protected virtual void LogResult(object result)
 	{
-		Console.Error.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
-		return result;
+		var json = JsonConvert.SerializeObject(result);
+		AnsiConsole.Write(
+			new Panel(new JsonText(json))
+				.Collapse()
+				.NoBorder());
 	}
 
 	public abstract Task<TResult> GetResult(TArgs args);
@@ -174,17 +183,43 @@ public abstract class CommandGroup : CommandGroup<CommandGroupArgs>
 	}
 }
 
-public abstract partial class AppCommand<TArgs> : Command, IResultProvider
+public interface IAppCommand
+{
+	bool IsForInternalUse { get; }
+	int Order { get; }
+
+	public static string GetModifiedDescription(bool isForInternalUse, string description)
+	{
+		if (isForInternalUse)
+		{
+			return $"[INTERNAL] {description}";
+		}
+
+		return description;
+	}
+}
+
+public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IAppCommand
 	where TArgs : CommandArgs
 {
 	private List<Action<BindingContext, TArgs>> _bindingActions = new List<Action<BindingContext, TArgs>>();
+	private string _description;
 
+	public virtual bool IsForInternalUse => false;
+	public virtual bool AutoLogOutput => true;
+	public virtual int Order => 100;
+	
+	
 	IDataReporterService IResultProvider.Reporter { get; set; }
 	public IDependencyProvider CommandProvider { get; set; }
 
-	protected AppCommand(string name, string description = null) : base(name, description)
+	protected AppCommand(string name, string description = null) : base(name)
 	{
+		_description = description;
 	}
+
+	public override string Description { get => IAppCommand.GetModifiedDescription(IsForInternalUse, _description); set => _description = value; }
+
 
 	/// <summary>
 	/// Add an argument to the current command

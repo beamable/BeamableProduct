@@ -30,7 +30,7 @@ public class ServicesManifestsCommand : AtomicCommand<ServicesManifestsArgs, Ser
 		response = response.Skip(args.skip).Take(args.limit > 0 ? args.limit : int.MaxValue).ToList();
 
 		var result = new ServiceManifestOutput { manifests = response };
-		return PrintResult(result);
+		return result;
 	}
 }
 

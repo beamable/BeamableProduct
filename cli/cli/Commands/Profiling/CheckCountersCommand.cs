@@ -13,6 +13,8 @@ public class CheckCountersCommandArgs : CommandArgs
 
 public class CheckCountersCommand : AtomicCommand<CheckCountersCommandArgs, CheckPerfCommandOutput>, IStandaloneCommand
 {
+	public override bool IsForInternalUse => true;
+
 	public CheckCountersCommand() : base("check-counters", "Read the results of a dotnet-counters json file and determine if there are errors")
 	{
 	}
@@ -74,9 +76,7 @@ public class CheckCountersCommand : AtomicCommand<CheckCountersCommandArgs, Chec
 			throw new CliException(string.Join(",", warnings.Select(w => w.ToString())));
 		}
 
-		BeamableLogger.Log("No issues found.");
 		return Task.FromResult(new CheckPerfCommandOutput { message = "No issues found." });
-
 	}
 }
 

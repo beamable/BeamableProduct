@@ -7,16 +7,15 @@ namespace cli;
 
 public class AccountMeCommandArgs : CommandArgs
 {
-	public bool plainOutput;
 }
 
 public class AccountMeCommand : AtomicCommand<AccountMeCommandArgs, User>
 {
+	public override int Order => 200;
 	public AccountMeCommand() : base("me", "Fetch the current account") { }
 
 	public override void Configure()
 	{
-		AddOption(new PlainOutputOption(), (args, b) => args.plainOutput = b);
 	}
 
 	protected override User GetHelpInstance()
@@ -39,20 +38,6 @@ public class AccountMeCommand : AtomicCommand<AccountMeCommandArgs, User>
 		try
 		{
 			var response = await args.AuthApi.GetUser().ShowLoading("Sending Request...");
-			var json = JsonConvert.SerializeObject(response);
-			if (args.plainOutput)
-			{
-				AnsiConsole.WriteLine(json);
-			}
-			else
-			{
-				AnsiConsole.Write(
-					new Panel(new JsonText(json))
-						.Header("Server response")
-						.Collapse()
-						.RoundedBorder());
-			}
-
 			return response;
 		}
 		catch (Exception e)

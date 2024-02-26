@@ -16,12 +16,9 @@ public class ConfigCommand : AtomicCommand<ConfigCommandArgs, ConfigCommandResul
 
 	public override Task<ConfigCommandResult> GetResult(ConfigCommandArgs args)
 	{
-		BeamableLogger.Log(args.ConfigService.ConfigFilePath);
-		BeamableLogger.Log($"cid=[{args.AppContext.Cid}] pid=[{args.AppContext.Pid}]");
-		BeamableLogger.Log(args.ConfigService.PrettyPrint());
-
 		return Task.FromResult(new ConfigCommandResult()
 		{
+			configPath = args.ConfigService.ConfigFilePath,
 			host = args.ConfigService.GetConfigString(Constants.CONFIG_PLATFORM),
 			cid = args.ConfigService.GetConfigString(Constants.CONFIG_CID),
 			pid = args.ConfigService.GetConfigString(Constants.CONFIG_PID)
@@ -35,6 +32,7 @@ public class ConfigCommandResult
 	public string host;
 	public string cid;
 	public string pid;
+	public string configPath;
 }
 
 public class ConfigCommandArgs : CommandArgs

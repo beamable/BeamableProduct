@@ -37,6 +37,8 @@
         <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
         <PackageReference Include="Serilog.Sinks.TestCorrelator" Version="3.2.0" />
+        <PackageReference Include="System.Net.WebSockets" Version="4.3.0" />
+        <PackageReference Include="WebSocketSharp-netstandard" Version="1.0.1" />
     </ItemGroup>
 
 <!--    <ItemGroup>-->

@@ -55,6 +55,6 @@ public class ServicesPromoteCommand : AtomicCommand<ServicesPromoteCommandArgs, 
 				await _remoteBeamo.Promote(args.SourcePid)
 			);
 
-		return PrintResult(response);
+		return response;
 	}
 }

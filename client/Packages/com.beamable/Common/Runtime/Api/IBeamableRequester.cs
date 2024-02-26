@@ -368,10 +368,27 @@ namespace Beamable.Common.Api
 		public RequesterException(string prefix, string method, string uri, long responseCode, string responsePayload)
 		   : base(GenerateMessage(prefix, method, uri, responseCode, responsePayload))
 		{
-			RequestError = string.IsNullOrEmpty(responsePayload)
-				? null
-				: JsonSerializable.FromJson<BeamableRequestError>(responsePayload);
-
+			if (string.IsNullOrEmpty(responsePayload))
+			{
+				RequestError = null;
+			}
+			else
+			{
+				try
+				{
+					RequestError =
+						JsonSerializable.FromJson<BeamableRequestError>(responsePayload, throwOnInvalidJson: true);
+				}
+				catch (ArgumentException ex)
+				{
+					RequestError = new BeamableRequestError
+					{
+						error = "invalid json", message = ex.Message, service = "", status = responseCode
+					};
+				}
+			}
+			
+			
 			if (MethodUtil.TryParseMethod(method, out var meth))
 			{
 				Method = meth;
