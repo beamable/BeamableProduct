@@ -414,7 +414,10 @@ namespace Beamable.Server.Editor.Usam
 
 		public void CheckMicroserviceStatus()
 		{
-			var projectPs = _cli.ProjectPs(new ProjectPsArgs()).OnStreamServiceDiscoveryEvent(cb =>
+			var projectPs = _cli.ProjectPs(new ProjectPsArgs()
+			{
+				watch = true
+			}).OnStreamServiceDiscoveryEvent(cb =>
 			{
 				Debug.Log($"[{cb.data.service}] is running = {cb.data.isRunning}");
 
@@ -769,28 +772,6 @@ namespace Beamable.Server.Editor.Usam
 			await stop.Run();
 		}
 
-		public async Promise Stop(IEnumerable<string> beamoIds)
-		{
-			try
-			{
-				var cmd = _cli.ServicesStop(new ServicesStopArgs() { ids = beamoIds.ToArray() });
-				await cmd.Run();
-
-				foreach (string id in beamoIds)
-				{
-					var def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(id));
-					if (def != null)
-					{
-						def.Builder.IsRunning = false;
-					}
-				}
-			}
-			catch (Exception e)
-			{
-				LogExceptionVerbose(e);
-			}
-		}
-
 		public async Promise OpenSwagger(string beamoId, bool remote = false)
 		{
 			try
@@ -816,38 +797,6 @@ namespace Beamable.Server.Editor.Usam
 			}
 			var fileName = $@"{def.ServiceInfo.projectPath}/{serviceName}.cs";
 			EditorUtility.OpenWithDefaultApp(fileName);
-		}
-
-		public async Promise Run(IEnumerable<string> beamoIds)
-		{
-			var listToRun = beamoIds.ToList();
-			try
-			{
-				var cmd = _cli.ServicesRun(new ServicesRunArgs() { ids = listToRun.ToArray() });
-				cmd.OnLocal_progressServiceRunProgressResult(cb =>
-				{
-					ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(cb.data.BeamoId))?.Builder
-									  .OnStartingProgress?.Invoke((int)cb.data.LocalDeployProgress, 100);
-				});
-				cmd.OnStreamServiceRunReportResult(cb =>
-				{
-					foreach (string id in beamoIds)
-					{
-						var def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(id));
-						def?.Builder.OnStartingProgress?.Invoke((int)100, 100);
-						def?.Builder.OnStartingFinished?.Invoke(cb.data.Success);
-						if (def != null)
-						{
-							def.Builder.IsRunning = cb.data.Success;
-						}
-					}
-				});
-				await cmd.Run();
-			}
-			catch (Exception e)
-			{
-				LogExceptionVerbose(e);
-			}
 		}
 	}
 }
