@@ -180,7 +180,11 @@ namespace Beamable.Editor.Microservice.UI2.Models
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => { OpenOnRemote("docs/"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => { OpenOnRemote("metrics"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => { OpenDocs(true); }, existsOnRemote);
-			evt.menu.BeamableAppendAction($"Open C# Code", _ => _serviceDefinition.ServiceInfo.OpenCode());
+			evt.menu.BeamableAppendAction($"Open C# Code", _ =>
+			{
+				BeamEditorContext.Default.ServiceScope.GetService<CodeService>()
+				                 .OpenMicroserviceFile(_serviceDefinition.BeamoId);
+			});
 
 			if (!AreLogsAttached)
 			{
