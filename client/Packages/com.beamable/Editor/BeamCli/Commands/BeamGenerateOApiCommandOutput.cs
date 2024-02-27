@@ -5,8 +5,10 @@ namespace Beamable.Editor.BeamCli.Commands
     using Beamable.Common.BeamCli;
     
     [System.SerializableAttribute()]
-    public class BeamServicesTemplatesCommandOutput
+    public class BeamGenerateOApiCommandOutput
     {
-        public System.Collections.Generic.List<BeamServiceTemplate> templates;
+        public string service;
+        public bool isBuilt;
+        public string openApi;
     }
 }
