@@ -101,12 +101,12 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 			args.ProjectService.GeneratePathForProject(path, args.storageName),
 			CancellationToken.None);
 
-		string[] dependencies;
-		if (args.linkedServices == null && !args.quiet)
+		string[] dependencies = null;
+		if ((args.linkedServices == null || args.linkedServices.Count == 0) && !args.quiet)
 		{ 
 			dependencies = GetChoicesFromPrompt(args.BeamoLocalSystem);
 		}
-		else
+		else if(args.linkedServices != null)
 		{
 			dependencies = GetDependencieFromName(args.BeamoLocalSystem, args.linkedServices);
 		}
@@ -114,6 +114,9 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 		// add the project itself
 		_ = await args.ProjectService.CreateNewStorage(args.slnPath, args.outputPath, args.storageName, args.quiet);
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
+
+		if (dependencies == null)
+			return;
 
 		foreach (var dependency in dependencies)
 		{
@@ -136,7 +139,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 		var choices = new List<string>();
 		foreach (var dep in dependencies)
 		{
-			var localProtocol = services.First(x => x.Key.Equals(dep)).Value;
+			var localProtocol = services.FirstOrDefault(x => x.Key.Equals(dep)).Value;
 			if (localProtocol != null)
 			{
 				var dockerfilePath = localProtocol.RelativeDockerfilePath;

@@ -10,7 +10,6 @@ namespace Beamable.Server.Editor.Usam
 		public string CsprojPath => assetProjectPath;
 		public string CsprojFilePath => Path.Combine(assetProjectPath, $"{name}.csproj");
 		
-		public ServiceType serviceType;
 		public string name;
 		public string assetProjectPath = "";
 		public void AfterDeserialize(string filePath)

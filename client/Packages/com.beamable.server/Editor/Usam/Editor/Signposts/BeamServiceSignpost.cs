@@ -11,7 +11,6 @@ namespace Beamable.Server.Editor.Usam
 		public string CsprojPath => assetProjectPath;
 		public string CsprojFilePath => Path.Combine(assetProjectPath, $"{name}.csproj");
 
-		public ServiceType serviceType;
 		public string name;
 		public string assetProjectPath = "";
 
@@ -26,7 +25,7 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
-			var path = Path.Combine(directoryPath, "StandaloneMicroservices~/");
+			string path = Path.Combine(directoryPath, CodeService.StandaloneMicroservicesFolderName);
 			assetProjectPath = Path.Combine(path, assetProjectPath);
 		}
 	}

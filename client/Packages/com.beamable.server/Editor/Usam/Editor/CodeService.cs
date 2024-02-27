@@ -40,7 +40,8 @@ namespace Beamable.Server.Editor.Usam
 
 		private const string BEAMABLE_PATH = "Assets/Beamable/";
 		private const string MICROSERVICE_DLL_PATH = "bin/Debug/net6.0"; // is this true for all platforms and dotnet installations?
-		private static readonly string StandaloneMicroservicesPath = $"{BEAMABLE_PATH}StandaloneMicroservices~/";
+		public static readonly string StandaloneMicroservicesFolderName = "StandaloneMicroservices~/";
+		private static readonly string StandaloneMicroservicesPath = $"{BEAMABLE_PATH}{StandaloneMicroservicesFolderName}";
 
 		public CodeService(BeamCommands cli, BeamableDispatcher dispatcher, DotnetService dotnetService)
 		{
@@ -99,13 +100,7 @@ namespace Beamable.Server.Editor.Usam
 		public async Promise UpdateServicesVersions()
 		{
 			var version = new BeamVersionResults();
-			var versionCommand = _cli.Version(new VersionArgs()
-			{
-				showVersion = true,
-				showLocation = true,
-				showTemplates = true,
-				showType = true
-			}).OnStreamVersionResults(result =>
+			var versionCommand = _cli.Version().OnStreamVersionResults(result =>
 			{
 				version = result.data;
 			});
@@ -179,7 +174,7 @@ namespace Beamable.Server.Editor.Usam
 
 			for (int i = 0; i < _services.Count; i++)
 			{
-				AddServiceDefinition(_services[i].name, _services[i].serviceType, _services[i].assetProjectPath, false);
+				AddServiceDefinition(_services[i].name, ServiceType.MicroService, _services[i].assetProjectPath, false);
 			}
 
 			for (int i = 0; i < _storages.Count; i++)
@@ -325,7 +320,7 @@ namespace Beamable.Server.Editor.Usam
 
 
 			var service = _services.FirstOrDefault(s => s.name == id);
-			if (service?.serviceType == ServiceType.StorageObject)
+			if (service == null)
 			{
 				return;
 			}
@@ -645,8 +640,7 @@ namespace Beamable.Server.Editor.Usam
 			BeamStorageSignpost signpost = new BeamStorageSignpost()
 			{
 				name = storageName,
-				assetProjectPath = Path.Combine(relativePath, storageName).Replace(StandaloneMicroservicesPath, string.Empty),
-				serviceType = ServiceType.StorageObject
+				assetProjectPath = Path.Combine(relativePath, storageName).Replace(StandaloneMicroservicesPath, string.Empty)
 			};
 			
 			string signpostPath = $"{BEAMABLE_PATH}{storageName}.beamstorage";
@@ -685,8 +679,7 @@ namespace Beamable.Server.Editor.Usam
 			BeamServiceSignpost signpost = new BeamServiceSignpost()
 			{
 				name = serviceName,
-				assetProjectPath = Path.Combine(relativePath, serviceName).Replace(StandaloneMicroservicesPath, string.Empty),
-				serviceType = ServiceType.MicroService
+				assetProjectPath = Path.Combine(relativePath, serviceName).Replace(StandaloneMicroservicesPath, string.Empty)
 			};
 			
 			string signpostPath = $"{BEAMABLE_PATH}{serviceName}.beamservice";
