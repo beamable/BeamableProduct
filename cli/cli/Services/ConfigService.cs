@@ -350,6 +350,15 @@ public class ConfigService
 				File.Move(oldPath,GetConfigPath(renamedPair.Value));
 			}
 		}
+
+		foreach (var pair in Constants.RENAMED_DIRECTORIES)
+		{
+			var oldPath = GetConfigPath(pair.Key);
+			if (Directory.Exists(oldPath))
+			{
+				Directory.Move(oldPath,GetConfigPath(pair.Value));
+			}
+		}
 	}
 
 	bool TryToFindBeamableConfigFolder(out string result)
