@@ -2,8 +2,6 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using cli.Dotnet;
 using JetBrains.Annotations;
-using Markdig.Helpers;
-using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Serilog;
 using System.CommandLine.Binding;
