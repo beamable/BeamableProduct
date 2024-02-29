@@ -363,27 +363,40 @@ public class ProjectService
 	public string GeneratePathForProject(string slnFilePath, string beamId)
 	{
 		var slnDirectory = Path.GetDirectoryName(slnFilePath)!;
+
+		if (string.IsNullOrEmpty(slnDirectory))
+		{
+			slnDirectory = slnFilePath;
+		}
+
 		var rootServicesPath = Path.Combine(slnDirectory, "services");
 		var path = _configService.GetRelativePath(Path.Combine(rootServicesPath, beamId));
 		return path;
 	}
 
-	public async Task<string> CreateNewStorage(string slnFilePath, string storageName)
+	public async Task<string> CreateNewStorage(string slnFilePath, string outputPath, string storageName, bool quiet)
 	{
-		var storagePath = GeneratePathForProject(slnFilePath, storageName);
+		var hasCustomPath = !string.IsNullOrEmpty(outputPath);
+		var path = hasCustomPath ? outputPath : slnFilePath;
+		var storagePath = GeneratePathForProject(path, storageName);
 
 		if (Directory.Exists(storagePath))
 		{
 			throw new CliException("Cannot create a storage because the directory already exists");
 		}
 
-		await EnsureCanUseTemplates(null); // TODO: tech debt, this whole command needs to care about version.
+		await EnsureCanUseTemplates(null, quiet); // TODO: tech debt, this whole command needs to care about version.
+		
+		// create the solution
+		if (hasCustomPath)
+			await RunDotnetCommand($"new sln -n \"{storageName}\" -o \"{storagePath}\"");
 
 		// create the beam microservice project
 		await RunDotnetCommand($"new beamstorage -n {storageName} -o {storagePath}");
 
 		// add the new project as a reference to the solution
-		await RunDotnetCommand($"sln {slnFilePath} add {storagePath}");
+		var slnPathToUse = hasCustomPath ? storagePath : slnFilePath;
+		await RunDotnetCommand($"sln {slnPathToUse} add {storagePath}");
 
 		return storagePath;
 	}

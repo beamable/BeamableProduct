@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Serilog;
+using Spectre.Console;
 using System.CommandLine;
 using System.Text.RegularExpressions;
 
@@ -8,7 +9,8 @@ namespace cli;
 public class ServicesSetManifestCommandArgs : CommandArgs
 {
 	public List<string> microservices;
-	public List<string> storages;
+	public List<string> storagesPaths;
+	public List<string> storagesNames;
 	public List<string> disabledServices;
 }
 
@@ -34,7 +36,14 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 			Arity = ArgumentArity.ZeroOrMore,
 			AllowMultipleArgumentsPerToken = true
 		};
-		AddOption(storageDeps, (x, i) => x.storages = i);
+		AddOption(storageDeps, (x, i) => x.storagesPaths = i);
+		
+		var storageNames = new Option<List<string>>("--storage-names", "Local storages names")
+		{
+			Arity = ArgumentArity.ZeroOrMore,
+			AllowMultipleArgumentsPerToken = true
+		};
+		AddOption(storageNames, (x, i) => x.storagesNames = i);
 
 		var shouldBeEnabled = new Option<List<string>>("--disabled-services", "Names of the services that should be disabled on remote")
 		{
@@ -46,7 +55,7 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 
 	public override async Task Handle(ServicesSetManifestCommandArgs args)
 	{
-		var nonExistingServices = args.microservices.Concat(args.storages)
+		var nonExistingServices = args.microservices.Concat(args.storagesPaths)
 			.Where(p => !Directory.Exists(Path.Combine(args.ConfigService.BaseDirectory, p))).ToArray();
 		if (nonExistingServices.Length > 0)
 		{
@@ -56,11 +65,10 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 
 		args.BeamoLocalSystem.BeamoManifest.Clear();
 
-		foreach (var storagePath in args.storages)
+		for (int i = 0; i < args.storagesNames.Count; i++)
 		{
-			var storageName = Directory.GetDirectories(storagePath).Last();
-			await args.BeamoLocalSystem.AddDefinition_EmbeddedMongoDb(storageName, "mongo:latest",
-				storagePath, CancellationToken.None);
+			await args.BeamoLocalSystem.AddDefinition_EmbeddedMongoDb(args.storagesNames[i], "mongo:latest",
+				args.storagesPaths[i], CancellationToken.None);
 		}
 
 		foreach (string microservicePath in args.microservices)

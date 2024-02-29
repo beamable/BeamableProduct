@@ -30,7 +30,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public event Action OnCreateServiceClicked;
 		public event Action OnCreateServiceFinished;
 
-		protected ServiceCreateDependentService _serviceCreateDependentService;
+		protected StandaloneServiceCreateDependent _serviceCreateDependentService;
 
 		private const int MAX_NAME_LENGTH = 28;
 
@@ -93,7 +93,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			if (!ShouldShowCreateDependentService)
 				return;
-			_serviceCreateDependentService = new ServiceCreateDependentService();
+			_serviceCreateDependentService = new StandaloneServiceCreateDependent();
 			_serviceCreateDependentService.Refresh();
 			InitCreateDependentService();
 			_createBtn.parent.parent.Insert(1, _serviceCreateDependentService);
@@ -111,19 +111,23 @@ namespace Beamable.Editor.Microservice.UI.Components
 			OnCreateServiceClicked?.Invoke();
 		}
 
-		private async Promise CreateService(string serviceName, List<ServiceModelBase> additionalReferences = null)
+		private async Promise CreateService(string serviceName, List<IBeamoServiceDefinition> additionalReferences = null)
 		{
 			var codeService = BeamEditorContext.Default.ServiceScope.GetService<CodeService>();
-			await codeService.CreateService(serviceName, ServiceType);
+			await codeService.CreateService(serviceName, ServiceType, additionalReferences);
 			OnCreateServiceFinished?.Invoke();
 		}
 
 		private void InitCreateDependentService()
 		{
-			//TODO
+			var codeService = BeamEditorContext.Default.ServiceScope.GetService<CodeService>();
+			ServiceType dependenciesType = ServiceType == ServiceType.MicroService
+				? ServiceType.StorageObject
+				: ServiceType.MicroService;
+			_serviceCreateDependentService.Init(codeService.ServiceDefinitions.Where(x => x.ServiceType == dependenciesType).ToList(), dependenciesType.ToString());
 		}
 
-		private bool ShouldShowCreateDependentService { get; }
+		private bool ShouldShowCreateDependentService => true;
 
 		private void HandleNameLabelFocus(FocusEvent evt)
 		{

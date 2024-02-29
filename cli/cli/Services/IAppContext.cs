@@ -181,7 +181,12 @@ public class DefaultAppContext : IAppContext
 		DotnetPath = bindingContext.ParseResult.GetValueForOption(_dotnetPathOption);
 		if (string.IsNullOrEmpty(DotnetPath))
 		{
-			DotnetPath = "dotnet";
+			DotnetPath = Environment.GetEnvironmentVariable("BEAM_DOTNET_PATH");
+
+			if (string.IsNullOrEmpty(DotnetPath))
+			{
+				DotnetPath = "dotnet";
+			}
 		}
 
 		SetupOutputStrategy();

@@ -1,6 +1,7 @@
 ﻿using Beamable.Common.BeamCli.Contracts;
 using Beamable.Server.Editor;
 using System;
+using System.Collections.Generic;
 
 namespace Beamable.Editor.UI.Model
 {
@@ -17,5 +18,6 @@ namespace Beamable.Editor.UI.Model
 		public BeamoServiceStatus IsRunningOnRemote { get; set; } = BeamoServiceStatus.Unknown;
 		public ServiceInfo ServiceInfo { get; set; }
 		public bool ExistLocally => !string.IsNullOrWhiteSpace(ServiceInfo?.projectPath);
+		public List<string> Dependencies { get; set; }
 	}
 }

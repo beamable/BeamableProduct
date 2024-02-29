@@ -80,9 +80,6 @@ namespace Beamable.Server.Editor.Usam
 
 				}
 			}
-
-
-
 		}
 
 	}

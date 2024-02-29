@@ -34,14 +34,13 @@ namespace Beamable.Editor.Microservice.UI2.Components
 
 		private void HandleStartButtonClicked()
 		{
-			Action<Unit> callback = _ => _codeService.RefreshServices().Then(_ => { });
 			if (_definition.IsRunningLocally)
 			{
-				_definition.Builder.TryToStop().ToPromise().Then(callback);
+				_definition.Builder.TryToStop().ToPromise();
 			}
 			else
 			{
-				_definition.Builder.TryToStart().ToPromise().Then(callback);
+				_definition.Builder.TryToStart().ToPromise();
 			}
 		}
 	}

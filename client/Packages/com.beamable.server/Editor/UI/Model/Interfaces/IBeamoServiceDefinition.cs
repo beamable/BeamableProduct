@@ -1,6 +1,7 @@
 ﻿using Beamable.Common.BeamCli.Contracts;
 using Beamable.Server.Editor;
 using System;
+using System.Collections.Generic;
 
 namespace Beamable.Editor.UI.Model
 {
@@ -51,5 +52,6 @@ namespace Beamable.Editor.UI.Model
 
 		ServiceInfo ServiceInfo { get; set; }
 		bool ExistLocally { get; }
+		public List<string> Dependencies { get; set; }
 	}
 }
