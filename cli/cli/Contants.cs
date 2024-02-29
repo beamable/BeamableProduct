@@ -5,6 +5,7 @@ public static class Constants
 	public const string CONFIG_FOLDER = ".beamable";
 	public const string CONTENT_DIRECTORY = "content";
 	public const string CONFIG_DEFAULTS_FILE_NAME = "connection-configuration.json";
+	public const string CONFIG_LINKED_PROJECTS = "linked-projects.json";
 	public const string CONFIG_GIT_IGNORE_FILE_NAME = ".gitignore";
 	public const string CONFIG_SVN_IGNORE_FILE_NAME = ".svnignore";
 	public const string CONFIG_P4_IGNORE_FILE_NAME = ".p4ignore";
@@ -51,7 +52,8 @@ public static class Constants
 	{
 		{ "config-defaults.json", CONFIG_DEFAULTS_FILE_NAME }, { "user-token.json", CONFIG_TOKEN_FILE_NAME },
 		{"beamoLocalRuntime.json",BEAMO_LOCAL_RUNTIME_FILE_NAME },
-		{"beamoLocalManifest.json", BEAMO_LOCAL_MANIFEST_FILE_NAME}
+		{"beamoLocalManifest.json", BEAMO_LOCAL_MANIFEST_FILE_NAME},
+		{".linkedProjects.json", CONFIG_LINKED_PROJECTS}
 	};
 
 	public static readonly Dictionary<string, string> RENAMED_DIRECTORIES = new Dictionary<string, string>()

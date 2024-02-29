@@ -102,7 +102,7 @@ public class ProjectService
 		_configService = configService;
 		_versionService = versionService;
 		_app = app;
-		_projects = configService.LoadDataFile<ProjectData>(".linkedProjects");
+		_projects = configService.LoadDataFile<ProjectData>(Constants.CONFIG_LINKED_PROJECTS);
 		ConfigFileExists = _configService.ConfigFileExists;
 	}
 
@@ -119,7 +119,7 @@ public class ProjectService
 	public void AddUnityProject(string relativePath)
 	{
 		_projects.unityProjectsPaths.Add(relativePath);
-		_configService.SaveDataFile(".linkedProjects", _projects);
+		_configService.SaveDataFile(Constants.CONFIG_LINKED_PROJECTS, _projects);
 	}
 
 	public void AddUnrealProjectWithOss(string projectPath)
@@ -157,7 +157,7 @@ public class ProjectService
 
 		// Save it
 		_projects.unrealProjectsPaths.Add(projData);
-		_configService.SaveDataFile(".linkedProjects", _projects);
+		_configService.SaveDataFile(Constants.CONFIG_LINKED_PROJECTS, _projects);
 	}
 
 	public void AddUnrealProject(string projectPath, string msClientModuleName, string blueprintNodesModuleName, bool msClientModuleIsPublicPrivate, bool blueprintNodesModuleIsPublicPrivate)
@@ -195,7 +195,7 @@ public class ProjectService
 		projData.BeamableBackendGenerationPassFile = projectPath + pathToBackendGenerationJson;
 
 		_projects.unrealProjectsPaths.Add(projData);
-		_configService.SaveDataFile(".linkedProjects", _projects);
+		_configService.SaveDataFile(Constants.CONFIG_LINKED_PROJECTS, _projects);
 	}
 
 	private static DirectoryInfo EnsureUnrealRootPath(string projectPath)
