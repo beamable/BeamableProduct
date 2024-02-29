@@ -87,7 +87,7 @@ public class ConfigService
 	{
 		if (string.IsNullOrWhiteSpace(ConfigFilePath))
 		{
-			throw new CliException($"Could not find {pathInConfig} because config is undetected.");
+			throw new CliException($"Could not find {pathInConfig} because config file is unspecified.");
 		}
 		var basePath = ConfigFilePath;
 		if (Constants.TEMP_FILES.Contains(pathInConfig))
@@ -320,12 +320,15 @@ public class ConfigService
 		ConfigFileExists = TryToFindBeamableConfigFolder(out var configPath);
 		ConfigFilePath = configPath;
 
-		if (!Directory.Exists(GetConfigPath(Constants.TEMP_FOLDER)))
+		if(ConfigFileExists.GetValueOrDefault(false))
 		{
-			Directory.CreateDirectory(GetConfigPath(Constants.TEMP_FOLDER));
+			if (!Directory.Exists(GetConfigPath(Constants.TEMP_FOLDER)))
+			{
+				Directory.CreateDirectory(GetConfigPath(Constants.TEMP_FOLDER));
+			}
+
+			MigrateOldConfigIfExists();
 		}
-		
-		MigrateOldConfigIfExists();
 		var isValid = TryToReadConfigFile(ConfigFilePath, out _config);
 		if (ConfigFileExists.Value && !isValid)
 		{
