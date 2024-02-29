@@ -25,9 +25,9 @@ public class ConfigService
 	private readonly CliEnvironment _environment;
 	private readonly ConfigDirOption _configDirOption;
 	public string WorkingDirectory => _dir;
-	public bool? ConfigFileExists { get; private set; }
-	[CanBeNull] public string ConfigFilePath { get; private set; }
-	public string BaseDirectory => Path.GetDirectoryName(ConfigFilePath);
+	public bool? DirectoryExists { get; private set; }
+	[CanBeNull] public string ConfigDirectoryPath { get; private set; }
+	public string BaseDirectory => Path.GetDirectoryName(ConfigDirectoryPath);
 
 	[CanBeNull] private Dictionary<string, string> _config;
 
@@ -60,7 +60,7 @@ public class ConfigService
 	/// <returns></returns>
 	public string GetRelativePath(string relativePath)
 	{
-		var rootDir = Directory.GetParent(ConfigFilePath).FullName;
+		var rootDir = Directory.GetParent(ConfigDirectoryPath).FullName;
 		var fullRoot = Path.GetFullPath(rootDir);
 
 		var path = Path.Combine(fullRoot, relativePath);
@@ -85,11 +85,11 @@ public class ConfigService
 	/// <returns>The full path of the file in the configuration.</returns>
 	public string GetConfigPath(string pathInConfig)
 	{
-		if (string.IsNullOrWhiteSpace(ConfigFilePath))
+		if (string.IsNullOrWhiteSpace(ConfigDirectoryPath))
 		{
 			throw new CliException($"Could not find {pathInConfig} because config file is unspecified.");
 		}
-		var basePath = ConfigFilePath;
+		var basePath = ConfigDirectoryPath;
 		if (Constants.TEMP_FILES.Contains(pathInConfig))
 		{
 			basePath = Path.Combine(basePath, Constants.TEMP_FOLDER);
@@ -155,7 +155,7 @@ public class ConfigService
 	{
 		try
 		{
-			if (!ConfigFileExists.GetValueOrDefault(false))
+			if (!DirectoryExists.GetValueOrDefault(false))
 			{
 				return defaultValueGenerator();
 			}
@@ -224,27 +224,32 @@ public class ConfigService
 
 	public void SetBeamableDirectory(string dir)
 	{
-		ConfigFilePath = Path.Combine(dir, Constants.CONFIG_FOLDER);
+		ConfigDirectoryPath = Path.Combine(dir, Constants.CONFIG_FOLDER);
 	}
 
 	public void FlushConfig()
 	{
-		if (string.IsNullOrEmpty(ConfigFilePath))
+		if (string.IsNullOrEmpty(ConfigDirectoryPath))
 			throw new CliException("No beamable project exists. Please use beam init");
 		var json = JsonConvert.SerializeObject(_config,
 			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented});
-		if (!Directory.Exists(ConfigFilePath))
+		if (!Directory.Exists(ConfigDirectoryPath))
 		{
-			Directory.CreateDirectory(ConfigFilePath);
+			Directory.CreateDirectory(ConfigDirectoryPath);
+		}
+		
+		if (!Directory.Exists(GetConfigPath(Constants.TEMP_FOLDER)))
+		{
+			Directory.CreateDirectory(GetConfigPath(Constants.TEMP_FOLDER));
 		}
 
-		string fullPath = Path.Combine(ConfigFilePath, Constants.CONFIG_DEFAULTS_FILE_NAME);
+		string fullPath = Path.Combine(ConfigDirectoryPath, Constants.CONFIG_DEFAULTS_FILE_NAME);
 		File.WriteAllText(fullPath, json);
 	}
 
 	public void CreateIgnoreFile(Vcs system = Vcs.Git, bool forceCreate = false)
 	{
-		if (string.IsNullOrEmpty(ConfigFilePath))
+		if (string.IsNullOrEmpty(ConfigDirectoryPath))
 			throw new CliException("No beamable project exists. Please use beam init");
 
 		string ignoreFilePath = GetIgnoreFilePath(system);
@@ -270,7 +275,7 @@ public class ConfigService
 	public bool ReadTokenFromFile(out CliToken response)
 	{
 		response = null;
-		string fullPath = Path.Combine(ConfigFilePath, Constants.TEMP_FOLDER, Constants.CONFIG_TOKEN_FILE_NAME);
+		string fullPath = Path.Combine(ConfigDirectoryPath, Constants.TEMP_FOLDER, Constants.CONFIG_TOKEN_FILE_NAME);
 		if (!File.Exists(fullPath)) return false;
 
 		try
@@ -289,7 +294,7 @@ public class ConfigService
 
 	public void SaveTokenToFile(IAccessToken response)
 	{
-		string fullPath = Path.Combine(ConfigFilePath, Constants.TEMP_FOLDER, Constants.CONFIG_TOKEN_FILE_NAME);
+		string fullPath = Path.Combine(ConfigDirectoryPath, Constants.TEMP_FOLDER, Constants.CONFIG_TOKEN_FILE_NAME);
 		var json = JsonConvert.SerializeObject(response,
 			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented});
 		File.WriteAllText(fullPath, json);
@@ -314,10 +319,10 @@ public class ConfigService
 
 	void RefreshConfig()
 	{
-		ConfigFileExists = TryToFindBeamableConfigFolder(out var configPath);
-		ConfigFilePath = configPath;
+		DirectoryExists = TryToFindBeamableConfigFolder(out var configPath);
+		ConfigDirectoryPath = configPath;
 
-		if(ConfigFileExists.GetValueOrDefault(false))
+		if(DirectoryExists.GetValueOrDefault(false))
 		{
 			if (!Directory.Exists(GetConfigPath(Constants.TEMP_FOLDER)))
 			{
@@ -326,8 +331,8 @@ public class ConfigService
 
 			MigrateOldConfigIfExists();
 		}
-		var isValid = TryToReadConfigFile(ConfigFilePath, out _config);
-		if (ConfigFileExists.Value && !isValid)
+		var isValid = TryToReadConfigFile(ConfigDirectoryPath, out _config);
+		if (DirectoryExists.Value && !isValid)
 		{
 			throw new CliException(
 				$"Beamable Config exist but it does not have one of the values: {string.Join(',', Constants.REQUIRED_CONFIG_KEYS)}");
@@ -403,9 +408,9 @@ public class ConfigService
 	string GetIgnoreFilePath(Vcs system) =>
 		system switch
 		{
-			Vcs.Git => Path.Combine(ConfigFilePath, Constants.CONFIG_GIT_IGNORE_FILE_NAME),
-			Vcs.SVN => Path.Combine(ConfigFilePath, Constants.CONFIG_SVN_IGNORE_FILE_NAME),
-			Vcs.P4 => Path.Combine(ConfigFilePath, Constants.CONFIG_P4_IGNORE_FILE_NAME),
+			Vcs.Git => Path.Combine(ConfigDirectoryPath, Constants.CONFIG_GIT_IGNORE_FILE_NAME),
+			Vcs.SVN => Path.Combine(ConfigDirectoryPath, Constants.CONFIG_SVN_IGNORE_FILE_NAME),
+			Vcs.P4 => Path.Combine(ConfigDirectoryPath, Constants.CONFIG_P4_IGNORE_FILE_NAME),
 			_ => throw new ArgumentOutOfRangeException(nameof(system), system, $"VCS {system} is not supported")
 		};
 

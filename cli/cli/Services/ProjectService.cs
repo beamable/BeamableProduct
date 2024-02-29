@@ -102,7 +102,7 @@ public class ProjectService
 		_configService = configService;
 		_versionService = versionService;
 		_app = app;
-		ConfigFileExists = _configService.ConfigFileExists;
+		ConfigFileExists = _configService.DirectoryExists;
 		_projects = configService.LoadDataFile<ProjectData>(Constants.CONFIG_LINKED_PROJECTS);
 	}
 
@@ -614,7 +614,7 @@ COPY {commonProjectName}/. .
 				$"The given id=[{serviceName}] does not match any local services in the local beamo manifest.");
 		}
 
-		var errorPath = Path.Combine(args.ConfigService.ConfigFilePath, "temp", "buildLogs",
+		var errorPath = Path.Combine(args.ConfigService.ConfigDirectoryPath, "temp", "buildLogs",
 			$"{serviceName}.json");
 		var errorDir = Path.GetDirectoryName(errorPath);
 		Directory.CreateDirectory(errorDir);
