@@ -2,6 +2,7 @@ using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Content;
 using Moq;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using Serilog.Events;
 using System;
@@ -80,11 +81,16 @@ public class BeamInitFlows : CLITest
 		Run("init");
 
 		// there should a .beamable folder
-		Assert.That(File.Exists(".beamable/config-defaults.json"), "there must be a config defaults file after beam init.");
+		Assert.That(File.Exists(".beamable/connection-configuration.json"), "there must be a config defaults file after beam init.");
 
 		// the contents of the file should contain the given cid and pid.
-		var configDefaultsStr = File.ReadAllText(".beamable/config-defaults.json");
+		var configDefaultsStr = File.ReadAllText(".beamable/connection-configuration.json");
 		var expectedJson = $@"{{""host"":""https://api.beamable.com"",""cid"":""{cid}"",""pid"":""{pid}""}}";
-		Assert.AreEqual(expectedJson, configDefaultsStr, "The config-defaults file should contain the cid and pid.");
+
+		bool areEqual = JToken.DeepEquals(JToken.Parse(configDefaultsStr),JToken.Parse(expectedJson));
+		
+		Assert.IsTrue(areEqual, "The connection-configuration file should contain the cid and pid.");
+		
+		
 	}
 }

@@ -37,12 +37,12 @@ public class BeamProjectFlows : CLITestExtensions
 		Assert.That(File.Exists($"{serviceName}/{serviceName}.sln"),
 			$"There must be an Example.sln file after beam project new {serviceName}");
 
-		// there should be a beamoLocalManifest.json file
-		Assert.That(File.Exists($"{serviceName}/.beamable/beamoLocalManifest.json"),
+		// there should be a local-services-manifest.json file
+		Assert.That(File.Exists($"{serviceName}/.beamable/local-services-manifest.json"),
 			$"There must be a beamo local manifest file after beam project new {serviceName}");
 
 		// the contents of the file beamoId should be equal to the name of the service created
-		string localManifestTextContent = File.ReadAllText($"{serviceName}/.beamable/beamoLocalManifest.json");
+		string localManifestTextContent = File.ReadAllText($"{serviceName}/.beamable/local-services-manifest.json");
 		Assert.That(localManifestTextContent.Contains($"\"BeamoId\":\"{serviceName}\""));
 
 		#endregion

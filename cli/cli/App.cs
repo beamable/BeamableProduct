@@ -56,7 +56,7 @@ public class App
 		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
 		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
 
-		var tempFile = Path.Combine(Path.GetTempPath(), "beamCliLog.txt");
+		var tempFile = Path.Combine(Path.GetTempPath(), $"beamCliLog.txt");
 		var shouldUseTempFile = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_CLI_NO_FILE_LOG"));
 		try
 		{

@@ -143,11 +143,6 @@ public class ConfigService
 
 	public void SaveDataFile<T>(string fileName, T data)
 	{
-		if (string.IsNullOrWhiteSpace(ConfigFilePath))
-		{
-			throw new CliException($"Could not write {fileName} because config is undetected.");
-		}
-
 		var json = JsonConvert.SerializeObject(data,
 			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented});
 		var file = GetConfigPath(fileName);
@@ -158,12 +153,12 @@ public class ConfigService
 
 	public T LoadDataFile<T>(string fileName, Func<T> defaultValueGenerator)
 	{
-		if (string.IsNullOrWhiteSpace(ConfigFilePath))
-		{
-			throw new CliException($"Could not write {fileName} because config is undetected.");
-		}
 		try
 		{
+			if (!ConfigFileExists.GetValueOrDefault(false))
+			{
+				return defaultValueGenerator();
+			}
 			var filePath = GetConfigPath(fileName);
 			if (!File.Exists(filePath)) { return defaultValueGenerator(); }
 
@@ -236,7 +231,8 @@ public class ConfigService
 	{
 		if (string.IsNullOrEmpty(ConfigFilePath))
 			throw new CliException("No beamable project exists. Please use beam init");
-		var json = JsonConvert.SerializeObject(_config);
+		var json = JsonConvert.SerializeObject(_config,
+			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented});
 		if (!Directory.Exists(ConfigFilePath))
 		{
 			Directory.CreateDirectory(ConfigFilePath);
@@ -294,7 +290,8 @@ public class ConfigService
 	public void SaveTokenToFile(IAccessToken response)
 	{
 		string fullPath = Path.Combine(ConfigFilePath, Constants.TEMP_FOLDER, Constants.CONFIG_TOKEN_FILE_NAME);
-		var json = JsonConvert.SerializeObject(response);
+		var json = JsonConvert.SerializeObject(response,
+			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented});
 		File.WriteAllText(fullPath, json);
 	}
 

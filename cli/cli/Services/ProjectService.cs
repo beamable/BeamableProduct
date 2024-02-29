@@ -102,8 +102,8 @@ public class ProjectService
 		_configService = configService;
 		_versionService = versionService;
 		_app = app;
-		_projects = configService.LoadDataFile<ProjectData>(Constants.CONFIG_LINKED_PROJECTS);
 		ConfigFileExists = _configService.ConfigFileExists;
+		_projects = configService.LoadDataFile<ProjectData>(Constants.CONFIG_LINKED_PROJECTS);
 	}
 
 	public List<string> GetLinkedUnityProjects()
