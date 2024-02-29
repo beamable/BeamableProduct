@@ -1,3 +1,5 @@
+using cli.Services;
+using Newtonsoft.Json;
 using NUnit.Framework;
 using System;
 using System.IO;
@@ -43,7 +45,9 @@ public class BeamProjectFlows : CLITestExtensions
 
 		// the contents of the file beamoId should be equal to the name of the service created
 		string localManifestTextContent = File.ReadAllText($"{serviceName}/.beamable/local-services-manifest.json");
-		Assert.That(localManifestTextContent.Contains($"\"BeamoId\":\"{serviceName}\""));
+		var manifest = JsonConvert.DeserializeObject<BeamoLocalManifest>(localManifestTextContent);
+		Assert.That(manifest!.ServiceDefinitions.Count, Is.EqualTo(1));
+		Assert.That(manifest.ServiceDefinitions[0].BeamoId, Is.EqualTo(serviceName));
 
 		#endregion
 	}
