@@ -214,7 +214,7 @@ namespace Beamable.Serialization
 		/// <typeparam name="T"></typeparam>
 		/// <param name="json"></param>
 		/// <returns></returns>
-		public static T FromJson<T>(string json, bool throwOnInvalidJson=false) where T : ISerializable, new() => FromJson<T>(json, null, throwOnInvalidJson);
+		public static T FromJson<T>(string json, bool throwOnInvalidJson = false) where T : ISerializable, new() => FromJson<T>(json, null, throwOnInvalidJson);
 
 		/// <summary>
 		/// Deserializes a JSON string into an ISerializable object
@@ -222,7 +222,7 @@ namespace Beamable.Serialization
 		/// <typeparam name="T"></typeparam>
 		/// <param name="json"></param>
 		/// <returns></returns>
-		public static T FromJson<T>(string json, IEnumerable<ISerializableFactory> factories, bool throwOnInvalidJson=false) where T : ISerializable, new()
+		public static T FromJson<T>(string json, IEnumerable<ISerializableFactory> factories, bool throwOnInvalidJson = false) where T : ISerializable, new()
 		{
 			var data = SmallerJSON.Json.Deserialize(json) as IDictionary<string, object>;
 			if (data == null)

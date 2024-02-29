@@ -37,7 +37,7 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 			AllowMultipleArgumentsPerToken = true
 		};
 		AddOption(storageDeps, (x, i) => x.storagesPaths = i);
-		
+
 		var storageNames = new Option<List<string>>("--storage-names", "Local storages names")
 		{
 			Arity = ArgumentArity.ZeroOrMore,

@@ -11,7 +11,7 @@ public class ProjectCommand : CommandGroup
 		"Commands that relate to a standalone Beamable project")
 	{
 	}
-	
+
 	public static void AddWatchOption<TArgs>(AppCommand<TArgs> command, Action<TArgs, bool> binder)
 		where TArgs : CommandArgs
 	{
