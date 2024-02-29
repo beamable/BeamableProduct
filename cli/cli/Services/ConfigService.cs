@@ -2,6 +2,8 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using cli.Dotnet;
 using JetBrains.Annotations;
+using Markdig.Helpers;
+using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Serilog;
 using System.CommandLine.Binding;
@@ -78,6 +80,26 @@ public class ConfigService
 		return Path.Combine(BaseDirectory, relativePath);
 	}
 
+	/// <summary>
+	/// Gets the full path for a given configuration file.
+	/// </summary>
+	/// <param name="pathInConfig">The path of the file in the configuration.</param>
+	/// <returns>The full path of the file in the configuration.</returns>
+	public string GetConfigPath(string pathInConfig)
+	{
+		if (string.IsNullOrWhiteSpace(ConfigFilePath))
+		{
+			throw new CliException($"Could not find {pathInConfig} because config is undetected.");
+		}
+		var basePath = ConfigFilePath;
+		if (Constants.TEMP_FILES.Contains(pathInConfig))
+		{
+			basePath = Path.Combine(basePath, Constants.TEMP_FOLDER);
+		}
+
+		return Path.Combine(basePath, pathInConfig);
+	}
+
 
 	public string GetServicesDir(SolutionCommandArgs args, string newSolutionPath)
 	{
@@ -123,24 +145,31 @@ public class ConfigService
 
 	public void SaveDataFile<T>(string fileName, T data)
 	{
-		if (!fileName.EndsWith(".json")) fileName += ".json";
+		if (string.IsNullOrWhiteSpace(ConfigFilePath))
+		{
+			throw new CliException($"Could not write {fileName} because config is undetected.");
+		}
+
 		var json = JsonConvert.SerializeObject(data,
-			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto });
-		var dir = Path.Combine(ConfigFilePath, fileName);
-		File.WriteAllText(dir, json);
+			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented});
+		var file = GetConfigPath(fileName);
+		File.WriteAllText(file, json);
 	}
 
 	public T LoadDataFile<T>(string fileName) where T : new() => LoadDataFile<T>(fileName, () => new T());
 
 	public T LoadDataFile<T>(string fileName, Func<T> defaultValueGenerator)
 	{
+		if (string.IsNullOrWhiteSpace(ConfigFilePath))
+		{
+			throw new CliException($"Could not write {fileName} because config is undetected.");
+		}
 		try
 		{
-			if (!fileName.EndsWith(".json")) fileName += ".json";
-			var dir = Path.Combine(ConfigFilePath, fileName);
-			if (!File.Exists(dir)) { return defaultValueGenerator(); }
+			var filePath = GetConfigPath(fileName);
+			if (!File.Exists(filePath)) { return defaultValueGenerator(); }
 
-			var json = File.ReadAllText(dir);
+			var json = File.ReadAllText(filePath);
 			var data = JsonConvert.DeserializeObject<T>(json,
 				new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto });
 			return data;
@@ -229,12 +258,16 @@ public class ConfigService
 			return;
 
 		var builder = new StringBuilder();
-		foreach (var fileName in Constants.FILES_TO_IGNORE)
+		foreach (var fileName in Constants.TEMP_FILES)
 		{
 			builder.Append('/');
-			builder.Append(fileName.EndsWith(".json") ? fileName : fileName + ".json");
+			builder.Append(fileName);
 			builder.Append(Environment.NewLine);
 		}
+
+		builder.Append(Constants.TEMP_FOLDER);
+		builder.Append('/');
+		builder.Append(Environment.NewLine);
 		File.WriteAllText(ignoreFilePath, builder.ToString());
 
 		BeamableLogger.Log($"Generated ignore file at {ignoreFilePath}");
@@ -243,7 +276,7 @@ public class ConfigService
 	public bool ReadTokenFromFile(out CliToken response)
 	{
 		response = null;
-		string fullPath = Path.Combine(ConfigFilePath, Constants.CONFIG_TOKEN_FILE_NAME);
+		string fullPath = Path.Combine(ConfigFilePath, Constants.TEMP_FOLDER, Constants.CONFIG_TOKEN_FILE_NAME);
 		if (!File.Exists(fullPath)) return false;
 
 		try
@@ -262,7 +295,7 @@ public class ConfigService
 
 	public void SaveTokenToFile(IAccessToken response)
 	{
-		string fullPath = Path.Combine(ConfigFilePath, Constants.CONFIG_TOKEN_FILE_NAME);
+		string fullPath = Path.Combine(ConfigFilePath, Constants.TEMP_FOLDER, Constants.CONFIG_TOKEN_FILE_NAME);
 		var json = JsonConvert.SerializeObject(response);
 		File.WriteAllText(fullPath, json);
 	}
@@ -288,7 +321,35 @@ public class ConfigService
 	{
 		ConfigFileExists = TryToFindBeamableConfigFolder(out var configPath);
 		ConfigFilePath = configPath;
-		TryToReadConfigFile(ConfigFilePath, out _config);
+
+		if (!Directory.Exists(GetConfigPath(Constants.TEMP_FOLDER)))
+		{
+			Directory.CreateDirectory(GetConfigPath(Constants.TEMP_FOLDER));
+		}
+		
+		MigrateOldConfigIfExists();
+		var isValid = TryToReadConfigFile(ConfigFilePath, out _config);
+		if (ConfigFileExists.Value && !isValid)
+		{
+			throw new CliException(
+				$"Beamable Config exist but it does not have one of the values: {string.Join(',', Constants.REQUIRED_CONFIG_KEYS)}");
+		}
+	}
+
+	/// <summary>
+	/// This commands goes through RENAMED_FILES dictionary and looks for files in config with obsolete names and renames
+	/// them to currently used names.
+	/// </summary>
+	private void MigrateOldConfigIfExists()
+	{
+		foreach (var renamedPair in Constants.RENAMED_FILES)
+		{
+			var oldPath = GetConfigPath(renamedPair.Key);
+			if (File.Exists(oldPath))
+			{
+				File.Move(oldPath,GetConfigPath(renamedPair.Value));
+			}
+		}
 	}
 
 	bool TryToFindBeamableConfigFolder(out string result)
@@ -321,15 +382,15 @@ public class ConfigService
 	{
 		string fullPath = Path.Combine(folderPath ?? string.Empty, Constants.CONFIG_DEFAULTS_FILE_NAME);
 		result = new Dictionary<string, string>();
-		if (File.Exists(fullPath))
+		if (!File.Exists(fullPath))
 		{
-			var content = File.ReadAllText(fullPath);
-			result = JsonConvert.DeserializeObject<Dictionary<string, string>>(content);
-
-			return result is { Count: > 0 };
+			return false;
 		}
 
-		return false;
+		var content = File.ReadAllText(fullPath);
+		result = JsonConvert.DeserializeObject<Dictionary<string, string>>(content);
+
+		return IsConfigValid(result);
 	}
 
 	string GetIgnoreFilePath(Vcs system) =>
@@ -340,4 +401,11 @@ public class ConfigService
 			Vcs.P4 => Path.Combine(ConfigFilePath, Constants.CONFIG_P4_IGNORE_FILE_NAME),
 			_ => throw new ArgumentOutOfRangeException(nameof(system), system, $"VCS {system} is not supported")
 		};
+
+	static bool IsConfigValid(Dictionary<string, string> dict)
+	{
+		if (dict == null || dict.Count == 0) return false;
+
+		return Constants.REQUIRED_CONFIG_KEYS.All(dict.Keys.Contains);
+	}
 }
