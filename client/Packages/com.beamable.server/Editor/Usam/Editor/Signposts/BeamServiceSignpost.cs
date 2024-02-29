@@ -11,7 +11,6 @@ namespace Beamable.Server.Editor.Usam
 		public string CsprojPath => assetProjectPath;
 		public string CsprojFilePath => Path.Combine(assetProjectPath, $"{name}.csproj");
 
-		public ServiceType serviceType;
 		public string name;
 		public string assetProjectPath = "";
 
@@ -20,7 +19,14 @@ namespace Beamable.Server.Editor.Usam
 		public void AfterDeserialize(string filePath)
 		{
 			var directoryPath = Path.GetDirectoryName(filePath);
-			assetProjectPath = Path.Combine(directoryPath, assetProjectPath);
+			if (directoryPath == null)
+			{
+				Debug.LogError("Failed to find file path.");
+				return;
+			}
+
+			string path = Path.Combine(directoryPath, CodeService.StandaloneMicroservicesFolderName);
+			assetProjectPath = Path.Combine(path, assetProjectPath);
 		}
 	}
 }
