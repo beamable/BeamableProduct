@@ -1,6 +1,7 @@
 ﻿using Beamable.Serialization.SmallerJSON;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 
@@ -30,6 +31,59 @@ namespace Beamable.Editor.Tests.SmallerJson
 			var jsonSerializedUnity = JsonUtility.ToJson(instance);
 			var smallerJsonSerialized = Json.Serialize(instance, new StringBuilder());
 			Assert.AreEqual(jsonSerializedUnity, smallerJsonSerialized);
+		}
+
+		[Test]
+		public void DictionaryWithHashSet_Long()
+		{
+			var dict = new Dictionary<string, object>
+			{
+				["fish"] = new HashSet<long>
+				{
+					1,2,3,1,2,3
+				}
+			};
+			var json = Json.Serialize(dict, new StringBuilder());
+			var expected = @"{
+""fish"":[1,2,3]
+}".Trim().Replace("\r\n", "").Replace("\n", "");
+			Assert.That(json, Is.EqualTo(expected));
+		}
+		
+		
+		[Test]
+		public void DictionaryWithHashSet_Ints()
+		{
+			var dict = new Dictionary<string, object>
+			{
+				["fish"] = new HashSet<int>
+				{
+					1,2,3,1,2,3
+				}
+			};
+			var json = Json.Serialize(dict, new StringBuilder());
+			var expected = @"{
+""fish"":[1,2,3]
+}".Trim().Replace("\r\n", "").Replace("\n", "");
+			Assert.That(json, Is.EqualTo(expected));
+		}
+		
+		
+		[Test]
+		public void DictionaryWithHashSet_Strings()
+		{
+			var dict = new Dictionary<string, object>
+			{
+				["fish"] = new HashSet<string>
+				{
+					"tuna", "salmon", "tuna"
+				}
+			};
+			var json = Json.Serialize(dict, new StringBuilder());
+			var expected = @"{
+""fish"":[""tuna"",""salmon""]
+}".Trim().Replace("\r\n", "").Replace("\n", "");
+			Assert.That(json, Is.EqualTo(expected));
 		}
 
 
