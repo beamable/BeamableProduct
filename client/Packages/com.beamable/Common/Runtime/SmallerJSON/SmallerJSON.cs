@@ -763,6 +763,7 @@ namespace Beamable.Serialization.SmallerJSON
 				IList asList;
 				IDictionary asDict;
 				string asStr;
+				IEnumerable asEnumerable;
 
 				if (value == null)
 				{
@@ -785,6 +786,7 @@ namespace Beamable.Serialization.SmallerJSON
 
 					SerializeArray(asList, builder);
 				}
+				
 				else if ((asDict = value as IDictionary) != null)
 				{
 					if (value is ISerializationCallbackReceiver receiver)
@@ -797,6 +799,15 @@ namespace Beamable.Serialization.SmallerJSON
 				else if (value is char)
 				{
 					SerializeString(new string((char)value, 1), builder);
+				}
+				else if ((asEnumerable = value as IEnumerable) != null)
+				{
+					if (value is ISerializationCallbackReceiver receiver)
+					{
+						receiver.OnBeforeSerialize();
+					}
+
+					SerializeEnumerable(asEnumerable, builder);
 				}
 				else
 				{
@@ -831,6 +842,28 @@ namespace Beamable.Serialization.SmallerJSON
 				}
 
 				builder.Append('}');
+			}
+
+			private static void SerializeEnumerable(IEnumerable enumerable, StringBuilder builder)
+			{
+				builder.Append('[');
+
+				bool first = true;
+
+				foreach (var value in enumerable)
+				{
+					object obj = value;
+					if (!first)
+					{
+						builder.Append(',');
+					}
+
+					SerializeValue(obj, builder);
+
+					first = false;
+				}
+
+				builder.Append(']');
 			}
 
 			private static void SerializeArray(IList anArray, StringBuilder builder)
