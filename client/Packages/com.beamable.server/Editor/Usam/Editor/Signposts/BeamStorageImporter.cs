@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Beamable.Server.Editor.Usam
 {
-	
+
 	[ScriptedImporter(0, ".beamstorage")]
 	public class BeamStorageImporter : ScriptedImporter
 	{
@@ -35,7 +35,7 @@ namespace Beamable.Server.Editor.Usam
 		public override void OnInspectorGUI()
 		{
 			base.OnInspectorGUI();
-			
+
 			if (assetTarget is BeamStorageAssetJson assetJson)
 			{
 				var instanceId = assetJson.GetInstanceID();

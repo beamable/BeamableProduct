@@ -383,12 +383,15 @@ namespace Beamable.Common.Api
 				{
 					RequestError = new BeamableRequestError
 					{
-						error = "invalid json", message = ex.Message, service = "", status = responseCode
+						error = "invalid json",
+						message = ex.Message,
+						service = "",
+						status = responseCode
 					};
 				}
 			}
-			
-			
+
+
 			if (MethodUtil.TryParseMethod(method, out var meth))
 			{
 				Method = meth;

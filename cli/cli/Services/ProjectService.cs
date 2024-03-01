@@ -386,7 +386,7 @@ public class ProjectService
 		}
 
 		await EnsureCanUseTemplates(null, quiet); // TODO: tech debt, this whole command needs to care about version.
-		
+
 		// create the solution
 		if (hasCustomPath)
 			await RunDotnetCommand($"new sln -n \"{storageName}\" -o \"{storagePath}\"");

@@ -329,9 +329,11 @@ namespace Beamable.Editor.BeamCli
 				_process.StartInfo.RedirectStandardError = CaptureStandardBuffers;
 				_process.StartInfo.CreateNoWindow = true;
 				_process.StartInfo.UseShellExecute = false;
-				
+
 				// prevent the beam CLI from saving any log information to file.
-				_process.StartInfo.Environment.Add("BEAM_CLI_NO_FILE_LOG", "1");				_process.StartInfo.EnvironmentVariables["BEAM_PATH"] = BeamCliUtil.CLI_PATH.Replace(".dll", "");
+				_process.StartInfo.Environment.Add("BEAM_CLI_NO_FILE_LOG", "1");
+
+				_process.StartInfo.EnvironmentVariables["BEAM_PATH"] = BeamCliUtil.CLI_PATH.Replace(".dll", "");
 				_process.StartInfo.EnvironmentVariables["BEAM_DOTNET_PATH"] = Path.GetFullPath(DotnetUtil.DotnetPath);
 
 				_status = new TaskCompletionSource<int>();
@@ -341,7 +343,7 @@ namespace Beamable.Editor.BeamCli
 					Task.Run(async () =>
 					{
 						await Task.Delay(1); // give 1 ms for log messages to eep out
-							if (_dispatcher.IsForceStopped)
+						if (_dispatcher.IsForceStopped)
 						{
 							KillProc();
 							return;
@@ -349,14 +351,14 @@ namespace Beamable.Editor.BeamCli
 
 						_dispatcher.Schedule(() =>
 						{
-								// there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
-								// _hasExited = true;
-								_exitCode = _process.ExitCode;
+							// there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
+							// _hasExited = true;
+							_exitCode = _process.ExitCode;
 
-								// OnExit?.Invoke(_process.ExitCode);
-								// HandleOnExit();
+							// OnExit?.Invoke(_process.ExitCode);
+							// HandleOnExit();
 
-								_status.TrySetResult(0);
+							_status.TrySetResult(0);
 						});
 					});
 				};

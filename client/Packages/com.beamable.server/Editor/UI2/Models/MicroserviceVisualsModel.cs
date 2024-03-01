@@ -183,7 +183,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 			evt.menu.BeamableAppendAction($"Open C# Code", _ =>
 			{
 				BeamEditorContext.Default.ServiceScope.GetService<CodeService>()
-				                 .OpenMicroserviceFile(_serviceDefinition.BeamoId);
+								 .OpenMicroserviceFile(_serviceDefinition.BeamoId);
 			});
 
 			if (!AreLogsAttached)
