@@ -75,6 +75,45 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             Assert.IsTrue(testSocket.AllMocksCalled());
         }
 
+        [Test]
+        [NonParallelizable]
+        public async Task Handle_NotificationFromNotNull()
+        {
+
+	        TestSocket testSocket = null;
+	        var ms = new TestSetup(new TestSocketProvider(socket =>
+	        {
+		        testSocket = socket;
+		        socket.AddStandardMessageHandlers()
+			        
+			        // register the message to the notifications API
+			        .AddMessageHandler(
+				        MessageMatcher.WithReqId(-5)
+				        .WithNullFrom(),
+				        // .WithFrom(0),
+				        MessageResponder.Success(new EmptyResponse()), 
+				        MessageFrequency.OnlyOnce())
+			        
+			        // register the response from the callable method as a success
+			        .AddMessageHandler(
+				        MessageMatcher
+					        .WithReqId(1)
+					        .WithStatus(200),
+				        MessageResponder.NoResponse(),
+				        MessageFrequency.OnlyOnce()
+			        );
+			        ;
+	        }));
+
+	        await ms.Start<SimpleMicroservice>(new TestArgs());
+	        Assert.IsTrue(ms.HasInitialized);
+
+	        testSocket.SendToClient(ClientRequest.Callable("micro_sample", nameof(SimpleMicroservice.FromNotNullPlease), 1, 123));
+
+	        // simulate shutdown event...
+	        await ms.OnShutdown(this, null);
+	        Assert.IsTrue(testSocket.AllMocksCalled());
+        }
         
         [Test]
         [NonParallelizable]
