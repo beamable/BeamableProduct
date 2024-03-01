@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Content alphabetizes fields on checksum calculation as well as publication.
 - Listing content `activeFrom` field no longer resets every time it is viewed in the Inspector.
 - `RecoverAccountWithExternalIdentity` method includes a parameter, `attemptToMergeExistingAccount` that will prevent automatic account merging.
+- `Json.Serialize` will treat non `IDictionary` values of `IEnumerable` as json arrays.
 
 ## [1.19.14]
 
