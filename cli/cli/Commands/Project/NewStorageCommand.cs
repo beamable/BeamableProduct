@@ -103,10 +103,10 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 
 		string[] dependencies = null;
 		if ((args.linkedServices == null || args.linkedServices.Count == 0) && !args.quiet)
-		{ 
+		{
 			dependencies = GetChoicesFromPrompt(args.BeamoLocalSystem);
 		}
-		else if(args.linkedServices != null)
+		else if (args.linkedServices != null)
 		{
 			dependencies = GetDependencieFromName(args.BeamoLocalSystem, args.linkedServices);
 		}
@@ -134,7 +134,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 		{
 			return Array.Empty<string>();
 		}
-		
+
 		var services = localSystem.BeamoManifest.HttpMicroserviceLocalProtocols;
 		var choices = new List<string>();
 		foreach (var dep in dependencies)
@@ -166,7 +166,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 		var prompt = new MultiSelectionPrompt<string>()
 			.Title("Service Dependencies")
 			.InstructionsText("Which services will use this storage?\n[grey](Press [blue]<space>[/] to toggle, " +
-			                  "[green]<enter>[/] to accept)[/]")
+							  "[green]<enter>[/] to accept)[/]")
 			.AddChoices(choices)
 			.AddBeamHightlight()
 			.NotRequired();

@@ -114,7 +114,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 					bool enableOnRemote = def.ShouldBeEnabledOnRemote;
 					var isRunning = false;
 					IEnumerable<string> dependencies = new List<string>();
-					
+
 					var service = manifest.manifest.FirstOrDefault(d => d.serviceName == beamoId);
 					var storage = manifest.storageReference.FirstOrDefault(d => d.id == beamoId);
 
@@ -129,11 +129,11 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 						dependencies = service.dependencies.Select(d => d.id);
 						enableOnRemote = service.enabled;
 					}
-					else if(storage != null)
+					else if (storage != null)
 					{
 						enableOnRemote = storage.enabled;
 					}
-					
+
 					localServiceListResult.AddService(def.BeamoId,
 						enableOnRemote,
 						isRunning,
@@ -144,10 +144,10 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 						new[] { "" },
 						new[] { "" },
 						dependencies);
-					
+
 					var beamoIdMarkup = new Markup(def.BeamoId);
 					var imageIdMarkup = new Markup(imageId);
-					var remoteTargetStatusMarkup = new Markup(enableOnRemote? "[green]Should be Enabled[/]" : "[red]Should be Disabled[/]");
+					var remoteTargetStatusMarkup = new Markup(enableOnRemote ? "[green]Should be Enabled[/]" : "[red]Should be Disabled[/]");
 					var remoteStatusMarkup = new Markup(isRunning ? "[green]On[/]" : "[red]Off[/]");
 					table.AddRow(new TableRow(new[] { beamoIdMarkup, imageIdMarkup, remoteTargetStatusMarkup, remoteStatusMarkup }));
 				}

@@ -33,7 +33,7 @@ public class RealmConfigSetCommand : AtomicCommand<RealmConfigSetCommandArgs, Re
 				currentConfig.Config[data.NamespaceKey()] = data.Value;
 			}
 			await args.RealmsApi.UpdateRealmConfig(currentConfig.Config);
-			
+
 			currentConfig = await GetRealmConfig(args);
 			LogResult(currentConfig.ConvertToView());
 			return currentConfig;

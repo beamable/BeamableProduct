@@ -46,7 +46,7 @@ EndProject";
 			{
 				content = InjectProject(content, signpost.name, signpost.CsprojFilePath);
 			}
-			
+
 			var storageFiles = CodeService.GetBeamStorages();
 			// TODO: Validate that these files actually exist/map to valid projects
 			foreach (var signpost in storageFiles)

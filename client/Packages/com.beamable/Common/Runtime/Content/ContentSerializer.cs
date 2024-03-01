@@ -488,7 +488,7 @@ namespace Beamable.Common.Content
 
 			var ll = notIgnoredFields.Select(CreateFieldWrapper);
 
-			
+
 			ll = ll.OrderBy(n => n.SerializedName);
 
 			return ll.ToList();
@@ -509,7 +509,7 @@ namespace Beamable.Common.Content
 		public string SerializeProperties<TContent>(TContent content, ContentSerializerOptions options)
 			where TContent : IContentObject =>
 			SerializeProperties(content);
-		
+
 		/// <summary>
 		/// returns only the {} representing the properties object
 		/// </summary>
@@ -520,7 +520,7 @@ namespace Beamable.Common.Content
 		   where TContent : IContentObject
 
 		{
-			
+
 			var fields = GetFieldInfos(content.GetType())
 			   .ToDictionary(f => f.SerializedName);
 			var propertyDict = new ArrayDict();

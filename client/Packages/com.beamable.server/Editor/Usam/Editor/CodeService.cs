@@ -124,7 +124,7 @@ namespace Beamable.Server.Editor.Usam
 		public async Promise RefreshServices()
 		{
 			ServiceDefinitions.Clear();
-			
+
 			try
 			{
 				LogVerbose("refresh remote services from CLI start");
@@ -138,7 +138,7 @@ namespace Beamable.Server.Editor.Usam
 				});
 				await psRemote.Run();
 				LogVerbose("refresh remote services from CLI end");
-				
+
 				LogVerbose("refresh local services from CLI start");
 				//Get local only information from the CLI
 				var psLocal = _cli.ServicesPs(new ServicesPsArgs() { json = false, remote = false });
@@ -158,7 +158,7 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
-			
+
 
 			LogVerbose("refresh local services start");
 
@@ -190,17 +190,17 @@ namespace Beamable.Server.Editor.Usam
 			{
 				var name = objData.BeamoIds[i];
 				LogVerbose($"Handling {name} started");
-				
+
 				var runningState = objData.RunningState[i] ? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
 				var type = objData.ProtocolTypes[i].Equals("HttpMicroservice")
 					? ServiceType.MicroService
 					: ServiceType.StorageObject;
-				
+
 				var service = _services.FirstOrDefault(s => s.name == name);
 				var storage = _storages.FirstOrDefault(s => s.name == name);
 
 				string assetProjectPath = string.Empty;
-				
+
 				if (service != null)
 				{
 					assetProjectPath = service.assetProjectPath;
@@ -209,15 +209,15 @@ namespace Beamable.Server.Editor.Usam
 				{
 					assetProjectPath = storage.assetProjectPath;
 				}
-				
+
 				AddServiceDefinition(name, type, assetProjectPath, true, runningState,
-				                     objData.ShouldBeEnabledOnRemote[i], objData.IsLocal, objData.Dependencies[i]);
+									 objData.ShouldBeEnabledOnRemote[i], objData.IsLocal, objData.Dependencies[i]);
 				LogVerbose($"Handling {name} ended");
 			}
 		}
 
-		private void AddServiceDefinition(string name, ServiceType type, string assetProjectPath, bool fromRemote, BeamoServiceStatus status = BeamoServiceStatus.Unknown, 
-		                                  bool shouldBeEnableOnRemote = true, bool hasLocalSource = true, string dependencies = null)
+		private void AddServiceDefinition(string name, ServiceType type, string assetProjectPath, bool fromRemote, BeamoServiceStatus status = BeamoServiceStatus.Unknown,
+										  bool shouldBeEnableOnRemote = true, bool hasLocalSource = true, string dependencies = null)
 		{
 			List<string> depsList = dependencies?.Split(',').ToList();
 
@@ -225,7 +225,7 @@ namespace Beamable.Server.Editor.Usam
 			{
 				depsList = new List<string>();
 			}
-			
+
 			var dataIndex =
 				ServiceDefinitions.FindIndex(definition => definition.BeamoId.Equals(name));
 			if (dataIndex < 0)
@@ -243,7 +243,7 @@ namespace Beamable.Server.Editor.Usam
 				ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder() { BeamoId = name };
 				ServiceDefinitions[dataIndex].HasLocalSource = hasLocalSource;
 			}
-			
+
 			if (fromRemote)
 			{
 				ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = shouldBeEnableOnRemote;
@@ -251,7 +251,7 @@ namespace Beamable.Server.Editor.Usam
 				ServiceDefinitions[dataIndex].Dependencies = depsList;
 			}
 		}
-		
+
 
 		/// <summary>
 		/// Regenerates the files: Program.cs, Dockerfile and .csproj. Then copy these files
@@ -304,7 +304,7 @@ namespace Beamable.Server.Editor.Usam
 		{
 			ProjectRunWrapper runCommand = _cli.ProjectRun(new ProjectRunArgs()
 			{
-				ids = new[] {id},
+				ids = new[] { id },
 				watch = true
 			});
 			return runCommand.Run();
@@ -441,7 +441,7 @@ namespace Beamable.Server.Editor.Usam
 			// if there is nothing to add there is no need for an update
 			if ((services == null || services.Count == 0) && (storages == null || storages.Count == 0))
 				return;
-			
+
 			// find the local sln file
 			var slnPath = FindFirstSolutionFile();
 			if (string.IsNullOrEmpty(slnPath) || !File.Exists(slnPath))
@@ -575,7 +575,7 @@ namespace Beamable.Server.Editor.Usam
 			{
 				services.Add(servicesFiles[i].CsprojPath);
 			}
-			
+
 			for (var i = 0; i < storagesFiles.Count; i++)
 			{
 				storagesPaths.Add(storagesFiles[i].CsprojPath);
@@ -622,13 +622,13 @@ namespace Beamable.Server.Editor.Usam
 		private async Promise CreateStorage(string storageName, string outputPath, List<IBeamoServiceDefinition> additionalReferences)
 		{
 			var service = new ServiceName(storageName);
-			
+
 			string[] deps = new string[additionalReferences.Count];
 			for (int i = 0; i < additionalReferences.Count; i++)
 			{
 				deps[i] = additionalReferences[i].BeamoId;
 			}
-					
+
 			var storageArgs = new ProjectNewStorageArgs
 			{
 				name = service,
@@ -638,14 +638,14 @@ namespace Beamable.Server.Editor.Usam
 			};
 			var storageCommand = _cli.ProjectNewStorage(storageArgs);
 			await storageCommand.Run();
-					
+
 			string relativePath = $"{outputPath}services";
 			BeamStorageSignpost signpost = new BeamStorageSignpost()
 			{
 				name = storageName,
 				assetProjectPath = Path.Combine(relativePath, storageName).Replace(StandaloneMicroservicesPath, string.Empty)
 			};
-			
+
 			string signpostPath = $"{BEAMABLE_PATH}{storageName}.beamstorage";
 			string signpostJson = JsonUtility.ToJson(signpost);
 
@@ -662,12 +662,12 @@ namespace Beamable.Server.Editor.Usam
 
 			LogVerbose($"Finished creation of storage {storageName}");
 		}
-		
+
 
 		private async Promise CreateMicroService(string serviceName, string outputPath, List<IBeamoServiceDefinition> dependencies)
 		{
 			var service = new ServiceName(serviceName);
-			
+
 			var args = new ProjectNewArgs
 			{
 				quiet = true,
@@ -684,7 +684,7 @@ namespace Beamable.Server.Editor.Usam
 				name = serviceName,
 				assetProjectPath = Path.Combine(relativePath, serviceName).Replace(StandaloneMicroservicesPath, string.Empty)
 			};
-			
+
 			string signpostPath = $"{BEAMABLE_PATH}{serviceName}.beamservice";
 			string signpostJson = JsonUtility.ToJson(signpost);
 
@@ -701,7 +701,7 @@ namespace Beamable.Server.Editor.Usam
 
 			LogVerbose($"Finished creation of service {serviceName}");
 		}
-		
+
 
 		private static IEnumerable<string> GetSignpostFiles(string extension)
 		{
@@ -768,7 +768,7 @@ namespace Beamable.Server.Editor.Usam
 
 		public async Promise StopStandaloneMicroservice(IEnumerable<string> beamoIds)
 		{
-			var stop = _cli.ProjectStop(new ProjectStopArgs() {ids = beamoIds.ToArray()});
+			var stop = _cli.ProjectStop(new ProjectStopArgs() { ids = beamoIds.ToArray() });
 			await stop.Run();
 		}
 

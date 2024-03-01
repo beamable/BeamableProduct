@@ -35,7 +35,7 @@ public class RealmConfigRemoveCommand : AtomicCommand<RealmConfigRemoveCommandAr
 				currentConfig.Config.Remove(data.NamespaceKey());
 			}
 			await args.RealmsApi.UpdateRealmConfig(currentConfig.Config);
-			
+
 			currentConfig = await GetRealmConfig(args);
 			LogResult(currentConfig.ConvertToView());
 			return currentConfig;
