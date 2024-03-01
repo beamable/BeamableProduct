@@ -1,11 +1,11 @@
 ﻿using cli.Services;
 using CliWrap;
 using Newtonsoft.Json;
+using Serilog;
 using Spectre.Console;
 using Spectre.Console.Json;
 using System.CommandLine;
 using System.Text;
-using Serilog;
 
 namespace cli.Commands.Project;
 
@@ -30,7 +30,7 @@ public class ProjectVersionCommand : AtomicCommand<ProjectVersionCommandArgs, Pr
 
 	public override async Task<ProjectVersionCommandResult> GetResult(ProjectVersionCommandArgs args)
 	{
-		
+
 		var projectList = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.Values
 			.Where(p => !string.IsNullOrWhiteSpace(p.RelativeDockerfilePath)).ToList();
 		List<BeamablePackageInProject> results = new();

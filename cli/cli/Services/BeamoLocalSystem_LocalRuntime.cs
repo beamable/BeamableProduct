@@ -350,8 +350,8 @@ public partial class BeamoLocalSystem
 
 
 		// Builds all images for all services that are defined and can be built locally.
-		var prepareImages = new List<Task>(localManifest.ServiceDefinitions.Where(VerifyCanBeBuiltLocally)
-			.Select(c => PrepareBeamoServiceImage(c, buildPullImageProgress, forceAmdCpuArchitecture)));
+
+		var prepareImages = new List<Task>(serviceDefinitionsToDeploy.Select(c => PrepareBeamoServiceImage(c, buildPullImageProgress, forceAmdCpuArchitecture)));
 		await Task.WhenAll(prepareImages);
 
 		var servicesDependencies = await localSystem.GetAllBeamoIdsDependencies();

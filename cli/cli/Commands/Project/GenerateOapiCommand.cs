@@ -52,7 +52,8 @@ public class GenerateOApiCommand : StreamCommand<GenerateOApiCommandArgs, Genera
 				Log.Information($"service=[{service}] is not built.");
 				SendResults(new GenerateOApiCommandOutput
 				{
-					service = service, isBuilt = false
+					service = service,
+					isBuilt = false
 				});
 				continue;
 			}
@@ -62,7 +63,7 @@ public class GenerateOApiCommand : StreamCommand<GenerateOApiCommandArgs, Genera
 
 			foreach (var (microservice, attribute) in microservices)
 			{
-				
+
 				var doc = generator.Generate(microservice.Type, attribute, new AdminRoutes
 				{
 					MicroserviceAttribute = attribute,
@@ -77,11 +78,11 @@ public class GenerateOApiCommand : StreamCommand<GenerateOApiCommandArgs, Genera
 					service = service,
 					openApi = outputString
 				});
-				
+
 			}
-			
+
 		}
-		
+
 	}
 
 	static List<(MicroserviceDescriptor, MicroserviceAttribute)> LoadDotnetMicroserviceTypesFromAssembly(Assembly assembly)
@@ -96,14 +97,16 @@ public class GenerateOApiCommand : StreamCommand<GenerateOApiCommandArgs, Genera
 
 			var descriptor = new MicroserviceDescriptor
 			{
-				Name = attribute.MicroserviceName, AttributePath = attribute.SourcePath, Type = type
+				Name = attribute.MicroserviceName,
+				AttributePath = attribute.SourcePath,
+				Type = type
 			};
 			output.Add((descriptor, attribute));
 		}
 
 		return output;
 	}
-	
+
 	static Assembly LoadDotnetMicroserviceAssembly(string serviceName, string assemblyPath)
 	{
 		var absolutePath = Path.GetFullPath(assemblyPath);
@@ -157,7 +160,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 		var stdOut = stdOutBuilder.ToString();
 		var lines = stdOut.Split(Environment.NewLine);
 		Log.Verbose("msbuild logs\n" + stdOut);
-		var outputPathLine = lines.Select(l =>l.ToLowerInvariant().Trim()).FirstOrDefault(l => l.StartsWith("finaloutputpath") && l.EndsWith(".dll"));
+		var outputPathLine = lines.Select(l => l.ToLowerInvariant().Trim()).FirstOrDefault(l => l.StartsWith("finaloutputpath") && l.EndsWith(".dll"));
 
 		if (string.IsNullOrEmpty(outputPathLine))
 			throw new CliException(
@@ -165,10 +168,10 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 
 		var report = new ProjectBuildStatusReport
 		{
-			path = outputPathLine.Substring("finaloutputpath = ".Length).Trim(), 
+			path = outputPathLine.Substring("finaloutputpath = ".Length).Trim(),
 		};
 		report.isBuilt = File.Exists(report.path);
-		
+
 		Log.Debug($"found output path, path=[{report.path}] exists=[{report.isBuilt}]");
 
 		return report;

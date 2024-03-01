@@ -23,7 +23,7 @@ public class VersionCommand : AtomicCommand<VersionCommandArgs, VersionResults>,
 
 	public override void Configure()
 	{
-		
+
 	}
 
 	public override async Task<VersionResults> GetResult(VersionCommandArgs args)

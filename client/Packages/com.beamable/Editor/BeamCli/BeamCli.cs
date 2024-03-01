@@ -29,7 +29,7 @@ namespace Beamable.Editor.BeamCli
 		{
 			var comm = new BeamCommand(_provider.GetService<BeamableDispatcher>());
 
-			var instance = Command.Version(new VersionArgs());
+			var instance = Command.Version();
 			comm.AutoLogErrors = false;
 			try
 			{

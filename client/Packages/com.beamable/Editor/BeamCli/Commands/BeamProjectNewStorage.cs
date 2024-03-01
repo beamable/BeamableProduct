@@ -10,6 +10,12 @@ namespace Beamable.Editor.BeamCli.Commands
 		public Beamable.Common.Semantics.ServiceName name;
 		/// <summary>The path to the solution that the Microstorage will be added to</summary>
 		public string sln;
+		/// <summary>The path where the storage is going to be created, a new sln is going to be created as well</summary>
+		public string outputPath;
+		/// <summary>The name of the project to link this storage to</summary>
+		public string[] linkTo;
+		/// <summary>When true, skip input waiting and use defaults</summary>
+		public bool quiet;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -22,6 +28,26 @@ namespace Beamable.Editor.BeamCli.Commands
 			{
 				genBeamCommandArgs.Add((("--sln=\"" + this.sln)
 								+ "\""));
+			}
+			// If the outputPath value was not default, then add it to the list of args.
+			if ((this.outputPath != default(string)))
+			{
+				genBeamCommandArgs.Add((("--output-path=\"" + this.outputPath)
+								+ "\""));
+			}
+			// If the linkTo value was not default, then add it to the list of args.
+			if ((this.linkTo != default(string[])))
+			{
+				for (int i = 0; (i < this.linkTo.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--link-to=" + this.linkTo[i]));
+				}
+			}
+			// If the quiet value was not default, then add it to the list of args.
+			if ((this.quiet != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--quiet=" + this.quiet));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

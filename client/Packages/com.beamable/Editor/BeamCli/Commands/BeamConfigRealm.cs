@@ -6,8 +6,6 @@ namespace Beamable.Editor.BeamCli.Commands
 
 	public class ConfigRealmArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>Make command returns plain text without custom colors and formatting</summary>
-		public bool plainOutput;
 		/// <summary>A list of realm config namespaces to filter</summary>
 		public string[] namespaces;
 		/// <summary>Serializes the arguments for command line usage.</summary>
@@ -15,11 +13,6 @@ namespace Beamable.Editor.BeamCli.Commands
 		{
 			// Create a list of arguments for the command
 			System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
-			// If the plainOutput value was not default, then add it to the list of args.
-			if ((this.plainOutput != default(bool)))
-			{
-				genBeamCommandArgs.Add(("--plain-output=" + this.plainOutput));
-			}
 			// If the namespaces value was not default, then add it to the list of args.
 			if ((this.namespaces != default(string[])))
 			{

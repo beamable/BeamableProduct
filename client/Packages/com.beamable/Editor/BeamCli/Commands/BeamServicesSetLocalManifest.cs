@@ -10,6 +10,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string[] services;
 		/// <summary>Local storages paths</summary>
 		public string[] storagePaths;
+		/// <summary>Local storages names</summary>
+		public string[] storageNames;
 		/// <summary>Names of the services that should be disabled on remote</summary>
 		public string[] disabledServices;
 		/// <summary>Serializes the arguments for command line usage.</summary>
@@ -33,6 +35,15 @@ namespace Beamable.Editor.BeamCli.Commands
 				{
 					// The parameter allows multiple values
 					genBeamCommandArgs.Add(("--storage-paths=" + this.storagePaths[i]));
+				}
+			}
+			// If the storageNames value was not default, then add it to the list of args.
+			if ((this.storageNames != default(string[])))
+			{
+				for (int i = 0; (i < this.storageNames.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--storage-names=" + this.storageNames[i]));
 				}
 			}
 			// If the disabledServices value was not default, then add it to the list of args.

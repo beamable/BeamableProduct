@@ -6,39 +6,11 @@ namespace Beamable.Editor.BeamCli.Commands
 
 	public class VersionArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>Displays the executing CLI version</summary>
-		public bool showVersion;
-		/// <summary>Displays the executing CLI install location</summary>
-		public bool showLocation;
-		/// <summary>Displays available Beamable template version</summary>
-		public bool showTemplates;
-		/// <summary>Displays the executing CLI install type</summary>
-		public bool showType;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
 			// Create a list of arguments for the command
 			System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
-			// If the showVersion value was not default, then add it to the list of args.
-			if ((this.showVersion != default(bool)))
-			{
-				genBeamCommandArgs.Add(("--show-version=" + this.showVersion));
-			}
-			// If the showLocation value was not default, then add it to the list of args.
-			if ((this.showLocation != default(bool)))
-			{
-				genBeamCommandArgs.Add(("--show-location=" + this.showLocation));
-			}
-			// If the showTemplates value was not default, then add it to the list of args.
-			if ((this.showTemplates != default(bool)))
-			{
-				genBeamCommandArgs.Add(("--show-templates=" + this.showTemplates));
-			}
-			// If the showType value was not default, then add it to the list of args.
-			if ((this.showType != default(bool)))
-			{
-				genBeamCommandArgs.Add(("--show-type=" + this.showType));
-			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces
 			genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
@@ -47,14 +19,13 @@ namespace Beamable.Editor.BeamCli.Commands
 	}
 	public partial class BeamCommands
 	{
-		public virtual VersionWrapper Version(VersionArgs versionArgs)
+		public virtual VersionWrapper Version()
 		{
 			// Create a list of arguments for the command
 			System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
 			genBeamCommandArgs.Add("beam");
 			genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
 			genBeamCommandArgs.Add("version");
-			genBeamCommandArgs.Add(versionArgs.Serialize());
 			// Create an instance of an IBeamCommand
 			Beamable.Common.BeamCli.IBeamCommand command = this._factory.Create();
 			// Join all the command paths and args into one string
