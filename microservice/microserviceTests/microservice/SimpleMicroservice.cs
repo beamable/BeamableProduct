@@ -75,6 +75,12 @@ namespace microserviceTests.microservice
    public class SimpleMicroservice : Microservice
    {
       public static MicroserviceFactory<SimpleMicroservice> Factory => () => new SimpleMicroservice();
+
+      [Callable]
+      public async Task FromNotNullPlease(long playerId)
+      {
+	      await Services.Notifications.NotifyPlayer(playerId, "test", "test");
+      }
       
       [ClientCallable]
       public async Promise<List<ItemContent>> GetContents()
