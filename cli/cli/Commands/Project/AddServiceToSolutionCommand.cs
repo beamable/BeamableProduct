@@ -13,7 +13,7 @@ public class AddServiceToSolutionCommand : AppCommand<SolutionCommandArgs>
 
 	public AddServiceToSolutionCommand(AddUnityClientOutputCommand addUnityCommand,
 		AddUnrealClientOutputCommand addUnrealCommand) : base("add",
-		"Add new project to an existing solution in current working directory")
+		"Add new project to an existing service solution in current working directory")
 	{
 		_addUnityCommand = addUnityCommand;
 		_addUnrealCommand = addUnrealCommand;
@@ -30,6 +30,14 @@ public class AddServiceToSolutionCommand : AppCommand<SolutionCommandArgs>
 
 	public override async Task Handle(SolutionCommandArgs args)
 	{
+		if (args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Count == 0)
+		{
+			throw new CliException(
+				"This configuration has no services yet, so it cannot add a new service to other service solution.", 
+				Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_NO_SERVICE_EXISTS,
+				true,"Call `beam project new` command instead.");
+		}
+		
 		if (string.IsNullOrEmpty(args.SolutionName.Value))
 		{
 			List<string> solutionPaths = Directory.GetFiles(args.ConfigService.WorkingDirectory, "*.sln",

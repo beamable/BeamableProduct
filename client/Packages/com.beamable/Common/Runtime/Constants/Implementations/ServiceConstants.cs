@@ -51,6 +51,7 @@ namespace Beamable.Common
 				public const int CMD_RESULT_CODE_DOCKER_NOT_RUNNING = 500;
 				public const int CMD_RESULT_CODE_CONTAINER_NOT_RUNNING = 501;
 				public const int CMD_RESULT_CODE_SOLUTION_NOT_FOUND = 502;
+				public const int CMD_RESULT_CODE_NO_SERVICE_EXISTS = 503;
 				public const int CMD_RESULT_CODE_INVALID_CONTENT = 601;
 
 				public static readonly Vector2 MIN_SIZE = new Vector2(900, 560);

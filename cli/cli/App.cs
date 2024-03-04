@@ -391,8 +391,6 @@ public class App
 		commandLineBuilder.UseHelpBuilder(context => helpBuilder);
 		commandLineBuilder.UseExceptionHandler((ex, context) =>
 		{
-
-
 			switch (ex)
 			{
 				case RequesterException requesterException:
@@ -417,6 +415,7 @@ public class App
 						}
 
 						report.Render(AnsiConsole.Console);
+						Console.Error.WriteLine(string.Empty);
 					}
 					else
 					{
