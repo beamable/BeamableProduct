@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Reflection;
+using UnityEngine;
 
 namespace Beamable.Common
 {
@@ -38,7 +39,9 @@ namespace Beamable.Common
 				public const string CONTAINER_ALREADY_UPLOADED_MESSAGE = "Service [{0}] is already deployed at imageId";
 				public const string CANT_UPLOAD_CONTAINER_MESSAGE = "Can't upload container service=[{0}]";
 				public const string USING_REMOTE_SERVICE_MESSAGE = "Using remote service";
-				public const string BROKEN_REMOTE_SERVICES_MESSAGE = "Looks like there are microservices with blank image IDs. This may have occurred due to a past publish with archived microservices, but will make it impossible to publish now. You need to recreate these services: \n\t-{0}\n\nAfter publishing, you may archive any unused microservices. However, they must be published at least once to ensure a correct ServerManifest.";
+
+				public const string BROKEN_REMOTE_SERVICES_MESSAGE =
+					"Looks like there are microservices with blank image IDs. This may have occurred due to a past publish with archived microservices, but will make it impossible to publish now. You need to recreate these services: \n\t-{0}\n\nAfter publishing, you may archive any unused microservices. However, they must be published at least once to ensure a correct ServerManifest.";
 
 
 				public const string MICROSERVICE_IMAGE_CLASS = "microserviceImage";
@@ -57,6 +60,32 @@ namespace Beamable.Common
 				public const float ROW_HEIGHT = 50;
 
 				public const string MICROSERVICE_FEDERATED_COMPONENTS_KEY = "x-federated-components";
+
+
+				/// <summary>
+				/// OpenAPI extension that stores <see cref="System.Type.Name"/> of a type used in the microservice "Callable" method signatures.
+				/// </summary>
+				public const string MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME = "x-beamable-type-name";
+
+				/// <summary>
+				/// OpenAPI extension that stores <see cref="System.Type.Namespace"/> of a type used in the microservice "Callable" method signatures.
+				/// </summary>
+				public const string MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAMESPACE = "x-beamable-type-namespace";
+
+				/// <summary>
+				/// OpenAPI extension that stores <see cref="System.Type.AssemblyQualifiedName"/> of a type used in the microservice "Callable" method signatures.
+				/// </summary>
+				public const string MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME = "x-beamable-qualified-name";
+
+				/// <summary>
+				/// OpenAPI extension that stores <see cref="AssemblyName.Name"/> of a type used in the microservice "Callable" method signatures.
+				/// </summary>
+				public const string MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY = "x-beamable-assembly";
+
+				/// <summary>
+				/// OpenAPI extension that stores <see cref="AssemblyName.Version"/> of a type used in the microservice "Callable" method signatures.
+				/// </summary>
+				public const string MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY_VERSION = "x-beamable-assembly-version";
 
 				public static string GetBuildButtonString(bool includeDebugTools, string text) => includeDebugTools
 					? $"{BUILD_DEBUG_PREFIX} {text}"
@@ -92,7 +121,10 @@ namespace Beamable.Common
 				{
 					public const string ON_OFF_HEADER_TOOLTIP = "A service can either be off or on. If the service is off, no ClientCallable methods can execute";
 					public const string NAME_HEADER_TOOLTIP = "The name of the service";
-					public const string KNOWN_LOCATION_HEADER_TOOLTIP = "A service can exist on your machine, or in a remote realm, or both. A 'Remote' value means that the service has been deployed previously, and only exists on the realm. A 'Local' value means that the service has not been deployed yet, and only exists on your machine. A 'Local & Remote' value means that the service exists on the realm and on your machine";
+
+					public const string KNOWN_LOCATION_HEADER_TOOLTIP =
+						"A service can exist on your machine, or in a remote realm, or both. A 'Remote' value means that the service has been deployed previously, and only exists on the realm. A 'Local' value means that the service has not been deployed yet, and only exists on your machine. A 'Local & Remote' value means that the service exists on the realm and on your machine";
+
 					public const string DEPENDENCIES_HEADER_TOOLTIP = "The storage objects that the service requires to run";
 					public const string COMMENTS_HEADER_TOOLTIP = "You may enter in specific comments per service that are viewable from portal for this deployment";
 					public const string STATUS_HEADER_TOOLTIP = "Indicates the current phase of the publication for the service";

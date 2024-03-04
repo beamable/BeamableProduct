@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Progress bars and logs do not appear side by side.
+- Unreal Microservice client generation now correctly generates non-primitives used in C#MS signatures
 
 ## [1.19.14]
 

@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Server;
 using Beamable.Server.Common;
@@ -8,6 +9,7 @@ using Microsoft.OpenApi.Models;
 using System.Collections;
 using System.Reflection;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Tooling.Common.OpenAPI;
 
@@ -188,11 +190,11 @@ public class SchemaGenerator
 				schema.AdditionalPropertiesAllowed = false;
 				schema.Extensions = new Dictionary<string, IOpenApiExtension>
 				{
-					["x-beamable-namespace"] = new OpenApiString(runtimeType.Namespace),
-					["x-beamable-name"] = new OpenApiString(runtimeType.Name),
-					["x-beamable-qualified-name"] = new OpenApiString(GetQualifiedReferenceName(runtimeType)),
-					["x-beamable-assembly-name"] = new OpenApiString(runtimeType.Assembly.GetName().Name),
-					["x-beamable-assembly-version"] = new OpenApiString(runtimeType.Assembly.GetName().Version.ToString())
+					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAMESPACE] = new OpenApiString(runtimeType.Namespace),
+					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME] = new OpenApiString(runtimeType.Name),
+					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_ASSEMBLY_QUALIFIED_NAME] = new OpenApiString(GetQualifiedReferenceName(runtimeType)),
+					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY] = new OpenApiString(runtimeType.Assembly.GetName().Name),
+					[MICROSERVICE_EXTENSION_BEAMABLE_TYPE_OWNER_ASSEMBLY_VERSION] = new OpenApiString(runtimeType.Assembly.GetName().Version.ToString())
 				};
 				
 				if (depth == 0) return schema;

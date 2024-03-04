@@ -1197,7 +1197,7 @@ namespace Beamable.Player
 		}
 
 		private async Promise<PlayerRecoveryOperation> RecoverAccount(
-			Func<IAuthService, bool, Promise<TokenResponse>> loginFunction)
+			Func<IAuthService, bool, Promise<TokenResponse>> loginFunction, bool attemptAccountMerge = true)
 		{
 			TokenResponse res;
 			var op = new PlayerRecoveryOperation();
@@ -1205,9 +1205,9 @@ namespace Beamable.Player
 			{
 				try
 				{
-					res = await loginFunction(_authService, true);
+					res = await loginFunction(_authService, attemptAccountMerge);
 				}
-				catch (PlatformRequesterException ex) when (ex.Error?.error == "UnableToMergeError")
+				catch (PlatformRequesterException ex) when (attemptAccountMerge && ex.Error?.error == "UnableToMergeError")
 				{
 					op.realmAlreadyHasGamerTag = true;
 					res = await loginFunction(_authService, false);
@@ -1400,14 +1400,15 @@ namespace Beamable.Player
 			return res;
 		}
 
-		/// <inheritdoc cref="RecoverAccountWithExternalIdentity{TCloudIdentity,TService}(string,Beamable.Player.AsyncChallengeHandler)"/>
+		/// <inheritdoc cref="RecoverAccountWithExternalIdentity{TCloudIdentity,TService}(string,Beamable.Player.AsyncChallengeHandler,bool)"/>
 		public Promise<PlayerRecoveryOperation> RecoverAccountWithExternalIdentity<TCloudIdentity, TService>(
 			string token,
-			ChallengeHandler challengeHandler)
+			ChallengeHandler challengeHandler,
+			bool attemptToMergeExistingAccount = true)
 			where TCloudIdentity : IThirdPartyCloudIdentity, new()
 			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity> =>
 			RecoverAccountWithExternalIdentity<TCloudIdentity, TService>(
-				token, challenge => Promise<string>.Successful(challengeHandler(challenge)));
+				token, challenge => Promise<string>.Successful(challengeHandler(challenge)), attemptToMergeExistingAccount);
 
 
 		/// <summary>
@@ -1424,17 +1425,38 @@ namespace Beamable.Player
 		/// <param name="challengeHandler">
 		/// The server may request the client to meet a challenge. The <see cref="ChallengeHandler"/> will be given
 		/// the challenge string from the server, and it must solve the challenge and return the solution. The solution
-		/// will be given back to the server to validate identity. 
+		/// will be given back to the server to validate identity.
+		/// <para>
+		/// If the <see cref="ChallengeHandler"/> is not idempotent, please set the <see cref="attemptToMergeExistingAccount"/> field to false.
+		/// </para>
+		/// </param>
+		/// <param name="attemptToMergeExistingAccount">
+		/// Defaults to true.
+		/// <para>
+		///		There may already be an account (on the CID) that has requested external identity associated with the account.
+		/// When there is an existing account, two outcomes are possible for this Recover method, either,
+		/// <list type="bullet">
+		/// <item> The current playerId can reference the existing account, or </item>
+		/// <item> A new playerId will be created that references the existing account </item>
+		/// </list>
+		/// By default, the first option is attempted. However, this approach requires two invocations of the <see cref="ChallengeHandler"/> ,
+		/// and if it is not idempotent, that will cause an error. Therefor, <b> if the <see cref="ChallengeHandler"/> is not idempotent, please set this field to false.</b>
+		/// </para>
 		/// </param>
 		/// <typeparam name="TCloudIdentity">A <see cref="IThirdPartyCloudIdentity"/> type</typeparam>
 		/// <typeparam name="TService">A <see cref="Microservice"/> that implements <see cref="TCloudIdentity"/></typeparam>
 		/// <returns>A <see cref="PlayerRecoveryOperation"/> containing the <see cref="PlayerAccount"/> or a <see cref="PlayerRecoveryError"/> value.</returns>
-		public Promise<PlayerRecoveryOperation> RecoverAccountWithExternalIdentity<TCloudIdentity, TService>(string token, AsyncChallengeHandler challengeHandler = null)
+		public Promise<PlayerRecoveryOperation> RecoverAccountWithExternalIdentity<TCloudIdentity, TService>(
+			string token, 
+			AsyncChallengeHandler challengeHandler = null,
+			bool attemptToMergeExistingAccount = true)
 			where TCloudIdentity : IThirdPartyCloudIdentity, new()
 			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity>
 		{
 
-			return RecoverAccount(async (auth, merge) =>
+			return RecoverAccount(
+				attemptAccountMerge: attemptToMergeExistingAccount, 
+				loginFunction: async (auth, merge) =>
 			{
 				var client = _provider.GetService<TService>();
 				var ident = new TCloudIdentity();
