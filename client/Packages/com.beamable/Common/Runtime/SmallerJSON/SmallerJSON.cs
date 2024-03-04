@@ -786,7 +786,7 @@ namespace Beamable.Serialization.SmallerJSON
 
 					SerializeArray(asList, builder);
 				}
-				
+
 				else if ((asDict = value as IDictionary) != null)
 				{
 					if (value is ISerializationCallbackReceiver receiver)

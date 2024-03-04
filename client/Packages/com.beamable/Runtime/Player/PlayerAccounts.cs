@@ -1505,7 +1505,7 @@ namespace Beamable.Player
 		/// <typeparam name="TService">A <see cref="Microservice"/> that implements <see cref="TCloudIdentity"/></typeparam>
 		/// <returns>A <see cref="PlayerRecoveryOperation"/> containing the <see cref="PlayerAccount"/> or a <see cref="PlayerRecoveryError"/> value.</returns>
 		public Promise<PlayerRecoveryOperation> RecoverAccountWithExternalIdentity<TCloudIdentity, TService>(
-			string token, 
+			string token,
 			AsyncChallengeHandler challengeHandler = null,
 			bool attemptToMergeExistingAccount = true)
 			where TCloudIdentity : IThirdPartyCloudIdentity, new()
@@ -1513,7 +1513,7 @@ namespace Beamable.Player
 		{
 
 			return RecoverAccount(
-				attemptAccountMerge: attemptToMergeExistingAccount, 
+				attemptAccountMerge: attemptToMergeExistingAccount,
 				loginFunction: async (auth, merge) =>
 			{
 				var client = _provider.GetService<TService>();
