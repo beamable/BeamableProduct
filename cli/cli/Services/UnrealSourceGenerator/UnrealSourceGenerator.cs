@@ -11,6 +11,7 @@ using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.RegularExpressions;
+using static Beamable.Common.Constants.Features.Services;
 
 namespace cli.Unreal;
 
@@ -134,7 +135,12 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	{
 		NAMESPACED_TYPES_OVERRIDES = new() { { "Player", "PlayerId" }, { "DeleteRole", "DeleteRoleRequestBody" } };
 		NAMESPACED_ENDPOINT_OVERRIDES = new() { { "PostToken", "Authenticate" } };
-		POLYMORPHIC_WRAPPER_TYPE_OVERRIDES = new() { { "UOneOf_UContentReference_UTextReference_UBinaryReference*", "UBaseContentReference*" }, { "UOneOf_UCronTrigger_UExactTrigger*", "UBeamJobTrigger*" }, { "UOneOf_UHttpCall_UPublishMessage_UServiceCall*", "UBeamJobType*" } };
+		POLYMORPHIC_WRAPPER_TYPE_OVERRIDES = new()
+		{
+			{ "UOneOf_UContentReference_UTextReference_UBinaryReference*", "UBaseContentReference*" },
+			{ "UOneOf_UCronTrigger_UExactTrigger*", "UBeamJobTrigger*" },
+			{ "UOneOf_UHttpCall_UPublishMessage_UServiceCall*", "UBeamJobType*" }
+		};
 
 		UNREAL_ALL_SEMTYPES = new List<string>
 		{
@@ -313,8 +319,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			newGeneratedUnrealTypes.TryAdd(s.decl.UnrealTypeName, headerFileName);
 			return new[]
 			{
-				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.headerDeclaration }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Optionals/{s.decl.NamespacedTypeName}.cpp", Content = s.cppDeclaration },
-				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/Optionals/{s.decl.NamespacedTypeName}Library.h", Content = s.bpLibraryHeader }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Optionals/{s.decl.NamespacedTypeName}Library.cpp", Content = s.bpLibraryCpp },
+				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.headerDeclaration },
+				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Optionals/{s.decl.NamespacedTypeName}.cpp", Content = s.cppDeclaration },
+				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/Optionals/{s.decl.NamespacedTypeName}Library.h", Content = s.bpLibraryHeader },
+				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Optionals/{s.decl.NamespacedTypeName}Library.cpp", Content = s.bpLibraryCpp },
 			};
 		}));
 
@@ -333,7 +341,11 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		{
 			var headerFileName = $"{headerFileOutputPath}AutoGen/Arrays/{s.decl.NamespacedTypeName}.h";
 			newGeneratedUnrealTypes.TryAdd(s.decl.UnrealTypeName, headerFileName);
-			return new[] { new GeneratedFileDescriptor { FileName = headerFileName, Content = s.headerDeclaration }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Arrays/{s.decl.NamespacedTypeName}.cpp", Content = s.cppDeclaration }, };
+			return new[]
+			{
+				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.headerDeclaration },
+				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Arrays/{s.decl.NamespacedTypeName}.cpp", Content = s.cppDeclaration },
+			};
 		}));
 
 		// Generate Map Wrapper Type Files
@@ -351,7 +363,11 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		{
 			var headerFileName = $"{headerFileOutputPath}AutoGen/Maps/{s.decl.NamespacedTypeName}.h";
 			newGeneratedUnrealTypes.TryAdd(s.decl.UnrealTypeName, headerFileName);
-			return new[] { new GeneratedFileDescriptor { FileName = headerFileName, Content = s.headerDeclaration }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Maps/{s.decl.NamespacedTypeName}.cpp", Content = s.cppDeclaration }, };
+			return new[]
+			{
+				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.headerDeclaration },
+				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Maps/{s.decl.NamespacedTypeName}.cpp", Content = s.cppDeclaration },
+			};
 		}));
 
 		// Generate all enum type declarations
@@ -392,8 +408,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			newGeneratedUnrealTypes.TryAdd(s.decl.UnrealTypeName, headerFileName);
 			return new[]
 			{
-				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.serializableHeader, }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}.cpp", Content = s.serializableCpp, },
-				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}Library.h", Content = s.serializableTypeLibraryHeader, }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}Library.cpp", Content = s.serializableTypeLibraryCpp, },
+				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.serializableHeader, },
+				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}.cpp", Content = s.serializableCpp, },
+				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}Library.h", Content = s.serializableTypeLibraryHeader, },
+				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}Library.cpp", Content = s.serializableTypeLibraryCpp, },
 			};
 		}));
 
@@ -411,7 +429,11 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		{
 			var headerFileName = $"{headerFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}.h";
 			newGeneratedUnrealTypes.TryAdd(s.decl.UnrealTypeName, headerFileName);
-			return new[] { new GeneratedFileDescriptor { FileName = headerFileName, Content = s.header, }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}.cpp", Content = s.cpp, }, };
+			return new[]
+			{
+				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.header, },
+				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/{s.decl.NamespacedTypeName}.cpp", Content = s.cpp, },
+			};
 		}));
 
 		// Generate all csv row types
@@ -428,7 +450,11 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		{
 			var headerFileName = $"{headerFileOutputPath}AutoGen/Rows/{s.decl.RowNamespacedType}.h";
 			newGeneratedUnrealTypes.TryAdd(s.decl.RowUnrealType, headerFileName);
-			return new[] { new GeneratedFileDescriptor { FileName = headerFileName, Content = s.header, }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Rows/{s.decl.RowNamespacedType}.cpp", Content = s.cpp, }, };
+			return new[]
+			{
+				new GeneratedFileDescriptor { FileName = headerFileName, Content = s.header, },
+				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/Rows/{s.decl.RowNamespacedType}.cpp", Content = s.cpp, },
+			};
 		}));
 
 		// Subsystem Declarations
@@ -446,7 +472,11 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		});
 		outputFiles.AddRange(subsystemsCode.SelectMany((s, i) =>
 		{
-			return new[] { new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/SubSystems/Beam{s.decl.SubsystemName}Api.h", Content = s.subsystemHeader }, new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/SubSystems/Beam{s.decl.SubsystemName}Api.cpp", Content = s.subsystemCpp }, };
+			return new[]
+			{
+				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/SubSystems/Beam{s.decl.SubsystemName}Api.h", Content = s.subsystemHeader },
+				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/SubSystems/Beam{s.decl.SubsystemName}Api.cpp", Content = s.subsystemCpp },
+			};
 		}));
 
 		var subsystemEndpoints = subsystemDeclarations.SelectMany(sd => sd.GetAllEndpoints()).ToList();
@@ -475,10 +505,19 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		{
 			return new[]
 			{
-				new GeneratedFileDescriptor { FileName = $"{headerFileOutputPath}AutoGen/SubSystems/{sc.decl.NamespacedOwnerServiceName}/{sc.decl.GlobalNamespacedEndpointName}Request.h", Content = sc.endpointHeader },
+				new GeneratedFileDescriptor
+				{
+					FileName = $"{headerFileOutputPath}AutoGen/SubSystems/{sc.decl.NamespacedOwnerServiceName}/{sc.decl.GlobalNamespacedEndpointName}Request.h", Content = sc.endpointHeader
+				},
 				new GeneratedFileDescriptor { FileName = $"{cppFileOutputPath}AutoGen/SubSystems/{sc.decl.NamespacedOwnerServiceName}/{sc.decl.GlobalNamespacedEndpointName}Request.cpp", Content = sc.endpointCpp },
-				new GeneratedFileDescriptor { FileName = $"{blueprintHeaderFileOutputPath}AutoGen/{sc.decl.NamespacedOwnerServiceName}/K2BeamNode_ApiRequest_{sc.decl.GlobalNamespacedEndpointName}.h", Content = sc.beamFlowNodeHeader },
-				new GeneratedFileDescriptor { FileName = $"{blueprintCppFileOutputPath}AutoGen/{sc.decl.NamespacedOwnerServiceName}/K2BeamNode_ApiRequest_{sc.decl.GlobalNamespacedEndpointName}.cpp", Content = sc.beamFlowNodeCpp },
+				new GeneratedFileDescriptor
+				{
+					FileName = $"{blueprintHeaderFileOutputPath}AutoGen/{sc.decl.NamespacedOwnerServiceName}/K2BeamNode_ApiRequest_{sc.decl.GlobalNamespacedEndpointName}.h", Content = sc.beamFlowNodeHeader
+				},
+				new GeneratedFileDescriptor
+				{
+					FileName = $"{blueprintCppFileOutputPath}AutoGen/{sc.decl.NamespacedOwnerServiceName}/K2BeamNode_ApiRequest_{sc.decl.GlobalNamespacedEndpointName}.cpp", Content = sc.beamFlowNodeCpp
+				},
 			};
 		}));
 
@@ -595,10 +634,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 				var csvRowType = new UnrealCsvRowTypeDeclaration
 				{
-					RowUnrealType = schemaUnrealType,
-					RowNamespacedType = GetNamespacedTypeNameFromUnrealType(schemaUnrealType),
-					PropertyDeclarations = uproperties,
-					KeyDeclarationIdx = Array.IndexOf(order, keyProperty),
+					RowUnrealType = schemaUnrealType, RowNamespacedType = GetNamespacedTypeNameFromUnrealType(schemaUnrealType), PropertyDeclarations = uproperties, KeyDeclarationIdx = Array.IndexOf(order, keyProperty),
 				};
 				csvRowTypes.Add(csvRowType);
 			}
@@ -679,7 +715,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 						if (uPropertyDeclarationData.SemTypeSerializationType.StartsWith(UNREAL_MAP))
 							uPropertyDeclarationData.SemTypeSerializationType = UnrealPropertyDeclaration.ExtractSecondTemplateParamFromType(uPropertyDeclarationData.SemTypeSerializationType);
 
-						kSemTypeDeclarationPointsLog.AppendLine($"{handle},{uPropertyDeclarationData.PropertyUnrealType},{uPropertyDeclarationData.PropertyNamespacedType},{uPropertyDeclarationData.SemTypeSerializationType}");
+						kSemTypeDeclarationPointsLog.AppendLine(
+							$"{handle},{uPropertyDeclarationData.PropertyUnrealType},{uPropertyDeclarationData.PropertyNamespacedType},{uPropertyDeclarationData.SemTypeSerializationType}");
 					}
 
 					// Check if this is an optional type, if it is --- declare it. (We don't support optional arrays of poly wrappers)
@@ -779,10 +816,11 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	{
 		foreach (var namedOpenApiSchema in namedOpenApiSchemata)
 		{
-			if (!schemaNameOverlaps.TryGetValue(namedOpenApiSchema.Name, out var list))
+			var name = namedOpenApiSchema.Schema.Extensions.TryGetValue(MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME, out var nameOverride) ? (nameOverride as OpenApiString).Value : namedOpenApiSchema.Name;
+			if (!schemaNameOverlaps.TryGetValue(name, out var list))
 			{
 				list = new List<NamedOpenApiSchema>(1);
-				schemaNameOverlaps.Add(namedOpenApiSchema.Name, list);
+				schemaNameOverlaps.Add(name, list);
 			}
 
 			list.Add(namedOpenApiSchema);
@@ -984,15 +1022,19 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	private static void BuildSubsystemDeclarations(IReadOnlyList<OpenApiDocument> openApiDocuments, out List<UnrealApiSubsystemDeclaration> outSubsystemDeclarations,
 		out List<UnrealJsonSerializableTypeDeclaration> outResponseWrapperTypes)
 	{
-		var isMsGen = UnrealSourceGenerator.genType == GenerationType.Microservice;
+		var isMsGen = genType == GenerationType.Microservice;
 		outSubsystemDeclarations = new List<UnrealApiSubsystemDeclaration>(openApiDocuments.Count);
 		outResponseWrapperTypes = new List<UnrealJsonSerializableTypeDeclaration>(openApiDocuments.Count);
 		foreach (var openApiDocument in openApiDocuments)
 		{
 			GetNamespacedServiceNameFromApiDoc(openApiDocument.Info, out var serviceTitle, out var serviceName);
-
-			var isMSGen = genType == GenerationType.Microservice;
-			var unrealServiceDecl = new UnrealApiSubsystemDeclaration { ServiceName = serviceName, SubsystemName = isMSGen ? $"{serviceName.Capitalize()}Ms" : serviceName.Capitalize(), };
+			
+			var capitalizedServiceName = serviceName.Capitalize();
+			var unrealServiceDecl = new UnrealApiSubsystemDeclaration
+			{
+				ServiceName = serviceName,
+				SubsystemName = capitalizedServiceName,
+			};
 
 			// check and see if we already declared this subsystem (but an object/basic version of it)
 			var alreadyDeclared = outSubsystemDeclarations.Any(d => d.SubsystemName == unrealServiceDecl.SubsystemName);
@@ -1041,8 +1083,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					unrealEndpoint.NamespacedOwnerServiceName = unrealServiceDecl.SubsystemName;
 					// TODO: For now, we make all non-basic endpoints require auth. This is due to certain endpoints' OpenAPI spec not being correctly generated. We also need to correctly generate the server-only services in UE at a future date.
 					unrealEndpoint.IsAuth = serviceType != ServiceType.Basic ||
-											serviceTitle.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
-											endpointData.Security[0].Any(kvp => kvp.Key.Reference.Id == "user");
+					                        serviceTitle.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
+					                        endpointData.Security[0].Any(kvp => kvp.Key.Reference.Id == "user");
 					unrealEndpoint.EndpointName = endpointPath;
 					unrealEndpoint.EndpointRoute = isMsGen ? $"micro_{openApiDocument.Info.Title}{endpointPath}" : endpointPath;
 					unrealEndpoint.EndpointVerb = operationType switch
@@ -1385,12 +1427,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// </summary>
 	private static UnrealEnumDeclaration MakeEnumDeclaration(string unrealType, List<string> enumValuesNames)
 	{
-		var enumDecl = new UnrealEnumDeclaration
-		{
-			UnrealTypeName = unrealType,
-			NamespacedTypeName = GetNamespacedTypeNameFromUnrealType(unrealType),
-			EnumValues = enumValuesNames
-		};
+		var enumDecl = new UnrealEnumDeclaration { UnrealTypeName = unrealType, NamespacedTypeName = GetNamespacedTypeNameFromUnrealType(unrealType), EnumValues = enumValuesNames };
 		return enumDecl;
 	}
 
@@ -1423,14 +1460,14 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	private static bool IsUnrealContainerOrWrapperType(string unrealType)
 	{
 		return unrealType.StartsWith(UNREAL_ARRAY) || unrealType.StartsWith(UNREAL_MAP) || unrealType.StartsWith(UNREAL_OPTIONAL) ||
-			   unrealType.StartsWith(UNREAL_U_OBJECT_PREFIX) ||
-			   UNREAL_ALL_SEMTYPES.Contains(unrealType);
+		       unrealType.StartsWith(UNREAL_U_OBJECT_PREFIX) ||
+		       UNREAL_ALL_SEMTYPES.Contains(unrealType);
 	}
 
 	private static bool IsUnrealPrimitiveType(string unrealType)
 	{
 		return unrealType.StartsWith(UNREAL_BYTE) || unrealType.StartsWith(UNREAL_SHORT) || unrealType.StartsWith(UNREAL_INT) || unrealType.StartsWith(UNREAL_LONG) ||
-			   unrealType.StartsWith(UNREAL_FLOAT) || unrealType.StartsWith(UNREAL_DOUBLE);
+		       unrealType.StartsWith(UNREAL_FLOAT) || unrealType.StartsWith(UNREAL_DOUBLE);
 	}
 
 
@@ -1495,6 +1532,13 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// </summary>
 	public static string GetNamespacedSerializableTypeFromSchema(OpenApiDocument parentDoc, string schemaName, bool isOptional, bool isCsvRow = false)
 	{
+		var isMsGen = genType == GenerationType.Microservice;
+		if (isMsGen)
+		{
+			if (parentDoc.Components.Schemas[schemaName].Extensions.TryGetValue(MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME, out var nameExtension))
+				schemaName = (nameExtension as OpenApiString).Value;
+		}
+
 		var hasMappedOverlaps = schemaNameOverlaps.TryGetValue(schemaName, out var overlaps);
 		if (hasMappedOverlaps && overlaps.Count > 1)
 		{
@@ -1517,6 +1561,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			}
 		}
 
+
 		// Override the schema name if any is configured.
 		schemaName = NAMESPACED_TYPES_OVERRIDES.TryGetValue(schemaName, out var overridenName) ? overridenName : schemaName;
 
@@ -1526,7 +1571,6 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		schemaName = isCsvRow ? $"{schemaName}TableRow" : schemaName;
 
 		// Adjust the schema name if its being generated for a Microservice.
-		var isMsGen = genType == GenerationType.Microservice;
 		schemaName = isMsGen ? $"{parentDoc.Info.Title.Sanitize()}{schemaName}" : schemaName;
 
 		// Adjust the schema name if it is an optional schema
@@ -1617,8 +1661,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		if (doesConflict)
 		{
 			throw new ArgumentException($"{methodName} was found in more than one service. " +
-										$"In this case, this is because you have two microservices with the same name OR because this name clashes with an existing Beamable API. " +
-										$"Please change your Microservice name to resolve this.");
+			                            $"In this case, this is because you have two microservices with the same name OR because this name clashes with an existing Beamable API. " +
+			                            $"Please change your Microservice name to resolve this.");
 		}
 
 		// In case we want to manually override an endpoint's name...
@@ -1649,8 +1693,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		if (doesConflict)
 		{
 			throw new ArgumentException($"{methodName} was overloaded in {serviceName}. " +
-										$"We do not support overloading Callable/ClientCallable/AdminCallable functions." +
-										$"Please rename all overloads to resolve this.");
+			                            $"We do not support overloading Callable/ClientCallable/AdminCallable functions." +
+			                            $"Please rename all overloads to resolve this.");
 		}
 
 		// In case we want to manually override an endpoint's name...
@@ -1676,7 +1720,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// <param name="fieldDeclarationHandle">A string created by <see cref="GetFieldDeclarationHandle"/>. Should null or empty, if generating the type name instead of a field/parameter's declaration.</param>
 	/// <param name="schema">The field schema (value of <see cref="OpenApiSchema.Properties"/>).</param>
 	/// <returns>The correct Unreal-land type as a string.</returns>
-	public static string GetUnrealTypeFromSchema([NotNull] OpenApiDocument parentDoc, [NotNull] string fieldDeclarationHandle, [NotNull] OpenApiSchema schema, out string nonOverridenUnrealType, UnrealTypeGetFlags Flags = UnrealTypeGetFlags.None)
+	public static string GetUnrealTypeFromSchema([NotNull] OpenApiDocument parentDoc, [NotNull] string fieldDeclarationHandle, [NotNull] OpenApiSchema schema, out string nonOverridenUnrealType,
+		UnrealTypeGetFlags Flags = UnrealTypeGetFlags.None)
 	{
 		// The field is considered an optional type ONLY if it is in the dictionary AND it's value in the dictionary is false.
 		// This dictionary must be built from all NamedSchemas's properties (fields) and contain true/false for whether or not that field of that type is required.
@@ -1751,7 +1796,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					{
 						var val = defaults.Default as OpenApiString;
 						if (polymorphicWrappedSchemaExpectedTypeValues.TryGetValue(wrappedUnrealType, out var existing) &&
-							(existing != val?.Value && existing != openApiSchema.Reference.Id.Sanitize()))
+						    (existing != val?.Value && existing != openApiSchema.Reference.Id.Sanitize()))
 							throw new Exception(
 								"Found a wrapped type that is currently used in two different ways. We don't support that cause it doesn't make a lot of sense. You should never see this.");
 
@@ -1761,7 +1806,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 				nonOverridenUnrealType = MakeUnrealUObjectTypeFromNamespacedType($"OneOf{str}");
 				var appliedOverride = POLYMORPHIC_WRAPPER_TYPE_OVERRIDES.TryGetValue(nonOverridenUnrealType, out var overriden) ? overriden : nonOverridenUnrealType;
-				return POLYMORPHIC_WRAPPER_TYPE_OVERRIDES.ContainsKey(nonOverridenUnrealType) ? appliedOverride : throw new Exception($"Should never see this!!! If you do, add an override to the UNREAL_TYPES_OVERRIDE with this as the key={nonOverridenUnrealType}");
+				return POLYMORPHIC_WRAPPER_TYPE_OVERRIDES.ContainsKey(nonOverridenUnrealType)
+					? appliedOverride
+					: throw new Exception($"Should never see this!!! If you do, add an override to the UNREAL_TYPES_OVERRIDE with this as the key={nonOverridenUnrealType}");
 			}
 			case var (_, _, referenceId, _) when !string.IsNullOrEmpty(referenceId):
 			{
