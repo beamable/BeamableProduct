@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Global dependency injection scope
 - Leaderboard PSDK
 - LightBeam UI framework
+- `RecoverAccountWithExternalIdentity` method includes a parameter, `attemptToMergeExistingAccount` that will prevent automatic account merging.
 
 ### Changed
 
@@ -30,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 502 and 504 requests containing HTML are received as `RequesterExceptions`.
 - Content alphabetizes fields on checksum calculation as well as publication.
 - Listing content `activeFrom` field no longer resets every time it is viewed in the Inspector.
+- `Json.Serialize` will treat non `IDictionary` values of `IEnumerable` as json arrays.
 
 ### Removed
 

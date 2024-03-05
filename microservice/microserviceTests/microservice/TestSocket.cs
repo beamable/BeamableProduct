@@ -80,6 +80,11 @@ namespace Beamable.Microservice.Tests.Socket
         {
             return And(matcher, MessageMatcher.WithFrom(fromId));
         }
+        
+        public static TestSocketMessageMatcher WithNullFrom(this TestSocketMessageMatcher matcher)
+        {
+	        return And(matcher, MessageMatcher.WithNullFrom());
+        }
 
         public static TestSocketMessageMatcher WithBody<T>(this TestSocketMessageMatcher matcher,
            Func<T, bool> bodyMatcher)
@@ -257,6 +262,11 @@ namespace Beamable.Microservice.Tests.Socket
         public static TestSocketMessageMatcher WithFrom(long from)
         {
             return req => req.from == from;
+        }
+        
+        public static TestSocketMessageMatcher WithNullFrom()
+        {
+	        return req => !req.from.HasValue;
         }
 
         public static TestSocketMessageMatcher WithPost()
@@ -493,6 +503,20 @@ namespace Beamable.Microservice.Tests.Socket
                 from = dbid,
                 method = "post"
             };
+        }
+        
+        public static WebsocketRequest Callable(string serviceName, string methodName, int reqId, params object[] args)
+        {
+	        return new WebsocketRequest
+	        {
+		        id = reqId,
+		        path = $"{serviceName}/{methodName}",
+		        body = new
+		        {
+			        payload = args
+		        },
+		        method = "post"
+	        };
         }
 
         public static WebsocketRequest ClientCallableAsAdmin(string serviceName, string methodName, int reqId, int dbid, params object[] args)

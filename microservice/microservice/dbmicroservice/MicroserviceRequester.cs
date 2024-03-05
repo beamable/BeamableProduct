@@ -459,6 +459,7 @@ namespace Beamable.Server
          if (_requestContext != null &&
              !_requestContext.IsInvalidUser && // Check to see if the requester has an invalid user --- if it does, the request is being made during
                                                // the initialization process without an Microservice.AssumeUser call being made before.
+             _requestContext.UserId > 0 && // '0' is not a valid playerId, and represents a null value.
              includeAuthHeader)
          {
             req.from = _requestContext.UserId;
