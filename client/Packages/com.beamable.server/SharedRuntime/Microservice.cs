@@ -1,7 +1,9 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
+using Beamable.Server.Api.Inventory;
 using System;
+using System.Threading.Tasks;
 
 namespace Beamable.Server
 {
@@ -134,6 +136,7 @@ namespace Beamable.Server
 		/// <returns>
 		/// A <see cref="RequestHandlerData"/> object that contains a request context, and a collection of services to execute SDK calls against.
 		/// </returns>
+		[Obsolete("Please use the " + nameof(AssumeNewUser) +" instead")]
 		protected RequestHandlerData AssumeUser(long userId, bool requireAdminUser = true)
 		{
 			// require admin privs.
@@ -157,6 +160,46 @@ namespace Beamable.Server
 				Provider = provider
 			};
 		}
+		
+		/// <summary>
+		/// Build a request context and collection of services that represents another player.
+		/// <para>
+		/// This can be used to take API actions on behalf of another player. For example, if
+		/// you needed to modify another player's currency, you could use this method's return object
+		/// to access an <see cref="IMicroserviceInventoryApi"/> and make a call.
+		/// </para>
+		/// </summary>
+		/// <param name="userId">The user id of the player for whom you'd like to make actions on behalf of</param>
+		/// <param name="requireAdminUser">
+		/// By default, this method can only be called by a user with admin access token.
+		/// <para> If you pass in false for this parameter, then any user's request can assume another user.
+		/// <b> This can be dangerous, and you should be careful that the code you write cannot be exploited. </b>
+		/// </para>
+		/// </param>
+		/// <returns>A <see cref="UserRequestDataHandler"/> object that contains a request context, and a collection of services to execute SDK calls against.</returns>
+		protected UserRequestDataHandler AssumeNewUser(long userId, bool requireAdminUser = true)
+		{
+			// require admin privs.
+			if (requireAdminUser)
+			{
+				Context.AssertAdmin();
+			}
+
+			var newCtx = new RequestContext(
+				Context.Cid, Context.Pid, Context.Id, Context.Status, userId, Context.Path, Context.Method, Context.Body,
+				Context.Scopes, Context.Headers);
+			var provider = _scopeGenerator(newCtx);
+
+			var requester = provider.GetService<IBeamableRequester>();
+			var services = provider.GetService<IBeamableServices>();
+			return new UserRequestDataHandler(provider)
+			{
+				Context = newCtx,
+				Requester = requester,
+				Services = services,
+				Provider = provider
+			};
+		}
 
 		public async Promise DisposeMicroservice()
 		{
@@ -169,5 +212,43 @@ namespace Beamable.Server
 			_servicesFactory = null;
 			_scopeGenerator = null;
 		}
+	}
+	
+	public class UserRequestDataHandler : IDisposable
+	                                      #if NETSTANDARD2_1_OR_GREATER
+	                                    , IAsyncDisposable
+	                                      #endif
+	{
+		public RequestContext Context;
+		public IBeamableRequester Requester;
+		public IBeamableServices Services;
+		public IDependencyProvider Provider;
+
+		private IDependencyProviderScope _serviceProvider;
+
+		public UserRequestDataHandler(IDependencyProviderScope serviceProvider)
+		{
+			_serviceProvider = serviceProvider;
+		}
+
+		public void Dispose()
+		{
+			_serviceProvider.Dispose();
+			Context = null;
+			Requester = null;
+			Services = null;
+			Provider = null;
+		}
+		
+#if NETSTANDARD2_1_OR_GREATER
+		public async ValueTask DisposeAsync()
+		{
+			await _serviceProvider.Dispose();
+			Context = null;
+			Requester = null;
+			Services = null;
+			Provider = null;
+		}
+#endif
 	}
 }
