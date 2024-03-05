@@ -1,4 +1,5 @@
 namespace cli;
+using System.Collections.Specialized;
 
 public static class Constants
 {
@@ -48,15 +49,16 @@ public static class Constants
 	public static readonly string[] REQUIRED_CONFIG_KEYS = new[] { CONFIG_PLATFORM, CONFIG_CID, CONFIG_PID };
 
 
-	public static readonly Dictionary<string, string> RENAMED_FILES = new Dictionary<string, string>
+	public static readonly OrderedDictionary RENAMED_FILES = new()
 	{
-		{ "config-defaults.json", CONFIG_DEFAULTS_FILE_NAME }, { "user-token.json", CONFIG_TOKEN_FILE_NAME },
-		{"beamoLocalRuntime.json",BEAMO_LOCAL_RUNTIME_FILE_NAME },
-		{"beamoLocalManifest.json", BEAMO_LOCAL_MANIFEST_FILE_NAME},
-		{".linkedProjects.json", CONFIG_LINKED_PROJECTS}
+		{ "config-defaults.json", CONFIG_DEFAULTS_FILE_NAME },
+		{ "user-token.json", CONFIG_TOKEN_FILE_NAME },
+		{ "beamoLocalRuntime.json", BEAMO_LOCAL_RUNTIME_FILE_NAME },
+		{ "beamoLocalManifest.json", BEAMO_LOCAL_MANIFEST_FILE_NAME },
+		{ ".linkedProjects.json", CONFIG_LINKED_PROJECTS }
 	};
 
-	public static readonly Dictionary<string, string> RENAMED_DIRECTORIES = new Dictionary<string, string>()
+	public static readonly OrderedDictionary RENAMED_DIRECTORIES = new()
 	{
 		{ "Content", CONTENT_DIRECTORY }
 	};

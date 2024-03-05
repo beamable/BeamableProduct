@@ -345,21 +345,23 @@ public class ConfigService
 	/// </summary>
 	private void MigrateOldConfigIfExists()
 	{
-		foreach (var renamedPair in Constants.RENAMED_FILES)
+		foreach (string key in Constants.RENAMED_DIRECTORIES.Keys)
 		{
-			var oldPath = GetConfigPath(renamedPair.Key);
-			if (File.Exists(oldPath))
+			var oldPath = GetConfigPath(key);
+			if (Directory.Exists(oldPath))
 			{
-				File.Move(oldPath,GetConfigPath(renamedPair.Value));
+				var newPath = Constants.RENAMED_DIRECTORIES[key] as string;
+				Directory.Move(oldPath,GetConfigPath(newPath));
 			}
 		}
 
-		foreach (var pair in Constants.RENAMED_DIRECTORIES)
+		foreach (string key in Constants.RENAMED_FILES.Keys)
 		{
-			var oldPath = GetConfigPath(pair.Key);
-			if (Directory.Exists(oldPath))
+			var oldPath = GetConfigPath(key);
+			if (File.Exists(oldPath))
 			{
-				Directory.Move(oldPath,GetConfigPath(pair.Value));
+				var newPath = Constants.RENAMED_FILES[key] as string;
+				File.Move(oldPath,GetConfigPath(newPath));
 			}
 		}
 	}
