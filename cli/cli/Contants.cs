@@ -11,7 +11,7 @@ public static class Constants
 	public const string CONFIG_SVN_IGNORE_FILE_NAME = ".svnignore";
 	public const string CONFIG_P4_IGNORE_FILE_NAME = ".p4ignore";
 	public const string CONFIG_TOKEN_FILE_NAME = "connection-auth.json";
-	
+
 	public const string CONTENT_TAGS_FORMAT = "{0}-manifest-content-tags.json";
 	public const string OLD_CONTENT_TAGS_FORMAT = "contentTags_{0}.json";
 
@@ -26,8 +26,8 @@ public static class Constants
 	/// TODO: This part will get abstracted out --- probably into <see cref="ConfigService"/> --- so that we can move this to the Beamable.Common library or some shared space.
 	/// </summary>
 	public const string BEAMO_LOCAL_RUNTIME_FILE_NAME = "local-services-runtime-cache.json";
-	
-	
+
+
 	public const int CMD_RESULT_CONFIG_RESOLUTION_CONFLICT = 701;
 
 	public const string TEMP_FOLDER = "temp";

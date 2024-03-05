@@ -87,10 +87,10 @@ public class BeamInitFlows : CLITest
 		var configDefaultsStr = File.ReadAllText(".beamable/connection-configuration.json");
 		var expectedJson = $@"{{""host"":""https://api.beamable.com"",""cid"":""{cid}"",""pid"":""{pid}""}}";
 
-		bool areEqual = JToken.DeepEquals(JToken.Parse(configDefaultsStr),JToken.Parse(expectedJson));
-		
+		bool areEqual = JToken.DeepEquals(JToken.Parse(configDefaultsStr), JToken.Parse(expectedJson));
+
 		Assert.IsTrue(areEqual, "The connection-configuration file should contain the cid and pid.");
-		
-		
+
+
 	}
 }

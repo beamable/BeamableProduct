@@ -145,7 +145,7 @@ public class ConfigService
 	public void SaveDataFile<T>(string fileName, T data)
 	{
 		var json = JsonConvert.SerializeObject(data,
-			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented});
+			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
 		var file = GetConfigPath(fileName);
 		File.WriteAllText(file, json);
 	}
@@ -233,12 +233,12 @@ public class ConfigService
 		if (string.IsNullOrEmpty(ConfigDirectoryPath))
 			throw new CliException("No beamable project exists. Please use beam init");
 		var json = JsonConvert.SerializeObject(_config,
-			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented});
+			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
 		if (!Directory.Exists(ConfigDirectoryPath))
 		{
 			Directory.CreateDirectory(ConfigDirectoryPath);
 		}
-		
+
 		if (!Directory.Exists(GetConfigPath(Constants.TEMP_FOLDER)))
 		{
 			Directory.CreateDirectory(GetConfigPath(Constants.TEMP_FOLDER));
@@ -297,7 +297,7 @@ public class ConfigService
 	{
 		string fullPath = Path.Combine(ConfigDirectoryPath, Constants.TEMP_FOLDER, Constants.CONFIG_TOKEN_FILE_NAME);
 		var json = JsonConvert.SerializeObject(response,
-			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented});
+			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
 		File.WriteAllText(fullPath, json);
 	}
 
@@ -322,7 +322,7 @@ public class ConfigService
 	{
 		DirectoryExists = TryToFindBeamableConfigFolder(out var configPath);
 		ConfigDirectoryPath = configPath;
-		if(DirectoryExists.GetValueOrDefault(false))
+		if (DirectoryExists.GetValueOrDefault(false))
 		{
 			if (!Directory.Exists(GetConfigPath(Constants.TEMP_FOLDER)))
 			{
@@ -354,16 +354,16 @@ public class ConfigService
 				var existsAndAreDifferent = File.Exists(newPath);
 
 				existsAndAreDifferent &=
-					string.Compare(oldPath, newPath, 
-						RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparison.InvariantCultureIgnoreCase: StringComparison.InvariantCulture) != 0;
-				
+					string.Compare(oldPath, newPath,
+						RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture) != 0;
+
 				if (existsAndAreDifferent)
 				{
 					throw new CliException($"Config resolution error, there is {oldPath} and {newPath}",
 						Constants.CMD_RESULT_CONFIG_RESOLUTION_CONFLICT, true,
 						"Remove one of the directories and run the command again\n");
 				}
-				Directory.Move(oldPath,newPath!);
+				Directory.Move(oldPath, newPath!);
 			}
 		}
 
@@ -376,8 +376,8 @@ public class ConfigService
 				var existsAndAreDifferent = File.Exists(newPath);
 
 				existsAndAreDifferent &=
-						string.Compare(oldPath, newPath, 
-							RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparison.InvariantCultureIgnoreCase: StringComparison.InvariantCulture) != 0;
+						string.Compare(oldPath, newPath,
+							RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture) != 0;
 
 				if (existsAndAreDifferent)
 				{
@@ -385,7 +385,7 @@ public class ConfigService
 						Constants.CMD_RESULT_CONFIG_RESOLUTION_CONFLICT, true,
 						"Remove one of the files and run the command again\n");
 				}
-				File.Move(oldPath,newPath!);
+				File.Move(oldPath, newPath!);
 			}
 		}
 	}
