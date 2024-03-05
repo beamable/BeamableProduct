@@ -174,7 +174,7 @@ public class ProjectClientHelper<TProjectClient> where TProjectClient : IProject
 		}
 	}
 
-	private bool IsValidProjectClientDirectory(ref string path)
+	public bool IsValidProjectClientDirectory(ref string path)
 	{
 		try
 		{
