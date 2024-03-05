@@ -91,7 +91,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			throw new CliException("invalid authorization");
 		}
 		AnsiConsole.MarkupLine(":thumbs_up: Success! Here are your connection details");
-		BeamableLogger.Log(args.ConfigService.ConfigFilePath);
+		BeamableLogger.Log(args.ConfigService.ConfigDirectoryPath);
 		BeamableLogger.Log($"cid=[{args.AppContext.Cid}] pid=[{args.AppContext.Pid}]");
 		BeamableLogger.Log(args.ConfigService.PrettyPrint());
 		return new InitCommandResult()

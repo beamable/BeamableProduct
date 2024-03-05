@@ -17,7 +17,7 @@ public class ContentLocalCache
 	public string ContentDirPath => Path.Combine(BaseDirPath, ManifestId);
 	public ContentTags Tags => _contentTags;
 
-	private string BaseDirPath => Path.Combine(_configService.ConfigFilePath, "Content");
+	private string BaseDirPath => Path.Combine(_configService.ConfigDirectoryPath!, Constants.CONTENT_DIRECTORY);
 
 	private Dictionary<string, ContentDocument> _localAssets;
 	private ContentTags _contentTags;
