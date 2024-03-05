@@ -5,6 +5,7 @@ using JetBrains.Annotations;
 using Newtonsoft.Json;
 using Serilog;
 using System.CommandLine.Binding;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace cli;
@@ -321,7 +322,6 @@ public class ConfigService
 	{
 		DirectoryExists = TryToFindBeamableConfigFolder(out var configPath);
 		ConfigDirectoryPath = configPath;
-
 		if(DirectoryExists.GetValueOrDefault(false))
 		{
 			if (!Directory.Exists(GetConfigPath(Constants.TEMP_FOLDER)))
@@ -350,8 +350,20 @@ public class ConfigService
 			var oldPath = GetConfigPath(key);
 			if (Directory.Exists(oldPath))
 			{
-				var newPath = Constants.RENAMED_DIRECTORIES[key] as string;
-				Directory.Move(oldPath,GetConfigPath(newPath));
+				var newPath = GetConfigPath(Constants.RENAMED_DIRECTORIES[key] as string);
+				var existsAndAreDifferent = File.Exists(newPath);
+
+				existsAndAreDifferent &=
+					string.Compare(oldPath, newPath, 
+						RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparison.InvariantCultureIgnoreCase: StringComparison.InvariantCulture) != 0;
+				
+				if (existsAndAreDifferent)
+				{
+					throw new CliException($"Config resolution error, there is {oldPath} and {newPath}",
+						Constants.CMD_RESULT_CONFIG_RESOLUTION_CONFLICT, true,
+						"Remove one of the directories and run the command again\n");
+				}
+				Directory.Move(oldPath,newPath!);
 			}
 		}
 
@@ -360,8 +372,20 @@ public class ConfigService
 			var oldPath = GetConfigPath(key);
 			if (File.Exists(oldPath))
 			{
-				var newPath = Constants.RENAMED_FILES[key] as string;
-				File.Move(oldPath,GetConfigPath(newPath));
+				var newPath = GetConfigPath(Constants.RENAMED_FILES[key] as string);
+				var existsAndAreDifferent = File.Exists(newPath);
+
+				existsAndAreDifferent &=
+						string.Compare(oldPath, newPath, 
+							RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparison.InvariantCultureIgnoreCase: StringComparison.InvariantCulture) != 0;
+
+				if (existsAndAreDifferent)
+				{
+					throw new CliException($"Config resolution error, there is {oldPath} and {newPath}",
+						Constants.CMD_RESULT_CONFIG_RESOLUTION_CONFLICT, true,
+						"Remove one of the files and run the command again\n");
+				}
+				File.Move(oldPath,newPath!);
 			}
 		}
 	}

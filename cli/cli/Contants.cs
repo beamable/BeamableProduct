@@ -26,6 +26,9 @@ public static class Constants
 	/// TODO: This part will get abstracted out --- probably into <see cref="ConfigService"/> --- so that we can move this to the Beamable.Common library or some shared space.
 	/// </summary>
 	public const string BEAMO_LOCAL_RUNTIME_FILE_NAME = "local-services-runtime-cache.json";
+	
+	
+	public const int CMD_RESULT_CONFIG_RESOLUTION_CONFLICT = 701;
 
 	public const string TEMP_FOLDER = "temp";
 
