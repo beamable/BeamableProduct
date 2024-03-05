@@ -18,7 +18,7 @@ public class ConfigCommand : AtomicCommand<ConfigCommandArgs, ConfigCommandResul
 	{
 		return Task.FromResult(new ConfigCommandResult()
 		{
-			configPath = args.ConfigService.ConfigFilePath,
+			configPath = args.ConfigService.ConfigDirectoryPath,
 			host = args.ConfigService.GetConfigString(Constants.CONFIG_PLATFORM),
 			cid = args.ConfigService.GetConfigString(Constants.CONFIG_CID),
 			pid = args.ConfigService.GetConfigString(Constants.CONFIG_PID)

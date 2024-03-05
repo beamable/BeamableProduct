@@ -61,7 +61,7 @@ public static class DependencyInjectionExtensions
 				}
 
 
-				if (!args.IgnoreStandaloneValidation && command is not IStandaloneCommand && args.ConfigService.ConfigFileExists.GetValueOrDefault(false) != true)
+				if (!args.IgnoreStandaloneValidation && command is not IStandaloneCommand && args.ConfigService.DirectoryExists.GetValueOrDefault(false) != true)
 				{
 					throw new CliException("Could not find any .beamable config folder which is required for this command.");
 				}

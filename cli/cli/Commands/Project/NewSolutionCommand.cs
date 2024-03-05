@@ -93,7 +93,7 @@ public class NewSolutionCommand : AppCommand<NewSolutionCommandArgs>, IStandalon
 		// initialize a beamable project in that directory...
 		var createdNewWorkingDir = false;
 		var currentPath = Directory.GetCurrentDirectory();
-		if (!args.ConfigService.ConfigFileExists.GetValueOrDefault(false))
+		if (!args.ConfigService.DirectoryExists.GetValueOrDefault(false))
 		{
 			args.ConfigService.SetTempWorkingDir(path);
 			Directory.SetCurrentDirectory(path);

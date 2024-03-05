@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using System.Text;
 
 namespace cli.Services.Content;
+
 public enum TagStatus
 {
 	LocalOnly,
@@ -14,17 +15,24 @@ public enum TagStatus
 public class ContentTags
 {
 	private readonly string _configDir;
-	private const string FILENAME_FORMAT = "contentTags_{0}.json";
 	public string ManifestId { get; }
 	public Dictionary<string, string[]> localTags = new();
 	public Dictionary<string, string[]> remoteTags = new();
-	public string Filename => string.Format(FILENAME_FORMAT, ManifestId);
-	public string FullPath => Path.Combine(_configDir, Filename);
 
 	ContentTags(string manifestId, string configDir)
 	{
 		_configDir = configDir;
 		ManifestId = manifestId;
+	}
+
+	/// <summary>
+	/// Returns the path of the content tags file.
+	/// </summary>
+	/// <returns>The path of the content tags file.</returns>
+	public string GetPath()
+	{
+		var filename = string.Format(Constants.CONTENT_TAGS_FORMAT, ManifestId);
+		return Path.Combine(_configDir, filename);
 	}
 
 	public void UpdateRemoteTagsInfo(ClientManifest manifest, bool overrideLocalTags)
@@ -93,6 +101,7 @@ public class ContentTags
 
 		return resultList.ToArray();
 	}
+
 	public Dictionary<string, TagStatus> GetContentAllTagsStatus(string contentId)
 	{
 		var dict = new Dictionary<string, TagStatus>();
@@ -113,7 +122,7 @@ public class ContentTags
 
 	public void WriteToFile()
 	{
-		var path = Path.Combine(_configDir, Filename);
+		var path = GetPath();
 		var json = JsonConvert.SerializeObject(localTags, Formatting.Indented);
 		File.WriteAllText(path, json, Encoding.UTF8);
 	}
@@ -121,21 +130,28 @@ public class ContentTags
 	public static ContentTags ReadFromDirectory(string configDir, string manifestId)
 	{
 		var tagsLocalFile = new ContentTags(manifestId, configDir);
+		var path = tagsLocalFile.GetPath();
 
-		if (string.IsNullOrWhiteSpace(configDir) || !File.Exists(tagsLocalFile.FullPath))
+		if (string.IsNullOrWhiteSpace(configDir) || !File.Exists(path))
 		{
-			BeamableLogger.LogWarning("Tags file not found, using empty one");
-			return tagsLocalFile;
+			var oldVersionPath = Path.Combine(configDir!, string.Format(Constants.OLD_CONTENT_TAGS_FORMAT, manifestId));
+			if (!File.Exists(oldVersionPath))
+			{
+				BeamableLogger.LogWarning("Tags file not found, using empty one");
+				return tagsLocalFile;
+			}
+
+			File.Move(oldVersionPath, path!);
 		}
 
 		try
 		{
-			var jsonContent = File.ReadAllText(tagsLocalFile.FullPath);
+			var jsonContent = File.ReadAllText(path);
 			tagsLocalFile.localTags = JsonConvert.DeserializeObject<Dictionary<string, string[]>>(jsonContent);
 		}
 		catch (Exception e)
 		{
-			throw new CliException($"Failed to read \"{tagsLocalFile.FullPath}\" tag file. Exception: {e.Message}");
+			throw new CliException($"Failed to read \"{path}\" tag file. Exception: {e.Message}");
 		}
 
 		return tagsLocalFile;

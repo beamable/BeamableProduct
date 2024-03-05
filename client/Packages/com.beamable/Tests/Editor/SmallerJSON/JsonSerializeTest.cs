@@ -49,8 +49,8 @@ namespace Beamable.Editor.Tests.SmallerJson
 }".Trim().Replace("\r\n", "").Replace("\n", "");
 			Assert.That(json, Is.EqualTo(expected));
 		}
-		
-		
+
+
 		[Test]
 		public void DictionaryWithHashSet_Ints()
 		{
@@ -67,8 +67,8 @@ namespace Beamable.Editor.Tests.SmallerJson
 }".Trim().Replace("\r\n", "").Replace("\n", "");
 			Assert.That(json, Is.EqualTo(expected));
 		}
-		
-		
+
+
 		[Test]
 		public void DictionaryWithHashSet_Strings()
 		{

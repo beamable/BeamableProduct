@@ -63,7 +63,7 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 		Log.Debug($"Found service definition, ctx=[{service.DockerBuildContextPath}] dockerfile=[{service.RelativeDockerfilePath}]");
 		var dockerfilePath = Path.Combine(args.ConfigService.GetRelativePath(service.DockerBuildContextPath), service.RelativeDockerfilePath);
 		var projectPath = Path.GetDirectoryName(dockerfilePath);
-		var logPath = Path.Combine(args.ConfigService.ConfigFilePath, "temp", "logs", $"{serviceName}-{DateTimeOffset.Now.ToUnixTimeMilliseconds()}-logs.txt");
+		var logPath = Path.Combine(args.ConfigService.ConfigDirectoryPath, "temp", "logs", $"{serviceName}-{DateTimeOffset.Now.ToUnixTimeMilliseconds()}-logs.txt");
 		Log.Debug($"service path=[{projectPath}]");
 
 		var watchPart = args.watch

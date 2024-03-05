@@ -136,7 +136,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 							if (unrealProjectData.CoreProjectName != "OnlineSubsystemBeamable" || !unrealProjectData.SourceFilesPath.StartsWith("Plugins/OnlineSubsystemBeamable"))
 							{
 								throw new CliException("You've added the OnlineSubsystemBeamable (OSB) plugin after you had already linked your Unreal Project." +
-													   "Please delete your '.beamable/.linkedProjects.json' file and re-run 'beam project add-unreal-project'." +
+													   $"Please delete your '{Constants.CONFIG_DIR}/{Constants.CONFIG_LINKED_PROJECTS}' file and re-run 'beam project add-unreal-project'." +
 													   "When using the OSB plugin, MS files are generated into the plugin's Customer folder; so, please delete your AutoGen folders from their " +
 													   "previous location (outside of the plugin).");
 							}

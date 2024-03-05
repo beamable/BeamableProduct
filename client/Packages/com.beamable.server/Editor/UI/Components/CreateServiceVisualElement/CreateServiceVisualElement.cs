@@ -29,7 +29,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public Action OnClose;
 		public event Action OnCreateServiceClicked;
 		public event Action OnCreateServiceFinished;
-		
+
 
 		private bool ShouldShowCreateDependentService => _dependenciesCandidates.Count > 0;
 
