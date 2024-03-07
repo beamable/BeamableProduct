@@ -29,7 +29,7 @@ public class BeamProjectFlows : CLITestExtensions
 
 		#region Act
 
-		Run("project", "new", serviceName);
+		Run("project", "new-microservice", serviceName);
 
 		#endregion
 
