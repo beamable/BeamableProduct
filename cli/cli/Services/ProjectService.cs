@@ -414,7 +414,7 @@ public class ProjectService
 		var microserviceInfo = new NewMicroserviceInfo();
 
 		// check that we have the templates available
-		await EnsureCanUseTemplates(usedVersion, args.quiet);
+		await EnsureCanUseTemplates(usedVersion, args.Quiet);
 		microserviceInfo.SolutionPath = args.relativeExistingSolutionFile;
 		var shouldCreateSolution = string.IsNullOrWhiteSpace(microserviceInfo.SolutionPath);
 		if(shouldCreateSolution)

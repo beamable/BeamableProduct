@@ -12,17 +12,9 @@ public class NewStorageCommandArgs : CommandArgs
 	public ServiceName storageName;
 	public string slnPath;
 	public List<string> linkedServices;
-	public bool quiet;
 	public string outputPath;
 }
 
-public class QuietNameOption : Option<bool>
-{
-	public QuietNameOption() : base("--quiet", () => false, "When true, skip input waiting and use defaults")
-	{
-		AddAlias("-q");
-	}
-}
 
 public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 {
@@ -45,7 +37,6 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 			AllowMultipleArgumentsPerToken = true
 		};
 		AddOption(storageDeps, (x, i) => x.linkedServices = i);
-		AddOption(new QuietNameOption(), (args, i) => args.quiet = i);
 	}
 
 	public override async Task Handle(NewStorageCommandArgs args)
@@ -102,7 +93,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 			CancellationToken.None);
 
 		string[] dependencies = null;
-		if ((args.linkedServices == null || args.linkedServices.Count == 0) && !args.quiet)
+		if ((args.linkedServices == null || args.linkedServices.Count == 0) && !args.Quiet)
 		{
 			dependencies = GetChoicesFromPrompt(args.BeamoLocalSystem);
 		}
@@ -112,7 +103,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 		}
 
 		// add the project itself
-		_ = await args.ProjectService.CreateNewStorage(args.slnPath, args.outputPath, args.storageName, args.quiet);
+		_ = await args.ProjectService.CreateNewStorage(args.slnPath, args.outputPath, args.storageName, args.Quiet);
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
 
 		if (dependencies == null)

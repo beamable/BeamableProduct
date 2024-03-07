@@ -37,16 +37,8 @@ public class NewMicroserviceArgs : SolutionCommandArgs
 {
 	public string relativeNewSolutionDirectory;
 	public string relativeExistingSolutionFile;
-	public bool quiet;
 }
 
-public class QuietNameOption : Option<bool>
-{
-	public QuietNameOption() : base("--quiet", () => false, "When true, automatically accept path suggestions")
-	{
-		AddAlias("-q");
-	}
-}
 
 public class RegenerateSolutionFilesCommandArgs : SolutionCommandArgs
 {
@@ -82,7 +74,6 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 		AddOption(new SpecificVersionOption(), (args, i) => args.SpecifiedVersion = i);
 		AddOption(new Option<bool>("--disable", "Created service by default would not be published"),
 			(args, i) => args.Disabled = i);
-		AddOption(new QuietNameOption(), (args, i) => args.quiet = i);
 	}
 
 	public override async Task Handle(NewMicroserviceArgs args)
@@ -125,7 +116,7 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
 		args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 
-		if (!args.quiet)
+		if (!args.Quiet)
 		{
 			await args.ProjectService.LinkProjects(_addUnityCommand, _addUnrealCommand, args.Provider);
 		}

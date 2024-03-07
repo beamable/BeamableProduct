@@ -36,7 +36,7 @@ public class RegenerateSolutionFilesCommand : AppCommand<RegenerateSolutionFiles
 			relativeNewSolutionDirectory = args.tempDirectory,
 			SolutionName = args.ProjectName,
 			ProjectName = args.ProjectName,
-			quiet = true,
+			Quiet = true,
 		};
 
 		//Create the temporary project to have the files to copy

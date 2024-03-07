@@ -1,4 +1,3 @@
-using Beamable.Common;
 using cli.Utils;
 using Spectre.Console;
 using System.CommandLine;
@@ -8,7 +7,6 @@ namespace cli.Dotnet;
 public class AddProjectClientOutputCommandArgs : CommandArgs
 {
 	public string path;
-	public bool quiet;
 }
 
 public class AddUnityClientOutputCommand : AppCommand<AddProjectClientOutputCommandArgs>, IEmptyResult
@@ -23,7 +21,6 @@ public class AddUnityClientOutputCommand : AppCommand<AddProjectClientOutputComm
 
 		var quietOption = new Option<bool>("--quiet", () => false, "When true, automatically accept path suggestions");
 		quietOption.AddAlias("-q");
-		AddOption(quietOption, (i, v) => i.quiet = v);
 	}
 
 	public override Task Handle(AddProjectClientOutputCommandArgs args)

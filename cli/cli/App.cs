@@ -12,6 +12,7 @@ using cli.Content.Tag;
 using cli.Docs;
 using cli.Dotnet;
 using cli.Notifications;
+using cli.Options;
 using cli.Services;
 using cli.Services.Content;
 using cli.Unreal;
@@ -159,6 +160,7 @@ public class App
 		Commands.AddSingleton<DryRunOption>();
 		Commands.AddSingleton<SkipStandaloneValidationOption>();
 		Commands.AddSingleton<CidOption>();
+		Commands.AddSingleton<QuietOption>();
 		Commands.AddSingleton<PidOption>();
 		Commands.AddSingleton<ConfigDirOption>();
 		Commands.AddSingleton<HostOption>();
@@ -176,6 +178,8 @@ public class App
 			var root = new RootCommand();
 			root.AddGlobalOption(provider.GetRequiredService<DryRunOption>());
 			root.AddGlobalOption(provider.GetRequiredService<CidOption>());
+			root.AddGlobalOption(provider.GetRequiredService<PidOption>());
+			root.AddGlobalOption(provider.GetRequiredService<QuietOption>());
 			root.AddGlobalOption(provider.GetRequiredService<PidOption>());
 			root.AddGlobalOption(provider.GetRequiredService<HostOption>());
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
