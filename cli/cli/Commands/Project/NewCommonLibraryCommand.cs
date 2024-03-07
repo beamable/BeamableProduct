@@ -11,9 +11,9 @@ public class CreateCommonLibraryArgs : CommandArgs
 	public string OutputPath;
 }
 
-public class CreateCommonLibraryCommand : AppCommand<CreateCommonLibraryArgs>, IStandaloneCommand, IEmptyResult
+public class NewCommonLibraryCommand : AppCommand<CreateCommonLibraryArgs>, IStandaloneCommand, IEmptyResult
 {
-	public CreateCommonLibraryCommand() : base("create-common-lib", "Create common library project that later can be connected to the services.")
+	public NewCommonLibraryCommand() : base("new-common-lib", "Create common library project that later can be connected to the services.")
 	{}
 
 	public override void Configure()

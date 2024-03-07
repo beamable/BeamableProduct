@@ -57,12 +57,12 @@ public class RegenerateSolutionFilesCommand : AppCommand<RegenerateSolutionFiles
 			File.Copy(filePath, $"{args.projectDirectory}/{fileName}", true);
 		}
 
-		BeamableLogger.Log($"Finished copying files.");
+		BeamableLogger.Log("Finished copying files.");
 
 		//Starts erasing the temporary project created
 		DeleteTempProject(path.SolutionDirectory);
 
-		BeamableLogger.Log($"Files regenerated successfully!");
+		BeamableLogger.Log("Files regenerated successfully!");
 	}
 
 	private void DeleteTempProject(string path)

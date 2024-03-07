@@ -204,7 +204,7 @@ public class App
 		Commands.AddSubCommand<StopProjectCommand, StopProjectCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<BuildProjectCommand, BuildProjectCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<NewMicroserviceCommand, NewMicroserviceArgs, ProjectCommand>();
-		Commands.AddSubCommand<CreateCommonLibraryCommand, CreateCommonLibraryArgs, ProjectCommand>();
+		Commands.AddSubCommand<NewCommonLibraryCommand, CreateCommonLibraryArgs, ProjectCommand>();
 		Commands.AddSubCommand<ProjectDependencies, ProjectDependenciesArgs, ProjectCommand>();
 		Commands.AddSubCommand<RegenerateSolutionFilesCommand, RegenerateSolutionFilesCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<ListCommand, ListCommandArgs, ProjectCommand>();
