@@ -305,17 +305,19 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 	public bool VerifyCanBeBuiltLocally(ConfigService configService)
 	{
 		var hasPaths = !string.IsNullOrEmpty(DockerBuildContextPath) && !string.IsNullOrEmpty(RelativeDockerfilePath);
-		if (hasPaths)
+		if (!hasPaths)
 		{
-			var path = configService.GetRelativePath(DockerBuildContextPath);
-			if (!Directory.Exists(path))
-				throw new Exception($"DockerBuildContext doesn't exist: [{path}]");
-
-			var dockerfilePath = Path.Combine(path, RelativeDockerfilePath);
-			if (!File.Exists(dockerfilePath))
-				throw new Exception($"No Dockerfile found at path: [{dockerfilePath}]");
+			return false;
 		}
 
-		return hasPaths;
+		var path = configService.GetRelativePath(DockerBuildContextPath);
+		if (!Directory.Exists(path))
+			throw new Exception($"DockerBuildContext doesn't exist: [{path}]");
+
+		var dockerfilePath = Path.Combine(path, RelativeDockerfilePath);
+		if (!File.Exists(dockerfilePath))
+			throw new Exception($"No Dockerfile found at path: [{dockerfilePath}]");
+
+		return true;
 	}
 }

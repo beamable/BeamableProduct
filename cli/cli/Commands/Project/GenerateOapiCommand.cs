@@ -145,7 +145,13 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 		{
 			throw new CliException($"service does not exist, service=[{serviceName}]");
 		}
+		var canBeBuiltLocally = args.BeamoLocalSystem.VerifyCanBeBuiltLocally(serviceName);
+		if (!canBeBuiltLocally)
+		{
+			return new ProjectBuildStatusReport() { path = null, isBuilt = false };
+		}
 		Log.Debug($"Found service definition, ctx=[{service.DockerBuildContextPath}] dockerfile=[{service.RelativeDockerfilePath}]");
+
 		var dockerfilePath = Path.Combine(args.ConfigService.GetRelativePath(service.DockerBuildContextPath), service.RelativeDockerfilePath);
 		var projectPath = Path.GetDirectoryName(dockerfilePath);
 		Log.Debug($"service path=[{projectPath}]");

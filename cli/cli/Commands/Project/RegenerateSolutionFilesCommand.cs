@@ -31,16 +31,16 @@ public class RegenerateSolutionFilesCommand : AppCommand<RegenerateSolutionFiles
 
 		args.SolutionName = string.IsNullOrEmpty(args.SolutionName) ? args.ProjectName : args.SolutionName;
 
-		var solutionArgs = new NewSolutionCommandArgs()
+		var solutionArgs = new NewMicroserviceArgs()
 		{
-			directory = args.tempDirectory,
+			relativeNewSolutionDirectory = args.tempDirectory,
 			SolutionName = args.ProjectName,
 			ProjectName = args.ProjectName,
 			quiet = true,
 		};
 
 		//Create the temporary project to have the files to copy
-		var path = await args.ProjectService.CreateNewSolution(solutionArgs);
+		var path = await args.ProjectService.CreateNewMicroservice(solutionArgs);
 
 		var filesToCopy = new string[3]
 		{
@@ -60,7 +60,7 @@ public class RegenerateSolutionFilesCommand : AppCommand<RegenerateSolutionFiles
 		BeamableLogger.Log($"Finished copying files.");
 
 		//Starts erasing the temporary project created
-		DeleteTempProject(path);
+		DeleteTempProject(path.SolutionDirectory);
 
 		BeamableLogger.Log($"Files regenerated successfully!");
 	}
