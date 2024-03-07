@@ -247,7 +247,7 @@ public class App
 		Commands.AddRootCommand<VersionCommand, VersionCommandArgs>();
 		Commands.AddSubCommandWithHandler<VersionListCommand, VersionListCommandArgs, VersionCommand>();
 		Commands.AddSubCommandWithHandler<VersionInstallCommand, VersionInstallCommandArgs, VersionCommand>();
-
+		Commands.AddSubCommandWithHandler<ConstructVersionCommand, ConstructVersionCommandArgs, VersionCommand>();
 		// org commands
 		Commands.AddRootCommand<OrganizationCommand>();
 		Commands.AddSubCommand<RegisterCommand, RegisterCommandArgs, OrganizationCommand>();
@@ -445,7 +445,7 @@ public class App
 			{
 				Log.CloseAndFlush();
 				File.AppendAllText(logConfigData.logFilePath, ex.ToString());
-				Console.Error.WriteLine("Logs at\n  " + logConfigData.logFilePath);
+				Console.Error.WriteLine("\nLogs at\n  " + logConfigData.logFilePath);
 			}
 		});
 		return commandLineBuilder.Build();
