@@ -638,7 +638,7 @@ namespace Beamable.Server.Editor.Usam
 				var sourcePath = $"{StandaloneMicroservicesPath}{name}/";
 				var signpostPath = $"{BEAMABLE_PATH}{name}.beamstorage";
 				
-				if (Directory.Exists(signpostPath))
+				if (File.Exists(signpostPath))
 				{
 					if (!Directory.Exists(sourcePath))
 					{
