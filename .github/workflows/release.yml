@@ -43,6 +43,11 @@ on:
           - rc
           - exp
           - production
+      dryRun:
+        type: boolean
+        description: When true, no publish will happen
+        required: true
+        default: false
 jobs:
   nuget:
     timeout-minutes: 10
@@ -53,13 +58,14 @@ jobs:
     steps:
       - name: review options
         run: |
+          echo dryRun=${{ inputs.dryRun }}
           echo commit=${{ inputs.commit }}
           echo major=${{ inputs.major }}
           echo minor=${{ inputs.minor }}
           echo patch=${{ inputs.patch }}
           echo rc=${{ inputs.rcNumber }}
           echo releaseType=${{ inputs.releaseType }}
-          echo "Release ${{ inputs.releaseType }} ${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }} (${{ inputs.releaseType }})\n${{ inputs.commit }}" >> $GITHUB_STEP_SUMMARY
+         
       - uses: actions/checkout@v4
         with: 
           ref: ${{ github.event.inputs.commit }}
@@ -111,10 +117,23 @@ jobs:
         run: sh ./build/docker/scripts/build-microservice-deps.sh
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
-      - name: Build Nuget Packages
+      - name: Publish Nuget Packages
         run: sh ./build/docker/scripts/build-cli.sh
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
           VERSION_PREFIX: ${{ steps.version.outputs.VERSION_PREFIX }}
           VERSION_SUFFIX: ${{ steps.version.outputs.VERSION_SUFFIX }}
-          DRY_RUN: true
+          DRY_RUN: ${{ inputs.dryRun }}
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: ${{ github.event.inputs.commit }}
+          release_name: Release ${{ steps.version.outputs.VERSION }}
+          body: |
+            Release ${{ steps.version.outputs.VERSION }}
+          draft: true
+          prerelease: false
