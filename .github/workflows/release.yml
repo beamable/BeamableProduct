@@ -51,6 +51,15 @@ jobs:
       group: release-nuget
       cancel-in-progress: true
     steps:
+      - name: review options
+        run: |
+          echo commit=${{ inputs.commit }}
+          echo major=${{ inputs.major }}
+          echo minor=${{ inputs.minor }}
+          echo patch=${{ inputs.patch }}
+          echo rc=${{ inputs.rcNumber }}
+          echo releaseType=${{ inputs.releaseType }}
+
       - uses: actions/checkout@v4
         with: 
           ref: ${{ github.event.inputs.commit }}
@@ -68,16 +77,16 @@ jobs:
         run: beam version
 
       - name: Get Version Number (Nightly)
-        if: ${{ inputs.releaseType }} == 'nightly' 
+        if: ${{ inputs.releaseType == 'nightly' }} 
         run: beam version construct 0 0 0 --nightly > version.txt
       - name: Get Version Number (RC)
-        if: ${{ inputs.releaseType }} == 'rc' 
+        if: ${{ inputs.releaseType == 'rc' }} 
         run: beam version construct ${{ inputs.major }} ${{ inputs.minor }} ${{ inputs.patch }} --rc ${{ inputs.rcNumber }} > version.txt
       - name: Get Version Number (Exp)
-        if: ${{ inputs.releaseType }} == 'exp' 
+        if: ${{ inputs.releaseType == 'exp' }} 
         run: beam version construct ${{ inputs.major }} ${{ inputs.minor }} ${{ inputs.patch }} --exp ${{ inputs.rcNumber }} > version.txt
       - name: Get Version Number (Prod)
-        if: ${{ inputs.releaseType }} == 'prod' 
+        if: ${{ inputs.releaseType == 'prod' }} 
         run: beam version construct ${{ inputs.major }} ${{ inputs.minor }} ${{ inputs.patch }} --prod > version.txt
       
       - name: Install JQ
