@@ -5,19 +5,20 @@ on:
     branches:
       - 'main'
       - 'staging'
-      - 'production'
-    paths:
-      - 'client/**'
-      - 'microservice/**'
+      - 'productio*'
+      paths-ignore:
+        - 'rfc/**'
+        - '.github/**'
 
 jobs:
   testMicroserviceBaseImage:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     concurrency:
-      group: base-image-tests-${{ github.head_ref }}
+      group: base-image-tests-${{ github.head_ref }}-${{ matrix.dotnet-version }}
       cancel-in-progress: true
     strategy:
+      max-parallel: 1
       matrix:
         dotnet-version: ['6.0.x', '7.0.x' ]
     steps:
@@ -59,6 +60,15 @@ jobs:
           - 2020.3.48f1
           - 2021.3.29f1
           - 2022.3.7f1
+        include:
+          - unityVersion: 2020.3.48f1
+            unityEmailOverride: UNITY_EMAIL_DEVOPS
+            unityPasswordOverride: UNITY_PASSWORD_DEVOPS
+            unitySerialOverride: UNITY_SERIAL_DEVOPS
+          - unityVersion: 2021.3.29f1
+            unityEmailOverride: UNITY_EMAIL_BUILD
+            unityPasswordOverride: UNITY_PASSWORD_BUILD
+            unitySerialOverride: UNITY_SERIAL_BUILD
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
@@ -68,7 +78,10 @@ jobs:
       - name: Build and Install BEAM CLI 
         working-directory: ./cli/cli
         run: |
-          ./install.sh
+          SKIP_GENERATION=true ./install.sh
+      - name: Check Beam CLI
+        run: |
+          beam version
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -98,7 +111,7 @@ jobs:
             Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
       - uses: game-ci/unity-test-runner@v4
         id: tests
-        timeout-minutes: 20
+        timeout-minutes: 30
         env:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
@@ -184,6 +197,11 @@ jobs:
           key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
           restore-keys: |
             Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
+      - name: Clean the build directory
+        continue-on-error: true
+        run: |
+          rm -rf /github/workspace/dist
+        shell: bash
       - uses: game-ci/unity-builder@v4
         if: ${{ github.ref == 'refs/heads/main' }}
         timeout-minutes: 30
@@ -195,7 +213,6 @@ jobs:
           targetPlatform: ${{ matrix.targetPlatform }}
           unityVersion: ${{ matrix.unityVersion }}
           projectPath: ${{ matrix.projectPath }}
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
           versioning: Custom
           version: 1.2.0
           androidVersionCode: ${{ github.run_number }} 
@@ -213,7 +230,6 @@ jobs:
           targetPlatform: ${{ matrix.targetPlatform }}
           unityVersion: ${{ matrix.unityVersion }}
           projectPath: ${{ matrix.projectPath }}
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
           versioning: Custom
           version: 1.2.0
           androidVersionCode: ${{ github.run_number }}
@@ -231,7 +247,6 @@ jobs:
           targetPlatform: ${{ matrix.targetPlatform }}
           unityVersion: ${{ matrix.unityVersion }}
           projectPath: ${{ matrix.projectPath }}
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
           versioning: Custom
           version: 1.2.0
           androidVersionCode: ${{ github.run_number }}
@@ -249,7 +264,7 @@ jobs:
         if: ${{ matrix.targetPlatform != 'WebGL' }}
         with:
           name: Build-${{ matrix.targetPlatform }}
-          path: dist/${{ matrix.targetPlatform }}
+          path: dist/**
           retention-days: 3
       - name: upload
         if: ${{ matrix.targetPlatform == 'WebGL' }}

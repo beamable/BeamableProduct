@@ -9,10 +9,6 @@ on:
     paths-ignore:
       - 'rfc/**'
       - '.github/**'
-    # paths:
-    #   - 'client/**'
-    #   - 'microservice/**'
-    #   - 'cli/**'
 
 jobs:
   baseNuget:
@@ -273,7 +269,7 @@ jobs:
         run: |
           rm -rf /github/workspace/dist
         shell: bash
-      - uses: game-ci/unity-builder@v4.0.1
+      - uses: game-ci/unity-builder@v4
         timeout-minutes: 60
         env:
           UNITY_EMAIL: ${{ secrets[matrix.unityEmailOverride] || secrets.UNITY_EMAIL }}
