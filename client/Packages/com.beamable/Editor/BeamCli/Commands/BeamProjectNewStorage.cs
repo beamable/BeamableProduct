@@ -14,8 +14,6 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string outputPath;
 		/// <summary>The name of the project to link this storage to</summary>
 		public string[] linkTo;
-		/// <summary>When true, skip input waiting and use defaults</summary>
-		public bool quiet;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -43,11 +41,6 @@ namespace Beamable.Editor.BeamCli.Commands
 					// The parameter allows multiple values
 					genBeamCommandArgs.Add(("--link-to=" + this.linkTo[i]));
 				}
-			}
-			// If the quiet value was not default, then add it to the list of args.
-			if ((this.quiet != default(bool)))
-			{
-				genBeamCommandArgs.Add(("--quiet=" + this.quiet));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

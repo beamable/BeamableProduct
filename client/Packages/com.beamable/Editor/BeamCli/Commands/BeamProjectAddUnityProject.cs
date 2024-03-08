@@ -8,8 +8,6 @@ namespace Beamable.Editor.BeamCli.Commands
 	{
 		/// <summary>Relative path to the Unity project</summary>
 		public string path;
-		/// <summary>When true, automatically accept path suggestions</summary>
-		public bool quiet;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -17,11 +15,6 @@ namespace Beamable.Editor.BeamCli.Commands
 			System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
 			// Add the path value to the list of args.
 			genBeamCommandArgs.Add(this.path);
-			// If the quiet value was not default, then add it to the list of args.
-			if ((this.quiet != default(bool)))
-			{
-				genBeamCommandArgs.Add(("--quiet=" + this.quiet));
-			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces
 			genBeamCommandStr = string.Join(" ", genBeamCommandArgs);

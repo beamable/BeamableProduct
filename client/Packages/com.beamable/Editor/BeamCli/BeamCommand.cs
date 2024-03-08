@@ -51,7 +51,8 @@ namespace Beamable.Editor.BeamCli.Commands
 				refreshToken = _requester?.AccessToken?.RefreshToken,
 				log = "Information",
 				skipStandaloneValidation = true,
-				dotnetPath = DotnetUtil.DotnetPath
+				dotnetPath = DotnetUtil.DotnetPath,
+				quiet = true,
 			};
 			return beamArgs;
 		}
