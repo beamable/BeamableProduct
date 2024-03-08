@@ -94,21 +94,33 @@ jobs:
           sudo apt-get update
           sudo apt-get install jq
           jq --version
+      - name: Preview version numbers
+        run: |
+          echo "VERSION=$(cat version.txt | jq -r .data.versionString)"
+          echo "VERSION_PREFIX=$(cat version.txt | jq -r .data.versionPrefix)"
+          echo "VERSION_SUFFIX=$(cat version.txt | jq -r .data.versionSuffix)"
       - name: Store version number as output
         id: version
         run: |
-          echo "{VERSION}={$(cat version.txt | jq -r .data.versionString)}" >> "$GITHUB_OUTPUT"
-          echo "{VERSION_PREFIX}={$(cat version.txt | jq -r .data.versionPrefix)}" >> "$GITHUB_OUTPUT"
-          echo "{VERSION_SUFFIX}={$(cat version.txt | jq -r .data.versionSuffix)}" >> "$GITHUB_OUTPUT"
+          echo "VERSION=$(cat version.txt | jq -r .data.versionString)" >> "$GITHUB_OUTPUT"
+          echo "VERSION_PREFIX=$(cat version.txt | jq -r .data.versionPrefix)" >> "$GITHUB_OUTPUT"
+          echo "VERSION_SUFFIX=$(cat version.txt | jq -r .data.versionSuffix)" >> "$GITHUB_OUTPUT"
 
-      - name: Prepare Microservice Dependencies
-        run: sh ./build/docker/scripts/build-microservice-deps.sh
-        env:
-          VERSION: ${{ steps.version.outputs.VERSION }}
-      - name: Build Nuget Packages
-        run: sh ./build/docker/scripts/build-cli.sh
-        env:
-          VERSION: ${{ steps.version.outputs.VERSION }}
-          VERSION_PREFIX: ${{ steps.version.outputs.VERSION_PREFIX }}
-          VERSION_SUFFIX: ${{ steps.version.outputs.VERSION_SUFFIX }}
-          DRY_RUN: true
+      - name: review version
+        run: |
+          echo version=${{ steps.version.outputs.VERSION }}
+          echo version prefix=${{ steps.version.outputs.VERSION_PREFIX }}
+          echo version suffix=${{ steps.version.outputs.VERSION_SUFFIX }}
+
+
+      # - name: Prepare Microservice Dependencies
+      #   run: sh ./build/docker/scripts/build-microservice-deps.sh
+      #   env:
+      #     VERSION: ${{ steps.version.outputs.VERSION }}
+      # - name: Build Nuget Packages
+      #   run: sh ./build/docker/scripts/build-cli.sh
+      #   env:
+      #     VERSION: ${{ steps.version.outputs.VERSION }}
+      #     VERSION_PREFIX: ${{ steps.version.outputs.VERSION_PREFIX }}
+      #     VERSION_SUFFIX: ${{ steps.version.outputs.VERSION_SUFFIX }}
+      #     DRY_RUN: true
