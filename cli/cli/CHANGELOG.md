@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Commands automatically save the latest log to the temp path.
 - Commands will log single outputs as JSON by default.
 - Console logging no longer includes log level and timestamp.
+- Logs containing GUID based tokens will be masked and only the last 4 characters will be shown.
 
 ### Fixed
 
