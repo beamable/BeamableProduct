@@ -23,6 +23,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Serilog;
 using Serilog.Core;
+using Serilog.Enrichers.Sensitive;
 using Serilog.Events;
 using Spectre.Console;
 using Spectre.Console.Rendering;
@@ -73,7 +74,14 @@ public class App
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
 		configureLogger ??= config =>
 		{
-			var baseConfig = config.MinimumLevel.Verbose()
+			var baseConfig = config
+				.MinimumLevel.Verbose()
+				.Enrich.WithSensitiveDataMasking(options =>
+				{
+					options.MaskingOperators.Clear();
+					options.MaskingOperators.Add(new TokenMasker());
+					options.MaskValue = "***";
+				})
 				.WriteTo.Logger(subConfig =>
 					subConfig
 						.WriteTo.BeamAnsi("{Message:lj}{NewLine}{Exception}")
