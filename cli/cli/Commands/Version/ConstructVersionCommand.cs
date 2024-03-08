@@ -93,7 +93,7 @@ public class ConstructVersionCommand : AtomicCommand<ConstructVersionCommandArgs
 				patch: 0,
 				isPreview: true,
 				nightlyTime: time);
-		} 
+		}
 		else if (args.isPreviewRc)
 		{
 			version = new PackageVersion(
@@ -166,7 +166,7 @@ public class ConstructVersionCommand : AtomicCommand<ConstructVersionCommandArgs
 		// the nightly time format is 
 		//          YYYYMMDDHHMM
 		// example: 202403051817
-		
+
 		// good thing they don't start with leading zeros, 
 		//  because our SDK code needs the data as a NUMBER, 
 		//  not a string, which is silly, but workable.

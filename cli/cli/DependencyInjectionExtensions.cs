@@ -57,10 +57,10 @@ public static class DependencyInjectionExtensions
 			var binder = new AppCommand<TArgs>.Binder(command, commandProvider);
 			command.SetHandler((TArgs args) =>
 			{
-				
+
 				Log.Verbose($@"app context= {JsonConvert.SerializeObject(args.AppContext, Formatting.Indented, new JsonSerializerSettings
 				{
-					 })}");
+				})}");
 				Log.Verbose($"running command=[{command.GetType().Name}] with parsed arguments {Json.Serialize(args, new StringBuilder())}");
 				if (command is IResultProvider resultProvider)
 				{
