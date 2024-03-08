@@ -23,10 +23,12 @@ public class ConstructVersionCommandArgs : CommandArgs
 public class ConstructVersionOutput
 {
 	public string versionString;
+	public string versionPrefix;
+	public string versionSuffix;
 	public bool exists;
 }
 
-public class ConstructVersionCommand : AtomicCommand<ConstructVersionCommandArgs, ConstructVersionOutput>
+public class ConstructVersionCommand : AtomicCommand<ConstructVersionCommandArgs, ConstructVersionOutput>, IStandaloneCommand
 {
 	public override bool IsForInternalUse => true;
 
@@ -144,7 +146,19 @@ public class ConstructVersionCommand : AtomicCommand<ConstructVersionCommandArgs
 			throw new CliException("version already exists");
 		}
 
-		return new ConstructVersionOutput { exists = exists, versionString = versionString };
+		var versionPrefix = $"{version.Major}.{version.Minor}.{version.Patch}";
+		var versionSuffix = "";
+		if (versionString.Length > versionPrefix.Length + 1)
+		{
+			versionSuffix = versionString.Substring(versionPrefix.Length + 1);
+		}
+		return new ConstructVersionOutput
+		{
+			exists = exists, 
+			versionString = versionString,
+			versionPrefix = versionPrefix,
+			versionSuffix = versionSuffix
+		};
 	}
 
 	static void CheckOnlyOneFlagIsSet(ConstructVersionCommandArgs args)
