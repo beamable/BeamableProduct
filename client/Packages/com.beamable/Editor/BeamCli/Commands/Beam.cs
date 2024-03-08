@@ -50,12 +50,6 @@ namespace Beamable.Editor.BeamCli.Commands
 				genBeamCommandArgs.Add((("--cid=\"" + this.cid)
 								+ "\""));
 			}
-			// If the pid value was not default, then add it to the list of args.
-			if ((this.pid != default(string)))
-			{
-				genBeamCommandArgs.Add((("--pid=\"" + this.pid)
-								+ "\""));
-			}
 			// If the quiet value was not default, then add it to the list of args.
 			if ((this.quiet != default(bool)))
 			{
