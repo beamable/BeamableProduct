@@ -48,11 +48,12 @@ on:
         description: When true, no publish will happen
         required: true
         default: false
+
+run-name: Release ${{ inputs.releaseType }} ${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}.${{ inputs.rcNumber }} by @${{ github.actor }}
 jobs:
   nuget:
     timeout-minutes: 10
     runs-on: ubuntu-latest
-    run-name: Release ${{ inputs.releaseType }} ${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}.${{ inputs.rcNumber }} by @${{ github.actor }}
     concurrency:
       group: release-nuget
       cancel-in-progress: true
