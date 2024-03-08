@@ -111,7 +111,7 @@ public class ConstructVersionCommand : AtomicCommand<ConstructVersionCommandArgs
 				major: args.major,
 				minor: args.minor,
 				patch: args.patch,
-				isPreview: false,
+				isPreview: true,
 				isExperimental: true,
 				rc: args.expRc);
 		}
