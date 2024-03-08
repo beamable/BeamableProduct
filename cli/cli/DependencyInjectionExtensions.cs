@@ -1,9 +1,12 @@
 using Beamable.Common.Dependencies;
+using Beamable.Serialization.SmallerJSON;
 using cli.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using Serilog;
 using System.CommandLine;
 using System.CommandLine.Help;
+using System.Text;
 
 namespace cli;
 
@@ -54,7 +57,11 @@ public static class DependencyInjectionExtensions
 			var binder = new AppCommand<TArgs>.Binder(command, commandProvider);
 			command.SetHandler((TArgs args) =>
 			{
-
+				
+				Log.Verbose($@"app context= {JsonConvert.SerializeObject(args.AppContext, Formatting.Indented, new JsonSerializerSettings
+				{
+					 })}");
+				Log.Verbose($"running command=[{command.GetType().Name}] with parsed arguments {Json.Serialize(args, new StringBuilder())}");
 				if (command is IResultProvider resultProvider)
 				{
 					resultProvider.Reporter = args.Provider.GetService<IDataReporterService>();
