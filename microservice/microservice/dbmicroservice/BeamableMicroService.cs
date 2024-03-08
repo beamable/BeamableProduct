@@ -612,18 +612,20 @@ namespace Beamable.Server
 		      builder.AddScoped(_args);
 	      });
 	      
-	      IDependencyProviderScope CreateFromScope(RequestContext requestContext)
+	      IDependencyProviderScope CreateFromScope(RequestContext requestContext, Action<IDependencyBuilder> configurator)
 	      {
 		      return newScope.Fork(builder =>
 		      {
 			      // each _request_ gets its own service scope, so we fork the provider again and override certain services. 
 			      builder.Remove<RequestContext>();
 			      builder.AddScoped(requestContext);
+			      
+			      configurator?.Invoke(builder);
 		      });
 	      }
 
 	      var service = newScope.GetRequiredService(MicroserviceType) as Microservice;
-	      service.ProvideDefaultServices(newScope, (requestContext) => CreateFromScope(requestContext));
+	      service.ProvideDefaultServices(newScope, (requestContext, configurator) => CreateFromScope(requestContext, configurator));
 	      
 	      return service;
       }

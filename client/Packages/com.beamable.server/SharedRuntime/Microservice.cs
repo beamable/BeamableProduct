@@ -86,7 +86,7 @@ namespace Beamable.Server
 		private RequesterFactory _requesterFactory;
 		private ServicesFactory _servicesFactory;
 		private IDependencyProviderScope _serviceProvider;
-		private Func<RequestContext, IDependencyProviderScope> _scopeGenerator;
+		private Func<RequestContext, Action<IDependencyBuilder>, IDependencyProviderScope> _scopeGenerator;
 
 		[Obsolete]
 		public void ProvideContext(RequestContext ctx)
@@ -108,7 +108,7 @@ namespace Beamable.Server
 			Services = _servicesFactory(Requester, Context);
 		}
 
-		public void ProvideDefaultServices(IDependencyProviderScope provider, Func<RequestContext, IDependencyProviderScope> scopeGenerator)
+		public void ProvideDefaultServices(IDependencyProviderScope provider, Func<RequestContext, Action<IDependencyBuilder>, IDependencyProviderScope> scopeGenerator)
 		{
 			Context = provider.GetService<RequestContext>();
 			Requester = provider.GetService<IBeamableRequester>();
@@ -148,7 +148,7 @@ namespace Beamable.Server
 			var newCtx = new RequestContext(
 			   Context.Cid, Context.Pid, Context.Id, Context.Status, userId, Context.Path, Context.Method, Context.Body,
 			   Context.Scopes, Context.Headers);
-			var provider = _scopeGenerator(newCtx);
+			var provider = _scopeGenerator(newCtx, null);
 
 			var requester = provider.GetService<IBeamableRequester>();
 			var services = provider.GetService<IBeamableServices>();
@@ -160,7 +160,7 @@ namespace Beamable.Server
 				Provider = provider
 			};
 		}
-		
+
 		/// <summary>
 		/// Build a request context and collection of services that represents another player.
 		/// <para>
@@ -170,6 +170,9 @@ namespace Beamable.Server
 		/// </para>
 		/// </summary>
 		/// <param name="userId">The user id of the player for whom you'd like to make actions on behalf of</param>
+		/// <param name="configurator">
+		/// A callback that receives the <see cref="IDependencyBuilder"/> of the scope being created. 
+		/// </param>
 		/// <param name="requireAdminUser">
 		/// By default, this method can only be called by a user with admin access token.
 		/// <para> If you pass in false for this parameter, then any user's request can assume another user.
@@ -177,7 +180,7 @@ namespace Beamable.Server
 		/// </para>
 		/// </param>
 		/// <returns>A <see cref="UserRequestDataHandler"/> object that contains a request context, and a collection of services to execute SDK calls against.</returns>
-		protected UserRequestDataHandler AssumeNewUser(long userId, bool requireAdminUser = true)
+		protected UserRequestDataHandler AssumeNewUser(long userId, Action<IDependencyBuilder> configurator = null, bool requireAdminUser = true)
 		{
 			// require admin privs.
 			if (requireAdminUser)
@@ -188,7 +191,7 @@ namespace Beamable.Server
 			var newCtx = new RequestContext(
 				Context.Cid, Context.Pid, Context.Id, Context.Status, userId, Context.Path, Context.Method, Context.Body,
 				Context.Scopes, Context.Headers);
-			var provider = _scopeGenerator(newCtx);
+			var provider = _scopeGenerator(newCtx, configurator);
 
 			var requester = provider.GetService<IBeamableRequester>();
 			var services = provider.GetService<IBeamableServices>();
