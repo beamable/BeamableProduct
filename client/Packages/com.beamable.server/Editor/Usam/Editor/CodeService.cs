@@ -642,7 +642,7 @@ namespace Beamable.Server.Editor.Usam
 				{
 					if (!Directory.Exists(sourcePath))
 					{
-						LogVerbose($"The file {name}.beamservice exists but there is no source code for it.");
+						LogVerbose($"The file {name}.beamstorage exists but there is no source code for it.");
 					}
 					continue;
 				}
