@@ -52,6 +52,7 @@ jobs:
   nuget:
     timeout-minutes: 10
     runs-on: ubuntu-latest
+    run-name: Release ${{ inputs.releaseType }} ${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}.${{ inputs.rcNumber }} by @${{ github.actor }}
     concurrency:
       group: release-nuget
       cancel-in-progress: true
@@ -124,6 +125,7 @@ jobs:
           VERSION_PREFIX: ${{ steps.version.outputs.VERSION_PREFIX }}
           VERSION_SUFFIX: ${{ steps.version.outputs.VERSION_SUFFIX }}
           DRY_RUN: ${{ inputs.dryRun }}
+          NUGET_TOOLS_KEY: ${{ secrets.NUGET_TOOLS_KEY }}
 
       - name: Create Release
         id: create_release
