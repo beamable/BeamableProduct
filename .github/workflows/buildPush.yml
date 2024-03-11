@@ -6,9 +6,9 @@ on:
       - 'main'
       - 'staging'
       - 'productio*'
-      paths-ignore:
-        - 'rfc/**'
-        - '.github/**'
+    paths-ignore:
+      - 'rfc/**'
+      - '.github/**'
 
 jobs:
   testMicroserviceBaseImage:
