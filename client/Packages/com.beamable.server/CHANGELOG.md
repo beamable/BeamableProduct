@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `[Callable]` methods no longer produce `AccountNotFoundError` errors when emitting Beamable API calls with valid playerIds. 
 - Microservices have improved thread-safety when sending messages to Beamable.
+- `AssumeUser` now returns a disposable object, memory usage improvements
 
 ## [1.19.14]
 
