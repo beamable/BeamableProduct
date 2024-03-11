@@ -605,22 +605,28 @@ namespace Beamable.Server
 
       Microservice BuildServiceInstance(RequestContext ctx)
       {
-
-	      IDependencyProviderScope Create(RequestContext requestContext)
+	      IDependencyProviderScope newScope = _args.ServiceScope.Fork(builder =>
 	      {
-		      var scope = _args.ServiceScope.Fork(builder =>
+		      // each _request_ gets its own service scope, so we fork the provider again and override certain services. 
+		      builder.AddScoped(ctx);
+		      builder.AddScoped(_args);
+	      });
+	      
+	      IDependencyProviderScope CreateFromScope(RequestContext requestContext, Action<IDependencyBuilder> configurator)
+	      {
+		      return newScope.Fork(builder =>
 		      {
 			      // each _request_ gets its own service scope, so we fork the provider again and override certain services. 
+			      builder.Remove<RequestContext>();
 			      builder.AddScoped(requestContext);
-			      builder.AddScoped(_args);
+			      
+			      configurator?.Invoke(builder);
 		      });
-		      
-		      return scope;
 	      }
 
-	      var scope = Create(ctx);
-	      var service = scope.GetRequiredService(MicroserviceType) as Microservice;
-	      service.ProvideDefaultServices(scope, Create);
+	      var service = newScope.GetRequiredService(MicroserviceType) as Microservice;
+	      service.ProvideDefaultServices(newScope, (requestContext, configurator) => CreateFromScope(requestContext, configurator));
+	      
 	      return service;
       }
 
