@@ -12,7 +12,7 @@ public class VersioningTests
 		{
 			Assert.Fail("unable to parse version at all");
 		}
-		
+
 		Assert.That(version.Major, Is.EqualTo(2));
 		Assert.That(version.Minor, Is.EqualTo(0));
 		Assert.That(version.Patch, Is.EqualTo(0));
