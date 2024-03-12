@@ -356,7 +356,7 @@ namespace Beamable.Common.Api.Leaderboards
 	{
 		[field: NonSerialized]
 		protected RankEntry maybeRankGt { get; set; }
-		
+
 		/// <summary>
 		/// The user id
 		/// </summary>
@@ -382,7 +382,7 @@ namespace Beamable.Common.Api.Leaderboards
 			set => maybeRankGt = value;
 		}
 	}
-	
+
 	[Serializable]
 	public class LeaderBoardView : LeaderboardViewBase, ISerializationCallbackReceiver
 	{
@@ -403,7 +403,7 @@ namespace Beamable.Common.Api.Leaderboards
 		/// </summary>
 		[SerializeField]
 		private new RankEntry rankgt;
-		
+
 		/// <summary>
 		/// Convert the <see cref="rankings"/> list into a dictionary from player id to <see cref="RankEntry"/>.
 		/// </summary>
