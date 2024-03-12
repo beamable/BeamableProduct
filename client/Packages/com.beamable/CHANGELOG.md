@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RecoverAccountWithExternalIdentity` method includes a parameter, `attemptToMergeExistingAccount` that will prevent automatic account merging.
 - `Json.Serialize` will treat non `IDictionary` values of `IEnumerable` as json arrays.
 - Disabling Content inspectors no longer causes compiler errors.
+- Leaderboard `rankgt` field is not null when specifying outlier.
 
 ## [1.19.14]
 
