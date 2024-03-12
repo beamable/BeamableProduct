@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Listing content `activeFrom` field no longer resets every time it is viewed in the Inspector.
 - `RecoverAccountWithExternalIdentity` method includes a parameter, `attemptToMergeExistingAccount` that will prevent automatic account merging.
 - `Json.Serialize` will treat non `IDictionary` values of `IEnumerable` as json arrays.
+- Disabling Content inspectors no longer causes compiler errors.
 
 ## [1.19.14]
 
