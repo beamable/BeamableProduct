@@ -124,7 +124,7 @@ namespace Beamable.Player
 		private INotificationService _notifications;
 		private ISdkEventService _sdkEventService;
 
-		public Promise OnReady;
+		public Promise OnReady { get; private set; }
 
 		public PlayerAnnouncements(IPlatformService platform,
 								   IAnnouncementsApi announcementsApi,
