@@ -42,7 +42,7 @@ public class GeneratePropertiesFileCommand : AppCommand<GeneratePropertiesFileCo
 		string fileContents = @$"
 <Project>
  <PropertyGroup>
-     <SolutionDir Condition=""$(SolutionDir) == ''$\"">{args.SolutionDir}</SolutionDir>
+     <SolutionDir Condition=""'$(SolutionDir)' == ''"">{args.SolutionDir}</SolutionDir>
      <BeamableTool>{args.BeamPath}</BeamableTool>
  </PropertyGroup>
 </Project>";
