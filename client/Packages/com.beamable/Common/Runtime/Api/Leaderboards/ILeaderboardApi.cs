@@ -2,6 +2,8 @@ using Beamable.Common.Leaderboards;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Beamable.Common.Api.Leaderboards
 {
@@ -348,13 +350,42 @@ namespace Beamable.Common.Api.Leaderboards
 		public LeaderBoardView lb;
 	}
 
+
 	[Serializable]
-	public class LeaderBoardView
+	public class LeaderboardViewBase
 	{
+		[field: NonSerialized]
+		protected RankEntry maybeRankGt { get; set; }
+		
 		/// <summary>
 		/// The user id
 		/// </summary>
 		public long userId;
+
+		/// <summary>
+		/// A set of <see cref="RankEntry"/>s that represent this section of the leaderboard view.
+		/// Use the <see cref="ToDictionary"/> method to convert this list into a dictionary for more convenient access.
+		/// </summary>
+		public List<RankEntry> rankings;
+
+		/// <summary>
+		/// The <see cref="RankEntry"/> of the current player
+		/// </summary>
+		public RankEntry rankgt
+		{
+			get
+			{
+				if (maybeRankGt == null || maybeRankGt.gt == 0)
+					maybeRankGt = rankings?.FirstOrDefault(y => y.gt == userId);
+				return maybeRankGt;
+			}
+			set => maybeRankGt = value;
+		}
+	}
+	
+	[Serializable]
+	public class LeaderBoardView : LeaderboardViewBase, ISerializationCallbackReceiver
+	{
 
 		/// <summary>
 		/// The leaderboard id
@@ -367,31 +398,12 @@ namespace Beamable.Common.Api.Leaderboards
 		public long boardsize;
 
 		/// <summary>
-		/// The <see cref="RankEntry"/> of the current player
-		/// </summary>
-		public RankEntry rankgt
-		{
-			get
-			{
-				if (_rankgt == null || _rankgt.gt == 0)
-					_rankgt = rankings?.FirstOrDefault(y => y.gt == userId);
-				return _rankgt;
-			}
-			set => _rankgt = value;
-		}
-
-		/// <summary>
 		/// Empty if no outlier was given to <see cref="ILeaderboardApi.GetBoard(Beamable.Common.Leaderboards.LeaderboardRef,int,int,System.Nullable{long},System.Nullable{long})"/>.
 		/// Otherwise, this is the rank entry for the outlier.
 		/// </summary>
-		private RankEntry _rankgt;
-
-		/// <summary>
-		/// A set of <see cref="RankEntry"/>s that represent this section of the leaderboard view.
-		/// Use the <see cref="ToDictionary"/> method to convert this list into a dictionary for more convenient access.
-		/// </summary>
-		public List<RankEntry> rankings;
-
+		[SerializeField]
+		private new RankEntry rankgt;
+		
 		/// <summary>
 		/// Convert the <see cref="rankings"/> list into a dictionary from player id to <see cref="RankEntry"/>.
 		/// </summary>
@@ -422,6 +434,16 @@ namespace Beamable.Common.Api.Leaderboards
 			}
 
 			return result;
+		}
+
+		public void OnBeforeSerialize()
+		{
+			// nothing to do.
+		}
+
+		public void OnAfterDeserialize()
+		{
+			maybeRankGt = rankgt;
 		}
 	}
 
