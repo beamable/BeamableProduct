@@ -6,6 +6,7 @@ using UnityEngine;
 
 namespace Beamable.Editor.Content
 {
+#if !BEAMABLE_NO_OPTIONAL_DRAWERS // we can't use this when optional drawers are disabled. That means some stuff will appear when it "shouldn't", but its as a major a blocker as a compiler error.
 	[CustomPropertyDrawer(typeof(HideUnlessServerPackageInstalled))]
 	public class HideServerPropertyDrawer : PropertyDrawer
 	{
@@ -83,4 +84,5 @@ namespace Beamable.Editor.Content
 			return hasPackage;
 		}
 	}
+#endif
 }

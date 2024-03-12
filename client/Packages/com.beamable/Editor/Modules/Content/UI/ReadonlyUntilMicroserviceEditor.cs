@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace Beamable.Editor.Content.UI
 {
+#if !BEAMABLE_NO_CONTENT_INSPECTOR
 	[CustomEditor(typeof(ApiContent), true)]
 	public class ReadonlyUntilMicroserviceEditor : ContentObjectEditor
 	{
@@ -26,4 +27,5 @@ namespace Beamable.Editor.Content.UI
 
 		}
 	}
+#endif
 }
