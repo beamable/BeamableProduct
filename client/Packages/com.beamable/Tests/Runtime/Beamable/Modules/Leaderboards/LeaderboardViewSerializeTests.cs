@@ -13,7 +13,7 @@ namespace Beamable.Tests.Modules.Leaderboards
 			Assert.That(instance.lb.rankgt, Is.Not.Null);
 			Assert.That(instance.lb.rankgt.gt, Is.EqualTo(1725855903908867L));
 		}
-		
+
 		[Test]
 		public void LeaderBoardV2ViewResponse_RankgtInferredFromUserId()
 		{
@@ -68,7 +68,7 @@ namespace Beamable.Tests.Modules.Leaderboards
     ]
   }
 }";
-		
+
 		private const string LEADERBOARD_JSON_WITHOUT_RANKGT = @"{
   ""result"": ""ok"",
   ""lb"": {
