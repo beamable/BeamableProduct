@@ -19,8 +19,6 @@ using UnityEngine;
 
 namespace cli;
 
-
-
 public class SwaggerService
 {
 	private readonly IAppContext _context;
@@ -92,13 +90,11 @@ public class SwaggerService
 		var allResults = openApiDocuments.Where(r => !r.Descriptor.SkippedSDKs.Contains(targetEngine));
 
 		var allDocuments = targetEngine == TARGET_ENGINE_NAME_UNREAL
-				? allResults.Where(r => !r.Document.Info.Title.Contains("Scheduler")).Select(r => r.Document).ToList()
-				: allResults.Select(r => r.Document).ToList();
+			? allResults.Where(r => !r.Document.Info.Title.Contains("Scheduler")).Select(r => r.Document).ToList()
+			: allResults.Select(r => r.Document).ToList();
 		var context = new DefaultGenerationContext
 		{
-			Documents = allDocuments,
-			OrderedSchemas = ExtractAllSchemas(allDocuments, resolutionStrategy),
-			ReplacementTypes = new Dictionary<string, ReplacementTypeInfo>(),
+			Documents = allDocuments, OrderedSchemas = ExtractAllSchemas(allDocuments, resolutionStrategy), ReplacementTypes = new Dictionary<OpenApiReferenceId, ReplacementTypeInfo>(),
 		};
 
 		// TODO: FILTER we shouldn't really be using _all_ the given generators, we should be selecting between one based on an input argument.
@@ -118,24 +114,33 @@ public class SwaggerService
 				UnrealSourceGenerator.previousGenerationPassesData = new PreviousGenerationPassesData();
 
 				// TODO: Add a command parameter that builds this from either a file or a CSV format. Figure out how to consistently load the file for the SDK replacement types into the UE SAMS client generation
-				context.ReplacementTypes = new Dictionary<string, ReplacementTypeInfo>
+				context.ReplacementTypes = new Dictionary<OpenApiReferenceId, ReplacementTypeInfo>
 				{
 					{
 						"ClientPermission", new ReplacementTypeInfo
 						{
-							ReferenceId = "ClientPermission", EngineReplacementType = "FBeamClientPermission", EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamClientPermission", EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamClientPermission.h""",
+							ReferenceId = "ClientPermission",
+							EngineReplacementType = "FBeamClientPermission",
+							EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamClientPermission",
+							EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamClientPermission.h""",
 						}
 					},
 					{
 						"ExternalIdentity", new ReplacementTypeInfo
 						{
-							ReferenceId = "ExternalIdentity", EngineReplacementType = "FBeamExternalIdentity", EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamExternalIdentity", EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamExternalIdentity.h""",
+							ReferenceId = "ExternalIdentity",
+							EngineReplacementType = "FBeamExternalIdentity",
+							EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamExternalIdentity",
+							EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamExternalIdentity.h""",
 						}
 					},
 					{
 						"Tag", new ReplacementTypeInfo
 						{
-							ReferenceId = "Tag", EngineReplacementType = "FBeamTag", EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamTag", EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamTag.h""",
+							ReferenceId = "Tag",
+							EngineReplacementType = "FBeamTag",
+							EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamTag",
+							EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamTag.h""",
 						}
 					}
 				};
@@ -206,7 +211,7 @@ public class SwaggerService
 				list.Add(new NamedOpenApiSchema
 				{
 					RawSchema = raw.GetEffective(doc),
-					Name = schemaName,
+					ReferenceId = schemaName,
 					Schema = openApiSchema,
 					Document = doc,
 					DependsOnSchema = schemaRecursiveRefs[namedOpenApiSchemaHandle]
@@ -247,7 +252,7 @@ public class SwaggerService
 
 		void HandleResolution()
 		{
-			var groups = list.GroupBy(s => s.Name).ToList();
+			var groups = list.GroupBy(s => s.ReferenceId).ToList();
 			foreach (var group in groups)
 			{
 				if (group.Count() <= 1) continue;
@@ -286,7 +291,7 @@ public class SwaggerService
 					continue; // there is only 1 variant of the serialization, so its "fine", and we don't need to do anything
 
 				/*
-		
+
 					 * But if there is one variant that has distinctly _more_ references, we should assume it is a common one.
 					 */
 
@@ -322,9 +327,9 @@ public class SwaggerService
 						var serviceTitle = string.Concat(instance.Document.Info.Title
 							.Split(' ')
 							.Select(w => char.ToUpper(w[0]) + w.Substring(1)));
-						var newName = serviceTitle + instance.Name;
-						var oldName = instance.Name;
-						instance.Name = newName;
+						var newName = serviceTitle + instance.ReferenceId;
+						var oldName = instance.ReferenceId;
+						instance.ReferenceId = newName;
 
 						void RewireSchema(OpenApiSchema schema)
 						{
@@ -388,13 +393,12 @@ public class SwaggerService
 					}
 				}
 			}
-
 		}
 
 		if (resolutionStrategy != GenerateSdkConflictResolutionStrategy.None)
 		{
 			HandleResolution();
-			list = list.DistinctBy(x => x.Name).ToList();
+			list = list.DistinctBy(x => x.ReferenceId).ToList();
 		}
 
 		return list;
@@ -403,7 +407,7 @@ public class SwaggerService
 	public async Task<IEnumerable<OpenApiDocumentResult>> DownloadBeamableApis(BeamableApiFilter filter)
 	{
 		var selected = Apis.Where(filter.Accepts).ToList();
-		return await DownloadOpenApis(_downloader, selected).ToPromise();//.ShowLoading("fetching swagger docs...");
+		return await DownloadOpenApis(_downloader, selected).ToPromise(); //.ShowLoading("fetching swagger docs...");
 	}
 
 	/// <summary>
@@ -453,7 +457,6 @@ public class SwaggerService
 				}
 				catch (Exception ex)
 				{
-
 					Log.Error(url + " / " + ex.Message);
 					throw;
 				}
@@ -547,6 +550,7 @@ public class SwaggerService
 				}
 			}
 		}
+
 		return new List<OpenApiDocumentResult> { swagger };
 	}
 
@@ -568,40 +572,19 @@ public class SwaggerService
 				if (!op.Value.Responses.ContainsKey(STATUS_200) && op.Value.Responses.ContainsKey(STATUS_204))
 				{
 					op.Value.Responses.Remove(STATUS_204);
-					op.Value.Responses[STATUS_200] = new OpenApiResponse
-					{
-						Content = new Dictionary<string, OpenApiMediaType>
-						{
-							[APPLICATION_JSON] = new OpenApiMediaType
-							{
-								Schema = new OpenApiSchema()
-							}
-						}
-					};
+					op.Value.Responses[STATUS_200] = new OpenApiResponse { Content = new Dictionary<string, OpenApiMediaType> { [APPLICATION_JSON] = new OpenApiMediaType { Schema = new OpenApiSchema() } } };
 				}
 
 				if (!op.Value.Responses.ContainsKey(STATUS_200) && op.Value.Responses.ContainsKey(STATUS_201))
 				{
 					var content201 = op.Value.Responses[STATUS_201].Content;
 					op.Value.Responses.Remove(STATUS_201);
-					op.Value.Responses[STATUS_200] = new OpenApiResponse
-					{
-						Content = content201
-					};
+					op.Value.Responses[STATUS_200] = new OpenApiResponse { Content = content201 };
 				}
 
 				if (op.Value.Responses.ContainsKey(STATUS_200) && op.Value.Responses[STATUS_200].Content.Count == 0)
 				{
-					op.Value.Responses[STATUS_200] = new OpenApiResponse
-					{
-						Content = new Dictionary<string, OpenApiMediaType>
-						{
-							[APPLICATION_JSON] = new OpenApiMediaType
-							{
-								Schema = new OpenApiSchema()
-							}
-						}
-					};
+					op.Value.Responses[STATUS_200] = new OpenApiResponse { Content = new Dictionary<string, OpenApiMediaType> { [APPLICATION_JSON] = new OpenApiMediaType { Schema = new OpenApiSchema() } } };
 				}
 			}
 		}
@@ -624,13 +607,7 @@ public class SwaggerService
 	{
 		var outputString = swagger.Document.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);
 		var clonedDocument = new OpenApiStringReader().Read(outputString, out var diag);
-		return new List<OpenApiDocumentResult>
-		{
-			new OpenApiDocumentResult
-			{
-				Descriptor = swagger.Descriptor, Diagnostic = diag, Document = clonedDocument
-			}
-		};
+		return new List<OpenApiDocumentResult> { new OpenApiDocumentResult { Descriptor = swagger.Descriptor, Diagnostic = diag, Document = clonedDocument } };
 	}
 
 	private static List<OpenApiDocumentResult> ReduceProtoActorMimeTypes(OpenApiDocumentResult swagger)
@@ -698,13 +675,10 @@ public class SwaggerService
 						{
 							continue;
 						}
+
 						var pathName = FormatPathNameAsMethodName(path.Key);
 						var id = $"{pathName}{op.Key}{op.Value.Tags[0].Name}Response";
-						var referencedSchema = new OpenApiSchema
-						{
-							Type = "object",
-							Reference = new OpenApiReference { Type = ReferenceType.Schema, Id = id }
-						};
+						var referencedSchema = new OpenApiSchema { Type = "object", Reference = new OpenApiReference { Type = ReferenceType.Schema, Id = id } };
 						content.Value.Schema = referencedSchema;
 
 						var json = SerializeSchema(schema);
@@ -725,7 +699,6 @@ public class SwaggerService
 							// no good, we have a new form of serialization
 							throw new CliException("Operations that return inline schemas may not have different schemas that collide under the operation method and tag");
 						}
-
 					}
 				}
 			}
@@ -784,6 +757,7 @@ public class SwaggerService
 				{
 					continue;
 				}
+
 				if (!tagToPaths.TryGetValue(tag, out var tagCollection))
 				{
 					tagToPaths[tag] = tagCollection = new List<KeyValuePair<string, OpenApiPathItem>>();
@@ -803,7 +777,6 @@ public class SwaggerService
 			{
 				throw new CliException("If a swagger doc has a tag in an operation, then every operation must have a tag.");
 			}
-
 		}
 		catch (Exception ex)
 		{
@@ -864,7 +837,6 @@ public class SwaggerService
 				seenSchemas.Add(curr);
 
 
-
 				schemasToExplore.Enqueue(curr.AdditionalProperties);
 				schemasToExplore.Enqueue(curr.Items);
 				if (curr.Properties != null)
@@ -891,20 +863,11 @@ public class SwaggerService
 				schemasToExplore.Enqueue(referencedSchema);
 			}
 
-			var openApiDocumentResult = new OpenApiDocumentResult
-			{
-				Descriptor = swagger.Descriptor,
-				Diagnostic = diag,
-				Document = clonedDocument
-			};
+			var openApiDocumentResult = new OpenApiDocumentResult { Descriptor = swagger.Descriptor, Diagnostic = diag, Document = clonedDocument };
 			output.Add(openApiDocumentResult);
 		}
 
-		var joiningTags = new Dictionary<string[], string>()
-		{
-			{ new[] { "Match", "Ticket" }, "Matchmaking" },
-			{ new[] { "PlayerPresence", "Player" }, "Player" },
-		};
+		var joiningTags = new Dictionary<string[], string>() { { new[] { "Match", "Ticket" }, "Matchmaking" }, { new[] { "PlayerPresence", "Player" }, "Player" }, };
 
 		foreach ((string[] existingDocsTitles, string mergedDocTitle) in joiningTags)
 		{
@@ -933,14 +896,10 @@ public class SwaggerService
 
 			foreach (OpenApiDocumentResult res in docs) output.Remove(res);
 
-			var mergedResult = new OpenApiDocumentResult
-			{
-				Descriptor = swagger.Descriptor,
-				Diagnostic = diag,
-				Document = clonedDocument
-			};
+			var mergedResult = new OpenApiDocumentResult { Descriptor = swagger.Descriptor, Diagnostic = diag, Document = clonedDocument };
 			output.Add(mergedResult);
 		}
+
 		return output;
 	}
 
@@ -988,7 +947,7 @@ public class SwaggerService
 		public IReadOnlyList<OpenApiDocument> Documents { get; init; }
 		public IReadOnlyList<NamedOpenApiSchema> OrderedSchemas { get; init; }
 
-		public IReadOnlyDictionary<string, ReplacementTypeInfo> ReplacementTypes { get; set; }
+		public IReadOnlyDictionary<OpenApiReferenceId, ReplacementTypeInfo> ReplacementTypes { get; set; }
 	}
 
 	/// <summary>
@@ -1009,7 +968,6 @@ public class SwaggerService
 			var descriptors = scope.SingletonServices.Where(service => service.Interface.IsAssignableTo(typeof(ISourceGenerator))).ToList();
 			Generators = descriptors.Select(descriptor => scope.GetService(descriptor.Interface)).Cast<ISourceGenerator>().ToArray();
 		}
-
 	}
 
 	public const string TARGET_ENGINE_NAME_UNITY = "unity";
@@ -1065,6 +1023,7 @@ public class BeamableApiFilter : DefaultQuery
 			query.ApiTypeConstraint = apiCons;
 		}
 	}
+
 	private static bool SerializeApiTypeRule(BeamableApiFilter query, out string str)
 	{
 		str = string.Empty;
@@ -1073,6 +1032,7 @@ public class BeamableApiFilter : DefaultQuery
 			str = $"t:{query.ApiTypeConstraint.Serialize()}";
 			return true;
 		}
+
 		return false;
 	}
 
@@ -1083,8 +1043,7 @@ public class BeamableApiFilter : DefaultQuery
 
 	protected static readonly Dictionary<string, DefaultQueryParser.ApplyParseRule<BeamableApiFilter>> StandardRules = new Dictionary<string, DefaultQueryParser.ApplyParseRule<BeamableApiFilter>>
 	{
-		{"id", DefaultQueryParser.ApplyIdParse},
-		{"t", ApplyApiTypeRule},
+		{ "id", DefaultQueryParser.ApplyIdParse }, { "t", ApplyApiTypeRule },
 
 		// {"tag", ApplyTagParse},
 	};
@@ -1094,32 +1053,17 @@ public static class BeamableApis
 {
 	public static BeamableApiDescriptor ProtoActor()
 	{
-		return new BeamableApiDescriptor
-		{
-			Source = BeamableApiSource.PLAT_PROTO,
-			RelativeUrl = $"api/platform/docs",
-			Service = "api"
-		};
+		return new BeamableApiDescriptor { Source = BeamableApiSource.PLAT_PROTO, RelativeUrl = $"api/platform/docs", Service = "api" };
 	}
 
 	public static BeamableApiDescriptor ObjectService(string service)
 	{
-		return new BeamableApiDescriptor
-		{
-			Source = BeamableApiSource.PLAT_THOR_OBJECT,
-			RelativeUrl = $"object/{service}/platform/docs",
-			Service = service
-		};
+		return new BeamableApiDescriptor { Source = BeamableApiSource.PLAT_THOR_OBJECT, RelativeUrl = $"object/{service}/platform/docs", Service = service };
 	}
 
 	public static BeamableApiDescriptor BasicService(string service)
 	{
-		return new BeamableApiDescriptor
-		{
-			Source = BeamableApiSource.PLAT_THOR_BASIC,
-			RelativeUrl = $"basic/{service}/platform/docs",
-			Service = service
-		};
+		return new BeamableApiDescriptor { Source = BeamableApiSource.PLAT_THOR_BASIC, RelativeUrl = $"basic/{service}/platform/docs", Service = service };
 	}
 }
 
@@ -1135,11 +1079,11 @@ public static class BeamableApiSourceExtensions
 {
 	static Dictionary<BeamableApiSource, string> enumToString = new Dictionary<BeamableApiSource, string>
 	{
-		{BeamableApiSource.PLAT_PROTO, "api"},
-		{BeamableApiSource.PLAT_THOR_BASIC, "basic"},
-		{BeamableApiSource.PLAT_THOR_OBJECT, "object"},
+		{ BeamableApiSource.PLAT_PROTO, "api" }, { BeamableApiSource.PLAT_THOR_BASIC, "basic" }, { BeamableApiSource.PLAT_THOR_OBJECT, "object" },
 	};
+
 	static Dictionary<string, BeamableApiSource> stringToEnum = new Dictionary<string, BeamableApiSource>();
+
 	static BeamableApiSourceExtensions()
 	{
 		foreach (var kvp in enumToString)
@@ -1147,6 +1091,7 @@ public static class BeamableApiSourceExtensions
 			stringToEnum.Add(kvp.Value, kvp.Key);
 		}
 	}
+
 	public static bool TryParse(string str, out BeamableApiSource status)
 	{
 		var parts = str.Split(new[] { ' ' }, StringSplitOptions.None);
@@ -1165,11 +1110,14 @@ public static class BeamableApiSourceExtensions
 				{
 					status |= subStatus;
 				}
+
 				any = true;
 			}
 		}
+
 		return any;
 	}
+
 	public static string Serialize(this BeamableApiSource self)
 	{
 		var str = self.ToString();
@@ -1177,6 +1125,7 @@ public static class BeamableApiSourceExtensions
 		{
 			str = str.Replace(kvp.Value.ToString(), kvp.Key);
 		}
+
 		str = str.Replace(",", "");
 		return str;
 	}
@@ -1192,8 +1141,6 @@ public static class BeamableApiSourceExtensions
 
 		return "unknown";
 	}
-
-
 }
 
 public class GeneratedFileDescriptor
@@ -1244,6 +1191,23 @@ public struct ReplacementTypeInfo
 	public string EngineImport;
 }
 
+/// <summary>
+/// Basically a type-def'ed string so we can have better readability when we are dealing with a string that is the <see cref="OpenApiSchema.Reference"/>'s <see cref="OpenApiReference.Id"/>.
+/// </summary>
+public struct OpenApiReferenceId : IEquatable<string>, IEquatable<OpenApiReferenceId>
+{
+	public string AsStr { get; private set; }
+	public OpenApiReferenceId(string val) => AsStr = val;
+	public static implicit operator string(OpenApiReferenceId w) => w.AsStr;
+	public static implicit operator OpenApiReferenceId(string s) => new(s);
+	public bool Equals(string other) => AsStr.Equals(other);
+	public bool Equals(OpenApiReferenceId other) => AsStr.Equals(other.AsStr);
+	public override bool Equals(object obj) => obj is OpenApiReferenceId && Equals((OpenApiReferenceId)obj);
+	public override int GetHashCode() => (AsStr != null ? AsStr.GetHashCode() : 0);
+	public static bool operator ==(OpenApiReferenceId left, OpenApiReferenceId right) => left.Equals(right);
+	public static bool operator !=(OpenApiReferenceId left, OpenApiReferenceId right) => !(left == right);
+	public override string ToString() => AsStr;
+}
 
 public interface IGenerationContext
 {
@@ -1261,9 +1225,8 @@ public interface IGenerationContext
 	/// Dictionary keyed by the OAPI Reference Id of the type you want to replace.
 	/// The value is the information necessary for replacing that type in the generation.
 	/// </summary>
-	IReadOnlyDictionary<string, ReplacementTypeInfo> ReplacementTypes { get; }
+	IReadOnlyDictionary<OpenApiReferenceId, ReplacementTypeInfo> ReplacementTypes { get; }
 }
-
 
 public class OpenApiSchemaComparer : IEqualityComparer<OpenApiSchema>
 {
@@ -1283,7 +1246,7 @@ public class NamedOpenApiSchema
 	/// <summary>
 	/// The name of the openAPI schema, which is not included in the schema itself
 	/// </summary>
-	public string Name;
+	public OpenApiReferenceId ReferenceId;
 
 	/// <summary>
 	/// The document where the schema originated
@@ -1308,16 +1271,16 @@ public class NamedOpenApiSchema
 	/// <summary>
 	/// A combination of the <see cref="Document"/>'s title, and <see cref="Name"/>
 	/// </summary>
-	public string UniqueName => $"{Document.Info.Title}-{Name}";
+	public string UniqueName => $"{Document.Info.Title}-{ReferenceId}";
 
 
 	private static Dictionary<(OpenApiSchema, OpenApiSchema), List<string>> _equalityCache =
 		new Dictionary<(OpenApiSchema, OpenApiSchema), List<string>>();
 
 	public static bool AreEqual(OpenApiSchema a, OpenApiSchema b) => AreEqual(a, b, out _);
+
 	public static bool AreEqual(OpenApiSchema a, OpenApiSchema b, out List<string> differences)
 	{
-
 		differences = new List<string>();
 
 		if (_equalityCache.TryGetValue((a, b), out var equalityReasons))
@@ -1388,7 +1351,6 @@ public class NamedOpenApiSchema
 			// the host document must be the same.
 			// var aSchema = a.GetEffective(a.Reference.HostDocument);
 			// var bSchema = b.GetEffective(b.Reference.HostDocument);
-
 
 
 			if (!string.Equals(a.Reference.HostDocument?.Info?.Title, b.Reference.HostDocument?.Info?.Title))
