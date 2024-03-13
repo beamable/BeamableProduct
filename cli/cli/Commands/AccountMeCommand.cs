@@ -14,7 +14,6 @@ public class AccountMeCommandArgs : CommandArgs
 
 public class AccountMeCommandOutput
 {
-	// public Vector2 x;
 
 	/// <summary>
 	/// The unique id of the player, sometimes called a "dbid".
