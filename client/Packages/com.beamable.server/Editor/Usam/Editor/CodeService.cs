@@ -117,7 +117,7 @@ namespace Beamable.Server.Editor.Usam
 				var signpost = _services.FirstOrDefault(s => s.name.Equals(microserviceName));
 				if(signpost == null) continue;
 				var command = $"add {signpost.CsprojFilePath} reference {commonCsProj}";
-				Debug.Log(command);
+
 				await _dotnetService.Run(command);
 				
 				foreach (var file in Directory.EnumerateFiles(microserviceDir))
@@ -127,16 +127,13 @@ namespace Beamable.Server.Editor.Usam
 					var newFilePath = Path.Combine(signpost.CsprojPath, fileName);
 					if (File.Exists(newFilePath))
 					{
-						File.Replace(file,newFilePath,newFilePath+".backup");
+						File.Delete(newFilePath);
 					}
-					else
-					{
-						File.Copy(file, newFilePath);
-					}
+					File.Copy(file, newFilePath);
 
 					var fileContent = File.ReadAllText(newFilePath);
 					fileContent = fileContent.Replace("namespace Beamable.Server",
-					                                  $"using Beamable.Server;\nnamespace Beamable.{microserviceName}");
+					                                  $"using Beamable.Server;\n\nnamespace Beamable.{microserviceName}");
 					File.WriteAllText(newFilePath,fileContent);
 				}
 			}
@@ -144,12 +141,22 @@ namespace Beamable.Server.Editor.Usam
 			{
 				var storageName = Path.GetFileName(storageDir);
 				var path = $"{StandaloneMicroservicesPath}{storageName}/";
+				var storageModel = MicroservicesDataModel.Instance.Storages.FirstOrDefault(s => s.Name == storageName);
+				var deps = MicroservicesDataModel.Instance.Services
+				                                 .Where(model => model.Dependencies.Any(s => s.Name == storageName)).Select(model => ServiceDefinitions.FirstOrDefault(d=>d.BeamoId==model.Name))
+				                                 .ToList();
+				Debug.Log(storageModel);
+				Debug.Log(string.Join(", ",deps));
 				if (!Directory.Exists(path))
 				{
 					Debug.Log(storageName);
-					await CreateStorage(storageName, path,null);
+					await CreateStorage(storageName, path, deps);
 				}
 			}
+			// REMOVE OLD STUFF
+			Directory.Delete("Assets/Beamable/Microservices",true);
+			Directory.Delete("Assets/Beamable/StorageObjects",true);
+			Directory.Delete("Assets/Beamable/Common",true);
 		}
 
 		private async Task<string> MigrateCommon()
