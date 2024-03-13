@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -95,6 +96,98 @@ namespace Beamable.Server.Editor.Usam
 			CheckMicroserviceStatus();
 			ConnectToLogs();
 			LogVerbose("Completed");
+			await Migrate();
+		}
+
+		public async Promise Migrate()
+		{
+			var commonCsProj = await MigrateCommon();
+			foreach(var microserviceDir in Directory.EnumerateDirectories("Assets/Beamable/Microservices"))
+			{
+				var microserviceName = Path.GetFileName(microserviceDir);
+				var path = $"{StandaloneMicroservicesPath}{microserviceName}/";
+				if (!Directory.Exists(path))
+				{
+					Debug.Log(microserviceName);
+					await CreateMicroService(microserviceName, $"{StandaloneMicroservicesPath}{microserviceName}/",
+					                         null,
+					                         true);
+				}
+
+				var signpost = _services.FirstOrDefault(s => s.name.Equals(microserviceName));
+				if(signpost == null) continue;
+				var command = $"add {signpost.CsprojFilePath} reference {commonCsProj}";
+				Debug.Log(command);
+				await _dotnetService.Run(command);
+				
+				foreach (var file in Directory.EnumerateFiles(microserviceDir))
+				{
+					if (!Path.GetExtension(file).EndsWith("cs")) continue;
+					var fileName = Path.GetFileName(file);
+					var newFilePath = Path.Combine(signpost.CsprojPath, fileName);
+					if (File.Exists(newFilePath))
+					{
+						File.Replace(file,newFilePath,newFilePath+".backup");
+					}
+					else
+					{
+						File.Copy(file, newFilePath);
+					}
+
+					var fileContent = File.ReadAllText(newFilePath);
+					fileContent = fileContent.Replace("namespace Beamable.Server",
+					                                  $"using Beamable.Server;\nnamespace Beamable.{microserviceName}");
+					File.WriteAllText(newFilePath,fileContent);
+				}
+			}
+			foreach(var storageDir in Directory.EnumerateDirectories("Assets/Beamable/StorageObjects"))
+			{
+				var storageName = Path.GetFileName(storageDir);
+				var path = $"{StandaloneMicroservicesPath}{storageName}/";
+				if (!Directory.Exists(path))
+				{
+					Debug.Log(storageName);
+					await CreateStorage(storageName, path,null);
+				}
+			}
+		}
+
+		private async Task<string> MigrateCommon()
+		{
+			var outputPath = $"{StandaloneMicroservicesPath}BeamableCommonShared/";
+			var commonPath = "Assets/Beamable/Common";
+			if(!Directory.Exists(outputPath) && Directory.Exists(commonPath))
+			{
+				LogVerbose("Starting creation of CommonLib");
+				var cmd = _cli.ProjectNewCommonLib(new ProjectNewCommonLibArgs()
+				{
+					name = new ServiceName("BeamableCommonShared"),
+					version = _projectVersion,
+					outputPath = StandaloneMicroservicesPath
+				});
+				try
+				{
+					await cmd.Run();
+					foreach (var file in Directory.EnumerateFiles(commonPath))
+					{
+						if (!Path.GetExtension(file).EndsWith("cs")) continue;
+						var fileName = Path.GetFileName(file);
+						var newFilePath = Path.Combine(outputPath, fileName);
+						File.Copy(file,newFilePath);
+					}
+				}
+				catch (Exception e)
+				{
+					Debug.Log(e);
+				}
+			}
+
+			foreach (var file in Directory.EnumerateFiles(outputPath))
+			{
+				if (file.EndsWith("csproj")) return file;
+			}
+
+			return null;
 		}
 
 		public async Promise UpdateServicesVersions()
@@ -115,7 +208,15 @@ namespace Beamable.Server.Editor.Usam
 			var versions = _cli.ProjectVersion(new ProjectVersionArgs { requestedVersion = version?.version });
 			versions.OnStreamProjectVersionCommandResult(result =>
 			{
-				_projectVersion = result.data.packageVersions[0];
+				if (result.data.packageVersions.Length > 0)
+				{
+					_projectVersion = result.data.packageVersions[0];
+				}
+				else
+				{
+					Debug.Log(JsonUtility.ToJson(result));
+					_projectVersion = "0.0.0";
+				}
 				LogVerbose($"Versions updated: {_projectVersion}");
 			});
 			await versions.Run().Error(LogExceptionVerbose);
@@ -632,7 +733,6 @@ namespace Beamable.Server.Editor.Usam
 			var storageArgs = new ProjectNewStorageArgs
 			{
 				name = service,
-				quiet = true,
 				linkTo = deps,
 				outputPath = outputPath
 			};
@@ -664,18 +764,19 @@ namespace Beamable.Server.Editor.Usam
 		}
 
 
-		private async Promise CreateMicroService(string serviceName, string outputPath, List<IBeamoServiceDefinition> dependencies)
+		private async Promise CreateMicroService(string serviceName, string outputPath, List<IBeamoServiceDefinition> dependencies, bool skipCommon = false)
 		{
 			var service = new ServiceName(serviceName);
 
-			var args = new ProjectNewArgs
+			var args = new ProjectNewMicroserviceArgs()
 			{
-				quiet = true,
 				name = service,
-				output = outputPath,
-				version = _projectVersion
+				newSolution = outputPath,
+				version = _projectVersion,
+				skipCommon = skipCommon,
+				
 			};
-			ProjectNewWrapper command = _cli.ProjectNew(args);
+			var command = _cli.ProjectNewMicroservice(args);
 			await command.Run();
 
 			string relativePath = $"{outputPath}services";
