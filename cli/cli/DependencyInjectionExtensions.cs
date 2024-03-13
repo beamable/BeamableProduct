@@ -1,9 +1,12 @@
 using Beamable.Common.Dependencies;
+using Beamable.Serialization.SmallerJSON;
 using cli.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using Serilog;
 using System.CommandLine;
 using System.CommandLine.Help;
+using System.Text;
 
 namespace cli;
 
@@ -54,14 +57,18 @@ public static class DependencyInjectionExtensions
 			var binder = new AppCommand<TArgs>.Binder(command, commandProvider);
 			command.SetHandler((TArgs args) =>
 			{
-
+				
+				Log.Verbose($@"app context= {JsonConvert.SerializeObject(args.AppContext, Formatting.Indented, new JsonSerializerSettings
+				{
+					 })}");
+				Log.Verbose($"running command=[{command.GetType().Name}] with parsed arguments {Json.Serialize(args, new StringBuilder())}");
 				if (command is IResultProvider resultProvider)
 				{
 					resultProvider.Reporter = args.Provider.GetService<IDataReporterService>();
 				}
 
 
-				if (!args.IgnoreStandaloneValidation && command is not IStandaloneCommand && args.ConfigService.ConfigFileExists.GetValueOrDefault(false) != true)
+				if (!args.IgnoreStandaloneValidation && command is not IStandaloneCommand && args.ConfigService.DirectoryExists.GetValueOrDefault(false) != true)
 				{
 					throw new CliException("Could not find any .beamable config folder which is required for this command.");
 				}

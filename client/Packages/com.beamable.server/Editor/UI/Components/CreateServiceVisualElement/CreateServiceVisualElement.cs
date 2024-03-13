@@ -30,6 +30,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public event Action OnCreateServiceClicked;
 		public event Action OnCreateServiceFinished;
 
+
+		private bool ShouldShowCreateDependentService => _dependenciesCandidates.Count > 0;
+
+		private ServiceType DependenciesType => ServiceType == ServiceType.MicroService
+			? ServiceType.StorageObject
+			: ServiceType.MicroService;
+
 		protected StandaloneServiceCreateDependent _serviceCreateDependentService;
 
 		private const int MAX_NAME_LENGTH = 28;
@@ -38,6 +45,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private TextField _nameTextField;
 		private PrimaryButtonVisualElement _createBtn;
 		private PrimaryButtonVisualElement _cancelBtn;
+		private List<IBeamoServiceDefinition> _dependenciesCandidates;
 
 		private FormConstraint _isNameValid;
 		private FormConstraint _isNameSizedRight;
@@ -47,6 +55,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			OnClose = onClose;
 			base.Refresh();
+
+			var codeService = BeamEditorContext.Default.ServiceScope.GetService<CodeService>();
+			_dependenciesCandidates = codeService.ServiceDefinitions.Where(x => x.ServiceType == DependenciesType && x.HasLocalSource).ToList();
+
 			QueryVisualElements();
 			UpdateVisualElements();
 		}
@@ -95,7 +107,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				return;
 			_serviceCreateDependentService = new StandaloneServiceCreateDependent();
 			_serviceCreateDependentService.Refresh();
-			InitCreateDependentService();
+			_serviceCreateDependentService.Init(_dependenciesCandidates, DependenciesType.ToString());
 			_createBtn.parent.parent.Insert(1, _serviceCreateDependentService);
 		}
 
@@ -117,17 +129,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			await codeService.CreateService(serviceName, ServiceType, additionalReferences);
 			OnCreateServiceFinished?.Invoke();
 		}
-
-		private void InitCreateDependentService()
-		{
-			var codeService = BeamEditorContext.Default.ServiceScope.GetService<CodeService>();
-			ServiceType dependenciesType = ServiceType == ServiceType.MicroService
-				? ServiceType.StorageObject
-				: ServiceType.MicroService;
-			_serviceCreateDependentService.Init(codeService.ServiceDefinitions.Where(x => x.ServiceType == dependenciesType).ToList(), dependenciesType.ToString());
-		}
-
-		private bool ShouldShowCreateDependentService => true;
 
 		private void HandleNameLabelFocus(FocusEvent evt)
 		{

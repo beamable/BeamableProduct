@@ -28,7 +28,7 @@ public class ContentTagCommand : CommandGroup<ContentTagCommandArgs>
 		_contentService = args.ContentService;
 		new Process
 		{
-			StartInfo = new ProcessStartInfo(_contentService.GetLocalCache(args.ManifestId).Tags.FullPath) { UseShellExecute = true }
+			StartInfo = new ProcessStartInfo(_contentService.GetLocalCache(args.ManifestId).Tags.GetPath()) { UseShellExecute = true }
 		}.Start();
 		return Task.CompletedTask;
 	}

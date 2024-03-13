@@ -102,8 +102,8 @@ public class ProjectService
 		_configService = configService;
 		_versionService = versionService;
 		_app = app;
-		_projects = configService.LoadDataFile<ProjectData>(".linkedProjects");
-		ConfigFileExists = _configService.ConfigFileExists;
+		ConfigFileExists = _configService.DirectoryExists;
+		_projects = configService.LoadDataFile<ProjectData>(Constants.CONFIG_LINKED_PROJECTS);
 	}
 
 	public List<string> GetLinkedUnityProjects()
@@ -119,7 +119,7 @@ public class ProjectService
 	public void AddUnityProject(string relativePath)
 	{
 		_projects.unityProjectsPaths.Add(relativePath);
-		_configService.SaveDataFile(".linkedProjects", _projects);
+		_configService.SaveDataFile(Constants.CONFIG_LINKED_PROJECTS, _projects);
 	}
 
 	public void AddUnrealProjectWithOss(string projectPath)
@@ -157,7 +157,7 @@ public class ProjectService
 
 		// Save it
 		_projects.unrealProjectsPaths.Add(projData);
-		_configService.SaveDataFile(".linkedProjects", _projects);
+		_configService.SaveDataFile(Constants.CONFIG_LINKED_PROJECTS, _projects);
 	}
 
 	public void AddUnrealProject(string projectPath, string msClientModuleName, string blueprintNodesModuleName, bool msClientModuleIsPublicPrivate, bool blueprintNodesModuleIsPublicPrivate)
@@ -195,7 +195,7 @@ public class ProjectService
 		projData.BeamableBackendGenerationPassFile = projectPath + pathToBackendGenerationJson;
 
 		_projects.unrealProjectsPaths.Add(projData);
-		_configService.SaveDataFile(".linkedProjects", _projects);
+		_configService.SaveDataFile(Constants.CONFIG_LINKED_PROJECTS, _projects);
 	}
 
 	private static DirectoryInfo EnsureUnrealRootPath(string projectPath)
@@ -627,7 +627,7 @@ COPY {commonProjectName}/. .
 				$"The given id=[{serviceName}] does not match any local services in the local beamo manifest.");
 		}
 
-		var errorPath = Path.Combine(args.ConfigService.ConfigFilePath, "temp", "buildLogs",
+		var errorPath = Path.Combine(args.ConfigService.ConfigDirectoryPath, "temp", "buildLogs",
 			$"{serviceName}.json");
 		var errorDir = Path.GetDirectoryName(errorPath);
 		Directory.CreateDirectory(errorDir);
