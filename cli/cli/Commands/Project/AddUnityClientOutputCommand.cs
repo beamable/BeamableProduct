@@ -30,7 +30,7 @@ public class AddUnityClientOutputCommand : AppCommand<AddProjectClientOutputComm
 		var startingDir = args.path;
 		var directory = args.path;
 
-		if (!unityProjectClient.IsValidProjectClientDirectory(ref directory) && !args.quiet)
+		if (!unityProjectClient.IsValidProjectClientDirectory(ref directory) && !args.Quiet)
 		{
 			var expectedUnityParentDirectories = new[]
 			{
