@@ -351,7 +351,7 @@ public class ConfigService
 			if (Directory.Exists(oldPath))
 			{
 				var newPath = GetConfigPath(Constants.RENAMED_DIRECTORIES[key] as string);
-				var existsAndAreDifferent = File.Exists(newPath);
+				var existsAndAreDifferent = Directory.Exists(newPath);
 
 				existsAndAreDifferent &=
 					string.Compare(oldPath, newPath,
