@@ -136,7 +136,7 @@ namespace Beamable.Server
 		/// <returns>
 		/// A <see cref="RequestHandlerData"/> object that contains a request context, and a collection of services to execute SDK calls against.
 		/// </returns>
-		[Obsolete("Please use the " + nameof(AssumeNewUser) +" instead")]
+		[Obsolete("Please use the " + nameof(AssumeNewUser) + " instead")]
 		protected RequestHandlerData AssumeUser(long userId, bool requireAdminUser = true)
 		{
 			// require admin privs.
@@ -216,11 +216,11 @@ namespace Beamable.Server
 			_scopeGenerator = null;
 		}
 	}
-	
+
 	public class UserRequestDataHandler : IDisposable
-	                                      #if NETSTANDARD2_1_OR_GREATER
+#if NETSTANDARD2_1_OR_GREATER
 	                                    , IAsyncDisposable
-	                                      #endif
+#endif
 	{
 		public RequestContext Context;
 		public IBeamableRequester Requester;
@@ -242,7 +242,7 @@ namespace Beamable.Server
 			Services = null;
 			Provider = null;
 		}
-		
+
 #if NETSTANDARD2_1_OR_GREATER
 		public async ValueTask DisposeAsync()
 		{
