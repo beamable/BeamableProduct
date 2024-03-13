@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using Serilog;
 using System.CommandLine.Binding;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace cli;
@@ -356,7 +357,6 @@ public class ConfigService
 				existsAndAreDifferent &=
 					string.Compare(oldPath, newPath,
 						RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture) != 0;
-
 				if (existsAndAreDifferent)
 				{
 					throw new CliException($"Config resolution error, there is {oldPath} and {newPath}",
@@ -378,6 +378,7 @@ public class ConfigService
 				existsAndAreDifferent &=
 						string.Compare(oldPath, newPath,
 							RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture) != 0;
+				existsAndAreDifferent &= !HaveSameContent(oldPath, newPath);
 
 				if (existsAndAreDifferent)
 				{
@@ -445,5 +446,13 @@ public class ConfigService
 		if (dict == null || dict.Count == 0) return false;
 
 		return Constants.REQUIRED_CONFIG_KEYS.All(dict.Keys.Contains);
+	}
+
+	static bool HaveSameContent(string pathFirst, string pathSecond)
+	{
+		using var md5 = MD5.Create();
+		var first = md5.ComputeHash(File.ReadAllBytes(pathFirst));
+		var second = md5.ComputeHash(File.ReadAllBytes(pathSecond));
+		return first.SequenceEqual(second);
 	}
 }
