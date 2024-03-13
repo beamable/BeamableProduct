@@ -69,7 +69,7 @@ public class UnityCliGenerator : ICliGenerator
 		return files;
 	}
 
-	public static List<Type> RecurseTypes(IEnumerable<Type> inputTypes)
+	public static List<Type> RecurseTypes(IEnumerable<Type> inputTypes, bool includeTypesFromInvalidAssembly=false)
 	{
 		var output = new HashSet<Type>();
 		var toExplore = new Queue<Type>();
@@ -85,7 +85,20 @@ public class UnityCliGenerator : ICliGenerator
 			if (output.Contains(curr)) continue; // we have already seen this type.
 
 			var assembly = curr.Assembly;
-			if (assembly != validAssembly) continue; // skip this type, it cannot be generated.
+			if (assembly != validAssembly) 
+			{
+				if (!includeTypesFromInvalidAssembly)
+				{
+					continue; // skip this type, it cannot be generated.
+				}
+
+				if (curr.IsPrimitive) continue;
+				if (curr == typeof(string)) continue;
+				if (curr.IsArray) continue;
+				if (curr.IsGenericType && curr.GetGenericTypeDefinition() == typeof(Nullable<>)) continue;
+				if (curr.IsGenericType && curr.GetGenericTypeDefinition() == typeof(List<>)) continue;
+				if (curr.IsGenericType && curr.GetGenericTypeDefinition() == typeof(Dictionary<,>)) continue;
+			}
 			var fields = UnityJsonContractResolver.GetSerializedFields(curr);
 			foreach (var field in fields)
 			{
@@ -97,6 +110,11 @@ public class UnityCliGenerator : ICliGenerator
 					{
 						toExplore.Enqueue(genericArg);
 					}
+				}
+
+				if (field.FieldType.IsArray)
+				{
+					toExplore.Enqueue(field.FieldType.GetElementType());
 				}
 			}
 			output.Add(curr);
@@ -211,8 +229,9 @@ public class UnityCliGenerator : ICliGenerator
 					CodeBinaryOperatorType.IdentityInequality,
 					new CodeDefaultValueExpression(parameter.Type));
 				var conditional = new CodeConditionStatement(valueIsNotNullExpr);
+				var toStringedParameter = new CodeMethodInvokeExpression(parameterReference, nameof(string.ToString));
 				var addStatement =
-					new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), parameterReference);
+					new CodeMethodInvokeExpression(argReference, nameof(List<int>.Add), toStringedParameter);
 				conditional.TrueStatements.Add(addStatement);
 
 				if (parameter.CustomAttributes.Count > 0)

@@ -65,21 +65,22 @@ public class Tests
 			var match = Regex.Match(valueToCheck, KEBAB_CASE_PATTERN);
 			Assert.AreEqual(match.Success, true, $"{valueToCheck} does not match kebab case naming.");
 		}
-		var commandTypes = Assembly.GetAssembly(typeof(App))!.GetTypes()
-			.Where(myType => myType.IsClass && !myType.IsAbstract && myType.IsSubclassOf(typeof(Command)));
-		var commandsList = new List<Command>();
+		// var commandTypes = Assembly.GetAssembly(typeof(App))!.GetTypes()
+		// 	.Where(myType => myType.IsClass && !myType.IsAbstract && myType.IsSubclassOf(typeof(Command)));
+		// var commandsList = new List<Command>();
 		var app = new App();
 		app.Configure();
 		app.Build();
+		var commandsList = app.InstantiateAllCommands();
 
-		foreach (Type type in commandTypes)
-		{
-			var command = app.CommandProvider.GetService(type);
-			if (command != null)
-			{
-				commandsList.Add((Command)command);
-			}
-		}
+		// foreach (Type type in commandTypes)
+		// {
+		// 	var command = app.CommandProvider.GetService(type);
+		// 	if (command != null)
+		// 	{
+		// 		commandsList.Add((Command)command);
+		// 	}
+		// }
 
 		foreach (var command in commandsList)
 		{

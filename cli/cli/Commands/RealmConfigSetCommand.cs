@@ -13,7 +13,7 @@ public class RealmConfigSetCommandArgs : CommandArgs
 	public List<string> keyValuePairs = new();
 }
 
-public class RealmConfigSetCommand : AtomicCommand<RealmConfigSetCommandArgs, RealmConfigData>
+public class RealmConfigSetCommand : AtomicCommand<RealmConfigSetCommandArgs, RealmConfigOutput>
 {
 	public RealmConfigSetCommand() : base("set", "Set realm config values") { }
 
@@ -22,7 +22,7 @@ public class RealmConfigSetCommand : AtomicCommand<RealmConfigSetCommandArgs, Re
 		AddOption(new RealmConfigKeyValueOption(), (args, b) => args.keyValuePairs = b.ToList());
 	}
 
-	public override async Task<RealmConfigData> GetResult(RealmConfigSetCommandArgs args)
+	public override async Task<RealmConfigOutput> GetResult(RealmConfigSetCommandArgs args)
 	{
 		try
 		{
@@ -36,7 +36,10 @@ public class RealmConfigSetCommand : AtomicCommand<RealmConfigSetCommandArgs, Re
 
 			currentConfig = await GetRealmConfig(args);
 			LogResult(currentConfig.ConvertToView());
-			return currentConfig;
+			return new RealmConfigOutput
+			{
+				Config = currentConfig.Config
+			};
 		}
 		catch (ArgumentException e)
 		{
