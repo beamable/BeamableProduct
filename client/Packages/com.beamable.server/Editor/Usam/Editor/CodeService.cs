@@ -609,35 +609,35 @@ namespace Beamable.Server.Editor.Usam
 		private async Promise CheckForDeletedServices()
 		{
 			bool foundDeletedService = false;
-			
+
 			LogVerbose("Checking for deleted microservices");
 			for (int i = _services.Count - 1; i > -1; i--)
 			{
 				var name = _services[i].name;
 				var sourcePath = $"{StandaloneMicroservicesPath}{name}/";
 				var signpostPath = $"{BEAMABLE_PATH}{name}.beamservice";
-				
+
 				if (File.Exists(signpostPath))
 				{
 					if (!Directory.Exists(sourcePath))
 					{
 						LogVerbose($"The file {name}.beamservice exists but there is no source code for it.");
 					}
-					
+
 					continue;
 				}
 
 				foundDeletedService = true;
 				_services.RemoveAt(i);
 			}
-			
+
 			LogVerbose("Checking for deleted storages");
 			for (int i = _storages.Count - 1; i > -1; i--)
 			{
 				var name = _storages[i].name;
 				var sourcePath = $"{StandaloneMicroservicesPath}{name}/";
 				var signpostPath = $"{BEAMABLE_PATH}{name}.beamstorage";
-				
+
 				if (File.Exists(signpostPath))
 				{
 					if (!Directory.Exists(sourcePath))
@@ -646,7 +646,7 @@ namespace Beamable.Server.Editor.Usam
 					}
 					continue;
 				}
-				
+
 				foundDeletedService = true;
 				_storages.RemoveAt(i);
 			}
