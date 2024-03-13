@@ -24,6 +24,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Serilog;
 using Serilog.Core;
+using Serilog.Enrichers.Sensitive;
 using Serilog.Events;
 using Spectre.Console;
 using Spectre.Console.Rendering;
@@ -74,7 +75,14 @@ public class App
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
 		configureLogger ??= config =>
 		{
-			var baseConfig = config.MinimumLevel.Verbose()
+			var baseConfig = config
+				.MinimumLevel.Verbose()
+				.Enrich.WithSensitiveDataMasking(options =>
+				{
+					options.MaskingOperators.Clear();
+					options.MaskingOperators.Add(new TokenMasker());
+					options.MaskValue = "***";
+				})
 				.WriteTo.Logger(subConfig =>
 					subConfig
 						.WriteTo.BeamAnsi("{Message:lj}{NewLine}{Exception}")
@@ -251,7 +259,7 @@ public class App
 		Commands.AddRootCommand<VersionCommand, VersionCommandArgs>();
 		Commands.AddSubCommandWithHandler<VersionListCommand, VersionListCommandArgs, VersionCommand>();
 		Commands.AddSubCommandWithHandler<VersionInstallCommand, VersionInstallCommandArgs, VersionCommand>();
-
+		Commands.AddSubCommandWithHandler<ConstructVersionCommand, ConstructVersionCommandArgs, VersionCommand>();
 		// org commands
 		Commands.AddRootCommand<OrganizationCommand>();
 		Commands.AddSubCommand<RegisterCommand, RegisterCommandArgs, OrganizationCommand>();
@@ -395,8 +403,6 @@ public class App
 		commandLineBuilder.UseHelpBuilder(context => helpBuilder);
 		commandLineBuilder.UseExceptionHandler((ex, context) =>
 		{
-
-
 			switch (ex)
 			{
 				case RequesterException requesterException:
@@ -421,6 +427,7 @@ public class App
 						}
 
 						report.Render(AnsiConsole.Console);
+						Console.Error.WriteLine(string.Empty);
 					}
 					else
 					{
@@ -449,7 +456,7 @@ public class App
 			{
 				Log.CloseAndFlush();
 				File.AppendAllText(logConfigData.logFilePath, ex.ToString());
-				Console.Error.WriteLine("Logs at\n  " + logConfigData.logFilePath);
+				Console.Error.WriteLine("\nLogs at\n  " + logConfigData.logFilePath);
 			}
 		});
 		return commandLineBuilder.Build();

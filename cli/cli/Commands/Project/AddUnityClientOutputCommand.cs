@@ -30,16 +30,19 @@ public class AddUnityClientOutputCommand : AppCommand<AddProjectClientOutputComm
 		var startingDir = args.path;
 		var directory = args.path;
 
-		var expectedUnityParentDirectories = new[]
+		if (!unityProjectClient.IsValidProjectClientDirectory(ref directory) && !args.quiet)
 		{
-			".", // maybe the unity project a child of the current folder...
-			".." // or maybe the unity project is a sibling of the current folder...
-		}.Select(p => Path.Combine(startingDir, p)).ToArray();
+			var expectedUnityParentDirectories = new[]
+			{
+				".", // maybe the unity project a child of the current folder...
+				".." // or maybe the unity project is a sibling of the current folder...
+			}.Select(p => Path.Combine(startingDir, p)).ToArray();
 
-		var status = unityProjectClient.SuggestProjectClientTypeCandidates(expectedUnityParentDirectories, args);
-		if (status) return Task.CompletedTask;
+			var status = unityProjectClient.SuggestProjectClientTypeCandidates(expectedUnityParentDirectories, args);
+			if (status) return Task.CompletedTask;
 
-		unityProjectClient.FindProjectClientInDirectory(workingDir, ref directory);
+			unityProjectClient.FindProjectClientInDirectory(workingDir, ref directory);
+		}
 
 		directory = Path.GetRelativePath(args.ConfigService.BaseDirectory, directory);
 

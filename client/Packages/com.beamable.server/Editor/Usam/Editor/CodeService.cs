@@ -225,6 +225,7 @@ namespace Beamable.Server.Editor.Usam
 		public async Promise RefreshServices()
 		{
 			ServiceDefinitions.Clear();
+			await CheckForDeletedServices();
 
 			try
 			{
@@ -605,12 +606,6 @@ namespace Beamable.Server.Editor.Usam
 			//check how many services exist locally
 			int servicesCount = definitions.Count(definition => !string.IsNullOrEmpty(definition.ServiceInfo.projectPath));
 
-			if (servicesCount == 0)
-			{
-				LogVerbose("There are no services to write to a manifest!");
-				return;
-			}
-
 			var services = new List<string>();
 			var storagesPath = new List<string>();
 			var storagesNames = new List<string>();
@@ -660,16 +655,9 @@ namespace Beamable.Server.Editor.Usam
 		{
 			var args = new ServicesSetLocalManifestArgs();
 
-			if (servicesFiles.Count == 0 || storagesFiles.Count == 0)
-			{
-				LogVerbose("There are no services or storages to write to a manifest!");
-				return;
-			}
-
 			var services = new List<string>();
 			var storagesPaths = new List<string>();
 			var storagesNames = new List<string>();
-			var disabledServices = new List<string>();
 			// TODO: add some validation to check that these files actually make sense
 
 			for (var i = 0; i < servicesFiles.Count; i++)
@@ -686,7 +674,6 @@ namespace Beamable.Server.Editor.Usam
 			if (services.Count > 0) args.services = services.ToArray();
 			if (storagesPaths.Count > 0) args.storagePaths = storagesPaths.ToArray();
 			if (storagesNames.Count > 0) args.storageNames = storagesNames.ToArray();
-			if (disabledServices.Count > 0) args.disabledServices = disabledServices.ToArray();
 
 			var command = cli.ServicesSetLocalManifest(args);
 			await command.Run().Error(LogExceptionVerbose);
@@ -718,6 +705,57 @@ namespace Beamable.Server.Editor.Usam
 			}
 
 			return output;
+		}
+
+		private async Promise CheckForDeletedServices()
+		{
+			bool foundDeletedService = false;
+
+			LogVerbose("Checking for deleted microservices");
+			for (int i = _services.Count - 1; i > -1; i--)
+			{
+				var name = _services[i].name;
+				var sourcePath = $"{StandaloneMicroservicesPath}{name}/";
+				var signpostPath = $"{BEAMABLE_PATH}{name}.beamservice";
+
+				if (File.Exists(signpostPath))
+				{
+					if (!Directory.Exists(sourcePath))
+					{
+						LogVerbose($"The file {name}.beamservice exists but there is no source code for it.");
+					}
+
+					continue;
+				}
+
+				foundDeletedService = true;
+				_services.RemoveAt(i);
+			}
+
+			LogVerbose("Checking for deleted storages");
+			for (int i = _storages.Count - 1; i > -1; i--)
+			{
+				var name = _storages[i].name;
+				var sourcePath = $"{StandaloneMicroservicesPath}{name}/";
+				var signpostPath = $"{BEAMABLE_PATH}{name}.beamstorage";
+
+				if (File.Exists(signpostPath))
+				{
+					if (!Directory.Exists(sourcePath))
+					{
+						LogVerbose($"The file {name}.beamstorage exists but there is no source code for it.");
+					}
+					continue;
+				}
+
+				foundDeletedService = true;
+				_storages.RemoveAt(i);
+			}
+
+			if (foundDeletedService)
+			{
+				await SetManifest(_cli, _services, _storages);
+			}
 		}
 
 		private async Promise CreateStorage(string storageName, string outputPath, List<IBeamoServiceDefinition> additionalReferences)
