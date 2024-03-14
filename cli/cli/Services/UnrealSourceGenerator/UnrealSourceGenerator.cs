@@ -1915,11 +1915,11 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		/// </summary>
 		public bool ContainsPolymorphicType() => AsStr.Contains(UNREAL_U_POLY_WRAPPER_PREFIX);
 
-		public bool ContainsWrapperContainer() => ContainsWrapperArray()|| ContainsWrapperMap();
+		public bool ContainsWrapperContainer() => ContainsWrapperArray() || ContainsWrapperMap();
 		public bool ContainsWrapperMap() => AsStr.Contains(UNREAL_WRAPPER_MAP);
 		public bool ContainsWrapperArray() => AsStr.Contains(UNREAL_WRAPPER_ARRAY);
 
-		public bool IsWrapperContainer() => IsWrapperMap()||IsWrapperArray();
+		public bool IsWrapperContainer() => IsWrapperMap() || IsWrapperArray();
 		public bool IsWrapperMap() => AsStr.StartsWith(UNREAL_WRAPPER_MAP);
 		public bool IsWrapperArray() => AsStr.StartsWith(UNREAL_WRAPPER_ARRAY);
 		public bool IsBeamNode() => AsStr.StartsWith(UNREAL_U_BEAM_NODE_PREFIX);
@@ -2052,7 +2052,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					{
 						var val = defaults.Default as OpenApiString;
 						if (context.PolymorphicWrappedSchemaExpectedTypeValues.TryGetValue(wrappedUnrealType, out var existing) &&
-						    (existing != val?.Value && existing != openApiSchema.Reference.Id.Sanitize()))
+							(existing != val?.Value && existing != openApiSchema.Reference.Id.Sanitize()))
 							throw new Exception(
 								"Found a wrapped type that is currently used in two different ways. We don't support that cause it doesn't make a lot of sense. You should never see this.");
 
