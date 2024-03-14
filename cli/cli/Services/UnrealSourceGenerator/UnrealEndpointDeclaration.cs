@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using static cli.Unreal.UnrealSourceGenerator;
 
 namespace cli.Unreal;
 
@@ -7,7 +8,8 @@ public struct UnrealEndpointDeclaration
 	public string SelfUnrealType;
 	public string GlobalNamespacedEndpointName;
 	public string SubsystemNamespacedEndpointName;
-	public string IncludeStatementsUnrealTypes;
+	public string RequestTypeIncludeStatements;
+	public string ResponseTypeIncludeStatement;
 
 	public bool IsAuth;
 
@@ -20,12 +22,10 @@ public struct UnrealEndpointDeclaration
 
 
 	public List<UnrealPropertyDeclaration> RequestBodyParameters;
-	public string ResponseBodyUnrealType;
-	public string ResponseBodyNamespacedType;
+	public UnrealType ResponseBodyUnrealType;
+	public NamespacedType ResponseBodyNamespacedType;
 	public string ResponseBodyNonPtrUnrealType;
 
-
-	private string _responseBodyIncludeStatement;
 
 	private string _capitalizedEndpointVerb;
 	private string _buildBodyImpl;
@@ -37,14 +37,14 @@ public struct UnrealEndpointDeclaration
 	private string _makeBodyImpl;
 
 
-	public List<string> GetAllUnrealTypes()
+	public List<UnrealType> GetAllUnrealTypes()
 	{
 		return RequestPathParameters
 			.Union(RequestQueryParameters)
 			.Union(RequestBodyParameters)
 			.DistinctBy(p => p.PropertyUnrealType)
 			.Select(p => p.PropertyUnrealType)
-			.Union(new[] { ResponseBodyUnrealType }.Where(t => t != null)).ToList();
+			.Union(new[] { ResponseBodyUnrealType }.Where(t => t.AsStr != null)).ToList();
 	}
 
 	public void IntoProcessMap(Dictionary<string, string> helperDict, List<UnrealJsonSerializableTypeDeclaration> serializableTypes = null)
@@ -72,9 +72,6 @@ public struct UnrealEndpointDeclaration
 			helperDict.Clear();
 			return propertyDeclaration;
 		}));
-
-		// Handle getting the include statement for the response body
-		_responseBodyIncludeStatement = UnrealSourceGenerator.GetIncludeStatementForUnrealType(ResponseBodyUnrealType);
 
 		// Handle Capitalizing the Verb so it matches UE's expected value
 		_capitalizedEndpointVerb = EndpointVerb.ToUpper();
@@ -104,21 +101,21 @@ public struct UnrealEndpointDeclaration
 		// Handle Make____Request implementation. This one is so that the UX around creating the Request UObject in Blueprint is improved.
 		if (serializableTypes != null)
 		{
-			string GetBodyParamName(List<(string ueType, string propertyName, string paramName)> valueTuples, UnrealPropertyDeclaration bodyParamDeclaration) =>
+			string GetBodyParamName(List<(UnrealType ueType, string propertyName, string paramName)> valueTuples, UnrealPropertyDeclaration bodyParamDeclaration) =>
 				valueTuples.Any(tuple => tuple.paramName == GetNonBodyParamName(bodyParamDeclaration)) ? $"Body_{bodyParamDeclaration.PropertyName}" : $"_{bodyParamDeclaration.PropertyName}";
 
 			string GetNonBodyParamName(UnrealPropertyDeclaration bodyParamDeclaration) => $"_{bodyParamDeclaration.PropertyName}";
 
-			string BuildNonBodyParamDeclarationImpl((string ueType, string propertyName, string paramName) nonBodyTypeDecl)
+			string BuildNonBodyParamDeclarationImpl((UnrealType ueType, string propertyName, string paramName) nonBodyTypeDecl)
 			{
 				var (ueType, _, paramName) = nonBodyTypeDecl;
 				return $"{ueType} {paramName}";
 			}
 
 
-			IEnumerable<string> BuildBodyParamDeclarationsImpl(UnrealPropertyDeclaration bodyParamDecl, List<(string ueType, string propertyName, string paramName)> list)
+			IEnumerable<string> BuildBodyParamDeclarationsImpl(UnrealPropertyDeclaration bodyParamDecl, List<(UnrealType ueType, string propertyName, string paramName)> list)
 			{
-				if (bodyParamDecl.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
+				if (bodyParamDecl.PropertyUnrealType.IsUnrealUObject())
 				{
 					var serializableType = serializableTypes.First(t => t.NamespacedTypeName == bodyParamDecl.PropertyNamespacedType);
 					return serializableType.UPropertyDeclarations.Select(tp => $"{tp.PropertyUnrealType} {GetBodyParamName(list, tp)}");
@@ -127,13 +124,13 @@ public struct UnrealEndpointDeclaration
 				return new[] { $"{bodyParamDecl.PropertyUnrealType} {GetBodyParamName(list, bodyParamDecl)}" };
 			}
 
-			IEnumerable<string> BuildBodyAdvancedDisplayImpl(UnrealPropertyDeclaration bodyParamDeclaration, List<(string ueType, string propertyName, string paramName)> nonBodyParamsDeclarations1)
+			IEnumerable<string> BuildBodyAdvancedDisplayImpl(UnrealPropertyDeclaration bodyParamDeclaration, List<(UnrealType ueType, string propertyName, string paramName)> nonBodyParamsDeclarations1)
 			{
-				if (bodyParamDeclaration.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
+				if (bodyParamDeclaration.PropertyUnrealType.IsUnrealUObject())
 				{
 					var serializableType = serializableTypes.First(t => t.NamespacedTypeName == bodyParamDeclaration.PropertyNamespacedType);
 					return serializableType.UPropertyDeclarations
-						.Where(tp => tp.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_OPTIONAL))
+						.Where(tp => tp.PropertyUnrealType.IsOptional())
 						.Select(tp => $"{GetBodyParamName(nonBodyParamsDeclarations1, tp)}");
 				}
 
@@ -141,7 +138,7 @@ public struct UnrealEndpointDeclaration
 			}
 
 
-			List<(string ueType, string propertyName, string paramName)> nonBodyParamsDeclarations = new List<(string ueType, string propertyName, string paramName)>();
+			List<(UnrealType ueType, string propertyName, string paramName)> nonBodyParamsDeclarations = new List<(UnrealType ueType, string propertyName, string paramName)>();
 			nonBodyParamsDeclarations.AddRange(RequestPathParameters.Select(p => (p.PropertyUnrealType, p.PropertyName, GetNonBodyParamName(p))));
 			nonBodyParamsDeclarations.AddRange(RequestQueryParameters.Select(p => (p.PropertyUnrealType, p.PropertyName, GetNonBodyParamName(p))));
 
@@ -166,7 +163,7 @@ public struct UnrealEndpointDeclaration
 
 			// Handle Make Annotations
 			{
-				var nonBodyParams = nonBodyParamsDeclarations.Where(p => p.ueType.StartsWith(UnrealSourceGenerator.UNREAL_OPTIONAL)).Select(p => p.paramName).ToList();
+				var nonBodyParams = nonBodyParamsDeclarations.Where(p => p.ueType.IsOptional()).Select(p => p.paramName).ToList();
 				stringBuilder.Append(string.Join(",", nonBodyParams));
 				stringBuilder.Append(nonBodyParams.Count > 0 ? "," : "");
 
@@ -189,18 +186,18 @@ public struct UnrealEndpointDeclaration
 				// Add implementation for body param fields. We make a new object of the body's type
 				var bodyParams = RequestBodyParameters.Select(p =>
 				{
-					if (p.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
+					if (p.PropertyUnrealType.IsUnrealUObject())
 					{
 						var serializableType = serializableTypes.First(t => t.NamespacedTypeName == p.PropertyNamespacedType);
-						var code = $"Req->{p.PropertyName} = NewObject<{UnrealSourceGenerator.RemovePtrFromUnrealTypeIfAny(p.PropertyUnrealType)}>(Req);\n\t";
+						var code = $"Req->{p.PropertyName} = NewObject<{RemovePtrFromUnrealTypeIfAny(p.PropertyUnrealType)}>(Req);\n\t";
 
 						code += string.Join("\n\t", serializableType.UPropertyDeclarations.Select(tp =>
 						{
-							if (tp.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
+							if (tp.PropertyUnrealType.IsUnrealUObject())
 							{
 								return $"// Assumes the object is constructed and have the new request take ownership of the memory for it\n\t" +
-									   $"Req->{p.PropertyName}->{tp.PropertyName} = {GetBodyParamName(nonBodyParamsDeclarations, tp)};\n\t" +
-									   $"Req->{p.PropertyName}->{tp.PropertyName}->Rename(nullptr, Req);";
+								       $"Req->{p.PropertyName}->{tp.PropertyName} = {GetBodyParamName(nonBodyParamsDeclarations, tp)};\n\t" +
+								       $"Req->{p.PropertyName}->{tp.PropertyName}->Rename(nullptr, Req);";
 							}
 
 							return $"Req->{p.PropertyName}->{tp.PropertyName} = {GetBodyParamName(nonBodyParamsDeclarations, tp)};";
@@ -219,21 +216,21 @@ public struct UnrealEndpointDeclaration
 			}
 		}
 
-		helperDict.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
-		helperDict.Add(nameof(UnrealSourceGenerator.blueprintExportMacro), UnrealSourceGenerator.blueprintExportMacro);
-		helperDict.Add(nameof(UnrealSourceGenerator.headerFileOutputPath), UnrealSourceGenerator.headerFileOutputPath);
-		helperDict.Add(nameof(UnrealSourceGenerator.blueprintHeaderFileOutputPath), UnrealSourceGenerator.blueprintHeaderFileOutputPath);
+		helperDict.Add(nameof(exportMacro), exportMacro);
+		helperDict.Add(nameof(blueprintExportMacro), blueprintExportMacro);
+		helperDict.Add(nameof(headerFileOutputPath), headerFileOutputPath);
+		helperDict.Add(nameof(blueprintHeaderFileOutputPath), blueprintHeaderFileOutputPath);
 
 		helperDict.Add(nameof(GlobalNamespacedEndpointName), GlobalNamespacedEndpointName);
 		helperDict.Add(nameof(SubsystemNamespacedEndpointName), SubsystemNamespacedEndpointName);
 
-		helperDict.Add(nameof(_responseBodyIncludeStatement), _responseBodyIncludeStatement);
+		helperDict.Add(nameof(ResponseTypeIncludeStatement), ResponseTypeIncludeStatement);
 
 		helperDict.Add(nameof(NamespacedOwnerServiceName), NamespacedOwnerServiceName);
 		helperDict.Add(nameof(EndpointVerb), EndpointVerb);
 		helperDict.Add(nameof(EndpointName), EndpointName);
 		helperDict.Add(nameof(_capitalizedEndpointVerb), _capitalizedEndpointVerb);
-		helperDict.Add(nameof(IncludeStatementsUnrealTypes), IncludeStatementsUnrealTypes);
+		helperDict.Add(nameof(RequestTypeIncludeStatements), RequestTypeIncludeStatements);
 
 		helperDict.Add(nameof(RequestPathParameters), pathParameters);
 		helperDict.Add(nameof(RequestQueryParameters), queryParameters);
@@ -254,35 +251,37 @@ public struct UnrealEndpointDeclaration
 	private static string BuildReplacePathParamsImpl(UnrealPropertyDeclaration routeParameterDeclaration)
 	{
 		// Based on the unreal property we may need to cast it to a string before appending it.
-		switch (routeParameterDeclaration.PropertyUnrealType)
+		if (routeParameterDeclaration.PropertyUnrealType.IsUnrealString())
 		{
-			case UnrealSourceGenerator.UNREAL_STRING:
-				return $"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), *{routeParameterDeclaration.PropertyName});";
-			case UnrealSourceGenerator.UNREAL_BYTE or UnrealSourceGenerator.UNREAL_SHORT or UnrealSourceGenerator.UNREAL_INT or UnrealSourceGenerator.UNREAL_LONG:
-				return $"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), *FString::FromInt({routeParameterDeclaration.PropertyName}));";
-
-			default:
-			{
-				// We handle the enum case that we can't pattern match here
-				if (routeParameterDeclaration.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_ENUM_PREFIX))
-				{
-					return
-						$"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), " +
-						$"*U{routeParameterDeclaration.PropertyNamespacedType}Library::{routeParameterDeclaration.PropertyNamespacedType}ToSerializableName({routeParameterDeclaration.PropertyName}));";
-				}
-				else if (UnrealSourceGenerator.UNREAL_ALL_SEMTYPES.Contains(routeParameterDeclaration.PropertyUnrealType))
-				{
-					return $"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), *static_cast<FString>({routeParameterDeclaration.PropertyName}));";
-				}
-				else if (UnrealSourceGenerator.UNREAL_GUID.Contains(routeParameterDeclaration.PropertyUnrealType))
-				{
-					return $"Route = Route.Replace(TEXT(\"{{id}}\"), *Id.ToString(EGuidFormats::DigitsWithHyphensLower));";
-				}
-
-				// We fail the gen loudly if we ever see a type that doesn't match this. It should be impossible.
-				throw new NotImplementedException("No definition for how to embed a path parameter of this type into the route string. Please add a conditional to handle this case.");
-			}
+			return $"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), *{routeParameterDeclaration.PropertyName});";
 		}
+
+		if (routeParameterDeclaration.PropertyUnrealType.IsUnrealByte() ||
+		    routeParameterDeclaration.PropertyUnrealType.IsUnrealShort() ||
+		    routeParameterDeclaration.PropertyUnrealType.IsUnrealInt() ||
+		    routeParameterDeclaration.PropertyUnrealType.IsUnrealLong())
+		{
+			return $"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), *FString::FromInt({routeParameterDeclaration.PropertyName}));";
+		}
+
+		// We handle the enum case that we can't pattern match here
+		if (routeParameterDeclaration.PropertyUnrealType.IsUnrealEnum())
+		{
+			return
+				$"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), " +
+				$"*U{routeParameterDeclaration.PropertyNamespacedType}Library::{routeParameterDeclaration.PropertyNamespacedType}ToSerializableName({routeParameterDeclaration.PropertyName}));";
+		}
+		else if (routeParameterDeclaration.PropertyUnrealType.IsAnySemanticType())
+		{
+			return $"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), *static_cast<FString>({routeParameterDeclaration.PropertyName}));";
+		}
+		else if (routeParameterDeclaration.PropertyUnrealType.IsUnrealGuid())
+		{
+			return $"Route = Route.Replace(TEXT(\"{{id}}\"), *Id.ToString(EGuidFormats::DigitsWithHyphensLower));";
+		}
+
+		// We fail the gen loudly if we ever see a type that doesn't match this. It should be impossible.
+		throw new NotImplementedException("No definition for how to embed a path parameter of this type into the route string. Please add a conditional to handle this case.");
 	}
 
 	private static StringBuilder BuildAppendQueryParamImpl(UnrealPropertyDeclaration queryParameterDeclaration)
@@ -292,7 +291,7 @@ public struct UnrealEndpointDeclaration
 		var q = queryParameterDeclaration;
 
 		// Checks if it is an optional type since we only add optionals if they are set.
-		var isOptional = q.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_OPTIONAL);
+		var isOptional = q.PropertyUnrealType.IsOptional();
 
 		// Open the if in case it's an optional
 		if (isOptional)
@@ -302,54 +301,55 @@ public struct UnrealEndpointDeclaration
 		queryAppend.Append("bIsFirstQueryParam ? QueryParams.Append(TEXT(\"?\")) : QueryParams.Append(TEXT(\"&\"));\n\t");
 
 		// Pattern match with the non-optional type name so that we know if we need to cast the underlying value or not.
-		switch (q.NonOptionalTypeName)
+		if (q.NonOptionalTypeName.IsUnrealString() && isOptional)
 		{
-			case UnrealSourceGenerator.UNREAL_STRING when isOptional:
-				queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *{q.PropertyName}.Val);\n\t");
-				break;
-			case UnrealSourceGenerator.UNREAL_STRING:
-				queryAppend.Append($"QueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *{q.PropertyName});\n\t");
-				break;
-			case UnrealSourceGenerator.UNREAL_BYTE or UnrealSourceGenerator.UNREAL_SHORT or UnrealSourceGenerator.UNREAL_INT or UnrealSourceGenerator.UNREAL_LONG when isOptional:
-				queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *FString::FromInt({q.PropertyName}.Val));\n\t");
-				break;
-			case UnrealSourceGenerator.UNREAL_BYTE or UnrealSourceGenerator.UNREAL_SHORT or UnrealSourceGenerator.UNREAL_INT or UnrealSourceGenerator.UNREAL_LONG:
-				queryAppend.Append($"QueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *FString::FromInt({q.PropertyName}));\n\t");
-				break;
-			case UnrealSourceGenerator.UNREAL_BOOL when isOptional:
-				queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), {q.PropertyName}.Val ? TEXT(\"true\") : TEXT(\"false\"));\n\t");
-				break;
-			case UnrealSourceGenerator.UNREAL_BOOL:
-				queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), {q.PropertyName} ? TEXT(\"true\") : TEXT(\"false\"));\n\t");
-				break;
-			default:
+			queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *{q.PropertyName}.Val);\n\t");
+		}
+		else if (q.NonOptionalTypeName .IsUnrealString())
+		{
+			queryAppend.Append($"QueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *{q.PropertyName});\n\t");
+		}
+		else if ((q.NonOptionalTypeName.IsUnrealByte() || q.NonOptionalTypeName.IsUnrealShort() || q.NonOptionalTypeName.IsUnrealInt() || q.NonOptionalTypeName.IsUnrealLong()) && isOptional)
+		{
+			queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *FString::FromInt({q.PropertyName}.Val));\n\t");
+		}
+		else if ((q.NonOptionalTypeName.IsUnrealByte() || q.NonOptionalTypeName.IsUnrealShort() || q.NonOptionalTypeName.IsUnrealInt() || q.NonOptionalTypeName.IsUnrealLong()))
+		{
+			queryAppend.Append($"QueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *FString::FromInt({q.PropertyName}));\n\t");
+		}
+		else if (q.NonOptionalTypeName.IsUnrealBool() && isOptional)
+		{
+			queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), {q.PropertyName}.Val ? TEXT(\"true\") : TEXT(\"false\"));\n\t");
+		}
+		else if (q.NonOptionalTypeName.IsUnrealBool())
+		{
+			queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), {q.PropertyName} ? TEXT(\"true\") : TEXT(\"false\"));\n\t");
+		}
+		else
+		{
+			// Handle the enum case that we can't pattern match with
+			if (q.NonOptionalTypeName.IsUnrealEnum())
 			{
-				// Handle the enum case that we can't pattern match with
-				if (q.NonOptionalTypeName.StartsWith(UnrealSourceGenerator.UNREAL_U_ENUM_PREFIX))
-				{
-					if (isOptional)
-						queryAppend.Append(
-							$"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *U{q.PropertyNamespacedType}Library::{q.PropertyNamespacedType}ToSerializationName({q.PropertyName}.Val));\n\t");
-					else
-						queryAppend.Append(
-							$"QueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *U{q.PropertyNamespacedType}Library::{q.PropertyNamespacedType}ToSerializationName({q.PropertyName}));\n\t");
-				}
-				else if (UnrealSourceGenerator.UNREAL_ALL_SEMTYPES.Contains(q.NonOptionalTypeName))
-				{
-					if (isOptional)
-						queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *static_cast<FString>({q.PropertyName}.Val));\n\t");
-					else
-						queryAppend.Append($"QueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *static_cast<FString>({q.PropertyName}));\n\t");
-				}
-				// https://disruptorbeam.atlassian.net/browse/PLAT-4672
-				// TODO This is a known issue --- so we are ignoring this case for now. Once this gets fixed, remove this thing.
-				else if (!q.NonOptionalTypeName.StartsWith(UnrealSourceGenerator.UNREAL_MAP) && !q.NonOptionalTypeName.StartsWith(UnrealSourceGenerator.UNREAL_ARRAY))
-				{
-					throw new NotImplementedException(
-						$"No definition for how to embed a query parameter of this type {q.NonOptionalTypeName} {q.PropertyName} into the route string. Please add a conditional to handle this case.");
-				}
-
-				break;
+				if (isOptional)
+					queryAppend.Append(
+						$"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *U{q.PropertyNamespacedType}Library::{q.PropertyNamespacedType}ToSerializationName({q.PropertyName}.Val));\n\t");
+				else
+					queryAppend.Append(
+						$"QueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *U{q.PropertyNamespacedType}Library::{q.PropertyNamespacedType}ToSerializationName({q.PropertyName}));\n\t");
+			}
+			else if (q.NonOptionalTypeName.IsAnySemanticType())
+			{
+				if (isOptional)
+					queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *static_cast<FString>({q.PropertyName}.Val));\n\t");
+				else
+					queryAppend.Append($"QueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *static_cast<FString>({q.PropertyName}));\n\t");
+			}
+			// https://disruptorbeam.atlassian.net/browse/PLAT-4672
+			// TODO This is a known issue --- so we are ignoring this case for now. Once this gets fixed, remove this thing.
+			else if (!q.NonOptionalTypeName.IsUnrealMap() && !q.NonOptionalTypeName.IsUnrealArray())
+			{
+				throw new NotImplementedException(
+					$"No definition for how to embed a query parameter of this type {q.NonOptionalTypeName} {q.PropertyName} into the route string. Please add a conditional to handle this case.");
 			}
 		}
 
@@ -376,12 +376,12 @@ public struct UnrealEndpointDeclaration
 #include ""BeamBackend/BeamErrorResponse.h""
 #include ""BeamBackend/BeamFullResponse.h""
 
-₢{nameof(IncludeStatementsUnrealTypes)}₢
+₢{nameof(RequestTypeIncludeStatements)}₢
 
 #include ""₢{nameof(GlobalNamespacedEndpointName)}₢Request.generated.h""
 
 UCLASS(BlueprintType)
-class ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ U₢{nameof(GlobalNamespacedEndpointName)}₢Request : public UObject, public IBeamBaseRequestInterface
+class ₢{nameof(exportMacro)}₢ U₢{nameof(GlobalNamespacedEndpointName)}₢Request : public UObject, public IBeamBaseRequestInterface
 {{
 	GENERATED_BODY()
 	
@@ -421,7 +421,7 @@ DECLARE_DELEGATE_OneParam(FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullRes
 ";
 
 	public const string U_ENDPOINT_CPP = $@"
-#include ""₢{nameof(UnrealSourceGenerator.headerFileOutputPath)}₢AutoGen/SubSystems/₢{nameof(NamespacedOwnerServiceName)}₢/₢{nameof(GlobalNamespacedEndpointName)}₢Request.h""
+#include ""₢{nameof(headerFileOutputPath)}₢AutoGen/SubSystems/₢{nameof(NamespacedOwnerServiceName)}₢/₢{nameof(GlobalNamespacedEndpointName)}₢Request.h""
 
 void U₢{nameof(GlobalNamespacedEndpointName)}₢Request::BuildVerb(FString& VerbString) const
 {{
@@ -824,7 +824,7 @@ void UBeam₢{nameof(NamespacedOwnerServiceName)}₢Api::₢{nameof(SubsystemNam
 * This is the code-gen'ed declaration for the Beam Flow's Endpoint: ₢{nameof(EndpointVerb)}₢ ₢{nameof(EndpointName)}₢  of the ₢{nameof(NamespacedOwnerServiceName)}₢ Service. 
 */
 UCLASS(meta=(BeamFlow))
-class ₢{nameof(UnrealSourceGenerator.blueprintExportMacro)}₢ UK2BeamNode_ApiRequest_₢{nameof(GlobalNamespacedEndpointName)}₢ : public UK2BeamNode_ApiRequest
+class ₢{nameof(blueprintExportMacro)}₢ UK2BeamNode_ApiRequest_₢{nameof(GlobalNamespacedEndpointName)}₢ : public UK2BeamNode_ApiRequest
 {{
 	GENERATED_BODY()
 
@@ -847,13 +847,13 @@ public:
 
 	public const string BEAM_FLOW_BP_NODE_CPP = $@"
 
-#include ""₢{nameof(UnrealSourceGenerator.blueprintHeaderFileOutputPath)}₢AutoGen/₢{nameof(NamespacedOwnerServiceName)}₢/K2BeamNode_ApiRequest_₢{nameof(GlobalNamespacedEndpointName)}₢.h""
+#include ""₢{nameof(blueprintHeaderFileOutputPath)}₢AutoGen/₢{nameof(NamespacedOwnerServiceName)}₢/K2BeamNode_ApiRequest_₢{nameof(GlobalNamespacedEndpointName)}₢.h""
 
 #include ""BeamK2.h""
 
-#include ""₢{nameof(UnrealSourceGenerator.headerFileOutputPath)}₢AutoGen/SubSystems/Beam₢{nameof(NamespacedOwnerServiceName)}₢Api.h""
-#include ""₢{nameof(UnrealSourceGenerator.headerFileOutputPath)}₢AutoGen/SubSystems/₢{nameof(NamespacedOwnerServiceName)}₢/₢{nameof(GlobalNamespacedEndpointName)}₢Request.h""
-₢{nameof(_responseBodyIncludeStatement)}₢
+#include ""₢{nameof(headerFileOutputPath)}₢AutoGen/SubSystems/Beam₢{nameof(NamespacedOwnerServiceName)}₢Api.h""
+#include ""₢{nameof(headerFileOutputPath)}₢AutoGen/SubSystems/₢{nameof(NamespacedOwnerServiceName)}₢/₢{nameof(GlobalNamespacedEndpointName)}₢Request.h""
+₢{nameof(ResponseTypeIncludeStatement)}₢
 
 #define LOCTEXT_NAMESPACE ""K2BeamNode_ApiRequest_₢{nameof(GlobalNamespacedEndpointName)}₢""
 

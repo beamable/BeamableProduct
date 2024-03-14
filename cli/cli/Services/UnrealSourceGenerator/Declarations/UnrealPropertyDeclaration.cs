@@ -5,21 +5,21 @@ namespace cli.Unreal;
 public struct UnrealPropertyDeclaration
 {
 	public string RawFieldName;
-	public string PropertyUnrealType;
-	public string PropertyNamespacedType;
+	public UnrealSourceGenerator.UnrealType PropertyUnrealType;
+	public UnrealSourceGenerator.NamespacedType PropertyNamespacedType;
 	public string PropertyName;
 	public string PropertyDisplayName;
 
 	/// <summary>
 	/// This is the type the optional wraps around. 
 	/// </summary>
-	public string NonOptionalTypeName;
+	public UnrealSourceGenerator.UnrealType NonOptionalTypeName;
 
 	/// <summary>
 	/// For optional arrays and maps, the (de)serialization code output needs to know what the type of the array/map is. This holds that variable.
 	/// If said type is a Semantic Type, <see cref="SemTypeSerializationType"/> will contain the (de)serialization type for each element of the array. 
 	/// </summary>
-	public string NonOptionalTypeNameRelevantTemplateParam;
+	public UnrealSourceGenerator.UnrealType NonOptionalTypeNameRelevantTemplateParam;
 
 	/// <summary>
 	/// If this property represents a Semantic Type (<see cref="UnrealSourceGenerator.UNREAL_ALL_SEMTYPES"/>), this contains the underlying primitive type that we expect to receive.
@@ -29,7 +29,7 @@ public struct UnrealPropertyDeclaration
 	/// There's one exception to this --- for semantic types that are not defined in the spec (ie: <see cref="UnrealSourceGenerator.UNREAL_OPTIONAL_U_REPTYPE_CLIENTPERMISSION"/>),
 	/// this is always an FString and the semantic type is expected to inherit from FBeamJsonSerializableUStruct/IBeamJsonSerializableUObject first (FBeamSemanticType as a second inheritance). 
 	/// </summary>
-	public string SemTypeSerializationType;
+	public UnrealSourceGenerator.UnrealType SemTypeSerializationType;
 
 
 	public string BriefCommentString;
@@ -140,24 +140,24 @@ public struct UnrealPropertyDeclaration
 	public const string OPTIONAL_WRAPPER_SEMTYPE_U_PROPERTY_DESERIALIZE =
 		$@"UBeamJsonUtils::DeserializeOptional<₢{nameof(NonOptionalTypeName)}₢, ₢{nameof(NonOptionalTypeNameRelevantTemplateParam)}₢, ₢{nameof(SemTypeSerializationType)}₢>(""₢{nameof(RawFieldName)}₢"", Bag, ₢{nameof(PropertyName)}₢, OuterOwner);";
 
-	public static string ExtractFirstTemplateParamFromType(string unrealType)
+	public static UnrealSourceGenerator.UnrealType ExtractFirstTemplateParamFromType(string unrealType)
 	{
 		var startIdx = unrealType.IndexOf('<');
 		if (startIdx == -1)
-			return "";
+			return new("");
 
 		startIdx += 1;
 
 		var endIdx = unrealType.IndexOf(',');
 		if (endIdx < 0) endIdx = unrealType.IndexOf('>');
-		return unrealType.AsSpan(startIdx, endIdx - startIdx).ToString();
+		return new(unrealType.AsSpan(startIdx, endIdx - startIdx).ToString());
 	}
 
-	public static string ExtractSecondTemplateParamFromType(string unrealType)
+	public static UnrealSourceGenerator.UnrealType ExtractSecondTemplateParamFromType(string unrealType)
 	{
 		var startIdx = unrealType.IndexOf(',');
 		if (startIdx == -1)
-			return "";
+			return new("");
 
 		startIdx += 1;
 
@@ -165,70 +165,65 @@ public struct UnrealPropertyDeclaration
 		var endIdx = unrealType.IndexOf(',', startIdx);
 		if (endIdx < 0) endIdx = unrealType.IndexOf('>');
 
-		return unrealType.AsSpan(startIdx, endIdx - startIdx).ToString().Trim();
+		return new(unrealType.AsSpan(startIdx, endIdx - startIdx).ToString().Trim());
 	}
 
-	public string GetSerializeTemplateForUnrealType(string unrealType)
+	public static string GetSerializeTemplateForUnrealType(UnrealSourceGenerator.UnrealType unrealType)
 	{
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_OPTIONAL))
+		if (unrealType.IsOptional())
 		{
-			var isSemType = UnrealSourceGenerator.UNREAL_ALL_SEMTYPES_NAMESPACED_NAMES.Any(unrealType.Contains);
-			if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_OPTIONAL_MAP) || unrealType.StartsWith(UnrealSourceGenerator.UNREAL_OPTIONAL_ARRAY))
+			var isSemType = unrealType.ContainsAnySemanticType();
+			if (unrealType.IsOptionalMap() || unrealType.IsOptionalArray())
 				return isSemType ? OPTIONAL_WRAPPER_SEMTYPE_U_PROPERTY_SERIALIZE : OPTIONAL_WRAPPER_U_PROPERTY_SERIALIZE;
 
 			return isSemType ? OPTIONAL_SEMTYPE_U_PROPERTY_SERIALIZE : OPTIONAL_U_PROPERTY_SERIALIZE;
 		}
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_ENUM_PREFIX))
+		if (unrealType.IsUnrealEnum())
 			return U_ENUM_U_PROPERTY_SERIALIZE;
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_MAP))
+		if (unrealType.IsUnrealMap())
 		{
-			var isSemType = UnrealSourceGenerator.UNREAL_ALL_SEMTYPES_NAMESPACED_NAMES.Any(unrealType.Contains);
+			var isSemType = unrealType.ContainsAnySemanticType();
 			return isSemType ? MAP_SEMTYPE_U_PROPERTY_SERIALIZE : MAP_U_PROPERTY_SERIALIZE;
 		}
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_ARRAY))
+		if (unrealType.IsUnrealArray())
 		{
-			var isSemType = UnrealSourceGenerator.UNREAL_ALL_SEMTYPES_NAMESPACED_NAMES.Any(unrealType.Contains);
+			var isSemType = unrealType.ContainsAnySemanticType();
 			return isSemType ? ARRAY_SEMTYPE_U_PROPERTY_SERIALIZE : ARRAY_U_PROPERTY_SERIALIZE;
 		}
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_GUID))
+		if (unrealType.IsUnrealGuid())
 			return GUID_U_PROPERTY_SERIALIZE;
 
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_STRING) ||
-			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_BYTE) ||
-			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_SHORT) ||
-			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_INT) ||
-			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_LONG) ||
-			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_BOOL) ||
-			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_FLOAT) ||
-			unrealType.StartsWith(UnrealSourceGenerator.UNREAL_DOUBLE))
+		if (unrealType.IsUnrealString() || unrealType.IsUnrealBool() ||
+		    unrealType.IsUnrealByte() || unrealType.IsUnrealShort() || unrealType.IsUnrealInt() || unrealType.IsUnrealLong() ||
+		    unrealType.IsUnrealFloat() || unrealType.IsUnrealDouble())
 		{
 			return PRIMITIVE_U_PROPERTY_SERIALIZE;
 		}
 
 		// Semantic types serialization
-		if (UnrealSourceGenerator.UNREAL_ALL_SEMTYPES.Contains(unrealType))
+		if (unrealType.IsAnySemanticType())
 			return SEMTYPE_U_PROPERTY_SERIALIZE;
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
+		if (unrealType.IsUnrealUObject())
 			return U_OBJECT_U_PROPERTY_SERIALIZE;
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_STRUCT_PREFIX))
+		if (unrealType.IsUnrealStruct())
 			return U_STRUCT_U_PROPERTY_SERIALIZE;
 
 		return PRIMITIVE_U_PROPERTY_SERIALIZE;
 	}
 
-	public string GetDeserializeTemplateForUnrealType(string unrealType)
+	public static string GetDeserializeTemplateForUnrealType(UnrealSourceGenerator.UnrealType unrealType)
 	{
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_OPTIONAL))
+		if (unrealType.IsOptional())
 		{
-			var isSemType = UnrealSourceGenerator.UNREAL_ALL_SEMTYPES_NAMESPACED_NAMES.Any(unrealType.EndsWith);
-			if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_OPTIONAL_MAP) || unrealType.StartsWith(UnrealSourceGenerator.UNREAL_OPTIONAL_ARRAY))
+			var isSemType = unrealType.ContainsAnySemanticType();
+			if (unrealType.IsOptionalMap() || unrealType.IsOptionalArray())
 			{
 				return isSemType ? OPTIONAL_WRAPPER_SEMTYPE_U_PROPERTY_DESERIALIZE : OPTIONAL_WRAPPER_U_PROPERTY_DESERIALIZE;
 			}
@@ -236,66 +231,63 @@ public struct UnrealPropertyDeclaration
 			return isSemType ? OPTIONAL_SEMTYPE_U_PROPERTY_DESERIALIZE : OPTIONAL_U_PROPERTY_DESERIALIZE;
 		}
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_ENUM_PREFIX))
+		if (unrealType.IsUnrealEnum())
 			return U_ENUM_U_PROPERTY_DESERIALIZE;
 
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_MAP))
+		if (unrealType.IsUnrealMap())
 		{
-			var isSemType = UnrealSourceGenerator.UNREAL_ALL_SEMTYPES_NAMESPACED_NAMES.Any(unrealType.Contains);
+			var isSemType = unrealType.ContainsAnySemanticType();
 			return isSemType ? MAP_SEMTYPE_U_PROPERTY_DESERIALIZE : MAP_U_PROPERTY_DESERIALIZE;
 		}
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_ARRAY))
+		if (unrealType.IsUnrealArray())
 		{
-			var isSemType = UnrealSourceGenerator.UNREAL_ALL_SEMTYPES_NAMESPACED_NAMES.Any(unrealType.Contains);
+			var isSemType = unrealType.ContainsAnySemanticType();
 			return isSemType ? ARRAY_SEMTYPE_U_PROPERTY_DESERIALIZE : ARRAY_U_PROPERTY_DESERIALIZE;
 		}
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_STRING))
+		if (unrealType.IsUnrealString())
 			return STRING_U_PROPERTY_DESERIALIZE;
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_BYTE))
+		if (unrealType.IsUnrealByte())
 			return INT8_U_PROPERTY_DESERIALIZE;
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_SHORT))
+		if (unrealType.IsUnrealShort())
 			return INT16_U_PROPERTY_DESERIALIZE;
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_INT))
+		if (unrealType.IsUnrealInt())
 			return INT32_U_PROPERTY_DESERIALIZE;
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_INT))
-			return INT32_U_PROPERTY_DESERIALIZE;
-
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_LONG))
+		if (unrealType.IsUnrealLong())
 			return INT64_U_PROPERTY_DESERIALIZE;
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_BOOL))
+		if (unrealType.IsUnrealBool())
 			return BOOL_U_PROPERTY_DESERIALIZE;
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_FLOAT))
+		if (unrealType.IsUnrealFloat())
 			return FLOAT_U_PROPERTY_DESERIALIZE;
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_DOUBLE))
+		if (unrealType.IsUnrealDouble())
 			return DOUBLE_U_PROPERTY_DESERIALIZE;
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_GUID))
+		if (unrealType.IsUnrealGuid())
 			return GUID_U_PROPERTY_DESERIALIZE;
 
 		// Semantic types serialization
-		if (UnrealSourceGenerator.UNREAL_ALL_SEMTYPES.Contains(unrealType))
+		if (unrealType.IsAnySemanticType())
 			return SEMTYPE_U_PROPERTY_DESERIALIZE;
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX))
+		if (unrealType.IsUnrealUObject())
 			return U_OBJECT_U_PROPERTY_DESERIALIZE;
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_U_STRUCT_PREFIX))
+		if (unrealType.IsUnrealStruct())
 			return U_STRUCT_U_PROPERTY_DESERIALIZE;
 
 		return STRING_U_PROPERTY_DESERIALIZE;
 	}
 
-	public static string GetPrimitiveUPropertyFieldName(string unrealType, string fieldName, StringBuilder stringBuilder)
+	public static string GetPrimitiveUPropertyFieldName(UnrealSourceGenerator.UnrealType unrealType, string fieldName, StringBuilder stringBuilder)
 	{
 		stringBuilder.Clear();
 		var wordStartIdx = 0;
@@ -312,7 +304,7 @@ public struct UnrealPropertyDeclaration
 			wordStartIdx = idx + 1;
 		} while (wordStartIdx < fieldName.Length && idx != -1);
 
-		if (unrealType.StartsWith(UnrealSourceGenerator.UNREAL_BOOL) || unrealType.StartsWith(UnrealSourceGenerator.UNREAL_OPTIONAL_BOOL))
+		if (unrealType.IsUnrealBool() || unrealType.IsOptionalBool())
 		{
 			stringBuilder.Insert(0, "b");
 		}

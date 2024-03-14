@@ -132,7 +132,7 @@ public class Tests
 		{
 			Documents = docs,
 			OrderedSchemas = orderedSchemas,
-			ReplacementTypes = new Dictionary<string, ReplacementTypeInfo>()
+			ReplacementTypes = new Dictionary<OpenApiReferenceId, ReplacementTypeInfo>()
 		};
 		var descriptors = generator.Generate(ctx);
 
