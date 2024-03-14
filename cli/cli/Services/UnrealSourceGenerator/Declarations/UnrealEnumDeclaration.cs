@@ -1,9 +1,11 @@
+using static cli.Unreal.UnrealSourceGenerator;
+
 namespace cli.Unreal;
 
 public struct UnrealEnumDeclaration
 {
-	public string UnrealTypeName;
-	public string NamespacedTypeName;
+	public UnrealType UnrealTypeName;
+	public NamespacedType NamespacedTypeName;
 
 	public List<string> EnumValues;
 
@@ -16,7 +18,7 @@ public struct UnrealEnumDeclaration
 			return enumValue;
 		}));
 
-		helperDict.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
+		helperDict.Add(nameof(exportMacro), exportMacro);
 		helperDict.Add(nameof(UnrealTypeName), UnrealTypeName);
 		helperDict.Add(nameof(NamespacedTypeName), NamespacedTypeName);
 		helperDict.Add(nameof(EnumValues), enumValues);
@@ -35,7 +37,7 @@ enum class ₢{nameof(UnrealTypeName)}₢ : uint8
 }};
 
 UCLASS(BlueprintType, Category=""Beam|Enums"")
-class ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ U₢{nameof(NamespacedTypeName)}₢Library : public UBlueprintFunctionLibrary
+class ₢{nameof(exportMacro)}₢ U₢{nameof(NamespacedTypeName)}₢Library : public UBlueprintFunctionLibrary
 {{
 	GENERATED_BODY()
 public:		

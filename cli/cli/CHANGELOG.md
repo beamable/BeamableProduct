@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `project add` Dockerfile path fixes.
 - `project new-storage` path fixes.
 - Progress bars and logs do not appear side by side.
+- Fixed issue that caused incorrect code-gen of Unreal wrapper types in SAMS-Client code
 
 ## [1.19.12]
 

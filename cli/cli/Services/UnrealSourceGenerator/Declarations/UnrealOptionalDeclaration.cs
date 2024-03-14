@@ -2,19 +2,19 @@
 
 public struct UnrealOptionalDeclaration
 {
-	public string UnrealTypeName;
-	public string NamespacedTypeName;
+	public UnrealSourceGenerator.UnrealType UnrealTypeName;
+	public UnrealSourceGenerator.NamespacedType NamespacedTypeName;
 	public string UnrealTypeIncludeStatement;
 
-	public string ValueUnrealTypeName;
-	public string ValueNamespacedTypeName;
+	public UnrealSourceGenerator.UnrealType ValueUnrealTypeName;
+	public UnrealSourceGenerator.NamespacedType ValueNamespacedTypeName;
 	public string ValueUnrealTypeIncludeStatement;
 
 	private string _valueInitializerStatement;
 
 	public void BakeIntoProcessMap(Dictionary<string, string> helperDict)
 	{
-		_valueInitializerStatement = ValueUnrealTypeName.StartsWith(UnrealSourceGenerator.UNREAL_U_OBJECT_PREFIX) ? "nullptr" : $"{ValueUnrealTypeName}()";
+		_valueInitializerStatement = ValueUnrealTypeName.IsUnrealUObject() ? "nullptr" : $"{ValueUnrealTypeName}()";
 
 		helperDict.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
 		helperDict.Add(nameof(UnrealTypeName), UnrealTypeName);

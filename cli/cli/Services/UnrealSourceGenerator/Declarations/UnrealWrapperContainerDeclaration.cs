@@ -4,12 +4,12 @@ namespace cli.Unreal;
 
 public struct UnrealWrapperContainerDeclaration
 {
-	public string UnrealTypeName;
-	public string NamespacedTypeName;
+	public UnrealSourceGenerator.UnrealType UnrealTypeName;
+	public UnrealSourceGenerator.NamespacedType NamespacedTypeName;
 	public string UnrealTypeIncludeStatement;
 
-	public string ValueUnrealTypeName;
-	public string ValueNamespacedTypeName;
+	public UnrealSourceGenerator.UnrealType ValueUnrealTypeName;
+	public UnrealSourceGenerator.NamespacedType ValueNamespacedTypeName;
 	public string ValueUnrealTypeIncludeStatement;
 
 	public void BakeIntoProcessMap(Dictionary<string, string> helperDict)

@@ -159,9 +159,9 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 						{
 							Documents = docs,
 							OrderedSchemas = orderedSchemas,
-							ReplacementTypes = new Dictionary<string, ReplacementTypeInfo>
+							ReplacementTypes = new Dictionary<OpenApiReferenceId, ReplacementTypeInfo>
 							{
-								{
+								{	
 									"ClientPermission", new ReplacementTypeInfo
 									{
 										ReferenceId = "ClientPermission",

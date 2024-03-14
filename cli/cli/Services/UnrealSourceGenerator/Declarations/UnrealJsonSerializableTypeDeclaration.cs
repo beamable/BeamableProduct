@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using static cli.Unreal.UnrealSourceGenerator;
 
 namespace cli.Unreal;
 
@@ -12,7 +13,7 @@ public enum ResponseBodyType
 
 public struct TypeRequestBody : IEquatable<string>, IComparable<string>
 {
-	public string UnrealType;
+	public UnrealType UnrealType;
 	public ResponseBodyType Type;
 
 	public bool Equals(TypeRequestBody other)
@@ -32,22 +33,23 @@ public struct TypeRequestBody : IEquatable<string>, IComparable<string>
 
 	public override int GetHashCode()
 	{
-		return (UnrealType != null ? UnrealType.GetHashCode() : 0);
+		return (UnrealType.AsStr != null ? UnrealType.GetHashCode() : 0);
 	}
 }
 
 public struct UnrealCsvRowTypeDeclaration
 {
-	public string RowUnrealType;
-	public string RowNamespacedType;
+	public UnrealType RowUnrealType;
+	public NamespacedType RowNamespacedType;
 
 	public int KeyDeclarationIdx;
 
 	public List<UnrealPropertyDeclaration> PropertyDeclarations;
+	public string IncludesForProperties;
 
 	private string _keyFieldPropertyName;
 	private string _headerFieldsContent;
-	private string _includesForProperties;
+
 
 	public void IntoProcessMap(Dictionary<string, string> processDictionary)
 	{
@@ -70,15 +72,13 @@ public struct UnrealCsvRowTypeDeclaration
 			return $"GET_MEMBER_NAME_STRING_CHECKED({@this.RowUnrealType}, {ud.PropertyName})";
 		}));
 
-		_includesForProperties = string.Join("\n", PropertyDeclarations.Select(p => UnrealSourceGenerator.GetIncludeStatementForUnrealType(p.PropertyUnrealType)));
-
-		processDictionary.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
+		processDictionary.Add(nameof(exportMacro), exportMacro);
 		processDictionary.Add(nameof(RowNamespacedType), RowNamespacedType);
 		processDictionary.Add(nameof(RowUnrealType), RowUnrealType);
 		processDictionary.Add(nameof(PropertyDeclarations), propertyDeclarations);
 		processDictionary.Add(nameof(_keyFieldPropertyName), _keyFieldPropertyName);
 		processDictionary.Add(nameof(_headerFieldsContent), _headerFieldsContent);
-		processDictionary.Add(nameof(_includesForProperties), _includesForProperties);
+		processDictionary.Add(nameof(IncludesForProperties), IncludesForProperties);
 	}
 
 
@@ -87,12 +87,12 @@ public struct UnrealCsvRowTypeDeclaration
 
 #include ""CoreMinimal.h""
 #include ""Engine/DataTable.h""
-₢{nameof(_includesForProperties)}₢
+₢{nameof(IncludesForProperties)}₢
 
 #include ""₢{nameof(RowNamespacedType)}₢.generated.h""
 
 USTRUCT(BlueprintType)
-struct ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ ₢{nameof(RowUnrealType)}₢ : public FTableRowBase
+struct ₢{nameof(exportMacro)}₢ ₢{nameof(RowUnrealType)}₢ : public FTableRowBase
 {{
 	GENERATED_BODY()
 
@@ -116,11 +116,11 @@ const TArray<FString> ₢{nameof(RowUnrealType)}₢::HeaderFields = {{
 
 public struct UnrealCsvSerializableTypeDeclaration
 {
-	public string UnrealTypeName;
-	public string NamespacedTypeName;
+	public UnrealType UnrealTypeName;
+	public NamespacedType NamespacedTypeName;
 
-	public string RowUnrealType;
-	public string RowNamespacedTypeName;
+	public UnrealType RowUnrealType;
+	public NamespacedType RowNamespacedTypeName;
 	public bool NeedsKeyGeneration;
 	public bool NeedsHeaderRow;
 
@@ -147,7 +147,7 @@ void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FSt
 
 	UBeamCsvUtils::StoreNameAsColumn<{RowUnrealType}>(CsvData, {RowUnrealType}::KeyField);
 }}";
-		processDictionary.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
+		processDictionary.Add(nameof(exportMacro), exportMacro);
 		processDictionary.Add(nameof(NamespacedTypeName), NamespacedTypeName);
 		processDictionary.Add(nameof(RowUnrealType), RowUnrealType);
 		processDictionary.Add(nameof(RowNamespacedTypeName), RowNamespacedTypeName);
@@ -164,7 +164,7 @@ void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FSt
 #include ""₢{nameof(NamespacedTypeName)}₢.generated.h""
 
 UCLASS(BlueprintType, Category=""Beam"")
-class ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ U₢{nameof(NamespacedTypeName)}₢ : public UObject, public IBeamBaseResponseBodyInterface
+class ₢{nameof(exportMacro)}₢ U₢{nameof(NamespacedTypeName)}₢ : public UObject, public IBeamBaseResponseBodyInterface
 {{
 	GENERATED_BODY()
 
@@ -193,19 +193,20 @@ public struct PolymorphicWrappedData
 
 public struct UnrealJsonSerializableTypeDeclaration
 {
-	public string UnrealTypeName;
-	public string NamespacedTypeName;
+	public UnrealType UnrealTypeName;
+	public NamespacedType NamespacedTypeName;
+
 	public List<string> PropertyIncludes;
 	public List<UnrealPropertyDeclaration> UPropertyDeclarations;
+
 	public string JsonUtilsInclude;
 	public string DefaultValueHelpersInclude;
 	public ResponseBodyType IsResponseBodyType;
+
 	public bool IsSelfReferential;
 
 	public List<PolymorphicWrappedData> PolymorphicWrappedTypes;
 	public bool IsPolymorphicWrapper => PolymorphicWrappedTypes?.Count > 0;
-
-
 
 
 	private string _responseBodyIncludes;
@@ -230,20 +231,20 @@ public struct UnrealJsonSerializableTypeDeclaration
 	{
 		UPropertyDeclarations.Sort((d1, d2) =>
 		{
-			var isD1Array = d1.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_ARRAY) || d1.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_WRAPPER_ARRAY) ? 1 : 0;
-			var isD2Array = d2.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_ARRAY) || d2.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_WRAPPER_ARRAY) ? 1 : 0;
+			var isD1Array = d1.PropertyUnrealType.IsUnrealArray() || d1.PropertyUnrealType.IsWrapperArray() ? 1 : 0;
+			var isD2Array = d2.PropertyUnrealType.IsUnrealArray() || d2.PropertyUnrealType.IsWrapperArray() ? 1 : 0;
 
-			var isD1Map = d1.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_MAP) || d1.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_WRAPPER_MAP) ? 1 : 0;
-			var isD2Map = d2.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_MAP) || d2.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_WRAPPER_MAP) ? 1 : 0;
+			var isD1Map = d1.PropertyUnrealType.IsUnrealMap() || d1.PropertyUnrealType.IsWrapperMap() ? 1 : 0;
+			var isD2Map = d2.PropertyUnrealType.IsUnrealMap() || d2.PropertyUnrealType.IsWrapperMap() ? 1 : 0;
 
-			var isD1Optional = d1.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_OPTIONAL) ? 1 : 0;
-			var isD2Optional = d2.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_OPTIONAL) ? 1 : 0;
+			var isD1Optional = d1.PropertyUnrealType.IsOptional() ? 1 : 0;
+			var isD2Optional = d2.PropertyUnrealType.IsOptional() ? 1 : 0;
 
-			var isD1OptionalArray = d1.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_OPTIONAL_ARRAY) ? 1 : 0;
-			var isD2OptionalArray = d2.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_OPTIONAL_ARRAY) ? 1 : 0;
+			var isD1OptionalArray = d1.PropertyUnrealType.IsOptionalArray() ? 1 : 0;
+			var isD2OptionalArray = d2.PropertyUnrealType.IsOptionalArray() ? 1 : 0;
 
-			var isD1OptionalMap = d1.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_OPTIONAL_MAP) ? 1 : 0;
-			var isD2OptionalMap = d2.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_OPTIONAL_MAP) ? 1 : 0;
+			var isD1OptionalMap = d1.PropertyUnrealType.IsOptionalMap() ? 1 : 0;
+			var isD2OptionalMap = d2.PropertyUnrealType.IsOptionalMap() ? 1 : 0;
 
 			var propNameD1 = d1.PropertyName.StartsWith("b") ? d1.PropertyName[1..] : d1.PropertyName;
 			var propNameD2 = d2.PropertyName.StartsWith("b") ? d2.PropertyName[1..] : d1.PropertyName;
@@ -281,7 +282,7 @@ public struct UnrealJsonSerializableTypeDeclaration
 			{
 				ud.IntoProcessMap(processDictionary);
 
-				var decl = ud.GetSerializeTemplateForUnrealType(ud.PropertyUnrealType).ProcessReplacement(processDictionary);
+				var decl = UnrealPropertyDeclaration.GetSerializeTemplateForUnrealType(ud.PropertyUnrealType).ProcessReplacement(processDictionary);
 				processDictionary.Clear();
 				return decl;
 			}));
@@ -289,7 +290,7 @@ public struct UnrealJsonSerializableTypeDeclaration
 			{
 				ud.IntoProcessMap(processDictionary);
 
-				var decl = ud.GetDeserializeTemplateForUnrealType(ud.PropertyUnrealType).ProcessReplacement(processDictionary);
+				var decl = UnrealPropertyDeclaration.GetDeserializeTemplateForUnrealType(ud.PropertyUnrealType).ProcessReplacement(processDictionary);
 				processDictionary.Clear();
 				return decl;
 			}));
@@ -306,8 +307,8 @@ public struct UnrealJsonSerializableTypeDeclaration
 			/*
 			 * Used to generate this:
 			 checkf((ContentReference && !TextReference && !BinaryReference) ||
-			  		(!ContentReference && TextReference && !BinaryReference) ||
-			  		(!ContentReference && !TextReference && BinaryReference), TEXT(""You should always only have one of these set. Set the others as nullptr.""))
+				    (!ContentReference && TextReference && !BinaryReference) ||
+				    (!ContentReference && !TextReference && BinaryReference), TEXT(""You should always only have one of these set. Set the others as nullptr.""))
 			 */
 			var check = "checkf(";
 			var checkAppend = ") || \n\t\t";
@@ -315,9 +316,9 @@ public struct UnrealJsonSerializableTypeDeclaration
 
 			/*
 			 * Used to generate this:
-			 	if (ContentReference) return TEXT(""content"");
-			 	if (TextReference) return TEXT(""text"");
-			 	if (BinaryReference) return TEXT(""binary"");
+			    if (ContentReference) return TEXT(""content"");
+			    if (TextReference) return TEXT(""text"");
+			    if (BinaryReference) return TEXT(""binary"");
 			 */
 			var body = "\t";
 
@@ -362,7 +363,7 @@ public struct UnrealJsonSerializableTypeDeclaration
 			var paramDeclaration = $"{unrealPropertyDeclaration.PropertyUnrealType} {unrealPropertyDeclaration.PropertyName}";
 
 			makeSb.Append($"{paramDeclaration}, ");
-			if (unrealPropertyDeclaration.PropertyUnrealType.StartsWith(UnrealSourceGenerator.UNREAL_OPTIONAL))
+			if (unrealPropertyDeclaration.PropertyUnrealType.IsOptional())
 			{
 				makeOptionalParamNamesSb.Append($"{unrealPropertyDeclaration.PropertyName}, ");
 			}
@@ -413,9 +414,9 @@ void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FSt
 		}
 
 
-		processDictionary.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
-		processDictionary.Add(nameof(UnrealSourceGenerator.headerFileOutputPath), UnrealSourceGenerator.headerFileOutputPath);
-		processDictionary.Add(nameof(UnrealSourceGenerator.blueprintHeaderFileOutputPath), UnrealSourceGenerator.blueprintHeaderFileOutputPath);
+		processDictionary.Add(nameof(exportMacro), exportMacro);
+		processDictionary.Add(nameof(headerFileOutputPath), headerFileOutputPath);
+		processDictionary.Add(nameof(blueprintHeaderFileOutputPath), blueprintHeaderFileOutputPath);
 
 		processDictionary.Add(nameof(NamespacedTypeName), NamespacedTypeName);
 		processDictionary.Add(nameof(UPropertyDeclarations), propertyDeclarations);
@@ -456,7 +457,7 @@ void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FSt
 #include ""₢{nameof(NamespacedTypeName)}₢.generated.h""
 
 UCLASS(BlueprintType, Category=""Beam"")
-class ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ U₢{nameof(NamespacedTypeName)}₢ : public UObject, public IBeamJsonSerializableUObject₢{nameof(_inheritResponseBodyInterface)}₢
+class ₢{nameof(exportMacro)}₢ U₢{nameof(NamespacedTypeName)}₢ : public UObject, public IBeamJsonSerializableUObject₢{nameof(_inheritResponseBodyInterface)}₢
 {{
 	GENERATED_BODY()
 
@@ -473,7 +474,7 @@ public:
 
 	public const string JSON_SERIALIZABLE_TYPE_CPP =
 		@$"
-#include ""₢{nameof(UnrealSourceGenerator.headerFileOutputPath)}₢AutoGen/₢{nameof(NamespacedTypeName)}₢.h""
+#include ""₢{nameof(headerFileOutputPath)}₢AutoGen/₢{nameof(NamespacedTypeName)}₢.h""
 ₢{nameof(JsonUtilsInclude)}₢
 ₢{nameof(DefaultValueHelpersInclude)}₢
 
@@ -501,13 +502,13 @@ void U₢{nameof(NamespacedTypeName)}₢::BeamDeserializeProperties(const TShare
 	public const string JSON_SERIALIZABLE_TYPES_LIBRARY_HEADER = $@"#pragma once
 
 #include ""CoreMinimal.h""
-#include ""₢{nameof(UnrealSourceGenerator.headerFileOutputPath)}₢AutoGen/₢{nameof(NamespacedTypeName)}₢.h""
+#include ""₢{nameof(headerFileOutputPath)}₢AutoGen/₢{nameof(NamespacedTypeName)}₢.h""
 
 #include ""₢{nameof(NamespacedTypeName)}₢Library.generated.h""
 
 
 UCLASS(BlueprintType, Category=""Beam"")
-class ₢{nameof(UnrealSourceGenerator.exportMacro)}₢ U₢{nameof(NamespacedTypeName)}₢Library : public UBlueprintFunctionLibrary
+class ₢{nameof(exportMacro)}₢ U₢{nameof(NamespacedTypeName)}₢Library : public UBlueprintFunctionLibrary
 {{
 	GENERATED_BODY()
 
@@ -523,7 +524,7 @@ public:
 }};";
 
 	public const string JSON_SERIALIZABLE_TYPES_LIBRARY_CPP = $@"
-#include ""₢{nameof(UnrealSourceGenerator.headerFileOutputPath)}₢AutoGen/₢{nameof(NamespacedTypeName)}₢Library.h""
+#include ""₢{nameof(headerFileOutputPath)}₢AutoGen/₢{nameof(NamespacedTypeName)}₢Library.h""
 
 #include ""CoreMinimal.h""
 
