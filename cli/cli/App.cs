@@ -215,6 +215,7 @@ public class App
 		Commands.AddSubCommand<GenerateEnvFileCommand, GenerateEnvFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateIgnoreFileCommand, GenerateIgnoreFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateClientFileCommand, GenerateClientFileCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<GeneratePropertiesFileCommand, GeneratePropertiesFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<OpenSwaggerCommand, OpenSwaggerCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<TailLogsCommand, TailLogsCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<OpenMongoExpressCommand, OpenMongoExpressCommandArgs, ProjectCommand>();
