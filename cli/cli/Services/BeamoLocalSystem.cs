@@ -141,7 +141,7 @@ public partial class BeamoLocalSystem
 	public async Task AddProjectDependency(BeamoServiceDefinition project, BeamoServiceDefinition dependency)
 	{
 		if (project.Protocol != BeamoProtocolType.HttpMicroservice ||
-		    dependency.Protocol != BeamoProtocolType.EmbeddedMongoDb)
+			dependency.Protocol != BeamoProtocolType.EmbeddedMongoDb)
 		{
 			throw new CliException(
 				$"Currently the only supported dependencies are {nameof(BeamoProtocolType.HttpMicroservice)} depending on {nameof(BeamoProtocolType.EmbeddedMongoDb)}");

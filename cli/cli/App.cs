@@ -311,7 +311,7 @@ public class App
 			CommandProvider.GetService(factoryDescriptor.Interface);
 			var commandType = factoryDescriptor.Interface.GetGenericArguments()[0];
 			var command = (Command)CommandProvider.GetService(commandType);
-			
+
 			commandList.Add(command);
 		}
 
