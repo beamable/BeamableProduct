@@ -7,6 +7,7 @@ using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Semantics;
 using cli.Commands.Project;
+using cli.Commands.Project.Deps;
 using cli.Content;
 using cli.Content.Tag;
 using cli.Docs;
@@ -242,6 +243,8 @@ public class App
 		Commands.AddRootCommand<OpenAPICommand>();
 		Commands.AddSubCommand<GenerateSdkCommand, GenerateSdkCommandArgs, OpenAPICommand>();
 		Commands.AddSubCommand<DownloadOpenAPICommand, DownloadOpenAPICommandArgs, OpenAPICommand>();
+		Commands.AddSubCommandWithHandler<DepsCommand, DepsCommandArgs, ProjectCommand>();
+		Commands.AddSubCommandWithHandler<ListDepsCommand, ListDepsCommandArgs, DepsCommand>();
 
 		Commands.AddRootCommand<NotificationBaseCommand>();
 		Commands.AddSubCommand<NotificationServerCommand, NotificationServerCommandArgs, NotificationBaseCommand>();
