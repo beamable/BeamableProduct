@@ -108,8 +108,9 @@ namespace Beamable.Server.Editor.Usam
 				var path = $"{StandaloneMicroservicesPath}{microserviceName}/";
 				if (!Directory.Exists(path))
 				{
-					Debug.Log(microserviceName);
+					LogVerbose($"Migrating {microserviceName} start");
 					await CreateMicroService(microserviceName, null, true);
+					return;
 				}
 
 				var signpost = _services.FirstOrDefault(s => s.name.Equals(microserviceName));
@@ -192,7 +193,7 @@ namespace Beamable.Server.Editor.Usam
 				if (file.EndsWith("csproj")) return file;
 			}
 
-			return null;
+			return outputPath;
 		}
 
 		public async Promise UpdateServicesVersions()
@@ -219,7 +220,7 @@ namespace Beamable.Server.Editor.Usam
 				}
 				else
 				{
-					Debug.Log(JsonUtility.ToJson(result));
+					LogVerbose($"UpdateServicesVersions failed, result: {JsonUtility.ToJson(result)}");
 					_projectVersion = "0.0.0";
 				}
 				LogVerbose($"Versions updated: {_projectVersion}");
