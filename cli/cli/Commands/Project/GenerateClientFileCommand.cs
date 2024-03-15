@@ -3,8 +3,8 @@ using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Generator;
 using Beamable.Tooling.Common.OpenAPI;
+using cli.Services;
 using cli.Unreal;
-using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Serilog;
 using System.CommandLine;
@@ -35,26 +35,44 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 		AddOption(new Option<bool>("--output-links", () => true, "When true, generate the source client files to all associated projects"), (arg, i) => arg.outputToLinkedProjects = i);
 	}
 
-	public override Task Handle(GenerateClientFileCommandArgs args)
+	public override async Task Handle(GenerateClientFileCommandArgs args)
 	{
 		#region load client dll into current domain
 
-		var absolutePath = Path.GetFullPath(args.microserviceAssemblyPath);
-		var absoluteDir = Path.GetDirectoryName(absolutePath);
-		var loadContext = new AssemblyLoadContext("generate-client-context", false);
-		loadContext.Resolving += (context, name) =>
+		// Get the list of all existing microservices
+		var allServices = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Where(sd => sd.Protocol is BeamoProtocolType.HttpMicroservice).ToArray();
+
+		// Get the list of dependencies of each of these microservices
+		var allDepTasks = allServices.Select(sd => args.BeamoLocalSystem.GetDependencies(sd.BeamoId)).ToArray();
+		var allDeps = await Task.WhenAll(allDepTasks);
+
+		// Get the list of all BeamoIds whose DLLs we need to have loaded for a single pass.
+		var allServicesToLoadDlls = allServices.Select(sd => sd.BeamoId).Union(allDeps.SelectMany(d => d)).Distinct().ToArray();
+
+		// Get the list of all assemblies paired with their last edit time.
+		var allAssemblies = new List<Assembly>();
+		foreach (string beamoId in allServicesToLoadDlls)
 		{
-			var assemblyPath = Path.Combine(absoluteDir, $"{name.Name}.dll");
-			try
+			var isProjBuilt = await ProjectCommand.IsProjectBuilt(args, beamoId);
+			if (isProjBuilt.isBuilt)
 			{
-				Log.Verbose($"loading dll name=[{name.Name}] version=[{name.Version}]");
-				if (assemblyPath != null)
-					return context.LoadFromAssemblyPath(assemblyPath);
-				return null;
-			}
-			catch (Exception ex)
-			{
-				BeamableLogger.LogError($@"Unable to load dll at path=[{assemblyPath}] 
+				var dllPath = isProjBuilt.path;
+				var absolutePath = Path.GetFullPath(dllPath);
+				var absoluteDir = Path.GetDirectoryName(absolutePath)!;
+				var loadContext = new AssemblyLoadContext($"generate-client-context-{beamoId}", false);
+				loadContext.Resolving += (context, name) =>
+				{
+					var assemblyPath = Path.Combine(absoluteDir, $"{name.Name}.dll");
+					try
+					{
+						Log.Verbose("loading dll name=[{Name}] version=[{Version}]", name.Name, name.Version);
+						var loadedDependentAsm = context.LoadFromAssemblyPath(assemblyPath);
+						allAssemblies.Add(loadedDependentAsm);
+						return loadedDependentAsm;
+					}
+					catch (Exception ex)
+					{
+						BeamableLogger.LogError($@"Unable to load dll at path=[{assemblyPath}] 
 name=[{name}] 
 context=[{context.Name}]
 message=[{ex.Message}]
@@ -62,21 +80,28 @@ ex-type=[{ex.GetType().Name}]
 inner-message=[{ex.InnerException?.Message}]
 inner-type=[{ex.InnerException?.GetType().Name}]
 ");
-				throw;
-			}
-		};
+						throw;
+					}
+				};
 
-		var userAssembly = loadContext.LoadFromAssemblyPath(absolutePath);
+				var userAssembly = loadContext.LoadFromAssemblyPath(absolutePath);
+				Log.Verbose("loading dll name=[{Name}] version=[{Version}] deps=[{Deps}]", userAssembly.GetName().Name, userAssembly.GetName().Version, string.Join(", ",userAssembly.GetReferencedAssemblies().Select(n => n.Name)));
+				
+				/// GHOST IN THE MACHINE ---> We need some time to investigate this stuff.
+				foreach (AssemblyName referencedAssembly in userAssembly.GetReferencedAssemblies().Where(asm => !asm.Name.Contains("BeamableMicroserviceBase"))) 
+					allAssemblies.Add(loadContext.LoadFromAssemblyName(referencedAssembly));
+				
+				allAssemblies.Add(userAssembly);
+			}
+		}
 
 		#endregion
 
-		var allTypes = userAssembly.GetExportedTypes();
-		foreach (var type in allTypes)
+		var allTypes = allAssemblies.SelectMany(asm => asm.GetExportedTypes()).ToArray();
+		var allMsTypes = allTypes.Where(t => t.IsSubclassOf(typeof(Microservice)) && t.GetCustomAttribute<MicroserviceAttribute>() != null).ToArray();
+		foreach (var type in allMsTypes)
 		{
-			if (!type.IsSubclassOf(typeof(Microservice))) continue;
-			var attribute = type.GetCustomAttribute<MicroserviceAttribute>();
-			if (attribute == null) continue;
-
+			var attribute = type.GetCustomAttribute<MicroserviceAttribute>()!;
 			var descriptor = new MicroserviceDescriptor { Name = attribute.MicroserviceName, AttributePath = attribute.SourcePath, Type = type };
 
 			if (args.outputToLinkedProjects)
@@ -106,155 +131,162 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 						GeneratedFileDescriptor fileDescriptor = new GeneratedFileDescriptor() { Content = generator.GetCSharpCodeString(), FileName = $"{descriptor.Name}Client.cs" };
 
 						Task generationTask = GenerateFile(new List<GeneratedFileDescriptor>() { fileDescriptor }, args, unityAssetPath);
-
 						if (generationTask != null)
-							return generationTask;
-					}
-				}
-
-				// UNREAL
-
-				if (args.ProjectService.GetLinkedUnrealProjects().Count > 0)
-				{
-					var gen = new ServiceDocGenerator();
-					var oapiDocument = gen.Generate(type, attribute, null, true);
-
-					foreach (var unrealProjectData in args.ProjectService.GetLinkedUnrealProjects())
-					{
-						var unrealGenerator = new UnrealSourceGenerator();
-						var docs = new List<OpenApiDocument>() { oapiDocument };
-						var orderedSchemas = SwaggerService.ExtractAllSchemas(docs, GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
-						var previousGenerationFilePath = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.BeamableBackendGenerationPassFile);
-
-						// We expect to find the OSS at the Plugin directory.
-						var expectedOssPath = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.Path, "Plugins/OnlineSubsystemBeamable");
-						var isOSSInLinkedProject = Directory.Exists(expectedOssPath);
-
-						// Set up the generator to generate code with the correct output path for the AutoGen folders.
-						if (isOSSInLinkedProject)
 						{
-							if (unrealProjectData.CoreProjectName != "OnlineSubsystemBeamable" || !unrealProjectData.SourceFilesPath.StartsWith("Plugins/OnlineSubsystemBeamable"))
-							{
-								throw new CliException("You've added the OnlineSubsystemBeamable (OSB) plugin after you had already linked your Unreal Project." +
-													   $"Please delete your '{Constants.CONFIG_DIR}/{Constants.CONFIG_LINKED_PROJECTS}' file and re-run 'beam project add-unreal-project'." +
-													   "When using the OSB plugin, MS files are generated into the plugin's Customer folder; so, please delete your AutoGen folders from their " +
-													   "previous location (outside of the plugin).");
-							}
+							await generationTask;
+							break;
 						}
-
-						UnrealSourceGenerator.exportMacro = unrealProjectData.CoreProjectName.ToUpper() + "_API";
-
-						UnrealSourceGenerator.blueprintExportMacro = unrealProjectData.BlueprintNodesProjectName.ToUpper() + "_API";
-						UnrealSourceGenerator.blueprintHeaderFileOutputPath = unrealProjectData.MsBlueprintNodesHeaderPath;
-						UnrealSourceGenerator.blueprintCppFileOutputPath = unrealProjectData.MsBlueprintNodesCppPath;
-
-						UnrealSourceGenerator.headerFileOutputPath = unrealProjectData.MsCoreHeaderPath;
-						UnrealSourceGenerator.cppFileOutputPath = unrealProjectData.MsCoreCppPath;
-
-						UnrealSourceGenerator.genType = UnrealSourceGenerator.GenerationType.Microservice;
-						UnrealSourceGenerator.previousGenerationPassesData = JsonConvert.DeserializeObject<PreviousGenerationPassesData>(File.ReadAllText(previousGenerationFilePath));
-						UnrealSourceGenerator.currentGenerationPassDataFilePath = $"{unrealProjectData.CoreProjectName}_GenerationPass";
-
-						var unrealFileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext
-						{
-							Documents = docs,
-							OrderedSchemas = orderedSchemas,
-							ReplacementTypes = new Dictionary<OpenApiReferenceId, ReplacementTypeInfo>
-							{
-								{	
-									"ClientPermission", new ReplacementTypeInfo
-									{
-										ReferenceId = "ClientPermission",
-										EngineReplacementType = "FBeamClientPermission",
-										EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamClientPermission",
-										EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamClientPermission.h""",
-									}
-								},
-								{
-									"ExternalIdentity", new ReplacementTypeInfo
-									{
-										ReferenceId = "ExternalIdentity",
-										EngineReplacementType = "FBeamExternalIdentity",
-										EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamExternalIdentity",
-										EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamExternalIdentity.h""",
-									}
-								},
-								{
-									"Tag", new ReplacementTypeInfo
-									{
-										ReferenceId = "Tag",
-										EngineReplacementType = "FBeamTag",
-										EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamTag",
-										EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamTag.h""",
-									}
-								}
-							}
-						});
-
-						var hasOutputPath = !string.IsNullOrEmpty(args.outputDirectory);
-						var outputDir = args.outputDirectory;
-						if (!hasOutputPath) outputDir = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.SourceFilesPath);
-
-						var allFilesToCreate = unrealFileDescriptors.Select(fd => Path.Join(outputDir, $"{fd.FileName}")).ToList();
-						// We need to run the "generate project files if any file was created"
-						var needsProjectFilesRebuild = !allFilesToCreate.All(File.Exists);
-						// We always clean up the output directory's AutoGen folders  --- every file we create is in the AutoGen folder.
-						var outputDirInfo = new DirectoryInfo(outputDir);
-						var autoGenDirs = outputDirInfo.GetDirectories("AutoGen", SearchOption.AllDirectories);
-						foreach (DirectoryInfo directoryInfo in autoGenDirs) Directory.Delete(directoryInfo.ToString(), true);
-
-						for (int i = 0; i < allFilesToCreate.Count; i++)
-						{
-							string filePath = allFilesToCreate[i];
-							var path = Path.GetDirectoryName(filePath);
-							if (path == null) throw new CliException($"Parent path for file {filePath} is null. If you're a customer seeing this, report a bug.");
-
-							Directory.CreateDirectory(path);
-							File.WriteAllText(filePath, unrealFileDescriptors[i].Content);
-						}
-
-						// Run the Regenerate Project Files utility for the project (so that create files are automatically updated in IDEs).
-						if (needsProjectFilesRebuild)
-							RunGenerateProjectFiles(Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.Path));
-
-						static void RunGenerateProjectFiles(string unrealRoot)
-						{
-							// go into the unreal root
-							var cmd = $"cd {unrealRoot};";
-							// Get the name of the uproject
-							cmd += @"$uproject = Get-ChildItem ""*.uproject"" -Name;";
-							// Get the path to the UnrealEngine version for this project (this is stored here as-per UE -- https://forums.unrealengine.com/t/generate-vs-project-files-by-command-line/277707/18).
-							cmd += @"$bin = & { (Get-ItemProperty 'Registry::HKEY_CLASSES_ROOT\Unreal.ProjectFile\shell\rungenproj' -Name 'Icon' ).'Icon' };";
-							// Build the actual command to run at this path and pipe it into the cmd.exe.
-							cmd += @"$bin + ' -projectfiles %cd%\' + $uproject | cmd.exe";
-
-							// Run the command and print the result
-							var _ = ExecutePowershellCommand(cmd);
-						}
-
-
-						static string ExecutePowershellCommand(string command)
-						{
-							var processStartInfo = new ProcessStartInfo();
-							processStartInfo.FileName = "powershell.exe";
-							processStartInfo.Arguments = $"-Command \"{command}\"";
-							processStartInfo.UseShellExecute = false;
-							processStartInfo.RedirectStandardOutput = true;
-
-							using var process = new Process();
-							process.StartInfo = processStartInfo;
-							process.Start();
-							string output = process.StandardOutput.ReadToEnd();
-							return output;
-						}
-
-						return Task.CompletedTask;
 					}
 				}
 			}
 		}
 
-		return Task.CompletedTask;
+		// Handle Unreal code-gen
+		if (args.outputToLinkedProjects && args.ProjectService.GetLinkedUnrealProjects().Count > 0)
+		{
+			// Get the list of all microservice docs
+			var docs = allMsTypes.Select(t =>
+			{
+				var attribute = t.GetCustomAttribute<MicroserviceAttribute>();
+				var gen = new ServiceDocGenerator();
+				return gen.Generate(t, attribute, null, true);
+			}).ToArray();
+
+			// Get the list of schemas
+			var orderedSchemas = SwaggerService.ExtractAllSchemas(docs, GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
+
+			// For each linked project, we generate the SAMS-Client source code and inject it according to that project's linking configuration 
+			foreach (var unrealProjectData in args.ProjectService.GetLinkedUnrealProjects())
+			{
+				var unrealGenerator = new UnrealSourceGenerator();
+				var previousGenerationFilePath = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.BeamableBackendGenerationPassFile);
+
+				// We expect to find the OSS at the Plugin directory.
+				var expectedOssPath = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.Path, "Plugins/OnlineSubsystemBeamable");
+				var isOSSInLinkedProject = Directory.Exists(expectedOssPath);
+
+				// Set up the generator to generate code with the correct output path for the AutoGen folders.
+				if (isOSSInLinkedProject)
+				{
+					if (unrealProjectData.CoreProjectName != "OnlineSubsystemBeamable" || !unrealProjectData.SourceFilesPath.StartsWith("Plugins/OnlineSubsystemBeamable"))
+					{
+						throw new CliException("You've added the OnlineSubsystemBeamable (OSB) plugin after you had already linked your Unreal Project." +
+						                       $"Please delete your '{Constants.CONFIG_DIR}/{Constants.CONFIG_LINKED_PROJECTS}' file and re-run 'beam project add-unreal-project'." +
+						                       "When using the OSB plugin, MS files are generated into the plugin's Customer folder; so, please delete your AutoGen folders from their " +
+						                       "previous location (outside of the plugin).");
+					}
+				}
+
+				UnrealSourceGenerator.exportMacro = unrealProjectData.CoreProjectName.ToUpper() + "_API";
+
+				UnrealSourceGenerator.blueprintExportMacro = unrealProjectData.BlueprintNodesProjectName.ToUpper() + "_API";
+				UnrealSourceGenerator.blueprintHeaderFileOutputPath = unrealProjectData.MsBlueprintNodesHeaderPath;
+				UnrealSourceGenerator.blueprintCppFileOutputPath = unrealProjectData.MsBlueprintNodesCppPath;
+
+				UnrealSourceGenerator.headerFileOutputPath = unrealProjectData.MsCoreHeaderPath;
+				UnrealSourceGenerator.cppFileOutputPath = unrealProjectData.MsCoreCppPath;
+
+				UnrealSourceGenerator.genType = UnrealSourceGenerator.GenerationType.Microservice;
+				UnrealSourceGenerator.previousGenerationPassesData = JsonConvert.DeserializeObject<PreviousGenerationPassesData>(File.ReadAllText(previousGenerationFilePath));
+				UnrealSourceGenerator.currentGenerationPassDataFilePath = $"{unrealProjectData.CoreProjectName}_GenerationPass";
+
+				var unrealFileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext
+				{
+					Documents = docs,
+					OrderedSchemas = orderedSchemas,
+					ReplacementTypes = new Dictionary<OpenApiReferenceId, ReplacementTypeInfo>
+					{
+						{
+							"ClientPermission", new ReplacementTypeInfo
+							{
+								ReferenceId = "ClientPermission",
+								EngineReplacementType = "FBeamClientPermission",
+								EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamClientPermission",
+								EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamClientPermission.h""",
+							}
+						},
+						{
+							"ExternalIdentity", new ReplacementTypeInfo
+							{
+								ReferenceId = "ExternalIdentity",
+								EngineReplacementType = "FBeamExternalIdentity",
+								EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamExternalIdentity",
+								EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamExternalIdentity.h""",
+							}
+						},
+						{
+							"Tag", new ReplacementTypeInfo
+							{
+								ReferenceId = "Tag",
+								EngineReplacementType = "FBeamTag",
+								EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamTag",
+								EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamTag.h""",
+							}
+						}
+					}
+				});
+
+				var hasOutputPath = !string.IsNullOrEmpty(args.outputDirectory);
+				var outputDir = args.outputDirectory;
+				if (!hasOutputPath) outputDir = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.SourceFilesPath);
+
+				var allFilesToCreate = unrealFileDescriptors.Select(fd => Path.Join(outputDir, $"{fd.FileName}")).ToList();
+				// We need to run the "generate project files if any file was created"
+				var needsProjectFilesRebuild = !allFilesToCreate.All(File.Exists);
+				// We always clean up the output directory's AutoGen folders  --- every file we create is in the AutoGen folder.
+				var outputDirInfo = new DirectoryInfo(outputDir);
+				var autoGenDirs = outputDirInfo.GetDirectories("AutoGen", SearchOption.AllDirectories);
+				foreach (DirectoryInfo directoryInfo in autoGenDirs) Directory.Delete(directoryInfo.ToString(), true);
+
+				var writeFiles = new List<Task>();
+				for (int i = 0; i < allFilesToCreate.Count; i++)
+				{
+					string filePath = allFilesToCreate[i];
+					var path = Path.GetDirectoryName(filePath);
+					if (path == null) throw new CliException($"Parent path for file {filePath} is null. If you're a customer seeing this, report a bug.");
+
+					Directory.CreateDirectory(path);
+					writeFiles.Add(File.WriteAllTextAsync(filePath, unrealFileDescriptors[i].Content));
+				}
+
+				await Task.WhenAll(writeFiles);
+
+				// Run the Regenerate Project Files utility for the project (so that create files are automatically updated in IDEs).
+				if (needsProjectFilesRebuild)
+					RunGenerateProjectFiles(Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.Path));
+
+				static void RunGenerateProjectFiles(string unrealRoot)
+				{
+					// go into the unreal root
+					var cmd = $"cd {unrealRoot};";
+					// Get the name of the uproject
+					cmd += @"$uproject = Get-ChildItem ""*.uproject"" -Name;";
+					// Get the path to the UnrealEngine version for this project (this is stored here as-per UE -- https://forums.unrealengine.com/t/generate-vs-project-files-by-command-line/277707/18).
+					cmd += @"$bin = & { (Get-ItemProperty 'Registry::HKEY_CLASSES_ROOT\Unreal.ProjectFile\shell\rungenproj' -Name 'Icon' ).'Icon' };";
+					// Build the actual command to run at this path and pipe it into the cmd.exe.
+					cmd += @"$bin + ' -projectfiles %cd%\' + $uproject | cmd.exe";
+
+					// Run the command and print the result
+					var _ = ExecutePowershellCommand(cmd);
+				}
+
+
+				static string ExecutePowershellCommand(string command)
+				{
+					var processStartInfo = new ProcessStartInfo();
+					processStartInfo.FileName = "powershell.exe";
+					processStartInfo.Arguments = $"-Command \"{command}\"";
+					processStartInfo.UseShellExecute = false;
+					processStartInfo.RedirectStandardOutput = true;
+
+					using var process = new Process();
+					process.StartInfo = processStartInfo;
+					process.Start();
+					string output = process.StandardOutput.ReadToEnd();
+					return output;
+				}
+			}
+		}
 	}
 
 	Task GenerateFile(List<GeneratedFileDescriptor> descriptors, GenerateClientFileCommandArgs args, string projectPath)
@@ -272,7 +304,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 			{
 				var existingContent = File.ReadAllText(outputPath);
 				if (string.Compare(existingContent, descriptors[i].Content, CultureInfo.InvariantCulture,
-						CompareOptions.IgnoreSymbols) == 0)
+					    CompareOptions.IgnoreSymbols) == 0)
 				{
 					identicalFileCounter++;
 					continue;

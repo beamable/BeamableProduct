@@ -260,36 +260,6 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 	/// This is for local and development things
 	/// </summary>
 	public string RelativeDockerfilePath;
-	//
-	// [JsonIgnore]
-	// public string CID;
-	//
-	// [JsonIgnore]
-	// public string PID;
-	//
-	// /// <summary>
-	// /// TODO: We should add secret storage/resolution to Beam-O...
-	// /// </summary>
-	// [JsonIgnore]
-	// public string RealmSecret;
-	//
-	// /// <summary>
-	// /// TODO: Discuss with Drazen how to step out of this problem by leveraging the Http Service Discovery thing.
-	// /// </summary>
-	// [JsonIgnore]
-	// public string WebSocketHost;
-	//
-	// [JsonIgnore]
-	// public string LogLevel;
-	//
-	// [JsonIgnore]
-	// public string Prefix;
-	//
-	// [JsonIgnore]
-	// public string HealthCheckEndpoint;
-	//
-	// [JsonIgnore]
-	// public string HealthCheckInternalPort;
 
 	public DockerBindMount BindSrcForHotReloading;
 	public string HotReloadEnabledEndpoint;

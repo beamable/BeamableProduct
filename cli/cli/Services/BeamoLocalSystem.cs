@@ -15,8 +15,6 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public readonly BeamoLocalManifest BeamoManifest;
 
-	public readonly Dictionary<BeamoServiceDefinition, List<string>> ServicesDependencies = new();
-
 	/// <summary>
 	/// The current local state of containers, associated with the <see cref="BeamoLocalManifest.ServiceDefinitions"/>, keept in sync with the <see cref="_beamoLocalRuntimeFile"/> json file.
 	/// </summary>
@@ -96,6 +94,7 @@ public partial class BeamoLocalSystem
 	/// Persists the current state of <see cref="BeamoManifest"/> out to disk. TODO: Make this persistence part agnostic of where this is running so we can use it in Unity as well, maybe?
 	/// </summary>
 	public void SaveBeamoLocalManifest() => _configService.SaveDataFile(Constants.BEAMO_LOCAL_MANIFEST_FILE_NAME, BeamoManifest);
+
 	public void SaveBeamoLocalRuntime() => _configService.SaveDataFile(Constants.BEAMO_LOCAL_RUNTIME_FILE_NAME, BeamoRuntime);
 
 	/// <summary>
@@ -108,15 +107,17 @@ public partial class BeamoLocalSystem
 	/// Get list of <see cref="BeamoId"/>s that this service depends on.
 	/// </summary>
 	/// <param name="beamoServiceId">The identifier of the Beamo service.</param>
-	/// <param name="projectExtension">The extension of the project files. Default is "csproj".</param>
 	/// <returns>Returns a list of <see cref="BeamoId"/>s that this service depends on.</returns>
-	public async Task<List<string>> GetDependencies(string beamoServiceId, string projectExtension = "csproj")
+	public async Task<List<string>> GetDependencies(string beamoServiceId)
 	{
 		var serviceDefinition = BeamoManifest.ServiceDefinitions.FirstOrDefault(s => s.BeamoId == beamoServiceId);
 		if (string.IsNullOrWhiteSpace(serviceDefinition?.ProjectDirectory))
 		{
 			return new List<string>();
 		}
+
+		var projectExtension = serviceDefinition.ProjectExtension;
+
 		var path = _configService.GetRelativePath(serviceDefinition!.ProjectDirectory);
 		path = Path.Combine(path, $"{beamoServiceId}.{projectExtension}");
 		var (cmd, builder) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, $"list {path} reference");
@@ -124,6 +125,7 @@ public partial class BeamoLocalSystem
 		{
 			throw new CliException($"Getting service dependencies failed, command output: {builder}");
 		}
+
 		// TODO improve it, for now it is naive, if there is related project with same name as one of the services it will treat it as it is connected
 		var withExtension = builder.ToString().Split(Environment.NewLine);
 
@@ -139,11 +141,12 @@ public partial class BeamoLocalSystem
 	public async Task AddProjectDependency(BeamoServiceDefinition project, BeamoServiceDefinition dependency)
 	{
 		if (project.Protocol != BeamoProtocolType.HttpMicroservice ||
-			dependency.Protocol != BeamoProtocolType.EmbeddedMongoDb)
+		    dependency.Protocol != BeamoProtocolType.EmbeddedMongoDb)
 		{
 			throw new CliException(
 				$"Currently the only supported dependencies are {nameof(BeamoProtocolType.HttpMicroservice)} depending on {nameof(BeamoProtocolType.EmbeddedMongoDb)}");
 		}
+
 		var projectPath = _configService.GetRelativePath(project.ProjectDirectory);
 		var dependencyPath = _configService.GetRelativePath(dependency.ProjectDirectory);
 		var command = $"add {projectPath} reference {dependencyPath}";
@@ -169,7 +172,6 @@ COPY {dependency.BeamoId}/. .";
 			dockerfileText = dockerfileText.Replace(search, replacement);
 			await File.WriteAllTextAsync(dockerfilePath, dockerfileText);
 		}
-		ServicesDependencies.Clear();
 	}
 
 	/// <summary>
@@ -179,17 +181,17 @@ COPY {dependency.BeamoId}/. .";
 	/// <returns>A dictionary where the key is a BeamoServiceDefinition and the value is a list of its dependencies.</returns>
 	public async Task<Dictionary<BeamoServiceDefinition, List<string>>> GetAllBeamoIdsDependencies(string projectExtension = "csproj")
 	{
-
+		var allBeamoIdsDependencies = new Dictionary<BeamoServiceDefinition, List<string>>();
 		foreach (var definition in BeamoManifest.ServiceDefinitions)
 		{
-			if (!ServicesDependencies.ContainsKey(definition))
+			if (!allBeamoIdsDependencies.ContainsKey(definition))
 			{
-				var entry = await GetDependencies(definition.BeamoId, projectExtension);
-				ServicesDependencies.Add(definition, entry);
+				var entry = await GetDependencies(definition.BeamoId);
+				allBeamoIdsDependencies.Add(definition, entry);
 			}
 		}
 
-		return ServicesDependencies;
+		return allBeamoIdsDependencies;
 	}
 
 	/// <summary>
@@ -272,6 +274,7 @@ COPY {dependency.BeamoId}/. .";
 		{
 			BeamoId = beamoId,
 			Protocol = type,
+			Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet,
 			ImageId = string.Empty,
 			ShouldBeEnabledOnRemote = shouldServiceBeEnabled,
 		};
@@ -387,7 +390,6 @@ COPY {dependency.BeamoId}/. .";
 	}
 }
 
-
 /// <summary>
 /// A function that takes in the <see cref="BeamoServiceDefinition"/> plus it's associated Local Protocol so that it can make changes to the protocol instance.
 /// </summary>
@@ -399,7 +401,6 @@ public delegate Task LocalProtocolModifier<in TLocal>(BeamoServiceDefinition own
 /// </summary>
 /// <typeparam name="TRemote">The type of <see cref="IBeamoRemoteProtocol"/> associated with the given <see cref="BeamoServiceDefinition.Protocol"/>.</typeparam>
 public delegate Task RemoteProtocolModifier<in TRemote>(BeamoServiceDefinition owner, TRemote protocol) where TRemote : IBeamoRemoteProtocol;
-
 
 /// <summary>
 /// A "typedef" around a <see cref="string"/> to <see cref="IBeamoLocalProtocol"/> <see cref="Dictionary{TKey,TValue}"/>.
@@ -473,10 +474,18 @@ public class BeamoLocalManifest
 
 public class BeamoServiceDefinition
 {
+	public enum ProjectLanguage { CSharpDotnet, }
+
 	/// <summary>
 	/// The id that this service will be know, both locally and remotely.
 	/// </summary>
 	public string BeamoId;
+
+	/// <summary>
+	/// The type of the project for this --- for now, can only be <see cref="ProjectLanguage.CSharpDotnet"/>, in the future, we might have different flavor MSs.
+	/// TODO: When we start supporting different languages for microservices, this will be allowed to change --- for now, it is always <see cref="ProjectLanguage.CSharpDotnet"/>.
+	/// </summary>
+	public ProjectLanguage Language = ProjectLanguage.CSharpDotnet;
 
 	/// <summary>
 	/// The protocol this service respects.
@@ -558,6 +567,34 @@ public class BeamoServiceDefinition
 			return $"{bm.LocalPath}:{bm.InContainerPath}{options}";
 		}));
 	}
+
+	/// <summary>
+	/// <inheritdoc cref="GetProjectExtension"/>
+	/// </summary>
+	public string ProjectExtension => GetProjectExtension(Language);
+
+	/// <summary>
+	/// Given a project language, will return an individual project/module file extension ("csproj" for dotnet, "mod" for go, etc...)
+	/// </summary>
+	public static string GetProjectExtension(ProjectLanguage language) => language switch
+	{
+		ProjectLanguage.CSharpDotnet => "csproj",
+		_ => throw new ArgumentOutOfRangeException()
+	};
+
+	/// <summary>
+	/// <inheritdoc cref="GetSolutionExtension"/>
+	/// </summary>
+	public string SolutionExtension => GetSolutionExtension(Language);
+
+	/// <summary>
+	/// Given a language, return a "group of project" file extension ("sln" for dotnet, "work" for go, etc...)
+	/// </summary>
+	public static string GetSolutionExtension(ProjectLanguage language) => language switch
+	{
+		ProjectLanguage.CSharpDotnet => "sln",
+		_ => throw new ArgumentOutOfRangeException()
+	};
 }
 
 /// <summary>
@@ -621,7 +658,6 @@ public struct DockerEnvironmentVariable
 	public string VariableName;
 	public string Value;
 }
-
 
 /// <summary>
 /// The type of protocol a <see cref="BeamoServiceDefinition.Protocol"/> was created with. Conceptually, a protocol is just a set of algorithms and data that solve the problem of:

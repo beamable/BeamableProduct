@@ -14,7 +14,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using static Beamable.Common.Constants.Features.Services;
 
-namespace cli.Unreal; 
+namespace cli.Unreal;
 
 public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 {
@@ -936,13 +936,15 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		context.SchemaNameCollisions.EnsureCapacity(context.Schemas.Count);
 		foreach (var namedOpenApiSchema in context.Schemas)
 		{
-			var name = namedOpenApiSchema.Schema.Extensions.TryGetValue(MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME, out var nameOverride)
-				? new OpenApiReferenceId((nameOverride as OpenApiString).Value)
-				: namedOpenApiSchema.ReferenceId;
+			var name = namedOpenApiSchema.ReferenceId;
+			if (namedOpenApiSchema.Schema.Extensions.TryGetValue(MICROSERVICE_EXTENSION_BEAMABLE_TYPE_NAME, out var nameOverride))
+			{
+				name = new OpenApiReferenceId((nameOverride as OpenApiString).Value);
+			}
 
 			if (!context.SchemaNameCollisions.TryGetValue(name, out var list))
 			{
-				list = new List<NamedOpenApiSchema>(1);
+				list = new List<NamedOpenApiSchema>(8);
 				context.SchemaNameCollisions.Add(name, list);
 			}
 
@@ -1198,8 +1200,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					unrealEndpoint.NamespacedOwnerServiceName = unrealServiceDecl.SubsystemName;
 					// TODO: For now, we make all non-basic endpoints require auth. This is due to certain endpoints' OpenAPI spec not being correctly generated. We also need to correctly generate the server-only services in UE at a future date.
 					unrealEndpoint.IsAuth = serviceType != ServiceType.Basic ||
-											serviceTitle.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
-											endpointData.Security[0].Any(kvp => kvp.Key.Reference.Id == "user");
+					                        serviceTitle.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
+					                        endpointData.Security[0].Any(kvp => kvp.Key.Reference.Id == "user");
 					unrealEndpoint.EndpointName = endpointPath;
 					unrealEndpoint.EndpointRoute = isMsGen ? $"micro_{openApiDocument.Info.Title}{endpointPath}" : endpointPath;
 					unrealEndpoint.EndpointVerb = operationType switch
@@ -1352,8 +1354,19 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 									RawFieldName = fieldName,
 									NonOptionalTypeName = unrealType,
 								};
+								wrapperBody.PropertyIncludes.Add(GetIncludeStatementForUnrealType(context, unrealType));
 								wrapperBody.UPropertyDeclarations.Add(wrappedPrimitiveProperty);
 								AddJsonAndDefaultValueHelperIncludesIfNecessary(unrealType, ref wrapperBody, true);
+
+								// Wrapper types can be directly returned from endpoints. In case this happens, we need to declare the wrapper types we found here.
+								if (unrealType.ContainsWrapperContainer())
+								{
+									var wrapper = MakeWrapperDeclaration(context, unrealType);
+
+									if (unrealType.ContainsWrapperArray()) output.ArrayWrapperTypes.Add(wrapper);
+									if (unrealType.ContainsWrapperMap()) output.MapWrapperTypes.Add(wrapper);
+								}
+
 								output.ResponseWrapperTypes.Add(wrapperBody);
 
 								// Configure the endpoint
@@ -1570,7 +1583,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	 * NAMESPACE CONFLICT RESOLUTION FUNCTIONS ---- THESE ARE MEANT TO RESOLVE NAME CONFLICTS AND PRODUCE A TYPE NAME (WITHOUT THE UNREAL PREFIXES) THAT IS UNIQUE ACROSS ALL THE GENERATION SPACE.
 	 * We use these to control what the "final name" of any give type will look like. The other use relies on UNREAL_TYPES_OVERRIDES and NAMESPACED_ENDPOINT_OVERRIDES to manually enforce a change
 	 * between a "auto-magically generated name" and a "manually defined one". This is important due to some of our types conflicting with each other as well as with Unreal's own types.
-	 *	 
+	 *
 	 */
 
 
@@ -1717,9 +1730,6 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		// Adjust the schema name if its a CSV Row
 		referenceId = isCsvRow ? $"{referenceId}TableRow" : referenceId;
 
-		// Adjust the schema name if its being generated for a Microservice.
-		referenceId = isMsGen ? $"{parentDoc.Info.Title.Sanitize()}{referenceId}" : referenceId;
-
 		// Adjust the schema name if it is an optional schema
 		referenceId = isOptional ? $"Optional{referenceId}" : referenceId;
 
@@ -1809,8 +1819,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		if (doesConflict)
 		{
 			throw new ArgumentException($"{methodName} was found in more than one service. " +
-										$"In this case, this is because you have two microservices with the same name OR because this name clashes with an existing Beamable API. " +
-										$"Please change your Microservice name to resolve this.");
+			                            $"In this case, this is because you have two microservices with the same name OR because this name clashes with an existing Beamable API. " +
+			                            $"Please change your Microservice name to resolve this.");
 		}
 
 		// In case we want to manually override an endpoint's name...
@@ -1841,8 +1851,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		if (doesConflict)
 		{
 			throw new ArgumentException($"{methodName} was overloaded in {serviceName}. " +
-										$"We do not support overloading Callable/ClientCallable/AdminCallable functions." +
-										$"Please rename all overloads to resolve this.");
+			                            $"We do not support overloading Callable/ClientCallable/AdminCallable functions." +
+			                            $"Please rename all overloads to resolve this.");
 		}
 
 		// In case we want to manually override an endpoint's name...
@@ -1915,11 +1925,11 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		/// </summary>
 		public bool ContainsPolymorphicType() => AsStr.Contains(UNREAL_U_POLY_WRAPPER_PREFIX);
 
-		public bool ContainsWrapperContainer() => ContainsWrapperArray()|| ContainsWrapperMap();
+		public bool ContainsWrapperContainer() => ContainsWrapperArray() || ContainsWrapperMap();
 		public bool ContainsWrapperMap() => AsStr.Contains(UNREAL_WRAPPER_MAP);
 		public bool ContainsWrapperArray() => AsStr.Contains(UNREAL_WRAPPER_ARRAY);
 
-		public bool IsWrapperContainer() => IsWrapperMap()||IsWrapperArray();
+		public bool IsWrapperContainer() => IsWrapperMap() || IsWrapperArray();
 		public bool IsWrapperMap() => AsStr.StartsWith(UNREAL_WRAPPER_MAP);
 		public bool IsWrapperArray() => AsStr.StartsWith(UNREAL_WRAPPER_ARRAY);
 		public bool IsBeamNode() => AsStr.StartsWith(UNREAL_U_BEAM_NODE_PREFIX);

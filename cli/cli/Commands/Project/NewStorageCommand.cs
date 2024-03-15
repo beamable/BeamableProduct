@@ -108,7 +108,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 		}
 		else if (args.linkedServices != null)
 		{
-			dependencies = GetDependencieFromName(args.BeamoLocalSystem, args.linkedServices);
+			dependencies = GetDependenciesFromName(args.BeamoLocalSystem, args.linkedServices);
 		}
 
 		// add the project itself
@@ -128,7 +128,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 		}
 	}
 
-	private string[] GetDependencieFromName(BeamoLocalSystem localSystem, List<string> dependencies)
+	private string[] GetDependenciesFromName(BeamoLocalSystem localSystem, List<string> dependencies)
 	{
 		if (dependencies == null)
 		{
