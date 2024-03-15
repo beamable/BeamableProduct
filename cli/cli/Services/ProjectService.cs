@@ -422,7 +422,13 @@ public class ProjectService
 			microserviceInfo.SolutionPath = await CreateNewSolution(args.relativeNewSolutionDirectory, args.SolutionName);
 		}
 
-		microserviceInfo.ServicePath = await CreateNewService(microserviceInfo.SolutionPath, args.ProjectName, !args.SkipCommon, usedVersion);
+		if (string.IsNullOrWhiteSpace(args.servicesBaseFolderPath))
+		{
+			var directory = Path.GetDirectoryName(microserviceInfo.SolutionPath);
+			args.servicesBaseFolderPath = Path.Combine(directory!, "services");
+		}
+
+		microserviceInfo.ServicePath = await CreateNewService(microserviceInfo.SolutionPath, args.ProjectName,args.servicesBaseFolderPath, !args.SkipCommon, usedVersion);
 		return microserviceInfo;
 	}
 
@@ -437,7 +443,10 @@ public class ProjectService
 
 		if (Directory.Exists(solutionPath))
 		{
-			throw new CliException("Cannot create a solution because the directory already exists");
+			if (Directory.EnumerateFiles(solutionPath, "*sln").ToArray().Length > 0)
+			{
+				throw new CliException("Cannot create a solution because the directory already exists and it contains a solution file.");
+			}
 		}
 
 		// create the solution
@@ -446,15 +455,13 @@ public class ProjectService
 		return Path.Combine(solutionPath,$"{solutionName}.sln");
 	}
 
-	public async Task<string> CreateNewService(string solutionPath,string projectName,bool createCommonLibrary, string version)
+	public async Task<string> CreateNewService(string solutionPath,string projectName,string rootServicesPath, bool createCommonLibrary, string version)
 	{
 		var directory = Path.GetDirectoryName(solutionPath);
 		if (!File.Exists(solutionPath) || !Directory.Exists(directory))
 		{
 			throw new CliException($"{solutionPath} does not exist");
 		}
-		
-		var rootServicesPath = Path.Combine(directory, "services");
 		var commonProjectName = $"{projectName}Common";
 		var projectPath = Path.Combine(rootServicesPath, projectName);
 		var commonProjectPath = Path.Combine(rootServicesPath, commonProjectName);

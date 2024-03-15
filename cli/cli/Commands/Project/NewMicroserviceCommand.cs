@@ -37,6 +37,7 @@ public class NewMicroserviceArgs : SolutionCommandArgs
 {
 	public string relativeNewSolutionDirectory;
 	public string relativeExistingSolutionFile;
+	public string servicesBaseFolderPath;
 }
 
 
@@ -71,6 +72,8 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 		AddOption(new SkipCommonOptionFlag(), (args, i) => args.SkipCommon = i);
 		AddOption(new Option<ServiceName>("--solution-name", "The name of the solution of the new project. Use it if you want to create a new solution."),
 			(args, i) => args.SolutionName = i);
+		AddOption(new Option<string>("--service-directory", "Relative path to directory where microservice should be created. Defaults to \"SOLUTION_DIR/services\""),
+			(args, i) => args.servicesBaseFolderPath = i);
 		AddOption(new SpecificVersionOption(), (args, i) => args.SpecifiedVersion = i);
 		AddOption(new Option<bool>("--disable", "Created service by default would not be published"),
 			(args, i) => args.Disabled = i);

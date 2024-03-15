@@ -13,7 +13,7 @@ namespace Beamable.Editor.BeamCli.Commands
 		/// <summary>Pid to use; will default to whatever is in the file system</summary>
 		public string pid;
 		/// <summary>When true, skip input waiting and use defaults</summary>
-		public bool quiet; 
+		public bool quiet;
 		/// <summary>The host endpoint for beamable</summary>
 		public string host;
 		/// <summary>Refresh token to use for the requests</summary>
