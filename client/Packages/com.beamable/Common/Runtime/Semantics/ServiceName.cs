@@ -1,8 +1,10 @@
+using Beamable.Common.BeamCli;
 using System;
 using System.Text.RegularExpressions;
 
 namespace Beamable.Common.Semantics
 {
+	[CliContractType]
 	public struct ServiceName
 	{
 		public string Value { get; }

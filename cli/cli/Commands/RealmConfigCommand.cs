@@ -10,14 +10,59 @@ public class RealmConfigCommandArgs : CommandArgs
 	public List<string> namespaces = new();
 }
 
-public class RealmConfigCommand : AtomicCommand<RealmConfigCommandArgs, RealmConfigData>
+public class RealmConfigOutput
+{
+	public Dictionary<string, string> Config;
+	public List<RealmConfigView> ConvertToView(List<string> namespaceFilter = default)
+	{
+		const char configSeparator = '|';
+		var groupedConfig = new Dictionary<string, Dictionary<string, string>>();
+		foreach (var keyValue in Config)
+		{
+			string namespaceKey = "";
+			string configKey = "";
+
+			if (keyValue.Key.Contains(configSeparator))
+			{
+				var keyParts = keyValue.Key.Split(configSeparator);
+				namespaceKey = keyParts[0];
+				configKey = keyParts[1];
+			}
+			else
+			{
+				configKey = keyValue.Key;
+			}
+
+
+			if (namespaceFilter?.Count > 0 && !namespaceFilter.Contains(namespaceKey))
+			{
+				continue;
+			}
+
+			if (!groupedConfig.ContainsKey(namespaceKey))
+			{
+				groupedConfig[namespaceKey] = new Dictionary<string, string>();
+			}
+
+			groupedConfig[namespaceKey][configKey] = keyValue.Value;
+		}
+
+		return groupedConfig.Select(pair => new RealmConfigView
+		{
+			Namespace = pair.Key,
+			Config = pair.Value
+		}).OrderBy(pair => pair.Namespace).ToList();
+	}
+}
+
+public class RealmConfigCommand : AtomicCommand<RealmConfigCommandArgs, RealmConfigOutput>
 {
 	public override bool AutoLogOutput => false;
 	public RealmConfigCommand() : base("realm", "Get current realm config values") { }
 
-	protected override RealmConfigData GetHelpInstance()
+	protected override RealmConfigOutput GetHelpInstance()
 	{
-		return new RealmConfigData { Config = new Dictionary<string, string> { ["thor_rpc|useHttp"] = "true" } };
+		return new RealmConfigOutput { Config = new Dictionary<string, string> { ["thor_rpc|useHttp"] = "true" } };
 	}
 
 	public override void Configure()
@@ -25,13 +70,14 @@ public class RealmConfigCommand : AtomicCommand<RealmConfigCommandArgs, RealmCon
 		AddOption(new RealmConfigNamespaceOption(), (args, b) => args.namespaces = b.ToList());
 	}
 
-	public override async Task<RealmConfigData> GetResult(RealmConfigCommandArgs args)
+	public override async Task<RealmConfigOutput> GetResult(RealmConfigCommandArgs args)
 	{
 		try
 		{
 			var data = await args.RealmsApi.GetRealmConfig();
+			var output = new RealmConfigOutput { Config = data.Config };
 			LogResult(data.ConvertToView(args.namespaces));
-			return data;
+			return output;
 		}
 		catch (Exception e)
 		{

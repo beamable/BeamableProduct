@@ -199,7 +199,12 @@ public interface IAppCommand
 	}
 }
 
-public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IAppCommand
+public interface IHasArgs<TArgs> where TArgs : CommandArgs
+{
+	
+}
+
+public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IAppCommand, IHasArgs<TArgs>
 	where TArgs : CommandArgs
 {
 	private List<Action<BindingContext, TArgs>> _bindingActions = new List<Action<BindingContext, TArgs>>();
@@ -359,11 +364,14 @@ public interface ICommandFactory
 
 }
 
-public interface ICommandFactory<T>
+public interface ICommandFactory<T> where T : Command
 {
 
 }
-public class CommandFactory<T> : ICommandFactory<T> { }
+
+public class CommandFactory<T> : ICommandFactory<T> where T : Command
+{
+}
 
 public class CommandFactory : ICommandFactory
 {
