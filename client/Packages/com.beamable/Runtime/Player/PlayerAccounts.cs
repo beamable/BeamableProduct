@@ -1045,6 +1045,8 @@ namespace Beamable.Player
 		/// <returns>The newly created <see cref="PlayerAccount"/></returns>
 		public async Promise<PlayerAccount> CreateNewAccount()
 		{
+			await OnReady;
+
 			var tokenResponse = await _authService.CreateUser();
 			var accessToken = new AccessToken(_storage, _ctx.Cid, _ctx.Pid, tokenResponse.access_token,
 											  tokenResponse.refresh_token, tokenResponse.expires_in);
@@ -1086,6 +1088,8 @@ namespace Beamable.Player
 
 		private async Promise<PlayerAccount> SetStatValue(string key, string value, PlayerAccount account)
 		{
+			await OnReady;
+
 			if (account == null)
 			{
 				account = Current;
@@ -1199,6 +1203,8 @@ namespace Beamable.Player
 		private async Promise<PlayerRecoveryOperation> RecoverAccount(
 			Func<IAuthService, bool, Promise<TokenResponse>> loginFunction, bool attemptAccountMerge = true)
 		{
+			await OnReady;
+
 			TokenResponse res;
 			var op = new PlayerRecoveryOperation();
 			try
@@ -1245,6 +1251,8 @@ namespace Beamable.Player
 		/// <returns></returns>
 		public async Promise<PasswordResetConfirmOperation> ConfirmPassword(string code, string newPassword, PlayerAccount account = null)
 		{
+			await OnReady;
+
 			if (account == null)
 			{
 				account = Current;
@@ -1256,6 +1264,32 @@ namespace Beamable.Player
 			await service.ConfirmPasswordUpdate(code, newPassword);
 			await Refresh();
 			return res;
+		}
+
+
+		public async Promise ResetPassword(string email)
+		{
+			await OnReady;
+
+			var service = GetAuthServiceForAccount(Current);
+			await service.IssuePasswordUpdate(email);
+
+		}
+
+		public async Promise<PasswordResetResult> ConfirmPassword(string code, string newPassword)
+		{
+			await OnReady;
+
+			var service = GetAuthServiceForAccount(Current);
+			try
+			{
+				await service.ConfirmPasswordUpdate(code, newPassword);
+				return new PasswordResetResult();
+			}
+			catch (Exception ex)
+			{
+				return new PasswordResetResult(ex);
+			}
 		}
 
 		/// <summary>
@@ -1272,6 +1306,8 @@ namespace Beamable.Player
 		/// <returns></returns>
 		public async Promise<PasswordResetOperation> ResetPassword(PlayerAccount account = null)
 		{
+			await OnReady;
+
 			if (account == null)
 			{
 				account = Current;
@@ -1301,6 +1337,8 @@ namespace Beamable.Player
 		/// <param name="account"></param>
 		public async Promise<PlayerAccount> RemoveAllDeviceIds(PlayerAccount account = null)
 		{
+			await OnReady;
+
 			if (account == null)
 			{
 				account = Current;
@@ -1322,6 +1360,8 @@ namespace Beamable.Player
 		/// <param name="account"></param>
 		public async Promise<PlayerAccount> RemoveDeviceId(PlayerAccount account = null)
 		{
+			await OnReady;
+
 			if (account == null)
 			{
 				account = Current;
@@ -1350,6 +1390,8 @@ namespace Beamable.Player
 		/// <param name="account"></param>
 		public async Promise<PlayerAccount> RemoveThirdParty(AuthThirdParty thirdParty, string token, PlayerAccount account = null)
 		{
+			await OnReady;
+
 			if (account == null)
 			{
 				account = Current;
@@ -1380,6 +1422,8 @@ namespace Beamable.Player
 		/// <returns>A <see cref="RegistrationResult"/> representing the result of the deviceId addition. </returns>
 		public async Promise<RegistrationResult> AddDeviceId(PlayerAccount account = null)
 		{
+			await OnReady;
+
 			if (account == null)
 			{
 				account = Current;
@@ -1522,6 +1566,8 @@ namespace Beamable.Player
 			where TCloudIdentity : IThirdPartyCloudIdentity, new()
 			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity>
 		{
+			await OnReady;
+
 			if (account == null)
 			{
 				account = Current;
@@ -1601,6 +1647,8 @@ namespace Beamable.Player
 			where TCloudIdentity : IThirdPartyCloudIdentity, new()
 			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity>
 		{
+			await OnReady;
+
 			if (account == null)
 			{
 				account = Current;
@@ -1627,6 +1675,8 @@ namespace Beamable.Player
 			where TCloudIdentity : IThirdPartyCloudIdentity, new()
 			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity>
 		{
+			await OnReady;
+
 			if (account == null)
 			{
 				account = Current;
@@ -1661,6 +1711,8 @@ namespace Beamable.Player
 		/// <returns>A <see cref="RegistrationResult"/> representing the result of the deviceId addition. </returns>
 		public async Promise<RegistrationResult> AddThirdParty(AuthThirdParty thirdParty, string token, PlayerAccount account = null)
 		{
+			await OnReady;
+
 			if (account == null)
 			{
 				account = Current;
@@ -1696,6 +1748,7 @@ namespace Beamable.Player
 		/// <returns>True when the token is available, false if taken.</returns>
 		public async Promise<bool> IsThirdPartyAvailable(AuthThirdParty thirdParty, string token)
 		{
+			await OnReady;
 			return await _authService.IsThirdPartyAvailable(thirdParty, token);
 		}
 
@@ -1717,6 +1770,8 @@ namespace Beamable.Player
 		/// <returns>A <see cref="RegistrationResult"/> representing the result of the email addition. </returns>
 		public async Promise<RegistrationResult> AddEmail(string email, string password, PlayerAccount account = null)
 		{
+			await OnReady;
+
 			if (account == null)
 			{
 				account = Current;
@@ -1753,6 +1808,7 @@ namespace Beamable.Player
 		/// <returns>True when email is free to be used, false when it's already taken.</returns>
 		public async Promise<bool> IsEmailAvailable(string email)
 		{
+			await OnReady;
 			return await _authService.IsEmailAvailable(email);
 		}
 
@@ -1769,6 +1825,8 @@ namespace Beamable.Player
 		/// <param name="account"></param>
 		public async Promise RemoveAccount(PlayerAccount account)
 		{
+			await OnReady;
+
 			if (account == null || account.GamerTag == Current.GamerTag) return;
 
 			_storage.RemoveDeviceRefreshToken(_ctx.Cid, _ctx.Pid, account.token);
@@ -1785,6 +1843,8 @@ namespace Beamable.Player
 		/// </summary>
 		public async Promise RemoveAllAccounts()
 		{
+			await OnReady;
+
 			// this won't clear the current user, just the other stored ones.
 			_storage.ClearDeviceRefreshTokens(_ctx.Cid, _ctx.Pid);
 			await Refresh();
@@ -1798,6 +1858,8 @@ namespace Beamable.Player
 		/// <returns></returns>
 		public async Promise<PlayerAccount> SetLanguage(SystemLanguage language, PlayerAccount account = null)
 		{
+			await OnReady;
+
 			if (account == null)
 			{
 				account = Current;
