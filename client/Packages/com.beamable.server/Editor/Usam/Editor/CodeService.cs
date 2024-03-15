@@ -36,7 +36,6 @@ namespace Beamable.Server.Editor.Usam
 		private List<BeamServiceSignpost> _services;
 		private List<BeamStorageSignpost> _storages;
 		private List<Promise> _logsCommands = new List<Promise>();
-		private string _projectVersion;
 
 		private const string BEAMABLE_PATH = "Assets/Beamable/";
 		private const string MICROSERVICE_DLL_PATH = "bin/Debug/net6.0"; // is this true for all platforms and dotnet installations?
@@ -99,24 +98,11 @@ namespace Beamable.Server.Editor.Usam
 
 		public async Promise UpdateServicesVersions()
 		{
-			var version = new BeamVersionResults();
-			var versionCommand = _cli.Version().OnStreamVersionResults(result =>
-			{
-				version = result.data;
-			});
-			await versionCommand.Run().Error(LogExceptionVerbose);
-
-			if (string.IsNullOrEmpty(version?.version) || version.version.Contains("1.0.0"))
-			{
-				LogVerbose("Could not detect current version, skipping");
-				return;
-			}
-
-			var versions = _cli.ProjectVersion(new ProjectVersionArgs { requestedVersion = version?.version });
+			var nugetVersion = GetCurrentNugetVersion();
+			var versions = _cli.ProjectVersion(new ProjectVersionArgs { requestedVersion = nugetVersion });
 			versions.OnStreamProjectVersionCommandResult(result =>
 			{
-				_projectVersion = result.data.packageVersions[0];
-				LogVerbose($"Versions updated: {_projectVersion}");
+				LogVerbose($"Versions updated: {string.Join(",", result.data.packageVersions)}");
 			});
 			await versions.Run().Error(LogExceptionVerbose);
 		}
@@ -701,6 +687,21 @@ namespace Beamable.Server.Editor.Usam
 			LogVerbose($"Finished creation of storage {storageName}");
 		}
 
+		/// <summary>
+		/// Given the current SDK version, we should be able to figure out which version of Nuget packages we need.
+		/// Note: if we're developing the SDK, the version will be 0.0.0, and the current local version of Nuget package is 0.0.123-local.
+		/// </summary>
+		/// <returns></returns>
+		public static string GetCurrentNugetVersion()
+		{
+			var version = BeamableEnvironment.SdkVersion.ToString();
+			if (version == "0.0.0")
+			{
+				version = "0.0.123";
+			}
+
+			return version;
+		}
 
 		private async Promise CreateMicroService(string serviceName, string outputPath, List<IBeamoServiceDefinition> dependencies)
 		{
@@ -711,7 +712,7 @@ namespace Beamable.Server.Editor.Usam
 				quiet = true,
 				name = service,
 				output = outputPath,
-				version = _projectVersion
+				version = GetCurrentNugetVersion()
 			};
 			ProjectNewWrapper command = _cli.ProjectNew(args);
 			await command.Run();
