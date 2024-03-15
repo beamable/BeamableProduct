@@ -1,4 +1,5 @@
 using Beamable.Common.Semantics;
+using cli.Dotnet;
 using cli.Services;
 using cli.Utils;
 using Serilog;
@@ -7,12 +8,9 @@ using System.CommandLine;
 
 namespace cli.Commands.Project;
 
-public class NewStorageCommandArgs : CommandArgs
+public class NewStorageCommandArgs : SolutionCommandArgs
 {
-	public ServiceName storageName;
-	public string slnPath;
 	public List<string> linkedServices;
-	public string outputPath;
 }
 
 
@@ -25,12 +23,16 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 	public override void Configure()
 	{
 		AddArgument(new Argument<ServiceName>("name", "The name of the new Microstorage."),
-			(args, i) => args.storageName = i);
-		AddOption(new Option<string>("--sln", "The path to the solution that the Microstorage will be added to"),
-			(args, i) => args.slnPath = i);
-		AddOption(new Option<string>("--output-path", "The path where the storage is going to be created, a new sln is going to be created as well"),
-			(args, i) => args.outputPath = i);
-
+			(args, i) => args.ProjectName = i);
+		AddOption(new Option<string>("--existing-solution-file", () => string.Empty, description: "Relative path to current solution file to which standalone microservice should be added."),
+			(args, i) => args.RelativeExistingSolutionFile = i);
+		AddOption(new Option<ServiceName>("--new-solution-name", "The name of the solution of the new project. Use it if you want to create a new solution."),
+			(args, i) => args.SolutionName = i);
+		AddOption(new Option<string>("--service-directory", "Relative path to directory where microservice should be created. Defaults to \"SOLUTION_DIR/services\""),
+			(args, i) => args.ServicesBaseFolderPath = i);
+		AddOption(new SpecificVersionOption(), (args, i) => args.SpecifiedVersion = i);
+		AddOption(new Option<bool>("--disable", "Created service by default would not be published"),
+			(args, i) => args.Disabled = i);
 		var storageDeps = new Option<List<string>>("--link-to", "The name of the project to link this storage to")
 		{
 			Arity = ArgumentArity.ZeroOrMore,
@@ -41,55 +43,16 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 
 	public override async Task Handle(NewStorageCommandArgs args)
 	{
+		args.ValidateConfig();
 		// first, create the project...
+		args.SolutionName = string.IsNullOrEmpty(args.SolutionName) ? args.ProjectName : args.SolutionName;
 
-		bool ignoreSln = !string.IsNullOrEmpty(args.outputPath);
-
-		if (!ignoreSln && string.IsNullOrEmpty(args.slnPath))
-		{
-			// we can make some best-effort attempts to find the .sln file.
-			// 1. if there is exactly 1 .sln file in our current directly, use that.
-
-			var files = Directory.GetFiles(args.AppContext.WorkingDirectory);
-			var slnFiles = files.Where(f => f.EndsWith(".sln")).ToArray();
-			if (slnFiles.Length == 1)
-			{
-				args.slnPath = slnFiles[0];
-			}
-		}
-
-		if (!ignoreSln && string.IsNullOrEmpty(args.slnPath))
-		{
-			throw new CliException($"Was not able to infer sln file, please provide one with --sln.",
-				Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_SOLUTION_NOT_FOUND, true);
-		}
-
-		if (!ignoreSln && !File.Exists(args.slnPath))
-		{
-			string correctSlnPath = string.Empty;
-			string dir = Path.GetDirectoryName(args.slnPath);
-			if (!string.IsNullOrWhiteSpace(dir))
-			{
-				var files = Directory.GetFiles(dir);
-				var slnFiles = files.Where(f => f.EndsWith(".sln")).ToArray();
-				if (slnFiles.Length == 1)
-				{
-					correctSlnPath = slnFiles[0];
-				}
-			}
-
-			var exception = new CliException($"No sln file found at path=[{args.slnPath}]",
-				Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_SOLUTION_NOT_FOUND, true,
-				string.IsNullOrWhiteSpace(correctSlnPath) ? null : $"Try using \"{correctSlnPath}\" as --sln option value");
-
-			throw exception;
-		}
-
-		var path = ignoreSln ? args.outputPath : args.slnPath;
+		var newMicroserviceInfo = await args.ProjectService.CreateNewStorage(args);
 		Log.Information(
-			$"Registering local project... 'beam services register --id {args.storageName} --type EmbeddedMongoDb'");
-		var storageDef = await args.BeamoLocalSystem.AddDefinition_EmbeddedMongoDb(args.storageName, "mongo:latest",
-			args.ProjectService.GeneratePathForProject(path, args.storageName),
+			$"Registering local project... 'beam services register --id {args.ProjectName} --type EmbeddedMongoDb'");
+
+		var storageDef = await args.BeamoLocalSystem.AddDefinition_EmbeddedMongoDb(args.ProjectName, "mongo:latest",
+			newMicroserviceInfo.ServicePath,
 			CancellationToken.None);
 
 		string[] dependencies = null;
@@ -103,7 +66,6 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 		}
 
 		// add the project itself
-		_ = await args.ProjectService.CreateNewStorage(args.slnPath, args.outputPath, args.storageName, args.Quiet);
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
 
 		if (dependencies == null)
@@ -113,7 +75,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 		{
 			if (args.BeamoLocalSystem.BeamoManifest.TryGetDefinition(dependency, out var dependencyDefinition))
 			{
-				Log.Information("Adding {ArgsStorageName} reference to {Dependency}. ", args.storageName, dependency);
+				Log.Information("Adding {ArgsStorageName} reference to {Dependency}. ", args.ProjectName, dependency);
 				await args.BeamoLocalSystem.AddProjectDependency(dependencyDefinition, storageDef);
 			}
 		}

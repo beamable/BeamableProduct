@@ -109,9 +109,7 @@ namespace Beamable.Server.Editor.Usam
 				if (!Directory.Exists(path))
 				{
 					Debug.Log(microserviceName);
-					await CreateMicroService(microserviceName, $"{StandaloneMicroservicesPath}{microserviceName}/",
-					                         null,
-					                         true);
+					await CreateMicroService(microserviceName, null, true);
 				}
 
 				var signpost = _services.FirstOrDefault(s => s.name.Equals(microserviceName));
@@ -150,7 +148,7 @@ namespace Beamable.Server.Editor.Usam
 				if (!Directory.Exists(path))
 				{
 					Debug.Log(storageName);
-					await CreateStorage(storageName, path, deps);
+					await CreateStorage(storageName,deps);
 				}
 			}
 			// REMOVE OLD STUFF
@@ -388,21 +386,13 @@ namespace Beamable.Server.Editor.Usam
 		{
 			LogVerbose($"Starting creation of {name}");
 
-			var outputPath = $"{StandaloneMicroservicesPath}{name}/";
-
-			if (Directory.Exists(outputPath))
-			{
-				LogVerbose($"{name} already exists!");
-				return;
-			}
-
 			switch (type)
 			{
 				case ServiceType.MicroService:
-					await CreateMicroService(name, outputPath, additionalReferences);
+					await CreateMicroService(name, additionalReferences);
 					break;
 				case ServiceType.StorageObject:
-					await CreateStorage(name, outputPath, additionalReferences);
+					await CreateStorage(name, additionalReferences);
 					break;
 				default:
 					throw new ArgumentOutOfRangeException(nameof(type), type, null);
@@ -609,7 +599,7 @@ namespace Beamable.Server.Editor.Usam
 		/// </summary>
 		public static async Promise SetManifest(BeamCommands cli, List<IBeamoServiceDefinition> definitions)
 		{
-			var args = new ServicesSetLocalManifestArgs();
+			ServicesSetLocalManifestArgs args = new ServicesSetLocalManifestArgs();
 			//check how many services exist locally
 			int servicesCount = definitions.Count(definition => !string.IsNullOrEmpty(definition.ServiceInfo.projectPath));
 
@@ -765,9 +755,16 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 
-		private async Promise CreateStorage(string storageName, string outputPath, List<IBeamoServiceDefinition> additionalReferences)
+		private async Promise CreateStorage(string storageName, List<IBeamoServiceDefinition> additionalReferences)
 		{
 			var service = new ServiceName(storageName);
+			var slnPath = FindFirstSolutionFile();
+			var relativePath = Path.Combine(StandaloneMicroservicesPath, storageName);
+			if (Directory.Exists(relativePath))
+			{
+				LogVerbose($"{storageName} already exists!");
+				return;
+			}
 
 			string[] deps = new string[additionalReferences.Count];
 			for (int i = 0; i < additionalReferences.Count; i++)
@@ -778,17 +775,18 @@ namespace Beamable.Server.Editor.Usam
 			var storageArgs = new ProjectNewStorageArgs
 			{
 				name = service,
+				serviceDirectory = StandaloneMicroservicesPath,
+				existingSolutionFile = slnPath,
+				version = _projectVersion,
 				linkTo = deps,
-				outputPath = outputPath
 			};
 			var storageCommand = _cli.ProjectNewStorage(storageArgs);
 			await storageCommand.Run();
 
-			string relativePath = $"{outputPath}services";
-			BeamStorageSignpost signpost = new BeamStorageSignpost()
+			var signpost = new BeamStorageSignpost()
 			{
 				name = storageName,
-				assetProjectPath = Path.Combine(relativePath, storageName).Replace(StandaloneMicroservicesPath, string.Empty)
+				assetProjectPath = relativePath.Replace(StandaloneMicroservicesPath, string.Empty)
 			};
 
 			string signpostPath = $"{BEAMABLE_PATH}{storageName}.beamstorage";
@@ -809,26 +807,32 @@ namespace Beamable.Server.Editor.Usam
 		}
 
 
-		private async Promise CreateMicroService(string serviceName, string outputPath, List<IBeamoServiceDefinition> dependencies, bool skipCommon = false)
+		private async Promise CreateMicroService(string serviceName, List<IBeamoServiceDefinition> dependencies, bool skipCommon = false)
 		{
 			var service = new ServiceName(serviceName);
+			var slnPath = FindFirstSolutionFile();
+			var fullPath = Path.Combine(StandaloneMicroservicesPath, serviceName);
+			if (Directory.Exists(fullPath))
+			{
+				LogVerbose($"{serviceName} already exists!");
+				return;
+			}
 
 			var args = new ProjectNewMicroserviceArgs()
 			{
 				name = service,
-				newSolution = outputPath,
+				serviceDirectory = StandaloneMicroservicesPath,
+				existingSolutionFile = slnPath,
 				version = _projectVersion,
 				skipCommon = skipCommon,
-				
 			};
 			var command = _cli.ProjectNewMicroservice(args);
 			await command.Run();
 
-			string relativePath = $"{outputPath}services";
 			BeamServiceSignpost signpost = new BeamServiceSignpost()
 			{
 				name = serviceName,
-				assetProjectPath = Path.Combine(relativePath, serviceName).Replace(StandaloneMicroservicesPath, string.Empty)
+				assetProjectPath = fullPath.Replace(StandaloneMicroservicesPath, string.Empty)
 			};
 
 			string signpostPath = $"{BEAMABLE_PATH}{serviceName}.beamservice";

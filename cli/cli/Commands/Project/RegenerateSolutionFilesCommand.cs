@@ -33,7 +33,7 @@ public class RegenerateSolutionFilesCommand : AppCommand<RegenerateSolutionFiles
 
 		var solutionArgs = new NewMicroserviceArgs()
 		{
-			relativeNewSolutionDirectory = args.tempDirectory,
+			RelativeNewSolutionDirectory = args.tempDirectory,
 			SolutionName = args.ProjectName,
 			ProjectName = args.ProjectName,
 			Quiet = true,

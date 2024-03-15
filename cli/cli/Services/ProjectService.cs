@@ -350,21 +350,11 @@ public class ProjectService
 		public List<string> templates = new List<string>();
 	}
 
-	public class NewMicroserviceInfo
+	public class NewServiceInfo
 	{
 		public string SolutionDirectory => Path.GetDirectoryName(SolutionPath);
 		public string SolutionPath;
 		public string ServicePath;
-	}
-
-	public async Task AddProjectReference(string slnFilePath, string project, string projectReference)
-	{
-		var slnDirectory = Path.GetDirectoryName(slnFilePath);
-		var rootServicesPath = Path.Combine(slnDirectory, "services");
-
-		var projectPath = Path.Combine(rootServicesPath, project);
-		var referencePath = Path.Combine(rootServicesPath, projectReference);
-		await RunDotnetCommand($"add {projectPath} reference {referencePath}");
 	}
 
 	public string GeneratePathForProject(string slnFilePath, string beamId)
@@ -381,54 +371,71 @@ public class ProjectService
 		return path;
 	}
 
-	public async Task<string> CreateNewStorage(string slnFilePath, string outputPath, string storageName, bool quiet)
-	{
-		var hasCustomPath = !string.IsNullOrEmpty(outputPath);
-		var path = hasCustomPath ? outputPath : slnFilePath;
-		var storagePath = GeneratePathForProject(path, storageName);
-
-		if (Directory.Exists(storagePath))
-		{
-			throw new CliException("Cannot create a storage because the directory already exists");
-		}
-
-		await EnsureCanUseTemplates(null, quiet); // TODO: tech debt, this whole command needs to care about version.
-
-		// create the solution
-		if (hasCustomPath)
-			await RunDotnetCommand($"new sln -n \"{storageName}\" -o \"{storagePath}\"");
-
-		// create the beam microservice project
-		await RunDotnetCommand($"new beamstorage -n {storageName} -o {storagePath}");
-
-		// add the new project as a reference to the solution
-		var slnPathToUse = hasCustomPath ? storagePath : slnFilePath;
-		await RunDotnetCommand($"sln {slnPathToUse} add {storagePath}");
-
-		return storagePath;
-	}
-
-	public async Task<NewMicroserviceInfo> CreateNewMicroservice(NewMicroserviceArgs args)
+	public async Task<NewServiceInfo> CreateNewStorage(NewStorageCommandArgs args)
 	{
 		string usedVersion = string.IsNullOrWhiteSpace(args.SpecifiedVersion) ? await GetVersion() : args.SpecifiedVersion;
-		var microserviceInfo = new NewMicroserviceInfo();
-
+		var microserviceInfo = new NewServiceInfo();
 		// check that we have the templates available
 		await EnsureCanUseTemplates(usedVersion, args.Quiet);
-		microserviceInfo.SolutionPath = args.relativeExistingSolutionFile;
+		microserviceInfo.SolutionPath = args.RelativeExistingSolutionFile;
 		var shouldCreateSolution = string.IsNullOrWhiteSpace(microserviceInfo.SolutionPath);
 		if(shouldCreateSolution)
 		{
-			microserviceInfo.SolutionPath = await CreateNewSolution(args.relativeNewSolutionDirectory, args.SolutionName);
+			microserviceInfo.SolutionPath = await CreateNewSolution(args.RelativeNewSolutionDirectory, args.SolutionName);
+		}
+		if (!File.Exists(microserviceInfo.SolutionPath))
+		{
+			string correctSlnPath = string.Empty;
+			string dir = Path.GetDirectoryName(microserviceInfo.SolutionPath);
+			if (!string.IsNullOrWhiteSpace(dir))
+			{
+				var files = Directory.GetFiles(dir);
+				var slnFiles = files.Where(f => f.EndsWith(".sln")).ToArray();
+				if (slnFiles.Length == 1)
+				{
+					correctSlnPath = slnFiles[0];
+				}
+			}
+
+			var exception = new CliException($"No sln file found at path=[{microserviceInfo.SolutionPath}]",
+				Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_SOLUTION_NOT_FOUND, true,
+				string.IsNullOrWhiteSpace(correctSlnPath) ? null : $"Try using \"{correctSlnPath}\" as --sln option value");
+
+			throw exception;
 		}
 
-		if (string.IsNullOrWhiteSpace(args.servicesBaseFolderPath))
+		if (string.IsNullOrWhiteSpace(args.ServicesBaseFolderPath))
 		{
 			var directory = Path.GetDirectoryName(microserviceInfo.SolutionPath);
-			args.servicesBaseFolderPath = Path.Combine(directory!, "services");
+			args.ServicesBaseFolderPath = Path.Combine(directory!, "services");
+		}
+		microserviceInfo.ServicePath = Path.Combine(args.ServicesBaseFolderPath, args.ProjectName);
+		await RunDotnetCommand($"new beamstorage -n {args.ProjectName} -o {microserviceInfo.ServicePath}");
+		await RunDotnetCommand($"sln {microserviceInfo.SolutionPath} add {microserviceInfo.ServicePath}");
+		return microserviceInfo;
+	}
+
+	public async Task<NewServiceInfo> CreateNewMicroservice(NewMicroserviceArgs args)
+	{
+		string usedVersion = string.IsNullOrWhiteSpace(args.SpecifiedVersion) ? await GetVersion() : args.SpecifiedVersion;
+		var microserviceInfo = new NewServiceInfo();
+
+		// check that we have the templates available
+		await EnsureCanUseTemplates(usedVersion, args.Quiet);
+		microserviceInfo.SolutionPath = args.RelativeExistingSolutionFile;
+		var shouldCreateSolution = string.IsNullOrWhiteSpace(microserviceInfo.SolutionPath);
+		if(shouldCreateSolution)
+		{
+			microserviceInfo.SolutionPath = await CreateNewSolution(args.RelativeNewSolutionDirectory, args.SolutionName);
 		}
 
-		microserviceInfo.ServicePath = await CreateNewService(microserviceInfo.SolutionPath, args.ProjectName,args.servicesBaseFolderPath, !args.SkipCommon, usedVersion);
+		if (string.IsNullOrWhiteSpace(args.ServicesBaseFolderPath))
+		{
+			var directory = Path.GetDirectoryName(microserviceInfo.SolutionPath);
+			args.ServicesBaseFolderPath = Path.Combine(directory!, "services");
+		}
+
+		microserviceInfo.ServicePath = await CreateNewService(microserviceInfo.SolutionPath, args.ProjectName,args.ServicesBaseFolderPath, !args.SkipCommon, usedVersion);
 		return microserviceInfo;
 	}
 
@@ -528,66 +535,11 @@ public class ProjectService
 		return RunDotnetCommand($"add \"{projectPath}\" package {packageName}{versionToUpdate}");
 	}
 
-	public Task<string> AddToSolution(SolutionCommandArgs args)
-	{
-		return AddToSolution(args.SolutionName, args.ProjectName, !args.SkipCommon,
-			version: args.SpecifiedVersion);
-	}
-
-	public async Task<string> AddToSolution(string solutionName, string projectName, bool createCommonLibrary = true,
-		bool skipSolutionCreation = false, string version = "")
-	{
-		var solutionFile = $"{solutionName}.sln";
-		var solutionPath = Path.Combine(_configService.WorkingDirectory, solutionFile);
-		var rootServicesPath = "services";
-		var commonProjectName = $"{projectName}Common";
-		var projectPath = Path.Combine(rootServicesPath, projectName);
-		var commonProjectPath = Path.Combine(rootServicesPath, commonProjectName);
-
-		if (Directory.Exists(projectPath))
-		{
-			throw new CliException($"Project {projectName} already exists");
-		}
-
-		// check that we have the templates available 
-		await EnsureCanUseTemplates(version);
-
-		if (!skipSolutionCreation)
-		{
-			// create the beam microservice project
-			await RunDotnetCommand($"new beamservice -n \"{projectName}\" -o \"{projectPath}\"");
-
-			// restore the microservice tools
-			await RunDotnetCommand(
-				$"tool restore --tool-manifest \"{Path.Combine(projectPath, ".config", "dotnet-tools.json")}\"");
-		}
-
-		// add the microservice to the solution
-		await RunDotnetCommand($"sln \"{solutionPath}\" add \"{projectPath}\"");
-
-		string usedVersion = string.IsNullOrWhiteSpace(version) ? await GetVersion() : version;
-
-		await UpdateProjectDependencyVersion(projectPath, "Beamable.Microservice.Runtime", usedVersion);
-
-		// create the shared library project only if requested
-		if (createCommonLibrary)
-		{
-			await CreateCommonProject(commonProjectName, commonProjectPath, usedVersion);
-
-			// add the shared library to the solution
-			await RunDotnetCommand($"sln \"{solutionPath}\" add \"{commonProjectPath}\"");
-			// add the shared library as a reference of the project
-			await RunDotnetCommand($"add \"{projectPath}\" reference \"{commonProjectPath}\"");
-		}
-
-		return projectPath;
-	}
-
-	public Task<BeamoServiceDefinition> AddDefinitonToNewService(SolutionCommandArgs args, string path)
+	public Task<BeamoServiceDefinition> AddDefinitonToNewService(SolutionCommandArgs args, NewServiceInfo info)
 	{
 		// Find path to service folders: either it is in the working directory, or it will be inside 'args.name\\services' from the working directory.
-		string projectDirectory = args.ConfigService.GetServicesDir(args, path);
-		string projectDockerfilePath = Path.Combine(args.ProjectName, "Dockerfile");
+		string projectDirectory = Path.GetPathRoot(info.ServicePath);
+		string projectDockerfilePath = Path.Combine(info.ServicePath, "Dockerfile");
 
 		// now that a .beamable folder has been created, setup the beamo manifest
 		return args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value,
