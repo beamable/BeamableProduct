@@ -65,12 +65,12 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 	public override void Configure()
 	{
 		AddArgument(new ServiceNameArgument(), (args, i) => args.ProjectName = i);
-		AddOption(new Option<string>("--new-solution", () => string.Empty, description: "Relative path to current directory where new solution should be created."),
+		AddOption(new Option<string>("--new-solution-directory", () => string.Empty, description: "Relative path to current directory where new solution should be created."),
 			(args, i) => args.relativeNewSolutionDirectory = i);
 		AddOption(new Option<string>("--existing-solution-file", () => string.Empty, description: "Relative path to current solution file to which standalone microservice should be added."),
 			(args, i) => args.relativeExistingSolutionFile = i);
 		AddOption(new SkipCommonOptionFlag(), (args, i) => args.SkipCommon = i);
-		AddOption(new Option<ServiceName>("--solution-name", "The name of the solution of the new project. Use it if you want to create a new solution."),
+		AddOption(new Option<ServiceName>("--new-solution-name", "The name of the solution of the new project. Use it if you want to create a new solution."),
 			(args, i) => args.SolutionName = i);
 		AddOption(new Option<string>("--service-directory", "Relative path to directory where microservice should be created. Defaults to \"SOLUTION_DIR/services\""),
 			(args, i) => args.servicesBaseFolderPath = i);
@@ -81,9 +81,9 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 
 	public override async Task Handle(NewMicroserviceArgs args)
 	{
+		ValidateConfig(args);
 		// Default the solution name to the project name.
 		args.SolutionName = string.IsNullOrEmpty(args.SolutionName) ? args.ProjectName : args.SolutionName;
-		ValidateConfig(args);
 		// in the current directory, create a project using dotnet. 
 		var newMicroserviceInfo = await args.ProjectService.CreateNewMicroservice(args);
 
@@ -131,10 +131,11 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 	{
 		var shouldUseExistingSolution = !string.IsNullOrWhiteSpace(args.relativeExistingSolutionFile);
 		var shouldCreateNewSolution = !string.IsNullOrWhiteSpace(args.relativeNewSolutionDirectory);
+		shouldCreateNewSolution |= !string.IsNullOrWhiteSpace(args.SolutionName);
 		
 		if (shouldUseExistingSolution && shouldCreateNewSolution)
 		{
-			throw new CliException("Cannot specify both --existing-solution-file and --new-solution options.");
+			throw new CliException("Cannot specify both --existing-solution-file and --new-solution-directory or --new-solution-name options.");
 		}
 	}
 

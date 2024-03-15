@@ -457,8 +457,7 @@ public class ProjectService
 
 	public async Task<string> CreateNewService(string solutionPath,string projectName,string rootServicesPath, bool createCommonLibrary, string version)
 	{
-		var directory = Path.GetDirectoryName(solutionPath);
-		if (!File.Exists(solutionPath) || !Directory.Exists(directory))
+		if (!File.Exists(solutionPath))
 		{
 			throw new CliException($"{solutionPath} does not exist");
 		}
