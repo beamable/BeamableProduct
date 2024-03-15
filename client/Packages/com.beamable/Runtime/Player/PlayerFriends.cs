@@ -245,6 +245,7 @@ namespace Beamable.Player
 		/// <param name="playerId">the gamerTag of the player to accept friendship for</param>
 		public async Promise AcceptInviteFrom(long playerId)
 		{
+			await OnReady;
 			var invite = ReceivedInvites.FirstOrDefault(i => i.invitingPlayerId == playerId);
 			if (invite == null)
 			{
@@ -278,6 +279,8 @@ namespace Beamable.Player
 		/// <param name="playerId">the player id of the player to block</param>
 		public async Promise BlockPlayer(long playerId)
 		{
+			await OnReady;
+
 			await _socialApi.BlockPlayer(playerId);
 			await Refresh();
 		}
@@ -303,6 +306,8 @@ namespace Beamable.Player
 		/// <param name="playerId">the player id of the player to unblock</param>
 		public async Promise UnblockPlayer(long playerId)
 		{
+			await OnReady;
+
 			await _socialApi.UnblockPlayer(playerId);
 			await Refresh();
 		}
@@ -315,6 +320,8 @@ namespace Beamable.Player
 		/// <param name="playerId">the player id of the player to cancel the friendship request with</param>
 		public async Promise CancelInvite(long playerId)
 		{
+			await OnReady;
+
 			await _socialApi.CancelFriendRequest(playerId);
 			await Refresh();
 		}
@@ -328,6 +335,8 @@ namespace Beamable.Player
 		/// <returns>A <see cref="Promise"/> representing the network call.</returns>
 		public async Promise ImportFacebookFriends(string thirdPartyAuthToken)
 		{
+			await OnReady;
+
 			await _socialApi.ImportFriends(SocialThirdParty.Facebook, thirdPartyAuthToken);
 			await Refresh();
 		}

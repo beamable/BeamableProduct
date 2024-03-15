@@ -276,6 +276,7 @@ namespace Beamable.Player
 									Action<PlayerPromotedNotification> onPlayerPromoted = null,
 									Action<PlayerKickedNotification> onPlayerKicked = null)
 		{
+			await OnReady;
 			State = await _partyApi.CreateParty(restriction, maxSize);
 
 			OnPlayerJoined = onPlayerJoined;
@@ -290,6 +291,8 @@ namespace Beamable.Player
 		/// <inheritdoc cref="IPartyApi.UpdateParty"/>
 		public async Promise Update(PartyRestriction restriction, int maxSize = 0)
 		{
+			await OnReady;
+
 			if (State == null)
 			{
 				return;
@@ -302,6 +305,8 @@ namespace Beamable.Player
 		/// <inheritdoc cref="IPartyApi.JoinParty"/>
 		public async Promise Join(string partyId)
 		{
+			await OnReady;
+
 			State = await _partyApi.JoinParty(partyId);
 			await RefreshMembersFromState();
 		}
@@ -309,6 +314,8 @@ namespace Beamable.Player
 		/// <inheritdoc cref="IPartyApi.LeaveParty"/>
 		public async Promise Leave()
 		{
+			await OnReady;
+
 			if (State == null)
 			{
 				return;
@@ -329,6 +336,8 @@ namespace Beamable.Player
 		/// <inheritdoc cref="IPartyApi.InviteToParty"/>
 		public async Promise Invite(string playerId)
 		{
+			await OnReady;
+
 			if (State == null)
 			{
 				return;
@@ -340,6 +349,8 @@ namespace Beamable.Player
 		/// <inheritdoc cref="IPartyApi.InviteToParty"/>
 		public async Promise Invite(long playerId)
 		{
+			await OnReady;
+
 			if (State == null)
 			{
 				return;
@@ -349,14 +360,16 @@ namespace Beamable.Player
 		}
 
 		/// <inheritdoc cref="IPartyApi.GetPartyInvites"/>
-		public Promise<InvitesResponse> GetInvites()
+		public async Promise<InvitesResponse> GetInvites()
 		{
-			return _partyApi.GetPartyInvites();
+			await OnReady;
+			return await _partyApi.GetPartyInvites();
 		}
 
 		/// <inheritdoc cref="IPartyApi.PromoteToLeader"/>
 		public async Promise Promote(string playerId)
 		{
+			await OnReady;
 			if (State == null)
 			{
 				return;
@@ -368,6 +381,8 @@ namespace Beamable.Player
 		/// <inheritdoc cref="IPartyApi.PromoteToLeader(string, long)"/>
 		public async Promise Promote(long playerId)
 		{
+			await OnReady;
+
 			if (State == null)
 			{
 				return;
@@ -379,6 +394,8 @@ namespace Beamable.Player
 		/// <inheritdoc cref="IPartyApi.KickPlayer"/>
 		public async Promise Kick(string playerId)
 		{
+			await OnReady;
+
 			if (State == null)
 			{
 				return;
@@ -390,6 +407,8 @@ namespace Beamable.Player
 		/// <inheritdoc cref="IPartyApi.KickPlayer(string, long)"/>
 		public async Promise Kick(long playerId)
 		{
+			await OnReady;
+
 			if (State == null)
 			{
 				return;
