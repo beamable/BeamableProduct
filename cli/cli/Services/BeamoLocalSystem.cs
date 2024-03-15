@@ -116,11 +116,7 @@ public partial class BeamoLocalSystem
 			return new List<string>();
 		}
 
-		var projectExtension = serviceDefinition.Language switch
-		{
-			BeamoServiceDefinition.ProjectLanguage.CSharpDotnet => "csproj",
-			_ => throw new ArgumentOutOfRangeException()
-		};
+		var projectExtension = serviceDefinition.ProjectExtension;
 
 		var path = _configService.GetRelativePath(serviceDefinition!.ProjectDirectory);
 		path = Path.Combine(path, $"{beamoServiceId}.{projectExtension}");
@@ -571,6 +567,34 @@ public class BeamoServiceDefinition
 			return $"{bm.LocalPath}:{bm.InContainerPath}{options}";
 		}));
 	}
+
+	/// <summary>
+	/// <inheritdoc cref="GetProjectExtension"/>
+	/// </summary>
+	public string ProjectExtension => GetProjectExtension(Language);
+
+	/// <summary>
+	/// Given a project language, will return an individual project/module file extension ("csproj" for dotnet, "mod" for go, etc...)
+	/// </summary>
+	public static string GetProjectExtension(ProjectLanguage language) => language switch
+	{
+		ProjectLanguage.CSharpDotnet => "csproj",
+		_ => throw new ArgumentOutOfRangeException()
+	};
+
+	/// <summary>
+	/// <inheritdoc cref="GetSolutionExtension"/>
+	/// </summary>
+	public string SolutionExtension => GetSolutionExtension(Language);
+
+	/// <summary>
+	/// Given a language, return a "group of project" file extension ("sln" for dotnet, "work" for go, etc...)
+	/// </summary>
+	public static string GetSolutionExtension(ProjectLanguage language) => language switch
+	{
+		ProjectLanguage.CSharpDotnet => "sln",
+		_ => throw new ArgumentOutOfRangeException()
+	};
 }
 
 /// <summary>
