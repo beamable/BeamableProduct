@@ -245,6 +245,7 @@ public class App
 		Commands.AddSubCommand<DownloadOpenAPICommand, DownloadOpenAPICommandArgs, OpenAPICommand>();
 		Commands.AddSubCommandWithHandler<DepsCommand, DepsCommandArgs, ProjectCommand>();
 		Commands.AddSubCommandWithHandler<ListDepsCommand, ListDepsCommandArgs, DepsCommand>();
+		Commands.AddSubCommandWithHandler<AddDepsCommand, AddDepsCommandArgs, DepsCommand>();
 
 		Commands.AddRootCommand<NotificationBaseCommand>();
 		Commands.AddSubCommand<NotificationServerCommand, NotificationServerCommandArgs, NotificationBaseCommand>();
