@@ -124,6 +124,8 @@ namespace Beamable.Player
 		private INotificationService _notifications;
 		private ISdkEventService _sdkEventService;
 
+		public Promise OnReady { get; private set; }
+
 		public PlayerAnnouncements(IPlatformService platform,
 								   IAnnouncementsApi announcementsApi,
 								   PlayerInventory playerInventory,
@@ -143,7 +145,7 @@ namespace Beamable.Player
 									 HandleSubscriptionUpdate);
 
 
-			var _ = Refresh(); // automatically start.
+			OnReady = Refresh(); // automatically start.
 			IsInitialized = true;
 		}
 
@@ -207,9 +209,10 @@ namespace Beamable.Player
 		/// </summary>
 		/// <param name="announcement">The <see cref="Announcement"/> instance to mark read</param>
 		/// <returns>A <see cref="Promise"/> representing the work.</returns>
-		public Promise Read(Announcement announcement)
+		public async Promise Read(Announcement announcement)
 		{
-			return _sdkEventService.Add(new SdkEvent(nameof(Announcements), "read", announcement.Id));
+			await OnReady;
+			await _sdkEventService.Add(new SdkEvent(nameof(Announcements), "read", announcement.Id));
 		}
 
 		/// <summary>
@@ -217,9 +220,10 @@ namespace Beamable.Player
 		/// </summary>
 		/// <param name="announcement">The <see cref="Announcement"/> instance to claim</param>
 		/// <returns>A <see cref="Promise"/> representing the work.</returns>
-		public Promise Claim(Announcement announcement)
+		public async Promise Claim(Announcement announcement)
 		{
-			return _sdkEventService.Add(new SdkEvent(nameof(Announcements), "claim", announcement.Id));
+			await OnReady;
+			await _sdkEventService.Add(new SdkEvent(nameof(Announcements), "claim", announcement.Id));
 		}
 
 		public Promise OnDispose()

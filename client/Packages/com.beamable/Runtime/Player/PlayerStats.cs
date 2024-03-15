@@ -118,6 +118,7 @@ namespace Beamable.Player
 		private Promise _commitSync = new Promise();
 		private Dictionary<string, string> _pendingUpdates = new Dictionary<string, string>();
 
+		public Promise OnReady { get; private set; }
 
 		public PlayerStats(IPlatformService platform, IUserContext userContext, StatsService statService, ISdkEventService eventService, CoroutineService coroutineService)
 		{
@@ -130,7 +131,7 @@ namespace Beamable.Player
 			_updateRoutine = _coroutineService.StartNew("playerStatLoop", Update());
 			_consumer = _eventService.Register(nameof(PlayerStats), HandleEvent);
 
-			var _ = Refresh(); // automatically start.
+			OnReady = Refresh(); // automatically start.
 			IsInitialized = true;
 		}
 
@@ -193,9 +194,10 @@ namespace Beamable.Player
 		/// <returns>
 		/// A <see cref="Promise"/> representing the work. The promise won't complete until the set is complete.
 		/// </returns>
-		public Promise Set(string key, string value)
+		public async Promise Set(string key, string value)
 		{
-			return _eventService.Add(new SdkEvent(nameof(PlayerStats), "set", key, value));
+			await OnReady;
+			await _eventService.Add(new SdkEvent(nameof(PlayerStats), "set", key, value));
 		}
 
 		public Promise OnDispose()
