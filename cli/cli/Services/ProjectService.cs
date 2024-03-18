@@ -1,16 +1,11 @@
-using Beamable.Common;
-using Beamable.Common.Dependencies;
 using Beamable.Common.Semantics;
 using cli.Commands.Project;
 using cli.Dotnet;
 using cli.Unreal;
 using CliWrap;
-using CliWrap.Buffered;
-using JetBrains.Annotations;
 using Microsoft.CodeAnalysis.Sarif;
 using Serilog;
 using Spectre.Console;
-using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -383,6 +378,12 @@ public class ProjectService
 		{
 			microserviceInfo.SolutionPath = await CreateNewSolution(args.RelativeNewSolutionDirectory, args.SolutionName);
 		}
+
+		if (!_configService.IsPathInWorkingDirectory(microserviceInfo.SolutionPath))
+		{
+			throw new CliException(
+				$"Solution file({microserviceInfo.SolutionPath}) should not exists outside working directory({_configService.WorkingDirectory}) or its subdirectories.");
+		}
 		if (!File.Exists(microserviceInfo.SolutionPath))
 		{
 			string correctSlnPath = string.Empty;
@@ -435,6 +436,12 @@ public class ProjectService
 			args.ServicesBaseFolderPath = Path.Combine(directory!, "services");
 		}
 
+		if (!_configService.IsPathInWorkingDirectory(microserviceInfo.SolutionPath))
+		{
+			throw new CliException(
+				$"Solution file({microserviceInfo.SolutionPath}) should not exists outside working directory({_configService.WorkingDirectory}) or its subdirectories.");
+		}
+
 		microserviceInfo.ServicePath = await CreateNewService(microserviceInfo.SolutionPath, args.ProjectName,args.ServicesBaseFolderPath, !args.SkipCommon, usedVersion);
 		return microserviceInfo;
 	}
@@ -454,6 +461,12 @@ public class ProjectService
 			{
 				throw new CliException("Cannot create a solution because the directory already exists and it contains a solution file.");
 			}
+		}
+
+		if (!_configService.IsPathInWorkingDirectory(directory))
+		{
+			throw new CliException(
+				$"Solution file({directory}) should not exists outside working directory({_configService.WorkingDirectory}) or its subdirectories.");
 		}
 
 		// create the solution

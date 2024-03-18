@@ -1,9 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Api;
-using cli.Dotnet;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
-using Serilog;
 using System.CommandLine.Binding;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -34,7 +32,7 @@ public class ConfigService
 	[CanBeNull] private Dictionary<string, string> _config;
 
 	private string _dir;
-
+	private string WorkingDirectoryFullPath => Path.GetFullPath(WorkingDirectory);
 	public ConfigService(CliEnvironment environment, ConfigDirOption configDirOption)
 	{
 		_environment = environment;
@@ -52,6 +50,17 @@ public class ConfigService
 	}
 
 	/// <summary>
+	/// Check if the given path is within the working directory.
+	/// </summary>
+	/// <param name="path">The path to check.</param>
+	/// <returns>True if the path is within the working directory, false otherwise.</returns>
+	public bool IsPathInWorkingDirectory(string path)
+	{
+		var fullPath = Path.GetFullPath(path);
+		return fullPath.StartsWith(WorkingDirectoryFullPath);
+	}
+
+	/// <summary>
 	/// by default, paths are relative to the execution working directory...
 	/// But you may need them to be relative to the project root.
 	///
@@ -62,10 +71,7 @@ public class ConfigService
 	/// <returns></returns>
 	public string GetRelativePath(string relativePath)
 	{
-		var rootDir = Directory.GetParent(ConfigDirectoryPath).FullName;
-		var fullRoot = Path.GetFullPath(rootDir);
-
-		var path = Path.Combine(fullRoot, relativePath);
+		var path = Path.Combine(WorkingDirectoryFullPath, relativePath);
 		path = Path.GetRelativePath(Directory.GetCurrentDirectory(), path);
 		return path;
 	}
@@ -98,49 +104,6 @@ public class ConfigService
 		}
 
 		return Path.Combine(basePath, pathInConfig);
-	}
-
-
-	public string GetServicesDir(SolutionCommandArgs args, string newSolutionPath)
-	{
-		string result = string.Empty;
-		//using try catch because of the Directory.EnumerateDirectories behaviour
-		try
-		{
-			var list = Directory.EnumerateDirectories(BaseDirectory,
-				$"{args.SolutionName}\\services",
-				SearchOption.AllDirectories).ToList();
-			if (list.Count > 0)
-			{
-				result = Path.GetRelativePath(BaseDirectory, list.First());
-			}
-		}
-		catch
-		{
-			//
-		}
-
-		try
-		{
-			if (string.IsNullOrWhiteSpace(result))
-			{
-				var list = Directory.EnumerateDirectories(newSolutionPath, "services",
-					SearchOption.AllDirectories).ToList();
-				result = Path.GetRelativePath(BaseDirectory, list.First());
-			}
-		}
-		catch
-		{
-			//
-		}
-
-		if (string.IsNullOrWhiteSpace(result))
-		{
-			const string SERVICES_PATH_ERROR = "Could not find Solution services path!";
-			Log.Error(SERVICES_PATH_ERROR);
-		}
-
-		return result;
 	}
 
 	public void SaveDataFile<T>(string fileName, T data)

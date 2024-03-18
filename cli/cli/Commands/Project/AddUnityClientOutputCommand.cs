@@ -18,9 +18,6 @@ public class AddUnityClientOutputCommand : AppCommand<AddProjectClientOutputComm
 	public override void Configure()
 	{
 		AddArgument(new Argument<string>("path", "Relative path to the Unity project"), (args, i) => args.path = i);
-
-		var quietOption = new Option<bool>("--quiet", () => false, "When true, automatically accept path suggestions");
-		quietOption.AddAlias("-q");
 	}
 
 	public override Task Handle(AddProjectClientOutputCommandArgs args)
