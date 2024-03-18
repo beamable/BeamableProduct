@@ -37,15 +37,17 @@ public class ProjectVersionCommand : AtomicCommand<ProjectVersionCommandArgs, Pr
 		Log.Debug($"discovered {projectList.Count} projects...");
 		foreach (var project in projectList)
 		{
-			var solutionPath =
+			var solutionPathDir =
 				Directory.GetParent(Path.Combine(args.ConfigService.BaseDirectory, project.RelativeDockerfilePath));
+			var solutionPath = Path.ChangeExtension(solutionPathDir.FullName, ".sln");
+			var solutionDir = Path.GetDirectoryName(solutionPath);
 			Log.Debug($"sln=[{solutionPath}]");
 
 			var (_, buffer) =
-				await CliExtensions.RunWithOutput(args.AppContext.DotnetPath, $"sln list {solutionPath!.FullName}");
+				await CliExtensions.RunWithOutput(args.AppContext.DotnetPath, $"sln {solutionPath} list");
 
 			var projectsPaths = buffer.ToString().ReplaceLineEndings("\n").Split("\n").Where(s => s.EndsWith(".csproj"))
-				.Select(p => Directory.GetParent(Path.Combine(solutionPath.FullName, p))!.FullName).ToList();
+				.Select(p => Directory.GetParent(Path.Combine(solutionDir, p))!.FullName).ToList();
 			Log.Debug($"sln=[{solutionPath}] inner project reference count=[{projectsPaths.Count}]");
 
 			foreach (string projectPath in projectsPaths)

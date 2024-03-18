@@ -1,3 +1,6 @@
+VERSION=${VERSION-'0.0.0'}
+OUTPUT=${OUTPUT-'./artifacts/'}
+cd "$(dirname "$0")"
 # uninstall the old version if it exists...
 dotnet new -u Beamable.Templates
 
@@ -12,10 +15,9 @@ cp -R ./BeamStorage/ ./templates/Data/BeamStorage
 
 # produce a nuget package...
 # dotnet pack ./templates/templates.csproj -o ./artifacts/ --no-build --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX
-dotnet pack ./templates/templates.csproj -o ./artifacts/ /p:VersionPrefix=0.0.0
-
+dotnet pack ./templates/templates.csproj -o ${OUTPUT} -p:PackageVersion=$VERSION
 # clean the folder again...
 rm -rf ./templates/Data
 
 # install the latest version...
-dotnet new -i ./artifacts/Beamable.Templates.0.0.0.nupkg
+dotnet new -i ${OUTPUT}Beamable.Templates.${VERSION}.nupkg

@@ -28,7 +28,7 @@ dotnet pack Packages/com.beamable.server/SharedRuntime/ --configuration Release 
 dotnet pack ../microservice/beamable.tooling.common/  --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
 dotnet pack ../microservice/  --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
 dotnet pack ../microservice/unityEngineStubs/  --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
-
+OUTPUT=$PROJECTS_DIR VERSION=$VERSION ../templates/build.sh
 
 if dotnet nuget list source | grep -q $SOURCE_NAME; then
     echo "Source already exists!"
