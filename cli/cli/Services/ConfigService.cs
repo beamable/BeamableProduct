@@ -33,6 +33,7 @@ public class ConfigService
 
 	private string _dir;
 	private string WorkingDirectoryFullPath => Path.GetFullPath(WorkingDirectory);
+
 	public ConfigService(CliEnvironment environment, ConfigDirOption configDirOption)
 	{
 		_environment = environment;
