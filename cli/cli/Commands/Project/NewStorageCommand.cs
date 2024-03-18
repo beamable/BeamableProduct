@@ -1,5 +1,4 @@
 using Beamable.Common.Semantics;
-using cli.Dotnet;
 using cli.Services;
 using cli.Utils;
 using Serilog;
@@ -14,14 +13,18 @@ public class NewStorageCommandArgs : SolutionCommandArgs
 }
 
 
-public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
+public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneCommand,IEmptyResult
 {
-	public NewStorageCommand() : base("storage", "Create and add a new Microstorage")
+	private readonly InitCommand _initCommand;
+
+	public NewStorageCommand(InitCommand initCommand) : base("storage", "Create and add a new Microstorage")
 	{
+		_initCommand = initCommand;
 	}
 
 	public override void Configure()
 	{
+		AddOption(new AutoInitFlag(), (args, b) => args.AutoInit = b);
 		AddArgument(new Argument<ServiceName>("name", "The name of the new Microstorage."),
 			(args, i) => args.ProjectName = i);
 		AddOption(new Option<string>("--existing-solution-file", () => string.Empty, description: "Relative path to current solution file to which standalone microservice should be added."),
@@ -44,6 +47,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 	public override async Task Handle(NewStorageCommandArgs args)
 	{
 		args.ValidateConfig();
+		await args.CreateConfigIfNeeded(_initCommand);
 		// first, create the project...
 		args.SolutionName = string.IsNullOrEmpty(args.SolutionName) ? args.ProjectName : args.SolutionName;
 

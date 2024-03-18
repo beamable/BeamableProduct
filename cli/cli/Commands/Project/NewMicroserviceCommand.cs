@@ -1,15 +1,38 @@
 using Beamable.Common;
 using Beamable.Common.Semantics;
-using Serilog;
-using Spectre.Console;
+using cli.Dotnet;
+using cli.Utils;
 using System.CommandLine;
 
-namespace cli.Dotnet;
+namespace cli.Commands.Project;
 
-public class SolutionCommandArgs : CommandArgs
+public class NewProjectCommandArgs : CommandArgs
+{
+	public ServiceName ProjectName;
+	public bool AutoInit;
+
+	public async Promise CreateConfigIfNeeded(InitCommand command)
+	{
+		if (ConfigService.DirectoryExists.GetValueOrDefault(false))
+		{
+			return;
+		}
+		if (!AutoInit)
+		{
+			throw CliExceptions.CONFIG_DOES_NOT_EXISTS;
+		}
+		await command.Handle(new InitCommandArgs { Provider = Provider, saveToFile = true });
+	}
+}
+
+public class AutoInitFlag : ConfigurableOptionFlag
+{
+	public AutoInitFlag() : base("auto-init", "If there is no .beamable configuration it will create one.") { }
+}
+
+public class SolutionCommandArgs : NewProjectCommandArgs
 {
 	public ServiceName SolutionName;
-	public ServiceName ProjectName;
 	public string SpecifiedVersion;
 	public bool Disabled;
 	public string RelativeNewSolutionDirectory;
@@ -79,6 +102,7 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 	public override void Configure()
 	{
 		AddArgument(new ServiceNameArgument(), (args, i) => args.ProjectName = i);
+		AddOption(new AutoInitFlag(), (args, b) => args.AutoInit = b);
 		AddOption(new Option<string>("--new-solution-directory", () => string.Empty, description: "Relative path to current directory where new solution should be created."),
 			(args, i) => args.RelativeNewSolutionDirectory = i);
 		AddOption(new Option<string>("--existing-solution-file", () => string.Empty, description: "Relative path to current solution file to which standalone microservice should be added."),
@@ -96,31 +120,11 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 	public override async Task Handle(NewMicroserviceArgs args)
 	{
 		args.ValidateConfig();
+		await args.CreateConfigIfNeeded(_initCommand);
 		// Default the solution name to the project name.
 		args.SolutionName = string.IsNullOrEmpty(args.SolutionName) ? args.ProjectName : args.SolutionName;
 		// in the current directory, create a project using dotnet. 
 		var newMicroserviceInfo = await args.ProjectService.CreateNewMicroservice(args);
-
-		// initialize a beamable project in that directory...
-		var createdNewWorkingDir = false;
-		var currentPath = Directory.GetCurrentDirectory();
-		if (!args.ConfigService.DirectoryExists.GetValueOrDefault(false))
-		{
-			args.ConfigService.SetTempWorkingDir(newMicroserviceInfo.SolutionDirectory);
-			Directory.SetCurrentDirectory(newMicroserviceInfo.SolutionDirectory);
-
-			try
-			{
-				await _initCommand.Handle(new InitCommandArgs { Provider = args.Provider, saveToFile = true });
-			}
-			catch
-			{
-				Directory.SetCurrentDirectory(currentPath);
-				throw;
-			}
-
-			createdNewWorkingDir = true;
-		}
 
 		var sd = await args.ProjectService.AddDefinitonToNewService(args, newMicroserviceInfo);
 
@@ -137,15 +141,5 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 		{
 			await args.ProjectService.LinkProjects(_addUnityCommand, _addUnrealCommand, args.Provider);
 		}
-
-		if (createdNewWorkingDir) HandleCreatedNewWorkingDirectory(currentPath, newMicroserviceInfo.SolutionDirectory, args.SolutionName);
-	}
-
-	private static void HandleCreatedNewWorkingDirectory(string currentPath, string path, string solutionName)
-	{
-		Directory.SetCurrentDirectory(currentPath);
-		BeamableLogger.Log("A new Beamable microservice project has been created successfully!");
-		AnsiConsole.MarkupLine($"To get started:\n[lime]cd {path}[/]");
-		AnsiConsole.MarkupLine($"Then open [lime]{solutionName}.sln[/] in your IDE and run the project");
 	}
 }

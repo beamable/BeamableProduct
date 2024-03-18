@@ -1,23 +1,26 @@
 ﻿using Beamable.Common.Semantics;
-using cli.Dotnet;
 using System.CommandLine;
 
 namespace cli.Commands.Project;
 
-public class CreateCommonLibraryArgs : CommandArgs
+public class CreateCommonLibraryArgs : NewProjectCommandArgs
 {
-	public ServiceName ProjectName;
 	public string SpecifiedVersion;
 	public string OutputPath;
 }
 
 public class NewCommonLibraryCommand : AppCommand<CreateCommonLibraryArgs>, IStandaloneCommand, IEmptyResult
 {
-	public NewCommonLibraryCommand() : base("common-lib", "Create common library project that later can be connected to the services.")
-	{}
+	private readonly InitCommand _initCommand;
+
+	public NewCommonLibraryCommand(InitCommand initCommand) : base("common-lib", "Create common library project that later can be connected to the services.")
+	{
+		_initCommand = initCommand;
+	}
 
 	public override void Configure()
 	{
+		AddOption(new AutoInitFlag(), (args, b) => args.AutoInit = b);
 		AddArgument(new Argument<ServiceName>("name", "The name of the new library project."),
 			(args, i) => args.ProjectName = i);
 		AddOption(new SpecificVersionOption(), (args, i) => args.SpecifiedVersion = i);
@@ -27,6 +30,7 @@ public class NewCommonLibraryCommand : AppCommand<CreateCommonLibraryArgs>, ISta
 
 	public override async Task Handle(CreateCommonLibraryArgs args)
 	{
+		await args.CreateConfigIfNeeded(_initCommand);
 		var path = Path.Combine(args.OutputPath, args.ProjectName);
 		await args.ProjectService.CreateCommonProject(args.ProjectName.Value, path, args.SpecifiedVersion);
 	}
