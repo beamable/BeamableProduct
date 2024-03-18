@@ -52,7 +52,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 			$"Registering local project... 'beam services register --id {args.ProjectName} --type EmbeddedMongoDb'");
 
 		var storageDef = await args.BeamoLocalSystem.AddDefinition_EmbeddedMongoDb(args.ProjectName, "mongo:latest",
-			newMicroserviceInfo.ServicePath,
+			args.ConfigService.GetRelativePath(newMicroserviceInfo.ServicePath),
 			CancellationToken.None);
 
 		string[] dependencies = null;
@@ -62,7 +62,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 		}
 		else if (args.linkedServices != null)
 		{
-			dependencies = GetDependencieFromName(args.BeamoLocalSystem, args.linkedServices);
+			dependencies = GetDependenciesFromName(args.BeamoLocalSystem, args.linkedServices);
 		}
 
 		// add the project itself
@@ -81,7 +81,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 		}
 	}
 
-	private string[] GetDependencieFromName(BeamoLocalSystem localSystem, List<string> dependencies)
+	private string[] GetDependenciesFromName(BeamoLocalSystem localSystem, List<string> dependencies)
 	{
 		if (dependencies == null)
 		{

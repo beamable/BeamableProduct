@@ -78,6 +78,9 @@ namespace Beamable.Server.Editor.Usam
 			SetSolution(_services, _storages);
 			LogVerbose("Solution set done");
 
+			LogVerbose("Setting properties file");
+			await SetPropertiesFile();
+
 			LogVerbose("Set manifest start");
 			await SetManifest(_cli, _services, _storages);
 			LogVerbose("set manifest ended");
@@ -577,6 +580,17 @@ namespace Beamable.Server.Editor.Usam
 			}
 
 			return null;
+		}
+
+		private async Promise SetPropertiesFile()
+		{
+			var command = _cli.ProjectGenerateProperties(new ProjectGeneratePropertiesArgs()
+			{
+				output = ".",
+				beamPath = BeamCliUtil.CLI_PATH.Replace(".dll", ""),
+				solutionDir = Path.GetFullPath(".")
+			});
+			await command.Run();
 		}
 
 		/// <summary>

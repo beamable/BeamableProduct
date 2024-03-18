@@ -105,8 +105,8 @@ public static class UnityHelper
 		foreach (var schema in context.OrderedSchemas)
 		{
 			// build all the types associated with this model...
-			var types = UnityHelper.GenerateDeclarations(schema.Name, schema.Schema);
-			nameToTypes.TryAdd(schema.Name, types);
+			var types = UnityHelper.GenerateDeclarations(schema.ReferenceId, schema.Schema);
+			nameToTypes.TryAdd(schema.ReferenceId, types);
 
 			// and always add the root model type...
 			root.Types.Add(types.Model);

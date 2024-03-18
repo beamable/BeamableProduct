@@ -46,7 +46,7 @@ public class GenerateOApiCommand : StreamCommand<GenerateOApiCommandArgs, Genera
 		var generator = new ServiceDocGenerator();
 		foreach (var service in args.services)
 		{
-			var result = await IsProjectBuilt(args, service);
+			var result = await ProjectCommand.IsProjectBuilt(args, service);
 			if (!result.isBuilt)
 			{
 				Log.Information($"service=[{service}] is not built.");

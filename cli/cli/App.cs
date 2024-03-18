@@ -220,6 +220,7 @@ public class App
 		Commands.AddSubCommand<GenerateEnvFileCommand, GenerateEnvFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateIgnoreFileCommand, GenerateIgnoreFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateClientFileCommand, GenerateClientFileCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<GeneratePropertiesFileCommand, GeneratePropertiesFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<OpenSwaggerCommand, OpenSwaggerCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<TailLogsCommand, TailLogsCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<OpenMongoExpressCommand, OpenMongoExpressCommandArgs, ProjectCommand>();
@@ -303,6 +304,24 @@ public class App
 		_serviceConfigurator = serviceConfigurator;
 	}
 
+	public List<Command> InstantiateAllCommands()
+	{
+		// automatically create all commands
+		var commandList = new List<Command>();
+		var commandFactoryServices = CommandProvider.SingletonServices.Where(t =>
+			t.Interface.IsGenericType && t.Interface.GetGenericTypeDefinition() == typeof(ICommandFactory<>)).ToList();
+		foreach (var factoryDescriptor in commandFactoryServices)
+		{
+			CommandProvider.GetService(factoryDescriptor.Interface);
+			var commandType = factoryDescriptor.Interface.GetGenericArguments()[0];
+			var command = (Command)CommandProvider.GetService(commandType);
+			
+			commandList.Add(command);
+		}
+
+		return commandList;
+	}
+
 	public virtual void Build()
 	{
 		if (IsBuilt)
@@ -310,13 +329,7 @@ public class App
 
 		CommandProvider = Commands.Build();
 
-		// automatically create all commands
-		var commandFactoryServices = CommandProvider.SingletonServices.Where(t =>
-			t.Interface.IsGenericType && t.Interface.GetGenericTypeDefinition() == typeof(ICommandFactory<>)).ToList();
-		foreach (var factory in commandFactoryServices)
-		{
-			CommandProvider.GetService(factory.Interface);
-		}
+		var _ = InstantiateAllCommands();
 
 		// sort the commands
 		var root = CommandProvider.GetService<RootCommand>();
