@@ -70,6 +70,7 @@ namespace Beamable.Server
 	    public static List<BeamableMicroService> Instances = new List<BeamableMicroService>();
 
 	    public static IUsageApi EcsService;
+	    private static IDiscoveryService _discovery;
 
 	    private static DebugLogSink ConfigureLogging(IMicroserviceArgs args, MicroserviceAttribute attr)
         {
@@ -220,6 +221,7 @@ namespace Beamable.Server
 			        .AddSingleton(attribute)
 			        .AddSingleton<IBeamSchedulerContext, SchedulerContext>()
 			        .AddSingleton<BeamScheduler>()
+			        .AddSingleton<IDiscoveryService>(_discovery)
 			        .AddSingleton<IUsageApi>(EcsService)
 			        .AddScoped<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
 			        .AddScoped<IRealmInfo>(provider => provider.GetService<IMicroserviceArgs>())
@@ -390,28 +392,18 @@ namespace Beamable.Server
 	        mongo.Init();
         }
 
-        public static void ConfigureDiscovery(IMicroserviceArgs args, MicroserviceAttribute attribute)
+        public static IDiscoveryService ConfigureDiscovery(IMicroserviceArgs args, MicroserviceAttribute attribute)
         {
 	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
 
 	        if (inDocker)
 	        {
-		        return;
+		        return new NoDiscoveryService();
 	        }
-	        var beacon = new NetMQBeacon();
-	        var port = Constants.Features.Services.DISCOVERY_PORT;
-	        beacon.Configure(port);
-	        
-	        var msg = new ServiceDiscoveryEntry
-	        {
-		        cid = args.CustomerID,
-		        pid = args.ProjectName,
-		        prefix = args.NamePrefix,
-		        serviceName = attribute.MicroserviceName,
-		        healthPort = args.HealthPort,
-	        };
-	        var msgJson = JsonConvert.SerializeObject(msg, UnitySerializationSettings.Instance);
-	        beacon.Publish(msgJson, TimeSpan.FromMilliseconds(Constants.Features.Services.DISCOVERY_BROADCAST_PERIOD_MS));
+
+	        var service = new DiscoveryService(args, attribute);
+			service.SetStatus(DiscoveryStatus.Starting);
+			return service;
         }
 
         public static async Task<string> ConfigureCid(IMicroserviceArgs args)
@@ -560,7 +552,7 @@ namespace Beamable.Server
 	        var pipeSink = ConfigureLogging(envArgs, attribute);
 	        ConfigureUncaughtExceptions();
 	        ConfigureUnhandledError();
-	        ConfigureDiscovery(envArgs, attribute);
+	        _discovery = ConfigureDiscovery(envArgs, attribute);
 	        await ConfigureUsageService(envArgs);
 	        ReflectionCache = ConfigureReflectionCache();
 	        

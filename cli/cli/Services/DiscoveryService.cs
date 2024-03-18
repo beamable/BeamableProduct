@@ -123,8 +123,14 @@ public class DiscoveryService
 				continue;
 			}
 
-			if (!nameToEntryWithTimestamp.ContainsKey(service.serviceName))
+			if (!nameToEntryWithTimestamp.TryGetValue(service.serviceName, out var existing))
 			{
+				// if it doesn't exist, enter it.
+				evtQueue.Enqueue(CreateEvent(service, true));
+
+			} else if (existing.Item2.status != service.status)
+			{
+				// or if the status has changed.
 				evtQueue.Enqueue(CreateEvent(service, true));
 			}
 
@@ -152,7 +158,8 @@ public class DiscoveryService
 			isRunning = isRunning,
 			isContainer = entry.isContainer,
 			containerId = entry.containerId,
-			healthPort = entry.healthPort
+			healthPort = entry.healthPort,
+			status = entry.status.GetDisplayString()
 		};
 	}
 
