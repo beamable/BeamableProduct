@@ -16,7 +16,7 @@ public class NewStorageCommandArgs : SolutionCommandArgs
 
 public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 {
-	public NewStorageCommand() : base("new-storage", "Create and add a new Microstorage")
+	public NewStorageCommand() : base("storage", "Create and add a new Microstorage")
 	{
 	}
 

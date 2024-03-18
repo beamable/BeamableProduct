@@ -72,15 +72,16 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class BeamCommands
     {
-        public virtual ProjectNewStorageWrapper ProjectNewStorage(ProjectNewStorageArgs newStorageArgs)
+        public virtual ProjectNewStorageWrapper ProjectNewStorage(ProjectNewStorageArgs storageArgs)
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             genBeamCommandArgs.Add("beam");
             genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
             genBeamCommandArgs.Add("project");
-            genBeamCommandArgs.Add("new-storage");
-            genBeamCommandArgs.Add(newStorageArgs.Serialize());
+            genBeamCommandArgs.Add("new");
+            genBeamCommandArgs.Add("storage");
+            genBeamCommandArgs.Add(storageArgs.Serialize());
             // Create an instance of an IBeamCommand
             Beamable.Common.BeamCli.IBeamCommand command = this._factory.Create();
             // Join all the command paths and args into one string

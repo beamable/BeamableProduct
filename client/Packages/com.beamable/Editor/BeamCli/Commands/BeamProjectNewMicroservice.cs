@@ -76,15 +76,16 @@ namespace Beamable.Editor.BeamCli.Commands
     }
     public partial class BeamCommands
     {
-        public virtual ProjectNewMicroserviceWrapper ProjectNewMicroservice(ProjectNewMicroserviceArgs newMicroserviceArgs)
+        public virtual ProjectNewMicroserviceWrapper ProjectNewMicroservice(ProjectNewMicroserviceArgs microserviceArgs)
         {
             // Create a list of arguments for the command
             System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
             genBeamCommandArgs.Add("beam");
             genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
             genBeamCommandArgs.Add("project");
-            genBeamCommandArgs.Add("new-microservice");
-            genBeamCommandArgs.Add(newMicroserviceArgs.Serialize());
+            genBeamCommandArgs.Add("new");
+            genBeamCommandArgs.Add("microservice");
+            genBeamCommandArgs.Add(microserviceArgs.Serialize());
             // Create an instance of an IBeamCommand
             Beamable.Common.BeamCli.IBeamCommand command = this._factory.Create();
             // Join all the command paths and args into one string

@@ -13,7 +13,7 @@ public class CreateCommonLibraryArgs : CommandArgs
 
 public class NewCommonLibraryCommand : AppCommand<CreateCommonLibraryArgs>, IStandaloneCommand, IEmptyResult
 {
-	public NewCommonLibraryCommand() : base("new-common-lib", "Create common library project that later can be connected to the services.")
+	public NewCommonLibraryCommand() : base("common-lib", "Create common library project that later can be connected to the services.")
 	{}
 
 	public override void Configure()

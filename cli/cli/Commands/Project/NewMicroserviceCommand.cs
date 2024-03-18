@@ -68,7 +68,7 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 	private readonly AddUnrealClientOutputCommand _addUnrealCommand;
 
 	public NewMicroserviceCommand(InitCommand initCommand, AddUnityClientOutputCommand addUnityCommand,
-		AddUnrealClientOutputCommand addUnrealCommand) : base("new-microservice",
+		AddUnrealClientOutputCommand addUnrealCommand) : base("microservice",
 		"Create new standalone microservice.")
 	{
 		_initCommand = initCommand;
