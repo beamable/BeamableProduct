@@ -246,6 +246,7 @@ public class App
 		Commands.AddSubCommandWithHandler<DepsCommand, DepsCommandArgs, ProjectCommand>();
 		Commands.AddSubCommandWithHandler<ListDepsCommand, ListDepsCommandArgs, DepsCommand>();
 		Commands.AddSubCommandWithHandler<AddDepsCommand, AddDepsCommandArgs, DepsCommand>();
+		Commands.AddSubCommandWithHandler<RemoveDepsCommand, RemoveDepsCommandArgs, DepsCommand>();
 
 		Commands.AddRootCommand<NotificationBaseCommand>();
 		Commands.AddSubCommand<NotificationServerCommand, NotificationServerCommandArgs, NotificationBaseCommand>();

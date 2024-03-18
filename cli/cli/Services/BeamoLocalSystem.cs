@@ -136,6 +136,52 @@ public partial class BeamoLocalSystem
 		return dependencies;
 	}
 
+	/// <summary>
+	/// Removes the dependency between a microservice and a storage.
+	/// </summary>
+	/// <param name="project">The microservice to have the dependency removed from</param>
+	/// <param name="dependency">The storage to remove as a dependency from the microservice</param>
+	public async Task RemoveProjectDependency(BeamoServiceDefinition project, BeamoServiceDefinition dependency)
+	{
+		if (project.Protocol != BeamoProtocolType.HttpMicroservice ||
+		    dependency.Protocol != BeamoProtocolType.EmbeddedMongoDb)
+		{
+			throw new CliException(
+				$"Currently the only supported dependencies are {nameof(BeamoProtocolType.HttpMicroservice)} depending on {nameof(BeamoProtocolType.EmbeddedMongoDb)}");
+		}
+
+		var relativeProjectPath = _configService.GetRelativePath(project.ProjectDirectory);
+		var projectPath = Path.Combine( relativeProjectPath, $"{project.BeamoId}.csproj");
+		var dependencyPath = Path.Combine( _configService.GetRelativePath(dependency.ProjectDirectory), $"{dependency.BeamoId}.csproj");
+		
+		var command = $"remove {projectPath} reference {dependencyPath}";
+		var (cmd, result) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, command);
+		if (cmd.ExitCode != 0)
+		{
+			throw new CliException($"Failed to remove project dependency, output of \"dotnet {command}\": {result}");
+		}
+		
+		var service = BeamoManifest.HttpMicroserviceLocalProtocols[project.BeamoId];
+		var dockerfilePath = service.RelativeDockerfilePath;
+		dockerfilePath = _configService.GetFullPath(Path.Combine(service.DockerBuildContextPath, dockerfilePath));
+		var dockerfileText = await File.ReadAllTextAsync(dockerfilePath);
+		
+		string search = @$"WORKDIR /subsrc/{dependency.BeamoId}
+COPY {dependency.BeamoId}/. .";
+		
+		if (dockerfileText.Contains(search))
+		{
+			dockerfileText = dockerfileText.Replace(search, "");
+			await File.WriteAllTextAsync(dockerfilePath, dockerfileText);
+		}
+		ServicesDependencies.Clear();
+	}
+
+	/// <summary>
+	/// Add a storage as a dependency of a microservice
+	/// </summary>
+	/// <param name="project">The microservice that the dependency will be added to</param>
+	/// <param name="dependency">The storage to be the microservice dependency</param>
 	public async Task AddProjectDependency(BeamoServiceDefinition project, BeamoServiceDefinition dependency)
 	{
 		if (project.Protocol != BeamoProtocolType.HttpMicroservice ||

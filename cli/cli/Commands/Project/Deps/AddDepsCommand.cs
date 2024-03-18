@@ -37,6 +37,14 @@ public class AddDepsCommand :  AppCommand<AddDepsCommandArgs>, IEmptyResult
 			return;
 		}
 
+		List<string> dependencies = await args.BeamoLocalSystem.GetDependencies(args.ServiceName);
+
+		if (dependencies.Contains(args.Dependency))
+		{
+			Log.Information($"The service {args.ServiceName} already has {args.Dependency} as a dependency");
+			return;
+		}
+
 		Log.Information("Adding {ArgsStorageName} reference to {Dependency}. ", args.Dependency, args.ServiceName);
 		await args.BeamoLocalSystem.AddProjectDependency(serviceDefinition, dependencyDefinition);
 	}
