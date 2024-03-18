@@ -28,7 +28,7 @@ public class GeneratePropertiesFileCommand : AppCommand<GeneratePropertiesFileCo
 		AddArgument(new Argument<string>("solution-dir", description: "The solution path to be used"),
 			(args, i) => args.SolutionDir = i);
 		
-		AddOption(new Option<string>("--build-dir", description: "A path relative to the given solution directory, that will be used to store the projects /bin and /obj directories. Note: the given path will have the project's assembly name and the bin or obj folder appended."),
+		AddOption(new Option<string>("--build-dir", description: "A path relative to the given solution directory, that will be used to store the projects /bin and /obj directories. Note: the given path will have the project's assembly name and the bin or obj folder appended"),
 			(args, i) => args.RelativeBuildDir = i);
 	}
 
