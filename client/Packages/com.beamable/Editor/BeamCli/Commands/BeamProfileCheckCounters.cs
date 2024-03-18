@@ -18,7 +18,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			// Create a list of arguments for the command
 			System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
 			// Add the countersFilePath value to the list of args.
-			genBeamCommandArgs.Add(this.countersFilePath);
+			genBeamCommandArgs.Add(this.countersFilePath.ToString());
 			// If the cpuLimit value was not default, then add it to the list of args.
 			if ((this.cpuLimit != default(double)))
 			{

@@ -16,7 +16,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			// Create a list of arguments for the command
 			System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
 			// Add the service value to the list of args.
-			genBeamCommandArgs.Add(this.service);
+			genBeamCommandArgs.Add(this.service.ToString());
 			// If the reconnect value was not default, then add it to the list of args.
 			if ((this.reconnect != default(bool)))
 			{

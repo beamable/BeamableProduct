@@ -7,6 +7,6 @@ namespace Beamable.Editor.BeamCli.Commands
 	[System.SerializableAttribute()]
 	public class BeamServiceManifestOutput
 	{
-		public System.Collections.Generic.List<BeamServiceManifest> manifests;
+		public System.Collections.Generic.List<BeamCliServiceManifest> manifests;
 	}
 }

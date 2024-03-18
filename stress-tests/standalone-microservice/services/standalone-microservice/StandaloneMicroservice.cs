@@ -2,7 +2,7 @@ using Beamable.Server;
 
 namespace Beamable.standalone_microservice
 {
-	[Microservice("standalone-microservice")]
+	[Microservice("standalone-microservice", EnableEagerContentLoading = false)]
 	public class StandaloneMicroservice : Microservice
 	{
 		[Callable]

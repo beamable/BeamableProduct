@@ -22,7 +22,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			// Create a list of arguments for the command
 			System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
 			// Add the name value to the list of args.
-			genBeamCommandArgs.Add(this.name);
+			genBeamCommandArgs.Add(this.name.ToString());
 			// If the sln value was not default, then add it to the list of args.
 			if ((this.sln != default(string)))
 			{

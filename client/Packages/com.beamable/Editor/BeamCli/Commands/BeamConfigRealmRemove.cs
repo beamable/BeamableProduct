@@ -55,7 +55,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	}
 	public class ConfigRealmRemoveWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
-		public virtual ConfigRealmRemoveWrapper OnStreamRealmConfigData(System.Action<ReportDataPoint<Beamable.Common.Api.Realms.RealmConfigData>> cb)
+		public virtual ConfigRealmRemoveWrapper OnStreamRealmConfigOutput(System.Action<ReportDataPoint<BeamRealmConfigOutput>> cb)
 		{
 			this.Command.On("stream", cb);
 			return this;

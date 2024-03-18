@@ -18,7 +18,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			// If the serviceName value was not default, then add it to the list of args.
 			if ((this.serviceName != default(Beamable.Common.Semantics.ServiceName)))
 			{
-				genBeamCommandArgs.Add(this.serviceName);
+				genBeamCommandArgs.Add(this.serviceName.ToString());
 			}
 			// If the remote value was not default, then add it to the list of args.
 			if ((this.remote != default(bool)))

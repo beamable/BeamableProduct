@@ -55,7 +55,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	}
 	public class ConfigRealmSetWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
-		public virtual ConfigRealmSetWrapper OnStreamRealmConfigData(System.Action<ReportDataPoint<Beamable.Common.Api.Realms.RealmConfigData>> cb)
+		public virtual ConfigRealmSetWrapper OnStreamRealmConfigOutput(System.Action<ReportDataPoint<BeamRealmConfigOutput>> cb)
 		{
 			this.Command.On("stream", cb);
 			return this;

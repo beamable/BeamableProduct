@@ -18,7 +18,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			// Create a list of arguments for the command
 			System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
 			// Add the source value to the list of args.
-			genBeamCommandArgs.Add(this.source);
+			genBeamCommandArgs.Add(this.source.ToString());
 			// If the outputDir value was not default, then add it to the list of args.
 			if ((this.outputDir != default(string)))
 			{

@@ -16,7 +16,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			// Create a list of arguments for the command
 			System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
 			// Add the path value to the list of args.
-			genBeamCommandArgs.Add(this.path);
+			genBeamCommandArgs.Add(this.path.ToString());
 			// If the quiet value was not default, then add it to the list of args.
 			if ((this.quiet != default(bool)))
 			{
