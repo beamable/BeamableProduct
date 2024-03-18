@@ -77,6 +77,9 @@ namespace Beamable.Server.Editor.Usam
 			SetSolution(_services, _storages);
 			LogVerbose("Solution set done");
 
+			LogVerbose("Setting properties file");
+			await SetPropertiesFile();
+
 			LogVerbose("Set manifest start");
 			await SetManifest(_cli, _services, _storages);
 			LogVerbose("set manifest ended");
@@ -480,6 +483,17 @@ namespace Beamable.Server.Editor.Usam
 			return null;
 		}
 
+		private async Promise SetPropertiesFile()
+		{
+			var command = _cli.ProjectGenerateProperties(new ProjectGeneratePropertiesArgs()
+			{
+				output = ".",
+				beamPath = BeamCliUtil.CLI_PATH.Replace(".dll", ""),
+				solutionDir = Path.GetFullPath(".")
+			});
+			await command.Run();
+		}
+
 		/// <summary>
 		/// Update all service definitions with new enable state from editor window.
 		/// </summary>
@@ -609,35 +623,35 @@ namespace Beamable.Server.Editor.Usam
 		private async Promise CheckForDeletedServices()
 		{
 			bool foundDeletedService = false;
-			
+
 			LogVerbose("Checking for deleted microservices");
 			for (int i = _services.Count - 1; i > -1; i--)
 			{
 				var name = _services[i].name;
 				var sourcePath = $"{StandaloneMicroservicesPath}{name}/";
 				var signpostPath = $"{BEAMABLE_PATH}{name}.beamservice";
-				
+
 				if (File.Exists(signpostPath))
 				{
 					if (!Directory.Exists(sourcePath))
 					{
 						LogVerbose($"The file {name}.beamservice exists but there is no source code for it.");
 					}
-					
+
 					continue;
 				}
 
 				foundDeletedService = true;
 				_services.RemoveAt(i);
 			}
-			
+
 			LogVerbose("Checking for deleted storages");
 			for (int i = _storages.Count - 1; i > -1; i--)
 			{
 				var name = _storages[i].name;
 				var sourcePath = $"{StandaloneMicroservicesPath}{name}/";
 				var signpostPath = $"{BEAMABLE_PATH}{name}.beamstorage";
-				
+
 				if (File.Exists(signpostPath))
 				{
 					if (!Directory.Exists(sourcePath))
@@ -646,7 +660,7 @@ namespace Beamable.Server.Editor.Usam
 					}
 					continue;
 				}
-				
+
 				foundDeletedService = true;
 				_storages.RemoveAt(i);
 			}

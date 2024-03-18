@@ -13,7 +13,7 @@ public class RealmConfigRemoveCommandArgs : CommandArgs
 	public List<string> keys = new();
 }
 
-public class RealmConfigRemoveCommand : AtomicCommand<RealmConfigRemoveCommandArgs, RealmConfigData>
+public class RealmConfigRemoveCommand : AtomicCommand<RealmConfigRemoveCommandArgs, RealmConfigOutput>
 {
 	public RealmConfigRemoveCommand() : base("remove", "Remove realm config values") { }
 
@@ -24,7 +24,7 @@ public class RealmConfigRemoveCommand : AtomicCommand<RealmConfigRemoveCommandAr
 
 	public override bool AutoLogOutput => false;
 
-	public override async Task<RealmConfigData> GetResult(RealmConfigRemoveCommandArgs args)
+	public override async Task<RealmConfigOutput> GetResult(RealmConfigRemoveCommandArgs args)
 	{
 		try
 		{
@@ -48,11 +48,12 @@ public class RealmConfigRemoveCommand : AtomicCommand<RealmConfigRemoveCommandAr
 		}
 	}
 
-	private async Promise<RealmConfigData> GetRealmConfig(RealmConfigRemoveCommandArgs args)
+	private async Promise<RealmConfigOutput> GetRealmConfig(RealmConfigRemoveCommandArgs args)
 	{
 		try
 		{
-			return await args.RealmsApi.GetRealmConfig().ShowLoading("Sending Request...");
+			var res = await args.RealmsApi.GetRealmConfig().ShowLoading("Sending Request...");
+			return new RealmConfigOutput { Config = res.Config };
 		}
 		catch (Exception e)
 		{

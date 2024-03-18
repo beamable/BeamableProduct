@@ -8,7 +8,7 @@ public class TokenMasker : RegexMaskingOperator
 {
 	public TokenMasker() : base("((token|Token|TOKEN).?.?.?.?.?)\"........-....-....-....-............")
 	{
-		
+
 	}
 
 	protected override string PreprocessMask(string mask, Match match)

@@ -27,7 +27,7 @@ public struct HttpSpecificArgs
 {
 	public string LocalDockerBuildContext;
 	public string LocalDockerfileRelativePath;
-	public LogEventLevel? LocalLogLevel;
+	public CliLogEventLevel? LocalLogLevel;
 	public string[] LocalHealthEndpointAndPort;
 	public string[] LocalHotReloadingConfig;
 
@@ -44,6 +44,45 @@ public struct HttpSpecificArgs
 	public string[] RemoteCustomEnvVars;
 }
 
+public enum CliLogEventLevel
+{
+	/// <summary>
+	/// Anything and everything you might want to know about
+	/// a running block of code.
+	/// </summary>
+	Verbose,
+
+	/// <summary>
+	/// Internal system events that aren't necessarily
+	/// observable from the outside.
+	/// </summary>
+	Debug,
+
+	/// <summary>
+	/// The lifeblood of operational intelligence - things
+	/// happen.
+	/// </summary>
+	Information,
+
+	/// <summary>
+	/// Service is degraded or endangered.
+	/// </summary>
+	Warning,
+
+	/// <summary>
+	/// Functionality is unavailable, invariants are broken
+	/// or data is lost.
+	/// </summary>
+	Error,
+
+	/// <summary>
+	/// If you have a pager, it goes off when one of these
+	/// occurs.
+	/// </summary>
+	Fatal
+}
+
+
 public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 {
 	public static readonly Option<string> BEAM_SERVICE_OPTION_ID = new("--id", "The Unique Id for this service within this Beamable CLI context");
@@ -54,7 +93,7 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 	public static readonly Option<string> HTTP_MICROSERVICE_OPTION_LOCAL_DOCKERFILE =
 		new("--local-dockerfile", "The relative file path, from the given build-context, to a valid Dockerfile inside that context");
 
-	public static readonly Option<LogEventLevel?> HTTP_MICROSERVICE_OPTION_LOCAL_LOG_LEVEL = new("--local-log", $"The log level this service should be deployed locally with");
+	public static readonly Option<CliLogEventLevel?> HTTP_MICROSERVICE_OPTION_LOCAL_LOG_LEVEL = new("--local-log", $"The log level this service should be deployed locally with");
 
 	public static readonly Option<string[]> HTTP_MICROSERVICE_OPTION_LOCAL_HEALTH_ENDPOINT_AND_PORT = new("--local-health-endpoint",
 		"The health check endpoint and port, with no trailing or heading '/', that determines if application is up.\n" +
@@ -293,13 +332,13 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 		return true;
 	}
 
-	public static void EnsureLocalLogLevel(ref HttpSpecificArgs httpArgs, LogEventLevel? currentLogLevel = null)
+	public static void EnsureLocalLogLevel(ref HttpSpecificArgs httpArgs, CliLogEventLevel? currentLogLevel = null)
 	{
 		var curr = currentLogLevel.HasValue ? $"(Current: {currentLogLevel.Value.ToString()})" : "";
-		httpArgs.LocalLogLevel ??= AnsiConsole.Prompt(new SelectionPrompt<LogEventLevel?>()
+		httpArgs.LocalLogLevel ??= AnsiConsole.Prompt(new SelectionPrompt<CliLogEventLevel?>()
 			.Title($"Choose the [lightskyblue1]LogLevel[/] {curr}:")
 			.AddBeamHightlight()
-			.AddChoices(Enum.GetValues<LogEventLevel>().Cast<LogEventLevel?>())
+			.AddChoices(Enum.GetValues<CliLogEventLevel>().Cast<CliLogEventLevel?>())
 		);
 	}
 

@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Content alphabetizes fields on checksum calculation as well as publication.
 - Listing content `activeFrom` field no longer resets every time it is viewed in the Inspector.
 - `Json.Serialize` will treat non `IDictionary` values of `IEnumerable` as json arrays.
+- Disabling Content inspectors no longer causes compiler errors.
+- Leaderboard `rankgt` field is not null when specifying outlier.
 
 ### Removed
 
@@ -43,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Marked `EventView` `endTime` field as obsolete, suggest using `GetEndTime` method instead.
+- `PlayerAccounts`, `PlayerAnnouncements`, `PlayerFiends`, `PlayerParty`, and `PlayerStats` automatically await their own initialization before running methods. 
 
 ## [1.19.12]
 

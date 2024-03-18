@@ -65,21 +65,10 @@ public class Tests
 			var match = Regex.Match(valueToCheck, KEBAB_CASE_PATTERN);
 			Assert.AreEqual(match.Success, true, $"{valueToCheck} does not match kebab case naming.");
 		}
-		var commandTypes = Assembly.GetAssembly(typeof(App))!.GetTypes()
-			.Where(myType => myType.IsClass && !myType.IsAbstract && myType.IsSubclassOf(typeof(Command)));
-		var commandsList = new List<Command>();
 		var app = new App();
 		app.Configure();
 		app.Build();
-
-		foreach (Type type in commandTypes)
-		{
-			var command = app.CommandProvider.GetService(type);
-			if (command != null)
-			{
-				commandsList.Add((Command)command);
-			}
-		}
+		var commandsList = app.InstantiateAllCommands();
 
 		foreach (var command in commandsList)
 		{
@@ -132,7 +121,7 @@ public class Tests
 		{
 			Documents = docs,
 			OrderedSchemas = orderedSchemas,
-			ReplacementTypes = new Dictionary<string, ReplacementTypeInfo>()
+			ReplacementTypes = new Dictionary<OpenApiReferenceId, ReplacementTypeInfo>()
 		};
 		var descriptors = generator.Generate(ctx);
 
