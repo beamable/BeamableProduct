@@ -201,7 +201,7 @@ public interface IAppCommand
 
 public interface IHasArgs<TArgs> where TArgs : CommandArgs
 {
-	
+
 }
 
 public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IAppCommand, IHasArgs<TArgs>
