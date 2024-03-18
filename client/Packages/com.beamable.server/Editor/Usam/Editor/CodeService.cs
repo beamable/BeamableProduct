@@ -485,13 +485,25 @@ namespace Beamable.Server.Editor.Usam
 
 		private async Promise SetPropertiesFile()
 		{
+			
+			var beamPath = BeamCliUtil.CLI_PATH.Replace(".dll", "");
+			var workingDir = Path.GetDirectoryName(Directory.GetCurrentDirectory());
+			if (beamPath.StartsWith(workingDir))
+			{
+				// when this case happens, we are developing locally, so put in a reference locally.
+				beamPath = "$(SolutionDir)../cli/cli/bin/Debug/net6.0/Beamable.Tools";
+			}
 			var command = _cli.ProjectGenerateProperties(new ProjectGeneratePropertiesArgs()
 			{
 				output = ".",
-				beamPath = BeamCliUtil.CLI_PATH.Replace(".dll", ""),
-				solutionDir = Path.GetFullPath(".")
+				beamPath = beamPath,
+				solutionDir = "$([System.IO.Path]::GetDirectoryName(`$(DirectoryBuildPropsPath)`))",
+				buildDir = "/Temp/beam/USAMBuilds"
 			});
+			
+			
 			await command.Run();
+			
 		}
 
 		/// <summary>
