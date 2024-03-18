@@ -204,6 +204,7 @@ namespace Beamable.Editor.Content.Components
 
 		private void NameLabel_OnFocus(FocusEvent evt)
 		{
+			evt.StopPropagation();
 			_nameTextField.SelectAll();
 		}
 
@@ -223,12 +224,13 @@ namespace Beamable.Editor.Content.Components
 
 		private void NameLabel_OnKeyup(KeyUpEvent evt)
 		{
+			evt.StopPropagation();
 			CheckName();
 		}
 
 		private void NameLabel_OnBlur(BlurEvent evt)
 		{
-			CommitName();
+			evt.StopPropagation();
 		}
 
 		private void CommitName()
