@@ -1200,8 +1200,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					unrealEndpoint.NamespacedOwnerServiceName = unrealServiceDecl.SubsystemName;
 					// TODO: For now, we make all non-basic endpoints require auth. This is due to certain endpoints' OpenAPI spec not being correctly generated. We also need to correctly generate the server-only services in UE at a future date.
 					unrealEndpoint.IsAuth = serviceType != ServiceType.Basic ||
-					                        serviceTitle.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
-					                        endpointData.Security[0].Any(kvp => kvp.Key.Reference.Id == "user");
+											serviceTitle.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
+											endpointData.Security[0].Any(kvp => kvp.Key.Reference.Id == "user");
 					unrealEndpoint.EndpointName = endpointPath;
 					unrealEndpoint.EndpointRoute = isMsGen ? $"micro_{openApiDocument.Info.Title}{endpointPath}" : endpointPath;
 					unrealEndpoint.EndpointVerb = operationType switch
@@ -1819,8 +1819,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		if (doesConflict)
 		{
 			throw new ArgumentException($"{methodName} was found in more than one service. " +
-			                            $"In this case, this is because you have two microservices with the same name OR because this name clashes with an existing Beamable API. " +
-			                            $"Please change your Microservice name to resolve this.");
+										$"In this case, this is because you have two microservices with the same name OR because this name clashes with an existing Beamable API. " +
+										$"Please change your Microservice name to resolve this.");
 		}
 
 		// In case we want to manually override an endpoint's name...
@@ -1851,8 +1851,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		if (doesConflict)
 		{
 			throw new ArgumentException($"{methodName} was overloaded in {serviceName}. " +
-			                            $"We do not support overloading Callable/ClientCallable/AdminCallable functions." +
-			                            $"Please rename all overloads to resolve this.");
+										$"We do not support overloading Callable/ClientCallable/AdminCallable functions." +
+										$"Please rename all overloads to resolve this.");
 		}
 
 		// In case we want to manually override an endpoint's name...
@@ -2062,7 +2062,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					{
 						var val = defaults.Default as OpenApiString;
 						if (context.PolymorphicWrappedSchemaExpectedTypeValues.TryGetValue(wrappedUnrealType, out var existing) &&
-						    (existing != val?.Value && existing != openApiSchema.Reference.Id.Sanitize()))
+							(existing != val?.Value && existing != openApiSchema.Reference.Id.Sanitize()))
 							throw new Exception(
 								"Found a wrapped type that is currently used in two different ways. We don't support that cause it doesn't make a lot of sense. You should never see this.");
 
