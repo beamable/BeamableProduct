@@ -14,14 +14,11 @@ public class BeamProjectFlows : CLITestExtensions
 		#region Arrange
 
 		SetupMocks();
-		Ansi.Input.PushKey(ConsoleKey.Enter);
 		Ansi.Input.PushTextWithEnter(alias); // enter alias
 		Ansi.Input.PushTextWithEnter(userName); // enter email
 		Ansi.Input.PushTextWithEnter(password); // enter password
 		Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the game
 		Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the realm
-		Ansi.Input.PushTextWithEnter("n"); // don't link unity project
-		Ansi.Input.PushTextWithEnter("n"); // don't link unreal project
 
 		const string serviceName = "Example";
 
@@ -29,7 +26,7 @@ public class BeamProjectFlows : CLITestExtensions
 
 		#region Act
 
-		Run("project", "new-microservice", serviceName);
+		Run("project", "new", "microservice", serviceName, "--auto-init", "--quiet");
 
 		#endregion
 
@@ -40,11 +37,11 @@ public class BeamProjectFlows : CLITestExtensions
 			$"There must be an Example.sln file after beam project new {serviceName}");
 
 		// there should be a local-services-manifest.json file
-		Assert.That(File.Exists($"{serviceName}/.beamable/local-services-manifest.json"),
+		Assert.That(File.Exists(".beamable/local-services-manifest.json"),
 			$"There must be a beamo local manifest file after beam project new {serviceName}");
 
 		// the contents of the file beamoId should be equal to the name of the service created
-		string localManifestTextContent = File.ReadAllText($"{serviceName}/.beamable/local-services-manifest.json");
+		string localManifestTextContent = File.ReadAllText(".beamable/local-services-manifest.json");
 		var manifest = JsonConvert.DeserializeObject<BeamoLocalManifest>(localManifestTextContent);
 		Assert.That(manifest!.ServiceDefinitions.Count, Is.EqualTo(1));
 		Assert.That(manifest.ServiceDefinitions[0].BeamoId, Is.EqualTo(serviceName));
