@@ -13,7 +13,7 @@ public class NewStorageCommandArgs : SolutionCommandArgs
 }
 
 
-public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneCommand,IEmptyResult
+public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneCommand, IEmptyResult
 {
 	private readonly InitCommand _initCommand;
 

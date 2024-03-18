@@ -105,7 +105,7 @@ namespace Beamable.Server.Editor.Usam
 		public async Promise Migrate()
 		{
 			var commonCsProj = await MigrateCommon();
-			foreach(var microserviceDir in Directory.EnumerateDirectories("Assets/Beamable/Microservices"))
+			foreach (var microserviceDir in Directory.EnumerateDirectories("Assets/Beamable/Microservices"))
 			{
 				var microserviceName = Path.GetFileName(microserviceDir);
 				var path = $"{StandaloneMicroservicesPath}{microserviceName}/";
@@ -117,11 +117,11 @@ namespace Beamable.Server.Editor.Usam
 				}
 
 				var signpost = _services.FirstOrDefault(s => s.name.Equals(microserviceName));
-				if(signpost == null) continue;
+				if (signpost == null) continue;
 				var command = $"add {signpost.CsprojFilePath} reference {commonCsProj}";
 
 				await _dotnetService.Run(command);
-				
+
 				foreach (var file in Directory.EnumerateFiles(microserviceDir))
 				{
 					if (!Path.GetExtension(file).EndsWith("cs")) continue;
@@ -135,37 +135,37 @@ namespace Beamable.Server.Editor.Usam
 
 					var fileContent = File.ReadAllText(newFilePath);
 					fileContent = fileContent.Replace("namespace Beamable.Server",
-					                                  $"using Beamable.Server;\n\nnamespace Beamable.{microserviceName}");
-					File.WriteAllText(newFilePath,fileContent);
+													  $"using Beamable.Server;\n\nnamespace Beamable.{microserviceName}");
+					File.WriteAllText(newFilePath, fileContent);
 				}
 			}
-			foreach(var storageDir in Directory.EnumerateDirectories("Assets/Beamable/StorageObjects"))
+			foreach (var storageDir in Directory.EnumerateDirectories("Assets/Beamable/StorageObjects"))
 			{
 				var storageName = Path.GetFileName(storageDir);
 				var path = $"{StandaloneMicroservicesPath}{storageName}/";
 				var storageModel = MicroservicesDataModel.Instance.Storages.FirstOrDefault(s => s.Name == storageName);
 				var deps = MicroservicesDataModel.Instance.Services
-				                                 .Where(model => model.Dependencies.Any(s => s.Name == storageName)).Select(model => ServiceDefinitions.FirstOrDefault(d=>d.BeamoId==model.Name))
-				                                 .ToList();
+												 .Where(model => model.Dependencies.Any(s => s.Name == storageName)).Select(model => ServiceDefinitions.FirstOrDefault(d => d.BeamoId == model.Name))
+												 .ToList();
 				Debug.Log(storageModel);
-				Debug.Log(string.Join(", ",deps));
+				Debug.Log(string.Join(", ", deps));
 				if (!Directory.Exists(path))
 				{
 					Debug.Log(storageName);
-					await CreateStorage(storageName,deps);
+					await CreateStorage(storageName, deps);
 				}
 			}
 			// REMOVE OLD STUFF
-			Directory.Delete("Assets/Beamable/Microservices",true);
-			Directory.Delete("Assets/Beamable/StorageObjects",true);
-			Directory.Delete("Assets/Beamable/Common",true);
+			Directory.Delete("Assets/Beamable/Microservices", true);
+			Directory.Delete("Assets/Beamable/StorageObjects", true);
+			Directory.Delete("Assets/Beamable/Common", true);
 		}
 
 		private async Task<string> MigrateCommon()
 		{
 			var outputPath = $"{StandaloneMicroservicesPath}BeamableCommonShared/";
 			var commonPath = "Assets/Beamable/Common";
-			if(!Directory.Exists(outputPath) && Directory.Exists(commonPath))
+			if (!Directory.Exists(outputPath) && Directory.Exists(commonPath))
 			{
 				LogVerbose("Starting creation of CommonLib");
 				var cmd = _cli.ProjectNewCommonLib(new ProjectNewCommonLibArgs()
@@ -182,7 +182,7 @@ namespace Beamable.Server.Editor.Usam
 						if (!Path.GetExtension(file).EndsWith("cs")) continue;
 						var fileName = Path.GetFileName(file);
 						var newFilePath = Path.Combine(outputPath, fileName);
-						File.Copy(file,newFilePath);
+						File.Copy(file, newFilePath);
 					}
 				}
 				catch (Exception e)

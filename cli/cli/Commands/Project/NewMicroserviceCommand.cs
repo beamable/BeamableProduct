@@ -38,14 +38,14 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 	public string RelativeNewSolutionDirectory;
 	public string RelativeExistingSolutionFile;
 	public string ServicesBaseFolderPath;
-	
-	
+
+
 	public void ValidateConfig()
 	{
 		var shouldUseExistingSolution = !string.IsNullOrWhiteSpace(RelativeExistingSolutionFile);
 		var shouldCreateNewSolution = !string.IsNullOrWhiteSpace(RelativeNewSolutionDirectory);
 		shouldCreateNewSolution |= !string.IsNullOrWhiteSpace(SolutionName);
-		
+
 		if (shouldUseExistingSolution && shouldCreateNewSolution)
 		{
 			throw new CliException("Cannot specify both --existing-solution-file and --new-solution-directory or --new-solution-name options.");

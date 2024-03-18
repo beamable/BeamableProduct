@@ -426,7 +426,7 @@ namespace Beamable.Editor.BeamCli
 						foreach (var err in _errors)
 						{
 							BeamEditorContext.Default.Dispatcher.Schedule(() => Debug.LogError(err.message));
-						}		
+						}
 						throw new CliInvocationException(_command, _errors);
 					}
 				}

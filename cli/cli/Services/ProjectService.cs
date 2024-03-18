@@ -374,7 +374,7 @@ public class ProjectService
 		await EnsureCanUseTemplates(usedVersion, args.Quiet);
 		microserviceInfo.SolutionPath = args.RelativeExistingSolutionFile;
 		var shouldCreateSolution = string.IsNullOrWhiteSpace(microserviceInfo.SolutionPath);
-		if(shouldCreateSolution)
+		if (shouldCreateSolution)
 		{
 			microserviceInfo.SolutionPath = await CreateNewSolution(args.RelativeNewSolutionDirectory, args.SolutionName);
 		}
@@ -425,7 +425,7 @@ public class ProjectService
 		await EnsureCanUseTemplates(usedVersion, args.Quiet);
 		microserviceInfo.SolutionPath = args.RelativeExistingSolutionFile;
 		var shouldCreateSolution = string.IsNullOrWhiteSpace(microserviceInfo.SolutionPath);
-		if(shouldCreateSolution)
+		if (shouldCreateSolution)
 		{
 			microserviceInfo.SolutionPath = await CreateNewSolution(args.RelativeNewSolutionDirectory, args.SolutionName);
 		}
@@ -442,7 +442,7 @@ public class ProjectService
 				$"Solution file({microserviceInfo.SolutionPath}) should not exists outside working directory({_configService.WorkingDirectory}) or its subdirectories.");
 		}
 
-		microserviceInfo.ServicePath = await CreateNewService(microserviceInfo.SolutionPath, args.ProjectName,args.ServicesBaseFolderPath, !args.SkipCommon, usedVersion);
+		microserviceInfo.ServicePath = await CreateNewService(microserviceInfo.SolutionPath, args.ProjectName, args.ServicesBaseFolderPath, !args.SkipCommon, usedVersion);
 		return microserviceInfo;
 	}
 
@@ -472,10 +472,10 @@ public class ProjectService
 		// create the solution
 		await RunDotnetCommand($"new sln -n \"{solutionName}\" -o \"{solutionPath}\"");
 
-		return Path.Combine(solutionPath,$"{solutionName}.sln");
+		return Path.Combine(solutionPath, $"{solutionName}.sln");
 	}
 
-	public async Task<string> CreateNewService(string solutionPath,string projectName,string rootServicesPath, bool createCommonLibrary, string version)
+	public async Task<string> CreateNewService(string solutionPath, string projectName, string rootServicesPath, bool createCommonLibrary, string version)
 	{
 		if (!File.Exists(solutionPath))
 		{
@@ -525,7 +525,7 @@ public class ProjectService
 		// restore the shared library tools
 		await RunDotnetCommand(
 			$"tool restore --tool-manifest \"{Path.Combine(commonProjectPath, ".config", "dotnet-tools.json")}\"");
-		if(!string.IsNullOrWhiteSpace(usedVersion))
+		if (!string.IsNullOrWhiteSpace(usedVersion))
 		{
 			await UpdateProjectDependencyVersion(commonProjectPath, "Beamable.Common", usedVersion);
 		}

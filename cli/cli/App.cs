@@ -207,7 +207,7 @@ public class App
 
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
 		Commands.AddRootCommand<ProjectCommand>();
-		Commands.AddSubCommand<ProjectNewCommand,CommandGroupArgs, ProjectCommand>();
+		Commands.AddSubCommand<ProjectNewCommand, CommandGroupArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateOApiCommand, GenerateOApiCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<RunProjectCommand, RunProjectCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<StopProjectCommand, StopProjectCommandArgs, ProjectCommand>();
@@ -316,7 +316,7 @@ public class App
 			CommandProvider.GetService(factoryDescriptor.Interface);
 			var commandType = factoryDescriptor.Interface.GetGenericArguments()[0];
 			var command = (Command)CommandProvider.GetService(commandType);
-			
+
 			commandList.Add(command);
 		}
 

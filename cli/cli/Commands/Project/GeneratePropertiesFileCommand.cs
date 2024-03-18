@@ -11,8 +11,8 @@ public class GeneratePropertiesFileCommandArgs : CommandArgs
 
 public class GeneratePropertiesFileCommand : AppCommand<GeneratePropertiesFileCommandArgs>, IEmptyResult
 {
-	
-	
+
+
 	public GeneratePropertiesFileCommand() : base("generate-properties", "Generates a Directory.Build.props file with the beam path and solution dir")
 	{
 	}
@@ -33,12 +33,12 @@ public class GeneratePropertiesFileCommand : AppCommand<GeneratePropertiesFileCo
 		{
 			throw new CliException("Output path argument passed does not exist.");
 		}
-		
+
 		if (!Directory.Exists(args.SolutionDir))
 		{
 			throw new CliException("SolutionDir path must exist.");
 		}
-		
+
 		string fileContents = @$"
 <Project>
  <PropertyGroup>
@@ -48,7 +48,7 @@ public class GeneratePropertiesFileCommand : AppCommand<GeneratePropertiesFileCo
 </Project>";
 		var path = Path.Combine(args.OutputPath, "Directory.Build.props");
 		File.WriteAllText(path, fileContents);
-		
+
 		return Task.CompletedTask;
 	}
 }
