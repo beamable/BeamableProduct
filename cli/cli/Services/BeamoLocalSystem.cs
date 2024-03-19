@@ -135,7 +135,7 @@ public partial class BeamoLocalSystem
 		var candidates = correctedPaths.Select(Path.GetFileNameWithoutExtension).ToList();
 
 		List<DependencyData> dependencies = new List<DependencyData>();
-		
+
 		for (int i = 0; i < correctedPaths.Count; i++)
 		{
 			string name = Path.GetFileNameWithoutExtension(correctedPaths[i]);
@@ -147,7 +147,7 @@ public partial class BeamoLocalSystem
 			}
 
 			var pathToDependencyProj = Path.Combine(serviceDefinition.ProjectDirectory, correctedPaths[i]);
-			
+
 			dependencies.Add(new DependencyData()
 			{
 				name = name,
@@ -168,23 +168,23 @@ public partial class BeamoLocalSystem
 	public async Task RemoveProjectDependency(BeamoServiceDefinition project, BeamoServiceDefinition dependency)
 	{
 		if (project.Protocol != BeamoProtocolType.HttpMicroservice ||
-		    dependency.Protocol != BeamoProtocolType.EmbeddedMongoDb)
+			dependency.Protocol != BeamoProtocolType.EmbeddedMongoDb)
 		{
 			throw new CliException(
 				$"Currently the only supported dependencies are {nameof(BeamoProtocolType.HttpMicroservice)} depending on {nameof(BeamoProtocolType.EmbeddedMongoDb)}");
 		}
 
 		var relativeProjectPath = _configService.GetRelativePath(project.ProjectDirectory);
-		var projectPath = Path.Combine( relativeProjectPath, $"{project.BeamoId}.csproj");
-		var dependencyPath = Path.Combine( _configService.GetRelativePath(dependency.ProjectDirectory), $"{dependency.BeamoId}.csproj");
-		
+		var projectPath = Path.Combine(relativeProjectPath, $"{project.BeamoId}.csproj");
+		var dependencyPath = Path.Combine(_configService.GetRelativePath(dependency.ProjectDirectory), $"{dependency.BeamoId}.csproj");
+
 		var command = $"remove {projectPath} reference {dependencyPath}";
 		var (cmd, result) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, command);
 		if (cmd.ExitCode != 0)
 		{
 			throw new CliException($"Failed to remove project dependency, output of \"dotnet {command}\": {result}");
 		}
-		
+
 		await UpdateDockerFile(project.BeamoId);
 	}
 
@@ -196,7 +196,7 @@ public partial class BeamoLocalSystem
 	public async Task AddProjectDependency(BeamoServiceDefinition project, BeamoServiceDefinition dependency)
 	{
 		if (project.Protocol != BeamoProtocolType.HttpMicroservice ||
-		    dependency.Protocol != BeamoProtocolType.EmbeddedMongoDb)
+			dependency.Protocol != BeamoProtocolType.EmbeddedMongoDb)
 		{
 			throw new CliException(
 				$"Currently the only supported dependencies are {nameof(BeamoProtocolType.HttpMicroservice)} depending on {nameof(BeamoProtocolType.EmbeddedMongoDb)}");
@@ -256,7 +256,7 @@ public partial class BeamoLocalSystem
 COPY {serviceNameTag}/. .";
 		var replacement = @$"{toAdd}
 {endTag}";
-		
+
 		//Remove old data
 		int startIndex = dockerfileText.LastIndexOf(startTag, StringComparison.Ordinal) + startTag.Length + 1;
 		int endIndex = dockerfileText.IndexOf(endTag, startIndex, StringComparison.Ordinal);

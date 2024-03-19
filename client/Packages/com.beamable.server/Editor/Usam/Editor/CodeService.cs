@@ -471,7 +471,7 @@ namespace Beamable.Server.Editor.Usam
 
 		private async Promise SetPropertiesFile()
 		{
-			
+
 			var beamPath = BeamCliUtil.CLI_PATH.Replace(".dll", "");
 			var workingDir = Path.GetDirectoryName(Directory.GetCurrentDirectory());
 			if (beamPath.StartsWith(workingDir))
@@ -486,10 +486,10 @@ namespace Beamable.Server.Editor.Usam
 				solutionDir = "$([System.IO.Path]::GetDirectoryName(`$(DirectoryBuildPropsPath)`))",
 				buildDir = "/Temp/beam/USAMBuilds"
 			});
-			
-			
+
+
 			await command.Run();
-			
+
 		}
 
 		/// <summary>

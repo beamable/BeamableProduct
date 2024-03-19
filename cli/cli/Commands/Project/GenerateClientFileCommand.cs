@@ -86,12 +86,12 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 				};
 
 				var userAssembly = loadContext.LoadFromAssemblyPath(absolutePath);
-				Log.Verbose("loading dll name=[{Name}] version=[{Version}] deps=[{Deps}]", userAssembly.GetName().Name, userAssembly.GetName().Version, string.Join(", ",userAssembly.GetReferencedAssemblies().Select(n => n.Name)));
-				
+				Log.Verbose("loading dll name=[{Name}] version=[{Version}] deps=[{Deps}]", userAssembly.GetName().Name, userAssembly.GetName().Version, string.Join(", ", userAssembly.GetReferencedAssemblies().Select(n => n.Name)));
+
 				/// GHOST IN THE MACHINE ---> We need some time to investigate this stuff.
-				foreach (AssemblyName referencedAssembly in userAssembly.GetReferencedAssemblies().Where(asm => !asm.Name.Contains("BeamableMicroserviceBase"))) 
+				foreach (AssemblyName referencedAssembly in userAssembly.GetReferencedAssemblies().Where(asm => !asm.Name.Contains("BeamableMicroserviceBase")))
 					allAssemblies.Add(loadContext.LoadFromAssemblyName(referencedAssembly));
-				
+
 				allAssemblies.Add(userAssembly);
 			}
 		}
@@ -172,9 +172,9 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 					if (unrealProjectData.CoreProjectName != "OnlineSubsystemBeamable" || !unrealProjectData.SourceFilesPath.StartsWith("Plugins/OnlineSubsystemBeamable"))
 					{
 						throw new CliException("You've added the OnlineSubsystemBeamable (OSB) plugin after you had already linked your Unreal Project." +
-						                       $"Please delete your '{Constants.CONFIG_DIR}/{Constants.CONFIG_LINKED_PROJECTS}' file and re-run 'beam project add-unreal-project'." +
-						                       "When using the OSB plugin, MS files are generated into the plugin's Customer folder; so, please delete your AutoGen folders from their " +
-						                       "previous location (outside of the plugin).");
+											   $"Please delete your '{Constants.CONFIG_DIR}/{Constants.CONFIG_LINKED_PROJECTS}' file and re-run 'beam project add-unreal-project'." +
+											   "When using the OSB plugin, MS files are generated into the plugin's Customer folder; so, please delete your AutoGen folders from their " +
+											   "previous location (outside of the plugin).");
 					}
 				}
 
@@ -305,7 +305,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 			{
 				var existingContent = File.ReadAllText(outputPath);
 				if (string.Compare(existingContent, descriptors[i].Content, CultureInfo.InvariantCulture,
-					    CompareOptions.IgnoreSymbols) == 0)
+						CompareOptions.IgnoreSymbols) == 0)
 				{
 					identicalFileCounter++;
 					continue;

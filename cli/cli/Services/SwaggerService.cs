@@ -94,7 +94,9 @@ public class SwaggerService
 			: allResults.Select(r => r.Document).ToList();
 		var context = new DefaultGenerationContext
 		{
-			Documents = allDocuments, OrderedSchemas = ExtractAllSchemas(allDocuments, resolutionStrategy), ReplacementTypes = new Dictionary<OpenApiReferenceId, ReplacementTypeInfo>(),
+			Documents = allDocuments,
+			OrderedSchemas = ExtractAllSchemas(allDocuments, resolutionStrategy),
+			ReplacementTypes = new Dictionary<OpenApiReferenceId, ReplacementTypeInfo>(),
 		};
 
 		// TODO: FILTER we shouldn't really be using _all_ the given generators, we should be selecting between one based on an input argument.

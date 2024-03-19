@@ -23,17 +23,17 @@ public class StreamingDataTests
 		Assert.That(commands, Is.Not.Null);
 
 		var cliAssembly = typeof(App).Assembly;
-		
+
 		foreach (var command in commands)
 		{
 			if (command is AccountMeCommand)
 			{
-				
+
 			}
 			var commandType = command.GetType();
 			var resultStreamGenType = typeof(IResultSteam<,>);
 			var inputGenType = typeof(IHasArgs<>);
-			
+
 			var allInterfaces = commandType.GetInterfaces();
 			var resultStreamTypeArgs = new List<Type[]>();
 			var inputTypeArgs = new List<Type[]>();
@@ -68,13 +68,13 @@ that qualifies as a potential breaking change in the CLI. ");
 					}
 				}
 			}
-			
+
 			var allInputTypes = UnityCliGenerator.RecurseTypes(inputTypeArgs.SelectMany(x => x), true);
 			var allOutputTypes = UnityCliGenerator.RecurseTypes(resultStreamTypeArgs.SelectMany(x => x), true);
 
 			CheckTypes(allInputTypes, "input");
 			CheckTypes(allOutputTypes, "output");
-			
+
 		}
 	}
 }

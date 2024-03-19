@@ -30,7 +30,7 @@ This means Unreal now supports multiple microservices as well as shared librarie
 - Commands will log single outputs as JSON by default.
 - Console logging no longer includes log level and timestamp.
 - Logs containing GUID based tokens will be masked and only the last 4 characters will be shown.
-- Unreal Microservice Client Code generation no longer appends the microservice name to serializable types. 
+- Unreal Microservice Client Code generation no longer appends the microservice name to serializable types.
 This means that the game-maker is responsible for resolving name conflicts that stem from types used in any `Callable`'s signature.
 In most cases, this is as trivial as renaming the type inside the microservice to something that won't conflict.
 
