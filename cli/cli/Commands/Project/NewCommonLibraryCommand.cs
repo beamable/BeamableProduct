@@ -3,9 +3,8 @@ using System.CommandLine;
 
 namespace cli.Commands.Project;
 
-public class CreateCommonLibraryArgs : NewProjectCommandArgs
+public class CreateCommonLibraryArgs : SolutionCommandArgs
 {
-	public string SpecifiedVersion;
 	public string OutputPath;
 }
 
@@ -23,6 +22,7 @@ public class NewCommonLibraryCommand : AppCommand<CreateCommonLibraryArgs>, ISta
 		AddOption(new AutoInitFlag(), (args, b) => args.AutoInit = b);
 		AddArgument(new Argument<ServiceName>("name", "The name of the new library project"),
 			(args, i) => args.ProjectName = i);
+		SolutionCommandArgs.ConfigureSolutionFlag(this);
 		AddOption(new SpecificVersionOption(), (args, i) => args.SpecifiedVersion = i);
 		AddOption(new Option<string>("--output-path", "The path where the project is going to be created"),
 			(args, i) => args.OutputPath = i);
@@ -32,6 +32,10 @@ public class NewCommonLibraryCommand : AppCommand<CreateCommonLibraryArgs>, ISta
 	{
 		await args.CreateConfigIfNeeded(_initCommand);
 		var path = Path.Combine(args.OutputPath, args.ProjectName);
-		await args.ProjectService.CreateCommonProject(args.ProjectName.Value, path, args.SpecifiedVersion);
+		if (!args.GetSlnExists())
+		{
+			await args.ProjectService.CreateNewSolution(args.GetSlnDirectory(), args.GetSlnFileName());
+		}
+		await args.ProjectService.CreateCommonProject(args.ProjectName.Value, path, args.SpecifiedVersion, args.SlnFilePath);
 	}
 }

@@ -2,6 +2,7 @@
 using Beamable.Common.Api.Realms;
 using Docker.DotNet;
 using Docker.DotNet.Models;
+using Serilog;
 using System.Text.RegularExpressions;
 
 namespace cli.Services;
@@ -118,8 +119,10 @@ public partial class BeamoLocalSystem
 
 		var projectExtension = serviceDefinition.ProjectExtension;
 
-		var path = _configService.GetRelativePath(serviceDefinition!.ProjectDirectory);
+		var path = _configService.BeamableRelativeToExecutionRelative(serviceDefinition!.ProjectDirectory);
+		Log.Verbose($"getting dependencies for serviceId=[{beamoServiceId}], path=[{path}]");
 		path = Path.Combine(path, $"{beamoServiceId}.{projectExtension}");
+		Log.Verbose($"resolved path is now=[{path}], and working dir=[{Environment.CurrentDirectory}]");
 		var (cmd, builder) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, $"list {path} reference");
 		if (cmd.ExitCode != 0)
 		{

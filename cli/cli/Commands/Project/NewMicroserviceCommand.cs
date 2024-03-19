@@ -11,6 +11,88 @@ public class NewProjectCommandArgs : CommandArgs
 	public ServiceName ProjectName;
 	public bool AutoInit;
 
+}
+
+public class AutoInitFlag : ConfigurableOptionFlag
+{
+	public AutoInitFlag() : base("init", "Automatically create a .beamable folder context if no context exists")
+	{
+		AddAlias("-i");
+	}
+}
+
+public interface IHaveSolutionFlag
+{
+	public string SlnFilePath { get; set; }
+	public string DefaultSolutionName { get; }
+}
+
+public static class IHaveSolutionFlagExtensions
+{
+	public static string GetSlnDirectory(this IHaveSolutionFlag instance) => Path.GetDirectoryName(instance.SlnFilePath);
+	public static bool GetSlnExists(this IHaveSolutionFlag instance) => File.Exists(instance.SlnFilePath);
+	public static string GetSlnFileName(this IHaveSolutionFlag instance) => Path.GetFileNameWithoutExtension(instance.SlnFilePath);
+}
+
+public class SolutionCommandArgs : NewProjectCommandArgs, IHaveSolutionFlag
+{
+	public string SlnFilePath { get; set; }
+	string IHaveSolutionFlag.DefaultSolutionName => ProjectName;
+	public string SpecifiedVersion;
+	public bool Disabled;
+	public string ServicesBaseFolderPath;
+
+	public static void ConfigureSolutionFlag<T>(AppCommand<T> command)
+		where T : CommandArgs, IHaveSolutionFlag
+	{
+		command.AddOption(new Option<string>(
+				name: "--sln",
+				getDefaultValue: () => string.Empty,
+				description:
+				"Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. By default, when no value is provided, the .sln path will be <name>/<name>.sln"),
+			(args, i) =>
+			{
+				if (string.IsNullOrEmpty(i))
+				{
+					// no sln path is given, so we use the defaults.
+					args.SlnFilePath = Path.Combine(args.DefaultSolutionName, args.DefaultSolutionName + ".sln");
+				}
+				else
+				{
+					args.SlnFilePath = i;
+					if (!args.SlnFilePath.EndsWith(".sln"))
+					{
+						args.SlnFilePath += ".sln";
+					}
+				}
+				
+			});
+
+	}
+	
+	/// <summary>
+	/// Register common solution based options
+	/// </summary>
+	/// <param name="command"></param>
+	/// <typeparam name="T"></typeparam>
+	public static void Configure<T>(AppCommand<T> command) 
+		where T : SolutionCommandArgs
+	{
+		ConfigureSolutionFlag(command);
+
+		command.AddOption(new Option<string>(
+				name: "--service-directory", 
+				description: "Relative path to directory where project should be created. Defaults to \"SOLUTION_DIR/services\""),
+			(args, i) => args.ServicesBaseFolderPath = i);
+		
+		command.AddOption(new SpecificVersionOption(), (args, i) => args.SpecifiedVersion = i);
+		
+		command.AddOption(new Option<bool>(
+				name: "--disable", 
+				description: "Created service by default would not be published"),
+			(args, i) => args.Disabled = i);
+	}
+	
 	public async Promise CreateConfigIfNeeded(InitCommand command)
 	{
 		if (ConfigService.DirectoryExists.GetValueOrDefault(false))
@@ -21,42 +103,22 @@ public class NewProjectCommandArgs : CommandArgs
 		{
 			throw CliExceptions.CONFIG_DOES_NOT_EXISTS;
 		}
-		await command.Handle(new InitCommandArgs { Provider = Provider, saveToFile = true });
+		
+		
+		var initArgs = Create<InitCommandArgs>();
+		initArgs.saveToFile = true;
+		var oldDir = initArgs.ConfigService.WorkingDirectory;
+		initArgs.ConfigService.SetTempWorkingDir(this.GetSlnDirectory());
+		await command.Handle(initArgs);
+		initArgs.ConfigService.SetTempWorkingDir(oldDir);
+		initArgs.ConfigService.SetBeamableDirectory(this.GetSlnDirectory());
+
+		
 	}
+	
+	// public void 
 }
 
-public class AutoInitFlag : ConfigurableOptionFlag
-{
-	public AutoInitFlag() : base("auto-init", "If there is no .beamable configuration it will create one") { }
-}
-
-public class SolutionCommandArgs : NewProjectCommandArgs
-{
-	public ServiceName SolutionName;
-	public string SpecifiedVersion;
-	public bool Disabled;
-	public string RelativeNewSolutionDirectory;
-	public string RelativeExistingSolutionFile;
-	public string ServicesBaseFolderPath;
-
-
-	public void ValidateConfig()
-	{
-		var shouldUseExistingSolution = !string.IsNullOrWhiteSpace(RelativeExistingSolutionFile);
-		var shouldCreateNewSolution = !string.IsNullOrWhiteSpace(RelativeNewSolutionDirectory);
-		shouldCreateNewSolution |= !string.IsNullOrWhiteSpace(SolutionName);
-
-		if (shouldUseExistingSolution && shouldCreateNewSolution)
-		{
-			throw new CliException("Cannot specify both --existing-solution-file and --new-solution-directory or --new-solution-name options.");
-		}
-	}
-}
-
-public class SkipCommonOptionFlag : ConfigurableOptionFlag
-{
-	public SkipCommonOptionFlag() : base("skip-common", "If you should create a common library") { }
-}
 
 public class ServiceNameArgument : Argument<ServiceName>
 {
@@ -73,13 +135,12 @@ public class SpecificVersionOption : Option<string>
 
 public class NewMicroserviceArgs : SolutionCommandArgs
 {
-	public bool SkipCommon;
+
 }
 
 
 public class RegenerateSolutionFilesCommandArgs : SolutionCommandArgs
 {
-	public bool SkipCommon;
 	public string tempDirectory;
 	public string projectDirectory;
 }
@@ -91,8 +152,8 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 	private readonly AddUnrealClientOutputCommand _addUnrealCommand;
 
 	public NewMicroserviceCommand(InitCommand initCommand, AddUnityClientOutputCommand addUnityCommand,
-		AddUnrealClientOutputCommand addUnrealCommand) : base("microservice",
-		"Create new standalone microservice")
+		AddUnrealClientOutputCommand addUnrealCommand) : base("service",
+		"Create a new microservice project")
 	{
 		_initCommand = initCommand;
 		_addUnityCommand = addUnityCommand;
@@ -103,37 +164,21 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 	{
 		AddArgument(new ServiceNameArgument(), (args, i) => args.ProjectName = i);
 		AddOption(new AutoInitFlag(), (args, b) => args.AutoInit = b);
-		AddOption(new Option<string>("--new-solution-directory", () => string.Empty, description: "Relative path to current directory where new solution should be created"),
-			(args, i) => args.RelativeNewSolutionDirectory = i);
-		AddOption(new Option<string>("--existing-solution-file", () => string.Empty, description: "Relative path to current solution file to which standalone microservice should be added"),
-			(args, i) => args.RelativeExistingSolutionFile = i);
-		AddOption(new SkipCommonOptionFlag(), (args, i) => args.SkipCommon = i);
-		AddOption(new Option<ServiceName>("--new-solution-name", "The name of the solution of the new project. Use it if you want to create a new solution"),
-			(args, i) => args.SolutionName = i);
-		AddOption(new Option<string>("--service-directory", "Relative path to directory where microservice should be created. Defaults to \"SOLUTION_DIR/services\""),
-			(args, i) => args.ServicesBaseFolderPath = i);
-		AddOption(new SpecificVersionOption(), (args, i) => args.SpecifiedVersion = i);
-		AddOption(new Option<bool>("--disable", "Created service by default would not be published"),
-			(args, i) => args.Disabled = i);
+		SolutionCommandArgs.Configure(this);
 	}
 
 	public override async Task Handle(NewMicroserviceArgs args)
 	{
-		args.ValidateConfig();
 		await args.CreateConfigIfNeeded(_initCommand);
-		// Default the solution name to the project name.
-		args.SolutionName = string.IsNullOrEmpty(args.SolutionName) ? args.ProjectName : args.SolutionName;
-		// in the current directory, create a project using dotnet. 
+		
 		var newMicroserviceInfo = await args.ProjectService.CreateNewMicroservice(args);
 
 		var sd = await args.ProjectService.AddDefinitonToNewService(args, newMicroserviceInfo);
-
-		if (!args.SkipCommon)
-		{
-			var service = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[sd.BeamoId];
-			await args.ProjectService.UpdateDockerFileWithCommonProject(args.ConfigService, args.ProjectName, service.RelativeDockerfilePath,
-				service.DockerBuildContextPath);
-		}
+		
+		var service = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[sd.BeamoId];
+		await args.ProjectService.UpdateDockerFileWithCommonProject(args.ConfigService, args.ProjectName, service.RelativeDockerfilePath,
+			service.DockerBuildContextPath);
+	
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
 		args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 

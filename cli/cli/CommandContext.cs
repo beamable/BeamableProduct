@@ -270,7 +270,7 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IApp
 		base.AddArgument(arg);
 		return arg;
 	}
-
+	
 	public Option<T> AddOption<T>(Option<T> arg, Action<TArgs, T> binder)
 	{
 		ArgValidator<T> validator = CommandProvider.CanBuildService<ArgValidator<T>>()
