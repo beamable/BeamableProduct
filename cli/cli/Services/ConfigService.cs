@@ -296,12 +296,7 @@ public class ConfigService
 
 			MigrateOldConfigIfExists();
 		}
-		var isValid = TryToReadConfigFile(ConfigDirectoryPath, out _config);
-		if (DirectoryExists.Value && !isValid)
-		{
-			throw new CliException(
-				$"Beamable Config exist but it does not have one of the values: {string.Join(',', Constants.REQUIRED_CONFIG_KEYS)}");
-		}
+		TryToReadConfigFile(ConfigDirectoryPath, out _config);
 	}
 
 	/// <summary>
@@ -395,19 +390,23 @@ public class ConfigService
 		return false;
 	}
 
-	bool TryToReadConfigFile([CanBeNull] string folderPath, out Dictionary<string, string> result)
+	void TryToReadConfigFile([CanBeNull] string folderPath, out Dictionary<string, string> result)
 	{
 		string fullPath = Path.Combine(folderPath ?? string.Empty, Constants.CONFIG_DEFAULTS_FILE_NAME);
 		result = new Dictionary<string, string>();
 		if (!File.Exists(fullPath))
 		{
-			return false;
+			return;
 		}
 
 		var content = File.ReadAllText(fullPath);
 		result = JsonConvert.DeserializeObject<Dictionary<string, string>>(content);
 
-		return IsConfigValid(result);
+		if (!IsConfigValid(result))
+		{
+			throw new CliException(
+				$"Beamable Config exist but it does not have one of the values: {string.Join(',', Constants.REQUIRED_CONFIG_KEYS)}");
+		}
 	}
 
 	string GetIgnoreFilePath(Vcs system) =>
