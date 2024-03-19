@@ -1,4 +1,5 @@
-﻿using Beamable.Common.Api;
+﻿using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
 using Docker.DotNet;
 using Docker.DotNet.Models;
@@ -108,36 +109,90 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	/// <param name="beamoServiceId">The identifier of the Beamo service.</param>
 	/// <returns>Returns a list of <see cref="BeamoId"/>s that this service depends on.</returns>
-	public async Task<List<string>> GetDependencies(string beamoServiceId)
+	public async Task<List<DependencyData>> GetDependencies(string beamoServiceId, bool listAll = false)
 	{
 		var serviceDefinition = BeamoManifest.ServiceDefinitions.FirstOrDefault(s => s.BeamoId == beamoServiceId);
 		if (string.IsNullOrWhiteSpace(serviceDefinition?.ProjectDirectory))
 		{
-			return new List<string>();
+			return new List<DependencyData>();
 		}
 
 		var projectExtension = serviceDefinition.ProjectExtension;
 
-		var path = _configService.GetRelativePath(serviceDefinition!.ProjectDirectory);
-		path = Path.Combine(path, $"{beamoServiceId}.{projectExtension}");
-		var (cmd, builder) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, $"list {path} reference");
+		var relativePath = _configService.GetRelativePath(serviceDefinition!.ProjectDirectory);
+		var csprojPath = Path.Combine(relativePath, $"{beamoServiceId}.{projectExtension}");
+		var (cmd, builder) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, $"list {csprojPath} reference");
 		if (cmd.ExitCode != 0)
 		{
 			throw new CliException($"Getting service dependencies failed, command output: {builder}");
 		}
 
-		// TODO improve it, for now it is naive, if there is related project with same name as one of the services it will treat it as it is connected
 		var withExtension = builder.ToString().Split(Environment.NewLine);
 
 		var files = withExtension.Where(line => line.EndsWith(projectExtension)).ToList();
 		var correctedPaths = files.Select(file => file.Replace("\\", "/")).ToList();
 
 		var candidates = correctedPaths.Select(Path.GetFileNameWithoutExtension).ToList();
-		var dependencies = candidates.Where(candidate => BeamoManifest.ServiceDefinitions.Any(definition => definition.BeamoId == candidate)).ToList();
+
+		List<DependencyData> dependencies = new List<DependencyData>();
+		
+		for (int i = 0; i < correctedPaths.Count; i++)
+		{
+			string name = Path.GetFileNameWithoutExtension(correctedPaths[i]);
+			bool hasDefinition = BeamoManifest.ServiceDefinitions.Any(definition => definition.BeamoId == name);
+
+			if (!listAll && !hasDefinition)
+			{
+				continue;
+			}
+
+			var pathToDependencyProj = Path.Combine(serviceDefinition.ProjectDirectory, correctedPaths[i]);
+			
+			dependencies.Add(new DependencyData()
+			{
+				name = name,
+				projPath = pathToDependencyProj,
+				dllName = name, // TODO: We should have a better way to get this, for now we assume it's the same as the reference project name
+				type = hasDefinition ? "storage" : "library"
+			});
+		}
 
 		return dependencies;
 	}
 
+	/// <summary>
+	/// Removes the dependency between a microservice and a storage.
+	/// </summary>
+	/// <param name="project">The microservice to have the dependency removed from</param>
+	/// <param name="dependency">The storage to remove as a dependency from the microservice</param>
+	public async Task RemoveProjectDependency(BeamoServiceDefinition project, BeamoServiceDefinition dependency)
+	{
+		if (project.Protocol != BeamoProtocolType.HttpMicroservice ||
+		    dependency.Protocol != BeamoProtocolType.EmbeddedMongoDb)
+		{
+			throw new CliException(
+				$"Currently the only supported dependencies are {nameof(BeamoProtocolType.HttpMicroservice)} depending on {nameof(BeamoProtocolType.EmbeddedMongoDb)}");
+		}
+
+		var relativeProjectPath = _configService.GetRelativePath(project.ProjectDirectory);
+		var projectPath = Path.Combine( relativeProjectPath, $"{project.BeamoId}.csproj");
+		var dependencyPath = Path.Combine( _configService.GetRelativePath(dependency.ProjectDirectory), $"{dependency.BeamoId}.csproj");
+		
+		var command = $"remove {projectPath} reference {dependencyPath}";
+		var (cmd, result) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, command);
+		if (cmd.ExitCode != 0)
+		{
+			throw new CliException($"Failed to remove project dependency, output of \"dotnet {command}\": {result}");
+		}
+		
+		await UpdateDockerFile(project.BeamoId);
+	}
+
+	/// <summary>
+	/// Add a storage as a dependency of a microservice
+	/// </summary>
+	/// <param name="project">The microservice that the dependency will be added to</param>
+	/// <param name="dependency">The storage to be the microservice dependency</param>
 	public async Task AddProjectDependency(BeamoServiceDefinition project, BeamoServiceDefinition dependency)
 	{
 		if (project.Protocol != BeamoProtocolType.HttpMicroservice ||
@@ -156,22 +211,7 @@ public partial class BeamoLocalSystem
 			throw new CliException($"Failed to add project dependency, output of \"dotnet {command}\": {result}");
 		}
 
-		var service = BeamoManifest.HttpMicroserviceLocalProtocols[project.BeamoId];
-		var dockerfilePath = service.RelativeDockerfilePath;
-		dockerfilePath = _configService.GetFullPath(Path.Combine(service.DockerBuildContextPath, dockerfilePath));
-		var dockerfileText = await File.ReadAllTextAsync(dockerfilePath);
-
-		const string search =
-			"# <BEAM-CLI-INSERT-FLAG:COPY> do not delete this line. It is used by the beam CLI to insert custom actions";
-		string toAdd = @$"WORKDIR /subsrc/{dependency.BeamoId}
-COPY {dependency.BeamoId}/. .";
-		var replacement = @$"{toAdd}
-{search}";
-		if (!dockerfileText.ReplaceLineEndings("\n").Contains(toAdd))
-		{
-			dockerfileText = dockerfileText.Replace(search, replacement);
-			await File.WriteAllTextAsync(dockerfilePath, dockerfileText);
-		}
+		await UpdateDockerFile(project.BeamoId);
 	}
 
 	/// <summary>
@@ -179,9 +219,9 @@ COPY {dependency.BeamoId}/. .";
 	/// </summary>
 	/// <param name="projectExtension">The extension of the project file (default: 'csproj').</param>
 	/// <returns>A dictionary where the key is a BeamoServiceDefinition and the value is a list of its dependencies.</returns>
-	public async Task<Dictionary<BeamoServiceDefinition, List<string>>> GetAllBeamoIdsDependencies(string projectExtension = "csproj")
+	public async Task<Dictionary<BeamoServiceDefinition, List<DependencyData>>> GetAllBeamoIdsDependencies(string projectExtension = "csproj")
 	{
-		var allBeamoIdsDependencies = new Dictionary<BeamoServiceDefinition, List<string>>();
+		var allBeamoIdsDependencies = new Dictionary<BeamoServiceDefinition, List<DependencyData>>();
 		foreach (var definition in BeamoManifest.ServiceDefinitions)
 		{
 			if (!allBeamoIdsDependencies.ContainsKey(definition))
@@ -199,6 +239,38 @@ COPY {dependency.BeamoId}/. .";
 	/// </summary>
 	public static bool ValidateBeamoServiceId_DoesntExists(string beamoServiceId, List<BeamoServiceDefinition> serviceDefinitions) =>
 		!serviceDefinitions.Contains(new BeamoServiceDefinition() { BeamoId = beamoServiceId }, new BeamoServiceDefinition.IdEquality());
+
+	private async Promise UpdateDockerFile(string serviceName)
+	{
+		var service = BeamoManifest.HttpMicroserviceLocalProtocols[serviceName];
+		var dockerfilePath = service.RelativeDockerfilePath;
+		dockerfilePath = _configService.GetFullPath(Path.Combine(service.DockerBuildContextPath, dockerfilePath));
+		var dockerfileText = await File.ReadAllTextAsync(dockerfilePath);
+
+		const string endTag =
+			"# </BEAM-CLI-COPY-SRC> this line signals the end of Beamable Project Src copies. Do not remove it.";
+		const string startTag =
+			"# <BEAM-CLI-COPY-SRC> this line signals the start of Beamable Project Src copies into the built container. Do not remove it. The content between here and the closing tag will change anytime the Beam CLI modifies dependencies.";
+		const string serviceNameTag = "<SERVICE_NAME>";
+		string toAdd = @$"WORKDIR /subsrc/{serviceNameTag}
+COPY {serviceNameTag}/. .";
+		var replacement = @$"{toAdd}
+{endTag}";
+		
+		//Remove old data
+		int startIndex = dockerfileText.LastIndexOf(startTag, StringComparison.Ordinal) + startTag.Length + 1;
+		int endIndex = dockerfileText.IndexOf(endTag, startIndex, StringComparison.Ordinal);
+		string newText = dockerfileText.Remove(startIndex, endIndex - startIndex);
+
+		var dependencies = await GetDependencies(serviceName);
+
+		foreach (var dependency in dependencies)
+		{
+			string depName = dependency.name;
+			newText = newText.Replace(endTag, replacement.Replace(serviceNameTag, depName));
+		}
+		await File.WriteAllTextAsync(dockerfilePath, newText);
+	}
 
 	/// <summary>
 	/// Verifies, by expanding the dependency DAG from root, we don't see root again until we have walked through all dependencies.
@@ -223,7 +295,7 @@ COPY {dependency.BeamoId}/. .";
 
 			// Pushes dependencies of this service onto the stack
 			var deps = (await GetDependencies(checking.BeamoId)).Select(
-					depId => registeredDependencies.FirstOrDefault(sd => sd.BeamoId == depId)
+					depId => registeredDependencies.FirstOrDefault(sd => sd.BeamoId == depId.name)
 				)
 				.Where(a => a != null)
 				.ToList();
@@ -687,6 +759,16 @@ public interface IBeamoRemoteProtocol
 }
 
 // Move this stuff to app context and initialization
+
+[Serializable]
+public class DependencyData
+{
+	public string name;
+	public string projPath;
+	public string dllName;
+	public string type;
+}
+
 [Serializable]
 public class CustomerResponse
 {

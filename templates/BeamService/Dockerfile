@@ -8,6 +8,10 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS build-env
 
 # <BEAM-CLI-INSERT-FLAG:COPY> do not delete this line. It is used by the beam CLI to insert custom actions
 
+# <BEAM-CLI-COPY-SRC> this line signals the start of Beamable Project Src copies into the built container. Do not remove it. The content between here and the closing tag will change anytime the Beam CLI modifies dependencies.
+
+# </BEAM-CLI-COPY-SRC> this line signals the end of Beamable Project Src copies. Do not remove it.
+
 # copy in required files
 WORKDIR /subsrc/BeamService
 COPY BeamService/BeamService.csproj .

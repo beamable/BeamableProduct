@@ -107,7 +107,7 @@ public class ServicesEnableCommand : AppCommand<ServicesEnableCommandArgs>
 			var dependencies = await args.BeamoLocalSystem.GetDependencies(serviceDefinition.BeamoId);
 			foreach (var id in dependencies)
 			{
-				var dep = _localBeamo.BeamoManifest.ServiceDefinitions.First(sd => sd.BeamoId == id);
+				var dep = _localBeamo.BeamoManifest.ServiceDefinitions.First(sd => sd.BeamoId == id.name);
 				dep.ShouldBeEnabledOnRemote = args.EnableOnRemoteDeploy;
 			}
 		}

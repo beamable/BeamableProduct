@@ -85,7 +85,7 @@ public class ServicesModifyCommand : AppCommand<ServicesModifyCommandArgs>
 		existingBeamoIds.Remove(args.BeamoId);
 		// Handle Dependencies Option
 		var dependencies = await _localBeamo.GetDependencies(args.BeamoId);
-		if (!EnsureServiceDependencies(existingBeamoIds, ref args.ServiceDependencies, dependencies.ToArray()))
+		if (!EnsureServiceDependencies(existingBeamoIds, ref args.ServiceDependencies, dependencies.Select(dep => dep.name).ToArray()))
 			return;
 
 		// Protocol specific stuff

@@ -394,7 +394,7 @@ public partial class BeamoLocalSystem
 	/// <see cref="BeamoProtocolType"/>. 
 	/// </summary>
 	private static void SplitLayersByProtocolType(List<BeamoServiceDefinition> serviceDefinitions,
-		Dictionary<BeamoServiceDefinition, List<string>> serviceDependencies,
+		Dictionary<BeamoServiceDefinition, List<DependencyData>> serviceDependencies,
 		out Dictionary<BeamoProtocolType, List<BeamoServiceDefinition>>[] splitContainers)
 	{
 		// Builds the dependency layers
@@ -419,7 +419,7 @@ public partial class BeamoLocalSystem
 	/// <param name="serviceDefinitions">The Directed Acyclic Graph of <see cref="BeamoServiceDefinition"/>s.</param>
 	/// <param name="builtLayers">An array of layers, each containing indices into <paramref name="serviceDefinitions"/> for services in that layer.</param>
 	private static void BuildLayeredDependencies(List<BeamoServiceDefinition> serviceDefinitions,
-		Dictionary<BeamoServiceDefinition, List<string>> serviceDependencies, out int[][] builtLayers)
+		Dictionary<BeamoServiceDefinition, List<DependencyData>> serviceDependencies, out int[][] builtLayers)
 	{
 		// Find the layers with 0 dependencies
 		var currentLayerDefinitions = serviceDefinitions.Where(c => serviceDependencies[c].Count == 0).ToList();
@@ -448,7 +448,7 @@ public partial class BeamoLocalSystem
 				// Check that all the dependencies are in previous layers
 				var isInNextLayer = serviceDependencies[sd].TrueForAll(depBeamoId =>
 				{
-					var dependencyIdx = serviceDefinitions.FindIndex(sd2 => sd2.BeamoId == depBeamoId);
+					var dependencyIdx = serviceDefinitions.FindIndex(sd2 => sd2.BeamoId == depBeamoId.name);
 					return allCompletedDependencies.Contains(dependencyIdx);
 				});
 

@@ -155,7 +155,7 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public static void WriteServiceManifestFromLocal(BeamoLocalManifest localManifest, string comments, Dictionary<string, string> perServiceComments,
 		ServiceManifest remoteManifest, Dictionary<string, List<string>> federatedComponentsByName,
-		Dictionary<BeamoServiceDefinition, List<string>> serviceDependencies)
+		Dictionary<BeamoServiceDefinition, List<DependencyData>> serviceDependencies)
 	{
 		// Setup comments
 		remoteManifest.comments = comments;
@@ -214,8 +214,8 @@ public partial class BeamoLocalSystem
 					dependencies = serviceDependencies[httpSd]
 						// For now, Beam-O only supports dependencies on Storage Objects (ie.:Embedded Mongo DBs).
 						// TODO: change this when Beam-O supports real dependency resolution across services.
-						.Where(beamoId => localManifest.ServiceDefinitions.First(sd => sd.BeamoId == beamoId).Protocol == BeamoProtocolType.EmbeddedMongoDb)
-						.Select(beamoId => new ServiceDependency() { id = beamoId, storageType = "mongov1" }).ToList(),
+						.Where(beamoId => localManifest.ServiceDefinitions.First(sd => sd.BeamoId == beamoId.name).Protocol == BeamoProtocolType.EmbeddedMongoDb)
+						.Select(beamoId => new ServiceDependency() { id = beamoId.name, storageType = "mongov1" }).ToList(),
 					comments = httpSdComments,
 					components = componentsList
 				};

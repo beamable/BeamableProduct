@@ -43,8 +43,9 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 		var allServices = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Where(sd => sd.Protocol is BeamoProtocolType.HttpMicroservice).ToArray();
 
 		// Get the list of dependencies of each of these microservices
-		var allDepTasks = allServices.Select(sd => args.BeamoLocalSystem.GetDependencies(sd.BeamoId)).ToArray();
-		var allDeps = await Task.WhenAll(allDepTasks);
+		Task<List<DependencyData>>[] allDepTasks = allServices.Select(sd => args.BeamoLocalSystem.GetDependencies(sd.BeamoId)).ToArray();
+		var allDepsData = await Task.WhenAll(allDepTasks);
+		var allDeps = allDepsData.Select(deps => deps.Select(dep => dep.name));
 
 		// Get the list of all BeamoIds whose DLLs we need to have loaded for a single pass.
 		var allServicesToLoadDlls = allServices.Select(sd => sd.BeamoId).Union(allDeps.SelectMany(d => d)).Distinct().ToArray();
