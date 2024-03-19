@@ -30,7 +30,8 @@ public class NewCommonLibraryCommand : AppCommand<CreateCommonLibraryArgs>, ISta
 
 	public override async Task Handle(CreateCommonLibraryArgs args)
 	{
-		await args.CreateConfigIfNeeded(_initCommand);
+		// TODO: 
+		// await args.CreateConfigIfNeeded(args, _initCommand);
 		var path = Path.Combine(args.OutputPath, args.ProjectName);
 		await args.ProjectService.CreateCommonProject(args.ProjectName.Value, path, args.SpecifiedVersion);
 	}

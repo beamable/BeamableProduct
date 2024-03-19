@@ -57,6 +57,7 @@ public class CLITest
 	[TearDown]
 	public void Teardown()
 	{
+		ResetConfigurator();
 		Directory.SetCurrentDirectory(OriginalWorkingDir);
 		Directory.Delete(WorkingDir, true);
 
@@ -78,14 +79,17 @@ public class CLITest
 		_configurator = builder =>
 		{
 			curriedConfig?.Invoke(builder);
-			builder.ReplaceSingleton<T, T>(() =>
-			{
-				var mock = new Mock<T>();
-				configurator(mock);
-				_mockObjects.Add(mock);
-				return mock.Object;
-			});
+			
+			var mock = new Mock<T>();
+			configurator(mock);
+			_mockObjects.Add(mock);
+			builder.ReplaceSingleton<T, T>(() => mock.Object);
 		};
+	}
+
+	protected void ResetConfigurator()
+	{
+		_configurator = new Action<IDependencyBuilder>(_ => { });
 	}
 
 	protected int Run(params string[] args)

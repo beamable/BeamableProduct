@@ -73,7 +73,8 @@ public class ConfigService
 	public string GetRelativePath(string relativePath)
 	{
 		var path = Path.Combine(WorkingDirectoryFullPath, relativePath);
-		path = Path.GetRelativePath(Directory.GetCurrentDirectory(), path);
+		path = Path.GetRelativePath(Path.Combine(Directory.GetCurrentDirectory(), BaseDirectory), path);
+		// path = Path.GetRelativePath(BaseDirectory, path);
 		return path;
 	}
 
@@ -283,7 +284,7 @@ public class ConfigService
 		}
 	}
 
-	void RefreshConfig()
+	public void RefreshConfig()
 	{
 		DirectoryExists = TryToFindBeamableConfigFolder(out var configPath);
 		ConfigDirectoryPath = configPath;

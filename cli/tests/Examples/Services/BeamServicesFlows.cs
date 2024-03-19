@@ -32,7 +32,7 @@ public class BeamServicesFlows : CLITest
 	{
 		#region Arrange
 
-		new BeamProjectFlows().CanCreateNewBeamableSolution();
+		new BeamProjectFlows().NewProject_AutoInit_NoSlnConfig();
 
 		// Create a new instance of a container
 		var container = new ContainerBuilder()
@@ -76,7 +76,7 @@ public class BeamServicesFlows : CLITest
 	{
 		#region Arrange
 
-		new BeamProjectFlows().CanCreateNewBeamableSolution();
+		new BeamProjectFlows().NewProject_AutoInit_NoSlnConfig();
 
 		// Create a new instance of a container
 		var container = new ContainerBuilder()

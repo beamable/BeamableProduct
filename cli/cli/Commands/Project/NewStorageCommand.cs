@@ -24,18 +24,11 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 
 	public override void Configure()
 	{
+		AddArgument(new ServiceNameArgument(), (args, i) => args.ProjectName = i);
 		AddOption(new AutoInitFlag(), (args, b) => args.AutoInit = b);
-		AddArgument(new Argument<ServiceName>("name", "The name of the new Microstorage"),
-			(args, i) => args.ProjectName = i);
-		AddOption(new Option<string>("--existing-solution-file", () => string.Empty, description: "Relative path to current solution file to which standalone microservice should be added"),
-			(args, i) => args.RelativeExistingSolutionFile = i);
-		AddOption(new Option<ServiceName>("--new-solution-name", "The name of the solution of the new project. Use it if you want to create a new solution"),
-			(args, i) => args.SolutionName = i);
-		AddOption(new Option<string>("--service-directory", "Relative path to directory where microservice should be created. Defaults to \"SOLUTION_DIR/services\""),
-			(args, i) => args.ServicesBaseFolderPath = i);
-		AddOption(new SpecificVersionOption(), (args, i) => args.SpecifiedVersion = i);
-		AddOption(new Option<bool>("--disable", "Created service by default would not be published"),
-			(args, i) => args.Disabled = i);
+
+		SolutionCommandArgs.Configure(this);
+		
 		var storageDeps = new Option<List<string>>("--link-to", "The name of the project to link this storage to")
 		{
 			Arity = ArgumentArity.ZeroOrMore,
@@ -46,11 +39,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 
 	public override async Task Handle(NewStorageCommandArgs args)
 	{
-		args.ValidateConfig();
 		await args.CreateConfigIfNeeded(_initCommand);
-		// first, create the project...
-		args.SolutionName = string.IsNullOrEmpty(args.SolutionName) ? args.ProjectName : args.SolutionName;
-
 		var newMicroserviceInfo = await args.ProjectService.CreateNewStorage(args);
 		Log.Information(
 			$"Registering local project... 'beam services register --id {args.ProjectName} --type EmbeddedMongoDb'");

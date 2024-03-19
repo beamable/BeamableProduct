@@ -19,22 +19,17 @@ public class RegenerateSolutionFilesCommand : AppCommand<RegenerateSolutionFiles
 			(args, i) => args.tempDirectory = i);
 		AddArgument(new Argument<string>("copy-path", () => string.Empty, description: "The path to where the files will be copied to"),
 			(args, i) => args.projectDirectory = i);
-		AddOption(new SkipCommonOptionFlag(), (args, i) => args.SkipCommon = i);
-		AddOption(new Option<ServiceName>("--solution-name", "The name of the solution of the new project"),
-			(args, i) => args.SolutionName = i);
 		AddOption(new SpecificVersionOption(), (args, i) => args.SpecifiedVersion = i);
+		SolutionCommandArgs.ConfigureSolutionFlag(this);
 	}
 
 	public override async Task Handle(RegenerateSolutionFilesCommandArgs args)
 	{
 		BeamableLogger.Log("Start creating a temporary project!");
 
-		args.SolutionName = string.IsNullOrEmpty(args.SolutionName) ? args.ProjectName : args.SolutionName;
-
 		var solutionArgs = new NewMicroserviceArgs()
 		{
-			RelativeNewSolutionDirectory = args.tempDirectory,
-			SolutionName = args.ProjectName,
+			SlnFilePath = Path.Combine(args.tempDirectory, args.ProjectName),
 			ProjectName = args.ProjectName,
 			Quiet = true,
 		};
@@ -46,14 +41,14 @@ public class RegenerateSolutionFilesCommand : AppCommand<RegenerateSolutionFiles
 		{
 			"Program.cs",
 			"Dockerfile",
-			$"{args.SolutionName}.csproj"
+			$"{args.ProjectName}.csproj"
 		};
 
 		//Copy all files to the desired path
 		foreach (var fileName in filesToCopy)
 		{
 			BeamableLogger.Log($"Copying file {fileName} ...");
-			var filePath = $"{path}/services/{args.SolutionName}/{fileName}";
+			var filePath = $"{path}/services/{args.ProjectName}/{fileName}";
 			File.Copy(filePath, $"{args.projectDirectory}/{fileName}", true);
 		}
 

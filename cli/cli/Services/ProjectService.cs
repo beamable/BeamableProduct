@@ -372,11 +372,10 @@ public class ProjectService
 		var microserviceInfo = new NewServiceInfo();
 		// check that we have the templates available
 		await EnsureCanUseTemplates(usedVersion, args.Quiet);
-		microserviceInfo.SolutionPath = args.RelativeExistingSolutionFile;
-		var shouldCreateSolution = string.IsNullOrWhiteSpace(microserviceInfo.SolutionPath);
-		if (shouldCreateSolution)
+		microserviceInfo.SolutionPath = args.SlnFilePath;
+		if (!args.GetSlnExists())
 		{
-			microserviceInfo.SolutionPath = await CreateNewSolution(args.RelativeNewSolutionDirectory, args.SolutionName);
+			microserviceInfo.SolutionPath = await CreateNewSolution(args.GetSlnDirectory(), args.GetSlnFileName());
 		}
 
 		if (!_configService.IsPathInWorkingDirectory(microserviceInfo.SolutionPath))
@@ -418,18 +417,19 @@ public class ProjectService
 
 	public async Task<NewServiceInfo> CreateNewMicroservice(NewMicroserviceArgs args)
 	{
-		string usedVersion = string.IsNullOrWhiteSpace(args.SpecifiedVersion) ? await GetVersion() : args.SpecifiedVersion;
-		var microserviceInfo = new NewServiceInfo();
-
 		// check that we have the templates available
+		string usedVersion = string.IsNullOrWhiteSpace(args.SpecifiedVersion) ? await GetVersion() : args.SpecifiedVersion;
 		await EnsureCanUseTemplates(usedVersion, args.Quiet);
-		microserviceInfo.SolutionPath = args.RelativeExistingSolutionFile;
-		var shouldCreateSolution = string.IsNullOrWhiteSpace(microserviceInfo.SolutionPath);
-		if (shouldCreateSolution)
+		
+		var microserviceInfo = new NewServiceInfo
 		{
-			microserviceInfo.SolutionPath = await CreateNewSolution(args.RelativeNewSolutionDirectory, args.SolutionName);
+			SolutionPath = args.SlnFilePath
+		};
+		if (!args.GetSlnExists())
+		{
+			await CreateNewSolution(args.GetSlnDirectory(), args.GetSlnFileName());
 		}
-
+		
 		if (string.IsNullOrWhiteSpace(args.ServicesBaseFolderPath))
 		{
 			var directory = Path.GetDirectoryName(microserviceInfo.SolutionPath);
@@ -442,17 +442,12 @@ public class ProjectService
 				$"Solution file({microserviceInfo.SolutionPath}) should not exists outside working directory({_configService.WorkingDirectory}) or its subdirectories.");
 		}
 
-		microserviceInfo.ServicePath = await CreateNewService(microserviceInfo.SolutionPath, args.ProjectName, args.ServicesBaseFolderPath, !args.SkipCommon, usedVersion);
+		microserviceInfo.ServicePath = await CreateNewService(microserviceInfo.SolutionPath, args.ProjectName, args.ServicesBaseFolderPath, usedVersion);
 		return microserviceInfo;
 	}
 
 	public async Task<string> CreateNewSolution(string directory, string solutionName)
 	{
-		if (string.IsNullOrEmpty(directory))
-		{
-			directory = solutionName;
-		}
-
 		var solutionPath = Path.Combine(_configService.WorkingDirectory, directory);
 
 		if (Directory.Exists(solutionPath))
@@ -463,11 +458,11 @@ public class ProjectService
 			}
 		}
 
-		if (!_configService.IsPathInWorkingDirectory(directory))
-		{
-			throw new CliException(
-				$"Solution file({directory}) should not exists outside working directory({_configService.WorkingDirectory}) or its subdirectories.");
-		}
+		// if (!_configService.IsPathInWorkingDirectory(directory))
+		// {
+		// 	throw new CliException(
+		// 		$"Solution file({directory}) should not exists outside working directory({_configService.WorkingDirectory}) or its subdirectories.");
+		// }
 
 		// create the solution
 		await RunDotnetCommand($"new sln -n \"{solutionName}\" -o \"{solutionPath}\"");
@@ -475,7 +470,7 @@ public class ProjectService
 		return Path.Combine(solutionPath, $"{solutionName}.sln");
 	}
 
-	public async Task<string> CreateNewService(string solutionPath, string projectName, string rootServicesPath, bool createCommonLibrary, string version)
+	public async Task<string> CreateNewService(string solutionPath, string projectName, string rootServicesPath, string version)
 	{
 		if (!File.Exists(solutionPath))
 		{
@@ -499,14 +494,12 @@ public class ProjectService
 		await UpdateProjectDependencyVersion(projectPath, "Beamable.Microservice.Runtime", version);
 
 		// create the shared library project only if requested
-		if (createCommonLibrary)
-		{
-			await CreateCommonProject(commonProjectName, commonProjectPath, version);
-			// add the shared library to the solution
-			await RunDotnetCommand($"sln \"{solutionPath}\" add \"{commonProjectPath}\"");
-			// add the shared library as a reference of the project
-			await RunDotnetCommand($"add \"{projectPath}\" reference \"{commonProjectPath}\"");
-		}
+		await CreateCommonProject(commonProjectName, commonProjectPath, version);
+		// add the shared library to the solution
+		await RunDotnetCommand($"sln \"{solutionPath}\" add \"{commonProjectPath}\"");
+		// add the shared library as a reference of the project
+		await RunDotnetCommand($"add \"{projectPath}\" reference \"{commonProjectPath}\"");
+	
 
 		return projectPath;
 	}
@@ -550,17 +543,20 @@ public class ProjectService
 
 	public Task<BeamoServiceDefinition> AddDefinitonToNewService(SolutionCommandArgs args, NewServiceInfo info)
 	{
+		// Example/services/Example
 		var serviceRelativePath = _configService.GetRelativePath(info.ServicePath);
+		// serviceRelativePath = Path.GetRelativePath(_configService.BaseDirectory, info.ServicePath);
 		// Find path to service folders: either it is in the working directory, or it will be inside 'args.name\\services' from the working directory.
-		string projectDirectory = Path.GetPathRoot(serviceRelativePath);
-		string projectDockerfilePath = Path.Combine(serviceRelativePath, "Dockerfile");
+		string projectDirectory = Path.GetDirectoryName(serviceRelativePath);
+		string projectDockerfilePath = Path.Combine(Path.GetFileName(serviceRelativePath), "Dockerfile");
 
 		// now that a .beamable folder has been created, setup the beamo manifest
 		return args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value,
 			projectDirectory,
 			projectDockerfilePath,
 			CancellationToken.None,
-			!args.Disabled);
+			!args.Disabled,
+			serviceRelativePath);
 	}
 
 
@@ -573,7 +569,7 @@ public class ProjectService
 		serviceFolder = configService.GetRelativePath(serviceFolder);
 		Log.Information("Docker file folder is {DockerFileFolder}", serviceFolder);
 
-		dockerfilePath = configService.GetRelativePath(Path.Combine(dockerBuildContextPath, dockerfilePath));
+		dockerfilePath = Path.Combine(configService.BaseDirectory, dockerBuildContextPath, dockerfilePath);
 		var dockerfileText = await File.ReadAllTextAsync(dockerfilePath);
 
 		const string search =
