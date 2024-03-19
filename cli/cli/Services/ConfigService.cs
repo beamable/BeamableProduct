@@ -317,15 +317,29 @@ public class ConfigService
 			{
 				var newPath = GetConfigPath(Constants.RENAMED_DIRECTORIES[key] as string);
 				var existsAndAreDifferent = Directory.Exists(newPath);
+				var samePath = string.Compare(oldPath, newPath,
+					RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture) == 0;
 
-				existsAndAreDifferent &=
-					string.Compare(oldPath, newPath,
-						RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture) != 0;
+				existsAndAreDifferent &= !samePath;
+					
 				if (existsAndAreDifferent)
 				{
 					throw new CliException($"Config resolution error, there is {oldPath} and {newPath}",
 						Constants.CMD_RESULT_CONFIG_RESOLUTION_CONFLICT, true,
 						"Remove one of the directories and run the command again\n");
+				}
+
+				if (samePath)
+				{
+					var tmpPath = newPath + "_bak";
+					if (Directory.Exists(tmpPath))
+					{
+						throw new CliException($"Config resolution error, there is already temp dir {tmpPath}",
+							Constants.CMD_RESULT_CONFIG_RESOLUTION_CONFLICT, true,
+							"Remove dir and run command again\n");
+					}
+					Directory.Move(oldPath, tmpPath);
+					oldPath = tmpPath;
 				}
 				Directory.Move(oldPath, newPath!);
 			}
