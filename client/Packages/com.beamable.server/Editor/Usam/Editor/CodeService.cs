@@ -97,8 +97,15 @@ namespace Beamable.Server.Editor.Usam
 
 			CheckMicroserviceStatus();
 			ConnectToLogs();
+			const string migratedServicesKey = "BeamMigratedServices";
+			if (!SessionState.GetBool(migratedServicesKey, false))
+			{
+				LogVerbose("Migrate old services start");
+				await Migrate();
+				SessionState.SetBool(migratedServicesKey, true);
+				LogVerbose("Migrate old services end");
+			}
 			LogVerbose("Completed");
-			await Migrate();
 		}
 
 		public async Promise Migrate()
@@ -170,7 +177,7 @@ namespace Beamable.Server.Editor.Usam
 				var cmd = _cli.ProjectNewCommonLib(new ProjectNewCommonLibArgs()
 				{
 					name = new ServiceName("BeamableCommonShared"),
-					version = _projectVersion,
+					version = GetCurrentNugetVersion(),
 					outputPath = StandaloneMicroservicesPath
 				});
 				try
@@ -782,7 +789,7 @@ namespace Beamable.Server.Editor.Usam
 				name = service,
 				serviceDirectory = StandaloneMicroservicesPath,
 				existingSolutionFile = slnPath,
-				version = _projectVersion,
+				version = GetCurrentNugetVersion(),
 				linkTo = deps,
 			};
 			var storageCommand = _cli.ProjectNewStorage(storageArgs);

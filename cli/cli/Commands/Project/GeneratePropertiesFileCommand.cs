@@ -47,11 +47,6 @@ public class GeneratePropertiesFileCommand : AppCommand<GeneratePropertiesFileCo
 		
 		var BeamableServiceIds = string.Join("|", args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Select(x => x.BeamoId)) + "|";
 
-		if (!Directory.Exists(args.SolutionDir))
-		{
-			throw new CliException("SolutionDir path must exist.");
-		}
-
 		string fileContents = @$"
 <Project>
 	<PropertyGroup>
