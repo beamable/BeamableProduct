@@ -37,7 +37,6 @@ namespace Beamable.Server.Editor.Usam
 		private List<BeamServiceSignpost> _services;
 		private List<BeamStorageSignpost> _storages;
 		private List<Promise> _logsCommands = new List<Promise>();
-		private string _projectVersion;
 
 		private const string BEAMABLE_PATH = "Assets/Beamable/";
 		private const string MICROSERVICE_DLL_PATH = "bin/Debug/net6.0"; // is this true for all platforms and dotnet installations?
@@ -201,32 +200,11 @@ namespace Beamable.Server.Editor.Usam
 
 		public async Promise UpdateServicesVersions()
 		{
-			var version = new BeamVersionResults();
-			var versionCommand = _cli.Version().OnStreamVersionResults(result =>
-			{
-				version = result.data;
-			});
-			await versionCommand.Run().Error(LogExceptionVerbose);
-
-			if (string.IsNullOrEmpty(version?.version) || version.version.Contains("1.0.0"))
-			{
-				LogVerbose("Could not detect current version, skipping");
-				return;
-			}
-
-			var versions = _cli.ProjectVersion(new ProjectVersionArgs { requestedVersion = version?.version });
+			var nugetVersion = GetCurrentNugetVersion();
+			var versions = _cli.ProjectVersion(new ProjectVersionArgs { requestedVersion = nugetVersion });
 			versions.OnStreamProjectVersionCommandResult(result =>
 			{
-				if (result.data.packageVersions.Length > 0)
-				{
-					_projectVersion = result.data.packageVersions[0];
-				}
-				else
-				{
-					LogVerbose($"UpdateServicesVersions failed, result: {JsonUtility.ToJson(result)}");
-					_projectVersion = "0.0.0";
-				}
-				LogVerbose($"Versions updated: {_projectVersion}");
+				LogVerbose($"Versions updated: {string.Join(",", result.data.packageVersions)}");
 			});
 			await versions.Run().Error(LogExceptionVerbose);
 		}
@@ -584,13 +562,25 @@ namespace Beamable.Server.Editor.Usam
 
 		private async Promise SetPropertiesFile()
 		{
+			
+			var beamPath = BeamCliUtil.CLI_PATH.Replace(".dll", "");
+			var workingDir = Path.GetDirectoryName(Directory.GetCurrentDirectory());
+			if (beamPath.StartsWith(workingDir))
+			{
+				// when this case happens, we are developing locally, so put in a reference locally.
+				beamPath = "$(SolutionDir)../cli/cli/bin/Debug/net6.0/Beamable.Tools";
+			}
 			var command = _cli.ProjectGenerateProperties(new ProjectGeneratePropertiesArgs()
 			{
 				output = ".",
-				beamPath = BeamCliUtil.CLI_PATH.Replace(".dll", ""),
-				solutionDir = Path.GetFullPath(".")
+				beamPath = beamPath,
+				solutionDir = "$([System.IO.Path]::GetDirectoryName(`$(DirectoryBuildPropsPath)`))",
+				buildDir = "/Temp/beam/USAMBuilds"
 			});
+			
+			
 			await command.Run();
+			
 		}
 
 		/// <summary>
@@ -821,6 +811,21 @@ namespace Beamable.Server.Editor.Usam
 			LogVerbose($"Finished creation of storage {storageName}");
 		}
 
+		/// <summary>
+		/// Given the current SDK version, we should be able to figure out which version of Nuget packages we need.
+		/// Note: if we're developing the SDK, the version will be 0.0.0, and the current local version of Nuget package is 0.0.123-local.
+		/// </summary>
+		/// <returns></returns>
+		public static string GetCurrentNugetVersion()
+		{
+			var version = BeamableEnvironment.SdkVersion.ToString();
+			if (version == "0.0.0")
+			{
+				version = "0.0.123";
+			}
+
+			return version;
+		}
 
 		private async Promise CreateMicroService(string serviceName, List<IBeamoServiceDefinition> dependencies, bool skipCommon = false)
 		{
@@ -838,8 +843,8 @@ namespace Beamable.Server.Editor.Usam
 				name = service,
 				serviceDirectory = StandaloneMicroservicesPath,
 				existingSolutionFile = slnPath,
-				version = _projectVersion,
 				skipCommon = skipCommon,
+				version = GetCurrentNugetVersion()
 			};
 			var command = _cli.ProjectNewMicroservice(args);
 			await command.Run();

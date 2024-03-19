@@ -12,6 +12,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string beamPath;
 		/// <summary>The solution path to be used</summary>
 		public string solutionDir;
+		/// <summary>A path relative to the given solution directory, that will be used to store the projects /bin and /obj directories. Note: the given path will have the project's assembly name and the bin or obj folder appended.</summary>
+		public string buildDir;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -23,6 +25,12 @@ namespace Beamable.Editor.BeamCli.Commands
 			genBeamCommandArgs.Add(this.beamPath.ToString());
 			// Add the solutionDir value to the list of args.
 			genBeamCommandArgs.Add(this.solutionDir.ToString());
+			// If the buildDir value was not default, then add it to the list of args.
+			if ((this.buildDir != default(string)))
+			{
+				genBeamCommandArgs.Add((("--build-dir=\"" + this.buildDir)
+								+ "\""));
+			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces
 			genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
