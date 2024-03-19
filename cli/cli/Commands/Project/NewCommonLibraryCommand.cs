@@ -32,6 +32,10 @@ public class NewCommonLibraryCommand : AppCommand<CreateCommonLibraryArgs>, ISta
 	{
 		await args.CreateConfigIfNeeded(_initCommand);
 		var path = Path.Combine(args.OutputPath, args.ProjectName);
-		await args.ProjectService.CreateCommonProject(args.ProjectName.Value, path, args.SpecifiedVersion);
+		if (!args.GetSlnExists())
+		{
+			await args.ProjectService.CreateNewSolution(args.GetSlnDirectory(), args.GetSlnFileName());
+		}
+		await args.ProjectService.CreateCommonProject(args.ProjectName.Value, path, args.SpecifiedVersion, args.SlnFilePath);
 	}
 }

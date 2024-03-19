@@ -488,9 +488,7 @@ public class ProjectService
 		await UpdateProjectDependencyVersion(projectPath, "Beamable.Microservice.Runtime", version);
 
 		// create the shared library project only if requested
-		await CreateCommonProject(commonProjectName, commonProjectPath, version);
-		// add the shared library to the solution
-		await RunDotnetCommand($"sln \"{solutionPath}\" add \"{commonProjectPath}\"");
+		await CreateCommonProject(commonProjectName, commonProjectPath, version, solutionPath);
 		// add the shared library as a reference of the project
 		await RunDotnetCommand($"add \"{projectPath}\" reference \"{commonProjectPath}\"");
 	
@@ -505,7 +503,7 @@ public class ProjectService
 	/// <param name="commonProjectPath">The path where the common project should be created.</param>
 	/// <param name="usedVersion">The version to be used for the common project.</param>
 	/// <returns>Task representing the asynchronous operation.</returns>
-	public async Task CreateCommonProject(string commonProjectName, string commonProjectPath, string usedVersion)
+	public async Task CreateCommonProject(string commonProjectName, string commonProjectPath, string usedVersion, string solutionPath)
 	{
 		await RunDotnetCommand($"new beamlib -n \"{commonProjectName}\" -o \"{commonProjectPath}\"");
 
@@ -516,6 +514,9 @@ public class ProjectService
 		{
 			await UpdateProjectDependencyVersion(commonProjectPath, "Beamable.Common", usedVersion);
 		}
+		
+		// add the shared library to the solution
+		await RunDotnetCommand($"sln \"{solutionPath}\" add \"{commonProjectPath}\"");
 	}
 
 	/// <summary>
