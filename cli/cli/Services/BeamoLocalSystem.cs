@@ -121,7 +121,7 @@ public partial class BeamoLocalSystem
 		var projectExtension = serviceDefinition.ProjectExtension;
 
 		var relativePath = _configService.BeamableRelativeToExecutionRelative(serviceDefinition!.ProjectDirectory);
-		var csProjPath = Path.Combine(path, $"{beamoServiceId}.{projectExtension}");
+		var csProjPath = Path.Combine(relativePath, $"{beamoServiceId}.{projectExtension}");
 		var (cmd, builder) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, $"list {csProjPath} reference");
 		if (cmd.ExitCode != 0)
 		{
