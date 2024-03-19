@@ -297,12 +297,7 @@ public class ConfigService
 
 			MigrateOldConfigIfExists();
 		}
-		var isValid = TryToReadConfigFile(ConfigDirectoryPath, out _config);
-		if (DirectoryExists.Value && !isValid)
-		{
-			throw new CliException(
-				$"Beamable Config exist but it does not have one of the values: {string.Join(',', Constants.REQUIRED_CONFIG_KEYS)}");
-		}
+		TryToReadConfigFile(ConfigDirectoryPath, out _config);
 	}
 
 	/// <summary>
