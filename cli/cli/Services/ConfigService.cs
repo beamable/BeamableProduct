@@ -390,23 +390,19 @@ public class ConfigService
 		return false;
 	}
 
-	void TryToReadConfigFile([CanBeNull] string folderPath, out Dictionary<string, string> result)
+	bool TryToReadConfigFile([CanBeNull] string folderPath, out Dictionary<string, string> result)
 	{
 		string fullPath = Path.Combine(folderPath ?? string.Empty, Constants.CONFIG_DEFAULTS_FILE_NAME);
 		result = new Dictionary<string, string>();
 		if (!File.Exists(fullPath))
 		{
-			return;
+			return false;
 		}
 
 		var content = File.ReadAllText(fullPath);
 		result = JsonConvert.DeserializeObject<Dictionary<string, string>>(content);
 
-		if (!IsConfigValid(result))
-		{
-			throw new CliException(
-				$"Beamable Config exist but it does not have one of the values: {string.Join(',', Constants.REQUIRED_CONFIG_KEYS)}");
-		}
+		return IsConfigValid(result);
 	}
 
 	string GetIgnoreFilePath(Vcs system) =>
