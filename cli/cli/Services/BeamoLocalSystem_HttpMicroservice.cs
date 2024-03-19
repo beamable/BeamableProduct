@@ -156,7 +156,7 @@ public partial class BeamoLocalSystem
 		{
 			try
 			{
-				var connectionEnvVar = await GetLocalConnectionString(localSystem.BeamoManifest, dependencyId);
+				var connectionEnvVar = await GetLocalConnectionString(localSystem.BeamoManifest, dependencyId.name);
 				environmentVariables.Add(connectionEnvVar);
 			}
 			catch (Exception ex)
