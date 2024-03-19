@@ -458,12 +458,6 @@ public class ProjectService
 			}
 		}
 
-		// if (!_configService.IsPathInWorkingDirectory(directory))
-		// {
-		// 	throw new CliException(
-		// 		$"Solution file({directory}) should not exists outside working directory({_configService.WorkingDirectory}) or its subdirectories.");
-		// }
-
 		// create the solution
 		await RunDotnetCommand($"new sln -n \"{solutionName}\" -o \"{solutionPath}\"");
 
@@ -543,9 +537,8 @@ public class ProjectService
 
 	public Task<BeamoServiceDefinition> AddDefinitonToNewService(SolutionCommandArgs args, NewServiceInfo info)
 	{
-		// Example/services/Example
 		var serviceRelativePath = _configService.GetRelativePath(info.ServicePath);
-		// serviceRelativePath = Path.GetRelativePath(_configService.BaseDirectory, info.ServicePath);
+		
 		// Find path to service folders: either it is in the working directory, or it will be inside 'args.name\\services' from the working directory.
 		string projectDirectory = Path.GetDirectoryName(serviceRelativePath);
 		string projectDockerfilePath = Path.Combine(Path.GetFileName(serviceRelativePath), "Dockerfile");

@@ -119,7 +119,6 @@ public partial class BeamoLocalSystem
 
 		var projectExtension = serviceDefinition.ProjectExtension;
 
-		// var path = Path.GetRelativePath(Environment.CurrentDirectory, serviceDefinition.ProjectDirectory);
 		var path = _configService.BeamableRelativeToExecutionRelative(serviceDefinition!.ProjectDirectory);
 		Log.Verbose($"getting dependencies for serviceId=[{beamoServiceId}], path=[{path}]");
 		path = Path.Combine(path, $"{beamoServiceId}.{projectExtension}");

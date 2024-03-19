@@ -38,10 +38,6 @@ public class SolutionCommandArgs : NewProjectCommandArgs, IHaveSolutionFlag
 {
 	public string SlnFilePath { get; set; }
 	string IHaveSolutionFlag.DefaultSolutionName => ProjectName;
-	// public bool SlnExists => File.Exists(SlnFilePath);
-	// public string SlnDirectory => Path.GetDirectoryName(SlnFilePath);
-	// public string SlnFileName => Path.GetFileNameWithoutExtension(SlnFilePath);
-	
 	public string SpecifiedVersion;
 	public bool Disabled;
 	public string ServicesBaseFolderPath;
@@ -173,7 +169,6 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 
 	public override async Task Handle(NewMicroserviceArgs args)
 	{
-		// args.ValidateConfig();
 		await args.CreateConfigIfNeeded(_initCommand);
 		
 		var newMicroserviceInfo = await args.ProjectService.CreateNewMicroservice(args);
