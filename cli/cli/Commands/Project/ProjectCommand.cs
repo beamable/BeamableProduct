@@ -57,15 +57,16 @@ public class ProjectCommand : CommandGroup
 
 	public static async Task<ProjectBuildStatusReport> IsProjectBuilt(CommandArgs args, string beamoServiceId)
 	{
-		if (!args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(beamoServiceId, out var service))
+
+		var service = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.FirstOrDefault(x => x.BeamoId == beamoServiceId);
+		if (service == null)
 		{
 			throw new CliException($"service does not exist, service=[{beamoServiceId}]");
 		}
-
+		
 		var deps = await args.BeamoLocalSystem.GetDependencies(beamoServiceId);
-		Log.Debug("Found service definition, ctx=[{ServiceDockerBuildContextPath}] dockerfile=[{ServiceRelativeDockerfilePath}] deps=[{Dependencies}]", service.DockerBuildContextPath, service.RelativeDockerfilePath, string.Join(",", deps));
-		var dockerfilePath = Path.Combine(args.ConfigService.GetRelativePath(service.DockerBuildContextPath), service.RelativeDockerfilePath);
-		var projectPath = Path.GetDirectoryName(dockerfilePath);
+		Log.Debug("Found service definition, ctx=[{ServiceDockerBuildContextPath}] projectPath=[{ProjectPath}] deps=[{Dependencies}]", service.ProjectDirectory, string.Join(",", deps));
+		var projectPath = args.ConfigService.BeamableRelativeToExecutionRelative(service.ProjectDirectory);
 		Log.Debug("service path=[{ProjectPath}]", projectPath);
 		var commandStr = $"msbuild {projectPath} -t:GetTargetPath -verbosity:diag";
 		Log.Debug("running {AppContextDotnetPath} {CommandStr}", args.AppContext.DotnetPath, commandStr);

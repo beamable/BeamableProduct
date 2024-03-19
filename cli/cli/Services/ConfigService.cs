@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
+using Serilog;
 using System.CommandLine.Binding;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -73,9 +74,19 @@ public class ConfigService
 	public string GetRelativePath(string relativePath)
 	{
 		var path = Path.Combine(WorkingDirectoryFullPath, relativePath);
-		path = Path.GetRelativePath(Path.Combine(Directory.GetCurrentDirectory(), BaseDirectory), path);
+		var baseDir = Path.GetRelativePath(WorkingDirectoryFullPath, BaseDirectory);
+		path = Path.GetRelativePath(Path.Combine(Directory.GetCurrentDirectory(), baseDir), path);
 		// path = Path.GetRelativePath(BaseDirectory, path);
+		Log.Verbose($"Converting path=[{relativePath}] into .beamable relative path, result=[{path}], workingDir=[{Directory.GetCurrentDirectory()}] workingDirFull=[{WorkingDirectoryFullPath}] baseDir=[{baseDir}]");
 		return path;
+	}
+
+	public string BeamableRelativeToExecutionRelative(string relativePath)
+	{
+		var path = GetFullPath(relativePath);
+		var executionRelative = Path.GetRelativePath(Directory.GetCurrentDirectory(), path);
+		Log.Verbose($"Converting path=[{relativePath}] into execution relative path, result=[{executionRelative}], base=[{BaseDirectory}] workingDir=[{Directory.GetCurrentDirectory()}] path=[{path}]");
+		return executionRelative;
 	}
 
 	/// <summary>
