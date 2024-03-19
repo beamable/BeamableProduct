@@ -7,19 +7,20 @@ namespace cli.Commands.Project.Deps;
 public class ListDepsCommandArgs : CommandArgs
 {
 	public string ServiceName;
+	public bool ListAll;
 }
 
 [Serializable]
 public class ListDepsCommandResults
 {
-	public ServiceDependenciesPair[] Services;
+	public List<ServiceDependenciesPair> Services;
 }
 
 [Serializable]
 public class ServiceDependenciesPair
 {
 	public string name;
-	public string[] dependencies;
+	public List<DependencyData> dependencies;
 }
 
 public class ListDepsCommand : AtomicCommand<ListDepsCommandArgs, ListDepsCommandResults>
@@ -32,6 +33,8 @@ public class ListDepsCommand : AtomicCommand<ListDepsCommandArgs, ListDepsComman
 	{
 		AddOption(new Option<string>("--service", "The name of the service to list the dependencies of"),
 			(args, i) => args.ServiceName = i);
+		AddOption(new Option<bool>("--all", "If this is passed and set to True, then all references of the service will be listed"),
+			(args, i) => args.ListAll = i);
 	}
 
 	public override async Task<ListDepsCommandResults> GetResult(ListDepsCommandArgs args)
@@ -63,18 +66,16 @@ public class ListDepsCommand : AtomicCommand<ListDepsCommandArgs, ListDepsComman
 			Log.Information("There are no microservices to show dependencies at the moment.");
 		}
 		
-		List<ServiceDependenciesPair> dependenciesPairs = new List<ServiceDependenciesPair>();
+		result.Services = new List<ServiceDependenciesPair>();
 		foreach (string service in servicesToShow)
 		{
-			List<string> dependencies = await args.BeamoLocalSystem.GetDependencies(service);
-			dependenciesPairs.Add(new ServiceDependenciesPair()
+			List<DependencyData> dependencies = await args.BeamoLocalSystem.GetDependencies(service, args.ListAll);
+			result.Services.Add(new ServiceDependenciesPair()
 			{
 				name = service,
-				dependencies = dependencies.ToArray()
+				dependencies = dependencies
 			});
 		}
-
-		result.Services = dependenciesPairs.ToArray();
 
 		return result;
 	}

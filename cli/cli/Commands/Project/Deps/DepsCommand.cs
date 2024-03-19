@@ -1,4 +1,6 @@
+using Beamable.Server;
 using Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsTCPIP;
+using System.CommandLine.Help;
 
 namespace cli.Commands.Project.Deps;
 
@@ -19,7 +21,8 @@ public class DepsCommand : AppCommand<DepsCommandArgs>, IEmptyResult
 
 	public override Task Handle(DepsCommandArgs args)
 	{
-		
+		var helpBuilder = args.Provider.GetService<HelpBuilder>();
+		helpBuilder.Write(this, Console.Error);
 		return Task.CompletedTask;
 	}
 }

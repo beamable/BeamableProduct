@@ -78,7 +78,7 @@ REFRESH_TOKEN={refreshToken}
 				await args.BeamoLocalSystem.StartListeningToDocker();
 				var dependencies = await args.BeamoLocalSystem.GetDependencies(service.BeamoId);
 				Log.Information("Starting " + string.Join(",", dependencies) + " " + sw.ElapsedMilliseconds);
-				await args.BeamoLocalSystem.DeployToLocal(args.BeamoLocalSystem, dependencies.ToArray());
+				await args.BeamoLocalSystem.DeployToLocal(args.BeamoLocalSystem, dependencies.Select(dep => dep.name).ToArray());
 				args.BeamoLocalSystem.SaveBeamoLocalManifest();
 				args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 				await args.BeamoLocalSystem.StopListeningToDocker();
@@ -96,7 +96,7 @@ REFRESH_TOKEN={refreshToken}
 				{
 					var connEnvVar =
 						await args.BeamoLocalSystem.GetLocalConnectionString(args.BeamoLocalSystem.BeamoManifest,
-							dependency, "localhost");
+							dependency.name, "localhost");
 					fileContent = $"{connEnvVar.VariableName}={connEnvVar.Value}\n" + fileContent;
 				}
 				catch (DockerContainerNotFoundException)

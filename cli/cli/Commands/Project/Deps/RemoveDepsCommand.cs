@@ -1,3 +1,4 @@
+using cli.Services;
 using Serilog;
 using System.CommandLine;
 
@@ -37,9 +38,10 @@ public class RemoveDepsCommand : AppCommand<RemoveDepsCommandArgs>, IEmptyResult
 			return;
 		}
 		
-		List<string> dependencies = await args.BeamoLocalSystem.GetDependencies(args.ServiceName);
+		List<DependencyData> dependencies = await args.BeamoLocalSystem.GetDependencies(args.ServiceName);
+		bool isAlreadyDependency = dependencies.Any(data => data.name == args.Dependency);
 
-		if (!dependencies.Contains(args.Dependency))
+		if (isAlreadyDependency)
 		{
 			Log.Information($"The service {args.ServiceName} does not have {args.Dependency} as a dependency");
 			return;

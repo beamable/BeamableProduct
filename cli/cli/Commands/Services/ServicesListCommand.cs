@@ -71,7 +71,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 				var shouldBeEnabledOnDeployMarkup = new Markup(sd.ShouldBeEnabledOnRemote ? "[green]Enable[/]" : "[red]Disable[/]");
 				var isRemoteOnlyMarkup = new Markup(_localBeamo.VerifyCanBeBuiltLocally(sd) ? "[green]True[/]" : "[red]False[/]");
 				localServiceListResult.AddService(sd.BeamoId, sd.ShouldBeEnabledOnRemote, false, sd.Protocol.ToString(), sd.ImageId,
-					"", "", new[] { "" }, new[] { "" }, dependenciesDict[sd]);
+					"", "", new[] { "" }, new[] { "" }, dependenciesDict[sd].Select(dep => dep.name));
 
 				table.AddRow(new TableRow(new[] { beamoIdMarkup, imageIdMarkup, shouldBeEnabledOnDeployMarkup, isRemoteOnlyMarkup, }));
 			}
@@ -234,7 +234,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 						"",
 						new[] { "" },
 						new[] { "" },
-						dependenciesDict[sd]);
+						dependenciesDict[sd].Select(dep => dep.name));
 					table.AddRow(new TableRow(new[] { beamoIdMarkup, imageIdMarkup, containersRenderable, shouldBeEnabledOnDeployMarkup, isRemoteOnlyMarkup, }));
 				}
 
