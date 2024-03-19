@@ -13,7 +13,7 @@ public class NewCommonLibraryCommand : AppCommand<CreateCommonLibraryArgs>, ISta
 {
 	private readonly InitCommand _initCommand;
 
-	public NewCommonLibraryCommand(InitCommand initCommand) : base("common-lib", "Create common library project that later can be connected to the services.")
+	public NewCommonLibraryCommand(InitCommand initCommand) : base("common-lib", "Create common library project that later can be connected to the services")
 	{
 		_initCommand = initCommand;
 	}
@@ -21,10 +21,10 @@ public class NewCommonLibraryCommand : AppCommand<CreateCommonLibraryArgs>, ISta
 	public override void Configure()
 	{
 		AddOption(new AutoInitFlag(), (args, b) => args.AutoInit = b);
-		AddArgument(new Argument<ServiceName>("name", "The name of the new library project."),
+		AddArgument(new Argument<ServiceName>("name", "The name of the new library project"),
 			(args, i) => args.ProjectName = i);
 		AddOption(new SpecificVersionOption(), (args, i) => args.SpecifiedVersion = i);
-		AddOption(new Option<string>("--output-path", "The path where the project is going to be created."),
+		AddOption(new Option<string>("--output-path", "The path where the project is going to be created"),
 			(args, i) => args.OutputPath = i);
 	}
 

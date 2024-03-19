@@ -25,11 +25,11 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 	public override void Configure()
 	{
 		AddOption(new AutoInitFlag(), (args, b) => args.AutoInit = b);
-		AddArgument(new Argument<ServiceName>("name", "The name of the new Microstorage."),
+		AddArgument(new Argument<ServiceName>("name", "The name of the new Microstorage"),
 			(args, i) => args.ProjectName = i);
-		AddOption(new Option<string>("--existing-solution-file", () => string.Empty, description: "Relative path to current solution file to which standalone microservice should be added."),
+		AddOption(new Option<string>("--existing-solution-file", () => string.Empty, description: "Relative path to current solution file to which standalone microservice should be added"),
 			(args, i) => args.RelativeExistingSolutionFile = i);
-		AddOption(new Option<ServiceName>("--new-solution-name", "The name of the solution of the new project. Use it if you want to create a new solution."),
+		AddOption(new Option<ServiceName>("--new-solution-name", "The name of the solution of the new project. Use it if you want to create a new solution"),
 			(args, i) => args.SolutionName = i);
 		AddOption(new Option<string>("--service-directory", "Relative path to directory where microservice should be created. Defaults to \"SOLUTION_DIR/services\""),
 			(args, i) => args.ServicesBaseFolderPath = i);
