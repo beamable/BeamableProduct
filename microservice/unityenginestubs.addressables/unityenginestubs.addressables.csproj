@@ -1,7 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <PackageId>Beamable.Common</PackageId>
+        <DefineConstants>DB_MICROSERVICE</DefineConstants>
+        <DefineConstants>BEAMABLE_MICROSERVICE</DefineConstants>
+
+        <PackageId>Beamable.UnityEngine.Addressables</PackageId>
+        <OutputType>Library</OutputType>
         <Authors>Beamable Team</Authors>
         <Company>Beamable</Company>
         <PackageTags>Beamable;Game Server;Unity;Unreal;Games;Microservice</PackageTags>
@@ -10,37 +14,20 @@
         <PackageReleaseNotes>https://beamable.github.io/changes/</PackageReleaseNotes>
         <PackageLicenseUrl>https://beamable.com/license</PackageLicenseUrl>
         <Description>
-            The Beamable.Common package contains the standard Beamable code that powers
-            The Beamable Unity SDK, as well as Beamable C# Microservices. 
+            The Beamable.UnityEngine.Addressables code contains mock classes that act as psuedo replacements for Unity addressable types.
         </Description>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <NoWarn>$(NoWarn);1591</NoWarn>
 
-        <DefineConstants>DB_MICROSERVICE;DISABLE_BEAMABLE_ASYNCMETHODBUILDER;BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES</DefineConstants>
-        <AssemblyName>Unity.Beamable.Runtime.Common</AssemblyName>
-
-        <OutputType>Library</OutputType>
         <VersionPrefix>$(VersionPrefix)</VersionPrefix>
         <PackageOutputPath>./nupkg</PackageOutputPath>
-        <LangVersion>8</LangVersion>
+        <AssemblyName>Unity.Addressables</AssemblyName>
         <TargetFramework>netstandard2.0</TargetFramework>
+        <LangVersion>8</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\..\..\microservice\unityEngineStubs.addressables\unityenginestubs.addressables.csproj" />
-        <ProjectReference Include="..\..\..\..\microservice\unityEngineStubs\unityenginestubs.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Compile Remove="'\**" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <EmbeddedResource Remove="'\**" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <None Remove="'\**" />
+      <ProjectReference Include="..\unityEngineStubs\unityenginestubs.csproj" />
     </ItemGroup>
 
 </Project>
