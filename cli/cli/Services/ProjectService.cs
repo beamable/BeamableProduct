@@ -420,7 +420,7 @@ public class ProjectService
 		// check that we have the templates available
 		string usedVersion = string.IsNullOrWhiteSpace(args.SpecifiedVersion) ? await GetVersion() : args.SpecifiedVersion;
 		await EnsureCanUseTemplates(usedVersion, args.Quiet);
-		
+
 		var microserviceInfo = new NewServiceInfo
 		{
 			SolutionPath = args.SlnFilePath
@@ -429,7 +429,7 @@ public class ProjectService
 		{
 			await CreateNewSolution(args.GetSlnDirectory(), args.GetSlnFileName());
 		}
-		
+
 		if (string.IsNullOrWhiteSpace(args.ServicesBaseFolderPath))
 		{
 			var directory = Path.GetDirectoryName(microserviceInfo.SolutionPath);
@@ -491,7 +491,7 @@ public class ProjectService
 		await CreateCommonProject(commonProjectName, commonProjectPath, version, solutionPath);
 		// add the shared library as a reference of the project
 		await RunDotnetCommand($"add \"{projectPath}\" reference \"{commonProjectPath}\"");
-	
+
 
 		return projectPath;
 	}
@@ -514,7 +514,7 @@ public class ProjectService
 		{
 			await UpdateProjectDependencyVersion(commonProjectPath, "Beamable.Common", usedVersion);
 		}
-		
+
 		// add the shared library to the solution
 		await RunDotnetCommand($"sln \"{solutionPath}\" add \"{commonProjectPath}\"");
 	}
@@ -539,7 +539,7 @@ public class ProjectService
 	public Task<BeamoServiceDefinition> AddDefinitonToNewService(SolutionCommandArgs args, NewServiceInfo info)
 	{
 		var serviceRelativePath = _configService.GetRelativePath(info.ServicePath);
-		
+
 		// Find path to service folders: either it is in the working directory, or it will be inside 'args.name\\services' from the working directory.
 		string projectDirectory = Path.GetDirectoryName(serviceRelativePath);
 		string projectDockerfilePath = Path.Combine(Path.GetFileName(serviceRelativePath), "Dockerfile");
