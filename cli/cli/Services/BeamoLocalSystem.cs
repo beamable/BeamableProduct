@@ -94,10 +94,11 @@ public partial class BeamoLocalSystem
 			
 			// find the local protocol to infer the project path via the docker context
 			if (!BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(serviceDefinition.BeamoId,
-				    out var localProto))
+				    out var localProto) || localProto.DockerBuildContextPath == null)
 			{
-				throw new CliException(
-					$"The beamo local manifest contains a serviceDefinition=[{serviceDefinition.BeamoId}] that does not have a ProjectDirectory value, and it cannot be inferred because no localHttpProtocol exists under the given name. Please manually fix the file, and try again.");
+				continue; // if there is no local protocol information, then this service is a "remote only" service. 
+				// throw new CliException(
+				// 	$"The beamo local manifest contains a serviceDefinition=[{serviceDefinition.BeamoId}] that does not have a ProjectDirectory value, and it cannot be inferred because no localHttpProtocol exists under the given name. Please manually fix the file, and try again.");
 			}
 
 			var dockerContextPath = localProto.DockerBuildContextPath;

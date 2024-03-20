@@ -65,7 +65,7 @@ public class ProjectCommand : CommandGroup
 		}
 		
 		var deps = await args.BeamoLocalSystem.GetDependencies(beamoServiceId);
-		Log.Debug("Found service definition, ctx=[{ServiceDockerBuildContextPath}] projectPath=[{ProjectPath}] deps=[{Dependencies}]", service.ProjectDirectory, string.Join(",", deps));
+		Log.Debug("Found service definition, service=[{serviceId}] projectPath=[{ProjectPath}] deps=[{Dependencies}]", beamoServiceId, service.ProjectDirectory, string.Join(",", deps));
 		var projectPath = args.ConfigService.BeamableRelativeToExecutionRelative(service.ProjectDirectory);
 		Log.Debug("service path=[{ProjectPath}]", projectPath);
 		var commandStr = $"msbuild {projectPath} -t:GetTargetPath -verbosity:diag";
