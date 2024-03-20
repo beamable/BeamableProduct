@@ -84,21 +84,21 @@ public partial class BeamoLocalSystem
 			EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>(),
 			EmbeddedMongoDbRemoteProtocols = new BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol>(),
 		});
-		
-		
+
+
 		// The ProjectDirectory field did not always exist, and older manifests may not include it. In these situations, we need to "guess" what is may be.
 		foreach (var serviceDefinition in BeamoManifest.ServiceDefinitions)
 		{
 			if (!string.IsNullOrEmpty(serviceDefinition.ProjectDirectory))
 				continue; // this entry has a ProjectDirectory, nothing to be done :) 
-			
+
 			// find the local protocol to infer the project path via the docker context
 			if (!BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(serviceDefinition.BeamoId,
-				    out var localProto) || localProto.DockerBuildContextPath == null)
+					out var localProto) || localProto.DockerBuildContextPath == null)
 			{
 				continue; // if there is no local protocol information, then this service is a "remote only" service. 
-				// throw new CliException(
-				// 	$"The beamo local manifest contains a serviceDefinition=[{serviceDefinition.BeamoId}] that does not have a ProjectDirectory value, and it cannot be inferred because no localHttpProtocol exists under the given name. Please manually fix the file, and try again.");
+						  // throw new CliException(
+						  // 	$"The beamo local manifest contains a serviceDefinition=[{serviceDefinition.BeamoId}] that does not have a ProjectDirectory value, and it cannot be inferred because no localHttpProtocol exists under the given name. Please manually fix the file, and try again.");
 			}
 
 			var dockerContextPath = localProto.DockerBuildContextPath;
@@ -112,7 +112,7 @@ public partial class BeamoLocalSystem
 			Log.Debug($"Guessing ProjectDirectory for service=[{serviceDefinition.BeamoId}], projectDir=[{guessedProjectDir}] ");
 			serviceDefinition.ProjectDirectory = guessedProjectDir;
 		}
-		
+
 		// Load or create the local runtime data
 		BeamoRuntime = _configService.LoadDataFile<BeamoLocalRuntime>(Constants.BEAMO_LOCAL_RUNTIME_FILE_NAME, () =>
 			new BeamoLocalRuntime() { ExistingLocalServiceInstances = new List<BeamoServiceInstance>(8) });
@@ -165,7 +165,7 @@ public partial class BeamoLocalSystem
 		var candidates = correctedPaths.Select(Path.GetFileNameWithoutExtension).ToList();
 
 		List<DependencyData> dependencies = new List<DependencyData>();
-		
+
 		for (int i = 0; i < correctedPaths.Count; i++)
 		{
 			string name = Path.GetFileNameWithoutExtension(correctedPaths[i]);
@@ -177,7 +177,7 @@ public partial class BeamoLocalSystem
 			}
 
 			var pathToDependencyProj = Path.Combine(serviceDefinition.ProjectDirectory, correctedPaths[i]);
-			
+
 			dependencies.Add(new DependencyData()
 			{
 				name = name,
@@ -198,23 +198,23 @@ public partial class BeamoLocalSystem
 	public async Task RemoveProjectDependency(BeamoServiceDefinition project, BeamoServiceDefinition dependency)
 	{
 		if (project.Protocol != BeamoProtocolType.HttpMicroservice ||
-		    dependency.Protocol != BeamoProtocolType.EmbeddedMongoDb)
+			dependency.Protocol != BeamoProtocolType.EmbeddedMongoDb)
 		{
 			throw new CliException(
 				$"Currently the only supported dependencies are {nameof(BeamoProtocolType.HttpMicroservice)} depending on {nameof(BeamoProtocolType.EmbeddedMongoDb)}");
 		}
 
 		var relativeProjectPath = _configService.GetRelativePath(project.ProjectDirectory);
-		var projectPath = Path.Combine( relativeProjectPath, $"{project.BeamoId}.csproj");
-		var dependencyPath = Path.Combine( _configService.GetRelativePath(dependency.ProjectDirectory), $"{dependency.BeamoId}.csproj");
-		
+		var projectPath = Path.Combine(relativeProjectPath, $"{project.BeamoId}.csproj");
+		var dependencyPath = Path.Combine(_configService.GetRelativePath(dependency.ProjectDirectory), $"{dependency.BeamoId}.csproj");
+
 		var command = $"remove {projectPath} reference {dependencyPath}";
 		var (cmd, result) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, command);
 		if (cmd.ExitCode != 0)
 		{
 			throw new CliException($"Failed to remove project dependency, output of \"dotnet {command}\": {result}");
 		}
-		
+
 		await UpdateDockerFile(project.BeamoId);
 	}
 
@@ -292,7 +292,7 @@ COPY {serviceNameTag}/. .";
 		var hasEndTag = dockerfileText.Contains(endTag);
 		var hasStartTag = dockerfileText.Contains(startTag);
 		var legacyIndex = dockerfileText.IndexOf(legacyCopyLine, StringComparison.Ordinal);
-		if ( (!hasEndTag && hasStartTag) || (!hasStartTag && hasEndTag) )
+		if ((!hasEndTag && hasStartTag) || (!hasStartTag && hasEndTag))
 		{
 			throw new CliException(
 				"The dockerfile is corrupted and cannot be used by Beamable. There is a tag mismatch." +
@@ -304,7 +304,7 @@ COPY {serviceNameTag}/. .";
 		{
 			dockerfileText = dockerfileText.Replace(legacyCopyLine, $"{legacyCopyLine}{Environment.NewLine}{startTag}{Environment.NewLine}{endTag}{Environment.NewLine}");
 		}
-		
+
 		//Remove old data
 		int startIndex = dockerfileText.LastIndexOf(startTag, StringComparison.Ordinal) + startTag.Length + 1;
 		int endIndex = dockerfileText.IndexOf(endTag, startIndex, StringComparison.Ordinal);
