@@ -79,6 +79,9 @@ public partial class BeamoLocalSystem
 				$"could not configure connection to storage=[{storageName}] because port was not mapped in storage container");
 		}
 
+		// group bindings based on their port, because that is the only property we actually need to use.
+		bindings = bindings.DistinctBy(b => b.HostPort).ToList();
+
 		if (bindings.Count != 1)
 		{
 			throw new Exception(
