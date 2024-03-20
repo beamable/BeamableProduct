@@ -1265,16 +1265,7 @@ namespace Beamable.Player
 			await Refresh();
 			return res;
 		}
-
-
-		public async Promise ResetPassword(string email)
-		{
-			await OnReady;
-
-			var service = GetAuthServiceForAccount(Current);
-			await service.IssuePasswordUpdate(email);
-
-		}
+		
 
 		/// <summary>
 		/// Initiates a password reset flow for the given <see cref="PlayerAccount"/>.
