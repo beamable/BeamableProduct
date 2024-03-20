@@ -39,15 +39,19 @@
         <file src="bin\Release\net6.0\Beamable.*.dll" target="lib\net6.0" />
         <file src="bin\Release\net6.0\BeamableMicroserviceBase.dll" target="lib\net6.0" />
         <file src="bin\Release\net6.0\UnityEngine.dll" target="lib\net6.0" />
+        <file src="bin\Release\net6.0\Unity.Addressables.dll" target="lib\net6.0" />
 
         <file src="bin\Release\net6.0\Unity.Beamable.*.pdb" target="lib\net6.0" />
         <file src="bin\Release\net6.0\Beamable.*.pdb" target="lib\net6.0" />
         <file src="bin\Release\net6.0\BeamableMicroserviceBase.pdb" target="lib\net6.0" />
         <file src="bin\Release\net6.0\UnityEngine.pdb" target="lib\net6.0" />
+        <file src="bin\Release\net6.0\Unity.Addressables.pdb" target="lib\net6.0" />
 
         <file src="bin\Release\net6.0\Unity.Beamable.*.xml" target="lib\net6.0" />
         <file src="bin\Release\net6.0\Beamable.*.xml" target="lib\net6.0" />
         <file src="bin\Release\net6.0\BeamableMicroserviceBase.xml" target="lib\net6.0" />
         <file src="bin\Release\net6.0\UnityEngine.xml" target="lib\net6.0" />
+        <file src="bin\Release\net6.0\Unity.Addressables.xml" target="lib\net6.0" />
+        
     </files>
 </package>

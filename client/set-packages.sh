@@ -28,6 +28,7 @@ dotnet pack Packages/com.beamable.server/SharedRuntime/ --configuration Release 
 dotnet pack ../microservice/beamable.tooling.common/  --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
 dotnet pack ../microservice/  --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
 dotnet pack ../microservice/unityEngineStubs/  --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
+dotnet pack ../microservice/unityEngineStubs.addressables/  --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
 OUTPUT=$PROJECTS_DIR VERSION=$VERSION ../templates/build.sh
 
 if dotnet nuget list source | grep -q $SOURCE_NAME; then
@@ -43,6 +44,7 @@ rm -rf ~/.nuget/packages/beamable.common/$VERSION
 rm -rf ~/.nuget/packages/beamable.tooling.common/$VERSION
 rm -rf ~/.nuget/packages/beamable.server/$VERSION
 rm -rf ~/.nuget/packages/beamable.unityengine/$VERSION
+rm -rf ~/.nuget/packages/beamable.unity.addressables/$VERSION
 rm -rf ~/.nuget/packages/beamable.microservice.runtime/$VERSION
 
 
