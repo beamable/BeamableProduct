@@ -47,9 +47,21 @@ public class DiscoveryService
 		{
 			// We skip out on non-Microservice containers.
 			var serviceDefinition = _localSystem.BeamoManifest.ServiceDefinitions.FirstOrDefault(sd => sd.BeamoId == beamoId);
-			if (serviceDefinition == null || serviceDefinition.Protocol != BeamoProtocolType.HttpMicroservice) return;
+			if (serviceDefinition == null) return;
 
-			var protocol = _localSystem.BeamoManifest.HttpMicroserviceRemoteProtocols[serviceDefinition.BeamoId];
+			var healthPort = 0;
+
+			if (serviceDefinition.Protocol == BeamoProtocolType.HttpMicroservice)
+			{
+				healthPort = Convert.ToInt32(_localSystem.BeamoManifest.HttpMicroserviceRemoteProtocols[serviceDefinition.BeamoId]
+					.HealthCheckPort);
+			}
+			else
+			{
+				healthPort =Convert.ToInt32(_localSystem.BeamoManifest.EmbeddedMongoDbLocalProtocols[serviceDefinition.BeamoId]
+					.MongoLocalPort);
+			}
+
 			var isRunning = eventType == "start";
 			isRunning &= eventType != "stop";
 			var evt = CreateEvent(new ServiceDiscoveryEntry()
@@ -58,7 +70,7 @@ public class DiscoveryService
 				pid = _appContext.Pid,
 				prefix = MachineHelper.GetUniqueDeviceId(),
 				serviceName = serviceDefinition.BeamoId,
-				healthPort = Convert.ToInt32(protocol.HealthCheckPort),
+				healthPort = healthPort,
 				isContainer = true,
 				containerId = raw.ID
 			}, isRunning);
