@@ -82,7 +82,7 @@ public partial class BeamoLocalSystem
 		if (bindings.Count != 1)
 		{
 			throw new Exception(
-				$"could not configure connection to storage=[{storageName}] because port bindings were not equal to one");
+				$"could not configure connection to storage=[{storageName}] because port bindings were not equal to one. count=[{bindings.Count}] bindings=[{string.Join(",", bindings.Select(b => b.HostIP + ":" + b.HostPort))}]");
 		}
 
 		var portBinding = bindings[0];
