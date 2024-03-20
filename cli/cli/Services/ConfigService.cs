@@ -73,10 +73,19 @@ public class ConfigService
 	/// <returns></returns>
 	public string GetRelativePath(string relativePath)
 	{
+	
 		var path = Path.Combine(WorkingDirectoryFullPath, relativePath);
-		var baseDir = Path.GetRelativePath(WorkingDirectoryFullPath, BaseDirectory);
-		path = Path.GetRelativePath(Path.Combine(Directory.GetCurrentDirectory(), baseDir), path);
-		Log.Verbose($"Converting path=[{relativePath}] into .beamable relative path, result=[{path}], workingDir=[{Directory.GetCurrentDirectory()}] workingDirFull=[{WorkingDirectoryFullPath}] baseDir=[{baseDir}]");
+		var baseDir = "";
+		var relativeTo = Directory.GetCurrentDirectory();
+		if (!string.IsNullOrEmpty(BaseDirectory))
+		{
+			baseDir = Path.GetRelativePath(WorkingDirectoryFullPath, BaseDirectory);
+			relativeTo = Path.Combine(Directory.GetCurrentDirectory(), baseDir);
+		}
+
+		path = Path.GetRelativePath(relativeTo, path);
+		Log.Verbose(
+			$"Converting path=[{relativePath}] into .beamable relative path, result=[{path}], workingDir=[{Directory.GetCurrentDirectory()}] workingDirFull=[{WorkingDirectoryFullPath}] baseDir=[{baseDir}]");
 		return path;
 	}
 
