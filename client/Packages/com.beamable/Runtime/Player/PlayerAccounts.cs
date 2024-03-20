@@ -1276,22 +1276,6 @@ namespace Beamable.Player
 
 		}
 
-		public async Promise<PasswordResetResult> ConfirmPassword(string code, string newPassword)
-		{
-			await OnReady;
-
-			var service = GetAuthServiceForAccount(Current);
-			try
-			{
-				await service.ConfirmPasswordUpdate(code, newPassword);
-				return new PasswordResetResult();
-			}
-			catch (Exception ex)
-			{
-				return new PasswordResetResult(ex);
-			}
-		}
-
 		/// <summary>
 		/// Initiates a password reset flow for the given <see cref="PlayerAccount"/>.
 		/// If the given account does not have an email credential, the resulting
