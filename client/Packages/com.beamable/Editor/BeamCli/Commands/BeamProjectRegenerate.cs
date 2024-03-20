@@ -12,12 +12,10 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string output;
 		/// <summary>The path to where the files will be copied to</summary>
 		public string copyPath;
-		/// <summary>If you should create a common library</summary>
-		public bool skipCommon;
-		/// <summary>The name of the solution of the new project</summary>
-		public Beamable.Common.Semantics.ServiceName solutionName;
 		/// <summary>Specifies version of Beamable project dependencies</summary>
 		public string version;
+		/// <summary>Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. By default, when no value is provided, the .sln path will be <name>/<name>.sln</summary>
+		public string sln;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -35,20 +33,16 @@ namespace Beamable.Editor.BeamCli.Commands
 			{
 				genBeamCommandArgs.Add(this.copyPath.ToString());
 			}
-			// If the skipCommon value was not default, then add it to the list of args.
-			if ((this.skipCommon != default(bool)))
-			{
-				genBeamCommandArgs.Add(("--skip-common=" + this.skipCommon));
-			}
-			// If the solutionName value was not default, then add it to the list of args.
-			if ((this.solutionName != default(Beamable.Common.Semantics.ServiceName)))
-			{
-				genBeamCommandArgs.Add(("--solution-name=" + this.solutionName));
-			}
 			// If the version value was not default, then add it to the list of args.
 			if ((this.version != default(string)))
 			{
 				genBeamCommandArgs.Add((("--version=\"" + this.version)
+								+ "\""));
+			}
+			// If the sln value was not default, then add it to the list of args.
+			if ((this.sln != default(string)))
+			{
+				genBeamCommandArgs.Add((("--sln=\"" + this.sln)
 								+ "\""));
 			}
 			string genBeamCommandStr = "";

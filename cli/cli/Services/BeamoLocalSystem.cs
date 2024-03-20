@@ -84,6 +84,34 @@ public partial class BeamoLocalSystem
 			EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>(),
 			EmbeddedMongoDbRemoteProtocols = new BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol>(),
 		});
+		
+		
+		// The ProjectDirectory field did not always exist, and older manifests may not include it. In these situations, we need to "guess" what is may be.
+		foreach (var serviceDefinition in BeamoManifest.ServiceDefinitions)
+		{
+			if (!string.IsNullOrEmpty(serviceDefinition.ProjectDirectory))
+				continue; // this entry has a ProjectDirectory, nothing to be done :) 
+			
+			// find the local protocol to infer the project path via the docker context
+			if (!BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(serviceDefinition.BeamoId,
+				    out var localProto))
+			{
+				throw new CliException(
+					$"The beamo local manifest contains a serviceDefinition=[{serviceDefinition.BeamoId}] that does not have a ProjectDirectory value, and it cannot be inferred because no localHttpProtocol exists under the given name. Please manually fix the file, and try again.");
+			}
+
+			var dockerContextPath = localProto.DockerBuildContextPath;
+			var servicePath = Path.GetDirectoryName(localProto.RelativeDockerfilePath);
+			if (servicePath == null)
+			{
+				throw new CliException(
+					$"The beamo local manifest contains a serviceDefinition=[{serviceDefinition.BeamoId}] that does not have a ProjectDirectory value, and it cannot be inferred because the localHttpProtocol's dockerFile path isn't in the usual format of NAME/Dockerfile.");
+			}
+			var guessedProjectDir = Path.Combine(dockerContextPath, servicePath);
+			Log.Debug($"Guessing ProjectDirectory for service=[{serviceDefinition.BeamoId}], projectDir=[{guessedProjectDir}] ");
+			serviceDefinition.ProjectDirectory = guessedProjectDir;
+		}
+		
 		// Load or create the local runtime data
 		BeamoRuntime = _configService.LoadDataFile<BeamoLocalRuntime>(Constants.BEAMO_LOCAL_RUNTIME_FILE_NAME, () =>
 			new BeamoLocalRuntime() { ExistingLocalServiceInstances = new List<BeamoServiceInstance>(8) });
@@ -583,7 +611,7 @@ public class BeamoServiceDefinition
 	/// <summary>
 	/// Path to the directory containing project file(csproj).
 	/// </summary>
-	public string ProjectDirectory;
+	public string ProjectDirectory; // TODO: right, this still needs to be auto-infered on load.
 
 	/// <summary>
 	/// Defines two services as being equal simply by using their <see cref="BeamoServiceDefinition.BeamoId"/>.

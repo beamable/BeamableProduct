@@ -6,11 +6,15 @@ namespace Beamable.Editor.BeamCli.Commands
 
 	public class ProjectNewCommonLibArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>The name of the new library project.</summary>
+		/// <summary>The name of the new library project</summary>
 		public Beamable.Common.Semantics.ServiceName name;
+		/// <summary>Automatically create a .beamable folder context if no context exists</summary>
+		public bool init;
+		/// <summary>Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. By default, when no value is provided, the .sln path will be <name>/<name>.sln</summary>
+		public string sln;
 		/// <summary>Specifies version of Beamable project dependencies</summary>
 		public string version;
-		/// <summary>The path where the project is going to be created.</summary>
+		/// <summary>The path where the project is going to be created</summary>
 		public string outputPath;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
@@ -19,6 +23,17 @@ namespace Beamable.Editor.BeamCli.Commands
 			System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
 			// Add the name value to the list of args.
 			genBeamCommandArgs.Add(this.name.ToString());
+			// If the init value was not default, then add it to the list of args.
+			if ((this.init != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--init=" + this.init));
+			}
+			// If the sln value was not default, then add it to the list of args.
+			if ((this.sln != default(string)))
+			{
+				genBeamCommandArgs.Add((("--sln=\"" + this.sln)
+								+ "\""));
+			}
 			// If the version value was not default, then add it to the list of args.
 			if ((this.version != default(string)))
 			{

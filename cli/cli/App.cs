@@ -189,7 +189,6 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<CidOption>());
 			root.AddGlobalOption(provider.GetRequiredService<PidOption>());
 			root.AddGlobalOption(provider.GetRequiredService<QuietOption>());
-			root.AddGlobalOption(provider.GetRequiredService<PidOption>());
 			root.AddGlobalOption(provider.GetRequiredService<HostOption>());
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());

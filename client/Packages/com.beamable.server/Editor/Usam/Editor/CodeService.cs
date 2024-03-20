@@ -101,7 +101,12 @@ namespace Beamable.Server.Editor.Usam
 			if (!SessionState.GetBool(migratedServicesKey, false))
 			{
 				LogVerbose("Migrate old services start");
-				await Migrate();
+				// TODO: We should not automatically Migrate.
+				//  instead, we need to offer a pop-up box that explains the consequences, 
+				//  and what to do to prepare before migration (src backup). 
+				// other notes, we need to be searching for _all_ microservices, not just those that
+				// exist in the common folders. 
+				// await Migrate();
 				SessionState.SetBool(migratedServicesKey, true);
 				LogVerbose("Migrate old services end");
 			}
@@ -118,7 +123,7 @@ namespace Beamable.Server.Editor.Usam
 				if (!Directory.Exists(path))
 				{
 					LogVerbose($"Migrating {microserviceName} start");
-					await CreateMicroService(microserviceName, null, true);
+					await CreateMicroService(microserviceName, null);
 					return;
 				}
 
@@ -788,7 +793,7 @@ namespace Beamable.Server.Editor.Usam
 			{
 				name = service,
 				serviceDirectory = StandaloneMicroservicesPath,
-				existingSolutionFile = slnPath,
+				sln = slnPath,
 				version = GetCurrentNugetVersion(),
 				linkTo = deps,
 			};
@@ -834,7 +839,7 @@ namespace Beamable.Server.Editor.Usam
 			return version;
 		}
 
-		private async Promise CreateMicroService(string serviceName, List<IBeamoServiceDefinition> dependencies, bool skipCommon = false)
+		private async Promise CreateMicroService(string serviceName, List<IBeamoServiceDefinition> dependencies)
 		{
 			var service = new ServiceName(serviceName);
 			var slnPath = FindFirstSolutionFile();
@@ -845,15 +850,14 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
-			var args = new ProjectNewMicroserviceArgs()
+			var args = new ProjectNewServiceArgs()
 			{
 				name = service,
 				serviceDirectory = StandaloneMicroservicesPath,
-				existingSolutionFile = slnPath,
-				skipCommon = skipCommon,
+				sln = slnPath,
 				version = GetCurrentNugetVersion()
 			};
-			var command = _cli.ProjectNewMicroservice(args);
+			var command = _cli.ProjectNewService(args);
 			await command.Run();
 
 			BeamServiceSignpost signpost = new BeamServiceSignpost()

@@ -6,13 +6,13 @@ namespace Beamable.Editor.BeamCli.Commands
 
 	public class ProjectNewStorageArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>The name of the new Microstorage.</summary>
+		/// <summary>Name of the new project</summary>
 		public Beamable.Common.Semantics.ServiceName name;
-		/// <summary>Relative path to current solution file to which standalone microservice should be added.</summary>
-		public string existingSolutionFile;
-		/// <summary>The name of the solution of the new project. Use it if you want to create a new solution.</summary>
-		public Beamable.Common.Semantics.ServiceName newSolutionName;
-		/// <summary>Relative path to directory where microservice should be created. Defaults to "SOLUTION_DIR/services"</summary>
+		/// <summary>Automatically create a .beamable folder context if no context exists</summary>
+		public bool init;
+		/// <summary>Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. By default, when no value is provided, the .sln path will be <name>/<name>.sln</summary>
+		public string sln;
+		/// <summary>Relative path to directory where project should be created. Defaults to "SOLUTION_DIR/services"</summary>
 		public string serviceDirectory;
 		/// <summary>Specifies version of Beamable project dependencies</summary>
 		public string version;
@@ -27,16 +27,16 @@ namespace Beamable.Editor.BeamCli.Commands
 			System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
 			// Add the name value to the list of args.
 			genBeamCommandArgs.Add(this.name.ToString());
-			// If the existingSolutionFile value was not default, then add it to the list of args.
-			if ((this.existingSolutionFile != default(string)))
+			// If the init value was not default, then add it to the list of args.
+			if ((this.init != default(bool)))
 			{
-				genBeamCommandArgs.Add((("--existing-solution-file=\"" + this.existingSolutionFile)
-								+ "\""));
+				genBeamCommandArgs.Add(("--init=" + this.init));
 			}
-			// If the newSolutionName value was not default, then add it to the list of args.
-			if ((this.newSolutionName != default(Beamable.Common.Semantics.ServiceName)))
+			// If the sln value was not default, then add it to the list of args.
+			if ((this.sln != default(string)))
 			{
-				genBeamCommandArgs.Add(("--new-solution-name=" + this.newSolutionName));
+				genBeamCommandArgs.Add((("--sln=\"" + this.sln)
+								+ "\""));
 			}
 			// If the serviceDirectory value was not default, then add it to the list of args.
 			if ((this.serviceDirectory != default(string)))

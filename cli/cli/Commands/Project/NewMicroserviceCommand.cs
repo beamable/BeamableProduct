@@ -29,21 +29,20 @@ public interface IHaveSolutionFlag
 
 public static class IHaveSolutionFlagExtensions
 {
-	public static string GetSlnDirectory(this IHaveSolutionFlag instance) => Path.GetDirectoryName(instance.SlnFilePath);
-	public static bool GetSlnExists(this IHaveSolutionFlag instance) => File.Exists(instance.SlnFilePath);
-	public static string GetSlnFileName(this IHaveSolutionFlag instance) => Path.GetFileNameWithoutExtension(instance.SlnFilePath);
+	public static string GetSlnDirectory(this SolutionCommandArgs instance) => Path.GetDirectoryName(instance.SlnFilePath);
+	public static bool GetSlnExists(this SolutionCommandArgs instance) => File.Exists(instance.SlnFilePath);
+	public static string GetSlnFileName(this SolutionCommandArgs instance) => Path.GetFileNameWithoutExtension(instance.SlnFilePath);
 }
 
-public class SolutionCommandArgs : NewProjectCommandArgs, IHaveSolutionFlag
+public class SolutionCommandArgs : NewProjectCommandArgs
 {
-	public string SlnFilePath { get; set; }
-	string IHaveSolutionFlag.DefaultSolutionName => ProjectName;
+	public string SlnFilePath;
 	public string SpecifiedVersion;
 	public bool Disabled;
 	public string ServicesBaseFolderPath;
 
 	public static void ConfigureSolutionFlag<T>(AppCommand<T> command)
-		where T : CommandArgs, IHaveSolutionFlag
+		where T : SolutionCommandArgs
 	{
 		command.AddOption(new Option<string>(
 				name: "--sln",
@@ -55,7 +54,7 @@ public class SolutionCommandArgs : NewProjectCommandArgs, IHaveSolutionFlag
 				if (string.IsNullOrEmpty(i))
 				{
 					// no sln path is given, so we use the defaults.
-					args.SlnFilePath = Path.Combine(args.DefaultSolutionName, args.DefaultSolutionName + ".sln");
+					args.SlnFilePath = Path.Combine(args.ProjectName, args.ProjectName + ".sln");
 				}
 				else
 				{

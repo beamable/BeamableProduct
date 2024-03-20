@@ -89,14 +89,30 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 				Log.Verbose("loading dll name=[{Name}] version=[{Version}] deps=[{Deps}]", userAssembly.GetName().Name, userAssembly.GetName().Version, string.Join(", ", userAssembly.GetReferencedAssemblies().Select(n => n.Name)));
 
 				/// GHOST IN THE MACHINE ---> We need some time to investigate this stuff.
-				foreach (AssemblyName referencedAssembly in userAssembly.GetReferencedAssemblies().Where(asm => !asm.Name.Contains("BeamableMicroserviceBase")))
+				var requiredAssemblies = userAssembly.GetReferencedAssemblies()
+					.Where(asm => !asm.Name.Contains("BeamableMicroserviceBase"))
+					.ToList();
+				foreach (AssemblyName referencedAssembly in requiredAssemblies)
 					allAssemblies.Add(loadContext.LoadFromAssemblyName(referencedAssembly));
 
 				allAssemblies.Add(userAssembly);
 			}
 		}
+		Log.Verbose("finished loading all dll files.");
 
 		#endregion
+		
+		// need to turn the crank loading types until the spigot bleeds dry.
+		var startCount = allAssemblies.Count;
+		var finalCount = 0;
+		while (startCount != finalCount)
+		{
+			var currentAssemblies = allAssemblies.ToList(); // copy working set.
+			startCount = currentAssemblies.Count;
+			var _ = currentAssemblies.SelectMany(asm => asm.GetExportedTypes()).ToArray();
+			finalCount = allAssemblies.Count;
+			Log.Verbose($"Loaded all types, and found {startCount} assemblies, and after, found {finalCount} assemblies.");
+		}
 
 		var allTypes = allAssemblies.SelectMany(asm => asm.GetExportedTypes()).ToArray();
 		var allMsTypes = allTypes.Where(t => t.IsSubclassOf(typeof(Microservice)) && t.GetCustomAttribute<MicroserviceAttribute>() != null).ToArray();
