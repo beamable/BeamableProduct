@@ -13,8 +13,8 @@ public class GeneratePropertiesFileCommandArgs : CommandArgs
 
 public class GeneratePropertiesFileCommand : AppCommand<GeneratePropertiesFileCommandArgs>, IEmptyResult
 {
-	
-	
+
+
 	public GeneratePropertiesFileCommand() : base("generate-properties", "Generates a Directory.Build.props file with the beam path and solution dir")
 	{
 	}
@@ -46,6 +46,7 @@ public class GeneratePropertiesFileCommand : AppCommand<GeneratePropertiesFileCo
 		//  Condition="$(BeamableServiceIds.Contains('$(MSBuildProjectName)|'))"
 		
 		var BeamableServiceIds = string.Join("|", args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Select(x => x.BeamoId)) + "|";
+
 		string fileContents = @$"
 <Project>
 	<PropertyGroup>
@@ -81,7 +82,7 @@ public class GeneratePropertiesFileCommand : AppCommand<GeneratePropertiesFileCo
 		
 		var path = Path.Combine(args.OutputPath, "Directory.Build.props");
 		File.WriteAllText(path, fileContents);
-		
+
 		return Task.CompletedTask;
 	}
 }

@@ -21,18 +21,13 @@ public class BeamServicesFlows : CLITest
 		_dockerClient = new DockerClientConfiguration(new AnonymousCredentials()).CreateClient();
 	}
 
-	private void Dispose()
-	{
-		// Dispose the Docker client
-		_dockerClient.Dispose();
-	}
 
 	[Test]
 	public async Task CanResetBeamableServiceContainer()
 	{
 		#region Arrange
 
-		new BeamProjectFlows().CanCreateNewBeamableSolution();
+		new BeamProjectNewFlows().NewProject_AutoInit_NoSlnConfig("Example");
 
 		// Create a new instance of a container
 		var container = new ContainerBuilder()
@@ -66,7 +61,6 @@ public class BeamServicesFlows : CLITest
 		bool isNotRunning = containers.Any(c => c.Names.Contains($"/{ServiceName}"));
 		Assert.IsTrue(isNotRunning, $"Container '{ServiceName}' should not be running.");
 
-		Dispose();
 
 		#endregion
 	}
@@ -76,7 +70,7 @@ public class BeamServicesFlows : CLITest
 	{
 		#region Arrange
 
-		new BeamProjectFlows().CanCreateNewBeamableSolution();
+		new BeamProjectNewFlows().NewProject_AutoInit_NoSlnConfig("Example");
 
 		// Create a new instance of a container
 		var container = new ContainerBuilder()
@@ -109,8 +103,6 @@ public class BeamServicesFlows : CLITest
 		// Check if the container with the specified name is not running
 		bool isNotRunning = containers.Any(c => c.Names.Contains($"/{ServiceName}"));
 		Assert.IsTrue(isNotRunning, $"Container '{ServiceName}' should not be running.");
-
-		Dispose();
 
 		#endregion
 	}

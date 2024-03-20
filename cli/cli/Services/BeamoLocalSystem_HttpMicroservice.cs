@@ -79,10 +79,13 @@ public partial class BeamoLocalSystem
 				$"could not configure connection to storage=[{storageName}] because port was not mapped in storage container");
 		}
 
+		// group bindings based on their port, because that is the only property we actually need to use.
+		bindings = bindings.DistinctBy(b => b.HostPort).ToList();
+
 		if (bindings.Count != 1)
 		{
 			throw new Exception(
-				$"could not configure connection to storage=[{storageName}] because port bindings were not equal to one");
+				$"could not configure connection to storage=[{storageName}] because port bindings were not equal to one. count=[{bindings.Count}] bindings=[{string.Join(",", bindings.Select(b => b.HostIP + ":" + b.HostPort))}]");
 		}
 
 		var portBinding = bindings[0];
@@ -275,17 +278,19 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 	public bool VerifyCanBeBuiltLocally(ConfigService configService)
 	{
 		var hasPaths = !string.IsNullOrEmpty(DockerBuildContextPath) && !string.IsNullOrEmpty(RelativeDockerfilePath);
-		if (hasPaths)
+		if (!hasPaths)
 		{
-			var path = configService.GetRelativePath(DockerBuildContextPath);
-			if (!Directory.Exists(path))
-				throw new Exception($"DockerBuildContext doesn't exist: [{path}]");
-
-			var dockerfilePath = Path.Combine(path, RelativeDockerfilePath);
-			if (!File.Exists(dockerfilePath))
-				throw new Exception($"No Dockerfile found at path: [{dockerfilePath}]");
+			return false;
 		}
 
-		return hasPaths;
+		var path = configService.BeamableRelativeToExecutionRelative(DockerBuildContextPath);
+		if (!Directory.Exists(path))
+			throw new Exception($"DockerBuildContext doesn't exist: [{path}]");
+
+		var dockerfilePath = Path.Combine(path, RelativeDockerfilePath);
+		if (!File.Exists(dockerfilePath))
+			throw new Exception($"No Dockerfile found at path: [{dockerfilePath}]");
+
+		return true;
 	}
 }

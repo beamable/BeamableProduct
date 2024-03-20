@@ -13,55 +13,56 @@ public class CLITestExtensions : CLITest
 	protected string alias = "sample-alias";
 	protected string userName = "user@test.com";
 	protected string password = "password";
-	private string cid = "123";
-	private string pid = "456";
+	protected string cid = "123";
+	protected string pid = "456";
 
-	protected void SetupMocks()
+	protected void SetupMocks(bool mockAlias=true, bool mockAuth=true, bool mockRealms=true)
 	{
 		base.Setup();
 		_serilogLevel.MinimumLevel = LogEventLevel.Verbose;
 
-		Mock<IAliasService>(mock =>
-		{
-			mock.Setup(x => x.Resolve(alias))
-				.ReturnsPromise(new AliasResolve
-				{
-					Alias = new OptionalString(alias),
-					Cid = new OptionalString("123")
-				})
-				.Verifiable();
-		});
-
-		Mock<IAuthApi>(mock =>
-		{
-			mock.Setup(x => x.Login(userName, password, false, false))
-				.ReturnsPromise(new TokenResponse
-				{
-					refresh_token = "refresh",
-					access_token = "access",
-					token_type = "token"
-				})
-				.Verifiable();
-		});
-
-		Mock<IRealmsApi>(mock =>
-		{
-			mock.Setup(x => x.GetGames())
-				.ReturnsPromise(new List<RealmView>
-				{
-					new RealmView
+		if (mockAlias)
+			Mock<IAliasService>(mock =>
+			{
+				mock.Setup(x => x.Resolve(alias))
+					.ReturnsPromise(new AliasResolve
 					{
-						Cid = cid, Pid = pid, ProjectName = pid, GamePid = pid,
-					}
-				})
-				.Verifiable();
+						Alias = new OptionalString(alias), Cid = new OptionalString("123")
+					})
+					.Verifiable();
+			});
 
-			mock.Setup(x => x.GetRealms(It.IsAny<RealmView>()))
-				.ReturnsPromise(new List<RealmView>
-				{
-					new RealmView { Cid = cid, Pid = pid, ProjectName = pid, GamePid = pid }
-				})
-				.Verifiable();
-		});
+		if (mockAuth)
+			Mock<IAuthApi>(mock =>
+			{
+				mock.Setup(x => x.Login(userName, password, false, false))
+					.ReturnsPromise(new TokenResponse
+					{
+						refresh_token = "refresh", access_token = "access", token_type = "token"
+					})
+					.Verifiable();
+			});
+
+		if (mockRealms)
+			Mock<IRealmsApi>(mock =>
+			{
+				mock.Setup(x => x.GetGames())
+					.ReturnsPromise(new List<RealmView>
+					{
+						new RealmView
+						{
+							Cid = cid, Pid = pid, ProjectName = pid, GamePid = pid,
+						}
+					})
+					.Verifiable();
+
+				mock.Setup(x => x.GetRealms(It.IsAny<RealmView>()))
+					.ReturnsPromise(new List<RealmView>
+					{
+						new RealmView { Cid = cid, Pid = pid, ProjectName = pid, GamePid = pid }
+					})
+					.Verifiable();
+			});
+
 	}
 }

@@ -12,7 +12,7 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string beamPath;
 		/// <summary>The solution path to be used</summary>
 		public string solutionDir;
-		/// <summary>A path relative to the given solution directory, that will be used to store the projects /bin and /obj directories. Note: the given path will have the project's assembly name and the bin or obj folder appended.</summary>
+		/// <summary>A path relative to the given solution directory, that will be used to store the projects /bin and /obj directories. Note: the given path will have the project's assembly name and the bin or obj folder appended</summary>
 		public string buildDir;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()

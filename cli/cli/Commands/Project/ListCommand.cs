@@ -29,8 +29,6 @@ public class ListCommand : AtomicCommand<ListCommandArgs, ListCommandResult>
 
 	public override Task<ListCommandResult> GetResult(ListCommandArgs args)
 	{
-		Log.Information("Running list command " + args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Count);
-
 		var services = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions
 			.Where(definition => definition.Protocol == BeamoProtocolType.HttpMicroservice).Select(
 				definition => new ServiceInfo() { name = definition.BeamoId, projectPath = definition.ProjectDirectory });
@@ -38,7 +36,7 @@ public class ListCommand : AtomicCommand<ListCommandArgs, ListCommandResult>
 			.Where(definition => definition.Protocol == BeamoProtocolType.EmbeddedMongoDb).Select(
 				definition => new ServiceInfo() { name = definition.BeamoId, projectPath = definition.ProjectDirectory });
 
-		Log.Debug("Sent list command " + args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Count);
+		Log.Debug("Found {} services", args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Count);
 
 		return Task.FromResult(new ListCommandResult { localServices = services.ToList(), localStorages = storages.ToList() });
 	}

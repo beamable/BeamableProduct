@@ -1,6 +1,7 @@
 using Beamable.Common.Dependencies;
 using Beamable.Serialization.SmallerJSON;
 using cli.Services;
+using cli.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Serilog;
@@ -70,7 +71,7 @@ public static class DependencyInjectionExtensions
 
 				if (!args.IgnoreStandaloneValidation && command is not IStandaloneCommand && args.ConfigService.DirectoryExists.GetValueOrDefault(false) != true)
 				{
-					throw new CliException("Could not find any .beamable config folder which is required for this command.");
+					throw CliExceptions.CONFIG_DOES_NOT_EXISTS;
 				}
 
 				return command.Handle(args);

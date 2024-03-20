@@ -27,38 +27,38 @@ public class ServicesManifestsCommand : AtomicCommand<ServicesManifestsArgs, Ser
 										{
 											var manifests = await _beamoService.GetManifests();
 											return manifests?.Select(x => new CliServiceManifest
+											{
+												comments = x.comments,
+												created = x.created,
+												createdByAccountId = x.createdByAccountId,
+												id = x.id,
+												manifest = x.manifest?.Select(m => new CliServiceReference
 												{
-													comments = x.comments,
-													created = x.created,
-													createdByAccountId = x.createdByAccountId,
-													id = x.id,
-													manifest = x.manifest?.Select(m => new CliServiceReference
+													checksum = m.checksum,
+													comments = m.comments,
+													containerHealthCheckPort = m.containerHealthCheckPort,
+													enabled = m.enabled,
+													imageId = m.imageId,
+													templateId = m.templateId,
+													components = m.components?.Select(c => new CliServiceComponent
 													{
-														checksum = m.checksum,
-														comments = m.comments,
-														containerHealthCheckPort = m.containerHealthCheckPort,
-														enabled = m.enabled,
-														imageId = m.imageId,
-														templateId = m.templateId,
-														components = m.components?.Select(c => new CliServiceComponent
-														{
-															name = c.name
-														}).ToList(),
-														dependencies = m.dependencies?.Select(d => new CliServiceDependency
-														{
-															id = d.id,
-															storageType = d.storageType
-														}).ToList()
+														name = c.name
 													}).ToList(),
-													storageReference = x.storageReference?.Select(m => new CliServiceStorageReference
+													dependencies = m.dependencies?.Select(d => new CliServiceDependency
 													{
-														id = m.id,
-														enabled = m.enabled,
-														storageType = m.storageType,
-														checksum = m.checksum,
-														templateId = m.templateId,
+														id = d.id,
+														storageType = d.storageType
 													}).ToList()
-												})
+												}).ToList(),
+												storageReference = x.storageReference?.Select(m => new CliServiceStorageReference
+												{
+													id = m.id,
+													enabled = m.enabled,
+													storageType = m.storageType,
+													checksum = m.checksum,
+													templateId = m.templateId,
+												}).ToList()
+											})
 												.ToList();
 										});
 		response = response.Skip(args.skip).Take(args.limit > 0 ? args.limit : int.MaxValue).ToList();
@@ -123,7 +123,7 @@ public class CliServiceDependency
 }
 
 [Serializable]
-public class CliServiceComponent 
+public class CliServiceComponent
 {
 	public string name;
 }

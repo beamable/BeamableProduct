@@ -1,11 +1,11 @@
 using Beamable.Common;
 using Beamable.Common.Api;
-using cli.Dotnet;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 using Serilog;
 using System.CommandLine.Binding;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace cli;
@@ -33,6 +33,7 @@ public class ConfigService
 	[CanBeNull] private Dictionary<string, string> _config;
 
 	private string _dir;
+	private string WorkingDirectoryFullPath => Path.GetFullPath(WorkingDirectory);
 
 	public ConfigService(CliEnvironment environment, ConfigDirOption configDirOption)
 	{
@@ -51,6 +52,17 @@ public class ConfigService
 	}
 
 	/// <summary>
+	/// Check if the given path is within the working directory.
+	/// </summary>
+	/// <param name="path">The path to check.</param>
+	/// <returns>True if the path is within the working directory, false otherwise.</returns>
+	public bool IsPathInWorkingDirectory(string path)
+	{
+		var fullPath = Path.GetFullPath(path);
+		return fullPath.StartsWith(WorkingDirectoryFullPath);
+	}
+
+	/// <summary>
 	/// by default, paths are relative to the execution working directory...
 	/// But you may need them to be relative to the project root.
 	///
@@ -61,12 +73,28 @@ public class ConfigService
 	/// <returns></returns>
 	public string GetRelativePath(string relativePath)
 	{
-		var rootDir = Directory.GetParent(ConfigDirectoryPath).FullName;
-		var fullRoot = Path.GetFullPath(rootDir);
+	
+		var path = Path.Combine(WorkingDirectoryFullPath, relativePath);
+		var baseDir = "";
+		var relativeTo = Directory.GetCurrentDirectory();
+		if (!string.IsNullOrEmpty(BaseDirectory))
+		{
+			baseDir = Path.GetRelativePath(WorkingDirectoryFullPath, BaseDirectory);
+			relativeTo = Path.Combine(Directory.GetCurrentDirectory(), baseDir);
+		}
 
-		var path = Path.Combine(fullRoot, relativePath);
-		path = Path.GetRelativePath(Directory.GetCurrentDirectory(), path);
+		path = Path.GetRelativePath(relativeTo, path);
+		Log.Verbose(
+			$"Converting path=[{relativePath}] into .beamable relative path, result=[{path}], workingDir=[{Directory.GetCurrentDirectory()}] workingDirFull=[{WorkingDirectoryFullPath}] baseDir=[{baseDir}]");
 		return path;
+	}
+
+	public string BeamableRelativeToExecutionRelative(string relativePath)
+	{
+		var path = GetFullPath(relativePath);
+		var executionRelative = Path.GetRelativePath(Directory.GetCurrentDirectory(), path);
+		Log.Verbose($"Converting path=[{relativePath}] into execution relative path, result=[{executionRelative}], base=[{BaseDirectory}] workingDir=[{Directory.GetCurrentDirectory()}] path=[{path}]");
+		return executionRelative;
 	}
 
 	/// <summary>
@@ -97,49 +125,6 @@ public class ConfigService
 		}
 
 		return Path.Combine(basePath, pathInConfig);
-	}
-
-
-	public string GetServicesDir(SolutionCommandArgs args, string newSolutionPath)
-	{
-		string result = string.Empty;
-		//using try catch because of the Directory.EnumerateDirectories behaviour
-		try
-		{
-			var list = Directory.EnumerateDirectories(BaseDirectory,
-				$"{args.SolutionName}\\services",
-				SearchOption.AllDirectories).ToList();
-			if (list.Count > 0)
-			{
-				result = Path.GetRelativePath(BaseDirectory, list.First());
-			}
-		}
-		catch
-		{
-			//
-		}
-
-		try
-		{
-			if (string.IsNullOrWhiteSpace(result))
-			{
-				var list = Directory.EnumerateDirectories(newSolutionPath, "services",
-					SearchOption.AllDirectories).ToList();
-				result = Path.GetRelativePath(BaseDirectory, list.First());
-			}
-		}
-		catch
-		{
-			//
-		}
-
-		if (string.IsNullOrWhiteSpace(result))
-		{
-			const string SERVICES_PATH_ERROR = "Could not find Solution services path!";
-			Log.Error(SERVICES_PATH_ERROR);
-		}
-
-		return result;
 	}
 
 	public void SaveDataFile<T>(string fileName, T data)
@@ -318,7 +303,7 @@ public class ConfigService
 		}
 	}
 
-	void RefreshConfig()
+	public void RefreshConfig()
 	{
 		DirectoryExists = TryToFindBeamableConfigFolder(out var configPath);
 		ConfigDirectoryPath = configPath;
@@ -331,12 +316,7 @@ public class ConfigService
 
 			MigrateOldConfigIfExists();
 		}
-		var isValid = TryToReadConfigFile(ConfigDirectoryPath, out _config);
-		if (DirectoryExists.Value && !isValid)
-		{
-			throw new CliException(
-				$"Beamable Config exist but it does not have one of the values: {string.Join(',', Constants.REQUIRED_CONFIG_KEYS)}");
-		}
+		TryToReadConfigFile(ConfigDirectoryPath, out _config);
 	}
 
 	/// <summary>
@@ -351,17 +331,30 @@ public class ConfigService
 			if (Directory.Exists(oldPath))
 			{
 				var newPath = GetConfigPath(Constants.RENAMED_DIRECTORIES[key] as string);
-				var existsAndAreDifferent = File.Exists(newPath);
+				var existsAndAreDifferent = Directory.Exists(newPath);
+				var samePath = string.Compare(oldPath, newPath,
+					RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture) == 0;
 
-				existsAndAreDifferent &=
-					string.Compare(oldPath, newPath,
-						RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture) != 0;
-
+				existsAndAreDifferent &= !samePath;
+					
 				if (existsAndAreDifferent)
 				{
 					throw new CliException($"Config resolution error, there is {oldPath} and {newPath}",
 						Constants.CMD_RESULT_CONFIG_RESOLUTION_CONFLICT, true,
 						"Remove one of the directories and run the command again\n");
+				}
+
+				if (samePath)
+				{
+					var tmpPath = newPath + "_bak";
+					if (Directory.Exists(tmpPath))
+					{
+						throw new CliException($"Config resolution error, there is already temp dir {tmpPath}",
+							Constants.CMD_RESULT_CONFIG_RESOLUTION_CONFLICT, true,
+							"Remove dir and run command again\n");
+					}
+					Directory.Move(oldPath, tmpPath);
+					oldPath = tmpPath;
 				}
 				Directory.Move(oldPath, newPath!);
 			}
@@ -378,6 +371,7 @@ public class ConfigService
 				existsAndAreDifferent &=
 						string.Compare(oldPath, newPath,
 							RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture) != 0;
+				existsAndAreDifferent &= !HaveSameContent(oldPath, newPath);
 
 				if (existsAndAreDifferent)
 				{
@@ -445,5 +439,13 @@ public class ConfigService
 		if (dict == null || dict.Count == 0) return false;
 
 		return Constants.REQUIRED_CONFIG_KEYS.All(dict.Keys.Contains);
+	}
+
+	static bool HaveSameContent(string pathFirst, string pathSecond)
+	{
+		using var md5 = MD5.Create();
+		var first = md5.ComputeHash(File.ReadAllBytes(pathFirst));
+		var second = md5.ComputeHash(File.ReadAllBytes(pathSecond));
+		return first.SequenceEqual(second);
 	}
 }

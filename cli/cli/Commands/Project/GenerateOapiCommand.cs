@@ -3,6 +3,8 @@ using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Tooling.Common.OpenAPI;
 using cli.Dotnet;
+using cli.Services;
+using CliWrap;
 using CliWrap.Buffered;
 using microservice.Common;
 using Microsoft.OpenApi;
@@ -10,6 +12,7 @@ using Microsoft.OpenApi.Extensions;
 using Serilog;
 using System.Reflection;
 using System.Runtime.Loader;
+using System.Text;
 
 namespace cli.Commands.Project;
 
@@ -134,5 +137,55 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 		};
 
 		return loadContext.LoadFromAssemblyPath(absolutePath);
+	}
+
+	static async Task<ProjectBuildStatusReport> IsProjectBuilt(CommandArgs args, string serviceName)
+	{
+		if (!args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(serviceName, out var service))
+		{
+			throw new CliException($"service does not exist, service=[{serviceName}]");
+		}
+		var canBeBuiltLocally = args.BeamoLocalSystem.VerifyCanBeBuiltLocally(serviceName);
+		if (!canBeBuiltLocally)
+		{
+			return new ProjectBuildStatusReport() { path = null, isBuilt = false };
+		}
+		Log.Debug($"Found service definition, ctx=[{service.DockerBuildContextPath}] dockerfile=[{service.RelativeDockerfilePath}]");
+
+		var dockerfilePath = Path.Combine(args.ConfigService.GetRelativePath(service.DockerBuildContextPath), service.RelativeDockerfilePath);
+		var projectPath = Path.GetDirectoryName(dockerfilePath);
+		Log.Debug($"service path=[{projectPath}]");
+		var commandStr = $"msbuild {projectPath} -t:GetTargetPath -verbosity:diag";
+		Log.Debug($"running {args.AppContext.DotnetPath} {commandStr}");
+		var stdOutBuilder = new StringBuilder();
+		var result = await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, commandStr)
+			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOutBuilder))
+			.WithValidation(CommandResultValidation.None)
+			.ExecuteAsync();
+		Log.Verbose("dotnet program exited with " + result.ExitCode);
+		var stdOut = stdOutBuilder.ToString();
+		var lines = stdOut.Split(Environment.NewLine);
+		Log.Verbose("msbuild logs\n" + stdOut);
+		var outputPathLine = lines.Select(l => l.ToLowerInvariant().Trim()).FirstOrDefault(l => l.StartsWith("finaloutputpath") && l.EndsWith(".dll"));
+
+		if (string.IsNullOrEmpty(outputPathLine))
+			throw new CliException(
+				$"service could not identify output path. service=[{serviceName}] command=[{commandStr}]");
+
+		var report = new ProjectBuildStatusReport
+		{
+			path = outputPathLine.Substring("finaloutputpath = ".Length).Trim(),
+		};
+		report.isBuilt = File.Exists(report.path);
+
+		Log.Debug($"found output path, path=[{report.path}] exists=[{report.isBuilt}]");
+
+		return report;
+	}
+
+	public struct ProjectBuildStatusReport
+	{
+		public bool isBuilt;
+		public string path;
 	}
 }

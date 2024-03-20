@@ -196,8 +196,8 @@ public struct UnrealEndpointDeclaration
 							if (tp.PropertyUnrealType.IsUnrealUObject())
 							{
 								return $"// Assumes the object is constructed and have the new request take ownership of the memory for it\n\t" +
-								       $"Req->{p.PropertyName}->{tp.PropertyName} = {GetBodyParamName(nonBodyParamsDeclarations, tp)};\n\t" +
-								       $"Req->{p.PropertyName}->{tp.PropertyName}->Rename(nullptr, Req);";
+									   $"Req->{p.PropertyName}->{tp.PropertyName} = {GetBodyParamName(nonBodyParamsDeclarations, tp)};\n\t" +
+									   $"Req->{p.PropertyName}->{tp.PropertyName}->Rename(nullptr, Req);";
 							}
 
 							return $"Req->{p.PropertyName}->{tp.PropertyName} = {GetBodyParamName(nonBodyParamsDeclarations, tp)};";
@@ -257,9 +257,9 @@ public struct UnrealEndpointDeclaration
 		}
 
 		if (routeParameterDeclaration.PropertyUnrealType.IsUnrealByte() ||
-		    routeParameterDeclaration.PropertyUnrealType.IsUnrealShort() ||
-		    routeParameterDeclaration.PropertyUnrealType.IsUnrealInt() ||
-		    routeParameterDeclaration.PropertyUnrealType.IsUnrealLong())
+			routeParameterDeclaration.PropertyUnrealType.IsUnrealShort() ||
+			routeParameterDeclaration.PropertyUnrealType.IsUnrealInt() ||
+			routeParameterDeclaration.PropertyUnrealType.IsUnrealLong())
 		{
 			return $"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), *FString::FromInt({routeParameterDeclaration.PropertyName}));";
 		}
@@ -305,7 +305,7 @@ public struct UnrealEndpointDeclaration
 		{
 			queryAppend.Append($"\tQueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *{q.PropertyName}.Val);\n\t");
 		}
-		else if (q.NonOptionalTypeName .IsUnrealString())
+		else if (q.NonOptionalTypeName.IsUnrealString())
 		{
 			queryAppend.Append($"QueryParams.Appendf(TEXT(\"%s=%s\"), TEXT(\"{q.RawFieldName}\"), *{q.PropertyName});\n\t");
 		}

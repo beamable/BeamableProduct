@@ -103,10 +103,10 @@ public class ProjectClientHelper<TProjectClient> where TProjectClient : IProject
 		switch (defaultPaths.Count)
 		{
 			// if there is only one detected file, offer to use that.
-			case 1 when !args.quiet && AnsiConsole.Confirm($"Automatically found {defaultPaths[0]}. Add as {_projectClientTypeName} project?"):
+			case 1 when !args.Quiet && AnsiConsole.Confirm($"Automatically found {defaultPaths[0]}. Add as {_projectClientTypeName} project?"):
 				_client.AddProject(defaultPaths[0], args);
 				return true;
-			case 1 when args.quiet:
+			case 1 when args.Quiet:
 				_client.AddProject(defaultPaths[0], args);
 				return true;
 			// if there are many detected files, offer up a list of them
