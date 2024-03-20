@@ -1,6 +1,7 @@
 using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using cli;
+using Docker.DotNet;
 using Moq;
 using NUnit.Framework;
 using Serilog;
@@ -28,6 +29,9 @@ public class CLITest
 	private Action<IDependencyBuilder> _configurator;
 
 	private List<Mock> _mockObjects = new();
+	
+	protected DockerClient _dockerClient = null!;
+
 
 	protected TestConsole Ansi
 	{
@@ -38,6 +42,8 @@ public class CLITest
 	[SetUp]
 	public void Setup()
 	{
+		_dockerClient = new DockerClientConfiguration(new AnonymousCredentials()).CreateClient();
+
 		TestId = Guid.NewGuid().ToString();
 
 		OriginalWorkingDir = Directory.GetCurrentDirectory();
@@ -53,10 +59,18 @@ public class CLITest
 		_serilogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
 		_mockRequester = new Mock<IRequester>();
 	}
+	
+	
+	protected void DisposeDockerClient()
+	{
+		// Dispose the Docker client
+		_dockerClient.Dispose();
+	}
 
 	[TearDown]
 	public void Teardown()
 	{
+		DisposeDockerClient();
 		ResetConfigurator();
 		Directory.SetCurrentDirectory(OriginalWorkingDir);
 		Directory.Delete(WorkingDir, true);

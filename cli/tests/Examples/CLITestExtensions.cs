@@ -22,44 +22,47 @@ public class CLITestExtensions : CLITest
 		_serilogLevel.MinimumLevel = LogEventLevel.Verbose;
 
 		if (mockAlias)
-		Mock<IAliasService>(mock =>
-		{
-			mock.Setup(x => x.Resolve(alias))
-				.ReturnsPromise(new AliasResolve { Alias = new OptionalString(alias), Cid = new OptionalString("123") })
-				.Verifiable();
-		});
+			Mock<IAliasService>(mock =>
+			{
+				mock.Setup(x => x.Resolve(alias))
+					.ReturnsPromise(new AliasResolve
+					{
+						Alias = new OptionalString(alias), Cid = new OptionalString("123")
+					})
+					.Verifiable();
+			});
 
 		if (mockAuth)
-		Mock<IAuthApi>(mock =>
-		{
-			mock.Setup(x => x.Login(userName, password, false, false))
-				.ReturnsPromise(new TokenResponse
-				{
-					refresh_token = "refresh", access_token = "access", token_type = "token"
-				})
-				.Verifiable();
-		});
+			Mock<IAuthApi>(mock =>
+			{
+				mock.Setup(x => x.Login(userName, password, false, false))
+					.ReturnsPromise(new TokenResponse
+					{
+						refresh_token = "refresh", access_token = "access", token_type = "token"
+					})
+					.Verifiable();
+			});
 
 		if (mockRealms)
-		Mock<IRealmsApi>(mock =>
-		{
-			mock.Setup(x => x.GetGames())
-				.ReturnsPromise(new List<RealmView>
-				{
-					new RealmView
+			Mock<IRealmsApi>(mock =>
+			{
+				mock.Setup(x => x.GetGames())
+					.ReturnsPromise(new List<RealmView>
 					{
-						Cid = cid, Pid = pid, ProjectName = pid, GamePid = pid,
-					}
-				})
-				.Verifiable();
+						new RealmView
+						{
+							Cid = cid, Pid = pid, ProjectName = pid, GamePid = pid,
+						}
+					})
+					.Verifiable();
 
-			mock.Setup(x => x.GetRealms(It.IsAny<RealmView>()))
-				.ReturnsPromise(new List<RealmView>
-				{
-					new RealmView { Cid = cid, Pid = pid, ProjectName = pid, GamePid = pid }
-				})
-				.Verifiable();
-		});
+				mock.Setup(x => x.GetRealms(It.IsAny<RealmView>()))
+					.ReturnsPromise(new List<RealmView>
+					{
+						new RealmView { Cid = cid, Pid = pid, ProjectName = pid, GamePid = pid }
+					})
+					.Verifiable();
+			});
 
 	}
 }

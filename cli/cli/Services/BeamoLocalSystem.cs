@@ -280,11 +280,29 @@ public partial class BeamoLocalSystem
 			"# </BEAM-CLI-COPY-SRC> this line signals the end of Beamable Project Src copies. Do not remove it.";
 		const string startTag =
 			"# <BEAM-CLI-COPY-SRC> this line signals the start of Beamable Project Src copies into the built container. Do not remove it. The content between here and the closing tag will change anytime the Beam CLI modifies dependencies.";
+		const string legacyCopyLine =
+			"# <BEAM-CLI-INSERT-FLAG:COPY> do not delete this line. It is used by the beam CLI to insert custom actions";
 		const string serviceNameTag = "<SERVICE_NAME>";
 		string toAdd = @$"WORKDIR /subsrc/{serviceNameTag}
 COPY {serviceNameTag}/. .";
 		var replacement = @$"{toAdd}
 {endTag}";
+
+		var hasEndTag = dockerfileText.Contains(endTag);
+		var hasStartTag = dockerfileText.Contains(startTag);
+		var legacyIndex = dockerfileText.IndexOf(legacyCopyLine, StringComparison.Ordinal);
+		if ( (!hasEndTag && hasStartTag) || (!hasStartTag && hasEndTag) )
+		{
+			throw new CliException(
+				"The dockerfile is corrupted and cannot be used by Beamable. There is a tag mismatch." +
+				"Please make the file have a section like this," +
+				$"{startTag}\n# content will go here\n{endTag}");
+		}
+
+		if (!hasEndTag && !hasStartTag && legacyIndex > -1)
+		{
+			dockerfileText = dockerfileText.Replace(legacyCopyLine, $"{legacyCopyLine}{Environment.NewLine}{startTag}{Environment.NewLine}{endTag}{Environment.NewLine}");
+		}
 		
 		//Remove old data
 		int startIndex = dockerfileText.LastIndexOf(startTag, StringComparison.Ordinal) + startTag.Length + 1;

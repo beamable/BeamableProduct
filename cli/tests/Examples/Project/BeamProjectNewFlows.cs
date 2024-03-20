@@ -3,14 +3,14 @@ using Newtonsoft.Json;
 using NUnit.Framework;
 using System;
 using System.IO;
-using tests.Examples.Init;
 
 namespace tests.Examples.Project;
 
-public class BeamProjectFlows : CLITestExtensions
+public class BeamProjectNewFlows : CLITestExtensions
 {
 	[Test]
-	public void NewProject_AutoInit_NoSlnConfig()
+	[TestCase("Example")]
+	public void NewProject_AutoInit_NoSlnConfig(string serviceName)
 	{
 		#region Arrange
 
@@ -21,7 +21,6 @@ public class BeamProjectFlows : CLITestExtensions
 		Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the game
 		Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the realm
 
-		const string serviceName = "Example";
 
 		#endregion
 
@@ -302,6 +301,79 @@ public class BeamProjectFlows : CLITestExtensions
 		Assert.That(manifest.HttpMicroserviceLocalProtocols[secondServiceName], Is.Not.Null);
 		Assert.That(manifest.HttpMicroserviceLocalProtocols[secondServiceName].DockerBuildContextPath, Is.EqualTo($"{serviceName}/services"));
 		Assert.That(manifest.HttpMicroserviceLocalProtocols[secondServiceName].RelativeDockerfilePath, Is.EqualTo($"{secondServiceName}/Dockerfile"));
+
+		#endregion
+	}
+	
+	
+	[TestCase("Example", "Data")]
+	public void NewProject_UsingExistingInit_NoSlnConfig_AddStorageToExistingSln(string serviceName, string storageName)
+	{
+		#region Arrange
+
+		SetupMocks();
+		Ansi.Input.PushTextWithEnter(alias); // enter alias
+		Ansi.Input.PushTextWithEnter(userName); // enter email
+		Ansi.Input.PushTextWithEnter(password); // enter password
+		Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the game
+		Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the realm
+		
+
+		#endregion
+
+		#region Act
+		
+		Run("init", "--save-to-file");
+		ResetConfigurator();
+		
+		Run("project", "new", "service", serviceName, "--quiet");
+		ResetConfigurator();
+
+		Run("project", "new", "storage", storageName, "--quiet", "--sln", $"{serviceName}/{serviceName}.sln", "--link-to", serviceName);
+
+		#endregion
+
+		#region Assert
+
+		// there should a .sln file
+		Assert.That(File.Exists($"{serviceName}/{serviceName}.sln"),
+			$"There must be an {serviceName}/{serviceName}.sln file ");
+		
+		Assert.That(File.Exists($"{serviceName}/services/{serviceName}/{serviceName}.csproj"),
+			"the first service needs to have a csproj");
+		Assert.That(File.Exists($"{serviceName}/services/{storageName}/{storageName}.csproj"),
+			"the second service needs to have a csproj");
+		
+		// there should a .beamable folder
+		Assert.That(File.Exists(".beamable/connection-configuration.json"), "there must be a config defaults file after beam init.");
+
+		// there should be a local-services-manifest.json file
+		Assert.That(File.Exists($".beamable/local-services-manifest.json"),
+			$"There must be a beamo local manifest file after beam project new {serviceName}");
+
+		// the contents of the file beamoId should be equal to the name of the service created
+		string localManifestTextContent = File.ReadAllText($".beamable/local-services-manifest.json");
+		var manifest = JsonConvert.DeserializeObject<BeamoLocalManifest>(localManifestTextContent);
+		Assert.That(manifest!.ServiceDefinitions.Count, Is.EqualTo(2));
+		Assert.That(manifest.ServiceDefinitions[0].BeamoId, Is.EqualTo(serviceName));
+		Assert.That(manifest.ServiceDefinitions[0].ProjectDirectory, Is.EqualTo($"{serviceName}/services/{serviceName}"));
+		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName], Is.Not.Null);
+		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, Is.EqualTo($"{serviceName}/services"));
+		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, Is.EqualTo($"{serviceName}/Dockerfile"));
+
+		Assert.That(manifest.ServiceDefinitions[1].BeamoId, Is.EqualTo(storageName));
+		Assert.That(manifest.ServiceDefinitions[1].ProjectDirectory, Is.EqualTo($"{serviceName}/services/{storageName}"));
+		Assert.That(manifest.EmbeddedMongoDbLocalProtocols[storageName], Is.Not.Null);
+
+		// the service should have a reference to the storage
+		var csProjPath = $"{serviceName}/services/{serviceName}/{serviceName}.csproj";
+		Assert.That(File.Exists(csProjPath), 
+			$"there should be a csproj at {csProjPath}");
+		var csProjContent = File.ReadAllText(csProjPath);
+		Assert.That(csProjContent.Contains($"<ProjectReference Include=\"..\\{storageName}\\{storageName}.csproj\" />"),
+			"There should be a reference to the storage in the csproj"
+			);
+		// <ProjectReference Include="..\Data\Data.csproj" />
 
 		#endregion
 	}
