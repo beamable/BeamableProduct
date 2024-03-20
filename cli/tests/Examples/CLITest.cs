@@ -29,7 +29,7 @@ public class CLITest
 	private Action<IDependencyBuilder> _configurator;
 
 	private List<Mock> _mockObjects = new();
-	
+
 	protected DockerClient _dockerClient = null!;
 
 
@@ -59,8 +59,8 @@ public class CLITest
 		_serilogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
 		_mockRequester = new Mock<IRequester>();
 	}
-	
-	
+
+
 	protected void DisposeDockerClient()
 	{
 		// Dispose the Docker client
@@ -93,7 +93,7 @@ public class CLITest
 		_configurator = builder =>
 		{
 			curriedConfig?.Invoke(builder);
-			
+
 			var mock = new Mock<T>();
 			configurator(mock);
 			_mockObjects.Add(mock);

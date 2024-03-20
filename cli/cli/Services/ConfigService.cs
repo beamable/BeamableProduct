@@ -73,7 +73,7 @@ public class ConfigService
 	/// <returns></returns>
 	public string GetRelativePath(string relativePath)
 	{
-	
+
 		var path = Path.Combine(WorkingDirectoryFullPath, relativePath);
 		var baseDir = "";
 		var relativeTo = Directory.GetCurrentDirectory();
@@ -336,7 +336,7 @@ public class ConfigService
 					RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture) == 0;
 
 				existsAndAreDifferent &= !samePath;
-					
+
 				if (existsAndAreDifferent)
 				{
 					throw new CliException($"Config resolution error, there is {oldPath} and {newPath}",

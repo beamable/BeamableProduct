@@ -37,7 +37,7 @@ public class RemoveDepsCommand : AppCommand<RemoveDepsCommandArgs>, IEmptyResult
 			Log.Information($"The service {args.ServiceName} does not have a definition in the manifest");
 			return;
 		}
-		
+
 		List<DependencyData> dependencies = await args.BeamoLocalSystem.GetDependencies(args.ServiceName);
 		bool isAlreadyDependency = dependencies.Any(data => data.name == args.Dependency);
 
@@ -46,7 +46,7 @@ public class RemoveDepsCommand : AppCommand<RemoveDepsCommandArgs>, IEmptyResult
 			Log.Information($"The service {args.ServiceName} does not have {args.Dependency} as a dependency");
 			return;
 		}
-		
+
 		Log.Information("Removing {ArgsStorageName} reference from {Dependency}. ", args.Dependency, args.ServiceName);
 		await args.BeamoLocalSystem.RemoveProjectDependency(serviceDefinition, dependencyDefinition);
 	}
