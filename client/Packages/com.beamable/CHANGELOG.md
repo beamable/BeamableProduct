@@ -46,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Marked `EventView` `endTime` field as obsolete, suggest using `GetEndTime` method instead.
-- `PlayerAccounts`, `PlayerAnnouncements`, `PlayerFiends`, `PlayerParty`, and `PlayerStats` automatically await their own initialization before running methods. 
+- `PlayerAccounts`, `PlayerAnnouncements`, `PlayerFiends`, `PlayerParty`, and `PlayerStats` automatically await their own initialization before running methods.
 
 ## [1.19.12]
 

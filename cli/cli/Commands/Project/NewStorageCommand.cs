@@ -7,102 +7,49 @@ using System.CommandLine;
 
 namespace cli.Commands.Project;
 
-public class NewStorageCommandArgs : CommandArgs
+public class NewStorageCommandArgs : SolutionCommandArgs
 {
-	public ServiceName storageName;
-	public string slnPath;
 	public List<string> linkedServices;
-	public bool quiet;
-	public string outputPath;
 }
 
-public class QuietNameOption : Option<bool>
-{
-	public QuietNameOption() : base("--quiet", () => false, "When true, skip input waiting and use defaults")
-	{
-		AddAlias("-q");
-	}
-}
 
-public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
+public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneCommand, IEmptyResult
 {
-	public NewStorageCommand() : base("new-storage", "Create and add a new Microstorage")
+	private readonly InitCommand _initCommand;
+
+	public NewStorageCommand(InitCommand initCommand) : base("storage", "Create and add a new Microstorage")
 	{
+		_initCommand = initCommand;
 	}
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<ServiceName>("name", "The name of the new Microstorage."),
-			(args, i) => args.storageName = i);
-		AddOption(new Option<string>("--sln", "The path to the solution that the Microstorage will be added to"),
-			(args, i) => args.slnPath = i);
-		AddOption(new Option<string>("--output-path", "The path where the storage is going to be created, a new sln is going to be created as well"),
-			(args, i) => args.outputPath = i);
+		AddArgument(new ServiceNameArgument(), (args, i) => args.ProjectName = i);
+		AddOption(new AutoInitFlag(), (args, b) => args.AutoInit = b);
 
+		SolutionCommandArgs.Configure(this);
+		
 		var storageDeps = new Option<List<string>>("--link-to", "The name of the project to link this storage to")
 		{
 			Arity = ArgumentArity.ZeroOrMore,
 			AllowMultipleArgumentsPerToken = true
 		};
 		AddOption(storageDeps, (x, i) => x.linkedServices = i);
-		AddOption(new QuietNameOption(), (args, i) => args.quiet = i);
 	}
 
 	public override async Task Handle(NewStorageCommandArgs args)
 	{
-		// first, create the project...
-
-		bool ignoreSln = !string.IsNullOrEmpty(args.outputPath);
-
-		if (!ignoreSln && string.IsNullOrEmpty(args.slnPath))
-		{
-			// we can make some best-effort attempts to find the .sln file.
-			// 1. if there is exactly 1 .sln file in our current directly, use that.
-
-			var files = Directory.GetFiles(args.AppContext.WorkingDirectory);
-			var slnFiles = files.Where(f => f.EndsWith(".sln")).ToArray();
-			if (slnFiles.Length == 1)
-			{
-				args.slnPath = slnFiles[0];
-			}
-		}
-
-		if (!ignoreSln && string.IsNullOrEmpty(args.slnPath))
-		{
-			throw new CliException($"Was not able to infer sln file, please provide one with --sln.",
-				Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_SOLUTION_NOT_FOUND, true);
-		}
-
-		if (!ignoreSln && !File.Exists(args.slnPath))
-		{
-			string correctSlnPath = string.Empty;
-			string dir = Path.GetDirectoryName(args.slnPath);
-			if (!string.IsNullOrWhiteSpace(dir))
-			{
-				var files = Directory.GetFiles(dir);
-				var slnFiles = files.Where(f => f.EndsWith(".sln")).ToArray();
-				if (slnFiles.Length == 1)
-				{
-					correctSlnPath = slnFiles[0];
-				}
-			}
-
-			var exception = new CliException($"No sln file found at path=[{args.slnPath}]",
-				Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_SOLUTION_NOT_FOUND, true,
-				string.IsNullOrWhiteSpace(correctSlnPath) ? null : $"Try using \"{correctSlnPath}\" as --sln option value");
-
-			throw exception;
-		}
-
-		var path = ignoreSln ? args.outputPath : args.slnPath;
+		await args.CreateConfigIfNeeded(_initCommand);
+		var newMicroserviceInfo = await args.ProjectService.CreateNewStorage(args);
 		Log.Information(
-			$"Registering local project... 'beam services register --id {args.storageName} --type EmbeddedMongoDb'");
-		var storageDef = await args.BeamoLocalSystem.AddDefinition_EmbeddedMongoDb(args.storageName, "mongo:latest",
-			args.ProjectService.GeneratePathForProject(path, args.storageName),
+			$"Registering local project... 'beam services register --id {args.ProjectName} --type EmbeddedMongoDb'");
+
+		var storageDef = await args.BeamoLocalSystem.AddDefinition_EmbeddedMongoDb(args.ProjectName, "mongo:latest",
+			args.ConfigService.GetRelativePath(newMicroserviceInfo.ServicePath),
 			CancellationToken.None);
 
 		string[] dependencies = null;
-		if ((args.linkedServices == null || args.linkedServices.Count == 0) && !args.quiet)
+		if ((args.linkedServices == null || args.linkedServices.Count == 0) && !args.Quiet)
 		{
 			dependencies = GetChoicesFromPrompt(args.BeamoLocalSystem);
 		}
@@ -112,7 +59,6 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 		}
 
 		// add the project itself
-		_ = await args.ProjectService.CreateNewStorage(args.slnPath, args.outputPath, args.storageName, args.quiet);
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
 
 		if (dependencies == null)
@@ -122,7 +68,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IEmptyResult
 		{
 			if (args.BeamoLocalSystem.BeamoManifest.TryGetDefinition(dependency, out var dependencyDefinition))
 			{
-				Log.Information("Adding {ArgsStorageName} reference to {Dependency}. ", args.storageName, dependency);
+				Log.Information("Adding {ArgsStorageName} reference to {Dependency}. ", args.ProjectName, dependency);
 				await args.BeamoLocalSystem.AddProjectDependency(dependencyDefinition, storageDef);
 			}
 		}

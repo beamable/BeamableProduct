@@ -12,6 +12,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string cid;
 		/// <summary>Pid to use; will default to whatever is in the file system</summary>
 		public string pid;
+		/// <summary>When true, skip input waiting and use defaults</summary>
+		public bool quiet;
 		/// <summary>The host endpoint for beamable</summary>
 		public string host;
 		/// <summary>Refresh token to use for the requests</summary>
@@ -53,6 +55,11 @@ namespace Beamable.Editor.BeamCli.Commands
 			{
 				genBeamCommandArgs.Add((("--pid=\"" + this.pid)
 								+ "\""));
+			}
+			// If the quiet value was not default, then add it to the list of args.
+			if ((this.quiet != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--quiet=" + this.quiet));
 			}
 			// If the host value was not default, then add it to the list of args.
 			if ((this.host != default(string)))

@@ -57,18 +57,24 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 	}
 
 
-	static async Task RunService(RunProjectCommandArgs args, string serviceName, HttpMicroserviceLocalProtocol service, CancellationTokenSource tokenSource)
+	static async Task RunService(RunProjectCommandArgs args, string serviceName, HttpMicroserviceLocalProtocol protocol, CancellationTokenSource tokenSource)
 	{
 
-		Log.Debug($"Found service definition, ctx=[{service.DockerBuildContextPath}] dockerfile=[{service.RelativeDockerfilePath}]");
-		var dockerfilePath = Path.Combine(args.ConfigService.GetRelativePath(service.DockerBuildContextPath), service.RelativeDockerfilePath);
-		var projectPath = Path.GetDirectoryName(dockerfilePath);
+		var service = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.FirstOrDefault(x => x.BeamoId == serviceName);
+		if (service == null)
+		{
+			throw new CliException($"service does not exist, service=[{serviceName}]");
+		}
+		
+		var projectPath = args.ConfigService.BeamableRelativeToExecutionRelative(service.ProjectDirectory);
+		Log.Debug("Found service definition, ctx=[{ServiceDockerBuildContextPath}] projectPath=[{ProjectPath}]", service.ProjectDirectory, projectPath);
+
 		var logPath = Path.Combine(args.ConfigService.ConfigDirectoryPath, "temp", "logs", $"{serviceName}-{DateTimeOffset.Now.ToUnixTimeMilliseconds()}-logs.txt");
 		Log.Debug($"service path=[{projectPath}]");
 
 		var watchPart = args.watch
 			? $"watch --project {projectPath} run"
-			: "run";
+			: $"run --project {projectPath}";
 		var commandStr = $"{watchPart}";
 
 		/* dotnet watch has odd semantics around process exiting...

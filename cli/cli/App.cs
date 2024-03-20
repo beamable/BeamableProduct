@@ -13,6 +13,7 @@ using cli.Content.Tag;
 using cli.Docs;
 using cli.Dotnet;
 using cli.Notifications;
+using cli.Options;
 using cli.Services;
 using cli.Services.Content;
 using cli.Unreal;
@@ -168,6 +169,7 @@ public class App
 		Commands.AddSingleton<DryRunOption>();
 		Commands.AddSingleton<SkipStandaloneValidationOption>();
 		Commands.AddSingleton<CidOption>();
+		Commands.AddSingleton<QuietOption>();
 		Commands.AddSingleton<PidOption>();
 		Commands.AddSingleton<ConfigDirOption>();
 		Commands.AddSingleton<HostOption>();
@@ -186,6 +188,7 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<DryRunOption>());
 			root.AddGlobalOption(provider.GetRequiredService<CidOption>());
 			root.AddGlobalOption(provider.GetRequiredService<PidOption>());
+			root.AddGlobalOption(provider.GetRequiredService<QuietOption>());
 			root.AddGlobalOption(provider.GetRequiredService<HostOption>());
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
@@ -204,15 +207,17 @@ public class App
 
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
 		Commands.AddRootCommand<ProjectCommand>();
+		Commands.AddSubCommand<ProjectNewCommand, CommandGroupArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateOApiCommand, GenerateOApiCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<RunProjectCommand, RunProjectCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<StopProjectCommand, StopProjectCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<BuildProjectCommand, BuildProjectCommandArgs, ProjectCommand>();
-		Commands.AddSubCommand<NewSolutionCommand, NewSolutionCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<NewMicroserviceCommand, NewMicroserviceArgs, ProjectNewCommand>();
+		Commands.AddSubCommand<NewCommonLibraryCommand, CreateCommonLibraryArgs, ProjectNewCommand>();
 		Commands.AddSubCommand<ProjectDependencies, ProjectDependenciesArgs, ProjectCommand>();
 		Commands.AddSubCommand<RegenerateSolutionFilesCommand, RegenerateSolutionFilesCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<ListCommand, ListCommandArgs, ProjectCommand>();
-		Commands.AddSubCommand<NewStorageCommand, NewStorageCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<NewStorageCommand, NewStorageCommandArgs, ProjectNewCommand>();
 		Commands.AddSubCommand<GenerateEnvFileCommand, GenerateEnvFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateIgnoreFileCommand, GenerateIgnoreFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateClientFileCommand, GenerateClientFileCommandArgs, ProjectCommand>();
@@ -226,7 +231,6 @@ public class App
 		Commands.AddSubCommand<ProjectVersionCommand, ProjectVersionCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<ShareCodeCommand, ShareCodeCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<CheckStatusCommand, CheckStatusCommandArgs, ProjectCommand>();
-		Commands.AddSubCommand<AddServiceToSolutionCommand, SolutionCommandArgs, ProjectCommand>();
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Commands.AddRootCommand<BaseRequestGetCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestPutCommand, BaseRequestArgs>();
@@ -316,7 +320,7 @@ public class App
 			CommandProvider.GetService(factoryDescriptor.Interface);
 			var commandType = factoryDescriptor.Interface.GetGenericArguments()[0];
 			var command = (Command)CommandProvider.GetService(commandType);
-			
+
 			commandList.Add(command);
 		}
 
