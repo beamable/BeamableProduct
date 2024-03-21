@@ -62,8 +62,8 @@ else
     dotnet nuget push ./microservice/unityEngineStubs/nupkg/Beamable.UnityEngine.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
     dotnet nuget push ./microservice/unityEngineStubs/nupkg/Beamable.UnityEngine.${VERSION}.snupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
     
-    dotnet nuget push ./microservice/unityenginestubs.addressables/nupkg/Beamable.UnityEngine.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
-    dotnet nuget push ./microservice/unityenginestubs.addressables/nupkg/Beamable.UnityEngine.${VERSION}.snupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
+    dotnet nuget push ./microservice/unityenginestubs.addressables/nupkg/Beamable.UnityEngine.Addressables.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
+    dotnet nuget push ./microservice/unityenginestubs.addressables/nupkg/Beamable.UnityEngine.Addressables.${VERSION}.snupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
 
     dotnet nuget push ./microservice/microservice/bin/Release/Beamable.Microservice.Runtime.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
     dotnet nuget push ./microservice/microservice/bin/Release/Beamable.Microservice.Runtime.${VERSION}.snupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
