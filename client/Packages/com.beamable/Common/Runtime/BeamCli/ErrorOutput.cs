@@ -20,11 +20,11 @@ namespace Beamable.Common.BeamCli
 	[Serializable]
 	public class ErrorOutput
 	{
-		public string stackTrace;
+		public string message;
+		public string invocation;
+		public int exitCode;
 		public string typeName;
 		public string fullTypeName;
-		public string message;
-		public int exitCode;
-		public string invocation;
+		public string stackTrace;
 	}
 }

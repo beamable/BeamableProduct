@@ -30,7 +30,4 @@ namespace UnityEngine.AddressableAssets
       {
       }
    }
-
-   public class Sprite {}
-
 }

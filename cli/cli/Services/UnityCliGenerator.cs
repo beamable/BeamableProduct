@@ -69,7 +69,7 @@ public class UnityCliGenerator : ICliGenerator
 		return files;
 	}
 
-	public static List<Type> RecurseTypes(IEnumerable<Type> inputTypes, bool includeTypesFromInvalidAssembly=false)
+	public static List<Type> RecurseTypes(IEnumerable<Type> inputTypes, bool includeTypesFromInvalidAssembly = false)
 	{
 		var output = new HashSet<Type>();
 		var toExplore = new Queue<Type>();
@@ -85,7 +85,7 @@ public class UnityCliGenerator : ICliGenerator
 			if (output.Contains(curr)) continue; // we have already seen this type.
 
 			var assembly = curr.Assembly;
-			if (assembly != validAssembly) 
+			if (assembly != validAssembly)
 			{
 				if (!includeTypesFromInvalidAssembly)
 				{

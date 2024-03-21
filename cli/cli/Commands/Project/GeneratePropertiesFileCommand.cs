@@ -13,8 +13,8 @@ public class GeneratePropertiesFileCommandArgs : CommandArgs
 
 public class GeneratePropertiesFileCommand : AppCommand<GeneratePropertiesFileCommandArgs>, IEmptyResult
 {
-	
-	
+
+
 	public GeneratePropertiesFileCommand() : base("generate-properties", "Generates a Directory.Build.props file with the beam path and solution dir")
 	{
 	}
@@ -27,7 +27,7 @@ public class GeneratePropertiesFileCommand : AppCommand<GeneratePropertiesFileCo
 			(args, i) => args.BeamPath = i);
 		AddArgument(new Argument<string>("solution-dir", description: "The solution path to be used"),
 			(args, i) => args.SolutionDir = i);
-		
+
 		AddOption(new Option<string>("--build-dir", description: "A path relative to the given solution directory, that will be used to store the projects /bin and /obj directories. Note: the given path will have the project's assembly name and the bin or obj folder appended"),
 			(args, i) => args.RelativeBuildDir = i);
 	}
@@ -38,14 +38,15 @@ public class GeneratePropertiesFileCommand : AppCommand<GeneratePropertiesFileCo
 		{
 			throw new CliException($"Output path argument passed does not exist. path=[{args.OutputPath}]");
 		}
-		
+
 		const string buildDirFlag = "BUILD_DIR_OPTIONS";
-		
+
 		// this line could be used on the second propertyGroup to only apply those values to project that are considered beamable projects.
 		//  however, this won't work until we are capturing all referenced projects as well.
 		//  Condition="$(BeamableServiceIds.Contains('$(MSBuildProjectName)|'))"
-		
+
 		var BeamableServiceIds = string.Join("|", args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Select(x => x.BeamoId)) + "|";
+
 		string fileContents = @$"
 <Project>
 	<PropertyGroup>
@@ -65,7 +66,7 @@ public class GeneratePropertiesFileCommand : AppCommand<GeneratePropertiesFileCo
 		var buildDirXml = "";
 		if (!string.IsNullOrEmpty(args.RelativeBuildDir))
 		{
-			
+
 			var objDir = Path.Combine(args.RelativeBuildDir, "$(MSBuildProjectName)", "obj");
 			var binDir = Path.Combine(args.RelativeBuildDir, "$(MSBuildProjectName)", "bin");
 			Log.Verbose("obj " + objDir);
@@ -78,10 +79,10 @@ public class GeneratePropertiesFileCommand : AppCommand<GeneratePropertiesFileCo
 		}
 
 		fileContents = fileContents.Replace(buildDirFlag, buildDirXml);
-		
+
 		var path = Path.Combine(args.OutputPath, "Directory.Build.props");
 		File.WriteAllText(path, fileContents);
-		
+
 		return Task.CompletedTask;
 	}
 }
