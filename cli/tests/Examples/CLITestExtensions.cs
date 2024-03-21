@@ -16,7 +16,7 @@ public class CLITestExtensions : CLITest
 	protected string cid = "123";
 	protected string pid = "456";
 
-	protected void SetupMocks(bool mockAlias=true, bool mockAuth=true, bool mockRealms=true)
+	protected void SetupMocks(bool mockAlias = true, bool mockAuth = true, bool mockRealms = true)
 	{
 		base.Setup();
 		_serilogLevel.MinimumLevel = LogEventLevel.Verbose;
@@ -27,7 +27,8 @@ public class CLITestExtensions : CLITest
 				mock.Setup(x => x.Resolve(alias))
 					.ReturnsPromise(new AliasResolve
 					{
-						Alias = new OptionalString(alias), Cid = new OptionalString("123")
+						Alias = new OptionalString(alias),
+						Cid = new OptionalString("123")
 					})
 					.Verifiable();
 			});
@@ -38,7 +39,9 @@ public class CLITestExtensions : CLITest
 				mock.Setup(x => x.Login(userName, password, false, false))
 					.ReturnsPromise(new TokenResponse
 					{
-						refresh_token = "refresh", access_token = "access", token_type = "token"
+						refresh_token = "refresh",
+						access_token = "access",
+						token_type = "token"
 					})
 					.Verifiable();
 			});

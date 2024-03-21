@@ -52,7 +52,7 @@ public class BeamProjectNewFlows : CLITestExtensions
 
 		#endregion
 	}
-	
+
 	[Test]
 	public void NewProject_AutoInit_NoSlnConfig_PassFlags()
 	{
@@ -93,7 +93,7 @@ public class BeamProjectNewFlows : CLITestExtensions
 
 		#endregion
 	}
-	
+
 	[Test]
 	public void NewProject_AutoInit_SlnPathInLocalFolder()
 	{
@@ -139,8 +139,8 @@ public class BeamProjectNewFlows : CLITestExtensions
 
 		#endregion
 	}
-	
-	
+
+
 	[Test]
 	public void NewProject_AutoInit_NewSlnPathInSubFolder()
 	{
@@ -187,7 +187,7 @@ public class BeamProjectNewFlows : CLITestExtensions
 
 		#endregion
 	}
-	
+
 	[Test]
 	public void NewProject_UsingExistingInit_NoSlnConfig()
 	{
@@ -199,16 +199,16 @@ public class BeamProjectNewFlows : CLITestExtensions
 		Ansi.Input.PushTextWithEnter(password); // enter password
 		Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the game
 		Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the realm
-		
+
 		const string serviceName = "Example";
 
 		#endregion
 
 		#region Act
-		
+
 		Run("init", "--save-to-file");
 		ResetConfigurator();
-		
+
 		Run("project", "new", "service", serviceName, "--quiet");
 
 		#endregion
@@ -218,7 +218,7 @@ public class BeamProjectNewFlows : CLITestExtensions
 		// there should a .sln file
 		Assert.That(File.Exists($"{serviceName}/{serviceName}.sln"),
 			$"There must be an {serviceName}/{serviceName}.sln file ");
-		
+
 		// there should a .beamable folder
 		Assert.That(File.Exists(".beamable/connection-configuration.json"), "there must be a config defaults file after beam init.");
 
@@ -238,7 +238,7 @@ public class BeamProjectNewFlows : CLITestExtensions
 
 		#endregion
 	}
-	
+
 	[Test]
 	public void NewProject_UsingExistingInit_NoSlnConfig_AddSecondWithExistingSln()
 	{
@@ -250,17 +250,17 @@ public class BeamProjectNewFlows : CLITestExtensions
 		Ansi.Input.PushTextWithEnter(password); // enter password
 		Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the game
 		Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the realm
-		
+
 		const string serviceName = "Example";
 		const string secondServiceName = "Tuna";
 
 		#endregion
 
 		#region Act
-		
+
 		Run("init", "--save-to-file");
 		ResetConfigurator();
-		
+
 		Run("project", "new", "service", serviceName, "--quiet");
 		ResetConfigurator();
 
@@ -273,12 +273,12 @@ public class BeamProjectNewFlows : CLITestExtensions
 		// there should a .sln file
 		Assert.That(File.Exists($"{serviceName}/{serviceName}.sln"),
 			$"There must be an {serviceName}/{serviceName}.sln file ");
-		
+
 		Assert.That(File.Exists($"{serviceName}/services/{serviceName}/{serviceName}.csproj"),
 			"the first service needs to have a csproj");
 		Assert.That(File.Exists($"{serviceName}/services/{secondServiceName}/{secondServiceName}.csproj"),
 			"the second service needs to have a csproj");
-		
+
 		// there should a .beamable folder
 		Assert.That(File.Exists(".beamable/connection-configuration.json"), "there must be a config defaults file after beam init.");
 
@@ -304,8 +304,8 @@ public class BeamProjectNewFlows : CLITestExtensions
 
 		#endregion
 	}
-	
-	
+
+
 	[TestCase("Example", "Data")]
 	public void NewProject_UsingExistingInit_NoSlnConfig_AddStorageToExistingSln(string serviceName, string storageName)
 	{
@@ -317,15 +317,15 @@ public class BeamProjectNewFlows : CLITestExtensions
 		Ansi.Input.PushTextWithEnter(password); // enter password
 		Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the game
 		Ansi.Input.PushKey(ConsoleKey.Enter); // hit enter to pick the realm
-		
+
 
 		#endregion
 
 		#region Act
-		
+
 		Run("init", "--save-to-file");
 		ResetConfigurator();
-		
+
 		Run("project", "new", "service", serviceName, "--quiet");
 		ResetConfigurator();
 
@@ -338,12 +338,12 @@ public class BeamProjectNewFlows : CLITestExtensions
 		// there should a .sln file
 		Assert.That(File.Exists($"{serviceName}/{serviceName}.sln"),
 			$"There must be an {serviceName}/{serviceName}.sln file ");
-		
+
 		Assert.That(File.Exists($"{serviceName}/services/{serviceName}/{serviceName}.csproj"),
 			"the first service needs to have a csproj");
 		Assert.That(File.Exists($"{serviceName}/services/{storageName}/{storageName}.csproj"),
 			"the second service needs to have a csproj");
-		
+
 		// there should a .beamable folder
 		Assert.That(File.Exists(".beamable/connection-configuration.json"), "there must be a config defaults file after beam init.");
 
@@ -367,7 +367,7 @@ public class BeamProjectNewFlows : CLITestExtensions
 
 		// the service should have a reference to the storage
 		var csProjPath = $"{serviceName}/services/{serviceName}/{serviceName}.csproj";
-		Assert.That(File.Exists(csProjPath), 
+		Assert.That(File.Exists(csProjPath),
 			$"there should be a csproj at {csProjPath}");
 		var csProjContent = File.ReadAllText(csProjPath);
 		Assert.That(csProjContent.Contains($"<ProjectReference Include=\"..\\{storageName}\\{storageName}.csproj\" />"),
@@ -377,5 +377,5 @@ public class BeamProjectNewFlows : CLITestExtensions
 
 		#endregion
 	}
-	
+
 }
