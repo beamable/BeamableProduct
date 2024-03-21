@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.19.16]
 ### Added
 - `AssumeNewUser` replaced `AssumeUser`, and offers memory usage improvements and extended configurability. 
+- `Beamable.UnityEngine.Addressables` exists and contains mock addressable types that used to exist in `Beamable.UnityEngine`, allowing Standalone Microservice projects to properly reference Addressable types in Unity.
 
 ### Changed
 - `AssumeUser` is obsolete, and `AssumeNewUser` should be used instead.
