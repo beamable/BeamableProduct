@@ -27,6 +27,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\..\..\..\microservice\unityenginestubs.addressables\unityenginestubs.addressables.csproj" />
         <ProjectReference Include="..\..\..\..\microservice\unityEngineStubs\unityenginestubs.csproj" />
     </ItemGroup>
 
