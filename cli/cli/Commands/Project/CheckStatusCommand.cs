@@ -21,6 +21,7 @@ public class ServiceDiscoveryEvent
 	public bool isContainer;
 	public int healthPort;
 	public string containerId;
+	public string status;
 }
 
 public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, ServiceDiscoveryEvent>
@@ -59,7 +60,26 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, ServiceD
 			}
 			else
 			{
-				Log.Information($"{evt.service} is available prefix=[{evt.prefix}] docker=[{evt.isContainer}]");
+				if (DiscoveryStatusUtil.TryGetStatusFromString(evt.status, out var status))
+				{
+					switch (status)
+					{
+						case DiscoveryStatus.Starting:
+							Log.Information($"{evt.service} is starting at prefix=[{evt.prefix}] docker=[{evt.isContainer}]");
+							break;
+						case DiscoveryStatus.Stopping:
+							Log.Information($"{evt.service} is stopping at prefix=[{evt.prefix}] docker=[{evt.isContainer}]");
+							break;
+						case DiscoveryStatus.AcceptingTraffic:
+							Log.Information($"{evt.service} is accepting traffic at prefix=[{evt.prefix}] docker=[{evt.isContainer}]");
+							break;
+					}
+				}
+				else
+				{
+					Log.Information($"{evt.service} is broadcasing at prefix=[{evt.prefix}] docker=[{evt.isContainer}]");
+				}
+				
 			}
 			SendResults(evt);
 		}

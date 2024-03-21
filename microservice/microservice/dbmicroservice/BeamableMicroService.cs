@@ -28,6 +28,7 @@ using Beamable.Common.Api.Realms;
 using Beamable.Common.Reflection;
 using Beamable.Server.Api.Usage;
 using microservice.Common;
+using microservice.dbmicroservice;
 using Newtonsoft.Json;
 using Serilog;
 using Microsoft.Extensions.DependencyInjection;
@@ -195,6 +196,8 @@ namespace Beamable.Server
          }
 
          await SetupWebsocket(socket, _serviceAttribute.EnableEagerContentLoading);
+         
+         Provider.GetService<IDiscoveryService>().SetStatus(DiscoveryStatus.AcceptingTraffic);
          if (!_serviceAttribute.EnableEagerContentLoading)
          {
 	         var _ = contentService.Init();
@@ -228,6 +231,7 @@ namespace Beamable.Server
 
          // need to wait for all tasks to complete...
          Log.Debug("Shutdown started... {runningTaskCount} tasks running.", _runningTaskTable.Count);
+         Provider.GetService<IDiscoveryService>().SetStatus(DiscoveryStatus.Stopping);
 
          var sw = new System.Diagnostics.Stopwatch();
          sw.Start();
