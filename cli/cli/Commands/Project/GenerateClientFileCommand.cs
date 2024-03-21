@@ -103,7 +103,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 		Log.Verbose("finished loading all dll files.");
 
 		#endregion
-		
+
 		// need to turn the crank loading types until the spigot bleeds dry.
 		var startCount = allAssemblies.Count;
 		var finalCount = 0;
