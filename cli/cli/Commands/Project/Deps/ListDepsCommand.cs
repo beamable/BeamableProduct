@@ -43,10 +43,10 @@ public class ListDepsCommand : AtomicCommand<ListDepsCommandArgs, ListDepsComman
 		List<string> servicesToShow;
 		ListDepsCommandResults result = new();
 		var allServicesDefinitions = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions;
-		
+
 		if (listAllServices)
 		{
-			
+
 			servicesToShow = allServicesDefinitions.Where(sd => sd.Protocol == BeamoProtocolType.HttpMicroservice)
 				.Select(sd => sd.BeamoId).ToList();
 		}
@@ -57,15 +57,15 @@ public class ListDepsCommand : AtomicCommand<ListDepsCommandArgs, ListDepsComman
 			{
 				Log.Error("Specified service name does not exist");
 			}
-			
-			servicesToShow = new List<string>(){args.ServiceName};
+
+			servicesToShow = new List<string>() { args.ServiceName };
 		}
 
 		if (servicesToShow.Count == 0)
 		{
 			Log.Information("There are no microservices to show dependencies at the moment.");
 		}
-		
+
 		result.Services = new List<ServiceDependenciesPair>();
 		foreach (string service in servicesToShow)
 		{

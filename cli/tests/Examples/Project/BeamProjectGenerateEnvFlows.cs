@@ -22,7 +22,7 @@ public class BeamProjectGenerateEnvFlows : CLITestExtensions
 	{
 		#region Arrange
 		const string secret = "secret";
-		
+
 		var newFlow = new BeamProjectNewFlows();
 		newFlow.NewProject_AutoInit_NoSlnConfig(serviceName);
 		ResetConfigurator();
@@ -30,7 +30,7 @@ public class BeamProjectGenerateEnvFlows : CLITestExtensions
 		// step into newly created beamable folder...
 		Directory.SetCurrentDirectory(serviceName);
 		Directory.SetCurrentDirectory(executeFrom);
-		
+
 		// mock call to get secret,
 		Mock<IRealmsApi>(mock =>
 		{
@@ -51,23 +51,23 @@ public class BeamProjectGenerateEnvFlows : CLITestExtensions
 				})
 				.Verifiable();
 		});
-		
-		
+
+
 		#endregion
-		
+
 		#region Act
-		
-		
+
+
 		Run("project", "generate-env", serviceName, ".", "--auto-deploy");
 
 		#endregion
-		
+
 		#region Assert
-		
+
 		// there should be an .env file
-		Assert.That( File.Exists($".env"),
+		Assert.That(File.Exists($".env"),
 			"there must be an .env file in the current directory.");
-		
+
 		// the contents of the file should include various ENV secrets...
 		var envContent = File.ReadAllText(".env");
 		Assert.That(envContent.Contains($"CID={cid}"),
@@ -87,16 +87,16 @@ public class BeamProjectGenerateEnvFlows : CLITestExtensions
 
 		#endregion
 	}
-	
+
 	[Test]
 	[TestCase("Example", "DataCLITest", ".")]
-	[TestCase("Example", "DataCLITest","services")]
-	[TestCase("Example", "DataCLITest","services/Example")]
+	[TestCase("Example", "DataCLITest", "services")]
+	[TestCase("Example", "DataCLITest", "services/Example")]
 	public async Task GenerateEnv_WithADep(string serviceName, string storageName, string executeFrom)
 	{
 		#region Arrange
 		const string secret = "secret";
-		
+
 		var newFlow = new BeamProjectNewFlows();
 		newFlow.NewProject_UsingExistingInit_NoSlnConfig_AddStorageToExistingSln(serviceName, storageName);
 		ResetConfigurator();
@@ -104,7 +104,7 @@ public class BeamProjectGenerateEnvFlows : CLITestExtensions
 		// step into newly created beamable folder...
 		Directory.SetCurrentDirectory(serviceName);
 		Directory.SetCurrentDirectory(executeFrom);
-		
+
 		// mock call to get secret,
 		Mock<IRealmsApi>(mock =>
 		{
@@ -125,11 +125,11 @@ public class BeamProjectGenerateEnvFlows : CLITestExtensions
 				})
 				.Verifiable();
 		});
-		
+
 		// Get list of all containers
 		var containers = await _dockerClient.Containers.ListContainersAsync(
 			new ContainersListParameters { All = true });
-		
+
 		// Check if the container with the specified name is running
 		var storageContainerName = $"/{storageName}_mongoDb";
 		var matchingContainer = containers.FirstOrDefault(c => c.Names.Contains(storageContainerName));
@@ -138,26 +138,26 @@ public class BeamProjectGenerateEnvFlows : CLITestExtensions
 			//Assert.IsFalse(isRunning, $"Container '{storageContainerName}' should not be running yet.");
 			await _dockerClient.Containers.StopContainerAsync(matchingContainer.ID, new ContainerStopParameters());
 		}
-		
+
 		#endregion
-		
+
 		#region Act
-		
+
 		Run("project", "generate-env", serviceName, ".", "--auto-deploy");
-		
+
 		#endregion
-		
+
 		#region Assert
-		
+
 		containers = await _dockerClient.Containers.ListContainersAsync(
 			new ContainersListParameters { All = true });
 		var isRunning = containers.Any(c => c.Names.Contains(storageContainerName));
 		Assert.IsTrue(isRunning, $"Container '{storageName}' should be running, now");
-		
+
 		// there should be an .env file
-		Assert.That( File.Exists($".env"),
+		Assert.That(File.Exists($".env"),
 			"there must be an .env file in the current directory.");
-		
+
 		// the contents of the file should include various ENV secrets...
 		var envContent = File.ReadAllText(".env");
 		Assert.That(envContent.Contains($"CID={cid}"),
@@ -174,7 +174,7 @@ public class BeamProjectGenerateEnvFlows : CLITestExtensions
 			$"the env file must have a BEAM_INSTANCE_COUNT. Content=[{envContent}]");
 		Assert.That(envContent.Contains($"HOST=wss://api.beamable.com/socket"),
 			$"the env file must have a HOST. Content=[{envContent}]");
-		
+
 		containers = await _dockerClient.Containers.ListContainersAsync(
 			new ContainersListParameters { All = true });
 		matchingContainer = containers.FirstOrDefault(c => c.Names.Contains(storageContainerName));

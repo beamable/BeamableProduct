@@ -6,7 +6,7 @@ namespace cli.Commands.Project.Deps;
 
 public class DepsCommandArgs : CommandArgs
 {
-	
+
 }
 
 public class DepsCommand : AppCommand<DepsCommandArgs>, IEmptyResult

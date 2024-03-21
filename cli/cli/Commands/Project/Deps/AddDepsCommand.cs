@@ -10,7 +10,7 @@ public class AddDepsCommandArgs : CommandArgs
 	public string Dependency;
 }
 
-public class AddDepsCommand :  AppCommand<AddDepsCommandArgs>, IEmptyResult
+public class AddDepsCommand : AppCommand<AddDepsCommandArgs>, IEmptyResult
 {
 	public AddDepsCommand() : base("add", "Add a given storage as a dependency of a microservice")
 	{

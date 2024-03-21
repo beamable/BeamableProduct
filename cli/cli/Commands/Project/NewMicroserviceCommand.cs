@@ -64,34 +64,34 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 						args.SlnFilePath += ".sln";
 					}
 				}
-				
+
 			});
 
 	}
-	
+
 	/// <summary>
 	/// Register common solution based options
 	/// </summary>
 	/// <param name="command"></param>
 	/// <typeparam name="T"></typeparam>
-	public static void Configure<T>(AppCommand<T> command) 
+	public static void Configure<T>(AppCommand<T> command)
 		where T : SolutionCommandArgs
 	{
 		ConfigureSolutionFlag(command);
 
 		command.AddOption(new Option<string>(
-				name: "--service-directory", 
+				name: "--service-directory",
 				description: "Relative path to directory where project should be created. Defaults to \"SOLUTION_DIR/services\""),
 			(args, i) => args.ServicesBaseFolderPath = i);
-		
+
 		command.AddOption(new SpecificVersionOption(), (args, i) => args.SpecifiedVersion = i);
-		
+
 		command.AddOption(new Option<bool>(
-				name: "--disable", 
+				name: "--disable",
 				description: "Created service by default would not be published"),
 			(args, i) => args.Disabled = i);
 	}
-	
+
 	public async Promise CreateConfigIfNeeded(InitCommand command)
 	{
 		if (ConfigService.DirectoryExists.GetValueOrDefault(false))
@@ -102,8 +102,8 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 		{
 			throw CliExceptions.CONFIG_DOES_NOT_EXISTS;
 		}
-		
-		
+
+
 		var initArgs = Create<InitCommandArgs>();
 		initArgs.saveToFile = true;
 		var oldDir = initArgs.ConfigService.WorkingDirectory;
@@ -112,9 +112,9 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 		initArgs.ConfigService.SetTempWorkingDir(oldDir);
 		initArgs.ConfigService.SetBeamableDirectory(this.GetSlnDirectory());
 
-		
+
 	}
-	
+
 	// public void 
 }
 
@@ -169,15 +169,15 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 	public override async Task Handle(NewMicroserviceArgs args)
 	{
 		await args.CreateConfigIfNeeded(_initCommand);
-		
+
 		var newMicroserviceInfo = await args.ProjectService.CreateNewMicroservice(args);
 
 		var sd = await args.ProjectService.AddDefinitonToNewService(args, newMicroserviceInfo);
-		
+
 		var service = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[sd.BeamoId];
 		await args.ProjectService.UpdateDockerFileWithCommonProject(args.ConfigService, args.ProjectName, service.RelativeDockerfilePath,
 			service.DockerBuildContextPath);
-	
+
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
 		args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 
