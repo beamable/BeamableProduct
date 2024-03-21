@@ -290,6 +290,52 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 
+		
+		public async Promise UpdateServiceReferences(string serviceName, List<string> assemblyReferencesNames)
+		{
+			LogVerbose($"Starting updating references");
+			//get a list of all references of that service
+			var service = _services.FirstOrDefault(s => s.name == serviceName);
+			if (service == null)
+			{
+				return;
+			}
+
+			LogVerbose($"Reading all references from service: {serviceName}");
+			var results = await _dotnetService.Run($"list {service.CsprojPath} reference");
+
+			//filter that list with only the generated projs
+			var depsPaths = results.Select(s => s.Replace(Environment.NewLine, string.Empty)).Where(line => line.EndsWith(".csproj")).ToList();
+			var correctedPaths = depsPaths.Select(path => path.Replace("\\", "/")).ToList();
+			var existinReferences = correctedPaths.Where(path => path.Contains(CsharpProjectUtil.PROJECT_NAME_PREFIX)).ToList();
+
+			
+			//remove all generated projs references
+			LogVerbose($"Removing all references from service: {serviceName}");
+			foreach (string reference in existinReferences)
+			{
+				var referenceName = Path.GetFileNameWithoutExtension(reference).Replace(CsharpProjectUtil.PROJECT_NAME_PREFIX, String.Empty);
+				var refPathToRemove = CsharpProjectUtil.GenerateCsharpProjectFilename(referenceName);
+				LogVerbose($"Removing reference: {refPathToRemove}");
+				await _dotnetService.Run($"remove {service.CsprojPath} reference {refPathToRemove}");
+			}
+
+			//add all the references
+			foreach (var newRefs in assemblyReferencesNames)
+			{
+				var newRefCsprojPath = CsharpProjectUtil.GenerateCsharpProjectFilename(newRefs);
+				if (!File.Exists(newRefCsprojPath))
+				{
+					LogVerbose($"The project file for reference {newRefs} does not exist yet");
+					continue;
+				}
+				LogVerbose($"Adding the reference: {newRefs}");
+				await _dotnetService.Run($"add {service.CsprojPath} reference {newRefCsprojPath}");
+			}
+			
+			LogVerbose($"Finished updating references");
+		}
+
 		public Promise RunStandaloneMicroservice(string id)
 		{
 			ProjectRunWrapper runCommand = _cli.ProjectRun(new ProjectRunArgs()
