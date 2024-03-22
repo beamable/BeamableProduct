@@ -6,16 +6,20 @@ namespace Beamable.Editor.BeamCli.Commands
 
 	public class ProjectNewStorageArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>The name of the new Microstorage.</summary>
+		/// <summary>Name of the new project</summary>
 		public Beamable.Common.Semantics.ServiceName name;
-		/// <summary>The path to the solution that the Microstorage will be added to</summary>
+		/// <summary>Automatically create a .beamable folder context if no context exists</summary>
+		public bool init;
+		/// <summary>Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. By default, when no value is provided, the .sln path will be <name>/<name>.sln</summary>
 		public string sln;
-		/// <summary>The path where the storage is going to be created, a new sln is going to be created as well</summary>
-		public string outputPath;
+		/// <summary>Relative path to directory where project should be created. Defaults to "SOLUTION_DIR/services"</summary>
+		public string serviceDirectory;
+		/// <summary>Specifies version of Beamable project dependencies</summary>
+		public string version;
+		/// <summary>Created service by default would not be published</summary>
+		public bool disable;
 		/// <summary>The name of the project to link this storage to</summary>
 		public string[] linkTo;
-		/// <summary>When true, skip input waiting and use defaults</summary>
-		public bool quiet;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -23,17 +27,33 @@ namespace Beamable.Editor.BeamCli.Commands
 			System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
 			// Add the name value to the list of args.
 			genBeamCommandArgs.Add(this.name.ToString());
+			// If the init value was not default, then add it to the list of args.
+			if ((this.init != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--init=" + this.init));
+			}
 			// If the sln value was not default, then add it to the list of args.
 			if ((this.sln != default(string)))
 			{
 				genBeamCommandArgs.Add((("--sln=\"" + this.sln)
 								+ "\""));
 			}
-			// If the outputPath value was not default, then add it to the list of args.
-			if ((this.outputPath != default(string)))
+			// If the serviceDirectory value was not default, then add it to the list of args.
+			if ((this.serviceDirectory != default(string)))
 			{
-				genBeamCommandArgs.Add((("--output-path=\"" + this.outputPath)
+				genBeamCommandArgs.Add((("--service-directory=\"" + this.serviceDirectory)
 								+ "\""));
+			}
+			// If the version value was not default, then add it to the list of args.
+			if ((this.version != default(string)))
+			{
+				genBeamCommandArgs.Add((("--version=\"" + this.version)
+								+ "\""));
+			}
+			// If the disable value was not default, then add it to the list of args.
+			if ((this.disable != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--disable=" + this.disable));
 			}
 			// If the linkTo value was not default, then add it to the list of args.
 			if ((this.linkTo != default(string[])))
@@ -44,11 +64,6 @@ namespace Beamable.Editor.BeamCli.Commands
 					genBeamCommandArgs.Add(("--link-to=" + this.linkTo[i]));
 				}
 			}
-			// If the quiet value was not default, then add it to the list of args.
-			if ((this.quiet != default(bool)))
-			{
-				genBeamCommandArgs.Add(("--quiet=" + this.quiet));
-			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces
 			genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
@@ -57,15 +72,16 @@ namespace Beamable.Editor.BeamCli.Commands
 	}
 	public partial class BeamCommands
 	{
-		public virtual ProjectNewStorageWrapper ProjectNewStorage(ProjectNewStorageArgs newStorageArgs)
+		public virtual ProjectNewStorageWrapper ProjectNewStorage(ProjectNewStorageArgs storageArgs)
 		{
 			// Create a list of arguments for the command
 			System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
 			genBeamCommandArgs.Add("beam");
 			genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
 			genBeamCommandArgs.Add("project");
-			genBeamCommandArgs.Add("new-storage");
-			genBeamCommandArgs.Add(newStorageArgs.Serialize());
+			genBeamCommandArgs.Add("new");
+			genBeamCommandArgs.Add("storage");
+			genBeamCommandArgs.Add(storageArgs.Serialize());
 			// Create an instance of an IBeamCommand
 			Beamable.Common.BeamCli.IBeamCommand command = this._factory.Create();
 			// Join all the command paths and args into one string

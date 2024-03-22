@@ -1,4 +1,3 @@
-using Beamable.Common;
 using cli.Utils;
 using Spectre.Console;
 using System.CommandLine;
@@ -8,7 +7,6 @@ namespace cli.Dotnet;
 public class AddProjectClientOutputCommandArgs : CommandArgs
 {
 	public string path;
-	public bool quiet;
 }
 
 public class AddUnityClientOutputCommand : AppCommand<AddProjectClientOutputCommandArgs>, IEmptyResult
@@ -20,10 +18,6 @@ public class AddUnityClientOutputCommand : AppCommand<AddProjectClientOutputComm
 	public override void Configure()
 	{
 		AddArgument(new Argument<string>("path", "Relative path to the Unity project"), (args, i) => args.path = i);
-
-		var quietOption = new Option<bool>("--quiet", () => false, "When true, automatically accept path suggestions");
-		quietOption.AddAlias("-q");
-		AddOption(quietOption, (i, v) => i.quiet = v);
 	}
 
 	public override Task Handle(AddProjectClientOutputCommandArgs args)
@@ -33,7 +27,7 @@ public class AddUnityClientOutputCommand : AppCommand<AddProjectClientOutputComm
 		var startingDir = args.path;
 		var directory = args.path;
 
-		if (!unityProjectClient.IsValidProjectClientDirectory(ref directory) && !args.quiet)
+		if (!unityProjectClient.IsValidProjectClientDirectory(ref directory) && !args.Quiet)
 		{
 			var expectedUnityParentDirectories = new[]
 			{

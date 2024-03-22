@@ -9,7 +9,6 @@ namespace cli.Version;
 public class VersionInstallCommandArgs : CommandArgs
 {
 	public string version;
-	public bool quiet;
 }
 
 public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>, IStandaloneCommand
@@ -23,10 +22,6 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>, ISta
 	{
 		AddArgument(new Argument<string>("version", () => "latest", "The version of the CLI to install"),
 			(args, i) => args.version = i);
-
-		var option = AddOption(new Option<bool>("--quiet", () => false, "When true, no prompts will be displayed"),
-			(args, i) => args.quiet = i);
-		option.AddAlias("-q");
 	}
 
 	public override async Task Handle(VersionInstallCommandArgs args)
@@ -64,7 +59,7 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>, ISta
 			return;
 		}
 
-		if (!args.quiet)
+		if (!args.Quiet)
 		{
 			var shouldContinue = AnsiConsole.Prompt(new ConfirmationPrompt(
 				$"Are you sure you want to install Beam CLI Version={packageVersion.originalVersion}"));

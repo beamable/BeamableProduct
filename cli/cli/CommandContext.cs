@@ -1,5 +1,6 @@
 using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
+using cli.Options;
 using cli.Services;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
@@ -201,7 +202,7 @@ public interface IAppCommand
 
 public interface IHasArgs<TArgs> where TArgs : CommandArgs
 {
-	
+
 }
 
 public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IAppCommand, IHasArgs<TArgs>
@@ -328,6 +329,7 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IApp
 	protected virtual void BindBaseContext(IServiceProvider provider, TArgs args, BindingContext bindingContext)
 	{
 		args.Dryrun = bindingContext.ParseResult.GetValueForOption(provider.GetRequiredService<DryRunOption>());
+		args.Quiet = bindingContext.ParseResult.GetValueForOption(provider.GetRequiredService<QuietOption>());
 		args.IgnoreStandaloneValidation =
 			bindingContext.ParseResult.GetValueForOption(provider.GetRequiredService<SkipStandaloneValidationOption>());
 	}
