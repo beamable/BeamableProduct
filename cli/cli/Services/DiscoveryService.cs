@@ -43,7 +43,7 @@ public class DiscoveryService
 
 
 		// This doesn't actually block
-		await _localSystem.StartListeningToDockerRaw((beamoId, eventType, raw) =>
+		await _localSystem.StartListeningToDockerRaw(async (beamoId, eventType, raw) =>
 		{
 			// We skip out on non-Microservice containers.
 			var serviceDefinition = _localSystem.BeamoManifest.ServiceDefinitions.FirstOrDefault(sd => sd.BeamoId == beamoId);
@@ -58,8 +58,7 @@ public class DiscoveryService
 			}
 			else
 			{
-				healthPort =Convert.ToInt32(_localSystem.BeamoManifest.EmbeddedMongoDbLocalProtocols[serviceDefinition.BeamoId]
-					.MongoLocalPort);
+				healthPort = Convert.ToInt32( await _localSystem.GetStorageHostPort(_localSystem.BeamoManifest, beamoId));
 			}
 
 			var isRunning = eventType == "start";
