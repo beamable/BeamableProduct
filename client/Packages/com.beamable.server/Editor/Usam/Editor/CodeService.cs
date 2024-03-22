@@ -393,7 +393,7 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 
-		
+
 		public async Promise UpdateServiceReferences(string serviceName, List<string> assemblyReferencesNames)
 		{
 			LogVerbose($"Starting updating references");
@@ -412,7 +412,7 @@ namespace Beamable.Server.Editor.Usam
 			var correctedPaths = depsPaths.Select(path => path.Replace("\\", "/")).ToList();
 			var existinReferences = correctedPaths.Where(path => path.Contains(CsharpProjectUtil.PROJECT_NAME_PREFIX)).ToList();
 
-			
+
 			//remove all generated projs references
 			LogVerbose($"Removing all references from service: {serviceName}");
 			var promises = new List<Promise<List<string>>>();
@@ -421,7 +421,7 @@ namespace Beamable.Server.Editor.Usam
 				var referenceName = Path.GetFileNameWithoutExtension(reference).Replace(CsharpProjectUtil.PROJECT_NAME_PREFIX, String.Empty);
 				var refPathToRemove = CsharpProjectUtil.GenerateCsharpProjectFilename(referenceName);
 				LogVerbose($"Removing reference: {refPathToRemove}");
-				Promise<List<string>> p =_dotnetService.Run($"remove {service.CsprojPath} reference {refPathToRemove}");
+				Promise<List<string>> p = _dotnetService.Run($"remove {service.CsprojPath} reference {refPathToRemove}");
 				promises.Add(p);
 			}
 
@@ -440,7 +440,7 @@ namespace Beamable.Server.Editor.Usam
 				LogVerbose($"Adding the reference: {newRefs}");
 				await _dotnetService.Run($"add {service.CsprojPath} reference {newRefCsprojPath}");
 			}
-			
+
 			LogVerbose($"Finished updating references");
 		}
 
