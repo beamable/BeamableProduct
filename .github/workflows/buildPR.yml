@@ -72,14 +72,15 @@ jobs:
         run: dotnet test --configuration Release --no-restore microservice/microserviceTests
   testCli:
     timeout-minutes: 10
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runners }}
     concurrency:
       group: cli-tests-${{ github.head_ref }}-${{ matrix.dotnet-version }}
       cancel-in-progress: true
     strategy:
       max-parallel: 1
       matrix:
-        dotnet-version: ['6.0.x','7.0.x' ]
+        dotnet-version: ['6.0.x' ]
+        runners: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
