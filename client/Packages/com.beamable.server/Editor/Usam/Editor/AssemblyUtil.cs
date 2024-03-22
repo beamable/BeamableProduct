@@ -40,7 +40,7 @@ namespace Beamable.Server.Editor.Usam
 			{
 				foreach (var reference in service.assemblyReferences)
 				{
-					if (!_nameToAssembly.TryGetValue(reference, out var assembly)) continue;
+					if (!_nameToAssembly.TryGetValue(reference.name, out var assembly)) continue;
 					_referencedAssemblies.Add(assembly);
 					foreach (var subReference in GetDeeplyReferencedAssemblies(assembly))
 					{
