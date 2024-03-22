@@ -11,15 +11,6 @@ namespace Beamable.Server.Editor.Usam
 	{
 		public BeamServiceSignpost data;
 
-		private void OnValidate()
-		{
-			if (!CheckAllValidAssemblies()) return; //TODO: We should show in the asset inspector in case there are invalid references in there
-			
-			List<string> allNames = data.assemblyReferences.Length > 0 ? data.assemblyReferences.Select(rf => rf.name).ToList() : new List<string>();
-			var codeService = BeamEditorContext.Default.ServiceScope.GetService<CodeService>();
-			_ = codeService.UpdateServiceReferences(data.name, allNames);
-		}
-
 		private bool CheckAllValidAssemblies()
 		{
 

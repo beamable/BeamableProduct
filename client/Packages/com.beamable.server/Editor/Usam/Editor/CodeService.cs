@@ -401,7 +401,7 @@ namespace Beamable.Server.Editor.Usam
 			var service = _services.FirstOrDefault(s => s.name == serviceName);
 			if (service == null)
 			{
-				return;
+				throw new ArgumentException($"Invalid service name was passed: {serviceName}");
 			}
 
 			LogVerbose($"Reading all references from service: {serviceName}");
@@ -415,13 +415,18 @@ namespace Beamable.Server.Editor.Usam
 			
 			//remove all generated projs references
 			LogVerbose($"Removing all references from service: {serviceName}");
+			var promises = new List<Promise<List<string>>>();
 			foreach (string reference in existinReferences)
 			{
 				var referenceName = Path.GetFileNameWithoutExtension(reference).Replace(CsharpProjectUtil.PROJECT_NAME_PREFIX, String.Empty);
 				var refPathToRemove = CsharpProjectUtil.GenerateCsharpProjectFilename(referenceName);
 				LogVerbose($"Removing reference: {refPathToRemove}");
-				await _dotnetService.Run($"remove {service.CsprojPath} reference {refPathToRemove}");
+				Promise<List<string>> p =_dotnetService.Run($"remove {service.CsprojPath} reference {refPathToRemove}");
+				promises.Add(p);
 			}
+
+			Promise<List<List<string>>> sequence = Promise.Sequence(promises);
+			await sequence;
 
 			//add all the references
 			foreach (var newRefs in assemblyReferencesNames)
