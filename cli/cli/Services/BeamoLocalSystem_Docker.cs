@@ -159,7 +159,7 @@ public partial class BeamoLocalSystem
 			var volumeResponses = await Task.WhenAll(createdVolumeTasks);
 			foreach (var volumeResponse in volumeResponses)
 			{
-				Log.Debug($"successfully created volume=[{volumeResponse.Name}]");
+				Log.Debug($"successfully created volume=[{volumeResponse.Name}] driver=[{volumeResponse.Driver}] json=[{JsonConvert.SerializeObject(volumeResponse, Formatting.Indented)}]");
 			}
 			
 			BeamoServiceDefinition.BuildVolumes(volumes, out var boundVolumes);

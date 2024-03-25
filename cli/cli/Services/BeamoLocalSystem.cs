@@ -672,7 +672,7 @@ public class BeamoServiceDefinition
 	public static void BuildVolumes(List<DockerVolume> volumes, out List<string> boundVolumes)
 	{
 		boundVolumes = new List<string>(volumes.Count);
-		boundVolumes.AddRange(volumes.Select(v => $"{v.VolumeName}:{v.InContainerPath}"));
+		boundVolumes.AddRange(volumes.Select(v => $"\"{v.VolumeName}\":{v.InContainerPath}"));
 	}
 
 	/// <summary>
