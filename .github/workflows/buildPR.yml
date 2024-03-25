@@ -100,7 +100,7 @@ jobs:
       - name: Build
         run: dotnet build --configuration Release --no-restore cli/tests
       - name: Test
-        run: dotnet test --configuration Release --no-restore cli/tests
+        run: LOG_LEVEL=verbose dotnet test --configuration Release --no-restore cli/tests
   testAllModes:
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
