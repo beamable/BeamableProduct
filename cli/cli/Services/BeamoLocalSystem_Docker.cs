@@ -143,6 +143,7 @@ public partial class BeamoLocalSystem
 				var volumeAlreadyExists = existingVolumeNames.Contains(volume.VolumeName);
 				if (volumeAlreadyExists)
 				{
+					
 					Log.Debug($"volume=[{volume.VolumeName}] for container=[{containerName}] already exists");
 					continue; // hooray!
 				}
@@ -152,13 +153,8 @@ public partial class BeamoLocalSystem
 				var createParameters = new VolumesCreateParameters
 				{
 					Name = volume.VolumeName,
-					DriverOpts = new Dictionary<string, string> { ["device"] = "D", ["type"] = "none" },
 					Labels = new Dictionary<string, string> { ["BEAMABLE_CLI"] = "true" }
 				};
-				if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-				{
-					createParameters.DriverOpts = new Dictionary<string, string>();
-				}
 				Log.Debug($"create parameters=[{JsonConvert.SerializeObject(createParameters, Formatting.Indented)}]");
 				var task = _client.Volumes.CreateAsync(createParameters);
 				
@@ -169,12 +165,33 @@ public partial class BeamoLocalSystem
 			foreach (var volumeResponse in volumeResponses)
 			{
 				Log.Debug($"successfully created volume=[{volumeResponse.Name}] driver=[{volumeResponse.Driver}] json=[{JsonConvert.SerializeObject(volumeResponse, Formatting.Indented)}]");
+				
 			}
 			
+			existingVolumes = await _client.Volumes.ListAsync(new VolumesListParameters { });
+			var localBindMounts = bindMounts.ToList();
+			foreach (var volume in volumes)
+			{
+				var foundVolume = existingVolumes.Volumes.FirstOrDefault(x =>
+					x.Name.ToLowerInvariant() == volume.VolumeName.ToLowerInvariant());
+				if (foundVolume == null)
+				{
+					Log.Warning($"could not find named volume=[{volume.VolumeName}]");
+					continue;
+				}
+				localBindMounts.Add(new DockerBindMount
+				{
+					LocalPath = foundVolume.Mountpoint,
+					IsReadOnly = false,
+					InContainerPath = volume.InContainerPath
+				});
+			}
+			// volumes.Clear();
+			
 			BeamoServiceDefinition.BuildVolumes(volumes, out var boundVolumes);
-			BeamoServiceDefinition.BuildBindMounts(bindMounts, out var boundMounts);
+			BeamoServiceDefinition.BuildBindMounts(localBindMounts, out var boundMounts);
 			var allBinds = new List<string>(boundVolumes.Count + boundMounts.Count);
-			allBinds.AddRange(boundVolumes);
+			// allBinds.AddRange(boundVolumes);
 			allBinds.AddRange(boundMounts);
 			hostConfig.Binds = allBinds;
 		}
