@@ -10,6 +10,7 @@ using ICSharpCode.SharpZipLib.Tar;
 using Newtonsoft.Json;
 using Serilog;
 using System.Collections.Concurrent;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -148,10 +149,18 @@ public partial class BeamoLocalSystem
 
 				// uh oh, we need to create this volume, first.
 				Log.Debug($"volume=[{volume.VolumeName}] for container=[{containerName}] does not exist, so creating it manually.");
-				var task = _client.Volumes.CreateAsync(new VolumesCreateParameters
+				var createParameters = new VolumesCreateParameters
 				{
-					Name = volume.VolumeName, Labels = new Dictionary<string, string> { ["BEAMABLE_CLI"] = "true" }
-				});
+					Name = volume.VolumeName,
+					DriverOpts = new Dictionary<string, string> { ["device"] = "D", ["type"] = "none" },
+					Labels = new Dictionary<string, string> { ["BEAMABLE_CLI"] = "true" }
+				};
+				if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+				{
+					createParameters.DriverOpts = new Dictionary<string, string>();
+				}
+				Log.Debug($"create parameters=[{JsonConvert.SerializeObject(createParameters, Formatting.Indented)}]");
+				var task = _client.Volumes.CreateAsync(createParameters);
 				
 				createdVolumeTasks.Add(task);
 			}
