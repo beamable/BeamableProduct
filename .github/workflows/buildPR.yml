@@ -81,6 +81,8 @@ jobs:
         dotnet-version: ['6.0.x' ]
         runners: [ubuntu-latest, windows-latest]
     steps:
+      - name: Check Docker 
+        run: docker version
       - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3
