@@ -78,7 +78,7 @@ jobs:
       group: cli-tests-${{ github.head_ref }}-${{ matrix.dotnet-version }}-${{matrix.runners}}
       cancel-in-progress: true
     strategy:
-      max-parallel: 1
+      max-parallel: 2
       matrix:
         dotnet-version: ['6.0.x' ]
         runners: [ubuntu-latest, windows-latest]

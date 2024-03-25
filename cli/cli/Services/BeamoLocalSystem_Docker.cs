@@ -129,6 +129,11 @@ public partial class BeamoLocalSystem
 
 		// Build BindMounts and Volumes: https://stackoverflow.com/a/58916037
 		{
+			volumes = volumes.Select(v => v with
+			{
+				// on windows, it appears that volume names must be lower case to work consistently.
+				VolumeName = v.VolumeName.ToLowerInvariant()
+			}).ToList();
 			var existingVolumes = await _client.Volumes.ListAsync(new VolumesListParameters { });
 			var existingVolumeNames = new HashSet<string>(existingVolumes.Volumes.Select(v => v.Name));
 			var createdVolumeTasks = new List<Task<VolumeResponse>>();

@@ -52,6 +52,7 @@ public class CLITest
 
 		TestId = Guid.NewGuid().ToString();
 		
+		Directory.SetCurrentDirectory(OriginalWorkingDir);
 		Directory.CreateDirectory(WorkingDir);
 		Directory.SetCurrentDirectory(WorkingDir);
 
