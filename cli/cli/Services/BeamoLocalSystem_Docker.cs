@@ -165,7 +165,6 @@ public partial class BeamoLocalSystem
 			foreach (var volumeResponse in volumeResponses)
 			{
 				Log.Debug($"successfully created volume=[{volumeResponse.Name}] driver=[{volumeResponse.Driver}] json=[{JsonConvert.SerializeObject(volumeResponse, Formatting.Indented)}]");
-				
 			}
 			
 			// existingVolumes = await _client.Volumes.ListAsync(new VolumesListParameters { });
