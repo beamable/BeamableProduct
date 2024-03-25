@@ -45,7 +45,8 @@ public class DiscoveryService
 		// This doesn't actually block
 		await _localSystem.StartListeningToDockerRaw(async (beamoId, eventType, raw) =>
 		{
-			// We skip out on non-Microservice containers.
+			if (eventType == "create") return; //We already listen to the "start" event, this is unecessary to log twice
+			
 			var serviceDefinition = _localSystem.BeamoManifest.ServiceDefinitions.FirstOrDefault(sd => sd.BeamoId == beamoId);
 			if (serviceDefinition == null) return;
 
@@ -58,11 +59,19 @@ public class DiscoveryService
 			}
 			else
 			{
-				healthPort = Convert.ToInt32( await _localSystem.GetStorageHostPort(_localSystem.BeamoManifest, beamoId));
+				try
+				{
+					var port = await _localSystem.GetStorageHostPort(_localSystem.BeamoManifest, beamoId);
+					healthPort = Convert.ToInt32(port);
+				}
+				catch
+				{
+					// storage is not running, therefore there is no port available
+				}
 			}
 
 			var isRunning = eventType == "start";
-			isRunning &= eventType != "stop";
+			isRunning &= eventType != "destroy";
 			var evt = CreateEvent(new ServiceDiscoveryEntry()
 			{
 				cid = _appContext.Cid,

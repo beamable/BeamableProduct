@@ -66,7 +66,8 @@ public partial class BeamoLocalSystem
 	public async Promise<string> GetStorageHostPort(BeamoLocalManifest localManifest, string storageName)
 	{
 		var localStorageContainerName = GetBeamIdAsMongoContainer(storageName);
-		var storageDesc = await _client.Containers.InspectContainerAsync(localStorageContainerName);
+
+		ContainerInspectResponse storageDesc = await _client.Containers.InspectContainerAsync(localStorageContainerName);
 		
 		if (!storageDesc.NetworkSettings.Ports.TryGetValue($"{MONGO_DATA_CONTAINER_PORT}/tcp", out IList<PortBinding> bindings))
 		{
