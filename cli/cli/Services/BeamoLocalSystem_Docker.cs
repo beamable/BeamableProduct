@@ -128,6 +128,30 @@ public partial class BeamoLocalSystem
 
 		// Build BindMounts and Volumes: https://stackoverflow.com/a/58916037
 		{
+			var existingVolumes = await _client.Volumes.ListAsync(new VolumesListParameters { });
+			var existingVolumeNames = new HashSet<string>(existingVolumes.Volumes.Select(v => v.Name));
+			var createdVolumeTasks = new List<Task<VolumeResponse>>();
+			foreach (var volume in volumes)
+			{
+				var volumeAlreadyExists = existingVolumeNames.Contains(volume.VolumeName);
+				if (volumeAlreadyExists) continue; // hooray!
+				
+				// uh oh, we need to create this volume, first.
+				Log.Debug($"volume=[{volume.VolumeName}] for container=[{containerName}] does not exist, so creating it manually.");
+				var task = _client.Volumes.CreateAsync(new VolumesCreateParameters
+				{
+					Name = volume.VolumeName, Labels = new Dictionary<string, string> { ["BEAMABLE_CLI"] = "true" }
+				});
+				
+				createdVolumeTasks.Add(task);
+			}
+
+			var volumeResponses = await Task.WhenAll(createdVolumeTasks);
+			foreach (var volumeResponse in volumeResponses)
+			{
+				Log.Debug($"successfully created volume=[{volumeResponse.Name}]");
+			}
+			
 			BeamoServiceDefinition.BuildVolumes(volumes, out var boundVolumes);
 			BeamoServiceDefinition.BuildBindMounts(bindMounts, out var boundMounts);
 			var allBinds = new List<string>(boundVolumes.Count + boundMounts.Count);
