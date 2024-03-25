@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using UnityEditorInternal;
 using UnityEngine;
 
 namespace Beamable.Server.Editor.Usam
@@ -15,7 +14,7 @@ namespace Beamable.Server.Editor.Usam
 		public string name;
 		public string assetProjectPath = "";
 
-		public AssemblyDefinitionAsset[] assemblyReferences;
+		public string[] assemblyReferences;
 
 		public void AfterDeserialize(string filePath)
 		{

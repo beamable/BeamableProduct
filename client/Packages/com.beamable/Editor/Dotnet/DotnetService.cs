@@ -1,7 +1,6 @@
 using Beamable.Common;
 using Beamable.Editor.BeamCli;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -13,13 +12,10 @@ namespace Beamable.Editor.Dotnet
 	public class DotnetService
 	{
 		private readonly BeamableDispatcher _dispatcher;
-		
-		private List<string> _resultBuffer;
 
 		public DotnetService(BeamableDispatcher dispatcher)
 		{
 			_dispatcher = dispatcher;
-			_resultBuffer = new List<string>();
 		}
 
 		public string DotnetPath => Path.GetFullPath(DotnetUtil.DotnetPath);
@@ -36,7 +32,6 @@ namespace Beamable.Editor.Dotnet
 		private void ProcessStandardOut(string message)
 		{
 			if (message == null) return;
-			_resultBuffer.Add(message);
 			Debug.Log(message);
 		}
 
@@ -52,7 +47,7 @@ namespace Beamable.Editor.Dotnet
 			_purposelyBeingExited = true;
 		}
 
-		public async Promise<List<string>> Run(string command)
+		public async Promise Run(string command)
 		{
 			if (string.IsNullOrEmpty(command)) throw new InvalidOperationException("must set command before running");
 			try
@@ -138,7 +133,6 @@ namespace Beamable.Editor.Dotnet
 							});
 						};
 
-						_resultBuffer.Clear();
 						_process.Start();
 						_process.BeginOutputReadLine();
 						_process.BeginErrorReadLine();
@@ -170,8 +164,6 @@ namespace Beamable.Editor.Dotnet
 				Debug.LogException(e);
 				throw;
 			}
-
-			return _resultBuffer;
 		}
 
 		private void KillProc()
