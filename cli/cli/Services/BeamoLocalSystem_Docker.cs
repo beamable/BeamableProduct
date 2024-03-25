@@ -46,6 +46,7 @@ public partial class BeamoLocalSystem
 		List<DockerBindMount> bindMounts,
 		List<DockerEnvironmentVariable> environmentVars)
 	{
+		Log.Verbose($"creating or running container with image=[{image}] containerName=[{containerName}]");
 		var existingInstance = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.ContainerName.Contains(containerName));
 		if (existingInstance != null)
 		{
@@ -134,8 +135,12 @@ public partial class BeamoLocalSystem
 			foreach (var volume in volumes)
 			{
 				var volumeAlreadyExists = existingVolumeNames.Contains(volume.VolumeName);
-				if (volumeAlreadyExists) continue; // hooray!
-				
+				if (volumeAlreadyExists)
+				{
+					Log.Debug($"volume=[{volume.VolumeName}] for container=[{containerName}] already exists");
+					continue; // hooray!
+				}
+
 				// uh oh, we need to create this volume, first.
 				Log.Debug($"volume=[{volume.VolumeName}] for container=[{containerName}] does not exist, so creating it manually.");
 				var task = _client.Volumes.CreateAsync(new VolumesCreateParameters

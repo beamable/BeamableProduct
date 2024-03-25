@@ -60,7 +60,7 @@ public class CLITest
 			.Interactive()
 			.EmitAnsiSequences();
 
-		_serilogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
+		_serilogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Verbose };
 		_mockRequester = new Mock<IRequester>();
 	}
 
