@@ -168,31 +168,31 @@ public partial class BeamoLocalSystem
 				
 			}
 			
-			existingVolumes = await _client.Volumes.ListAsync(new VolumesListParameters { });
-			var localBindMounts = bindMounts.ToList();
-			foreach (var volume in volumes)
-			{
-				var foundVolume = existingVolumes.Volumes.FirstOrDefault(x =>
-					x.Name.ToLowerInvariant() == volume.VolumeName.ToLowerInvariant());
-				if (foundVolume == null)
-				{
-					Log.Warning($"could not find named volume=[{volume.VolumeName}]");
-					continue;
-				}
-				localBindMounts.Add(new DockerBindMount
-				{
-					LocalPath = foundVolume.Mountpoint,
-					IsReadOnly = false,
-					InContainerPath = volume.InContainerPath
-				});
-			}
+			// existingVolumes = await _client.Volumes.ListAsync(new VolumesListParameters { });
+			// var localBindMounts = bindMounts.ToList();
+			// foreach (var volume in volumes)
+			// {
+			// 	var foundVolume = existingVolumes.Volumes.FirstOrDefault(x =>
+			// 		x.Name.ToLowerInvariant() == volume.VolumeName.ToLowerInvariant());
+			// 	if (foundVolume == null)
+			// 	{
+			// 		Log.Warning($"could not find named volume=[{volume.VolumeName}]");
+			// 		continue;
+			// 	}
+			// 	localBindMounts.Add(new DockerBindMount
+			// 	{
+			// 		LocalPath = foundVolume.Mountpoint,
+			// 		IsReadOnly = false,
+			// 		InContainerPath = volume.InContainerPath
+			// 	});
+			// }
 			// volumes.Clear();
 			
 			BeamoServiceDefinition.BuildVolumes(volumes, out var boundVolumes);
-			BeamoServiceDefinition.BuildBindMounts(localBindMounts, out var boundMounts);
+			BeamoServiceDefinition.BuildBindMounts(bindMounts, out var boundMounts);
 			var allBinds = new List<string>(boundVolumes.Count + boundMounts.Count);
 			// allBinds.AddRange(boundVolumes);
-			allBinds.AddRange(boundMounts);
+			// allBinds.AddRange(boundMounts);
 			hostConfig.Binds = allBinds;
 		}
 
