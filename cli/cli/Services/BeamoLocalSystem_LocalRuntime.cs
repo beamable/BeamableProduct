@@ -136,16 +136,9 @@ public partial class BeamoLocalSystem
 			onServiceContainerStateChange?.Invoke(beamoId, action));
 	}
 
-	/// <summary>
-	/// Kick off a long running task that receives updates from the docker engine.
-	/// </summary>
-	public async Task StartListeningToDockerRaw(Action<string, string, Message> onServiceContainerStateChange = null)
+	public async Promise<Dictionary<string, string>> GetDockerRunningServices()
 	{
-		// Cancel the thread if it's already running.
-		if (_dockerListeningThread != null && !_dockerListeningThread.IsCompleted)
-			_dockerListeningThreadCancel.Cancel();
-
-		
+		var result = new Dictionary<string, string>();
 		var currentInfo = await _client.Containers.ListContainersAsync(new ContainersListParameters() { All = true });
 
 		foreach (var info in currentInfo)
@@ -155,17 +148,21 @@ public partial class BeamoLocalSystem
 
 			if (!string.IsNullOrEmpty(beamoId))
 			{
-				var beamoServiceInstance =
-					BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.BeamoId == beamoId);
-				
-				if (beamoServiceInstance != null)
-				{
-					beamoServiceInstance.IsRunning = false;
-					var message = new Message() { ID = info.ID };
-					onServiceContainerStateChange?.Invoke(beamoId, "start", message);
-				}
+				result.Add(beamoId, info.ID);
 			}
-		}	
+		}
+
+		return result;
+	}
+
+	/// <summary>
+	/// Kick off a long running task that receives updates from the docker engine.
+	/// </summary>
+	public async Task StartListeningToDockerRaw(Action<string, string, Message> onServiceContainerStateChange = null)
+	{
+		// Cancel the thread if it's already running.
+		if (_dockerListeningThread != null && !_dockerListeningThread.IsCompleted)
+			_dockerListeningThreadCancel.Cancel();
 			
 		// Start the long running task. We don't "await" this task as it never yields until it's cancelled.
 		_dockerListeningThread = _client.System.MonitorEventsAsync(new ContainerEventsParameters(),
