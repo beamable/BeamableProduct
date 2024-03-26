@@ -94,9 +94,9 @@ jobs:
         continue-on-error: true
       - run: docker run --rm -v //d/a:/chris mongo ls -R /chris/
         continue-on-error: true
-      - run: docker run --rm -v //d/a/:/chris mongo ls -R /chris/
+      - run: docker run --rm -v D:\\a\\BeamableProduct\\BeamableProduct\\work:/data/db mongo ls -R /data/db/
         continue-on-error: true
-      - run: docker run --rm -v ${{ github.workspace }}:/chris mongo ls -R /chris/
+      - run: docker run --rm -v ${{ github.workspace }}/work:/data/db mongo ls -R /data/db/
         continue-on-error: true
 
       
