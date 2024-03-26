@@ -328,59 +328,29 @@ public class ConfigService
 		foreach (string key in Constants.RENAMED_DIRECTORIES.Keys)
 		{
 			var oldPath = GetConfigPath(key);
+			var newPath = GetConfigPath(Constants.RENAMED_DIRECTORIES[key] as string);
+
+			// We skip converting if the new directory is there. This means Case-Sensitive Renames don't get modified on windows --- which is irrelevant.
+			if (Directory.Exists(newPath))
+				continue;
+
+			// If the old path exists and the new path doesn't, we move the old path into the new path.
 			if (Directory.Exists(oldPath))
-			{
-				var newPath = GetConfigPath(Constants.RENAMED_DIRECTORIES[key] as string);
-				var existsAndAreDifferent = Directory.Exists(newPath);
-				var samePath = string.Compare(oldPath, newPath,
-					RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture) == 0;
-
-				existsAndAreDifferent &= !samePath;
-
-				if (existsAndAreDifferent)
-				{
-					throw new CliException($"Config resolution error, there is {oldPath} and {newPath}",
-						Constants.CMD_RESULT_CONFIG_RESOLUTION_CONFLICT, true,
-						"Remove one of the directories and run the command again\n");
-				}
-
-				if (samePath)
-				{
-					var tmpPath = newPath + "_bak";
-					if (Directory.Exists(tmpPath))
-					{
-						throw new CliException($"Config resolution error, there is already temp dir {tmpPath}",
-							Constants.CMD_RESULT_CONFIG_RESOLUTION_CONFLICT, true,
-							"Remove dir and run command again\n");
-					}
-					Directory.Move(oldPath, tmpPath);
-					oldPath = tmpPath;
-				}
 				Directory.Move(oldPath, newPath!);
-			}
 		}
 
 		foreach (string key in Constants.RENAMED_FILES.Keys)
 		{
 			var oldPath = GetConfigPath(key);
+			var newPath = GetConfigPath(Constants.RENAMED_FILES[key] as string);
+
+			// We skip converting if the new directory is there. This means Case-Sensitive Renames don't get modified on windows --- which is irrelevant.
+			if (File.Exists(newPath))
+				continue;
+
+			// If the old Path is there, we simply move it to the NewPath
 			if (File.Exists(oldPath))
-			{
-				var newPath = GetConfigPath(Constants.RENAMED_FILES[key] as string);
-				var existsAndAreDifferent = File.Exists(newPath);
-
-				existsAndAreDifferent &=
-						string.Compare(oldPath, newPath,
-							RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture) != 0;
-				existsAndAreDifferent &= !HaveSameContent(oldPath, newPath);
-
-				if (existsAndAreDifferent)
-				{
-					throw new CliException($"Config resolution error, there is {oldPath} and {newPath}",
-						Constants.CMD_RESULT_CONFIG_RESOLUTION_CONFLICT, true,
-						"Remove one of the files and run the command again\n");
-				}
 				File.Move(oldPath, newPath!);
-			}
 		}
 	}
 

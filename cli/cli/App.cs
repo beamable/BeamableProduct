@@ -297,6 +297,7 @@ public class App
 		Commands.AddSubCommandWithHandler<ContentStatusCommand, ContentStatusCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentOpenCommand, ContentOpenCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentPublishCommand, ContentPublishCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentLocalManifestCommand, ContentLocalManifestCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentResetCommand, ContentResetCommandArgs, ContentCommand>();
 
 		Commands.AddSubCommandWithHandler<ContentTagCommand, ContentTagCommandArgs, ContentCommand>();
