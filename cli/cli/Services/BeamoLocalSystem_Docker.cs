@@ -138,13 +138,14 @@ public partial class BeamoLocalSystem
 				foreach (var volume in customVolumes)
 				{
 					var path = _configService.GetRelativePath(Path.Combine("docker", "var", volume.VolumeName));
-					var fullPath = Path.GetFullPath(path);
+					Directory.CreateDirectory(path);
+					var fullPath = path;
 					var replacement = new DockerBindMount
 					{
 						InContainerPath = volume.InContainerPath, IsReadOnly = false, LocalPath = fullPath
 					};
 					customBindMounts.Add(replacement);
-					Log.Verbose($"Mapping volume=[{volume.VolumeName}] to bind-mount=[{replacement.LocalPath}] at container=[{replacement.InContainerPath}]");
+					Log.Verbose($"Mapping volume=[{volume.VolumeName}] to bind-mount=[{replacement.LocalPath}] path=[{path}] full=[{fullPath}] at container=[{replacement.InContainerPath}]");
 				}
 				customVolumes.Clear();
 			}
