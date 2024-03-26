@@ -152,7 +152,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 		}
 		Log.Debug($"Found service definition, ctx=[{service.DockerBuildContextPath}] dockerfile=[{service.RelativeDockerfilePath}]");
 
-		var dockerfilePath = Path.Combine(args.ConfigService.GetRelativePath(service.DockerBuildContextPath), service.RelativeDockerfilePath);
+		var dockerfilePath = Path.Combine(args.ConfigService.GetRelativeToBeamableFolderPath(service.DockerBuildContextPath), service.RelativeDockerfilePath);
 		var projectPath = Path.GetDirectoryName(dockerfilePath);
 		Log.Debug($"service path=[{projectPath}]");
 		var commandStr = $"msbuild {projectPath} -t:GetTargetPath -verbosity:diag";

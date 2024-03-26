@@ -71,7 +71,7 @@ public class ConfigService
 	/// </summary>
 	/// <param name="executionRelativePath"></param>
 	/// <returns></returns>
-	public string GetRelativePath(string executionRelativePath)
+	public string GetRelativeToBeamableFolderPath(string executionRelativePath)
 	{
 		try
 		{

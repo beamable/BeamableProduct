@@ -215,7 +215,7 @@ public partial class BeamoLocalSystem
 	public async Task<string> BuildAndCreateImage(string imageName, string dockerBuildContextPath, string dockerfilePathInBuildContext, Action<float> progressUpdateHandler,
 		string containerImageTag = "latest", bool forceAmdCpuArchitecture = false)
 	{
-		dockerBuildContextPath = _configService.GetRelativePath(dockerBuildContextPath);
+		dockerBuildContextPath = _configService.GetRelativeToBeamableFolderPath(dockerBuildContextPath);
 
 
 		using (var stream = CreateTarballForDirectory(dockerBuildContextPath))
