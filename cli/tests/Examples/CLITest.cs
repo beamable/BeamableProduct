@@ -26,7 +26,7 @@ public class CLITest
 	{
 		OriginalWorkingDir = Directory.GetCurrentDirectory();
 	}
-	
+
 	protected string WorkingDir => Path.Combine(OriginalWorkingDir, "testRuns", TestId);
 	protected string TestId { get; private set; }
 
@@ -51,7 +51,7 @@ public class CLITest
 		_dockerClient = new DockerClientConfiguration(new AnonymousCredentials()).CreateClient();
 
 		TestId = Guid.NewGuid().ToString();
-		
+
 		Directory.SetCurrentDirectory(OriginalWorkingDir);
 		Directory.CreateDirectory(WorkingDir);
 		Directory.SetCurrentDirectory(WorkingDir);

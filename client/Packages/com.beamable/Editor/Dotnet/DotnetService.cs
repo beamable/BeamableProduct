@@ -13,7 +13,7 @@ namespace Beamable.Editor.Dotnet
 	public class DotnetService
 	{
 		private readonly BeamableDispatcher _dispatcher;
-		
+
 		private List<string> _resultBuffer;
 
 		public DotnetService(BeamableDispatcher dispatcher)
