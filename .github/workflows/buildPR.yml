@@ -89,7 +89,11 @@ jobs:
         run: docker version
       - uses: actions/checkout@v4
 
-      - run: docker run --rm --mount type=bind,source=D:\\a,target=/data/db mongo ls -R /data/db/
+      - run: docker run --rm mongo ls -R /
+        continue-on-error: true
+      - run: docker run --rm mongo ls -R C://
+        continue-on-error: true
+      - run: docker run --rm mongo ls -R /data/db/
         continue-on-error: true
       - run: |
           mkdir D:\\a\goof
