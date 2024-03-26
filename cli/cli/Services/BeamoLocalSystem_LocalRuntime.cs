@@ -244,6 +244,20 @@ public partial class BeamoLocalSystem
 					// TODO: Detect when people containers are running but their dependencies are not. Output a list of warnings that people can then print out.
 					break;
 				}
+				
+				case ("container", "stop"):
+				{
+					var beamoServiceInstance =
+						BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => message.Actor.Attributes["name"].Contains(si.BeamoId));
+					if (beamoServiceInstance != null)
+					{
+						beamoServiceInstance.IsRunning = false;
+						onServiceContainerStateChange?.Invoke(beamoServiceInstance.BeamoId, messageAction, message);
+					}
+
+					// TODO: Detect when people containers are running but their dependencies are not. Output a list of warnings that people can then print out.
+					break;
+				}
 			}
 		}
 	}

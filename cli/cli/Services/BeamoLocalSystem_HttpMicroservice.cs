@@ -13,6 +13,8 @@ namespace cli.Services;
 
 public partial class BeamoLocalSystem
 {
+	public string GetBeamIdAsMicroserviceContainer(string beamoId) => $"{beamoId}_httpMicroservice";
+	
 	/// <summary>
 	/// Registers a <see cref="BeamoServiceDefinition"/> of with the <see cref="BeamoProtocolType"/> of <see cref="BeamoProtocolType.HttpMicroservice"/>.
 	/// </summary>
@@ -63,7 +65,7 @@ public partial class BeamoLocalSystem
 		return output;
 	}
 
-	public async Promise<string> GetStorageHostPort(BeamoLocalManifest localManifest, string storageName)
+	public async Promise<string> GetStorageHostPort(string storageName)
 	{
 		var localStorageContainerName = GetBeamIdAsMongoContainer(storageName);
 
@@ -95,7 +97,7 @@ public partial class BeamoLocalSystem
 			throw new Exception($"Could not find entry for {storageName}");
 		}
 		
-		var hostPort = await GetStorageHostPort(localManifest, storageName);
+		var hostPort = await GetStorageHostPort(storageName);
 
 		var str = $"mongodb://{localStorage.RootUsername}:{localStorage.RootPassword}@{host}:{hostPort}";
 		var key = $"STORAGE_CONNSTR_{storageName}";
@@ -120,7 +122,7 @@ public partial class BeamoLocalSystem
 
 
 		var imageId = serviceDefinition.ImageId;
-		var containerName = $"{serviceDefinition.BeamoId}_httpMicroservice";
+		var containerName = GetBeamIdAsMicroserviceContainer(serviceDefinition.BeamoId);
 
 		var portBindings = new List<DockerPortBinding>();
 		portBindings.AddRange(localProtocol.CustomPortBindings);

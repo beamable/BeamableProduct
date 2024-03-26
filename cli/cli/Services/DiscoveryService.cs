@@ -45,7 +45,13 @@ public class DiscoveryService
 		// This doesn't actually block
 		await _localSystem.StartListeningToDockerRaw(async (beamoId, eventType, raw) =>
 		{
-			if (eventType == "create") return; //We already listen to the "start" event, this is unecessary to log twice
+			if (eventType != "start" && eventType != "destroy")
+			{
+				return;
+			}
+			
+			
+			var isRunning = eventType == "start";
 			
 			var serviceDefinition = _localSystem.BeamoManifest.ServiceDefinitions.FirstOrDefault(sd => sd.BeamoId == beamoId);
 			if (serviceDefinition == null) return;
@@ -61,7 +67,7 @@ public class DiscoveryService
 			{
 				try
 				{
-					var port = await _localSystem.GetStorageHostPort(_localSystem.BeamoManifest, beamoId);
+					var port = await _localSystem.GetStorageHostPort(beamoId);
 					healthPort = Convert.ToInt32(port);
 				}
 				catch
@@ -70,9 +76,7 @@ public class DiscoveryService
 				}
 			}
 
-			var isRunning = eventType == "start";
-			isRunning &= eventType != "destroy";
-			var evt = CreateEvent(new ServiceDiscoveryEntry()
+			var service = new ServiceDiscoveryEntry()
 			{
 				cid = _appContext.Cid,
 				pid = _appContext.Pid,
@@ -81,7 +85,9 @@ public class DiscoveryService
 				healthPort = healthPort,
 				isContainer = true,
 				containerId = raw.ID
-			}, isRunning);
+			};
+			
+			var evt = CreateEvent(service, isRunning);
 			evtQueue.Enqueue(evt);
 		});
 
