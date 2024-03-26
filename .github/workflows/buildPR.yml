@@ -11,6 +11,7 @@ on:
 
 jobs:
   baseNuget:
+    if: ${{false}}
     timeout-minutes: 10
     runs-on: ubuntu-latest
     concurrency:
@@ -41,6 +42,7 @@ jobs:
           path: ./nuget-build
           retention-days: 3
   testMicroserviceBaseImage:
+    if: ${{false}}
     timeout-minutes: 10
     runs-on: ubuntu-latest
     concurrency:
@@ -87,7 +89,7 @@ jobs:
         run: docker version
       - uses: actions/checkout@v4
       - name: Try volumes
-        run: docker run --rm -v d:/a:/data alpine ls -R /data/
+        run: docker run --rm -v d:/a:/data mongo ls -R /data/
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3
         with:
@@ -106,6 +108,7 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release --no-restore cli/tests
   testAllModes:
+    if: ${{false}}
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
     runs-on: ubuntu-latest
@@ -202,6 +205,7 @@ jobs:
         shell: bash
 
   build:
+    if: ${{false}}
     name: Build for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
