@@ -97,13 +97,17 @@ jobs:
         continue-on-error: true
       - run: docker run --rm mongo ls -R C:\\data\\db
         continue-on-error: true
-      - run: docker run --rm mongo dir C:/data/db
+      - run: docker run --rm mongo ls
+        continue-on-error: true
+      - run: docker run --rm mongo dir
         continue-on-error: true
       - run: |
           mkdir D:\\a\goof
           docker run --rm --mount type=bind,source='D:\\a\goof',target=C:\\data\\db mongo ls -R C:\\data\\db
         continue-on-error: true
-      - run: docker run --rm -v D:\\a\goof2:C:\\data\\db ls -R C:\\data\\db
+      - run: docker run --rm -v D:\\a\goof2:C:\\data\\db mongo ls -R C:\\data\\db
+        continue-on-error: true
+      - run: docker run --rm -v D:\\a\goof2:C:/data/db mongo ls -R C:\\data\\db
         continue-on-error: true
       
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
