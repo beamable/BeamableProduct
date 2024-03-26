@@ -69,13 +69,13 @@ public class ConfigService
 	/// This function will take a relative directory from the execution site, and turn it into a relative path from the project's root.
 	/// The project's root is the folder that _contains_ /.beamable
 	/// </summary>
-	/// <param name="relativePath"></param>
+	/// <param name="executionRelativePath"></param>
 	/// <returns></returns>
-	public string GetRelativePath(string relativePath)
+	public string GetRelativePath(string executionRelativePath)
 	{
 		try
 		{
-			var path = Path.Combine(WorkingDirectoryFullPath, relativePath);
+			var path = Path.Combine(WorkingDirectoryFullPath, executionRelativePath);
 			var baseDir = "";
 			var relativeTo = Directory.GetCurrentDirectory();
 			if (!string.IsNullOrEmpty(BaseDirectory))
@@ -91,7 +91,7 @@ public class ConfigService
 		catch (Exception)
 		{
 			Log.Verbose(
-				$"Converting path=[{relativePath}] into .beamable relative path, workingDir=[{Directory.GetCurrentDirectory()}] workingDirFull=[{WorkingDirectoryFullPath}] baseDir=[{BaseDirectory}]");
+				$"Converting path=[{executionRelativePath}] into .beamable relative path, workingDir=[{Directory.GetCurrentDirectory()}] workingDirFull=[{WorkingDirectoryFullPath}] baseDir=[{BaseDirectory}]");
 			throw;
 		}
 	}
