@@ -66,7 +66,8 @@ public class ContentLocalCache
 			{
 				contentId = pair.Key,
 				status = ContentStatus.Created,
-				tags = _contentTags.TagsForContent(pair.Key, false)
+				tags = _contentTags.TagsForContent(pair.Key, false),
+				hash = pair.Value.CalculateChecksum()
 			});
 		}
 
@@ -92,7 +93,8 @@ public class ContentLocalCache
 			{
 				contentId = contentManifestEntry.contentId,
 				status = localStatus,
-				tags = tags
+				tags = tags,
+				hash = contentManifestEntry.version,
 			});
 		}
 

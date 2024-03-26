@@ -1,5 +1,8 @@
-﻿namespace cli.Services.Content;
+﻿using Beamable.Common.BeamCli;
 
+namespace cli.Services.Content;
+
+[CliContractType]
 public enum ContentStatus
 {
 	Created = 0,
@@ -13,6 +16,7 @@ public class LocalContent
 	public string contentId;
 	public ContentStatus status;
 	public string[] tags;
+	public string hash;
 
 	public string StatusString() =>
 		status switch

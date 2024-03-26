@@ -36,7 +36,7 @@ if dotnet nuget list source | grep -q $SOURCE_NAME; then
 else
     echo "Source does not exists!!"
     echo "Setting the projects folder as a source folder for nuget"
-    dotnet nuget add source $PROJECTS_SOURCE -n $SOURCE_NAME
+    dotnet nuget add source "$PROJECTS_SOURCE" -n $SOURCE_NAME
 fi
 
 echo "Removing cached nuget entries"

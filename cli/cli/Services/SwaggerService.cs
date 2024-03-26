@@ -1203,7 +1203,7 @@ public struct OpenApiReferenceId : IEquatable<string>, IEquatable<OpenApiReferen
 	public static implicit operator string(OpenApiReferenceId w) => w.AsStr;
 	public static implicit operator OpenApiReferenceId(string s) => new(s);
 	public bool Equals(string other) => string.Equals(AsStr, other);
-	public bool Equals(OpenApiReferenceId other) => AsStr.Equals(other.AsStr);
+	public bool Equals(OpenApiReferenceId other) => string.Equals(AsStr, other.AsStr);
 	public override bool Equals(object obj) => obj is OpenApiReferenceId && Equals((OpenApiReferenceId)obj);
 	public override int GetHashCode() => (AsStr != null ? AsStr.GetHashCode() : 0);
 	public static bool operator ==(OpenApiReferenceId left, OpenApiReferenceId right) => left.Equals(right);
