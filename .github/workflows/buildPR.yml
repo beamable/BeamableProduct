@@ -75,27 +75,21 @@ jobs:
     timeout-minutes: 10
     runs-on: ${{ matrix.runners }}
     concurrency:
-      group: cli-tests-${{ github.sha }}-${{ matrix.dotnet-version }}-${{matrix.runners}}
+      group: cli-pr-${{ github.sha }}-${{ matrix.dotnet-version }}-${{matrix.runners}}
       cancel-in-progress: true
     strategy:
       max-parallel: 2
       matrix:
         dotnet-version: ['6.0.x' ]
-        runners: [ windows-latest]
+        runners: [ windows-latest, ubuntu-latest ]
     env:
-      BEAM_DOCKER_WINDOWS_CONTAINERS: '1'
+      BEAM_DOCKER_WINDOWS_CONTAINERS: ${{ matrix.runners == 'windows-latest' && '1' || '0' }}
     steps:
       - name: Check Docker 
         run: docker version
+      - name: Check concurrency
+        run: echo 'cli-pr-${{ github.sha }}-${{ matrix.dotnet-version }}-${{matrix.runners}}'
       - uses: actions/checkout@v4
-
-      - run: |
-          docker pull mongo
-          docker inspect mongo
-        continue-on-error: true
-      - run: docker run --rm -v gharunner:C:/data/db mongo help
-        continue-on-error: true
-      
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3
         with:
