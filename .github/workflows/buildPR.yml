@@ -90,24 +90,30 @@ jobs:
       - uses: actions/checkout@v4
 
       - run: |
-          docker pull mongo
-          docker inspect mongo
+          docker pull mongo:jammy
+          docker inspect mongo:jammy
         continue-on-error: true
-      - run: docker run --rm mongo dir C:\\data\\db
+      - run: docker run --rm mongo:jammy dir C:\\data\\db
         continue-on-error: true
-      - run: docker run --rm mongo ls -R C:\\data\\db
+      - run: docker run --rm mongo:jammy ls -R C:\\data\\db
         continue-on-error: true
-      - run: docker run --rm mongo ls
+      - run: docker run --rm mongo:jammy ls
         continue-on-error: true
-      - run: docker run --rm mongo dir
+      - run: docker run --rm mongo:jammy dir
         continue-on-error: true
       - run: |
           mkdir D:\\a\goof
           docker run --rm --mount type=bind,source='D:\\a\goof',target=C:\\data\\db mongo ls -R C:\\data\\db
         continue-on-error: true
-      - run: docker run --rm -v D:\\a\goof2:C:\\data\\db mongo ls -R C:\\data\\db
+      - run: docker run --rm -v D:\\a\goof2:C:\\data\\db mongo:jammy ls -R C:\\data\\db
         continue-on-error: true
-      - run: docker run --rm -v D:\\a\goof2:C:/data/db mongo ls -R C:\\data\\db
+      - run: docker run --rm -v D:\\a\goof2:C://data/db mongo:jammy ls -R C:\\data\\db
+        continue-on-error: true
+      - run: docker run --rm -v D:\\a\goof2://C/data/db mongo:jammy ls -R C:\\data\\db
+        continue-on-error: true
+      - run: docker run --rm -v D:\\a\goof2:C:/data/db mongo:jammy ls -R C:\\data\\db
+        continue-on-error: true
+      - run: docker run --rm -v D:\\a\goof3:/data/db mongo:jammy ls -R /data/db
         continue-on-error: true
       
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
