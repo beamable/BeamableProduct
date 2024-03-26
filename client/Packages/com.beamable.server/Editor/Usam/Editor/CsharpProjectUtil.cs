@@ -20,6 +20,9 @@ namespace Beamable.Server.Editor.Usam
 		private const string KEY_FOLDER = "FOLDER";
 		private const string KEY_BEAMABLE_VERSION = "[BEAM_VERSION]";
 
+		public static readonly string PROJECT_NAME_PREFIX = "UNITY_GENERATED_PROJECT_";
+		private static readonly string PROJECT_NAME_TAG = "[ASSEMBLY_NAME]";
+		private static readonly string PROJECT_NAME = $"{PROJECT_NAME_PREFIX}{PROJECT_NAME_TAG}.csproj";
 		private static readonly string TEMPLATE_OUTPUT_DIR =
 			Path.Combine("Library", "BeamableEditor", "GeneratedProjects", KEY_FOLDER);
 		private static readonly string SOURCE_TEMPLATE = $"<Compile Include=\"{KEY_INCLUDE}\" />";
@@ -79,6 +82,11 @@ namespace Beamable.Server.Editor.Usam
 				File.WriteAllText(fileName, content);
 			}
 		}
+		
+		public static string GenerateCsharpProjectPath(string assembly)
+		{
+			return TEMPLATE_OUTPUT_DIR.Replace(KEY_FOLDER, assembly);
+		}
 
 		public static string GenerateCsharpProjectPath(Assembly assembly)
 		{
@@ -87,7 +95,12 @@ namespace Beamable.Server.Editor.Usam
 
 		public static string GenerateCsharpProjectFilename(Assembly assembly)
 		{
-			return Path.Combine(GenerateCsharpProjectPath(assembly), assembly.name + ".csproj");
+			return Path.Combine(GenerateCsharpProjectPath(assembly), PROJECT_NAME.Replace(PROJECT_NAME_TAG, assembly.name));
+		}
+
+		public static string GenerateCsharpProjectFilename(string assembly)
+		{
+			return Path.Combine(GenerateCsharpProjectPath(assembly), PROJECT_NAME.Replace(PROJECT_NAME_TAG, assembly));
 		}
 
 		public static string GenerateCsharpProject(Assembly assembly, string csProjDir)
@@ -133,25 +146,30 @@ namespace Beamable.Server.Editor.Usam
 
 		static IEnumerable<Assembly> GetValidAssemblyReferences(Assembly assembly)
 		{
-			var invalidPrefixes = new string[] { "Unity.", "UnityEditor.", "UnityEngine." };
 			foreach (var reference in assembly.assemblyReferences)
 			{
 				var name = reference.name;
-				var valid = true;
-				foreach (var prefix in invalidPrefixes)
-				{
-					if (name.StartsWith(prefix))
-					{
-						valid = false;
-						break;
-					}
-				}
 
-				if (valid)
+				if (IsValidReference(name))
 				{
 					yield return reference;
 				}
 			}
+		}
+		
+		public static bool IsValidReference(string referenceName)
+		{
+			var invalidPrefixes = new string[] { "Unity.", "UnityEditor.", "UnityEngine." };
+
+			foreach (var prefix in invalidPrefixes)
+			{
+				if (referenceName.StartsWith(prefix))
+				{
+					return false;
+				}
+			}
+
+			return true;
 		}
 
 		static string GenerateProjectReferenceEntry(Assembly reference, string csProjDir)
