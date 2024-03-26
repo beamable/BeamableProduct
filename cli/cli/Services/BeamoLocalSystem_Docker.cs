@@ -137,7 +137,7 @@ public partial class BeamoLocalSystem
 				Log.Verbose("mapping named volumes to bind mounts");
 				foreach (var volume in customVolumes)
 				{
-					var path = _configService.GetRelativePath(Path.Combine("docker", "var", volume.VolumeName));
+					var path = (Path.Combine(_configService.ConfigDirectoryPath, "docker", "var", volume.VolumeName));
 					Directory.CreateDirectory(path);
 					var fullPath = Path.GetFullPath(path);
 					var replacement = new DockerBindMount

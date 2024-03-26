@@ -86,6 +86,8 @@ jobs:
       - name: Check Docker 
         run: docker version
       - uses: actions/checkout@v4
+      - name: Try volumes
+        run: docker run --rm -v d:/a:/data alpine ls -R /data/
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3
         with:
