@@ -403,8 +403,8 @@ public class UnrealCliGenerator : ICliGenerator
 
 		// We should never get a "t" that is a container --- the property iterating loop below should filter them out into their element types. 
 		CheckIsContainer(t, out var isArray, out var isList, out var isDictionary);
-		if (isArray || isList || isDictionary)
-			throw new Exception("We don't support generating nested containers here. Wrap your internal container in a class/struct.");
+		if (isArray || isList || isDictionary || t.IsEnum)
+			throw new Exception("We don't support generating nested containers or enums here. Wrap your internal container in a class/struct OR pass your enum as an integer value or string.");
 
 		if (typeof(ValueType).IsAssignableFrom(t) || typeof(object).IsAssignableFrom(t))
 		{

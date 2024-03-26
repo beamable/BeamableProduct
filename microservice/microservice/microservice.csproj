@@ -84,7 +84,7 @@
     <ProjectReference Include="..\unityEngineStubs\unityenginestubs.csproj" />
   </ItemGroup>
   <ItemGroup Condition="!Exists('.\lib') AND Exists('..\unityEngineStubs.addressables\unityenginestubs.addressables.csproj')">
-    <ProjectReference Include="..\unityEngineStubs\unityenginestubs.addressables.csproj" />
+    <ProjectReference Include="..\unityEngineStubs.addressables\unityenginestubs.addressables.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="!Exists('.\lib') AND Exists('..\beamable.tooling.common\beamable.tooling.common.csproj')">
