@@ -32,8 +32,8 @@ public class BeamServicesFlows : CLITest
 		// Create a new instance of a container
 		var container = new ContainerBuilder()
 			.WithName(ServiceName)
-			// Set the image for the container to "testcontainers/helloworld:1.1.0"
-			.WithImage("testcontainers/helloworld:1.1.0")
+			// Set the image for the container to "mongo:latest"
+			.WithImage("mongo:latest")
 			// Build the container configuration
 			.Build();
 
@@ -75,8 +75,8 @@ public class BeamServicesFlows : CLITest
 		// Create a new instance of a container
 		var container = new ContainerBuilder()
 			.WithName(ServiceName)
-			// Set the image for the container to "testcontainers/helloworld:1.1.0"
-			.WithImage("testcontainers/helloworld:1.1.0")
+			// Set the image for the container to "mongo:latest"
+			.WithImage("mongo:latest")
 			// Build the container configuration
 			.Build();
 

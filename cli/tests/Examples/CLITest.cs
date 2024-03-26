@@ -20,9 +20,15 @@ namespace tests.Examples;
 [NonParallelizable]
 public class CLITest
 {
+	protected static string OriginalWorkingDir;
+
+	static CLITest()
+	{
+		OriginalWorkingDir = Directory.GetCurrentDirectory();
+	}
+	
 	protected string WorkingDir => Path.Combine(OriginalWorkingDir, "testRuns", TestId);
 	protected string TestId { get; private set; }
-	protected string OriginalWorkingDir;
 
 	protected Mock<IRequester> _mockRequester;
 	protected LoggingLevelSwitch _serilogLevel;
@@ -45,9 +51,8 @@ public class CLITest
 		_dockerClient = new DockerClientConfiguration(new AnonymousCredentials()).CreateClient();
 
 		TestId = Guid.NewGuid().ToString();
-
-		OriginalWorkingDir = Directory.GetCurrentDirectory();
-
+		
+		Directory.SetCurrentDirectory(OriginalWorkingDir);
 		Directory.CreateDirectory(WorkingDir);
 		Directory.SetCurrentDirectory(WorkingDir);
 
@@ -56,7 +61,7 @@ public class CLITest
 			.Interactive()
 			.EmitAnsiSequences();
 
-		_serilogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
+		_serilogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Verbose };
 		_mockRequester = new Mock<IRequester>();
 	}
 

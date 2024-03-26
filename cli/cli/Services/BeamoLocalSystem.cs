@@ -204,9 +204,9 @@ public partial class BeamoLocalSystem
 				$"Currently the only supported dependencies are {nameof(BeamoProtocolType.HttpMicroservice)} depending on {nameof(BeamoProtocolType.EmbeddedMongoDb)}");
 		}
 
-		var relativeProjectPath = _configService.GetRelativePath(project.ProjectDirectory);
+		var relativeProjectPath = _configService.GetRelativeToBeamableFolderPath(project.ProjectDirectory);
 		var projectPath = Path.Combine(relativeProjectPath, $"{project.BeamoId}.csproj");
-		var dependencyPath = Path.Combine(_configService.GetRelativePath(dependency.ProjectDirectory), $"{dependency.BeamoId}.csproj");
+		var dependencyPath = Path.Combine(_configService.GetRelativeToBeamableFolderPath(dependency.ProjectDirectory), $"{dependency.BeamoId}.csproj");
 
 		var command = $"remove {projectPath} reference {dependencyPath}";
 		var (cmd, result) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, command);
@@ -232,8 +232,8 @@ public partial class BeamoLocalSystem
 				$"Currently the only supported dependencies are {nameof(BeamoProtocolType.HttpMicroservice)} depending on {nameof(BeamoProtocolType.EmbeddedMongoDb)}");
 		}
 
-		var projectPath = _configService.GetRelativePath(project.ProjectDirectory);
-		var dependencyPath = _configService.GetRelativePath(dependency.ProjectDirectory);
+		var projectPath = _configService.GetRelativeToBeamableFolderPath(project.ProjectDirectory);
+		var dependencyPath = _configService.GetRelativeToBeamableFolderPath(dependency.ProjectDirectory);
 		var command = $"add {projectPath} reference {dependencyPath}";
 		var (cmd, result) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, command);
 		if (cmd.ExitCode != 0)

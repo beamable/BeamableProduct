@@ -10,6 +10,7 @@ using ICSharpCode.SharpZipLib.Tar;
 using Newtonsoft.Json;
 using Serilog;
 using System.Collections.Concurrent;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -46,6 +47,7 @@ public partial class BeamoLocalSystem
 		List<DockerBindMount> bindMounts,
 		List<DockerEnvironmentVariable> environmentVars)
 	{
+		Log.Verbose($"creating or running container with image=[{image}] containerName=[{containerName}]");
 		var existingInstance = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.ContainerName.Contains(containerName));
 		if (existingInstance != null)
 		{
@@ -213,7 +215,7 @@ public partial class BeamoLocalSystem
 	public async Task<string> BuildAndCreateImage(string imageName, string dockerBuildContextPath, string dockerfilePathInBuildContext, Action<float> progressUpdateHandler,
 		string containerImageTag = "latest", bool forceAmdCpuArchitecture = false)
 	{
-		dockerBuildContextPath = _configService.GetRelativePath(dockerBuildContextPath);
+		dockerBuildContextPath = _configService.GetRelativeToBeamableFolderPath(dockerBuildContextPath);
 
 
 		using (var stream = CreateTarballForDirectory(dockerBuildContextPath))

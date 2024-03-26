@@ -73,7 +73,7 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 			{
 				if (_localBeamo.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(id, out var microservice))
 				{
-					var path = args.ConfigService.GetRelativePath(microservice.DockerBuildContextPath);
+					var path = args.ConfigService.GetRelativeToBeamableFolderPath(microservice.DockerBuildContextPath);
 					if (!Directory.Exists(path))
 						diagnostics.Add(new Diagnostic($"[{id}] DockerBuildContext doesn't exist: [{path}]"));
 					var dockerfilePath = Path.Combine(path, microservice.RelativeDockerfilePath);

@@ -8,7 +8,6 @@ on:
       - 'productio*'
     paths-ignore:
       - 'rfc/**'
-      - '.github/**'
 
 jobs:
   baseNuget:
@@ -71,16 +70,23 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release --no-restore microservice/microserviceTests
   testCli:
-    timeout-minutes: 10
-    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    runs-on: ${{ matrix.runners }}
     concurrency:
-      group: cli-tests-${{ github.head_ref }}-${{ matrix.dotnet-version }}
+      group: cli-pr-${{ github.sha }}-${{ matrix.dotnet-version }}-${{matrix.runners}}
       cancel-in-progress: true
     strategy:
-      max-parallel: 1
+      max-parallel: 2
       matrix:
-        dotnet-version: ['6.0.x','7.0.x' ]
+        dotnet-version: ['6.0.x' ]
+        runners: [ windows-latest, ubuntu-latest ]
+    env:
+      BEAM_DOCKER_WINDOWS_CONTAINERS: ${{ matrix.runners == 'windows-latest' && '1' || '0' }}
     steps:
+      - name: Check Docker 
+        run: docker version
+      - name: Check concurrency
+        run: echo 'cli-pr-${{ github.sha }}-${{ matrix.dotnet-version }}-${{matrix.runners}}'
       - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3

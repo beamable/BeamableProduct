@@ -69,24 +69,31 @@ public class ConfigService
 	/// This function will take a relative directory from the execution site, and turn it into a relative path from the project's root.
 	/// The project's root is the folder that _contains_ /.beamable
 	/// </summary>
-	/// <param name="relativePath"></param>
+	/// <param name="executionRelativePath"></param>
 	/// <returns></returns>
-	public string GetRelativePath(string relativePath)
+	public string GetRelativeToBeamableFolderPath(string executionRelativePath)
 	{
-
-		var path = Path.Combine(WorkingDirectoryFullPath, relativePath);
-		var baseDir = "";
-		var relativeTo = Directory.GetCurrentDirectory();
-		if (!string.IsNullOrEmpty(BaseDirectory))
+		try
 		{
-			baseDir = Path.GetRelativePath(WorkingDirectoryFullPath, BaseDirectory);
-			relativeTo = Path.Combine(Directory.GetCurrentDirectory(), baseDir);
-		}
+			var path = Path.Combine(WorkingDirectoryFullPath, executionRelativePath);
+			var baseDir = "";
+			var relativeTo = Directory.GetCurrentDirectory();
+			if (!string.IsNullOrEmpty(BaseDirectory))
+			{
+				baseDir = Path.GetRelativePath(WorkingDirectoryFullPath, BaseDirectory);
+				relativeTo = Path.Combine(Directory.GetCurrentDirectory(), baseDir);
+			}
 
-		path = Path.GetRelativePath(relativeTo, path);
-		Log.Verbose(
-			$"Converting path=[{relativePath}] into .beamable relative path, result=[{path}], workingDir=[{Directory.GetCurrentDirectory()}] workingDirFull=[{WorkingDirectoryFullPath}] baseDir=[{baseDir}]");
-		return path;
+			path = Path.GetRelativePath(relativeTo, path);
+			return path;
+
+		}
+		catch (Exception)
+		{
+			Log.Verbose(
+				$"Converting path=[{executionRelativePath}] into .beamable relative path, workingDir=[{Directory.GetCurrentDirectory()}] workingDirFull=[{WorkingDirectoryFullPath}] baseDir=[{BaseDirectory}]");
+			throw;
+		}
 	}
 
 	public string BeamableRelativeToExecutionRelative(string relativePath)
@@ -164,6 +171,19 @@ public class ConfigService
 	{
 		_dir = dir;
 		SetBeamableDirectory(_dir);
+	}
+
+	public const string ENV_VAR_WINDOWS_VOLUME_NAMES = "BEAM_DOCKER_WINDOWS_CONTAINERS";
+	/// <summary>
+	/// Github Action Runners for windows don't seem to work with volumes for mongo.
+	/// </summary>
+	public bool UseWindowsStyleVolumeNames
+	{
+		get
+		{
+			var value = Environment.GetEnvironmentVariable(ENV_VAR_WINDOWS_VOLUME_NAMES);
+			return !string.IsNullOrEmpty(value) && value != "0" && !value.ToLowerInvariant().StartsWith("f");
+		}
 	}
 
 
