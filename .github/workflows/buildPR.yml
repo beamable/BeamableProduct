@@ -88,15 +88,13 @@ jobs:
       - name: Check Docker 
         run: docker version
       - uses: actions/checkout@v4
-      - run: docker run --rm -v D://a:/chris mongo ls -R /chris/
+      - run: docker run --rm --mount type=bind,source="//D:/a",target="/data/db" mongo ls -R /data/db/
         continue-on-error: true
-      - run: docker run --rm -v d://a:/chris mongo ls -R /chris/
+      - run: docker run --rm --mount type=bind,source="D:/a",target="/data/db" mongo ls -R /data/db/
         continue-on-error: true
-      - run: docker run --rm -v //d/a:/chris mongo ls -R /chris/
+      - run: docker run --rm --mount type=bind,source="D:\\a",target="/data/db" mongo ls -R /data/db/
         continue-on-error: true
-      - run: docker run --rm -v D:\\a\\BeamableProduct\\BeamableProduct\\work:/data/db mongo ls -R /data/db/
-        continue-on-error: true
-      - run: docker run --rm -v ${{ github.workspace }}/work:/data/db mongo ls -R /data/db/
+      - run: docker run --rm --mount type=bind,source="D:\\a\goof",target="/data/db" mongo ls -R /data/db/
         continue-on-error: true
 
       
