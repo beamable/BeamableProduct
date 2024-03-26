@@ -75,7 +75,7 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 		{
 			var directoryInfo = new DirectoryInfo(Path.Combine(args.ConfigService.BaseDirectory, microservicePath));
 			var name = directoryInfo.Name;
-			var contextPath = args.ConfigService.GetRelativePath(directoryInfo.Parent!.FullName);
+			var contextPath = args.ConfigService.GetRelativeToBeamableFolderPath(directoryInfo.Parent!.FullName);
 			var dockerPath = Path.Combine(name, "Dockerfile");
 			var shouldBeEnabled = !args.disabledServices.Contains(name);
 

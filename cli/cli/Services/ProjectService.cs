@@ -362,7 +362,7 @@ public class ProjectService
 		}
 
 		var rootServicesPath = Path.Combine(slnDirectory, "services");
-		var path = _configService.GetRelativePath(Path.Combine(rootServicesPath, beamId));
+		var path = _configService.GetRelativeToBeamableFolderPath(Path.Combine(rootServicesPath, beamId));
 		return path;
 	}
 
@@ -538,7 +538,7 @@ public class ProjectService
 
 	public Task<BeamoServiceDefinition> AddDefinitonToNewService(SolutionCommandArgs args, NewServiceInfo info)
 	{
-		var serviceRelativePath = _configService.GetRelativePath(info.ServicePath);
+		var serviceRelativePath = _configService.GetRelativeToBeamableFolderPath(info.ServicePath);
 
 		// Find path to service folders: either it is in the working directory, or it will be inside 'args.name\\services' from the working directory.
 		string projectDirectory = Path.GetDirectoryName(serviceRelativePath);
@@ -560,7 +560,7 @@ public class ProjectService
 		var commonProjectName = $"{projectName}Common";
 		Log.Information("Docker file path is {DockerfilePath}", dockerfilePath);
 		var serviceFolder = Path.GetDirectoryName(dockerfilePath);
-		serviceFolder = configService.GetRelativePath(serviceFolder);
+		serviceFolder = configService.GetRelativeToBeamableFolderPath(serviceFolder);
 		Log.Information("Docker file folder is {DockerFileFolder}", serviceFolder);
 
 		dockerfilePath = Path.Combine(configService.BaseDirectory, dockerBuildContextPath, dockerfilePath);
@@ -629,7 +629,7 @@ COPY {commonProjectName}/. .
 		var errorDir = Path.GetDirectoryName(errorPath);
 		Directory.CreateDirectory(errorDir);
 		Log.Debug($"error log path=[{errorPath}]");
-		var dockerfilePath = Path.Combine(args.ConfigService.GetRelativePath(service.DockerBuildContextPath),
+		var dockerfilePath = Path.Combine(args.ConfigService.GetRelativeToBeamableFolderPath(service.DockerBuildContextPath),
 			service.RelativeDockerfilePath);
 		var projectPath = Path.GetDirectoryName(dockerfilePath);
 

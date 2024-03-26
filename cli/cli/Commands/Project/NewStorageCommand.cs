@@ -45,7 +45,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 			$"Registering local project... 'beam services register --id {args.ProjectName} --type EmbeddedMongoDb'");
 
 		var storageDef = await args.BeamoLocalSystem.AddDefinition_EmbeddedMongoDb(args.ProjectName, "mongo:latest",
-			args.ConfigService.GetRelativePath(newMicroserviceInfo.ServicePath),
+			args.ConfigService.GetRelativeToBeamableFolderPath(newMicroserviceInfo.ServicePath),
 			CancellationToken.None);
 
 		string[] dependencies = null;
