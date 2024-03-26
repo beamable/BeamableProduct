@@ -89,7 +89,11 @@ jobs:
         run: docker version
       - uses: actions/checkout@v4
 
-      - run: docker run --rm mongo ls -R /
+      - run: |
+          docker pull mongo
+          docker inspect mongo
+        continue-on-error: true
+      - run: docker run --rm mongo dir
         continue-on-error: true
       - run: docker run --rm mongo ls -R C://
         continue-on-error: true
