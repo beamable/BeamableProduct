@@ -89,9 +89,17 @@ jobs:
         run: docker version
       - uses: actions/checkout@v4
       - run: docker run --rm -v D://a:/chris mongo ls -R /chris/
+        continue-on-error: true
       - run: docker run --rm -v d://a:/chris mongo ls -R /chris/
+        continue-on-error: true
       - run: docker run --rm -v //d/a:/chris mongo ls -R /chris/
+        continue-on-error: true
       - run: docker run --rm -v //d/a/:/chris mongo ls -R /chris/
+        continue-on-error: true
+      - run: docker run --rm -v ${{ github.workspace }}:/chris mongo ls -R /chris/
+        continue-on-error: true
+
+      
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3
         with:
