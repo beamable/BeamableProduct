@@ -89,11 +89,13 @@ jobs:
         run: docker version
       - uses: actions/checkout@v4
 
-      - run: docker run --rm --mount type=bind,source="D:\\a",target=/data/db mongo ls -R /data/db/
+      - run: docker run --rm --mount type=bind,source=D:\\a,target=/data/db mongo ls -R /data/db/
         continue-on-error: true
-      - run: docker run --rm --mount type=bind,source='D:\\a\goof',target=/data/db mongo ls -R /data/db/
+      - run: |
+          mkdir D:\\a\goof
+          docker run --rm --mount type=bind,source='D:\\a\goof',target=/data/db mongo ls -R /data/db/
         continue-on-error: true
-      - run: docker run --rm --mount type=bind,source=D:\\a\goo,target=/data/db mongo ls -R /data/db/
+      - run: docker run --rm --mount type=bind,source=D:\\a,target=/data/db mongo ls -R /data/db/
         continue-on-error: true
       
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
