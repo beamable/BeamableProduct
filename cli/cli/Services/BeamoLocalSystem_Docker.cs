@@ -132,22 +132,23 @@ public partial class BeamoLocalSystem
 		{
 			var customVolumes = volumes.ToList();
 			var customBindMounts = bindMounts.ToList();
-			if (_configService.MapNamedVolumesToBindMounts)
+			if (_configService.DisableVolumeSupport)
 			{
-				Log.Verbose("mapping named volumes to bind mounts");
-				foreach (var volume in customVolumes)
-				{
-					var path = (Path.Combine(_configService.ConfigDirectoryPath, "docker", "var", volume.VolumeName));
-					Directory.CreateDirectory(path);
-					var fullPath = Path.GetFullPath(path);
-					var replacement = new DockerBindMount
-					{
-						InContainerPath = volume.InContainerPath, IsReadOnly = false, LocalPath = fullPath
-					};
-					customBindMounts.Add(replacement);
-					Log.Verbose($"Mapping volume=[{volume.VolumeName}] to bind-mount=[{replacement.LocalPath}] path=[{path}] full=[{fullPath}] at container=[{replacement.InContainerPath}]");
-				}
-				customVolumes.Clear();
+				// Log.Verbose("removing all volumes");
+				// customVolumes.Clear();
+				// foreach (var volume in customVolumes)
+				// {
+				// 	var path = (Path.Combine(_configService.ConfigDirectoryPath, "docker", "var", volume.VolumeName));
+				// 	Directory.CreateDirectory(path);
+				// 	var fullPath = Path.GetFullPath(path);
+				// 	var replacement = new DockerBindMount
+				// 	{
+				// 		InContainerPath = volume.InContainerPath, IsReadOnly = false, LocalPath = fullPath
+				// 	};
+				// 	customBindMounts.Add(replacement);
+				// 	Log.Verbose($"Mapping volume=[{volume.VolumeName}] to bind-mount=[{replacement.LocalPath}] path=[{path}] full=[{fullPath}] at container=[{replacement.InContainerPath}]");
+				// }
+				// customVolumes.Clear();
 			}
 			BeamoServiceDefinition.BuildVolumes(customVolumes, out var boundVolumes);
 			BeamoServiceDefinition.BuildBindMounts(customBindMounts, out var boundMounts);

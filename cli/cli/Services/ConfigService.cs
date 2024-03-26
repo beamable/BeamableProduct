@@ -173,20 +173,15 @@ public class ConfigService
 		SetBeamableDirectory(_dir);
 	}
 
-	public const string ENV_VAR_NAMED_VOLUMES_TO_BIND_MOUNTS = "BEAM_CONVERT_NAMED_VOLUMES_TO_BIND_MOUNTS";
+	public const string ENV_VAR_DISABLE_VOLUME_SUPPORT = "BEAM_DOCKER_WINDOWS_CONTAINERS";
 	/// <summary>
-	/// On windows systems, if the drives are configured such that C: is not accessible, then
-	/// Docker will fail to create named volumes, because named volumes are always created on the
-	/// C: drive, unless a the opt, drive, is set, which is not possible on Github Actions.
-	///
-	/// This option instructs the CLI to convert any named volume to a bind mount relative to the
-	/// project's .beamable folder. 
+	/// Github Action Runners for windows don't seem to work with volumes for mongo.
 	/// </summary>
-	public bool MapNamedVolumesToBindMounts
+	public bool DisableVolumeSupport
 	{
 		get
 		{
-			var value = Environment.GetEnvironmentVariable(ENV_VAR_NAMED_VOLUMES_TO_BIND_MOUNTS);
+			var value = Environment.GetEnvironmentVariable(ENV_VAR_DISABLE_VOLUME_SUPPORT);
 			return !string.IsNullOrEmpty(value) && value != "0" && !value.ToLowerInvariant().StartsWith("f");
 		}
 	}

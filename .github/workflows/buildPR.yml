@@ -83,7 +83,7 @@ jobs:
         dotnet-version: ['6.0.x' ]
         runners: [ windows-latest]
     env:
-      BEAM_CONVERT_NAMED_VOLUMES_TO_BIND_MOUNTS: '1'
+      BEAM_DOCKER_WINDOWS_CONTAINERS: '1'
     steps:
       - name: Check Docker 
         run: docker version
@@ -115,7 +115,7 @@ jobs:
         continue-on-error: true
       - run: docker run --rm -v gharunner:C:/data/db mongo dir
         continue-on-error: true
-      - run: docker run --rm -v gharunner2:'C:\\data\db' mongo dir
+      - run: docker run --rm -v gharunner:C:/data/db mongo echo hi
         continue-on-error: true
       
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
