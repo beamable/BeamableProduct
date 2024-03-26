@@ -88,8 +88,10 @@ jobs:
       - name: Check Docker 
         run: docker version
       - uses: actions/checkout@v4
-      - name: Try volumes
-        run: docker run --rm -v d:/a:/data mongo ls -R /data/
+      - run: docker run --rm -v D://a:/chris mongo ls -R /chris/
+      - run: docker run --rm -v d://a:/chris mongo ls -R /chris/
+      - run: docker run --rm -v //d/a:/chris mongo ls -R /chris/
+      - run: docker run --rm -v //d/a/:/chris mongo ls -R /chris/
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3
         with:
