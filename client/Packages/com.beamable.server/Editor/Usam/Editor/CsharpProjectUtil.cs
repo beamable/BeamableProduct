@@ -83,14 +83,14 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 		
-		public static string GenerateCsharpProjectPath(string assembly)
-		{
-			return TEMPLATE_OUTPUT_DIR.Replace(KEY_FOLDER, assembly);
-		}
-
 		public static string GenerateCsharpProjectPath(Assembly assembly)
 		{
 			return TEMPLATE_OUTPUT_DIR.Replace(KEY_FOLDER, assembly.name);
+		}
+		
+		public static string GenerateCsharpProjectPath(string assembly)
+		{
+			return TEMPLATE_OUTPUT_DIR.Replace(KEY_FOLDER, assembly);
 		}
 
 		public static string GenerateCsharpProjectFilename(Assembly assembly)
@@ -148,9 +148,7 @@ namespace Beamable.Server.Editor.Usam
 		{
 			foreach (var reference in assembly.assemblyReferences)
 			{
-				var name = reference.name;
-
-				if (IsValidReference(name))
+				if (IsValidReference(reference.name))
 				{
 					yield return reference;
 				}
