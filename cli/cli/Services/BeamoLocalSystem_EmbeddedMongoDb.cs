@@ -121,7 +121,7 @@ public partial class BeamoLocalSystem
 
 		local.MongoLocalPort = "";
 
-		if (_configService.DisableVolumeSupport)
+		if (_configService.UseWindowsStyleVolumeNames)
 		{
 			local.DataVolumeInContainerPath = "C:/data/db";
 			local.FilesVolumeInContainerPath = "C:/beamable";

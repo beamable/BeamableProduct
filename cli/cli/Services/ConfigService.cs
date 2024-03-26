@@ -173,15 +173,15 @@ public class ConfigService
 		SetBeamableDirectory(_dir);
 	}
 
-	public const string ENV_VAR_DISABLE_VOLUME_SUPPORT = "BEAM_DOCKER_WINDOWS_CONTAINERS";
+	public const string ENV_VAR_WINDOWS_VOLUME_NAMES = "BEAM_DOCKER_WINDOWS_CONTAINERS";
 	/// <summary>
 	/// Github Action Runners for windows don't seem to work with volumes for mongo.
 	/// </summary>
-	public bool DisableVolumeSupport
+	public bool UseWindowsStyleVolumeNames
 	{
 		get
 		{
-			var value = Environment.GetEnvironmentVariable(ENV_VAR_DISABLE_VOLUME_SUPPORT);
+			var value = Environment.GetEnvironmentVariable(ENV_VAR_WINDOWS_VOLUME_NAMES);
 			return !string.IsNullOrEmpty(value) && value != "0" && !value.ToLowerInvariant().StartsWith("f");
 		}
 	}

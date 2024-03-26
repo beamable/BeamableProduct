@@ -132,7 +132,7 @@ public partial class BeamoLocalSystem
 		{
 			var customVolumes = volumes.ToList();
 			var customBindMounts = bindMounts.ToList();
-			if (_configService.DisableVolumeSupport)
+			if (_configService.UseWindowsStyleVolumeNames)
 			{
 				// Log.Verbose("removing all volumes");
 				// customVolumes.Clear();

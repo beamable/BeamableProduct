@@ -75,7 +75,7 @@ jobs:
     timeout-minutes: 10
     runs-on: ${{ matrix.runners }}
     concurrency:
-      group: cli-tests-${{ github.head_ref }}-${{ matrix.dotnet-version }}-${{matrix.runners}}
+      group: cli-tests-${{ github.sha }}-${{ matrix.dotnet-version }}-${{matrix.runners}}
       cancel-in-progress: true
     strategy:
       max-parallel: 2
@@ -93,29 +93,7 @@ jobs:
           docker pull mongo
           docker inspect mongo
         continue-on-error: true
-      - run: docker run --rm mongo dir C:\\data\\db
-        continue-on-error: true
-      - run: docker run --rm mongo ls -R C:\\data\\db
-        continue-on-error: true
-      - run: docker run --rm mongo ls
-        continue-on-error: true
-      - run: docker run --rm mongo dir
-        continue-on-error: true
-      - run: |
-          mkdir D:\\a\goof
-          docker run --rm --mount type=bind,source='D:\\a\goof',target=C:\\data\\db mongo ls -R C:\\data\\db
-        continue-on-error: true
-      - run: docker run --rm -v D:\\a\goof2:C:\\data\\db mongo ls -R C:\\data\\db
-        continue-on-error: true
-      - run: docker run --rm -v D:\\a\goof2:C://data/db mongo ls -R C:\\data\\db
-        continue-on-error: true
-      - run: docker run --rm -v D:\\a\goof2://C/data/db mongo ls -R C:\\data\\db
-        continue-on-error: true
-      - run: docker run --rm -v D:\\a\goof2:C:/data/db mongo ls -R C:\\data\\db
-        continue-on-error: true
-      - run: docker run --rm -v gharunner:C:/data/db mongo dir
-        continue-on-error: true
-      - run: docker run --rm -v gharunner:C:/data/db mongo echo hi
+      - run: docker run --rm -v gharunner:C:/data/db mongo help
         continue-on-error: true
       
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
