@@ -57,6 +57,7 @@ public class DiscoveryService
 			if (serviceDefinition == null) return;
 
 			var healthPort = 0;
+			var dataPort = 0;
 
 			if (serviceDefinition.Protocol == BeamoProtocolType.HttpMicroservice)
 			{
@@ -68,7 +69,7 @@ public class DiscoveryService
 				try
 				{
 					var port = await _localSystem.GetStorageHostPort(beamoId);
-					healthPort = Convert.ToInt32(port);
+					dataPort = Convert.ToInt32(port);
 				}
 				catch
 				{
@@ -82,6 +83,8 @@ public class DiscoveryService
 				pid = _appContext.Pid,
 				prefix = MachineHelper.GetUniqueDeviceId(),
 				serviceName = serviceDefinition.BeamoId,
+				serviceType = serviceDefinition.Protocol == BeamoProtocolType.HttpMicroservice ? "service" : "storage",
+				dataPort = dataPort,
 				healthPort = healthPort,
 				isContainer = true,
 				containerId = raw.ID
@@ -178,7 +181,9 @@ public class DiscoveryService
 			isRunning = isRunning,
 			isContainer = entry.isContainer,
 			containerId = entry.containerId,
-			healthPort = entry.healthPort
+			healthPort = entry.healthPort,
+			dataPort = entry.dataPort,
+			serviceType = entry.serviceType
 		};
 	}
 

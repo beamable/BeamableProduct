@@ -409,6 +409,7 @@ namespace Beamable.Server
 		        prefix = args.NamePrefix,
 		        serviceName = attribute.MicroserviceName,
 		        healthPort = args.HealthPort,
+		        serviceType = "service"
 	        };
 	        var msgJson = JsonConvert.SerializeObject(msg, UnitySerializationSettings.Instance);
 	        beacon.Publish(msgJson, TimeSpan.FromMilliseconds(Constants.Features.Services.DISCOVERY_BROADCAST_PERIOD_MS));
