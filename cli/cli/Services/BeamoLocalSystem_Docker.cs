@@ -139,7 +139,7 @@ public partial class BeamoLocalSystem
 				{
 					var path = _configService.GetRelativePath(Path.Combine("docker", "var", volume.VolumeName));
 					Directory.CreateDirectory(path);
-					var fullPath = path;
+					var fullPath = Path.GetFullPath(path);
 					var replacement = new DockerBindMount
 					{
 						InContainerPath = volume.InContainerPath, IsReadOnly = false, LocalPath = fullPath
