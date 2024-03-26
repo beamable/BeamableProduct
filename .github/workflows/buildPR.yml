@@ -72,8 +72,6 @@ jobs:
   testCli:
     timeout-minutes: 10
     runs-on: ${{ matrix.runners }}
-    env: 
-      LOG_LEVEL: 'verbose'
     concurrency:
       group: cli-tests-${{ github.head_ref }}-${{ matrix.dotnet-version }}-${{matrix.runners}}
       cancel-in-progress: true
@@ -103,6 +101,8 @@ jobs:
         run: dotnet build --configuration Release --no-restore cli/tests
       - name: Test
         run: dotnet test --configuration Release --no-restore cli/tests
+        with:
+          BEAM_CONVERT_NAMED_VOLUMES_TO_BIND_MOUNTS: '1'
   testAllModes:
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}

@@ -130,68 +130,28 @@ public partial class BeamoLocalSystem
 
 		// Build BindMounts and Volumes: https://stackoverflow.com/a/58916037
 		{
-			volumes = volumes.Select(v => v with
+			var customVolumes = volumes.ToList();
+			var customBindMounts = bindMounts.ToList();
+			if (_configService.MapNamedVolumesToBindMounts)
 			{
-				// on windows, it appears that volume names must be lower case to work consistently.
-				VolumeName = v.VolumeName.ToLowerInvariant()
-			}).ToList();
-			var existingVolumes = await _client.Volumes.ListAsync(new VolumesListParameters { });
-			var existingVolumeNames = new HashSet<string>(existingVolumes.Volumes.Select(v => v.Name));
-			var createdVolumeTasks = new List<Task<VolumeResponse>>();
-			foreach (var volume in volumes)
-			{
-				var volumeAlreadyExists = existingVolumeNames.Contains(volume.VolumeName);
-				if (volumeAlreadyExists)
+				foreach (var volume in customVolumes)
 				{
-					
-					Log.Debug($"volume=[{volume.VolumeName}] for container=[{containerName}] already exists");
-					continue; // hooray!
+					var path = _configService.GetRelativePath(Path.Combine("docker", "var", volume.VolumeName));
+					var fullPath = Path.GetFullPath(path);
+					var replacement = new DockerBindMount
+					{
+						InContainerPath = volume.InContainerPath, IsReadOnly = false, LocalPath = fullPath
+					};
+					customBindMounts.Add(replacement);
+					Log.Verbose($"Mapping volume=[{volume.VolumeName}] to bind-mount=[{replacement.LocalPath}] at container=[{replacement.InContainerPath}]");
 				}
-
-				// uh oh, we need to create this volume, first.
-				Log.Debug($"volume=[{volume.VolumeName}] for container=[{containerName}] does not exist, so creating it manually.");
-				var createParameters = new VolumesCreateParameters
-				{
-					Name = volume.VolumeName,
-					Labels = new Dictionary<string, string> { ["BEAMABLE_CLI"] = "true" }
-				};
-				Log.Debug($"create parameters=[{JsonConvert.SerializeObject(createParameters, Formatting.Indented)}]");
-				var task = _client.Volumes.CreateAsync(createParameters);
-				
-				createdVolumeTasks.Add(task);
+				customVolumes.Clear();
 			}
-
-			var volumeResponses = await Task.WhenAll(createdVolumeTasks);
-			foreach (var volumeResponse in volumeResponses)
-			{
-				Log.Debug($"successfully created volume=[{volumeResponse.Name}] driver=[{volumeResponse.Driver}] json=[{JsonConvert.SerializeObject(volumeResponse, Formatting.Indented)}]");
-			}
-			
-			// existingVolumes = await _client.Volumes.ListAsync(new VolumesListParameters { });
-			// var localBindMounts = bindMounts.ToList();
-			// foreach (var volume in volumes)
-			// {
-			// 	var foundVolume = existingVolumes.Volumes.FirstOrDefault(x =>
-			// 		x.Name.ToLowerInvariant() == volume.VolumeName.ToLowerInvariant());
-			// 	if (foundVolume == null)
-			// 	{
-			// 		Log.Warning($"could not find named volume=[{volume.VolumeName}]");
-			// 		continue;
-			// 	}
-			// 	localBindMounts.Add(new DockerBindMount
-			// 	{
-			// 		LocalPath = foundVolume.Mountpoint,
-			// 		IsReadOnly = false,
-			// 		InContainerPath = volume.InContainerPath
-			// 	});
-			// }
-			// volumes.Clear();
-			
-			BeamoServiceDefinition.BuildVolumes(volumes, out var boundVolumes);
-			BeamoServiceDefinition.BuildBindMounts(bindMounts, out var boundMounts);
+			BeamoServiceDefinition.BuildVolumes(customVolumes, out var boundVolumes);
+			BeamoServiceDefinition.BuildBindMounts(customBindMounts, out var boundMounts);
 			var allBinds = new List<string>(boundVolumes.Count + boundMounts.Count);
-			// allBinds.AddRange(boundVolumes);
-			// allBinds.AddRange(boundMounts);
+			allBinds.AddRange(boundVolumes);
+			allBinds.AddRange(boundMounts);
 			hostConfig.Binds = allBinds;
 		}
 

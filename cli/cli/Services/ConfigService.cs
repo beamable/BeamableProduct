@@ -173,6 +173,24 @@ public class ConfigService
 		SetBeamableDirectory(_dir);
 	}
 
+	public const string ENV_VAR_NAMED_VOLUMES_TO_BIND_MOUNTS = "BEAM_CONVERT_NAMED_VOLUMES_TO_BIND_MOUNTS";
+	/// <summary>
+	/// On windows systems, if the drives are configured such that C: is not accessible, then
+	/// Docker will fail to create named volumes, because named volumes are always created on the
+	/// C: drive, unless a the opt, drive, is set, which is not possible on Github Actions.
+	///
+	/// This option instructs the CLI to convert any named volume to a bind mount relative to the
+	/// project's .beamable folder. 
+	/// </summary>
+	public bool MapNamedVolumesToBindMounts
+	{
+		get
+		{
+			var value = Environment.GetEnvironmentVariable(ENV_VAR_NAMED_VOLUMES_TO_BIND_MOUNTS);
+			return !string.IsNullOrEmpty(value) && value != "0" && !value.ToLowerInvariant().StartsWith("f");
+		}
+	}
+
 
 	public bool TryGetSetting(out string value, BindingContext context, ConfigurableOption option,
 		string defaultValue = null)
