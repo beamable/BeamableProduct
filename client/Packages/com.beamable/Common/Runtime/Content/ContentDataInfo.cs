@@ -80,7 +80,9 @@ namespace Beamable.Common.Content
 				// but much more likely, this acts as more of a NEW content write,
 				var newItem = KeyToContentData[key] = new ContentDataInfo
 				{
-					data = raw, contentVersion = info.version, contentId = info.contentId
+					data = raw, 
+					contentVersion = info.version, 
+					contentId = info.contentId
 				};
 				
 				// and we need to add it to the actual serialized data
@@ -120,14 +122,9 @@ namespace Beamable.Common.Content
 			KeyToContentData.Clear();
 			content ??= new List<ContentDataInfo>();
 
-			// iterate through the content backwards, because
-			//  we'll find the latest content first, since new content 
-			//  was always appended to the end of the list in pre 1.19.17 versions
-			for (var i = content.Count - 1; i >= 0 ; i -- )
+			foreach (var info in content)
 			{
-				var info = content[i];
 				var key = GetCacheKey(info.contentId, info.GetContentVersion());
-
 				KeyToContentData[key] = info;
 			}
 		}

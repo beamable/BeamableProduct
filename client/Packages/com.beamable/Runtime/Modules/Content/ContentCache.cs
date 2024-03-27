@@ -82,7 +82,15 @@ namespace Beamable.Content
 			PlatformLogger.Log(
 				$"ContentCache: Fetching content from cache for {requestedInfo.contentId}: version: {requestedInfo.version}");
 			if (_cache.TryGetValue(cacheId, out var cacheEntry)) return cacheEntry.Content;
-
+			
+			// Then, try the on disk cache
+			if (TryGetValueFromDisk(requestedInfo, out var diskContent))
+			{
+				var promise = Promise<TContent>.Successful(diskContent);
+				SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
+				return promise;
+			}
+			
 			// Check if the data exists as baked content
 			if (TryGetBaked(requestedInfo, out var bakedContent))
 			{
@@ -91,25 +99,15 @@ namespace Beamable.Content
 				return promise;
 			}
 			
-			// Then, try the on disk cache
-			PlatformLogger.Log(
-				$"ContentCache: Loading content from disk for {requestedInfo.contentId}: version: {requestedInfo.version}");
-			if (TryGetValueFromDisk(requestedInfo, out var diskContent, _filesystemAccessor))
-			{
-				var promise = Promise<TContent>.Successful(diskContent);
-				SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
-				return promise;
-			}
-
 			// Finally, if not found, fetch the content from the CDN
-			PlatformLogger.Log(
-				$"ContentCache: Fetching content from CDN for {requestedInfo.contentId}: version: {requestedInfo.version}");
 			var fetchedContent = DownloadContent(requestedInfo);
 			return fetchedContent;
 		}
 
 		private async Promise<TContent> DownloadContent(ClientContentInfo requestedInfo)
 		{
+			PlatformLogger.Log(
+				$"ContentCache: Fetching content from CDN for {requestedInfo.contentId}: version: {requestedInfo.version}");
 			var cacheId = GetCacheKey(requestedInfo);
 
 			async Promise<TContent> Download()
@@ -160,26 +158,13 @@ namespace Beamable.Content
 		{
 			PlatformLogger.Log(
 				$"ContentCache: Checking content from baked for {info.contentId}: version: {info.version}");
-			content = default;
-			var bakedContent = _contentService.BakedContentDataInfo;
-			if (bakedContent == null)
-			{
-				return false;
-			}
-
-			return TryGetContentFromInfo(bakedContent, info, out content);
+			return TryGetContentFromInfo(_contentService.BakedContentDataInfo, info, out content);
 		}
 
-		private bool TryGetValueFromDisk(ClientContentInfo info, out TContent content,
-										 IBeamableFilesystemAccessor fsa)
+		private bool TryGetValueFromDisk(ClientContentInfo info, out TContent content)
 		{
-			var filePath = ContentService.ContentPath(fsa);
-			content = default;
-			if (!File.Exists(filePath)) // if there is no cache content file, then this info doesn't exist.
-			{
-				return false;
-			}
-			
+			PlatformLogger.Log(
+				$"ContentCache: Loading content from disk for {info.contentId}: version: {info.version}");
 			return TryGetContentFromInfo(_contentService.CachedContentDataInfo, info, out content);
 		}
 

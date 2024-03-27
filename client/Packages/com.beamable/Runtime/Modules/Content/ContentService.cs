@@ -207,13 +207,13 @@ namespace Beamable.Content
 		/// <summary>
 		/// Member holds all content that has been cached as a result of fetching new content
 		/// </summary>
-		public ContentDataInfoWrapper CachedContentDataInfo;
+		public ContentDataInfoWrapper CachedContentDataInfo = new ContentDataInfoWrapper();
 		
 		/// <summary>
 		/// Member holds all content that was baked into the current build
 		/// To resolve content, please use the <see cref="GetContent(string,string)"/> method.
 		/// </summary>
-		public ContentDataInfoWrapper BakedContentDataInfo;
+		public ContentDataInfoWrapper BakedContentDataInfo = new ContentDataInfoWrapper();
 
 		private Dictionary<string, ClientContentInfo> bakedManifestInfo =
 			new Dictionary<string, ClientContentInfo>();
@@ -359,9 +359,6 @@ namespace Beamable.Content
 			}
 			bool contentDataExists = File.Exists(contentPath);
 
-			// initialize the cached content as empty to begin, 
-			CachedContentDataInfo = new ContentDataInfoWrapper();
-			
 			// but if there is local file content, then scoop it up!
 			if (contentDataExists)
 			{
