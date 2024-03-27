@@ -54,6 +54,12 @@ EndProject";
 				content = InjectProject(content, signpost.name, signpost.CsprojFilePath);
 			}
 
+			var librariesPaths = CodeService.GetLibrariesPaths();
+			foreach (var lib in librariesPaths.libraries)
+			{
+				content = InjectProject(content, lib.name, lib.projPath);
+			}
+
 			foreach (var reference in AssemblyUtil.ReferencedAssemblies)
 			{
 				var referenceName = reference.name;
