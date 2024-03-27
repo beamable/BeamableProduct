@@ -39,9 +39,9 @@ public class RemoveDepsCommand : AppCommand<RemoveDepsCommandArgs>, IEmptyResult
 		}
 
 		List<DependencyData> dependencies = await args.BeamoLocalSystem.GetDependencies(args.ServiceName);
-		bool isAlreadyDependency = dependencies.Any(data => data.name == args.Dependency);
+		bool isDependency = dependencies.Any(data => data.name == args.Dependency);
 
-		if (isAlreadyDependency)
+		if (!isDependency)
 		{
 			Log.Information($"The service {args.ServiceName} does not have {args.Dependency} as a dependency");
 			return;

@@ -392,7 +392,6 @@ namespace Beamable.Server.Editor.Usam
 					throw new ArgumentOutOfRangeException(nameof(type), type, null);
 			}
 		}
-
 		
 		public async Promise UpdateServiceReferences(string serviceName, List<string> assemblyReferencesNames)
 		{
@@ -412,7 +411,7 @@ namespace Beamable.Server.Editor.Usam
 			var correctedPaths = depsPaths.Select(path => path.Replace("\\", "/")).ToList();
 			var existinReferences = correctedPaths.Where(path => path.Contains(CsharpProjectUtil.PROJECT_NAME_PREFIX)).ToList();
 
-			
+
 			//remove all generated projs references
 			LogVerbose($"Removing all references from service: {serviceName}");
 			var promises = new List<Promise<List<string>>>();
@@ -440,9 +439,10 @@ namespace Beamable.Server.Editor.Usam
 				LogVerbose($"Adding the reference: {newRefs}");
 				await _dotnetService.Run($"add {service.CsprojPath} reference {newRefCsprojPath}");
 			}
-			
+
 			LogVerbose($"Finished updating references");
 		}
+
 
 		public Promise RunStandaloneMicroservice(string id)
 		{

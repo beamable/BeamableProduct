@@ -136,6 +136,25 @@ public partial class BeamoLocalSystem
 			onServiceContainerStateChange?.Invoke(beamoId, action));
 	}
 
+	public async Promise<Dictionary<string, string>> GetDockerRunningServices()
+	{
+		var result = new Dictionary<string, string>();
+		var currentInfo = await _client.Containers.ListContainersAsync(new ContainersListParameters() { All = true });
+
+		foreach (var info in currentInfo)
+		{
+			var beamoId = BeamoManifest.ServiceDefinitions.FirstOrDefault(c => info.Names[0].Contains(c.BeamoId))
+				?.BeamoId;
+
+			if (!string.IsNullOrEmpty(beamoId))
+			{
+				result.Add(beamoId, info.ID);
+			}
+		}
+
+		return result;
+	}
+
 	/// <summary>
 	/// Kick off a long running task that receives updates from the docker engine.
 	/// </summary>
@@ -144,7 +163,7 @@ public partial class BeamoLocalSystem
 		// Cancel the thread if it's already running.
 		if (_dockerListeningThread != null && !_dockerListeningThread.IsCompleted)
 			_dockerListeningThreadCancel.Cancel();
-
+			
 		// Start the long running task. We don't "await" this task as it never yields until it's cancelled.
 		_dockerListeningThread = _client.System.MonitorEventsAsync(new ContainerEventsParameters(),
 			new Progress<Message>(DockerSystemEventHandler), _dockerListeningThreadCancel.Token);
@@ -164,7 +183,7 @@ public partial class BeamoLocalSystem
 				case ("container", "create"):
 				{
 					// Find the beamoId tied to the image that was used to create the container
-					var beamoId = BeamoManifest.ServiceDefinitions.FirstOrDefault(c => c.ImageId == message.From)
+					var beamoId = BeamoManifest.ServiceDefinitions.FirstOrDefault(c => message.Actor.Attributes["name"].Contains(c.BeamoId))
 						?.BeamoId;
 					if (!string.IsNullOrEmpty(beamoId))
 					{
@@ -197,9 +216,10 @@ public partial class BeamoLocalSystem
 				{
 					BeamoRuntime.ExistingLocalServiceInstances.RemoveAll(si =>
 					{
-						var wasDestroyed = si.ContainerId == message.ID;
+						var wasDestroyed = message.Actor.Attributes["name"].Contains(si.BeamoId);
 						if (wasDestroyed)
 						{
+							si.IsRunning = false;
 							onServiceContainerStateChange?.Invoke(si.BeamoId, messageAction, message);
 						}
 
@@ -211,7 +231,7 @@ public partial class BeamoLocalSystem
 				case ("container", "start"):
 				{
 					var beamoServiceInstance =
-						BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.ContainerId == message.ID);
+						BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => message.Actor.Attributes["name"].Contains(si.BeamoId));
 					if (beamoServiceInstance != null)
 					{
 						beamoServiceInstance.IsRunning = true;
@@ -221,11 +241,11 @@ public partial class BeamoLocalSystem
 					// TODO: Detect when people containers are running but their dependencies are not. Output a list of warnings that people can then print out.
 					break;
 				}
-
+				
 				case ("container", "stop"):
 				{
 					var beamoServiceInstance =
-						BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.ContainerId == message.ID);
+						BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => message.Actor.Attributes["name"].Contains(si.BeamoId));
 					if (beamoServiceInstance != null)
 					{
 						beamoServiceInstance.IsRunning = false;

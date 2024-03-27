@@ -5,6 +5,7 @@
 
 using Beamable.Common;
 using cli.Utils;
+using Docker.DotNet.Models;
 using Serilog;
 using System.Text.RegularExpressions;
 
@@ -12,6 +13,8 @@ namespace cli.Services;
 
 public partial class BeamoLocalSystem
 {
+	public string GetBeamIdAsMicroserviceContainer(string beamoId) => $"{beamoId}_httpMicroservice";
+	
 	/// <summary>
 	/// Registers a <see cref="BeamoServiceDefinition"/> of with the <see cref="BeamoProtocolType"/> of <see cref="BeamoProtocolType.HttpMicroservice"/>.
 	/// </summary>
@@ -62,6 +65,30 @@ public partial class BeamoLocalSystem
 		return output;
 	}
 
+	public async Promise<string> GetStorageHostPort(string storageName)
+	{
+		var localStorageContainerName = GetBeamIdAsMongoContainer(storageName);
+
+		ContainerInspectResponse storageDesc = await _client.Containers.InspectContainerAsync(localStorageContainerName);
+		
+		if (!storageDesc.NetworkSettings.Ports.TryGetValue($"{MONGO_DATA_CONTAINER_PORT}/tcp", out IList<PortBinding> bindings))
+		{
+			throw new Exception(
+				$"could not get host port of storage=[{storageName}] because it was not mapped in storage container");
+		}
+		
+		// group bindings based on their port, because that is the only property we actually need to use.
+		bindings = bindings.DistinctBy(b => b.HostPort).ToList();
+		
+		if (bindings.Count != 1)
+		{
+			throw new Exception(
+				$"could not get host port of storage=[{storageName}] because port bindings were not equal to one. count=[{bindings.Count}] bindings=[{string.Join(",", bindings.Select(b => b.HostIP + ":" + b.HostPort))}]");
+		}
+
+		return bindings[0].HostPort;
+	}
+
 	public async Task<DockerEnvironmentVariable> GetLocalConnectionString(BeamoLocalManifest localManifest,
 		string storageName, string host = "gateway.docker.internal")
 	{
@@ -69,28 +96,10 @@ public partial class BeamoLocalSystem
 		{
 			throw new Exception($"Could not find entry for {storageName}");
 		}
+		
+		var hostPort = await GetStorageHostPort(storageName);
 
-		var localStorageContainerName = GetBeamIdAsMongoContainer(storageName);
-		var storageDesc = await _client.Containers.InspectContainerAsync(localStorageContainerName);
-
-		if (!storageDesc.NetworkSettings.Ports.TryGetValue($"{MONGO_DATA_CONTAINER_PORT}/tcp", out var bindings))
-		{
-			throw new Exception(
-				$"could not configure connection to storage=[{storageName}] because port was not mapped in storage container");
-		}
-
-		// group bindings based on their port, because that is the only property we actually need to use.
-		bindings = bindings.DistinctBy(b => b.HostPort).ToList();
-
-		if (bindings.Count != 1)
-		{
-			throw new Exception(
-				$"could not configure connection to storage=[{storageName}] because port bindings were not equal to one. count=[{bindings.Count}] bindings=[{string.Join(",", bindings.Select(b => b.HostIP + ":" + b.HostPort))}]");
-		}
-
-		var portBinding = bindings[0];
-
-		var str = $"mongodb://{localStorage.RootUsername}:{localStorage.RootPassword}@{host}:{portBinding.HostPort}";
+		var str = $"mongodb://{localStorage.RootUsername}:{localStorage.RootPassword}@{host}:{hostPort}";
 		var key = $"STORAGE_CONNSTR_{storageName}";
 
 		return new DockerEnvironmentVariable { VariableName = key, Value = str };
@@ -113,7 +122,7 @@ public partial class BeamoLocalSystem
 
 
 		var imageId = serviceDefinition.ImageId;
-		var containerName = $"{serviceDefinition.BeamoId}_httpMicroservice";
+		var containerName = GetBeamIdAsMicroserviceContainer(serviceDefinition.BeamoId);
 
 		var portBindings = new List<DockerPortBinding>();
 		portBindings.AddRange(localProtocol.CustomPortBindings);
