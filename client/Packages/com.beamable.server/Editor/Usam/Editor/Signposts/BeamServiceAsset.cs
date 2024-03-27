@@ -10,7 +10,7 @@ namespace Beamable.Server.Editor.Usam
 	public class BeamServiceAsset : ScriptableObject
 	{
 		public BeamServiceSignpost data;
-		
+
 		private bool CheckAllValidAssemblies()
 		{
 

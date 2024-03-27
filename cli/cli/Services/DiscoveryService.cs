@@ -44,10 +44,10 @@ public class DiscoveryService
 
 		//Update with current state of docker
 		var runningServices = await _localSystem.GetDockerRunningServices();
-		foreach (KeyValuePair<string,string> pair in runningServices)
+		foreach (KeyValuePair<string, string> pair in runningServices)
 		{
 			var service = await CreateEntryFromDocker(pair.Key, pair.Value);
-			
+
 			var evt = CreateEvent(service, true);
 			evtQueue.Enqueue(evt);
 		}
@@ -59,12 +59,12 @@ public class DiscoveryService
 			{
 				return;
 			}
-			
-			
+
+
 			var isRunning = eventType == "start";
 
 			var service = await CreateEntryFromDocker(beamoId, raw.ID);
-			
+
 			var evt = CreateEvent(service, isRunning);
 			evtQueue.Enqueue(evt);
 		});
