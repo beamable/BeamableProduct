@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Server;
 using Beamable.Server.Common;
 using cli.Utils;
@@ -41,27 +42,30 @@ public class DiscoveryService
 		var evtQueue = new ConcurrentQueue<ServiceDiscoveryEvent>();
 		var startTime = DateTimeOffset.Now;
 
+		//Update with current state of docker
+		var runningServices = await _localSystem.GetDockerRunningServices();
+		foreach (KeyValuePair<string,string> pair in runningServices)
+		{
+			var service = await CreateEntryFromDocker(pair.Key, pair.Value);
+			
+			var evt = CreateEvent(service, true);
+			evtQueue.Enqueue(evt);
+		}
 
 		// This doesn't actually block
-		await _localSystem.StartListeningToDockerRaw((beamoId, eventType, raw) =>
+		await _localSystem.StartListeningToDockerRaw(async (beamoId, eventType, raw) =>
 		{
-			// We skip out on non-Microservice containers.
-			var serviceDefinition = _localSystem.BeamoManifest.ServiceDefinitions.FirstOrDefault(sd => sd.BeamoId == beamoId);
-			if (serviceDefinition == null || serviceDefinition.Protocol != BeamoProtocolType.HttpMicroservice) return;
-
-			var protocol = _localSystem.BeamoManifest.HttpMicroserviceRemoteProtocols[serviceDefinition.BeamoId];
-			var isRunning = eventType == "start";
-			isRunning &= eventType != "stop";
-			var evt = CreateEvent(new ServiceDiscoveryEntry()
+			if (eventType != "start" && eventType != "destroy")
 			{
-				cid = _appContext.Cid,
-				pid = _appContext.Pid,
-				prefix = MachineHelper.GetUniqueDeviceId(),
-				serviceName = serviceDefinition.BeamoId,
-				healthPort = Convert.ToInt32(protocol.HealthCheckPort),
-				isContainer = true,
-				containerId = raw.ID
-			}, isRunning);
+				return;
+			}
+			
+			
+			var isRunning = eventType == "start";
+
+			var service = await CreateEntryFromDocker(beamoId, raw.ID);
+			
+			var evt = CreateEvent(service, isRunning);
 			evtQueue.Enqueue(evt);
 		});
 
@@ -141,6 +145,48 @@ public class DiscoveryService
 
 	}
 
+	public async Promise<ServiceDiscoveryEntry> CreateEntryFromDocker(string beamoId, string id)
+	{
+		var serviceDefinition = _localSystem.BeamoManifest.ServiceDefinitions.FirstOrDefault(sd => sd.BeamoId == beamoId);
+		if (serviceDefinition == null) return null;
+
+		var healthPort = 0;
+		var dataPort = 0;
+
+		if (serviceDefinition.Protocol == BeamoProtocolType.HttpMicroservice)
+		{
+			healthPort = Convert.ToInt32(_localSystem.BeamoManifest.HttpMicroserviceRemoteProtocols[serviceDefinition.BeamoId]
+				.HealthCheckPort);
+		}
+		else
+		{
+			try
+			{
+				var port = await _localSystem.GetStorageHostPort(beamoId);
+				dataPort = Convert.ToInt32(port);
+			}
+			catch
+			{
+				// storage is not running, therefore there is no port available
+			}
+		}
+
+		var service = new ServiceDiscoveryEntry()
+		{
+			cid = _appContext.Cid,
+			pid = _appContext.Pid,
+			prefix = MachineHelper.GetUniqueDeviceId(),
+			serviceName = serviceDefinition.BeamoId,
+			serviceType = serviceDefinition.Protocol == BeamoProtocolType.HttpMicroservice ? "service" : "storage",
+			dataPort = dataPort,
+			healthPort = healthPort,
+			isContainer = true,
+			containerId = id
+		};
+
+		return service;
+	}
+
 	public static ServiceDiscoveryEvent CreateEvent(ServiceDiscoveryEntry entry, bool isRunning)
 	{
 		return new ServiceDiscoveryEvent
@@ -152,7 +198,9 @@ public class DiscoveryService
 			isRunning = isRunning,
 			isContainer = entry.isContainer,
 			containerId = entry.containerId,
-			healthPort = entry.healthPort
+			healthPort = entry.healthPort,
+			dataPort = entry.dataPort,
+			serviceType = entry.serviceType
 		};
 	}
 

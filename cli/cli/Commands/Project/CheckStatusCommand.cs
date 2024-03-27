@@ -19,7 +19,9 @@ public class ServiceDiscoveryEvent
 	public string cid, pid, prefix, service;
 	public bool isRunning;
 	public bool isContainer;
+	public string serviceType;
 	public int healthPort;
+	public int dataPort;
 	public string containerId;
 }
 
