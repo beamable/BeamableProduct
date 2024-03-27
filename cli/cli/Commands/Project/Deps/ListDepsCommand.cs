@@ -8,6 +8,7 @@ public class ListDepsCommandArgs : CommandArgs
 {
 	public string ServiceName;
 	public bool ListAll;
+	public bool ListNonBeamo;
 }
 
 [Serializable]
@@ -35,6 +36,8 @@ public class ListDepsCommand : AtomicCommand<ListDepsCommandArgs, ListDepsComman
 			(args, i) => args.ServiceName = i);
 		AddOption(new Option<bool>("--all", "If this is passed and set to True, then all references of the service will be listed"),
 			(args, i) => args.ListAll = i);
+		AddOption(new Option<bool>("--non-beamo", "If this is passed and set to True, then all references that are not storages or microservices will be listed"),
+			(args, i) => args.ListNonBeamo = i);
 	}
 
 	public override async Task<ListDepsCommandResults> GetResult(ListDepsCommandArgs args)
@@ -69,7 +72,13 @@ public class ListDepsCommand : AtomicCommand<ListDepsCommandArgs, ListDepsComman
 		result.Services = new List<ServiceDependenciesPair>();
 		foreach (string service in servicesToShow)
 		{
-			List<DependencyData> dependencies = await args.BeamoLocalSystem.GetDependencies(service, args.ListAll);
+			List<DependencyData> dependencies = await args.BeamoLocalSystem.GetDependencies(service, args.ListAll || args.ListNonBeamo);
+
+			if (args.ListNonBeamo)
+			{
+				dependencies.RemoveAll(dd => dd.type == "storage");
+			}
+			
 			result.Services.Add(new ServiceDependenciesPair()
 			{
 				name = service,

@@ -42,6 +42,7 @@ namespace Beamable.Server.Editor.Usam
 		private const string MICROSERVICE_DLL_PATH = "bin/Debug/net6.0"; // is this true for all platforms and dotnet installations?
 		public static readonly string StandaloneMicroservicesFolderName = "StandaloneMicroservices~/";
 		private static readonly string StandaloneMicroservicesPath = $"{BEAMABLE_PATH}{StandaloneMicroservicesFolderName}";
+		public static readonly string LibrariesPathsFilePath = $"{StandaloneMicroservicesPath}.libraries_paths";
 
 		public CodeService(BeamCommands cli, BeamableDispatcher dispatcher, DotnetService dotnetService)
 		{
@@ -79,6 +80,9 @@ namespace Beamable.Server.Editor.Usam
 
 			LogVerbose("Setting properties file");
 			await SetPropertiesFile();
+
+			LogVerbose("Saving all libraries referenced by services");
+			await SaveReferencedLibraries();
 
 			LogVerbose("Set manifest start");
 			await SetManifest(_cli, _services, _storages);
@@ -208,6 +212,40 @@ namespace Beamable.Server.Editor.Usam
 			}
 
 			return outputPath;
+		}
+
+		private async Promise SaveReferencedLibraries()
+		{
+			List<BeamDependencyData> allDependencies = new List<BeamDependencyData>();
+
+			var command = _cli.ProjectDepsList(new ProjectDepsListArgs()
+			{
+				nonBeamo = true
+			}).OnStreamListDepsCommandResults(cb =>
+			{
+				foreach (var serviceDependenciesPair in cb.data.Services)
+				{
+					allDependencies.AddRange(serviceDependenciesPair.dependencies);
+				}
+			});
+			await command.Run();
+
+			var librariesPaths = new LibrariesPaths() {libraries = allDependencies.Distinct().ToList()};
+
+			var fileContent = JsonUtility.ToJson(librariesPaths);
+			File.WriteAllText(LibrariesPathsFilePath, fileContent);
+		}
+
+		public static LibrariesPaths GetLibrariesPaths()
+		{
+			if (!File.Exists(LibrariesPathsFilePath))
+			{
+				return new LibrariesPaths() {libraries = new List<BeamDependencyData>()};
+			}
+			
+			var contents = File.ReadAllText(LibrariesPathsFilePath);
+
+			return JsonUtility.FromJson<LibrariesPaths>(contents);
 		}
 
 		public async Promise UpdateServicesVersions()
