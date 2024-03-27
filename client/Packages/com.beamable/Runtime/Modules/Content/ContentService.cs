@@ -205,11 +205,15 @@ namespace Beamable.Content
 		private static bool _testScopeEnabled;
 
 		/// <summary>
-		/// A utility used during Content Baking.
-		/// This field should not be used in regular use.
+		/// Member holds all content that has been cached as a result of fetching new content
+		/// </summary>
+		public ContentDataInfoWrapper CachedContentDataInfo = new ContentDataInfoWrapper();
+		
+		/// <summary>
+		/// Member holds all content that was baked into the current build
 		/// To resolve content, please use the <see cref="GetContent(string,string)"/> method.
 		/// </summary>
-		public ContentDataInfoWrapper ContentDataInfo;
+		public ContentDataInfoWrapper BakedContentDataInfo = new ContentDataInfoWrapper();
 
 		private Dictionary<string, ClientContentInfo> bakedManifestInfo =
 			new Dictionary<string, ClientContentInfo>();
@@ -275,8 +279,9 @@ namespace Beamable.Content
 			});
 
 
-			InitializeBakedContent();
+			InitializeCachedContent();
 			InitializeBakedManifest();
+			BakedContentDataInfo = LoadBakedContent();
 
 			Subscribables = new Dictionary<string, ManifestSubscription>();
 			AddSubscriber(CurrentDefaultManifestID);
@@ -295,11 +300,50 @@ namespace Beamable.Content
 			}
 		}
 
-		private void InitializeBakedContent()
+		/// <summary>
+		/// Build the path string using a file system accessor and the PID.
+		/// </summary>
+		/// <param name="fsa">The file system accessor that it's being used for content.</param>
+		/// <returns>eturns the path where the content cache data is stored.</returns>
+		public static string ContentPath(IBeamableFilesystemAccessor fsa)
+		{
+			var pid = Beam.RuntimeConfigProvider.Pid;
+			var cid = Beam.RuntimeConfigProvider.Cid;
+
+			return $"{fsa.GetPersistentDataPathWithoutTrailingSlash()}/{pid}-{cid}/content/content.json";
+		}
+		
+		/// <summary>
+		/// get the baked content and hold it as an in-memory dictionary for use later
+		/// </summary>
+		ContentDataInfoWrapper LoadBakedContent()
+		{
+			var bakedFile = Resources.Load<TextAsset>(BAKED_FILE_RESOURCE_PATH);
+
+			if (bakedFile == null)
+			{
+				return new ContentDataInfoWrapper();
+			}
+			
+			string json = bakedFile.text;
+			var isValidJson = Json.IsValidJson(json);
+			if (isValidJson)
+			{
+				return DeserializeDataCache<ContentDataInfoWrapper>(json);
+			}
+			else
+			{
+				json = Gzip.Decompress(bakedFile.bytes);
+				return DeserializeDataCache<ContentDataInfoWrapper>(json);
+			}
+		}
+
+		private void InitializeCachedContent()
 		{
 			// remove content in old format
-			string contentDirectory = Path.Combine(FilesystemAccessor.GetPersistentDataPathWithoutTrailingSlash(), "content");
-			const string contentFileName = "content.json";
+			var contentPath = ContentPath(FilesystemAccessor);
+			var contentDirectory = Path.GetDirectoryName(contentPath);
+			var contentFileName = Path.GetFileName(contentPath);
 			if (Directory.Exists(contentDirectory))
 			{
 				DirectoryInfo info = new DirectoryInfo(contentDirectory);
@@ -313,9 +357,9 @@ namespace Beamable.Content
 					file.Delete();
 				}
 			}
-			string contentPath = Path.Combine(contentDirectory, contentFileName);
 			bool contentDataExists = File.Exists(contentPath);
 
+			// but if there is local file content, then scoop it up!
 			if (contentDataExists)
 			{
 				var json = File.ReadAllText(contentPath);
@@ -323,40 +367,7 @@ namespace Beamable.Content
 				contentDataExists = contentData != null && contentData.content?.Count > 0;
 				if (contentDataExists)
 				{
-					ContentDataInfo = contentData;
-				}
-			}
-
-			if (!contentDataExists)
-			{
-				var bakedFile = Resources.Load<TextAsset>(BAKED_FILE_RESOURCE_PATH);
-
-				if (bakedFile == null)
-				{
-					return;
-				}
-
-				string json = bakedFile.text;
-				var isValidJson = Json.IsValidJson(json);
-				if (isValidJson)
-				{
-					ContentDataInfo = DeserializeDataCache<ContentDataInfoWrapper>(json);
-				}
-				else
-				{
-					json = Gzip.Decompress(bakedFile.bytes);
-					ContentDataInfo = DeserializeDataCache<ContentDataInfoWrapper>(json);
-				}
-
-				// save baked data to disk
-				try
-				{
-					Directory.CreateDirectory(Path.GetDirectoryName(contentPath));
-					File.WriteAllText(contentPath, json);
-				}
-				catch (Exception e)
-				{
-					Debug.LogError($"[EXTRACT] Failed to write baked data to disk: {e.Message}");
+					CachedContentDataInfo = contentData;
 				}
 			}
 		}
