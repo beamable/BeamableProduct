@@ -38,7 +38,8 @@ namespace Beamable.Editor.Content
 			var contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 			bool disableExceptions = ContentConfiguration.Instance.DisableContentDownloadExceptions;
 
-			var downloadPromiseGenerators = summary.GetAllDownloadEntries().Select(operation =>
+			var entries = summary.GetAllDownloadEntries();
+			var downloadPromiseGenerators = entries.Select(operation =>
 			{
 				var type = operation.ContentId.Split('.')[0];
 				if (!contentTypeReflectionCache.HasContentTypeValidClass(type))
@@ -47,8 +48,9 @@ namespace Beamable.Editor.Content
 					return null;
 				}
 
-				return new Func<Promise<Tuple<ContentObject, string>>>(() => FetchContentFromCDN(operation.Uri).Map(response =>
+				return new Func<Promise<Tuple<ContentObject, string>>>(async () =>
 				{
+					var response = await FetchContentFromCDN(operation.Uri);
 					var contentType = contentTypeReflectionCache.GetTypeFromId(operation.ContentId);
 					var newAsset = serializer.DeserializeByType(response, contentType, disableExceptions);
 					newAsset.Tags = operation.Tags;
@@ -61,7 +63,8 @@ namespace Beamable.Editor.Content
 					progressCallback?.Invoke(completed / totalOperations, (int)completed, totalOperations);
 
 					return new Tuple<ContentObject, string>(newAsset, operation.AssetPath);
-				}));
+				
+				});
 			}).ToList();
 
 			downloadPromiseGenerators.RemoveAll(item => item == null);
@@ -80,9 +83,17 @@ namespace Beamable.Editor.Content
 
 		}
 
-		private Promise<string> FetchContentFromCDN(string uri)
+		private async Promise<string> FetchContentFromCDN(string uri)
 		{
-			return _requester.Request(Method.GET, uri, includeAuthHeader: false, parser: s => s);
+			try
+			{
+				return await _requester.Request(Method.GET, uri, includeAuthHeader: false, parser: s => s);
+			}
+			catch (Exception ex)
+			{
+				Debug.LogException(ex);
+				throw;
+			}
 		}
 	}
 

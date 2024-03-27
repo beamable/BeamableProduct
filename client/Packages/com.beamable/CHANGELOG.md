@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cid and Pid are stored in `Beam.GlobalScope`
 - Dotnet is automatically installed to the project's /Library folder
 - Beam CLI is automatically installed to the project's /Library folder
+- Baked content exists in a separate memory location than the deserialized `content.json` CDN cache
 
 ### Fixed
 
