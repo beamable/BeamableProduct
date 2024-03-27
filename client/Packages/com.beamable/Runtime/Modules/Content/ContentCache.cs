@@ -142,7 +142,17 @@ namespace Beamable.Content
 				return false;
 			}
 
-			content = DeserializeContent(info, existingInfo.data);
+			try
+			{
+				content = DeserializeContent(info, existingInfo.data);
+			}
+			catch (Exception ex)
+			{
+				PlatformLogger.Log(
+					$"ContentCache: Unable to deserialize content type correctly {info.contentId}: version: {info.version} message: {ex.Message}");
+				return false;
+			}
+
 			return true;
 		}
 
