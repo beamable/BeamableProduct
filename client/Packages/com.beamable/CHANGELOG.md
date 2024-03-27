@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Disabling Content inspectors no longer causes compiler errors.
 - Leaderboard `rankgt` field is not null when specifying outlier.
 - Fix renaming content throwing infinite warnings
+- Content cache evicts old content for new content id versions
 
 ### Removed
 

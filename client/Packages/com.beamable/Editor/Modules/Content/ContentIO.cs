@@ -1169,7 +1169,12 @@ namespace Beamable.Editor.Content
 
 				var version = serverReference.version;
 				content.SetIdAndVersion(content.Id, version);
-				contentData[i] = new ContentDataInfo { contentId = content.Id, data = content.ToJson() };
+				contentData[i] = new ContentDataInfo
+				{
+					contentId = content.Id, 
+					contentVersion = content.Version,
+					data = content.ToJson()
+				};
 			}
 
 			ContentDataInfoWrapper fileData = new ContentDataInfoWrapper { content = contentData.ToList() };

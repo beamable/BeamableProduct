@@ -137,18 +137,13 @@ namespace Beamable.Content
 		private bool TryGetContentFromInfo(ContentDataInfoWrapper wrapper, ClientContentInfo info, out TContent content)
 		{
 			content = default;
-			var contentInfo = wrapper.content.Find(item => item.contentId == info.contentId);
-			if (contentInfo != null)
+			if (!wrapper.TryGetContent(info.contentId, info.version, out var existingInfo))
 			{
-				var deserialized = DeserializeContent(info, contentInfo.data);
-				if (deserialized.Version == info.version)
-				{
-					content = deserialized;
-					return true;
-				}
+				return false;
 			}
 
-			return false;
+			content = DeserializeContent(info, existingInfo.data);
+			return true;
 		}
 
 		private bool TryGetBaked(ClientContentInfo info, out TContent content)
@@ -191,35 +186,17 @@ namespace Beamable.Content
 
 		private void UpdateDiskFile(ClientContentInfo info, string raw)
 		{
+			var needsUpdating = _contentService.CachedContentDataInfo.TryUpdateContent(info, raw);
+			if (!needsUpdating)
+			{
+				return;
+			}
 			try
 			{
-				if (_contentService.CachedContentDataInfo != null)
-				{
-					var existingContent = _contentService.CachedContentDataInfo.content.Find(obj => obj.contentId == info.contentId);
-					if (existingContent != null)
-					{
-						existingContent.data = raw;
-					}
-					else
-					{
-						var newObject = new ContentDataInfo { contentId = info.contentId, data = raw };
-						_contentService.CachedContentDataInfo.content.Add(newObject);
-					}
-				}
-				else
-				{
-					_contentService.CachedContentDataInfo = new ContentDataInfoWrapper
-					{
-						content = { new ContentDataInfo { contentId = info.contentId, data = raw } }
-					};
-				}
-
-				
 				if (_updateDiskFileCoroutine != null)
 				{
 					_coroutineService.StopCoroutine(_updateDiskFileCoroutine);
 				}
-
 				_updateDiskFileCoroutine = _coroutineService.StartNew("ContentFileUpdate", WriteToDisk());
 			}
 			catch (Exception e)
