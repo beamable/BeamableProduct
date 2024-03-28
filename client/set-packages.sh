@@ -36,6 +36,9 @@ if dotnet nuget list source | grep -q $SOURCE_NAME; then
 else
     echo "Source does not exists!!"
     echo "Setting the projects folder as a source folder for nuget"
+    echo $PROJECTS_SOURCE
+    echo $SOURCE_NAME
+    dotnet nuget add source --help
     dotnet nuget add source "$PROJECTS_SOURCE" -n $SOURCE_NAME
 fi
 
