@@ -5,7 +5,6 @@ SOURCE_NAME="BeamableSource"
 SOURCE_PATH="$PROJECTS_SOURCE"
 VERSION="0.0.123"
 VERSION_INFO="$VERSION-local"
-
 if [ ! -d "$PROJECTS_DIR" ]; then
     echo "Creating projects source folder!"
     mkdir $PROJECTS_DIR
@@ -13,6 +12,7 @@ else
     echo "Projects source folder already exists!"
     rm -r $PROJECTS_DIR/*
 fi
+ls $PROJECTS_DIR
 
 if [ ! -d "$PROJECTS_SOURCE" ]; then
     echo "Creating source feed folder!"
@@ -51,4 +51,9 @@ rm -rf ~/.nuget/packages/beamable.unity.addressables/$VERSION
 rm -rf ~/.nuget/packages/beamable.microservice.runtime/$VERSION
 
 
+echo "Pushing"
+echo $PROJECTS_DIR
+echo $PROJECTS_SOURCE
+ls $PROJECTS_DIR
+ls $PROJECTS_SOURCE
 dotnet nuget push $PROJECTS_DIR -s $PROJECTS_SOURCE
