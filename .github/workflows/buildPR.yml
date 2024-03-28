@@ -103,6 +103,8 @@ jobs:
         working-directory: ./client
         shell: bash
         run: ./set-packages.sh
+        env:
+          HOME: "./Home"
       - name: Install dependencies
         run: dotnet restore cli/tests
       - name: Build
