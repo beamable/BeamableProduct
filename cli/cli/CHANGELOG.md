@@ -33,6 +33,7 @@ This means Unreal now supports multiple microservices as well as shared librarie
 - Unreal Microservice Client Code generation no longer appends the microservice name to serializable types.
 This means that the game-maker is responsible for resolving name conflicts that stem from types used in any `Callable`'s signature.
 In most cases, this is as trivial as renaming the type inside the microservice to something that won't conflict.
+- Microservices install with current CLI version
 
 ### Fixed
 
