@@ -104,7 +104,7 @@ jobs:
         shell: bash
         run: ./set-packages.sh
         env:
-          HOME: "./Home"
+          HOME: .
       - name: Install dependencies
         run: dotnet restore cli/tests
       - name: Build
