@@ -102,9 +102,12 @@ jobs:
       - name: Install local packages
         working-directory: ./client
         shell: bash
-        run: ./set-packages.sh
+        run: |
+          mkdir ${{ github.workspace }}/NugetBuildDir
+          ./set-packages.sh
         env:
           HOME_OVERRIDE: ${{ github.workspace }}
+          PROJECTS_DIR: ${{ github.workspace }}/NugetBuildDir
       - name: Install dependencies
         run: dotnet restore cli/tests
       - name: Build

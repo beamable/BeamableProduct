@@ -1,4 +1,4 @@
-PROJECTS_DIR="../ProjectsSource/"
+PROJECTS_DIR=${PROJECT_DIR_OVERRIDE:-"../ProjectsSource/"}
 HOME_FOR_BUILD=${HOME_OVERRIDE:-$HOME}
 PROJECTS_SOURCE="$HOME_FOR_BUILD/BeamableSource/"
 SOURCE_NAME="BeamableSource"
@@ -39,7 +39,6 @@ else
     echo "Setting the projects folder as a source folder for nuget"
     echo $PROJECTS_SOURCE
     echo $SOURCE_NAME
-    dotnet nuget add source --help
     dotnet nuget add source "$PROJECTS_SOURCE" -n $SOURCE_NAME
 fi
 
