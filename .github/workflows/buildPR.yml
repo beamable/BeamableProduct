@@ -103,7 +103,6 @@ jobs:
         working-directory: ./client
         shell: bash
         run: |
-          mkdir ${{ github.workspace }}/NugetBuildDir
           ./set-packages.sh
         env:
           HOME_OVERRIDE: ${{ github.workspace }}
