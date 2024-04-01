@@ -164,6 +164,18 @@ public class App
 
 		Commands.AddSingleton(logConfig);
 		Commands.AddSingleton(new ArgValidator<ServiceName>(arg => new ServiceName(arg)));
+		Commands.AddSingleton(new ArgValidator<PackageVersion>(arg =>
+		{
+			if (arg == null) return "0.0.0";
+			try
+			{
+				return PackageVersion.FromSemanticVersionString(arg);
+			}
+			catch (Exception ex)
+			{
+				throw new Exception($"Failed to parse version. Invalid=[{arg}] Message=[{ex.Message}]");
+			}
+		}));
 
 		// add global options
 		Commands.AddSingleton<DryRunOption>();

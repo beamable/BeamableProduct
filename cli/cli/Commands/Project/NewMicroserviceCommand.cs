@@ -1,7 +1,10 @@
 using Beamable.Common;
 using Beamable.Common.Semantics;
+using Beamable.Common.Util;
 using cli.Dotnet;
+using cli.Services;
 using cli.Utils;
+using Serilog;
 using System.CommandLine;
 
 namespace cli.Commands.Project;
@@ -37,7 +40,7 @@ public static class IHaveSolutionFlagExtensions
 public class SolutionCommandArgs : NewProjectCommandArgs
 {
 	public string SlnFilePath;
-	public string SpecifiedVersion;
+	public PackageVersion SpecifiedVersion;
 	public bool Disabled;
 	public string ServicesBaseFolderPath;
 
@@ -124,10 +127,12 @@ public class ServiceNameArgument : Argument<ServiceName>
 	public ServiceNameArgument(string description = "Name of the new project") : base("name", description) { }
 }
 
-public class SpecificVersionOption : Option<string>
+public class SpecificVersionOption : Option<PackageVersion>
 {
-	public SpecificVersionOption() : base("--version", () => string.Empty,
-		"Specifies version of Beamable project dependencies")
+	public SpecificVersionOption() : base(
+		name: "--version", 
+		getDefaultValue: () => VersionService.GetNugetPackagesForExecutingCliVersion().ToString(),
+		description: $"Specifies version of Beamable project dependencies. Defaults to the current version of the CLI")
 	{
 	}
 }

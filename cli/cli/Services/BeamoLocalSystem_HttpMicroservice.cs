@@ -77,15 +77,6 @@ public partial class BeamoLocalSystem
 				$"could not get host port of storage=[{storageName}] because it was not mapped in storage container");
 		}
 		
-		// group bindings based on their port, because that is the only property we actually need to use.
-		bindings = bindings.DistinctBy(b => b.HostPort).ToList();
-		
-		if (bindings.Count != 1)
-		{
-			throw new Exception(
-				$"could not get host port of storage=[{storageName}] because port bindings were not equal to one. count=[{bindings.Count}] bindings=[{string.Join(",", bindings.Select(b => b.HostIP + ":" + b.HostPort))}]");
-		}
-
 		return bindings[0].HostPort;
 	}
 

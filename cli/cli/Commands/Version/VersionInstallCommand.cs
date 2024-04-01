@@ -15,7 +15,7 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>, ISta
 {
 	public VersionInstallCommand() : base("install", "Install a different version of the CLI")
 	{
-
+		AddAlias("update");
 	}
 
 	public override void Configure()
