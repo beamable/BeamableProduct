@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Leaderboard `rankgt` field is not null when specifying outlier.
 - Fix renaming content throwing infinite warnings
 - Content cache evicts old content for new content id versions
+- `PlatformRequester` will reattempt failed requests caused by SSL connection issues.
 
 ### Removed
 
