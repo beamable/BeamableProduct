@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unreal Microservice client generation now correctly generates non-primitives used in C#MS signatures, including containers and nested containers.
 - Unreal Microservice client generation now happens for all microservices at once and support shared code.
 This means Unreal now supports multiple microservices as well as shared libraries!
+- `BEAM_DOCKER_URI` environment variable will override docker connection uri
 
 ### Changed
 
@@ -40,6 +41,7 @@ In most cases, this is as trivial as renaming the type inside the microservice t
 - `project new-storage` path fixes.
 - Progress bars and logs do not appear side by side.
 - Fixed issue that caused incorrect code-gen of Unreal wrapper types in SAMS-Client code
+- Docker will not connect at common unix home directory if `/var/run/docker.sock` is not available
 
 ## [1.19.12]
 

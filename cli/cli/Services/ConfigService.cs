@@ -174,6 +174,14 @@ public class ConfigService
 	}
 
 	public const string ENV_VAR_WINDOWS_VOLUME_NAMES = "BEAM_DOCKER_WINDOWS_CONTAINERS";
+	public const string ENV_VAR_DOCKER_URI = "BEAM_DOCKER_URI";
+
+	/// <summary>
+	/// Enabling a custom Docker Uri allows for a customer to have a customized docker install and still
+	/// tell the Beam CLI where the docker socket is available.
+	/// </summary>
+	public string CustomDockerUri => Environment.GetEnvironmentVariable(ENV_VAR_DOCKER_URI);
+	
 	/// <summary>
 	/// Github Action Runners for windows don't seem to work with volumes for mongo.
 	/// </summary>
