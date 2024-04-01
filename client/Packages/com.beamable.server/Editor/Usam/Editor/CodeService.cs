@@ -230,7 +230,7 @@ namespace Beamable.Server.Editor.Usam
 			});
 			await command.Run();
 
-			var librariesPaths = new LibrariesPaths() {libraries = allDependencies.Distinct().ToList()};
+			var librariesPaths = new LibrariesPaths() { libraries = allDependencies.Distinct().ToList() };
 
 			var fileContent = JsonUtility.ToJson(librariesPaths);
 			File.WriteAllText(LibrariesPathsFilePath, fileContent);
@@ -240,9 +240,9 @@ namespace Beamable.Server.Editor.Usam
 		{
 			if (!File.Exists(LibrariesPathsFilePath))
 			{
-				return new LibrariesPaths() {libraries = new List<BeamDependencyData>()};
+				return new LibrariesPaths() { libraries = new List<BeamDependencyData>() };
 			}
-			
+
 			var contents = File.ReadAllText(LibrariesPathsFilePath);
 
 			return JsonUtility.FromJson<LibrariesPaths>(contents);
@@ -430,7 +430,7 @@ namespace Beamable.Server.Editor.Usam
 					throw new ArgumentOutOfRangeException(nameof(type), type, null);
 			}
 		}
-		
+
 		public async Promise UpdateServiceReferences(string serviceName, List<string> assemblyReferencesNames)
 		{
 			LogVerbose($"Starting updating references");
@@ -458,7 +458,7 @@ namespace Beamable.Server.Editor.Usam
 				var referenceName = Path.GetFileNameWithoutExtension(reference).Replace(CsharpProjectUtil.PROJECT_NAME_PREFIX, String.Empty);
 				var refPathToRemove = CsharpProjectUtil.GenerateCsharpProjectFilename(referenceName);
 				LogVerbose($"Removing reference: {refPathToRemove}");
-				Promise<List<string>> p =_dotnetService.Run($"remove {service.CsprojPath} reference {refPathToRemove}");
+				Promise<List<string>> p = _dotnetService.Run($"remove {service.CsprojPath} reference {refPathToRemove}");
 				promises.Add(p);
 			}
 
