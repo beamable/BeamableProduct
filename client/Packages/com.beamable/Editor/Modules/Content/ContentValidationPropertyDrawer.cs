@@ -187,11 +187,6 @@ namespace Beamable.Editor.Content
 		public static DefaultPropertyFieldDelegate VanillaPropertyField;
 		static RefEditorGUI()
 		{
-			Init();
-		}
-
-		static void Init()
-		{
 			_propertyDrawerTypes = TypeCache.GetTypesDerivedFrom<PropertyDrawer>().ToArray();
 
 			var t = typeof(EditorGUI);
@@ -250,6 +245,7 @@ namespace Beamable.Editor.Content
 				}
 				return true;
 			};
+
 		}
 
 		static Type GetPropertyType(SerializedProperty prop)
@@ -283,15 +279,6 @@ namespace Beamable.Editor.Content
 
 		static Type GetPropertyDrawerType(Type fieldType)
 		{
-			if (_propertyDrawerTypes == null)
-			{
-				Init();
-			}
-
-			if (_propertyDrawerTypes == null)
-			{
-				throw new Exception("cannot initialize property drawer types :( ");
-			}
 			return _propertyDrawerTypes.FirstOrDefault(drawerType =>
 			{
 				var attributes = drawerType.GetCustomAttributes<CustomPropertyDrawer>();
