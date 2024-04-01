@@ -11,6 +11,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Pooling;
+using Beamable.Common.Scheduler;
 using Beamable.Common.Spew;
 using Beamable.Serialization;
 using Core.Platform.SDK;
@@ -54,6 +55,7 @@ namespace Beamable.Api
 	{
 		private readonly IDependencyProvider _provider;
 		private const string ACCEPT_HEADER = "application/json";
+		private const string SSL_ERROR = "Unable to complete SSL connection";
 
 		private readonly PackageVersion _beamableVersion;
 		protected AccessTokenStorage accessTokenStorage;
@@ -382,7 +384,7 @@ namespace Beamable.Api
 						   {
 							   return Promise<T>.Failed(new NoConnectivityException(
 															opts.uri +
-															" should not be cached and requires internet connectivity. Internet connection lost."));
+															" should not be cached and requires internet connectivity. Internet connection lost. " + error.Message));
 						   }
 
 						   return HandleError<T>(error, contentType, body, opts);
@@ -442,14 +444,27 @@ namespace Beamable.Api
 		   byte[] body,
 		   SDKRequesterOptions<T> opts)
 		{
-			var result = new Promise<T>();
-			var request = PrepareWebRequester(contentType, body, opts);
-			var op = request.SendWebRequest();
-			op.completed += _ => HandleResponse<T>(result, request, opts);
-			return result;
+			return Promise.RetryPromise<T>(() =>
+			{
+				var result = new Promise<T>();
+				var request = PrepareWebRequester(contentType, body, opts);
+				var op = request.SendWebRequest();
+				op.completed += _ => HandleResponse<T>(result, request, opts);
+				return result;
+			}, (ex) =>
+			{
+				if (ex?.Message?.ToLowerInvariant()?.Contains(SSL_ERROR.ToLowerInvariant()) ?? false)
+				{
+					// this is an SSL error, and from empirical observation, maybe it'll work if we try again...
+					PlatformLogger.Log($"<b>[PlatformRequester][{opts.method.ToString()}]</b> {Host}{opts.uri} -- trying again due to ssl error.");
+					return true;
+				}
+				// the error is not a known retry case... 
+				return false;
+			});
+
 		}
-
-
+		
 		[Conditional("BEAMABLE_ENABLE_VERSION_HEADERS")]
 		protected void AddVersionHeaders(UnityWebRequest request)
 		{
