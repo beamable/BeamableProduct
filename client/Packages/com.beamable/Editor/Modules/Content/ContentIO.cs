@@ -992,8 +992,8 @@ namespace Beamable.Editor.Content
 			EditorApplication.delayCall += () =>
 			{
 				EditorUtility.SetDirty(content);
-				AssetDatabase.ForceReserializeAssets(new[] {nextAssetpath},
-				                                     ForceReserializeAssetsOptions.ReserializeAssetsAndMetadata);
+				AssetDatabase.ForceReserializeAssets(new[] { nextAssetpath },
+													 ForceReserializeAssetsOptions.ReserializeAssetsAndMetadata);
 			};
 		}
 
@@ -1174,7 +1174,7 @@ namespace Beamable.Editor.Content
 				content.SetIdAndVersion(content.Id, version);
 				contentData[i] = new ContentDataInfo
 				{
-					contentId = content.Id, 
+					contentId = content.Id,
 					contentVersion = content.Version,
 					data = content.ToJson()
 				};
