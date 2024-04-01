@@ -224,14 +224,14 @@ public class ProjectService
 	}
 
 
-	public async Task EnsureCanUseTemplates(string version, bool quiet = false)
+	public async Task EnsureCanUseTemplates(string version)
 	{
 		var info = await GetTemplateInfo();
 
 		if (!info.HasTemplates ||
 			!string.Equals(version, info.templateVersion, StringComparison.CurrentCultureIgnoreCase))
 		{
-			await PromptAndInstallTemplates(info.templateVersion, version, quiet);
+			await PromptAndInstallTemplates(info.templateVersion, version, true);
 		}
 	}
 
@@ -368,10 +368,10 @@ public class ProjectService
 
 	public async Task<NewServiceInfo> CreateNewStorage(NewStorageCommandArgs args)
 	{
-		string usedVersion = string.IsNullOrWhiteSpace(args.SpecifiedVersion) ? await GetVersion() : args.SpecifiedVersion;
+		string usedVersion = args.SpecifiedVersion.ToString();
 		var microserviceInfo = new NewServiceInfo();
 		// check that we have the templates available
-		await EnsureCanUseTemplates(usedVersion, args.Quiet);
+		await EnsureCanUseTemplates(usedVersion);
 		microserviceInfo.SolutionPath = args.SlnFilePath;
 		if (!args.GetSlnExists())
 		{
@@ -418,8 +418,8 @@ public class ProjectService
 	public async Task<NewServiceInfo> CreateNewMicroservice(NewMicroserviceArgs args)
 	{
 		// check that we have the templates available
-		string usedVersion = string.IsNullOrWhiteSpace(args.SpecifiedVersion) ? await GetVersion() : args.SpecifiedVersion;
-		await EnsureCanUseTemplates(usedVersion, args.Quiet);
+		string usedVersion = args.SpecifiedVersion.ToString();
+		await EnsureCanUseTemplates(usedVersion);
 
 		var microserviceInfo = new NewServiceInfo
 		{
@@ -596,13 +596,6 @@ COPY {commonProjectName}/. .
 			await addUnrealCommand.Handle(
 				new UnrealAddProjectClientOutputCommandArgs() { path = ".", Provider = provider });
 		}
-	}
-
-	private async Task<string> GetVersion()
-	{
-		var nugetPackages = (await _versionService.GetBeamableToolPackageVersions(replaceDashWithDot: false)).ToArray();
-
-		return nugetPackages.Last().packageVersion;
 	}
 
 	Task RunDotnetCommand(string arguments)

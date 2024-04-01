@@ -1,3 +1,4 @@
+using Serilog;
 using System.CommandLine.Parsing;
 
 namespace cli
@@ -12,6 +13,11 @@ namespace cli
 
 		public T GetValue(OptionResult parse)
 		{
+			var objValue = parse.GetValueForOption(parse.Option);
+			if (objValue is T tValue)
+			{
+				return tValue;
+			}
 			var strValue = parse == null ? string.Empty : parse.GetValueOrDefault<string>();
 			try
 			{

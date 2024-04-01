@@ -99,6 +99,14 @@ jobs:
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget
+      - name: Install local packages
+        working-directory: ./client
+        shell: bash
+        run: |
+          ./set-packages.sh
+        env:
+          HOME_OVERRIDE: ${{ github.workspace }}
+          PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Install dependencies
         run: dotnet restore cli/tests
       - name: Build

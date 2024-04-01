@@ -14,8 +14,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public string sln;
         /// <summary>Relative path to directory where project should be created. Defaults to "SOLUTION_DIR/services"</summary>
         public string serviceDirectory;
-        /// <summary>Specifies version of Beamable project dependencies</summary>
-        public string version;
+        /// <summary>Specifies version of Beamable project dependencies. Defaults to the current version of the CLI</summary>
+        public Beamable.Common.PackageVersion version;
         /// <summary>Created service by default would not be published</summary>
         public bool disable;
         /// <summary>Serializes the arguments for command line usage.</summary>
@@ -43,10 +43,9 @@ namespace Beamable.Editor.BeamCli.Commands
                                 + "\""));
             }
             // If the version value was not default, then add it to the list of args.
-            if ((this.version != default(string)))
+            if ((this.version != default(Beamable.Common.PackageVersion)))
             {
-                genBeamCommandArgs.Add((("--version=\"" + this.version) 
-                                + "\""));
+                genBeamCommandArgs.Add(("--version=" + this.version));
             }
             // If the disable value was not default, then add it to the list of args.
             if ((this.disable != default(bool)))

@@ -36,6 +36,6 @@ public class NewCommonLibraryCommand : AppCommand<CreateCommonLibraryArgs>, ISta
 		{
 			await args.ProjectService.CreateNewSolution(args.GetSlnDirectory(), args.GetSlnFileName());
 		}
-		await args.ProjectService.CreateCommonProject(args.ProjectName.Value, path, args.SpecifiedVersion, args.SlnFilePath);
+		await args.ProjectService.CreateCommonProject(args.ProjectName.Value, path, args.SpecifiedVersion.ToString(), args.SlnFilePath);
 	}
 }

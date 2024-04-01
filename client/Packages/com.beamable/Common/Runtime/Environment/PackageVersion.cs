@@ -1,9 +1,11 @@
+using Beamable.Common.BeamCli;
 using System;
 using System.Text;
 using UnityEngine;
 
 namespace Beamable.Common
 {
+	[CliContractType]
 	[Serializable]
 	public class PackageVersion
 	{
