@@ -130,7 +130,7 @@ public class ServiceNameArgument : Argument<ServiceName>
 public class SpecificVersionOption : Option<PackageVersion>
 {
 	public SpecificVersionOption() : base(
-		name: "--version", 
+		name: "--version",
 		getDefaultValue: () => VersionService.GetNugetPackagesForExecutingCliVersion().ToString(),
 		description: $"Specifies version of Beamable project dependencies. Defaults to the current version of the CLI")
 	{
