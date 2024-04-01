@@ -984,16 +984,11 @@ namespace Beamable.Editor.Content
 			NotifyRenamed(oldId, content, nextAssetpath);
 			content.BroadcastUpdate();
 			
-			Debug.Log("Handling rename " + existingAssetPath);
 			var result = AssetDatabase.MoveAsset(existingAssetPath, nextAssetpath);
 			if (!string.IsNullOrEmpty(result))
 			{
 				throw new Exception(result);
 			}
-
-			// EditorUtility.SetDirty(content);
-			// AssetDatabase.ForceReserializeAssets(new[] {nextAssetpath},
-			//                                      ForceReserializeAssetsOptions.ReserializeAssetsAndMetadata);
 		}
 
 
