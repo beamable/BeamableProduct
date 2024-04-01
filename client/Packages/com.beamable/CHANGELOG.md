@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Content cache evicts old content for new content id versions
 - `PlatformRequester` will reattempt failed requests caused by SSL connection issues.
+- Fix renaming content throwing infinite warnings
 
 ## [1.19.16]
 ### Fixed
