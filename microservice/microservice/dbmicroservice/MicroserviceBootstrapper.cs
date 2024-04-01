@@ -8,6 +8,7 @@ using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Leaderboards;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Api.Stats;
+using Beamable.Common.Assistant;
 using Beamable.Common.BeamCli;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
