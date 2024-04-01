@@ -24,9 +24,8 @@ public class GenerateEnvFileCommandArgs : CommandArgs
 	public bool autoDeploy;
 }
 
-public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, GenerateEnvFileOutput>
+public class GenerateEnvFileCommand : AppCommand<GenerateEnvFileCommandArgs>, IResultSteam<DefaultStreamResultChannel, GenerateEnvFileOutput>
 {
-	public override bool IsForInternalUse => true;
 
 	public GenerateEnvFileCommand() : base("generate-env", "Get the connection strings required to start a Microservice. This is used when running Standalone Microservices locally without Docker")
 	{
@@ -41,7 +40,7 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 		AddOption(new Option<bool>("--auto-deploy", () => false, "When enabled, automatically deploy dependencies that aren't running"), (args, i) => args.autoDeploy = i);
 	}
 
-	public override async Task<GenerateEnvFileOutput> GetResult(GenerateEnvFileCommandArgs args)
+	public override async Task Handle(GenerateEnvFileCommandArgs args)
 	{
 		var realmsApi = args.Provider.GetService<IRealmsApi>();
 		var res = await realmsApi.GetAdminCustomer();
@@ -95,7 +94,7 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 				{
 					var connEnvVar =
 						await args.BeamoLocalSystem.GetLocalConnectionString(args.BeamoLocalSystem.BeamoManifest,
-							dependency.name, "localhost");
+							dependency, "localhost");
 					output.envVars.Add(EnvVarOutput.Create(
 						name: connEnvVar.VariableName,
 						value: connEnvVar.Value));
@@ -135,7 +134,8 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 			Directory.CreateDirectory(args.output);
 			File.WriteAllText(path, "BEAMABLE_ENV_FILE_NO_LONGER_EXISTS=1\n\n");
 		}
-		return output;
+		
+		this.SendResults(output);
 	}
 
 

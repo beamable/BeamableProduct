@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Semantics;
+using cli.Services;
 using Serilog;
 using Spectre.Console;
 using System.CommandLine;
@@ -27,7 +28,8 @@ public class ServiceNameArgument : Argument<ServiceName>
 
 public class SpecificVersionOption : Option<string>
 {
-	public SpecificVersionOption() : base("--version", () => string.Empty,
+	public SpecificVersionOption() : base("--version", 
+		getDefaultValue: () => VersionService.GetNugetPackagesForExecutingCliVersion().ToString(),
 		"Specifies version of Beamable project dependencies")
 	{
 	}
