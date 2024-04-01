@@ -989,9 +989,12 @@ namespace Beamable.Editor.Content
 				throw new Exception(result);
 			}
 
-			EditorUtility.SetDirty(content);
-			AssetDatabase.ForceReserializeAssets(new[] { nextAssetpath },
-				ForceReserializeAssetsOptions.ReserializeAssetsAndMetadata);
+			EditorApplication.delayCall += () =>
+			{
+				EditorUtility.SetDirty(content);
+				AssetDatabase.ForceReserializeAssets(new[] {nextAssetpath},
+				                                     ForceReserializeAssetsOptions.ReserializeAssetsAndMetadata);
+			};
 		}
 
 
