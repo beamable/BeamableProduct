@@ -44,6 +44,10 @@ In most cases, this is as trivial as renaming the type inside the microservice t
 - Fixed issue that caused incorrect code-gen of Unreal wrapper types in SAMS-Client code
 - Docker will not connect at common unix home directory if `/var/run/docker.sock` is not available
 
+### Removed
+
+- `beam content` no longer directly opens content folder.
+
 ## [1.19.12]
 
 ### Added
