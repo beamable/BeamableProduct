@@ -8,6 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -658,6 +659,50 @@ namespace Beamable.Common
 
 		public void CompleteSuccess() => CompleteSuccess(PromiseBase.Unit);
 
+		
+		/// <summary>
+		/// This function accepts a generator that will produce a promise, and then
+		/// that promise will be executed.
+		///
+		/// If the promise fails, the <see cref="shouldRetry"/> callback will be executed
+		/// with the Exception that caused the promise to fail. If the callback returns
+		/// `true`, then the generator function will be re-invoked to generate a new promise
+		/// instance.
+		///
+		/// This loop continues until the promise succeeds, the callback returns false,
+		/// or the callback has been called <see cref="maxAttempts"/> times.
+		/// </summary>
+		/// <param name="promiseGenerator"></param>
+		/// <param name="shouldRetry"></param>
+		/// <param name="maxAttempts"></param>
+		/// <typeparam name="T"></typeparam>
+		/// <returns></returns>
+		/// <exception cref="InvalidOperationException"></exception>
+		public static async Promise<T> RetryPromise<T>(Func<Promise<T>> promiseGenerator, Func<Exception, bool> shouldRetry, int maxAttempts = 1000)
+		{
+			Exception lastEx = null;
+			while (maxAttempts-- > 0)
+			{
+				try
+				{
+					var promise = promiseGenerator();
+					var result = await promise;
+					return result;
+				}
+				catch (Exception ex)
+				{
+					lastEx = ex;
+					if (!shouldRetry(ex))
+					{
+						throw;
+					}
+				}
+			}
+
+			throw new InvalidOperationException("promise failed to complete after maximum retry count", lastEx);
+		}
+
+		
 		/// <summary>
 		/// Create a <see cref="SequencePromise{T}"/> from List of <see cref="Promise{T}"/>
 		/// </summary>
