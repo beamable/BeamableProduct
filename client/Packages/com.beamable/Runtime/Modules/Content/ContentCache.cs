@@ -112,27 +112,19 @@ namespace Beamable.Content
 
 			async Promise<TContent> Download()
 			{
-				return false;
 				var raw = await FetchContentFromCDN(requestedInfo);
 				UpdateDiskFile(requestedInfo, raw);
 				return DeserializeContent(requestedInfo, raw);
 			}
-
-			string json = bakedFile.text;
-			ContentDataInfoWrapper data;
 			
 			try
 			{
-				data = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
 				var promise = Download();
 				SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
 				return await promise;
 			}
-			catch
 			catch (Exception err)
 			{
-				json = Gzip.Decompress(bakedFile.bytes);
-				data = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
 				_cache.Remove(cacheId);
 				PlatformLogger.Log(
 					$"ContentCache: Failed to resolve {requestedInfo.contentId} {requestedInfo.version} {requestedInfo.uri} ; ERR={err}");
@@ -140,7 +132,6 @@ namespace Beamable.Content
 			}
 		}
 
-			if (data == null)
 		private bool TryGetContentFromInfo(ContentDataInfoWrapper wrapper, ClientContentInfo info, out TContent content)
 		{
 			content = default;
@@ -213,6 +204,7 @@ namespace Beamable.Content
 		{
 			var content = _serializer.Deserialize<TContent>(raw);
 			content.SetManifestID(info.manifestID);
+			content.Tags = info.tags;
 			return content;
 		}
 
