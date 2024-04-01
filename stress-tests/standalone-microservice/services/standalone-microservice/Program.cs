@@ -18,7 +18,7 @@ namespace Beamable.standalone_microservice
 		public static async Task Main()
 		{
 			Environment.SetEnvironmentVariable("DOTNET_DiagnosticPorts", null);
-			await MicroserviceBootstrapper.Prepare<StandaloneMicroservice>();
+			await Prepare<StandaloneMicroservice>();
 			
 			// run the Microservice code
 			await MicroserviceBootstrapper.Start<StandaloneMicroservice>();
