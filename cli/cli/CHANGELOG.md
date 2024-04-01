@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.19.17]
 ### Changed
 - `BEAM_DOCKER_URI` environment variable will override docker connection uri
+- Standalone Microservices no longer have a `LoadEnvironmentVariables` method, and connection strings are handled in the existing `Prepare` method.
+- `beam project generate-env` command writes a blank `.env` file and returns connection strings over STDOUT instead.
+- Docker will not connect at common unix home directory if `/var/run/docker.sock` is not available
 
 ## [1.19.16]
 no changes
@@ -23,12 +26,7 @@ no changes
 - Docker path issue when adding storage objects 
 
 ## [1.19.13]
-
 no changes
-=======
-- Fixed issue that caused incorrect code-gen of Unreal wrapper types in SAMS-Client code
-- Docker will not connect at common unix home directory if `/var/run/docker.sock` is not available
->>>>>>> b8d17c661 (fixes 3216 - docker uri fallbacks and override (#3221))
 
 ## [1.19.12]
 
