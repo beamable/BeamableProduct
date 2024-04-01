@@ -8,6 +8,8 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Api.Stats;
+using Beamable.Common.BeamCli;
+using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
@@ -546,10 +548,25 @@ namespace Beamable.Server
 	        await process.WaitForExitAsync();
 			
 	        var result = await process.StandardOutput.ReadToEndAsync();
-	        Console.WriteLine(result);
 	        if (process.ExitCode != 0)
 	        {
 		        throw new Exception($"Failed to generate-env message=[{result}]");
+	        }
+	        
+	        var parsedOutput = JsonConvert.DeserializeObject<ReportDataPoint<GenerateEnvFileOutput>>(result);
+	        if (parsedOutput.type != "stream")
+	        {
+		        // the output type needs to be "stream" (the default data output channel name). 
+		        //  if the type isn't "stream", it is likely doing to be "error", but even if it isn't, 
+		        //  it isn't the expected value.
+		        throw new Exception($"Failed to parse generate-env output. raw=[{result}]");
+	        }
+
+	        // apply the environment data to the local process.
+	        var envData = parsedOutput.data;
+	        foreach (var envVar in envData.envVars)
+	        {
+		        Environment.SetEnvironmentVariable(envVar.name, envVar.value);
 	        }
         }
 
