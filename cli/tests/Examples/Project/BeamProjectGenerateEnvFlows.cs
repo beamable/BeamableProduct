@@ -69,23 +69,11 @@ public class BeamProjectGenerateEnvFlows : CLITestExtensions
 		Assert.That(BFile.Exists($".env"),
 			"there must be an .env file in the current directory.");
 
-		// the contents of the file should include various ENV secrets...
 		var envContent = BFile.ReadAllText(".env");
-		Assert.That(envContent.Contains($"CID={cid}"),
-			$"the env file must have a CID=[{cid}]. Content=[{envContent}]");
-		Assert.That(envContent.Contains($"PID={pid}"),
-			$"the env file must have a PID=[{pid}]. Content=[{envContent}]");
-		Assert.That(envContent.Contains($"SECRET={secret}"),
-			$"the env file must have a SECRET=[{secret}]. Content=[{envContent}]");
-		Assert.That(envContent.Contains($"NAME_PREFIX="), // this is different on each machine, so not worth testing the value
-			$"the env file must have a NAME_PREFIX. Content=[{envContent}]");
-		Assert.That(envContent.Contains($"REFRESH_TOKEN=refresh"),
-			$"the env file must have a REFRESH_TOKEN. Content=[{envContent}]");
-		Assert.That(envContent.Contains($"BEAM_INSTANCE_COUNT=1"),
-			$"the env file must have a BEAM_INSTANCE_COUNT. Content=[{envContent}]");
-		Assert.That(envContent.Contains($"HOST=wss://api.beamable.com/socket"),
-			$"the env file must have a HOST. Content=[{envContent}]");
-
+		Assert.That(envContent.Contains($"BEAMABLE_ENV_FILE_NO_LONGER_EXISTS=1"),
+			$"the env file must have a BEAMABLE_ENV_FILE_NO_LONGER_EXISTS=[1]. Content=[{envContent}]");
+		Assert.That(!envContent.Contains($"SECRET"),
+			$"the env file must NOT have a secret. Content=[{envContent}]");
 		#endregion
 	}
 
@@ -159,22 +147,11 @@ public class BeamProjectGenerateEnvFlows : CLITestExtensions
 		Assert.That(BFile.Exists($".env"),
 			"there must be an .env file in the current directory.");
 
-		// the contents of the file should include various ENV secrets...
 		var envContent = BFile.ReadAllText(".env");
-		Assert.That(envContent.Contains($"CID={cid}"),
-			$"the env file must have a CID=[{cid}]. Content=[{envContent}]");
-		Assert.That(envContent.Contains($"PID={pid}"),
-			$"the env file must have a PID=[{pid}]. Content=[{envContent}]");
-		Assert.That(envContent.Contains($"SECRET={secret}"),
-			$"the env file must have a SECRET=[{secret}]. Content=[{envContent}]");
-		Assert.That(envContent.Contains($"NAME_PREFIX="), // this is different on each machine, so not worth testing the value
-			$"the env file must have a NAME_PREFIX. Content=[{envContent}]");
-		Assert.That(envContent.Contains($"REFRESH_TOKEN=refresh"),
-			$"the env file must have a REFRESH_TOKEN. Content=[{envContent}]");
-		Assert.That(envContent.Contains($"BEAM_INSTANCE_COUNT=1"),
-			$"the env file must have a BEAM_INSTANCE_COUNT. Content=[{envContent}]");
-		Assert.That(envContent.Contains($"HOST=wss://api.beamable.com/socket"),
-			$"the env file must have a HOST. Content=[{envContent}]");
+		Assert.That(envContent.Contains($"BEAMABLE_ENV_FILE_NO_LONGER_EXISTS=1"),
+			$"the env file must have a BEAMABLE_ENV_FILE_NO_LONGER_EXISTS=[1]. Content=[{envContent}]");
+		Assert.That(!envContent.Contains($"SECRET"),
+			$"the env file must NOT have a secret. Content=[{envContent}]");
 
 		containers = await _dockerClient.Containers.ListContainersAsync(
 			new ContainersListParameters { All = true });

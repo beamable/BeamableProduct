@@ -35,6 +35,8 @@ This means Unreal now supports multiple microservices as well as shared librarie
 This means that the game-maker is responsible for resolving name conflicts that stem from types used in any `Callable`'s signature.
 In most cases, this is as trivial as renaming the type inside the microservice to something that won't conflict.
 - Microservices install with current CLI version
+- Standalone Microservices no longer have a `LoadEnvironmentVariables` method, and connection strings are handled in the existing `Prepare` method.
+- `beam project generate-env` command writes a blank `.env` file and returns connection strings over STDOUT instead.
 
 ### Fixed
 
