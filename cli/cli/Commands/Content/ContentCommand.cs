@@ -8,7 +8,7 @@ public class ContentCommand : CommandGroup<ContentCommandArgs>
 {
 	public static readonly Option<string> MANIFEST_OPTION =
 		new("--manifest-id", () => "global", "Set the manifest to use, 'global' by default");
-	
+
 	public static readonly Option<string[]> MANIFESTS_FILTER_OPTION =
 		new("--ids", Array.Empty<string>, "Inform a subset of ','-separated manifest ids for which to return data. By default, will return all manifests");
 
