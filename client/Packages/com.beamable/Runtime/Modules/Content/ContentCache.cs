@@ -9,6 +9,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 using static Beamable.Common.Constants.Features.Content;
 using Debug = UnityEngine.Debug;
@@ -35,8 +36,7 @@ namespace Beamable.Content
 	public class ContentCache<TContent> : ContentCache where TContent : ContentObject, new()
 	{
 		private static readonly ClientContentSerializer _serializer = new ClientContentSerializer();
-		private static readonly string _bakedDataExtractedKey = "beamable_baked_data_extracted";
-
+		
 		private readonly Dictionary<string, ContentCacheEntry<TContent>> _cache =
 			new Dictionary<string, ContentCacheEntry<TContent>>();
 
@@ -47,7 +47,11 @@ namespace Beamable.Content
 
 		private const float WriteToFileDelay = 5;
 
-		public ContentCache(IHttpRequester requester, IBeamableFilesystemAccessor filesystemAccessor, ContentService contentService, CoroutineService coroutineService)
+		public ContentCache(
+			IHttpRequester requester, 
+			IBeamableFilesystemAccessor filesystemAccessor, 
+			ContentService contentService, 
+			CoroutineService coroutineService)
 		{
 			_requester = requester;
 			_filesystemAccessor = filesystemAccessor;
@@ -78,188 +82,116 @@ namespace Beamable.Content
 			PlatformLogger.Log(
 				$"ContentCache: Fetching content from cache for {requestedInfo.contentId}: version: {requestedInfo.version}");
 			if (_cache.TryGetValue(cacheId, out var cacheEntry)) return cacheEntry.Content;
-
+			
 			// Then, try the on disk cache
-			PlatformLogger.Log(
-				$"ContentCache: Loading content from disk for {requestedInfo.contentId}: version: {requestedInfo.version}");
-			if (TryGetValueFromDisk(requestedInfo, out var diskContent, _filesystemAccessor))
+			if (TryGetValueFromDisk(requestedInfo, out var diskContent))
 			{
 				var promise = Promise<TContent>.Successful(diskContent);
 				SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
 				return promise;
 			}
-
-			// Check baked file for requested content
-			PlatformLogger.Log(
-				$"ContentCache: Loading content from baked file for {requestedInfo.contentId}: version: {requestedInfo.version}");
-			if (TryGetValueFromBaked(requestedInfo, out var bakedContent))
+			
+			// Check if the data exists as baked content
+			if (TryGetBaked(requestedInfo, out var bakedContent))
 			{
 				var promise = Promise<TContent>.Successful(bakedContent);
 				SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
 				return promise;
 			}
-
+			
 			// Finally, if not found, fetch the content from the CDN
-			PlatformLogger.Log(
-				$"ContentCache: Fetching content from CDN for {requestedInfo.contentId}: version: {requestedInfo.version}");
 			var fetchedContent = DownloadContent(requestedInfo);
 			return fetchedContent;
 		}
 
-		private Promise<TContent> DownloadContent(ClientContentInfo requestedInfo)
+		private async Promise<TContent> DownloadContent(ClientContentInfo requestedInfo)
 		{
+			PlatformLogger.Log(
+				$"ContentCache: Fetching content from CDN for {requestedInfo.contentId}: version: {requestedInfo.version}");
 			var cacheId = GetCacheKey(requestedInfo);
-			var fetchedContent = FetchContentFromCDN(requestedInfo)
-		                     .Map(raw =>
-		                     {
-			                     // Write the content to disk
-			                     UpdateDiskFile(requestedInfo, raw);
-			                     return DeserializeContent(requestedInfo, raw);
-		                     })
-		                     .Error(err =>
-		                     {
-			                     _cache.Remove(cacheId);
-			                     PlatformLogger.Log(
-				                     $"ContentCache: Failed to resolve {requestedInfo.contentId} {requestedInfo.version} {requestedInfo.uri} ; ERR={err}");
-		                     });
-			SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, fetchedContent));
-			return fetchedContent;
-		}
 
-		private bool TryGetValueFromDisk(ClientContentInfo info, out TContent content,
-		                                 IBeamableFilesystemAccessor fsa)
-		{
-			var filePath = ContentPath(fsa);
-			if (!File.Exists(filePath))
+			async Promise<TContent> Download()
 			{
-				DownloadContent(info);
+				var raw = await FetchContentFromCDN(requestedInfo);
+				UpdateDiskFile(requestedInfo, raw);
+				return DeserializeContent(requestedInfo, raw);
 			}
 			
-			if (File.Exists(filePath) && _contentService.ContentDataInfo == null)
+			try
 			{
-				var fileContent = File.ReadAllText(filePath);
-				_contentService.ContentDataInfo = _contentService.DeserializeDataCache<ContentDataInfoWrapper>(fileContent);
+				var promise = Download();
+				SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
+				return await promise;
 			}
-
-			if (_contentService.ContentDataInfo != null)
+			catch (Exception err)
 			{
-				var contentInfo = _contentService.ContentDataInfo.content.Find(item => item.contentId == info.contentId);
-				if (contentInfo != null)
-				{
-					var deserialized = DeserializeContent(info, contentInfo.data);
-					if (deserialized.Version == info.version)
-					{
-						content = deserialized;
-						return true;
-					}
-				}
+				_cache.Remove(cacheId);
+				PlatformLogger.Log(
+					$"ContentCache: Failed to resolve {requestedInfo.contentId} {requestedInfo.version} {requestedInfo.uri} ; ERR={err}");
+				throw;
 			}
-
-			content = null;
-			return false;
 		}
 
-		private bool TryGetValueFromBaked(ClientContentInfo info, out TContent contentObject)
+		private bool TryGetContentFromInfo(ContentDataInfoWrapper wrapper, ClientContentInfo info, out TContent content)
 		{
-			contentObject = null;
-
-			bool dataExtracted = PlayerPrefs.GetInt(_bakedDataExtractedKey) == 1;
-			if (!dataExtracted)
-			{
-				if (ExtractContent())
-				{
-					return TryGetValueFromDisk(info, out contentObject, _filesystemAccessor);
-				}
-				PlayerPrefs.SetInt(_bakedDataExtractedKey, 1);
-			}
-
-			return false;
-		}
-
-		private bool ExtractContent()
-		{
-			var bakedFile = Resources.Load<TextAsset>(BAKED_FILE_RESOURCE_PATH);
-
-			if (bakedFile == null)
+			content = default;
+			if (!wrapper.TryGetContent(info.contentId, info.version, out var existingInfo))
 			{
 				return false;
 			}
 
-			string json = bakedFile.text;
-			ContentDataInfoWrapper data;
 			try
 			{
-				data = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
+				content = DeserializeContent(info, existingInfo.data);
 			}
-			catch
+			catch (Exception ex)
 			{
-				json = Gzip.Decompress(bakedFile.bytes);
-				data = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
-			}
-
-			if (data == null)
-			{
-				return false;
-			}
-
-			// save baked data to disk
-			string path = ContentPath(_filesystemAccessor);
-
-			try
-			{
-				Directory.CreateDirectory(Path.GetDirectoryName(path));
-				File.WriteAllText(path, json);
-			}
-			catch (Exception e)
-			{
-				Debug.LogError($"[EXTRACT] Failed to write baked data to disk: {e.Message}");
+				PlatformLogger.Log(
+					$"ContentCache: Unable to deserialize content type correctly {info.contentId}: version: {info.version} message: {ex.Message}");
 				return false;
 			}
 
 			return true;
 		}
 
+		private bool TryGetBaked(ClientContentInfo info, out TContent content)
+		{
+			PlatformLogger.Log(
+				$"ContentCache: Checking content from baked for {info.contentId}: version: {info.version}");
+			return TryGetContentFromInfo(_contentService.BakedContentDataInfo, info, out content);
+		}
+
+		private bool TryGetValueFromDisk(ClientContentInfo info, out TContent content)
+		{
+			PlatformLogger.Log(
+				$"ContentCache: Loading content from disk for {info.contentId}: version: {info.version}");
+			return TryGetContentFromInfo(_contentService.CachedContentDataInfo, info, out content);
+		}
+
 		private Coroutine _updateDiskFileCoroutine;
 		private IEnumerator WriteToDisk()
 		{
 			yield return new WaitForSeconds(WriteToFileDelay);
-			var filePath = ContentPath(_filesystemAccessor);
-			
+			var filePath = ContentService.ContentPath(_filesystemAccessor);
+
 			// Ensure the directory is created
 			Directory.CreateDirectory(Path.GetDirectoryName(filePath));
-			File.WriteAllText(filePath, JsonUtility.ToJson(_contentService.ContentDataInfo));
+			File.WriteAllText(filePath, JsonUtility.ToJson(_contentService.CachedContentDataInfo));
 		}
 
 		private void UpdateDiskFile(ClientContentInfo info, string raw)
 		{
+			var needsUpdating = _contentService.CachedContentDataInfo.TryUpdateContent(info, raw);
+			if (!needsUpdating)
+			{
+				return;
+			}
 			try
 			{
-				if (_contentService.ContentDataInfo != null)
-				{
-					var existingContent = _contentService.ContentDataInfo.content.Find(obj => obj.contentId == info.contentId);
-					if (existingContent != null)
-					{
-						existingContent.data = raw;
-					}
-					else
-					{
-						var newObject = new ContentDataInfo { contentId = info.contentId, data = raw };
-						_contentService.ContentDataInfo.content.Add(newObject);
-					}
-				}
-				else
-				{
-					_contentService.ContentDataInfo = new ContentDataInfoWrapper
-					{
-						content = { new ContentDataInfo { contentId = info.contentId, data = raw } }
-					};
-				}
-
 				if (_updateDiskFileCoroutine != null)
 				{
 					_coroutineService.StopCoroutine(_updateDiskFileCoroutine);
 				}
-
 				_updateDiskFileCoroutine = _coroutineService.StartNew("ContentFileUpdate", WriteToDisk());
 			}
 			catch (Exception e)
@@ -268,23 +200,11 @@ namespace Beamable.Content
 			}
 		}
 
-		/// <summary>
-		/// Build the path string using a file system accessor and the PID.
-		/// </summary>
-		/// <param name="fsa">The file system accessor that it's being used for content.</param>
-		/// <returns>eturns the path where the content cache data is stored.</returns>
-		private static string ContentPath(IBeamableFilesystemAccessor fsa)
-		{
-			var pid = Beam.RuntimeConfigProvider.Pid;
-			var cid = Beam.RuntimeConfigProvider.Cid;
-			
-			return $"{fsa.GetPersistentDataPathWithoutTrailingSlash()}/{pid}-{cid}/content/content.json";
-		}
-
 		private static TContent DeserializeContent(ClientContentInfo info, string raw)
 		{
 			var content = _serializer.Deserialize<TContent>(raw);
 			content.SetManifestID(info.manifestID);
+			content.Tags = info.tags;
 			return content;
 		}
 

@@ -5,11 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.17]
+### Changed
+- `BEAM_DOCKER_URI` environment variable will override docker connection uri
+- Standalone Microservices no longer have a `LoadEnvironmentVariables` method, and connection strings are handled in the existing `Prepare` method.
+- `beam project generate-env` command writes a blank `.env` file and returns connection strings over STDOUT instead.
+- Docker will not connect at common unix home directory if `/var/run/docker.sock` is not available
+
 ## [1.19.16]
 no changes
 
 ## [1.19.15]
-
 ### Fixed
 - Progress bars and logs do not appear side by side.
 - Unreal Microservice client generation now correctly generates non-primitives used in C#MS signatures
@@ -20,7 +26,6 @@ no changes
 - Docker path issue when adding storage objects 
 
 ## [1.19.13]
-
 no changes
 
 ## [1.19.12]

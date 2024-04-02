@@ -1,3 +1,5 @@
+using Beamable.Common;
+using Beamable.Common.Util;
 using Newtonsoft.Json;
 using Serilog;
 using System.Reflection;
@@ -22,6 +24,29 @@ public class VersionService
 	{
 		public string originalVersion;
 		public string packageVersion;
+	}
+	
+	public static PackageVersion GetExecutingCliVersion()
+	{
+		var versionString = BeamAssemblyVersionUtil.GetVersion<BeamoService>();
+		if (!PackageVersion.TryFromSemanticVersionString(versionString, out var packageVersion))
+		{
+			return "0.0.0";
+		}
+		return packageVersion;
+	}
+
+	public static PackageVersion GetNugetPackagesForExecutingCliVersion()
+	{
+		var currentVersion = GetExecutingCliVersion();
+		if (currentVersion.Major == 0)
+		{
+			// if the major is 0, then its likely 0.0.0 or 0.0.123, 
+			//  which means we want to use our local dev nuget package version, which is 0.0.123
+			return "0.0.123";
+		}
+
+		return currentVersion;
 	}
 
 	public async Task<NugetPackages[]> GetBeamableToolPackageVersions(bool replaceDashWithDot = true,

@@ -250,32 +250,6 @@ public class ProjectService
 	private static async Task PromptAndInstallTemplates(string currentlyInstalledVersion, string version)
 	{
 		// lets get user consent before auto installing beamable templates
-		string question;
-		bool noTemplatesInstalled = string.IsNullOrEmpty(currentlyInstalledVersion);
-		if (noTemplatesInstalled)
-		{
-			question =
-				"Beamable templates are currently not installed. Would you like to proceed with installing the Beamable templates?";
-		}
-		else
-		{
-			string latestMsg = string.IsNullOrEmpty(version) ? "the latest version" : $"version {version}";
-			question =
-				$"Beamable templates are currently installed as {currentlyInstalledVersion}. Would you like to proceed with installing {latestMsg}";
-		}
-
-		bool canInstallTemplates = AnsiConsole.Confirm(question);
-
-		switch (canInstallTemplates)
-		{
-			case false when noTemplatesInstalled:
-				throw new CliException(
-					"Before you can continue, you must install the Beamable templates by running - " +
-					"dotnet new --install beamable.templates");
-			case false:
-				return;
-		}
-
 		const string packageName = "beamable.templates";
 
 		if (!string.IsNullOrEmpty(currentlyInstalledVersion))

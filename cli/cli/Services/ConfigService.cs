@@ -106,6 +106,27 @@ public class ConfigService
 		SetBeamableDirectory(_dir);
 	}
 
+	public const string ENV_VAR_WINDOWS_VOLUME_NAMES = "BEAM_DOCKER_WINDOWS_CONTAINERS";
+	public const string ENV_VAR_DOCKER_URI = "BEAM_DOCKER_URI";
+
+	/// <summary>
+	/// Enabling a custom Docker Uri allows for a customer to have a customized docker install and still
+	/// tell the Beam CLI where the docker socket is available.
+	/// </summary>
+	public string CustomDockerUri => Environment.GetEnvironmentVariable(ENV_VAR_DOCKER_URI);
+	
+	/// <summary>
+	/// Github Action Runners for windows don't seem to work with volumes for mongo.
+	/// </summary>
+	public bool UseWindowsStyleVolumeNames
+	{
+		get
+		{
+			var value = Environment.GetEnvironmentVariable(ENV_VAR_WINDOWS_VOLUME_NAMES);
+			return !string.IsNullOrEmpty(value) && value != "0" && !value.ToLowerInvariant().StartsWith("f");
+		}
+	}
+
 
 	public bool TryGetSetting(out string value, BindingContext context, ConfigurableOption option,
 		string defaultValue = null)
