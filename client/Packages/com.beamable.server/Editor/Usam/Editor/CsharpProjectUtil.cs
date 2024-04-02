@@ -159,6 +159,12 @@ namespace Beamable.Server.Editor.Usam
 		public static bool IsValidReference(string referenceName)
 		{
 			var invalidPrefixes = new string[] { "Unity.", "UnityEditor.", "UnityEngine." };
+			var invalidReferences = new string[] {"netstandard"};
+
+			if (invalidReferences.Contains(referenceName))
+			{
+				return false;
+			}
 			
 			foreach (var prefix in invalidPrefixes)
 			{
