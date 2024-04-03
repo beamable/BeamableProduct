@@ -111,7 +111,8 @@ public class CLITest
 		_configurator = new Action<IDependencyBuilder>(_ => { });
 	}
 
-	protected int Run(params string[] args)
+	protected int Run(params string[] args) => RunFull(args, assertExitCode: true);
+	protected int RunFull(string[] args, bool assertExitCode=false, Action<IDependencyBuilder>? configurator=null)
 	{
 		var exitCode = Cli.RunWithParams(builder =>
 		{
@@ -122,6 +123,7 @@ public class CLITest
 			builder.AddSingleton<IBeamableRequester>(_mockRequester.Object);
 
 			_configurator?.Invoke(builder);
+			configurator?.Invoke(builder);
 		},
 		logger => logger
 		.WriteTo.Console(new MessageTemplateTextFormatter(
@@ -131,7 +133,10 @@ public class CLITest
 
 		args);
 
-		Assert.AreEqual(0, exitCode, $"Command had a non zero exit code. Check logs. code=[{exitCode}] command=[{string.Join(" ", args)}]");
+		if (assertExitCode)
+		{
+			Assert.AreEqual(0, exitCode, $"Command had a non zero exit code. Check logs. code=[{exitCode}] command=[{string.Join(" ", args)}]");
+		}
 		return exitCode;
 	}
 }
