@@ -168,7 +168,6 @@ namespace Beamable.Server.Editor.Usam
 
 		private async Promise MigrateMicroservice(MicroserviceDescriptor microserviceDescriptor, string commonCsProj)
 		{
-			//haha
 			var microserviceDir = microserviceDescriptor.SourcePath;
 			var microserviceName = microserviceDescriptor.Name;
 			var path = $"{StandaloneMicroservicesPath}{microserviceName}/";
@@ -240,21 +239,6 @@ namespace Beamable.Server.Editor.Usam
 			}
 
 			return outputPath;
-		}
-
-		[MenuItem("GABRIEL/Migrate")]
-		private static void TryMigrate()
-		{
-			var oldServices = GetAllOldServices();
-			var migrationVisualElement = new MigrationConfirmationVisualElement(oldServices);
-			var popup = BeamablePopupWindow.ShowUtility(Constants.Features.ContentManager.ActionNames.DOWNLOAD_CONTENT, migrationVisualElement, null,
-			                                            new Vector2(500, 300),  (window) =>
-			                                            {
-				                                            // trigger after Unity domain reload
-				                                            window.Close();
-			                                            });
-			migrationVisualElement.OnCancelled += popup.Close;
-			migrationVisualElement.OnClosed += popup.Close;
 		}
 		
 		private static List<IDescriptor> GetAllOldServices()
