@@ -53,21 +53,21 @@ jobs:
           chmod +x ./build/create_config_defaults.sh
           ./build/create_config_defaults.sh
         shell: bash
-      - name: Cache Docker Layers
-        uses: actions/cache@v3
-        id: cache_docker
-        with:
-          path: ./docker-cache
-          key: Docker-gzipped-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
-          restore-keys: |
-            Docker-gzipped-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
-      - name: Load Docker Image If Exits
-        if: ${{ steps.cache_docker.outputs.cache-hit }}
-        continue-on-error: true
-        run: |
-          chmod +x ./build/prepare_base_image.sh
-          UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/prepare_base_image.sh
-        shell: bash
+      # - name: Cache Docker Layers
+      #   uses: actions/cache@v3
+      #   id: cache_docker
+      #   with:
+      #     path: ./docker-cache
+      #     key: Docker-gzipped-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
+      #     restore-keys: |
+      #       Docker-gzipped-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
+      # - name: Load Docker Image If Exits
+      #   if: ${{ steps.cache_docker.outputs.cache-hit }}
+      #   continue-on-error: true
+      #   run: |
+      #     chmod +x ./build/prepare_base_image.sh
+      #     UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/prepare_base_image.sh
+      #   shell: bash
       - name: Cache Unity Folders
         uses: actions/cache@v3
         with:
@@ -101,12 +101,12 @@ jobs:
           buildsPath: dist
           buildMethod: BuildSampleProject.Development
 
-      - name: Save Docker Image If Exits
-        if: ${{ !steps.cache_docker.outputs.cache-hit }}
-        run: |
-          chmod +x ./build/save_base_image.sh
-          UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/save_base_image.sh
-        shell: bash
+      # - name: Save Docker Image If Exits
+      #   if: ${{ !steps.cache_docker.outputs.cache-hit }}
+      #   run: |
+      #     chmod +x ./build/save_base_image.sh
+      #     UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/save_base_image.sh
+      #   shell: bash
 
 
       - name: Check for Changes
