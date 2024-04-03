@@ -41,6 +41,9 @@ loadtests/
 
 user-token.json
 
+/client/Packages/com.beamable/Editor/BeamCli/Commands/obj/
+/client/Packages/com.beamable/Editor/BeamCli/Commands/bin/
+
 /stress-tests/standalone-microservice/services/StressTest/bin/
 /stress-tests/standalone-microservice/services/StressTest/obj/
 /stress-tests/standalone-microservice/services/StressTest/.idea/
