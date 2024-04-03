@@ -675,7 +675,7 @@ namespace Beamable.Server.Editor.Usam
 			{
 				output = ".",
 				beamPath = beamPath,
-				solutionDir = "$([System.IO.Path]::GetDirectoryName(`$(DirectoryBuildPropsPath)`))",
+				solutionDir = "\"$([System.IO.Path]::GetDirectoryName(`$(DirectoryBuildPropsPath)`))\"",
 				buildDir = "/Temp/beam/USAMBuilds"
 			});
 
