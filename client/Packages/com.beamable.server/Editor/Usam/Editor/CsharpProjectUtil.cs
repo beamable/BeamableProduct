@@ -82,7 +82,7 @@ namespace Beamable.Server.Editor.Usam
 				File.WriteAllText(fileName, content);
 			}
 		}
-
+		
 		public static string GenerateCsharpProjectPath(Assembly assembly)
 		{
 			return TEMPLATE_OUTPUT_DIR.Replace(KEY_FOLDER, assembly.name);
@@ -97,7 +97,7 @@ namespace Beamable.Server.Editor.Usam
 		{
 			return Path.Combine(GenerateCsharpProjectPath(assembly), PROJECT_NAME.Replace(PROJECT_NAME_TAG, assembly.name));
 		}
-		
+
 		public static string GenerateCsharpProjectFilename(string assembly)
 		{
 			return Path.Combine(GenerateCsharpProjectPath(assembly), PROJECT_NAME.Replace(PROJECT_NAME_TAG, assembly));
@@ -146,7 +146,6 @@ namespace Beamable.Server.Editor.Usam
 
 		static IEnumerable<Assembly> GetValidAssemblyReferences(Assembly assembly)
 		{
-			var invalidPrefixes = new string[] { "Unity.", "UnityEditor.", "UnityEngine." };
 			foreach (var reference in assembly.assemblyReferences)
 			{
 				if (IsValidReference(reference.name))
@@ -155,7 +154,7 @@ namespace Beamable.Server.Editor.Usam
 				}
 			}
 		}
-
+		
 		public static bool IsValidReference(string referenceName)
 		{
 			var invalidPrefixes = new string[] { "Unity.", "UnityEditor.", "UnityEngine." };

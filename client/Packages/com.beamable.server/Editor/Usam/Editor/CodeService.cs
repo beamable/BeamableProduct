@@ -43,10 +43,12 @@ namespace Beamable.Server.Editor.Usam
 		private List<Promise> _logsCommands = new List<Promise>();
 
 		private const string BEAMABLE_PATH = "Assets/Beamable/";
+		private const string BEAMABLE_LIB_PATH = "Library/BeamableEditor";
 		private const string MICROSERVICE_DLL_PATH = "bin/Debug/net6.0"; // is this true for all platforms and dotnet installations?
 		public static readonly string StandaloneMicroservicesFolderName = "StandaloneMicroservices~/";
 		private static readonly string StandaloneMicroservicesPath = $"{BEAMABLE_PATH}{StandaloneMicroservicesFolderName}";
-		public static readonly string LibrariesPathsFilePath = $"{StandaloneMicroservicesPath}.libraries_paths";
+		public static readonly string LibrariesPathsFilePath = $"{BEAMABLE_LIB_PATH}/.libraries_paths";
+		public static string LibrariesPathsDirectory => Path.GetDirectoryName(LibrariesPathsFilePath);
 
 		public CodeService(BeamCommands cli, BeamableDispatcher dispatcher, DotnetService dotnetService)
 		{
@@ -341,6 +343,8 @@ namespace Beamable.Server.Editor.Usam
 			var librariesPaths = new LibrariesPaths() {libraries = allDependencies.Distinct().ToList()};
 
 			var fileContent = JsonUtility.ToJson(librariesPaths);
+
+			Directory.CreateDirectory(LibrariesPathsDirectory);
 			File.WriteAllText(LibrariesPathsFilePath, fileContent);
 		}
 
@@ -348,7 +352,7 @@ namespace Beamable.Server.Editor.Usam
 		{
 			if (!File.Exists(LibrariesPathsFilePath))
 			{
-				return new LibrariesPaths() {libraries = new List<BeamDependencyData>()};
+				return new LibrariesPaths();
 			}
 			
 			var contents = File.ReadAllText(LibrariesPathsFilePath);

@@ -12,8 +12,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public bool init;
 		/// <summary>Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. By default, when no value is provided, the .sln path will be <name>/<name>.sln</summary>
 		public string sln;
-		/// <summary>Specifies version of Beamable project dependencies</summary>
-		public string version;
+		/// <summary>Specifies version of Beamable project dependencies. Defaults to the current version of the CLI</summary>
+		public Beamable.Common.PackageVersion version;
 		/// <summary>The path where the project is going to be created</summary>
 		public string outputPath;
 		/// <summary>Serializes the arguments for command line usage.</summary>
@@ -35,10 +35,9 @@ namespace Beamable.Editor.BeamCli.Commands
 								+ "\""));
 			}
 			// If the version value was not default, then add it to the list of args.
-			if ((this.version != default(string)))
+			if ((this.version != default(Beamable.Common.PackageVersion)))
 			{
-				genBeamCommandArgs.Add((("--version=\"" + this.version)
-								+ "\""));
+				genBeamCommandArgs.Add(("--version=" + this.version));
 			}
 			// If the outputPath value was not default, then add it to the list of args.
 			if ((this.outputPath != default(string)))

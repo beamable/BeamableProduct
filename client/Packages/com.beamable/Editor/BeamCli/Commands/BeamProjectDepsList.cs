@@ -10,6 +10,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string service;
 		/// <summary>If this is passed and set to True, then all references of the service will be listed</summary>
 		public bool all;
+		/// <summary>If this is passed and set to True, then all references that are not storages or microservices will be listed</summary>
+		public bool nonBeamo;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -25,6 +27,11 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.all != default(bool)))
 			{
 				genBeamCommandArgs.Add(("--all=" + this.all));
+			}
+			// If the nonBeamo value was not default, then add it to the list of args.
+			if ((this.nonBeamo != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--non-beamo=" + this.nonBeamo));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces
