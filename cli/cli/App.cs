@@ -413,6 +413,35 @@ public class App
 		});
 
 		var commandLineBuilder = new CommandLineBuilder(root);
+		
+		// this middleware is responsible for catching parse errors and putting them on the data-out raw channel
+		commandLineBuilder.AddMiddleware((ctx, next) =>
+		{
+			if (ctx.ParseResult.Errors.Count == 0)
+			{
+				// no parse errors, so this middleware has nothing to do.
+				return next(ctx);
+			}
+
+			var provider = ctx.BindingContext.GetService<AppServices>();
+			var appContext = provider.GetService<IAppContext>();
+			var reporter = provider.GetService<IDataReporterService>();
+			var isPiping = appContext.UsePipeOutput || appContext.ShowRawOutput;
+			
+			if (!isPiping)
+			{
+				// we aren't using raw output, so this middleware has nothing to do.
+				return next(ctx);
+			}
+
+			var ex = new Exception(string.Join(",", ctx.ParseResult.Errors));
+			ctx.ExitCode = 1;
+			reporter.Exception(ex, ctx.ExitCode, ctx.BindingContext.ParseResult.Diagram());
+			// don't call the next task, because we have "handled" the error by posting it to the error channel
+			return Task.CompletedTask;
+			
+		}, MiddlewareOrder.ErrorReporting);
+		
 		commandLineBuilder.AddMiddleware(consoleContext =>
 		{
 			// create a scope for the execution of the command
