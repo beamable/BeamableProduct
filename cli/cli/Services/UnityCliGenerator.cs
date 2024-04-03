@@ -183,7 +183,7 @@ public class UnityCliGenerator : ICliGenerator
 		}
 
 		var name = runtimeType.Name.Replace("[]", "");
-		
+
 		return ConvertToSnakeCase("Beam" + name);
 	}
 
