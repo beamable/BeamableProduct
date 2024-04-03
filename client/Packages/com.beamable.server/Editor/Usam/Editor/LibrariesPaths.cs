@@ -7,6 +7,6 @@ namespace Beamable.Server.Editor.Usam
 	[Serializable]
 	public class LibrariesPaths
 	{
-		public List<BeamDependencyData> libraries;
+		public List<BeamDependencyData> libraries = new List<BeamDependencyData>();
 	}
 }
