@@ -6,6 +6,8 @@ using Beamable.Editor;
 using Beamable.Editor.BeamCli;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.Dotnet;
+using Beamable.Editor.Microservice.UI.Components;
+using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.UI.Components;
 using System;
@@ -44,6 +46,7 @@ namespace Beamable.Server.Editor.Usam
 		private const string MICROSERVICE_DLL_PATH = "bin/Debug/net6.0"; // is this true for all platforms and dotnet installations?
 		public static readonly string StandaloneMicroservicesFolderName = "StandaloneMicroservices~/";
 		private static readonly string StandaloneMicroservicesPath = $"{BEAMABLE_PATH}{StandaloneMicroservicesFolderName}";
+		public static readonly string LibrariesPathsFilePath = $"{StandaloneMicroservicesPath}.libraries_paths";
 
 		public CodeService(BeamCommands cli, BeamableDispatcher dispatcher, DotnetService dotnetService)
 		{
@@ -82,6 +85,9 @@ namespace Beamable.Server.Editor.Usam
 			LogVerbose("Setting properties file");
 			await SetPropertiesFile();
 
+			LogVerbose("Saving all libraries referenced by services");
+			await SaveReferencedLibraries();
+
 			LogVerbose("Set manifest start");
 			await SetManifest(_cli, _services, _storages);
 			LogVerbose("set manifest ended");
@@ -99,26 +105,28 @@ namespace Beamable.Server.Editor.Usam
 
 			CheckMicroserviceStatus();
 			ConnectToLogs();
-			//const string migratedServicesKey = "BeamMigratedServices";
-			//if (!SessionState.GetBool(migratedServicesKey, false))
+
+			var oldServices = GetAllOldServices();
+			if (oldServices.Count > 0)
 			{
-				LogVerbose("Migrate old services start");
-				// TODO: We should not automatically Migrate.
-				//  instead, we need to offer a pop-up box that explains the consequences, 
-				//  and what to do to prepare before migration (src backup). 
-				// other notes, we need to be searching for _all_ microservices, not just those that
-				// exist in the common folders. 
-				//await Migrate();
-				//SessionState.SetBool(migratedServicesKey, true);
-				LogVerbose("Migrate old services end");
+				var migrationVisualElement = new MigrationConfirmationVisualElement(oldServices);
+				var popup = BeamablePopupWindow.ShowUtility(Constants.Migration.MIGRATION_POPUP_NAME, migrationVisualElement, null,
+				                                            new Vector2(600, 200),  (window) =>
+				                                            {
+					                                            // trigger after Unity domain reload
+					                                            window.Close();
+				                                            });
+				migrationVisualElement.OnCancelled += popup.Close;
+				migrationVisualElement.OnClosed += popup.Close;
 			}
+			
+			
 			LogVerbose("Completed");
 		}
 
-		public async Promise Migrate()
+		public async Promise Migrate(List<IDescriptor> allDescriptors)
 		{
 			var commonCsProj = await MigrateCommon();
-			var allDescriptors = GetAllOldServices();
 
 			foreach (IDescriptor descriptor in allDescriptors)
 			{
@@ -133,9 +141,9 @@ namespace Beamable.Server.Editor.Usam
 			}
 			
 			// REMOVE OLD STUFF
-			//Directory.Delete("Assets/Beamable/Microservices", true);
-			//Directory.Delete("Assets/Beamable/StorageObjects", true);
-			//Directory.Delete("Assets/Beamable/Common", true);
+			Directory.Delete("Assets/Beamable/Microservices", true);
+			Directory.Delete("Assets/Beamable/StorageObjects", true);
+			Directory.Delete("Assets/Beamable/Common", true);
 		}
 
 		private async Promise MigrateStorage(StorageObjectDescriptor storageDescriptor)
@@ -153,11 +161,12 @@ namespace Beamable.Server.Editor.Usam
 				Debug.Log(storageName);	
 				await CreateStorage(storageName, deps);
 			}
-			//Directory.Delete(storageDescriptor.AttributePath, true);
+			Directory.Delete(storageDescriptor.AttributePath, true);
 		}
 
 		private async Promise MigrateMicroservice(MicroserviceDescriptor microserviceDescriptor, string commonCsProj)
 		{
+			//haha
 			var microserviceDir = microserviceDescriptor.SourcePath;
 			var microserviceName = microserviceDescriptor.Name;
 			var path = $"{StandaloneMicroservicesPath}{microserviceName}/";
@@ -190,7 +199,7 @@ namespace Beamable.Server.Editor.Usam
 				                                  $"using Beamable.Server;\n\nnamespace Beamable.{microserviceName}");
 				File.WriteAllText(newFilePath, fileContent);
 			}
-			//Directory.Delete(microserviceDir, true);
+			Directory.Delete(microserviceDir, true);
 		}
 
 		private async Task<string> MigrateCommon()
@@ -234,7 +243,16 @@ namespace Beamable.Server.Editor.Usam
 		[MenuItem("GABRIEL/Migrate")]
 		private static void TryMigrate()
 		{
-			
+			var oldServices = GetAllOldServices();
+			var migrationVisualElement = new MigrationConfirmationVisualElement(oldServices);
+			var popup = BeamablePopupWindow.ShowUtility(Constants.Features.ContentManager.ActionNames.DOWNLOAD_CONTENT, migrationVisualElement, null,
+			                                            new Vector2(500, 300),  (window) =>
+			                                            {
+				                                            // trigger after Unity domain reload
+				                                            window.Close();
+			                                            });
+			migrationVisualElement.OnCancelled += popup.Close;
+			migrationVisualElement.OnClosed += popup.Close;
 		}
 		
 		private static List<IDescriptor> GetAllOldServices()
@@ -302,6 +320,40 @@ namespace Beamable.Server.Editor.Usam
 			}
 
 			return assets;
+		}
+		
+		private async Promise SaveReferencedLibraries()
+		{
+			List<BeamDependencyData> allDependencies = new List<BeamDependencyData>();
+
+			var command = _cli.ProjectDepsList(new ProjectDepsListArgs()
+			{
+				nonBeamo = true
+			}).OnStreamListDepsCommandResults(cb =>
+			{
+				foreach (var serviceDependenciesPair in cb.data.Services)
+				{
+					allDependencies.AddRange(serviceDependenciesPair.dependencies);
+				}
+			});
+			await command.Run();
+
+			var librariesPaths = new LibrariesPaths() {libraries = allDependencies.Distinct().ToList()};
+
+			var fileContent = JsonUtility.ToJson(librariesPaths);
+			File.WriteAllText(LibrariesPathsFilePath, fileContent);
+		}
+
+		public static LibrariesPaths GetLibrariesPaths()
+		{
+			if (!File.Exists(LibrariesPathsFilePath))
+			{
+				return new LibrariesPaths() {libraries = new List<BeamDependencyData>()};
+			}
+			
+			var contents = File.ReadAllText(LibrariesPathsFilePath);
+
+			return JsonUtility.FromJson<LibrariesPaths>(contents);
 		}
 
 		public async Promise UpdateServicesVersions()
@@ -486,7 +538,6 @@ namespace Beamable.Server.Editor.Usam
 					throw new ArgumentOutOfRangeException(nameof(type), type, null);
 			}
 		}
-
 		
 		public async Promise UpdateServiceReferences(string serviceName, List<string> assemblyReferencesNames)
 		{
@@ -506,7 +557,7 @@ namespace Beamable.Server.Editor.Usam
 			var correctedPaths = depsPaths.Select(path => path.Replace("\\", "/")).ToList();
 			var existinReferences = correctedPaths.Where(path => path.Contains(CsharpProjectUtil.PROJECT_NAME_PREFIX)).ToList();
 
-			
+
 			//remove all generated projs references
 			LogVerbose($"Removing all references from service: {serviceName}");
 			var promises = new List<Promise<List<string>>>();
@@ -534,9 +585,10 @@ namespace Beamable.Server.Editor.Usam
 				LogVerbose($"Adding the reference: {newRefs}");
 				await _dotnetService.Run($"add {service.CsprojPath} reference {newRefCsprojPath}");
 			}
-			
+
 			LogVerbose($"Finished updating references");
 		}
+
 
 		public Promise RunStandaloneMicroservice(string id)
 		{
@@ -731,7 +783,7 @@ namespace Beamable.Server.Editor.Usam
 			{
 				output = ".",
 				beamPath = beamPath,
-				solutionDir = "$([System.IO.Path]::GetDirectoryName(`$(DirectoryBuildPropsPath)`))",
+				solutionDir = "\"$([System.IO.Path]::GetDirectoryName(`$(DirectoryBuildPropsPath)`))\"",
 				buildDir = "/Temp/beam/USAMBuilds"
 			});
 
