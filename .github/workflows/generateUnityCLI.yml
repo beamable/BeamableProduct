@@ -20,6 +20,10 @@ jobs:
         with:
           dotnet-version: |
             6.0.x
+      - name: Restore Tools
+        working-directory: ./cli/cli
+        run: |
+           dotnet tool restore
       - name: Build CLI 
         working-directory: ./cli/cli
         run: |
