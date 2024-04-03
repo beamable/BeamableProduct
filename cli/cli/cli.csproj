@@ -93,6 +93,10 @@
   <Target Name="PrepTools" BeforeTargets="Pack" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true">
     <Exec Command="dotnet tool restore" />
   </Target>
+  <Target Name="BuildCLIForUnity">
+    <Exec Command="$(OutputPath)/$(AssemblyName) generate-interface --engine unity --output=../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
+    <Exec Command="dotnet tool run dotnet-format ../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
+  </Target>
   <Target Name="BuildCLIInterface" AfterTargets="Pack" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true AND $(SKIP_GENERATION)!=true">
     <Message Importance="high" Text="OutDir: $(OutputPath)" />
 
