@@ -43,7 +43,7 @@ jobs:
         run: ls -a
       - name: Build CLI 
         run: |
-           dotnet msbuild -r:True -t:BuildCLIInterface ./cli/cli
+           dotnet msbuild -r:True -t:BuildCLIForUnity ./cli/cli
     
       - name: List files (post)
         working-directory: ./client/Packages/com.beamable/Editor/BeamCli/Commands
