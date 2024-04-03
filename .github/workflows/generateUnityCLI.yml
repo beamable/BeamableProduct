@@ -45,6 +45,11 @@ jobs:
         run: |
            dotnet msbuild -r:True -t:Build ./cli/cli -p:BEAM_GENERATE_INTERFACE=true
     
+      - name: Delete Trash Files
+        working-directory: ./client/Packages/com.beamable/Editor/BeamCli/Commands
+        run: |
+          rm -rf obj
+          rm -rf bin
       - name: List files (post)
         working-directory: ./client/Packages/com.beamable/Editor/BeamCli/Commands
         run: ls -a
