@@ -123,7 +123,7 @@ jobs:
         run: echo ::set-output name=any::$(if [ -n "$(git status --porcelain)" ]; then echo "true"; else echo "false"; fi)
         id: changes
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v6
         id: cpr
         if: ${{ steps.changes.outputs.any == 'true' }}
         with:
