@@ -118,7 +118,10 @@ jobs:
       #     UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/save_base_image.sh
       #   shell: bash
 
-
+      - name: Cleanup other files
+        run: |
+          rm -f client/ProjectSettings/Packages/com.unity.services.core/Settings.json
+          rm -f client/UserSettings/EditorUserSettings.assets
       - name: Check for Changes
         run: echo ::set-output name=any::$(if [ -n "$(git status --porcelain)" ]; then echo "true"; else echo "false"; fi)
         id: changes
