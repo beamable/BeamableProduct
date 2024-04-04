@@ -3,6 +3,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Spew;
 using Beamable.Editor.Dotnet;
 using System;
 using System.Collections.Generic;
@@ -378,6 +379,7 @@ namespace Beamable.Editor.BeamCli
 							KillProc();
 							return;
 						}
+						CliLogger.Log("stdout", args.Data, System.Environment.NewLine+System.Environment.NewLine  ,_command );
 
 						_dispatcher.Schedule(() =>
 						{
@@ -399,6 +401,8 @@ namespace Beamable.Editor.BeamCli
 							return;
 						}
 
+						CliLogger.Log("stderr", args.Data, System.Environment.NewLine+System.Environment.NewLine  ,_command );
+
 						_dispatcher.Schedule(() =>
 						{
 							try
@@ -412,6 +416,7 @@ namespace Beamable.Editor.BeamCli
 						});
 					};
 
+					CliLogger.Log("starting", _command);
 					_process.Start();
 					pid = _process.Id;
 					_collection?.Add(pid);
@@ -423,6 +428,8 @@ namespace Beamable.Editor.BeamCli
 
 					if (_exitCode != 0)
 					{
+						CliLogger.Log("failed", _command, $"errors-count=[{_errors.Count}]");
+
 						foreach (var err in _errors)
 						{
 							BeamEditorContext.Default.Dispatcher.Schedule(() => Debug.LogError(err.message));
