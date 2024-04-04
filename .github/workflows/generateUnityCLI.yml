@@ -33,7 +33,7 @@ jobs:
         working-directory: ./client/Packages/com.beamable/Editor/BeamCli/Commands
         run: |
           rm -rf *.cs
-          rm -rf *.meta
+          rm -rf *.cs.meta
       - name: Restore Tools
         working-directory: ./cli/cli
         run: |
