@@ -29,11 +29,11 @@ jobs:
         with:
           dotnet-version: |
             6.0.x
-      - name: Clear old files
-        working-directory: ./client/Packages/com.beamable/Editor/BeamCli/Commands
-        run: |
-          rm -rf *.cs
-          rm -rf *.meta
+      # - name: Clear old files
+      #   working-directory: ./client/Packages/com.beamable/Editor/BeamCli/Commands
+      #   run: |
+      #     rm -rf *.cs
+      #     rm -rf *.meta
       - name: Restore Tools
         working-directory: ./cli/cli
         run: |
