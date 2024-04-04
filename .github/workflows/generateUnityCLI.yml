@@ -120,6 +120,7 @@ jobs:
 
       - name: Cleanup other files
         run: |
+          chmod -R 777 client
           rm -f client/ProjectSettings/Packages/com.unity.services.core/Settings.json
           rm -f client/UserSettings/EditorUserSettings.assets
       - name: Check for Changes
