@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEditor;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -143,7 +144,11 @@ namespace Beamable.Editor.UI.Components
 
 			promise
 			   .Then(_ => Finish())
-			   .Error(_ => Finish());
+			   .Error(ex =>
+			   {
+				   Debug.LogError($"Beamable error: {ex.GetType().Name} - {ex.Message} - \n\n - {ex.StackTrace}");
+				   Finish();
+			   });
 		}
 
 		public override void Refresh()

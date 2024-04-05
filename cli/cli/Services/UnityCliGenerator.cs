@@ -6,6 +6,8 @@ using System.CodeDom;
 using System.CommandLine;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace cli.Services;
 
@@ -65,8 +67,41 @@ public class UnityCliGenerator : ICliGenerator
 			});
 		}
 
+		var output = new List<GeneratedFileDescriptor>();
+		output.AddRange(files);
+		output.AddRange(GenerateMetaFiles(files));
 
-		return files;
+		return output;
+	}
+
+	public static List<GeneratedFileDescriptor> GenerateMetaFiles(List<GeneratedFileDescriptor> sourceFiles)
+	{
+		var metas = new List<GeneratedFileDescriptor>(sourceFiles.Count);
+		const string GUID_TEMPLATE = "{GUID_REPLACE}";
+		const string metaContentTemplate = @"fileFormatVersion: 2
+guid: " + GUID_TEMPLATE + @"
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+";
+		using var md5 = MD5.Create();
+		foreach (var sourceFile in sourceFiles)
+		{
+			var hashedBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(sourceFile.FileName));
+			var guid = new Guid(hashedBytes);
+			metas.Add(new GeneratedFileDescriptor
+			{
+				FileName = sourceFile.FileName + ".meta",
+				Content = metaContentTemplate.Replace(GUID_TEMPLATE, guid.ToString().Replace("-", ""))
+			});
+		}
+		return metas;
 	}
 
 	public static List<Type> RecurseTypes(IEnumerable<Type> inputTypes, bool includeTypesFromInvalidAssembly = false)
