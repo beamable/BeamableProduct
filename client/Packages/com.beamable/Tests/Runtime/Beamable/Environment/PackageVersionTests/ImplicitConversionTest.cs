@@ -13,5 +13,12 @@ namespace Beamable.Tests.Runtime.Environment.PackageVersionTests
 			Assert.AreEqual(false, versionStr < version);
 			Assert.AreEqual(false, version > versionStr);
 		}
+
+		[Test]
+		public void NullEquality()
+		{
+			var version = PackageVersion.FromSemanticVersionString("1.0.2");
+			Assert.IsFalse(version == null, "the version should not think it is equal to null, and an exception should not be thrown.");
+		}
 	}
 }

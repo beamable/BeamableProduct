@@ -90,6 +90,7 @@ namespace Beamable.Common
 
 		protected bool Equals(PackageVersion other)
 		{
+			if (ReferenceEquals(null, other)) return false;
 			return _major == other._major && _minor == other._minor && _patch == other._patch && _rc == other._rc && _nightlyTime == other._nightlyTime && _isPreview == other._isPreview;
 		}
 
@@ -138,7 +139,7 @@ namespace Beamable.Common
 
 		public static bool operator ==(PackageVersion a, PackageVersion b)
 		{
-			return a.Equals(b);
+			return a?.Equals(b) ?? false;
 		}
 		public static bool operator !=(PackageVersion a, PackageVersion b)
 		{
