@@ -129,6 +129,8 @@ namespace Beamable.Server.Editor.Usam
 		public async Promise Migrate(List<IDescriptor> allDescriptors)
 		{
 			var commonCsProj = await MigrateCommon();
+			
+			AssetDatabase.DisallowAutoRefresh();
 
 			foreach (IDescriptor descriptor in allDescriptors)
 			{
@@ -143,9 +145,26 @@ namespace Beamable.Server.Editor.Usam
 			}
 			
 			// REMOVE OLD STUFF
-			Directory.Delete("Assets/Beamable/Microservices", true);
-			Directory.Delete("Assets/Beamable/StorageObjects", true);
-			Directory.Delete("Assets/Beamable/Common", true);
+			var microPath = "Assets/Beamable/Microservices";
+			var storagePath = "Assets/Beamable/StorageObjects";
+			var commonPath = "Assets/Beamable/Common";
+			if (Directory.Exists(microPath))
+			{
+				Directory.Delete(microPath, true);
+			}
+			
+			if (Directory.Exists(storagePath))
+			{
+				Directory.Delete(storagePath, true);
+			}
+			
+			if (Directory.Exists(commonPath))
+			{
+				Directory.Delete(commonPath, true);
+			}
+			
+			AssetDatabase.AllowAutoRefresh();
+			await Init();
 		}
 
 		private async Promise MigrateStorage(StorageObjectDescriptor storageDescriptor)
@@ -161,9 +180,11 @@ namespace Beamable.Server.Editor.Usam
 			if (!Directory.Exists(path))
 			{
 				Debug.Log(storageName);	
-				await CreateStorage(storageName, deps);
+				await CreateStorage(storageName, deps, shouldInitialize: false);
 			}
-			Directory.Delete(storageDescriptor.AttributePath, true);
+
+			var dirToDelete = Directory.GetDirectoryRoot(storageDescriptor.AttributePath);
+			Directory.Delete(dirToDelete, true);
 		}
 
 		private async Promise MigrateMicroservice(MicroserviceDescriptor microserviceDescriptor, string commonCsProj)
@@ -175,9 +196,10 @@ namespace Beamable.Server.Editor.Usam
 			{
 				LogVerbose($"Migrating {microserviceName} start");
 				var references = GetAssemblyDefinitionAssets(microserviceDescriptor);
-				await CreateMicroService(microserviceName, null, assemblyReferences: references);
+				await CreateMicroService(microserviceName, null, assemblyReferences: references, shouldInitialize: false);
 			}
 
+			_services = GetBeamServices();
 			var signpost = _services.FirstOrDefault(s => s.name.Equals(microserviceName));
 			if (signpost == null) return;
 			var command = $"add {signpost.CsprojFilePath} reference {commonCsProj}";
@@ -957,7 +979,7 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 
-		private async Promise CreateStorage(string storageName, List<IBeamoServiceDefinition> additionalReferences)
+		private async Promise CreateStorage(string storageName, List<IBeamoServiceDefinition> additionalReferences, bool shouldInitialize = true)
 		{
 			var service = new ServiceName(storageName);
 			var slnPath = FindFirstSolutionFile();
@@ -999,7 +1021,10 @@ namespace Beamable.Server.Editor.Usam
 
 			LogVerbose($"Starting the initialization of CodeService");
 			// Re-initializing the CodeService to make sure all files are with the right information
-			await Init();
+			if (shouldInitialize)
+			{
+				await Init();
+			}
 
 			//Shoudln't we generate client code at the end of the creation?
 			//For some reason this this line is never reached after the Init. And if put bfore Init, it doesn't work
@@ -1024,7 +1049,7 @@ namespace Beamable.Server.Editor.Usam
 			return version;
 		}
 
-		private async Promise CreateMicroService(string serviceName, List<IBeamoServiceDefinition> dependencies, List<AssemblyDefinitionAsset> assemblyReferences = null)
+		private async Promise CreateMicroService(string serviceName, List<IBeamoServiceDefinition> dependencies, List<AssemblyDefinitionAsset> assemblyReferences = null, bool shouldInitialize = true)
 		{
 			var service = new ServiceName(serviceName);
 			var slnPath = FindFirstSolutionFile();
@@ -1060,7 +1085,10 @@ namespace Beamable.Server.Editor.Usam
 
 			LogVerbose($"Starting the initialization of CodeService");
 			// Re-initializing the CodeService to make sure all files are with the right information
-			await Init();
+			if (shouldInitialize)
+			{
+				await Init();
+			}
 
 			//Shoudln't we generate client code at the end of the creation?
 			//For some reason this this line is never reached after the Init. And if put bfore Init, it doesn't work
