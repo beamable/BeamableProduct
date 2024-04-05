@@ -6,6 +6,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Common.Spew;
 using Beamable.Editor.Dotnet;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -426,16 +427,26 @@ namespace Beamable.Editor.BeamCli
 
 					await _status.Task;
 
-					if (_exitCode != 0)
+					IEnumerator Defer()
 					{
-						CliLogger.Log("failed", _command, $"errors-count=[{_errors.Count}]");
-
-						foreach (var err in _errors)
+						yield return null; // delay a single frame, because the stdout/stderr callbacks may not have fired yet.
+						
+						if (_exitCode != 0)
 						{
-							BeamEditorContext.Default.Dispatcher.Schedule(() => Debug.LogError(err.message));
+							CliLogger.Log("failed", _command, $"errors-count=[{_errors.Count}]");
+
+							foreach (var err in _errors)
+							{
+								BeamEditorContext.Default.Dispatcher.Schedule(() => Debug.LogError(err.message));
+							}
+							throw new CliInvocationException(_command, _errors);
 						}
-						throw new CliInvocationException(_command, _errors);
+						else
+						{
+							CliLogger.Log("done", _command );
+						}
 					}
+					_dispatcher.Run("beam-cli-defer", Defer());
 				}
 				finally
 				{

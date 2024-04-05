@@ -1,3 +1,4 @@
+using cli.Services;
 using Serilog;
 using System.CommandLine;
 
@@ -25,8 +26,21 @@ public class GeneratePropertiesFileCommand : AppCommand<GeneratePropertiesFileCo
 			(args, i) => args.OutputPath = i);
 		AddArgument(new Argument<string>("beam-path", description: "Beam path to be used"),
 			(args, i) => args.BeamPath = i);
-		AddArgument(new Argument<string>("solution-dir", description: "The solution path to be used"),
-			(args, i) => args.SolutionDir = i);
+		AddArgument(new Argument<string>("solution-dir", description: @"The solution path to be used. 
+The following values have special meaning and are not treated as paths... 
+- """ + Beamable.Common.BeamCli.Contracts.CliConstants.GENERATE_PROPS_SLN_NEXT_TO_PROPS + @""" = $([System.IO.Path]::GetDirectoryName(`$(DirectoryBuildPropsPath)`)) "),
+			(args, i) =>
+			{
+				if (i == Beamable.Common.BeamCli.Contracts.CliConstants.GENERATE_PROPS_SLN_NEXT_TO_PROPS)
+				{
+					args.SolutionDir = "$([System.IO.Path]::GetDirectoryName(`$(DirectoryBuildPropsPath)`))";
+				}
+				else
+				{
+					args.SolutionDir = i;
+				}
+			});
+		
 
 		AddOption(new Option<string>("--build-dir", description: "A path relative to the given solution directory, that will be used to store the projects /bin and /obj directories. Note: the given path will have the project's assembly name and the bin or obj folder appended"),
 			(args, i) => args.RelativeBuildDir = i);
@@ -39,6 +53,7 @@ public class GeneratePropertiesFileCommand : AppCommand<GeneratePropertiesFileCo
 			throw new CliException($"Output path argument passed does not exist. path=[{args.OutputPath}]");
 		}
 
+	
 		const string buildDirFlag = "BUILD_DIR_OPTIONS";
 
 		// this line could be used on the second propertyGroup to only apply those values to project that are considered beamable projects.
