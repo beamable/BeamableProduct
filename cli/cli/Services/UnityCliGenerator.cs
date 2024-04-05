@@ -218,7 +218,7 @@ MonoImporter:
 		}
 
 		var name = runtimeType.Name.Replace("[]", "");
-		
+
 		return ConvertToSnakeCase("Beam" + name);
 	}
 

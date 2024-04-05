@@ -379,7 +379,7 @@ namespace Beamable.Editor.BeamCli
 							KillProc();
 							return;
 						}
-						CliLogger.Log("stdout", args.Data, System.Environment.NewLine+System.Environment.NewLine  ,_command );
+						CliLogger.Log("stdout", args.Data, System.Environment.NewLine + System.Environment.NewLine, _command);
 
 						_dispatcher.Schedule(() =>
 						{
@@ -401,7 +401,7 @@ namespace Beamable.Editor.BeamCli
 							return;
 						}
 
-						CliLogger.Log("stderr", args.Data, System.Environment.NewLine+System.Environment.NewLine  ,_command );
+						CliLogger.Log("stderr", args.Data, System.Environment.NewLine + System.Environment.NewLine, _command);
 
 						_dispatcher.Schedule(() =>
 						{
