@@ -25,8 +25,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private GenericButtonVisualElement _cancelBtn;
 		private PrimaryButtonVisualElement _migrateBtn;
 
-		private List<MigrationServiceLinkVisualElement> _contentElements = new List<MigrationServiceLinkVisualElement>();
-		private ListView _addList;
 		private List<IDescriptor> _allDescriptors;
 		protected Label _messageLabel;
 
@@ -42,7 +40,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public override void Refresh()
 		{
 			base.Refresh();
-			var mainElement = Root.Q<VisualElement>("mainVisualElement");
 			SetMessageLabel();
 
 			var label = Root.Q<Label>("listTitle");
@@ -54,11 +51,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_migrateBtn = Root.Q<PrimaryButtonVisualElement>("downloadBtn");
 			_migrateBtn.Button.clickable.clicked += MigrateButton_OnClicked;
 
-			var servicesList = Root.Q<ListView>("servicesList");
-			servicesList.itemsSource = _allDescriptors;
-			servicesList.makeItem = MakeElement;
-			servicesList.bindItem = CreateBinder(_allDescriptors);
-			servicesList.SetItemHeight(24);
+			var servicesScroll = Root.Q<ScrollView>("servicesScroll");
+			foreach (var descriptor in _allDescriptors)
+			{
+				var path = new Label(descriptor.AttributePath);
+				servicesScroll.Add(path);
+			}
 		}
 
 		protected virtual void SetMessageLabel()
@@ -66,23 +64,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_messageLabel = Root.Q<Label>("message");
 			_messageLabel.text = Constants.Migration.POPUP_LABEL;
 			_messageLabel.AddTextWrapStyle();
-		}
-
-		private MigrationServiceLinkVisualElement MakeElement()
-		{
-			var contentPopupLinkVisualElement = new MigrationServiceLinkVisualElement();
-			_contentElements.Add(contentPopupLinkVisualElement);
-			return contentPopupLinkVisualElement;
-		}
-
-		private Action<VisualElement, int> CreateBinder(List<IDescriptor> source)
-		{
-			return (elem, index) =>
-			{
-				var link = elem as MigrationServiceLinkVisualElement;
-				link.Model = source[index];
-				link.Refresh();
-			};
 		}
 
 		private void CancelButton_OnClicked()

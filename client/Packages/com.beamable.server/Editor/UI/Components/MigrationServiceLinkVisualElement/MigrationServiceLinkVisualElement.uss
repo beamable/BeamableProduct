@@ -5,6 +5,7 @@
 }
 MigrationServiceLinkVisualElement > TemplateContainer {
     flex-grow: 1;
+    height: 28px;
 }
 
 .alignLeft {

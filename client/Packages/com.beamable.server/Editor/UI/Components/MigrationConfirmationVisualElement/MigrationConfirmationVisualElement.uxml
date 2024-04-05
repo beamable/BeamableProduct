@@ -3,7 +3,7 @@
         <ui:Label name="message" text="placeholder" style="height: 58px;" />
         <ui:Label tabindex="-1" text="Label" parse-escape-sequences="true" display-tooltip-when-elided="true" name="listTitle" style="align-items: stretch; align-self: flex-start;" />
         <ui:VisualElement name="downloadPreviewContainer">
-            <ui:ListView focusable="true" name="servicesList" fixed-item-height="22" show-border="true" header-title="Services to be migrated" style="align-self: auto;" />
+            <ui:ScrollView name="servicesScroll" style="flex-grow: 1;" />
         </ui:VisualElement>
         <ui:VisualElement name="buttonStrip" style="align-self: auto; justify-content: flex-end;">
             <Beamable.Editor.UI.Components.GenericButtonVisualElement name="cancelBtn" text="Cancel" type="Cancel" />
