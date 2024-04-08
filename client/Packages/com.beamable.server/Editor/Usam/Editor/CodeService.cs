@@ -113,7 +113,7 @@ namespace Beamable.Server.Editor.Usam
 			{
 				var migrationVisualElement = new MigrationConfirmationVisualElement(oldServices);
 				var popup = BeamablePopupWindow.ShowUtility(Constants.Migration.MIGRATION_POPUP_NAME, migrationVisualElement, null,
-				                                            new Vector2(600, 200),  (window) =>
+				                                            new Vector2(800, 400),  (window) =>
 				                                            {
 					                                            // trigger after Unity domain reload
 					                                            window.Close();
