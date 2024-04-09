@@ -79,6 +79,23 @@ namespace Beamable.Server.Editor.Usam
 					} while (property.NextVisible(false));
 
 				}
+				
+				if (GUILayout.Button("Apply Changes"))
+				{
+					if (_serviceAsset != null)
+					{
+						if (!_serviceAsset.data.CheckAllValidAssemblies())
+						{
+							Debug.LogError("Assembly references in file are not valid");
+						}
+						else
+						{
+							_ = BeamEditorContext
+							    .Default.ServiceScope.GetService<CodeService>()
+							    .UpdateServiceReferences(_serviceAsset.data);
+						}
+					}
+				}
 			}
 		}
 
