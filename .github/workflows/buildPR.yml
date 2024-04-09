@@ -19,7 +19,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        dotnet-version: ['6.0.x', '7.0.x' ]
+        dotnet-version: ['6.0.x', '7.0.x', '8.0.x' ]
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
@@ -49,7 +49,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        dotnet-version: ['6.0.x', '7.0.x' ]
+        dotnet-version: ['6.0.x', '7.0.x', '8.0.x' ]
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
@@ -78,7 +78,7 @@ jobs:
     strategy:
       max-parallel: 2
       matrix:
-        dotnet-version: ['6.0.x' ]
+        dotnet-version: ['8.0.x' ]
         runners: [ windows-latest, ubuntu-latest ]
     env:
       BEAM_DOCKER_WINDOWS_CONTAINERS: ${{ matrix.runners == 'windows-latest' && '1' || '0' }}
@@ -146,7 +146,7 @@ jobs:
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '6.0.x'
+          dotnet-version: '8.0.x'
       - name: Build and Install BEAM CLI 
         working-directory: ./cli/cli
         run: |
