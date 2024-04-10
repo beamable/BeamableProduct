@@ -132,29 +132,29 @@ jobs:
           cat client/Packages/com.beamable/Runtime/Environment/Resources/env-default.json
           cat client/Packages/com.beamable.server/package.json
 
-      - name: Prepare Microservice Dependencies
-        run: sh ./build/docker/scripts/build-microservice-deps.sh
-        env:
-          VERSION: ${{ steps.version.outputs.VERSION }}
-      - name: Publish Nuget Packages
-        run: sh ./build/docker/scripts/build-cli.sh
-        env:
-          VERSION: ${{ steps.version.outputs.VERSION }}
-          VERSION_PREFIX: ${{ steps.version.outputs.VERSION_PREFIX }}
-          VERSION_SUFFIX: ${{ steps.version.outputs.VERSION_SUFFIX }}
-          DRY_RUN: ${{ inputs.dryRun }}
-          NUGET_TOOLS_KEY: ${{ secrets.NUGET_TOOLS_KEY }}
+      # - name: Prepare Microservice Dependencies
+      #   run: sh ./build/docker/scripts/build-microservice-deps.sh
+      #   env:
+      #     VERSION: ${{ steps.version.outputs.VERSION }}
+      # - name: Publish Nuget Packages
+      #   run: sh ./build/docker/scripts/build-cli.sh
+      #   env:
+      #     VERSION: ${{ steps.version.outputs.VERSION }}
+      #     VERSION_PREFIX: ${{ steps.version.outputs.VERSION_PREFIX }}
+      #     VERSION_SUFFIX: ${{ steps.version.outputs.VERSION_SUFFIX }}
+      #     DRY_RUN: ${{ inputs.dryRun }}
+      #     NUGET_TOOLS_KEY: ${{ secrets.NUGET_TOOLS_KEY }}
 
-      - name: Create Release
-        id: create_release
-        if: ${{ inputs.releaseType != 'nightly' && inputs.dryRun == false }} 
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-        with:
-          tag_name: v${{ steps.version.outputs.VERSION }}
-          release_name: Nuget ${{ steps.version.outputs.VERSION }}
-          body: |
-            Release ${{ steps.version.outputs.VERSION }}
-          draft: true
-          prerelease: false
+      # - name: Create Release
+      #   id: create_release
+      #   if: ${{ inputs.releaseType != 'nightly' && inputs.dryRun == false }} 
+      #   uses: actions/create-release@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      #   with:
+      #     tag_name: v${{ steps.version.outputs.VERSION }}
+      #     release_name: Nuget ${{ steps.version.outputs.VERSION }}
+      #     body: |
+      #       Release ${{ steps.version.outputs.VERSION }}
+      #     draft: true
+      #     prerelease: false
