@@ -4,6 +4,9 @@ set -e
 export BEAMSERVICE_TAG=${ENVIRONMENT}_${VERSION:-0.0.0}
 export LOCAL_REPO_TAG=beamservice:${BEAMSERVICE_TAG}
 
+echo "Docker Version Info..."
+docker version
+
 echo "Starting Microservice dependencies..."
 docker-compose --no-ansi -f docker/image.microservice/docker-compose.yml build --pull --no-cache # Fresh pull, no cache, builds
 docker-compose --no-ansi -f docker/image.microservice/docker-compose.yml up --exit-code-from microservice # Runs containers and checks the exit code
