@@ -6,6 +6,12 @@ echo "VERSION = ${VERSION}"
 SRC_FILE=./client/Packages/com.beamable/Runtime/Environment/Resources/env-$ENVIRONMENT.json
 DST_FILE=./client/Packages/com.beamable/Runtime/Environment/Resources/env-default.json
 echo "Moving $SRC_FILE to $DST_FILE"
+
+echo srcFile
+cat $SRC_FILE
+
+echo listing dst
+ls ./client/Packages/com.beamable/Runtime/Environment/Resources
 cp -f $SRC_FILE $DST_FILE
 
 # update the version number in env-defaults
