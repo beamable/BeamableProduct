@@ -122,9 +122,7 @@ jobs:
               "nightly": "dev",
               "rc": "staging",
               "exp": "staging",
-              "production": "prod"
-            }')[github.event.inputs.releaseType] }}
-
+              "production": "prod"}')[github.event.inputs.releaseType] }}
       - name: Review Unity SDK Files
         if: ${{ inputs.releaseUnitySdk == true }}
         run: |
