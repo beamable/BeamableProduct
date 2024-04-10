@@ -397,7 +397,9 @@ MonoImporter:
 		var type = new CodeTypeDeclaration
 		{
 			Name = GetResultClassName(runtimeType),
+#pragma warning disable SYSLIB0050
 			TypeAttributes = TypeAttributes.Serializable | TypeAttributes.Public,
+#pragma warning restore SYSLIB0050
 			CustomAttributes = new CodeAttributeDeclarationCollection
 			{
 				new CodeAttributeDeclaration(new CodeTypeReference(typeof(SerializableAttribute)))
