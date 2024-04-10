@@ -112,7 +112,7 @@ jobs:
           echo version prefix=${{ steps.version.outputs.VERSION_PREFIX }}
           echo version suffix=${{ steps.version.outputs.VERSION_SUFFIX }}
 
-      - name: Prepare Unity SDK
+      - name: Prepare Unity Env
         if: ${{ inputs.releaseUnitySdk == true }}
         run: sh ./build/bin/modify-unity-files.sh
         env:
@@ -124,13 +124,19 @@ jobs:
               "exp": "staging",
               "production": "prod"
             }')[github.event.inputs.releaseType] }}
+      - name: Prepare Unity Samples
+        if: ${{ inputs.releaseUnitySdk == true }}
+        run: sh ./build/docker/scripts/prepare-samples.sh
+        working-directory: ./client/Packages/com.beamable/
       - name: Review Unity SDK Files
         if: ${{ inputs.releaseUnitySdk == true }}
         run: |
           ls ./client/Packages/com.beamable/Runtime/Environment/Resources
           cat client/Packages/com.beamable/Runtime/Environment/Resources/env-default.json
           cat client/Packages/com.beamable.server/package.json
-
+          ls ./client/Packages/com.beamable
+          ls ./client/Packages/com.beamable/Samples~
+          cat client/Packages/com.beamable/package.json
       # - name: Prepare Microservice Dependencies
       #   run: sh ./build/docker/scripts/build-microservice-deps.sh
       #   env:
