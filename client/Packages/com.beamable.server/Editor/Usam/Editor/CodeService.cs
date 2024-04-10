@@ -86,13 +86,13 @@ namespace Beamable.Server.Editor.Usam
 
 			LogVerbose("Setting properties file");
 			await SetPropertiesFile();
+			
+			LogVerbose("Set manifest start");
+			await SetManifest(_cli, _services, _storages);//asd
+			LogVerbose("set manifest ended");
 
 			LogVerbose("Saving all libraries referenced by services");
 			await SaveReferencedLibraries();
-
-			LogVerbose("Set manifest start");
-			await SetManifest(_cli, _services, _storages);
-			LogVerbose("set manifest ended");
 
 			await RefreshServices();
 			LogVerbose($"There are {ServiceDefinitions.Count} Service definitions");
@@ -128,15 +128,13 @@ namespace Beamable.Server.Editor.Usam
 
 		public async Promise Migrate(List<IDescriptor> allDescriptors)
 		{
-			var commonCsProj = await MigrateCommon();
-			
 			AssetDatabase.DisallowAutoRefresh();
 
 			foreach (IDescriptor descriptor in allDescriptors)
 			{
 				if (descriptor.ServiceType == ServiceType.MicroService)
 				{
-					await MigrateMicroservice((MicroserviceDescriptor)descriptor, commonCsProj);
+					await MigrateMicroservice((MicroserviceDescriptor)descriptor);
 				}
 				else
 				{
@@ -147,7 +145,6 @@ namespace Beamable.Server.Editor.Usam
 			// REMOVE OLD STUFF
 			var microPath = "Assets/Beamable/Microservices";
 			var storagePath = "Assets/Beamable/StorageObjects";
-			var commonPath = "Assets/Beamable/Common";
 			if (Directory.Exists(microPath))
 			{
 				Directory.Delete(microPath, true);
@@ -156,11 +153,6 @@ namespace Beamable.Server.Editor.Usam
 			if (Directory.Exists(storagePath))
 			{
 				Directory.Delete(storagePath, true);
-			}
-			
-			if (Directory.Exists(commonPath))
-			{
-				Directory.Delete(commonPath, true);
 			}
 			
 			AssetDatabase.AllowAutoRefresh();
@@ -187,7 +179,7 @@ namespace Beamable.Server.Editor.Usam
 			Directory.Delete(dirToDelete, true);
 		}
 
-		private async Promise MigrateMicroservice(MicroserviceDescriptor microserviceDescriptor, string commonCsProj)
+		private async Promise MigrateMicroservice(MicroserviceDescriptor microserviceDescriptor)
 		{
 			var microserviceDir = microserviceDescriptor.SourcePath;
 			var microserviceName = microserviceDescriptor.Name;
@@ -202,9 +194,6 @@ namespace Beamable.Server.Editor.Usam
 			_services = GetBeamServices();
 			var signpost = _services.FirstOrDefault(s => s.name.Equals(microserviceName));
 			if (signpost == null) return;
-			var command = $"add {signpost.CsprojFilePath} reference {commonCsProj}";
-
-			await _dotnetService.Run(command);
 
 			foreach (var file in Directory.EnumerateFiles(microserviceDir))
 			{
@@ -218,49 +207,11 @@ namespace Beamable.Server.Editor.Usam
 				File.Copy(file, newFilePath);
 
 				var fileContent = File.ReadAllText(newFilePath);
-				fileContent = fileContent.Replace("namespace Beamable.Server",
-				                                  $"using Beamable.Server;\n\nnamespace Beamable.{microserviceName}");
+				fileContent = fileContent.Replace("namespace Beamable.Microservices",
+				                                  $"namespace Beamable.{microserviceName}");
 				File.WriteAllText(newFilePath, fileContent);
 			}
 			Directory.Delete(microserviceDir, true);
-		}
-
-		private async Task<string> MigrateCommon()
-		{
-			var outputPath = $"{StandaloneMicroservicesPath}BeamableCommonShared/";
-			var commonPath = "Assets/Beamable/Common";
-			if (!Directory.Exists(outputPath) && Directory.Exists(commonPath))
-			{
-				LogVerbose("Starting creation of CommonLib");
-				var cmd = _cli.ProjectNewCommonLib(new ProjectNewCommonLibArgs()
-				{
-					name = new ServiceName("BeamableCommonShared"),
-					version = GetCurrentNugetVersion(),
-					outputPath = StandaloneMicroservicesPath
-				});
-				try
-				{
-					await cmd.Run();
-					foreach (var file in Directory.EnumerateFiles(commonPath))
-					{
-						if (!Path.GetExtension(file).EndsWith("cs")) continue;
-						var fileName = Path.GetFileName(file);
-						var newFilePath = Path.Combine(outputPath, fileName);
-						File.Copy(file, newFilePath);
-					}
-				}
-				catch (Exception e)
-				{
-					Debug.Log(e);
-				}
-			}
-
-			foreach (var file in Directory.EnumerateFiles(outputPath))
-			{
-				if (file.EndsWith("csproj")) return file;
-			}
-
-			return outputPath;
 		}
 		
 		private static List<IDescriptor> GetAllOldServices()
@@ -309,17 +260,24 @@ namespace Beamable.Server.Editor.Usam
 		public static List<AssemblyDefinitionAsset> GetAssemblyDefinitionAssets(MicroserviceDescriptor descriptor)
 		{
 			List<AssemblyDefinitionAsset> assets = new List<AssemblyDefinitionAsset>();
+			List<string> mandatoryReferences = new List<string>() {"Unity.Beamable.Customer.Common"}; // Add the customer common asmdef even if it's not being used
 			
-			var dependencies = descriptor.Type.Assembly.GetReferencedAssemblies();
+			var dependencies = descriptor.Type.Assembly.GetReferencedAssemblies().Select(r => r.Name).ToList();
+			dependencies.AddRange(mandatoryReferences);
 			foreach (var name in dependencies)
 			{
-				if (CsharpProjectUtil.IsValidReference(name.Name))
+				if (CsharpProjectUtil.IsValidReference(name))
 				{
-					var guid = AssetDatabase.FindAssets($"t:AssemblyDefinitionAsset {name.Name}");
+					var guid = AssetDatabase.FindAssets($"t:AssemblyDefinitionAsset {name}");
+
+					if (guid.Length == 0)
+					{
+						continue; //there is no asset of this assembly to reference
+					}
 
 					if (guid.Length > 1)
 					{
-						throw new Exception($"Found more than one assembly definition with the name: {name.Name}");
+						throw new Exception($"Found more than one assembly definition with the name: {name}");
 					}
 					
 					var path = AssetDatabase.GUIDToAssetPath(guid[0]);
@@ -354,6 +312,7 @@ namespace Beamable.Server.Editor.Usam
 			File.WriteAllText(LibrariesPathsFilePath, fileContent);
 		}
 
+		[MenuItem("Gabriel/GetLibrariesPaths")]
 		public static LibrariesPaths GetLibrariesPaths()
 		{
 			if (!File.Exists(LibrariesPathsFilePath))

@@ -159,6 +159,12 @@ namespace Beamable.Server.Editor.Usam
 		{
 			var invalidPrefixes = new string[] { "Unity.", "UnityEditor.", "UnityEngine." };
 			var invalidReferences = new string[] {"netstandard"};
+			var mandatoryReferences = new string[] {"Unity.Beamable.Customer.Common"};
+
+			if (mandatoryReferences.Contains(referenceName))
+			{
+				return true;
+			}
 
 			if (invalidReferences.Contains(referenceName))
 			{
