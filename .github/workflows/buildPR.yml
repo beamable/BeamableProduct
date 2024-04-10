@@ -178,9 +178,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ matrix.projectPath }}/Library
-          key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
+          key: Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
           restore-keys: |
-            Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
+            Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
       - uses: game-ci/unity-test-runner@v4
         id: tests
         timeout-minutes: 30
@@ -275,9 +275,9 @@ jobs:
             ${{ matrix.projectPath }}/Library
             ${{ matrix.projectPath }}/Temp
             ${{ matrix.projectPath }}/obj
-          key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
+          key: Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
           restore-keys: |
-            Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
+            Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
       - name: Clean the build directory
         continue-on-error: true
         run: |
