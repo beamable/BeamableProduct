@@ -117,7 +117,7 @@ jobs:
         run: sh ./build/bin/modify-unity-files.sh
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
-          ENVIRONMENT: >
+          ENVIRONMENT: >-
             ${{ fromJson('{
               "nightly": "dev",
               "rc": "staging",
