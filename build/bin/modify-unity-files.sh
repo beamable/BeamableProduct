@@ -1,9 +1,9 @@
 # review inputs
-echo "ENVIRONMENT = ${ENVIRONMENT}"
-echo "VERSION = ${VERSION}"
+echo "ENVIRONMENT = ${ENVIRONMENT//a}"
+echo "VERSION = ${VERSION//a}"
 
 # select the right .env file for the package and write it as env-defaults
-SRC_FILE="client/Packages/com.beamable/Runtime/Environment/Resources/env-${ENVIRONMENT}.json"
+SRC_FILE="client/Packages/com.beamable/Runtime/Environment/Resources/env-${ENVIRONMENT//a}.json"
 DST_FILE="client/Packages/com.beamable/Runtime/Environment/Resources/env-default.json"
 echo "Moving $SRC_FILE to $DST_FILE"
 
