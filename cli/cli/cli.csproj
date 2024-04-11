@@ -27,7 +27,7 @@
     <PackageOutputPath>./nupkg</PackageOutputPath>
     <LangVersion>10</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
 
@@ -101,13 +101,11 @@
     <Message Importance="high" Text="OutDir: $(OutputPath)" />
 
     <!-- Unix-Based -->
-    <Exec Condition="'$(IsWindows)'!='true' And Exists('$(OutputPath)net6.0/')" Command="./$(OutputPath)net6.0/$(AssemblyName) generate-interface --engine unity --output=../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
-    <Exec Condition="'$(IsWindows)'!='true' And Exists('$(OutputPath)net7.0/')" Command="./$(OutputPath)net7.0/$(AssemblyName) generate-interface --engine unity --output=../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
-
+    <Exec Condition="'$(IsWindows)'!='true' And Exists('$(OutputPath)net8.0/')" Command="./$(OutputPath)net8.0/$(AssemblyName) generate-interface --engine unity --output=../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
+    
     <!-- Windows-Based -->
-    <Exec Condition="'$(IsWindows)'=='true' And Exists('$(OutputPath)net6.0\')" Command=".\$(OutputPath)net6.0\$(AssemblyName) generate-interface --engine unity --output=..\..\client\Packages\com.beamable\Editor\BeamCli\Commands" />
-    <Exec Condition="'$(IsWindows)'=='true' And Exists('$(OutputPath)net7.0\')" Command=".\$(OutputPath)net7.0\$(AssemblyName) generate-interface --engine unity --output=..\..\client\Packages\com.beamable\Editor\BeamCli\Commands" />
-
+    <Exec Condition="'$(IsWindows)'=='true' And Exists('$(OutputPath)net8.0\')" Command=".\$(OutputPath)net8.0\$(AssemblyName) generate-interface --engine unity --output=..\..\client\Packages\com.beamable\Editor\BeamCli\Commands" />
+    
     <Exec Command="dotnet tool run dotnet-format ../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
   </Target>
 

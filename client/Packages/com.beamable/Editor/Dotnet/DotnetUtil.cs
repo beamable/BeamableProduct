@@ -12,7 +12,7 @@ namespace Beamable.Editor.Dotnet
 {
 	public static partial class DotnetUtil
 	{
-		private const int REQUIRED_MAJOR_VERSION = 6;
+		private const int REQUIRED_MAJOR_VERSION = 8;
 
 		private const string ENV_VAR_DOTNET_LOCATION = "BEAMABLE_DOTNET_PATH";
 
@@ -86,16 +86,7 @@ namespace Beamable.Editor.Dotnet
 			DownloadInstallScript();
 
 			EditorUtility.DisplayProgressBar("Downloading Dotnet", "installing dotnet in your Library folder", .2f);
-			RunInstallScript("6.0");
-
-			if (EditorConfiguration.Instance != null && EditorConfiguration.Instance.AdvancedCli.HasValue)
-			{
-				if (EditorConfiguration.Instance.AdvancedCli.Value.UseFromSource.HasNonEmptyValue)
-				{
-					RunInstallScript("7.0");
-				}
-			}
-
+			RunInstallScript("8.0");
 
 			EditorUtility.ClearProgressBar();
 		}
@@ -116,6 +107,7 @@ namespace Beamable.Editor.Dotnet
 
 				if (!CheckVersion(dotnetPath, out var majorVersion))
 				{
+					
 					Debug.LogWarning(
 						$"Ignoring version of dotnet at {path} due to incorrect version number. Founded: {majorVersion}, required: {REQUIRED_MAJOR_VERSION}");
 					continue;

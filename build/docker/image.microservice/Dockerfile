@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:7.0
+FROM mcr.microsoft.com/dotnet/sdk:8.0
 
 # RUN npm install -g json
 ADD build/docker/scripts /scripts
