@@ -126,7 +126,7 @@ jobs:
             }')[github.event.inputs.releaseType] }}
       - name: Prepare Unity Samples
         if: ${{ inputs.releaseUnitySdk == true }}
-        run: sh ./build/docker/scripts/prepare-samples.sh
+        run: sh ./../../../build/docker/scripts/prepare-samples.sh
         working-directory: ./client/Packages/com.beamable/
       - name: Review Unity SDK Files
         if: ${{ inputs.releaseUnitySdk == true }}
