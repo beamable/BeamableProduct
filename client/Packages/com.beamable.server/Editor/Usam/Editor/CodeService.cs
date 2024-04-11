@@ -175,7 +175,39 @@ namespace Beamable.Server.Editor.Usam
 				await CreateStorage(storageName, deps, shouldInitialize: false);
 			}
 
-			var dirToDelete = Directory.GetDirectoryRoot(storageDescriptor.AttributePath);
+			_storages = GetBeamStorages();
+			var signpost = _storages.FirstOrDefault(s => s.name.Equals(storageName));
+			if (signpost == null)
+			{
+				throw new Exception($"Storage: {storageName} was not found in local files");
+			}
+
+			var newExtensionsFile = Path.Combine(signpost.CsprojPath, "StorageExtensions.cs");
+			if (File.Exists(newExtensionsFile))
+			{
+				File.Delete(newExtensionsFile); // Delete this file because in old storages the extensions class was already inside the storage main file
+			}
+
+			var dirToDelete = Path.GetDirectoryName(storageDescriptor.AttributePath);
+
+			if (string.IsNullOrEmpty(dirToDelete))
+			{
+				throw new Exception($"Old location of the storage: {storageName} was not found");
+			}
+
+			foreach (var file in Directory.EnumerateFiles(dirToDelete))
+			{
+				if (!Path.GetExtension(file).EndsWith("cs")) continue;
+				var fileName = Path.GetFileName(file);
+				var newFilePath = Path.Combine(signpost.CsprojPath, fileName);
+				if (File.Exists(newFilePath))
+				{
+					File.Delete(newFilePath);
+				}
+				File.Copy(file, newFilePath);
+			}
+
+
 			Directory.Delete(dirToDelete, true);
 		}
 
@@ -949,6 +981,7 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
+			additionalReferences ??= new List<IBeamoServiceDefinition>();
 			string[] deps = new string[additionalReferences.Count];
 			for (int i = 0; i < additionalReferences.Count; i++)
 			{

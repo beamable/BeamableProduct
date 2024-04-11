@@ -3,8 +3,8 @@
         <ui:Label name="message" text="placeholder" style="height: 60px; width: 585px; align-items: auto; align-self: flex-start;" />
         <ui:Label tabindex="-1" text="For more information, go check the &lt;a href=&quot;https://dash.readme.com/project/beamable2/v0.15.0/docs/migration-guide&quot;&gt;documentation&lt;/a&gt;." parse-escape-sequences="true" display-tooltip-when-elided="true" name="docLink" style="align-self: flex-start; height: 56px; width: 584px; justify-content: center;" />
         <ui:Label tabindex="-1" text="Label" parse-escape-sequences="true" display-tooltip-when-elided="true" name="listTitle" style="align-items: stretch; align-self: flex-start;" />
-        <ui:VisualElement name="downloadPreviewContainer">
-            <ui:ScrollView name="servicesScroll" style="flex-grow: 1;" />
+        <ui:VisualElement name="downloadPreviewContainer" style="align-items: stretch; width: -273px; left: 10px; right: 10px; align-self: flex-start;">
+            <ui:ScrollView name="servicesScroll" style="flex-grow: 1; align-self: flex-start;" />
         </ui:VisualElement>
         <ui:VisualElement name="buttonStrip" style="align-self: auto; justify-content: flex-end;">
             <Beamable.Editor.UI.Components.GenericButtonVisualElement name="cancelBtn" text="Cancel" type="Cancel" />
