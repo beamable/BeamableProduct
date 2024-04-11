@@ -440,6 +440,7 @@ namespace Beamable.Server.Editor.Usam
 			var serviceName = signpost.name;
 			
 			SolutionPostProcessor.OnPreGeneratingCSProjectFiles();
+			SetSolution(_services, _storages);
 			LogVerbose($"Starting updating references");
 			//get a list of all references of that service
 			var service = _services.FirstOrDefault(s => s.name == serviceName);
