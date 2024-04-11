@@ -137,6 +137,35 @@ jobs:
           ls ./client/Packages/com.beamable
           ls ./client/Packages/com.beamable/Samples~
           cat client/Packages/com.beamable/package.json
+      - name: Upload Docker Base Image (for SDK usage)
+        if: ${{ inputs.releaseUnitySdk == true }}
+        run: sh ./build/upload-docker-base-image.sh
+        env:
+          DOCKER_HUB_USER: ${{secrets.DOCKERHUB_USERNAME}}
+          DOCKER_HUB_PASSWORD: ${{secrets.DOCKERHUB_TOKEN}}
+          VERSION: ${{ steps.version.outputs.VERSION }}
+          ENVIRONMENT: >-
+            ${{ fromJson('{
+              "nightly": "dev",
+              "rc": "staging",
+              "exp": "staging",
+              "production": "prod"
+            }')[github.event.inputs.releaseType] }}
+          
+      - name: Upload Changelogs
+        # if: ${{ inputs.dryRun == false }}
+        run: sh ./build/upload-changelogs.sh
+        env:
+          GITHUB_USERNAME: ${{ secrets.GIT_CHANGELOGS_USERNAME }}
+          GITHUB_PASSWORD: ${{ secrets.GIT_CHANGELOGS_PASSWORD }}
+          VERSION: ${{ steps.version.outputs.VERSION }}
+          BRANCH: >-
+            ${{ fromJson('{
+              "nightly": "daily",
+              "rc": "staging",
+              "exp": "staging",
+              "production": "production"
+            }')[github.event.inputs.releaseType] }}
       # - name: Prepare Microservice Dependencies
       #   run: sh ./build/docker/scripts/build-microservice-deps.sh
       #   env:
