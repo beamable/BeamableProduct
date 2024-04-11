@@ -30,9 +30,9 @@ git remote add --fetch origin https://$GITHUB_USERNAME:$GITHUB_PASSWORD@github.c
 git remote set-url origin https://$GITHUB_USERNAME:$GITHUB_PASSWORD@github.com/beamable/Changelogs.git
 git checkout $BRANCH
 git status
-cp -f ../client/Packages/com.beamable/CHANGELOG.md ./com-beamable-changelog.md
-cp -f ../client/Packages/com.beamable.server/CHANGELOG.md ./com-beamable-server-changelog.md
-cp -f ../cli/cli/CHANGELOG.md ./beamable-tools-changelog.md || true
+cp -f ../BeamableProduct/BeamableProduct/client/Packages/com.beamable/CHANGELOG.md ./com-beamable-changelog.md
+cp -f ../BeamableProduct/BeamableProduct/client/Packages/com.beamable.server/CHANGELOG.md ./com-beamable-server-changelog.md
+cp -f ../BeamableProduct/BeamableProduct/cli/cli/CHANGELOG.md ./beamable-tools-changelog.md || true
 git add .
 git status
 git diff-index --quiet HEAD || git commit -m "updating changelogs for ' + $VERSION + '"
