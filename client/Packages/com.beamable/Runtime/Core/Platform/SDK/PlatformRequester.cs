@@ -223,7 +223,7 @@ namespace Beamable.Api
 					var responsePayload = request.downloadHandler.text;
 					if (request.responseCode >= 300 || request.IsNetworkError())
 					{
-						result.CompleteError(new HttpRequesterException(responsePayload));
+						result.CompleteError(new HttpRequesterException($"failed network request. payload=[{responsePayload}] error=[{request.error}]"));
 					}
 					else
 					{
