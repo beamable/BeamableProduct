@@ -2,6 +2,17 @@
 
 echo Branch is $BRANCH
 
+echo "--PWD---"
+pwd
+
+echo "moving up"
+cd ..
+pwd
+
+echo "creating new dir"
+mkdir -p changlog-upload-dir
+cd changelog-upload-dir
+
 git --version
 git init
 git config user.email "chris@beamable.com"
