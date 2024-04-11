@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.19.18]
 ### Fixed
-- Adds Retry logic for in game SSL errors.
+- Adds Retry logic for in game SSL errors. Special thanks to _Balraj Basi_
 
 ## [1.19.17]
 ### Changed
