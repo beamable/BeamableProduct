@@ -36,6 +36,5 @@ dotnet publish ../microservice/unityenginestubs.addressables -c release -o $lib_
 echo "Building Tools..."
 dotnet publish ../microservice/beamable.tooling.common -c release -o $lib_path /p:InformationalVersion=$VERSION
 
-
 echo "Building Microservice base image..."
-# /usr/libexec/docker/cli-plugins/docker-buildx build --builder beamable-builder --platform linux/arm64,linux/amd64 --push -t beamableinc/${LOCAL_REPO_TAG} ../microservice/microservice --build-arg BEAMABLE_SDK_VERSION=${VERSION:-0.0.0}
+docker build --builder beamable-builder --platform linux/arm64,linux/amd64 --push -t beamableinc/${LOCAL_REPO_TAG} ../microservice/microservice --build-arg BEAMABLE_SDK_VERSION=${VERSION:-0.0.0}
