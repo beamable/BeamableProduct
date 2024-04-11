@@ -4,14 +4,20 @@ echo Branch is $BRANCH
 
 echo "--PWD---"
 pwd
+ls
 
 echo "moving up"
-cd ..
+cd ../..
 pwd
+ls
 
 echo "creating new dir"
 mkdir -p changlog-upload-dir
-cd changelog-upload-dir
+
+echo "listing"
+ls
+
+cd ./changelog-upload-dir
 
 git --version
 git init
