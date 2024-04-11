@@ -10,7 +10,9 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string output;
 		/// <summary>Beam path to be used</summary>
 		public string beamPath;
-		/// <summary>The solution path to be used</summary>
+		/// <summary>The solution path to be used. 
+		///The following values have special meaning and are not treated as paths... 
+		///- "DIR.PROPS" = $([System.IO.Path]::GetDirectoryName(`$(DirectoryBuildPropsPath)`)) </summary>
 		public string solutionDir;
 		/// <summary>A path relative to the given solution directory, that will be used to store the projects /bin and /obj directories. Note: the given path will have the project's assembly name and the bin or obj folder appended</summary>
 		public string buildDir;
