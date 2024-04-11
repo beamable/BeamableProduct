@@ -84,9 +84,9 @@ namespace Beamable.Server.Editor.Usam
 				{
 					if (_serviceAsset != null)
 					{
-						if (!_serviceAsset.data.CheckAllValidAssemblies())
+						if (!_serviceAsset.data.CheckAllValidAssemblies(out string message))
 						{
-							Debug.LogError("Assembly references in file are not valid");
+							Debug.LogError($"Error: {message}");
 						}
 						else
 						{
