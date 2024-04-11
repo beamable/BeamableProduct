@@ -175,11 +175,59 @@ namespace Beamable.Api
 		                                   string contentType = "application/json",
 		                                   Func<string, T> parser = null)
 		{
-			// need to retry the internal request if it fails.
-			return Promise.RetryPromise<T>(() =>
+			Promise<T> ManualRequestInternal()
 			{
-				return ManualRequestInternal(method, url, body, headers, contentType, parser);
-			}, (ex) =>
+				byte[] bodyBytes = null;
+
+				if (body != null)
+				{
+					bodyBytes = body is string json ? Encoding.UTF8.GetBytes(json) : Encoding.UTF8.GetBytes(JsonUtility.ToJson(body));
+					contentType = "application/json";
+				}
+
+				var result = new Promise<T>();
+				var request = BuildWebRequest(method, url, contentType, bodyBytes);
+
+				if (headers != null)
+				{
+					foreach (var header in headers)
+					{
+						request.SetRequestHeader(header.Key, header.Value);
+					}
+				}
+
+				var op = request.SendWebRequest();
+				op.completed += _ =>
+				{
+					try
+					{
+						var responsePayload = request.downloadHandler.text;
+						if (request.responseCode >= 300 || request.IsNetworkError())
+						{
+							result.CompleteError(new HttpRequesterException(responsePayload));
+						}
+						else
+						{
+							T parsedResult = parser == null
+								? JsonUtility.FromJson<T>(responsePayload)
+								: parser(responsePayload);
+							result.CompleteSuccess(parsedResult);
+						}
+					}
+					catch (Exception ex)
+					{
+						result.CompleteError(ex);
+					}
+					finally
+					{
+						request.Dispose();
+					}
+				};
+				return result;
+			}
+			
+			// need to retry the internal request if it fails.
+			return Promise.RetryPromise<T>(ManualRequestInternal, (ex) =>
 			{
 				if (ex?.Message?.ToLowerInvariant()?.Contains(SSL_ERROR.ToLowerInvariant()) ?? false)
 				{
@@ -194,57 +242,7 @@ namespace Beamable.Api
 			});
 		}
 		
-		public Promise<T> ManualRequestInternal<T>(Method method, string url, object body = null, Dictionary<string, string> headers = null, string contentType = "application/json", Func<string, T> parser = null)
-		{
-			byte[] bodyBytes = null;
-
-			if (body != null)
-			{
-				bodyBytes = body is string json ? Encoding.UTF8.GetBytes(json) : Encoding.UTF8.GetBytes(JsonUtility.ToJson(body));
-				contentType = "application/json";
-			}
-
-			var result = new Promise<T>();
-			var request = BuildWebRequest(method, url, contentType, bodyBytes);
-
-			if (headers != null)
-			{
-				foreach (var header in headers)
-				{
-					request.SetRequestHeader(header.Key, header.Value);
-				}
-			}
-
-			var op = request.SendWebRequest();
-			op.completed += _ =>
-			{
-				try
-				{
-					var responsePayload = request.downloadHandler.text;
-					if (request.responseCode >= 300 || request.IsNetworkError())
-					{
-						result.CompleteError(new HttpRequesterException(responsePayload));
-					}
-					else
-					{
-						T parsedResult = parser == null
-							? JsonUtility.FromJson<T>(responsePayload)
-							: parser(responsePayload);
-						result.CompleteSuccess(parsedResult);
-					}
-				}
-				catch (Exception ex)
-				{
-					result.CompleteError(ex);
-				}
-				finally
-				{
-					request.Dispose();
-				}
-			};
-			return result;
-		}
-
+		
 		public string EscapeURL(string url)
 		{
 			return UnityWebRequest.EscapeURL(url);
