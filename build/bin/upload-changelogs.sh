@@ -35,5 +35,5 @@ cp -f ../BeamableProduct/BeamableProduct/client/Packages/com.beamable.server/CHA
 cp -f ../BeamableProduct/BeamableProduct/cli/cli/CHANGELOG.md ./beamable-tools-changelog.md || true
 git add .
 git status
-git diff-index --quiet HEAD || git commit -m "updating changelogs for ' + $VERSION + '"
+git diff-index --quiet HEAD || git commit -m "updating changelogs for $VERSION"
 git push --set-upstream --force origin $BRANCH

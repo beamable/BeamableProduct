@@ -74,6 +74,9 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
       - name: Install JQ
         run: |
           sudo apt-get update
@@ -137,8 +140,21 @@ jobs:
           ls ./client/Packages/com.beamable
           ls ./client/Packages/com.beamable/Samples~
           cat client/Packages/com.beamable/package.json
+      
+      - name: Release com.beamable UPM Package
+        run: ./build/bin/upload-upm-packages.sh
+        env:
+          PACKAGE_DIR: ./client/Packages/com.beamable
+          NPM_AUTH: ${{secrets.NPM_AUTH}}
+          NPM_REGISTRY: https://nexus.beamable.com/nexus/content/repositories/unity-dev/
+          DRY_RUN: ${{ inputs.dryRun }}
+          NPM_COMMAND: publish
+          NPM_LOGLEVEL: verbose
+          VERSION: ${{ steps.version.outputs.VERSION }}
+          UPDATE_NPM_VERSION: false
+      
       - name: Upload Docker Base Image (for SDK usage)
-        if: ${{ inputs.releaseUnitySdk == true }}
+        if: ${{ inputs.releaseUnitySdk == true && inputs.dryRun == false}}
         run: sh ./build/bin/upload-docker-base-image.sh
         env:
           DOCKER_HUB_USER: ${{secrets.DOCKERHUB_USERNAME}}
@@ -153,7 +169,7 @@ jobs:
             }')[github.event.inputs.releaseType] }}
           
       - name: Upload Changelogs
-        # if: ${{ inputs.dryRun == false }}
+        if: ${{ inputs.dryRun == false }}
         run: sh ./build/bin/upload-changelogs.sh
         env:
           GITHUB_USERNAME: ${{ secrets.GIT_CHANGELOGS_USERNAME }}
