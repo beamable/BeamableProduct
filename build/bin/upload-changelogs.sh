@@ -11,13 +11,16 @@ cd ../..
 pwd
 ls
 
+CHANGELOG_DIR=changlog-upload-dir
 echo "creating new dir"
-mkdir -p changlog-upload-dir
+mkdir -p $CHANGELOG_DIR
 
 echo "listing"
 ls
 
-cd ./changelog-upload-dir
+cd $CHANGELOG_DIR
+echo "moving into dir"
+pwd
 
 git --version
 git init
