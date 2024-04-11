@@ -17,10 +17,10 @@ for row in $(cat ./package.json | jq -r '.samples[] | @base64'); do
     path=$(_jq '.path')
     echo "Converting samples - found path ${path}"
 
-    sourcePath=${path/"SAMPLES_PATH"/"Samples"}
+    sourcePath="$(echo $path | sed 's/SAMPLES_PATH/Samples/')"
     echo "Converting samples - found source ${sourcePath}"
 
-    dstPath=${path/"SAMPLES_PATH"/"Samples~"}
+    dstPath="$(echo $path | sed 's/SAMPLES_PATH/Samples~/')"
     echo "Converting samples - found dst ${dstPath}"
 
     # # update the package json file
