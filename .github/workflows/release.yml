@@ -145,7 +145,7 @@ jobs:
         run: ./build/bin/upload-upm-packages.sh
         env:
           PACKAGE_DIR: ./client/Packages/com.beamable
-          NPM_AUTH: ${{secrets.NPM_AUTH}}
+          NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
           NPM_REGISTRY: https://nexus.beamable.com/nexus/content/repositories/unity-dev/
           DRY_RUN: ${{ inputs.dryRun }}
           NPM_COMMAND: publish
