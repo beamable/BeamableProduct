@@ -36,4 +36,4 @@ cp -f ../BeamableProduct/BeamableProduct/cli/cli/CHANGELOG.md ./beamable-tools-c
 git add .
 git status
 git diff-index --quiet HEAD || git commit -m "updating changelogs for ' + $VERSION + '"
-sh "git push --set-upstream --force origin $BRANCH"
+git push --set-upstream --force origin $BRANCH
