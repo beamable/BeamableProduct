@@ -5,6 +5,8 @@ cd $PACKAGE_DIR
 pwd
 ls
 
+npm config fix
+
 if [ "$NPM_COMMAND" == "deprecate" ]
 then
   npm deprecate $VERSION "This package has been deprecated by Beamable."
