@@ -74,9 +74,6 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
       - name: Install JQ
         run: |
           sudo apt-get update
@@ -141,19 +138,28 @@ jobs:
           ls ./client/Packages/com.beamable/Samples~
           cat client/Packages/com.beamable/package.json
       
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://nexus.beamable.com/nexus/content/repositories/unity-dev'
       - name: Release com.beamable UPM Package
-        run: ./build/bin/upload-upm-packages.sh
-        env:
-          PACKAGE_DIR: ./client/Packages/com.beamable
-          NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
-          NPM_USER: ${{secrets.NEXUS_NPM_USER}}
-          NPM_PASS: ${{secrets.NEXUS_NPM_PASSWORD}}
-          NPM_REGISTRY: https://nexus.beamable.com/nexus/content/repositories/unity-dev/
-          DRY_RUN: ${{ inputs.dryRun }}
-          NPM_COMMAND: publish
-          NPM_LOGLEVEL: verbose
-          VERSION: ${{ steps.version.outputs.VERSION }}
-          UPDATE_NPM_VERSION: false
+        run: npm publish
+        working-directory: ./client/Packages/com.beamable
+        env: 
+          NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
+
+        # run: ./build/bin/upload-upm-packages.sh
+        # env:
+        #   PACKAGE_DIR: ./client/Packages/com.beamable
+        #   NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
+        #   NPM_USER: ${{secrets.NEXUS_NPM_USER}}
+        #   NPM_PASS: ${{secrets.NEXUS_NPM_PASSWORD}}
+        #   NPM_REGISTRY: https://nexus.beamable.com/nexus/content/repositories/unity-dev/
+        #   DRY_RUN: ${{ inputs.dryRun }}
+        #   NPM_COMMAND: publish
+        #   NPM_LOGLEVEL: verbose
+        #   VERSION: ${{ steps.version.outputs.VERSION }}
+        #   UPDATE_NPM_VERSION: false
       
       - name: Upload Docker Base Image (for SDK usage)
         if: ${{ inputs.releaseUnitySdk == true && inputs.dryRun == false}}
