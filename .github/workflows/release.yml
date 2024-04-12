@@ -164,11 +164,11 @@ jobs:
         run: sh ./../../../build/bin/prepare-samples.sh
         working-directory: ./client/Packages/com.beamable/
       
-      - name: Update UPM Versions
+      - name: Update UPM Versions (com.beamable)
         run: npm version ${{ steps.version.outputs.VERSION }}
         working-directory: ./client/Packages/com.beamable/
 
-      - name: Update UPM Versions
+      - name: Update UPM Version (com.beamable.server)
         run: npm version ${{ steps.version.outputs.VERSION }}
         working-directory: ./client/Packages/com.beamable.server/
 
@@ -204,12 +204,12 @@ jobs:
         working-directory: .
 
       - name: Upload Docker Base Image (for SDK usage)
-        if: ${{ inputs.releaseUnitySdk == true && inputs.dryRun == false}}
+        if: ${{ inputs.releaseUnitySdk == true }}
         uses: docker/build-push-action@v5
         with:
           context: ./microservice/microservice
           platforms: linux/arm64,linux/amd64
-          push: false
+          push: ${{inputs.dryRun == false}}
           tags: "beamableinc/beamservice:${{steps.version.outputs.BUILD_ENV}}_${{ steps.version.outputs.VERSION }}"
           build-args: |
             BEAMABLE_SDK_VERSION=${{ steps.version.outputs.VERSION }}
