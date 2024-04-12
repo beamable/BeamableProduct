@@ -5,7 +5,9 @@ cd $PACKAGE_DIR
 pwd
 ls
 
-npm config fix
+npm config set registry=${NPM_REGISTRY}
+npm config set _auth="$(echo -n "$NPM_USER:$NPM_PASS" | base64)"
+npm config ls
 
 if [ "$NPM_COMMAND" == "deprecate" ]
 then

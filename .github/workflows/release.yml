@@ -146,6 +146,8 @@ jobs:
         env:
           PACKAGE_DIR: ./client/Packages/com.beamable
           NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
+          NPM_USER: ${{secrets.NEXUS_NPM_USER}}
+          NPM_PASS: ${{secrets.NEXUS_NPM_PASSWORD}}
           NPM_REGISTRY: https://nexus.beamable.com/nexus/content/repositories/unity-dev/
           DRY_RUN: ${{ inputs.dryRun }}
           NPM_COMMAND: publish
