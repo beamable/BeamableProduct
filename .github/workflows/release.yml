@@ -201,6 +201,7 @@ jobs:
       - name: Prepare Docker Base Image (for SDK usage)
         if: ${{ inputs.releaseUnitySdk == true && inputs.dryRun == false}}
         run: sh ./build/bin/upload-docker-base-image.sh
+        working-directory: .
 
       - name: Upload Docker Base Image (for SDK usage)
         if: ${{ inputs.releaseUnitySdk == true && inputs.dryRun == false}}
