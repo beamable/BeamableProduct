@@ -7,8 +7,6 @@ echo "---- PWD ----"
 pwd
 ls
 
-echo "Building microserivce dependencies..."
-cd client
 echo "Building Common Library..."
 dotnet publish ./client/Packages/com.beamable/Common -c release -o $lib_path /p:InformationalVersion=$VERSION
 
