@@ -25,11 +25,11 @@ public class ContentLocalManifestCommand : AtomicCommand<ContentLocalManifestCom
 	public override async Task<LocalContentState> GetResult(ContentLocalManifestCommandArgs args)
 	{
 		_contentService = args.ContentService;
-		
+
 		var contentApi = args.Provider.GetService<IContentApi>();
 		var manifests = await contentApi.GetManifestChecksums();
 		var existingManifestIds = manifests.manifests.Select(m => m.id).ToArray();
-		
+
 		// Make sure the given manifests are valid.
 		var manifestsToGet = args.ManifestFilter;
 		if (args.ManifestFilter.Length == 0)
@@ -44,7 +44,7 @@ public class ContentLocalManifestCommand : AtomicCommand<ContentLocalManifestCom
 				throw new CliException($"Content Manifests Not Found. MANIFEST_IDS_NOT_FOUND=[{invalidManifestIds}], AVAILABLE_IDS=[{existingManifestIds}]");
 			}
 		}
-		
+
 		var localManifests = new List<LocalContentManifest>(manifestsToGet.Length);
 
 		// Make requests for all local manifests
