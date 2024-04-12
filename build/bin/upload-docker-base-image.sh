@@ -37,4 +37,4 @@ echo "Building Tools..."
 dotnet publish ../microservice/beamable.tooling.common -c release -o $lib_path /p:InformationalVersion=$VERSION
 
 echo "Building Microservice base image..."
-docker build --builder beamable-builder --platform linux/arm64,linux/amd64 --push -t beamableinc/${LOCAL_REPO_TAG} ../microservice/microservice --build-arg BEAMABLE_SDK_VERSION=${VERSION:-0.0.0}
+docker build --platform linux/arm64,linux/amd64 --push -t beamableinc/${LOCAL_REPO_TAG} ../microservice/microservice --build-arg BEAMABLE_SDK_VERSION=${VERSION:-0.0.0}

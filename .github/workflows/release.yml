@@ -77,7 +77,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-          registry-url: 'https://nexus.beamable.com/nexus/content/repositories/unity-dev'
+          registry-url: >-
+            ${{ fromJson('{
+              "nightly": "https://nexus.beamable.com/nexus/content/repositories/unity-dev",
+              "rc": "https://nexus.beamable.com/nexus/content/repositories/unity-preview",
+              "exp": "https://nexus.beamable.com/nexus/content/repositories/unity-preview",
+              "production": "https://nexus.beamable.com/nexus/content/repositories/unity"
+            }')[github.event.inputs.releaseType] }}
       - name: Install JQ
         run: |
           sudo apt-get update
@@ -150,25 +156,21 @@ jobs:
           cat client/Packages/com.beamable/package.json
       
       - name: Release com.beamable UPM Package
+        if: ${{ inputs.dryRun == false }}
         run: npm publish
         working-directory: ./client/Packages/com.beamable
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
           NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
 
-        # run: ./build/bin/upload-upm-packages.sh
-        # env:
-        #   PACKAGE_DIR: ./client/Packages/com.beamable
-        #   NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
-        #   NPM_USER: ${{secrets.NEXUS_NPM_USER}}
-        #   NPM_PASS: ${{secrets.NEXUS_NPM_PASSWORD}}
-        #   NPM_REGISTRY: https://nexus.beamable.com/nexus/content/repositories/unity-dev/
-        #   DRY_RUN: ${{ inputs.dryRun }}
-        #   NPM_COMMAND: publish
-        #   NPM_LOGLEVEL: verbose
-        #   VERSION: ${{ steps.version.outputs.VERSION }}
-        #   UPDATE_NPM_VERSION: false
-      
+      - name: Release com.beamable.server UPM Package
+        if: ${{ inputs.dryRun == false }}
+        run: npm publish
+        working-directory: ./client/Packages/com.beamable.server
+        env: 
+          NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
+          NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
+
       - name: Upload Docker Base Image (for SDK usage)
         if: ${{ inputs.releaseUnitySdk == true && inputs.dryRun == false}}
         run: sh ./build/bin/upload-docker-base-image.sh
@@ -198,29 +200,29 @@ jobs:
               "exp": "staging",
               "production": "production"
             }')[github.event.inputs.releaseType] }}
-      # - name: Prepare Microservice Dependencies
-      #   run: sh ./build/docker/scripts/build-microservice-deps.sh
-      #   env:
-      #     VERSION: ${{ steps.version.outputs.VERSION }}
-      # - name: Publish Nuget Packages
-      #   run: sh ./build/docker/scripts/build-cli.sh
-      #   env:
-      #     VERSION: ${{ steps.version.outputs.VERSION }}
-      #     VERSION_PREFIX: ${{ steps.version.outputs.VERSION_PREFIX }}
-      #     VERSION_SUFFIX: ${{ steps.version.outputs.VERSION_SUFFIX }}
-      #     DRY_RUN: ${{ inputs.dryRun }}
-      #     NUGET_TOOLS_KEY: ${{ secrets.NUGET_TOOLS_KEY }}
+      - name: Prepare Microservice Dependencies
+        run: sh ./build/docker/scripts/build-microservice-deps.sh
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+      - name: Publish Nuget Packages
+        run: sh ./build/docker/scripts/build-cli.sh
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+          VERSION_PREFIX: ${{ steps.version.outputs.VERSION_PREFIX }}
+          VERSION_SUFFIX: ${{ steps.version.outputs.VERSION_SUFFIX }}
+          DRY_RUN: ${{ inputs.dryRun }}
+          NUGET_TOOLS_KEY: ${{ secrets.NUGET_TOOLS_KEY }}
 
-      # - name: Create Release
-      #   id: create_release
-      #   if: ${{ inputs.releaseType != 'nightly' && inputs.dryRun == false }} 
-      #   uses: actions/create-release@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-      #   with:
-      #     tag_name: v${{ steps.version.outputs.VERSION }}
-      #     release_name: Nuget ${{ steps.version.outputs.VERSION }}
-      #     body: |
-      #       Release ${{ steps.version.outputs.VERSION }}
-      #     draft: true
-      #     prerelease: false
+      - name: Create Release
+        id: create_release
+        if: ${{ inputs.releaseType != 'nightly' && inputs.dryRun == false }} 
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: v${{ steps.version.outputs.VERSION }}
+          release_name: Nuget ${{ steps.version.outputs.VERSION }}
+          body: |
+            Release ${{ steps.version.outputs.VERSION }}
+          draft: true
+          prerelease: false
