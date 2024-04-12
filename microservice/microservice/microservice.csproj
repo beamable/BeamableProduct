@@ -12,11 +12,11 @@
 
     <DefineConstants>DB_MICROSERVICE;DISABLE_BEAMABLE_ASYNCMETHODBUILDER;BEAMABLE_IGNORE_MONGO_MOCKS</DefineConstants>
 
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
 
     <AssemblyName>BeamableMicroserviceBase</AssemblyName>
 
-    <LangVersion>10</LangVersion>
+    <LangVersion>11</LangVersion>
 
 
 
