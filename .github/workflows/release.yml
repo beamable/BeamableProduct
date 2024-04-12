@@ -74,6 +74,10 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://nexus.beamable.com/nexus/content/repositories/unity-dev'
       - name: Install JQ
         run: |
           sudo apt-get update
@@ -128,6 +132,13 @@ jobs:
         if: ${{ inputs.releaseUnitySdk == true }}
         run: sh ./../../../build/bin/prepare-samples.sh
         working-directory: ./client/Packages/com.beamable/
+      
+      - name: Update UPM Versions
+        run: npm version ${{ steps.version.outputs.VERSION }}
+        working-directory: ./client/Packages/com.beamable/
+      - name: Update UPM Versions
+        run: npm version ${{ steps.version.outputs.VERSION }}
+        working-directory: ./client/Packages/com.beamable.server/
       - name: Review Unity SDK Files
         if: ${{ inputs.releaseUnitySdk == true }}
         run: |
@@ -138,15 +149,12 @@ jobs:
           ls ./client/Packages/com.beamable/Samples~
           cat client/Packages/com.beamable/package.json
       
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-          registry-url: 'https://nexus.beamable.com/nexus/content/repositories/unity-dev'
       - name: Release com.beamable UPM Package
         run: npm publish
         working-directory: ./client/Packages/com.beamable
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
+          NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
 
         # run: ./build/bin/upload-upm-packages.sh
         # env:
