@@ -3,6 +3,10 @@ set -e
 
 export lib_path="./microservice/microservice/lib"
 
+echo "---- PWD ----"
+pwd
+ls
+
 echo "Building microserivce dependencies..."
 cd client
 echo "Building Common Library..."
