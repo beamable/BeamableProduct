@@ -6,8 +6,19 @@ pwd
 ls
 
 npm config set registry=${NPM_REGISTRY}
-npm config set //nexus.beamable.com/nexus/content/repositories/:_auth="$(echo -n "$NPM_USER:$NPM_PASS" | base64)"
-npm config ls
+# npm config set //nexus.beamable.com/nexus/content/repositories/:_auth="$(echo -n "$NPM_USER:$NPM_PASS" | base64)"
+# npm config ls
+
+echo "----- NPM LOG IN -----"
+npm adduser --registry ${NPM_REGISTRY}<<!
+$NPM_USER
+$NPM_PASS
+'devops@disruptorbeam.com'
+!
+
+echo "----- NPM WHO AM I----"
+npm whoami
+echo "-----
 
 if [ "$NPM_COMMAND" == "deprecate" ]
 then
