@@ -70,10 +70,12 @@ jobs:
       - uses: actions/checkout@v4
         with: 
           ref: ${{ github.event.inputs.commit }}
+
       - name: Setup .NET Core SDK
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20.x'
@@ -84,56 +86,79 @@ jobs:
               "exp": "https://nexus.beamable.com/nexus/content/repositories/unity-preview",
               "production": "https://nexus.beamable.com/nexus/content/repositories/unity"
             }')[github.event.inputs.releaseType] }}
+        
       - name: Install JQ
         run: |
           sudo apt-get update
           sudo apt-get install jq
           jq --version
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Install CLI
         run: |
           cd ./cli/cli
           sh ./install.sh
+
       - name: Check CLI
         run: beam version
 
       - name: Get Version Number (Nightly)
         if: ${{ inputs.releaseType == 'nightly' }} 
         run: beam version construct 0 0 0 --nightly > version.txt
+      
       - name: Get Version Number (RC)
         if: ${{ inputs.releaseType == 'rc' }} 
         run: beam version construct ${{ inputs.major }} ${{ inputs.minor }} ${{ inputs.patch }} --rc ${{ inputs.rcNumber }} > version.txt
+      
       - name: Get Version Number (Exp)
         if: ${{ inputs.releaseType == 'exp' }} 
         run: beam version construct ${{ inputs.major }} ${{ inputs.minor }} ${{ inputs.patch }} --exp ${{ inputs.rcNumber }} > version.txt
+      
       - name: Get Version Number (Prod)
         if: ${{ inputs.releaseType == 'prod' }} 
         run: beam version construct ${{ inputs.major }} ${{ inputs.minor }} ${{ inputs.patch }} --prod > version.txt
       
       - name: Store version number as output
         id: version
-        run: |
-          echo "VERSION=$(cat version.txt | jq -r .data.versionString)" >> "$GITHUB_OUTPUT"
-          echo "VERSION_PREFIX=$(cat version.txt | jq -r .data.versionPrefix)" >> "$GITHUB_OUTPUT"
-          echo "VERSION_SUFFIX=$(cat version.txt | jq -r .data.versionSuffix)" >> "$GITHUB_OUTPUT"
-
-      - name: review version
-        run: |
-          echo version=${{ steps.version.outputs.VERSION }}
-          echo version prefix=${{ steps.version.outputs.VERSION_PREFIX }}
-          echo version suffix=${{ steps.version.outputs.VERSION_SUFFIX }}
-
-      - name: Prepare Unity Env
-        if: ${{ inputs.releaseUnitySdk == true }}
-        run: sh ./build/bin/modify-unity-files.sh
-        env:
-          VERSION: ${{ steps.version.outputs.VERSION }}
-          ENVIRONMENT: >-
+        env: 
+          BUILD_ENV: >-
             ${{ fromJson('{
               "nightly": "dev",
               "rc": "staging",
               "exp": "staging",
               "production": "prod"
             }')[github.event.inputs.releaseType] }}
+        run: |
+          echo "VERSION=$(cat version.txt | jq -r .data.versionString)" >> "$GITHUB_OUTPUT"
+          echo "VERSION_PREFIX=$(cat version.txt | jq -r .data.versionPrefix)" >> "$GITHUB_OUTPUT"
+          echo "VERSION_SUFFIX=$(cat version.txt | jq -r .data.versionSuffix)" >> "$GITHUB_OUTPUT"
+          echo "BUILD_ENV=$BUILD_ENV" >> "$GITHUB_OUTPUT"
+
+      - name: review version
+        run: |
+          echo version=${{ steps.version.outputs.VERSION }}
+          echo version prefix=${{ steps.version.outputs.VERSION_PREFIX }}
+          echo version suffix=${{ steps.version.outputs.VERSION_SUFFIX }}
+          echo build-env=${{steps.version.outputs.BUILD_ENV}}
+
+      - name: Prepare Unity Env
+        if: ${{ inputs.releaseUnitySdk == true }}
+        run: sh ./build/bin/modify-unity-files.sh
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+          ENVIRONMENT: ${{steps.version.outputs.BUILD_ENV}}
+
       - name: Prepare Unity Samples
         if: ${{ inputs.releaseUnitySdk == true }}
         run: sh ./../../../build/bin/prepare-samples.sh
@@ -142,9 +167,11 @@ jobs:
       - name: Update UPM Versions
         run: npm version ${{ steps.version.outputs.VERSION }}
         working-directory: ./client/Packages/com.beamable/
+
       - name: Update UPM Versions
         run: npm version ${{ steps.version.outputs.VERSION }}
         working-directory: ./client/Packages/com.beamable.server/
+
       - name: Review Unity SDK Files
         if: ${{ inputs.releaseUnitySdk == true }}
         run: |
@@ -172,19 +199,14 @@ jobs:
           NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
 
       - name: Upload Docker Base Image (for SDK usage)
-        if: ${{ inputs.releaseUnitySdk == true && inputs.dryRun == false}}
-        run: sh ./build/bin/upload-docker-base-image.sh
-        env:
-          DOCKER_HUB_USER: ${{secrets.DOCKERHUB_USERNAME}}
-          DOCKER_HUB_PASSWORD: ${{secrets.DOCKERHUB_TOKEN}}
-          VERSION: ${{ steps.version.outputs.VERSION }}
-          ENVIRONMENT: >-
-            ${{ fromJson('{
-              "nightly": "dev",
-              "rc": "staging",
-              "exp": "staging",
-              "production": "prod"
-            }')[github.event.inputs.releaseType] }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ./microservice/microservice
+          platforms: linux/arm64,linux/amd64
+          push: false
+          tag: "beamableinc/beamservice:${{steps.version.outputs.BUILD_ENV}}_${{ steps.version.outputs.VERSION }}"
+          build-args: |
+            BEAMABLE_SDK_VERSION=${{ steps.version.outputs.VERSION }}
           
       - name: Upload Changelogs
         if: ${{ inputs.dryRun == false }}
