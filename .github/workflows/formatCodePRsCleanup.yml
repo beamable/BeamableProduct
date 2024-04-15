@@ -23,22 +23,23 @@ jobs:
     - name: Close all but the latest bot-tagged pull request
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        const { Octokit } = require("@octokit/rest");
-        const _ = require("lodash");
+      run: node -e "
+        const { Octokit } = require('@octokit/rest');
+        const _ = require('lodash');
         const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
         async function manageBotPRs() {
           const owner = '${{ github.repository_owner }}';
           const repo = '${{ github.event.repository.name }}';
-          const prs = await octokit.rest.pulls.list({
+          const response = await octokit.rest.pulls.list({
             owner,
             repo,
             state: 'open',
             per_page: 100,
           });
+          const prs = response.data;
 
-          const botPRs = prs.data.filter(pr => pr.labels.some(label => label.name === 'bot'));
+          const botPRs = prs.filter(pr => pr.labels.some(label => label.name === 'bot'));
           if (botPRs.length <= 1) return; // If there's 0 or 1 bot PR, do nothing.
 
           const sortedBotPRs = _.orderBy(botPRs, ['created_at'], ['desc']);
@@ -55,4 +56,5 @@ jobs:
           }
         }
 
-        manageBotPRs();
+        manageBotPRs().catch(err => console.error('Failed to manage bot PRs:', err));
+      "
