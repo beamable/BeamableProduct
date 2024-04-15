@@ -134,7 +134,7 @@ namespace Beamable.Editor.Dotnet
 			{
 				FileName = Path.GetFullPath(dotnetPath),
 				WorkingDirectory = Path.GetFullPath(dir),
-				Arguments = "--info",
+				Arguments = "--version",
 				UseShellExecute = false,
 				RedirectStandardOutput = true
 			};
@@ -144,19 +144,13 @@ namespace Beamable.Editor.Dotnet
 
 			proc.Start();
 			proc.WaitForExit();
-			var output = proc.StandardOutput.ReadToEnd().Replace("\r\n", "\n");
-			var start = output.IndexOf("NET SDKs installed:", StringComparison.Ordinal);
-			var length = output.IndexOf("NET runtimes installed:", StringComparison.Ordinal) - start;
-			var line = output.Substring(start, length).Split('\n').First(s => s.Contains(dir));
-			if (string.IsNullOrWhiteSpace(line))
+			var output = proc.StandardOutput.ReadToEnd().Replace("\r\n", string.Empty);
+			if (string.IsNullOrWhiteSpace(output))
 			{
 				return false;
 			}
 
-
-			var result = line.Split(' ').FirstOrDefault(s => !string.IsNullOrWhiteSpace(s));
-
-			if (!PackageVersion.TryFromSemanticVersionString(result, out var findedVersion))
+			if (!PackageVersion.TryFromSemanticVersionString(output, out var findedVersion))
 			{
 				return false;
 			}

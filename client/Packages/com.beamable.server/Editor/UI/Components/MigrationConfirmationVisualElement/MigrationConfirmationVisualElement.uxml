@@ -1,0 +1,14 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.Experimental.UIElements" editor="UnityEditor.Experimental.UIElements" beamable="Beamable.Editor.UI.Components" contentManager="Beamable.Editor.Content.Components" noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd" schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd Beamable.Editor.UI.Components" editor-extension-mode="False">
+    <ui:VisualElement name="mainVisualElement" style="align-items: auto;">
+        <ui:Label name="message" text="placeholder" style="height: 60px; width: 585px; align-items: auto; align-self: flex-start;" />
+        <ui:Label tabindex="-1" text="For more information, go check the &lt;a href=&quot;https://dash.readme.com/project/beamable2/v0.15.0/docs/migration-guide&quot;&gt;documentation&lt;/a&gt;." parse-escape-sequences="true" display-tooltip-when-elided="true" name="docLink" style="align-self: flex-start; height: 56px; width: 584px; justify-content: center;" />
+        <ui:Label tabindex="-1" text="Label" parse-escape-sequences="true" display-tooltip-when-elided="true" name="listTitle" style="align-items: stretch; align-self: flex-start;" />
+        <ui:VisualElement name="downloadPreviewContainer" style="align-items: stretch; width: -273px; left: 10px; right: 10px; align-self: flex-start;">
+            <ui:ScrollView name="servicesScroll" style="flex-grow: 1; align-self: flex-start;" />
+        </ui:VisualElement>
+        <ui:VisualElement name="buttonStrip" style="align-self: auto; justify-content: flex-end;">
+            <Beamable.Editor.UI.Components.GenericButtonVisualElement name="cancelBtn" text="Cancel" type="Cancel" />
+            <Beamable.Editor.UI.Components.PrimaryButtonVisualElement name="downloadBtn" text="Migrate" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
