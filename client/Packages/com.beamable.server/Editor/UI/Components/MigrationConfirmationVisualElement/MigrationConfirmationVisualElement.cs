@@ -24,6 +24,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private GenericButtonVisualElement _cancelBtn;
 		private PrimaryButtonVisualElement _migrateBtn;
+		private ProgressBar _progressBar;
 
 		private List<IDescriptor> _allDescriptors;
 		protected Label _messageLabel;
@@ -44,6 +45,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			var label = Root.Q<Label>("listTitle");
 			label.text = Constants.Migration.LIST_TITLE;
+
+			_progressBar = Root.Q<ProgressBar>("progressBar");
+			_progressBar.value = 0;
+			_progressBar.visible = false;
 
 			_cancelBtn = Root.Q<GenericButtonVisualElement>("cancelBtn");
 			_cancelBtn.OnClick += CancelButton_OnClicked;
@@ -73,15 +78,27 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void MigrateButton_OnClicked()
 		{
-			OnClosed?.Invoke();
+			//OnClosed?.Invoke();
 			HandleDownload();
 		}
 
 
 		private void HandleDownload()
 		{
+			_progressBar.visible = true;
+			_migrateBtn.Disable();
+
 			var codeService = BeamEditorContext.Default.ServiceScope.GetService<CodeService>();
-			_ = codeService.Migrate(_allDescriptors);
+			_ = codeService.Migrate(_allDescriptors, (progress, message) =>
+			{
+				_progressBar.value = progress;
+				_progressBar.title = message;
+
+				if (progress >= 100)
+				{
+					OnClosed?.Invoke();
+				}
+			});
 		}
 	}
 }
