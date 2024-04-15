@@ -30,7 +30,7 @@ namespace Beamable.Server.Editor.Usam
 			string path = Path.Combine(directoryPath, CodeService.StandaloneMicroservicesFolderName);
 			assetProjectPath = Path.Combine(path, assetProjectPath);
 		}
-		
+
 		public bool CheckAllValidAssemblies(out string validationMessage)
 		{
 
