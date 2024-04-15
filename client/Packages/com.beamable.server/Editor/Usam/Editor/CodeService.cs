@@ -6,6 +6,8 @@ using Beamable.Editor;
 using Beamable.Editor.BeamCli;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.Dotnet;
+using Beamable.Editor.Microservice.UI.Components;
+using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.UI.Components;
 using System;
@@ -13,8 +15,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -79,6 +83,10 @@ namespace Beamable.Server.Editor.Usam
 
 			LogVerbose("Setting properties file");
 			await SetPropertiesFile();
+			
+			LogVerbose("Set manifest start");
+			await SetManifest(_cli, _services, _storages);//asd
+			LogVerbose("set manifest ended");
 
 			LogVerbose("Saving all libraries referenced by services");
 			await SaveReferencedLibraries();
@@ -104,119 +112,219 @@ namespace Beamable.Server.Editor.Usam
 
 			CheckMicroserviceStatus();
 			ConnectToLogs();
-			const string migratedServicesKey = "BeamMigratedServices";
-			if (!SessionState.GetBool(migratedServicesKey, false))
+
+			var oldServices = GetAllOldServices();
+			if (oldServices.Count > 0)
 			{
-				LogVerbose("Migrate old services start");
-				// TODO: We should not automatically Migrate.
-				//  instead, we need to offer a pop-up box that explains the consequences, 
-				//  and what to do to prepare before migration (src backup). 
-				// other notes, we need to be searching for _all_ microservices, not just those that
-				// exist in the common folders. 
-				// await Migrate();
-				SessionState.SetBool(migratedServicesKey, true);
-				LogVerbose("Migrate old services end");
+				var migrationVisualElement = new MigrationConfirmationVisualElement(oldServices);
+				var popup = BeamablePopupWindow.ShowUtility(Constants.Migration.MIGRATION_POPUP_NAME, migrationVisualElement, null,
+				                                            new Vector2(800, 400),  (window) =>
+				                                            {
+					                                            // trigger after Unity domain reload
+					                                            window.Close();
+				                                            });
+				migrationVisualElement.OnCancelled += popup.Close;
+				migrationVisualElement.OnClosed += popup.Close;
 			}
+			
+			
 			LogVerbose("Completed");
 		}
 
-		public async Promise Migrate()
+		public async Promise Migrate(List<IDescriptor> allDescriptors)
 		{
-			var commonCsProj = await MigrateCommon();
-			foreach (var microserviceDir in Directory.EnumerateDirectories("Assets/Beamable/Microservices"))
+			AssetDatabase.DisallowAutoRefresh();
+
+			foreach (IDescriptor descriptor in allDescriptors)
 			{
-				var microserviceName = Path.GetFileName(microserviceDir);
-				var path = $"{StandaloneMicroservicesPath}{microserviceName}/";
-				if (!Directory.Exists(path))
+				if (descriptor.ServiceType == ServiceType.MicroService)
 				{
-					LogVerbose($"Migrating {microserviceName} start");
-					await CreateMicroService(microserviceName, null);
-					return;
+					await MigrateMicroservice((MicroserviceDescriptor)descriptor);
 				}
-
-				var signpost = _services.FirstOrDefault(s => s.name.Equals(microserviceName));
-				if (signpost == null) continue;
-				var command = $"add {signpost.CsprojFilePath} reference {commonCsProj}";
-
-				await _dotnetService.Run(command);
-
-				foreach (var file in Directory.EnumerateFiles(microserviceDir))
+				else
 				{
-					if (!Path.GetExtension(file).EndsWith("cs")) continue;
-					var fileName = Path.GetFileName(file);
-					var newFilePath = Path.Combine(signpost.CsprojPath, fileName);
-					if (File.Exists(newFilePath))
-					{
-						File.Delete(newFilePath);
-					}
-					File.Copy(file, newFilePath);
-
-					var fileContent = File.ReadAllText(newFilePath);
-					fileContent = fileContent.Replace("namespace Beamable.Server",
-													  $"using Beamable.Server;\n\nnamespace Beamable.{microserviceName}");
-					File.WriteAllText(newFilePath, fileContent);
+					await MigrateStorage((StorageObjectDescriptor)descriptor);
 				}
 			}
-			foreach (var storageDir in Directory.EnumerateDirectories("Assets/Beamable/StorageObjects"))
-			{
-				var storageName = Path.GetFileName(storageDir);
-				var path = $"{StandaloneMicroservicesPath}{storageName}/";
-				var storageModel = MicroservicesDataModel.Instance.Storages.FirstOrDefault(s => s.Name == storageName);
-				var deps = MicroservicesDataModel.Instance.Services
-												 .Where(model => model.Dependencies.Any(s => s.Name == storageName)).Select(model => ServiceDefinitions.FirstOrDefault(d => d.BeamoId == model.Name))
-												 .ToList();
-				Debug.Log(storageModel);
-				Debug.Log(string.Join(", ", deps));
-				if (!Directory.Exists(path))
-				{
-					Debug.Log(storageName);
-					await CreateStorage(storageName, deps);
-				}
-			}
+			
 			// REMOVE OLD STUFF
-			Directory.Delete("Assets/Beamable/Microservices", true);
-			Directory.Delete("Assets/Beamable/StorageObjects", true);
-			Directory.Delete("Assets/Beamable/Common", true);
+			var microPath = "Assets/Beamable/Microservices";
+			var storagePath = "Assets/Beamable/StorageObjects";
+			if (Directory.Exists(microPath))
+			{
+				Directory.Delete(microPath, true);
+			}
+			
+			if (Directory.Exists(storagePath))
+			{
+				Directory.Delete(storagePath, true);
+			}
+			
+			AssetDatabase.AllowAutoRefresh();
+			await Init();
 		}
 
-		private async Task<string> MigrateCommon()
+		private async Promise MigrateStorage(StorageObjectDescriptor storageDescriptor)
 		{
-			var outputPath = $"{StandaloneMicroservicesPath}BeamableCommonShared/";
-			var commonPath = "Assets/Beamable/Common";
-			if (!Directory.Exists(outputPath) && Directory.Exists(commonPath))
+			var storageName = storageDescriptor.Name;
+			var path = $"{StandaloneMicroservicesPath}{storageName}/";
+			var storageModel = MicroservicesDataModel.Instance.Storages.FirstOrDefault(s => s.Name == storageName);
+			var deps = MicroservicesDataModel.Instance.Services
+			                                 .Where(model => model.Dependencies.Any(s => s.Name == storageName)).Select(model => ServiceDefinitions.FirstOrDefault(d => d.BeamoId == model.Name))
+			                                 .ToList();
+			Debug.Log(storageModel);
+			Debug.Log(string.Join(", ", deps));
+			if (!Directory.Exists(path))
 			{
-				LogVerbose("Starting creation of CommonLib");
-				var cmd = _cli.ProjectNewCommonLib(new ProjectNewCommonLibArgs()
-				{
-					name = new ServiceName("BeamableCommonShared"),
-					version = GetCurrentNugetVersion(),
-					outputPath = StandaloneMicroservicesPath
-				});
-				try
-				{
-					await cmd.Run();
-					foreach (var file in Directory.EnumerateFiles(commonPath))
-					{
-						if (!Path.GetExtension(file).EndsWith("cs")) continue;
-						var fileName = Path.GetFileName(file);
-						var newFilePath = Path.Combine(outputPath, fileName);
-						File.Copy(file, newFilePath);
-					}
-				}
-				catch (Exception e)
-				{
-					Debug.Log(e);
-				}
+				Debug.Log(storageName);	
+				await CreateStorage(storageName, deps, shouldInitialize: false);
 			}
 
-			foreach (var file in Directory.EnumerateFiles(outputPath))
+			_storages = GetBeamStorages();
+			var signpost = _storages.FirstOrDefault(s => s.name.Equals(storageName));
+			if (signpost == null)
 			{
-				if (file.EndsWith("csproj")) return file;
+				throw new Exception($"Storage: {storageName} was not found in local files");
 			}
 
-			return outputPath;
+			var newExtensionsFile = Path.Combine(signpost.CsprojPath, "StorageExtensions.cs");
+			if (File.Exists(newExtensionsFile))
+			{
+				File.Delete(newExtensionsFile); // Delete this file because in old storages the extensions class was already inside the storage main file
+			}
+
+			var dirToDelete = Path.GetDirectoryName(storageDescriptor.AttributePath);
+
+			if (string.IsNullOrEmpty(dirToDelete))
+			{
+				throw new Exception($"Old location of the storage: {storageName} was not found");
+			}
+
+			foreach (var file in Directory.EnumerateFiles(dirToDelete))
+			{
+				if (!Path.GetExtension(file).EndsWith("cs")) continue;
+				var fileName = Path.GetFileName(file);
+				var newFilePath = Path.Combine(signpost.CsprojPath, fileName);
+				if (File.Exists(newFilePath))
+				{
+					File.Delete(newFilePath);
+				}
+				File.Copy(file, newFilePath);
+			}
+
+
+			Directory.Delete(dirToDelete, true);
 		}
 
+		private async Promise MigrateMicroservice(MicroserviceDescriptor microserviceDescriptor)
+		{
+			var microserviceDir = microserviceDescriptor.SourcePath;
+			var microserviceName = microserviceDescriptor.Name;
+			var path = $"{StandaloneMicroservicesPath}{microserviceName}/";
+			if (!Directory.Exists(path))
+			{
+				LogVerbose($"Migrating {microserviceName} start");
+				var references = GetAssemblyDefinitionAssets(microserviceDescriptor);
+				await CreateMicroService(microserviceName, null, assemblyReferences: references, shouldInitialize: false);
+			}
+
+			_services = GetBeamServices();
+			var signpost = _services.FirstOrDefault(s => s.name.Equals(microserviceName));
+			if (signpost == null) return;
+
+			foreach (var file in Directory.EnumerateFiles(microserviceDir))
+			{
+				if (!Path.GetExtension(file).EndsWith("cs")) continue;
+				var fileName = Path.GetFileName(file);
+				var newFilePath = Path.Combine(signpost.CsprojPath, fileName);
+				if (File.Exists(newFilePath))
+				{
+					File.Delete(newFilePath);
+				}
+				File.Copy(file, newFilePath);
+
+				var fileContent = File.ReadAllText(newFilePath);
+				fileContent = fileContent.Replace("namespace Beamable.Microservices",
+				                                  $"namespace Beamable.{microserviceName}");
+				File.WriteAllText(newFilePath, fileContent);
+			}
+			Directory.Delete(microserviceDir, true);
+		}
+		
+		private static List<IDescriptor> GetAllOldServices()
+		{
+			List<string> servicesToIgnore = new List<string>() {"CacheDependentMS"};
+			List<IDescriptor> allDescriptors = new List<IDescriptor>();
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			if (serviceRegistry != null)
+			{
+				foreach (var descriptor in serviceRegistry.AllDescriptors)
+				{
+					if (servicesToIgnore.Contains(descriptor.Name))
+					{
+						continue;
+					}
+					
+					//Check if this was already migrated
+					//Right now this is not required, because we maintain all services and storages inside a hidden folder from Unity
+					//However, in the future with services being able to be created anywhere, this will be necessary
+					if (descriptor.ServiceType == ServiceType.MicroService)
+					{
+						var services = GetBeamServices();
+						var service = services.FirstOrDefault(s => s.name.Equals(descriptor.Name));
+						if (service != null)
+						{
+							continue;
+						}
+					}
+					else
+					{
+						var storages = GetBeamStorages();
+						var storage = storages.FirstOrDefault(s => s.name.Equals(descriptor.Name));
+						if (storage != null)
+						{
+							continue;
+						}
+					}
+					
+					allDescriptors.Add(descriptor);
+				}
+			}
+
+			return allDescriptors;
+		}
+
+		public static List<AssemblyDefinitionAsset> GetAssemblyDefinitionAssets(MicroserviceDescriptor descriptor)
+		{
+			List<AssemblyDefinitionAsset> assets = new List<AssemblyDefinitionAsset>();
+			List<string> mandatoryReferences = new List<string>() {"Unity.Beamable.Customer.Common"}; // Add the customer common asmdef even if it's not being used
+			
+			var dependencies = descriptor.Type.Assembly.GetReferencedAssemblies().Select(r => r.Name).ToList();
+			dependencies.AddRange(mandatoryReferences);
+			foreach (var name in dependencies)
+			{
+				if (CsharpProjectUtil.IsValidReference(name))
+				{
+					var guid = AssetDatabase.FindAssets($"t:AssemblyDefinitionAsset {name}");
+
+					if (guid.Length == 0)
+					{
+						continue; //there is no asset of this assembly to reference
+					}
+
+					if (guid.Length > 1)
+					{
+						throw new Exception($"Found more than one assembly definition with the name: {name}");
+					}
+					
+					var path = AssetDatabase.GUIDToAssetPath(guid[0]);
+					assets.Add(AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(path));
+				}
+			}
+
+			return assets;
+		}
+		
 		private async Promise SaveReferencedLibraries()
 		{
 			List<BeamDependencyData> allDependencies = new List<BeamDependencyData>();
@@ -241,6 +349,7 @@ namespace Beamable.Server.Editor.Usam
 			File.WriteAllText(LibrariesPathsFilePath, fileContent);
 		}
 
+		[MenuItem("Gabriel/GetLibrariesPaths")]
 		public static LibrariesPaths GetLibrariesPaths()
 		{
 			if (!File.Exists(LibrariesPathsFilePath))
@@ -436,8 +545,12 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 		
-		public async Promise UpdateServiceReferences(string serviceName, List<string> assemblyReferencesNames)
+		public async Promise UpdateServiceReferences(BeamServiceSignpost signpost)
 		{
+			var serviceName = signpost.name;
+			
+			SolutionPostProcessor.OnPreGeneratingCSProjectFiles();
+			SetSolution(_services, _storages);
 			LogVerbose($"Starting updating references");
 			//get a list of all references of that service
 			var service = _services.FirstOrDefault(s => s.name == serviceName);
@@ -471,9 +584,9 @@ namespace Beamable.Server.Editor.Usam
 			await sequence;
 
 			//add all the references
-			foreach (var newRefs in assemblyReferencesNames)
+			foreach (var newRefs in signpost.assemblyReferences)
 			{
-				var newRefCsprojPath = CsharpProjectUtil.GenerateCsharpProjectFilename(newRefs);
+				var newRefCsprojPath = CsharpProjectUtil.GenerateCsharpProjectFilename(newRefs.name);
 				if (!File.Exists(newRefCsprojPath))
 				{
 					LogVerbose($"The project file for reference {newRefs} does not exist yet");
@@ -866,7 +979,7 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 
-		private async Promise CreateStorage(string storageName, List<IBeamoServiceDefinition> additionalReferences)
+		private async Promise CreateStorage(string storageName, List<IBeamoServiceDefinition> additionalReferences, bool shouldInitialize = true)
 		{
 			var service = new ServiceName(storageName);
 			var slnPath = FindFirstSolutionFile();
@@ -877,6 +990,7 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
+			additionalReferences ??= new List<IBeamoServiceDefinition>();
 			string[] deps = new string[additionalReferences.Count];
 			for (int i = 0; i < additionalReferences.Count; i++)
 			{
@@ -908,7 +1022,10 @@ namespace Beamable.Server.Editor.Usam
 
 			LogVerbose($"Starting the initialization of CodeService");
 			// Re-initializing the CodeService to make sure all files are with the right information
-			await Init();
+			if (shouldInitialize)
+			{
+				await Init();
+			}
 
 			//Shoudln't we generate client code at the end of the creation?
 			//For some reason this this line is never reached after the Init. And if put bfore Init, it doesn't work
@@ -933,7 +1050,7 @@ namespace Beamable.Server.Editor.Usam
 			return version;
 		}
 
-		private async Promise CreateMicroService(string serviceName, List<IBeamoServiceDefinition> dependencies)
+		private async Promise CreateMicroService(string serviceName, List<IBeamoServiceDefinition> dependencies, List<AssemblyDefinitionAsset> assemblyReferences = null, bool shouldInitialize = true)
 		{
 			var service = new ServiceName(serviceName);
 			var slnPath = FindFirstSolutionFile();
@@ -957,7 +1074,8 @@ namespace Beamable.Server.Editor.Usam
 			BeamServiceSignpost signpost = new BeamServiceSignpost()
 			{
 				name = serviceName,
-				assetProjectPath = fullPath.Replace(StandaloneMicroservicesPath, string.Empty)
+				assetProjectPath = fullPath.Replace(StandaloneMicroservicesPath, string.Empty),
+				assemblyReferences = assemblyReferences?.ToArray()
 			};
 
 			string signpostPath = $"{BEAMABLE_PATH}{serviceName}.beamservice";
@@ -968,7 +1086,10 @@ namespace Beamable.Server.Editor.Usam
 
 			LogVerbose($"Starting the initialization of CodeService");
 			// Re-initializing the CodeService to make sure all files are with the right information
-			await Init();
+			if (shouldInitialize)
+			{
+				await Init();
+			}
 
 			//Shoudln't we generate client code at the end of the creation?
 			//For some reason this this line is never reached after the Init. And if put bfore Init, it doesn't work

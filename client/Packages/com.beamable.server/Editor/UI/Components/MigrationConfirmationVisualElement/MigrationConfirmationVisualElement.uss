@@ -1,0 +1,65 @@
+
+.cover {
+    position: absolute;
+    left: 10000px;
+}
+
+MigrationConfirmationVisualElement,
+MigrationConfirmationVisualElement > TemplateContainer
+{
+    flex-grow: 1;
+}
+
+MigrationConfirmationVisualElement > TemplateContainer > #mainVisualElement {
+    flex-grow: 1;
+    margin-left: 26px;
+    margin-right: 26px;
+}
+
+#downloadPreviewContainer {
+    flex-grow: 1;
+}
+
+#buttonStrip {
+    flex-direction: row;
+    justify-content: flex-end;
+    flex-shrink: 0;
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+#downloadPreviewContainer .unity-foldout__content, /* 2019 has the .unity-foldout__content class. */
+#downloadPreviewContainer .unity-foldout-content /* 2018 has the .unity-foldout-content class. */ {
+    padding-left: 12px;
+}
+
+#downloadBtn{
+    width: 100px;
+    height: 28px;
+}
+
+MigrationConfirmationVisualElement ScrollView  #ContentView {
+    left: 1px;
+    right: 1px;
+}
+MigrationConfirmationVisualElement ScrollView {
+    flex-grow: 1;
+}
+
+.hide {
+    position: absolute;
+    left: 50000px;
+}
+
+ScrollView {
+    flex-grow: 1;
+}
+
+#servicesScroll .unity-scroll-view__content-container {
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+ScrollView :selected {
+    background-color: rgba(59, 146, 250, .4);
+}

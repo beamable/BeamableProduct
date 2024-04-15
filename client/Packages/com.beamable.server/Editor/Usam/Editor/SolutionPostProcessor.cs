@@ -31,7 +31,7 @@ EndProject";
 
 
 
-		private static bool OnPreGeneratingCSProjectFiles()
+		public static bool OnPreGeneratingCSProjectFiles()
 		{
 			AssemblyUtil.Reload();
 			CsharpProjectUtil.GenerateAllReferencedAssemblies();
