@@ -80,9 +80,6 @@ namespace Beamable.Server.Editor.Usam
 			LogVerbose("Have services");
 			_storages = GetBeamStorages();
 			LogVerbose("Have storages");
-			// TODO: we need validation. What happens if the .beamservice files point to non-existent files
-			SetSolution(_services, _storages);
-			LogVerbose("Solution set done");
 
 			LogVerbose("Setting properties file");
 			await SetPropertiesFile();
@@ -93,6 +90,14 @@ namespace Beamable.Server.Editor.Usam
 
 			LogVerbose("Saving all libraries referenced by services");
 			await SaveReferencedLibraries();
+
+			LogVerbose("Set manifest start");
+			await SetManifest(_cli, _services, _storages);
+			LogVerbose("set manifest ended");
+
+			// TODO: we need validation. What happens if the .beamservice files point to non-existent files
+			SetSolution(_services, _storages);
+			LogVerbose("Solution set done");
 
 			await RefreshServices();
 			LogVerbose($"There are {ServiceDefinitions.Count} Service definitions");
