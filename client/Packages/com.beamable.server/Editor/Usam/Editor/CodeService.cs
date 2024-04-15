@@ -80,9 +80,6 @@ namespace Beamable.Server.Editor.Usam
 			LogVerbose("Have services");
 			_storages = GetBeamStorages();
 			LogVerbose("Have storages");
-			// TODO: we need validation. What happens if the .beamservice files point to non-existent files
-			SetSolution(_services, _storages);
-			LogVerbose("Solution set done");
 
 			LogVerbose("Setting properties file");
 			await SetPropertiesFile();
@@ -93,6 +90,10 @@ namespace Beamable.Server.Editor.Usam
 
 			LogVerbose("Saving all libraries referenced by services");
 			await SaveReferencedLibraries();
+
+			// TODO: we need validation. What happens if the .beamservice files point to non-existent files
+			SetSolution(_services, _storages);
+			LogVerbose("Solution set done");
 
 			await RefreshServices();
 			LogVerbose($"There are {ServiceDefinitions.Count} Service definitions");
@@ -540,8 +541,12 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 		
-		public async Promise UpdateServiceReferences(string serviceName, List<string> assemblyReferencesNames)
+		public async Promise UpdateServiceReferences(BeamServiceSignpost signpost)
 		{
+			var serviceName = signpost.name;
+			
+			SolutionPostProcessor.OnPreGeneratingCSProjectFiles();
+			SetSolution(_services, _storages);
 			LogVerbose($"Starting updating references");
 			//get a list of all references of that service
 			var service = _services.FirstOrDefault(s => s.name == serviceName);
@@ -575,9 +580,9 @@ namespace Beamable.Server.Editor.Usam
 			await sequence;
 
 			//add all the references
-			foreach (var newRefs in assemblyReferencesNames)
+			foreach (var newRefs in signpost.assemblyReferences)
 			{
-				var newRefCsprojPath = CsharpProjectUtil.GenerateCsharpProjectFilename(newRefs);
+				var newRefCsprojPath = CsharpProjectUtil.GenerateCsharpProjectFilename(newRefs.name);
 				if (!File.Exists(newRefCsprojPath))
 				{
 					LogVerbose($"The project file for reference {newRefs} does not exist yet");
