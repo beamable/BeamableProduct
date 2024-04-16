@@ -9,7 +9,7 @@
         <DefineConstants>DB_MICROSERVICE;DISABLE_BEAMABLE_ASYNCMETHODBUILDER</DefineConstants>
         <TargetFramework>net6.0</TargetFramework>
         <AssemblyName>BeamableMicroserviceBaseTests</AssemblyName>
-        <LangVersion>10</LangVersion>
+        <LangVersion>11</LangVersion>
         <OutputType>Library</OutputType>
 
         <GenerateDocumentationFile>true</GenerateDocumentationFile>

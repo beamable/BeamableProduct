@@ -12,12 +12,13 @@
 
     <DefineConstants>DB_MICROSERVICE;DISABLE_BEAMABLE_ASYNCMETHODBUILDER;BEAMABLE_IGNORE_MONGO_MOCKS</DefineConstants>
 
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
 
     <AssemblyName>BeamableMicroserviceBase</AssemblyName>
 
-    <LangVersion>10</LangVersion>
-
+    <LangVersion>11</LangVersion>
+    <!-- These warnings are XML documentation missing related   -->
+    <NoWarn>1573,1591,1574,1572</NoWarn>
 
 
   </PropertyGroup>
@@ -26,7 +27,6 @@
 
   <PropertyGroup>
 
-    <NoWarn>1591</NoWarn>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
