@@ -380,7 +380,7 @@ namespace Beamable.Editor.BeamCli
 							KillProc();
 							return;
 						}
-						CliLogger.Log("stdout", args.Data, System.Environment.NewLine+System.Environment.NewLine  ,_command );
+						CliLogger.Log("stdout", args.Data, System.Environment.NewLine + System.Environment.NewLine, _command);
 
 						_dispatcher.Schedule(() =>
 						{
@@ -402,7 +402,7 @@ namespace Beamable.Editor.BeamCli
 							return;
 						}
 
-						CliLogger.Log("stderr", args.Data, System.Environment.NewLine+System.Environment.NewLine  ,_command );
+						CliLogger.Log("stderr", args.Data, System.Environment.NewLine + System.Environment.NewLine, _command);
 
 						_dispatcher.Schedule(() =>
 						{
@@ -430,7 +430,7 @@ namespace Beamable.Editor.BeamCli
 					IEnumerator Defer()
 					{
 						yield return null; // delay a single frame, because the stdout/stderr callbacks may not have fired yet.
-						
+
 						if (_exitCode != 0)
 						{
 							CliLogger.Log("failed", _command, $"errors-count=[{_errors.Count}]");
@@ -443,7 +443,7 @@ namespace Beamable.Editor.BeamCli
 						}
 						else
 						{
-							CliLogger.Log("done", _command );
+							CliLogger.Log("done", _command);
 						}
 					}
 					_dispatcher.Run("beam-cli-defer", Defer());

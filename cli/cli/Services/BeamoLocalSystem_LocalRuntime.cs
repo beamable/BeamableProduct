@@ -163,7 +163,7 @@ public partial class BeamoLocalSystem
 		// Cancel the thread if it's already running.
 		if (_dockerListeningThread != null && !_dockerListeningThread.IsCompleted)
 			_dockerListeningThreadCancel.Cancel();
-			
+
 		// Start the long running task. We don't "await" this task as it never yields until it's cancelled.
 		_dockerListeningThread = _client.System.MonitorEventsAsync(new ContainerEventsParameters(),
 			new Progress<Message>(DockerSystemEventHandler), _dockerListeningThreadCancel.Token);
@@ -241,7 +241,7 @@ public partial class BeamoLocalSystem
 					// TODO: Detect when people containers are running but their dependencies are not. Output a list of warnings that people can then print out.
 					break;
 				}
-				
+
 				case ("container", "stop"):
 				{
 					var beamoServiceInstance =
