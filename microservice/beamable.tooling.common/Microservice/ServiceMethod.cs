@@ -33,17 +33,17 @@ namespace Beamable.Server
 		/// <summary>
 		/// Whether or not this is a method that is meant to be called by the beamable backend as part of one of our federated flows (<see cref="FederatedLoginCallableGenerator"/>).
 		/// </summary>
-		public bool IsFederatedCallbackMethod { get; init; }
+		public bool IsFederatedCallbackMethod { get; set; }
 		
 		/// <summary>
 		/// The tag associated with the service method.
 		/// </summary>
-		public string Tag { get; init; }
+		public string Tag { get; set; }
 
 		/// <summary>
 		/// The path associated with the service method.
 		/// </summary>
-		public string Path { get; init; }
+		public string Path { get; set; }
 
 		/// <summary>
 		/// Factory function to create an instance of the service method's target.
@@ -53,22 +53,22 @@ namespace Beamable.Server
 		/// <summary>
 		/// The set of required scopes for accessing the service method.
 		/// </summary>
-		public HashSet<string> RequiredScopes { get; init; }
+		public HashSet<string> RequiredScopes { get; set; }
 
 		/// <summary>
 		/// Indicates whether an authenticated user is required to access the service method.
 		/// </summary>
-		public bool RequireAuthenticatedUser { get; init; }
+		public bool RequireAuthenticatedUser { get; set; }
 
 		/// <summary>
 		/// List of parameter information for the service method.
 		/// </summary>
-		public List<ParameterInfo> ParameterInfos { get; init; }
+		public List<ParameterInfo> ParameterInfos { get; set; }
 
 		/// <summary>
 		/// The method to be invoked for the service.
 		/// </summary>
-		public MethodInfo Method { get; init; }
+		public MethodInfo Method { get; set; }
 
 		/// <summary>
 		/// List of parameter deserializers for the service method.
@@ -78,7 +78,7 @@ namespace Beamable.Server
 		/// <summary>
 		/// List of parameter names for the service method.
 		/// </summary>
-		public List<string> ParameterNames { get; init; }
+		public List<string> ParameterNames { get; set; }
 
 		/// <summary>
 		/// Dictionary mapping parameter names to their corresponding deserializers.
