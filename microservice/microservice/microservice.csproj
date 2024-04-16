@@ -17,7 +17,8 @@
     <AssemblyName>BeamableMicroserviceBase</AssemblyName>
 
     <LangVersion>11</LangVersion>
-
+    <!-- These warnings are XML documentation missing related   -->
+    <NoWarn>1573,1591,1574,1572</NoWarn>
 
 
   </PropertyGroup>
@@ -26,7 +27,6 @@
 
   <PropertyGroup>
 
-    <NoWarn>1591</NoWarn>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 

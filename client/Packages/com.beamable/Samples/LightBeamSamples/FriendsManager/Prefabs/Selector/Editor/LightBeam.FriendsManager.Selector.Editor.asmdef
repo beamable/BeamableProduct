@@ -2,7 +2,7 @@
     "name": "LightBeam.FriendsManager.Selector.Editor",
     "rootNamespace": "",
     "references": [
-        "GUID:b0ad3935c4c674c07a88e2e7adf00841"
+        "LightBeam.FriendsManager"
     ],
     "includePlatforms": [
         "Editor"
