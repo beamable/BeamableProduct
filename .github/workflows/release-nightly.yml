@@ -6,7 +6,7 @@ on:
     - cron: "0 22 * * *"
 
     # every 30 minutes (debug mode)
-    - cron: "*/30 * * * *"
+    # - cron: "*/30 * * * *"
 
 run-name: Nightly Release Trigger
 jobs:
