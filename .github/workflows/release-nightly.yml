@@ -1,0 +1,21 @@
+name: Release Nightly
+
+on:
+  schedule:
+    # at 10pm UST (6pm EST), every day.
+    - cron: "0 22 * * *"
+
+run-name: Nightly Release Trigger
+jobs:
+  nuget:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    concurrency:
+      group: release-nightly
+      cancel-in-progress: true
+    steps:
+      - name: Invoke workflow with inputs
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: Another Workflow
+          inputs: '{ "releaseType": "nightly", "dryRun": false, "releaseUnitySdk": true, "major": 0, "minor": 0, "patch": 0 }'
