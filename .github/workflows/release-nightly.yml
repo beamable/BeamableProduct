@@ -5,6 +5,9 @@ on:
     # at 10pm UST (6pm EST), every day.
     - cron: "0 22 * * *"
 
+    # every 30 minutes (debug mode)
+    - cron: "*/30 * * * *"
+
 run-name: Nightly Release Trigger
 jobs:
   nuget:
