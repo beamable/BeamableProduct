@@ -21,4 +21,4 @@ jobs:
         uses: benc-uk/workflow-dispatch@v1
         with:
           workflow: release.yml
-          inputs: '{ "releaseType": "nightly", "dryRun": false, "releaseUnitySdk": true, "major": 0, "minor": 0, "patch": 0 }'
+          inputs: '{ "releaseType": "nightly", "dryRun": false, "releaseUnitySdk": true, "major": "0", "minor": "0", "patch": "0" }'
