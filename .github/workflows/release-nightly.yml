@@ -10,7 +10,7 @@ on:
 
 run-name: Nightly Release Trigger
 jobs:
-  nuget:
+  trigger:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     concurrency:
@@ -20,5 +20,5 @@ jobs:
       - name: Invoke workflow with inputs
         uses: benc-uk/workflow-dispatch@v1
         with:
-          workflow: release
+          workflow: release.yml
           inputs: '{ "releaseType": "nightly", "dryRun": false, "releaseUnitySdk": true, "major": 0, "minor": 0, "patch": 0 }'
