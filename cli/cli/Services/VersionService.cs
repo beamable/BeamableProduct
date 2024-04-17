@@ -93,7 +93,7 @@ public class VersionService
 	public static PackageVersion GetNugetPackagesForExecutingCliVersion()
 	{
 		var currentVersion = GetExecutingCliVersion();
-		if (currentVersion.Major == 0)
+		if (currentVersion.Major == 0 || currentVersion == "1.0.0")
 		{
 			// if the major is 0, then its likely 0.0.0 or 0.0.123, 
 			//  which means we want to use our local dev nuget package version, which is 0.0.123
