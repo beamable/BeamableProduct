@@ -20,5 +20,5 @@ jobs:
       - name: Invoke workflow with inputs
         uses: benc-uk/workflow-dispatch@v1
         with:
-          workflow: Another Workflow
+          workflow: release
           inputs: '{ "releaseType": "nightly", "dryRun": false, "releaseUnitySdk": true, "major": 0, "minor": 0, "patch": 0 }'
