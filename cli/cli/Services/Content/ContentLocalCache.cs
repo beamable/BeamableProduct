@@ -253,30 +253,29 @@ public class ContentLocalCache
 		var manifest = await UpdateManifest();
 		var contents = new List<ContentDocument>(manifest.entries.Count);
 
-		foreach (var contentInfo in manifest.entries)
+		// Add the unchanged content files directly to the list of content documents
+		var localContent = manifest.entries.Where(HasSameVersion).ToArray();
+		contents.AddRange(localContent.Select(c => GetContent(c.contentId)));
+		
+		// Download and overwrite the local content for things that have changed based on the hash. 
 		{
-			if (HasSameVersion(contentInfo))
+			var requiresDownloadContent = manifest.entries.Except(localContent).ToArray();
+			var downloadPromises = requiresDownloadContent.Select(async c =>
 			{
-				contents.Add(GetContent(contentInfo.contentId));
-				continue;
-			}
-
-			try
-			{
-				var result = await _requester.CustomRequest(Method.GET, contentInfo.uri,
-					parser: s => JsonSerializer.Deserialize<ContentDocument>(s));
-				contents.Add(result);
+				var content = await _requester.CustomRequest(Method.GET, c.uri, parser: s => JsonSerializer.Deserialize<ContentDocument>(s));
 				if (saveToDisk)
 				{
-					await UpdateContent(result);
+					await UpdateContent(content);
 				}
-			}
-			catch (Exception e)
-			{
-				BeamableLogger.LogException(e);
-			}
+
+				return content;
+			}).ToArray();
+
+			var downloadedContent = await Task.WhenAll(downloadPromises);
+			contents.AddRange(downloadedContent);
 		}
 
+		// Return the updated list of content
 		return contents;
 	}
 
