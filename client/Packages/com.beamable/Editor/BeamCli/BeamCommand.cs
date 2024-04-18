@@ -338,7 +338,7 @@ namespace Beamable.Editor.BeamCli
 
 				_process.StartInfo.EnvironmentVariables["BEAM_PATH"] = Path.GetFullPath(BeamCliUtil.CLI_PATH.Replace(".dll", ""));
 				_process.StartInfo.EnvironmentVariables["BEAM_DOTNET_PATH"] = Path.GetFullPath(DotnetUtil.DotnetPath);
-
+				
 				_status = new TaskCompletionSource<int>();
 				_standardOutComplete = new TaskCompletionSource<int>();
 				EventHandler eh = (s, e) =>
@@ -380,8 +380,12 @@ namespace Beamable.Editor.BeamCli
 							KillProc();
 							return;
 						}
-						CliLogger.Log("stdout", args.Data, System.Environment.NewLine+System.Environment.NewLine  ,_command );
 
+						_dispatcher.Schedule(() =>
+						{
+							CliLogger.Log("stdout", args.Data, System.Environment.NewLine + System.Environment.NewLine,
+							              _command);
+						});
 						_dispatcher.Schedule(() =>
 						{
 							try
@@ -402,8 +406,11 @@ namespace Beamable.Editor.BeamCli
 							return;
 						}
 
-						CliLogger.Log("stderr", args.Data, System.Environment.NewLine+System.Environment.NewLine  ,_command );
-
+						_dispatcher.Schedule(() =>
+						{
+							CliLogger.Log("stderr", args.Data, System.Environment.NewLine + System.Environment.NewLine,
+							              _command);
+						});
 						_dispatcher.Schedule(() =>
 						{
 							try

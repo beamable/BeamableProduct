@@ -1,4 +1,6 @@
 using Beamable.Common.Dependencies;
+using Beamable.Editor;
+using Beamable.Editor.Microservice.UI3;
 
 namespace Beamable.Server.Editor.Usam
 {
@@ -10,6 +12,8 @@ namespace Beamable.Server.Editor.Usam
 		{
 			builder.AddSingleton<CodeService>();
 			builder.AddSingleton<PublishService>();
+
+			builder.AddGlobalStorage<SamModel, EditorStorageLayer>();
 		}
 
 	}

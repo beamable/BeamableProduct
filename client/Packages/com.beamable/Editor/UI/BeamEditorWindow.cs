@@ -185,6 +185,16 @@ namespace Beamable.Editor.UI
 		/// </summary>
 		public void BuildWithContext(int index) => BuildWithContext(BeamEditorContext.ForEditorUser(index));
 
+
+		protected virtual async Promise BuildSetup()
+		{
+			await Load();
+			var root = this.GetRootVisualContainer();
+			root.Clear();
+
+			await BuildAsync();
+		}
+		
 		/// <summary>
 		/// Rebuilds the window's entire content.
 		/// If it cares about whether or not the given <paramref name="context"/> is/isn't authenticated, it'll invoke either <see cref="Build"/> or <see cref="BuildWhenNotAuthenticated"/>.
@@ -197,14 +207,14 @@ namespace Beamable.Editor.UI
 
 			var dispatcher = ActiveContext.ServiceScope.GetService<BeamableDispatcher>();
 
-			async Promise Setup()
-			{
-				await Load();
-				var root = this.GetRootVisualContainer();
-				root.Clear();
-
-				await BuildAsync();
-			}
+			// async Promise Setup()
+			// {
+			// 	await Load();
+			// 	var root = this.GetRootVisualContainer();
+			// 	root.Clear();
+			//
+			// 	await BuildAsync();
+			// }
 
 			dispatcher.Schedule(async () =>
 			{
@@ -214,7 +224,7 @@ namespace Beamable.Editor.UI
 					{
 						if (ActiveContext.IsAuthenticated)
 						{
-							await Setup();
+							await BuildSetup();
 						}
 						else
 						{
@@ -223,7 +233,7 @@ namespace Beamable.Editor.UI
 					}
 					else
 					{
-						await Setup();
+						await BuildSetup();
 					}
 				}
 				catch (Exception ex)

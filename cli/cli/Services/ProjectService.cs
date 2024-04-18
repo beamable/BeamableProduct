@@ -288,7 +288,9 @@ public class ProjectService
 			await RunDotnetCommand($"{UNINSTALL_COMMAND} {packageName}");
 		}
 
-		var (result, installStream) = await CliExtensions.RunWithOutput(_app.DotnetPath, $"new --install {packageName}::{version}");
+		var command = $"new install {packageName}::{version}";
+		Log.Verbose($"installing templates as {command}");
+		var (result, installStream) = await CliExtensions.RunWithOutput(_app.DotnetPath, command);
 		var isTemplateInstalled = result.ExitCode == 0;
 
 		if (!isTemplateInstalled)

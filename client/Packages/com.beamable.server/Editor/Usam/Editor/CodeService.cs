@@ -1,12 +1,14 @@
 using Beamable.Api.CloudSaving;
 using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
+using Beamable.Common.Dependencies;
 using Beamable.Common.Semantics;
 using Beamable.Editor;
 using Beamable.Editor.BeamCli;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.Dotnet;
 using Beamable.Editor.Microservice.UI.Components;
+using Beamable.Editor.Microservice.UI3;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.UI.Components;
@@ -48,69 +50,59 @@ namespace Beamable.Server.Editor.Usam
 		public static readonly string StandaloneMicroservicesFolderName = "StandaloneMicroservices~/";
 		private static readonly string StandaloneMicroservicesPath = $"{BEAMABLE_PATH}{StandaloneMicroservicesFolderName}";
 		public static readonly string LibrariesPathsFilePath = $"{BEAMABLE_LIB_PATH}/.libraries_paths";
+		private IDependencyProvider _provider;
 		public static string LibrariesPathsDirectory => Path.GetDirectoryName(LibrariesPathsFilePath);
 
-		public CodeService(BeamCommands cli, BeamableDispatcher dispatcher, DotnetService dotnetService)
+		public CodeService(IDependencyProvider provider, BeamCommands cli, BeamableDispatcher dispatcher, DotnetService dotnetService)
 		{
+			_provider = provider;
 			_cli = cli;
 			_dispatcher = dispatcher;
 			_dotnetService = dotnetService;
 			OnReady = Init();
 		}
 
-		[Conditional("BEAM_CODE_SERVICE_LOGS"), Conditional("BEAMABLE_DEVELOPER")]
-		static void LogVerbose(string log, bool isError = false)
-		{
-			const string logFormat = "<b>[" + nameof(CodeService) + "]</b> {0}";
-			var text = string.Format(logFormat, log);
-			if (isError)
-				BeamEditorContext.Default.Dispatcher.Schedule(() => Debug.LogError(text));
-			else
-				BeamEditorContext.Default.Dispatcher.Schedule(() => Debug.Log(text));
-		}
-
-		static void LogExceptionVerbose(Exception e) => LogVerbose(e.ToString(), true);
-
+		
 		public async Promise Init()
 		{
 			if (EditorApplication.isPlayingOrWillChangePlaymode)
 				return;
-			LogVerbose("Running init");
+			UsamLogger.Log("Running init");
 			_services = GetBeamServices();
-			LogVerbose("Have services");
+			UsamLogger.Log("Have services");
 			_storages = GetBeamStorages();
-			LogVerbose("Have storages");
+			UsamLogger.Log("Have storages");
 
-			LogVerbose("Setting properties file");
+			UsamLogger.Log("Setting properties file");
 			await SetPropertiesFile();
 			
-			LogVerbose("Set manifest start");
+			UsamLogger.Log("Set manifest start");
 			await SetManifest(_cli, _services, _storages);//asd
-			LogVerbose("set manifest ended");
+			UsamLogger.Log("set manifest ended");
 
-			LogVerbose("Saving all libraries referenced by services");
+			UsamLogger.Log("Saving all libraries referenced by services");
 			await SaveReferencedLibraries();
 
-			LogVerbose("Set manifest start");
+			UsamLogger.Log("Set manifest start");
 			await SetManifest(_cli, _services, _storages);
-			LogVerbose("set manifest ended");
+			UsamLogger.Log("set manifest ended");
 
 			// TODO: we need validation. What happens if the .beamservice files point to non-existent files
 			SetSolution(_services, _storages);
-			LogVerbose("Solution set done");
+			UsamLogger.Log("Solution set done");
 
 			await RefreshServices();
-			LogVerbose($"There are {ServiceDefinitions.Count} Service definitions");
+			UsamLogger.Log($"There are {ServiceDefinitions.Count} Service definitions");
 			const string updatedServicesKey = "BeamUpdatedServices";
 			if (!SessionState.GetBool(updatedServicesKey, false))
 			{
-				LogVerbose("Update services version start");
+				UsamLogger.Log("Update services version start");
 				await UpdateServicesVersions();
 				SessionState.SetBool(updatedServicesKey, true);
-				LogVerbose("Update services version end");
+				UsamLogger.Log("Update services version end");
 			}
 
-			CheckMicroserviceStatus();
+			var _ = CheckMicroserviceStatus();
 			ConnectToLogs();
 
 			var oldServices = GetAllOldServices();
@@ -128,7 +120,7 @@ namespace Beamable.Server.Editor.Usam
 			}
 			
 			
-			LogVerbose("Completed");
+			UsamLogger.Log("Completed");
 		}
 
 		public async Promise Migrate(List<IDescriptor> allDescriptors)
@@ -223,7 +215,7 @@ namespace Beamable.Server.Editor.Usam
 			var path = $"{StandaloneMicroservicesPath}{microserviceName}/";
 			if (!Directory.Exists(path))
 			{
-				LogVerbose($"Migrating {microserviceName} start");
+				UsamLogger.Log($"Migrating {microserviceName} start");
 				var references = GetAssemblyDefinitionAssets(microserviceDescriptor);
 				await CreateMicroService(microserviceName, null, assemblyReferences: references, shouldInitialize: false);
 			}
@@ -368,9 +360,9 @@ namespace Beamable.Server.Editor.Usam
 			var versions = _cli.ProjectVersion(new ProjectVersionArgs { requestedVersion = nugetVersion });
 			versions.OnStreamProjectVersionCommandResult(result =>
 			{
-				LogVerbose($"Versions updated: {string.Join(",", result.data.packageVersions)}");
+				UsamLogger.Log($"Versions updated: {string.Join(",", result.data.packageVersions)}");
 			});
-			await versions.Run().Error(LogExceptionVerbose);
+			await versions.Run().Error(ex => UsamLogger.Log(ex));
 		}
 
 		public async Promise RefreshServices()
@@ -380,44 +372,44 @@ namespace Beamable.Server.Editor.Usam
 
 			try
 			{
-				LogVerbose("refresh remote services from CLI start");
+				UsamLogger.Log("refresh remote services from CLI start");
 				//Get remote only information from the CLI
 				var psRemote = _cli.ServicesPs(new ServicesPsArgs() { json = false, remote = true });
 				psRemote.OnStreamServiceListResult(cb =>
 				{
 					IsDockerRunning = cb.data.IsDockerRunning;
-					LogVerbose($"Found {cb.data.BeamoIds.Count} remote services");
+					UsamLogger.Log($"Found {cb.data.BeamoIds.Count} remote services");
 					_dispatcher.Schedule(() => PopulateDataWithRemote(cb.data));
 				});
 				await psRemote.Run();
-				LogVerbose("refresh remote services from CLI end");
+				UsamLogger.Log("refresh remote services from CLI end");
 
-				LogVerbose("refresh local services from CLI start");
+				UsamLogger.Log("refresh local services from CLI start");
 				//Get local only information from the CLI
 				var psLocal = _cli.ServicesPs(new ServicesPsArgs() { json = false, remote = false });
 				psLocal.OnStreamServiceListResult(cb =>
 				{
 					IsDockerRunning = cb.data.IsDockerRunning;
-					LogVerbose($"Found {cb.data.BeamoIds.Count} remote services");
+					UsamLogger.Log($"Found {cb.data.BeamoIds.Count} remote services");
 					_dispatcher.Schedule(() => PopulateDataWithRemote(cb.data));
 				});
 				await psLocal.Run();
-				LogVerbose("refresh local services from CLI end");
+				UsamLogger.Log("refresh local services from CLI end");
 			}
 			catch
 			{
 				IsDockerRunning = false;
-				LogVerbose("Could not list remote services, skip", true);
+				UsamLogger.Log("ERROR: Could not list remote services, skip");
 				return;
 			}
 
 
 
-			LogVerbose("refresh local services start");
+			UsamLogger.Log("refresh local services start");
 
 			PopulateDataWithLocal();
 
-			LogVerbose("refresh local services end");
+			UsamLogger.Log("refresh local services end");
 		}
 
 		private void PopulateDataWithLocal()
@@ -442,7 +434,7 @@ namespace Beamable.Server.Editor.Usam
 			for (int i = 0; i < objData.BeamoIds.Count; i++)
 			{
 				var name = objData.BeamoIds[i];
-				LogVerbose($"Handling {name} started");
+				UsamLogger.Log($"Handling {name} started");
 
 				var runningState = objData.RunningState[i] ? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
 				var type = objData.ProtocolTypes[i].Equals("HttpMicroservice")
@@ -463,9 +455,10 @@ namespace Beamable.Server.Editor.Usam
 					assetProjectPath = storage.assetProjectPath;
 				}
 
+				
 				AddServiceDefinition(name, type, assetProjectPath, true, runningState,
 									 objData.ShouldBeEnabledOnRemote[i], objData.IsLocal, objData.Dependencies[i]);
-				LogVerbose($"Handling {name} ended");
+				UsamLogger.Log($"Handling {name} ended");
 			}
 		}
 
@@ -530,7 +523,7 @@ namespace Beamable.Server.Editor.Usam
 		/// <param name="additionalReferences">A list with all references to link to this service.</param>
 		public async Promise CreateService(string name, ServiceType type, List<IBeamoServiceDefinition> additionalReferences)
 		{
-			LogVerbose($"Starting creation of {name}");
+			UsamLogger.Log($"Starting creation of {name}");
 
 			switch (type)
 			{
@@ -551,7 +544,7 @@ namespace Beamable.Server.Editor.Usam
 			
 			SolutionPostProcessor.OnPreGeneratingCSProjectFiles();
 			SetSolution(_services, _storages);
-			LogVerbose($"Starting updating references");
+			UsamLogger.Log($"Starting updating references");
 			//get a list of all references of that service
 			var service = _services.FirstOrDefault(s => s.name == serviceName);
 			if (service == null)
@@ -559,7 +552,7 @@ namespace Beamable.Server.Editor.Usam
 				throw new ArgumentException($"Invalid service name was passed: {serviceName}");
 			}
 
-			LogVerbose($"Reading all references from service: {serviceName}");
+			UsamLogger.Log($"Reading all references from service: {serviceName}");
 			var results = await _dotnetService.Run($"list {service.CsprojPath} reference");
 
 			//filter that list with only the generated projs
@@ -569,13 +562,13 @@ namespace Beamable.Server.Editor.Usam
 
 
 			//remove all generated projs references
-			LogVerbose($"Removing all references from service: {serviceName}");
+			UsamLogger.Log($"Removing all references from service: {serviceName}");
 			var promises = new List<Promise<List<string>>>();
 			foreach (string reference in existinReferences)
 			{
 				var referenceName = Path.GetFileNameWithoutExtension(reference).Replace(CsharpProjectUtil.PROJECT_NAME_PREFIX, String.Empty);
 				var refPathToRemove = CsharpProjectUtil.GenerateCsharpProjectFilename(referenceName);
-				LogVerbose($"Removing reference: {refPathToRemove}");
+				UsamLogger.Log($"Removing reference: {refPathToRemove}");
 				Promise<List<string>> p =_dotnetService.Run($"remove {service.CsprojPath} reference {refPathToRemove}");
 				promises.Add(p);
 			}
@@ -589,23 +582,22 @@ namespace Beamable.Server.Editor.Usam
 				var newRefCsprojPath = CsharpProjectUtil.GenerateCsharpProjectFilename(newRefs.name);
 				if (!File.Exists(newRefCsprojPath))
 				{
-					LogVerbose($"The project file for reference {newRefs} does not exist yet");
+					UsamLogger.Log($"The project file for reference {newRefs} does not exist yet");
 					continue;
 				}
-				LogVerbose($"Adding the reference: {newRefs}");
+				UsamLogger.Log($"Adding the reference: {newRefs}");
 				await _dotnetService.Run($"add {service.CsprojPath} reference {newRefCsprojPath}");
 			}
 
-			LogVerbose($"Finished updating references");
+			UsamLogger.Log($"Finished updating references");
 		}
 
 
 		public Promise RunStandaloneMicroservice(string id)
 		{
-			ProjectRunWrapper runCommand = _cli.ProjectRun(new ProjectRunArgs()
+			var runCommand = _cli.ProjectRun(new ProjectRunArgs() {ids = new[] {id}, watch = true}).OnError(ex =>
 			{
-				ids = new[] { id },
-				watch = true
+				Debug.LogError(ex.data.message);
 			});
 			return runCommand.Run();
 		}
@@ -616,7 +608,7 @@ namespace Beamable.Server.Editor.Usam
 		/// <param name="id">The id of the Standalone Microservice.</param>
 		public async Promise GenerateClientCode(string id)
 		{
-			LogVerbose($"Start generating client code for service: {id}");
+			UsamLogger.Log($"Start generating client code for service: {id}");
 
 
 			var service = _services.FirstOrDefault(s => s.name == id);
@@ -627,17 +619,17 @@ namespace Beamable.Server.Editor.Usam
 
 			if (string.IsNullOrWhiteSpace(service?.CsprojPath))
 			{
-				LogVerbose("No file to generate");
+				UsamLogger.Log("No file to generate");
 				return;
 			}
 
 			var beamPath = BeamCliUtil.CLI_PATH.Replace(".dll", "");
 			var buildCommand = $"build \"{service.CsprojPath}\" /p:BeamableTool={beamPath} /p:GenerateClientCode=false";
 
-			LogVerbose($"Starting build service: {id} using command: {buildCommand}");
+			UsamLogger.Log($"Starting build service: {id} using command: {buildCommand}");
 			await _dotnetService.Run(buildCommand);
 
-			LogVerbose($"Starting beam client code generator");
+			UsamLogger.Log($"Starting beam client code generator");
 
 			string dllPath = $"{service.CsprojPath}/{MICROSERVICE_DLL_PATH}/{id}.dll";
 			string outputPath = Constants.Features.Services.AUTOGENERATED_CLIENT_PATH;
@@ -652,7 +644,7 @@ namespace Beamable.Server.Editor.Usam
 			ProjectGenerateClientWrapper command = _cli.ProjectGenerateClient(generateClientArgs);
 			await command.Run();
 
-			LogVerbose($"Finished generating client code for service: {id}");
+			UsamLogger.Log($"Finished generating client code for service: {id}");
 		}
 
 		/// <summary>
@@ -697,6 +689,7 @@ namespace Beamable.Server.Editor.Usam
 
 		public void ConnectToLogs()
 		{
+			// TODO: re-attach if process dies
 			foreach (IBeamoServiceDefinition definition in ServiceDefinitions)
 			{
 				var logs = _cli.ProjectLogs(new ProjectLogsArgs
@@ -706,13 +699,14 @@ namespace Beamable.Server.Editor.Usam
 				});
 				logs.OnStreamTailLogMessageForClient(point =>
 				{
+					UsamLogger.Log("Log: " + point.data.message);
 					_dispatcher.Schedule(() => OnLogMessage?.Invoke(definition.BeamoId, point.data));
 				});
 				_logsCommands.Add(logs.Run());
 			}
 		}
 
-		public void CheckMicroserviceStatus()
+		public async Promise CheckMicroserviceStatus()
 		{
 			var projectPs = _cli.ProjectPs(new ProjectPsArgs()
 			{
@@ -724,10 +718,29 @@ namespace Beamable.Server.Editor.Usam
 				var def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(cb.data.service));
 				if (def != null)
 				{
+					// def.IsRunningLocally = cb.data.isRunning;
 					def.Builder.IsRunning = cb.data.isRunning;
 				}
+				
+				_provider.GetService<SamModel>().SetStatusForService(cb.data.service, cb.data.isRunning);
+			}).OnError(cb =>
+			{
+				Debug.LogError($"Error occured while listening for Microservice status updates. Message=[{cb.data.message}] CliStack=[{cb.data.stackTrace}]");
 			});
-			projectPs.Run();
+			
+			try
+			{
+				await projectPs.Run();
+			}
+			catch (Exception ex)
+			{
+				Debug.LogError($"Restarting Microservice listening process. Message=[{ex.Message}]");
+				// this command needs to retry and retry and retry. It should always be running.
+				_dispatcher.Schedule(() =>
+				{
+					var _ = CheckMicroserviceStatus();
+				});
+			}
 		}
 
 
@@ -746,7 +759,7 @@ namespace Beamable.Server.Editor.Usam
 			var slnPath = FindFirstSolutionFile();
 			if (string.IsNullOrEmpty(slnPath) || !File.Exists(slnPath))
 			{
-				LogVerbose("Beam. No script file, so reloading scripts");
+				UsamLogger.Log("Beam. No script file, so reloading scripts");
 				UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
 				return; // once scripts reload, the current invocation of scripts end.
 			}
@@ -868,7 +881,7 @@ namespace Beamable.Server.Editor.Usam
 			}
 			catch (Exception e)
 			{
-				LogExceptionVerbose(e);
+				UsamLogger.Log(e.GetType().Name, e.Message, e.StackTrace);
 			}
 		}
 
@@ -897,7 +910,7 @@ namespace Beamable.Server.Editor.Usam
 			if (storagesNames.Count > 0) args.storageNames = storagesNames.ToArray();
 
 			var command = cli.ServicesSetLocalManifest(args);
-			await command.Run().Error(LogExceptionVerbose);
+			await command.Run().Error(ex => UsamLogger.Log(ex));
 		}
 
 		public static List<BeamServiceSignpost> GetBeamServices()
@@ -932,7 +945,7 @@ namespace Beamable.Server.Editor.Usam
 		{
 			bool foundDeletedService = false;
 
-			LogVerbose("Checking for deleted microservices");
+			UsamLogger.Log("Checking for deleted microservices");
 			for (int i = _services.Count - 1; i > -1; i--)
 			{
 				var name = _services[i].name;
@@ -943,7 +956,7 @@ namespace Beamable.Server.Editor.Usam
 				{
 					if (!Directory.Exists(sourcePath))
 					{
-						LogVerbose($"The file {name}.beamservice exists but there is no source code for it.");
+						UsamLogger.Log($"The file {name}.beamservice exists but there is no source code for it.");
 					}
 
 					continue;
@@ -953,7 +966,7 @@ namespace Beamable.Server.Editor.Usam
 				_services.RemoveAt(i);
 			}
 
-			LogVerbose("Checking for deleted storages");
+			UsamLogger.Log("Checking for deleted storages");
 			for (int i = _storages.Count - 1; i > -1; i--)
 			{
 				var name = _storages[i].name;
@@ -964,7 +977,7 @@ namespace Beamable.Server.Editor.Usam
 				{
 					if (!Directory.Exists(sourcePath))
 					{
-						LogVerbose($"The file {name}.beamstorage exists but there is no source code for it.");
+						UsamLogger.Log($"The file {name}.beamstorage exists but there is no source code for it.");
 					}
 					continue;
 				}
@@ -986,7 +999,7 @@ namespace Beamable.Server.Editor.Usam
 			var relativePath = Path.Combine(StandaloneMicroservicesPath, storageName);
 			if (Directory.Exists(relativePath))
 			{
-				LogVerbose($"{storageName} already exists!");
+				UsamLogger.Log($"{storageName} already exists!");
 				return;
 			}
 
@@ -1017,10 +1030,10 @@ namespace Beamable.Server.Editor.Usam
 			string signpostPath = $"{BEAMABLE_PATH}{storageName}.beamstorage";
 			string signpostJson = JsonUtility.ToJson(signpost);
 
-			LogVerbose($"Writing data to {storageName}.beamstorage file");
+			UsamLogger.Log($"Writing data to {storageName}.beamstorage file");
 			File.WriteAllText(signpostPath, signpostJson);
 
-			LogVerbose($"Starting the initialization of CodeService");
+			UsamLogger.Log($"Starting the initialization of CodeService");
 			// Re-initializing the CodeService to make sure all files are with the right information
 			if (shouldInitialize)
 			{
@@ -1031,7 +1044,7 @@ namespace Beamable.Server.Editor.Usam
 			//For some reason this this line is never reached after the Init. And if put bfore Init, it doesn't work
 			//await GenerateClientCode(serviceName);
 
-			LogVerbose($"Finished creation of storage {storageName}");
+			UsamLogger.Log($"Finished creation of storage {storageName}");
 		}
 
 		/// <summary>
@@ -1057,7 +1070,7 @@ namespace Beamable.Server.Editor.Usam
 			var fullPath = Path.Combine(StandaloneMicroservicesPath, serviceName);
 			if (Directory.Exists(fullPath))
 			{
-				LogVerbose($"{serviceName} already exists!");
+				UsamLogger.Log($"{serviceName} already exists!");
 				return;
 			}
 
@@ -1081,10 +1094,10 @@ namespace Beamable.Server.Editor.Usam
 			string signpostPath = $"{BEAMABLE_PATH}{serviceName}.beamservice";
 			string signpostJson = JsonUtility.ToJson(signpost);
 
-			LogVerbose($"Writing data to {serviceName}.beamservice file");
+			UsamLogger.Log($"Writing data to {serviceName}.beamservice file");
 			File.WriteAllText(signpostPath, signpostJson);
 
-			LogVerbose($"Starting the initialization of CodeService");
+			UsamLogger.Log($"Starting the initialization of CodeService");
 			// Re-initializing the CodeService to make sure all files are with the right information
 			if (shouldInitialize)
 			{
@@ -1095,7 +1108,7 @@ namespace Beamable.Server.Editor.Usam
 			//For some reason this this line is never reached after the Init. And if put bfore Init, it doesn't work
 			//await GenerateClientCode(serviceName);
 
-			LogVerbose($"Finished creation of service {serviceName}");
+			UsamLogger.Log($"Finished creation of service {serviceName}");
 		}
 
 
@@ -1157,9 +1170,14 @@ namespace Beamable.Server.Editor.Usam
 				}
 				catch (UnauthorizedAccessException ex)
 				{
-					LogVerbose($"Beam Error accessing {directoryPath}: {ex.Message}", true);
+					UsamLogger.Log($"Beam Error accessing {directoryPath}: {ex.Message}");
 				}
 			}
+		}
+
+		public Promise StopStandaloneMicroservice(string beamoId)
+		{
+			return StopStandaloneMicroservice(new string[] {beamoId});
 		}
 
 		public async Promise StopStandaloneMicroservice(IEnumerable<string> beamoIds)
@@ -1178,7 +1196,7 @@ namespace Beamable.Server.Editor.Usam
 			}
 			catch (Exception e)
 			{
-				LogExceptionVerbose(e);
+				UsamLogger.Log(e.GetType().Name, e.Message, e.StackTrace);
 			}
 		}
 
@@ -1188,7 +1206,7 @@ namespace Beamable.Server.Editor.Usam
 
 			if (def == null)
 			{
-				LogVerbose("Service does not exist!");
+				UsamLogger.Log("Service does not exist!");
 				return;
 			}
 			var fileName = $@"{def.ServiceInfo.projectPath}/{serviceName}.cs";

@@ -11,7 +11,7 @@ namespace Beamable.Editor.BeamCli
 		[Conditional(Constants.Features.Spew.SPEW_ALL), Conditional(Constants.Features.Spew.SPEW_CLI)]
 		public static void Log(params object[] msg)
 		{
-			Logger.DoSpew("CLI: " + string.Join(",", msg.Select(x => x?.ToString())));
+			Logger.DoSimpleSpew("CLI: " + string.Join(",", msg.Select(x => x?.ToString())));
 		}
 	}
 }

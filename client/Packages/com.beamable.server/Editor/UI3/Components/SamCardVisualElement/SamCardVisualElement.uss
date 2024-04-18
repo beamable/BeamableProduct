@@ -1,0 +1,54 @@
+#card-header {
+    flex-direction: row;
+    background-color: #282828;
+    /*background-color: red;*/
+    padding:4px;
+}
+.running #card-header {
+    /*background-color: #234a6c;*/
+}
+
+#card-btn-dropdown > .icon {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/advance.png");
+}
+
+#card-btn-swagger > .icon {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/local swagger doc light.png");
+}
+
+#card-btn-code > .icon {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/read doc light.png");
+}
+
+#card-btn-start > .icon {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Play_light.png");
+}
+#card-btn-start {
+    background-color: #383838;
+}
+.running #card-btn-start {
+    background-color: #234a6c;
+}
+
+#card-header-center {
+    flex-grow: 1;
+    justify-content: center;
+}
+
+.btn-strip {
+    flex-direction: row;
+}
+.btn {
+    width: 30px;
+    height: 30px;
+    /*background-color:red;*/
+    cursor: link;
+}
+.btn > .icon {
+    margin: 3px;
+    flex-grow: 1;
+    cursor: link;
+}
+.btn:hover {
+    background-color: #424242;
+}
