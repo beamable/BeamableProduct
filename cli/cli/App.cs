@@ -309,6 +309,7 @@ public class App
 		Commands.AddSubCommandWithHandler<ContentPullCommand, ContentPullCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentStatusCommand, ContentStatusCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentOpenCommand, ContentOpenCommandArgs, ContentCommand>();
+		Commands.AddSubCommandWithHandler<ContentBulkEditCommand, ContentBulkEditCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentPublishCommand, ContentPublishCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentLocalManifestCommand, ContentLocalManifestCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentResetCommand, ContentResetCommandArgs, ContentCommand>();

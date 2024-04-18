@@ -15,28 +15,36 @@ public class ContentTagAddCommand : AppCommand<ContentTagAddCommandArgs>
 	{
 		AddArgument(ContentTagCommand.CONTENT_ARGUMENT, (args, s) => args.content = s);
 		AddArgument(ContentTagCommand.TAG_ARGUMENT, (args, s) => args.tag = s);
-		AddOption(ContentCommand.MANIFEST_OPTION, (args, s) => args.ManifestId = s);
+		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestIds = s);
 		AddOption(ContentTagCommand.REGEX_OPTION, (args, b) => args.treatAsRegex = b);
 	}
 
 	public override Task Handle(ContentTagAddCommandArgs args)
 	{
 		_contentService = args.ContentService;
-		var local = _contentService.GetLocalCache(args.ManifestId);
 
+		if (args.ManifestIds.Length == 0)
+			args.ManifestIds = new[] { "global" };
 
-		var contentIds = args.GetContentsList(local);
-		var addedValues = new List<string>();
-
-		foreach (var id in contentIds)
+		foreach (string manifestId in args.ManifestIds)
 		{
-			if (local.Tags.AddTagToContent(id, args.tag))
+			var local = _contentService.GetLocalCache(manifestId);
+
+			var contentIds = args.GetContentsList(local);
+			var addedValues = new List<string>();
+
+			foreach (var id in contentIds)
 			{
-				addedValues.Add(id);
+				if (local.Tags.AddTagToContent(id, args.tag))
+				{
+					addedValues.Add(id);
+				}
 			}
+
+			local.Tags.WriteToFile();
+			BeamableLogger.Log("Added tag {ArgsTag} to content ({AddedValuesCount}): {Join}", args.tag, addedValues.Count, string.Join(", ", addedValues));
 		}
-		local.Tags.WriteToFile();
-		BeamableLogger.Log("Added tag {ArgsTag} to content ({AddedValuesCount}): {Join}", args.tag, addedValues.Count, string.Join(", ", addedValues));
+
 		return Task.CompletedTask;
 	}
 }

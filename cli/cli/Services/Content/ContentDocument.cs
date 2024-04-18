@@ -16,7 +16,7 @@ public class ContentDocument
 	{
 		using var sha1 = SHA1.Create();
 		string json = JsonSerializer.Serialize(properties, new JsonSerializerOptions { WriteIndented = false });
-		var bytes = Encoding.ASCII.GetBytes(json);
+		var bytes = Encoding.UTF8.GetBytes(json);
 		var hash = sha1.ComputeHash(bytes);
 		var checksum = BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
 		return checksum;

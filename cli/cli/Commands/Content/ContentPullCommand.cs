@@ -1,42 +1,48 @@
 ﻿using Beamable.Common;
 using cli.Services.Content;
 using Spectre.Console;
-using System.Text.Json;
+using System.Text;
 
 namespace cli.Content;
 
-public class ContentPullCommand : AppCommand<ContentPullCommandArgs>
+public class ContentPullCommand : AtomicCommand<ContentPullCommandArgs, LocalContentState>
 {
 	private ContentService _contentService;
+
 	public ContentPullCommand() : base("pull", "Pulls currently deployed content")
 	{
 	}
 
-	public override async Task Handle(ContentPullCommandArgs args)
+	public override void Configure()
+	{
+		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestIdsToPull = s);
+	}
+
+	public override async Task<LocalContentState> GetResult(ContentPullCommandArgs args)
 	{
 		_contentService = args.ContentService;
 
-		var localCache = _contentService.GetLocalCache(args.ManifestId);
-		await localCache.UpdateTags();
-		var result = await localCache.PullContent();
+		// Prepare the filters (makes sure all the given manifests exist.
+		var manifestsToPull = await _contentService.PrepareManifestFilter(args.ManifestIdsToPull);
 
-		if (args.printOutput)
+		// Resets the content for all the given manifests
+		for (int i = 0; i < manifestsToPull.Length; i++)
 		{
-			var json = JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
-			AnsiConsole.WriteLine(json);
-		}
-	}
+			var localCache = _contentService.GetLocalCache(manifestsToPull[i]);
 
-	public override void Configure()
-	{
-		AddOption(ContentCommand.MANIFEST_OPTION,
-			(args, s) => args.ManifestId = s);
-		AddOption(new ConfigurableOptionFlag("print-output", "Print content to console"),
-			(args, b) => args.printOutput = b);
+			await localCache.UpdateTags();
+			_ = await localCache.PullContent();
+		}
+
+		// Get the local content state for all the requested manifests
+		var allLocalStates = await _contentService.GetLocalContentForManifests(manifestsToPull);
+
+		// Builds the local content state from a list of local states
+		return _contentService.BuildLocalContentState(manifestsToPull, allLocalStates);
 	}
 }
 
 public class ContentPullCommandArgs : ContentCommandArgs
 {
-	public bool printOutput;
+	public string[] ManifestIdsToPull;
 }
