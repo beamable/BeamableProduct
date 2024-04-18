@@ -96,18 +96,18 @@ public:
 
 #include ""BeamLogging.h""
 #include ""Misc/MonitoredProcess.h""
-#include ""JsonObjectConverter.h""
 #include ""Serialization/JsonSerializerMacros.h""
 		
 TSharedPtr<FMonitoredProcess> U₢{nameof(CommandName)}₢Command::RunImpl(const TArray<FString>& CommandParams, const FBeamOperationHandle& Op)
 {{
-	FString Params = (""₢{nameof(CommandKeywords)}₢ --reporter-use-fatal"");
+	FString Params = (""₢{nameof(CommandKeywords)}₢"");
 	for (const auto& CommandParam : CommandParams)
 		Params.Appendf(TEXT("" %s""), *CommandParam);
 	Params = PrepareParams(Params);
 	UE_LOG(LogBeamCli, Verbose, TEXT(""₢{nameof(CommandName)}₢ Command - Invocation: %s %s""), *PathToCli, *Params)
 
-	const auto CliProcess = MakeShared<FMonitoredProcess>(PathToCli, Params, FPaths::ProjectDir(), true, true);
+	const auto CliPath = Cli->GetPathToCli();
+	const auto CliProcess = MakeShared<FMonitoredProcess>(CliPath, Params, FPaths::ProjectDir(), true, true);
 	CliProcess->OnOutput().BindLambda([this, Op](const FString& Out)
 	{{
 		UE_LOG(LogBeamCli, Verbose, TEXT(""₢{nameof(CommandName)}₢ Command - Std Out: %s""), *Out);
@@ -116,12 +116,18 @@ TSharedPtr<FMonitoredProcess> U₢{nameof(CommandName)}₢Command::RunImpl(const
 		while (ConsumeMessageFromOutput(OutCopy, MessageJson))
 		{{
 			auto Bag = FJsonDataBag();
-			Bag.FromJson(MessageJson);
-			const auto ReceivedStreamType = Bag.GetString(""type"");
-			const auto Timestamp = static_cast<int64>(Bag.GetField(""ts"")->AsNumber());
-			const auto DataJson = Bag.JsonObject->GetObjectField(""data"").ToSharedRef();
-
-			₢{nameof(_parseStreamDataImpl)}₢
+			if (Bag.FromJson(MessageJson))
+			{{
+				const auto ReceivedStreamType = Bag.GetString(""type"");
+				const auto Timestamp = static_cast<int64>(Bag.GetField(""ts"")->AsNumber());
+				const auto DataJson = Bag.JsonObject->GetObjectField(""data"").ToSharedRef();
+				
+				₢{nameof(_parseStreamDataImpl)}₢
+			}}
+			else
+			{{
+				UE_LOG(LogBeamCli, Verbose, TEXT(""₢{nameof(CommandName)}₢ Command - Skipping non-JSON message: %s""), *MessageJson);
+			}}			
 		}}
 	}});
 	CliProcess->OnCompleted().BindLambda([this, Op](int ResultCode)
@@ -250,20 +256,21 @@ public struct UnrealCliStreamDeclaration
 	TFunction<void (const TArray<₢{nameof(_rootDataType)}₢>& StreamData, const TArray<int64>& Timestamps, const FBeamOperationHandle& Op)> On₢{nameof(StreamName)}₢StreamOutput;";
 
 	public const string STREAM_PARSE_IMPL = $@"
-			if(ReceivedStreamType.Equals(StreamType₢{nameof(StreamName)}₢))
-			{{
-				₢{nameof(_rootDataType)}₢ Data = NewObject<U₢{nameof(_rootDataNamespacedType)}₢>();
-				Data->BeamDeserializeProperties(DataJson);
-
-				₢{nameof(StreamName)}₢Stream.Add(Data);
-				₢{nameof(StreamName)}₢Timestamps.Add(Timestamp);
-
-				UE_LOG(LogBeamCli, Verbose, TEXT(""₢{nameof(CommandName)}₢ Command - Message Received: %s""), *MessageJson);
-				AsyncTask(ENamedThreads::GameThread, [this, Op]
+				if(ReceivedStreamType.Equals(StreamType₢{nameof(StreamName)}₢))
 				{{
-					On₢{nameof(StreamName)}₢StreamOutput(₢{nameof(StreamName)}₢Stream, ₢{nameof(StreamName)}₢Timestamps, Op);
-				}});				
-			}}
+					₢{nameof(_rootDataType)}₢ Data = NewObject<U₢{nameof(_rootDataNamespacedType)}₢>(this);
+					Data->OuterOwner = this;
+					Data->BeamDeserializeProperties(DataJson);
+
+					₢{nameof(StreamName)}₢Stream.Add(Data);
+					₢{nameof(StreamName)}₢Timestamps.Add(Timestamp);
+
+					UE_LOG(LogBeamCli, Verbose, TEXT(""₢{nameof(CommandName)}₢ Command - Message Received: %s""), *MessageJson);
+					AsyncTask(ENamedThreads::GameThread, [this, Op]
+					{{
+						On₢{nameof(StreamName)}₢StreamOutput(₢{nameof(StreamName)}₢Stream, ₢{nameof(StreamName)}₢Timestamps, Op);
+					}});				
+				}}
 ";
 }
 

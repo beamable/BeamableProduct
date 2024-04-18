@@ -15,8 +15,7 @@ public class ContentOpenCommand : AppCommand<ContentOpenCommandArgs>
 	public override void Configure()
 	{
 		var contentId = new Argument<string>(nameof(ContentOpenCommandArgs.contentId));
-		AddOption(ContentCommand.MANIFEST_OPTION,
-			(args, s) => args.ManifestId = s);
+		AddOption(ContentCommand.MANIFESTS_FILTER_OPTION, (args, s) => args.ManifestIds = s);
 		AddArgument(contentId, (args, i) => args.contentId = i);
 	}
 
@@ -24,22 +23,22 @@ public class ContentOpenCommand : AppCommand<ContentOpenCommandArgs>
 	{
 		_contentService = args.ContentService;
 
-		var localContent = _contentService.GetLocalCache(args.ManifestId);
-
-		var path = string.IsNullOrWhiteSpace(args.contentId)
-			? localContent.ContentDirPath
-			: localContent.GetContentPath(args.contentId);
-		if (File.Exists(path))
+		if (args.ManifestIds.Length == 0)
+			args.ManifestIds = new[] { "global" };
+		
+		foreach (var manifestId in args.ManifestIds)
 		{
-			new Process
-			{
-				StartInfo = new ProcessStartInfo(path)
-				{
-					UseShellExecute = true
-				}
-			}.Start();
-		}
+			var localContent = _contentService.GetLocalCache(manifestId);
 
+			var path = string.IsNullOrWhiteSpace(args.contentId)
+				? localContent.ContentDirPath
+				: localContent.GetContentPath(args.contentId);
+			if (File.Exists(path))
+			{
+				new Process { StartInfo = new ProcessStartInfo(path) { UseShellExecute = true } }.Start();
+			}
+		}
+		
 		return Task.CompletedTask;
 	}
 }
