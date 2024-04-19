@@ -260,7 +260,7 @@ public struct UnrealEndpointDeclaration
 		{
 			return $"Route = Route.Replace(TEXT(\"{{{routeParameterDeclaration.RawFieldName}}}\"), *FString::Printf(TEXT(\"%lld\"), {routeParameterDeclaration.PropertyName}));";
 		}
-		
+
 		if (routeParameterDeclaration.PropertyUnrealType.IsUnrealByte() ||
 			routeParameterDeclaration.PropertyUnrealType.IsUnrealShort() ||
 			routeParameterDeclaration.PropertyUnrealType.IsUnrealInt())
