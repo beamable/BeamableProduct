@@ -184,6 +184,8 @@ namespace Beamable.Common.Content
 			Value = value;
 			HasValue = true;
 		}
+		public static implicit operator OptionalBool(bool value) => new OptionalBool(value);
+
 	}
 
 	[System.Serializable]
@@ -197,6 +199,8 @@ namespace Beamable.Common.Content
 			Value = value;
 			HasValue = true;
 		}
+
+		public static implicit operator OptionalInt(int value) => new OptionalInt(value);
 	}
 
 	[System.Serializable]
@@ -404,6 +408,9 @@ namespace Beamable.Common.Content
 			if (HasNonEmptyValue) return Value;
 			return otherwise();
 		}
+		
+		public static implicit operator OptionalString(string value) => new OptionalString(value);
+
 
 
 		public bool HasNonEmptyValue => HasValue && !string.IsNullOrEmpty(Value);
