@@ -238,7 +238,7 @@ namespace Beamable.Editor.UI
 				}
 				catch (Exception ex)
 				{
-					Debug.LogError(ex);
+					Debug.LogError(ex?.InnerException ?? ex);
 					Debug.LogError("Cannot load window");
 				}
 			});

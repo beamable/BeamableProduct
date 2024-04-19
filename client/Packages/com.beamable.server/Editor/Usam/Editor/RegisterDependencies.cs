@@ -14,6 +14,7 @@ namespace Beamable.Server.Editor.Usam
 			builder.AddSingleton<PublishService>();
 
 			builder.AddGlobalStorage<SamModel, EditorStorageLayer>();
+			builder.AddGlobalStorage<SamLogModel, EditorStorageLayer>();
 		}
 
 	}

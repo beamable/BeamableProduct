@@ -27,7 +27,7 @@ namespace Beamable.Editor.Microservice.UI3.Components.SamCardVisualElement
 			Root.Q<Label>("card-txt-title").text = _beamoId;
 
 			var logRoot = Root.Q<VisualElement>("card-logs");
-			var logContainer = new SamLogsVisualElement();
+			var logContainer = new SamLogsVisualElement(_beamoId);
 			logRoot.Add(logContainer);
 			logContainer.Refresh();
 			

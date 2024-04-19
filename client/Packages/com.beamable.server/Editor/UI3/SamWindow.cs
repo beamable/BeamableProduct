@@ -99,38 +99,6 @@ namespace Beamable.Editor.Microservice.UI3
 				var cardElement = new SamCardVisualElement(service.name);
 				cards.Add(cardElement);
 				cardElement.Refresh();
-
-				//
-				// dbg.Add(new Label("SERVICE: " + service.name));
-				// var btn = new Button();
-				// btn.text = service.isRunning ? $"STOP {service.name}" : $"START {service.name}";
-				// btn.clickable.clicked += () =>
-				// {
-				// 	// _codeService.RunStandaloneMicroservice()
-				// 	Debug.Log("clicking " + service.name);
-				//
-				//
-				// 	btn.SetEnabled(false);
-				//
-				// 	if (service.isRunning)
-				// 	{
-				// 		btn.text = "stopping...";
-				// 		_codeService.StopStandaloneMicroservice(service.name);
-				// 	}
-				// 	else
-				// 	{
-				// 		btn.text = "starting...";
-				// 		_codeService.RunStandaloneMicroservice(service.name)
-				// 		            .Error(ex =>
-				// 		            {
-				// 			            Debug.LogException( ex);
-				// 			            BindData();
-				// 		            });
-				// 	}
-				//
-				// };
-				//
-				// dbg.Add(btn);
 			}
 		}
 

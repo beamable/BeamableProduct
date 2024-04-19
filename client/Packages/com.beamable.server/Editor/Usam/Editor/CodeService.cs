@@ -692,6 +692,7 @@ namespace Beamable.Server.Editor.Usam
 			// TODO: re-attach if process dies
 			foreach (IBeamoServiceDefinition definition in ServiceDefinitions)
 			{
+				var serviceId = definition.BeamoId;
 				var logs = _cli.ProjectLogs(new ProjectLogsArgs
 				{
 					service = new ServiceName(definition.BeamoId),
@@ -699,6 +700,9 @@ namespace Beamable.Server.Editor.Usam
 				});
 				logs.OnStreamTailLogMessageForClient(point =>
 				{
+
+					_provider.GetService<SamLogModel>().AddLogMessage(serviceId, point.data);
+					
 					UsamLogger.Log("Log: " + point.data.message);
 					_dispatcher.Schedule(() => OnLogMessage?.Invoke(definition.BeamoId, point.data));
 				});
