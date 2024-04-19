@@ -168,7 +168,33 @@ namespace Beamable.Api
 			return requester;
 		}
 
-		public Promise<T> ManualRequest<T>(Method method, string url, object body = null, Dictionary<string, string> headers = null, string contentType = "application/json", Func<string, T> parser = null)
+		public Promise<T> ManualRequest<T>(Method method,
+		                                   string url,
+		                                   object body = null,
+		                                   Dictionary<string, string> headers = null,
+		                                   string contentType = "application/json",
+		                                   Func<string, T> parser = null)
+		{
+			// need to retry the internal request if it fails.
+			return Promise.RetryPromise<T>(() =>
+			{
+				return ManualRequestInternal(method, url, body, headers, contentType, parser);
+			}, (ex) =>
+			{
+				if (ex?.Message?.ToLowerInvariant()?.Contains(SSL_ERROR.ToLowerInvariant()) ?? false)
+				{
+					// this is an SSL error, and from empirical observation, maybe it'll work if we try again...
+					PlatformLogger.Log(
+						$"<b>[PlatformRequester][{method.ToString()}]</b> {url} -- (manual) trying again due to ssl error.");
+					return true;
+				}
+
+				// the error is not a known retry case... 
+				return false;
+			});
+		}
+		
+		public Promise<T> ManualRequestInternal<T>(Method method, string url, object body = null, Dictionary<string, string> headers = null, string contentType = "application/json", Func<string, T> parser = null)
 		{
 			byte[] bodyBytes = null;
 
@@ -197,7 +223,7 @@ namespace Beamable.Api
 					var responsePayload = request.downloadHandler.text;
 					if (request.responseCode >= 300 || request.IsNetworkError())
 					{
-						result.CompleteError(new HttpRequesterException(responsePayload));
+						result.CompleteError(new HttpRequesterException($"failed network request. payload=[{responsePayload}] error=[{request.error}]"));
 					}
 					else
 					{
