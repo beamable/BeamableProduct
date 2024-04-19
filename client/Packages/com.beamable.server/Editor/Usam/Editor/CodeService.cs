@@ -8,7 +8,6 @@ using Beamable.Editor.BeamCli;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.Dotnet;
 using Beamable.Editor.Microservice.UI.Components;
-using Beamable.Editor.Microservice.UI3;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.UI.Components;
@@ -701,7 +700,6 @@ namespace Beamable.Server.Editor.Usam
 				logs.OnStreamTailLogMessageForClient(point =>
 				{
 
-					_provider.GetService<SamLogModel>().AddLogMessage(serviceId, point.data);
 					
 					UsamLogger.Log("Log: " + point.data.message);
 					_dispatcher.Schedule(() => OnLogMessage?.Invoke(definition.BeamoId, point.data));
@@ -726,7 +724,6 @@ namespace Beamable.Server.Editor.Usam
 					def.Builder.IsRunning = cb.data.isRunning;
 				}
 				
-				_provider.GetService<SamModel>().SetStatusForService(cb.data.service, cb.data.isRunning);
 			}).OnError(cb =>
 			{
 				Debug.LogError($"Error occured while listening for Microservice status updates. Message=[{cb.data.message}] CliStack=[{cb.data.stackTrace}]");

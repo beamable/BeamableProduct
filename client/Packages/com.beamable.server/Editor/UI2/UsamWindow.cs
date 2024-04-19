@@ -36,7 +36,7 @@ namespace Beamable.Editor.Microservice.UI2
 		[MenuItem(
 			Constants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
 			Constants.Commons.OPEN + " " +
-			"Usam Editor",
+			"Usam Editor %g",
 			priority = Constants.MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
 		)]
 		public static async void Init() => _ = await GetFullyInitializedWindow();
