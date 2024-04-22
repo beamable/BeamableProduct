@@ -16,6 +16,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditorInternal;
@@ -41,6 +42,8 @@ namespace Beamable.Server.Editor.Usam
 		private List<BeamServiceSignpost> _services;
 		private List<BeamStorageSignpost> _storages;
 		private List<Promise> _logsCommands = new List<Promise>();
+
+		private const string BEAMABLE_MIGRATION_CANCELLATION_LOG = "Migration was cancelled!";
 
 		private const string BEAMABLE_PATH = "Assets/Beamable/";
 		private const string BEAMABLE_LIB_PATH = "Library/BeamableEditor";
@@ -91,10 +94,6 @@ namespace Beamable.Server.Editor.Usam
 			LogVerbose("Saving all libraries referenced by services");
 			await SaveReferencedLibraries();
 
-			LogVerbose("Set manifest start");
-			await SetManifest(_cli, _services, _storages);
-			LogVerbose("set manifest ended");
-
 			// TODO: we need validation. What happens if the .beamservice files point to non-existent files
 			SetSolution(_services, _storages);
 			LogVerbose("Solution set done");
@@ -131,54 +130,107 @@ namespace Beamable.Server.Editor.Usam
 			LogVerbose("Completed");
 		}
 
-		public async Promise Migrate(List<IDescriptor> allDescriptors)
+		public async Promise Migrate(List<IDescriptor> allDescriptors, Action<float, string> updateCallback, CancellationToken token)
 		{
+			List<string> pathsToDelete = new List<string>();
+
 			AssetDatabase.DisallowAutoRefresh();
 
-			foreach (IDescriptor descriptor in allDescriptors)
+			List<IDescriptor> microServices = allDescriptors.Where(dc => dc.ServiceType == ServiceType.MicroService).ToList();
+			List<IDescriptor> storages = allDescriptors.Where(dc => dc.ServiceType == ServiceType.StorageObject).ToList();
+
+			float progress = 0f;
+			float increment = 100f / (microServices.Count + storages.Count * 2 + 1);
+
+			var microPromises = new List<Promise<Unit>>();
+			foreach (IDescriptor descriptor in microServices)
 			{
-				if (descriptor.ServiceType == ServiceType.MicroService)
+				if (token.IsCancellationRequested)
 				{
-					await MigrateMicroservice((MicroserviceDescriptor)descriptor);
+					LogVerbose(BEAMABLE_MIGRATION_CANCELLATION_LOG);
+					return;
 				}
-				else
+
+				MicroserviceDescriptor serviceDesc = (MicroserviceDescriptor)descriptor;
+				pathsToDelete.Add(serviceDesc.SourcePath);
+				microPromises.Add( MigrateMicroservice(serviceDesc, (message, hasProgress) =>
 				{
-					await MigrateStorage((StorageObjectDescriptor)descriptor);
-				}
+					updateCallback(progress, message);
+					progress += increment * hasProgress;
+				}));
 			}
-			
+
+			var microSequence = Promise.Sequence(microPromises);
+			await microSequence;
+
+			//Updates local data and manifest so storages can be added as dependencies to these services
+			PopulateDataWithLocal();
+			await SetManifest(_cli, _services, _storages);
+
+			var storagePromises = new List<Promise<Unit>>();
+			foreach (IDescriptor descriptor in storages)
+			{
+				if (token.IsCancellationRequested)
+				{
+					LogVerbose(BEAMABLE_MIGRATION_CANCELLATION_LOG);
+					return;
+				}
+
+				pathsToDelete.Add(Path.GetDirectoryName(descriptor.AttributePath));
+				storagePromises.Add( MigrateStorage((StorageObjectDescriptor)descriptor, (message, hasProgress) =>
+				{
+					updateCallback(progress, message);
+					progress += increment * hasProgress;
+				}));
+			}
+
+			var storageSequence = Promise.Sequence(storagePromises);
+			await storageSequence;
+
+			updateCallback(progress, "Deleting old services");
+
+			if (token.IsCancellationRequested)
+			{
+				LogVerbose(BEAMABLE_MIGRATION_CANCELLATION_LOG);
+				return;
+			}
+
 			// REMOVE OLD STUFF
-			var microPath = "Assets/Beamable/Microservices";
-			var storagePath = "Assets/Beamable/StorageObjects";
-			if (Directory.Exists(microPath))
+			pathsToDelete.Add("Assets/Beamable/Microservices");
+			pathsToDelete.Add("Assets/Beamable/StorageObjects");
+
+			foreach (string path in pathsToDelete)
 			{
-				Directory.Delete(microPath, true);
+				if (Directory.Exists(path))
+				{
+					FileUtils.DeleteDirectoryRecursively(path);
+					File.Delete(path + ".meta");
+				}
 			}
-			
-			if (Directory.Exists(storagePath))
-			{
-				Directory.Delete(storagePath, true);
-			}
-			
+
 			AssetDatabase.AllowAutoRefresh();
+			updateCallback(100f, "Completed");
+			EditorUtility.RequestScriptReload();
 			await Init();
 		}
 
-		private async Promise MigrateStorage(StorageObjectDescriptor storageDescriptor)
+		private async Promise MigrateStorage(StorageObjectDescriptor storageDescriptor, Action<string, int> updateProgress)
 		{
 			var storageName = storageDescriptor.Name;
 			var path = $"{StandaloneMicroservicesPath}{storageName}/";
-			var storageModel = MicroservicesDataModel.Instance.Storages.FirstOrDefault(s => s.Name == storageName);
-			var deps = MicroservicesDataModel.Instance.Services
-			                                 .Where(model => model.Dependencies.Any(s => s.Name == storageName)).Select(model => ServiceDefinitions.FirstOrDefault(d => d.BeamoId == model.Name))
-			                                 .ToList();
-			Debug.Log(storageModel);
-			Debug.Log(string.Join(", ", deps));
-			if (!Directory.Exists(path))
+
+			updateProgress?.Invoke($"Reading dependencies of storage: {storageName}", 0);
+			var depsNames = MigrationHelper.GetDependentServices(storageName);
+			var deps = depsNames.Select(dp => ServiceDefinitions.FirstOrDefault(sd => sd.BeamoId == dp)).ToList();
+
+			//If folder exists, then there was another attempt of migration and we need to restart it
+			if (Directory.Exists(path))
 			{
-				Debug.Log(storageName);	
-				await CreateStorage(storageName, deps, shouldInitialize: false);
+				FileUtils.DeleteDirectoryRecursively(path);
 			}
+
+			updateProgress?.Invoke($"Creating storage: {storageName}", 1);
+			await CreateStorage(storageName, deps, shouldInitialize: false);
 
 			_storages = GetBeamStorages();
 			var signpost = _storages.FirstOrDefault(s => s.name.Equals(storageName));
@@ -193,14 +245,15 @@ namespace Beamable.Server.Editor.Usam
 				File.Delete(newExtensionsFile); // Delete this file because in old storages the extensions class was already inside the storage main file
 			}
 
-			var dirToDelete = Path.GetDirectoryName(storageDescriptor.AttributePath);
+			var oldDir = Path.GetDirectoryName(storageDescriptor.AttributePath);
 
-			if (string.IsNullOrEmpty(dirToDelete))
+			if (string.IsNullOrEmpty(oldDir))
 			{
 				throw new Exception($"Old location of the storage: {storageName} was not found");
 			}
 
-			foreach (var file in Directory.EnumerateFiles(dirToDelete))
+			updateProgress?.Invoke($"Copying files of: {storageName}", 1);
+			foreach (var file in Directory.EnumerateFiles(oldDir))
 			{
 				if (!Path.GetExtension(file).EndsWith("cs")) continue;
 				var fileName = Path.GetFileName(file);
@@ -211,27 +264,33 @@ namespace Beamable.Server.Editor.Usam
 				}
 				File.Copy(file, newFilePath);
 			}
-
-
-			Directory.Delete(dirToDelete, true);
 		}
 
-		private async Promise MigrateMicroservice(MicroserviceDescriptor microserviceDescriptor)
+		private async Promise MigrateMicroservice(MicroserviceDescriptor microserviceDescriptor, Action<string, int> updateProgress)
 		{
 			var microserviceDir = microserviceDescriptor.SourcePath;
 			var microserviceName = microserviceDescriptor.Name;
 			var path = $"{StandaloneMicroservicesPath}{microserviceName}/";
-			if (!Directory.Exists(path))
+
+			//If folder exists, then there was another attempt of migration and we need to restart it
+			if (Directory.Exists(path))
 			{
-				LogVerbose($"Migrating {microserviceName} start");
-				var references = GetAssemblyDefinitionAssets(microserviceDescriptor);
-				await CreateMicroService(microserviceName, null, assemblyReferences: references, shouldInitialize: false);
+				FileUtils.DeleteDirectoryRecursively(path);
 			}
+
+			LogVerbose($"Migrating {microserviceName} start");
+			updateProgress?.Invoke($"Creating service {microserviceName}", 0);
+			var references = GetAssemblyDefinitionAssets(microserviceDescriptor);
+			await CreateMicroService(microserviceName, null, assemblyReferences: references, shouldInitialize: false);
 
 			_services = GetBeamServices();
 			var signpost = _services.FirstOrDefault(s => s.name.Equals(microserviceName));
-			if (signpost == null) return;
+			if (signpost == null)
+			{
+				throw new Exception($"Microservice: {microserviceName} was not found in local files");
+			}
 
+			updateProgress?.Invoke($"Copying files of {microserviceName}", 1);
 			foreach (var file in Directory.EnumerateFiles(microserviceDir))
 			{
 				if (!Path.GetExtension(file).EndsWith("cs")) continue;
@@ -248,7 +307,6 @@ namespace Beamable.Server.Editor.Usam
 				                                  $"namespace Beamable.{microserviceName}");
 				File.WriteAllText(newFilePath, fileContent);
 			}
-			Directory.Delete(microserviceDir, true);
 		}
 		
 		private static List<IDescriptor> GetAllOldServices()
@@ -318,7 +376,11 @@ namespace Beamable.Server.Editor.Usam
 					}
 					
 					var path = AssetDatabase.GUIDToAssetPath(guid[0]);
-					assets.Add(AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(path));
+
+					if (string.IsNullOrEmpty(path)) continue;
+
+					var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(path);
+					if(asset != null && asset.name.Equals(name)) assets.Add(asset);
 				}
 			}
 
