@@ -6,6 +6,7 @@ using Beamable.Server.Editor.Usam;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -27,6 +28,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private ProgressBar _progressBar;
 
 		private List<IDescriptor> _allDescriptors;
+		private CancellationTokenSource _cts;
 		protected Label _messageLabel;
 
 		public MigrationConfirmationVisualElement(List<IDescriptor> allDescriptors) : base(nameof(MigrationConfirmationVisualElement))
@@ -73,12 +75,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void CancelButton_OnClicked()
 		{
+			_cts.Cancel();
 			OnCancelled?.Invoke();
 		}
 
 		private void MigrateButton_OnClicked()
 		{
-			//OnClosed?.Invoke();
 			HandleDownload();
 		}
 
@@ -87,6 +89,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			_progressBar.visible = true;
 			_migrateBtn.Disable();
+
+			_cts = new CancellationTokenSource();
 
 			var codeService = BeamEditorContext.Default.ServiceScope.GetService<CodeService>();
 			_ = codeService.Migrate(_allDescriptors, (progress, message) =>
@@ -98,6 +102,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 				{
 					OnClosed?.Invoke();
 				}
+			}, _cts.Token).Then(_ =>
+			{
+				_cts.Dispose();
 			});
 		}
 	}

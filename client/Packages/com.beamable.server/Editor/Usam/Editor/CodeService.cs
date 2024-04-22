@@ -16,6 +16,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditorInternal;
@@ -41,6 +42,8 @@ namespace Beamable.Server.Editor.Usam
 		private List<BeamServiceSignpost> _services;
 		private List<BeamStorageSignpost> _storages;
 		private List<Promise> _logsCommands = new List<Promise>();
+
+		private const string BEAMABLE_MIGRATION_CANCELLATION_LOG = "Migration was cancelled!";
 
 		private const string BEAMABLE_PATH = "Assets/Beamable/";
 		private const string BEAMABLE_LIB_PATH = "Library/BeamableEditor";
@@ -127,25 +130,7 @@ namespace Beamable.Server.Editor.Usam
 			LogVerbose("Completed");
 		}
 
-		[MenuItem("Gabriel/OpenMigrate")]
-		public static void OpenMigrate()
-		{
-			var oldServices = GetAllOldServices();
-			if (oldServices.Count > 0)
-			{
-				var migrationVisualElement = new MigrationConfirmationVisualElement(oldServices);
-				var popup = BeamablePopupWindow.ShowUtility(Constants.Migration.MIGRATION_POPUP_NAME, migrationVisualElement, null,
-				                                            new Vector2(800, 400),  (window) =>
-				                                            {
-					                                            // trigger after Unity domain reload
-					                                            window.Close();
-				                                            });
-				migrationVisualElement.OnCancelled += popup.Close;
-				migrationVisualElement.OnClosed += popup.Close;
-			}
-		}
-
-		public async Promise Migrate(List<IDescriptor> allDescriptors, Action<float, string> updateCallback)
+		public async Promise Migrate(List<IDescriptor> allDescriptors, Action<float, string> updateCallback, CancellationToken token)
 		{
 			List<string> pathsToDelete = new List<string>();
 
@@ -160,6 +145,12 @@ namespace Beamable.Server.Editor.Usam
 			var microPromises = new List<Promise<Unit>>();
 			foreach (IDescriptor descriptor in microServices)
 			{
+				if (token.IsCancellationRequested)
+				{
+					LogVerbose(BEAMABLE_MIGRATION_CANCELLATION_LOG);
+					return;
+				}
+
 				MicroserviceDescriptor serviceDesc = (MicroserviceDescriptor)descriptor;
 				pathsToDelete.Add(serviceDesc.SourcePath);
 				microPromises.Add( MigrateMicroservice(serviceDesc, (message, hasProgress) =>
@@ -179,6 +170,12 @@ namespace Beamable.Server.Editor.Usam
 			var storagePromises = new List<Promise<Unit>>();
 			foreach (IDescriptor descriptor in storages)
 			{
+				if (token.IsCancellationRequested)
+				{
+					LogVerbose(BEAMABLE_MIGRATION_CANCELLATION_LOG);
+					return;
+				}
+
 				pathsToDelete.Add(Path.GetDirectoryName(descriptor.AttributePath));
 				storagePromises.Add( MigrateStorage((StorageObjectDescriptor)descriptor, (message, hasProgress) =>
 				{
@@ -191,6 +188,12 @@ namespace Beamable.Server.Editor.Usam
 			await storageSequence;
 
 			updateCallback(progress, "Deleting old services");
+
+			if (token.IsCancellationRequested)
+			{
+				LogVerbose(BEAMABLE_MIGRATION_CANCELLATION_LOG);
+				return;
+			}
 
 			// REMOVE OLD STUFF
 			pathsToDelete.Add("Assets/Beamable/Microservices");
