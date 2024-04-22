@@ -801,7 +801,11 @@ namespace Beamable.Server.Editor.Usam
 			if (beamPath.StartsWith(workingDir))
 			{
 				// when this case happens, we are developing locally, so put in a reference locally.
-				beamPath = "$(SolutionDir)../cli/cli/bin/Debug/net6.0/Beamable.Tools";
+				beamPath = "$(SolutionDir)../cli/cli/bin/Debug/net8.0/Beamable.Tools";
+			}
+			else
+			{
+				beamPath = "$(SolutionDir)/" + beamPath;
 			}
 			var command = _cli.ProjectGenerateProperties(new ProjectGeneratePropertiesArgs()
 			{
