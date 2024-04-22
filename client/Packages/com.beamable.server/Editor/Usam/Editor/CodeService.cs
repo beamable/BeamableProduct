@@ -160,13 +160,13 @@ namespace Beamable.Server.Editor.Usam
 				pathsToDelete.Add(serviceDesc.SourcePath);
 				await MigrateMicroservice(serviceDesc, (message) =>
 				{
-					progress += increment;
 					updateCallback(progress, message);
+					progress += increment;
 				});
 			}
 
-			//Updates manifest so storages can be added as dependencies to these services
-			_services = GetBeamServices();
+			//Updates local data and manifest so storages can be added as dependencies to these services
+			PopulateDataWithLocal();
 			await SetManifest(_cli, _services, _storages);
 
 			List<IDescriptor> storages = allDescriptors.Where(dc => dc.ServiceType == ServiceType.StorageObject).ToList();
@@ -175,12 +175,11 @@ namespace Beamable.Server.Editor.Usam
 				pathsToDelete.Add(Path.GetDirectoryName(descriptor.AttributePath));
 				await MigrateStorage((StorageObjectDescriptor)descriptor, (message) =>
 				{
-					progress += increment;
 					updateCallback(progress, message);
+					progress += increment;
 				});
 			}
 
-			progress += increment;
 			updateCallback(progress, "Deleting old services");
 
 			// REMOVE OLD STUFF
@@ -205,9 +204,8 @@ namespace Beamable.Server.Editor.Usam
 		{
 			var storageName = storageDescriptor.Name;
 			var path = $"{StandaloneMicroservicesPath}{storageName}/";
-			var deps = MicroservicesDataModel.Instance.Services
-			                                 .Where(model => model.Dependencies.Any(s => s.Name == storageName)).Select(model => ServiceDefinitions.FirstOrDefault(d => d.BeamoId == model.Name))
-			                                 .ToList();
+			var depsNames = MigrationHelper.GetDependentServices(storageName);
+			var deps = depsNames.Select(dp => ServiceDefinitions.FirstOrDefault(sd => sd.BeamoId == dp)).ToList();
 
 			//If folder exists, then there was another attempt of migration and we need to restart it
 			if (Directory.Exists(path))
@@ -250,9 +248,6 @@ namespace Beamable.Server.Editor.Usam
 				}
 				File.Copy(file, newFilePath);
 			}
-
-			//FileUtils.DeleteDirectoryRecursively(dirToDelete);
-			//File.Delete(dirToDelete + ".meta");
 		}
 
 		private async Promise MigrateMicroservice(MicroserviceDescriptor microserviceDescriptor, Action<string> updateProgress)
@@ -368,7 +363,11 @@ namespace Beamable.Server.Editor.Usam
 					}
 					
 					var path = AssetDatabase.GUIDToAssetPath(guid[0]);
-					assets.Add(AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(path));
+
+					if (string.IsNullOrEmpty(path)) continue;
+
+					var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(path);
+					if(asset != null && asset.name.Equals(name)) assets.Add(asset);
 				}
 			}
 
