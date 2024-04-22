@@ -41,6 +41,7 @@ namespace Beamable.Server.Editor.Usam
 				foreach (var reference in service.assemblyReferences)
 				{
 					if (!_nameToAssembly.TryGetValue(reference.name, out var assembly)) continue;
+					if (!CsharpProjectUtil.IsValidReference(assembly.name)) continue;
 					_referencedAssemblies.Add(assembly);
 					foreach (var subReference in GetDeeplyReferencedAssemblies(assembly))
 					{
@@ -50,27 +51,17 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 
-		static bool IsValidAssemblyReference(Assembly assembly)
-		{
-			foreach (var prefix in _invalidAssemblyPrefixes)
-			{
-				if (assembly.name.StartsWith(prefix)) return false;
-			}
-
-			return true;
-		}
-
 		static IEnumerable<Assembly> GetDeeplyReferencedAssemblies(Assembly assembly)
 		{
 			var references = _assemblyGraph[assembly];
 			foreach (var reference in references)
 			{
-				if (!IsValidAssemblyReference(reference)) continue;
+				if (!CsharpProjectUtil.IsValidReference(reference.name)) continue;
 				yield return reference;
 			}
 			foreach (var reference in references)
 			{
-				if (!IsValidAssemblyReference(reference)) continue;
+				if (!CsharpProjectUtil.IsValidReference(reference.name)) continue;
 				foreach (var subReference in GetDeeplyReferencedAssemblies(reference))
 				{
 					yield return subReference;
