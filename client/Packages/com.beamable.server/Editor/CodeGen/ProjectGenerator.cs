@@ -73,7 +73,7 @@ namespace Beamable.Server.Editor.CodeGen
             <PropertyGroup>
                <DefineConstants>DB_MICROSERVICE;BEAMABLE_MICROSERVICE;BEAMABLE_IGNORE_MONGO_MOCKS</DefineConstants>
                <OutputType>Exe</OutputType>
-               <TargetFramework>net6.0</TargetFramework>
+               <TargetFramework>net8.0</TargetFramework>
             </PropertyGroup>
 
 	            <PropertyGroup>

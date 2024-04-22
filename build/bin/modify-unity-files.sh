@@ -23,6 +23,7 @@ rm -f client/Packages/com.beamable/Runtime/Environment/Resources/env-staging.jso
 rm -f client/Packages/com.beamable/Runtime/Environment/Resources/env-prod.json
 rm -f client/Packages/com.beamable/Runtime/Environment/Resources/env-prod.json.meta
 
-# map samples
-# TODO
+# remove generated cli folder
+rm -rf client/Packages/com.beamable/Editor/BeamCli/Commands/bin
+rm -rf client/Packages/com.beamable/Editor/BeamCli/Commands/obj
 

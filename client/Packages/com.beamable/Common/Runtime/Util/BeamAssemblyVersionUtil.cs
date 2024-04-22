@@ -22,7 +22,28 @@ namespace Beamable.Common.Util
 		public static string GetVersion(Type t)
 		{
 			var attribute = t.Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
-			return attribute.InformationalVersion;
+			
+			// starting with net8, the attribute includes the commit hash, which we don't want.
+			return RemoveSourceLinkFromVersion(attribute.InformationalVersion);
+		}
+
+		/// <summary>
+		/// A utility method to take a semver string and remove the SourceLink part of the string, which
+		/// is signaled by a '+' character.
+		/// In Beamable's use cases, the SourceLink invalidates several versioning assumptions.
+		/// https://learn.microsoft.com/en-us/dotnet/core/compatibility/sdk/8.0/source-link 
+		/// </summary>
+		/// <param name="informationVersion"></param>
+		/// <returns></returns>
+		public static string RemoveSourceLinkFromVersion(string informationVersion)
+		{
+			var plusSymbolIndex = informationVersion.IndexOf('+');
+			if (plusSymbolIndex >= 0)
+			{
+				informationVersion = informationVersion.Substring(0, plusSymbolIndex);
+			}
+
+			return informationVersion;
 		}
 	}
 }
