@@ -148,12 +148,16 @@ namespace Beamable.Server.Editor.Usam
 		public async Promise Migrate(List<IDescriptor> allDescriptors, Action<float, string> updateCallback)
 		{
 			List<string> pathsToDelete = new List<string>();
-			float progress = 0f;
-			float increment = 100f / (allDescriptors.Count * 2 + 1);
+
 			AssetDatabase.DisallowAutoRefresh();
 
 			List<IDescriptor> microServices = allDescriptors.Where(dc => dc.ServiceType == ServiceType.MicroService).ToList();
+			List<IDescriptor> storages = allDescriptors.Where(dc => dc.ServiceType == ServiceType.StorageObject).ToList();
 
+			float progress = 0f;
+			float increment = 100f / (microServices.Count * 2 + storages.Count * 3 + 1);
+
+			//TODO make this async
 			foreach (IDescriptor descriptor in microServices)
 			{
 				MicroserviceDescriptor serviceDesc = (MicroserviceDescriptor)descriptor;
@@ -169,7 +173,7 @@ namespace Beamable.Server.Editor.Usam
 			PopulateDataWithLocal();
 			await SetManifest(_cli, _services, _storages);
 
-			List<IDescriptor> storages = allDescriptors.Where(dc => dc.ServiceType == ServiceType.StorageObject).ToList();
+
 			foreach (IDescriptor descriptor in storages)
 			{
 				pathsToDelete.Add(Path.GetDirectoryName(descriptor.AttributePath));
@@ -204,6 +208,8 @@ namespace Beamable.Server.Editor.Usam
 		{
 			var storageName = storageDescriptor.Name;
 			var path = $"{StandaloneMicroservicesPath}{storageName}/";
+
+			updateProgress?.Invoke($"Reading dependencies of storage: {storageName}");
 			var depsNames = MigrationHelper.GetDependentServices(storageName);
 			var deps = depsNames.Select(dp => ServiceDefinitions.FirstOrDefault(sd => sd.BeamoId == dp)).ToList();
 
@@ -213,7 +219,7 @@ namespace Beamable.Server.Editor.Usam
 				FileUtils.DeleteDirectoryRecursively(path);
 			}
 
-			updateProgress?.Invoke($"Creating storage {storageName}");
+			updateProgress?.Invoke($"Creating storage: {storageName}");
 			await CreateStorage(storageName, deps, shouldInitialize: false);
 
 			_storages = GetBeamStorages();
@@ -236,7 +242,7 @@ namespace Beamable.Server.Editor.Usam
 				throw new Exception($"Old location of the storage: {storageName} was not found");
 			}
 
-			updateProgress?.Invoke($"Copying files of {storageName}");
+			updateProgress?.Invoke($"Copying files of: {storageName}");
 			foreach (var file in Directory.EnumerateFiles(oldDir))
 			{
 				if (!Path.GetExtension(file).EndsWith("cs")) continue;
@@ -291,9 +297,6 @@ namespace Beamable.Server.Editor.Usam
 				                                  $"namespace Beamable.{microserviceName}");
 				File.WriteAllText(newFilePath, fileContent);
 			}
-
-			//FileUtils.DeleteDirectoryRecursively(microserviceDir);
-			//File.Delete(microserviceDir + ".meta");
 		}
 		
 		private static List<IDescriptor> GetAllOldServices()
