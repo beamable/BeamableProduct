@@ -24,8 +24,8 @@ public class GeneratePropertiesFileCommand : AppCommand<GeneratePropertiesFileCo
 	{
 		AddArgument(new Argument<string>("output", description: "Where the file will be created"),
 			(args, i) => args.OutputPath = i);
-		AddArgument(new Argument<string>("beam-path", description: "Beam path to be used"),
-			(args, i) => args.BeamPath = i);
+		AddArgument(new Argument<string>("beam-path", description: "Beam path to be used. Use BEAM_SOLUTION_DIR to template in $(SolutionDir)"),
+			(args, i) => args.BeamPath = i.Replace("BEAM_SOLUTION_DIR", "$(SolutionDir)"));
 		AddArgument(new Argument<string>("solution-dir", description: @"The solution path to be used. 
 The following values have special meaning and are not treated as paths... 
 - """ + Beamable.Common.BeamCli.Contracts.CliConstants.GENERATE_PROPS_SLN_NEXT_TO_PROPS + @""" = $([System.IO.Path]::GetDirectoryName(`$(DirectoryBuildPropsPath)`)) "),

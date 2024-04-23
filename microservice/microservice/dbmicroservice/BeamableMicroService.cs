@@ -386,6 +386,7 @@ namespace Beamable.Server
 
 	      if (string.IsNullOrEmpty(refreshToken))
 	      {
+		      Log.Verbose("not generating portal url, because no refresh token exists.");
 		      portalUrl = "";
 		      return false;
 	      }
@@ -402,6 +403,8 @@ namespace Beamable.Server
 		      .Replace("api", "portal");
 	      portalUrl = $"{treatedHost}/{cid}/games/{pid}/realms/{pid}/microservices/{microName}/docs?{joinedQueryString}";
 	      
+	      Log.Verbose("portal url " + portalUrl);
+
 	      return true;
       }
 

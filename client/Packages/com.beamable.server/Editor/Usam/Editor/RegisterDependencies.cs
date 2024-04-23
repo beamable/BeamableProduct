@@ -1,4 +1,5 @@
 using Beamable.Common.Dependencies;
+using Beamable.Editor;
 
 namespace Beamable.Server.Editor.Usam
 {

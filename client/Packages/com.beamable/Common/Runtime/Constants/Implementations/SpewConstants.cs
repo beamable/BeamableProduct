@@ -8,6 +8,7 @@
 			{
 				public const string SPEW_ALL = "SPEW_ALL";
 				public const string SPEW_CLI = "SPEW_CLI";
+				public const string SPEW_USAM = "SPEW_USAM";
 				public const string SPEW_NOTIFICATION = "SPEW_NOTIFICATION";
 				public const string SPEW_CHAT = "SPEW_CHAT";
 				public const string SPEW_PUBNUB_SUBSCRIPTION = "SPEW_PUBNUB_SUBSCRIPTION";

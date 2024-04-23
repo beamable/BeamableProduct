@@ -27,9 +27,22 @@ dotnet pack Packages/com.beamable/Common/ --configuration Release --include-sour
 dotnet pack Packages/com.beamable.server/Runtime/Common/ --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
 dotnet pack Packages/com.beamable.server/SharedRuntime/ --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
 dotnet pack ../microservice/beamable.tooling.common/  --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
-dotnet pack ../microservice/  --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
 dotnet pack ../microservice/unityEngineStubs/  --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
 dotnet pack ../microservice/unityEngineStubs.addressables/  --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
+
+# microservice.runtime is silly, and needs a pre-process step
+lib_path="../microservice/microservice/lib"
+echo "-------------- PREPARING MICROSERVICE RUNTIME -----------------"
+dotnet publish ../client/Packages/com.beamable/Common -c release -o $lib_path
+dotnet publish ../client/Packages/com.beamable.server/SharedRuntime -c release -o $lib_path
+dotnet publish ../client/Packages/com.beamable.server/Runtime/Common -c release -o $lib_path
+dotnet publish ../microservice/unityEngineStubs  -c release -o $lib_path
+dotnet publish ../microservice/unityenginestubs.addressables  -c release -o $lib_path
+dotnet publish ../microservice/beamable.tooling.common -c release -o $lib_path
+
+dotnet pack ../microservice/  --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
+rm -rf $lib_path
+
 OUTPUT=$PROJECTS_DIR VERSION=$VERSION ../templates/build.sh
 
 if dotnet nuget list source | grep -q $SOURCE_NAME; then

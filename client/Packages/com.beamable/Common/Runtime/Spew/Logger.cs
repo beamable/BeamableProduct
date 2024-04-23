@@ -37,6 +37,18 @@ namespace Beamable.Common.Spew
 
 		public static string filter = "";
 
+		public static void DoSimpleSpew(string s)
+		{
+			if (!string.IsNullOrEmpty(filter) && !s.Contains(filter))
+				return;
+
+#if PREPEND_SPEW_METADATA
+         s = PrependMetadata(s);
+#endif
+
+			UnityEngine.Debug.Log(s);
+		}
+		
 		public static void DoSpew(string msg, params object[] args)
 		{
 			var s = string.Format(msg, args);
