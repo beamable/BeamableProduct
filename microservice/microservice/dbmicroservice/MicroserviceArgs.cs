@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Util;
 using System;
 using System.IO;
 
@@ -226,18 +227,7 @@ namespace Beamable.Server
 		public int RateLimitCPUOffset => GetIntFromEnvironmentVariable("WS_RATE_LIMIT_CPU_OFFSET", 0);
 		public int ReceiveChunkSize => GetIntFromEnvironmentVariable("WS_RECEIVE_CHUNK_SIZE", 65536);
 		public int SendChunkSize => GetIntFromEnvironmentVariable("WS_SEND_CHUNK_SIZE", 65536);
-		public string SdkVersionBaseBuild
-		{
-			get
-			{
-				if (File.Exists(".beamablesdkversion"))
-				{
-					return File.ReadAllText(".beamablesdkversion").Trim();
-				}
-				
-				return "";
-			}
-		}
+		public string SdkVersionBaseBuild => BeamAssemblyVersionUtil.GetVersion<MicroserviceArgs>();
 
 		public bool EnableDangerousDeflateOptions => IsEnvironmentVariableTrue("WS_ENABLE_DANGEROUS_DEFLATE_OPTIONS");
 		public string MetadataUrl => Environment.GetEnvironmentVariable("ECS_CONTAINER_METADATA_URI_V4");

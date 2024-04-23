@@ -43,31 +43,35 @@ public class DiscoveryService
 		var startTime = DateTimeOffset.Now;
 
 		//Update with current state of docker
-		var runningServices = await _localSystem.GetDockerRunningServices();
-		foreach (KeyValuePair<string,string> pair in runningServices)
+		var isDockerRunning = await _localSystem.CheckIsRunning();
+		if (isDockerRunning)
 		{
-			var service = await CreateEntryFromDocker(pair.Key, pair.Value);
-			
-			var evt = CreateEvent(service, true);
-			evtQueue.Enqueue(evt);
-		}
-
-		// This doesn't actually block
-		await _localSystem.StartListeningToDockerRaw(async (beamoId, eventType, raw) =>
-		{
-			if (eventType != "start" && eventType != "destroy")
+			var runningServices = await _localSystem.GetDockerRunningServices();
+			foreach (KeyValuePair<string, string> pair in runningServices)
 			{
-				return;
-			}
-			
-			
-			var isRunning = eventType == "start";
+				var service = await CreateEntryFromDocker(pair.Key, pair.Value);
 
-			var service = await CreateEntryFromDocker(beamoId, raw.ID);
-			
-			var evt = CreateEvent(service, isRunning);
-			evtQueue.Enqueue(evt);
-		});
+				var evt = CreateEvent(service, true);
+				evtQueue.Enqueue(evt);
+			}
+
+			// This doesn't actually block
+			await _localSystem.StartListeningToDockerRaw(async (beamoId, eventType, raw) =>
+			{
+				if (eventType != "start" && eventType != "destroy")
+				{
+					return;
+				}
+
+
+				var isRunning = eventType == "start";
+
+				var service = await CreateEntryFromDocker(beamoId, raw.ID);
+
+				var evt = CreateEvent(service, isRunning);
+				evtQueue.Enqueue(evt);
+			});
+		}
 
 		var toRemove = new HashSet<string>();
 		while (true)
@@ -140,8 +144,10 @@ public class DiscoveryService
 
 		}
 
-		await _localSystem.StopListeningToDocker();
-
+		if (isDockerRunning)
+		{
+			await _localSystem.StopListeningToDocker();
+		}
 
 	}
 

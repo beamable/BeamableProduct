@@ -51,7 +51,6 @@ namespace Beamable.Editor
 				{
 					try
 					{
-						// Debug.Log("Doing work");
 						workItem?.Invoke();
 					}
 					catch (Exception ex)
