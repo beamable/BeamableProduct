@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unreal Microservice client generation now happens for all microservices at once and support shared code.
 This means Unreal now supports multiple microservices as well as shared libraries!
 - `BEAM_DOCKER_URI` environment variable will override docker connection uri
+- Added Bulk Edit Content command to the CLI (`beam content bulk-edit`)
 
 ### Changed
 

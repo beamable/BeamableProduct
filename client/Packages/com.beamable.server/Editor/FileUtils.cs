@@ -170,5 +170,26 @@ namespace Beamable.Server.Editor
 				file.Attributes = fileAttributes;
 			}
 		}
+
+		public static void DeleteDirectoryRecursively(string path)
+		{
+			foreach (string directory in Directory.GetDirectories(path))
+			{
+				DeleteDirectoryRecursively(directory);
+			}
+
+			try
+			{
+				Directory.Delete(path, true);
+			}
+			catch (IOException)
+			{
+				Directory.Delete(path, true);
+			}
+			catch (UnauthorizedAccessException)
+			{
+				Directory.Delete(path, true);
+			}
+		}
 	}
 }
