@@ -442,7 +442,7 @@ public class ProjectService
 				$"Solution file({microserviceInfo.SolutionPath}) should not exists outside working directory({_configService.WorkingDirectory}) or its subdirectories.");
 		}
 
-		microserviceInfo.ServicePath = await CreateNewService(microserviceInfo.SolutionPath, args.ProjectName, args.ServicesBaseFolderPath, usedVersion);
+		microserviceInfo.ServicePath = await CreateNewService(microserviceInfo.SolutionPath, args.ProjectName, args.ServicesBaseFolderPath, usedVersion, args.GenerateCommon);
 		return microserviceInfo;
 	}
 
@@ -464,7 +464,7 @@ public class ProjectService
 		return Path.Combine(solutionPath, $"{solutionName}.sln");
 	}
 
-	public async Task<string> CreateNewService(string solutionPath, string projectName, string rootServicesPath, string version)
+	public async Task<string> CreateNewService(string solutionPath, string projectName, string rootServicesPath, string version, bool generateCommon)
 	{
 		if (!File.Exists(solutionPath))
 		{
@@ -488,10 +488,12 @@ public class ProjectService
 		await UpdateProjectDependencyVersion(projectPath, "Beamable.Microservice.Runtime", version);
 
 		// create the shared library project only if requested
-		await CreateCommonProject(commonProjectName, commonProjectPath, version, solutionPath);
-		// add the shared library as a reference of the project
-		await RunDotnetCommand($"add \"{projectPath}\" reference \"{commonProjectPath}\"");
-
+		if (generateCommon)
+		{
+			await CreateCommonProject(commonProjectName, commonProjectPath, version, solutionPath);
+			// add the shared library as a reference of the project
+			await RunDotnetCommand($"add \"{projectPath}\" reference \"{commonProjectPath}\"");
+		}
 
 		return projectPath;
 	}

@@ -18,6 +18,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public Beamable.Common.PackageVersion version;
 		/// <summary>Created service by default would not be published</summary>
 		public bool disable;
+		/// <summary>If passed, will create a common library for this project</summary>
+		public bool generateCommon;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -51,6 +53,11 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.disable != default(bool)))
 			{
 				genBeamCommandArgs.Add(("--disable=" + this.disable));
+			}
+			// If the generateCommon value was not default, then add it to the list of args.
+			if ((this.generateCommon != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--generate-common=" + this.generateCommon));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces
