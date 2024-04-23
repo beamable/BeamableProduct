@@ -13,7 +13,6 @@ public class NewProjectCommandArgs : CommandArgs
 {
 	public ServiceName ProjectName;
 	public bool AutoInit;
-
 }
 
 public class AutoInitFlag : ConfigurableOptionFlag
@@ -139,7 +138,7 @@ public class SpecificVersionOption : Option<PackageVersion>
 
 public class NewMicroserviceArgs : SolutionCommandArgs
 {
-
+	public bool GenerateCommon;
 }
 
 
@@ -169,6 +168,10 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 		AddArgument(new ServiceNameArgument(), (args, i) => args.ProjectName = i);
 		AddOption(new AutoInitFlag(), (args, b) => args.AutoInit = b);
 		SolutionCommandArgs.Configure(this);
+		AddOption(new Option<bool>(
+				name: "--generate-common",
+				description: "If passed, will create a common library for this project"),
+			(args, i) => args.GenerateCommon = i);
 	}
 
 	public override async Task Handle(NewMicroserviceArgs args)
