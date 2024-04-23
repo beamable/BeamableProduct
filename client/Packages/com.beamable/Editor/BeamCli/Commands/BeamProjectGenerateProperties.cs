@@ -8,7 +8,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	{
 		/// <summary>Where the file will be created</summary>
 		public string output;
-		/// <summary>Beam path to be used</summary>
+		/// <summary>Beam path to be used. Use BEAM_SOLUTION_DIR to template in $(SolutionDir)</summary>
 		public string beamPath;
 		/// <summary>The solution path to be used. 
 		///The following values have special meaning and are not treated as paths... 
