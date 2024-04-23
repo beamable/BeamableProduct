@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `BeamScheduler` can deserialize jobs without a `source` field.
 
+### Changed
+- `async void` methods are not allowed in Microservices, and will cause the Microservice to fail. Instead, consider using methods with `async Task`, or `async Promise`. 
+
+
 ## [1.19.17]
 ### Fixed
 - Mock `Unity.Addressable` reference included in Microservice builds
