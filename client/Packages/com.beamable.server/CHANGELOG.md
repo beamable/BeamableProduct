@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `async void` methods are not allowed in Microservices, and will cause the Microservice to fail. Instead, consider using methods with `async Task`, or `async Promise`. 
 
+### Fixed
+ - `AssumeNewUser` does not allow `userId` that is not a positive value
+
 ## [1.19.17]
 ### Fixed
 - Mock `Unity.Addressable` reference included in Microservice builds
