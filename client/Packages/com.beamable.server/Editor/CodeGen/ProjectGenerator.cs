@@ -103,6 +103,10 @@ namespace Beamable.Server.Editor.CodeGen
                   <HintPath>/src/lib/UnityEngine.dll</HintPath>
 <SpecificVersion>False</SpecificVersion>
                </Reference>
+               <Reference Include=""Unity.Addressables"">
+                  <HintPath>/src/lib/Unity.Addressables.dll</HintPath>
+<SpecificVersion>False</SpecificVersion>
+               </Reference>
 
             </ItemGroup>
             {GetDllDependenciesString()}

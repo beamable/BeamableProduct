@@ -120,6 +120,11 @@
       <HintPath>.\lib\UnityEngine.dll</HintPath>
 
     </Reference>
+    <Reference Include="Unity.Addressables">
+
+      <HintPath>.\lib\Unity.Addressables.dll</HintPath>
+
+    </Reference>
 
     <Reference Include="Beamable.Tooling.Common">
 
