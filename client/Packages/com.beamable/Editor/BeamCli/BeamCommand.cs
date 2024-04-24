@@ -338,7 +338,7 @@ namespace Beamable.Editor.BeamCli
 
 				_process.StartInfo.EnvironmentVariables["BEAM_PATH"] = Path.GetFullPath(BeamCliUtil.CLI_PATH.Replace(".dll", ""));
 				_process.StartInfo.EnvironmentVariables["BEAM_DOTNET_PATH"] = Path.GetFullPath(DotnetUtil.DotnetPath);
-				
+
 				_status = new TaskCompletionSource<int>();
 				_standardOutComplete = new TaskCompletionSource<int>();
 				EventHandler eh = (s, e) =>
@@ -384,7 +384,7 @@ namespace Beamable.Editor.BeamCli
 						_dispatcher.Schedule(() =>
 						{
 							CliLogger.Log("stdout", args.Data, System.Environment.NewLine + System.Environment.NewLine,
-							              _command);
+										  _command);
 						});
 						_dispatcher.Schedule(() =>
 						{
@@ -409,7 +409,7 @@ namespace Beamable.Editor.BeamCli
 						_dispatcher.Schedule(() =>
 						{
 							CliLogger.Log("stderr", args.Data, System.Environment.NewLine + System.Environment.NewLine,
-							              _command);
+										  _command);
 						});
 						_dispatcher.Schedule(() =>
 						{
@@ -437,7 +437,7 @@ namespace Beamable.Editor.BeamCli
 					IEnumerator Defer()
 					{
 						yield return null; // delay a single frame, because the stdout/stderr callbacks may not have fired yet.
-						
+
 						if (_exitCode != 0)
 						{
 							CliLogger.Log("failed", _command, $"errors-count=[{_errors.Count}]");
@@ -450,7 +450,7 @@ namespace Beamable.Editor.BeamCli
 						}
 						else
 						{
-							CliLogger.Log("done", _command );
+							CliLogger.Log("done", _command);
 						}
 					}
 					_dispatcher.Run("beam-cli-defer", Defer());
