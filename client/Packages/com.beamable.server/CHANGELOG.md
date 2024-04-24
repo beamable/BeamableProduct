@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
  - `AssumeNewUser` does not allow `userId` that is not a positive value
+ - Content downloads from Microservice no longer have SSL validation issues
 
 ## [1.19.17]
 ### Fixed
