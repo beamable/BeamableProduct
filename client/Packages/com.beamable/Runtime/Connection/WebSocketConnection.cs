@@ -20,7 +20,12 @@ namespace Beamable.Connection
 		public event Action<string> Error;
 		public event Action Close;
 
+		private const int MIN_DELAY = 1000;
+		private const int MAX_DELAY = 60000;
+
 		private bool _disconnecting;
+		private bool _retrying;
+		private int _delay;
 		private WebSocket _webSocket;
 		private readonly CoroutineService _coroutineService;
 		private IEnumerator _dispatchMessagesRoutine;
@@ -103,6 +108,7 @@ namespace Beamable.Connection
 				try
 				{
 					_onConnectPromise.CompleteSuccess();
+					_retrying = false;
 					Open?.Invoke();
 				}
 				catch (Exception e)
@@ -148,8 +154,16 @@ namespace Beamable.Connection
 					else
 					{
 						PlatformLogger.Log($"<b>[WebSocketConnection]</b> Ungraceful close of websocket. Reconnecting!");
-						// eh?
-						// TODO: Add retry interval
+
+						if (_retrying)
+						{
+							PlatformLogger.Log($"<b>[WebSocketConnection]</b> Retrying connection in {_delay / 1000} seconds");
+							await Task.Delay(_delay);
+						}
+						_delay = (_retrying && _delay < MAX_DELAY) ? _delay * 2 : MIN_DELAY; // always doubling the delay in case of an error
+						_delay = Math.Clamp(_delay, MIN_DELAY, MAX_DELAY);
+						_retrying = true;
+
 						await DoConnect();
 					}
 
