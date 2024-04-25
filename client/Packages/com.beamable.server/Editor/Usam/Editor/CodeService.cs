@@ -69,6 +69,9 @@ namespace Beamable.Server.Editor.Usam
 		{
 			if (EditorApplication.isPlayingOrWillChangePlaymode)
 				return;
+			
+			UsamLogger.ResetLogTimer();
+			
 			UsamLogger.Log("Running init");
 			_services = GetBeamServices();
 			UsamLogger.Log("Have services");
@@ -119,6 +122,7 @@ namespace Beamable.Server.Editor.Usam
 			
 			
 			UsamLogger.Log("Completed");
+			UsamLogger.StopLogTimer();
 		}
 
 		public async Promise Migrate(List<IDescriptor> allDescriptors, Action<float, string> updateCallback, CancellationToken token)
