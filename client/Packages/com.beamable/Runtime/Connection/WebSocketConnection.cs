@@ -161,7 +161,7 @@ namespace Beamable.Connection
 							await Task.Delay(_delay);
 						}
 						_delay = (_retrying && _delay < MAX_DELAY) ? _delay * 2 : MIN_DELAY; // always doubling the delay in case of an error
-						_delay = Math.Clamp(_delay, MIN_DELAY, MAX_DELAY);
+						_delay = Mathf.Clamp(_delay, MIN_DELAY, MAX_DELAY);
 						_retrying = true;
 
 						await DoConnect();
