@@ -1,3 +1,4 @@
+using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using Beamable.Serialization.SmallerJSON;
 using cli.Services;
@@ -56,7 +57,7 @@ public static class DependencyInjectionExtensions
 			command.CommandProvider = commandProvider;
 			command.Configure();
 			var binder = new AppCommand<TArgs>.Binder(command, commandProvider);
-			command.SetHandler((TArgs args) =>
+			command.SetHandler(async (TArgs args) =>
 			{
 
 				Log.Verbose($@"app context= {JsonConvert.SerializeObject(args.AppContext, Formatting.Indented, new JsonSerializerSettings
@@ -74,7 +75,13 @@ public static class DependencyInjectionExtensions
 					throw CliExceptions.CONFIG_DOES_NOT_EXISTS;
 				}
 
-				return command.Handle(args);
+				await command.Handle(args);
+
+				// signal the end of any client listening, which saves some time while the process itself shuts down.
+				if (args.AppContext.ShowRawOutput)
+				{
+					args.Provider.GetService<IDataReporterService>().Report("eof", new EofOutput());
+				}
 
 			}, binder);
 			root.AddCommand(command);
