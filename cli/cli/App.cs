@@ -6,6 +6,7 @@ using Beamable.Common.Api.Realms;
 using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Semantics;
+using cli.CliServerCommand;
 using cli.Commands.Project;
 using cli.Commands.Project.Deps;
 using cli.Content;
@@ -16,6 +17,7 @@ using cli.Notifications;
 using cli.Options;
 using cli.Services;
 using cli.Services.Content;
+using cli.Services.HttpServer;
 using cli.Unreal;
 using cli.Utils;
 using cli.Version;
@@ -145,7 +147,8 @@ public class App
 		services.AddSingleton<CliGenerator>();
 		services.AddSingleton<VersionService>();
 		services.AddSingleton<IDataReporterService, DataReporterService>();
-
+		services.AddSingleton<ServerService>();
+		
 		OpenApiRegistration.RegisterOpenApis(services);
 
 		_serviceConfigurator?.Invoke(services);
@@ -217,6 +220,7 @@ public class App
 		// add commands
 		Commands.AddRootCommand<CliInterfaceGeneratorCommand, CliInterfaceGeneratorCommandArgs>();
 
+		Commands.AddRootCommand<ServeCliCommand, ServeCliCommandArgs>();
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
 		Commands.AddRootCommand<ProjectCommand>();
 		Commands.AddSubCommand<ProjectNewCommand, CommandGroupArgs, ProjectCommand>();
@@ -594,5 +598,11 @@ public class App
 	{
 		var prog = GetProgram();
 		return prog.InvokeAsync(args);
+	}
+
+	public virtual Task<int> RunWithSingleString(string commandLine)
+	{
+		var prog = GetProgram();
+		return prog.InvokeAsync(commandLine);
 	}
 }

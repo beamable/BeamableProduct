@@ -116,7 +116,7 @@ public abstract class AtomicCommand<TArgs, TResult> : AppCommand<TArgs>, IResult
 
 		var reporter = args.Provider.GetService<IDataReporterService>();
 		reporter.Report(_channel.ChannelName, result);
-
+		
 		if (AutoLogOutput)
 		{
 			LogResult(result);

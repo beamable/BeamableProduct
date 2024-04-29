@@ -8,6 +8,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
+using Beamable.Common.BeamCli;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using Beamable.Common.Dependencies;
@@ -112,7 +113,13 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IAccountService>(p => p.GetService<AccountService>());
 
 			DependencyBuilder.AddSingleton<BeamCommands>();
-			DependencyBuilder.AddGlobalStorage<BeamCommandFactory, EditorStorageLayer>();
+			
+			// DependencyBuilder.AddGlobalStorage<BeamCommandFactory, EditorStorageLayer>();
+			// DependencyBuilder.AddSingleton<IBeamCommandFactory>(p => p.GetService<BeamCommandFactory>());
+			
+			DependencyBuilder.AddGlobalStorage<BeamWebCommandFactory, EditorStorageLayer>();
+			DependencyBuilder.AddSingleton<IBeamCommandFactory>(p => p.GetService<BeamWebCommandFactory>());
+
 			DependencyBuilder.AddSingleton<BeamCli>();
 			DependencyBuilder.AddSingleton<DotnetService>();
 			DependencyBuilder.AddSingleton<IRuntimeConfigProvider>(p => new EditorRuntimeConfigProvider(p.GetService<AccountService>()));
