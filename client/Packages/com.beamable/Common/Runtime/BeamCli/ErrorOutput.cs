@@ -27,4 +27,10 @@ namespace Beamable.Common.BeamCli
 		public string fullTypeName;
 		public string stackTrace;
 	}
+
+	[Serializable]
+	public class EofOutput
+	{
+		// nothing. 
+	}
 }

@@ -69,11 +69,12 @@ namespace Beamable.Server.Editor.Usam
 		{
 			if (EditorApplication.isPlayingOrWillChangePlaymode)
 				return;
+			
+			UsamLogger.ResetLogTimer();
+			
 			UsamLogger.Log("Running init");
-			_services = GetBeamServices();
-			UsamLogger.Log("Have services");
-			_storages = GetBeamStorages();
-			UsamLogger.Log("Have storages");
+			GetBeamServicePosts(out _services, out _storages);
+			UsamLogger.Log("Have services and storages");
 
 			UsamLogger.Log("Setting properties file");
 			await SetPropertiesFile();
@@ -119,6 +120,7 @@ namespace Beamable.Server.Editor.Usam
 			
 			
 			UsamLogger.Log("Completed");
+			UsamLogger.StopLogTimer();
 		}
 
 		public async Promise Migrate(List<IDescriptor> allDescriptors, Action<float, string> updateCallback, CancellationToken token)
@@ -475,8 +477,7 @@ namespace Beamable.Server.Editor.Usam
 
 		private void PopulateDataWithLocal()
 		{
-			_services = GetBeamServices();
-			_storages = GetBeamStorages();
+			GetBeamServicePosts(out _services, out _storages);
 
 			for (int i = 0; i < _services.Count; i++)
 			{
@@ -994,6 +995,14 @@ namespace Beamable.Server.Editor.Usam
 			return data;
 		}
 
+		public static void GetBeamServicePosts(out List<BeamServiceSignpost> serviceSignposts,
+		                              out List<BeamStorageSignpost> storageSignposts)
+		{
+			var files = GetSignpostFiles(new string[]{".beamservice", ".beamstorage"});
+			serviceSignposts = GetSignpostData<BeamServiceSignpost>(files[0]);
+			storageSignposts = GetSignpostData<BeamStorageSignpost>(files[1]);
+		}
+
 		public static List<T> GetSignpostData<T>(IEnumerable<string> files) where T : ISignpostData
 		{
 			var output = new List<T>();
@@ -1178,21 +1187,28 @@ namespace Beamable.Server.Editor.Usam
 			UsamLogger.Log($"Finished creation of service {serviceName}");
 		}
 
-
-		private static IEnumerable<string> GetSignpostFiles(string extension)
+		private static HashSet<string> GetSignpostFiles(string extension)
 		{
-			var files = new HashSet<string>();
+			return GetSignpostFiles(new string[] {extension})[0];
+		}
+		private static HashSet<string>[] GetSignpostFiles(string[] extensions)
+		{
+			var fileSets = new HashSet<string>[extensions.Length];
+			for (var i = 0; i < fileSets.Length; i++)
+			{
+				fileSets[i] = new HashSet<string>();
+			}
 
-			ScanDirectoryRecursive("Assets", extension, IgnoreFolderSuffixes, files);
-			ScanDirectoryRecursive("Packages", extension, IgnoreFolderSuffixes, files);
-			ScanDirectoryRecursive(Path.Combine(new[] { "Library", "PackageCache" }), extension, IgnoreFolderSuffixes, files);
-			return files;
+			ScanDirectoryRecursive("Assets", extensions, IgnoreFolderSuffixes, fileSets);
+			ScanDirectoryRecursive("Packages", extensions, IgnoreFolderSuffixes, fileSets);
+			ScanDirectoryRecursive(Path.Combine(new[] { "Library", "PackageCache" }), extensions, IgnoreFolderSuffixes, fileSets);
+			return fileSets;
 		}
 
 		private static void ScanDirectoryRecursive(string directoryPath,
-												   string targetExtension,
+												   string[] targetExtensions,
 												   List<string> excludeFolders,
-												   HashSet<string> foundFiles)
+												   HashSet<string>[] foundFiles)
 		{
 			// TODO: ChatGPT wrote this, but actually, it should use a queue<string> to do a non-stack-recursive BFS over the file system
 			if (!Directory.Exists(directoryPath))
@@ -1224,10 +1240,14 @@ namespace Beamable.Server.Editor.Usam
 
 					foreach (var file in Directory.GetFiles(dir))
 					{
-						if (Path.GetExtension(file) == targetExtension)
+						for (var i = 0; i < foundFiles.Length; i++)
 						{
-							foundFiles.Add(file);
+							if (Path.GetExtension(file) == targetExtensions[i])
+							{
+								foundFiles[i].Add(file);
+							}
 						}
+						
 					}
 
 					foreach (var subDir in Directory.GetDirectories(dir))

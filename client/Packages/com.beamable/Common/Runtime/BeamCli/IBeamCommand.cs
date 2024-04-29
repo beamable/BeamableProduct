@@ -9,6 +9,7 @@ namespace Beamable.Common.BeamCli
 		IBeamCommand On<T>(string type, Action<ReportDataPoint<T>> cb);
 		IBeamCommand On(Action<ReportDataPointDescription> cb);
 		IBeamCommand OnError(Action<ReportDataPoint<ErrorOutput>> cb);
+		IBeamCommand OnTerminate(Action<ReportDataPoint<EofOutput>> cb);
 	}
 
 	public class BeamCommandWrapper
