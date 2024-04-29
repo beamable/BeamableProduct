@@ -40,14 +40,13 @@ EndProject";
 
 		public static string OnGeneratedSlnSolution(string path, string content)
 		{
-			var serviceFiles = CodeService.GetBeamServices();
+			CodeService.GetBeamServicePosts(out var serviceFiles, out var storageFiles);
 			// TODO: Validate that these files actually exist/map to valid projects
 			foreach (var signpost in serviceFiles)
 			{
 				content = InjectProject(content, signpost.name, signpost.CsprojFilePath);
 			}
 
-			var storageFiles = CodeService.GetBeamStorages();
 			// TODO: Validate that these files actually exist/map to valid projects
 			foreach (var signpost in storageFiles)
 			{
