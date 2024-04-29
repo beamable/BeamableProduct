@@ -78,7 +78,7 @@ public class ListDepsCommand : AtomicCommand<ListDepsCommandArgs, ListDepsComman
 			{
 				dependencies.RemoveAll(dd => dd.type == "storage");
 			}
-			
+
 			result.Services.Add(new ServiceDependenciesPair()
 			{
 				name = service,
