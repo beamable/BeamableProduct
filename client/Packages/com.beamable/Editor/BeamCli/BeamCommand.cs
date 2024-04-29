@@ -359,21 +359,15 @@ namespace Beamable.Editor.BeamCli
 							return;
 						}
 
-						// if (!_earlyExit)
+
+						_dispatcher.Schedule(() =>
 						{
-							_dispatcher.Schedule(() =>
-							{
-								if (_exitCode >= 0) return;
-								// there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
-								// _hasExited = true;
-								_exitCode = _process.ExitCode;
+							if (_exitCode >= 0) return;
+							// there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
+							_exitCode = _process.ExitCode;
+							_status.TrySetResult(0);
+						});
 
-								// OnExit?.Invoke(_process.ExitCode);
-								// HandleOnExit();
-
-								_status.TrySetResult(0);
-							});
-						}
 					});
 				};
 

@@ -477,8 +477,7 @@ namespace Beamable.Server.Editor.Usam
 
 		private void PopulateDataWithLocal()
 		{
-			_services = GetBeamServices();
-			_storages = GetBeamStorages();
+			GetBeamServicePosts(out _services, out _storages);
 
 			for (int i = 0; i < _services.Count; i++)
 			{
