@@ -182,9 +182,14 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 
 		var sd = await args.ProjectService.AddDefinitonToNewService(args, newMicroserviceInfo);
 
-		var service = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[sd.BeamoId];
-		await args.ProjectService.UpdateDockerFileWithCommonProject(args.ConfigService, args.ProjectName, service.RelativeDockerfilePath,
-			service.DockerBuildContextPath);
+		await args.BeamoLocalSystem.UpdateDockerFile(sd);
+
+		if (args.GenerateCommon)
+		{
+			var service = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[sd.BeamoId];
+			await args.ProjectService.UpdateDockerFileWithCommonProject(args.ConfigService, args.ProjectName, service.RelativeDockerfilePath,
+				service.DockerBuildContextPath);
+		}
 
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
 		args.BeamoLocalSystem.SaveBeamoLocalRuntime();

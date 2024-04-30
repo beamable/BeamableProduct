@@ -254,7 +254,7 @@ public partial class BeamoLocalSystem
 			throw new CliException($"Failed to remove project dependency, output of \"dotnet {command}\": {result}");
 		}
 
-		await UpdateDockerFile(project.BeamoId);
+		await UpdateDockerFile(project);
 	}
 
 	/// <summary>
@@ -280,7 +280,7 @@ public partial class BeamoLocalSystem
 			throw new CliException($"Failed to add project dependency, output of \"dotnet {command}\": {result}");
 		}
 
-		await UpdateDockerFile(project.BeamoId);
+		await UpdateDockerFile(project);
 	}
 
 	/// <summary>
@@ -309,10 +309,12 @@ public partial class BeamoLocalSystem
 	public static bool ValidateBeamoServiceId_DoesntExists(string beamoServiceId, List<BeamoServiceDefinition> serviceDefinitions) =>
 		!serviceDefinitions.Contains(new BeamoServiceDefinition() { BeamoId = beamoServiceId }, new BeamoServiceDefinition.IdEquality());
 
-	private async Promise UpdateDockerFile(string serviceName)
+	public async Promise UpdateDockerFile(BeamoServiceDefinition serviceDefinition)
 	{
+		var serviceName = serviceDefinition.BeamoId;
 		var service = BeamoManifest.HttpMicroserviceLocalProtocols[serviceName];
 		var dockerfilePath = service.RelativeDockerfilePath;
+		var dockerContext = service.DockerBuildContextPath;
 		dockerfilePath = _configService.GetFullPath(Path.Combine(service.DockerBuildContextPath, dockerfilePath));
 		var dockerfileText = await File.ReadAllTextAsync(dockerfilePath);
 
@@ -323,9 +325,14 @@ public partial class BeamoLocalSystem
 		const string legacyCopyLine =
 			"# <BEAM-CLI-INSERT-FLAG:COPY> do not delete this line. It is used by the beam CLI to insert custom actions";
 		const string serviceNameTag = "<SERVICE_NAME>";
+		const string servicePathTag = "<SERVICE_PATH>";
+		string toAddCsproj = $"COPY {servicePathTag}/{serviceNameTag}.csproj .";
 		string toAdd = @$"WORKDIR /subsrc/{serviceNameTag}
-COPY {serviceNameTag}/. .";
+COPY {servicePathTag}/. .";
 		var replacement = @$"{toAdd}
+{endTag}";
+		var replacementWithCsproj = @$"{toAdd}
+{toAddCsproj}
 {endTag}";
 
 		var hasEndTag = dockerfileText.Contains(endTag);
@@ -349,12 +356,16 @@ COPY {serviceNameTag}/. .";
 		int endIndex = dockerfileText.IndexOf(endTag, startIndex, StringComparison.Ordinal);
 		string newText = dockerfileText.Remove(startIndex, endIndex - startIndex);
 
+		//Copy the services files first
+		var relativePath = _configService.GetRelativeToBeamableFolderPath(serviceDefinition.ProjectDirectory);
+		newText = newText.Replace(endTag, replacementWithCsproj.Replace(serviceNameTag, serviceDefinition.BeamoId).Replace(servicePathTag, relativePath));
+
 		var dependencies = await GetDependencies(serviceName);
 
 		foreach (var dependency in dependencies)
 		{
-			string depName = dependency.name;
-			newText = newText.Replace(endTag, replacement.Replace(serviceNameTag, depName));
+			string path = _configService.GetRelativeToBeamableFolderPath(dependency.projPath);
+			newText = newText.Replace(endTag, replacement.Replace(serviceNameTag, dependency.name).Replace(servicePathTag, path));
 		}
 		await File.WriteAllTextAsync(dockerfilePath, newText);
 	}
@@ -670,6 +681,12 @@ public class BeamoServiceDefinition
 	/// Path to the directory containing project file(csproj).
 	/// </summary>
 	public string ProjectDirectory; // TODO: right, this still needs to be auto-infered on load.
+
+	/// <summary>
+	/// Path to be used as the docker context. This needs to be a parent of anything that
+	/// will be copied through the Dockerfile.
+	/// </summary>
+	public string DockerContextPath;
 
 	/// <summary>
 	/// Defines two services as being equal simply by using their <see cref="BeamoServiceDefinition.BeamoId"/>.

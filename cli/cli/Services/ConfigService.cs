@@ -63,6 +63,15 @@ public class ConfigService
 	}
 
 	/// <summary>
+	/// Get the docker build context path, which is used to copy files through the Dockerfile
+	/// </summary>
+	/// <returns></returns>
+	public string GetDockerBuildContextPath()
+	{
+		return GetRelativeToBeamableFolderPath(BaseDirectory);
+	}
+
+	/// <summary>
 	/// by default, paths are relative to the execution working directory...
 	/// But you may need them to be relative to the project root.
 	///

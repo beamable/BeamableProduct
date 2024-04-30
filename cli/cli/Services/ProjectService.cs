@@ -472,9 +472,8 @@ public class ProjectService
 		{
 			throw new CliException($"{solutionPath} does not exist");
 		}
-		var commonProjectName = $"{projectName}Common";
+
 		var projectPath = Path.Combine(rootServicesPath, projectName);
-		var commonProjectPath = Path.Combine(rootServicesPath, commonProjectName);
 
 		// create the beam microservice project
 		await RunDotnetCommand($"new beamservice -n \"{projectName}\" -o \"{projectPath}\"");
@@ -492,6 +491,8 @@ public class ProjectService
 		// create the shared library project only if requested
 		if (generateCommon)
 		{
+			var commonProjectName = $"{projectName}Common";
+			var commonProjectPath = Path.Combine(rootServicesPath, commonProjectName);
 			await CreateCommonProject(commonProjectName, commonProjectPath, version, solutionPath);
 			// add the shared library as a reference of the project
 			await RunDotnetCommand($"add \"{projectPath}\" reference \"{commonProjectPath}\"");
@@ -550,11 +551,11 @@ public class ProjectService
 
 		// now that a .beamable folder has been created, setup the beamo manifest
 		return args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value,
-			projectDirectory,
+			_configService.GetDockerBuildContextPath(),
 			projectDockerfilePath,
 			CancellationToken.None,
 			!args.Disabled,
-			serviceRelativePath);
+			projectDirectory);
 	}
 
 

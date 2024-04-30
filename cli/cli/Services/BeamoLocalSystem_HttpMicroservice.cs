@@ -34,6 +34,11 @@ public partial class BeamoLocalSystem
 			BeamoProtocolType.HttpMicroservice,
 			async (definition, protocol) =>
 			{
+				if (string.IsNullOrEmpty(buildContexPath))
+				{
+					buildContexPath = _configService.BaseDirectory;
+				}
+
 				await PrepareDefaultLocalProtocol_HttpMicroservice(definition, protocol);
 				protocol.DockerBuildContextPath = buildContexPath;
 				protocol.RelativeDockerfilePath = dockerfilePath;
