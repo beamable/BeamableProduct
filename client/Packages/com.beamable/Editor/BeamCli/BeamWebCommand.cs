@@ -229,6 +229,7 @@ namespace Beamable.Editor.BeamCli
 				CliLogger.Log("Sending cli web request, " + json);
 				try
 				{
+					Debug.Log($"trying to do socket thing url=[{_factory.ExecuteUrl}]");
 					using HttpResponseMessage response =
 						await _localClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
 
