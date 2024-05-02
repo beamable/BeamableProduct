@@ -271,6 +271,8 @@ namespace Beamable.Editor.BeamCli
 				catch (Exception ex)
 				{
 					CliLogger.Log("Failed to talk to CLI" + ex.Message + " \n " + _command);
+					Debug.Log($"Socket exception happened general. command=[{_command}] url=[{_factory.ExecuteUrl}] " + ex.Message);
+
 					Debug.LogException(ex);
 				}
 			}
