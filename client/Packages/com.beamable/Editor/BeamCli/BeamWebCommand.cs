@@ -125,17 +125,17 @@ namespace Beamable.Editor.BeamCli
 					{
 						case PingResult.Match:
 							// perfect, the server is running! Nothing more to do :) 
-							Debug.Log("found server ! ");
+							CliLogger.Log("found server ! ");
 							serverIdentified = true;
 							break;
 						case PingResult.Mismatch:
 							// ah, this server is being used for a different project...
-							Debug.Log("mismatch server :(");
+							CliLogger.Log("mismatch server :(");
 							port++; // by increasing the port, maybe we'll find our server soon...
 							break;
 						case PingResult.NoServer:
 							// bummer, no server exists for us, so we need to turn it on...
-							Debug.Log("Starting server.... " + port + " , " + Owner);
+							CliLogger.Log("Starting server.... " + port + " , " + Owner);
 							var serverCommand = processCommands.Serve(new ServeArgs
 							{
 								port = port, 
@@ -166,9 +166,7 @@ namespace Beamable.Editor.BeamCli
 			
 			dispatcher.Run("cli-server-init", Work());
 
-			Debug.Log("waiting for onready");
 			await onReady;
-			Debug.Log("server is ready!!" );
 		}
 		
 
@@ -239,7 +237,6 @@ namespace Beamable.Editor.BeamCli
 				CliLogger.Log("Sending cli web request, " + json);
 				try
 				{
-					Debug.Log($"!trying to do socket thing url=[{_factory.ExecuteUrl}] ready=[{_factory.onReady != null}] ready2=[{_factory.onReady?.IsCompleted}]");
 					using HttpResponseMessage response =
 						await _localClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
 
@@ -269,7 +266,7 @@ namespace Beamable.Editor.BeamCli
 				}
 				catch (HttpRequestException socketException)
 				{
-					Debug.Log($"Socket exception happened. command=[{_command}] url=[{_factory.ExecuteUrl}] " + socketException.Message);
+					CliLogger.Log($"Socket exception happened. command=[{_command}] url=[{_factory.ExecuteUrl}] " + socketException.Message);
 					throw;
 				}
 				catch (IOException ioException)
