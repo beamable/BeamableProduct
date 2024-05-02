@@ -86,7 +86,7 @@ public class ServerService
 			try
 			{
 				_listener = new HttpListener();
-				uri = $"http://localhost:{args.port}/";
+				uri = $"http://127.0.0.1:{args.port}/";
 				_listener.Prefixes.Add(uri);
 				_listener.Start();
 				started = true;

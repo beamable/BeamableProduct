@@ -44,7 +44,7 @@ namespace Beamable.Editor.BeamCli
 			Timeout = TimeSpan.FromDays(7)
 		};
 
-		public string Url => $"http://localhost:{port}";
+		public string Url => $"http://127.0.0.1:{port}";
 		public string ExecuteUrl => $"{Url}/execute";
 		public string InfoUrl => $"{Url}/info";
 		public string Owner => BeamCliUtil.CLI_PATH;
