@@ -47,7 +47,7 @@ namespace Beamable.Editor.BeamCli
 		public string Url => $"http://127.0.0.1:{port}";
 		public string ExecuteUrl => $"{Url}/execute";
 		public string InfoUrl => $"{Url}/info";
-		public string Owner => BeamCliUtil.CLI_PATH;
+		public string Owner => $"""{BeamCliUtil.CLI_PATH.ToLowerInvariant()}""";
 		
 		public static string Version
 		{
@@ -176,6 +176,7 @@ namespace Beamable.Editor.BeamCli
 				
 				if (!ownerMatches || !versionMatches)
 				{
+					CliLogger.Log($"ping mismatch. Required version=[{Version}] Received version=[{res.version}] Required owner=[{Owner}] Received owner=[{res.owner}]");
 					return PingResult.Mismatch;
 				}
 
