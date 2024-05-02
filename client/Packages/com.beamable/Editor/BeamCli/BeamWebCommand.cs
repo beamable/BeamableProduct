@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.IO;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -254,6 +255,11 @@ namespace Beamable.Editor.BeamCli
 							_callbacks?.Invoke(res);
 						});
 					}
+				}
+				catch (SocketException socketException)
+				{
+					Debug.Log($"Socket exception happened. command=[{_command}] url=[{_factory.ExecuteUrl}] " + socketException.Message);
+					throw;
 				}
 				catch (IOException ioException)
 				{

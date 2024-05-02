@@ -23,7 +23,7 @@ public class ServeCliCommand : StreamCommand<ServeCliCommandArgs, ServeCliComman
 {
 	public override bool IsForInternalUse => true;
 
-	public ServeCliCommand() : base("serve", "Create a local server for the cli. ")
+	public ServeCliCommand() : base("serve", "Create a local server for the cli")
 	{
 	}
 
