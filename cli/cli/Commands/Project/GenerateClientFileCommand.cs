@@ -88,7 +88,8 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 				};
 
 				var userAssembly = loadContext.LoadFromAssemblyPath(absolutePath);
-				Log.Verbose("loading dll name=[{Name}] version=[{Version}] deps=[{Deps}]", userAssembly.GetName().Name, userAssembly.GetName().Version, string.Join(", ", userAssembly.GetReferencedAssemblies().Select(n => n.Name)));
+				Log.Verbose("loading dll name=[{Name}] version=[{Version}] deps=[{Deps}]", userAssembly.GetName().Name, userAssembly.GetName().Version,
+					string.Join(", ", userAssembly.GetReferencedAssemblies().Select(n => n.Name)));
 
 				/// GHOST IN THE MACHINE ---> We need some time to investigate this stuff.
 				var requiredAssemblies = userAssembly.GetReferencedAssemblies()
@@ -100,6 +101,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 				allAssemblies.Add(userAssembly);
 			}
 		}
+
 		Log.Verbose("finished loading all dll files.");
 
 		#endregion
@@ -180,28 +182,15 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 				var unrealGenerator = new UnrealSourceGenerator();
 				var previousGenerationFilePath = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.BeamableBackendGenerationPassFile);
 
-				// We expect to find the OSS at the Plugin directory.
-				var expectedOssPath = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.Path, "Plugins/OnlineSubsystemBeamable");
-				var isOSSInLinkedProject = Directory.Exists(expectedOssPath);
-
-				// Set up the generator to generate code with the correct output path for the AutoGen folders.
-				if (isOSSInLinkedProject)
-				{
-					if (unrealProjectData.CoreProjectName != "OnlineSubsystemBeamable" || !unrealProjectData.SourceFilesPath.StartsWith("Plugins/OnlineSubsystemBeamable"))
-					{
-						throw new CliException("You've added the OnlineSubsystemBeamable (OSB) plugin after you had already linked your Unreal Project." +
-											   $"Please delete your '{Constants.CONFIG_DIR}/{Constants.CONFIG_LINKED_PROJECTS}' file and re-run 'beam project add-unreal-project'." +
-											   "When using the OSB plugin, MS files are generated into the plugin's Customer folder; so, please delete your AutoGen folders from their " +
-											   "previous location (outside of the plugin).");
-					}
-				}
-
 				UnrealSourceGenerator.exportMacro = unrealProjectData.CoreProjectName.ToUpper() + "_API";
 
 				UnrealSourceGenerator.blueprintExportMacro = unrealProjectData.BlueprintNodesProjectName.ToUpper() + "_API";
+				
+				UnrealSourceGenerator.blueprintIncludeStatementPrefix = unrealProjectData.MsBlueprintNodesHeaderPath[(unrealProjectData.MsCoreHeaderPath.IndexOf('/') + 1)..];
 				UnrealSourceGenerator.blueprintHeaderFileOutputPath = unrealProjectData.MsBlueprintNodesHeaderPath;
 				UnrealSourceGenerator.blueprintCppFileOutputPath = unrealProjectData.MsBlueprintNodesCppPath;
 
+				UnrealSourceGenerator.includeStatementPrefix = unrealProjectData.MsCoreHeaderPath[(unrealProjectData.MsCoreHeaderPath.IndexOf('/') + 1)..];
 				UnrealSourceGenerator.headerFileOutputPath = unrealProjectData.MsCoreHeaderPath;
 				UnrealSourceGenerator.cppFileOutputPath = unrealProjectData.MsCoreCppPath;
 
@@ -245,6 +234,241 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 					}
 				});
 
+
+				// Generate Microservice Plugin and Modules around the file descriptors 
+				{
+					// Generate Plugin file descriptor
+					{
+						unrealFileDescriptors.Add(new()
+						{
+							FileName = $"{unrealProjectData.CoreProjectName}.uplugin",
+							Content = $@"{{
+	""FileVersion"": 3,
+	""Version"": 1,
+	""VersionName"": ""1.0"",
+	""FriendlyName"": ""{unrealProjectData.CoreProjectName}"",
+	""Description"": """",
+	""Category"": ""Other"",
+	""CreatedBy"": """",
+	""CreatedByURL"": """",
+	""DocsURL"": """",
+	""MarketplaceURL"": """",
+	""CanContainContent"": false,
+	""IsBetaVersion"": false,
+	""IsExperimentalVersion"": false,
+	""Installed"": false,
+	""Modules"": [
+		{{
+			""Name"": ""{unrealProjectData.CoreProjectName}"",
+			""Type"": ""Runtime"",
+			""LoadingPhase"": ""Default""
+		}},
+		{{
+			""Name"": ""{unrealProjectData.BlueprintNodesProjectName}"",
+			""Type"": ""UncookedOnly"",
+			""LoadingPhase"": ""Default""
+		}}
+	],
+	""Plugins"": [
+		{{
+			""Name"": ""BeamableCore"",
+			""Enabled"": true
+		}}
+	]
+}}"
+						});
+					}
+
+					// Generate the ".Build.cs" file for the regular module 
+					{
+						unrealFileDescriptors.Add(new()
+						{
+							FileName = $"Source/{unrealProjectData.CoreProjectName}/{unrealProjectData.CoreProjectName}.Build.cs",
+							Content = $@"// Copyright Epic Games, Inc. All Rights Reserved.
+
+using UnrealBuildTool;
+
+public class {unrealProjectData.CoreProjectName} : ModuleRules
+{{
+	public {unrealProjectData.CoreProjectName}(ReadOnlyTargetRules Target) : base(Target)
+	{{
+		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+
+		PublicDependencyModuleNames.AddRange(
+			new string[]
+			{{
+				""Core"",
+				""BeamableCore"",
+				""BeamableCoreRuntime""
+			}});
+
+
+		PrivateDependencyModuleNames.AddRange(
+			new string[]
+			{{
+				""CoreUObject"",
+				""Engine"",
+				""Slate"",
+				""SlateCore"",					
+			}});
+	}}
+
+	public static void AddMicroserviceClients(ModuleRules Rules)
+	{{
+		Rules.PublicDependencyModuleNames.AddRange(new[] {{ ""{unrealProjectData.CoreProjectName}"" }});
+	}}
+	
+}}"
+						});
+					}
+
+					// Generate the ".Build.cs" file for the blueprint module 
+					{
+						unrealFileDescriptors.Add(new()
+						{
+							FileName = $"Source/{unrealProjectData.BlueprintNodesProjectName}/{unrealProjectData.BlueprintNodesProjectName}.Build.cs",
+							Content = $@"// Copyright Epic Games, Inc. All Rights Reserved.
+
+using UnrealBuildTool;
+
+public class {unrealProjectData.BlueprintNodesProjectName} : ModuleRules
+{{
+	public {unrealProjectData.BlueprintNodesProjectName}(ReadOnlyTargetRules Target) : base(Target)
+	{{
+		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+
+		PublicDependencyModuleNames.AddRange(
+			new string[]
+			{{
+				""Core"",
+				""{unrealProjectData.CoreProjectName}"",
+
+				""BeamableCore"",
+                ""BeamableCoreRuntime"",
+                ""BeamableCoreBlueprintNodes"",
+                
+                ""BlueprintGraph"",
+			}});
+
+
+		PrivateDependencyModuleNames.AddRange(
+			new string[]
+			{{
+				""CoreUObject"",
+				""Engine"",
+				""Slate"",
+				""SlateCore"",					
+			}});
+	}}
+
+	public static void AddMicroserviceClientsBp(ModuleRules Rules)
+	{{
+		Rules.PublicDependencyModuleNames.AddRange(new[] {{ ""{unrealProjectData.BlueprintNodesProjectName}"" }});
+	}}
+	
+}}"
+						});
+					}
+
+					// Generate the IModuleInterface Header and Cpp files for the Regular Module 
+					{
+						unrealFileDescriptors.Add(new()
+						{
+							FileName = $"{unrealProjectData.MsCoreHeaderPath}{unrealProjectData.CoreProjectName}.h",
+							Content = $@"// Copyright Epic Games, Inc. All Rights Reserved.
+
+#pragma once
+
+#include ""CoreMinimal.h""
+#include ""Modules/ModuleManager.h""
+
+class F{unrealProjectData.CoreProjectName}Module : public IModuleInterface
+{{
+public:
+
+	/** IModuleInterface implementation */
+	virtual void StartupModule() override;
+	virtual void ShutdownModule() override;
+}};
+"
+						});
+
+						unrealFileDescriptors.Add(new()
+						{
+							FileName = $"{unrealProjectData.MsCoreCppPath}{unrealProjectData.CoreProjectName}.cpp",
+							Content = $@"// Copyright Epic Games, Inc. All Rights Reserved.
+
+#include ""{unrealProjectData.CoreProjectName}.h""
+
+#define LOCTEXT_NAMESPACE ""F{unrealProjectData.CoreProjectName}Module""
+
+void F{unrealProjectData.CoreProjectName}Module::StartupModule()
+{{
+	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
+}}
+
+void F{unrealProjectData.CoreProjectName}Module::ShutdownModule()
+{{
+	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
+	// we call this function before unloading the module.
+}}
+
+#undef LOCTEXT_NAMESPACE
+	
+IMPLEMENT_MODULE(F{unrealProjectData.CoreProjectName}Module, {unrealProjectData.CoreProjectName})"
+						});
+					}
+
+					// Generate the IModuleInterface Header and Cpp files for the Blueprint Module 
+					{
+						unrealFileDescriptors.Add(new()
+						{
+							FileName = $"{unrealProjectData.MsBlueprintNodesHeaderPath}{unrealProjectData.BlueprintNodesProjectName}.h",
+							Content = $@"// Copyright Epic Games, Inc. All Rights Reserved.
+
+#pragma once
+
+#include ""CoreMinimal.h""
+#include ""Modules/ModuleManager.h""
+
+class F{unrealProjectData.BlueprintNodesProjectName}Module : public IModuleInterface
+{{
+public:
+
+	/** IModuleInterface implementation */
+	virtual void StartupModule() override;
+	virtual void ShutdownModule() override;
+}};
+"
+						});
+
+						unrealFileDescriptors.Add(new()
+						{
+							FileName = $"{unrealProjectData.MsBlueprintNodesCppPath}{unrealProjectData.BlueprintNodesProjectName}.cpp",
+							Content = $@"// Copyright Epic Games, Inc. All Rights Reserved.
+
+#include ""{unrealProjectData.BlueprintNodesProjectName}.h""
+
+#define LOCTEXT_NAMESPACE ""F{unrealProjectData.BlueprintNodesProjectName}Module""
+
+void F{unrealProjectData.BlueprintNodesProjectName}Module::StartupModule()
+{{
+	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
+}}
+
+void F{unrealProjectData.BlueprintNodesProjectName}Module::ShutdownModule()
+{{
+	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
+	// we call this function before unloading the module.
+}}
+
+#undef LOCTEXT_NAMESPACE
+	
+IMPLEMENT_MODULE(F{unrealProjectData.BlueprintNodesProjectName}Module, {unrealProjectData.BlueprintNodesProjectName})"
+						});
+					}
+				}
+
 				var hasOutputPath = !string.IsNullOrEmpty(args.outputDirectory);
 				var outputDir = args.outputDirectory;
 				if (!hasOutputPath) outputDir = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.SourceFilesPath);
@@ -254,8 +478,11 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 				var needsProjectFilesRebuild = !allFilesToCreate.All(File.Exists);
 				// We always clean up the output directory's AutoGen folders  --- every file we create is in the AutoGen folder.
 				var outputDirInfo = new DirectoryInfo(outputDir);
-				var autoGenDirs = outputDirInfo.GetDirectories("AutoGen", SearchOption.AllDirectories);
-				foreach (DirectoryInfo directoryInfo in autoGenDirs) Directory.Delete(directoryInfo.ToString(), true);
+				if(outputDirInfo.Exists)
+				{
+					var autoGenDirs = outputDirInfo.GetDirectories("AutoGen", SearchOption.AllDirectories);
+					foreach (DirectoryInfo directoryInfo in autoGenDirs) Directory.Delete(directoryInfo.ToString(), true);
+				}
 
 				var writeFiles = new List<Task>();
 				for (int i = 0; i < allFilesToCreate.Count; i++)
@@ -323,7 +550,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 			{
 				var existingContent = File.ReadAllText(outputPath);
 				if (string.Compare(existingContent, descriptors[i].Content, CultureInfo.InvariantCulture,
-						CompareOptions.IgnoreSymbols) == 0)
+					    CompareOptions.IgnoreSymbols) == 0)
 				{
 					identicalFileCounter++;
 					continue;
