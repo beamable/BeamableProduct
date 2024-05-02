@@ -57,9 +57,10 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 	}
 
 
-	static async Task RunService(RunProjectCommandArgs args, string serviceName, HttpMicroserviceLocalProtocol protocol, CancellationTokenSource tokenSource)
+	static async Task RunService(RunProjectCommandArgs args, string serviceName, HttpMicroserviceLocalProtocol protocol, CancellationTokenSource serviceToken)
 	{
-
+		var tokenSource =
+			CancellationTokenSource.CreateLinkedTokenSource(args.Lifecycle.CancellationToken, serviceToken.Token);
 		var service = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.FirstOrDefault(x => x.BeamoId == serviceName);
 		if (service == null)
 		{

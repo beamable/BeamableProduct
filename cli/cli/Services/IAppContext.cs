@@ -4,6 +4,7 @@ using Beamable.Common.Api.Auth;
 using Beamable.Common.Dependencies;
 using Beamable.Server.Common;
 using Serilog;
+using Serilog.Core;
 using Serilog.Events;
 using Spectre.Console;
 using System.CommandLine.Binding;
@@ -59,6 +60,7 @@ public class DefaultAppContext : IAppContext
 	private readonly CliEnvironment _environment;
 	private readonly ShowRawOutput _showRawOption;
 	private readonly ShowPrettyOutput _showPrettyOption;
+	private readonly LoggingLevelSwitch _logSwitch;
 	private readonly SkipStandaloneValidationOption _skipValidationOption;
 	private readonly DotnetPathOption _dotnetPathOption;
 	public bool IsDryRun { get; private set; }
@@ -85,7 +87,7 @@ public class DefaultAppContext : IAppContext
 	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, HostOption hostOption,
 		AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption, ConfigDirOption configDirOption,
 		ConfigService configService, CliEnvironment environment, ShowRawOutput showRawOption, SkipStandaloneValidationOption skipValidationOption,
-		DotnetPathOption dotnetPathOption, ShowPrettyOutput showPrettyOption)
+		DotnetPathOption dotnetPathOption, ShowPrettyOutput showPrettyOption, LoggingLevelSwitch logSwitch)
 	{
 		_dryRunOption = dryRunOption;
 		_cidOption = cidOption;
@@ -99,6 +101,7 @@ public class DefaultAppContext : IAppContext
 		_environment = environment;
 		_showRawOption = showRawOption;
 		_showPrettyOption = showPrettyOption;
+		_logSwitch = logSwitch;
 		_skipValidationOption = skipValidationOption;
 		_dotnetPathOption = dotnetPathOption;
 	}
@@ -106,7 +109,7 @@ public class DefaultAppContext : IAppContext
 	void SetupOutputStrategy()
 	{
 		// by default, set logs to INFO
-		App.LogLevel.MinimumLevel = LogEventLevel.Information;
+		_logSwitch.MinimumLevel = LogEventLevel.Information;
 
 		TextWriter spectreOutput = Console.Error;
 		var invisibleStream = new StringWriter();
@@ -114,7 +117,7 @@ public class DefaultAppContext : IAppContext
 		if (ShowRawOutput)
 		{
 			// when --raw is included, there are no logs by default
-			App.LogLevel.MinimumLevel = LogEventLevel.Fatal;
+			_logSwitch.MinimumLevel = LogEventLevel.Fatal;
 
 			// the user has asked for raw output, which means by default, pretty must be request.
 			if (ShowPrettyOutput)
@@ -159,12 +162,12 @@ public class DefaultAppContext : IAppContext
 			}
 			else if (LogUtil.TryParseLogLevel(logLevelOption, out var level))
 			{
-				App.LogLevel.MinimumLevel = level;
+				_logSwitch.MinimumLevel = level;
 			}
 			else if (!string.IsNullOrEmpty(_environment.LogLevel) &&
 					 LogUtil.TryParseLogLevel(_environment.LogLevel, out level))
 			{
-				App.LogLevel.MinimumLevel = level;
+				_logSwitch.MinimumLevel = level;
 			}
 		}
 	}
