@@ -86,8 +86,8 @@ public class ServerService
 			try
 			{
 				_listener = new HttpListener();
-				uri = $"http://127.0.0.1:{args.port}/";
-				_listener.Prefixes.Add(uri);
+				uri = $"http://localhost:{args.port}/";
+				_listener.Prefixes.Add($"http://*:{args.port}/");
 				_listener.Start();
 				started = true;
 			}
@@ -185,7 +185,8 @@ public class ServerService
 			HttpListenerRequest req = ctx.Request;
 			HttpListenerResponse resp = ctx.Response;
 				
-			var frag = ctx.Request.Url.ToString().Substring(uri.Length);
+			// http://base:port/
+			var frag = ctx.Request.Url.ToString().Substring(ctx.Request.Url.ToString().LastIndexOf('/') + 1);
 			Log.Verbose("got message: " + frag);
 			string response = null;
 			int status = 200;
