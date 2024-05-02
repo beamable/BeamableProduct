@@ -68,7 +68,7 @@ namespace Beamable.Editor.BeamCli
 		public BeamCommands processCommands;
 		public BeamableDispatcher dispatcher;
 
-		private Promise onReady = null; 
+		public Promise onReady = null; 
 
 		public BeamWebCommandFactory(IBeamableRequester requester, BeamableDispatcher dispatcher)
 		{
@@ -86,17 +86,26 @@ namespace Beamable.Editor.BeamCli
 		{
 			if (onReady != null)
 			{
+				Debug.Log("server onready is not null");
 				if (onReady.IsCompleted)
 				{
+					Debug.Log("server onready is completed, so checking still matches");
+
 					var ping = await PingServer();
 					if (ping != PingResult.Match)
 					{
 						onReady = null;
+						Debug.Log("server onready getting reset, and re-init");
+
 						await Init();
+						return;
 					}
 				}
 
+				Debug.Log("server onready waiting again");
+
 				await onReady;
+				return;
 			}
 			
 			onReady = new Beamable.Common.Promise();
@@ -116,15 +125,17 @@ namespace Beamable.Editor.BeamCli
 					{
 						case PingResult.Match:
 							// perfect, the server is running! Nothing more to do :) 
+							Debug.Log("found server ! ");
 							serverIdentified = true;
 							break;
 						case PingResult.Mismatch:
 							// ah, this server is being used for a different project...
+							Debug.Log("mismatch server :(");
 							port++; // by increasing the port, maybe we'll find our server soon...
 							break;
 						case PingResult.NoServer:
 							// bummer, no server exists for us, so we need to turn it on...
-							CliLogger.Log("Starting server.... " + port + " , " + Owner);
+							Debug.Log("Starting server.... " + port + " , " + Owner);
 							var serverCommand = processCommands.Serve(new ServeArgs
 							{
 								port = port, 
@@ -136,7 +147,6 @@ namespace Beamable.Editor.BeamCli
 							serverCommand.OnStreamServeCliCommandOutput(data =>
 							{
 								port = data.data.port;
-								serverIdentified = true;
 								waitForResult.CompleteSuccess();
 							});
 							serverCommand.OnError(err =>
@@ -155,6 +165,10 @@ namespace Beamable.Editor.BeamCli
 			}
 			
 			dispatcher.Run("cli-server-init", Work());
+
+			Debug.Log("waiting for onready");
+			await onReady;
+			Debug.Log("server is ready!!" );
 		}
 		
 
@@ -212,10 +226,6 @@ namespace Beamable.Editor.BeamCli
 			_command = command.Substring("beam".Length);
 		}
 
-		public Promise Run2()
-		{
-			return Promise.Success;
-		}
 		public async Promise Run()
 		{
 			await _factory.Init();
@@ -229,13 +239,13 @@ namespace Beamable.Editor.BeamCli
 				CliLogger.Log("Sending cli web request, " + json);
 				try
 				{
-					Debug.Log($"trying to do socket thing url=[{_factory.ExecuteUrl}]");
+					Debug.Log($"!trying to do socket thing url=[{_factory.ExecuteUrl}] ready=[{_factory.onReady != null}] ready2=[{_factory.onReady?.IsCompleted}]");
 					using HttpResponseMessage response =
 						await _localClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
 
 					using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
 					using StreamReader reader = new StreamReader(streamToReadFrom);
-
+					
 					while (!reader.EndOfStream)
 					{
 						var line = await reader.ReadLineAsync();
@@ -257,22 +267,21 @@ namespace Beamable.Editor.BeamCli
 						});
 					}
 				}
-				catch (SocketException socketException)
+				catch (HttpRequestException socketException)
 				{
 					Debug.Log($"Socket exception happened. command=[{_command}] url=[{_factory.ExecuteUrl}] " + socketException.Message);
 					throw;
 				}
 				catch (IOException ioException)
 				{
+					
 					// in this event, it is likely that the CLI server was terminated without politely closing connections.
 					//  that is _fine_, but we need to handle it.
 					CliLogger.Log("cli server died, " + ioException.Message);
 				}
 				catch (Exception ex)
 				{
-					CliLogger.Log("Failed to talk to CLI" + ex.Message + " \n " + _command);
-					Debug.Log($"Socket exception happened general. command=[{_command}] url=[{_factory.ExecuteUrl}] " + ex.Message);
-
+					CliLogger.Log($"Socket exception happened general. command=[{_command}] url=[{_factory.ExecuteUrl}] type=[{ex.GetType().FullName}]" + ex.Message);
 					Debug.LogException(ex);
 				}
 			}
