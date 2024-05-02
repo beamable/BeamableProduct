@@ -86,23 +86,17 @@ namespace Beamable.Editor.BeamCli
 		{
 			if (onReady != null)
 			{
-				Debug.Log("server onready is not null");
 				if (onReady.IsCompleted)
 				{
-					Debug.Log("server onready is completed, so checking still matches");
-
 					var ping = await PingServer();
 					if (ping != PingResult.Match)
 					{
 						onReady = null;
-						Debug.Log("server onready getting reset, and re-init");
 
 						await Init();
 						return;
 					}
 				}
-
-				Debug.Log("server onready waiting again");
 
 				await onReady;
 				return;
