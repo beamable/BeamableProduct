@@ -1,4 +1,4 @@
-name: Release Nightly
+name: Trigger Nightly Release (bot)
 
 on:
   schedule:
