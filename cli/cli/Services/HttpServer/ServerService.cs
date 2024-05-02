@@ -1,17 +1,12 @@
-using Beamable.Common;
 using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
-using Beamable.Common.Util;
 using Beamable.Server;
 using Beamable.Server.Common;
 using cli.CliServerCommand;
-using NBomber;
 using Newtonsoft.Json;
 using Serilog;
 using System.Net;
 using System.Text;
-using System.Threading.Channels;
-using UnityEngine;
 
 namespace cli.Services.HttpServer;
 
@@ -71,6 +66,9 @@ public class ServerService
 	private DateTimeOffset _selfDestructAt;
 	private ulong _inflightRequests;
 
+	private const string INFO_ROUTE = "info";
+	private const string EXEC_ROUTE = "execute";
+
 	public ServerService()
 	{
 		
@@ -112,6 +110,12 @@ public class ServerService
 		});
 		
 		Log.Information("Cli available at " + uri);
+
+		var execString = @$" use /{EXEC_ROUTE} with a body of {{""commandLine"": ""config""}} to run commands. 
+ the 'commandLine' string will be parsed as though the command was being passed directly to the BEAM cli.";
+		var infoString = @$" use /{INFO_ROUTE} with no body to receive metadata about the cli server.";
+		Log.Information(execString);
+		Log.Information(infoString);
 		_selfDestructAt = DateTimeOffset.Now + TimeSpan.FromSeconds(args.selfDestructTimeSeconds);
 
 		var keepAlive = true;
@@ -190,14 +194,14 @@ public class ServerService
 			{
 				switch (frag)
 				{
-					case "info":
+					case INFO_ROUTE:
 						var info = await HandleInfo(args, inflightRequests);
 						response = JsonConvert.SerializeObject(info);
 						data = Encoding.UTF8.GetBytes(response);
 						await resp.OutputStream.WriteAsync(data, 0, data.Length);
 						resp.StatusCode = status;
 						break;
-					case "execute":
+					case EXEC_ROUTE:
 						resp.Headers.Set(HttpResponseHeader.ContentType, "text/event-stream");
 						
 						

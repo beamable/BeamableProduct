@@ -21,7 +21,9 @@ public class ServeCliCommandOutput
 
 public class ServeCliCommand : StreamCommand<ServeCliCommandArgs, ServeCliCommandOutput>
 {
-	public ServeCliCommand() : base("serve", "create a local server for the cli")
+	public override bool IsForInternalUse => true;
+
+	public ServeCliCommand() : base("serve", "Create a local server for the cli. ")
 	{
 	}
 
@@ -29,20 +31,20 @@ public class ServeCliCommand : StreamCommand<ServeCliCommandArgs, ServeCliComman
 	{
 		AddArgument(
 			new Argument<string>("owner", () => "cli",
-				"the owner of the server is used to identify the server later with the /info endpoint"),
+				"The owner of the server is used to identify the server later with the /info endpoint"),
 			(args, owner) => args.owner = owner);
 		
-		var portOption = new Option<int>("--port", () => 8342, "the port the local server will bind to");
+		var portOption = new Option<int>("--port", () => 8342, "The port the local server will bind to");
 		portOption.AddAlias("-p");
 		AddOption(portOption, (args, port) => args.port = port);
 
 		var timerOption = new Option<int>("--self-destruct-seconds", () => 0,
-			"the number of seconds the server will stay alive without receiving any traffic");
+			"The number of seconds the server will stay alive without receiving any traffic");
 		timerOption.AddAlias("-d");
 		AddOption(timerOption, (args, time) => args.selfDestructTimeSeconds = time);
 
 		var incPortOption = new Option<bool>("--auto-inc-port", () => true,
-			"when true, if the given --port is not available, it will be incremented until an available port is discovered");
+			"When true, if the given --port is not available, it will be incremented until an available port is discovered");
 		incPortOption.AddAlias("-i");
 		AddOption(incPortOption, (args, inc) => args.incPortUntilSuccess = inc);
 	}
