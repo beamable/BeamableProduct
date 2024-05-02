@@ -40,7 +40,7 @@ on:
         type: boolean
         description: When true, no publish will happen
         required: true
-        default: true
+        default: false
       releaseUnitySdk:
         type: boolean
         description: When true, the Unity SDK packages com.beamable and com.beamable.server will be released.
