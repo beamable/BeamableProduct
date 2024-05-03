@@ -171,7 +171,7 @@ public struct UnrealApiSubsystemDeclaration
 
 		var isMSGen = UnrealSourceGenerator.genType == UnrealSourceGenerator.GenerationType.Microservice;
 		helperDict.Add(nameof(UnrealSourceGenerator.exportMacro), UnrealSourceGenerator.exportMacro);
-		helperDict.Add(nameof(UnrealSourceGenerator.headerFileOutputPath), UnrealSourceGenerator.headerFileOutputPath);
+		helperDict.Add(nameof(UnrealSourceGenerator.includeStatementPrefix), UnrealSourceGenerator.includeStatementPrefix);
 		helperDict.Add(nameof(SubsystemName), SubsystemName);
 		helperDict.Add(nameof(_assignMicroserviceId), isMSGen ? $"MicroserviceName = TEXT(\"{ServiceName}\");" : "");
 
@@ -244,7 +244,7 @@ public:
 ";
 
 	public const string U_SUBSYSTEM_CPP = $@"
-#include ""₢{nameof(UnrealSourceGenerator.headerFileOutputPath)}₢AutoGen/SubSystems/Beam₢{nameof(SubsystemName)}₢Api.h""
+#include ""₢{nameof(UnrealSourceGenerator.includeStatementPrefix)}₢AutoGen/SubSystems/Beam₢{nameof(SubsystemName)}₢Api.h""
 #include ""BeamCoreSettings.h""
 
 

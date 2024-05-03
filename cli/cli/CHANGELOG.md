@@ -38,6 +38,12 @@ In most cases, this is as trivial as renaming the type inside the microservice t
 - Microservices install with current CLI version
 - Standalone Microservices no longer have a `LoadEnvironmentVariables` method, and connection strings are handled in the existing `Prepare` method.
 - `beam project generate-env` command writes a blank `.env` file and returns connection strings over STDOUT instead.
+- Generating microservice clients for Unreal now outputs them to a Plugin called `[ProjectName]MicroserviceClients` instead of placing it in some existing module. Update flow: 
+  - Delete your microservice client files in the various `AutoGen` folders where they used to live.
+  - Do a clean rebuild of your microservice solution to re-run the generation.
+  - Add `[ProjectName]MicroserviceClients.AddMicroserviceClient(Module)` to all your `Build.cs` files of modules in which you want to use the clients.
+  - Add `[ProjectName]MicroserviceClients` to the list of plugins in your project (or as a dependency of other plugins in which you want to use the clients).
+  - Rebuild your project.
 
 ### Fixed
 

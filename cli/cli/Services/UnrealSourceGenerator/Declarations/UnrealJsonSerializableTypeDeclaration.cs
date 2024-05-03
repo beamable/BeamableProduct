@@ -415,8 +415,8 @@ void U{NamespacedTypeName}::DeserializeRequestResponse(UObject* RequestData, FSt
 
 
 		processDictionary.Add(nameof(exportMacro), exportMacro);
-		processDictionary.Add(nameof(headerFileOutputPath), headerFileOutputPath);
-		processDictionary.Add(nameof(blueprintHeaderFileOutputPath), blueprintHeaderFileOutputPath);
+		processDictionary.Add(nameof(includeStatementPrefix), includeStatementPrefix);
+		processDictionary.Add(nameof(blueprintIncludeStatementPrefix), blueprintIncludeStatementPrefix);
 
 		processDictionary.Add(nameof(NamespacedTypeName), NamespacedTypeName);
 		processDictionary.Add(nameof(UPropertyDeclarations), propertyDeclarations);
@@ -474,7 +474,7 @@ public:
 
 	public const string JSON_SERIALIZABLE_TYPE_CPP =
 		@$"
-#include ""₢{nameof(headerFileOutputPath)}₢AutoGen/₢{nameof(NamespacedTypeName)}₢.h""
+#include ""₢{nameof(includeStatementPrefix)}₢AutoGen/₢{nameof(NamespacedTypeName)}₢.h""
 ₢{nameof(JsonUtilsInclude)}₢
 ₢{nameof(DefaultValueHelpersInclude)}₢
 
@@ -502,7 +502,7 @@ void U₢{nameof(NamespacedTypeName)}₢::BeamDeserializeProperties(const TShare
 	public const string JSON_SERIALIZABLE_TYPES_LIBRARY_HEADER = $@"#pragma once
 
 #include ""CoreMinimal.h""
-#include ""₢{nameof(headerFileOutputPath)}₢AutoGen/₢{nameof(NamespacedTypeName)}₢.h""
+#include ""₢{nameof(includeStatementPrefix)}₢AutoGen/₢{nameof(NamespacedTypeName)}₢.h""
 
 #include ""₢{nameof(NamespacedTypeName)}₢Library.generated.h""
 
@@ -524,7 +524,7 @@ public:
 }};";
 
 	public const string JSON_SERIALIZABLE_TYPES_LIBRARY_CPP = $@"
-#include ""₢{nameof(headerFileOutputPath)}₢AutoGen/₢{nameof(NamespacedTypeName)}₢Library.h""
+#include ""₢{nameof(includeStatementPrefix)}₢AutoGen/₢{nameof(NamespacedTypeName)}₢Library.h""
 
 #include ""CoreMinimal.h""
 

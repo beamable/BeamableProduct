@@ -218,8 +218,8 @@ public struct UnrealEndpointDeclaration
 
 		helperDict.Add(nameof(exportMacro), exportMacro);
 		helperDict.Add(nameof(blueprintExportMacro), blueprintExportMacro);
-		helperDict.Add(nameof(headerFileOutputPath), headerFileOutputPath);
-		helperDict.Add(nameof(blueprintHeaderFileOutputPath), blueprintHeaderFileOutputPath);
+		helperDict.Add(nameof(includeStatementPrefix), includeStatementPrefix);
+		helperDict.Add(nameof(blueprintIncludeStatementPrefix), blueprintIncludeStatementPrefix);
 
 		helperDict.Add(nameof(GlobalNamespacedEndpointName), GlobalNamespacedEndpointName);
 		helperDict.Add(nameof(SubsystemNamespacedEndpointName), SubsystemNamespacedEndpointName);
@@ -425,7 +425,7 @@ DECLARE_DELEGATE_OneParam(FOn₢{nameof(GlobalNamespacedEndpointName)}₢FullRes
 ";
 
 	public const string U_ENDPOINT_CPP = $@"
-#include ""₢{nameof(headerFileOutputPath)}₢AutoGen/SubSystems/₢{nameof(NamespacedOwnerServiceName)}₢/₢{nameof(GlobalNamespacedEndpointName)}₢Request.h""
+#include ""₢{nameof(includeStatementPrefix)}₢AutoGen/SubSystems/₢{nameof(NamespacedOwnerServiceName)}₢/₢{nameof(GlobalNamespacedEndpointName)}₢Request.h""
 
 void U₢{nameof(GlobalNamespacedEndpointName)}₢Request::BuildVerb(FString& VerbString) const
 {{
@@ -851,12 +851,12 @@ public:
 
 	public const string BEAM_FLOW_BP_NODE_CPP = $@"
 
-#include ""₢{nameof(blueprintHeaderFileOutputPath)}₢AutoGen/₢{nameof(NamespacedOwnerServiceName)}₢/K2BeamNode_ApiRequest_₢{nameof(GlobalNamespacedEndpointName)}₢.h""
+#include ""₢{nameof(blueprintIncludeStatementPrefix)}₢AutoGen/₢{nameof(NamespacedOwnerServiceName)}₢/K2BeamNode_ApiRequest_₢{nameof(GlobalNamespacedEndpointName)}₢.h""
 
 #include ""BeamK2.h""
 
-#include ""₢{nameof(headerFileOutputPath)}₢AutoGen/SubSystems/Beam₢{nameof(NamespacedOwnerServiceName)}₢Api.h""
-#include ""₢{nameof(headerFileOutputPath)}₢AutoGen/SubSystems/₢{nameof(NamespacedOwnerServiceName)}₢/₢{nameof(GlobalNamespacedEndpointName)}₢Request.h""
+#include ""₢{nameof(includeStatementPrefix)}₢AutoGen/SubSystems/Beam₢{nameof(NamespacedOwnerServiceName)}₢Api.h""
+#include ""₢{nameof(includeStatementPrefix)}₢AutoGen/SubSystems/₢{nameof(NamespacedOwnerServiceName)}₢/₢{nameof(GlobalNamespacedEndpointName)}₢Request.h""
 ₢{nameof(ResponseTypeIncludeStatement)}₢
 
 #define LOCTEXT_NAMESPACE ""K2BeamNode_ApiRequest_₢{nameof(GlobalNamespacedEndpointName)}₢""
