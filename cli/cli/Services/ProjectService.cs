@@ -545,9 +545,7 @@ public class ProjectService
 	{
 		var serviceRelativePath = _configService.GetRelativeToBeamableFolderPath(info.ServicePath);
 
-		// Find path to service folders: either it is in the working directory, or it will be inside 'args.name\\services' from the working directory.
-		string projectDirectory = Path.GetDirectoryName(serviceRelativePath);
-		string projectDockerfilePath = Path.Combine(Path.GetFileName(serviceRelativePath), "Dockerfile");
+		string projectDockerfilePath = Path.Combine(serviceRelativePath, "Dockerfile");
 
 		// now that a .beamable folder has been created, setup the beamo manifest
 		return args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value,
@@ -555,7 +553,7 @@ public class ProjectService
 			projectDockerfilePath,
 			CancellationToken.None,
 			!args.Disabled,
-			projectDirectory);
+			serviceRelativePath);
 	}
 
 

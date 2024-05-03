@@ -215,10 +215,10 @@ public partial class BeamoLocalSystem
 	public async Task<string> BuildAndCreateImage(string imageName, string dockerBuildContextPath, string dockerfilePathInBuildContext, Action<float> progressUpdateHandler,
 		string containerImageTag = "latest", bool forceAmdCpuArchitecture = false)
 	{
-		dockerBuildContextPath = _configService.GetRelativeToBeamableFolderPath(dockerBuildContextPath);
 
+		var pathsList = ParseDockerfile(dockerfilePathInBuildContext);
 
-		using (var stream = CreateTarballForDirectory(dockerBuildContextPath))
+		using (var stream = CreateTarballForDirectory(pathsList))
 		{
 			var tag = $"{imageName}:{containerImageTag}";
 			var progress = 0f;
@@ -320,23 +320,53 @@ public partial class BeamoLocalSystem
 		return _client.PullAndCreateImage(publicImageName, progressUpdateHandler);
 	}
 
+	private static List<string> ParseDockerfile(string dockerFilePath)
+	{
+		var paths = new List<string>();
+
+		var fileContents = File.ReadAllLines(dockerFilePath);
+
+		foreach (string line in fileContents)
+		{
+			if (line.StartsWith("COPY"))
+			{
+				var parts = line.Split(" ");
+				var probablePath = parts[1];
+				string result;
+				try
+				{
+					result = Path.GetFullPath(probablePath);
+				}
+				catch
+				{
+					continue;
+				}
+
+				if (Directory.Exists(result))
+				{
+					paths.Add(probablePath);
+				}
+
+			}
+		}
+
+		return paths;
+	}
+
 	/// <summary>
 	/// Creates a tarball stream containing every file in the given <paramref name="directory"/>. 
 	/// </summary>
-	private static Stream CreateTarballForDirectory(string directory)
+	private static Stream CreateTarballForDirectory(List<string> directories)
 	{
 		var tarball = new MemoryStream(512 * 1024);
-		var files = Directory.GetFiles(directory, "*.*", SearchOption.AllDirectories);
+		var allFilesByDir = new Dictionary<string, List<string>>();
 
-		var filteredFiles = new List<string>();
-		foreach (var file in files)
+		foreach (var dir in directories)
 		{
-			if (file.Contains("/bin/")) continue;
-			if (file.Contains("/obj/")) continue;
-			filteredFiles.Add(file);
+			var files = Directory.GetFiles(dir, "*.*", SearchOption.AllDirectories);
+			allFilesByDir.Add(dir, files.ToList());
 		}
 
-		files = filteredFiles.ToArray();
 		using var archive = new TarOutputStream(tarball, Encoding.Default)
 		{
 			//Prevent the TarOutputStream from closing the underlying memory stream when done
@@ -344,35 +374,43 @@ public partial class BeamoLocalSystem
 		};
 
 		// Get every file in the given directory
-		foreach (var file in files)
+		foreach (var pair in allFilesByDir)
 		{
-			// Open the file we're putting into the tarball
-			using var fileStream = File.OpenRead(file);
-
-			// When creating the tar file (using SharpZipLib) if I create the tar entries from the filenames,
-			// the tar will be created with the wrong slashes (\ instead of / for linux).
-			// Swapping those out myself if you're doing any COPY or ADD within folders.
-			var tarName = file.Substring(directory.Length).Replace('\\', '/').TrimStart('/');
-
-			//Let's create the entry header
-			var entry = TarEntry.CreateTarEntry(tarName);
-
-			entry.Size = fileStream.Length;
-			archive.PutNextEntry(entry);
-
-			//Now write the bytes of data
-			byte[] localBuffer = new byte[32 * 1024];
-			while (true)
+			foreach (var file in pair.Value)
 			{
-				int numRead = fileStream.Read(localBuffer, 0, localBuffer.Length);
-				if (numRead <= 0)
-					break;
+				if (file.Contains("/bin/") || file.Contains("/obj/"))
+				{
+					continue;
+				}
 
-				archive.Write(localBuffer, 0, numRead);
+				// Open the file we're putting into the tarball
+				using var fileStream = File.OpenRead(file);
+
+				// When creating the tar file (using SharpZipLib) if I create the tar entries from the filenames,
+				// the tar will be created with the wrong slashes (\ instead of / for linux).
+				// Swapping those out myself if you're doing any COPY or ADD within folders.
+				var tarName = file.Replace('\\', '/').TrimStart('/');
+
+				//Let's create the entry header
+				var entry = TarEntry.CreateTarEntry(tarName);
+
+				entry.Size = fileStream.Length;
+				archive.PutNextEntry(entry);
+
+				//Now write the bytes of data
+				byte[] localBuffer = new byte[32 * 1024];
+				while (true)
+				{
+					int numRead = fileStream.Read(localBuffer, 0, localBuffer.Length);
+					if (numRead <= 0)
+						break;
+
+					archive.Write(localBuffer, 0, numRead);
+				}
+
+				//Nothing more to do with this entry
+				archive.CloseEntry();
 			}
-
-			//Nothing more to do with this entry
-			archive.CloseEntry();
 		}
 
 		// Finish writing to the tarball

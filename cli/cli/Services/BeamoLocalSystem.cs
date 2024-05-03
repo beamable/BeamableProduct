@@ -96,7 +96,7 @@ public partial class BeamoLocalSystem
 
 			// find the local protocol to infer the project path via the docker context
 			if (!BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(serviceDefinition.BeamoId,
-					out var localProto) || localProto.DockerBuildContextPath == null)
+					out var localProto) || localProto.RelativeDockerfilePath == null)
 			{
 				continue; // if there is no local protocol information, then this service is a "remote only" service. 
 						  // throw new CliException(
@@ -314,8 +314,7 @@ public partial class BeamoLocalSystem
 		var serviceName = serviceDefinition.BeamoId;
 		var service = BeamoManifest.HttpMicroserviceLocalProtocols[serviceName];
 		var dockerfilePath = service.RelativeDockerfilePath;
-		var dockerContext = service.DockerBuildContextPath;
-		dockerfilePath = _configService.GetFullPath(Path.Combine(service.DockerBuildContextPath, dockerfilePath));
+		dockerfilePath = _configService.GetFullPath(dockerfilePath);
 		var dockerfileText = await File.ReadAllTextAsync(dockerfilePath);
 
 		const string endTag =
