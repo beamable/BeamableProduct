@@ -9,9 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `BeamScheduler` can deserialize jobs without a `source` field.
 - `AssumeNewUser` does not allow `userId` that is not a positive value
+- Content downloads from Microservice no longer have SSL validation issues
 
 ### Changed
 - `async void` methods are not allowed in Microservices, and will cause the Microservice to fail. Instead, consider using methods with `async Task`, or `async Promise`. 
+
 
 ## [1.19.17]
 ### Fixed
