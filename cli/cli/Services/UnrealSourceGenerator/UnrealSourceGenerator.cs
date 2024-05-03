@@ -177,6 +177,18 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	public static string blueprintExportMacro = "BEAMABLECOREBLUEPRINTNODES_API";
 
 	/// <summary>
+	/// Set this before calling <see cref="Generate"/> when you want to describe a prefix to add before the path to the autogen folder in include statements.
+	/// Typically, this is the same as <see cref="headerFileOutputPath"/>. However, for microservice clients we remove the "Source/" part of the path.
+	/// </summary>
+	public static string includeStatementPrefix = "BeamableCore/Public/";
+	
+	/// <summary>
+	/// Set this before calling <see cref="Generate"/> when you want to describe a prefix to add before the path to the autogen folder in include statements.
+	/// Typically, this is the same as <see cref="blueprintHeaderFileOutputPath"/>. However, for microservice clients we remove the "Source/" part of the path.
+	/// </summary>
+	public static string blueprintIncludeStatementPrefix = "BeamableCoreBlueprintNodes/Public/BeamFlow/ApiRequest/";
+	
+	/// <summary>
 	/// Set this before calling <see cref="Generate"/> when you want to control where the AutoGen folder will be created.
 	/// It can be the same as <see cref="cppFileOutputPath"/>.
 	/// </summary>
@@ -1426,7 +1438,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			}
 
 			unrealServiceDecl.IncludeStatements.AddRange(
-				unrealServiceDecl.GetAllEndpoints().Select(e => $"#include \"{headerFileOutputPath}AutoGen/SubSystems/{e.NamespacedOwnerServiceName}/{e.GlobalNamespacedEndpointName}Request.h\"")
+				unrealServiceDecl.GetAllEndpoints().Select(e => $"#include \"{includeStatementPrefix}AutoGen/SubSystems/{e.NamespacedOwnerServiceName}/{e.GlobalNamespacedEndpointName}Request.h\"")
 			);
 
 			// If we had declared it already, replace that old declaration with the new one.
@@ -2471,7 +2483,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 					return $"#include \"{includeStatement}\"";
 
 				var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
-				return $"#include \"{headerFileOutputPath}AutoGen/Enums/{header}\"";
+				return $"#include \"{includeStatementPrefix}AutoGen/Enums/{header}\"";
 			}
 
 			if (unrealType.IsOptional())
@@ -2479,7 +2491,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				if (previousGenerationPassesData.InEngineTypeToIncludePaths.TryGetValue(unrealType, out var includeStatement))
 					return $"#include \"{includeStatement}\"";
 				var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
-				return $"#include \"{headerFileOutputPath}AutoGen/Optionals/{header}\"";
+				return $"#include \"{includeStatementPrefix}AutoGen/Optionals/{header}\"";
 			}
 
 			if (unrealType.IsWrapperArray())
@@ -2487,7 +2499,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				if (previousGenerationPassesData.InEngineTypeToIncludePaths.TryGetValue(unrealType, out var includeStatement))
 					return $"#include \"{includeStatement}\"";
 				var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
-				return $"#include \"{headerFileOutputPath}AutoGen/Arrays/{header}\"";
+				return $"#include \"{includeStatementPrefix}AutoGen/Arrays/{header}\"";
 			}
 
 			if (unrealType.IsWrapperMap())
@@ -2495,7 +2507,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				if (previousGenerationPassesData.InEngineTypeToIncludePaths.TryGetValue(unrealType, out var includeStatement))
 					return $"#include \"{includeStatement}\"";
 				var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
-				return $"#include \"{headerFileOutputPath}AutoGen/Maps/{header}\"";
+				return $"#include \"{includeStatementPrefix}AutoGen/Maps/{header}\"";
 			}
 
 			if (unrealType.IsUnrealArray())
@@ -2527,9 +2539,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 				var header = $"{GetNamespacedTypeNameFromUnrealType(unrealType)}.h";
 				if (unrealType.IsBeamNode())
-					return $"#include \"{blueprintHeaderFileOutputPath}AutoGen/{header}\"";
+					return $"#include \"{blueprintIncludeStatementPrefix}AutoGen/{header}\"";
 
-				return $"#include \"{headerFileOutputPath}AutoGen/{header}\"";
+				return $"#include \"{includeStatementPrefix}AutoGen/{header}\"";
 			}
 		}
 
