@@ -38,15 +38,16 @@ public class ServeCliCommand : StreamCommand<ServeCliCommandArgs, ServeCliComman
 		portOption.AddAlias("-p");
 		AddOption(portOption, (args, port) => args.port = port);
 
-		var timerOption = new Option<int>("--self-destruct-seconds", () => 0,
-			"The number of seconds the server will stay alive without receiving any traffic");
-		timerOption.AddAlias("-d");
-		AddOption(timerOption, (args, time) => args.selfDestructTimeSeconds = time);
-
 		var incPortOption = new Option<bool>("--auto-inc-port", () => true,
 			"When true, if the given --port is not available, it will be incremented until an available port is discovered");
 		incPortOption.AddAlias("-i");
 		AddOption(incPortOption, (args, inc) => args.incPortUntilSuccess = inc);
+		
+		var timerOption = new Option<int>("--self-destruct-seconds", () => 0,
+			"The number of seconds the server will stay alive without receiving any traffic. A value of zero means there is no self destruct timer.");
+		timerOption.AddAlias("-d");
+		AddOption(timerOption, (args, time) => args.selfDestructTimeSeconds = time);
+
 	}
 
 	public override async Task Handle(ServeCliCommandArgs args)

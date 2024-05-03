@@ -123,23 +123,34 @@ public class ServerService
 		{
 			var selfDestruct = Task.Run(async () =>
 			{
-				while (keepAlive)
+				try
 				{
-					var untilDoom = _selfDestructAt - DateTimeOffset.Now;
-					await Task.Delay(untilDoom);
+					while (keepAlive)
+					{
+						var untilDoom = _selfDestructAt - DateTimeOffset.Now;
+						await Task.Delay(untilDoom);
 
-					if (Interlocked.Read(ref _inflightRequests) > 0)
-					{
-						_selfDestructAt = DateTimeOffset.Now + TimeSpan.FromSeconds(args.selfDestructTimeSeconds);
-						continue;
+						if (Interlocked.Read(ref _inflightRequests) > 0)
+						{
+							_selfDestructAt = DateTimeOffset.Now + TimeSpan.FromSeconds(args.selfDestructTimeSeconds);
+							continue;
+						}
+
+						if (DateTimeOffset.Now >= _selfDestructAt)
+						{
+							Log.Information("auto self-destruct.");
+							// TODO: this does force-kill any existing connections.
+							//  There shouldn't be any due to the inflight check earlier,
+							//  however if there ARE due to threading issues,
+							//  then this will cause a unhappy termination at the client 
+							Environment.Exit(0); 
+							keepAlive = false;
+						}
 					}
-					
-					if (DateTimeOffset.Now >= _selfDestructAt)
-					{
-						Log.Information("auto self-destruct.");
-						Environment.Exit(0);
-						keepAlive = false;
-					}
+				}
+				catch (Exception ex)
+				{
+					Log.Error($"self destruct monitor failed. message=[{ex.Message}] type=[{ex.GetType().Name}] stack=[{ex.StackTrace}]");
 				}
 			});
 		}
@@ -155,8 +166,7 @@ public class ServerService
 			{
 				try
 				{
-					_selfDestructAt = DateTimeOffset.Now + TimeSpan.FromSeconds(args.selfDestructTimeSeconds);
-					await HandleRequest(args, uri, ctx, Interlocked.Read(ref _inflightRequests));
+					await HandleRequest(args, ctx, Interlocked.Read(ref _inflightRequests));
 				}
 				catch (Exception ex)
 				{
@@ -166,9 +176,9 @@ public class ServerService
 				}
 				finally
 				{
+					_selfDestructAt = DateTimeOffset.Now + TimeSpan.FromSeconds(args.selfDestructTimeSeconds);
 					Interlocked.Decrement(ref _inflightRequests);
 					Log.Verbose($"Finishing request. inflight=[{Interlocked.Read(ref _inflightRequests)}]");
-
 				}
 			});
 		}
@@ -176,67 +186,61 @@ public class ServerService
 		
 	}
 
-	static async Task HandleRequest(ServeCliCommandArgs args, string uri, HttpListenerContext ctx, ulong inflightRequests)
+	static async Task HandleRequest(ServeCliCommandArgs args, HttpListenerContext ctx,
+		ulong inflightRequests)
 	{
-		// while (true)
-		{
-			
-			// Peel out the requests and response objects
-			HttpListenerRequest req = ctx.Request;
-			HttpListenerResponse resp = ctx.Response;
-				
-			// http://base:port/
-			var frag = ctx.Request.Url.ToString().Substring(ctx.Request.Url.ToString().LastIndexOf('/') + 1);
-			Log.Verbose("got message: " + frag);
-			string response = null;
-			int status = 200;
-			byte[] data;
-			try
-			{
-				switch (frag)
-				{
-					case INFO_ROUTE:
-						var info = await HandleInfo(args, inflightRequests);
-						response = JsonConvert.SerializeObject(info);
-						data = Encoding.UTF8.GetBytes(response);
-						await resp.OutputStream.WriteAsync(data, 0, data.Length);
-						resp.StatusCode = status;
-						break;
-					case EXEC_ROUTE:
-						resp.Headers.Set(HttpResponseHeader.ContentType, "text/event-stream");
-						
-						
-						await HandleExec(req.InputStream, resp);
-						break;
-					default:
-						Log.Information("Unknown route");
-						response = JsonConvert.SerializeObject(new ServerErrorResponse
-						{
-							message = "unknown route",
-							type = "UnhandledRoute"
-						});
-						status = 400;
-						data = Encoding.UTF8.GetBytes(response);
-						await resp.OutputStream.WriteAsync(data, 0, data.Length);
-						resp.StatusCode = status;
-						break;
-				}
-			}
-			catch (Exception ex)
-			{
-				response = JsonConvert.SerializeObject(new ServerErrorResponse
-				{
-					message = ex.Message, type = ex.GetType().Name, stack = ex.StackTrace
-				});
-				status = 500;
-				data = Encoding.UTF8.GetBytes(response);
-				await resp.OutputStream.WriteAsync(data, 0, data.Length);
-				resp.StatusCode = status;
-			}
+		// Peel out the requests and response objects
+		HttpListenerRequest req = ctx.Request;
+		HttpListenerResponse resp = ctx.Response;
 
-			
-			resp.Close();
+		// http://base:port/
+		var routePath = ctx.Request.Url.ToString().Substring(ctx.Request.Url.ToString().LastIndexOf('/') + 1);
+		Log.Verbose("got message at route: " + routePath);
+		string response = null;
+		int status = 200;
+		byte[] data;
+		try
+		{
+			switch (routePath)
+			{
+				case INFO_ROUTE:
+					var info = await HandleInfo(args, inflightRequests);
+					response = JsonConvert.SerializeObject(info);
+					data = Encoding.UTF8.GetBytes(response);
+					await resp.OutputStream.WriteAsync(data, 0, data.Length);
+					resp.StatusCode = status;
+					break;
+				case EXEC_ROUTE:
+					await HandleExec(req.InputStream, resp);
+					break;
+				default:
+					Log.Information("Unknown route");
+					response = JsonConvert.SerializeObject(new ServerErrorResponse
+					{
+						message = "unknown route", type = "UnhandledRoute"
+					});
+					status = 400;
+					data = Encoding.UTF8.GetBytes(response);
+					await resp.OutputStream.WriteAsync(data, 0, data.Length);
+					resp.StatusCode = status;
+					break;
+			}
 		}
+		catch (Exception ex)
+		{
+			response = JsonConvert.SerializeObject(new ServerErrorResponse
+			{
+				message = ex.Message, type = ex.GetType().Name, stack = ex.StackTrace
+			});
+			status = 500;
+			data = Encoding.UTF8.GetBytes(response);
+			await resp.OutputStream.WriteAsync(data, 0, data.Length);
+			resp.StatusCode = status;
+		}
+
+
+		resp.Close();
+
 	}
 
 	static Task<ServerInfoResponse> HandleInfo(ServeCliCommandArgs args, ulong inflightRequests)
@@ -251,9 +255,10 @@ public class ServerService
 	}
 	
 
-	static async Task HandleExec(Stream stream, HttpListenerResponse response)
+	static async Task HandleExec(Stream networkRequestStream, HttpListenerResponse response)
 	{
-		using var inputStream = new StreamReader(stream);
+		using var inputStream = new StreamReader(networkRequestStream);
+		response.Headers.Set(HttpResponseHeader.ContentType, "text/event-stream");
 		var input = await inputStream.ReadToEndAsync();
 		var req = JsonConvert.DeserializeObject<ServerRequest>(input);
 		
@@ -305,6 +310,7 @@ public class ServerReporterService : IDataReporterService
 						// the pipe is broken, so can assume the client is no longer connected, and we can cancel this invocation.
 						Log.Verbose("monitor found that client is no longer connected; cancelling app lifecycle.");
 						_lifecycle.Cancel();
+						break;
 					}
 				}
 			}
