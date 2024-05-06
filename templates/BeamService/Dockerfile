@@ -16,7 +16,7 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build-env
 RUN dotnet publish -c release -o /subapp
 
 # use the dotnet runtime as the final stage
-FROM mcr.microsoft.com/dotnet/runtime:6.0-alpine
+FROM mcr.microsoft.com/dotnet/runtime:8.0-alpine
 WORKDIR /subapp
 
 # expose the health port
