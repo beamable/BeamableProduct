@@ -3,6 +3,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Server;
 using Beamable.Server.Common;
 using cli.CliServerCommand;
+using cli.Utils;
 using Newtonsoft.Json;
 using Serilog;
 using System.Net;
@@ -87,7 +88,12 @@ public class ServerService
 			{
 				_listener = new HttpListener();
 				uri = $"http://localhost:{args.port}/";
-				_listener.Prefixes.Add($"http://*:{args.port}/");
+				
+				// it is important not to listen on ALL interfaces, because this server should only be accessible 
+				//  from the machine itself. It would be bad if another machine could start triggering CLI commands
+				//  because the server was public. 
+				// _listener.Prefixes.Add($"http://localhost:{args.port}/");
+				_listener.Prefixes.Add($"http://127.0.0.1:{args.port}/");
 				_listener.Start();
 				started = true;
 			}
@@ -211,7 +217,7 @@ public class ServerService
 					resp.StatusCode = status;
 					break;
 				case EXEC_ROUTE:
-					await HandleExec(req.InputStream, resp);
+					await HandleExec(args, req.InputStream, resp);
 					break;
 				default:
 					Log.Information("Unknown route");
@@ -255,7 +261,7 @@ public class ServerService
 	}
 	
 
-	static async Task HandleExec(Stream networkRequestStream, HttpListenerResponse response)
+	static async Task HandleExec(ServeCliCommandArgs args, Stream networkRequestStream, HttpListenerResponse response)
 	{
 		using var inputStream = new StreamReader(networkRequestStream);
 		response.Headers.Set(HttpResponseHeader.ContentType, "text/event-stream");
@@ -269,7 +275,7 @@ public class ServerService
 		{
 			builder.Remove<IDataReporterService>();
 			builder.AddSingleton<IDataReporterService, ServerReporterService>(provider => new ServerReporterService(provider, response));
-		});
+		}, prebuiltLogger: args.logData);
 		app.Build();
 
 		
@@ -329,10 +335,10 @@ public class ServerReporterService : IDataReporterService
 			_streamWriter.WriteLine("data: " + rawMessage);
 			_streamWriter.Flush();
 		}
-		catch (HttpListenerException)
+		catch (HttpListenerException ex)
 		{
 			// the pipe is broken, so can assume the client is no longer connected, and we can cancel this invocation.
-			Log.Verbose("client is no longer connected; cancelling app lifecycle.");
+			Log.Verbose("client is no longer connected; cancelling app lifecycle." + ex.Message);
 			_lifecycle.Cancel();
 		}
 	}

@@ -31,7 +31,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			defaultBeamArgs = ConstructDefaultArgs();
 		}
 
-		private BeamArgs ConstructDefaultArgs()
+		public BeamArgs ConstructDefaultArgs()
 		{
 			string cid = null;
 			string pid = null;

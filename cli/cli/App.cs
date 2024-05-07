@@ -58,9 +58,7 @@ public class App
 
 	private static LogConfigData ConfigureLogging(App app, Func<LoggerConfiguration, ILogger> configureLogger = null)
 	{
-		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
-		app.LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
-
+	
 		var tempFile = Path.Combine(Path.GetTempPath(), "beamCliLog.txt");
 		var shouldUseTempFile = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_CLI_NO_FILE_LOG"));
 		try
@@ -159,15 +157,26 @@ public class App
 	public virtual void Configure(
 		Action<IDependencyBuilder> serviceConfigurator = null,
 		Action<IDependencyBuilder> commandConfigurator = null,
-		Func<LoggerConfiguration, ILogger> configureLogger = null
+		Func<LoggerConfiguration, ILogger> configureLogger = null,
+		LogConfigData prebuiltLogger=null
 		)
 	{
 		if (IsBuilt)
 			throw new InvalidOperationException("The app has already been built, and cannot be configured anymore");
 
-		var logConfig = ConfigureLogging(this, configureLogger);
+		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
+		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
 
-		Commands.AddSingleton(logConfig);
+		if (prebuiltLogger == null)
+		{
+			var logConfig = ConfigureLogging(this, configureLogger);
+			Commands.AddSingleton(logConfig);
+		}
+		else
+		{
+			Commands.AddSingleton(prebuiltLogger);
+		}
+
 		Commands.AddSingleton(new ArgValidator<ServiceName>(arg => new ServiceName(arg)));
 		Commands.AddSingleton(new ArgValidator<PackageVersion>(arg =>
 		{
@@ -222,7 +231,9 @@ public class App
 		// add commands
 		Commands.AddRootCommand<CliInterfaceGeneratorCommand, CliInterfaceGeneratorCommandArgs>();
 
-		Commands.AddRootCommand<ServeCliCommand, ServeCliCommandArgs>();
+		Commands.AddRootCommand<ServerGroupCommand>();
+		Commands.AddSubCommand<ServeCliCommand, ServeCliCommandArgs, ServerGroupCommand>();
+		Commands.AddSubCommand<RequestCliCommand, RequestCliCommandArgs, ServerGroupCommand>();
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
 		Commands.AddRootCommand<ProjectCommand>();
 		Commands.AddSubCommand<ProjectNewCommand, CommandGroupArgs, ProjectCommand>();

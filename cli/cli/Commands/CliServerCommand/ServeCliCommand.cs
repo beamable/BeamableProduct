@@ -1,5 +1,6 @@
 using Beamable.Server;
 using cli.Services.HttpServer;
+using cli.Utils;
 using Serilog;
 using System.CommandLine;
 
@@ -11,6 +12,8 @@ public class ServeCliCommandArgs : CommandArgs
 	public string owner;
 	public int selfDestructTimeSeconds;
 	public bool incPortUntilSuccess;
+
+	public LogConfigData logData;
 }
 
 public class ServeCliCommandOutput
@@ -21,10 +24,12 @@ public class ServeCliCommandOutput
 
 public class ServeCliCommand : StreamCommand<ServeCliCommandArgs, ServeCliCommandOutput>
 {
+	private LogConfigData _logData;
 	public override bool IsForInternalUse => true;
 
-	public ServeCliCommand() : base("serve", "Create a local server for the cli")
+	public ServeCliCommand(LogConfigData logData) : base("serve", "Create a local server for the cli")
 	{
+		_logData = logData;
 	}
 
 	public override void Configure()
@@ -52,7 +57,9 @@ public class ServeCliCommand : StreamCommand<ServeCliCommandArgs, ServeCliComman
 
 	public override async Task Handle(ServeCliCommandArgs args)
 	{
+		args.logData = _logData;
 		var server = args.Provider.GetService<ServerService>();
+		
 		await server.RunServer(args, data =>
 		{
 			this.SendResults(new ServeCliCommandOutput

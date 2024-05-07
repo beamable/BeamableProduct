@@ -137,6 +137,9 @@ namespace Beamable.Editor.BeamCli
 					case PingResult.NoServer:
 						// bummer, no server exists for us, so we need to turn it on...
 						CliLogger.Log("Starting server.... " + port + " , " + Owner);
+						processCommands.defaultBeamArgs = processCommands.ConstructDefaultArgs();
+						processCommands.defaultBeamArgs.log = "verbose";
+						processCommands.defaultBeamArgs.pretty = true;
 						var serverCommand = processCommands.Serve(new ServeArgs
 						{
 							port = port, 
@@ -239,15 +242,21 @@ namespace Beamable.Editor.BeamCli
 				while (!reader.EndOfStream)
 				{
 					var line = await reader.ReadLineAsync();
-
 					if (string.IsNullOrEmpty(line)) continue; // TODO: what if the message contains a \n character?
-					if (!line.StartsWith("data: ")) continue;
+
+					// remove life-cycle zero-width character 
+					line = line.Replace("\u200b", "");
+					if (!line.StartsWith("data: "))
+					{
+						Debug.LogWarning($"CLI received a message over the local-server that did not start with the expected 'data: ' format. line=[{line}]");
+						continue;
+					}
 
 					_factory.dispatcher.Schedule(() => // put callback on separate work queue.
 					{
 						var lineJson = line
-						               .Substring("data: ".Length) // remove the Server-Side-Event notation
-						               .Replace("\u200b", ""); // remove life-cycle zero-width character 
+							.Substring("data: ".Length); // remove the Server-Side-Event notation
+						               
 						CliLogger.Log("received, " + lineJson, "from " + _command);
 
 						var res = JsonUtility.FromJson<ReportDataPointDescription>(lineJson);
