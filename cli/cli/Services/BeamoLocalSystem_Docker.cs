@@ -336,21 +336,27 @@ public partial class BeamoLocalSystem
 				try
 				{
 					result = Path.GetFullPath(probablePath);
+					FileAttributes attr = File.GetAttributes(result);
+
+					if (attr.HasFlag(FileAttributes.Directory))
+					{
+						paths.Add(probablePath);
+					}
+					else
+					{
+						var dir = Path.GetDirectoryName(probablePath);
+						paths.Add(dir);
+					}
 				}
 				catch
 				{
-					continue;
-				}
-
-				if (Directory.Exists(result))
-				{
-					paths.Add(probablePath);
+					//Just keep going finding valid paths
 				}
 
 			}
 		}
 
-		return paths;
+		return paths.Distinct().ToList();
 	}
 
 	/// <summary>
@@ -359,12 +365,12 @@ public partial class BeamoLocalSystem
 	private static Stream CreateTarballForDirectory(List<string> directories)
 	{
 		var tarball = new MemoryStream(512 * 1024);
-		var allFilesByDir = new Dictionary<string, List<string>>();
+		var allFiles = new List<string>();
 
 		foreach (var dir in directories)
 		{
 			var files = Directory.GetFiles(dir, "*.*", SearchOption.AllDirectories);
-			allFilesByDir.Add(dir, files.ToList());
+			allFiles.AddRange(files.ToList());
 		}
 
 		using var archive = new TarOutputStream(tarball, Encoding.Default)
@@ -374,43 +380,40 @@ public partial class BeamoLocalSystem
 		};
 
 		// Get every file in the given directory
-		foreach (var pair in allFilesByDir)
+		foreach (var file in allFiles)
 		{
-			foreach (var file in pair.Value)
+			if (file.Contains("/bin/") || file.Contains("/obj/"))
 			{
-				if (file.Contains("/bin/") || file.Contains("/obj/"))
-				{
-					continue;
-				}
-
-				// Open the file we're putting into the tarball
-				using var fileStream = File.OpenRead(file);
-
-				// When creating the tar file (using SharpZipLib) if I create the tar entries from the filenames,
-				// the tar will be created with the wrong slashes (\ instead of / for linux).
-				// Swapping those out myself if you're doing any COPY or ADD within folders.
-				var tarName = file.Replace('\\', '/').TrimStart('/');
-
-				//Let's create the entry header
-				var entry = TarEntry.CreateTarEntry(tarName);
-
-				entry.Size = fileStream.Length;
-				archive.PutNextEntry(entry);
-
-				//Now write the bytes of data
-				byte[] localBuffer = new byte[32 * 1024];
-				while (true)
-				{
-					int numRead = fileStream.Read(localBuffer, 0, localBuffer.Length);
-					if (numRead <= 0)
-						break;
-
-					archive.Write(localBuffer, 0, numRead);
-				}
-
-				//Nothing more to do with this entry
-				archive.CloseEntry();
+				continue;
 			}
+
+			// Open the file we're putting into the tarball
+			using var fileStream = File.OpenRead(file);
+
+			// When creating the tar file (using SharpZipLib) if I create the tar entries from the filenames,
+			// the tar will be created with the wrong slashes (\ instead of / for linux).
+			// Swapping those out myself if you're doing any COPY or ADD within folders.
+			var tarName = file.Replace('\\', '/').TrimStart('/');
+
+			//Let's create the entry header
+			var entry = TarEntry.CreateTarEntry(tarName);
+
+			entry.Size = fileStream.Length;
+			archive.PutNextEntry(entry);
+
+			//Now write the bytes of data
+			byte[] localBuffer = new byte[32 * 1024];
+			while (true)
+			{
+				int numRead = fileStream.Read(localBuffer, 0, localBuffer.Length);
+				if (numRead <= 0)
+					break;
+
+				archive.Write(localBuffer, 0, numRead);
+			}
+
+			//Nothing more to do with this entry
+			archive.CloseEntry();
 		}
 
 		// Finish writing to the tarball

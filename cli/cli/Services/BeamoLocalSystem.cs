@@ -327,7 +327,7 @@ public partial class BeamoLocalSystem
 		const string servicePathTag = "<SERVICE_PATH>";
 		string toAddCsproj = $"COPY {servicePathTag}/{serviceNameTag}.csproj .";
 		string toAdd = @$"WORKDIR /subsrc/{serviceNameTag}
-COPY {servicePathTag}/. .";
+COPY {servicePathTag} .";
 		var replacement = @$"{toAdd}
 {endTag}";
 		var replacementWithCsproj = @$"{toAdd}
