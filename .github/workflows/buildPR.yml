@@ -34,7 +34,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget
       - name: Build a Nuget package
-        run: dotnet pack ./microservice/microservice -c Release -o ./nuget-build -p:NuspecFile=Microservice.nuspec -p:PackageVersion=0.0.0 /p:CombinedVersion=0.0.0
+        run: dotnet pack ./microservice/microservice -c Release -o ./nuget-build -p:PackageVersion=0.0.0 /p:CombinedVersion=0.0.0
       - uses: actions/upload-artifact@v3
         with:
           name: Microservice Nuget Package
