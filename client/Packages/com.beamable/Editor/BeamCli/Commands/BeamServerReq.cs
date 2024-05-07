@@ -6,9 +6,9 @@ namespace Beamable.Editor.BeamCli.Commands
 
 	public class ServerReqArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>the port where the CLI server is running</summary>
+		/// <summary>The port where the CLI server is running</summary>
 		public int port;
-		/// <summary>the CLI command to execute</summary>
+		/// <summary>The CLI command to execute</summary>
 		public string cli;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()

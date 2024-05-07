@@ -140,7 +140,7 @@ namespace Beamable.Editor.BeamCli
 						processCommands.defaultBeamArgs = processCommands.ConstructDefaultArgs();
 						processCommands.defaultBeamArgs.log = "verbose";
 						processCommands.defaultBeamArgs.pretty = true;
-						var serverCommand = processCommands.Serve(new ServeArgs
+						var serverCommand = processCommands.ServerServe(new ServerServeArgs()
 						{
 							port = port, 
 							owner = "\"" + Owner + "\"",

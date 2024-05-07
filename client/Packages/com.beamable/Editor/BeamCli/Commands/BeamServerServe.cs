@@ -12,7 +12,7 @@ namespace Beamable.Editor.BeamCli.Commands
 		public int port;
 		/// <summary>When true, if the given --port is not available, it will be incremented until an available port is discovered</summary>
 		public bool autoIncPort;
-		/// <summary>The number of seconds the server will stay alive without receiving any traffic. A value of zero means there is no self destruct timer.</summary>
+		/// <summary>The number of seconds the server will stay alive without receiving any traffic. A value of zero means there is no self destruct timer</summary>
 		public int selfDestructSeconds;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
