@@ -9,6 +9,8 @@
         <TargetFramework>netstandard2.0</TargetFramework>
         <AssemblyName>Beamable.Server.Common</AssemblyName>
         <LangVersion>8</LangVersion>
+        
+        <UseMongoNugetReference>true</UseMongoNugetReference>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -20,12 +22,14 @@
         <ProjectReference Include="..\..\..\com.beamable\Common\beamable.common.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="$(UseMongoNugetReference)=='true'">
         <PackageReference Include="MongoDB.Driver" Version="2.15.1"/>
+    </ItemGroup>
+    
+    <ItemGroup Condition="$(UseMongoNugetReference)!='true'">
         <Reference Include="MongoDB.Driver">
             <HintPath>..\..\Editor\ThirdParty\Mongo\MongoDB.Driver.dll</HintPath>
         </Reference>
-
         <Reference Include="MongoDB.Bson">
             <HintPath>..\..\Editor\ThirdParty\Mongo\MongoDB.Bson.dll</HintPath>
         </Reference>

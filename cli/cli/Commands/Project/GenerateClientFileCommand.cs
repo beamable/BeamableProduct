@@ -93,7 +93,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 
 				/// GHOST IN THE MACHINE ---> We need some time to investigate this stuff.
 				var requiredAssemblies = userAssembly.GetReferencedAssemblies()
-					.Where(asm => !asm.Name.Contains("BeamableMicroserviceBase"))
+					.Where(asm => !asm.Name.Contains("BeamableMicroserviceBase") && !asm.Name.Contains("Beamable.Server"))
 					.ToList();
 				foreach (AssemblyName referencedAssembly in requiredAssemblies)
 					allAssemblies.Add(loadContext.LoadFromAssemblyName(referencedAssembly));
@@ -113,7 +113,11 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 		{
 			var currentAssemblies = allAssemblies.ToList(); // copy working set.
 			startCount = currentAssemblies.Count;
-			var _ = currentAssemblies.SelectMany(asm => asm.GetExportedTypes()).ToArray();
+			foreach (var currentAssembly in currentAssemblies)
+			{
+				Log.Verbose("Expanding types from " + currentAssembly.FullName);
+				var _ = currentAssembly.GetExportedTypes();
+			}
 			finalCount = allAssemblies.Count;
 			Log.Verbose($"Loaded all types, and found {startCount} assemblies, and after, found {finalCount} assemblies.");
 		}
