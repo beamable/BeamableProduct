@@ -30,9 +30,9 @@ public class RequestCliCommand : StreamCommand<RequestCliCommandArgs, RequestCli
 
 	public override void Configure()
 	{
-		AddOption(new Option<int>("--port", () => 8432, "the port where the CLI server is running"),
+		AddOption(new Option<int>("--port", () => 8432, "The port where the CLI server is running"),
 			(args, i) => args.port = i);
-		AddOption(new Option<string>("--cli", "the CLI command to execute"),
+		AddOption(new Option<string>("--cli", "The CLI command to execute"),
 			(args, s) => args.commandLine = s);
 	}
 
