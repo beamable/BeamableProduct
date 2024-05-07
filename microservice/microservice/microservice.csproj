@@ -1,137 +1,76 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-
-    <PackageId>Beamable.Microservice</PackageId>
-    <NuspecFile>Microservice.nuspec</NuspecFile>
-    <NuspecProperties>version=$(CombinedVersion)</NuspecProperties>
-
+  
+  <PropertyGroup Label="beam-nuget-details">
+    <PackageId>Beamable.Microservice.Runtime</PackageId>
     <VersionPrefix>$(VersionPrefix)</VersionPrefix>
-
     <Authors>Beamable Team</Authors>
     <Company>Beamable</Company>
+    <PackageTags>Beamable;Game Server;Unity;Unreal;Games;Microservice</PackageTags>
+    <PackageProjectUrl>https://beamable.com</PackageProjectUrl>
+    <PackageIconUrl>https://beamable.com/wp-content/uploads/2024/01/kY9wLmfZ_400x400.jpg</PackageIconUrl>
+    <PackageReleaseNotes>https://beamable.github.io/changes/</PackageReleaseNotes>
+    <PackageLicenseUrl>https://beamable.com/license</PackageLicenseUrl>
+    <Description>
+      The Beamable.Microservice.Runtime package contains the code required for running C# Microservices.
+    </Description>
+    <PackageOutputPath>./nupkg</PackageOutputPath>
 
+  </PropertyGroup>
+  
+  <PropertyGroup Label="beam-assembly-details">
+
+    <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
+    <OutputType>Library</OutputType>
     <DefineConstants>DB_MICROSERVICE;DISABLE_BEAMABLE_ASYNCMETHODBUILDER;BEAMABLE_IGNORE_MONGO_MOCKS</DefineConstants>
-
     <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
-
     <AssemblyName>BeamableMicroserviceBase</AssemblyName>
-
     <LangVersion>11</LangVersion>
+  </PropertyGroup>
+  
+  <PropertyGroup Label="beam-docs">
     <!-- These warnings are XML documentation missing related   -->
     <NoWarn>1573,1591,1574,1572</NoWarn>
-
-
-  </PropertyGroup>
-
-
-
-  <PropertyGroup>
-
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
-
-
-
-  <ItemGroup>
-
+  
+  <ItemGroup Label="Nuget Packages">
     <PackageReference Include="EmbedIO" Version="3.4.*" />
-
     <PackageReference Include="LoxSmoke.DocXml" Version="3.4.*" />
-
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0-preview.6.21352.12" />
-
     <PackageReference Include="Microsoft.OpenApi" Version="1.6.3" />
-
     <PackageReference Include="NetMQ" Version="4.0.1.11" />
-
     <PackageReference Include="Newtonsoft.Json" Version="12.0.*" />
-
     <PackageReference Include="Serilog" Version="2.10.*" />
-
     <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.*" />
-
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.*" />
-
     <PackageReference Include="Serilog.Sinks.File" Version="3.1.1" />
-
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta3.22114.*" />
-
     <PackageReference Include="System.ServiceModel.Primitives" Version="4.9.*" />
-
     <PackageReference Include="System.Threading.RateLimiting" Version="7.0.0" />
-
+    <PackageReference Include="MongoDB.Driver" Version="2.15.1"/>
   </ItemGroup>
-
-
-
-  <ItemGroup Condition="!Exists('.\lib') AND Exists('..\..\client\Packages\com.beamable\Common')">
-
-    <ProjectReference Include="..\..\client\Packages\com.beamable\Common\beamable.common.csproj" />
-
+  
+  <ItemGroup Label="Internal Beamable References">
+    <ProjectReference Include="..\..\client\Packages\com.beamable.server\Runtime\Common\beamable.server.common.csproj" PrivateAssets="All"/>
+    <ProjectReference Include="..\..\client\Packages\com.beamable.server\SharedRuntime\beamable.server.csproj" PrivateAssets="All"/>
+    <ProjectReference Include="..\..\client\Packages\com.beamable\Common\beamable.common.csproj" PrivateAssets="All"/>
+    <ProjectReference Include="..\beamable.tooling.common\beamable.tooling.common.csproj" PrivateAssets="All"/>
+    <ProjectReference Include="..\unityenginestubs.addressables\unityenginestubs.addressables.csproj" PrivateAssets="All"/>
+    <ProjectReference Include="..\unityEngineStubs\unityenginestubs.csproj" PrivateAssets="All"/>
   </ItemGroup>
-
-
-
-  <ItemGroup Condition="!Exists('.\lib') AND Exists('..\..\client\Packages\com.beamable.server')">
-
-    <ProjectReference Include="..\..\client\Packages\com.beamable.server\SharedRuntime\beamable.server.csproj" />
-    <ProjectReference Include="..\..\client\Packages\com.beamable.server\Runtime\Common\beamable.server.common.csproj" />
-
+  
+  <ItemGroup Label="Pack Internal Beamable References: Net6.0">
+    <None Include="$(OutputPath)/net6.0/Beamable*" PackagePath="lib/net6.0" Pack="True"/>
+    <None Include="$(OutputPath)/net6.0/Unity*" PackagePath="lib/net6.0" Pack="True"/>
   </ItemGroup>
-
-
-  <ItemGroup Condition="!Exists('.\lib') AND Exists('..\unityEngineStubs\unityenginestubs.csproj')">
-    <ProjectReference Include="..\unityEngineStubs\unityenginestubs.csproj" />
+  <ItemGroup Label="Pack Internal Beamable References: Net7.0">
+    <None Include="$(OutputPath)/net7.0/Beamable*" PackagePath="lib/net7.0" Pack="True"/>
+    <None Include="$(OutputPath)/net7.0/Unity*" PackagePath="lib/net7.0" Pack="True"/>
   </ItemGroup>
-  <ItemGroup Condition="!Exists('.\lib') AND Exists('..\unityEngineStubs.addressables\unityenginestubs.addressables.csproj')">
-    <ProjectReference Include="..\unityEngineStubs.addressables\unityenginestubs.addressables.csproj" />
+  <ItemGroup Label="Pack Internal Beamable References: Net8.0">
+    <None Include="$(OutputPath)/net8.0/Beamable*" PackagePath="lib/net8.0" Pack="True"/>
+    <None Include="$(OutputPath)/net8.0/Unity*" PackagePath="lib/net8.0" Pack="True"/>
   </ItemGroup>
-
-  <ItemGroup Condition="!Exists('.\lib') AND Exists('..\beamable.tooling.common\beamable.tooling.common.csproj')">
-
-    <ProjectReference Include="..\beamable.tooling.common\beamable.tooling.common.csproj" />
-
-  </ItemGroup>
-
-
-
-  <ItemGroup Condition="Exists('.\lib')">
-
-    <Reference Include="Beamable.Common">
-
-      <HintPath>.\lib\Unity.Beamable.Runtime.Common.dll</HintPath>
-
-    </Reference>
-
-    <Reference Include="Beamable.Server">
-
-      <HintPath>.\lib\Beamable.Server.dll</HintPath>
-
-    </Reference>
-
-    <Reference Include="Beamable.Server.Common">
-
-      <HintPath>.\lib\Beamable.Server.Common.dll</HintPath>
-
-    </Reference>
-
-    <Reference Include="UnityEngine">
-
-      <HintPath>.\lib\UnityEngine.dll</HintPath>
-
-    </Reference>
-    <Reference Include="Unity.Addressables">
-
-      <HintPath>.\lib\Unity.Addressables.dll</HintPath>
-
-    </Reference>
-
-    <Reference Include="Beamable.Tooling.Common">
-
-      <HintPath>.\lib\Beamable.Tooling.Common.dll</HintPath>
-
-    </Reference>
-
-  </ItemGroup>
+  
 
 </Project>

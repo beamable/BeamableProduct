@@ -21,7 +21,7 @@
     </ItemGroup>
 
     <ItemGroup>
-
+        <PackageReference Include="MongoDB.Driver" Version="2.15.1"/>
         <Reference Include="MongoDB.Driver">
             <HintPath>..\..\Editor\ThirdParty\Mongo\MongoDB.Driver.dll</HintPath>
         </Reference>
