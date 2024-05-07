@@ -49,7 +49,7 @@ public class ServeCliCommand : StreamCommand<ServeCliCommandArgs, ServeCliComman
 		AddOption(incPortOption, (args, inc) => args.incPortUntilSuccess = inc);
 		
 		var timerOption = new Option<int>("--self-destruct-seconds", () => 0,
-			"The number of seconds the server will stay alive without receiving any traffic. A value of zero means there is no self destruct timer.");
+			"The number of seconds the server will stay alive without receiving any traffic. A value of zero means there is no self destruct timer");
 		timerOption.AddAlias("-d");
 		AddOption(timerOption, (args, time) => args.selfDestructTimeSeconds = time);
 
