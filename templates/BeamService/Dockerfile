@@ -13,7 +13,7 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build-env
 # </BEAM-CLI-COPY-SRC> this line signals the end of Beamable Project Src copies. Do not remove it.
 
 # build the dotnet program
-RUN dotnet publish -c release -o /subapp
+RUN dotnet publish /subsrc/BeamService/BeamService.csproj -c release -o /subapp
 
 # use the dotnet runtime as the final stage
 FROM mcr.microsoft.com/dotnet/runtime:8.0-alpine

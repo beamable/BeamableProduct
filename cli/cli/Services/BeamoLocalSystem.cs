@@ -355,10 +355,6 @@ COPY {servicePathTag} .";
 		int endIndex = dockerfileText.IndexOf(endTag, startIndex, StringComparison.Ordinal);
 		string newText = dockerfileText.Remove(startIndex, endIndex - startIndex);
 
-		//Copy the services files first
-		var relativePath = _configService.GetRelativeToBeamableFolderPath(serviceDefinition.ProjectDirectory);
-		newText = newText.Replace(endTag, replacementWithCsproj.Replace(serviceNameTag, serviceDefinition.BeamoId).Replace(servicePathTag, relativePath));
-
 		var dependencies = await GetDependencies(serviceName);
 
 		foreach (var dependency in dependencies)
@@ -366,6 +362,11 @@ COPY {servicePathTag} .";
 			string path = _configService.GetRelativeToBeamableFolderPath(dependency.projPath);
 			newText = newText.Replace(endTag, replacement.Replace(serviceNameTag, dependency.name).Replace(servicePathTag, path));
 		}
+
+		//Copy the services files
+		var relativePath = _configService.GetRelativeToBeamableFolderPath(serviceDefinition.ProjectDirectory);
+		newText = newText.Replace(endTag, replacementWithCsproj.Replace(serviceNameTag, serviceDefinition.BeamoId).Replace(servicePathTag, relativePath));
+
 		await File.WriteAllTextAsync(dockerfilePath, newText);
 	}
 

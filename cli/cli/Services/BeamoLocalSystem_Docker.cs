@@ -332,21 +332,11 @@ public partial class BeamoLocalSystem
 			{
 				var parts = line.Split(" ");
 				var probablePath = parts[1];
-				string result;
 				try
 				{
-					result = Path.GetFullPath(probablePath);
-					FileAttributes attr = File.GetAttributes(result);
-
-					if (attr.HasFlag(FileAttributes.Directory))
-					{
-						paths.Add(probablePath);
-					}
-					else
-					{
-						var dir = Path.GetDirectoryName(probablePath);
-						paths.Add(dir);
-					}
+					var result = Path.GetFullPath(probablePath);
+					FileAttributes attr = File.GetAttributes(result); //If it's not a valid path, this is going to throw an exception
+					paths.Add(probablePath);
 				}
 				catch
 				{
@@ -362,15 +352,24 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// Creates a tarball stream containing every file in the given <paramref name="directory"/>. 
 	/// </summary>
-	private static Stream CreateTarballForDirectory(List<string> directories)
+	private static Stream CreateTarballForDirectory(List<string> paths)
 	{
 		var tarball = new MemoryStream(512 * 1024);
 		var allFiles = new List<string>();
 
-		foreach (var dir in directories)
+		foreach (var path in paths)
 		{
-			var files = Directory.GetFiles(dir, "*.*", SearchOption.AllDirectories);
-			allFiles.AddRange(files.ToList());
+			FileAttributes attr = File.GetAttributes(path);
+
+			if (attr.HasFlag(FileAttributes.Directory))
+			{
+				var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories);
+				allFiles.AddRange(files.ToList());
+			}
+			else
+			{
+				allFiles.Add(path);
+			}
 		}
 
 		using var archive = new TarOutputStream(tarball, Encoding.Default)
