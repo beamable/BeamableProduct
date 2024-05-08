@@ -1,8 +1,4 @@
 <Project>
-    <PropertyGroup>
-        <!-- by default, no copy happens. It needs to be an opt-in -->
-        <CopyToLinkedProjects Condition="$(CopyToLinkedProjects)==''">false</CopyToLinkedProjects>
-    </PropertyGroup>
 
     <!-- Move the built dll to the linked projects -->
     <Target Name="share-code" AfterTargets="Build" Condition="$(CopyToLinkedProjects)==true AND $(DOTNET_RUNNING_IN_CONTAINER)!=true">

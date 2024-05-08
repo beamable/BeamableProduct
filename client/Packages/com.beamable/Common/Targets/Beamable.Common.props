@@ -2,6 +2,11 @@
     <PropertyGroup>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
+    
+    <PropertyGroup>
+        <!-- by default, no copy happens. It needs to be an opt-in -->
+        <CopyToLinkedProjects Condition="$(CopyToLinkedProjects)==''">false</CopyToLinkedProjects>
+    </PropertyGroup>
 
     <!--  Settings for Beamable Build  -->
     <PropertyGroup>

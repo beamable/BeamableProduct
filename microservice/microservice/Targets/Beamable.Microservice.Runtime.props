@@ -1,7 +1,5 @@
 <Project>
     <PropertyGroup>
-        <BeamTunaBlah>xyz</BeamTunaBlah>
-
         <OutputType>Exe</OutputType>
         <ImplicitUsings>disable</ImplicitUsings>
         <Nullable>disable</Nullable>
