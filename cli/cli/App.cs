@@ -6,6 +6,7 @@ using Beamable.Common.Api.Realms;
 using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Semantics;
+using cli.CliServerCommand;
 using cli.Commands.Project;
 using cli.Commands.Project.Deps;
 using cli.Content;
@@ -16,6 +17,7 @@ using cli.Notifications;
 using cli.Options;
 using cli.Services;
 using cli.Services.Content;
+using cli.Services.HttpServer;
 using cli.Unreal;
 using cli.Utils;
 using cli.Version;
@@ -40,7 +42,7 @@ namespace cli;
 
 public class App
 {
-	public static LoggingLevelSwitch LogLevel { get; set; }
+	public LoggingLevelSwitch LogLevel { get; set; }
 
 	public IDependencyBuilder Commands { get; set; }
 	public IDependencyProviderScope CommandProvider { get; set; }
@@ -54,11 +56,9 @@ public class App
 
 	public bool IsBuilt => CommandProvider != null;
 
-	private static LogConfigData ConfigureLogging(Func<LoggerConfiguration, ILogger> configureLogger = null)
+	private static LogConfigData ConfigureLogging(App app, Func<LoggerConfiguration, ILogger> configureLogger = null)
 	{
-		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
-		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
-
+	
 		var tempFile = Path.Combine(Path.GetTempPath(), "beamCliLog.txt");
 		var shouldUseTempFile = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_CLI_NO_FILE_LOG"));
 		try
@@ -87,7 +87,7 @@ public class App
 				.WriteTo.Logger(subConfig =>
 					subConfig
 						.WriteTo.BeamAnsi("{Message:lj}{NewLine}{Exception}")
-						.MinimumLevel.ControlledBy(LogLevel)
+						.MinimumLevel.ControlledBy(app.LogLevel)
 				);
 
 			if (shouldUseTempFile)
@@ -119,6 +119,7 @@ public class App
 	private void ConfigureServices(IDependencyBuilder services)
 	{
 		// register services
+		services.AddSingleton<LoggingLevelSwitch>(LogLevel);
 		services.AddSingleton<IAppContext, DefaultAppContext>();
 		services.AddSingleton<IRealmsApi, RealmsService>();
 		services.AddSingleton<IAliasService, AliasService>();
@@ -145,7 +146,9 @@ public class App
 		services.AddSingleton<CliGenerator>();
 		services.AddSingleton<VersionService>();
 		services.AddSingleton<IDataReporterService, DataReporterService>();
-
+		services.AddSingleton<ServerService>();
+		services.AddSingleton<AppLifecycle>();
+		
 		OpenApiRegistration.RegisterOpenApis(services);
 
 		_serviceConfigurator?.Invoke(services);
@@ -154,15 +157,26 @@ public class App
 	public virtual void Configure(
 		Action<IDependencyBuilder> serviceConfigurator = null,
 		Action<IDependencyBuilder> commandConfigurator = null,
-		Func<LoggerConfiguration, ILogger> configureLogger = null
+		Func<LoggerConfiguration, ILogger> configureLogger = null,
+		LogConfigData prebuiltLogger=null
 		)
 	{
 		if (IsBuilt)
 			throw new InvalidOperationException("The app has already been built, and cannot be configured anymore");
 
-		var logConfig = ConfigureLogging(configureLogger);
+		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
+		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
 
-		Commands.AddSingleton(logConfig);
+		if (prebuiltLogger == null)
+		{
+			var logConfig = ConfigureLogging(this, configureLogger);
+			Commands.AddSingleton(logConfig);
+		}
+		else
+		{
+			Commands.AddSingleton(prebuiltLogger);
+		}
+
 		Commands.AddSingleton(new ArgValidator<ServiceName>(arg => new ServiceName(arg)));
 		Commands.AddSingleton(new ArgValidator<PackageVersion>(arg =>
 		{
@@ -217,6 +231,9 @@ public class App
 		// add commands
 		Commands.AddRootCommand<CliInterfaceGeneratorCommand, CliInterfaceGeneratorCommandArgs>();
 
+		Commands.AddRootCommand<ServerGroupCommand>();
+		Commands.AddSubCommand<ServeCliCommand, ServeCliCommandArgs, ServerGroupCommand>();
+		Commands.AddSubCommand<RequestCliCommand, RequestCliCommandArgs, ServerGroupCommand>();
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
 		Commands.AddRootCommand<ProjectCommand>();
 		Commands.AddSubCommand<ProjectNewCommand, CommandGroupArgs, ProjectCommand>();
@@ -594,5 +611,11 @@ public class App
 	{
 		var prog = GetProgram();
 		return prog.InvokeAsync(args);
+	}
+
+	public virtual Task<int> RunWithSingleString(string commandLine)
+	{
+		var prog = GetProgram();
+		return prog.InvokeAsync(commandLine);
 	}
 }

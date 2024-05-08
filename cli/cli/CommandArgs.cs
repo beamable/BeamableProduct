@@ -35,5 +35,7 @@ public abstract class CommandArgs
 	public ContentService ContentService => Provider.GetService<ContentService>();
 	public ProjectService ProjectService => Provider.GetService<ProjectService>();
 
+	public AppLifecycle Lifecycle => Provider.GetService<AppLifecycle>();
+
 }
 

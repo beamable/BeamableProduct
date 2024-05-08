@@ -76,13 +76,7 @@ public static class DependencyInjectionExtensions
 				}
 
 				await command.Handle(args);
-
-				// signal the end of any client listening, which saves some time while the process itself shuts down.
-				if (args.AppContext.ShowRawOutput)
-				{
-					args.Provider.GetService<IDataReporterService>().Report("eof", new EofOutput());
-				}
-
+				
 			}, binder);
 			root.AddCommand(command);
 			return factory;
