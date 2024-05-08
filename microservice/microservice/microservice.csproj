@@ -60,17 +60,17 @@
   </ItemGroup>
 
   <ItemGroup Label="Pack Internal Beamable References: Net6.0">
-    <None Include="Targets/Beamable.Microservice.Runtime.targets" PackagePath="build/net6.0" Pack="True"/>
+    <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build/net6.0" Pack="True"/>
     <None Include="$(OutputPath)/net6.0/Beamable*" PackagePath="lib/net6.0" Pack="True"/>
     <None Include="$(OutputPath)/net6.0/Unity*" PackagePath="lib/net6.0" Pack="True"/>
   </ItemGroup>
   <ItemGroup Label="Pack Internal Beamable References: Net7.0">
-    <None Include="Targets/Beamable.Microservice.Runtime.targets" PackagePath="build/net7.0" Pack="True"/>
+    <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build/net7.0" Pack="True"/>
     <None Include="$(OutputPath)/net7.0/Beamable*" PackagePath="lib/net7.0" Pack="True"/>
     <None Include="$(OutputPath)/net7.0/Unity*" PackagePath="lib/net7.0" Pack="True"/>
   </ItemGroup>
   <ItemGroup Label="Pack Internal Beamable References: Net8.0">
-    <None Include="Targets/Beamable.Microservice.Runtime.targets" PackagePath="build/net8.0" Pack="True"/>
+    <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build/net8.0" Pack="True"/>
     <None Include="$(OutputPath)/net8.0/Beamable*" PackagePath="lib/net8.0" Pack="True"/>
     <None Include="$(OutputPath)/net8.0/Unity*" PackagePath="lib/net8.0" Pack="True"/>
   </ItemGroup>

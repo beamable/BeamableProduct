@@ -27,7 +27,7 @@
     </PropertyGroup>
 
     <ItemGroup Label="Pack: custom targets">
-        <None Include="Targets/Beamable.Common.targets" PackagePath="build/netstandard2.0" Pack="True"/>
+        <None Include="Targets/Beamable.Common.*" PackagePath="build/netstandard2.0" Pack="True"/>
     </ItemGroup>
 
     <ItemGroup>
