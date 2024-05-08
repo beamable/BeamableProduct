@@ -9,9 +9,9 @@ export SUFFIX=$(echo $VERSION_SUFFIX | tr . -)
 echo $SUFFIX
 if [ -z "$SUFFIX" ]
 then 
-    dotnet pack -c Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg /p:NuspecFile=Microservice.nuspec /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION
+    dotnet pack -c Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION
 else
-    dotnet pack -c Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg  --version-suffix=${SUFFIX-""} /p:NuspecFile=Microservice.nuspec /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION
+    dotnet pack -c Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg  --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION
 fi
 
 echo "Checking for publish"

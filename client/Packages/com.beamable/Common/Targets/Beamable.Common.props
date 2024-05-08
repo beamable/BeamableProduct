@@ -1,0 +1,25 @@
+<Project>
+    <PropertyGroup>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+    
+    <PropertyGroup>
+        <!-- by default, no copy happens. It needs to be an opt-in -->
+        <CopyToLinkedProjects Condition="$(CopyToLinkedProjects)==''">false</CopyToLinkedProjects>
+    </PropertyGroup>
+
+    <!--  Settings for Beamable Build  -->
+    <PropertyGroup>
+        <!-- The tool path for the beamCLI. "dotnet beam" will refer to the local project tool, and "beam" would install to a globally installed tool -->
+        <BeamableTool Condition="'$(BeamableTool)' == ''">$(BEAM_PATH)</BeamableTool>
+        <BeamableTool Condition="'$(BeamableTool)' == ''">beam</BeamableTool>
+    </PropertyGroup>
+
+    <!-- Make sure that the built dlls and their dependencies are in the output directory -->
+    <PropertyGroup>
+        <ProduceReferenceAssemblyInOutDir>true</ProduceReferenceAssemblyInOutDir>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <PublishDocumentationFile>true</PublishDocumentationFile>
+    </PropertyGroup>
+    
+</Project>
