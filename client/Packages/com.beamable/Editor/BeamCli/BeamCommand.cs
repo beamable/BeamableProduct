@@ -24,14 +24,14 @@ namespace Beamable.Editor.BeamCli.Commands
 		private IBeamCommandFactory _factory;
 		public BeamArgs defaultBeamArgs;
 
-		public BeamCommands(IBeamableRequester requester, BeamCommandFactory factory)
+		public BeamCommands(IBeamableRequester requester, IBeamCommandFactory factory)
 		{
 			_requester = requester;
 			_factory = factory;
 			defaultBeamArgs = ConstructDefaultArgs();
 		}
 
-		private BeamArgs ConstructDefaultArgs()
+		public BeamArgs ConstructDefaultArgs()
 		{
 			string cid = null;
 			string pid = null;

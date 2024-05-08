@@ -67,7 +67,7 @@ public class TailLogsCommand : StreamCommand<TailLogsCommandArgs, TailLogMessage
 
 	public override async Task Handle(TailLogsCommandArgs args)
 	{
-		await ProjectLogsService.Handle(args, HandleLog);
+		await ProjectLogsService.Handle(args, HandleLog, args.Lifecycle.CancellationToken);
 	}
 
 	void HandleLog(TailLogMessage logMessage)
