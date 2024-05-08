@@ -198,22 +198,6 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
           NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
 
-      - name: Prepare Docker Base Image (for SDK usage)
-        if: ${{ inputs.releaseUnitySdk == true && inputs.dryRun == false}}
-        run: sh ./build/bin/upload-docker-base-image.sh
-        working-directory: .
-
-      - name: Upload Docker Base Image (for SDK usage)
-        if: ${{ inputs.releaseUnitySdk == true }}
-        uses: docker/build-push-action@v5
-        with:
-          context: ./microservice/microservice
-          platforms: linux/arm64,linux/amd64
-          push: ${{inputs.dryRun == false}}
-          tags: "beamableinc/beamservice:${{steps.version.outputs.BUILD_ENV}}_${{ steps.version.outputs.VERSION }}"
-          build-args: |
-            BEAMABLE_SDK_VERSION=${{ steps.version.outputs.VERSION }}
-          
       - name: Upload Changelogs
         if: ${{ inputs.dryRun == false }}
         run: sh ./build/bin/upload-changelogs.sh
