@@ -1,17 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
+    <PropertyGroup Label="Dotnet Settings">
         <TargetFramework>net8.0</TargetFramework>
     </PropertyGroup>
-
-    <!-- Make sure that the built dlls and their dependencies are in the output directory -->
-    <PropertyGroup>
-        <ProduceReferenceAssemblyInOutDir>true</ProduceReferenceAssemblyInOutDir>
-        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-        <PublishDocumentationFile>true</PublishDocumentationFile>
-    </PropertyGroup>
-
-    <ItemGroup>
+    
+    <ItemGroup Label="Nuget References">
       <PackageReference Include="Beamable.Microservice.Runtime" Version="1.15.0-PREVIEW.RC1" />
       <PackageReference Include="MongoDB.Driver" Version="2.19.1" />
     </ItemGroup>

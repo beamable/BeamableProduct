@@ -24,14 +24,14 @@ namespace Beamable.Editor.BeamCli.Commands
 		private IBeamCommandFactory _factory;
 		public BeamArgs defaultBeamArgs;
 
-		public BeamCommands(IBeamableRequester requester, BeamCommandFactory factory)
+		public BeamCommands(IBeamableRequester requester, IBeamCommandFactory factory)
 		{
 			_requester = requester;
 			_factory = factory;
 			defaultBeamArgs = ConstructDefaultArgs();
 		}
 
-		private BeamArgs ConstructDefaultArgs()
+		public BeamArgs ConstructDefaultArgs()
 		{
 			string cid = null;
 			string pid = null;
@@ -55,6 +55,7 @@ namespace Beamable.Editor.BeamCli.Commands
 				skipStandaloneValidation = true,
 				dotnetPath = Path.GetFullPath(DotnetUtil.DotnetPath),
 				quiet = true,
+				raw = true
 			};
 			return beamArgs;
 		}
@@ -161,7 +162,7 @@ namespace Beamable.Editor.BeamCli
 		private Process _process;
 		protected virtual bool CaptureStandardBuffers => true;
 		public bool AutoLogErrors { get; set; } = false;
-		private TaskCompletionSource<int> _status, _standardOutComplete;
+		private TaskCompletionSource<int> _status;
 
 		protected int _exitCode = -1;
 		private bool _hasExecuted;
@@ -191,6 +192,11 @@ namespace Beamable.Editor.BeamCli
 		public IBeamCommand OnError(Action<ReportDataPoint<ErrorOutput>> cb)
 		{
 			return On<ErrorOutput>("error", cb);
+		}
+		
+		public IBeamCommand OnTerminate(Action<ReportDataPoint<EofOutput>> cb)
+		{
+			return On<EofOutput>("eof", cb);
 		}
 
 		public IBeamCommand On<T>(string type, Action<ReportDataPoint<T>> cb)
@@ -306,6 +312,8 @@ namespace Beamable.Editor.BeamCli
 			if (string.IsNullOrEmpty(Command)) throw new InvalidOperationException("must set command before running");
 			_hasExecuted = true;
 
+			
+			
 			using (_process = new System.Diagnostics.Process())
 			{
 				if (_command.Contains(".dll"))
@@ -340,7 +348,6 @@ namespace Beamable.Editor.BeamCli
 				_process.StartInfo.EnvironmentVariables["BEAM_DOTNET_PATH"] = Path.GetFullPath(DotnetUtil.DotnetPath);
 				
 				_status = new TaskCompletionSource<int>();
-				_standardOutComplete = new TaskCompletionSource<int>();
 				EventHandler eh = (s, e) =>
 				{
 					Task.Run(async () =>
@@ -352,22 +359,28 @@ namespace Beamable.Editor.BeamCli
 							return;
 						}
 
+
 						_dispatcher.Schedule(() =>
 						{
+							if (_exitCode >= 0) return;
 							// there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
-							// _hasExited = true;
 							_exitCode = _process.ExitCode;
-
-							// OnExit?.Invoke(_process.ExitCode);
-							// HandleOnExit();
-
 							_status.TrySetResult(0);
 						});
+
 					});
 				};
 
 				_process.Exited += eh;
 
+				var earlyExitTask = new TaskCompletionSource<int>();
+				OnTerminate(_ =>
+				{
+					CliLogger.Log("Early EOF exit");
+					_exitCode = 0;
+					earlyExitTask.SetResult(1);
+				});
+				
 				var pid = 0;
 				try
 				{
@@ -432,7 +445,7 @@ namespace Beamable.Editor.BeamCli
 					_process.BeginOutputReadLine();
 					_process.BeginErrorReadLine();
 
-					await _status.Task;
+					await Task.WhenAny(_status.Task, earlyExitTask.Task);
 
 					IEnumerator Defer()
 					{

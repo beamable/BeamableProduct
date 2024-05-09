@@ -1,0 +1,38 @@
+<Project>
+
+    <!-- After the build completes, we should auto-generate client code to any linked projects -->
+    <Target Name="generate-client" AfterTargets="Build" Condition="$(GenerateClientCode)==true AND $(DOTNET_RUNNING_IN_CONTAINER)!=true">
+        <Message Text="Generating client files..." Importance="high" />
+        <Exec Command="$(BeamableTool) project generate-client $(OutDir)/$(AssemblyName).dll --output-links $(Beam_GenerateClient_Args)" />
+    </Target>
+
+    <!-- Before starting the build, we need to prepare a few files and an .env file to pass startup information to the service -->
+    <Target Name="setup-beamable" BeforeTargets="Build" DependsOnTargets="RunResolvePackageDependencies" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true">
+        <CreateItem Include="@(PackageDefinitions)" Condition="'%(Name)' == 'Beamable.Microservice.Runtime'">
+            <Output TaskParameter="Include" ItemName="BeamablePackage" />
+        </CreateItem>
+
+        <PropertyGroup>
+            <BeamableVersion>@(BeamablePackage->'%(Version)')</BeamableVersion>
+        </PropertyGroup>
+
+        <!-- We need a file that lets the runtime know what version of Beamable it was built with... -->
+        <Message Text="Creating beamable version file..." Importance="high" />
+        <WriteLinesToFile File="$(OutDir)/.beamablesdkversion" Lines="$(BeamableVersion)" Overwrite="true" />
+    </Target>
+
+    <!-- When running in a container, before building, we need to prepare a few files -->
+    <Target Name="docker-setup-beamable" BeforeTargets="Build" DependsOnTargets="RunResolvePackageDependencies" Condition="$(DOTNET_RUNNING_IN_CONTAINER)==true">
+        <CreateItem Include="@(PackageDefinitions)" Condition="'%(Name)' == 'Beamable.Microservice.Runtime'">
+            <Output TaskParameter="Include" ItemName="BeamablePackage" />
+        </CreateItem>
+
+        <PropertyGroup>
+            <BeamableVersion>@(BeamablePackage->'%(Version)')</BeamableVersion>
+        </PropertyGroup>
+        <Message Text="Generating files..." Importance="high" />
+        <WriteLinesToFile File="$(PublishDir)/.beamablesdkversion" Lines="$(BeamableVersion)" Overwrite="true"/>
+        <WriteLinesToFile File="$(PublishDir)/.env" Lines="BEAMABLE_SDK_VERSION_EXECUTION=$(BeamableVersion)" Overwrite="true"/>
+    </Target>
+
+</Project>

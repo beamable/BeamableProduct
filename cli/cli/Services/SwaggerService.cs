@@ -109,8 +109,10 @@ public class SwaggerService
 			// on the "Source" folder of the plugin (or, in SAMS case, the project)
 			if (targetEngine == TARGET_ENGINE_NAME_UNREAL)
 			{
+				UnrealSourceGenerator.includeStatementPrefix = "BeamableCore/Public/";
 				UnrealSourceGenerator.headerFileOutputPath = "BeamableCore/Public/";
 				UnrealSourceGenerator.cppFileOutputPath = "BeamableCore/Private/";
+				UnrealSourceGenerator.blueprintIncludeStatementPrefix = "BeamableCoreBlueprintNodes/Public/BeamFlow/ApiRequest/";
 				UnrealSourceGenerator.blueprintHeaderFileOutputPath = "BeamableCoreBlueprintNodes/Public/BeamFlow/ApiRequest/";
 				UnrealSourceGenerator.blueprintCppFileOutputPath = "BeamableCoreBlueprintNodes/Private/BeamFlow/ApiRequest/";
 				UnrealSourceGenerator.previousGenerationPassesData = new PreviousGenerationPassesData();

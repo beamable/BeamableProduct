@@ -72,7 +72,7 @@ public class ProjectData
 		public bool Equals(Unreal other) => Path == other.Path;
 
 		public override bool Equals(object obj) => (obj is Unreal unreal && Equals(unreal)) ||
-												   (obj is string unrealPath && Equals(unrealPath));
+		                                           (obj is string unrealPath && Equals(unrealPath));
 
 		public override int GetHashCode() => (Path != null ? Path.GetHashCode() : 0);
 
@@ -117,52 +117,10 @@ public class ProjectService
 		_configService.SaveDataFile(Constants.CONFIG_LINKED_PROJECTS, _projects);
 	}
 
-	public void AddUnrealProjectWithOss(string projectPath)
+	public void AddUnrealProject(string projectPath, string microservicePluginName, string microservicePluginNameBp)
 	{
 		// Always ensure that we store things relative to the root of the UE project (not the repo)
 		var unrealRootPath = EnsureUnrealRootPath(projectPath);
-
-		// Ensure we have the OSS as a plugin.
-		var foundOss = unrealRootPath.GetDirectories("Plugins/OnlineSubsystemBeamable").Any();
-		if (!foundOss) throw new CliException("The selected UE project does not contain the OnlineSubsystemBeamable plugin. You should never see this. If you do, report a bug.");
-
-		// Find beamable folder (it must exist either as a parent of the UE project root OR inside the UE project root folder.
-		var beamableFolderPath = FindBeamableFolderPath(unrealRootPath);
-
-		// The path must always be stored relative to the .beamable folder as we run commands always through that.
-		projectPath = Path.GetRelativePath(beamableFolderPath.ToString(), unrealRootPath.ToString());
-		projectPath = projectPath.StartsWith(".") ? projectPath.Substring(1) : projectPath;
-		projectPath = projectPath.StartsWith("/") ? projectPath.Substring(1) : projectPath;
-
-		// Configure the ProjectData for Unreal
-		var projData = new ProjectData.Unreal();
-		projData.Path = projectPath;
-		projData.SourceFilesPath = projectPath + "Plugins/OnlineSubsystemBeamable/Source/";
-
-		projData.CoreProjectName = "OnlineSubsystemBeamable";
-		projData.BlueprintNodesProjectName = "OnlineSubsystemBeamableBp";
-
-		// These are defined relative to the SourceFilesPath
-		projData.MsCoreHeaderPath = projData.CoreProjectName + "/Public/Customer/";
-		projData.MsCoreCppPath = projData.CoreProjectName + "/Private/Customer/";
-		projData.MsBlueprintNodesHeaderPath = projData.BlueprintNodesProjectName + "/Public/Customer/";
-		projData.MsBlueprintNodesCppPath = projData.BlueprintNodesProjectName + "/Private/Customer/";
-
-		projData.BeamableBackendGenerationPassFile = projectPath + $"Plugins/BeamableCore/Source/{UnrealSourceGenerator.currentGenerationPassDataFilePath}.json";
-
-		// Save it
-		_projects.unrealProjectsPaths.Add(projData);
-		_configService.SaveDataFile(Constants.CONFIG_LINKED_PROJECTS, _projects);
-	}
-
-	public void AddUnrealProject(string projectPath, string msClientModuleName, string blueprintNodesModuleName, bool msClientModuleIsPublicPrivate, bool blueprintNodesModuleIsPublicPrivate)
-	{
-		// Always ensure that we store things relative to the root of the UE project (not the repo)
-		var unrealRootPath = EnsureUnrealRootPath(projectPath);
-
-		// Ensure we DON'T have the OSS as a plugin.
-		var foundOss = unrealRootPath.GetDirectories("Plugins/OnlineSubsystemBeamable").Any();
-		if (foundOss) throw new CliException("The selected UE project contains the OnlineSubsystemBeamable plugin. If you're a customer seeing this, please report a bug.");
 
 		// Find beamable folder (it must exist either as a parent of the UE project root OR inside the UE project root folder.
 		var beamableFolderPath = FindBeamableFolderPath(unrealRootPath);
@@ -176,16 +134,16 @@ public class ProjectService
 
 		var pathToBackendGenerationJson = $"Plugins/BeamableCore/Source/{UnrealSourceGenerator.currentGenerationPassDataFilePath}.json";
 		projData.Path = projectPath;
-		projData.SourceFilesPath = projectPath + (string.IsNullOrEmpty(projectPath) ? "Source/" : "/Source/");
+		projData.SourceFilesPath = projectPath + $"Plugins/{microservicePluginName}/";
 
-		projData.CoreProjectName = msClientModuleName;
-		projData.BlueprintNodesProjectName = blueprintNodesModuleName;
+		projData.CoreProjectName = microservicePluginName;
+		projData.BlueprintNodesProjectName = microservicePluginNameBp;
 
 		// These are defined relative to the SourceFilesPath
-		projData.MsCoreHeaderPath = projData.CoreProjectName + (msClientModuleIsPublicPrivate ? "/Public/" : "/");
-		projData.MsCoreCppPath = projData.CoreProjectName + (msClientModuleIsPublicPrivate ? "/Private/" : "/");
-		projData.MsBlueprintNodesHeaderPath = projData.BlueprintNodesProjectName + (blueprintNodesModuleIsPublicPrivate ? "/Public/" : "/");
-		projData.MsBlueprintNodesCppPath = projData.BlueprintNodesProjectName + (blueprintNodesModuleIsPublicPrivate ? "/Private/" : "/");
+		projData.MsCoreHeaderPath = "Source/" + projData.CoreProjectName + "/Public/";
+		projData.MsCoreCppPath = "Source/" + projData.CoreProjectName + "/Private/";
+		projData.MsBlueprintNodesHeaderPath = "Source/" + projData.BlueprintNodesProjectName + "/Public/";
+		projData.MsBlueprintNodesCppPath = "Source/" + projData.BlueprintNodesProjectName + "/Private/";
 
 		projData.BeamableBackendGenerationPassFile = projectPath + pathToBackendGenerationJson;
 
@@ -229,7 +187,7 @@ public class ProjectService
 		var info = await GetTemplateInfo();
 
 		if (!info.HasTemplates ||
-			!string.Equals(version, info.templateVersion, StringComparison.CurrentCultureIgnoreCase))
+		    !string.Equals(version, info.templateVersion, StringComparison.CurrentCultureIgnoreCase))
 		{
 			await PromptAndInstallTemplates(info.templateVersion, version, true);
 		}
@@ -385,6 +343,7 @@ public class ProjectService
 			throw new CliException(
 				$"Solution file({microserviceInfo.SolutionPath}) should not exists outside working directory({_configService.WorkingDirectory}) or its subdirectories.");
 		}
+
 		if (!File.Exists(microserviceInfo.SolutionPath))
 		{
 			string correctSlnPath = string.Empty;
@@ -411,6 +370,7 @@ public class ProjectService
 			var directory = Path.GetDirectoryName(microserviceInfo.SolutionPath);
 			args.ServicesBaseFolderPath = Path.Combine(directory!, "services");
 		}
+
 		microserviceInfo.ServicePath = Path.Combine(args.ServicesBaseFolderPath, args.ProjectName);
 		await RunDotnetCommand($"new beamstorage -n {args.ProjectName} -o {microserviceInfo.ServicePath}");
 		await RunDotnetCommand($"sln {microserviceInfo.SolutionPath} add {microserviceInfo.ServicePath}");
@@ -423,10 +383,7 @@ public class ProjectService
 		string usedVersion = args.SpecifiedVersion.ToString();
 		await EnsureCanUseTemplates(usedVersion);
 
-		var microserviceInfo = new NewServiceInfo
-		{
-			SolutionPath = args.SlnFilePath
-		};
+		var microserviceInfo = new NewServiceInfo { SolutionPath = args.SlnFilePath };
 		if (!args.GetSlnExists())
 		{
 			await CreateNewSolution(args.GetSlnDirectory(), args.GetSlnFileName());
@@ -614,6 +571,7 @@ COPY {commonProjectName}/. .
 			throw new CliException(
 				$"The given id=[{serviceName}] does not match any local services in the local beamo manifest.");
 		}
+
 		var canBeBuiltLocally = args.BeamoLocalSystem.VerifyCanBeBuiltLocally(serviceName);
 		if (!canBeBuiltLocally)
 		{
@@ -639,11 +597,7 @@ COPY {commonProjectName}/. .
 		using var cts = new CancellationTokenSource();
 
 		var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, commandStr)
-			.WithEnvironmentVariables(new Dictionary<string, string>
-			{
-				["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1",
-				["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1",
-			})
+			.WithEnvironmentVariables(new Dictionary<string, string> { ["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1", ["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1", })
 			.WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
 			{
 				if (line.Trim() == "dotnet watch : Waiting for a file to change before restarting dotnet...")
@@ -691,11 +645,7 @@ COPY {commonProjectName}/. .
 				});
 			}
 
-			return new ProjectErrorReport
-			{
-				errors = outputs,
-				isSuccess = outputs.Count == 0
-			};
+			return new ProjectErrorReport { errors = outputs, isSuccess = outputs.Count == 0 };
 		}
 		catch (Exception ex)
 		{
@@ -710,6 +660,7 @@ public class ProjectErrorReport
 	public bool isSuccess;
 	public List<ProjectErrorResult> errors = new List<ProjectErrorResult>();
 }
+
 public class ProjectErrorResult
 {
 	public string level;
