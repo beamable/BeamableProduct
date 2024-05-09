@@ -683,12 +683,6 @@ public class BeamoServiceDefinition
 	public string ProjectDirectory; // TODO: right, this still needs to be auto-infered on load.
 
 	/// <summary>
-	/// Path to be used as the docker context. This needs to be a parent of anything that
-	/// will be copied through the Dockerfile.
-	/// </summary>
-	public string DockerContextPath;
-
-	/// <summary>
 	/// Defines two services as being equal simply by using their <see cref="BeamoServiceDefinition.BeamoId"/>.
 	/// </summary>
 	public struct IdEquality : IEqualityComparer<BeamoServiceDefinition>
