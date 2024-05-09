@@ -36,7 +36,7 @@ public partial class BeamoLocalSystem
 			{
 				if (string.IsNullOrEmpty(buildContexPath))
 				{
-					buildContexPath = _configService.BaseDirectory;
+					buildContexPath = _configService.GetDockerBuildContextPath();
 				}
 
 				await PrepareDefaultLocalProtocol_HttpMicroservice(definition, protocol);
