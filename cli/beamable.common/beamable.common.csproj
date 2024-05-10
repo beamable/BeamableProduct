@@ -25,7 +25,7 @@
         <TargetFramework>netstandard2.0</TargetFramework>
     </PropertyGroup>
     <ItemGroup>
-      <ProjectReference Include="..\..\microservice\unityEngineStubs.addressables\unityenginestubs.addressables.csproj" />
+      <ProjectReference Include="..\..\microservice\unityenginestubs.addressables\unityenginestubs.addressables.csproj" />
       <ProjectReference Include="..\..\microservice\unityEngineStubs\unityenginestubs.csproj" />
     </ItemGroup>
     <ItemGroup Label="Pack: custom targets">
