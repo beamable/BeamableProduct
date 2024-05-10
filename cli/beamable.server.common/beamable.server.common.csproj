@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <PackageId>Beamable.Server.Common</PackageId>
+        <Version>0.0.0</Version>
+        <Authors>Beamable Team</Authors>
+        <Company>Beamable</Company>
+
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <AssemblyName>Beamable.Server.Common</AssemblyName>
+        <LangVersion>8</LangVersion>
+
+        <UseMongoNugetReference>true</UseMongoNugetReference>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <DefineConstants>$(DefineConstants);BEAMABLE_IGNORE_MONGO_MOCKS</DefineConstants>
+    </PropertyGroup>
+    
+    <ItemGroup>
+      <ProjectReference Include="..\..\microservice\unityEngineStubs\unityenginestubs.csproj" />
+      <ProjectReference Include="..\beamable.common\beamable.common.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="$(UseMongoNugetReference)=='true'">
+        <PackageReference Include="MongoDB.Driver" Version="2.15.1"/>
+    </ItemGroup>
+    
+</Project>

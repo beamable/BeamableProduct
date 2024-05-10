@@ -74,7 +74,10 @@ public class UnityCliGenerator : ICliGenerator
 		return output;
 	}
 
-	public static List<GeneratedFileDescriptor> GenerateMetaFiles(List<GeneratedFileDescriptor> sourceFiles)
+	public static List<GeneratedFileDescriptor> GenerateMetaFiles(List<GeneratedFileDescriptor> sourceFiles) =>
+		GenerateMetaFiles(sourceFiles.Select(x => x.FileName).ToList());
+	
+	public static List<GeneratedFileDescriptor> GenerateMetaFiles(List<string> sourceFiles)
 	{
 		var metas = new List<GeneratedFileDescriptor>(sourceFiles.Count);
 		const string GUID_TEMPLATE = "{GUID_REPLACE}";
@@ -93,11 +96,11 @@ MonoImporter:
 		using var md5 = MD5.Create();
 		foreach (var sourceFile in sourceFiles)
 		{
-			var hashedBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(sourceFile.FileName));
+			var hashedBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(sourceFile));
 			var guid = new Guid(hashedBytes);
 			metas.Add(new GeneratedFileDescriptor
 			{
-				FileName = sourceFile.FileName + ".meta",
+				FileName = sourceFile + ".meta",
 				Content = metaContentTemplate.Replace(GUID_TEMPLATE, guid.ToString().Replace("-", ""))
 			});
 		}

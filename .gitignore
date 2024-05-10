@@ -81,6 +81,13 @@ user-token.json
 /cli/*.sln.DotSettings.*
 cli/cli/beamoLocalRuntime.json
 
+/cli/beamable.common/bin/
+/cli/beamable.common/obj/
+/cli/beamable.server/bin/
+/cli/beamable.server/obj/
+/cli/beamable.server.common/bin/
+/cli/beamable.server.common/obj/
+
 /templates/artifacts/
 /templates/bin/
 /templates/obj

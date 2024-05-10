@@ -18,6 +18,7 @@ using cli.Options;
 using cli.Services;
 using cli.Services.Content;
 using cli.Services.HttpServer;
+using cli.UnityCommands;
 using cli.Unreal;
 using cli.Utils;
 using cli.Version;
@@ -290,6 +291,11 @@ public class App
 		Commands.AddSubCommand<CheckNBomberCommand, CheckNBomberCommandArgs, ProfilingCommand>();
 		Commands.AddSubCommand<RunNBomberCommand, RunNBomberCommandArgs, ProfilingCommand>();
 
+		Commands.AddRootCommand<UnityGroupCommand>();
+		Commands.AddSubCommand<CopyProjectSrcToUnityCommand, CopyProjectSrcToUnityCommandArgs, UnityGroupCommand>();
+		Commands.AddSubCommand<GetUnityVersionInfoCommand, GetUnityVersionInfoCommandArgs, UnityGroupCommand>();
+		Commands.AddSubCommand<ReleaseSharedUnityCodeCommand, ReleaseSharedUnityCodeCommandArgs, UnityGroupCommand>();
+		
 		// version commands
 		Commands.AddRootCommand<VersionCommand, VersionCommandArgs>();
 		Commands.AddSubCommandWithHandler<VersionListCommand, VersionListCommandArgs, VersionCommand>();

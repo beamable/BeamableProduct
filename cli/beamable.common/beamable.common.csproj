@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <PackageId>Beamable.Common</PackageId>
+        <Authors>Beamable Team</Authors>
+        <Company>Beamable</Company>
+        <PackageTags>Beamable;Game Server;Unity;Unreal;Games;Microservice</PackageTags>
+        <PackageProjectUrl>https://beamable.com</PackageProjectUrl>
+        <PackageIconUrl>https://beamable.com/wp-content/uploads/2024/01/kY9wLmfZ_400x400.jpg</PackageIconUrl>
+        <PackageReleaseNotes>https://beamable.github.io/changes/</PackageReleaseNotes>
+        <PackageLicenseUrl>https://beamable.com/license</PackageLicenseUrl>
+        <Description>
+            The Beamable.Common package contains the standard Beamable code that powers
+            The Beamable Unity SDK, as well as Beamable C# Microservices.
+        </Description>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <NoWarn>$(NoWarn);1591</NoWarn>
+
+        <DefineConstants>DB_MICROSERVICE;DISABLE_BEAMABLE_ASYNCMETHODBUILDER;BEAMABLE_ENABLE_UNITY_SERIALIZATION_TYPES</DefineConstants>
+        <AssemblyName>Unity.Beamable.Runtime.Common</AssemblyName>
+
+        <OutputType>Library</OutputType>
+        <VersionPrefix>$(VersionPrefix)</VersionPrefix>
+        <PackageOutputPath>./nupkg</PackageOutputPath>
+        <LangVersion>8</LangVersion>
+        <TargetFramework>netstandard2.0</TargetFramework>
+    </PropertyGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\..\microservice\unityEngineStubs.addressables\unityenginestubs.addressables.csproj" />
+      <ProjectReference Include="..\..\microservice\unityEngineStubs\unityenginestubs.csproj" />
+    </ItemGroup>
+    <ItemGroup Label="Pack: custom targets">
+        <None Include="Targets/Beamable.Common.*" PackagePath="build/netstandard2.0" Pack="True"/>
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Newtonsoft.Json" Version="12.0.2"/>
+    </ItemGroup>
+
+
+<!--    <ItemGroup>-->
+<!--        <Compile Remove="'\**" />-->
+<!--    </ItemGroup>-->
+
+<!--    <ItemGroup>-->
+<!--        <EmbeddedResource Remove="'\**" />-->
+<!--    </ItemGroup>-->
+
+<!--    <ItemGroup>-->
+<!--        <None Remove="'\**" />-->
+<!--    </ItemGroup>-->
+
+    <!--   
+        This code is repackaged as direct source code in Unity. 
+        Therefore, the following are targets to assist in porting the code to our linked Unity SDK
+     -->
+
+    <!-- Copy all project .cs files to Unity. Also create computed .meta files -->
+<!--    <Target Name="copy-code-to-unity">-->
+<!--&lt;!&ndash;        <Message Importance="high" Text="Hello $(ProjectPath)"/>&ndash;&gt;-->
+<!--        <Exec Command="beam unity copy-dotnet-src $(ProjectPath) ../../client/Packages/com.beamable/Common/Test"/>-->
+<!--    </Target>-->
+<!--    -->
+</Project>

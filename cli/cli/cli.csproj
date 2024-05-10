@@ -74,10 +74,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\client\Packages\com.beamable.server\Runtime\Common\beamable.server.common.csproj" />
-    <ProjectReference Include="..\..\client\Packages\com.beamable.server\SharedRuntime\beamable.server.csproj" />
-    <ProjectReference Include="..\..\client\Packages\com.beamable\Common\beamable.common.csproj" />
     <ProjectReference Include="..\..\microservice\beamable.tooling.common\beamable.tooling.common.csproj" />
+    <ProjectReference Include="..\..\cli\beamable.common\beamable.common.csproj" />
+    <ProjectReference Include="..\..\cli\beamable.server.common\beamable.server.common.csproj" />
+    <ProjectReference Include="..\..\cli\beamable.server\beamable.server.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -107,6 +107,12 @@
     <Exec Condition="'$(IsWindows)'=='true' And Exists('$(OutputPath)net8.0\')" Command=".\$(OutputPath)net8.0\$(AssemblyName) generate-interface --engine unity --output=..\..\client\Packages\com.beamable\Editor\BeamCli\Commands" />
     
     <Exec Command="dotnet tool run dotnet-format ../../client/Packages/com.beamable/Editor/BeamCli/Commands" />
+  </Target>
+  
+  <Target Name="CopyCodeToUnity" AfterTargets="Build" Condition="Exists('../../client/Packages/com.beamable')">
+    <Exec Command="$(OutDir)$(AssemblyName) unity release-shared-code ../beamable.common/beamable.common.csproj ../../client com.beamable Common --logs v" ConsoleToMSBuild="false" />
+    <Exec Command="$(OutDir)$(AssemblyName) unity release-shared-code ../beamable.server.common/beamable.server.common.csproj ../../client com.beamable.server Runtime/Common --logs v" ConsoleToMSBuild="false" />
+    <Exec Command="$(OutDir)$(AssemblyName) unity release-shared-code ../beamable.server/beamable.server.csproj ../../client com.beamable.server SharedRuntime --logs v" ConsoleToMSBuild="false" />
   </Target>
 
 </Project>
