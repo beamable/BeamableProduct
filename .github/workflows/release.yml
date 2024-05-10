@@ -108,6 +108,7 @@ jobs:
       - name: Install CLI
         run: |
           cd ./cli/cli
+          dotnet restore
           sh ./install.sh
 
       - name: Check CLI
