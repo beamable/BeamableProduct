@@ -25,7 +25,7 @@ public partial class BeamoLocalSystem
 	/// <param name="cancellationToken">A cancellation token to stop the registration.</param>
 	/// <param name="shouldServiceBeEnabled">Should service be enabled/disabled when adding service definition</param>
 	/// <returns>A valid <see cref="BeamoServiceDefinition"/> with the default values of the protocol.</returns>
-	public async Task<BeamoServiceDefinition> AddDefinition_HttpMicroservice(string beamId, string buildContexPath,
+	public async Task<BeamoServiceDefinition> AddDefinition_HttpMicroservice(string beamId,
 		string dockerfilePath, CancellationToken cancellationToken,
 		bool shouldServiceBeEnabled = true, string projectPath = null)
 	{
@@ -34,11 +34,7 @@ public partial class BeamoLocalSystem
 			BeamoProtocolType.HttpMicroservice,
 			async (definition, protocol) =>
 			{
-				if (string.IsNullOrEmpty(buildContexPath))
-				{
-					buildContexPath = _configService.GetDockerBuildContextPath();
-				}
-
+				string buildContexPath = _configService.GetDockerBuildContextPath();
 				await PrepareDefaultLocalProtocol_HttpMicroservice(definition, protocol);
 				protocol.DockerBuildContextPath = buildContexPath;
 				protocol.RelativeDockerfilePath = dockerfilePath;
@@ -46,7 +42,7 @@ public partial class BeamoLocalSystem
 				{
 					definition.ProjectDirectory = projectPath;
 				}
-				else if (!string.IsNullOrWhiteSpace(buildContexPath) && !string.IsNullOrWhiteSpace(dockerfilePath))
+				else if (!string.IsNullOrWhiteSpace(dockerfilePath))
 				{
 					definition.ProjectDirectory = Path.Combine(buildContexPath, dockerfilePath);
 					definition.ProjectDirectory = Regex.Replace(definition.ProjectDirectory, @"(/|\\)Dockerfile$", string.Empty);

@@ -330,7 +330,13 @@ public partial class BeamoLocalSystem
 		{
 			if (line.StartsWith("COPY"))
 			{
-				var parts = line.Split(" ");
+				var parts = line.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+
+				if (parts.Length != 3) //This needs to have the follow pattern: "COPY SOURCE DESTINATION", if not just continues reading file
+				{
+					continue;
+				}
+
 				var probablePath = parts[1];
 				try
 				{
@@ -338,9 +344,13 @@ public partial class BeamoLocalSystem
 					FileAttributes attr = File.GetAttributes(result); //If it's not a valid path, this is going to throw an exception
 					paths.Add(probablePath);
 				}
-				catch
+				catch(Exception e)
 				{
-					//Just keep going finding valid paths
+					// If the exception was an IO one, then throw it, otherwise just continue looking for paths
+					if (e is PathTooLongException || e is FileNotFoundException || e is DirectoryNotFoundException || e is IOException)
+					{
+						throw new CliException($"Dockerfile has invalid source path to copy. Docker path: [{dockerFilePath}] Error: [{e.Message}] Stack: [{e.StackTrace}]");
+					}
 				}
 
 			}

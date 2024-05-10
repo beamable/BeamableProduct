@@ -105,7 +105,21 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 						idsToDeploy.AddRange(dependencies.Select(d => d.name));
 					}
 
-					await _localBeamo.DeployToLocal(_localBeamo, idsToDeploy.Distinct().ToArray(),
+					var uniqueIds = idsToDeploy.Distinct().ToArray();
+					List<BeamoServiceDefinition> definitions = uniqueIds.Select(id =>
+						args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions
+							.FirstOrDefault(def => def.BeamoId == id)).ToList();
+
+					List<Promise<Unit>> promises = new List<Promise<Unit>>();
+					foreach (var definition in definitions)
+					{
+						promises.Add(args.BeamoLocalSystem.UpdateDockerFile(definition));
+					}
+
+					var sequence = Promise.Sequence(promises);
+					await sequence;
+
+					await _localBeamo.DeployToLocal(_localBeamo, uniqueIds,
 						forceAmdCpuArchitecture: args.forceAmdCpuArchitecture,
 						(beamoId, progress) =>
 						{

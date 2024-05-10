@@ -311,6 +311,11 @@ public partial class BeamoLocalSystem
 
 	public async Promise UpdateDockerFile(BeamoServiceDefinition serviceDefinition)
 	{
+		if (serviceDefinition.Protocol != BeamoProtocolType.HttpMicroservice)
+		{
+			return; // Only HttpMicroservices have dockerfiles
+		}
+
 		var serviceName = serviceDefinition.BeamoId;
 		var service = BeamoManifest.HttpMicroserviceLocalProtocols[serviceName];
 		var dockerfilePath = service.RelativeDockerfilePath;
@@ -359,12 +364,12 @@ COPY {servicePathTag} .";
 
 		foreach (var dependency in dependencies)
 		{
-			string path = _configService.GetRelativeToBeamableFolderPath(dependency.projPath);
+			string path = _configService.GetRelativeToDockerBuildContextPath(dependency.projPath);
 			newText = newText.Replace(endTag, replacement.Replace(serviceNameTag, dependency.name).Replace(servicePathTag, path));
 		}
 
 		//Copy the services files
-		var relativePath = _configService.GetRelativeToBeamableFolderPath(serviceDefinition.ProjectDirectory);
+		var relativePath = _configService.GetRelativeToDockerBuildContextPath(serviceDefinition.ProjectDirectory);
 		newText = newText.Replace(endTag, replacementWithCsproj.Replace(serviceNameTag, serviceDefinition.BeamoId).Replace(servicePathTag, relativePath));
 
 		await File.WriteAllTextAsync(dockerfilePath, newText);

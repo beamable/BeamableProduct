@@ -75,14 +75,12 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 		{
 			var directoryInfo = new DirectoryInfo(Path.Combine(args.ConfigService.BaseDirectory, microservicePath));
 			var name = directoryInfo.Name;
-			var context = args.ConfigService.GetDockerBuildContextPath();
 
 			var relativePath = args.ConfigService.GetRelativeToBeamableFolderPath(microservicePath);
 			var dockerPath = Path.Combine(relativePath, "Dockerfile");
 			var shouldBeEnabled = !args.disabledServices.Contains(name);
 
 			_ = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(name,
-				context,
 				dockerPath,
 				CancellationToken.None,
 				shouldBeEnabled,

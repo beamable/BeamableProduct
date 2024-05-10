@@ -52,7 +52,6 @@ public partial class BeamoLocalSystem
 			{
 				var sd = await AddDefinition_HttpMicroservice(httpReference.serviceName,
 					null,
-					null,
 					CancellationToken.None);
 
 				sd.ImageId = httpReference.imageId;

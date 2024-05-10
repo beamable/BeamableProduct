@@ -506,7 +506,6 @@ public class ProjectService
 
 		// now that a .beamable folder has been created, setup the beamo manifest
 		return args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value,
-			_configService.GetDockerBuildContextPath(),
 			projectDockerfilePath,
 			CancellationToken.None,
 			!args.Disabled,
