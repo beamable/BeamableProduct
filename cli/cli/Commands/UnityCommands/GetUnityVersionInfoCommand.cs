@@ -19,6 +19,8 @@ public class GetUnityVersionInfoCommandOutput
 
 public class GetUnityVersionInfoCommand : AtomicCommand<GetUnityVersionInfoCommandArgs, GetUnityVersionInfoCommandOutput>, IStandaloneCommand
 {
+	public override bool IsForInternalUse => true;
+
 	public GetUnityVersionInfoCommand() : base("get-version-info", "get information about a beamable unity sdk project's version dependencies")
 	{
 	}

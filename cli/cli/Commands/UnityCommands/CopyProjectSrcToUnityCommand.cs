@@ -17,6 +17,8 @@ public class CopyProjectSrcToUnityCommandOutput
 
 public class CopyProjectSrcToUnityCommand : AtomicCommand<CopyProjectSrcToUnityCommandArgs, CopyProjectSrcToUnityCommandOutput>, IStandaloneCommand
 {
+	public override bool IsForInternalUse => true;
+
 	public CopyProjectSrcToUnityCommand() : base("copy-dotnet-src", "Copy the src from a dotnet csproj project into a Unity project")
 	{
 	}

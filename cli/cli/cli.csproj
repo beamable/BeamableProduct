@@ -110,9 +110,9 @@
   </Target>
   
   <Target Name="CopyCodeToUnity" AfterTargets="Build" Condition="Exists('../../client/Packages/com.beamable')">
-    <Exec Command="$(OutDir)$(AssemblyName) unity release-shared-code ../beamable.common/beamable.common.csproj ../../client com.beamable Common --logs v" ConsoleToMSBuild="false" />
-    <Exec Command="$(OutDir)$(AssemblyName) unity release-shared-code ../beamable.server.common/beamable.server.common.csproj ../../client com.beamable.server Runtime/Common --logs v" ConsoleToMSBuild="false" />
-    <Exec Command="$(OutDir)$(AssemblyName) unity release-shared-code ../beamable.server/beamable.server.csproj ../../client com.beamable.server SharedRuntime --logs v" ConsoleToMSBuild="false" />
+<!--    <Exec Command="$(OutDir)$(AssemblyName) unity release-shared-code ../beamable.common/beamable.common.csproj ../../client com.beamable Common &#45;&#45;logs v" ConsoleToMSBuild="false" />-->
+<!--    <Exec Command="$(OutDir)$(AssemblyName) unity release-shared-code ../beamable.server.common/beamable.server.common.csproj ../../client com.beamable.server Runtime/Common &#45;&#45;logs v" ConsoleToMSBuild="false" />-->
+<!--    <Exec Command="$(OutDir)$(AssemblyName) unity release-shared-code ../beamable.server/beamable.server.csproj ../../client com.beamable.server SharedRuntime &#45;&#45;logs v" ConsoleToMSBuild="false" />-->
   </Target>
 
 </Project>

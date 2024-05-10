@@ -3,19 +3,19 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2017
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "microservice", "microservice/microservice.csproj", "{3872B68C-8902-40D9-AA4F-D8D6D9687D2B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.server", "..\client\Packages\com.beamable.server\SharedRuntime\beamable.server.csproj", "{591F0840-3B6E-43C6-BD8E-3DDAED9F966B}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.common", "..\client\Packages\com.beamable\Common\beamable.common.csproj", "{6C78B915-96F3-4D5E-B5F7-5FC8309724D8}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "unityenginestubs", "unityEngineStubs\unityenginestubs.csproj", "{DE912FD3-7463-49FD-84E7-C870275262C9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "microserviceTests", "microserviceTests\microserviceTests.csproj", "{571CDC94-D9BB-4402-BBA2-770C5400E533}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.server.common", "..\client\Packages\com.beamable.server\Runtime\Common\beamable.server.common.csproj", "{5A3B42BD-623E-47FC-8468-732B96471529}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.tooling.common", "beamable.tooling.common\beamable.tooling.common.csproj", "{23B019AB-DFB0-4E0F-AEA3-2D21767D5719}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "unityenginestubs.addressables", "unityenginestubs.addressables\unityenginestubs.addressables.csproj", "{ED963DB4-9FE6-4713-9766-7EB92FE98AF8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.common", "..\cli\beamable.common\beamable.common.csproj", "{E1C87663-1664-4EB3-A51D-AAEEF31969EB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.server.common", "..\cli\beamable.server.common\beamable.server.common.csproj", "{58565E54-D92D-4D7F-8B2C-D518496D12CB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.server", "..\cli\beamable.server\beamable.server.csproj", "{30491894-2520-4F78-9788-7D99835007F7}"
 EndProject
 
 Global
@@ -28,14 +28,6 @@ Global
 		{3872B68C-8902-40D9-AA4F-D8D6D9687D2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3872B68C-8902-40D9-AA4F-D8D6D9687D2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3872B68C-8902-40D9-AA4F-D8D6D9687D2B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{591F0840-3B6E-43C6-BD8E-3DDAED9F966B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{591F0840-3B6E-43C6-BD8E-3DDAED9F966B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{591F0840-3B6E-43C6-BD8E-3DDAED9F966B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{591F0840-3B6E-43C6-BD8E-3DDAED9F966B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6C78B915-96F3-4D5E-B5F7-5FC8309724D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6C78B915-96F3-4D5E-B5F7-5FC8309724D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6C78B915-96F3-4D5E-B5F7-5FC8309724D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6C78B915-96F3-4D5E-B5F7-5FC8309724D8}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DE912FD3-7463-49FD-84E7-C870275262C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DE912FD3-7463-49FD-84E7-C870275262C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DE912FD3-7463-49FD-84E7-C870275262C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -44,10 +36,6 @@ Global
 		{571CDC94-D9BB-4402-BBA2-770C5400E533}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{571CDC94-D9BB-4402-BBA2-770C5400E533}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{571CDC94-D9BB-4402-BBA2-770C5400E533}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5A3B42BD-623E-47FC-8468-732B96471529}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5A3B42BD-623E-47FC-8468-732B96471529}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5A3B42BD-623E-47FC-8468-732B96471529}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5A3B42BD-623E-47FC-8468-732B96471529}.Release|Any CPU.Build.0 = Release|Any CPU
 		{23B019AB-DFB0-4E0F-AEA3-2D21767D5719}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{23B019AB-DFB0-4E0F-AEA3-2D21767D5719}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{23B019AB-DFB0-4E0F-AEA3-2D21767D5719}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -56,5 +44,17 @@ Global
 		{ED963DB4-9FE6-4713-9766-7EB92FE98AF8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ED963DB4-9FE6-4713-9766-7EB92FE98AF8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ED963DB4-9FE6-4713-9766-7EB92FE98AF8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E1C87663-1664-4EB3-A51D-AAEEF31969EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E1C87663-1664-4EB3-A51D-AAEEF31969EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E1C87663-1664-4EB3-A51D-AAEEF31969EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E1C87663-1664-4EB3-A51D-AAEEF31969EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58565E54-D92D-4D7F-8B2C-D518496D12CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58565E54-D92D-4D7F-8B2C-D518496D12CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58565E54-D92D-4D7F-8B2C-D518496D12CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58565E54-D92D-4D7F-8B2C-D518496D12CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{30491894-2520-4F78-9788-7D99835007F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{30491894-2520-4F78-9788-7D99835007F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{30491894-2520-4F78-9788-7D99835007F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{30491894-2520-4F78-9788-7D99835007F7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -35,28 +35,8 @@
         <PackageReference Include="Newtonsoft.Json" Version="12.0.2"/>
     </ItemGroup>
 
-
-<!--    <ItemGroup>-->
-<!--        <Compile Remove="'\**" />-->
-<!--    </ItemGroup>-->
-
-<!--    <ItemGroup>-->
-<!--        <EmbeddedResource Remove="'\**" />-->
-<!--    </ItemGroup>-->
-
-<!--    <ItemGroup>-->
-<!--        <None Remove="'\**" />-->
-<!--    </ItemGroup>-->
-
-    <!--   
-        This code is repackaged as direct source code in Unity. 
-        Therefore, the following are targets to assist in porting the code to our linked Unity SDK
-     -->
-
-    <!-- Copy all project .cs files to Unity. Also create computed .meta files -->
-<!--    <Target Name="copy-code-to-unity">-->
-<!--&lt;!&ndash;        <Message Importance="high" Text="Hello $(ProjectPath)"/>&ndash;&gt;-->
-<!--        <Exec Command="beam unity copy-dotnet-src $(ProjectPath) ../../client/Packages/com.beamable/Common/Test"/>-->
-<!--    </Target>-->
-<!--    -->
+    <Target Name="CopyCodeToUnity" AfterTargets="Build" Condition="Exists('../../client/Packages/com.beamable') AND Exists('../cli/bin/Debug/net8.0/Beamable.Tools.dll')">
+        <!-- This is sort of jank, but this will use the build of the cli bin if it exists to copy the src over to Unity. -->
+        <Exec Command="dotnet ../cli/bin/Debug/net8.0/Beamable.Tools.dll unity release-shared-code ../beamable.common/beamable.common.csproj ../../client com.beamable Common --logs v"/>
+    </Target>
 </Project>

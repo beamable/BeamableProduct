@@ -26,4 +26,9 @@
         <PackageReference Include="MongoDB.Driver" Version="2.15.1"/>
     </ItemGroup>
     
+    <Target Name="CopyCodeToUnity" AfterTargets="Build" Condition="Exists('../../client/Packages/com.beamable') AND Exists('../cli/bin/Debug/net8.0/Beamable.Tools.dll')">
+        <!-- This is sort of jank, but this will use the build of the cli bin if it exists to copy the src over to Unity. -->
+        <Exec Command="dotnet ../cli/bin/Debug/net8.0/Beamable.Tools.dll unity release-shared-code ../beamable.server/beamable.server.csproj ../../client com.beamable.server SharedRuntime --logs v"/>
+    </Target>
+    
 </Project>

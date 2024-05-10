@@ -18,6 +18,8 @@ public class ReleaseSharedUnityCodeCommandOutput
 
 public class ReleaseSharedUnityCodeCommand : AtomicCommand<ReleaseSharedUnityCodeCommandArgs, ReleaseSharedUnityCodeCommandOutput>, IStandaloneCommand
 {
+	public override bool IsForInternalUse => true;
+
 	public ReleaseSharedUnityCodeCommand() : base("release-shared-code", "Copy the various shared code projects into the Beamable Unity SDK")
 	{
 	}
@@ -82,16 +84,25 @@ public class ReleaseSharedUnityCodeCommand : AtomicCommand<ReleaseSharedUnityCod
 		var dstPath = Path.Combine(info.packageFolder, args.packageRelativeTarget);
 		Log.Information($"Copying code src=[{args.csProjPath}] to dst=[{dstPath}]");
 
-		// if (Directory.Exists(dstPath))
-		// {
-		// if we delete everything, we'll delete a few asmdef files :/ 
-		// 	Directory.Delete(dstPath, true);
-		// }
+		// clean up all old cs and meta files, while leaving possible Unity specific files, like asmdef files.
+		DeleteAllFilesWithExtensions(dstPath, new string[]{".cs", ".cs.meta"});
 
 		CopyProjectSrcToUnityCommand.CopyProject(args.csProjPath, dstPath);
 		return Task.FromResult(new ReleaseSharedUnityCodeCommandOutput
 		{
 			message = $"Copying code src=[{args.csProjPath}] to dst=[{dstPath}]"
 		});
+	}
+
+	public static void DeleteAllFilesWithExtensions(string folder, string[] extensions)
+	{
+		foreach (var ext in extensions)
+		{
+			var filesToDelete = Directory.GetFiles(folder, $"*{ext}", SearchOption.AllDirectories);
+			foreach (var file in filesToDelete)
+			{
+				File.Delete(file);
+			}
+		}
 	}
 }
