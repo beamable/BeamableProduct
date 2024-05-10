@@ -212,12 +212,9 @@ jobs:
               "exp": "staging",
               "production": "production"
             }')[github.event.inputs.releaseType] }}
-      - name: Prepare Microservice Dependencies
-        run: sh ./build/docker/scripts/build-microservice-deps.sh
-        env:
-          VERSION: ${{ steps.version.outputs.VERSION }}
+
       - name: Publish Nuget Packages
-        run: sh ./build/docker/scripts/build-cli.sh
+        run: sh ./build/bin/release-nuget.sh
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
           VERSION_PREFIX: ${{ steps.version.outputs.VERSION_PREFIX }}
