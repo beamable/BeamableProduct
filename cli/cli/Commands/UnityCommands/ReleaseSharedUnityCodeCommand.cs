@@ -1,5 +1,6 @@
 using Serilog;
 using System.CommandLine;
+using System.IO.Compression;
 
 namespace cli.UnityCommands;
 
@@ -105,4 +106,6 @@ public class ReleaseSharedUnityCodeCommand : AtomicCommand<ReleaseSharedUnityCod
 			}
 		}
 	}
+
+
 }

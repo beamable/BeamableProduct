@@ -291,10 +291,14 @@ public class App
 		Commands.AddSubCommand<CheckNBomberCommand, CheckNBomberCommandArgs, ProfilingCommand>();
 		Commands.AddSubCommand<RunNBomberCommand, RunNBomberCommandArgs, ProfilingCommand>();
 
+		// unity commands
 		Commands.AddRootCommand<UnityGroupCommand>();
 		Commands.AddSubCommand<CopyProjectSrcToUnityCommand, CopyProjectSrcToUnityCommandArgs, UnityGroupCommand>();
 		Commands.AddSubCommand<GetUnityVersionInfoCommand, GetUnityVersionInfoCommandArgs, UnityGroupCommand>();
 		Commands.AddSubCommand<ReleaseSharedUnityCodeCommand, ReleaseSharedUnityCodeCommandArgs, UnityGroupCommand>();
+		Commands.AddSubCommand<DownloadNugetDepToUnityCommand, DownloadNugetDepToUnityCommandArgs, UnityGroupCommand>();
+		Commands.AddSubCommand<DownloadAllNugetDepsToUnityCommand, DownloadAllNugetDepsToUnityCommandArgs,
+				UnityGroupCommand>();
 		
 		// version commands
 		Commands.AddRootCommand<VersionCommand, VersionCommandArgs>();
