@@ -31,6 +31,10 @@
     <ItemGroup Label="Pack: custom targets">
         <None Include="Targets/Beamable.Common.*" PackagePath="build/netstandard2.0" Pack="True"/>
     </ItemGroup>
+    <ItemGroup Label="Pack: source code">
+        <None Include="Runtime/**/*.cs" PackagePath="content/netstandard2.0/Runtime" Pack="True" />
+    </ItemGroup>
+    
     <ItemGroup>
         <PackageReference Include="Newtonsoft.Json" Version="12.0.2"/>
     </ItemGroup>
