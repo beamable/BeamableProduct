@@ -12,7 +12,7 @@ public class DownloadAllNugetDepsToUnityCommandOutput
 {
 	
 }
-public class DownloadAllNugetDepsToUnityCommand : AtomicCommand<DownloadAllNugetDepsToUnityCommandArgs, DownloadAllNugetDepsToUnityCommandOutput>
+public class DownloadAllNugetDepsToUnityCommand : AtomicCommand<DownloadAllNugetDepsToUnityCommandArgs, DownloadAllNugetDepsToUnityCommandOutput>, IStandaloneCommand
 {
 	public override bool IsForInternalUse => true;
 
