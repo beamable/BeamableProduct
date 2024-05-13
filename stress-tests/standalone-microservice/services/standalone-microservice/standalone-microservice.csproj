@@ -98,6 +98,9 @@
       <ProjectReference Include="..\..\..\..\client\Packages\com.beamable.server\Runtime\Common\beamable.server.common.csproj" />
       <ProjectReference Include="..\..\..\..\client\Packages\com.beamable.server\SharedRuntime\beamable.server.csproj" />
       <ProjectReference Include="..\..\..\..\client\Packages\com.beamable\Common\beamable.common.csproj" />
+      <ProjectReference Include="..\..\..\..\cli\beamable.common\beamable.common.csproj" />
+      <ProjectReference Include="..\..\..\..\cli\beamable.server.common\beamable.server.common.csproj" />
+      <ProjectReference Include="..\..\..\..\cli\beamable.server\beamable.server.csproj" />
       <ProjectReference Include="..\..\..\..\microservice\microservice\microservice.csproj" />
       <ProjectReference Include="..\..\..\..\microservice\unityEngineStubs\unityenginestubs.csproj" />
     </ItemGroup>
