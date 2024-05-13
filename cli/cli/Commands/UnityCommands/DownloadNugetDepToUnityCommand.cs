@@ -62,8 +62,9 @@ public class DownloadNugetDepToUnityCommand : AtomicCommand<DownloadNugetDepToUn
 					// Iterate through each entry in the zip archive
 					Log.Debug($"checking log entries for prefix=[{packageSrc}]");
 					var tasks = new List<Task>();
-					foreach (ZipArchiveEntry entry in zipArchive.Entries)
+					foreach (ZipArchiveEntry entryIterator in zipArchive.Entries)
 					{
+						var entry = entryIterator; // capture.
 						// Check if the entry is one of the files we want to save
 						if (entry.FullName.StartsWith(packageSrc))
 						{
@@ -74,21 +75,22 @@ public class DownloadNugetDepToUnityCommand : AtomicCommand<DownloadNugetDepToUn
 							Directory.CreateDirectory(Path.GetDirectoryName(filePath));
 
 							// Extract the entry to a file on disk
-							var task = Task.Run(async () =>
+							
 							{
 								try
 								{
+									if (File.Exists(filePath)) File.Delete(filePath);
+									
 									using (Stream entryStream = entry.Open())
 									using (FileStream fileStream = File.Create(filePath))
 									using (StreamWriter writer = new StreamWriter(fileStream))
 									{
 										await writer.WriteLineAsync(
-											$"// this file was copied from nuget package {packageId}@{packageVersion}\n// {detailUrl}");
+											$"// this file was copied from nuget package {packageId}@{packageVersion}\n// {detailUrl}\n");
 										await writer.FlushAsync();
 										await entryStream.CopyToAsync(fileStream);
-										await entryStream.FlushAsync();
-										entryStream.Close();
 									}
+									
 									Log.Debug($"Extracted and saved: {entry.FullName} to {filePath}");
 									
 									var metaDesc = UnityCliGenerator.GenerateMetaFile(filePath);
@@ -99,9 +101,10 @@ public class DownloadNugetDepToUnityCommand : AtomicCommand<DownloadNugetDepToUn
 								catch (Exception ex)
 								{
 									Log.Warning($"Failed to handle {entry.FullName}. {ex.GetType().Name} - {ex.Message}");
+									throw new CliException(
+										$"Failed to handle {entry.FullName}. {ex.GetType().Name} - {ex.Message}");
 								}
-							});
-							tasks.Add(task);
+							}
 
 						}
 						else
@@ -110,7 +113,6 @@ public class DownloadNugetDepToUnityCommand : AtomicCommand<DownloadNugetDepToUn
 						}
 					}
 
-					await Task.WhenAll(tasks);
 				}
 			}
 		}
