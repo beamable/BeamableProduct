@@ -102,13 +102,12 @@ namespace Beamable.Common.Api.Stats
 			foreach (var stat in stats)
 			{
 				var value = $"{stat.v}";
-				// TODO: CHRIS FIX THIS BEFORE MERGING May 10, 2024
-// #if DB_MICROSERVICE
-//             if (stat.v is Newtonsoft.Json.Linq.JContainer jContainer)
-//             {
-//                value = jContainer.ToString(Newtonsoft.Json.Formatting.None);
-//             }
-// #endif
+#if DB_MICROSERVICE
+            if (stat.v is Newtonsoft.Json.Linq.JContainer jContainer)
+            {
+               value = jContainer.ToString(Newtonsoft.Json.Formatting.None);
+            }
+#endif
 
 				result[stat.k] = value;
 			}
