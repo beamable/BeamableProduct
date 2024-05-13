@@ -68,7 +68,12 @@ public class ConfigService
 	/// <returns></returns>
 	public string GetDockerBuildContextPath()
 	{
-		return GetRelativeToBeamableFolderPath(BaseDirectory);
+		var path = BaseDirectory;
+		if (string.IsNullOrEmpty(path))
+		{
+			path = _dir;
+		}
+		return GetRelativeToBeamableFolderPath(path);
 	}
 
 	/// <summary>
