@@ -24,7 +24,7 @@ public class DownloadAllNugetDepsToUnityCommand : AtomicCommand<DownloadAllNuget
 	{
 		AddArgument(new Argument<string>("unityProjectPath", "the path to the Unity project"), (args, i) => args.unityProjectPath = i);
 
-	}
+	}	
 
 	public override async Task<DownloadAllNugetDepsToUnityCommandOutput> GetResult(DownloadAllNugetDepsToUnityCommandArgs args)
 	{
