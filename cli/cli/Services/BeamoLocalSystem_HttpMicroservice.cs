@@ -66,6 +66,15 @@ public partial class BeamoLocalSystem
 		return output;
 	}
 
+	public async Promise<string> GetMicroserviceHostPort(string serviceName)
+	{
+		var localMicroserviceName = GetBeamIdAsMicroserviceContainer(serviceName);
+
+		ContainerInspectResponse storageDesc = await _client.Containers.InspectContainerAsync(localMicroserviceName);
+
+		return "";
+	}
+
 	public async Promise<string> GetStorageHostPort(string storageName)
 	{
 		var localStorageContainerName = GetBeamIdAsMongoContainer(storageName);
