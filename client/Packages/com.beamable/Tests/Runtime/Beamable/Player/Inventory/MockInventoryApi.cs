@@ -12,6 +12,11 @@ namespace Beamable.Tests.Runtime
 			throw new System.NotImplementedException();
 		}
 
+		public Promise<CommonResponse> ObjectPutTransfer(long objectId, TransferRequest gsReq)
+		{
+			throw new System.NotImplementedException();
+		}
+
 		Promise<ItemContentResponse> IInventoryApi.GetItems(bool includeAuthHeader)
 		{
 			throw new System.NotImplementedException();
@@ -28,6 +33,11 @@ namespace Beamable.Tests.Runtime
 		}
 
 		Promise<MultipliersGetResponse> IInventoryApi.ObjectGetMultipliers(long objectId, bool includeAuthHeader)
+		{
+			throw new System.NotImplementedException();
+		}
+
+		public Promise<CommonResponse> ObjectDeleteTransaction(long objectId, EndTransactionRequest gsReq)
 		{
 			throw new System.NotImplementedException();
 		}
