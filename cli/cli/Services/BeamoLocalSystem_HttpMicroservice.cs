@@ -14,7 +14,7 @@ namespace cli.Services;
 public partial class BeamoLocalSystem
 {
 	public string GetBeamIdAsMicroserviceContainer(string beamoId) => $"{beamoId}_httpMicroservice";
-	
+
 	/// <summary>
 	/// Registers a <see cref="BeamoServiceDefinition"/> of with the <see cref="BeamoProtocolType"/> of <see cref="BeamoProtocolType.HttpMicroservice"/>.
 	/// </summary>
@@ -71,13 +71,13 @@ public partial class BeamoLocalSystem
 		var localStorageContainerName = GetBeamIdAsMongoContainer(storageName);
 
 		ContainerInspectResponse storageDesc = await _client.Containers.InspectContainerAsync(localStorageContainerName);
-		
+
 		if (!storageDesc.NetworkSettings.Ports.TryGetValue($"{MONGO_DATA_CONTAINER_PORT}/tcp", out IList<PortBinding> bindings))
 		{
 			throw new Exception(
 				$"could not get host port of storage=[{storageName}] because it was not mapped in storage container");
 		}
-		
+
 		return bindings[0].HostPort;
 	}
 
@@ -88,7 +88,7 @@ public partial class BeamoLocalSystem
 		{
 			throw new Exception($"Could not find entry for {storageName}");
 		}
-		
+
 		var hostPort = await GetStorageHostPort(storageName);
 
 		var str = $"mongodb://{localStorage.RootUsername}:{localStorage.RootPassword}@{host}:{hostPort}";

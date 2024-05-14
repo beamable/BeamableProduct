@@ -17,7 +17,7 @@ public class RequestCliCommandArgs : CommandArgs
 
 public class RequestCliCommandOutput
 {
-	
+
 }
 
 public class RequestCliCommand : StreamCommand<RequestCliCommandArgs, RequestCliCommandOutput>
@@ -39,14 +39,14 @@ public class RequestCliCommand : StreamCommand<RequestCliCommandArgs, RequestCli
 	public override async Task Handle(RequestCliCommandArgs args)
 	{
 		var client = new HttpClient();
-		
+
 		var req = new HttpRequestMessage(HttpMethod.Post, $"http://127.0.0.1:{args.port}/execute");
 
 		var json = JsonConvert.SerializeObject(new ServerRequest() { commandLine = args.commandLine });
-		
+
 		req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
-		
+
 		try
 		{
 			Log.Information("sending request " + json);
@@ -60,14 +60,14 @@ public class RequestCliCommand : StreamCommand<RequestCliCommandArgs, RequestCli
 			{
 				Log.Debug("waiting for next chunk of data...");
 				var line = await reader.ReadLineAsync();
-				
+
 				if (string.IsNullOrEmpty(line)) continue; // TODO: what if the message contains a \n character?
 				line = line.Replace("\u200b", ""); // remove life-cycle zero-width character 
 
 				if (!line.StartsWith("data: ")) continue;
 
 				var lineJson = line.Substring("data: ".Length); // remove the Server-Side-Event notation
-					
+
 				Log.Information("received, " + lineJson);
 
 			}
