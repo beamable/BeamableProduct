@@ -71,16 +71,16 @@ public class ServicesSetManifestCommand : AppCommand<ServicesSetManifestCommandA
 				args.storagesPaths[i], CancellationToken.None);
 		}
 
-		foreach (string microservicePath in args.microservices)
+		foreach (var microservicePath in args.microservices)
 		{
 			var directoryInfo = new DirectoryInfo(Path.Combine(args.ConfigService.BaseDirectory, microservicePath));
 			var name = directoryInfo.Name;
-			var contextPath = args.ConfigService.GetRelativeToBeamableFolderPath(directoryInfo.Parent!.FullName);
-			var dockerPath = Path.Combine(name, "Dockerfile");
+
+			var relativePath = args.ConfigService.GetRelativeToBeamableFolderPath(microservicePath);
+			var dockerPath = Path.Combine(relativePath, "Dockerfile");
 			var shouldBeEnabled = !args.disabledServices.Contains(name);
 
 			_ = await args.BeamoLocalSystem.AddDefinition_HttpMicroservice(name,
-				contextPath,
 				dockerPath,
 				CancellationToken.None,
 				shouldBeEnabled,

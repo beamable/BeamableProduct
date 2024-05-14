@@ -239,7 +239,6 @@ public class ServicesRegisterCommand : AppCommand<ServicesRegisterCommandArgs>
 				EnsureRemoteHealthEndpointAndPort(ref httpArgs);
 
 				await _localBeamo.AddDefinition_HttpMicroservice(args.BeamoId,
-					httpArgs.LocalDockerBuildContext,
 					httpArgs.LocalDockerfileRelativePath,
 					CancellationToken.None);
 

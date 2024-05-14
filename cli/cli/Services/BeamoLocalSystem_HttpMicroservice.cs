@@ -14,6 +14,8 @@ namespace cli.Services;
 public partial class BeamoLocalSystem
 {
 	public string GetBeamIdAsMicroserviceContainer(string beamoId) => $"{beamoId}_httpMicroservice";
+
+	private const string HTTM_MICROSERVICE_CONTAINER_PORT = "6565";
 	
 	/// <summary>
 	/// Registers a <see cref="BeamoServiceDefinition"/> of with the <see cref="BeamoProtocolType"/> of <see cref="BeamoProtocolType.HttpMicroservice"/>.
@@ -25,7 +27,7 @@ public partial class BeamoLocalSystem
 	/// <param name="cancellationToken">A cancellation token to stop the registration.</param>
 	/// <param name="shouldServiceBeEnabled">Should service be enabled/disabled when adding service definition</param>
 	/// <returns>A valid <see cref="BeamoServiceDefinition"/> with the default values of the protocol.</returns>
-	public async Task<BeamoServiceDefinition> AddDefinition_HttpMicroservice(string beamId, string buildContexPath,
+	public async Task<BeamoServiceDefinition> AddDefinition_HttpMicroservice(string beamId,
 		string dockerfilePath, CancellationToken cancellationToken,
 		bool shouldServiceBeEnabled = true, string projectPath = null)
 	{
@@ -34,6 +36,7 @@ public partial class BeamoLocalSystem
 			BeamoProtocolType.HttpMicroservice,
 			async (definition, protocol) =>
 			{
+				string buildContexPath = _configService.GetDockerBuildContextPath();
 				await PrepareDefaultLocalProtocol_HttpMicroservice(definition, protocol);
 				protocol.DockerBuildContextPath = buildContexPath;
 				protocol.RelativeDockerfilePath = dockerfilePath;
@@ -41,7 +44,7 @@ public partial class BeamoLocalSystem
 				{
 					definition.ProjectDirectory = projectPath;
 				}
-				else if (!string.IsNullOrWhiteSpace(buildContexPath) && !string.IsNullOrWhiteSpace(dockerfilePath))
+				else if (!string.IsNullOrWhiteSpace(dockerfilePath))
 				{
 					definition.ProjectDirectory = Path.Combine(buildContexPath, dockerfilePath);
 					definition.ProjectDirectory = Regex.Replace(definition.ProjectDirectory, @"(/|\\)Dockerfile$", string.Empty);
@@ -63,6 +66,21 @@ public partial class BeamoLocalSystem
 		}
 
 		return output;
+	}
+
+	public async Promise<string> GetMicroserviceHostPort(string serviceName)
+	{
+		var localMicroserviceName = GetBeamIdAsMicroserviceContainer(serviceName);
+
+		ContainerInspectResponse storageDesc = await _client.Containers.InspectContainerAsync(localMicroserviceName);
+
+		if (!storageDesc.NetworkSettings.Ports.TryGetValue($"{HTTM_MICROSERVICE_CONTAINER_PORT}/tcp", out IList<PortBinding> bindings))
+		{
+			throw new Exception(
+				$"could not get host port of microservice=[{serviceName}] because it was not mapped in container");
+		}
+
+		return bindings[0].HostPort;
 	}
 
 	public async Promise<string> GetStorageHostPort(string storageName)
