@@ -215,10 +215,10 @@ public partial class BeamoLocalSystem
 	public async Task<string> BuildAndCreateImage(string imageName, string dockerBuildContextPath, string dockerfilePathInBuildContext, Action<float> progressUpdateHandler,
 		string containerImageTag = "latest", bool forceAmdCpuArchitecture = false)
 	{
-		dockerBuildContextPath = _configService.GetRelativeToBeamableFolderPath(dockerBuildContextPath);
 
+		var pathsList = ParseDockerfile(dockerfilePathInBuildContext);
 
-		using (var stream = CreateTarballForDirectory(dockerBuildContextPath))
+		using (var stream = CreateTarballForDirectory(pathsList))
 		{
 			var tag = $"{imageName}:{containerImageTag}";
 			var progress = 0f;
@@ -320,23 +320,68 @@ public partial class BeamoLocalSystem
 		return _client.PullAndCreateImage(publicImageName, progressUpdateHandler);
 	}
 
+	private static List<string> ParseDockerfile(string dockerFilePath)
+	{
+		var paths = new List<string>();
+
+		var fileContents = File.ReadAllLines(dockerFilePath);
+
+		foreach (string line in fileContents)
+		{
+			if (line.StartsWith("COPY"))
+			{
+				var parts = line.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+
+				if (parts.Length != 3) //This needs to have the follow pattern: "COPY SOURCE DESTINATION", if not just continues reading file
+				{
+					continue;
+				}
+
+				var probablePath = parts[1];
+				try
+				{
+					var result = Path.GetFullPath(probablePath);
+					FileAttributes attr = File.GetAttributes(result); //If it's not a valid path, this is going to throw an exception
+					paths.Add(probablePath);
+				}
+				catch(Exception e)
+				{
+					// If the exception was an IO one, then throw it, otherwise just continue looking for paths
+					if (e is PathTooLongException || e is FileNotFoundException || e is DirectoryNotFoundException || e is IOException)
+					{
+						throw new CliException($"Dockerfile has invalid source path to copy. Docker path: [{dockerFilePath}] Error: [{e.Message}] Stack: [{e.StackTrace}]");
+					}
+				}
+
+			}
+		}
+
+		return paths.Distinct().ToList();
+	}
+
 	/// <summary>
 	/// Creates a tarball stream containing every file in the given <paramref name="directory"/>. 
 	/// </summary>
-	private static Stream CreateTarballForDirectory(string directory)
+	private static Stream CreateTarballForDirectory(List<string> paths)
 	{
 		var tarball = new MemoryStream(512 * 1024);
-		var files = Directory.GetFiles(directory, "*.*", SearchOption.AllDirectories);
+		var allFiles = new List<string>();
 
-		var filteredFiles = new List<string>();
-		foreach (var file in files)
+		foreach (var path in paths)
 		{
-			if (file.Contains("/bin/")) continue;
-			if (file.Contains("/obj/")) continue;
-			filteredFiles.Add(file);
+			FileAttributes attr = File.GetAttributes(path);
+
+			if (attr.HasFlag(FileAttributes.Directory))
+			{
+				var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories);
+				allFiles.AddRange(files.ToList());
+			}
+			else
+			{
+				allFiles.Add(path);
+			}
 		}
 
-		files = filteredFiles.ToArray();
 		using var archive = new TarOutputStream(tarball, Encoding.Default)
 		{
 			//Prevent the TarOutputStream from closing the underlying memory stream when done
@@ -344,15 +389,20 @@ public partial class BeamoLocalSystem
 		};
 
 		// Get every file in the given directory
-		foreach (var file in files)
+		foreach (var file in allFiles)
 		{
+			if (file.Contains("/bin/") || file.Contains("/obj/"))
+			{
+				continue;
+			}
+
 			// Open the file we're putting into the tarball
 			using var fileStream = File.OpenRead(file);
 
 			// When creating the tar file (using SharpZipLib) if I create the tar entries from the filenames,
 			// the tar will be created with the wrong slashes (\ instead of / for linux).
 			// Swapping those out myself if you're doing any COPY or ADD within folders.
-			var tarName = file.Substring(directory.Length).Replace('\\', '/').TrimStart('/');
+			var tarName = file.Replace('\\', '/').TrimStart('/');
 
 			//Let's create the entry header
 			var entry = TarEntry.CreateTarEntry(tarName);

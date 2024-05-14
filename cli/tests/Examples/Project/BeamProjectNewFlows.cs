@@ -48,8 +48,8 @@ public class BeamProjectNewFlows : CLITestExtensions
 		Assert.That(manifest.ServiceDefinitions[0].BeamoId, Is.EqualTo(serviceName));
 		Assert.That(manifest.ServiceDefinitions[0].ProjectDirectory, BIs.Path($"services/{serviceName}"));
 		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName], Is.Not.Null);
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, Is.EqualTo($"services"));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"{serviceName}/Dockerfile"));
+		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, Is.EqualTo($"."));
+		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"services/{serviceName}/Dockerfile"));
 
 		#endregion
 	}
@@ -89,8 +89,8 @@ public class BeamProjectNewFlows : CLITestExtensions
 		Assert.That(manifest.ServiceDefinitions[0].BeamoId, Is.EqualTo(serviceName));
 		Assert.That(manifest.ServiceDefinitions[0].ProjectDirectory, BIs.Path($"services/{serviceName}"));
 		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName], Is.Not.Null);
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, Is.EqualTo($"services"));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"{serviceName}/Dockerfile"));
+		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, Is.EqualTo($"."));
+		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"services/{serviceName}/Dockerfile"));
 
 		#endregion
 	}
@@ -135,8 +135,8 @@ public class BeamProjectNewFlows : CLITestExtensions
 		Assert.That(manifest.ServiceDefinitions[0].BeamoId, Is.EqualTo(serviceName));
 		Assert.That(manifest.ServiceDefinitions[0].ProjectDirectory, BIs.Path($"services/{serviceName}"));
 		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName], Is.Not.Null);
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, Is.EqualTo($"services"));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"{serviceName}/Dockerfile"));
+		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, Is.EqualTo($"."));
+		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"services/{serviceName}/Dockerfile"));
 
 		#endregion
 	}
@@ -183,8 +183,8 @@ public class BeamProjectNewFlows : CLITestExtensions
 		Assert.That(manifest.ServiceDefinitions[0].BeamoId, Is.EqualTo(serviceName));
 		Assert.That(manifest.ServiceDefinitions[0].ProjectDirectory, BIs.Path($"services/{serviceName}"));
 		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName], Is.Not.Null);
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, Is.EqualTo($"services"));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"{serviceName}/Dockerfile"));
+		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, Is.EqualTo($"."));
+		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"services/{serviceName}/Dockerfile"));
 
 		#endregion
 	}
@@ -234,8 +234,8 @@ public class BeamProjectNewFlows : CLITestExtensions
 		Assert.That(manifest.ServiceDefinitions[0].BeamoId, Is.EqualTo(serviceName));
 		Assert.That(manifest.ServiceDefinitions[0].ProjectDirectory, BIs.Path($"{serviceName}/services/{serviceName}"));
 		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName], Is.Not.Null);
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, BIs.Path($"{serviceName}/services"));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"{serviceName}/Dockerfile"));
+		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, BIs.Path($"."));
+		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"{serviceName}/services/{serviceName}/Dockerfile"));
 
 		#endregion
 	}
@@ -294,14 +294,14 @@ public class BeamProjectNewFlows : CLITestExtensions
 		Assert.That(manifest.ServiceDefinitions[0].BeamoId, Is.EqualTo(serviceName));
 		Assert.That(manifest.ServiceDefinitions[0].ProjectDirectory, BIs.Path($"{serviceName}/services/{serviceName}"));
 		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName], Is.Not.Null);
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, BIs.Path($"{serviceName}/services"));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"{serviceName}/Dockerfile"));
+		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, BIs.Path($"."));
+		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"{serviceName}/services/{serviceName}/Dockerfile"));
 
 		Assert.That(manifest.ServiceDefinitions[1].BeamoId, Is.EqualTo(secondServiceName));
 		Assert.That(manifest.ServiceDefinitions[1].ProjectDirectory, BIs.Path($"{serviceName}/services/{secondServiceName}"));
 		Assert.That(manifest.HttpMicroserviceLocalProtocols[secondServiceName], Is.Not.Null);
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[secondServiceName].DockerBuildContextPath, BIs.Path($"{serviceName}/services"));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[secondServiceName].RelativeDockerfilePath, BIs.Path($"{secondServiceName}/Dockerfile"));
+		Assert.That(manifest.HttpMicroserviceLocalProtocols[secondServiceName].DockerBuildContextPath, BIs.Path($"."));
+		Assert.That(manifest.HttpMicroserviceLocalProtocols[secondServiceName].RelativeDockerfilePath, BIs.Path($"{serviceName}/services/{secondServiceName}/Dockerfile"));
 
 		#endregion
 	}
@@ -359,8 +359,8 @@ public class BeamProjectNewFlows : CLITestExtensions
 		Assert.That(manifest.ServiceDefinitions[0].BeamoId, Is.EqualTo(serviceName));
 		Assert.That(manifest.ServiceDefinitions[0].ProjectDirectory, BIs.Path($"{serviceName}/services/{serviceName}"));
 		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName], Is.Not.Null);
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, BIs.Path($"{serviceName}/services"));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"{serviceName}/Dockerfile"));
+		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, BIs.Path($"."));
+		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"{serviceName}/services/{serviceName}/Dockerfile"));
 
 		Assert.That(manifest.ServiceDefinitions[1].BeamoId, Is.EqualTo(storageName));
 		Assert.That(manifest.ServiceDefinitions[1].ProjectDirectory, BIs.Path($"{serviceName}/services/{storageName}"));

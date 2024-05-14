@@ -97,6 +97,15 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 			}
 		}
 
+		List<Promise<Unit>> promises = new List<Promise<Unit>>();
+		foreach (var definition in args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions)
+		{
+			promises.Add(args.BeamoLocalSystem.UpdateDockerFile(definition));
+		}
+
+		var sequence = Promise.Sequence(promises);
+		await sequence;
+
 		try
 		{
 			await _servicesListCommand.Handle(new ServicesListCommandArgs { Provider = args.Provider, Remote = true });

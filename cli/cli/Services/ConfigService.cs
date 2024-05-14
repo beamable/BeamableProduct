@@ -63,6 +63,30 @@ public class ConfigService
 	}
 
 	/// <summary>
+	/// Get the docker build context path, which is used to copy files through the Dockerfile
+	/// </summary>
+	/// <returns></returns>
+	public string GetDockerBuildContextPath()
+	{
+		var path = BaseDirectory;
+		if (string.IsNullOrEmpty(path))
+		{
+			path = _dir;
+		}
+		return GetRelativeToBeamableFolderPath(path);
+	}
+
+	/// <summary>
+	/// Gets a path relative to the docker build context path
+	/// </summary>
+	/// <param name="path">Your current path</param>
+	/// <returns>A path relative to the docker build context path</returns>
+	public string GetRelativeToDockerBuildContextPath(string path)
+	{
+		return Path.GetRelativePath(GetDockerBuildContextPath(), path);
+	}
+
+	/// <summary>
 	/// by default, paths are relative to the execution working directory...
 	/// But you may need them to be relative to the project root.
 	///

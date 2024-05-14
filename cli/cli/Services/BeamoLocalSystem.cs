@@ -96,7 +96,7 @@ public partial class BeamoLocalSystem
 
 			// find the local protocol to infer the project path via the docker context
 			if (!BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(serviceDefinition.BeamoId,
-					out var localProto) || localProto.DockerBuildContextPath == null)
+					out var localProto) || localProto.RelativeDockerfilePath == null)
 			{
 				continue; // if there is no local protocol information, then this service is a "remote only" service. 
 						  // throw new CliException(
@@ -254,7 +254,7 @@ public partial class BeamoLocalSystem
 			throw new CliException($"Failed to remove project dependency, output of \"dotnet {command}\": {result}");
 		}
 
-		await UpdateDockerFile(project.BeamoId);
+		await UpdateDockerFile(project);
 	}
 
 	/// <summary>
@@ -280,7 +280,7 @@ public partial class BeamoLocalSystem
 			throw new CliException($"Failed to add project dependency, output of \"dotnet {command}\": {result}");
 		}
 
-		await UpdateDockerFile(project.BeamoId);
+		await UpdateDockerFile(project);
 	}
 
 	/// <summary>
@@ -309,11 +309,17 @@ public partial class BeamoLocalSystem
 	public static bool ValidateBeamoServiceId_DoesntExists(string beamoServiceId, List<BeamoServiceDefinition> serviceDefinitions) =>
 		!serviceDefinitions.Contains(new BeamoServiceDefinition() { BeamoId = beamoServiceId }, new BeamoServiceDefinition.IdEquality());
 
-	private async Promise UpdateDockerFile(string serviceName)
+	public async Promise UpdateDockerFile(BeamoServiceDefinition serviceDefinition)
 	{
+		if (serviceDefinition.Protocol != BeamoProtocolType.HttpMicroservice)
+		{
+			return; // Only HttpMicroservices have dockerfiles
+		}
+
+		var serviceName = serviceDefinition.BeamoId;
 		var service = BeamoManifest.HttpMicroserviceLocalProtocols[serviceName];
 		var dockerfilePath = service.RelativeDockerfilePath;
-		dockerfilePath = _configService.GetFullPath(Path.Combine(service.DockerBuildContextPath, dockerfilePath));
+		dockerfilePath = _configService.GetFullPath(dockerfilePath);
 		var dockerfileText = await File.ReadAllTextAsync(dockerfilePath);
 
 		const string endTag =
@@ -323,9 +329,14 @@ public partial class BeamoLocalSystem
 		const string legacyCopyLine =
 			"# <BEAM-CLI-INSERT-FLAG:COPY> do not delete this line. It is used by the beam CLI to insert custom actions";
 		const string serviceNameTag = "<SERVICE_NAME>";
+		const string servicePathTag = "<SERVICE_PATH>";
+		string toAddCsproj = $"COPY {servicePathTag}/{serviceNameTag}.csproj .";
 		string toAdd = @$"WORKDIR /subsrc/{serviceNameTag}
-COPY {serviceNameTag}/. .";
+COPY {servicePathTag} .";
 		var replacement = @$"{toAdd}
+{endTag}";
+		var replacementWithCsproj = @$"{toAdd}
+{toAddCsproj}
 {endTag}";
 
 		var hasEndTag = dockerfileText.Contains(endTag);
@@ -353,9 +364,14 @@ COPY {serviceNameTag}/. .";
 
 		foreach (var dependency in dependencies)
 		{
-			string depName = dependency.name;
-			newText = newText.Replace(endTag, replacement.Replace(serviceNameTag, depName));
+			string path = _configService.GetRelativeToDockerBuildContextPath(dependency.projPath);
+			newText = newText.Replace(endTag, replacement.Replace(serviceNameTag, dependency.name).Replace(servicePathTag, path));
 		}
+
+		//Copy the services files
+		var relativePath = _configService.GetRelativeToDockerBuildContextPath(serviceDefinition.ProjectDirectory);
+		newText = newText.Replace(endTag, replacementWithCsproj.Replace(serviceNameTag, serviceDefinition.BeamoId).Replace(servicePathTag, relativePath));
+
 		await File.WriteAllTextAsync(dockerfilePath, newText);
 	}
 

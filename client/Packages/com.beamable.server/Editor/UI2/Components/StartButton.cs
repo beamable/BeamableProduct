@@ -36,11 +36,11 @@ namespace Beamable.Editor.Microservice.UI2.Components
 		{
 			if (_definition.IsRunningLocally)
 			{
-				_definition.Builder.TryToStop().ToPromise();
+				_definition.Builder.TryToStop();
 			}
 			else
 			{
-				_definition.Builder.TryToStart().ToPromise();
+				_definition.Builder.TryToStart();
 			}
 		}
 	}

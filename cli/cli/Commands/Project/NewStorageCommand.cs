@@ -88,9 +88,11 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 			var localProtocol = services.FirstOrDefault(x => x.Key.Equals(dep)).Value;
 			if (localProtocol != null)
 			{
-				var dockerfilePath = localProtocol.RelativeDockerfilePath;
-				var serviceFolder = Path.GetDirectoryName(dockerfilePath);
-				choices.Add(serviceFolder);
+				choices.Add(dep);
+			}
+			else
+			{
+				Log.Warning($"The dependency {dep} does not exist in the local manifest and cannot be added as reference. Use `beam project deps add <service> <storage> to add after the storage is already created`");
 			}
 		}
 
