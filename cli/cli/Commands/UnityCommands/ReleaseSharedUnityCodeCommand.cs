@@ -78,17 +78,17 @@ public class ReleaseSharedUnityCodeCommand : AtomicCommand<ReleaseSharedUnityCod
 			});
 	}
 
-	public override Task<ReleaseSharedUnityCodeCommandOutput> GetResult(ReleaseSharedUnityCodeCommandArgs args)
+	public override async Task<ReleaseSharedUnityCodeCommandOutput> GetResult(ReleaseSharedUnityCodeCommandArgs args)
 	{
 		
 		// we know that the CLI csproj is relative to the unity client path...
 		var info = UnityProjectUtil.GetUnityInfo(args.unityProjectPath, args.packageId);
 		if (info.beamableNugetVersion != "0.0.123")
 		{
-			return Task.FromResult(new ReleaseSharedUnityCodeCommandOutput
-			{
-				message = "ignoring"
-			});
+			// in this case, we actually want to run a different command...
+			await UnityProjectUtil.DownloadPackage("Beamable.Common", info.beamableNugetVersion,
+				"content/netstandard2.0/", Path.Combine(info.packageFolder, "Common"));
+			return new ReleaseSharedUnityCodeCommandOutput { message = "downloaded used nuget version" };
 		}
 
 		var dstPath = Path.Combine(info.packageFolder, args.packageRelativeTarget);
@@ -99,9 +99,9 @@ public class ReleaseSharedUnityCodeCommand : AtomicCommand<ReleaseSharedUnityCod
 
 		var srcDir = Path.Combine(Path.GetDirectoryName(args.csProjPath), args.relativeSrc);
 		UnityProjectUtil.CopyProject(srcDir, dstPath);
-		return Task.FromResult(new ReleaseSharedUnityCodeCommandOutput
+		return new ReleaseSharedUnityCodeCommandOutput
 		{
 			message = $"Copying code src=[{args.csProjPath}] to dst=[{dstPath}]"
-		});
+		};
 	}
 }
