@@ -25,7 +25,7 @@ public class ContentOpenCommand : AppCommand<ContentOpenCommandArgs>
 
 		if (args.ManifestIds.Length == 0)
 			args.ManifestIds = new[] { "global" };
-		
+
 		foreach (var manifestId in args.ManifestIds)
 		{
 			var localContent = _contentService.GetLocalCache(manifestId);
@@ -38,7 +38,7 @@ public class ContentOpenCommand : AppCommand<ContentOpenCommandArgs>
 				new Process { StartInfo = new ProcessStartInfo(path) { UseShellExecute = true } }.Start();
 			}
 		}
-		
+
 		return Task.CompletedTask;
 	}
 }
