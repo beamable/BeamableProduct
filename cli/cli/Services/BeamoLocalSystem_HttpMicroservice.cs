@@ -14,6 +14,8 @@ namespace cli.Services;
 public partial class BeamoLocalSystem
 {
 	public string GetBeamIdAsMicroserviceContainer(string beamoId) => $"{beamoId}_httpMicroservice";
+
+	private const string HTTM_MICROSERVICE_CONTAINER_PORT = "6565";
 	
 	/// <summary>
 	/// Registers a <see cref="BeamoServiceDefinition"/> of with the <see cref="BeamoProtocolType"/> of <see cref="BeamoProtocolType.HttpMicroservice"/>.
@@ -64,6 +66,21 @@ public partial class BeamoLocalSystem
 		}
 
 		return output;
+	}
+
+	public async Promise<string> GetMicroserviceHostPort(string serviceName)
+	{
+		var localMicroserviceName = GetBeamIdAsMicroserviceContainer(serviceName);
+
+		ContainerInspectResponse storageDesc = await _client.Containers.InspectContainerAsync(localMicroserviceName);
+
+		if (!storageDesc.NetworkSettings.Ports.TryGetValue($"{HTTM_MICROSERVICE_CONTAINER_PORT}/tcp", out IList<PortBinding> bindings))
+		{
+			throw new Exception(
+				$"could not get host port of microservice=[{serviceName}] because it was not mapped in container");
+		}
+
+		return bindings[0].HostPort;
 	}
 
 	public async Promise<string> GetStorageHostPort(string storageName)
