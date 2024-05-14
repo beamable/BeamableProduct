@@ -161,8 +161,15 @@ public class DiscoveryService
 
 		if (serviceDefinition.Protocol == BeamoProtocolType.HttpMicroservice)
 		{
-			healthPort = Convert.ToInt32(_localSystem.BeamoManifest.HttpMicroserviceRemoteProtocols[serviceDefinition.BeamoId]
-				.HealthCheckPort);
+			try
+			{
+				var port = await _localSystem.GetMicroserviceHostPort(beamoId);
+				healthPort = Convert.ToInt32(port);
+			}
+			catch
+			{
+				// service is not running, therefore there is no port available
+			}
 		}
 		else
 		{
