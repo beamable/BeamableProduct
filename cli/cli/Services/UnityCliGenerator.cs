@@ -78,6 +78,7 @@ public class UnityCliGenerator : ICliGenerator
 		GenerateMetaFiles(sourceFiles.Select(x => x.FileName).ToList());
 	
 	const string GUID_TEMPLATE = "{GUID_REPLACE}";
+	// TODO: do we need to update these meta file generations for future versions of Unity?
 	const string META_CONTENT_TEMPLATE = @"fileFormatVersion: 2
 guid: " + GUID_TEMPLATE + @"
 MonoImporter:

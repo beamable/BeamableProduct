@@ -19,7 +19,6 @@
     <ItemGroup>
       <ProjectReference Include="..\..\cli\beamable.common\beamable.common.csproj" />
       <ProjectReference Include="..\..\cli\beamable.server.common\beamable.server.common.csproj" />
-      <ProjectReference Include="..\..\cli\beamable.server\beamable.server.csproj" />
       <ProjectReference Include="..\unityEngineStubs\unityenginestubs.csproj" />
     </ItemGroup>
 

@@ -1,3 +1,4 @@
+using cli.Services.Unity;
 using Serilog;
 using System.CommandLine;
 using System.IO.Compression;
@@ -9,6 +10,7 @@ public class ReleaseSharedUnityCodeCommandArgs : CommandArgs
 	public string csProjPath;
 	public string unityProjectPath;
 	public string packageRelativeTarget;
+	public string relativeSrc;
 	public string packageId;
 }
 
@@ -64,16 +66,23 @@ public class ReleaseSharedUnityCodeCommand : AtomicCommand<ReleaseSharedUnityCod
 				}
 				args.packageRelativeTarget = unityPath;
 			});
+		
+		AddArgument(new Argument<string>("relativeSrc", "relative path to src files"),
+			(args, relativeSrc) =>
+			{
+				if (Path.HasExtension(relativeSrc))
+				{
+					throw new CliException($"given relativeSrc must be a directory, relativeSrc=[${relativeSrc}]");
+				}
+				args.relativeSrc = relativeSrc;
+			});
 	}
 
 	public override Task<ReleaseSharedUnityCodeCommandOutput> GetResult(ReleaseSharedUnityCodeCommandArgs args)
 	{
 		
 		// we know that the CLI csproj is relative to the unity client path...
-		
-		
-		
-		var info = GetUnityVersionInfoCommand.GetUnityInfo(args.unityProjectPath, args.packageId);
+		var info = UnityProjectUtil.GetUnityInfo(args.unityProjectPath, args.packageId);
 		if (info.beamableNugetVersion != "0.0.123")
 		{
 			return Task.FromResult(new ReleaseSharedUnityCodeCommandOutput
@@ -86,26 +95,13 @@ public class ReleaseSharedUnityCodeCommand : AtomicCommand<ReleaseSharedUnityCod
 		Log.Information($"Copying code src=[{args.csProjPath}] to dst=[{dstPath}]");
 
 		// clean up all old cs and meta files, while leaving possible Unity specific files, like asmdef files.
-		DeleteAllFilesWithExtensions(dstPath, new string[]{".cs", ".cs.meta"});
+		UnityProjectUtil.DeleteAllFilesWithExtensions(dstPath, new string[]{".cs", ".cs.meta"});
 
-		CopyProjectSrcToUnityCommand.CopyProject(args.csProjPath, dstPath);
+		var srcDir = Path.Combine(Path.GetDirectoryName(args.csProjPath), args.relativeSrc);
+		UnityProjectUtil.CopyProject(srcDir, dstPath);
 		return Task.FromResult(new ReleaseSharedUnityCodeCommandOutput
 		{
 			message = $"Copying code src=[{args.csProjPath}] to dst=[{dstPath}]"
 		});
 	}
-
-	public static void DeleteAllFilesWithExtensions(string folder, string[] extensions)
-	{
-		foreach (var ext in extensions)
-		{
-			var filesToDelete = Directory.GetFiles(folder, $"*{ext}", SearchOption.AllDirectories);
-			foreach (var file in filesToDelete)
-			{
-				File.Delete(file);
-			}
-		}
-	}
-
-
 }

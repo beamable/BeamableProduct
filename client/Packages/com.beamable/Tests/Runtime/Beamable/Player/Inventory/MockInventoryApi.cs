@@ -7,6 +7,11 @@ namespace Beamable.Tests.Runtime
 {
 	public class MockInventoryApi : IInventoryApi
 	{
+		public Promise<CommonResponse> ObjectPutTransfer(long objectId, TransferRequest gsReq, bool includeAuthHeader = true)
+		{
+			throw new System.NotImplementedException();
+		}
+
 		Promise<ItemContentResponse> IInventoryApi.GetItems(bool includeAuthHeader)
 		{
 			throw new System.NotImplementedException();
@@ -27,7 +32,7 @@ namespace Beamable.Tests.Runtime
 			throw new System.NotImplementedException();
 		}
 
-		Promise<CommonResponse> IInventoryApi.ObjectDeleteTransaction(long objectId, EndTransactionRequest gsReq)
+		public Promise<CommonResponse> ObjectDeleteTransaction(long objectId, EndTransactionRequest gsReq, bool includeAuthHeader = true)
 		{
 			throw new System.NotImplementedException();
 		}
@@ -58,9 +63,5 @@ namespace Beamable.Tests.Runtime
 			throw new System.NotImplementedException();
 		}
 
-		Promise<CommonResponse> IInventoryApi.ObjectPutTransfer(long objectId, TransferRequest gsReq)
-		{
-			throw new System.NotImplementedException();
-		}
 	}
 }

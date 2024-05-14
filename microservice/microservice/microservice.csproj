@@ -53,7 +53,6 @@
   <ItemGroup Label="Internal Beamable References">
     <ProjectReference Include="..\..\cli\beamable.common\beamable.common.csproj" PrivateAssets="All"/>
     <ProjectReference Include="..\..\cli\beamable.server.common\beamable.server.common.csproj" PrivateAssets="All"/>
-    <ProjectReference Include="..\..\cli\beamable.server\beamable.server.csproj" PrivateAssets="All"/>
     <ProjectReference Include="..\beamable.tooling.common\beamable.tooling.common.csproj" PrivateAssets="All"/>
     <ProjectReference Include="..\unityenginestubs.addressables\unityenginestubs.addressables.csproj" PrivateAssets="All"/>
     <ProjectReference Include="..\unityEngineStubs\unityenginestubs.csproj" PrivateAssets="All"/>

@@ -1,3 +1,4 @@
+using cli.Services.Unity;
 using System.CommandLine;
 
 namespace cli.UnityCommands;
@@ -28,16 +29,17 @@ public class DownloadAllNugetDepsToUnityCommand : AtomicCommand<DownloadAllNuget
 
 	public override async Task<DownloadAllNugetDepsToUnityCommandOutput> GetResult(DownloadAllNugetDepsToUnityCommandArgs args)
 	{
-		var info = GetUnityVersionInfoCommand.GetUnityInfo(args.unityProjectPath, "com.beamable");
+		var info = UnityProjectUtil.GetUnityInfo(args.unityProjectPath, "com.beamable");
 
 		if (info.beamableNugetVersion == "0.0.123")
 		{
 			throw new CliException("Cannot download nuget packages for developer 0.0.123 version.");
 		}
 
-		await DownloadNugetDepToUnityCommand.DownloadPackage("Beamable.Common", info.beamableNugetVersion,
+		await UnityProjectUtil.DownloadPackage("Beamable.Common", info.beamableNugetVersion,
 			"content/netstandard2.0/", Path.Combine(info.packageFolder, "Common"));
 		
+		// TODO: what about beamable.server, and beamable.server.common!? 
 		return new DownloadAllNugetDepsToUnityCommandOutput();
 	}
 }

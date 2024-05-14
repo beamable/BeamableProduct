@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 
 namespace Beamable
 {
-
 	/// <summary>
 	/// This type defines those types with a %SourcePath
 	///
