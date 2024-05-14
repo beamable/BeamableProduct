@@ -350,6 +350,7 @@ public partial class BeamoLocalSystem
 		Action<string> onServiceDeployCompleted = null)
 	{
 		var localManifest = localSystem.BeamoManifest;
+
 		// Get all services that must be deployed (and that are not just known remotely --- as in, have their local protocols correctly configured).
 		var serviceDefinitionsToDeploy = GetServiceDefinitionsThatCanBeDeployed(localManifest, deployBeamoIds);
 
@@ -374,113 +375,48 @@ public partial class BeamoLocalSystem
 		var prepareImages = new List<Task>(serviceDefinitionsToDeploy.Select(c => PrepareBeamoServiceImage(c, buildPullImageProgress, forceAmdCpuArchitecture)));
 		await Task.WhenAll(prepareImages);
 
-		var servicesDependencies = await localSystem.GetAllBeamoIdsDependencies();
 		// Build dependency layers split by protocol type.
-		SplitLayersByProtocolType(serviceDefinitionsToDeploy, servicesDependencies, out var builtLayers);
+		SplitDefinitionsByProtocolType(serviceDefinitionsToDeploy, out Dictionary<BeamoProtocolType, List<BeamoServiceDefinition>> builtDefinitions);
 
 		// For each layer, run through the containers of each type on that layer and do what is needed to deploy them
 		// We already know that all containers are properly built here, so we just need to create the containers and run them.
-		foreach (var builtLayer in builtLayers)
-		{
-			var runContainerTasks = new List<Task>();
+		var runContainerTasks = new List<Task>();
 
-			// Kick off all the run container tasks for the Embedded MongoDatabases in this layer
-			if (builtLayer.TryGetValue(BeamoProtocolType.EmbeddedMongoDb, out var microStorageContainers))
-				runContainerTasks.AddRange(microStorageContainers.Select(async sd =>
-				{
-					Log.Information("Started deploying service: " + sd.BeamoId);
-					await RunLocalEmbeddedMongoDb(sd, localManifest.EmbeddedMongoDbLocalProtocols[sd.BeamoId]);
-					Log.Information("Finished deploying service: " + sd.BeamoId);
-					onServiceDeployCompleted?.Invoke(sd.BeamoId);
-				}));
+		// Kick off all the run container tasks for the Embedded MongoDatabases in this layer
+		if (builtDefinitions.TryGetValue(BeamoProtocolType.EmbeddedMongoDb, out var microStorageContainers))
+			runContainerTasks.AddRange(microStorageContainers.Select(async sd =>
+			{
+				Log.Information("Started deploying service: " + sd.BeamoId);
+				await RunLocalEmbeddedMongoDb(sd, localManifest.EmbeddedMongoDbLocalProtocols[sd.BeamoId]);
+				Log.Information("Finished deploying service: " + sd.BeamoId);
+				onServiceDeployCompleted?.Invoke(sd.BeamoId);
+			}));
 
-			// Kick off all the run container tasks for the HTTP Microservices in this layer
-			if (builtLayer.TryGetValue(BeamoProtocolType.HttpMicroservice, out var microserviceContainers))
-				runContainerTasks.AddRange(microserviceContainers.Select(async sd =>
-				{
-					await RunLocalHttpMicroservice(sd, localManifest.HttpMicroserviceLocalProtocols[sd.BeamoId],
-						localSystem);
-					onServiceDeployCompleted?.Invoke(sd.BeamoId);
-				}));
+		// Kick off all the run container tasks for the HTTP Microservices in this layer
+		if (builtDefinitions.TryGetValue(BeamoProtocolType.HttpMicroservice, out var microserviceContainers))
+			runContainerTasks.AddRange(microserviceContainers.Select(async sd =>
+			{
+				await RunLocalHttpMicroservice(sd, localManifest.HttpMicroserviceLocalProtocols[sd.BeamoId],
+					localSystem);
+				onServiceDeployCompleted?.Invoke(sd.BeamoId);
+			}));
 
 
-			// Wait for all container tasks in this layer to finish before starting the next one.
-			await Task.WhenAll(runContainerTasks);
-		}
+		// Wait for all container tasks in this layer to finish before starting the next one.
+		await Task.WhenAll(runContainerTasks);
 	}
 
 	/// <summary>
 	/// Given a Directed Acyclic Graph of <paramref name="serviceDefinitions"/>, builds a dictionary for each of the graph's layers. This dictionary splits the services in each layer by their
 	/// <see cref="BeamoProtocolType"/>. 
 	/// </summary>
-	private static void SplitLayersByProtocolType(List<BeamoServiceDefinition> serviceDefinitions,
-		Dictionary<BeamoServiceDefinition, List<DependencyData>> serviceDependencies,
-		out Dictionary<BeamoProtocolType, List<BeamoServiceDefinition>>[] splitContainers)
+	private static void SplitDefinitionsByProtocolType(List<BeamoServiceDefinition> serviceDefinitions,
+		out Dictionary<BeamoProtocolType, List<BeamoServiceDefinition>> splitContainers)
 	{
-		// Builds the dependency layers
-		BuildLayeredDependencies(serviceDefinitions, serviceDependencies, out var layers);
+		// Split each definition by their BeamoProtocolType
 
-		// Split each layer by their BeamoProtocolType
-		splitContainers = new Dictionary<BeamoProtocolType, List<BeamoServiceDefinition>>[layers.Length];
-		for (var layerIdx = 0; layerIdx < layers.Length; layerIdx++)
-		{
-			var builtLayer = layers[layerIdx];
-			var perProtocolSplit = builtLayer
-				.GroupBy(i => serviceDefinitions[i].Protocol)
-				.ToDictionary(g => g.Key, g => g.Select(i => serviceDefinitions[i]).ToList());
-
-			splitContainers[layerIdx] = perProtocolSplit;
-		}
-	}
-
-	/// <summary>
-	/// Topological sorting of the dependency graph. Basically, this returns layers of dependencies. Generates layers by finding all 0-dependency services and expanding from them.
-	/// </summary>
-	/// <param name="serviceDefinitions">The Directed Acyclic Graph of <see cref="BeamoServiceDefinition"/>s.</param>
-	/// <param name="builtLayers">An array of layers, each containing indices into <paramref name="serviceDefinitions"/> for services in that layer.</param>
-	private static void BuildLayeredDependencies(List<BeamoServiceDefinition> serviceDefinitions,
-		Dictionary<BeamoServiceDefinition, List<DependencyData>> serviceDependencies, out int[][] builtLayers)
-	{
-		// Find the layers with 0 dependencies
-		var currentLayerDefinitions = serviceDefinitions.Where(c => serviceDependencies[c].Count == 0).ToList();
-		var seen = new HashSet<BeamoServiceDefinition>();
-
-		var layers = new List<int[]>();
-		// While we haven't seen everything
-		var allCompletedDependencies = new HashSet<int>();
-		while (!serviceDefinitions.TrueForAll(sd => seen.Contains(sd)))
-		{
-			// Makes a layer out of all the nodes in the current layer --- when we start, this is all the nodes with 0 dependencies.
-			// In further iterations of this loop, it'll contain all service definitions whose dependencies are in previous layers AND haven't been added before. 
-			var currLayer = currentLayerDefinitions.Select(sd => serviceDefinitions.IndexOf(sd)).ToArray();
-			layers.Add(currLayer);
-
-			// Updates the set of seen service definitions so we know when to break out of this loop
-			seen.UnionWith(currentLayerDefinitions);
-
-			// Updates the list of all completed dependencies so that we can search for nodes in the next layer.
-			allCompletedDependencies.UnionWith(layers.SelectMany(ints => ints));
-
-			// Go through all the service definitions and find the next layer of service definitions based on all the completed dependencies.
-			currentLayerDefinitions.Clear();
-			foreach (var sd in serviceDefinitions)
-			{
-				// Check that all the dependencies are in previous layers
-				var isInNextLayer = serviceDependencies[sd].TrueForAll(depBeamoId =>
-				{
-					var dependencyIdx = serviceDefinitions.FindIndex(sd2 => sd2.BeamoId == depBeamoId.name);
-					return allCompletedDependencies.Contains(dependencyIdx);
-				});
-
-
-				// If they are, and we haven't expanded them already, we can have them in the next layer.  
-				if (isInNextLayer && !seen.Contains(sd))
-					currentLayerDefinitions.Add(sd);
-			}
-		}
-
-		// Build them into a list of indices into the unsorted list of containers (the parameter list)
-		builtLayers = layers.ToArray();
+			splitContainers = serviceDefinitions.GroupBy(i => i.Protocol)
+				.ToDictionary(g => g.Key, g => g.ToList());
 	}
 
 	public async IAsyncEnumerable<string> TailLogs(string containerId)

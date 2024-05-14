@@ -97,7 +97,29 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 				var allProgressTasks = args.BeamoIdsToDeploy.Where(id => _localBeamo.VerifyCanBeBuiltLocally(id)).Select(id => ctx.AddTask($"Deploying Service {id}")).ToList();
 				try
 				{
-					await _localBeamo.DeployToLocal(_localBeamo, args.BeamoIdsToDeploy,
+					List<string> idsToDeploy = new List<string>();
+					idsToDeploy.AddRange(args.BeamoIdsToDeploy);
+					foreach (string id in args.BeamoIdsToDeploy)
+					{
+						var dependencies = await _localBeamo.GetDependencies(id);
+						idsToDeploy.AddRange(dependencies.Select(d => d.name));
+					}
+
+					var uniqueIds = idsToDeploy.Distinct().ToArray();
+					List<BeamoServiceDefinition> definitions = uniqueIds.Select(id =>
+						args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions
+							.FirstOrDefault(def => def.BeamoId == id)).ToList();
+
+					List<Promise<Unit>> promises = new List<Promise<Unit>>();
+					foreach (var definition in definitions)
+					{
+						promises.Add(args.BeamoLocalSystem.UpdateDockerFile(definition));
+					}
+
+					var sequence = Promise.Sequence(promises);
+					await sequence;
+
+					await _localBeamo.DeployToLocal(_localBeamo, uniqueIds,
 						forceAmdCpuArchitecture: args.forceAmdCpuArchitecture,
 						(beamoId, progress) =>
 						{
