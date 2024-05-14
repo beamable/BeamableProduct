@@ -65,7 +65,7 @@ namespace Beamable.Editor.BeamCli
 #endif
 				}
 				const string CLI_LIBRARY = "Library/BeamableEditor/BeamCLI";
-				var requiredVersion = BeamableEnvironment.SdkVersion;
+				var requiredVersion = BeamableEnvironment.NugetPackageVersion;
 
 				var requiredVersionStr = requiredVersion.ToString();
 				// if the required version is 0.0.0, then we want the latest CLI
