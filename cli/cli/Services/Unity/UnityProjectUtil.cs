@@ -125,7 +125,6 @@ public static class UnityProjectUtil
 		var packageUrl = $"https://www.nuget.org/api/v2/package/{packageId}/{packageVersion}";
 		var detailUrl = $"https://www.nuget.org/packages/{packageId}/{packageVersion}";
 		
-		DeleteAllFilesWithExtensions(outputPath, new string[]{".cs", ".cs.meta"});
 
 		using (HttpClient client = new HttpClient())
 		{

@@ -86,8 +86,9 @@ public class ReleaseSharedUnityCodeCommand : AtomicCommand<ReleaseSharedUnityCod
 		if (info.beamableNugetVersion != "0.0.123")
 		{
 			// in this case, we actually want to run a different command...
-			await UnityProjectUtil.DownloadPackage("Beamable.Common", info.beamableNugetVersion,
-				"content/netstandard2.0/", Path.Combine(info.packageFolder, "Common"));
+			var subArgs = args.Create<DownloadAllNugetDepsToUnityCommandArgs>();
+			subArgs.unityProjectPath = args.unityProjectPath;
+			await DownloadAllNugetDepsToUnityCommand.DownloadAllPackages(subArgs);
 			return new ReleaseSharedUnityCodeCommandOutput { message = "downloaded used nuget version" };
 		}
 

@@ -29,17 +29,33 @@ public class DownloadAllNugetDepsToUnityCommand : AtomicCommand<DownloadAllNuget
 
 	public override async Task<DownloadAllNugetDepsToUnityCommandOutput> GetResult(DownloadAllNugetDepsToUnityCommandArgs args)
 	{
+		await DownloadAllPackages(args);
+		return new DownloadAllNugetDepsToUnityCommandOutput();
+	}
+
+	public static async Task DownloadAllPackages(DownloadAllNugetDepsToUnityCommandArgs args)
+	{
 		var info = UnityProjectUtil.GetUnityInfo(args.unityProjectPath, "com.beamable");
+		var infoServer = UnityProjectUtil.GetUnityInfo(args.unityProjectPath, "com.beamable.server");
 
 		if (info.beamableNugetVersion == "0.0.123")
 		{
 			throw new CliException("Cannot download nuget packages for developer 0.0.123 version.");
 		}
 
+		UnityProjectUtil.DeleteAllFilesWithExtensions(Path.Combine(info.packageFolder, "Common"), new string[]{".cs", ".cs.meta"});
+		UnityProjectUtil.DeleteAllFilesWithExtensions(Path.Combine(infoServer.packageFolder, "SharedRuntime"), new string[]{".cs", ".cs.meta"});
+		UnityProjectUtil.DeleteAllFilesWithExtensions(Path.Combine(infoServer.packageFolder, "Runtime/Common"), new string[]{".cs", ".cs.meta"});
+
 		await UnityProjectUtil.DownloadPackage("Beamable.Common", info.beamableNugetVersion,
 			"content/netstandard2.0/", Path.Combine(info.packageFolder, "Common"));
 		
-		// TODO: what about beamable.server, and beamable.server.common!? 
-		return new DownloadAllNugetDepsToUnityCommandOutput();
+		await UnityProjectUtil.DownloadPackage("Beamable.Server.Common", info.beamableNugetVersion,
+			"content/netstandard2.0/SharedRuntime/", Path.Combine(infoServer.packageFolder, "SharedRuntime"));
+		
+		await UnityProjectUtil.DownloadPackage("Beamable.Server.Common", info.beamableNugetVersion,
+			"content/netstandard2.0/Runtime/Common/", Path.Combine(infoServer.packageFolder, "Runtime/Common"));
+
 	}
+	
 }
