@@ -1130,12 +1130,7 @@ namespace Beamable.Server.Editor.Usam
 		/// <returns></returns>
 		public static string GetCurrentNugetVersion()
 		{
-			var version = BeamableEnvironment.SdkVersion.ToString();
-			if (version == "0.0.0")
-			{
-				version = "0.0.123";
-			}
-
+			var version = BeamableEnvironment.NugetPackageVersion;
 			return version;
 		}
 

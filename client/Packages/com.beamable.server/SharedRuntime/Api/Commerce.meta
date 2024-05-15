@@ -1,8 +1,11 @@
 fileFormatVersion: 2
-guid: 282a45341a5b62240a3ded197b138871
-folderAsset: yes
-DefaultImporter:
+guid: 41cf5adaf445ddaf348df53b4090a720
+MonoImporter:
   externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
   userData: 
   assetBundleName: 
   assetBundleVariant: 

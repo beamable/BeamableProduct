@@ -35,7 +35,7 @@ public class BeamProjectGenerateEnvFlows : CLITestExtensions
 		// mock call to get secret,
 		Mock<IRealmsApi>(mock =>
 		{
-			mock.Setup(x => x.GetAdminCustomer())
+			mock.Setup(x => x.GetAdminCustomer(true))
 				.ReturnsPromise(new CustomerResponse
 				{
 					customer = new Customer
@@ -97,7 +97,7 @@ public class BeamProjectGenerateEnvFlows : CLITestExtensions
 		// mock call to get secret,
 		Mock<IRealmsApi>(mock =>
 		{
-			mock.Setup(x => x.GetAdminCustomer())
+			mock.Setup(x => x.GetAdminCustomer(true))
 				.ReturnsPromise(new CustomerResponse
 				{
 					customer = new Customer

@@ -1,5 +1,6 @@
 using Beamable.Api;
 using Beamable.Common;
+using Beamable.Common.BeamCli.Contracts;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
 using System;
@@ -12,7 +13,9 @@ namespace Beamable
 	public static class BeamableEnvironment
 	{
 		public const string FilePath = "Packages/com.beamable/Runtime/Environment/Resources/env-default.json";
+		public const string VersionPath = "Packages/com.beamable/Runtime/Environment/Resources/versions-default.json";
 		private const string ResourcesPath = "env-default";
+		private const string VersionsResourcePath = "versions-default";
 
 		private const string ENV_STAGING = "staging";
 		private const string ENV_DEV = "dev";
@@ -35,6 +38,9 @@ namespace Beamable
 
 		public static EnvironmentData Data { get; private set; } = new EnvironmentData();
 
+		
+		public static EnvironmentVersionData VersionData { get; private set; } = new EnvironmentVersionData();
+		
 		/// <inheritdoc cref="EnvironmentData.ApiUrl"/>
 		public static string ApiUrl => Data.ApiUrl;
 
@@ -83,6 +89,12 @@ namespace Beamable
 		public static bool IsNightly => string.Equals(Environment, ENV_DEV);
 
 		/// <summary>
+		/// The version of Beamable nuget packages that this Beamable SDK requires
+		/// </summary>
+		public static string NugetPackageVersion => VersionData.nugetPackageVersion;
+		
+		
+		/// <summary>
 		/// Read the data from the env-default.json file in Resources and reload all environment properties.
 		/// This function is called automatically by Beamable's initialization process. You shouldn't need to call it unless
 		/// you have somehow modified the embedded resource file.
@@ -90,11 +102,14 @@ namespace Beamable
 		public static void ReloadEnvironment()
 		{
 			string envText = string.Empty;
+			string versionText = string.Empty;
 
 #if UNITY_EDITOR
 			envText = File.ReadAllText(FilePath);
+			versionText = File.ReadAllText(VersionPath);
 #else
 			envText = Resources.Load<TextAsset>(ResourcesPath).text;
+			versionText = Resources.Load<TextAsset>(VersionsResourcePath).text;
 #endif
 
 			var overrideFile = Resources.Load<TextAsset>(Path.GetFileNameWithoutExtension(OVERRIDE_PATH));
@@ -111,6 +126,7 @@ namespace Beamable
 			}
 
 			JsonSerializable.Deserialize(Data, rawDict);
+			VersionData = JsonUtility.FromJson<EnvironmentVersionData>(versionText);
 		}
 
 		private static string GetSocketUrl()
@@ -122,6 +138,7 @@ namespace Beamable
 			return $"{url}/socket";
 		}
 	}
+	
 
 	[Serializable]
 	public class EnvironmentData : JsonSerializable.ISerializable, IPlatformRequesterHostResolver

@@ -154,6 +154,9 @@ jobs:
       - name: Check Beam CLI
         run: |
           beam version
+      - name: Apply Nuget Version to Unity SDK
+        run: |
+          beam unity download-all-nuget-packages ./client --logs v
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -243,6 +246,20 @@ jobs:
         with:
           fetch-depth: 0
           lfs: true
+      - name: Setup .NET Core SDK 
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build and Install BEAM CLI 
+        working-directory: ./cli/cli
+        run: |
+          SKIP_GENERATION=true ./install.sh
+      - name: Check Beam CLI
+        run: |
+          beam version
+      - name: Apply Nuget Version to Unity SDK
+        run: |
+          beam unity download-all-nuget-packages ./client --logs v
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
