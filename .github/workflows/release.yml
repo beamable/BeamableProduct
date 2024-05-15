@@ -94,11 +94,16 @@ jobs:
       - name: Apply Nuget Version
         run: jq --arg nextVersion ${{ steps.version.outputs.VERSION }} '.nugetPackageVersion = $nextVersion' ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json > localtmpfile && mv localtmpfile ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
 
+      - name: Review Unity version-default file
+        run: |
+          cat ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
+
       - name: Copy Nuget Code Over
         uses: nick-fields/retry@v3
         with:
-          timeout_seconds: 15
+          timeout_minutes: 15
           max_attempts: 10
+          retry_wait_seconds: 60
           retry_on: error
           command: beam unity download-all-nuget-packages ./client --logs v
 
@@ -116,7 +121,6 @@ jobs:
         working-directory: ./client/Packages/com.beamable.server/
 
       - name: Review Unity SDK Files
-        if: ${{ inputs.releaseUnitySdk == true }}
         run: |
           ls ./client/Packages/com.beamable/Runtime/Environment/Resources
           cat client/Packages/com.beamable/Runtime/Environment/Resources/env-default.json
@@ -124,8 +128,7 @@ jobs:
           ls ./client/Packages/com.beamable
           ls ./client/Packages/com.beamable/Samples~
           cat client/Packages/com.beamable/package.json
-          cat ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
-      
+
       - name: Release com.beamable UPM Package
         if: ${{ inputs.dryRun == false }}
         run: npm publish
