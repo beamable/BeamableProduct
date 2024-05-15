@@ -27,10 +27,10 @@ jobs:
           dotnet build ./cli/cli 
       - name: Generate API
         run: |
-          dotnet run --framework net6.0 --project ./cli/cli -- --host https://dev.api.beamable.com oapi generate --engine unity --conflict-strategy RenameUncommonConflicts --output ./client/Packages/com.beamable/Common/Runtime/OpenApi --cleaning-strategy RemoveCsFiles
+          dotnet run --project ./cli/cli -- --host https://dev.api.beamable.com oapi generate --engine unity --conflict-strategy RenameUncommonConflicts --output ./cli/beamable.common/Runtime/OpenApi --cleaning-strategy RemoveCsFiles
       - name: Format files
         id: format
-        run: dotnet-format -f ./client/Packages/com.beamable/Common/Runtime/OpenApi
+        run: dotnet-format -f ./cli/beamable.common/Runtime/OpenApi
       - name: Check for Changes
         run: echo ::set-output name=any::$(if [ -n "$(git status --porcelain)" ]; then echo "true"; else echo "false"; fi)
         id: changes
