@@ -108,7 +108,6 @@ jobs:
           command: beam unity download-all-nuget-packages ./client --logs v
 
       - name: Prepare Unity Samples
-        if: ${{ inputs.releaseUnitySdk == true }}
         run: sh ./../../../build/bin/prepare-samples.sh
         working-directory: ./client/Packages/com.beamable/
       
