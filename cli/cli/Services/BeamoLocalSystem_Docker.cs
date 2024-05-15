@@ -344,7 +344,7 @@ public partial class BeamoLocalSystem
 					FileAttributes attr = File.GetAttributes(result); //If it's not a valid path, this is going to throw an exception
 					paths.Add(probablePath);
 				}
-				catch(Exception e)
+				catch (Exception e)
 				{
 					// If the exception was an IO one, then throw it, otherwise just continue looking for paths
 					if (e is PathTooLongException || e is FileNotFoundException || e is DirectoryNotFoundException || e is IOException)
