@@ -1,4 +1,4 @@
-name: Release Custom SDK and CLI 
+name: Release Unity SDK
 
 on:
   workflow_dispatch:
@@ -7,13 +7,42 @@ on:
         type: string
         description: Commit hash to deploy
         default: main
+      major:
+        type: number
+        description: Major version number, X.0.0
+        required: true
+        default: 0
+      minor:
+        type: number
+        description: Minor version number, 0.X.0
+        required: true
+        default: 0
+      patch:
+        type: number
+        description: Patch version number, 0.0.X
+        required: true
+        default: 0
+      rcNumber:
+        type: number
+        description: Rc version number, if required, 0.0.0-PREVIEW.RCX
+        required: false
+        default: 0
+      releaseType:
+        type: choice
+        description: What type of release is this?
+        required: true
+        options:
+          - nightly
+          - rc
+          - exp
+          - production
       dryRun:
         type: boolean
         description: When true, no publish will happen
         required: true
         default: false
 
-run-name: Release Custom ${{ inputs.commit }} by @${{ github.actor }}
+run-name: Release ${{ inputs.releaseType }} ${{ inputs.major }}.${{ inputs.minor }}.${{ inputs.patch }}.${{ inputs.rcNumber }} by @${{ github.actor }}
 jobs:
   nuget:
     timeout-minutes: 10
@@ -26,6 +55,11 @@ jobs:
         run: |
           echo dryRun=${{ inputs.dryRun }}
           echo commit=${{ inputs.commit }}
+          echo major=${{ inputs.major }}
+          echo minor=${{ inputs.minor }}
+          echo patch=${{ inputs.patch }}
+          echo rc=${{ inputs.rcNumber }}
+          echo releaseType=${{ inputs.releaseType }}
          
       - uses: actions/checkout@v4
         with: 
@@ -39,7 +73,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-          registry-url: https://nexus.beamable.com/nexus/content/repositories/unity-dev
+          registry-url: >-
+            ${{ fromJson('{
+              "nightly": "https://nexus.beamable.com/nexus/content/repositories/unity-dev",
+              "rc": "https://nexus.beamable.com/nexus/content/repositories/unity-preview",
+              "exp": "https://nexus.beamable.com/nexus/content/repositories/unity-preview",
+              "production": "https://nexus.beamable.com/nexus/content/repositories/unity"
+            }')[github.event.inputs.releaseType] }}
         
       - name: Install JQ
         run: |
@@ -56,13 +96,32 @@ jobs:
       - name: Check CLI
         run: beam version
 
-      - name: Get Version Number 
+      - name: Get Version Number (Nightly)
+        if: ${{ inputs.releaseType == 'nightly' }} 
         run: beam version construct 0 0 0 --nightly > version.txt
+      
+      - name: Get Version Number (RC)
+        if: ${{ inputs.releaseType == 'rc' }} 
+        run: beam version construct ${{ inputs.major }} ${{ inputs.minor }} ${{ inputs.patch }} --rc ${{ inputs.rcNumber }} > version.txt
+      
+      - name: Get Version Number (Exp)
+        if: ${{ inputs.releaseType == 'exp' }} 
+        run: beam version construct ${{ inputs.major }} ${{ inputs.minor }} ${{ inputs.patch }} --exp ${{ inputs.rcNumber }} > version.txt
+      
+      - name: Get Version Number (Prod)
+        if: ${{ inputs.releaseType == 'prod' }} 
+        run: beam version construct ${{ inputs.major }} ${{ inputs.minor }} ${{ inputs.patch }} --prod > version.txt
       
       - name: Store version number as output
         id: version
         env: 
-          BUILD_ENV: dev
+          BUILD_ENV: >-
+            ${{ fromJson('{
+              "nightly": "dev",
+              "rc": "staging",
+              "exp": "staging",
+              "production": "prod"
+            }')[github.event.inputs.releaseType] }}
         run: |
           echo "VERSION=$(cat version.txt | jq -r .data.versionString)" >> "$GITHUB_OUTPUT"
           echo "VERSION_PREFIX=$(cat version.txt | jq -r .data.versionPrefix)" >> "$GITHUB_OUTPUT"
@@ -76,34 +135,17 @@ jobs:
           echo version suffix=${{ steps.version.outputs.VERSION_SUFFIX }}
           echo build-env=${{steps.version.outputs.BUILD_ENV}}
 
-      - name: Publish Nuget Packages
-        run: sh ./build/bin/release-nuget.sh
-        env:
-          VERSION: ${{ steps.version.outputs.VERSION }}
-          VERSION_PREFIX: ${{ steps.version.outputs.VERSION_PREFIX }}
-          VERSION_SUFFIX: ${{ steps.version.outputs.VERSION_SUFFIX }}
-          DRY_RUN: ${{ inputs.dryRun }}
-          NUGET_TOOLS_KEY: ${{ secrets.NUGET_TOOLS_KEY }}
-
       - name: Prepare Unity Env
         run: sh ./build/bin/modify-unity-files.sh
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
           ENVIRONMENT: ${{steps.version.outputs.BUILD_ENV}}
-      
-      - name: Apply Nuget Version
-        run: jq --arg nextVersion ${{ steps.version.outputs.VERSION }} '.nugetPackageVersion = $nextVersion' ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json > localtmpfile && mv localtmpfile ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
-
-      - name: Copy Nuget Code Over
-        uses: nick-fields/retry@v3
-        with:
-          timeout_seconds: 15
-          max_attempts: 10
-          retry_on: error
-          command: beam unity download-all-nuget-packages ./client --logs v
+          
+      - name: Apply Nuget Version to Unity SDK
+        run: |
+          beam unity download-all-nuget-packages ./client --logs v
 
       - name: Prepare Unity Samples
-        if: ${{ inputs.releaseUnitySdk == true }}
         run: sh ./../../../build/bin/prepare-samples.sh
         working-directory: ./client/Packages/com.beamable/
       
@@ -116,7 +158,6 @@ jobs:
         working-directory: ./client/Packages/com.beamable.server/
 
       - name: Review Unity SDK Files
-        if: ${{ inputs.releaseUnitySdk == true }}
         run: |
           ls ./client/Packages/com.beamable/Runtime/Environment/Resources
           cat client/Packages/com.beamable/Runtime/Environment/Resources/env-default.json
@@ -124,7 +165,6 @@ jobs:
           ls ./client/Packages/com.beamable
           ls ./client/Packages/com.beamable/Samples~
           cat client/Packages/com.beamable/package.json
-          cat ./client/Packages/com.beamable/Runtime/Environment/Resources/versions-default.json
       
       - name: Release com.beamable UPM Package
         if: ${{ inputs.dryRun == false }}
@@ -141,3 +181,17 @@ jobs:
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
           NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
+
+      - name: Create Release
+        id: create_release
+        if: ${{ inputs.dryRun == false }} 
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: unity-sdk-${{ steps.version.outputs.VERSION }}
+          release_name: Unity SDK ${{ steps.version.outputs.VERSION }}
+          body: |
+            Unity SDK Release ${{ steps.version.outputs.VERSION }}
+          draft: false
+          prerelease: ${{ inputs.releaseType != 'production' }}
