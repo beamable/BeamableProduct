@@ -51,28 +51,27 @@
   </ItemGroup>
   
   <ItemGroup Label="Internal Beamable References">
-    <ProjectReference Include="..\..\client\Packages\com.beamable.server\Runtime\Common\beamable.server.common.csproj" PrivateAssets="All"/>
-    <ProjectReference Include="..\..\client\Packages\com.beamable.server\SharedRuntime\beamable.server.csproj" PrivateAssets="All"/>
-    <ProjectReference Include="..\..\client\Packages\com.beamable\Common\beamable.common.csproj" PrivateAssets="All"/>
     <ProjectReference Include="..\beamable.tooling.common\beamable.tooling.common.csproj" PrivateAssets="All"/>
-    <ProjectReference Include="..\unityenginestubs.addressables\unityenginestubs.addressables.csproj" PrivateAssets="All"/>
-    <ProjectReference Include="..\unityEngineStubs\unityenginestubs.csproj" PrivateAssets="All"/>
+  </ItemGroup>
+  
+  <ItemGroup Label="Public Beamable References">
+    <ProjectReference Include="..\..\cli\beamable.common\beamable.common.csproj"/>
+    <ProjectReference Include="..\..\cli\beamable.server.common\beamable.server.common.csproj"/>
+    <ProjectReference Include="..\unityenginestubs.addressables\unityenginestubs.addressables.csproj"/>
+    <ProjectReference Include="..\unityEngineStubs\unityenginestubs.csproj"/>
   </ItemGroup>
 
   <ItemGroup Label="Pack Internal Beamable References: Net6.0">
     <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build/net6.0" Pack="True"/>
-    <None Include="$(OutputPath)/net6.0/Beamable*" PackagePath="lib/net6.0" Pack="True"/>
-    <None Include="$(OutputPath)/net6.0/Unity*" PackagePath="lib/net6.0" Pack="True"/>
+    <None Include="$(OutputPath)/net6.0/beamable.tooling.common*" PackagePath="lib/net6.0" Pack="True"/>
   </ItemGroup>
   <ItemGroup Label="Pack Internal Beamable References: Net7.0">
     <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build/net7.0" Pack="True"/>
-    <None Include="$(OutputPath)/net7.0/Beamable*" PackagePath="lib/net7.0" Pack="True"/>
-    <None Include="$(OutputPath)/net7.0/Unity*" PackagePath="lib/net7.0" Pack="True"/>
+    <None Include="$(OutputPath)/net7.0/beamable.tooling.common*" PackagePath="lib/net7.0" Pack="True"/>
   </ItemGroup>
   <ItemGroup Label="Pack Internal Beamable References: Net8.0">
     <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build/net8.0" Pack="True"/>
-    <None Include="$(OutputPath)/net8.0/Beamable*" PackagePath="lib/net8.0" Pack="True"/>
-    <None Include="$(OutputPath)/net8.0/Unity*" PackagePath="lib/net8.0" Pack="True"/>
+    <None Include="$(OutputPath)/net8.0/beamable.tooling.common*" PackagePath="lib/net8.0" Pack="True"/>
   </ItemGroup>
   
 

@@ -48,20 +48,9 @@ namespace Beamable.Editor.BeamCli
 		public string ExecuteUrl => $"{Url}/execute";
 		public string InfoUrl => $"{Url}/info";
 		public string Owner => BeamCliUtil.CLI_PATH.ToLowerInvariant();
-		
-		public static string Version
-		{
-			get
-			{
-				var version = BeamableEnvironment.SdkVersion.ToString();
-				if (version == "0.0.0")
-				{
-					version = "0.0.123";
-				}
 
-				return version;
-			}
-		}
+		public static string Version => BeamCliUtil.CLI_VERSION;
+		
 		
 		// TODO: how do we store this port so that we don't have to ALWAYS go through mismatches to re-find it? 
 		public int port = 8432; // beas 

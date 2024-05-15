@@ -36,14 +36,12 @@ namespace Beamable.Editor.BeamCli
 			}
 		}
 
-		private static string DEFAULT_VERSION
+		public static string CLI_VERSION
 		{
 			get
 			{
-				var config = EditorConfiguration.Instance;
-				if (config == null || !config.AdvancedCli.HasValue) return "0.0.0";
-
-				return config.AdvancedCli.Value.DefaultCLIVersion;
+				if (USE_SRC) return "0.0.123"; 
+				return BeamableEnvironment.NugetPackageVersion;
 			}
 		}
 
@@ -65,15 +63,7 @@ namespace Beamable.Editor.BeamCli
 #endif
 				}
 				const string CLI_LIBRARY = "Library/BeamableEditor/BeamCLI";
-				var requiredVersion = BeamableEnvironment.SdkVersion;
-
-				var requiredVersionStr = requiredVersion.ToString();
-				// if the required version is 0.0.0, then we want the latest CLI
-				if (requiredVersionStr == "0.0.0")
-				{
-					requiredVersionStr = DEFAULT_VERSION;
-				}
-				return Path.Combine(CLI_LIBRARY, requiredVersionStr);
+				return Path.Combine(CLI_LIBRARY, CLI_VERSION);
 			}
 		}
 
@@ -266,9 +256,9 @@ namespace Beamable.Editor.BeamCli
 			var proc = new Process();
 			var fullDirectory = Path.GetFullPath(CLI_VERSIONED_HOME);
 			var installCommand = $"tool install beamable.tools --tool-path \"{fullDirectory}\"";
-			if (!BeamableEnvironment.SdkVersion.ToString().Equals("0.0.0"))
+			if (!BeamableEnvironment.NugetPackageVersion.ToString().Equals("0.0.123"))
 			{
-				installCommand += $" --version {BeamableEnvironment.SdkVersion}";
+				installCommand += $" --version {BeamableEnvironment.NugetPackageVersion}";
 			}
 			proc.StartInfo = new ProcessStartInfo
 			{

@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <PackageId>Beamable.Server.Common</PackageId>
+        <Authors>Beamable Team</Authors>
+        <Company>Beamable</Company>
+        <PackageTags>Beamable;Game Server;Unity;Unreal;Games;Microservice</PackageTags>
+        <PackageProjectUrl>https://beamable.com</PackageProjectUrl>
+        <PackageIconUrl>https://beamable.com/wp-content/uploads/2024/01/kY9wLmfZ_400x400.jpg</PackageIconUrl>
+        <PackageReleaseNotes>https://beamable.github.io/changes/</PackageReleaseNotes>
+        <PackageLicenseUrl>https://beamable.com/license</PackageLicenseUrl>
+        <Description>
+            The Beamable.Server.Common package contains the standard Beamable code that helps with Beamable Microservices.
+        </Description>
+        <VersionPrefix>$(VersionPrefix)</VersionPrefix>
+        <PackageOutputPath>./nupkg</PackageOutputPath>
+
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <AssemblyName>Beamable.Server.Common</AssemblyName>
+        <LangVersion>8</LangVersion>
+
+        <UseMongoNugetReference>true</UseMongoNugetReference>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <DefineConstants>$(DefineConstants);BEAMABLE_IGNORE_MONGO_MOCKS</DefineConstants>
+    </PropertyGroup>
+    
+    <ItemGroup>
+      <ProjectReference Include="..\..\microservice\unityEngineStubs\unityenginestubs.csproj" />
+      <ProjectReference Include="..\beamable.common\beamable.common.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="$(UseMongoNugetReference)=='true'">
+        <PackageReference Include="MongoDB.Driver" Version="2.15.1"/>
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="System.CodeDom" Version="6.0.0" />
+    </ItemGroup>
+
+    <ItemGroup Label="Pack: source code">
+        <None Include="Runtime/**/*.cs" PackagePath="content/netstandard2.0/Runtime" Pack="True" />
+        <None Include="SharedRuntime/**/*.cs" PackagePath="content/netstandard2.0/SharedRuntime" Pack="True" />
+    </ItemGroup>
+    
+    
+    <Target Name="CopyCodeToUnity" AfterTargets="Build" Condition="Exists('../../client/Packages/com.beamable') AND Exists('../cli/bin/Debug/net8.0/Beamable.Tools.dll')">
+        <!-- This is sort of jank, but this will use the build of the cli bin if it exists to copy the src over to Unity. -->
+        <Exec Command="dotnet ../cli/bin/Debug/net8.0/Beamable.Tools.dll unity release-shared-code ../beamable.server.common/beamable.server.common.csproj ../../client com.beamable.server Runtime/Common Runtime/Common --logs v"/>
+        <Exec Command="dotnet ../cli/bin/Debug/net8.0/Beamable.Tools.dll unity release-shared-code ../beamable.server.common/beamable.server.common.csproj ../../client com.beamable.server SharedRuntime SharedRuntime --logs v"/>
+    </Target>
+    
+</Project>
