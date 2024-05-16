@@ -216,9 +216,10 @@ public partial class BeamoLocalSystem
 		string containerImageTag = "latest", bool forceAmdCpuArchitecture = false)
 	{
 
-		var pathsList = ParseDockerfile(dockerfilePathInBuildContext);
+		var pathToDockerfile = _configService.BeamableRelativeToExecutionRelative(dockerfilePathInBuildContext);
+		var pathsList = ParseDockerfile(_configService, pathToDockerfile);
 
-		using (var stream = CreateTarballForDirectory(pathsList))
+		using (var stream = CreateTarballForDirectory(_configService, pathsList))
 		{
 			var tag = $"{imageName}:{containerImageTag}";
 			var progress = 0f;
@@ -320,7 +321,7 @@ public partial class BeamoLocalSystem
 		return _client.PullAndCreateImage(publicImageName, progressUpdateHandler);
 	}
 
-	private static List<string> ParseDockerfile(string dockerFilePath)
+	private static List<string> ParseDockerfile(ConfigService configService, string dockerFilePath)
 	{
 		var paths = new List<string>();
 
@@ -340,9 +341,9 @@ public partial class BeamoLocalSystem
 				var probablePath = parts[1];
 				try
 				{
-					var result = Path.GetFullPath(probablePath);
+					var result = Path.GetFullPath(configService.BeamableRelativeToExecutionRelative(probablePath));
 					FileAttributes attr = File.GetAttributes(result); //If it's not a valid path, this is going to throw an exception
-					paths.Add(probablePath);
+					paths.Add(result);
 				}
 				catch(Exception e)
 				{
@@ -362,7 +363,7 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// Creates a tarball stream containing every file in the given <paramref name="directory"/>. 
 	/// </summary>
-	private static Stream CreateTarballForDirectory(List<string> paths)
+	private static Stream CreateTarballForDirectory(ConfigService configService, List<string> paths)
 	{
 		var tarball = new MemoryStream(512 * 1024);
 		var allFiles = new List<string>();
@@ -402,7 +403,9 @@ public partial class BeamoLocalSystem
 			// When creating the tar file (using SharpZipLib) if I create the tar entries from the filenames,
 			// the tar will be created with the wrong slashes (\ instead of / for linux).
 			// Swapping those out myself if you're doing any COPY or ADD within folders.
-			var tarName = file.Replace('\\', '/').TrimStart('/');
+
+			var localPath = configService.GetRelativeToBeamableFolderPath(file);
+			var tarName = localPath.Replace('\\', '/').TrimStart('/');
 
 			//Let's create the entry header
 			var entry = TarEntry.CreateTarEntry(tarName);
