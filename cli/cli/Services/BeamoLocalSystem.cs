@@ -318,8 +318,18 @@ public partial class BeamoLocalSystem
 
 		var serviceName = serviceDefinition.BeamoId;
 		var service = BeamoManifest.HttpMicroserviceLocalProtocols[serviceName];
+
+		if (string.IsNullOrEmpty(service.RelativeDockerfilePath))
+		{
+			Log.Verbose($"skipping dockerfile update for {serviceName} because no dockerfile is listed in the manifest.");
+			return; // there is no docker file.
+		}
+		
 		var dockerfilePath = service.RelativeDockerfilePath;
+		Log.Verbose($"Updating docker file, serviceName=[{serviceName}] service=[{service.DockerBuildContextPath}] dockerfilePath=[{dockerfilePath}]");
 		dockerfilePath = _configService.GetFullPath(dockerfilePath);
+		Log.Verbose($"Updating docker file at {dockerfilePath}");
+
 		var dockerfileText = await File.ReadAllTextAsync(dockerfilePath);
 
 		const string endTag =
