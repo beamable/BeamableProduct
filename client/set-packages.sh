@@ -1,10 +1,11 @@
 PROJECTS_DIR=${PROJECT_DIR_OVERRIDE:-"../ProjectsSource/"}
-HOME_FOR_BUILD=${HOME_OVERRIDE:-$HOME}
+HOME_FOR_BUILD=${1:-$HOME}
 PROJECTS_SOURCE="$HOME_FOR_BUILD/BeamableSource/"
 SOURCE_NAME="BeamableSource"
 SOURCE_PATH="$PROJECTS_SOURCE"
 VERSION="0.0.123"
-VERSION_INFO="$VERSION-local"
+VERSION_INFO="$VERSION"
+
 if [ ! -d "$PROJECTS_DIR" ]; then
     echo "Creating projects source folder!"
     mkdir $PROJECTS_DIR
@@ -59,4 +60,7 @@ echo $PROJECTS_DIR
 echo $PROJECTS_SOURCE
 ls $PROJECTS_DIR
 ls $PROJECTS_SOURCE
-dotnet nuget push $PROJECTS_DIR -s $PROJECTS_SOURCE
+
+# Nuget push seems to need the actual files on windows (it doesn't automatically get all the files if you just pass in a directory) 
+PROJECTS_DIR_FILES=$PROJECTS_DIR*
+dotnet nuget push $PROJECTS_DIR_FILES -s $PROJECTS_SOURCE
