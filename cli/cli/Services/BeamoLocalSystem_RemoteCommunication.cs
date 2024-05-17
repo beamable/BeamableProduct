@@ -71,7 +71,7 @@ public partial class BeamoLocalSystem
 	/// Deploys services defined in the given <see cref="localManifest"/>.
 	/// </summary>
 	public async Task<ServiceManifest> DeployToRemote(BeamoLocalSystem localSystem, string dockerRegistryUrl, string comments,
-		Dictionary<string, string> perServiceComments, Action<string, float> buildPullImageProgress = null, Action<string> onServiceDeployCompleted = null,
+		Dictionary<string, string> perServiceComments, DockerBuildArgs imageBuildArgs, Action<string, float> buildPullImageProgress = null, Action<string> onServiceDeployCompleted = null,
 		Action<string, float> onContainerUploadProgress = null, Action<string, bool> onContainerUploadCompleted = null)
 	{
 		BeamoLocalManifest localManifest = localSystem.BeamoManifest;
@@ -82,7 +82,7 @@ public partial class BeamoLocalSystem
 		// Then, let's try to deploy locally first.
 		try
 		{
-			await DeployToLocal(localSystem, null, true, buildPullImageProgress, onServiceDeployCompleted);
+			await DeployToLocal(localSystem, imageBuildArgs, null, true, buildPullImageProgress, onServiceDeployCompleted);
 		}
 		// If we fail, log out a message and the exception that caused the failure
 		catch (Exception e)
@@ -637,4 +637,9 @@ public partial class BeamoLocalSystem
 	}
 
 	#endregion
+}
+
+public struct DockerBuildArgs
+{
+	public string BuildMode;
 }

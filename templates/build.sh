@@ -20,4 +20,4 @@ dotnet pack ./templates/templates.csproj -o ${OUTPUT} -p:PackageVersion=$VERSION
 rm -rf ./templates/Data
 
 # install the latest version...
-dotnet new -i ${OUTPUT}Beamable.Templates.${VERSION}.nupkg
+dotnet new -i ${OUTPUT}/Beamable.Templates.${VERSION}.nupkg

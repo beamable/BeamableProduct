@@ -374,6 +374,12 @@ public class ProjectService
 		microserviceInfo.ServicePath = Path.Combine(args.ServicesBaseFolderPath, args.ProjectName);
 		await RunDotnetCommand($"new beamstorage -n {args.ProjectName} -o {microserviceInfo.ServicePath}");
 		await RunDotnetCommand($"sln {microserviceInfo.SolutionPath} add {microserviceInfo.ServicePath}");
+		
+		if (!string.IsNullOrWhiteSpace(usedVersion))
+		{
+			await UpdateProjectDependencyVersion(microserviceInfo.ServicePath, "Beamable.Microservice.Runtime", usedVersion);
+		}
+		
 		return microserviceInfo;
 	}
 

@@ -3,6 +3,7 @@ using Beamable.Common;
 using Beamable.Common.BeamCli;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Semantics;
+using cli.Services;
 using cli.Utils;
 using Docker.DotNet;
 using JetBrains.Annotations;
@@ -22,6 +23,7 @@ public class GenerateEnvFileCommandArgs : CommandArgs
 	public int instanceCount = 1;
 	public ServiceName serviceId;
 	public bool autoDeploy;
+	public string buildMode;
 }
 
 public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, GenerateEnvFileOutput>
@@ -39,6 +41,8 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 		AddOption(new Option<bool>("--include-prefix", () => true, "If true, the generated .env file will include the local machine name as prefix"), (args, i) => args.includePrefix = i);
 		AddOption(new Option<int>("--instance-count", () => 1, "How many virtual websocket connections the server will open"), (args, i) => args.instanceCount = i);
 		AddOption(new Option<bool>("--auto-deploy", () => false, "When enabled, automatically deploy dependencies that aren't running"), (args, i) => args.autoDeploy = i);
+		AddOption(new Option<string>("--build-mode", () => "game_maker", $"INTERNAL This enables a sane workflow for beamable developers to be happy and productive"),
+			(args, i) => args.buildMode = i);
 	}
 
 	public override async Task<GenerateEnvFileOutput> GetResult(GenerateEnvFileCommandArgs args)
@@ -79,7 +83,10 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 				await args.BeamoLocalSystem.StartListeningToDocker();
 				var dependencies = await args.BeamoLocalSystem.GetDependencies(service.BeamoId);
 				Log.Information("Starting " + string.Join(",", dependencies) + " " + sw.ElapsedMilliseconds);
-				await args.BeamoLocalSystem.DeployToLocal(args.BeamoLocalSystem, dependencies.Select(dep => dep.name).ToArray());
+				
+				// ImageBuildArgs not needed when deploying only MicroStorages 
+				await args.BeamoLocalSystem.DeployToLocal(args.BeamoLocalSystem, new DockerBuildArgs { BuildMode = args.buildMode, }, dependencies.Select(dep => dep.name).ToArray());
+				
 				args.BeamoLocalSystem.SaveBeamoLocalManifest();
 				args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 				await args.BeamoLocalSystem.StopListeningToDocker();

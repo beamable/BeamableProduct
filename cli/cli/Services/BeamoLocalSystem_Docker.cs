@@ -1,6 +1,6 @@
 ﻿/**
  * This part of the class has a bunch of utility functions to handle talking to docker using the Docker client in this system.
- * It handles enforcing the way we map BeamoServiceDefinitions to Docker containers. 
+ * It handles enforcing the way we map BeamoServiceDefinitions to Docker containers.
  */
 
 using Beamable.Common;
@@ -67,7 +67,6 @@ public partial class BeamoLocalSystem
 				// the image is not correct, so we need to erase the old container before recreating it.
 				await DeleteContainer(containerName);
 			}
-
 		}
 
 		_ = await CreateContainer(image, containerName, healthConfig, autoRemoveWhenStopped, portBindings, volumes, bindMounts, environmentVars);
@@ -175,7 +174,7 @@ public partial class BeamoLocalSystem
 	/// <see cref="BeamoServiceDefinition.DockerBuildContextPath"/> and <see cref="BeamoServiceDefinition.RelativeDockerfilePath"/>.  
 	/// </summary>
 	/// <returns>The image id that was created/pulled.</returns>
-	public async Task<string> PrepareBeamoServiceImage(BeamoServiceDefinition serviceDefinition, Action<string, float> messageHandler, bool forceAmdCpuArchitecture = false)
+	public async Task<string> PrepareBeamoServiceImage(BeamoServiceDefinition serviceDefinition, DockerBuildArgs imageBuildArgs, Action<string, float> messageHandler, bool forceAmdCpuArchitecture = false)
 	{
 		switch (serviceDefinition.Protocol)
 		{
@@ -194,6 +193,7 @@ public partial class BeamoLocalSystem
 				serviceDefinition.ImageId = await BuildAndCreateImage(serviceDefinition.BeamoId.ToLower(),
 					localProtocol.DockerBuildContextPath,
 					localProtocol.RelativeDockerfilePath,
+					imageBuildArgs,
 					progress =>
 					{
 						messageHandler?.Invoke(serviceDefinition.BeamoId, progress);
@@ -212,13 +212,14 @@ public partial class BeamoLocalSystem
 	/// Builds an image with the local docker engine using the given <paramref name="dockerBuildContextPath"/>, <paramref name="imageName"/> and dockerfile (<paramref name="dockerfilePathInBuildContext"/>).
 	/// It inspects the created image and returns it's ID.
 	/// </summary>
-	public async Task<string> BuildAndCreateImage(string imageName, string dockerBuildContextPath, string dockerfilePathInBuildContext, Action<float> progressUpdateHandler,
+	public async Task<string> BuildAndCreateImage(string imageName, string dockerBuildContextPath, string dockerfilePathInBuildContext, DockerBuildArgs imageBuildArgs, Action<float> progressUpdateHandler,
 		string containerImageTag = "latest", bool forceAmdCpuArchitecture = false)
 	{
 
-		var pathsList = ParseDockerfile(dockerfilePathInBuildContext);
+		var pathToDockerfile = _configService.BeamableRelativeToExecutionRelative(dockerfilePathInBuildContext);
+		var pathsList = ParseDockerfile(_configService, pathToDockerfile);
 
-		using (var stream = CreateTarballForDirectory(pathsList))
+		using (var stream = CreateTarballForDirectory(_configService, pathsList))
 		{
 			var tag = $"{imageName}:{containerImageTag}";
 			var progress = 0f;
@@ -230,12 +231,14 @@ public partial class BeamoLocalSystem
 					Dockerfile = dockerfilePathInBuildContext.Replace("\\", "/"),
 					Labels = new Dictionary<string, string>() { { "beamoId", imageName } },
 					Pull = "pull",
+					BuildArgs = new Dictionary<string, string> { { "BUILD_MODE", imageBuildArgs.BuildMode } }
 				};
 				if (forceAmdCpuArchitecture)
 				{
 					parameters.Platform = "linux/amd64";
 					Log.Debug($"Forcing CPU architecture arch=[{parameters.Platform}]");
 				}
+
 				await _client.Images.BuildImageFromDockerfileAsync(
 					parameters,
 					stream,
@@ -259,6 +262,7 @@ public partial class BeamoLocalSystem
 						// https://regex101.com/r/gpX8Ix/1
 						var regex = new Regex("Step ([0-9]+)/([0-9]+) :");
 
+						BeamableLogger.Log(message.Stream);
 						BeamableLogger.LogError(message.ErrorMessage);
 						if (message.Error != null)
 						{
@@ -320,7 +324,7 @@ public partial class BeamoLocalSystem
 		return _client.PullAndCreateImage(publicImageName, progressUpdateHandler);
 	}
 
-	private static List<string> ParseDockerfile(string dockerFilePath)
+	private static List<string> ParseDockerfile(ConfigService configService, string dockerFilePath)
 	{
 		var paths = new List<string>();
 
@@ -328,23 +332,26 @@ public partial class BeamoLocalSystem
 
 		foreach (string line in fileContents)
 		{
-			if (line.StartsWith("COPY"))
+			// Handles escaping stuff from copy statements that we don't need (to enforce pattern of COPY SOURCE DESTINATION).
+			string escapedLine = line;
+			if (escapedLine.StartsWith("ONBUILD COPY"))
+				escapedLine = escapedLine.Replace("ONBUILD ", "");
+
+			//This needs to have the follow pattern: "COPY SOURCE DESTINATION", if not just continues reading file
+			if (escapedLine.Contains("--"))
+				escapedLine = "";
+
+			if (escapedLine.StartsWith("COPY"))
 			{
-				var parts = line.Split(" ", StringSplitOptions.RemoveEmptyEntries);
-
-				if (parts.Length != 3) //This needs to have the follow pattern: "COPY SOURCE DESTINATION", if not just continues reading file
-				{
-					continue;
-				}
-
+				var parts = escapedLine.Split(" ", StringSplitOptions.RemoveEmptyEntries);
 				var probablePath = parts[1];
 				try
 				{
-					var result = Path.GetFullPath(probablePath);
+					var result = Path.GetFullPath(configService.BeamableRelativeToExecutionRelative(probablePath));
 					FileAttributes attr = File.GetAttributes(result); //If it's not a valid path, this is going to throw an exception
-					paths.Add(probablePath);
+					paths.Add(result);
 				}
-				catch(Exception e)
+				catch (Exception e)
 				{
 					// If the exception was an IO one, then throw it, otherwise just continue looking for paths
 					if (e is PathTooLongException || e is FileNotFoundException || e is DirectoryNotFoundException || e is IOException)
@@ -352,7 +359,6 @@ public partial class BeamoLocalSystem
 						throw new CliException($"Dockerfile has invalid source path to copy. Docker path: [{dockerFilePath}] Error: [{e.Message}] Stack: [{e.StackTrace}]");
 					}
 				}
-
 			}
 		}
 
@@ -362,7 +368,7 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// Creates a tarball stream containing every file in the given <paramref name="directory"/>. 
 	/// </summary>
-	private static Stream CreateTarballForDirectory(List<string> paths)
+	private static Stream CreateTarballForDirectory(ConfigService configService, List<string> paths)
 	{
 		var tarball = new MemoryStream(512 * 1024);
 		var allFiles = new List<string>();
@@ -402,7 +408,9 @@ public partial class BeamoLocalSystem
 			// When creating the tar file (using SharpZipLib) if I create the tar entries from the filenames,
 			// the tar will be created with the wrong slashes (\ instead of / for linux).
 			// Swapping those out myself if you're doing any COPY or ADD within folders.
-			var tarName = file.Replace('\\', '/').TrimStart('/');
+
+			var localPath = configService.GetRelativeToBeamableFolderPath(file);
+			var tarName = localPath.Replace('\\', '/').TrimStart('/');
 
 			//Let's create the entry header
 			var entry = TarEntry.CreateTarEntry(tarName);
@@ -513,9 +521,9 @@ public partial class BeamoLocalSystem
 							// TODO: A more robust algorithm for this is to make sure that we don't have repeating image ids tied to BeamoIds when running this stop loop.
 							if (!e.Message.Contains("reference does not exist") &&
 
-								// Because we run this in-parallel, we can also get this error:
-								// Docker API responded with status code=InternalServerError, response={"message":"unrecognized image ID sha256:c8b57c4bf7e3a88daf948d5d17bc7145db05771e928b3b3095ca4590719b5469"}    
-								!e.Message.Contains("unrecognized image ID"))
+							    // Because we run this in-parallel, we can also get this error:
+							    // Docker API responded with status code=InternalServerError, response={"message":"unrecognized image ID sha256:c8b57c4bf7e3a88daf948d5d17bc7145db05771e928b3b3095ca4590719b5469"}    
+							    !e.Message.Contains("unrecognized image ID"))
 								throw;
 						}
 					}
@@ -593,7 +601,7 @@ public static class DockerClientHelper
 				 * 2) Check if the "status" is Downloading/Extracting and increment the percentage accordingly
 				 * 3) Calculate the total percentage as the average of the 2 percentages.
 				 * 4) Invoke the handler
-				 * 
+				 *
 				 * Reference of each type of message:
 				 * {"status":"Pulling from library/mongo","id":"latest"}
 				 * {"status":"Pulling fs layer","progressDetail":{},"id":"20cec14c8f9e"}

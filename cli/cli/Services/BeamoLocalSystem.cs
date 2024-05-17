@@ -318,8 +318,18 @@ public partial class BeamoLocalSystem
 
 		var serviceName = serviceDefinition.BeamoId;
 		var service = BeamoManifest.HttpMicroserviceLocalProtocols[serviceName];
+
+		if (string.IsNullOrEmpty(service.RelativeDockerfilePath))
+		{
+			Log.Verbose($"skipping dockerfile update for {serviceName} because no dockerfile is listed in the manifest.");
+			return; // there is no docker file.
+		}
+		
 		var dockerfilePath = service.RelativeDockerfilePath;
+		Log.Verbose($"Updating docker file, serviceName=[{serviceName}] service=[{service.DockerBuildContextPath}] dockerfilePath=[{dockerfilePath}]");
 		dockerfilePath = _configService.GetFullPath(dockerfilePath);
+		Log.Verbose($"Updating docker file at {dockerfilePath}");
+
 		var dockerfileText = await File.ReadAllTextAsync(dockerfilePath);
 
 		const string endTag =
@@ -330,13 +340,10 @@ public partial class BeamoLocalSystem
 			"# <BEAM-CLI-INSERT-FLAG:COPY> do not delete this line. It is used by the beam CLI to insert custom actions";
 		const string serviceNameTag = "<SERVICE_NAME>";
 		const string servicePathTag = "<SERVICE_PATH>";
-		string toAddCsproj = $"COPY {servicePathTag}/{serviceNameTag}.csproj .";
-		string toAdd = @$"WORKDIR /subsrc/{serviceNameTag}
-COPY {servicePathTag} .";
+		
+		string toAdd = @$"RUN mkdir /subsrc/{serviceNameTag}
+COPY {servicePathTag} /subsrc/{serviceNameTag}";
 		var replacement = @$"{toAdd}
-{endTag}";
-		var replacementWithCsproj = @$"{toAdd}
-{toAddCsproj}
 {endTag}";
 
 		var hasEndTag = dockerfileText.Contains(endTag);
@@ -360,18 +367,18 @@ COPY {servicePathTag} .";
 		int endIndex = dockerfileText.IndexOf(endTag, startIndex, StringComparison.Ordinal);
 		string newText = dockerfileText.Remove(startIndex, endIndex - startIndex);
 
-		var dependencies = await GetDependencies(serviceName);
-
+		var dependencies = await GetDependencies(serviceName, true);
 		foreach (var dependency in dependencies)
 		{
 			string path = _configService.GetRelativeToDockerBuildContextPath(dependency.projPath);
-			newText = newText.Replace(endTag, replacement.Replace(serviceNameTag, dependency.name).Replace(servicePathTag, path));
+			string directory = _configService.GetRelativeToDockerBuildContextPath( Directory.GetParent(path)!.ToString());
+			newText = newText.Replace(endTag, replacement.Replace(serviceNameTag, dependency.name).Replace(servicePathTag, directory).Replace('\\', '/').Insert(0, "\n"));
 		}
 
 		//Copy the services files
 		var relativePath = _configService.GetRelativeToDockerBuildContextPath(serviceDefinition.ProjectDirectory);
-		newText = newText.Replace(endTag, replacementWithCsproj.Replace(serviceNameTag, serviceDefinition.BeamoId).Replace(servicePathTag, relativePath));
-
+		newText = newText.Replace(endTag, replacement.Replace(serviceNameTag, serviceDefinition.BeamoId).Replace(servicePathTag, relativePath).Replace('\\', '/').Insert(0, "\n"));
+		
 		await File.WriteAllTextAsync(dockerfilePath, newText);
 	}
 
