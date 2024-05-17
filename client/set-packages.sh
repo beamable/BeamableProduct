@@ -63,6 +63,6 @@ ls $PROJECTS_SOURCE
 
 # Nuget push seems to need the actual files on windows (it doesn't automatically get all the files if you just pass in a directory) 
 # The $PACKAGE_SOURCE_SUFFIX_BLOB is set from the buildPR.yml file.
-#PROJECTS_DIR_FILES=$PROJECTS_DIR${PACKAGE_SOURCE_SUFFIX_BLOB:-"*.nupkg"}
-PROJECTS_DIR_FILES=${PROJECTS_DIR_FILES:-"$PROJECTS_DIR*.nupkg"}
-dotnet nuget push "$PROJECTS_DIR_FILES" -s $PROJECTS_SOURCE
+for i in `find $PROJECTS_DIR -name "*.nupkg" -type f`; do    
+    dotnet nuget push "$i" -s $PROJECTS_SOURCE
+done
