@@ -668,9 +668,28 @@ public class BeamoServiceDefinition
 	public BeamoProtocolType Protocol;
 
 	/// <summary>
+	/// A list of beamo ids for dependencies on storage projects
+	/// </summary>
+	public List<string> StorageDependencyBeamIds = new List<string> { };
+
+	/// <summary>
+	/// A list of beamo ids for dependencies on storage projects
+	/// </summary>
+	public List<string> GeneralDependencyProjectPaths = new List<string> { };
+
+	
+	
+	/// <summary>
 	/// Gets the truncated version of the image id (used for deploying the service manifest to Beamo. TODO Ideally, we should make beamo use the full ID later...
 	/// </summary>
-	public string TruncImageId => ImageId.Contains(':') ? ImageId.Split(':')[1].Substring(0, 12) : ImageId;
+	public string TruncImageId
+	{
+		get
+		{
+			if (string.IsNullOrEmpty(ImageId)) return null;
+			return ImageId.Contains(':') ? ImageId.Split(':')[1].Substring(0, 12) : ImageId;
+		}
+	}
 
 	/// <summary>
 	/// This is what we need for deployment.
