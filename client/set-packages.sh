@@ -62,5 +62,5 @@ ls $PROJECTS_DIR
 ls $PROJECTS_SOURCE
 
 # Nuget push seems to need the actual files on windows (it doesn't automatically get all the files if you just pass in a directory) 
-PROJECTS_DIR_FILES=$PROJECTS_DIR*.nupkg
+PROJECTS_DIR_FILES=$PROJECTS_DIR${PACKAGE_SOURCE_SUFFIX_BLOB:-"*.nupkg"}
 dotnet nuget push "$PROJECTS_DIR_FILES" -s $PROJECTS_SOURCE
