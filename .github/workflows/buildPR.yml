@@ -106,7 +106,7 @@ jobs:
           ./set-packages.sh "${{ github.workspace }}"
         env:
           HOME_OVERRIDE: ${{ github.workspace }}
-          PACKAGE_SOURCE_SUFFIX_BLOB: "."
+          PROJECTS_DIR_FILES: ${{ github.workspace }}/NugetBuildDir/
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Install dependencies
         run: dotnet restore cli/tests
