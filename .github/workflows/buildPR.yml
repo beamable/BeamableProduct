@@ -103,9 +103,8 @@ jobs:
         working-directory: ./client
         shell: bash
         run: |
-          ./set-packages.sh
+          ./set-packages.sh ${{ github.workspace }}
         env:
-          HOME_OVERRIDE: ${{ github.workspace }}
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Install dependencies
         run: dotnet restore cli/tests
