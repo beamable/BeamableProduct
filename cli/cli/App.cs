@@ -328,7 +328,9 @@ public class App
 		Commands.AddSubCommand<ServicesPromoteCommand, ServicesPromoteCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesGetConnectionStringCommand, ServicesGetConnectionStringCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesSetManifestCommand, ServicesSetManifestCommandArgs, ServicesCommand>();
-
+		Commands
+			.AddSubCommand<ServicesGenerateLocalManifestCommand, ServicesGenerateLocalManifestCommandArgs,
+				ServicesCommand>();
 
 		// content commands
 		
