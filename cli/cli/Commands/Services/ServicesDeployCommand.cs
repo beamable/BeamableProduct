@@ -19,6 +19,8 @@ public class ServicesDeployCommandArgs : LoginCommandArgs
 
 	public string FromJsonFile;
 
+	public string BuildMode;
+
 	public string RemoteComment;
 	public string[] RemoteServiceComments;
 	public string dockerRegistryUrl;
@@ -56,13 +58,18 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 		AddOption(new Option<string>("--comment", () => "", $"Associates this comment along with the published Manifest. You'll be able to read it via the Beamable Portal"),
 			(args, i) => args.RemoteComment = i);
 
+		AddOption(new Option<string>("--build-mode", () => "game_maker", $"INTERNAL This enables a sane workflow for beamable developers to be happy and productive"),
+			(args, i) => args.BuildMode = i);
+
 		AddOption(new Option<string[]>("--service-comments", Array.Empty<string>, $"Any number of strings in the format BeamoId::Comment" +
-																				  $"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal")
-		{ AllowMultipleArgumentsPerToken = true },
+		                                                                          $"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal")
+			{
+				AllowMultipleArgumentsPerToken = true
+			},
 			(args, i) => args.RemoteServiceComments = i);
 
 		AddOption(new Option<string>("--docker-registry-url", "A custom docker registry url to use when uploading. By default, the result from the beamo/registry network call will be used, " +
-															  "with minor string manipulation to add https scheme, remove port specificatino, and add /v2 "), (args, i) => args.dockerRegistryUrl = i);
+		                                                      "with minor string manipulation to add https scheme, remove port specificatino, and add /v2 "), (args, i) => args.dockerRegistryUrl = i);
 	}
 
 	public override async Task Handle(ServicesDeployCommandArgs args)
@@ -193,7 +200,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 			if (_localBeamo.BeamoManifest.ServiceDefinitions.FindIndex(sd => sd.BeamoId == id) == -1)
 			{
 				var errMsg = $"ID [{id}] in the given service comment argument [{commentArg}] " +
-							 $"doesn't match any of the registered services [{string.Join(",", _localBeamo.BeamoManifest.ServiceDefinitions.Select(sd => sd.BeamoId))}]!";
+				             $"doesn't match any of the registered services [{string.Join(",", _localBeamo.BeamoManifest.ServiceDefinitions.Select(sd => sd.BeamoId))}]!";
 				LogToSendResult(errMsg, "ERROR");
 				throw new ArgumentOutOfRangeException($"{nameof(args.RemoteServiceComments)}[{i}]", errMsg);
 			}
@@ -239,6 +246,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 				_ = await _localBeamo.DeployToRemote(_localBeamo, dockerRegistryUrl,
 					args.RemoteComment ?? string.Empty,
 					perServiceComments,
+					new DockerBuildArgs() { BuildMode = args.BuildMode, },
 					(beamoId, progress) =>
 					{
 						var progressTask = buildAndTestTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
@@ -298,12 +306,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 	private void LogToSendResult(string msg, string level)
 	{
 		this.SendResults<ServiceDeployLogResult, ServiceDeployLogResult>(
-			new ServiceDeployLogResult()
-			{
-				Message = msg,
-				Level = level,
-				TimeStamp = DateTime.Now.ToString("HH:mm:ss")
-			}
+			new ServiceDeployLogResult() { Message = msg, Level = level, TimeStamp = DateTime.Now.ToString("HH:mm:ss") }
 		);
 	}
 }
