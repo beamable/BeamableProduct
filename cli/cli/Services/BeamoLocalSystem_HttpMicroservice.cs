@@ -292,6 +292,18 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 	public List<DockerEnvironmentVariable> CustomEnvironmentVariables;
 
 	public int InstanceCount = 1;
+	
+	/// <summary>
+	/// A list of beamo ids for dependencies on storage projects
+	/// </summary>
+	public List<string> StorageDependencyBeamIds = new List<string> { };
+
+	/// <summary>
+	/// A list of beamo ids for dependencies on storage projects
+	/// </summary>
+	public List<string> GeneralDependencyProjectPaths = new List<string> { };
+
+
 
 	public bool VerifyCanBeBuiltLocally(ConfigService configService)
 	{

@@ -157,6 +157,13 @@ public class EmbeddedMongoDbLocalProtocol : IBeamoLocalProtocol
 
 	public string DataVolumeInContainerPath;
 	public string FilesVolumeInContainerPath;
+	
+	/// <summary>
+	/// A list of beamo ids for dependencies on storage projects
+	/// </summary>
+	public List<string> GeneralDependencyProjectPaths = new List<string> { };
+
+
 	public bool VerifyCanBeBuiltLocally(ConfigService _)
 	{
 		if (!BaseImage.Contains("mongo:"))

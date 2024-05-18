@@ -1,5 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+    <PropertyGroup Label="Beamable Settings">
+        <!-- All StorageObjects must have the value, "storage" -->
+        <BeamProjectType>storage</BeamProjectType>
+    </PropertyGroup>
+    
     <PropertyGroup Label="Dotnet Settings">
         <TargetFramework>net6.0</TargetFramework>
     </PropertyGroup>

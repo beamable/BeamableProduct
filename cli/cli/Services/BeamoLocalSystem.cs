@@ -667,17 +667,7 @@ public class BeamoServiceDefinition
 	/// </summary>
 	public BeamoProtocolType Protocol;
 
-	/// <summary>
-	/// A list of beamo ids for dependencies on storage projects
-	/// </summary>
-	public List<string> StorageDependencyBeamIds = new List<string> { };
 
-	/// <summary>
-	/// A list of beamo ids for dependencies on storage projects
-	/// </summary>
-	public List<string> GeneralDependencyProjectPaths = new List<string> { };
-
-	
 	
 	/// <summary>
 	/// Gets the truncated version of the image id (used for deploying the service manifest to Beamo. TODO Ideally, we should make beamo use the full ID later...

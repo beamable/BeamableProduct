@@ -7,6 +7,54 @@ namespace cli.Services;
 
 public static class ProjectContextUtil
 {
+	public static async Task<BeamoLocalManifest> GenerateLocalManifest(CommandArgs args)
+	{
+		var rootFolder = args.ConfigService.BaseDirectory;
+
+	
+		// find all local project files...
+		var allProjects = (await ProjectContextUtil.FindCsharpProjects(args.AppContext.DotnetPath, rootFolder)).ToArray();
+		var typeToProjects = allProjects
+			.GroupBy(p => p.properties.ProjectType)
+			.ToDictionary(kvp => kvp.Key, kvp => kvp.ToList());
+		var absPathToProject = allProjects.ToDictionary(kvp => kvp.absolutePath);
+		var manifest = new BeamoLocalManifest
+		{
+			ServiceDefinitions = new List<BeamoServiceDefinition>(),
+			HttpMicroserviceLocalProtocols = new BeamoLocalProtocolMap<HttpMicroserviceLocalProtocol>{},
+			EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>()
+		};
+		
+		// extract the "service" types, and convert them into beamo domain model
+		if (!typeToProjects.TryGetValue("service", out var serviceProjects))
+		{
+			serviceProjects = new List<ProjectContextUtil.CsharpProjectMetadata>();
+		}
+		if (!typeToProjects.TryGetValue("storage", out var storageProjects))
+		{
+			storageProjects = new List<ProjectContextUtil.CsharpProjectMetadata>();
+		}
+
+		foreach (var serviceProject in serviceProjects)
+		{
+			var definition = ProjectContextUtil.ConvertProjectToServiceDefinition(serviceProject, absPathToProject);
+			var protocol = ProjectContextUtil.ConvertProjectToLocalHttpProtocol(serviceProject, definition, absPathToProject);
+			manifest.ServiceDefinitions.Add(definition);
+			manifest.HttpMicroserviceLocalProtocols.Add(definition.BeamoId, protocol);
+		}
+
+		foreach (var storageProject in storageProjects)
+		{
+			var definition = ProjectContextUtil.ConvertProjectToStorageDefinition(storageProject, absPathToProject);
+			var protocol = ProjectContextUtil.ConvertProjectToLocalMongoProtocol(storageProject, definition, absPathToProject);
+			manifest.EmbeddedMongoDbLocalProtocols.Add(definition.BeamoId, protocol);
+			manifest.ServiceDefinitions.Add(definition);
+		}
+
+		return manifest;
+	}
+	
+	
 	public static async Task<CsharpProjectMetadata[]> FindCsharpProjects(string dotnetPath, string rootFolder)
 	{
 		var paths = Directory.GetFiles(rootFolder, "*.csproj", SearchOption.AllDirectories);
@@ -59,6 +107,80 @@ public static class ProjectContextUtil
 		return instance;
 	}
 
+	public static EmbeddedMongoDbLocalProtocol ConvertProjectToLocalMongoProtocol(CsharpProjectMetadata project,
+		BeamoServiceDefinition beamoServiceDefinition, Dictionary<string, CsharpProjectMetadata> absPathToProject)
+	{
+		var protocol = new EmbeddedMongoDbLocalProtocol();
+		
+		// TODO: we could extract these as options in the Csproj file.
+		protocol.BaseImage = "mongo:7.0";
+		protocol.RootUsername = "beamable";
+		protocol.RootPassword = "beamable";
+		protocol.DataVolumeInContainerPath = "/data/db";
+		protocol.FilesVolumeInContainerPath = "/beamable";
+		protocol.MongoLocalPort = ""; // TODO: I don't think we actually need this, because we are getting the port via docker container inspection.
+		
+		foreach (var referencedProject in project.projectReferences)
+		{
+			if (!absPathToProject.TryGetValue(referencedProject.FullPath, out var knownProject))
+			{
+				Log.Warning($"Project=[{project.relativePath}] references project=[${referencedProject.FullPath}] but that project was not detected in the beamable folder context. ");
+				continue;
+			}
+
+			var referenceType = knownProject.properties.ProjectType;
+			switch (referenceType)
+			{
+				default:
+					protocol.GeneralDependencyProjectPaths.Add(knownProject.relativePath);
+					break;
+			}
+		}
+
+		return protocol;
+	}
+	
+	public static HttpMicroserviceLocalProtocol ConvertProjectToLocalHttpProtocol(CsharpProjectMetadata project,
+		BeamoServiceDefinition beamoServiceDefinition, Dictionary<string, CsharpProjectMetadata> absPathToProject)
+	{
+		var protocol = new HttpMicroserviceLocalProtocol();
+		protocol.DockerBuildContextPath = ".";
+		protocol.RelativeDockerfilePath = Path.Combine(Path.GetDirectoryName(project.relativePath), "Dockerfile");
+		
+		protocol.CustomVolumes = new List<DockerVolume>();
+		protocol.InstanceCount = 1;
+		protocol.CustomBindMounts = new List<DockerBindMount>();
+		protocol.CustomPortBindings = new List<DockerPortBinding>();
+		protocol.CustomEnvironmentVariables = new List<DockerEnvironmentVariable>();
+		
+		foreach (var referencedProject in project.projectReferences)
+		{
+			if (!absPathToProject.TryGetValue(referencedProject.FullPath, out var knownProject))
+			{
+				Log.Warning($"Project=[{project.relativePath}] references project=[${referencedProject.FullPath}] but that project was not detected in the beamable folder context. ");
+				continue;
+			}
+
+			var referenceType = knownProject.properties.ProjectType;
+			switch (referenceType)
+			{
+				case "storage":
+					protocol.StorageDependencyBeamIds.Add(ConvertBeamoId(knownProject));
+					break;
+				default:
+					protocol.GeneralDependencyProjectPaths.Add(knownProject.relativePath);
+					break;
+			}
+		}
+		
+		return protocol;
+	}
+	
+	static string ConvertBeamoId(CsharpProjectMetadata metadata) => string.IsNullOrEmpty(metadata.properties.BeamId)
+		? metadata.fileNameWithoutExtension
+		: metadata.properties.BeamId;
+
+
 	public static BeamoServiceDefinition ConvertProjectToServiceDefinition(CsharpProjectMetadata project, Dictionary<string, CsharpProjectMetadata> absPathToProject)
 	{
 		if (project.properties.ProjectType != "service")
@@ -67,10 +189,6 @@ public static class ProjectContextUtil
 				$"Assert failed; Trying to convert a project into a service project, but the project=[{project.absolutePath}] is of type=[{project.properties.ProjectType}]. This should have been prefiltered in the CLI. ");
 		}
 
-		string ConvertBeamoId(CsharpProjectMetadata metadata) => string.IsNullOrEmpty(metadata.properties.BeamId)
-			? metadata.fileNameWithoutExtension
-			: metadata.properties.BeamId;
-		
 		var definition = new BeamoServiceDefinition();
 
 		// the beamId will default to the csproj file name
@@ -88,25 +206,7 @@ public static class ProjectContextUtil
 		definition.Protocol = BeamoProtocolType.HttpMicroservice;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet;
 		
-		foreach (var referencedProject in project.projectReferences)
-		{
-			if (!absPathToProject.TryGetValue(referencedProject.FullPath, out var knownProject))
-			{
-				Log.Warning($"Project=[{project.relativePath}] references project=[${referencedProject.FullPath}] but that project was not detected in the beamable folder context. ");
-				continue;
-			}
-
-			var referenceType = knownProject.properties.ProjectType;
-			switch (referenceType)
-			{
-				case "storage":
-					definition.StorageDependencyBeamIds.Add(ConvertBeamoId(knownProject));
-					break;
-				default:
-					definition.GeneralDependencyProjectPaths.Add(knownProject.relativePath);
-					break;
-			}
-		}
+		
 		
 		
 		return definition;
@@ -140,27 +240,6 @@ public static class ProjectContextUtil
 
 		definition.Protocol = BeamoProtocolType.EmbeddedMongoDb;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet;
-		
-		foreach (var referencedProject in project.projectReferences)
-		{
-			if (!absPathToProject.TryGetValue(referencedProject.FullPath, out var knownProject))
-			{
-				Log.Warning($"Project=[{project.relativePath}] references project=[${referencedProject.FullPath}] but that project was not detected in the beamable folder context. ");
-				continue;
-			}
-
-			var referenceType = knownProject.properties.ProjectType;
-			switch (referenceType)
-			{
-				case "storage":
-					definition.StorageDependencyBeamIds.Add(ConvertBeamoId(knownProject));
-					break;
-				default:
-					definition.GeneralDependencyProjectPaths.Add(knownProject.relativePath);
-					break;
-			}
-		}
-		
 		
 		return definition;
 	}
