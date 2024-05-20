@@ -104,7 +104,7 @@ public class ServicesEnableCommand : AppCommand<ServicesEnableCommandArgs>
 		// If we are supposed to propagate the changes to all service dependencies, let's do that.
 		if (!args.IgnoreDependencies.Value)
 		{
-			var dependencies = await args.BeamoLocalSystem.GetDependencies(serviceDefinition.BeamoId);
+			var dependencies = args.BeamoLocalSystem.GetDependencies(serviceDefinition.BeamoId);
 			foreach (var id in dependencies)
 			{
 				var dep = _localBeamo.BeamoManifest.ServiceDefinitions.First(sd => sd.BeamoId == id.name);

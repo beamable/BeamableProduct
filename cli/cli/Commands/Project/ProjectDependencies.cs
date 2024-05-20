@@ -15,10 +15,13 @@ public class ProjectDependencies : AppCommand<ProjectDependenciesArgs>
 		AddArgument(new ServiceNameArgument("Name of the service"), (args, i) => args.ProjectName = i);
 	}
 
-	public override async Task Handle(ProjectDependenciesArgs args)
+	public override Task Handle(ProjectDependenciesArgs args)
 	{
-		var deps = await args.BeamoLocalSystem.GetDependencies(args.ProjectName);
-		Log.Information("{0} dependencies: {1}", args.ProjectName, string.Join(',', deps));
+		return Task.Run(() =>
+		{
+			var deps = args.BeamoLocalSystem.GetDependencies(args.ProjectName);
+			Log.Information("{0} dependencies: {1}", args.ProjectName, string.Join(',', deps));
+		});
 	}
 }
 

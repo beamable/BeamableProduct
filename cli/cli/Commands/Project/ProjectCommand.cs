@@ -64,7 +64,7 @@ public class ProjectCommand : CommandGroup
 			throw new CliException($"service does not exist, service=[{beamoServiceId}]");
 		}
 
-		var deps = await args.BeamoLocalSystem.GetDependencies(beamoServiceId);
+		var deps = args.BeamoLocalSystem.GetDependencies(beamoServiceId);
 		Log.Debug("Found service definition, service=[{serviceId}] projectPath=[{ProjectPath}] deps=[{Dependencies}]", beamoServiceId, service.ProjectDirectory, string.Join(",", deps));
 		var projectPath = args.ConfigService.BeamableRelativeToExecutionRelative(service.ProjectDirectory);
 		Log.Debug("service path=[{ProjectPath}]", projectPath);

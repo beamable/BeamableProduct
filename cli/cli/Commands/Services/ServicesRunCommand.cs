@@ -105,7 +105,7 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 					idsToDeploy.AddRange(args.BeamoIdsToDeploy);
 					foreach (string id in args.BeamoIdsToDeploy)
 					{
-						var dependencies = await _localBeamo.GetDependencies(id);
+						var dependencies = _localBeamo.GetDependencies(id);
 						idsToDeploy.AddRange(dependencies.Select(d => d.name));
 					}
 

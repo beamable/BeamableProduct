@@ -172,7 +172,7 @@ public partial class BeamoLocalSystem
 
 
 		// add in connection string environment vars for mongo storage dependencies
-		var dependencies = await localSystem.GetDependencies(serviceDefinition.BeamoId);
+		var dependencies = localSystem.GetDependencies(serviceDefinition.BeamoId);
 		foreach (var dependencyId in dependencies)
 		{
 			try

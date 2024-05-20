@@ -132,7 +132,7 @@ public partial class BeamoLocalSystem
 		// If all is well with the local deployment, we convert the local manifest into the remote one
 		// TODO: When Beam-O gets upgraded, hopefully it'll use the same format locally. Then, we can rename this stuff to BeamoManifest and throw this x-form away.
 		var remoteManifest = new ServiceManifest();
-		var dependencies = await GetAllBeamoIdsDependencies();
+		var dependencies = GetAllBeamoIdsDependencies();
 		WriteServiceManifestFromLocal(localManifest, comments, perServiceComments, remoteManifest, federatedComponentByServiceName, dependencies);
 
 		await _beamo.Deploy(remoteManifest);

@@ -53,7 +53,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 
 		var isDockerRunning = await _localBeamo.CheckIsRunning();
 		var serviceDefinitions = _localBeamo.BeamoManifest.ServiceDefinitions;
-		var dependenciesDict = await _localBeamo.GetAllBeamoIdsDependencies();
+		var dependenciesDict = _localBeamo.GetAllBeamoIdsDependencies();
 		var localServiceListResult = new ServiceListResult(!args.Remote, isDockerRunning, serviceDefinitions.Count);
 		if (!isDockerRunning && !args.Remote)
 		{

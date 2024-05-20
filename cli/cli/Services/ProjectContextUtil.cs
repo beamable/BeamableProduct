@@ -7,13 +7,10 @@ namespace cli.Services;
 
 public static class ProjectContextUtil
 {
-	public static async Task<BeamoLocalManifest> GenerateLocalManifest(CommandArgs args)
+	public static async Task<BeamoLocalManifest> GenerateLocalManifest(string rootFolder, string dotnetPath)
 	{
-		var rootFolder = args.ConfigService.BaseDirectory;
-
-	
 		// find all local project files...
-		var allProjects = (await ProjectContextUtil.FindCsharpProjects(args.AppContext.DotnetPath, rootFolder)).ToArray();
+		var allProjects = (await ProjectContextUtil.FindCsharpProjects(dotnetPath, rootFolder)).ToArray();
 		var typeToProjects = allProjects
 			.GroupBy(p => p.properties.ProjectType)
 			.ToDictionary(kvp => kvp.Key, kvp => kvp.ToList());
@@ -22,7 +19,10 @@ public static class ProjectContextUtil
 		{
 			ServiceDefinitions = new List<BeamoServiceDefinition>(),
 			HttpMicroserviceLocalProtocols = new BeamoLocalProtocolMap<HttpMicroserviceLocalProtocol>{},
-			EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>()
+			EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>(){},
+			EmbeddedMongoDbRemoteProtocols = new BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol>(),
+			HttpMicroserviceRemoteProtocols = new BeamoRemoteProtocolMap<HttpMicroserviceRemoteProtocol>()
+
 		};
 		
 		// extract the "service" types, and convert them into beamo domain model

@@ -483,10 +483,15 @@ public class App
 				services.AddSingleton(helpBuilder);
 				ConfigureServices(services);
 			});
+
 			// we can take advantage of a feature of the CLI tool to use their slightly jank DI system to inject our DI system. DI in DI.
 			consoleContext.BindingContext.AddService(_ => new AppServices { duck = provider });
 			var appContext = provider.GetRequiredService<IAppContext>();
 			appContext.Apply(consoleContext.BindingContext);
+
+			var beamoSystem = provider.GetService<BeamoLocalSystem>();
+			beamoSystem.InitManifest().Wait();
+
 		}, MiddlewareOrder.Configuration);
 		commandLineBuilder.UseDefaults();
 		commandLineBuilder.UseSuggestDirective();
