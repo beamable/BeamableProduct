@@ -48,7 +48,7 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     concurrency:
-      group: release-nuget
+      group: release-unity-sdk
       cancel-in-progress: true
     steps:
       - name: review options
