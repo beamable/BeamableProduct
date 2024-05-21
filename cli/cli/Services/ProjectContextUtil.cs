@@ -7,7 +7,7 @@ namespace cli.Services;
 
 public static class ProjectContextUtil
 {
-	public static async Task<BeamoLocalManifest> GenerateLocalManifest(string rootFolder, string dotnetPath)
+	public static async Task<BeamoLocalManifest> GenerateLocalManifest(string rootFolder, string dotnetPath, ConfigService configService)
 	{
 		// find all local project files...
 		var allProjects = (await ProjectContextUtil.FindCsharpProjects(dotnetPath, rootFolder)).ToArray();
@@ -46,7 +46,7 @@ public static class ProjectContextUtil
 		foreach (var storageProject in storageProjects)
 		{
 			var definition = ProjectContextUtil.ConvertProjectToStorageDefinition(storageProject, absPathToProject);
-			var protocol = ProjectContextUtil.ConvertProjectToLocalMongoProtocol(storageProject, definition, absPathToProject);
+			var protocol = ProjectContextUtil.ConvertProjectToLocalMongoProtocol(storageProject, definition, absPathToProject, configService);
 			manifest.EmbeddedMongoDbLocalProtocols.Add(definition.BeamoId, protocol);
 			manifest.ServiceDefinitions.Add(definition);
 		}
@@ -108,7 +108,8 @@ public static class ProjectContextUtil
 	}
 
 	public static EmbeddedMongoDbLocalProtocol ConvertProjectToLocalMongoProtocol(CsharpProjectMetadata project,
-		BeamoServiceDefinition beamoServiceDefinition, Dictionary<string, CsharpProjectMetadata> absPathToProject)
+		BeamoServiceDefinition beamoServiceDefinition, Dictionary<string, CsharpProjectMetadata> absPathToProject,
+		ConfigService configService)
 	{
 		var protocol = new EmbeddedMongoDbLocalProtocol();
 		
@@ -116,8 +117,18 @@ public static class ProjectContextUtil
 		protocol.BaseImage = "mongo:7.0";
 		protocol.RootUsername = "beamable";
 		protocol.RootPassword = "beamable";
-		protocol.DataVolumeInContainerPath = "/data/db";
-		protocol.FilesVolumeInContainerPath = "/beamable";
+		if (configService.UseWindowsStyleVolumeNames)
+		{
+			protocol.DataVolumeInContainerPath = "C:/data/db";
+			protocol.FilesVolumeInContainerPath = "C:/beamable";
+		}
+		else
+		{
+			protocol.DataVolumeInContainerPath = "/data/db";
+			protocol.FilesVolumeInContainerPath = "/beamable";
+		}
+		
+		
 		protocol.MongoLocalPort = ""; // TODO: I don't think we actually need this, because we are getting the port via docker container inspection.
 		
 		foreach (var referencedProject in project.projectReferences)

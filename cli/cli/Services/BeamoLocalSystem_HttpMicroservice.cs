@@ -17,44 +17,6 @@ public partial class BeamoLocalSystem
 
 	private const string HTTM_MICROSERVICE_CONTAINER_PORT = "6565";
 	
-	/// <summary>
-	/// Registers a <see cref="BeamoServiceDefinition"/> of with the <see cref="BeamoProtocolType"/> of <see cref="BeamoProtocolType.HttpMicroservice"/>.
-	/// </summary>
-	/// <param name="beamId">The service's unique id.</param>
-	/// <param name="projectPath">A valid Docker Build Context that'll be the built service.</param>
-	/// <param name="dockerfilePath">A path inside the given Docker Build Context (<paramref name="projectPath"/>) that'll be used to run the build.</param>
-	/// <param name="dependencyBeamIds">Other existing services that this depends on. Any dependency is guaranteed to be running by the time this service attempts to start up.</param>
-	/// <param name="cancellationToken">A cancellation token to stop the registration.</param>
-	/// <param name="shouldServiceBeEnabled">Should service be enabled/disabled when adding service definition</param>
-	/// <returns>A valid <see cref="BeamoServiceDefinition"/> with the default values of the protocol.</returns>
-	public async Task<BeamoServiceDefinition> AddDefinition_HttpMicroservice(string beamId,
-		string dockerfilePath, CancellationToken cancellationToken,
-		bool shouldServiceBeEnabled = true, string projectPath = null)
-	{
-		return await AddServiceDefinition<HttpMicroserviceLocalProtocol, HttpMicroserviceRemoteProtocol>(
-			beamId,
-			BeamoProtocolType.HttpMicroservice,
-			async (definition, protocol) =>
-			{
-				string buildContexPath = _configService.GetDockerBuildContextPath();
-				await PrepareDefaultLocalProtocol_HttpMicroservice(definition, protocol);
-				protocol.DockerBuildContextPath = buildContexPath;
-				protocol.RelativeDockerfilePath = dockerfilePath;
-				if (!string.IsNullOrWhiteSpace(projectPath))
-				{
-					definition.ProjectDirectory = projectPath;
-				}
-				else if (!string.IsNullOrWhiteSpace(dockerfilePath))
-				{
-					definition.ProjectDirectory = Path.Combine(buildContexPath, dockerfilePath);
-					definition.ProjectDirectory = Regex.Replace(definition.ProjectDirectory, @"(/|\\)Dockerfile$", string.Empty);
-				}
-			},
-			PrepareDefaultRemoteProtocol_HttpMicroservice,
-			cancellationToken,
-			shouldServiceBeEnabled);
-	}
-
 	public async Task<List<DockerEnvironmentVariable>> GetLocalConnectionStrings(BeamoLocalManifest localManifest,
 		string host = "gateway.docker.internal")
 	{
@@ -206,60 +168,7 @@ public partial class BeamoLocalSystem
 		await CreateAndRunContainer(imageId, containerName, cmdStr, false, portBindings, volumes, bindMounts,
 			environmentVariables);
 	}
-
-	/// <summary>
-	/// Resets the protocol data for the <see cref="BeamoServiceDefinition"/> with the given <paramref name="beamoId"/> to the default settings. 
-	/// </summary>
-	public async Task<bool> ResetToDefaultValues_HttpMicroservice(string beamoId)
-	{
-		var localUpdated = await ResetLocalProtocol_HttpMicroservice(beamoId, CancellationToken.None);
-		var remoteUpdated = await ResetRemoteProtocol_HttpMicroservice(beamoId, CancellationToken.None);
-		return localUpdated && remoteUpdated;
-	}
-
-	/// <summary>
-	/// Short-hand to restore the <see cref="HttpMicroserviceLocalProtocol"/> of a given <paramref name="beamoId"/> to default parameters. Returns false if the update fails or if the given <paramref name="beamoId"/>'s service is
-	/// not set to the <see cref="BeamoProtocolType.HttpMicroservice"/>. 
-	/// </summary>
-	public async Task<bool> ResetLocalProtocol_HttpMicroservice(string beamoId, CancellationToken cancellationToken) =>
-		await TryUpdateLocalProtocol<HttpMicroserviceLocalProtocol>(beamoId,
-			PrepareDefaultLocalProtocol_HttpMicroservice, cancellationToken);
-
-	/// <summary>
-	/// Short-hand to restore the <see cref="HttpMicroserviceRemoteProtocol"/> of a given <paramref name="beamoId"/> to default parameters. Returns false if the update fails or if the given <paramref name="beamoId"/>'s service is
-	/// not set to the <see cref="BeamoProtocolType.HttpMicroservice"/>. 
-	/// </summary>
-	public async Task<bool> ResetRemoteProtocol_HttpMicroservice(string beamoId, CancellationToken cancellationToken) =>
-		await TryUpdateRemoteProtocol<HttpMicroserviceRemoteProtocol>(beamoId,
-			PrepareDefaultRemoteProtocol_HttpMicroservice, cancellationToken);
-
-	/// <summary>
-	/// Implementation of <see cref="LocalProtocolModifier{TLocal}"/> that applies the default values of the <see cref="HttpMicroserviceLocalProtocol"/>.
-	/// <see cref="AddServiceDefinition{TLocal,TRemote}"/> and <see cref="TryUpdateLocalProtocol{TLocal}"/> to understand how this gets called. 
-	/// </summary>
-	private Task PrepareDefaultLocalProtocol_HttpMicroservice(BeamoServiceDefinition owner,
-		HttpMicroserviceLocalProtocol local)
-	{
-		local.CustomPortBindings = new List<DockerPortBinding>();
-		local.CustomVolumes = new List<DockerVolume>();
-		local.CustomBindMounts = new List<DockerBindMount>();
-		local.CustomEnvironmentVariables = new List<DockerEnvironmentVariable>();
-		return Task.CompletedTask;
-	}
-
-	/// <summary>
-	/// Implementation of <see cref="RemoteProtocolModifier{TRemote}"/> that applies the default values of the <see cref="HttpMicroserviceRemoteProtocol"/>.
-	/// <see cref="AddServiceDefinition{TLocal,TRemote}"/> and <see cref="TryUpdateRemoteProtocol{TRemote}"/> to understand how this gets called. 
-	/// </summary>
-	private async Task PrepareDefaultRemoteProtocol_HttpMicroservice(BeamoServiceDefinition owner,
-		HttpMicroserviceRemoteProtocol remote)
-	{
-		remote.HealthCheckEndpoint = "health";
-		remote.HealthCheckPort = "6565";
-		remote.CustomEnvironmentVariables = new List<DockerEnvironmentVariable>();
-
-		await Task.CompletedTask;
-	}
+	
 }
 
 public class HttpMicroserviceRemoteProtocol : IBeamoRemoteProtocol
@@ -275,7 +184,7 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 	/// <summary>
 	/// This is for local and development things
 	/// </summary>
-	public string DockerBuildContextPath;
+	public string DockerBuildContextPath; // TODO: we should delete this, because the build context is now ALWAYS known as the parent of the .beamable folder.
 
 	/// <summary>
 	/// This is for local and development things
