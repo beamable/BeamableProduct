@@ -56,9 +56,6 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 			dependencies = GetDependenciesFromName(args.BeamoLocalSystem, args.linkedServices);
 		}
 
-		// add the project itself
-		args.BeamoLocalSystem.SaveBeamoLocalManifest();
-
 		if (dependencies == null)
 			return;
 
@@ -101,13 +98,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 	{
 		// identify the linkable projects...
 		var services = localSystem.BeamoManifest.HttpMicroserviceLocalProtocols;
-		var choices = new List<string>();
-		foreach (var service in services)
-		{
-			var dockerfilePath = service.Value.RelativeDockerfilePath;
-			var serviceFolder = Path.GetDirectoryName(dockerfilePath);
-			choices.Add(serviceFolder);
-		}
+		var choices = services.Select(service => service.Key).ToList();
 
 		var prompt = new MultiSelectionPrompt<string>()
 			.Title("Service Dependencies")

@@ -379,6 +379,8 @@ public class ProjectService
 		{
 			await UpdateProjectDependencyVersion(microserviceInfo.ServicePath, "Beamable.Microservice.Runtime", usedVersion);
 		}
+
+		await args.BeamoLocalSystem.InitManifest();
 		
 		return microserviceInfo;
 	}
