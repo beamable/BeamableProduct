@@ -159,3 +159,6 @@ client/Assets/Editor.meta
 client/Assets/Plugins/Editor.meta
 client/Assets/Editor/BeamableLoginDev/login_data.json
 client/Assets/BeamSemiAutomatedTester/Reports
+client/BeamableSource/*.nupkg
+cli/.run/UNREAL-*.run.xml
+cli/.run/UNITY-*.run.xml
