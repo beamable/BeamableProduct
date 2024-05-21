@@ -93,11 +93,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 				);
 
 			(var manifest, var status) = response;
-
-			// Update the local manifest given the remote one.
-			await _localBeamo.SyncLocalManifestWithRemote(manifest);
-			_localBeamo.SaveBeamoLocalManifest();
-
+			
 			if (!args.AsJson)
 			{
 				var table = new Table();

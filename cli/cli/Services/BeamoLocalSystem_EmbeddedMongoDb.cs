@@ -10,31 +10,6 @@ namespace cli.Services;
 
 public partial class BeamoLocalSystem
 {
-	/// <summary>
-	/// Registers a <see cref="BeamoServiceDefinition"/> of with the <see cref="BeamoProtocolType"/> of <see cref="BeamoProtocolType.HttpMicroservice"/>.
-	/// </summary>
-	/// <param name="beamId">The service's unique id.</param>
-	/// <param name="baseImage">A valid MongoDB image that is at least based on the official MongoDB image and exposes the same healthcheck.</param>
-	/// <param name="dependencyBeamIds">Other existing services that this depends on. Any dependency is guaranteed to be running by the time this service attempts to start up.</param>
-	/// <param name="cancellationToken">A cancellation token to stop the registration.</param>
-	/// <returns>A valid <see cref="BeamoServiceDefinition"/> with the default values of the protocol.</returns>
-	public async Task<BeamoServiceDefinition> AddDefinition_EmbeddedMongoDb(string beamId, string baseImage, string projectPath, CancellationToken cancellationToken)
-	{
-		baseImage ??= "mongo:latest";
-		return await AddServiceDefinition<EmbeddedMongoDbLocalProtocol, EmbeddedMongoDbRemoteProtocol>(
-			beamId,
-			BeamoProtocolType.EmbeddedMongoDb,
-			async (definition, protocol) =>
-			{
-				await PrepareDefaultLocalProtocol_EmbeddedMongoDb(definition, protocol);
-				definition.ProjectDirectory = projectPath;
-				if (!string.IsNullOrEmpty(baseImage))
-					protocol.BaseImage = baseImage;
-			},
-			PrepareDefaultRemoteProtocol_EmbeddedMongoDb,
-			cancellationToken);
-	}
-
 	public string GetBeamIdAsMongoContainer(string beamoId) => $"{beamoId}_mongoDb";
 
 	const string MONGO_DATA_CONTAINER_PORT = "27017";
@@ -84,65 +59,7 @@ public partial class BeamoLocalSystem
 		}
 	}
 
-	/// <summary>
-	/// Resets the protocol data for the <see cref="BeamoServiceDefinition"/> with the given <paramref name="beamoId"/> to the default settings. 
-	/// </summary>
-	public async Task<bool> ResetToDefaultValues_EmbeddedMongoDb(string beamoId)
-	{
-		var localUpdated = await ResetLocalProtocol_EmbeddedMongoDb(beamoId, CancellationToken.None);
-		var remoteUpdated = await ResetRemoteProtocol_EmbeddedMongoDb(beamoId, CancellationToken.None);
-		return localUpdated && remoteUpdated;
-	}
 
-	/// <summary>
-	/// Short-hand to restore the <see cref="EmbeddedMongoDbLocalProtocol"/> of a given <paramref name="beamoId"/> to default parameters. Returns false if the update fails or if the given <paramref name="beamoId"/>'s service is
-	/// not set to the <see cref="BeamoProtocolType.EmbeddedMongoDb"/>. 
-	/// </summary>
-	public async Task<bool> ResetLocalProtocol_EmbeddedMongoDb(string beamoId, CancellationToken cancellationToken) =>
-		await TryUpdateLocalProtocol<EmbeddedMongoDbLocalProtocol>(beamoId, PrepareDefaultLocalProtocol_EmbeddedMongoDb, cancellationToken);
-
-	/// <summary>
-	/// Short-hand to restore the <see cref="EmbeddedMongoDbRemoteProtocol"/> of a given <paramref name="beamoId"/> to default parameters. Returns false if the update fails or if the given <paramref name="beamoId"/>'s service is
-	/// not set to the <see cref="BeamoProtocolType.EmbeddedMongoDb"/>. 
-	/// </summary>
-	public async Task<bool> ResetRemoteProtocol_EmbeddedMongoDb(string beamoId, CancellationToken cancellationToken) =>
-		await TryUpdateRemoteProtocol<EmbeddedMongoDbRemoteProtocol>(beamoId, PrepareDefaultRemoteProtocol_EmbeddedMongoDb, cancellationToken);
-
-	/// <summary>
-	/// Implementation of <see cref="RemoteProtocolModifier{TRemote}"/> that applies the default values of the <see cref="EmbeddedMongoDbLocalProtocol"/>.
-	/// <see cref="AddServiceDefinition{TLocal,TRemote}"/> and <see cref="TryUpdateRemoteProtocol{TRemote}"/> to understand how this gets called. 
-	/// </summary>
-	private async Task PrepareDefaultLocalProtocol_EmbeddedMongoDb(BeamoServiceDefinition owner, EmbeddedMongoDbLocalProtocol local)
-	{
-		local.BaseImage = "mongo:latest";
-
-		local.RootUsername = "beamable";
-		local.RootPassword = "beamable";
-
-		local.MongoLocalPort = "";
-
-		if (_configService.UseWindowsStyleVolumeNames)
-		{
-			local.DataVolumeInContainerPath = "C:/data/db";
-			local.FilesVolumeInContainerPath = "C:/beamable";
-		}
-		else
-		{
-			local.DataVolumeInContainerPath = "/data/db";
-			local.FilesVolumeInContainerPath = "/beamable";
-		}
-
-		await Task.CompletedTask;
-	}
-
-	/// <summary>
-	/// Implementation of <see cref="RemoteProtocolModifier{TRemote}"/> that applies the default values of the <see cref="EmbeddedMongoDbRemoteProtocol"/>.
-	/// <see cref="AddServiceDefinition{TLocal,TRemote}"/> and <see cref="TryUpdateRemoteProtocol{TRemote}"/> to understand how this gets called. 
-	/// </summary>
-	private async Task PrepareDefaultRemoteProtocol_EmbeddedMongoDb(BeamoServiceDefinition owner, EmbeddedMongoDbRemoteProtocol remote)
-	{
-		await Task.CompletedTask;
-	}
 }
 
 [Serializable]

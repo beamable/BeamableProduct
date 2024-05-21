@@ -88,34 +88,19 @@ public partial class BeamoLocalSystem
 	public async Task InitManifest()
 	{
 		// Load or create the local manifest
-		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_configService.BaseDirectory, _ctx.DotnetPath);;
-
-		// The ProjectDirectory field did not always exist, and older manifests may not include it. In these situations, we need to "guess" what is may be.
-		foreach (var serviceDefinition in BeamoManifest.ServiceDefinitions)
+		if (_configService.DirectoryExists != true)
 		{
-			if (!string.IsNullOrEmpty(serviceDefinition.ProjectDirectory))
-				continue; // this entry has a ProjectDirectory, nothing to be done :)
-
-			// find the local protocol to infer the project path via the docker context
-			if (!BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(serviceDefinition.BeamoId,
-				    out var localProto) || localProto.RelativeDockerfilePath == null)
+			Log.Verbose("Beamo is initializing local manifest, but since no beamable folder exists, an empty manifest is being produced. ");
+			BeamoManifest = new BeamoLocalManifest
 			{
-				continue; // if there is no local protocol information, then this service is a "remote only" service.
-				// throw new CliException(
-				// 	$"The beamo local manifest contains a serviceDefinition=[{serviceDefinition.BeamoId}] that does not have a ProjectDirectory value, and it cannot be inferred because no localHttpProtocol exists under the given name. Please manually fix the file, and try again.");
-			}
-
-			var dockerContextPath = localProto.DockerBuildContextPath;
-			var servicePath = Path.GetDirectoryName(localProto.RelativeDockerfilePath);
-			if (servicePath == null)
-			{
-				throw new CliException(
-					$"The beamo local manifest contains a serviceDefinition=[{serviceDefinition.BeamoId}] that does not have a ProjectDirectory value, and it cannot be inferred because the localHttpProtocol's dockerFile path isn't in the usual format of NAME/Dockerfile.");
-			}
-			var guessedProjectDir = Path.Combine(dockerContextPath, servicePath);
-			Log.Debug($"Guessing ProjectDirectory for service=[{serviceDefinition.BeamoId}], projectDir=[{guessedProjectDir}] ");
-			serviceDefinition.ProjectDirectory = guessedProjectDir;
+				ServiceDefinitions = new List<BeamoServiceDefinition>(),
+				HttpMicroserviceLocalProtocols = new BeamoLocalProtocolMap<HttpMicroserviceLocalProtocol>(),
+				EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>()
+			};
+			return;
 		}
+		
+		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_configService.BaseDirectory, _ctx.DotnetPath, _configService);;
 	}
 	
 	private static Uri GetLocalDockerEndpoint(ConfigService config)
@@ -158,7 +143,11 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// Persists the current state of <see cref="BeamoManifest"/> out to disk. TODO: Make this persistence part agnostic of where this is running so we can use it in Unity as well, maybe?
 	/// </summary>
-	public void SaveBeamoLocalManifest() => _configService.SaveDataFile(Constants.BEAMO_LOCAL_MANIFEST_FILE_NAME, BeamoManifest);
+	public void SaveBeamoLocalManifest()
+	{
+		Log.Error("TODO: This function should never be called anymore, because there is no local manifest file.");
+		_configService.SaveDataFile(Constants.BEAMO_LOCAL_MANIFEST_FILE_NAME, BeamoManifest);
+	}
 
 	public void SaveBeamoLocalRuntime() => _configService.SaveDataFile(Constants.BEAMO_LOCAL_RUNTIME_FILE_NAME, BeamoRuntime);
 
@@ -257,17 +246,10 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	/// <param name="project">The microservice that the dependency will be added to</param>
 	/// <param name="dependency">The storage to be the microservice dependency</param>
-	public async Task AddProjectDependency(BeamoServiceDefinition project, BeamoServiceDefinition dependency)
+	public async Task AddProjectDependency(BeamoServiceDefinition project, string relativePath)
 	{
-		if (project.Protocol != BeamoProtocolType.HttpMicroservice ||
-			dependency.Protocol != BeamoProtocolType.EmbeddedMongoDb)
-		{
-			throw new CliException(
-				$"Currently the only supported dependencies are {nameof(BeamoProtocolType.HttpMicroservice)} depending on {nameof(BeamoProtocolType.EmbeddedMongoDb)}");
-		}
-
 		var projectPath = _configService.GetRelativeToBeamableFolderPath(project.ProjectDirectory);
-		var dependencyPath = _configService.GetRelativeToBeamableFolderPath(dependency.ProjectDirectory);
+		var dependencyPath = relativePath;
 		var command = $"add {projectPath} reference {dependencyPath}";
 		var (cmd, result) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, command);
 		if (cmd.ExitCode != 0)
@@ -297,12 +279,6 @@ public partial class BeamoLocalSystem
 
 		return allBeamoIdsDependencies;
 	}
-
-	/// <summary>
-	/// Checks if the given BeamO Service Id is already known in the current <see cref="BeamoManifest"/>.
-	/// </summary>
-	public static bool ValidateBeamoServiceId_DoesntExists(string beamoServiceId, List<BeamoServiceDefinition> serviceDefinitions) =>
-		!serviceDefinitions.Contains(new BeamoServiceDefinition() { BeamoId = beamoServiceId }, new BeamoServiceDefinition.IdEquality());
 
 	public async Promise UpdateDockerFile(BeamoServiceDefinition serviceDefinition)
 	{
@@ -411,89 +387,7 @@ COPY {servicePathTag} /subsrc/{serviceNameTag}";
 
 		return rootSeenCount == 1;
 	}
-
-	/// <summary>
-	/// Creates a service definition given the parameters.
-	/// </summary>
-	/// <param name="beamoId">A unique-id across all services in <see cref="RegisteredContainers"/>.</param>
-	/// <param name="type">The type of the protocol we are adding.</param>
-	/// <param name="projectPath">If the container's image will be built locally, this is the path to the docker-build-context (prefer absolute path).</param>
-	/// <param name="dockerfilePath">If the container's image will be built locally, this is the relative path to a Dockerfile from inside the docker-build-context.</param>
-	/// <param name="baseImage">If the container's image should be pulled or used locally (not built), this is the image's name (in the "name:tag" form).</param>
-	/// <param name="localConstructor">A task that will prepare the default parameters for the local protocol we are creating the service with.</param>
-	/// <param name="remoteConstructor">A task that will prepare the default parameters for the remote protocol we are creating the service with.</param>
-	/// <param name="cancellationToken">A cancellation token that we pass into both local and remote tasks. Can be used to cancel both tasks.</param>
-	/// <param name="shouldServiceBeEnabled">Should service be enabled/disabled when adding service definition</param>
-	/// <typeparam name="TLocal">The type of the <see cref="IBeamoLocalProtocol"/> that this service definition uses.</typeparam>
-	/// <typeparam name="TRemote">The type of the <see cref="IBeamoRemoteProtocol"/> that this service definition uses.</typeparam>
-	/// <returns>The created service definition.</returns>
-	private async Task<BeamoServiceDefinition> AddServiceDefinition<TLocal, TRemote>(string beamoId, BeamoProtocolType type,
-		LocalProtocolModifier<TLocal> localConstructor, RemoteProtocolModifier<TRemote> remoteConstructor, CancellationToken cancellationToken, bool shouldServiceBeEnabled = true)
-		where TLocal : class, IBeamoLocalProtocol, new() where TRemote : class, IBeamoRemoteProtocol, new() =>
-		await AddServiceDefinition(BeamoManifest, beamoId, type, localConstructor, remoteConstructor, cancellationToken, shouldServiceBeEnabled);
-
-	/// <summary>
-	/// <inheritdoc cref="AddServiceDefinition{TLocal,TRemote}(string,cli.Services.BeamoProtocolType,string[],cli.Services.LocalProtocolModifier{TLocal},cli.Services.RemoteProtocolModifier{TRemote},System.Threading.CancellationToken)"/>
-	/// </summary>
-	private async Task<BeamoServiceDefinition> AddServiceDefinition<TLocal, TRemote>(BeamoLocalManifest beamoLocalManifest, string beamoId, BeamoProtocolType type,
-		LocalProtocolModifier<TLocal> localConstructor, RemoteProtocolModifier<TRemote> remoteConstructor, CancellationToken cancellationToken, bool shouldServiceBeEnabled = true)
-		where TLocal : class, IBeamoLocalProtocol, new() where TRemote : class, IBeamoRemoteProtocol, new()
-	{
-		// Verify that we aren't creating a non-unique beamo id.
-		if (!ValidateBeamoServiceId_DoesntExists(beamoId, beamoLocalManifest.ServiceDefinitions))
-			throw new ArgumentOutOfRangeException(nameof(beamoId), $"Attempting to register a service definition that's already registered [BeamoId={beamoId}]. This is not allowed.");
-
-		// Verify that we aren't creating a non-unique beamo id. TODO: Change Comment
-		if (!ValidateBeamoServiceId_ValidCharacters(beamoId))
-			throw new ArgumentOutOfRangeException(nameof(beamoId), $"Attempting to register a service with an invalid [BeamoId={beamoId}]. Only alphanumeric and underscore are allowed.");
-
-		var serviceDefinition = new BeamoServiceDefinition()
-		{
-			BeamoId = beamoId,
-			Protocol = type,
-			Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet,
-			ImageId = string.Empty,
-			ShouldBeEnabledOnRemote = shouldServiceBeEnabled,
-		};
-
-		// Register the services before initializing protocols so that the protocol initialization can know about the service.
-		beamoLocalManifest.ServiceDefinitions.Add(serviceDefinition);
-
-		// Verify that we aren't creating cyclical dependencies
-		var noCyclicalDeps = ValidateBeamoService_NoCyclicalDependencies(serviceDefinition, beamoLocalManifest.ServiceDefinitions);
-		if (!noCyclicalDeps)
-			throw new ArgumentOutOfRangeException(nameof(serviceDefinition), "Attempting to register a service definition with a cyclical dependency. Please make sure that is not the case.");
-
-		// Set up local and remote protocol with their defaults.
-		var local = new TLocal();
-		var localConstructorTask = localConstructor(serviceDefinition, local);
-
-		var remote = new TRemote();
-		var remoteConstructorTask = remoteConstructor(serviceDefinition, remote);
-
-		// Wait for the protocols to run and assign them
-		await Task.WhenAll(localConstructorTask, remoteConstructorTask).WaitAsync(cancellationToken);
-		switch (type)
-		{
-			case BeamoProtocolType.HttpMicroservice:
-			{
-				beamoLocalManifest.HttpMicroserviceLocalProtocols.Add(beamoId, local as HttpMicroserviceLocalProtocol);
-				beamoLocalManifest.HttpMicroserviceRemoteProtocols.Add(beamoId, remote as HttpMicroserviceRemoteProtocol);
-				break;
-			}
-			case BeamoProtocolType.EmbeddedMongoDb:
-			{
-				beamoLocalManifest.EmbeddedMongoDbLocalProtocols.Add(beamoId, local as EmbeddedMongoDbLocalProtocol);
-				beamoLocalManifest.EmbeddedMongoDbRemoteProtocols.Add(beamoId, remote as EmbeddedMongoDbRemoteProtocol);
-				break;
-			}
-			default:
-				throw new ArgumentOutOfRangeException(nameof(type), type, null);
-		}
-
-		return serviceDefinition;
-	}
-
+	
 	/// <summary>
 	/// Tries to run the given update task on the <see cref="IBeamoLocalProtocol"/> of the <see cref="BeamoServiceDefinition"/> with the given <paramref name="beamoId"/>.
 	/// </summary>
@@ -530,41 +424,6 @@ COPY {servicePathTag} /subsrc/{serviceNameTag}";
 		return foundContainer;
 	}
 
-	/// <summary>
-	/// Tries to run the given update task on the <see cref="IBeamoRemoteProtocol"/> of the <see cref="BeamoServiceDefinition"/> with the given <paramref name="beamoId"/>.
-	/// </summary>
-	/// <param name="cancellationToken">A token that we pass to the given task. Can be used to cancel the task, if needed.</param>
-	/// <typeparam name="TRemote">The <see cref="IBeamoRemoteProtocol"/> that the service definition with the given <paramref name="beamoId"/> is expected to contain.</typeparam>
-	/// <returns>Whether or not the <see cref="BeamoServiceDefinition"/> with the given <paramref name="beamoId"/> was found.</returns>
-	public async Task<bool> TryUpdateRemoteProtocol<TRemote>(string beamoId, RemoteProtocolModifier<TRemote> remoteProtocolModifier, CancellationToken cancellationToken)
-		where TRemote : class, IBeamoRemoteProtocol
-	{
-		var containerIdx = BeamoManifest.ServiceDefinitions.FindIndex(container => container.BeamoId == beamoId);
-		var foundContainer = containerIdx != -1;
-
-		if (foundContainer)
-		{
-			var sd = BeamoManifest.ServiceDefinitions[containerIdx];
-			var type = sd.Protocol;
-			switch (type)
-			{
-				case BeamoProtocolType.HttpMicroservice:
-				{
-					await remoteProtocolModifier(sd, BeamoManifest.HttpMicroserviceRemoteProtocols[sd.BeamoId] as TRemote).WaitAsync(cancellationToken);
-					break;
-				}
-				case BeamoProtocolType.EmbeddedMongoDb:
-				{
-					await remoteProtocolModifier(sd, BeamoManifest.EmbeddedMongoDbRemoteProtocols[sd.BeamoId] as TRemote).WaitAsync(cancellationToken);
-					break;
-				}
-				default:
-					throw new ArgumentOutOfRangeException();
-			}
-		}
-
-		return foundContainer;
-	}
 }
 
 /// <summary>

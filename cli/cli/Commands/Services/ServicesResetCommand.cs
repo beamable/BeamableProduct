@@ -18,7 +18,7 @@ public class ServicesResetCommand : AtomicCommand<ServicesResetCommandArgs, Serv
 
 	public ServicesResetCommand() :
 		base("reset",
-			"Resets services to default settings and cleans up docker images (if any exist)")
+			"Cleans up docker images (if any exist)")
 	{
 	}
 
@@ -120,20 +120,6 @@ public class ServicesResetCommand : AtomicCommand<ServicesResetCommandArgs, Serv
 					var actualTasks = args.BeamoIdsToReset.Select(async id =>
 					{
 						await _localBeamo.CleanUpDocker(id);
-
-						var protocol = _localBeamo.BeamoManifest.ServiceDefinitions.First(sd => sd.BeamoId == id).Protocol;
-						switch (protocol)
-						{
-							case BeamoProtocolType.HttpMicroservice:
-								await _localBeamo.ResetToDefaultValues_HttpMicroservice(id);
-								break;
-							case BeamoProtocolType.EmbeddedMongoDb:
-								await _localBeamo.ResetToDefaultValues_EmbeddedMongoDb(id);
-								break;
-							default:
-								throw new ArgumentOutOfRangeException();
-						}
-
 						var progressTask = progressTasks.First(pt => pt.Description.Contains(id));
 						progressTask.Increment(progressTask.MaxValue);
 					});

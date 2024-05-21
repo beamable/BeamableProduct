@@ -313,8 +313,6 @@ public class App
 		Commands.AddRootCommand<ServicesCommand>();
 		Commands.AddSubCommand<ServicesManifestsCommand, ServicesManifestsArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesListCommand, ServicesListCommandArgs, ServicesCommand>();
-		Commands.AddSubCommand<ServicesRegisterCommand, ServicesRegisterCommandArgs, ServicesCommand>();
-		Commands.AddSubCommand<ServicesModifyCommand, ServicesModifyCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesEnableCommand, ServicesEnableCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesDeployCommand, ServicesDeployCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesRunCommand, ServicesRunCommandArgs, ServicesCommand>();
@@ -327,7 +325,6 @@ public class App
 		Commands.AddSubCommand<ServicesMetricsUrlCommand, ServicesMetricsUrlCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesPromoteCommand, ServicesPromoteCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesGetConnectionStringCommand, ServicesGetConnectionStringCommandArgs, ServicesCommand>();
-		Commands.AddSubCommand<ServicesSetManifestCommand, ServicesSetManifestCommandArgs, ServicesCommand>();
 		Commands
 			.AddSubCommand<ServicesGenerateLocalManifestCommand, ServicesGenerateLocalManifestCommandArgs,
 				ServicesCommand>();
@@ -489,8 +486,19 @@ public class App
 			var appContext = provider.GetRequiredService<IAppContext>();
 			appContext.Apply(consoleContext.BindingContext);
 
-			var beamoSystem = provider.GetService<BeamoLocalSystem>();
-			beamoSystem.InitManifest().Wait();
+			try
+			{
+				var beamoSystem = provider.GetService<BeamoLocalSystem>();
+				beamoSystem.InitManifest().Wait();
+			}
+			catch (AggregateException aggregateException)
+			{
+				foreach (var ex in aggregateException.InnerExceptions)
+				{
+					Log.Error(ex.GetType().Name + " -- " + ex.Message + "\n" + ex.StackTrace);
+				}
+				throw;
+			}
 
 		}, MiddlewareOrder.Configuration);
 		commandLineBuilder.UseDefaults();

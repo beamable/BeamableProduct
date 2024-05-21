@@ -503,22 +503,7 @@ public class ProjectService
 
 		return RunDotnetCommand($"add \"{projectPath}\" package {packageName}{versionToUpdate}");
 	}
-
-	public Task<BeamoServiceDefinition> AddDefinitonToNewService(SolutionCommandArgs args, NewServiceInfo info)
-	{
-		var serviceRelativePath = _configService.GetRelativeToBeamableFolderPath(info.ServicePath);
-
-		string projectDockerfilePath = Path.Combine(serviceRelativePath, "Dockerfile");
-
-		// now that a .beamable folder has been created, setup the beamo manifest
-		return args.BeamoLocalSystem.AddDefinition_HttpMicroservice(args.ProjectName.Value,
-			projectDockerfilePath,
-			CancellationToken.None,
-			!args.Disabled,
-			serviceRelativePath);
-	}
-
-
+	
 	public async Task UpdateDockerFileWithCommonProject(ConfigService configService, string projectName, string dockerfilePath,
 		string dockerBuildContextPath)
 	{

@@ -4,6 +4,7 @@ using Beamable.Common.Util;
 using cli.Dotnet;
 using cli.Services;
 using cli.Utils;
+using Newtonsoft.Json;
 using Serilog;
 using System.CommandLine;
 
@@ -180,8 +181,15 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 
 		var newMicroserviceInfo = await args.ProjectService.CreateNewMicroservice(args);
 
-		var sd = await args.ProjectService.AddDefinitonToNewService(args, newMicroserviceInfo);
-
+		// refresh beamoManifest
+		args.ConfigService.SetTempWorkingDir(newMicroserviceInfo.SolutionDirectory);
+		await args.BeamoLocalSystem.InitManifest();
+		if (!args.BeamoLocalSystem.BeamoManifest.TryGetDefinition(args.ProjectName, out var sd))
+		{
+			Log.Verbose("manifest... \n " + JsonConvert.SerializeObject(args.BeamoLocalSystem.BeamoManifest, Formatting.Indented));
+			throw new CliException("cannot find recently generated project, " + args.ProjectName);
+		}
+		
 		await args.BeamoLocalSystem.UpdateDockerFile(sd);
 
 		if (args.GenerateCommon)
