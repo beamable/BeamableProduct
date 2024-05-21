@@ -194,17 +194,17 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 		// Make sure we have the correct docker file
 		var regularDockerfilePath = Path.Combine(service.DockerBuildContextPath, service.RelativeDockerfilePath);
 		var beamableDevDockerfilePath = regularDockerfilePath + "-BeamableDev";
-		if (isBeamableDev)
+		if (File.Exists(beamableDevDockerfilePath))
 		{
-			if (File.Exists(beamableDevDockerfilePath))
+			if (isBeamableDev)
 			{
 				var beamableDevDockerfileContents = await File.ReadAllTextAsync(beamableDevDockerfilePath);
 				await File.WriteAllTextAsync(regularDockerfilePath, beamableDevDockerfileContents);
 			}
-		}
 
-		// We always delete the -BeamableDev dockerfile from the template.
-		File.Delete(beamableDevDockerfilePath);
+			// We always delete the -BeamableDev dockerfile from the template (for older versions of the template, this file does not exist so... we need to check for it).
+			File.Delete(beamableDevDockerfilePath);
+		} 
 
 		args.BeamoLocalSystem.SaveBeamoLocalManifest();
 		args.BeamoLocalSystem.SaveBeamoLocalRuntime();
