@@ -18,15 +18,12 @@ public class SaveToFileOption
 	{
 		const string saveToFileStr = "--save-to-file";
 		const string noTokenSaveStr = "--no-token-save";
-
-		const bool saveToFileDefault = true;
-		const bool noTokenSaveDefault = false;
 		
 		// included for legacy reasons. 
 		var saveToFileOption = new Option<bool>(saveToFileStr, 
 			
-			// Hey You, Watch out! This default value affects the algorithm in the parse handling! 
-			getDefaultValue: () => saveToFileDefault, 
+			// This default value is assumed "true" in the SaveToFileOption.ShouldSaveToFile function
+			getDefaultValue: () => true, 
 			description: "Save login refresh token to file");
 		
 		// this option is legacy, and we don't really want people using it anymore. 
@@ -34,40 +31,40 @@ public class SaveToFileOption
 		
 		var noTokenOption = new Option<bool>(noTokenSaveStr, 
 			
-			// Hey You, Watch out! This default value affects the algorithm in the parse handling! 
-			getDefaultValue: () => noTokenSaveDefault, 
+			// This default value is assumed "false" in the SaveToFileOption.ShouldSaveToFile function
+			getDefaultValue: () => false, 
 			description: $"Prevent auth tokens from being saved to disk. This replaces the legacy {saveToFileStr} option.");
 		
 		command.AddOption<bool>(saveToFileOption, (args, value) => args.SaveToFile = value);
 		command.AddOption<bool>(noTokenOption, (args, context, noTokenSave) =>
 		{
 			var saveToFile = context.ParseResult.GetValueForOption(saveToFileOption);
-
-			switch (saveToFile, noTokenSave)
-			{
-				case (saveToFileDefault, !noTokenSaveDefault):
-					// saveToFile defaults to true, but noTokenSave has higher order, and since that defaults to false, the noTokenSave wins.
-					args.SaveToFile = false;
-					break;
-				
-				case (false, true):
-					// double positive is a positive. Don't save it.
-					args.SaveToFile = false;
-					break;
-				
-				case (!saveToFileDefault, noTokenSaveDefault):
-					// saveToFile is non-default, so it wins this case. 
-					args.SaveToFile = false;
-					break;
-				
-				case (saveToFileDefault, noTokenSaveDefault):
-					// the default case is to save it!
-					args.SaveToFile = true;
-					break;
-			}
-			
-			
+			args.SaveToFile = ShouldSaveToFile(saveToFile, noTokenSave);
 		});
 		
+	}
+	
+	static bool ShouldSaveToFile(bool saveToFileOptionValue, bool noTokenSaveOptionValue)
+	{
+		
+		switch (saveToFileOptionValue, noTokenSaveOptionValue)
+		{
+			case (true, true):
+				// saveToFile defaults to true, but noTokenSave has higher order, and since that defaults to false, the noTokenSave wins.
+				return false;
+				
+			case (false, true):
+				// double positive is a positive. Don't save it.
+				return false;
+				
+			case (false, false):
+				// saveToFile is non-default, so it wins this case. 
+				return false;
+				
+			case (true, false):
+				// the default case is to save it!
+				return true;
+		}
+
 	}
 }
