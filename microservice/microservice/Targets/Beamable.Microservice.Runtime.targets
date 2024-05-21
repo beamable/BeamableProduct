@@ -1,5 +1,12 @@
 <Project>
 
+    <!-- If the user has not set an OutputType, then we need to set one-->
+    <PropertyGroup Condition="'$(OutputType)'=='' OR '$(OutputType)'=='Library' OR '$(OutputType)'=='library'">
+        <!-- It is only our responsibility to set an outputtype if the user has configured their project correctly, meaning they must have a valid beamProjectType, or have created their own OutputType to begin with.-->
+        <OutputType Condition="'$(BeamProjectType)'=='storage'">Library</OutputType>
+        <OutputType Condition="'$(BeamProjectType)'=='service'">Exe</OutputType>
+    </PropertyGroup>
+    
     <!-- After the build completes, we should auto-generate client code to any linked projects -->
     <Target Name="generate-client" AfterTargets="Build" Condition="$(GenerateClientCode)==true AND $(DOTNET_RUNNING_IN_CONTAINER)!=true">
         <Message Text="Generating client files..." Importance="high" />
