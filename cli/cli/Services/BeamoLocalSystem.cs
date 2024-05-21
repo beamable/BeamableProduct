@@ -140,15 +140,6 @@ public partial class BeamoLocalSystem
 		throw new CliException($"No docker address found. Use the {ConfigService.ENV_VAR_DOCKER_URI} environment variable to set a Docker Uri.");
 	}
 
-	/// <summary>
-	/// Persists the current state of <see cref="BeamoManifest"/> out to disk. TODO: Make this persistence part agnostic of where this is running so we can use it in Unity as well, maybe?
-	/// </summary>
-	public void SaveBeamoLocalManifest()
-	{
-		Log.Error("TODO: This function should never be called anymore, because there is no local manifest file.");
-		_configService.SaveDataFile(Constants.BEAMO_LOCAL_MANIFEST_FILE_NAME, BeamoManifest);
-	}
-
 	public void SaveBeamoLocalRuntime() => _configService.SaveDataFile(Constants.BEAMO_LOCAL_RUNTIME_FILE_NAME, BeamoRuntime);
 
 	/// <summary>

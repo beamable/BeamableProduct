@@ -294,8 +294,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 
 				LogToSendResult("Finished deployment", "INFO");
 
-				LogToSendResult("Saving manifests", "INFO");
-				_localBeamo.SaveBeamoLocalManifest();
+				LogToSendResult("Saving beamo local runtime", "INFO");
 				_localBeamo.SaveBeamoLocalRuntime();
 			});
 

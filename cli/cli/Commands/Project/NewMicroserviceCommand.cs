@@ -201,7 +201,7 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 				service.DockerBuildContextPath);
 		}
 
-		args.BeamoLocalSystem.SaveBeamoLocalManifest();
+		await args.BeamoLocalSystem.InitManifest();
 		args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 
 		if (!args.Quiet)

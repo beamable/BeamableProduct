@@ -86,8 +86,8 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 				
 				// ImageBuildArgs not needed when deploying only MicroStorages 
 				await args.BeamoLocalSystem.DeployToLocal(args.BeamoLocalSystem, new DockerBuildArgs { BuildMode = args.buildMode, }, dependencies.Select(dep => dep.name).ToArray());
-				
-				args.BeamoLocalSystem.SaveBeamoLocalManifest();
+
+				await args.BeamoLocalSystem.InitManifest();
 				args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 				await args.BeamoLocalSystem.StopListeningToDocker();
 				await AppendDependencyVars();

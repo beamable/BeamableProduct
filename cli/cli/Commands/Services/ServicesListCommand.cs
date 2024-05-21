@@ -249,7 +249,6 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 				AnsiConsole.WriteLine(JsonConvert.SerializeObject(_localBeamo.BeamoManifest, Formatting.Indented));
 			}
 
-			_localBeamo.SaveBeamoLocalManifest();
 			_localBeamo.SaveBeamoLocalRuntime();
 			await _localBeamo.StopListeningToDocker();
 		}

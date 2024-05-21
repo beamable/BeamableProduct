@@ -112,7 +112,6 @@ public class ServicesEnableCommand : AppCommand<ServicesEnableCommandArgs>
 			}
 		}
 
-		_localBeamo.SaveBeamoLocalManifest();
 		_localBeamo.SaveBeamoLocalRuntime();
 
 		await _localBeamo.StopListeningToDocker();
