@@ -303,7 +303,10 @@ public class {unrealProjectData.CoreProjectName} : ModuleRules
 			{{
 				""Core"",
 				""BeamableCore"",
-				""BeamableCoreRuntime""
+				""BeamableCoreRuntime"",
+
+				""Json"",
+				""JsonUtilities"",
 			}});
 
 

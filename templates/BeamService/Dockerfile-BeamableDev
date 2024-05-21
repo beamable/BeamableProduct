@@ -1,7 +1,10 @@
-﻿ARG BUILD_MODE=beamable_dev
+﻿# Processes specific 
 
-# Processes specific 
 FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine as build-env
+WORKDIR /BeamableSource
+COPY ./BeamableSource/*.nupkg ./
+WORKDIR /subsrc/
+RUN dotnet nuget add source /BeamableSource
 
 # <BEAM-CLI-COPY-SRC> this line signals the start of Beamable Project Src copies into the built container. Do not remove it. The content between here and the closing tag will change anytime the Beam CLI modifies dependencies.
 

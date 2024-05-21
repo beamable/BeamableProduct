@@ -345,7 +345,7 @@ public partial class BeamoLocalSystem
 	/// Using the given <paramref name="localSystem"/>, builds and deploys all services with the given <paramref name="deployBeamoIds"/> to the local docker engine.
 	/// If <paramref name="deployBeamoIds"/> is null, will deploy ALL services. Also, this does check for cyclical dependencies before running the deployment.
 	/// </summary>
-	public async Task DeployToLocal(BeamoLocalSystem localSystem, DockerBuildArgs imageBuildArgs, string[] deployBeamoIds = null,
+	public async Task DeployToLocal(BeamoLocalSystem localSystem, string[] deployBeamoIds = null,
 		bool forceAmdCpuArchitecture = false, Action<string, float> buildPullImageProgress = null,
 		Action<string> onServiceDeployCompleted = null)
 	{
@@ -372,7 +372,7 @@ public partial class BeamoLocalSystem
 
 		// Builds all images for all services that are defined and can be built locally.
 
-		var prepareImages = new List<Task>(serviceDefinitionsToDeploy.Select(c => PrepareBeamoServiceImage(c, imageBuildArgs, buildPullImageProgress, forceAmdCpuArchitecture)));
+		var prepareImages = new List<Task>(serviceDefinitionsToDeploy.Select(c => PrepareBeamoServiceImage(c, buildPullImageProgress, forceAmdCpuArchitecture)));
 		await Task.WhenAll(prepareImages);
 
 		// Build dependency layers split by protocol type.

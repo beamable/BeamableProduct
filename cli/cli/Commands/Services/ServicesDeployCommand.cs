@@ -19,8 +19,6 @@ public class ServicesDeployCommandArgs : LoginCommandArgs
 
 	public string FromJsonFile;
 
-	public string BuildMode;
-
 	public string RemoteComment;
 	public string[] RemoteServiceComments;
 	public string dockerRegistryUrl;
@@ -57,9 +55,6 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 
 		AddOption(new Option<string>("--comment", () => "", $"Associates this comment along with the published Manifest. You'll be able to read it via the Beamable Portal"),
 			(args, i) => args.RemoteComment = i);
-
-		AddOption(new Option<string>("--build-mode", () => "game_maker", $"INTERNAL This enables a sane workflow for beamable developers to be happy and productive"),
-			(args, i) => args.BuildMode = i);
 
 		AddOption(new Option<string[]>("--service-comments", Array.Empty<string>, $"Any number of strings in the format BeamoId::Comment" +
 		                                                                          $"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal")
@@ -246,7 +241,6 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 				_ = await _localBeamo.DeployToRemote(_localBeamo, dockerRegistryUrl,
 					args.RemoteComment ?? string.Empty,
 					perServiceComments,
-					new DockerBuildArgs() { BuildMode = args.BuildMode, },
 					(beamoId, progress) =>
 					{
 						var progressTask = buildAndTestTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
