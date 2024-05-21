@@ -5,8 +5,8 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine as build_game_maker
 ONBUILD RUN echo "Making a game-maker build"
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine as build_beamable_dev
-ONBUILD COPY ./BeamableSource ./BeamableSource
-ONBUILD RUN dotnet nuget add source ./BeamableSource
+ONBUILD COPY ./BeamableSource /BeamableSource
+ONBUILD RUN dotnet nuget add source /BeamableSource
 
 # use the dotnet SDK as a build stage
 FROM build_${BUILD_MODE} as build-env
