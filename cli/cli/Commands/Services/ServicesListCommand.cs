@@ -1,6 +1,7 @@
 ﻿using cli.Services;
 using cli.Utils;
 using Newtonsoft.Json;
+using Serilog;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 using System.CommandLine;
@@ -93,6 +94,9 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 				);
 
 			(var manifest, var status) = response;
+			
+			Log.Verbose($"Got manifest=[{JsonConvert.SerializeObject(manifest)}]");
+			Log.Verbose($"Got status=[{JsonConvert.SerializeObject(status)}]");
 			
 			if (!args.AsJson)
 			{

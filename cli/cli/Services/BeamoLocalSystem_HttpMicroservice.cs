@@ -173,10 +173,6 @@ public partial class BeamoLocalSystem
 
 public class HttpMicroserviceRemoteProtocol : IBeamoRemoteProtocol
 {
-	// For when we support people exposing what the health check endpoint is
-	public string HealthCheckEndpoint;
-	public string HealthCheckPort;
-	public List<DockerEnvironmentVariable> CustomEnvironmentVariables;
 }
 
 public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol

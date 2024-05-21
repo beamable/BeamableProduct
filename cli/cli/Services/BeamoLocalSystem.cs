@@ -100,7 +100,8 @@ public partial class BeamoLocalSystem
 			return;
 		}
 		
-		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_configService.BaseDirectory, _ctx.DotnetPath, _configService);;
+		
+		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_configService.BaseDirectory, _ctx.DotnetPath, _beamo, _configService);;
 	}
 	
 	private static Uri GetLocalDockerEndpoint(ConfigService config)

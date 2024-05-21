@@ -163,7 +163,7 @@ public partial class BeamoLocalSystem
 					serviceName = httpSd.BeamoId,
 					enabled = httpSd.ShouldBeEnabledOnRemote,
 					templateId = "small",
-					containerHealthCheckPort = long.Parse(remoteProtocol.HealthCheckPort),
+					containerHealthCheckPort = long.Parse(BeamoLocalSystem.HTTM_MICROSERVICE_CONTAINER_PORT),
 					imageId = httpSd.TruncImageId,
 					dependencies = serviceDependencies[httpSd]
 						// For now, Beam-O only supports dependencies on Storage Objects (ie.:Embedded Mongo DBs).

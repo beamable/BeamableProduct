@@ -7,8 +7,15 @@ namespace cli.Services;
 
 public static class ProjectContextUtil
 {
-	public static async Task<BeamoLocalManifest> GenerateLocalManifest(string rootFolder, string dotnetPath, ConfigService configService)
+	public static async Task<BeamoLocalManifest> GenerateLocalManifest(
+		string rootFolder,
+		string dotnetPath, 
+		BeamoService beamo,
+		ConfigService configService)
 	{
+
+		var remote = await beamo.GetCurrentManifest(); // TODO do this at the same time as file scanning.
+		
 		// find all local project files...
 		var allProjects = (await ProjectContextUtil.FindCsharpProjects(dotnetPath, rootFolder)).ToArray();
 		var typeToProjects = allProjects
@@ -24,6 +31,7 @@ public static class ProjectContextUtil
 			HttpMicroserviceRemoteProtocols = new BeamoRemoteProtocolMap<HttpMicroserviceRemoteProtocol>()
 
 		};
+
 		
 		// extract the "service" types, and convert them into beamo domain model
 		if (!typeToProjects.TryGetValue("service", out var serviceProjects))
@@ -41,6 +49,8 @@ public static class ProjectContextUtil
 			var protocol = ProjectContextUtil.ConvertProjectToLocalHttpProtocol(serviceProject, definition, absPathToProject);
 			manifest.ServiceDefinitions.Add(definition);
 			manifest.HttpMicroserviceLocalProtocols.Add(definition.BeamoId, protocol);
+			
+			manifest.HttpMicroserviceRemoteProtocols.Add(definition.BeamoId, new HttpMicroserviceRemoteProtocol());
 		}
 
 		foreach (var storageProject in storageProjects)
@@ -49,6 +59,49 @@ public static class ProjectContextUtil
 			var protocol = ProjectContextUtil.ConvertProjectToLocalMongoProtocol(storageProject, definition, absPathToProject, configService);
 			manifest.EmbeddedMongoDbLocalProtocols.Add(definition.BeamoId, protocol);
 			manifest.ServiceDefinitions.Add(definition);
+			manifest.EmbeddedMongoDbRemoteProtocols.Add(definition.BeamoId, new EmbeddedMongoDbRemoteProtocol());
+		}
+		
+		
+		// add in the remote knowledge of services and storages
+		foreach (var remoteService in remote.manifest)
+		{
+			if (!manifest.TryGetDefinition(remoteService.serviceName, out var existingDefinition))
+			{
+				existingDefinition = new BeamoServiceDefinition
+				{
+					BeamoId = remoteService.serviceName,
+					Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet,
+					ProjectDirectory = null,
+					Protocol = BeamoProtocolType.HttpMicroservice
+				};
+				manifest.ServiceDefinitions.Add(existingDefinition);
+				manifest.HttpMicroserviceRemoteProtocols.Add(remoteService.serviceName, new HttpMicroserviceRemoteProtocol());
+
+			}
+
+			existingDefinition.ShouldBeEnabledOnRemote = remoteService.enabled;
+			existingDefinition.ImageId = remoteService.imageId;
+		}
+
+		foreach (var remoteStorage in remote.storageReference)
+		{
+			if (!manifest.TryGetDefinition(remoteStorage.id, out var existingDefinition))
+			{
+				existingDefinition = new BeamoServiceDefinition
+				{
+					BeamoId = remoteStorage.id,
+					Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet,
+					Protocol = BeamoProtocolType.EmbeddedMongoDb,
+					ProjectDirectory = null
+				};
+				manifest.ServiceDefinitions.Add(existingDefinition);
+				manifest.EmbeddedMongoDbRemoteProtocols.Add(remoteStorage.id, new EmbeddedMongoDbRemoteProtocol());
+
+			}
+			
+			existingDefinition.ShouldBeEnabledOnRemote = remoteStorage.enabled;
+			existingDefinition.ImageId = MongoImage;
 		}
 
 		return manifest;
@@ -107,6 +160,7 @@ public static class ProjectContextUtil
 		return instance;
 	}
 
+	private const string MongoImage = "mongo:7.0";
 	public static EmbeddedMongoDbLocalProtocol ConvertProjectToLocalMongoProtocol(CsharpProjectMetadata project,
 		BeamoServiceDefinition beamoServiceDefinition, Dictionary<string, CsharpProjectMetadata> absPathToProject,
 		ConfigService configService)
@@ -114,7 +168,7 @@ public static class ProjectContextUtil
 		var protocol = new EmbeddedMongoDbLocalProtocol();
 		
 		// TODO: we could extract these as options in the Csproj file.
-		protocol.BaseImage = "mongo:7.0";
+		protocol.BaseImage = MongoImage;
 		protocol.RootUsername = "beamable";
 		protocol.RootPassword = "beamable";
 		if (configService.UseWindowsStyleVolumeNames)
