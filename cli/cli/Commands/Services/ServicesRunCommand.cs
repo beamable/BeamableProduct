@@ -151,7 +151,6 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 
 		this.SendResults<DefaultStreamResultChannel, ServiceRunReportResult>(new ServiceRunReportResult() { Success = true, FailureReason = "" });
 
-		_localBeamo.SaveBeamoLocalManifest();
 		_localBeamo.SaveBeamoLocalRuntime();
 
 		await _localBeamo.StopListeningToDocker();
