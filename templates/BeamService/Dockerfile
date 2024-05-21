@@ -11,6 +11,9 @@ ONBUILD RUN dotnet nuget add source ./BeamableSource
 # use the dotnet SDK as a build stage
 FROM build_${BUILD_MODE} as build-env
 
+# <BEAM-CLI-COPY-ENV> this line signals the start of environment variables copies into the built container. Do not remove it. This will be overwritten every time a variable changes in the execution of the CLI.
+# </BEAM-CLI-COPY-ENV> this line signals the end of environment variables copies into the built container. Do not remove it.
+
 # Since generating the common library is optional, the CLI will replace the insert flag below to copy it correctly 
 # At the moment, it'll only do so, if the common library project was created at the time of setting up the solution.
 # If not, this line will remain so that we can make a command that adds only the common library to your C#MS solution.
@@ -21,7 +24,7 @@ FROM build_${BUILD_MODE} as build-env
 
 # build the dotnet program
 WORKDIR /
-RUN dotnet publish /subsrc/BeamService/BeamService.csproj -c release -o /subapp
+RUN dotnet publish ${BEAM_CSPROJ_PATH} -c release -o /subapp
 
 # use the dotnet runtime as the final stage
 FROM mcr.microsoft.com/dotnet/runtime:6.0-alpine

@@ -301,6 +301,12 @@ public partial class BeamoLocalSystem
 		dockerfilePath = _configService.GetFullPath(dockerfilePath);
 		Log.Verbose($"Updating docker file at {dockerfilePath}");
 
+		await WriteDependenciesToDockerfile(dockerfilePath, serviceName, serviceDefinition.ProjectDirectory);
+		await WriteEnvVarsToDockerfile(dockerfilePath, serviceName, serviceDefinition.ProjectDirectory);
+	}
+
+	private async Promise WriteDependenciesToDockerfile(string dockerfilePath, string serviceName, string projectDir)
+	{
 		var dockerfileText = await File.ReadAllTextAsync(dockerfilePath);
 
 		const string endTag =
@@ -309,11 +315,10 @@ public partial class BeamoLocalSystem
 			"# <BEAM-CLI-COPY-SRC> this line signals the start of Beamable Project Src copies into the built container. Do not remove it. The content between here and the closing tag will change anytime the Beam CLI modifies dependencies.";
 		const string legacyCopyLine =
 			"# <BEAM-CLI-INSERT-FLAG:COPY> do not delete this line. It is used by the beam CLI to insert custom actions";
-		const string serviceNameTag = "<SERVICE_NAME>";
 		const string servicePathTag = "<SERVICE_PATH>";
-		
-		string toAdd = @$"RUN mkdir -p /subsrc/{serviceNameTag}
-COPY {servicePathTag} /subsrc/{serviceNameTag}";
+
+		string toAdd = @$"RUN mkdir -p /subsrc/{servicePathTag}
+COPY {servicePathTag} /subsrc/{servicePathTag}";
 		var replacement = @$"{toAdd}
 {endTag}";
 
@@ -345,14 +350,49 @@ COPY {servicePathTag} /subsrc/{serviceNameTag}";
 			string directory = _configService.GetRelativeToDockerBuildContextPath( Directory.GetParent(path)!.ToString());
 			Log.Verbose($"adding docker dep, projPath=[{dependency.projPath}] path=[{path}] directory=[{directory}]");
 
-			newText = newText.Replace(endTag, replacement.Replace(serviceNameTag, dependency.name).Replace(servicePathTag, directory).Replace('\\', '/').Insert(0, "\n"));
+			newText = newText.Replace(endTag, replacement.Replace(servicePathTag, directory).Replace('\\', '/').Insert(0, "\n"));
 		}
 
 		//Copy the services files
-		Log.Verbose($"adding service files projPath=[{serviceDefinition.ProjectDirectory}]");
+		Log.Verbose($"adding service files projPath=[{projectDir}]");
 
-		newText = newText.Replace(endTag, replacement.Replace(serviceNameTag, serviceDefinition.BeamoId).Replace(servicePathTag, serviceDefinition.ProjectDirectory).Replace('\\', '/').Insert(0, "\n"));
-		
+		newText = newText.Replace(endTag, replacement.Replace(servicePathTag, projectDir).Replace('\\', '/').Insert(0, "\n"));
+
+		await File.WriteAllTextAsync(dockerfilePath, newText);
+	}
+
+	private async Promise WriteEnvVarsToDockerfile(string dockerfilePath, string serviceName, string projectDir)
+	{
+		var dockerfileText = await File.ReadAllTextAsync(dockerfilePath);
+
+		const string endTag =
+			"# </BEAM-CLI-COPY-ENV> this line signals the end of environment variables copies into the built container. Do not remove it.";
+		const string startTag =
+			"# <BEAM-CLI-COPY-ENV> this line signals the start of environment variables copies into the built container. Do not remove it. This will be overwritten every time a variable changes in the execution of the CLI.";
+		const string servicePathTag = "<SERVICE_PATH>";
+		const string serviceNameTag = "<SERVICE_NAME>";
+
+		const string toAdd = @$"ENV BEAM_CSPROJ_PATH=""/subsrc/{servicePathTag}/{serviceNameTag}.csproj""";
+		var replacement = @$"{toAdd}
+{endTag}";
+
+		var hasEndTag = dockerfileText.Contains(endTag);
+		var hasStartTag = dockerfileText.Contains(startTag);
+		if ((!hasEndTag && hasStartTag) || (!hasStartTag && hasEndTag) || (!hasEndTag && !hasStartTag))
+		{
+			throw new CliException(
+				"The dockerfile is corrupted and cannot be used by Beamable. There is a tag mismatch." +
+				"Please make the file have a section like this," +
+				$"{startTag}\n# content will go here\n{endTag}");
+		}
+
+		//Remove old data
+		int startIndex = dockerfileText.LastIndexOf(startTag, StringComparison.Ordinal) + startTag.Length + 1;
+		int endIndex = dockerfileText.IndexOf(endTag, startIndex, StringComparison.Ordinal);
+		string newText = dockerfileText.Remove(startIndex, endIndex - startIndex);
+
+		newText = newText.Replace(endTag, replacement.Replace(servicePathTag, projectDir).Replace(serviceNameTag, serviceName).Replace('\\', '/').Insert(0, "\n"));
+
 		await File.WriteAllTextAsync(dockerfilePath, newText);
 	}
 
