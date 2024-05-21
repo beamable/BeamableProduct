@@ -88,7 +88,7 @@ public partial class BeamoLocalSystem
 	public async Task InitManifest()
 	{
 		// Load or create the local manifest
-		if (_configService.DirectoryExists != true)
+		if (_configService.BaseDirectory == null)
 		{
 			Log.Verbose("Beamo is initializing local manifest, but since no beamable folder exists, an empty manifest is being produced. ");
 			BeamoManifest = new BeamoLocalManifest
@@ -312,7 +312,7 @@ public partial class BeamoLocalSystem
 		const string serviceNameTag = "<SERVICE_NAME>";
 		const string servicePathTag = "<SERVICE_PATH>";
 		
-		string toAdd = @$"RUN mkdir /subsrc/{serviceNameTag}
+		string toAdd = @$"RUN mkdir -p /subsrc/{serviceNameTag}
 COPY {servicePathTag} /subsrc/{serviceNameTag}";
 		var replacement = @$"{toAdd}
 {endTag}";
@@ -343,12 +343,15 @@ COPY {servicePathTag} /subsrc/{serviceNameTag}";
 		{
 			string path = _configService.GetRelativeToDockerBuildContextPath(dependency.projPath);
 			string directory = _configService.GetRelativeToDockerBuildContextPath( Directory.GetParent(path)!.ToString());
+			Log.Verbose($"adding docker dep, projPath=[{dependency.projPath}] path=[{path}] directory=[{directory}]");
+
 			newText = newText.Replace(endTag, replacement.Replace(serviceNameTag, dependency.name).Replace(servicePathTag, directory).Replace('\\', '/').Insert(0, "\n"));
 		}
 
 		//Copy the services files
-		var relativePath = _configService.GetRelativeToDockerBuildContextPath(serviceDefinition.ProjectDirectory);
-		newText = newText.Replace(endTag, replacement.Replace(serviceNameTag, serviceDefinition.BeamoId).Replace(servicePathTag, relativePath).Replace('\\', '/').Insert(0, "\n"));
+		Log.Verbose($"adding service files projPath=[{serviceDefinition.ProjectDirectory}]");
+
+		newText = newText.Replace(endTag, replacement.Replace(serviceNameTag, serviceDefinition.BeamoId).Replace(servicePathTag, serviceDefinition.ProjectDirectory).Replace('\\', '/').Insert(0, "\n"));
 		
 		await File.WriteAllTextAsync(dockerfilePath, newText);
 	}

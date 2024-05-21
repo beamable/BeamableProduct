@@ -182,7 +182,9 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 		var newMicroserviceInfo = await args.ProjectService.CreateNewMicroservice(args);
 
 		// refresh beamoManifest
+		Log.Verbose($"setting temp working dir solutiondir=[{newMicroserviceInfo.SolutionDirectory}]");
 		args.ConfigService.SetTempWorkingDir(newMicroserviceInfo.SolutionDirectory);
+		args.ConfigService.SetBeamableDirectory(newMicroserviceInfo.SolutionDirectory);
 		await args.BeamoLocalSystem.InitManifest();
 		if (!args.BeamoLocalSystem.BeamoManifest.TryGetDefinition(args.ProjectName, out var sd))
 		{

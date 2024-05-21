@@ -51,6 +51,10 @@ public class BeamProjectNewFlows : CLITestExtensions
 		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, Is.EqualTo($"."));
 		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"services/{serviceName}/Dockerfile"));
 
+		string dockerfileContent = BFile.ReadAllText($"{serviceName}/services/{serviceName}/Dockerfile");
+		var hasCorrectCopyFragment = dockerfileContent.Contains($"COPY services/{serviceName} ");
+		Assert.IsTrue(hasCorrectCopyFragment, "the docker file needs to have a copy line relative to the services folder.\n" + dockerfileContent);
+		
 		#endregion
 	}
 

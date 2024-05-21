@@ -184,7 +184,7 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 	/// <summary>
 	/// This is for local and development things
 	/// </summary>
-	public string DockerBuildContextPath;
+	public string DockerBuildContextPath; // TODO: we should delete this, because the build context is now ALWAYS known as the parent of the .beamable folder.
 
 	/// <summary>
 	/// This is for local and development things
