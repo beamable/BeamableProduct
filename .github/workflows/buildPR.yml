@@ -100,7 +100,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget
       - name: Install local packages
-        working-directory: ./client
+        working-directory: ./
         shell: bash
         run: |
           ./set-packages.sh "${{ github.workspace }}"
