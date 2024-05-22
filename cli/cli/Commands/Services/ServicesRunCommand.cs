@@ -16,7 +16,6 @@ public class ServicesRunCommandArgs : LoginCommandArgs
 {
 	public string[] BeamoIdsToDeploy;
 	public bool forceAmdCpuArchitecture = false;
-	public string BuildMode;
 }
 
 public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
@@ -40,9 +39,6 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 			new Option<bool>(new string[] { "--force-amd-cpu-arch", "-fcpu" }, () => false,
 				"Force the services to run with amd64 CPU architecture, useful when deploying from computers with ARM architecture"),
 			(args, i) => args.forceAmdCpuArchitecture = i);
-
-		AddOption(new Option<string>("--build-mode", () => "game_maker", $"INTERNAL This enables a sane workflow for beamable developers to be happy and productive"),
-			(args, i) => args.BuildMode = i);
 	}
 
 	public override async Task Handle(ServicesRunCommandArgs args)
@@ -125,19 +121,17 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 					var sequence = Promise.Sequence(promises);
 					await sequence;
 
-					await _localBeamo.DeployToLocal(_localBeamo, new DockerBuildArgs() { BuildMode = args.BuildMode }, uniqueIds,
-						args.forceAmdCpuArchitecture,
-						(beamoId, progress) =>
-						{
-							var progressTask = allProgressTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
-							progressTask?.Increment((progress * 80) - progressTask.Value);
-							this.SendResults<ServiceRunProgressResult, ServiceRunProgressResult>(new ServiceRunProgressResult() { BeamoId = beamoId, LocalDeployProgress = progressTask?.Value ?? 0.0f, });
-						}, beamoId =>
-						{
-							var progressTask = allProgressTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
-							progressTask?.Increment(20);
-							this.SendResults<ServiceRunProgressResult, ServiceRunProgressResult>(new ServiceRunProgressResult() { BeamoId = beamoId, LocalDeployProgress = progressTask?.Value ?? 0.0f, });
-						});
+					await _localBeamo.DeployToLocal(_localBeamo, uniqueIds, args.forceAmdCpuArchitecture, (beamoId, progress) =>
+					{
+						var progressTask = allProgressTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
+						progressTask?.Increment((progress * 80) - progressTask.Value);
+						this.SendResults<ServiceRunProgressResult, ServiceRunProgressResult>(new ServiceRunProgressResult() { BeamoId = beamoId, LocalDeployProgress = progressTask?.Value ?? 0.0f, });
+					}, beamoId =>
+					{
+						var progressTask = allProgressTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
+						progressTask?.Increment(20);
+						this.SendResults<ServiceRunProgressResult, ServiceRunProgressResult>(new ServiceRunProgressResult() { BeamoId = beamoId, LocalDeployProgress = progressTask?.Value ?? 0.0f, });
+					});
 				}
 				catch (CliException e)
 				{

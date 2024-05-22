@@ -1,4 +1,6 @@
-PROJECTS_DIR=${PROJECT_DIR_OVERRIDE:-"../ProjectsSource"}
+#!/bin/bash
+
+PROJECTS_DIR=${PROJECT_DIR_OVERRIDE:-"ProjectsSource"}
 HOME_FOR_BUILD=${1:-$HOME}
 PROJECTS_SOURCE="$HOME_FOR_BUILD/BeamableSource/"
 SOURCE_NAME="BeamableSource"
@@ -24,17 +26,17 @@ else
 fi
 
 echo "Creating nupckg files for our packages"
-dotnet pack ../cli/beamable.common/ --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
-dotnet pack ../cli/beamable.server.common/ --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
-dotnet pack ../microservice/beamable.tooling.common/  --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
-dotnet pack ../microservice/unityEngineStubs/  --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
-dotnet pack ../microservice/unityEngineStubs.addressables/  --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
+dotnet pack ./cli/beamable.common/ --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
+dotnet pack ./cli/beamable.server.common/ --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
+dotnet pack ./microservice/beamable.tooling.common/  --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
+dotnet pack ./microservice/unityEngineStubs/  --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
+dotnet pack ./microservice/unityEngineStubs.addressables/  --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
 
-dotnet build ../microservice/microservice/  --configuration Release -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
-dotnet pack ../microservice/microservice/  --configuration Release --no-build --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
+dotnet build ./microservice/microservice/  --configuration Release -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
+dotnet pack ./microservice/microservice/  --configuration Release --no-build --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION_INFO
 
 
-OUTPUT=$PROJECTS_DIR VERSION=$VERSION ../templates/build.sh
+OUTPUT=$PROJECTS_DIR VERSION=$VERSION ./templates/build.sh
 
 if dotnet nuget list source | grep -q $SOURCE_NAME; then
     echo "Source already exists!"

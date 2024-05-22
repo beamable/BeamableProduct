@@ -67,9 +67,7 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 						args.SlnFilePath += ".sln";
 					}
 				}
-
 			});
-
 	}
 
 	/// <summary>
@@ -101,6 +99,7 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 		{
 			return;
 		}
+
 		if (!AutoInit)
 		{
 			throw CliExceptions.CONFIG_DOES_NOT_EXISTS;
@@ -114,13 +113,10 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 		await command.Handle(initArgs);
 		initArgs.ConfigService.SetTempWorkingDir(oldDir);
 		initArgs.ConfigService.SetBeamableDirectory(this.GetSlnDirectory());
-
-
 	}
 
 	// public void 
 }
-
 
 public class ServiceNameArgument : Argument<ServiceName>
 {
@@ -130,7 +126,7 @@ public class ServiceNameArgument : Argument<ServiceName>
 public class SpecificVersionOption : Option<PackageVersion>
 {
 	public SpecificVersionOption() : base(
-		name: "--version", 
+		name: "--version",
 		getDefaultValue: () => VersionService.GetNugetPackagesForExecutingCliVersion().ToString(),
 		description: $"Specifies version of Beamable project dependencies. Defaults to the current version of the CLI")
 	{
@@ -140,8 +136,8 @@ public class SpecificVersionOption : Option<PackageVersion>
 public class NewMicroserviceArgs : SolutionCommandArgs
 {
 	public bool GenerateCommon;
+	public bool IsBeamableDev;
 }
-
 
 public class RegenerateSolutionFilesCommandArgs : SolutionCommandArgs
 {
@@ -173,6 +169,9 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 				name: "--generate-common",
 				description: "If passed, will create a common library for this project"),
 			(args, i) => args.GenerateCommon = i);
+
+		AddOption(new Option<bool>("--beamable-dev", () => false, $"INTERNAL This enables a sane workflow for beamable developers to be happy and productive"),
+			(args, i) => args.IsBeamableDev = i);
 	}
 
 	public override async Task Handle(NewMicroserviceArgs args)
@@ -180,6 +179,8 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 		await args.CreateConfigIfNeeded(_initCommand);
 
 		var newMicroserviceInfo = await args.ProjectService.CreateNewMicroservice(args);
+
+		var isBeamableDev = args.IsBeamableDev;
 
 		// refresh beamoManifest
 		Log.Verbose($"setting temp working dir solutiondir=[{newMicroserviceInfo.SolutionDirectory}]");
@@ -192,21 +193,37 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 			Log.Verbose("manifest... \n " + JsonConvert.SerializeObject(args.BeamoLocalSystem.BeamoManifest, Formatting.Indented));
 			throw new CliException("cannot find recently generated project, " + args.ProjectName);
 		}
-		
+
 		await args.BeamoLocalSystem.UpdateDockerFile(sd);
 
+		var service = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[sd.BeamoId];
 		if (args.GenerateCommon)
 		{
-			var service = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[sd.BeamoId];
 			await args.ProjectService.UpdateDockerFileWithCommonProject(args.ConfigService, args.ProjectName, service.RelativeDockerfilePath,
 				service.DockerBuildContextPath);
 		}
+
 
 		await args.BeamoLocalSystem.InitManifest();
 
 		//Go back to the default working dir
 		args.ConfigService.SetTempWorkingDir(previousWorkingDir);
 		args.ConfigService.SetBeamableDirectory(previousWorkingDir);
+		
+		// Make sure we have the correct docker file
+		var regularDockerfilePath = Path.Combine(service.DockerBuildContextPath, service.RelativeDockerfilePath);
+		var beamableDevDockerfilePath = regularDockerfilePath + "-BeamableDev";
+		if (File.Exists(beamableDevDockerfilePath))
+		{
+			if (isBeamableDev)
+			{
+				var beamableDevDockerfileContents = await File.ReadAllTextAsync(beamableDevDockerfilePath);
+				await File.WriteAllTextAsync(regularDockerfilePath, beamableDevDockerfileContents);
+			}
+
+			// We always delete the -BeamableDev dockerfile from the template (for older versions of the template, this file does not exist so... we need to check for it).
+			File.Delete(beamableDevDockerfilePath);
+		} 
 
 		args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 
