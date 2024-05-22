@@ -146,8 +146,8 @@ public partial class BeamoLocalSystem
 
 		foreach (var info in currentInfo)
 		{
-			if (info.State == "exited") continue; 
-			
+			if (info.State == "exited") continue;
+
 			var beamoId = BeamoManifest.ServiceDefinitions.FirstOrDefault(c =>
 				{
 					switch (c.Protocol)
@@ -159,7 +159,7 @@ public partial class BeamoLocalSystem
 						default:
 							throw new CliException("Unknown protocol type");
 					}
-					
+
 				})
 				?.BeamoId;
 			Log.Verbose(beamoId + " found " + info.ID + " as " + info.State);
@@ -182,7 +182,7 @@ public partial class BeamoLocalSystem
 		// Cancel the thread if it's already running.
 		if (_dockerListeningThread != null && !_dockerListeningThread.IsCompleted)
 			_dockerListeningThreadCancel.Cancel();
-			
+
 		// Start the long running task. We don't "await" this task as it never yields until it's cancelled.
 		_dockerListeningThread = _client.System.MonitorEventsAsync(new ContainerEventsParameters(),
 			new Progress<Message>(DockerSystemEventHandler), _dockerListeningThreadCancel.Token);
@@ -260,7 +260,7 @@ public partial class BeamoLocalSystem
 					// TODO: Detect when people containers are running but their dependencies are not. Output a list of warnings that people can then print out.
 					break;
 				}
-				
+
 				case ("container", "stop"):
 				{
 					var beamoServiceInstance =
@@ -343,7 +343,7 @@ public partial class BeamoLocalSystem
 				if (!hasDockerfile) return false;
 
 				return true;
-			
+
 			case BeamoProtocolType.EmbeddedMongoDb:
 				return true; // always pull down a version of mongo.
 			default:
@@ -443,8 +443,8 @@ public partial class BeamoLocalSystem
 	{
 		// Split each definition by their BeamoProtocolType
 
-			splitContainers = serviceDefinitions.GroupBy(i => i.Protocol)
-				.ToDictionary(g => g.Key, g => g.ToList());
+		splitContainers = serviceDefinitions.GroupBy(i => i.Protocol)
+			.ToDictionary(g => g.Key, g => g.ToList());
 	}
 
 	public async IAsyncEnumerable<string> TailLogs(string containerId)
