@@ -34,6 +34,7 @@ public class ServicesManifestsCommand : AtomicCommand<ServicesManifestsArgs, Ser
 												id = x.id,
 												manifest = x.manifest?.Select(m => new CliServiceReference
 												{
+													serviceName = m.serviceName,
 													checksum = m.checksum,
 													comments = m.comments,
 													containerHealthCheckPort = m.containerHealthCheckPort,
