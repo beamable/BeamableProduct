@@ -206,7 +206,7 @@ public class ConfigService
 	/// tell the Beam CLI where the docker socket is available.
 	/// </summary>
 	public string CustomDockerUri => Environment.GetEnvironmentVariable(ENV_VAR_DOCKER_URI);
-	
+
 	/// <summary>
 	/// Github Action Runners for windows don't seem to work with volumes for mongo.
 	/// </summary>

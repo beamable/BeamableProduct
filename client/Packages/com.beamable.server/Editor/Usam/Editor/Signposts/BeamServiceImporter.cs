@@ -79,7 +79,7 @@ namespace Beamable.Server.Editor.Usam
 					} while (property.NextVisible(false));
 
 				}
-				
+
 				if (GUILayout.Button("Apply Changes"))
 				{
 					if (_serviceAsset != null)
@@ -91,8 +91,8 @@ namespace Beamable.Server.Editor.Usam
 						else
 						{
 							_ = BeamEditorContext
-							    .Default.ServiceScope.GetService<CodeService>()
-							    .UpdateServiceReferences(_serviceAsset.data);
+								.Default.ServiceScope.GetService<CodeService>()
+								.UpdateServiceReferences(_serviceAsset.data);
 						}
 					}
 				}
