@@ -227,10 +227,5 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 
 		
 		args.BeamoLocalSystem.SaveBeamoLocalRuntime();
-
-		if (!args.Quiet)
-		{
-			await args.ProjectService.LinkProjects(_addUnityCommand, _addUnrealCommand, args.Provider);
-		}
 	}
 }
