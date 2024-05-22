@@ -64,6 +64,7 @@ namespace Beamable.Server.Editor.DockerCommands
 	{
 		public const string ENV_CODE_THEME = "ME_CONFIG_OPTIONS_EDITORTHEME";
 		public const string ENV_MONGO_SERVER = "ME_CONFIG_MONGODB_URL";
+		public const string ENV_MONGO_BASIC_AUTH = "ME_CONFIG_BASICAUTH";
 		public const string ENV_ME_CONFIG_MONGODB_ENABLE_ADMIN = "ME_CONFIG_MONGODB_ENABLE_ADMIN";
 		public const string ENV_ME_CONFIG_SITE_COOKIESECRET = "ME_CONFIG_SITE_COOKIESECRET";
 		public const string ENV_ME_CONFIG_SITE_SESSIONSECRET = "ME_CONFIG_SITE_SESSIONSECRET";
@@ -84,6 +85,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			var config = MicroserviceConfiguration.Instance.GetStorageEntry(storage.Name);
 			Environment = new Dictionary<string, string>
 			{
+				[ENV_MONGO_BASIC_AUTH] = "false",
 				[ENV_CODE_THEME] = "rubyblue",
 				[ENV_ME_CONFIG_MONGODB_ENABLE_ADMIN] = "true",
 				[ENV_ME_CONFIG_SITE_COOKIESECRET] = Guid.NewGuid().ToString(),
