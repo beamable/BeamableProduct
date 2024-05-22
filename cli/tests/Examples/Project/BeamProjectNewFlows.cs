@@ -42,6 +42,12 @@ public class BeamProjectNewFlows : CLITestExtensions
 		Assert.That(BFile.Exists($"{serviceName}/services/{serviceName}/{serviceName}.csproj"),
 			$"There must be a csproj file after beam project new {serviceName}");
 
+		Assert.That(BFile.Exists($"{serviceName}/services/{serviceName}/Dockerfile"),
+			$"There must be a dockerfile");
+		Assert.That(!BFile.Exists($"{serviceName}/services/{serviceName}/Dockerfile-BeamableDev"),
+			$"There must not be a dev dockerfile");
+
+		
 		// the contents of the file beamoId should be equal to the name of the service created
 		
 		

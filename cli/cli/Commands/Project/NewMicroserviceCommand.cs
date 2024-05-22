@@ -207,7 +207,7 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 		await args.BeamoLocalSystem.InitManifest();
 
 		// Make sure we have the correct docker file
-		var regularDockerfilePath = service.RelativeDockerfilePath;
+		var regularDockerfilePath = args.ConfigService.BeamableRelativeToExecutionRelative(service.RelativeDockerfilePath);
 		var beamableDevDockerfilePath = regularDockerfilePath + "-BeamableDev";
 		if (File.Exists(beamableDevDockerfilePath))
 		{
