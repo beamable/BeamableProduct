@@ -38,7 +38,7 @@ public class AddDepsCommand : AppCommand<AddDepsCommandArgs>, IEmptyResult
 			return;
 		}
 
-		List<DependencyData> dependencies = await args.BeamoLocalSystem.GetDependencies(args.ServiceName);
+		List<DependencyData> dependencies = args.BeamoLocalSystem.GetDependencies(args.ServiceName);
 		bool isAlreadyDependency = dependencies.Any(data => data.name == args.Dependency);
 
 		if (isAlreadyDependency)
@@ -48,6 +48,6 @@ public class AddDepsCommand : AppCommand<AddDepsCommandArgs>, IEmptyResult
 		}
 
 		Log.Information("Adding {ArgsStorageName} reference to {Dependency}. ", args.Dependency, args.ServiceName);
-		await args.BeamoLocalSystem.AddProjectDependency(serviceDefinition, dependencyDefinition);
+		await args.BeamoLocalSystem.AddProjectDependency(serviceDefinition, dependencyDefinition.ProjectDirectory);
 	}
 }

@@ -1,6 +1,5 @@
 <Project>
     <PropertyGroup>
-        <OutputType>Exe</OutputType>
         <ImplicitUsings>disable</ImplicitUsings>
         <Nullable>disable</Nullable>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>

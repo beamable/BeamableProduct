@@ -57,13 +57,15 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 				_localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
 			await _localBeamo.StartListeningToDocker();
 		}
-		catch
+		catch (Exception ex)
 		{
-			return;
+			Log.Error($"Failed to communicate with docker. message=[{ex.Message}]");
+			throw;
+			//throw new CliException($"Failed to communicate with docker. message=[{ex.Message}]");
 		}
 
 		// If no ids were given, run all registered services in docker 
-		args.BeamoIdsToDeploy ??= _localBeamo.BeamoManifest.ServiceDefinitions.Select(c => c.BeamoId).ToArray();
+		args.BeamoIdsToDeploy ??= _localBeamo.BeamoManifest.LocalBeamoIds;
 
 		var failedId = args.BeamoIdsToDeploy.Where(id => !_localBeamo.VerifyCanBeBuiltLocally(id)).ToList();
 		if (failedId.Any())
@@ -101,7 +103,7 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 					idsToDeploy.AddRange(args.BeamoIdsToDeploy);
 					foreach (string id in args.BeamoIdsToDeploy)
 					{
-						var dependencies = await _localBeamo.GetDependencies(id);
+						var dependencies = _localBeamo.GetDependencies(id);
 						idsToDeploy.AddRange(dependencies.Select(d => d.name));
 					}
 
@@ -145,7 +147,6 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 
 		this.SendResults<DefaultStreamResultChannel, ServiceRunReportResult>(new ServiceRunReportResult() { Success = true, FailureReason = "" });
 
-		_localBeamo.SaveBeamoLocalManifest();
 		_localBeamo.SaveBeamoLocalRuntime();
 
 		await _localBeamo.StopListeningToDocker();

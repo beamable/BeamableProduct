@@ -14,6 +14,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string fromFile;
 		/// <summary>Associates this comment along with the published Manifest. You'll be able to read it via the Beamable Portal</summary>
 		public string comment;
+		/// <summary>INTERNAL This enables a sane workflow for beamable developers to be happy and productive</summary>
+		public string buildMode;
 		/// <summary>Any number of strings in the format BeamoId::Comment
 		///Associates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal</summary>
 		public string[] serviceComments;
@@ -52,6 +54,12 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.comment != default(string)))
 			{
 				genBeamCommandArgs.Add((("--comment=\"" + this.comment)
+								+ "\""));
+			}
+			// If the buildMode value was not default, then add it to the list of args.
+			if ((this.buildMode != default(string)))
+			{
+				genBeamCommandArgs.Add((("--build-mode=\"" + this.buildMode)
 								+ "\""));
 			}
 			// If the serviceComments value was not default, then add it to the list of args.

@@ -16,6 +16,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public int instanceCount;
 		/// <summary>When enabled, automatically deploy dependencies that aren't running</summary>
 		public bool autoDeploy;
+		/// <summary>INTERNAL This enables a sane workflow for beamable developers to be happy and productive</summary>
+		public string buildMode;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -39,6 +41,12 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.autoDeploy != default(bool)))
 			{
 				genBeamCommandArgs.Add(("--auto-deploy=" + this.autoDeploy));
+			}
+			// If the buildMode value was not default, then add it to the list of args.
+			if ((this.buildMode != default(string)))
+			{
+				genBeamCommandArgs.Add((("--build-mode=\"" + this.buildMode)
+								+ "\""));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

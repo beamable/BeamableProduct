@@ -4,6 +4,7 @@ using Beamable.Common.Util;
 using cli.Dotnet;
 using cli.Services;
 using cli.Utils;
+using Newtonsoft.Json;
 using Serilog;
 using System.CommandLine;
 
@@ -180,7 +181,18 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 		var newMicroserviceInfo = await args.ProjectService.CreateNewMicroservice(args);
 
 		var isBeamableDev = args.IsBeamableDev;
-		var sd = await args.ProjectService.AddDefinitonToNewService(args, newMicroserviceInfo);
+
+		// refresh beamoManifest
+		Log.Verbose($"setting temp working dir solutiondir=[{newMicroserviceInfo.SolutionDirectory}]");
+		var previousWorkingDir = args.ConfigService.WorkingDirectory;
+		args.ConfigService.SetTempWorkingDir(newMicroserviceInfo.SolutionDirectory);
+		args.ConfigService.SetBeamableDirectory(newMicroserviceInfo.SolutionDirectory);
+		await args.BeamoLocalSystem.InitManifest();
+		if (!args.BeamoLocalSystem.BeamoManifest.TryGetDefinition(args.ProjectName, out var sd))
+		{
+			Log.Verbose("manifest... \n " + JsonConvert.SerializeObject(args.BeamoLocalSystem.BeamoManifest, Formatting.Indented));
+			throw new CliException("cannot find recently generated project, " + args.ProjectName);
+		}
 
 		await args.BeamoLocalSystem.UpdateDockerFile(sd);
 
@@ -191,8 +203,11 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 				service.DockerBuildContextPath);
 		}
 
+
+		await args.BeamoLocalSystem.InitManifest();
+
 		// Make sure we have the correct docker file
-		var regularDockerfilePath = Path.Combine(service.DockerBuildContextPath, service.RelativeDockerfilePath);
+		var regularDockerfilePath = service.RelativeDockerfilePath;
 		var beamableDevDockerfilePath = regularDockerfilePath + "-BeamableDev";
 		if (File.Exists(beamableDevDockerfilePath))
 		{
@@ -206,7 +221,11 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 			File.Delete(beamableDevDockerfilePath);
 		} 
 
-		args.BeamoLocalSystem.SaveBeamoLocalManifest();
+		//Go back to the default working dir
+		args.ConfigService.SetTempWorkingDir(previousWorkingDir);
+		args.ConfigService.SetBeamableDirectory(previousWorkingDir);
+
+		
 		args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 
 		if (!args.Quiet)

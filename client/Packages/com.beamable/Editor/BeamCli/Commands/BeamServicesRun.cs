@@ -10,6 +10,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string[] ids;
 		/// <summary>Force the services to run with amd64 CPU architecture, useful when deploying from computers with ARM architecture</summary>
 		public bool forceAmdCpuArch;
+		/// <summary>INTERNAL This enables a sane workflow for beamable developers to be happy and productive</summary>
+		public string buildMode;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -28,6 +30,12 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.forceAmdCpuArch != default(bool)))
 			{
 				genBeamCommandArgs.Add(("--force-amd-cpu-arch=" + this.forceAmdCpuArch));
+			}
+			// If the buildMode value was not default, then add it to the list of args.
+			if ((this.buildMode != default(string)))
+			{
+				genBeamCommandArgs.Add((("--build-mode=\"" + this.buildMode)
+								+ "\""));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

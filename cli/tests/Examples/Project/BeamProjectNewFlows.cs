@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using NUnit.Framework;
 using System;
 using System.IO;
+using tests.MoqExtensions;
 
 namespace tests.Examples.Project;
 
@@ -38,19 +39,26 @@ public class BeamProjectNewFlows : CLITestExtensions
 			$"There must be an Example.sln file after beam project new {serviceName}");
 
 		// there should be a local-services-manifest.json file
-		Assert.That(BFile.Exists($"{serviceName}/.beamable/local-services-manifest.json"),
-			$"There must be a beamo local manifest file after beam project new {serviceName}");
+		Assert.That(BFile.Exists($"{serviceName}/services/{serviceName}/{serviceName}.csproj"),
+			$"There must be a csproj file after beam project new {serviceName}");
 
 		// the contents of the file beamoId should be equal to the name of the service created
-		string localManifestTextContent = BFile.ReadAllText($"{serviceName}/.beamable/local-services-manifest.json");
-		var manifest = JsonConvert.DeserializeObject<BeamoLocalManifest>(localManifestTextContent);
-		Assert.That(manifest!.ServiceDefinitions.Count, Is.EqualTo(1));
-		Assert.That(manifest.ServiceDefinitions[0].BeamoId, Is.EqualTo(serviceName));
-		Assert.That(manifest.ServiceDefinitions[0].ProjectDirectory, BIs.Path($"services/{serviceName}"));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName], Is.Not.Null);
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, Is.EqualTo($"."));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"services/{serviceName}/Dockerfile"));
+		
+		
+		string localCsProjContent = BFile.ReadAllText($"{serviceName}/services/{serviceName}/{serviceName}.csproj");
+		// var manifest = JsonConvert.DeserializeObject<BeamoLocalManifest>(localManifestTextContent);
+		// Assert.That(manifest!.ServiceDefinitions.Count, Is.EqualTo(1));
 
+		var hasProjectType = localCsProjContent.Contains("<BeamProjectType>service</BeamProjectType>");
+		var hasNugetReference = localCsProjContent.Contains("<PackageReference Include=\"Beamable.Microservice.Runtime\" Version=\"0.0.123\" />");
+		
+		Assert.That(hasProjectType, "csproj must have project type fragment\n" + localCsProjContent);
+		Assert.That(hasNugetReference, "csproj must have nuget reference fragment\n" + localCsProjContent);
+		
+		string dockerfileContent = BFile.ReadAllText($"{serviceName}/services/{serviceName}/Dockerfile");
+		var hasCorrectCopyFragment = dockerfileContent.Contains($"COPY services/{serviceName} ");
+		Assert.IsTrue(hasCorrectCopyFragment, "the docker file needs to have a copy line relative to the services folder.\n" + dockerfileContent);
+		
 		#endregion
 	}
 
@@ -77,20 +85,16 @@ public class BeamProjectNewFlows : CLITestExtensions
 		// there should a .sln file
 		Assert.That(BFile.Exists($"{serviceName}/{serviceName}.sln"),
 			$"There must be an Example.sln file after beam project new {serviceName}");
-
-		// there should be a local-services-manifest.json file
-		Assert.That(BFile.Exists($"{serviceName}/.beamable/local-services-manifest.json"),
-			$"There must be a beamo local manifest file after beam project new {serviceName}");
+		
+		// there should be a csproj file
+		Assert.That(BFile.Exists($"{serviceName}/services/{serviceName}/{serviceName}.csproj"),
+			$"There must be a beamo csproj file after beam project new {serviceName}");
 
 		// the contents of the file beamoId should be equal to the name of the service created
-		string localManifestTextContent = BFile.ReadAllText($"{serviceName}/.beamable/local-services-manifest.json");
-		var manifest = JsonConvert.DeserializeObject<BeamoLocalManifest>(localManifestTextContent);
-		Assert.That(manifest!.ServiceDefinitions.Count, Is.EqualTo(1));
-		Assert.That(manifest.ServiceDefinitions[0].BeamoId, Is.EqualTo(serviceName));
-		Assert.That(manifest.ServiceDefinitions[0].ProjectDirectory, BIs.Path($"services/{serviceName}"));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName], Is.Not.Null);
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, Is.EqualTo($"."));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"services/{serviceName}/Dockerfile"));
+		string localCsProjContent = BFile.ReadAllText($"{serviceName}/services/{serviceName}/{serviceName}.csproj");
+
+		var hasProjectTypeFragment = localCsProjContent.Contains("<BeamProjectType>service</BeamProjectType>");
+		Assert.That(hasProjectTypeFragment, "csproj must have project type\n" + hasProjectTypeFragment);
 
 		#endregion
 	}
@@ -124,19 +128,15 @@ public class BeamProjectNewFlows : CLITestExtensions
 		Assert.That(BFile.Exists($"{slnName}.sln"),
 			$"There must be an {slnName}.sln file after beam project new --sln {slnName}");
 
-		// there should be a local-services-manifest.json file
-		Assert.That(BFile.Exists($".beamable/local-services-manifest.json"),
-			$"There must be a beamo local manifest file after beam project new {serviceName}");
+		// there should be a csproj file
+		Assert.That(BFile.Exists($"services/{serviceName}/{serviceName}.csproj"),
+			$"There must be a beamo csproj file after beam project new {serviceName}");
 
 		// the contents of the file beamoId should be equal to the name of the service created
-		string localManifestTextContent = BFile.ReadAllText($".beamable/local-services-manifest.json");
-		var manifest = JsonConvert.DeserializeObject<BeamoLocalManifest>(localManifestTextContent);
-		Assert.That(manifest!.ServiceDefinitions.Count, Is.EqualTo(1));
-		Assert.That(manifest.ServiceDefinitions[0].BeamoId, Is.EqualTo(serviceName));
-		Assert.That(manifest.ServiceDefinitions[0].ProjectDirectory, BIs.Path($"services/{serviceName}"));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName], Is.Not.Null);
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, Is.EqualTo($"."));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"services/{serviceName}/Dockerfile"));
+		string localCsProjContent = BFile.ReadAllText($"services/{serviceName}/{serviceName}.csproj");
+
+		var hasProjectTypeFragment = localCsProjContent.Contains("<BeamProjectType>service</BeamProjectType>");
+		Assert.That(hasProjectTypeFragment, "csproj must have project type\n" + hasProjectTypeFragment);
 
 		#endregion
 	}
@@ -172,19 +172,15 @@ public class BeamProjectNewFlows : CLITestExtensions
 		Assert.That(BFile.Exists($"{slnName}.sln"),
 			$"There must be an {slnName}.sln file after beam project new --sln {slnName}");
 
-		// there should be a local-services-manifest.json file
-		Assert.That(BFile.Exists($"{slnPath}/.beamable/local-services-manifest.json"),
-			$"There must be a beamo local manifest file after beam project new {serviceName}");
+		// there should be a csproj file
+		Assert.That(BFile.Exists($"{slnPath}/services/{serviceName}/{serviceName}.csproj"),
+			$"There must be a beamo csproj file after beam project new service.\n" );
 
 		// the contents of the file beamoId should be equal to the name of the service created
-		string localManifestTextContent = BFile.ReadAllText($"{slnPath}/.beamable/local-services-manifest.json");
-		var manifest = JsonConvert.DeserializeObject<BeamoLocalManifest>(localManifestTextContent);
-		Assert.That(manifest!.ServiceDefinitions.Count, Is.EqualTo(1));
-		Assert.That(manifest.ServiceDefinitions[0].BeamoId, Is.EqualTo(serviceName));
-		Assert.That(manifest.ServiceDefinitions[0].ProjectDirectory, BIs.Path($"services/{serviceName}"));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName], Is.Not.Null);
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, Is.EqualTo($"."));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"services/{serviceName}/Dockerfile"));
+		string localCsProjContent = BFile.ReadAllText($"{slnPath}/services/{serviceName}/{serviceName}.csproj");
+
+		var hasProjectTypeFragment = localCsProjContent.Contains("<BeamProjectType>service</BeamProjectType>");
+		Assert.That(hasProjectTypeFragment, "csproj must have project type\n" + hasProjectTypeFragment);
 
 		#endregion
 	}
@@ -194,7 +190,7 @@ public class BeamProjectNewFlows : CLITestExtensions
 	{
 		#region Arrange
 
-		SetupMocks();
+		SetupMocks(mockBeamoManifest:false);
 		Ansi.Input.PushTextWithEnter(alias); // enter alias
 		Ansi.Input.PushTextWithEnter(userName); // enter email
 		Ansi.Input.PushTextWithEnter(password); // enter password
@@ -210,6 +206,12 @@ public class BeamProjectNewFlows : CLITestExtensions
 		Run("init", "--save-to-file");
 		ResetConfigurator();
 
+		Mock<BeamoService>(mock =>
+		{
+			mock.Setup(x => x.GetCurrentManifest())
+				.ReturnsPromise(new ServiceManifest())
+				.Verifiable();
+		});
 		Run("project", "new", "service", serviceName, "--quiet");
 
 		#endregion
@@ -223,19 +225,15 @@ public class BeamProjectNewFlows : CLITestExtensions
 		// there should a .beamable folder
 		Assert.That(BFile.Exists(".beamable/connection-configuration.json"), "there must be a config defaults file after beam init.");
 
-		// there should be a local-services-manifest.json file
-		Assert.That(BFile.Exists($".beamable/local-services-manifest.json"),
-			$"There must be a beamo local manifest file after beam project new {serviceName}");
+		// there should be a csproj file
+		Assert.That(BFile.Exists($"{serviceName}/services/{serviceName}/{serviceName}.csproj"),
+			$"There must be a beamo csproj file after beam project new {serviceName}");
 
 		// the contents of the file beamoId should be equal to the name of the service created
-		string localManifestTextContent = BFile.ReadAllText($".beamable/local-services-manifest.json");
-		var manifest = JsonConvert.DeserializeObject<BeamoLocalManifest>(localManifestTextContent);
-		Assert.That(manifest!.ServiceDefinitions.Count, Is.EqualTo(1));
-		Assert.That(manifest.ServiceDefinitions[0].BeamoId, Is.EqualTo(serviceName));
-		Assert.That(manifest.ServiceDefinitions[0].ProjectDirectory, BIs.Path($"{serviceName}/services/{serviceName}"));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName], Is.Not.Null);
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, BIs.Path($"."));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"{serviceName}/services/{serviceName}/Dockerfile"));
+		string localCsProjContent = BFile.ReadAllText($"{serviceName}/services/{serviceName}/{serviceName}.csproj");
+
+		var hasProjectTypeFragment = localCsProjContent.Contains("<BeamProjectType>service</BeamProjectType>");
+		Assert.That(hasProjectTypeFragment, "csproj must have project type\n" + hasProjectTypeFragment);
 
 		#endregion
 	}
@@ -245,7 +243,7 @@ public class BeamProjectNewFlows : CLITestExtensions
 	{
 		#region Arrange
 
-		SetupMocks();
+		SetupMocks(mockBeamoManifest:false);
 		Ansi.Input.PushTextWithEnter(alias); // enter alias
 		Ansi.Input.PushTextWithEnter(userName); // enter email
 		Ansi.Input.PushTextWithEnter(password); // enter password
@@ -261,10 +259,22 @@ public class BeamProjectNewFlows : CLITestExtensions
 
 		Run("init", "--save-to-file");
 		ResetConfigurator();
-
+		Mock<BeamoService>(mock =>
+		{
+			mock.Setup(x => x.GetCurrentManifest())
+				.ReturnsPromise(new ServiceManifest())
+				.Verifiable();
+		});
+		
 		Run("project", "new", "service", serviceName, "--quiet");
 		ResetConfigurator();
-
+		Mock<BeamoService>(mock =>
+		{
+			mock.Setup(x => x.GetCurrentManifest())
+				.ReturnsPromise(new ServiceManifest())
+				.Verifiable();
+		});
+		
 		Run("project", "new", "service", secondServiceName, "--quiet", "--sln", $"{serviceName}/{serviceName}.sln");
 
 		#endregion
@@ -283,25 +293,15 @@ public class BeamProjectNewFlows : CLITestExtensions
 		// there should a .beamable folder
 		Assert.That(BFile.Exists(".beamable/connection-configuration.json"), "there must be a config defaults file after beam init.");
 
-		// there should be a local-services-manifest.json file
-		Assert.That(BFile.Exists($".beamable/local-services-manifest.json"),
-			$"There must be a beamo local manifest file after beam project new {serviceName}");
+		// there should be a csproj file
+		Assert.That(BFile.Exists($"{serviceName}/services/{serviceName}/{serviceName}.csproj"),
+			$"There must be a beamo csproj file after beam project new {serviceName}");
 
 		// the contents of the file beamoId should be equal to the name of the service created
-		string localManifestTextContent = BFile.ReadAllText($".beamable/local-services-manifest.json");
-		var manifest = JsonConvert.DeserializeObject<BeamoLocalManifest>(localManifestTextContent);
-		Assert.That(manifest!.ServiceDefinitions.Count, Is.EqualTo(2));
-		Assert.That(manifest.ServiceDefinitions[0].BeamoId, Is.EqualTo(serviceName));
-		Assert.That(manifest.ServiceDefinitions[0].ProjectDirectory, BIs.Path($"{serviceName}/services/{serviceName}"));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName], Is.Not.Null);
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, BIs.Path($"."));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"{serviceName}/services/{serviceName}/Dockerfile"));
+		string localCsProjContent = BFile.ReadAllText($"{serviceName}/services/{serviceName}/{serviceName}.csproj");
 
-		Assert.That(manifest.ServiceDefinitions[1].BeamoId, Is.EqualTo(secondServiceName));
-		Assert.That(manifest.ServiceDefinitions[1].ProjectDirectory, BIs.Path($"{serviceName}/services/{secondServiceName}"));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[secondServiceName], Is.Not.Null);
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[secondServiceName].DockerBuildContextPath, BIs.Path($"."));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[secondServiceName].RelativeDockerfilePath, BIs.Path($"{serviceName}/services/{secondServiceName}/Dockerfile"));
+		var hasProjectTypeFragment = localCsProjContent.Contains("<BeamProjectType>service</BeamProjectType>");
+		Assert.That(hasProjectTypeFragment, "csproj must have project type\n" + hasProjectTypeFragment);
 
 		#endregion
 	}
@@ -312,7 +312,7 @@ public class BeamProjectNewFlows : CLITestExtensions
 	{
 		#region Arrange
 
-		SetupMocks();
+		SetupMocks(mockBeamoManifest: false);
 		Ansi.Input.PushTextWithEnter(alias); // enter alias
 		Ansi.Input.PushTextWithEnter(userName); // enter email
 		Ansi.Input.PushTextWithEnter(password); // enter password
@@ -327,9 +327,21 @@ public class BeamProjectNewFlows : CLITestExtensions
 		Run("init", "--save-to-file");
 		ResetConfigurator();
 
+		Mock<BeamoService>(mock =>
+		{
+			mock.Setup(x => x.GetCurrentManifest())
+				.ReturnsPromise(new ServiceManifest())
+				.Verifiable();
+		});
 		Run("project", "new", "service", serviceName, "--quiet");
 		ResetConfigurator();
 
+		Mock<BeamoService>(mock =>
+		{
+			mock.Setup(x => x.GetCurrentManifest())
+				.ReturnsPromise(new ServiceManifest())
+				.Verifiable();
+		});
 		Run("project", "new", "storage", storageName, "--quiet", "--sln", $"{serviceName}/{serviceName}.sln", "--link-to", serviceName);
 
 		#endregion
@@ -348,24 +360,16 @@ public class BeamProjectNewFlows : CLITestExtensions
 		// there should a .beamable folder
 		Assert.That(BFile.Exists(".beamable/connection-configuration.json"), "there must be a config defaults file after beam init.");
 
-		// there should be a local-services-manifest.json file
-		Assert.That(BFile.Exists($".beamable/local-services-manifest.json"),
-			$"There must be a beamo local manifest file after beam project new {serviceName}");
+		// there should be a csproj file
+		Assert.That(BFile.Exists($"{serviceName}/services/{storageName}/{storageName}.csproj"),
+			$"There must be a beamo csproj file after beam project new {serviceName}");
 
 		// the contents of the file beamoId should be equal to the name of the service created
-		string localManifestTextContent = BFile.ReadAllText($".beamable/local-services-manifest.json");
-		var manifest = JsonConvert.DeserializeObject<BeamoLocalManifest>(localManifestTextContent);
-		Assert.That(manifest!.ServiceDefinitions.Count, Is.EqualTo(2));
-		Assert.That(manifest.ServiceDefinitions[0].BeamoId, Is.EqualTo(serviceName));
-		Assert.That(manifest.ServiceDefinitions[0].ProjectDirectory, BIs.Path($"{serviceName}/services/{serviceName}"));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName], Is.Not.Null);
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].DockerBuildContextPath, BIs.Path($"."));
-		Assert.That(manifest.HttpMicroserviceLocalProtocols[serviceName].RelativeDockerfilePath, BIs.Path($"{serviceName}/services/{serviceName}/Dockerfile"));
+		string localCsProjContent = BFile.ReadAllText($"{serviceName}/services/{storageName}/{storageName}.csproj");
 
-		Assert.That(manifest.ServiceDefinitions[1].BeamoId, Is.EqualTo(storageName));
-		Assert.That(manifest.ServiceDefinitions[1].ProjectDirectory, BIs.Path($"{serviceName}/services/{storageName}"));
-		Assert.That(manifest.EmbeddedMongoDbLocalProtocols[storageName], Is.Not.Null);
-
+		var hasProjectTypeFragment = localCsProjContent.Contains("<BeamProjectType>storage</BeamProjectType>");
+		Assert.That(hasProjectTypeFragment, "csproj must have project type\n" + hasProjectTypeFragment);
+		
 		// the service should have a reference to the storage
 		var csProjPath = $"{serviceName}/services/{serviceName}/{serviceName}.csproj";
 		Assert.That(BFile.Exists(csProjPath),

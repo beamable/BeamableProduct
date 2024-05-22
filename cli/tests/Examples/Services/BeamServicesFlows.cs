@@ -1,3 +1,4 @@
+using cli.Services;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using DotNet.Testcontainers.Builders;
@@ -6,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using tests.Examples.Project;
+using tests.MoqExtensions;
 
 namespace tests.Examples.Services;
 
@@ -55,6 +57,13 @@ public class BeamServicesFlows : CLITest
 
 		string workingDirectory = Directory.GetCurrentDirectory();
 		Directory.SetCurrentDirectory($"{workingDirectory}/{ServiceName}");
+		Mock<BeamoService>(mock =>
+		{
+			mock.Setup(x => x.GetCurrentManifest())
+				.ReturnsPromise(new ServiceManifest())
+				.Verifiable();
+		});
+		
 		Run("services", "reset", "container", "--ids", ServiceName);
 
 		// Check if the container with the specified name is not running
@@ -98,6 +107,12 @@ public class BeamServicesFlows : CLITest
 
 		string workingDirectory = Directory.GetCurrentDirectory();
 		Directory.SetCurrentDirectory($"{workingDirectory}/{ServiceName}");
+		Mock<BeamoService>(mock =>
+		{
+			mock.Setup(x => x.GetCurrentManifest())
+				.ReturnsPromise(new ServiceManifest())
+				.Verifiable();
+		});
 		Run("services", "stop", "--ids", ServiceName);
 
 		// Check if the container with the specified name is not running
