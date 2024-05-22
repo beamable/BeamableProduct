@@ -8,7 +8,12 @@ using Spectre.Console;
 
 namespace cli;
 
-public class LoginCommandArgs : CommandArgs
+public interface IArgsWithSaveToFile
+{
+	public bool SaveToFile { get; set; }
+}
+
+public class LoginCommandArgs : CommandArgs, IArgsWithSaveToFile
 {
 	public string username;
 	public string password;
@@ -17,6 +22,12 @@ public class LoginCommandArgs : CommandArgs
 	public bool printToConsole;
 	public bool customerScoped;
 	public string refreshToken = "";
+	
+	public bool SaveToFile
+	{
+		get => saveToFile;
+		set => saveToFile = value;
+	}
 }
 
 public class LoginCommand : AppCommand<LoginCommandArgs>
@@ -35,7 +46,7 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 		AddOption(new UsernameOption(), (args, i) => args.username = i);
 		AddOption(new PasswordOption(), (args, i) => args.password = i);
 		AddOption(new SaveToEnvironmentOption(), (args, b) => args.saveToEnvironment = b);
-		AddOption(new SaveToFileOption(), (args, b) => args.saveToFile = b);
+		SaveToFileOption.Bind(this);
 		AddOption(new CustomerScopedOption(), (args, b) => args.customerScoped = b);
 		AddOption(new RefreshTokenOption(), (args, i) => args.refreshToken = i);
 		AddOption(new PrintToConsoleOption(), (args, b) => args.printToConsole = b);
@@ -133,12 +144,12 @@ public class LoginCommand : AppCommand<LoginCommandArgs>
 	{
 		if (!string.IsNullOrEmpty(args.username)) return args.username;
 		return AnsiConsole.Prompt(
-			new TextPrompt<string>("Please enter your [green]username[/]:")
+			new TextPrompt<string>("Please enter your [green]email[/]:")
 				.PromptStyle("green")
-				.ValidationErrorMessage("[red]Not a valid username[/]")
+				.ValidationErrorMessage("[red]Not a valid email[/]")
 				.Validate(email =>
 				{
-					if (!email.Contains("@")) return ValidationResult.Error("[red]username must be an email[/]");
+					if (!email.Contains("@")) return ValidationResult.Error("[red]email is invalid[/]");
 					return ValidationResult.Success();
 				})).ToString();
 	}

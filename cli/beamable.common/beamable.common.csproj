@@ -39,7 +39,7 @@
         <PackageReference Include="Newtonsoft.Json" Version="12.0.2"/>
     </ItemGroup>
 
-    <Target Name="CopyCodeToUnity" AfterTargets="Build" Condition="Exists('../../client/Packages/com.beamable') AND Exists('../cli/bin/Debug/net8.0/Beamable.Tools.dll')">
+    <Target Name="CopyCodeToUnity" AfterTargets="Build" Condition="'$(ReleaseSharedCode)'=='true' AND Exists('../../client/Packages/com.beamable') AND Exists('../cli/bin/Debug/net8.0/Beamable.Tools.dll')">
         <!-- This is sort of jank, but this will use the build of the cli bin if it exists to copy the src over to Unity. -->
         <Exec Command="dotnet ../cli/bin/Debug/net8.0/Beamable.Tools.dll unity release-shared-code ../beamable.common/beamable.common.csproj ../../client com.beamable Common . --logs v"/>
     </Target>

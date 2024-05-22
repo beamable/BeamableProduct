@@ -11,6 +11,7 @@ using Spectre.Console.Json;
 using System.CommandLine;
 using System.CommandLine.Binding;
 using System.CommandLine.Help;
+using System.CommandLine.Parsing;
 using UnityEngine;
 
 namespace cli;
@@ -208,7 +209,7 @@ public interface IHasArgs<TArgs> where TArgs : CommandArgs
 public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IAppCommand, IHasArgs<TArgs>
 	where TArgs : CommandArgs
 {
-	private List<Action<BindingContext, TArgs>> _bindingActions = new List<Action<BindingContext, TArgs>>();
+	private List<Action<BindingContext, BindingContext, TArgs>> _bindingActions = new List<Action<BindingContext, BindingContext, TArgs>>();
 	private string _description;
 
 	public virtual bool IsForInternalUse => false;
@@ -245,7 +246,7 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IApp
 			? CommandProvider.GetService<ArgValidator<T>>()
 			: null;
 
-		var set = new Action<BindingContext, TArgs>((ctx, args) =>
+		var set = new Action<BindingContext, BindingContext, TArgs>((ctx, _, args) =>
 		{
 			if (validator != null)
 			{
@@ -273,20 +274,25 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IApp
 
 	public Option<T> AddOption<T>(Option<T> arg, Action<TArgs, T> binder)
 	{
+		return AddOption<T>(arg, (args, _, b) => binder(args, b));
+	}
+	
+	public Option<T> AddOption<T>(Option<T> arg, Action<TArgs, BindingContext, T> binder)
+	{
 		ArgValidator<T> validator = CommandProvider.CanBuildService<ArgValidator<T>>()
 			? CommandProvider.GetService<ArgValidator<T>>()
 			: null;
 
-		var set = new Action<BindingContext, TArgs>((ctx, args) =>
+		var set = new Action<BindingContext, BindingContext, TArgs>((ctx, parse, args) =>
 		{
 			if (validator != null)
 			{
-				binder(args, validator.GetValue(ctx.ParseResult.FindResultFor(arg)));
+				binder(args, parse, validator.GetValue(ctx.ParseResult.FindResultFor(arg)));
 			}
 			else
 			{
 				var res = ctx.ParseResult.GetValueForOption(arg);
-				binder(args, res);
+				binder(args, parse, res);
 			}
 		});
 
@@ -353,7 +359,7 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IApp
 			_command.BindBaseContext(_provider, args, bindingContext);
 			foreach (var action in _command._bindingActions)
 			{
-				action?.Invoke(bindingContext, args);
+				action?.Invoke(bindingContext, bindingContext, args);
 			}
 			return args;
 		}
