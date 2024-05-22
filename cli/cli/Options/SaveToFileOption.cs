@@ -33,7 +33,7 @@ public class SaveToFileOption
 			
 			// This default value is assumed "false" in the SaveToFileOption.ShouldSaveToFile function
 			getDefaultValue: () => false, 
-			description: $"Prevent auth tokens from being saved to disk. This replaces the legacy {saveToFileStr} option.");
+			description: $"Prevent auth tokens from being saved to disk. This replaces the legacy {saveToFileStr} option");
 		
 		command.AddOption<bool>(saveToFileOption, (args, value) => args.SaveToFile = value);
 		command.AddOption<bool>(noTokenOption, (args, context, noTokenSave) =>
