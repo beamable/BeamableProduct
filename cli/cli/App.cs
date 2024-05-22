@@ -384,8 +384,15 @@ public class App
 
 		// sort the commands
 		var root = CommandProvider.GetService<RootCommand>();
+		SortCommands(root);
+	}
+
+	void SortCommands(Command root)
+	{
 		var subCommandField = typeof(Command).GetField("_subcommands", BindingFlags.Instance | BindingFlags.NonPublic);
+		if (subCommandField == null) return;
 		var subCommands = (List<Command>)subCommandField.GetValue(root);
+		if (subCommands == null) return;
 		subCommands.Sort((a, b) =>
 		{
 			if (a is not IAppCommand aCommand)
@@ -405,9 +412,20 @@ public class App
 			}
 
 			// and all commands are sorted by their order
-			return bCommand.Order.CompareTo(aCommand.Order);
+			// return bCommand.Order.CompareTo(aCommand.Order);
+			if (bCommand.Order != aCommand.Order)
+			{
+				return bCommand.Order.CompareTo(aCommand.Order);
+			}
+
+			return String.Compare(a.Name, b.Name, StringComparison.Ordinal);
 
 		});
+
+		foreach (var subCommand in subCommands)
+		{
+			SortCommands(subCommand);
+		}
 	}
 
 	public static IEnumerable<HelpSectionDelegate> GetHelpLayout()
