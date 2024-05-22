@@ -139,12 +139,31 @@ public partial class BeamoLocalSystem
 	public async Promise<Dictionary<string, string>> GetDockerRunningServices()
 	{
 		var result = new Dictionary<string, string>();
-		var currentInfo = await _client.Containers.ListContainersAsync(new ContainersListParameters() { All = true });
+		var currentInfo = await _client.Containers.ListContainersAsync(new ContainersListParameters()
+		{
+			All = false
+		});
 
 		foreach (var info in currentInfo)
 		{
-			var beamoId = BeamoManifest.ServiceDefinitions.FirstOrDefault(c => info.Names[0].Contains(c.BeamoId))
+			if (info.State == "exited") continue; 
+			
+			var beamoId = BeamoManifest.ServiceDefinitions.FirstOrDefault(c =>
+				{
+					switch (c.Protocol)
+					{
+						case BeamoProtocolType.EmbeddedMongoDb:
+							return info.Names[0] == "/" + BeamoLocalSystem.GetBeamIdAsMongoContainer(c.BeamoId);
+						case BeamoProtocolType.HttpMicroservice:
+							return info.Names[0] == "/" + BeamoLocalSystem.GetBeamIdAsMicroserviceContainer(c.BeamoId);
+						default:
+							throw new CliException("Unknown protocol type");
+					}
+					
+				})
 				?.BeamoId;
+			Log.Verbose(beamoId + " found " + info.ID + " as " + info.State);
+
 
 			if (!string.IsNullOrEmpty(beamoId))
 			{
@@ -313,14 +332,23 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	private bool VerifyCanBeBuiltLocally(BeamoLocalManifest manifest, BeamoServiceDefinition toCheck)
 	{
-		IBeamoLocalProtocol protocol = toCheck.Protocol switch
+		switch (toCheck.Protocol)
 		{
-			BeamoProtocolType.HttpMicroservice => manifest.HttpMicroserviceLocalProtocols[toCheck.BeamoId],
-			BeamoProtocolType.EmbeddedMongoDb => manifest.EmbeddedMongoDbLocalProtocols[toCheck.BeamoId],
-			_ => throw new ArgumentOutOfRangeException()
-		};
+			case BeamoProtocolType.HttpMicroservice:
+				var missingLocalSource = string.IsNullOrEmpty(toCheck.ProjectDirectory);
 
-		return protocol.VerifyCanBeBuiltLocally(_configService);
+				if (missingLocalSource) return false;
+
+				var hasDockerfile = File.Exists(Path.Combine(toCheck.ProjectDirectory, "Dockerfile"));
+				if (!hasDockerfile) return false;
+
+				return true;
+			
+			case BeamoProtocolType.EmbeddedMongoDb:
+				return true; // always pull down a version of mongo.
+			default:
+				throw new CliException($"Unknown protocol=[{toCheck.Protocol}] inside method=[{nameof(VerifyCanBeBuiltLocally)}]");
+		}
 	}
 
 	/// <summary>

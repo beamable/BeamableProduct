@@ -38,7 +38,7 @@ public class RemoveDepsCommand : AppCommand<RemoveDepsCommandArgs>, IEmptyResult
 			return;
 		}
 
-		List<DependencyData> dependencies = await args.BeamoLocalSystem.GetDependencies(args.ServiceName);
+		List<DependencyData> dependencies = args.BeamoLocalSystem.GetDependencies(args.ServiceName);
 		bool isDependency = dependencies.Any(data => data.name == args.Dependency);
 
 		if (!isDependency)

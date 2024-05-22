@@ -66,14 +66,15 @@ public class ConfigService
 	/// Get the docker build context path, which is used to copy files through the Dockerfile
 	/// </summary>
 	/// <returns></returns>
-	public string GetDockerBuildContextPath()
+	public string GetAbsoluteDockerBuildContextPath()
 	{
 		var path = BaseDirectory;
 		if (string.IsNullOrEmpty(path))
 		{
 			path = _dir;
 		}
-		return GetRelativeToBeamableFolderPath(path);
+
+		return Path.GetFullPath(path);
 	}
 
 	/// <summary>
@@ -83,7 +84,7 @@ public class ConfigService
 	/// <returns>A path relative to the docker build context path</returns>
 	public string GetRelativeToDockerBuildContextPath(string path)
 	{
-		return Path.GetRelativePath(GetDockerBuildContextPath(), path);
+		return Path.GetRelativePath(GetAbsoluteDockerBuildContextPath(), path);
 	}
 
 	/// <summary>

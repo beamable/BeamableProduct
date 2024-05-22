@@ -23,51 +23,6 @@ namespace cli.Services;
 public partial class BeamoLocalSystem
 {
 	/// <summary>
-	/// Synchronizes the given <see cref="localManifest"/> instance with the given <see cref="remoteManifest"/>. This will:
-	/// <list type="bullet">
-	/// <item>Ensures all remote embedded databases (storage objects) are defined locally. Since these can always be built </item>
-	/// <item></item>
-	/// </list>
-	/// </summary>
-	/// <param name="remoteManifest"></param>
-	/// <param name="localManifest"></param>
-	public async Task SyncLocalManifestWithRemote(ServiceManifest remoteManifest)
-	{
-		var existingMongoServices = BeamoManifest.ServiceDefinitions.Where(sd => sd.Protocol == BeamoProtocolType.EmbeddedMongoDb).ToList();
-		foreach (var storageReference
-				 in remoteManifest.storageReference)
-		{
-			// If we don't have a service storage with that id stored locally, let's make one
-			if (existingMongoServices.All(sd => sd.BeamoId != storageReference.id))
-				await AddDefinition_EmbeddedMongoDb(storageReference.id, null, null, CancellationToken.None);
-		}
-
-		var existingHttpServices = BeamoManifest.ServiceDefinitions.Where(sd => sd.Protocol == BeamoProtocolType.HttpMicroservice).ToList();
-		foreach (var httpReference in remoteManifest.manifest)
-		{
-			var foundDefinition = existingHttpServices.FirstOrDefault(sd => sd.BeamoId == httpReference.serviceName);
-			// If we don't have an http service with that id locally defined, let's make a remote only service defined locally.
-			// A remote-only service is just a service that can't be built locally --- in HttpMicroservice's case, its a service with no project and dockerfile paths.
-			if (foundDefinition == null)
-			{
-				var sd = await AddDefinition_HttpMicroservice(httpReference.serviceName,
-					null,
-					CancellationToken.None);
-
-				sd.ImageId = httpReference.imageId;
-				sd.ShouldBeEnabledOnRemote = httpReference.enabled;
-			}
-			else
-			{
-				// If we can't build the image locally, we keep the reference to the image id that existed in the remote.
-				if (!VerifyCanBeBuiltLocally(foundDefinition))
-					foundDefinition.ImageId = httpReference.imageId;
-				// If we can build the image locally, this image id will be replaced when we deploy either locally or remotely, so we don't need to do anything here.
-			}
-		}
-	}
-
-	/// <summary>
 	/// Deploys services defined in the given <see cref="localManifest"/>.
 	/// </summary>
 	public async Task<ServiceManifest> DeployToRemote(BeamoLocalSystem localSystem, string dockerRegistryUrl, string comments,
@@ -132,7 +87,7 @@ public partial class BeamoLocalSystem
 		// If all is well with the local deployment, we convert the local manifest into the remote one
 		// TODO: When Beam-O gets upgraded, hopefully it'll use the same format locally. Then, we can rename this stuff to BeamoManifest and throw this x-form away.
 		var remoteManifest = new ServiceManifest();
-		var dependencies = await GetAllBeamoIdsDependencies();
+		var dependencies = GetAllBeamoIdsDependencies();
 		WriteServiceManifestFromLocal(localManifest, comments, perServiceComments, remoteManifest, federatedComponentByServiceName, dependencies);
 
 		await _beamo.Deploy(remoteManifest);
@@ -208,7 +163,7 @@ public partial class BeamoLocalSystem
 					serviceName = httpSd.BeamoId,
 					enabled = httpSd.ShouldBeEnabledOnRemote,
 					templateId = "small",
-					containerHealthCheckPort = long.Parse(remoteProtocol.HealthCheckPort),
+					containerHealthCheckPort = long.Parse(BeamoLocalSystem.HTTM_MICROSERVICE_CONTAINER_PORT),
 					imageId = httpSd.TruncImageId,
 					dependencies = serviceDependencies[httpSd]
 						// For now, Beam-O only supports dependencies on Storage Objects (ie.:Embedded Mongo DBs).

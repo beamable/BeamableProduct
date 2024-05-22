@@ -17,7 +17,12 @@ public class BeamoService
 		Requester = requester;
 	}
 
-	public Promise<ServiceManifest> GetCurrentManifest()
+	public BeamoService()
+	{
+		
+	}
+
+	public virtual Promise<ServiceManifest> GetCurrentManifest()
 	{
 		return Requester.Request<GetManifestResponse>(Method.GET, $"{SERVICE}/manifest/current", "{}")
 			.Map(res => res.manifest)

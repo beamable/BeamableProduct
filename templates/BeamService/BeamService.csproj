@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
     
     <PropertyGroup Label="Beamable Settings">
+        <!-- All Microservices must have the value, "service" -->
+        <BeamProjectType>service</BeamProjectType>
+
         <!-- When "true", this will auto-generate client code to any linked unity projects -->
         <GenerateClientCode>true</GenerateClientCode>
     </PropertyGroup>
