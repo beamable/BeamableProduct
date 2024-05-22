@@ -320,7 +320,9 @@ public class App
 		Commands.AddSubCommand<ServicesEnableCommand, ServicesEnableCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesDeployCommand, ServicesDeployCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesRunCommand, ServicesRunCommandArgs, ServicesCommand>();
-		Commands.AddSubCommand<ServicesResetCommand, ServicesResetCommandArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesResetCommand, CommandGroupArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesResetImageCommand, ServicesResetImageCommandArgs, ServicesResetCommand>();
+		Commands.AddSubCommand<ServicesResetContainerCommand, ServicesResetContainerCommandArgs, ServicesResetCommand>();
 		Commands.AddSubCommand<ServicesStopCommand, ServicesStopCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesTemplatesCommand, ServicesTemplatesCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesRegistryCommand, ServicesRegistryCommandArgs, ServicesCommand>();

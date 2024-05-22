@@ -141,15 +141,29 @@ public partial class BeamoLocalSystem
 		var result = new Dictionary<string, string>();
 		var currentInfo = await _client.Containers.ListContainersAsync(new ContainersListParameters()
 		{
-			All = true
+			All = false
 		});
 
 		foreach (var info in currentInfo)
 		{
 			if (info.State == "exited") continue; 
 			
-			var beamoId = BeamoManifest.ServiceDefinitions.FirstOrDefault(c => info.Names[0].Contains(c.BeamoId))
+			var beamoId = BeamoManifest.ServiceDefinitions.FirstOrDefault(c =>
+				{
+					switch (c.Protocol)
+					{
+						case BeamoProtocolType.EmbeddedMongoDb:
+							return info.Names[0] == "/" + BeamoLocalSystem.GetBeamIdAsMongoContainer(c.BeamoId);
+						case BeamoProtocolType.HttpMicroservice:
+							return info.Names[0] == "/" + BeamoLocalSystem.GetBeamIdAsMicroserviceContainer(c.BeamoId);
+						default:
+							throw new CliException("Unknown protocol type");
+					}
+					
+				})
 				?.BeamoId;
+			Log.Verbose(beamoId + " found " + info.ID + " as " + info.State);
+
 
 			if (!string.IsNullOrEmpty(beamoId))
 			{

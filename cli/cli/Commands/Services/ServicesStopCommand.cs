@@ -1,4 +1,5 @@
 ﻿using Beamable.Common;
+using cli.Dotnet;
 using cli.Services;
 using cli.Utils;
 using Newtonsoft.Json;
@@ -11,7 +12,7 @@ namespace cli;
 
 public class ServicesStopCommandArgs : CommandArgs
 {
-	public string[] BeamoIdsToStop;
+	public List<string> services;
 }
 
 public class ServicesStopCommand : AppCommand<ServicesStopCommandArgs>, IEmptyResult
@@ -23,18 +24,19 @@ public class ServicesStopCommand : AppCommand<ServicesStopCommandArgs>, IEmptyRe
 
 	public override void Configure()
 	{
-		AddOption(new Option<string[]>("--ids", "The ids for the services you wish to stop") { AllowMultipleArgumentsPerToken = true },
-			(args, i) => args.BeamoIdsToStop = i.Length == 0 ? Array.Empty<string>() : i);
+		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
 	}
 
 	public override async Task Handle(ServicesStopCommandArgs args)
 	{
-		// we use the BeamCommandAssistantBuilder to construct the underlying reset container command
-		await new BeamCommandAssistantBuilder("services reset", args.AppContext)
-			.AddArgument("container")
-			.WithOption(args.BeamoIdsToStop.Length > 0, "--ids", args.BeamoIdsToStop)
-			.WithOption(!string.IsNullOrWhiteSpace(args.AppContext.WorkingDirectory), "--dir",
-				args.AppContext.WorkingDirectory)
-			.RunAsync();
+		ProjectCommand.FinalizeServicesArg(args, ref args.services);
+		
+		await args.BeamoLocalSystem.SynchronizeInstanceStatusWithDocker(args.BeamoLocalSystem.BeamoManifest, args.BeamoLocalSystem.BeamoRuntime.ExistingLocalServiceInstances);
+		await args.BeamoLocalSystem.StartListeningToDocker();
+
+		await ServicesResetContainerCommand.TurnOffContainers(args.BeamoLocalSystem, args.services.ToArray(), _ =>
+		{
+			// do nothing.
+		});
 	}
 }

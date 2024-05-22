@@ -10,7 +10,7 @@ namespace cli.Services;
 
 public partial class BeamoLocalSystem
 {
-	public string GetBeamIdAsMongoContainer(string beamoId) => $"{beamoId}_mongoDb";
+	public static string GetBeamIdAsMongoContainer(string beamoId) => $"{beamoId}_mongoDb";
 
 	const string MONGO_DATA_CONTAINER_PORT = "27017";
 

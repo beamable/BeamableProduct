@@ -13,7 +13,7 @@ namespace cli.Services;
 
 public partial class BeamoLocalSystem
 {
-	public string GetBeamIdAsMicroserviceContainer(string beamoId) => $"{beamoId}_httpMicroservice";
+	public static string GetBeamIdAsMicroserviceContainer(string beamoId) => $"{beamoId}_httpMicroservice";
 
 	private const string HTTM_MICROSERVICE_CONTAINER_PORT = "6565";
 	

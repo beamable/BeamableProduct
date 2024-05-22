@@ -3,6 +3,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
 using Docker.DotNet;
 using Docker.DotNet.Models;
+using Newtonsoft.Json;
 using Serilog;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
@@ -597,6 +598,7 @@ public class BeamoServiceDefinition
 	/// <summary>
 	/// Gets the truncated version of the image id (used for deploying the service manifest to Beamo. TODO Ideally, we should make beamo use the full ID later...
 	/// </summary>
+	[JsonIgnore]
 	public string TruncImageId
 	{
 		get
