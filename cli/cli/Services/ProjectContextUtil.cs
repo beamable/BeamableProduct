@@ -110,6 +110,11 @@ public static class ProjectContextUtil
 	
 	public static async Task<CsharpProjectMetadata[]> FindCsharpProjects(string dotnetPath, string rootFolder)
 	{
+		if (string.IsNullOrEmpty(rootFolder))
+		{
+			rootFolder = ".";
+		}
+		
 		var paths = Directory.GetFiles(rootFolder, "*.csproj", SearchOption.AllDirectories);
 		var projects = new CsharpProjectMetadata[paths.Length];
 

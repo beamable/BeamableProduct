@@ -1,6 +1,7 @@
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Content;
+using cli.Services;
 using Moq;
 using Serilog.Events;
 using System.Collections.Generic;
@@ -16,11 +17,21 @@ public class CLITestExtensions : CLITest
 	protected string cid = "123";
 	protected string pid = "456";
 
-	protected void SetupMocks(bool mockAlias = true, bool mockAuth = true, bool mockRealms = true)
+	protected void SetupMocks(bool mockAlias = true, bool mockAuth = true, bool mockRealms = true, bool mockBeamoManifest=true)
 	{
 		base.Setup();
 		_serilogLevel.MinimumLevel = LogEventLevel.Verbose;
 
+		if (mockBeamoManifest)
+		{
+			Mock<BeamoService>(mock =>
+			{
+				mock.Setup(x => x.GetCurrentManifest())
+					.ReturnsPromise(new ServiceManifest())
+					.Verifiable();
+			});
+		}
+		
 		if (mockAlias)
 			Mock<IAliasService>(mock =>
 			{

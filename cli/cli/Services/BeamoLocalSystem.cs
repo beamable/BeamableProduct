@@ -141,7 +141,9 @@ public partial class BeamoLocalSystem
 		throw new CliException($"No docker address found. Use the {ConfigService.ENV_VAR_DOCKER_URI} environment variable to set a Docker Uri.");
 	}
 
-	public void SaveBeamoLocalRuntime() => _configService.SaveDataFile(Constants.BEAMO_LOCAL_RUNTIME_FILE_NAME, BeamoRuntime);
+	public void SaveBeamoLocalRuntime() {
+		// TODO: remove this.
+	}
 
 	/// <summary>
 	/// Checks to see if the service id matches the <see cref="BeamoServiceIdRegex"/>.
@@ -277,6 +279,11 @@ public partial class BeamoLocalSystem
 		if (serviceDefinition.Protocol != BeamoProtocolType.HttpMicroservice)
 		{
 			return; // Only HttpMicroservices have dockerfiles
+		}
+
+		if (!serviceDefinition.HasLocalDockerfile)
+		{
+			return; // if no dockerfile; do nothing.
 		}
 
 		var serviceName = serviceDefinition.BeamoId;
@@ -492,6 +499,25 @@ public class BeamoRemoteProtocolMap<T> : Dictionary<string, T> where T : IBeamoR
 /// </summary>
 public class BeamoLocalManifest
 {
+	public string[] LocalBeamoIds
+	{
+		get
+		{
+			var ids = new string[HttpMicroserviceLocalProtocols.Count + EmbeddedMongoDbLocalProtocols.Count];
+			var i = 0;
+			foreach (var local in HttpMicroserviceLocalProtocols)
+			{
+				ids[i++] = local.Key;
+			}
+			foreach (var local in EmbeddedMongoDbLocalProtocols)
+			{
+				ids[i++] = local.Key;
+			}
+
+			return ids;
+		}
+	}
+	
 	/// <summary>
 	/// This list contains all the <see cref="BeamoServiceDefinition"/> that the current machine knows about. TODO: At a minimum, this list is kept in sync with already deployed services?
 	/// </summary>
@@ -545,6 +571,9 @@ public class BeamoLocalManifest
 
 public class BeamoServiceDefinition
 {
+	public bool HasLocalDockerfile =>
+		Protocol == BeamoProtocolType.HttpMicroservice && !string.IsNullOrEmpty(ProjectDirectory);
+	
 	public enum ProjectLanguage { CSharpDotnet, }
 
 	/// <summary>

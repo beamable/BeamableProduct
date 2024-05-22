@@ -313,14 +313,23 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	private bool VerifyCanBeBuiltLocally(BeamoLocalManifest manifest, BeamoServiceDefinition toCheck)
 	{
-		IBeamoLocalProtocol protocol = toCheck.Protocol switch
+		switch (toCheck.Protocol)
 		{
-			BeamoProtocolType.HttpMicroservice => manifest.HttpMicroserviceLocalProtocols[toCheck.BeamoId],
-			BeamoProtocolType.EmbeddedMongoDb => manifest.EmbeddedMongoDbLocalProtocols[toCheck.BeamoId],
-			_ => throw new ArgumentOutOfRangeException()
-		};
+			case BeamoProtocolType.HttpMicroservice:
+				var missingLocalSource = string.IsNullOrEmpty(toCheck.ProjectDirectory);
 
-		return protocol.VerifyCanBeBuiltLocally(_configService);
+				if (missingLocalSource) return false;
+
+				var hasDockerfile = File.Exists(Path.Combine(toCheck.ProjectDirectory, "Dockerfile"));
+				if (!hasDockerfile) return false;
+
+				return true;
+			
+			case BeamoProtocolType.EmbeddedMongoDb:
+				return true; // always pull down a version of mongo.
+			default:
+				throw new CliException($"Unknown protocol=[{toCheck.Protocol}] inside method=[{nameof(VerifyCanBeBuiltLocally)}]");
+		}
 	}
 
 	/// <summary>
