@@ -44,7 +44,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		AddOption(new RefreshTokenOption(), (args, i) => args.refreshToken = i);
 
 		AddOption(new SaveToEnvironmentOption(), (args, b) => args.saveToEnvironment = b);
-		AddOption(new SaveToFileOption(), (args, b) => args.saveToFile = b);
+		SaveToFileOption.Bind(this);
 		AddOption(new CustomerScopedOption(), (args, b) => args.customerScoped = b);
 		AddOption(new PrintToConsoleOption(), (args, b) => args.printToConsole = b);
 	}

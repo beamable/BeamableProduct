@@ -31,7 +31,7 @@ public class RegisterCommand : AppCommand<RegisterCommandArgs>, IStandaloneComma
 	{
 		AddOption(new Option<string>("--alias", "The name you will use to sign into the organization"), (args, i) => args.alias = i);
 		AddOption(new Option<string>("--game", "The first game for the organization"), (args, i) => args.gameName = i);
-		AddOption(new Option<string>("--username", "The admin email for the new organization"), (args, i) => args.username = i);
+		AddOption(new Option<string>("--email", "The admin email for the new organization"), (args, i) => args.username = i);
 		AddOption(new Option<string>("--password", "The admin password for the new organization"), (args, i) => args.password = i);
 		AddOption(new Option<bool>("--accept-legal", "Accept the Beamable legal agreements"), (args, i) => args.agreedToLegal = i);
 	}
@@ -111,7 +111,7 @@ public class RegisterCommand : AppCommand<RegisterCommandArgs>, IStandaloneComma
 			return Task.FromResult(args.username);
 
 		return Task.FromResult(AnsiConsole.Prompt(
-			new TextPrompt<string>("Please enter your [green]username[/]:")
+			new TextPrompt<string>("Please enter your [green]email[/]:")
 				.PromptStyle("green")
 		));
 	}
