@@ -139,10 +139,15 @@ public partial class BeamoLocalSystem
 	public async Promise<Dictionary<string, string>> GetDockerRunningServices()
 	{
 		var result = new Dictionary<string, string>();
-		var currentInfo = await _client.Containers.ListContainersAsync(new ContainersListParameters() { All = true });
+		var currentInfo = await _client.Containers.ListContainersAsync(new ContainersListParameters()
+		{
+			All = true
+		});
 
 		foreach (var info in currentInfo)
 		{
+			if (info.State == "exited") continue; 
+			
 			var beamoId = BeamoManifest.ServiceDefinitions.FirstOrDefault(c => info.Names[0].Contains(c.BeamoId))
 				?.BeamoId;
 

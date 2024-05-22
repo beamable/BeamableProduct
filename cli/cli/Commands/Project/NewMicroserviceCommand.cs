@@ -206,12 +206,8 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 
 		await args.BeamoLocalSystem.InitManifest();
 
-		//Go back to the default working dir
-		args.ConfigService.SetTempWorkingDir(previousWorkingDir);
-		args.ConfigService.SetBeamableDirectory(previousWorkingDir);
-		
 		// Make sure we have the correct docker file
-		var regularDockerfilePath = Path.Combine(service.DockerBuildContextPath, service.RelativeDockerfilePath);
+		var regularDockerfilePath = service.RelativeDockerfilePath;
 		var beamableDevDockerfilePath = regularDockerfilePath + "-BeamableDev";
 		if (File.Exists(beamableDevDockerfilePath))
 		{
@@ -225,6 +221,11 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 			File.Delete(beamableDevDockerfilePath);
 		} 
 
+		//Go back to the default working dir
+		args.ConfigService.SetTempWorkingDir(previousWorkingDir);
+		args.ConfigService.SetBeamableDirectory(previousWorkingDir);
+
+		
 		args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 
 		if (!args.Quiet)
