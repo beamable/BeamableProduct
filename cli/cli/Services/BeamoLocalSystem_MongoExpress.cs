@@ -15,6 +15,7 @@ public partial class BeamoLocalSystem
 	public const string ENV_ME_CONFIG_MONGODB_ENABLE_ADMIN = "ME_CONFIG_MONGODB_ENABLE_ADMIN";
 	public const string ENV_ME_CONFIG_SITE_COOKIESECRET = "ME_CONFIG_SITE_COOKIESECRET";
 	public const string ENV_ME_CONFIG_SITE_SESSIONSECRET = "ME_CONFIG_SITE_SESSIONSECRET";
+	public const string ENV_ME_CONFIG_BASIC_AUTH = "ME_CONFIG_BASICAUTH";
 	public string GetMongoExpressContainerNameFromStorageId(string storageId) => $"tool_{storageId}_storage";
 
 	public async Task<ContainerInspectResponse> GetOrCreateMongoExpress(string storageId, string connectionString)
@@ -81,6 +82,11 @@ public partial class BeamoLocalSystem
 				{
 					VariableName = ENV_ME_CONFIG_SITE_SESSIONSECRET,
 					Value = Guid.NewGuid().ToString()
+				},
+				new()
+				{
+					VariableName = ENV_ME_CONFIG_BASIC_AUTH,
+					Value = "false"
 				}
 			}
 		);

@@ -22,6 +22,7 @@ using cli.UnityCommands;
 using cli.Unreal;
 using cli.Utils;
 using cli.Version;
+using CommandLine.Text;
 using Errata;
 using Microsoft.CodeAnalysis.Sarif;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,6 +37,7 @@ using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Help;
 using System.CommandLine.Invocation;
+using System.CommandLine.IO;
 using System.CommandLine.Parsing;
 using System.Reflection;
 
@@ -209,6 +211,7 @@ public class App
 		Commands.AddSingleton<ShowRawOutput>();
 		Commands.AddSingleton<ShowPrettyOutput>();
 		Commands.AddSingleton<DotnetPathOption>();
+		Commands.AddSingleton<AllHelpOption>(AllHelpOption.Instance);
 		Commands.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
@@ -219,6 +222,7 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<HostOption>());
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
+			root.AddGlobalOption(provider.GetRequiredService<AllHelpOption>());
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
 			root.AddGlobalOption(provider.GetRequiredService<ShowRawOutput>());
 			root.AddGlobalOption(provider.GetRequiredService<ShowPrettyOutput>());
@@ -405,7 +409,18 @@ public class App
 		});
 	}
 
-
+	public static IEnumerable<HelpSectionDelegate> GetHelpLayout()
+	{
+		yield return HelpBuilder.Default.SynopsisSection();
+		yield return HelpBuilder.Default.CommandUsageSection();
+		yield return HelpBuilder.Default.CommandArgumentsSection();
+		yield return HelpBuilder.Default.OptionsSection();
+		// Instead of using HelpBuilder.Default.SubcommandsSection();
+		//  we inject our own subCommandSection.
+		yield return (ctx) => new BeamHelpBuilder(ctx).WriteSubcommands(ctx);
+		yield return HelpBuilder.Default.AdditionalArgumentsSection();
+	}
+	
 	protected virtual Parser GetProgram()
 	{
 		var root = CommandProvider.GetRequiredService<RootCommand>();
@@ -414,7 +429,7 @@ public class App
 
 		helpBuilder.CustomizeLayout(c =>
 		{
-			var defaultLayout = HelpBuilder.Default.GetLayout().ToList();
+			var defaultLayout = GetHelpLayout().ToList();
 
 			defaultLayout.Add(PrintOutputHelp);
 
@@ -440,6 +455,19 @@ public class App
 		});
 
 		var commandLineBuilder = new CommandLineBuilder(root);
+
+		
+		// this middleware pre-handles the --all-help option.
+		commandLineBuilder.AddMiddleware((ctx, next) =>
+		{
+			var isAllHelp = ctx.ParseResult.GetValueForOption(AllHelpOption.Instance);
+			if (isAllHelp)
+			{
+				PrintHelp(ctx);
+				return Task.CompletedTask;
+			}
+			return next(ctx);
+		}, MiddlewareOrder.Configuration);
 		
 		// this middleware is responsible for catching parse errors and putting them on the data-out raw channel
 		commandLineBuilder.AddMiddleware((ctx, next) =>
@@ -564,6 +592,17 @@ public class App
 			}
 		});
 		return commandLineBuilder.Build();
+	}
+	
+	static void PrintHelp(InvocationContext context)
+	{
+		var output = context.Console.Out.CreateTextWriter();
+		var helpContext = new HelpContext(context.HelpBuilder,
+			context.ParseResult.CommandResult.Command,
+			output,
+			context.ParseResult);
+
+		context.HelpBuilder.Write(helpContext);
 	}
 
 	static void PrintOutputHelp(HelpContext context)
