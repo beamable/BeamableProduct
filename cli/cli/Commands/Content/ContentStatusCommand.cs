@@ -24,8 +24,8 @@ public class ContentStatusCommand : AppCommand<ContentStatusCommandArgs>
 
 		if (args.ManifestIds.Length == 0)
 			args.ManifestIds = new[] { "global" };
-		
-		foreach (string id in args.ManifestIds) 
+
+		foreach (string id in args.ManifestIds)
 			await _contentService.DisplayStatusTable(id, args.showUpToDate, args.limit, args.skip);
 	}
 }

@@ -61,7 +61,7 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 				EnvVarOutput.Create("REFRESH_TOKEN", args.AppContext.RefreshToken),
 			}
 		};
-		
+
 		var sw = new Stopwatch();
 		sw.Start();
 
@@ -80,10 +80,10 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 				await args.BeamoLocalSystem.StartListeningToDocker();
 				var dependencies = await args.BeamoLocalSystem.GetDependencies(service.BeamoId);
 				Log.Information("Starting " + string.Join(",", dependencies) + " " + sw.ElapsedMilliseconds);
-				
+
 				// ImageBuildArgs not needed when deploying only MicroStorages 
 				await args.BeamoLocalSystem.DeployToLocal(args.BeamoLocalSystem, dependencies.Select(dep => dep.name).ToArray());
-				
+
 				args.BeamoLocalSystem.SaveBeamoLocalManifest();
 				args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 				await args.BeamoLocalSystem.StopListeningToDocker();
@@ -114,7 +114,7 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 				}
 			}
 		}
-		
+
 		{
 			/*
 			 * This command is going to write an .env file for legacy purposes.
