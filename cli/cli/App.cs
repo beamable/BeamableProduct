@@ -313,7 +313,6 @@ public class App
 		Commands.AddRootCommand<ServicesCommand>();
 		Commands.AddSubCommand<ServicesManifestsCommand, ServicesManifestsArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesListCommand, ServicesListCommandArgs, ServicesCommand>();
-		Commands.AddSubCommand<ServicesEnableCommand, ServicesEnableCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesDeployCommand, ServicesDeployCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesRunCommand, ServicesRunCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesResetCommand, ServicesResetCommandArgs, ServicesCommand>();
