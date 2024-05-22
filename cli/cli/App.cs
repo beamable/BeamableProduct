@@ -412,12 +412,12 @@ public class App
 			}
 
 			// and all commands are sorted by their order
-			// return bCommand.Order.CompareTo(aCommand.Order);
 			if (bCommand.Order != aCommand.Order)
 			{
 				return bCommand.Order.CompareTo(aCommand.Order);
 			}
 
+			// or alphabet order
 			return String.Compare(a.Name, b.Name, StringComparison.Ordinal);
 
 		});
