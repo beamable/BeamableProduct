@@ -77,10 +77,11 @@ public static class ProjectContextUtil
 				};
 				manifest.ServiceDefinitions.Add(existingDefinition);
 				manifest.HttpMicroserviceRemoteProtocols.Add(remoteService.serviceName, new HttpMicroserviceRemoteProtocol());
-
+				
+				existingDefinition.ShouldBeEnabledOnRemote = remoteService.enabled;
 			}
 
-			existingDefinition.ShouldBeEnabledOnRemote = remoteService.enabled;
+			// overwrite existing local settings
 			existingDefinition.ImageId = remoteService.imageId;
 		}
 
@@ -98,9 +99,10 @@ public static class ProjectContextUtil
 				manifest.ServiceDefinitions.Add(existingDefinition);
 				manifest.EmbeddedMongoDbRemoteProtocols.Add(remoteStorage.id, new EmbeddedMongoDbRemoteProtocol());
 
+				existingDefinition.ShouldBeEnabledOnRemote = remoteStorage.enabled;
 			}
 			
-			existingDefinition.ShouldBeEnabledOnRemote = remoteStorage.enabled;
+			// overwrite existing settings.
 			existingDefinition.ImageId = MongoImage;
 		}
 
@@ -269,6 +271,8 @@ public static class ProjectContextUtil
 		{
 			definition.ShouldBeEnabledOnRemote = true;
 		}
+		Log.Verbose($"set beam enabled for service=[{project.relativePath}] prop=[{project.properties.Enabled}] value=[{definition.ShouldBeEnabledOnRemote}]");
+
 
 		// the project directory is just "where is the csproj" 
 		definition.ProjectDirectory = Path.GetDirectoryName(project.relativePath);
