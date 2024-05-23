@@ -219,13 +219,13 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 
 			// We always delete the -BeamableDev dockerfile from the template (for older versions of the template, this file does not exist so... we need to check for it).
 			File.Delete(beamableDevDockerfilePath);
-		} 
+		}
 
 		//Go back to the default working dir
 		args.ConfigService.SetTempWorkingDir(previousWorkingDir);
 		args.ConfigService.SetBeamableDirectory(previousWorkingDir);
 
-		
+
 		args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 	}
 }
