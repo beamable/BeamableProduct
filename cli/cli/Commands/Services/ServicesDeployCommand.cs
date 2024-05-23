@@ -14,9 +14,6 @@ namespace cli;
 
 public class ServicesDeployCommandArgs : LoginCommandArgs
 {
-	public string[] BeamoIdsToEnable;
-	public string[] BeamoIdsToDisable;
-
 	public string FromJsonFile;
 
 	public string RemoteComment;
@@ -44,12 +41,6 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 
 	public override void Configure()
 	{
-		AddOption(new Option<string[]>("--enable", "These are the ids for services you wish to be enabled once Beam-O receives the updated manifest") { AllowMultipleArgumentsPerToken = true },
-			(args, i) => args.BeamoIdsToEnable = i.Length == 0 ? null : i);
-
-		AddOption(new Option<string[]>("--disable", "These are the ids for services you wish to be disabled once Beam-O receives the updated manifest") { AllowMultipleArgumentsPerToken = true },
-			(args, i) => args.BeamoIdsToDisable = i.Length == 0 ? null : i);
-
 		AddOption(new Option<string>("--from-file", () => null, $"If this option is set to a valid path to a ServiceManifest JSON, deploys that instead"),
 			(args, i) => args.FromJsonFile = i);
 
@@ -155,25 +146,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 
 			return;
 		}
-
-		// Enable the list of BeamoIds that were given
-		LogToSendResult("Enabling given BeamoIds to enable", "INFO");
-		args.BeamoIdsToEnable ??= Array.Empty<string>();
-		foreach (string beamoId in args.BeamoIdsToEnable)
-		{
-			var sd = _localBeamo.BeamoManifest.ServiceDefinitions.First(def => def.BeamoId == beamoId);
-			sd.ShouldBeEnabledOnRemote = true;
-		}
-
-		// Disable the list of BeamoIds that were given
-		LogToSendResult("Disabling given BeamoIds to disable", "INFO");
-		args.BeamoIdsToDisable ??= Array.Empty<string>();
-		foreach (string beamoId in args.BeamoIdsToDisable)
-		{
-			var sd = _localBeamo.BeamoManifest.ServiceDefinitions.First(def => def.BeamoId == beamoId);
-			sd.ShouldBeEnabledOnRemote = false;
-		}
-
+		
 		// Parse and prepare per-service comments dictionary (BeamoId => CommentString) 
 		LogToSendResult("Parse and prepare per-service comments dictionary", "INFO");
 		var perServiceComments = new Dictionary<string, string>();
