@@ -50,16 +50,15 @@ public class ConfigService
 
 		RefreshConfig();
 	}
-
 	/// <summary>
-	/// Check if the given path is within the working directory.
+	/// Check if the given path is within the .beamable folder context.
 	/// </summary>
 	/// <param name="path">The path to check.</param>
-	/// <returns>True if the path is within the working directory, false otherwise.</returns>
-	public bool IsPathInWorkingDirectory(string path)
+	/// <returns>True if the path is within the .beamable folder context, false otherwise.</returns>
+	public bool IsPathInBeamableDirectory(string path)
 	{
 		var fullPath = Path.GetFullPath(path);
-		return fullPath.StartsWith(WorkingDirectoryFullPath);
+		return fullPath.StartsWith(Path.GetFullPath(Path.GetDirectoryName(ConfigDirectoryPath)));
 	}
 
 	/// <summary>
@@ -407,10 +406,12 @@ public class ConfigService
 		}
 	}
 
-	bool TryToFindBeamableConfigFolder(out string result)
+	bool TryToFindBeamableConfigFolder(out string result) => TryToFindBeamableFolder(_dir, out result);
+
+	public static bool TryToFindBeamableFolder(string relativePath, out string result)
 	{
 		result = string.Empty;
-		var basePath = _dir;
+		var basePath = relativePath;
 		if (Directory.Exists(Path.Combine(basePath, Constants.CONFIG_FOLDER)))
 		{
 			result = Path.Combine(basePath, Constants.CONFIG_FOLDER);

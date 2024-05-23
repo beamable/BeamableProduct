@@ -49,9 +49,27 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 	{
 		command.AddOption(new Option<string>(
 				name: "--sln",
-				getDefaultValue: () => string.Empty,
+				getDefaultValue: () =>
+				{
+					if (!ConfigService.TryToFindBeamableFolder(".", out var beamableFolder))
+						return String.Empty; // will be converted into PROJECT/PROJECT.sln
+					
+					var path = Path.GetFullPath(Path.GetDirectoryName(beamableFolder));
+					Log.Verbose($"creating default --sln value, found /.beamable=[{path}]");
+					var firstSlnPath = Directory.EnumerateFiles(path, "*.sln", SearchOption.AllDirectories).FirstOrDefault();
+					if (string.IsNullOrEmpty(firstSlnPath))
+						return String.Empty; // will be converted into PROJECT/PROJECT.sln
+					
+					Log.Verbose($"found default .sln=[{firstSlnPath}]");
+					var relativePath = Path.GetRelativePath(".", firstSlnPath);
+					return relativePath;
+				},
 				description:
-				"Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. By default, when no value is provided, the .sln path will be <name>/<name>.sln"),
+				"Relative path to the .sln file to use for the new project. " +
+				"If the .sln file does not exist, it will be created. " +
+				"When no option is configured, if this command is executing inside a .beamable folder, " +
+				"then the first .sln found in .beamable/.. will be used. " +
+				"Otherwise, when no value is provided, the .sln path will be <name>/<name>.sln"),
 			(args, i) =>
 			{
 				if (string.IsNullOrEmpty(i))
