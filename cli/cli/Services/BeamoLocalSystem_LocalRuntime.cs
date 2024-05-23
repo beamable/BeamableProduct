@@ -332,13 +332,13 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	private bool VerifyCanBeBuiltLocally(BeamoLocalManifest manifest, BeamoServiceDefinition toCheck)
 	{
+		var missingLocalSource = string.IsNullOrEmpty(toCheck.ProjectDirectory);
+		if (missingLocalSource) return false; 
+
 		switch (toCheck.Protocol)
 		{
 			case BeamoProtocolType.HttpMicroservice:
-				var missingLocalSource = string.IsNullOrEmpty(toCheck.ProjectDirectory);
-
-				if (missingLocalSource) return false;
-
+			
 				var hasDockerfile = File.Exists(Path.Combine(toCheck.ProjectDirectory, "Dockerfile"));
 				if (!hasDockerfile) return false;
 

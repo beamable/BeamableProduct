@@ -260,7 +260,7 @@ public partial class BeamoLocalSystem
 						// https://regex101.com/r/gpX8Ix/1
 						var regex = new Regex("Step ([0-9]+)/([0-9]+) :");
 
-						BeamableLogger.Log(message.Stream);
+						Log.Debug(message.Stream);
 						BeamableLogger.LogError(message.ErrorMessage);
 						if (message.Error != null)
 						{
