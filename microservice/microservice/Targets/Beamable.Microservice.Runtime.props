@@ -3,7 +3,8 @@
         <ImplicitUsings>disable</ImplicitUsings>
         <Nullable>disable</Nullable>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-
+        <RollForward>LatestMajor</RollForward>
+        
         <!-- Warning 1591 is about missing XML comments on methods. Beamable suggests disabling this warning. 
              https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/compiler-messages/cs1591 -->
         <NoWarn>1591</NoWarn>
