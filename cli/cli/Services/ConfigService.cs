@@ -50,16 +50,17 @@ public class ConfigService
 
 		RefreshConfig();
 	}
-
 	/// <summary>
-	/// Check if the given path is within the working directory.
+	/// Check if the given path is within the .beamable folder context.
 	/// </summary>
 	/// <param name="path">The path to check.</param>
-	/// <returns>True if the path is within the working directory, false otherwise.</returns>
-	public bool IsPathInWorkingDirectory(string path)
+	/// <returns>True if the path is within the .beamable folder context, false otherwise.</returns>
+	public bool IsPathInBeamableDirectory(string path)
 	{
 		var fullPath = Path.GetFullPath(path);
-		return fullPath.StartsWith(WorkingDirectoryFullPath);
+		var parent = Path.GetDirectoryName(ConfigDirectoryPath);
+		if (parent == "") parent = ".";
+		return fullPath.StartsWith(Path.GetFullPath(parent));
 	}
 
 	/// <summary>
@@ -308,7 +309,7 @@ public class ConfigService
 		builder.Append(Environment.NewLine);
 		File.WriteAllText(ignoreFilePath, builder.ToString());
 
-		BeamableLogger.Log($"Generated ignore file at {ignoreFilePath}");
+		Log.Debug($"Generated ignore file at {ignoreFilePath}");
 	}
 
 	public bool ReadTokenFromFile(out CliToken response)
@@ -334,6 +335,8 @@ public class ConfigService
 	public void SaveTokenToFile(IAccessToken response)
 	{
 		string fullPath = Path.Combine(ConfigDirectoryPath, Constants.TEMP_FOLDER, Constants.CONFIG_TOKEN_FILE_NAME);
+		var dir = Path.GetDirectoryName(fullPath);
+		Directory.CreateDirectory(dir);
 		var json = JsonConvert.SerializeObject(response,
 			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
 		File.WriteAllText(fullPath, json);
@@ -407,10 +410,12 @@ public class ConfigService
 		}
 	}
 
-	bool TryToFindBeamableConfigFolder(out string result)
+	bool TryToFindBeamableConfigFolder(out string result) => TryToFindBeamableFolder(_dir, out result);
+
+	public static bool TryToFindBeamableFolder(string relativePath, out string result)
 	{
 		result = string.Empty;
-		var basePath = _dir;
+		var basePath = relativePath;
 		if (Directory.Exists(Path.Combine(basePath, Constants.CONFIG_FOLDER)))
 		{
 			result = Path.Combine(basePath, Constants.CONFIG_FOLDER);

@@ -15,6 +15,8 @@ public static class Constants
 	public const string CONTENT_TAGS_FORMAT = "{0}-manifest-content-tags.json";
 	public const string OLD_CONTENT_TAGS_FORMAT = "contentTags_{0}.json";
 
+	public const string DEFAULT_SLN_NAME = "BeamableServices.sln";
+
 	/// <summary>
 	/// The full-path to where we are storing the <see cref="BeamoManifest"/>.
 	/// TODO: This part will get abstracted out --- probably into <see cref="ConfigService"/> --- so that we can move this to the Beamable.Common library or some shared space.
