@@ -101,7 +101,6 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 
 		try
 		{
-			await _servicesListCommand.Handle(new ServicesListCommandArgs { Provider = args.Provider, Remote = true });
 			await _localBeamo.SynchronizeInstanceStatusWithDocker(_localBeamo.BeamoManifest,
 				_localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
 			await _localBeamo.StartListeningToDocker();

@@ -44,7 +44,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 		Log.Information(
 			$"Registering local project... 'beam services register --id {args.ProjectName} --type EmbeddedMongoDb'");
 
-		var relativePathToStorage = args.ConfigService.GetRelativeToBeamableFolderPath(newMicroserviceInfo.ServicePath);
+		var relativePathToStorage = newMicroserviceInfo.ServicePath;
 
 		string[] dependencies = null;
 		if ((args.linkedServices == null || args.linkedServices.Count == 0) && !args.Quiet)

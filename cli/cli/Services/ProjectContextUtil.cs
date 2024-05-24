@@ -128,7 +128,7 @@ public static class ProjectContextUtil
 			projects[i] = new CsharpProjectMetadata
 			{
 				relativePath = Path.GetRelativePath(rootFolder, path),
-				absolutePath = path,
+				absolutePath = Path.GetFullPath(path),
 				fileNameWithoutExtension = Path.GetFileNameWithoutExtension(path),
 				// properties = props
 			};
