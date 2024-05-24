@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
 using cli.Utils;
+using Serilog;
 using Spectre.Console;
 using System.CommandLine;
 
@@ -12,6 +13,7 @@ public class InitCommandArgs : LoginCommandArgs
 	public string selectedEnvironment = "";
 	public string cid;
 	public string pid;
+	public string path;
 }
 
 public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
@@ -34,6 +36,12 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 
 	public override void Configure()
 	{
+		AddArgument(new Argument<string>(
+			name: "path", 
+			getDefaultValue: () => ".",
+			description: "the folder that will be initialized as a beamable project. "), 
+			(args, i) => args.path = Path.GetFullPath(i));
+		
 		AddOption(new UsernameOption(), (args, i) => args.username = i);
 		AddOption(new PasswordOption(), (args, i) => args.password = i);
 
@@ -51,6 +59,10 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 
 	public override async Task<InitCommandResult> GetResult(InitCommandArgs args)
 	{
+		var originalPath = Path.GetFullPath(Directory.GetCurrentDirectory());
+		Directory.CreateDirectory(args.path);
+		args.ConfigService.SetTempWorkingDir(args.path);
+
 		_ctx = args.AppContext;
 		_configService = args.ConfigService;
 		_aliasService = args.AliasService;
@@ -94,6 +106,18 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		BeamableLogger.Log(args.ConfigService.ConfigDirectoryPath);
 		BeamableLogger.Log($"cid=[{args.AppContext.Cid}] pid=[{args.AppContext.Pid}]");
 		BeamableLogger.Log(args.ConfigService.PrettyPrint());
+
+		var relativePath = Path.GetRelativePath(originalPath, args.path);
+		if (relativePath != ".")
+		{
+			Log.Information($"The beamable project has been initialized in {relativePath}.\nTo get started,");
+			Log.Information($" cd {relativePath}");
+		}
+		else
+		{
+			Log.Information("The beamable project has been initialized in the current folder.");
+		}
+
 		return new InitCommandResult()
 		{
 			host = args.ConfigService.GetConfigString(Constants.CONFIG_PLATFORM),

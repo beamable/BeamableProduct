@@ -338,10 +338,10 @@ public class ProjectService
 			microserviceInfo.SolutionPath = await CreateNewSolution(args.GetSlnDirectory(), args.GetSlnFileName());
 		}
 
-		if (!_configService.IsPathInWorkingDirectory(microserviceInfo.SolutionPath))
+		if (!_configService.IsPathInBeamableDirectory(microserviceInfo.SolutionPath))
 		{
 			throw new CliException(
-				$"Solution file({microserviceInfo.SolutionPath}) should not exists outside working directory({_configService.WorkingDirectory}) or its subdirectories.");
+				$"Solution file({microserviceInfo.SolutionPath}) should not exists outside beamable directory({_configService.ConfigDirectoryPath}) or its subdirectories.");
 		}
 
 		if (!File.Exists(microserviceInfo.SolutionPath))
@@ -403,10 +403,10 @@ public class ProjectService
 			args.ServicesBaseFolderPath = Path.Combine(directory!, "services");
 		}
 
-		if (!_configService.IsPathInWorkingDirectory(microserviceInfo.SolutionPath))
+		if (!_configService.IsPathInBeamableDirectory(microserviceInfo.SolutionPath))
 		{
 			throw new CliException(
-				$"Solution file({microserviceInfo.SolutionPath}) should not exists outside working directory({_configService.WorkingDirectory}) or its subdirectories.");
+				$"Solution file({microserviceInfo.SolutionPath}) should not exists outside beamable directory({_configService.ConfigDirectoryPath}) or its subdirectories.");
 		}
 
 		microserviceInfo.ServicePath = await CreateNewService(microserviceInfo.SolutionPath, args.ProjectName, args.ServicesBaseFolderPath, usedVersion, args.GenerateCommon);

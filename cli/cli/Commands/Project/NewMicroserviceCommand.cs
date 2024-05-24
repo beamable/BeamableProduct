@@ -21,6 +21,7 @@ public class AutoInitFlag : ConfigurableOptionFlag
 	public AutoInitFlag() : base("init", "Automatically create a .beamable folder context if no context exists")
 	{
 		AddAlias("-i");
+		IsHidden = true;
 	}
 }
 
@@ -41,7 +42,6 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 {
 	public string SlnFilePath;
 	public PackageVersion SpecifiedVersion;
-	public bool Disabled;
 	public string ServicesBaseFolderPath;
 
 	public static void ConfigureSolutionFlag<T>(AppCommand<T> command)
@@ -49,15 +49,45 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 	{
 		command.AddOption(new Option<string>(
 				name: "--sln",
-				getDefaultValue: () => string.Empty,
+				getDefaultValue: () =>
+				{
+					if (!ConfigService.TryToFindBeamableFolder(".", out var beamableFolder))
+						return String.Empty; // will be converted into PROJECT/PROJECT.sln
+					
+					var path = Path.GetFullPath(Path.GetDirectoryName(beamableFolder));
+					Log.Verbose($"creating default --sln value, found /.beamable=[{path}]");
+					var firstSlnPath = Directory.EnumerateFiles(path, "*.sln", SearchOption.AllDirectories).FirstOrDefault();
+					if (string.IsNullOrEmpty(firstSlnPath))
+						return String.Empty; // will be converted into PROJECT/PROJECT.sln
+					
+					Log.Verbose($"found default .sln=[{firstSlnPath}]");
+					var relativePath = Path.GetRelativePath(".", firstSlnPath);
+					return relativePath;
+				},
 				description:
-				"Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. By default, when no value is provided, the .sln path will be <name>/<name>.sln"),
+				"Relative path to the .sln file to use for the new project. " +
+				"If the .sln file does not exist, it will be created. " +
+				"When no option is configured, if this command is executing inside a .beamable folder, " +
+				"then the first .sln found in .beamable/.. will be used. " +
+				"If no .sln is found, the .sln path will be <name>.sln. " +
+				"If no .beamable folder exists, then the <project>/<project>.sln will be used"),
 			(args, i) =>
 			{
 				if (string.IsNullOrEmpty(i))
 				{
-					// no sln path is given, so we use the defaults.
-					args.SlnFilePath = Path.Combine(args.ProjectName, args.ProjectName + ".sln");
+					if (!ConfigService.TryToFindBeamableFolder(".", out var beamableFolder))
+					{
+						// no sln path is given, so we use the defaults.
+						// this code-path really only exists when 
+						//  the user passes the hidden `-i` flag
+						args.SlnFilePath = Path.Combine(args.ProjectName, args.ProjectName + ".sln");
+					}
+					else
+					{
+						var path = Path.GetFullPath(Path.GetDirectoryName(beamableFolder));
+						args.SlnFilePath = Path.GetRelativePath(".", Path.Combine(path, Constants.DEFAULT_SLN_NAME));
+					}
+
 				}
 				else
 				{
@@ -87,10 +117,6 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 
 		command.AddOption(new SpecificVersionOption(), (args, i) => args.SpecifiedVersion = i);
 
-		command.AddOption(new Option<bool>(
-				name: "--disable",
-				description: "Created service by default would not be published"),
-			(args, i) => args.Disabled = i);
 	}
 
 	public async Promise CreateConfigIfNeeded(InitCommand command)
@@ -107,6 +133,7 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 
 
 		var initArgs = Create<InitCommandArgs>();
+		initArgs.path = ".";
 		initArgs.saveToFile = true;
 		var oldDir = initArgs.ConfigService.WorkingDirectory;
 		initArgs.ConfigService.SetTempWorkingDir(this.GetSlnDirectory());

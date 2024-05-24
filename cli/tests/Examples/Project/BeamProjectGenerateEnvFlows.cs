@@ -99,10 +99,6 @@ public class BeamProjectGenerateEnvFlows : CLITestExtensions
 		newFlow.NewProject_UsingExistingInit_NoSlnConfig_AddStorageToExistingSln(serviceName, storageName);
 		ResetConfigurator();
 
-		// step into newly created beamable folder...
-		Directory.SetCurrentDirectory(serviceName);
-		Directory.SetCurrentDirectory(executeFrom);
-
 		// mock call to get secret,
 		Mock<BeamoService>(mock =>
 		{
