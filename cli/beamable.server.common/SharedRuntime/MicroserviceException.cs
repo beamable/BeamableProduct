@@ -107,4 +107,13 @@ namespace Beamable.Server
 
 		}
 	}
+	
+	public class InvalidArgumentException : MicroserviceException
+	{
+		public InvalidArgumentException(string argumentName, string message) : base(400, "invalidArgument",
+			$"Invalid value passed to argument [{argumentName}]. Message: {message}")
+		{
+
+		}
+	}
 }
