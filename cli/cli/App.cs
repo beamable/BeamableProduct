@@ -330,9 +330,7 @@ public class App
 		Commands.AddSubCommand<ServicesMetricsUrlCommand, ServicesMetricsUrlCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesPromoteCommand, ServicesPromoteCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesGetConnectionStringCommand, ServicesGetConnectionStringCommandArgs, ServicesCommand>();
-		Commands
-			.AddSubCommand<ServicesGenerateLocalManifestCommand, ServicesGenerateLocalManifestCommandArgs,
-				ServicesCommand>();
+		//Commands.AddSubCommand<ServicesGenerateLocalManifestCommand, ServicesGenerateLocalManifestCommandArgs, ServicesCommand>();
 
 		// content commands
 		
