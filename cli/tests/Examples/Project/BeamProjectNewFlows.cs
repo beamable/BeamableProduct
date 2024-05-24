@@ -218,14 +218,14 @@ public class BeamProjectNewFlows : CLITestExtensions
 				.ReturnsPromise(new ServiceManifest())
 				.Verifiable();
 		});
-		Run("project", "new", "service", serviceName, "--quiet");
+		Run("project", "new", "service", serviceName, "--quiet", "--service-directory", Path.Combine(serviceName, "services"));
 
 		#endregion
 
 		#region Assert
 
 		// there should a .sln file
-		Assert.That(BFile.Exists($"{serviceName}/{serviceName}.sln"),
+		Assert.That(BFile.Exists($"{serviceName}.sln"),
 			$"There must be an {serviceName}/{serviceName}.sln file ");
 
 		// there should a .beamable folder
@@ -272,7 +272,7 @@ public class BeamProjectNewFlows : CLITestExtensions
 				.Verifiable();
 		});
 		
-		Run("project", "new", "service", serviceName, "--quiet");
+		Run("project", "new", "service", serviceName, "--quiet", "--service-directory", Path.Combine(serviceName, "services"));
 		ResetConfigurator();
 		Mock<BeamoService>(mock =>
 		{
@@ -281,14 +281,14 @@ public class BeamProjectNewFlows : CLITestExtensions
 				.Verifiable();
 		});
 		
-		Run("project", "new", "service", secondServiceName, "--quiet", "--sln", $"{serviceName}/{serviceName}.sln");
+		Run("project", "new", "service", secondServiceName, "--quiet", "--sln", $"{serviceName}.sln", "--service-directory", Path.Combine(serviceName, "services"));
 
 		#endregion
 
 		#region Assert
 
 		// there should a .sln file
-		Assert.That(BFile.Exists($"{serviceName}/{serviceName}.sln"),
+		Assert.That(BFile.Exists($"{serviceName}.sln"),
 			$"There must be an {serviceName}/{serviceName}.sln file ");
 
 		Assert.That(BFile.Exists($"{serviceName}/services/{serviceName}/{serviceName}.csproj"),
@@ -348,41 +348,41 @@ public class BeamProjectNewFlows : CLITestExtensions
 				.ReturnsPromise(new ServiceManifest())
 				.Verifiable();
 		});
-		Run("project", "new", "storage", storageName, "--quiet", "--sln", $"{serviceName}/{serviceName}.sln", "--link-to", serviceName);
+		Run("project", "new", "storage", storageName, "--quiet", "--link-to", serviceName);
 
 		#endregion
 
 		#region Assert
 
 		// there should a .sln file
-		Assert.That(BFile.Exists($"{serviceName}/{serviceName}.sln"),
+		Assert.That(BFile.Exists($"{serviceName}.sln"),
 			$"There must be an {serviceName}/{serviceName}.sln file ");
 
-		Assert.That(BFile.Exists($"{serviceName}/services/{serviceName}/{serviceName}.csproj"),
+		Assert.That(BFile.Exists($"services/{serviceName}/{serviceName}.csproj"),
 			"the first service needs to have a csproj");
-		Assert.That(BFile.Exists($"{serviceName}/services/{storageName}/{storageName}.csproj"),
+		Assert.That(BFile.Exists($"services/{storageName}/{storageName}.csproj"),
 			"the second service needs to have a csproj");
 
 		// there should a .beamable folder
 		Assert.That(BFile.Exists(".beamable/connection-configuration.json"), "there must be a config defaults file after beam init.");
 
 		// there should be a csproj file
-		Assert.That(BFile.Exists($"{serviceName}/services/{storageName}/{storageName}.csproj"),
+		Assert.That(BFile.Exists($"services/{storageName}/{storageName}.csproj"),
 			$"There must be a beamo csproj file after beam project new {serviceName}");
 
 		// the contents of the file beamoId should be equal to the name of the service created
-		string localCsProjContent = BFile.ReadAllText($"{serviceName}/services/{storageName}/{storageName}.csproj");
+		string localCsProjContent = BFile.ReadAllText($"services/{storageName}/{storageName}.csproj");
 
 		var hasProjectTypeFragment = localCsProjContent.Contains("<BeamProjectType>storage</BeamProjectType>");
 		Assert.That(hasProjectTypeFragment, "csproj must have project type\n" + hasProjectTypeFragment);
 		
 		// the service should have a reference to the storage
-		var csProjPath = $"{serviceName}/services/{serviceName}/{serviceName}.csproj";
+		var csProjPath = $"services/{serviceName}/{serviceName}.csproj";
 		Assert.That(BFile.Exists(csProjPath),
 			$"there should be a csproj at {csProjPath}");
 		var csProjContent = BFile.ReadAllText(csProjPath);
 		Assert.That(csProjContent.Contains($"<ProjectReference Include=\"..\\{storageName}\\{storageName}.csproj\" />"),
-			"There should be a reference to the storage in the csproj"
+			"There should be a reference to the storage in the csproj\n" + csProjContent
 			);
 		// <ProjectReference Include="..\Data\Data.csproj" />
 

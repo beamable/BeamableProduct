@@ -41,7 +41,6 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 {
 	public string SlnFilePath;
 	public PackageVersion SpecifiedVersion;
-	public bool Disabled;
 	public string ServicesBaseFolderPath;
 
 	public static void ConfigureSolutionFlag<T>(AppCommand<T> command)
@@ -69,13 +68,23 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 				"If the .sln file does not exist, it will be created. " +
 				"When no option is configured, if this command is executing inside a .beamable folder, " +
 				"then the first .sln found in .beamable/.. will be used. " +
-				"Otherwise, when no value is provided, the .sln path will be <name>/<name>.sln"),
+				"If no .sln is found, the .sln path will be <name>.sln. " +
+				"If no .beamable folder exists, then the <project>/<project>.sln will be used"),
 			(args, i) =>
 			{
 				if (string.IsNullOrEmpty(i))
 				{
-					// no sln path is given, so we use the defaults.
-					args.SlnFilePath = Path.Combine(args.ProjectName, args.ProjectName + ".sln");
+					if (!ConfigService.TryToFindBeamableFolder(".", out var beamableFolder))
+					{
+						// no sln path is given, so we use the defaults.
+						args.SlnFilePath = Path.Combine(args.ProjectName, args.ProjectName + ".sln");
+					}
+					else
+					{
+						var path = Path.GetFullPath(Path.GetDirectoryName(beamableFolder));
+						args.SlnFilePath = Path.GetRelativePath(".", Path.Combine(path, args.ProjectName + ".sln"));
+					}
+
 				}
 				else
 				{
@@ -105,10 +114,6 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 
 		command.AddOption(new SpecificVersionOption(), (args, i) => args.SpecifiedVersion = i);
 
-		command.AddOption(new Option<bool>(
-				name: "--disable",
-				description: "Created service by default would not be published"),
-			(args, i) => args.Disabled = i);
 	}
 
 	public async Promise CreateConfigIfNeeded(InitCommand command)
@@ -125,6 +130,7 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 
 
 		var initArgs = Create<InitCommandArgs>();
+		initArgs.path = ".";
 		initArgs.saveToFile = true;
 		var oldDir = initArgs.ConfigService.WorkingDirectory;
 		initArgs.ConfigService.SetTempWorkingDir(this.GetSlnDirectory());

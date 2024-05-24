@@ -58,7 +58,9 @@ public class ConfigService
 	public bool IsPathInBeamableDirectory(string path)
 	{
 		var fullPath = Path.GetFullPath(path);
-		return fullPath.StartsWith(Path.GetFullPath(Path.GetDirectoryName(ConfigDirectoryPath)));
+		var parent = Path.GetDirectoryName(ConfigDirectoryPath);
+		if (parent == "") parent = ".";
+		return fullPath.StartsWith(Path.GetFullPath(parent));
 	}
 
 	/// <summary>
@@ -307,7 +309,7 @@ public class ConfigService
 		builder.Append(Environment.NewLine);
 		File.WriteAllText(ignoreFilePath, builder.ToString());
 
-		BeamableLogger.Log($"Generated ignore file at {ignoreFilePath}");
+		Log.Debug($"Generated ignore file at {ignoreFilePath}");
 	}
 
 	public bool ReadTokenFromFile(out CliToken response)
@@ -333,6 +335,8 @@ public class ConfigService
 	public void SaveTokenToFile(IAccessToken response)
 	{
 		string fullPath = Path.Combine(ConfigDirectoryPath, Constants.TEMP_FOLDER, Constants.CONFIG_TOKEN_FILE_NAME);
+		var dir = Path.GetDirectoryName(fullPath);
+		Directory.CreateDirectory(dir);
 		var json = JsonConvert.SerializeObject(response,
 			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
 		File.WriteAllText(fullPath, json);
