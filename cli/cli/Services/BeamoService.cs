@@ -19,7 +19,7 @@ public class BeamoService
 
 	public BeamoService()
 	{
-		
+
 	}
 
 	public virtual Promise<ServiceManifest> GetCurrentManifest()

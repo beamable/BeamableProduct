@@ -94,10 +94,10 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 				);
 
 			(var manifest, var status) = response;
-			
+
 			Log.Verbose($"Got manifest=[{JsonConvert.SerializeObject(manifest)}]");
 			Log.Verbose($"Got status=[{JsonConvert.SerializeObject(status)}]");
-			
+
 			if (!args.AsJson)
 			{
 				var table = new Table();
