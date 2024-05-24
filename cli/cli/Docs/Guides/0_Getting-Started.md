@@ -40,7 +40,7 @@ mkdir MyProject
 beam init
 ```
 
-This command will prompt you for your organization's alias, your credentials, and which realm to use. When it is complete, you should see a `./beamable` folder in the current directory. See the [Configuration](doc:cli-configuration) for details about this folder. Now, you can run a [beam config](doc:cli-config) command to verify your project is set up.
+This command will prompt you for your organization's alias, your credentials, and which realm to use. When it is complete, you should see a `./beamable` folder in the current directory. See the [Configuration](doc:cli-guide-configuration) for details about this folder. Now, you can run a [beam config](doc:cli-config) command to verify your project is set up.
 
 ```shell
 beam config
@@ -52,6 +52,6 @@ To check that everything is working correctly, you can use the [beam me](doc:cli
 ### Next Steps
 
 From here, you can
-- setup [Standalone Microservices](doc:cli-microservices)
+- setup [Standalone Microservices](doc:cli-guide-microservices)
 - manage Content, or
 - listen to server events
