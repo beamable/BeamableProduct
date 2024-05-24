@@ -188,7 +188,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 				UnrealSourceGenerator.exportMacro = unrealProjectData.CoreProjectName.ToUpper() + "_API";
 
 				UnrealSourceGenerator.blueprintExportMacro = unrealProjectData.BlueprintNodesProjectName.ToUpper() + "_API";
-				
+
 				UnrealSourceGenerator.blueprintIncludeStatementPrefix = unrealProjectData.MsBlueprintNodesHeaderPath[(unrealProjectData.MsCoreHeaderPath.IndexOf('/') + 1)..];
 				UnrealSourceGenerator.blueprintHeaderFileOutputPath = unrealProjectData.MsBlueprintNodesHeaderPath;
 				UnrealSourceGenerator.blueprintCppFileOutputPath = unrealProjectData.MsBlueprintNodesCppPath;
@@ -484,7 +484,7 @@ IMPLEMENT_MODULE(F{unrealProjectData.BlueprintNodesProjectName}Module, {unrealPr
 				var needsProjectFilesRebuild = !allFilesToCreate.All(File.Exists);
 				// We always clean up the output directory's AutoGen folders  --- every file we create is in the AutoGen folder.
 				var outputDirInfo = new DirectoryInfo(outputDir);
-				if(outputDirInfo.Exists)
+				if (outputDirInfo.Exists)
 				{
 					var autoGenDirs = outputDirInfo.GetDirectories("AutoGen", SearchOption.AllDirectories);
 					foreach (DirectoryInfo directoryInfo in autoGenDirs) Directory.Delete(directoryInfo.ToString(), true);
@@ -556,7 +556,7 @@ IMPLEMENT_MODULE(F{unrealProjectData.BlueprintNodesProjectName}Module, {unrealPr
 			{
 				var existingContent = File.ReadAllText(outputPath);
 				if (string.Compare(existingContent, descriptors[i].Content, CultureInfo.InvariantCulture,
-					    CompareOptions.IgnoreSymbols) == 0)
+						CompareOptions.IgnoreSymbols) == 0)
 				{
 					identicalFileCounter++;
 					continue;
