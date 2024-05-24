@@ -37,11 +37,11 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 	public override void Configure()
 	{
 		AddArgument(new Argument<string>(
-			name: "path", 
+			name: "path",
 			getDefaultValue: () => ".",
-			description: "the folder that will be initialized as a beamable project. "), 
+			description: "the folder that will be initialized as a beamable project. "),
 			(args, i) => args.path = Path.GetFullPath(i));
-		
+
 		AddOption(new UsernameOption(), (args, i) => args.username = i);
 		AddOption(new PasswordOption(), (args, i) => args.password = i);
 
