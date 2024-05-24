@@ -61,7 +61,7 @@ public class App
 
 	private static LogConfigData ConfigureLogging(App app, Func<LoggerConfiguration, ILogger> configureLogger = null)
 	{
-	
+
 		var tempFile = Path.Combine(Path.GetTempPath(), "beamCliLog.txt");
 		var shouldUseTempFile = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_CLI_NO_FILE_LOG"));
 		try
@@ -151,7 +151,7 @@ public class App
 		services.AddSingleton<IDataReporterService, DataReporterService>();
 		services.AddSingleton<ServerService>();
 		services.AddSingleton<AppLifecycle>();
-		
+
 		OpenApiRegistration.RegisterOpenApis(services);
 
 		_serviceConfigurator?.Invoke(services);
@@ -161,7 +161,7 @@ public class App
 		Action<IDependencyBuilder> serviceConfigurator = null,
 		Action<IDependencyBuilder> commandConfigurator = null,
 		Func<LoggerConfiguration, ILogger> configureLogger = null,
-		LogConfigData prebuiltLogger=null
+		LogConfigData prebuiltLogger = null
 		)
 	{
 		if (IsBuilt)
@@ -303,7 +303,7 @@ public class App
 		Commands.AddSubCommand<DownloadNugetDepToUnityCommand, DownloadNugetDepToUnityCommandArgs, UnityGroupCommand>();
 		Commands.AddSubCommand<DownloadAllNugetDepsToUnityCommand, DownloadAllNugetDepsToUnityCommandArgs,
 				UnityGroupCommand>();
-		
+
 		// version commands
 		Commands.AddRootCommand<VersionCommand, VersionCommandArgs>();
 		Commands.AddSubCommandWithHandler<VersionListCommand, VersionListCommandArgs, VersionCommand>();
@@ -333,7 +333,7 @@ public class App
 		//Commands.AddSubCommand<ServicesGenerateLocalManifestCommand, ServicesGenerateLocalManifestCommandArgs, ServicesCommand>();
 
 		// content commands
-		
+
 		Commands.AddRootCommand<ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentPullCommand, ContentPullCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentStatusCommand, ContentStatusCommandArgs, ContentCommand>();
@@ -437,7 +437,7 @@ public class App
 		yield return (ctx) => new BeamHelpBuilder(ctx).WriteSubcommands(ctx);
 		yield return HelpBuilder.Default.AdditionalArgumentsSection();
 	}
-	
+
 	protected virtual Parser GetProgram()
 	{
 		var root = CommandProvider.GetRequiredService<RootCommand>();
@@ -473,7 +473,7 @@ public class App
 
 		var commandLineBuilder = new CommandLineBuilder(root);
 
-		
+
 		// this middleware pre-handles the --all-help option.
 		commandLineBuilder.AddMiddleware((ctx, next) =>
 		{
@@ -485,7 +485,7 @@ public class App
 			}
 			return next(ctx);
 		}, MiddlewareOrder.Configuration);
-		
+
 		// this middleware is responsible for catching parse errors and putting them on the data-out raw channel
 		commandLineBuilder.AddMiddleware((ctx, next) =>
 		{
@@ -499,7 +499,7 @@ public class App
 			var appContext = provider.GetService<IAppContext>();
 			var reporter = provider.GetService<IDataReporterService>();
 			var isPiping = appContext.UsePipeOutput || appContext.ShowRawOutput;
-			
+
 			if (!isPiping)
 			{
 				// we aren't using raw output, so this middleware has nothing to do.
@@ -511,9 +511,9 @@ public class App
 			reporter.Exception(ex, ctx.ExitCode, ctx.BindingContext.ParseResult.Diagram());
 			// don't call the next task, because we have "handled" the error by posting it to the error channel
 			return Task.CompletedTask;
-			
+
 		}, MiddlewareOrder.ErrorReporting);
-		
+
 		commandLineBuilder.AddMiddleware(consoleContext =>
 		{
 			// create a scope for the execution of the command
@@ -610,7 +610,7 @@ public class App
 		});
 		return commandLineBuilder.Build();
 	}
-	
+
 	static void PrintHelp(InvocationContext context)
 	{
 		var output = context.Console.Out.CreateTextWriter();
