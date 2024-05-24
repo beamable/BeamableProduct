@@ -184,6 +184,7 @@ namespace Beamable.Common.Content
 			Value = value;
 			HasValue = true;
 		}
+		public static implicit operator OptionalBool(bool value) => new OptionalBool(value);
 	}
 
 	[System.Serializable]
@@ -197,6 +198,7 @@ namespace Beamable.Common.Content
 			Value = value;
 			HasValue = true;
 		}
+		public static implicit operator OptionalInt(int value) => new OptionalInt(value);
 	}
 
 	[System.Serializable]
@@ -220,24 +222,64 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalFloat : OptionalValue<float> { }
+	public class OptionalFloat : OptionalValue<float>
+	{
+		public static implicit operator OptionalFloat(float value)
+		{
+			var opt = new OptionalFloat();
+			opt.SetValue(value);
+			return opt;
+		}
+	}
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalByte : OptionalValue<byte> { }
+	public class OptionalByte : OptionalValue<byte>
+	{
+		public static implicit operator OptionalByte(byte value)
+		{
+			var opt = new OptionalByte();
+			opt.SetValue(value);
+			return opt;
+		}
+	}
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalShort : OptionalValue<short> { }
+	public class OptionalShort : OptionalValue<short>
+	{
+		public static implicit operator OptionalShort(short value)
+		{
+			var opt = new OptionalShort();
+			opt.SetValue(value);
+			return opt;
+		}
+	}
 
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalGuid : OptionalValue<Guid> { }
+	public class OptionalGuid : OptionalValue<Guid>
+	{
+		public static implicit operator OptionalGuid(Guid value)
+		{
+			var opt = new OptionalGuid();
+			opt.SetValue(value);
+			return opt;
+		}
+	}
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalDouble : OptionalValue<double> { }
+	public class OptionalDouble : OptionalValue<double>
+	{
+		public static implicit operator OptionalDouble(double value)
+		{
+			var opt = new OptionalDouble();
+			opt.SetValue(value);
+			return opt;
+		}
+	}
 
 	[System.Serializable]
 	[Agnostic]
@@ -392,6 +434,7 @@ namespace Beamable.Common.Content
 		{
 
 		}
+		public static implicit operator OptionalString(string value) => new OptionalString(value);
 
 		public OptionalString(string value)
 		{
