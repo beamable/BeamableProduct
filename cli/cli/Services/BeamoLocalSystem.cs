@@ -178,12 +178,10 @@ public partial class BeamoLocalSystem
 
 			var definition = BeamoManifest.ServiceDefinitions.Find(s => s.BeamoId == name);
 
-			var pathToDependencyProj = Path.Combine(definition.ProjectDirectory, name);
-
 			dependencies.Add(new DependencyData()
 			{
 				name = name,
-				projPath = pathToDependencyProj,
+				projPath =  definition.ProjectDirectory,
 				dllName = name, // TODO: We should have a better way to get this, for now we assume it's the same as the reference project name
 				type = "storage"
 			});
@@ -243,7 +241,7 @@ public partial class BeamoLocalSystem
 	/// <param name="dependency">The storage to be the microservice dependency</param>
 	public async Task AddProjectDependency(BeamoServiceDefinition project, string relativePath)
 	{
-		var projectPath = _configService.GetRelativeToBeamableFolderPath(project.ProjectDirectory);
+		var projectPath = _configService.BeamableRelativeToExecutionRelative(project.ProjectDirectory);
 		var dependencyPath = relativePath;
 		var command = $"add {projectPath} reference {dependencyPath}";
 		var (cmd, result) = await CliExtensions.RunWithOutput(_ctx.DotnetPath, command);
@@ -346,11 +344,7 @@ COPY {servicePathTag} /subsrc/{servicePathTag}";
 		var dependencies = GetDependencies(serviceName, true);
 		foreach (var dependency in dependencies)
 		{
-			string path = _configService.GetRelativeToDockerBuildContextPath(dependency.projPath);
-			string directory = _configService.GetRelativeToDockerBuildContextPath( Directory.GetParent(path)!.ToString());
-			Log.Verbose($"adding docker dep, projPath=[{dependency.projPath}] path=[{path}] directory=[{directory}]");
-
-			newText = newText.Replace(endTag, replacement.Replace(servicePathTag, directory).Replace('\\', '/').Insert(0, "\n"));
+			newText = newText.Replace(endTag, replacement.Replace(servicePathTag, dependency.projPath)).Replace('\\', '/').Insert(0, "\n");
 		}
 
 		//Copy the services files
