@@ -21,6 +21,7 @@ public class AutoInitFlag : ConfigurableOptionFlag
 	public AutoInitFlag() : base("init", "Automatically create a .beamable folder context if no context exists")
 	{
 		AddAlias("-i");
+		IsHidden = true;
 	}
 }
 
