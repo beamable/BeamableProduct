@@ -139,6 +139,12 @@ namespace Beamable.Server
 		[Obsolete("Please use the " + nameof(AssumeNewUser) + " instead")]
 		protected RequestHandlerData AssumeUser(long userId, bool requireAdminUser = true)
 		{
+			if (userId <= 0)
+			{
+				throw new InvalidArgumentException(
+					nameof(userId), $"Invalid User Id of value: {userId}. Should be a positive value.");
+			}
+			
 			// require admin privs.
 			if (requireAdminUser)
 			{
@@ -182,6 +188,11 @@ namespace Beamable.Server
 		/// <returns>A <see cref="UserRequestDataHandler"/> object that contains a request context, and a collection of services to execute SDK calls against.</returns>
 		protected UserRequestDataHandler AssumeNewUser(long userId, Action<IDependencyBuilder> configurator = null, bool requireAdminUser = true)
 		{
+			if (userId <= 0)
+			{
+				throw new InvalidArgumentException(
+					nameof(userId), $"Invalid User Id of value: {userId}. Should be a positive value.");
+			}
 			// require admin privs.
 			if (requireAdminUser)
 			{

@@ -269,6 +269,14 @@ namespace Beamable.Server
             var requiredUser = attribute.RequireAuthenticatedUser;
 
             Log.Debug("Found {method} for {path}", method.Name, servicePath);
+            
+            var isAsync = null != method.GetCustomAttribute<AsyncStateMachineAttribute>();
+            var isVoid = method.ReturnType == typeof(void);
+            if (isAsync && isVoid)
+            {
+	            throw new BeamableMicroserviceException($"The following method is invalid, method=[{type.Name}.{method.Name}]. Callable methods in Beamable Microservices are not allowed to have the `async void` method signature. Consider using `async Promise` or `async Task` instead. ");
+            }
+            
             var serviceMethod = CreateMethod(
 	            serviceAttribute,
 	            provider,
