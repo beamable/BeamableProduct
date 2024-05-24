@@ -78,12 +78,14 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 					if (!ConfigService.TryToFindBeamableFolder(".", out var beamableFolder))
 					{
 						// no sln path is given, so we use the defaults.
+						// this code-path really only exists when 
+						//  the user passes the hidden `-i` flag
 						args.SlnFilePath = Path.Combine(args.ProjectName, args.ProjectName + ".sln");
 					}
 					else
 					{
 						var path = Path.GetFullPath(Path.GetDirectoryName(beamableFolder));
-						args.SlnFilePath = Path.GetRelativePath(".", Path.Combine(path, args.ProjectName + ".sln"));
+						args.SlnFilePath = Path.GetRelativePath(".", Path.Combine(path, Constants.DEFAULT_SLN_NAME));
 					}
 
 				}

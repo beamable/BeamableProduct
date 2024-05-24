@@ -1,3 +1,4 @@
+using cli;
 using cli.Services;
 using cli.Utils;
 using Newtonsoft.Json;
@@ -225,7 +226,7 @@ public class BeamProjectNewFlows : CLITestExtensions
 		#region Assert
 
 		// there should a .sln file
-		Assert.That(BFile.Exists($"{serviceName}.sln"),
+		Assert.That(BFile.Exists(Constants.DEFAULT_SLN_NAME),
 			$"There must be an {serviceName}/{serviceName}.sln file ");
 
 		// there should a .beamable folder
@@ -281,14 +282,14 @@ public class BeamProjectNewFlows : CLITestExtensions
 				.Verifiable();
 		});
 		
-		Run("project", "new", "service", secondServiceName, "--quiet", "--sln", $"{serviceName}.sln", "--service-directory", Path.Combine(serviceName, "services"));
+		Run("project", "new", "service", secondServiceName, "--quiet", "--sln", Constants.DEFAULT_SLN_NAME, "--service-directory", Path.Combine(serviceName, "services"));
 
 		#endregion
 
 		#region Assert
 
 		// there should a .sln file
-		Assert.That(BFile.Exists($"{serviceName}.sln"),
+		Assert.That(BFile.Exists(Constants.DEFAULT_SLN_NAME),
 			$"There must be an {serviceName}/{serviceName}.sln file ");
 
 		Assert.That(BFile.Exists($"{serviceName}/services/{serviceName}/{serviceName}.csproj"),
@@ -355,7 +356,7 @@ public class BeamProjectNewFlows : CLITestExtensions
 		#region Assert
 
 		// there should a .sln file
-		Assert.That(BFile.Exists($"{serviceName}.sln"),
+		Assert.That(BFile.Exists(Constants.DEFAULT_SLN_NAME),
 			$"There must be an {serviceName}/{serviceName}.sln file ");
 
 		Assert.That(BFile.Exists($"services/{serviceName}/{serviceName}.csproj"),
