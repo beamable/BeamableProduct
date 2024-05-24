@@ -3,7 +3,7 @@ Deploying Beamable Standalone Microservices
 
 ## Dependencies
 
-Before you can deploy Beamable Standalone Microservices, you need to complete the [Getting-Started Guide](doc:cli-getting-started). That means having [Dotnet 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) installed, and getting the [Beam CLI]([nuget.org](https://www.nuget.org/packages/Beamable.Tools). 
+Before you can deploy Beamable Standalone Microservices, you need to complete the [Getting-Started Guide](doc:cli-guide-getting-started). That means having [Dotnet 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) installed, and getting the [Beam CLI]([nuget.org](https://www.nuget.org/packages/Beamable.Tools). 
 
 You can confirm you have everything installed checking the versions of the tools.
 ```sh
@@ -52,7 +52,7 @@ Now that your service is running on the Beamable Cloud, you can send HTTPS traff
 
 After a Standalone Microservice has been deployed, it will continue to be available on the Beamable Cloud until it is disabled. A service can be temporarily disabled through Portal, but they will be re-activated after a fresh `deploy` command occurs. 
 
-To disable a service through a `deploy` command, you need to modify the configuration of the Microservice source code itself. In the `.csproj` file of your service, set the `<BeamEnabled>` property to `false`. Then, re-run the `deploy` command. See the [Microservice Configuration Section](doc:cli-microservice-configuration) for more details about project configuration. 
+To disable a service through a `deploy` command, you need to modify the configuration of the Microservice source code itself. In the `.csproj` file of your service, set the `<BeamEnabled>` property to `false`. Then, re-run the `deploy` command. See the [Microservice Configuration Section](doc:cli-guide-microservice-configuration) for more details about project configuration. 
 
 > 📘 Services Cost Money! 
 >

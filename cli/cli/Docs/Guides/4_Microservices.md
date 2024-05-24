@@ -4,7 +4,7 @@ Beamable offers a rich micro service development workflow using the Beam CLI and
 
 ## Dependencies
 
-Before you can develop a Beamable Standalone Microservice, you need to complete the [Getting-Started Guide](doc:cli-getting-started). That means having [Dotnet 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) installed, and getting the [Beam CLI]([nuget.org](https://www.nuget.org/packages/Beamable.Tools). 
+Before you can develop a Beamable Standalone Microservice, you need to complete the [Getting-Started Guide](doc:cli-guide-getting-started). That means having [Dotnet 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) installed, and getting the [Beam CLI]([nuget.org](https://www.nuget.org/packages/Beamable.Tools). 
 
 You can confirm you have everything installed checking the versions of the tools.
 ```sh
@@ -95,22 +95,22 @@ You can write new functions and tag them with `[ClientCallable]` to make them ac
 
 Each file in the Standalone Microservice has a valuable function that is important to understand. 
 
-| file                                   | function                                                                                                                                                                                                                                                 |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MyProject/services/.gitignore`        | a version control file that will ignore build and intermediate folders from your git based source control                                                                                                                                                |
-| `MyProject/services/Dockerfile`        | When the Standalone Microservice is deployed, it will be containerized using Docker. You can modify the Dockerfile to extend the capabilities of the service. See the [Deployment Section](doc:cli-microservice-deployment#Dockerfiles) for more details |
-| `MyProject/services/HelloWorld.cs`     | This file is the main `.cs` file that has your server functionality                                                                                                                                                                                      |
-| `MyProject/services/Programcs`         | This file is the entry point of the dotnet application. It bootstraps the server and starts it. You may edit it, but make sure not to remove the section that enables the service.                                                                       |
-| `MyProject/services/HelloWorld.csproj` | This file is the dotnet project file for your service. You can modify the `.csproj` file to customize your service. See the [Microservice Configuration Section](doc:cli-microservice-configuration) section for more details                            |
-| `MyProject/BeamableServices.sln`       | This file is the dotnet solution file, and organizes your services. If you add additional services or storage databases, they will be tracked through the `.sln` file.                                                                                   |
+| file                                   | function                                                                                                                                                                                                                                                       |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MyProject/services/.gitignore`        | a version control file that will ignore build and intermediate folders from your git based source control                                                                                                                                                      |
+| `MyProject/services/Dockerfile`        | When the Standalone Microservice is deployed, it will be containerized using Docker. You can modify the Dockerfile to extend the capabilities of the service. See the [Deployment Section](doc:cli-guide-microservice-deployment#Dockerfiles) for more details |
+| `MyProject/services/HelloWorld.cs`     | This file is the main `.cs` file that has your server functionality                                                                                                                                                                                            |
+| `MyProject/services/Programcs`         | This file is the entry point of the dotnet application. It bootstraps the server and starts it. You may edit it, but make sure not to remove the section that enables the service.                                                                             |
+| `MyProject/services/HelloWorld.csproj` | This file is the dotnet project file for your service. You can modify the `.csproj` file to customize your service. See the [Microservice Configuration Section](doc:cli-guide-microservice-configuration) section for more details                            |
+| `MyProject/BeamableServices.sln`       | This file is the dotnet solution file, and organizes your services. If you add additional services or storage databases, they will be tracked through the `.sln` file.                                                                                         |
 
 
 ## Next Steps
 
 There are many topics to continue learning about Beamable Standalone Microservices,
 
-- [Deploy your Microservice to the Beamable Cloud](doc:cli-microservice-deployment)
-- [Debugging Techniques](doc:cli-microservices-deployment)
+- [Deploy your Microservice to the Beamable Cloud](doc:cli-guide-microservice-deployment)
+- [Debugging Techniques](doc:cli-guide-microservices-deployment)
 - Add a Beamable Database Storage Object
 - Microservice Configuration Settings (BeamEnabled, and other options)
 - Microservice Code Patterns (AssumeUser, Services, Storage, async Task)
