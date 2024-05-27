@@ -352,7 +352,7 @@ COPY {servicePathTag} /subsrc/{servicePathTag}";
 				path = Path.GetDirectoryName(path);
 			}
 
-			newText = newText.Replace(endTag, replacement.Replace(servicePathTag, path)).Replace('\\', '/').Insert(0, "\n");
+			newText = newText.Replace(endTag, replacement.Replace(servicePathTag, path).Replace('\\', '/').Insert(0, "\n"));
 		}
 
 		//Copy the services files
