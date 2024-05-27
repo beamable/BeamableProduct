@@ -112,7 +112,7 @@ There are many topics to continue learning about Beamable Standalone Microservic
 - [Deploy your Microservice to the Beamable Cloud](doc:cli-guide-microservice-deployment)
 - [Debugging Techniques](doc:cli-guide-microservices-deployment)
 - Add a Beamable Database Storage Object
-- Microservice Configuration Settings (BeamEnabled, and other options)
+- [Microservice Configuration Settings](doc:cli-guide-microservice-configuration)
 - Microservice Code Patterns (AssumeUser, Services, Storage, async Task)
 - Beam CLI Commands for Managing Microservices 
 - Microservice Request Routing and Authentication
