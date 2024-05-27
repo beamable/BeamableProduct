@@ -597,8 +597,24 @@ public class BeamoServiceDefinition
 	{
 		get
 		{
-			if (string.IsNullOrEmpty(ImageId)) return null;
-			return ImageId.Contains(':') ? ImageId.Split(':')[1].Substring(0, 12) : ImageId;
+			if (string.IsNullOrEmpty(ImageId) || Protocol != BeamoProtocolType.HttpMicroservice) return null;
+			const int minimumChars = 12;
+
+			if (ImageId.Contains(':'))
+			{
+				var version = ImageId.Split(':')[1];
+
+				if (version.Length < minimumChars)
+				{
+					Log.Warning($"Possibly invalid format of image version Version=[{version}]. Should have at least {minimumChars} characters");
+					return version;
+				}
+				return version.Substring(0, minimumChars);
+			}
+			else
+			{
+				return ImageId;
+			}
 		}
 	}
 
