@@ -606,7 +606,7 @@ public class BeamoServiceDefinition
 
 				if (version.Length < minimumChars)
 				{
-					Log.Warning($"Possibly invalid format of image version Version=[{version}]. Should have at least {minimumChars} characters");
+					Log.Warning($"Possibly invalid format of image Version=[{version}]. Should have at least {minimumChars} characters");
 					return version;
 				}
 				return version.Substring(0, minimumChars);
