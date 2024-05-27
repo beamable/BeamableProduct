@@ -344,7 +344,15 @@ COPY {servicePathTag} /subsrc/{servicePathTag}";
 		var dependencies = GetDependencies(serviceName, true);
 		foreach (var dependency in dependencies)
 		{
-			newText = newText.Replace(endTag, replacement.Replace(servicePathTag, dependency.projPath)).Replace('\\', '/').Insert(0, "\n");
+			var path = dependency.projPath;
+			FileAttributes attr = File.GetAttributes(path);
+
+			if (!attr.HasFlag(FileAttributes.Directory))
+			{
+				path = Path.GetDirectoryName(path);
+			}
+
+			newText = newText.Replace(endTag, replacement.Replace(servicePathTag, path)).Replace('\\', '/').Insert(0, "\n");
 		}
 
 		//Copy the services files
