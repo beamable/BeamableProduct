@@ -73,22 +73,59 @@ The account information is accessible via the `Context.UserId` property when exe
 | `[AdminOnlyCallable]` | An access token for a player with the admin role.                                                            |
 | `[ServerCallable]`    | This may be used by requests authenticated with signed requests. However, no player is present.              |
 
-## Client Generation
+## Calling Microservice Code From Unity
 
-write docs to file
+Microservices can automatically generate client code for the Unity game engine. First, a Unity project needs to be linked to the `.beamable` workspace. To do this, use the [project add-unity-project](doc:cli-project-add-unity-project) command. 
+
+```sh
+beam project add-unity-project <relative-path-to-unity-project>
+```
+
+The given path should be the relative path to the Unity project. If it isn't right, the CLI will offer an explorative search flow to identify a valid Unity project. 
+
+After the command has run, there will be a `.beamable/linked-projects.json` file. You can review it to double check your project has been added correctly.
+
+```sh
+MyProject % cat .beamable/linked-projects.json 
+{
+  "unityProjectsPaths": [
+    "../UnityProject"
+  ],
+  "unrealProjectsPaths": []
+}%  
+```
+
+
+When there is a linked project, anytime a Microservice _builds_, it will automatically generate client code for the Unity project to use. This can be accessed via the `BeamContext`. 
+
+```csharp
+public async Promise TalkToMicroservice(){
+	var ctx = await BeamContext.Default.Instance;  
+	var client = ctx.Microservices().HelloWorld();  
+	var sum = await client.Add(1, 2);
+}
+```
+
+The automatic client code generation can be disabled when a project builds by modifying the `<GenerateClientCode>` option. Learn more in the [configuration guide](doc:cli-guide-microservice-configuration#GenerateClientCode). 
+
+## Custom Clients
+
+It is possible to use the [project oapi](doc:cli-project-oapi) command to generate an Open API document and then use open source tools to transpile the document into a client in some other programming language. 
+
+The following command will output the Open API document for the service into a file called `doc.json`.  
 
 ```sh
 beam project oapi --ids HelloWorld | jq '.data.openApi | fromjson' > doc.json
 ```
 
-Automatically build docs
+In fact, that command can baked into the Microservice's `.csproj` file with a custom build target. This requires that the `<SolutionDir>` property is set, which only happens when you run the project from the IDE. See the [generate-props](doc:cli-generate-properties) command to extend the `<SolutionDir>` property outside of IDE use cases. 
 ```xml
 <Target Name="Build Local OpenAPI File" AfterTargets="Build">  
     <Exec Command="$(BeamableTool) project oapi --ids HelloWorld | jq '.data.openApi | fromjson' > $(SolutionDir)local/doc.json"/>  
 </Target>
 ```
 
-generate a javascript SDK
+Then, you can use the open source [Open API Generator](https://openapi-generator.tech/docs/generators/javascript/) to build a local javascript client. This snippet uses docker to interact with the generator tool, but you can also use `npm`. 
 
 ```sh
 docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate \
@@ -99,100 +136,43 @@ docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli generate \
 ```
 
 
-use browserify
+In this example, we need to use `browserify` to convert the generated client code into a valid browser script.
 ```sh
 npm install -g browserify
-browserify ./dist/index.js --standalone helloWorld > ../../ap
-p/bundle.js 
+browserify ./dist/index.js --standalone helloWorld > ../../app/bundle.js 
 ```
 
-
-
-client-src
+Then, a sample web page might use a similar script to interact with the Microservice.
 
 ```html
 <html>
+    <body>
+        <script src="bundle.js"></script>
 
-<head>
+        <script>
+            var cid = 'cid';
+            var pid = 'pid';
+            var refreshToken = 'redacted';
+            var localPrefix = 'local';
+            var serviceName = 'HelloWorld';
 
-<title>Test</title>
+            var host = 'https://api.beamable.com/basic/' + cid + '.' + pid + '.' + localPrefix + 'micro_' + serviceName;
+            var client = new helloWorld.ApiClient(host);
+            client.authentications['scope'].apiKey = cid + '.' + pid;
+            client.authentications['user'].accessToken = refreshToken
+            
+            var api = new helloWorld.UncategorizedApi(client);
+            var args = new helloWorld.AddRequestArgs();
+            args.a = 2;
+            args.b = 3;
 
-</head>
+            var opts = {
+                'addRequestArgs': args
+            };
+            api.addPost(opts).then(function(result) {
+                console.log('got result', result)
+            });
 
-<body>
-
-<div> Hello </div>
-
-  
-
-<script src="bundle.js"></script>
-
-  
-
-<script>
-
-// This script will run after bundle.js is loaded
-
-document.addEventListener("DOMContentLoaded", function() {
-
-var cid = '1338004997867618';
-var pid = 'DE_1752011665993728';
-var refreshToken = '0b199fd6-71a7-466b-9a13-f9c2e36fe5e1';
-var localPrefix = 'Chriss-MacBook-Pro-2';
-var serviceName = 'HelloWorld';
-
-var host = 'https://api.beamable.com/basic/' + cid + '.' + pid + '.' + localPrefix + 'micro_' + serviceName;
-
-console.log(host)
-
-var client = new helloWorld.ApiClient(host);
-
-client.authentications['scope'].apiKey = cid + '.' + pid;
-
-client.authentications['user'].accessToken = refreshToken
-
-console.log(client)
-
-  
-
-var api = new helloWorld.UncategorizedApi(client);
-
-console.log(api)
-
-  
-
-var args = new helloWorld.AddRequestArgs();
-
-args.a = 2;
-
-args.b = 3;
-
-  
-
-console.log(args)
-
-var opts = {
-
-'addRequestArgs': args
-
-};
-
-api.addPost(opts).then(function(result) {
-
-console.log('got result', result)
-
-});
-
-  
-
-});
-
-</script>
-
-</body>
-
-</html>
-```
-
-
-https://openapi-generator.tech/docs/generators/javascript/ 
+        </script>
+    </body>
+</html>```
