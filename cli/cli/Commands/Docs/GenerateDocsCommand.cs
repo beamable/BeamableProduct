@@ -45,6 +45,8 @@ public class GenerateDocsCommand : AppCommand<GenerateDocsCommandArgs>, IStandal
 		foreach (var command in generatorContext.Commands)
 		{
 			if (command == generatorContext.Root) continue;
+			if (!(command.command is IAppCommand appCommand)) continue;
+			
 			var doc = docService.GenerateDocFile(command, args);
 			Log.Information(doc.markdownContent);
 
@@ -55,6 +57,7 @@ public class GenerateDocsCommand : AppCommand<GenerateDocsCommandArgs>, IStandal
 				body = doc.markdownContent,
 				title = doc.title,
 				excerpt = doc.excerpt,
+				hidden = appCommand.IsForInternalUse,
 				categorySlug = doc.categorySlug,
 				parentDocSlug = doc.parentSlug
 			};

@@ -8,7 +8,7 @@ Verify it is installed by running `dotnet --version` from a terminal.
 
 ## Installing
 
-To install the Beamable CLI, run the following commands in a shell.
+To install the Beamable CLI, run the following command in a shell.
 
 ```shell
 dotnet tool install --global Beamable.Tools
@@ -49,9 +49,14 @@ You should expect to see your CID/PID printed out.
 
 To check that everything is working correctly, you can use the [beam me](doc:cli-me) command. Now you have a configured CLI project! 
 
+> 📘 Finding Help
+>
+> You can pass the `--help` flag to any command to print out detailed information about the arguments and options for the given command. Also, the `--help-all` flag will include additional information used by internal Beamable developers. You are welcome to use the internal facing commands, but they are not officially supported. 
+
 ### Next Steps
 
 From here, you can
 - setup [Standalone Microservices](doc:cli-guide-microservices)
-- manage Content, or
-- listen to server events
+- manage Content,
+- listen to server events,
+- [learn how the CLI handles data output](doc:cli-guide-command-line-output).

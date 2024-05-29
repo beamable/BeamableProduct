@@ -1,6 +1,6 @@
 Developing Standalone Microservices with the Beam CLI
 
-Beamable offers a rich micro service development workflow using the Beam CLI and Dotnet. 
+Beamable offers a rich microservice development workflow using the Beam CLI and Dotnet. Microservices deploy to the Beamable Cloud, and offer a secure way to handle server-side authoritative logic for your games. 
 
 ## Dependencies
 
@@ -111,13 +111,9 @@ There are many topics to continue learning about Beamable Standalone Microservic
 
 - [Deploy your Microservice to the Beamable Cloud](doc:cli-guide-microservice-deployment)
 - [Debugging Techniques](doc:cli-guide-microservices-deployment)
-- Add a Beamable Database Storage Object
-- Microservice Configuration Settings (BeamEnabled, and other options)
-- Microservice Code Patterns (AssumeUser, Services, Storage, async Task)
-- Beam CLI Commands for Managing Microservices 
-- Microservice Request Routing and Authentication
-- Custom Microservice Client Advise
-- Linking Microservices to Unity
-- Linking Microservices to Unreal
+- [Add a Beamable Database Storage Object](doc:cli-guide-microservice-storage)
+- [Microservice Configuration Settings](doc:cli-guide-microservice-configuration)
+- [Beam CLI Commands for Managing Microservices](doc:cli-guide-microservice-cli-workflows)
+- [Microservice Routing and Client Usage](doc:cli-guide-microservice-routing)
 
 
