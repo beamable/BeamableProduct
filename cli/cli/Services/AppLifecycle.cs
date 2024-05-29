@@ -9,5 +9,5 @@ public class AppLifecycle
 	public bool IsCancelled => Source.IsCancellationRequested;
 
 	public void Cancel() => Source.Cancel();
-	
+
 }
