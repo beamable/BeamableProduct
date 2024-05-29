@@ -292,6 +292,27 @@ namespace Beamable.Server.Common
         {
             var baseProps = base.CreateProperties(type, memberSerialization);
 
+            foreach (var prop in baseProps)
+            {
+	            prop.ShouldSerialize = instance =>
+	            {
+		            try
+		            {
+			            var value = prop.ValueProvider.GetValue(instance);
+			            if (value is Optional optionalValue)
+			            {
+				            return optionalValue.HasValue;
+			            }
+		            }
+		            catch (Exception ex)
+		            {
+			            Debug.LogWarning("Failed to understand parse predicate. " + ex.GetType().Name + " -- " + ex.Message + "\n" + ex.StackTrace);
+		            }
+
+		            return true;
+	            };
+            }
+            
             bool HasSerializeField(JsonProperty p)
             {
                 var serializeFieldAttrs = p.AttributeProvider.GetAttributes(typeof(SerializeField), false);
