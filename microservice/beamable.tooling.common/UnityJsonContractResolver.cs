@@ -9,6 +9,8 @@ using UnityEngine;
 
 namespace Beamable.Server.Common
 {
+	
+	
 	/// <summary>
 	/// Custom JSON serialization settings optimized for Unity applications.
 	/// </summary>
@@ -26,7 +28,7 @@ namespace Beamable.Server.Common
 				new StringToSomethingDictionaryConverter<long>(),
 				new StringToSomethingDictionaryConverter<CurrencyPropertyList>(),
 				new StringToSomethingDictionaryConverter<List<FederatedItemProxy>>(),
-				
+				new OptionalConverter(),
 				// THIS MUST BE LAST, because it is hacky, and falls back onto other converts as its _normal_ behaviour. If its not last, then other converts can run twice, which causes newtonsoft to explode.
 				new UnitySerializationCallbackInvoker(),
 
@@ -42,6 +44,34 @@ namespace Beamable.Server.Common
         }
     }
 
+	public class OptionalConverter : JsonConverter
+	{
+		public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+		{
+			if (!(value is Optional optional))
+				throw new Exception("Cannot handle non-optional value in optional convert");
+
+			if (!optional.HasValue) return; // nothing to write!
+			
+			serializer.Serialize(writer, optional.GetValue());
+		}
+
+		public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+		{
+			var instance = (Optional)Activator.CreateInstance(objectType);
+			var optionalType = instance.GetOptionalType();
+			var value = serializer.Deserialize(reader, optionalType);
+			instance.SetValue(value);
+			return instance;
+		}
+
+		public override bool CanConvert(Type objectType)
+		{
+			var isOptional = objectType.IsAssignableTo(typeof(Optional));
+			return isOptional;
+		}
+	}
+	
 	/// <summary>
 	/// Custom JSON converter for JsonUtility that uses Newtonsoft.Json for serialization and deserialization.
 	/// </summary>
