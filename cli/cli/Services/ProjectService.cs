@@ -499,7 +499,7 @@ public class ProjectService
 	/// <returns></returns>
 	private Task UpdateProjectDependencyVersion(string projectPath, string packageName, string version)
 	{
-		var versionToUpdate = string.IsNullOrWhiteSpace(version) || version.Equals("0.0.0")
+		var versionToUpdate = string.IsNullOrWhiteSpace(version)
 			? string.Empty
 			: $" --version \"{version}\"";
 
@@ -552,7 +552,7 @@ COPY {commonProjectName}/. .
 
 	Task RunDotnetCommand(string arguments)
 	{
-		return CliExtensions.GetDotnetCommand(_app.DotnetPath, arguments).ExecuteAsyncAndLog().Task;
+		return CliExtensions.GetDotnetCommand(_app.DotnetPath, arguments).WithValidation(CommandResultValidation.None).ExecuteAsyncAndLog().Task;
 	}
 
 	public static async Task WatchBuild(BuildProjectCommandArgs args, ServiceName serviceName, Action<ProjectErrorReport> onReport)

@@ -363,7 +363,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			parent.AddStyleSheet(UssPath);
 		}
 
-		public async Promise PrepareForPublish()
+		public void PrepareForPublish()
 		{
 			_arrowLeft.SetEnabled(false);
 			_arrowRight.SetEnabled(false);
@@ -374,7 +374,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var cli = Context.ServiceScope.GetService<BeamCommands>();
 
 			codeService.UpdateServicesEnableState(_allUnarchivedServices);
-			await CodeService.SetManifest(cli, codeService.ServiceDefinitions);
 
 			foreach (var kvp in _publishManifestElements)
 			{

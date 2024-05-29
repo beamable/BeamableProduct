@@ -81,7 +81,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_publishPopup.OnSubmit += async (logger) =>
 		   {
 			   WindowStateUtility.DisableAllWindows(new[] { PUBLISH });
-			   await _publishPopup.PrepareForPublish();
+			   _publishPopup.PrepareForPublish();
 
 			   var publishService = editorContext.ServiceScope.GetService<PublishService>();
 			   await publishService.PublishServices();

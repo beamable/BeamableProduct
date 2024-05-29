@@ -40,17 +40,10 @@ EndProject";
 
 		public static string OnGeneratedSlnSolution(string path, string content)
 		{
-			CodeService.GetBeamServicePosts(out var serviceFiles, out var storageFiles);
-			// TODO: Validate that these files actually exist/map to valid projects
-			foreach (var signpost in serviceFiles)
+			var codeService = BeamEditorContext.Default.ServiceScope.GetService<CodeService>();
+			foreach (var definition in codeService.ServiceDefinitions)
 			{
-				content = InjectProject(content, signpost.name, signpost.CsprojFilePath);
-			}
-
-			// TODO: Validate that these files actually exist/map to valid projects
-			foreach (var signpost in storageFiles)
-			{
-				content = InjectProject(content, signpost.name, signpost.CsprojFilePath);
+				content = InjectProject(content, definition.BeamoId, definition.ServiceInfo.projectPath);
 			}
 
 			var librariesPaths = CodeService.GetLibrariesPaths();
