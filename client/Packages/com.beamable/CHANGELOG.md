@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `BeamablePackages` utility no longer uses `EditorApplication.delay` call.
+-  The `Lobby` now can be created passing the field `data` and that can be updated as well
 
 ## [1.19.19]
 no changes

@@ -129,7 +129,7 @@ namespace Beamable.Player
 									List<Tag> playerTags = null,
 									int? maxPlayers = null,
 									int? passcodeLength = null,
-									List<string> statsToInclude = null)
+									Dictionary<string, string> data = null)
 		{
 			Value = await _lobbyApi.CreateLobby(
 				name,
@@ -139,10 +139,12 @@ namespace Beamable.Player
 				playerTags,
 				maxPlayers,
 				passcodeLength,
-				statsToInclude);
+				null,
+				data);
 		}
 
 		/// <inheritdoc cref="ILobbyApi.CreateLobby"/>
+		[Obsolete("This method with this signature uses an old type request, please use the other signature")]
 		public async Promise Create(string name,
 									LobbyRestriction restriction,
 									SimGameTypeRef gameTypeRef = null,
