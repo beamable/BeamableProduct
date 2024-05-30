@@ -5,30 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.19.17]
+## [1.19.17] - 2024-04-04
 ### Changed
 - `BEAM_DOCKER_URI` environment variable will override docker connection uri
 - Standalone Microservices no longer have a `LoadEnvironmentVariables` method, and connection strings are handled in the existing `Prepare` method.
 - `beam project generate-env` command writes a blank `.env` file and returns connection strings over STDOUT instead.
 - Docker will not connect at common unix home directory if `/var/run/docker.sock` is not available
 
-## [1.19.16]
+## [1.19.16] - 2024-03-2
 no changes
 
-## [1.19.15]
+## [1.19.15] - 2024-03-07
 ### Fixed
 - Progress bars and logs do not appear side by side.
 - Unreal Microservice client generation now correctly generates non-primitives used in C#MS signatures
 
-## [1.19.14]
+## [1.19.14] - 2024-02-06
 
 ### Fixed
 - Docker path issue when adding storage objects 
 
-## [1.19.13]
+## [1.19.13] - 2024-02-05
 no changes
 
-## [1.19.12]
+## [1.19.12] - 2024-01-22
 
 ### Added
 - Better validation and error messages for add-unreal-project command code-path;
@@ -42,7 +42,7 @@ no changes
 - Fixed serializer generation to correctly use `TCHAR` as opposed to `wchar_t`
 - Fixed `FGuid` serialization to always serialize with digits + hyphen + lower case;
 
-## [1.19.11]
+## [1.19.11] - 2024-01-12
 
 ### Added
 - `beam config realm` command suite for working with realm config via the CLI.
@@ -50,30 +50,30 @@ no changes
 ### Fixed
 - Stack traces from Dependency Injection, `GetService`, show inner stack trace instead of Reflection based stack trace.
 
-## [1.19.10]
+## [1.19.10] - 2024-01-05
 
 ### Fixed
 - fixed issue an issue that would cause an NRE if an existing service had no federated component when running services deploy command
 
-## [1.19.9]
+## [1.19.9] - 2023-12-20
 
 no changes
 
-## [1.19.8]
+## [1.19.8] - 2023-12-15
 
 ### Fixed
 
 - OpenAPI generation fixes.
 
-## [1.19.7]
+## [1.19.7] - 2023-11-29
 
 no changes
 
-## [1.19.6]
+## [1.19.6] - 2023-11-22
 
 no changes
 
-## [1.19.5]
+## [1.19.5] - 2023-11-15
 
 ### Added
 
@@ -83,16 +83,16 @@ no changes
 
 - API code-gen now generates structs with properly initialized fields.
 
-## [1.19.4]
+## [1.19.4] - 2023-11-02
 
 ### Fixed
 - `--reporter-use-fatal` channel supports JSON strings
 
-## [1.19.3]
+## [1.19.3] - 2023-10-26
 
 no changes
 
-## [1.19.2]
+## [1.19.2] - 2023-10-11
 
 ### Fixed
 - `beam services deploy` no longer times out.
@@ -100,11 +100,11 @@ no changes
 ### Changed
  - Templates update with refactor to improve it receiving updates and fixes in the future.
 
-## [1.19.1]
+## [1.19.1] - 2023-09-22
 
 no changes
 
-## [1.19.0]
+## [1.19.0] - 2023-09-20
 
 ### Added
 
@@ -119,7 +119,7 @@ no changes
 - When executing a microservice that depends on a storage through the IDE, the storage was not booting up in docker.
 - Add more information logs when executing C#MS through the IDE.
 
-## [1.18.0]
+## [1.18.0] - 2023-09-01
 
 ### Added
 
@@ -140,7 +140,7 @@ no changes
 
 - `run-nbomber` cli command accepts a json file as body for request instead of an argument.
 
-## [1.17.3]
+## [1.17.3] - 2023-08-21
 
 ### Added
 
@@ -160,7 +160,7 @@ no changes
 - If an internal `dotnet` command fails, `beam` will now emit the logs of the failed command
 - Improved installed templates detection
 
-## [1.17.2]
+## [1.17.2] - 2023-08-10
 
 ### Added
 
@@ -171,7 +171,7 @@ no changes
 - `--log` option correctly changes desired log level.
 - `beam project {new/add}` commands work if called from other directory than the one with Beamable config.
 
-## [1.17.1]
+## [1.17.1] - 2023-08-10
 
 ### Added
 
@@ -194,7 +194,7 @@ no changes
 - newly created service will have `ShouldBeEnabledOnRemote` as true in `BeamoServiceDefinition`
 - when creating new storage, service dependencies are all selected by default
 
-## [1.17.0]
+## [1.17.0] - 2023-07-27
 
 ### Added
 
@@ -205,7 +205,7 @@ for the specified micro-storage
 for the specified micro-storage
 - Add `--quiet` to ignore confirmation step when retrieving connection string
 
-## [1.16.2]
+## [1.16.2] - 2023-07-12
 
 ### Added
 
@@ -223,7 +223,7 @@ for the specified micro-storage
 - If there is only one Microservice, `beam project open-swagger` work without passing Microservice ID
 - If there is only one Storage, `beam project open-mongo` work without passing Storage ID
 
-## [1.16.1]
+## [1.16.1] - 2023-06-28
 
 ### Added
 
@@ -234,7 +234,7 @@ for the specified micro-storage
 - `CliRequester` incorrectly assuming token needs refreshing instead of failed request
 - `beam services deploy` uses docker registry endpoint derived from call to `/basic/beamo/registry`
 
-## [1.16.0]
+## [1.16.0] - 2023-06-27
 
 ### Added
 
@@ -258,7 +258,7 @@ for the specified micro-storage
 
 - `beam project generate-env` loads `.dll` files into new context, allowing for multiple versions of similar libraries
 
-## [1.15.2]
+## [1.15.2] - 2023-05-18
 
 ### Added
 
