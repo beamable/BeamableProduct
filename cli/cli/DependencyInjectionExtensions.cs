@@ -76,7 +76,7 @@ public static class DependencyInjectionExtensions
 				}
 
 				await command.Handle(args);
-				
+
 			}, binder);
 			root.AddCommand(command);
 			return factory;

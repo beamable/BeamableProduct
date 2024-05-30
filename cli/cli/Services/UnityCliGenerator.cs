@@ -76,7 +76,7 @@ public class UnityCliGenerator : ICliGenerator
 
 	public static List<GeneratedFileDescriptor> GenerateMetaFiles(List<GeneratedFileDescriptor> sourceFiles) =>
 		GenerateMetaFiles(sourceFiles.Select(x => x.FileName).ToList());
-	
+
 	const string GUID_TEMPLATE = "{GUID_REPLACE}";
 	// TODO: do we need to update these meta file generations for future versions of Unity?
 	const string META_CONTENT_TEMPLATE = @"fileFormatVersion: 2
@@ -237,7 +237,7 @@ MonoImporter:
 		}
 
 		var name = runtimeType.Name.Replace("[]", "");
-		
+
 		return ConvertToSnakeCase("Beam" + name);
 	}
 
