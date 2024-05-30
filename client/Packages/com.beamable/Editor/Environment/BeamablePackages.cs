@@ -103,7 +103,6 @@ namespace Beamable.Editor.Environment
 			{
 				if (!listReq.IsCompleted)
 				{
-					EditorApplication.delayCall += Check;
 					return;
 				}
 
@@ -117,7 +116,11 @@ namespace Beamable.Editor.Environment
 				promise.CompleteSuccess(package);
 			}
 
-			EditorApplication.delayCall += Check;
+			EditorApplication.update += Check;
+			promise.Recover(_ => null).Then(_ =>
+			{
+				EditorApplication.update -= Check;
+			});
 			return promise;
 		}
 
@@ -333,7 +336,6 @@ namespace Beamable.Editor.Environment
 			{
 				if (!listReq.IsCompleted)
 				{
-					EditorApplication.delayCall += Check;
 					return;
 				}
 
@@ -356,9 +358,8 @@ namespace Beamable.Editor.Environment
 					if (_isDownloading)
 						return;
 
-					EditorApplication.delayCall -= Check;
 					_isDownloading = true;
-					DownloadMissingPackage(serverPackage.version).Then(_ => EditorApplication.delayCall += Check);
+					DownloadMissingPackage(serverPackage.version);
 					return;
 				}
 
@@ -400,6 +401,11 @@ namespace Beamable.Editor.Environment
 			}
 
 			EditorApplication.update += Check;
+
+			promise.Recover(_ => false).Then(_ =>
+			{
+				EditorApplication.update -= Check;
+			});
 			return promise;
 		}
 
@@ -412,7 +418,6 @@ namespace Beamable.Editor.Environment
 			{
 				if (!listReq.IsCompleted)
 				{
-					EditorApplication.delayCall += Check;
 					return;
 				}
 
@@ -440,6 +445,11 @@ namespace Beamable.Editor.Environment
 			}
 
 			EditorApplication.update += Check;
+			promise.Recover(_ => false).Then(_ =>
+			{
+				EditorApplication.update -= Check;
+			});
+			
 			return promise;
 		}
 
