@@ -13,6 +13,7 @@
         <OutputType>Library</OutputType>
 
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <RollForward>LatestMajor</RollForward>
     </PropertyGroup>
 
     <PropertyGroup>
