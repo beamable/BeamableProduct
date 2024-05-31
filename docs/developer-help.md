@@ -16,7 +16,90 @@ This repository also has a lot of supporting libraries. Some important ones to c
 There are some strange inter-dependencies between the various products and libraries that you should be aware of. Especially if you plan on developing the Unity SDK, you will need to know about the "Unity Common Konudrum (UCK)"
 
 
-# The CLI Solution
+# Know Your Scripts
+
+The codebase has a bunch of build utility scripts that you need to understand to compose your workflow. In some cases, you'll be able to get away without running the scripts, if your work can be done inside unity tests or you have some other way to validate the code. However, in _most_ cases, you'll want to be able to actually test your code by _using_ the code. The build scripts will get you sorted. :thumbs-up: 
+
+All of the scripts are `.sh` first! If you are running on a windows machine, you need to execute the scripts in a git-bash shell. 
+
+First, here is a list of the scripts. Later on there will be a "workflow-first" approach to the same information. 
+
+| script                | description                                                                                                                                                                                                                                                                                       |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/set-packages.sh`    | builds all your local source code to nuget packages, and installs them inside a local nuget package source. The packages will always have version, `0.0.123`. Note: this script _also_ runs the `/templates/build.sh` script by default, but it _does not_ run the `/cli/cli/install.sh` script.  |
+| `/cli/cli/install.sh` | builds your local CLI source code and installs it globally.                                                                                                                                                                                                                                       |
+| `/templates/build.sh` | builds your local templates and installs them globally.                                                                                                                                                                                                                                           |
+
+#### I wrote a new CLI command, and I want to play with it. 
+there are _many_ ways to do this, (see the CLI section), but using scripts, you should run the `cli/cli/install.sh` script. This will build your local source code into a CLI, and install it globally. After you do this, you can run `beam` wherever on your machine. 
+
+
+#### I changed some Microservice Framework code, and I want to validate it works in a new SAM project (without using Docker)
+Good work, sir/madam for your desire to test your work! If your change is _just_ inside the Microservice Framework, then you should run the `./set-packages.sh` script to bundle all of your Nuget packages to a locally available `0.0.123` version. Once this is done, in your SAM project, you should change the nuget reference from whatever it _was_, to `0.0.123`. 
+
+```xml
+<PackageReference Include="Beamable.Microservice.Runtime" Version="0.0.123" /> 
+```
+
+You may need to run a `dotnet restore` to make the SAM pay attention to the new version of the code. Now, when you start the SAM, it will use your local version of the source code. 
+
+There is a more robust way to accomplish this task as well, but with its robustness, comes annoyance. _Technically_, instead of getting all the `Beamable.Microservice.Runtime` code from the nuget package, your SAM project _could_ use `<ProjectReference>`'s to map directly to your source code. This will take longer to set up, but has a nice pay-off. If you spend the time to configure all these source code links, then you don't need to re-run `./set-packages.sh` every time you make a change and want to re-test. (I would encourage you to write a unit test to help with fast iteration speed, but hey, no one scrambles an egg alike). 
+
+As an example, Imagine (please) that I have a SAM project in a sibling `/myProject` directory to the monorepo.
+
+```
+/myProject
+ /services
+  /Tuna
+/BeamableProduct
+ /cli
+ /microservice
+ etc...
+```
+
+Then the `/myProject/services/Tuna/Tuna.csproj` may have references like this, 
+```xml
+<ProjectReference Include="..\..\..\BeamableProduct\microservice\microservice\microservice.csproj" />
+```
+
+However, this _won't_ actually work, because the Nuget package reference also carries magical msbuild extensions that we aren't getting. In order to reference the `.props` and `.target` files correctly, we need to add references to the `.props` file at the top of our `.csproj`, and the `.targets` file at the bottom of the `.csproj`. 
+
+```xml
+<!-- Import the .props file!  -->
+<ImportGroup >  
+    <Import Project="..\..\..\BeamableProduct\microservice\microservice\Targets\Beamable.Microservice.Runtime.props" />  
+</ImportGroup>
+```
+
+And then at the bottom, 
+```xml
+<!-- Import the .props file!  -->
+<ImportGroup >  
+    <Import Project="..\..\..\BeamableProduct\microservice\microservice\Targets\Beamable.Microservice.Runtime.targets" />  
+</ImportGroup>
+```
+
+**NOTE**: neither of these approaches will work if you need to run the SAM in Docker, because Docker won't have access to these relative paths. 
+
+
+#### I changed some Microservice Framework code, and I want to validate it works in a new SAM project (Inside Docker)
+Oh boy, you're in the thick of it, now. The docker use-case requires that all the moving pieces of our software stack line up. Everything needs to be accessible to the docker build step, which means source-code needs to be built and included locally, or the code needs to be built and be available on nuget.org. 
+
+Ultimately, what needs to happen is that docker needs to be able to find your source code. There are lots of ways that _could_ happen, but the proposed solution is to have the dockerfile for your SAM project copy in a local Nuget package source, register it, and then find the source code from that. 
+
+When you run `./set-packages.sh`, you can pass an argument which is the path to your local `.beamable` project. Then, the output `0.0.123` packages will be sent to that package source. You can write the dockerfile manually, but if hindsight is 20/20, then it would be better to create the service with the `--beamable-dev` flag. This will create a slightly different dockerfile for your service that you can find in the `templates/BeamStorage/Dockerfile-BeamableDev` file. 
+
+```Dockerfile
+FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine as build-env  
+WORKDIR /BeamableSource  
+COPY ./BeamableSource/*.nupkg ./  
+WORKDIR /subsrc/  
+RUN dotnet nuget add source /BeamableSource
+```
+
+This process is a pain. 
+
+## The CLI Solution
 
 The Beam CLI is a dotnet solution located in the `/cli` folder. Confusingly, there is also a dotnet _project_ in `/cli/cli` which is the actual executable CLI project. This CLI project is the dotnet tool we publish to Nuget, [https://www.nuget.org/packages/Beamable.Tools](https://www.nuget.org/packages/Beamable.Tools)
 
@@ -27,6 +110,11 @@ Within the `/cli` solution, there are also a few other project folders,
 | `/cli/beamable.common`        | this is shared code between Unity, the CLI, and the Microservice Framework. Any edits to this project are wide-reaching. |
 | `/cli/beamable.server.common` | this is shared code between Unity, the CLI, and the Microservice Framework. Any edits to this project are wide-reaching. |
 | `/cli/tests`                  | this is a unit test project for the CLI executable.                                                                      |
+
+The CLI solution also references some code in the `/microservice` folder, specifically, 
+- `/microservice/beamable.tooling.common`
+- `/microservice/unityEngine`
+- `/microservice/unityEngine.addressables
 
 Within the CLI project itself, the application is built on top of Microsoft's Command Line Library, [https://learn.microsoft.com/en-us/dotnet/standard/commandline/](https://learn.microsoft.com/en-us/dotnet/standard/commandline/). Beyond that, we've introduced our own dependency injection style framework that groups "Commands" in a service-scope, and "Services" within a separate scope. To start understanding the flow of the program, I'd recommend looking at the `Program` class, which functions as the entry point to the executable. 
 
@@ -137,7 +225,7 @@ Mock<IAuthApi>(mock =>
 
 
 
-# Unity SDK
+## Unity SDK
 
 There is a Unity project inside the `/client` folder. The Unity SDK itself is a Unity Package Manager (UPM) Package. Per UPM regulation, the source code is inside `/client/Packages/com.beamable`. As of this writing, there is a second UPM package, `/client/Packages/com.beamable.server`. However, the plan is to move the contents of the `.server` package into the `com.beamable` one. 
 
@@ -194,6 +282,60 @@ dotnet build -p:ReleaseSharedCode=true
 ```
 
 Finally, as mentioned, the SDK depends on the Beam CLI. As part of the SDK's initialization, it will resolve a Beam CLI executable path. In a deployed package, it uses the value of the `nugetPackageVersion` field and downloads the Nuget tool as a local package in `/Library/BeamableEditor/BeamCLI`. If you are developing locally, you can edit this through the `EditorConfiguration` .
+
+
+## Templates
+
+The `/templates` folder has a solution of dotnet project templates. These templates are built and released as a Nuget package, [https://www.nuget.org/packages/Beamable.Templates/](https://www.nuget.org/packages/Beamable.Templates/). These templates are important for the CLI & Standalone Microservice workflow. When you create a new Standalone Microservice, one of the steps is to run the `dotnet new` command and pass in a template option for these deployed Beamable templates. 
+
+I'd recommend reading up on Dotnet Templates, [https://learn.microsoft.com/en-us/dotnet/core/tools/custom-templates](https://learn.microsoft.com/en-us/dotnet/core/tools/custom-templates). 
+
+The structure of the templates solution is a bit confusing. There are a set of _actual_ template projects, at the time of this writing, 
+1. `Beamservice`
+2. `BeamStorage`
+3. `CommonLibrary`
+But there is a very important additional project, `templates`. The `templates` project is the actual project file that is converted into a nuget package. If you inspect the `.csproj` , you'll see this, 
+
+```xml
+<ItemGroup>  
+    <Content Include="Data/BeamService/**" Exclude="Data/BeamService/bin/**;Data/BeamService/obj/**;" />  
+    <Compile Remove="**/*" />  
+</ItemGroup>  
+<ItemGroup>  
+    <Content Include="Data/BeamStorage/**" Exclude="Data/BeamStorage/bin/**;Data/BeamStorage/obj/**;" />  
+    <Compile Remove="**/*" />  
+</ItemGroup>  
+<ItemGroup>  
+    <Content Include="Data/CommonLibrary/**" Exclude="Data/CommonLibrary/bin/**;Data/CommonLibrary/obj/**;" />  
+    <Compile Remove="**/*" />  
+</ItemGroup>
+```
+
+The goal of this configuration is to copy in files from the `/Data` folder into the final nuget package. This allows the single `template` project to carry multiple project templates, instead of having a single nuget package per template project. 
+
+Admittedly, this is confusing. there is a `build.sh` script in the templates solution that will copy the files from the various projects into the `/templates/Data`, and then run the nuget pack. The `build.sh` script will install the templates to your local computer, so that you can use them. 
+
+
+## Microservice Framework
+
+The Microservice framework code is inside the `/microservice` solution. There is a `/microservice/microservice` project which is the Dotnet project that gets packed into the nuget package, `Beamable.Microservice.Runtime`.[https://www.nuget.org/packages/Beamable.Microservice.Runtime/](https://www.nuget.org/packages/Beamable.Microservice.Runtime/) 
+
+The `microservice` solution has several projects referenced, 
+
+| path                                          | note                                                                                                                                                                      |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/microservice/beamable.tooling.common`       | this is shared code between the CLI and the Microservices. Really, this is shared beamable code that cannot be put in `cli/beamable.common` due to the Unity requirement. |
+| `/microservice/unityEngineStubs`              | this is a proxy library for basic unity types                                                                                                                             |
+| `/microservice/unityEngineStubs.addressables` | this is a proxy library for basic addressable types. It must exist is as a separate project due to how assemblies are loaded in Unity itself.                             |
+| `/microservice/microserviceTests`             | unit and smoke tests for the microservice framework                                                                                                                       |
+| `/microservice/microserivce`                  | the actual framework code.                                                                                                                                                |
+
+The `/cli/beamable.common` and `/cli/beamable.server.common` projects are also _referenced_ through the solution file. 
+
+An unusual part of the packaging of the `microservice/microservice` project into the Nuget package, `Beamable.Microservice.Runtime`, is that not _all_ of the project references are deployed as Nuget packages themselves. Specifically, `beamable.tooling.common` is not currently a Nuget package. This means that `Beamable.Microservice.Runtime` needs to manually include the dependency as a built dll, and the sub-dependencies of that library as well. Its a pain, and I hope we change this some day soon. 
+
+
+
 
 # Releases
 
