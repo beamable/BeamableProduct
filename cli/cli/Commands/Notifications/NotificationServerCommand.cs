@@ -4,6 +4,7 @@ using Beamable.Common.Dependencies;
 using cli.Utils;
 using Newtonsoft.Json;
 using Serilog;
+using System.CommandLine;
 using System.Net.WebSockets;
 using System.Text;
 
@@ -11,7 +12,7 @@ namespace cli.Notifications;
 
 public class NotificationServerCommandArgs : CommandArgs
 {
-
+	public bool noFilterList;
 }
 
 public class NotificationServerOutput
@@ -29,7 +30,10 @@ public class NotificationServerCommand : StreamCommand<NotificationServerCommand
 
 	public override void Configure()
 	{
-
+		var noFilterOpt = new Option<bool>("--no-filter", () => false,
+			"When true, do not send any approved list of messages, such that all server messages will be sent");
+		noFilterOpt.AddAlias("-n");
+		AddOption(noFilterOpt, (args, i) => args.noFilterList = i);
 	}
 
 	public override async Task Handle(NotificationServerCommandArgs args)
@@ -43,7 +47,7 @@ public class NotificationServerCommand : StreamCommand<NotificationServerCommand
 		await ws.ConnectAsync(new Uri(socketAddress), cancelToken);
 
 		await Authenticate(ws, secret, args.AppContext.Cid, args.AppContext.Pid, cancelToken);
-		await RegisterForEvents(ws, cancelToken);
+		await RegisterForEvents(args, ws, cancelToken);
 
 		do
 		{
@@ -117,19 +121,36 @@ public class NotificationServerCommand : StreamCommand<NotificationServerCommand
 		}
 	}
 
-	private static async Task RegisterForEvents(ClientWebSocket ws, CancellationToken cancelToken)
+	private static async Task RegisterForEvents(NotificationServerCommandArgs args, ClientWebSocket ws, CancellationToken cancelToken)
 	{
-		var reqObject = new
+		object reqObject;
+		if (args.noFilterList)
 		{
-			id = 3,
-			method = "post",
-			path = "gateway/provider",
-			body = new
+			reqObject = new
 			{
-				type = "event",
-				evtWhitelist = new string[] { "content.manifest", "realm-config.refresh" }
-			}
-		};
+				id = 3,
+				method = "post",
+				path = "gateway/provider",
+				body = new
+				{
+					type = "event",
+				}
+			};
+		}
+		else
+		{
+			reqObject = new
+			{
+				id = 3,
+				method = "post",
+				path = "gateway/provider",
+				body = new
+				{
+					type = "event", evtWhitelist = new string[] { "content.manifest", "realm-config.refresh" }
+				}
+			};
+		}
+
 		var reqJson = JsonConvert.SerializeObject(reqObject);
 		Log.Debug($"Registering for events - {reqJson}");
 
