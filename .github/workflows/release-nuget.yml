@@ -147,7 +147,7 @@ jobs:
 
       - name: Publish Changelog
         if: ${{ inputs.dryRun == false }} 
-        run: sh ./build/bin-upload-changelogs.sh
+        run: sh ./build/bin/upload-changelogs.sh
         env:
           COPY_UNITY_SDK: 'false'
           COPY_CLI: 'true'
