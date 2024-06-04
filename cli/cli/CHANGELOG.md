@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `--no-filter` option to `beam listen server`
+
+## [2.0.0]
+
+### Added
 
 - `--raw` option will output commands in machine readable JSON format
 - `beam listen player` command monitors notifications sent to the logged in CLI user

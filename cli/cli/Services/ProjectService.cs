@@ -307,7 +307,15 @@ public class ProjectService
 
 	public class NewServiceInfo
 	{
-		public string SolutionDirectory => Path.GetDirectoryName(SolutionPath);
+		public string SolutionDirectory
+		{
+			get
+			{
+				string path = Path.GetDirectoryName(SolutionPath);
+				return string.IsNullOrEmpty(path) ? "." : path;
+			}
+		}
+
 		public string SolutionPath;
 		public string ServicePath;
 	}
@@ -391,7 +399,10 @@ public class ProjectService
 		string usedVersion = args.SpecifiedVersion.ToString();
 		await EnsureCanUseTemplates(usedVersion);
 
-		var microserviceInfo = new NewServiceInfo { SolutionPath = args.SlnFilePath };
+		var microserviceInfo = new NewServiceInfo
+		{
+			SolutionPath = args.SlnFilePath
+		};
 		if (!args.GetSlnExists())
 		{
 			await CreateNewSolution(args.GetSlnDirectory(), args.GetSlnFileName());
