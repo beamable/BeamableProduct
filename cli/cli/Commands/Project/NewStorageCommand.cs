@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Semantics;
 using cli.Services;
 using cli.Utils;
@@ -59,14 +60,37 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 		if (dependencies == null)
 			return;
 
+		var definitions = new List<BeamoServiceDefinition>();
+
 		foreach (var dependency in dependencies)
 		{
 			if (args.BeamoLocalSystem.BeamoManifest.TryGetDefinition(dependency, out var dependencyDefinition))
 			{
 				Log.Information("Adding {ArgsStorageName} reference to {Dependency}. ", args.ProjectName, dependency);
 				await args.BeamoLocalSystem.AddProjectDependency(dependencyDefinition, relativePathToStorage);
+				definitions.Add(dependencyDefinition);
 			}
 		}
+
+		args.ConfigService.SetTempWorkingDir(newMicroserviceInfo.SolutionDirectory);
+		args.ConfigService.SetBeamableDirectory(newMicroserviceInfo.SolutionDirectory);
+
+		await args.BeamoLocalSystem.InitManifest();
+
+		var promises = new List<Promise<Unit>>();
+
+		foreach (var def in definitions)
+		{
+			promises.Add(UpdateDependencyDockerFile(args, def));
+		}
+
+		var sequence = Promise.Sequence(promises);
+		await sequence;
+	}
+
+	private async Promise UpdateDependencyDockerFile(NewStorageCommandArgs args, BeamoServiceDefinition definition)
+	{
+		await args.BeamoLocalSystem.UpdateDockerFile(definition);
 	}
 
 	private string[] GetDependenciesFromName(BeamoLocalSystem localSystem, List<string> dependencies)
