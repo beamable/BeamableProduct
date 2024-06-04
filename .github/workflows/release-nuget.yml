@@ -136,6 +136,7 @@ jobs:
           echo build-env=${{steps.version.outputs.BUILD_ENV}}
 
       - name: Publish Nuget Packages
+        if: ${{ inputs.dryRun == false }} 
         run: sh ./build/bin/release-nuget.sh
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
@@ -143,6 +144,23 @@ jobs:
           VERSION_SUFFIX: ${{ steps.version.outputs.VERSION_SUFFIX }}
           DRY_RUN: ${{ inputs.dryRun }}
           NUGET_TOOLS_KEY: ${{ secrets.NUGET_TOOLS_KEY }}
+
+      - name: Publish Changelog
+        if: ${{ inputs.dryRun == false }} 
+        run: sh ./build/bin-upload-changelogs.sh
+        env:
+          COPY_UNITY_SDK: 'false'
+          COPY_CLI: 'true'
+          VERSION: ${{ steps.version.outputs.VERSION }}
+          GITHUB_USERNAME: ${{ secrets.GIT_CHANGELOGS_USERNAME }}
+          GITHUB_PASSWORD: ${{ secrets.GIT_CHANGELOGS_PASSWORD }}
+          BRANCH: >-
+            ${{ fromJson('{
+              "nightly": "daily",
+              "rc": "staging",
+              "exp": "staging",
+              "production": "production"
+            }')[github.event.inputs.releaseType] }}
 
       - name: Create Release
         id: create_release
