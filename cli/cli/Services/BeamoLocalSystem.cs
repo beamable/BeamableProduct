@@ -196,7 +196,7 @@ public partial class BeamoLocalSystem
 				dependencies.Add(new DependencyData()
 				{
 					name = name,
-					projPath = path,
+					projPath = Path.GetDirectoryName(path),
 					dllName = name, // TODO: We should have a better way to get this, for now we assume it's the same as the reference project name
 					type = "library"
 				});
@@ -344,7 +344,7 @@ COPY {servicePathTag} /subsrc/{servicePathTag}";
 		var dependencies = GetDependencies(serviceName, true);
 		foreach (var dependency in dependencies)
 		{
-			newText = newText.Replace(endTag, replacement.Replace(servicePathTag, dependency.projPath)).Replace('\\', '/').Insert(0, "\n");
+			newText = newText.Replace(endTag, replacement.Replace(servicePathTag, dependency.projPath).Replace('\\', '/').Insert(0, "\n"));
 		}
 
 		//Copy the services files
@@ -597,8 +597,23 @@ public class BeamoServiceDefinition
 	{
 		get
 		{
-			if (string.IsNullOrEmpty(ImageId)) return null;
-			return ImageId.Contains(':') ? ImageId.Split(':')[1].Substring(0, 12) : ImageId;
+			if (string.IsNullOrEmpty(ImageId) || Protocol != BeamoProtocolType.HttpMicroservice) return null;
+			const int minimumChars = 12;
+
+			if (ImageId.Contains(':'))
+			{
+				var version = ImageId.Split(':')[1];
+
+				if (version.Length < minimumChars)
+				{
+					throw new CliException($"Invalid format of image Version=[{version}]. Should have at least {minimumChars} characters.");
+				}
+				return version.Substring(0, minimumChars);
+			}
+			else
+			{
+				return ImageId;
+			}
 		}
 	}
 
