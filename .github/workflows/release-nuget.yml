@@ -135,15 +135,15 @@ jobs:
           echo version suffix=${{ steps.version.outputs.VERSION_SUFFIX }}
           echo build-env=${{steps.version.outputs.BUILD_ENV}}
 
-      - name: Publish Nuget Packages
-        if: ${{ inputs.dryRun == false }} 
-        run: sh ./build/bin/release-nuget.sh
-        env:
-          VERSION: ${{ steps.version.outputs.VERSION }}
-          VERSION_PREFIX: ${{ steps.version.outputs.VERSION_PREFIX }}
-          VERSION_SUFFIX: ${{ steps.version.outputs.VERSION_SUFFIX }}
-          DRY_RUN: ${{ inputs.dryRun }}
-          NUGET_TOOLS_KEY: ${{ secrets.NUGET_TOOLS_KEY }}
+      # - name: Publish Nuget Packages
+      #   if: ${{ inputs.dryRun == false }} 
+      #   run: sh ./build/bin/release-nuget.sh
+      #   env:
+      #     VERSION: ${{ steps.version.outputs.VERSION }}
+      #     VERSION_PREFIX: ${{ steps.version.outputs.VERSION_PREFIX }}
+      #     VERSION_SUFFIX: ${{ steps.version.outputs.VERSION_SUFFIX }}
+      #     DRY_RUN: ${{ inputs.dryRun }}
+      #     NUGET_TOOLS_KEY: ${{ secrets.NUGET_TOOLS_KEY }}
 
       - name: Publish Changelog
         if: ${{ inputs.dryRun == false }} 
@@ -162,16 +162,16 @@ jobs:
               "production": "production"
             }')[github.event.inputs.releaseType] }}
 
-      - name: Create Release
-        id: create_release
-        if: ${{ inputs.dryRun == false }} 
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-        with:
-          tag_name: cli-${{ steps.version.outputs.VERSION }}
-          release_name: CLI ${{ steps.version.outputs.VERSION }}
-          body: |
-            CLI Release ${{ steps.version.outputs.VERSION }}
-          draft: false
-          prerelease: ${{ inputs.releaseType != 'production' }}
+      # - name: Create Release
+      #   id: create_release
+      #   if: ${{ inputs.dryRun == false }} 
+      #   uses: actions/create-release@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      #   with:
+      #     tag_name: cli-${{ steps.version.outputs.VERSION }}
+      #     release_name: CLI ${{ steps.version.outputs.VERSION }}
+      #     body: |
+      #       CLI Release ${{ steps.version.outputs.VERSION }}
+      #     draft: false
+      #     prerelease: ${{ inputs.releaseType != 'production' }}
