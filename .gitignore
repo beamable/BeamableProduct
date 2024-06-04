@@ -3,6 +3,8 @@
 /ProjectsSource/
 /dist
 
+.obsidian
+
 # Unity3D generated files.
 /client/Library/
 /client/Temp/
@@ -56,6 +58,9 @@ user-token.json
 /microservice/unityEngineStubs/bin/
 /microservice/unityEngineStubs/obj/
 /microservice/unityEngineStubs/.idea/
+/microservice/unityEngineStubs.addressables/bin/
+/microservice/unityEngineStubs.addressables/obj/
+/microservice/unityEngineStubs.addressables/.idea/
 /microservice/microservice/bin/
 /microservice/microservice/obj/
 /microservice/microserviceTests/bin/
