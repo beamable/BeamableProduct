@@ -1,7 +1,7 @@
 // this file was copied from nuget package Beamable.Common@0.0.0-PREVIEW.NIGHTLY-202405141737
 // https://www.nuget.org/packages/Beamable.Common/0.0.0-PREVIEW.NIGHTLY-202405141737
 
-﻿#if !UNITY_WEBGL || UNITY_EDITOR
+#if !UNITY_WEBGL || UNITY_EDITOR
 using System;
 using System.Threading.Tasks;
 
