@@ -1,6 +1,7 @@
 using Beamable.Common.Semantics;
 using cli.Dotnet;
 using cli.Services;
+using Newtonsoft.Json;
 using Serilog;
 using System.CommandLine;
 using System.ComponentModel;
@@ -58,11 +59,16 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 		{
 			if (serviceEvt.isContainer)
 			{
-				Log.Warning($"Skipping service=[{serviceName}]. this command is only intended to work for locally running services in dotnet. Please use `docker stop` instead.");
-				SendResults(new StopProjectCommandOutput
+				await args.BeamoLocalSystem.SynchronizeInstanceStatusWithDocker(args.BeamoLocalSystem.BeamoManifest, args.BeamoLocalSystem.BeamoRuntime.ExistingLocalServiceInstances);
+				await args.BeamoLocalSystem.StartListeningToDocker();
+
+				await ServicesResetContainerCommand.TurnOffContainers(args.BeamoLocalSystem,new[]{serviceName}, _ =>
 				{
-					didStop = false,
-					serviceName = serviceName
+					SendResults(new StopProjectCommandOutput
+					{
+						didStop = true,
+						serviceName = serviceName
+					});
 				});
 				continue;
 			}
@@ -81,6 +87,7 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 	{
 		using var client = new HttpClient();
 		// Set up the HTTP GET request
+		Log.Verbose($"Sending kill event, discovery=[{JsonConvert.SerializeObject(evt, Formatting.Indented)}]");
 		var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:{evt.healthPort}/stop?reason=cli-request");
 		var response = await client.SendAsync(request);
 		if (!response.IsSuccessStatusCode)
