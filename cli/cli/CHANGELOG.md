@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `--no-filter` option to `beam listen server`
 
+### Fixed
+- `beam project stop` will stop services running in docker
+- `beam service ps`  was not working when calling it because it was trying to get the ImageId of storage objects
+- common lib handling uses `.` as a default path instead of the empty string 
+- `UpdateDockerfile` update to fix common lib handling for docker builds
+
 ## [2.0.0] - 2024-05-24
 
 ### Added
