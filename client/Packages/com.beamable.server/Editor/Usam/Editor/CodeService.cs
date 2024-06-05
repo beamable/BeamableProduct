@@ -50,8 +50,10 @@ namespace Beamable.Server.Editor.Usam
 		public static readonly string StandaloneMicroservicesFolderName = "StandaloneMicroservices~/";
 		private static readonly string StandaloneMicroservicesPath = $"{BEAMABLE_PATH}{StandaloneMicroservicesFolderName}";
 		public static readonly string LibrariesPathsFilePath = $"{BEAMABLE_LIB_PATH}/.libraries_paths";
+		public static readonly string ServicesDefinitionsFilePath = $"{BEAMABLE_LIB_PATH}/.services_definitions";
 		private IDependencyProvider _provider;
 		public static string LibrariesPathsDirectory => Path.GetDirectoryName(LibrariesPathsFilePath);
+		public static string ServicesDefinitionsDirectory => Path.GetDirectoryName(ServicesDefinitionsFilePath);
 
 		public CodeService(IDependencyProvider provider, BeamCommands cli, BeamableDispatcher dispatcher, DotnetService dotnetService)
 		{
@@ -78,11 +80,12 @@ namespace Beamable.Server.Editor.Usam
 			UsamLogger.Log("Saving all libraries referenced by services");
 			await SaveReferencedLibraries();
 
+			await RefreshServices();
+			UsamLogger.Log($"There are {ServiceDefinitions.Count} Service definitions");
+
 			SetSolution();
 			UsamLogger.Log("Solution set done");
 
-			await RefreshServices();
-			UsamLogger.Log($"There are {ServiceDefinitions.Count} Service definitions");
 			const string updatedServicesKey = "BeamUpdatedServices";
 			if (!SessionState.GetBool(updatedServicesKey, false))
 			{
@@ -366,6 +369,27 @@ namespace Beamable.Server.Editor.Usam
 
 			return assets;
 		}
+
+		private void SaveServicesDefinitions()
+		{
+			//Only get those services that exist locally
+			var definitions = ServiceDefinitions.Where(sd => !string.IsNullOrEmpty(sd.ServiceInfo.projectPath))
+			                                    .ToList();
+			var servicesDefinitionsObject = new ServicesPaths()
+			{
+
+				definitions = definitions.Select(d => new ServiceDefinitionObject()
+				{
+					name = d.BeamoId,
+					path = d.ServiceInfo.projectPath
+				}).ToList()
+			};
+
+			string fileContent = JsonUtility.ToJson(servicesDefinitionsObject, true);
+
+			Directory.CreateDirectory(ServicesDefinitionsDirectory);
+			File.WriteAllText(ServicesDefinitionsFilePath, fileContent);
+		}
 		
 		private async Promise SaveReferencedLibraries()
 		{
@@ -385,13 +409,12 @@ namespace Beamable.Server.Editor.Usam
 
 			var librariesPaths = new LibrariesPaths() {libraries = allDependencies.Distinct().ToList()};
 
-			var fileContent = JsonUtility.ToJson(librariesPaths);
+			var fileContent = JsonUtility.ToJson(librariesPaths, true);
 
 			Directory.CreateDirectory(LibrariesPathsDirectory);
 			File.WriteAllText(LibrariesPathsFilePath, fileContent);
 		}
 
-		[MenuItem("Gabriel/GetLibrariesPaths")]
 		public static LibrariesPaths GetLibrariesPaths()
 		{
 			if (!File.Exists(LibrariesPathsFilePath))
@@ -402,6 +425,18 @@ namespace Beamable.Server.Editor.Usam
 			var contents = File.ReadAllText(LibrariesPathsFilePath);
 
 			return JsonUtility.FromJson<LibrariesPaths>(contents);
+		}
+
+		public static ServicesPaths GetServicesDefinitions()
+		{
+			if (!File.Exists(ServicesDefinitionsFilePath))
+			{
+				return new ServicesPaths();
+			}
+
+			var contents = File.ReadAllText(ServicesDefinitionsFilePath);
+
+			return JsonUtility.FromJson<ServicesPaths>(contents);
 		}
 
 		public async Promise UpdateServicesVersions()
@@ -418,6 +453,8 @@ namespace Beamable.Server.Editor.Usam
 		public async Promise RefreshServices()
 		{
 			ServiceDefinitions.Clear();
+			bool finishedLocal = false;
+			bool finishedRemote = false;
 
 			try
 			{
@@ -428,7 +465,8 @@ namespace Beamable.Server.Editor.Usam
 				{
 					IsDockerRunning = cb.data.IsDockerRunning;
 					UsamLogger.Log($"Found {cb.data.BeamoIds.Count} remote services");
-					_dispatcher.Schedule(() => PopulateDataWithRemote(cb.data));
+					PopulateDataWithRemote(cb.data);
+					finishedRemote = true;
 				});
 				await psRemote.Run();
 				UsamLogger.Log("refresh remote services from CLI end");
@@ -439,8 +477,9 @@ namespace Beamable.Server.Editor.Usam
 				psLocal.OnStreamServiceListResult(cb =>
 				{
 					IsDockerRunning = cb.data.IsDockerRunning;
-					UsamLogger.Log($"Found {cb.data.BeamoIds.Count} remote services");
-					_dispatcher.Schedule(() => PopulateDataWithRemote(cb.data));
+					UsamLogger.Log($"Found {cb.data.BeamoIds.Count} local services");
+					PopulateDataWithRemote(cb.data);
+					finishedLocal = true;
 				});
 				await psLocal.Run();
 				UsamLogger.Log("refresh local services from CLI end");
@@ -451,6 +490,13 @@ namespace Beamable.Server.Editor.Usam
 				UsamLogger.Log("ERROR: Could not list remote services, skip");
 				return;
 			}
+
+			while (!finishedLocal || !finishedRemote)
+			{
+				await Task.Delay(10);
+			}
+
+			SaveServicesDefinitions();
 		}
 
 		private void PopulateDataWithRemote(BeamServiceListResult objData)
@@ -465,7 +511,7 @@ namespace Beamable.Server.Editor.Usam
 					? ServiceType.MicroService
 					: ServiceType.StorageObject;
 
-				string assetProjectPath = string.Empty; //TODO: we should be able to get this from the CLI command
+				string assetProjectPath = objData.ProjectPath[i];
 
 				
 				AddServiceDefinition(name, type, assetProjectPath, true, runningState,

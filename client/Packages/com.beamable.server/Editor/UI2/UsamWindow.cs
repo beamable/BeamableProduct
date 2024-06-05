@@ -127,7 +127,7 @@ namespace Beamable.Editor.Microservice.UI2
 		private void HandleRefreshButtonClicked()
 		{
 			_codeService = Scope.GetService<CodeService>();
-			_codeService.Init().Then(_ => Build()).Error(Debug.LogError);
+			_codeService.RefreshServices().Then(_ => Build()).Error(Debug.LogError);
 		}
 
 		private void HandleCreateNewButtonClicked(ServiceType serviceType)

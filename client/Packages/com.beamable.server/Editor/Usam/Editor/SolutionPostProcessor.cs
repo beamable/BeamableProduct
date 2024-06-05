@@ -40,10 +40,11 @@ EndProject";
 
 		public static string OnGeneratedSlnSolution(string path, string content)
 		{
-			var codeService = BeamEditorContext.Default.ServiceScope.GetService<CodeService>();
-			foreach (var definition in codeService.ServiceDefinitions)
+			var definitions = CodeService.GetServicesDefinitions();
+			foreach (var definition in definitions.definitions)
 			{
-				content = InjectProject(content, definition.BeamoId, definition.ServiceInfo.projectPath);
+				var csprojPath = Path.Combine(definition.path, $"{definition.name}.csproj");
+				content = InjectProject(content, definition.name, csprojPath);
 			}
 
 			var librariesPaths = CodeService.GetLibrariesPaths();
