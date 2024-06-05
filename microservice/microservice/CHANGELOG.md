@@ -8,5 +8,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- `beam project stop` will stop services running in docker
 - services running locally will use adaptive port bindings to avoid port collisions
