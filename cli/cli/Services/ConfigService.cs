@@ -72,7 +72,7 @@ public class ConfigService
 	public void SaveDataFile<T>(string fileName, T data)
 	{
 		if (!fileName.EndsWith(".json")) fileName += ".json";
-		var json = JsonConvert.SerializeObject(data,
+		var json = JsonConvert.SerializeObject(data, Formatting.Indented,
 			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto });
 		var dir = Path.Combine(ConfigFilePath, fileName);
 		File.WriteAllText(dir, json);
@@ -178,7 +178,7 @@ public class ConfigService
 	{
 		if (string.IsNullOrEmpty(ConfigFilePath))
 			throw new CliException("No beamable project exists. Please use beam init");
-		var json = JsonConvert.SerializeObject(_config);
+		var json = JsonConvert.SerializeObject(_config, Formatting.Indented);
 		if (!Directory.Exists(ConfigFilePath))
 		{
 			Directory.CreateDirectory(ConfigFilePath);
@@ -232,7 +232,7 @@ public class ConfigService
 	public void SaveTokenToFile(IAccessToken response)
 	{
 		string fullPath = Path.Combine(ConfigFilePath, Constants.CONFIG_TOKEN_FILE_NAME);
-		var json = JsonConvert.SerializeObject(response);
+		var json = JsonConvert.SerializeObject(response, Formatting.Indented);
 		File.WriteAllText(fullPath, json);
 	}
 
