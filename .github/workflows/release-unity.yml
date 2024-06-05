@@ -182,6 +182,23 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
           NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
 
+      - name: Publish Changelog
+        if: ${{ inputs.dryRun == false }} 
+        run: sh ./build/bin/upload-changelogs.sh
+        env:
+          COPY_UNITY_SDK: 'true'
+          COPY_CLI: 'false'
+          VERSION: ${{ steps.version.outputs.VERSION }}
+          GITHUB_USERNAME: ${{ secrets.GIT_CHANGELOGS_USERNAME }}
+          GITHUB_PASSWORD: ${{ secrets.GIT_CHANGELOGS_PASSWORD }}
+          BRANCH: >-
+            ${{ fromJson('{
+              "nightly": "daily",
+              "rc": "staging",
+              "exp": "staging",
+              "production": "production"
+            }')[github.event.inputs.releaseType] }}
+
       - name: Create Release
         id: create_release
         if: ${{ inputs.dryRun == false }} 
