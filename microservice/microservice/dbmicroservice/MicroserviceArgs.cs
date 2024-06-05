@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Util;
+using Beamable.Server.Common;
 using System;
 using System.IO;
 
@@ -50,6 +51,7 @@ namespace Beamable.Server
 	public class MicroserviceArgs : IMicroserviceArgs
 	{
 		public IDependencyProviderScope ServiceScope { get; set; }
+
 		public int HealthPort { get; set; }
 		public string CustomerID { get; set; }
 		public string ProjectName { get; set; }
@@ -160,7 +162,27 @@ namespace Beamable.Server
 		public string CustomerID => Environment.GetEnvironmentVariable("CID");
 		public string ProjectName => Environment.GetEnvironmentVariable("PID");
 		public IDependencyProviderScope ServiceScope { get; }
-		public int HealthPort => GetIntFromEnvironmentVariable("HEALTH_PORT", Constants.Features.Services.HEALTH_PORT);
+
+		private static int? _freeHealthPort = null;
+		public int HealthPort
+		{
+			get
+			{
+				var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+				var defaultPort = Constants.Features.Services.HEALTH_PORT;
+				if (!inDocker)
+				{
+					// if we aren't in docker, then we can't use a constant default port, because
+					//  it is very likely that there will be a port collision.
+					//  So, get a fresh port number, and store it in a static variable, so 
+					//  it doesn't get re-generated for later calls. 
+					_freeHealthPort ??= PortUtil.FreeTcpPort();
+					defaultPort = _freeHealthPort.Value;
+				}
+				return GetIntFromEnvironmentVariable("HEALTH_PORT", defaultPort);
+			}
+		}
+
 		public string Host => Environment.GetEnvironmentVariable("HOST");
 		public string Secret => Environment.GetEnvironmentVariable("SECRET");
 		public string NamePrefix => Environment.GetEnvironmentVariable("NAME_PREFIX") ?? "";
