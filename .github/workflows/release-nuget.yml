@@ -135,6 +135,12 @@ jobs:
           echo version suffix=${{ steps.version.outputs.VERSION_SUFFIX }}
           echo build-env=${{steps.version.outputs.BUILD_ENV}}
 
+     - name: Prepare Unity Env
+        run: sh ./build/bin/modify-nuget-files.sh
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+          ENVIRONMENT: ${{steps.version.outputs.BUILD_ENV}}
+          
       - name: Publish Nuget Packages
         if: ${{ inputs.dryRun == false }} 
         run: sh ./build/bin/release-nuget.sh

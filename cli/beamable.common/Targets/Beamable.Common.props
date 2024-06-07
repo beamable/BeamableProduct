@@ -8,6 +8,11 @@
         <CopyToLinkedProjects Condition="$(CopyToLinkedProjects)==''">false</CopyToLinkedProjects>
     </PropertyGroup>
 
+    <PropertyGroup Label="Built Settings">
+        <PackagedBeamableVersion>__REPLACE_PACKED_BEAMABLE_VERSION__</PackagedBeamableVersion>
+    </PropertyGroup>
+
+
     <!--  Settings for Beamable Build  -->
     <PropertyGroup>
         <!-- The tool path for the beamCLI. "dotnet beam" will refer to the local project tool, and "beam" would install to a globally installed tool -->
