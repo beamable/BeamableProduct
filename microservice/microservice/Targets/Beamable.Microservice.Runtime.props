@@ -15,6 +15,7 @@
     </PropertyGroup>
 
     <PropertyGroup Label="Built Settings">
+        <BeamDotnetPath Condition="'$(BeamDotnetPath)' == ''">dotnet</BeamDotnetPath>
         <PackagedBeamableVersion>__REPLACE_PACKED_BEAMABLE_VERSION__</PackagedBeamableVersion>
     </PropertyGroup>
 
