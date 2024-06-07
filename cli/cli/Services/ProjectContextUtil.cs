@@ -23,7 +23,7 @@ public static class ProjectContextUtil
 		var typeToProjects = allProjects
 			.GroupBy(p => p.properties.ProjectType)
 			.ToDictionary(kvp => kvp.Key, kvp => kvp.ToList());
-		var absPathToProject = allProjects.ToDictionary(kvp => kvp.absolutePath);
+		var absPathToProject = allProjects.ToDictionary(kvp => kvp.fileNameWithoutExtension);
 		var manifest = new BeamoLocalManifest
 		{
 			ServiceDefinitions = new List<BeamoServiceDefinition>(),
@@ -47,8 +47,8 @@ public static class ProjectContextUtil
 
 		foreach (var serviceProject in serviceProjects)
 		{
-			var definition = ProjectContextUtil.ConvertProjectToServiceDefinition(serviceProject, absPathToProject);
-			var protocol = ProjectContextUtil.ConvertProjectToLocalHttpProtocol(serviceProject, definition, absPathToProject);
+			var definition = ProjectContextUtil.ConvertProjectToServiceDefinition(serviceProject);
+			var protocol = ProjectContextUtil.ConvertProjectToLocalHttpProtocol(serviceProject, absPathToProject);
 			manifest.ServiceDefinitions.Add(definition);
 			manifest.HttpMicroserviceLocalProtocols.Add(definition.BeamoId, protocol);
 			
@@ -125,6 +125,14 @@ public static class ProjectContextUtil
 		for (var i = 0 ; i < paths.Length; i ++)
 		{
 			var path = paths[i];
+			var pathDir = Path.GetDirectoryName(path);
+
+			if (string.IsNullOrEmpty(pathDir))
+			{
+				throw new CliException($"Expected a valid directory name from path = [{path}], but got nothing instead.");
+			}
+
+			var projectRelativePath = Path.GetRelativePath(rootFolder, pathDir);
 			Log.Verbose($"Found csproj=[{path}]");
 			projects[i] = new CsharpProjectMetadata
 			{
@@ -151,7 +159,7 @@ public static class ProjectContextUtil
 				allProjectRefs.Add(new MsBuildProjectReference()
 				{
 					RelativePath = reference.EvaluatedInclude,
-					FullPath = Path.GetFullPath(reference.EvaluatedInclude),
+					FullPath = Path.GetFullPath(Path.Combine(projectRelativePath, reference.EvaluatedInclude)),
 					BeamRefType = metaData?.EvaluatedValue
 				});
 			}
@@ -221,8 +229,7 @@ public static class ProjectContextUtil
 		return protocol;
 	}
 	
-	public static HttpMicroserviceLocalProtocol ConvertProjectToLocalHttpProtocol(CsharpProjectMetadata project,
-		BeamoServiceDefinition beamoServiceDefinition, Dictionary<string, CsharpProjectMetadata> absPathToProject)
+	public static HttpMicroserviceLocalProtocol ConvertProjectToLocalHttpProtocol(CsharpProjectMetadata project, Dictionary<string, CsharpProjectMetadata> absPathToProject)
 	{
 		var protocol = new HttpMicroserviceLocalProtocol();
 		protocol.DockerBuildContextPath = ".";
@@ -236,7 +243,8 @@ public static class ProjectContextUtil
 		
 		foreach (var referencedProject in project.projectReferences)
 		{
-			if (!absPathToProject.TryGetValue(referencedProject.FullPath, out var knownProject))
+			var referencedName = Path.GetFileNameWithoutExtension(referencedProject.RelativePath);
+			if (!absPathToProject.TryGetValue(referencedName, out var knownProject))
 			{
 				Log.Warning($"Project=[{project.relativePath}] references project=[${referencedProject.FullPath}] but that project was not detected in the beamable folder context. ");
 				continue;
@@ -262,7 +270,7 @@ public static class ProjectContextUtil
 		: metadata.properties.BeamId;
 
 
-	public static BeamoServiceDefinition ConvertProjectToServiceDefinition(CsharpProjectMetadata project, Dictionary<string, CsharpProjectMetadata> absPathToProject)
+	public static BeamoServiceDefinition ConvertProjectToServiceDefinition(CsharpProjectMetadata project)
 	{
 		if (project.properties.ProjectType != "service")
 		{
