@@ -29,6 +29,7 @@ namespace Beamable.Server {
 		{
 			ConsoleLogger.Instance.LogLevel = LogLevel.Error;
 			_beamableService = service;
+			Log.Verbose($"Debug server starting at port={args.HealthPort}");
 			_server = new WebServer(args.HealthPort)
 				.WithWebApi("/", m => m.WithController(() => new SampleController(service, debugLogSink)));
 		}

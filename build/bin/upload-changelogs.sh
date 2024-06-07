@@ -1,6 +1,8 @@
 #!/bin/bash
 
 echo Branch is $BRANCH
+echo Should Copy Unity SDK=$COPY_UNITY_SDK
+echo Should Copy CLI=$COPY_CLI
 
 echo "--PWD---"
 pwd
@@ -30,9 +32,18 @@ git remote add --fetch origin https://$GITHUB_USERNAME:$GITHUB_PASSWORD@github.c
 git remote set-url origin https://$GITHUB_USERNAME:$GITHUB_PASSWORD@github.com/beamable/Changelogs.git
 git checkout $BRANCH
 git status
+
+if [ "$COPY_UNITY_SDK" = "true" ]
+then 
 cp -f ../BeamableProduct/BeamableProduct/client/Packages/com.beamable/CHANGELOG.md ./com-beamable-changelog.md
 cp -f ../BeamableProduct/BeamableProduct/client/Packages/com.beamable.server/CHANGELOG.md ./com-beamable-server-changelog.md
+fi
+
+if [ "$COPY_CLI" = "true" ]
+then 
 cp -f ../BeamableProduct/BeamableProduct/cli/cli/CHANGELOG.md ./beamable-tools-changelog.md || true
+fi 
+
 git add .
 git status
 git diff-index --quiet HEAD || git commit -m "updating changelogs for $VERSION"
