@@ -39,6 +39,8 @@ namespace Beamable.Server.Editor.Usam
 		public List<IBeamoServiceDefinition> ServiceDefinitions { get; private set; } =
 			new List<IBeamoServiceDefinition>();
 
+		public List<BeamDependencyData> Libraries { get; private set; } = new List<BeamDependencyData>();
+
 		private static readonly List<string> IgnoreFolderSuffixes = new List<string> { "~", "obj", "bin" };
 		private List<Promise> _logsCommands = new List<Promise>();
 
@@ -70,7 +72,7 @@ namespace Beamable.Server.Editor.Usam
 			if (EditorApplication.isPlayingOrWillChangePlaymode)
 				return;
 			
-			UsamLogger.ResetLogTimer();//asd
+			UsamLogger.ResetLogTimer();
 			
 			UsamLogger.Log("Running init");
 
@@ -369,27 +371,6 @@ namespace Beamable.Server.Editor.Usam
 
 			return assets;
 		}
-
-		private void SaveServicesDefinitions()
-		{
-			//Only get those services that exist locally
-			var definitions = ServiceDefinitions.Where(sd => !string.IsNullOrEmpty(sd.ServiceInfo.projectPath))
-			                                    .ToList();
-			var servicesDefinitionsObject = new ServicesPaths()
-			{
-
-				definitions = definitions.Select(d => new ServiceDefinitionObject()
-				{
-					name = d.BeamoId,
-					path = d.ServiceInfo.projectPath
-				}).ToList()
-			};
-
-			string fileContent = JsonUtility.ToJson(servicesDefinitionsObject, true);
-
-			Directory.CreateDirectory(ServicesDefinitionsDirectory);
-			File.WriteAllText(ServicesDefinitionsFilePath, fileContent);
-		}
 		
 		private async Promise SaveReferencedLibraries()
 		{
@@ -407,36 +388,7 @@ namespace Beamable.Server.Editor.Usam
 			});
 			await command.Run();
 
-			var librariesPaths = new LibrariesPaths() {libraries = allDependencies.Distinct().ToList()};
-
-			var fileContent = JsonUtility.ToJson(librariesPaths, true);
-
-			Directory.CreateDirectory(LibrariesPathsDirectory);
-			File.WriteAllText(LibrariesPathsFilePath, fileContent);
-		}
-
-		public static LibrariesPaths GetLibrariesPaths()
-		{
-			if (!File.Exists(LibrariesPathsFilePath))
-			{
-				return new LibrariesPaths();
-			}
-			
-			var contents = File.ReadAllText(LibrariesPathsFilePath);
-
-			return JsonUtility.FromJson<LibrariesPaths>(contents);
-		}
-
-		public static ServicesPaths GetServicesDefinitions()
-		{
-			if (!File.Exists(ServicesDefinitionsFilePath))
-			{
-				return new ServicesPaths();
-			}
-
-			var contents = File.ReadAllText(ServicesDefinitionsFilePath);
-
-			return JsonUtility.FromJson<ServicesPaths>(contents);
+			Libraries = allDependencies.Distinct().ToList();
 		}
 
 		public async Promise UpdateServicesVersions()
@@ -495,8 +447,6 @@ namespace Beamable.Server.Editor.Usam
 			{
 				await Task.Delay(10);
 			}
-
-			SaveServicesDefinitions();
 		}
 
 		private void PopulateDataWithRemote(BeamServiceListResult objData)

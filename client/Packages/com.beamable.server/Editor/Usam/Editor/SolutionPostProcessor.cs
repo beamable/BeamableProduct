@@ -1,7 +1,9 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
@@ -40,24 +42,30 @@ EndProject";
 
 		public static string OnGeneratedSlnSolution(string path, string content)
 		{
-			var definitions = CodeService.GetServicesDefinitions();
-			foreach (var definition in definitions.definitions)
+			var codeService = BeamEditorContext.Default.ServiceScope.GetService<CodeService>();
+			codeService.OnReady.Then((u) =>
 			{
-				var csprojPath = Path.Combine(definition.path, $"{definition.name}.csproj");
-				content = InjectProject(content, definition.name, csprojPath);
-			}
+				var definitions =
+					codeService.ServiceDefinitions.Where(sd => !string.IsNullOrEmpty(sd.ServiceInfo.projectPath));
+				foreach (var definition in definitions)
+				{
+					var csprojPath = Path.Combine(definition.ServiceInfo.projectPath, $"{definition.BeamoId}.csproj");
+					content = InjectProject(content, definition.BeamoId, csprojPath);
+				}
 
-			var librariesPaths = CodeService.GetLibrariesPaths();
-			foreach (var lib in librariesPaths.libraries)
-			{
-				content = InjectProject(content, lib.name, lib.projPath);
-			}
+				foreach (var lib in codeService.Libraries)
+				{
+					content = InjectProject(content, lib.name, lib.projPath);
+				}
 
-			foreach (var reference in AssemblyUtil.ReferencedAssemblies)
-			{
-				var referenceName = reference.name;
-				content = InjectProject(content, referenceName, CsharpProjectUtil.GenerateCsharpProjectFilename(reference));
-			}
+				foreach (var reference in AssemblyUtil.ReferencedAssemblies)
+				{
+					var referenceName = reference.name;
+					content = InjectProject(content, referenceName, CsharpProjectUtil.GenerateCsharpProjectFilename(reference));
+				}
+				File.WriteAllText(path, content);
+			});
+
 			return content;
 		}
 
