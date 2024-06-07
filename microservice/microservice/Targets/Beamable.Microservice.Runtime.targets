@@ -7,10 +7,10 @@
         <OutputType Condition="'$(BeamProjectType)'=='service'">Exe</OutputType>
     </PropertyGroup>
     
-    <Target Name="update-local-tools" AfterTargets="Restore" Condition="$(BeamDisableToolUpdate)==''">
-        <Message Importance="high" Text="updating local beam tool to version=[$(PackagedBeamableVersion)]"/>
-        <Exec Command="$(BeamDotnetPath) tool install --local --allow-downgrade beamable.tools --version $(PackagedBeamableVersion)"/>
-    </Target>
+<!--    <Target Name="update-local-tools" AfterTargets="Restore" Condition="$(BeamDisableToolUpdate)==''">-->
+<!--        <Message Importance="high" Text="updating local beam tool to version=[$(PackagedBeamableVersion)]"/>-->
+<!--        <Exec Command="$(BeamDotnetPath) tool install &#45;&#45;local &#45;&#45;allow-downgrade beamable.tools &#45;&#45;version $(PackagedBeamableVersion)"/>-->
+<!--    </Target>-->
     
     <!-- After the build completes, we should auto-generate client code to any linked projects -->
     <Target Name="generate-client" AfterTargets="Build" Condition="$(GenerateClientCode)==true AND $(DOTNET_RUNNING_IN_CONTAINER)!=true">
