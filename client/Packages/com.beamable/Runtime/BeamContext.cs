@@ -563,8 +563,8 @@ namespace Beamable
 				var analytics = _serviceScope.GetService<IAnalyticsTracker>();
 				analytics.TrackEvent(
 					TokenEvent.ChangingToken(playerId: PlayerId,
-					                         newAccessToken: token.Token,
-					                         newRefreshToken: token.RefreshToken,
+					                         newAccessToken: token?.Token,
+					                         newRefreshToken: token?.RefreshToken,
 					                         oldAccessToken: oldToken?.Token,
 					                         oldRefreshToken: oldToken?.RefreshToken), true);
 			}

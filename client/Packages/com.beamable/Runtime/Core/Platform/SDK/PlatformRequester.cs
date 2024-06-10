@@ -427,8 +427,8 @@ namespace Beamable.Api
 					if (settings.EnableTokenAnalytics)
 					{
 						analytics.TrackEvent(TokenEvent.InvalidAccessToken(playerId: userId,
-						                                                   accessToken: oldToken.Token, 
-						                                                   refreshToken: oldToken.RefreshToken, 
+						                                                   accessToken: oldToken?.Token, 
+						                                                   refreshToken: oldToken?.RefreshToken, 
 						                                                   error: code?.Error.error), true);
 					}
 					
@@ -440,16 +440,16 @@ namespace Beamable.Api
 					{
 						analytics.TrackEvent(
 							TokenEvent.GetNewToken(playerId: userId, 
-							                       newAccessToken: Token.Token, 
-							                       newRefreshToken: Token.RefreshToken, 
-							                       oldAccessToken: oldToken.Token,
-							                       oldRefreshToken: oldToken.RefreshToken), true);
+							                       newAccessToken: Token?.Token, 
+							                       newRefreshToken: Token?.RefreshToken, 
+							                       oldAccessToken: oldToken?.Token,
+							                       oldRefreshToken: oldToken?.RefreshToken), true);
 						analytics.TrackEvent(
 							TokenEvent.ChangingToken(playerId: userId,
-							                         newAccessToken: Token.Token,
-							                         newRefreshToken: Token.RefreshToken,
-							                         oldAccessToken: oldToken.Token,
-							                         oldRefreshToken: oldToken.RefreshToken), true);
+							                         newAccessToken: Token?.Token,
+							                         newRefreshToken: Token?.RefreshToken,
+							                         oldAccessToken: oldToken?.Token,
+							                         oldRefreshToken: oldToken?.RefreshToken), true);
 					}
 
 					await Token.Save();
