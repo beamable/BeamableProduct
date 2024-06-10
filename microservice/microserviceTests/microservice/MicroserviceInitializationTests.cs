@@ -14,9 +14,33 @@ using microserviceTests.microservice.Util;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Serilog.Events;
+using UnityEngine;
 
 namespace microserviceTests.microservice
 {
+
+	[Microservice(nameof(InitCompleteTestService), EnableEagerContentLoading = false)]
+	public class InitCompleteTestService : Microservice
+	{
+		private static bool hasInitialized = false;
+		[InitializeServices]
+		public static async Task Initialize(IServiceInitializer initializer)
+		{
+			await Task.Delay(2000); // wait for 2 seconds
+			hasInitialized = true;
+		}
+
+		[ClientCallable]
+		public int Add(int a, int b)
+		{
+			if (!hasInitialized)
+			{
+				throw new Exception("The service has not initialized yet!");
+			}
+			return a + b;
+		}
+	}
+	
 	[Microservice(nameof(SingletonCache_Success), EnableEagerContentLoading = false)]
 	public class SingletonCache_Success : Microservice
 	{
@@ -167,6 +191,36 @@ namespace microserviceTests.microservice
 
 	public class MicroserviceInitializationTests : CommonTest
 	{
+		[Test]
+		[NonParallelizable]
+		public async Task Test_InitializationCompletesBeforeTrafficIsHandled()
+		{
+			TestSocket testSocket = null;
+			var ms = new TestSetup(new TestSocketProvider(socket =>
+			{
+				testSocket = socket;
+				socket.AddStandardMessageHandlers()
+	                
+					.AddMessageHandler(
+						MessageMatcher
+							.WithReqId(1)
+							.WithStatus(200)
+							.WithPayload<int>(n => n == 3),
+						MessageResponder.NoResponse(),
+						MessageFrequency.OnlyOnce()
+					);
+			}));
+
+			await ms.Start<InitCompleteTestService>(new TestArgs());
+
+			testSocket.SendToClient(ClientRequest.ClientCallable("micro_" + nameof(InitCompleteTestService), nameof(InitCompleteTestService.Add), 1, 1, 1, 2));
+			Assert.IsTrue(ms.HasInitialized);
+
+			// simulate shutdown event...
+			await ms.OnShutdown(this, null);
+			Assert.IsTrue(testSocket.AllMocksCalled());
+		}
+		
 		[Test]
 		[NonParallelizable]
 		public async Task Test_SingletonCache_Success()
