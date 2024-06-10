@@ -1,5 +1,6 @@
 using Beamable.Api.Commerce;
 using Beamable.Common.Content;
+using DefaultNamespace;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -16,7 +17,7 @@ namespace Beamable
 		menuName = Paths.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
 				   "Core Configuration")]
 #endif
-	public class CoreConfiguration : ModuleConfigurationObject, ICommerceConfig
+	public class CoreConfiguration : ModuleConfigurationObject, ICommerceConfig, ITokenEventSettings
 	{
 		public const string PROJECT_EDITOR_REFLECTION_SYSTEM_PATH = "Assets/Beamable/Editor/ReflectionCache/UserSystems";
 		public const string BEAMABLE_EDITOR_REFLECTION_SYSTEM_PATH = "Packages/com.beamable/Editor/ReflectionCache/UserSystems";
@@ -255,5 +256,8 @@ The default is 60 seconds.
 			return new string[] { };
 		}
 
+		[Tooltip("when true, token analytic events will be sent to Beamable. This may be useful to diagnose account switching errors related to expired tokens. ")]
+		public bool enableTokenAnalytics = false;
+		bool ITokenEventSettings.EnableTokenAnalytics => enableTokenAnalytics;
 	}
 }

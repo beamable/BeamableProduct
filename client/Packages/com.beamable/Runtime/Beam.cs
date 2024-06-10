@@ -53,6 +53,7 @@ using Beamable.Player;
 using Beamable.Reflection;
 using Beamable.Sessions;
 using Core.Platform.SDK;
+using DefaultNamespace;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -273,6 +274,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(ContentConfiguration.Instance);
 			DependencyBuilder.AddSingleton(CoreConfiguration.Instance);
 			DependencyBuilder.AddSingleton<ICommerceConfig>(CoreConfiguration.Instance);
+			DependencyBuilder.AddSingleton<ITokenEventSettings>(CoreConfiguration.Instance);
 			DependencyBuilder.AddSingleton<IAuthSettings>(AccountManagementConfiguration.Instance);
 			DependencyBuilder.AddSingleton<OfflineCache>(p => new OfflineCache(p.GetService<IRuntimeConfigProvider>(), CoreConfiguration.Instance.UseOfflineCache));
 

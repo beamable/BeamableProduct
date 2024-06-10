@@ -4,6 +4,7 @@
 #undef BEAMABLE_ENABLE_VERSION_HEADERS
 #endif
 
+using Beamable.Api.Analytics;
 using Beamable.Api.Caches;
 using Beamable.Api.Connectivity;
 using Beamable.Common;
@@ -418,9 +419,39 @@ namespace Beamable.Api
 			{
 				try
 				{
+					
+					var analytics = _provider.GetService<IAnalyticsTracker>();
+					var userId = _provider.GetService<IPlatformService>().User.id;
+					var settings = _provider.GetService<ITokenEventSettings>();
+					var oldToken = Token;
+					if (settings.EnableTokenAnalytics)
+					{
+						analytics.TrackEvent(TokenEvent.InvalidAccessToken(playerId: userId,
+						                                                   accessToken: oldToken.Token, 
+						                                                   refreshToken: oldToken.RefreshToken, 
+						                                                   error: code?.Error.error), true);
+					}
+					
 					var nextToken = await AuthService.LoginRefreshToken(Token.RefreshToken);
 					Token = new AccessToken(accessTokenStorage, Cid, Pid, nextToken.access_token,
 											nextToken.refresh_token, nextToken.expires_in);
+
+					if (settings.EnableTokenAnalytics)
+					{
+						analytics.TrackEvent(
+							TokenEvent.GetNewToken(playerId: userId, 
+							                       newAccessToken: Token.Token, 
+							                       newRefreshToken: Token.RefreshToken, 
+							                       oldAccessToken: oldToken.Token,
+							                       oldRefreshToken: oldToken.RefreshToken), true);
+						analytics.TrackEvent(
+							TokenEvent.ChangingToken(playerId: userId,
+							                         newAccessToken: Token.Token,
+							                         newRefreshToken: Token.RefreshToken,
+							                         oldAccessToken: oldToken.Token,
+							                         oldRefreshToken: oldToken.RefreshToken), true);
+					}
+
 					await Token.Save();
 				}
 				catch (Exception err)
