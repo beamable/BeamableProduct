@@ -6,16 +6,10 @@ namespace Beamable.Editor.BeamCli.Commands
 
 	public class ServicesDeployArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>These are the ids for services you wish to be enabled once Beam-O receives the updated manifest</summary>
-		public string[] enable;
-		/// <summary>These are the ids for services you wish to be disabled once Beam-O receives the updated manifest</summary>
-		public string[] disable;
 		/// <summary>If this option is set to a valid path to a ServiceManifest JSON, deploys that instead</summary>
 		public string fromFile;
 		/// <summary>Associates this comment along with the published Manifest. You'll be able to read it via the Beamable Portal</summary>
 		public string comment;
-		/// <summary>INTERNAL This enables a sane workflow for beamable developers to be happy and productive</summary>
-		public string buildMode;
 		/// <summary>Any number of strings in the format BeamoId::Comment
 		///Associates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal</summary>
 		public string[] serviceComments;
@@ -26,24 +20,6 @@ namespace Beamable.Editor.BeamCli.Commands
 		{
 			// Create a list of arguments for the command
 			System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
-			// If the enable value was not default, then add it to the list of args.
-			if ((this.enable != default(string[])))
-			{
-				for (int i = 0; (i < this.enable.Length); i = (i + 1))
-				{
-					// The parameter allows multiple values
-					genBeamCommandArgs.Add(("--enable=" + this.enable[i]));
-				}
-			}
-			// If the disable value was not default, then add it to the list of args.
-			if ((this.disable != default(string[])))
-			{
-				for (int i = 0; (i < this.disable.Length); i = (i + 1))
-				{
-					// The parameter allows multiple values
-					genBeamCommandArgs.Add(("--disable=" + this.disable[i]));
-				}
-			}
 			// If the fromFile value was not default, then add it to the list of args.
 			if ((this.fromFile != default(string)))
 			{
@@ -54,12 +30,6 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.comment != default(string)))
 			{
 				genBeamCommandArgs.Add((("--comment=\"" + this.comment)
-								+ "\""));
-			}
-			// If the buildMode value was not default, then add it to the list of args.
-			if ((this.buildMode != default(string)))
-			{
-				genBeamCommandArgs.Add((("--build-mode=\"" + this.buildMode)
 								+ "\""));
 			}
 			// If the serviceComments value was not default, then add it to the list of args.

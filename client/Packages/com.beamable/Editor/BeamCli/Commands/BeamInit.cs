@@ -6,8 +6,10 @@ namespace Beamable.Editor.BeamCli.Commands
 
 	public class InitArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>Specify user name</summary>
-		public string username;
+		/// <summary>the folder that will be initialized as a beamable project. </summary>
+		public string path;
+		/// <summary>Specify user email address</summary>
+		public string email;
 		/// <summary>User password</summary>
 		public string password;
 		/// <summary>The host endpoint for beamable</summary>
@@ -22,6 +24,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public bool saveToEnvironment;
 		/// <summary>Save login refresh token to file</summary>
 		public bool saveToFile;
+		/// <summary>Prevent auth tokens from being saved to disk. This replaces the legacy --save-to-file option</summary>
+		public bool noTokenSave;
 		/// <summary>Make request customer scoped instead of product only</summary>
 		public bool customerScoped;
 		/// <summary>Prints out login request response to console</summary>
@@ -31,10 +35,15 @@ namespace Beamable.Editor.BeamCli.Commands
 		{
 			// Create a list of arguments for the command
 			System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
-			// If the username value was not default, then add it to the list of args.
-			if ((this.username != default(string)))
+			// If the path value was not default, then add it to the list of args.
+			if ((this.path != default(string)))
 			{
-				genBeamCommandArgs.Add((("--username=\"" + this.username)
+				genBeamCommandArgs.Add(this.path.ToString());
+			}
+			// If the email value was not default, then add it to the list of args.
+			if ((this.email != default(string)))
+			{
+				genBeamCommandArgs.Add((("--email=\"" + this.email)
 								+ "\""));
 			}
 			// If the password value was not default, then add it to the list of args.
@@ -76,6 +85,11 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.saveToFile != default(bool)))
 			{
 				genBeamCommandArgs.Add(("--save-to-file=" + this.saveToFile));
+			}
+			// If the noTokenSave value was not default, then add it to the list of args.
+			if ((this.noTokenSave != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--no-token-save=" + this.noTokenSave));
 			}
 			// If the customerScoped value was not default, then add it to the list of args.
 			if ((this.customerScoped != default(bool)))

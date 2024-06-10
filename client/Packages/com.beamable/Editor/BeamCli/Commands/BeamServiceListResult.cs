@@ -19,5 +19,6 @@ namespace Beamable.Editor.BeamCli.Commands
 		public System.Collections.Generic.List<string> LocalHostPorts;
 		public System.Collections.Generic.List<string> LocalContainerPorts;
 		public System.Collections.Generic.List<string> Dependencies;
+		public System.Collections.Generic.List<string> ProjectPath;
 	}
 }

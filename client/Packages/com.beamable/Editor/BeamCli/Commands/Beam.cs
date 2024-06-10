@@ -20,6 +20,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string refreshToken;
 		/// <summary>Extra logs gets printed out</summary>
 		public string log;
+		/// <summary>Show help for all commands</summary>
+		public bool helpAll;
 		/// <summary>Directory to use for configuration</summary>
 		public string dir;
 		/// <summary>Output raw JSON to standard out. This happens by default when the command is being piped</summary>
@@ -78,6 +80,11 @@ namespace Beamable.Editor.BeamCli.Commands
 			{
 				genBeamCommandArgs.Add((("--log=\"" + this.log)
 								+ "\""));
+			}
+			// If the helpAll value was not default, then add it to the list of args.
+			if ((this.helpAll != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--help-all=" + this.helpAll));
 			}
 			// If the dir value was not default, then add it to the list of args.
 			if ((this.dir != default(string)))

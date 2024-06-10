@@ -1,6 +1,5 @@
 using Beamable.Common.Dependencies;
 using cli;
-using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using System;
 using System.Threading.Tasks;
