@@ -256,7 +256,7 @@ The default is 60 seconds.
 			return new string[] { };
 		}
 
-		[Tooltip("when true, token analytic events will be sent to Beamable. This may be useful to diagnose account switching errors related to expired tokens. ")]
+		[Tooltip("When true, token analytic events will be sent to Beamable. This may be useful to diagnose account switching errors related to expired tokens. Analytics are sent when a token expires (`access_token_invalid`), when a new token is issued via a refresh token (`got_new_token`), and when the beam context's token changes (`will_change_token`). \n **NOTE**: Only the last 4 digits of a token are sent with the analytics. ")]
 		public bool enableTokenAnalytics = false;
 		bool ITokenEventSettings.EnableTokenAnalytics => enableTokenAnalytics;
 	}
