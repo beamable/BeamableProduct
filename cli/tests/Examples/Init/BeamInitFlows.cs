@@ -83,7 +83,11 @@ public class BeamInitFlows : CLITest
 		Assert.That(File.Exists(".beamable/config-defaults.json"), "there must be a config defaults file after beam init.");
 
 		// the contents of the file should contain the given cid and pid.
-		var configDefaultsStr = File.ReadAllText(".beamable/config-defaults.json");
+		var configDefaultsStr = File.ReadAllText(".beamable/config-defaults.json")
+			.ReplaceLineEndings("")
+			.Replace("  \"", "\"")
+			.Replace(": \"", ":\"")
+			;
 		var expectedJson = $@"{{""host"":""https://api.beamable.com"",""cid"":""{cid}"",""pid"":""{pid}""}}";
 		Assert.AreEqual(expectedJson, configDefaultsStr, "The config-defaults file should contain the cid and pid.");
 	}

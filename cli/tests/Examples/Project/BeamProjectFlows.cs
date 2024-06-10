@@ -43,7 +43,7 @@ public class BeamProjectFlows : CLITestExtensions
 
 		// the contents of the file beamoId should be equal to the name of the service created
 		string localManifestTextContent = File.ReadAllText($"{serviceName}/.beamable/beamoLocalManifest.json");
-		Assert.That(localManifestTextContent.Contains($"\"BeamoId\":\"{serviceName}\""));
+		Assert.That(localManifestTextContent.Contains($"\"BeamoId\": \"{serviceName}\""));
 
 		#endregion
 	}
