@@ -15,7 +15,7 @@ namespace Beamable.Api
 		public static TokenEvent InvalidAccessToken(long playerId, string accessToken, string refreshToken, string error)
 		{
 			return new TokenEvent(
-				eventName: "access-token-expired",
+				eventName: "access_token_invalid",
 				eventParams: new Dictionary<string, object>
 				{
 					["player-id"] = playerId,
@@ -29,7 +29,7 @@ namespace Beamable.Api
 		public static TokenEvent GetNewToken(long playerId, string newAccessToken, string newRefreshToken, string oldAccessToken, string oldRefreshToken)
 		{
 			return new TokenEvent(
-				eventName: "got-new-token",
+				eventName: "got_new_token",
 				eventParams: new Dictionary<string, object>
 				{
 					["player-id"] = playerId,
@@ -43,7 +43,7 @@ namespace Beamable.Api
 		public static TokenEvent ChangingToken(long playerId, string newAccessToken, string newRefreshToken, string oldAccessToken, string oldRefreshToken)
 		{
 			return new TokenEvent(
-				eventName: "will-change-token",
+				eventName: "will_change_token",
 				eventParams: new Dictionary<string, object>
 				{
 					["player-id"] = playerId,

@@ -565,8 +565,8 @@ namespace Beamable
 					TokenEvent.ChangingToken(playerId: PlayerId,
 					                         newAccessToken: token.Token,
 					                         newRefreshToken: token.RefreshToken,
-					                         oldAccessToken: oldToken.Token,
-					                         oldRefreshToken: oldToken.RefreshToken), true);
+					                         oldAccessToken: oldToken?.Token,
+					                         oldRefreshToken: oldToken?.RefreshToken), true);
 			}
 
 			await _requester.Token.Save();
