@@ -14,7 +14,7 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string copyPath;
 		/// <summary>Specifies version of Beamable project dependencies. Defaults to the current version of the CLI</summary>
 		public Beamable.Common.PackageVersion version;
-		/// <summary>Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. By default, when no value is provided, the .sln path will be <name>/<name>.sln</summary>
+		/// <summary>Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. When no option is configured, if this command is executing inside a .beamable folder, then the first .sln found in .beamable/.. will be used. If no .sln is found, the .sln path will be <name>.sln. If no .beamable folder exists, then the <project>/<project>.sln will be used</summary>
 		public string sln;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()

@@ -10,14 +10,12 @@ namespace Beamable.Editor.BeamCli.Commands
 		public Beamable.Common.Semantics.ServiceName name;
 		/// <summary>Automatically create a .beamable folder context if no context exists</summary>
 		public bool init;
-		/// <summary>Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. By default, when no value is provided, the .sln path will be <name>/<name>.sln</summary>
+		/// <summary>Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. When no option is configured, if this command is executing inside a .beamable folder, then the first .sln found in .beamable/.. will be used. If no .sln is found, the .sln path will be <name>.sln. If no .beamable folder exists, then the <project>/<project>.sln will be used</summary>
 		public string sln;
 		/// <summary>Relative path to directory where project should be created. Defaults to "SOLUTION_DIR/services"</summary>
 		public string serviceDirectory;
 		/// <summary>Specifies version of Beamable project dependencies. Defaults to the current version of the CLI</summary>
 		public Beamable.Common.PackageVersion version;
-		/// <summary>Created service by default would not be published</summary>
-		public bool disable;
 		/// <summary>The name of the project to link this storage to</summary>
 		public string[] linkTo;
 		/// <summary>Serializes the arguments for command line usage.</summary>
@@ -48,11 +46,6 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.version != default(Beamable.Common.PackageVersion)))
 			{
 				genBeamCommandArgs.Add(("--version=" + this.version));
-			}
-			// If the disable value was not default, then add it to the list of args.
-			if ((this.disable != default(bool)))
-			{
-				genBeamCommandArgs.Add(("--disable=" + this.disable));
 			}
 			// If the linkTo value was not default, then add it to the list of args.
 			if ((this.linkTo != default(string[])))

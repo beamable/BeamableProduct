@@ -6,7 +6,7 @@ namespace Beamable.Editor.BeamCli.Commands
 
 	public class ServicesStopArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>The ids for the services you wish to stop</summary>
+		/// <summary>The list of services to build, defaults to all local services</summary>
 		public string[] ids;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()

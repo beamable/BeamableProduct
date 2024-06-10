@@ -160,8 +160,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				if (serviceDefinition.ServiceType == ServiceType.MicroService)
 				{
-					// TODO Make it work
-					var allDependencies = new List<ServiceDependency>();
+					var allDependencies = serviceDefinition.Dependencies.Select(d => new ServiceDependency() {id = d, storageType = "storage"}).ToList();
 
 					var entryModel = new ManifestEntryModel()
 					{
@@ -363,7 +362,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			parent.AddStyleSheet(UssPath);
 		}
 
-		public async Promise PrepareForPublish()
+		public void PrepareForPublish()
 		{
 			_arrowLeft.SetEnabled(false);
 			_arrowRight.SetEnabled(false);
@@ -374,7 +373,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var cli = Context.ServiceScope.GetService<BeamCommands>();
 
 			codeService.UpdateServicesEnableState(_allUnarchivedServices);
-			await CodeService.SetManifest(cli, codeService.ServiceDefinitions);
 
 			foreach (var kvp in _publishManifestElements)
 			{

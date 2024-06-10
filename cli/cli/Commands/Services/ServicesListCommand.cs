@@ -72,7 +72,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 				var shouldBeEnabledOnDeployMarkup = new Markup(sd.ShouldBeEnabledOnRemote ? "[green]Enable[/]" : "[red]Disable[/]");
 				var isRemoteOnlyMarkup = new Markup(_localBeamo.VerifyCanBeBuiltLocally(sd) ? "[green]True[/]" : "[red]False[/]");
 				localServiceListResult.AddService(sd.BeamoId, sd.ShouldBeEnabledOnRemote, false, sd.Protocol.ToString(), sd.ImageId,
-					"", "", new[] { "" }, new[] { "" }, dependenciesDict[sd].Select(dep => dep.name));
+					"", "", new[] { "" }, new[] { "" }, dependenciesDict[sd].Select(dep => dep.name), sd.ProjectDirectory);
 
 				table.AddRow(new TableRow(new[] { beamoIdMarkup, imageIdMarkup, shouldBeEnabledOnDeployMarkup, isRemoteOnlyMarkup, }));
 			}
@@ -143,7 +143,8 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 						"",
 						new[] { "" },
 						new[] { "" },
-						dependencies);
+						dependencies,
+						def.ProjectDirectory);
 
 					var beamoIdMarkup = new Markup(def.BeamoId);
 					var imageIdMarkup = new Markup(imageId);
@@ -234,7 +235,8 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 						"",
 						new[] { "" },
 						new[] { "" },
-						dependenciesDict[sd].Select(dep => dep.name));
+						dependenciesDict[sd].Select(dep => dep.name),
+						sd.ProjectDirectory);
 					table.AddRow(new TableRow(new[] { beamoIdMarkup, imageIdMarkup, containersRenderable, shouldBeEnabledOnDeployMarkup, isRemoteOnlyMarkup, }));
 				}
 
@@ -277,6 +279,7 @@ public class ServiceListResult
 	public List<string> LocalContainerPorts;
 
 	public List<string> Dependencies;
+	public List<string> ProjectPath;
 
 	public ServiceListResult(bool local, bool isDockerRunning, int allocateCount)
 	{
@@ -297,10 +300,11 @@ public class ServiceListResult
 		LocalContainerPorts = new List<string>(allocateCount);
 
 		Dependencies = new List<string>(allocateCount);
+		ProjectPath = new List<string>(allocateCount);
 	}
 
 	public void AddService(string beamoId, bool shouldBeEnabledOnRemote, bool running, string protocol, string imageId,
-		string containerName, string containerId, IEnumerable<string> hostPort, IEnumerable<string> containerPort, IEnumerable<string> dependentBeamoIds)
+		string containerName, string containerId, IEnumerable<string> hostPort, IEnumerable<string> containerPort, IEnumerable<string> dependentBeamoIds, string projectPath)
 	{
 		BeamoIds.Add(beamoId);
 		RunningState.Add(running);
@@ -317,5 +321,6 @@ public class ServiceListResult
 		var dependencies = string.Join(",", dependentBeamoIds.ToList());
 
 		Dependencies.Add(dependencies);
+		ProjectPath.Add(projectPath);
 	}
 }
