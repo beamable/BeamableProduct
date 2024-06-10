@@ -53,7 +53,6 @@ using Beamable.Player;
 using Beamable.Reflection;
 using Beamable.Sessions;
 using Core.Platform.SDK;
-using DefaultNamespace;
 using System;
 using System.Collections.Generic;
 using System.IO;

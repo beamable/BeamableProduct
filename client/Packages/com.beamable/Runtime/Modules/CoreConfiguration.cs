@@ -1,6 +1,6 @@
+using Beamable.Api;
 using Beamable.Api.Commerce;
 using Beamable.Common.Content;
-using DefaultNamespace;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
