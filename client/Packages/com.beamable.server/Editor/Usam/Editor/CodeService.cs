@@ -405,8 +405,12 @@ namespace Beamable.Server.Editor.Usam
 		public async Promise RefreshServices()
 		{
 			ServiceDefinitions.Clear();
-			bool finishedLocal = false;
-			bool finishedRemote = false;
+			Promise finishedLocal = new Promise();
+			Promise finishedRemote = new Promise();
+
+			var promises = new List<Promise<Unit>>();
+			promises.Add(finishedLocal);
+			promises.Add(finishedRemote);
 
 			try
 			{
@@ -418,7 +422,7 @@ namespace Beamable.Server.Editor.Usam
 					IsDockerRunning = cb.data.IsDockerRunning;
 					UsamLogger.Log($"Found {cb.data.BeamoIds.Count} remote services");
 					PopulateDataWithRemote(cb.data);
-					finishedRemote = true;
+					finishedLocal.CompleteSuccess();
 				});
 				await psRemote.Run();
 				UsamLogger.Log("refresh remote services from CLI end");
@@ -431,7 +435,7 @@ namespace Beamable.Server.Editor.Usam
 					IsDockerRunning = cb.data.IsDockerRunning;
 					UsamLogger.Log($"Found {cb.data.BeamoIds.Count} local services");
 					PopulateDataWithRemote(cb.data);
-					finishedLocal = true;
+					finishedRemote.CompleteSuccess();
 				});
 				await psLocal.Run();
 				UsamLogger.Log("refresh local services from CLI end");
@@ -443,10 +447,8 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
-			while (!finishedLocal || !finishedRemote)
-			{
-				await Task.Delay(10);
-			}
+			var sequence = Promise.Sequence(promises);
+			await sequence;
 		}
 
 		private void PopulateDataWithRemote(BeamServiceListResult objData)
@@ -479,6 +481,8 @@ namespace Beamable.Server.Editor.Usam
 			{
 				depsList = new List<string>();
 			}
+
+			depsList = depsList.Where(dep => !string.IsNullOrEmpty(dep)).ToList();
 
 			var dataIndex =
 				ServiceDefinitions.FindIndex(definition => definition.BeamoId.Equals(name));
@@ -800,7 +804,7 @@ namespace Beamable.Server.Editor.Usam
 
 		private async Promise SetPropertiesFile()
 		{
-			var beamPath = BeamCliUtil.CLI_PATH.Replace(".dll", "");//asd
+			var beamPath = BeamCliUtil.CLI_PATH.Replace(".dll", "");
 			var workingDir = Path.GetDirectoryName(Directory.GetCurrentDirectory());
 			if (beamPath.StartsWith(workingDir))
 			{

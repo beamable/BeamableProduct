@@ -1,6 +1,5 @@
 using Beamable.Common.Dependencies;
 using cli;
-using Microsoft.Build.Locator;
 using Serilog;
 using System;
 using System.Threading.Tasks;
@@ -19,11 +18,6 @@ public static class Cli
 	}
 	public static int RunWithParams(Action<IDependencyBuilder>? configurator, Func<LoggerConfiguration, ILogger> configureLogger, params string[] args)
 	{
-		if (MSBuildLocator.CanRegister)
-		{
-			MSBuildLocator.RegisterDefaults();
-		}
-
 		var app = new App();
 		app.Configure(configurator, configureLogger: configureLogger);
 		app.Build();

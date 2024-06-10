@@ -23,7 +23,7 @@ public static class ProjectContextUtil
 		var typeToProjects = allProjects
 			.GroupBy(p => p.properties.ProjectType)
 			.ToDictionary(kvp => kvp.Key, kvp => kvp.ToList());
-		var absPathToProject = allProjects.ToDictionary(kvp => kvp.fileNameWithoutExtension);
+		var fileNameToProject = allProjects.ToDictionary(kvp => kvp.fileNameWithoutExtension);
 		var manifest = new BeamoLocalManifest
 		{
 			ServiceDefinitions = new List<BeamoServiceDefinition>(),
@@ -34,7 +34,7 @@ public static class ProjectContextUtil
 
 		};
 
-		
+
 		// extract the "service" types, and convert them into beamo domain model
 		if (!typeToProjects.TryGetValue("service", out var serviceProjects))
 		{
@@ -48,17 +48,17 @@ public static class ProjectContextUtil
 		foreach (var serviceProject in serviceProjects)
 		{
 			var definition = ProjectContextUtil.ConvertProjectToServiceDefinition(serviceProject);
-			var protocol = ProjectContextUtil.ConvertProjectToLocalHttpProtocol(serviceProject, absPathToProject);
+			var protocol = ProjectContextUtil.ConvertProjectToLocalHttpProtocol(serviceProject, fileNameToProject);
 			manifest.ServiceDefinitions.Add(definition);
 			manifest.HttpMicroserviceLocalProtocols.Add(definition.BeamoId, protocol);
-			
+
 			manifest.HttpMicroserviceRemoteProtocols.Add(definition.BeamoId, new HttpMicroserviceRemoteProtocol());
 		}
 
 		foreach (var storageProject in storageProjects)
 		{
-			var definition = ProjectContextUtil.ConvertProjectToStorageDefinition(storageProject, absPathToProject);
-			var protocol = ProjectContextUtil.ConvertProjectToLocalMongoProtocol(storageProject, definition, absPathToProject, configService);
+			var definition = ProjectContextUtil.ConvertProjectToStorageDefinition(storageProject, fileNameToProject);
+			var protocol = ProjectContextUtil.ConvertProjectToLocalMongoProtocol(storageProject, definition, fileNameToProject, configService);
 			manifest.EmbeddedMongoDbLocalProtocols.Add(definition.BeamoId, protocol);
 			manifest.ServiceDefinitions.Add(definition);
 			manifest.EmbeddedMongoDbRemoteProtocols.Add(definition.BeamoId, new EmbeddedMongoDbRemoteProtocol());

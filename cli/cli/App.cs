@@ -24,6 +24,7 @@ using cli.Utils;
 using cli.Version;
 using CommandLine.Text;
 using Errata;
+using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis.Sarif;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
@@ -54,6 +55,12 @@ public class App
 
 	public App()
 	{
+		//This is necessary, so we can use MSBuild to read different projects and get their properties later on
+		if (MSBuildLocator.CanRegister)
+		{
+			MSBuildLocator.RegisterDefaults();
+		}
+
 		Commands = new DependencyBuilder();
 	}
 
