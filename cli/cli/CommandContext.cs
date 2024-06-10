@@ -117,7 +117,7 @@ public abstract class AtomicCommand<TArgs, TResult> : AppCommand<TArgs>, IResult
 
 		var reporter = args.Provider.GetService<IDataReporterService>();
 		reporter.Report(_channel.ChannelName, result);
-		
+
 		if (AutoLogOutput)
 		{
 			LogResult(result);
@@ -276,7 +276,7 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IApp
 	{
 		return AddOption<T>(arg, (args, _, b) => binder(args, b));
 	}
-	
+
 	public Option<T> AddOption<T>(Option<T> arg, Action<TArgs, BindingContext, T> binder)
 	{
 		ArgValidator<T> validator = CommandProvider.CanBuildService<ArgValidator<T>>()
