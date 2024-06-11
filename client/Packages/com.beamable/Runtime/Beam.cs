@@ -273,6 +273,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(ContentConfiguration.Instance);
 			DependencyBuilder.AddSingleton(CoreConfiguration.Instance);
 			DependencyBuilder.AddSingleton<ICommerceConfig>(CoreConfiguration.Instance);
+			DependencyBuilder.AddSingleton<ITokenEventSettings>(CoreConfiguration.Instance);
 			DependencyBuilder.AddSingleton<IAuthSettings>(AccountManagementConfiguration.Instance);
 			DependencyBuilder.AddSingleton<OfflineCache>(p => new OfflineCache(p.GetService<IRuntimeConfigProvider>(), CoreConfiguration.Instance.UseOfflineCache));
 
