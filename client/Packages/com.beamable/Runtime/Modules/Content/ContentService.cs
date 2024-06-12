@@ -10,11 +10,14 @@ using Beamable.Coroutines;
 using Beamable.Serialization.SmallerJSON;
 using Core.Platform.SDK;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using UnityEngine;
 using static Beamable.Common.Constants.Features.Content;
+using Debug = UnityEngine.Debug;
 
 namespace Beamable.Content
 {
@@ -203,6 +206,7 @@ namespace Beamable.Content
 		private readonly Dictionary<Type, ContentCache> _contentCaches = new Dictionary<Type, ContentCache>();
 		private readonly OfflineCache _offlineCache;
 		private static bool _testScopeEnabled;
+		private static ContentTypeReflectionCache reflectionCache;
 
 		/// <summary>
 		/// Member holds all content that has been cached as a result of fetching new content
@@ -218,7 +222,7 @@ namespace Beamable.Content
 		private Dictionary<string, ClientContentInfo> bakedManifestInfo =
 			new Dictionary<string, ClientContentInfo>();
 
-		private Dictionary<string, ClientContentInfo> cachedManifestInfo;
+		private Dictionary<string, ClientContentInfo> cachedManifestInfo = new Dictionary<string, ClientContentInfo>();
 
 		private ClientManifest bakedManifest;
 		private ClientManifest BakedManifest
@@ -262,6 +266,7 @@ namespace Beamable.Content
 		public ContentService(IDependencyProvider provider,
 							  IBeamableFilesystemAccessor filesystemAccessor, ContentParameterProvider config, OfflineCache offlineCache)
 		{
+			reflectionCache = Beam.GetReflectionSystem<ContentTypeReflectionCache>();
 			_provider = provider;
 			_config = config;
 			_cacheFactory = provider.GetService<IContentCacheFactory>();
@@ -285,6 +290,57 @@ namespace Beamable.Content
 
 			Subscribables = new Dictionary<string, ManifestSubscription>();
 			AddSubscriber(CurrentDefaultManifestID);
+
+			var coroutineService = _provider.GetService<CoroutineService>();
+			coroutineService.StartCoroutine(WatchCacheAndWriteToDisk());
+		}
+
+		/// <summary>
+		/// This coroutine will sit and wait for 5 seconds to see if the content cache's
+		/// version number has changed.
+		///
+		/// If it has, then the routine will save the data to the disk.
+		/// If the version hasn't changed, then this routine will sit around and wait another 5 seconds.
+		///
+		/// </summary>
+		/// <returns></returns>
+		private IEnumerator WatchCacheAndWriteToDisk()
+		{
+			var provider = (DependencyProvider)_provider;
+			var delay = new WaitForSecondsRealtime(5);
+			ulong committedCacheVersion = 0;
+			while (provider.IsActive)
+			{
+				ulong cacheVersion = CachedContentDataInfo.cacheVersion;
+				yield return delay;
+				if (cacheVersion != CachedContentDataInfo.cacheVersion)
+				{
+					// there has been a cache update since we waited. We should wait 
+					//  some more time to let all the changes roll in.
+					continue;
+				}
+				
+				// check if cache needs to be saved
+				if (CachedContentDataInfo.cacheVersion <= committedCacheVersion)
+					continue; // wait for another 5 seconds ? 
+
+				try
+				{
+					committedCacheVersion = CachedContentDataInfo.cacheVersion;
+					var sw = new Stopwatch();
+					sw.Start();
+
+					var filePath = ContentPath(FilesystemAccessor);
+					// Ensure the directory is created
+					Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+					File.WriteAllText(filePath, JsonUtility.ToJson(CachedContentDataInfo));
+				}
+				catch (Exception ex)
+				{
+					Debug.LogError("Beamable could not save content cache. " + ex.Message);
+					Debug.LogException(ex);
+				}
+			}
 		}
 
 		public T DeserializeDataCache<T>(string json) where T : new()
@@ -424,7 +480,7 @@ namespace Beamable.Content
 
 		public Promise<IContentObject> GetContent(string contentId, string manifestID = "")
 		{
-			var referencedType = Beam.GetReflectionSystem<ContentTypeReflectionCache>().GetTypeFromId(contentId);
+			var referencedType = reflectionCache.GetTypeFromId(contentId);
 			return GetContent(contentId, referencedType, DetermineManifestID(manifestID));
 		}
 
@@ -474,7 +530,8 @@ namespace Beamable.Content
 
 		public Promise<IContentObject> GetContent(IContentRef reference, string manifestID = "")
 		{
-			var referencedType = Beam.GetReflectionSystem<ContentTypeReflectionCache>().GetTypeFromId(reference.GetId());
+			
+			var referencedType = reflectionCache.GetTypeFromId(reference.GetId());
 			return GetContent(reference.GetId(), referencedType, DetermineManifestID(manifestID));
 		}
 
@@ -559,6 +616,12 @@ namespace Beamable.Content
 			}
 
 			return GetSubscription(determinedManifestID)?.GetManifest(query);
+		}
+
+		public SequencePromise<T> ConvertPromisesIntoSequence<T>(int batchSize, List<Func<Promise<T>>> promiseGenerators)
+		{
+			return PromiseExtensions.ExecuteOnGameObjectRoutines(batchSize, _provider.GetService<CoroutineService>(),
+			                                              promiseGenerators);
 		}
 
 		private bool TryGetCachedManifest(string manifestID, out Promise<ClientManifest> promise)

@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Core Configuration includes a `enableTokenAnalytics` option that will opt into sending an analytic event when a token expires (`access_token_invalid`), when a new token is issued via a refresh token (`got_new_token`), and when the beam context's token changes (`will_change_token`)
+- `PromiseExtensions.ExecuteOnRoutines` utility method runs a set of promise generators on a given number of consumer routines
+
+### Changed
+- Editor content imports are debounced into groups.
+- Editor content validation speed improved by using editor coroutines
+- Editor content upload speed improved by using `ExecuteOnRoutines` utility
+- Runtime content cache hydrates once, instead of once per content type
+- Runtime content cache resolution is faster and allocates less memory by using `JsonUtilty`
+- Runtime content download speed improved by using `ExecuteOnRoutines` utility
 
 ## [1.19.20] - 2024-05-31
 

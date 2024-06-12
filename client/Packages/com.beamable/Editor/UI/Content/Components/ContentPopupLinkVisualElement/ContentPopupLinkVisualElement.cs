@@ -37,5 +37,13 @@ namespace Beamable.Editor.Content.Components
 			_checkIcon.AddToClassList("checked");
 			_checkIcon.tooltip = Tooltips.ContentManager.CHECKED;
 		}
+		
+		public void MarkUnChecked()
+		{
+			if (_checkIcon == null) return;
+			_checkIcon.RemoveFromClassList("checked");
+			_checkIcon.AddToClassList("unchecked");
+			_checkIcon.tooltip = Tooltips.ContentManager.UNCHECK;
+		}
 	}
 }

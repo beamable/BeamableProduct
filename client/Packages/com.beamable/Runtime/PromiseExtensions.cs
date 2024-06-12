@@ -12,6 +12,60 @@ namespace Beamable
 {
 	public static class PromiseExtensions
 	{
+
+		public static SequencePromise<T> ExecuteOnGameObjectRoutines<T>(int routineCount,
+		                                                              CoroutineService coroutineService,
+		                                                              List<Func<Promise<T>>> generators)
+		{
+			return ExecuteOnRoutines(
+				routineCount: routineCount,
+				coroutineExecutor: enumerator => coroutineService.StartCoroutine(enumerator),
+				generators: generators);
+		}
+		
+		public static SequencePromise<T> ExecuteOnRoutines<T>(int routineCount,
+		                                                    Action<IEnumerator> coroutineExecutor,
+		                                                    List<Func<Promise<T>>> generators)
+		{
+			
+			var seq = new SequencePromise<T>(generators.Count);
+			var nextIndex = 0;
+			for (var i = 0; i < routineCount; i++)
+			{
+				coroutineExecutor(Routine());
+			}
+
+			IEnumerator Routine()
+			{
+				while (nextIndex < generators.Count())
+				{
+					var index = nextIndex++;
+					var generator = generators[index];
+					var promise = generator();
+					yield return promise.ToYielder();
+
+					if (promise.IsFailed)
+					{
+						Debug.LogWarning($"Failed promise index=[{index}]");
+						promise.Error(ex =>
+						{
+							seq.ReportEntryError(index, ex);
+						});
+					}
+					else
+					{
+						var result = promise.GetResult();
+						seq.ReportEntrySuccess(index, result);
+					}
+
+				}
+
+			}
+
+			return seq;
+		}
+
+		
 		private static IConcurrentDictionary<long, Task> _uncaughtTasks = new ConcurrentDictionary<long, Task>();
 
 		public static async Task WaitForAllUncaughtHandlers()
