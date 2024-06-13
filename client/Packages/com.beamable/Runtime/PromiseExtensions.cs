@@ -23,6 +23,24 @@ namespace Beamable
 				generators: generators);
 		}
 		
+		/// <summary>
+		/// This function will execute a series of promises.
+		///
+		/// A set of consuming routines will be spawned immediately as the function is invoked,
+		/// and each routine will work on the next available promise in the given <see cref="generators"/> list.
+		///
+		/// When all the generators have been completed, the resulting sequence promise will complete.
+		///
+		/// </summary>
+		/// <param name="routineCount">The number of consuming routines</param>
+		/// <param name="coroutineExecutor">This method is not responsible for scheduling the routines, and relies on this proxy action to actually start the routine.
+		/// This action should enumerate the routine until completion. Ideally, all the routines should be enumerated in parallel. </param>
+		/// <param name="generators">The list of generators that will be invoked by this method. Each function callback will only be invoked once. </param>
+		/// <typeparam name="T"></typeparam>
+		/// <returns>
+		/// A sequence promise where the inner list of values maps to the results of each promise generator.
+		/// The order is maintained. 
+		/// </returns>
 		public static SequencePromise<T> ExecuteOnRoutines<T>(int routineCount,
 		                                                    Action<IEnumerator> coroutineExecutor,
 		                                                    List<Func<Promise<T>>> generators)

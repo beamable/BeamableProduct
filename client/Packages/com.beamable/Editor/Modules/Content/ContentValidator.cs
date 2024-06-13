@@ -87,10 +87,8 @@ namespace Beamable.Editor.Content
 					
 					if (n % numberOfUpdatesBeforeRenderFrame == 0)
 					{
-						// Debug.Log("yielding");
 						yield return null; // delay a frame
 					}
-					// yield 
 				}
 				
 				promise.CompleteSuccess(exceptionList);

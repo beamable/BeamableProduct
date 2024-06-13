@@ -327,9 +327,6 @@ namespace Beamable.Content
 				try
 				{
 					committedCacheVersion = CachedContentDataInfo.cacheVersion;
-					var sw = new Stopwatch();
-					sw.Start();
-
 					var filePath = ContentPath(FilesystemAccessor);
 					// Ensure the directory is created
 					Directory.CreateDirectory(Path.GetDirectoryName(filePath));
