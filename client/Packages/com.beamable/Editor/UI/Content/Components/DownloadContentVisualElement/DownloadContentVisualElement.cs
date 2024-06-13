@@ -149,7 +149,7 @@ namespace Beamable.Editor.Content.Components
 			if (entries.Count > 0)
 			{
 				source.AddRange(entries);
-				foldout.Q<ListView>().style.SetHeight(_modifiedList.GetItemHeight() * entries.Count(), true);
+				foldout.Q<ListView>().style.SetHeight(_modifiedList.GetItemHeight() * Math.Min(10, entries.Count()), true);
 				listView.RefreshPolyfill();
 			}
 			else
@@ -216,9 +216,13 @@ namespace Beamable.Editor.Content.Components
 			{
 				var link = elem as ContentPopupLinkVisualElement;
 				link.Model = source[index];
-				if (_allDownloadsComplete)
+				if (_allDownloadsComplete || source[index].IsDownloaded)
 				{
 					link.MarkChecked();
+				}
+				else
+				{
+					link.MarkUnChecked();
 				}
 				link.Refresh();
 			};
@@ -252,12 +256,6 @@ namespace Beamable.Editor.Content.Components
 			OnDownloadStarted?.Invoke(Model.GetResult(), (progress, processed, total) =>
 			{
 				_loadingBar.Progress = progress;
-				//Mark element as checked
-				for (var i = lastProcessed; i < processed; i++)
-				{
-					var contentElement = _contentElements[i];
-					contentElement.MarkChecked();
-				}
 				lastProcessed = processed;
 
 			}, finalPromise =>

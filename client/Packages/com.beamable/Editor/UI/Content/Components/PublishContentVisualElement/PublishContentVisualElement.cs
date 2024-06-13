@@ -64,8 +64,7 @@ namespace Beamable.Editor.Content.Components
 			_loadingBar = Root.Q<LoadingBarElement>();
 			_loadingBar.SmallBar = true;
 			_loadingBar.Refresh();
-
-
+			
 			var mainContent = Root.Q<VisualElement>("publish-mainVisualElement");
 			var loadingBlocker = Root.Q<LoadingIndicatorVisualElement>();
 
@@ -199,7 +198,7 @@ namespace Beamable.Editor.Content.Components
 					}
 				}
 
-				addFoldoutElem.Q<ListView>().style.SetHeight(addList.GetItemHeight() * addSource.Count, true);
+				addFoldoutElem.Q<ListView>().style.SetHeight(addList.GetItemHeight() * Mathf.Min(addSource.Count, 20), true);
 				addList.RefreshPolyfill();
 
 				foreach (var toModify in publishSet.ToModify)
@@ -219,7 +218,7 @@ namespace Beamable.Editor.Content.Components
 					}
 				}
 
-				modifyFoldoutElem.Q<ListView>().style.SetHeight(modifyList.GetItemHeight() * modifySource.Count, true);
+				modifyFoldoutElem.Q<ListView>().style.SetHeight(modifyList.GetItemHeight() * Mathf.Min(modifySource.Count, 20), true);
 				modifyList.RefreshPolyfill();
 
 				foreach (var toDelete in publishSet.ToDelete)
@@ -239,7 +238,7 @@ namespace Beamable.Editor.Content.Components
 					}
 				}
 
-				deleteFoldoutElem.Q<ListView>().style.SetHeight(deleteList.GetItemHeight() * deleteSource.Count, true);
+				deleteFoldoutElem.Q<ListView>().style.SetHeight(deleteList.GetItemHeight() * Mathf.Min(deleteSource.Count, 20), true);
 				deleteList.RefreshPolyfill();
 
 
