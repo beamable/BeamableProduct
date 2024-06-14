@@ -405,50 +405,31 @@ namespace Beamable.Server.Editor.Usam
 		public async Promise RefreshServices()
 		{
 			ServiceDefinitions.Clear();
-			Promise finishedLocal = new Promise();
-			Promise finishedRemote = new Promise();
-
-			var promises = new List<Promise<Unit>>();
-			promises.Add(finishedLocal);
-			promises.Add(finishedRemote);
+			Promise finishedPopulatingServices = new Promise();
 
 			try
 			{
-				UsamLogger.Log("refresh remote services from CLI start");
+				UsamLogger.Log("refresh services from CLI start");
 				//Get remote only information from the CLI
-				var psRemote = _cli.ServicesPs(new ServicesPsArgs() { json = false, remote = true });
+				var psRemote = _cli.ServicesPs(new ServicesPsArgs() { json = false});
 				psRemote.OnStreamServiceListResult(cb =>
 				{
 					IsDockerRunning = cb.data.IsDockerRunning;
-					UsamLogger.Log($"Found {cb.data.BeamoIds.Count} remote services");
+					UsamLogger.Log($"Found {cb.data.BeamoIds.Count} services");
 					PopulateDataWithRemote(cb.data);
-					finishedLocal.CompleteSuccess();
+					finishedPopulatingServices.CompleteSuccess();
 				});
 				await psRemote.Run();
-				UsamLogger.Log("refresh remote services from CLI end");
-
-				UsamLogger.Log("refresh local services from CLI start");
-				//Get local only information from the CLI
-				var psLocal = _cli.ServicesPs(new ServicesPsArgs() { json = false, remote = false });
-				psLocal.OnStreamServiceListResult(cb =>
-				{
-					IsDockerRunning = cb.data.IsDockerRunning;
-					UsamLogger.Log($"Found {cb.data.BeamoIds.Count} local services");
-					PopulateDataWithRemote(cb.data);
-					finishedRemote.CompleteSuccess();
-				});
-				await psLocal.Run();
-				UsamLogger.Log("refresh local services from CLI end");
+				UsamLogger.Log("refresh services from CLI end");
 			}
 			catch
 			{
 				IsDockerRunning = false;
-				UsamLogger.Log("ERROR: Could not list remote services, skip");
+				UsamLogger.Log("ERROR: Could not list services, skip", true);
 				return;
 			}
 
-			var sequence = Promise.Sequence(promises);
-			await sequence;
+			await finishedPopulatingServices;
 		}
 
 		private void PopulateDataWithRemote(BeamServiceListResult objData)
@@ -458,7 +439,7 @@ namespace Beamable.Server.Editor.Usam
 				var name = objData.BeamoIds[i];
 				UsamLogger.Log($"Handling {name} started");
 
-				var runningState = objData.RunningState[i] ? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
+				var runningState = objData.IsRunningRemotely[i] ? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
 				var type = objData.ProtocolTypes[i].Equals("HttpMicroservice")
 					? ServiceType.MicroService
 					: ServiceType.StorageObject;
@@ -466,13 +447,13 @@ namespace Beamable.Server.Editor.Usam
 				string assetProjectPath = objData.ProjectPath[i];
 
 				
-				AddServiceDefinition(name, type, assetProjectPath, true, runningState,
-									 objData.ShouldBeEnabledOnRemote[i], objData.IsLocal, objData.Dependencies[i]);
+				AddServiceDefinition(name, type, assetProjectPath, runningState,
+									 objData.ShouldBeEnabledOnRemote[i], objData.IsLocal[i], objData.Dependencies[i]);
 				UsamLogger.Log($"Handling {name} ended");
 			}
 		}
 
-		private void AddServiceDefinition(string name, ServiceType type, string assetProjectPath, bool fromRemote, BeamoServiceStatus status = BeamoServiceStatus.Unknown,
+		private void AddServiceDefinition(string name, ServiceType type, string assetProjectPath, BeamoServiceStatus status = BeamoServiceStatus.Unknown,
 										  bool shouldBeEnableOnRemote = true, bool hasLocalSource = true, string dependencies = null)
 		{
 			List<string> depsList = dependencies?.Split(',').ToList();
@@ -499,15 +480,12 @@ namespace Beamable.Server.Editor.Usam
 				});
 				dataIndex = ServiceDefinitions.Count - 1;
 				ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder() { BeamoId = name };
-				ServiceDefinitions[dataIndex].HasLocalSource = hasLocalSource;
-			}
 
-			if (fromRemote)
-			{
-				ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = shouldBeEnableOnRemote;
-				ServiceDefinitions[dataIndex].IsRunningOnRemote = status;
-				ServiceDefinitions[dataIndex].Dependencies = depsList;
 			}
+			ServiceDefinitions[dataIndex].HasLocalSource = hasLocalSource;
+			ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = shouldBeEnableOnRemote;
+			ServiceDefinitions[dataIndex].IsRunningOnRemote = status;
+			ServiceDefinitions[dataIndex].Dependencies = depsList;
 		}
 
 
@@ -660,10 +638,10 @@ namespace Beamable.Server.Editor.Usam
 		}
 
 		/// <summary>
-		/// Get the information of if this service is local or remote.
+		/// Get the information of if this service is local or not.
 		/// </summary>
 		/// <param name="serviceName">The name of the service</param>
-		/// <returns>Returns true if the service is local or false if remote.</returns>
+		/// <returns>Returns true if the service is local or false if not.</returns>
 		public bool GetServiceIsLocal(string serviceName)
 		{
 			foreach (IBeamoServiceDefinition service in ServiceDefinitions)
@@ -672,6 +650,23 @@ namespace Beamable.Server.Editor.Usam
 				{
 					return service.HasLocalSource;
 				}
+			}
+
+			var allServices = String.Join(", ", ServiceDefinitions.Select(s => s.BeamoId));
+			throw new EntryPointNotFoundException(
+				$"The service {serviceName} was not found! The current list of services is: {allServices}");
+		}
+
+		/// <summary>
+		/// Get if this service is published already or not
+		/// </summary>
+		/// <param name="serviceName">The name of the service</param>
+		/// <returns>Returns true if the service was published and false if not</returns>
+		public bool GetServiceIsRemote(string serviceName)
+		{
+			foreach (var service in ServiceDefinitions.Where(service => service.BeamoId.Equals(serviceName)))
+			{
+				return service.IsRunningOnRemote == BeamoServiceStatus.Running;
 			}
 
 			var allServices = String.Join(", ", ServiceDefinitions.Select(s => s.BeamoId));

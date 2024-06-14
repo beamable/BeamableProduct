@@ -566,6 +566,8 @@ public class BeamoLocalManifest
 
 public class BeamoServiceDefinition
 {
+	public bool IsInRemote;
+	public bool IsLocal => !string.IsNullOrEmpty(ProjectDirectory);
 	public bool HasLocalDockerfile =>
 		Protocol == BeamoProtocolType.HttpMicroservice && !string.IsNullOrEmpty(ProjectDirectory);
 	

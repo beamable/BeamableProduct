@@ -31,7 +31,6 @@ public static class ProjectContextUtil
 			EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>(){},
 			EmbeddedMongoDbRemoteProtocols = new BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol>(),
 			HttpMicroserviceRemoteProtocols = new BeamoRemoteProtocolMap<HttpMicroserviceRemoteProtocol>()
-
 		};
 
 
@@ -85,6 +84,7 @@ public static class ProjectContextUtil
 
 			// overwrite existing local settings
 			existingDefinition.ImageId = remoteService.imageId;
+			existingDefinition.IsInRemote = true;
 		}
 
 		foreach (var remoteStorage in remote.storageReference)
@@ -106,6 +106,7 @@ public static class ProjectContextUtil
 			
 			// overwrite existing settings.
 			existingDefinition.ImageId = MongoImage;
+			existingDefinition.IsInRemote = true;
 		}
 
 		return manifest;
@@ -293,7 +294,6 @@ public static class ProjectContextUtil
 
 		// the project directory is just "where is the csproj" 
 		definition.ProjectDirectory = Path.GetDirectoryName(project.relativePath);
-
 		definition.Protocol = BeamoProtocolType.HttpMicroservice;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet;
 		
