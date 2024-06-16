@@ -17,6 +17,7 @@ namespace cli;
 public enum Vcs
 {
 	Git,
+
 	// ReSharper disable once InconsistentNaming
 	SVN,
 	P4
@@ -368,21 +369,32 @@ public class ConfigService
 
 		File.WriteAllText(pathToToolsManifest, manifestString);
 	}
-	
-	
+
+
 	/// <summary>
 	/// Extract the CLI version registered in the ".config" directory sibling to the ".beamable" folder. 
 	/// </summary>
-	public string GetProjectBeamableCLIVersion()
+	public bool TryGetProjectBeamableCLIVersion(out string version)
 	{
+		if (!Directory.Exists(ConfigDirectoryPath))
+		{
+			version = "";
+			return false;
+		}
+
 		var pathToDotNetConfigFolder = Directory.GetParent(ConfigDirectoryPath).ToString();
 		pathToDotNetConfigFolder = Path.Combine(pathToDotNetConfigFolder, ".config");
 		var pathToToolsManifest = Path.Combine(pathToDotNetConfigFolder, "dotnet-tools.json");
 
 		var versionMatching = new Regex("beamable.*?\"([0-9]+\\.[0-9]+\\.[0-9]+)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
 		var versionMatch = versionMatching.Match(File.ReadAllText(pathToToolsManifest));
-		
-		if (versionMatch.Success) return versionMatch.Groups[1].Value;
+
+		if (versionMatch.Success)
+		{
+			version = versionMatch.Groups[1].Value;
+			return true;
+		}
+
 		throw new Exception("Missing \"beamable.tools\" entry in \".config/dotnet-tools.json\" directory.");
 	}
 

@@ -544,9 +544,8 @@ public class App
 			// Check if we need to forward this command --- we only forward if the executing version of the CLI is different than the one locally installed on the project.
 			// As long as the versions are the same, running the local one or the global one changes nothing in behaviour.
 			var runningVersion = VersionService.GetNugetPackagesForExecutingCliVersion().ToString();
-			var projectLocalVersion = provider.GetService<ConfigService>().GetProjectBeamableCLIVersion();
-			
-			if (runningVersion != projectLocalVersion)
+			var isCalledFromInsideBeamableProject = provider.GetService<ConfigService>().TryGetProjectBeamableCLIVersion(out var projectLocalVersion);
+			if (isCalledFromInsideBeamableProject && runningVersion != projectLocalVersion)
 			{
 				// Get the args that were given to this command invocation
 				var argumentsToForward= string.Join(" ", new []{"beam"}.Concat(Environment.GetCommandLineArgs()[1..]));
