@@ -8,8 +8,17 @@
         <!-- When "true", this will copy the built project and associated dependencies to linked Unity projects -->
         <CopyToLinkedProjects>true</CopyToLinkedProjects>
     </PropertyGroup>
+
+    <!-- These are special Beamable parameters that we use to keep the beamable packages in-sync to the CLI version your project is using. -->
+    <!-- This makes it so your microservices are auto-updated whenever you update the CLI installed in your project. -->
+    <PropertyGroup Label="Beamable Version">
+        <DotNetConfigPath Condition="'$(DotNetConfigPath)' == '' AND $(DOTNET_RUNNING_IN_CONTAINER)!=true">$([MSBuild]::GetDirectoryNameOfFileAbove("$(MSBuildProjectDirectory)\..", ".config\dotnet-tools.json"))</DotNetConfigPath>
+        <DotNetConfig Condition="'$(DotNetConfig)' == '' AND $(DOTNET_RUNNING_IN_CONTAINER)!=true">$([System.IO.File]::ReadAllText("$(DotNetConfigPath)\.config\dotnet-tools.json"))</DotNetConfig>
+        <!-- Extracts the version number from the first tool defined in 'dotnet-tools.json' that starts with "beamable". -->
+        <BeamableVersion Condition="'$(BeamableVersion)' == '' AND $(DOTNET_RUNNING_IN_CONTAINER)!=true">$([System.Text.RegularExpressions.Regex]::Match("$(DotNetConfig)", "beamable.*?\"([0-9]+\.[0-9]+\.[0-9]+)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace).Groups[1].Value)</BeamableVersion>
+    </PropertyGroup>
     
     <ItemGroup Label="Nuget References">
-        <PackageReference Include="Beamable.Common" Version="1.19.17"/>
+        <PackageReference Include="Beamable.Common" Version="$(BeamableVersion)"/>
     </ItemGroup>
 </Project>

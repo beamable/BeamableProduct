@@ -48,9 +48,13 @@ if [ -d "$CliRunPath" ]; then
          
     # For the local packages script we also change the SCRIPT_OPTIONS to point to the $PathToWorkingDirectory
     # For every other script, we set the WORKING_DIRECTORY path in the xml, replace it with the given $PathToWorkingDirectory
-    if [[ $TargetFile == *$TargetEngine-Set-Local-Packages* ]]; then
-      echo sed -i '\@="SCRIPT_OPTIONS"@s@value=".*"@value="'"$PathToWorkingDirectory"'"@g' "$TargetFile"
-           sed -i '\@="SCRIPT_OPTIONS"@s@value=".*"@value="'"$PathToWorkingDirectory"'"@g' "$TargetFile"
+    if [[ $TargetFile == *$TargetEngine-Set-Local-Packages* || $TargetFile == *$TargetEngine-Set-Install-* ]]; then
+      echo sed -i '\@="SCRIPT_OPTIONS"@s@\$PROJECT_DIR\$\/\.\.\/client@'"$PathToWorkingDirectory"'@g' "$TargetFile"
+           sed -i '\@="SCRIPT_OPTIONS"@s@\$PROJECT_DIR\$\/\.\.\/client@'"$PathToWorkingDirectory"'@g' "$TargetFile"
+           
+      echo sed -i '\@="SCRIPT_OPTIONS"@s@BeamableNugetSource@'"$TargetEngine"'_NugetSource@g' "$TargetFile"
+           sed -i '\@="SCRIPT_OPTIONS"@s@BeamableNugetSource@'"$TargetEngine"'_NugetSource@g' "$TargetFile"
+                                 
       continue
     else          
       echo sed -i '\@="WORKING_DIRECTORY"@s@value=".*"@value="'"$PathToWorkingDirectory"'"@g' "$TargetFile"

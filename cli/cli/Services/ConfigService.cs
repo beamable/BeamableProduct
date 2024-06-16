@@ -1,5 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Serialization.SmallerJSON;
+using cli.Services;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 using Serilog;
@@ -7,10 +9,9 @@ using System.CommandLine.Binding;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace cli;
-
-
 
 [Serializable]
 public enum Vcs
@@ -50,6 +51,7 @@ public class ConfigService
 
 		RefreshConfig();
 	}
+
 	/// <summary>
 	/// Check if the given path is within the .beamable folder context.
 	/// </summary>
@@ -112,7 +114,6 @@ public class ConfigService
 
 			path = Path.GetRelativePath(relativeTo, path);
 			return path;
-
 		}
 		catch (Exception)
 		{
@@ -151,6 +152,7 @@ public class ConfigService
 		{
 			throw new CliException($"Could not find {pathInConfig} because config file is unspecified.");
 		}
+
 		var basePath = ConfigDirectoryPath;
 		if (Constants.TEMP_FILES.Contains(pathInConfig))
 		{
@@ -178,6 +180,7 @@ public class ConfigService
 			{
 				return defaultValueGenerator();
 			}
+
 			var filePath = GetConfigPath(fileName);
 			if (!File.Exists(filePath)) { return defaultValueGenerator(); }
 
@@ -207,7 +210,7 @@ public class ConfigService
 	/// tell the Beam CLI where the docker socket is available.
 	/// </summary>
 	public string CustomDockerUri => Environment.GetEnvironmentVariable(ENV_VAR_DOCKER_URI);
-	
+
 	/// <summary>
 	/// Github Action Runners for windows don't seem to work with volumes for mongo.
 	/// </summary>
@@ -285,6 +288,102 @@ public class ConfigService
 
 		string fullPath = Path.Combine(ConfigDirectoryPath, Constants.CONFIG_DEFAULTS_FILE_NAME);
 		File.WriteAllText(fullPath, json);
+	}
+
+	/// <summary>
+	/// Called to initialize or overwrite the current DotNet dotnet-tools.json file in the ".beamable" folder's sibling ".config" folder.  
+	/// </summary>
+	public void EnforceDotNetToolsManifest()
+	{
+		if (string.IsNullOrEmpty(ConfigDirectoryPath))
+			throw new CliException("No beamable project exists. Please use beam init");
+
+		var pathToDotNetConfigFolder = Directory.GetParent(ConfigDirectoryPath).ToString();
+		pathToDotNetConfigFolder = Path.Combine(pathToDotNetConfigFolder, ".config");
+
+		// Create the sibling ".config" folder if its not there.
+		if (!Directory.Exists(pathToDotNetConfigFolder))
+			Directory.CreateDirectory(pathToDotNetConfigFolder);
+
+		// Create/Update the manifest inside the ".config" folder 
+		var pathToToolsManifest = Path.Combine(pathToDotNetConfigFolder, "dotnet-tools.json");
+		string manifestString;
+
+		var executingCliVersion = VersionService.GetNugetPackagesForExecutingCliVersion().ToString();
+
+		// Create the file if it doesn't exist with our default local tool and its correct version.
+		if (!File.Exists(pathToToolsManifest))
+		{
+			manifestString = $@"{{
+  ""version"": 1,
+  ""isRoot"": true,
+  ""tools"": {{
+    ""beamable.tools"": {{
+      ""version"": ""{executingCliVersion}"",
+      ""commands"": [
+        ""beam""
+      ]
+    }}
+  }}
+}}";
+		}
+		// If the file is already there, make a best effort to update just the beamable version.
+		else
+		{
+			var versionMatching = new Regex("beamable.*?\"([0-9]+\\.[0-9]+\\.[0-9]+)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
+			manifestString = File.ReadAllText(pathToToolsManifest);
+
+			if (versionMatching.IsMatch(manifestString))
+			{
+				// Replace the group within the full match with version number of the executing CLI
+				manifestString = versionMatching.Replace(manifestString, match =>
+				{
+					var fullMatch = match.Value;
+					return fullMatch.Replace(match.Groups[1].Value, executingCliVersion);
+				});
+			}
+			else
+			{
+				if (!Json.IsValidJson(manifestString))
+					throw new CliException("DotNet tool manifest is not valid json. Please correct it or remove it and re-run `beam init` so we can regenerate it.");
+
+				var manifest = (ArrayDict)Json.Deserialize(manifestString);
+
+				if (!manifest.ContainsKey("tools"))
+					throw new CliException("DotNet tool manifest is not valid json. Please correct it or remove it and re-run `beam init` so we can regenerate it.");
+
+				// Prepare the correct value for the "beamable.tools" entry into the manifest file.
+				var toolsDict = new ArrayDict();
+				toolsDict.Add("version", executingCliVersion);
+				toolsDict.Add("commands", new[] { "beam" });
+
+				// Update the tools JSON object 
+				var tools = (ArrayDict)manifest["tools"];
+				tools["beamable.tools"] = toolsDict;
+
+				// Serialize the manifest back
+				manifestString = Json.Serialize(manifest, new StringBuilder());
+			}
+		}
+
+		File.WriteAllText(pathToToolsManifest, manifestString);
+	}
+	
+	
+	/// <summary>
+	/// Extract the CLI version registered in the ".config" directory sibling to the ".beamable" folder. 
+	/// </summary>
+	public string GetProjectBeamableCLIVersion()
+	{
+		var pathToDotNetConfigFolder = Directory.GetParent(ConfigDirectoryPath).ToString();
+		pathToDotNetConfigFolder = Path.Combine(pathToDotNetConfigFolder, ".config");
+		var pathToToolsManifest = Path.Combine(pathToDotNetConfigFolder, "dotnet-tools.json");
+
+		var versionMatching = new Regex("beamable.*?\"([0-9]+\\.[0-9]+\\.[0-9]+)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
+		var versionMatch = versionMatching.Match(File.ReadAllText(pathToToolsManifest));
+		
+		if (versionMatch.Success) return versionMatch.Groups[1].Value;
+		throw new Exception("Missing \"beamable.tools\" entry in \".config/dotnet-tools.json\" directory.");
 	}
 
 	public void CreateIgnoreFile(Vcs system = Vcs.Git, bool forceCreate = false)
@@ -372,6 +471,7 @@ public class ConfigService
 
 			MigrateOldConfigIfExists();
 		}
+
 		TryToReadConfigFile(ConfigDirectoryPath, out _config);
 	}
 
