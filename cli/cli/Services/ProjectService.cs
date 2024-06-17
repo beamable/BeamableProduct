@@ -382,11 +382,6 @@ public class ProjectService
 		microserviceInfo.ServicePath = Path.Combine(args.ServicesBaseFolderPath, args.ProjectName);
 		await RunDotnetCommand($"new beamstorage -n {args.ProjectName} -o {microserviceInfo.ServicePath}");
 		await RunDotnetCommand($"sln {microserviceInfo.SolutionPath} add {microserviceInfo.ServicePath}");
-		
-		if (!string.IsNullOrWhiteSpace(usedVersion))
-		{
-			await UpdateProjectDependencyVersion(microserviceInfo.ServicePath, "Beamable.Microservice.Runtime", usedVersion);
-		}
 
 		await args.BeamoLocalSystem.InitManifest();
 		
@@ -461,9 +456,6 @@ public class ProjectService
 		// add the microservice to the solution
 		await RunDotnetCommand($"sln \"{solutionPath}\" add \"{projectPath}\"");
 
-
-		await UpdateProjectDependencyVersion(projectPath, "Beamable.Microservice.Runtime", version);
-
 		// create the shared library project only if requested
 		if (generateCommon)
 		{
@@ -489,12 +481,7 @@ public class ProjectService
 		await RunDotnetCommand($"new beamlib -n \"{commonProjectName}\" -o \"{commonProjectPath}\"");
 
 		// restore the shared library tools
-		await RunDotnetCommand(
-			$"tool restore --tool-manifest \"{Path.Combine(commonProjectPath, ".config", "dotnet-tools.json")}\"");
-		if (!string.IsNullOrWhiteSpace(usedVersion))
-		{
-			await UpdateProjectDependencyVersion(commonProjectPath, "Beamable.Common", usedVersion);
-		}
+		await RunDotnetCommand($"tool restore --tool-manifest \"{Path.Combine(commonProjectPath, ".config", "dotnet-tools.json")}\"");
 
 		// add the shared library to the solution
 		await RunDotnetCommand($"sln \"{solutionPath}\" add \"{commonProjectPath}\"");
