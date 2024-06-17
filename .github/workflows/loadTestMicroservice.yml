@@ -27,6 +27,10 @@ jobs:
         working-directory: ./
         run: |
           ./set-packages.sh "./client" "UNITY_NugetSource" "" "Global"
+        env:
+          HOME_OVERRIDE: ${{ github.workspace }}
+          PROJECTS_DIR_FILES: ${{ github.workspace }}/NugetBuildDir/
+          PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Login to BEAM CLI
         working-directory: ./stress-tests/standalone-microservice
         run: |
