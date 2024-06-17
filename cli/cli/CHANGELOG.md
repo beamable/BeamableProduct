@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - common lib handling uses `.` as a default path instead of the empty string 
 - `UpdateDockerfile` update to fix common lib handling for docker builds
 
+## [1.19.21]
+
+### Changed
+- config files use indented JSON
+
 ## [2.0.0] - 2024-05-24
 
 ### Added
