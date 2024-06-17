@@ -376,7 +376,7 @@ public class ConfigService
 	/// </summary>
 	public bool TryGetProjectBeamableCLIVersion(out string version)
 	{
-		if (!Directory.Exists(ConfigDirectoryPath))
+		if (string.IsNullOrEmpty(ConfigDirectoryPath) || !Directory.Exists(Directory.GetParent(ConfigDirectoryPath)?.ToString()))
 		{
 			version = "";
 			return false;
