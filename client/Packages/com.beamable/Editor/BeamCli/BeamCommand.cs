@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
@@ -411,18 +412,24 @@ namespace Beamable.Editor.BeamCli
 							}
 						});
 					};
+					var sb = new StringBuilder();
+					
 					_process.ErrorDataReceived += (sender, args) =>
 					{
+
 						if (_dispatcher.IsForceStopped)
 						{
 							KillProc();
 							return;
 						}
 
+						sb.Insert(0, args.Data + "\n");
+
 						_dispatcher.Schedule(() =>
 						{
-							CliLogger.Log("stderr", args.Data, System.Environment.NewLine + System.Environment.NewLine,
-							              _command);
+							CliLogger.Log("CLISTDERR: " + sb.ToString());
+							// CliLogger.Log("stderr ()", args.Data, System.Environment.NewLine + System.Environment.NewLine,
+							              // _command);
 						});
 						_dispatcher.Schedule(() =>
 						{
