@@ -49,9 +49,9 @@ jobs:
 
       - name: Install CLI
         run: |
-          cd ./cli/cli
+          cd ./
           dotnet restore
-          sh ./install.sh
+          sh ./set-packages.sh "./client" "UNITY_NugetSource" "" "Global"
 
       - name: Check CLI
         run: beam version

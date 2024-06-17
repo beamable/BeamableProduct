@@ -76,9 +76,9 @@ jobs:
         with:
           dotnet-version: '8.0.x'
       - name: Build and Install BEAM CLI 
-        working-directory: ./cli/cli
+        working-directory: ./
         run: |
-          SKIP_GENERATION=true ./install.sh
+          SKIP_GENERATION=true ./set-packages.sh "./client" "UNITY_NugetSource" "" "Global"
       - name: Check Beam CLI
         run: |
           beam version
