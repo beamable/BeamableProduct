@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.1] - 2024-06-17
 
 ### Added
 - `--no-filter` option to `beam listen server`
@@ -15,11 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `beam service ps`  was not working when calling it because it was trying to get the ImageId of storage objects
 - common lib handling uses `.` as a default path instead of the empty string 
 - `UpdateDockerfile` update to fix common lib handling for docker builds
-
-## [1.19.21]
-
-### Changed
-- config files use indented JSON
 
 ## [2.0.0] - 2024-05-24
 
