@@ -5,7 +5,7 @@ namespace cli;
 
 public class ServicesGenerateLocalManifestCommandArgs : CommandArgs
 {
-	
+
 }
 
 [Serializable]
@@ -23,12 +23,12 @@ public class ServicesGenerateLocalManifestCommand : AtomicCommand<ServicesGenera
 
 	public override void Configure()
 	{
-		
+
 	}
 
 	public override async Task<ServicesGenerateLocalManifestCommandOutput> GetResult(ServicesGenerateLocalManifestCommandArgs args)
 	{
-		var manifest = await ProjectContextUtil.GenerateLocalManifest(args.ConfigService.BaseDirectory, args.AppContext.DotnetPath,  args.BeamoService, args.ConfigService);
+		var manifest = await ProjectContextUtil.GenerateLocalManifest(args.ConfigService.BaseDirectory, args.AppContext.DotnetPath, args.BeamoService, args.ConfigService);
 		return new ServicesGenerateLocalManifestCommandOutput
 		{
 			manifest = manifest
