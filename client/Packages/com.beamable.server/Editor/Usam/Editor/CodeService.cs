@@ -436,6 +436,11 @@ namespace Beamable.Server.Editor.Usam
 		{
 			for (int i = 0; i < objData.BeamoIds.Count; i++)
 			{
+				if (!objData.IsLocal[i] && !objData.IsRunningRemotely[i]) //In this case the service was disabled in the remote, which means that it's irrelevant.
+				{
+					continue;
+				}
+
 				var name = objData.BeamoIds[i];
 				UsamLogger.Log($"Handling {name} started");
 
