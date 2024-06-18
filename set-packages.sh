@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PROJECTS_DIR=${PROJECT_DIR_OVERRIDE:-"ProjectsSource"}
-HOME_FOR_BUILD=${1:-$HOME}
+HOME_FOR_BUILD=${1:-$HOME_OVERRIDE}
 PROJECTS_SOURCE="$HOME_FOR_BUILD/BeamableSource/"
 VERSION="0.0.123"
 SOURCE_NAME=${2-"BeamableNugetSource"}

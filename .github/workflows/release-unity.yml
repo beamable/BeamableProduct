@@ -91,9 +91,8 @@ jobs:
         run: |
           cd ./
           dotnet restore
-          sh ./set-packages.sh "./client" "UNITY_NugetSource" "" "Global"
-        env:
-          HOME_OVERRIDE: ${{ github.workspace }}
+          sh ./set-packages.sh "${{ github.workspace }}" "UNITY_NugetSource" "" "Global"
+        env:          
           PROJECTS_DIR_FILES: ${{ github.workspace }}/NugetBuildDir/
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
 
