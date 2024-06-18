@@ -611,7 +611,6 @@ public class App
 				reporter.Exception(ex, context.ExitCode, context.BindingContext.ParseResult.Diagram());
 			}
 
-			// var appContext = CommandProvider.GetService<IAppContext>();
 			if (appContext.ShouldUseLogFile)
 			{
 				Log.CloseAndFlush();
