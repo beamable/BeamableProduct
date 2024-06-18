@@ -170,7 +170,7 @@ public class CliRequester : IRequester
 
 	public IBeamableRequester WithAccessToken(TokenResponse tokenResponse)
 	{
-		throw new NotImplementedException("Access token not implemented");
+		throw new NotImplementedException();
 	}
 
 	public string EscapeURL(string url)

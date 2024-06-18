@@ -5,15 +5,11 @@ using Beamable.Editor.BeamCli.Commands;
 using System;
 using System.Collections;
 using System.IO;
-using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
-using Unity.EditorCoroutines.Editor;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.Networking;
 
 namespace Beamable.Editor.BeamCli
 {
@@ -138,7 +134,7 @@ namespace Beamable.Editor.BeamCli
 							port = port, 
 							owner = "\"" + Owner + "\"",
 							autoIncPort = true,
-							// selfDestructSeconds = 15 // TODO: validate that a low ttl will restart the server
+							selfDestructSeconds = 15 // TODO: validate that a low ttl will restart the server
 						});
 						var waitForResult = new Promise();
 						serverCommand.OnStreamServeCliCommandOutput(data =>
@@ -165,9 +161,9 @@ namespace Beamable.Editor.BeamCli
 		{
 			try
 			{
-				var json = await localClient.GetStringAsync(InfoUrl).TaskToPromise();
+				var json = await localClient.GetStringAsync(InfoUrl);
 				var res = JsonUtility.FromJson<ServerInfoResponse>(json);
-				
+
 				var ownerMatches = res.owner == Owner;
 				var versionMatches = res.version == Version;
 				
@@ -216,58 +212,10 @@ namespace Beamable.Editor.BeamCli
 			_command = command.Substring("beam".Length);
 		}
 
-		[MenuItem("CLI/Test")]
-		public static void RunUnity()
-		{
-			// var execUrl = "http://127.0.0.1:8432/execute";
-			// var req = new UnityWebRequest(execUrl, "post");
-			//
-			// var json = JsonUtility.ToJson(new BeamWebCommandRequest {commandLine = "project ps -w"});
-			// var bytes = Encoding.UTF8.GetBytes(json);
-			// req.uploadHandler = new UploadHandlerRaw(bytes) {contentType = "application/json"};
-			// var handler = req.downloadHandler = new DownloadHandlerBuffer();
-			//
-			// var op = req.SendWebRequest();
-			//
-			// EditorCoroutineUtility.StartCoroutineOwnerless(Routine());
-			//
-			// op.completed += (res) =>
-			// {
-			// 	Debug.Log("DONE!"  + req.result);
-			// };
-			//
-			// IEnumerator Routine()
-			// {
-			// 	Debug.Log("---------STARTING!!");
-			//
-			// 	while (!op.isDone)
-			// 	{
-			// 		Debug.Log("Length: " + (handler.data?.Length ?? -1));
-			// 		yield return null;
-			// 	}
-			// 	Debug.Log("---------EXITING");
-			// }
-			// op.webRequest.downloadHandler = 
-			// var 
-			// var request = WebRequest.Create(new Uri(execUrl));
-			// request.Method = "post";
-			// request.Timeout = int.MaxValue; // hopefully forever.
-			// // request.get
-			// ((HttpWebRequest)request).AllowReadStreamBuffering = false;
-			// re
-			//
-			// var res = request.GetResponse();
-			// var stream = res.GetResponseStream();
-			//
-			//
-			// var res = request.GetResponse();
-		}
-
 		public async Promise Run()
 		{
 			await _factory.EnsureServerIsRunning();
 
-			
 			var req = new HttpRequestMessage(HttpMethod.Post, _factory.ExecuteUrl);
 			var json = JsonUtility.ToJson(new BeamWebCommandRequest {commandLine = _command});
 			req.Content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -275,14 +223,14 @@ namespace Beamable.Editor.BeamCli
 			try
 			{
 				using HttpResponseMessage response =
-					await _localClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead).TaskToPromise();
+					await _localClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
 
-				using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync().TaskToPromise();
+				using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
 				using StreamReader reader = new StreamReader(streamToReadFrom);
 
 				while (!reader.EndOfStream)
 				{
-					var line = await reader.ReadLineAsync().TaskToPromise();
+					var line = await reader.ReadLineAsync();
 					if (string.IsNullOrEmpty(line)) continue; // TODO: what if the message contains a \n character?
 
 					// remove life-cycle zero-width character 
