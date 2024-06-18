@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- `[Callable]` methods no longer produce `AccountNotFoundError` errors when emitting Beamable API calls with valid playerIds.
+- Microservices with `.dll` references will match based on filename, instead of first matching suffix. This fixes a common `Newtonsoft.Json` collision between Unity.Plastic and Unity.Newtonsoft.
+- Microservices have improved thread-safety when sending messages to Beamable.
+- `AssumeUser` now returns a disposable object, memory usage improvements
+
+### Added
+
+- `admin/metadata` route will return sdk version and other metadata about a running service.
+
+## [1.19.21] - 2024-06-18
+
+no changes
+
 ## [1.19.20] - 2024-05-31
 ### Fixed
 - `Optional` types now serialize correctly.
