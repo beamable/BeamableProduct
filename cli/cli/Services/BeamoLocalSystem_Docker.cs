@@ -304,7 +304,7 @@ public partial class BeamoLocalSystem
 			{
 				BeamableLogger.LogError(ex);
 				BeamableLogger.LogError(ex?.InnerException);
-				throw new CliException($"Failed while building image = [{imageName}]");
+				throw new CliException($"Failed while building image = [{imageName}]. Exception thrown: [{ex.Message}]. Stacktrace: [{ex.StackTrace}]");
 			}
 
 			var builtImage = await _client.Images.InspectImageAsync(tag);
