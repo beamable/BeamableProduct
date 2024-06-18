@@ -108,6 +108,10 @@ if printf '%s\0' "${PACKAGES_TO_SET_ARR[@]}" | grep -qwz "$PKG_TEMPLATES"; then
   OUTPUT=$PROJECTS_DIR VERSION=$VERSION "$PKG_TEMPLATES"/build.sh
 fi
 
+# Print out the source list
+echo "List of Sources"
+dotnet nuget list source
+
 if dotnet nuget list source | grep -q $SOURCE_NAME; then
     echo "Source already exists!"
 else
@@ -116,6 +120,8 @@ else
     echo "$PROJECTS_SOURCE"
     echo "$SOURCE_NAME"  
     dotnet nuget add source "$PROJECTS_SOURCE" -n "$SOURCE_NAME"
+    echo "Added source $SOURCE_NAME bound to path $PROJECTS_SOURCE"
+    dotnet nuget list source
 fi
 
 echo "Pushing"
@@ -123,6 +129,7 @@ echo $PROJECTS_DIR
 echo $PROJECTS_SOURCE
 ls $PROJECTS_DIR
 ls $PROJECTS_SOURCE
+
 
 # Nuget push seems to need the actual files on windows (it doesn't automatically get all the files if you just pass in a directory) 
 # The $PACKAGE_SOURCE_SUFFIX_BLOB is set from the buildPR.yml file.
