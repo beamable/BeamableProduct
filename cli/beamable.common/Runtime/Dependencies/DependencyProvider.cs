@@ -164,26 +164,15 @@ namespace Beamable.Common.Dependencies
 		/// <param name="child"></param>
 		void RemoveChild(IDependencyProviderScope child);
 	}
-
-	enum DependencyWorkItemType
-	{
-		NOOP,
-		GET_SINGLETON
-	}
 	
-	struct DependencyWorkItem
-	{
-		public DependencyWorkItemType type;
-		public Type typeArg;
-	}
 	
 	public class DependencyProvider : IDependencyProviderScope
 	{
-		private Queue<DependencyWorkItem> _workItems = new Queue<DependencyWorkItem>();
 		
-		private Dictionary<Type, ServiceDescriptor> Transients { get; set; }
-		private Dictionary<Type, ServiceDescriptor> Scoped { get; set; }
-		private Dictionary<Type, ServiceDescriptor> Singletons { get; set; }
+		// private Dictionary<Type, ServiceDescriptor> Transients { get; set; }
+		// private Dictionary<Type, ServiceDescriptor> Scoped { get; set; }
+		// private Dictionary<Type, ServiceDescriptor> Singletons { get; set; }
+		private Dictionary<Type, ServiceDescriptor> Descriptors { get; set; }
 
 		private Dictionary<Type, object> InstanceCache { get; set; } = new Dictionary<Type, object>();
 		// private Dictionary<Type, object> SingletonCache { get; set; } = new Dictionary<Type, object>();
@@ -195,9 +184,9 @@ namespace Beamable.Common.Dependencies
 		public bool IsDisposed => _destroyed;
 		public bool IsActive => !_isDestroying && !_destroyed;
 
-		public IEnumerable<ServiceDescriptor> TransientServices => Transients.Values;
-		public IEnumerable<ServiceDescriptor> ScopedServices => Scoped.Values;
-		public IEnumerable<ServiceDescriptor> SingletonServices => Singletons.Values;
+		public IEnumerable<ServiceDescriptor> TransientServices => Descriptors.Values.Where(x => x.Lifetime == DependencyLifetime.Transient);
+		public IEnumerable<ServiceDescriptor> ScopedServices => Descriptors.Values.Where(x => x.Lifetime == DependencyLifetime.Scoped);
+		public IEnumerable<ServiceDescriptor> SingletonServices => Descriptors.Values.Where(x => x.Lifetime == DependencyLifetime.Singleton);
 
 		public IDependencyProviderScope Parent { get; private set; }
 		private HashSet<IDependencyProviderScope> _children = new HashSet<IDependencyProviderScope>();
@@ -218,37 +207,33 @@ namespace Beamable.Common.Dependencies
 			}
 
 			_options = options;
-			Transients = new Dictionary<Type, ServiceDescriptor>();
-			foreach (var desc in builder.TransientServices)
-			{
-				Transients.Add(desc.Interface, desc);
-			}
+			Descriptors = new Dictionary<Type, ServiceDescriptor>();
 
-			Scoped = new Dictionary<Type, ServiceDescriptor>();
-			foreach (var desc in builder.ScopedServices)
+			if (builder == null) return;
+			
+			foreach (var desc in builder.Descriptors)
 			{
-				Scoped.Add(desc.Interface, desc);
-			}
+				if (Descriptors.TryGetValue(desc.Interface, out var existingDesc))
+				{
+					if (existingDesc.Lifetime <= desc.Lifetime)
+					{
+						throw new Exception(
+							$"Cannot add service=[{existingDesc.Interface.Name}] to scope as lifetime=[{desc.Lifetime}], because the service has already been added to the scope as existing-lifetime=[{existingDesc.Lifetime}]. ");
+					}
 
-			Singletons = new Dictionary<Type, ServiceDescriptor>();
-			foreach (var desc in builder.SingletonServices)
-			{
-				Singletons.Add(desc.Interface, desc);
+					Descriptors[desc.Interface] = desc;
+				}
+				else
+				{
+					Descriptors.Add(desc.Interface, desc);
+				}
 			}
 		}
 
 		public bool TryGetServiceDescriptor<T>(out ServiceDescriptor descriptor)
 		{
 			descriptor = null;
-			if (Transients.TryGetValue(typeof(T), out descriptor))
-			{
-				return true;
-			}
-			if (Scoped.TryGetValue(typeof(T), out descriptor))
-			{
-				return true;
-			}
-			if (Singletons.TryGetValue(typeof(T), out descriptor))
+			if (Descriptors.TryGetValue(typeof(T), out descriptor))
 			{
 				return true;
 			}
@@ -260,19 +245,9 @@ namespace Beamable.Common.Dependencies
 		{
 
 			lifetime = DependencyLifetime.Unknown;
-			if (Transients.TryGetValue(typeof(T), out _))
+			if (Descriptors.TryGetValue(typeof(T), out var desc))
 			{
-				lifetime = DependencyLifetime.Transient;
-				return true;
-			}
-			if (Scoped.TryGetValue(typeof(T), out _))
-			{
-				lifetime = DependencyLifetime.Scoped;
-				return true;
-			}
-			if (Singletons.TryGetValue(typeof(T), out _))
-			{
-				lifetime = DependencyLifetime.Singleton;
+				lifetime = desc.Lifetime;
 				return true;
 			}
 
@@ -300,7 +275,7 @@ namespace Beamable.Common.Dependencies
 		{
 			if (_destroyed) throw new ServiceScopeDisposedException(nameof(CanBuildService), t, this);
 
-			return Transients.ContainsKey(t) || Scoped.ContainsKey(t) || Singletons.ContainsKey(t) || (Parent?.CanBuildService(t) ?? false);
+			return Descriptors.ContainsKey(t) || (Parent?.CanBuildService(t) ?? false);
 		}
 
 		
@@ -313,33 +288,24 @@ namespace Beamable.Common.Dependencies
 				if (t == typeof(IDependencyProvider)) return this;
 				if (t == typeof(IDependencyProviderScope)) return this;
 
-				if (Transients.TryGetValue(t, out var descriptor))
+				if (Descriptors.TryGetValue(t, out var descriptor))
 				{
-					var service = descriptor.Factory(this);
-					return service;
-				}
-
-				if (Scoped.TryGetValue(t, out descriptor))
-				{
-					if (InstanceCache.TryGetValue(t, out var instance))
+					if (descriptor.Lifetime != DependencyLifetime.Transient)
 					{
-						return instance;
+						if (InstanceCache.TryGetValue(t, out var instance))
+						{
+							return instance;
+						}
+						else
+						{
+							return InstanceCache[t] = descriptor.Factory(this);
+						}
 					}
-
-					return InstanceCache[t] = descriptor.Factory(this);
-				}
-
-
-				if (Singletons.TryGetValue(t, out descriptor))
-				{
-					if (InstanceCache.TryGetValue(t, out var instance))
+					else
 					{
-						return instance;
+						return descriptor.Factory(this);
 					}
-
-					return InstanceCache[t] = descriptor.Factory(this);
 				}
-
 
 				if (Parent != null)
 				{
@@ -434,12 +400,8 @@ namespace Beamable.Common.Dependencies
 				// remove from parent.
 				Parent?.RemoveChild(this);
 
-				ClearServices(Singletons);
-				ClearServices(Transients);
-				ClearServices(Scoped);
-				Singletons = null;
-				Transients = null;
-				Scoped = null;
+				ClearServices(Descriptors);
+				Descriptors = null;
 
 				InstanceCache = null;
 			}
@@ -453,21 +415,23 @@ namespace Beamable.Common.Dependencies
 
 			_destroyed = other.IsDisposed;
 			_isDestroying = false;
-			Transients = new Dictionary<Type, ServiceDescriptor>();
-			foreach (var desc in other.TransientServices)
-			{
-				Transients.Add(desc.Interface, desc);
-			}
-			Scoped = new Dictionary<Type, ServiceDescriptor>();
-			foreach (var desc in other.ScopedServices)
-			{
-				Scoped.Add(desc.Interface, desc);
-			}
-			Singletons = new Dictionary<Type, ServiceDescriptor>();
+			Descriptors = new Dictionary<Type, ServiceDescriptor>();
 			foreach (var desc in other.SingletonServices)
-			{
-				Singletons.Add(desc.Interface, desc);
-			}
+			// Transients = new Dictionary<Type, ServiceDescriptor>();
+			// foreach (var desc in other.TransientServices)
+			// {
+			// 	Transients.Add(desc.Interface, desc);
+			// }
+			// Scoped = new Dictionary<Type, ServiceDescriptor>();
+			// foreach (var desc in other.ScopedServices)
+			// {
+			// 	Scoped.Add(desc.Interface, desc);
+			// }
+			// Singletons = new Dictionary<Type, ServiceDescriptor>();
+			// foreach (var desc in other.SingletonServices)
+			// {
+			// 	Singletons.Add(desc.Interface, desc);
+			// }
 			InstanceCache.Clear();
 
 			lock (_children)
@@ -529,15 +493,41 @@ namespace Beamable.Common.Dependencies
 			var builder = new DependencyBuilder();
 			// populate all of the existing services we have in this scope.
 
+			foreach (var source in Descriptors)
+			{
+				switch (source.Value.Lifetime)
+				{
+					case DependencyLifetime.Transient:
+					case DependencyLifetime.Scoped:
+						builder.Descriptors.Add(new ServiceDescriptor
+						{
+							Interface = source.Value.Interface,
+							Implementation = source.Value.Implementation,
+							Lifetime = source.Value.Lifetime,
+							Factory = (nextProvider) => source.Value.Factory(nextProvider)
+						});
+						break;
+					case DependencyLifetime.Singleton:
+						builder.Descriptors.Add(new ServiceDescriptor
+						{
+							Interface = source.Value.Interface,
+							Implementation = source.Value.Implementation,
+							Lifetime = source.Value.Lifetime,
+							Factory = _ => GetService(source.Value.Interface)
+						});
+						break;
+						
+				}
+			}
 			// transients are stupid, and I should probably delete them.
-			AddDescriptors(builder.TransientServices, Transients, (nextProvider, desc) => desc.Factory(nextProvider));
-
-			// all scoped descriptors
-			AddDescriptors(builder.ScopedServices, Scoped, (nextProvider, desc) => desc.Factory(nextProvider));
-			// scopes services build brand new instances per provider
-
-			// singletons use their parent singleton cache.
-			AddDescriptors(builder.SingletonServices, Scoped, (_, desc) => GetService(desc.Interface));
+			//AddDescriptors(builder.TransientServices, Transients, (nextProvider, desc) => desc.Factory(nextProvider));
+			//
+			// // all scoped descriptors
+			// AddDescriptors(builder.ScopedServices, Scoped, (nextProvider, desc) => desc.Factory(nextProvider));
+			// // scopes services build brand new instances per provider
+			//
+			// // singletons use their parent singleton cache.
+			// AddDescriptors(builder.SingletonServices, Scoped, (_, desc) => GetService(desc.Interface));
 
 			configure?.Invoke(builder);
 

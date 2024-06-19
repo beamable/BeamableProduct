@@ -23,6 +23,13 @@ public class DependencyProviderBenchmarks
 	// {
 	// 	var x = new Dictionary<Type, ServiceDescriptor>();
 	// }
+
+	// [Benchmark]
+	public void BaseCase_JustProvider()
+	{
+		var provider = new DependencyProvider(null, null);
+	}
+	
 	// [Benchmark]
 	public void BaseCase_NoDispose()
 	{
@@ -37,24 +44,24 @@ public class DependencyProviderBenchmarks
 	public void BaseCase_NoDispose_RegisterAndResolve()
 	{
 		var builder = new DependencyBuilder();
-		builder.AddSingleton<TestService>(()=>new TestService());
+		// builder.AddSingleton<TestService>();
 		var provider = builder.Build();
-		var service = provider.GetService<TestService>();
+		// var service = provider.GetService<TestService>();
 		// var serv = new TestService();
 	}
 	//
 	//
-	// [Benchmark]
-	// public void BaseCase_Dispose()
-	// {
-	// 	var builder = new DependencyBuilder();
-	// 	// builder.AddSingleton<TestService>();
-	// 	var provider = builder.Build();
-	//
-	// 	// var service = provider.GetService<TestService>();
-	//
-	// 	provider.Dispose();
-	// }
+	[Benchmark]
+	public void BaseCase_Dispose()
+	{
+		var builder = new DependencyBuilder();
+		// builder.AddSingleton<TestService>();
+		var provider = builder.Build();
+	
+		// var service = provider.GetService<TestService>();
+	
+		provider.Dispose();
+	}
 
 
 	public class TestService

@@ -236,10 +236,7 @@ namespace Beamable.Server
 				        return new MicroserviceHttpRequester(envArgs, new HttpClient(handler));
 			        })
 			        .AddSingleton<IMicroserviceArgs>(envArgs)
-			        .AddSingleton<SocketRequesterContext>(_ =>
-			        {
-				        return Instances[0].SocketContext;
-			        })
+			        .AddSingleton<SocketRequesterContext>(_ => Instances[0].SocketContext)
 			        .AddScoped(provider =>
 				        new MicroserviceRequester(provider.GetService<IMicroserviceArgs>(), provider.GetService<RequestContext>(), provider.GetService<SocketRequesterContext>(), true))
 			        .AddScoped<IUserContext>(provider => provider.GetService<RequestContext>())
