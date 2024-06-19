@@ -7,8 +7,8 @@ namespace Beamable.Editor.BeamCli.Commands
     [System.SerializableAttribute()]
     public class BeamServiceListResult
     {
-        public System.Collections.Generic.List<bool> IsLocal;
-        public System.Collections.Generic.List<bool> IsInRemote;
+        public System.Collections.Generic.List<bool> ExistInLocal;
+        public System.Collections.Generic.List<bool> ExistInRemote;
         public System.Collections.Generic.List<bool> IsRunningRemotely;
         public bool IsDockerRunning;
         public System.Collections.Generic.List<string> BeamoIds;
