@@ -165,14 +165,29 @@ namespace Beamable.Common.Dependencies
 		void RemoveChild(IDependencyProviderScope child);
 	}
 
+	enum DependencyWorkItemType
+	{
+		NOOP,
+		GET_SINGLETON
+	}
+	
+	struct DependencyWorkItem
+	{
+		public DependencyWorkItemType type;
+		public Type typeArg;
+	}
+	
 	public class DependencyProvider : IDependencyProviderScope
 	{
-		private ConcurrentDictionary<Type, ServiceDescriptor> Transients { get; set; }
-		private ConcurrentDictionary<Type, ServiceDescriptor> Scoped { get; set; }
-		private ConcurrentDictionary<Type, ServiceDescriptor> Singletons { get; set; }
+		private Queue<DependencyWorkItem> _workItems = new Queue<DependencyWorkItem>();
+		
+		private Dictionary<Type, ServiceDescriptor> Transients { get; set; }
+		private Dictionary<Type, ServiceDescriptor> Scoped { get; set; }
+		private Dictionary<Type, ServiceDescriptor> Singletons { get; set; }
 
-		private ConcurrentDictionary<Type, object> SingletonCache { get; set; } = new ConcurrentDictionary<Type, object>();
-		private ConcurrentDictionary<Type, object> ScopeCache { get; set; } = new ConcurrentDictionary<Type, object>();
+		private Dictionary<Type, object> InstanceCache { get; set; } = new Dictionary<Type, object>();
+		// private Dictionary<Type, object> SingletonCache { get; set; } = new Dictionary<Type, object>();
+		// private Dictionary<Type, object> ScopeCache { get; set; } = new Dictionary<Type, object>();
 
 		private bool _destroyed;
 		private bool _isDestroying;
@@ -203,31 +218,22 @@ namespace Beamable.Common.Dependencies
 			}
 
 			_options = options;
-			Transients = new ConcurrentDictionary<Type, ServiceDescriptor>();
+			Transients = new Dictionary<Type, ServiceDescriptor>();
 			foreach (var desc in builder.TransientServices)
 			{
-				if (!Transients.TryAdd(desc.Interface, desc))
-				{
-					Debug.LogError($"Failed to add transient interface=[{desc.Interface.Name}] because it already existed.");
-				}
+				Transients.Add(desc.Interface, desc);
 			}
 
-			Scoped = new ConcurrentDictionary<Type, ServiceDescriptor>();
+			Scoped = new Dictionary<Type, ServiceDescriptor>();
 			foreach (var desc in builder.ScopedServices)
 			{
-				if (!Scoped.TryAdd(desc.Interface, desc))
-				{
-					Debug.LogError($"Failed to add scoped interface=[{desc.Interface.Name}] because it already existed.");
-				}
+				Scoped.Add(desc.Interface, desc);
 			}
 
-			Singletons = new ConcurrentDictionary<Type, ServiceDescriptor>();
+			Singletons = new Dictionary<Type, ServiceDescriptor>();
 			foreach (var desc in builder.SingletonServices)
 			{
-				if (!Singletons.TryAdd(desc.Interface, desc))
-				{
-					Debug.LogError($"Failed to add singleton interface=[{desc.Interface.Name}] because it already existed.");
-				}
+				Singletons.Add(desc.Interface, desc);
 			}
 		}
 
@@ -297,47 +303,52 @@ namespace Beamable.Common.Dependencies
 			return Transients.ContainsKey(t) || Scoped.ContainsKey(t) || Singletons.ContainsKey(t) || (Parent?.CanBuildService(t) ?? false);
 		}
 
+		
 		public object GetService(Type t)
 		{
-			if (_destroyed) throw new ServiceScopeDisposedException(nameof(GetService), t, this);
-
-			if (t == typeof(IDependencyProvider)) return this;
-			if (t == typeof(IDependencyProviderScope)) return this;
-
-			if (Transients.TryGetValue(t, out var descriptor))
+			lock (this)
 			{
-				var service = descriptor.Factory(this);
-				return service;
-			}
+				if (_destroyed) throw new ServiceScopeDisposedException(nameof(GetService), t, this);
 
-			if (Scoped.TryGetValue(t, out descriptor))
-			{
-				if (ScopeCache.TryGetValue(t, out var instance))
+				if (t == typeof(IDependencyProvider)) return this;
+				if (t == typeof(IDependencyProviderScope)) return this;
+
+				if (Transients.TryGetValue(t, out var descriptor))
 				{
-					return instance;
+					var service = descriptor.Factory(this);
+					return service;
 				}
 
-				return ScopeCache[t] = descriptor.Factory(this);
-			}
-
-
-			if (Singletons.TryGetValue(t, out descriptor))
-			{
-				if (SingletonCache.TryGetValue(t, out var instance))
+				if (Scoped.TryGetValue(t, out descriptor))
 				{
-					return instance;
+					if (InstanceCache.TryGetValue(t, out var instance))
+					{
+						return instance;
+					}
+
+					return InstanceCache[t] = descriptor.Factory(this);
 				}
 
-				return SingletonCache[t] = descriptor.Factory(this);
+
+				if (Singletons.TryGetValue(t, out descriptor))
+				{
+					if (InstanceCache.TryGetValue(t, out var instance))
+					{
+						return instance;
+					}
+
+					return InstanceCache[t] = descriptor.Factory(this);
+				}
+
+
+				if (Parent != null)
+				{
+					return Parent.GetService(t);
+				}
+
+
+				throw new Exception($"Service not found {t.Name}");
 			}
-
-			if (Parent != null)
-			{
-				return Parent.GetService(t);
-			}
-
-
-			throw new Exception($"Service not found {t.Name}");
 		}
 
 		List<Promise<Unit>> childRemovalPromises = new List<Promise<Unit>>();
@@ -401,7 +412,7 @@ namespace Beamable.Common.Dependencies
 				}
 			}
 
-			void ClearServices(ConcurrentDictionary<Type, ServiceDescriptor> descriptors)
+			void ClearServices(Dictionary<Type, ServiceDescriptor> descriptors)
 			{
 				foreach (var kvp in descriptors)
 				{
@@ -414,11 +425,9 @@ namespace Beamable.Common.Dependencies
 			}
 
 
-			await DisposeServices(SingletonCache.Values.Distinct());
-			await DisposeServices(ScopeCache.Values.Distinct());
+			await DisposeServices(InstanceCache.Values.Distinct());
 
-			SingletonCache.Clear();
-			ScopeCache.Clear();
+			InstanceCache.Clear();
 
 			if (!_options.allowHydration)
 			{
@@ -432,8 +441,7 @@ namespace Beamable.Common.Dependencies
 				Transients = null;
 				Scoped = null;
 
-				SingletonCache = null;
-				ScopeCache = null;
+				InstanceCache = null;
 			}
 
 			_destroyed = true;
@@ -445,32 +453,22 @@ namespace Beamable.Common.Dependencies
 
 			_destroyed = other.IsDisposed;
 			_isDestroying = false;
-			Transients = new ConcurrentDictionary<Type, ServiceDescriptor>();
+			Transients = new Dictionary<Type, ServiceDescriptor>();
 			foreach (var desc in other.TransientServices)
 			{
-				if (!Transients.TryAdd(desc.Interface, desc))
-				{
-					Debug.LogError($"Failed to hydrate transient interface=[{desc.Interface.Name}] because it already existed");
-				}
+				Transients.Add(desc.Interface, desc);
 			}
-			Scoped = new ConcurrentDictionary<Type, ServiceDescriptor>();
+			Scoped = new Dictionary<Type, ServiceDescriptor>();
 			foreach (var desc in other.ScopedServices)
 			{
-				if (!Scoped.TryAdd(desc.Interface, desc))
-				{
-					Debug.LogError($"Failed to hydrate scoped interface=[{desc.Interface.Name}] because it already existed");
-				}
+				Scoped.Add(desc.Interface, desc);
 			}
-			Singletons = new ConcurrentDictionary<Type, ServiceDescriptor>();
+			Singletons = new Dictionary<Type, ServiceDescriptor>();
 			foreach (var desc in other.SingletonServices)
 			{
-				if (!Singletons.TryAdd(desc.Interface, desc))
-				{
-					Debug.LogError($"Failed to hydrate singleton interface=[{desc.Interface.Name}] because it already existed");
-				}
+				Singletons.Add(desc.Interface, desc);
 			}
-			SingletonCache.Clear();
-			ScopeCache.Clear();
+			InstanceCache.Clear();
 
 			lock (_children)
 			{
@@ -502,7 +500,7 @@ namespace Beamable.Common.Dependencies
 		}
 
 		void AddDescriptors(List<ServiceDescriptor> target,
-			ConcurrentDictionary<Type, ServiceDescriptor> source,
+			Dictionary<Type, ServiceDescriptor> source,
 			Func<IDependencyProvider, ServiceDescriptor, object> factory)
 		{
 			foreach (var kvp in source)
