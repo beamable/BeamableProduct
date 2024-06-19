@@ -163,8 +163,16 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 
 public class ServiceListResult
 {
+	/// <summary>
+	/// True if the service exists in a local directory
+	/// </summary>
 	public List<bool> ExistInLocal;
+
+	/// <summary>
+	/// True if the service was published before and exists in the cloud
+	/// </summary>
 	public List<bool> ExistInRemote;
+	
 	public List<bool> IsRunningRemotely;
 	public bool IsDockerRunning;
 
