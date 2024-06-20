@@ -100,6 +100,18 @@ This property is accessible to the dotnet build targets, including any custom ta
 | ---------------- | -------------------------------------------- |
 | `<BeamableTool>` | the value of env var, `BEAM_PATH`, or `beam` |
 
+#### BeamServiceGroup
+The `<BeamServiceGroup>` property is a comma or semi-colon separated list of tags that logically group services together. 
+If you need to specify multiple values, use a `,` or a `;` to separate values. You can also redefine the property in terms of itself.
+
+```xml
+<BeamServiceGroup>firstTag</BeamServiceGroup>
+<BeamServiceGroup>$(BeamServiceGroup);secondTag</BeamServiceGroup>
+```
+
+| Property Name        | Default Value |
+|----------------------|---------------|
+| `<BeamServiceGroup>` | empty         |
 
 ### Dotnet Properties
 

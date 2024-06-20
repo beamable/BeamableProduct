@@ -9,6 +9,8 @@ namespace cli.Services;
 
 public static class ProjectContextUtil
 {
+	private static readonly char[] SPLIT_OPTIONS = new char[] { ',', ';' };
+	
 	public static async Task<BeamoLocalManifest> GenerateLocalManifest(
 		string rootFolder,
 		string dotnetPath, 
@@ -30,8 +32,8 @@ public static class ProjectContextUtil
 			HttpMicroserviceLocalProtocols = new BeamoLocalProtocolMap<HttpMicroserviceLocalProtocol>{},
 			EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>(){},
 			EmbeddedMongoDbRemoteProtocols = new BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol>(),
-			HttpMicroserviceRemoteProtocols = new BeamoRemoteProtocolMap<HttpMicroserviceRemoteProtocol>()
-
+			HttpMicroserviceRemoteProtocols = new BeamoRemoteProtocolMap<HttpMicroserviceRemoteProtocol>(),
+			ServiceGroupToBeamoIds = new Dictionary<string, string[]>()
 		};
 
 
@@ -75,7 +77,8 @@ public static class ProjectContextUtil
 					BeamoId = remoteService.serviceName,
 					Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet,
 					ProjectDirectory = null,
-					Protocol = BeamoProtocolType.HttpMicroservice
+					Protocol = BeamoProtocolType.HttpMicroservice,
+					ServiceGroupTags = Array.Empty<string>()
 				};
 				manifest.ServiceDefinitions.Add(existingDefinition);
 				manifest.HttpMicroserviceRemoteProtocols.Add(remoteService.serviceName, new HttpMicroserviceRemoteProtocol());
@@ -96,7 +99,8 @@ public static class ProjectContextUtil
 					BeamoId = remoteStorage.id,
 					Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet,
 					Protocol = BeamoProtocolType.EmbeddedMongoDb,
-					ProjectDirectory = null
+					ProjectDirectory = null,
+					ServiceGroupTags = Array.Empty<string>()
 				};
 				manifest.ServiceDefinitions.Add(existingDefinition);
 				manifest.EmbeddedMongoDbRemoteProtocols.Add(remoteStorage.id, new EmbeddedMongoDbRemoteProtocol());
@@ -108,9 +112,63 @@ public static class ProjectContextUtil
 			existingDefinition.ImageId = MongoImage;
 		}
 
+
+		manifest.ServiceGroupToBeamoIds =
+			ResolveServiceGroups(manifest.ServiceDefinitions, manifest.HttpMicroserviceLocalProtocols);
+
 		return manifest;
 	}
-	
+
+	/// <summary>
+	/// Given a list of definitions with service-group tags, produce a dictionary that
+	/// maps from service group name to the fully dependency resolved set of definitions
+	/// in that group. The result dictionary's values are arrays of beamoIds.
+	/// </summary>
+	/// <param name="definitions"></param>
+	/// <returns></returns>
+	public static Dictionary<string, string[]> ResolveServiceGroups(
+		List<BeamoServiceDefinition> definitions,
+		BeamoLocalProtocolMap<HttpMicroserviceLocalProtocol> localServices
+		)
+	{
+		var intermediateResult = new Dictionary<string, HashSet<string>>();
+		
+		foreach (var definition in definitions)
+		{
+			
+			// add all the groups for this definition
+			foreach (var group in definition.ServiceGroupTags)
+			{
+				if (!intermediateResult.TryGetValue(group, out var existing))
+				{
+					existing = intermediateResult[group] = new HashSet<string>();
+				}
+				existing.Add(definition.BeamoId);
+			}
+
+			// the only dependency we care about are service --> storage dependencies 
+			if (definition.Protocol == BeamoProtocolType.HttpMicroservice &&
+			    localServices.TryGetValue(definition.BeamoId, out var service) &&
+			    service.StorageDependencyBeamIds?.Count > 0)
+			{
+				foreach (var group in definition.ServiceGroupTags)
+				{
+					if (!intermediateResult.TryGetValue(group, out var existing))
+					{
+						existing = intermediateResult[group] = new HashSet<string>();
+					}
+
+					foreach (var storageId in service.StorageDependencyBeamIds)
+					{
+						existing.Add(storageId);
+					}
+				}
+			}
+		}
+
+		// convert the hashset into an array
+		return intermediateResult.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToArray());
+	}
 	
 	public static CsharpProjectMetadata[] FindCsharpProjects(string rootFolder)
 	{
@@ -148,7 +206,8 @@ public static class ProjectContextUtil
 			{
 				BeamId = buildProject.GetPropertyValue(CliConstants.PROP_BEAMO_ID),
 				Enabled = buildProject.GetPropertyValue(CliConstants.PROP_BEAM_ENABLED),
-				ProjectType = buildProject.GetPropertyValue(CliConstants.PROP_BEAM_PROJECT_TYPE)
+				ProjectType = buildProject.GetPropertyValue(CliConstants.PROP_BEAM_PROJECT_TYPE),
+				ServiceGroupString = buildProject.GetPropertyValue(CliConstants.PROP_BEAM_SERVICE_GROUP)
 			};
 
 			var references = buildProject.GetItemsIgnoringCondition("ProjectReference");
@@ -269,6 +328,12 @@ public static class ProjectContextUtil
 		? metadata.fileNameWithoutExtension
 		: metadata.properties.BeamId;
 
+	static string[] ExtractServiceGroupTags(CsharpProjectMetadata project)
+	{
+		return project.properties.ServiceGroupString?.Split(SPLIT_OPTIONS,
+			       StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+		       ?? Array.Empty<string>();
+	}
 
 	public static BeamoServiceDefinition ConvertProjectToServiceDefinition(CsharpProjectMetadata project)
 	{
@@ -296,10 +361,10 @@ public static class ProjectContextUtil
 
 		definition.Protocol = BeamoProtocolType.HttpMicroservice;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet;
+
+		definition.ServiceGroupTags = ExtractServiceGroupTags(project);
 		
-		
-		
-		
+
 		return definition;
 	}
 	
@@ -331,7 +396,8 @@ public static class ProjectContextUtil
 
 		definition.Protocol = BeamoProtocolType.EmbeddedMongoDb;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet;
-		
+		definition.ServiceGroupTags = ExtractServiceGroupTags(project);
+
 		return definition;
 	}
 
@@ -347,6 +413,9 @@ public static class ProjectContextUtil
 
 		[JsonProperty(CliConstants.PROP_BEAM_PROJECT_TYPE)]
 		public string ProjectType;
+
+		[JsonProperty(CliConstants.PROP_BEAM_SERVICE_GROUP)]
+		public string ServiceGroupString;
 	}
 	
 	public class MsBuildProjectReference

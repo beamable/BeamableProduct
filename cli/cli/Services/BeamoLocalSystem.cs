@@ -512,6 +512,17 @@ public class BeamoLocalManifest
 			return ids;
 		}
 	}
+
+	/// <summary>
+	/// The keys are service groups, specified through the &lt;BeamServiceGroup&gt; property.
+	/// The values are the fully resolved list of beamoIds that are part of the group.
+	///
+	/// <para>
+	/// If a service defines itself as part of a group, then all the service's dependencies are also
+	/// part of the group.
+	/// </para>
+	/// </summary>
+	public Dictionary<string, string[]> ServiceGroupToBeamoIds;
 	
 	/// <summary>
 	/// This list contains all the <see cref="BeamoServiceDefinition"/> that the current machine knows about. TODO: At a minimum, this list is kept in sync with already deployed services?
@@ -626,6 +637,13 @@ public class BeamoServiceDefinition
 	/// Whether or not this service should be enabled when we deploy remotely.
 	/// </summary>
 	public bool ShouldBeEnabledOnRemote;
+
+	/// <summary>
+	/// A set of tags that can be used to manipulate or control the services as a group.
+	/// This data is sourced from the &lt;BeamServiceGroup&gt; tag in the project's .csproj file, as
+	/// a comma separated list. 
+	/// </summary>
+	public string[] ServiceGroupTags;
 
 	/// <summary>
 	/// Path to the directory containing project file(csproj).
