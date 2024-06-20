@@ -436,7 +436,7 @@ namespace Beamable.Server.Editor.Usam
 		{
 			for (int i = 0; i < objData.BeamoIds.Count; i++)
 			{
-				if (!objData.IsLocal[i] && !objData.IsRunningRemotely[i]) //In this case the service was disabled in the remote, which means that it's irrelevant.
+				if (!objData.ExistInLocal[i] && !objData.IsRunningRemotely[i]) //In this case the service was disabled in the remote, which means that it's irrelevant.
 				{
 					continue;
 				}
@@ -453,7 +453,7 @@ namespace Beamable.Server.Editor.Usam
 
 				
 				AddServiceDefinition(name, type, assetProjectPath, runningState,
-									 objData.ShouldBeEnabledOnRemote[i], objData.IsLocal[i], objData.Dependencies[i]);
+									 objData.ShouldBeEnabledOnRemote[i], objData.ExistInLocal[i], objData.Dependencies[i]);
 				UsamLogger.Log($"Handling {name} ended");
 			}
 		}

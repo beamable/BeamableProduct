@@ -152,7 +152,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 		}
 
 		_localBeamo.SaveBeamoLocalRuntime();
-		if (isDockerRunning)
+		if (!isDockerRunning)
 		{
 			var warning = new Panel("No docker running --- the running information here is not up-to-date!") { Header = new PanelHeader("NO DOCKER RUNNING") };
 			AnsiConsole.Write(warning);
@@ -163,8 +163,16 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 
 public class ServiceListResult
 {
-	public List<bool> IsLocal;
-	public List<bool> IsInRemote;
+	/// <summary>
+	/// True if the service exists in a local directory
+	/// </summary>
+	public List<bool> ExistInLocal;
+
+	/// <summary>
+	/// True if the service was published before and exists in the cloud
+	/// </summary>
+	public List<bool> ExistInRemote;
+	
 	public List<bool> IsRunningRemotely;
 	public bool IsDockerRunning;
 
@@ -185,8 +193,8 @@ public class ServiceListResult
 
 	public ServiceListResult( bool isDockerRunning, int allocateCount)
 	{
-		IsLocal = new List<bool>(allocateCount);;
-		IsInRemote = new List<bool>(allocateCount);;
+		ExistInLocal = new List<bool>(allocateCount);;
+		ExistInRemote = new List<bool>(allocateCount);;
 		IsRunningRemotely = new List<bool>(allocateCount);;
 		IsDockerRunning = isDockerRunning;
 
@@ -227,8 +235,8 @@ public class ServiceListResult
 
 		Dependencies.Add(dependencies);
 		ProjectPath.Add(projectPath);
-		IsLocal.Add(isLocal);
-		IsInRemote.Add(isInRemote);
+		ExistInLocal.Add(isLocal);
+		ExistInRemote.Add(isInRemote);
 		IsRunningRemotely.Add(isRunningRemotely);
 	}
 }
