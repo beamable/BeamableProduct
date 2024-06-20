@@ -344,38 +344,42 @@ namespace Beamable.Common.Dependencies
 				}
 			}
 
-			await Promise.Sequence(childRemovalPromises);
+			
+			await Promise.WhenAll(childRemovalPromises);
 
 			async Promise DisposeServices(IEnumerable<object> services)
 			{
-				var clonedList = new List<object>(services);
-				var groups = clonedList.GroupBy(x =>
-				{
-					if (x is IBeamableDisposableOrder disposableOrder)
-						return disposableOrder.DisposeOrder;
-					return 0;
-				});
-				groups = groups.OrderBy(x => x.Key);
-				foreach (var group in groups)
-				{
-					var promises = new List<Promise<Unit>>();
-
-					foreach (var service in group)
-					{
-						if (service == null) continue;
-						if (service is IBeamableDisposable disposable)
-						{
-							var promise = disposable.OnDispose();
-							if (promise != null)
-							{
-								promises.Add(promise);
-							}
-						}
-					}
-
-					var final = Promise.Sequence(promises);
-					await final;
-				}
+				var p = new Promise();
+				p.CompleteSuccess();
+				await p;
+				// var clonedList = new List<object>(services);
+				// var groups = clonedList.GroupBy(x =>
+				// {
+				// 	if (x is IBeamableDisposableOrder disposableOrder)
+				// 		return disposableOrder.DisposeOrder;
+				// 	return 0;
+				// });
+				// groups = groups.OrderBy(x => x.Key);
+				// foreach (var group in groups)
+				// {
+				// 	var promises = new List<Promise<Unit>>();
+				//
+				// 	foreach (var service in group)
+				// 	{
+				// 		if (service == null) continue;
+				// 		if (service is IBeamableDisposable disposable)
+				// 		{
+				// 			var promise = disposable.OnDispose();
+				// 			if (promise != null)
+				// 			{
+				// 				promises.Add(promise);
+				// 			}
+				// 		}
+				// 	}
+				//
+				// 	var final = Promise.Sequence(promises);
+				// 	await final;
+				// }
 			}
 
 			void ClearServices(Dictionary<Type, ServiceDescriptor> descriptors)

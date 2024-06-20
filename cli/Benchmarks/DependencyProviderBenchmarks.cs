@@ -30,7 +30,7 @@ public class DependencyProviderBenchmarks
 		var provider = new DependencyProvider(null, null);
 	}
 	
-	// [Benchmark]
+	[Benchmark]
 	public void BaseCase_NoDispose()
 	{
 		var builder = new DependencyBuilder();
@@ -40,7 +40,7 @@ public class DependencyProviderBenchmarks
 		// var service = provider.GetService<TestService>();
 	}
 	//
-	[Benchmark]
+	// [Benchmark]
 	public void BaseCase_NoDispose_RegisterAndResolve()
 	{
 		var builder = new DependencyBuilder();
@@ -55,11 +55,7 @@ public class DependencyProviderBenchmarks
 	public void BaseCase_Dispose()
 	{
 		var builder = new DependencyBuilder();
-		// builder.AddSingleton<TestService>();
 		var provider = builder.Build();
-	
-		// var service = provider.GetService<TestService>();
-	
 		provider.Dispose();
 	}
 
