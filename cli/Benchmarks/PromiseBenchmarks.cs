@@ -9,6 +9,18 @@ namespace Benchmarks;
 public class PromiseBenchmarks
 {
 
+	// [GlobalSetup]
+	public void Setup()
+	{
+		var x = PromiseBase.Unit;
+	}
+	// [Benchmark]
+	public Promise<int> PromiseComplete()
+	{
+		var p = new Promise<int>();
+		//p.CompleteSuccess();
+		return p;
+	}
 	// [Benchmark]
 	public void PromiseAllocation_Many()
 	{
@@ -16,26 +28,30 @@ public class PromiseBenchmarks
 		{
 			var p = new Promise();
 		}
+	}
+
+	[Benchmark]
+	public async Task<int> Await()
+	{
+		var p = new Promise<int>();
+		p.CompleteSuccess(3);
+
+		return await p;
 	} 
 	
 	// [Benchmark]
-	public void PromiseAllocation()
+	public Promise PromiseAllocation()
 	{
 		var p = new Promise();
+		return p;
 	} 
 	
 	
-	[Benchmark]
-	public Promise ReturnPromise()
-	{
-		var p = new Promise();
-		return null;
-	}
-	
-	[Benchmark]
+	// [Benchmark]
 	public async Promise ReturnAsyncPromise()
 	{
-		var p = new Promise();
+		// var p = new Promise();
+		
 	}
 	
 		

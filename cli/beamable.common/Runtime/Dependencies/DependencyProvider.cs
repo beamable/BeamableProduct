@@ -164,9 +164,12 @@ namespace Beamable.Common.Dependencies
 		/// <param name="child"></param>
 		void RemoveChild(IDependencyProviderScope child);
 	}
-	
-	
-	public class DependencyProvider : IDependencyProviderScope
+
+	public interface IDependencyOrderComparer : IComparer<object>
+	{
+		
+	}
+	public class DependencyProvider : IDependencyProviderScope, IDependencyOrderComparer
 	{
 		
 		// private Dictionary<Type, ServiceDescriptor> Transients { get; set; }
@@ -175,6 +178,8 @@ namespace Beamable.Common.Dependencies
 		private Dictionary<Type, ServiceDescriptor> Descriptors { get; set; }
 
 		private Dictionary<Type, object> InstanceCache { get; set; } = new Dictionary<Type, object>();
+
+		private SortedDictionary<int, List<object>> SortedInstanceValues = new SortedDictionary<int, List<object>>();
 		// private Dictionary<Type, object> SingletonCache { get; set; } = new Dictionary<Type, object>();
 		// private Dictionary<Type, object> ScopeCache { get; set; } = new Dictionary<Type, object>();
 
@@ -208,7 +213,6 @@ namespace Beamable.Common.Dependencies
 
 			_options = options;
 			Descriptors = new Dictionary<Type, ServiceDescriptor>();
-
 			if (builder == null) return;
 			
 			foreach (var desc in builder.Descriptors)
@@ -298,7 +302,20 @@ namespace Beamable.Common.Dependencies
 						}
 						else
 						{
-							return InstanceCache[t] = descriptor.Factory(this);
+							var service = InstanceCache[t] = descriptor.Factory(this);
+
+							var sortOrder = 0;
+							if (service is IBeamableDisposableOrder orderable)
+							{
+								sortOrder = orderable.DisposeOrder;
+							}
+							if (!SortedInstanceValues.TryGetValue(sortOrder, out var services))
+							{
+								services = new List<object>();
+								SortedInstanceValues.Add(sortOrder, services);
+							}
+							services.Add(service);
+							return service;
 						}
 					}
 					else
@@ -330,8 +347,7 @@ namespace Beamable.Common.Dependencies
 
 			lock (_children)
 			{
-				var childrenClone = new List<IDependencyProviderScope>(_children);
-				foreach (var child in childrenClone)
+				foreach (var child in _children)
 				{
 					if (child != null)
 					{
@@ -347,39 +363,32 @@ namespace Beamable.Common.Dependencies
 			
 			await Promise.WhenAll(childRemovalPromises);
 
-			async Promise DisposeServices(IEnumerable<object> services)
+			async Promise DisposeServices(SortedDictionary<int, List<object>> groups)
 			{
-				var p = new Promise();
-				p.CompleteSuccess();
-				await p;
-				// var clonedList = new List<object>(services);
-				// var groups = clonedList.GroupBy(x =>
-				// {
-				// 	if (x is IBeamableDisposableOrder disposableOrder)
-				// 		return disposableOrder.DisposeOrder;
-				// 	return 0;
-				// });
-				// groups = groups.OrderBy(x => x.Key);
-				// foreach (var group in groups)
-				// {
-				// 	var promises = new List<Promise<Unit>>();
-				//
-				// 	foreach (var service in group)
-				// 	{
-				// 		if (service == null) continue;
-				// 		if (service is IBeamableDisposable disposable)
-				// 		{
-				// 			var promise = disposable.OnDispose();
-				// 			if (promise != null)
-				// 			{
-				// 				promises.Add(promise);
-				// 			}
-				// 		}
-				// 	}
-				//
-				// 	var final = Promise.Sequence(promises);
-				// 	await final;
-				// }
+				if (groups.Count == 0) return;
+				
+				foreach (var kvp in groups)
+				{
+					var services = kvp.Value;
+					
+					var promises = new List<Promise<Unit>>();
+				
+					foreach (var service in services)
+					{
+						if (service == null) continue;
+						if (service is IBeamableDisposable disposable)
+						{
+							var promise = disposable.OnDispose();
+							if (promise != null)
+							{
+								promises.Add(promise);
+							}
+						}
+					}
+				
+					var final = Promise.Sequence(promises);
+					await final;
+				}
 			}
 
 			void ClearServices(Dictionary<Type, ServiceDescriptor> descriptors)
@@ -395,9 +404,10 @@ namespace Beamable.Common.Dependencies
 			}
 
 
-			await DisposeServices(InstanceCache.Values.Distinct());
+			await DisposeServices(SortedInstanceValues);
 
 			InstanceCache.Clear();
+			SortedInstanceValues.Clear();
 
 			if (!_options.allowHydration)
 			{
@@ -408,6 +418,7 @@ namespace Beamable.Common.Dependencies
 				Descriptors = null;
 
 				InstanceCache = null;
+				SortedInstanceValues = null;
 			}
 
 			_destroyed = true;
@@ -437,6 +448,7 @@ namespace Beamable.Common.Dependencies
 			// 	Singletons.Add(desc.Interface, desc);
 			// }
 			InstanceCache.Clear();
+			SortedInstanceValues.Clear();
 
 			lock (_children)
 			{
@@ -543,6 +555,27 @@ namespace Beamable.Common.Dependencies
 			}
 
 			return provider;
+		}
+
+
+		public int Compare(object x, object y)
+		{
+			if (x == null || y == null) return 0;
+
+			var xOrder = 0;
+			var yOrder = 0;
+
+			if (x is IBeamableDisposableOrder xDisposable)
+			{
+				xOrder = xDisposable.DisposeOrder;
+			}
+
+			if (y is IBeamableDisposableOrder yDisposable)
+			{
+				yOrder = yDisposable.DisposeOrder;
+			}
+
+			return xOrder.CompareTo(yOrder);
 		}
 	}
 

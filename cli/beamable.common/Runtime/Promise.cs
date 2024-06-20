@@ -65,7 +65,7 @@ namespace Beamable.Common
 		}
 #endif
 
-		public static readonly Unit Unit = new Unit();
+		public static Unit Unit = new Unit();
 
 		public static Promise<Unit> SuccessfulUnit => Promise<Unit>.Successful(Unit);
 
@@ -151,8 +151,8 @@ namespace Beamable.Common
 	[AsyncMethodBuilder(typeof(PromiseAsyncMethodBuilder<>))]
 	public class Promise<T> : PromiseBase, ICriticalNotifyCompletion
 	{
-		private Action<T> _callbacks;
-		private T _val;
+		protected Action<T> _callbacks;
+		protected T _val;
 
 		/// <summary>
 		/// Call to set the value and resolve the %Promise
@@ -656,9 +656,32 @@ namespace Beamable.Common
 	{
 		public static Promise Success { get; } = new Promise { done = true };
 
-		public void CompleteSuccess() => CompleteSuccess(PromiseBase.Unit);
+		public void CompleteSuccess()
+		{
+			// CompleteSuccessRef();
+			lock (this)
+			{
+				if (done)
+				{
+					return;
+				}
 
-		
+				_val = Unit;
+				done = true;
+				try
+				{
+					_callbacks?.Invoke(Unit);
+				}
+				catch (Exception e)
+				{
+					BeamableLogger.LogException(e);
+				}
+				
+				_callbacks = null;
+				errbacks = null;
+			}
+		}
+
 		/// <summary>
 		/// This function accepts a generator that will produce a promise, and then
 		/// that promise will be executed.
@@ -1297,7 +1320,7 @@ namespace Beamable.Common
 
 		public void SetResult()
 		{
-			Promise.CompleteSuccess(PromiseBase.Unit);
+			Promise.CompleteSuccess();
 		}
 
 		public void SetException(Exception ex)

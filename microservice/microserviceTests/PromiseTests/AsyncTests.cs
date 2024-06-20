@@ -17,4 +17,12 @@ public class AsyncTests
 		await Method();
 
 	}
+
+	[Test]
+	public async Task SimpleAwait()
+	{
+		var p = new Promise();
+		p.CompleteSuccess();
+		await p;
+	}
 }
