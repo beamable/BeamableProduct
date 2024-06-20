@@ -163,7 +163,7 @@ namespace Beamable.Editor.BeamCli
 			{
 				var json = await localClient.GetStringAsync(InfoUrl).ToPromiseRoutine();
 				var res = JsonUtility.FromJson<ServerInfoResponse>(json);
-
+				
 				var ownerMatches = String.Equals(res.owner, Owner, StringComparison.OrdinalIgnoreCase);
 				var versionMatches = res.version == Version;
 				
