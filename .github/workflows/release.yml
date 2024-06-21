@@ -50,8 +50,6 @@ jobs:
       - name: Install CLI
         run: |
           cd ./
-          ls
-          dotnet restore
           sh ./set-packages.sh "${{ github.workspace }}/client" "UNITY_NugetSource" "" "Global"
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
