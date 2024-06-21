@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "beamable.tools": {
+      "version": "0.0.123",
+      "commands": [
+        "beam"
+      ]
+    }
+  }
+}
