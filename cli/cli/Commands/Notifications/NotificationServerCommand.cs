@@ -146,7 +146,8 @@ public class NotificationServerCommand : StreamCommand<NotificationServerCommand
 				path = "gateway/provider",
 				body = new
 				{
-					type = "event", evtWhitelist = new string[] { "content.manifest", "realm-config.refresh" }
+					type = "event",
+					evtWhitelist = new string[] { "content.manifest", "realm-config.refresh" }
 				}
 			};
 		}

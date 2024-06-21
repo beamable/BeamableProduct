@@ -107,7 +107,7 @@ namespace Beamable.Editor.Dotnet
 
 				if (!CheckVersion(dotnetPath, out var majorVersion))
 				{
-					
+
 					Debug.LogWarning(
 						$"Ignoring version of dotnet at {path} due to incorrect version number. Found: {majorVersion}, required: {REQUIRED_MAJOR_VERSION}");
 					continue;

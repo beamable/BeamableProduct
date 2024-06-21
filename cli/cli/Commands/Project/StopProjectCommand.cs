@@ -62,14 +62,14 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 				await args.BeamoLocalSystem.SynchronizeInstanceStatusWithDocker(args.BeamoLocalSystem.BeamoManifest, args.BeamoLocalSystem.BeamoRuntime.ExistingLocalServiceInstances);
 				await args.BeamoLocalSystem.StartListeningToDocker();
 
-				await ServicesResetContainerCommand.TurnOffContainers(args.BeamoLocalSystem,new[]{serviceName}, _ =>
-				{
-					SendResults(new StopProjectCommandOutput
+				await ServicesResetContainerCommand.TurnOffContainers(args.BeamoLocalSystem, new[] { serviceName }, _ =>
 					{
-						didStop = true,
-						serviceName = serviceName
+						SendResults(new StopProjectCommandOutput
+						{
+							didStop = true,
+							serviceName = serviceName
+						});
 					});
-				});
 				continue;
 			}
 

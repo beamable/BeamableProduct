@@ -11,7 +11,7 @@ public class DownloadAllNugetDepsToUnityCommandArgs : CommandArgs
 
 public class DownloadAllNugetDepsToUnityCommandOutput
 {
-	
+
 }
 public class DownloadAllNugetDepsToUnityCommand : AtomicCommand<DownloadAllNugetDepsToUnityCommandArgs, DownloadAllNugetDepsToUnityCommandOutput>, IStandaloneCommand
 {
@@ -25,7 +25,7 @@ public class DownloadAllNugetDepsToUnityCommand : AtomicCommand<DownloadAllNuget
 	{
 		AddArgument(new Argument<string>("unityProjectPath", "the path to the Unity project"), (args, i) => args.unityProjectPath = i);
 
-	}	
+	}
 
 	public override async Task<DownloadAllNugetDepsToUnityCommandOutput> GetResult(DownloadAllNugetDepsToUnityCommandArgs args)
 	{
@@ -43,19 +43,19 @@ public class DownloadAllNugetDepsToUnityCommand : AtomicCommand<DownloadAllNuget
 			throw new CliException("Cannot download nuget packages for developer 0.0.123 version.");
 		}
 
-		UnityProjectUtil.DeleteAllFilesWithExtensions(Path.Combine(info.packageFolder, "Common"), new string[]{".cs", ".cs.meta"});
-		UnityProjectUtil.DeleteAllFilesWithExtensions(Path.Combine(infoServer.packageFolder, "SharedRuntime"), new string[]{".cs", ".cs.meta"});
-		UnityProjectUtil.DeleteAllFilesWithExtensions(Path.Combine(infoServer.packageFolder, "Runtime/Common"), new string[]{".cs", ".cs.meta"});
+		UnityProjectUtil.DeleteAllFilesWithExtensions(Path.Combine(info.packageFolder, "Common"), new string[] { ".cs", ".cs.meta" });
+		UnityProjectUtil.DeleteAllFilesWithExtensions(Path.Combine(infoServer.packageFolder, "SharedRuntime"), new string[] { ".cs", ".cs.meta" });
+		UnityProjectUtil.DeleteAllFilesWithExtensions(Path.Combine(infoServer.packageFolder, "Runtime/Common"), new string[] { ".cs", ".cs.meta" });
 
 		await UnityProjectUtil.DownloadPackage("Beamable.Common", info.beamableNugetVersion,
 			"content/netstandard2.0/", Path.Combine(info.packageFolder, "Common"));
-		
+
 		await UnityProjectUtil.DownloadPackage("Beamable.Server.Common", info.beamableNugetVersion,
 			"content/netstandard2.0/SharedRuntime/", Path.Combine(infoServer.packageFolder, "SharedRuntime"));
-		
+
 		await UnityProjectUtil.DownloadPackage("Beamable.Server.Common", info.beamableNugetVersion,
 			"content/netstandard2.0/Runtime/Common/", Path.Combine(infoServer.packageFolder, "Runtime/Common"));
 
 	}
-	
+
 }

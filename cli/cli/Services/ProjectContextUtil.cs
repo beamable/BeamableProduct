@@ -11,7 +11,7 @@ public static class ProjectContextUtil
 {
 	public static async Task<BeamoLocalManifest> GenerateLocalManifest(
 		string rootFolder,
-		string dotnetPath, 
+		string dotnetPath,
 		BeamoService beamo,
 		ConfigService configService)
 	{
@@ -27,8 +27,8 @@ public static class ProjectContextUtil
 		var manifest = new BeamoLocalManifest
 		{
 			ServiceDefinitions = new List<BeamoServiceDefinition>(),
-			HttpMicroserviceLocalProtocols = new BeamoLocalProtocolMap<HttpMicroserviceLocalProtocol>{},
-			EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>(){},
+			HttpMicroserviceLocalProtocols = new BeamoLocalProtocolMap<HttpMicroserviceLocalProtocol> { },
+			EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>() { },
 			EmbeddedMongoDbRemoteProtocols = new BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol>(),
 			HttpMicroserviceRemoteProtocols = new BeamoRemoteProtocolMap<HttpMicroserviceRemoteProtocol>()
 
@@ -63,8 +63,8 @@ public static class ProjectContextUtil
 			manifest.ServiceDefinitions.Add(definition);
 			manifest.EmbeddedMongoDbRemoteProtocols.Add(definition.BeamoId, new EmbeddedMongoDbRemoteProtocol());
 		}
-		
-		
+
+
 		// add in the remote knowledge of services and storages
 		foreach (var remoteService in remote.manifest)
 		{
@@ -79,7 +79,7 @@ public static class ProjectContextUtil
 				};
 				manifest.ServiceDefinitions.Add(existingDefinition);
 				manifest.HttpMicroserviceRemoteProtocols.Add(remoteService.serviceName, new HttpMicroserviceRemoteProtocol());
-				
+
 				existingDefinition.ShouldBeEnabledOnRemote = remoteService.enabled;
 			}
 
@@ -103,26 +103,26 @@ public static class ProjectContextUtil
 
 				existingDefinition.ShouldBeEnabledOnRemote = remoteStorage.enabled;
 			}
-			
+
 			// overwrite existing settings.
 			existingDefinition.ImageId = MongoImage;
 		}
 
 		return manifest;
 	}
-	
-	
+
+
 	public static CsharpProjectMetadata[] FindCsharpProjects(string rootFolder)
 	{
 		if (string.IsNullOrEmpty(rootFolder))
 		{
 			rootFolder = ".";
 		}
-		
+
 		var paths = Directory.GetFiles(rootFolder, "*.csproj", SearchOption.AllDirectories);
 		var projects = new CsharpProjectMetadata[paths.Length];
 
-		for (var i = 0 ; i < paths.Length; i ++)
+		for (var i = 0; i < paths.Length; i++)
 		{
 			var path = paths[i];
 			var pathDir = Path.GetDirectoryName(path);
@@ -191,7 +191,7 @@ public static class ProjectContextUtil
 		ConfigService configService)
 	{
 		var protocol = new EmbeddedMongoDbLocalProtocol();
-		
+
 		// TODO: we could extract these as options in the Csproj file.
 		protocol.BaseImage = MongoImage;
 		protocol.RootUsername = "beamable";
@@ -206,10 +206,10 @@ public static class ProjectContextUtil
 			protocol.DataVolumeInContainerPath = "/data/db";
 			protocol.FilesVolumeInContainerPath = "/beamable";
 		}
-		
-		
+
+
 		protocol.MongoLocalPort = ""; // TODO: I don't think we actually need this, because we are getting the port via docker container inspection.
-		
+
 		foreach (var referencedProject in project.projectReferences)
 		{
 			if (!absPathToProject.TryGetValue(referencedProject.FullPath, out var knownProject))
@@ -229,19 +229,19 @@ public static class ProjectContextUtil
 
 		return protocol;
 	}
-	
+
 	public static HttpMicroserviceLocalProtocol ConvertProjectToLocalHttpProtocol(CsharpProjectMetadata project, Dictionary<string, CsharpProjectMetadata> absPathToProject)
 	{
 		var protocol = new HttpMicroserviceLocalProtocol();
 		protocol.DockerBuildContextPath = ".";
 		protocol.RelativeDockerfilePath = Path.Combine(Path.GetDirectoryName(project.relativePath), "Dockerfile");
-		
+
 		protocol.CustomVolumes = new List<DockerVolume>();
 		protocol.InstanceCount = 1;
 		protocol.CustomBindMounts = new List<DockerBindMount>();
 		protocol.CustomPortBindings = new List<DockerPortBinding>();
 		protocol.CustomEnvironmentVariables = new List<DockerEnvironmentVariable>();
-		
+
 		foreach (var referencedProject in project.projectReferences)
 		{
 			var referencedName = Path.GetFileNameWithoutExtension(referencedProject.RelativePath);
@@ -262,10 +262,10 @@ public static class ProjectContextUtil
 					break;
 			}
 		}
-		
+
 		return protocol;
 	}
-	
+
 	static string ConvertBeamoId(CsharpProjectMetadata metadata) => string.IsNullOrEmpty(metadata.properties.BeamId)
 		? metadata.fileNameWithoutExtension
 		: metadata.properties.BeamId;
@@ -297,13 +297,13 @@ public static class ProjectContextUtil
 
 		definition.Protocol = BeamoProtocolType.HttpMicroservice;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet;
-		
-		
-		
-		
+
+
+
+
 		return definition;
 	}
-	
+
 	public static BeamoServiceDefinition ConvertProjectToStorageDefinition(CsharpProjectMetadata project, Dictionary<string, CsharpProjectMetadata> absPathToProject)
 	{
 		if (project.properties.ProjectType != "storage")
@@ -315,7 +315,7 @@ public static class ProjectContextUtil
 		string ConvertBeamoId(CsharpProjectMetadata metadata) => string.IsNullOrEmpty(metadata.properties.BeamId)
 			? metadata.fileNameWithoutExtension
 			: metadata.properties.BeamId;
-		
+
 		var definition = new BeamoServiceDefinition();
 
 		// the beamId will default to the csproj file name
@@ -332,7 +332,7 @@ public static class ProjectContextUtil
 
 		definition.Protocol = BeamoProtocolType.EmbeddedMongoDb;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet;
-		
+
 		return definition;
 	}
 
@@ -349,7 +349,7 @@ public static class ProjectContextUtil
 		[JsonProperty(CliConstants.PROP_BEAM_PROJECT_TYPE)]
 		public string ProjectType;
 	}
-	
+
 	public class MsBuildProjectReference
 	{
 		[JsonProperty("Identity")]
@@ -369,7 +369,7 @@ public static class ProjectContextUtil
 	}
 
 
-	
+
 	[Serializable]
 	public class CsharpProjectBuildData
 	{
@@ -396,5 +396,5 @@ public static class ProjectContextUtil
 		public MsBuildProjectProperties properties;
 		public List<MsBuildProjectReference> projectReferences;
 	}
-	
+
 }

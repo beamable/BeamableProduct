@@ -30,7 +30,7 @@ public class ServicesStopCommand : AppCommand<ServicesStopCommandArgs>, IEmptyRe
 	public override async Task Handle(ServicesStopCommandArgs args)
 	{
 		ProjectCommand.FinalizeServicesArg(args, ref args.services);
-		
+
 		await args.BeamoLocalSystem.SynchronizeInstanceStatusWithDocker(args.BeamoLocalSystem.BeamoManifest, args.BeamoLocalSystem.BeamoRuntime.ExistingLocalServiceInstances);
 		await args.BeamoLocalSystem.StartListeningToDocker();
 

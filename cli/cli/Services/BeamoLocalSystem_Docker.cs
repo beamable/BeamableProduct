@@ -332,7 +332,7 @@ public partial class BeamoLocalSystem
 		{
 			// Handles escaping stuff from copy statements that we don't need (to enforce pattern of COPY SOURCE DESTINATION).
 			string escapedLine = line;
-			
+
 			//This needs to have the follow pattern: "COPY SOURCE DESTINATION", if not just continues reading file
 			if (escapedLine.Contains("--"))
 				escapedLine = "";
@@ -344,7 +344,7 @@ public partial class BeamoLocalSystem
 
 				if (probablePath.Contains("*"))
 					probablePath = Path.GetDirectoryName(probablePath);
-				
+
 				try
 				{
 					var result = Path.GetFullPath(configService.BeamableRelativeToExecutionRelative(probablePath));
@@ -521,9 +521,9 @@ public partial class BeamoLocalSystem
 							// TODO: A more robust algorithm for this is to make sure that we don't have repeating image ids tied to BeamoIds when running this stop loop.
 							if (!e.Message.Contains("reference does not exist") &&
 
-							    // Because we run this in-parallel, we can also get this error:
-							    // Docker API responded with status code=InternalServerError, response={"message":"unrecognized image ID sha256:c8b57c4bf7e3a88daf948d5d17bc7145db05771e928b3b3095ca4590719b5469"}    
-							    !e.Message.Contains("unrecognized image ID"))
+								// Because we run this in-parallel, we can also get this error:
+								// Docker API responded with status code=InternalServerError, response={"message":"unrecognized image ID sha256:c8b57c4bf7e3a88daf948d5d17bc7145db05771e928b3b3095ca4590719b5469"}    
+								!e.Message.Contains("unrecognized image ID"))
 								throw;
 						}
 					}
