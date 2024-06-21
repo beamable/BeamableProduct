@@ -1,10 +1,21 @@
 #!/bin/bash
 
-PROJECTS_DIR=${PROJECT_DIR_OVERRIDE:-"ProjectsSource"}
+# Path where we'll put the BeamableSource folder and make it into a nuget source feed
 HOME_FOR_BUILD=${1:-$HOME_OVERRIDE}
+HOME_FOR_BUILD=${HOME_FOR_BUILD:-$HOME}
+# The name of the source in the format UNITY_|UNREAL_|WHATEVER_
+SOURCE_NAME=${2-"BeamableNugetSource"}
+# Look at PKG_ variables and separated by '|'
+PACKAGES_TO_SET=${3:-''}
+# Either "", "Local" or "Global"
+INSTALL_CLI=${4:-""}
+# When not "", this should be the absolute path we'll call dotnet restore in after the script has run
+PATH_TO_DOTNET_RESTORE=${5:-""}
+
+# Overridable via EnvVars only
+PROJECTS_DIR=${PROJECT_DIR_OVERRIDE:-"ProjectsSource"}
 PROJECTS_SOURCE="$HOME_FOR_BUILD/BeamableSource/"
 VERSION="0.0.123"
-SOURCE_NAME=${2-"BeamableNugetSource"}
 
 PKG_COMMON="./cli/beamable.common/"
 PKG_SERVER_COMMON="./cli/beamable.server.common/"
@@ -24,7 +35,6 @@ PACKAGES_TO_SET_ARR[5]="$PKG_CLI"
 PACKAGES_TO_SET_ARR[6]="$PKG_MICROSERVICE"
 PACKAGES_TO_SET_ARR[7]="$PKG_TEMPLATES"
 
-PACKAGES_TO_SET=${3:-''}
 if [[ "$PACKAGES_TO_SET" != '' ]]; then
     echo "Filtering packages to set..."
     PACKAGES_TO_SET_ARR=("${PACKAGES_TO_SET//|/ }")
@@ -36,7 +46,7 @@ if [ ! -d "$PROJECTS_DIR" ]; then
     echo "Creating projects source folder!"
     mkdir "$PROJECTS_DIR"
 else
-    echo "Projects source folder already exists!"
+    echo "Projects source folder ($PROJECTS_DIR) already exists!"
 fi
 ls $PROJECTS_DIR
 
@@ -44,24 +54,37 @@ if [ ! -d "$PROJECTS_SOURCE" ]; then
     echo "Creating source feed folder!"
     mkdir "$PROJECTS_SOURCE"
 else
-    echo "Projects source feed already exists!"
+    echo "Projects source feed ($PROJECTS_SOURCE) already exists!"
 fi
 
 # Clean up the path so that it works on all OSs
-case "$OSTYPE" in
-  solaris*) PROJECTS_SOURCE=$PROJECTS_SOURCE ;;
-  darwin*)  PROJECTS_SOURCE=$PROJECTS_SOURCE ;; 
-  linux*)   PROJECTS_SOURCE=$PROJECTS_SOURCE ;;
-  bsd*)     PROJECTS_SOURCE=$PROJECTS_SOURCE ;;
-  msys*)    PROJECTS_SOURCE=${PROJECTS_SOURCE/\//\/\/} ;;
-  cygwin*)  PROJECTS_SOURCE=${PROJECTS_SOURCE/\//\/\/} ;;
-  *)        echo "Should never see this!!" ;;
-esac
+if [[ $PROJECTS_SOURCE == *:* ]];then
+    case "$OSTYPE" in
+    solaris*) PROJECTS_SOURCE=$PROJECTS_SOURCE ;;
+    darwin*)  PROJECTS_SOURCE=$PROJECTS_SOURCE ;; 
+    linux*)   PROJECTS_SOURCE=$PROJECTS_SOURCE ;;
+    bsd*)     PROJECTS_SOURCE=$PROJECTS_SOURCE ;;
+    msys*)    PROJECTS_SOURCE=${PROJECTS_SOURCE/\//\/\/} ;;
+    cygwin*)  PROJECTS_SOURCE=${PROJECTS_SOURCE/\//\/\/} ;;
+    *)        echo "Should never see this!!" ;;
+    esac
+fi
+
+# Clean up the path so that it works on all OSs
+if [[ $PATH_TO_DOTNET_RESTORE == *:* ]];then
+    case "$OSTYPE" in
+    solaris*) PATH_TO_DOTNET_RESTORE=$PATH_TO_DOTNET_RESTORE ;;
+    darwin*)  PATH_TO_DOTNET_RESTORE=$PATH_TO_DOTNET_RESTORE ;; 
+    linux*)   PATH_TO_DOTNET_RESTORE=$PATH_TO_DOTNET_RESTORE ;;
+    bsd*)     PATH_TO_DOTNET_RESTORE=$PATH_TO_DOTNET_RESTORE ;;
+    msys*)    PATH_TO_DOTNET_RESTORE=${PATH_TO_DOTNET_RESTORE/\//\/\/} ;;
+    cygwin*)  PATH_TO_DOTNET_RESTORE=${PATH_TO_DOTNET_RESTORE/\//\/\/} ;;
+    *)        echo "Should never see this!!" ;;
+    esac
+fi
 
 echo "I'm a fake nupkg that exist here so that our sample microservices' Dockerfile-BeamableDev can work properly." >> "$PROJECTS_SOURCE"/DONT_MIND_ME.nupkg
 
-# Either "", "Local" or "Global"
-INSTALL_CLI=${4:-""}
 
 echo "Creating nupkg files for our packages"
 
@@ -148,4 +171,13 @@ fi
 if [[ "$INSTALL_CLI" == "Global" ]];then
   dotnet tool uninstall beamable.tools -g || true
   dotnet tool install beamable.tools --global --version "$VERSION"
+fi
+
+## If we want to restore the project in a particular path...
+if [[ "$PATH_TO_DOTNET_RESTORE" != "" ]];then
+  echo "Restoring project at $PATH_TO_DOTNET_RESTORE" 
+  cd "$PROJECTS_SOURCE/.."
+  dotnet tool restore || true
+  cd "$PATH_TO_DOTNET_RESTORE"
+  dotnet restore || true
 fi
