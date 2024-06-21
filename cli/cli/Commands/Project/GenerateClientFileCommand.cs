@@ -1,3 +1,4 @@
+using Beamable;
 using Beamable.Common;
 using Beamable.Server;
 using Beamable.Server.Editor;
@@ -117,12 +118,22 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 				Log.Verbose("Expanding types from " + currentAssembly.FullName);
 				var _ = currentAssembly.GetExportedTypes();
 			}
+
 			finalCount = allAssemblies.Count;
 			Log.Verbose($"Loaded all types, and found {startCount} assemblies, and after, found {finalCount} assemblies.");
 		}
 
 		var allTypes = allAssemblies.SelectMany(asm => asm.GetExportedTypes()).ToArray();
 		var allMsTypes = allTypes.Where(t => t.IsSubclassOf(typeof(Microservice)) && t.GetCustomAttribute<MicroserviceAttribute>() != null).ToArray();
+		var allSchemaTypes = ServiceDocGenerator.LoadDotnetDeclaredSchemasFromTypes(allTypes, out var missingAttributes).Select(t => t.type).ToArray();
+		
+		if (missingAttributes.Count > 0)
+		{
+			var typesWithErr = string.Join(",", missingAttributes.Select(t => $"({t.Name}, {t.Assembly.GetName().Name})"));
+			throw new CliException($"Types [{typesWithErr}] should have {nameof(BeamGenerateSchemaAttribute)} as they are used as fields of a type with {nameof(BeamGenerateSchemaAttribute)}.",
+				2, true);
+		}
+		
 		foreach (var type in allMsTypes)
 		{
 			var attribute = type.GetCustomAttribute<MicroserviceAttribute>()!;
@@ -169,13 +180,29 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 		if (args.outputToLinkedProjects && args.ProjectService.GetLinkedUnrealProjects().Count > 0)
 		{
 			// Get the list of all microservice docs
+			var schemasInSomeAssembly = new List<Type>(1024);
 			var docs = allMsTypes.Select(t =>
 			{
+				var schemasInSameAssembly = allSchemaTypes.Where(s => s.Assembly.Equals(t.Assembly)).ToArray();
+				schemasInSomeAssembly.AddRange(schemasInSameAssembly);
+				
 				var attribute = t.GetCustomAttribute<MicroserviceAttribute>();
 				var gen = new ServiceDocGenerator();
-				return gen.Generate(t, attribute, null, true);
+				return gen.Generate(t, attribute, null, true, schemasInSameAssembly);
 			}).ToArray();
 
+			// Get all the schemas that are not declared in the same assembly as a microservice
+			var schemasInNonMicroserviceAssemblies = allSchemaTypes.Except(schemasInSomeAssembly).GroupBy(s => s.Assembly)
+				.ToDictionary(g => g.Key, g => g.ToArray());
+
+			// Make a new OpenApiDocument for each of these assemblies containing just its schemas.
+			docs = docs.Concat(schemasInNonMicroserviceAssemblies.Select(kvp =>
+			{
+				var gen = new ServiceDocGenerator();
+				var doc = gen.Generate(kvp.Key, kvp.Value);
+				return doc;
+			})).ToArray();
+			
 			// Get the list of schemas
 			var orderedSchemas = SwaggerService.ExtractAllSchemas(docs, GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
 
@@ -188,7 +215,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 				UnrealSourceGenerator.exportMacro = unrealProjectData.CoreProjectName.ToUpper() + "_API";
 
 				UnrealSourceGenerator.blueprintExportMacro = unrealProjectData.BlueprintNodesProjectName.ToUpper() + "_API";
-				
+
 				UnrealSourceGenerator.blueprintIncludeStatementPrefix = unrealProjectData.MsBlueprintNodesHeaderPath[(unrealProjectData.MsCoreHeaderPath.IndexOf('/') + 1)..];
 				UnrealSourceGenerator.blueprintHeaderFileOutputPath = unrealProjectData.MsBlueprintNodesHeaderPath;
 				UnrealSourceGenerator.blueprintCppFileOutputPath = unrealProjectData.MsBlueprintNodesCppPath;
@@ -484,21 +511,77 @@ IMPLEMENT_MODULE(F{unrealProjectData.BlueprintNodesProjectName}Module, {unrealPr
 				var needsProjectFilesRebuild = !allFilesToCreate.All(File.Exists);
 				// We always clean up the output directory's AutoGen folders  --- every file we create is in the AutoGen folder.
 				var outputDirInfo = new DirectoryInfo(outputDir);
-				if(outputDirInfo.Exists)
+				if (outputDirInfo.Exists)
 				{
 					var autoGenDirs = outputDirInfo.GetDirectories("AutoGen", SearchOption.AllDirectories);
-					foreach (DirectoryInfo directoryInfo in autoGenDirs) Directory.Delete(directoryInfo.ToString(), true);
+					foreach (DirectoryInfo directoryInfo in autoGenDirs)
+					{
+						// Because Microsoft does not give us a callback that runs after one or more projects have been recompiled in a solution and instead compiles all projects in-parallel), there is a chance
+						// that multiple instances of this command run simultaneously. When that happens, the directory might not be accessible --- in that case, we just have to busy wait until we can actually delete the directory.
+						// This guarantees that, when compiling the entire solution, the last instance of this command will do a clean rebuild of the microservice clients (which means it'll use the up-to-date dlls of
+						// all the projects in the solution).
+						bool successfulDelete;
+						do
+						{
+							try
+							{
+								Directory.Delete(directoryInfo.ToString(), true);
+								successfulDelete = true;
+							}
+							catch
+							{
+								successfulDelete = false;
+							}
+						} while (!successfulDelete);
+					}
 				}
 
 				var writeFiles = new List<Task>();
 				for (int i = 0; i < allFilesToCreate.Count; i++)
 				{
-					string filePath = allFilesToCreate[i];
+					var fileIdx = i;
+					string filePath = allFilesToCreate[fileIdx];
 					var path = Path.GetDirectoryName(filePath);
 					if (path == null) throw new CliException($"Parent path for file {filePath} is null. If you're a customer seeing this, report a bug.");
 
-					Directory.CreateDirectory(path);
-					writeFiles.Add(File.WriteAllTextAsync(filePath, unrealFileDescriptors[i].Content));
+					// Because Microsoft does not give us a callback that runs after one or more projects have been recompiled in a solution and instead compiles all projects in-parallel), there is a chance
+					// that multiple instances of this command run simultaneously. When that happens, the directory might not be accessible --- in that case, we just have to busy wait until we can actually delete the directory.
+					// This guarantees that, when compiling the entire solution, the last instance of this command will do a clean rebuild of the microservice clients (which means it'll use the up-to-date dlls of
+					// all the projects in the solution).
+					bool successfulCreate;
+					do
+					{
+						try
+						{
+							Directory.CreateDirectory(path);
+							successfulCreate = true;
+						}
+						catch
+						{
+							successfulCreate = false;
+						}
+					} while (!successfulCreate);
+
+					writeFiles.Add(Task.Run(() =>
+					{
+						// Because Microsoft does not give us a callback that runs after one or more projects have been recompiled in a solution and instead compiles all projects in-parallel), there is a chance
+						// that multiple instances of this command run simultaneously. When that happens, the directory might not be accessible --- in that case, we just have to busy wait until we can actually delete the directory.
+						// This guarantees that, when compiling the entire solution, the last instance of this command will do a clean rebuild of the microservice clients (which means it'll use the up-to-date dlls of
+						// all the projects in the solution).
+						bool successfulWrite;
+						do
+						{
+							try
+							{
+								File.WriteAllText(filePath, unrealFileDescriptors[fileIdx].Content);
+								successfulWrite = true;
+							}
+							catch
+							{
+								successfulWrite = false;
+							}
+						} while (!successfulWrite);
+					}));
 				}
 
 				await Task.WhenAll(writeFiles);
