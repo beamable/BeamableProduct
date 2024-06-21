@@ -75,6 +75,7 @@ The `<BeamId>` controls the name of the Beamable project.
 #### BeamEnabled
 
 The `<BeamEnabled>` is a boolean property. When `false`, when services are [deployed](doc:cli-guide-microservice-deployment) , the service will not be enabled, and will not cost Beamable Cloud resources.
+This option can be set using the [project enable](doc:cli-project-enable) or the [project disable](doc:cli-project-enable) commands.
 
 | Property Name   | Default Value |
 | --------------- | ------------- |
@@ -100,6 +101,18 @@ This property is accessible to the dotnet build targets, including any custom ta
 | ---------------- | -------------------------------------------- |
 | `<BeamableTool>` | the value of env var, `BEAM_PATH`, or `beam` |
 
+#### BeamServiceGroup
+The `<BeamServiceGroup>` property is a comma or semi-colon separated list of tags that logically group services together. 
+If you need to specify multiple values, use a `,` or a `;` to separate values. You can also redefine the property in terms of itself.
+
+```xml
+<BeamServiceGroup>firstTag</BeamServiceGroup>
+<BeamServiceGroup>$(BeamServiceGroup);secondTag</BeamServiceGroup>
+```
+
+| Property Name        | Default Value |
+|----------------------|---------------|
+| `<BeamServiceGroup>` | empty         |
 
 ### Dotnet Properties
 

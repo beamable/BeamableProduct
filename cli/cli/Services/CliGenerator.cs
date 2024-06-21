@@ -8,6 +8,11 @@ public class CliGenerator
 {
 	private readonly IDependencyProvider _provider;
 
+	public readonly static HashSet<Type> CommandTypesToReject = new HashSet<Type>
+	{
+		typeof(ServicesGenerateLocalManifestCommand)
+	};
+	
 	public CliGenerator(IDependencyProvider provider)
 	{
 		_provider = provider;
@@ -31,11 +36,14 @@ public class CliGenerator
 		while (safety-- > 0 && queue.Count > 0)
 		{
 			var curr = queue.Dequeue();
+			
 			allCommands.Add(curr);
 
 
 			foreach (var subCommand in curr.command.Subcommands)
 			{
+				if (CommandTypesToReject.Contains(subCommand.GetType())) continue;
+				
 				var subBeamCommand = new BeamCommandDescriptor
 				{
 					executionPath = $"{curr.executionPath} {subCommand.Name}",
