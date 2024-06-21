@@ -62,12 +62,12 @@ namespace microservice.Common
       public string Docs()
       {
 	      var docs = new ServiceDocGenerator();
-	      var doc = docs.Generate(MicroserviceType, MicroserviceAttribute, this);
+	      var extraSchemas = ServiceDocGenerator.LoadDotnetDeclaredSchemasFromTypes(MicroserviceType.Assembly.GetExportedTypes(), out var typesMissingAttribute).Select(t => t.type).ToArray();
+	      var doc = docs.Generate(MicroserviceType, MicroserviceAttribute, this, false, extraSchemas);
 
 	      if (!string.IsNullOrEmpty(PublicHost))
 	      {
 		      doc.Servers.Add(new OpenApiServer { Url = PublicHost });
-
 	      }
 	      
 	      var outputString = doc.Serialize(OpenApiSpecVersion.OpenApi3_0, OpenApiFormat.Json);

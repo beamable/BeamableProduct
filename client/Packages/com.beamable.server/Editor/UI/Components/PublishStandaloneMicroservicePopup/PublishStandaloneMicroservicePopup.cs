@@ -241,7 +241,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				var model = _allUnarchivedServices[index];
 				var isLocal = codeService.GetServiceIsLocal(model.Name);
-				var isRemote = MicroservicesDataModel.Instance.ContainsRemoteOnlyModel(model.Name); //TODO figure it out how to know this outside this way
+				var isRemote = codeService.GetServiceIsRemote(model.Name);
 				var newElement = new PublishManifestEntryVisualElement(model, index, isLocal, isRemote);
 				newElement.Refresh();
 				newElement.OnEnableStateChanged += HandleEnableStateChanged;

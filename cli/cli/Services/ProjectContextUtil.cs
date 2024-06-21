@@ -22,7 +22,12 @@ public static class ProjectContextUtil
 		var remote = await beamo.GetCurrentManifest(); // TODO do this at the same time as file scanning.
 
 		// find all local project files...
+		var sw = new Stopwatch();
+		sw.Start();
 		var allProjects = ProjectContextUtil.FindCsharpProjects(rootFolder).ToArray();
+		sw.Stop();
+		Log.Verbose($"Gathering csprojs took {sw.Elapsed.TotalMilliseconds} ");
+		
 		var typeToProjects = allProjects
 			.GroupBy(p => p.properties.ProjectType)
 			.ToDictionary(kvp => kvp.Key, kvp => kvp.ToList());
@@ -89,6 +94,7 @@ public static class ProjectContextUtil
 
 			// overwrite existing local settings
 			existingDefinition.ImageId = remoteService.imageId;
+			existingDefinition.IsInRemote = true;
 		}
 
 		foreach (var remoteStorage in remote.storageReference)
@@ -111,6 +117,7 @@ public static class ProjectContextUtil
 			
 			// overwrite existing settings.
 			existingDefinition.ImageId = MongoImage;
+			existingDefinition.IsInRemote = true;
 		}
 
 
@@ -184,6 +191,25 @@ public static class ProjectContextUtil
 		for (var i = 0 ; i < paths.Length; i ++)
 		{
 			var path = paths[i];
+
+			var fileReader = File.OpenRead(path);
+			using var streamReader = new StreamReader(fileReader);
+			string line = string.Empty;
+			while (string.IsNullOrEmpty(line))
+			{
+				// read through the first whitespace of a file until the first actual content...
+				line = streamReader.ReadLine()?.Trim();
+			}
+
+			if (!string.Equals("<Project Sdk=\"Microsoft.NET.Sdk\">", line,
+				    StringComparison.InvariantCultureIgnoreCase))
+			{
+				Log.Verbose($"Rejecting csproj=[{path}] due to lack of leading <Project Sdk> tag");
+				projects[i] = null;
+				continue;
+			}
+			
+			
 			var pathDir = Path.GetDirectoryName(path);
 
 			if (string.IsNullOrEmpty(pathDir))
@@ -201,6 +227,7 @@ public static class ProjectContextUtil
 			};
 
 			var buildEngine = new ProjectCollection();
+			buildEngine.IsBuildEnabled = true;
 			var buildProject = buildEngine.LoadProject(Path.GetFullPath(path));
 
 			projects[i].properties = new MsBuildProjectProperties()
@@ -226,7 +253,7 @@ public static class ProjectContextUtil
 			projects[i].projectReferences = allProjectRefs;
 		}
 
-		return projects;
+		return projects.Where(p => p != null).ToArray();
 	}
 
 	public static async Task<CsharpProjectBuildData> GetCsharpProperties(string dotnetPath, string csharpPath, params string[] properties)
@@ -359,7 +386,6 @@ public static class ProjectContextUtil
 
 		// the project directory is just "where is the csproj" 
 		definition.ProjectPath = project.relativePath;
-
 		definition.Protocol = BeamoProtocolType.HttpMicroservice;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet;
 
