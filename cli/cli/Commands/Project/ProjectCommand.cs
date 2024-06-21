@@ -54,7 +54,7 @@ public class ProjectCommand : CommandGroup
 		var withoutTagsOption = new Option<List<string>>(
 			name: "--without-group",
 			description:
-			$"A set of {CliConstants.PROP_BEAM_SERVICE_GROUP} tags that will exclude the associated services. Exclusion takes precedence over inclusion."
+			$"A set of {CliConstants.PROP_BEAM_SERVICE_GROUP} tags that will exclude the associated services. Exclusion takes precedence over inclusion"
 		)
 		{
 			AllowMultipleArgumentsPerToken = true, 
