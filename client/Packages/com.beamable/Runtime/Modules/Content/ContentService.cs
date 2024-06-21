@@ -208,7 +208,7 @@ namespace Beamable.Content
 		/// Member holds all content that has been cached as a result of fetching new content
 		/// </summary>
 		public ContentDataInfoWrapper CachedContentDataInfo = new ContentDataInfoWrapper();
-		
+
 		/// <summary>
 		/// Member holds all content that was baked into the current build
 		/// To resolve content, please use the <see cref="GetContent(string,string)"/> method.
@@ -312,7 +312,7 @@ namespace Beamable.Content
 
 			return $"{fsa.GetPersistentDataPathWithoutTrailingSlash()}/{pid}-{cid}/content/content.json";
 		}
-		
+
 		/// <summary>
 		/// get the baked content and hold it as an in-memory dictionary for use later
 		/// </summary>
@@ -324,7 +324,7 @@ namespace Beamable.Content
 			{
 				return new ContentDataInfoWrapper();
 			}
-			
+
 			string json = bakedFile.text;
 			var isValidJson = Json.IsValidJson(json);
 			if (isValidJson)

@@ -46,18 +46,18 @@ public class ProjectCommand : CommandGroup
 			$"A set of {CliConstants.PROP_BEAM_SERVICE_GROUP} tags that will include the associated services"
 		)
 		{
-			AllowMultipleArgumentsPerToken = true, 
+			AllowMultipleArgumentsPerToken = true,
 			Arity = ArgumentArity.ZeroOrMore
 		};
 		withTagsOption.AddAlias("--with-groups");
-		
+
 		var withoutTagsOption = new Option<List<string>>(
 			name: "--without-group",
 			description:
 			$"A set of {CliConstants.PROP_BEAM_SERVICE_GROUP} tags that will exclude the associated services. Exclusion takes precedence over inclusion"
 		)
 		{
-			AllowMultipleArgumentsPerToken = true, 
+			AllowMultipleArgumentsPerToken = true,
 			Arity = ArgumentArity.ZeroOrMore
 		};
 		withoutTagsOption.AddAlias("--without-groups");
@@ -102,7 +102,7 @@ public class ProjectCommand : CommandGroup
 		services ??= new List<string>();
 		var noExplicitlyListedServices = services.Count == 0;
 		var noInclusionTags = withTags == null || withTags.Count == 0;
-		
+
 		if (noExplicitlyListedServices && noInclusionTags) // get all services
 		{
 			services = args.BeamoLocalSystem?.BeamoManifest?.ServiceDefinitions
@@ -115,7 +115,7 @@ public class ProjectCommand : CommandGroup
 				.Select(x => x.BeamoId)
 				.ToList() ?? new List<string>();
 		}
-		
+
 		if (withTags != null) // add included groups
 		{
 			foreach (var group in withTags)
@@ -127,7 +127,7 @@ public class ProjectCommand : CommandGroup
 		}
 
 		services = services.Distinct().ToList(); // de-dupe services... This is important to do before removal, because the remove operation will only remove the first (and hopefully only) instance of a service id. 
-		
+
 		if (withoutTags != null) // remove excluded groups
 		{
 			foreach (var group in withoutTags)
@@ -140,7 +140,7 @@ public class ProjectCommand : CommandGroup
 				}
 			}
 		}
-		
+
 		if (services.Count == 0)
 		{
 			throw new CliException("No services are listed.");
@@ -150,10 +150,10 @@ public class ProjectCommand : CommandGroup
 	}
 	public static void FinalizeServicesArg(CommandArgs args, ref List<string> services)
 	{
-		FinalizeServicesArg(args, 
-			withTags: null, 
-			withoutTags: null, 
-			includeStorage: false, 
+		FinalizeServicesArg(args,
+			withTags: null,
+			withoutTags: null,
+			includeStorage: false,
 			ref services);
 	}
 
