@@ -11,11 +11,12 @@ PACKAGES_TO_SET=${3:-''}
 INSTALL_CLI=${4:-""}
 # When not "", this should be the absolute path we'll call dotnet restore in after the script has run
 PATH_TO_DOTNET_RESTORE=${5:-""}
+# This is used because we need to set the correct version for release flows in Github Actions
+VERSION=${6:-"0.0.123"}
 
 # Overridable via EnvVars only
 PROJECTS_DIR=${PROJECT_DIR_OVERRIDE:-"ProjectsSource"}
 PROJECTS_SOURCE="$HOME_FOR_BUILD/BeamableSource/"
-VERSION="0.0.123"
 
 
 PKG_COMMON="./cli/beamable.common/"
