@@ -38,7 +38,7 @@ PACKAGES_TO_SET_ARR[5]="$PKG_CLI"
 PACKAGES_TO_SET_ARR[6]="$PKG_MICROSERVICE"
 PACKAGES_TO_SET_ARR[7]="$PKG_TEMPLATES"
 
-if [[ "$PACKAGES_TO_SET" != '' ]]; then
+if [[ "$PACKAGES_TO_SET" != "" ]]; then
     echo "Filtering packages to set..."
     PACKAGES_TO_SET_ARR=("${PACKAGES_TO_SET//|/ }")
     printf '%s, ' "${PACKAGES_TO_SET_ARR[@]}"
