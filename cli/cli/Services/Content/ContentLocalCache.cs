@@ -5,6 +5,7 @@ using cli.Utils;
 using Errata;
 using JetBrains.Annotations;
 using Serilog;
+using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -13,13 +14,13 @@ namespace cli.Services.Content;
 public class ContentLocalCache
 {
 	public string ManifestId { get; }
-	public Dictionary<string, ContentDocument> Assets => _localAssets;
+	public IDictionary<string, ContentDocument> Assets => _localAssets;
 	public string ContentDirPath => Path.Combine(BaseDirPath, ManifestId);
 	public ContentTags Tags => _contentTags;
 
 	private string BaseDirPath => Path.Combine(_configService.ConfigDirectoryPath!, Constants.CONTENT_DIRECTORY);
 
-	private Dictionary<string, ContentDocument> _localAssets;
+	private ConcurrentDictionary<string, ContentDocument> _localAssets;
 	private ContentTags _contentTags;
 	private ClientManifest _manifest;
 	private readonly CliRequester _requester;
@@ -132,14 +133,14 @@ public class ContentLocalCache
 			Directory.CreateDirectory(ContentDirPath);
 		}
 
-		_localAssets = new Dictionary<string, ContentDocument>();
+		_localAssets = new ConcurrentDictionary<string, ContentDocument>();
 
 		foreach (var path in Directory.EnumerateFiles(ContentDirPath, "*json"))
 		{
 			try
 			{
 				var content = ContentDocument.AtPath(path);
-				_localAssets.Add(content.id, content);
+				_localAssets.TryAdd(content.id, content);
 			}
 			catch (JsonException e)
 			{

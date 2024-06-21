@@ -24,9 +24,11 @@ jobs:
         run: |
           dotnet tool install --global dotnet-counters --version 7.0.447801
       - name: Build and Install BEAM CLI 
-        working-directory: ./cli/cli
+        working-directory: ./
         run: |
-          ./install.sh
+          ./set-packages.sh "${{ github.workspace }}" "UNITY_NugetSource" "" "Global"
+        env:
+          PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Login to BEAM CLI
         working-directory: ./stress-tests/standalone-microservice
         run: |

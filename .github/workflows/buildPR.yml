@@ -105,8 +105,6 @@ jobs:
         run: |
           ./set-packages.sh "${{ github.workspace }}"
         env:
-          HOME_OVERRIDE: ${{ github.workspace }}
-          PROJECTS_DIR_FILES: ${{ github.workspace }}/NugetBuildDir/
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Install dependencies
         run: dotnet restore cli/tests
@@ -149,9 +147,11 @@ jobs:
         with:
           dotnet-version: '8.0.x'
       - name: Build and Install BEAM CLI 
-        working-directory: ./cli/cli
+        working-directory: ./
         run: |
-          SKIP_GENERATION=true ./install.sh
+          SKIP_GENERATION=true ./set-packages.sh "${{ github.workspace }}" "UNITY_NugetSource" "" "Global"
+        env:
+          PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Check Beam CLI
         run: |
           beam version
@@ -252,9 +252,11 @@ jobs:
         with:
           dotnet-version: '8.0.x'
       - name: Build and Install BEAM CLI 
-        working-directory: ./cli/cli
+        working-directory: ./
         run: |
-          SKIP_GENERATION=true ./install.sh
+          SKIP_GENERATION=true ./set-packages.sh "${{ github.workspace }}" "UNITY_NugetSource" "" "Global"
+        env:
+          PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Check Beam CLI
         run: |
           beam version
