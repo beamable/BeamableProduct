@@ -1,4 +1,5 @@
-using cli.Services;
+using Newtonsoft.Json;
+using Spectre.Console;
 
 namespace cli.Commands.Project;
 
@@ -7,7 +8,7 @@ public class ShowRemoteManifestCommandArgs : CommandArgs
 
 }
 
-public class ShowRemoteManifestCommand : AtomicCommand<ShowRemoteManifestCommandArgs, ServiceManifest>
+public class ShowRemoteManifestCommand : AppCommand<ShowRemoteManifestCommandArgs>
 {
 	public override bool IsForInternalUse => true;
 	public ShowRemoteManifestCommand() : base("remote-manifest", "Returns the remote manifest in json format")
@@ -18,9 +19,9 @@ public class ShowRemoteManifestCommand : AtomicCommand<ShowRemoteManifestCommand
 	{
 	}
 
-	public override async Task<ServiceManifest> GetResult(ShowRemoteManifestCommandArgs args)
+	public override async Task Handle(ShowRemoteManifestCommandArgs args)
 	{
 		var manifest = await args.BeamoService.GetCurrentManifest();
-		return manifest;
+		AnsiConsole.WriteLine(JsonConvert.SerializeObject(manifest, Formatting.Indented));
 	}
 }
