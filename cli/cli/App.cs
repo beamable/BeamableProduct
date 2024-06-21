@@ -244,7 +244,6 @@ public class App
 
 		// add commands
 		Commands.AddRootCommand<CliInterfaceGeneratorCommand, CliInterfaceGeneratorCommandArgs>();
-
 		Commands.AddRootCommand<ServerGroupCommand>();
 		Commands.AddSubCommand<ServeCliCommand, ServeCliCommandArgs, ServerGroupCommand>();
 		Commands.AddSubCommand<RequestCliCommand, RequestCliCommandArgs, ServerGroupCommand>();
@@ -274,6 +273,7 @@ public class App
 		Commands.AddSubCommand<ProjectVersionCommand, ProjectVersionCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<ShareCodeCommand, ShareCodeCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<CheckStatusCommand, CheckStatusCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<ShowRemoteManifestCommand, ShowRemoteManifestCommandArgs, ProjectCommand>();
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Commands.AddRootCommand<BaseRequestGetCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestPutCommand, BaseRequestArgs>();

@@ -12,7 +12,7 @@ namespace Beamable.Editor.Dotnet
 {
 	public static partial class DotnetUtil
 	{
-		private const int REQUIRED_MAJOR_VERSION = 8;
+		private static readonly PackageVersion REQUIRED_INSTALL_VERSION = "8.0.302";
 
 		private const string ENV_VAR_DOTNET_LOCATION = "BEAMABLE_DOTNET_PATH";
 
@@ -86,7 +86,7 @@ namespace Beamable.Editor.Dotnet
 			DownloadInstallScript();
 
 			EditorUtility.DisplayProgressBar("Downloading Dotnet", "installing dotnet in your Library folder", .2f);
-			RunInstallScript("8.0");
+			RunInstallScript(REQUIRED_INSTALL_VERSION.ToString());
 
 			EditorUtility.ClearProgressBar();
 		}
@@ -105,11 +105,11 @@ namespace Beamable.Editor.Dotnet
 					continue;
 				}
 
-				if (!CheckVersion(dotnetPath, out var majorVersion))
+				if (!CheckVersion(dotnetPath, out var version))
 				{
 					
 					Debug.LogWarning(
-						$"Ignoring version of dotnet at {path} due to incorrect version number. Found: {majorVersion}, required: {REQUIRED_MAJOR_VERSION}");
+						$"Ignoring version of dotnet at {path} due to incorrect version number. Found: {version}, required: {REQUIRED_INSTALL_VERSION}");
 					continue;
 				}
 
@@ -120,14 +120,9 @@ namespace Beamable.Editor.Dotnet
 			return false;
 		}
 
-		static bool CheckVersion(string dotnetPath, out int majorVersion)
+		static bool CheckVersion(string dotnetPath, out PackageVersion version)
 		{
-			var key = $"DOTNET_VERSION_{dotnetPath}";
-			majorVersion = SessionState.GetInt(key, -1);
-			if (majorVersion > 0)
-			{
-				return majorVersion == REQUIRED_MAJOR_VERSION;
-			}
+			version = "0.0.0";
 			var dir = Path.GetDirectoryName(dotnetPath)!;
 			var proc = new Process();
 			proc.StartInfo = new ProcessStartInfo
@@ -150,15 +145,12 @@ namespace Beamable.Editor.Dotnet
 				return false;
 			}
 
-			if (!PackageVersion.TryFromSemanticVersionString(output, out var findedVersion))
+			if (!PackageVersion.TryFromSemanticVersionString(output, out version))
 			{
 				return false;
 			}
 
-			majorVersion = findedVersion.Major;
-			SessionState.SetInt(key, majorVersion);
-
-			return majorVersion == REQUIRED_MAJOR_VERSION;
+			return version == REQUIRED_INSTALL_VERSION ;
 		}
 
 		static bool CheckForDotnetAtPath(string dotnetPath)

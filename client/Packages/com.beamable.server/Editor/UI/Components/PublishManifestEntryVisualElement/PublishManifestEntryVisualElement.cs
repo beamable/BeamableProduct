@@ -196,7 +196,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public void HandlePublishStarted()
 		{
 			EnableState.SetEnabled(false);
-			// _sizeDropdown.SetEnabled(false);
 			_commentField.SetEnabled(false);
 		}
 
