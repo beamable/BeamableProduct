@@ -161,10 +161,10 @@ namespace Beamable.Editor.BeamCli
 		{
 			try
 			{
-				var json = await localClient.GetStringAsync(InfoUrl);
+				var json = await localClient.GetStringAsync(InfoUrl).ToPromiseRoutine();
 				var res = JsonUtility.FromJson<ServerInfoResponse>(json);
-
-				var ownerMatches = res.owner == Owner;
+				
+				var ownerMatches = String.Equals(res.owner, Owner, StringComparison.OrdinalIgnoreCase);
 				var versionMatches = res.version == Version;
 				
 				if (!ownerMatches || !versionMatches)
@@ -223,14 +223,14 @@ namespace Beamable.Editor.BeamCli
 			try
 			{
 				using HttpResponseMessage response =
-					await _localClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+					await _localClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead).ToPromiseRoutine();
 
-				using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
+				using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync().ToPromiseRoutine();
 				using StreamReader reader = new StreamReader(streamToReadFrom);
 
 				while (!reader.EndOfStream)
 				{
-					var line = await reader.ReadLineAsync();
+					var line = await reader.ReadLineAsync().ToPromiseRoutine();
 					if (string.IsNullOrEmpty(line)) continue; // TODO: what if the message contains a \n character?
 
 					// remove life-cycle zero-width character 

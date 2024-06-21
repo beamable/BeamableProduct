@@ -264,7 +264,7 @@ public class ServerService
 	static async Task HandleExec(ServeCliCommandArgs args, Stream networkRequestStream, HttpListenerResponse response)
 	{
 		using var inputStream = new StreamReader(networkRequestStream);
-		response.Headers.Set(HttpResponseHeader.ContentType, "text/event-stream");
+		response.Headers.Set(HttpResponseHeader.ContentType, "text/event-stream; charset=utf-8");
 		var input = await inputStream.ReadToEndAsync();
 		var req = JsonConvert.DeserializeObject<ServerRequest>(input);
 		
@@ -308,8 +308,12 @@ public class ServerReporterService : IDataReporterService
 					// check if the pipe is still open, because if it isn't, the invocation should cancel.
 					try
 					{
-						_streamWriter.Write("\u200b"); // write a zero-width character to test the connection.
-						_streamWriter.Flush();
+						lock(_streamWriter)
+						{
+							_streamWriter.Write("\u200b"); // write a zero-width character to test the connection.
+							_streamWriter.Flush();
+						}
+
 					}
 					catch (HttpListenerException)
 					{
@@ -332,8 +336,14 @@ public class ServerReporterService : IDataReporterService
 	{
 		try
 		{
-			_streamWriter.WriteLine("data: " + rawMessage);
-			_streamWriter.Flush();
+			var data = "data: " + rawMessage + Environment.NewLine;
+			var bytes = Encoding.UTF8.GetBytes(data);
+			lock(_streamWriter)
+			{
+				_streamWriter.BaseStream.Write(bytes, 0, bytes.Length);
+				_streamWriter.Flush();
+			}
+
 		}
 		catch (HttpListenerException ex)
 		{

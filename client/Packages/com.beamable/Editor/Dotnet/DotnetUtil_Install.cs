@@ -96,9 +96,8 @@ namespace Beamable.Editor.Dotnet
 
 			using (var process = new System.Diagnostics.Process())
 			{
-
 #if UNITY_EDITOR && !UNITY_EDITOR_WIN
-				var command = $"{DotnetInstallScriptPath} --install-dir {DOTNET_LIBRARY_PATH} --no-path --channel {version}";
+				var command = $"{DotnetInstallScriptPath} --install-dir {DOTNET_LIBRARY_PATH} --no-path --version {version}";
 				process.StartInfo.FileName = "sh";
 				process.StartInfo.Arguments = $"-c '{command}'";
 #else
