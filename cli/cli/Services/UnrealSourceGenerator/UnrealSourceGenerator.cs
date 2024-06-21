@@ -181,13 +181,13 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// Typically, this is the same as <see cref="headerFileOutputPath"/>. However, for microservice clients we remove the "Source/" part of the path.
 	/// </summary>
 	public static string includeStatementPrefix = "BeamableCore/Public/";
-	
+
 	/// <summary>
 	/// Set this before calling <see cref="Generate"/> when you want to describe a prefix to add before the path to the autogen folder in include statements.
 	/// Typically, this is the same as <see cref="blueprintHeaderFileOutputPath"/>. However, for microservice clients we remove the "Source/" part of the path.
 	/// </summary>
 	public static string blueprintIncludeStatementPrefix = "BeamableCoreBlueprintNodes/Public/BeamFlow/ApiRequest/";
-	
+
 	/// <summary>
 	/// Set this before calling <see cref="Generate"/> when you want to control where the AutoGen folder will be created.
 	/// It can be the same as <see cref="cppFileOutputPath"/>.

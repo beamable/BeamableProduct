@@ -48,7 +48,7 @@ namespace Beamable.Common.Spew
 
 			UnityEngine.Debug.Log(s);
 		}
-		
+
 		public static void DoSpew(string msg, params object[] args)
 		{
 			var s = string.Format(msg, args);

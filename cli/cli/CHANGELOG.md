@@ -8,16 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.0.1] - 2024-06-17
 
 ### Added
+
 - `--no-filter` option to `beam listen server`
 
 ### Fixed
+
 - `beam project stop` will stop services running in docker
 - `beam service ps`  was not working when calling it because it was trying to get the ImageId of storage objects
-- common lib handling uses `.` as a default path instead of the empty string 
+- common lib handling uses `.` as a default path instead of the empty string
 - `UpdateDockerfile` update to fix common lib handling for docker builds
 
 ### Changed
- - `beam service ps` now doesn't have the `--remote` flag and always return information updated with both local and remote
+
+- `beam service ps` now doesn't have the `--remote` flag and always return information updated with both local and remote
 
 ## [2.0.0] - 2024-05-24
 
@@ -65,37 +68,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `beam content` no longer directly opens content folder.
 
 ## [1.19.17] - 2024-04-04
+
 ### Changed
+
 - `BEAM_DOCKER_URI` environment variable will override docker connection uri
 - Standalone Microservices no longer have a `LoadEnvironmentVariables` method, and connection strings are handled in the existing `Prepare` method.
 - `beam project generate-env` command writes a blank `.env` file and returns connection strings over STDOUT instead.
 - Docker will not connect at common unix home directory if `/var/run/docker.sock` is not available
 
 ## [1.19.16] - 2024-03-2
+
 no changes
 
 ## [1.19.15] - 2024-03-07
+
 ### Fixed
+
 - Progress bars and logs do not appear side by side.
 - Unreal Microservice client generation now correctly generates non-primitives used in C#MS signatures
 
 ## [1.19.14] - 2024-02-06
 
 ### Fixed
+
 - Docker path issue when adding storage objects
 
 ## [1.19.13] - 2024-02-05
+
 no changes
 
 ## [1.19.12] - 2024-01-22
 
 ### Added
+
 - Better validation and error messages for add-unreal-project command code-path;
 - Unreal Microservice client generation now correctly identifies whether or not the OSS UE Plugin is there and, if so, it'll add the microservices code to that module instead.
 - Unreal Microservice client generation now checks whether or not the linked project is using the OnlineSubsystemBeamable plugin and, if so, checks if it is configured correctly. This catches the case where people add the OSS after the Microservice was already added to the project modules;
 - CLI will now check if its necessary to run Unreal's Generate VS Project Files command after generating client code and, if so, will run and wait for it as part of the generate-client command (it is needed when new client callables are added/removed);
 
 ### Fixed
+
 - Fixed issue that caused paths not to be stored relative to the `.beamable` folder correctly
 - Fixed issue that caused incorrect `\\` to be used instead of `/`
 - Fixed serializer generation to correctly use `TCHAR` as opposed to `wchar_t`
@@ -104,14 +116,17 @@ no changes
 ## [1.19.11] - 2024-01-12
 
 ### Added
+
 - `beam config realm` command suite for working with realm config via the CLI.
 
 ### Fixed
+
 - Stack traces from Dependency Injection, `GetService`, show inner stack trace instead of Reflection based stack trace.
 
 ## [1.19.10] - 2024-01-05
 
 ### Fixed
+
 - fixed issue an issue that would cause an NRE if an existing service had no federated component when running services deploy command
 
 ## [1.19.9] - 2023-12-20
@@ -145,6 +160,7 @@ no changes
 ## [1.19.4] - 2023-11-02
 
 ### Fixed
+
 - `--reporter-use-fatal` channel supports JSON strings
 
 ## [1.19.3] - 2023-10-26
@@ -154,9 +170,11 @@ no changes
 ## [1.19.2] - 2023-10-11
 
 ### Fixed
+
 - `beam services deploy` no longer times out.
 
 ### Changed
+
 - Templates update with refactor to improve it receiving updates and fixes in the future.
 
 ## [1.19.1] - 2023-09-22
