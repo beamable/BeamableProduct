@@ -48,9 +48,8 @@ jobs:
           jq --version
 
       - name: Install CLI
-        shell: bash
+        working-directory: ./
         run: |
-          cd ./
           sh ./set-packages.sh "${{ github.workspace }}/client" "UNITY_NugetSource" "" "Global"
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
