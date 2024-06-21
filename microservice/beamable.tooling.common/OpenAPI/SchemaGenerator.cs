@@ -23,17 +23,13 @@ public class SchemaGenerator
 	/// </summary>
 	/// <param name="methods">The collection of service methods to analyze.</param>
 	/// <returns>An enumeration of complex types found in the service methods.</returns>
-	public static IEnumerable<Type> FindAllComplexTypes(IEnumerable<ServiceMethod> methods)
+	public static IEnumerable<Type> FindAllComplexTypes(IEnumerable<Type> startingTypes)
 	{
 		// construct a queue of types that we will need to search over for other types... These types are the entry points into the search.
 		var toExplore = new Queue<Type>();
-		foreach (var method in methods)
+		foreach (var startingType in startingTypes)
 		{
-			toExplore.Enqueue(method.Method.ReturnType); // output type of a method
-			foreach (var parameter in method.ParameterInfos)
-			{
-				toExplore.Enqueue(parameter.ParameterType); // and all input types of the method
-			}
+			toExplore.Enqueue(startingType);
 		}
 
 		// construct a set of types we've seen. It starts empty.
@@ -87,6 +83,26 @@ public class SchemaGenerator
 		{
 			throw new InvalidOperationException("Exceeded while-loop safety limit");
 		}
+	}
+	
+	/// <summary>
+	/// Finds all complex types used in the specified service methods.
+	/// </summary>
+	/// <param name="methods">The collection of service methods to analyze.</param>
+	/// <returns>An enumeration of complex types found in the service methods.</returns>
+	public static IEnumerable<Type> FindAllComplexTypes(IEnumerable<ServiceMethod> methods)
+	{
+		var startingTypes = new List<Type>();
+		foreach (var method in methods)
+		{
+			startingTypes.Add(method.Method.ReturnType); // output type of a method
+			foreach (var parameter in method.ParameterInfos)
+			{
+				startingTypes.Add(parameter.ParameterType); // and all input types of the method
+			}
+		}
+
+		return FindAllComplexTypes(startingTypes);
 	}
 
 	/// <summary>

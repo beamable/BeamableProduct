@@ -47,6 +47,9 @@ public class BeamProjectNewFlows : CLITestExtensions
 			$"There must be a dockerfile");
 		Assert.That(!BFile.Exists($"{serviceName}/services/{serviceName}/Dockerfile-BeamableDev"),
 			$"There must not be a dev dockerfile");
+		
+		// There should be a .config/dotnet-tools.json file
+		Assert.That(BFile.Exists($".config/dotnet-tools.json"), "There must be .config/dotnet-tools.json file");
 
 		
 		// the contents of the file beamoId should be equal to the name of the service created
@@ -57,7 +60,7 @@ public class BeamProjectNewFlows : CLITestExtensions
 		// Assert.That(manifest!.ServiceDefinitions.Count, Is.EqualTo(1));
 
 		var hasProjectType = localCsProjContent.Contains("<BeamProjectType>service</BeamProjectType>");
-		var hasNugetReference = localCsProjContent.Contains("<PackageReference Include=\"Beamable.Microservice.Runtime\" Version=\"0.0.123\" />");
+		var hasNugetReference = localCsProjContent.Contains("<PackageReference Include=\"Beamable.Microservice.Runtime\" Version=\"$(BeamableVersion)\" />");
 		
 		Assert.That(hasProjectType, "csproj must have project type fragment\n" + localCsProjContent);
 		Assert.That(hasNugetReference, "csproj must have nuget reference fragment\n" + localCsProjContent);

@@ -10,7 +10,7 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine as build-env
 # build the dotnet program
 WORKDIR /
 
-RUN dotnet publish ${BEAM_CSPROJ_PATH} -c release -o /beamApp
+RUN dotnet publish ${BEAM_CSPROJ_PATH} -p:BeamableVersion=${BEAM_VERSION} -c release -o /beamApp
 
 # use the dotnet runtime as the final stage
 FROM mcr.microsoft.com/dotnet/runtime:6.0-alpine

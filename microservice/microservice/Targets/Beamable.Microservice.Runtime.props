@@ -19,11 +19,8 @@
     <PropertyGroup>
         <!-- The tool path for the beamCLI. "dotnet beam" will refer to the local project tool, and "beam" would install to a globally installed tool -->
         <BeamableTool Condition="'$(BeamableTool)' == ''">$(BEAM_PATH)</BeamableTool>
-        <BeamableTool Condition="'$(BeamableTool)' == ''">beam</BeamableTool>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true">
-        <DefineConstants>$(DefineConstants);BEAMABLE_GENERATE_ENV</DefineConstants>
+        <BeamableTool Condition="'$(BeamableTool)' == ''">dotnet beam</BeamableTool>
+        <GenerateClientCode Condition="'$(GenerateClientCode)' == ''">true</GenerateClientCode>
     </PropertyGroup>
 
     <!-- Make sure that the built dlls and their dependencies are in the output directory -->

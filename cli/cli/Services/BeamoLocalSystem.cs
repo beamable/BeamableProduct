@@ -365,9 +365,12 @@ COPY {servicePathTag} /subsrc/{servicePathTag}";
 			"# <BEAM-CLI-COPY-ENV> this line signals the start of environment variables copies into the built container. Do not remove it. This will be overwritten every time a variable changes in the execution of the CLI.";
 		const string servicePathTag = "<SERVICE_PATH>";
 		const string serviceNameTag = "<SERVICE_NAME>";
+		const string beamVersionTag = "<ENV_BEAM_VERSION>"; 
 
-		const string toAdd = @$"ENV BEAM_CSPROJ_PATH=""/subsrc/{servicePathTag}/{serviceNameTag}.csproj""";
-		var replacement = @$"{toAdd}
+		const string beamCsProjPath = @$"ENV BEAM_CSPROJ_PATH=""/subsrc/{servicePathTag}/{serviceNameTag}.csproj""";
+		const string beamVersion = @$"ENV BEAM_VERSION=""{beamVersionTag}""";
+		var replacement = @$"{beamCsProjPath}
+{beamVersion}
 {endTag}";
 
 		var hasEndTag = dockerfileText.Contains(endTag);
@@ -385,7 +388,11 @@ COPY {servicePathTag} /subsrc/{servicePathTag}";
 		int endIndex = dockerfileText.IndexOf(endTag, startIndex, StringComparison.Ordinal);
 		string newText = dockerfileText.Remove(startIndex, endIndex - startIndex);
 
-		newText = newText.Replace(endTag, replacement.Replace(servicePathTag, projectDir).Replace(serviceNameTag, serviceName).Replace('\\', '/').Insert(0, "\n"));
+		var varsPlusEndTag = replacement.Replace(servicePathTag, projectDir)
+			.Replace(serviceNameTag, serviceName)
+			.Replace(beamVersionTag, VersionService.GetNugetPackagesForExecutingCliVersion().ToString())
+			.Replace('\\', '/').Insert(0, "\n");
+		newText = newText.Replace(endTag, varsPlusEndTag);
 
 		await File.WriteAllTextAsync(dockerfilePath, newText);
 	}

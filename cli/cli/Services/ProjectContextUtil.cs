@@ -142,6 +142,7 @@ public static class ProjectContextUtil
 			};
 
 			var buildEngine = new ProjectCollection();
+			buildEngine.IsBuildEnabled = true;
 			var buildProject = buildEngine.LoadProject(Path.GetFullPath(path));
 
 			projects[i].properties = new MsBuildProjectProperties()

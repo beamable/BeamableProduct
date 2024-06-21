@@ -72,8 +72,6 @@ public struct UnrealCliCommandDeclaration
 ₢{nameof(_streamDataTypeIncludes)}₢
 #include ""₢{nameof(CommandName)}₢Command.generated.h""
 
-class FMonitoredProcess;
-
 ₢{nameof(Streams)}₢
 
 /**
@@ -88,61 +86,40 @@ public:
 	₢{nameof(_streamFieldDeclarations)}₢	
 
 	TFunction<void (const int& ResCode, const FBeamOperationHandle& Op)> OnCompleted;
-	virtual TSharedPtr<FMonitoredProcess> RunImpl(const TArray<FString>& CommandParams, const FBeamOperationHandle& Op = {{}}) override;
+	virtual void HandleStreamReceived(FBeamOperationHandle Op, FString ReceivedStreamType, int64 Timestamp, TSharedRef<FJsonObject> DataJson, bool isServer) override;
+	virtual void HandleStreamCompleted(FBeamOperationHandle Op, int ResultCode, bool isServer) override;
+	virtual FString GetCommand() override;
 }};
 ";
 
 	public const string CPP_COMMAND_TEMPLATE = $@"#include ""₢{nameof(CommandName)}₢Command.h""
 
 #include ""BeamLogging.h""
-#include ""Misc/MonitoredProcess.h""
 #include ""Serialization/JsonSerializerMacros.h""
-		
-TSharedPtr<FMonitoredProcess> U₢{nameof(CommandName)}₢Command::RunImpl(const TArray<FString>& CommandParams, const FBeamOperationHandle& Op)
-{{
-	FString Params = (""₢{nameof(CommandKeywords)}₢"");
-	for (const auto& CommandParam : CommandParams)
-		Params.Appendf(TEXT("" %s""), *CommandParam);
-	Params = PrepareParams(Params);
-	UE_LOG(LogBeamCli, Verbose, TEXT(""₢{nameof(CommandName)}₢ Command - Invocation: %s %s""), *PathToCli, *Params)
 
-	const auto CliPath = Cli->GetPathToCli();
-	const auto CliProcess = MakeShared<FMonitoredProcess>(CliPath, Params, FPaths::ProjectDir(), true, true);
-	CliProcess->OnOutput().BindLambda([this, Op](const FString& Out)
+FString U₢{nameof(CommandName)}₢Command::GetCommand()
+{{
+	return FString(TEXT(""₢{nameof(CommandKeywords)}₢""));
+}}
+		
+void U₢{nameof(CommandName)}₢Command::HandleStreamReceived(FBeamOperationHandle Op, FString ReceivedStreamType, int64 Timestamp, TSharedRef<FJsonObject> DataJson, bool isServer)
+{{
+	₢{nameof(_parseStreamDataImpl)}₢
+}}
+
+void U₢{nameof(CommandName)}₢Command::HandleStreamCompleted(FBeamOperationHandle Op, int ResultCode, bool isServer)
+{{
+	if (OnCompleted)
 	{{
-		UE_LOG(LogBeamCli, Verbose, TEXT(""₢{nameof(CommandName)}₢ Command - Std Out: %s""), *Out);
-		FString OutCopy = Out;
-		FString MessageJson;
-		while (ConsumeMessageFromOutput(OutCopy, MessageJson))
+		AsyncTask(ENamedThreads::GameThread, [this, ResultCode, Op]
 		{{
-			auto Bag = FJsonDataBag();
-			if (Bag.FromJson(MessageJson))
-			{{
-				const auto ReceivedStreamType = Bag.GetString(""type"");
-				const auto Timestamp = static_cast<int64>(Bag.GetField(""ts"")->AsNumber());
-				const auto DataJson = Bag.JsonObject->GetObjectField(""data"").ToSharedRef();
-				
-				₢{nameof(_parseStreamDataImpl)}₢
-			}}
-			else
-			{{
-				UE_LOG(LogBeamCli, Verbose, TEXT(""₢{nameof(CommandName)}₢ Command - Skipping non-JSON message: %s""), *MessageJson);
-			}}			
-		}}
-	}});
-	CliProcess->OnCompleted().BindLambda([this, Op](int ResultCode)
-	{{
-		if (OnCompleted)
-		{{
-			AsyncTask(ENamedThreads::GameThread, [this, ResultCode, Op]
-			{{
-				OnCompleted(ResultCode, Op);
-			}});
-		}}
-	}});
-	return CliProcess;
+			OnCompleted(ResultCode, Op);
+		}});
+	}}
 }}
 ";
+	
+	
 }
 
 public struct UnrealCliStreamDataDeclaration
@@ -255,23 +232,20 @@ public struct UnrealCliStreamDeclaration
 	UPROPERTY() TArray<int64> ₢{nameof(StreamName)}₢Timestamps;
 	TFunction<void (const TArray<₢{nameof(_rootDataType)}₢>& StreamData, const TArray<int64>& Timestamps, const FBeamOperationHandle& Op)> On₢{nameof(StreamName)}₢StreamOutput;";
 
-	public const string STREAM_PARSE_IMPL = $@"
-				if(ReceivedStreamType.Equals(StreamType₢{nameof(StreamName)}₢))
-				{{
-					₢{nameof(_rootDataType)}₢ Data = NewObject<U₢{nameof(_rootDataNamespacedType)}₢>(this);
-					Data->OuterOwner = this;
-					Data->BeamDeserializeProperties(DataJson);
+	public const string STREAM_PARSE_IMPL = $@"if(ReceivedStreamType.Equals(StreamType₢{nameof(StreamName)}₢) && On₢{nameof(StreamName)}₢StreamOutput)
+	{{
+		₢{nameof(_rootDataType)}₢ Data = NewObject<U₢{nameof(_rootDataNamespacedType)}₢>(this);
+		Data->OuterOwner = this;
+		Data->BeamDeserializeProperties(DataJson);
 
-					₢{nameof(StreamName)}₢Stream.Add(Data);
-					₢{nameof(StreamName)}₢Timestamps.Add(Timestamp);
-
-					UE_LOG(LogBeamCli, Verbose, TEXT(""₢{nameof(CommandName)}₢ Command - Message Received: %s""), *MessageJson);
-					AsyncTask(ENamedThreads::GameThread, [this, Op]
-					{{
-						On₢{nameof(StreamName)}₢StreamOutput(₢{nameof(StreamName)}₢Stream, ₢{nameof(StreamName)}₢Timestamps, Op);
-					}});				
-				}}
-";
+		₢{nameof(StreamName)}₢Stream.Add(Data);
+		₢{nameof(StreamName)}₢Timestamps.Add(Timestamp);
+		
+		AsyncTask(ENamedThreads::GameThread, [this, Op]
+		{{
+			On₢{nameof(StreamName)}₢StreamOutput(₢{nameof(StreamName)}₢Stream, ₢{nameof(StreamName)}₢Timestamps, Op);
+		}});				
+	}}";
 }
 
 public class UnrealCliGenerator : ICliGenerator

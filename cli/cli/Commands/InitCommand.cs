@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
+using cli.Services;
 using cli.Utils;
 using Serilog;
 using Spectre.Console;
@@ -67,6 +68,12 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		_configService = args.ConfigService;
 		_aliasService = args.AliasService;
 		_realmsApi = args.RealmsApi;
+		
+		// Setup integration with DotNet for C#MSs --- If we ever have integrations with other microservice languages, we 
+		{
+			_configService.EnforceDotNetToolsManifest();
+			await CliExtensions.GetDotnetCommand(_ctx.DotnetPath, "tool restore").ExecuteAsyncAndLog().Task;
+		}
 
 		if (!_retry) AnsiConsole.Write(new FigletText("Beam").Color(Color.Red));
 		else _ctx.Set(string.Empty, _ctx.Pid, _ctx.Host);
