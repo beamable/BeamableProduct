@@ -648,8 +648,13 @@ public class BeamoServiceDefinition
 	/// <summary>
 	/// Path to the directory containing project file(csproj).
 	/// </summary>
-	public string ProjectDirectory; // TODO: right, this still needs to be auto-infered on load.
+	public string ProjectDirectory => ProjectPath == null ? null : Path.GetDirectoryName(ProjectPath);
 
+	/// <summary>
+	/// Path to the services csproj file
+	/// </summary>
+	public string ProjectPath;
+	
 	/// <summary>
 	/// Defines two services as being equal simply by using their <see cref="BeamoServiceDefinition.BeamoId"/>.
 	/// </summary>

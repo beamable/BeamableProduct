@@ -1,16 +1,17 @@
 using Beamable.Common.BeamCli.Contracts;
+using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Locator;
 using Newtonsoft.Json;
 using Serilog;
 using System.Diagnostics;
+using System.Xml;
+using System.Xml.Linq;
 
 namespace cli.Services;
 
 public static class ProjectContextUtil
 {
-	private static readonly char[] SPLIT_OPTIONS = new char[] { ',', ';' };
-	
 	public static async Task<BeamoLocalManifest> GenerateLocalManifest(
 		string rootFolder,
 		string dotnetPath, 
@@ -76,7 +77,7 @@ public static class ProjectContextUtil
 				{
 					BeamoId = remoteService.serviceName,
 					Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet,
-					ProjectDirectory = null,
+					ProjectPath = null,
 					Protocol = BeamoProtocolType.HttpMicroservice,
 					ServiceGroupTags = Array.Empty<string>()
 				};
@@ -99,7 +100,7 @@ public static class ProjectContextUtil
 					BeamoId = remoteStorage.id,
 					Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet,
 					Protocol = BeamoProtocolType.EmbeddedMongoDb,
-					ProjectDirectory = null,
+					ProjectPath = null,
 					ServiceGroupTags = Array.Empty<string>()
 				};
 				manifest.ServiceDefinitions.Add(existingDefinition);
@@ -330,7 +331,7 @@ public static class ProjectContextUtil
 
 	static string[] ExtractServiceGroupTags(CsharpProjectMetadata project)
 	{
-		return project.properties.ServiceGroupString?.Split(SPLIT_OPTIONS,
+		return project.properties.ServiceGroupString?.Split(CliConstants.SPLIT_OPTIONS,
 			       StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
 		       ?? Array.Empty<string>();
 	}
@@ -357,7 +358,7 @@ public static class ProjectContextUtil
 
 
 		// the project directory is just "where is the csproj" 
-		definition.ProjectDirectory = Path.GetDirectoryName(project.relativePath);
+		definition.ProjectPath = project.relativePath;
 
 		definition.Protocol = BeamoProtocolType.HttpMicroservice;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet;
@@ -392,7 +393,7 @@ public static class ProjectContextUtil
 		}
 
 		// the project directory is just "where is the csproj" 
-		definition.ProjectDirectory = Path.GetDirectoryName(project.relativePath);
+		definition.ProjectPath = project.relativePath;
 
 		definition.Protocol = BeamoProtocolType.EmbeddedMongoDb;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet;
@@ -464,5 +465,50 @@ public static class ProjectContextUtil
 		public MsBuildProjectProperties properties;
 		public List<MsBuildProjectReference> projectReferences;
 	}
-	
+
+	/// <summary>
+	/// Set an msbuild property in the given service definition
+	/// </summary>
+	/// <param name="definition"></param>
+	/// <param name="propBeamEnabled"></param>
+	/// <param name="false"></param>
+	public static string ModifyProperty(BeamoServiceDefinition definition, string propertyName, string propertyValue)
+	{
+		var buildEngine = new ProjectCollection();
+		var stream = File.OpenRead(definition.ProjectPath);
+		var document = XDocument.Load(stream, LoadOptions.PreserveWhitespace);
+		var reader = document.CreateReader(ReaderOptions.None);
+		var buildProject = buildEngine.LoadProject(reader);
+		Log.Verbose($"setting project=[{definition.ProjectPath}] property=[{propertyName}] value=[{propertyValue}]");
+
+		var prop = buildProject.SetProperty(propertyName, propertyValue);
+		
+		buildProject.Save(definition.ProjectPath);
+		
+		/*
+		 * if the property didn't exist, then dotnet's wisdom is to append <TheNewProperty> at the end of the last property...
+		 * Ugh...
+		 *
+		 * <PropertyGroup>
+		 *		<SomeOtherProperty>tuna</SomeOtherProperty><TheNewProperty>toast</TheNewProperty>
+		 * </PropertyGroup>
+		 *
+		 * So, this little wizardry attempts to detect this nonsense and format the file. 
+		 */
+		
+		var searchTerm = $"><{propertyName}>";
+		var rawText = File.ReadAllText(definition.ProjectPath);
+		var brokenIndex = rawText.IndexOf(searchTerm, StringComparison.Ordinal);
+		if (brokenIndex == -1) return prop.UnevaluatedValue; // the glitch does not exist.
+		
+		// we need to detect the amount of whitespace to insert...
+		int newLineIndex = rawText.LastIndexOf(Environment.NewLine, brokenIndex, brokenIndex, StringComparison.Ordinal);
+		int contentIndex = rawText.IndexOf('<', newLineIndex);
+		var whiteSpace = rawText.Substring(newLineIndex, contentIndex - newLineIndex);
+
+		var formattedText = rawText.Insert(brokenIndex + 1, whiteSpace);
+		File.WriteAllText(definition.ProjectPath, formattedText);
+
+		return prop.UnevaluatedValue;
+	}
 }

@@ -75,6 +75,7 @@ The `<BeamId>` controls the name of the Beamable project.
 #### BeamEnabled
 
 The `<BeamEnabled>` is a boolean property. When `false`, when services are [deployed](doc:cli-guide-microservice-deployment) , the service will not be enabled, and will not cost Beamable Cloud resources.
+This option can be set using the [project enable](doc:cli-project-enable) or the [project disable](doc:cli-project-enable) commands.
 
 | Property Name   | Default Value |
 | --------------- | ------------- |
