@@ -48,8 +48,6 @@ namespace Beamable.Common
 
 		protected Exception err;
 		protected ExceptionDispatchInfo errInfo;
-		protected StackTrace _errStackTrace;
-		protected object _lock = new object();
 		internal bool RaiseInnerException { get; set; }
 
 #if DISABLE_THREADING
@@ -67,7 +65,7 @@ namespace Beamable.Common
 		}
 #endif
 
-		public static readonly Unit Unit = new Unit();
+		public static Unit Unit = new Unit();
 
 		public static Promise<Unit> SuccessfulUnit => Promise<Unit>.Successful(Unit);
 
@@ -81,6 +79,7 @@ namespace Beamable.Common
 		/// </summary>
 		public bool IsFailed => done && err != null;
 
+		
 		private static event PromiseEvent OnPotentialUncaughtError;
 
 		public static bool HasUncaughtErrorHandler => OnPotentialUncaughtError != null;
@@ -152,8 +151,8 @@ namespace Beamable.Common
 	[AsyncMethodBuilder(typeof(PromiseAsyncMethodBuilder<>))]
 	public class Promise<T> : PromiseBase, ICriticalNotifyCompletion
 	{
-		private Action<T> _callbacks;
-		private T _val;
+		protected Action<T> _callbacks;
+		protected T _val;
 
 		/// <summary>
 		/// Call to set the value and resolve the %Promise
@@ -161,7 +160,7 @@ namespace Beamable.Common
 		/// <param name="val"></param>
 		public void CompleteSuccess(T val)
 		{
-			lock (_lock)
+			lock (this)
 			{
 				if (done)
 				{
@@ -190,7 +189,7 @@ namespace Beamable.Common
 		/// <param name="val"></param>
 		public void CompleteError(Exception ex)
 		{
-			lock (_lock)
+			lock (this)
 			{
 				if (done)
 				{
@@ -232,7 +231,7 @@ namespace Beamable.Common
 		/// <param name="val"></param>
 		public Promise<T> Then(Action<T> callback)
 		{
-			lock (_lock)
+			lock (this)
 			{
 				if (done)
 				{
@@ -292,7 +291,7 @@ namespace Beamable.Common
 		/// <param name="val"></param>
 		public Promise<T> Error(Action<Exception> errback)
 		{
-			lock (_lock)
+			lock (this)
 			{
 				HadAnyErrbacks = true;
 				if (done)
@@ -657,9 +656,32 @@ namespace Beamable.Common
 	{
 		public static Promise Success { get; } = new Promise { done = true };
 
-		public void CompleteSuccess() => CompleteSuccess(PromiseBase.Unit);
+		public void CompleteSuccess()
+		{
+			// CompleteSuccessRef();
+			lock (this)
+			{
+				if (done)
+				{
+					return;
+				}
 
-		
+				_val = Unit;
+				done = true;
+				try
+				{
+					_callbacks?.Invoke(Unit);
+				}
+				catch (Exception e)
+				{
+					BeamableLogger.LogException(e);
+				}
+				
+				_callbacks = null;
+				errbacks = null;
+			}
+		}
+
 		/// <summary>
 		/// This function accepts a generator that will produce a promise, and then
 		/// that promise will be executed.
@@ -738,6 +760,29 @@ namespace Beamable.Common
 			}
 
 			return result;
+		}
+
+		public static Promise WhenAll<T>(List<Promise<T>> promises)
+		{
+			if (promises.Count == 0)
+				return Success;
+			
+			var result = new Promise();
+			Check();
+			return result;
+			void Check()
+			{
+				for (var i = 0; i < promises.Count; i++)
+				{
+					if (promises[i].IsCompleted)
+						continue;
+
+					promises[i].Error(ex => result.CompleteError(ex));
+					promises[i].Then(_ => Check());
+					return;
+				}
+				result.CompleteSuccess();
+			}
 		}
 
 		/// <summary>
@@ -1250,25 +1295,38 @@ namespace Beamable.Common
 		public Promise<T> Task => _promise;
 	}
 
-	public sealed class PromiseAsyncMethodBuilder
+	public struct PromiseAsyncMethodBuilder
 	{
 		private IAsyncStateMachine _stateMachine;
-		private Promise _promise = new Promise(); // TODO: allocation.
+		private Promise _promise;// = new Promise(); // TODO: allocation.
 
+		private Promise Promise
+		{
+			get
+			{
+				if (_promise == null)
+				{
+					_promise = new Promise(); // TODO: allocation?
+				}
+
+				return _promise;
+			}
+		}
+		
 		public static PromiseAsyncMethodBuilder Create()
 		{
-			return new PromiseAsyncMethodBuilder();
+			return default;
 		}
 
 		public void SetResult()
 		{
-			_promise.CompleteSuccess(PromiseBase.Unit);
+			Promise.CompleteSuccess();
 		}
 
 		public void SetException(Exception ex)
 		{
-			_promise.RaiseInnerException = true;
-			_promise.CompleteError(ex);
+			Promise.RaiseInnerException = true;
+			Promise.CompleteError(ex);
 		}
 
 		public void SetStateMachine(IAsyncStateMachine machine)
@@ -1287,10 +1345,11 @@ namespace Beamable.Common
 				_stateMachine.SetStateMachine(stateMachine);
 			}
 
-			awaiter.OnCompleted(() =>
-			{
-				_stateMachine.MoveNext();
-			});
+			awaiter.OnCompleted(_stateMachine.MoveNext);
+			// awaiter.OnCompleted(() =>
+			// {
+			// 	// _stateMachine.MoveNext();
+			// });
 		}
 
 		public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(
@@ -1307,6 +1366,6 @@ namespace Beamable.Common
 			stateMachine.MoveNext();
 		}
 
-		public Promise Task => _promise;
+		public Promise Task => Promise;
 	}
 }

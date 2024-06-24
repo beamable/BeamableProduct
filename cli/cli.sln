@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.server.common", "b
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "unityenginestubs.addressables", "..\microservice\unityEngineStubs.addressables\unityenginestubs.addressables.csproj", "{04402A61-B144-4536-BCA1-E2122B342B04}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmarks", "Benchmarks\Benchmarks.csproj", "{B78AE042-D90B-4E38-AEC6-F0CC61E4DA3C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,5 +50,9 @@ Global
 		{04402A61-B144-4536-BCA1-E2122B342B04}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{04402A61-B144-4536-BCA1-E2122B342B04}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{04402A61-B144-4536-BCA1-E2122B342B04}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B78AE042-D90B-4E38-AEC6-F0CC61E4DA3C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B78AE042-D90B-4E38-AEC6-F0CC61E4DA3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B78AE042-D90B-4E38-AEC6-F0CC61E4DA3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B78AE042-D90B-4E38-AEC6-F0CC61E4DA3C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
