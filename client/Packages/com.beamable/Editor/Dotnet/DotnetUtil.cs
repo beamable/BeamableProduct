@@ -43,6 +43,8 @@ namespace Beamable.Editor.Dotnet
 		public static string DotnetPath => Path.Combine(DotnetHome, DOTNET_EXEC);
 		public static bool IsUsingGlobalDotnet => DotnetHome.Equals(DOTNET_GLOBAL_PATH);
 
+		public static string DotnetMSBuildPath => Path.Combine(DotnetHome, "sdk", REQUIRED_INSTALL_VERSION.ToString());
+
 		/// <summary>
 		/// Beamable 2.0+ requires Dotnet.
 		/// This method will ensure Dotnet exists for use with the Unity SDK.
@@ -78,7 +80,6 @@ namespace Beamable.Editor.Dotnet
 					throw new Exception("Beamable unable to start because no Dotnet exists");
 				}
 			}
-			SetDotnetEnvironmentPathVariable(DotnetHome);
 		}
 
 		static void InstallDotnetToLibrary()
@@ -119,15 +120,6 @@ namespace Beamable.Editor.Dotnet
 			}
 
 			return false;
-		}
-
-		static void SetDotnetEnvironmentPathVariable(string pathToDotnet)
-		{
-			var name = "PATH";
-			var scope = EnvironmentVariableTarget.Machine;
-			var oldValue = System.Environment.GetEnvironmentVariable(name, scope);
-			var newValue  = oldValue + @";" + pathToDotnet;
-			System.Environment.SetEnvironmentVariable(name, newValue, scope);
 		}
 
 		static bool CheckVersion(string dotnetPath, out PackageVersion version)
