@@ -1,9 +1,12 @@
 using Beamable.Common.BeamCli.Contracts;
+using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Locator;
 using Newtonsoft.Json;
 using Serilog;
 using System.Diagnostics;
+using System.Xml;
+using System.Xml.Linq;
 
 namespace cli.Services;
 
@@ -35,7 +38,8 @@ public static class ProjectContextUtil
 			HttpMicroserviceLocalProtocols = new BeamoLocalProtocolMap<HttpMicroserviceLocalProtocol>{},
 			EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>(){},
 			EmbeddedMongoDbRemoteProtocols = new BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol>(),
-			HttpMicroserviceRemoteProtocols = new BeamoRemoteProtocolMap<HttpMicroserviceRemoteProtocol>()
+			HttpMicroserviceRemoteProtocols = new BeamoRemoteProtocolMap<HttpMicroserviceRemoteProtocol>(),
+			ServiceGroupToBeamoIds = new Dictionary<string, string[]>()
 		};
 
 
@@ -78,8 +82,9 @@ public static class ProjectContextUtil
 				{
 					BeamoId = remoteService.serviceName,
 					Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet,
-					ProjectDirectory = null,
-					Protocol = BeamoProtocolType.HttpMicroservice
+					ProjectPath = null,
+					Protocol = BeamoProtocolType.HttpMicroservice,
+					ServiceGroupTags = Array.Empty<string>()
 				};
 				manifest.ServiceDefinitions.Add(existingDefinition);
 				manifest.HttpMicroserviceRemoteProtocols.Add(remoteService.serviceName, new HttpMicroserviceRemoteProtocol());
@@ -101,7 +106,8 @@ public static class ProjectContextUtil
 					BeamoId = remoteStorage.id,
 					Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet,
 					Protocol = BeamoProtocolType.EmbeddedMongoDb,
-					ProjectDirectory = null
+					ProjectPath = null,
+					ServiceGroupTags = Array.Empty<string>()
 				};
 				manifest.ServiceDefinitions.Add(existingDefinition);
 				manifest.EmbeddedMongoDbRemoteProtocols.Add(remoteStorage.id, new EmbeddedMongoDbRemoteProtocol());
@@ -114,9 +120,63 @@ public static class ProjectContextUtil
 			existingDefinition.IsInRemote = true;
 		}
 
+
+		manifest.ServiceGroupToBeamoIds =
+			ResolveServiceGroups(manifest.ServiceDefinitions, manifest.HttpMicroserviceLocalProtocols);
+
 		return manifest;
 	}
-	
+
+	/// <summary>
+	/// Given a list of definitions with service-group tags, produce a dictionary that
+	/// maps from service group name to the fully dependency resolved set of definitions
+	/// in that group. The result dictionary's values are arrays of beamoIds.
+	/// </summary>
+	/// <param name="definitions"></param>
+	/// <returns></returns>
+	public static Dictionary<string, string[]> ResolveServiceGroups(
+		List<BeamoServiceDefinition> definitions,
+		BeamoLocalProtocolMap<HttpMicroserviceLocalProtocol> localServices
+		)
+	{
+		var intermediateResult = new Dictionary<string, HashSet<string>>();
+		
+		foreach (var definition in definitions)
+		{
+			
+			// add all the groups for this definition
+			foreach (var group in definition.ServiceGroupTags)
+			{
+				if (!intermediateResult.TryGetValue(group, out var existing))
+				{
+					existing = intermediateResult[group] = new HashSet<string>();
+				}
+				existing.Add(definition.BeamoId);
+			}
+
+			// the only dependency we care about are service --> storage dependencies 
+			if (definition.Protocol == BeamoProtocolType.HttpMicroservice &&
+			    localServices.TryGetValue(definition.BeamoId, out var service) &&
+			    service.StorageDependencyBeamIds?.Count > 0)
+			{
+				foreach (var group in definition.ServiceGroupTags)
+				{
+					if (!intermediateResult.TryGetValue(group, out var existing))
+					{
+						existing = intermediateResult[group] = new HashSet<string>();
+					}
+
+					foreach (var storageId in service.StorageDependencyBeamIds)
+					{
+						existing.Add(storageId);
+					}
+				}
+			}
+		}
+
+		// convert the hashset into an array
+		return intermediateResult.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToArray());
+	}
 	
 	public static CsharpProjectMetadata[] FindCsharpProjects(string rootFolder)
 	{
@@ -174,7 +234,8 @@ public static class ProjectContextUtil
 			{
 				BeamId = buildProject.GetPropertyValue(CliConstants.PROP_BEAMO_ID),
 				Enabled = buildProject.GetPropertyValue(CliConstants.PROP_BEAM_ENABLED),
-				ProjectType = buildProject.GetPropertyValue(CliConstants.PROP_BEAM_PROJECT_TYPE)
+				ProjectType = buildProject.GetPropertyValue(CliConstants.PROP_BEAM_PROJECT_TYPE),
+				ServiceGroupString = buildProject.GetPropertyValue(CliConstants.PROP_BEAM_SERVICE_GROUP)
 			};
 
 			var references = buildProject.GetItemsIgnoringCondition("ProjectReference");
@@ -295,6 +356,12 @@ public static class ProjectContextUtil
 		? metadata.fileNameWithoutExtension
 		: metadata.properties.BeamId;
 
+	static string[] ExtractServiceGroupTags(CsharpProjectMetadata project)
+	{
+		return project.properties.ServiceGroupString?.Split(CliConstants.SPLIT_OPTIONS,
+			       StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+		       ?? Array.Empty<string>();
+	}
 
 	public static BeamoServiceDefinition ConvertProjectToServiceDefinition(CsharpProjectMetadata project)
 	{
@@ -318,13 +385,13 @@ public static class ProjectContextUtil
 
 
 		// the project directory is just "where is the csproj" 
-		definition.ProjectDirectory = Path.GetDirectoryName(project.relativePath);
+		definition.ProjectPath = project.relativePath;
 		definition.Protocol = BeamoProtocolType.HttpMicroservice;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet;
+
+		definition.ServiceGroupTags = ExtractServiceGroupTags(project);
 		
-		
-		
-		
+
 		return definition;
 	}
 	
@@ -352,11 +419,12 @@ public static class ProjectContextUtil
 		}
 
 		// the project directory is just "where is the csproj" 
-		definition.ProjectDirectory = Path.GetDirectoryName(project.relativePath);
+		definition.ProjectPath = project.relativePath;
 
 		definition.Protocol = BeamoProtocolType.EmbeddedMongoDb;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet;
-		
+		definition.ServiceGroupTags = ExtractServiceGroupTags(project);
+
 		return definition;
 	}
 
@@ -372,6 +440,9 @@ public static class ProjectContextUtil
 
 		[JsonProperty(CliConstants.PROP_BEAM_PROJECT_TYPE)]
 		public string ProjectType;
+
+		[JsonProperty(CliConstants.PROP_BEAM_SERVICE_GROUP)]
+		public string ServiceGroupString;
 	}
 	
 	public class MsBuildProjectReference
@@ -420,5 +491,50 @@ public static class ProjectContextUtil
 		public MsBuildProjectProperties properties;
 		public List<MsBuildProjectReference> projectReferences;
 	}
-	
+
+	/// <summary>
+	/// Set an msbuild property in the given service definition
+	/// </summary>
+	/// <param name="definition"></param>
+	/// <param name="propBeamEnabled"></param>
+	/// <param name="false"></param>
+	public static string ModifyProperty(BeamoServiceDefinition definition, string propertyName, string propertyValue)
+	{
+		var buildEngine = new ProjectCollection();
+		var stream = File.OpenRead(definition.ProjectPath);
+		var document = XDocument.Load(stream, LoadOptions.PreserveWhitespace);
+		var reader = document.CreateReader(ReaderOptions.None);
+		var buildProject = buildEngine.LoadProject(reader);
+		Log.Verbose($"setting project=[{definition.ProjectPath}] property=[{propertyName}] value=[{propertyValue}]");
+
+		var prop = buildProject.SetProperty(propertyName, propertyValue);
+		
+		buildProject.Save(definition.ProjectPath);
+		
+		/*
+		 * if the property didn't exist, then dotnet's wisdom is to append <TheNewProperty> at the end of the last property...
+		 * Ugh...
+		 *
+		 * <PropertyGroup>
+		 *		<SomeOtherProperty>tuna</SomeOtherProperty><TheNewProperty>toast</TheNewProperty>
+		 * </PropertyGroup>
+		 *
+		 * So, this little wizardry attempts to detect this nonsense and format the file. 
+		 */
+		
+		var searchTerm = $"><{propertyName}>";
+		var rawText = File.ReadAllText(definition.ProjectPath);
+		var brokenIndex = rawText.IndexOf(searchTerm, StringComparison.Ordinal);
+		if (brokenIndex == -1) return prop.UnevaluatedValue; // the glitch does not exist.
+		
+		// we need to detect the amount of whitespace to insert...
+		int newLineIndex = rawText.LastIndexOf(Environment.NewLine, brokenIndex, brokenIndex, StringComparison.Ordinal);
+		int contentIndex = rawText.IndexOf('<', newLineIndex);
+		var whiteSpace = rawText.Substring(newLineIndex, contentIndex - newLineIndex);
+
+		var formattedText = rawText.Insert(brokenIndex + 1, whiteSpace);
+		File.WriteAllText(definition.ProjectPath, formattedText);
+
+		return prop.UnevaluatedValue;
+	}
 }

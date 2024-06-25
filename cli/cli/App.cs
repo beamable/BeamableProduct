@@ -257,6 +257,8 @@ public class App
 		Commands.AddSubCommand<NewMicroserviceCommand, NewMicroserviceArgs, ProjectNewCommand>();
 		Commands.AddSubCommand<NewCommonLibraryCommand, CreateCommonLibraryArgs, ProjectNewCommand>();
 		Commands.AddSubCommand<ProjectDependencies, ProjectDependenciesArgs, ProjectCommand>();
+		Commands.AddSubCommand<SetEnabledCommand, SetEnabledCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<SetDisableCommand, SetEnabledCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<RegenerateSolutionFilesCommand, RegenerateSolutionFilesCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<ListCommand, ListCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<NewStorageCommand, NewStorageCommandArgs, ProjectNewCommand>();
@@ -339,7 +341,7 @@ public class App
 		Commands.AddSubCommand<ServicesMetricsUrlCommand, ServicesMetricsUrlCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesPromoteCommand, ServicesPromoteCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesGetConnectionStringCommand, ServicesGetConnectionStringCommandArgs, ServicesCommand>();
-		//Commands.AddSubCommand<ServicesGenerateLocalManifestCommand, ServicesGenerateLocalManifestCommandArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesGenerateLocalManifestCommand, ServicesGenerateLocalManifestCommandArgs, ServicesCommand>();
 
 		// content commands
 		
