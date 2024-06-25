@@ -42,6 +42,11 @@ EndProject";
 
 		public static string OnGeneratedSlnSolution(string path, string content)
 		{
+			if (BeamEditorContext.EditorContexts.Count == 0) // If there is no context yet, then we can't do anything
+			{
+				return content;
+			}
+
 			var codeService = BeamEditorContext.Default.ServiceScope.GetService<CodeService>();
 			codeService.OnReady.Then((u) =>
 			{
