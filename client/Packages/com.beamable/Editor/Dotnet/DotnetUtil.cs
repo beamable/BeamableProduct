@@ -78,6 +78,7 @@ namespace Beamable.Editor.Dotnet
 					throw new Exception("Beamable unable to start because no Dotnet exists");
 				}
 			}
+			SetDotnetEnvironmentPathVariable(DotnetHome);
 		}
 
 		static void InstallDotnetToLibrary()
@@ -118,6 +119,15 @@ namespace Beamable.Editor.Dotnet
 			}
 
 			return false;
+		}
+
+		static void SetDotnetEnvironmentPathVariable(string pathToDotnet)
+		{
+			var name = "PATH";
+			var scope = EnvironmentVariableTarget.Machine;
+			var oldValue = System.Environment.GetEnvironmentVariable(name, scope);
+			var newValue  = oldValue + @";" + pathToDotnet;
+			System.Environment.SetEnvironmentVariable(name, newValue, scope);
 		}
 
 		static bool CheckVersion(string dotnetPath, out PackageVersion version)
