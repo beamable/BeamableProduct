@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `beam project enable` and `beam project disable` commands will set the `<BeamEnabled>` setting.
+- Can pass MSBuild dlls location through environment variable to the CLI
 
 
 ## [2.0.1] - 2024-06-17

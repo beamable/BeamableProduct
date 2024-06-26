@@ -386,6 +386,12 @@ public class ConfigService
 		pathToDotNetConfigFolder = Path.Combine(pathToDotNetConfigFolder, ".config");
 		var pathToToolsManifest = Path.Combine(pathToDotNetConfigFolder, "dotnet-tools.json");
 
+		if (!File.Exists(pathToToolsManifest))
+		{
+			version = "";
+			return false;
+		}
+
 		var versionMatching = new Regex("beamable.*?\"([0-9]+\\.[0-9]+\\.[0-9]+)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
 		var versionMatch = versionMatching.Match(File.ReadAllText(pathToToolsManifest));
 
