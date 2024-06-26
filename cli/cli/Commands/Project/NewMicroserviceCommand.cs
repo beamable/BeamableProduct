@@ -53,13 +53,13 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 				{
 					if (!ConfigService.TryToFindBeamableFolder(".", out var beamableFolder))
 						return String.Empty; // will be converted into PROJECT/PROJECT.sln
-					
+
 					var path = Path.GetFullPath(Path.GetDirectoryName(beamableFolder));
 					Log.Verbose($"creating default --sln value, found /.beamable=[{path}]");
 					var firstSlnPath = Directory.EnumerateFiles(path, "*.sln", SearchOption.AllDirectories).FirstOrDefault();
 					if (string.IsNullOrEmpty(firstSlnPath))
 						return String.Empty; // will be converted into PROJECT/PROJECT.sln
-					
+
 					Log.Verbose($"found default .sln=[{firstSlnPath}]");
 					var relativePath = Path.GetRelativePath(".", firstSlnPath);
 					return relativePath;
@@ -241,13 +241,13 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 
 			// We always delete the -BeamableDev dockerfile from the template (for older versions of the template, this file does not exist so... we need to check for it).
 			File.Delete(beamableDevDockerfilePath);
-		} 
+		}
 
 		//Go back to the default working dir
 		args.ConfigService.SetTempWorkingDir(previousWorkingDir);
 		args.ConfigService.SetBeamableDirectory(previousWorkingDir);
 
-		
+
 		args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 	}
 }

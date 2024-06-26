@@ -20,7 +20,7 @@ namespace Beamable.Editor.BeamCli
 		/// the nuget id of the code executing the server
 		/// </summary>
 		public string version;
-	
+
 		/// <summary>
 		/// a server must be created with an "owner", some form of identification
 		/// that can be used to determine if the server is operating for a Unity-client, or
@@ -28,16 +28,16 @@ namespace Beamable.Editor.BeamCli
 		/// </summary>
 		public string owner;
 	}
-	
+
 	public class BeamWebCommandFactory : IBeamCommandFactory
 	{
 		public enum PingResult
 		{
-			Match, 
+			Match,
 			Mismatch,
 			NoServer
 		}
-		
+
 		public HttpClient localClient = new HttpClient
 		{
 			// this timeout is how long a single HTTP call can stay open receiving server-side-events.
@@ -50,15 +50,15 @@ namespace Beamable.Editor.BeamCli
 		public string Owner => BeamCliUtil.CLI_PATH.ToLowerInvariant();
 
 		public static string Version => BeamCliUtil.CLI_VERSION;
-		
-		
+
+
 		// TODO: how do we store this port so that we don't have to ALWAYS go through mismatches to re-find it? 
 		public int port = 8432; // beas 
 		public BeamCommandFactory processFactory;
 		public BeamCommands processCommands;
 		public BeamableDispatcher dispatcher;
 
-		public Promise onReady = null; 
+		public Promise onReady = null;
 
 		public BeamWebCommandFactory(IBeamableRequester requester, BeamableDispatcher dispatcher)
 		{
@@ -66,7 +66,7 @@ namespace Beamable.Editor.BeamCli
 			processFactory = new BeamCommandFactory(dispatcher);
 			processCommands = new BeamCommands(requester, processFactory);
 		}
-		
+
 		public IBeamCommand Create()
 		{
 			return new BeamWebCommand(this);
@@ -92,14 +92,14 @@ namespace Beamable.Editor.BeamCli
 				await onReady;
 				return;
 			}
-			
+
 			onReady = new Beamable.Common.Promise();
-			
+
 			dispatcher.Run("cli-server-init", InitServer());
 
 			await onReady;
 		}
-		
+
 		IEnumerator InitServer()
 		{
 			yield return null; // important, wait a frame to accrue all requests in one "tick" 
@@ -110,7 +110,7 @@ namespace Beamable.Editor.BeamCli
 				var pingPromise = PingServer();
 				yield return pingPromise.ToYielder();
 				var pingResult = pingPromise.GetResult();
-					
+
 				switch (pingResult)
 				{
 					case PingResult.Match:
@@ -131,7 +131,7 @@ namespace Beamable.Editor.BeamCli
 						processCommands.defaultBeamArgs.pretty = true;
 						var serverCommand = processCommands.ServerServe(new ServerServeArgs()
 						{
-							port = port, 
+							port = port,
 							owner = "\"" + Owner + "\"",
 							autoIncPort = true,
 							selfDestructSeconds = 15 // TODO: validate that a low ttl will restart the server
@@ -147,13 +147,13 @@ namespace Beamable.Editor.BeamCli
 							waitForResult.CompleteSuccess();
 						});
 						var _ = serverCommand.Run();
-							
+
 						yield return waitForResult.ToYielder();
-							
+
 						break;
 				}
 			}
-				
+
 			onReady.CompleteSuccess();
 		}
 
@@ -163,24 +163,24 @@ namespace Beamable.Editor.BeamCli
 			{
 				var json = await localClient.GetStringAsync(InfoUrl).ToPromiseRoutine();
 				var res = JsonUtility.FromJson<ServerInfoResponse>(json);
-				
+
 				var ownerMatches = String.Equals(res.owner, Owner, StringComparison.OrdinalIgnoreCase);
 				var versionMatches = res.version == Version;
-				
+
 				if (!ownerMatches || !versionMatches)
 				{
 					CliLogger.Log($"ping mismatch. Required version=[{Version}] Received version=[{res.version}] Required owner=[{Owner}] Received owner=[{res.owner}]");
 					return PingResult.Mismatch;
 				}
 
-				return PingResult.Match; 
+				return PingResult.Match;
 			}
-			catch 
+			catch
 			{
 				return PingResult.NoServer;
 			}
 		}
-		
+
 
 		public void ClearAll()
 		{
@@ -193,7 +193,7 @@ namespace Beamable.Editor.BeamCli
 	{
 		public string commandLine;
 	}
-	
+
 	public class BeamWebCommand : IBeamCommand
 	{
 		private string _command;
@@ -217,7 +217,7 @@ namespace Beamable.Editor.BeamCli
 			await _factory.EnsureServerIsRunning();
 
 			var req = new HttpRequestMessage(HttpMethod.Post, _factory.ExecuteUrl);
-			var json = JsonUtility.ToJson(new BeamWebCommandRequest {commandLine = _command});
+			var json = JsonUtility.ToJson(new BeamWebCommandRequest { commandLine = _command });
 			req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 			CliLogger.Log("Sending cli web request, " + json);
 			try
@@ -245,7 +245,7 @@ namespace Beamable.Editor.BeamCli
 					{
 						var lineJson = line
 							.Substring("data: ".Length); // remove the Server-Side-Event notation
-						               
+
 						CliLogger.Log("received, " + lineJson, "from " + _command);
 
 						var res = JsonUtility.FromJson<ReportDataPointDescription>(lineJson);
@@ -258,7 +258,7 @@ namespace Beamable.Editor.BeamCli
 			catch (HttpRequestException socketException)
 			{
 				CliLogger.Log($"Socket exception happened. command=[{_command}] url=[{_factory.ExecuteUrl}] " +
-				              socketException.Message);
+							  socketException.Message);
 				throw;
 			}
 			catch (IOException ioException)

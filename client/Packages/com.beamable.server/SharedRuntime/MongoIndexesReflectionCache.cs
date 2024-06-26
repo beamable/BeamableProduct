@@ -1,7 +1,7 @@
 // this file was copied from nuget package Beamable.Server.Common@0.0.0-PREVIEW.NIGHTLY-202405141737
 // https://www.nuget.org/packages/Beamable.Server.Common/0.0.0-PREVIEW.NIGHTLY-202405141737
 
-﻿using Beamable.Common;
+using Beamable.Common;
 using Beamable.Common.Reflection;
 using Beamable.Mongo;
 using MongoDB.Driver;

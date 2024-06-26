@@ -983,7 +983,7 @@ namespace Beamable.Editor.Content
 			content.SetContentName(nextName);
 			NotifyRenamed(oldId, content, nextAssetpath);
 			content.BroadcastUpdate();
-			
+
 			var result = AssetDatabase.MoveAsset(existingAssetPath, nextAssetpath);
 			if (!string.IsNullOrEmpty(result))
 			{
@@ -1168,7 +1168,7 @@ namespace Beamable.Editor.Content
 				content.SetIdAndVersion(content.Id, version);
 				contentData[i] = new ContentDataInfo
 				{
-					contentId = content.Id, 
+					contentId = content.Id,
 					contentVersion = content.Version,
 					data = content.ToJson()
 				};
