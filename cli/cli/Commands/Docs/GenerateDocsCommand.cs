@@ -46,7 +46,7 @@ public class GenerateDocsCommand : AppCommand<GenerateDocsCommandArgs>, IStandal
 		{
 			if (command == generatorContext.Root) continue;
 			if (!(command.command is IAppCommand appCommand)) continue;
-			
+
 			var doc = docService.GenerateDocFile(command, args);
 			Log.Information(doc.markdownContent);
 

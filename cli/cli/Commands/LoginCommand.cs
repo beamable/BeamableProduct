@@ -22,7 +22,7 @@ public class LoginCommandArgs : CommandArgs, IArgsWithSaveToFile
 	public bool printToConsole;
 	public bool customerScoped;
 	public string refreshToken = "";
-	
+
 	public bool SaveToFile
 	{
 		get => saveToFile;
