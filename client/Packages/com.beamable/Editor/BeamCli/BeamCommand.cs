@@ -346,6 +346,8 @@ namespace Beamable.Editor.BeamCli
 
 				_process.StartInfo.EnvironmentVariables["BEAM_PATH"] = Path.GetFullPath(BeamCliUtil.CLI_PATH.Replace(".dll", ""));
 				_process.StartInfo.EnvironmentVariables["BEAM_DOTNET_PATH"] = Path.GetFullPath(DotnetUtil.DotnetPath);
+				_process.StartInfo.EnvironmentVariables["BEAM_DOTNET_MSBUILD_PATH"] =
+					Path.GetFullPath(DotnetUtil.DotnetMSBuildPath);
 				
 				_status = new TaskCompletionSource<int>();
 				EventHandler eh = (s, e) =>

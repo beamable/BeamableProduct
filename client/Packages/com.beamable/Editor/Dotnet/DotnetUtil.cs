@@ -43,6 +43,8 @@ namespace Beamable.Editor.Dotnet
 		public static string DotnetPath => Path.Combine(DotnetHome, DOTNET_EXEC);
 		public static bool IsUsingGlobalDotnet => DotnetHome.Equals(DOTNET_GLOBAL_PATH);
 
+		public static string DotnetMSBuildPath => Path.Combine(DotnetHome, "sdk", REQUIRED_INSTALL_VERSION.ToString());
+
 		/// <summary>
 		/// Beamable 2.0+ requires Dotnet.
 		/// This method will ensure Dotnet exists for use with the Unity SDK.
