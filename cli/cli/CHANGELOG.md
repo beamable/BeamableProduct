@@ -5,12 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-
 ## [2.1.0]
 
 ### Added
 - `--unmask-logs` option will show full tokens in verbose logs
 - `--no-log-file` option will prevent verbose logs from being written to temp file
+
+### Added
+- `beam project enable` and `beam project disable` commands will set the `<BeamEnabled>` setting.
+
 
 ## [2.0.1] - 2024-06-17
 
@@ -22,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `beam service ps`  was not working when calling it because it was trying to get the ImageId of storage objects
 - common lib handling uses `.` as a default path instead of the empty string 
 - `UpdateDockerfile` update to fix common lib handling for docker builds
+
+### Changed
+ - `beam service ps` now doesn't have the `--remote` flag and always return information updated with both local and remote
 
 ## [2.0.0] - 2024-05-24
 

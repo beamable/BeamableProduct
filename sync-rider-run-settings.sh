@@ -12,6 +12,12 @@ if [[  $TargetEngine == "UNITY" && $PathToWorkingDirectory == "" ]]; then
 fi
 PathToWorkingDirectory="${PathToWorkingDirectory//\\/\/}"
 
+# For unreal
+PathToRestoreDirectory="$3"
+if [[  $TargetEngine == "UNREAL" && $PathToRestoreDirectory == "" ]]; then
+    PathToRestoreDirectory="$PathToWorkingDirectory"Microservices
+fi
+
 # This argument is the path to GitBash 99% of the time. If not given, assumes C:/Program Files/Git/bin/bash.exe
 PathToUnixShell="$3"
 if [[ $PathToUnixShell == "" ]]; then
@@ -48,9 +54,16 @@ if [ -d "$CliRunPath" ]; then
          
     # For the local packages script we also change the SCRIPT_OPTIONS to point to the $PathToWorkingDirectory
     # For every other script, we set the WORKING_DIRECTORY path in the xml, replace it with the given $PathToWorkingDirectory
-    if [[ $TargetFile == *$TargetEngine-Set-Local-Packages* ]]; then
-      echo sed -i '\@="SCRIPT_OPTIONS"@s@value=".*"@value="'"$PathToWorkingDirectory"'"@g' "$TargetFile"
-           sed -i '\@="SCRIPT_OPTIONS"@s@value=".*"@value="'"$PathToWorkingDirectory"'"@g' "$TargetFile"
+    if [[ $TargetFile == *$TargetEngine-Set-Local-Packages* || $TargetFile == *$TargetEngine-Set-Install-* ]]; then
+      echo sed -i '\@="SCRIPT_OPTIONS"@s@\$PROJECT_DIR\$\/\.\.\/client@'"$PathToWorkingDirectory"'@g' "$TargetFile"
+           sed -i '\@="SCRIPT_OPTIONS"@s@\$PROJECT_DIR\$\/\.\.\/client@'"$PathToWorkingDirectory"'@g' "$TargetFile"
+           
+      echo sed -i '\@="SCRIPT_OPTIONS"@s@BeamableNugetSource@'"$TargetEngine"'_NugetSource@g' "$TargetFile"
+           sed -i '\@="SCRIPT_OPTIONS"@s@BeamableNugetSource@'"$TargetEngine"'_NugetSource@g' "$TargetFile"
+
+      echo sed -i '\@="SCRIPT_OPTIONS"@s@PathToRestore@'"$PathToRestoreDirectory"'@g' "$TargetFile"
+           sed -i '\@="SCRIPT_OPTIONS"@s@PathToRestore@'"$PathToRestoreDirectory"'@g' "$TargetFile"
+                                 
       continue
     else          
       echo sed -i '\@="WORKING_DIRECTORY"@s@value=".*"@value="'"$PathToWorkingDirectory"'"@g' "$TargetFile"

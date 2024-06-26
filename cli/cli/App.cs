@@ -22,6 +22,7 @@ using cli.UnityCommands;
 using cli.Unreal;
 using cli.Utils;
 using cli.Version;
+using CliWrap;
 using CommandLine.Text;
 using Errata;
 using Microsoft.Build.Locator;
@@ -41,6 +42,7 @@ using System.CommandLine.Invocation;
 using System.CommandLine.IO;
 using System.CommandLine.Parsing;
 using System.Reflection;
+using Command = System.CommandLine.Command;
 
 namespace cli;
 
@@ -244,7 +246,6 @@ public class App
 
 		// add commands
 		Commands.AddRootCommand<CliInterfaceGeneratorCommand, CliInterfaceGeneratorCommandArgs>();
-
 		Commands.AddRootCommand<ServerGroupCommand>();
 		Commands.AddSubCommand<ServeCliCommand, ServeCliCommandArgs, ServerGroupCommand>();
 		Commands.AddSubCommand<RequestCliCommand, RequestCliCommandArgs, ServerGroupCommand>();
@@ -258,6 +259,8 @@ public class App
 		Commands.AddSubCommand<NewMicroserviceCommand, NewMicroserviceArgs, ProjectNewCommand>();
 		Commands.AddSubCommand<NewCommonLibraryCommand, CreateCommonLibraryArgs, ProjectNewCommand>();
 		Commands.AddSubCommand<ProjectDependencies, ProjectDependenciesArgs, ProjectCommand>();
+		Commands.AddSubCommand<SetEnabledCommand, SetEnabledCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<SetDisableCommand, SetEnabledCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<RegenerateSolutionFilesCommand, RegenerateSolutionFilesCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<ListCommand, ListCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<NewStorageCommand, NewStorageCommandArgs, ProjectNewCommand>();
@@ -274,6 +277,7 @@ public class App
 		Commands.AddSubCommand<ProjectVersionCommand, ProjectVersionCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<ShareCodeCommand, ShareCodeCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<CheckStatusCommand, CheckStatusCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<ShowRemoteManifestCommand, ShowRemoteManifestCommandArgs, ProjectCommand>();
 		Commands.AddRootCommand<AccountMeCommand, AccountMeCommandArgs>();
 		Commands.AddRootCommand<BaseRequestGetCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestPutCommand, BaseRequestArgs>();
@@ -339,7 +343,7 @@ public class App
 		Commands.AddSubCommand<ServicesMetricsUrlCommand, ServicesMetricsUrlCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesPromoteCommand, ServicesPromoteCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesGetConnectionStringCommand, ServicesGetConnectionStringCommandArgs, ServicesCommand>();
-		//Commands.AddSubCommand<ServicesGenerateLocalManifestCommand, ServicesGenerateLocalManifestCommandArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesGenerateLocalManifestCommand, ServicesGenerateLocalManifestCommandArgs, ServicesCommand>();
 
 		// content commands
 		
@@ -522,14 +526,15 @@ public class App
 			
 		}, MiddlewareOrder.ErrorReporting);
 		
-		commandLineBuilder.AddMiddleware(consoleContext =>
+		
+		commandLineBuilder.AddMiddleware(async (ctx, next) =>
 		{
 			// create a scope for the execution of the command
 			var provider = CommandProvider.Fork(services =>
 			{
 				// add in the services that need to rely on the CLI parsing having completed
-				services.AddSingleton(consoleContext);
-				services.AddSingleton(consoleContext.BindingContext);
+				services.AddSingleton(ctx);
+				services.AddSingleton(ctx.BindingContext);
 				services.AddSingleton(helpBuilder);
 				ConfigureServices(services);
 			});
@@ -538,10 +543,29 @@ public class App
 			setLogger(provider);
 
 			// we can take advantage of a feature of the CLI tool to use their slightly jank DI system to inject our DI system. DI in DI.
-			consoleContext.BindingContext.AddService(_ => new AppServices { duck = provider });
+			ctx.BindingContext.AddService(_ => new AppServices { duck = provider });
 			var appContext = provider.GetRequiredService<IAppContext>();
-			appContext.Apply(consoleContext.BindingContext);
+			appContext.Apply(ctx.BindingContext);
 
+			// Check if we need to forward this command --- we only forward if the executing version of the CLI is different than the one locally installed on the project.
+			// As long as the versions are the same, running the local one or the global one changes nothing in behaviour.
+			var runningVersion = VersionService.GetNugetPackagesForExecutingCliVersion().ToString();
+			var isCalledFromInsideBeamableProject = provider.GetService<ConfigService>().TryGetProjectBeamableCLIVersion(out var projectLocalVersion);
+			if (isCalledFromInsideBeamableProject && runningVersion != projectLocalVersion)
+			{
+				// Get the args that were given to this command invocation
+				var argumentsToForward= string.Join(" ", new []{"beam"}.Concat(Environment.GetCommandLineArgs()[1..]));
+				Log.Warning("You tried used a Beamable CLI version different than the one configured in this project. We are forwarding the command ({cmd}) to the version the project is using. Instead of relying on this forwarding, please 'dotnet beam' from inside the project directory.",
+					argumentsToForward);
+				var forwardedCommand = Cli.Wrap("dotnet");
+				var forwardedResult = await forwardedCommand
+					.WithArguments(argumentsToForward)
+					.ExecuteAsyncAndLog();
+				
+				ctx.ExitCode = forwardedResult.ExitCode;
+				return;
+			}
+			
 			try
 			{
 				var beamoSystem = provider.GetService<BeamoLocalSystem>();
@@ -555,6 +579,8 @@ public class App
 				}
 				throw;
 			}
+
+			await next(ctx);
 
 		}, MiddlewareOrder.Configuration);
 		commandLineBuilder.UseDefaults();

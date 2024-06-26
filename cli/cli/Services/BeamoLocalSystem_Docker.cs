@@ -191,7 +191,6 @@ public partial class BeamoLocalSystem
 			{
 				var localProtocol = BeamoManifest.HttpMicroserviceLocalProtocols[serviceDefinition.BeamoId];
 				serviceDefinition.ImageId = await BuildAndCreateImage(serviceDefinition.BeamoId.ToLower(),
-					localProtocol.DockerBuildContextPath,
 					localProtocol.RelativeDockerfilePath,
 					progress =>
 					{
@@ -211,7 +210,7 @@ public partial class BeamoLocalSystem
 	/// Builds an image with the local docker engine using the given <paramref name="dockerBuildContextPath"/>, <paramref name="imageName"/> and dockerfile (<paramref name="dockerfilePathInBuildContext"/>).
 	/// It inspects the created image and returns it's ID.
 	/// </summary>
-	public async Task<string> BuildAndCreateImage(string imageName, string dockerBuildContextPath, string dockerfilePathInBuildContext, Action<float> progressUpdateHandler,
+	public async Task<string> BuildAndCreateImage(string imageName, string dockerfilePathInBuildContext, Action<float> progressUpdateHandler,
 		string containerImageTag = "latest", bool forceAmdCpuArchitecture = false)
 	{
 
@@ -305,6 +304,7 @@ public partial class BeamoLocalSystem
 			{
 				BeamableLogger.LogError(ex);
 				BeamableLogger.LogError(ex?.InnerException);
+				throw new CliException($"Failed while building image = [{imageName}]. Exception thrown: [{ex.Message}]. Stacktrace: [{ex.StackTrace}]");
 			}
 
 			var builtImage = await _client.Images.InspectImageAsync(tag);

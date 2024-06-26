@@ -365,9 +365,12 @@ COPY {servicePathTag} /subsrc/{servicePathTag}";
 			"# <BEAM-CLI-COPY-ENV> this line signals the start of environment variables copies into the built container. Do not remove it. This will be overwritten every time a variable changes in the execution of the CLI.";
 		const string servicePathTag = "<SERVICE_PATH>";
 		const string serviceNameTag = "<SERVICE_NAME>";
+		const string beamVersionTag = "<ENV_BEAM_VERSION>"; 
 
-		const string toAdd = @$"ENV BEAM_CSPROJ_PATH=""/subsrc/{servicePathTag}/{serviceNameTag}.csproj""";
-		var replacement = @$"{toAdd}
+		const string beamCsProjPath = @$"ENV BEAM_CSPROJ_PATH=""/subsrc/{servicePathTag}/{serviceNameTag}.csproj""";
+		const string beamVersion = @$"ENV BEAM_VERSION=""{beamVersionTag}""";
+		var replacement = @$"{beamCsProjPath}
+{beamVersion}
 {endTag}";
 
 		var hasEndTag = dockerfileText.Contains(endTag);
@@ -385,7 +388,11 @@ COPY {servicePathTag} /subsrc/{servicePathTag}";
 		int endIndex = dockerfileText.IndexOf(endTag, startIndex, StringComparison.Ordinal);
 		string newText = dockerfileText.Remove(startIndex, endIndex - startIndex);
 
-		newText = newText.Replace(endTag, replacement.Replace(servicePathTag, projectDir).Replace(serviceNameTag, serviceName).Replace('\\', '/').Insert(0, "\n"));
+		var varsPlusEndTag = replacement.Replace(servicePathTag, projectDir)
+			.Replace(serviceNameTag, serviceName)
+			.Replace(beamVersionTag, VersionService.GetNugetPackagesForExecutingCliVersion().ToString())
+			.Replace('\\', '/').Insert(0, "\n");
+		newText = newText.Replace(endTag, varsPlusEndTag);
 
 		await File.WriteAllTextAsync(dockerfilePath, newText);
 	}
@@ -512,6 +519,17 @@ public class BeamoLocalManifest
 			return ids;
 		}
 	}
+
+	/// <summary>
+	/// The keys are service groups, specified through the &lt;BeamServiceGroup&gt; property.
+	/// The values are the fully resolved list of beamoIds that are part of the group.
+	///
+	/// <para>
+	/// If a service defines itself as part of a group, then all the service's dependencies are also
+	/// part of the group.
+	/// </para>
+	/// </summary>
+	public Dictionary<string, string[]> ServiceGroupToBeamoIds;
 	
 	/// <summary>
 	/// This list contains all the <see cref="BeamoServiceDefinition"/> that the current machine knows about. TODO: At a minimum, this list is kept in sync with already deployed services?
@@ -566,6 +584,8 @@ public class BeamoLocalManifest
 
 public class BeamoServiceDefinition
 {
+	public bool IsInRemote;
+	public bool IsLocal => !string.IsNullOrEmpty(ProjectDirectory);
 	public bool HasLocalDockerfile =>
 		Protocol == BeamoProtocolType.HttpMicroservice && !string.IsNullOrEmpty(ProjectDirectory);
 	
@@ -628,10 +648,22 @@ public class BeamoServiceDefinition
 	public bool ShouldBeEnabledOnRemote;
 
 	/// <summary>
+	/// A set of tags that can be used to manipulate or control the services as a group.
+	/// This data is sourced from the &lt;BeamServiceGroup&gt; tag in the project's .csproj file, as
+	/// a comma separated list. 
+	/// </summary>
+	public string[] ServiceGroupTags;
+
+	/// <summary>
 	/// Path to the directory containing project file(csproj).
 	/// </summary>
-	public string ProjectDirectory; // TODO: right, this still needs to be auto-infered on load.
+	public string ProjectDirectory => ProjectPath == null ? null : Path.GetDirectoryName(ProjectPath);
 
+	/// <summary>
+	/// Path to the services csproj file
+	/// </summary>
+	public string ProjectPath;
+	
 	/// <summary>
 	/// Defines two services as being equal simply by using their <see cref="BeamoServiceDefinition.BeamoId"/>.
 	/// </summary>

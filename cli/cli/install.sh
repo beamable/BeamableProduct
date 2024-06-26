@@ -1,8 +1,4 @@
 #!/bin/bash
 
-default_version='0.0.0'
-version=${1:-$default_version}
-
-dotnet pack -p:PackageVersion=$version
-dotnet tool uninstall beamable.tools -g || true
-dotnet tool install --global --version $version --add-source ./nupkg/ beamable.tools
+# ATM, this only works on Mac because path strings are annoying across OSs.
+bash ../../set-packages.sh "" "BeamableNugetSource" "./cli/cli" "Global" ""
