@@ -106,7 +106,7 @@ public class App
 					options.MaskValue = "***";
 				});
 			}
-			
+
 			baseConfig = baseConfig.WriteTo.Logger(subConfig =>
 				subConfig
 					.WriteTo.BeamAnsi("{Message:lj}{NewLine}{Exception}")
@@ -164,7 +164,7 @@ public class App
 		services.AddSingleton<IDataReporterService, DataReporterService>();
 		services.AddSingleton<ServerService>();
 		services.AddSingleton<AppLifecycle>();
-		
+
 		OpenApiRegistration.RegisterOpenApis(services);
 
 		_serviceConfigurator?.Invoke(services);
@@ -240,7 +240,7 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<HostOption>());
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
-			root.AddGlobalOption(AllHelpOption.Instance);;
+			root.AddGlobalOption(AllHelpOption.Instance); ;
 			root.AddGlobalOption(UnmaskLogsOption.Instance);
 			root.AddGlobalOption(NoLogFileOption.Instance);
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
@@ -325,7 +325,7 @@ public class App
 		Commands.AddSubCommand<DownloadNugetDepToUnityCommand, DownloadNugetDepToUnityCommandArgs, UnityGroupCommand>();
 		Commands.AddSubCommand<DownloadAllNugetDepsToUnityCommand, DownloadAllNugetDepsToUnityCommandArgs,
 				UnityGroupCommand>();
-		
+
 		// version commands
 		Commands.AddRootCommand<VersionCommand, VersionCommandArgs>();
 		Commands.AddSubCommandWithHandler<VersionListCommand, VersionListCommandArgs, VersionCommand>();
@@ -355,7 +355,7 @@ public class App
 		Commands.AddSubCommand<ServicesGenerateLocalManifestCommand, ServicesGenerateLocalManifestCommandArgs, ServicesCommand>();
 
 		// content commands
-		
+
 		Commands.AddRootCommand<ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentPullCommand, ContentPullCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentStatusCommand, ContentStatusCommandArgs, ContentCommand>();
@@ -459,7 +459,7 @@ public class App
 		yield return (ctx) => new BeamHelpBuilder(ctx).WriteSubcommands(ctx);
 		yield return HelpBuilder.Default.AdditionalArgumentsSection();
 	}
-	
+
 	protected virtual Parser GetProgram()
 	{
 		var root = CommandProvider.GetRequiredService<RootCommand>();
@@ -506,7 +506,7 @@ public class App
 			}
 			return next(ctx);
 		}, MiddlewareOrder.Configuration);
-		
+
 		// this middleware is responsible for catching parse errors and putting them on the data-out raw channel
 		commandLineBuilder.AddMiddleware((ctx, next) =>
 		{
@@ -520,7 +520,7 @@ public class App
 			var appContext = provider.GetService<IAppContext>();
 			var reporter = provider.GetService<IDataReporterService>();
 			var isPiping = appContext.UsePipeOutput || appContext.ShowRawOutput;
-			
+
 			if (!isPiping)
 			{
 				// we aren't using raw output, so this middleware has nothing to do.
@@ -532,10 +532,10 @@ public class App
 			reporter.Exception(ex, ctx.ExitCode, ctx.BindingContext.ParseResult.Diagram());
 			// don't call the next task, because we have "handled" the error by posting it to the error channel
 			return Task.CompletedTask;
-			
+
 		}, MiddlewareOrder.ErrorReporting);
-		
-		
+
+
 		commandLineBuilder.AddMiddleware(async (ctx, next) =>
 		{
 			// create a scope for the execution of the command
@@ -563,18 +563,18 @@ public class App
 			if (isCalledFromInsideBeamableProject && runningVersion != projectLocalVersion)
 			{
 				// Get the args that were given to this command invocation
-				var argumentsToForward= string.Join(" ", new []{"beam"}.Concat(Environment.GetCommandLineArgs()[1..]));
+				var argumentsToForward = string.Join(" ", new[] { "beam" }.Concat(Environment.GetCommandLineArgs()[1..]));
 				Log.Warning("You tried used a Beamable CLI version different than the one configured in this project. We are forwarding the command ({cmd}) to the version the project is using. Instead of relying on this forwarding, please 'dotnet beam' from inside the project directory.",
 					argumentsToForward);
 				var forwardedCommand = Cli.Wrap("dotnet");
 				var forwardedResult = await forwardedCommand
 					.WithArguments(argumentsToForward)
 					.ExecuteAsyncAndLog();
-				
+
 				ctx.ExitCode = forwardedResult.ExitCode;
 				return;
 			}
-			
+
 			try
 			{
 				var beamoSystem = provider.GetService<BeamoLocalSystem>();
@@ -655,7 +655,7 @@ public class App
 		});
 		return commandLineBuilder.Build();
 	}
-	
+
 	static void PrintHelp(InvocationContext context)
 	{
 		var output = context.Console.Out.CreateTextWriter();
