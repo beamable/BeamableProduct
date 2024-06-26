@@ -87,7 +87,7 @@ public class ServerService
 			try
 			{
 				_listener = new HttpListener();
-				uri = $"http://localhost:{args.port}/";
+				uri = $"http://127.0.0.1:{args.port}/";
 				
 				// it is important not to listen on ALL interfaces, because this server should only be accessible 
 				//  from the machine itself. It would be bad if another machine could start triggering CLI commands
@@ -271,11 +271,12 @@ public class ServerService
 		Log.Verbose("virtualizing " + req.commandLine);
 		
 		var app = new App();
+		
 		app.Configure(builder =>
 		{
 			builder.Remove<IDataReporterService>();
 			builder.AddSingleton<IDataReporterService, ServerReporterService>(provider => new ServerReporterService(provider, response));
-		}, prebuiltLogger: args.logData);
+		}, overwriteLogger: false);
 		app.Build();
 
 		

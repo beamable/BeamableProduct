@@ -3,11 +3,13 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Dependencies;
 using Beamable.Server.Common;
+using cli.Options;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Spectre.Console;
 using System.CommandLine.Binding;
+using System.CommandLine.Invocation;
 using System.CommandLine.IO;
 using UnityEngine;
 
@@ -34,6 +36,9 @@ public interface IAppContext
 	public string WorkingDirectory { get; }
 	public IAccessToken Token { get; }
 	public string RefreshToken { get; }
+	bool ShouldUseLogFile { get; }
+	string TempLogFilePath { get;  }
+	bool ShouldMaskLogs { get; }
 
 	/// <summary>
 	/// Control how basic options are found from the console context.
@@ -48,6 +53,7 @@ public interface IAppContext
 
 public class DefaultAppContext : IAppContext
 {
+	private readonly InvocationContext _consoleContext;
 	private readonly DryRunOption _dryRunOption;
 	private readonly CidOption _cidOption;
 	private readonly PidOption _pidOption;
@@ -61,6 +67,8 @@ public class DefaultAppContext : IAppContext
 	private readonly ShowRawOutput _showRawOption;
 	private readonly ShowPrettyOutput _showPrettyOption;
 	private readonly LoggingLevelSwitch _logSwitch;
+	private readonly UnmaskLogsOption _unmaskLogsOption;
+	private readonly NoLogFileOption _noLogFileOption;
 	private readonly SkipStandaloneValidationOption _skipValidationOption;
 	private readonly DotnetPathOption _dotnetPathOption;
 	public bool IsDryRun { get; private set; }
@@ -69,6 +77,10 @@ public class DefaultAppContext : IAppContext
 	public bool ShowPrettyOutput { get; private set; }
 
 	public string DotnetPath { get; private set; }
+
+	public bool ShouldUseLogFile => !_consoleContext.ParseResult.GetValueForOption(_noLogFileOption);
+	public string TempLogFilePath => Path.Combine(Path.GetTempPath(), "beamCliLog.txt");
+	public bool ShouldMaskLogs => !_consoleContext.ParseResult.GetValueForOption(_unmaskLogsOption);
 
 	public IAccessToken Token => _token;
 	private CliToken _token;
@@ -84,11 +96,13 @@ public class DefaultAppContext : IAppContext
 	public string WorkingDirectory => _configService.WorkingDirectory;
 	public LogEventLevel LogLevel { get; private set; }
 
-	public DefaultAppContext(DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, HostOption hostOption,
+	public DefaultAppContext(InvocationContext consoleContext, DryRunOption dryRunOption, CidOption cidOption, PidOption pidOption, HostOption hostOption,
 		AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption, ConfigDirOption configDirOption,
 		ConfigService configService, CliEnvironment environment, ShowRawOutput showRawOption, SkipStandaloneValidationOption skipValidationOption,
-		DotnetPathOption dotnetPathOption, ShowPrettyOutput showPrettyOption, LoggingLevelSwitch logSwitch)
+		DotnetPathOption dotnetPathOption, ShowPrettyOutput showPrettyOption, LoggingLevelSwitch logSwitch,
+		UnmaskLogsOption unmaskLogsOption, NoLogFileOption noLogFileOption)
 	{
+		_consoleContext = consoleContext;
 		_dryRunOption = dryRunOption;
 		_cidOption = cidOption;
 		_pidOption = pidOption;
@@ -102,6 +116,8 @@ public class DefaultAppContext : IAppContext
 		_showRawOption = showRawOption;
 		_showPrettyOption = showPrettyOption;
 		_logSwitch = logSwitch;
+		_unmaskLogsOption = unmaskLogsOption;
+		_noLogFileOption = noLogFileOption;
 		_skipValidationOption = skipValidationOption;
 		_dotnetPathOption = dotnetPathOption;
 	}
