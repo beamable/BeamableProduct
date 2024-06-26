@@ -4,21 +4,19 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ServicesResetArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public class ProjectEnableArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>Either image|container|protocols.'image' will cleanup all your locally built images for the selected Beamo Services.
-		///'container' will stop all your locally running containers for the selected Beamo Services.
-		///'protocols' will reset all the protocol data for the selected Beamo Services back to default parameters</summary>
-		public string target;
-		/// <summary>The ids for the services you wish to reset</summary>
+		/// <summary>The list of services to include, defaults to all local services</summary>
 		public string[] ids;
+		/// <summary>A set of BeamServiceGroup tags that will exclude the associated services. Exclusion takes precedence over inclusion</summary>
+		public string[] withoutGroup;
+		/// <summary>A set of BeamServiceGroup tags that will include the associated services</summary>
+		public string[] withGroup;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
 			// Create a list of arguments for the command
 			System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
-			// Add the target value to the list of args.
-			genBeamCommandArgs.Add(this.target.ToString());
 			// If the ids value was not default, then add it to the list of args.
 			if ((this.ids != default(string[])))
 			{
@@ -26,6 +24,24 @@ namespace Beamable.Editor.BeamCli.Commands
 				{
 					// The parameter allows multiple values
 					genBeamCommandArgs.Add(("--ids=" + this.ids[i]));
+				}
+			}
+			// If the withoutGroup value was not default, then add it to the list of args.
+			if ((this.withoutGroup != default(string[])))
+			{
+				for (int i = 0; (i < this.withoutGroup.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--without-group=" + this.withoutGroup[i]));
+				}
+			}
+			// If the withGroup value was not default, then add it to the list of args.
+			if ((this.withGroup != default(string[])))
+			{
+				for (int i = 0; (i < this.withGroup.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--with-group=" + this.withGroup[i]));
 				}
 			}
 			string genBeamCommandStr = "";
@@ -36,30 +52,30 @@ namespace Beamable.Editor.BeamCli.Commands
 	}
 	public partial class BeamCommands
 	{
-		public virtual ServicesResetWrapper ServicesReset(ServicesResetArgs resetArgs)
+		public virtual ProjectEnableWrapper ProjectEnable(ProjectEnableArgs enableArgs)
 		{
 			// Create a list of arguments for the command
 			System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
 			genBeamCommandArgs.Add("beam");
 			genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
-			genBeamCommandArgs.Add("services");
-			genBeamCommandArgs.Add("reset");
-			genBeamCommandArgs.Add(resetArgs.Serialize());
+			genBeamCommandArgs.Add("project");
+			genBeamCommandArgs.Add("enable");
+			genBeamCommandArgs.Add(enableArgs.Serialize());
 			// Create an instance of an IBeamCommand
 			Beamable.Common.BeamCli.IBeamCommand command = this._factory.Create();
 			// Join all the command paths and args into one string
 			string genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
 			// Configure the command with the command string
 			command.SetCommand(genBeamCommandStr);
-			ServicesResetWrapper genBeamCommandWrapper = new ServicesResetWrapper();
+			ProjectEnableWrapper genBeamCommandWrapper = new ProjectEnableWrapper();
 			genBeamCommandWrapper.Command = command;
 			// Return the command!
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ServicesResetWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public class ProjectEnableWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
-		public virtual ServicesResetWrapper OnStreamServicesResetResult(System.Action<ReportDataPoint<BeamServicesResetResult>> cb)
+		public virtual ProjectEnableWrapper OnStreamSetEnabledCommandArgsOutput(System.Action<ReportDataPoint<BeamSetEnabledCommandArgsOutput>> cb)
 		{
 			this.Command.On("stream", cb);
 			return this;

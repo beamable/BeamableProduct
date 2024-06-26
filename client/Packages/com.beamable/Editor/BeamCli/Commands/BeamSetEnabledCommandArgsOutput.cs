@@ -5,9 +5,8 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamServicesResetResult
+	public class BeamSetEnabledCommandArgsOutput
 	{
-		public string Target;
-		public System.Collections.Generic.List<string> Ids;
+		public System.Collections.Generic.List<BeamSetEnabledCommandComponent> modifiedServices;
 	}
 }

@@ -4,10 +4,14 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ServicesStopArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public class ProjectDisableArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The list of services to include, defaults to all local services</summary>
 		public string[] ids;
+		/// <summary>A set of BeamServiceGroup tags that will exclude the associated services. Exclusion takes precedence over inclusion</summary>
+		public string[] withoutGroup;
+		/// <summary>A set of BeamServiceGroup tags that will include the associated services</summary>
+		public string[] withGroup;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -22,6 +26,24 @@ namespace Beamable.Editor.BeamCli.Commands
 					genBeamCommandArgs.Add(("--ids=" + this.ids[i]));
 				}
 			}
+			// If the withoutGroup value was not default, then add it to the list of args.
+			if ((this.withoutGroup != default(string[])))
+			{
+				for (int i = 0; (i < this.withoutGroup.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--without-group=" + this.withoutGroup[i]));
+				}
+			}
+			// If the withGroup value was not default, then add it to the list of args.
+			if ((this.withGroup != default(string[])))
+			{
+				for (int i = 0; (i < this.withGroup.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--with-group=" + this.withGroup[i]));
+				}
+			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces
 			genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
@@ -30,28 +52,33 @@ namespace Beamable.Editor.BeamCli.Commands
 	}
 	public partial class BeamCommands
 	{
-		public virtual ServicesStopWrapper ServicesStop(ServicesStopArgs stopArgs)
+		public virtual ProjectDisableWrapper ProjectDisable(ProjectDisableArgs disableArgs)
 		{
 			// Create a list of arguments for the command
 			System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
 			genBeamCommandArgs.Add("beam");
 			genBeamCommandArgs.Add(defaultBeamArgs.Serialize());
-			genBeamCommandArgs.Add("services");
-			genBeamCommandArgs.Add("stop");
-			genBeamCommandArgs.Add(stopArgs.Serialize());
+			genBeamCommandArgs.Add("project");
+			genBeamCommandArgs.Add("disable");
+			genBeamCommandArgs.Add(disableArgs.Serialize());
 			// Create an instance of an IBeamCommand
 			Beamable.Common.BeamCli.IBeamCommand command = this._factory.Create();
 			// Join all the command paths and args into one string
 			string genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
 			// Configure the command with the command string
 			command.SetCommand(genBeamCommandStr);
-			ServicesStopWrapper genBeamCommandWrapper = new ServicesStopWrapper();
+			ProjectDisableWrapper genBeamCommandWrapper = new ProjectDisableWrapper();
 			genBeamCommandWrapper.Command = command;
 			// Return the command!
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ServicesStopWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public class ProjectDisableWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
+		public virtual ProjectDisableWrapper OnStreamSetEnabledCommandArgsOutput(System.Action<ReportDataPoint<BeamSetEnabledCommandArgsOutput>> cb)
+		{
+			this.Command.On("stream", cb);
+			return this;
+		}
 	}
 }
