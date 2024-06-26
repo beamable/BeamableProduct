@@ -77,16 +77,14 @@ public class App
 
 	public bool IsBuilt => CommandProvider != null;
 
-	private static LogConfigData ConfigureLogging(App app, Func<LoggerConfiguration, ILogger> configureLogger = null)
+	private static void ConfigureLogging(App app, IDependencyProvider provider, Func<LoggerConfiguration, ILogger> configureLogger = null)
 	{
-	
-		var tempFile = Path.Combine(Path.GetTempPath(), "beamCliLog.txt");
-		var shouldUseTempFile = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BEAM_CLI_NO_FILE_LOG"));
+		var appCtx = provider.GetService<IAppContext>();
 		try
 		{
-			if (shouldUseTempFile)
+			if (appCtx.ShouldUseLogFile)
 			{
-				File.Delete(tempFile);
+				File.Delete(appCtx.TempLogFilePath);
 			}
 		}
 		catch
@@ -97,23 +95,26 @@ public class App
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
 		configureLogger ??= config =>
 		{
-			var baseConfig = config
-				.MinimumLevel.Verbose()
-				.Enrich.WithSensitiveDataMasking(options =>
+
+			var baseConfig = config.MinimumLevel.Verbose();
+			if (appCtx.ShouldMaskLogs)
+			{
+				baseConfig = baseConfig.Enrich.WithSensitiveDataMasking(options =>
 				{
 					options.MaskingOperators.Clear();
 					options.MaskingOperators.Add(new TokenMasker());
 					options.MaskValue = "***";
-				})
-				.WriteTo.Logger(subConfig =>
-					subConfig
-						.WriteTo.BeamAnsi("{Message:lj}{NewLine}{Exception}")
-						.MinimumLevel.ControlledBy(app.LogLevel)
-				);
-
-			if (shouldUseTempFile)
+				});
+			}
+			
+			baseConfig = baseConfig.WriteTo.Logger(subConfig =>
+				subConfig
+					.WriteTo.BeamAnsi("{Message:lj}{NewLine}{Exception}")
+					.MinimumLevel.ControlledBy(app.LogLevel)
+			);
+			if (appCtx.ShouldUseLogFile)
 			{
-				baseConfig.WriteTo.File(tempFile, LogEventLevel.Verbose);
+				baseConfig.WriteTo.File(appCtx.TempLogFilePath, LogEventLevel.Verbose);
 			}
 
 			return baseConfig.CreateLogger();
@@ -125,12 +126,6 @@ public class App
 
 		BeamableLogProvider.Provider = new CliSerilogProvider();
 		CliSerilogProvider.LogContext.Value = Log.Logger;
-
-		return new LogConfigData
-		{
-			shouldUseTempFile = shouldUseTempFile,
-			logFilePath = tempFile
-		};
 	}
 
 	/// <summary>
@@ -175,11 +170,16 @@ public class App
 		_serviceConfigurator?.Invoke(services);
 	}
 
+	private Action<IDependencyProvider> setLogger = _ =>
+	{
+		// no-op
+	};
+
 	public virtual void Configure(
 		Action<IDependencyBuilder> serviceConfigurator = null,
 		Action<IDependencyBuilder> commandConfigurator = null,
 		Func<LoggerConfiguration, ILogger> configureLogger = null,
-		LogConfigData prebuiltLogger=null
+		bool overwriteLogger = true
 		)
 	{
 		if (IsBuilt)
@@ -188,14 +188,12 @@ public class App
 		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
 		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
 
-		if (prebuiltLogger == null)
+		if (overwriteLogger)
 		{
-			var logConfig = ConfigureLogging(this, configureLogger);
-			Commands.AddSingleton(logConfig);
-		}
-		else
-		{
-			Commands.AddSingleton(prebuiltLogger);
+			setLogger = (provider) =>
+			{
+				ConfigureLogging(this, provider, configureLogger);
+			};
 		}
 
 		Commands.AddSingleton(new ArgValidator<ServiceName>(arg => new ServiceName(arg)));
@@ -229,7 +227,9 @@ public class App
 		Commands.AddSingleton<ShowRawOutput>();
 		Commands.AddSingleton<ShowPrettyOutput>();
 		Commands.AddSingleton<DotnetPathOption>();
-		Commands.AddSingleton<AllHelpOption>(AllHelpOption.Instance);
+		Commands.AddSingleton(AllHelpOption.Instance);
+		Commands.AddSingleton(NoLogFileOption.Instance);
+		Commands.AddSingleton(UnmaskLogsOption.Instance);
 		Commands.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
@@ -240,7 +240,9 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<HostOption>());
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
-			root.AddGlobalOption(provider.GetRequiredService<AllHelpOption>());
+			root.AddGlobalOption(AllHelpOption.Instance);;
+			root.AddGlobalOption(UnmaskLogsOption.Instance);
+			root.AddGlobalOption(NoLogFileOption.Instance);
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
 			root.AddGlobalOption(provider.GetRequiredService<ShowRawOutput>());
 			root.AddGlobalOption(provider.GetRequiredService<ShowPrettyOutput>());
@@ -493,7 +495,6 @@ public class App
 
 		var commandLineBuilder = new CommandLineBuilder(root);
 
-		
 		// this middleware pre-handles the --all-help option.
 		commandLineBuilder.AddMiddleware((ctx, next) =>
 		{
@@ -546,6 +547,9 @@ public class App
 				services.AddSingleton(helpBuilder);
 				ConfigureServices(services);
 			});
+
+			// update log information before dependency injection is sealed.
+			setLogger(provider);
 
 			// we can take advantage of a feature of the CLI tool to use their slightly jank DI system to inject our DI system. DI in DI.
 			ctx.BindingContext.AddService(_ => new AppServices { duck = provider });
@@ -642,12 +646,11 @@ public class App
 				reporter.Exception(ex, context.ExitCode, context.BindingContext.ParseResult.Diagram());
 			}
 
-			var logConfigData = CommandProvider.GetService<LogConfigData>();
-			if (logConfigData.shouldUseTempFile)
+			if (appContext.ShouldUseLogFile)
 			{
 				Log.CloseAndFlush();
-				File.AppendAllText(logConfigData.logFilePath, ex.ToString());
-				Console.Error.WriteLine("\nLogs at\n  " + logConfigData.logFilePath);
+				File.AppendAllText(appContext.TempLogFilePath, ex.ToString());
+				Console.Error.WriteLine("\nLogs at\n  " + appContext.TempLogFilePath);
 			}
 		});
 		return commandLineBuilder.Build();
