@@ -2,6 +2,8 @@ using Beamable.Common;
 using Beamable.Server.Editor.Usam;
 using System;
 using System.Collections.Generic;
+using System.Data;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditorInternal;
@@ -76,7 +78,10 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 				}
 				else
 				{
-					settings.SaveChanges();
+					settings.SaveChanges().Then((_) =>
+					{
+						Repaint();
+					});
 				}
 			}
 
@@ -132,18 +137,47 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 			return true;
 		}
 
-		public void SaveChanges()
+		public async Promise SaveChanges()
 		{
-			_ = BeamEditorContext
+			await BeamEditorContext
 			    .Default.ServiceScope.GetService<CodeService>()
 			    .UpdateServiceReferences(serviceName, serviceDefinitions);
 		}
 
 		public static SerializedObject GetSerializedSettings(string serviceName)
 		{
+			var codeService = BeamEditorContext
+				.Default.ServiceScope.GetService<CodeService>();
+			var sd = codeService.ServiceDefinitions.FirstOrDefault(s => s.BeamoId.Equals(serviceName));
+
+			if (sd == null)
+			{
+				Debug.LogError($"The service: {serviceName} was not found in the available services list");
+				return null;
+			}
+
 			var instance = ScriptableObject.CreateInstance<BeamableMicroservicesSettings>();
 			instance.serviceName = serviceName;
-			//TODO fill all values of settings here
+
+			instance.serviceDefinitions = new List<AssemblyDefinitionAsset>();
+			foreach (var name in sd.AssemblyDefinitionsNames)
+			{
+				var guids = AssetDatabase.FindAssets($"{name} t:AssemblyDefinitionAsset");
+				AssemblyDefinitionAsset asset = null;
+				foreach (var id in guids)
+				{
+					var assetPath = AssetDatabase.GUIDToAssetPath(id);
+					var nameQuery = $"{Path.DirectorySeparatorChar}{name}.asmdef";
+					if (!assetPath.Contains(nameQuery))
+					{
+						continue;
+					}
+
+					asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(assetPath);
+				}
+				instance.serviceDefinitions.Add(asset);
+			}
+
 			return new SerializedObject(instance);
 		}
 	}

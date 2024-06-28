@@ -453,22 +453,26 @@ namespace Beamable.Server.Editor.Usam
 
 				
 				AddServiceDefinition(name, type, assetProjectPath, runningState,
-									 objData.ShouldBeEnabledOnRemote[i], objData.ExistInLocal[i], objData.Dependencies[i]);
+									 objData.ShouldBeEnabledOnRemote[i], objData.ExistInLocal[i], objData.Dependencies[i], objData.UnityAssemblyDefinitions[i]);
 				UsamLogger.Log($"Handling {name} ended");
 			}
 		}
 
 		private void AddServiceDefinition(string name, ServiceType type, string assetProjectPath, BeamoServiceStatus status = BeamoServiceStatus.Unknown,
-										  bool shouldBeEnableOnRemote = true, bool hasLocalSource = true, string dependencies = null)
+										  bool shouldBeEnableOnRemote = true, bool hasLocalSource = true, string dependencies = null, string assemblyDefinitionsNames = null)
 		{
-			List<string> depsList = dependencies?.Split(',').ToList();
+			List<string> depsList = new List<string>();
+			List<string> assembliesList = new List<string>();
 
-			if (depsList == null)
+			if (!string.IsNullOrEmpty(dependencies))
 			{
-				depsList = new List<string>();
+				depsList = dependencies.Split(',').ToList();
 			}
 
-			depsList = depsList.Where(dep => !string.IsNullOrEmpty(dep)).ToList();
+			if (!string.IsNullOrEmpty(assemblyDefinitionsNames))
+			{
+				assembliesList = assemblyDefinitionsNames.Split(',').ToList();
+			}
 
 			var dataIndex =
 				ServiceDefinitions.FindIndex(definition => definition.BeamoId.Equals(name));
@@ -491,6 +495,7 @@ namespace Beamable.Server.Editor.Usam
 			ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = shouldBeEnableOnRemote;
 			ServiceDefinitions[dataIndex].IsRunningOnRemote = status;
 			ServiceDefinitions[dataIndex].Dependencies = depsList;
+			ServiceDefinitions[dataIndex].AssemblyDefinitionsNames = assembliesList;
 		}
 
 
@@ -548,8 +553,9 @@ namespace Beamable.Server.Editor.Usam
 			foreach (AssemblyDefinitionAsset asmdef in assemblyDefinitions)
 			{
 				namesList.Add(asmdef.name);
-				var path = CsharpProjectUtil.GenerateCsharpProjectFilename(asmdef.name);
-				pathsList.Add(path);
+				var pathFromRootFolder = CsharpProjectUtil.GenerateCsharpProjectFilename(asmdef.name);
+				var pathToService = service.ServiceInfo.projectPath;
+				pathsList.Add(Path.GetRelativePath(pathToService, pathFromRootFolder));
 			}
 
 			var updateCommand = _cli.UnityUpdateReferences(new UnityUpdateReferencesArgs()
