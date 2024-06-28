@@ -336,7 +336,7 @@ public class ProjectService
 
 	public async Task<NewServiceInfo> CreateNewStorage(NewStorageCommandArgs args)
 	{
-		string usedVersion = args.SpecifiedVersion.ToString();
+		string usedVersion = VersionService.GetNugetPackagesForExecutingCliVersion().ToString();
 		var microserviceInfo = new NewServiceInfo();
 		// check that we have the templates available
 		await EnsureCanUseTemplates(usedVersion);
@@ -391,7 +391,7 @@ public class ProjectService
 	public async Task<NewServiceInfo> CreateNewMicroservice(NewMicroserviceArgs args)
 	{
 		// check that we have the templates available
-		string usedVersion = args.SpecifiedVersion.ToString();
+		string usedVersion = VersionService.GetNugetPackagesForExecutingCliVersion().ToString();
 		await EnsureCanUseTemplates(usedVersion);
 
 		var microserviceInfo = new NewServiceInfo

@@ -15,5 +15,6 @@ namespace Beamable.Common.BeamCli.Contracts
 		public const string PROP_BEAM_SERVICE_GROUP = PROP_PREFIX + "ServiceGroup";
 		public const string ATTR_BEAM_REF_TYPE = PROP_PREFIX + "RefType";
 		public static readonly char[] SPLIT_OPTIONS = new char[] { ',', ';' };
+		public const string UNITY_ASSEMBLY_ITEM_NAME = "UnityAssembly";
 	}
 }

@@ -35,6 +35,11 @@ namespace Beamable.Server.Editor.Usam
         <DefineConstants>$(DefineConstants);BEAMABLE_MICROSERVICE</DefineConstants>
     </PropertyGroup>
 
+	<PropertyGroup Label=""Beamable Settings"">
+        <!-- All StorageObjects must have the value, ""storage"" -->
+        <BeamProjectType>unity</BeamProjectType>
+    </PropertyGroup>
+
     <!-- Project settings -->
     <PropertyGroup>
         <TargetFramework>netstandard2.1</TargetFramework>

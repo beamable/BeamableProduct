@@ -41,7 +41,6 @@ public static class IHaveSolutionFlagExtensions
 public class SolutionCommandArgs : NewProjectCommandArgs
 {
 	public string SlnFilePath;
-	public PackageVersion SpecifiedVersion;
 	public string ServicesBaseFolderPath;
 
 	public static void ConfigureSolutionFlag<T>(AppCommand<T> command)
@@ -114,8 +113,6 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 				name: "--service-directory",
 				description: "Relative path to directory where project should be created. Defaults to \"SOLUTION_DIR/services\""),
 			(args, i) => args.ServicesBaseFolderPath = i);
-
-		command.AddOption(new SpecificVersionOption(), (args, i) => args.SpecifiedVersion = i);
 
 	}
 

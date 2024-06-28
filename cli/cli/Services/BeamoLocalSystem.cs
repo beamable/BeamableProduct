@@ -201,6 +201,19 @@ public partial class BeamoLocalSystem
 					type = "library"
 				});
 			}
+
+			foreach (UnityAssemblyReferenceData unityAsmdefReference in microservice.UnityAssemblyDefinitionProjectReferences)
+			{
+				var name = Path.GetFileNameWithoutExtension(unityAsmdefReference.Path);
+
+				dependencies.Add(new DependencyData()
+				{
+					name = name,
+					projPath = Path.GetDirectoryName(unityAsmdefReference.Path),
+					dllName = unityAsmdefReference.AssemblyName,
+					type = "unity-asmdef"
+				});
+			}
 		}
 
 		return dependencies;
@@ -258,14 +271,14 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	/// <param name="projectExtension">The extension of the project file (default: 'csproj').</param>
 	/// <returns>A dictionary where the key is a BeamoServiceDefinition and the value is a list of its dependencies.</returns>
-	public Dictionary<BeamoServiceDefinition, List<DependencyData>> GetAllBeamoIdsDependencies(string projectExtension = "csproj")
+	public Dictionary<BeamoServiceDefinition, List<DependencyData>> GetAllBeamoIdsDependencies(string projectExtension = "csproj", bool getAll = false)
 	{
 		var allBeamoIdsDependencies = new Dictionary<BeamoServiceDefinition, List<DependencyData>>();
 		foreach (var definition in BeamoManifest.ServiceDefinitions)
 		{
 			if (!allBeamoIdsDependencies.ContainsKey(definition))
 			{
-				var entry = GetDependencies(definition.BeamoId);
+				var entry = GetDependencies(definition.BeamoId, getAll);
 				allBeamoIdsDependencies.Add(definition, entry);
 			}
 		}

@@ -53,5 +53,6 @@ namespace Beamable.Editor.UI.Model
 		ServiceInfo ServiceInfo { get; set; }
 		bool ExistLocally { get; }
 		public List<string> Dependencies { get; set; }
+		public List<string> AssemblyDefinitionsNames { get; set; }
 	}
 }

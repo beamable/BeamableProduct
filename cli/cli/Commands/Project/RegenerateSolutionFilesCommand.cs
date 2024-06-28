@@ -19,7 +19,6 @@ public class RegenerateSolutionFilesCommand : AppCommand<RegenerateSolutionFiles
 			(args, i) => args.tempDirectory = i);
 		AddArgument(new Argument<string>("copy-path", () => string.Empty, description: "The path to where the files will be copied to"),
 			(args, i) => args.projectDirectory = i);
-		AddOption(new SpecificVersionOption(), (args, i) => args.SpecifiedVersion = i);
 		SolutionCommandArgs.ConfigureSolutionFlag(this);
 	}
 
