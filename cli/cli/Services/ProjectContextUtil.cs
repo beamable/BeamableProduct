@@ -1,4 +1,5 @@
 using Beamable.Common.BeamCli.Contracts;
+using CliWrap;
 using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Locator;
@@ -242,12 +243,14 @@ public static class ProjectContextUtil
 			var allProjectRefs = new List<MsBuildProjectReference>();
 			foreach (ProjectItem reference in references)
 			{
-				var metaData = reference.Metadata.FirstOrDefault(m => m.Name.Equals("BeamRefType"));
+				ProjectMetadata refTypeMetadata = reference.Metadata.FirstOrDefault(m => m.Name.Equals("BeamRefType"));
+				ProjectMetadata assemblyMetadata = reference.Metadata.FirstOrDefault(m => m.Name.Equals(CliConstants.UNITY_ASSEMBLY_ITEM_NAME));
 				allProjectRefs.Add(new MsBuildProjectReference()
 				{
 					RelativePath = reference.EvaluatedInclude,
 					FullPath = Path.GetFullPath(Path.Combine(projectRelativePath, reference.EvaluatedInclude)),
-					BeamRefType = metaData?.EvaluatedValue
+					BeamRefType = refTypeMetadata?.EvaluatedValue,
+					BeamUnityAssemblyName = assemblyMetadata?.EvaluatedValue
 				});
 			}
 			projects[i].projectReferences = allProjectRefs;
@@ -328,11 +331,21 @@ public static class ProjectContextUtil
 		protocol.CustomPortBindings = new List<DockerPortBinding>();
 		protocol.CustomEnvironmentVariables = new List<DockerEnvironmentVariable>();
 		
-		foreach (var referencedProject in project.projectReferences)
+		foreach (MsBuildProjectReference referencedProject in project.projectReferences)
 		{
 			var referencedName = Path.GetFileNameWithoutExtension(referencedProject.RelativePath);
 			if (!absPathToProject.TryGetValue(referencedName, out var knownProject))
 			{
+				// Check if this is a Unity Assembly reference that does not have it's csproj generated yet
+				if (!string.IsNullOrEmpty(referencedProject.BeamUnityAssemblyName))
+				{
+					protocol.UnityAssemblyDefinitionProjectReferences.Add(new UnityAssemblyReferenceData()
+					{
+						Path = referencedProject.RelativePath,
+						AssemblyName = referencedProject.BeamUnityAssemblyName
+					});
+				}
+
 				Log.Warning($"Project=[{project.relativePath}] references project=[${referencedProject.FullPath}] but that project was not detected in the beamable folder context. ");
 				continue;
 			}
@@ -344,7 +357,11 @@ public static class ProjectContextUtil
 					protocol.StorageDependencyBeamIds.Add(ConvertBeamoId(knownProject));
 					break;
 				case "unity":
-					protocol.UnityAssemblyDefinitionProjectPaths.Add(knownProject.relativePath);
+					protocol.UnityAssemblyDefinitionProjectReferences.Add(new UnityAssemblyReferenceData()
+					{
+						Path = referencedProject.RelativePath,
+						AssemblyName = referencedProject.BeamUnityAssemblyName
+					});
 					break;
 				default:
 					protocol.GeneralDependencyProjectPaths.Add(knownProject.relativePath);
@@ -458,6 +475,9 @@ public static class ProjectContextUtil
 
 		[JsonProperty(CliConstants.ATTR_BEAM_REF_TYPE)]
 		public string BeamRefType;
+
+		[JsonProperty(CliConstants.UNITY_ASSEMBLY_ITEM_NAME)]
+		public string BeamUnityAssemblyName;
 	}
 
 	public class MsBuildProjectItems
@@ -524,18 +544,11 @@ public static class ProjectContextUtil
 		 *
 		 * So, this little wizardry attempts to detect this nonsense and format the file. 
 		 */
-		
+
 		var searchTerm = $"><{propertyName}>";
 		var rawText = File.ReadAllText(definition.ProjectPath);
-		var brokenIndex = rawText.IndexOf(searchTerm, StringComparison.Ordinal);
-		if (brokenIndex == -1) return prop.UnevaluatedValue; // the glitch does not exist.
-		
-		// we need to detect the amount of whitespace to insert...
-		int newLineIndex = rawText.LastIndexOf(Environment.NewLine, brokenIndex, brokenIndex, StringComparison.Ordinal);
-		int contentIndex = rawText.IndexOf('<', newLineIndex);
-		var whiteSpace = rawText.Substring(newLineIndex, contentIndex - newLineIndex);
 
-		var formattedText = rawText.Insert(brokenIndex + 1, whiteSpace);
+		var formattedText = FixMissingBreaklineInProject(searchTerm, rawText);;
 		File.WriteAllText(definition.ProjectPath, formattedText);
 
 		return prop.UnevaluatedValue;
@@ -543,7 +556,6 @@ public static class ProjectContextUtil
 
 	public static void UpdateUnityProjectReferences(BeamoServiceDefinition definition, List<string> projectsPaths, List<string> assemblyNames)
 	{
-		const string ITEM_NAME = "UnityAssembly";
 		const string ITEM_TYPE = "ProjectReference";
 
 		var buildEngine = new ProjectCollection();
@@ -552,10 +564,11 @@ public static class ProjectContextUtil
 		var reader = document.CreateReader(ReaderOptions.None);
 		var buildProject = buildEngine.LoadProject(reader);
 
-		var references = buildProject.GetItemsIgnoringCondition(ITEM_TYPE);
-		foreach (ProjectItem reference in references)
+		var references = buildProject.GetItemsIgnoringCondition(ITEM_TYPE).ToArray();
+		for (int i = references.Length - 1; i >= 0; i--)
 		{
-			ProjectMetadata metaData = reference.Metadata.FirstOrDefault(m => m.Name.Equals(ITEM_NAME));
+			var reference = references[i];
+			ProjectMetadata metaData = reference.Metadata.FirstOrDefault(m => m.Name.Equals(CliConstants.UNITY_ASSEMBLY_ITEM_NAME));
 			if (metaData != null)
 			{
 				buildProject.RemoveItem(reference);
@@ -565,15 +578,40 @@ public static class ProjectContextUtil
 		for (int i = 0; i < assemblyNames.Count; i++)
 		{
 			var assemblyName = assemblyNames[i];
-			var projectPath = projectsPaths[i];
+			var projectPath = projectsPaths[i].Replace("/", "\\");
 
-			var items = buildProject.AddItem(ITEM_TYPE, projectPath,
-				new Dictionary<string, string> { { ITEM_NAME, assemblyName } });
-
-
+			buildProject.AddItem(ITEM_TYPE, projectPath,
+				new Dictionary<string, string> { { CliConstants.UNITY_ASSEMBLY_ITEM_NAME, assemblyName } });
 		}
 
 		buildProject.FullPath = definition.ProjectPath;
 		buildProject.Save();
+
+		var rawText = File.ReadAllText(definition.ProjectPath);
+
+		//TODO improve this, it's kind of dumb right now running the filter
+		// as many times as there were project references added
+		for (int i = 0; i < assemblyNames.Count; i++)
+		{
+			rawText = FixMissingBreaklineInProject($"><{ITEM_TYPE}", rawText);
+		}
+
+		File.WriteAllText(definition.ProjectPath, rawText);
+	}
+
+	private static string FixMissingBreaklineInProject(string searchQuery, string fileContents)
+	{
+		var brokenIndex = fileContents.IndexOf(searchQuery, StringComparison.Ordinal);
+		if (brokenIndex == -1){
+			return fileContents; // the glitch does not exist.
+		}
+
+		// we need to detect the amount of whitespace to insert...
+		int newLineIndex =
+			fileContents.LastIndexOf(Environment.NewLine, brokenIndex, brokenIndex, StringComparison.Ordinal);
+		int contentIndex = fileContents.IndexOf('<', newLineIndex);
+		var whiteSpace = fileContents.Substring(newLineIndex, contentIndex - newLineIndex);
+
+		return fileContents.Insert(brokenIndex + 1, whiteSpace);
 	}
 }
