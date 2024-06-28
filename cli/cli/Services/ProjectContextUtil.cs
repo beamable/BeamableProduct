@@ -343,6 +343,9 @@ public static class ProjectContextUtil
 				case "storage":
 					protocol.StorageDependencyBeamIds.Add(ConvertBeamoId(knownProject));
 					break;
+				case "unity":
+					protocol.UnityAssemblyDefinitionProjectPaths.Add(knownProject.relativePath);
+					break;
 				default:
 					protocol.GeneralDependencyProjectPaths.Add(knownProject.relativePath);
 					break;
@@ -536,5 +539,41 @@ public static class ProjectContextUtil
 		File.WriteAllText(definition.ProjectPath, formattedText);
 
 		return prop.UnevaluatedValue;
+	}
+
+	public static void UpdateUnityProjectReferences(BeamoServiceDefinition definition, List<string> projectsPaths, List<string> assemblyNames)
+	{
+		const string ITEM_NAME = "UnityAssembly";
+		const string ITEM_TYPE = "ProjectReference";
+
+		var buildEngine = new ProjectCollection();
+		var stream = File.OpenRead(definition.ProjectPath);
+		var document = XDocument.Load(stream, LoadOptions.PreserveWhitespace);
+		var reader = document.CreateReader(ReaderOptions.None);
+		var buildProject = buildEngine.LoadProject(reader);
+
+		var references = buildProject.GetItemsIgnoringCondition(ITEM_TYPE);
+		foreach (ProjectItem reference in references)
+		{
+			ProjectMetadata metaData = reference.Metadata.FirstOrDefault(m => m.Name.Equals(ITEM_NAME));
+			if (metaData != null)
+			{
+				buildProject.RemoveItem(reference);
+			}
+		}
+
+		for (int i = 0; i < assemblyNames.Count; i++)
+		{
+			var assemblyName = assemblyNames[i];
+			var projectPath = projectsPaths[i];
+
+			var items = buildProject.AddItem(ITEM_TYPE, projectPath,
+				new Dictionary<string, string> { { ITEM_NAME, assemblyName } });
+
+
+		}
+
+		buildProject.FullPath = definition.ProjectPath;
+		buildProject.Save();
 	}
 }

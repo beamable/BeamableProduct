@@ -325,6 +325,8 @@ public class App
 		Commands.AddSubCommand<DownloadNugetDepToUnityCommand, DownloadNugetDepToUnityCommandArgs, UnityGroupCommand>();
 		Commands.AddSubCommand<DownloadAllNugetDepsToUnityCommand, DownloadAllNugetDepsToUnityCommandArgs,
 				UnityGroupCommand>();
+		Commands.AddSubCommand<UpdateServiceAssemblyReferencesCommand, UpdateServiceAssemblyReferencesCommandArgs,
+			UnityGroupCommand>();
 		
 		// version commands
 		Commands.AddRootCommand<VersionCommand, VersionCommandArgs>();

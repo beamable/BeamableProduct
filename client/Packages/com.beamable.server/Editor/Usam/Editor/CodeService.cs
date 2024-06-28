@@ -533,59 +533,39 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 		
-		/*public async Promise UpdateServiceReferences(BeamServiceSignpost signpost)
+		public async Promise UpdateServiceReferences(string serviceName, List<AssemblyDefinitionAsset> assemblyDefinitions)
 		{
-			var serviceName = signpost.name;
-			
-			SolutionPostProcessor.OnPreGeneratingCSProjectFiles();
-			SetSolution();
 			UsamLogger.Log($"Starting updating references");
 			//get a list of all references of that service
-			var service = _services.FirstOrDefault(s => s.name == serviceName);
+			var service = ServiceDefinitions.FirstOrDefault(s => s.BeamoId == serviceName);
 			if (service == null)
 			{
 				throw new ArgumentException($"Invalid service name was passed: {serviceName}");
 			}
 
-			UsamLogger.Log($"Reading all references from service: {serviceName}");
-			var results = await _dotnetService.Run($"list {service.CsprojPath} reference");
-
-			//filter that list with only the generated projs
-			var depsPaths = results.Select(s => s.Replace(Environment.NewLine, string.Empty)).Where(line => line.EndsWith(".csproj")).ToList();
-			var correctedPaths = depsPaths.Select(path => path.Replace("\\", "/")).ToList();
-			var existinReferences = correctedPaths.Where(path => path.Contains(CsharpProjectUtil.PROJECT_NAME_PREFIX)).ToList();
-
-
-			//remove all generated projs references
-			UsamLogger.Log($"Removing all references from service: {serviceName}");
-			var promises = new List<Promise<List<string>>>();
-			foreach (string reference in existinReferences)
+			var pathsList = new List<string>();
+			var namesList = new List<string>();
+			foreach (AssemblyDefinitionAsset asmdef in assemblyDefinitions)
 			{
-				var referenceName = Path.GetFileNameWithoutExtension(reference).Replace(CsharpProjectUtil.PROJECT_NAME_PREFIX, String.Empty);
-				var refPathToRemove = CsharpProjectUtil.GenerateCsharpProjectFilename(referenceName);
-				UsamLogger.Log($"Removing reference: {refPathToRemove}");
-				Promise<List<string>> p =_dotnetService.Run($"remove {service.CsprojPath} reference {refPathToRemove}");
-				promises.Add(p);
+				namesList.Add(asmdef.name);
+				var path = CsharpProjectUtil.GenerateCsharpProjectFilename(asmdef.name);
+				pathsList.Add(path);
 			}
 
-			Promise<List<List<string>>> sequence = Promise.Sequence(promises);
-			await sequence;
-
-			//add all the references
-			foreach (var newRefs in signpost.assemblyReferences)
+			var updateCommand = _cli.UnityUpdateReferences(new UnityUpdateReferencesArgs()
 			{
-				var newRefCsprojPath = CsharpProjectUtil.GenerateCsharpProjectFilename(newRefs.name);
-				if (!File.Exists(newRefCsprojPath))
-				{
-					UsamLogger.Log($"The project file for reference {newRefs} does not exist yet");
-					continue;
-				}
-				UsamLogger.Log($"Adding the reference: {newRefs}");
-				await _dotnetService.Run($"add {service.CsprojPath} reference {newRefCsprojPath}");
-			}
+				service = serviceName,
+				paths = pathsList.ToArray(),
+				names = namesList.ToArray()
+			});
+			await updateCommand.Run();
+
+			//call the CsharpProjectUtil to regenerate the csproj for this specific file
+			SolutionPostProcessor.OnPreGeneratingCSProjectFiles();
+			SetSolution();
 
 			UsamLogger.Log($"Finished updating references");
-		}*/
+		}
 
 
 		public Promise RunStandaloneMicroservice(string id)
@@ -867,7 +847,6 @@ namespace Beamable.Server.Editor.Usam
 				name = service,
 				serviceDirectory = StandaloneMicroservicesPath,
 				sln = slnPath,
-				version = GetCurrentNugetVersion(),
 				linkTo = deps,
 			};
 			var storageCommand = _cli.ProjectNewStorage(storageArgs);
@@ -909,8 +888,7 @@ namespace Beamable.Server.Editor.Usam
 			{
 				name = service,
 				serviceDirectory = StandaloneMicroservicesPath,
-				sln = slnPath,
-				version = GetCurrentNugetVersion()
+				sln = slnPath
 			};
 			var command = _cli.ProjectNewService(args);
 			await command.Run();
