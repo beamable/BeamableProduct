@@ -70,6 +70,9 @@ The following values have special meaning and are not treated as paths...
 	</PropertyGroup>
 
 	<PropertyGroup>
+		<!-- Path configurations -->
+		<SolutionDir Condition=""'$(SolutionDir)' == ''"">{args.SolutionDir}</SolutionDir>
+
 {buildDirFlag}
 	</PropertyGroup>
 </Project>";
