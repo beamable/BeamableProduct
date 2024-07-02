@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Server.Editor;
 using Beamable.Server.Editor.Usam;
 using System;
 using System.Collections.Generic;
@@ -39,7 +40,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 
 			foreach (var definition in codeService.ServiceDefinitions)
 			{
-				if (!definition.ExistLocally)
+				if (!definition.ExistLocally && definition.ServiceType != ServiceType.MicroService)
 				{
 					continue;
 				}
@@ -97,7 +98,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 	[Serializable]
 	public class BeamableMicroservicesSettings : ScriptableObject
 	{
-		public List<AssemblyDefinitionAsset> serviceDefinitions;
+		public List<AssemblyDefinitionAsset> serviceDefinitions; //TODO: this is misleading, change to assembly references
 
 		public string serviceName;
 
@@ -162,7 +163,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 			instance.serviceDefinitions = new List<AssemblyDefinitionAsset>();
 			foreach (var name in sd.AssemblyDefinitionsNames)
 			{
-				var guids = AssetDatabase.FindAssets($"{name} t:AssemblyDefinitionAsset");
+				var guids = AssetDatabase.FindAssets($"{name} t:{typeof(AssemblyDefinitionAsset).FullName}");
 				AssemblyDefinitionAsset asset = null;
 				foreach (var id in guids)
 				{

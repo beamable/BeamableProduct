@@ -36,13 +36,13 @@ namespace Beamable.Server.Editor.Usam
     </PropertyGroup>
 
 	<PropertyGroup Label=""Beamable Settings"">
-        <!-- All StorageObjects must have the value, ""storage"" -->
+        <!-- All Unity Assembly References must have the value: ""unity"" -->
         <BeamProjectType>unity</BeamProjectType>
     </PropertyGroup>
 
     <!-- Project settings -->
     <PropertyGroup>
-        <TargetFramework>netstandard2.1</TargetFramework>
+        <TargetFramework>netstandard2.0</TargetFramework>
         <ImplicitlyExpandNETStandardFacades>false</ImplicitlyExpandNETStandardFacades>
         <ImplicitlyExpandDesignTimeFacades>false</ImplicitlyExpandDesignTimeFacades>
         <EnableDefaultItems>false</EnableDefaultItems>

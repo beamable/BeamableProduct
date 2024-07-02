@@ -344,6 +344,7 @@ public static class ProjectContextUtil
 						Path = referencedProject.RelativePath,
 						AssemblyName = referencedProject.BeamUnityAssemblyName
 					});
+					continue;
 				}
 
 				Log.Warning($"Project=[{project.relativePath}] references project=[${referencedProject.FullPath}] but that project was not detected in the beamable folder context. ");
