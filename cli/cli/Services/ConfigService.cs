@@ -392,16 +392,23 @@ public class ConfigService
 			return false;
 		}
 
-		var versionMatching = new Regex("beamable.*?\"([0-9]+\\.[0-9]+\\.[0-9]+)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
+		var versionMatching = new Regex("beamable.*?\"([0-9]+\\.[0-9]+\\.[0-9]+.*?)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
 		var versionMatch = versionMatching.Match(File.ReadAllText(pathToToolsManifest));
 
 		if (versionMatch.Success)
 		{
-			version = versionMatch.Groups[1].Value;
+			var retrievedVersion = versionMatch.Groups[1].Value;
+
+			if (!PackageVersion.TryFromSemanticVersionString(retrievedVersion, out _))
+			{
+				throw new CliException("The version in the dotnet-tools.json file is not valid.");
+			}
+
+			version = retrievedVersion;
 			return true;
 		}
 
-		throw new Exception("Missing \"beamable.tools\" entry in \".config/dotnet-tools.json\" directory.");
+		throw new CliException("Missing \"beamable.tools\" entry in \".config/dotnet-tools.json\" directory.");
 	}
 
 	public void CreateIgnoreFile(Vcs system = Vcs.Git, bool forceCreate = false)

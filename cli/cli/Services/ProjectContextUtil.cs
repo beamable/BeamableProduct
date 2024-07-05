@@ -344,6 +344,7 @@ public static class ProjectContextUtil
 						Path = referencedProject.RelativePath,
 						AssemblyName = referencedProject.BeamUnityAssemblyName
 					});
+					continue;
 				}
 
 				Log.Warning($"Project=[{project.relativePath}] references project=[${referencedProject.FullPath}] but that project was not detected in the beamable folder context. ");
@@ -559,10 +560,7 @@ public static class ProjectContextUtil
 		const string ITEM_TYPE = "ProjectReference";
 
 		var buildEngine = new ProjectCollection();
-		var stream = File.OpenRead(definition.ProjectPath);
-		var document = XDocument.Load(stream, LoadOptions.PreserveWhitespace);
-		var reader = document.CreateReader(ReaderOptions.None);
-		var buildProject = buildEngine.LoadProject(reader);
+		var buildProject = buildEngine.LoadProject(definition.ProjectPath);
 
 		var references = buildProject.GetItemsIgnoringCondition(ITEM_TYPE).ToArray();
 		for (int i = references.Length - 1; i >= 0; i--)

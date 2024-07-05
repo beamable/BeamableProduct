@@ -567,6 +567,7 @@ namespace Beamable.Server.Editor.Usam
 			await updateCommand.Run();
 
 			//call the CsharpProjectUtil to regenerate the csproj for this specific file
+			await RefreshServices();
 			SolutionPostProcessor.OnPreGeneratingCSProjectFiles();
 			SetSolution();
 

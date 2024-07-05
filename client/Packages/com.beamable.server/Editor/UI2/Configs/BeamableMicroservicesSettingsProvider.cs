@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Server.Editor;
 using Beamable.Server.Editor.Usam;
 using System;
 using System.Collections.Generic;
@@ -8,6 +9,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
@@ -39,7 +41,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 
 			foreach (var definition in codeService.ServiceDefinitions)
 			{
-				if (!definition.ExistLocally)
+				if (!definition.ExistLocally || definition.ServiceType != ServiceType.MicroService)
 				{
 					continue;
 				}
@@ -97,7 +99,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 	[Serializable]
 	public class BeamableMicroservicesSettings : ScriptableObject
 	{
-		public List<AssemblyDefinitionAsset> serviceDefinitions;
+		public List<AssemblyDefinitionAsset> assemblyReferences;
 
 		public string serviceName;
 
@@ -105,7 +107,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 		{
 
 			//Check if there is any null reference in the array
-			foreach (AssemblyDefinitionAsset assembly in serviceDefinitions)
+			foreach (AssemblyDefinitionAsset assembly in assemblyReferences)
 			{
 				if (assembly == null)
 				{
@@ -114,7 +116,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 				}
 			}
 
-			List<string> names = serviceDefinitions.Select(rf => rf.name).ToList();
+			List<string> names = assemblyReferences.Select(rf => rf.name).ToList();
 
 			//Check if there are duplicates in the list
 			if (names.Count != names.Distinct().Count())
@@ -141,7 +143,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 		{
 			await BeamEditorContext
 			    .Default.ServiceScope.GetService<CodeService>()
-			    .UpdateServiceReferences(serviceName, serviceDefinitions);
+			    .UpdateServiceReferences(serviceName, assemblyReferences);
 		}
 
 		public static SerializedObject GetSerializedSettings(string serviceName)
@@ -159,10 +161,10 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 			var instance = ScriptableObject.CreateInstance<BeamableMicroservicesSettings>();
 			instance.serviceName = serviceName;
 
-			instance.serviceDefinitions = new List<AssemblyDefinitionAsset>();
+			instance.assemblyReferences = new List<AssemblyDefinitionAsset>();
 			foreach (var name in sd.AssemblyDefinitionsNames)
 			{
-				var guids = AssetDatabase.FindAssets($"{name} t:AssemblyDefinitionAsset");
+				var guids = AssetDatabase.FindAssets($"{name} t:{nameof(AssemblyDefinitionAsset)}");
 				AssemblyDefinitionAsset asset = null;
 				foreach (var id in guids)
 				{
@@ -175,7 +177,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 
 					asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(assetPath);
 				}
-				instance.serviceDefinitions.Add(asset);
+				instance.assemblyReferences.Add(asset);
 			}
 
 			return new SerializedObject(instance);
