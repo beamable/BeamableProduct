@@ -163,7 +163,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 			instance.serviceDefinitions = new List<AssemblyDefinitionAsset>();
 			foreach (var name in sd.AssemblyDefinitionsNames)
 			{
-				var guids = AssetDatabase.FindAssets($"{name} t:{typeof(AssemblyDefinitionAsset).FullName}");
+				var guids = AssetDatabase.FindAssets($"{name} t:{nameof(AssemblyDefinitionAsset)}");
 				AssemblyDefinitionAsset asset = null;
 				foreach (var id in guids)
 				{

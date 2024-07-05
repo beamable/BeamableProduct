@@ -560,10 +560,7 @@ public static class ProjectContextUtil
 		const string ITEM_TYPE = "ProjectReference";
 
 		var buildEngine = new ProjectCollection();
-		var stream = File.OpenRead(definition.ProjectPath);
-		var document = XDocument.Load(stream, LoadOptions.PreserveWhitespace);
-		var reader = document.CreateReader(ReaderOptions.None);
-		var buildProject = buildEngine.LoadProject(reader);
+		var buildProject = buildEngine.LoadProject(definition.ProjectPath);
 
 		var references = buildProject.GetItemsIgnoringCondition(ITEM_TYPE).ToArray();
 		for (int i = references.Length - 1; i >= 0; i--)
