@@ -305,6 +305,8 @@ public class App
 		Commands.AddSubCommand<GetTokenForGuestCommand, GetTokenForGuestCommandArgs, TokenCommandGroup>();
 
 		Commands.AddRootCommand<PlayerCommand, PlayerCommandArgs>();
+		Commands.AddSubCommandWithHandler<AddPlayerToRealmCommand, AddPlayerToRealmCommandArgs, PlayerCommand>();
+		
 		Commands.AddRootCommand<PortalCommand, PortalCommandArgs>();
 		Commands.AddSubCommandWithHandler<PortalOpenCurrentAccountCommand, PortalOpenCurrentAccountCommandArgs, PortalCommand>();
 		
