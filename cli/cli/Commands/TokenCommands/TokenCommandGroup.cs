@@ -1,0 +1,10 @@
+using JetBrains.Annotations;
+
+namespace cli.TokenCommands;
+
+public class TokenCommandGroup : CommandGroup
+{
+	public TokenCommandGroup() : base("token", "explore Beamable tokens")
+	{
+	}
+}

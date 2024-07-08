@@ -15,9 +15,12 @@ using cli.Docs;
 using cli.Dotnet;
 using cli.Notifications;
 using cli.Options;
+using cli.PlayerCommands;
+using cli.Portal;
 using cli.Services;
 using cli.Services.Content;
 using cli.Services.HttpServer;
+using cli.TokenCommands;
 using cli.UnityCommands;
 using cli.Unreal;
 using cli.Utils;
@@ -238,6 +241,7 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<PidOption>());
 			root.AddGlobalOption(provider.GetRequiredService<QuietOption>());
 			root.AddGlobalOption(provider.GetRequiredService<HostOption>());
+			root.AddGlobalOption(provider.GetRequiredService<AccessTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
 			root.AddGlobalOption(AllHelpOption.Instance);;
@@ -293,6 +297,17 @@ public class App
 		Commands.AddRootCommand<BaseRequestPostCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestDeleteCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<GenerateDocsCommand, GenerateDocsCommandArgs>();
+		
+		Commands.AddRootCommand<TokenCommandGroup>();
+		Commands.AddSubCommand<GetTokenDetailsCommand, GetTokenDetailsCommandArgs, TokenCommandGroup>();
+		Commands.AddSubCommand<GetTokenListCommand, GetTokenListCommandArgs, TokenCommandGroup>();
+		Commands.AddSubCommand<GetTokenViaRefreshCommand, GetTokenViaRefreshCommandArgs, TokenCommandGroup>();
+		Commands.AddSubCommand<GetTokenForGuestCommand, GetTokenForGuestCommandArgs, TokenCommandGroup>();
+
+		Commands.AddRootCommand<PlayerCommand, PlayerCommandArgs>();
+		Commands.AddRootCommand<PortalCommand, PortalCommandArgs>();
+		Commands.AddSubCommandWithHandler<PortalOpenCurrentAccountCommand, PortalOpenCurrentAccountCommandArgs, PortalCommand>();
+		
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Commands.AddSubCommandWithHandler<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
 		Commands.AddSubCommandWithHandler<ConfigGetSecret, ConfigGetSecretArgs, ConfigCommand>();

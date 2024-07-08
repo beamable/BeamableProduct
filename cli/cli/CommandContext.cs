@@ -1,5 +1,6 @@
 using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
+using Beamable.Server.Common;
 using cli.Options;
 using cli.Services;
 using JetBrains.Annotations;
@@ -126,7 +127,7 @@ public abstract class AtomicCommand<TArgs, TResult> : AppCommand<TArgs>, IResult
 
 	protected virtual void LogResult(object result)
 	{
-		var json = JsonConvert.SerializeObject(result);
+		var json = JsonConvert.SerializeObject(result, UnitySerializationSettings.Instance);
 		AnsiConsole.Write(
 			new Panel(new JsonText(json))
 				.Collapse()
@@ -272,17 +273,25 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IApp
 		return arg;
 	}
 
-	public Option<T> AddOption<T>(Option<T> arg, Action<TArgs, T> binder)
+	public Option<T> AddOption<T>(Option<T> arg, Action<TArgs, T> binder, string[] aliases=null)
 	{
-		return AddOption<T>(arg, (args, _, b) => binder(args, b));
+		return AddOption<T>(arg, (args, _, b) => binder(args, b), aliases);
 	}
 	
-	public Option<T> AddOption<T>(Option<T> arg, Action<TArgs, BindingContext, T> binder)
+	public Option<T> AddOption<T>(Option<T> arg, Action<TArgs, BindingContext, T> binder, string[] aliases=null)
 	{
 		ArgValidator<T> validator = CommandProvider.CanBuildService<ArgValidator<T>>()
 			? CommandProvider.GetService<ArgValidator<T>>()
 			: null;
 
+		if (aliases != null)
+		{
+			foreach (var alias in aliases)
+			{
+				arg.AddAlias(alias);
+			}
+		}
+		
 		var set = new Action<BindingContext, BindingContext, TArgs>((ctx, parse, args) =>
 		{
 			if (validator != null)

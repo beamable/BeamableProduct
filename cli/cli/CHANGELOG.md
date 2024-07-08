@@ -10,11 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `--unmask-logs` option will show full tokens in verbose logs
 - `--no-log-file` option will prevent verbose logs from being written to temp file
+- `token` commands allow you to explore access and refresh tokens
 
 ### Added
 - `beam project enable` and `beam project disable` commands will set the `<BeamEnabled>` setting.
 - Can pass MSBuild dlls location through environment variable to the CLI
 
+### Fixed
+- JSON output will correctly render optional types
 
 ## [2.0.1] - 2024-06-17
 
