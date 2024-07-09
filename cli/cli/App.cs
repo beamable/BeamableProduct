@@ -660,6 +660,21 @@ public class App
 			{
 				var reporter = provider.GetService<IDataReporterService>();
 
+				var isSpecialType = ex.GetType().IsGenericType &&
+					ex.GetType().GetGenericTypeDefinition() == typeof(CliExceptionWithPayload<>);
+				if (isSpecialType)
+				{
+					// TODO: construct a unique result-stream based on the ExceptionType
+				}
+				else if (ex is CliException)
+				{
+					// TODO: report on "error"
+				}
+				else
+				{
+					// TODO: report on "uncaught-error"
+				}
+				
 				reporter.Exception(ex, context.ExitCode, context.BindingContext.ParseResult.Diagram());
 			}
 

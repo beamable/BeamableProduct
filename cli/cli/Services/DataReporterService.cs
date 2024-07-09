@@ -74,6 +74,38 @@ public class DataReporterService : IDataReporterService
 			typeName = ex?.GetType().Name,
 			fullTypeName = ex?.GetType().FullName
 		};
-		Report(DefaultErrorStream.CHANNEL, result);
+		Report(GetChannelNameFromException(ex), result);
+	}
+
+	public static object GetExceptionPayload(Exception ex, int exitCode, string invocationContext)
+	{
+		if (ex is CliException cliException)
+		{
+			return cliException.GetPayload(exitCode, invocationContext);
+		}
+		else
+		{
+			return new ErrorOutput
+			{
+				exitCode = exitCode,
+				invocation = invocationContext,
+				message = ex?.Message,
+				stackTrace = ex?.StackTrace,
+				typeName = ex?.GetType().Name,
+				fullTypeName = ex?.GetType().FullName
+			};
+		}
+	}
+
+	public static string GetChannelNameFromException(Exception ex)
+	{
+		if (ex is CliException)
+		{
+			// TODO: check if its special case...
+		}
+		else
+		{
+			return "uncaught-error";
+		}
 	}
 }
