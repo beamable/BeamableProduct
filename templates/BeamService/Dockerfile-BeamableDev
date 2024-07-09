@@ -21,16 +21,16 @@ RUN dotnet publish ${BEAM_CSPROJ_PATH} -p:BeamableVersion=${BEAM_VERSION} -c rel
 
 # use the dotnet runtime as the final stage
 FROM mcr.microsoft.com/dotnet/runtime:6.0-alpine
-WORKDIR /subapp
+WORKDIR /beamApp
 
 # expose the health port
 EXPOSE 6565 
 
 # copy the built program
-COPY --from=build-env /subapp .
+COPY --from=build-env /beamApp .
 
 # when starting the container, run dotnet with the built dll
-ENTRYPOINT ["dotnet", "/subapp/BeamService.dll"]
+ENTRYPOINT ["dotnet", "/beamApp/BeamService.dll"]
 
 # Swap entrypoints if the container is exploding and you want to keep it alive indefinitely so you can go look into it.
 #ENTRYPOINT ["tail", "-f", "/dev/null"]

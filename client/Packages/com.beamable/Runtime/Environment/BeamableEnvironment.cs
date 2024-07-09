@@ -92,6 +92,11 @@ namespace Beamable
 		/// The version of Beamable nuget packages that this Beamable SDK requires
 		/// </summary>
 		public static string NugetPackageVersion => VersionData.nugetPackageVersion;
+
+		/// <summary>
+		/// Returns if the SDK is being run in a beamable developer environment
+		/// </summary>
+		public static bool IsBeamableDeveloper => VersionData.nugetPackageVersion.Contains("0.0.123");
 		
 		
 		/// <summary>
