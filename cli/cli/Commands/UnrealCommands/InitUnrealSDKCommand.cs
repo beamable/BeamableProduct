@@ -20,7 +20,7 @@ public class InitUnrealSDKCommand : AppCommand<InitUnrealSDKCommandArgs>
 {
 	public override bool IsForInternalUse => true;
 
-	public InitUnrealSDKCommand() : base("init", "Ran by `beam_init_game_maker.sh` in order to do a bunch of set up in an Unreal project automatically.")
+	public InitUnrealSDKCommand() : base("init", "Ran by `beam_init_game_maker.sh` in order to do a bunch of set up in an Unreal project automatically")
 	{
 	}
 
