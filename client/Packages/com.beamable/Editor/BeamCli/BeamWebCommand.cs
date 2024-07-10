@@ -4,6 +4,7 @@ using Beamable.Common.BeamCli;
 using Beamable.Editor.BeamCli.Commands;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Net.Sockets;
@@ -199,6 +200,7 @@ namespace Beamable.Editor.BeamCli
 		private string _command;
 		private HttpClient _localClient;
 		private Action<ReportDataPointDescription> _callbacks = (_) => { };
+		private HashSet<string> _explicitOnCallbackTypes = new HashSet<string>();
 		private BeamWebCommandFactory _factory;
 
 		public BeamWebCommand(BeamWebCommandFactory factory)
@@ -278,16 +280,21 @@ namespace Beamable.Editor.BeamCli
 
 		}
 
-		public IBeamCommand On<T>(string type, Action<ReportDataPoint<T>> cb)
+		public IBeamCommand On<T>(Func<ReportDataPointDescription, bool> predicate, Action<ReportDataPoint<T>> cb)
 		{
 			On(desc =>
 			{
-				if (desc.type != type) return;
+				if (!predicate(desc)) return;
 				var pt = JsonUtility.FromJson<ReportDataPoint<T>>(desc.json);
 				cb?.Invoke(pt);
 			});
 
 			return this;
+		}
+		public IBeamCommand On<T>(string type, Action<ReportDataPoint<T>> cb)
+		{
+			_explicitOnCallbackTypes.Add(type);
+			return On<T>(desc => desc.type == type, cb);
 		}
 
 		public IBeamCommand On(Action<ReportDataPointDescription> cb)
@@ -298,7 +305,17 @@ namespace Beamable.Editor.BeamCli
 
 		public IBeamCommand OnError(Action<ReportDataPoint<ErrorOutput>> cb)
 		{
-			return On<ErrorOutput>("error", cb);
+			return On<ErrorOutput>(desc => desc.type.StartsWith("error"), data =>
+			{
+				if (_explicitOnCallbackTypes.Contains(data.type))
+				{
+					// if the caller has explicitly called an `.On("type")` method
+					//  where the "type" is the same as this input, this the general
+					//  purpose OnError() function shouldn't get the error. 
+					return;
+				}
+				cb(data);
+			});
 		}
 
 		public IBeamCommand OnTerminate(Action<ReportDataPoint<EofOutput>> cb)

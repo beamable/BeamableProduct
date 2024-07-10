@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.BeamCli;
 using cli.Utils;
 using Newtonsoft.Json;
 using Spectre.Console;
@@ -66,7 +67,9 @@ public class AccountMeExternalIdentity
 	public string userId;
 }
 
-public class AccountMeCommand : AtomicCommand<AccountMeCommandArgs, AccountMeCommandOutput>
+
+public class AccountMeCommand 
+	: AtomicCommand<AccountMeCommandArgs, AccountMeCommandOutput>
 {
 	public override int Order => 200;
 	public AccountMeCommand() : base("me", "Fetch the current account") { }

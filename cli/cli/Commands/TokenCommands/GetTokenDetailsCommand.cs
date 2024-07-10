@@ -102,6 +102,7 @@ public class GetTokenDetailsCommand : AtomicCommand<GetTokenDetailsCommandArgs, 
 		var api = new AccountsApi(args.Requester);
 		
 		var (res, wasRefresh) = await ResolveToken(args, args.autoResolve, args.token);
+		
 		return new GetTokenDetailsCommandOutput
 		{
 			wasRefreshToken = wasRefresh,

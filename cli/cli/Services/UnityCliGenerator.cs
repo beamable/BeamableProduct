@@ -43,11 +43,17 @@ public class UnityCliGenerator : ICliGenerator
 			files.Add(Generate(command));
 		}
 
+		// var me = context.Commands.First(x => x.executionPath == "beam me");
+		// var resultTypes = RecurseTypes(me.resultStreams.Select(x => x.runtimeType));
 		var resultTypes = RecurseTypes(context.Commands.SelectMany(command => command.resultStreams.Select(s => s.runtimeType)));
 
 		foreach (var resultType in resultTypes)
 		{
-			if (resultType.Namespace.StartsWith("Beamable.Common")) continue;
+			if (resultType.Namespace.StartsWith("Beamable.Common"))
+			{
+				Log.Debug("skipping type " + resultType.FullName);
+				continue;
+			}
 
 			var unit = new CodeCompileUnit();
 			var root = new CodeNamespace("Beamable.Editor.BeamCli.Commands");
@@ -129,6 +135,7 @@ MonoImporter:
 		var toExplore = new Queue<Type>();
 		foreach (var inputType in inputTypes)
 		{
+			// Log.Information("Looking at type : " + inputType.Name);
 			toExplore.Enqueue(inputType);
 		}
 
@@ -453,9 +460,14 @@ MonoImporter:
 
 		foreach (var result in descriptor.resultStreams)
 		{
+			var callbackName = $"On{result.channel.Capitalize()}{result.runtimeType.Name}";
+			if (result.runtimeType.IsSubclassOf(typeof(ErrorOutput)))
+			{
+				callbackName = $"On{result.channel.Capitalize()}";
+			}
 			var method = new CodeMemberMethod
 			{
-				Name = $"On{result.channel.Capitalize()}{result.runtimeType.Name}",
+				Name = callbackName,
 				Attributes = MemberAttributes.Public,
 				ReturnType = new CodeTypeReference(type.Name)
 			};

@@ -659,22 +659,6 @@ public class App
 			if (appContext.UsePipeOutput || appContext.ShowRawOutput)
 			{
 				var reporter = provider.GetService<IDataReporterService>();
-
-				var isSpecialType = ex.GetType().IsGenericType &&
-					ex.GetType().GetGenericTypeDefinition() == typeof(CliExceptionWithPayload<>);
-				if (isSpecialType)
-				{
-					// TODO: construct a unique result-stream based on the ExceptionType
-				}
-				else if (ex is CliException)
-				{
-					// TODO: report on "error"
-				}
-				else
-				{
-					// TODO: report on "uncaught-error"
-				}
-				
 				reporter.Exception(ex, context.ExitCode, context.BindingContext.ParseResult.Diagram());
 			}
 
@@ -703,29 +687,35 @@ public class App
 	{
 		switch (context.Command)
 		{
-			case ISingleResult singleResult:
-				var resultType = singleResult.ResultType;
-				context.Output.WriteLine("");
-				context.Output.WriteLine("Raw Output:");
-				if (singleResult.IsSingleReturn)
-				{
-					context.Output.WriteLine($"  Returns a single {resultType.Name} object, which may resemble the following...");
-				}
-				else
-				{
-					context.Output.WriteLine($"  Returns a stream of {resultType.Name} objects, which each may resemble the following...");
-				}
-
-				var data = new ReportDataPoint { data = singleResult.CreateEmptyInstance(), type = "stream", ts = DateTimeOffset.Now.ToUnixTimeMilliseconds() };
-				var json = JsonConvert.SerializeObject(data, Formatting.Indented);
-				context.Output.WriteLine("  " + json.ReplaceLineEndings("\n  "));
-				break;
+			// case ISingleResult singleResult:
+			// 	var resultType = singleResult.ResultType;
+			// 	context.Output.WriteLine("");
+			// 	context.Output.WriteLine("Raw Output:");
+			// 	if (singleResult.IsSingleReturn)
+			// 	{
+			// 		context.Output.WriteLine($"  Returns a single {resultType.Name} object, which may resemble the following...");
+			// 	}
+			// 	else
+			// 	{
+			// 		context.Output.WriteLine($"  Returns a stream of {resultType.Name} objects, which each may resemble the following...");
+			// 	}
+			//
+			// 	var data = new ReportDataPoint { data = singleResult.CreateEmptyInstance(), type = "stream", ts = DateTimeOffset.Now.ToUnixTimeMilliseconds() };
+			// 	var json = JsonConvert.SerializeObject(data, Formatting.Indented);
+			// 	context.Output.WriteLine("  " + json.ReplaceLineEndings("\n  "));
+			// 	break;
 			default:
 				// we need to explicitly check for interface implementations... 
 				var genType = typeof(IResultSteam<,>);
 				var commandType = context.Command.GetType();
 				var allInterfaces = commandType.GetInterfaces();
 				var resultStreamTypeArgs = new List<Type[]>();
+				ISingleResult single = null;
+				if (context.Command is ISingleResult result)
+				{
+					single = result;
+				}
+				
 				foreach (var subInterface in allInterfaces)
 				{
 					if (!subInterface.IsGenericType) continue;
@@ -748,8 +738,19 @@ public class App
 
 					var channelInstance = (IResultChannel)Activator.CreateInstance(channelType);
 
-					context.Output.WriteLine($"  Returns a stream of {dataType.Name} objects on the {channelInstance.ChannelName} stream, which each may resemble the following...");
-					var resultStreamData = new ReportDataPoint { data = Activator.CreateInstance(dataType), type = channelInstance.ChannelName, ts = DateTimeOffset.Now.ToUnixTimeMilliseconds() };
+					object dataInstance = null;
+					var isSingle = single != null && dataType == single.ResultType;
+					if (isSingle)
+					{
+						dataInstance = single.CreateEmptyInstance();
+					}
+					else
+					{
+						dataInstance = Activator.CreateInstance(dataType);
+					}
+
+					context.Output.WriteLine($"  Returns a {(isSingle ? "stream of" : "single message of")} {dataType.Name} object on the {channelInstance.ChannelName} stream, which each may resemble the following...");
+					var resultStreamData = new ReportDataPoint { data = dataInstance, type = channelInstance.ChannelName, ts = DateTimeOffset.Now.ToUnixTimeMilliseconds() };
 					var resultStreamJson = JsonConvert.SerializeObject(resultStreamData, Formatting.Indented);
 					context.Output.WriteLine("  " + resultStreamJson.ReplaceLineEndings("\n  "));
 					context.Output.WriteLine("  ");

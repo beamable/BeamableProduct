@@ -9,24 +9,6 @@ using System.CommandLine;
 namespace cli.Version;
 
 
-public class SpecialErrorStream<T> : IResultChannel
-{
-	public string ChannelName { get; }
-}
-
-public class SpecialErrorData<T>
-{
-	public T customData;
-	public ErrorOutput common;
-}
-public interface IThrowAnException<T> : IResultSteam<IThrowAnException<T>.ErrorStream, T>
-	// where T
-{
-	public class ErrorStream : IResultChannel
-	{
-		public string ChannelName => "error-" + typeof(T).Name;
-	}
-}
 
 
 public class VersionInstallCommandArgs : CommandArgs
@@ -34,26 +16,8 @@ public class VersionInstallCommandArgs : CommandArgs
 	public string version;
 }
 
-public class GrumpyData : ErrorOutput
-{
-	public int x;
-}
-public class CliExceptionSub1 : CliException<GrumpyData>
-{
-	public CliExceptionSub1(GrumpyData data) : base("grumpy")
-	{
-		payload = data;
-	}
-
-	public CliExceptionSub1(string message, int nonZeroOrOneExitCode, bool useStdOut, string additionalNote = null, IEnumerable<Diagnostic> additionalReports = null) : base(message, nonZeroOrOneExitCode, useStdOut, additionalNote, additionalReports)
-	{
-	}
-}
-
-
 public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 	, IStandaloneCommand
-	, IThrowAnException<GrumpyData>
 {
 	public VersionInstallCommand() : base("install", "Install a different version of the CLI")
 	{
@@ -68,10 +32,7 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 
 	public override async Task Handle(VersionInstallCommandArgs args)
 	{
-		throw new CliException<GrumpyData>(new GrumpyData
-		{
-			x =3
-		});
+		
 		var service = args.DependencyProvider.GetService<VersionService>();
 		var currentVersionInfo = await service.GetInformationData(args.ProjectService);
 

@@ -27,6 +27,15 @@ public interface IResultSteam<TChannel, TData> : IResultProvider
 {
 }
 
+public interface IReportException<T> : IResultSteam<IReportException<T>.ErrorStream, T>
+	where T : ErrorOutput
+{
+	public class ErrorStream : IResultChannel
+	{
+		public string ChannelName => CliException<T>.GetChannelName();
+	}
+}
+
 public interface IEmptyResult : IResultProvider
 {
 

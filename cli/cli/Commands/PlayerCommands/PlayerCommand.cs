@@ -18,6 +18,7 @@ public class PlayerCommandArgs : CommandArgs
 
 public class PlayerCommand : AtomicCommand<PlayerCommandArgs, Account>
 {
+	
 	public static async Promise<long> ResolvePlayerId(CommandArgs args, long playerId, string token)
 	{
 		var hasId = playerId != 0;
