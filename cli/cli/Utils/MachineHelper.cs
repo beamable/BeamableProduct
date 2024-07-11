@@ -40,4 +40,42 @@ public class MachineHelper
 			}
 		}
 	}
+
+	/// <summary>
+	/// Call to regenerate project files. Currently only works on windows.
+	/// TODO: Add support for MacOS/Linux
+	/// </summary>
+	/// <param name="unrealRoot"></param>
+	public static void RunUnrealGenerateProjectFiles(string unrealRoot)
+	{
+		if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+		{
+			// go into the unreal root
+			var cmd = $"cd {unrealRoot};";
+			// Get the name of the uproject
+			cmd += @"$uproject = Get-ChildItem ""*.uproject"" -Name;";
+			// Get the path to the UnrealEngine version for this project (this is stored here as-per UE -- https://forums.unrealengine.com/t/generate-vs-project-files-by-command-line/277707/18).
+			cmd += @"$bin = & { (Get-ItemProperty 'Registry::HKEY_CLASSES_ROOT\Unreal.ProjectFile\shell\rungenproj' -Name 'Icon' ).'Icon' };";
+			// Build the actual command to run at this path and pipe it into the cmd.exe.
+			cmd += @"$bin + ' -projectfiles %cd%\' + $uproject | cmd.exe";
+
+			// Run the command and print the result
+			var _ = ExecutePowershellCommand(cmd);
+		}
+	}
+
+	public static string ExecutePowershellCommand(string command)
+	{
+		var processStartInfo = new ProcessStartInfo();
+		processStartInfo.FileName = "powershell.exe";
+		processStartInfo.Arguments = $"-Command \"{command}\"";
+		processStartInfo.UseShellExecute = false;
+		processStartInfo.RedirectStandardOutput = true;
+
+		using var process = new Process();
+		process.StartInfo = processStartInfo;
+		process.Start();
+		string output = process.StandardOutput.ReadToEnd();
+		return output;
+	}
 }

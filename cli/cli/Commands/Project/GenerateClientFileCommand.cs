@@ -6,6 +6,7 @@ using Beamable.Server.Generator;
 using Beamable.Tooling.Common.OpenAPI;
 using cli.Services;
 using cli.Unreal;
+using cli.Utils;
 using Newtonsoft.Json;
 using Serilog;
 using System.CommandLine;
@@ -587,42 +588,12 @@ IMPLEMENT_MODULE(F{unrealProjectData.BlueprintNodesProjectName}Module, {unrealPr
 				await Task.WhenAll(writeFiles);
 
 				// Run the Regenerate Project Files utility for the project (so that create files are automatically updated in IDEs).
-				if (needsProjectFilesRebuild)
-					RunGenerateProjectFiles(Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.Path));
-
-				static void RunGenerateProjectFiles(string unrealRoot)
-				{
-					// go into the unreal root
-					var cmd = $"cd {unrealRoot};";
-					// Get the name of the uproject
-					cmd += @"$uproject = Get-ChildItem ""*.uproject"" -Name;";
-					// Get the path to the UnrealEngine version for this project (this is stored here as-per UE -- https://forums.unrealengine.com/t/generate-vs-project-files-by-command-line/277707/18).
-					cmd += @"$bin = & { (Get-ItemProperty 'Registry::HKEY_CLASSES_ROOT\Unreal.ProjectFile\shell\rungenproj' -Name 'Icon' ).'Icon' };";
-					// Build the actual command to run at this path and pipe it into the cmd.exe.
-					cmd += @"$bin + ' -projectfiles %cd%\' + $uproject | cmd.exe";
-
-					// Run the command and print the result
-					var _ = ExecutePowershellCommand(cmd);
-				}
-
-
-				static string ExecutePowershellCommand(string command)
-				{
-					var processStartInfo = new ProcessStartInfo();
-					processStartInfo.FileName = "powershell.exe";
-					processStartInfo.Arguments = $"-Command \"{command}\"";
-					processStartInfo.UseShellExecute = false;
-					processStartInfo.RedirectStandardOutput = true;
-
-					using var process = new Process();
-					process.StartInfo = processStartInfo;
-					process.Start();
-					string output = process.StandardOutput.ReadToEnd();
-					return output;
-				}
+				if (needsProjectFilesRebuild) 
+					MachineHelper.RunUnrealGenerateProjectFiles(Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.Path));
 			}
 		}
 	}
+
 
 	Task GenerateFile(List<GeneratedFileDescriptor> descriptors, GenerateClientFileCommandArgs args, string projectPath)
 	{
