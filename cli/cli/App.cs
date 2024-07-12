@@ -230,6 +230,7 @@ public class App
 		Commands.AddSingleton<ShowRawOutput>();
 		Commands.AddSingleton<ShowPrettyOutput>();
 		Commands.AddSingleton<DotnetPathOption>();
+		Commands.AddSingleton<NoForwardingOption>();
 		Commands.AddSingleton(AllHelpOption.Instance);
 		Commands.AddSingleton(NoLogFileOption.Instance);
 		Commands.AddSingleton(UnmaskLogsOption.Instance);
@@ -244,6 +245,7 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<AccessTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
+			root.AddGlobalOption(provider.GetRequiredService<NoForwardingOption>());
 			root.AddGlobalOption(AllHelpOption.Instance);;
 			root.AddGlobalOption(UnmaskLogsOption.Instance);
 			root.AddGlobalOption(NoLogFileOption.Instance);
@@ -579,6 +581,12 @@ public class App
 			var isCalledFromInsideBeamableProject = provider.GetService<ConfigService>().TryGetProjectBeamableCLIVersion(out var projectLocalVersion);
 			if (isCalledFromInsideBeamableProject && runningVersion != projectLocalVersion)
 			{
+				var preventRedirect = ctx.ParseResult.GetValueForOption(provider.GetService<NoForwardingOption>());
+				if (preventRedirect)
+				{
+					throw new CliException(
+						$"The {NoForwardingOption.OPTION_FLAG} flag is set, and thus the CLI will not forward the global request to the local version. Global-Version=[{runningVersion}] Local-Version=[{projectLocalVersion}]");
+				}
 				await ProxyCommand(ctx, provider);
 				return;
 			}
@@ -665,6 +673,7 @@ public class App
 
 	private async Task ProxyCommand(InvocationContext context, IDependencyProviderScope provider)
 	{
+		
 		// get the version of dotnet available (which may not always be the global dotnet installation) 
 		var dotnetPath = context.ParseResult.GetValueForOption(provider.GetService<DotnetPathOption>());
 		var isPretty = context.ParseResult.GetValueForOption(provider.GetService<ShowPrettyOutput>());
@@ -711,15 +720,8 @@ public class App
 			proxy = proxy.WithStandardErrorPipe(stdOut);
 		}
 		
-		await proxy.ExecuteAsync();
-
-
-		// var forwardedCommand = Cli.Wrap("dotnet");
-		// var forwardedResult = await forwardedCommand
-		// 	.WithArguments(argumentsToForward)
-		// 	.ExecuteAsyncAndLog();
-
-		// ctx.ExitCode = forwardedResult.ExitCode;
+		var forwardedResult = await proxy.ExecuteAsync();
+		context.ExitCode = forwardedResult.ExitCode;
 	}
 
 	static void ProxyCommand()
