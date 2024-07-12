@@ -579,16 +579,7 @@ public class App
 			var isCalledFromInsideBeamableProject = provider.GetService<ConfigService>().TryGetProjectBeamableCLIVersion(out var projectLocalVersion);
 			if (isCalledFromInsideBeamableProject && runningVersion != projectLocalVersion)
 			{
-				// Get the args that were given to this command invocation
-				var argumentsToForward= string.Join(" ", new []{"beam"}.Concat(Environment.GetCommandLineArgs()[1..]));
-				Log.Warning("You tried used a Beamable CLI version different than the one configured in this project. We are forwarding the command ({cmd}) to the version the project is using. Instead of relying on this forwarding, please 'dotnet beam' from inside the project directory.",
-					argumentsToForward);
-				var forwardedCommand = Cli.Wrap("dotnet");
-				var forwardedResult = await forwardedCommand
-					.WithArguments(argumentsToForward)
-					.ExecuteAsyncAndLog();
-				
-				ctx.ExitCode = forwardedResult.ExitCode;
+				await ProxyCommand(ctx, provider);
 				return;
 			}
 			
@@ -670,6 +661,70 @@ public class App
 			}
 		});
 		return commandLineBuilder.Build();
+	}
+
+	private async Task ProxyCommand(InvocationContext context, IDependencyProviderScope provider)
+	{
+		// get the version of dotnet available (which may not always be the global dotnet installation) 
+		var dotnetPath = context.ParseResult.GetValueForOption(provider.GetService<DotnetPathOption>());
+		var isPretty = context.ParseResult.GetValueForOption(provider.GetService<ShowPrettyOutput>());
+		var appContext = provider.GetService<IAppContext>();
+		var shouldRedirect = (appContext.UsePipeOutput || appContext.ShowRawOutput);
+			
+		var argumentsToForward= string.Join(" ", new []{"beam", "--pretty"}.Concat(Environment.GetCommandLineArgs()[1..]));
+
+		var warningMessage =
+			$"You tried used a Beamable CLI version different than the one configured in this project. We are forwarding the command ({argumentsToForward}) to the version the project is using. Instead of relying on this forwarding, please 'dotnet beam' from inside the project directory.";
+		if (shouldRedirect)
+		{
+			Console.Error.WriteLine(warningMessage);
+		}
+		else
+		{
+			Log.Warning(warningMessage);
+		}
+
+		var stdOut = PipeTarget.ToStream(Console.OpenStandardOutput());
+		var stdErr = PipeTarget.ToStream(Console.OpenStandardError());
+		var proxy = CliExtensions
+			.GetDotnetCommand(dotnetPath, argumentsToForward)
+			.WithValidation(CommandResultValidation.None)// it is okay if the sub command fails, hopefully it logs a useful error.
+			.WithStandardInputPipe(PipeSource.FromStream(Console.OpenStandardInput()))
+			;
+		if (shouldRedirect) // the sub process _should_ be redirecting, 
+		{
+			// so take the data, and forward it
+			proxy = proxy.WithStandardOutputPipe(stdOut); 
+
+			// and if we are supposed to be showing logs, those appear on stderr
+			if (isPretty)
+			{
+				proxy = proxy.WithStandardErrorPipe(stdErr);
+			}
+		}
+		else
+		{
+			// data _shouldn't_ sent, but it will be _anyway_. 
+			// so we can cheat it back and take the stderr (logs) and show them on stdOut. 
+			//   Note: stdout from the proxied process IS the data channel, but we
+			//         don't need it so it is lost.
+			proxy = proxy.WithStandardErrorPipe(stdOut);
+		}
+		
+		await proxy.ExecuteAsync();
+
+
+		// var forwardedCommand = Cli.Wrap("dotnet");
+		// var forwardedResult = await forwardedCommand
+		// 	.WithArguments(argumentsToForward)
+		// 	.ExecuteAsyncAndLog();
+
+		// ctx.ExitCode = forwardedResult.ExitCode;
+	}
+
+	static void ProxyCommand()
+	{
+		
 	}
 	
 	static void PrintHelp(InvocationContext context)
