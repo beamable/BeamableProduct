@@ -57,6 +57,8 @@ namespace Beamable.Server.Editor.Usam
 		public static string LibrariesPathsDirectory => Path.GetDirectoryName(LibrariesPathsFilePath);
 		public static string ServicesDefinitionsDirectory => Path.GetDirectoryName(ServicesDefinitionsFilePath);
 
+		private bool _isBeamableDev;
+
 		public CodeService(IDependencyProvider provider, BeamCommands cli, BeamableDispatcher dispatcher, DotnetService dotnetService)
 		{
 			_provider = provider;
@@ -895,7 +897,8 @@ namespace Beamable.Server.Editor.Usam
 			{
 				name = service,
 				serviceDirectory = StandaloneMicroservicesPath,
-				sln = slnPath
+				sln = slnPath,
+				beamableDev = BeamableEnvironment.IsBeamableDeveloper
 			};
 			var command = _cli.ProjectNewService(args);
 			await command.Run();

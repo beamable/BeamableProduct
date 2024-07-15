@@ -88,7 +88,15 @@ public class ConfigService
 	/// <returns>A path relative to the docker build context path</returns>
 	public string GetRelativeToDockerBuildContextPath(string path)
 	{
-		return Path.GetRelativePath(GetAbsoluteDockerBuildContextPath(), path);
+		string absoluteContextPath = GetAbsoluteDockerBuildContextPath();
+		return Path.GetRelativePath(absoluteContextPath, path);
+	}
+
+	public string GetPathFromRelativeToService(string path, string servicePath)
+	{
+		var relativePath = Path.GetDirectoryName(path);
+		var fullPath = Path.Combine(servicePath, relativePath);
+		return GetRelativeToDockerBuildContextPath(fullPath);
 	}
 
 	/// <summary>

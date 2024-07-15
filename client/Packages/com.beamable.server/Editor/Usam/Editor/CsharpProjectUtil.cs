@@ -118,7 +118,7 @@ namespace Beamable.Server.Editor.Usam
 												assemblyReferences.Select(
 													x => GenerateProjectReferenceEntry(x, csProjDir)));
 
-			var sdkVersion = BeamableEnvironment.SdkVersion;
+			var sdkVersion = BeamableEnvironment.NugetPackageVersion;
 
 
 

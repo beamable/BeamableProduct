@@ -67,7 +67,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 		public override void OnGUI(string searchContext)
 		{
 			EditorGUILayout.Separator();
-			EditorGUILayout.PropertyField(_customSettings.FindProperty("serviceDefinitions"), Styles.definitions);
+			EditorGUILayout.PropertyField(_customSettings.FindProperty("assemblyReferences"), Styles.definitions);
 
 
 			if (GUILayout.Button("Save changes", GUILayout.Width(100)))

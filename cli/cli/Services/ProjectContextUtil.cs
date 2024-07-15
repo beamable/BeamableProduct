@@ -555,6 +555,61 @@ public static class ProjectContextUtil
 		return prop.UnevaluatedValue;
 	}
 
+	public static List<string> GetAllIncludedFiles(BeamoServiceDefinition definition, ConfigService configService)
+	{
+		var buildEngine = new ProjectCollection();
+		Project buildProject = buildEngine.LoadProject(definition.ProjectPath);
+
+		return GetAllIncludedFiles(buildProject, configService).Distinct().ToList();
+	}
+
+	public static List<string> GetAllIncludedFiles(Project project, ConfigService configService)
+	{
+		var results = new List<string>();
+
+		var buildEngine = new ProjectCollection();
+
+		const string PROJECT_REFERENCE_TYPE = "ProjectReference";
+		const string COMPILE_TYPE = "Compile";
+
+		//First check if there are other projects being referenced here, so we run through them too
+		var references = project.GetItemsIgnoringCondition(PROJECT_REFERENCE_TYPE).ToArray();
+		foreach (ProjectItem reference in references)
+		{
+			var name = Path.GetFileName(reference.EvaluatedInclude);
+			var relativePath =
+				configService.GetPathFromRelativeToService(reference.EvaluatedInclude, project.DirectoryPath);
+			var combinedPath = Path.Combine(relativePath, name);
+			var refProject = buildEngine.LoadProject(combinedPath);
+
+			var partialResult = GetAllIncludedFiles(refProject, configService);
+			results.AddRange(partialResult);
+		}
+
+		//Now goes through all compile items in this project
+		var compiles = project.GetItemsIgnoringCondition(COMPILE_TYPE).ToArray();
+		foreach (ProjectItem item in compiles)
+		{
+			if (item.UnevaluatedInclude.Equals("**/*$(DefaultLanguageSourceExtension)")) //This case is the default one of every csproj, we want to skip this
+			{
+				continue;
+			}
+
+			var allFiles = item.EvaluatedInclude.Split(";");
+			foreach (var filePath in allFiles)
+			{
+				var name = Path.GetFileName(filePath);
+				var relativePath =
+					configService.GetPathFromRelativeToService(filePath, project.DirectoryPath);
+				var fixedPath = Path.Combine(relativePath, name);
+				results.Add(fixedPath);
+			}
+		}
+
+		return results;
+	}
+
+
 	public static void UpdateUnityProjectReferences(BeamoServiceDefinition definition, List<string> projectsPaths, List<string> assemblyNames)
 	{
 		const string ITEM_TYPE = "ProjectReference";
