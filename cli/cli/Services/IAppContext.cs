@@ -164,7 +164,12 @@ public class DefaultAppContext : IAppContext
 		{
 			AnsiConsole.Console = AnsiConsole.Create(new AnsiConsoleSettings
 			{
-				Out = new AnsiConsoleOutput(spectreOutput)
+				Out = new AnsiConsoleOutput(spectreOutput),
+				Enrichment = new ProfileEnrichment
+				{
+					Enrichers = new List<IProfileEnricher>(),
+					UseDefaultEnrichers = false
+				},
 			});
 		}
 

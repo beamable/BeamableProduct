@@ -82,6 +82,7 @@ public class App
 
 	private static void ConfigureLogging(App app, IDependencyProvider provider, Func<LoggerConfiguration, ILogger> configureLogger = null)
 	{
+		
 		var appCtx = provider.GetService<IAppContext>();
 		try
 		{
@@ -579,16 +580,18 @@ public class App
 			// As long as the versions are the same, running the local one or the global one changes nothing in behaviour.
 			var runningVersion = VersionService.GetNugetPackagesForExecutingCliVersion().ToString();
 			var isCalledFromInsideBeamableProject = provider.GetService<ConfigService>().TryGetProjectBeamableCLIVersion(out var projectLocalVersion);
+			Log.Verbose($"Checking for command redirect. is-local=[{isCalledFromInsideBeamableProject}] running-version=[{runningVersion}] project-version=[{projectLocalVersion}]");
 			if (isCalledFromInsideBeamableProject && runningVersion != projectLocalVersion)
 			{
 				var preventRedirect = ctx.ParseResult.GetValueForOption(provider.GetService<NoForwardingOption>());
-				if (preventRedirect)
+				if (!preventRedirect)
 				{
-					throw new CliException(
-						$"The {NoForwardingOption.OPTION_FLAG} flag is set, and thus the CLI will not forward the global request to the local version. Global-Version=[{runningVersion}] Local-Version=[{projectLocalVersion}]");
+					await ProxyCommand(ctx, provider);
+					return;
+
+					// throw new CliException(
+					// 	$"The {NoForwardingOption.OPTION_FLAG} flag is set, and thus the CLI will not forward the global request to the local version. Global-Version=[{runningVersion}] Local-Version=[{projectLocalVersion}]");
 				}
-				await ProxyCommand(ctx, provider);
-				return;
 			}
 			
 			try
@@ -683,7 +686,7 @@ public class App
 		var argumentsToForward= string.Join(" ", new []{"beam", "--pretty"}.Concat(Environment.GetCommandLineArgs()[1..]));
 
 		var warningMessage =
-			$"You tried used a Beamable CLI version different than the one configured in this project. We are forwarding the command ({argumentsToForward}) to the version the project is using. Instead of relying on this forwarding, please 'dotnet beam' from inside the project directory.";
+			$"You tried using a Beamable CLI version different than the one configured in this project. We are forwarding the command ({argumentsToForward}) to the version the project is using. Instead of relying on this forwarding, please 'dotnet beam' from inside the project directory.";
 		if (shouldRedirect)
 		{
 			Console.Error.WriteLine(warningMessage);
@@ -699,6 +702,7 @@ public class App
 			.GetDotnetCommand(dotnetPath, argumentsToForward)
 			.WithValidation(CommandResultValidation.None)// it is okay if the sub command fails, hopefully it logs a useful error.
 			.WithStandardInputPipe(PipeSource.FromStream(Console.OpenStandardInput()))
+			
 			;
 		if (shouldRedirect) // the sub process _should_ be redirecting, 
 		{
@@ -722,11 +726,6 @@ public class App
 		
 		var forwardedResult = await proxy.ExecuteAsync();
 		context.ExitCode = forwardedResult.ExitCode;
-	}
-
-	static void ProxyCommand()
-	{
-		
 	}
 	
 	static void PrintHelp(InvocationContext context)
