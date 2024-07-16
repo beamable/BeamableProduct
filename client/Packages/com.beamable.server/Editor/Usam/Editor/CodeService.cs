@@ -557,7 +557,7 @@ namespace Beamable.Server.Editor.Usam
 				namesList.Add(asmdef.name);
 				var pathFromRootFolder = CsharpProjectUtil.GenerateCsharpProjectFilename(asmdef.name);
 				var pathToService = service.ServiceInfo.projectPath;
-				pathsList.Add(Path.GetRelativePath(pathToService, pathFromRootFolder));
+				pathsList.Add(PackageUtil.GetRelativePath(pathToService, pathFromRootFolder));
 			}
 
 			var updateCommand = _cli.UnityUpdateReferences(new UnityUpdateReferencesArgs()
