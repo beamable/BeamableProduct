@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.19.22]
 ### Added
 - All standard `ContentRef` subtypes have a constructor that takes a content id string
+- `IPlatformRequester` includes `LatestServerTime` utility properties and functions
 
 ### Fixed
 - `IAnalyticsTracker` unavailable error no longer thrown in editor when token expires

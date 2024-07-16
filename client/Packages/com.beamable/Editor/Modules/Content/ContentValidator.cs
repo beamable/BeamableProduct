@@ -85,7 +85,7 @@ namespace Beamable.Editor.Content
 						Debug.LogException(ex);
 					}
 					
-					if (n % numberOfUpdatesBeforeRenderFrame == 0)
+					if (numberOfUpdatesBeforeRenderFrame != 0 && (n % numberOfUpdatesBeforeRenderFrame == 0))
 					{
 						yield return null; // delay a frame
 					}

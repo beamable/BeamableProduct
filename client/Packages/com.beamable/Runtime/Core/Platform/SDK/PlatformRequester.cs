@@ -41,6 +41,7 @@ namespace Beamable.Api
 		PackageVersion PackageVersion { get; }
 	}
 
+
 	/// <summary>
 	/// This type defines the %PlatformRequester.
 	///
@@ -52,7 +53,7 @@ namespace Beamable.Api
 	/// ![img beamable-logo]
 	///
 	/// </summary>
-	public class PlatformRequester : IPlatformRequester, IHttpRequester, IRequester
+	public class PlatformRequester : IPlatformRequester, IHttpRequester, IRequester, IPlatformTimeObserver
 	{
 		private readonly IDependencyProvider _provider;
 		private const string ACCEPT_HEADER = "application/json";
@@ -604,6 +605,7 @@ namespace Beamable.Api
 				}
 				else if (request.responseCode >= 300)
 				{
+					NoteServerTime(request);
 					// Handle errors
 					PlatformError platformError = null;
 					try
@@ -621,6 +623,7 @@ namespace Beamable.Api
 				else
 				{
 					// Parse JSON object and resolve promise
+					NoteServerTime(request);
 
 					if (string.IsNullOrWhiteSpace(responsePayload))
 					{
@@ -648,10 +651,25 @@ namespace Beamable.Api
 			}
 		}
 
+		protected virtual void NoteServerTime(UnityWebRequest request)
+		{
+			var dateHeaderValue = request.GetResponseHeader("Date");
+			LatestReceiveTime = DateTimeOffset.UtcNow;
+			if (!DateTimeOffset.TryParse(dateHeaderValue, out var parsedDate))
+			{
+				return;
+			}
+			
+			LatestServerTime = parsedDate;
+		}
+
 		protected virtual string GenerateAuthorizationHeader()
 		{
 			return Token != null ? $"Bearer {Token.Token}" : null;
 		}
+
+		public DateTimeOffset LatestServerTime { get; protected set; }
+		public DateTimeOffset LatestReceiveTime { get; protected set; }
 	}
 
 }

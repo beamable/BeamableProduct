@@ -389,5 +389,8 @@ namespace Beamable.Platform.Tests
 		{
 			throw new NotImplementedException();
 		}
+
+		public DateTimeOffset LatestServerTime { get; }
+		public DateTimeOffset LatestReceiveTime { get; }
 	}
 }
