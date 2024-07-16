@@ -1,3 +1,4 @@
+using Beamable.Common.Content;
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -23,6 +24,9 @@ namespace Beamable.Editor.Modules.EditorConfig
 		[Tooltip("These are advanced Beamable editor features. Please only use these if you are confident in what you are doing.")]
 		public AdvancedSettings Advanced = new AdvancedSettings();
 
+		[Tooltip("UnityHub may delete your PATH variable for the process. In order to customize the path, use this variable. By default, the common usr/local/bin path is included.")]
+		public OptionalListString CustomPathInclusions = new OptionalListString();
+		
 		public override void OnFreshCopy()
 		{
 			var existing = GetDefineSymbols();
