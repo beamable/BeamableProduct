@@ -8,6 +8,46 @@ using System.Linq;
 
 namespace Beamable.Common.Api
 {
+	
+	public interface IPlatformTimeObserver
+	{
+		/// <summary>
+		/// The most recent time included on a response from Beamable.
+		/// Use <see cref="PlatformTimeObserverExtensions.GetLatestServerTimestamp"/> to see a UNIX timestamp.
+		/// </summary>
+		public DateTimeOffset LatestServerTime { get; }
+		
+		/// <summary>
+		/// The most recent time a response from Beamable was received. 
+		/// </summary>
+		public DateTimeOffset LatestReceiveTime { get; }
+	}
+
+	public static class PlatformTimeObserverExtensions
+	{
+		/// <summary>
+		/// A UTC based timestamp (number of milliseconds) representing the most recent DateTimeOffset received from Beamable
+		/// </summary>
+		/// <param name="timeObserver"></param>
+		/// <returns></returns>
+		public static long GetLatestServerTimestamp(this IPlatformTimeObserver timeObserver)
+		{
+			return timeObserver.LatestServerTime.ToUniversalTime().ToUnixTimeMilliseconds();
+		}
+
+		/// <summary>
+		/// Get the number of milliseconds between the <see cref="IPlatformTimeObserver.LatestServerTime"/> and <see cref="IPlatformTimeObserver.LatestReceiveTime"/>.
+		/// This represents a loose notion of latency between the Beamable servers and the device. 
+		/// </summary>
+		/// <param name="timeObserver"></param>
+		/// <returns></returns>
+		public static double GetLatestServerTimeDifferenceMilliseconds(this IPlatformTimeObserver timeObserver)
+		{
+			return (timeObserver.LatestReceiveTime - timeObserver.LatestServerTime).TotalMilliseconds;
+		}
+	}
+
+	
 	public interface IRequester : IBeamableRequester
 	{
 		/// <summary>
