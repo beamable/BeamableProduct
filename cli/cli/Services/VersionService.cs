@@ -80,19 +80,14 @@ public class VersionService
 		return info;
 	}
 
-	public static PackageVersion GetExecutingCliVersion()
-	{
-		var versionString = BeamAssemblyVersionUtil.GetVersion<BeamoService>();
-		if (!PackageVersion.TryFromSemanticVersionString(versionString, out var packageVersion))
-		{
-			return "0.0.0";
-		}
-		return packageVersion;
-	}
-
 	public static PackageVersion GetNugetPackagesForExecutingCliVersion()
 	{
-		var currentVersion = GetExecutingCliVersion();
+		var versionString = BeamAssemblyVersionUtil.GetVersion<BeamoService>();
+		if (!PackageVersion.TryFromSemanticVersionString(versionString, out var currentVersion))
+		{
+			currentVersion = "0.0.0";
+		}
+
 		if ((currentVersion.Major == 0 || currentVersion == "1.0.0") && !currentVersion.IsNightly)
 		{
 			// if the major is 0, then its likely 0.0.0 or 0.0.123, 

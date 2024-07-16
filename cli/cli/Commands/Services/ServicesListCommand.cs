@@ -45,7 +45,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 
 		var isDockerRunning = await _localBeamo.CheckIsRunning();
 		var serviceDefinitions = _localBeamo.BeamoManifest.ServiceDefinitions;
-		var dependenciesDict = _localBeamo.GetAllBeamoIdsDependencies();
+		var dependenciesDict = _localBeamo.GetAllBeamoIdsDependencies(getAll: true);
 		var localServiceListResult = new ServiceListResult(isDockerRunning, serviceDefinitions.Count);
 		if (isDockerRunning)
 		{
@@ -125,7 +125,8 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 					"",
 					new[] { "" },
 					new[] { "" },
-					dependenciesDict[sd].Select(dep => dep.name),
+					dependenciesDict[sd].Where(d => d.type.Equals("storage")).Select(dep => dep.name),
+					dependenciesDict[sd].Where(d => d.type.Equals("unity-asmdef")).Select(dep => dep.dllName),
 					sd.ProjectDirectory,
 					sd.IsLocal,
 					sd.IsInRemote,
@@ -190,6 +191,7 @@ public class ServiceListResult
 
 	public List<string> Dependencies;
 	public List<string> ProjectPath;
+	public List<string> UnityAssemblyDefinitions;
 
 	public ServiceListResult( bool isDockerRunning, int allocateCount)
 	{
@@ -213,11 +215,12 @@ public class ServiceListResult
 
 		Dependencies = new List<string>(allocateCount);
 		ProjectPath = new List<string>(allocateCount);
+		UnityAssemblyDefinitions = new List<string>(allocateCount);
 	}
 
 	public void AddService(string beamoId, bool shouldBeEnabledOnRemote, bool runningLocally, string protocol, string imageId,
-		string containerName, string containerId, IEnumerable<string> hostPort, IEnumerable<string> containerPort, IEnumerable<string> dependentBeamoIds, string projectPath,
-		bool isLocal, bool isInRemote, bool isRunningRemotely)
+		string containerName, string containerId, IEnumerable<string> hostPort, IEnumerable<string> containerPort, IEnumerable<string> dependentBeamoIds, IEnumerable<string> unityAssemblyNames,
+		string projectPath, bool isLocal, bool isInRemote, bool isRunningRemotely)
 	{
 		BeamoIds.Add(beamoId);
 		IsRunningLocally.Add(runningLocally);
@@ -234,6 +237,7 @@ public class ServiceListResult
 		var dependencies = string.Join(",", dependentBeamoIds.ToList());
 
 		Dependencies.Add(dependencies);
+		UnityAssemblyDefinitions.Add(string.Join(",", unityAssemblyNames));
 		ProjectPath.Add(projectPath);
 		ExistInLocal.Add(isLocal);
 		ExistInRemote.Add(isInRemote);

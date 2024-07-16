@@ -35,13 +35,12 @@ namespace Beamable.Server.Editor.Usam
 				_assemblyGraph[assembly] = assembly.assemblyReferences;
 			}
 
-			//TODO this needs to be refactored to use ServicesDefinitions, which right now doesn't have the access to the assemblies list
-			/*var codeService = BeamEditorContext.Default.ServiceScope.GetService<CodeService>();
+			var codeService = BeamEditorContext.Default.ServiceScope.GetService<CodeService>();
 			foreach (var definition in codeService.ServiceDefinitions)
 			{
-				foreach (var reference in definition.)
+				foreach (var reference in definition.AssemblyDefinitionsNames)
 				{
-					if (!_nameToAssembly.TryGetValue(reference.name, out var assembly)) continue;
+					if (!_nameToAssembly.TryGetValue(reference, out var assembly)) continue;
 					if (!CsharpProjectUtil.IsValidReference(assembly.name)) continue;
 					_referencedAssemblies.Add(assembly);
 					foreach (var subReference in GetDeeplyReferencedAssemblies(assembly))
@@ -49,7 +48,7 @@ namespace Beamable.Server.Editor.Usam
 						_referencedAssemblies.Add(subReference);
 					}
 				}
-			}*/
+			}
 		}
 
 		static IEnumerable<Assembly> GetDeeplyReferencedAssemblies(Assembly assembly)
