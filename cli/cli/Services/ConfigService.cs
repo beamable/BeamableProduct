@@ -205,7 +205,10 @@ public class ConfigService
 
 	public const string ENV_VAR_WINDOWS_VOLUME_NAMES = "BEAM_DOCKER_WINDOWS_CONTAINERS";
 	public const string ENV_VAR_DOCKER_URI = "BEAM_DOCKER_URI";
+	public const string ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND = "BEAM_CLI_IS_REDIRECTED_COMMAND";
 
+	public static bool IsRedirected => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND));
+	
 	/// <summary>
 	/// Enabling a custom Docker Uri allows for a customer to have a customized docker install and still
 	/// tell the Beam CLI where the docker socket is available.
@@ -370,19 +373,23 @@ public class ConfigService
 		File.WriteAllText(pathToToolsManifest, manifestString);
 	}
 
-
+	public bool TryGetProjectBeamableCLIVersion(out string version)
+	{
+		return TryGetProjectBeamableCLIVersion(ConfigDirectoryPath, out version);
+	}
+	
 	/// <summary>
 	/// Extract the CLI version registered in the ".config" directory sibling to the ".beamable" folder. 
 	/// </summary>
-	public bool TryGetProjectBeamableCLIVersion(out string version)
+	public static bool TryGetProjectBeamableCLIVersion(string configDirectoryPath, out string version)
 	{
-		if (string.IsNullOrEmpty(ConfigDirectoryPath) || !Directory.Exists(Directory.GetParent(ConfigDirectoryPath)?.ToString()))
+		if (string.IsNullOrEmpty(configDirectoryPath) || !Directory.Exists(Directory.GetParent(configDirectoryPath)?.ToString()))
 		{
 			version = "";
 			return false;
 		}
 
-		var pathToDotNetConfigFolder = Directory.GetParent(ConfigDirectoryPath).ToString();
+		var pathToDotNetConfigFolder = Directory.GetParent(configDirectoryPath).ToString();
 		pathToDotNetConfigFolder = Path.Combine(pathToDotNetConfigFolder, ".config");
 		var pathToToolsManifest = Path.Combine(pathToDotNetConfigFolder, "dotnet-tools.json");
 

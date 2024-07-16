@@ -22,7 +22,8 @@ public class ShowPrettyOutput : Option<bool>
 public class NoForwardingOption : Option<bool>
 {
 	public const string OPTION_FLAG = "--no-redirect";
-	public NoForwardingOption()
+	public static NoForwardingOption Instance = new NoForwardingOption();
+	private NoForwardingOption()
 		: base(
 			name: OPTION_FLAG,
 			description: "If there is a local dotnet tool installation (with a ./config/dotnet-tools.json file) for the beam tool, " +

@@ -90,11 +90,8 @@ public class PlayerCommand : AtomicCommand<PlayerCommandArgs, Account>
 		var playerId = await ResolvePlayerId(args, args.playerId, args.token);
 
 		var api = new AccountsApi(args.Requester);
-		var account = await api.GetFind(playerId.ToString()).RecoverFrom404(ex =>
-		{
-			Log.Warning("No account exists in this realm.");
-			return new Account();
-		});
+		var account = await api.GetFind(playerId.ToString()).RecoverFrom404(_ => 
+			throw new CliException("No account exists in this realm."));
 
 		return account;
 	}

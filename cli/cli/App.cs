@@ -230,8 +230,8 @@ public class App
 		Commands.AddSingleton<LogOption>();
 		Commands.AddSingleton<ShowRawOutput>();
 		Commands.AddSingleton<ShowPrettyOutput>();
-		Commands.AddSingleton<DotnetPathOption>();
-		Commands.AddSingleton<NoForwardingOption>();
+		Commands.AddSingleton(DotnetPathOption.Instance);
+		Commands.AddSingleton(NoForwardingOption.Instance);
 		Commands.AddSingleton(AllHelpOption.Instance);
 		Commands.AddSingleton(NoLogFileOption.Instance);
 		Commands.AddSingleton(UnmaskLogsOption.Instance);
@@ -488,9 +488,28 @@ public class App
 
 		helpBuilder.CustomizeLayout(c =>
 		{
+			
 			var defaultLayout = GetHelpLayout().ToList();
-
 			defaultLayout.Add(PrintOutputHelp);
+			defaultLayout.Add(ctx =>
+			{
+				if (!ConfigService.IsRedirected)
+				{
+					// return; // nothing to say if we aren't being redirected...
+				}
+
+				var options = ctx.Command.Options;
+				
+				if (ctx.Command is IHaveRedirectionConcernMessage concernedCommand)
+				{
+					
+					ctx.Output.WriteLine("Redirection Warning:");
+					concernedCommand.WriteValidationMessage(ctx.Command, ctx.Output);
+				}
+
+				
+			});
+			var executingVersion = VersionService.GetNugetPackagesForExecutingCliVersion();
 
 			defaultLayout.Insert(0, (ctx) =>
 			{
@@ -507,8 +526,51 @@ public class App
 					ctx.Output.WriteLine("  designed to be used outside of the Beamable team. The command structure may change ");
 					ctx.Output.WriteLine("  in the future. Happy spelunking!");
 				}
-
 			});
+			
+			defaultLayout.Insert(0, (ctx) =>
+			{
+				ctx.Output.WriteLine("CLI Version: " + executingVersion);
+			});
+			ConfigService.TryToFindBeamableFolder(".", out var guessPath);
+			if (ConfigService.TryGetProjectBeamableCLIVersion(guessPath, out var localVersion))
+			{
+				
+				if (executingVersion != localVersion)
+				{
+					var noForward = c.ParseResult.GetValueForOption(NoForwardingOption.Instance);
+					if (noForward)
+					{
+						defaultLayout.Insert(0, ctx =>
+						{
+							ctx.Output.WriteLine($"Version Warning!");
+							ctx.Output.WriteLine($"  A local project was detected at path=[{guessPath}].");
+							ctx.Output.WriteLine($"  The local project is using local-version=[{localVersion}], ");
+							ctx.Output.WriteLine($"  but this CLI is showing --help for execution-version=[{executingVersion}]. ");
+							ctx.Output.WriteLine("");
+							ctx.Output.WriteLine("  To see the --help information for the local version, use ");
+							ctx.Output.WriteLine("  `dotnet beam --help`  ");
+							ctx.Output.WriteLine("");
+							ctx.Output.WriteLine("  By default, all commands will be redirected to the local version, unless ");
+							ctx.Output.WriteLine($"  the {NoForwardingOption.OPTION_FLAG} flag is set.");
+
+						});
+						return defaultLayout;
+					}
+					
+					return new List<HelpSectionDelegate>
+					{
+						ctx =>
+						{
+							ctx.Output.WriteLine($"execution-version=[{executingVersion}]");
+							ctx.Output.WriteLine($"local-version=[{localVersion}]");
+							ctx.Output.WriteLine($"Showing redirected help.");
+						},
+						ProxyHelp
+					};
+				}
+			}
+
 
 			return defaultLayout;
 		});
@@ -578,19 +640,17 @@ public class App
 
 			// Check if we need to forward this command --- we only forward if the executing version of the CLI is different than the one locally installed on the project.
 			// As long as the versions are the same, running the local one or the global one changes nothing in behaviour.
-			var runningVersion = VersionService.GetNugetPackagesForExecutingCliVersion().ToString();
-			var isCalledFromInsideBeamableProject = provider.GetService<ConfigService>().TryGetProjectBeamableCLIVersion(out var projectLocalVersion);
-			Log.Verbose($"Checking for command redirect. is-local=[{isCalledFromInsideBeamableProject}] running-version=[{runningVersion}] project-version=[{projectLocalVersion}]");
-			if (isCalledFromInsideBeamableProject && runningVersion != projectLocalVersion)
+			var runningVersion = appContext.ExecutingVersion;
+			var localVersion = appContext.LocalProjectVersion;
+			var isCalledFromInsideBeamableProject = localVersion != null;
+			Log.Verbose($"Checking for command redirect. is-local=[{isCalledFromInsideBeamableProject}] running-version=[{runningVersion}] project-version=[{localVersion}]");
+			if (isCalledFromInsideBeamableProject && runningVersion != localVersion)
 			{
 				var preventRedirect = ctx.ParseResult.GetValueForOption(provider.GetService<NoForwardingOption>());
 				if (!preventRedirect)
 				{
 					await ProxyCommand(ctx, provider);
 					return;
-
-					// throw new CliException(
-					// 	$"The {NoForwardingOption.OPTION_FLAG} flag is set, and thus the CLI will not forward the global request to the local version. Global-Version=[{runningVersion}] Local-Version=[{projectLocalVersion}]");
 				}
 			}
 			
@@ -674,11 +734,32 @@ public class App
 		return commandLineBuilder.Build();
 	}
 
+	private void ProxyHelp(HelpContext helpContext)
+	{
+		var dotnetPath = helpContext.ParseResult.GetValueForOption(DotnetPathOption.Instance) ?? "dotnet"; // TODO: use IAppContext to get env var or option based dotnet path
+		var argumentsToForward= string.Join(" ", new []{"beam"}.Concat(Environment.GetCommandLineArgs()[1..]));
+		
+		var stdOut = PipeTarget.ToDelegate(line => helpContext.Output.WriteLine(line));
+		var stdErr = PipeTarget.ToStream(Console.OpenStandardError());
+		
+		var proxy = CliExtensions
+				.GetDotnetCommand(dotnetPath, argumentsToForward)
+				.WithValidation(CommandResultValidation.None)// it is okay if the sub command fails, hopefully it logs a useful error.
+				.WithEnvironmentVariables(new Dictionary<string, string>
+				{
+					[ConfigService.ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND] = "1"
+				})
+				.WithStandardOutputPipe(stdOut)
+				.WithStandardErrorPipe(stdErr)
+			;
+		var task = proxy.ExecuteAsync();
+		task.Task.Wait();
+	}
+
 	private async Task ProxyCommand(InvocationContext context, IDependencyProviderScope provider)
 	{
-		
 		// get the version of dotnet available (which may not always be the global dotnet installation) 
-		var dotnetPath = context.ParseResult.GetValueForOption(provider.GetService<DotnetPathOption>());
+		var dotnetPath = context.ParseResult.GetValueForOption(provider.GetService<DotnetPathOption>()); // TODO: use IAppContext to get env var or option based dotnet path
 		var isPretty = context.ParseResult.GetValueForOption(provider.GetService<ShowPrettyOutput>());
 		var appContext = provider.GetService<IAppContext>();
 		var shouldRedirect = (appContext.UsePipeOutput || appContext.ShowRawOutput);
@@ -701,7 +782,12 @@ public class App
 		var proxy = CliExtensions
 			.GetDotnetCommand(dotnetPath, argumentsToForward)
 			.WithValidation(CommandResultValidation.None)// it is okay if the sub command fails, hopefully it logs a useful error.
-			.WithStandardInputPipe(PipeSource.FromStream(Console.OpenStandardInput()))
+			.WithEnvironmentVariables(new Dictionary<string, string>
+			{
+				[ConfigService.ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND] = "1"
+			})
+			// TODO: ideally, support somehow std-in commands
+			// .WithStandardInputPipe(PipeSource.FromStream(Console.OpenStandardInput()))
 			
 			;
 		if (shouldRedirect) // the sub process _should_ be redirecting, 
@@ -741,6 +827,7 @@ public class App
 
 	static void PrintOutputHelp(HelpContext context)
 	{
+		
 		switch (context.Command)
 		{
 			// case ISingleResult singleResult:
