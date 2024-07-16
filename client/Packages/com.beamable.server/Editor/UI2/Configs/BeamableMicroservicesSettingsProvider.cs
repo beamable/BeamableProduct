@@ -26,9 +26,9 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 		private string _serviceName;
 
 		public BeamableMicroservicesSettingsProvider(string serviceName,
-		                                             string path,
-		                                             SettingsScope scopes,
-		                                             IEnumerable<string> keywords = null) : base(path, scopes, keywords)
+													 string path,
+													 SettingsScope scopes,
+													 IEnumerable<string> keywords = null) : base(path, scopes, keywords)
 		{
 			_serviceName = serviceName;
 		}
@@ -48,9 +48,9 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 
 				var provider =
 					new BeamableMicroservicesSettingsProvider(definition.BeamoId, "Project/Beamable Services/" + definition.BeamoId,
-					                                          SettingsScope.Project)
+															  SettingsScope.Project)
 					{
-						keywords = new HashSet<string>(new[] { "Microservice", definition.BeamoId})
+						keywords = new HashSet<string>(new[] { "Microservice", definition.BeamoId })
 					};
 				provider.activateHandler += MicroserviceHandler;
 				allProviders.Add(provider);
@@ -142,8 +142,8 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 		public async Promise SaveChanges()
 		{
 			await BeamEditorContext
-			    .Default.ServiceScope.GetService<CodeService>()
-			    .UpdateServiceReferences(serviceName, assemblyReferences);
+				.Default.ServiceScope.GetService<CodeService>()
+				.UpdateServiceReferences(serviceName, assemblyReferences);
 		}
 
 		public static SerializedObject GetSerializedSettings(string serviceName)

@@ -37,7 +37,7 @@ public interface IAppContext
 	public IAccessToken Token { get; }
 	public string RefreshToken { get; }
 	bool ShouldUseLogFile { get; }
-	string TempLogFilePath { get;  }
+	string TempLogFilePath { get; }
 	bool ShouldMaskLogs { get; }
 
 	/// <summary>

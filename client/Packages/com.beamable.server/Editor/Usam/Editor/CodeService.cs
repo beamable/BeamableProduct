@@ -68,14 +68,14 @@ namespace Beamable.Server.Editor.Usam
 			OnReady = Init();
 		}
 
-		
+
 		public async Promise Init()
 		{
 			if (EditorApplication.isPlayingOrWillChangePlaymode)
 				return;
-			
+
 			UsamLogger.ResetLogTimer();
-			
+
 			UsamLogger.Log("Running init");
 
 			UsamLogger.Log("Setting properties file");
@@ -107,16 +107,16 @@ namespace Beamable.Server.Editor.Usam
 			{
 				var migrationVisualElement = new MigrationConfirmationVisualElement(oldServices);
 				var popup = BeamablePopupWindow.ShowUtility(Constants.Migration.MIGRATION_POPUP_NAME, migrationVisualElement, null,
-				                                            new Vector2(800, 400),  (window) =>
-				                                            {
-					                                            // trigger after Unity domain reload
-					                                            window.Close();
-				                                            });
+															new Vector2(800, 400), (window) =>
+														   {
+																// trigger after Unity domain reload
+																window.Close();
+														   });
 				migrationVisualElement.OnCancelled += popup.Close;
 				migrationVisualElement.OnClosed += popup.Close;
 			}
-			
-			
+
+
 			UsamLogger.Log("Completed");
 			UsamLogger.StopLogTimer();
 		}
@@ -144,11 +144,11 @@ namespace Beamable.Server.Editor.Usam
 
 				MicroserviceDescriptor serviceDesc = (MicroserviceDescriptor)descriptor;
 				pathsToDelete.Add(serviceDesc.SourcePath);
-				microPromises.Add( MigrateMicroservice(serviceDesc, (message, hasProgress) =>
-				{
-					updateCallback(progress, message);
-					progress += increment * hasProgress;
-				}));
+				microPromises.Add(MigrateMicroservice(serviceDesc, (message, hasProgress) =>
+			   {
+				   updateCallback(progress, message);
+				   progress += increment * hasProgress;
+			   }));
 			}
 
 			var microSequence = Promise.Sequence(microPromises);
@@ -164,11 +164,11 @@ namespace Beamable.Server.Editor.Usam
 				}
 
 				pathsToDelete.Add(Path.GetDirectoryName(descriptor.AttributePath));
-				storagePromises.Add( MigrateStorage((StorageObjectDescriptor)descriptor, (message, hasProgress) =>
-				{
-					updateCallback(progress, message);
-					progress += increment * hasProgress;
-				}));
+				storagePromises.Add(MigrateStorage((StorageObjectDescriptor)descriptor, (message, hasProgress) =>
+			   {
+				   updateCallback(progress, message);
+				   progress += increment * hasProgress;
+			   }));
 			}
 
 			var storageSequence = Promise.Sequence(storagePromises);
@@ -291,14 +291,14 @@ namespace Beamable.Server.Editor.Usam
 
 				var fileContent = File.ReadAllText(newFilePath);
 				fileContent = fileContent.Replace("namespace Beamable.Microservices",
-				                                  $"namespace Beamable.{microserviceName}");
+												  $"namespace Beamable.{microserviceName}");
 				File.WriteAllText(newFilePath, fileContent);
 			}
 		}
-		
+
 		private static List<IDescriptor> GetAllOldServices()
 		{
-			List<string> servicesToIgnore = new List<string>() {"CacheDependentMS"};
+			List<string> servicesToIgnore = new List<string>() { "CacheDependentMS" };
 			List<IDescriptor> allDescriptors = new List<IDescriptor>();
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			if (serviceRegistry != null)
@@ -309,7 +309,7 @@ namespace Beamable.Server.Editor.Usam
 					{
 						continue;
 					}
-					
+
 					//Check if this was already migrated
 					//Right now this is not required, because we maintain all services and storages inside a hidden folder from Unity
 					//However, in the future with services being able to be created anywhere, this will be necessary
@@ -331,7 +331,7 @@ namespace Beamable.Server.Editor.Usam
 							continue;
 						}
 					}*/
-					
+
 					allDescriptors.Add(descriptor);
 				}
 			}
@@ -342,8 +342,8 @@ namespace Beamable.Server.Editor.Usam
 		public static List<AssemblyDefinitionAsset> GetAssemblyDefinitionAssets(MicroserviceDescriptor descriptor)
 		{
 			List<AssemblyDefinitionAsset> assets = new List<AssemblyDefinitionAsset>();
-			List<string> mandatoryReferences = new List<string>() {"Unity.Beamable.Customer.Common"}; // Add the customer common asmdef even if it's not being used
-			
+			List<string> mandatoryReferences = new List<string>() { "Unity.Beamable.Customer.Common" }; // Add the customer common asmdef even if it's not being used
+
 			var dependencies = descriptor.Type.Assembly.GetReferencedAssemblies().Select(r => r.Name).ToList();
 			dependencies.AddRange(mandatoryReferences);
 			foreach (var name in dependencies)
@@ -361,19 +361,19 @@ namespace Beamable.Server.Editor.Usam
 					{
 						throw new Exception($"Found more than one assembly definition with the name: {name}");
 					}
-					
+
 					var path = AssetDatabase.GUIDToAssetPath(guid[0]);
 
 					if (string.IsNullOrEmpty(path)) continue;
 
 					var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(path);
-					if(asset != null && asset.name.Equals(name)) assets.Add(asset);
+					if (asset != null && asset.name.Equals(name)) assets.Add(asset);
 				}
 			}
 
 			return assets;
 		}
-		
+
 		private async Promise SaveReferencedLibraries()
 		{
 			List<BeamDependencyData> allDependencies = new List<BeamDependencyData>();
@@ -413,7 +413,7 @@ namespace Beamable.Server.Editor.Usam
 			{
 				UsamLogger.Log("refresh services from CLI start");
 				//Get remote only information from the CLI
-				var psRemote = _cli.ServicesPs(new ServicesPsArgs() { json = false});
+				var psRemote = _cli.ServicesPs(new ServicesPsArgs() { json = false });
 				psRemote.OnStreamServiceListResult(cb =>
 				{
 					IsDockerRunning = cb.data.IsDockerRunning;
@@ -453,7 +453,7 @@ namespace Beamable.Server.Editor.Usam
 
 				string assetProjectPath = objData.ProjectPath[i];
 
-				
+
 				AddServiceDefinition(name, type, assetProjectPath, runningState,
 									 objData.ShouldBeEnabledOnRemote[i], objData.ExistInLocal[i], objData.Dependencies[i], objData.UnityAssemblyDefinitions[i]);
 				UsamLogger.Log($"Handling {name} ended");
@@ -539,7 +539,7 @@ namespace Beamable.Server.Editor.Usam
 					throw new ArgumentOutOfRangeException(nameof(type), type, null);
 			}
 		}
-		
+
 		public async Promise UpdateServiceReferences(string serviceName, List<AssemblyDefinitionAsset> assemblyDefinitions)
 		{
 			UsamLogger.Log($"Starting updating references");
@@ -579,10 +579,10 @@ namespace Beamable.Server.Editor.Usam
 
 		public Promise RunStandaloneMicroservice(string id)
 		{
-			var runCommand = _cli.ProjectRun(new ProjectRunArgs() {ids = new[] {id}, watch = true}).OnError(ex =>
-			{
-				Debug.LogError(ex.data.message);
-			});
+			var runCommand = _cli.ProjectRun(new ProjectRunArgs() { ids = new[] { id }, watch = true }).OnError(ex =>
+				{
+					Debug.LogError(ex.data.message);
+				});
 			return runCommand.Run();
 		}
 
@@ -702,7 +702,7 @@ namespace Beamable.Server.Editor.Usam
 				logs.OnStreamTailLogMessageForClient(point =>
 				{
 
-					
+
 					UsamLogger.Log("Log: " + point.data.message);
 					_dispatcher.Schedule(() => OnLogMessage?.Invoke(definition.BeamoId, point.data));
 				});
@@ -725,12 +725,12 @@ namespace Beamable.Server.Editor.Usam
 					// def.IsRunningLocally = cb.data.isRunning;
 					def.Builder.IsRunning = cb.data.isRunning;
 				}
-				
+
 			}).OnError(cb =>
 			{
 				Debug.LogError($"Error occured while listening for Microservice status updates. Message=[{cb.data.message}] CliStack=[{cb.data.stackTrace}]");
 			});
-			
+
 			try
 			{
 				await projectPs.Run();
@@ -915,7 +915,7 @@ namespace Beamable.Server.Editor.Usam
 
 		public Promise StopStandaloneMicroservice(string beamoId)
 		{
-			return StopStandaloneMicroservice(new string[] {beamoId});
+			return StopStandaloneMicroservice(new string[] { beamoId });
 		}
 
 		public async Promise StopStandaloneMicroservice(IEnumerable<string> beamoIds)

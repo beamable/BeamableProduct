@@ -36,7 +36,7 @@ namespace Beamable.Content
 	public class ContentCache<TContent> : ContentCache where TContent : ContentObject, new()
 	{
 		private static readonly ClientContentSerializer _serializer = new ClientContentSerializer();
-		
+
 		private readonly Dictionary<string, ContentCacheEntry<TContent>> _cache =
 			new Dictionary<string, ContentCacheEntry<TContent>>();
 
@@ -48,9 +48,9 @@ namespace Beamable.Content
 		private const float WriteToFileDelay = 5;
 
 		public ContentCache(
-			IHttpRequester requester, 
-			IBeamableFilesystemAccessor filesystemAccessor, 
-			ContentService contentService, 
+			IHttpRequester requester,
+			IBeamableFilesystemAccessor filesystemAccessor,
+			ContentService contentService,
 			CoroutineService coroutineService)
 		{
 			_requester = requester;
@@ -82,7 +82,7 @@ namespace Beamable.Content
 			PlatformLogger.Log(
 				$"ContentCache: Fetching content from cache for {requestedInfo.contentId}: version: {requestedInfo.version}");
 			if (_cache.TryGetValue(cacheId, out var cacheEntry)) return cacheEntry.Content;
-			
+
 			// Then, try the on disk cache
 			if (TryGetValueFromDisk(requestedInfo, out var diskContent))
 			{
@@ -90,7 +90,7 @@ namespace Beamable.Content
 				SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
 				return promise;
 			}
-			
+
 			// Check if the data exists as baked content
 			if (TryGetBaked(requestedInfo, out var bakedContent))
 			{
@@ -98,7 +98,7 @@ namespace Beamable.Content
 				SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
 				return promise;
 			}
-			
+
 			// Finally, if not found, fetch the content from the CDN
 			var fetchedContent = DownloadContent(requestedInfo);
 			return fetchedContent;
@@ -116,7 +116,7 @@ namespace Beamable.Content
 				UpdateDiskFile(requestedInfo, raw);
 				return DeserializeContent(requestedInfo, raw);
 			}
-			
+
 			try
 			{
 				var promise = Download();
