@@ -224,6 +224,15 @@ namespace Beamable.Common.Content
 	[System.Serializable]
 	public class ContentRef<TContent> : AbsContentRef<TContent> where TContent : ContentObject, IContentObject, new()
 	{
+		public ContentRef()
+		{
+			// default constructor
+		}
+		public ContentRef(string id)
+		{
+			this.Id = id;
+		}
+		
 		public override Promise<TContent> Resolve(string manifestID = "")
 		{
 			var api = ContentApi.Instance;
