@@ -210,7 +210,7 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 		Log.Verbose($"setting temp working dir solutiondir=[{newMicroserviceInfo.SolutionDirectory}]");
 		var previousWorkingDir = args.ConfigService.WorkingDirectory;
 		args.ConfigService.SetTempWorkingDir(newMicroserviceInfo.SolutionDirectory);
-		args.ConfigService.SetBeamableDirectory(newMicroserviceInfo.SolutionDirectory);
+		args.ConfigService.SetBeamableDirectory(".");
 		await args.BeamoLocalSystem.InitManifest();
 		if (!args.BeamoLocalSystem.BeamoManifest.TryGetDefinition(args.ProjectName, out var sd))
 		{
@@ -242,8 +242,6 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 
 		//Go back to the default working dir
 		args.ConfigService.SetTempWorkingDir(previousWorkingDir);
-		args.ConfigService.SetBeamableDirectory(previousWorkingDir);
-
 		
 		args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 	}
