@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -20,10 +21,13 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 		class Styles
 		{
 			public static GUIContent definitions = new GUIContent("Service Assembly Definitions");
+			public static GUIContent dependencies = new GUIContent("Storages Dependencies");
 		}
 
 		private SerializedObject _customSettings;
 		private string _serviceName;
+		private int _selected;
+		private bool _showDependenciesEditor;
 
 		public BeamableMicroservicesSettingsProvider(string serviceName,
 		                                             string path,
@@ -62,13 +66,31 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 		public override void OnActivate(string searchContext, VisualElement rootElement)
 		{
 			_customSettings = BeamableMicroservicesSettings.GetSerializedSettings(_serviceName);
+			//load all possible dependencies
+			var codeService = BeamEditorContext
+			                  .Default.ServiceScope.GetService<CodeService>();
+			var options = codeService.ServiceDefinitions.Where(sd => sd.ServiceType == ServiceType.StorageObject)
+			                         .Select(sd => sd.BeamoId).ToArray();
+
+			_showDependenciesEditor = options.Length > 0;
 		}
 
 		public override void OnGUI(string searchContext)
 		{
 			EditorGUILayout.Separator();
-			EditorGUILayout.PropertyField(_customSettings.FindProperty("assemblyReferences"), Styles.definitions);
+			if (_showDependenciesEditor)
+			{
+				EditorGUILayout.PropertyField(_customSettings.FindProperty(nameof(BeamableMicroservicesSettings.storageDependencies)), Styles.dependencies);
+			}
+			else
+			{
+				EditorGUILayout.LabelField("There are no storages yet created!");
+			}
 
+			EditorGUILayout.Separator();
+			EditorGUILayout.PropertyField(_customSettings.FindProperty(nameof(BeamableMicroservicesSettings.assemblyReferences)), Styles.definitions);
+			EditorGUILayout.Separator();
+			EditorGUILayout.Separator();
 
 			if (GUILayout.Button("Save changes", GUILayout.Width(100)))
 			{
@@ -100,6 +122,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 	public class BeamableMicroservicesSettings : ScriptableObject
 	{
 		public List<AssemblyDefinitionAsset> assemblyReferences;
+		public List<StorageDependency> storageDependencies;
 
 		public string serviceName;
 
@@ -141,9 +164,10 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 
 		public async Promise SaveChanges()
 		{
+			var dependencies = storageDependencies.Select(dep => dep.StorageName).ToList();
 			await BeamEditorContext
 			    .Default.ServiceScope.GetService<CodeService>()
-			    .UpdateServiceReferences(serviceName, assemblyReferences);
+			    .SetMicroserviceChanges(serviceName, assemblyReferences, dependencies);
 		}
 
 		public static SerializedObject GetSerializedSettings(string serviceName)
@@ -180,7 +204,47 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 				instance.assemblyReferences.Add(asset);
 			}
 
+			var dependencies = sd.Dependencies.Select(dp => new StorageDependency() {StorageName = dp}).ToList();
+			instance.storageDependencies = dependencies;
+
 			return new SerializedObject(instance);
+		}
+
+		[Serializable]
+		public class StorageDependency
+		{
+			public string StorageName;
+		}
+
+		[CustomPropertyDrawer(typeof(StorageDependency))]
+		public class StorageDependencyDrawer : PropertyDrawer
+		{
+			private int _selected;
+			private Regex _regex = new Regex(".Array.data\\[([0-9]+)]");
+
+			public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+			{
+				//load all possible dependencies
+				var codeService = BeamEditorContext
+				                  .Default.ServiceScope.GetService<CodeService>();
+				var options = codeService.ServiceDefinitions.Where(sd => sd.ServiceType == ServiceType.StorageObject)
+				                      .Select(sd => sd.BeamoId).ToArray();
+
+				var storageNameProperty = property.FindPropertyRelative(nameof(StorageDependency.StorageName));
+
+				//Some stuff to get the index of this property in it's array
+				string indexInArray = string.Empty;
+				if (property.propertyPath.Contains("Array"))
+				{
+					indexInArray =
+						_regex.Match(property.propertyPath).Groups[1].ToString();
+				}
+
+				var previousIndex = Array.IndexOf(options, storageNameProperty.stringValue);
+
+				var index = EditorGUI.Popup(position, $"Element {indexInArray}", previousIndex, options);
+				storageNameProperty.stringValue = index >= 0 ? options[index] : "None";
+			}
 		}
 	}
 }
