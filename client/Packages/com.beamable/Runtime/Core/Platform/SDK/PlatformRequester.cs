@@ -384,9 +384,7 @@ namespace Beamable.Api
 						   }
 						   else if (httpNoInternet)
 						   {
-							   return Promise<T>.Failed(new NoConnectivityException(
-															opts.uri +
-															" should not be cached and requires internet connectivity. Internet connection lost. " + error.Message));
+							   return Promise<T>.Failed(error); // this is either a NoConnectivityException, or a PlatformRequesterException
 						   }
 
 						   return HandleError<T>(error, contentType, body, opts);
@@ -406,7 +404,7 @@ namespace Beamable.Api
 			}
 			else
 			{
-				return Promise<T>.Failed(new NoConnectivityException(opts.uri + " should not be cached and requires internet connectivity."));
+				return Promise<T>.Failed(new BeamableConnectionNotEstablishedException(opts));
 			}
 		}
 
@@ -601,7 +599,7 @@ namespace Beamable.Api
 				if (request.IsNetworkError())
 				{
 					PlatformLogger.Log($"<b>[PlatformRequester][NetworkError]</b> {typeof(T).Name}");
-					promise.CompleteError(new NoConnectivityException($"Unity webRequest failed with a network error. status=[{request.responseCode}] error=[{request.error}]"));
+					promise.CompleteError(new BeamableConnectionFailedException(opts, request));
 				}
 				else if (request.responseCode >= 300)
 				{
@@ -616,9 +614,7 @@ namespace Beamable.Api
 					{
 						// Swallow the exception and let the error be null
 					}
-
 					promise.CompleteError(new PlatformRequesterException(platformError, request, responsePayload));
-
 				}
 				else
 				{

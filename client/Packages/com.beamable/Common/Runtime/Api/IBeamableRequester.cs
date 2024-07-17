@@ -2,9 +2,12 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Serialization;
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using UnityEngine.Networking;
 
 namespace Beamable.Common.Api
 {
@@ -71,7 +74,24 @@ namespace Beamable.Common.Api
 		public string Uri { get; set; }
 	}
 
-	public struct SDKRequesterOptions<T> : ISDKRequesterOptionData
+	public interface ISDKRequesterOptionDataView : ISDKRequesterOptionData
+	{
+		public object Body { get; }
+		public bool UseCache { get; }
+		public bool IncludeAuthHeader { get; }
+		public bool UseConnectivityPreCheck { get; }
+		public bool DisableScopeHeader { get; }
+	}
+
+	public static class SDKRequesterOptionDataViewExtensions
+	{
+		public static string ConvertToJson(this ISDKRequesterOptionDataView view)
+		{
+			return Json.Serialize(view, new StringBuilder());
+		}
+	}
+
+	public struct SDKRequesterOptions<T> : ISDKRequesterOptionDataView
 	{
 		/// <summary>
 		/// The HTTP method to use
@@ -128,6 +148,12 @@ namespace Beamable.Common.Api
 			parser = clone.parser;
 			disableScopeHeaders = clone.disableScopeHeaders;
 		}
+
+		public object Body => body;
+		public bool UseCache => useCache;
+		public bool IncludeAuthHeader => includeAuthHeader;
+		public bool UseConnectivityPreCheck => useConnectivityPreCheck;
+		public bool DisableScopeHeader => disableScopeHeaders;
 	}
 
 	public enum BeamableBackendType
@@ -477,11 +503,146 @@ namespace Beamable.Common.Api
 	}
 
 	/// <summary>
+	/// The <see cref="NoConnectivityExceptionSource"/> captures the possible reasons why a <see cref="NoConnectivityException"/> can exist
+	/// </summary>
+	public enum NoConnectivityExceptionSource
+	{
+		/// <summary>
+		/// Represents a request that was attempted and failed due a http-status=0 code.
+		/// </summary>
+		FAILED_REQUEST,
+		
+		/// <summary>
+		/// Represents a request that attempted to use the offlineCache, but failed due to a cache-miss.
+		/// These errors do not re-trigger an offline state. 
+		/// </summary>
+		CACHE_MISS,
+		
+		/// <summary>
+		/// Represents a request that never even attempted to transmit, because the system was already found to be in an offline-state.
+		/// </summary>
+		EXISTING_OUTAGE
+	}
+
+	/// <summary>
+	/// The <see cref="BeamableConnectionNotEstablishedException"/> occurs when
+	/// a Beamable request is attempted, but the system believes it is in a no-internet state.
+	/// Internet will not be re-established until the ConnectivityChecker runs again and succeeds. 
+	/// </summary>
+	public class BeamableConnectionNotEstablishedException : NoConnectivityException
+	{
+		public BeamableConnectionNotEstablishedException(ISDKRequesterOptionDataView requestData) : base(requestData)
+		{
+			
+		}
+	}
+	
+	/// <summary>
+	/// The <see cref="BeamableConnectionFailedException"/> occurs when
+	/// a Beamable request actively fails due to a lack of Internet. 
+	/// </summary>
+	public class BeamableConnectionFailedException : NoConnectivityException
+	{
+		public BeamableConnectionFailedException(ISDKRequesterOptionDataView requestData, UnityWebRequest failedRequest) : base(
+			requestData, failedRequest)
+		{
+			
+		}
+	}
+
+	/// <summary>
+	/// The <see cref="OfflineCacheMissException"/> occurs when a
+	/// Beamable request attempts to use the offlineCache, and no cache-key is found.
+	/// </summary>
+	public class OfflineCacheMissException : NoConnectivityException
+	{
+		public OfflineCacheMissException(string key, string description) : base(key, description)
+		{
+			
+		}
+	}
+	
+	/// <summary>
 	/// An error that comes from the <see cref="IBeamableRequester"/> or the <see cref="IHttpRequester"/>
 	/// when there is no internet connectivity.
 	/// </summary>
 	public class NoConnectivityException : Exception
 	{
+		/// <summary>
+		/// The <see cref="NoConnectivityExceptionSource"/> explains why the exception exists
+		/// </summary>
+		public NoConnectivityExceptionSource source;
+		
+		/// <summary>
+		/// This field only exists if the <see cref="source"/> is <see cref="NoConnectivityExceptionSource.FAILED_REQUEST"/>.
+		/// Then, this field captures the failed Unity Web Request. Otherwise, this field is null.
+		/// </summary>
+		public UnityWebRequest failedRequest;
+		
+		/// <summary>
+		/// This field only exists when the <see cref="source"/> is not <see cref="NoConnectivityExceptionSource.CACHE_MISS"/>.
+		/// Then, this field captures the request data that would spawn a Unity Web Request. 
+		/// </summary>
+		public ISDKRequesterOptionDataView requestData;
+		
+		/// <summary>
+		/// This field only exists when the <see cref="source"/> is <see cref="NoConnectivityExceptionSource.CACHE_MISS"/>.
+		/// Then, this field represents the cache-key that was missed. 
+		/// </summary>
+		public string CacheKey;
+		
+		/// <summary>
+		/// This field only exists when the <see cref="source"/> is <see cref="NoConnectivityExceptionSource.CACHE_MISS"/>.
+		/// Then, this field describes the cache-key that was missed. 
+		/// </summary>
+		public string CacheKeyDescription;
+
+		/// <summary>
+		/// true when the <see cref="source"/> is <see cref="NoConnectivityExceptionSource.CACHE_MISS"/>
+		/// </summary>
+		public bool CausedByCacheMiss => source == NoConnectivityExceptionSource.CACHE_MISS;
+		
+		/// <summary>
+		/// true when the <see cref="source"/> is <see cref="NoConnectivityExceptionSource.FAILED_REQUEST"/>
+		/// </summary>
+		public bool CausedByFailedRequest => source == NoConnectivityExceptionSource.FAILED_REQUEST;
+		
+		/// <summary>
+		/// true when the <see cref="source"/> is <see cref="NoConnectivityExceptionSource.EXISTING_OUTAGE"/>
+		/// </summary>
+		public bool CausedByExistingOutage => source == NoConnectivityExceptionSource.EXISTING_OUTAGE;
+		
+		protected NoConnectivityException(ISDKRequesterOptionDataView requestData, UnityWebRequest failedRequest)
+			: base($"NoConnectivity detected through failed web request. " +
+			       $"opts-json=[{requestData?.ConvertToJson()}] " +
+			       $"request-error=[{failedRequest?.error}] " +
+			       $"request-url=[{failedRequest?.url}] " +
+			       $"request-status=[{failedRequest?.responseCode}] ")
+		{
+			source = NoConnectivityExceptionSource.FAILED_REQUEST;
+			this.requestData = requestData;
+			this.failedRequest = failedRequest;
+		}
+
+		protected NoConnectivityException(string key, string description)
+			: base("NoConnectivity detected through cache miss. " +
+			       $"cache-key=[{key}] " +
+			       $"cache-key-desc=[{description}]")
+		{
+			source = NoConnectivityExceptionSource.CACHE_MISS;
+			CacheKey = key;
+			CacheKeyDescription = description;
+		}
+
+		protected NoConnectivityException(ISDKRequesterOptionDataView requestData)
+			: base("NoConnectivity detected because Beamable is still not reachable. " +
+			       $"opts-json=[{requestData?.ConvertToJson()}]" )
+		{
+			this.requestData = requestData;
+			source = NoConnectivityExceptionSource.EXISTING_OUTAGE;
+		}
+		
+		[Obsolete("As of 1.19.22, this should only be used for testing. Instead, use one of the sub-types.")]
 		public NoConnectivityException(string message) : base(message) { }
 	}
 
