@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `IAnalyticsTracker` unavailable error no longer thrown in editor when token expires
 
+### Changed
+- `NoConnectivityException` error messaging has more detail
+
 ## [1.19.21] - 2024-06-18
 
 ### Added
