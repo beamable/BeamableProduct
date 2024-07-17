@@ -27,7 +27,6 @@ namespace Beamable.Editor.Content.Components
 			nameLbl.text = Model.ContentId;
 
 			_checkIcon = Root.Q<VisualElement>("checkIcon");
-			_checkIcon.tooltip = Tooltips.ContentManager.UNCHECK;
 		}
 
 		// Content is downloaded.
@@ -35,7 +34,6 @@ namespace Beamable.Editor.Content.Components
 		{
 			_checkIcon.RemoveFromClassList("unchecked");
 			_checkIcon.AddToClassList("checked");
-			_checkIcon.tooltip = Tooltips.ContentManager.CHECKED;
 		}
 		
 		public void MarkUnChecked()
@@ -43,7 +41,6 @@ namespace Beamable.Editor.Content.Components
 			if (_checkIcon == null) return;
 			_checkIcon.RemoveFromClassList("checked");
 			_checkIcon.AddToClassList("unchecked");
-			_checkIcon.tooltip = Tooltips.ContentManager.UNCHECK;
 		}
 	}
 }
