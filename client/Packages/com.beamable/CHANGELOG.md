@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `NoConnectivityException` error messaging has more detail
 - Content Manager publish popup no longer has "CHECK" tooltip
 
+
 ## [1.19.21] - 2024-06-18
 
 ### Added
