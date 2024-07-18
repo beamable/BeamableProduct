@@ -1,4 +1,3 @@
-using Beamable.Api.CloudSaving;
 using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Dependencies;
@@ -13,12 +12,9 @@ using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
-using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -34,6 +30,7 @@ namespace Beamable.Server.Editor.Usam
 
 		public Promise OnReady { get; private set; }
 		public Action<string, BeamTailLogMessageForClient> OnLogMessage;
+		public Action<List<IBeamoServiceDefinition>> OnServicesRefresh;
 		public bool IsDockerRunning { get; private set; }
 
 		public List<IBeamoServiceDefinition> ServiceDefinitions { get; private set; } =
@@ -432,6 +429,7 @@ namespace Beamable.Server.Editor.Usam
 			}
 
 			await finishedPopulatingServices;
+			OnServicesRefresh?.Invoke(ServiceDefinitions);
 		}
 
 		private void PopulateDataWithRemote(BeamServiceListResult objData)
