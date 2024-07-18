@@ -20,6 +20,7 @@ using cli.Services.Content;
 using cli.Services.HttpServer;
 using cli.UnityCommands;
 using cli.Unreal;
+using cli.UnrealCommands;
 using cli.Utils;
 using cli.Version;
 using CliWrap;
@@ -327,6 +328,10 @@ public class App
 				UnityGroupCommand>();
 		Commands.AddSubCommand<UpdateServiceAssemblyReferencesCommand, UpdateServiceAssemblyReferencesCommandArgs,
 			UnityGroupCommand>();
+		
+		// unreal commands
+		Commands.AddRootCommand<UnrealGroupCommand>();
+		Commands.AddSubCommand<InitUnrealSDKCommand, InitUnrealSDKCommandArgs, UnrealGroupCommand>();
 		
 		// version commands
 		Commands.AddRootCommand<VersionCommand, VersionCommandArgs>();
