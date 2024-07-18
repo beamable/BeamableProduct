@@ -464,7 +464,7 @@ namespace Beamable.Api
 			});
 
 		}
-		
+
 		[Conditional("BEAMABLE_ENABLE_VERSION_HEADERS")]
 		protected void AddVersionHeaders(UnityWebRequest request)
 		{
