@@ -1,4 +1,3 @@
-using Beamable.Api.CloudSaving;
 using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Dependencies;
@@ -13,12 +12,9 @@ using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
-using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -34,6 +30,7 @@ namespace Beamable.Server.Editor.Usam
 
 		public Promise OnReady { get; private set; }
 		public Action<string, BeamTailLogMessageForClient> OnLogMessage;
+		public Action<List<IBeamoServiceDefinition>> OnServicesRefresh;
 		public bool IsDockerRunning { get; private set; }
 
 		public List<IBeamoServiceDefinition> ServiceDefinitions { get; private set; } =
@@ -432,6 +429,7 @@ namespace Beamable.Server.Editor.Usam
 			}
 
 			await finishedPopulatingServices;
+			OnServicesRefresh?.Invoke(ServiceDefinitions);
 		}
 
 		private void PopulateDataWithRemote(BeamServiceListResult objData)
@@ -539,16 +537,26 @@ namespace Beamable.Server.Editor.Usam
 					throw new ArgumentOutOfRangeException(nameof(type), type, null);
 			}
 		}
-		
-		public async Promise UpdateServiceReferences(string serviceName, List<AssemblyDefinitionAsset> assemblyDefinitions)
+
+		public async Promise SetMicroserviceChanges(string serviceName, List<AssemblyDefinitionAsset> assemblyDefinitions, List<string> dependencies)
 		{
-			UsamLogger.Log($"Starting updating references");
-			//get a list of all references of that service
 			var service = ServiceDefinitions.FirstOrDefault(s => s.BeamoId == serviceName);
 			if (service == null)
 			{
 				throw new ArgumentException($"Invalid service name was passed: {serviceName}");
 			}
+
+			UsamLogger.Log($"Starting updating storage dependencies");
+			await UpdateServiceStoragesDependencies(service, dependencies);
+
+			await UpdateServiceReferences(service, assemblyDefinitions);
+
+			UsamLogger.Log($"Finished updating microservice [{serviceName}] data");
+		}
+		
+		public async Promise UpdateServiceReferences(IBeamoServiceDefinition service, List<AssemblyDefinitionAsset> assemblyDefinitions)
+		{
+			UsamLogger.Log($"Starting updating references");
 
 			var pathsList = new List<string>();
 			var namesList = new List<string>();
@@ -562,7 +570,7 @@ namespace Beamable.Server.Editor.Usam
 
 			var updateCommand = _cli.UnityUpdateReferences(new UnityUpdateReferencesArgs()
 			{
-				service = serviceName,
+				service = service.BeamoId,
 				paths = pathsList.ToArray(),
 				names = namesList.ToArray()
 			});
@@ -574,6 +582,37 @@ namespace Beamable.Server.Editor.Usam
 			SetSolution();
 
 			UsamLogger.Log($"Finished updating references");
+		}
+
+		public async Promise UpdateServiceStoragesDependencies(IBeamoServiceDefinition service, List<string> dependencies)
+		{
+			var serviceName = service.BeamoId;
+			var currentDependencies = service.Dependencies;
+
+			var dependenciesToRemove = currentDependencies.Where(dep => !dependencies.Contains(dep)).ToList();
+			var dependenciesToAdd = dependencies.Where(dep => !currentDependencies.Contains(dep)).ToList();
+
+			//TODO: can this be made asynchronous? not sure since all are changing the same csproj file
+
+			foreach (string dep in dependenciesToRemove)
+			{
+				UsamLogger.Log($"Removing dependency [{dep}] from service [{serviceName}]");
+				var removeCommand = _cli.ProjectDepsRemove(new ProjectDepsRemoveArgs()
+				{
+					microservice = serviceName, dependency = dep
+				});
+				await removeCommand.Run();
+			}
+
+			foreach (string dep in dependenciesToAdd)
+			{
+				UsamLogger.Log($"Adding dependency [{dep}] to service [{serviceName}]");
+				var addCommand = _cli.ProjectDepsAdd(new ProjectDepsAddArgs()
+				{
+					microservice = serviceName, dependency = dep
+				});
+				await addCommand.Run();
+			}
 		}
 
 
