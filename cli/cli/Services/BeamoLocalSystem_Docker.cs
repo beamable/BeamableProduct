@@ -45,7 +45,8 @@ public partial class BeamoLocalSystem
 		List<DockerPortBinding> portBindings,
 		List<DockerVolume> volumes,
 		List<DockerBindMount> bindMounts,
-		List<DockerEnvironmentVariable> environmentVars)
+		List<DockerEnvironmentVariable> environmentVars,
+		CancellationToken token = default)
 	{
 		Log.Verbose($"creating or running container with image=[{image}] containerName=[{containerName}]");
 		var existingInstance = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.ContainerName.Contains(containerName));
@@ -69,9 +70,16 @@ public partial class BeamoLocalSystem
 			}
 		}
 
+		token.ThrowIfCancellationRequested();
 		_ = await CreateContainer(image, containerName, healthConfig, autoRemoveWhenStopped, portBindings, volumes, bindMounts, environmentVars);
+
+		token.ThrowIfCancellationRequested();
 		var didRun = await RunContainer(containerName);
+
+		token.ThrowIfCancellationRequested();
 		_ = await _client.Containers.InspectContainerAsync(containerName);
+
+		token.ThrowIfCancellationRequested();
 		return didRun;
 	}
 
@@ -174,7 +182,7 @@ public partial class BeamoLocalSystem
 	/// <see cref="BeamoServiceDefinition.DockerBuildContextPath"/> and <see cref="BeamoServiceDefinition.RelativeDockerfilePath"/>.  
 	/// </summary>
 	/// <returns>The image id that was created/pulled.</returns>
-	public async Task<string> PrepareBeamoServiceImage(BeamoServiceDefinition serviceDefinition, Action<string, float> messageHandler, bool forceAmdCpuArchitecture = false)
+	public async Task<string> PrepareBeamoServiceImage(BeamoServiceDefinition serviceDefinition, Action<string, float> messageHandler, bool forceAmdCpuArchitecture = false, CancellationToken token = default)
 	{
 		switch (serviceDefinition.Protocol)
 		{
@@ -202,6 +210,7 @@ public partial class BeamoLocalSystem
 			default:
 				throw new ArgumentOutOfRangeException(nameof(serviceDefinition.Protocol));
 		}
+		token.ThrowIfCancellationRequested(); // Happens at the end so if one of the services that are being prepared finishes first, it will throw the OperationCanceledException
 
 		return serviceDefinition.ImageId;
 	}

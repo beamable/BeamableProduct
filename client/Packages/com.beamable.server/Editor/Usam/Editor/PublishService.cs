@@ -21,6 +21,8 @@ namespace Beamable.Server.Editor.Usam
 		public Action<string, string, string> OnDeployLogMessage;
 		public Action<string, ServicePublishState> OnProgressInfoUpdated;
 
+		public BeamCommandWrapper _command;
+
 		public PublishService(BeamCommands cli, CodeService codeService)
 		{
 			_cli = cli;
@@ -48,7 +50,7 @@ namespace Beamable.Server.Editor.Usam
 		{
 			OnProgressInfoUpdated?.Invoke("Preparing publish process", ServicePublishState.Verifying);
 			ServicesDeployArgs args = new ServicesDeployArgs();
-			BeamCommandWrapper deployer = _cli.ServicesDeploy(args).OnStreamServiceDeployReportResult((cb) =>
+			_command = _cli.ServicesDeploy(args).OnStreamServiceDeployReportResult((cb) =>
 			{
 				if (cb.data.Success)
 				{
@@ -94,7 +96,12 @@ namespace Beamable.Server.Editor.Usam
 			{
 				OnDeployLogMessage?.Invoke(cb.data.Level, cb.data.Message, cb.data.TimeStamp);
 			});
-			await deployer.Run();
+			await _command.Run();
+		}
+
+		public void Cancel()
+		{
+			_command.Cancel();
 		}
 	}
 }

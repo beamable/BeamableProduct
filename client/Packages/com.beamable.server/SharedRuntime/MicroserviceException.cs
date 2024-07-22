@@ -1,5 +1,5 @@
-// this file was copied from nuget package Beamable.Server.Common@0.0.0-PREVIEW.NIGHTLY-202405141737
-// https://www.nuget.org/packages/Beamable.Server.Common/0.0.0-PREVIEW.NIGHTLY-202405141737
+// this file was copied from nuget package Beamable.Server.Common@0.0.0-PREVIEW.NIGHTLY-202407161549
+// https://www.nuget.org/packages/Beamable.Server.Common/0.0.0-PREVIEW.NIGHTLY-202407161549
 
 using Beamable.Common;
 using Beamable.Common.Api;
@@ -106,6 +106,15 @@ namespace Beamable.Server
 	{
 		public BadInputException(string payload, Exception inner)
 			: base(400, "inputParameterFailure", $"Your input failed to deserialize correctly. Payload=[{payload}] Inner message=[{inner?.Message ?? "?"}]")
+		{
+
+		}
+	}
+	
+	public class InvalidArgumentException : MicroserviceException
+	{
+		public InvalidArgumentException(string argumentName, string message) : base(400, "invalidArgument",
+			$"Invalid value passed to argument [{argumentName}]. Message: {message}")
 		{
 
 		}

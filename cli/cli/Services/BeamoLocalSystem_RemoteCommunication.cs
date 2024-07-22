@@ -27,17 +27,19 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public async Task<ServiceManifest> DeployToRemote(BeamoLocalSystem localSystem, string dockerRegistryUrl, string comments,
 		Dictionary<string, string> perServiceComments, Action<string, float> buildPullImageProgress = null, Action<string> onServiceDeployCompleted = null,
-		Action<string, float> onContainerUploadProgress = null, Action<string, bool> onContainerUploadCompleted = null)
+		Action<string, float> onContainerUploadProgress = null, Action<string, bool> onContainerUploadCompleted = null, CancellationToken cancellationToken = default)
 	{
 		BeamoLocalManifest localManifest = localSystem.BeamoManifest;
 		BeamoLocalRuntime localRuntime = localSystem.BeamoRuntime;
 		// First Stop all Local Containers that are running
 		await Task.WhenAll(localRuntime.ExistingLocalServiceInstances.Select(async sd => await StopContainer(sd.ContainerId)));
 
+		cancellationToken.ThrowIfCancellationRequested();
+
 		// Then, let's try to deploy locally first.
 		try
 		{
-			await DeployToLocal(localSystem, null, true, buildPullImageProgress, onServiceDeployCompleted);
+			await DeployToLocal(localSystem, null, true, buildPullImageProgress, onServiceDeployCompleted, cancellationToken);
 		}
 		// If we fail, log out a message and the exception that caused the failure
 		catch (Exception e)
@@ -51,6 +53,7 @@ public partial class BeamoLocalSystem
 
 		foreach (var sd in serviceDefinitionsToDeploy)
 		{
+			cancellationToken.ThrowIfCancellationRequested();
 			if (sd.Protocol is not BeamoProtocolType.HttpMicroservice)
 			{
 				continue;
@@ -81,9 +84,11 @@ public partial class BeamoLocalSystem
 		var beamoIds = localManifest.ServiceDefinitions.Select(sd => sd.BeamoId).ToArray();
 		var folders = beamoIds.Select(id => $"{id}_folder").ToArray();
 
+		cancellationToken.ThrowIfCancellationRequested();
 		await UploadContainers(beamoIds, folders, dockerRegistryUrl, CancellationToken.None, onContainerUploadProgress, onContainerUploadCompleted);
 
 
+		cancellationToken.ThrowIfCancellationRequested();
 		// If all is well with the local deployment, we convert the local manifest into the remote one
 		// TODO: When Beam-O gets upgraded, hopefully it'll use the same format locally. Then, we can rename this stuff to BeamoManifest and throw this x-form away.
 		var remoteManifest = new ServiceManifest();

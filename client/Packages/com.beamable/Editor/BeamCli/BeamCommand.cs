@@ -199,6 +199,11 @@ namespace Beamable.Editor.BeamCli
 			return On<EofOutput>("eof", cb);
 		}
 
+		public void Cancel()
+		{
+			throw new NotImplementedException();
+		}
+
 		public IBeamCommand On<T>(string type, Action<ReportDataPoint<T>> cb)
 		{
 			On(desc =>

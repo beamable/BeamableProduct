@@ -8,6 +8,7 @@ using System.IO;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -200,11 +201,13 @@ namespace Beamable.Editor.BeamCli
 		private HttpClient _localClient;
 		private Action<ReportDataPointDescription> _callbacks = (_) => { };
 		private BeamWebCommandFactory _factory;
+		private CancellationTokenSource _cts;
 
 		public BeamWebCommand(BeamWebCommandFactory factory)
 		{
 			_factory = factory;
 			_localClient = factory.localClient;
+			_cts = new CancellationTokenSource();
 		}
 
 		public void SetCommand(string command)
@@ -216,12 +219,13 @@ namespace Beamable.Editor.BeamCli
 		{
 			await _factory.EnsureServerIsRunning();
 
-			var req = new HttpRequestMessage(HttpMethod.Post, _factory.ExecuteUrl);
+			using var req = new HttpRequestMessage(HttpMethod.Post, _factory.ExecuteUrl);
 			var json = JsonUtility.ToJson(new BeamWebCommandRequest {commandLine = _command});
 			req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 			CliLogger.Log("Sending cli web request, " + json);
 			try
 			{
+				_cts.Token.ThrowIfCancellationRequested();
 				using HttpResponseMessage response =
 					await _localClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead).ToPromiseRoutine();
 
@@ -230,14 +234,16 @@ namespace Beamable.Editor.BeamCli
 
 				while (!reader.EndOfStream)
 				{
+					_cts.Token.ThrowIfCancellationRequested();
 					var line = await reader.ReadLineAsync().ToPromiseRoutine();
 					if (string.IsNullOrEmpty(line)) continue; // TODO: what if the message contains a \n character?
 
-					// remove life-cycle zero-width character 
+					// remove life-cycle zero-width character
 					line = line.Replace("\u200b", "");
 					if (!line.StartsWith("data: "))
 					{
-						Debug.LogWarning($"CLI received a message over the local-server that did not start with the expected 'data: ' format. line=[{line}]");
+						Debug.LogWarning(
+							$"CLI received a message over the local-server that did not start with the expected 'data: ' format. line=[{line}]");
 						continue;
 					}
 
@@ -245,7 +251,7 @@ namespace Beamable.Editor.BeamCli
 					{
 						var lineJson = line
 							.Substring("data: ".Length); // remove the Server-Side-Event notation
-						               
+
 						CliLogger.Log("received, " + lineJson, "from " + _command);
 
 						var res = JsonUtility.FromJson<ReportDataPointDescription>(lineJson);
@@ -268,6 +274,11 @@ namespace Beamable.Editor.BeamCli
 				//  that is _fine_, but we need to handle it.
 				CliLogger.Log("cli server died, " + ioException.Message);
 			}
+			catch (OperationCanceledException cancelledException)
+			{
+				// A cancellation was requested so the connection was terminated
+				CliLogger.Log("cli command was cancelled, " + cancelledException.Message);
+			}
 			catch (Exception ex)
 			{
 				CliLogger.Log(
@@ -275,7 +286,11 @@ namespace Beamable.Editor.BeamCli
 					ex.Message);
 				Debug.LogException(ex);
 			}
+		}
 
+		public void Cancel()
+		{
+			_cts.Cancel();
 		}
 
 		public IBeamCommand On<T>(string type, Action<ReportDataPoint<T>> cb)

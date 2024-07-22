@@ -6,6 +6,7 @@ namespace Beamable.Common.BeamCli
 	{
 		void SetCommand(string command);
 		Promise Run();
+		void Cancel();
 		IBeamCommand On<T>(string type, Action<ReportDataPoint<T>> cb);
 		IBeamCommand On(Action<ReportDataPointDescription> cb);
 		IBeamCommand OnError(Action<ReportDataPoint<ErrorOutput>> cb);
@@ -17,6 +18,8 @@ namespace Beamable.Common.BeamCli
 		public IBeamCommand Command { get; set; }
 		public Promise Run() => Command
 			.Run();
+
+		public void Cancel() => Command.Cancel();
 
 		public BeamCommandWrapper()
 		{
