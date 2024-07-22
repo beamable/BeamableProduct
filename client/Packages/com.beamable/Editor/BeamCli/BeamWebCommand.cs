@@ -219,7 +219,7 @@ namespace Beamable.Editor.BeamCli
 		{
 			await _factory.EnsureServerIsRunning();
 
-			var req = new HttpRequestMessage(HttpMethod.Post, _factory.ExecuteUrl);
+			using var req = new HttpRequestMessage(HttpMethod.Post, _factory.ExecuteUrl);
 			var json = JsonUtility.ToJson(new BeamWebCommandRequest {commandLine = _command});
 			req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 			CliLogger.Log("Sending cli web request, " + json);
@@ -238,7 +238,7 @@ namespace Beamable.Editor.BeamCli
 					var line = await reader.ReadLineAsync().ToPromiseRoutine();
 					if (string.IsNullOrEmpty(line)) continue; // TODO: what if the message contains a \n character?
 
-					// remove life-cycle zero-width character 
+					// remove life-cycle zero-width character
 					line = line.Replace("\u200b", "");
 					if (!line.StartsWith("data: "))
 					{
@@ -286,7 +286,6 @@ namespace Beamable.Editor.BeamCli
 					ex.Message);
 				Debug.LogException(ex);
 			}
-
 		}
 
 		public void Cancel()
