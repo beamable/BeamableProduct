@@ -24,12 +24,13 @@ public partial class BeamoLocalSystem
 	/// <param name="serviceDefinitions">The list of all service definitions we care about synchronizing.</param>
 	/// <param name="existingServiceInstances">The list it should update with the running <see cref="BeamoServiceInstance"/>.</param>
 	public async Task SynchronizeInstanceStatusWithDocker(BeamoLocalManifest manifest,
-		List<BeamoServiceInstance> existingServiceInstances)
+		List<BeamoServiceInstance> existingServiceInstances, CancellationToken token = default)
 	{
 		var serviceDefinitions = manifest.ServiceDefinitions;
 		// Make sure we know about all images that match our beamo ids and make sure all image ids that we know about are still there. 
 		foreach (var sd in serviceDefinitions)
 		{
+			token.ThrowIfCancellationRequested();
 			try
 			{
 				string imageToInspect;
@@ -377,12 +378,13 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public async Task DeployToLocal(BeamoLocalSystem localSystem, string[] deployBeamoIds = null,
 		bool forceAmdCpuArchitecture = false, Action<string, float> buildPullImageProgress = null,
-		Action<string> onServiceDeployCompleted = null)
+		Action<string> onServiceDeployCompleted = null, CancellationToken token = default)
 	{
 		var localManifest = localSystem.BeamoManifest;
 
 		// Get all services that must be deployed (and that are not just known remotely --- as in, have their local protocols correctly configured).
 		var serviceDefinitionsToDeploy = GetServiceDefinitionsThatCanBeDeployed(localManifest, deployBeamoIds);
+		token.ThrowIfCancellationRequested();
 
 		// Guarantee they each don't have cyclical dependencies.
 		{
@@ -392,7 +394,7 @@ public partial class BeamoLocalSystem
 					ValidateBeamoService_NoCyclicalDependencies(sd, localManifest.ServiceDefinitions));
 			}));
 
-
+			token.ThrowIfCancellationRequested();
 			var indexOfServiceWithCyclicalDependency = dependencyChecksForServicesToDeploy.ToList().IndexOf(false);
 			if (indexOfServiceWithCyclicalDependency != -1)
 				throw new Exception(
@@ -402,7 +404,7 @@ public partial class BeamoLocalSystem
 
 		// Builds all images for all services that are defined and can be built locally.
 
-		var prepareImages = new List<Task>(serviceDefinitionsToDeploy.Select(c => PrepareBeamoServiceImage(c, buildPullImageProgress, forceAmdCpuArchitecture)));
+		var prepareImages = new List<Task>(serviceDefinitionsToDeploy.Select(c => PrepareBeamoServiceImage(c, buildPullImageProgress, forceAmdCpuArchitecture, token)));
 		await Task.WhenAll(prepareImages);
 
 		// Build dependency layers split by protocol type.
@@ -412,6 +414,7 @@ public partial class BeamoLocalSystem
 		// We already know that all containers are properly built here, so we just need to create the containers and run them.
 		var runContainerTasks = new List<Task>();
 
+		token.ThrowIfCancellationRequested();
 		// Kick off all the run container tasks for the Embedded MongoDatabases in this layer
 		if (builtDefinitions.TryGetValue(BeamoProtocolType.EmbeddedMongoDb, out var microStorageContainers))
 			runContainerTasks.AddRange(microStorageContainers.Select(async sd =>
@@ -420,6 +423,7 @@ public partial class BeamoLocalSystem
 				await RunLocalEmbeddedMongoDb(sd, localManifest.EmbeddedMongoDbLocalProtocols[sd.BeamoId]);
 				Log.Information("Finished deploying service: " + sd.BeamoId);
 				onServiceDeployCompleted?.Invoke(sd.BeamoId);
+				token.ThrowIfCancellationRequested(); //The first service to be deployed locally would throw the exception and prevent the others from continuing
 			}));
 
 		// Kick off all the run container tasks for the HTTP Microservices in this layer
@@ -427,13 +431,14 @@ public partial class BeamoLocalSystem
 			runContainerTasks.AddRange(microserviceContainers.Select(async sd =>
 			{
 				await RunLocalHttpMicroservice(sd, localManifest.HttpMicroserviceLocalProtocols[sd.BeamoId],
-					localSystem);
+					localSystem, token);
 				onServiceDeployCompleted?.Invoke(sd.BeamoId);
 			}));
 
 
 		// Wait for all container tasks in this layer to finish before starting the next one.
 		await Task.WhenAll(runContainerTasks);
+		token.ThrowIfCancellationRequested();
 	}
 
 	/// <summary>

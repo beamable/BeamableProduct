@@ -1,5 +1,5 @@
-// this file was copied from nuget package Beamable.Server.Common@0.0.0-PREVIEW.NIGHTLY-202405141737
-// https://www.nuget.org/packages/Beamable.Server.Common/0.0.0-PREVIEW.NIGHTLY-202405141737
+// this file was copied from nuget package Beamable.Server.Common@0.0.0-PREVIEW.NIGHTLY-202407161549
+// https://www.nuget.org/packages/Beamable.Server.Common/0.0.0-PREVIEW.NIGHTLY-202407161549
 
 using Beamable.Common;
 using Beamable.Common.Api;
@@ -142,6 +142,12 @@ namespace Beamable.Server
 		[Obsolete("Please use the " + nameof(AssumeNewUser) + " instead")]
 		protected RequestHandlerData AssumeUser(long userId, bool requireAdminUser = true)
 		{
+			if (userId <= 0)
+			{
+				throw new InvalidArgumentException(
+					nameof(userId), $"Invalid User Id of value: {userId}. Should be a positive value.");
+			}
+			
 			// require admin privs.
 			if (requireAdminUser)
 			{
@@ -185,6 +191,11 @@ namespace Beamable.Server
 		/// <returns>A <see cref="UserRequestDataHandler"/> object that contains a request context, and a collection of services to execute SDK calls against.</returns>
 		protected UserRequestDataHandler AssumeNewUser(long userId, Action<IDependencyBuilder> configurator = null, bool requireAdminUser = true)
 		{
+			if (userId <= 0)
+			{
+				throw new InvalidArgumentException(
+					nameof(userId), $"Invalid User Id of value: {userId}. Should be a positive value.");
+			}
 			// require admin privs.
 			if (requireAdminUser)
 			{
