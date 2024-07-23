@@ -13,6 +13,10 @@
         <!-- The tool path for the beamCLI. "dotnet beam" will refer to the local project tool, and "beam" would install to a globally installed tool -->
         <BeamableTool Condition="'$(BeamableTool)' == ''">$(BEAM_PATH)</BeamableTool>
         <BeamableTool Condition="'$(BeamableTool)' == ''">beam</BeamableTool>
+
+        <!-- The path to the dotnet to be used. -->
+        <BeamableDotnetPath Condition="'$(BeamableDotnetPath)' == ''">$(BEAM_DOTNET_PATH)</BeamableDotnetPath>
+        <BeamableDotnetPath Condition="'$(BeamableDotnetPath)' == ''">dotnet</BeamableDotnetPath>
     </PropertyGroup>
 
     <!-- Make sure that the built dlls and their dependencies are in the output directory -->

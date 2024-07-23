@@ -349,7 +349,7 @@ namespace Beamable.Editor.BeamCli
 				// prevent the beam CLI from saving any log information to file.
 				_process.StartInfo.Environment.Add("BEAM_CLI_NO_FILE_LOG", "1");
 
-				_process.StartInfo.EnvironmentVariables["BEAM_PATH"] = Path.GetFullPath(BeamCliUtil.CLI_PATH.Replace(".dll", ""));
+				_process.StartInfo.EnvironmentVariables["BEAM_PATH"] = Path.GetFullPath(BeamCliUtil.CLI_PATH);
 				_process.StartInfo.EnvironmentVariables["BEAM_DOTNET_PATH"] = Path.GetFullPath(DotnetUtil.DotnetPath);
 				_process.StartInfo.EnvironmentVariables["BEAM_DOTNET_MSBUILD_PATH"] =
 					Path.GetFullPath(DotnetUtil.DotnetMSBuildPath);

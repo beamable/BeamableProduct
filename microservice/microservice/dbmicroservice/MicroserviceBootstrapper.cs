@@ -541,18 +541,9 @@ namespace Beamable.Server
 
 	        var dotnetPath = Environment.GetEnvironmentVariable("BEAM_DOTNET_PATH");
 	        var beamProgram = GetBeamProgram();
-	        string fileName;
-	        string arguments;
-	        if (!String.IsNullOrEmpty(dotnetPath))
-	        {
-		        fileName = dotnetPath;
-		        arguments = $"{beamProgram}.dll project generate-env {serviceName} {customArgs}";
-	        }
-	        else
-	        {
-		        fileName = beamProgram;
-		        arguments = $"project generate-env {serviceName} {customArgs}";
-	        }
+
+	        string arguments = $"{beamProgram} project generate-env {serviceName} {customArgs}";
+	        string fileName = !string.IsNullOrEmpty(dotnetPath) ? dotnetPath : "dotnet";
 	        
 	        process.StartInfo.FileName = fileName;
 	        process.StartInfo.Arguments = arguments;
