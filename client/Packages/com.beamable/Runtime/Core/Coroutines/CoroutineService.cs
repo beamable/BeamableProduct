@@ -1,5 +1,4 @@
-﻿using Beamable.Service;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -19,7 +18,6 @@ namespace Beamable.Coroutines
 	/// The CoroutineService is a MonoBehaviour itself, and all coroutines are associated to the related GameObject.
 	/// Use the <see cref="StartNew"/> method to start a coroutine.
 	/// </summary>
-	[EditorServiceResolver(typeof(EditorSingletonMonoBehaviourServiceResolver<CoroutineService>))]
 	public class CoroutineService : MonoBehaviour, ICoroutineService
 	{
 		private Dictionary<string, List<IEnumerator>> coroutines = new Dictionary<string, List<IEnumerator>>();
