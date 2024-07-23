@@ -215,6 +215,25 @@ public partial class BeamoLocalSystem
 		return serviceDefinition.ImageId;
 	}
 
+	public struct DockerInfo
+	{
+		public string arch; // example: "aarch64"
+		public string osType; // example: "linux"
+		public string Platform => $"{osType}/{arch}";
+	}
+	public async Task<DockerInfo> GetBuildPlatform()
+	{
+		var info = await _client.System.GetSystemInfoAsync();
+		
+		var plugins = await _client.Plugin.ListPluginsAsync(new PluginListParameters { });
+		var buildx = await _client.Plugin.InspectPluginAsync("buildx");
+		// info.Plugins
+		return new DockerInfo { 
+			arch = info.Architecture, 
+			osType = info.OSType
+		};
+	}
+
 	/// <summary>
 	/// Builds an image with the local docker engine using the given <paramref name="dockerBuildContextPath"/>, <paramref name="imageName"/> and dockerfile (<paramref name="dockerfilePathInBuildContext"/>).
 	/// It inspects the created image and returns it's ID.
@@ -232,18 +251,40 @@ public partial class BeamoLocalSystem
 			var progress = 0f;
 			try
 			{
+				var info = await GetBuildPlatform();
+				Log.Debug($"Local docker system info=[{JsonConvert.SerializeObject(info, Formatting.Indented)}]");
+				
 				var parameters = new ImageBuildParameters
 				{
 					Tags = new[] { tag },
 					Dockerfile = dockerfilePathInBuildContext.Replace("\\", "/"),
 					Labels = new Dictionary<string, string>() { { "beamoId", imageName } },
 					Pull = "pull",
+					NoCache = true, // Do not use the cache when building the image,
+					Remove = true, // Remove intermediate containers after a successful build
+					ForceRemove = true, // Always remove intermediate containers, even upon failure
+					
 				};
+				var targetArch = info.arch; // default architecture.
+				// parameters.Platform = info.Platform; // default.
 				if (forceAmdCpuArchitecture)
 				{
+					targetArch = "amd64";
 					parameters.Platform = "linux/amd64";
 					Log.Debug($"Forcing CPU architecture arch=[{parameters.Platform}]");
 				}
+				
+				
+				// buildKit (buildx) provides a few global ARGs
+				//  https://docs.docker.com/reference/dockerfile/#automatic-platform-args-in-the-global-scope
+				// but DockerDotnet does not support buildKit
+				//  https://github.com/dotnet/Docker.DotNet/issues/635
+				// so we need to fake it and provide a subset of the global ARGs in order to support cross-compilation and net7+
+				// parameters.BuildArgs = new Dictionary<string, string>
+				// {
+				// 	["BUILDPLATFORM"] = info.Platform,
+				// 	["TARGETARCH"] = targetArch
+				// };
 
 				await _client.Images.BuildImageFromDockerfileAsync(
 					parameters,
