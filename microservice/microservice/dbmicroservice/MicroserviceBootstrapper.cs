@@ -460,8 +460,11 @@ namespace Beamable.Server
         /// <returns></returns>
         public static string GetBeamProgram()
         {
-	        var beamPathOverride = Environment.GetEnvironmentVariable("BEAM_PATH");
-	        if ( !String.IsNullOrEmpty(beamPathOverride) ) return beamPathOverride;
+	        string beamPathOverride = Environment.GetEnvironmentVariable("BEAM_PATH");
+	        if (!string.IsNullOrEmpty(beamPathOverride))
+	        {
+		        return beamPathOverride;
+	        }
 	        
 	        if (TryFindBeamableFolder(out var beamableFolderPath))
 	        {
@@ -476,7 +479,7 @@ namespace Beamable.Server
 			        return unityPath;
 		        }
 	        }
-	        return "beam"; // use global
+	        return "dotnet beam"; // use global
         }
 
         /// <summary>
@@ -536,13 +539,33 @@ namespace Beamable.Server
 			
 	        using var process = new Process();
 
+	        var dotnetPath = Environment.GetEnvironmentVariable("BEAM_DOTNET_PATH");
+	        var beamProgram = GetBeamProgram();
+	        string fileName;
+	        string arguments;
+	        if (!String.IsNullOrEmpty(dotnetPath))
+	        {
+		        fileName = dotnetPath;
+		        arguments = $"{beamProgram}.dll project generate-env {serviceName} {customArgs}";
+	        }
+	        else
+	        {
+		        fileName = beamProgram;
+		        arguments = $"project generate-env {serviceName} {customArgs}";
+	        }
 	        
-	        process.StartInfo.FileName = GetBeamProgram();
-	        process.StartInfo.Arguments = $"project generate-env {serviceName} {customArgs}";
+	        process.StartInfo.FileName = fileName;
+	        process.StartInfo.Arguments = arguments;
 	        process.StartInfo.RedirectStandardOutput = true;
 	        process.StartInfo.RedirectStandardError = true;
 	        process.StartInfo.CreateNoWindow = true;
 	        process.StartInfo.UseShellExecute = false;
+
+	        string path = Environment.GetEnvironmentVariable("BEAM_DOTNET_MSBUILD_PATH", EnvironmentVariableTarget.Process);
+	        if (!string.IsNullOrEmpty(path))
+	        {
+		        process.StartInfo.EnvironmentVariables["BEAM_DOTNET_MSBUILD_PATH"] = path;
+	        }
 
 	        process.Start();
 	        await process.WaitForExitAsync();

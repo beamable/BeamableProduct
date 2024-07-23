@@ -151,6 +151,8 @@ namespace Beamable.Server.Editor.Usam
 			var microSequence = Promise.Sequence(microPromises);
 			await microSequence;
 
+			await RefreshServices(); //Refresh services data so we can connect dependencies
+
 			var storagePromises = new List<Promise<Unit>>();
 			foreach (IDescriptor descriptor in storages)
 			{
@@ -306,28 +308,6 @@ namespace Beamable.Server.Editor.Usam
 					{
 						continue;
 					}
-					
-					//Check if this was already migrated
-					//Right now this is not required, because we maintain all services and storages inside a hidden folder from Unity
-					//However, in the future with services being able to be created anywhere, this will be necessary
-					/*if (descriptor.ServiceType == ServiceType.MicroService)
-					{
-						var services = GetBeamServices();
-						var service = services.FirstOrDefault(s => s.name.Equals(descriptor.Name));
-						if (service != null)
-						{
-							continue;
-						}
-					}
-					else
-					{
-						var storages = GetBeamStorages();
-						var storage = storages.FirstOrDefault(s => s.name.Equals(descriptor.Name));
-						if (storage != null)
-						{
-							continue;
-						}
-					}*/
 					
 					allDescriptors.Add(descriptor);
 				}
