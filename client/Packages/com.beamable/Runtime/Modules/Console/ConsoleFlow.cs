@@ -1,12 +1,10 @@
 ﻿using Beamable.ConsoleCommands;
 using Beamable.InputManagerIntegration;
-using Beamable.Service;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 using static Beamable.Common.Constants.URLs;
@@ -181,8 +179,7 @@ namespace Beamable.Console
 			}
 
 			_console = ctx.ServiceProvider.GetService<BeamableConsole>();
-			ServiceManager.Provide<BeamableConsole>(ctx.ServiceProvider); // this exists for legacy purposes, for anyone who might be using the service manager to the console...
-
+			
 			_console.OnLog += Log;
 			_console.OnExecute += ExecuteCommand;
 			_console.OnCommandRegistered += RegisterCommand;

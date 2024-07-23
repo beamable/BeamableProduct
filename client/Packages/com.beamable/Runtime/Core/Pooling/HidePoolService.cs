@@ -1,5 +1,4 @@
-﻿using Beamable.Service;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -10,7 +9,6 @@ using UnityEngine.SceneManagement;
 // the gap.
 namespace Beamable.Pooling
 {
-	[EditorServiceResolver(typeof(EditorSingletonServiceResolver<HidePoolService>))]
 	public class HidePoolService
 	{
 		private Dictionary<string, HidePool> _hidePools = new Dictionary<string, HidePool>();

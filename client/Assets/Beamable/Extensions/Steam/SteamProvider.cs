@@ -1,13 +1,9 @@
 ﻿using UnityEngine;
-using Beamable.Service;
-using Beamable.Common.Steam;
-
 public class SteamProvider : MonoBehaviour
 {
 #if USE_STEAMWORKS
     private void Awake()
     {
-        ServiceManager.ProvideWithDefaultContainer<ISteamService>(new SteamService());
         DontDestroyOnLoad(this.gameObject);
     }
 #endif

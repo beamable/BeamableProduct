@@ -46,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Theme Manager
 - Beamable Assistant
 - OpenAPI for Chatv2 and Matchmaking
+- Legacy static based `ServiceManager` class and the `Beamable.Service` namespace.
 
 ### Changed
 

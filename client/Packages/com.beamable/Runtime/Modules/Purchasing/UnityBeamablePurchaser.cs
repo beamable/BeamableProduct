@@ -6,7 +6,6 @@ using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Spew;
 using Beamable.Coroutines;
-using Beamable.Service;
 using System;
 using System.Collections;
 using UnityEngine;
@@ -382,35 +381,6 @@ namespace Beamable.Purchasing
 			yield return new WaitForSeconds(waitTime);
 
 			FulfillTransaction(transaction, purchasedProduct);
-		}
-	}
-
-	/// <summary>
-	/// Unity IAP Beamable service resolver.
-	/// </summary>
-	[BeamContextSystem]
-	public class UnityBeamableIAPServiceResolver : IServiceResolver<IBeamablePurchaser>
-	{
-		private UnityBeamablePurchaser _unityBeamablePurchaser;
-
-		public void OnTeardown()
-		{
-			_unityBeamablePurchaser = null;
-		}
-
-		public bool CanResolve() => true;
-
-		public bool Exists() => _unityBeamablePurchaser != null;
-
-		public IBeamablePurchaser Resolve()
-		{
-			return _unityBeamablePurchaser ?? (_unityBeamablePurchaser = new UnityBeamablePurchaser());
-		}
-
-		[RegisterBeamableDependencies(Constants.SYSTEM_DEPENDENCY_ORDER)]
-		public static void Register(IDependencyBuilder builder)
-		{
-			builder.AddSingleton<IBeamablePurchaser, UnityBeamablePurchaser>();
 		}
 	}
 
