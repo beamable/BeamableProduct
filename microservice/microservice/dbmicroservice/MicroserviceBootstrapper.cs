@@ -465,21 +465,8 @@ namespace Beamable.Server
 	        {
 		        return beamPathOverride;
 	        }
-	        
-	        if (TryFindBeamableFolder(out var beamableFolderPath))
-	        {
-		        var unityPath = Path.Combine(beamableFolderPath, 
-			        "Library", 
-			        "BeamableEditor",
-			        "BeamCLI", 
-			        BeamAssemblyVersionUtil.GetVersion<Promise>(),
-			        "beam");
-		        if (File.Exists(unityPath))
-		        {
-			        return unityPath;
-		        }
-	        }
-	        return "dotnet beam"; // use global
+
+	        return "tool run beam"; // use global
         }
 
         /// <summary>

@@ -254,10 +254,14 @@ namespace Beamable.Editor.BeamCli
 				return false;
 			}
 
-			Directory.CreateDirectory(CLI_VERSIONED_HOME);
+			if (!DotnetUtil.InstallLocalManifest())
+			{
+				BeamableLogger.LogError("Unable to install BeamCLI from package: couldn't create a local manifest for the project.");
+				return false;
+			}
+
 			var proc = new Process();
-			var fullDirectory = Path.GetFullPath(CLI_VERSIONED_HOME);
-			var installCommand = $"tool install beamable.tools --tool-path \"{fullDirectory}\"";
+			var installCommand = $"tool install beamable.tools";
 			if (!BeamableEnvironment.NugetPackageVersion.ToString().Equals("0.0.123"))
 			{
 				installCommand += $" --version {BeamableEnvironment.NugetPackageVersion}";
@@ -265,7 +269,7 @@ namespace Beamable.Editor.BeamCli
 			proc.StartInfo = new ProcessStartInfo
 			{
 				FileName = Path.GetFullPath(DotnetUtil.DotnetPath),
-				WorkingDirectory = Path.GetFullPath("Library"),
+				WorkingDirectory = Path.GetFullPath("."),
 				Arguments = installCommand,
 				UseShellExecute = false,
 				RedirectStandardOutput = true,

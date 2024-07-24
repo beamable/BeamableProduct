@@ -301,18 +301,27 @@ namespace Beamable.Editor.BeamCli
 			Debug.LogError(data);
 		}
 
-		public void SetCommand(string command)
+		private string GetCommandPrefix()
 		{
 			var beamCli = BeamCliUtil.CLI;
 
 #if UNITY_EDITOR_WIN
-			if(BeamCliUtil.USE_SRC)
-			{
-				beamCli = $"\"{beamCli}\"";
-			}
+			beamCli = $"\"{beamCli}\"";
 #endif
 
-			Command = beamCli + command.Substring("beam".Length);
+			if (!beamCli.Contains(".dll"))
+			{
+				beamCli = $"tool run {beamCli}";
+			}
+
+			return beamCli;
+		}
+
+		public void SetCommand(string command)
+		{
+			var prefix = GetCommandPrefix();
+
+			Command = prefix + command.Substring("beam".Length);
 		}
 
 		public async Promise Run()
@@ -324,22 +333,8 @@ namespace Beamable.Editor.BeamCli
 			
 			using (_process = new System.Diagnostics.Process())
 			{
-				if (_command.Contains(".dll"))
-				{
-					_process.StartInfo.FileName = DotnetUtil.DotnetPath;
-					_process.StartInfo.Arguments = _command;
-				}
-				else
-				{
-#if UNITY_EDITOR && !UNITY_EDITOR_WIN
-						_process.StartInfo.FileName = "sh";
-						_process.StartInfo.Arguments = $"-c '{Command}'";
-#else
-					_process.StartInfo.FileName = "cmd.exe";
-					_process.StartInfo.Arguments =
-						$"/C {_command}"; //  "/C " + _command + " > " + commandoutputfile + "'"; // TODO: I haven't tested this since refactor.
-#endif
-				}
+				_process.StartInfo.FileName = DotnetUtil.DotnetPath;
+				_process.StartInfo.Arguments = _command;
 				// Configure the process using the StartInfo properties.
 				_process.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal;
 				_process.EnableRaisingEvents = true;
@@ -352,7 +347,7 @@ namespace Beamable.Editor.BeamCli
 				// prevent the beam CLI from saving any log information to file.
 				_process.StartInfo.Environment.Add("BEAM_CLI_NO_FILE_LOG", "1");
 
-				_process.StartInfo.EnvironmentVariables["BEAM_PATH"] = BeamCliUtil.CLI;
+				_process.StartInfo.EnvironmentVariables["BEAM_PATH"] = GetCommandPrefix();
 				_process.StartInfo.EnvironmentVariables["BEAM_DOTNET_PATH"] = Path.GetFullPath(DotnetUtil.DotnetPath);
 				_process.StartInfo.EnvironmentVariables["BEAM_DOTNET_MSBUILD_PATH"] =
 					Path.GetFullPath(DotnetUtil.DotnetMSBuildPath);

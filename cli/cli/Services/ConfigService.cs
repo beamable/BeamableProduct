@@ -339,7 +339,7 @@ public class ConfigService
 		// If the file is already there, make a best effort to update just the beamable version.
 		else
 		{
-			var versionMatching = new Regex("beamable.*?\"([0-9]+\\.[0-9]+\\.[0-9]+)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
+			var versionMatching = new Regex("beamable.*?\"([0-9]+\\.[0-9]+\\.[0-9]+.*?)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
 			manifestString = File.ReadAllText(pathToToolsManifest);
 
 			if (versionMatching.IsMatch(manifestString))

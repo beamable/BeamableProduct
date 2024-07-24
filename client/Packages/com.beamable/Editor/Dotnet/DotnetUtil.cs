@@ -82,6 +82,34 @@ namespace Beamable.Editor.Dotnet
 			}
 		}
 
+		public static bool InstallLocalManifest()
+		{
+			var proc = new Process();
+
+			var installCommand = $"new tool-manifest";
+
+			proc.StartInfo = new ProcessStartInfo
+			{
+				FileName = Path.GetFullPath(DotnetPath),
+				WorkingDirectory = Path.GetFullPath("."),
+				Arguments = installCommand,
+				UseShellExecute = false,
+				RedirectStandardOutput = true,
+				RedirectStandardError = true
+			};
+			proc.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
+			proc.Start();
+			proc.WaitForExit();
+
+			var output = proc.StandardOutput.ReadToEnd();
+			var error = proc.StandardError.ReadToEnd();
+			if (!string.IsNullOrWhiteSpace(error))
+			{
+				Debug.LogError("Unable to create local manifest: " + error + " / " + output);
+			}
+			return proc.ExitCode == 0;
+		}
+
 		static void InstallDotnetToLibrary()
 		{
 			EditorUtility.DisplayProgressBar("Downloading Dotnet", "Getting install script", .1f);
