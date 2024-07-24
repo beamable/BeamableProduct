@@ -4,6 +4,7 @@
  */
 
 using Beamable.Common;
+using cli.Utils;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using ICSharpCode.SharpZipLib.Tar;
@@ -372,7 +373,58 @@ public partial class BeamoLocalSystem
 		return _client.PullAndCreateImage(publicImageName, progressUpdateHandler);
 	}
 
-	private static List<string> ParseDockerfile(ConfigService configService, string dockerFilePath)
+	public static Stream GetTarfile(string beamoId, CommandArgs args)
+	{
+		
+		if (!args.BeamoLocalSystem.BeamoManifest.TryGetDefinition(beamoId, out var definition))
+		{
+			throw new CliException($"no service available for id=[{beamoId}]");
+		}
+
+		if (definition.Protocol != BeamoProtocolType.HttpMicroservice)
+		{
+			throw new CliException($"no service available for id=[{beamoId}]");
+		}
+
+		if (!args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(beamoId, out var http))
+		{
+			throw new CliException($"no local http microservice for id=[{beamoId}]");
+		}
+
+		var pathToDockerfile = args.ConfigService.BeamableRelativeToExecutionRelative(http.RelativeDockerfilePath);
+		var pathsList = BeamoLocalSystem.ParseDockerfile(args.ConfigService, pathToDockerfile);
+		return BeamoLocalSystem.CreateTarballForDirectory(args.ConfigService, pathsList);
+	}
+	
+	public static async Task<ServicesGenerateTarballCommandOutput> WriteTarfileToDisk(string outputPath, string beamoId, CommandArgs args)
+	{
+		var isDockerRunning = await args.BeamoLocalSystem.CheckIsRunning();
+		if (!isDockerRunning)
+		{
+			throw CliExceptions.DOCKER_NOT_RUNNING;
+		}
+
+		if (string.IsNullOrEmpty(outputPath))
+		{
+			outputPath = beamoId + ".tar";
+		} else if (!Path.HasExtension(outputPath))
+		{
+			outputPath += ".tar";
+		}
+
+		var stream = GetTarfile(beamoId, args);
+		using var file = File.OpenWrite(outputPath);
+		await stream.CopyToAsync(file);
+
+		file.Close();
+
+		return new ServicesGenerateTarballCommandOutput
+		{
+			outputPath = outputPath
+		};
+	}
+
+	public static List<string> ParseDockerfile(ConfigService configService, string dockerFilePath)
 	{
 		var paths = new List<string>();
 
@@ -418,7 +470,7 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// Creates a tarball stream containing every file in the given <paramref name="directory"/>. 
 	/// </summary>
-	private static Stream CreateTarballForDirectory(ConfigService configService, List<string> paths)
+	public static Stream CreateTarballForDirectory(ConfigService configService, List<string> paths)
 	{
 		var tarball = new MemoryStream(512 * 1024);
 		var allFiles = new List<string>();
@@ -441,7 +493,7 @@ public partial class BeamoLocalSystem
 		using var archive = new TarOutputStream(tarball, Encoding.Default)
 		{
 			//Prevent the TarOutputStream from closing the underlying memory stream when done
-			IsStreamOwner = false
+			IsStreamOwner = false,
 		};
 
 		// Get every file in the given directory

@@ -360,7 +360,8 @@ public class App
 		Commands.AddSubCommand<ServicesPromoteCommand, ServicesPromoteCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesGetConnectionStringCommand, ServicesGetConnectionStringCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesGenerateLocalManifestCommand, ServicesGenerateLocalManifestCommandArgs, ServicesCommand>();
-
+		Commands.AddSubCommand<ServicesGenerateTarballCommand, ServicesGenerateTarballCommandArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesBuildCommand, ServicesBuildCommandArgs, ServicesCommand>();
 		// content commands
 		
 		Commands.AddRootCommand<ContentCommand>();
