@@ -67,6 +67,8 @@ namespace Beamable.Editor.BeamCli
 			}
 		}
 
+		public static string CLI => USE_SRC ? Path.GetFullPath(CLI_VERSIONED_HOME) : EXEC;
+
 		public static string CLI_PATH
 		{
 			get

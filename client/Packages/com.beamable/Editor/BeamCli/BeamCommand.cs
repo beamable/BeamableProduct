@@ -303,13 +303,16 @@ namespace Beamable.Editor.BeamCli
 
 		public void SetCommand(string command)
 		{
-			var beamLocation = BeamCliUtil.CLI_PATH;
+			var beamCli = BeamCliUtil.CLI;
 
 #if UNITY_EDITOR_WIN
-			beamLocation = $"\"{Path.GetFullPath(beamLocation)}\"";
+			if(BeamCliUtil.USE_SRC)
+			{
+				beamCli = $"\"{beamCli}\"";
+			}
 #endif
 
-			Command = beamLocation + command.Substring("beam".Length);
+			Command = beamCli + command.Substring("beam".Length);
 		}
 
 		public async Promise Run()
@@ -349,7 +352,7 @@ namespace Beamable.Editor.BeamCli
 				// prevent the beam CLI from saving any log information to file.
 				_process.StartInfo.Environment.Add("BEAM_CLI_NO_FILE_LOG", "1");
 
-				_process.StartInfo.EnvironmentVariables["BEAM_PATH"] = Path.GetFullPath(BeamCliUtil.CLI_PATH);
+				_process.StartInfo.EnvironmentVariables["BEAM_PATH"] = BeamCliUtil.CLI;
 				_process.StartInfo.EnvironmentVariables["BEAM_DOTNET_PATH"] = Path.GetFullPath(DotnetUtil.DotnetPath);
 				_process.StartInfo.EnvironmentVariables["BEAM_DOTNET_MSBUILD_PATH"] =
 					Path.GetFullPath(DotnetUtil.DotnetMSBuildPath);
