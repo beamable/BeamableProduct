@@ -116,19 +116,17 @@ namespace Beamable.Editor.BeamCli
 				}
 			}
 
-			if (USE_GLOBAL || File.Exists(CLI_PATH))
+			if (USE_GLOBAL)
 			{
-				// if using global, we make no promises about anything. 
-				// or, if the cli exists, we are good 
+				// if using global, we make no promises about anything.
 				return;
 			}
 
 			// need to install the CLI
 			var installResult = InstallTool();
 
-			if (!installResult || !File.Exists(CLI_PATH))
+			if (!installResult)
 			{
-				// if the CLI still doesn't exist at the path, something went wrong.
 				throw new Exception("Beamable could not install the Beam CLI");
 			}
 		}

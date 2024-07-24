@@ -86,7 +86,7 @@ namespace Beamable.Editor.Dotnet
 		{
 			var proc = new Process();
 
-			var installCommand = $"new tool-manifest";
+			var installCommand = $"new tool-manifest --force";
 
 			proc.StartInfo = new ProcessStartInfo
 			{
