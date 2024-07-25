@@ -213,12 +213,19 @@ public class ConfigService
 
 	public const string ENV_VAR_WINDOWS_VOLUME_NAMES = "BEAM_DOCKER_WINDOWS_CONTAINERS";
 	public const string ENV_VAR_DOCKER_URI = "BEAM_DOCKER_URI";
+	public const string ENV_VAR_DOCKER_EXE = "BEAM_DOCKER_EXE";
 
 	/// <summary>
 	/// Enabling a custom Docker Uri allows for a customer to have a customized docker install and still
 	/// tell the Beam CLI where the docker socket is available.
 	/// </summary>
 	public string CustomDockerUri => Environment.GetEnvironmentVariable(ENV_VAR_DOCKER_URI);
+
+	/// <summary>
+	/// Beamable CLI needs the path to the docker executable for buildkit invocation. By default, the Beam CLI
+	/// will make a guess where Docker's exe is, but it can be specified and overwritten with this env var
+	/// </summary>
+	public static string CustomDockerExe => Environment.GetEnvironmentVariable(ENV_VAR_DOCKER_EXE);
 
 	/// <summary>
 	/// Github Action Runners for windows don't seem to work with volumes for mongo.

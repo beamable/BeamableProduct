@@ -403,7 +403,7 @@ public partial class BeamoLocalSystem
 
 
 		// Builds all images for all services that are defined and can be built locally.
-
+		
 		var prepareImages = new List<Task>(serviceDefinitionsToDeploy.Select(c => PrepareBeamoServiceImage(c, buildPullImageProgress, forceAmdCpuArchitecture, token)));
 		await Task.WhenAll(prepareImages);
 
