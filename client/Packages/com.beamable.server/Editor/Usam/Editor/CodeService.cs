@@ -534,7 +534,7 @@ namespace Beamable.Server.Editor.Usam
 			UsamLogger.Log($"Finished updating microservice [{serviceName}] data");
 		}
 		
-		public async Promise UpdateServiceReferences(IBeamoServiceDefinition service, List<AssemblyDefinitionAsset> assemblyDefinitions)
+		public async Promise UpdateServiceReferences(IBeamoServiceDefinition service, List<AssemblyDefinitionAsset> assemblyDefinitions, bool shouldRefresh = true)
 		{
 			UsamLogger.Log($"Starting updating references");
 
@@ -556,10 +556,13 @@ namespace Beamable.Server.Editor.Usam
 			});
 			await updateCommand.Run();
 
-			//call the CsharpProjectUtil to regenerate the csproj for this specific file
-			await RefreshServices();
-			SolutionPostProcessor.OnPreGeneratingCSProjectFiles();
-			SetSolution();
+			if (shouldRefresh)
+			{
+				//call the CsharpProjectUtil to regenerate the csproj for this specific file
+				await RefreshServices();
+				SolutionPostProcessor.OnPreGeneratingCSProjectFiles();
+				SetSolution();
+			}
 
 			UsamLogger.Log($"Finished updating references");
 		}
@@ -922,8 +925,21 @@ namespace Beamable.Server.Editor.Usam
 			var command = _cli.ProjectNewService(args);
 			await command.Run();
 
+			await RefreshServices();
+
+			var definition = ServiceDefinitions.FirstOrDefault(def => def.BeamoId == serviceName);
+
+			if (definition == null)
+			{
+				Debug.LogError($"The service [{serviceName}] could not be created.");
+			}
+
+			if (assemblyReferences != null)
+			{
+				await UpdateServiceReferences(definition, assemblyReferences, false);
+			}
+
 			UsamLogger.Log($"Starting the initialization of CodeService");
-			// Re-initializing the CodeService to make sure all files are with the right information
 			if (shouldInitialize)
 			{
 				await Init();

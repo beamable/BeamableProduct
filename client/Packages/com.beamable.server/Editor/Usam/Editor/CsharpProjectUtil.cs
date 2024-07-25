@@ -38,11 +38,12 @@ namespace Beamable.Server.Editor.Usam
 	<PropertyGroup Label=""Beamable Settings"">
         <!-- All Unity Assembly References must have the value: ""unity"" -->
         <BeamProjectType>unity</BeamProjectType>
+		<LangVersion>8.0</LangVersion>
     </PropertyGroup>
 
     <!-- Project settings -->
     <PropertyGroup>
-        <TargetFramework>netstandard2.0</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
         <ImplicitlyExpandNETStandardFacades>false</ImplicitlyExpandNETStandardFacades>
         <ImplicitlyExpandDesignTimeFacades>false</ImplicitlyExpandDesignTimeFacades>
         <EnableDefaultItems>false</EnableDefaultItems>
@@ -52,6 +53,7 @@ namespace Beamable.Server.Editor.Usam
     <ItemGroup>
         <PackageReference Include=""Beamable.UnityEngine"" Version=""{KEY_BEAMABLE_VERSION}""/>
         <PackageReference Include=""Beamable.Common"" Version=""{KEY_BEAMABLE_VERSION}""/>
+        <PackageReference Include=""Beamable.Microservice.Runtime"" Version=""{KEY_BEAMABLE_VERSION}""/>
     </ItemGroup>
 
     <!-- Source files -->
@@ -80,6 +82,7 @@ namespace Beamable.Server.Editor.Usam
 		{
 			foreach (var assembly in AssemblyUtil.ReferencedAssemblies)
 			{
+				//TODO: if the file exists read it, generate the new content, if it is equal, just skip writing to disk
 				var path = GenerateCsharpProjectPath(assembly);
 				var content = GenerateCsharpProject(assembly, path);
 				var fileName = GenerateCsharpProjectFilename(assembly);
@@ -190,7 +193,7 @@ namespace Beamable.Server.Editor.Usam
 		static string GenerateProjectReferenceEntry(Assembly reference, string csProjDir)
 		{
 			// the project will be generated in a folder next to the project path
-			var path = Path.Combine("..", reference.name, reference.name + ".csproj");
+			var path = Path.Combine("..", reference.name, PROJECT_NAME_PREFIX + reference.name + ".csproj");
 			return PROJECT_TEMPLATE.Replace(KEY_INCLUDE, path);
 		}
 
