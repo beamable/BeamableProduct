@@ -1,6 +1,7 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
+using Beamable.Common.Dependencies;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using Newtonsoft.Json;
@@ -24,6 +25,7 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public readonly BeamoLocalRuntime BeamoRuntime;
 
+	private readonly IDependencyProvider _provider;
 	private readonly ConfigService _configService;
 
 	/// <summary>
@@ -64,8 +66,9 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	private readonly CancellationTokenSource _dockerListeningThreadCancel;
 
-	public BeamoLocalSystem(ConfigService configService, IAppContext ctx, IRealmsApi realmsApi, BeamoService beamo, IBeamableRequester beamableRequester)
+	public BeamoLocalSystem(IDependencyProvider provider, ConfigService configService, IAppContext ctx, IRealmsApi realmsApi, BeamoService beamo, IBeamableRequester beamableRequester)
 	{
+		_provider = provider;
 		_configService = configService;
 		_ctx = ctx;
 		_beamo = beamo;

@@ -6,7 +6,7 @@
     </PropertyGroup>
     
     <PropertyGroup Label="Dotnet Settings">
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
     </PropertyGroup>
 
     <!-- These are special Beamable parameters that we use to keep the beamable packages in-sync to the CLI version your project is using. -->

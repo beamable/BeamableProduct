@@ -39,6 +39,7 @@ public interface IAppContext
 	bool ShouldUseLogFile { get; }
 	string TempLogFilePath { get;  }
 	bool ShouldMaskLogs { get; }
+	string DockerPath { get; }
 
 	/// <summary>
 	/// Control how basic options are found from the console context.
@@ -77,6 +78,7 @@ public class DefaultAppContext : IAppContext
 	public bool ShowPrettyOutput { get; private set; }
 
 	public string DotnetPath { get; private set; }
+	public string DockerPath { get; private set; }
 
 	public bool ShouldUseLogFile => !_consoleContext.ParseResult.GetValueForOption(_noLogFileOption);
 	public string TempLogFilePath => Path.Combine(Path.GetTempPath(), "beamCliLog.txt");
@@ -100,7 +102,7 @@ public class DefaultAppContext : IAppContext
 		AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption, ConfigDirOption configDirOption,
 		ConfigService configService, CliEnvironment environment, ShowRawOutput showRawOption, SkipStandaloneValidationOption skipValidationOption,
 		DotnetPathOption dotnetPathOption, ShowPrettyOutput showPrettyOption, LoggingLevelSwitch logSwitch,
-		UnmaskLogsOption unmaskLogsOption, NoLogFileOption noLogFileOption)
+		UnmaskLogsOption unmaskLogsOption, NoLogFileOption noLogFileOption, DockerPathOption dockerPathOption)
 	{
 		_consoleContext = consoleContext;
 		_dryRunOption = dryRunOption;
@@ -120,6 +122,7 @@ public class DefaultAppContext : IAppContext
 		_noLogFileOption = noLogFileOption;
 		_skipValidationOption = skipValidationOption;
 		_dotnetPathOption = dotnetPathOption;
+		DockerPath = consoleContext.ParseResult.GetValueForOption(dockerPathOption);
 	}
 
 	void SetupOutputStrategy()
