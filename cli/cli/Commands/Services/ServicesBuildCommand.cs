@@ -54,7 +54,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 	, IResultSteam<DefaultStreamResultChannel, ServicesBuildCommandOutput>
 	, IResultSteam<ProgressStream, ServicesBuiltProgress>
 {
-	public ServicesBuildCommand() : base("build", "build a set of services into docker images")
+	public ServicesBuildCommand() : base("build", "Build a set of services into docker images")
 	{
 	}
 
@@ -66,26 +66,26 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			bindWithoutTags: (args, i) => args.withoutServiceTags = i);
 
 		var serialOption = new Option<bool>("--simultaneous",
-			"when true, all build images will run in parallel.");
+			"When true, all build images will run in parallel");
 		serialOption.AddAlias("-s");
 		serialOption.SetDefaultValue(false);
 		
 		var forceCpuOption = new Option<bool>("--force-cpu-arch",
-			"when true, build an image for the Beamable Cloud architecture, amd64.");
+			"When true, build an image for the Beamable Cloud architecture, amd64");
 		forceCpuOption.AddAlias("-fcpu");
 		forceCpuOption.SetDefaultValue(false);
 		
 		var pullOption = new Option<bool>("--pull",
-			"when true, force the docker build to pull all base images.");
+			"When true, force the docker build to pull all base images");
 		pullOption.AddAlias("-p");
 		pullOption.SetDefaultValue(false);
 		
 		var noCacheOption = new Option<bool>("--no-cache",
-			"when true, force the docker build to ignore all caches.");
+			"When true, force the docker build to ignore all caches");
 		noCacheOption.SetDefaultValue(false);
 		
 		var tagsOption = new Option<string[]>("--tags",
-			"provider custom tags for the resulting docker images.");
+			"Provider custom tags for the resulting docker images");
 		tagsOption.SetDefaultValue(new string[]{"latest"});
 		tagsOption.AllowMultipleArgumentsPerToken = true;
 		tagsOption.Arity = ArgumentArity.ZeroOrMore;

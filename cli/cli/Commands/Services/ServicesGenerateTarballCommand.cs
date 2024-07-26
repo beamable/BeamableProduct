@@ -16,19 +16,19 @@ public class ServicesGenerateTarballCommandOutput
 }
 public class ServicesGenerateTarballCommand : AtomicCommand<ServicesGenerateTarballCommandArgs, ServicesGenerateTarballCommandOutput>
 {
-	public ServicesGenerateTarballCommand() : base("bundle", "create a bundle .tar file for the given service")
+	public ServicesGenerateTarballCommand() : base("bundle", "Create a bundle .tar file for the given service")
 	{
 	}
 
 	public override void Configure()
 	{
-		var serviceIdOption = new Option<string>("--id", "the beamo id of the service to bundle");
+		var serviceIdOption = new Option<string>("--id", "The beamo id of the service to bundle");
 		serviceIdOption.AddAlias("-i");
 		serviceIdOption.IsRequired = true;
 		AddOption(serviceIdOption, (args, i) => args.beamoId = i);
 		
 		
-		var outputOption = new Option<string>("--output", "the location of the output tarball file");
+		var outputOption = new Option<string>("--output", "The location of the output tarball file");
 		outputOption.AddAlias("-o");
 		AddOption(outputOption, (args, i) => args.outputPath = i);
 	}
