@@ -199,7 +199,7 @@ public partial class BeamoLocalSystem
 			}
 			case BeamoProtocolType.HttpMicroservice:
 			{
-				serviceDefinition.ImageId = await BuildAndCreateImage2(serviceDefinition.BeamoId, prog =>
+				serviceDefinition.ImageId = await BuildAndCreateImage(serviceDefinition.BeamoId, prog =>
 				{
 					messageHandler?.Invoke(serviceDefinition.BeamoId, prog);
 				}, forceCpuArch: forceAmdCpuArchitecture);
@@ -233,7 +233,7 @@ public partial class BeamoLocalSystem
 	}
 
 
-	public async Task<string> BuildAndCreateImage2(string serviceId, Action<float> progressUpdateHandler, bool forceCpuArch)
+	public async Task<string> BuildAndCreateImage(string serviceId, Action<float> progressUpdateHandler, bool forceCpuArch)
 	{
 		var res = await ServicesBuildCommand.Build(_provider, serviceId, log =>
 		{
@@ -266,7 +266,7 @@ public partial class BeamoLocalSystem
 		return _client.PullAndCreateImage(publicImageName, progressUpdateHandler);
 	}
 
-	public static Stream GetTarfile(string beamoId, IDependencyProvider provider)
+	public static async Task<Stream> GetTarfile(string beamoId, IDependencyProvider provider)
 	{
 		var beamo = provider.GetService<BeamoLocalSystem>();
 		var config = provider.GetService<ConfigService>();
@@ -284,6 +284,7 @@ public partial class BeamoLocalSystem
 		{
 			throw new CliException($"no local http microservice for id=[{beamoId}]");
 		}
+		await beamo.UpdateDockerFile(definition); // TODO: make sure we aren't calling this more than we need to.
 
 		var pathToDockerfile = config.BeamableRelativeToExecutionRelative(http.RelativeDockerfilePath);
 		var pathsList = BeamoLocalSystem.ParseDockerfile(config, pathToDockerfile);
@@ -297,7 +298,7 @@ public partial class BeamoLocalSystem
 		{
 			throw CliExceptions.DOCKER_NOT_RUNNING;
 		}
-
+		
 		if (string.IsNullOrEmpty(outputPath))
 		{
 			outputPath = beamoId + ".tar";
@@ -306,7 +307,7 @@ public partial class BeamoLocalSystem
 			outputPath += ".tar";
 		}
 
-		var stream = GetTarfile(beamoId, args.DependencyProvider);
+		var stream = await GetTarfile(beamoId, args.DependencyProvider);
 		using var file = File.OpenWrite(outputPath);
 		await stream.CopyToAsync(file);
 

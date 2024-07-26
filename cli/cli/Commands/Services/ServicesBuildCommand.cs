@@ -22,6 +22,7 @@ public class ServicesBuildCommandArgs : CommandArgs
 	public List<string> withServiceTags = new List<string>();
 	public List<string> withoutServiceTags = new List<string>();
 
+	public bool simultaneous;
 	public bool noCache;
 	public bool pull;
 	public bool forceCpu;
@@ -64,6 +65,11 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			bindWithTags: (args, i) => args.withServiceTags = i,
 			bindWithoutTags: (args, i) => args.withoutServiceTags = i);
 
+		var serialOption = new Option<bool>("--simultaneous",
+			"when true, all build images will run in parallel.");
+		serialOption.AddAlias("-s");
+		serialOption.SetDefaultValue(false);
+		
 		var forceCpuOption = new Option<bool>("--force-cpu-arch",
 			"when true, build an image for the Beamable Cloud architecture, amd64.");
 		forceCpuOption.AddAlias("-fcpu");
@@ -79,7 +85,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		noCacheOption.SetDefaultValue(false);
 		
 		var tagsOption = new Option<string[]>("--tags",
-			"provider custom tags for the resulting images.");
+			"provider custom tags for the resulting docker images.");
 		tagsOption.SetDefaultValue(new string[]{"latest"});
 		tagsOption.AllowMultipleArgumentsPerToken = true;
 		tagsOption.Arity = ArgumentArity.ZeroOrMore;
@@ -88,6 +94,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		AddOption(pullOption, (args, i) => args.pull = i);
 		AddOption(noCacheOption, (args, i) => args.noCache = i);
 		AddOption(tagsOption, (args, i) => args.tags = i);
+		AddOption(serialOption, (args, i) => args.simultaneous = i);
 
 	}
 
@@ -105,9 +112,15 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			.StartAsync(async ctx =>
 			{
 				var tasks = new List<Task<BuildImageOutput>>();
-				foreach (var service in args.services)
+				var visuals = new ProgressTask[args.services.Count];
+				for (var i = 0; i < visuals.Length; i++)
 				{
-					var visual = ctx.AddTask(service);
+					visuals[i] = ctx.AddTask(args.services[i]);
+				}
+				for (var i = 0 ; i < args.services.Count; i ++)
+				{
+					var index = i;
+					var service = args.services[i];
 					var buildTask = Build(
 						args.DependencyProvider, 
 						service,
@@ -123,7 +136,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 						if (msg.isFailure)
 						{
 							Log.Error(msg.message);
-							visual.StopTask();
+							visuals[index].StopTask();
 						}
 						else
 						{						
@@ -134,10 +147,15 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 					}, progressMessage: prog =>
 					{
 						prog.id = service;
-						visual.Value = (prog.Ratio * visual.MaxValue);
+						visuals[index].Value = (prog.Ratio * visuals[index].MaxValue);
 						this.SendResults<ProgressStream, ServicesBuiltProgress>(prog);
 					});
 					tasks.Add(buildTask);
+
+					if (args.simultaneous)
+					{
+						await buildTask;
+					}
 				}
 
 				var results = await Task.WhenAll(tasks);
@@ -153,72 +171,6 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		if (failed)
 		{
 			throw new CliException("failed to build. see logs for details. ");
-		}
-	}
-
-	public static bool TryGetDockerPath(out string dockerPath, out string errorMessage)
-	{
-		dockerPath = ConfigService.CustomDockerExe;
-		errorMessage = null;
-		if (!string.IsNullOrEmpty(dockerPath))
-		{
-			// the path is specified, so we must use it.
-			if (!TryValidatePath(dockerPath, out var message))
-			{
-				errorMessage = $"specified docker path via {ConfigService.ENV_VAR_DOCKER_EXE} env var, but {message}";
-				return false;
-			}
-
-			return true;
-		}
-
-		var paths = new string[]
-		{
-			"docker", // hopefully its just on the PATH
-			"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe", // common windows installation
-			"/usr/local/bin/docker", // common mac installation
-		};
-		foreach (var path in paths)
-		{
-			if (!TryValidatePath(path, out _))
-				continue;
-
-			dockerPath = path;
-			return true; // yahoo!
-		}
-
-		errorMessage =
-			$"docker executable not found using common paths. Please specify with {ConfigService.ENV_VAR_DOCKER_EXE} env var";
-		return false;
-
-		bool TryValidatePath(string candidatePath, out string message)
-		{
-			message = null;
-			Log.Verbose($"testing docker candidate=[{candidatePath}]");
-
-			var command = CliWrap.Cli
-				.Wrap(candidatePath)
-				.WithStandardOutputPipe(PipeTarget.ToDelegate(x =>
-				{
-					Log.Verbose($"docker-version-check-stdout=[{x}]");
-				}))
-				.WithStandardErrorPipe(PipeTarget.ToDelegate(x =>
-				{
-					Log.Verbose($"docker-version-check-stderr=[{x}]");
-				}))
-				.WithArguments("--version")
-				.WithValidation(CommandResultValidation.None);
-			var res = command.ExecuteAsync();
-			res.Task.Wait();
-			var success = res.Task.Result.ExitCode == 0;
-			if (!success)
-			{
-				message = "given path is not a valid docker executable";
-				return false;
-			}
-
-			Log.Verbose($"found docker path=[{candidatePath}]");
-			return true;
 		}
 	}
 
@@ -245,13 +197,15 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		string[] tags=null)
 	{
 		// a fake number of "steps" that the tarball is allotted. 
-		const int tarBallSteps = 3;
+		const int tarBallSteps = 2;
 		const int estimatedSteps = 10;
 		const int stepPadding = 2;
 
 		var beamoLocal = provider.GetService<BeamoLocalSystem>();
+		var app = provider.GetService<IAppContext>();
 
-		if (!TryGetDockerPath(out var dockerPath, out var dockerPathError))
+		var dockerPath = app.DockerPath;
+		if (!DockerPathOption.TryValidateDockerExec(dockerPath, out var dockerPathError))
 		{
 			throw new CliException(dockerPathError);
 		}
@@ -293,19 +247,11 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			totalSteps = estimatedSteps
 		});
 		
-		await beamoLocal.UpdateDockerFile(definition);
-		
-		progressMessage?.Invoke(new ServicesBuiltProgress
-		{
-			completedSteps = 1,
-			totalSteps = estimatedSteps
-		});
-		
 		logMessage?.Invoke(new ServicesBuildCommandOutput
 		{
 			message = "building tarball..."
 		});
-		var tarStream = BeamoLocalSystem.GetTarfile(id, provider);
+		var tarStream = await BeamoLocalSystem.GetTarfile(id, provider);
 		
 		progressMessage?.Invoke(new ServicesBuiltProgress
 		{
@@ -329,29 +275,18 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 
 		Log.Verbose($"running docker command with args=[{argString}]");
 		var buffer = new StringBuilder();
-		var shaToVertex = new Dictionary<string, BuildkitVertex>();
+		var digestToVertex = new Dictionary<string, BuildkitVertex>();
 		var idToStatus = new Dictionary<string, BuildkitStatus>();
 		string imageId = null; 
 		bool TryParse(out BuildkitMessage msg)
 		{
-			string json;
-			lock (buffer)
-			{
-				json = buffer.ToString();
-			}
+			string json = buffer.ToString();
 			try
 			{
-				lock (buffer)
-				{
-					msg = System.Text.Json.JsonSerializer.Deserialize<BuildkitMessage>(json,
-						new JsonSerializerOptions { IncludeFields = true });
-					if (msg.statuses.Count > 0)
-					{
-						
-					}
-					buffer.Clear();
-					return true;
-				}
+				msg = System.Text.Json.JsonSerializer.Deserialize<BuildkitMessage>(json,
+					new JsonSerializerOptions { IncludeFields = true });
+				buffer.Clear();
+				return true;
 			}
 			catch
 			{
@@ -367,7 +302,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			{
 				var wasStarted = false;
 				var wasFailed = false;
-				if (shaToVertex.TryGetValue(vertex.digest, out var oldVertex))
+				if (digestToVertex.TryGetValue(vertex.digest, out var oldVertex))
 				{
 					wasStarted = oldVertex.IsStarted;
 					wasFailed = oldVertex.IsFailed;
@@ -393,12 +328,12 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 				}
 				
 				// always overwrite the vertex. Docker will change the started and completed times
-				shaToVertex[vertex.digest] = vertex;
+				digestToVertex[vertex.digest] = vertex;
 			}
 			
 			// compute the total steps
-			var totalSteps = tarBallSteps + shaToVertex.Count;
-			var completedSteps = tarBallSteps + shaToVertex.Count(kvp => kvp.Value.IsCompleted);
+			var totalSteps = tarBallSteps + digestToVertex.Count;
+			var completedSteps = tarBallSteps + digestToVertex.Count(kvp => kvp.Value.IsCompleted);
 			
 			progressMessage?.Invoke(new ServicesBuiltProgress
 			{
@@ -409,9 +344,9 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			// check for log updates on vertex data
 			foreach (var log in msg.logs)
 			{
-				if (!shaToVertex.TryGetValue(log.vertex, out var vertex))
+				if (!digestToVertex.ContainsKey(log.vertex))
 				{
-					Log.Warning($"Received docker log for non-existent vertex=[{log.vertex}]");
+					Log.Warning($"Received docker log for non-existent vertex=[{log.vertex}] message=[{log.DecodedMessage}]");
 					continue;
 				}
 
@@ -424,8 +359,10 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			// check for status updates on vertex data
 			foreach (var status in msg.statuses)
 			{
-				//writing image sha256:d3150be3b218a7f0327310ad97e06f7a1cd708548d01707371676262781b48f3
-				var prefix = "writing image ";
+				// there is a status with the follow format, 
+				//  writing image sha256:d3150be3b218a7f0327310ad97e06f7a1cd708548d01707371676262781b48f3
+				// we can use this to extract the image id without a second docker call!
+				const string prefix = "writing image ";
 				if (status.id?.StartsWith(prefix) ?? false)
 				{
 					imageId = status.id.Substring(prefix.Length + 1);
@@ -447,7 +384,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			
 		}
 
-		var command = CliWrap.Cli
+		var command = Cli
 			.Wrap(dockerPath)
 			.WithArguments(argString)
 			.WithValidation(CommandResultValidation.None)
@@ -458,10 +395,13 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			}))
 			.WithStandardErrorPipe(PipeTarget.ToDelegate(line =>
 			{
-				buffer.Append(line);
-				if (TryParse(out var msg))
+				lock (buffer)
 				{
-					PostMessage(msg);
+					buffer.Append(line);
+					if (TryParse(out var msg))
+					{
+						PostMessage(msg);
+					}
 				}
 			}));
 			
@@ -499,6 +439,10 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		public List<VertexWarning> warnings = new List<VertexWarning>();
 	}
 
+	/// <summary>
+	/// a vertex represents a build step in the docker-file.
+	/// buildkit will publish all the vertexes and then publish status and log updates for each vertex.
+	/// </summary>
 	class BuildkitVertex
 	{
 		public string digest;
@@ -537,8 +481,6 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 	class BuildkitStatus
 	{
 		public string id;
-		// public string name;
-		// public string message;
 		public string vertex;
 		public long current;
 		public long total;
@@ -564,9 +506,9 @@ public struct BuildImageOutput
 {
 	public bool success;
 	public string service;
-	public string fullImageId;
+	public string fullImageId; // in the form of sha256:203948q30497q235498q734056982304598135
 
-	public string LongImageId
+	public string LongImageId // in the form of 203948q30497q235498q734056982304598135
 	{
 		get
 		{
@@ -582,7 +524,7 @@ public struct BuildImageOutput
 		}
 	}
 
-	public string ShortImageId => LongImageId.Substring(0, Math.Min(12, LongImageId.Length));
+	public string ShortImageId => LongImageId.Substring(0, Math.Min(12, LongImageId.Length)); // 203948q30497q2
 	
 	public string Display => $"{service}: {(success ? ShortImageId : "(failed)")}";
 }

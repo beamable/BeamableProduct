@@ -231,6 +231,7 @@ public class App
 		Commands.AddSingleton(AllHelpOption.Instance);
 		Commands.AddSingleton(NoLogFileOption.Instance);
 		Commands.AddSingleton(UnmaskLogsOption.Instance);
+		Commands.AddSingleton(DockerPathOption.Instance);
 		Commands.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
@@ -244,6 +245,7 @@ public class App
 			root.AddGlobalOption(AllHelpOption.Instance);;
 			root.AddGlobalOption(UnmaskLogsOption.Instance);
 			root.AddGlobalOption(NoLogFileOption.Instance);
+			root.AddGlobalOption(DockerPathOption.Instance);
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
 			root.AddGlobalOption(provider.GetRequiredService<ShowRawOutput>());
 			root.AddGlobalOption(provider.GetRequiredService<ShowPrettyOutput>());
