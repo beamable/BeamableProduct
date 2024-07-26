@@ -88,7 +88,15 @@ public class ConfigService
 	/// <returns>A path relative to the docker build context path</returns>
 	public string GetRelativeToDockerBuildContextPath(string path)
 	{
-		return Path.GetRelativePath(GetAbsoluteDockerBuildContextPath(), path);
+		string absoluteContextPath = GetAbsoluteDockerBuildContextPath();
+		return Path.GetRelativePath(absoluteContextPath, path);
+	}
+
+	public string GetPathFromRelativeToService(string path, string servicePath)
+	{
+		var relativePath = Path.GetDirectoryName(path);
+		var fullPath = Path.Combine(servicePath, relativePath);
+		return GetRelativeToDockerBuildContextPath(fullPath);
 	}
 
 	/// <summary>
@@ -206,6 +214,7 @@ public class ConfigService
 	public const string ENV_VAR_WINDOWS_VOLUME_NAMES = "BEAM_DOCKER_WINDOWS_CONTAINERS";
 	public const string ENV_VAR_DOCKER_URI = "BEAM_DOCKER_URI";
 	public const string ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND = "BEAM_CLI_IS_REDIRECTED_COMMAND";
+	public const string ENV_VAR_DOCKER_EXE = "BEAM_DOCKER_EXE";
 
 	public static bool IsRedirected => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND));
 	
@@ -214,6 +223,12 @@ public class ConfigService
 	/// tell the Beam CLI where the docker socket is available.
 	/// </summary>
 	public string CustomDockerUri => Environment.GetEnvironmentVariable(ENV_VAR_DOCKER_URI);
+
+	/// <summary>
+	/// Beamable CLI needs the path to the docker executable for buildkit invocation. By default, the Beam CLI
+	/// will make a guess where Docker's exe is, but it can be specified and overwritten with this env var
+	/// </summary>
+	public static string CustomDockerExe => Environment.GetEnvironmentVariable(ENV_VAR_DOCKER_EXE);
 
 	/// <summary>
 	/// Github Action Runners for windows don't seem to work with volumes for mongo.
@@ -399,16 +414,23 @@ public class ConfigService
 			return false;
 		}
 
-		var versionMatching = new Regex("beamable.*?\"([0-9]+\\.[0-9]+\\.[0-9]+)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
+		var versionMatching = new Regex("beamable.*?\"([0-9]+\\.[0-9]+\\.[0-9]+.*?)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
 		var versionMatch = versionMatching.Match(File.ReadAllText(pathToToolsManifest));
 
 		if (versionMatch.Success)
 		{
-			version = versionMatch.Groups[1].Value;
+			var retrievedVersion = versionMatch.Groups[1].Value;
+
+			if (!PackageVersion.TryFromSemanticVersionString(retrievedVersion, out _))
+			{
+				throw new CliException("The version in the dotnet-tools.json file is not valid.");
+			}
+
+			version = retrievedVersion;
 			return true;
 		}
 
-		throw new Exception("Missing \"beamable.tools\" entry in \".config/dotnet-tools.json\" directory.");
+		throw new CliException("Missing \"beamable.tools\" entry in \".config/dotnet-tools.json\" directory.");
 	}
 
 	public void CreateIgnoreFile(Vcs system = Vcs.Git, bool forceCreate = false)

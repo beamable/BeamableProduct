@@ -4,6 +4,8 @@
  */
 
 using Beamable.Common;
+using Beamable.Common.Dependencies;
+using cli.Utils;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using ICSharpCode.SharpZipLib.Tar;
@@ -45,7 +47,8 @@ public partial class BeamoLocalSystem
 		List<DockerPortBinding> portBindings,
 		List<DockerVolume> volumes,
 		List<DockerBindMount> bindMounts,
-		List<DockerEnvironmentVariable> environmentVars)
+		List<DockerEnvironmentVariable> environmentVars,
+		CancellationToken token = default)
 	{
 		Log.Verbose($"creating or running container with image=[{image}] containerName=[{containerName}]");
 		var existingInstance = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.ContainerName.Contains(containerName));
@@ -69,9 +72,16 @@ public partial class BeamoLocalSystem
 			}
 		}
 
+		token.ThrowIfCancellationRequested();
 		_ = await CreateContainer(image, containerName, healthConfig, autoRemoveWhenStopped, portBindings, volumes, bindMounts, environmentVars);
+
+		token.ThrowIfCancellationRequested();
 		var didRun = await RunContainer(containerName);
+
+		token.ThrowIfCancellationRequested();
 		_ = await _client.Containers.InspectContainerAsync(containerName);
+
+		token.ThrowIfCancellationRequested();
 		return didRun;
 	}
 
@@ -174,7 +184,7 @@ public partial class BeamoLocalSystem
 	/// <see cref="BeamoServiceDefinition.DockerBuildContextPath"/> and <see cref="BeamoServiceDefinition.RelativeDockerfilePath"/>.  
 	/// </summary>
 	/// <returns>The image id that was created/pulled.</returns>
-	public async Task<string> PrepareBeamoServiceImage(BeamoServiceDefinition serviceDefinition, Action<string, float> messageHandler, bool forceAmdCpuArchitecture = false)
+	public async Task<string> PrepareBeamoServiceImage(BeamoServiceDefinition serviceDefinition, Action<string, float> messageHandler, bool forceAmdCpuArchitecture = false, CancellationToken token = default)
 	{
 		switch (serviceDefinition.Protocol)
 		{
@@ -189,130 +199,64 @@ public partial class BeamoLocalSystem
 			}
 			case BeamoProtocolType.HttpMicroservice:
 			{
-				var localProtocol = BeamoManifest.HttpMicroserviceLocalProtocols[serviceDefinition.BeamoId];
-				serviceDefinition.ImageId = await BuildAndCreateImage(serviceDefinition.BeamoId.ToLower(),
-					localProtocol.RelativeDockerfilePath,
-					progress =>
-					{
-						messageHandler?.Invoke(serviceDefinition.BeamoId, progress);
-					},
-					forceAmdCpuArchitecture: forceAmdCpuArchitecture);
+				serviceDefinition.ImageId = await BuildAndCreateImage(serviceDefinition.BeamoId, prog =>
+				{
+					messageHandler?.Invoke(serviceDefinition.BeamoId, prog);
+				}, forceCpuArch: forceAmdCpuArchitecture);
 				break;
 			}
 			default:
 				throw new ArgumentOutOfRangeException(nameof(serviceDefinition.Protocol));
 		}
+		token.ThrowIfCancellationRequested(); // Happens at the end so if one of the services that are being prepared finishes first, it will throw the OperationCanceledException
 
 		return serviceDefinition.ImageId;
 	}
 
-	/// <summary>
-	/// Builds an image with the local docker engine using the given <paramref name="dockerBuildContextPath"/>, <paramref name="imageName"/> and dockerfile (<paramref name="dockerfilePathInBuildContext"/>).
-	/// It inspects the created image and returns it's ID.
-	/// </summary>
-	public async Task<string> BuildAndCreateImage(string imageName, string dockerfilePathInBuildContext, Action<float> progressUpdateHandler,
-		string containerImageTag = "latest", bool forceAmdCpuArchitecture = false)
+	public struct DockerInfo
 	{
-
-		var pathToDockerfile = _configService.BeamableRelativeToExecutionRelative(dockerfilePathInBuildContext);
-		var pathsList = ParseDockerfile(_configService, pathToDockerfile);
-
-		using (var stream = CreateTarballForDirectory(_configService, pathsList))
-		{
-			var tag = $"{imageName}:{containerImageTag}";
-			var progress = 0f;
-			try
-			{
-				var parameters = new ImageBuildParameters
-				{
-					Tags = new[] { tag },
-					Dockerfile = dockerfilePathInBuildContext.Replace("\\", "/"),
-					Labels = new Dictionary<string, string>() { { "beamoId", imageName } },
-					Pull = "pull",
-				};
-				if (forceAmdCpuArchitecture)
-				{
-					parameters.Platform = "linux/amd64";
-					Log.Debug($"Forcing CPU architecture arch=[{parameters.Platform}]");
-				}
-
-				await _client.Images.BuildImageFromDockerfileAsync(
-					parameters,
-					stream,
-					null,
-					new Dictionary<string, string>(),
-					new Progress<JSONMessage>(message =>
-					{
-						/* Potentially relevant stream messages formats (in order of appearance):
-						 *
-						 * {"stream":"\n"}
-						 * {"stream":"Step 14/14 : LABEL beamoId=test1"}
-						 * {"stream":" ---> Running in 286bb8db47b8\n"}
-						 * {"stream":"Removing intermediate container 286bb8db47b8\n"}
-						 * {"stream":" ---> 08705e552527\n"}
-						 * {"aux":{"ID":"sha256:08705e552527b5b7d5dce08777c134338d8d642878670d79ff2d8ec393f75852"}}
-						 * {"stream":"Successfully built 08705e552527\n"}
-						 * {"stream":"Successfully tagged test1:latest\n"}
-						 */
-
-						// If you need to make changes to this and aren't super familiar with regex --- go here and learn it:
-						// https://regex101.com/r/gpX8Ix/1
-						var regex = new Regex("Step ([0-9]+)/([0-9]+) :");
-
-						Log.Debug(message.Stream);
-						BeamableLogger.LogError(message.ErrorMessage);
-						if (message.Error != null)
-						{
-							BeamableLogger.LogError(message.Error.Code.ToString());
-							BeamableLogger.LogError(message.Error.Message);
-							BeamableLogger.LogError("Failed!");
-							throw new Exception(
-								$"Failed to build {tag} code=[{message.Error.Code}] message=[{message.Error.Message}]");
-						}
-
-						var messageStream = message.Stream;
-						if (string.IsNullOrEmpty(messageStream))
-						{
-							return;
-						}
-
-						if (regex.IsMatch(messageStream))
-						{
-							// The group at idx 0 is the full match --- since we want the groups capturing the separated step values, we start at indices 1 and 2.
-							var currentStepStr = regex.Match(messageStream).Groups[1].Captures[0].Value;
-							var totalStepStr = regex.Match(messageStream).Groups[2].Captures[0].Value;
-
-							var currStep = float.Parse(currentStepStr);
-							// Add one here because Step 14/14 or Step 2/2 means we have just started step 14 or 2.
-							var totalStep = float.Parse(totalStepStr) + 1;
-
-							// Update the progress only if it increased (this is because we can sometimes get out of order stream step messages for the earlier steps).
-							// IDK why this happens, but... it does...
-							var currProgress = currStep / totalStep;
-							progress = progress < currProgress ? currProgress : progress;
-						}
-
-						// We set this to one here when we receive this stream message as it's the final one
-						if (messageStream.StartsWith("Successfully tagged"))
-							progress = 1;
-
-						// Update the progress handler
-						progressUpdateHandler?.Invoke(progress);
-					}));
-			}
-			catch (Exception ex)
-			{
-				BeamableLogger.LogError(ex);
-				BeamableLogger.LogError(ex?.InnerException);
-				throw new CliException($"Failed while building image = [{imageName}]. Exception thrown: [{ex.Message}]. Stacktrace: [{ex.StackTrace}]");
-			}
-
-			var builtImage = await _client.Images.InspectImageAsync(tag);
-			Log.Debug($"Built image=[{builtImage.ID}] for arch=[{builtImage.Architecture}]");
-			return builtImage.ID;
-		}
+		public string arch; // example: "aarch64"
+		public string osType; // example: "linux"
+		public string Platform => $"{osType}/{arch}";
+	}
+	public async Task<DockerInfo> GetBuildPlatform()
+	{
+		var info = await _client.System.GetSystemInfoAsync();
+		
+		var plugins = await _client.Plugin.ListPluginsAsync(new PluginListParameters { });
+		var buildx = await _client.Plugin.InspectPluginAsync("buildx");
+		// info.Plugins
+		return new DockerInfo { 
+			arch = info.Architecture, 
+			osType = info.OSType
+		};
 	}
 
+
+	public async Task<string> BuildAndCreateImage(string serviceId, Action<float> progressUpdateHandler, bool forceCpuArch)
+	{
+		var res = await ServicesBuildCommand.Build(_provider, serviceId, log =>
+		{
+			if (log.isFailure)
+			{
+				Log.Error($"({serviceId}) - {log.message}");
+			}
+			else
+			{
+				Log.Debug($"({serviceId}) - {log.message}");
+			}
+		}, prog =>
+		{
+			progressUpdateHandler?.Invoke(prog.Ratio);
+		}, forceCpu: forceCpuArch);
+
+		if (!res.success)
+		{
+			throw new CliException($"cannot build image=[{serviceId}] check logs.");
+		}
+		return res.ShortImageId;
+	}
+	
 	/// <summary>
 	/// Pulls the image with the given <paramref name="imageName"/>:<paramref name="imageTag"/> into the local docker engine from remote docker repositories.
 	/// It inspects the pulled image and returns its id, after the pull is done.
@@ -322,7 +266,60 @@ public partial class BeamoLocalSystem
 		return _client.PullAndCreateImage(publicImageName, progressUpdateHandler);
 	}
 
-	private static List<string> ParseDockerfile(ConfigService configService, string dockerFilePath)
+	public static async Task<Stream> GetTarfile(string beamoId, IDependencyProvider provider)
+	{
+		var beamo = provider.GetService<BeamoLocalSystem>();
+		var config = provider.GetService<ConfigService>();
+		if (!beamo.BeamoManifest.TryGetDefinition(beamoId, out var definition))
+		{
+			throw new CliException($"no service available for id=[{beamoId}]");
+		}
+
+		if (definition.Protocol != BeamoProtocolType.HttpMicroservice)
+		{
+			throw new CliException($"no service available for id=[{beamoId}]");
+		}
+
+		if (!beamo.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(beamoId, out var http))
+		{
+			throw new CliException($"no local http microservice for id=[{beamoId}]");
+		}
+		await beamo.UpdateDockerFile(definition); // TODO: make sure we aren't calling this more than we need to.
+
+		var pathToDockerfile = config.BeamableRelativeToExecutionRelative(http.RelativeDockerfilePath);
+		var pathsList = BeamoLocalSystem.ParseDockerfile(config, pathToDockerfile);
+		return BeamoLocalSystem.CreateTarballForDirectory(config, pathsList);
+	}
+	
+	public static async Task<ServicesGenerateTarballCommandOutput> WriteTarfileToDisk(string outputPath, string beamoId, CommandArgs args)
+	{
+		var isDockerRunning = await args.BeamoLocalSystem.CheckIsRunning();
+		if (!isDockerRunning)
+		{
+			throw CliExceptions.DOCKER_NOT_RUNNING;
+		}
+		
+		if (string.IsNullOrEmpty(outputPath))
+		{
+			outputPath = beamoId + ".tar";
+		} else if (!Path.HasExtension(outputPath))
+		{
+			outputPath += ".tar";
+		}
+
+		var stream = await GetTarfile(beamoId, args.DependencyProvider);
+		using var file = File.OpenWrite(outputPath);
+		await stream.CopyToAsync(file);
+
+		file.Close();
+
+		return new ServicesGenerateTarballCommandOutput
+		{
+			outputPath = outputPath
+		};
+	}
+
+	public static List<string> ParseDockerfile(ConfigService configService, string dockerFilePath)
 	{
 		var paths = new List<string>();
 
@@ -368,7 +365,7 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// Creates a tarball stream containing every file in the given <paramref name="directory"/>. 
 	/// </summary>
-	private static Stream CreateTarballForDirectory(ConfigService configService, List<string> paths)
+	public static Stream CreateTarballForDirectory(ConfigService configService, List<string> paths)
 	{
 		var tarball = new MemoryStream(512 * 1024);
 		var allFiles = new List<string>();
@@ -391,7 +388,7 @@ public partial class BeamoLocalSystem
 		using var archive = new TarOutputStream(tarball, Encoding.Default)
 		{
 			//Prevent the TarOutputStream from closing the underlying memory stream when done
-			IsStreamOwner = false
+			IsStreamOwner = false,
 		};
 
 		// Get every file in the given directory

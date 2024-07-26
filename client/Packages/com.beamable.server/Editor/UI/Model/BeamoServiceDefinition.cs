@@ -19,5 +19,6 @@ namespace Beamable.Editor.UI.Model
 		public ServiceInfo ServiceInfo { get; set; }
 		public bool ExistLocally => !string.IsNullOrWhiteSpace(ServiceInfo?.projectPath);
 		public List<string> Dependencies { get; set; }
+		public List<string> AssemblyDefinitionsNames { get; set; }
 	}
 }

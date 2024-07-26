@@ -1,4 +1,3 @@
-using Beamable.Api.CloudSaving;
 using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Dependencies;
@@ -13,12 +12,9 @@ using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
-using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -34,6 +30,7 @@ namespace Beamable.Server.Editor.Usam
 
 		public Promise OnReady { get; private set; }
 		public Action<string, BeamTailLogMessageForClient> OnLogMessage;
+		public Action<List<IBeamoServiceDefinition>> OnServicesRefresh;
 		public bool IsDockerRunning { get; private set; }
 
 		public List<IBeamoServiceDefinition> ServiceDefinitions { get; private set; } =
@@ -56,6 +53,8 @@ namespace Beamable.Server.Editor.Usam
 		private IDependencyProvider _provider;
 		public static string LibrariesPathsDirectory => Path.GetDirectoryName(LibrariesPathsFilePath);
 		public static string ServicesDefinitionsDirectory => Path.GetDirectoryName(ServicesDefinitionsFilePath);
+
+		private bool _isBeamableDev;
 
 		public CodeService(IDependencyProvider provider, BeamCommands cli, BeamableDispatcher dispatcher, DotnetService dotnetService)
 		{
@@ -430,6 +429,7 @@ namespace Beamable.Server.Editor.Usam
 			}
 
 			await finishedPopulatingServices;
+			OnServicesRefresh?.Invoke(ServiceDefinitions);
 		}
 
 		private void PopulateDataWithRemote(BeamServiceListResult objData)
@@ -453,22 +453,26 @@ namespace Beamable.Server.Editor.Usam
 
 				
 				AddServiceDefinition(name, type, assetProjectPath, runningState,
-									 objData.ShouldBeEnabledOnRemote[i], objData.ExistInLocal[i], objData.Dependencies[i]);
+									 objData.ShouldBeEnabledOnRemote[i], objData.ExistInLocal[i], objData.Dependencies[i], objData.UnityAssemblyDefinitions[i]);
 				UsamLogger.Log($"Handling {name} ended");
 			}
 		}
 
 		private void AddServiceDefinition(string name, ServiceType type, string assetProjectPath, BeamoServiceStatus status = BeamoServiceStatus.Unknown,
-										  bool shouldBeEnableOnRemote = true, bool hasLocalSource = true, string dependencies = null)
+										  bool shouldBeEnableOnRemote = true, bool hasLocalSource = true, string dependencies = null, string assemblyDefinitionsNames = null)
 		{
-			List<string> depsList = dependencies?.Split(',').ToList();
+			List<string> depsList = new List<string>();
+			List<string> assembliesList = new List<string>();
 
-			if (depsList == null)
+			if (!string.IsNullOrEmpty(dependencies))
 			{
-				depsList = new List<string>();
+				depsList = dependencies.Split(',').ToList();
 			}
 
-			depsList = depsList.Where(dep => !string.IsNullOrEmpty(dep)).ToList();
+			if (!string.IsNullOrEmpty(assemblyDefinitionsNames))
+			{
+				assembliesList = assemblyDefinitionsNames.Split(',').ToList();
+			}
 
 			var dataIndex =
 				ServiceDefinitions.FindIndex(definition => definition.BeamoId.Equals(name));
@@ -491,6 +495,7 @@ namespace Beamable.Server.Editor.Usam
 			ServiceDefinitions[dataIndex].ShouldBeEnabledOnRemote = shouldBeEnableOnRemote;
 			ServiceDefinitions[dataIndex].IsRunningOnRemote = status;
 			ServiceDefinitions[dataIndex].Dependencies = depsList;
+			ServiceDefinitions[dataIndex].AssemblyDefinitionsNames = assembliesList;
 		}
 
 
@@ -532,60 +537,83 @@ namespace Beamable.Server.Editor.Usam
 					throw new ArgumentOutOfRangeException(nameof(type), type, null);
 			}
 		}
-		
-		/*public async Promise UpdateServiceReferences(BeamServiceSignpost signpost)
+
+		public async Promise SetMicroserviceChanges(string serviceName, List<AssemblyDefinitionAsset> assemblyDefinitions, List<string> dependencies)
 		{
-			var serviceName = signpost.name;
-			
-			SolutionPostProcessor.OnPreGeneratingCSProjectFiles();
-			SetSolution();
-			UsamLogger.Log($"Starting updating references");
-			//get a list of all references of that service
-			var service = _services.FirstOrDefault(s => s.name == serviceName);
+			var service = ServiceDefinitions.FirstOrDefault(s => s.BeamoId == serviceName);
 			if (service == null)
 			{
 				throw new ArgumentException($"Invalid service name was passed: {serviceName}");
 			}
 
-			UsamLogger.Log($"Reading all references from service: {serviceName}");
-			var results = await _dotnetService.Run($"list {service.CsprojPath} reference");
+			UsamLogger.Log($"Starting updating storage dependencies");
+			await UpdateServiceStoragesDependencies(service, dependencies);
 
-			//filter that list with only the generated projs
-			var depsPaths = results.Select(s => s.Replace(Environment.NewLine, string.Empty)).Where(line => line.EndsWith(".csproj")).ToList();
-			var correctedPaths = depsPaths.Select(path => path.Replace("\\", "/")).ToList();
-			var existinReferences = correctedPaths.Where(path => path.Contains(CsharpProjectUtil.PROJECT_NAME_PREFIX)).ToList();
+			await UpdateServiceReferences(service, assemblyDefinitions);
 
+			UsamLogger.Log($"Finished updating microservice [{serviceName}] data");
+		}
+		
+		public async Promise UpdateServiceReferences(IBeamoServiceDefinition service, List<AssemblyDefinitionAsset> assemblyDefinitions)
+		{
+			UsamLogger.Log($"Starting updating references");
 
-			//remove all generated projs references
-			UsamLogger.Log($"Removing all references from service: {serviceName}");
-			var promises = new List<Promise<List<string>>>();
-			foreach (string reference in existinReferences)
+			var pathsList = new List<string>();
+			var namesList = new List<string>();
+			foreach (AssemblyDefinitionAsset asmdef in assemblyDefinitions)
 			{
-				var referenceName = Path.GetFileNameWithoutExtension(reference).Replace(CsharpProjectUtil.PROJECT_NAME_PREFIX, String.Empty);
-				var refPathToRemove = CsharpProjectUtil.GenerateCsharpProjectFilename(referenceName);
-				UsamLogger.Log($"Removing reference: {refPathToRemove}");
-				Promise<List<string>> p =_dotnetService.Run($"remove {service.CsprojPath} reference {refPathToRemove}");
-				promises.Add(p);
+				namesList.Add(asmdef.name);
+				var pathFromRootFolder = CsharpProjectUtil.GenerateCsharpProjectFilename(asmdef.name);
+				var pathToService = service.ServiceInfo.projectPath;
+				pathsList.Add(PackageUtil.GetRelativePath(pathToService, pathFromRootFolder));
 			}
 
-			Promise<List<List<string>>> sequence = Promise.Sequence(promises);
-			await sequence;
-
-			//add all the references
-			foreach (var newRefs in signpost.assemblyReferences)
+			var updateCommand = _cli.UnityUpdateReferences(new UnityUpdateReferencesArgs()
 			{
-				var newRefCsprojPath = CsharpProjectUtil.GenerateCsharpProjectFilename(newRefs.name);
-				if (!File.Exists(newRefCsprojPath))
-				{
-					UsamLogger.Log($"The project file for reference {newRefs} does not exist yet");
-					continue;
-				}
-				UsamLogger.Log($"Adding the reference: {newRefs}");
-				await _dotnetService.Run($"add {service.CsprojPath} reference {newRefCsprojPath}");
-			}
+				service = service.BeamoId,
+				paths = pathsList.ToArray(),
+				names = namesList.ToArray()
+			});
+			await updateCommand.Run();
+
+			//call the CsharpProjectUtil to regenerate the csproj for this specific file
+			await RefreshServices();
+			SolutionPostProcessor.OnPreGeneratingCSProjectFiles();
+			SetSolution();
 
 			UsamLogger.Log($"Finished updating references");
-		}*/
+		}
+
+		public async Promise UpdateServiceStoragesDependencies(IBeamoServiceDefinition service, List<string> dependencies)
+		{
+			var serviceName = service.BeamoId;
+			var currentDependencies = service.Dependencies;
+
+			var dependenciesToRemove = currentDependencies.Where(dep => !dependencies.Contains(dep)).ToList();
+			var dependenciesToAdd = dependencies.Where(dep => !currentDependencies.Contains(dep)).ToList();
+
+			//TODO: can this be made asynchronous? not sure since all are changing the same csproj file
+
+			foreach (string dep in dependenciesToRemove)
+			{
+				UsamLogger.Log($"Removing dependency [{dep}] from service [{serviceName}]");
+				var removeCommand = _cli.ProjectDepsRemove(new ProjectDepsRemoveArgs()
+				{
+					microservice = serviceName, dependency = dep
+				});
+				await removeCommand.Run();
+			}
+
+			foreach (string dep in dependenciesToAdd)
+			{
+				UsamLogger.Log($"Adding dependency [{dep}] to service [{serviceName}]");
+				var addCommand = _cli.ProjectDepsAdd(new ProjectDepsAddArgs()
+				{
+					microservice = serviceName, dependency = dep
+				});
+				await addCommand.Run();
+			}
+		}
 
 
 		public Promise RunStandaloneMicroservice(string id)
@@ -867,7 +895,6 @@ namespace Beamable.Server.Editor.Usam
 				name = service,
 				serviceDirectory = StandaloneMicroservicesPath,
 				sln = slnPath,
-				version = GetCurrentNugetVersion(),
 				linkTo = deps,
 			};
 			var storageCommand = _cli.ProjectNewStorage(storageArgs);
@@ -910,7 +937,7 @@ namespace Beamable.Server.Editor.Usam
 				name = service,
 				serviceDirectory = StandaloneMicroservicesPath,
 				sln = slnPath,
-				version = GetCurrentNugetVersion()
+				beamableDev = BeamableEnvironment.IsBeamableDeveloper
 			};
 			var command = _cli.ProjectNewService(args);
 			await command.Run();

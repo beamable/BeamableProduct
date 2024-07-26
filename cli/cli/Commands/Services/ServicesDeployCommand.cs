@@ -31,6 +31,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 	private BeamoService _remoteBeamo;
 	private ServicesListCommand _servicesListCommand;
 	private IAliasService _aliasService;
+	private AppLifecycle _lifeCycle;
 
 	public ServicesDeployCommand(ServicesListCommand servicesListCommand) :
 		base("deploy",
@@ -64,12 +65,14 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 		_localBeamo = args.BeamoLocalSystem;
 		_remoteBeamo = args.BeamoService;
 		_aliasService = args.AliasService;
+		_lifeCycle = args.Lifecycle;
 
 		var isDockerRunning = await _localBeamo.CheckIsRunning();
 		if (!isDockerRunning)
 		{
 			throw CliExceptions.DOCKER_NOT_RUNNING;
 		}
+		_lifeCycle.CancellationToken.ThrowIfCancellationRequested();
 
 		var cid = _ctx.Cid;
 		if (!AliasHelper.IsCid(cid))
@@ -102,7 +105,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 		try
 		{
 			await _localBeamo.SynchronizeInstanceStatusWithDocker(_localBeamo.BeamoManifest,
-				_localBeamo.BeamoRuntime.ExistingLocalServiceInstances);
+				_localBeamo.BeamoRuntime.ExistingLocalServiceInstances, _lifeCycle.CancellationToken);
 			await _localBeamo.StartListeningToDocker();
 		}
 		catch (Exception e)
@@ -112,6 +115,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 			return;
 		}
 
+		_lifeCycle.CancellationToken.ThrowIfCancellationRequested();
 		if (!string.IsNullOrEmpty(args.FromJsonFile))
 		{
 			ServiceManifest manifest;
@@ -151,6 +155,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 		var perServiceComments = new Dictionary<string, string>();
 		for (var i = 0; i < args.RemoteServiceComments.Length; i++)
 		{
+			_lifeCycle.CancellationToken.ThrowIfCancellationRequested();
 			var commentArg = args.RemoteServiceComments[i];
 			if (!commentArg.Contains("::"))
 			{
@@ -187,17 +192,20 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 			.Progress()
 			.StartAsync(async ctx =>
 			{
+				_lifeCycle.CancellationToken.ThrowIfCancellationRequested();
 				// These are the services we care about tracking progress for... The storage dependencies get pulled into each of these but I don't think we need to show them for now...
 				// Maybe that's not a good idea, but... we can easily change this if we want.
 				var beamoServiceDefinitions = _localBeamo.BeamoManifest.ServiceDefinitions
 					.Where(sd => sd.Protocol == BeamoProtocolType.HttpMicroservice)
 					.Where(_localBeamo.VerifyCanBeBuiltLocally).ToList();
 
+				_lifeCycle.CancellationToken.ThrowIfCancellationRequested();
 				// Prepare build and test with local deployment tasks
 				var buildAndTestTasks = beamoServiceDefinitions
 					.Select(sd => ctx.AddTask($"Test Local Deployment = {sd.BeamoId}"))
 					.ToList();
 
+				_lifeCycle.CancellationToken.ThrowIfCancellationRequested();
 				// Prepare uploading container tasks
 				var uploadingContainerTasks = beamoServiceDefinitions
 					.Select(sd => ctx.AddTask($"Uploading {sd.BeamoId}"))
@@ -248,7 +256,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 							progressTask.Description = successful ? $"Success: {progressTask?.Description}" : $"Failure: {progressTask?.Description}";
 							atLeastOneFailed |= !successful;
 						}
-					});
+					}, _lifeCycle.CancellationToken);
 
 				// Finish the upload manifest task
 				uploadManifestTask.Increment(100);

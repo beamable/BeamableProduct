@@ -77,6 +77,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_tokenSource?.Cancel();
 				WindowStateUtility.EnableAllWindows();
 				Close();
+
+				var publishService = editorContext.ServiceScope.GetService<PublishService>();
+				publishService.Cancel();
 			};
 			_publishPopup.OnSubmit += async (logger) =>
 		   {

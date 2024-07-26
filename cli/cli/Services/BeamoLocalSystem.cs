@@ -1,6 +1,7 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
+using Beamable.Common.Dependencies;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using Newtonsoft.Json;
@@ -24,6 +25,7 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public readonly BeamoLocalRuntime BeamoRuntime;
 
+	private readonly IDependencyProvider _provider;
 	private readonly ConfigService _configService;
 
 	/// <summary>
@@ -64,8 +66,9 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	private readonly CancellationTokenSource _dockerListeningThreadCancel;
 
-	public BeamoLocalSystem(ConfigService configService, IAppContext ctx, IRealmsApi realmsApi, BeamoService beamo, IBeamableRequester beamableRequester)
+	public BeamoLocalSystem(IDependencyProvider provider, ConfigService configService, IAppContext ctx, IRealmsApi realmsApi, BeamoService beamo, IBeamableRequester beamableRequester)
 	{
+		_provider = provider;
 		_configService = configService;
 		_ctx = ctx;
 		_beamo = beamo;
@@ -201,6 +204,21 @@ public partial class BeamoLocalSystem
 					type = "library"
 				});
 			}
+
+			foreach (UnityAssemblyReferenceData unityAsmdefReference in microservice.UnityAssemblyDefinitionProjectReferences)
+			{
+				var name = Path.GetFileNameWithoutExtension(unityAsmdefReference.Path);
+				var microPath = Path.GetDirectoryName(microservice.RelativeDockerfilePath);
+				var relativeToContextPath = _configService.GetPathFromRelativeToService(unityAsmdefReference.Path, microPath);
+
+				dependencies.Add(new DependencyData()
+				{
+					name = name,
+					projPath = relativeToContextPath,
+					dllName = unityAsmdefReference.AssemblyName,
+					type = "unity-asmdef"
+				});
+			}
 		}
 
 		return dependencies;
@@ -258,14 +276,14 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	/// <param name="projectExtension">The extension of the project file (default: 'csproj').</param>
 	/// <returns>A dictionary where the key is a BeamoServiceDefinition and the value is a list of its dependencies.</returns>
-	public Dictionary<BeamoServiceDefinition, List<DependencyData>> GetAllBeamoIdsDependencies(string projectExtension = "csproj")
+	public Dictionary<BeamoServiceDefinition, List<DependencyData>> GetAllBeamoIdsDependencies(string projectExtension = "csproj", bool getAll = false)
 	{
 		var allBeamoIdsDependencies = new Dictionary<BeamoServiceDefinition, List<DependencyData>>();
 		foreach (var definition in BeamoManifest.ServiceDefinitions)
 		{
 			if (!allBeamoIdsDependencies.ContainsKey(definition))
 			{
-				var entry = GetDependencies(definition.BeamoId);
+				var entry = GetDependencies(definition.BeamoId, getAll);
 				allBeamoIdsDependencies.Add(definition, entry);
 			}
 		}
@@ -314,10 +332,16 @@ public partial class BeamoLocalSystem
 		const string legacyCopyLine =
 			"# <BEAM-CLI-INSERT-FLAG:COPY> do not delete this line. It is used by the beam CLI to insert custom actions";
 		const string servicePathTag = "<SERVICE_PATH>";
+		const string serviceFileTag = "<SERVICE_FILE>";
 
 		string toAdd = @$"RUN mkdir -p /subsrc/{servicePathTag}
 COPY {servicePathTag} /subsrc/{servicePathTag}";
 		var replacement = @$"{toAdd}
+{endTag}";
+
+		string toAddFile = @$"RUN mkdir -p /subsrc/{servicePathTag}
+COPY {serviceFileTag} /subsrc/{servicePathTag}";
+		var replacementFile = @$"{toAddFile}
 {endTag}";
 
 		var hasEndTag = dockerfileText.Contains(endTag);
@@ -344,13 +368,22 @@ COPY {servicePathTag} /subsrc/{servicePathTag}";
 		var dependencies = GetDependencies(serviceName, true);
 		foreach (var dependency in dependencies)
 		{
-			newText = newText.Replace(endTag, replacement.Replace(servicePathTag, dependency.projPath).Replace('\\', '/').Insert(0, "\n"));
+			newText = newText.Replace(endTag, replacement.Replace(servicePathTag, dependency.projPath).Replace('\\', '/').Insert(0, Environment.NewLine));
+		}
+
+		//Now Add all the included files in the project
+		var definition = BeamoManifest.ServiceDefinitions.FirstOrDefault(s => s.BeamoId.Equals(serviceName));
+		var allFiles = ProjectContextUtil.GetAllIncludedFiles(definition, _configService);
+		foreach (var file in allFiles)
+		{
+			var path = Path.GetDirectoryName(file);
+			newText = newText.Replace(endTag, replacementFile.Replace(servicePathTag, path).Replace(serviceFileTag, file).Replace('\\', '/').Insert(0, Environment.NewLine));
 		}
 
 		//Copy the services files
 		Log.Verbose($"adding service files projPath=[{projectDir}]");
 
-		newText = newText.Replace(endTag, replacement.Replace(servicePathTag, projectDir).Replace('\\', '/').Insert(0, "\n"));
+		newText = newText.Replace(endTag, replacement.Replace(servicePathTag, projectDir).Replace('\\', '/').Insert(0, Environment.NewLine));
 
 		await File.WriteAllTextAsync(dockerfilePath, newText);
 	}
@@ -391,7 +424,7 @@ COPY {servicePathTag} /subsrc/{servicePathTag}";
 		var varsPlusEndTag = replacement.Replace(servicePathTag, projectDir)
 			.Replace(serviceNameTag, serviceName)
 			.Replace(beamVersionTag, VersionService.GetNugetPackagesForExecutingCliVersion().ToString())
-			.Replace('\\', '/').Insert(0, "\n");
+			.Replace('\\', '/').Insert(0, Environment.NewLine);
 		newText = newText.Replace(endTag, varsPlusEndTag);
 
 		await File.WriteAllTextAsync(dockerfilePath, newText);

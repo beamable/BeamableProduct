@@ -129,8 +129,7 @@ namespace Beamable.Serialization.SmallerJSON
 						break;
 					case '{':
 					case '[':
-						var openFormatted = string.Concat(Enumerable.Repeat(indentString, ++indentation))
-											+ indent;
+						var openFormatted = string.Concat(Enumerable.Repeat(indentString, ++indentation));
 						result += string.Format("{0}{1}{2}", ch, Environment.NewLine, openFormatted);
 						break;
 					case '}':

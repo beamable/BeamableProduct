@@ -35,9 +35,14 @@ namespace Beamable.Server.Editor.Usam
         <DefineConstants>$(DefineConstants);BEAMABLE_MICROSERVICE</DefineConstants>
     </PropertyGroup>
 
+	<PropertyGroup Label=""Beamable Settings"">
+        <!-- All Unity Assembly References must have the value: ""unity"" -->
+        <BeamProjectType>unity</BeamProjectType>
+    </PropertyGroup>
+
     <!-- Project settings -->
     <PropertyGroup>
-        <TargetFramework>netstandard2.1</TargetFramework>
+        <TargetFramework>netstandard2.0</TargetFramework>
         <ImplicitlyExpandNETStandardFacades>false</ImplicitlyExpandNETStandardFacades>
         <ImplicitlyExpandDesignTimeFacades>false</ImplicitlyExpandDesignTimeFacades>
         <EnableDefaultItems>false</EnableDefaultItems>
@@ -113,7 +118,7 @@ namespace Beamable.Server.Editor.Usam
 												assemblyReferences.Select(
 													x => GenerateProjectReferenceEntry(x, csProjDir)));
 
-			var sdkVersion = BeamableEnvironment.SdkVersion;
+			var sdkVersion = BeamableEnvironment.NugetPackageVersion;
 
 
 

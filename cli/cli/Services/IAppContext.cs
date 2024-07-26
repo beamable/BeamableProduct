@@ -57,6 +57,7 @@ public interface IAppContext
 	/// isn't a local project. 
 	/// </summary>
 	PackageVersion LocalProjectVersion { get; }
+	string DockerPath { get; }
 
 	/// <summary>
 	/// Control how basic options are found from the console context.
@@ -95,6 +96,7 @@ public class DefaultAppContext : IAppContext
 	public bool ShowPrettyOutput { get; private set; }
 
 	public string DotnetPath { get; private set; }
+	public string DockerPath { get; private set; }
 
 
 	/// <inheritdoc cref="IAppContext.ExecutingVersion"/>
@@ -139,7 +141,7 @@ public class DefaultAppContext : IAppContext
 		AccessTokenOption accessTokenOption, RefreshTokenOption refreshTokenOption, LogOption logOption, ConfigDirOption configDirOption,
 		ConfigService configService, CliEnvironment environment, ShowRawOutput showRawOption, SkipStandaloneValidationOption skipValidationOption,
 		DotnetPathOption dotnetPathOption, ShowPrettyOutput showPrettyOption, LoggingLevelSwitch logSwitch,
-		UnmaskLogsOption unmaskLogsOption, NoLogFileOption noLogFileOption)
+		UnmaskLogsOption unmaskLogsOption, NoLogFileOption noLogFileOption, DockerPathOption dockerPathOption)
 	{
 		_consoleContext = consoleContext;
 		_dryRunOption = dryRunOption;
@@ -159,6 +161,7 @@ public class DefaultAppContext : IAppContext
 		_noLogFileOption = noLogFileOption;
 		_skipValidationOption = skipValidationOption;
 		_dotnetPathOption = dotnetPathOption;
+		DockerPath = consoleContext.ParseResult.GetValueForOption(dockerPathOption);
 	}
 
 	void SetupOutputStrategy()

@@ -23,6 +23,7 @@ using cli.Services.HttpServer;
 using cli.TokenCommands;
 using cli.UnityCommands;
 using cli.Unreal;
+using cli.UnrealCommands;
 using cli.Utils;
 using cli.Version;
 using CliWrap;
@@ -235,6 +236,7 @@ public class App
 		Commands.AddSingleton(AllHelpOption.Instance);
 		Commands.AddSingleton(NoLogFileOption.Instance);
 		Commands.AddSingleton(UnmaskLogsOption.Instance);
+		Commands.AddSingleton(DockerPathOption.Instance);
 		Commands.AddSingleton(provider =>
 		{
 			var root = new RootCommand();
@@ -250,6 +252,7 @@ public class App
 			root.AddGlobalOption(AllHelpOption.Instance);;
 			root.AddGlobalOption(UnmaskLogsOption.Instance);
 			root.AddGlobalOption(NoLogFileOption.Instance);
+			root.AddGlobalOption(DockerPathOption.Instance);
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
 			root.AddGlobalOption(provider.GetRequiredService<ShowRawOutput>());
 			root.AddGlobalOption(provider.GetRequiredService<ShowPrettyOutput>());
@@ -345,6 +348,12 @@ public class App
 		Commands.AddSubCommand<DownloadNugetDepToUnityCommand, DownloadNugetDepToUnityCommandArgs, UnityGroupCommand>();
 		Commands.AddSubCommand<DownloadAllNugetDepsToUnityCommand, DownloadAllNugetDepsToUnityCommandArgs,
 				UnityGroupCommand>();
+		Commands.AddSubCommand<UpdateServiceAssemblyReferencesCommand, UpdateServiceAssemblyReferencesCommandArgs,
+			UnityGroupCommand>();
+		
+		// unreal commands
+		Commands.AddRootCommand<UnrealGroupCommand>();
+		Commands.AddSubCommand<InitUnrealSDKCommand, InitUnrealSDKCommandArgs, UnrealGroupCommand>();
 		
 		// version commands
 		Commands.AddRootCommand<VersionCommand, VersionCommandArgs>();
@@ -373,7 +382,8 @@ public class App
 		Commands.AddSubCommand<ServicesPromoteCommand, ServicesPromoteCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesGetConnectionStringCommand, ServicesGetConnectionStringCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesGenerateLocalManifestCommand, ServicesGenerateLocalManifestCommandArgs, ServicesCommand>();
-
+		Commands.AddSubCommand<ServicesGenerateTarballCommand, ServicesGenerateTarballCommandArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesBuildCommand, ServicesBuildCommandArgs, ServicesCommand>();
 		// content commands
 		
 		Commands.AddRootCommand<ContentCommand>();
