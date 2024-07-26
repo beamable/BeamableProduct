@@ -1,6 +1,7 @@
 ﻿# Processes specific 
 
-FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine as build-env
+FROM --platform=$BUILDPLATFORM  mcr.microsoft.com/dotnet/sdk:8.0-alpine as build-env
+ARG TARGETARCH
 WORKDIR /BeamableSource
 COPY ./BeamableSource/*.nupkg ./
 WORKDIR /subsrc/
@@ -17,10 +18,10 @@ RUN dotnet nuget update source BeamableSource
 
 # build the dotnet program
 WORKDIR /
-RUN dotnet publish ${BEAM_CSPROJ_PATH} -p:BeamableVersion=${BEAM_VERSION} -c release -o /beamApp
+RUN dotnet publish ${BEAM_CSPROJ_PATH} -p:BeamableVersion=${BEAM_VERSION} -a $TARGETARCH -c release -o /beamApp
 
 # use the dotnet runtime as the final stage
-FROM mcr.microsoft.com/dotnet/runtime:6.0-alpine
+FROM mcr.microsoft.com/dotnet/runtime:8.0-alpine
 WORKDIR /beamApp
 
 # expose the health port
