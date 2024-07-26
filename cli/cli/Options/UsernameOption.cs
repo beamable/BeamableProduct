@@ -1,8 +1,9 @@
 ﻿using System.CommandLine;
+using System.CommandLine.Invocation;
 
 namespace cli;
 
-public class UsernameOption : Option<string>
+public class UsernameOption : Option<string>, IAmRequiredForRedirection
 {
 	public UsernameOption()
 		: base("--email", "Specify user email address")

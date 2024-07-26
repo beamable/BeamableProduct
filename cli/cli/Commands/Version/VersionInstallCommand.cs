@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.BeamCli;
 using cli.Services;
 using CliWrap;
@@ -5,6 +6,9 @@ using Errata;
 using Serilog;
 using Spectre.Console;
 using System.CommandLine;
+using System.CommandLine.Invocation;
+using System.Text;
+using Command = System.CommandLine.Command;
 
 namespace cli.Version;
 
@@ -18,6 +22,7 @@ public class VersionInstallCommandArgs : CommandArgs
 
 public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 	, IStandaloneCommand
+	, IHaveRedirectionConcerns<VersionInstallCommandArgs>
 {
 	public VersionInstallCommand() : base("install", "Install a different version of the CLI")
 	{
@@ -39,7 +44,7 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 		Log.Debug($"setting up CLI install... scope=[{currentVersionInfo.installType}] ");
 
 		var data = await service.GetBeamableToolPackageVersions();
-
+		
 		var packageVersion = args.version?.ToLower() switch
 		{
 			// 0.0.123 is a special "dev" version of the package. It is not supposed to exist on nuget.org. Instead, it comes from the developer's local machine's nuget source.
@@ -55,8 +60,17 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 		};
 		if (packageVersion == null)
 		{
-			throw new CliException(
-				$"Given version is not available on Nuget. Use `beam version ls` to view available versions. version=[{args.version}]");
+			if (!PackageVersion.TryFromSemanticVersionString(args.version, out var parsedVersion))
+			{
+				throw new CliException(
+					$"Given version is not available. Use `beam version ls` to view available versions. version=[{args.version}]");
+			}
+
+			packageVersion = new VersionService.NugetPackages
+			{
+				originalVersion = args.version,
+				packageVersion = parsedVersion.ToString()
+			};
 		}
 
 
@@ -86,4 +100,19 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 		Log.Information($"Beam CLI version=[{packageVersion.originalVersion}] installed successfully as a {scope} tool. Use `beam version` or `beam --version` to verify.");
 	}
 
+	public void ValidationRedirection(InvocationContext context, Command command, VersionInstallCommandArgs args,
+		StringBuilder errorStream, out bool isValid)
+	{
+		isValid = true;
+		if (!args.Quiet)
+		{
+			errorStream.AppendLine("Must include the quiet flag.");
+			isValid = false;
+		}
+	}
+
+	public void WriteValidationMessage(Command command, TextWriter writer)
+	{
+		writer.WriteLine("The quiet flag must be used.");
+	}
 }

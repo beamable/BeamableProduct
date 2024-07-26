@@ -93,6 +93,10 @@ public class VersionService
 	public static PackageVersion GetNugetPackagesForExecutingCliVersion()
 	{
 		var currentVersion = GetExecutingCliVersion();
+		if (currentVersion.Major == 0 && currentVersion.Patch == 125)
+		{
+			return "0.0.125";
+		}
 		if ((currentVersion.Major == 0 || currentVersion == "1.0.0") && !currentVersion.IsNightly)
 		{
 			// if the major is 0, then its likely 0.0.0 or 0.0.123, 

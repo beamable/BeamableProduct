@@ -21,10 +21,6 @@ public class GetTokenViaRefreshCommandOutput
 	public string tokenType;
 }
 
-// current pid - DE_1650190063990785
-// other pid - DE_1633533405392912
-// token - dd2a39c6-2445-4dad-87b1-f4a8946c2e3f
-// gamertag - 1764333556767745
 
 public class GetTokenViaRefreshCommand : AtomicCommand<GetTokenViaRefreshCommandArgs, GetTokenViaRefreshCommandOutput>
 {

@@ -12,7 +12,9 @@ using Spectre.Console.Json;
 using System.CommandLine;
 using System.CommandLine.Binding;
 using System.CommandLine.Help;
+using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
+using System.Text;
 using UnityEngine;
 
 namespace cli;
@@ -45,6 +47,7 @@ public interface IEmptyResult : IResultProvider
 /// Specifies that command does not require config to work correctly.
 /// </summary>
 public interface IStandaloneCommand { }
+
 
 public class DefaultStreamResultChannel : IResultChannel
 {
@@ -195,6 +198,7 @@ public abstract class CommandGroup : CommandGroup<CommandGroupArgs>
 	}
 }
 
+
 public interface IAppCommand
 {
 	bool IsForInternalUse { get; }
@@ -215,6 +219,78 @@ public interface IHasArgs<TArgs> where TArgs : CommandArgs
 {
 
 }
+
+public interface IHaveRedirectionConcernMessage
+{
+	void WriteValidationMessage(Command command, TextWriter writer)
+	{
+		List<Option> requiredOptions = new List<Option>();
+		foreach (var option in command.Options)
+		{
+			if (option is IAmRequiredForRedirection)
+			{
+				requiredOptions.Add(option);
+						
+			}
+		}
+
+		if (requiredOptions.Count > 0)
+		{
+			writer.WriteLine("The following options must be included when using CLI redirection.");
+			foreach (var requiredOption in requiredOptions)
+			{
+				writer.WriteLine($"  {requiredOption.Name}");
+			}
+		}
+		else
+		{
+			writer.WriteLine("Unknown");
+		}
+	}
+}
+
+public interface IAmRequiredForRedirection
+{
+}
+
+public interface IAmRequiredForRedirection<T>
+{
+	bool IsValid(InvocationContext ctx, T value);
+}
+
+/// <summary>
+/// Specifies that a command cannot be proxied.
+/// When there is a local version of BEAM, and the user executes the global version of BEAM,
+///   the global version will invoke a sub process to call the local version.
+/// However, STD-INPUT cannot be channeled easily, and so many commands will break.
+/// For now, we need to maintain this list declaratively. 
+/// </summary>
+public interface IHaveRedirectionConcerns<TArgs> : IHaveRedirectionConcernMessage
+	where TArgs : CommandArgs 
+{
+	void ValidationRedirection(InvocationContext context, Command command, TArgs args, StringBuilder errorStream, out bool isValid)
+	{
+		DefaultValidationRedirection(context, command, args, errorStream, out isValid);
+	}
+
+	public static void DefaultValidationRedirection(InvocationContext context, Command command, TArgs args, StringBuilder errorStream, out bool isValid)
+	{
+		isValid = true;
+		foreach (var option in command.Options)
+		{
+			if (option is IAmRequiredForRedirection)
+			{
+				var value = context.ParseResult.GetValueForOption(option);
+				if (value == null)
+				{
+					errorStream.AppendLine("Missing value for " + option.Name);
+					isValid = false;
+				}
+			}
+		}
+	}
+}
+
 
 public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IAppCommand, IHasArgs<TArgs>
 	where TArgs : CommandArgs
