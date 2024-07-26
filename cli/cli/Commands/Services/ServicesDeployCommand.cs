@@ -49,14 +49,14 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 			(args, i) => args.RemoteComment = i);
 
 		AddOption(new Option<string[]>("--service-comments", Array.Empty<string>, $"Any number of strings in the format BeamoId::Comment" +
-		                                                                          $"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal")
-			{
-				AllowMultipleArgumentsPerToken = true
-			},
+																				  $"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal")
+		{
+			AllowMultipleArgumentsPerToken = true
+		},
 			(args, i) => args.RemoteServiceComments = i);
 
 		AddOption(new Option<string>("--docker-registry-url", "A custom docker registry url to use when uploading. By default, the result from the beamo/registry network call will be used, " +
-		                                                      "with minor string manipulation to add https scheme, remove port specificatino, and add /v2 "), (args, i) => args.dockerRegistryUrl = i);
+															  "with minor string manipulation to add https scheme, remove port specificatino, and add /v2 "), (args, i) => args.dockerRegistryUrl = i);
 	}
 
 	public override async Task Handle(ServicesDeployCommandArgs args)
@@ -149,7 +149,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 
 			return;
 		}
-		
+
 		// Parse and prepare per-service comments dictionary (BeamoId => CommentString) 
 		LogToSendResult("Parse and prepare per-service comments dictionary", "INFO");
 		var perServiceComments = new Dictionary<string, string>();
@@ -172,7 +172,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 			if (_localBeamo.BeamoManifest.ServiceDefinitions.FindIndex(sd => sd.BeamoId == id) == -1)
 			{
 				var errMsg = $"ID [{id}] in the given service comment argument [{commentArg}] " +
-				             $"doesn't match any of the registered services [{string.Join(",", _localBeamo.BeamoManifest.ServiceDefinitions.Select(sd => sd.BeamoId))}]!";
+							 $"doesn't match any of the registered services [{string.Join(",", _localBeamo.BeamoManifest.ServiceDefinitions.Select(sd => sd.BeamoId))}]!";
 				LogToSendResult(errMsg, "ERROR");
 				throw new ArgumentOutOfRangeException($"{nameof(args.RemoteServiceComments)}[{i}]", errMsg);
 			}

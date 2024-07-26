@@ -23,7 +23,7 @@ namespace Beamable.Common.Util
 		public static string GetVersion(Type t)
 		{
 			var attribute = t.Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
-			
+
 			// starting with net8, the attribute includes the commit hash, which we don't want.
 			return RemoveSourceLinkFromVersion(attribute.InformationalVersion);
 		}

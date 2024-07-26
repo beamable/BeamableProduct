@@ -26,8 +26,8 @@ public class ServicesGenerateTarballCommand : AtomicCommand<ServicesGenerateTarb
 		serviceIdOption.AddAlias("-i");
 		serviceIdOption.IsRequired = true;
 		AddOption(serviceIdOption, (args, i) => args.beamoId = i);
-		
-		
+
+
 		var outputOption = new Option<string>("--output", "The location of the output tarball file");
 		outputOption.AddAlias("-o");
 		AddOption(outputOption, (args, i) => args.outputPath = i);

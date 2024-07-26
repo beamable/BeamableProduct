@@ -87,12 +87,12 @@ namespace Beamable.Server.Editor.Usam
 				File.WriteAllText(fileName, content);
 			}
 		}
-		
+
 		public static string GenerateCsharpProjectPath(Assembly assembly)
 		{
 			return TEMPLATE_OUTPUT_DIR.Replace(KEY_FOLDER, assembly.name);
 		}
-		
+
 		public static string GenerateCsharpProjectPath(string assembly)
 		{
 			return TEMPLATE_OUTPUT_DIR.Replace(KEY_FOLDER, assembly);
@@ -159,12 +159,12 @@ namespace Beamable.Server.Editor.Usam
 				}
 			}
 		}
-		
+
 		public static bool IsValidReference(string referenceName)
 		{
 			var invalidPrefixes = new string[] { "Unity.", "UnityEditor.", "UnityEngine." };
-			var invalidReferences = new string[] {"netstandard"};
-			var mandatoryReferences = new string[] {"Unity.Beamable.Customer.Common"};
+			var invalidReferences = new string[] { "netstandard" };
+			var mandatoryReferences = new string[] { "Unity.Beamable.Customer.Common" };
 
 			if (mandatoryReferences.Contains(referenceName))
 			{
@@ -175,7 +175,7 @@ namespace Beamable.Server.Editor.Usam
 			{
 				return false;
 			}
-			
+
 			foreach (var prefix in invalidPrefixes)
 			{
 				if (referenceName.StartsWith(prefix))
