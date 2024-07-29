@@ -24,7 +24,6 @@ public class ServicesGenerateTarballCommand : AtomicCommand<ServicesGenerateTarb
 	{
 		var serviceIdOption = new Option<string>("--id", "The beamo id of the service to bundle");
 		serviceIdOption.AddAlias("-i");
-		serviceIdOption.IsRequired = true;
 		AddOption(serviceIdOption, (args, i) => args.beamoId = i);
 		
 		

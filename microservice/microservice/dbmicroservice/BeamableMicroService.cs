@@ -13,7 +13,9 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Runtime;
 using Beamable.Server.Api.RealmConfig;
 using beamable.tooling.common.Microservice;
 using Core.Server.Common;
@@ -39,6 +41,7 @@ using Serilog;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json;
 using static Beamable.Common.Constants.Features.Services;
+#pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
 
 namespace Beamable.Server
 {
@@ -61,7 +64,13 @@ namespace Beamable.Server
    {
 	   public string type = "basic";
 	   public string name;
-	   public List<MicroserviceServiceProviderFederationComponent> federation;
+	   public string? routingKey; // Option[String] = None, // Arbitrary unique key. This should only be used for locally running services
+	   public long? startedByGamerTag; //: Option[Long] = None, // gamerTag of the user who started this service. This should only be used for locally running services
+
+	   public string ToJson()
+	   {
+		   return System.Text.Json.JsonSerializer.Serialize(this, new JsonSerializerOptions { IncludeFields = true });
+	   }
    }
 
    public class MicroserviceServiceProviderFederationComponent
@@ -94,10 +103,7 @@ namespace Beamable.Server
    public class BeamableMicroService
    {
       public string MicroserviceName => _serviceAttribute.MicroserviceName;
-      public string QualifiedName => $"{_args.NamePrefix}micro_{MicroserviceName}"; // scope everything behind a feature name "micro"
-
-      public string PublicHost => $"{_args.Host.Replace("wss://", "https://").Replace("/socket", "")}/basic/{_args.CustomerID}.{_args.ProjectName}.{QualifiedName}/";
-
+      
       private ConcurrentDictionary<long, Task> _runningTaskTable = new ConcurrentDictionary<long, Task>();
       private const int EXIT_CODE_PENDING_TASKS_STILL_RUNNING = 11;
       private const int EXIT_CODE_FAILED_AUTH = 12;
@@ -260,7 +266,7 @@ namespace Beamable.Server
          // remove the service, so that no new messages are accepted
          try
          {
-            var promise = RemoveService(QualifiedName);
+            var promise = RemoveService(MicroserviceName);
             var startedWaitingAt = sw.ElapsedMilliseconds;
             while (!promise.IsCompleted)
             {
@@ -330,7 +336,7 @@ namespace Beamable.Server
 		      MicroserviceAttribute = _serviceAttribute, 
 		      MicroserviceType = MicroserviceType,
 		      routingKey = _args.NamePrefix,
-		      PublicHost = $"{_args.Host.Replace("wss://", "https://").Replace("/socket", "")}/basic/{_args.CustomerID}.{_args.ProjectName}.{QualifiedName}/"
+		      PublicHost = $"{_args.Host.Replace("wss://", "https://").Replace("/socket", "")}/basic/{_args.CustomerID}.{_args.ProjectName}.{MicroserviceName}/"
 	      };
 	      
 	      ServiceMethods = RouteTableGeneration.BuildRoutes(MicroserviceType, _serviceAttribute, adminRoutes, BuildServiceInstance);
@@ -380,7 +386,7 @@ namespace Beamable.Server
             var realmService = _args.ServiceScope.GetService<IRealmConfigService>();
             await realmService.GetRealmConfigSettings();
             
-            await ProvideService(QualifiedName);
+            await ProvideService(MicroserviceName);
 
             HasInitialized = true;
 
@@ -429,6 +435,7 @@ namespace Beamable.Server
 	      // var account = new AccountsApi(http);
 	      // account.
 
+	      throw new NotImplementedException("cannot ensure playerId");
       }
 
       private bool TryBuildPortalUrl(out string portalUrl)
@@ -448,7 +455,7 @@ namespace Beamable.Server
 	      var queryArgs = new List<string>
 	      {
 		      $"refresh_token={refreshToken}",
-		      $"prefix={_args.NamePrefix}"
+		      $"routingKey={_args.NamePrefix}"
 	      };
 	      var joinedQueryString = string.Join("&", queryArgs);
 	      var treatedHost = _args.Host.Replace("/socket", "")
@@ -697,7 +704,7 @@ namespace Beamable.Server
 
          try
          {
-            var route = ctx.Path.Substring(QualifiedName.Length + 1);
+            var route = ctx.Path.Substring(MicroserviceName.Length + 1);
 
             var parameterProvider = new AdaptiveParameterProvider(ctx);
             var responseJson = await ServiceMethods.Handle(ctx, route, parameterProvider);
@@ -838,39 +845,60 @@ namespace Beamable.Server
          }
       }
 
-      private Promise<Unit> ProvideService(string name)
+      private async Promise ProvideService(string name)
       {
+	      var req = new MicroserviceServiceProviderRequest
+	      {
+		      type = "basic", 
+		      name = name,
+	      };
+	      if (_args.TryGetRoutingKey(out var routingKey))
+	      {
+		      req.routingKey = routingKey;
+	      }
+
+	      var serviceProviderTask = _requester.Request<MicroserviceProviderResponse>(
+		      method: Method.POST,
+		      uri: "gateway/provider",
+		      body: req.ToJson());
+	      serviceProviderTask.Then(_ => Log.Debug(Logs.SERVICE_PROVIDER_INITIALIZED));
+
+	      var eventProvider = _serviceAttribute.DisableAllBeamableEvents
+		      ? PromiseBase.SuccessfulUnit
+		      : _requester.InitializeSubscription().Then(res =>
+		      {
+			      Log.Debug(Logs.EVENT_PROVIDER_INITIALIZED);
+		      }).ToUnit();
+
+	      await serviceProviderTask;
+	      await RegisterFederation(name, routingKey);
+	      await eventProvider;
+      }
+
+      private async Promise RegisterFederation(string name, string routingKey)
+      {
+	      if (_args.DisableCustomInitializationHooks) 
+		      return; // if this is a health-check, then we aren't going to auto-register federation at all.
 
 	      IBeamoApi api = new BeamoApi(_requester);
-	      
-         var req = new MicroserviceServiceProviderRequest
-         {
-            type = "basic",
-            name = name,
-            // taskId: Option[String] = None,
-            federation = FederationComponents.Select(x => new MicroserviceServiceProviderFederationComponent
-            {
-	            nameSpace = x.identity.UniqueName,
-	            type = x.typeName,
-	            settings = new Dictionary<string, string>
-	            {
-		            ["version"] = "1"
-	            }
-            }).ToList()
-            // localServiceId: Option[String] = None
-         };
-         
-         var serviceProvider = _requester.Request<MicroserviceProviderResponse>(Method.POST, "gateway/provider", req).Then(res =>
-         {
-            Log.Debug(Logs.SERVICE_PROVIDER_INITIALIZED);
-         }).ToUnit();
-         var eventProvider = _serviceAttribute.DisableAllBeamableEvents
-	         ? PromiseBase.SuccessfulUnit
-	         : _requester.InitializeSubscription().Then(res =>
-	         {
-		         Log.Debug(Logs.EVENT_PROVIDER_INITIALIZED);
-	         }).ToUnit();
-         return Promise.Sequence(serviceProvider, eventProvider).ToUnit();
+	      var federationRequest = new MicroserviceRegistrationRequest
+	      {
+		      serviceName = name,
+		      trafficFilterEnabled = true,
+		      federation = new OptionalArrayOfSupportedFederation(FederationComponents.Select(component =>
+			      new SupportedFederation
+			      {
+				      nameSpace = component.identity.UniqueName,
+				      type = FederationComponentNames.GetFederationType(component.typeName),
+				      //settings = ? // leave filter node empty for now
+			      }).ToArray())
+	      };
+	      if (!string.IsNullOrEmpty(routingKey))
+	      {
+		      federationRequest.routingKey = routingKey;
+	      }
+
+	      await api.PutMicroserviceFederationTraffic(federationRequest);
       }
 
       private Promise<Unit> RemoveService(string name)
@@ -880,7 +908,7 @@ namespace Beamable.Server
             type = "basic",
             name = name
          };
-         var serviceProvider = _requester.Request<MicroserviceProviderResponse>(Method.DELETE, "gateway/provider", req).Then(res =>
+         var serviceProvider = _requester.Request<MicroserviceProviderResponse>(Method.DELETE, "gateway/provider", req.ToJson()).Then(res =>
          {
             RefuseNewClientMessages = true;
             Log.Debug("Service provider removed");

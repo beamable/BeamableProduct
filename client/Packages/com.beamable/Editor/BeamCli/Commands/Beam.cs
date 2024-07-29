@@ -22,12 +22,17 @@ namespace Beamable.Editor.BeamCli.Commands
         public string refreshToken;
         /// <summary>Extra logs gets printed out</summary>
         public string log;
+        /// <summary>If there is a local dotnet tool installation (with a ./config/dotnet-tools.json file) for the beam tool, then any global invocation of the beam tool will automatically redirect and call the local version. However, there will be a performance penalty due to the extra process invocation. This option flag will cause an error to occur instead of automatically redirecting the execution to a new process invocation. </summary>
+        public bool noRedirect;
         /// <summary>Show help for all commands</summary>
         public bool helpAll;
         /// <summary>By default, logs will automatically mask tokens. However, when this option is enabled, tokens will be visible in their full text. This is a security risk.</summary>
         public bool unmaskLogs;
         /// <summary>By default, logs are automatically written to a temp file so that they can be used in an error case. However, when this option is enabled, logs are not written. Also, if the BEAM_CLI_NO_FILE_LOG environment variable is set, no log file will be written. </summary>
         public bool noLogFile;
+        /// <summary>a custom location for docker. By default, the CLI will attempt to resolve docker through its usual install locations. You can also use the BEAM_DOCKER_EXE environment variable to specify. 
+        ///Currently, a docker path has been automatically identified.</summary>
+        public string dockerCliPath;
         /// <summary>Directory to use for configuration</summary>
         public string dir;
         /// <summary>Output raw JSON to standard out. This happens by default when the command is being piped</summary>
@@ -93,6 +98,11 @@ namespace Beamable.Editor.BeamCli.Commands
                 genBeamCommandArgs.Add((("--log=\"" + this.log) 
                                 + "\""));
             }
+            // If the noRedirect value was not default, then add it to the list of args.
+            if ((this.noRedirect != default(bool)))
+            {
+                genBeamCommandArgs.Add(("--no-redirect=" + this.noRedirect));
+            }
             // If the helpAll value was not default, then add it to the list of args.
             if ((this.helpAll != default(bool)))
             {
@@ -107,6 +117,12 @@ namespace Beamable.Editor.BeamCli.Commands
             if ((this.noLogFile != default(bool)))
             {
                 genBeamCommandArgs.Add(("--no-log-file=" + this.noLogFile));
+            }
+            // If the dockerCliPath value was not default, then add it to the list of args.
+            if ((this.dockerCliPath != default(string)))
+            {
+                genBeamCommandArgs.Add((("--docker-cli-path=\"" + this.dockerCliPath) 
+                                + "\""));
             }
             // If the dir value was not default, then add it to the list of args.
             if ((this.dir != default(string)))

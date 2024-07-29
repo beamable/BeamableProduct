@@ -466,64 +466,64 @@ namespace Beamable.Api
 		}
 		
 		[Conditional("BEAMABLE_ENABLE_VERSION_HEADERS")]
-		protected void AddVersionHeaders(UnityWebRequest request)
+		protected void AddVersionHeaders(Dictionary<string, string> headers)
 		{
 #if !BEAMABLE_DISABLE_VERSION_HEADERS
-			request.SetRequestHeader(Constants.Requester.HEADER_BEAMABLE_VERSION, _beamableVersion.ToString());
-			request.SetRequestHeader(Constants.Requester.HEADER_APPLICATION_VERSION, Application.version);
-			request.SetRequestHeader(Constants.Requester.HEADER_UNITY_VERSION, Application.unityVersion);
-			request.SetRequestHeader(Constants.Requester.HEADER_ENGINE_TYPE, $"Unity-{Application.platform}");
+			headers[Constants.Requester.HEADER_BEAMABLE_VERSION] = _beamableVersion.ToString();
+			headers[Constants.Requester.HEADER_APPLICATION_VERSION] = Application.version;
+			headers[Constants.Requester.HEADER_UNITY_VERSION] = Application.unityVersion;
+			headers[Constants.Requester.HEADER_ENGINE_TYPE] = $"Unity-{Application.platform}";
 #endif
 		}
 
-		protected virtual void AddCidPidHeaders(UnityWebRequest request)
+		protected virtual void AddCidPidHeaders(Dictionary<string, string> headers)
 		{
 			if (!string.IsNullOrEmpty(Cid))
 			{
 				if (!string.IsNullOrEmpty(Pid))
 				{
-					request.SetRequestHeader(Constants.Requester.HEADER_SCOPE, $"{Cid}.{Pid}");
+					headers[Constants.Requester.HEADER_SCOPE] = $"{Cid}.{Pid}";
 				}
 				else
 				{
-					request.SetRequestHeader(Constants.Requester.HEADER_SCOPE, $"{Cid}");
+					headers[Constants.Requester.HEADER_SCOPE] = $"{Cid}";
 				}
 			}
 		}
 
-		protected void AddAuthHeader<T>(UnityWebRequest request, SDKRequesterOptions<T> opts)
+		protected void AddAuthHeader<T>(Dictionary<string, string> headers, SDKRequesterOptions<T> opts)
 		{
 			if (opts.includeAuthHeader)
 			{
 				var authHeader = GenerateAuthorizationHeader();
 				if (authHeader != null)
 				{
-					request.SetRequestHeader(Constants.Requester.HEADER_AUTH, authHeader);
+					headers[Constants.Requester.HEADER_AUTH] = authHeader;
 				}
 			}
 		}
 
-		protected virtual void AddShardHeader(UnityWebRequest request)
+		protected virtual void AddShardHeader(Dictionary<string, string> headers)
 		{
 			if (Shard != null)
 			{
-				request.SetRequestHeader(Constants.Requester.HEADER_SHARD, Shard);
+				headers[Constants.Requester.HEADER_SHARD] = Shard;
 			}
 		}
 
-		protected void AddTimeOverrideHeader(UnityWebRequest request)
+		protected void AddTimeOverrideHeader(Dictionary<string, string> headers)
 		{
 			if (TimeOverride != null)
 			{
-				request.SetRequestHeader(Constants.Requester.HEADER_TIME_OVERRIDE, TimeOverride);
+				headers[Constants.Requester.HEADER_TIME_OVERRIDE] = TimeOverride;
 			}
 		}
 
-		protected void AddRequestTimeoutHeader(UnityWebRequest request)
+		protected void AddRequestTimeoutHeader(Dictionary<string, string> headers)
 		{
 			if (RequestTimeoutMs != null)
 			{
-				request.SetRequestHeader(Constants.Requester.HEADER_TIMEOUT, RequestTimeoutMs);
+				headers[Constants.Requester.HEADER_TIMEOUT] = RequestTimeoutMs;
 			}
 		}
 
@@ -534,21 +534,33 @@ namespace Beamable.Api
 
 			// Prepare the request
 			UnityWebRequest request = BuildWebRequest(contentType, body, opts);
-			request.SetRequestHeader("Accept", GetAcceptHeader());
 
+			var headers = new Dictionary<string, string>();
+			headers["Accept"] = GetAcceptHeader();
+			
 			if (!opts.disableScopeHeaders)
 			{
-				AddCidPidHeaders(request);
+				AddCidPidHeaders(headers);
 			}
 
-			AddVersionHeaders(request);
-			AddAuthHeader(request, opts);
-			AddShardHeader(request);
-			AddTimeOverrideHeader(request);
-			AddRequestTimeoutHeader(request);
+			AddVersionHeaders(headers);
+			AddAuthHeader(headers, opts);
+			AddShardHeader(headers);
+			AddTimeOverrideHeader(headers);
+			AddRequestTimeoutHeader(headers);
 
-			request.SetRequestHeader(Constants.Requester.HEADER_ACCEPT_LANGUAGE, "");
+			headers[Constants.Requester.HEADER_ACCEPT_LANGUAGE] = "";
 
+			if (opts.headerInterceptor != null)
+			{
+				headers = opts.headerInterceptor.Invoke(headers);
+			}
+
+			foreach (var kvp in headers)
+			{
+				request.SetRequestHeader(kvp.Key, kvp.Value);
+			}
+			
 			return request;
 		}
 

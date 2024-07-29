@@ -19,7 +19,7 @@ namespace Beamable.Server.Editor
 			builder.AddGlobalStorage<UsamDataModel, EditorStorageLayer>();
 		}
 
-		[RegisterBeamableDependencies(-1000, RegistrationOrigin.RUNTIME)]
+		[RegisterBeamableDependencies(-1000, RegistrationOrigin.RUNTIME_GLOBAL)]
 		public static void RegisterRuntime(IDependencyBuilder builder)
 		{
 			builder.AddSingleton<MicroserviceDiscovery>();

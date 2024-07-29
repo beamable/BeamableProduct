@@ -6,6 +6,7 @@ using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.Text;
 using UnityEngine;
@@ -39,30 +40,31 @@ namespace Beamable.Server
 
 	public class MicroserviceClient
 	{
-		protected IBeamableRequester _requester;
-		protected BeamContext _ctx;
+		private readonly IDependencyProvider _provider;
 
-		protected MicroserviceClient(IBeamableRequester requester = null)
+		// protected BeamContext _ctx;
+
+		protected MicroserviceClient(BeamContext ctx=null) : this(ctx?.ServiceProvider)
 		{
-			_requester = requester;
 		}
 
-		protected MicroserviceClient(BeamContext ctx) : this(ctx?.Requester)
+		protected MicroserviceClient(IDependencyProvider provider)
 		{
-			_ctx = ctx;
+			_provider = provider;
 		}
 
-		public virtual IDependencyProvider Provider => _ctx?.ServiceProvider ?? BeamContext.Default.ServiceProvider;
+		public virtual IDependencyProvider Provider => _provider ?? BeamContext.Default.ServiceProvider;
+		protected IBeamableRequester Requester => Provider.GetService<IBeamableRequester>();
 
 		protected async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
 		{
-			var requester = _requester ?? await API.Instance.Map(b => b.Requester);
+			var requester = Requester ?? await API.Instance.Map(b => b.Requester);
 			return await MicroserviceClientHelper.Request<T>(Provider, requester, serviceName, endpoint, serializedFields);
 		}
 
 		protected async Promise<T> Request<T>(string serviceName, string endpoint, Dictionary<string, object> serializedFields)
 		{
-			var requester = _requester ?? await API.Instance.Map(b => b.Requester);
+			var requester = Requester ?? await API.Instance.Map(b => b.Requester);
 			return await MicroserviceClientHelper.Request<T>(Provider, requester, serviceName, endpoint, serializedFields);
 		}
 
@@ -312,16 +314,10 @@ namespace Beamable.Server
 			public TList items = default;
 		}
 
-		[Obsolete]
+
 		public static string CreateUrl(string cid, string pid, string serviceName, string endpoint)
 		{
-			var prefix = _prefix ?? (_prefix = MicroserviceIndividualization.GetServicePrefix(serviceName));
-			return CreateUrl(cid, pid, serviceName, endpoint, prefix);
-		}
-
-		public static string CreateUrl(string cid, string pid, string serviceName, string endpoint, string prefix)
-		{
-			var path = $"{prefix}micro_{serviceName}/{endpoint}";
+			var path = $"{serviceName}/{endpoint}";
 			var url = $"/basic/{cid}.{pid}.{path}";
 			return url; ///basic/123.testpid.micro_test/test
 		}
@@ -339,8 +335,25 @@ namespace Beamable.Server
 			return Request<T>(ctx.ServiceProvider, requester, serviceName, endpoint, serializedFields);
 		}
 
-		public static async Promise<T> Request<T>(IDependencyProvider provider, IBeamableRequester requester, string serviceName, string endpoint, string[] serializedFields)
+		public static Dictionary<string, string> ApplyPrefixToHeaders(Dictionary<string, string> headers, string prefix)
 		{
+			if (!string.IsNullOrEmpty(prefix))
+			{
+				headers["X-BEAM-SERVICE-ROUTING-KEY"] = prefix;
+			}
+
+			return headers;
+		}
+		
+		public static async Promise<T> Request<T>(IDependencyProvider provider, IBeamableRequester beamableRequester, string serviceName, string endpoint, string[] serializedFields)
+		{
+			if (!(beamableRequester is IRequester requester))
+			{
+				throw new NotSupportedException(
+					$"the microservice client must be given a {nameof(IRequester)} instance for the {nameof(beamableRequester)} field. " +
+					$"In a future version, this will be a compiler time check, but it exists as a runtime check to support mid-term backwards compatability. ");
+			}
+
 			var argArray = "[ " + string.Join(",", serializedFields) + " ]";
 
 			T Parser(string json)
@@ -358,25 +371,51 @@ namespace Beamable.Server
 
 			Promise<string> prefixPromise = PrefixPromise<T>(provider, serviceName);
 			var prefix = await prefixPromise;
-			var url = CreateUrl(requester.AccessToken.Cid, requester.AccessToken.Pid, serviceName, endpoint, prefix);
+			var url = CreateUrl(requester.AccessToken.Cid, requester.AccessToken.Pid, serviceName, endpoint);
 			var req = new RequestObject
 			{
 				payload = argArray
 			};
-			return await requester.Request<T>(Method.POST, url, req, parser: Parser);
+			
+			return await requester.BeamableRequest(new SDKRequesterOptions<T>
+			{
+				body = req, 
+				method = Method.POST, 
+				uri = url,
+				parser = Parser,
+				includeAuthHeader = true,
+				useCache = false,
+				headerInterceptor = headers => ApplyPrefixToHeaders(headers, prefix)
+			});
 		}
 
 		public static async Promise<T> Request<T>(IDependencyProvider provider,
-												  IBeamableRequester requester,
+												  IBeamableRequester beamableRequester,
 												  string serviceName,
 												  string endpoint,
 												  Dictionary<string, object> serializedFields)
 		{
+			if (!(beamableRequester is IRequester requester))
+			{
+				throw new NotSupportedException(
+					$"the microservice client must be given a {nameof(IRequester)} instance for the {nameof(beamableRequester)} field. " +
+					$"In a future version, this will be a compiler time check, but it exists as a runtime check to support mid-term backwards compatability. ");
+			}
+			
 			Promise<string> prefixPromise = PrefixPromise<T>(provider, serviceName);
 			var prefix = await prefixPromise;
-			var url = CreateUrl(requester.AccessToken.Cid, requester.AccessToken.Pid, serviceName, endpoint, prefix);
+			var url = CreateUrl(requester.AccessToken.Cid, requester.AccessToken.Pid, serviceName, endpoint);
 			var req = SerializeArgument(serializedFields);
-			return await requester.Request(Method.POST, url, req, parser: DeserializeResult<T>);
+			return await requester.BeamableRequest(new SDKRequesterOptions<T>
+			{
+				body = req, 
+				method = Method.POST, 
+				uri = url,
+				parser = DeserializeResult<T>,
+				includeAuthHeader = true,
+				useCache = false,
+				headerInterceptor = headers => ApplyPrefixToHeaders(headers, prefix)
+			});
 		}
 
 		private static Promise<string> PrefixPromise<T>(IDependencyProvider provider, string serviceName)

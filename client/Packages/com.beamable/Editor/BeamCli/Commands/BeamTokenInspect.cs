@@ -62,5 +62,10 @@ namespace Beamable.Editor.BeamCli.Commands
             this.Command.On("stream", cb);
             return this;
         }
+        public virtual TokenInspectWrapper OnErrorInvalidTokenErrorOutput(System.Action<ReportDataPoint<BeamInvalidTokenErrorOutput>> cb)
+        {
+            this.Command.On("errorInvalidTokenErrorOutput", cb);
+            return this;
+        }
     }
 }
