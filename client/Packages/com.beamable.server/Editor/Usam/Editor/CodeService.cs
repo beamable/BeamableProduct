@@ -181,10 +181,6 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
-			// REMOVE OLD STUFF
-			pathsToDelete.Add("Assets/Beamable/Microservices");
-			pathsToDelete.Add("Assets/Beamable/StorageObjects");
-
 			foreach (string path in pathsToDelete)
 			{
 				if (Directory.Exists(path))
@@ -217,6 +213,8 @@ namespace Beamable.Server.Editor.Usam
 
 			updateProgress?.Invoke($"Creating storage: {storageName}", 1);
 			await CreateStorage(storageName, deps, shouldInitialize: false);
+
+			await RefreshServices();
 
 			var definition = ServiceDefinitions.FirstOrDefault(s => s.BeamoId.Equals(storageName));
 			if (definition == null)

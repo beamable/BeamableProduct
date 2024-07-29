@@ -545,13 +545,19 @@ namespace Beamable.Server
 		        process.StartInfo.EnvironmentVariables["BEAM_DOTNET_MSBUILD_PATH"] = path;
 	        }
 
+	        if (!string.IsNullOrEmpty(dotnetPath))
+	        {
+		        process.StartInfo.EnvironmentVariables["BEAM_DOTNET_PATH"] = dotnetPath;
+	        }
+
 	        process.Start();
 	        await process.WaitForExitAsync();
 			
 	        var result = await process.StandardOutput.ReadToEndAsync();
 	        if (process.ExitCode != 0)
 	        {
-		        throw new Exception($"Failed to generate-env message=[{result}]");
+		        var sublogs = await process.StandardError.ReadToEndAsync();
+		        throw new Exception($"Failed to generate-env message=[{result}] sub-logs=[{sublogs}]");
 	        }
 	        
 	        var parsedOutput = JsonConvert.DeserializeObject<ReportDataPoint<GenerateEnvFileOutput>>(result);

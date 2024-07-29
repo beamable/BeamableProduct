@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Compilation;
+using UnityEngine;
 using UnityEngine.WSA;
 
 namespace Beamable.Server.Editor.Usam
@@ -82,10 +83,21 @@ namespace Beamable.Server.Editor.Usam
 		{
 			foreach (var assembly in AssemblyUtil.ReferencedAssemblies)
 			{
-				//TODO: if the file exists read it, generate the new content, if it is equal, just skip writing to disk
 				var path = GenerateCsharpProjectPath(assembly);
 				var content = GenerateCsharpProject(assembly, path);
 				var fileName = GenerateCsharpProjectFilename(assembly);
+
+				if (File.Exists(fileName))
+				{
+					var oldContent = File.ReadAllText(fileName);
+					if (oldContent.Equals(content))
+					{
+						Debug.Log($"Skipping assembly {assembly.name} because it does not have any changes");
+						continue;
+					}
+				}
+
+				Debug.Log($"Writing generated project for assembly definition {assembly.name} in the file: {fileName}");
 				Directory.CreateDirectory(path);
 				File.WriteAllText(fileName, content);
 			}

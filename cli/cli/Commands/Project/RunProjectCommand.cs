@@ -116,7 +116,8 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 				["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1",
 				["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1",
 				["LOG_PATH"] = logPath,
-				["WATCH_TOKEN"] = "true"
+				["WATCH_TOKEN"] = "true",
+				["BEAM_DOTNET_PATH"] = args.AppContext.DotnetPath,
 			})
 			.WithStandardErrorPipe(PipeTarget.ToDelegate(line =>
 			{
