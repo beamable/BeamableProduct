@@ -544,6 +544,7 @@ namespace Beamable.Server
 	        process.StartInfo.RedirectStandardError = true;
 	        process.StartInfo.CreateNoWindow = true;
 	        process.StartInfo.UseShellExecute = false;
+	        
 
 	        process.Start();
 	        await process.WaitForExitAsync();

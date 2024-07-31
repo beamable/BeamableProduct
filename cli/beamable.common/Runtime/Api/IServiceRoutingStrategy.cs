@@ -9,24 +9,6 @@ namespace Beamable.Common.Api
 	public interface IServiceRoutingStrategy
 	{
 		/// <summary>
-		/// Resolve the routingKey for a given service name.
-		/// This routingKey is used for targeted Microservice calls.
-		/// </summary>
-		/// <param name="serviceName"></param>
-		/// <returns></returns>
-		Promise<string> GetPrefix(string serviceName);
-
-		/// <summary>
-		/// Resolve the routingKey to be used for all requests, even
-		/// those not directly going to a Microservice.
-		/// Due to out-of-band federation, it is possible that a request
-		/// can be sent to a regular Beamable Managed service, but still cause a federation event
-		/// to occur. 
-		/// </summary>
-		/// <returns></returns>
-		Promise<string> GetGlobalPrefix();
-
-		/// <summary>
 		/// All services must have a routing key in the format,
 		/// name:key
 		/// and multiple keys can be separated with commas. 
