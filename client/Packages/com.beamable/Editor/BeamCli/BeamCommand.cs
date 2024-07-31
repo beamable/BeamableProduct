@@ -301,7 +301,7 @@ namespace Beamable.Editor.BeamCli
 			Debug.LogError(data);
 		}
 
-		private string GetCommandPrefix()
+		public static string GetCommandPrefix()
 		{
 			var beamCli = BeamCliUtil.CLI;
 
@@ -347,9 +347,9 @@ namespace Beamable.Editor.BeamCli
 				// prevent the beam CLI from saving any log information to file.
 				_process.StartInfo.Environment.Add("BEAM_CLI_NO_FILE_LOG", "1");
 
-				_process.StartInfo.EnvironmentVariables["BEAM_PATH"] = GetCommandPrefix();
-				_process.StartInfo.EnvironmentVariables["BEAM_DOTNET_PATH"] = Path.GetFullPath(DotnetUtil.DotnetPath);
-				_process.StartInfo.EnvironmentVariables["BEAM_DOTNET_MSBUILD_PATH"] =
+				_process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_PATH] = GetCommandPrefix();
+				_process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = Path.GetFullPath(DotnetUtil.DotnetPath);
+				_process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_MSBUILD_PATH] =
 					Path.GetFullPath(DotnetUtil.DotnetMSBuildPath);
 				
 				_status = new TaskCompletionSource<int>();

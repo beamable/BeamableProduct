@@ -55,7 +55,7 @@ The following values have special meaning and are not treated as paths...
 
 	
 		const string buildDirFlag = "BUILD_DIR_OPTIONS";
-		string msBuildPath = Environment.GetEnvironmentVariable("BEAM_DOTNET_MSBUILD_PATH", EnvironmentVariableTarget.Process);
+		string msBuildPath = Environment.GetEnvironmentVariable(Beamable.Common.Constants.EnvironmentVariables.BEAM_DOTNET_MSBUILD_PATH, EnvironmentVariableTarget.Process);
 
 		// this line could be used on the second propertyGroup to only apply those values to project that are considered beamable projects.
 		//  however, this won't work until we are capturing all referenced projects as well.

@@ -101,7 +101,11 @@ namespace Beamable.Server.Editor.Usam
 
 		public void Cancel()
 		{
-			_command.Cancel();
+			if (_command != null)
+			{
+				_command.Cancel();
+				_command = null;
+			}
 		}
 	}
 }

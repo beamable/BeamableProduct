@@ -70,7 +70,7 @@ namespace Beamable.Editor.Dotnet
 					_process.StartInfo.CreateNoWindow = true;
 					_process.StartInfo.UseShellExecute = false;
 					_process.StartInfo.Environment.Add("DOTNET_CLI_UI_LANGUAGE", "en");
-					_process.StartInfo.Environment.Add("BEAM_PATH", Path.GetFullPath(BeamCliUtil.CLI_PATH));
+					_process.StartInfo.Environment.Add(Constants.EnvironmentVariables.BEAM_PATH, BeamCommand.GetCommandPrefix());
 
 					_status = new TaskCompletionSource<int>();
 					_standardOutComplete = new TaskCompletionSource<int>();

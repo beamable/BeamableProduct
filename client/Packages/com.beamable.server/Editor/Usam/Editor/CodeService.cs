@@ -627,8 +627,7 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
-			var beamPath = BeamCliUtil.CLI_PATH.Replace(".dll", "");
-			var buildCommand = $"build \"{service.ServiceInfo.projectPath}\" /p:BeamableTool={beamPath} /p:GenerateClientCode=false";
+			var buildCommand = $"build \"{service.ServiceInfo.projectPath}\" /p:GenerateClientCode=false";
 
 			UsamLogger.Log($"Starting build service: {id} using command: {buildCommand}");
 			await _dotnetService.Run(buildCommand);
