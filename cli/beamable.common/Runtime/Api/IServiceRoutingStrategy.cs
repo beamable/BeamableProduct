@@ -46,19 +46,9 @@ namespace Beamable.Common.Api
 	{
 		private IBeamoApi _beamo;
 
-		public Promise<MicroserviceRegistrations[]> registrationPromise;
-
 		public DefaultServiceRoutingStrategy(IBeamoApi beamo)
 		{
 			_beamo = beamo;
-			var _ = Refresh();
-		}
-
-		public async Promise Refresh()
-		{
-			registrationPromise = new Promise<MicroserviceRegistrations[]>();
-			var res = await _beamo.PostMicroserviceRegistrations(new MicroserviceRegistrationsQuery(), includeAuthHeader: true);
-			registrationPromise.CompleteSuccess(res.registrations);
 		}
 
 		/// <summary>
@@ -68,83 +58,14 @@ namespace Beamable.Common.Api
 		/// </summary>
 		public static string DefaultRoutingKey => ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine();
 		
-		public async Promise<string> GetPrefix(string serviceName)
-		{
-			serviceName = serviceName.ToLowerInvariant();
-			var filterString = $".{serviceName}.";
-			
-			var registrations = await registrationPromise;
-			
-			// filter the total set of realm running services for the ones that match our given service
-			var validRegistrations = new List<MicroserviceRegistrations>();
-			foreach (var reg in registrations)
-			{
-				// serviceName is in format cid.pid.servicename.basic
-				if (reg.serviceName.Contains(filterString))
-				{
-					validRegistrations.Add(reg);
-				}
-			}
-			
-			// select one of the valid registrations based on the routingKey
-			var hasLocal = false;
-			var hasDeployed = false;
-			foreach (var reg in validRegistrations)
-			{
-				if (reg.routingKey?.TryGet(out var routingKey) ?? false)
-				{
-					if (string.Equals(routingKey, DefaultRoutingKey))
-					{
-						hasLocal = true;
-					}
-				} else if ((!reg.routingKey?.HasValue) ?? true)
-				{
-					hasDeployed = true;
-				}
-			}
-
-			if (hasLocal)
-			{
-				// use the local service
-				return DefaultRoutingKey; 
-			} else if (hasDeployed)
-			{
-				// use the remote service
-				return null;
-			}
-
-			// this will break, so we can log a warning...
-			BeamableLogger.LogWarning($"No microservice is running locally or remotely for the given service name=[{serviceName}]. Subsequent requests will fail.");
-			return null; 
-		}
-
-		public async Promise<string> GetGlobalPrefix()
-		{
-			var registrations = await registrationPromise;
-			foreach (var reg in registrations)
-			{
-				if (reg.routingKey?.TryGet(out var routingKey) ?? false)
-				{
-					if (string.Equals(routingKey, DefaultRoutingKey))
-					{
-						// if there are ANY local services running, we should federate to them automatically.
-						return DefaultRoutingKey;
-					}
-				} 
-			}
-
-			// otherwise, assume that the federation exists in the remote deployed service. 
-			return null;
-		}
-
 		public async Promise<Dictionary<string, string>> GetServiceMap()
 		{
-			var registrations = await registrationPromise;
+			var res = await _beamo.PostMicroserviceRegistrations(new MicroserviceRegistrationsQuery(), includeAuthHeader: true);
 
 			var results = new Dictionary<string, string>();
 
 			// extract all services that have a matching routing key
-			foreach (var reg in registrations)
+			foreach (var reg in res.registrations)
 			{
 				if (reg.routingKey?.TryGet(out var routingKey) ?? false)
 				{
