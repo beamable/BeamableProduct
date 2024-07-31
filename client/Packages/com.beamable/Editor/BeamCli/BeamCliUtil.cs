@@ -67,6 +67,8 @@ namespace Beamable.Editor.BeamCli
 			}
 		}
 
+		public static string CLI => USE_SRC ? Path.GetFullPath(CLI_VERSIONED_HOME) : EXEC;
+
 		public static string CLI_PATH
 		{
 			get
@@ -114,19 +116,17 @@ namespace Beamable.Editor.BeamCli
 				}
 			}
 
-			if (USE_GLOBAL || File.Exists(CLI_PATH))
+			if (USE_GLOBAL)
 			{
-				// if using global, we make no promises about anything. 
-				// or, if the cli exists, we are good 
+				// if using global, we make no promises about anything.
 				return;
 			}
 
 			// need to install the CLI
 			var installResult = InstallTool();
 
-			if (!installResult || !File.Exists(CLI_PATH))
+			if (!installResult)
 			{
-				// if the CLI still doesn't exist at the path, something went wrong.
 				throw new Exception("Beamable could not install the Beam CLI");
 			}
 		}
@@ -252,10 +252,14 @@ namespace Beamable.Editor.BeamCli
 				return false;
 			}
 
-			Directory.CreateDirectory(CLI_VERSIONED_HOME);
+			if (!DotnetUtil.InstallLocalManifest())
+			{
+				BeamableLogger.LogError("Unable to install BeamCLI from package: couldn't create a local manifest for the project.");
+				return false;
+			}
+
 			var proc = new Process();
-			var fullDirectory = Path.GetFullPath(CLI_VERSIONED_HOME);
-			var installCommand = $"tool install beamable.tools --tool-path \"{fullDirectory}\"";
+			var installCommand = $"tool install beamable.tools";
 			if (!BeamableEnvironment.NugetPackageVersion.ToString().Equals("0.0.123"))
 			{
 				installCommand += $" --version {BeamableEnvironment.NugetPackageVersion}";
@@ -263,7 +267,7 @@ namespace Beamable.Editor.BeamCli
 			proc.StartInfo = new ProcessStartInfo
 			{
 				FileName = Path.GetFullPath(DotnetUtil.DotnetPath),
-				WorkingDirectory = Path.GetFullPath("Library"),
+				WorkingDirectory = Path.GetFullPath("."),
 				Arguments = installCommand,
 				UseShellExecute = false,
 				RedirectStandardOutput = true,

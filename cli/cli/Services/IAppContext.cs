@@ -203,7 +203,7 @@ public class DefaultAppContext : IAppContext
 		DotnetPath = bindingContext.ParseResult.GetValueForOption(_dotnetPathOption);
 		if (string.IsNullOrEmpty(DotnetPath))
 		{
-			DotnetPath = Environment.GetEnvironmentVariable("BEAM_DOTNET_PATH");
+			DotnetPath = Environment.GetEnvironmentVariable(Beamable.Common.Constants.EnvironmentVariables.BEAM_DOTNET_PATH);
 
 			if (string.IsNullOrEmpty(DotnetPath))
 			{

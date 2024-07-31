@@ -73,6 +73,8 @@ namespace Beamable.Server
 
 	    public static IUsageApi EcsService;
 
+	    private static DebugLogSink _sink;
+
 	    private static DebugLogSink ConfigureLogging(IMicroserviceArgs args, MicroserviceAttribute attr)
         {
             var logLevel = args.LogLevel;
@@ -460,23 +462,13 @@ namespace Beamable.Server
         /// <returns></returns>
         public static string GetBeamProgram()
         {
-	        var beamPathOverride = Environment.GetEnvironmentVariable("BEAM_PATH");
-	        if ( !String.IsNullOrEmpty(beamPathOverride) ) return beamPathOverride;
-	        
-	        if (TryFindBeamableFolder(out var beamableFolderPath))
+	        string beamPathOverride = Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.BEAM_PATH);
+	        if (!string.IsNullOrEmpty(beamPathOverride))
 	        {
-		        var unityPath = Path.Combine(beamableFolderPath, 
-			        "Library", 
-			        "BeamableEditor",
-			        "BeamCLI", 
-			        BeamAssemblyVersionUtil.GetVersion<Promise>(),
-			        "beam");
-		        if (File.Exists(unityPath))
-		        {
-			        return unityPath;
-		        }
+		        return beamPathOverride;
 	        }
-	        return "beam"; // use global
+
+	        return "tool run beam"; // use global
         }
 
         /// <summary>
@@ -526,23 +518,56 @@ namespace Beamable.Server
         /// <exception cref="Exception">Exception raised in case the generate-env command fails.</exception>
         public static async Task Prepare<TMicroservice>(string customArgs = null) where TMicroservice : Microservice
         {
+	        var attribute = typeof(TMicroservice).GetCustomAttribute<MicroserviceAttribute>();
+	        var envArgs = new EnvironmentArgs();
+
+	        _sink = ConfigureLogging(envArgs, attribute);
+
 	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
 	        if (inDocker) return;
-			
-	        MicroserviceAttribute attribute = typeof(TMicroservice).GetCustomAttribute<MicroserviceAttribute>();
+
 	        var serviceName = attribute.MicroserviceName;
 	        
 	        customArgs ??= ". --auto-deploy";
 			
 	        using var process = new Process();
 
+	        var dotnetPath = Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.BEAM_DOTNET_PATH);
+	        var beamProgram = GetBeamProgram();
+
+	        string arguments = $"{beamProgram} project generate-env {serviceName} {customArgs} --logs v --pretty";
+	        string fileName = !string.IsNullOrEmpty(dotnetPath) ? dotnetPath : "dotnet";
 	        
-	        process.StartInfo.FileName = GetBeamProgram();
-	        process.StartInfo.Arguments = $"project generate-env {serviceName} {customArgs}";
+	        process.StartInfo.FileName = fileName;
+	        process.StartInfo.Arguments = arguments;
 	        process.StartInfo.RedirectStandardOutput = true;
 	        process.StartInfo.RedirectStandardError = true;
 	        process.StartInfo.CreateNoWindow = true;
 	        process.StartInfo.UseShellExecute = false;
+	        process.EnableRaisingEvents = true;
+
+	        //TODO: These events are still not working for some reason
+	        process.ErrorDataReceived += (sender, args) =>
+	        {
+				Log.Information($"Generate env process (error): [{args.Data}]");
+	        };
+
+	        process.OutputDataReceived += (sender, args) =>
+	        {
+		        Log.Information($"Generate env process (log): [{args.Data}]");
+	        };
+
+
+	        string path = Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.BEAM_DOTNET_MSBUILD_PATH, EnvironmentVariableTarget.Process);
+	        if (!string.IsNullOrEmpty(path))
+	        {
+		        process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_MSBUILD_PATH] = path;
+	        }
+
+	        if (!string.IsNullOrEmpty(dotnetPath))
+	        {
+		        process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = dotnetPath;
+	        }
 
 	        process.Start();
 	        await process.WaitForExitAsync();
@@ -550,7 +575,8 @@ namespace Beamable.Server
 	        var result = await process.StandardOutput.ReadToEndAsync();
 	        if (process.ExitCode != 0)
 	        {
-		        throw new Exception($"Failed to generate-env message=[{result}]");
+		        var sublogs = await process.StandardError.ReadToEndAsync();
+		        throw new Exception($"Failed to generate-env message=[{result}] sub-logs=[{sublogs}]");
 	        }
 	        
 	        var parsedOutput = JsonConvert.DeserializeObject<ReportDataPoint<GenerateEnvFileOutput>>(result);
@@ -575,7 +601,6 @@ namespace Beamable.Server
 	        var attribute = typeof(TMicroService).GetCustomAttribute<MicroserviceAttribute>();
 	        var envArgs = new EnvironmentArgs();
 
-	        var pipeSink = ConfigureLogging(envArgs, attribute);
 	        ConfigureUncaughtExceptions();
 	        ConfigureUnhandledError();
 	        ConfigureDiscovery(envArgs, attribute);
@@ -611,7 +636,7 @@ namespace Beamable.Server
 				
 	            if (isFirstInstance)
 	            {
-		            var localDebug = new ContainerDiagnosticService(instanceArgs, beamableService, pipeSink);
+		            var localDebug = new ContainerDiagnosticService(instanceArgs, beamableService, _sink);
 		            var runningDebugTask = localDebug.Run();
 	            }
 	            

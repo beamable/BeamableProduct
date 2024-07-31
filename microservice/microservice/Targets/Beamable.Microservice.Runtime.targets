@@ -1,5 +1,4 @@
 <Project>
-
     <!-- If the user has not set an OutputType, then we need to set one-->
     <PropertyGroup Condition="'$(OutputType)'=='' OR '$(OutputType)'=='Library' OR '$(OutputType)'=='library'">
         <!-- It is only our responsibility to set an outputtype if the user has configured their project correctly, meaning they must have a valid beamProjectType, or have created their own OutputType to begin with.-->
@@ -10,7 +9,7 @@
     <!-- After the build completes, we should auto-generate client code to any linked projects -->
     <Target Name="generate-client" AfterTargets="Build" Condition="$(GenerateClientCode)==true AND $(DOTNET_RUNNING_IN_CONTAINER)!=true">
         <Message Text="Generating client files..." Importance="high" />
-        <Exec Command="$(BeamableTool) project generate-client $(OutDir)/$(AssemblyName).dll --output-links $(Beam_GenerateClient_Args)" />
+        <Exec Command="$(BeamableDotnetPath) $(BeamableTool) project generate-client $(OutDir)/$(AssemblyName).dll --output-links --no-redirect $(Beam_GenerateClient_Args)" EnvironmentVariables="BEAM_DOTNET_MSBUILD_PATH=$(BEAM_DOTNET_MSBUILD_PATH)"/>
     </Target>
 
 </Project>

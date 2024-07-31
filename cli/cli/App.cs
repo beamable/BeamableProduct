@@ -61,7 +61,7 @@ public class App
 		//This is necessary, so we can use MSBuild to read different projects and get their properties later on
 		if (MSBuildLocator.CanRegister)
 		{
-			string path = Environment.GetEnvironmentVariable("BEAM_DOTNET_MSBUILD_PATH", EnvironmentVariableTarget.Process);
+			string path = Environment.GetEnvironmentVariable(Beamable.Common.Constants.EnvironmentVariables.BEAM_DOTNET_MSBUILD_PATH, EnvironmentVariableTarget.Process);
 			if (!string.IsNullOrEmpty(path))
 			{
 				MSBuildLocator.RegisterMSBuildPath(path);
