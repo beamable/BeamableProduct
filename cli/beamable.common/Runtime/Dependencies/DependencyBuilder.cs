@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 
@@ -8,10 +9,10 @@ namespace Beamable.Common.Dependencies
 
 	public enum DependencyLifetime
 	{
-		Unknown,
-		Transient,
-		Scoped,
-		Singleton
+		Unknown = 1,
+		Transient = 2,
+		Scoped = 3,
+		Singleton = 4
 	}
 
 	/// <summary>
@@ -449,18 +450,21 @@ namespace Beamable.Common.Dependencies
 	/// </summary>
 	public class DependencyBuilder : IDependencyBuilder
 	{
-		public List<ServiceDescriptor> TransientServices { get; protected set; } = new List<ServiceDescriptor>();
-		public List<ServiceDescriptor> ScopedServices { get; protected set; } = new List<ServiceDescriptor>();
-		public List<ServiceDescriptor> SingletonServices { get; protected set; } = new List<ServiceDescriptor>();
+		// public List<ServiceDescriptor> TransientServices { get; protected set; } = new List<ServiceDescriptor>();
+		// public List<ServiceDescriptor> ScopedServices { get; protected set; } = new List<ServiceDescriptor>();
+		// public List<ServiceDescriptor> SingletonServices { get; protected set; } = new List<ServiceDescriptor>();
 
-		List<ServiceDescriptor> IDependencyBuilder.GetTransientServices() => TransientServices;
-		List<ServiceDescriptor> IDependencyBuilder.GetScopedServices() => ScopedServices;
-		List<ServiceDescriptor> IDependencyBuilder.GetSingletonServices() => SingletonServices;
+		public List<ServiceDescriptor> Descriptors { get; protected set; } = new List<ServiceDescriptor>();
+		
+		List<ServiceDescriptor> IDependencyBuilder.GetTransientServices() => Descriptors.Where(x => x.Lifetime == DependencyLifetime.Transient).ToList();
+		List<ServiceDescriptor> IDependencyBuilder.GetScopedServices() => Descriptors.Where(x => x.Lifetime == DependencyLifetime.Scoped).ToList();
+		List<ServiceDescriptor> IDependencyBuilder.GetSingletonServices() => Descriptors.Where(x => x.Lifetime == DependencyLifetime.Singleton).ToList();
 
 		public IDependencyBuilder AddTransient<TInterface, TImpl>(Func<IDependencyProvider, TInterface> factory) where TImpl : TInterface
 		{
-			TransientServices.Add(new ServiceDescriptor
+			Descriptors.Add(new ServiceDescriptor
 			{
+				Lifetime = DependencyLifetime.Transient,
 				Interface = typeof(TInterface),
 				Implementation = typeof(TImpl),
 				Factory = (provider) => factory(provider)
@@ -482,8 +486,9 @@ namespace Beamable.Common.Dependencies
 
 		public IDependencyBuilder AddScoped<TInterface, TImpl>(Func<IDependencyProvider, TInterface> factory) where TImpl : TInterface
 		{
-			ScopedServices.Add(new ServiceDescriptor
+			Descriptors.Add(new ServiceDescriptor
 			{
+				Lifetime = DependencyLifetime.Scoped,
 				Interface = typeof(TInterface),
 				Implementation = typeof(TImpl),
 				Factory = (provider) => factory(provider)
@@ -511,8 +516,9 @@ namespace Beamable.Common.Dependencies
 
 		public IDependencyBuilder AddSingleton<TInterface, TImpl>(Func<IDependencyProvider, TInterface> factory) where TImpl : TInterface
 		{
-			SingletonServices.Add(new ServiceDescriptor
+			Descriptors.Add(new ServiceDescriptor
 			{
+				Lifetime = DependencyLifetime.Singleton,
 				Interface = typeof(TInterface),
 				Implementation = typeof(TImpl),
 				Factory = (provider) => factory(provider)
@@ -522,8 +528,9 @@ namespace Beamable.Common.Dependencies
 
 		public IDependencyBuilder AddSingleton(Type type)
 		{
-			SingletonServices.Add(new ServiceDescriptor
+			Descriptors.Add(new ServiceDescriptor
 			{
+				Lifetime = DependencyLifetime.Singleton,
 				Interface = type,
 				Implementation = type,
 				Factory = provider => Instantiate(type, provider)
@@ -534,8 +541,9 @@ namespace Beamable.Common.Dependencies
 		public IDependencyBuilder AddSingleton<T>(Type registeringType, Func<T> factory)
 		{
 			System.Diagnostics.Debug.Assert(typeof(T).IsAssignableFrom(registeringType), $"RegisteringType [{registeringType.Name}] does not implement/inherit from [{typeof(T).Name}]!");
-			SingletonServices.Add(new ServiceDescriptor
+			Descriptors.Add(new ServiceDescriptor
 			{
+				Lifetime = DependencyLifetime.Singleton,
 				Interface = registeringType,
 				Implementation = registeringType,
 				Factory = (provider) => factory()
@@ -584,8 +592,9 @@ namespace Beamable.Common.Dependencies
 			{
 				Remove<TExisting>();
 			}
-			SingletonServices.Add(new ServiceDescriptor
+			Descriptors.Add(new ServiceDescriptor
 			{
+				Lifetime = DependencyLifetime.Singleton,
 				Interface = typeof(TExisting),
 				Implementation = typeof(TNew),
 				Factory = provider => factory(provider)
@@ -677,37 +686,56 @@ namespace Beamable.Common.Dependencies
 
 		public IDependencyBuilder Remove<T>()
 		{
-			if (TryGetTransient(typeof(T), out var transient))
+			// foreach (var service in Descriptors)
+			for (var i = 0 ; i < Descriptors.Count; i ++)
 			{
-				TransientServices.Remove(transient);
-				return this;
+				if (Descriptors[i].Interface == typeof(T))
+				{
+					Descriptors.RemoveAt(i);
+					return this;
+				}
 			}
-
-			if (TryGetScoped(typeof(T), out var scoped))
-			{
-				ScopedServices.Remove(scoped);
-				return this;
-			}
-
-			if (TryGetSingleton(typeof(T), out var singleton))
-			{
-				SingletonServices.Remove(singleton);
-				return this;
-			}
+			
+			// if (TryGetTransient(typeof(T), out var transient))
+			// {
+			// 	TransientServices.Remove(transient);
+			// 	return this;
+			// }
+			//
+			// if (TryGetScoped(typeof(T), out var scoped))
+			// {
+			// 	ScopedServices.Remove(scoped);
+			// 	return this;
+			// }
+			//
+			// if (TryGetSingleton(typeof(T), out var singleton))
+			// {
+			// 	SingletonServices.Remove(singleton);
+			// 	return this;
+			// }
 
 			throw new Exception($"Service does not exist, so cannot be removed. type=[{typeof(T)}]");
 		}
 
 		public bool Has<T>()
 		{
-			return TryGetTransient(typeof(T), out _) || TryGetScoped(typeof(T), out _) || TryGetSingleton(typeof(T), out _);
+			for (var i = 0 ; i < Descriptors.Count; i ++)
+			{
+				if (Descriptors[i].Interface == typeof(T))
+				{
+					return true;
+				}
+			}
+
+			return false;
 		}
 
+		[Obsolete]
 		public bool TryGetTransient(Type type, out ServiceDescriptor descriptor)
 		{
-			foreach (var serviceDescriptor in TransientServices)
+			foreach (var serviceDescriptor in Descriptors)
 			{
-				if (serviceDescriptor.Interface == type)
+				if (serviceDescriptor.Interface == type && serviceDescriptor.Lifetime == DependencyLifetime.Transient)
 				{
 					descriptor = serviceDescriptor;
 					return true;
@@ -717,11 +745,13 @@ namespace Beamable.Common.Dependencies
 			descriptor = default(ServiceDescriptor);
 			return false;
 		}
+		
+		[Obsolete]
 		public bool TryGetScoped(Type type, out ServiceDescriptor descriptor)
 		{
-			foreach (var serviceDescriptor in ScopedServices)
+			foreach (var serviceDescriptor in Descriptors)
 			{
-				if (serviceDescriptor.Interface == type)
+				if (serviceDescriptor.Interface == type && serviceDescriptor.Lifetime == DependencyLifetime.Scoped)
 				{
 					descriptor = serviceDescriptor;
 					return true;
@@ -732,11 +762,12 @@ namespace Beamable.Common.Dependencies
 			return false;
 		}
 
+		[Obsolete]
 		public bool TryGetSingleton(Type type, out ServiceDescriptor descriptor)
 		{
-			foreach (var serviceDescriptor in SingletonServices)
+			foreach (var serviceDescriptor in Descriptors)
 			{
-				if (serviceDescriptor.Interface == type)
+				if (serviceDescriptor.Interface == type && serviceDescriptor.Lifetime == DependencyLifetime.Singleton)
 				{
 					descriptor = serviceDescriptor;
 					return true;
@@ -752,9 +783,7 @@ namespace Beamable.Common.Dependencies
 		{
 			return new DependencyBuilder
 			{
-				ScopedServices = new List<ServiceDescriptor>(ScopedServices),
-				TransientServices = new List<ServiceDescriptor>(TransientServices),
-				SingletonServices = new List<ServiceDescriptor>(SingletonServices)
+				Descriptors = new List<ServiceDescriptor>(Descriptors),
 			};
 		}
 	}

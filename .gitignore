@@ -83,6 +83,9 @@ user-token.json
 /cli/tests/bin/
 /cli/tests/obj/
 /cli/tests/.idea/
+/cli/benchmarks/bin/
+/cli/benchmarks/obj/
+/cli/benchmarks/.idea/
 /cli/*.sln.DotSettings.*
 cli/cli/beamoLocalRuntime.json
 
