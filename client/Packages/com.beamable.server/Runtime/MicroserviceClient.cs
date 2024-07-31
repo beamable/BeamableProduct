@@ -1,3 +1,4 @@
+using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Inventory;
@@ -90,10 +91,7 @@ namespace Beamable.Server
 			public string payload;
 		}
 
-		static string _prefix;
 		static readonly StringBuilder _builder = new StringBuilder();
-
-		public static void SetPrefix(string prefix) => _prefix = prefix;
 
 		public static string SerializeArgument(object arg)
 		{
@@ -322,9 +320,6 @@ namespace Beamable.Server
 			return url; ///basic/123.testpid.micro_test/test
 		}
 
-		public static Dictionary<string, Promise<string>> serviceNameToPrefixPromise =
-			new Dictionary<string, Promise<string>>();
-
 		[Obsolete("Use the variant that accepts a dependency provider.")]
 		public static Promise<T> Request<T>(IBeamableRequester requester,
 												  string serviceName,
@@ -335,14 +330,15 @@ namespace Beamable.Server
 			return Request<T>(ctx.ServiceProvider, requester, serviceName, endpoint, serializedFields);
 		}
 
-		public static Dictionary<string, string> ApplyPrefixToHeaders(Dictionary<string, string> headers, string prefix)
+		public static Dictionary<string, string> ApplyRoutingHeaders(this IDependencyProvider provider,
+		                                                             Dictionary<string, string> headers)
 		{
-			if (!string.IsNullOrEmpty(prefix))
-			{
-				headers["X-BEAM-SERVICE-ROUTING-KEY"] = prefix;
-			}
+			if (!provider.CanBuildService<IServiceRoutingResolution>())
+				return headers;
 
-			return headers;
+			var resolution = provider.GetService<IServiceRoutingResolution>();
+			return resolution.ApplyRoutingHeaders(headers);
+
 		}
 		
 		public static async Promise<T> Request<T>(IDependencyProvider provider, IBeamableRequester beamableRequester, string serviceName, string endpoint, string[] serializedFields)
@@ -369,8 +365,6 @@ namespace Beamable.Server
 				return result;
 			}
 
-			Promise<string> prefixPromise = PrefixPromise<T>(provider, serviceName);
-			var prefix = await prefixPromise;
 			var url = CreateUrl(requester.AccessToken.Cid, requester.AccessToken.Pid, serviceName, endpoint);
 			var req = new RequestObject
 			{
@@ -385,7 +379,7 @@ namespace Beamable.Server
 				parser = Parser,
 				includeAuthHeader = true,
 				useCache = false,
-				headerInterceptor = headers => ApplyPrefixToHeaders(headers, prefix)
+				headerInterceptor = provider.ApplyRoutingHeaders
 			});
 		}
 
@@ -402,8 +396,6 @@ namespace Beamable.Server
 					$"In a future version, this will be a compiler time check, but it exists as a runtime check to support mid-term backwards compatability. ");
 			}
 			
-			Promise<string> prefixPromise = PrefixPromise<T>(provider, serviceName);
-			var prefix = await prefixPromise;
 			var url = CreateUrl(requester.AccessToken.Cid, requester.AccessToken.Pid, serviceName, endpoint);
 			var req = SerializeArgument(serializedFields);
 			return await requester.BeamableRequest(new SDKRequesterOptions<T>
@@ -414,27 +406,10 @@ namespace Beamable.Server
 				parser = DeserializeResult<T>,
 				includeAuthHeader = true,
 				useCache = false,
-				headerInterceptor = headers => ApplyPrefixToHeaders(headers, prefix)
+				headerInterceptor = provider.ApplyRoutingHeaders
 			});
 		}
-
-		private static Promise<string> PrefixPromise<T>(IDependencyProvider provider, string serviceName)
-		{
-			if (!serviceNameToPrefixPromise.TryGetValue(serviceName, out var prefixPromise))
-			{
-				// need to resolve the IPrefixService
-				if (provider.CanBuildService<IMicroservicePrefixService>())
-				{
-					var prefixService = provider.GetService<IMicroservicePrefixService>();
-					prefixPromise = serviceNameToPrefixPromise[serviceName] = prefixService.GetPrefix(serviceName);
-				}
-				else
-				{
-					prefixPromise = Promise<string>.Successful("");
-				}
-			}
-
-			return prefixPromise;
-		}
+		
+		
 	}
 }

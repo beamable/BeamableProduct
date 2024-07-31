@@ -1,10 +1,10 @@
-using Beamable.Common;
-using Beamable.Common.Dependencies;
+using Beamable.Common.Api;
 
 namespace Beamable.Server
 {
-	public interface IMicroservicePrefixService
+	public interface IMicroservicePrefixService : IServiceRoutingStrategy
 	{
-		Promise<string> GetPrefix(string serviceName);
+		// psuedo obsolete. The code was moved into the common library. 
+		//  this type exists as a backwards compat signal.
 	}
 }

@@ -13,6 +13,7 @@ using cli.Content;
 using cli.Content.Tag;
 using cli.Docs;
 using cli.Dotnet;
+using cli.FederationCommands;
 using cli.Notifications;
 using cli.Options;
 using cli.PlayerCommands;
@@ -303,6 +304,12 @@ public class App
 		Commands.AddRootCommand<BaseRequestPostCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<BaseRequestDeleteCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<GenerateDocsCommand, GenerateDocsCommandArgs>();
+
+		Commands.AddRootCommand<FederationCommand>();
+		Commands.AddSubCommand<ListServicesCommand, ListServicesCommandArgs, FederationCommand>();
+		Commands.AddSubCommand<DisableFederationCommand, DisableFederationCommandArgs, FederationCommand>();
+		Commands.AddSubCommand<EnableFederationCommand, DisableFederationCommandArgs, FederationCommand>();
+
 		
 		Commands.AddRootCommand<TokenCommandGroup>();
 		Commands.AddSubCommand<GetTokenDetailsCommand, GetTokenDetailsCommandArgs, TokenCommandGroup>();

@@ -9,6 +9,7 @@ using Beamable.Api.Connectivity;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Pooling;
 using Beamable.Common.Scheduler;
@@ -40,6 +41,44 @@ namespace Beamable.Api
 		PackageVersion PackageVersion { get; }
 	}
 
+	public interface IServiceRoutingResolution
+	{
+		Promise Init();
+		string RoutingMap { get; }
+	}
+
+	public static class ServiceRoutingResolutionExtensions
+	{
+		public static Dictionary<string, string> ApplyRoutingHeaders(this IServiceRoutingResolution self,
+		                                                             Dictionary<string, string> headers)
+		{
+			// if the routing map is empty, do not include the header
+			if (string.IsNullOrEmpty(self.RoutingMap))
+				return headers;
+			
+			headers[Constants.Requester.HEADER_ROUTINGKEY] = self.RoutingMap;
+			return headers;
+		}
+	}
+
+	public class DefaultServiceRoutingResolution : IServiceRoutingResolution
+	{
+		private IServiceRoutingStrategy _strategy;
+		private string _routingMap;
+
+		public DefaultServiceRoutingResolution(IServiceRoutingStrategy strategy)
+		{
+			_strategy = strategy;
+		}
+
+		public async Promise Init()
+		{
+			_routingMap = await _strategy.GetRoutingHeaderValue();
+		}
+
+		public string RoutingMap => _routingMap;
+	}
+
 	/// <summary>
 	/// This type defines the %PlatformRequester.
 	///
@@ -60,6 +99,7 @@ namespace Beamable.Api
 		private readonly PackageVersion _beamableVersion;
 		protected AccessTokenStorage accessTokenStorage;
 		private IConnectivityService _connectivityService;
+		private IServiceRoutingResolution _routingKeyResolution;
 		private bool _disposed;
 		private bool internetConnectivity;
 		public string Host { get; set; }
@@ -128,6 +168,11 @@ namespace Beamable.Api
 			accessTokenStorage = provider.GetService<AccessTokenStorage>();
 			_connectivityService = provider.GetService<IConnectivityService>();
 			_offlineCache = provider.GetService<OfflineCache>();
+
+			if (provider.CanBuildService<IServiceRoutingResolution>())
+			{
+				_routingKeyResolution = provider.GetService<IServiceRoutingResolution>();
+			}
 		}
 
 		public PlatformRequester(string host, PackageVersion beamableVersion, AccessTokenStorage accessTokenStorage, IConnectivityService connectivityService, OfflineCache offlineCache)
@@ -528,6 +573,8 @@ namespace Beamable.Api
 		}
 
 		protected virtual string GetAcceptHeader() => ACCEPT_HEADER;
+
+
 		private UnityWebRequest PrepareWebRequester<T>(string contentType, byte[] body, SDKRequesterOptions<T> opts)
 		{
 			PlatformLogger.Log($"<b>[PlatformRequester][{opts.method.ToString()}]</b> {Host}{opts.uri}");
@@ -543,6 +590,8 @@ namespace Beamable.Api
 				AddCidPidHeaders(headers);
 			}
 
+			_routingKeyResolution?.ApplyRoutingHeaders(headers);
+			
 			AddVersionHeaders(headers);
 			AddAuthHeader(headers, opts);
 			AddShardHeader(headers);

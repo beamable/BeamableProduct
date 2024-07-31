@@ -1,4 +1,6 @@
+using Beamable.Api;
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using System;
 using System.Collections.Generic;
@@ -7,13 +9,24 @@ using UnityEngine;
 namespace Beamable.Server.Tests.Runtime
 {
 
-	public class TestClient : MicroserviceClient
+	public class TestClient : MicroserviceClient, IHaveServiceName
 	{
-		public class TestPrefixProvider : IMicroservicePrefixService
+		public class TestPrefixProvider : IServiceRoutingStrategy
 		{
 			public Promise<string> GetPrefix(string serviceName)
 			{
 				return Promise<string>.Successful("test");
+			}
+
+			public Promise<string> GetGlobalPrefix()
+			{
+				return Promise<string>.Successful("test");
+			}
+
+			public Promise<Dictionary<string, string>> GetServiceMap()
+			{
+				return Promise<Dictionary<string, string>>.Successful(
+					new Dictionary<string, string> {["test"] = "test"});
 			}
 		}
 
@@ -23,9 +36,9 @@ namespace Beamable.Server.Tests.Runtime
 		public TestClient(string serviceName)
 		{
 			_serviceName = serviceName;
-			MicroserviceClientHelper.SetPrefix("test");
 			var builder = new DependencyBuilder();
-			builder.AddSingleton<IMicroservicePrefixService, TestPrefixProvider>();
+			builder.AddSingleton<IServiceRoutingStrategy, TestPrefixProvider>();
+			builder.AddSingleton<IServiceRoutingResolution, DefaultServiceRoutingResolution>();
 			_provider = builder.Build();
 		}
 
@@ -43,8 +56,10 @@ namespace Beamable.Server.Tests.Runtime
 
 		public string GetMockPath(string cid, string pid, string endpoint)
 		{
-			return MicroserviceClientHelper.CreateUrl(cid, pid, _serviceName, endpoint, "test");
+			return MicroserviceClientHelper.CreateUrl(cid, pid, _serviceName, endpoint);
 		}
+
+		public string ServiceName => _serviceName;
 	}
 
 	public class TestJSON
