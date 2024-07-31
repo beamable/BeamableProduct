@@ -158,5 +158,12 @@
 				public const char ARROW_UP_UTF = '\u25B2';
 			}
 		}
+
+		public static class EnvironmentVariables
+		{
+			public const string BEAM_PATH = "BEAM_PATH";
+			public const string BEAM_DOTNET_PATH = "BEAM_DOTNET_PATH";
+			public const string BEAM_DOTNET_MSBUILD_PATH = "BEAM_DOTNET_MSBUILD_PATH";
+		}
 	}
 }

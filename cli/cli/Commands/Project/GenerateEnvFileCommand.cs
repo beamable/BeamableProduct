@@ -79,8 +79,7 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 				await args.BeamoLocalSystem.SynchronizeInstanceStatusWithDocker(args.BeamoLocalSystem.BeamoManifest, args.BeamoLocalSystem.BeamoRuntime.ExistingLocalServiceInstances);
 				await args.BeamoLocalSystem.StartListeningToDocker();
 				var dependencies = args.BeamoLocalSystem.GetDependencies(service.BeamoId);
-				Log.Information("Starting " + string.Join(",", dependencies) + " " + sw.ElapsedMilliseconds);
-				
+				Log.Information("Starting " + string.Join(",", dependencies.Select(d => d.name).ToList()) + " " + sw.ElapsedMilliseconds);
 				await args.BeamoLocalSystem.DeployToLocal(args.BeamoLocalSystem, dependencies.Select(dep => dep.name).ToArray());
 				await args.BeamoLocalSystem.InitManifest();
 				args.BeamoLocalSystem.SaveBeamoLocalRuntime();

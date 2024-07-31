@@ -151,6 +151,8 @@ namespace Beamable.Server.Editor.Usam
 			var microSequence = Promise.Sequence(microPromises);
 			await microSequence;
 
+			await RefreshServices(); //Refresh services data so we can connect dependencies
+
 			var storagePromises = new List<Promise<Unit>>();
 			foreach (IDescriptor descriptor in storages)
 			{
@@ -178,10 +180,6 @@ namespace Beamable.Server.Editor.Usam
 				UsamLogger.Log(BEAMABLE_MIGRATION_CANCELLATION_LOG);
 				return;
 			}
-
-			// REMOVE OLD STUFF
-			pathsToDelete.Add("Assets/Beamable/Microservices");
-			pathsToDelete.Add("Assets/Beamable/StorageObjects");
 
 			foreach (string path in pathsToDelete)
 			{
@@ -215,6 +213,8 @@ namespace Beamable.Server.Editor.Usam
 
 			updateProgress?.Invoke($"Creating storage: {storageName}", 1);
 			await CreateStorage(storageName, deps, shouldInitialize: false);
+
+			await RefreshServices();
 
 			var definition = ServiceDefinitions.FirstOrDefault(s => s.BeamoId.Equals(storageName));
 			if (definition == null)
@@ -306,28 +306,6 @@ namespace Beamable.Server.Editor.Usam
 					{
 						continue;
 					}
-					
-					//Check if this was already migrated
-					//Right now this is not required, because we maintain all services and storages inside a hidden folder from Unity
-					//However, in the future with services being able to be created anywhere, this will be necessary
-					/*if (descriptor.ServiceType == ServiceType.MicroService)
-					{
-						var services = GetBeamServices();
-						var service = services.FirstOrDefault(s => s.name.Equals(descriptor.Name));
-						if (service != null)
-						{
-							continue;
-						}
-					}
-					else
-					{
-						var storages = GetBeamStorages();
-						var storage = storages.FirstOrDefault(s => s.name.Equals(descriptor.Name));
-						if (storage != null)
-						{
-							continue;
-						}
-					}*/
 					
 					allDescriptors.Add(descriptor);
 				}
@@ -554,7 +532,7 @@ namespace Beamable.Server.Editor.Usam
 			UsamLogger.Log($"Finished updating microservice [{serviceName}] data");
 		}
 		
-		public async Promise UpdateServiceReferences(IBeamoServiceDefinition service, List<AssemblyDefinitionAsset> assemblyDefinitions)
+		public async Promise UpdateServiceReferences(IBeamoServiceDefinition service, List<AssemblyDefinitionAsset> assemblyDefinitions, bool shouldRefresh = true)
 		{
 			UsamLogger.Log($"Starting updating references");
 
@@ -576,10 +554,13 @@ namespace Beamable.Server.Editor.Usam
 			});
 			await updateCommand.Run();
 
-			//call the CsharpProjectUtil to regenerate the csproj for this specific file
-			await RefreshServices();
-			SolutionPostProcessor.OnPreGeneratingCSProjectFiles();
-			SetSolution();
+			if (shouldRefresh)
+			{
+				//call the CsharpProjectUtil to regenerate the csproj for this specific file
+				await RefreshServices();
+				SolutionPostProcessor.OnPreGeneratingCSProjectFiles();
+				SetSolution();
+			}
 
 			UsamLogger.Log($"Finished updating references");
 		}
@@ -646,8 +627,7 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
-			var beamPath = BeamCliUtil.CLI_PATH.Replace(".dll", "");
-			var buildCommand = $"build \"{service.ServiceInfo.projectPath}\" /p:BeamableTool={beamPath} /p:GenerateClientCode=false";
+			var buildCommand = $"build \"{service.ServiceInfo.projectPath}\" /p:GenerateClientCode=false";
 
 			UsamLogger.Log($"Starting build service: {id} using command: {buildCommand}");
 			await _dotnetService.Run(buildCommand);
@@ -942,8 +922,21 @@ namespace Beamable.Server.Editor.Usam
 			var command = _cli.ProjectNewService(args);
 			await command.Run();
 
+			await RefreshServices();
+
+			var definition = ServiceDefinitions.FirstOrDefault(def => def.BeamoId == serviceName);
+
+			if (definition == null)
+			{
+				Debug.LogError($"The service [{serviceName}] could not be created.");
+			}
+
+			if (assemblyReferences != null)
+			{
+				await UpdateServiceReferences(definition, assemblyReferences, false);
+			}
+
 			UsamLogger.Log($"Starting the initialization of CodeService");
-			// Re-initializing the CodeService to make sure all files are with the right information
 			if (shouldInitialize)
 			{
 				await Init();
