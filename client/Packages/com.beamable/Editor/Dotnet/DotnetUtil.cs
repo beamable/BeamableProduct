@@ -137,7 +137,7 @@ namespace Beamable.Editor.Dotnet
 
 				if (!CheckVersion(dotnetPath, out var version))
 				{
-					
+
 					Debug.LogWarning(
 						$"Ignoring version of dotnet at {path} due to incorrect version number. Found: {version}, required: {REQUIRED_INSTALL_VERSION}");
 					continue;
@@ -180,7 +180,7 @@ namespace Beamable.Editor.Dotnet
 				return false;
 			}
 
-			return version == REQUIRED_INSTALL_VERSION ;
+			return version == REQUIRED_INSTALL_VERSION;
 		}
 
 		static bool CheckForDotnetAtPath(string dotnetPath)
