@@ -790,8 +790,8 @@ namespace Beamable.Server.Editor.Usam
 				contents; // TODO: is there a better way to check if the solution file needs to be regenerated? This feels like it could become a bottleneck.
 			if (areDifferent)
 			{
-				// force the sln file to be re-generated, by deleting it. // TODO: we'll need to "unlock" the file in certain VCS
-				File.Delete(slnPath);
+				// Write over the sln file adding the hidden microservices/storages. // TODO: we'll need to "unlock" the file in certain VCS
+				File.WriteAllText(slnPath, generatedContent);
 				UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
 			}
 		}
