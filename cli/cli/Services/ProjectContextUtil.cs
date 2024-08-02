@@ -609,6 +609,52 @@ public static class ProjectContextUtil
 		return results;
 	}
 
+	public static List<string> GetAllIncludedDlls(BeamoServiceDefinition definition, ConfigService configService)
+	{
+		var buildEngine = new ProjectCollection();
+		Project buildProject = buildEngine.LoadProject(definition.ProjectPath);
+
+		return GetAllIncludedDlls(buildProject, configService);
+	}
+
+	public static List<string> GetAllIncludedDlls(Project project, ConfigService configService)
+	{
+		var buildEngine = new ProjectCollection();
+		var results = new List<string>();
+		const string REFERENCE_TYPE = "Reference";
+		const string PROJECT_REFERENCE_TYPE = "ProjectReference";
+
+		//First check if there are other projects being referenced here, so we run through them too
+		var projs = project.GetItemsIgnoringCondition(PROJECT_REFERENCE_TYPE).ToArray();
+		foreach (ProjectItem item in projs)
+		{
+			var name = Path.GetFileName(item.EvaluatedInclude);
+			var relativePath =
+				configService.GetPathFromRelativeToService(item.EvaluatedInclude, project.DirectoryPath);
+			var combinedPath = Path.Combine(relativePath, name);
+			var refProject = buildEngine.LoadProject(combinedPath);
+
+			var partialResult = GetAllIncludedDlls(refProject, configService);
+			results.AddRange(partialResult);
+		}
+
+		var references = project.GetItemsIgnoringCondition(REFERENCE_TYPE).ToArray();
+
+		foreach (var dllReference in references)
+		{
+			ProjectMetadata hintPathMetadata = dllReference.Metadata.FirstOrDefault(m => m.Name.Equals("HintPath"));
+			if (hintPathMetadata == null) continue;
+			var dllPath = hintPathMetadata.EvaluatedValue;
+			var name = Path.GetFileName(dllPath);
+			var relativePath =
+				configService.GetPathFromRelativeToService(dllPath, project.DirectoryPath);
+			var fixedPath = Path.Combine(relativePath, name);
+			results.Add(fixedPath);
+		}
+
+		return results;
+	}
+
 
 	public static void UpdateUnityProjectReferences(BeamoServiceDefinition definition, List<string> projectsPaths, List<string> assemblyNames)
 	{

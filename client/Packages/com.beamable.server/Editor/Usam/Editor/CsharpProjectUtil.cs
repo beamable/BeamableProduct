@@ -92,7 +92,6 @@ namespace Beamable.Server.Editor.Usam
 					var oldContent = File.ReadAllText(fileName);
 					if (oldContent.Equals(content))
 					{
-						Debug.Log($"Skipping assembly {assembly.name} because it does not have any changes");
 						continue;
 					}
 				}
@@ -158,7 +157,10 @@ namespace Beamable.Server.Editor.Usam
 			foreach (var dll in assembly.compiledAssemblyReferences)
 			{
 				if (!dll.StartsWith(projectRoot)) continue;
-				yield return dll.Substring(projectRoot.Length + 1);
+				var dllPath = dll.Substring(projectRoot.Length + 1);
+				var dllName = Path.GetFileName(dllPath);
+				if (!IsValidReference(dllName)) continue;
+				yield return dllPath;
 			}
 
 			yield break;
