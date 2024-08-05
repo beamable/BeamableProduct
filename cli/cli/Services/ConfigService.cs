@@ -582,6 +582,7 @@ public class ConfigService
 			parentDir = parentDir.Parent;
 		}
 
+		result = Path.Combine(basePath, Constants.CONFIG_FOLDER);
 		return false;
 	}
 
