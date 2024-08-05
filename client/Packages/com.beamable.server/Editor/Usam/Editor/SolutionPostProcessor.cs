@@ -71,7 +71,9 @@ EndProject";
 				File.WriteAllText(path, content);
 			});
 
-			return content;
+			var oldContent = File.ReadAllText(path);
+
+			return oldContent; //return old content and let the above promise write the new content later on, so we don't flick the sln
 		}
 
 

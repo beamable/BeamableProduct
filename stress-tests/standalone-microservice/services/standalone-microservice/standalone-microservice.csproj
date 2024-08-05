@@ -33,7 +33,7 @@
     <!-- After the build completes, we should auto-generate client code to any linked projects -->
     <Target Name="generate-client" AfterTargets="Build" Condition="$(GenerateClientCode)==true AND $(DOTNET_RUNNING_IN_CONTAINER)!=true">
         <Message Text="Generating client files..." Importance="high" />
-        <Exec Command="$(BeamableTool) project generate-client $(OutDir)/$(AssemblyName).dll --output-links" />
+        <Exec Command="$(BeamableDotnetPath) $(BeamableTool) project generate-client $(OutDir)/$(AssemblyName).dll --output-links" />
     </Target>
 
     <!-- Before starting the build, we need to prepare a few files and an .env file to pass startup information to the service -->
