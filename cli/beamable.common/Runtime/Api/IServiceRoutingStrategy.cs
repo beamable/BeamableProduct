@@ -67,7 +67,7 @@ namespace Beamable.Common.Api
 			// extract all services that have a matching routing key
 			foreach (var reg in res.registrations)
 			{
-				if (reg.routingKey?.TryGet(out var routingKey) ?? false)
+				if (reg.routingKey != null && reg.routingKey.TryGet(out string routingKey))
 				{
 					if (string.Equals(routingKey, DefaultRoutingKey))
 					{

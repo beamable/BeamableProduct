@@ -11,7 +11,6 @@ namespace Beamable.Common.Api
 {
 	public interface IServiceRoutingStrategy
 	{
-
 		/// <summary>
 		/// All services must have a routing key in the format,
 		/// name:key
@@ -64,16 +63,15 @@ namespace Beamable.Common.Api
 		
 		public async Promise<Dictionary<string, string>> GetServiceMap()
 		{
-			var registrations = await _beamo.PostMicroserviceRegistrations(new MicroserviceRegistrationsQuery(), includeAuthHeader: true);;
+			var res = await _beamo.PostMicroserviceRegistrations(new MicroserviceRegistrationsQuery(), includeAuthHeader: true);
 
 			var results = new Dictionary<string, string>();
 
 			// extract all services that have a matching routing key
-			foreach (var reg in registrations.registrations)
+			foreach (var reg in res.registrations)
 			{
-				if (reg.routingKey?.TryGet(out var routingKey) ?? false)
+				if (reg.routingKey != null && reg.routingKey.TryGet(out string routingKey))
 				{
-					// we only get services that match the current local machine
 					if (string.Equals(routingKey, DefaultRoutingKey))
 					{
 						// extract the service name, which is in the format cid.pid.name.basic, 
