@@ -50,17 +50,15 @@ jobs:
       - name: Install CLI
         working-directory: ./
         run: |
-          bash ./set-packages.sh "${{ github.workspace }}/client" "UNITY_NugetSource" "./cli/cli" "Local" 
+          bash ./set-packages.sh "${{ github.workspace }}" "UNITY_NugetSource" "./cli/cli" "Local"
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
 
       - name: Check CLI
-        working-directory: ./client/
         run: dotnet beam version
 
       - name: Get Version Number 
-        working-directory: ./client/
-        run: dotnet beam version construct 0 0 0 --nightly > ../version.txt
+        run: dotnet beam version construct 0 0 0 --nightly > ./version.txt
       
       - name: Store version number as output
         id: version

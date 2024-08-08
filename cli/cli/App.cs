@@ -549,45 +549,49 @@ public class App
 			{
 				ctx.Output.WriteLine("CLI Version: " + executingVersion);
 			});
-			ConfigService.TryToFindBeamableFolder(".", out var guessPath);
-			if (ConfigService.TryGetProjectBeamableCLIVersion(guessPath, out var localVersion))
-			{
-				
-				if (executingVersion != localVersion)
-				{
-					var noForward = c.ParseResult.GetValueForOption(NoForwardingOption.Instance);
-					if (noForward)
-					{
-						defaultLayout.Insert(0, ctx =>
-						{
-							ctx.Output.WriteLine($"Version Warning!");
-							ctx.Output.WriteLine($"  A local project was detected at path=[{guessPath}].");
-							ctx.Output.WriteLine($"  The local project is using local-version=[{localVersion}], ");
-							ctx.Output.WriteLine($"  but this CLI is showing --help for execution-version=[{executingVersion}]. ");
-							ctx.Output.WriteLine("");
-							ctx.Output.WriteLine("  To see the --help information for the local version, use ");
-							ctx.Output.WriteLine("  `dotnet beam --help`  ");
-							ctx.Output.WriteLine("");
-							ctx.Output.WriteLine("  By default, all commands will be redirected to the local version, unless ");
-							ctx.Output.WriteLine($"  the {NoForwardingOption.OPTION_FLAG} flag is set.");
 
-						});
-						return defaultLayout;
-					}
-					
-					return new List<HelpSectionDelegate>
-					{
-						ctx =>
-						{
-							ctx.Output.WriteLine($"execution-version=[{executingVersion}]");
-							ctx.Output.WriteLine($"local-version=[{localVersion}]");
-							ctx.Output.WriteLine($"Showing redirected help.");
-						},
-						ProxyHelp
-					};
-				}
+			if (!ConfigService.TryToFindBeamableFolder(".", out var guessPath))
+			{
+				return defaultLayout;
+			}
+			if (!ConfigService.TryGetProjectBeamableCLIVersion(guessPath, out var localVersion))
+			{
+				return defaultLayout;
 			}
 
+			if (executingVersion != localVersion)
+			{
+				var noForward = c.ParseResult.GetValueForOption(NoForwardingOption.Instance);
+				if (noForward)
+				{
+					defaultLayout.Insert(0, ctx =>
+					{
+						ctx.Output.WriteLine($"Version Warning!");
+						ctx.Output.WriteLine($"  A local project was detected at path=[{guessPath}].");
+						ctx.Output.WriteLine($"  The local project is using local-version=[{localVersion}], ");
+						ctx.Output.WriteLine($"  but this CLI is showing --help for execution-version=[{executingVersion}]. ");
+						ctx.Output.WriteLine("");
+						ctx.Output.WriteLine("  To see the --help information for the local version, use ");
+						ctx.Output.WriteLine("  `dotnet beam --help`  ");
+						ctx.Output.WriteLine("");
+						ctx.Output.WriteLine("  By default, all commands will be redirected to the local version, unless ");
+						ctx.Output.WriteLine($"  the {NoForwardingOption.OPTION_FLAG} flag is set.");
+
+					});
+					return defaultLayout;
+				}
+
+				return new List<HelpSectionDelegate>
+				{
+					ctx =>
+					{
+						ctx.Output.WriteLine($"execution-version=[{executingVersion}]");
+						ctx.Output.WriteLine($"local-version=[{localVersion}]");
+						ctx.Output.WriteLine($"Showing redirected help.");
+					},
+					ProxyHelp
+				};
+			}
 
 			return defaultLayout;
 		});

@@ -398,21 +398,34 @@ public class ConfigService
 	/// </summary>
 	public static bool TryGetProjectBeamableCLIVersion(string configDirectoryPath, out string version)
 	{
-		if (string.IsNullOrEmpty(configDirectoryPath) || !Directory.Exists(Directory.GetParent(configDirectoryPath)?.ToString()))
+		if (string.IsNullOrEmpty(configDirectoryPath))
 		{
 			version = "";
 			return false;
 		}
 
-		var pathToDotNetConfigFolder = Directory.GetParent(configDirectoryPath).ToString();
-		pathToDotNetConfigFolder = Path.Combine(pathToDotNetConfigFolder, ".config");
-		var pathToToolsManifest = Path.Combine(pathToDotNetConfigFolder, "dotnet-tools.json");
-
-		if (!File.Exists(pathToToolsManifest))
+		bool foundFile = false;
+		string currentPath = configDirectoryPath;
+		while (!foundFile)
 		{
-			version = "";
-			return false;
+			var parent = Path.GetDirectoryName(currentPath);
+			if (string.IsNullOrEmpty(parent))
+			{
+				version = string.Empty;
+				return false;
+			}
+
+			var possibleConfigFilePath = Path.Combine(parent, ".config", "dotnet-tools.json");
+			if (File.Exists(possibleConfigFilePath))
+			{
+				currentPath = possibleConfigFilePath;
+				break;
+			}
+
+			currentPath = parent;
 		}
+
+		var pathToToolsManifest = currentPath;
 
 		var versionMatching = new Regex("beamable.*?\"([0-9]+\\.[0-9]+\\.[0-9]+.*?)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
 		var versionMatch = versionMatching.Match(File.ReadAllText(pathToToolsManifest));
