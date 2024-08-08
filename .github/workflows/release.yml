@@ -101,7 +101,6 @@ jobs:
 
       - name: Copy Nuget Code Over
         uses: nick-fields/retry@v3
-        working-directory: ./client/
         with:
           timeout_minutes: 15
           max_attempts: 10
