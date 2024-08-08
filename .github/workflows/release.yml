@@ -50,7 +50,7 @@ jobs:
       - name: Install CLI
         working-directory: ./
         run: |
-          dotnet new tool-manifest
+          dotnet new tool-manifest --force
           bash ./set-packages.sh "${{ github.workspace }}/client" "UNITY_NugetSource" "./cli/cli" "Global" 
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
