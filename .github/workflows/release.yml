@@ -50,16 +50,17 @@ jobs:
       - name: Install CLI
         working-directory: ./
         run: |
-          ls -a .
-          bash ./set-packages.sh "${{ github.workspace }}/client" "UNITY_NugetSource" "./cli/cli" "Global" 
+          bash ./set-packages.sh "${{ github.workspace }}/client" "UNITY_NugetSource" "./cli/cli" "Local" 
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
 
       - name: Check CLI
+        working-directory: ./client/
         run: dotnet beam version
 
       - name: Get Version Number 
-        run: dotnet beam version construct 0 0 0 --nightly > version.txt
+        working-directory: ./client/
+        run: dotnet beam version construct 0 0 0 --nightly > ../version.txt
       
       - name: Store version number as output
         id: version
@@ -102,12 +103,13 @@ jobs:
 
       - name: Copy Nuget Code Over
         uses: nick-fields/retry@v3
+        working-directory: ./client/
         with:
           timeout_minutes: 15
           max_attempts: 10
           retry_wait_seconds: 60
           retry_on: error
-          command: dotnet beam unity download-all-nuget-packages ./client --logs v
+          command: dotnet beam unity download-all-nuget-packages . --logs v
 
       - name: Prepare Unity Samples
         run: sh ./../../../build/bin/prepare-samples.sh
