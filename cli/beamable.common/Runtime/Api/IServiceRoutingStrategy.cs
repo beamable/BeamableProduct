@@ -69,13 +69,14 @@ namespace Beamable.Common.Api
 			{
 				if (reg.routingKey != null && reg.routingKey.TryGet(out string routingKey))
 				{
-					if (string.Equals(routingKey, DefaultRoutingKey))
+					// extract the service name, which is in the format cid.pid.name.basic,
+					var serviceName = reg.serviceName.Split('.')[2];
+					var validRoutingKey = $"{serviceName}:{DefaultRoutingKey}";
+					if (string.Equals(routingKey, validRoutingKey))
 					{
-						// extract the service name, which is in the format cid.pid.name.basic, 
-						var serviceName = reg.serviceName.Split('.')[2];
-						results[serviceName] = routingKey;
+						results[serviceName] = DefaultRoutingKey;
 					}
-				} 
+				}
 			}
 
 			return results;

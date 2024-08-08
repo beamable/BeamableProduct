@@ -455,7 +455,7 @@ namespace Beamable.Server
 	      var queryArgs = new List<string>
 	      {
 		      $"refresh_token={refreshToken}",
-		      $"routingKey={_args.NamePrefix}"
+		      $"routingKey={microName.ToLower()}:{_args.NamePrefix}"
 	      };
 	      var joinedQueryString = string.Join("&", queryArgs);
 	      var treatedHost = _args.Host.Replace("/socket", "")
