@@ -44,7 +44,7 @@ public class InvalidTokenErrorOutput : ErrorOutput
 public class GetTokenDetailsCommand : AtomicCommand<GetTokenDetailsCommandArgs, GetTokenDetailsCommandOutput>,
 	IReportException<InvalidTokenErrorOutput>
 {
-	public GetTokenDetailsCommand() : base("inspect", "get token information")
+	public GetTokenDetailsCommand() : base("inspect", "Get token information")
 	{
 	}
 
@@ -52,12 +52,12 @@ public class GetTokenDetailsCommand : AtomicCommand<GetTokenDetailsCommandArgs, 
 	{
 		AddOption(new Option<bool>(name: "--resolve",
 				getDefaultValue: () => false,
-			description: "this command normally only works for an access token. However, if this option is enabled and a refresh token is given, then it will be automatically converted to the access token and this command is rerun"), 
+			description: "This command normally only works for an access token. However, if this option is enabled and a refresh token is given, then it will be automatically converted to the access token and this command is rerun"), 
 			(args, b) => args.autoResolve = b, 
 			new string[]{"-r"});
 		
 		var tokenOpt = new Option<string>("--token",
-			"the token that you want to get information for. This must be an access token. By default, the current access token of the .beamable context is used");
+			"The token that you want to get information for. This must be an access token. By default, the current access token of the .beamable context is used");
 		tokenOpt.AddAlias("-t");
 		AddOption(tokenOpt, (args, context, value) =>
 		{

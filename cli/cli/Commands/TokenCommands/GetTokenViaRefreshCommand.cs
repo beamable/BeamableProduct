@@ -24,14 +24,14 @@ public class GetTokenViaRefreshCommandOutput
 
 public class GetTokenViaRefreshCommand : AtomicCommand<GetTokenViaRefreshCommandArgs, GetTokenViaRefreshCommandOutput>
 {
-	public GetTokenViaRefreshCommand() : base("from-refresh", "get an access token from a refresh token")
+	public GetTokenViaRefreshCommand() : base("from-refresh", "Get an access token from a refresh token")
 	{
 	}
 
 	public override void Configure()
 	{
 		var tokenOpt = new Option<string>("--token",
-			"the token that you want to get information for. This must be a refresh token. By default, the current refresh token of the .beamable context is used.");
+			"The token that you want to get information for. This must be a refresh token. By default, the current refresh token of the .beamable context is used");
 		tokenOpt.AddAlias("-t");
 		AddOption(tokenOpt, (args, context, value) =>
 		{

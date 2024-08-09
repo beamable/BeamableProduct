@@ -47,14 +47,14 @@ public class PlayerCommand : AtomicCommand<PlayerCommandArgs, Account>
 	public static void AddPlayerSpecifierArgs<TArgs>(AppCommand<TArgs> command, Action<TArgs, long, string> binder)
 		where TArgs : CommandArgs
 	{
-		var idOpt = new Option<long>("--player-id", "the playerId (gamerTag)");
+		var idOpt = new Option<long>("--player-id", "The playerId (gamerTag)");
 		idOpt.AddAlias("-i");
 		idOpt.AddAlias("-gt");
 
 		command.AddOption(idOpt);
 
 		var tokenOpt = new Option<string>("--token",
-			"the token for a player. Cannot be specified when --player-id is set.");
+			"The token for a player. Cannot be specified when --player-id is set");
 		tokenOpt.AddAlias("-t");
 
 		command.AddOption(tokenOpt, (args, ctx, token) =>
@@ -72,7 +72,7 @@ public class PlayerCommand : AtomicCommand<PlayerCommandArgs, Account>
 	}
 	
 	
-	public PlayerCommand() : base("player", "get information about a player")
+	public PlayerCommand() : base("player", "Get information about a player")
 	{
 	}
 

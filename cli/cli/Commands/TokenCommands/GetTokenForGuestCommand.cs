@@ -20,7 +20,7 @@ public class GetTokenForGuestCommandOutput
 }
 public class GetTokenForGuestCommand : AtomicCommand<GetTokenForGuestCommandArgs, GetTokenForGuestCommandOutput>
 {
-	public GetTokenForGuestCommand() : base("new-guest", "create a new guest token")
+	public GetTokenForGuestCommand() : base("new-guest", "Create a new guest token")
 	{
 	}
 

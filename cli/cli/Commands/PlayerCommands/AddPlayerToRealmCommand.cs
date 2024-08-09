@@ -15,7 +15,7 @@ public class AddPlayerToRealmCommandOutput
 
 public class AddPlayerToRealmCommand : AtomicCommand<AddPlayerToRealmCommandArgs, AddPlayerToRealmCommandOutput>
 {
-	public AddPlayerToRealmCommand() : base("add-to-realm", "add a player to a realm and find their gamertag in the realm")
+	public AddPlayerToRealmCommand() : base("add-to-realm", "Add a player to a realm and find their gamertag in the realm")
 	{
 	}
 

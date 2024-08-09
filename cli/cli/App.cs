@@ -670,7 +670,7 @@ public class App
 				var preventRedirect = ctx.ParseResult.GetValueForOption(provider.GetService<NoForwardingOption>());
 				if (!preventRedirect)
 				{
-					await ProxyCommand(ctx, provider);
+					await ProxyCommand(ctx, provider, runningVersion, localVersion);
 					return;
 				}
 			}
@@ -777,7 +777,7 @@ public class App
 		task.Task.Wait();
 	}
 
-	private async Task ProxyCommand(InvocationContext context, IDependencyProviderScope provider)
+	private async Task ProxyCommand(InvocationContext context, IDependencyProviderScope provider, PackageVersion executingVersion, PackageVersion projectVersion)
 	{
 		// get the version of dotnet available (which may not always be the global dotnet installation) 
 		var dotnetPath = context.ParseResult.GetValueForOption(provider.GetService<DotnetPathOption>()); // TODO: use IAppContext to get env var or option based dotnet path
@@ -788,7 +788,7 @@ public class App
 		var argumentsToForward= string.Join(" ", new []{"beam", "--pretty"}.Concat(Environment.GetCommandLineArgs()[1..]));
 
 		var warningMessage =
-			$"You tried using a Beamable CLI version different than the one configured in this project. We are forwarding the command ({argumentsToForward}) to the version the project is using via dotnet=[{dotnetPath}]. Instead of relying on this forwarding, please 'dotnet beam' from inside the project directory.";
+			$"You tried using a Beamable CLI version=[{executingVersion}] which is different than the one configured in this project=[{projectVersion}]. We are forwarding the command ({argumentsToForward}) to the version the project is using via dotnet=[{dotnetPath}]. Instead of relying on this forwarding, please 'dotnet beam' from inside the project directory.";
 		if (shouldRedirect)
 		{
 			Console.Error.WriteLine(warningMessage);

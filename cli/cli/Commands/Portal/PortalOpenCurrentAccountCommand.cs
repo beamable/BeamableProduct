@@ -12,16 +12,16 @@ public class PortalOpenCurrentAccountCommandArgs : CommandArgs
 }
 public class PortalOpenCurrentAccountCommand : AppCommand<PortalOpenCurrentAccountCommandArgs>
 {
-	public PortalOpenCurrentAccountCommand() : base("player", "open portal to a player page")
+	public PortalOpenCurrentAccountCommand() : base("player", "Open portal to a player page")
 	{
 	}
 
 	public override void Configure()
 	{
-		AddOption(new Option<long>("--player-id", "the playerId (gamerTag) for the player to open Portal."),
+		AddOption(new Option<long>("--player-id", "The playerId (gamerTag) for the player to open Portal"),
 			(args, i) => args.playerId = i, new string[] { "-i", "-p", "-gt" });
 		
-		AddOption(new Option<string>("--token", "the token for the player to open Portal. Cannot be specified when --player-id is set."),
+		AddOption(new Option<string>("--token", "The token for the player to open Portal. Cannot be specified when --player-id is set"),
 			(args, i) => args.token = i, new string[] { "-t" });
 	}
 

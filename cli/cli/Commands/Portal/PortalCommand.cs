@@ -11,7 +11,7 @@ public class PortalCommandArgs : CommandArgs
 
 public class PortalCommand : AppCommand<PortalCommandArgs>
 {
-	public PortalCommand() : base("portal", "open portal")
+	public PortalCommand() : base("portal", "Open portal")
 	{
 	}
 

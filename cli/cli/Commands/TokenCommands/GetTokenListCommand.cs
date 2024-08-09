@@ -34,23 +34,23 @@ public class GetTokenListElement
 
 public class GetTokenListCommand : AtomicCommand<GetTokenListCommandArgs, GetTokenListCommandOutput>
 {
-	public GetTokenListCommand() : base("list", "list tokens for a player or account")
+	public GetTokenListCommand() : base("list", "List tokens for a player or account")
 	{
 	}
 
 	public override void Configure()
 	{
 		var idOpt = new Option<long>("--id",
-			"the player or account id to fetch tokens for. When blank, the current player id will be used.");
+			"The player or account id to fetch tokens for. When blank, the current player id will be used");
 		idOpt.AddAlias("-i");
 		idOpt.AddAlias("--player-id");
 		idOpt.AddAlias("--account-id");
 		AddOption(idOpt, (args, l) => args.playerOrAccountId = l);
 
-		AddOption(new Option<int>("--offset"), ((args, i) => args.page = i), new string[] { "-o" });
-		AddOption(new Option<int>("--length"), ((args, i) => args.pageSize = i), new string[] { "-l" });
+		AddOption(new Option<int>("--offset", "The offset"), ((args, i) => args.page = i), new string[] { "-o" });
+		AddOption(new Option<int>("--length", "The max size of the response"), ((args, i) => args.pageSize = i), new string[] { "-l" });
 
-		AddOption(new Option<long>("--cid"), (args, i) =>
+		AddOption(new Option<long>("--cid", "A cid"), (args, i) =>
 		{
 			args.cid = new Optional<long>();
 			if (i != default)
@@ -60,7 +60,7 @@ public class GetTokenListCommand : AtomicCommand<GetTokenListCommandArgs, GetTok
 		}, new string[] { "-c" });
 		
 		
-		AddOption(new Option<string>("--pid"), (args, i) =>
+		AddOption(new Option<string>("--pid", "A pid"), (args, i) =>
 		{
 			args.pid = new Optional<string>();
 			if (!string.IsNullOrEmpty(i))

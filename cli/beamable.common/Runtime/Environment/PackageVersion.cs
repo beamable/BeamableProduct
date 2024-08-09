@@ -2,6 +2,7 @@ using Beamable.Common.BeamCli;
 using System;
 using System.Text;
 using UnityEngine;
+using Object = System.Object;
 
 namespace Beamable.Common
 {
@@ -139,11 +140,15 @@ namespace Beamable.Common
 
 		public static bool operator ==(PackageVersion a, PackageVersion b)
 		{
-			return a?.Equals(b) ?? false;
+			if (Object.Equals(null, a))
+				return Object.Equals(null, b);
+			var areEqual = a.Equals(b);
+			return areEqual;
 		}
 		public static bool operator !=(PackageVersion a, PackageVersion b)
 		{
-			return !(a == b);
+			var notEqual = !(a == b);
+			return notEqual;
 		}
 
 		public static bool operator <=(PackageVersion a, PackageVersion b)
