@@ -32,7 +32,7 @@ jobs:
       - name: Login to BEAM CLI
         working-directory: ./stress-tests/standalone-microservice
         run: |
-          beam login --username ${{ secrets.BEAM_STRESSTEST_EMAIL }} --password ${{ secrets.BEAM_STRESSTEST_PASS }} --save-to-file
+          dotnet beam login --username ${{ secrets.BEAM_STRESSTEST_EMAIL }} --password ${{ secrets.BEAM_STRESSTEST_PASS }} --save-to-file
       - name: Build Microservice
         working-directory: ./stress-tests/standalone-microservice/services/standalone-microservice
         run: |
