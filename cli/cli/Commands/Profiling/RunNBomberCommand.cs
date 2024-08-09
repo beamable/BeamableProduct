@@ -50,7 +50,7 @@ public class RunNBomberCommand : AppCommand<RunNBomberCommandArgs>
 		var prefix = args.includePrefix ? MachineHelper.GetUniqueDeviceId() : "";
 		var host = args.AppContext.Host;
 
-		var url = $"{host}/basic/{cid}.{pid}.{prefix}micro_{args.service}/{args.method}";
+		var url = $"{host}/basic/{cid}.{pid}.{args.service}/{args.method}";
 		var scope = $"{cid}.{pid}";
 
 		if (string.IsNullOrWhiteSpace(args.jsonFilePath))
@@ -68,6 +68,7 @@ public class RunNBomberCommand : AppCommand<RunNBomberCommandArgs>
 				var request =
 					Http.CreateRequest("POST", url)
 						.WithHeader("X-DE-SCOPE", scope)
+						.WithHeader(Beamable.Common.Constants.Requester.HEADER_ROUTINGKEY, $"{args.service}:{prefix}")
 						.WithBody(new StringContent(jsonContent));
 				if (args.includeAuth)
 				{
