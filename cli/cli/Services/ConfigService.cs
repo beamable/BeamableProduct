@@ -398,9 +398,9 @@ public class ConfigService
 	/// </summary>
 	public static bool TryGetProjectBeamableCLIVersion(string configDirectoryPath, out string version)
 	{
+		version = "";
 		if (string.IsNullOrEmpty(configDirectoryPath))
 		{
-			version = "";
 			return false;
 		}
 
@@ -443,7 +443,7 @@ public class ConfigService
 			return true;
 		}
 
-		throw new CliException("Missing \"beamable.tools\" entry in \".config/dotnet-tools.json\" directory.");
+		return false;
 	}
 
 	public void CreateIgnoreFile(Vcs system = Vcs.Git, bool forceCreate = false)

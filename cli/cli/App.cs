@@ -788,7 +788,7 @@ public class App
 		var argumentsToForward= string.Join(" ", new []{"beam", "--pretty"}.Concat(Environment.GetCommandLineArgs()[1..]));
 
 		var warningMessage =
-			$"You tried using a Beamable CLI version different than the one configured in this project. We are forwarding the command ({argumentsToForward}) to the version the project is using. Instead of relying on this forwarding, please 'dotnet beam' from inside the project directory.";
+			$"You tried using a Beamable CLI version different than the one configured in this project. We are forwarding the command ({argumentsToForward}) to the version the project is using via dotnet=[{dotnetPath}]. Instead of relying on this forwarding, please 'dotnet beam' from inside the project directory.";
 		if (shouldRedirect)
 		{
 			Console.Error.WriteLine(warningMessage);

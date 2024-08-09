@@ -154,6 +154,8 @@ jobs:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Check Beam CLI
         run: |
+          pwd
+          ls
           beam version
       - name: Apply Nuget Version to Unity SDK
         run: |

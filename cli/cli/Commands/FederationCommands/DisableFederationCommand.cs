@@ -30,6 +30,13 @@ public class DisableFederationCommand : AtomicCommand<DisableFederationCommandAr
 
 	public override async Task<DisableFederationCommandOutput> GetResult(DisableFederationCommandArgs args)
 	{
+		var res = await SetEnabled(args, false);
+		LogResult(res);
+		return new DisableFederationCommandOutput();
+	}
+
+	public static async Task<SupportedFederationsResponse> SetEnabled(DisableFederationCommandArgs args, bool enabled)
+	{
 		var api = args.DependencyProvider.GetService<IBeamoApi>();
 		var res = await api.PostMicroserviceFederation(new MicroserviceRegistrationsQuery
 		{
@@ -45,22 +52,21 @@ public class DisableFederationCommand : AtomicCommand<DisableFederationCommandAr
 
 		await api.PutMicroserviceFederationTraffic(new MicroserviceRegistrationRequest
 		{
-			serviceName = registration.serviceName, trafficFilterEnabled = false
+			serviceName = registration.serviceName, trafficFilterEnabled = enabled
 		});
 		
 		res = await api.PostMicroserviceFederation(new MicroserviceRegistrationsQuery
 		{
 			serviceName = args.serviceName,
 		});
-		LogResult(res);
-		return new DisableFederationCommandOutput();
+		return res;
 	}
 }
 
 
 public class EnableFederationCommand : AtomicCommand<DisableFederationCommandArgs, DisableFederationCommandOutput>
 {
-	public EnableFederationCommand() : base("enable", "Disable an active federation without stopping a service")
+	public EnableFederationCommand() : base("enable", "Enable an active federation without stopping a service")
 	{
 	}
 
@@ -72,28 +78,7 @@ public class EnableFederationCommand : AtomicCommand<DisableFederationCommandArg
 
 	public override async Task<DisableFederationCommandOutput> GetResult(DisableFederationCommandArgs args)
 	{
-		var api = args.DependencyProvider.GetService<IBeamoApi>();
-		var res = await api.PostMicroserviceFederation(new MicroserviceRegistrationsQuery
-		{
-			serviceName = args.serviceName,
-		});
-
-		if (res.registrations.Length == 0)
-		{
-			throw new CliException("no service found");
-		}
-
-		var registration = res.registrations[0];
-
-		await api.PutMicroserviceFederationTraffic(new MicroserviceRegistrationRequest
-		{
-			serviceName = registration.serviceName, trafficFilterEnabled = true
-		});
-		
-		res = await api.PostMicroserviceFederation(new MicroserviceRegistrationsQuery
-		{
-			serviceName = args.serviceName,
-		});
+		var res = await DisableFederationCommand.SetEnabled(args, true);
 		LogResult(res);
 		return new DisableFederationCommandOutput();
 	}
