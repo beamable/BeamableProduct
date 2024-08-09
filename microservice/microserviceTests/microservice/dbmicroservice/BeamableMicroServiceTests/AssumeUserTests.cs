@@ -24,7 +24,7 @@ public class AssumeUserTests : CommonTest
 			socket.AddStandardMessageHandlers()
 				.AddMessageHandler(
 					MessageMatcher
-						.WithReqId(-5)
+						.WithReqId(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST)
 						.WithFrom(2)
 					,
 					MessageResponder.Success(new EmptyResponse()),
@@ -62,7 +62,7 @@ public class AssumeUserTests : CommonTest
 			socket.AddStandardMessageHandlers()
 				.AddMessageHandler(
 					MessageMatcher
-						.WithReqId(-5)
+						.WithReqId(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST)
 						.WithFrom(2),
 					MessageResponder.Success(new EmptyResponse()),
 					MessageFrequency.OnlyOnce())
@@ -98,7 +98,7 @@ public class AssumeUserTests : CommonTest
 			socket.AddStandardMessageHandlers()
 				.AddMessageHandler(
 					MessageMatcher
-						.WithReqId(-5)
+						.WithReqId(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST)
 						.WithFrom(2),
 					MessageResponder.Success(new EmptyResponse()),
 					MessageFrequency.OnlyOnce())

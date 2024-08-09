@@ -285,7 +285,7 @@ namespace microserviceTests.microservice.Content
 			      references[i] = new ContentReference {id = id, version = "123", uri = id, visibility = "public"};
 		      }
 
-		      socket.AddStandardMessageHandlers().AddInitialContentMessageHandler(-5, references).AddMessageHandler(
+		      socket.AddStandardMessageHandlers().AddInitialContentMessageHandler(-6, references).AddMessageHandler(
 			      MessageMatcher
 				      .WithReqId(1)
 				      .WithStatus(200),

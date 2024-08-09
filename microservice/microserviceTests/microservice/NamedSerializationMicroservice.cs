@@ -4,7 +4,7 @@ using Beamable.Server;
 
 namespace microserviceTests.microservice
 {
-   [Microservice("named", EnableEagerContentLoading = false)]
+   [Microservice("micro_named", EnableEagerContentLoading = false)]
    public class NamedSerializationMicroservice : Microservice
    {
       public static MicroserviceFactory<NamedSerializationMicroservice> Factory => () => new NamedSerializationMicroservice();
