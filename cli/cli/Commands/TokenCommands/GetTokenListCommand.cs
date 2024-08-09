@@ -14,8 +14,8 @@ public class GetTokenListCommandArgs : CommandArgs
 	public int page;
 	public int pageSize;
 
-	public Optional<long> cid;
-	public Optional<string> pid;
+	public long cid;
+	public string pid;
 }
 
 public class GetTokenListCommandOutput
@@ -55,7 +55,7 @@ public class GetTokenListCommand : AtomicCommand<GetTokenListCommandArgs, GetTok
 			args.cid = new Optional<long>();
 			if (i != default)
 			{
-				args.cid.Set(i);
+				args.cid = i;
 			}
 		}, new string[] { "-c" });
 		
@@ -65,7 +65,7 @@ public class GetTokenListCommand : AtomicCommand<GetTokenListCommandArgs, GetTok
 			args.pid = new Optional<string>();
 			if (!string.IsNullOrEmpty(i))
 			{
-				args.pid.Set(i);
+				args.pid = i;
 			}
 		}, new string[] { "-p" });
 	}

@@ -13,11 +13,11 @@ public class GetTokenViaRefreshCommandArgs : CommandArgs
 
 public class GetTokenViaRefreshCommandOutput
 {
-	public OptionalString accessToken = new OptionalString();
-	public OptionalString challengeToken = new OptionalString();
+	public string accessToken;
+	public string challengeToken;
 	public long expiresIn;
-	public OptionalString refreshToken = new OptionalString();
-	public OptionalArrayOfString scopes = new OptionalArrayOfString();
+	public string refreshToken;
+	public string[] scopes;
 	public string tokenType;
 }
 

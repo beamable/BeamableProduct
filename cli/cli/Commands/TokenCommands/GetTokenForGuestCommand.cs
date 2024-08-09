@@ -11,11 +11,11 @@ public class GetTokenForGuestCommandArgs : CommandArgs
 
 public class GetTokenForGuestCommandOutput
 {
-	public OptionalString accessToken = new OptionalString();
-	public OptionalString challengeToken = new OptionalString();
+	public string accessToken;
+	public string challengeToken;
 	public long expiresIn;
-	public OptionalString refreshToken = new OptionalString();
-	public OptionalArrayOfString scopes = new OptionalArrayOfString();
+	public string refreshToken;
+	public string[] scopes;
 	public string tokenType;
 }
 public class GetTokenForGuestCommand : AtomicCommand<GetTokenForGuestCommandArgs, GetTokenForGuestCommandOutput>

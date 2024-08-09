@@ -13,9 +13,7 @@ public class ListServicesCommandArgs : CommandArgs
 	public string federationFilter;
 	public string federationNamespaceFilter;
 	public long authorFilter;
-	public OptionalBool enabledFilter;
 	public string nameFilter;
-	public bool localOnlyFilter;
 }
 
 public class ListServicesCommandOutput
@@ -68,31 +66,11 @@ public class ListServicesCommand : AtomicCommand<ListServicesCommandArgs,ListSer
 			new Option<long>("--player", "Filter the services by the playerId of the author");
 		AddOption(playerIdOpt, (args, i) => args.authorFilter = i);
 		
-		var localOnlyOpt =
-			new Option<bool>("--local", "Filter the services for which ones are running locally");
-		AddOption(localOnlyOpt, (args, i) => args.localOnlyFilter = i);
-		
-		var enabledOpt =
-			new Option<bool>("--enabled", "Filter the services by their traffic enablement");
-		AddOption(enabledOpt, (args, ctx, i) =>
-		{
-			// ctx.ParseResult.GetValueForOption()
-			var output = ctx.ParseResult.FindResultFor(enabledOpt);
-			if (output != null)
-			{
-				args.enabledFilter = i;
-			}
-			else
-			{
-				args.enabledFilter = new OptionalBool();
-			}
-				
-		});
 	}
 
 	public override async Task<ListServicesCommandOutput> GetResult(ListServicesCommandArgs args)
 	{
-		var res = await GetRunningServices(args.DependencyProvider, args.localOnlyFilter);
+		var res = await GetRunningServices(args.DependencyProvider);
 
 		IEnumerable<RunningService> services = res.services;
 		if (!string.IsNullOrEmpty(args.federationFilter))
@@ -118,26 +96,16 @@ public class ListServicesCommand : AtomicCommand<ListServicesCommandArgs,ListSer
 				x.federations.Any(f => f.nameSpace.ToLowerInvariant().Contains(args.federationNamespaceFilter)));
 		}
 
-		if (args.enabledFilter.HasValue)
-		{
-			var enabledValue = args.enabledFilter.Value;
-			Log.Verbose($"applying federation enabled filter=[{enabledValue}]");
-			services = res.services.Where(x => x.trafficFilterEnabled == enabledValue);
-		}
 
 		res.services = services.ToList();
 
 		return res;
 	}
 
-	public static async Task<ListServicesCommandOutput> GetRunningServices(IDependencyProvider provider, bool? localOnly=null)
+	public static async Task<ListServicesCommandOutput> GetRunningServices(IDependencyProvider provider)
 	{
 		var api = provider.GetService<IBeamoApi>();
 		var req = new MicroserviceRegistrationsQuery { };
-		if (localOnly.HasValue)
-		{
-			req.localOnly = localOnly;
-		}
 		var res = await api.PostMicroserviceRegistrations(req);
 
 		var ctx = provider.GetService<IAppContext>();

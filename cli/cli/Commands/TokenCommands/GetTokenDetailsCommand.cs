@@ -22,16 +22,16 @@ public class GetTokenDetailsCommandArgs : CommandArgs
 public class GetTokenDetailsCommandOutput
 {
 	public bool wasRefreshToken;
-	public OptionalLong accountId = new OptionalLong();
+	public long accountId;
 	public long cid;
 	public long created;
-	public OptionalString device = new OptionalString();
-	public OptionalLong expiresMs = new OptionalLong();
-	public OptionalLong gamerTag = new OptionalLong();
-	public OptionalString pid = new OptionalString();
-	public OptionalString platform = new OptionalString();
-	public OptionalBool revoked = new OptionalBool();
-	public OptionalArrayOfString scopes = new OptionalArrayOfString();
+	public string device;
+	public long expiresMs;
+	public long gamerTag;
+	public string pid;
+	public string platform;
+	public bool revoked;
+	public string[] scopes;
 	public string token;
 	public string type;
 }
