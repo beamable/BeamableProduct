@@ -68,8 +68,12 @@ public class RunNBomberCommand : AppCommand<RunNBomberCommandArgs>
 				var request =
 					Http.CreateRequest("POST", url)
 						.WithHeader("X-DE-SCOPE", scope)
-						.WithHeader(Beamable.Common.Constants.Requester.HEADER_ROUTINGKEY, $"{args.service}:{prefix}")
 						.WithBody(new StringContent(jsonContent));
+				if (args.includePrefix)
+				{
+					request = request.WithHeader(Beamable.Common.Constants.Requester.HEADER_ROUTINGKEY,
+						$"{args.service}:{prefix}");
+				}
 				if (args.includeAuth)
 				{
 					request = request.WithHeader("Authorization", $"Bearer {args.AppContext.Token.Token}");
