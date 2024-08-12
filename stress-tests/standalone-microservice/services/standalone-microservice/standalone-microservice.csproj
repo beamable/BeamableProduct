@@ -29,58 +29,9 @@
 <!--        <DocumentationFile>serviceDocs.xml</DocumentationFile>-->
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
-
-    <!-- After the build completes, we should auto-generate client code to any linked projects -->
-    <Target Name="generate-client" AfterTargets="Build" Condition="$(GenerateClientCode)==true AND $(DOTNET_RUNNING_IN_CONTAINER)!=true">
-        <Message Text="Generating client files..." Importance="high" />
-        <Exec Command="$(BeamableDotnetPath) $(BeamableTool) project generate-client $(OutDir)/$(AssemblyName).dll --output-links" />
-    </Target>
-
-    <!-- Before starting the build, we need to prepare a few files and an .env file to pass startup information to the service -->
-    <Target Name="setup-beamable" BeforeTargets="Build" DependsOnTargets="RunResolvePackageDependencies" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true">
-
-
-        <PropertyGroup>
-            <BeamableVersion>@(BeamablePackage->'%(Version)')</BeamableVersion>
-            <BeamableBaseDocs>
-                <!-- TODO: this is hardcoded empty xml that will let the base image docs load. Ideally, we'd have the actual file. -->
-                %3C?xml version="1.0"?%3E
-                %3Cdoc%3E
-                %3C/doc%3E
-            </BeamableBaseDocs>
-
-        </PropertyGroup>
-        
-        <!-- We need a file that lets the runtime know what version of Beamable it was built with... -->
-        <Message Text="Creating beamable version file..." Importance="high" />
-        <WriteLinesToFile File="$(OutDir)/.beamablesdkversion" Lines="$(BeamableVersion)" Overwrite="true" />
-
-        <!-- We need a file that contains the base image docstrings... -->
-        <Message Text="Creating beamable base docs file..." Importance="high" />
-        <WriteLinesToFile File="$(OutDir)/baseImageDocs.xml" Lines="$(BeamableBaseDocs)" Overwrite="true" />
-
-    </Target>
     
-    <!-- When running in a container, before building, we need to prepare a few files -->
-    <Target Name="docker-setup-beamable" BeforeTargets="Build" DependsOnTargets="RunResolvePackageDependencies" Condition="$(DOTNET_RUNNING_IN_CONTAINER)==true">
-
-        <PropertyGroup>
-            <BeamableVersion>@(BeamablePackage->'%(Version)')</BeamableVersion>
-            <BeamableBaseDocs>
-                <!-- TODO: this is hardcoded empty xml that will let the base image docs load. Ideally, we'd have the actual file. -->
-                %3C?xml version="1.0"?%3E
-                %3Cdoc%3E
-                %3C/doc%3E
-            </BeamableBaseDocs>
-        </PropertyGroup>
-        <Message Text="Generating files..." Importance="high" />
-        <WriteLinesToFile File="$(PublishDir)/.beamablesdkversion" Lines="$(BeamableVersion)" Overwrite="true" />
-        <WriteLinesToFile File="$(PublishDir)/.env" Lines="BEAMABLE_SDK_VERSION_EXECUTION=$(BeamableVersion)" Overwrite="true" />
-        <WriteLinesToFile File="$(PublishDir)/baseImageDocs.xml" Lines="$(BeamableBaseDocs)" Overwrite="true" />
-    </Target>
-
     <!-- Nuget references -->
-    <ItemGroup>
+    <!-- <ItemGroup>
         <PackageReference Include="EmbedIO" Version="3.4.*" />
         <PackageReference Include="LoxSmoke.DocXml" Version="3.4.*" />
         <PackageReference Include="NetMQ" Version="4.0.1.11" />
@@ -93,7 +44,7 @@
         <PackageReference Include="Serilog.Sinks.Console" Version="3.1.*" />
         <PackageReference Include="System.CommandLine" Version="2.0.0-beta3.22114.*" />
         <PackageReference Include="System.ServiceModel.Primitives" Version="4.9.*" />
-    </ItemGroup>
+    </ItemGroup> -->
     <ItemGroup>
       <ProjectReference Include="..\..\..\..\cli\beamable.common\beamable.common.csproj" />
       <ProjectReference Include="..\..\..\..\cli\beamable.server.common\beamable.server.common.csproj" />
