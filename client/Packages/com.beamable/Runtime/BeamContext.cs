@@ -591,11 +591,11 @@ namespace Beamable
 
 			#region resolve routing key
 
-			// if (_serviceScope.CanBuildService<IServiceRoutingResolution>())
-			// {
-			// 	var resolution = _serviceScope.GetService<IServiceRoutingResolution>();
-			// 	await resolution.Init();
-			// }
+			if (_serviceScope.CanBuildService<IServiceRoutingResolution>())
+			{
+				var resolution = _serviceScope.GetService<IServiceRoutingResolution>();
+				await resolution.Init();
+			}
 			#endregion
 			
 			#region load token from storage
