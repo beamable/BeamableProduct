@@ -4822,7 +4822,7 @@ public static class OpenApiFixtures
             },
             ""ClientManifestCsvResponse"": {
                 ""properties"": {
-                    ""itemsCsv"": {
+                    ""items"": {
                         ""type"": ""array"",
                         ""items"": {
                             ""$ref"": ""#/components/schemas/ClientContentInfo""
@@ -4833,7 +4833,7 @@ public static class OpenApiFixtures
                 ""title"": ""Client Manifest Csv Response"",
                 ""type"": ""object"",
                 ""required"": [
-                    ""itemsCsv""
+                    ""items""
                 ]
             },
             ""LocalizedValue"": {
@@ -11607,7 +11607,7 @@ public static class OpenApiFixtures
       }},
       ""ClientManifestCsvResponse"": {{
         ""properties"": {{
-          ""itemsCsv"": {{
+          ""items"": {{
             ""type"": ""array"",
             ""items"": {{
               ""$ref"": ""#/components/schemas/ClientContentInfo""
@@ -11618,7 +11618,7 @@ public static class OpenApiFixtures
         ""title"": ""Client Manifest Csv Response"",
         ""type"": ""object"",
         ""required"": [
-          ""itemsCsv""
+          ""items""
         ]
       }},
       ""LocalizedValue"": {{
