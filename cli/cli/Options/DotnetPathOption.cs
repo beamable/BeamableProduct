@@ -15,10 +15,10 @@ public class DockerPathOption : Option<string>
 {
 	public static readonly DockerPathOption Instance = new DockerPathOption();
 	private DockerPathOption() : base(
-		name: "--docker-cli-path", 
+		name: "--docker-cli-path",
 		description: "a custom location for docker. By default, the CLI will attempt to resolve" +
-		             $" docker through its usual install locations. You can also use the {ConfigService.ENV_VAR_DOCKER_EXE} " +
-		             "environment variable to specify. ")
+					 $" docker through its usual install locations. You can also use the {ConfigService.ENV_VAR_DOCKER_EXE} " +
+					 "environment variable to specify. ")
 	{
 		if (TryGetDockerPath(out var dockerPath, out _))
 		{
@@ -34,8 +34,8 @@ public class DockerPathOption : Option<string>
 			Description += "\nCurrently, no docker path is available, and you must set this option to use docker CLI.";
 		}
 	}
-	
-	
+
+
 	public static bool TryGetDockerPath(out string dockerPath, out string errorMessage)
 	{
 		dockerPath = ConfigService.CustomDockerExe;
@@ -74,8 +74,8 @@ public class DockerPathOption : Option<string>
 		return false;
 
 	}
-	
-	
+
+
 	public static bool TryValidateDockerExec(string candidatePath, out string message)
 	{
 		message = null;
