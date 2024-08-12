@@ -771,7 +771,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			}
 			else if (isResponseBodyType.Type is ResponseBodyType.Csv)
 			{
-				var csvRowForm = schema.Properties["itemsCsv"].Items.GetEffective(namedOpenApiSchema.Document);
+				var csvRowForm = schema.Properties["items"].Items.GetEffective(namedOpenApiSchema.Document);
 				var rowUnrealType = GetNonOptionalUnrealTypeForField(context, namedOpenApiSchema.Document, csvRowForm);
 
 				var csvResponseType = new UnrealCsvSerializableTypeDeclaration
