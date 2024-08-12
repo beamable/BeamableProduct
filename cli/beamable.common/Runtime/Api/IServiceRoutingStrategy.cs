@@ -37,8 +37,8 @@ namespace Beamable.Common.Api
 		public static string GetDefaultRoutingKeyForMachine()
 		{
 			var devices = NetworkInterface.GetAllNetworkInterfaces().ToList();
-		
-			string macAddr = null;
+
+			byte[] macBytes = null;
 			
 			// if we don't sort the list, then different conditions may change the routingKey order.
 			devices.Sort((a, b) => String.Compare(a.Id, b.Id, StringComparison.Ordinal));
@@ -48,15 +48,19 @@ namespace Beamable.Common.Api
 				
 				var addrBytes = device.GetPhysicalAddress().GetAddressBytes();
 				if (addrBytes.Length == 0) continue;
-				
-				var hex = BitConverter.ToString( device.GetPhysicalAddress().GetAddressBytes() );
-				macAddr = hex.Replace( "-", "" );
+
+				macBytes = device.GetPhysicalAddress().GetAddressBytes();
 				break;
 			}
 			
-			if (string.IsNullOrEmpty(macAddr))
+			if (macBytes == null)
 				throw new InvalidOperationException(
 					"cannot get routingKey for a machine with no active network addresses");
+			
+			// hash the macAddr to avoid leaking pii
+			using var md5 = System.Security.Cryptography.MD5.Create();
+			md5.TransformFinalBlock(macBytes, 0, macBytes.Length);
+			var macAddr = BitConverter.ToString(md5.Hash).Replace("-", "").ToLowerInvariant();;
 			
 			return Environment.MachineName + "_" + macAddr
 				.Replace(":", "_")

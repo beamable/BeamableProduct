@@ -33,10 +33,11 @@ namespace Beamable.Server.Tests.Runtime
 		private readonly string _serviceName;
 
 		private readonly IDependencyProvider _provider;
-		public TestClient(string serviceName)
+		public TestClient(string serviceName, IBeamableRequester requester)
 		{
 			_serviceName = serviceName;
 			var builder = new DependencyBuilder();
+			builder.AddSingleton<IBeamableRequester>(requester);
 			builder.AddSingleton<IServiceRoutingStrategy, TestPrefixProvider>();
 			builder.AddSingleton<IServiceRoutingResolution, DefaultServiceRoutingResolution>();
 			_provider = builder.Build();
