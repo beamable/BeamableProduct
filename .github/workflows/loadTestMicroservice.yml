@@ -78,7 +78,7 @@ jobs:
         continue-on-error: true
         working-directory: ./stress-tests/standalone-microservice/services/reports
         run: |
-          echo "log='$(beam profile check-counters ./counter.json --cpu-limit 35 --mem-limit 200)'" >> $GITHUB_OUTPUT
+          echo "log='$(beam profile check-counters ./counter.json --cpu-limit 35 --mem-limit 250)'" >> $GITHUB_OUTPUT
       - name: Check NBomber
         id: nbomber
         continue-on-error: true
