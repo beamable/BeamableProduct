@@ -37,10 +37,32 @@ namespace Beamable.Common.Api
 
 		public static string GetDefaultRoutingKeyForMachine()
 		{
-			return Environment.MachineName
-				.Replace(":", "_")
-				.Replace(",", "_")
-				.ToLowerInvariant();
+			var devices = NetworkInterface.GetAllNetworkInterfaces().ToList();
+		
+			string macAddr = null;
+			
+			// if we don't sort the list, then different conditions may change the routingKey order.
+			devices.Sort((a, b) => String.Compare(a.Id, b.Id, StringComparison.Ordinal));
+			for (var i = 0; i < devices.Count; i++)
+			{
+				var device = devices[i];
+				
+				var addrBytes = device.GetPhysicalAddress().GetAddressBytes();
+				if (addrBytes.Length == 0) continue;
+				
+				var hex = BitConverter.ToString( device.GetPhysicalAddress().GetAddressBytes() );
+				macAddr = hex.Replace( "-", "" );
+				break;
+			}
+			
+			if (string.IsNullOrEmpty(macAddr))
+				throw new InvalidOperationException(
+					"cannot get routingKey for a machine with no active network addresses");
+			
+			return Environment.MachineName + "_" + macAddr
+			                                       .Replace(":", "_")
+			                                       .Replace(",", "_")
+			                                       .ToLowerInvariant();
 		}
 	}
 	

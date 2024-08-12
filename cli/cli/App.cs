@@ -309,7 +309,7 @@ public class App
 		Commands.AddSubCommand<ListServicesCommand, ListServicesCommandArgs, FederationCommand>();
 		Commands.AddSubCommand<DisableFederationCommand, DisableFederationCommandArgs, FederationCommand>();
 		Commands.AddSubCommand<EnableFederationCommand, DisableFederationCommandArgs, FederationCommand>();
-
+		Commands.AddSubCommand<GetLocalRoutingKeyCommand, GetLocalRoutingKeyCommandArgs, FederationCommand>();
 		
 		Commands.AddRootCommand<TokenCommandGroup>();
 		Commands.AddSubCommand<GetTokenDetailsCommand, GetTokenDetailsCommandArgs, TokenCommandGroup>();
