@@ -259,21 +259,6 @@ public static class ProjectContextUtil
 		return projects.Where(p => p != null).ToArray();
 	}
 
-	public static async Task<CsharpProjectBuildData> GetCsharpProperties(string dotnetPath, string csharpPath, params string[] properties)
-	{
-		var propertyList = new HashSet<string>(properties);
-		propertyList.Add("TargetFramework");
-		propertyList.Add("OutDir");
-		var propertyStringQuery = string.Join(",", propertyList);
-		var argString = $"dotnet msbuild -getItem:ProjectReference -getProperty:{propertyStringQuery} {csharpPath}";
-		var (result, buffer) = await CliExtensions.RunWithOutput(dotnetPath, argString);
-		var json = buffer.ToString();
-		Log.Verbose("got json: " + json);
-		var instance = JsonConvert.DeserializeObject<CsharpProjectBuildData>(json);
-		instance.Sanitize();
-		return instance;
-	}
-
 	private const string MongoImage = "mongo:7.0";
 	public static EmbeddedMongoDbLocalProtocol ConvertProjectToLocalMongoProtocol(CsharpProjectMetadata project,
 		BeamoServiceDefinition beamoServiceDefinition, Dictionary<string, CsharpProjectMetadata> absPathToProject,

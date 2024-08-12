@@ -146,6 +146,15 @@ public class SwaggerService
 							EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamTag",
 							EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamTag.h""",
 						}
+					},
+					{
+						"ClientContentInfoJson", new ReplacementTypeInfo()
+						{
+							ReferenceId = "ClientContentInfoJson",
+							EngineReplacementType = "FBeamRemoteContentManifestEntry",
+							EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamRemoteContentManifestEntry",
+							EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamRemoteContentManifestEntry.h""",
+						}
 					}
 				};
 			}
