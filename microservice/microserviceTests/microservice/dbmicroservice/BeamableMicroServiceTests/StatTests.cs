@@ -9,7 +9,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 	public class StatTests : CommonTest
 	{
 
-		[Microservice("statservice", EnableEagerContentLoading = false)]
+		[Microservice("micro_statservice", EnableEagerContentLoading = false)]
 		public class StatMicroservice : Microservice
 		{
 			[ClientCallable]
@@ -39,7 +39,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 				socket.AddStandardMessageHandlers()
 					.AddMessageHandler(
 						MessageMatcher
-							.WithReqId(-5),
+							.WithReqId(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST),
 						MessageResponder.Success(
 							"{\"results\": [ {\"id\": 1, \"stats\": [ {\"k\": \"TRIALS\", \"v\": [] },  {\"k\": \"tuna\", \"v\": \"fish\" },  {\"k\": \"num\", \"v\": 1 } ] }] }"),
 						MessageFrequency.OnlyOnce())
@@ -76,7 +76,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 				socket.AddStandardMessageHandlers()
 					.AddMessageHandler(
 						MessageMatcher
-							.WithReqId(-5),
+							.WithReqId(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST),
 						MessageResponder.Success(
 							"{\"results\": [ {\"id\": 1, \"stats\": [ {\"k\": \"TRIALS\", \"v\": [\"123\",3] },  {\"k\": \"tuna\", \"v\": \"fish\" },  {\"k\": \"num\", \"v\": 1 } ] }] }"),
 						MessageFrequency.OnlyOnce())
@@ -113,7 +113,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 				socket.AddStandardMessageHandlers()
 					.AddMessageHandler(
 						MessageMatcher
-							.WithReqId(-5),
+							.WithReqId(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST),
 						MessageResponder.Success("{\"id\": 1, \"stats\": {\"TRIALS\":[], \"tuna\": 2} }"),
 						MessageFrequency.OnlyOnce())
 					.AddMessageHandler(
@@ -149,7 +149,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 				socket.AddStandardMessageHandlers()
 					.AddMessageHandler(
 						MessageMatcher
-							.WithReqId(-5),
+							.WithReqId(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST),
 						MessageResponder.Success("{\"id\": 1, \"stats\": {\"TRIALS\":[\"123\", 3], \"tuna\": 2} }"),
 						MessageFrequency.OnlyOnce())
 					.AddMessageHandler(
@@ -185,7 +185,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 				socket.AddStandardMessageHandlers()
 					.AddMessageHandler(
 						MessageMatcher
-							.WithReqId(-5),
+							.WithReqId(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST),
 						MessageResponder.Success("{\"id\": 1, \"stats\": {\"Session\":\"fish\", \"tuna\": 2} }"),
 						MessageFrequency.OnlyOnce())
 					.AddMessageHandler(
@@ -221,7 +221,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 				socket.AddStandardMessageHandlers()
 					.AddMessageHandler(
 						MessageMatcher
-							.WithReqId(-5),
+							.WithReqId(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST),
 						MessageResponder.Success("{\"id\": 1, \"stats\": {\"Session\":\"fish\", \"tuna\": 2} }"),
 						MessageFrequency.OnlyOnce())
 					.AddMessageHandler(

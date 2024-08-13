@@ -106,7 +106,7 @@ public class CliRequester : IRequester
 					BeamableLogger.LogWarning("Timeout error, retrying in few seconds... ");
 					return Task.Delay(TimeSpan.FromSeconds(5)).ToPromise().FlatMap(_ =>
 							Request<T>(method, uri, body, includeAuthHeader, parser, useCache));
-				case RequesterException e when e.RequestError.error is "InvalidTokenError" or "ExpiredTokenError" ||
+				case RequesterException e when e.RequestError.error is "ExpiredTokenError" ||
 											   e.Status == 403 ||
 											   (!string.IsNullOrWhiteSpace(AccessToken.RefreshToken) &&
 												AccessToken.ExpiresAt < DateTime.Now):

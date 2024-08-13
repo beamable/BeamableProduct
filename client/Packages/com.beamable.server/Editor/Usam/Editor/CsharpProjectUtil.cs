@@ -40,6 +40,7 @@ namespace Beamable.Server.Editor.Usam
         <!-- All Unity Assembly References must have the value: ""unity"" -->
         <BeamProjectType>unity</BeamProjectType>
 		<LangVersion>8.0</LangVersion>
+		<GenerateClientCode>false</GenerateClientCode>
     </PropertyGroup>
 
     <!-- Project settings -->

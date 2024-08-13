@@ -16,6 +16,7 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string serviceType;
 		public int healthPort;
 		public int dataPort;
+		public string executionVersion;
 		public string containerId;
 	}
 }

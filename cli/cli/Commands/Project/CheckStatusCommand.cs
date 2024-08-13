@@ -22,6 +22,7 @@ public class ServiceDiscoveryEvent
 	public string serviceType;
 	public int healthPort;
 	public int dataPort;
+	public string executionVersion;
 	public string containerId;
 }
 

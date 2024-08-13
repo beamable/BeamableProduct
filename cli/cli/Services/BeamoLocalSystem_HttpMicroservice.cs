@@ -30,6 +30,13 @@ public partial class BeamoLocalSystem
 		return output;
 	}
 
+	public async Promise<IDictionary<string, string>> GetImageLabels(string serviceName)
+	{
+		var localMicroserviceName = GetBeamIdAsMicroserviceContainer(serviceName);
+		ContainerInspectResponse container = await _client.Containers.InspectContainerAsync(localMicroserviceName);
+		return container?.Config?.Labels ?? new Dictionary<string, string>();
+	}
+
 	public async Promise<string> GetMicroserviceHostPort(string serviceName)
 	{
 		var localMicroserviceName = GetBeamIdAsMicroserviceContainer(serviceName);

@@ -13,7 +13,7 @@ namespace Beamable.Server.Editor
 
 		private Promise _gotAnyDataPromise;
 
-		private Dictionary<string, string> _nameToPrefix = new Dictionary<string, string>();
+		private Dictionary<string, BeamServiceDiscoveryEvent> _nameToStatus = new Dictionary<string, BeamServiceDiscoveryEvent>();
 		private ProjectPsWrapper _command;
 
 		public MicroserviceDiscovery()
@@ -47,18 +47,25 @@ namespace Beamable.Server.Editor
 			var entry = data.data;
 			if (entry.isRunning)
 			{
-				_nameToPrefix[entry.service] = entry.prefix;
+				_nameToStatus[entry.service] = entry;
 			}
 			else
 			{
-				_nameToPrefix.Remove(entry.service);
+				_nameToStatus.Remove(entry.service);
 			}
 			_gotAnyDataPromise.CompleteSuccess();
 		}
 
 		public bool TryIsRunning(string serviceName, out string prefix)
 		{
-			return _nameToPrefix.TryGetValue(serviceName, out prefix);
+			prefix = null;
+			if (_nameToStatus.TryGetValue(serviceName, out var status))
+			{
+				prefix = status.prefix;
+				return true;
+			}
+
+			return false;
 		}
 
 		public Promise OnDispose()

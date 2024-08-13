@@ -5,6 +5,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -39,12 +40,12 @@ namespace Core.Platform.SDK
 
 		protected override string GetAcceptHeader() => ACCEPT_HEADER;
 
-		protected override void AddCidPidHeaders(UnityWebRequest request)
+		protected override void AddCidPidHeaders(Dictionary<string, string> headers)
 		{
 			// no-op
 		}
 
-		protected override void AddShardHeader(UnityWebRequest request)
+		protected override void AddShardHeader(Dictionary<string, string> headers)
 		{
 			// no-op
 		}

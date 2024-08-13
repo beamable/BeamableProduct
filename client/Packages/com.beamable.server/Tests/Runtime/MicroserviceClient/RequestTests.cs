@@ -24,7 +24,7 @@ namespace Beamable.Server.Tests.Runtime
 		[UnityTest]
 		public IEnumerator CanDeserializeList_OfInt()
 		{
-			var client = new TestClient(ROUTE);
+			var client = new TestClient(ROUTE, MockRequester);
 
 			MockRequester.MockRequest<List<int>>(Method.POST,
 				  client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
@@ -39,7 +39,7 @@ namespace Beamable.Server.Tests.Runtime
 		[UnityTest]
 		public IEnumerator CanDeserializeList_OfStrings()
 		{
-			var client = new TestClient(ROUTE);
+			var client = new TestClient(ROUTE, MockRequester);
 
 			MockRequester.MockRequest<List<string>>(Method.POST,
 													client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
@@ -54,7 +54,7 @@ namespace Beamable.Server.Tests.Runtime
 		[UnityTest]
 		public IEnumerator CanDeserializeDictionary_OfStrings()
 		{
-			var client = new TestClient(ROUTE);
+			var client = new TestClient(ROUTE,MockRequester);
 
 			MockRequester.MockRequest<Dictionary<string, string>>(Method.POST,
 																  client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
@@ -69,7 +69,7 @@ namespace Beamable.Server.Tests.Runtime
 		[UnityTest]
 		public IEnumerator CanDeserializeEnumValues()
 		{
-			var client = new TestClient(ROUTE);
+			var client = new TestClient(ROUTE, MockRequester);
 			int enumValue = (int)Convert.ChangeType(EnumTest.EnumValueTest1, typeof(int));
 
 			MockRequester.MockRequest<EnumTest>(Method.POST,
@@ -85,7 +85,7 @@ namespace Beamable.Server.Tests.Runtime
 		[UnityTest]
 		public IEnumerator CanDeserializeDictionary_OfInts()
 		{
-			var client = new TestClient(ROUTE);
+			var client = new TestClient(ROUTE, MockRequester);
 
 			MockRequester.MockRequest<Dictionary<string, int>>(Method.POST,
 															   client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
@@ -100,7 +100,7 @@ namespace Beamable.Server.Tests.Runtime
 		[UnityTest]
 		public IEnumerator CanDeserializeDictionary_OfLongs()
 		{
-			var client = new TestClient(ROUTE);
+			var client = new TestClient(ROUTE, MockRequester);
 
 			MockRequester.MockRequest<Dictionary<string, long>>(Method.POST,
 																client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
@@ -115,7 +115,7 @@ namespace Beamable.Server.Tests.Runtime
 		[UnityTest]
 		public IEnumerator CanDeserializeDictionary_OfFloats()
 		{
-			var client = new TestClient(ROUTE);
+			var client = new TestClient(ROUTE, MockRequester);
 
 			MockRequester.MockRequest<Dictionary<string, float>>(Method.POST,
 																 client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
@@ -130,7 +130,7 @@ namespace Beamable.Server.Tests.Runtime
 		[UnityTest]
 		public IEnumerator CanDeserializeDictionary_OfDoubles()
 		{
-			var client = new TestClient(ROUTE);
+			var client = new TestClient(ROUTE, MockRequester);
 
 			MockRequester.MockRequest<Dictionary<string, double>>(Method.POST,
 																 client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
@@ -145,7 +145,7 @@ namespace Beamable.Server.Tests.Runtime
 		[UnityTest]
 		public IEnumerator CanDeserializeDictionary_OfBools()
 		{
-			var client = new TestClient(ROUTE);
+			var client = new TestClient(ROUTE, MockRequester);
 
 			MockRequester.MockRequest<Dictionary<string, bool>>(Method.POST,
 																client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
@@ -160,7 +160,7 @@ namespace Beamable.Server.Tests.Runtime
 		[UnityTest]
 		public IEnumerator CanDeserializeList_OfTypedObjects()
 		{
-			var client = new TestClient(ROUTE);
+			var client = new TestClient(ROUTE, MockRequester);
 
 			MockRequester.MockRequest<List<SimplePoco>>(Method.POST,
 				  client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
@@ -175,7 +175,7 @@ namespace Beamable.Server.Tests.Runtime
 		[UnityTest]
 		public IEnumerator CanNotDeserializePolymorphicList()
 		{
-			var client = new TestClient(ROUTE);
+			var client = new TestClient(ROUTE, MockRequester);
 
 			MockRequester.MockRequest<List<object>>(Method.POST,
 				  client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
@@ -228,7 +228,7 @@ namespace Beamable.Server.Tests.Runtime
 		[UnityTest]
 		public IEnumerator CanDeserializeBoolean()
 		{
-			var client = new TestClient(ROUTE);
+			var client = new TestClient(ROUTE, MockRequester);
 
 			MockRequester.MockRequest<bool>(Method.POST,
 				  client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
@@ -243,7 +243,7 @@ namespace Beamable.Server.Tests.Runtime
 		[UnityTest]
 		public IEnumerator CanDeserializeInt()
 		{
-			var client = new TestClient(ROUTE);
+			var client = new TestClient(ROUTE, MockRequester);
 
 			MockRequester.MockRequest<int>(Method.POST,
 				  client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
@@ -258,7 +258,7 @@ namespace Beamable.Server.Tests.Runtime
 		[UnityTest]
 		public IEnumerator CanDeserializeString()
 		{
-			var client = new TestClient(ROUTE);
+			var client = new TestClient(ROUTE, MockRequester);
 
 			MockRequester.MockRequest<string>(Method.POST,
 				  client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
@@ -281,7 +281,7 @@ namespace Beamable.Server.Tests.Runtime
 
 			string serialized = JsonUtility.ToJson(jsonObj);
 
-			var client = new TestClient(ROUTE);
+			var client = new TestClient(ROUTE, MockRequester);
 
 			MockRequester.MockRequest<string>(Method.POST,
 											  client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
@@ -296,7 +296,7 @@ namespace Beamable.Server.Tests.Runtime
 		[UnityTest]
 		public IEnumerator CanDeserializeObject()
 		{
-			var client = new TestClient(ROUTE);
+			var client = new TestClient(ROUTE, MockRequester);
 
 			MockRequester.MockRequest<Vector2>(Method.POST,
 				  client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
@@ -311,7 +311,7 @@ namespace Beamable.Server.Tests.Runtime
 		[UnityTest]
 		public IEnumerator CanDeserializeProperties()
 		{
-			var client = new TestClient(ROUTE);
+			var client = new TestClient(ROUTE, MockRequester);
 
 			MockRequester.MockRequest<TestProperties>(Method.POST,
 													  client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
@@ -328,7 +328,7 @@ namespace Beamable.Server.Tests.Runtime
 		[UnityTest]
 		public IEnumerator CanDeserializeContentObject()
 		{
-			var client = new TestClient(ROUTE);
+			var client = new TestClient(ROUTE, MockRequester);
 
 			MockRequester.MockRequest<LocalizeContentObject>(Method.POST,
 											   client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
@@ -348,7 +348,7 @@ namespace Beamable.Server.Tests.Runtime
 		[UnityTest]
 		public IEnumerator CanDeserializeListOf_ContentObject()
 		{
-			var client = new TestClient(ROUTE);
+			var client = new TestClient(ROUTE, MockRequester);
 
 			MockRequester.MockRequest<List<LocalizeContentObject>>(Method.POST,
 																   client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))

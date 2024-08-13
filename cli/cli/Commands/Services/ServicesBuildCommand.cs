@@ -271,7 +271,9 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		                $"{(forceCpu ? "--platform linux/amd64 " : "")} " +
 		                $"{(noCache ? "--no-cache " : "")}" +
 		                $"{(pull ? "--pull " : "")}" +
-		                $"--label \"beamoId={id.ToLowerInvariant()}\"";
+		                $"--label \"beamoId={id.ToLowerInvariant()}\" " +
+		                $"--label \"beamVersion={VersionService.GetNugetPackagesForExecutingCliVersion()}\" "
+		                ;
 
 		Log.Verbose($"running docker command with args=[{argString}]");
 		var buffer = new StringBuilder();

@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Util;
 using Beamable.Server.Common;
@@ -253,5 +254,25 @@ namespace Beamable.Server
 
 		public bool EnableDangerousDeflateOptions => IsEnvironmentVariableTrue("WS_ENABLE_DANGEROUS_DEFLATE_OPTIONS");
 		public string MetadataUrl => Environment.GetEnvironmentVariable("ECS_CONTAINER_METADATA_URI_V4");
+	}
+
+	public static class ArgExtensions
+	{
+		/// <summary>
+		/// The routing key is the old name prefix.
+		/// There is no routing key when the service is deployed.
+		/// </summary>
+		/// <returns>false if there is no routing key</returns>
+		public static bool TryGetRoutingKey(this IMicroserviceArgs args, out string routingKey)
+		{
+			routingKey = args.NamePrefix;
+			return !string.IsNullOrEmpty(routingKey);
+		}
+
+		public static OptionalString GetRoutingKey(this IMicroserviceArgs args)
+		{
+			return OptionalString.FromString(args.NamePrefix);
+		}
+		
 	}
 }

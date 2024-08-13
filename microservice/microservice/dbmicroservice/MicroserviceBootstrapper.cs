@@ -413,6 +413,7 @@ namespace Beamable.Server
 		        prefix = args.NamePrefix,
 		        serviceName = attribute.MicroserviceName,
 		        healthPort = args.HealthPort,
+		        executionVersion = BeamAssemblyVersionUtil.GetVersion<ServiceDiscoveryEntry>(),
 		        serviceType = "service"
 	        };
 	        var msgJson = JsonConvert.SerializeObject(msg, UnitySerializationSettings.Instance);

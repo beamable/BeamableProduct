@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using Serilog;
 using System.CommandLine;
 using System.CommandLine.Help;
+using System.CommandLine.Invocation;
 using System.Text;
 
 namespace cli;
@@ -73,6 +74,18 @@ public static class DependencyInjectionExtensions
 				if (!args.IgnoreStandaloneValidation && command is not IStandaloneCommand && args.ConfigService.DirectoryExists.GetValueOrDefault(false) != true)
 				{
 					throw CliExceptions.CONFIG_DOES_NOT_EXISTS;
+				}
+				
+				if (ConfigService.IsRedirected && command is IHaveRedirectionConcerns<TArgs> redirectionValidation)
+				{
+					var tw = new StringBuilder();
+					var ctx = args.Provider.GetService<InvocationContext>();
+					redirectionValidation.ValidationRedirection(ctx, command, args, tw, out var valid);
+					if (!valid)
+					{
+						Log.Warning($"Cannot redirect command \n{tw}");
+						throw new CliException($"Cannot redirect command");
+					}
 				}
 
 				await command.Handle(args);

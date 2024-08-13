@@ -8,8 +8,29 @@ namespace cli.Services;
 public interface IDataReporterService
 {
 	void Report<T>(string type, T data);
+}
 
-	void Exception(Exception ex, int exitCode, string invocationContext);
+public static class IDataReporterServiceExtensions
+{
+	
+	public static void Exception(this IDataReporterService reporter, Exception ex, int exitCode, string invocationContext)
+	{
+		ErrorOutput result = null;
+		string channel = null;
+		switch (ex)
+		{
+			case CliException cliEx: // perhaps custom output.
+				result = cliEx.GetPayload(exitCode, invocationContext);
+				channel = CliException.GetChannelName(result.GetType());
+				break;
+			default: // general uncaught exception
+				result = new ErrorOutput();
+				CliException.Apply(ex, ref result, exitCode, invocationContext);
+				channel = DefaultErrorStream.CHANNEL;
+				break;
+		}
+		reporter.Report(channel, result);
+	}
 }
 
 public class DataReporterService : IDataReporterService
@@ -61,19 +82,5 @@ public class DataReporterService : IDataReporterService
 			Log.Information(ex.Message);
 			throw;
 		}
-	}
-
-	public void Exception(Exception ex, int exitCode, string invocationContext)
-	{
-		var result = new ErrorOutput
-		{
-			exitCode = exitCode,
-			invocation = invocationContext,
-			message = ex?.Message,
-			stackTrace = ex?.StackTrace,
-			typeName = ex?.GetType().Name,
-			fullTypeName = ex?.GetType().FullName
-		};
-		Report(DefaultErrorStream.CHANNEL, result);
 	}
 }

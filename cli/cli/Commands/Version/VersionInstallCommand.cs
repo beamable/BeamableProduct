@@ -1,17 +1,28 @@
+using Beamable.Common;
+using Beamable.Common.BeamCli;
 using cli.Services;
 using CliWrap;
+using Errata;
 using Serilog;
 using Spectre.Console;
 using System.CommandLine;
+using System.CommandLine.Invocation;
+using System.Text;
+using Command = System.CommandLine.Command;
 
 namespace cli.Version;
+
+
+
 
 public class VersionInstallCommandArgs : CommandArgs
 {
 	public string version;
 }
 
-public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>, IStandaloneCommand
+public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
+	, IStandaloneCommand
+	, IHaveRedirectionConcerns<VersionInstallCommandArgs>
 {
 	public VersionInstallCommand() : base("install", "Install a different version of the CLI")
 	{
@@ -26,21 +37,22 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>, ISta
 
 	public override async Task Handle(VersionInstallCommandArgs args)
 	{
+		
 		var service = args.DependencyProvider.GetService<VersionService>();
 		var currentVersionInfo = await service.GetInformationData(args.ProjectService);
 
-		if (currentVersionInfo.installType != VersionService.VersionInstallType.GlobalTool)
-		{
-			throw new CliException(
-				$"This command can only update a globally installed Beamable CLI via dotnet tools. " +
-				$"Use the `dotnet tool` suite of commands to manage the install. " +
-				$"Use `beam version` to discover where this Beam CLI install is located. ");
-		}
+		Log.Debug($"setting up CLI install... scope=[{currentVersionInfo.installType}] ");
 
 		var data = await service.GetBeamableToolPackageVersions();
-
+		
 		var packageVersion = args.version?.ToLower() switch
 		{
+			// 0.0.123 is a special "dev" version of the package. It is not supposed to exist on nuget.org. Instead, it comes from the developer's local machine's nuget source.
+			"0.0.123" => new VersionService.NugetPackages
+			{
+				originalVersion = "0.0.123",
+				packageVersion = "0.0.123"
+			},
 			"latest" => data.LastOrDefault(d => !d.packageVersion.Contains("preview")),
 			"latest-rc" => data.LastOrDefault(d => d.packageVersion.Contains("preview.rc")),
 			(var version) when string.IsNullOrEmpty(version) => throw new CliException($"Given version is not valid. version=[{args.version}]"),
@@ -48,8 +60,17 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>, ISta
 		};
 		if (packageVersion == null)
 		{
-			throw new CliException(
-				$"Given version is not available on Nuget. Use `beam version ls` to view available versions. version=[{args.version}]");
+			if (!PackageVersion.TryFromSemanticVersionString(args.version, out var parsedVersion))
+			{
+				throw new CliException(
+					$"Given version is not available. Use `beam version ls` to view available versions. version=[{args.version}]");
+			}
+
+			packageVersion = new VersionService.NugetPackages
+			{
+				originalVersion = args.version,
+				packageVersion = parsedVersion.ToString()
+			};
 		}
 
 
@@ -69,11 +90,29 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>, ISta
 			}
 		}
 
-		await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, $"tool update Beamable.Tools --global --version {packageVersion.originalVersion}")
+		var scope = currentVersionInfo.installType == VersionService.VersionInstallType.GlobalTool
+			? "global"
+			: "local";
+		await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, $"tool update Beamable.Tools --allow-downgrade --{scope} --version {packageVersion.originalVersion}")
 			.WithValidation(CommandResultValidation.ZeroExitCode)
 			.ExecuteAsyncAndLog();
 
-		Log.Information($"Beam CLI version=[{packageVersion.originalVersion}] installed successfully as a global tool. Use `beam version` or `beam --version` to verify.");
+		Log.Information($"Beam CLI version=[{packageVersion.originalVersion}] installed successfully as a {scope} tool. Use `beam version` or `beam --version` to verify.");
 	}
 
+	public void ValidationRedirection(InvocationContext context, Command command, VersionInstallCommandArgs args,
+		StringBuilder errorStream, out bool isValid)
+	{
+		isValid = true;
+		if (!args.Quiet)
+		{
+			errorStream.AppendLine("Must include the quiet flag.");
+			isValid = false;
+		}
+	}
+
+	public void WriteValidationMessage(Command command, TextWriter writer)
+	{
+		writer.WriteLine("The quiet flag must be used.");
+	}
 }

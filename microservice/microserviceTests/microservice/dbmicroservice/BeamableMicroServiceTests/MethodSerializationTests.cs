@@ -572,7 +572,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 		      socket.AddStandardMessageHandlers()
 			      .AddMessageHandler(
 				      MessageMatcher
-					      .WithReqId(-5), // outbound mail response...
+					      .WithReqId(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST), // outbound mail response...
 				      MessageResponder.Success(new EmptyResponse()),
 				      MessageFrequency.OnlyOnce()
 			      )
