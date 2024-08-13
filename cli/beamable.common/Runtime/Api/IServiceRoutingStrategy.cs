@@ -39,37 +39,37 @@ namespace Beamable.Common.Api
 			var devices = NetworkInterface.GetAllNetworkInterfaces().ToList();
 
 			byte[] macBytes = null;
-			
+
 			// if we don't sort the list, then different conditions may change the routingKey order.
 			devices.Sort((a, b) => String.Compare(a.Id, b.Id, StringComparison.Ordinal));
 			for (var i = 0; i < devices.Count; i++)
 			{
 				var device = devices[i];
-				
+
 				var addrBytes = device.GetPhysicalAddress().GetAddressBytes();
 				if (addrBytes.Length == 0) continue;
 
 				macBytes = device.GetPhysicalAddress().GetAddressBytes();
 				break;
 			}
-			
+
 			if (macBytes == null)
 				throw new InvalidOperationException(
 					"cannot get routingKey for a machine with no active network addresses");
-			
+
 			// hash the macAddr to avoid leaking pii
 			using var md5 = System.Security.Cryptography.MD5.Create();
 			md5.TransformFinalBlock(macBytes, 0, macBytes.Length);
-			var macAddr = BitConverter.ToString(md5.Hash).Replace("-", "").ToLowerInvariant();;
-			
+			var macAddr = BitConverter.ToString(md5.Hash).Replace("-", "").ToLowerInvariant(); ;
+
 			return (Environment.MachineName + "_" + macAddr)
 				.Replace(":", "_")
 				.Replace(",", "_")
 				.ToLowerInvariant();
 		}
 	}
-	
-	
+
+
 	public class DefaultServiceRoutingStrategy : IServiceRoutingStrategy
 	{
 		private IBeamoApi _beamo;
@@ -85,7 +85,7 @@ namespace Beamable.Common.Api
 		/// characters are used as delimiters 
 		/// </summary>
 		public static string DefaultRoutingKey => ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine();
-		
+
 		public async Promise<Dictionary<string, string>> GetServiceMap()
 		{
 			var res = await _beamo.PostMicroserviceRegistrations(new MicroserviceRegistrationsQuery(), includeAuthHeader: true);
