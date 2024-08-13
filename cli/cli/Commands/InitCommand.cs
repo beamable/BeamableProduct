@@ -41,11 +41,11 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 	public override void Configure()
 	{
 		AddArgument(new Argument<string>(
-			name: "path", 
+			name: "path",
 			getDefaultValue: () => ".",
-			description: "the folder that will be initialized as a beamable project. "), 
+			description: "the folder that will be initialized as a beamable project. "),
 			(args, i) => args.path = Path.GetFullPath(i));
-		
+
 		AddOption(new UsernameOption(), (args, i) => args.username = i);
 		AddOption(new PasswordOption(), (args, i) => args.password = i);
 
@@ -71,7 +71,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		_configService = args.ConfigService;
 		_aliasService = args.AliasService;
 		_realmsApi = args.RealmsApi;
-		
+
 		// Setup integration with DotNet for C#MSs --- If we ever have integrations with other microservice languages, we 
 		{
 			_configService.EnforceDotNetToolsManifest();
