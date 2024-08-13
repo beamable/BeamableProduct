@@ -41,7 +41,7 @@ public class RunningFederation
 	public string federationType;
 }
 
-public class ListServicesCommand : AtomicCommand<ListServicesCommandArgs,ListServicesCommandOutput>
+public class ListServicesCommand : AtomicCommand<ListServicesCommandArgs, ListServicesCommandOutput>
 {
 	public ListServicesCommand() : base("list", "List all running services in the current realm")
 	{
@@ -52,20 +52,20 @@ public class ListServicesCommand : AtomicCommand<ListServicesCommandArgs,ListSer
 		var federationFilterOpt =
 			new Option<string>("--type", "Filter the services by the types of federations they provide");
 		AddOption(federationFilterOpt, (args, i) => args.federationFilter = i?.ToLowerInvariant());
-		
+
 		var nameFilterOpt =
 			new Option<string>("--name", "Filter the services by the service name");
 		AddOption(nameFilterOpt, (args, i) => args.nameFilter = i?.ToLowerInvariant());
-		
+
 		var namespaceFilterOpt =
 			new Option<string>("--namespace", "Filter the services by the federation namespace");
 		namespaceFilterOpt.AddAlias("-ns");
 		AddOption(namespaceFilterOpt, (args, i) => args.federationNamespaceFilter = i?.ToLowerInvariant());
-		
+
 		var playerIdOpt =
 			new Option<long>("--player", "Filter the services by the playerId of the author");
 		AddOption(playerIdOpt, (args, i) => args.authorFilter = i);
-		
+
 	}
 
 	public override async Task<ListServicesCommandOutput> GetResult(ListServicesCommandArgs args)
@@ -109,7 +109,7 @@ public class ListServicesCommand : AtomicCommand<ListServicesCommandArgs,ListSer
 		var res = await api.PostMicroserviceRegistrations(req);
 
 		var ctx = provider.GetService<IAppContext>();
-		
+
 		return new ListServicesCommandOutput
 		{
 			cid = ctx.Cid,

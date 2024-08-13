@@ -12,7 +12,7 @@ public interface IDataReporterService
 
 public static class IDataReporterServiceExtensions
 {
-	
+
 	public static void Exception(this IDataReporterService reporter, Exception ex, int exitCode, string invocationContext)
 	{
 		ErrorOutput result = null;
