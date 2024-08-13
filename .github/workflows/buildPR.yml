@@ -188,14 +188,6 @@ jobs:
           key: Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
           restore-keys: |
             Library-2-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
-        # Free up disk space
-      - name: Free Disk Space for Android
-        run: |
-          sudo swapoff -a
-          sudo rm -f /swapfile
-          sudo apt clean
-          docker rmi $(docker images -q)
-          df -h
       - uses: game-ci/unity-test-runner@v4
         id: tests
         timeout-minutes: 30
@@ -316,6 +308,13 @@ jobs:
         run: |
           rm -rf /github/workspace/dist
         shell: bash
+      - name: Free Disk Space for Android
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo apt clean
+          docker rmi $(docker images -q)
+          df -h
       - uses: game-ci/unity-builder@v4
         timeout-minutes: 60
         env:
