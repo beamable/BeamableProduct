@@ -1,3 +1,4 @@
+using Beamable.Api;
 using Beamable.Api.Payments;
 using Beamable.Common;
 using Beamable.Common.Api;
@@ -53,6 +54,7 @@ namespace Beamable.Tests.Runtime
 
 		protected virtual void OnRegister(IDependencyBuilder builder)
 		{
+			builder.RemoveIfExists<IServiceRoutingResolution>();
 			builder.RemoveIfExists<IBeamablePurchaser>();
 			builder.RemoveIfExists<IContentApi>();
 			builder.AddSingleton<IContentApi>(MockContent);
