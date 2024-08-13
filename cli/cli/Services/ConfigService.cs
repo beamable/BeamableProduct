@@ -213,8 +213,11 @@ public class ConfigService
 
 	public const string ENV_VAR_WINDOWS_VOLUME_NAMES = "BEAM_DOCKER_WINDOWS_CONTAINERS";
 	public const string ENV_VAR_DOCKER_URI = "BEAM_DOCKER_URI";
+	public const string ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND = "BEAM_CLI_IS_REDIRECTED_COMMAND";
 	public const string ENV_VAR_DOCKER_EXE = "BEAM_DOCKER_EXE";
 
+	public static bool IsRedirected => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND));
+	
 	/// <summary>
 	/// Enabling a custom Docker Uri allows for a customer to have a customized docker install and still
 	/// tell the Beam CLI where the docker socket is available.
@@ -385,27 +388,44 @@ public class ConfigService
 		File.WriteAllText(pathToToolsManifest, manifestString);
 	}
 
-
+	public bool TryGetProjectBeamableCLIVersion(out string version)
+	{
+		return TryGetProjectBeamableCLIVersion(ConfigDirectoryPath, out version);
+	}
+	
 	/// <summary>
 	/// Extract the CLI version registered in the ".config" directory sibling to the ".beamable" folder. 
 	/// </summary>
-	public bool TryGetProjectBeamableCLIVersion(out string version)
+	public static bool TryGetProjectBeamableCLIVersion(string configDirectoryPath, out string version)
 	{
-		if (string.IsNullOrEmpty(ConfigDirectoryPath) || !Directory.Exists(Directory.GetParent(ConfigDirectoryPath)?.ToString()))
+		version = "";
+		if (string.IsNullOrEmpty(configDirectoryPath))
 		{
-			version = "";
 			return false;
 		}
 
-		var pathToDotNetConfigFolder = Directory.GetParent(ConfigDirectoryPath).ToString();
-		pathToDotNetConfigFolder = Path.Combine(pathToDotNetConfigFolder, ".config");
-		var pathToToolsManifest = Path.Combine(pathToDotNetConfigFolder, "dotnet-tools.json");
-
-		if (!File.Exists(pathToToolsManifest))
+		bool foundFile = false;
+		string currentPath = configDirectoryPath;
+		while (!foundFile)
 		{
-			version = "";
-			return false;
+			var parent = Path.GetDirectoryName(currentPath);
+			if (string.IsNullOrEmpty(parent))
+			{
+				version = string.Empty;
+				return false;
+			}
+
+			var possibleConfigFilePath = Path.Combine(parent, ".config", "dotnet-tools.json");
+			if (File.Exists(possibleConfigFilePath))
+			{
+				currentPath = possibleConfigFilePath;
+				break;
+			}
+
+			currentPath = parent;
 		}
+
+		var pathToToolsManifest = currentPath;
 
 		var versionMatching = new Regex("beamable.*?\"([0-9]+\\.[0-9]+\\.[0-9]+.*?)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
 		var versionMatch = versionMatching.Match(File.ReadAllText(pathToToolsManifest));
@@ -423,7 +443,7 @@ public class ConfigService
 			return true;
 		}
 
-		throw new CliException("Missing \"beamable.tools\" entry in \".config/dotnet-tools.json\" directory.");
+		return false;
 	}
 
 	public void CreateIgnoreFile(Vcs system = Vcs.Git, bool forceCreate = false)

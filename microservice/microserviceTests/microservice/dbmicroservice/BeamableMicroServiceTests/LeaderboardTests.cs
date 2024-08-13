@@ -31,7 +31,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 			{
 				testSocket = socket;
 				socket.AddStandardMessageHandlers()
-					.AddInitialContentMessageHandler(-5,
+					.AddInitialContentMessageHandler(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST,
 						new ContentReference
 						{
 							id = contentId, version = version, visibility = Constants.Features.Content.PUBLIC
@@ -106,7 +106,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 					.AddMessageHandler(
 						MessageMatcher
 							.WithBody<JObject>(n => JToken.DeepEquals(expectedJObject, n))
-							.WithReqId(-5),
+							.WithReqId(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST),
 						MessageResponder.Success("{\"total\": 2, \"offset\": 3, \"nameList\": [\"howdy\", \"ho\"]}"),
 						MessageFrequency.OnlyOnce())
 					.AddMessageHandler(
@@ -146,7 +146,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 					.AddMessageHandler(
 						MessageMatcher
 							.WithBody<JObject>(n => JToken.DeepEquals(expectedJObject, n))
-							.WithReqId(-5),
+							.WithReqId(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST),
 						MessageResponder.Success("{\"total\": 2, \"offset\": 3, \"nameList\": [\"howdy\", \"ho\"]}"),
 						MessageFrequency.OnlyOnce())
 					.AddMessageHandler(
@@ -186,7 +186,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 					.AddMessageHandler(
 						MessageMatcher
 							.WithBody<JObject>(n => JToken.DeepEquals(expectedJObject, n))
-							.WithReqId(-5),
+							.WithReqId(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST),
 						MessageResponder.Success("{\"total\": 2, \"offset\": 3, \"nameList\": [\"howdy\", \"ho\"]}"),
 						MessageFrequency.OnlyOnce())
 					.AddMessageHandler(
@@ -228,7 +228,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 					.AddMessageHandler(
 						MessageMatcher
 							.WithBody<JObject>(n => JToken.DeepEquals(expectedJObject, n))
-							.WithReqId(-5),
+							.WithReqId(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST),
 						MessageResponder.Success("{\"total\": 2, \"offset\": 3, \"nameList\": [\"howdy\", \"ho\"]}"),
 						MessageFrequency.OnlyOnce())
 					.AddMessageHandler(
@@ -267,7 +267,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 					.AddMessageHandler(
 						MessageMatcher
 							.WithRouteContains($"dbid={dbid}")
-							.WithReqId(-5),
+							.WithReqId(TestSocket.DEFAULT_FIRST_BEAMABLE_REQUEST),
 						MessageResponder.Success("{\"result\": \"howdy\", \"lbs\": [{},{}]}"),
 						MessageFrequency.OnlyOnce())
 					.AddMessageHandler(

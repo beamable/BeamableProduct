@@ -160,6 +160,7 @@ ls $PROJECTS_SOURCE
 # Nuget push seems to need the actual files on windows (it doesn't automatically get all the files if you just pass in a directory) 
 # The $PACKAGE_SOURCE_SUFFIX_BLOB is set from the buildPR.yml file.
 for i in `find $PROJECTS_DIR -name "*.nupkg" -type f`; do    
+    echo "pushing nuget package $i to $SOURCE_NAME"
     dotnet nuget push "$i" -s "$SOURCE_NAME"
 done
 dotnet nuget update source "$SOURCE_NAME"
@@ -167,7 +168,7 @@ dotnet nuget update source "$SOURCE_NAME"
 ## If we also want to install the CLI in our Engine Integration SDK Repo (this will install the CLI in the first found .config/dotnet-tools.json while walking up the hierarchy)
 if [[ "$INSTALL_CLI" == "Local" ]];then
   cd "$PROJECTS_SOURCE/.." || dotnet tool uninstall beamable.tools || true
-  cd "$PROJECTS_SOURCE/.." || dotnet tool install beamable.tools --version "$VERSION"
+  cd "$PROJECTS_SOURCE/.." || dotnet tool install beamable.tools --version "$VERSION" --add-source $SOURCE_NAME
 fi
 
 ## If we also want to install the CLI

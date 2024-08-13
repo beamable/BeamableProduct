@@ -3,6 +3,7 @@ using Beamable.Common.Util;
 using beamable.server;
 using Beamable.Server;
 using Beamable.Server.Api.Usage;
+using Beamable.Server.Editor;
 using Beamable.Tooling.Common.OpenAPI;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Extensions;
@@ -24,6 +25,11 @@ namespace microservice.Common
 	   /// MicroserviceAttribute associated with the administrative routes.
 	   /// </summary>
 	   public MicroserviceAttribute MicroserviceAttribute { get; set; }
+	   
+	   /// <summary>
+	   /// List of pre-generated federation component data
+	   /// </summary>
+	   public List<FederationComponent> FederationComponents { get; set; }
 
 	   /// <summary>
 	   /// Public host for the administrative routes.
@@ -37,6 +43,20 @@ namespace microservice.Common
 	   
 	   public string sdkVersionBaseBuild { get; set; }
 	   public string sdkVersionExecution { get; set; }
+	   
+	   /// <summary>
+	   /// sometimes called the namePrefix, or localPrefix, the routingKey is the
+	   /// unique name for the service to group traffic separately away from the deployed service.
+	   ///
+	   /// In a deloyed context, the routingKey should always be empty.
+	   /// </summary>
+	   public string routingKey { get; set; }
+	   
+	   /// <summary>
+	   /// The PlayerId for the player that started this microservice instance.
+	   /// In a deployed environment, this value should be empty (0)
+	   /// </summary>
+	   public long executorPlayerId { get; set; }
 	   
       /// <summary>
       /// A simple method to check if the microservice can send and receive network traffic.
@@ -104,7 +124,13 @@ namespace microservice.Common
 		      useLegacySerialization = MicroserviceAttribute.UseLegacySerialization,
 #pragma warning restore CS0618 // Type or member is obsolete
 		      disableAllBeamableEvents = MicroserviceAttribute.DisableAllBeamableEvents,
-		      enableEagerContentLoading = MicroserviceAttribute.EnableEagerContentLoading
+		      enableEagerContentLoading = MicroserviceAttribute.EnableEagerContentLoading,
+		      routingKey = routingKey,
+		      federatedComponents = FederationComponents?.Select(x => new FederationComponentMetadata
+		      {
+			      federationNamespace = x.identity.UniqueName,
+			      federationType = x.typeName
+		      }).ToList()
 	      };
       }
    }

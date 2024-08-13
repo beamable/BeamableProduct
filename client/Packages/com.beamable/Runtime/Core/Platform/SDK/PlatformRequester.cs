@@ -9,6 +9,7 @@ using Beamable.Api.Connectivity;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Pooling;
 using Beamable.Common.Scheduler;
@@ -40,6 +41,44 @@ namespace Beamable.Api
 		PackageVersion PackageVersion { get; }
 	}
 
+	public interface IServiceRoutingResolution
+	{
+		Promise Init();
+		string RoutingMap { get; }
+	}
+
+	public static class ServiceRoutingResolutionExtensions
+	{
+		public static Dictionary<string, string> ApplyRoutingHeaders(this IServiceRoutingResolution self,
+		                                                             Dictionary<string, string> headers)
+		{
+			// if the routing map is empty, do not include the header
+			if (string.IsNullOrEmpty(self.RoutingMap))
+				return headers;
+			
+			headers[Constants.Requester.HEADER_ROUTINGKEY] = self.RoutingMap;
+			return headers;
+		}
+	}
+
+	public class DefaultServiceRoutingResolution : IServiceRoutingResolution
+	{
+		private IServiceRoutingStrategy _strategy;
+		private string _routingMap;
+
+		public DefaultServiceRoutingResolution(IServiceRoutingStrategy strategy)
+		{
+			_strategy = strategy;
+		}
+
+		public async Promise Init()
+		{
+			_routingMap = await _strategy.GetRoutingHeaderValue();
+		}
+
+		public string RoutingMap => _routingMap;
+	}
+
 	/// <summary>
 	/// This type defines the %PlatformRequester.
 	///
@@ -60,6 +99,7 @@ namespace Beamable.Api
 		private readonly PackageVersion _beamableVersion;
 		protected AccessTokenStorage accessTokenStorage;
 		private IConnectivityService _connectivityService;
+		private IServiceRoutingResolution _routingKeyResolution;
 		private bool _disposed;
 		private bool internetConnectivity;
 		public string Host { get; set; }
@@ -128,6 +168,11 @@ namespace Beamable.Api
 			accessTokenStorage = provider.GetService<AccessTokenStorage>();
 			_connectivityService = provider.GetService<IConnectivityService>();
 			_offlineCache = provider.GetService<OfflineCache>();
+
+			if (provider.CanBuildService<IServiceRoutingResolution>())
+			{
+				_routingKeyResolution = provider.GetService<IServiceRoutingResolution>();
+			}
 		}
 
 		public PlatformRequester(string host, PackageVersion beamableVersion, AccessTokenStorage accessTokenStorage, IConnectivityService connectivityService, OfflineCache offlineCache)
@@ -466,89 +511,105 @@ namespace Beamable.Api
 		}
 		
 		[Conditional("BEAMABLE_ENABLE_VERSION_HEADERS")]
-		protected void AddVersionHeaders(UnityWebRequest request)
+		protected void AddVersionHeaders(Dictionary<string, string> headers)
 		{
 #if !BEAMABLE_DISABLE_VERSION_HEADERS
-			request.SetRequestHeader(Constants.Requester.HEADER_BEAMABLE_VERSION, _beamableVersion.ToString());
-			request.SetRequestHeader(Constants.Requester.HEADER_APPLICATION_VERSION, Application.version);
-			request.SetRequestHeader(Constants.Requester.HEADER_UNITY_VERSION, Application.unityVersion);
-			request.SetRequestHeader(Constants.Requester.HEADER_ENGINE_TYPE, $"Unity-{Application.platform}");
+			headers[Constants.Requester.HEADER_BEAMABLE_VERSION] = _beamableVersion.ToString();
+			headers[Constants.Requester.HEADER_APPLICATION_VERSION] = Application.version;
+			headers[Constants.Requester.HEADER_UNITY_VERSION] = Application.unityVersion;
+			headers[Constants.Requester.HEADER_ENGINE_TYPE] = $"Unity-{Application.platform}";
 #endif
 		}
 
-		protected virtual void AddCidPidHeaders(UnityWebRequest request)
+		protected virtual void AddCidPidHeaders(Dictionary<string, string> headers)
 		{
 			if (!string.IsNullOrEmpty(Cid))
 			{
 				if (!string.IsNullOrEmpty(Pid))
 				{
-					request.SetRequestHeader(Constants.Requester.HEADER_SCOPE, $"{Cid}.{Pid}");
+					headers[Constants.Requester.HEADER_SCOPE] = $"{Cid}.{Pid}";
 				}
 				else
 				{
-					request.SetRequestHeader(Constants.Requester.HEADER_SCOPE, $"{Cid}");
+					headers[Constants.Requester.HEADER_SCOPE] = $"{Cid}";
 				}
 			}
 		}
 
-		protected void AddAuthHeader<T>(UnityWebRequest request, SDKRequesterOptions<T> opts)
+		protected void AddAuthHeader<T>(Dictionary<string, string> headers, SDKRequesterOptions<T> opts)
 		{
 			if (opts.includeAuthHeader)
 			{
 				var authHeader = GenerateAuthorizationHeader();
 				if (authHeader != null)
 				{
-					request.SetRequestHeader(Constants.Requester.HEADER_AUTH, authHeader);
+					headers[Constants.Requester.HEADER_AUTH] = authHeader;
 				}
 			}
 		}
 
-		protected virtual void AddShardHeader(UnityWebRequest request)
+		protected virtual void AddShardHeader(Dictionary<string, string> headers)
 		{
 			if (Shard != null)
 			{
-				request.SetRequestHeader(Constants.Requester.HEADER_SHARD, Shard);
+				headers[Constants.Requester.HEADER_SHARD] = Shard;
 			}
 		}
 
-		protected void AddTimeOverrideHeader(UnityWebRequest request)
+		protected void AddTimeOverrideHeader(Dictionary<string, string> headers)
 		{
 			if (TimeOverride != null)
 			{
-				request.SetRequestHeader(Constants.Requester.HEADER_TIME_OVERRIDE, TimeOverride);
+				headers[Constants.Requester.HEADER_TIME_OVERRIDE] = TimeOverride;
 			}
 		}
 
-		protected void AddRequestTimeoutHeader(UnityWebRequest request)
+		protected void AddRequestTimeoutHeader(Dictionary<string, string> headers)
 		{
 			if (RequestTimeoutMs != null)
 			{
-				request.SetRequestHeader(Constants.Requester.HEADER_TIMEOUT, RequestTimeoutMs);
+				headers[Constants.Requester.HEADER_TIMEOUT] = RequestTimeoutMs;
 			}
 		}
 
 		protected virtual string GetAcceptHeader() => ACCEPT_HEADER;
+
+
 		private UnityWebRequest PrepareWebRequester<T>(string contentType, byte[] body, SDKRequesterOptions<T> opts)
 		{
 			PlatformLogger.Log($"<b>[PlatformRequester][{opts.method.ToString()}]</b> {Host}{opts.uri}");
 
 			// Prepare the request
 			UnityWebRequest request = BuildWebRequest(contentType, body, opts);
-			request.SetRequestHeader("Accept", GetAcceptHeader());
 
+			var headers = new Dictionary<string, string>();
+			headers["Accept"] = GetAcceptHeader();
+			
 			if (!opts.disableScopeHeaders)
 			{
-				AddCidPidHeaders(request);
+				AddCidPidHeaders(headers);
 			}
 
-			AddVersionHeaders(request);
-			AddAuthHeader(request, opts);
-			AddShardHeader(request);
-			AddTimeOverrideHeader(request);
-			AddRequestTimeoutHeader(request);
+			_routingKeyResolution?.ApplyRoutingHeaders(headers);
+			
+			AddVersionHeaders(headers);
+			AddAuthHeader(headers, opts);
+			AddShardHeader(headers);
+			AddTimeOverrideHeader(headers);
+			AddRequestTimeoutHeader(headers);
 
-			request.SetRequestHeader(Constants.Requester.HEADER_ACCEPT_LANGUAGE, "");
+			headers[Constants.Requester.HEADER_ACCEPT_LANGUAGE] = "";
 
+			if (opts.headerInterceptor != null)
+			{
+				headers = opts.headerInterceptor.Invoke(headers);
+			}
+
+			foreach (var kvp in headers)
+			{
+				request.SetRequestHeader(kvp.Key, kvp.Value);
+			}
+			
 			return request;
 		}
 

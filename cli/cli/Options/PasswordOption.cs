@@ -2,7 +2,7 @@
 
 namespace cli;
 
-public class PasswordOption : Option<string>
+public class PasswordOption : Option<string>, IAmRequiredForRedirection
 {
 	public PasswordOption()
 		: base("--password", "User password")

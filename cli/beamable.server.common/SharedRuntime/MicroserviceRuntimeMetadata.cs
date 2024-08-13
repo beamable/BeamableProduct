@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace beamable.server
 {
@@ -13,5 +14,14 @@ namespace beamable.server
 		public bool disableAllBeamableEvents;
 		public bool enableEagerContentLoading;
 		public string instanceId;
+		public string routingKey;
+
+		public List<FederationComponentMetadata> federatedComponents = new List<FederationComponentMetadata>();
+	}
+
+	public class FederationComponentMetadata
+	{
+		public string federationNamespace;
+		public string federationType;
 	}
 }

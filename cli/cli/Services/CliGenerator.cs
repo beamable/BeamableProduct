@@ -1,5 +1,6 @@
 using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
+using cli.PlayerCommands;
 using System.CommandLine.Invocation;
 
 namespace cli.Services;
@@ -10,7 +11,8 @@ public class CliGenerator
 
 	public readonly static HashSet<Type> CommandTypesToReject = new HashSet<Type>
 	{
-		typeof(ServicesGenerateLocalManifestCommand)
+		typeof(ServicesGenerateLocalManifestCommand),
+		typeof(PlayerCommand),
 	};
 	
 	public CliGenerator(IDependencyProvider provider)

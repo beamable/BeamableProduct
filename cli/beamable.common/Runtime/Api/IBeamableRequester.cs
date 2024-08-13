@@ -74,6 +74,12 @@ namespace Beamable.Common.Api
 		/// </summary>
 		public Func<string, T> parser;
 
+		/// <summary>
+		/// A function that receives request headers and returns a finalized set of headers.
+		/// This can be useful to inject or modify headers. 
+		/// </summary>
+		public Func<Dictionary<string, string>, Dictionary<string, string>> headerInterceptor;
+
 		public Method Method => method;
 		public string Uri => uri;
 
@@ -87,6 +93,7 @@ namespace Beamable.Common.Api
 			useConnectivityPreCheck = clone.useConnectivityPreCheck;
 			parser = clone.parser;
 			disableScopeHeaders = clone.disableScopeHeaders;
+			headerInterceptor = clone.headerInterceptor;
 		}
 	}
 

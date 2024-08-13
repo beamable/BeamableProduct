@@ -6,6 +6,8 @@ using cli.Utils;
 using Serilog;
 using Spectre.Console;
 using System.CommandLine;
+using System.CommandLine.Invocation;
+using System.Text;
 
 namespace cli;
 
@@ -18,7 +20,8 @@ public class InitCommandArgs : LoginCommandArgs
 }
 
 public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
-	IStandaloneCommand
+	IStandaloneCommand,
+	IHaveRedirectionConcerns<InitCommandArgs>
 {
 	private readonly LoginCommand _loginCommand;
 	private IRealmsApi _realmsApi;
@@ -228,6 +231,29 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		);
 		var realm = realms.FirstOrDefault(g => g.DisplayName.Replace("[", "").Replace("]", "") == realmSelection);
 		return realm.Pid;
+	}
+
+	public void ValidationRedirection(InvocationContext context, Command command, InitCommandArgs args, StringBuilder errorStream,
+		out bool isValid)
+	{
+		var ctx = args.AppContext;
+		IHaveRedirectionConcerns<InitCommandArgs>.DefaultValidationRedirection(context, command, args, errorStream, out isValid);
+		// add some custom concerns...
+		if (string.IsNullOrEmpty(ctx.Cid) && string.IsNullOrEmpty(args.cid))
+		{
+			errorStream.AppendLine("must provide cid");
+			isValid = false;
+		}
+		if (string.IsNullOrEmpty(ctx.Pid) && string.IsNullOrEmpty(args.pid))
+		{
+			errorStream.AppendLine("must provide pid");
+			isValid = false;
+		}
+		if (string.IsNullOrEmpty(ctx.Host) && string.IsNullOrEmpty(args.selectedEnvironment))
+		{
+			errorStream.AppendLine("must provide environment");
+			isValid = false;
+		}
 	}
 
 	private Task<string> GetCid(InitCommandArgs args)
