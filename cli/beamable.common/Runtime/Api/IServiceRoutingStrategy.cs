@@ -62,7 +62,7 @@ namespace Beamable.Common.Api
 			md5.TransformFinalBlock(macBytes, 0, macBytes.Length);
 			var macAddr = BitConverter.ToString(md5.Hash).Replace("-", "").ToLowerInvariant();;
 			
-			return Environment.MachineName + "_" + macAddr
+			return (Environment.MachineName + "_" + macAddr)
 				.Replace(":", "_")
 				.Replace(",", "_")
 				.ToLowerInvariant();

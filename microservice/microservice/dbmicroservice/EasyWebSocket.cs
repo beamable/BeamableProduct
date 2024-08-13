@@ -1,5 +1,4 @@
-﻿#if DB_MICROSERVICE
-
+﻿
 using System;
 using System.Net.WebSockets;
 using System.Text;
@@ -412,4 +411,3 @@ namespace Beamable.Server
 	}
 }
 
-#endif
