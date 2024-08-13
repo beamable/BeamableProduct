@@ -312,8 +312,9 @@ public class ConfigService
 	/// <summary>
 	/// Called to initialize or overwrite the current DotNet dotnet-tools.json file in the ".beamable" folder's sibling ".config" folder.  
 	/// </summary>
-	public void EnforceDotNetToolsManifest()
+	public void EnforceDotNetToolsManifest(out string pathToToolsManifest)
 	{
+		pathToToolsManifest = null;
 		if (string.IsNullOrEmpty(ConfigDirectoryPath))
 			throw new CliException("No beamable project exists. Please use beam init");
 
@@ -325,7 +326,7 @@ public class ConfigService
 			Directory.CreateDirectory(pathToDotNetConfigFolder);
 
 		// Create/Update the manifest inside the ".config" folder 
-		var pathToToolsManifest = Path.Combine(pathToDotNetConfigFolder, "dotnet-tools.json");
+		pathToToolsManifest = Path.Combine(pathToDotNetConfigFolder, "dotnet-tools.json");
 		string manifestString;
 
 		var executingCliVersion = VersionService.GetNugetPackagesForExecutingCliVersion().ToString();

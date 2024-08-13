@@ -3,11 +3,13 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
 using cli.Services;
 using cli.Utils;
+using CliWrap;
 using Serilog;
 using Spectre.Console;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.Text;
+using Command = System.CommandLine.Command;
 
 namespace cli;
 
@@ -74,8 +76,8 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		
 		// Setup integration with DotNet for C#MSs --- If we ever have integrations with other microservice languages, we 
 		{
-			_configService.EnforceDotNetToolsManifest();
-			await CliExtensions.GetDotnetCommand(_ctx.DotnetPath, "tool restore").ExecuteAsyncAndLog().Task;
+			_configService.EnforceDotNetToolsManifest(out var manifestFile);
+			await CliExtensions.GetDotnetCommand(_ctx.DotnetPath, $"tool restore --tool-manifest '{manifestFile}'").ExecuteAsyncAndLog().Task;
 		}
 
 		if (!_retry) AnsiConsole.Write(new FigletText("Beam").Color(Color.Red));
