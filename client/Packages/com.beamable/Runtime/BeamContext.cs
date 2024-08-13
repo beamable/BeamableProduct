@@ -594,7 +594,7 @@ namespace Beamable
 			if (_serviceScope.CanBuildService<IServiceRoutingResolution>())
 			{
 				var resolution = _serviceScope.GetService<IServiceRoutingResolution>();
-				await resolution.Init();
+				// await resolution.Init();
 			}
 			#endregion
 			
