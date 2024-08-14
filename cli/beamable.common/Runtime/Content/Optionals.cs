@@ -94,6 +94,12 @@ namespace Beamable.Common.Content
 			return Value;
 		}
 
+		public bool TryGet(out T value)
+		{
+			value = Value;
+			return HasValue;
+		}
+
 		public T GetOrElse(T otherwise) => GetOrElse(() => otherwise);
 
 		public T GetOrElse(Func<T> otherwise)

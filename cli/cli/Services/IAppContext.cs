@@ -4,6 +4,8 @@ using Beamable.Common.Api.Auth;
 using Beamable.Common.Dependencies;
 using Beamable.Server.Common;
 using cli.Options;
+using cli.Services;
+using cli.Utils;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -39,6 +41,22 @@ public interface IAppContext
 	bool ShouldUseLogFile { get; }
 	string TempLogFilePath { get;  }
 	bool ShouldMaskLogs { get; }
+	
+	/// <summary>
+	/// The version of the CLI that is currently running.
+	/// </summary>
+	PackageVersion ExecutingVersion { get; }
+	
+	/// <summary>
+	/// true if the CLI is running in a directory that has a .beamable folder and a .config/dotnet-tools.json
+	/// </summary>
+	bool IsLocalProject { get; }
+	
+	/// <summary>
+	/// The version of the CLI defined in the local project's .config/dotnet-tools.json file; or null if this
+	/// isn't a local project. 
+	/// </summary>
+	PackageVersion LocalProjectVersion { get; }
 	string DockerPath { get; }
 
 	/// <summary>
@@ -79,6 +97,27 @@ public class DefaultAppContext : IAppContext
 
 	public string DotnetPath { get; private set; }
 	public string DockerPath { get; private set; }
+
+
+	/// <inheritdoc cref="IAppContext.ExecutingVersion"/>
+	public PackageVersion ExecutingVersion => VersionService.GetNugetPackagesForExecutingCliVersion();
+
+	/// <inheritdoc cref="IAppContext.IsLocalProject"/>
+	public bool IsLocalProject => LocalProjectVersion != null;
+
+	/// <inheritdoc cref="IAppContext.LocalProjectVersion"/>
+	public PackageVersion LocalProjectVersion
+	{
+		get
+		{
+			if (_configService.TryGetProjectBeamableCLIVersion(out var version))
+			{
+				return version;
+			}
+
+			return null;
+		}
+	}
 
 	public bool ShouldUseLogFile => !_consoleContext.ParseResult.GetValueForOption(_noLogFileOption);
 	public string TempLogFilePath => Path.Combine(Path.GetTempPath(), "beamCliLog.txt");
@@ -167,7 +206,12 @@ public class DefaultAppContext : IAppContext
 		{
 			AnsiConsole.Console = AnsiConsole.Create(new AnsiConsoleSettings
 			{
-				Out = new AnsiConsoleOutput(spectreOutput)
+				Out = new AnsiConsoleOutput(spectreOutput),
+				Enrichment = new ProfileEnrichment
+				{
+					Enrichers = new List<IProfileEnricher>(),
+					UseDefaultEnrichers = false
+				},
 			});
 		}
 

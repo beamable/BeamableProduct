@@ -46,7 +46,12 @@ namespace Beamable.Common
 			/// The header that contains how long Beamable will let the request live before timing it out. Should be number of milliseconds.
 			/// </summary>
 			public const string HEADER_TIMEOUT = "X-KS-TIMEOUT";
-
+			
+			/// <summary>
+			/// The header that contains forwards downstream traffic back to a specific microservice
+			/// </summary>
+			public const string HEADER_ROUTINGKEY = "X-BEAM-SERVICE-ROUTING-KEY";
+			
 			/// <summary>
 			/// The header that contains the runtime version of the Beamable SDK. Ex: 1.2.5, or 0.18.5
 			/// </summary>

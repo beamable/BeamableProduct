@@ -365,18 +365,4 @@ public class ServerReporterService : IDataReporterService
 		var json = JsonConvert.SerializeObject(pt, UnitySerializationSettings.Instance);
 		Report(json);
 	}
-
-	public void Exception(Exception ex, int exitCode, string invocationContext)
-	{
-		var result = new ErrorOutput
-		{
-			exitCode = exitCode,
-			invocation = invocationContext,
-			message = ex?.Message,
-			stackTrace = ex?.StackTrace,
-			typeName = ex?.GetType().Name,
-			fullTypeName = ex?.GetType().FullName
-		};
-		Report(DefaultErrorStream.CHANNEL, result);
-	}
 }

@@ -18,3 +18,19 @@ public class ShowPrettyOutput : Option<bool>
 
 	}
 }
+
+public class NoForwardingOption : Option<bool>
+{
+	public const string OPTION_FLAG = "--no-redirect";
+	public static NoForwardingOption Instance = new NoForwardingOption();
+	private NoForwardingOption()
+		: base(
+			name: OPTION_FLAG,
+			description: "If there is a local dotnet tool installation (with a ./config/dotnet-tools.json file) for the beam tool, " +
+			             "then any global invocation of the beam tool will automatically redirect and call the local version. " +
+			             "However, there will be a performance penalty due to the extra process invocation. This option flag will " +
+			             "cause an error to occur instead of automatically redirecting the execution to a new process invocation. ")
+	{
+		
+	}
+}

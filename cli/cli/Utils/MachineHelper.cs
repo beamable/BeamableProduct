@@ -1,3 +1,4 @@
+using Beamable.Common.Api;
 using System.Diagnostics;
 using System.Net.NetworkInformation;
 using System.Reflection.PortableExecutable;
@@ -7,10 +8,7 @@ namespace cli.Utils;
 
 public class MachineHelper
 {
-	public static string GetUniqueDeviceId()
-	{
-		return Environment.MachineName;
-	}
+	public static string GetUniqueDeviceId() => ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine();
 
 	public static void OpenBrowser(string url)
 	{

@@ -5,6 +5,9 @@ using cli.Utils;
 using Newtonsoft.Json;
 using Serilog;
 using Spectre.Console;
+using System.CommandLine;
+using System.CommandLine.Invocation;
+using System.Text;
 
 namespace cli;
 
@@ -30,7 +33,7 @@ public class LoginCommandArgs : CommandArgs, IArgsWithSaveToFile
 	}
 }
 
-public class LoginCommand : AppCommand<LoginCommandArgs>
+public class LoginCommand : AppCommand<LoginCommandArgs>, IHaveRedirectionConcerns<LoginCommandArgs>
 {
 	public bool Successful { get; private set; } = false;
 	private IAppContext _ctx;

@@ -387,7 +387,7 @@ namespace Beamable.Platform.Tests
 
 		public Promise<T> BeamableRequest<T>(SDKRequesterOptions<T> req)
 		{
-			throw new NotImplementedException();
+			return Request<T>(req.method, req.uri, req.body, req.includeAuthHeader, parser: req.parser, useCache: req.useCache);
 		}
 	}
 }

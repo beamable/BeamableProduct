@@ -82,6 +82,8 @@
     <ProjectReference Include="..\..\microservice\beamable.tooling.common\beamable.tooling.common.csproj" />
     <ProjectReference Include="..\..\cli\beamable.common\beamable.common.csproj" />
     <ProjectReference Include="..\..\cli\beamable.server.common\beamable.server.common.csproj" />
+    
+<!--    <ProjectReference Include="Library/Beamable/GeneratedProjects/Tuna/Tuna.csproj" UnityAssembly="MyExample.Tuna"/>-->
   </ItemGroup>
 
   <ItemGroup>

@@ -589,6 +589,15 @@ namespace Beamable
 		private async Promise InitProcedure(bool silent = false)
 		{
 
+			#region resolve routing key
+
+			if (_serviceScope.CanBuildService<IServiceRoutingResolution>())
+			{
+				var resolution = _serviceScope.GetService<IServiceRoutingResolution>();
+				await resolution.Init();
+			}
+			#endregion
+			
 			#region load token from storage
 			_requester.Token = _tokenStorage.LoadTokenForRealmImmediate(Cid, Pid);
 			_beamableApiRequester.Token = _requester.Token;
