@@ -126,7 +126,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private async Promise CreateService(string serviceName, List<IBeamoServiceDefinition> additionalReferences = null)
 		{
 			var codeService = BeamEditorContext.Default.ServiceScope.GetService<CodeService>();
-			await codeService.CreateService(serviceName, ServiceType, additionalReferences);
+			await codeService.CreateService(serviceName, ServiceType, additionalReferences, errorCallback: () =>
+			{
+				Root.RemoveFromHierarchy();
+				OnClose?.Invoke();
+			});
+
 			OnCreateServiceFinished?.Invoke();
 		}
 
