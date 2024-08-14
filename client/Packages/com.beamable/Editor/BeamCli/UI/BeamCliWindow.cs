@@ -3,11 +3,21 @@ using Beamable.Editor.UI;
 using System;
 using System.Threading.Tasks;
 using UnityEditor;
+using UnityEditor.Graphs;
 using UnityEngine;
 
 namespace Beamable.Editor.BeamCli.UI
 {
-	public class BeamCliWindow : BeamEditorWindow<BeamCliWindow>
+	public enum BeamCliWindowTab
+	{
+		Commands,
+		Stats,
+		Servers,
+		Terminal,
+		Overrides
+	}
+	
+	public partial class BeamCliWindow : BeamEditorWindow<BeamCliWindow>
 	{
 		private BeamWebCliCommandHistory _history;
 
@@ -18,11 +28,16 @@ namespace Beamable.Editor.BeamCli.UI
 			priority = Constants.MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
 		)]
 		public static async Task Init() => await GetFullyInitializedWindow();
-		
+
+		// serialized state gets remembered between domain reloads...
+		[SerializeField]
+		public BeamCliWindowTab selectedTab;
+
 		protected override void Build()
 		{
-			
+			// nothing to be done...
 		}
+		
 
 		private void OnGUI()
 		{
@@ -52,9 +67,41 @@ namespace Beamable.Editor.BeamCli.UI
 			GUILayout.Label("No history... (broken?)");
 		}
 
+		void DrawTabButton(BeamCliWindowTab tab, string display)
+		{
+			var selectedTabStyle = new GUIStyle(EditorStyles.toolbarButton);
+			selectedTabStyle.normal.textColor = Color.cyan;
+			var tabStyle = EditorStyles.toolbarButton;
+
+			if (GUILayout.Button(display, selectedTab == tab ? selectedTabStyle : tabStyle))
+			{
+				selectedTab = tab;
+			}
+		}
+
 		void MainTabsGui()
 		{
-			GUILayout.Label($"[TEST] There are {_history.commands.Count} commands...");
+			GUILayout.BeginHorizontal(EditorStyles.toolbar);
+			{
+				DrawTabButton(BeamCliWindowTab.Commands, "Commands");
+				DrawTabButton(BeamCliWindowTab.Servers, "Servers");
+				DrawTabButton(BeamCliWindowTab.Terminal, "Terminal");
+				DrawTabButton(BeamCliWindowTab.Overrides, "Overrides");
+				DrawTabButton(BeamCliWindowTab.Stats, "Stats");
+			} 
+			GUILayout.EndHorizontal();
+
+			GUILayout.Label($"[TEST] tab is {selectedTab}", EditorStyles.miniLabel);
+
+			switch (selectedTab)
+			{
+				case BeamCliWindowTab.Commands:
+					OnCommandsGui();
+					break;
+				default:
+					GUILayout.Label("There is no tab implemented yet!");
+					break;
+			}
 		}
 	}
 }
