@@ -67,6 +67,12 @@ namespace Beamable.Common.Api
 				.Replace(",", "_")
 				.ToLowerInvariant();
 		}
+
+		public static string GetRoutingKeyMap(IEnumerable<string> servicesNames)
+		{
+			string routingKey = GetDefaultRoutingKeyForMachine();
+			return string.Join(",", servicesNames.Select(n => $"{n}:{routingKey}"));
+		}
 	}
 	
 	
