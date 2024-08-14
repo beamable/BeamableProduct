@@ -25,7 +25,7 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// Deploys services defined in the given <see cref="localManifest"/>.
 	/// </summary>
-	public async Task<ServiceManifest> DeployToRemote(BeamoLocalSystem localSystem, string dockerRegistryUrl, string comments,
+	public async Task<ServiceManifest> DeployToRemote(BeamoLocalSystem localSystem, BeamoService remoteBeamo,string dockerRegistryUrl, string comments,
 		Dictionary<string, string> perServiceComments, Action<string, float> buildPullImageProgress = null, Action<string> onServiceDeployCompleted = null,
 		Action<string, float> onContainerUploadProgress = null, Action<string, bool> onContainerUploadCompleted = null, CancellationToken cancellationToken = default)
 	{
@@ -81,17 +81,31 @@ public partial class BeamoLocalSystem
 
 
 		// Upload working containers to docker registry
-		var beamoIds = localManifest.ServiceDefinitions.Select(sd => sd.BeamoId).ToArray();
-		var folders = beamoIds.Select(id => $"{id}_folder").ToArray();
+		var localDefinitions = localManifest.ServiceDefinitions.Where(sd => sd.IsLocal).ToList();
+		var ids = new List<string>();
+		foreach (var definition in localDefinitions)
+		{
+			if (definition.Protocol != BeamoProtocolType.HttpMicroservice)
+			{
+				continue;
+			}
+
+			if (VerifyCanBeBuiltLocally(definition))
+			{
+				ids.Add(definition.BeamoId);
+			}
+		}
+
+		var folders = ids.Select(id => $"{id}_folder").ToArray();
 
 		cancellationToken.ThrowIfCancellationRequested();
-		await UploadContainers(beamoIds, folders, dockerRegistryUrl, CancellationToken.None, onContainerUploadProgress, onContainerUploadCompleted);
+		await UploadContainers(ids.ToArray(), folders, dockerRegistryUrl, CancellationToken.None, onContainerUploadProgress, onContainerUploadCompleted);
 
 
 		cancellationToken.ThrowIfCancellationRequested();
 		// If all is well with the local deployment, we convert the local manifest into the remote one
 		// TODO: When Beam-O gets upgraded, hopefully it'll use the same format locally. Then, we can rename this stuff to BeamoManifest and throw this x-form away.
-		var remoteManifest = new ServiceManifest();
+		var remoteManifest = await remoteBeamo.GetCurrentManifest();
 		var dependencies = GetAllBeamoIdsDependencies();
 		WriteServiceManifestFromLocal(localManifest, comments, perServiceComments, remoteManifest, federatedComponentByServiceName, dependencies);
 
@@ -119,9 +133,11 @@ public partial class BeamoLocalSystem
 		// Setup comments
 		remoteManifest.comments = comments;
 
+		var localDefinitions = localManifest.ServiceDefinitions.Where(sd => sd.IsLocal).ToList();
+
 		// Build list of service storage references
 		{
-			var allMongoServices = localManifest.ServiceDefinitions.Where(sd => sd.Protocol == BeamoProtocolType.EmbeddedMongoDb).ToList();
+			var allMongoServices = localDefinitions.Where(sd => sd.Protocol == BeamoProtocolType.EmbeddedMongoDb).ToList();
 			var locals = allMongoServices.Select(mongoSd => new ServiceStorageReference()
 			{
 				id = mongoSd.BeamoId,
@@ -145,7 +161,7 @@ public partial class BeamoLocalSystem
 
 		// Build list of service references
 		{
-			var allHttpMicroservices = localManifest.ServiceDefinitions.Where(sd => sd.Protocol == BeamoProtocolType.HttpMicroservice).ToList();
+			var allHttpMicroservices = localDefinitions.Where(sd => sd.Protocol == BeamoProtocolType.HttpMicroservice).ToList();
 			var locals = allHttpMicroservices.Select(httpSd =>
 			{
 				var remoteProtocol = localManifest.HttpMicroserviceRemoteProtocols[httpSd.BeamoId];
