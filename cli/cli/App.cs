@@ -123,6 +123,12 @@ public class App
 				baseConfig.WriteTo.File(appCtx.TempLogFilePath, LogEventLevel.Verbose);
 			}
 
+			if (appCtx.ShouldEmitLogs)
+			{
+				baseConfig.WriteTo.Sink(new ReporterSink(provider))
+					.MinimumLevel.ControlledBy(app.LogLevel);
+			}
+
 			return baseConfig.CreateLogger();
 		};
 
@@ -254,6 +260,7 @@ public class App
 			root.AddGlobalOption(UnmaskLogsOption.Instance);
 			root.AddGlobalOption(NoLogFileOption.Instance);
 			root.AddGlobalOption(DockerPathOption.Instance);
+			root.AddGlobalOption(EmitLogsOption.Instance);
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
 			root.AddGlobalOption(provider.GetRequiredService<ShowRawOutput>());
 			root.AddGlobalOption(provider.GetRequiredService<ShowPrettyOutput>());

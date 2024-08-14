@@ -51,11 +51,12 @@ namespace Beamable.Editor.BeamCli.Commands
 				pid = pid,
 				host = BeamableEnvironment.ApiUrl,
 				refreshToken = _requester?.AccessToken?.RefreshToken,
-				log = "Information",
+				log = "Verbose",
 				skipStandaloneValidation = true,
 				dotnetPath = Path.GetFullPath(DotnetUtil.DotnetPath),
 				quiet = true,
-				raw = true
+				raw = true,
+				emitLogStreams = true
 			};
 			return beamArgs;
 		}

@@ -6,9 +6,9 @@ namespace Beamable.Editor.BeamCli.Commands
 
 	public class TokenInspectArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>this command normally only works for an access token. However, if this option is enabled and a refresh token is given, then it will be automatically converted to the access token and this command is rerun</summary>
+		/// <summary>This command normally only works for an access token. However, if this option is enabled and a refresh token is given, then it will be automatically converted to the access token and this command is rerun</summary>
 		public bool resolve;
-		/// <summary>the token that you want to get information for. This must be an access token. By default, the current access token of the .beamable context is used</summary>
+		/// <summary>The token that you want to get information for. This must be an access token. By default, the current access token of the .beamable context is used</summary>
 		public string token;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()

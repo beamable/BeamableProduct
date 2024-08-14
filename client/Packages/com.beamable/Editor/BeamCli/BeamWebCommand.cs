@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.BeamCli;
+using Beamable.Common.Dependencies;
 using Beamable.Editor.BeamCli.Commands;
 using System;
 using System.Collections;
@@ -30,7 +31,7 @@ namespace Beamable.Editor.BeamCli
 		/// </summary>
 		public string owner;
 	}
-	
+
 	public class BeamWebCommandFactory : IBeamCommandFactory
 	{
 		public enum PingResult
@@ -59,19 +60,22 @@ namespace Beamable.Editor.BeamCli
 		public BeamCommandFactory processFactory;
 		public BeamCommands processCommands;
 		public BeamableDispatcher dispatcher;
+		private readonly BeamWebCliCommandHistory _history;
 
 		public Promise onReady = null; 
 
-		public BeamWebCommandFactory(IBeamableRequester requester, BeamableDispatcher dispatcher)
+		public BeamWebCommandFactory(IBeamableRequester requester, BeamableDispatcher dispatcher, BeamWebCliCommandHistory history)
 		{
 			this.dispatcher = dispatcher;
+			_history = history;
 			processFactory = new BeamCommandFactory(dispatcher);
 			processCommands = new BeamCommands(requester, processFactory);
 		}
 		
 		public IBeamCommand Create()
 		{
-			return new BeamWebCommand(this);
+			var command = new BeamWebCommand(this, _history);
+			return command;
 		}
 
 		public async Promise EnsureServerIsRunning()
@@ -198,31 +202,41 @@ namespace Beamable.Editor.BeamCli
 	
 	public class BeamWebCommand : IBeamCommand
 	{
-		private string _command;
+		public string id;
+		public string commandString;
 		private HttpClient _localClient;
 		private Action<ReportDataPointDescription> _callbacks = (_) => { };
 		private HashSet<string> _explicitOnCallbackTypes = new HashSet<string>();
 		private BeamWebCommandFactory _factory;
 		private CancellationTokenSource _cts;
+		private BeamWebCliCommandHistory _history;
 
-		public BeamWebCommand(BeamWebCommandFactory factory)
+		public BeamWebCommand(BeamWebCommandFactory factory, BeamWebCliCommandHistory history)
 		{
+			_history = history;
+			id = Guid.NewGuid().ToString();
 			_factory = factory;
 			_localClient = factory.localClient;
 			_cts = new CancellationTokenSource();
+			history.AddCommand(this);
 		}
 
 		public void SetCommand(string command)
 		{
-			_command = command.Substring("beam".Length);
+			commandString = command.Substring("beam".Length);
+			_history.UpdateCommand(id, commandString);
 		}
 
 		public async Promise Run()
 		{
+			_history.UpdateResolvingHostTime(id);
+
 			await _factory.EnsureServerIsRunning();
+			
+			_history.UpdateStartTime(id);
 
 			using var req = new HttpRequestMessage(HttpMethod.Post, _factory.ExecuteUrl);
-			var json = JsonUtility.ToJson(new BeamWebCommandRequest {commandLine = _command});
+			var json = JsonUtility.ToJson(new BeamWebCommandRequest {commandLine = commandString});
 			req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 			CliLogger.Log("Sending cli web request, " + json);
 			try
@@ -254,10 +268,12 @@ namespace Beamable.Editor.BeamCli
 						var lineJson = line
 							.Substring("data: ".Length); // remove the Server-Side-Event notation
 
-						CliLogger.Log("received, " + lineJson, "from " + _command);
+						CliLogger.Log("received, " + lineJson, "from " + commandString);
 
 						var res = JsonUtility.FromJson<ReportDataPointDescription>(lineJson);
 						res.json = lineJson;
+
+						_history.HandleMessage(id, res);
 
 						_callbacks?.Invoke(res);
 					});
@@ -265,7 +281,7 @@ namespace Beamable.Editor.BeamCli
 			}
 			catch (HttpRequestException socketException)
 			{
-				CliLogger.Log($"Socket exception happened. command=[{_command}] url=[{_factory.ExecuteUrl}] " +
+				CliLogger.Log($"Socket exception happened. command=[{commandString}] url=[{_factory.ExecuteUrl}] " +
 				              socketException.Message);
 				throw;
 			}
@@ -284,9 +300,11 @@ namespace Beamable.Editor.BeamCli
 			catch (Exception ex)
 			{
 				CliLogger.Log(
-					$"Socket exception happened general. command=[{_command}] url=[{_factory.ExecuteUrl}] type=[{ex.GetType().FullName}]" +
+					$"Socket exception happened general. command=[{commandString}] url=[{_factory.ExecuteUrl}] type=[{ex.GetType().FullName}]" +
 					ex.Message);
 				Debug.LogException(ex);
+			} finally {
+				_history.UpdateCompleteTime(id);
 			}
 		}
 

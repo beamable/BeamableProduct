@@ -6,15 +6,15 @@ namespace Beamable.Editor.BeamCli.Commands
 
 	public class TokenListArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>the player or account id to fetch tokens for. When blank, the current player id will be used.</summary>
+		/// <summary>The player or account id to fetch tokens for. When blank, the current player id will be used</summary>
 		public long id;
-		/// <summary></summary>
+		/// <summary>The offset</summary>
 		public int offset;
-		/// <summary></summary>
+		/// <summary>The max size of the response</summary>
 		public int length;
-		/// <summary></summary>
+		/// <summary>A cid</summary>
 		public long cid;
-		/// <summary></summary>
+		/// <summary>A pid</summary>
 		public string pid;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
