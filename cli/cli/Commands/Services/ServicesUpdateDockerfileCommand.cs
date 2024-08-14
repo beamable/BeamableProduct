@@ -11,6 +11,8 @@ public class ServicesUpdateDockerfileCommandArgs : CommandArgs
 
 public class ServicesUpdateDockerfileCommand : AppCommand<ServicesUpdateDockerfileCommandArgs>, IEmptyResult
 {
+	public override bool IsForInternalUse => true;
+	
 	public ServicesUpdateDockerfileCommand() : base("update-dockerfile", "Updates the Dockerfile for the specified service")
 	{
 	}
