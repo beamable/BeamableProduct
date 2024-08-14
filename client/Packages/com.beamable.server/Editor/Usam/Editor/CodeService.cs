@@ -499,17 +499,18 @@ namespace Beamable.Server.Editor.Usam
 		/// <param name="name"> The name of the Service/Storage to be created.</param>
 		/// <param name="type"> The type of the Service/Storage to be created.</param>
 		/// <param name="additionalReferences">A list with all references to link to this service.</param>
-		public async Promise CreateService(string name, ServiceType type, List<IBeamoServiceDefinition> additionalReferences)
+		/// <param name="errorCallback">A callback that will be called in case an error happens</param>
+		public async Promise CreateService(string name, ServiceType type, List<IBeamoServiceDefinition> additionalReferences, Action errorCallback = null)
 		{
 			UsamLogger.Log($"Starting creation of {name}");
 
 			switch (type)
 			{
 				case ServiceType.MicroService:
-					await CreateMicroService(name, additionalReferences);
+					await CreateMicroService(name, additionalReferences, errorCallback: errorCallback);
 					break;
 				case ServiceType.StorageObject:
-					await CreateStorage(name, additionalReferences);
+					await CreateStorage(name, additionalReferences, errorCallback: errorCallback);
 					break;
 				default:
 					throw new ArgumentOutOfRangeException(nameof(type), type, null);
@@ -852,7 +853,7 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 
-		private async Promise CreateStorage(string storageName, List<IBeamoServiceDefinition> additionalReferences, bool shouldInitialize = true)
+		private async Promise CreateStorage(string storageName, List<IBeamoServiceDefinition> additionalReferences, bool shouldInitialize = true, Action errorCallback = null)
 		{
 			var service = new ServiceName(storageName);
 			var slnPath = FindFirstSolutionFile();
@@ -870,6 +871,9 @@ namespace Beamable.Server.Editor.Usam
 				deps[i] = additionalReferences[i].BeamoId;
 			}
 
+			Promise errorPromise = new Promise();
+			string errorMessage = string.Empty;
+
 			var storageArgs = new ProjectNewStorageArgs
 			{
 				name = service,
@@ -877,8 +881,23 @@ namespace Beamable.Server.Editor.Usam
 				sln = slnPath,
 				linkTo = deps,
 			};
-			var storageCommand = _cli.ProjectNewStorage(storageArgs);
+			var storageCommand = _cli.ProjectNewStorage(storageArgs).OnError((cb) =>
+			{
+				errorMessage = $"Error creating storage: {storageName}. Message=[{cb.data.message}] Stacktrace=[{cb.data.stackTrace}]";
+				errorPromise.CompleteSuccess();
+			});
 			await storageCommand.Run();
+
+			await RefreshServices();
+
+			var definition = ServiceDefinitions.FirstOrDefault(def => def.BeamoId == storageName);
+
+			if (definition == null)
+			{
+				await errorPromise;
+				errorCallback?.Invoke();
+				throw new Exception(errorMessage);
+			}
 
 			UsamLogger.Log($"Starting the initialization of CodeService");
 			// Re-initializing the CodeService to make sure all files are with the right information
@@ -901,7 +920,7 @@ namespace Beamable.Server.Editor.Usam
 			return version;
 		}
 
-		private async Promise CreateMicroService(string serviceName, List<IBeamoServiceDefinition> dependencies, List<AssemblyDefinitionAsset> assemblyReferences = null, bool shouldInitialize = true)
+		private async Promise CreateMicroService(string serviceName, List<IBeamoServiceDefinition> dependencies, List<AssemblyDefinitionAsset> assemblyReferences = null, bool shouldInitialize = true, Action errorCallback = null)
 		{
 			var service = new ServiceName(serviceName);
 			var slnPath = FindFirstSolutionFile();
@@ -912,6 +931,9 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
+			Promise errorPromise = new Promise();
+			string errorMessage = string.Empty;
+
 			var args = new ProjectNewServiceArgs()
 			{
 				name = service,
@@ -919,7 +941,11 @@ namespace Beamable.Server.Editor.Usam
 				sln = slnPath,
 				beamableDev = BeamableEnvironment.IsBeamableDeveloper
 			};
-			var command = _cli.ProjectNewService(args);
+			var command = _cli.ProjectNewService(args).OnError((cb) =>
+			{
+				errorMessage = $"Error creating service: {serviceName}. Message=[{cb.data.message}] Stacktrace=[{cb.data.stackTrace}]";
+				errorPromise.CompleteSuccess();
+			});
 			await command.Run();
 
 			await RefreshServices();
@@ -928,7 +954,9 @@ namespace Beamable.Server.Editor.Usam
 
 			if (definition == null)
 			{
-				Debug.LogError($"The service [{serviceName}] could not be created.");
+				await errorPromise;
+				errorCallback?.Invoke();
+				throw new Exception(errorMessage);
 			}
 
 			if (assemblyReferences != null)
