@@ -391,6 +391,7 @@ public class App
 		Commands.AddSubCommand<ServicesGenerateLocalManifestCommand, ServicesGenerateLocalManifestCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesGenerateTarballCommand, ServicesGenerateTarballCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesBuildCommand, ServicesBuildCommandArgs, ServicesCommand>();
+		Commands.AddSubCommand<ServicesUpdateDockerfileCommand, ServicesUpdateDockerfileCommandArgs, ServicesCommand>();
 		// content commands
 		
 		Commands.AddRootCommand<ContentCommand>();

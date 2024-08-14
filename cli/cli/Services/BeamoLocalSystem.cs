@@ -380,6 +380,14 @@ COPY {serviceFileTag} /subsrc/{servicePathTag}";
 			newText = newText.Replace(endTag, replacementFile.Replace(servicePathTag, path).Replace(serviceFileTag, file).Replace('\\', '/').Insert(0, Environment.NewLine));
 		}
 
+		//Add all dll files in the project
+		var allDlls = ProjectContextUtil.GetAllIncludedDlls(definition, _configService);
+		foreach (var dll in allDlls)
+		{
+			var path = Path.GetDirectoryName(dll);
+			newText = newText.Replace(endTag, replacementFile.Replace(servicePathTag, path).Replace(serviceFileTag, dll).Replace('\\', '/').Insert(0, Environment.NewLine));
+		}
+
 		//Copy the services files
 		Log.Verbose($"adding service files projPath=[{projectDir}]");
 
