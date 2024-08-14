@@ -11,8 +11,10 @@ using Beamable.Common.Content;
 using Beamable.Common.Reflection;
 using Beamable.Serialization.SmallerJSON;
 using cli.Utils;
+using Docker.DotNet.Models;
 using ICSharpCode.SharpZipLib.Tar;
 using Newtonsoft.Json.Linq;
+using Serilog;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
@@ -25,7 +27,7 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// Deploys services defined in the given <see cref="localManifest"/>.
 	/// </summary>
-	public async Task<ServiceManifest> DeployToRemote(BeamoLocalSystem localSystem, string dockerRegistryUrl, string comments,
+	public async Task<ServiceManifest> DeployToRemote(BeamoLocalSystem localSystem, BeamoService remoteBeamo,string dockerRegistryUrl, string comments,
 		Dictionary<string, string> perServiceComments, Action<string, float> buildPullImageProgress = null, Action<string> onServiceDeployCompleted = null,
 		Action<string, float> onContainerUploadProgress = null, Action<string, bool> onContainerUploadCompleted = null, CancellationToken cancellationToken = default)
 	{
@@ -51,6 +53,10 @@ public partial class BeamoLocalSystem
 		var federatedComponentByServiceName = new Dictionary<string, List<string>>();
 		var serviceDefinitionsToDeploy = GetServiceDefinitionsThatCanBeDeployed(localManifest);
 
+		var routingKeysMap =
+			ServiceRoutingStrategyExtensions.GetRoutingKeyMap(serviceDefinitionsToDeploy.Select(sd => sd.BeamoId));
+		var routingHeader = $"{Beamable.Common.Constants.Requester.HEADER_ROUTINGKEY}={routingKeysMap}";
+
 		foreach (var sd in serviceDefinitionsToDeploy)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
@@ -59,8 +65,8 @@ public partial class BeamoLocalSystem
 				continue;
 			}
 
-			var url = $"/basic/{_beamableRequester.Cid}.{_beamableRequester.Pid}.{MachineHelper.GetUniqueDeviceId()}micro_{sd.BeamoId}/admin/Docs";
-			var request = await _beamableRequester.Request(Method.GET, url, null, true, (s => s));
+			var containerName = BeamoLocalSystem.GetBeamIdAsMicroserviceContainer(sd.BeamoId);
+			var request = await RetryRequest(containerName, sd.BeamoId, routingHeader);
 
 			var requestObj = JObject.Parse(request);
 			var federatedKey = Beamable.Common.Constants.Features.Services.MICROSERVICE_FEDERATED_COMPONENTS_KEY;
@@ -81,23 +87,71 @@ public partial class BeamoLocalSystem
 
 
 		// Upload working containers to docker registry
-		var beamoIds = localManifest.ServiceDefinitions.Select(sd => sd.BeamoId).ToArray();
-		var folders = beamoIds.Select(id => $"{id}_folder").ToArray();
+		var localDefinitions = localManifest.ServiceDefinitions.Where(sd => sd.IsLocal).ToList();
+		var ids = new List<string>();
+		foreach (var definition in localDefinitions)
+		{
+			if (definition.Protocol != BeamoProtocolType.HttpMicroservice)
+			{
+				continue;
+			}
+
+			if (VerifyCanBeBuiltLocally(definition))
+			{
+				ids.Add(definition.BeamoId);
+			}
+		}
+
+		var folders = ids.Select(id => $"{id}_folder").ToArray();
 
 		cancellationToken.ThrowIfCancellationRequested();
-		await UploadContainers(beamoIds, folders, dockerRegistryUrl, CancellationToken.None, onContainerUploadProgress, onContainerUploadCompleted);
+		await UploadContainers(ids.ToArray(), folders, dockerRegistryUrl, CancellationToken.None, onContainerUploadProgress, onContainerUploadCompleted);
 
 
 		cancellationToken.ThrowIfCancellationRequested();
 		// If all is well with the local deployment, we convert the local manifest into the remote one
 		// TODO: When Beam-O gets upgraded, hopefully it'll use the same format locally. Then, we can rename this stuff to BeamoManifest and throw this x-form away.
-		var remoteManifest = new ServiceManifest();
+		var remoteManifest = await remoteBeamo.GetCurrentManifest();
 		var dependencies = GetAllBeamoIdsDependencies();
 		WriteServiceManifestFromLocal(localManifest, comments, perServiceComments, remoteManifest, federatedComponentByServiceName, dependencies);
 
 		await _beamo.Deploy(remoteManifest);
 
 		return remoteManifest;
+	}
+
+	private async Promise<string> RetryRequest(string containerName, string serviceName, string routingHeader)
+	{
+		var url = $"/basic/{_beamableRequester.Cid}.{_beamableRequester.Pid}.{serviceName}/admin/Metadata";
+		var requester = (CliRequester)_beamableRequester;
+
+		var isRunning = false;
+		string request = null;
+
+		do
+		{
+			isRunning = false;
+			try
+			{
+				request = await requester.CustomRequest(Method.GET, url, null, true, (s => s),
+					customHeaders: new[] { routingHeader });
+			}
+			catch (Exception e)
+			{
+				Log.Verbose($"Exception happened while trying to reach service Metadata endpoint. Message = [{e.Message}] Stacktrace = [{e.StackTrace}]");
+				await Task.Delay(500); // Waiting a bit before retrying
+				ContainerInspectResponse response = await _client.Containers.InspectContainerAsync(containerName);
+				isRunning = response.State.Running;
+			}
+
+		} while (isRunning);
+
+		if (string.IsNullOrEmpty(request))
+		{
+			throw new CliException($"The service [{serviceName}] failed to register itself with Beamable.");
+		}
+
+		return request;
 	}
 
 	/// <summary>
@@ -119,9 +173,11 @@ public partial class BeamoLocalSystem
 		// Setup comments
 		remoteManifest.comments = comments;
 
+		var localDefinitions = localManifest.ServiceDefinitions.Where(sd => sd.IsLocal).ToList();
+
 		// Build list of service storage references
 		{
-			var allMongoServices = localManifest.ServiceDefinitions.Where(sd => sd.Protocol == BeamoProtocolType.EmbeddedMongoDb).ToList();
+			var allMongoServices = localDefinitions.Where(sd => sd.Protocol == BeamoProtocolType.EmbeddedMongoDb).ToList();
 			var locals = allMongoServices.Select(mongoSd => new ServiceStorageReference()
 			{
 				id = mongoSd.BeamoId,
@@ -145,7 +201,7 @@ public partial class BeamoLocalSystem
 
 		// Build list of service references
 		{
-			var allHttpMicroservices = localManifest.ServiceDefinitions.Where(sd => sd.Protocol == BeamoProtocolType.HttpMicroservice).ToList();
+			var allHttpMicroservices = localDefinitions.Where(sd => sd.Protocol == BeamoProtocolType.HttpMicroservice).ToList();
 			var locals = allHttpMicroservices.Select(httpSd =>
 			{
 				var remoteProtocol = localManifest.HttpMicroserviceRemoteProtocols[httpSd.BeamoId];
