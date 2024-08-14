@@ -40,7 +40,7 @@ public class GetTokenViaRefreshCommand : AtomicCommand<GetTokenViaRefreshCommand
 				args.refreshToken = value;
 				return;
 			}
-			
+
 			var provider = context.GetService<AppServices>();
 			var ctx = provider.GetService<IAppContext>();
 			args.refreshToken = ctx.Token.RefreshToken;
@@ -51,9 +51,9 @@ public class GetTokenViaRefreshCommand : AtomicCommand<GetTokenViaRefreshCommand
 	public override async Task<GetTokenViaRefreshCommandOutput> GetResult(GetTokenViaRefreshCommandArgs args)
 	{
 		var api = args.Provider.GetService<IAuthApi>();
-		TokenResponse  res = await api.PostToken(new TokenRequestWrapper
+		TokenResponse res = await api.PostToken(new TokenRequestWrapper
 		{
-			grant_type = "refresh_token", 
+			grant_type = "refresh_token",
 			refresh_token = args.refreshToken
 		});
 		return new GetTokenViaRefreshCommandOutput
