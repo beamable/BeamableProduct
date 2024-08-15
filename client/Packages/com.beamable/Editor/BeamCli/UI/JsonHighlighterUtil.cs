@@ -25,6 +25,15 @@ namespace Beamable.Editor.BeamCli.UI
 			var formatted = sb.ToString();
 			return formatted;
 		}
+		
+		public static string HighlightJson(ArrayDict dict)
+		{
+			var sb = new StringBuilder();
+			Highlight(dict, sb, 0);
+			var formatted = sb.ToString();
+			return formatted;
+		}
+		
 
 		static void AppendIndents(StringBuilder sb, int indents)
 		{

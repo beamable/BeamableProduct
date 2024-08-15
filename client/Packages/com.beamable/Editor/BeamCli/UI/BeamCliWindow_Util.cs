@@ -1,3 +1,4 @@
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -63,6 +64,12 @@ namespace Beamable.Editor.BeamCli.UI
 		{
 			var json = JsonUtility.ToJson(obj);
 			var highlighted = JsonHighlighterUtil.HighlightJson(json);
+			DrawJsonBlock(highlighted);
+		}
+		
+		void DrawJsonBlock(ArrayDict dict)
+		{
+			var highlighted = JsonHighlighterUtil.HighlightJson(dict);
 			DrawJsonBlock(highlighted);
 		}
 		
