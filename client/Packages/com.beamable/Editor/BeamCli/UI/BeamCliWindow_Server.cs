@@ -5,6 +5,7 @@ namespace Beamable.Editor.BeamCli.UI
 {
 	public partial class BeamCliWindow
 	{
+		public Vector2 scrollerPositionServerLogs;
 		public Vector2 scrollerPositionServerEvents;
 		
 		void OnServerGui()
@@ -36,7 +37,7 @@ namespace Beamable.Editor.BeamCli.UI
 			EditorGUILayout.EndVertical();
 			
 
-			GUILayout.Label("Server Event Stream", EditorStyles.boldLabel);
+			GUILayout.Label("Server Data ", EditorStyles.boldLabel);
 			{
 				DrawTools(new CliWindowToolAction
 				{
@@ -49,10 +50,30 @@ namespace Beamable.Editor.BeamCli.UI
 					}
 				});
 
-				DrawVirtualScroller(40, _history.serverLogs.Count, ref scrollerPositionServerEvents, (index, position) =>
+				EditorGUILayout.BeginHorizontal();
+
+				EditorGUILayout.BeginVertical(GUILayout.Width(250));
+				GUILayout.Label($"Server Events ({_history.serverEvents.Count})", EditorStyles.boldLabel);
+				DrawVirtualScroller(30, _history.serverEvents.Count, ref scrollerPositionServerEvents, (index, position) =>
 				{
-					EditorGUI.SelectableLabel(position, _history.serverLogs[index].message.message, EditorStyles.textField);
+					EditorGUI.SelectableLabel(position, _history.serverEvents[index].message);
 				});
+				EditorGUILayout.EndVertical();
+
+				EditorGUILayout.Space(30, false);
+				
+				EditorGUILayout.BeginVertical(GUILayout.ExpandWidth(true));
+				GUILayout.Label($"Server Logs ({_history.serverLogs.Count})", EditorStyles.boldLabel);
+
+				DrawVirtualScroller(40, _history.serverLogs.Count, ref scrollerPositionServerLogs, (index, position) =>
+				{
+					EditorGUI.SelectableLabel(position, _history.serverLogs[index].message.message);
+				});
+				EditorGUILayout.EndVertical();
+
+				
+				EditorGUILayout.EndHorizontal();
+				
 
 			}
 
