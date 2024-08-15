@@ -94,54 +94,38 @@ namespace Beamable.Editor.BeamCli.UI
 			EditorGUI.SelectableLabel(res, formattedJson, style);
 		}
 
-
 		void DrawVirtualScroller(int elementHeight, int totalElements, ref Vector2 scrollPos, Action<int, Rect> drawCallback)
 		{
 			var visHeight = 300;
 			var totalHeight = elementHeight * totalElements;
 
-			// the first index that visible
 			int startIndex = (int)(scrollPos.y / elementHeight);
-			int rowsVisibleCount = ( int ) ( visHeight / elementHeight );
-			int endIndex = startIndex + rowsVisibleCount+ 1;
-
-			// fill in the slots above.
+			if (startIndex < 0) startIndex = 0;
 			
-			var spaceTop = startIndex * elementHeight;
-			// var spaceLow = totalHeight - (endIndex - startIndex) * elementHeight + spaceTop;
-			var spaceLow = (totalElements - endIndex ) * elementHeight;
-			// var spaceLow = totalHeight - (startIndex + (visHeight/(float)elementHeight)+1) * elementHeight;
+			int rowsVisibleCount =( visHeight / elementHeight );
+			int endIndex = startIndex + rowsVisibleCount+1;
+			if (endIndex >= totalElements) endIndex = totalElements;
+			
 			scrollPos.x = 0;
-			scrollPos.y = (int)scrollPos.y;
-			scrollPos = EditorGUILayout.BeginScrollView(scrollPos, 
-			                                            GUIStyle.none,
-			                                            options: new GUILayoutOption[]
-			                                            {
-				                                            GUILayout.Height(visHeight),
-			                                            });
-			EditorGUILayout.BeginVertical();
+			var scrollRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.Height(visHeight));
+			var viewRect = new Rect(0, 0, scrollRect.width - 15, totalHeight);
+			scrollPos = GUI.BeginScrollView(scrollRect, scrollPos, viewRect);
 			
-			
-			GUILayoutUtility.GetRect(1, spaceTop, GUILayout.ExpandWidth(true));
-			// 
-			// figure out which elements to render...
-
-			Debug.Log("RENDERING FROM :" + startIndex + " TO " + endIndex);
+			if (scrollPos.y > totalHeight - visHeight)
+			{
+				scrollPos.y = totalHeight - visHeight;
+			}
+			// Debug.Log("RENDERING FROM :" + startIndex + " TO " + endIndex);
 			for (var i = startIndex; i < endIndex; i++)
 			{
-				var rect = GUILayoutUtility.GetRect(null, GUIStyle.none, GUILayout.Height(elementHeight));
+				var rect = new Rect(0, i * elementHeight, viewRect.width, elementHeight);
 				if (i % 2 == 0)
-				{
 					EditorGUI.DrawRect(rect, new Color(0,0,0,.1f));
-				}
 				drawCallback(i, rect);
 			}
-			
-			GUILayoutUtility.GetRect(1, spaceLow, GUILayout.ExpandWidth(true));
-		
-			EditorGUILayout.EndVertical();
-			EditorGUILayout.EndScrollView();
+			GUI.EndScrollView();
 		}
+
 		
 	}
 	

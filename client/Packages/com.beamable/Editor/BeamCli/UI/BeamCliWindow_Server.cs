@@ -51,19 +51,9 @@ namespace Beamable.Editor.BeamCli.UI
 
 				DrawVirtualScroller(40, _history.serverLogs.Count, ref scrollerPositionServerEvents, (index, position) =>
 				{
-					EditorGUI.LabelField(position, _history.serverLogs[index].message.message);
-					// GUILayout.Label("log number: " + index, GUILayout.Height(position.height));
+					EditorGUI.SelectableLabel(position, _history.serverLogs[index].message.message, EditorStyles.textField);
 				});
 
-				// scrollerPositionServerEvents = GUILayout.BeginScrollView(scrollerPositionServerEvents);
-				// {
-				// 	for (var i = 0; i < _history.serverLogs.Count; i++)
-				// 	{
-				// 		var evt = _history.serverLogs[i];
-				// 		GUILayout.Label($"[{evt.message.logLevel}] {evt.message.message}");
-				// 	}
-				// }
-				// GUILayout.EndScrollView();
 			}
 
 		}
