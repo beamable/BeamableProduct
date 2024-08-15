@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Editor.UI;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.Graphs;
@@ -32,6 +33,9 @@ namespace Beamable.Editor.BeamCli.UI
 		// serialized state gets remembered between domain reloads...
 		[SerializeField]
 		public BeamCliWindowTab selectedTab;
+		
+		[NonSerialized]
+		private List<Action> delayedActions = new List<Action>();
 
 		protected override void Build()
 		{
@@ -55,6 +59,14 @@ namespace Beamable.Editor.BeamCli.UI
 			}
 
 			MainTabsGui();
+
+			
+			// run the actions at the end of the GUI loop, so that all GUI tags are closed.
+			foreach (var evt in delayedActions)
+			{
+				evt?.Invoke();
+			}
+			delayedActions.Clear();
 		}
 
 		void OnNoContextGUI()
@@ -97,6 +109,9 @@ namespace Beamable.Editor.BeamCli.UI
 			{
 				case BeamCliWindowTab.Commands:
 					OnCommandsGui();
+					break;
+				case BeamCliWindowTab.Servers:
+					OnServerGui();
 					break;
 				default:
 					GUILayout.Label("There is no tab implemented yet!");

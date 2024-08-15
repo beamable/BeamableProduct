@@ -18,6 +18,24 @@ namespace Beamable.Editor.BeamCli
 		DONE,
 	}
 
+	[Serializable]
+	public class BeamCliPingResultDescriptor
+	{
+		public int port;
+		public string url;
+		public bool ownerMatches;
+		public bool versionMatches;
+		public ServerInfoResponse response;
+		public BeamWebCommandFactory.PingResult result;
+	}
+
+	[Serializable]
+	public class BeamCliServerEvent
+	{
+		public float time;
+		public string message;
+	}
+
 	
 	[Serializable]
 	public class BeamWebCommandDescriptor
@@ -61,7 +79,8 @@ namespace Beamable.Editor.BeamCli
 	public class BeamWebCliCommandHistory : IStorageHandler<BeamWebCliCommandHistory>, Beamable.Common.Dependencies.IServiceStorable
 	{
 		public List<BeamWebCommandDescriptor> commands = new List<BeamWebCommandDescriptor>();
-		
+		public List<BeamCliServerEvent> serverEvents = new List<BeamCliServerEvent>();
+		public BeamCliPingResultDescriptor latestPing = new BeamCliPingResultDescriptor();
 		
 		[NonSerialized]
 		private StorageHandle<BeamWebCliCommandHistory> _handle;
@@ -159,7 +178,26 @@ namespace Beamable.Editor.BeamCli
 				desc.payloads.Add(res);
 			}
 		}
-		
+
+		public BeamWebCommandFactory.PingResult SetLatestServerPingResult(BeamWebCommandFactory.PingResult result)
+		{
+			latestPing.result = result;
+			return result;
+		}
+		public void SetLatestServerPing(int port, string infoUrl, ServerInfoResponse res, bool ownerMatches, bool versionMatches)
+		{
+			latestPing.versionMatches = versionMatches;
+			latestPing.port = port;
+			latestPing.url = infoUrl;
+			latestPing.response = res;
+			latestPing.ownerMatches = ownerMatches;
+		}
+
+		public void AddServerEvent(BeamCliServerEvent beamCliServerEvent)
+		{
+			beamCliServerEvent.time = Time.realtimeSinceStartup;
+			serverEvents.Add(beamCliServerEvent);
+		}
 	}
 
 }

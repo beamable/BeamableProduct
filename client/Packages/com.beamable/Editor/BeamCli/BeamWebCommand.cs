@@ -123,11 +123,19 @@ namespace Beamable.Editor.BeamCli
 						// perfect, the server is running! Nothing more to do :) 
 						CliLogger.Log("found server ! ");
 						serverIdentified = true;
+						_history.AddServerEvent(new BeamCliServerEvent
+						{
+							message = $"server identified at port=[{port}]"
+						});
 						break;
 					case PingResult.Mismatch:
 						// ah, this server is being used for a different project...
 						CliLogger.Log("mismatch server :(");
 						port++; // by increasing the port, maybe we'll find our server soon...
+						_history.AddServerEvent(new BeamCliServerEvent
+						{
+							message = "server mismatched detected, bumping local port"
+						});
 						break;
 					case PingResult.NoServer:
 						// bummer, no server exists for us, so we need to turn it on...
@@ -135,22 +143,34 @@ namespace Beamable.Editor.BeamCli
 						processCommands.defaultBeamArgs = processCommands.ConstructDefaultArgs();
 						processCommands.defaultBeamArgs.log = "verbose";
 						processCommands.defaultBeamArgs.pretty = true;
-						var serverCommand = processCommands.ServerServe(new ServerServeArgs()
+
+						var args = new ServerServeArgs()
 						{
-							port = port, 
+							port = port,
 							owner = "\"" + Owner + "\"",
 							autoIncPort = true,
 							selfDestructSeconds = 15 // TODO: validate that a low ttl will restart the server
-						});
+						};
+						var serverCommand = processCommands.ServerServe(args);
 						var waitForResult = new Promise();
 						serverCommand.OnStreamServeCliCommandOutput(data =>
 						{
 							port = data.data.port;
+							
+							_history.AddServerEvent(new BeamCliServerEvent
+							{
+								message = $"server established on port=[{port}] uri=[{data.data.uri}]"
+							});
 							waitForResult.CompleteSuccess();
 						});
 						serverCommand.OnError(err =>
 						{
 							waitForResult.CompleteSuccess();
+						});
+						
+						_history.AddServerEvent(new BeamCliServerEvent
+						{
+							message = $"starting server on port=[{args.port}]"
 						});
 						var _ = serverCommand.Run();
 							
@@ -172,18 +192,21 @@ namespace Beamable.Editor.BeamCli
 				
 				var ownerMatches = String.Equals(res.owner, Owner, StringComparison.OrdinalIgnoreCase);
 				var versionMatches = res.version == Version;
+
+				_history.SetLatestServerPing(port, InfoUrl, res, ownerMatches, versionMatches);
 				
 				if (!ownerMatches || !versionMatches)
 				{
 					CliLogger.Log($"ping mismatch. Required version=[{Version}] Received version=[{res.version}] Required owner=[{Owner}] Received owner=[{res.owner}]");
-					return PingResult.Mismatch;
+					return _history.SetLatestServerPingResult(PingResult.Mismatch);
 				}
 
-				return PingResult.Match; 
+				return _history.SetLatestServerPingResult(PingResult.Match);
+
 			}
 			catch 
 			{
-				return PingResult.NoServer;
+				return _history.SetLatestServerPingResult(PingResult.NoServer);
 			}
 		}
 		
