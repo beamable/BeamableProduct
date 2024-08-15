@@ -1,3 +1,4 @@
+using UnityEditor;
 using UnityEngine;
 
 namespace Beamable.Editor.BeamCli.UI
@@ -8,27 +9,62 @@ namespace Beamable.Editor.BeamCli.UI
 		
 		void OnServerGui()
 		{
-			GUILayout.Label($"DEBUG SERVER!");
-			
-			DrawTools(new CliWindowToolAction
+			EditorGUILayout.BeginHorizontal();
 			{
-				name = "clear",
-				onClick = () =>
+				GUILayout.Label("Server Ping", EditorStyles.boldLabel, new GUILayoutOption[]
 				{
-					_history.serverEvents.Clear();
-				}
-			});
+					GUILayout.ExpandWidth(false)
+				});
+				
+				GUILayout.Label("(readonly)", EditorStyles.miniLabel, new GUILayoutOption[]
+				{
+					GUILayout.ExpandWidth(true),
+				});
+			}
+			EditorGUILayout.EndHorizontal();
+			EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+			{
+				// GUI.enabled = false;
+				EditorGUI.indentLevel++;
+				EditorGUILayout.TextField("status", _history.latestPing.result.ToString());
+				
+				DrawJsonBlock(_history.latestPing);
+				
+				// GUI.enabled = true;
+				EditorGUI.indentLevel--;
+			}
+			EditorGUILayout.EndVertical();
 			
 
-			scrollerPositionServerEvents = GUILayout.BeginScrollView(scrollerPositionServerEvents);
+			GUILayout.Label("Server Event Stream", EditorStyles.boldLabel);
 			{
-				for (var i = 0; i < _history.serverEvents.Count; i++)
+				DrawTools(new CliWindowToolAction
 				{
-					var evt = _history.serverEvents[i];
-					GUILayout.Label($"[{evt.time:00}] server event - {evt.message}");
-				}
+					name = "clear",
+					onClick = () =>
+					{
+						_history.serverEvents.Clear();
+						_history.serverLogs.Clear();
+						scrollerPositionServerEvents = Vector2.zero;
+					}
+				});
+
+				DrawVirtualScroller(40, _history.serverLogs.Count, ref scrollerPositionServerEvents, (index, position) =>
+				{
+					EditorGUI.LabelField(position, _history.serverLogs[index].message.message);
+					// GUILayout.Label("log number: " + index, GUILayout.Height(position.height));
+				});
+
+				// scrollerPositionServerEvents = GUILayout.BeginScrollView(scrollerPositionServerEvents);
+				// {
+				// 	for (var i = 0; i < _history.serverLogs.Count; i++)
+				// 	{
+				// 		var evt = _history.serverLogs[i];
+				// 		GUILayout.Label($"[{evt.message.logLevel}] {evt.message.message}");
+				// 	}
+				// }
+				// GUILayout.EndScrollView();
 			}
-			GUILayout.EndScrollView();
 
 		}
 	}

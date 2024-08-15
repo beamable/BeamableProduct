@@ -151,8 +151,15 @@ namespace Beamable.Editor.BeamCli
 							autoIncPort = true,
 							selfDestructSeconds = 15 // TODO: validate that a low ttl will restart the server
 						};
+						var p = args.port;
 						var serverCommand = processCommands.ServerServe(args);
 						var waitForResult = new Promise();
+						serverCommand.Command.On(data =>
+						{
+							if (data.type != "logs") return;
+							
+							_history.AddServerLog(p, data.json);
+						});
 						serverCommand.OnStreamServeCliCommandOutput(data =>
 						{
 							port = data.data.port;

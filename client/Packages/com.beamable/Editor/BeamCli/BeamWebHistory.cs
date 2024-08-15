@@ -35,6 +35,13 @@ namespace Beamable.Editor.BeamCli
 		public float time;
 		public string message;
 	}
+	
+	[Serializable]
+	public class BeamCliServerLog
+	{
+		public int port;
+		public CliLogMessage message;
+	}
 
 	
 	[Serializable]
@@ -80,6 +87,7 @@ namespace Beamable.Editor.BeamCli
 	{
 		public List<BeamWebCommandDescriptor> commands = new List<BeamWebCommandDescriptor>();
 		public List<BeamCliServerEvent> serverEvents = new List<BeamCliServerEvent>();
+		public List<BeamCliServerLog> serverLogs = new List<BeamCliServerLog>();
 		public BeamCliPingResultDescriptor latestPing = new BeamCliPingResultDescriptor();
 		
 		[NonSerialized]
@@ -197,6 +205,14 @@ namespace Beamable.Editor.BeamCli
 		{
 			beamCliServerEvent.time = Time.realtimeSinceStartup;
 			serverEvents.Add(beamCliServerEvent);
+		}
+
+		public void AddServerLog(int port, string serverLog)
+		{
+			var msg = JsonUtility.FromJson<ReportDataPoint<CliLogMessage>>(serverLog);
+			var log = new BeamCliServerLog { port = port, message = msg.data};
+			serverLogs.Add(log);
+			
 		}
 	}
 
