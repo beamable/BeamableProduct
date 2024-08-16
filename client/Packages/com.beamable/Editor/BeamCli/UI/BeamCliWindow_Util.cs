@@ -94,9 +94,8 @@ namespace Beamable.Editor.BeamCli.UI
 			EditorGUI.SelectableLabel(res, formattedJson, style);
 		}
 
-		void DrawVirtualScroller(int elementHeight, int totalElements, ref Vector2 scrollPos, Action<int, Rect> drawCallback)
+		void DrawVirtualScroller(int elementHeight, int totalElements, ref Vector2 scrollPos, Action<int, Rect> drawCallback, int visHeight = 300)
 		{
-			var visHeight = 300;
 			var totalHeight = elementHeight * totalElements;
 
 			int startIndex = (int)(scrollPos.y / elementHeight);
@@ -109,8 +108,11 @@ namespace Beamable.Editor.BeamCli.UI
 			scrollPos.x = 0;
 			var scrollRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.Height(visHeight));
 			var viewRect = new Rect(0, 0, scrollRect.width - 15, totalHeight);
+
 			scrollPos = GUI.BeginScrollView(scrollRect, scrollPos, viewRect);
-			
+			var areaRect = new Rect(scrollPos.x, scrollPos.y, scrollRect.width - 15, visHeight);
+			EditorGUI.DrawRect(areaRect, new Color(1,1,1,.1f));
+
 			if (scrollPos.y > totalHeight - visHeight)
 			{
 				scrollPos.y = totalHeight - visHeight;
