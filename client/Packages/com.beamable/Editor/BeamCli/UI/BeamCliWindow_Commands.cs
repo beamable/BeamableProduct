@@ -28,6 +28,7 @@ namespace Beamable.Editor.BeamCli.UI
 					_commandsScrollPosition = Vector2.zero;
 					_commandsLogScrollPosition = Vector2.zero;
 					_commandsPayloadsScrollPosition = Vector2.zero;
+					_commandsErrorsScrollPosition = Vector2.zero;
 				}
 			});
 
@@ -47,12 +48,9 @@ namespace Beamable.Editor.BeamCli.UI
 				GUILayout.ExpandWidth(false)
 			});
 
-			_commandsScrollPosition = EditorGUILayout.BeginScrollView(_commandsScrollPosition, GUILayout.Width(500), GUILayout.Height(500));
-			var areaRect = new Rect(_commandsScrollPosition.x, _commandsScrollPosition.y, 500, 500);
-			EditorGUI.DrawRect(areaRect, new Color(1,1,1,.1f));
-
-			foreach (var command in _history.commands)
+			DrawVirtualScroller(20, _history.commands.Count, ref _commandsScrollPosition, (index, pos) =>
 			{
+				var command = _history.commands[index];
 				var commandStringData = ParseCommandString(command.commandString);
 				var buttonStyle = new GUIStyle(EditorStyles.toolbarButton);
 				buttonStyle.alignment = TextAnchor.MiddleLeft;
@@ -63,7 +61,8 @@ namespace Beamable.Editor.BeamCli.UI
 					GUI.color = Color.cyan;
 				}
 
-				if (GUILayout.Button(commandStringData.command, buttonStyle))
+				Rect buttonRect = new Rect(pos.position.x, pos.position.y, pos.width, pos.height - 2);
+				if (GUI.Button(buttonRect, commandStringData.command, buttonStyle))
 				{
 					delayedActions.Add(() =>
 					{
@@ -74,9 +73,7 @@ namespace Beamable.Editor.BeamCli.UI
 				GUI.color = defaultColor;
 
 				EditorGUILayout.Space(5);
-			}
-
-			EditorGUILayout.EndScrollView();
+			}, 500);
 
 			EditorGUILayout.EndVertical();
 		}
@@ -105,11 +102,19 @@ namespace Beamable.Editor.BeamCli.UI
 
 			DrawVirtualScroller(40, payloadsCount, ref _commandsPayloadsScrollPosition, (index, pos) =>
 			{
-				EditorGUI.SelectableLabel(pos, command?.payloads[index].json);
+				EditorGUILayout.BeginHorizontal();
+				Rect labelRect = new Rect(pos.position, new Vector2((int)(pos.width * 0.8), pos.height));
+				EditorGUI.SelectableLabel(labelRect, command?.payloads[index].json);
+
+				Rect buttonRect = new Rect(pos.position.x + (int)(pos.width * 0.9), pos.position.y, (int)(pos.width * 0.1), pos.height - 10);
+				if (GUI.Button(buttonRect, "Show"))
+				{
+					PopupWindow.Show(buttonRect, new BeamCliJsonPopup(command?.payloads[index].json));
+				}
+				EditorGUILayout.EndHorizontal();
 			}, 150);
 
 			GUILayout.Label($"Command Errors ({errorsCount})", EditorStyles.boldLabel);
-
 
 			DrawVirtualScroller(40, errorsCount, ref _commandsErrorsScrollPosition, (index, pos) =>
 			{

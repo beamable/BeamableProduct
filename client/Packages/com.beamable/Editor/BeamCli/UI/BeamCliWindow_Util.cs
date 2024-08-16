@@ -60,38 +60,44 @@ namespace Beamable.Editor.BeamCli.UI
 			GUILayout.EndHorizontal();
 		}
 
-		void DrawJsonBlock(object obj)
+		public static void DrawJsonBlock(object obj)
 		{
 			var json = JsonUtility.ToJson(obj);
 			var highlighted = JsonHighlighterUtil.HighlightJson(json);
 			DrawJsonBlock(highlighted);
 		}
 		
-		void DrawJsonBlock(ArrayDict dict)
+		public static void DrawJsonBlock(ArrayDict dict)
 		{
 			var highlighted = JsonHighlighterUtil.HighlightJson(dict);
 			DrawJsonBlock(highlighted);
 		}
-		
-		void DrawJsonBlock(string formattedJson)
+
+		public static void DrawJsonBlock(string formattedJson)
 		{
-			var style = new GUIStyle(EditorStyles.textArea);
-			style.wordWrap = true;
-			
-			style.padding.bottom += 3;
-			style.font = codeFont;
-			style.richText = true;
-			
-			style.normal.textColor = Color.gray;
-			style.hover = style.active = style.focused = style.normal;
-			
-			var res = GUILayoutUtility.GetRect(new GUIContent(formattedJson), style);
+			Rect res = GetRectForFormattedJson(formattedJson, out var style);
+
 			var indentedRect = EditorGUI.IndentedRect(res);
 			var outlineWidth = 1;
 			var outline = new Rect(indentedRect.x - outlineWidth, indentedRect.y - outlineWidth,
 			                       indentedRect.width + outlineWidth * 2, indentedRect.height + outlineWidth * 2);
-			
+
 			EditorGUI.SelectableLabel(res, formattedJson, style);
+		}
+
+		public static Rect GetRectForFormattedJson(string formattedJson, out GUIStyle style)
+		{
+			style = new GUIStyle(EditorStyles.textArea);
+			style.wordWrap = true;
+
+			style.padding.bottom += 3;
+			style.font = codeFont;
+			style.richText = true;
+
+			style.normal.textColor = Color.gray;
+			style.hover = style.active = style.focused = style.normal;
+
+			return GUILayoutUtility.GetRect(new GUIContent(formattedJson), style);
 		}
 
 		void DrawVirtualScroller(int elementHeight, int totalElements, ref Vector2 scrollPos, Action<int, Rect> drawCallback, int visHeight = 300)
