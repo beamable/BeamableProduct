@@ -205,6 +205,23 @@ public class App
 			setLogger = (provider) =>
 			{
 				ConfigureLogging(this, provider, configureLogger);
+				
+				TaskLocalLog.Instance.globalLogger = Log.Logger;
+				Log.Logger = TaskLocalLog.Instance;
+			};
+		}
+		else
+		{
+
+
+			setLogger = (provider) =>
+			{
+				var appCtx = provider.GetService<IAppContext>();
+				if (appCtx.ShouldEmitLogs)
+				{
+					TaskLocalLog.Instance.CreateContext(provider);
+					// Log.Logger = TaskLocalLog.Instance;
+				}
 			};
 		}
 

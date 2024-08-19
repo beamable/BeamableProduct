@@ -31,6 +31,13 @@ namespace Beamable.Editor.BeamCli.Commands
 			defaultBeamArgs = ConstructDefaultArgs();
 		}
 
+		public IBeamCommand CreateCustom(string args)
+		{
+			var command = _factory.Create();
+			command.SetCommand("beam " + defaultBeamArgs.Serialize() + " " + args);
+			return command;
+		}
+
 		public BeamArgs ConstructDefaultArgs()
 		{
 			string cid = null;

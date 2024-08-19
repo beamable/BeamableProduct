@@ -24,12 +24,12 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 		public Vector2 logScroll;
 		public Vector2 selectedScroll;
 
-		public LogLevelView verbose;
-		public LogLevelView debug;
-		public LogLevelView info;
-		public LogLevelView warning;
-		public LogLevelView error;
-		public LogLevelView fatal;
+		public LogLevelView verbose = new LogLevelView();
+		public LogLevelView debug = new LogLevelView();
+		public LogLevelView info = new LogLevelView();
+		public LogLevelView warning = new LogLevelView();
+		public LogLevelView error = new LogLevelView();
+		public LogLevelView fatal = new LogLevelView();
 
 		public bool isTailing = true;
 		

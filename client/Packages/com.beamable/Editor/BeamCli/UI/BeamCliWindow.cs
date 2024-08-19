@@ -103,8 +103,6 @@ namespace Beamable.Editor.BeamCli.UI
 			} 
 			GUILayout.EndHorizontal();
 
-			GUILayout.Label($"[TEST] tab is {selectedTab}", EditorStyles.miniLabel);
-
 			switch (selectedTab)
 			{
 				case BeamCliWindowTab.Commands:
@@ -112,6 +110,9 @@ namespace Beamable.Editor.BeamCli.UI
 					break;
 				case BeamCliWindowTab.Servers:
 					OnServerGui();
+					break;
+				case BeamCliWindowTab.Terminal:
+					OnTerminalGui();
 					break;
 				default:
 					GUILayout.Label("There is no tab implemented yet!");

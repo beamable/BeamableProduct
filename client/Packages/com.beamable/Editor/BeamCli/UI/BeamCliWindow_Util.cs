@@ -75,9 +75,9 @@ namespace Beamable.Editor.BeamCli.UI
 			DrawJsonBlock(highlighted);
 		}
 
-		public static void DrawJsonBlock(string formattedJson)
+		public static void DrawJsonBlock(string formattedJson, params GUILayoutOption[] options)
 		{
-			Rect res = GetRectForFormattedJson(formattedJson, out var style);
+			Rect res = GetRectForFormattedJson(formattedJson, out var style, options);
 
 			var indentedRect = EditorGUI.IndentedRect(res);
 			var outlineWidth = 1;
@@ -86,10 +86,42 @@ namespace Beamable.Editor.BeamCli.UI
 
 			EditorGUI.SelectableLabel(res, formattedJson, style);
 		}
+		
+		public static void DrawJsonBlock(Rect position, string formattedJson, params GUILayoutOption[] options)
+		{
+			var style = GetCodeStyle();
+			var content = new GUIContent(formattedJson);
+			var size = style.CalcSize(content);
+			if (size.y < position.height)
+			{
+				size.y = position.height;
+			}
 
+			if (size.x < position.width)
+			{
+				size.x = position.width;
+			}
+			var view = new Rect(0,0, size.x, size.y);
+
+			GUI.BeginScrollView(position, Vector2.zero, view);
+			EditorGUI.SelectableLabel(view, formattedJson, style);
+			
+			GUI.EndScrollView();
+		}
+
+		public static Rect GetRectForFormattedJson(string formattedJson, out GUIStyle style, params GUILayoutOption[] options)
+		{
+			style = GetCodeStyle();
+			return GUILayoutUtility.GetRect(new GUIContent(formattedJson), style, options);
+		}
 		public static Rect GetRectForFormattedJson(string formattedJson, out GUIStyle style)
 		{
-			style = new GUIStyle(EditorStyles.textArea);
+			return GetRectForFormattedJson(formattedJson, out style);
+		}
+
+		public static GUIStyle GetCodeStyle()
+		{
+			var style = new GUIStyle(EditorStyles.textArea);
 			style.wordWrap = true;
 
 			style.padding.bottom += 3;
@@ -98,8 +130,7 @@ namespace Beamable.Editor.BeamCli.UI
 
 			style.normal.textColor = Color.gray;
 			style.hover = style.active = style.focused = style.normal;
-
-			return GUILayoutUtility.GetRect(new GUIContent(formattedJson), style);
+			return style;
 		}
 
 		public static void DrawVirtualScroller(Rect scrollRect,

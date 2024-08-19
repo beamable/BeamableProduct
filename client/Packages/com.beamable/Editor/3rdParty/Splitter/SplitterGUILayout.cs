@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using System.Collections;
 using UnityEditor;
@@ -15,6 +16,8 @@ namespace Beamable.Editor.ThirdParty.Splitter
 		}
 
 		Direction splitDirection;
+		
+		[NonSerialized]
 		public float splitNormalizedPosition;
 		bool resize;
 		public Vector2 scrollPosition;

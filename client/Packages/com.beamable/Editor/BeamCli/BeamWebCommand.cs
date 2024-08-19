@@ -153,6 +153,7 @@ namespace Beamable.Editor.BeamCli
 						};
 						var p = args.port;
 						var serverCommand = processCommands.ServerServe(args);
+					
 						var waitForResult = new Promise();
 						serverCommand.Command.On(data =>
 						{
@@ -303,8 +304,8 @@ namespace Beamable.Editor.BeamCli
 						var res = JsonUtility.FromJson<ReportDataPointDescription>(lineJson);
 						res.json = lineJson;
 
+						
 						_history.HandleMessage(id, res);
-
 						_callbacks?.Invoke(res);
 					});
 				}
