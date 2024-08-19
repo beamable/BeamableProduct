@@ -37,14 +37,6 @@ namespace Beamable.Editor.BeamCli
 	}
 	
 	[Serializable]
-	public class BeamCliServerLog
-	{
-		public int port;
-		public CliLogMessage message;
-	}
-
-	
-	[Serializable]
 	public class BeamWebCommandDescriptor
 	{
 		public string id;
@@ -87,7 +79,7 @@ namespace Beamable.Editor.BeamCli
 	{
 		public List<BeamWebCommandDescriptor> commands = new List<BeamWebCommandDescriptor>();
 		public List<BeamCliServerEvent> serverEvents = new List<BeamCliServerEvent>();
-		public List<BeamCliServerLog> serverLogs = new List<BeamCliServerLog>();
+		public List<CliLogMessage> serverLogs = new List<CliLogMessage>();
 		public BeamCliPingResultDescriptor latestPing = new BeamCliPingResultDescriptor();
 		
 		[NonSerialized]
@@ -126,6 +118,8 @@ namespace Beamable.Editor.BeamCli
 				if (command == null || string.IsNullOrEmpty(command.id)) continue;
 				_idTable[command.id] = command;
 			}
+
+			serverLogs = serverLogs.Where(s => !string.IsNullOrEmpty(s.logLevel)).ToList();
 		}
 
 		private BeamWebCommandDescriptor GetCommand(string id)
@@ -210,7 +204,7 @@ namespace Beamable.Editor.BeamCli
 		public void AddServerLog(int port, string serverLog)
 		{
 			var msg = JsonUtility.FromJson<ReportDataPoint<CliLogMessage>>(serverLog);
-			var log = new BeamCliServerLog { port = port, message = msg.data};
+			var log = msg.data;
 			serverLogs.Add(log);
 			
 		}

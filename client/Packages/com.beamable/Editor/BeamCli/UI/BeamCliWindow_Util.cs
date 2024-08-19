@@ -1,3 +1,5 @@
+using Beamable.Common.BeamCli.Contracts;
+using Beamable.Editor.BeamCli.UI.LogHelpers;
 using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
@@ -12,7 +14,7 @@ namespace Beamable.Editor.BeamCli.UI
 		public Action onClick;
 		public string name;
 	}
-	
+
 	public partial class BeamCliWindow
 	{
 		private static string[] _fonts;
@@ -100,10 +102,27 @@ namespace Beamable.Editor.BeamCli.UI
 			return GUILayoutUtility.GetRect(new GUIContent(formattedJson), style);
 		}
 
-		void DrawVirtualScroller(int elementHeight, int totalElements, ref Vector2 scrollPos, Action<int, Rect> drawCallback, int visHeight = 300)
+		public static void DrawVirtualScroller(Rect scrollRect,
+		                         int elementHeight,
+		                         int totalElements,
+		                         ref Vector2 scrollPos,
+		                         Action<int, Rect> drawCallback)
+		{
+			DrawVirtualScroller(scrollRect, elementHeight, totalElements, ref scrollPos, (index, rect) =>
+			{
+				drawCallback(index, rect);
+				return true;
+			});
+		}
+		
+		public static void DrawVirtualScroller(Rect scrollRect, 
+		                         int elementHeight,
+		                         int totalElements,
+		                         ref Vector2 scrollPos,
+		                         Func<int, Rect, bool> drawCallback)
 		{
 			var totalHeight = elementHeight * totalElements;
-
+			var visHeight = (int)scrollRect.height;
 			int startIndex = (int)(scrollPos.y / elementHeight);
 			if (startIndex < 0) startIndex = 0;
 			
@@ -112,7 +131,7 @@ namespace Beamable.Editor.BeamCli.UI
 			if (endIndex >= totalElements) endIndex = totalElements;
 			
 			scrollPos.x = 0;
-			var scrollRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.Height(visHeight));
+			// var scrollRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.Height(visHeight));
 			var viewRect = new Rect(0, 0, scrollRect.width - 15, totalHeight);
 
 			scrollPos = GUI.BeginScrollView(scrollRect, scrollPos, viewRect);
@@ -124,14 +143,49 @@ namespace Beamable.Editor.BeamCli.UI
 				scrollPos.y = totalHeight - visHeight;
 			}
 			// Debug.Log("RENDERING FROM :" + startIndex + " TO " + endIndex);
+
+			var offset = 0;
+			var shadedIndex = startIndex;
 			for (var i = startIndex; i < endIndex; i++)
 			{
+				var index = i + offset;
+				if (index >= totalElements) break;
+				
 				var rect = new Rect(0, i * elementHeight, viewRect.width, elementHeight);
-				if (i % 2 == 0)
+				if (i % 2 == 0 && i >= shadedIndex)
+				{
+					shadedIndex++;
 					EditorGUI.DrawRect(rect, new Color(0,0,0,.1f));
-				drawCallback(i, rect);
+				}
+
+				var drawn = drawCallback(index, rect);
+				if (!drawn)
+				{
+					offset++;
+					i--;
+					// nothing was selected, so draw the next thing...
+				}
 			}
 			GUI.EndScrollView();
+		}
+		
+		public static void DrawVirtualScroller(int elementHeight, int totalElements, ref Vector2 scrollPos, Action<int, Rect> drawCallback, int visHeight = 300)
+		{
+			var scrollRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.Height(visHeight));
+			DrawVirtualScroller(scrollRect, elementHeight, totalElements, ref scrollPos, drawCallback);
+		}
+
+		public static void DrawScrollableSelectableTextBox(string text, ref Vector2 scrollPos, int minHeight)
+		{
+			scrollPos = EditorGUILayout.BeginScrollView(scrollPos, GUILayout.Height(100));
+			var style = new GUIStyle(EditorStyles.label)
+			{
+				wordWrap = true, 
+				padding = new RectOffset(2, 2, 2, 2)
+			};
+			var rect = GUILayoutUtility.GetRect(new GUIContent(text), style);
+			EditorGUI.SelectableLabel(rect, text, style);
+			EditorGUILayout.EndScrollView();
 		}
 
 		

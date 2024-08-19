@@ -35,7 +35,7 @@ namespace Beamable.Editor.BeamCli.UI
 		public BeamCliWindowTab selectedTab;
 		
 		[NonSerialized]
-		private List<Action> delayedActions = new List<Action>();
+		public List<Action> delayedActions = new List<Action>();
 
 		protected override void Build()
 		{

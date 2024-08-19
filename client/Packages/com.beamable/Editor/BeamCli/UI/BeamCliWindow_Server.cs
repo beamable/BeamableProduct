@@ -1,3 +1,7 @@
+using Beamable.Editor.BeamCli.UI.LogHelpers;
+using Beamable.Editor.ThirdParty.Splitter;
+using System;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -5,8 +9,25 @@ namespace Beamable.Editor.BeamCli.UI
 {
 	public partial class BeamCliWindow
 	{
-		public Vector2 scrollerPositionServerLogs;
+		// public Vector2 scrollerPositionServerLogs;
 		public Vector2 scrollerPositionServerEvents;
+		// public Vector2 serverLogsSelectedIndexScroll;
+
+		// public int selectedIndex = -1;
+
+		// public bool verboseToggled;
+
+		public float serverSplitterValue;
+		public LogView serverLogs;
+		public LogView serverEvents;
+		
+		[NonSerialized]
+		public EditorGUISplitView serverSplitter;
+		
+		[NonSerialized]
+		public CliLogDataProvider serverLogProvider;
+		[NonSerialized]
+		public ServerEventLogDataProvider serverEventsProvider;
 		
 		void OnServerGui()
 		{
@@ -37,41 +58,63 @@ namespace Beamable.Editor.BeamCli.UI
 			EditorGUILayout.EndVertical();
 			
 
-			GUILayout.Label("Server Data ", EditorStyles.boldLabel);
 			{
-				DrawTools(new CliWindowToolAction
+				if (serverSplitter == null)
 				{
-					name = "clear",
-					onClick = () =>
+					serverSplitter = new EditorGUISplitView(EditorGUISplitView.Direction.Horizontal);
+					if (serverSplitterValue < .01f)
 					{
-						_history.serverEvents.Clear();
-						_history.serverLogs.Clear();
-						scrollerPositionServerEvents = Vector2.zero;
+						serverSplitterValue = .2f;
 					}
-				});
-
+					serverSplitter.splitNormalizedPosition = serverSplitterValue;
+				}
+			
 				EditorGUILayout.BeginHorizontal();
+				serverSplitter.BeginSplitView();
 
-				EditorGUILayout.BeginVertical(GUILayout.Width(250));
-				GUILayout.Label($"Server Events ({_history.serverEvents.Count})", EditorStyles.boldLabel);
-				DrawVirtualScroller(30, _history.serverEvents.Count, ref scrollerPositionServerEvents, (index, position) =>
 				{
-					EditorGUI.SelectableLabel(position, _history.serverEvents[index].message);
-				});
-				EditorGUILayout.EndVertical();
+					EditorGUILayout.BeginVertical();
+					if (serverEventsProvider == null)
+					{
+						serverEventsProvider = new ServerEventLogDataProvider(_history.serverEvents);
+					}
 
-				EditorGUILayout.Space(30, false);
+					GUILayout.Label($"Server Events ({_history.serverEvents.Count})", EditorStyles.boldLabel);
+
+					this.DrawLogWindow(serverEvents,
+					                   dataList: serverEventsProvider,
+					                   onClear: () =>
+					                   {
+						                   _history.serverEvents.Clear();
+					                   });
+					EditorGUILayout.EndVertical();
+				}
 				
-				EditorGUILayout.BeginVertical(GUILayout.ExpandWidth(true));
-				GUILayout.Label($"Server Logs ({_history.serverLogs.Count})", EditorStyles.boldLabel);
+				
+				EditorGUILayout.Space(10, false);
+				serverSplitter.Split();
+				EditorGUILayout.Space(10, false);
 
-				DrawVirtualScroller(40, _history.serverLogs.Count, ref scrollerPositionServerLogs, (index, position) =>
+				
 				{
-					EditorGUI.SelectableLabel(position, _history.serverLogs[index].message.message);
-				});
-				EditorGUILayout.EndVertical();
+					EditorGUILayout.BeginVertical(GUILayout.ExpandWidth(true));
+					GUILayout.Label($"Server Logs ({_history.serverLogs.Count})", EditorStyles.boldLabel);
 
-				
+					if (serverLogProvider == null)
+					{
+						serverLogProvider = new CliLogDataProvider(_history.serverLogs);
+					}
+
+					this.DrawLogWindow(serverLogs,
+					                   dataList: serverLogProvider,
+					                   onClear: () =>
+					                   {
+						                   _history.serverLogs.Clear();
+					                   });
+					EditorGUILayout.EndVertical();
+				}
+
+				serverSplitter.EndSplitView();
 				EditorGUILayout.EndHorizontal();
 				
 
