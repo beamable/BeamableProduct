@@ -519,11 +519,14 @@ namespace Beamable.Server
         /// <exception cref="Exception">Exception raised in case the generate-env command fails.</exception>
         public static async Task Prepare<TMicroservice>(string customArgs = null) where TMicroservice : Microservice
         {
+	        
 	        var attribute = typeof(TMicroservice).GetCustomAttribute<MicroserviceAttribute>();
 	        var envArgs = new EnvironmentArgs();
 
 	        _sink = ConfigureLogging(envArgs, attribute);
-
+	        
+	        Log.Information($"Starting Prepare");
+	        
 	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
 	        if (inDocker) return;
 
@@ -546,16 +549,20 @@ namespace Beamable.Server
 	        process.StartInfo.CreateNoWindow = true;
 	        process.StartInfo.UseShellExecute = false;
 	        process.EnableRaisingEvents = true;
-
+	        
+	        var result = "";
+	        var sublogs = "";
 	        //TODO: These events are still not working for some reason
 	        process.ErrorDataReceived += (sender, args) =>
 	        {
 				Log.Information($"Generate env process (error): [{args.Data}]");
+				if(!string.IsNullOrEmpty(args.Data)) sublogs += args.Data;
 	        };
 
 	        process.OutputDataReceived += (sender, args) =>
 	        {
 		        Log.Information($"Generate env process (log): [{args.Data}]");
+		        if(!string.IsNullOrEmpty(args.Data)) result += args.Data;
 	        };
 
 
@@ -569,14 +576,28 @@ namespace Beamable.Server
 	        {
 		        process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = dotnetPath;
 	        }
-
+	        Log.Information($"Running command {fileName} {arguments}");
 	        process.Start();
+	        process.BeginOutputReadLine();
+	        process.BeginErrorReadLine();
+
+	        var exitSignal = new Promise();
+	        process.Exited += (sender, args) =>
+	        {
+		        exitSignal.CompleteSuccess();
+	        };
+	        
 	        await process.WaitForExitAsync();
+	        // Might be necessary due to stupid .NET thing that causes the Out/Err callbacks to trigger a bit after the process closes.
+	        await exitSignal;
+	        await Task.Delay(100);
+	        
+	        Log.Information($"Read StdOut: {result}");
+	        Log.Information($"Read StdErr: {sublogs}");
+	        Log.Information($"Awaited Exit!");
 			
-	        var result = await process.StandardOutput.ReadToEndAsync();
 	        if (process.ExitCode != 0)
 	        {
-		        var sublogs = await process.StandardError.ReadToEndAsync();
 		        throw new Exception($"Failed to generate-env message=[{result}] sub-logs=[{sublogs}]");
 	        }
 	        
