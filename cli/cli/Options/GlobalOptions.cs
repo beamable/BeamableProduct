@@ -18,12 +18,12 @@ public class NoLogFileOption : Option<bool>
 	public static readonly NoLogFileOption Instance = new NoLogFileOption();
 
 	private NoLogFileOption() : base(
-		name: "--no-log-file", 
+		name: "--no-log-file",
 		getDefaultValue: () => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(ENV_VAR)),
 		description: $"By default, logs are automatically written to a temp file so that they can be used in an error case. However, when this option is enabled, logs are not written. Also, if the {ENV_VAR} environment variable is set, no log file will be written. ")
 	{
-		
+
 	}
-	
-	
+
+
 }
