@@ -230,16 +230,17 @@ namespace Beamable.Editor.BeamCli.UI
 			DrawVirtualScroller(scrollRect, elementHeight, totalElements, ref scrollPos, drawCallback);
 		}
 
-		public static void DrawScrollableSelectableTextBox(string text, ref Vector2 scrollPos, int minHeight)
+		public static void DrawScrollableSelectableTextBox(string text, ref Vector2 scrollPos, int minHeight, GUIStyle baseStyle=null)
 		{
 
 			var content = new GUIContent(text);
-			var style = new GUIStyle(EditorStyles.label)
+			baseStyle ??= EditorStyles.label;
+			var style = new GUIStyle(baseStyle)
 			{
 				wordWrap = true, padding = new RectOffset(2, 2, 2, 2), alignment = TextAnchor.UpperLeft
 			};
 			var size = style.CalcSize(content);
-
+			
 			var fullRect = GUILayoutUtility.GetRect(content, style,
 			                                        options: new GUILayoutOption[]
 			                                        {

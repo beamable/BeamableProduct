@@ -319,7 +319,7 @@ public class ServerReporterService : IDataReporterService
 					catch (HttpListenerException)
 					{
 						// the pipe is broken, so can assume the client is no longer connected, and we can cancel this invocation.
-						Log.Verbose("monitor found that client is no longer connected; cancelling app lifecycle.");
+						TaskLocalLog.Instance.globalLogger.Verbose("monitor found that client is no longer connected; cancelling app lifecycle.");
 						_lifecycle.Cancel();
 						break;
 					}
@@ -328,7 +328,7 @@ public class ServerReporterService : IDataReporterService
 			catch (Exception ex)
 			{
 				// remember, async void methods don't report exceptions automatically, so always log it to save brain later.
-				Log.Error($"cli-server reporter service monitor task failed! type=[{ex.GetType().Name}] message=[{ex.Message}] stack=[{ex.StackTrace}]");
+				TaskLocalLog.Instance.globalLogger.Error($"cli-server reporter service monitor task failed! type=[{ex.GetType().Name}] message=[{ex.Message}] stack=[{ex.StackTrace}]");
 			}
 		});
 	} 
@@ -349,7 +349,7 @@ public class ServerReporterService : IDataReporterService
 		catch (HttpListenerException ex)
 		{
 			// the pipe is broken, so can assume the client is no longer connected, and we can cancel this invocation.
-			Log.Verbose("client is no longer connected; cancelling app lifecycle." + ex.Message);
+			TaskLocalLog.Instance.globalLogger.Verbose("client is no longer connected; cancelling app lifecycle." + ex.Message);
 			_lifecycle.Cancel();
 		}
 	}
