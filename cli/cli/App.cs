@@ -212,15 +212,12 @@ public class App
 		}
 		else
 		{
-
-
 			setLogger = (provider) =>
 			{
 				var appCtx = provider.GetService<IAppContext>();
 				if (appCtx.ShouldEmitLogs)
 				{
 					TaskLocalLog.Instance.CreateContext(provider);
-					// Log.Logger = TaskLocalLog.Instance;
 				}
 			};
 		}

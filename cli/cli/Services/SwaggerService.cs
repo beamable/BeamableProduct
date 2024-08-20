@@ -98,7 +98,7 @@ public class SwaggerService
 			OrderedSchemas = ExtractAllSchemas(allDocuments, resolutionStrategy),
 			ReplacementTypes = new Dictionary<OpenApiReferenceId, ReplacementTypeInfo>(),
 		};
-
+		
 		// TODO: FILTER we shouldn't really be using _all_ the given generators, we should be selecting between one based on an input argument.
 		var files = new List<GeneratedFileDescriptor>();
 		foreach (var generator in _generators.Where(g => string.IsNullOrEmpty(targetEngine) || g.GetType().Name.Contains(targetEngine, StringComparison.OrdinalIgnoreCase)))

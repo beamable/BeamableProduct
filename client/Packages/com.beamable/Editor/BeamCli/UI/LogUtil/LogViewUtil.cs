@@ -318,7 +318,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 			EditorGUILayout.BeginVertical();
 			EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 			{
-				var isClear = GUILayout.Button("clear", EditorStyles.toolbarButton, GUILayout.Width(100));
+				var isClear = GUILayout.Button("clear", EditorStyles.toolbarButton, GUILayout.Width(50));
 				if (isClear)
 				{
 					window.delayedActions.Add(() =>
@@ -515,7 +515,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 			var countStr = count > 999 ? "999+" : count.ToString();
 			var verboseContent = new GUIContent(countStr, verboseTexture, $"{logLevel} logs");
 			var nextEnabled = GUILayout.Toggle(view.enabled, verboseContent, 
-			                                        EditorStyles.toolbarButton, GUILayout.MaxWidth(60));
+			                                        EditorStyles.toolbarButton, GUILayout.Width(52), GUILayout.ExpandWidth(false));
 			if (nextEnabled != view.enabled)
 			{
 				window.delayedActions.Add(() =>

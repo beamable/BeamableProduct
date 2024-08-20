@@ -91,9 +91,9 @@ namespace Beamable.Editor.BeamCli.UI
 				}
 				
 				
-				EditorGUILayout.Space(10, false);
+				EditorGUILayout.Space(15, false);
 				serverSplitter.Split(this);
-				EditorGUILayout.Space(10, false);
+				EditorGUILayout.Space(5, false);
 
 				
 				{

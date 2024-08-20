@@ -1,4 +1,5 @@
 using Beamable.Serialization.SmallerJSON;
+using System.Collections;
 using System.Text;
 
 namespace Beamable.Editor.BeamCli.UI
@@ -7,6 +8,8 @@ namespace Beamable.Editor.BeamCli.UI
 	{
 		private const string OBJECT_OPEN = "{";
 		private const string OBJECT_CLOSE = "}";
+		private const string ARRAY_OPEN = "[";
+		private const string ARRAY_CLOSE = "]";
 		private const string KEY_OPEN = "<color=#fbb863>";
 		private const string KEY_CLOSE = "</color>";
 		private const string VAL_OPEN = "<color=#ffeedb>";
@@ -70,6 +73,49 @@ namespace Beamable.Editor.BeamCli.UI
 
 				switch (kvp.Value)
 				{
+					case IList listable:
+						sb.Append(ARRAY_OPEN);
+				
+						foreach (var element in listable)
+						{
+							// TODO: refactor to use some recursive definitions
+							sb.Append(LINEBREAK);
+							AppendIndents(sb, indents + 1);
+							switch (element)
+							{
+								case ArrayDict subDict:
+									break;
+								case string:
+									sb.Append(STR_OPEN);
+									sb.Append("\"");
+									sb.Append(VAL_CLOSE);
+
+									sb.Append(BOOL_OPEN);
+									sb.Append(element.ToString().ToLowerInvariant());
+									sb.Append(VAL_CLOSE);
+
+									sb.Append(STR_OPEN);
+									sb.Append("\"");
+									sb.Append(VAL_CLOSE);
+									break;
+								case int:
+								case long:
+								case bool:
+									sb.Append(BOOL_OPEN);
+									sb.Append(element.ToString().ToLowerInvariant());
+									sb.Append(VAL_CLOSE);
+									break;
+								default:
+									sb.Append(VAL_OPEN);
+									sb.Append(element);
+									sb.Append(VAL_CLOSE);
+									break;
+							}
+						}
+						sb.Append(LINEBREAK);
+						AppendIndents(sb, indents);
+						sb.Append(ARRAY_CLOSE);
+						break;
 					case ArrayDict subDict:
 						Highlight(subDict, sb, indents, applyOpeningIndent: false);
 						break;

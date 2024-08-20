@@ -1,5 +1,6 @@
 using Beamable.Common.Dependencies;
 using cli.Services;
+using MongoDB.Bson;
 using Serilog;
 using Serilog.Events;
 
@@ -10,10 +11,9 @@ public class TaskLocalLog : ILogger
 	public static TaskLocalLog Instance = new TaskLocalLog();
 
 	public AsyncLocal<ILogger> Context = new AsyncLocal<ILogger>();
-	
+
 	private TaskLocalLog()
 	{
-		
 	}
 
 	public void CreateContext(IDependencyProvider provider)
