@@ -1,3 +1,6 @@
+using Beamable.Common.BeamCli.Contracts;
+using Beamable.Editor.BeamCli.UI.LogHelpers;
+using Beamable.Editor.ThirdParty.Splitter;
 using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
@@ -15,6 +18,15 @@ namespace Beamable.Editor.BeamCli.UI
 		Vector2 _commandsPayloadsScrollPosition;
 		Vector2 _commandsErrorsScrollPosition;
 		private string _currentCommandId = string.Empty;
+		public LogView commandLogs;
+
+		public float commandSplitterValue;
+
+		[NonSerialized]
+		public CliLogDataProvider commandsLogProvider;
+
+		[NonSerialized]
+		public EditorGUISplitView commandSplitter;
 
 		void OnCommandsGui()
 		{
@@ -32,10 +44,33 @@ namespace Beamable.Editor.BeamCli.UI
 				}
 			});
 
+			if (commandSplitter == null)
+			{
+				commandSplitter = new EditorGUISplitView(EditorGUISplitView.Direction.Horizontal);
+				if (commandSplitterValue < .01f)
+				{
+					commandSplitterValue = .2f;
+				}
+				commandSplitter.splitNormalizedPosition = commandSplitterValue;
+			}
+
 			EditorGUILayout.BeginHorizontal();
+			commandSplitter.BeginSplitView();
 			OnCommandsScrollView();
+
+			EditorGUILayout.Space(10, false);
+			commandSplitter.Split(this);
+			EditorGUILayout.Space(10, false);
+
+			#region right side split
+
 			OnCommandsInfo();
+
 			OnLogsScrollView();
+
+			#endregion
+
+			commandSplitter.EndSplitView();
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.EndVertical();
 		}
@@ -71,8 +106,6 @@ namespace Beamable.Editor.BeamCli.UI
 				}
 
 				GUI.color = defaultColor;
-
-				EditorGUILayout.Space(5);
 			}, 500);
 
 			EditorGUILayout.EndVertical();
@@ -84,15 +117,19 @@ namespace Beamable.Editor.BeamCli.UI
 			string commandString = string.Empty;
 			int payloadsCount = 0;
 			int errorsCount = 0;
+			string startTime = string.Empty;
 
 			if (command != null)
 			{
 				commandString = command.commandString;
 				payloadsCount = command.payloads.Count;
 				errorsCount = command.errors.Count;
+				startTime = Time.;
 			}
 
 			EditorGUILayout.BeginVertical(GUILayout.ExpandWidth(true));
+
+			GUILayout.Label($"Command Timelapse - Start = [{startTime}]", EditorStyles.boldLabel);
 
 			var commandData = ParseCommandString(commandString);
 			GUILayout.Label($"Command Arguments: [{commandData.command}]", EditorStyles.boldLabel);
@@ -102,7 +139,6 @@ namespace Beamable.Editor.BeamCli.UI
 
 			DrawVirtualScroller(40, payloadsCount, ref _commandsPayloadsScrollPosition, (index, pos) =>
 			{
-				EditorGUILayout.BeginHorizontal();
 				Rect labelRect = new Rect(pos.position, new Vector2((int)(pos.width * 0.8), pos.height));
 				EditorGUI.SelectableLabel(labelRect, command?.payloads[index].json);
 
@@ -111,7 +147,6 @@ namespace Beamable.Editor.BeamCli.UI
 				{
 					PopupWindow.Show(buttonRect, new BeamCliJsonPopup(command?.payloads[index].json));
 				}
-				EditorGUILayout.EndHorizontal();
 			}, 150);
 
 			GUILayout.Label($"Command Errors ({errorsCount})", EditorStyles.boldLabel);
@@ -127,21 +162,27 @@ namespace Beamable.Editor.BeamCli.UI
 		private void OnLogsScrollView()
 		{
 			var command = _history.commands.FirstOrDefault(c => c.id.Equals(_currentCommandId));
-			int commandLogsCount = 0;
 
-			if (command != null)
+			if (command == null)
 			{
-				commandLogsCount = command.logs.Count;
+				return;
 			}
 
 			EditorGUILayout.BeginVertical(GUILayout.ExpandWidth(true));
 
-			GUILayout.Label($"Command Logs ({commandLogsCount})", EditorStyles.boldLabel);
+			GUILayout.Label($"Command Logs ({command.logs.Count})", EditorStyles.boldLabel);
 
-			DrawVirtualScroller(40, commandLogsCount, ref _commandsLogScrollPosition, (index, pos) =>
+			if (commandsLogProvider == null)
 			{
-				EditorGUI.SelectableLabel(pos, command?.logs[index].message);
-			}, 450);
+				commandsLogProvider = new CliLogDataProvider(command.logs);
+			}
+
+			this.DrawLogWindow(commandLogs,
+			                   dataList: commandsLogProvider,
+			                   onClear: () =>
+			                   {
+				                   command.logs.Clear();
+			                   });
 
 			EditorGUILayout.EndVertical();
 		}
