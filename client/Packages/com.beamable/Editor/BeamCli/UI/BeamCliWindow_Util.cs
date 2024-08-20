@@ -15,6 +15,14 @@ namespace Beamable.Editor.BeamCli.UI
 		public string name;
 	}
 
+	[Serializable]
+	public class CliJsonBlockData
+	{
+		public Vector2 scrollPosition;
+		public string highlightedJson;
+		public string originalJson;
+	}
+
 	public partial class BeamCliWindow
 	{
 		private static string[] _fonts;
@@ -75,22 +83,10 @@ namespace Beamable.Editor.BeamCli.UI
 			DrawJsonBlock(highlighted);
 		}
 
-		public static void DrawJsonBlock(string formattedJson, params GUILayoutOption[] options)
-		{
-			Rect res = GetRectForFormattedJson(formattedJson, out var style, options);
-
-			var indentedRect = EditorGUI.IndentedRect(res);
-			var outlineWidth = 1;
-			var outline = new Rect(indentedRect.x - outlineWidth, indentedRect.y - outlineWidth,
-			                       indentedRect.width + outlineWidth * 2, indentedRect.height + outlineWidth * 2);
-
-			EditorGUI.SelectableLabel(res, formattedJson, style);
-		}
-		
-		public static void DrawJsonBlock(Rect position, string formattedJson, params GUILayoutOption[] options)
+		public static void DrawJsonBlock(Rect position, CliJsonBlockData data)
 		{
 			var style = GetCodeStyle();
-			var content = new GUIContent(formattedJson);
+			var content = new GUIContent(data.highlightedJson);
 			var size = style.CalcSize(content);
 			if (size.y < position.height)
 			{
@@ -103,10 +99,38 @@ namespace Beamable.Editor.BeamCli.UI
 			}
 			var view = new Rect(0,0, size.x, size.y);
 
-			GUI.BeginScrollView(position, Vector2.zero, view);
-			EditorGUI.SelectableLabel(view, formattedJson, style);
+			data.scrollPosition = GUI.BeginScrollView(position, data.scrollPosition, view);
+			var copyButton = new Rect(position.xMax - 40, 10, 20, 20);
+			var isButtonHover = copyButton.Contains(Event.current.mousePosition);
+			var buttonClicked = isButtonHover && Event.current.rawType == EventType.MouseDown;
+
+			EditorGUI.SelectableLabel(view, data.highlightedJson, style);
 			
 			GUI.EndScrollView();
+			
+			// copy button...
+			var tempColor = GUI.color;
+			GUI.color = isButtonHover ? new Color(1,1,1,.8f) : new Color(1, 1, 1, .5f);
+			GUI.Button(copyButton, EditorGUIUtility.FindTexture("Clipboard"));
+			EditorGUIUtility.AddCursorRect(copyButton, MouseCursor.Link);
+			GUI.color = tempColor;
+			if (buttonClicked)
+			{
+				EditorGUIUtility.systemCopyBuffer = data.originalJson;
+			}
+			
+		}
+		
+		public static void DrawJsonBlock(string formattedJson, params GUILayoutOption[] options)
+		{
+			Rect res = GetRectForFormattedJson(formattedJson, out var style, options);
+
+			var indentedRect = EditorGUI.IndentedRect(res);
+			var outlineWidth = 1;
+			var outline = new Rect(indentedRect.x - outlineWidth, indentedRect.y - outlineWidth,
+			                       indentedRect.width + outlineWidth * 2, indentedRect.height + outlineWidth * 2);
+
+			EditorGUI.SelectableLabel(res, formattedJson, style);
 		}
 
 		public static Rect GetRectForFormattedJson(string formattedJson, out GUIStyle style, params GUILayoutOption[] options)
@@ -208,18 +232,54 @@ namespace Beamable.Editor.BeamCli.UI
 
 		public static void DrawScrollableSelectableTextBox(string text, ref Vector2 scrollPos, int minHeight)
 		{
-			scrollPos = EditorGUILayout.BeginScrollView(scrollPos, GUILayout.Height(100));
+
+			var content = new GUIContent(text);
 			var style = new GUIStyle(EditorStyles.label)
 			{
-				wordWrap = true, 
-				padding = new RectOffset(2, 2, 2, 2)
+				wordWrap = true, padding = new RectOffset(2, 2, 2, 2), alignment = TextAnchor.UpperLeft
 			};
-			var rect = GUILayoutUtility.GetRect(new GUIContent(text), style);
-			EditorGUI.SelectableLabel(rect, text, style);
-			EditorGUILayout.EndScrollView();
+			var size = style.CalcSize(content);
+
+			var fullRect = GUILayoutUtility.GetRect(content, style,
+			                                        options: new GUILayoutOption[]
+			                                        {
+				                                        GUILayout.ExpandWidth(true), GUILayout.MinHeight(minHeight),
+				                                        GUILayout.MaxHeight(minHeight),
+			                                        });
+			if (size.y < fullRect.height)
+			{
+				size.y = fullRect.height;
+			}
+
+			size.x = fullRect.width - 18;
+
+
+			var view = new Rect(0, 0, size.x, size.y);
+
+			var copyButton = new Rect(fullRect.xMax - 40, fullRect.y + 10, 20, 20);
+			var isButtonHover = copyButton.Contains(Event.current.mousePosition);
+			var buttonClicked = isButtonHover && Event.current.rawType == EventType.MouseDown;
+
+			scrollPos = GUI.BeginScrollView(fullRect, scrollPos, view);
+
+
+			EditorGUI.SelectableLabel(view, text, style);
+			GUI.EndScrollView();
+
+			// copy button...
+			var tempColor = GUI.color;
+			GUI.color = isButtonHover ? new Color(1, 1, 1, .8f) : new Color(1, 1, 1, .5f);
+			GUI.Button(copyButton, EditorGUIUtility.FindTexture("Clipboard"));
+			EditorGUIUtility.AddCursorRect(copyButton, MouseCursor.Link);
+			GUI.color = tempColor;
+			if (buttonClicked)
+			{
+				Debug.Log("Copied! " + text);
+				EditorGUIUtility.systemCopyBuffer = text;
+			}
 		}
 
-		
+
 	}
 	
 	
