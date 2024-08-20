@@ -17,7 +17,9 @@ namespace Beamable.Editor.BeamCli.UI
 
 		public CliLogDataProvider logProvider;
 		public LogView terminalLogView;
-		public List<string> terminalResults = new List<string>();
+		public List<CliJsonBlockData> terminalResults = new List<CliJsonBlockData>();
+		public List<CliJsonBlockData> terminalErrors = new List<CliJsonBlockData>();
+		public Vector2 terminalErrorScroller;
 		public Vector2 terminalResultScroller;
 
 		public float terminalSplitValue = .5f;
@@ -71,12 +73,33 @@ namespace Beamable.Editor.BeamCli.UI
 				EditorGUILayout.Space(10, false);
 
 				EditorGUILayout.BeginVertical();
-				DrawVirtualScroller(200, terminalResults.Count, ref terminalResultScroller, (index, rect) =>
+
+				EditorGUILayout.BeginVertical();
 				{
-					var json = terminalResults[index];
-					DrawJsonBlock(rect, json);
+					EditorGUILayout.LabelField("Terminal Output", EditorStyles.boldLabel);
+					DrawVirtualScroller(200, terminalResults.Count, ref terminalResultScroller, (index, rect) =>
+					{
+						var json = terminalResults[index];
+						DrawJsonBlock(rect, json);
 				
-				});
+					});
+				}
+				
+				EditorGUILayout.EndVertical();
+				
+				EditorGUILayout.BeginVertical();
+				{
+					EditorGUILayout.LabelField("Terminal Errors", EditorStyles.boldLabel);
+					DrawVirtualScroller(200, terminalErrors.Count, ref terminalErrorScroller, (index, rect) =>
+					{
+						var json = terminalErrors[index];
+						DrawJsonBlock(rect, json);
+				
+						
+					});
+				}
+				EditorGUILayout.EndVertical();
+				
 				EditorGUILayout.EndVertical();
 				
 				
@@ -92,7 +115,6 @@ namespace Beamable.Editor.BeamCli.UI
 				
 				if (!string.IsNullOrEmpty(terminalInput) && Event.current.isKey && Event.current.keyCode == KeyCode.Return)
 				{
-					
 					RunTerminalCommand();
 				}
 				
@@ -111,6 +133,7 @@ namespace Beamable.Editor.BeamCli.UI
 			var logs = new List<CliLogMessage>();
 			logProvider = new CliLogDataProvider(logs);
 			terminalLogView = new LogView();
+			terminalErrors.Clear();
 			terminalResults.Clear();
 			
 			command.On(cb =>
@@ -121,15 +144,28 @@ namespace Beamable.Editor.BeamCli.UI
 					logs.Add(msg.data);
 					terminalLogView.RebuildView();
 					
-				} else if (cb.type.StartsWith("error"))
-				{
-					
-				}
+				} 
 				else // data payload...
 				{
 					var dict = (ArrayDict)Json.Deserialize(cb.json);
 					var highlightedJson = JsonHighlighterUtil.HighlightJson(dict);
-					terminalResults.Add(highlightedJson);
+
+					if (cb.type.StartsWith("error"))
+					{
+						terminalErrors.Add(new CliJsonBlockData
+						{
+							highlightedJson = highlightedJson,
+							originalJson = cb.json,
+						});
+					}
+					else
+					{
+						terminalResults.Add(new CliJsonBlockData
+						{
+							highlightedJson = highlightedJson,
+							originalJson = cb.json,
+						});
+					}
 				}
 				
 				Debug.Log(cb.type + " / " + cb.json);

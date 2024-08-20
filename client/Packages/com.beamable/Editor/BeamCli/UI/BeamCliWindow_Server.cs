@@ -20,6 +20,7 @@ namespace Beamable.Editor.BeamCli.UI
 		public float serverSplitterValue;
 		public LogView serverLogs;
 		public LogView serverEvents;
+		public Vector2 serverCliScroll;
 		
 		[NonSerialized]
 		public EditorGUISplitView serverSplitter;
@@ -31,6 +32,29 @@ namespace Beamable.Editor.BeamCli.UI
 		
 		void OnServerGui()
 		{
+			var service = ActiveContext.ServiceScope.GetService<BeamWebCommandFactory>();
+			var process = service.GetServerProcess();
+			DrawTools(new CliWindowToolAction
+			{
+				name = "Clear Data",
+				onClick = () =>
+				{
+					_history.serverEvents.Clear();
+					_history.serverLogs.Clear();
+					
+					serverLogs.BuildView(serverLogProvider, true);
+					serverEvents.BuildView(serverEventsProvider, true);
+				}
+			}, new CliWindowToolAction
+			{
+				name = "Kill Server",
+				onClick = () =>
+				{
+					Debug.Log("killing server...");
+					service.KillServer();
+				}
+			});
+			
 			EditorGUILayout.BeginHorizontal();
 			{
 				GUILayout.Label("Server Ping", EditorStyles.boldLabel, new GUILayoutOption[]
@@ -43,6 +67,7 @@ namespace Beamable.Editor.BeamCli.UI
 					GUILayout.ExpandWidth(true),
 				});
 			}
+
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 			{
@@ -57,6 +82,22 @@ namespace Beamable.Editor.BeamCli.UI
 			}
 			EditorGUILayout.EndVertical();
 			
+			
+			EditorGUILayout.BeginVertical();
+			var hasProcess = !string.IsNullOrEmpty(process);
+			
+			if (hasProcess)
+			{
+				EditorGUILayout.LabelField("Running local server", EditorStyles.boldLabel);
+				DrawScrollableSelectableTextBox(process, ref serverCliScroll, 70, EditorStyles.helpBox);
+			}
+			else
+			{
+				EditorGUILayout.LabelField("Local server is not running (maybe connected to other server)", EditorStyles.boldLabel);
+			}
+
+			EditorGUILayout.EndVertical();
+
 
 			{
 				if (serverSplitter == null)

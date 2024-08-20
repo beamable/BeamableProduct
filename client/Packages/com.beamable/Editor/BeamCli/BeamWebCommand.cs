@@ -6,6 +6,7 @@ using Beamable.Editor.BeamCli.Commands;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Net.Sockets;
@@ -13,6 +14,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace Beamable.Editor.BeamCli
 {
@@ -62,7 +64,10 @@ namespace Beamable.Editor.BeamCli
 		public BeamableDispatcher dispatcher;
 		private readonly BeamWebCliCommandHistory _history;
 
-		public Promise onReady = null; 
+		public Promise onReady = null;
+		private ServerServeWrapper _serverCommand;
+
+
 
 		public BeamWebCommandFactory(IBeamableRequester requester, BeamableDispatcher dispatcher, BeamWebCliCommandHistory history)
 		{
@@ -106,6 +111,24 @@ namespace Beamable.Editor.BeamCli
 			await onReady;
 		}
 		
+		public void KillServer()
+		{
+			_serverCommand?.Cancel();
+			_serverCommand = null;
+		}
+
+		public string GetServerProcess()
+		{
+			try
+			{
+				return (((BeamCommand)_serverCommand?.Command)?.process)?.StartInfo.Arguments;
+			}
+			catch
+			{
+				return null;
+			}
+		}
+
 		IEnumerator InitServer()
 		{
 			yield return null; // important, wait a frame to accrue all requests in one "tick" 
@@ -152,16 +175,16 @@ namespace Beamable.Editor.BeamCli
 							selfDestructSeconds = 15 // TODO: validate that a low ttl will restart the server
 						};
 						var p = args.port;
-						var serverCommand = processCommands.ServerServe(args);
-					
+						_serverCommand = processCommands.ServerServe(args);
+						
 						var waitForResult = new Promise();
-						serverCommand.Command.On(data =>
+						_serverCommand.Command.On(data =>
 						{
 							if (data.type != "logs") return;
 							
 							_history.AddServerLog(p, data.json);
 						});
-						serverCommand.OnStreamServeCliCommandOutput(data =>
+						_serverCommand.OnStreamServeCliCommandOutput(data =>
 						{
 							port = data.data.port;
 							
@@ -171,7 +194,7 @@ namespace Beamable.Editor.BeamCli
 							});
 							waitForResult.CompleteSuccess();
 						});
-						serverCommand.OnError(err =>
+						_serverCommand.OnError(err =>
 						{
 							waitForResult.CompleteSuccess();
 						});
@@ -180,7 +203,7 @@ namespace Beamable.Editor.BeamCli
 						{
 							message = $"starting server on port=[{args.port}]"
 						});
-						var _ = serverCommand.Run();
+						var _ = _serverCommand.Run();
 							
 						yield return waitForResult.ToYielder();
 							
