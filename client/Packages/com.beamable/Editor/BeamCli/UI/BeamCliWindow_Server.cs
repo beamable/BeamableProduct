@@ -92,7 +92,7 @@ namespace Beamable.Editor.BeamCli.UI
 				
 				
 				EditorGUILayout.Space(10, false);
-				serverSplitter.Split();
+				serverSplitter.Split(this);
 				EditorGUILayout.Space(10, false);
 
 				

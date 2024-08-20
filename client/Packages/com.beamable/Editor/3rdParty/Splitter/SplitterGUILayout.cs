@@ -54,10 +54,10 @@ namespace Beamable.Editor.ThirdParty.Splitter
 					                                           availableRect.height * splitNormalizedPosition));
 		}
 
-		public void Split()
+		public void Split(EditorWindow window)
 		{
 			GUILayout.EndScrollView();
-			ResizeSplitFirstView();
+			ResizeSplitFirstView(window);
 		}
 
 		public void EndSplitView()
@@ -69,17 +69,19 @@ namespace Beamable.Editor.ThirdParty.Splitter
 				EditorGUILayout.EndVertical();
 		}
 
-		private void ResizeSplitFirstView()
+		private void ResizeSplitFirstView(EditorWindow window)
 		{
 
 			Rect resizeHandleRect;
 
+			var width = 4f;
+			var halfWidth = width * .5f;
 			if (splitDirection == Direction.Horizontal)
-				resizeHandleRect = new Rect(availableRect.width * splitNormalizedPosition, availableRect.y, 2f,
+				resizeHandleRect = new Rect(availableRect.width * splitNormalizedPosition - halfWidth, availableRect.y, width,
 				                            availableRect.height);
 			else
-				resizeHandleRect = new Rect(availableRect.x, availableRect.height * splitNormalizedPosition,
-				                            availableRect.width, 2f);
+				resizeHandleRect = new Rect(availableRect.x, availableRect.height * splitNormalizedPosition - halfWidth,
+				                            availableRect.width, width);
 
 			// GUI.DrawTexture(resizeHandleRect, EditorGUIUtility.whiteTexture);
 			EditorGUI.DrawRect(resizeHandleRect, new Color(0,0,0,.3f));
@@ -99,6 +101,8 @@ namespace Beamable.Editor.ThirdParty.Splitter
 					splitNormalizedPosition = Event.current.mousePosition.x / availableRect.width;
 				else
 					splitNormalizedPosition = Event.current.mousePosition.y / availableRect.height;
+				
+				window.Repaint();
 			}
 
 			if (Event.current.type == EventType.MouseUp)

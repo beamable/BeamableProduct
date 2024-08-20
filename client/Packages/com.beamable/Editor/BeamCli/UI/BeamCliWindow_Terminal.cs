@@ -56,6 +56,7 @@ namespace Beamable.Editor.BeamCli.UI
 				terminalSplitter.BeginSplitView();
 				
 				EditorGUILayout.BeginVertical();
+
 				this.DrawLogWindow(terminalLogView,
 				                   dataList: logProvider,
 				                   onClear: () =>
@@ -66,7 +67,7 @@ namespace Beamable.Editor.BeamCli.UI
 				EditorGUILayout.EndVertical();
 
 				EditorGUILayout.Space(10, false);
-				terminalSplitter.Split();
+				terminalSplitter.Split(this);
 				EditorGUILayout.Space(10, false);
 
 				EditorGUILayout.BeginVertical();
@@ -74,7 +75,7 @@ namespace Beamable.Editor.BeamCli.UI
 				{
 					var json = terminalResults[index];
 					DrawJsonBlock(rect, json);
-
+				
 				});
 				EditorGUILayout.EndVertical();
 				
