@@ -35,6 +35,8 @@ namespace Beamable.Editor.BeamCli.UI
 			{"Lost", "sv_icon_dot15_sml"}
 		};
 
+		private BeamWebCommandDescriptor selectedCommand;
+
 		void OnCommandsGui()
 		{
 			EditorGUILayout.BeginVertical();
@@ -126,7 +128,8 @@ namespace Beamable.Editor.BeamCli.UI
 
 		private void OnCommandsInfo()
 		{
-			var command = _history.commands.FirstOrDefault(c => c.id.Equals(_currentCommandId));
+			var command = GetSelectedCommand();
+
 			string commandString = string.Empty;
 			int payloadsCount = 0;
 			int errorsCount = 0;
@@ -190,8 +193,7 @@ namespace Beamable.Editor.BeamCli.UI
 
 		private void OnLogsScrollView()
 		{
-			var command = _history.commands.FirstOrDefault(c => c.id.Equals(_currentCommandId));
-
+			var command = GetSelectedCommand();
 			if (command == null)
 			{
 				return;
@@ -205,6 +207,8 @@ namespace Beamable.Editor.BeamCli.UI
 			{
 				commandsLogProvider = new CliLogDataProvider(command.logs);
 			}
+			
+			
 
 			this.DrawLogWindow(commandLogs,
 			                   dataList: commandsLogProvider,
@@ -219,6 +223,29 @@ namespace Beamable.Editor.BeamCli.UI
 		private void OnCommandSelected(string id)
 		{
 			_currentCommandId = id;
+			GetSelectedCommand(true);
+		}
+
+		BeamWebCommandDescriptor GetSelectedCommand(bool force=false)
+		{
+			if (force || selectedCommand == null)
+			{
+				selectedCommand = _history.commands.FirstOrDefault(c => c.id.Equals(_currentCommandId));
+				if (selectedCommand == null)
+				{
+					commandsLogProvider = new CliLogDataProvider(new List<CliLogMessage>());
+				}
+				else
+				{
+					commandsLogProvider = new CliLogDataProvider(selectedCommand.logs);
+				}
+				commandLogs.BuildView(commandsLogProvider, true);
+				return selectedCommand;
+			}
+			else
+			{
+				return selectedCommand;
+			}
 		}
 
 		private CommandStringData ParseCommandString(string commandString)
