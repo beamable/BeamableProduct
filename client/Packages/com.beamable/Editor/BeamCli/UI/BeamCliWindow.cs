@@ -37,11 +37,40 @@ namespace Beamable.Editor.BeamCli.UI
 		[NonSerialized]
 		public List<Action> delayedActions = new List<Action>();
 
+		private float lastTick;
+
 		protected override void Build()
 		{
 			// nothing to be done...
 		}
-		
+
+		public override void OnEnable()
+		{
+			base.OnEnable();
+			lastTick = Time.realtimeSinceStartup;
+			EditorApplication.update += OnEditorUpdate;
+		}
+
+		private void OnDisable()
+		{
+			EditorApplication.update -= OnEditorUpdate;
+		}
+
+		private void OnEditorUpdate()
+		{
+			if (selectedTab != BeamCliWindowTab.Commands)
+			{
+				return;
+			}
+
+			float diff = Time.realtimeSinceStartup - lastTick;
+
+			if (diff >= 1.0f)
+			{
+				lastTick = Time.realtimeSinceStartup;
+				Repaint();
+			}
+		}
 
 		private void OnGUI()
 		{

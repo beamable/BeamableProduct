@@ -14,7 +14,7 @@ namespace Beamable.Editor.BeamCli.UI
 		{
 			var currentTime = Time.realtimeSinceStartup;
 			var timePassed = currentTime - logTime;
-			var logDateTime = DateTime.Now.Subtract(new TimeSpan(0, 0, Convert.ToInt32(timePassed)));
+			var logDateTime = DateTime.Now.AddSeconds(-timePassed);
 			return logDateTime.ToLongTimeString();
 		}
 	}

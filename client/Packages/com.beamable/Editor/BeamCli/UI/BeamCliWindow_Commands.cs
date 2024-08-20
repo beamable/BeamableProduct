@@ -14,7 +14,6 @@ namespace Beamable.Editor.BeamCli.UI
 	public partial class BeamCliWindow
 	{
 		Vector2 _commandsScrollPosition;
-		Vector2 _commandsLogScrollPosition;
 		Vector2 _commandsPayloadsScrollPosition;
 		Vector2 _commandsErrorsScrollPosition;
 		private string _currentCommandId = string.Empty;
@@ -30,7 +29,10 @@ namespace Beamable.Editor.BeamCli.UI
 
 		private readonly Dictionary<string, string> commandsStatusIconMap = new Dictionary<string, string>()
 		{
-			{"Running", "sv_icon_dot13_sml"}, {"Completed", "sv_icon_dot11_sml"}, {"Error", "sv_icon_dot14_sml"}
+			{"Running", "sv_icon_dot13_sml"},
+			{"Completed", "sv_icon_dot11_sml"},
+			{"Error", "sv_icon_dot14_sml"},
+			{"Lost", "sv_icon_dot15_sml"}
 		};
 
 		void OnCommandsGui()
@@ -43,7 +45,6 @@ namespace Beamable.Editor.BeamCli.UI
 				{
 					_history.commands.Clear();
 					_commandsScrollPosition = Vector2.zero;
-					_commandsLogScrollPosition = Vector2.zero;
 					_commandsPayloadsScrollPosition = Vector2.zero;
 					_commandsErrorsScrollPosition = Vector2.zero;
 				}
@@ -131,14 +132,17 @@ namespace Beamable.Editor.BeamCli.UI
 			int errorsCount = 0;
 			string startTime = string.Empty;
 			string endTime = string.Empty;
+			string elapsedTimeText = string.Empty;
 
 			if (command != null)
 			{
 				commandString = command.commandString;
 				payloadsCount = command.payloads.Count;
 				errorsCount = command.errors.Count;
-				startTime = TimeDisplayUtil.GetLogDisplayTime(command.startTime);
+				startTime = command.startTime > 0 ? TimeDisplayUtil.GetLogDisplayTime(command.startTime) : "...";
 				endTime = command.Status == BeamWebCommandDescriptorStatus.DONE ? TimeDisplayUtil.GetLogDisplayTime(command.endTime) : "...";
+				var elapsedTime = GetElapsedTime(command);
+				elapsedTimeText = GetFormatedElapsedTime(elapsedTime);
 			}
 
 			EditorGUILayout.BeginVertical(GUILayout.ExpandWidth(true));
@@ -148,6 +152,7 @@ namespace Beamable.Editor.BeamCli.UI
 
 			GUILayout.Label($"Start Time = [<color=yellow>{startTime}</color>]", timeLabelsStyle);
 			GUILayout.Label($"End Time = [<color=yellow>{endTime}</color>]", timeLabelsStyle);
+			GUILayout.Label($"Elapsed Time = [<color=yellow>{elapsedTimeText}</color>]", timeLabelsStyle);
 
 			GUILayout.Space(10);
 
@@ -243,12 +248,44 @@ namespace Beamable.Editor.BeamCli.UI
 
 		private string GetCommandStatusIconKey(BeamWebCommandDescriptor command)
 		{
+			if (command.instance == null)
+			{
+				return commandsStatusIconMap["Lost"];
+			}
+
 			if (command.Status == BeamWebCommandDescriptorStatus.DONE)
 			{
 				return command.exitCode != 0 ? commandsStatusIconMap["Error"] : commandsStatusIconMap["Completed"];
 			}
 
 			return commandsStatusIconMap["Running"];
+		}
+
+		private float GetElapsedTime(BeamWebCommandDescriptor command)
+		{
+			if (command.Status == BeamWebCommandDescriptorStatus.DONE)
+			{
+				return command.endTime - command.startTime;
+			}
+
+			if (command.startTime < 0)
+			{
+				return 0;
+			}
+
+			return Time.realtimeSinceStartup - command.startTime;
+		}
+
+		private string GetFormatedElapsedTime(float elapsedTime)
+		{
+			if (elapsedTime < 1)
+			{
+				return "...";
+			}
+
+			var timeSpan = TimeSpan.FromSeconds(elapsedTime);
+			var dateTime = new DateTime(timeSpan.Ticks);
+			return dateTime.ToString("HH:mm:ss");
 		}
 	}
 
