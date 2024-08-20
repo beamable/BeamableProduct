@@ -137,6 +137,7 @@ namespace Beamable.Editor.BeamCli.UI
 			command.Run().Then(_ =>
 			{
 				Debug.Log("DONE");
+				this.Repaint();
 			});
 
 

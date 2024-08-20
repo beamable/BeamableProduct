@@ -270,6 +270,7 @@ namespace Beamable.Editor.BeamCli
 			var json = JsonUtility.ToJson(new BeamWebCommandRequest {commandLine = commandString});
 			req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 			CliLogger.Log("Sending cli web request, " + json);
+			var dispatchedIds = new List<long>();
 			try
 			{
 				_cts.Token.ThrowIfCancellationRequested();
@@ -294,7 +295,7 @@ namespace Beamable.Editor.BeamCli
 						continue;
 					}
 
-					_factory.dispatcher.Schedule(() => // put callback on separate work queue.
+					var jobId = _factory.dispatcher.Schedule(() => // put callback on separate work queue.
 					{
 						var lineJson = line
 							.Substring("data: ".Length); // remove the Server-Side-Event notation
@@ -308,7 +309,10 @@ namespace Beamable.Editor.BeamCli
 						_history.HandleMessage(id, res);
 						_callbacks?.Invoke(res);
 					});
+					dispatchedIds.Add(jobId);
 				}
+				
+				
 			}
 			catch (HttpRequestException socketException)
 			{
@@ -334,7 +338,9 @@ namespace Beamable.Editor.BeamCli
 					$"Socket exception happened general. command=[{commandString}] url=[{_factory.ExecuteUrl}] type=[{ex.GetType().FullName}]" +
 					ex.Message);
 				Debug.LogException(ex);
-			} finally {
+			} finally
+			{
+				await _factory.dispatcher.WaitForJobIds(dispatchedIds);
 				_history.UpdateCompleteTime(id);
 			}
 		}

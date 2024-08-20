@@ -162,7 +162,6 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 
 		public void RebuildView()
 		{
-			Debug.Log("REBUILD LOG VIEW");
 			scanIndex = 0;
 			verbose.count = 0;
 			info.count = 0;
