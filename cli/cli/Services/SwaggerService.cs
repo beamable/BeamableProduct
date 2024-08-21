@@ -22,7 +22,7 @@ public class SwaggerService
 	private readonly List<ISourceGenerator> _generators;
 
 	// TODO: make a PLAT ticket to give us back all openAPI spec info
-	public static readonly BeamableApiDescriptor[] Apis = new BeamableApiDescriptor[]
+	public static readonly BeamableApiDescriptor[] APIS = new BeamableApiDescriptor[]
 	{
 		// the proto-actor stack!
 		BeamableApis.ProtoActor(),
@@ -415,7 +415,7 @@ public class SwaggerService
 
 	public async Task<IEnumerable<OpenApiDocumentResult>> DownloadBeamableApis(BeamableApiFilter filter)
 	{
-		var selected = Apis.Where(filter.Accepts).ToList();
+		var selected = APIS.Where(filter.Accepts).ToList();
 		return await DownloadOpenApis(_downloader, selected).ToPromise(); //.ShowLoading("fetching swagger docs...");
 	}
 
@@ -600,6 +600,7 @@ public class SwaggerService
 			AddTitlesToAllSchemasIfNone,
 			RewriteObjectEnumsAsStrings,
 			DetectNonSelfReferentialTypes,
+			FixBasicCloudsavingDataMetadataGet,
 			Reserailize
 		};
 
@@ -1026,6 +1027,16 @@ public class SwaggerService
 		}
 
 		return output;
+	}
+
+	private static List<OpenApiDocumentResult> FixBasicCloudsavingDataMetadataGet(OpenApiDocumentResult swagger)
+	{
+		// this is a bit broken endpoint, it is a GET request with support for body
+		if (swagger.Document.Paths.ContainsKey("/basic/cloudsaving/data/metadata"))
+		{
+			swagger.Document.Paths.Remove("/basic/cloudsaving/data/metadata");
+		}
+		return new List<OpenApiDocumentResult> { swagger };
 	}
 
 	private static List<OpenApiDocumentResult> DetectNonSelfReferentialTypes(OpenApiDocumentResult swagger)
