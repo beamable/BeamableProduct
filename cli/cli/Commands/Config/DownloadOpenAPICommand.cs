@@ -1,7 +1,6 @@
 using JetBrains.Annotations;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Extensions;
-using Newtonsoft.Json;
 using Serilog;
 using System.CommandLine;
 
@@ -11,6 +10,9 @@ public class DownloadOpenAPICommandArgs : CommandArgs
 {
 	[CanBeNull] public string OutputPath;
 	public string Filter;
+	public bool CombineIntoOneDocument;
+
+	public bool OutputToStandardOutOnly => string.IsNullOrWhiteSpace(OutputPath);
 }
 
 
@@ -31,6 +33,9 @@ public class DownloadOpenAPICommand : AppCommand<DownloadOpenAPICommandArgs>, IE
 		AddOption(new Option<string>("--filter", () => null,
 				"Filter which open apis to generate. An empty string matches everything"),
 			(args, val) => args.Filter = val);
+		AddOption(new ConfigurableOptionFlag("combine-into-one-document",
+				"Combines all API documents into one."),
+			(args, val) => args.CombineIntoOneDocument = val);
 	}
 
 	public override async Task Handle(DownloadOpenAPICommandArgs args)
@@ -41,23 +46,37 @@ public class DownloadOpenAPICommand : AppCommand<DownloadOpenAPICommandArgs>, IE
 
 		var data = await _swaggerService.DownloadBeamableApis(filter);
 
-		var hasOutput = !string.IsNullOrEmpty(args.OutputPath);
+		if (args.CombineIntoOneDocument)
+		{
+			var combined = _swaggerService.GetCombinedDocument(data);
+			var json = combined.SerializeAsJson(OpenApiSpecVersion.OpenApi3_0);
+
+			if (args.OutputToStandardOutOnly)
+			{
+				Log.Information(json);
+				return;
+			}
+			var pathName = Path.Combine(args.OutputPath!, "combinedOpenApi.json");
+
+			Directory.CreateDirectory(Path.GetDirectoryName(pathName) ?? throw new InvalidOperationException());
+			await File.WriteAllTextAsync(pathName, json);
+			return;
+		}
 
 		foreach (var api in data)
 		{
 			var json = api.Document.SerializeAsJson(OpenApiSpecVersion.OpenApi3_0);
 
-			if (!hasOutput)
+			if (args.OutputToStandardOutOnly)
 			{
 				Log.Information(json);
-				// args.Reporter.Report("output", json);
 				continue;
 			}
 
-			var pathName = Path.Combine(args.OutputPath, api.Descriptor.FileName);
+			var pathName = Path.Combine(args.OutputPath!, api.Descriptor.FileName);
 
-			Directory.CreateDirectory(Path.GetDirectoryName(pathName));
-			File.WriteAllText(pathName, json);
+			Directory.CreateDirectory(Path.GetDirectoryName(pathName) ?? throw new InvalidOperationException());
+			await File.WriteAllTextAsync(pathName, json);
 		}
 	}
 }

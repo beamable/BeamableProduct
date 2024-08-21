@@ -1,7 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
 using cli.Unreal;
-using cli.Utils;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Exceptions;
@@ -9,10 +8,7 @@ using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
 using Microsoft.OpenApi.Writers;
-using Newtonsoft.Json;
 using Serilog;
-using SharpYaml.Tokens;
-using System.Collections;
 using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -421,6 +417,122 @@ public class SwaggerService
 	{
 		var selected = Apis.Where(filter.Accepts).ToList();
 		return await DownloadOpenApis(_downloader, selected).ToPromise(); //.ShowLoading("fetching swagger docs...");
+	}
+
+	public OpenApiDocument GetCombinedDocument(IEnumerable<OpenApiDocumentResult> apis)
+	{
+		var combinedDocument = new OpenApiDocument(apis.FirstOrDefault().Document);
+		foreach (OpenApiDocumentResult documentResult in apis)
+		{
+			foreach (var path in documentResult.Document.Paths)
+			{
+				if (!combinedDocument.Paths.ContainsKey(path.Key))
+				{
+					combinedDocument.Paths.Add(path.Key, path.Value);
+				}
+			}
+
+			foreach (var component in documentResult.Document.Components.Schemas)
+			{
+				if (!combinedDocument.Components.Schemas.ContainsKey(component.Key))
+				{
+					combinedDocument.Components.Schemas.Add(component);
+				}
+			}
+
+			foreach (var component in documentResult.Document.Components.RequestBodies)
+			{
+				if (!combinedDocument.Components.RequestBodies.ContainsKey(component.Key))
+				{
+					combinedDocument.Components.RequestBodies.Add(component);
+				}
+			}
+
+			foreach (var component in documentResult.Document.Components.Parameters)
+			{
+				if (!combinedDocument.Components.Parameters.ContainsKey(component.Key))
+				{
+					combinedDocument.Components.Parameters.Add(component);
+				}
+			}
+
+			foreach (var component in documentResult.Document.Components.Headers)
+			{
+				if (!combinedDocument.Components.Headers.ContainsKey(component.Key))
+				{
+					combinedDocument.Components.Headers.Add(component);
+				}
+			}
+
+			foreach (var component in documentResult.Document.Components.Callbacks)
+			{
+				if (!combinedDocument.Components.Callbacks.ContainsKey(component.Key))
+				{
+					combinedDocument.Components.Callbacks.Add(component);
+				}
+			}
+
+			foreach (var component in documentResult.Document.Components.Examples)
+			{
+				if (!combinedDocument.Components.Examples.ContainsKey(component.Key))
+				{
+					combinedDocument.Components.Examples.Add(component);
+				}
+			}
+
+			foreach (var component in documentResult.Document.Components.Responses)
+			{
+				if (!combinedDocument.Components.Responses.ContainsKey(component.Key))
+				{
+					combinedDocument.Components.Responses.Add(component);
+				}
+			}
+
+			foreach (var component in documentResult.Document.Components.Links)
+			{
+				if (!combinedDocument.Components.Links.ContainsKey(component.Key))
+				{
+					combinedDocument.Components.Links.Add(component);
+				}
+			}
+
+			foreach (var component in documentResult.Document.Components.SecuritySchemes)
+			{
+				if (!combinedDocument.Components.SecuritySchemes.ContainsKey(component.Key))
+				{
+					combinedDocument.Components.SecuritySchemes.Add(component);
+				}
+			}
+
+			foreach (var component in documentResult.Document.Components.Extensions)
+			{
+				if (!combinedDocument.Components.Extensions.ContainsKey(component.Key))
+				{
+					combinedDocument.Components.Extensions.Add(component);
+				}
+			}
+
+			foreach (var component in documentResult.Document.Extensions)
+			{
+				if (!combinedDocument.Extensions.ContainsKey(component.Key))
+				{
+					combinedDocument.Extensions.Add(component);
+				}
+			}
+
+			if (documentResult.Document.Annotations != null)
+			{
+				foreach (var component in documentResult.Document.Annotations)
+				{
+					if (!combinedDocument.Annotations.ContainsKey(component.Key))
+					{
+						combinedDocument.Annotations.Add(component);
+					}
+				}
+			}
+		}
+
+		return combinedDocument;
 	}
 
 	/// <summary>
@@ -1055,11 +1167,11 @@ public class BeamableApiFilter : DefaultQuery
 	}
 
 	protected static readonly Dictionary<string, DefaultQueryParser.ApplyParseRule<BeamableApiFilter>> StandardRules = new Dictionary<string, DefaultQueryParser.ApplyParseRule<BeamableApiFilter>>
-	{
-		{ "id", DefaultQueryParser.ApplyIdParse }, { "t", ApplyApiTypeRule },
+		{
+			{ "id", DefaultQueryParser.ApplyIdParse }, { "t", ApplyApiTypeRule },
 
-		// {"tag", ApplyTagParse},
-	};
+			// {"tag", ApplyTagParse},
+		};
 }
 
 public static class BeamableApis
