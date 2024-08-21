@@ -22,8 +22,7 @@ namespace Beamable.Editor.BeamCli.UI
 		public LogView serverEvents;
 		public Vector2 serverCliScroll;
 		
-		[NonSerialized]
-		public EditorGUISplitView serverSplitter;
+		public EditorGUISplitView serverSplitter = new EditorGUISplitView(EditorGUISplitView.Direction.Horizontal, .2f, .8f);
 		
 		[NonSerialized]
 		public CliLogDataProvider serverLogProvider;
@@ -100,16 +99,7 @@ namespace Beamable.Editor.BeamCli.UI
 
 
 			{
-				if (serverSplitter == null)
-				{
-					serverSplitter = new EditorGUISplitView(EditorGUISplitView.Direction.Horizontal);
-					if (serverSplitterValue < .01f)
-					{
-						serverSplitterValue = .2f;
-					}
-					serverSplitter.splitNormalizedPosition = serverSplitterValue;
-				}
-			
+				
 				EditorGUILayout.BeginHorizontal();
 				serverSplitter.BeginSplitView();
 

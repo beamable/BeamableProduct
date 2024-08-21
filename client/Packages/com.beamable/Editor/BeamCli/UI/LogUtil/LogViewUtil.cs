@@ -32,7 +32,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 		public LogLevelView fatal = new LogLevelView();
 
 		public bool isTailing = true;
-		
+
 		/// <summary>
 		/// this variable is used to process information across frames
 		/// </summary>

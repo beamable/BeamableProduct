@@ -23,8 +23,9 @@ namespace Beamable.Editor.BeamCli.UI
 		public Vector2 terminalResultScroller;
 
 		public float terminalSplitValue = .5f;
-		[NonSerialized]
-		public EditorGUISplitView terminalSplitter;
+
+		public EditorGUISplitView terminalSplitter = new EditorGUISplitView(EditorGUISplitView.Direction.Horizontal, .5f, .25f, .25f);
+		public EditorGUISplitView terminalSplitterVert = new EditorGUISplitView(EditorGUISplitView.Direction.Vertical, .85f, .15f);
 
 		
 		[NonSerialized]
@@ -32,12 +33,6 @@ namespace Beamable.Editor.BeamCli.UI
 		
 		void OnTerminalGui()
 		{
-			if (terminalSplitter == null)
-			{
-				terminalSplitter = new EditorGUISplitView(EditorGUISplitView.Direction.Horizontal);
-				terminalSplitter.splitNormalizedPosition = terminalSplitValue;
-				
-			}
 			{
 				
 				var style = new GUIStyle(EditorStyles.label)
@@ -54,72 +49,94 @@ namespace Beamable.Editor.BeamCli.UI
 					logProvider = new CliLogDataProvider(new List<CliLogMessage>());
 				}
 
+				terminalSplitterVert.BeginSplitView();
 				EditorGUILayout.BeginHorizontal();
-				terminalSplitter.BeginSplitView();
-				
-				EditorGUILayout.BeginVertical();
-
-				this.DrawLogWindow(terminalLogView,
-				                   dataList: logProvider,
-				                   onClear: () =>
-				                   {
-					                   logProvider.data.Clear();
-				                   });
-				
-				EditorGUILayout.EndVertical();
-
-				EditorGUILayout.Space(10, false);
-				terminalSplitter.Split(this);
-				EditorGUILayout.Space(10, false);
-
-				EditorGUILayout.BeginVertical();
-
-				EditorGUILayout.BeginVertical();
 				{
-					EditorGUILayout.LabelField("Terminal Output", EditorStyles.boldLabel);
-					DrawVirtualScroller(200, terminalResults.Count, ref terminalResultScroller, (index, rect) =>
+					terminalSplitter.BeginSplitView();
+
+					EditorGUILayout.BeginVertical();
 					{
-						var json = terminalResults[index];
-						DrawJsonBlock(rect, json);
-				
-					});
-				}
-				
-				EditorGUILayout.EndVertical();
-				
-				EditorGUILayout.BeginVertical();
-				{
-					EditorGUILayout.LabelField("Terminal Errors", EditorStyles.boldLabel);
-					DrawVirtualScroller(200, terminalErrors.Count, ref terminalErrorScroller, (index, rect) =>
+						EditorGUILayout.LabelField("Terminal Logs", EditorStyles.boldLabel);
+						this.DrawLogWindow(terminalLogView,
+						                   dataList: logProvider,
+						                   onClear: () =>
+						                   {
+							                   logProvider.data.Clear();
+						                   });
+					}
+					EditorGUILayout.EndVertical();
+
+
+					EditorGUILayout.Space(10, false);
+					terminalSplitter.Split(this);
+					EditorGUILayout.Space(10, false);
+
+					// EditorGUILayout.LabelField("B");
+					EditorGUILayout.BeginVertical();
+
 					{
-						var json = terminalErrors[index];
-						DrawJsonBlock(rect, json);
-				
-						
-					});
+						EditorGUILayout.LabelField("Terminal Output", EditorStyles.boldLabel);
+						DrawVirtualScroller(200, terminalResults.Count, ref terminalResultScroller, (index, rect) =>
+						{
+							var json = terminalResults[index];
+							DrawJsonBlock(rect, json);
+
+						});
+					}
+					EditorGUILayout.EndVertical();
+
+
+
+					EditorGUILayout.Space(10, false);
+					terminalSplitter.Split(this);
+					EditorGUILayout.Space(10, false);
+
+					// EditorGUILayout.LabelField("C");
+
+					EditorGUILayout.BeginVertical();
+					{
+						EditorGUILayout.LabelField("Terminal Errors", EditorStyles.boldLabel);
+						DrawVirtualScroller(200, terminalErrors.Count, ref terminalErrorScroller, (index, rect) =>
+						{
+							var json = terminalErrors[index];
+							DrawJsonBlock(rect, json);
+
+
+						});
+					}
+					EditorGUILayout.EndVertical();
+					//
+
+
+					terminalSplitter.EndSplitView();
 				}
-				EditorGUILayout.EndVertical();
-				
-				EditorGUILayout.EndVertical();
-				
-				
-				terminalSplitter.EndSplitView();
 				EditorGUILayout.EndHorizontal();
 				
-				// draw the input area
-				
-				var inputStyle = GetCodeStyle();
-				inputStyle.normal.textColor = new Color(.2f, .9f, .4f);
-				inputStyle.hover = inputStyle.active = inputStyle.focused = inputStyle.normal;
-				inputStyle.fontSize = 18;
-				
-				if (!string.IsNullOrEmpty(terminalInput) && Event.current.isKey && Event.current.keyCode == KeyCode.Return)
-				{
-					RunTerminalCommand();
-				}
-				
-				terminalInput = GUILayout.TextField(terminalInput, inputStyle);
+				EditorGUILayout.Space(10, false);
+				terminalSplitterVert.Split(this);
+				EditorGUILayout.Space(10, false);
 
+				// draw the input area
+				EditorGUILayout.BeginVertical();
+				{
+					EditorGUILayout.LabelField("Command Input", EditorStyles.boldLabel);
+
+					var inputStyle = GetCodeStyle();
+					inputStyle.normal.textColor = new Color(.2f, .9f, .4f);
+					inputStyle.hover = inputStyle.active = inputStyle.focused = inputStyle.normal;
+					inputStyle.fontSize = 18;
+
+					if (!string.IsNullOrEmpty(terminalInput) && Event.current.isKey &&
+					    Event.current.keyCode == KeyCode.Return)
+					{
+						RunTerminalCommand();
+					}
+
+					terminalInput = GUILayout.TextField(terminalInput, inputStyle, GUILayout.ExpandHeight(true));
+				}
+				EditorGUILayout.EndVertical();
+				
+				terminalSplitterVert.EndSplitView();
 			} 
 		}
 

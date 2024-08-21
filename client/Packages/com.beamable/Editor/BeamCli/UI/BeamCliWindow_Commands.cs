@@ -17,15 +17,14 @@ namespace Beamable.Editor.BeamCli.UI
 		Vector2 _commandsPayloadsScrollPosition;
 		Vector2 _commandsErrorsScrollPosition;
 		private string _currentCommandId = string.Empty;
-		public LogView commandLogs;
+		public LogView commandLogs = new LogView();
 
 		public float commandSplitterValue;
 
 		[NonSerialized]
 		public CliLogDataProvider commandsLogProvider;
 
-		[NonSerialized]
-		public EditorGUISplitView commandSplitter;
+		public EditorGUISplitView commandSplitter = new EditorGUISplitView(EditorGUISplitView.Direction.Horizontal, .2f, .3f, .5f);
 
 		private readonly Dictionary<string, string> commandsStatusIconMap = new Dictionary<string, string>()
 		{
@@ -52,16 +51,6 @@ namespace Beamable.Editor.BeamCli.UI
 				}
 			});
 
-			if (commandSplitter == null)
-			{
-				commandSplitter = new EditorGUISplitView(EditorGUISplitView.Direction.Horizontal);
-				if (commandSplitterValue < .01f)
-				{
-					commandSplitterValue = .2f;
-				}
-				commandSplitter.splitNormalizedPosition = commandSplitterValue;
-			}
-
 			EditorGUILayout.BeginHorizontal();
 			commandSplitter.BeginSplitView();
 			OnCommandsScrollView();
@@ -74,6 +63,11 @@ namespace Beamable.Editor.BeamCli.UI
 
 			OnCommandsInfo();
 
+			EditorGUILayout.Space(10, false);
+			commandSplitter.Split(this);
+			EditorGUILayout.Space(10, false);
+
+			
 			OnLogsScrollView();
 
 			#endregion
@@ -239,6 +233,7 @@ namespace Beamable.Editor.BeamCli.UI
 				{
 					commandsLogProvider = new CliLogDataProvider(selectedCommand.logs);
 				}
+
 				commandLogs.BuildView(commandsLogProvider, true);
 				return selectedCommand;
 			}
