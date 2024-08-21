@@ -92,18 +92,17 @@ namespace Beamable.Editor.BeamCli.UI
 				var buttonStyle = new GUIStyle(EditorStyles.toolbarButton);
 				buttonStyle.alignment = TextAnchor.MiddleLeft;
 
-				var defaultColor = GUI.color;
-				if (command.id.Equals(_currentCommandId))
-				{
-					GUI.color = Color.cyan;
-				}
-
-
 				var iconKey = GetCommandStatusIconKey(command);
 				var texture = EditorGUIUtility.FindTexture(iconKey);
 
 				Rect iconRect = new Rect(pos.position.x, pos.position.y, (int)(pos.width * 0.05), pos.height);
 				GUI.DrawTexture(iconRect, texture, ScaleMode.ScaleToFit);
+
+				var defaultColor = GUI.color;
+				if (command.id.Equals(_currentCommandId))
+				{
+					GUI.color = Color.cyan;
+				}
 
 				Rect buttonRect = new Rect(pos.position.x + (int)(pos.width * 0.05), pos.position.y, pos.width, pos.height - 2);
 				if (GUI.Button(buttonRect, commandStringData.command, buttonStyle))
@@ -179,7 +178,16 @@ namespace Beamable.Editor.BeamCli.UI
 
 			DrawVirtualScroller(40, errorsCount, ref _commandsErrorsScrollPosition, (index, pos) =>
 			{
-				EditorGUI.SelectableLabel(pos, command?.errors[index].message);
+				Rect labelRect = new Rect(pos.position.x, pos.position.y, (int)(pos.width * 0.75), pos.height);
+				EditorGUI.SelectableLabel(labelRect, command?.errors[index].message);
+
+				float buttonWidth = (int)(pos.width * 0.2);
+				float xAtEnd = pos.position.x + (pos.width - buttonWidth - 10);
+				Rect buttonRect = new Rect(xAtEnd, pos.position.y + (int)(pos.height * 0.25), buttonWidth, (int)(pos.height * 0.5));
+				if (GUI.Button(buttonRect, "Stack Trace"))
+				{
+					PopupWindow.Show(buttonRect, new BeamCliTextPopup("Stack Trace:", command?.errors[index].stackTrace));
+				}
 			}, 120);
 
 			EditorGUILayout.EndVertical();
@@ -277,7 +285,7 @@ namespace Beamable.Editor.BeamCli.UI
 
 			if (command.Status == BeamWebCommandDescriptorStatus.DONE)
 			{
-				return command.exitCode != 0 ? commandsStatusIconMap["Error"] : commandsStatusIconMap["Completed"];
+				return command.errors.Count > 0 ? commandsStatusIconMap["Error"] : commandsStatusIconMap["Completed"];
 			}
 
 			return commandsStatusIconMap["Running"];
