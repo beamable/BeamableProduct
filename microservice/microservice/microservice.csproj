@@ -37,7 +37,6 @@
     <PackageReference Include="EmbedIO" Version="3.4.*" />
     <PackageReference Include="LoxSmoke.DocXml" Version="3.4.*" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0-preview.6.21352.12" />
-    <PackageReference Include="Microsoft.OpenApi" Version="1.6.17" />
     <PackageReference Include="Microsoft.OpenApi.Readers" Version="1.3.2" />
     <PackageReference Include="NetMQ" Version="4.0.1.11" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.*" />
