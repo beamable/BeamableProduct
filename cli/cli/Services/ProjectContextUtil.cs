@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
 using CliWrap;
 using Microsoft.Build.Construction;
@@ -13,22 +14,45 @@ namespace cli.Services;
 
 public static class ProjectContextUtil
 {
+
+	private static Promise<ServiceManifest> _existingManifest;
+	private static DateTimeOffset _existingManifestCacheExpirationTime;
+	private static object _existingManifestLock = new();
+	private static readonly TimeSpan _existingManifestCacheTime = TimeSpan.FromSeconds(10);
+	
 	public static async Task<BeamoLocalManifest> GenerateLocalManifest(
 		string rootFolder,
 		string dotnetPath, 
 		BeamoService beamo,
 		ConfigService configService)
 	{
+		lock (_existingManifestLock)
+		{
+			var now = DateTimeOffset.Now;
+			var ttlValid = now < _existingManifestCacheExpirationTime;
+			var hasValue = _existingManifest != null;
 
-		var remote = await beamo.GetCurrentManifest(); // TODO do this at the same time as file scanning.
-
+			if (!ttlValid || !hasValue)
+			{
+				_existingManifest = beamo.GetCurrentManifest();
+				_existingManifestCacheExpirationTime = now + _existingManifestCacheTime;
+				Log.Verbose("cached manifest is a miss.");
+			}
+			else
+			{
+				Log.Verbose("using cached manifest.");
+			}
+		}
+		var remote = await _existingManifest;
+		
+		// var remoteTask = beamo.GetCurrentManifest();
 		// find all local project files...
 		var sw = new Stopwatch();
 		sw.Start();
-		var allProjects = ProjectContextUtil.FindCsharpProjects(rootFolder).ToArray();
+		var allProjects = FindCsharpProjects(rootFolder).ToArray();
 		sw.Stop();
 		Log.Verbose($"Gathering csprojs took {sw.Elapsed.TotalMilliseconds} ");
-		
+		sw.Restart();
 		var typeToProjects = allProjects
 			.GroupBy(p => p.properties.ProjectType)
 			.ToDictionary(kvp => kvp.Key, kvp => kvp.ToList());
@@ -125,6 +149,8 @@ public static class ProjectContextUtil
 		manifest.ServiceGroupToBeamoIds =
 			ResolveServiceGroups(manifest.ServiceDefinitions, manifest.HttpMicroserviceLocalProtocols);
 
+		sw.Stop();
+		Log.Verbose($"Finishing manifest took {sw.Elapsed.TotalMilliseconds} ");
 		return manifest;
 	}
 
@@ -181,6 +207,9 @@ public static class ProjectContextUtil
 	
 	public static CsharpProjectMetadata[] FindCsharpProjects(string rootFolder)
 	{
+		var sw = new Stopwatch();
+		sw.Start();
+		
 		if (string.IsNullOrEmpty(rootFolder))
 		{
 			rootFolder = ".";
@@ -256,7 +285,14 @@ public static class ProjectContextUtil
 			projects[i].projectReferences = allProjectRefs;
 		}
 
-		return projects.Where(p => p != null).ToArray();
+		Log.Verbose("filtering csproj files only took " + sw.ElapsedMilliseconds);
+
+		var result = projects.Where(p => p != null).ToArray();
+		
+		Log.Verbose("csproj linq non-null files took " + sw.ElapsedMilliseconds);
+
+		sw.Stop();
+		return result;
 	}
 
 	private const string MongoImage = "mongo:7.0";

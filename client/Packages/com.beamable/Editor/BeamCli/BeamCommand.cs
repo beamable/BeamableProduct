@@ -209,13 +209,20 @@ namespace Beamable.Editor.BeamCli
 
 		public void Cancel()
 		{
-			if (process.HasExited)
+			try
 			{
-				Debug.Log("Already exited.");
-				return;
+				if (process.HasExited)
+				{
+					Debug.Log("Already exited.");
+					return;
+				}
+
+				Debug.Log("Killing beam process, " + _command);
+				process.Kill();
 			}
-			Debug.Log("Killing beam process, " + _command);
-			process.Kill();
+			catch
+			{
+			}
 		}
 
 		public IBeamCommand On<T>(string type, Action<ReportDataPoint<T>> cb)
