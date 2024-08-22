@@ -34,7 +34,7 @@ public class DownloadOpenAPICommand : AppCommand<DownloadOpenAPICommandArgs>, IE
 				"Filter which open apis to generate. An empty string matches everything"),
 			(args, val) => args.Filter = val);
 		AddOption(new ConfigurableOptionFlag("combine-into-one-document",
-				"Combines all API documents into one."),
+				"Combines all API documents into one"),
 			(args, val) => args.CombineIntoOneDocument = val);
 	}
 
