@@ -154,6 +154,8 @@ namespace Beamable.Editor.BeamCli.UI
 			string startTime = string.Empty;
 			string endTime = string.Empty;
 			string elapsedTimeText = string.Empty;
+			string createdTime = string.Empty;
+			string resolveHostAtTime = string.Empty;
 			string timeFormat = "HH:mm:ss.ffff";
 
 			if (command != null)
@@ -161,6 +163,8 @@ namespace Beamable.Editor.BeamCli.UI
 				commandString = command.commandString;
 				payloadsCount = command.payloads.Count;
 				errorsCount = command.errors.Count;
+				createdTime = TimeDisplayUtil.GetLogDisplayTime(command.createdTime, timeFormat);
+				resolveHostAtTime = TimeDisplayUtil.GetLogDisplayTime(command.resolveHostAtTime, timeFormat);
 				startTime = command.startTime > 0 ? TimeDisplayUtil.GetLogDisplayTime(command.startTime, timeFormat) : "...";
 				endTime = command.Status == BeamWebCommandDescriptorStatus.DONE ? TimeDisplayUtil.GetLogDisplayTime(command.endTime, timeFormat) : "...";
 				elapsedTimeText = GetElapsedTime(command);
@@ -171,6 +175,8 @@ namespace Beamable.Editor.BeamCli.UI
 			GUIStyle timeLabelsStyle = new GUIStyle( EditorStyles.boldLabel);
 			timeLabelsStyle.richText = true;
 
+			GUILayout.Label($"Created Time = [<color=yellow>{createdTime}</color>]", timeLabelsStyle);
+			GUILayout.Label($"Resolve Host Time = [<color=yellow>{resolveHostAtTime}</color>]", timeLabelsStyle);
 			GUILayout.Label($"Start Time = [<color=yellow>{startTime}</color>]", timeLabelsStyle);
 			GUILayout.Label($"End Time = [<color=yellow>{endTime}</color>]", timeLabelsStyle);
 			GUILayout.Label($"Elapsed Time = [<color=yellow>{elapsedTimeText}</color>]", timeLabelsStyle);

@@ -42,7 +42,7 @@ namespace Beamable.Editor.BeamCli
 		public string id;
 		public string commandString;
 		public long createdTime = -1;
-		public float resolveHostAtTime;
+		public long resolveHostAtTime;
 		public long startTime = -1;
 		public long endTime = -1;
 		public float latestMessageTime;
@@ -141,7 +141,7 @@ namespace Beamable.Editor.BeamCli
 		public void UpdateResolvingHostTime(string id)
 		{
 			var desc = GetCommand(id);
-			desc.resolveHostAtTime = Time.realtimeSinceStartup;
+			desc.resolveHostAtTime = DateTime.Now.ToFileTime();
 		}
 		
 		public void UpdateStartTime(string id)

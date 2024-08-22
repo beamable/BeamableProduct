@@ -174,6 +174,16 @@ namespace Beamable.Editor.BeamCli.UI
 							highlightedJson = highlightedJson,
 							originalJson = cb.json,
 						});
+
+						//also add it to the logs
+						var msg = JsonUtility.FromJson<ReportDataPoint<ErrorOutput>>(cb.json);
+						var logMessage = $"{msg.data.message} \n\n {msg.data.stackTrace}";
+						var log = new CliLogMessage()
+						{
+							logLevel = "Error", message = logMessage, timestamp = msg.ts
+						};
+						logs.Add(log);
+						terminalLogView.RebuildView();
 					}
 					else
 					{
