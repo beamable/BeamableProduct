@@ -201,6 +201,7 @@ namespace Beamable.Editor.BeamCli.UI
 
 			var offset = 0;
 			var shadedIndex = startIndex;
+			var drawAttempts = 0;
 			for (var i = startIndex; i < endIndex; i++)
 			{
 				var index = i + offset;
@@ -216,9 +217,22 @@ namespace Beamable.Editor.BeamCli.UI
 				var drawn = drawCallback(index, rect);
 				if (!drawn)
 				{
+					drawAttempts++;
+
+					// if (drawAttempts > 50)
+					// {
+					// 	drawAttempts = 0;
+					// 	// skip cell
+					// 	continue;
+					// }
+					//
 					offset++;
 					i--;
 					// nothing was selected, so draw the next thing...
+				}
+				else
+				{
+					drawAttempts = 0;
 				}
 			}
 			GUI.EndScrollView();
