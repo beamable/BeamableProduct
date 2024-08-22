@@ -20,6 +20,7 @@ namespace Beamable.Editor.BeamCli.UI
 		public LogView commandLogs = new LogView();
 
 		public float commandSplitterValue;
+		public bool isCommandsScrollTailing = true;
 
 		[NonSerialized]
 		public CliLogDataProvider commandsLogProvider;
@@ -85,7 +86,17 @@ namespace Beamable.Editor.BeamCli.UI
 				GUILayout.ExpandWidth(false)
 			});
 
-			DrawVirtualScroller(20, _history.commands.Count, ref _commandsScrollPosition, (index, pos) =>
+			var scrollRectHeight = 500;
+			var elementHeight = 20;
+			var maxScroll = _history.commands.Count * elementHeight - scrollRectHeight;
+
+			if (isCommandsScrollTailing)
+			{
+				_commandsScrollPosition.y = maxScroll;
+			}
+			var startScrollPosition = _commandsScrollPosition.y;
+
+			DrawVirtualScroller(elementHeight, _history.commands.Count, ref _commandsScrollPosition, (index, pos) =>
 			{
 				var command = _history.commands[index];
 				var commandStringData = ParseCommandString(command.commandString);
@@ -114,7 +125,19 @@ namespace Beamable.Editor.BeamCli.UI
 				}
 
 				GUI.color = defaultColor;
-			}, 500);
+			}, scrollRectHeight);
+
+			// if the user tries to interact with the scroll, then un-tail
+			if (Math.Abs(startScrollPosition - _commandsScrollPosition.y) > .0001f)
+			{
+				isCommandsScrollTailing = false;
+			}
+
+			// if the user is close enough to the end, then become tail
+			if (Math.Abs(maxScroll - _commandsScrollPosition.y) < .01f)
+			{
+				isCommandsScrollTailing = true;
+			}
 
 			EditorGUILayout.EndVertical();
 		}
