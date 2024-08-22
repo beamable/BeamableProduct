@@ -41,10 +41,10 @@ namespace Beamable.Editor.BeamCli
 	{
 		public string id;
 		public string commandString;
-		public float createdTime;
+		public long createdTime = -1;
 		public float resolveHostAtTime;
-		public float startTime;
-		public float endTime;
+		public long startTime = -1;
+		public long endTime = -1;
 		public float latestMessageTime;
 		public int exitCode;
 
@@ -94,7 +94,7 @@ namespace Beamable.Editor.BeamCli
 				instance = command, 
 				commandString = command.commandString,
 				id = command.id,
-				createdTime = Time.realtimeSinceStartup
+				createdTime = DateTime.Now.ToFileTime()
 			};
 
 			_idTable.Add(desc.id, desc);
@@ -147,13 +147,13 @@ namespace Beamable.Editor.BeamCli
 		public void UpdateStartTime(string id)
 		{
 			var desc = GetCommand(id);
-			desc.startTime = Time.realtimeSinceStartup;
+			desc.startTime = DateTime.Now.ToFileTime();
 		}
 		
 		public void UpdateCompleteTime(string id)
 		{
 			var desc = GetCommand(id);
-			desc.endTime = Time.realtimeSinceStartup;
+			desc.endTime = DateTime.Now.ToFileTime();
 		}
 		
 		public void UpdateMessageTime(string id)
@@ -214,7 +214,6 @@ namespace Beamable.Editor.BeamCli
 			var msg = JsonUtility.FromJson<ReportDataPoint<CliLogMessage>>(serverLog);
 			var log = msg.data;
 			serverLogs.Add(log);
-			
 		}
 	}
 

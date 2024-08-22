@@ -20,6 +20,7 @@ namespace Beamable.Editor.BeamCli.UI
 		public LogView commandLogs = new LogView();
 
 		public float commandSplitterValue;
+		public bool isCommandsScrollTailing = true;
 
 		[NonSerialized]
 		public CliLogDataProvider commandsLogProvider;
@@ -85,7 +86,17 @@ namespace Beamable.Editor.BeamCli.UI
 				GUILayout.ExpandWidth(false)
 			});
 
-			DrawVirtualScroller(20, _history.commands.Count, ref _commandsScrollPosition, (index, pos) =>
+			var scrollRectHeight = 500;
+			var elementHeight = 20;
+			var maxScroll = _history.commands.Count * elementHeight - scrollRectHeight;
+
+			if (isCommandsScrollTailing)
+			{
+				_commandsScrollPosition.y = maxScroll;
+			}
+			var startScrollPosition = _commandsScrollPosition.y;
+
+			DrawVirtualScroller(elementHeight, _history.commands.Count, ref _commandsScrollPosition, (index, pos) =>
 			{
 				var command = _history.commands[index];
 				var commandStringData = ParseCommandString(command.commandString);
@@ -105,7 +116,9 @@ namespace Beamable.Editor.BeamCli.UI
 				}
 
 				Rect buttonRect = new Rect(pos.position.x + (int)(pos.width * 0.05), pos.position.y, pos.width, pos.height - 2);
-				if (GUI.Button(buttonRect, commandStringData.command, buttonStyle))
+				var displayTimeText = TimeDisplayUtil.GetLogDisplayTime(command.createdTime);
+				var commandText = $"[{displayTimeText}] {commandStringData.command}";
+				if (GUI.Button(buttonRect, commandText, buttonStyle))
 				{
 					delayedActions.Add(() =>
 					{
@@ -114,7 +127,19 @@ namespace Beamable.Editor.BeamCli.UI
 				}
 
 				GUI.color = defaultColor;
-			}, 500);
+			}, scrollRectHeight);
+
+			// if the user tries to interact with the scroll, then un-tail
+			if (Math.Abs(startScrollPosition - _commandsScrollPosition.y) > .0001f)
+			{
+				isCommandsScrollTailing = false;
+			}
+
+			// if the user is close enough to the end, then become tail
+			if (Math.Abs(maxScroll - _commandsScrollPosition.y) < .01f)
+			{
+				isCommandsScrollTailing = true;
+			}
 
 			EditorGUILayout.EndVertical();
 		}
@@ -129,16 +154,16 @@ namespace Beamable.Editor.BeamCli.UI
 			string startTime = string.Empty;
 			string endTime = string.Empty;
 			string elapsedTimeText = string.Empty;
+			string timeFormat = "HH:mm:ss.ffff";
 
 			if (command != null)
 			{
 				commandString = command.commandString;
 				payloadsCount = command.payloads.Count;
 				errorsCount = command.errors.Count;
-				startTime = command.startTime > 0 ? TimeDisplayUtil.GetLogDisplayTime(command.startTime) : "...";
-				endTime = command.Status == BeamWebCommandDescriptorStatus.DONE ? TimeDisplayUtil.GetLogDisplayTime(command.endTime) : "...";
-				var elapsedTime = GetElapsedTime(command);
-				elapsedTimeText = GetFormatedElapsedTime(elapsedTime);
+				startTime = command.startTime > 0 ? TimeDisplayUtil.GetLogDisplayTime(command.startTime, timeFormat) : "...";
+				endTime = command.Status == BeamWebCommandDescriptorStatus.DONE ? TimeDisplayUtil.GetLogDisplayTime(command.endTime, timeFormat) : "...";
+				elapsedTimeText = GetElapsedTime(command);
 			}
 
 			EditorGUILayout.BeginVertical(GUILayout.ExpandWidth(true));
@@ -291,31 +316,22 @@ namespace Beamable.Editor.BeamCli.UI
 			return commandsStatusIconMap["Running"];
 		}
 
-		private float GetElapsedTime(BeamWebCommandDescriptor command)
+		private string GetElapsedTime(BeamWebCommandDescriptor command)
 		{
+			TimeSpan diff;
 			if (command.Status == BeamWebCommandDescriptorStatus.DONE)
 			{
-				return command.endTime - command.startTime;
+				diff = DateTime.FromFileTime(command.endTime) - DateTime.FromFileTime(command.startTime);
+				return  $"{diff.Hours:00}:{diff.Minutes:00}:{diff.Seconds:00}.{diff.Milliseconds:0000}";
 			}
 
-			if (command.startTime < 0)
+			if (command.startTime <= 0)
 			{
-				return 0;
+				return "00:00:00.0000";
 			}
 
-			return Time.realtimeSinceStartup - command.startTime;
-		}
-
-		private string GetFormatedElapsedTime(float elapsedTime)
-		{
-			if (elapsedTime < 1)
-			{
-				return "...";
-			}
-
-			var timeSpan = TimeSpan.FromSeconds(elapsedTime);
-			var dateTime = new DateTime(timeSpan.Ticks);
-			return dateTime.ToString("HH:mm:ss");
+			diff = DateTime.Now - DateTime.FromFileTime(command.startTime);
+			return $"{diff.Hours:00}:{diff.Minutes:00}:{diff.Seconds:00}.{diff.Milliseconds:0000}";
 		}
 	}
 

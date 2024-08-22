@@ -1,5 +1,4 @@
 using System;
-using UnityEngine;
 
 namespace Beamable.Editor.BeamCli.UI
 {
@@ -9,13 +8,14 @@ namespace Beamable.Editor.BeamCli.UI
 		/// Gets the date time from the time a log happened
 		/// </summary>
 		/// <param name="logTime">The time a log happened in seconds since the startup of Unity</param>
-		/// <returns></returns>
-		public static string GetLogDisplayTime(float logTime)
+		/// <param name="customFormat">A optional custom format for the time log</param>
+		/// <returns>A formated date time based on the log time passed</returns>
+		public static string GetLogDisplayTime(long logTime, string customFormat = "HH:mm:ss")
 		{
-			var currentTime = Time.realtimeSinceStartup;
-			var timePassed = currentTime - logTime;
-			var logDateTime = DateTime.Now.AddSeconds(-timePassed);
-			return logDateTime.ToLongTimeString();
+			DateTime timeThen = DateTime.FromFileTime(logTime);
+
+			// Return the formatted log time
+			return timeThen.ToString(customFormat);
 		}
 	}
 }
