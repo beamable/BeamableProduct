@@ -290,13 +290,17 @@ namespace Beamable.Editor.BeamCli.UI
 			{
 				string key = match.Groups["key"].Value;
 				string value = match.Groups["value"].Value;
-				commandStringData.arguments.TryAdd(key, value);
+				commandStringData.arguments.AddUnchecked(key, value);
 			}
 
 			string result = Regex.Replace(commandString, pattern, "").Trim();
 			MatchCollection unmatchedMatches = Regex.Matches(result, nonMatchedPattern);
-
-			commandStringData.command = string.Join(" ", unmatchedMatches);
+			var unmatchedMatchResults = new string[unmatchedMatches.Count];
+			for (var i = 0; i < unmatchedMatchResults.Length; i++)
+			{
+				unmatchedMatchResults[i] = unmatchedMatches[i].Value;
+			}
+			commandStringData.command = string.Join(" ", unmatchedMatchResults);
 
 			return commandStringData;
 		}

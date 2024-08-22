@@ -1,4 +1,5 @@
 using Beamable.Serialization.SmallerJSON;
+using System;
 using System.Collections;
 using System.Text;
 
@@ -17,6 +18,7 @@ namespace Beamable.Editor.BeamCli.UI
 		private const string STR_OPEN = "<color=#bfb8b5>";
 		private const string VAL_CLOSE = KEY_CLOSE;
 		private const string KEY_SEPARATOR = ": ";
+		private const string VALUE_SEPARATOR = ", ";
 		private const string INDENT = "  ";
 		private const string LINEBREAK = "\n";
 		
@@ -24,7 +26,7 @@ namespace Beamable.Editor.BeamCli.UI
 		{
 			var dict = (ArrayDict)Json.Deserialize(json);
 			var sb = new StringBuilder();
-			Highlight(dict, sb, 0);
+			Highlight2(dict, sb, 0);
 			var formatted = sb.ToString();
 			return formatted;
 		}
@@ -32,7 +34,7 @@ namespace Beamable.Editor.BeamCli.UI
 		public static string HighlightJson(ArrayDict dict)
 		{
 			var sb = new StringBuilder();
-			Highlight(dict, sb, 0);
+			Highlight2(dict, sb, 0);
 			var formatted = sb.ToString();
 			return formatted;
 		}
@@ -48,110 +50,94 @@ namespace Beamable.Editor.BeamCli.UI
 
 		}
 
-		static void Highlight(ArrayDict dict, StringBuilder sb, int indents, bool applyOpeningIndent=true)
+		static void Highlight2(ArrayDict dict, StringBuilder sb, int indents, bool applyOpeningIndent = true)
 		{
 			if (applyOpeningIndent)
 			{
 				AppendIndents(sb, indents);
 			}
-
 			indents++;
 			sb.Append(OBJECT_OPEN);
-
+			
 			if (dict.Count > 0)
 			{
 				sb.Append(LINEBREAK);
 			}
-			
+
+			var count = dict.Count;
 			foreach (var kvp in dict)
 			{
+				count--;
 				AppendIndents(sb, indents);
 				sb.Append(KEY_OPEN);
 				sb.Append(kvp.Key);
 				sb.Append(KEY_CLOSE);
 				sb.Append(KEY_SEPARATOR);
-
-				switch (kvp.Value)
-				{
-					case IList listable:
-						sb.Append(ARRAY_OPEN);
 				
-						foreach (var element in listable)
-						{
-							// TODO: refactor to use some recursive definitions
-							sb.Append(LINEBREAK);
-							AppendIndents(sb, indents + 1);
-							switch (element)
-							{
-								case ArrayDict subDict:
-									break;
-								case string:
-									sb.Append(STR_OPEN);
-									sb.Append("\"");
-									sb.Append(VAL_CLOSE);
+				HighlightValue(kvp.Value, sb, indents);
 
-									sb.Append(BOOL_OPEN);
-									sb.Append(element.ToString().ToLowerInvariant());
-									sb.Append(VAL_CLOSE);
-
-									sb.Append(STR_OPEN);
-									sb.Append("\"");
-									sb.Append(VAL_CLOSE);
-									break;
-								case int:
-								case long:
-								case bool:
-									sb.Append(BOOL_OPEN);
-									sb.Append(element.ToString().ToLowerInvariant());
-									sb.Append(VAL_CLOSE);
-									break;
-								default:
-									sb.Append(VAL_OPEN);
-									sb.Append(element);
-									sb.Append(VAL_CLOSE);
-									break;
-							}
-						}
-						sb.Append(LINEBREAK);
-						AppendIndents(sb, indents);
-						sb.Append(ARRAY_CLOSE);
-						break;
-					case ArrayDict subDict:
-						Highlight(subDict, sb, indents, applyOpeningIndent: false);
-						break;
-					case string:
-						sb.Append(STR_OPEN);
-						sb.Append("\"");
-						sb.Append(VAL_CLOSE);
-
-						sb.Append(BOOL_OPEN);
-						sb.Append(kvp.Value.ToString().ToLowerInvariant());
-						sb.Append(VAL_CLOSE);
-
-						sb.Append(STR_OPEN);
-						sb.Append("\"");
-						sb.Append(VAL_CLOSE);
-						break;
-					case int:
-					case long:
-					case bool:
-						sb.Append(BOOL_OPEN);
-						sb.Append(kvp.Value.ToString().ToLowerInvariant());
-						sb.Append(VAL_CLOSE);
-						break;
-					default:
-						sb.Append(VAL_OPEN);
-						sb.Append(kvp.Value);
-						sb.Append(VAL_CLOSE);
-						break;
+				if (count > 0)
+				{
+					sb.Append(VALUE_SEPARATOR);
 				}
 				sb.Append(LINEBREAK);
 			}
-
+			
 			indents--;
 			AppendIndents(sb, indents);
 			sb.Append(OBJECT_CLOSE);
-			
+		}
+
+		static void HighlightValue(object value, StringBuilder sb, int indents)
+		{
+			if (value is int || value is float || value is long || value is double || value is bool)
+			{
+				sb.Append(BOOL_OPEN);
+				sb.Append(value.ToString().ToLowerInvariant());
+				sb.Append(VAL_CLOSE);
+			} else if (value is string)
+			{
+				sb.Append(STR_OPEN);
+				sb.Append("\"");
+				sb.Append(VAL_CLOSE);
+
+				sb.Append(BOOL_OPEN);
+				sb.Append(value.ToString());
+				sb.Append(VAL_CLOSE);
+
+				sb.Append(STR_OPEN);
+				sb.Append("\"");
+				sb.Append(VAL_CLOSE);
+			} else if (value is ArrayDict subDict)
+			{
+				Highlight2(subDict, sb, indents, false);
+			} else if (value is IList listable)
+			{
+				sb.Append(ARRAY_OPEN);
+				var count = listable.Count;
+				foreach (var element in listable)
+				{
+					count--;
+					sb.Append(LINEBREAK);
+					AppendIndents(sb, indents + 1);
+					
+					// serialize value.
+					HighlightValue(element, sb, indents + 1);
+
+					if (count > 0)
+					{
+						sb.Append(VALUE_SEPARATOR);
+					}
+				}
+				sb.Append(LINEBREAK);
+				AppendIndents(sb, indents);
+				sb.Append(ARRAY_CLOSE);
+				
+			}
+			else
+			{
+				// ? 
+			}
 		}
 	}
 }

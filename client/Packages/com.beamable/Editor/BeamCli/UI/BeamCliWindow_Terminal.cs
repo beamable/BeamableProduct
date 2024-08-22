@@ -185,11 +185,9 @@ namespace Beamable.Editor.BeamCli.UI
 					}
 				}
 				
-				Debug.Log(cb.type + " / " + cb.json);
 			});
 			command.Run().Then(_ =>
 			{
-				Debug.Log("DONE");
 				this.Repaint();
 			});
 
