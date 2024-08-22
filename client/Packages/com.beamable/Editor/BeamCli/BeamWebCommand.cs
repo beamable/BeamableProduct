@@ -220,7 +220,11 @@ namespace Beamable.Editor.BeamCli
 		{
 			try
 			{
-				var json = await localClient.GetStringAsync(InfoUrl).ToPromiseRoutine();
+#if UNITY_2021_1_OR_NEWER
+				var json = await localClient.GetStringAsync(InfoUrl);
+#else
+				var json = await localClient.GetStringAsync(InfoUrl).ToPromiseRoutine();;
+#endif
 				var res = JsonUtility.FromJson<ServerInfoResponse>(json);
 				
 				var ownerMatches = String.Equals(res.owner, Owner, StringComparison.OrdinalIgnoreCase);
