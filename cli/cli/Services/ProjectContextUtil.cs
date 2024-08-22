@@ -204,6 +204,44 @@ public static class ProjectContextUtil
 		// convert the hashset into an array
 		return intermediateResult.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToArray());
 	}
+
+
+	private static Dictionary<string, DateTime> _pathToLastWriteTime = new Dictionary<string, DateTime>();
+	private static Dictionary<string, CsharpProjectMetadata> _pathToMetadata =
+		new Dictionary<string, CsharpProjectMetadata>();
+	
+	static bool TryGetCachedProject(string path, out CsharpProjectMetadata metadata)
+	{
+		metadata = null;
+
+		if (!_pathToLastWriteTime.TryGetValue(path, out var cachedWriteTime))
+		{
+			// we've never seen this file before!
+			return false;
+		}
+		
+		var lastWriteTime = File.GetLastWriteTime(path);
+		if (lastWriteTime >= cachedWriteTime)
+		{
+			// the file has been modified since we last looked at it, so we should break the cache
+			return false;
+		}
+
+		if (!_pathToMetadata.TryGetValue(path, out metadata))
+		{
+			// unexpected, but if we don't have the associated metadata, then obviously break the cache.
+			return false;
+		}
+
+		// the metadata has been retrieved from the cache!
+		return true;
+	}
+
+	static void CacheProjectNow(string path, CsharpProjectMetadata metadata)
+	{
+		_pathToLastWriteTime[path] = DateTime.Now;
+		_pathToMetadata[path] = metadata;
+	}
 	
 	public static CsharpProjectMetadata[] FindCsharpProjects(string rootFolder)
 	{
@@ -222,6 +260,12 @@ public static class ProjectContextUtil
 		{
 			var path = paths[i];
 
+			if (TryGetCachedProject(path, out var metadata))
+			{
+				projects[i] = metadata;
+				continue;
+			}
+
 			var fileReader = File.OpenRead(path);
 			using var streamReader = new StreamReader(fileReader);
 			string line = string.Empty;
@@ -234,8 +278,8 @@ public static class ProjectContextUtil
 			if (!string.Equals("<Project Sdk=\"Microsoft.NET.Sdk\">", line,
 				    StringComparison.InvariantCultureIgnoreCase))
 			{
-				Log.Verbose($"Rejecting csproj=[{path}] due to lack of leading <Project Sdk> tag");
 				projects[i] = null;
+				CacheProjectNow(path, projects[i]);
 				continue;
 			}
 			
@@ -283,6 +327,7 @@ public static class ProjectContextUtil
 				});
 			}
 			projects[i].projectReferences = allProjectRefs;
+			CacheProjectNow(path, projects[i]);
 		}
 
 		Log.Verbose("filtering csproj files only took " + sw.ElapsedMilliseconds);
