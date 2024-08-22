@@ -16,7 +16,7 @@ public class DownloadOpenAPICommandArgs : CommandArgs
 }
 
 
-public class DownloadOpenAPICommand : AppCommand<DownloadOpenAPICommandArgs>, IEmptyResult
+public class DownloadOpenAPICommand : AppCommand<DownloadOpenAPICommandArgs>, IEmptyResult, IStandaloneCommand
 {
 	private SwaggerService _swaggerService;
 
