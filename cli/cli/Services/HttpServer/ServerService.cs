@@ -6,6 +6,7 @@ using cli.CliServerCommand;
 using cli.Utils;
 using Newtonsoft.Json;
 using Serilog;
+using System.Diagnostics;
 using System.Net;
 using System.Text;
 
@@ -271,14 +272,17 @@ public class ServerService
 		Log.Verbose("virtualizing " + req.commandLine);
 		
 		var app = new App();
-		
+
+		var sw = new Stopwatch();
+		sw.Start();
 		app.Configure(builder =>
 		{
 			builder.Remove<IDataReporterService>();
 			builder.AddSingleton<IDataReporterService, ServerReporterService>(provider => new ServerReporterService(provider, response));
 		}, overwriteLogger: false);
 		app.Build();
-
+		sw.Stop();
+		Log.Verbose("build virtual app in " + sw.ElapsedMilliseconds);
 		
 		await app.RunWithSingleString(req.commandLine);
 	}

@@ -46,6 +46,7 @@ using System.CommandLine.Help;
 using System.CommandLine.Invocation;
 using System.CommandLine.IO;
 using System.CommandLine.Parsing;
+using System.Diagnostics;
 using System.Reflection;
 using Command = System.CommandLine.Command;
 
@@ -459,7 +460,11 @@ public class App
 
 		CommandProvider = Commands.Build();
 
+		var sw = new Stopwatch();
+		sw.Start();
 		var _ = InstantiateAllCommands();
+		sw.Stop();
+		Log.Verbose("BUILD ALL COMMANDS TOOK : " + sw.ElapsedMilliseconds);
 
 		// sort the commands
 		var root = CommandProvider.GetService<RootCommand>();
@@ -663,6 +668,8 @@ public class App
 		
 		commandLineBuilder.AddMiddleware(async (ctx, next) =>
 		{
+			var sw = new Stopwatch();
+			sw.Start();
 			// create a scope for the execution of the command
 			var provider = CommandProvider.Fork(services =>
 			{
@@ -673,13 +680,19 @@ public class App
 				ConfigureServices(services);
 			});
 
+			Log.Verbose("command prep (make provider) took " + sw.ElapsedMilliseconds);
+
 			// update log information before dependency injection is sealed.
 			setLogger(provider);
+
+			Log.Verbose("command prep (make logs) took " + sw.ElapsedMilliseconds);
 
 			// we can take advantage of a feature of the CLI tool to use their slightly jank DI system to inject our DI system. DI in DI.
 			ctx.BindingContext.AddService(_ => new AppServices { duck = provider });
 			var appContext = provider.GetRequiredService<IAppContext>();
 			appContext.Apply(ctx.BindingContext);
+
+			Log.Verbose("command prep (app context) took " + sw.ElapsedMilliseconds);
 
 			// Check if we need to forward this command --- we only forward if the executing version of the CLI is different than the one locally installed on the project.
 			// As long as the versions are the same, running the local one or the global one changes nothing in behaviour.
@@ -697,6 +710,8 @@ public class App
 				}
 			}
 			
+			Log.Verbose("command prep (past proxy) took " + sw.ElapsedMilliseconds);
+			
 			try
 			{
 				var beamoSystem = provider.GetService<BeamoLocalSystem>();
@@ -711,8 +726,11 @@ public class App
 				throw;
 			}
 
+			Log.Verbose("command prep took " + sw.ElapsedMilliseconds);
 			await next(ctx);
 
+			sw.Stop();
+			Log.Verbose("command execution took " + sw.ElapsedMilliseconds);
 		}, MiddlewareOrder.Configuration);
 		commandLineBuilder.UseDefaults();
 		commandLineBuilder.UseSuggestDirective();
@@ -960,7 +978,11 @@ public class App
 
 	public virtual Task<int> RunWithSingleString(string commandLine)
 	{
+		var sw = new Stopwatch();
+		sw.Start();
 		var prog = GetProgram();
+		sw.Stop();
+		Log.Verbose("prepared virtual program instance in " + sw.ElapsedMilliseconds);
 		return prog.InvokeAsync(commandLine);
 	}
 }
