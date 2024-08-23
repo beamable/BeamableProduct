@@ -228,6 +228,7 @@ namespace Beamable.Editor.BeamCli.UI
 					//
 					offset++;
 					i--;
+					
 					// nothing was selected, so draw the next thing...
 				}
 				else

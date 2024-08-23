@@ -25,6 +25,11 @@ namespace Beamable.Editor.BeamCli.UI
 			
 			var mainStyle = new GUIStyle();
 			mainStyle.padding = new RectOffset(30, 30, 12, 0);
+
+			var labelStyle = new GUIStyle(EditorStyles.label);
+			// labelStyle.margin = new RectOffset(0, 0, 0, 0);
+			labelStyle.padding = new RectOffset(0, 18, 0, 2);
+			labelStyle.alignment = TextAnchor.LowerRight;
 			EditorGUILayout.BeginVertical(mainStyle);
 			{
 				EditorGUI.BeginChangeCheck();
@@ -46,8 +51,15 @@ namespace Beamable.Editor.BeamCli.UI
 					message: "These settings control how the CLI server resolution happens. ", 
 					type: MessageType.Info);
 				
+				EditorGUILayout.SelectableLabel(BeamCliUtil.CLI_PATH.ToLowerInvariant(), labelStyle);
 				EditorGUILayout.PropertyField(
 					serializedSettings.FindProperty(nameof(BeamWebCommandFactoryOptions.ownerOverride)));
+			
+				
+				EditorGUILayout.SelectableLabel(BeamCliUtil.CLI_VERSION, labelStyle);
+				EditorGUILayout.PropertyField(
+					serializedSettings.FindProperty(nameof(BeamWebCommandFactoryOptions.versionOverride)));
+		
 				EditorGUILayout.PropertyField(
 					serializedSettings.FindProperty(nameof(BeamWebCommandFactoryOptions.selfDestructOverride)),
 					new GUIContent("Destruct Timer (s)", null, "a value of 0 means there is no timeout."));

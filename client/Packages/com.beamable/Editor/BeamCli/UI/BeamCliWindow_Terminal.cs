@@ -16,7 +16,7 @@ namespace Beamable.Editor.BeamCli.UI
 		public string terminalInput;
 
 		public CliLogDataProvider logProvider;
-		public LogView terminalLogView;
+		public LogView terminalLogView = new LogView();
 		public List<CliJsonBlockData> terminalResults = new List<CliJsonBlockData>();
 		public List<CliJsonBlockData> terminalErrors = new List<CliJsonBlockData>();
 		public Vector2 terminalErrorScroller;

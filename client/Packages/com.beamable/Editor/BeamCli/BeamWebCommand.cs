@@ -43,6 +43,7 @@ namespace Beamable.Editor.BeamCli
 		public int port;
 		public OptionalInt selfDestructOverride = new OptionalInt();
 		public OptionalString ownerOverride = new OptionalString();
+		public OptionalString versionOverride = new OptionalString();
 
 		public OptionalInt serverEventLogCap = new OptionalInt();
 		public OptionalInt serverLogCap = new OptionalInt();
@@ -73,7 +74,7 @@ namespace Beamable.Editor.BeamCli
 		public string InfoUrl => $"{Url}/info";
 		public string Owner => _options.ownerOverride.GetOrElse(BeamCliUtil.CLI_PATH.ToLowerInvariant());
 
-		public static string Version => BeamCliUtil.CLI_VERSION;
+		public string Version => _options.versionOverride.GetOrElse(BeamCliUtil.CLI_VERSION);
 		
 		
 		// TODO: how do we store this port so that we don't have to ALWAYS go through mismatches to re-find it? 

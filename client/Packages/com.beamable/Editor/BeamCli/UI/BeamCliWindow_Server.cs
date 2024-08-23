@@ -18,8 +18,8 @@ namespace Beamable.Editor.BeamCli.UI
 		// public bool verboseToggled;
 
 		public float serverSplitterValue;
-		public LogView serverLogs;
-		public LogView serverEvents;
+		public LogView serverLogs = new LogView();
+		public LogView serverEvents = new LogView();
 		public Vector2 serverCliScroll;
 		
 		public EditorGUISplitView serverSplitter = new EditorGUISplitView(EditorGUISplitView.Direction.Horizontal, .2f, .8f);

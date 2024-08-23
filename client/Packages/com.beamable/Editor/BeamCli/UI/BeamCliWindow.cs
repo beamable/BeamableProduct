@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Editor.UI;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.Graphs;
@@ -22,13 +23,25 @@ namespace Beamable.Editor.BeamCli.UI
 		private BeamWebCliCommandHistory _history;
 
 		[MenuItem(
-			Constants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
+			Constants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/" +
 			Constants.Commons.OPEN + " " +
-			"beam cli debug",
+			"CLI Debugger %l",
 			priority = Constants.MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
 		)]
 		public static async Task Init() => await GetFullyInitializedWindow();
 
+		static BeamCliWindow()
+		{
+			WindowDefaultConfig = new BeamEditorWindowInitConfig()
+			{
+				Title = "CLI Debugger",
+				DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName,
+				FocusOnShow = false,
+				RequireLoggedUser = false,
+			};
+		}
+		
+		
 		// serialized state gets remembered between domain reloads...
 		[SerializeField]
 		public BeamCliWindowTab selectedTab;
@@ -107,26 +120,11 @@ namespace Beamable.Editor.BeamCli.UI
 			GUILayout.Label("No history... (broken?)");
 		}
 
-		void DrawTabButton(BeamCliWindowTab tab, string display)
-		{
-			var selectedTabStyle = new GUIStyle(EditorStyles.toolbarButton);
-			selectedTabStyle.normal.textColor = Color.cyan;
-			var tabStyle = EditorStyles.toolbarButton;
-
-			if (GUILayout.Button(display, selectedTab == tab ? selectedTabStyle : tabStyle))
-			{
-				selectedTab = tab;
-			}
-		}
-
 		void MainTabsGui()
 		{
 			GUILayout.BeginHorizontal(EditorStyles.toolbar);
 			{
-				DrawTabButton(BeamCliWindowTab.Commands, "Commands");
-				DrawTabButton(BeamCliWindowTab.Servers, "Servers");
-				DrawTabButton(BeamCliWindowTab.Terminal, "Terminal");
-				DrawTabButton(BeamCliWindowTab.Overrides, "Settings");
+				selectedTab = (BeamCliWindowTab)GUILayout.Toolbar((int)selectedTab, Enum.GetNames(typeof(BeamCliWindowTab)));
 			} 
 			GUILayout.EndHorizontal();
 
