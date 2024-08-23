@@ -34,7 +34,7 @@ public class DownloadOpenAPICommand : AppCommand<DownloadOpenAPICommandArgs>, IE
 				"Filter which open apis to generate. An empty string matches everything"),
 			(args, val) => args.Filter = val);
 		AddOption(new ConfigurableOptionFlag("combine-into-one-document",
-				"Combines all API documents into one"),
+				"Combines all API documents into one. In order to achieve that it will need to rename some of the types because of duplicates, eg. GetManifestResponse"),
 			(args, val) => args.CombineIntoOneDocument = val);
 	}
 
@@ -44,10 +44,12 @@ public class DownloadOpenAPICommand : AppCommand<DownloadOpenAPICommandArgs>, IE
 		// TODO: download the files to a folder...
 		var filter = BeamableApiFilter.Parse(args.Filter);
 
-		var data = await _swaggerService.DownloadBeamableApis(filter);
+		var documents = await _swaggerService.DownloadBeamableApis(filter);
 
 		if (args.CombineIntoOneDocument)
 		{
+			var data = SwaggerService.ExtractAllSchemas(documents.Select(result => result.Document).ToList(),
+				GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
 			var combined = _swaggerService.GetCombinedDocument(data);
 			var json = combined.SerializeAsJson(OpenApiSpecVersion.OpenApi3_0);
 
@@ -63,7 +65,7 @@ public class DownloadOpenAPICommand : AppCommand<DownloadOpenAPICommandArgs>, IE
 			return;
 		}
 
-		foreach (var api in data)
+		foreach (var api in documents)
 		{
 			var json = api.Document.SerializeAsJson(OpenApiSpecVersion.OpenApi3_0);
 

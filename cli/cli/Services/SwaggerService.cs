@@ -419,115 +419,88 @@ public class SwaggerService
 		return await DownloadOpenApis(_downloader, selected).ToPromise(); //.ShowLoading("fetching swagger docs...");
 	}
 
-	public OpenApiDocument GetCombinedDocument(IEnumerable<OpenApiDocumentResult> apis)
+	public OpenApiDocument GetCombinedDocument(List<NamedOpenApiSchema> apis)
 	{
-		var combinedDocument = new OpenApiDocument(apis.FirstOrDefault().Document);
-		foreach (OpenApiDocumentResult documentResult in apis)
+		var combinedDocument = new OpenApiDocument(apis.FirstOrDefault()!.Document);
+		foreach (var documentResult in apis.Skip(1))
 		{
 			foreach (var path in documentResult.Document.Paths)
 			{
-				if (!combinedDocument.Paths.ContainsKey(path.Key))
-				{
-					combinedDocument.Paths.Add(path.Key, path.Value);
-				}
+				if(combinedDocument.Paths.ContainsKey(path.Key))
+					continue;
+				combinedDocument.Paths.Add(path.Key, path.Value);
 			}
 
 			foreach (var component in documentResult.Document.Components.Schemas)
 			{
-				if (!combinedDocument.Components.Schemas.ContainsKey(component.Key))
+				if(combinedDocument.Components.Schemas.TryGetValue(component.Value.Reference.Id, out var schema))
 				{
-					combinedDocument.Components.Schemas.Add(component);
+					if(NamedOpenApiSchema.AreEqual(schema, component.Value, out _))
+						continue;
 				}
+				combinedDocument.Components.Schemas.Add(component.Value.Reference.Id, component.Value);
 			}
 
 			foreach (var component in documentResult.Document.Components.RequestBodies)
 			{
-				if (!combinedDocument.Components.RequestBodies.ContainsKey(component.Key))
-				{
-					combinedDocument.Components.RequestBodies.Add(component);
-				}
+				combinedDocument.Components.RequestBodies.Add(component);
 			}
 
 			foreach (var component in documentResult.Document.Components.Parameters)
 			{
-				if (!combinedDocument.Components.Parameters.ContainsKey(component.Key))
-				{
-					combinedDocument.Components.Parameters.Add(component);
-				}
+				combinedDocument.Components.Parameters.Add(component);
 			}
 
 			foreach (var component in documentResult.Document.Components.Headers)
 			{
-				if (!combinedDocument.Components.Headers.ContainsKey(component.Key))
-				{
-					combinedDocument.Components.Headers.Add(component);
-				}
+				combinedDocument.Components.Headers.Add(component);
 			}
 
 			foreach (var component in documentResult.Document.Components.Callbacks)
 			{
-				if (!combinedDocument.Components.Callbacks.ContainsKey(component.Key))
-				{
-					combinedDocument.Components.Callbacks.Add(component);
-				}
+				combinedDocument.Components.Callbacks.Add(component);
 			}
 
 			foreach (var component in documentResult.Document.Components.Examples)
 			{
-				if (!combinedDocument.Components.Examples.ContainsKey(component.Key))
-				{
-					combinedDocument.Components.Examples.Add(component);
-				}
+				combinedDocument.Components.Examples.Add(component);
 			}
 
 			foreach (var component in documentResult.Document.Components.Responses)
 			{
-				if (!combinedDocument.Components.Responses.ContainsKey(component.Key))
-				{
-					combinedDocument.Components.Responses.Add(component);
-				}
+				combinedDocument.Components.Responses.Add(component);
 			}
 
 			foreach (var component in documentResult.Document.Components.Links)
 			{
-				if (!combinedDocument.Components.Links.ContainsKey(component.Key))
-				{
-					combinedDocument.Components.Links.Add(component);
-				}
+				combinedDocument.Components.Links.Add(component);
 			}
 
 			foreach (var component in documentResult.Document.Components.SecuritySchemes)
 			{
-				if (!combinedDocument.Components.SecuritySchemes.ContainsKey(component.Key))
+				if (combinedDocument.Components.SecuritySchemes.TryGetValue(component.Key, out OpenApiSecurityScheme scheme))
 				{
-					combinedDocument.Components.SecuritySchemes.Add(component);
+					if (NamedOpenApiSchema.AreEqual(component.Value, scheme))
+						continue;
 				}
+				combinedDocument.Components.SecuritySchemes.Add(component);
 			}
 
 			foreach (var component in documentResult.Document.Components.Extensions)
 			{
-				if (!combinedDocument.Components.Extensions.ContainsKey(component.Key))
-				{
-					combinedDocument.Components.Extensions.Add(component);
-				}
+				combinedDocument.Components.Extensions.Add(component);
 			}
 
 			foreach (var component in documentResult.Document.Extensions)
 			{
-				if (!combinedDocument.Extensions.ContainsKey(component.Key))
-				{
-					combinedDocument.Extensions.Add(component);
-				}
+				combinedDocument.Extensions.Add(component);
 			}
 
 			if (documentResult.Document.Annotations != null)
 			{
 				foreach (var component in documentResult.Document.Annotations)
 				{
-					if (!combinedDocument.Annotations.ContainsKey(component.Key))
-					{
-						combinedDocument.Annotations.Add(component);
-					}
+					combinedDocument.Annotations.Add(component);
 				}
 			}
 		}
@@ -1545,6 +1518,72 @@ public class NamedOpenApiSchema
 
 
 		return differences.Count == 0;
+	}
+
+	public static bool AreEqual(OpenApiSecurityScheme a, OpenApiSecurityScheme b)
+	{
+		if (a == null && b == null) return true;
+		if (a == null || b == null) return false;
+		if (a == b) return true;
+		
+
+		// type must match.
+		if (!string.Equals(a.Type, b.Type))
+		{
+			return false;
+		}
+		if (!string.Equals(a.Flows, b.Flows))
+		{
+			return false;
+		}
+		if (!string.Equals(a.OpenIdConnectUrl, b.OpenIdConnectUrl))
+		{
+			return false;
+		}
+		if (!a.In.Equals(b.In))
+		{
+			return false;
+		}
+		if (a.Scheme != b.Scheme)
+		{
+			return false;
+		}
+
+		if (!a.Extensions.SequenceEqual(b.Extensions))
+		{
+			return false;
+		}
+
+		// if this is a reference, it must reference the same thing.
+		if (a.Reference != null && b.Reference != null)
+		{
+			// the reference id must be the same
+			if (!string.Equals(a.Reference.Id, b.Reference.Id))
+			{
+				return false;
+			}
+
+
+			if (!string.Equals(a.Reference.HostDocument?.Info?.Title, b.Reference.HostDocument?.Info?.Title))
+			{
+				var aSchema = a.Reference.HostDocument.Components.Schemas[a.Reference.Id];
+				var bSchema = a.Reference.HostDocument.Components.Schemas[a.Reference.Id];
+				if (!NamedOpenApiSchema.AreEqual(aSchema, bSchema, out _))
+				{
+					return false;
+				}
+			}
+		}
+		else if (a.Reference == null && b.Reference != null)
+		{
+			return false;
+		}
+		else if (a.Reference != null && b.Reference == null)
+		{
+			return false;
+		}
+
+		return true;
 	}
 }
 
