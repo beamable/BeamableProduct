@@ -38,7 +38,7 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 		var serviceSet = new HashSet<string>(args.services);
 		var discovery = args.DependencyProvider.GetService<DiscoveryService>();
 		var evtTable = new Dictionary<string, ServiceDiscoveryEvent>();
-		await foreach (var evt in discovery.StartDiscovery(TimeSpan.FromSeconds(1)))
+		await foreach (var evt in discovery.StartDiscovery(args, TimeSpan.FromSeconds(1)))
 		{
 			if (!serviceSet.Contains(evt.service)) continue; // we don't care about this service, because we aren't stopping it.
 

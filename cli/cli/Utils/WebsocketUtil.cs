@@ -40,6 +40,10 @@ public class WebsocketUtil
 			var messageObj = JsonConvert.DeserializeObject<ServerNotificationMessage>(message);
 
 			onNotification?.Invoke(messageObj);
+			
+			if (cancellationToken.IsCancellationRequested)
+				break;
+			
 		} while (ws.State == WebSocketState.Open);
 
 		return ws;
