@@ -304,7 +304,6 @@ namespace Beamable.Editor.BeamCli.UI
 			if (nextEnabled != view.enabled)
 			{
 				view.enabled = nextEnabled;
-				Debug.Log($"Changed filter of [{status}] to [{nextEnabled}]");
 			}
 		}
 
