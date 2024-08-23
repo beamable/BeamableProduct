@@ -81,6 +81,10 @@ namespace Beamable.Editor.BeamCli
 		public List<BeamCliServerEvent> serverEvents = new List<BeamCliServerEvent>();
 		public List<CliLogMessage> serverLogs = new List<CliLogMessage>();
 		public BeamCliPingResultDescriptor latestPing = new BeamCliPingResultDescriptor();
+
+		public int serverEventLogCap = 1_000;
+		public int serverLogCap = 3_000;
+		public int commandInstanceCap = 35;
 		
 		[NonSerialized]
 		private StorageHandle<BeamWebCliCommandHistory> _handle;
@@ -108,6 +112,10 @@ namespace Beamable.Editor.BeamCli
 
 		public void OnBeforeSaveState()
 		{
+			// only save at the given caps
+			serverLogs = serverLogs.TakeLast((int)Math.Min(serverLogCap, serverLogs.Count)).ToList();
+			serverEvents = serverEvents.TakeLast((int)Math.Min(serverEventLogCap, serverEvents.Count)).ToList();
+			commands = commands.TakeLast((int)Math.Min(commandInstanceCap, commands.Count)).ToList();
 		}
 
 		public void OnAfterLoadState()

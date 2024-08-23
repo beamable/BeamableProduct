@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using System.Collections;
 using UnityEditor;
 
 namespace Beamable.Editor.ThirdParty.Splitter
@@ -66,6 +65,24 @@ namespace Beamable.Editor.ThirdParty.Splitter
 			if (tempRect.width > 0.0f)
 			{
 				availableRect = tempRect;
+			}
+
+			var sum = 0f;
+			for (var i = 0; i < cellNormalizedSizes.Length; i++)
+			{
+				cellNormalizedSizes[i] = Mathf.Clamp01(cellNormalizedSizes[i]);
+				sum += cellNormalizedSizes[i];
+			}
+
+			// if the sum isn't close enough to 1, then we need to re-balance the weights
+			if (Mathf.Abs(1 - sum) > .01f)
+			{
+				Debug.LogWarning("splitter view is unbalanced and is resetting. ");
+				// this is a crappy way to do it; but cannot think of another way. 
+				for (var i = 0; i < cellNormalizedSizes.Length; i++)
+				{
+					cellNormalizedSizes[i] = 1f / cellNormalizedSizes.Length;
+				}
 			}
 
 			StartSplit(cellIndex);
