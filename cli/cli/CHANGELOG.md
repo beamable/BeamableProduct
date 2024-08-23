@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `--docker-cli-path` option overrides docker cli location used for Buildkit
 - `net8.0` support for Standalone Microservices
 - `beam project ps --raw` includes an `executionVersion` representing the version of the Beamable SDK being used in the service
-
+- `oapi download` flag `--combine-into-one-document` for combining OpenAPI documents into one
 ### Changed
 - Standalone Microservices are created with `net8.0` by default
 

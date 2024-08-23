@@ -28,10 +28,8 @@ using cli.UnrealCommands;
 using cli.Utils;
 using cli.Version;
 using CliWrap;
-using CommandLine.Text;
 using Errata;
 using Microsoft.Build.Locator;
-using Microsoft.CodeAnalysis.Sarif;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Serilog;
@@ -39,7 +37,6 @@ using Serilog.Core;
 using Serilog.Enrichers.Sensitive;
 using Serilog.Events;
 using Spectre.Console;
-using Spectre.Console.Rendering;
 using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Help;
@@ -176,7 +173,7 @@ public class App
 		_serviceConfigurator?.Invoke(services);
 	}
 
-	private Action<IDependencyProvider> setLogger = _ =>
+	private Action<IDependencyProvider> _setLogger = _ =>
 	{
 		// no-op
 	};
@@ -196,7 +193,7 @@ public class App
 
 		if (overwriteLogger)
 		{
-			setLogger = (provider) =>
+			_setLogger = (provider) =>
 			{
 				ConfigureLogging(this, provider, configureLogger);
 			};
@@ -653,14 +650,15 @@ public class App
 			});
 
 			// update log information before dependency injection is sealed.
-			setLogger(provider);
+			_setLogger(provider);
 
 			// we can take advantage of a feature of the CLI tool to use their slightly jank DI system to inject our DI system. DI in DI.
 			ctx.BindingContext.AddService(_ => new AppServices { duck = provider });
 			var appContext = provider.GetRequiredService<IAppContext>();
 			appContext.Apply(ctx.BindingContext);
 
-			// Check if we need to forward this command --- we only forward if the executing version of the CLI is different than the one locally installed on the project.
+			// Check if we need to forward this command
+			// we only forward if the executing version of the CLI is different from the one locally installed on the project.
 			// As long as the versions are the same, running the local one or the global one changes nothing in behaviour.
 			var runningVersion = appContext.ExecutingVersion;
 			var localVersion = appContext.LocalProjectVersion;
@@ -696,7 +694,7 @@ public class App
 		commandLineBuilder.UseDefaults();
 		commandLineBuilder.UseSuggestDirective();
 		commandLineBuilder.UseTypoCorrections();
-		commandLineBuilder.UseHelpBuilder(context => helpBuilder);
+		commandLineBuilder.UseHelpBuilder(_ => helpBuilder);
 		commandLineBuilder.UseExceptionHandler((ex, context) =>
 		{
 			switch (ex)
@@ -828,7 +826,7 @@ public class App
 			// data _shouldn't_ sent, but it will be _anyway_. 
 			// so we can cheat it back and take the stderr (logs) and show them on stdOut. 
 			//   Note: stdout from the proxied process IS the data channel, but we
-			//         don't need it so it is lost.
+			//         don't need it, so it is lost.
 			proxy = proxy.WithStandardErrorPipe(stdOut);
 		}
 		
@@ -903,18 +901,10 @@ public class App
 
 					var channelInstance = (IResultChannel)Activator.CreateInstance(channelType);
 
-					object dataInstance = null;
 					var isSingle = single != null && dataType == single.ResultType;
-					if (isSingle)
-					{
-						dataInstance = single.CreateEmptyInstance();
-					}
-					else
-					{
-						dataInstance = Activator.CreateInstance(dataType);
-					}
+					object dataInstance = isSingle ? single.CreateEmptyInstance() : Activator.CreateInstance(dataType);
 
-					context.Output.WriteLine($"  Returns a {(isSingle ? "stream of" : "single message of")} {dataType.Name} object on the {channelInstance.ChannelName} stream, which each may resemble the following...");
+					context.Output.WriteLine($"  Returns a {(isSingle ? "stream of" : "single message of")} {dataType.Name} object on the {channelInstance!.ChannelName} stream, which each may resemble the following...");
 					var resultStreamData = new ReportDataPoint { data = dataInstance, type = channelInstance.ChannelName, ts = DateTimeOffset.Now.ToUnixTimeMilliseconds() };
 					var resultStreamJson = JsonConvert.SerializeObject(resultStreamData, Formatting.Indented);
 					context.Output.WriteLine("  " + resultStreamJson.ReplaceLineEndings("\n  "));
