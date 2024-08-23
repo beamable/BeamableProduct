@@ -81,13 +81,21 @@ namespace Beamable.Editor.BeamCli
 		public List<BeamCliServerEvent> serverEvents = new List<BeamCliServerEvent>();
 		public List<CliLogMessage> serverLogs = new List<CliLogMessage>();
 		public BeamCliPingResultDescriptor latestPing = new BeamCliPingResultDescriptor();
-		
+
 		[NonSerialized]
 		private StorageHandle<BeamWebCliCommandHistory> _handle;
 
 		[NonSerialized]
 		private Dictionary<string, BeamWebCommandDescriptor> _idTable;
 
+		[NonSerialized]
+		private BeamWebCommandFactoryOptions _options;
+
+		public BeamWebCliCommandHistory(BeamWebCommandFactoryOptions options)
+		{
+			_options = options;
+		}
+		
 		public void AddCommand(BeamWebCommand command)
 		{
 			var desc = new BeamWebCommandDescriptor {
@@ -108,6 +116,10 @@ namespace Beamable.Editor.BeamCli
 
 		public void OnBeforeSaveState()
 		{
+			// only save at the given caps
+			serverLogs = serverLogs.TakeLast((int)Math.Min(_options.serverLogCap.GetOrElse(5_000), serverLogs.Count)).ToList();
+			serverEvents = serverEvents.TakeLast((int)Math.Min(_options.serverEventLogCap.GetOrElse(100), serverEvents.Count)).ToList();
+			commands = commands.TakeLast((int)Math.Min(_options.commandInstanceCap.GetOrElse(30), commands.Count)).ToList();
 		}
 
 		public void OnAfterLoadState()

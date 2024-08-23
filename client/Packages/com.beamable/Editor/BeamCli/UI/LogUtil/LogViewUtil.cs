@@ -32,6 +32,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 		public LogLevelView fatal = new LogLevelView();
 
 		public bool isTailing = true;
+		public string searchText;
 
 		/// <summary>
 		/// this variable is used to process information across frames
@@ -53,6 +54,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 
 		[NonSerialized]
 		private EditorWindow _window;
+
 
 		public void Scan(int budget, out bool foundDiff)
 		{
@@ -87,6 +89,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 				}
 
 				var log = data.data[index];
+
 				switch (log.GetLogLevel())
 				{
 					case CliLogLevel.Verbose:
@@ -143,6 +146,13 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 							view.Remove(log);
 						}
 						break;
+				}
+				
+				if (!string.IsNullOrEmpty(searchText) &&
+				    !log.message.ToLowerInvariant().Contains(searchText.ToLowerInvariant()))
+				{
+					foundDiff = true;
+					view.Remove(log);
 				}
 				
 				scanIndex++;
@@ -328,7 +338,51 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 				}
 
 				EditorGUILayout.Space(1, true);
-				EditorGUILayout.Space(1, true);
+
+				{ // search text field
+					EditorGUI.BeginChangeCheck();
+					var searchStyle = new GUIStyle(EditorStyles.toolbarSearchField);
+					// searchStyle.margin = new RectOffset(1, 50, 1, 1);
+					var searchRect = GUILayoutUtility.GetRect(GUIContent.none, searchStyle);
+					
+					// if there isn't enough space, don't bother rendering it.
+					if (searchRect.width > 70)
+					{
+						var searchClearRect = new Rect(searchRect.xMax - searchRect.height - 2, searchRect.y,
+						                               searchRect.height, searchRect.height);
+
+						EditorGUIUtility.AddCursorRect(searchClearRect, MouseCursor.Link);
+						var isButtonHover = searchClearRect.Contains(Event.current.mousePosition);
+						var clearButtonClicked = isButtonHover && Event.current.rawType == EventType.MouseDown;
+
+						logView.searchText = EditorGUI.TextField(searchRect, logView.searchText, searchStyle);
+						if (EditorGUI.EndChangeCheck())
+						{
+							logView.RebuildView();
+						}
+
+						if (!string.IsNullOrEmpty(logView.searchText))
+						{
+							var tex = EditorGUIUtility.FindTexture("winbtn_win_close");
+							GUI.Button(searchClearRect, tex, GUIStyle.none);
+
+							if (clearButtonClicked)
+							{
+								window.delayedActions.Add(() =>
+								{
+									logView.searchText = null;
+									GUIUtility.hotControl = 0;
+									GUIUtility.keyboardControl = 0;
+									logView.RebuildView();
+									window.Repaint();
+								});
+							}
+						}
+					}
+				}
+
+
+				// EditorGUILayout.Space(5, false);
 				if (dataList.showLogLevels)
 				{
 					DrawLogLevelToggle(CliLogLevel.Verbose, logView.verbose, window, logView);
@@ -441,6 +495,12 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 						break;
 				}
 
+				if (!string.IsNullOrEmpty(logView.searchText) &&
+				    !log.message.ToLowerInvariant().Contains(logView.searchText.ToLowerInvariant()))
+				{
+					logView.view.Remove(log);
+					return false;
+				}
 
 
 				// show selected index

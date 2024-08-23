@@ -116,6 +116,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<BeamCommands>();
 			
 			DependencyBuilder.AddGlobalStorage<BeamWebCliCommandHistory, SessionStorageLayer>();
+			DependencyBuilder.AddGlobalStorage<BeamWebCommandFactoryOptions, SessionStorageLayer>();
 			DependencyBuilder.AddSingleton<IBeamCommandFactory>(p => p.GetService<BeamWebCommandFactory>());
 			DependencyBuilder.AddSingleton<BeamWebCommandFactory>();
 			

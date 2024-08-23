@@ -12,6 +12,7 @@ namespace Beamable.Editor.BeamCli.UI
 		/// <returns>A formated date time based on the log time passed</returns>
 		public static string GetLogDisplayTime(long logTime, string customFormat = "HH:mm:ss")
 		{
+			if (logTime < 0) return "";
 			DateTime timeThen = DateTime.FromFileTime(logTime);
 
 			// Return the formatted log time

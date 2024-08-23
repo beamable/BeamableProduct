@@ -12,7 +12,6 @@ namespace Beamable.Editor.BeamCli.UI
 	public enum BeamCliWindowTab
 	{
 		Commands,
-		Stats,
 		Servers,
 		Terminal,
 		Overrides
@@ -127,8 +126,7 @@ namespace Beamable.Editor.BeamCli.UI
 				DrawTabButton(BeamCliWindowTab.Commands, "Commands");
 				DrawTabButton(BeamCliWindowTab.Servers, "Servers");
 				DrawTabButton(BeamCliWindowTab.Terminal, "Terminal");
-				DrawTabButton(BeamCliWindowTab.Overrides, "Overrides");
-				DrawTabButton(BeamCliWindowTab.Stats, "Stats");
+				DrawTabButton(BeamCliWindowTab.Overrides, "Settings");
 			} 
 			GUILayout.EndHorizontal();
 
@@ -142,6 +140,9 @@ namespace Beamable.Editor.BeamCli.UI
 					break;
 				case BeamCliWindowTab.Terminal:
 					OnTerminalGui();
+					break;
+				case BeamCliWindowTab.Overrides:
+					OnOverridesGui();
 					break;
 				default:
 					GUILayout.Label("There is no tab implemented yet!");
