@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.BeamCli;
+using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Editor.BeamCli.Commands;
 using System;
@@ -35,6 +36,23 @@ namespace Beamable.Editor.BeamCli
 		public string owner;
 	}
 
+	public class BeamWebCommandFactoryOptions : ScriptableObject
+	{
+		// public int startPort = 8432; // beas
+		public OptionalInt startPortOverride = new OptionalInt();
+		public int port;
+		public OptionalInt selfDestructOverride = new OptionalInt();
+		public OptionalString ownerOverride = new OptionalString();
+
+		public OptionalInt serverEventLogCap = new OptionalInt();
+		public OptionalInt serverLogCap = new OptionalInt();
+		public OptionalInt commandInstanceCap = new OptionalInt();
+		// public int serverEventLogCap = 1_000;
+		// public int serverLogCap = 3_000;
+		// public int commandInstanceCap = 35;
+
+	}
+	
 	public class BeamWebCommandFactory : IBeamCommandFactory
 	{
 		public enum PingResult
@@ -53,29 +71,38 @@ namespace Beamable.Editor.BeamCli
 		public string Url => $"http://127.0.0.1:{port}";
 		public string ExecuteUrl => $"{Url}/execute";
 		public string InfoUrl => $"{Url}/info";
-		public string Owner => BeamCliUtil.CLI_PATH.ToLowerInvariant();
+		public string Owner => _options.ownerOverride.GetOrElse(BeamCliUtil.CLI_PATH.ToLowerInvariant());
 
 		public static string Version => BeamCliUtil.CLI_VERSION;
 		
 		
 		// TODO: how do we store this port so that we don't have to ALWAYS go through mismatches to re-find it? 
-		public int port = 8432; // beas 
+		// public int port { get; set; }= 8432; // beas 
+		public int port
+		{
+			get => _options.port;
+			set => _options.port = value;
+		}
+		
 		public BeamCommandFactory processFactory;
 		public BeamCommands processCommands;
 		public BeamableDispatcher dispatcher;
 		private readonly BeamWebCliCommandHistory _history;
+		private readonly BeamWebCommandFactoryOptions _options;
 
 		public Promise onReady = null;
 		private ServerServeWrapper _serverCommand;
 
 
 
-		public BeamWebCommandFactory(IBeamableRequester requester, BeamableDispatcher dispatcher, BeamWebCliCommandHistory history)
+		public BeamWebCommandFactory(IBeamableRequester requester, BeamableDispatcher dispatcher, BeamWebCliCommandHistory history, BeamWebCommandFactoryOptions options)
 		{
 			this.dispatcher = dispatcher;
 			_history = history;
+			_options = options;
 			processFactory = new BeamCommandFactory(dispatcher);
 			processCommands = new BeamCommands(requester, processFactory);
+			_options.port = _options.startPortOverride.GetOrElse(8432);
 		}
 		
 		public IBeamCommand Create()
@@ -174,7 +201,7 @@ namespace Beamable.Editor.BeamCli
 							port = port,
 							owner = "\"" + Owner + "\"",
 							autoIncPort = true,
-							selfDestructSeconds = 15 // TODO: validate that a low ttl will restart the server
+							selfDestructSeconds = _options.selfDestructOverride.GetOrElse(15) // TODO: validate that a low ttl will restart the server
 						};
 						var p = args.port;
 						_serverCommand = processCommands.ServerServe(args);
