@@ -11,6 +11,23 @@ using UnityEngine;
 
 namespace Beamable.Editor.BeamCli.UI
 {
+	[Serializable]
+	public class CommandStatusFilterView
+	{
+		public int lastCount;
+		public int count;
+		public bool enabled = true;
+	}
+
+	[Serializable]
+	public class CommandDescriptionView
+	{
+		public string id;
+		public string command;
+		public BeamCliWindow.CommandStatus status;
+		public string timeStamp;
+	}
+
 	public partial class BeamCliWindow
 	{
 		Vector2 _commandsScrollPosition;
@@ -19,20 +36,34 @@ namespace Beamable.Editor.BeamCli.UI
 		private string _currentCommandId = string.Empty;
 		public LogView commandLogs = new LogView();
 
-		public float commandSplitterValue;
 		public bool isCommandsScrollTailing = true;
 
 		[NonSerialized]
 		public CliLogDataProvider commandsLogProvider;
 
-		public EditorGUISplitView commandSplitter = new EditorGUISplitView(EditorGUISplitView.Direction.Horizontal, .2f, .3f, .5f);
+		public EditorGUISplitView commandSplitter =
+			new EditorGUISplitView(EditorGUISplitView.Direction.Horizontal, .2f, .3f, .5f);
 
-		private readonly Dictionary<string, string> commandsStatusIconMap = new Dictionary<string, string>()
+		public CommandStatusFilterView runningFilter = new CommandStatusFilterView();
+		public CommandStatusFilterView completedFilter = new CommandStatusFilterView();
+		public CommandStatusFilterView errorFilter = new CommandStatusFilterView();
+		public CommandStatusFilterView lostFilter = new CommandStatusFilterView();
+
+
+		public enum CommandStatus
 		{
-			{"Running", "sv_icon_dot13_sml"},
-			{"Completed", "sv_icon_dot11_sml"},
-			{"Error", "sv_icon_dot14_sml"},
-			{"Lost", "sv_icon_dot15_sml"}
+			Running,
+			Completed,
+			Error,
+			Lost
+		}
+
+		private readonly Dictionary<CommandStatus, string> commandsStatusIconMap = new Dictionary<CommandStatus, string>()
+		{
+			{CommandStatus.Running, "sv_icon_dot13_sml"},
+			{CommandStatus.Completed, "sv_icon_dot11_sml"},
+			{CommandStatus.Error, "sv_icon_dot14_sml"},
+			{CommandStatus.Lost, "sv_icon_dot15_sml"}
 		};
 
 		private BeamWebCommandDescriptor selectedCommand;
@@ -81,14 +112,24 @@ namespace Beamable.Editor.BeamCli.UI
 		private void OnCommandsScrollView()
 		{
 			EditorGUILayout.BeginVertical(GUILayout.ExpandWidth(true));
+
+			EditorGUILayout.BeginHorizontal();
 			GUILayout.Label("Commands", EditorStyles.boldLabel, new GUILayoutOption[]
 			{
-				GUILayout.ExpandWidth(false)
+				GUILayout.ExpandWidth(true)
 			});
+			DrawCommandStatusFilter(CommandStatus.Running, runningFilter);
+			DrawCommandStatusFilter(CommandStatus.Completed, completedFilter);
+			DrawCommandStatusFilter(CommandStatus.Error, errorFilter);
+			DrawCommandStatusFilter(CommandStatus.Lost, lostFilter);
+
+			EditorGUILayout.EndHorizontal();
+
+			var filteredCommandsList = FilterCommands();
 
 			var scrollRectHeight = 500;
 			var elementHeight = 20;
-			var maxScroll = _history.commands.Count * elementHeight - scrollRectHeight;
+			var maxScroll = filteredCommandsList.Count * elementHeight - scrollRectHeight;
 
 			if (isCommandsScrollTailing)
 			{
@@ -96,14 +137,15 @@ namespace Beamable.Editor.BeamCli.UI
 			}
 			var startScrollPosition = _commandsScrollPosition.y;
 
-			DrawVirtualScroller(elementHeight, _history.commands.Count, ref _commandsScrollPosition, (index, pos) =>
+
+			DrawVirtualScroller(elementHeight, filteredCommandsList.Count, ref _commandsScrollPosition, (index, pos) =>
 			{
-				var command = _history.commands[index];
-				var commandStringData = ParseCommandString(command.commandString);
+				var command = filteredCommandsList[index];
+				var commandStringData = ParseCommandString(command.command);
 				var buttonStyle = new GUIStyle(EditorStyles.toolbarButton);
 				buttonStyle.alignment = TextAnchor.MiddleLeft;
 
-				var iconKey = GetCommandStatusIconKey(command);
+				var iconKey = commandsStatusIconMap[command.status];
 				var texture = EditorGUIUtility.FindTexture(iconKey);
 
 				Rect iconRect = new Rect(pos.position.x, pos.position.y, (int)(pos.width * 0.05), pos.height);
@@ -116,8 +158,7 @@ namespace Beamable.Editor.BeamCli.UI
 				}
 
 				Rect buttonRect = new Rect(pos.position.x + (int)(pos.width * 0.05), pos.position.y, pos.width, pos.height - 2);
-				var displayTimeText = TimeDisplayUtil.GetLogDisplayTime(command.createdTime);
-				var commandText = $"[{displayTimeText}] {commandStringData.command}";
+				var commandText = $"[{command.timeStamp}] {commandStringData.command}";
 				if (GUI.Button(buttonRect, commandText, buttonStyle))
 				{
 					delayedActions.Add(() =>
@@ -240,8 +281,6 @@ namespace Beamable.Editor.BeamCli.UI
 			{
 				commandsLogProvider = new CliLogDataProvider(command.logs);
 			}
-			
-			
 
 			this.DrawLogWindow(commandLogs,
 			                   dataList: commandsLogProvider,
@@ -251,6 +290,108 @@ namespace Beamable.Editor.BeamCli.UI
 			                   });
 
 			EditorGUILayout.EndVertical();
+		}
+
+		public void DrawCommandStatusFilter(CommandStatus status, CommandStatusFilterView view)
+		{
+			var texture = EditorGUIUtility.FindTexture(commandsStatusIconMap[status]);
+
+			var verboseContent = new GUIContent(view.count.ToString(), texture, $"{status} commands");
+
+			var nextEnabled = GUILayout.Toggle(view.enabled, verboseContent,
+			                                   EditorStyles.toolbarButton, GUILayout.Width(40), GUILayout.ExpandWidth(false));
+
+			if (nextEnabled != view.enabled)
+			{
+				view.enabled = nextEnabled;
+			}
+		}
+
+		public List<CommandDescriptionView> FilterCommands()
+		{
+			var lostCount = 0;
+			var completedCount = 0;
+			var runningCount = 0;
+			var errorCount = 0;
+
+			var filteredList = new List<CommandDescriptionView>();
+
+			foreach (BeamWebCommandDescriptor commandDescriptor in _history.commands)
+			{
+				var parsedCommand = ParseCommandString(commandDescriptor.commandString);
+				var status = GetCommandStatus(commandDescriptor);
+
+				if (status == CommandStatus.Error)
+				{
+					if (errorFilter.enabled)
+					{
+						filteredList.Add(new CommandDescriptionView()
+						{
+							command = parsedCommand.command,
+							timeStamp = TimeDisplayUtil.GetLogDisplayTime(commandDescriptor.createdTime),
+							status = status,
+							id = commandDescriptor.id,
+						});
+					}
+
+					errorCount++;
+				}
+
+				if (status == CommandStatus.Running)
+				{
+					if (runningFilter.enabled)
+					{
+						filteredList.Add(new CommandDescriptionView()
+						{
+							command = parsedCommand.command,
+							timeStamp = TimeDisplayUtil.GetLogDisplayTime(commandDescriptor.createdTime),
+							status = status,
+							id = commandDescriptor.id,
+						});
+					}
+
+					runningCount++;
+				}
+
+				if (status == CommandStatus.Completed)
+				{
+					if (completedFilter.enabled)
+					{
+						filteredList.Add(new CommandDescriptionView()
+						{
+							command = parsedCommand.command,
+							timeStamp = TimeDisplayUtil.GetLogDisplayTime(commandDescriptor.createdTime),
+							status = status,
+							id = commandDescriptor.id,
+						});
+					}
+
+					completedCount++;
+				}
+
+				if (status == CommandStatus.Lost)
+				{
+					if (lostFilter.enabled)
+					{
+						filteredList.Add(new CommandDescriptionView()
+						{
+							command = parsedCommand.command,
+							timeStamp = TimeDisplayUtil.GetLogDisplayTime(commandDescriptor.createdTime),
+							status = status,
+							id = commandDescriptor.id,
+						});
+					}
+
+					lostCount++;
+				}
+			}
+
+			errorFilter.count = errorCount;
+			completedFilter.count = completedCount;
+			runningFilter.count = runningCount;
+			lostFilter.count = lostCount;
+
+			return filteredList;
 		}
 
 		private void OnCommandSelected(string id)
@@ -311,19 +452,19 @@ namespace Beamable.Editor.BeamCli.UI
 			return commandStringData;
 		}
 
-		private string GetCommandStatusIconKey(BeamWebCommandDescriptor command)
+		private CommandStatus GetCommandStatus(BeamWebCommandDescriptor command)
 		{
 			if (command.instance == null)
 			{
-				return commandsStatusIconMap["Lost"];
+				return CommandStatus.Lost;
 			}
 
 			if (command.Status == BeamWebCommandDescriptorStatus.DONE)
 			{
-				return command.errors.Count > 0 ? commandsStatusIconMap["Error"] : commandsStatusIconMap["Completed"];
+				return command.errors.Count > 0 ? CommandStatus.Error : CommandStatus.Completed;
 			}
 
-			return commandsStatusIconMap["Running"];
+			return CommandStatus.Running;
 		}
 
 		private string GetElapsedTime(BeamWebCommandDescriptor command)
