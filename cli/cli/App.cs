@@ -28,10 +28,8 @@ using cli.UnrealCommands;
 using cli.Utils;
 using cli.Version;
 using CliWrap;
-using CommandLine.Text;
 using Errata;
 using Microsoft.Build.Locator;
-using Microsoft.CodeAnalysis.Sarif;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Serilog;
@@ -39,7 +37,6 @@ using Serilog.Core;
 using Serilog.Enrichers.Sensitive;
 using Serilog.Events;
 using Spectre.Console;
-using Spectre.Console.Rendering;
 using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Help;
@@ -183,7 +180,7 @@ public class App
 		_serviceConfigurator?.Invoke(services);
 	}
 
-	private Action<IDependencyProvider> setLogger = _ =>
+	private Action<IDependencyProvider> _setLogger = _ =>
 	{
 		// no-op
 	};
@@ -203,7 +200,7 @@ public class App
 
 		if (overwriteLogger)
 		{
-			setLogger = (provider) =>
+			_setLogger = (provider) =>
 			{
 				ConfigureLogging(this, provider, configureLogger);
 				
@@ -683,7 +680,7 @@ public class App
 			Log.Verbose("command prep (make provider) took " + sw.ElapsedMilliseconds);
 
 			// update log information before dependency injection is sealed.
-			setLogger(provider);
+			_setLogger(provider);
 
 			Log.Verbose("command prep (make logs) took " + sw.ElapsedMilliseconds);
 
@@ -735,7 +732,7 @@ public class App
 		commandLineBuilder.UseDefaults();
 		commandLineBuilder.UseSuggestDirective();
 		commandLineBuilder.UseTypoCorrections();
-		commandLineBuilder.UseHelpBuilder(context => helpBuilder);
+		commandLineBuilder.UseHelpBuilder(_ => helpBuilder);
 		commandLineBuilder.UseExceptionHandler((ex, context) =>
 		{
 			switch (ex)
@@ -867,7 +864,7 @@ public class App
 			// data _shouldn't_ sent, but it will be _anyway_. 
 			// so we can cheat it back and take the stderr (logs) and show them on stdOut. 
 			//   Note: stdout from the proxied process IS the data channel, but we
-			//         don't need it so it is lost.
+			//         don't need it, so it is lost.
 			proxy = proxy.WithStandardErrorPipe(stdOut);
 		}
 		
@@ -942,18 +939,10 @@ public class App
 
 					var channelInstance = (IResultChannel)Activator.CreateInstance(channelType);
 
-					object dataInstance = null;
 					var isSingle = single != null && dataType == single.ResultType;
-					if (isSingle)
-					{
-						dataInstance = single.CreateEmptyInstance();
-					}
-					else
-					{
-						dataInstance = Activator.CreateInstance(dataType);
-					}
+					object dataInstance = isSingle ? single.CreateEmptyInstance() : Activator.CreateInstance(dataType);
 
-					context.Output.WriteLine($"  Returns a {(isSingle ? "stream of" : "single message of")} {dataType.Name} object on the {channelInstance.ChannelName} stream, which each may resemble the following...");
+					context.Output.WriteLine($"  Returns a {(isSingle ? "stream of" : "single message of")} {dataType.Name} object on the {channelInstance!.ChannelName} stream, which each may resemble the following...");
 					var resultStreamData = new ReportDataPoint { data = dataInstance, type = channelInstance.ChannelName, ts = DateTimeOffset.Now.ToUnixTimeMilliseconds() };
 					var resultStreamJson = JsonConvert.SerializeObject(resultStreamData, Formatting.Indented);
 					context.Output.WriteLine("  " + resultStreamJson.ReplaceLineEndings("\n  "));
