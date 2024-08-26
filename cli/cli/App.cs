@@ -210,7 +210,7 @@ public class App
 		}
 		else
 		{
-			setLogger = (provider) =>
+			_setLogger = (provider) =>
 			{
 				var appCtx = provider.GetService<IAppContext>();
 				if (appCtx.ShouldEmitLogs)
