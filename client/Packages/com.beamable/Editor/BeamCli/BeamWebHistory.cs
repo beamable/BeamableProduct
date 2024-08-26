@@ -117,9 +117,22 @@ namespace Beamable.Editor.BeamCli
 		public void OnBeforeSaveState()
 		{
 			// only save at the given caps
-			serverLogs = serverLogs.TakeLast((int)Math.Min(_options.serverLogCap.GetOrElse(5_000), serverLogs.Count)).ToList();
-			serverEvents = serverEvents.TakeLast((int)Math.Min(_options.serverEventLogCap.GetOrElse(100), serverEvents.Count)).ToList();
-			commands = commands.TakeLast((int)Math.Min(_options.commandInstanceCap.GetOrElse(30), commands.Count)).ToList();
+			List<T> ResetList<T>(List<T> elements, int maxSize)
+			{
+				var count = (int)Math.Min(maxSize, elements.Count);
+				var index = elements.Count - count;
+				var temp = new List<T>();
+				for (var i = index; i < elements.Count; i++)
+				{
+					temp.Add(elements[i]);
+				}
+				return temp;
+			}
+
+			serverLogs = ResetList(serverLogs, _options.serverLogCap.GetOrElse(5_000));
+			serverEvents = ResetList(serverEvents, _options.serverEventLogCap.GetOrElse(100));
+			commands = ResetList(commands, _options.commandInstanceCap.GetOrElse(30));
+
 		}
 
 		public void OnAfterLoadState()
