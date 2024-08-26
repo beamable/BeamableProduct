@@ -19,6 +19,15 @@ public static class ProjectContextUtil
 	private static DateTimeOffset _existingManifestCacheExpirationTime;
 	private static object _existingManifestLock = new();
 	private static readonly TimeSpan _existingManifestCacheTime = TimeSpan.FromSeconds(10);
+
+	public static void EvictManifestCache()
+	{
+		lock (_existingManifestLock)
+		{
+			_existingManifest = null;
+			_existingManifestCacheExpirationTime = DateTimeOffset.Now;
+		}
+	}
 	
 	public static async Task<BeamoLocalManifest> GenerateLocalManifest(
 		string rootFolder,

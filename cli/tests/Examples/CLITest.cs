@@ -1,6 +1,7 @@
 using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using cli;
+using cli.Services;
 using Docker.DotNet;
 using Moq;
 using NUnit.Framework;
@@ -48,6 +49,7 @@ public class CLITest
 	[SetUp]
 	public void Setup()
 	{
+		ProjectContextUtil.EvictManifestCache();
 		_dockerClient = new DockerClientConfiguration(new AnonymousCredentials()).CreateClient();
 
 		TestId = Guid.NewGuid().ToString();
