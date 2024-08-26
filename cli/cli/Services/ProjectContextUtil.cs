@@ -19,7 +19,7 @@ public static class ProjectContextUtil
 	private static DateTimeOffset _existingManifestCacheExpirationTime;
 	private static object _existingManifestLock = new();
 	private static readonly TimeSpan _existingManifestCacheTime = TimeSpan.FromSeconds(10);
-
+	public static bool EnableManifestCache { get; set; } = true;
 	public static void EvictManifestCache()
 	{
 		lock (_existingManifestLock)
@@ -41,7 +41,7 @@ public static class ProjectContextUtil
 			var ttlValid = now < _existingManifestCacheExpirationTime;
 			var hasValue = _existingManifest != null;
 
-			if (!ttlValid || !hasValue)
+			if (!EnableManifestCache || !ttlValid || !hasValue)
 			{
 				_existingManifest = beamo.GetCurrentManifest();
 				_existingManifestCacheExpirationTime = now + _existingManifestCacheTime;

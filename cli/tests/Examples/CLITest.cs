@@ -49,7 +49,7 @@ public class CLITest
 	[SetUp]
 	public void Setup()
 	{
-		ProjectContextUtil.EvictManifestCache();
+		ProjectContextUtil.EnableManifestCache = false;
 		_dockerClient = new DockerClientConfiguration(new AnonymousCredentials()).CreateClient();
 
 		TestId = Guid.NewGuid().ToString();
