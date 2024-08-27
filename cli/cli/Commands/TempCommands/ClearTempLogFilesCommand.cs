@@ -1,4 +1,3 @@
-using HdrHistogram;
 using Serilog;
 using System.CommandLine;
 
