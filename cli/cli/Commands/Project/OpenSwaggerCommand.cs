@@ -1,5 +1,7 @@
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Semantics;
+using cli.FederationCommands;
 using cli.Services;
 using cli.Utils;
 using Spectre.Console;
@@ -23,6 +25,8 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 	{
 		AddArgument(new Argument<ServiceName>("service-name", () => new ServiceName(), "Name of the service to open swagger to"), (arg, i) => arg.ServiceName = i);
 		AddOption(new Option<string>("--routing-key", "The routing key for the service instance we want. If not passed, defaults to the deployed service"), (arg, i) => arg.RoutingKey = i);
+		AddOption(new Option<bool>("--local", "When set, enforces the routing key to be the one for the local machine"), (arg, i) => arg.RoutingKey = ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine() );
+		AddOption(new Option<bool>("--remote", "When set, enforces the routing key to be the one for the service deployed to the realm"), (arg, i) => arg.RoutingKey = "");
 	}
 
 	public override Task Handle(OpenSwaggerCommandArgs args)

@@ -1,3 +1,4 @@
+using Beamable.Common.Api;
 using cli.Utils;
 
 namespace cli.FederationCommands;
@@ -25,6 +26,6 @@ public class GetLocalRoutingKeyCommand : AtomicCommand<GetLocalRoutingKeyCommand
 
 	public override Task<GetLocalRoutingKeyCommandOutput> GetResult(GetLocalRoutingKeyCommandArgs args)
 	{
-		return Task.FromResult(new GetLocalRoutingKeyCommandOutput { routingKey = MachineHelper.GetUniqueDeviceId() });
+		return Task.FromResult(new GetLocalRoutingKeyCommandOutput { routingKey = ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine() });
 	}
 }
