@@ -43,6 +43,7 @@ using System.CommandLine.Help;
 using System.CommandLine.Invocation;
 using System.CommandLine.IO;
 using System.CommandLine.Parsing;
+using System.Diagnostics;
 using System.Reflection;
 using Command = System.CommandLine.Command;
 
@@ -118,6 +119,12 @@ public class App
 			if (appCtx.ShouldUseLogFile)
 			{
 				baseConfig.WriteTo.File(appCtx.TempLogFilePath, LogEventLevel.Verbose);
+			}
+
+			if (appCtx.ShouldEmitLogs)
+			{
+				baseConfig.WriteTo.Sink(new ReporterSink(provider))
+					.MinimumLevel.ControlledBy(app.LogLevel);
 			}
 
 			return baseConfig.CreateLogger();
@@ -196,6 +203,20 @@ public class App
 			_setLogger = (provider) =>
 			{
 				ConfigureLogging(this, provider, configureLogger);
+				
+				TaskLocalLog.Instance.globalLogger = Log.Logger;
+				Log.Logger = TaskLocalLog.Instance;
+			};
+		}
+		else
+		{
+			_setLogger = (provider) =>
+			{
+				var appCtx = provider.GetService<IAppContext>();
+				if (appCtx.ShouldEmitLogs)
+				{
+					TaskLocalLog.Instance.CreateContext(provider);
+				}
 			};
 		}
 
@@ -251,6 +272,7 @@ public class App
 			root.AddGlobalOption(UnmaskLogsOption.Instance);
 			root.AddGlobalOption(NoLogFileOption.Instance);
 			root.AddGlobalOption(DockerPathOption.Instance);
+			root.AddGlobalOption(EmitLogsOption.Instance);
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
 			root.AddGlobalOption(provider.GetRequiredService<ShowRawOutput>());
 			root.AddGlobalOption(provider.GetRequiredService<ShowPrettyOutput>());
@@ -435,7 +457,11 @@ public class App
 
 		CommandProvider = Commands.Build();
 
+		var sw = new Stopwatch();
+		sw.Start();
 		var _ = InstantiateAllCommands();
+		sw.Stop();
+		Log.Verbose("BUILD ALL COMMANDS TOOK : " + sw.ElapsedMilliseconds);
 
 		// sort the commands
 		var root = CommandProvider.GetService<RootCommand>();
@@ -639,6 +665,8 @@ public class App
 		
 		commandLineBuilder.AddMiddleware(async (ctx, next) =>
 		{
+			var sw = new Stopwatch();
+			sw.Start();
 			// create a scope for the execution of the command
 			var provider = CommandProvider.Fork(services =>
 			{
@@ -649,16 +677,21 @@ public class App
 				ConfigureServices(services);
 			});
 
+			Log.Verbose("command prep (make provider) took " + sw.ElapsedMilliseconds);
+
 			// update log information before dependency injection is sealed.
 			_setLogger(provider);
+
+			Log.Verbose("command prep (make logs) took " + sw.ElapsedMilliseconds);
 
 			// we can take advantage of a feature of the CLI tool to use their slightly jank DI system to inject our DI system. DI in DI.
 			ctx.BindingContext.AddService(_ => new AppServices { duck = provider });
 			var appContext = provider.GetRequiredService<IAppContext>();
 			appContext.Apply(ctx.BindingContext);
 
-			// Check if we need to forward this command
-			// we only forward if the executing version of the CLI is different from the one locally installed on the project.
+			Log.Verbose("command prep (app context) took " + sw.ElapsedMilliseconds);
+
+			// Check if we need to forward this command --- we only forward if the executing version of the CLI is different than the one locally installed on the project.
 			// As long as the versions are the same, running the local one or the global one changes nothing in behaviour.
 			var runningVersion = appContext.ExecutingVersion;
 			var localVersion = appContext.LocalProjectVersion;
@@ -674,6 +707,8 @@ public class App
 				}
 			}
 			
+			Log.Verbose("command prep (past proxy) took " + sw.ElapsedMilliseconds);
+			
 			try
 			{
 				var beamoSystem = provider.GetService<BeamoLocalSystem>();
@@ -688,8 +723,11 @@ public class App
 				throw;
 			}
 
+			Log.Verbose("command prep took " + sw.ElapsedMilliseconds);
 			await next(ctx);
 
+			sw.Stop();
+			Log.Verbose("command execution took " + sw.ElapsedMilliseconds);
 		}, MiddlewareOrder.Configuration);
 		commandLineBuilder.UseDefaults();
 		commandLineBuilder.UseSuggestDirective();
@@ -929,7 +967,11 @@ public class App
 
 	public virtual Task<int> RunWithSingleString(string commandLine)
 	{
+		var sw = new Stopwatch();
+		sw.Start();
 		var prog = GetProgram();
+		sw.Stop();
+		Log.Verbose("prepared virtual program instance in " + sw.ElapsedMilliseconds);
 		return prog.InvokeAsync(commandLine);
 	}
 }

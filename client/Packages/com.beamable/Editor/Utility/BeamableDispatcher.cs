@@ -4,6 +4,8 @@ using Beamable.Coroutines;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using Unity.EditorCoroutines.Editor;
 using UnityEngine;
 
@@ -15,21 +17,58 @@ namespace Beamable.Editor
 	/// </summary>
 	public class BeamableDispatcher : IBeamableDisposable, ICoroutineService
 	{
+		private long jobIdCounter;
+		
+		public struct WorkItem
+		{
+			public Action action;
+			public long jobId;
+		}
+		
 		public const string DEFAULT_QUEUE_NAME = "beamable";
-		private Dictionary<string, Queue<Action>> _workQueues;
+		private Dictionary<string, Queue<WorkItem>> _workQueues;
 		private Dictionary<string, EditorCoroutine> _runningSchedulers;
 		private bool _forceStop;
+		private HashSet<long> completedJobIds = new HashSet<long>();
 
 		public bool IsForceStopped => _forceStop;
 
 		public BeamableDispatcher()
 		{
-			_workQueues = new Dictionary<string, Queue<Action>>();
+			_workQueues = new Dictionary<string, Queue<WorkItem>>();
 			_runningSchedulers = new Dictionary<string, EditorCoroutine>();
 			Start(DEFAULT_QUEUE_NAME);
 		}
 
-		IEnumerator Scheduler(string queueName, Queue<Action> workQueue)
+		public bool IsJobCompleted(long jobId) => completedJobIds.Contains(jobId);
+		
+		public Promise WaitForJobIds(List<long> dispatchedIds)
+		{
+			var idList = dispatchedIds.ToList();
+			var jobCompletionPromise = new Promise();
+			IEnumerator Routine()
+			{
+				while (idList.Count > 0)
+				{
+					var id = idList[0];
+					if (IsJobCompleted(id))
+					{
+						// stop waiting for this job, its done!
+						idList.RemoveAt(0);
+					}
+					else
+					{
+						yield return null;
+					}
+				}
+				
+				jobCompletionPromise.CompleteSuccess();
+			}
+			Run("waiting-for-jobs", Routine());
+			return jobCompletionPromise;
+		}
+		
+		IEnumerator Scheduler(string queueName, Queue<WorkItem> workQueue)
 		{
 			while (_workQueues.ContainsKey(queueName) && !_forceStop)
 			{
@@ -39,10 +78,10 @@ namespace Beamable.Editor
 
 				if (_forceStop) break;
 
-				Queue<Action> pendingWork;
+				Queue<WorkItem> pendingWork;
 				lock (workQueue)
 				{
-					pendingWork = new Queue<Action>(workQueue);
+					pendingWork = new Queue<WorkItem>(workQueue);
 					workQueue.Clear();
 				}
 
@@ -51,12 +90,16 @@ namespace Beamable.Editor
 				{
 					try
 					{
-						workItem?.Invoke();
+						workItem.action?.Invoke();
 					}
 					catch (Exception ex)
 					{
 						Debug.LogError($"Failed scheduled work. queue=[{queueName}]");
 						Debug.LogException(ex);
+					}
+					finally
+					{
+						completedJobIds.Add(workItem.jobId);
 					}
 				}
 			}
@@ -79,7 +122,7 @@ namespace Beamable.Editor
 				return false;
 			}
 
-			var queue = new Queue<Action>();
+			var queue = new Queue<WorkItem>();
 			_workQueues.Add(queueName, queue);
 			var coroutine = EditorCoroutineUtility.StartCoroutine(Scheduler(queueName, queue), this);
 			_runningSchedulers[queueName] = coroutine;
@@ -108,7 +151,7 @@ namespace Beamable.Editor
 		/// This method will automatically place the work on the default queue.
 		/// </summary>
 		/// <param name="work">The piece of work to execute later.</param>
-		public void Schedule(Action work) => Schedule(DEFAULT_QUEUE_NAME, work);
+		public long Schedule(Action work) => Schedule(DEFAULT_QUEUE_NAME, work);
 
 		/// <summary>
 		/// Schedule a piece of work to happen on the main Unity thread.
@@ -117,7 +160,7 @@ namespace Beamable.Editor
 		/// <param name="queueName">The name of the queue to run the work on. The <see cref="Start"/> method must be called with the given queue name first. </param>
 		/// <param name="work">The piece of work to execute later.</param>
 		/// <exception cref="Exception">If the <see cref="Start"/> method has not been called with the given queueName, an exception will be thrown.</exception>
-		public void Schedule(string queueName, Action work)
+		public long Schedule(string queueName, Action work)
 		{
 			if (_forceStop)
 			{
@@ -125,12 +168,20 @@ namespace Beamable.Editor
 				Debug.LogException(ex);
 				throw ex;
 			}
+
+			var jobId = Interlocked.Increment(ref jobIdCounter);
 			if (_workQueues.TryGetValue(queueName, out var queue))
 			{
 				lock (queue)
 				{
-					queue.Enqueue(work);
+					queue.Enqueue(new WorkItem
+					{
+						action = work,
+						jobId = jobId
+					});
 				}
+
+				return jobId;
 			}
 			else
 			{
@@ -153,9 +204,9 @@ namespace Beamable.Editor
 
 		private class WaitForWork : CustomYieldInstruction
 		{
-			private readonly Queue<Action> _workQueue;
+			private readonly Queue<WorkItem> _workQueue;
 
-			public WaitForWork(Queue<Action> workQueue)
+			public WaitForWork(Queue<WorkItem> workQueue)
 			{
 				_workQueue = workQueue;
 			}
