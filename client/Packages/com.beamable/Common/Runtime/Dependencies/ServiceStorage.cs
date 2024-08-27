@@ -51,7 +51,7 @@ namespace Beamable.Common.Dependencies
 			return builder;
 		}
 
-		public static IDependencyBuilder AddGlobalStorage<T, TStorageLayer>(this IDependencyBuilder builder, Func<Type, string> keyFunction = null)
+		public static IDependencyBuilder AddGlobalStorage<T, TStorageLayer>(this IDependencyBuilder builder, Func<Type, string> keyFunction = null, Func<T> instanceGenerator=null)
 			where TStorageLayer : IStorageLayer
 		{
 			builder.AddSingleton<T>(provider =>
@@ -64,7 +64,11 @@ namespace Beamable.Common.Dependencies
 			builder.AddSingleton<StorageWrapper<T>>(
 				provider =>
 				{
-					var instance = DependencyBuilder.Instantiate<T>(provider);
+					if (instanceGenerator == null)
+					{
+						instanceGenerator = () => DependencyBuilder.Instantiate<T>(provider);
+					}
+					var instance = instanceGenerator();
 					var storage = provider.GetService<GlobalServiceStorage<TStorageLayer>>();
 					var wrapper = new StorageWrapper<T>(storage, instance);
 					if (instance is IStorageHandler<T> handler)
