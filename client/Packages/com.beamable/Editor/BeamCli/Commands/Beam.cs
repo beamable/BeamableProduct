@@ -33,6 +33,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		/// <summary>a custom location for docker. By default, the CLI will attempt to resolve docker through its usual install locations. You can also use the BEAM_DOCKER_EXE environment variable to specify. 
 		///Currently, a docker path has been automatically identified.</summary>
 		public string dockerCliPath;
+		/// <summary>Out all log messages as data payloads in addition to however they are logged</summary>
+		public bool emitLogStreams;
 		/// <summary>Directory to use for configuration</summary>
 		public string dir;
 		/// <summary>Output raw JSON to standard out. This happens by default when the command is being piped</summary>
@@ -123,6 +125,11 @@ namespace Beamable.Editor.BeamCli.Commands
 			{
 				genBeamCommandArgs.Add((("--docker-cli-path=\"" + this.dockerCliPath)
 								+ "\""));
+			}
+			// If the emitLogStreams value was not default, then add it to the list of args.
+			if ((this.emitLogStreams != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--emit-log-streams=" + this.emitLogStreams));
 			}
 			// If the dir value was not default, then add it to the list of args.
 			if ((this.dir != default(string)))

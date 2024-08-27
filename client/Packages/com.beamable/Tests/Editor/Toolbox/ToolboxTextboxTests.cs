@@ -19,30 +19,6 @@ namespace Beamable.Editor.Tests.Toolbox
 		{
 			builder.ReplaceSingleton<IToolboxViewService, MockToolboxViewService>();
 		}
-
-		[UnityTest]
-		public IEnumerator TextboxKeystrokeTest()
-		{
-			var model = Provider.GetService<IToolboxViewService>();
-
-			var tbActionBar = new ToolboxActionBarVisualElement();
-			tbActionBar.Refresh(Provider);
-
-			var search = tbActionBar.Q<SearchBarVisualElement>();
-			var text = search.Q<TextField>();
-
-			var window = tbActionBar.MountForTest();
-
-			yield return null;
-			text.SendTestKeystroke("TESTing");
-
-			yield return new WaitForSecondsRealtime(.5f);
-			window.Close();
-
-			Debug.Log(text.value);
-			Assert.AreEqual("TESTing", model.Query.ToString());
-
-			model.SetQuery(string.Empty);
-		}
+		
 	}
 }

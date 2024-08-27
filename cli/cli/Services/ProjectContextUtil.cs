@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
 using CliWrap;
 using Microsoft.Build.Construction;
@@ -13,22 +14,54 @@ namespace cli.Services;
 
 public static class ProjectContextUtil
 {
+
+	private static Promise<ServiceManifest> _existingManifest;
+	private static DateTimeOffset _existingManifestCacheExpirationTime;
+	private static object _existingManifestLock = new();
+	private static readonly TimeSpan _existingManifestCacheTime = TimeSpan.FromSeconds(10);
+	public static bool EnableManifestCache { get; set; } = true;
+	public static void EvictManifestCache()
+	{
+		lock (_existingManifestLock)
+		{
+			_existingManifest = null;
+			_existingManifestCacheExpirationTime = DateTimeOffset.Now;
+		}
+	}
+	
 	public static async Task<BeamoLocalManifest> GenerateLocalManifest(
 		string rootFolder,
 		string dotnetPath, 
 		BeamoService beamo,
 		ConfigService configService)
 	{
+		lock (_existingManifestLock)
+		{
+			var now = DateTimeOffset.Now;
+			var ttlValid = now < _existingManifestCacheExpirationTime;
+			var hasValue = _existingManifest != null;
 
-		var remote = await beamo.GetCurrentManifest(); // TODO do this at the same time as file scanning.
-
+			if (!EnableManifestCache || !ttlValid || !hasValue)
+			{
+				_existingManifest = beamo.GetCurrentManifest();
+				_existingManifestCacheExpirationTime = now + _existingManifestCacheTime;
+				Log.Verbose("cached manifest is a miss.");
+			}
+			else
+			{
+				Log.Verbose("using cached manifest.");
+			}
+		}
+		var remote = await _existingManifest;
+		
+		// var remoteTask = beamo.GetCurrentManifest();
 		// find all local project files...
 		var sw = new Stopwatch();
 		sw.Start();
-		var allProjects = ProjectContextUtil.FindCsharpProjects(rootFolder).ToArray();
+		var allProjects = FindCsharpProjects(rootFolder).ToArray();
 		sw.Stop();
 		Log.Verbose($"Gathering csprojs took {sw.Elapsed.TotalMilliseconds} ");
-		
+		sw.Restart();
 		var typeToProjects = allProjects
 			.GroupBy(p => p.properties.ProjectType)
 			.ToDictionary(kvp => kvp.Key, kvp => kvp.ToList());
@@ -125,6 +158,8 @@ public static class ProjectContextUtil
 		manifest.ServiceGroupToBeamoIds =
 			ResolveServiceGroups(manifest.ServiceDefinitions, manifest.HttpMicroserviceLocalProtocols);
 
+		sw.Stop();
+		Log.Verbose($"Finishing manifest took {sw.Elapsed.TotalMilliseconds} ");
 		return manifest;
 	}
 
@@ -178,9 +213,50 @@ public static class ProjectContextUtil
 		// convert the hashset into an array
 		return intermediateResult.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToArray());
 	}
+
+
+	private static Dictionary<string, DateTime> _pathToLastWriteTime = new Dictionary<string, DateTime>();
+	private static Dictionary<string, CsharpProjectMetadata> _pathToMetadata =
+		new Dictionary<string, CsharpProjectMetadata>();
+	
+	static bool TryGetCachedProject(string path, out CsharpProjectMetadata metadata)
+	{
+		metadata = null;
+
+		if (!_pathToLastWriteTime.TryGetValue(path, out var cachedWriteTime))
+		{
+			// we've never seen this file before!
+			return false;
+		}
+		
+		var lastWriteTime = File.GetLastWriteTime(path);
+		if (lastWriteTime >= cachedWriteTime)
+		{
+			// the file has been modified since we last looked at it, so we should break the cache
+			return false;
+		}
+
+		if (!_pathToMetadata.TryGetValue(path, out metadata))
+		{
+			// unexpected, but if we don't have the associated metadata, then obviously break the cache.
+			return false;
+		}
+
+		// the metadata has been retrieved from the cache!
+		return true;
+	}
+
+	static void CacheProjectNow(string path, CsharpProjectMetadata metadata)
+	{
+		_pathToLastWriteTime[path] = DateTime.Now;
+		_pathToMetadata[path] = metadata;
+	}
 	
 	public static CsharpProjectMetadata[] FindCsharpProjects(string rootFolder)
 	{
+		var sw = new Stopwatch();
+		sw.Start();
+		
 		if (string.IsNullOrEmpty(rootFolder))
 		{
 			rootFolder = ".";
@@ -192,6 +268,12 @@ public static class ProjectContextUtil
 		for (var i = 0 ; i < paths.Length; i ++)
 		{
 			var path = paths[i];
+
+			if (TryGetCachedProject(path, out var metadata))
+			{
+				projects[i] = metadata;
+				continue;
+			}
 
 			var fileReader = File.OpenRead(path);
 			using var streamReader = new StreamReader(fileReader);
@@ -205,8 +287,8 @@ public static class ProjectContextUtil
 			if (!string.Equals("<Project Sdk=\"Microsoft.NET.Sdk\">", line,
 				    StringComparison.InvariantCultureIgnoreCase))
 			{
-				Log.Verbose($"Rejecting csproj=[{path}] due to lack of leading <Project Sdk> tag");
 				projects[i] = null;
+				CacheProjectNow(path, projects[i]);
 				continue;
 			}
 			
@@ -254,9 +336,17 @@ public static class ProjectContextUtil
 				});
 			}
 			projects[i].projectReferences = allProjectRefs;
+			CacheProjectNow(path, projects[i]);
 		}
 
-		return projects.Where(p => p != null).ToArray();
+		Log.Verbose("filtering csproj files only took " + sw.ElapsedMilliseconds);
+
+		var result = projects.Where(p => p != null).ToArray();
+		
+		Log.Verbose("csproj linq non-null files took " + sw.ElapsedMilliseconds);
+
+		sw.Stop();
+		return result;
 	}
 
 	private const string MongoImage = "mongo:7.0";

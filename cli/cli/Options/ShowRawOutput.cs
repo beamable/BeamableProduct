@@ -19,6 +19,16 @@ public class ShowPrettyOutput : Option<bool>
 	}
 }
 
+public class EmitLogsOption : Option<bool>
+{
+	public static readonly EmitLogsOption Instance = new EmitLogsOption();
+	private EmitLogsOption()
+		: base("--emit-log-streams", "Out all log messages as data payloads in addition to however they are logged")
+	{
+
+	}
+}
+
 public class NoForwardingOption : Option<bool>
 {
 	public const string OPTION_FLAG = "--no-redirect";

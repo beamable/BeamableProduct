@@ -7,11 +7,11 @@ namespace Beamable.Editor.BeamCli.Commands
 	[System.SerializableAttribute()]
 	public class BeamGetTokenViaRefreshCommandOutput
 	{
-		public Beamable.Common.Content.OptionalString accessToken;
-		public Beamable.Common.Content.OptionalString challengeToken;
+		public string accessToken;
+		public string challengeToken;
 		public long expiresIn;
-		public Beamable.Common.Content.OptionalString refreshToken;
-		public Beamable.Common.Content.OptionalArrayOfString scopes;
+		public string refreshToken;
+		public string[] scopes;
 		public string tokenType;
 	}
 }

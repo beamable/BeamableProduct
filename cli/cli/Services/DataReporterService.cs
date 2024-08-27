@@ -1,7 +1,12 @@
 using Beamable.Common.BeamCli;
+using Beamable.Common.BeamCli.Contracts;
+using Beamable.Common.Dependencies;
 using Beamable.Server.Common;
 using Newtonsoft.Json;
 using Serilog;
+using Serilog.Core;
+using Serilog.Events;
+using System.Text;
 
 namespace cli.Services;
 
@@ -81,6 +86,34 @@ public class DataReporterService : IDataReporterService
 			Log.Error($"Error: {ex.GetType().Name} - {ex.Message} -- {ex.StackTrace}");
 			Log.Information(ex.Message);
 			throw;
+		}
+	}
+}
+
+public class ReporterSink : ILogEventSink
+{
+	private readonly IDependencyProvider _provider;
+	private object key = new();
+
+	public ReporterSink(IDependencyProvider provider)
+	{
+		_provider = provider;
+	}
+	
+	public void Emit(LogEvent logEvent)
+	{
+		var writer = new StringWriter();
+		logEvent.RenderMessage(writer);
+		lock (key)
+		{
+			_provider.GetService<IDataReporterService>().Report("logs",
+				new CliLogMessage
+				{
+					message = writer.ToString(), 
+					logLevel = logEvent.Level.ToString(),
+					timestamp = logEvent.Timestamp.ToUnixTimeMilliseconds()
+				}
+			);
 		}
 	}
 }

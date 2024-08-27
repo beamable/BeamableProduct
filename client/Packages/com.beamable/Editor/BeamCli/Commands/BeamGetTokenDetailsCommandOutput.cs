@@ -8,16 +8,16 @@ namespace Beamable.Editor.BeamCli.Commands
 	public class BeamGetTokenDetailsCommandOutput
 	{
 		public bool wasRefreshToken;
-		public Beamable.Common.Content.OptionalLong accountId;
+		public long accountId;
 		public long cid;
 		public long created;
-		public Beamable.Common.Content.OptionalString device;
-		public Beamable.Common.Content.OptionalLong expiresMs;
-		public Beamable.Common.Content.OptionalLong gamerTag;
-		public Beamable.Common.Content.OptionalString pid;
-		public Beamable.Common.Content.OptionalString platform;
-		public Beamable.Common.Content.OptionalBool revoked;
-		public Beamable.Common.Content.OptionalArrayOfString scopes;
+		public string device;
+		public long expiresMs;
+		public long gamerTag;
+		public string pid;
+		public string platform;
+		public bool revoked;
+		public string[] scopes;
 		public string token;
 		public string type;
 	}
