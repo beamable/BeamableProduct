@@ -121,8 +121,7 @@ public class DefaultAppContext : IAppContext
 	}
 
 	public bool ShouldUseLogFile => !_consoleContext.ParseResult.GetValueForOption(_noLogFileOption);
-	// public string TempLogFilePath => Path.Combine(Path.GetTempPath(), "beamCliLog.txt");
-	
+
 	static DateTimeOffset _logTime = DateTimeOffset.Now;
 
 	public bool TryGetTempLogFilePath(out string logFile)
