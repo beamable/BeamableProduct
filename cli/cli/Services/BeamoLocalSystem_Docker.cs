@@ -222,12 +222,13 @@ public partial class BeamoLocalSystem
 	public async Task<DockerInfo> GetBuildPlatform()
 	{
 		var info = await _client.System.GetSystemInfoAsync();
-		
+
 		var plugins = await _client.Plugin.ListPluginsAsync(new PluginListParameters { });
 		var buildx = await _client.Plugin.InspectPluginAsync("buildx");
 		// info.Plugins
-		return new DockerInfo { 
-			arch = info.Architecture, 
+		return new DockerInfo
+		{
+			arch = info.Architecture,
 			osType = info.OSType
 		};
 	}
@@ -256,7 +257,7 @@ public partial class BeamoLocalSystem
 		}
 		return res.ShortImageId;
 	}
-	
+
 	/// <summary>
 	/// Pulls the image with the given <paramref name="imageName"/>:<paramref name="imageTag"/> into the local docker engine from remote docker repositories.
 	/// It inspects the pulled image and returns its id, after the pull is done.
@@ -290,7 +291,7 @@ public partial class BeamoLocalSystem
 		var pathsList = BeamoLocalSystem.ParseDockerfile(config, pathToDockerfile);
 		return BeamoLocalSystem.CreateTarballForDirectory(config, pathsList);
 	}
-	
+
 	public static async Task<ServicesGenerateTarballCommandOutput> WriteTarfileToDisk(string outputPath, string beamoId, CommandArgs args)
 	{
 		var isDockerRunning = await args.BeamoLocalSystem.CheckIsRunning();
@@ -298,11 +299,12 @@ public partial class BeamoLocalSystem
 		{
 			throw CliExceptions.DOCKER_NOT_RUNNING;
 		}
-		
+
 		if (string.IsNullOrEmpty(outputPath))
 		{
 			outputPath = beamoId + ".tar";
-		} else if (!Path.HasExtension(outputPath))
+		}
+		else if (!Path.HasExtension(outputPath))
 		{
 			outputPath += ".tar";
 		}
@@ -329,7 +331,7 @@ public partial class BeamoLocalSystem
 		{
 			// Handles escaping stuff from copy statements that we don't need (to enforce pattern of COPY SOURCE DESTINATION).
 			string escapedLine = line;
-			
+
 			//This needs to have the follow pattern: "COPY SOURCE DESTINATION", if not just continues reading file
 			if (escapedLine.Contains("--"))
 				escapedLine = "";
@@ -341,7 +343,7 @@ public partial class BeamoLocalSystem
 
 				if (probablePath.Contains("*"))
 					probablePath = Path.GetDirectoryName(probablePath);
-				
+
 				try
 				{
 					var result = Path.GetFullPath(configService.BeamableRelativeToExecutionRelative(probablePath));
@@ -518,9 +520,9 @@ public partial class BeamoLocalSystem
 							// TODO: A more robust algorithm for this is to make sure that we don't have repeating image ids tied to BeamoIds when running this stop loop.
 							if (!e.Message.Contains("reference does not exist") &&
 
-							    // Because we run this in-parallel, we can also get this error:
-							    // Docker API responded with status code=InternalServerError, response={"message":"unrecognized image ID sha256:c8b57c4bf7e3a88daf948d5d17bc7145db05771e928b3b3095ca4590719b5469"}    
-							    !e.Message.Contains("unrecognized image ID"))
+								// Because we run this in-parallel, we can also get this error:
+								// Docker API responded with status code=InternalServerError, response={"message":"unrecognized image ID sha256:c8b57c4bf7e3a88daf948d5d17bc7145db05771e928b3b3095ca4590719b5469"}    
+								!e.Message.Contains("unrecognized image ID"))
 								throw;
 						}
 					}
