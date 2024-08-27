@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `net8.0` support for Standalone Microservices
 - `beam project ps --raw` includes an `executionVersion` representing the version of the Beamable SDK being used in the service
 - `beam project ps --raw` includes an `processId` and `routingKeys` representing the locally running OS process id, if any, and the list of routing keys currently registered with the Beamable backend for that service.
+- `oapi download` flag `--combine-into-one-document` for combining OpenAPI documents into one
 
 ### Changed
 - Standalone Microservices are created with `net8.0` by default
