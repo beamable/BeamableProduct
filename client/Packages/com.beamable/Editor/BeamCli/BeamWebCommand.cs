@@ -316,47 +316,47 @@ namespace Beamable.Editor.BeamCli
 		}
 		
 
-		async Task ReadLoop(HttpRequestMessage req, List<long> dispatchedIds)
-		{
-			using HttpResponseMessage response =
-				await _localClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
-			using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
-			using StreamReader reader = new StreamReader(streamToReadFrom);
-			
-			while (!reader.EndOfStream)
-			{
-				_cts.Token.ThrowIfCancellationRequested();
-				var line = await reader.ReadLineAsync();
-				if (string.IsNullOrEmpty(line)) continue; // TODO: what if the message contains a \n character?
-
-				// remove life-cycle zero-width character
-				line = line.Replace("\u200b", "");
-				if (!line.StartsWith("data: "))
-				{
-					Debug.LogWarning(
-						$"CLI received a message over the local-server that did not start with the expected 'data: ' format. line=[{line}]");
-					continue;
-				}
-
-				var jobId = _factory.dispatcher.Schedule(() => // put callback on separate work queue.
-				{
-					var lineJson = line
-						.Substring("data: ".Length); // remove the Server-Side-Event notation
-
-					CliLogger.Log("received, " + lineJson, "from " + commandString);
-
-					var res = JsonUtility.FromJson<ReportDataPointDescription>(lineJson);
-					res.json = lineJson;
-
-						
-					_history.HandleMessage(id, res);
-					_callbacks?.Invoke(res);
-				});
-				dispatchedIds.Add(jobId);
-			}
-
-		}
-		
+		// async Task ReadLoop(HttpRequestMessage req, List<long> dispatchedIds)
+		// {
+		// 	using HttpResponseMessage response =
+		// 		await _localClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+		// 	using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
+		// 	using StreamReader reader = new StreamReader(streamToReadFrom);
+		// 	
+		// 	while (!reader.EndOfStream)
+		// 	{
+		// 		_cts.Token.ThrowIfCancellationRequested();
+		// 		var line = await reader.ReadLineAsync();
+		// 		if (string.IsNullOrEmpty(line)) continue; // TODO: what if the message contains a \n character?
+		//
+		// 		// remove life-cycle zero-width character
+		// 		line = line.Replace("\u200b", "");
+		// 		if (!line.StartsWith("data: "))
+		// 		{
+		// 			Debug.LogWarning(
+		// 				$"CLI received a message over the local-server that did not start with the expected 'data: ' format. line=[{line}]");
+		// 			continue;
+		// 		}
+		//
+		// 		var jobId = _factory.dispatcher.Schedule(() => // put callback on separate work queue.
+		// 		{
+		// 			var lineJson = line
+		// 				.Substring("data: ".Length); // remove the Server-Side-Event notation
+		//
+		// 			CliLogger.Log("received, " + lineJson, "from " + commandString);
+		//
+		// 			var res = JsonUtility.FromJson<ReportDataPointDescription>(lineJson);
+		// 			res.json = lineJson;
+		//
+		// 				
+		// 			_history.HandleMessage(id, res);
+		// 			_callbacks?.Invoke(res);
+		// 		});
+		// 		dispatchedIds.Add(jobId);
+		// 	}
+		//
+		// }
+		//
 		public async Promise Run()
 		{
 			_history.UpdateResolvingHostTime(id);
@@ -375,83 +375,87 @@ namespace Beamable.Editor.BeamCli
 			try
 			{
 				_cts.Token.ThrowIfCancellationRequested();
-			
+					using HttpResponseMessage response =
+						await _localClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+					using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
+					using StreamReader reader = new StreamReader(streamToReadFrom);
+					
 				
 				// spawn a background task
-				var _ = Task.Run(async () =>
-				{
-					try
-					{
-						await ReadLoop(req, dispatchedIds);
-					}
-					catch (HttpRequestException socketException)
-					{
-						CliLogger.Log($"Socket exception happened. command=[{commandString}] url=[{_factory.ExecuteUrl}] " +
-						              socketException.Message);
-						throw;
-					}
-					catch (IOException ioException)
-					{
-
-						// in this event, it is likely that the CLI server was terminated without politely closing connections.
-						//  that is _fine_, but we need to handle it.
-						CliLogger.Log("cli server died, " + ioException.Message);
-					}
-					catch (OperationCanceledException cancelledException)
-					{
-						// A cancellation was requested so the connection was terminated
-						CliLogger.Log("cli command was cancelled, " + cancelledException.Message);
-					}
-					catch (Exception ex)
-					{
-						CliLogger.Log(
-							$"Socket exception happened general. command=[{commandString}] url=[{_factory.ExecuteUrl}] type=[{ex.GetType().FullName}]" +
-							ex.Message);
-						Debug.LogException(ex);
-					}
-					finally
-					{
-						_history.UpdateCompleteTime(id);
-						await _factory.dispatcher.WaitForJobIds(dispatchedIds);
-						p.CompleteSuccess();
-						
-						req.Dispose();
-					}
-				});
-
-
-				// while (!reader.EndOfStream)
+				// var _ = Task.Run(async () =>
 				// {
-				// 	_cts.Token.ThrowIfCancellationRequested();
-				// 	var line = await reader.ReadLineAsync().ToPromiseRoutine();
-				// 	if (string.IsNullOrEmpty(line)) continue; // TODO: what if the message contains a \n character?
-				//
-				// 	// remove life-cycle zero-width character
-				// 	line = line.Replace("\u200b", "");
-				// 	if (!line.StartsWith("data: "))
+				// 	try
 				// 	{
-				// 		Debug.LogWarning(
-				// 			$"CLI received a message over the local-server that did not start with the expected 'data: ' format. line=[{line}]");
-				// 		continue;
+				// 		await ReadLoop(req, dispatchedIds);
 				// 	}
-				//
-				// 	var jobId = _factory.dispatcher.Schedule(() => // put callback on separate work queue.
+				// 	catch (HttpRequestException socketException)
 				// 	{
-				// 		var lineJson = line
-				// 			.Substring("data: ".Length); // remove the Server-Side-Event notation
+				// 		CliLogger.Log($"Socket exception happened. command=[{commandString}] url=[{_factory.ExecuteUrl}] " +
+				// 		              socketException.Message);
+				// 		throw;
+				// 	}
+				// 	catch (IOException ioException)
+				// 	{
 				//
-				// 		CliLogger.Log("received, " + lineJson, "from " + commandString);
-				//
-				// 		var res = JsonUtility.FromJson<ReportDataPointDescription>(lineJson);
-				// 		res.json = lineJson;
-				//
+				// 		// in this event, it is likely that the CLI server was terminated without politely closing connections.
+				// 		//  that is _fine_, but we need to handle it.
+				// 		CliLogger.Log("cli server died, " + ioException.Message);
+				// 	}
+				// 	catch (OperationCanceledException cancelledException)
+				// 	{
+				// 		// A cancellation was requested so the connection was terminated
+				// 		CliLogger.Log("cli command was cancelled, " + cancelledException.Message);
+				// 	}
+				// 	catch (Exception ex)
+				// 	{
+				// 		CliLogger.Log(
+				// 			$"Socket exception happened general. command=[{commandString}] url=[{_factory.ExecuteUrl}] type=[{ex.GetType().FullName}]" +
+				// 			ex.Message);
+				// 		Debug.LogException(ex);
+				// 	}
+				// 	finally
+				// 	{
+				// 		_history.UpdateCompleteTime(id);
+				// 		await _factory.dispatcher.WaitForJobIds(dispatchedIds);
+				// 		p.CompleteSuccess();
 				// 		
-				// 		_history.HandleMessage(id, res);
-				// 		_callbacks?.Invoke(res);
-				// 	});
-				// 	dispatchedIds.Add(jobId);
-				// }
-				//
+				// 		req.Dispose();
+				// 	}
+				// });
+
+
+				while (!reader.EndOfStream)
+				{
+					_cts.Token.ThrowIfCancellationRequested();
+					var line = await reader.ReadLineAsync().ToPromiseRoutine();
+					if (string.IsNullOrEmpty(line)) continue; // TODO: what if the message contains a \n character?
+				
+					// remove life-cycle zero-width character
+					line = line.Replace("\u200b", "");
+					if (!line.StartsWith("data: "))
+					{
+						Debug.LogWarning(
+							$"CLI received a message over the local-server that did not start with the expected 'data: ' format. line=[{line}]");
+						continue;
+					}
+				
+					var jobId = _factory.dispatcher.Schedule(() => // put callback on separate work queue.
+					{
+						var lineJson = line
+							.Substring("data: ".Length); // remove the Server-Side-Event notation
+				
+						CliLogger.Log("received, " + lineJson, "from " + commandString);
+				
+						var res = JsonUtility.FromJson<ReportDataPointDescription>(lineJson);
+						res.json = lineJson;
+				
+						
+						_history.HandleMessage(id, res);
+						_callbacks?.Invoke(res);
+					});
+					dispatchedIds.Add(jobId);
+				}
+				
 
 			}
 			finally
