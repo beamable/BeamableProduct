@@ -18,7 +18,7 @@ public class ClearTempLogFilesCommandOutput
 
 public class ClearTempLogFilesCommand : AtomicCommand<ClearTempLogFilesCommandArgs, ClearTempLogFilesCommandOutput>
 {
-	public ClearTempLogFilesCommand() : base("logs", "clear temp log files")
+	public ClearTempLogFilesCommand() : base("logs", "Clear temp log files")
 	{
 	}
 

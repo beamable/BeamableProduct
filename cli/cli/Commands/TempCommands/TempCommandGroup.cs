@@ -5,7 +5,7 @@ namespace cli.TempCommands;
 
 public class TempCommandGroup : CommandGroup
 {
-	public TempCommandGroup() : base("temp", "commands for the .beamable temp folder")
+	public TempCommandGroup() : base("temp", "Commands for the .beamable temp folder")
 	{
 	}
 }
@@ -16,7 +16,7 @@ public class TempClearArgs : CommandArgs
 }
 public class TempClearCommandGroup : CommandGroup<TempClearArgs>
 {
-	public TempClearCommandGroup() : base("clear", "commands to clear files in the temp folder")
+	public TempClearCommandGroup() : base("clear", "Commands to clear files in the temp folder")
 	{
 	}
 
