@@ -18,8 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `net8.0` support for Standalone Microservices
 - `beam project ps --raw` includes an `executionVersion` representing the version of the Beamable SDK being used in the service
 - `oapi download` flag `--combine-into-one-document` for combining OpenAPI documents into one
+- `temp clear logs` command will clear old log files in the `.beamable/temp/logs` folder.
+
 ### Changed
 - Standalone Microservices are created with `net8.0` by default
+- CLI log files are kept in the `.beamable/temp/logs` folder and are cleared after each day if the total number of log files exceeds 250
 
 ### Fixed
 - JSON output will correctly render optional types

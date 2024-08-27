@@ -39,7 +39,7 @@ public interface IAppContext
 	public IAccessToken Token { get; }
 	public string RefreshToken { get; }
 	bool ShouldUseLogFile { get; }
-	string TempLogFilePath { get;  }
+	bool TryGetTempLogFilePath(out string logFile);
 	bool ShouldMaskLogs { get; }
 	bool ShouldEmitLogs { get; }
 	
@@ -121,7 +121,23 @@ public class DefaultAppContext : IAppContext
 	}
 
 	public bool ShouldUseLogFile => !_consoleContext.ParseResult.GetValueForOption(_noLogFileOption);
-	public string TempLogFilePath => Path.Combine(Path.GetTempPath(), "beamCliLog.txt");
+	// public string TempLogFilePath => Path.Combine(Path.GetTempPath(), "beamCliLog.txt");
+	
+	static DateTimeOffset _logTime = DateTimeOffset.Now;
+
+	public bool TryGetTempLogFilePath(out string logFile)
+	{
+		logFile = null;
+		if (string.IsNullOrEmpty(_configService.ConfigDirectoryPath))
+		{
+			// there is no .beamable folder
+			return false;
+		}
+		logFile = _configService.GetRelativeToBeamableFolderPath(
+			$".beamable/temp/logs/beamCliLog-{_logTime.ToFileTime()}");
+		return true;
+	}
+	
 	public bool ShouldMaskLogs => !_consoleContext.ParseResult.GetValueForOption(_unmaskLogsOption);
 	public bool ShouldEmitLogs => _consoleContext.ParseResult.GetValueForOption(EmitLogsOption.Instance);
 

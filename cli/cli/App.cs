@@ -21,6 +21,7 @@ using cli.Portal;
 using cli.Services;
 using cli.Services.Content;
 using cli.Services.HttpServer;
+using cli.TempCommands;
 using cli.TokenCommands;
 using cli.UnityCommands;
 using cli.Unreal;
@@ -38,6 +39,7 @@ using Serilog.Enrichers.Sensitive;
 using Serilog.Events;
 using Spectre.Console;
 using System.CommandLine;
+using System.CommandLine.Binding;
 using System.CommandLine.Builder;
 using System.CommandLine.Help;
 using System.CommandLine.Invocation;
@@ -84,18 +86,10 @@ public class App
 	{
 		
 		var appCtx = provider.GetService<IAppContext>();
-		try
-		{
-			if (appCtx.ShouldUseLogFile)
-			{
-				File.Delete(appCtx.TempLogFilePath);
-			}
-		}
-		catch
-		{
-			// if we cannot delete the temp file, then the worst outcome is that we are appending new data to it.
-		}
-
+		var config = provider.GetService<ConfigService>();
+		var binding = provider.GetService<BindingContext>();
+		config.SetupBasePath(binding);
+		
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
 		configureLogger ??= config =>
 		{
@@ -116,9 +110,17 @@ public class App
 					.WriteTo.BeamAnsi("{Message:lj}{NewLine}{Exception}")
 					.MinimumLevel.ControlledBy(app.LogLevel)
 			);
-			if (appCtx.ShouldUseLogFile)
+			if (appCtx.ShouldUseLogFile && appCtx.TryGetTempLogFilePath(out var logPath))
 			{
-				baseConfig.WriteTo.File(appCtx.TempLogFilePath, LogEventLevel.Verbose);
+				var existingLogFiles = Directory.GetFiles(Path.GetDirectoryName(logPath));
+				// this is magic number... I guess its a rough estimate of a number of commands per day?
+				const int MaxNumberOfLogFilesBeforeAutoClean = 250;
+				if (existingLogFiles.Length > MaxNumberOfLogFilesBeforeAutoClean)
+				{
+					// clean up everything older than a day
+					ClearTempLogFilesCommand.CleanLogs(TimeSpan.FromDays(1), existingLogFiles);
+				}
+				baseConfig.WriteTo.File(logPath, LogEventLevel.Verbose);
 			}
 
 			if (appCtx.ShouldEmitLogs)
@@ -336,6 +338,10 @@ public class App
 		Commands.AddSubCommand<GetTokenViaRefreshCommand, GetTokenViaRefreshCommandArgs, TokenCommandGroup>();
 		Commands.AddSubCommand<GetTokenForGuestCommand, GetTokenForGuestCommandArgs, TokenCommandGroup>();
 
+		Commands.AddRootCommand<TempCommandGroup>();
+		Commands.AddSubCommand<TempClearCommandGroup, TempClearArgs, TempCommandGroup>();
+		Commands.AddSubCommandWithHandler<ClearTempLogFilesCommand, ClearTempLogFilesCommandArgs, TempClearCommandGroup>();
+		
 		Commands.AddRootCommand<PlayerCommand, PlayerCommandArgs>();
 		Commands.AddSubCommandWithHandler<AddPlayerToRealmCommand, AddPlayerToRealmCommandArgs, PlayerCommand>();
 		
@@ -784,9 +790,17 @@ public class App
 
 			if (appContext.ShouldUseLogFile)
 			{
-				Log.CloseAndFlush();
-				File.AppendAllText(appContext.TempLogFilePath, ex.ToString());
-				Console.Error.WriteLine("\nLogs at\n  " + appContext.TempLogFilePath);
+				if (!appContext.TryGetTempLogFilePath(out var logFile))
+				{
+					Log.Warning("Could not write logs because no .beamable project exists to host the log file. Please re-run the command with '--logs v', or, create a .beamable folder using 'beam init' and then re-run the command.");
+				}
+				else
+				{
+					Log.CloseAndFlush();
+					
+					File.AppendAllText(logFile, ex.ToString());
+					Console.Error.WriteLine("\nLogs at\n  " + Path.GetFullPath(logFile));
+				}
 			}
 		});
 		return commandLineBuilder.Build();
