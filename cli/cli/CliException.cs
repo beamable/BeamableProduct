@@ -8,9 +8,9 @@ public class CliException<T> : CliException
 	where T : ErrorOutput
 {
 	public T payload = default;
-	
+
 	protected override ErrorOutput Payload => payload;
-	
+
 	public static string GetChannelName() => GetChannelName(typeof(T));
 
 
@@ -84,8 +84,8 @@ public class CliException : Exception
 		output.stackTrace = ex.StackTrace;
 		output.typeName = ex.GetType().Name;
 	}
-	
-	
+
+
 	public ErrorOutput GetPayload(int exitCode, string invocationContext)
 	{
 		var payload = Payload ?? new ErrorOutput();

@@ -31,28 +31,28 @@ public class SetEnabledCommand : AtomicCommand<SetEnabledCommandArgs, SetEnabled
 	public override void Configure()
 	{
 		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
-		ProjectCommand.AddServiceTagsOption(this, 
+		ProjectCommand.AddServiceTagsOption(this,
 			bindWithTags: (args, i) => args.withServiceTags = i,
 			bindWithoutTags: (args, i) => args.withoutServiceTags = i);
 	}
 
 	public override Task<SetEnabledCommandArgsOutput> GetResult(SetEnabledCommandArgs args)
 	{
-		ProjectCommand.FinalizeServicesArg(args, 
-			withTags: args.withServiceTags, 
+		ProjectCommand.FinalizeServicesArg(args,
+			withTags: args.withServiceTags,
 			withoutTags: args.withoutServiceTags,
-			includeStorage: true, 
+			includeStorage: true,
 			ref args.services);
 
 		var output = SetProjectEnabled(args.services, args.BeamoLocalSystem.BeamoManifest, true);
-		
+
 		return Task.FromResult(output);
 	}
 
 	public static SetEnabledCommandArgsOutput SetProjectEnabled(List<string> services, BeamoLocalManifest manifest, bool enabled)
 	{
 		{ // do a prepass to make sure that all services have all of their dependencies in the list
-			
+
 			foreach (var service in services)
 			{
 				if (!manifest.HttpMicroserviceLocalProtocols.TryGetValue(service, out var protocol))
@@ -68,8 +68,8 @@ public class SetEnabledCommand : AtomicCommand<SetEnabledCommandArgs, SetEnabled
 				}
 			}
 		}
-		
-		
+
+
 		var output = new SetEnabledCommandArgsOutput();
 		foreach (var service in services)
 		{
@@ -77,7 +77,7 @@ public class SetEnabledCommand : AtomicCommand<SetEnabledCommandArgs, SetEnabled
 			{
 				throw new CliException($"Unknown service id=[{service}]");
 			}
-			
+
 			var value = ProjectContextUtil.ModifyProperty(definition, CliConstants.PROP_BEAM_ENABLED, enabled ? "true" : "false");
 			output.modifiedServices.Add(new SetEnabledCommandComponent
 			{
@@ -101,17 +101,17 @@ public class SetDisableCommand : AtomicCommand<SetEnabledCommandArgs, SetEnabled
 	public override void Configure()
 	{
 		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
-		ProjectCommand.AddServiceTagsOption(this, 
+		ProjectCommand.AddServiceTagsOption(this,
 			bindWithTags: (args, i) => args.withServiceTags = i,
 			bindWithoutTags: (args, i) => args.withoutServiceTags = i);
 	}
 
 	public override Task<SetEnabledCommandArgsOutput> GetResult(SetEnabledCommandArgs args)
 	{
-		ProjectCommand.FinalizeServicesArg(args, 
-			withTags: args.withServiceTags, 
+		ProjectCommand.FinalizeServicesArg(args,
+			withTags: args.withServiceTags,
 			withoutTags: args.withoutServiceTags,
-			includeStorage: true, 
+			includeStorage: true,
 			ref args.services);
 
 		var output = SetEnabledCommand.SetProjectEnabled(args.services, args.BeamoLocalSystem.BeamoManifest, false);
