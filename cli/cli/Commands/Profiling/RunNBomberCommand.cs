@@ -50,7 +50,7 @@ public class RunNBomberCommand : AppCommand<RunNBomberCommandArgs>
 		var prefix = args.includePrefix ? MachineHelper.GetUniqueDeviceId() : "";
 		var host = args.AppContext.Host;
 
-		var url = $"{host}/basic/{cid}.{pid}.{args.service}/{args.method}";
+		var url = $"{host}/basic/{cid}.{pid}.micro_{args.service}/{args.method}";
 		var scope = $"{cid}.{pid}";
 
 		if (string.IsNullOrWhiteSpace(args.jsonFilePath))

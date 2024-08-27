@@ -50,28 +50,22 @@
     <PackageReference Include="MongoDB.Driver" Version="2.15.1"/>
   </ItemGroup>
   
-  <ItemGroup Label="Internal Beamable References">
-    <ProjectReference Include="..\beamable.tooling.common\beamable.tooling.common.csproj" PrivateAssets="All"/>
-  </ItemGroup>
-  
   <ItemGroup Label="Public Beamable References">
     <ProjectReference Include="..\..\cli\beamable.common\beamable.common.csproj"/>
     <ProjectReference Include="..\..\cli\beamable.server.common\beamable.server.common.csproj"/>
     <ProjectReference Include="..\unityenginestubs.addressables\unityenginestubs.addressables.csproj"/>
     <ProjectReference Include="..\unityEngineStubs\unityenginestubs.csproj"/>
+    <ProjectReference Include="..\beamable.tooling.common\beamable.tooling.common.csproj"/>
   </ItemGroup>
 
   <ItemGroup Label="Pack Internal Beamable References: Net6.0">
     <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build/net6.0" Pack="True"/>
-    <None Include="$(OutputPath)/net6.0/beamable.tooling.common*" PackagePath="lib/net6.0" Pack="True"/>
   </ItemGroup>
   <ItemGroup Label="Pack Internal Beamable References: Net7.0">
     <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build/net7.0" Pack="True"/>
-    <None Include="$(OutputPath)/net7.0/beamable.tooling.common*" PackagePath="lib/net7.0" Pack="True"/>
   </ItemGroup>
   <ItemGroup Label="Pack Internal Beamable References: Net8.0">
     <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build/net8.0" Pack="True"/>
-    <None Include="$(OutputPath)/net8.0/beamable.tooling.common*" PackagePath="lib/net8.0" Pack="True"/>
   </ItemGroup>
   
 
