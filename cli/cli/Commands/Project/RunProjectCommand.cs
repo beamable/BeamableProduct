@@ -13,7 +13,7 @@ namespace cli.Commands.Project;
 public class RunProjectCommandArgs : CommandArgs
 {
 	public List<string> services = new List<string>();
-	public bool watch;
+	public bool detach;
 	public bool forceRestart;
 }
 
@@ -26,15 +26,25 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 
 	public override void Configure()
 	{
-		ProjectCommand.AddWatchOption(this, (args, i) => args.watch = i);
+		ProjectCommand.AddWatchOption(this, (_, b) =>
+		{
+			if (b) throw new CliException("The --watch flag is no longer supported due to underlying .NET issues");
+		});
 		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
-		AddOption<bool>(new Option<bool>("--force", "With this flag, we restart any running services. Without it, we skip running services"), (args, b) => args.forceRestart = b);
+		AddOption<bool>(new Option<bool>("--force", "With this flag, we restart any running services. Without it, we skip running services"), (args, b) => args.detach = b);
+		AddOption<bool>(new Option<bool>("--detach", "With this flag, we restart any running services. Without it, we skip running services"), (args, b) => args.forceRestart = b);
 	}
 
 	public override async Task Handle(RunProjectCommandArgs args)
 	{
 		ProjectCommand.FinalizeServicesArg(args, ref args.services);
 
+		if (!args.detach && args.services.Count > 1)
+		{
+			Log.Warning("You are starting multiple services without the '--detach' flag. " +
+			            "Their log output will be shown interleaved; for optimal log viewing, use '--detach' and then use 'beam project logs --ids <BeamoId>' for each service whose logs you wish to tail");
+		}
+		
 		// First, we need to find out which services are currently running.
 		var runningServices = new Dictionary<string, ServiceDiscoveryEvent>();
 		var discovery = args.DependencyProvider.GetService<DiscoveryService>();
@@ -94,14 +104,14 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 		Log.Debug("Starting Services. SERVICES={Services}", string.Join(",", serviceTable.Keys));
 		foreach ((string serviceName, HttpMicroserviceLocalProtocol service) in serviceTable)
 		{
-			runTasks.Add(RunService(args, serviceName, args.watch, cancelTable[serviceName]));
+			runTasks.Add(RunService(args, serviceName, !args.detach, cancelTable[serviceName]));
 		}
-
+		
 		await Task.WhenAll(runTasks);
 	}
 
 
-	private static async Task RunService(CommandArgs args, string serviceName, bool watchProcess, CancellationTokenSource serviceToken)
+	public static async Task RunService(CommandArgs args, string serviceName, bool watchProcess, CancellationTokenSource serviceToken)
 	{
 		var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(args.Lifecycle.CancellationToken, serviceToken.Token);
 
@@ -174,7 +184,6 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 		}, tokenSource.Token);
 
 		var serviceStarted = false;
-
 		var healthCheckTask = Task.Run(async () =>
 		{
 			var route = $"https://dev.api.beamable.com/basic/{args.AppContext.Cid}.{args.AppContext.Pid}.{serviceName}/admin/HealthCheck";

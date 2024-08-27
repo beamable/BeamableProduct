@@ -30,7 +30,7 @@ public class ProjectCommand : CommandGroup
 	{
 		command.AddOption(new Option<List<string>>(
 			name: "--ids",
-			description: "The list of services to include, defaults to all local services")
+			description: "The list of services to include, defaults to all local services (separated by whitespace)")
 		{
 			AllowMultipleArgumentsPerToken = true,
 			Arity = ArgumentArity.ZeroOrMore

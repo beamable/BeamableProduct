@@ -526,7 +526,7 @@ public class ProjectService
 		var errorDir = Path.GetDirectoryName(errorPath);
 		Directory.CreateDirectory(errorDir);
 		Log.Debug($"error log path=[{errorPath}]");
-		var dockerfilePath = Path.Combine(args.ConfigService.GetRelativeToBeamableFolderPath(service.DockerBuildContextPath),
+		var dockerfilePath = Path.Combine(args.ConfigService.BeamableRelativeToExecutionRelative(service.DockerBuildContextPath),
 			service.RelativeDockerfilePath);
 		var projectPath = Path.GetDirectoryName(dockerfilePath);
 

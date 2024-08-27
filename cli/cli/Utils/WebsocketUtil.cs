@@ -49,7 +49,6 @@ public class WebsocketUtil
 			var dict = new ArrayDict
 			{
 				["id"] = messageObj.id, ["status"] = 200,
-				//["body"] = new RawJsonProvider {Json = JsonConvert.SerializeObject(messageObj.body, UnitySerializationSettings.Instance)}
 			};
 
 			var ack = Json.Serialize(dict, stringBuilder.Builder);
@@ -63,10 +62,9 @@ public class WebsocketUtil
 				{
 					onNotification?.Invoke(messageObj);
 					dict["status"] = 500;
-					dict["body"] = e.Message;
 					var nack = Json.Serialize(dict, stringBuilder.Builder);
-
 					await WebsocketUtil.SendMessageAsync(ws, nack, cancellationToken);
+					Log.Error(e, "Error invoking Notification callback... You should not see this as a Beamable customer. If you do, please tell us");
 					throw;
 				}
 				

@@ -376,7 +376,7 @@ public class DiscoveryService
 			isContainer = entry.isContainer,
 			// In some cases, we need to explicitly set this as not running.
 			// We can determine if the service is running or not based on these variables. (HealthPort is only there if the docker container is running).
-			isRunning = isRunningOverride.HasValue ? isRunningOverride.Value : (entry.processId > 0 || entry.healthPort > 0),
+			isRunning = isRunningOverride.HasValue ? isRunningOverride.Value : entry.healthPort > 0,
 
 			// Header stuff.
 			service = entry.serviceName,
