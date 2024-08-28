@@ -98,6 +98,27 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 			.ExecuteAsyncAndLog();
 
 		Log.Information($"Beam CLI version=[{packageVersion.originalVersion}] installed successfully as a {scope} tool. Use `beam version` or `beam --version` to verify.");
+
+		// if the tool is local, then likely, the microservices need to be restored as well.
+		if (currentVersionInfo.installType == VersionService.VersionInstallType.LocalTool)
+		{
+			foreach (var local in args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions)
+			{
+				// skip services that don't have local source code
+				if (!local.IsLocal) continue;
+				Log.Information($"Restoring local project=[{local.ProjectPath}]");
+				try
+				{
+					await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, $"restore {local.ProjectPath}")
+						.WithValidation(CommandResultValidation.ZeroExitCode)
+						.ExecuteAsyncAndLog();
+				}
+				catch (Exception ex)
+				{
+					Log.Error($"Failed to restore local project=[{local.ProjectPath}] message=[{ex.Message}]");
+				}
+			}
+		}
 	}
 
 	public void ValidationRedirection(InvocationContext context, Command command, VersionInstallCommandArgs args,
