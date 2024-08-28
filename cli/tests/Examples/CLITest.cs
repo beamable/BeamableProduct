@@ -27,7 +27,7 @@ public class CLITest
 	{
 		OriginalWorkingDir = Directory.GetCurrentDirectory();
 	}
-	
+
 	protected string WorkingDir => Path.Combine(OriginalWorkingDir, "testRuns", TestId);
 	protected string TestId { get; private set; }
 
@@ -53,7 +53,7 @@ public class CLITest
 		_dockerClient = new DockerClientConfiguration(new AnonymousCredentials()).CreateClient();
 
 		TestId = Guid.NewGuid().ToString();
-		
+
 		Directory.SetCurrentDirectory(OriginalWorkingDir);
 		Directory.CreateDirectory(WorkingDir);
 		Directory.SetCurrentDirectory(WorkingDir);
@@ -114,7 +114,7 @@ public class CLITest
 	}
 
 	protected int Run(params string[] args) => RunFull(args, assertExitCode: true);
-	protected int RunFull(string[] args, bool assertExitCode=false, Action<IDependencyBuilder>? configurator=null)
+	protected int RunFull(string[] args, bool assertExitCode = false, Action<IDependencyBuilder>? configurator = null)
 	{
 		var exitCode = Cli.RunWithParams(builder =>
 		{

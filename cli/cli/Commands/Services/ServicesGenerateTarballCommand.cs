@@ -25,8 +25,8 @@ public class ServicesGenerateTarballCommand : AtomicCommand<ServicesGenerateTarb
 		var serviceIdOption = new Option<string>("--id", "The beamo id of the service to bundle");
 		serviceIdOption.AddAlias("-i");
 		AddOption(serviceIdOption, (args, i) => args.beamoId = i);
-		
-		
+
+
 		var outputOption = new Option<string>("--output", "The location of the output tarball file");
 		outputOption.AddAlias("-o");
 		AddOption(outputOption, (args, i) => args.outputPath = i);
