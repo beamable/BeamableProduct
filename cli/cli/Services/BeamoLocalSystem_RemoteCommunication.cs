@@ -122,7 +122,7 @@ public partial class BeamoLocalSystem
 
 	private async Promise<string> RetryRequest(string containerName, string serviceName, string routingHeader)
 	{
-		var url = $"/basic/{_beamableRequester.Cid}.{_beamableRequester.Pid}.{serviceName}/admin/Metadata";
+		var url = $"/basic/{_beamableRequester.Cid}.{_beamableRequester.Pid}.micro_{serviceName}/admin/Metadata";
 		var requester = (CliRequester)_beamableRequester;
 
 		var isRunning = false;
