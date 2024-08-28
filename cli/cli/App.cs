@@ -112,13 +112,17 @@ public class App
 			);
 			if (appCtx.ShouldUseLogFile && appCtx.TryGetTempLogFilePath(out var logPath))
 			{
-				var existingLogFiles = Directory.GetFiles(Path.GetDirectoryName(logPath));
-				// this is magic number... I guess its a rough estimate of a number of commands per day?
-				const int MaxNumberOfLogFilesBeforeAutoClean = 250;
-				if (existingLogFiles.Length > MaxNumberOfLogFilesBeforeAutoClean)
+				var path = Path.GetDirectoryName(logPath);
+				if (Directory.Exists(path))
 				{
-					// clean up everything older than a day
-					ClearTempLogFilesCommand.CleanLogs(TimeSpan.FromDays(1), existingLogFiles);
+					var existingLogFiles = Directory.GetFiles(path);
+					// this is magic number... I guess its a rough estimate of a number of commands per day?
+					const int MaxNumberOfLogFilesBeforeAutoClean = 250;
+					if (existingLogFiles.Length > MaxNumberOfLogFilesBeforeAutoClean)
+					{
+						// clean up everything older than a day
+						ClearTempLogFilesCommand.CleanLogs(TimeSpan.FromDays(1), existingLogFiles);
+					}
 				}
 				baseConfig.WriteTo.File(logPath, LogEventLevel.Verbose);
 			}
