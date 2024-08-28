@@ -6,7 +6,7 @@ namespace cli.TempCommands;
 [Serializable]
 public class ClearTempLogFilesCommandArgs : CommandArgs
 {
-	public TimeSpan olderThan;
+	public string olderThan;
 }
 
 [Serializable]
@@ -38,19 +38,21 @@ public class ClearTempLogFilesCommand : AtomicCommand<ClearTempLogFilesCommandAr
 		olderThanOption.AddAlias("-ot");
 		AddOption(olderThanOption, (args, i) =>
 		{
-			if (string.IsNullOrEmpty(i))
-			{
-				args.olderThan = TimeSpan.Zero;
-			} else if (!TryParse(i, out args.olderThan))
-			{
-				throw new CliException("Invalid --older-than value.");
-			}
+			args.olderThan = i;
 		});
 	}
 
 	public override Task<ClearTempLogFilesCommandOutput> GetResult(ClearTempLogFilesCommandArgs args)
 	{
-		return Task.FromResult(CleanLogs(args.AppContext, args.olderThan));
+		TimeSpan olderThan = default;
+		if (string.IsNullOrEmpty(args.olderThan))
+		{
+			olderThan = TimeSpan.Zero;
+		} else if (!TryParse(args.olderThan, out olderThan))
+		{
+			throw new CliException("Invalid --older-than value.");
+		}
+		return Task.FromResult(CleanLogs(args.AppContext, olderThan));
 	}
 
 
