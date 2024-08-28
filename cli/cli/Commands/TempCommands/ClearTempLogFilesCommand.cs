@@ -26,7 +26,7 @@ public class ClearTempLogFilesCommand : AtomicCommand<ClearTempLogFilesCommandAr
 	{
 		var olderThanOption = new Option<string>(
 			name: "--older-than",
-			description: "only clear logs older than a given value. " +
+			description: "Only clear logs older than a given value. " +
 			             "This string should be in a duration format.\n\n " +
 			             "The duration format should be a number, followed by a time unit. Valid time units " +
 			             "include seconds (s), minutes (m), hours (h), days (d), and months(mo). Please note that " +
