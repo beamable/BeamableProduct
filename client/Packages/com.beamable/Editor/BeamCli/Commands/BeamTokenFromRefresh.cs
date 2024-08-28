@@ -6,7 +6,7 @@ namespace Beamable.Editor.BeamCli.Commands
 
 	public class TokenFromRefreshArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>the token that you want to get information for. This must be a refresh token. By default, the current refresh token of the .beamable context is used.</summary>
+		/// <summary>The token that you want to get information for. This must be a refresh token. By default, the current refresh token of the .beamable context is used</summary>
 		public string token;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()

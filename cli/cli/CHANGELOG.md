@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Standalone Microservices are created with `net8.0` by default
 - `beam project open-swagger` now takes in `--routing-key` as opposed to `--remote`. Not passing `--routing-key` gives you the same behavior as passing `--remote`.  
+- `temp clear logs` command will clear old log files in the `.beamable/temp/logs` folder.
+- CLI log files are kept in the `.beamable/temp/logs` folder and are cleared after each day if the total number of log files exceeds 250
 
 ### Fixed
 - JSON output will correctly render optional types
