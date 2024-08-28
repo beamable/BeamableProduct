@@ -62,6 +62,7 @@ namespace Beamable.Editor.BeamCli.Commands
 				skipStandaloneValidation = true,
 				dotnetPath = Path.GetFullPath(DotnetUtil.DotnetPath),
 				quiet = true,
+				noLogFile = true,
 				raw = true,
 				emitLogStreams = true
 			};
