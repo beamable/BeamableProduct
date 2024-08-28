@@ -7,7 +7,7 @@
     </PropertyGroup>
     
     <!-- After the build completes, we should auto-generate client code to any linked projects -->
-    <Target Name="generate-client" AfterTargets="Build" Condition="$(GenerateClientCode)==true AND $(DOTNET_RUNNING_IN_CONTAINER)!=true">
+    <Target Name="generate-client" AfterTargets="Build" Condition="'$(BeamProjectType)'=='service' AND $(GenerateClientCode)==true AND $(DOTNET_RUNNING_IN_CONTAINER)!=true">
         <Message Text="Generating client files..." Importance="high" />
         <Exec Command="$(BeamableDotnetPath) $(BeamableTool) project generate-client $(OutDir)/$(AssemblyName).dll --output-links $(Beam_GenerateClient_Args)" EnvironmentVariables="BEAM_DOTNET_MSBUILD_PATH=$(BEAM_DOTNET_MSBUILD_PATH)"/>
     </Target>
