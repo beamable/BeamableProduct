@@ -16,8 +16,8 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 		{
 			var provider =
 				new BeamableMicroserviceSectionSettingsProvider("Project/Beamable Services",
-				                                                SettingsScope.Project);
-			provider.keywords = new HashSet<string>(new[] { "Microservice"});
+																SettingsScope.Project);
+			provider.keywords = new HashSet<string>(new[] { "Microservice" });
 
 			return provider;
 		}

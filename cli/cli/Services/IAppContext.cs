@@ -42,17 +42,17 @@ public interface IAppContext
 	bool TryGetTempLogFilePath(out string logFile);
 	bool ShouldMaskLogs { get; }
 	bool ShouldEmitLogs { get; }
-	
+
 	/// <summary>
 	/// The version of the CLI that is currently running.
 	/// </summary>
 	PackageVersion ExecutingVersion { get; }
-	
+
 	/// <summary>
 	/// true if the CLI is running in a directory that has a .beamable folder and a .config/dotnet-tools.json
 	/// </summary>
 	bool IsLocalProject { get; }
-	
+
 	/// <summary>
 	/// The version of the CLI defined in the local project's .config/dotnet-tools.json file; or null if this
 	/// isn't a local project. 
@@ -136,7 +136,7 @@ public class DefaultAppContext : IAppContext
 			$".beamable/temp/logs/beamCliLog-{_logTime.ToFileTime()}");
 		return true;
 	}
-	
+
 	public bool ShouldMaskLogs => !_consoleContext.ParseResult.GetValueForOption(_unmaskLogsOption);
 	public bool ShouldEmitLogs => _consoleContext.ParseResult.GetValueForOption(EmitLogsOption.Instance);
 

@@ -46,7 +46,7 @@ public class UnrealProjectClient : IProjectClient
 		var projectName = unrealProject.Name[..unrealProject.Name.IndexOf('.')];
 		var microservicePluginName = $"{projectName}MicroserviceClients";
 		var microservicePluginBpName = $"{projectName}MicroserviceClientsBp";
-		
+
 		unrealArgs.ProjectService.AddUnrealProject(relativePath, microservicePluginName, microservicePluginBpName);
 	}
 }
