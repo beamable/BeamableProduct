@@ -43,6 +43,16 @@ public class ConfigService
 		_configDirOption = configDirOption;
 	}
 
+	public void SetupBasePath(BindingContext bindingContext)
+	{
+		if (!TryGetSetting(out _dir, bindingContext, _configDirOption))
+		{
+			_dir = Directory.GetCurrentDirectory();
+		}
+		DirectoryExists = TryToFindBeamableConfigFolder(out var configPath);
+		ConfigDirectoryPath = configPath;
+	}
+	
 	public void Init(BindingContext bindingContext)
 	{
 		if (!TryGetSetting(out _dir, bindingContext, _configDirOption))
@@ -257,8 +267,6 @@ public class ConfigService
 		if (string.IsNullOrEmpty(value))
 		{
 			_ = _environment.TryGetFromOption(option, out value);
-			CliSerilogProvider.Instance.Debug(
-				$"Trying to get option={option.GetType().Name} from Env Vars! Value Found={value}");
 		}
 
 		var hasValue = !string.IsNullOrEmpty(value);
