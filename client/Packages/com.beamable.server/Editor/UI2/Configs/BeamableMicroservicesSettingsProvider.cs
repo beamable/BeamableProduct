@@ -32,9 +32,9 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 		private bool _confirmLeaveTriggered = false;
 
 		public BeamableMicroservicesSettingsProvider(string serviceName,
-		                                             string path,
-		                                             SettingsScope scopes,
-		                                             IEnumerable<string> keywords = null) : base(path, scopes, keywords)
+													 string path,
+													 SettingsScope scopes,
+													 IEnumerable<string> keywords = null) : base(path, scopes, keywords)
 		{
 			_serviceName = serviceName;
 		}
@@ -60,9 +60,9 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 
 				var provider =
 					new BeamableMicroservicesSettingsProvider(definition.BeamoId, "Project/Beamable Services/" + definition.BeamoId,
-					                                          SettingsScope.Project)
+															  SettingsScope.Project)
 					{
-						keywords = new HashSet<string>(new[] { "Microservice", definition.BeamoId})
+						keywords = new HashSet<string>(new[] { "Microservice", definition.BeamoId })
 					};
 				allProviders.Add(provider);
 			}
@@ -78,10 +78,10 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 
 			//load all possible dependencies
 			var codeService = BeamEditorContext
-			                  .Default.ServiceScope.GetService<CodeService>();
+							  .Default.ServiceScope.GetService<CodeService>();
 
 			var options = codeService.ServiceDefinitions.Where(sd => sd.ServiceType == ServiceType.StorageObject)
-			                         .Select(sd => sd.BeamoId).ToArray();
+									 .Select(sd => sd.BeamoId).ToArray();
 
 			_showDependenciesEditor = options.Length > 0;
 
@@ -101,8 +101,8 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 			{
 				_confirmLeaveTriggered = true;
 				if (EditorUtility.DisplayDialog("Unsaved Changes",
-				                                "You have unsaved changes! Would you like to save them before leaving?",
-				                                "Yes", "No"))
+												"You have unsaved changes! Would you like to save them before leaving?",
+												"Yes", "No"))
 				{
 					TrySaveChanges(settings);
 				}
@@ -203,7 +203,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 		public bool HasChanges()
 		{
 			if (originalAssemblyReferences == null || assemblyReferences == null ||
-			    originalStorageDependencies == null || storageDependencies == null)
+				originalStorageDependencies == null || storageDependencies == null)
 			{
 				return false;
 			}
@@ -218,8 +218,8 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 			UpdateOriginalData();
 			var dependencies = storageDependencies.Select(dep => dep.StorageName).ToList();
 			_ = BeamEditorContext
-			    .Default.ServiceScope.GetService<CodeService>()
-			    .SetMicroserviceChanges(serviceName, assemblyReferences, dependencies);
+				.Default.ServiceScope.GetService<CodeService>()
+				.SetMicroserviceChanges(serviceName, assemblyReferences, dependencies);
 		}
 
 		public static SerializedObject GetSerializedSettings(string serviceName)
@@ -256,7 +256,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 				instance.assemblyReferences.Add(asset);
 			}
 
-			var dependencies = sd.Dependencies.Select(dp => new StorageDependency() {StorageName = dp}).ToList();
+			var dependencies = sd.Dependencies.Select(dp => new StorageDependency() { StorageName = dp }).ToList();
 			instance.storageDependencies = dependencies;
 
 			instance.UpdateOriginalData();
@@ -293,9 +293,9 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 			{
 				//load all possible dependencies
 				var codeService = BeamEditorContext
-				                  .Default.ServiceScope.GetService<CodeService>();
+								  .Default.ServiceScope.GetService<CodeService>();
 				var options = codeService.ServiceDefinitions.Where(sd => sd.ServiceType == ServiceType.StorageObject)
-				                         .Select(sd => sd.BeamoId).ToArray();
+										 .Select(sd => sd.BeamoId).ToArray();
 
 				var storageNameProperty = property.FindPropertyRelative(nameof(StorageDependency.StorageName));
 
