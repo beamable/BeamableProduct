@@ -194,7 +194,7 @@ namespace Beamable.Editor.UI
 
 			await BuildAsync();
 		}
-		
+
 		/// <summary>
 		/// Rebuilds the window's entire content.
 		/// If it cares about whether or not the given <paramref name="context"/> is/isn't authenticated, it'll invoke either <see cref="Build"/> or <see cref="BuildWhenNotAuthenticated"/>.
