@@ -315,7 +315,7 @@ namespace Beamable.Server
 
 		public static string CreateUrl(string cid, string pid, string serviceName, string endpoint)
 		{
-			var path = $"{serviceName}/{endpoint}";
+			var path = $"micro_{serviceName}/{endpoint}";
 			var url = $"/basic/{cid}.{pid}.{path}";
 			return url; ///basic/123.testpid.micro_test/test
 		}
