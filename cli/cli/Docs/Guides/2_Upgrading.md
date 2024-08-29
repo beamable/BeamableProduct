@@ -5,7 +5,7 @@ Update the Beamable CLI and workspaces
 To install the latest version of the CLI, use the following command. 
 
 ```sh
-beam version install latest
+dotnet beam version install latest
 ```
 
 You can also search for available versions with the [beam version ls](doc:cli-version-ls) command. The [beam version install](doc:cli-version-install) command accepts any valid version instead of the "latest" string in the example above. 
@@ -23,7 +23,7 @@ The Beamable CLI may include changes between versions that require developer int
 
 The upgrade from 2.0.1 to 2.1.0 brings a few critical updates to the `csproj` file, how the Beam CLI tool is managed, and the version of `dotnet`. 
 
-Starting with CLI 2.1.0, you _may_ update to `net8.0`. The old `net6.0` framework will be end-of-life on November 12, 2024. 
+Starting with CLI 2.1.0, you _may_ (and should) update to `net8.0`. The old `net6.0` framework will be end-of-life on November 12, 2024. 
 
 ##### CLI File Structure
 
@@ -365,17 +365,25 @@ And from the following properties the only two that you need are,
 
 When you are done with these edits, your `csproj` file should appear similar to the following snippet. Here is the `csproj` file for a common library created with CLI 2.0.1.
 ```xml
-<Project Sdk="Microsoft.NET.Sdk">  
-  
-    <PropertyGroup Label="Dotnet Settings">  
-        <TargetFramework>netstandard2.1</TargetFramework>  
-    </PropertyGroup>  
-    <PropertyGroup Label="Beamable Settings">  
-        <!-- When "true", this will copy the built project and associated dependencies to linked Unity projects -->  
-        <CopyToLinkedProjects>true</CopyToLinkedProjects>  
-    </PropertyGroup>    <ItemGroup Label="Nuget References">  
-        <PackageReference Include="Beamable.Common" Version="2.0.1" />  
-    </ItemGroup></Project>
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <!-- Unity 2021 can handle netstandard2.1 libraries -->
+        <TargetFramework>netstandard2.1</TargetFramework>
+    </PropertyGroup>
+
+    <!--  Settings for Beamable Build  -->
+    <PropertyGroup>
+        <!-- When "true", this will copy the built project and associated dependencies to linked Unity projects -->
+        <CopyToLinkedProjects>true</CopyToLinkedProjects>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Beamable.Common" Version="2.0.1" />
+    </ItemGroup>
+    
+</Project>
+
 ```
 
 
@@ -416,7 +424,7 @@ Finally, on the last line (the `ENTRYPOINT`), replace the `/subapp` with `/beamA
 
 Here is a Dockerfile that was adapted from 2.0.1. There are two important things to note, 
 1. this file is for a service called `Example3`, which justifies the `ENTRYPOINT`, and
-2. when you run `beam services run`, the CLI will _inject_ content into the file based on the `BEAM-CLI-` tags. After the command runs, you should see `ENV`, `RUN`, and `COPY` statements between the beamable tags. This is how the `${BEAM_CSPROJ_PATH}` reference will be resolved. 
+2. when you run `beam services run`, the CLI will _inject_ content into the file between on the `BEAM-CLI-` tags. After the command runs, you should see `ENV`, `RUN`, and `COPY` statements between the beamable tags. This is how the `${BEAM_CSPROJ_PATH}` reference will be resolved. 
 
 ```Dockerfile
 # use the dotnet sdk as a build stage  

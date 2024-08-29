@@ -9,7 +9,7 @@ Before you can develop a Beamable Standalone Microservice, you need to complete 
 You can confirm you have everything installed checking the versions of the tools.
 ```sh
 dotnet --version
-beam version # beam --version also works.
+dotnetbeam version # beam --version also works.
 ```
 
 
@@ -26,7 +26,7 @@ Once you have a `.beamble` workspace, you can create a new Standalone Microservi
 
 ```sh
 # run this inside your .beamable workspace
-beam project new service HelloWorld
+dotnet beam project new service HelloWorld
 ```
 
 A new file, `BeamableServices.sln` has been created in `/MyProject`. Open it in your IDE of choice (Visual Studio Code, Rider, or Visual Studio). 
@@ -48,7 +48,7 @@ However you decide to run the project, you should see a stream of logs similar t
 The service is running! You can send requests to the service over HTTPS. To verify, you can open the local Open API documentation by using the [project open-swagger](doc:cli-project-open-swagger) command. 
 
 ```sh
-beam project open-swagger
+dotnet beam project open-swagger
 ```
 
 Your local web browser should open to the Beamable Portal, showing the local Open API documentation, 
