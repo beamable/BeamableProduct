@@ -131,7 +131,7 @@ public class ServicesListCommand : AppCommand<ServicesListCommandArgs>, IResultS
 					sd.IsLocal,
 					sd.IsInRemote,
 					isRunningOnRemote);
-				table.AddRow(new TableRow(new[] { beamoIdMarkup, imageIdMarkup, containersRenderable, shouldBeEnabledOnDeployMarkup, isRemoteOnlyMarkup, isRunningRemotelyMark}));
+				table.AddRow(new TableRow(new[] { beamoIdMarkup, imageIdMarkup, containersRenderable, shouldBeEnabledOnDeployMarkup, isRemoteOnlyMarkup, isRunningRemotelyMark }));
 			}
 
 			this.SendResults(localServiceListResult);
@@ -173,7 +173,7 @@ public class ServiceListResult
 	/// True if the service was published before and exists in the cloud
 	/// </summary>
 	public List<bool> ExistInRemote;
-	
+
 	public List<bool> IsRunningRemotely;
 	public bool IsDockerRunning;
 
@@ -193,11 +193,11 @@ public class ServiceListResult
 	public List<string> ProjectPath;
 	public List<string> UnityAssemblyDefinitions;
 
-	public ServiceListResult( bool isDockerRunning, int allocateCount)
+	public ServiceListResult(bool isDockerRunning, int allocateCount)
 	{
-		ExistInLocal = new List<bool>(allocateCount);;
-		ExistInRemote = new List<bool>(allocateCount);;
-		IsRunningRemotely = new List<bool>(allocateCount);;
+		ExistInLocal = new List<bool>(allocateCount); ;
+		ExistInRemote = new List<bool>(allocateCount); ;
+		IsRunningRemotely = new List<bool>(allocateCount); ;
 		IsDockerRunning = isDockerRunning;
 
 		BeamoIds = new List<string>(allocateCount);
