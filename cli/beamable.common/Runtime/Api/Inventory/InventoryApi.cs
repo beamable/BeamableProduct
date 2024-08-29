@@ -6,6 +6,7 @@ using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Beamable.Common.Api.Inventory
 {
@@ -242,9 +243,21 @@ namespace Beamable.Common.Api.Inventory
 			{
 				return ContentApi.Instance
 					.FlatMap(service => service.GetContent<TContent>(new ItemRef(kvp.Key)))
+					.Recover(ex =>
+					{
+						if (ex is ContentNotFoundException)
+						{
+							return null;
+						}
+						throw ex;
+					})
 					.Map(content =>
 					{
-
+						if (content == null)
+						{
+							content = ScriptableObject.CreateInstance<TContent>();
+							content.SetIdAndVersion(kvp.Key, Constants.Features.Content.CONTENT_DEPRECATED);
+						}
 						return kvp.Value
 							.Select(item => new InventoryObject<TContent>
 							{

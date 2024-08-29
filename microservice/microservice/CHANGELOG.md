@@ -14,3 +14,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - services running locally will use adaptive port bindings to avoid port collisions
+- calling `Context.Services.Inventory.GetItems()` will no longer break when items reference deleted content
