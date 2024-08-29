@@ -17,11 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `--docker-cli-path` option overrides docker cli location used for Buildkit
 - `net8.0` support for Standalone Microservices
 - `beam project ps --raw` includes an `executionVersion` representing the version of the Beamable SDK being used in the service
+- `beam project ps --raw` includes an `processId` and `routingKeys` representing the locally running OS process id, if any, and the list of routing keys currently registered with the Beamable backend for that service.
+- `beam project run` args modified: `--watch` is no longer supported due to underlying .NET issues. Added `--detach` to make it so that, after the service starts, we exit the command (the service stays running as a background process; stopped by `beam project stop` command).
 - `oapi download` flag `--combine-into-one-document` for combining OpenAPI documents into one
-- `temp clear logs` command will clear old log files in the `.beamable/temp/logs` folder.
 
 ### Changed
 - Standalone Microservices are created with `net8.0` by default
+- `beam project open-swagger` now takes in `--routing-key` as opposed to `--remote`. Not passing `--routing-key` gives you the same behavior as passing `--remote`.  
+- `temp clear logs` command will clear old log files in the `.beamable/temp/logs` folder.
 - CLI log files are kept in the `.beamable/temp/logs` folder and are cleared after each day if the total number of log files exceeds 250
 
 ### Fixed

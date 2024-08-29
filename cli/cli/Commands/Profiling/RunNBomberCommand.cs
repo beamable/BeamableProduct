@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Common.Api;
 using cli.Utils;
 using NBomber.Contracts.Stats;
 using NBomber.CSharp;
@@ -47,7 +48,7 @@ public class RunNBomberCommand : AppCommand<RunNBomberCommandArgs>
 	{
 		var cid = args.AppContext.Cid;
 		var pid = args.AppContext.Pid;
-		var prefix = args.includePrefix ? MachineHelper.GetUniqueDeviceId() : "";
+		var prefix = args.includePrefix ? ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine() : "";
 		var host = args.AppContext.Host;
 
 		var url = $"{host}/basic/{cid}.{pid}.micro_{args.service}/{args.method}";

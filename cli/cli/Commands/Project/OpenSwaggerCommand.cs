@@ -1,5 +1,7 @@
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Semantics;
+using cli.FederationCommands;
 using cli.Services;
 using cli.Utils;
 using Spectre.Console;
@@ -9,7 +11,7 @@ namespace cli.Dotnet;
 
 public class OpenSwaggerCommandArgs : CommandArgs
 {
-	public bool IsRemote;
+	public string RoutingKey;
 	public ServiceName ServiceName;
 }
 
@@ -22,7 +24,9 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 	public override void Configure()
 	{
 		AddArgument(new Argument<ServiceName>("service-name", () => new ServiceName(), "Name of the service to open swagger to"), (arg, i) => arg.ServiceName = i);
-		AddOption(new Option<bool>("--remote", "If passed, swagger will open to the remote version of this service. Otherwise, it will try and use the local version"), (arg, i) => arg.IsRemote = i);
+		AddOption(new Option<string>("--routing-key", "The routing key for the service instance we want. If not passed, defaults to the deployed service"), (arg, i) => arg.RoutingKey = i);
+		AddOption(new Option<bool>("--local", "When set, enforces the routing key to be the one for the local machine"), (arg, i) => arg.RoutingKey = ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine() );
+		AddOption(new Option<bool>("--remote", "When set, enforces the routing key to be the one for the service deployed to the realm"), (arg, i) => arg.RoutingKey = "");
 	}
 
 	public override Task Handle(OpenSwaggerCommandArgs args)
@@ -59,8 +63,11 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 		var queryArgs = new List<string>
 		{
 			$"refresh_token={refreshToken}",
-			$"prefix={MachineHelper.GetUniqueDeviceId()}"
 		};
+		
+		if(!string.IsNullOrEmpty(args.RoutingKey))
+			queryArgs.Add($"routingKey={args.RoutingKey}");
+		
 		var joinedQueryString = string.Join("&", queryArgs);
 		var url = $"{args.AppContext.Host.Replace("dev.", "dev-").Replace("api", "portal")}/{cid}/games/{pid}/realms/{pid}/microservices/{args.ServiceName}/docs?{joinedQueryString}";
 
@@ -73,7 +80,7 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 		string directory = AnsiConsole.Ask<string>("Enter the absolute or relative directory to use:");
 		await new BeamCommandAssistantBuilder("project open-swagger", args.AppContext)
 			.WithOption(true, "--dir", directory)
-			.WithOption(args.IsRemote, "--remote")
+			.WithOption(true, "--routing-key", args.RoutingKey)
 			.RunAsync();
 	}
 
@@ -91,7 +98,7 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 		await new BeamCommandAssistantBuilder("project open-swagger", args.AppContext)
 			.AddArgument(serviceName)
 			.WithOption(!string.IsNullOrWhiteSpace(directory), "--dir", directory)
-			.WithOption(args.IsRemote, "--remote")
+			.WithOption(true, "--routing-key", args.RoutingKey)
 			.RunAsync();
 	}
 }

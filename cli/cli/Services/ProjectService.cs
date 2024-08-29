@@ -384,7 +384,7 @@ public class ProjectService
 		await RunDotnetCommand($"sln {microserviceInfo.SolutionPath} add {microserviceInfo.ServicePath}");
 
 		await args.BeamoLocalSystem.InitManifest();
-		
+
 		return microserviceInfo;
 	}
 
@@ -394,10 +394,7 @@ public class ProjectService
 		string usedVersion = VersionService.GetNugetPackagesForExecutingCliVersion().ToString();
 		await EnsureCanUseTemplates(usedVersion);
 
-		var microserviceInfo = new NewServiceInfo
-		{
-			SolutionPath = args.SlnFilePath
-		};
+		var microserviceInfo = new NewServiceInfo { SolutionPath = args.SlnFilePath };
 		if (!args.GetSlnExists())
 		{
 			await CreateNewSolution(args.GetSlnDirectory(), args.GetSlnFileName());
@@ -529,15 +526,11 @@ public class ProjectService
 		var errorDir = Path.GetDirectoryName(errorPath);
 		Directory.CreateDirectory(errorDir);
 		Log.Debug($"error log path=[{errorPath}]");
-		var dockerfilePath = Path.Combine(args.ConfigService.GetRelativeToBeamableFolderPath(service.DockerBuildContextPath),
+		var dockerfilePath = Path.Combine(args.ConfigService.BeamableRelativeToExecutionRelative(service.DockerBuildContextPath),
 			service.RelativeDockerfilePath);
 		var projectPath = Path.GetDirectoryName(dockerfilePath);
 
-		var watchPart = args.watch
-			? $"watch -q --project {projectPath} build --"
-			: $"build {projectPath}";
-		var commandStr =
-			$"{watchPart} -p:ErrorLog=\"{errorPath}%2Cversion=2\"";
+		var commandStr = $"build {projectPath} -p:ErrorLog=\"{errorPath}%2Cversion=2\"";
 		Log.Debug($"dotnet command=[{args.AppContext.DotnetPath} {commandStr}]");
 
 		using var cts = new CancellationTokenSource();
@@ -546,13 +539,6 @@ public class ProjectService
 			.WithEnvironmentVariables(new Dictionary<string, string> { ["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1", ["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1", })
 			.WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
 			{
-				if (line.Trim() == "dotnet watch : Waiting for a file to change before restarting dotnet...")
-				{
-					// read the data file!
-					var report = ReadErrorReport(errorPath);
-					onReport?.Invoke(report);
-				}
-
 				Log.Information(line);
 			}))
 			.WithValidation(CommandResultValidation.None)
@@ -561,11 +547,9 @@ public class ProjectService
 
 		await command;
 
-		if (!args.watch)
-		{
-			var report = ReadErrorReport(errorPath);
-			onReport?.Invoke(report);
-		}
+
+		var report = ReadErrorReport(errorPath);
+		onReport?.Invoke(report);
 	}
 
 	static ProjectErrorReport ReadErrorReport(string errorLogPath)

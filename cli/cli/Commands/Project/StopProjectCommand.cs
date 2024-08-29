@@ -38,11 +38,12 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 		var serviceSet = new HashSet<string>(args.services);
 		var discovery = args.DependencyProvider.GetService<DiscoveryService>();
 		var evtTable = new Dictionary<string, ServiceDiscoveryEvent>();
-		await foreach (var evt in discovery.StartDiscovery(TimeSpan.FromSeconds(1)))
+		await foreach (var evt in discovery.StartDiscovery(args, TimeSpan.FromSeconds(1)))
 		{
 			if (!serviceSet.Contains(evt.service)) continue; // we don't care about this service, because we aren't stopping it.
 
-			if (!evtTable.ContainsKey(evt.service))
+			// We need to wait for when discovery emits the event with the health-port set up.
+			if (!evtTable.ContainsKey(evt.service) && evt.healthPort != 0)
 			{
 				evtTable[evt.service] = evt;
 				if (evtTable.Keys.Count == serviceSet.Count)
@@ -51,39 +52,41 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 					break;
 				}
 			}
-
 		}
+
 		await discovery.Stop();
 
 		foreach ((string serviceName, ServiceDiscoveryEvent serviceEvt) in evtTable)
 		{
-			if (serviceEvt.isContainer)
+			var beamoLocalSystem = args.BeamoLocalSystem;
+			await StopRunningService(serviceEvt, beamoLocalSystem, serviceName, evt =>
 			{
-				await args.BeamoLocalSystem.SynchronizeInstanceStatusWithDocker(args.BeamoLocalSystem.BeamoManifest, args.BeamoLocalSystem.BeamoRuntime.ExistingLocalServiceInstances);
-				await args.BeamoLocalSystem.StartListeningToDocker();
-
-				await ServicesResetContainerCommand.TurnOffContainers(args.BeamoLocalSystem,new[]{serviceName}, _ =>
-				{
-					SendResults(new StopProjectCommandOutput
-					{
-						didStop = true,
-						serviceName = serviceName
-					});
-				});
-				continue;
-			}
-
-			await SendKillMessage(serviceEvt);
-			Log.Information($"stopped {serviceName}.");
-			SendResults(new StopProjectCommandOutput
-			{
-				serviceName = serviceName,
-				didStop = true
+				SendResults(new StopProjectCommandOutput { didStop = true, serviceName = serviceName, });
 			});
 		}
 	}
 
-	async Task SendKillMessage(ServiceDiscoveryEvent evt)
+	public static async Task StopRunningService(ServiceDiscoveryEvent serviceEvt, BeamoLocalSystem beamoLocalSystem, string serviceName, Action<ServiceDiscoveryEvent> onServiceStopped = null)
+	{
+		if (serviceEvt.isContainer)
+		{
+			await beamoLocalSystem.SynchronizeInstanceStatusWithDocker(beamoLocalSystem.BeamoManifest, beamoLocalSystem.BeamoRuntime.ExistingLocalServiceInstances);
+			await beamoLocalSystem.StartListeningToDocker();
+
+			await ServicesResetContainerCommand.TurnOffContainers(beamoLocalSystem, new[] { serviceName }, _ =>
+			{
+				onServiceStopped?.Invoke(serviceEvt);
+			});
+		}
+		else
+		{
+			await SendKillMessage(serviceEvt);
+			Log.Information($"stopped {serviceName}.");
+			onServiceStopped?.Invoke(serviceEvt);
+		}
+	}
+
+	public static async Task SendKillMessage(ServiceDiscoveryEvent evt)
 	{
 		using var client = new HttpClient();
 		// Set up the HTTP GET request
@@ -99,6 +102,7 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 				// because service-discovery JUST told us the service existed- if we got a 404- it is likely that the Microservice itself doesn't have the /stop endpoint, which is a 2.0 feature.
 				message = "Only Beamable 2.0 Microservices can be stopped via the CLI. " + message;
 			}
+
 			throw new CliException(message, 1, true);
 		}
 	}

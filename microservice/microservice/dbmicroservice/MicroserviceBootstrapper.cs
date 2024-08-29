@@ -43,7 +43,6 @@ using Core.Server.Common;
 using microservice;
 using microservice.dbmicroservice;
 using Microsoft.Extensions.DependencyInjection;
-using NetMQ;
 using Newtonsoft.Json;
 using Serilog;
 using Serilog.Core;
@@ -55,6 +54,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Reflection;
 using Constants = Beamable.Common.Constants;
 using Debug = UnityEngine.Debug;
@@ -74,6 +74,7 @@ namespace Beamable.Server
 	    public static IUsageApi EcsService;
 
 	    private static DebugLogSink _sink;
+	    private static Task _localDiscoveryBroadcast;
 
 	    private static DebugLogSink ConfigureLogging(IMicroserviceArgs args, MicroserviceAttribute attr)
         {
@@ -394,30 +395,44 @@ namespace Beamable.Server
 	        mongo.Init();
         }
 
-        public static void ConfigureDiscovery(IMicroserviceArgs args, MicroserviceAttribute attribute)
+        public static Task ConfigureDiscovery(IMicroserviceArgs args, MicroserviceAttribute attribute)
         {
 	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
-
 	        if (inDocker)
 	        {
-		        return;
+		        return Task.CompletedTask;
 	        }
-	        var beacon = new NetMQBeacon();
-	        var port = Constants.Features.Services.DISCOVERY_PORT;
-	        beacon.Configure(port);
 	        
 	        var msg = new ServiceDiscoveryEntry
 	        {
+		        processId = Environment.ProcessId,
 		        cid = args.CustomerID,
 		        pid = args.ProjectName,
 		        prefix = args.NamePrefix,
 		        serviceName = attribute.MicroserviceName,
 		        healthPort = args.HealthPort,
 		        executionVersion = BeamAssemblyVersionUtil.GetVersion<ServiceDiscoveryEntry>(),
-		        serviceType = "service"
+		        serviceType = "service" 
 	        };
 	        var msgJson = JsonConvert.SerializeObject(msg, UnitySerializationSettings.Instance);
-	        beacon.Publish(msgJson, TimeSpan.FromMilliseconds(Constants.Features.Services.DISCOVERY_BROADCAST_PERIOD_MS));
+	        var msgBytes = Encoding.UTF8.GetBytes(msgJson);
+	        var broadcastSocket = new UdpClient();
+	        broadcastSocket.Connect(new IPEndPoint(IPAddress.Broadcast, Constants.Features.Services.DISCOVERY_PORT));
+	        return Task.Run(function: async () =>
+	        {
+		        try
+		        {
+			        do
+			        {
+				        await broadcastSocket.SendAsync(msgBytes, msgBytes.Length);
+				        await Task.Delay(Constants.Features.Services.DISCOVERY_BROADCAST_PERIOD_MS);
+			        } while (true);
+		        }
+		        catch (Exception e)
+		        {
+			        Log.Error(e, e.Message);
+		        }
+	        });
         }
 
         public static async Task<string> ConfigureCid(IMicroserviceArgs args)
@@ -625,7 +640,7 @@ namespace Beamable.Server
 
 	        ConfigureUncaughtExceptions();
 	        ConfigureUnhandledError();
-	        ConfigureDiscovery(envArgs, attribute);
+	        _localDiscoveryBroadcast = ConfigureDiscovery(envArgs, attribute);
 	        await ConfigureUsageService(envArgs);
 	        ReflectionCache = ConfigureReflectionCache();
 	        

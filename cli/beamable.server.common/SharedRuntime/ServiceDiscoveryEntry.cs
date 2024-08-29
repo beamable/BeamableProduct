@@ -5,6 +5,11 @@ namespace Beamable.Server
 	[Serializable]
 	public class ServiceDiscoveryEntry
 	{
+		/// <summary>
+		/// Value has no semantic meaning when <see cref="isContainer"/> is true.
+		/// </summary>
+		public int processId;
+		
 		public string serviceName;
 		public string cid;
 		public string pid;
