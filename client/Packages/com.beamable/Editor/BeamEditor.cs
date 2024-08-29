@@ -114,12 +114,12 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IAccountService>(p => p.GetService<AccountService>());
 
 			DependencyBuilder.AddSingleton<BeamCommands>();
-			
+
 			DependencyBuilder.AddGlobalStorage<BeamWebCliCommandHistory, SessionStorageLayer>();
 			DependencyBuilder.AddGlobalStorage<BeamWebCommandFactoryOptions, SessionStorageLayer>(instanceGenerator: ScriptableObject.CreateInstance<BeamWebCommandFactoryOptions>);
 			DependencyBuilder.AddSingleton<IBeamCommandFactory>(p => p.GetService<BeamWebCommandFactory>());
 			DependencyBuilder.AddSingleton<BeamWebCommandFactory>();
-			
+
 			DependencyBuilder.AddSingleton<BeamCli>();
 			DependencyBuilder.AddSingleton<DotnetService>();
 			DependencyBuilder.AddSingleton<IRuntimeConfigProvider>(p => new EditorRuntimeConfigProvider(p.GetService<AccountService>()));
