@@ -20,7 +20,7 @@ public class ProjectLogsService
 			var discovery = args.DependencyProvider.GetService<DiscoveryService>();
 
 			ServiceDiscoveryEvent startEvt = null;
-			await foreach (var evt in discovery.StartDiscovery(default, token))
+			await foreach (var evt in discovery.StartDiscovery(args, default, token))
 			{
 				if (evt.service == args.service && evt.isRunning)
 				{

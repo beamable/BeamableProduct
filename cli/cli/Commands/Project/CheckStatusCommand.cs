@@ -1,7 +1,5 @@
-using Beamable.Server;
 using cli.Dotnet;
 using cli.Services;
-using NetMQ;
 using Serilog;
 
 // ReSharper disable InconsistentNaming
@@ -16,6 +14,12 @@ public class CheckStatusCommandArgs : CommandArgs
 [Serializable]
 public class ServiceDiscoveryEvent
 {
+	/// <summary>
+	/// Value has no semantic meaning when <see cref="isContainer"/> is true.
+	/// Otherwise, has the OS-level process id for the running microservice task.
+	/// </summary>
+	public int processId;
+
 	public string cid, pid, prefix, service;
 	public bool isRunning;
 	public bool isContainer;
@@ -24,18 +28,22 @@ public class ServiceDiscoveryEvent
 	public int dataPort;
 	public string executionVersion;
 	public string containerId;
+
+	/// <summary>
+	/// Array of user-defined groups to which this service belongs.
+	/// </summary>
+	public string[] groups;
+
+	/// <summary>
+	/// List of available routing keys that can be selected for this service.
+	/// </summary>
+	public string[] routingKeys;
 }
 
 public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, ServiceDiscoveryEvent>
 {
-	private Dictionary<string, (long, ServiceDiscoveryEntry)> _nameToEntryWithTimestamp =
-		new Dictionary<string, (long, ServiceDiscoveryEntry)>();
-
-	private InterfaceCollection _networkInterfaceCollection;
-
 	public CheckStatusCommand() : base("ps", "List the running status of local services not running in docker")
 	{
-		_networkInterfaceCollection = new InterfaceCollection();
 	}
 
 	public override void Configure()
@@ -52,9 +60,11 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, ServiceD
 		{
 			timeout = default;
 		}
+
 		Log.Debug($"running status-check with watch=[{args.watch}] timeout=[{timeout.Milliseconds}]");
-		
-		await foreach (var evt in discovery.StartDiscovery(timeout, args.Lifecycle.CancellationToken))
+
+
+		await foreach (var evt in discovery.StartDiscovery(args, timeout, args.Lifecycle.CancellationToken))
 		{
 			if (!evt.isRunning)
 			{
@@ -62,12 +72,12 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, ServiceD
 			}
 			else
 			{
-				Log.Information($"{evt.service} is available prefix=[{evt.prefix}] docker=[{evt.isContainer}]");
+				Log.Information($"{evt.service} is available routingKeys=[{string.Join(",", evt.routingKeys)}] docker=[{evt.isContainer}]");
 			}
+
 			SendResults(evt);
 		}
 
 		await discovery.Stop();
 	}
-
 }

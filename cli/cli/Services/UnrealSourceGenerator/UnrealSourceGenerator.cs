@@ -1215,7 +1215,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 											serviceTitle.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
 											endpointData.Security[0].Any(kvp => kvp.Key.Reference.Id == "user");
 					unrealEndpoint.EndpointName = endpointPath;
-					unrealEndpoint.EndpointRoute = isMsGen ? $"micro_{openApiDocument.Info.Title}{endpointPath}" : endpointPath;
+					unrealEndpoint.EndpointRoute = isMsGen ? $"_micro{openApiDocument.Info.Title}{endpointPath}" : endpointPath;
 					unrealEndpoint.EndpointVerb = operationType switch
 					{
 						OperationType.Get => "Get",

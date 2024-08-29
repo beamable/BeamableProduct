@@ -4,6 +4,7 @@
  */
 
 using Beamable.Common;
+using Beamable.Common.Api;
 using cli.Utils;
 using Docker.DotNet.Models;
 using Serilog;
@@ -130,13 +131,13 @@ public partial class BeamoLocalSystem
 				Value = $"{_ctx.Host.Replace("http://", "wss://").Replace("https://", "wss://")}/socket"
 			},
 			new() { VariableName = ENV_LOG_LEVEL, Value = _ctx.LogLevel.ToString() },
-			new() { VariableName = ENV_NAME_PREFIX, Value = MachineHelper.GetUniqueDeviceId() },
+			new() { VariableName = ENV_NAME_PREFIX, Value = ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine() },
 			new() { VariableName = ENV_WATCH_TOKEN, Value = shouldPrepareWatch.ToString() },
 			new() { VariableName = ENV_INSTANCE_COUNT, Value = localProtocol.InstanceCount.ToString() },
 		};
 		Log.Information("Building Env Vars.. {host} {prefix} {cid} {pid}",
 			(object)$"{_ctx.Host.Replace("http://", "wss://").Replace("https://", "wss://")}/socket",
-			(object)MachineHelper.GetUniqueDeviceId(),
+			(object)ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine(),
 			(object)_ctx.Cid, (object)_ctx.Pid);
 
 
