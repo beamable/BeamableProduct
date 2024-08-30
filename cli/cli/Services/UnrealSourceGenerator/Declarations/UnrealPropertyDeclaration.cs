@@ -50,10 +50,25 @@ public struct UnrealPropertyDeclaration
 		helperDict.Add(nameof(SemTypeSerializationType), SemTypeSerializationType);
 	}
 
+	/// <summary>
+	/// This function returns the correct template for declaring this field.
+	/// This allows us to correctly generate fields that are not UPROPERTIES.
+	///
+	/// Primarily we want to minimize the amount of fields that are unusable in blueprints.
+	/// </summary>
+	public string GetDeclarationTemplate() => IsBlueprintCompatible() ? U_PROPERTY_DECLARATION : U_FIELD_DECLARATION;
+
+	/// <summary>
+	/// This checks to see if this property is blueprint compatible or not.
+	/// </summary>
+	public bool IsBlueprintCompatible() => !PropertyUnrealType.IsUnrealJson();
+
 	public const string U_PROPERTY_DECLARATION =
 		$@"UPROPERTY(EditAnywhere, BlueprintReadWrite, DisplayName=""₢{nameof(PropertyDisplayName)}₢"", Category=""Beam"")
 	₢{nameof(PropertyUnrealType)}₢ ₢{nameof(PropertyName)}₢ = {{}};";
 
+	public const string U_FIELD_DECLARATION =
+		$@"₢{nameof(PropertyUnrealType)}₢ ₢{nameof(PropertyName)}₢ = {{}};";
 
 	public const string PRIMITIVE_U_PROPERTY_SERIALIZE = @$"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢);";
 	public const string GUID_U_PROPERTY_SERIALIZE = @$"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢.ToString(EGuidFormats::DigitsWithHyphensLower));";
@@ -67,6 +82,12 @@ public struct UnrealPropertyDeclaration
 	public const string FLOAT_U_PROPERTY_DESERIALIZE = @$"FDefaultValueHelper::ParseFloat(Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢);";
 	public const string DOUBLE_U_PROPERTY_DESERIALIZE = $@"₢{nameof(PropertyName)}₢ = Bag->GetNumberField(TEXT(""₢{nameof(RawFieldName)}₢""));";
 	public const string GUID_U_PROPERTY_DESERIALIZE = $@"FGuid::Parse(Bag->GetStringField(TEXT(""₢{nameof(RawFieldName)}₢"")), ₢{nameof(PropertyName)}₢);";
+
+	public const string UNREAL_JSON_FIELD_SERIALIZE =
+		$@"UBeamJsonUtils::SerializeJsonObject(TEXT(""₢{nameof(RawFieldName)}₢""), ₢{nameof(PropertyName)}₢, Serializer);";
+
+	public const string UNREAL_JSON_FIELD_DESERIALIZE =
+		$@"UBeamJsonUtils::DeserializeJsonObject(TEXT(""₢{nameof(RawFieldName)}₢""), Bag, ₢{nameof(PropertyName)}₢, OuterOwner);";
 
 	public const string U_ENUM_U_PROPERTY_SERIALIZE =
 		$@"Serializer->WriteValue(TEXT(""₢{nameof(RawFieldName)}₢""), U₢{nameof(PropertyNamespacedType)}₢Library::₢{nameof(PropertyNamespacedType)}₢ToSerializationName(₢{nameof(PropertyName)}₢));";
@@ -194,13 +215,16 @@ public struct UnrealPropertyDeclaration
 			return isSemType ? ARRAY_SEMTYPE_U_PROPERTY_SERIALIZE : ARRAY_U_PROPERTY_SERIALIZE;
 		}
 
+		if (unrealType.IsUnrealJson())
+			return UNREAL_JSON_FIELD_SERIALIZE;
+
 		if (unrealType.IsUnrealGuid())
 			return GUID_U_PROPERTY_SERIALIZE;
 
 
 		if (unrealType.IsUnrealString() || unrealType.IsUnrealBool() ||
-			unrealType.IsUnrealByte() || unrealType.IsUnrealShort() || unrealType.IsUnrealInt() || unrealType.IsUnrealLong() ||
-			unrealType.IsUnrealFloat() || unrealType.IsUnrealDouble())
+		    unrealType.IsUnrealByte() || unrealType.IsUnrealShort() || unrealType.IsUnrealInt() || unrealType.IsUnrealLong() ||
+		    unrealType.IsUnrealFloat() || unrealType.IsUnrealDouble())
 		{
 			return PRIMITIVE_U_PROPERTY_SERIALIZE;
 		}
@@ -246,6 +270,9 @@ public struct UnrealPropertyDeclaration
 			var isSemType = unrealType.ContainsAnySemanticType();
 			return isSemType ? ARRAY_SEMTYPE_U_PROPERTY_DESERIALIZE : ARRAY_U_PROPERTY_DESERIALIZE;
 		}
+
+		if (unrealType.IsUnrealJson())
+			return UNREAL_JSON_FIELD_DESERIALIZE;
 
 		if (unrealType.IsUnrealString())
 			return STRING_U_PROPERTY_DESERIALIZE;
