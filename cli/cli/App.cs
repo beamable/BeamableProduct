@@ -800,9 +800,9 @@ public class App
 				}
 				else
 				{
+					Log.Error(ex.ToString());
 					Log.CloseAndFlush();
 					
-					File.AppendAllText(logFile, ex.ToString());
 					Console.Error.WriteLine("\nLogs at\n  " + Path.GetFullPath(logFile));
 				}
 			}
