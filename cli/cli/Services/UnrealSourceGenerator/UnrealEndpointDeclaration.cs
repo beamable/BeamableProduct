@@ -52,7 +52,7 @@ public struct UnrealEndpointDeclaration
 		var pathParameters = string.Join("\n\t", RequestPathParameters.Select(p =>
 		{
 			p.IntoProcessMap(helperDict);
-			var propertyDeclaration = UnrealPropertyDeclaration.U_PROPERTY_DECLARATION.ProcessReplacement(helperDict);
+			var propertyDeclaration = p.GetDeclarationTemplate().ProcessReplacement(helperDict);
 			helperDict.Clear();
 			return propertyDeclaration;
 		}));
@@ -60,7 +60,7 @@ public struct UnrealEndpointDeclaration
 		var queryParameters = string.Join("\n\t", RequestQueryParameters.Select(p =>
 		{
 			p.IntoProcessMap(helperDict);
-			var propertyDeclaration = UnrealPropertyDeclaration.U_PROPERTY_DECLARATION.ProcessReplacement(helperDict);
+			var propertyDeclaration = p.GetDeclarationTemplate().ProcessReplacement(helperDict);
 			helperDict.Clear();
 			return propertyDeclaration;
 		}));
@@ -68,7 +68,7 @@ public struct UnrealEndpointDeclaration
 		var bodyParameters = string.Join("\n\t", RequestBodyParameters.Select(p =>
 		{
 			p.IntoProcessMap(helperDict);
-			var propertyDeclaration = UnrealPropertyDeclaration.U_PROPERTY_DECLARATION.ProcessReplacement(helperDict);
+			var propertyDeclaration = p.GetDeclarationTemplate().ProcessReplacement(helperDict);
 			helperDict.Clear();
 			return propertyDeclaration;
 		}));
