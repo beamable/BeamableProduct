@@ -57,7 +57,7 @@ public struct UnrealCsvRowTypeDeclaration
 		var propertyDeclarations = string.Join("\n\t", PropertyDeclarations.Select(ud =>
 		{
 			ud.IntoProcessMap(processDictionary);
-			var decl = UnrealPropertyDeclaration.U_PROPERTY_DECLARATION.ProcessReplacement(processDictionary);
+			var decl = ud.GetDeclarationTemplate().ProcessReplacement(processDictionary);
 			processDictionary.Clear();
 			return decl;
 		}));
@@ -270,7 +270,7 @@ public struct UnrealJsonSerializableTypeDeclaration
 		var propertyDeclarations = string.Join("\n\t", UPropertyDeclarations.Select(ud =>
 		{
 			ud.IntoProcessMap(processDictionary);
-			var decl = UnrealPropertyDeclaration.U_PROPERTY_DECLARATION.ProcessReplacement(processDictionary);
+			var decl = ud.GetDeclarationTemplate().ProcessReplacement(processDictionary);
 			processDictionary.Clear();
 			return decl;
 		}));
@@ -360,6 +360,9 @@ public struct UnrealJsonSerializableTypeDeclaration
 		var breakAssignmentSb = new StringBuilder(1024);
 		foreach (var unrealPropertyDeclaration in UPropertyDeclarations)
 		{
+			// We skip properties that are not blueprint compatible when generating the Make/Break helper functions.
+			if (!unrealPropertyDeclaration.IsBlueprintCompatible()) continue;
+
 			var paramDeclaration = $"{unrealPropertyDeclaration.PropertyUnrealType} {unrealPropertyDeclaration.PropertyName}";
 
 			makeSb.Append($"{paramDeclaration}, ");
