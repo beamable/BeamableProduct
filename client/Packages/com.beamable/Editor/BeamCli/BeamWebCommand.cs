@@ -460,7 +460,7 @@ namespace Beamable.Editor.BeamCli
 			}
 			finally
 			{
-				await p;
+				//await p;
 			}
 		}
 
