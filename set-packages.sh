@@ -171,11 +171,9 @@ if [[ "$INSTALL_CLI" == "Local" ]];then
   cd $PROJECTS_SOURCE..
   dotnet tool uninstall beamable.tools || true
   echo "Installing CLI"
-  echo "$PROJECTS_SOURCE.."
   dotnet new tool-manifest --force
   dotnet tool install beamable.tools --version "$VERSION"
   dotnet tool restore
-  ls -a
 fi
 
 ## If we also want to install the CLI
