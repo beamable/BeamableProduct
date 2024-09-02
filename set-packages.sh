@@ -168,10 +168,10 @@ dotnet nuget update source "$SOURCE_NAME"
 ## If we also want to install the CLI in our Engine Integration SDK Repo (this will install the CLI in the first found .config/dotnet-tools.json while walking up the hierarchy)
 if [[ "$INSTALL_CLI" == "Local" ]];then
   echo "Uninstalling CLI"
-  cd "$PROJECTS_SOURCE/.." || dotnet tool uninstall beamable.tools || true
+  cd "$PROJECTS_SOURCE.." || dotnet tool uninstall beamable.tools || true
   echo "Installing CLI"
-  echo "$PROJECTS_SOURCE/.."
-  cd "$PROJECTS_SOURCE/.." || dotnet tool install beamable.tools --version "$VERSION" --add-source $SOURCE_NAME
+  echo "$PROJECTS_SOURCE.."
+  cd "$PROJECTS_SOURCE.." || dotnet tool install beamable.tools --version "$VERSION"
 fi
 
 ## If we also want to install the CLI
