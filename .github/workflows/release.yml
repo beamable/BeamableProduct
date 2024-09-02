@@ -56,8 +56,8 @@ jobs:
 
       - name: Check CLI
         run: |
-          ls -a
-          dotnet --info 
+          cat .config/dotnet-tools.json
+          dotnet tool list --local 
           dotnet beam version
 
       - name: Get Version Number 
