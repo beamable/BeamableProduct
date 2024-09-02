@@ -174,6 +174,7 @@ if [[ "$INSTALL_CLI" == "Local" ]];then
   cd "$PROJECTS_SOURCE.." || dotnet new tool-manifest --force
   cd "$PROJECTS_SOURCE.." || dotnet tool install beamable.tools --version "$VERSION"
   cd "$PROJECTS_SOURCE.." || dotnet tool restore
+  cd "$PROJECTS_SOURCE.." || ls -a
 fi
 
 ## If we also want to install the CLI
