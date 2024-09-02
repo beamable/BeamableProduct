@@ -55,7 +55,10 @@ jobs:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
 
       - name: Check CLI
-        run: dotnet beam version
+        run: |
+          ls -a
+          dotnet --info 
+          dotnet beam version
 
       - name: Get Version Number 
         run: dotnet beam version construct 0 0 0 --nightly > ./version.txt
