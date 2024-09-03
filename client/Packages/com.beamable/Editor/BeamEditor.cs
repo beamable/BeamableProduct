@@ -169,8 +169,8 @@ namespace Beamable
 
 		static void Initialize()
 		{
-
 			if (IsInitialized) return;
+			BeamEditorContextDependencies = BeamEditorDependencies.DependencyBuilder.Clone();
 			initializeAttemptCount++;
 
 			if (initializeAttemptCount > WARN_ON_INITIALIZE_ATTEMPT)
@@ -306,7 +306,7 @@ namespace Beamable
 			EditorReflectionCache.GenerateReflectionCache(coreConfiguration.AssembliesToSweep);
 
 			// Initialize BeamEditorContext dependencies
-			BeamEditorContextDependencies = BeamEditorDependencies.DependencyBuilder.Clone();
+
 			BeamEditorContextDependencies.AddSingleton(_ => EditorReflectionCache);
 
 			GetReflectionSystem<BeamReflectionCache.Registry>()
@@ -426,17 +426,9 @@ namespace Beamable
 		public bool IsStopped { get; private set; }
 		public bool IsAuthenticated => ServiceScope.GetService<PlatformRequester>().Token != null;
 
-		private Promise _onAuthenticated;
+		private Promise _onAuthenticated = new Promise();
 
-		public Promise OnAuthenticated
-		{
-			get => _onAuthenticated;
-			private set
-			{
-				_onAuthenticated = value;
-				_onAuthenticated = new Promise();
-			}
-		}
+		public Promise OnAuthenticated => _onAuthenticated;
 
 		public IDependencyProviderScope ServiceScope { get; private set; }
 		public Promise InitializePromise { get; private set; }

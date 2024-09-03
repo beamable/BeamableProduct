@@ -71,6 +71,8 @@ namespace Beamable.Server.Editor.Usam
 			if (EditorApplication.isPlayingOrWillChangePlaymode)
 				return;
 
+			await BeamEditorContext.Default.OnReady;
+
 			await BeamEditorContext.Default.OnAuthenticated;
 			
 			UsamLogger.ResetLogTimer();
