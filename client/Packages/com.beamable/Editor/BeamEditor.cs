@@ -426,7 +426,17 @@ namespace Beamable
 		public bool IsStopped { get; private set; }
 		public bool IsAuthenticated => ServiceScope.GetService<PlatformRequester>().Token != null;
 
-		public Promise OnAuthenticated { get; private set; }
+		private Promise _onAuthenticated;
+
+		public Promise OnAuthenticated
+		{
+			get => _onAuthenticated;
+			private set
+			{
+				_onAuthenticated = value;
+				_onAuthenticated = new Promise();
+			}
+		}
 
 		public IDependencyProviderScope ServiceScope { get; private set; }
 		public Promise InitializePromise { get; private set; }
@@ -548,7 +558,6 @@ namespace Beamable
 		/// <returns></returns>
 		public async Promise<Unit> LoginCustomer(string aliasOrCid, string email, string password)
 		{
-			OnAuthenticated = new Promise();
 			var res = await AliasService.Resolve(aliasOrCid);
 
 			var cid = res.Cid.GetOrThrow();
@@ -562,7 +571,7 @@ namespace Beamable
 
 			await ApplyToken(cid, token);
 			await RefreshRealmSecret();
-			OnAuthenticated.CompleteSuccess();
+			_onAuthenticated.CompleteSuccess();
 			return PromiseBase.Unit;
 		}
 
