@@ -13,6 +13,9 @@
 				public const string PID_KEY = "pid";
 				public const string CID_KEY = "cid";
 				public const string LAST_PID_KEY = "last-pid";
+
+				public const string BEAMABLE_SETTINGS_RESOURCE_NAME = "Beamable.properties";
+				public const string BEAMABLE_SETTINGS_RESOURCE_SPLITTER = "__BEAM__SETTING__SPLIT__";
 			}
 		}
 	}

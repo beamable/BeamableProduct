@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
+using Beamable.Server.Common;
 using CliWrap;
 using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
@@ -7,8 +8,10 @@ using Microsoft.Build.Locator;
 using Newtonsoft.Json;
 using Serilog;
 using System.Diagnostics;
+using System.Text.Json;
 using System.Xml;
 using System.Xml.Linq;
+using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace cli.Services;
 
@@ -80,11 +83,11 @@ public static class ProjectContextUtil
 		// extract the "service" types, and convert them into beamo domain model
 		if (!typeToProjects.TryGetValue("service", out var serviceProjects))
 		{
-			serviceProjects = new List<ProjectContextUtil.CsharpProjectMetadata>();
+			serviceProjects = new List<CsharpProjectMetadata>();
 		}
 		if (!typeToProjects.TryGetValue("storage", out var storageProjects))
 		{
-			storageProjects = new List<ProjectContextUtil.CsharpProjectMetadata>();
+			storageProjects = new List<CsharpProjectMetadata>();
 		}
 
 		foreach (var serviceProject in serviceProjects)
@@ -321,6 +324,40 @@ public static class ProjectContextUtil
 				ServiceGroupString = buildProject.GetPropertyValue(CliConstants.PROP_BEAM_SERVICE_GROUP)
 			};
 
+			{ // load up the settings
+				var beamableSettings = buildProject.GetItems("BeamableSetting").ToList();
+				var beamableSettingsDict = new Dictionary<string, string>();
+				foreach (var setting in beamableSettings)
+				{
+					var key = setting.EvaluatedInclude;
+					var valueTypeHint = setting.GetMetadataValue("ValueTypeHint");
+					var value = setting.GetMetadataValue("Value");
+					if (valueTypeHint == "json")
+					{
+						value = JsonPrettify(value);
+					}
+					beamableSettingsDict[key] = value;
+				}
+
+				projects[i].msbuildProject = buildProject;
+				projects[i].beamableSettings = new BuiltSettings(beamableSettingsDict);
+				static string JsonPrettify(string json)
+				{
+					try
+					{
+						using var jDoc = JsonDocument.Parse(json);
+						return System.Text.Json.JsonSerializer.Serialize(jDoc,
+							new JsonSerializerOptions { WriteIndented = true, });
+					}
+					catch
+					{
+						// in the event of an error, ignore it and just return the original value.
+						return json;
+					}
+				}
+			}
+			
+
 			var references = buildProject.GetItemsIgnoringCondition("ProjectReference");
 			var allProjectRefs = new List<MsBuildProjectReference>();
 			foreach (ProjectItem reference in references)
@@ -399,7 +436,7 @@ public static class ProjectContextUtil
 		var protocol = new HttpMicroserviceLocalProtocol();
 		protocol.DockerBuildContextPath = ".";
 		protocol.RelativeDockerfilePath = Path.Combine(Path.GetDirectoryName(project.relativePath), "Dockerfile");
-		
+		protocol.Metadata = project;
 		protocol.CustomVolumes = new List<DockerVolume>();
 		protocol.InstanceCount = 1;
 		protocol.CustomBindMounts = new List<DockerBindMount>();
@@ -577,18 +614,6 @@ public static class ProjectContextUtil
 		{
 			// TODO: clean up values of properties (like trim, lowercase, etc)
 		}
-	}
-
-	[Serializable]
-	[DebuggerDisplay("{fileNameWithoutExtension} : {relativePath}")]
-	public class CsharpProjectMetadata
-	{
-		public string relativePath;
-		public string absolutePath;
-		public string fileNameWithoutExtension;
-
-		public MsBuildProjectProperties properties;
-		public List<MsBuildProjectReference> projectReferences;
 	}
 
 	/// <summary>
@@ -788,4 +813,18 @@ public static class ProjectContextUtil
 
 		return fileContents.Insert(brokenIndex + 1, whiteSpace);
 	}
+}
+
+[Serializable]
+[DebuggerDisplay("{fileNameWithoutExtension} : {relativePath}")]
+public class CsharpProjectMetadata
+{
+	public string relativePath;
+	public string absolutePath;
+	public string fileNameWithoutExtension;
+
+	public ProjectContextUtil.MsBuildProjectProperties properties;
+	public List<ProjectContextUtil.MsBuildProjectReference> projectReferences;
+	public BuiltSettings beamableSettings;
+	public Project msbuildProject;
 }

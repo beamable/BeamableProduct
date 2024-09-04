@@ -5,6 +5,7 @@
 
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Server.Common;
 using cli.Utils;
 using Docker.DotNet.Models;
 using Serilog;
@@ -224,6 +225,8 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 	/// </summary>
 	public List<UnityAssemblyReferenceData> UnityAssemblyDefinitionProjectReferences = new List<UnityAssemblyReferenceData>();
 
+	public CsharpProjectMetadata Metadata;
+	public BuiltSettings Settings => Metadata.beamableSettings;
 
 	public bool VerifyCanBeBuiltLocally(ConfigService configService)
 	{

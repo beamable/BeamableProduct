@@ -48,4 +48,12 @@
         <PublishDocumentationFile>true</PublishDocumentationFile>
     </PropertyGroup>
 
+
+    <ItemDefinitionGroup>
+        <BeamableSetting>
+            <Visible>false</Visible>
+        </BeamableSetting>
+    </ItemDefinitionGroup>
+
+
 </Project>

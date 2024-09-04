@@ -1,0 +1,104 @@
+using Beamable.Common;
+using System.Collections;
+using System.Reflection;
+using System.Text.Json;
+
+namespace Beamable.Server.Common
+{
+	/// <summary>
+	/// Built settings are defined in the build of the project. They are intended to be used with Microservice projects
+	/// that are referencing the Beamable.Microservice.Runtime nuget package. That package introduces a custom build target
+	/// that will create an embedded resource in the final dll for the service. The resource file bakes in values from
+	/// <c>BeamableSetting</c> item elements in the csproj file. The "Include" attribute of the <c>BeamableSetting</c> acts
+	/// as a key, and the "Value" attribute acts as the value.
+	///
+	/// <para>
+	/// Use the <see cref="TryGetSetting"/> and <see cref="TryGetSettingFromJson{T}"/> functions to read this data.
+	/// </para>
+	/// </summary>
+	public class BuiltSettings : IEnumerable<KeyValuePair<string, string>>
+	{
+		private IReadOnlyDictionary<string, string> _settings;
+
+		public BuiltSettings(Dictionary<string, string> settings = null)
+		{
+			_settings = settings ?? new Dictionary<string, string>();
+		}
+
+		public static BuiltSettings FromResource()
+		{
+			return new BuiltSettings(ReadBuiltSettings());
+		}
+
+		/// <summary>
+		/// Read a <c>BeamableSetting</c> from the .csproj file. 
+		/// </summary>
+		/// <param name="key">The key should be the "Include" attribute, case insensitive.</param>
+		/// <param name="value">The output value will the contents of the "Value" attribute. </param>
+		/// <returns>false if there was no setting. </returns>
+		public bool TryGetSetting(string key, out string value) =>
+			_settings.TryGetValue(key?.ToLowerInvariant(), out value);
+
+		/// <summary>
+		/// Read a <c>BeamableSetting</c> from the .csproj file, and assume that the value is well formatted JSON
+		/// for the <see cref="T"/> schema. 
+		/// </summary>
+		/// <param name="key">The key should be the "Include" attribute, case insensitive.</param>
+		/// <param name="value">The output value will the contents of the "Value" attribute, deserialized from JSON</param>
+		/// <typeparam name="T"></typeparam>
+		/// <returns>false if there was no setting. </returns>
+		public bool TryGetSettingFromJson<T>(string key, out T value)
+		{
+			value = default;
+			if (!TryGetSetting(key, out var json)) return false;
+
+			value = JsonSerializer.Deserialize<T>(json, new JsonSerializerOptions { IncludeFields = true });
+			return true;
+		}
+
+		/// <summary>
+		/// Reads the embedded resource, Beamable.properties, and returns a dictionary of the key value pairs.
+		/// 
+		/// <para>
+		/// In a .csproj file, you may use BeamableSetting items. The Include attribute will be the key, and the Value attribute will be the value
+		/// </para>
+		/// </summary>
+		/// <returns>
+		/// If there is no embedded resource, this will return an empty dictionary.
+		/// </returns>
+		public static Dictionary<string, string> ReadBuiltSettings()
+		{
+			var settings = new Dictionary<string, string>();
+			var assembly = Assembly.GetEntryAssembly();
+			
+			using var stream =
+				assembly.GetManifestResourceStream(Constants.Features.Config.BEAMABLE_SETTINGS_RESOURCE_NAME);
+			if (stream == null) return new Dictionary<string, string>();
+
+			using var reader = new StreamReader(stream);
+			string result = reader.ReadToEnd();
+			var lines = result.Split(new string[] { Constants.Features.Config.BEAMABLE_SETTINGS_RESOURCE_SPLITTER }, StringSplitOptions.RemoveEmptyEntries);
+			foreach (var line in lines)
+			{
+				var parts = line.Split(new char[]{'='}, StringSplitOptions.RemoveEmptyEntries);
+				if (parts.Length != 2) continue;
+				
+				var key = parts[0].Trim().ToLowerInvariant();
+				var value = parts[1].Trim();
+				settings[key] = value;
+			}
+
+			return settings;
+		}
+
+		public IEnumerator<KeyValuePair<string, string>> GetEnumerator()
+		{
+			return _settings.GetEnumerator();
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			return GetEnumerator();
+		}
+	}
+}
