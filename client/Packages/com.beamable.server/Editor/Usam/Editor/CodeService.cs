@@ -73,7 +73,7 @@ namespace Beamable.Server.Editor.Usam
 
 			await BeamEditorContext.Default.OnReady;
 
-			await BeamEditorContext.Default.OnAuthenticated;
+			if (BeamEditorContext.Default.Requester == null || BeamEditorContext.Default.Requester.Token == null) return;
 
 			//Wait for the CLI to be initialized
 			var cli = BeamEditorContext.Default.ServiceScope.GetService<BeamCli>();
