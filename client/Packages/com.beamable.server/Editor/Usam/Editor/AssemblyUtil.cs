@@ -35,7 +35,7 @@ namespace Beamable.Server.Editor.Usam
 				_assemblyGraph[assembly] = assembly.assemblyReferences;
 			}
 
-			if (!BeamEditorContext.Default.OnReady.IsCompleted)
+			if (!BeamEditor.IsInitialized)
 			{
 				return;
 			}

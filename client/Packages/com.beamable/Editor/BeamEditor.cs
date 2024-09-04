@@ -170,7 +170,7 @@ namespace Beamable
 		static void Initialize()
 		{
 			if (IsInitialized) return;
-			BeamEditorContextDependencies = BeamEditorDependencies.DependencyBuilder.Clone();
+
 			initializeAttemptCount++;
 
 			if (initializeAttemptCount > WARN_ON_INITIALIZE_ATTEMPT)
@@ -306,7 +306,7 @@ namespace Beamable
 			EditorReflectionCache.GenerateReflectionCache(coreConfiguration.AssembliesToSweep);
 
 			// Initialize BeamEditorContext dependencies
-
+			BeamEditorContextDependencies = BeamEditorDependencies.DependencyBuilder.Clone();
 			BeamEditorContextDependencies.AddSingleton(_ => EditorReflectionCache);
 
 			GetReflectionSystem<BeamReflectionCache.Registry>()
