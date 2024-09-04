@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -73,7 +74,10 @@ namespace Beamable.Server.Editor.Usam
 
 			await BeamEditorContext.Default.OnReady;
 
-			if (BeamEditorContext.Default.Requester == null || BeamEditorContext.Default.Requester.Token == null) return;
+			while (BeamEditorContext.Default.Requester == null || BeamEditorContext.Default.Requester.Token == null)
+			{
+				await Task.Delay(500);
+			}
 
 			//Wait for the CLI to be initialized
 			var cli = BeamEditorContext.Default.ServiceScope.GetService<BeamCli>();
