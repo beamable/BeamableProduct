@@ -3,6 +3,8 @@ using Beamable.Common.Semantics;
 using cli.Services;
 using Serilog;
 using System.CommandLine;
+using System.CommandLine.Parsing;
+using System.Reflection;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -12,12 +14,15 @@ public class WriteProjectSettingsCommandArgs : CommandArgs
 {
 	public string beamoId;
 	public List<SettingInput> settings = new List<SettingInput>();
+	public List<string> settingsToDelete = new List<string>();
 	public bool skipBuild;
+	
 }
 
 public class SettingInput
 {
 	public string key, value;
+	public bool IsLikelyJson => value.StartsWith('{') || value.StartsWith('[');
 }
 
 public class WriteProjectSettingsCommandOutput
@@ -48,6 +53,11 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 		skipBuildOption.AddAlias("-s");
 		AddOption(skipBuildOption, (args, i) => args.skipBuild = i);
 		
+		var deleteOption = new Option<List<string>>("--delete-key", "The keys of the settings to be deleted");
+		deleteOption.AddAlias("-d");
+		deleteOption.AllowMultipleArgumentsPerToken = true;
+		deleteOption.Arity = ArgumentArity.OneOrMore;
+		
 		var keyOption = new Option<List<string>>("--key", "The keys of the settings. The count must match the count of the --value options");
 		keyOption.AddAlias("-k");
 		keyOption.AllowMultipleArgumentsPerToken = true;
@@ -58,13 +68,25 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 		valueOption.AllowMultipleArgumentsPerToken = true;
 		valueOption.Arity = ArgumentArity.OneOrMore;
 		
+		var jsonValueOption = new Option<List<string>>("--json-value", "The values of the settings. The count must match the count of the --key options");
+		valueOption.AddAlias("-jv");
+		valueOption.AllowMultipleArgumentsPerToken = true;
+		valueOption.Arity = ArgumentArity.OneOrMore;
+
+		
 		AddOption(keyOption, (args, i) =>
 		{
 			// do nothing; the binding happens in the value callback
 		});
+		AddOption(deleteOption, (args, i) =>
+		{
+			args.settingsToDelete = i;
+		});
 		AddOption(valueOption, (args, binder, values) =>
 		{
+			
 			var keys = binder.ParseResult.GetValueForOption(keyOption);
+
 			if (keys.Count != values.Count)
 			{
 				throw new CliException("The --key count must match the --value count");
@@ -114,9 +136,21 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 			docInfo = new SettingInfo { csProjPath = file, document = doc, itemGroup = itemGroup };
 		}
 
+		// delete all the properties we no longer want
+		foreach (var setting in args.settingsToDelete)
+		{
+			if (!TryFindExistingSetting(docInfo.itemGroup, setting, out var property))
+			{
+				// the property doesn't exist anyway; so no work needs to be done
+				continue;
+			}
+
+			property.Remove();
+		}
+		
+		// add or set all the properties we do want
 		foreach (var setting in args.settings)
 		{
-			
 			// try to load the existing setting so we can modify it inline
 			if (!TryFindExistingSetting(docInfo.itemGroup, setting.key, out var property))
 			{
@@ -129,7 +163,7 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 			}
 
 			// set the property, regardless of it was just created or if it already existed
-			SetPropertyValue(property, setting.value);
+			SetPropertyValue(property, setting);
 			docInfo.document.Save(docInfo.csProjPath, SaveOptions.None);
 		}
 
@@ -333,13 +367,22 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 		return false;
 	}
 
-	public static void SetPropertyValue(XElement property, string value)
+	public static void SetPropertyValue(XElement property, SettingInput setting)
 	{
 		// if there is a "Value" attribute, we should use that...
+		if (setting.IsLikelyJson)
+		{
+			property.SetAttributeValue("ValueTypeHint", "json");
+		}
+		else
+		{
+			property.Attribute("ValueTypeHint")?.Remove();
+		}
+		
 		var valueProp = property.Attribute("Value");
 		if (valueProp != null)
 		{
-			valueProp.Value = value;
+			valueProp.Value = setting.value;
 		}
 		else
 		{
@@ -350,13 +393,13 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 			{
 				// add the value
 				AddNewLineAndSpace(property);
-				property.Add(new XElement("Value"){ Value = value });
+				property.Add(new XElement("Value"){ Value = setting.value });
 				AddNewLineAndSpace(property, -1);
 			}
 			else
 			{
 				// modify the value
-				valueNode.Value = value;
+				valueNode.Value = setting.value;
 			}
 		}
 	}
