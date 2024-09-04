@@ -74,6 +74,10 @@ namespace Beamable.Server.Editor.Usam
 			await BeamEditorContext.Default.OnReady;
 
 			await BeamEditorContext.Default.OnAuthenticated;
+
+			//Wait for the CLI to be initialized
+			var cli = BeamEditorContext.Default.ServiceScope.GetService<BeamCli>();
+			await cli.OnReady;
 			
 			UsamLogger.ResetLogTimer();
 			
