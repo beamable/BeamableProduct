@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using Beamable.Editor.BeamCli.Commands;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Beamable.Editor.BeamCli
@@ -48,6 +49,12 @@ namespace Beamable.Editor.BeamCli
 		{
 			await _ctx.OnReady;
 			await _ctx.OnAuthenticated;
+
+			while (_ctx.Requester == null)
+			{
+				await Task.Delay(100);
+			}
+
 			var initCommand = Command.Init(new InitArgs
 			{
 				saveToFile = true,
