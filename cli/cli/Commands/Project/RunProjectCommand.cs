@@ -42,9 +42,9 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 		if (!args.detach && args.services.Count > 1)
 		{
 			Log.Warning("You are starting multiple services without the '--detach' flag. " +
-			            "Their log output will be shown interleaved; for optimal log viewing, use '--detach' and then use 'beam project logs --ids <BeamoId>' for each service whose logs you wish to tail");
+						"Their log output will be shown interleaved; for optimal log viewing, use '--detach' and then use 'beam project logs --ids <BeamoId>' for each service whose logs you wish to tail");
 		}
-		
+
 		// First, we need to find out which services are currently running.
 		var runningServices = new Dictionary<string, ServiceDiscoveryEvent>();
 		var discovery = args.DependencyProvider.GetService<DiscoveryService>();
@@ -106,7 +106,7 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 		{
 			runTasks.Add(RunService(args, serviceName, !args.detach, cancelTable[serviceName]));
 		}
-		
+
 		await Task.WhenAll(runTasks);
 	}
 

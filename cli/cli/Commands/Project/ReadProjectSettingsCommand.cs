@@ -46,7 +46,7 @@ public class ReadProjectSettingsCommand : AtomicCommand<ReadProjectSettingsComma
 		var res = new ReadProjectSettingsCommandOutput();
 		ProjectCommand.FinalizeServicesArg(args, ref args.services);
 
-		
+
 		foreach (var (service, http) in args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols)
 		{
 			if (!args.services.Contains(service)) continue; // skip
@@ -54,10 +54,11 @@ public class ReadProjectSettingsCommand : AtomicCommand<ReadProjectSettingsComma
 			res.settings.Add(collection);
 			foreach (var (key, value) in http.Settings)
 			{
-				Log.Verbose($"found info service=[{service}] key=[{key}] val=[{value}]" );
+				Log.Verbose($"found info service=[{service}] key=[{key}] val=[{value}]");
 				collection.settings.Add(new SettingOutput
 				{
-					key = key, value = value
+					key = key,
+					value = value
 				});
 			}
 		}
