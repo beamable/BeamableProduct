@@ -209,40 +209,50 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 		// refresh beamoManifest
 		Log.Verbose($"setting temp working dir solutiondir=[{newMicroserviceInfo.SolutionDirectory}]");
 		var previousWorkingDir = args.ConfigService.WorkingDirectory;
+		var previousCurrentDirectory = Environment.CurrentDirectory;
 		args.ConfigService.SetTempWorkingDir(newMicroserviceInfo.SolutionDirectory);
 		args.ConfigService.SetBeamableDirectory(".");
-		await args.BeamoLocalSystem.InitManifest();
-		if (!args.BeamoLocalSystem.BeamoManifest.TryGetDefinition(args.ProjectName, out var sd))
+		try
 		{
-			Log.Verbose("manifest... \n " + JsonConvert.SerializeObject(args.BeamoLocalSystem.BeamoManifest, Formatting.Indented));
-			throw new CliException("cannot find recently generated project, " + args.ProjectName);
-		}
-
-		await args.BeamoLocalSystem.UpdateDockerFile(sd);
-
-		var service = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[sd.BeamoId];
-
-
-		await args.BeamoLocalSystem.InitManifest();
-
-		// Make sure we have the correct docker file
-		var regularDockerfilePath = args.ConfigService.BeamableRelativeToExecutionRelative(service.RelativeDockerfilePath);
-		var beamableDevDockerfilePath = regularDockerfilePath + "-BeamableDev";
-		if (File.Exists(beamableDevDockerfilePath))
-		{
-			if (isBeamableDev)
+			await args.BeamoLocalSystem.InitManifest();
+			if (!args.BeamoLocalSystem.BeamoManifest.TryGetDefinition(args.ProjectName, out var sd))
 			{
-				var beamableDevDockerfileContents = await File.ReadAllTextAsync(beamableDevDockerfilePath);
-				await File.WriteAllTextAsync(regularDockerfilePath, beamableDevDockerfileContents);
+				Log.Verbose("manifest... \n " +
+				            JsonConvert.SerializeObject(args.BeamoLocalSystem.BeamoManifest, Formatting.Indented));
+				throw new CliException("cannot find recently generated project, " + args.ProjectName);
 			}
 
-			// We always delete the -BeamableDev dockerfile from the template (for older versions of the template, this file does not exist so... we need to check for it).
-			File.Delete(beamableDevDockerfilePath);
-		} 
+			await args.BeamoLocalSystem.UpdateDockerFile(sd);
 
-		//Go back to the default working dir
-		args.ConfigService.SetTempWorkingDir(previousWorkingDir);
-		
-		args.BeamoLocalSystem.SaveBeamoLocalRuntime();
+			var service = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[sd.BeamoId];
+
+
+			await args.BeamoLocalSystem.InitManifest();
+
+			// Make sure we have the correct docker file
+			var regularDockerfilePath =
+				args.ConfigService.BeamableRelativeToExecutionRelative(service.RelativeDockerfilePath);
+			var beamableDevDockerfilePath = regularDockerfilePath + "-BeamableDev";
+			if (File.Exists(beamableDevDockerfilePath))
+			{
+				if (isBeamableDev)
+				{
+					var beamableDevDockerfileContents = await File.ReadAllTextAsync(beamableDevDockerfilePath);
+					await File.WriteAllTextAsync(regularDockerfilePath, beamableDevDockerfileContents);
+				}
+
+				// We always delete the -BeamableDev dockerfile from the template (for older versions of the template, this file does not exist so... we need to check for it).
+				File.Delete(beamableDevDockerfilePath);
+			}
+
+
+		}
+		finally
+		{
+			//Go back to the default working dir
+			args.ConfigService.SetTempWorkingDir(previousWorkingDir);
+			args.BeamoLocalSystem.SaveBeamoLocalRuntime();
+		}
+
 	}
 }
