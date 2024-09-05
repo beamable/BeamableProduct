@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.BeamCli;
+using Beamable.Common.BeamCli.Contracts;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.Microservice.UI.Components;
 using System;
@@ -83,7 +84,7 @@ namespace Beamable.Server.Editor.Usam
 					else
 					{
 						OnProgressInfoUpdated?.Invoke($"[{beamoId}] Uploading image",
-													  ServicePublishState.InProgress);
+						                              ServicePublishState.InProgress);
 						OnDeployStateProgress?.Invoke(beamoId, ServicePublishState.InProgress);
 					}
 				}
@@ -92,9 +93,10 @@ namespace Beamable.Server.Editor.Usam
 					OnDeployStateProgress?.Invoke(beamoId, ServicePublishState.Unpublished);
 				}
 
-			}).OnLogsServiceDeployLogResult((cb) =>
+			});
+			_command.Command.On<CliLogMessage>("logs", (cb) =>
 			{
-				OnDeployLogMessage?.Invoke(cb.data.Level, cb.data.Message, cb.data.TimeStamp);
+				OnDeployLogMessage?.Invoke(cb.data.logLevel, cb.data.message, cb.data.timestamp.ToString()); //TODO actually format the timestamp correctly
 			});
 			await _command.Run();
 		}

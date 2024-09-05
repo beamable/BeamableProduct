@@ -186,7 +186,7 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 		var serviceStarted = false;
 		var healthCheckTask = Task.Run(async () =>
 		{
-			var route = $"https://dev.api.beamable.com/basic/{args.AppContext.Cid}.{args.AppContext.Pid}.{serviceName}/admin/HealthCheck";
+			var route = $"https://dev.api.beamable.com/basic/{args.AppContext.Cid}.{args.AppContext.Pid}.micro_{serviceName}/admin/HealthCheck";
 			while (true)
 			{
 				try
