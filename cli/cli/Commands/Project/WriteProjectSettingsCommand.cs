@@ -1,4 +1,5 @@
 using Beamable.Common.BeamCli.Contracts;
+using Beamable.Common.Dependencies;
 using Beamable.Common.Semantics;
 using cli.Services;
 using Serilog;
@@ -36,6 +37,7 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 
 	public WriteProjectSettingsCommand() : base("write-setting", "Write a group of project settings")
 	{
+		AddAlias("write-settings");
 	}
 
 	public override void Configure()
@@ -53,7 +55,7 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 		skipBuildOption.AddAlias("-s");
 		AddOption(skipBuildOption, (args, i) => args.skipBuild = i);
 		
-		var deleteOption = new Option<List<string>>("--delete-key", "The keys of the settings to be deleted");
+		var deleteOption = new Option<List<string>>("--delete-key", "The keys of the settings to be deleted. If the key is also set in a --key option, the key will not be deleted");
 		deleteOption.AddAlias("-d");
 		deleteOption.AllowMultipleArgumentsPerToken = true;
 		deleteOption.Arity = ArgumentArity.OneOrMore;
@@ -67,12 +69,6 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 		valueOption.AddAlias("-v");
 		valueOption.AllowMultipleArgumentsPerToken = true;
 		valueOption.Arity = ArgumentArity.OneOrMore;
-		
-		var jsonValueOption = new Option<List<string>>("--json-value", "The values of the settings. The count must match the count of the --key options");
-		valueOption.AddAlias("-jv");
-		valueOption.AllowMultipleArgumentsPerToken = true;
-		valueOption.Arity = ArgumentArity.OneOrMore;
-
 		
 		AddOption(keyOption, (args, i) =>
 		{
@@ -103,24 +99,41 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 
 	public override async Task<WriteProjectSettingsCommandOutput> GetResult(WriteProjectSettingsCommandArgs args)
 	{
-		if (!args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(args.beamoId, out var http))
+		return await WriteSettings(
+			args: args,
+			beamoId: args.beamoId,
+			settingsToDelete: args.settingsToDelete,
+			settings: args.settings,
+			skipBuild: args.skipBuild);
+	}
+	
+	public static async Task<WriteProjectSettingsCommandOutput> WriteSettings(
+		CommandArgs args, 
+		string beamoId,
+		List<string> settingsToDelete,
+		List<SettingInput> settings,
+		bool skipBuild)
+	{
+		var beamo = args.BeamoLocalSystem;
+		var config = args.ConfigService;
+		if (!beamo.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(beamoId, out var http))
 		{
 			throw new CliException("Invalid beamoId");
 		}
 
 		var subPath = Path.Combine("temp", "localDev");
-		var localDevFolder = Path.GetFullPath(args.ConfigService.GetConfigPath(subPath));
+		var localDevFolder = Path.GetFullPath(config.GetConfigPath(subPath));
 		Directory.CreateDirectory(localDevFolder);
 		
 		var imports = FindLocalDevImports(localDevFolder, http.Metadata.msbuildProject);
-		if (!TryFindExistingXmlSettings(imports, args.beamoId, out var docInfo))
+		if (!TryFindExistingXmlSettings(imports, beamoId, out var docInfo))
 		{
 			// there is no existing ItemGroup for the given service, so we need to create one...
 			
 			if (imports.Count == 0)
 			{
 				// there were no files at all, so we need to create one
-				var newProjectPath = Path.Combine(localDevFolder, "BeamableSettings.csproj");
+				var newProjectPath = Path.Combine(localDevFolder, "LocalServiceDevelopmentSettings.csproj");
 				CreateBlankProjectFile(newProjectPath);
 				imports = new List<string> { newProjectPath };
 			}
@@ -132,12 +145,12 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 			}
 
 			// and now we need to create the item group
-			var itemGroup = CreateItemGroup(projectNode, args.beamoId);
+			var itemGroup = CreateItemGroup(projectNode, beamoId);
 			docInfo = new SettingInfo { csProjPath = file, document = doc, itemGroup = itemGroup };
 		}
 
 		// delete all the properties we no longer want
-		foreach (var setting in args.settingsToDelete)
+		foreach (var setting in settingsToDelete)
 		{
 			if (!TryFindExistingSetting(docInfo.itemGroup, setting, out var property))
 			{
@@ -149,7 +162,7 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 		}
 		
 		// add or set all the properties we do want
-		foreach (var setting in args.settings)
+		foreach (var setting in settings)
 		{
 			// try to load the existing setting so we can modify it inline
 			if (!TryFindExistingSetting(docInfo.itemGroup, setting.key, out var property))
@@ -167,7 +180,7 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 			docInfo.document.Save(docInfo.csProjPath, SaveOptions.None);
 		}
 
-		if (args.skipBuild)
+		if (skipBuild)
 		{
 			return new WriteProjectSettingsCommandOutput();
 		}
@@ -176,7 +189,7 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
           //  but IDEs (like Rider) won't do that, and won't realize that the csproj file has a meaningful change. 
 			var subArgs = args.Create<BuildProjectCommandArgs>();
 			Log.Information("Building project to apply settings...");
-			await ProjectService.WatchBuild(subArgs, new ServiceName(args.beamoId), report =>
+			await ProjectService.WatchBuild(subArgs, new ServiceName(beamoId), report =>
 			{
 				if (report.isSuccess)
 				{

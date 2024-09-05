@@ -85,7 +85,11 @@ namespace Beamable.Server.Common
 				
 				var key = parts[0].Trim().ToLowerInvariant();
 				var value = parts[1].Trim();
-				settings[key] = value;
+
+				if (!settings.ContainsKey(key))
+				{
+					settings[key] = value;
+				}
 			}
 
 			return settings;

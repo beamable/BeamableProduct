@@ -36,7 +36,8 @@ public static class ProjectContextUtil
 		string rootFolder,
 		string dotnetPath, 
 		BeamoService beamo,
-		ConfigService configService)
+		ConfigService configService,
+		bool useCache=true)
 	{
 		lock (_existingManifestLock)
 		{
@@ -44,7 +45,7 @@ public static class ProjectContextUtil
 			var ttlValid = now < _existingManifestCacheExpirationTime;
 			var hasValue = _existingManifest != null;
 
-			if (!EnableManifestCache || !ttlValid || !hasValue)
+			if (!useCache || !EnableManifestCache || !ttlValid || !hasValue)
 			{
 				_existingManifest = beamo.GetCurrentManifest();
 				_existingManifestCacheExpirationTime = now + _existingManifestCacheTime;

@@ -724,7 +724,7 @@ public class App
 			try
 			{
 				var beamoSystem = provider.GetService<BeamoLocalSystem>();
-				beamoSystem.InitManifest().Wait();
+				beamoSystem.InitManifest(useManifestCache: true).Wait();
 			}
 			catch (AggregateException aggregateException)
 			{
