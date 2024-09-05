@@ -314,6 +314,8 @@ public class App
 		Commands.AddSubCommand<GenerateClientFileCommand, GenerateClientFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GeneratePropertiesFileCommand, GeneratePropertiesFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<OpenSwaggerCommand, OpenSwaggerCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<ReadProjectSettingsCommand, ReadProjectSettingsCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<WriteProjectSettingsCommand, WriteProjectSettingsCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<TailLogsCommand, TailLogsCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<OpenMongoExpressCommand, OpenMongoExpressCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<AddUnityClientOutputCommand, AddProjectClientOutputCommandArgs, ProjectCommand>();
@@ -722,7 +724,7 @@ public class App
 			try
 			{
 				var beamoSystem = provider.GetService<BeamoLocalSystem>();
-				beamoSystem.InitManifest().Wait();
+				beamoSystem.InitManifest(useManifestCache: true).Wait();
 			}
 			catch (AggregateException aggregateException)
 			{

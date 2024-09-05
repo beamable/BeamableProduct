@@ -132,8 +132,15 @@ public class DefaultAppContext : IAppContext
 			// there is no .beamable folder
 			return false;
 		}
-		logFile = _configService.GetRelativeToBeamableFolderPath(
-			$".beamable/temp/logs/beamCliLog-{_logTime.ToFileTime()}");
+
+		
+		var subPath = Path.Combine(
+			".beamable",
+			"temp",
+			"logs",
+			$"beamCliLog-{_logTime.ToFileTime()}.txt");
+		logFile = _configService.BeamableRelativeToExecutionRelative(subPath);
+		
 		return true;
 	}
 	
