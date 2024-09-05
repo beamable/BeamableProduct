@@ -54,7 +54,7 @@ namespace Beamable.Server.Tests.Runtime
 		[UnityTest]
 		public IEnumerator CanDeserializeDictionary_OfStrings()
 		{
-			var client = new TestClient(ROUTE,MockRequester);
+			var client = new TestClient(ROUTE, MockRequester);
 
 			MockRequester.MockRequest<Dictionary<string, string>>(Method.POST,
 																  client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))

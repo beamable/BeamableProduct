@@ -19,6 +19,6 @@ namespace Beamable.Editor.Tests.Toolbox
 		{
 			builder.ReplaceSingleton<IToolboxViewService, MockToolboxViewService>();
 		}
-		
+
 	}
 }
