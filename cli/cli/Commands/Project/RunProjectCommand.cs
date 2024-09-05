@@ -31,8 +31,8 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 			if (b) throw new CliException("The --watch flag is no longer supported due to underlying .NET issues");
 		});
 		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
-		AddOption<bool>(new Option<bool>("--force", "With this flag, we restart any running services. Without it, we skip running services"), (args, b) => args.detach = b);
-		AddOption<bool>(new Option<bool>("--detach", "With this flag, we restart any running services. Without it, we skip running services"), (args, b) => args.forceRestart = b);
+		AddOption<bool>(new Option<bool>("--force", "With this flag, we restart any running services. Without it, we skip running services"), (args, b) => args.forceRestart = b);
+		AddOption<bool>(new Option<bool>("--detach", "With this flag, we don't remain attached to the running service process"), (args, b) => args.detach = b);
 	}
 
 	public override async Task Handle(RunProjectCommandArgs args)
