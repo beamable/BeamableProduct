@@ -8,8 +8,12 @@ namespace Beamable.Editor.BeamCli.Commands
 	{
 		/// <summary>When true, the command will run forever and watch the state of the program</summary>
 		public bool watch;
-		/// <summary>The list of services to include, defaults to all local services</summary>
+		/// <summary>The list of services to include, defaults to all local services (separated by whitespace)</summary>
 		public string[] ids;
+		/// <summary>With this flag, we restart any running services. Without it, we skip running services</summary>
+		public bool force;
+		/// <summary>With this flag, we restart any running services. Without it, we skip running services</summary>
+		public bool detach;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -28,6 +32,16 @@ namespace Beamable.Editor.BeamCli.Commands
 					// The parameter allows multiple values
 					genBeamCommandArgs.Add(("--ids=" + this.ids[i]));
 				}
+			}
+			// If the force value was not default, then add it to the list of args.
+			if ((this.force != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--force=" + this.force));
+			}
+			// If the detach value was not default, then add it to the list of args.
+			if ((this.detach != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--detach=" + this.detach));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

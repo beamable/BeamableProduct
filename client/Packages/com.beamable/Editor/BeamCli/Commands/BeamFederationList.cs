@@ -14,6 +14,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string @namespace;
 		/// <summary>Filter the services by the playerId of the author</summary>
 		public long player;
+		/// <summary>After piping the current list of services, keeps on listening and pipe them again every change</summary>
+		public bool listen;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -41,6 +43,11 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.player != default(long)))
 			{
 				genBeamCommandArgs.Add(("--player=" + this.player));
+			}
+			// If the listen value was not default, then add it to the list of args.
+			if ((this.listen != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--listen=" + this.listen));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

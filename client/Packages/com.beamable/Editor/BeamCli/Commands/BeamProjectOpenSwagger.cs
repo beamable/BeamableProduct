@@ -8,7 +8,11 @@ namespace Beamable.Editor.BeamCli.Commands
 	{
 		/// <summary>Name of the service to open swagger to</summary>
 		public Beamable.Common.Semantics.ServiceName serviceName;
-		/// <summary>If passed, swagger will open to the remote version of this service. Otherwise, it will try and use the local version</summary>
+		/// <summary>The routing key for the service instance we want. If not passed, defaults to the deployed service</summary>
+		public string routingKey;
+		/// <summary>When set, enforces the routing key to be the one for the local machine</summary>
+		public bool local;
+		/// <summary>When set, enforces the routing key to be the one for the service deployed to the realm</summary>
 		public bool remote;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
@@ -19,6 +23,17 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.serviceName != default(Beamable.Common.Semantics.ServiceName)))
 			{
 				genBeamCommandArgs.Add(this.serviceName.ToString());
+			}
+			// If the routingKey value was not default, then add it to the list of args.
+			if ((this.routingKey != default(string)))
+			{
+				genBeamCommandArgs.Add((("--routing-key=\"" + this.routingKey)
+								+ "\""));
+			}
+			// If the local value was not default, then add it to the list of args.
+			if ((this.local != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--local=" + this.local));
 			}
 			// If the remote value was not default, then add it to the list of args.
 			if ((this.remote != default(bool)))

@@ -6,7 +6,7 @@ namespace Beamable.Editor.BeamCli.Commands
 
 	public class ServicesResetImageArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>The list of services to include, defaults to all local services</summary>
+		/// <summary>The list of services to include, defaults to all local services (separated by whitespace)</summary>
 		public string[] ids;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()

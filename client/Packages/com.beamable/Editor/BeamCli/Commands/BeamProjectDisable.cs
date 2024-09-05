@@ -6,7 +6,7 @@ namespace Beamable.Editor.BeamCli.Commands
 
 	public class ProjectDisableArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>The list of services to include, defaults to all local services</summary>
+		/// <summary>The list of services to include, defaults to all local services (separated by whitespace)</summary>
 		public string[] ids;
 		/// <summary>A set of BeamServiceGroup tags that will exclude the associated services. Exclusion takes precedence over inclusion</summary>
 		public string[] withoutGroup;

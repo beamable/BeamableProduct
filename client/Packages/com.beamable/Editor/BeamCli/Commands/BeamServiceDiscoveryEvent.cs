@@ -7,6 +7,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	[System.SerializableAttribute()]
 	public class BeamServiceDiscoveryEvent
 	{
+		public int processId;
 		public string cid;
 		public string pid;
 		public string prefix;
@@ -18,5 +19,7 @@ namespace Beamable.Editor.BeamCli.Commands
 		public int dataPort;
 		public string executionVersion;
 		public string containerId;
+		public string[] groups;
+		public string[] routingKeys;
 	}
 }

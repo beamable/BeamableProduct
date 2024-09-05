@@ -10,6 +10,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string output;
 		/// <summary>Filter which open apis to generate. An empty string matches everything</summary>
 		public string filter;
+		/// <summary>Combines all API documents into one. In order to achieve that it will need to rename some of the types because of duplicates, eg. GetManifestResponse</summary>
+		public bool combineIntoOneDocument;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -26,6 +28,11 @@ namespace Beamable.Editor.BeamCli.Commands
 			{
 				genBeamCommandArgs.Add((("--filter=\"" + this.filter)
 								+ "\""));
+			}
+			// If the combineIntoOneDocument value was not default, then add it to the list of args.
+			if ((this.combineIntoOneDocument != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--combine-into-one-document=" + this.combineIntoOneDocument));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

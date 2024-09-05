@@ -8,7 +8,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	{
 		/// <summary>When true, the command will run forever and watch the state of the program</summary>
 		public bool watch;
-		/// <summary>The list of services to include, defaults to all local services</summary>
+		/// <summary>The list of services to include, defaults to all local services (separated by whitespace)</summary>
 		public string[] ids;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
