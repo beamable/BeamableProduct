@@ -212,6 +212,7 @@ namespace Beamable.Editor.UI.Model
 		WARNING,
 		INFO,
 		DEBUG,
-		VERBOSE
+		VERBOSE,
+		INFORMATION
 	}
 }
