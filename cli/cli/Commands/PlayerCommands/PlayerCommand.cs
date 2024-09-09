@@ -18,7 +18,7 @@ public class PlayerCommandArgs : CommandArgs
 
 public class PlayerCommand : AtomicCommand<PlayerCommandArgs, Account>
 {
-	
+
 	public static async Promise<long> ResolvePlayerId(CommandArgs args, long playerId, string token)
 	{
 		var hasId = playerId != 0;
@@ -43,7 +43,7 @@ public class PlayerCommand : AtomicCommand<PlayerCommandArgs, Account>
 		var user = await args.AuthApi.GetUser();
 		return user.id;
 	}
-	
+
 	public static void AddPlayerSpecifierArgs<TArgs>(AppCommand<TArgs> command, Action<TArgs, long, string> binder)
 		where TArgs : CommandArgs
 	{
@@ -70,8 +70,8 @@ public class PlayerCommand : AtomicCommand<PlayerCommandArgs, Account>
 			binder(args, playerId, token);
 		});
 	}
-	
-	
+
+
 	public PlayerCommand() : base("player", "Get information about a player")
 	{
 	}
@@ -90,7 +90,7 @@ public class PlayerCommand : AtomicCommand<PlayerCommandArgs, Account>
 		var playerId = await ResolvePlayerId(args, args.playerId, args.token);
 
 		var api = new AccountsApi(args.Requester);
-		var account = await api.GetFind(playerId.ToString()).RecoverFrom404(_ => 
+		var account = await api.GetFind(playerId.ToString()).RecoverFrom404(_ =>
 			throw new CliException("No account exists in this realm."));
 
 		return account;
