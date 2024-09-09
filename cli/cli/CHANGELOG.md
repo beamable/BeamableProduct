@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - JSON output will correctly render optional types
+- DockerHub 4.31 is supported via microservices using `host.docker.internal` instead of `gateway.docker.internal` to communicate to `localhost`
 
 ## [2.0.1] - 2024-06-17
 

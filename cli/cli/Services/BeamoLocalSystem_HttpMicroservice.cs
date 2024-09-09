@@ -21,7 +21,7 @@ public partial class BeamoLocalSystem
 	private const string HTTM_MICROSERVICE_CONTAINER_PORT = "6565";
 	
 	public async Task<List<DockerEnvironmentVariable>> GetLocalConnectionStrings(BeamoLocalManifest localManifest,
-		string host = "gateway.docker.internal")
+		string host = "host.docker.internal")
 	{
 		var output = new List<DockerEnvironmentVariable>();
 		foreach (var local in localManifest.EmbeddedMongoDbLocalProtocols)
@@ -71,7 +71,7 @@ public partial class BeamoLocalSystem
 	}
 
 	public async Task<DockerEnvironmentVariable> GetLocalConnectionString(BeamoLocalManifest localManifest,
-		string storageName, string host = "gateway.docker.internal")
+		string storageName, string host = "host.docker.internal")
 	{
 		if (!localManifest.EmbeddedMongoDbLocalProtocols.TryGetValue(storageName, out var localStorage))
 		{
