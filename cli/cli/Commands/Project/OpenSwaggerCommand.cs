@@ -30,11 +30,11 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 		var defaultRoutingKey = ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine();
 		
 		var remoteOption = new Option<bool>("--remote",
-			"When set, enforces the routing key to be the one for the service deployed to the realm. Cannot be specified when --routing-key is also set.");
+			"When set, enforces the routing key to be the one for the service deployed to the realm. Cannot be specified when --routing-key is also set");
 		remoteOption.AddAlias("-r");
 		
 		var routingKeyOption = new Option<string>("--routing-key",
-			"The routing key for the service instance we want. If not passed, defaults to the local service. ");
+			"The routing key for the service instance we want. If not passed, defaults to the local service");
 		routingKeyOption.SetDefaultValue(defaultRoutingKey);
 		routingKeyOption.AddAlias("-k");
 		
