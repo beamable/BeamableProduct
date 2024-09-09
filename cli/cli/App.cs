@@ -721,19 +721,28 @@ public class App
 			
 			Log.Verbose("command prep (past proxy) took " + sw.ElapsedMilliseconds);
 			
-			try
+			var skip = ctx.ParseResult.CommandResult.Command is ISkipManifest;
+			if (skip)
 			{
-				var beamoSystem = provider.GetService<BeamoLocalSystem>();
-				beamoSystem.InitManifest(useManifestCache: true).Wait();
-			}
-			catch (AggregateException aggregateException)
+				Log.Debug($"skipping manifest initialization because command=[{ctx.ParseResult.CommandResult.Command.GetType().Name}] is a {nameof(ISkipManifest)}");
+			} else 
 			{
-				foreach (var ex in aggregateException.InnerExceptions)
+				try
 				{
-					Log.Error(ex.GetType().Name + " -- " + ex.Message + "\n" + ex.StackTrace);
+					var beamoSystem = provider.GetService<BeamoLocalSystem>();
+					beamoSystem.InitManifest(useManifestCache: true).Wait();
 				}
-				throw;
+				catch (AggregateException aggregateException)
+				{
+					foreach (var ex in aggregateException.InnerExceptions)
+					{
+						Log.Error(ex.GetType().Name + " -- " + ex.Message + "\n" + ex.StackTrace);
+					}
+
+					throw;
+				}
 			}
+
 
 			Log.Verbose("command prep took " + sw.ElapsedMilliseconds);
 			await next(ctx);

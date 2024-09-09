@@ -570,13 +570,13 @@ namespace Beamable.Server
 	        //TODO: These events are still not working for some reason
 	        process.ErrorDataReceived += (sender, args) =>
 	        {
-				Log.Information($"Generate env process (error): [{args.Data}]");
+				Log.Verbose($"Generate env process (error): [{args.Data}]");
 				if(!string.IsNullOrEmpty(args.Data)) sublogs += args.Data;
 	        };
 
 	        process.OutputDataReceived += (sender, args) =>
 	        {
-		        Log.Information($"Generate env process (log): [{args.Data}]");
+		        Log.Verbose($"Generate env process (log): [{args.Data}]");
 		        if(!string.IsNullOrEmpty(args.Data)) result += args.Data;
 	        };
 
