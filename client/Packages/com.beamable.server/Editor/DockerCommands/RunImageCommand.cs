@@ -89,7 +89,7 @@ namespace Beamable.Server.Editor.DockerCommands
 				[ENV_ME_CONFIG_MONGODB_ENABLE_ADMIN] = "true",
 				[ENV_ME_CONFIG_SITE_COOKIESECRET] = Guid.NewGuid().ToString(),
 				[ENV_ME_CONFIG_SITE_SESSIONSECRET] = Guid.NewGuid().ToString(),
-				[ENV_MONGO_SERVER] = $"mongodb://{config.LocalInitUser}:{config.LocalInitPass}@gateway.docker.internal:{config.LocalDataPort}"
+				[ENV_MONGO_SERVER] = $"mongodb://{config.LocalInitUser}:{config.LocalInitPass}@host.docker.internal:{config.LocalDataPort}"
 			};
 			Ports = new Dictionary<uint, uint>
 			{
