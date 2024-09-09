@@ -186,6 +186,10 @@ namespace Beamable.Editor.Microservice.UI2.Models
 				BeamEditorContext.Default.ServiceScope.GetService<CodeService>()
 								 .OpenMicroserviceFile(_serviceDefinition.BeamoId);
 			});
+			evt.menu.BeamableAppendAction("Open Microservice Settings", pos =>
+			{
+				SettingsService.OpenProjectSettings($"Project/Beamable Services/{_serviceDefinition.BeamoId}");
+			});
 
 			if (!AreLogsAttached)
 			{

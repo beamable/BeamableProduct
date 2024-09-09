@@ -35,6 +35,11 @@ namespace Beamable.Server.Editor.Usam
 				_assemblyGraph[assembly] = assembly.assemblyReferences;
 			}
 
+			if (!BeamEditor.IsInitialized)
+			{
+				return;
+			}
+
 			var codeService = BeamEditorContext.Default.ServiceScope.GetService<CodeService>();
 			foreach (var definition in codeService.ServiceDefinitions)
 			{

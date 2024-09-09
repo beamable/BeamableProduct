@@ -415,7 +415,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void HandleLogMessage(string level, string message, string timeStamp)
 		{
-			var parsed = Enum.TryParse(level, out LogLevel enumLevel);
+			var parsed = Enum.TryParse(level.ToUpper(), out LogLevel enumLevel);
 
 			if (!parsed)
 			{

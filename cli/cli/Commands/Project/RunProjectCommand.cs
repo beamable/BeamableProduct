@@ -144,7 +144,7 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 						["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1",
 						["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1",
 						["LOG_PATH"] = logPath,
-						["WATCH_TOKEN"] = "true",
+						["WATCH_TOKEN"] = "false",
 						[Beamable.Common.Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = args.AppContext.DotnetPath,
 					})
 					.WithStandardErrorPipe(PipeTarget.ToDelegate(line =>
@@ -186,7 +186,7 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 		var serviceStarted = false;
 		var healthCheckTask = Task.Run(async () =>
 		{
-			var route = $"https://dev.api.beamable.com/basic/{args.AppContext.Cid}.{args.AppContext.Pid}.{serviceName}/admin/HealthCheck";
+			var route = $"https://dev.api.beamable.com/basic/{args.AppContext.Cid}.{args.AppContext.Pid}.micro_{serviceName}/admin/HealthCheck";
 			while (true)
 			{
 				try

@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using Beamable.Editor.BeamCli.Commands;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Beamable.Editor.BeamCli
@@ -47,7 +48,11 @@ namespace Beamable.Editor.BeamCli
 		public async Promise Init()
 		{
 			await _ctx.OnReady;
-			if (_ctx.Requester == null || _ctx.Requester.Token == null) return;
+			while (BeamEditorContext.Default.Requester == null || BeamEditorContext.Default.Requester.Token == null)
+			{
+				await Task.Delay(500);
+			}
+
 			var initCommand = Command.Init(new InitArgs
 			{
 				saveToFile = true,

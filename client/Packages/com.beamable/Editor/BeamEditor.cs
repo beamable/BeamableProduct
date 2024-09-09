@@ -169,8 +169,8 @@ namespace Beamable
 
 		static void Initialize()
 		{
-
 			if (IsInitialized) return;
+
 			initializeAttemptCount++;
 
 			if (initializeAttemptCount > WARN_ON_INITIALIZE_ATTEMPT)
