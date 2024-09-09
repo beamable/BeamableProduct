@@ -62,7 +62,7 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 				EnvVarOutput.Create("REFRESH_TOKEN", args.AppContext.RefreshToken),
 			}
 		};
-		
+
 		var sw = new Stopwatch();
 		sw.Start();
 
@@ -112,7 +112,7 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 				}
 			}
 		}
-		
+
 		{
 			/*
 			 * This command is going to write an .env file for legacy purposes.
