@@ -4,9 +4,6 @@ using Beamable.Common.BeamCli.Contracts;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.Microservice.UI.Components;
 using System;
-using System.IO;
-using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace Beamable.Server.Editor.Usam
 {
@@ -96,7 +93,9 @@ namespace Beamable.Server.Editor.Usam
 			});
 			_command.Command.On<CliLogMessage>("logs", (cb) =>
 			{
-				OnDeployLogMessage?.Invoke(cb.data.logLevel, cb.data.message, cb.data.timestamp.ToString()); //TODO actually format the timestamp correctly
+				DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+				dateTime = dateTime.AddMilliseconds( cb.data.timestamp ).ToLocalTime();
+				OnDeployLogMessage?.Invoke(cb.data.logLevel, cb.data.message, dateTime.ToString("HH:mm:ss"));
 			});
 			await _command.Run();
 		}

@@ -426,10 +426,6 @@ namespace Beamable
 		public bool IsStopped { get; private set; }
 		public bool IsAuthenticated => ServiceScope.GetService<PlatformRequester>().Token != null;
 
-		private Promise _onAuthenticated = new Promise();
-
-		public Promise OnAuthenticated => _onAuthenticated;
-
 		public IDependencyProviderScope ServiceScope { get; private set; }
 		public Promise InitializePromise { get; private set; }
 		public Promise OnReady => InitializePromise;
@@ -563,7 +559,6 @@ namespace Beamable
 
 			await ApplyToken(cid, token);
 			await RefreshRealmSecret();
-			_onAuthenticated.CompleteSuccess();
 			return PromiseBase.Unit;
 		}
 
