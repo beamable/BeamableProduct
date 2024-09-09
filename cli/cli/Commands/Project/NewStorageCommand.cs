@@ -72,10 +72,10 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 			}
 		}
 
-		// args.ConfigService.SetTempWorkingDir(newMicroserviceInfo.SolutionDirectory);
-		// args.ConfigService.SetBeamableDirectory(newMicroserviceInfo.SolutionDirectory);
-		//
-		// await args.BeamoLocalSystem.InitManifest();
+		args.ConfigService.SetTempWorkingDir(newMicroserviceInfo.SolutionDirectory);
+		args.ConfigService.SetBeamableDirectory(newMicroserviceInfo.SolutionDirectory);
+
+		await args.BeamoLocalSystem.InitManifest();
 
 		var promises = new List<Promise<Unit>>();
 
