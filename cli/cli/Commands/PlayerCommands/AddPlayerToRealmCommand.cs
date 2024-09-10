@@ -10,7 +10,7 @@ public class AddPlayerToRealmCommandArgs : CommandArgs
 
 public class AddPlayerToRealmCommandOutput
 {
-	
+
 }
 
 public class AddPlayerToRealmCommand : AtomicCommand<AddPlayerToRealmCommandArgs, AddPlayerToRealmCommandOutput>

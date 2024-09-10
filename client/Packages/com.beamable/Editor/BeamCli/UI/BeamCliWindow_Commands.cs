@@ -99,7 +99,7 @@ namespace Beamable.Editor.BeamCli.UI
 			commandSplitter.Split(this);
 			EditorGUILayout.Space(10, false);
 
-			
+
 			OnLogsScrollView();
 
 			#endregion
@@ -213,7 +213,7 @@ namespace Beamable.Editor.BeamCli.UI
 
 			EditorGUILayout.BeginVertical(GUILayout.ExpandWidth(true));
 
-			GUIStyle timeLabelsStyle = new GUIStyle( EditorStyles.boldLabel);
+			GUIStyle timeLabelsStyle = new GUIStyle(EditorStyles.boldLabel);
 			timeLabelsStyle.richText = true;
 
 			GUILayout.Label($"Created Time = [<color=yellow>{createdTime}</color>]", timeLabelsStyle);
@@ -283,11 +283,11 @@ namespace Beamable.Editor.BeamCli.UI
 			}
 
 			this.DrawLogWindow(commandLogs,
-			                   dataList: commandsLogProvider,
-			                   onClear: () =>
-			                   {
-				                   command.logs.Clear();
-			                   });
+							   dataList: commandsLogProvider,
+							   onClear: () =>
+							   {
+								   command.logs.Clear();
+							   });
 
 			EditorGUILayout.EndVertical();
 		}
@@ -299,7 +299,7 @@ namespace Beamable.Editor.BeamCli.UI
 			var verboseContent = new GUIContent(view.count.ToString(), texture, $"{status} commands");
 
 			var nextEnabled = GUILayout.Toggle(view.enabled, verboseContent,
-			                                   EditorStyles.toolbarButton, GUILayout.Width(40), GUILayout.ExpandWidth(false));
+											   EditorStyles.toolbarButton, GUILayout.Width(40), GUILayout.ExpandWidth(false));
 
 			if (nextEnabled != view.enabled)
 			{
@@ -400,7 +400,7 @@ namespace Beamable.Editor.BeamCli.UI
 			GetSelectedCommand(true);
 		}
 
-		BeamWebCommandDescriptor GetSelectedCommand(bool force=false)
+		BeamWebCommandDescriptor GetSelectedCommand(bool force = false)
 		{
 			if (force || selectedCommand == null)
 			{
@@ -473,7 +473,7 @@ namespace Beamable.Editor.BeamCli.UI
 			if (command.Status == BeamWebCommandDescriptorStatus.DONE)
 			{
 				diff = DateTime.FromFileTime(command.endTime) - DateTime.FromFileTime(command.startTime);
-				return  $"{diff.Hours:00}:{diff.Minutes:00}:{diff.Seconds:00}.{diff.Milliseconds:0000}";
+				return $"{diff.Hours:00}:{diff.Minutes:00}:{diff.Seconds:00}.{diff.Milliseconds:0000}";
 			}
 
 			if (command.startTime <= 0)

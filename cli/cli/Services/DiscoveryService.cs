@@ -81,7 +81,7 @@ public class DiscoveryService
 				var ed = new IPEndPoint(IPAddress.Any, Beamable.Common.Constants.Features.Services.DISCOVERY_PORT);
 				socketListener.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 				socketListener.Bind(ed);
-				
+
 				var buffer = new ArraySegment<byte>(new byte[1024 * 2]);
 				do
 				{
@@ -97,7 +97,7 @@ public class DiscoveryService
 						// If the message we got from a local service running that is not for this PID/CID, we ignore it.
 						if (service.cid != _appContext.Cid || service.pid != _appContext.Pid)
 							continue;
-					
+
 
 						// If we don't have the entry (in this map), we emit the event that the service is now running and store it in the map. 
 						if (!_localDiscoveryEntryWithTimestamp.ContainsKey(service.serviceName))
@@ -112,7 +112,7 @@ public class DiscoveryService
 
 					if (token.IsCancellationRequested)
 						break;
-					
+
 					await Task.Delay(50);
 				} while (true);
 			}
@@ -267,7 +267,7 @@ public class DiscoveryService
 
 			// Wait for a bit.
 			await Task.Delay(50, token);
-	
+
 			// Find out frow which services we have not received messages in the past DISCOVERY_RECEIVE_PERIOD_MS  
 			var now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 			foreach (var kvp in _localDiscoveryEntryWithTimestamp)
