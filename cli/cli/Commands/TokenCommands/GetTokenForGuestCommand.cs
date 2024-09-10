@@ -6,7 +6,7 @@ namespace cli.TokenCommands;
 
 public class GetTokenForGuestCommandArgs : CommandArgs
 {
-	
+
 }
 
 public class GetTokenForGuestCommandOutput
@@ -34,7 +34,7 @@ public class GetTokenForGuestCommand : AtomicCommand<GetTokenForGuestCommandArgs
 		TokenResponse res = await api.PostToken(
 			gsReq: new TokenRequestWrapper { grant_type = "guest" },
 			includeAuthHeader: false);
-		
+
 		return new GetTokenForGuestCommandOutput
 		{
 			scopes = res.scopes,
