@@ -14,6 +14,8 @@ namespace Beamable.Editor.BeamCli.Commands
         public string sln;
         /// <summary>Relative path to directory where project should be created. Defaults to "SOLUTION_DIR/services"</summary>
         public string serviceDirectory;
+        /// <summary>The name of the storage to link this service to</summary>
+        public string[] linkTo;
         /// <summary>If passed, will create a common library for this project</summary>
         public bool generateCommon;
         /// <summary>INTERNAL This enables a sane workflow for beamable developers to be happy and productive</summary>
@@ -41,6 +43,15 @@ namespace Beamable.Editor.BeamCli.Commands
             {
                 genBeamCommandArgs.Add((("--service-directory=\"" + this.serviceDirectory) 
                                 + "\""));
+            }
+            // If the linkTo value was not default, then add it to the list of args.
+            if ((this.linkTo != default(string[])))
+            {
+                for (int i = 0; (i < this.linkTo.Length); i = (i + 1))
+                {
+                    // The parameter allows multiple values
+                    genBeamCommandArgs.Add(("--link-to=" + this.linkTo[i]));
+                }
             }
             // If the generateCommon value was not default, then add it to the list of args.
             if ((this.generateCommon != default(bool)))
