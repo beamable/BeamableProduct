@@ -49,11 +49,8 @@ namespace Beamable.Server.Editor.Usam
 		private const string MICROSERVICE_DLL_PATH = "bin/Debug/net6.0"; // is this true for all platforms and dotnet installations?
 		public static readonly string StandaloneMicroservicesFolderName = "StandaloneMicroservices~/";
 		private static readonly string StandaloneMicroservicesPath = $"{BEAMABLE_PATH}{StandaloneMicroservicesFolderName}";
-		public static readonly string LibrariesPathsFilePath = $"{BEAMABLE_LIB_PATH}/.libraries_paths";
-		public static readonly string ServicesDefinitionsFilePath = $"{BEAMABLE_LIB_PATH}/.services_definitions";
+
 		private IDependencyProvider _provider;
-		public static string LibrariesPathsDirectory => Path.GetDirectoryName(LibrariesPathsFilePath);
-		public static string ServicesDefinitionsDirectory => Path.GetDirectoryName(ServicesDefinitionsFilePath);
 
 		private bool _isBeamableDev;
 
@@ -69,9 +66,6 @@ namespace Beamable.Server.Editor.Usam
 		
 		public async Promise Init()
 		{
-			if (EditorApplication.isPlayingOrWillChangePlaymode)
-				return;
-
 			await BeamEditorContext.Default.OnReady;
 
 			while (BeamEditorContext.Default.Requester == null || BeamEditorContext.Default.Requester.Token == null)
