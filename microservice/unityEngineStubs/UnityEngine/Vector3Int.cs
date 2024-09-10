@@ -1,5 +1,6 @@
 ﻿using System;
 using Newtonsoft.Json;
+// ReSharper disable InconsistentNaming
 
 namespace UnityEngine
 {
@@ -286,7 +287,6 @@ namespace UnityEngine
     /// <summary>
     ///   <para>Returns a nicely formatted string for this vector.</para>
     /// </summary>
-    /// <param name="format"></param>
     public override string ToString()
     {
       return string.Format("({0}, {1}, {2})", (object) this.x, (object) this.y, (object) this.z);

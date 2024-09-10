@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using Newtonsoft.Json;
+// ReSharper disable InconsistentNaming
 
 namespace UnityEngine
 {
@@ -298,7 +299,6 @@ namespace UnityEngine
     ///   <para>Returns true if the x and y components of point is a point inside this rectangle. If allowInverse is present and true, the width and height of the Rect are allowed to take negative values (ie, the min value is greater than the max), and the test will still work.</para>
     /// </summary>
     /// <param name="point">Point to test.</param>
-    /// <param name="allowInverse">Does the test allow the Rect's width and height to be negative?</param>
     /// <returns>
     ///   <para>True if the point lies within the specified rectangle.</para>
     /// </returns>
@@ -311,7 +311,6 @@ namespace UnityEngine
     ///   <para>Returns true if the x and y components of point is a point inside this rectangle. If allowInverse is present and true, the width and height of the Rect are allowed to take negative values (ie, the min value is greater than the max), and the test will still work.</para>
     /// </summary>
     /// <param name="point">Point to test.</param>
-    /// <param name="allowInverse">Does the test allow the Rect's width and height to be negative?</param>
     /// <returns>
     ///   <para>True if the point lies within the specified rectangle.</para>
     /// </returns>
@@ -359,7 +358,6 @@ namespace UnityEngine
     ///   <para>Returns true if the other rectangle overlaps this one. If allowInverse is present and true, the widths and heights of the Rects are allowed to take negative values (ie, the min value is greater than the max), and the test will still work.</para>
     /// </summary>
     /// <param name="other">Other rectangle to test overlapping with.</param>
-    /// <param name="allowInverse">Does the test allow the widths and heights of the Rects to be negative?</param>
     public bool Overlaps(Rect other)
     {
       return other.xMax > (double) xMin && other.xMin < (double) xMax && other.yMax > (double) yMin && other.yMin < (double) yMax;
@@ -458,7 +456,6 @@ label_5:
     /// <summary>
     ///   <para>Returns a nicely formatted string for this Rect.</para>
     /// </summary>
-    /// <param name="format"></param>
     public override string ToString()
     {
       return $"(x:{(object) x:F2}, y:{(object) y:F2}, width:{(object) width:F2}, height:{(object) height:F2})";
