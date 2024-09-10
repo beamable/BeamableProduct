@@ -5,11 +5,29 @@
         <OutputType Condition="'$(BeamProjectType)'=='storage'">Library</OutputType>
         <OutputType Condition="'$(BeamProjectType)'=='service'">Exe</OutputType>
     </PropertyGroup>
+
+    <!-- This imports customer specific csproj files in the .beamable/temp/localDev project -->
+    <Import Label="Load Beamable Local Developer Settings"
+            Condition="'$(BeamProjectType)'=='storage' OR '$(BeamProjectType)'=='service'"
+            Project="$(BeamableLocalDevProjectsGlob)"/>
     
     <!-- After the build completes, we should auto-generate client code to any linked projects -->
-    <Target Name="generate-client" AfterTargets="Build" Condition="$(GenerateClientCode)==true AND $(DOTNET_RUNNING_IN_CONTAINER)!=true">
+    <Target Name="generate-client" AfterTargets="Build" Condition="'$(BeamProjectType)'=='service' AND $(GenerateClientCode)==true AND $(DOTNET_RUNNING_IN_CONTAINER)!=true">
         <Message Text="Generating client files..." Importance="high" />
         <Exec Command="$(BeamableDotnetPath) $(BeamableTool) project generate-client $(OutDir)/$(AssemblyName).dll --output-links $(Beam_GenerateClient_Args)" EnvironmentVariables="BEAM_DOTNET_MSBUILD_PATH=$(BEAM_DOTNET_MSBUILD_PATH)"/>
     </Target>
+    
+    <Target Name="BeamableBuildAttrs" BeforeTargets="BeforeResGen" Condition="'$(BeamProjectType)'=='service'">
+        <Message Importance="high" Text="Bundling Beamable Properties..."/>
+        <PropertyGroup>
+            <PropertiesFile>$(IntermediateOutputPath)/beamableProps.txt</PropertiesFile>
+        </PropertyGroup>
+        <Delete Files="$(PropertiesFile)"/>
+        <WriteLinesToFile File="$(PropertiesFile)" Overwrite="false" Lines="%(BeamableSetting.Identity)=%(BeamableSetting.Value)__BEAM__SETTING__SPLIT__"/>
+        <ItemGroup>
+            <EmbeddedResource Include="$(PropertiesFile)" Type="Non-Resx" WithCulture="false" LogicalName="Beamable.properties"/>
+        </ItemGroup>
+    </Target>
+
 
 </Project>

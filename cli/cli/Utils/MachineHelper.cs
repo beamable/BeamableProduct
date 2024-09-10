@@ -8,8 +8,6 @@ namespace cli.Utils;
 
 public class MachineHelper
 {
-	public static string GetUniqueDeviceId() => ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine();
-
 	public static void OpenBrowser(string url)
 	{
 		try

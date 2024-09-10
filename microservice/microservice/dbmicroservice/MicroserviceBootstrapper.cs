@@ -43,7 +43,6 @@ using Core.Server.Common;
 using microservice;
 using microservice.dbmicroservice;
 using Microsoft.Extensions.DependencyInjection;
-using NetMQ;
 using Newtonsoft.Json;
 using Serilog;
 using Serilog.Core;
@@ -55,6 +54,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Reflection;
 using Constants = Beamable.Common.Constants;
 using Debug = UnityEngine.Debug;
@@ -74,6 +74,7 @@ namespace Beamable.Server
 	    public static IUsageApi EcsService;
 
 	    private static DebugLogSink _sink;
+	    private static Task _localDiscoveryBroadcast;
 
 	    private static DebugLogSink ConfigureLogging(IMicroserviceArgs args, MicroserviceAttribute attr)
         {
@@ -394,30 +395,44 @@ namespace Beamable.Server
 	        mongo.Init();
         }
 
-        public static void ConfigureDiscovery(IMicroserviceArgs args, MicroserviceAttribute attribute)
+        public static Task ConfigureDiscovery(IMicroserviceArgs args, MicroserviceAttribute attribute)
         {
 	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
-
 	        if (inDocker)
 	        {
-		        return;
+		        return Task.CompletedTask;
 	        }
-	        var beacon = new NetMQBeacon();
-	        var port = Constants.Features.Services.DISCOVERY_PORT;
-	        beacon.Configure(port);
 	        
 	        var msg = new ServiceDiscoveryEntry
 	        {
+		        processId = Environment.ProcessId,
 		        cid = args.CustomerID,
 		        pid = args.ProjectName,
 		        prefix = args.NamePrefix,
 		        serviceName = attribute.MicroserviceName,
 		        healthPort = args.HealthPort,
 		        executionVersion = BeamAssemblyVersionUtil.GetVersion<ServiceDiscoveryEntry>(),
-		        serviceType = "service"
+		        serviceType = "service" 
 	        };
 	        var msgJson = JsonConvert.SerializeObject(msg, UnitySerializationSettings.Instance);
-	        beacon.Publish(msgJson, TimeSpan.FromMilliseconds(Constants.Features.Services.DISCOVERY_BROADCAST_PERIOD_MS));
+	        var msgBytes = Encoding.UTF8.GetBytes(msgJson);
+	        var broadcastSocket = new UdpClient();
+	        broadcastSocket.Connect(new IPEndPoint(IPAddress.Broadcast, Constants.Features.Services.DISCOVERY_PORT));
+	        return Task.Run(function: async () =>
+	        {
+		        try
+		        {
+			        do
+			        {
+				        await broadcastSocket.SendAsync(msgBytes, msgBytes.Length);
+				        await Task.Delay(Constants.Features.Services.DISCOVERY_BROADCAST_PERIOD_MS);
+			        } while (true);
+		        }
+		        catch (Exception e)
+		        {
+			        Log.Error(e, e.Message);
+		        }
+	        });
         }
 
         public static async Task<string> ConfigureCid(IMicroserviceArgs args)
@@ -519,11 +534,14 @@ namespace Beamable.Server
         /// <exception cref="Exception">Exception raised in case the generate-env command fails.</exception>
         public static async Task Prepare<TMicroservice>(string customArgs = null) where TMicroservice : Microservice
         {
+	        
 	        var attribute = typeof(TMicroservice).GetCustomAttribute<MicroserviceAttribute>();
 	        var envArgs = new EnvironmentArgs();
 
 	        _sink = ConfigureLogging(envArgs, attribute);
-
+	        
+	        Log.Information($"Starting Prepare");
+	        
 	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
 	        if (inDocker) return;
 
@@ -546,16 +564,20 @@ namespace Beamable.Server
 	        process.StartInfo.CreateNoWindow = true;
 	        process.StartInfo.UseShellExecute = false;
 	        process.EnableRaisingEvents = true;
-
+	        
+	        var result = "";
+	        var sublogs = "";
 	        //TODO: These events are still not working for some reason
 	        process.ErrorDataReceived += (sender, args) =>
 	        {
-				Log.Information($"Generate env process (error): [{args.Data}]");
+				Log.Verbose($"Generate env process (error): [{args.Data}]");
+				if(!string.IsNullOrEmpty(args.Data)) sublogs += args.Data;
 	        };
 
 	        process.OutputDataReceived += (sender, args) =>
 	        {
-		        Log.Information($"Generate env process (log): [{args.Data}]");
+		        Log.Verbose($"Generate env process (log): [{args.Data}]");
+		        if(!string.IsNullOrEmpty(args.Data)) result += args.Data;
 	        };
 
 
@@ -569,16 +591,29 @@ namespace Beamable.Server
 	        {
 		        process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = dotnetPath;
 	        }
-
+	        Log.Information($"Running command {fileName} {arguments}");
 	        process.Start();
+	        process.BeginOutputReadLine();
+	        process.BeginErrorReadLine();
+
+	        var exitSignal = new Promise();
+	        process.Exited += (sender, args) =>
+	        {
+		        exitSignal.CompleteSuccess();
+	        };
+	        
 	        await process.WaitForExitAsync();
-			
-	        var result = await process.StandardOutput.ReadToEndAsync();
+	        // Might be necessary due to stupid .NET thing that causes the Out/Err callbacks to trigger a bit after the process closes.
+	        await exitSignal;
+	        await Task.Delay(100);
+
+	     
 	        if (process.ExitCode != 0)
 	        {
-		        var sublogs = await process.StandardError.ReadToEndAsync();
+		        Log.Error($"generate-env output:\n{sublogs}");
 		        throw new Exception($"Failed to generate-env message=[{result}] sub-logs=[{sublogs}]");
 	        }
+	        Log.Information($"environment:\n{result}");
 	        
 	        var parsedOutput = JsonConvert.DeserializeObject<ReportDataPoint<GenerateEnvFileOutput>>(result);
 	        if (parsedOutput.type != "stream")
@@ -604,7 +639,7 @@ namespace Beamable.Server
 
 	        ConfigureUncaughtExceptions();
 	        ConfigureUnhandledError();
-	        ConfigureDiscovery(envArgs, attribute);
+	        _localDiscoveryBroadcast = ConfigureDiscovery(envArgs, attribute);
 	        await ConfigureUsageService(envArgs);
 	        ReflectionCache = ConfigureReflectionCache();
 	        

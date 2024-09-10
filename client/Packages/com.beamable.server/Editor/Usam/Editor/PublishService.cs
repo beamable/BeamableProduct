@@ -1,11 +1,9 @@
 using Beamable.Common;
 using Beamable.Common.BeamCli;
+using Beamable.Common.BeamCli.Contracts;
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.Microservice.UI.Components;
 using System;
-using System.IO;
-using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace Beamable.Server.Editor.Usam
 {
@@ -83,7 +81,7 @@ namespace Beamable.Server.Editor.Usam
 					else
 					{
 						OnProgressInfoUpdated?.Invoke($"[{beamoId}] Uploading image",
-													  ServicePublishState.InProgress);
+						                              ServicePublishState.InProgress);
 						OnDeployStateProgress?.Invoke(beamoId, ServicePublishState.InProgress);
 					}
 				}
@@ -92,9 +90,12 @@ namespace Beamable.Server.Editor.Usam
 					OnDeployStateProgress?.Invoke(beamoId, ServicePublishState.Unpublished);
 				}
 
-			}).OnLogsServiceDeployLogResult((cb) =>
+			});
+			_command.Command.On<CliLogMessage>("logs", (cb) =>
 			{
-				OnDeployLogMessage?.Invoke(cb.data.Level, cb.data.Message, cb.data.TimeStamp);
+				DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+				dateTime = dateTime.AddMilliseconds( cb.data.timestamp ).ToLocalTime();
+				OnDeployLogMessage?.Invoke(cb.data.logLevel, cb.data.message, dateTime.ToString("HH:mm:ss"));
 			});
 			await _command.Run();
 		}

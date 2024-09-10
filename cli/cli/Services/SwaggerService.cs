@@ -1,7 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
 using cli.Unreal;
-using cli.Utils;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Exceptions;
@@ -9,10 +8,7 @@ using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
 using Microsoft.OpenApi.Writers;
-using Newtonsoft.Json;
 using Serilog;
-using SharpYaml.Tokens;
-using System.Collections;
 using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -26,7 +22,7 @@ public class SwaggerService
 	private readonly List<ISourceGenerator> _generators;
 
 	// TODO: make a PLAT ticket to give us back all openAPI spec info
-	public static readonly BeamableApiDescriptor[] Apis = new BeamableApiDescriptor[]
+	public static readonly BeamableApiDescriptor[] APIS = new BeamableApiDescriptor[]
 	{
 		// the proto-actor stack!
 		BeamableApis.ProtoActor(),
@@ -98,7 +94,7 @@ public class SwaggerService
 			OrderedSchemas = ExtractAllSchemas(allDocuments, resolutionStrategy),
 			ReplacementTypes = new Dictionary<OpenApiReferenceId, ReplacementTypeInfo>(),
 		};
-
+		
 		// TODO: FILTER we shouldn't really be using _all_ the given generators, we should be selecting between one based on an input argument.
 		var files = new List<GeneratedFileDescriptor>();
 		foreach (var generator in _generators.Where(g => string.IsNullOrEmpty(targetEngine) || g.GetType().Name.Contains(targetEngine, StringComparison.OrdinalIgnoreCase)))
@@ -419,8 +415,97 @@ public class SwaggerService
 
 	public async Task<IEnumerable<OpenApiDocumentResult>> DownloadBeamableApis(BeamableApiFilter filter)
 	{
-		var selected = Apis.Where(filter.Accepts).ToList();
+		var selected = APIS.Where(filter.Accepts).ToList();
 		return await DownloadOpenApis(_downloader, selected).ToPromise(); //.ShowLoading("fetching swagger docs...");
+	}
+
+	public OpenApiDocument GetCombinedDocument(List<NamedOpenApiSchema> apis)
+	{
+		var combinedDocument = new OpenApiDocument(apis.FirstOrDefault()!.Document);
+		foreach (var documentResult in apis.Skip(1))
+		{
+			foreach (var path in documentResult.Document.Paths)
+			{
+				if(combinedDocument.Paths.ContainsKey(path.Key))
+					continue;
+				combinedDocument.Paths.Add(path.Key, path.Value);
+			}
+
+			foreach (var component in documentResult.Document.Components.Schemas)
+			{
+				if(combinedDocument.Components.Schemas.TryGetValue(component.Value.Reference.Id, out var schema))
+				{
+					if(NamedOpenApiSchema.AreEqual(schema, component.Value, out _))
+						continue;
+				}
+				combinedDocument.Components.Schemas.Add(component.Value.Reference.Id, component.Value);
+			}
+
+			foreach (var component in documentResult.Document.Components.RequestBodies)
+			{
+				combinedDocument.Components.RequestBodies.Add(component);
+			}
+
+			foreach (var component in documentResult.Document.Components.Parameters)
+			{
+				combinedDocument.Components.Parameters.Add(component);
+			}
+
+			foreach (var component in documentResult.Document.Components.Headers)
+			{
+				combinedDocument.Components.Headers.Add(component);
+			}
+
+			foreach (var component in documentResult.Document.Components.Callbacks)
+			{
+				combinedDocument.Components.Callbacks.Add(component);
+			}
+
+			foreach (var component in documentResult.Document.Components.Examples)
+			{
+				combinedDocument.Components.Examples.Add(component);
+			}
+
+			foreach (var component in documentResult.Document.Components.Responses)
+			{
+				combinedDocument.Components.Responses.Add(component);
+			}
+
+			foreach (var component in documentResult.Document.Components.Links)
+			{
+				combinedDocument.Components.Links.Add(component);
+			}
+
+			foreach (var component in documentResult.Document.Components.SecuritySchemes)
+			{
+				if (combinedDocument.Components.SecuritySchemes.TryGetValue(component.Key, out OpenApiSecurityScheme scheme))
+				{
+					if (NamedOpenApiSchema.AreEqual(component.Value, scheme))
+						continue;
+				}
+				combinedDocument.Components.SecuritySchemes.Add(component);
+			}
+
+			foreach (var component in documentResult.Document.Components.Extensions)
+			{
+				combinedDocument.Components.Extensions.Add(component);
+			}
+
+			foreach (var component in documentResult.Document.Extensions)
+			{
+				combinedDocument.Extensions.Add(component);
+			}
+
+			if (documentResult.Document.Annotations != null)
+			{
+				foreach (var component in documentResult.Document.Annotations)
+				{
+					combinedDocument.Annotations.Add(component);
+				}
+			}
+		}
+
+		return combinedDocument;
 	}
 
 	/// <summary>
@@ -488,6 +573,7 @@ public class SwaggerService
 			AddTitlesToAllSchemasIfNone,
 			RewriteObjectEnumsAsStrings,
 			DetectNonSelfReferentialTypes,
+			FixBasicCloudsavingDataMetadataGet,
 			Reserailize
 		};
 
@@ -916,6 +1002,16 @@ public class SwaggerService
 		return output;
 	}
 
+	private static List<OpenApiDocumentResult> FixBasicCloudsavingDataMetadataGet(OpenApiDocumentResult swagger)
+	{
+		// this is a bit broken endpoint, it is a GET request with support for body
+		if (swagger.Document.Paths.ContainsKey("/basic/cloudsaving/data/metadata"))
+		{
+			swagger.Document.Paths.Remove("/basic/cloudsaving/data/metadata");
+		}
+		return new List<OpenApiDocumentResult> { swagger };
+	}
+
 	private static List<OpenApiDocumentResult> DetectNonSelfReferentialTypes(OpenApiDocumentResult swagger)
 	{
 		foreach ((string key, OpenApiSchema value) in swagger.Document.Components.Schemas)
@@ -1055,11 +1151,11 @@ public class BeamableApiFilter : DefaultQuery
 	}
 
 	protected static readonly Dictionary<string, DefaultQueryParser.ApplyParseRule<BeamableApiFilter>> StandardRules = new Dictionary<string, DefaultQueryParser.ApplyParseRule<BeamableApiFilter>>
-	{
-		{ "id", DefaultQueryParser.ApplyIdParse }, { "t", ApplyApiTypeRule },
+		{
+			{ "id", DefaultQueryParser.ApplyIdParse }, { "t", ApplyApiTypeRule },
 
-		// {"tag", ApplyTagParse},
-	};
+			// {"tag", ApplyTagParse},
+		};
 }
 
 public static class BeamableApis
@@ -1422,6 +1518,72 @@ public class NamedOpenApiSchema
 
 
 		return differences.Count == 0;
+	}
+
+	public static bool AreEqual(OpenApiSecurityScheme a, OpenApiSecurityScheme b)
+	{
+		if (a == null && b == null) return true;
+		if (a == null || b == null) return false;
+		if (a == b) return true;
+		
+
+		// type must match.
+		if (!string.Equals(a.Type, b.Type))
+		{
+			return false;
+		}
+		if (!string.Equals(a.Flows, b.Flows))
+		{
+			return false;
+		}
+		if (!string.Equals(a.OpenIdConnectUrl, b.OpenIdConnectUrl))
+		{
+			return false;
+		}
+		if (!a.In.Equals(b.In))
+		{
+			return false;
+		}
+		if (a.Scheme != b.Scheme)
+		{
+			return false;
+		}
+
+		if (!a.Extensions.SequenceEqual(b.Extensions))
+		{
+			return false;
+		}
+
+		// if this is a reference, it must reference the same thing.
+		if (a.Reference != null && b.Reference != null)
+		{
+			// the reference id must be the same
+			if (!string.Equals(a.Reference.Id, b.Reference.Id))
+			{
+				return false;
+			}
+
+
+			if (!string.Equals(a.Reference.HostDocument?.Info?.Title, b.Reference.HostDocument?.Info?.Title))
+			{
+				var aSchema = a.Reference.HostDocument.Components.Schemas[a.Reference.Id];
+				var bSchema = a.Reference.HostDocument.Components.Schemas[a.Reference.Id];
+				if (!NamedOpenApiSchema.AreEqual(aSchema, bSchema, out _))
+				{
+					return false;
+				}
+			}
+		}
+		else if (a.Reference == null && b.Reference != null)
+		{
+			return false;
+		}
+		else if (a.Reference != null && b.Reference == null)
+		{
+			return false;
+		}
+
+		return true;
 	}
 }
 

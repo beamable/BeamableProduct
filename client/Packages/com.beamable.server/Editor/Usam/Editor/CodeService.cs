@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -70,6 +71,17 @@ namespace Beamable.Server.Editor.Usam
 		{
 			if (EditorApplication.isPlayingOrWillChangePlaymode)
 				return;
+
+			await BeamEditorContext.Default.OnReady;
+
+			while (BeamEditorContext.Default.Requester == null || BeamEditorContext.Default.Requester.Token == null)
+			{
+				await Task.Delay(500);
+			}
+
+			//Wait for the CLI to be initialized
+			var cli = BeamEditorContext.Default.ServiceScope.GetService<BeamCli>();
+			await cli.OnReady;
 			
 			UsamLogger.ResetLogTimer();
 			
@@ -600,7 +612,7 @@ namespace Beamable.Server.Editor.Usam
 
 		public Promise RunStandaloneMicroservice(string id)
 		{
-			var runCommand = _cli.ProjectRun(new ProjectRunArgs() {ids = new[] {id}, watch = true}).OnError(ex =>
+			var runCommand = _cli.ProjectRun(new ProjectRunArgs() {ids = new[] {id}, watch = false, detach = true}).OnError(ex =>
 			{
 				Debug.LogError(ex.data.message);
 			});
@@ -931,7 +943,6 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
-			Promise errorPromise = new Promise();
 			string errorMessage = string.Empty;
 
 			var args = new ProjectNewServiceArgs()
@@ -944,7 +955,6 @@ namespace Beamable.Server.Editor.Usam
 			var command = _cli.ProjectNewService(args).OnError((cb) =>
 			{
 				errorMessage = $"Error creating service: {serviceName}. Message=[{cb.data.message}] Stacktrace=[{cb.data.stackTrace}]";
-				errorPromise.CompleteSuccess();
 			});
 			await command.Run();
 
@@ -952,11 +962,10 @@ namespace Beamable.Server.Editor.Usam
 
 			var definition = ServiceDefinitions.FirstOrDefault(def => def.BeamoId == serviceName);
 
-			if (definition == null)
+			if (definition == null || !string.IsNullOrEmpty(errorMessage))
 			{
-				await errorPromise;
 				errorCallback?.Invoke();
-				throw new Exception(errorMessage);
+				throw new Exception(errorMessage ?? "no error message, but definition was null somehow");
 			}
 
 			if (assemblyReferences != null)

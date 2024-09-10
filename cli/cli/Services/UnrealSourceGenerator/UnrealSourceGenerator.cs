@@ -28,6 +28,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	public static readonly UnrealType UNREAL_FLOAT = new("float");
 	public static readonly UnrealType UNREAL_DOUBLE = new("double");
 	public static readonly UnrealType UNREAL_GUID = new("FGuid");
+	public static readonly UnrealType UNREAL_JSON = new("TSharedPtr<FJsonObject>");
 	public static readonly UnrealType UNREAL_OPTIONAL = new("FOptional");
 	public static readonly UnrealType UNREAL_OPTIONAL_STRING = new($"{UNREAL_OPTIONAL}String");
 	public static readonly UnrealType UNREAL_OPTIONAL_BYTE = new($"{UNREAL_OPTIONAL}Int8");
@@ -785,6 +786,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 				};
 				output.CsvResponseTypes.Add(csvResponseType);
 			}
+			else if (schemaUnrealType.IsUnrealJson())
+			{
+				// We skip the generation for this schema if we bump into a schema that maps to UNREAL_JSON.
+			}
 			else
 			{
 				// Prepare the data for injection in the template string.
@@ -1215,7 +1220,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 											serviceTitle.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
 											endpointData.Security[0].Any(kvp => kvp.Key.Reference.Id == "user");
 					unrealEndpoint.EndpointName = endpointPath;
-					unrealEndpoint.EndpointRoute = isMsGen ? $"micro_{openApiDocument.Info.Title}{endpointPath}" : endpointPath;
+					unrealEndpoint.EndpointRoute = isMsGen ? $"_micro{openApiDocument.Info.Title}{endpointPath}" : endpointPath;
 					unrealEndpoint.EndpointVerb = operationType switch
 					{
 						OperationType.Get => "Get",
@@ -1963,6 +1968,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		public bool IsAnySemanticType() => UNREAL_ALL_SEMTYPES.Contains(this);
 		public bool ContainsAnySemanticType() => UNREAL_ALL_SEMTYPES_NAMESPACED_NAMES.Any(AsStr.Contains);
 
+		public bool IsUnrealJson() => AsStr.StartsWith(UNREAL_JSON);
+		
 		#endregion
 	}
 
@@ -2006,6 +2013,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		var isOptional = !flags.HasFlag(UnrealTypeGetFlags.ReturnUnderlyingOptionalType) && context.FieldRequiredMap.TryGetValue(fieldDeclarationHandle, out var isRequired) && !isRequired;
 		var isEnum = schema.GetEffective(parentDoc).Enum.Count > 0;
 		var isCsvRow = IsCsvRowSchema(parentDoc, schema);
+		var isArbitraryJsonObject = IsArbitraryJsonBlob(parentDoc, schema);
 
 		// We warn of self-referential types as these are interesting schemas that are more likely to create problems.
 		var isSelfReferential = IsSelfReferentialSchema(parentDoc, schema);
@@ -2052,6 +2060,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			case (_, _, _, _) when string.Equals(semType, "StatsType", StringComparison.InvariantCultureIgnoreCase):
 				return new(nonOverridenType = isOptional ? UNREAL_OPTIONAL_U_SEMTYPE_STATSTYPE : UNREAL_U_SEMTYPE_STATSTYPE);
 
+			case (_, _, _, _) when isArbitraryJsonObject:
+				return new UnrealType(nonOverridenType = UNREAL_JSON);
+			
 			// Handle replacement types (types that we replace by hand-crafted types inside the SDK)
 			case var (_, _, referenceId, _) when !string.IsNullOrEmpty(referenceId) && context.ReplacementTypes.TryGetValue(referenceId, out var replacementTypeInfo):
 			{
@@ -2346,6 +2357,12 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	private static bool IsCsvRowSchema(OpenApiDocument parentDoc, OpenApiSchema schema) => schema.GetEffective(parentDoc).Extensions.ContainsKey("x-beamable-primary-key");
 
 	/// <summary>
+	/// Checks if the given schema should be interpreted as a FJsonObject type in UE.
+	/// These types are not Blueprint compatible.
+	/// </summary>
+	private static bool IsArbitraryJsonBlob(OpenApiDocument parentDoc, OpenApiSchema schema) => schema.GetEffective(parentDoc).Extensions.ContainsKey("x-beamable-json-object");
+
+	/// <summary>
 	/// Checks if the given schema has a known semantic type.
 	/// </summary>
 	private static bool IsSemanticTypeSchema(OpenApiSchema schema) => schema.Extensions.TryGetValue(Constants.EXTENSION_BEAMABLE_SEMANTIC_TYPE, out var ext) && ext is OpenApiString;
@@ -2426,6 +2443,8 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			return UNREAL_STRING;
 		if (namespacedWrappedType == "Guid")
 			return UNREAL_GUID;
+		if (namespacedWrappedType == "JsonObject")
+			return UNREAL_JSON;
 
 		// If (SomethingArrayey | SomethingMappy | SomethingOptional) aren't any of the raw cases above, we just prepend an 'U' and '*' to it.
 		return new($"U{namespacedWrappedType}*");
@@ -2471,6 +2490,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 			if (unrealType.IsStatsType())
 				return @"#include ""BeamBackend/SemanticTypes/BeamStatsType.h""";
 
+			if (unrealType.IsUnrealJson())
+				return @"#include ""Dom/JsonObject.h""";
+			
 			if (context.ReplacementTypesIncludes.TryGetValue(unrealType, out var replacementTypeInclude))
 				return replacementTypeInclude;
 		}

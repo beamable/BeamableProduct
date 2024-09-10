@@ -37,11 +37,13 @@ public partial class BeamoLocalSystem
 		await Task.WhenAll(localRuntime.ExistingLocalServiceInstances.Select(async sd => await StopContainer(sd.ContainerId)));
 
 		cancellationToken.ThrowIfCancellationRequested();
+		var serviceDefinitionsToDeploy = GetServiceDefinitionsThatCanBeDeployed(localManifest);
+		var idsToDeployLocal = serviceDefinitionsToDeploy.Select(sd => sd.BeamoId);
 
 		// Then, let's try to deploy locally first.
 		try
 		{
-			await DeployToLocal(localSystem, null, true, buildPullImageProgress, onServiceDeployCompleted, cancellationToken);
+			await DeployToLocal(localSystem, idsToDeployLocal.ToArray(), true, buildPullImageProgress, onServiceDeployCompleted, cancellationToken);
 		}
 		// If we fail, log out a message and the exception that caused the failure
 		catch (Exception e)
@@ -51,7 +53,7 @@ public partial class BeamoLocalSystem
 		}
 
 		var federatedComponentByServiceName = new Dictionary<string, List<string>>();
-		var serviceDefinitionsToDeploy = GetServiceDefinitionsThatCanBeDeployed(localManifest);
+
 
 		var routingKeysMap =
 			ServiceRoutingStrategyExtensions.GetRoutingKeyMap(serviceDefinitionsToDeploy.Select(sd => sd.BeamoId));
@@ -122,7 +124,7 @@ public partial class BeamoLocalSystem
 
 	private async Promise<string> RetryRequest(string containerName, string serviceName, string routingHeader)
 	{
-		var url = $"/basic/{_beamableRequester.Cid}.{_beamableRequester.Pid}.{serviceName}/admin/Metadata";
+		var url = $"/basic/{_beamableRequester.Cid}.{_beamableRequester.Pid}.micro_{serviceName}/admin/Metadata";
 		var requester = (CliRequester)_beamableRequester;
 
 		var isRunning = false;

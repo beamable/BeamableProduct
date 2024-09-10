@@ -24,6 +24,15 @@ public interface IResultProvider
 	public IDataReporterService Reporter { get; set; }
 }
 
+/// <summary>
+/// when a command implements this interface, the CLI app framework will not attempt to initialize beamoLocal.
+/// If this happens, the command SHOULD NOT use _ANYTHING_ in the beamoLocalManifest; otherwise nulls ahoy.
+/// </summary>
+public interface ISkipManifest
+{
+	
+}
+
 public interface IResultSteam<TChannel, TData> : IResultProvider
 	where TChannel : IResultChannel, new()
 {

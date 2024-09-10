@@ -4,8 +4,11 @@
  */
 
 using Beamable.Common;
+using Beamable.Common.Api;
+using Beamable.Server.Common;
 using cli.Utils;
 using Docker.DotNet.Models;
+using Newtonsoft.Json;
 using Serilog;
 using System.Text.RegularExpressions;
 
@@ -18,7 +21,7 @@ public partial class BeamoLocalSystem
 	private const string HTTM_MICROSERVICE_CONTAINER_PORT = "6565";
 	
 	public async Task<List<DockerEnvironmentVariable>> GetLocalConnectionStrings(BeamoLocalManifest localManifest,
-		string host = "gateway.docker.internal")
+		string host = "host.docker.internal")
 	{
 		var output = new List<DockerEnvironmentVariable>();
 		foreach (var local in localManifest.EmbeddedMongoDbLocalProtocols)
@@ -68,7 +71,7 @@ public partial class BeamoLocalSystem
 	}
 
 	public async Task<DockerEnvironmentVariable> GetLocalConnectionString(BeamoLocalManifest localManifest,
-		string storageName, string host = "gateway.docker.internal")
+		string storageName, string host = "host.docker.internal")
 	{
 		if (!localManifest.EmbeddedMongoDbLocalProtocols.TryGetValue(storageName, out var localStorage))
 		{
@@ -130,13 +133,13 @@ public partial class BeamoLocalSystem
 				Value = $"{_ctx.Host.Replace("http://", "wss://").Replace("https://", "wss://")}/socket"
 			},
 			new() { VariableName = ENV_LOG_LEVEL, Value = _ctx.LogLevel.ToString() },
-			new() { VariableName = ENV_NAME_PREFIX, Value = MachineHelper.GetUniqueDeviceId() },
+			new() { VariableName = ENV_NAME_PREFIX, Value = ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine() },
 			new() { VariableName = ENV_WATCH_TOKEN, Value = shouldPrepareWatch.ToString() },
 			new() { VariableName = ENV_INSTANCE_COUNT, Value = localProtocol.InstanceCount.ToString() },
 		};
 		Log.Information("Building Env Vars.. {host} {prefix} {cid} {pid}",
 			(object)$"{_ctx.Host.Replace("http://", "wss://").Replace("https://", "wss://")}/socket",
-			(object)MachineHelper.GetUniqueDeviceId(),
+			(object)ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine(),
 			(object)_ctx.Cid, (object)_ctx.Pid);
 
 
@@ -223,6 +226,10 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 	/// </summary>
 	public List<UnityAssemblyReferenceData> UnityAssemblyDefinitionProjectReferences = new List<UnityAssemblyReferenceData>();
 
+	[System.Text.Json.Serialization.JsonIgnore]
+	[JsonIgnore]
+	public CsharpProjectMetadata Metadata;
+	public BuiltSettings Settings => Metadata.beamableSettings;
 
 	public bool VerifyCanBeBuiltLocally(ConfigService configService)
 	{

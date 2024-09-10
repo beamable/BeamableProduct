@@ -31,6 +31,13 @@ namespace Beamable.Editor.BeamCli.Commands
 			defaultBeamArgs = ConstructDefaultArgs();
 		}
 
+		public IBeamCommand CreateCustom(string args)
+		{
+			var command = _factory.Create();
+			command.SetCommand("beam " + defaultBeamArgs.Serialize() + " " + args);
+			return command;
+		}
+
 		public BeamArgs ConstructDefaultArgs()
 		{
 			string cid = null;
@@ -51,11 +58,13 @@ namespace Beamable.Editor.BeamCli.Commands
 				pid = pid,
 				host = BeamableEnvironment.ApiUrl,
 				refreshToken = _requester?.AccessToken?.RefreshToken,
-				log = "Information",
+				log = "Verbose",
 				skipStandaloneValidation = true,
 				dotnetPath = Path.GetFullPath(DotnetUtil.DotnetPath),
 				quiet = true,
-				raw = true
+				noLogFile = true,
+				raw = true,
+				emitLogStreams = true
 			};
 			return beamArgs;
 		}
@@ -159,7 +168,7 @@ namespace Beamable.Editor.BeamCli
 			}
 		}
 
-		private Process _process;
+		public Process process;
 		protected virtual bool CaptureStandardBuffers => true;
 		public bool AutoLogErrors { get; set; } = false;
 		private TaskCompletionSource<int> _status;
@@ -201,7 +210,20 @@ namespace Beamable.Editor.BeamCli
 
 		public void Cancel()
 		{
-			throw new NotImplementedException();
+			try
+			{
+				if (process.HasExited)
+				{
+					Debug.Log("Already exited.");
+					return;
+				}
+
+				Debug.Log("Killing beam process, " + _command);
+				process.Kill();
+			}
+			catch
+			{
+			}
 		}
 
 		public IBeamCommand On<T>(string type, Action<ReportDataPoint<T>> cb)
@@ -331,25 +353,25 @@ namespace Beamable.Editor.BeamCli
 
 			
 			
-			using (_process = new System.Diagnostics.Process())
+			using (process = new System.Diagnostics.Process())
 			{
-				_process.StartInfo.FileName = DotnetUtil.DotnetPath;
-				_process.StartInfo.Arguments = _command;
+				process.StartInfo.FileName = DotnetUtil.DotnetPath;
+				process.StartInfo.Arguments = _command;
 				// Configure the process using the StartInfo properties.
-				_process.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal;
-				_process.EnableRaisingEvents = true;
-				_process.StartInfo.RedirectStandardInput = true;
-				_process.StartInfo.RedirectStandardOutput = CaptureStandardBuffers;
-				_process.StartInfo.RedirectStandardError = CaptureStandardBuffers;
-				_process.StartInfo.CreateNoWindow = true;
-				_process.StartInfo.UseShellExecute = false;
+				process.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal;
+				process.EnableRaisingEvents = true;
+				process.StartInfo.RedirectStandardInput = true;
+				process.StartInfo.RedirectStandardOutput = CaptureStandardBuffers;
+				process.StartInfo.RedirectStandardError = CaptureStandardBuffers;
+				process.StartInfo.CreateNoWindow = true;
+				process.StartInfo.UseShellExecute = false;
 
 				// prevent the beam CLI from saving any log information to file.
-				_process.StartInfo.Environment.Add("BEAM_CLI_NO_FILE_LOG", "1");
+				process.StartInfo.Environment.Add("BEAM_CLI_NO_FILE_LOG", "1");
 
-				_process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_PATH] = GetCommandPrefix();
-				_process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = Path.GetFullPath(DotnetUtil.DotnetPath);
-				_process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_MSBUILD_PATH] =
+				process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_PATH] = GetCommandPrefix();
+				process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = Path.GetFullPath(DotnetUtil.DotnetPath);
+				process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_MSBUILD_PATH] =
 					Path.GetFullPath(DotnetUtil.DotnetMSBuildPath);
 				
 				_status = new TaskCompletionSource<int>();
@@ -369,14 +391,14 @@ namespace Beamable.Editor.BeamCli
 						{
 							if (_exitCode >= 0) return;
 							// there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
-							_exitCode = _process.ExitCode;
+							_exitCode = process.ExitCode;
 							_status.TrySetResult(0);
 						});
 
 					});
 				};
 
-				_process.Exited += eh;
+				process.Exited += eh;
 
 				var earlyExitTask = new TaskCompletionSource<int>();
 				OnTerminate(_ =>
@@ -389,9 +411,9 @@ namespace Beamable.Editor.BeamCli
 				var pid = 0;
 				try
 				{
-					_process.EnableRaisingEvents = true;
+					process.EnableRaisingEvents = true;
 
-					_process.OutputDataReceived += (sender, args) =>
+					process.OutputDataReceived += (sender, args) =>
 					{
 						if (_dispatcher.IsForceStopped)
 						{
@@ -416,7 +438,7 @@ namespace Beamable.Editor.BeamCli
 							}
 						});
 					};
-					_process.ErrorDataReceived += (sender, args) =>
+					process.ErrorDataReceived += (sender, args) =>
 					{
 						if (_dispatcher.IsForceStopped)
 						{
@@ -443,12 +465,12 @@ namespace Beamable.Editor.BeamCli
 					};
 
 					CliLogger.Log("starting", _command);
-					_process.Start();
-					pid = _process.Id;
+					process.Start();
+					pid = process.Id;
 					_collection?.Add(pid);
 					// _started = true;
-					_process.BeginOutputReadLine();
-					_process.BeginErrorReadLine();
+					process.BeginOutputReadLine();
+					process.BeginErrorReadLine();
 
 					await Task.WhenAny(_status.Task, earlyExitTask.Task);
 
@@ -475,7 +497,7 @@ namespace Beamable.Editor.BeamCli
 				}
 				finally
 				{
-					_process.Exited -= eh;
+					process.Exited -= eh;
 					_collection?.Remove(pid);
 				}
 			}
@@ -485,14 +507,14 @@ namespace Beamable.Editor.BeamCli
 
 		private void KillProc()
 		{
-			if (_process.HasExited)
+			if (process.HasExited)
 			{
 				return;
 			}
 
 			try
 			{
-				_process.Kill();
+				process.Kill();
 			}
 			catch
 			{

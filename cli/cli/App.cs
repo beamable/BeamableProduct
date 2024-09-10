@@ -21,6 +21,7 @@ using cli.Portal;
 using cli.Services;
 using cli.Services.Content;
 using cli.Services.HttpServer;
+using cli.TempCommands;
 using cli.TokenCommands;
 using cli.UnityCommands;
 using cli.Unreal;
@@ -28,10 +29,8 @@ using cli.UnrealCommands;
 using cli.Utils;
 using cli.Version;
 using CliWrap;
-using CommandLine.Text;
 using Errata;
 using Microsoft.Build.Locator;
-using Microsoft.CodeAnalysis.Sarif;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Serilog;
@@ -39,13 +38,14 @@ using Serilog.Core;
 using Serilog.Enrichers.Sensitive;
 using Serilog.Events;
 using Spectre.Console;
-using Spectre.Console.Rendering;
 using System.CommandLine;
+using System.CommandLine.Binding;
 using System.CommandLine.Builder;
 using System.CommandLine.Help;
 using System.CommandLine.Invocation;
 using System.CommandLine.IO;
 using System.CommandLine.Parsing;
+using System.Diagnostics;
 using System.Reflection;
 using Command = System.CommandLine.Command;
 
@@ -86,18 +86,10 @@ public class App
 	{
 		
 		var appCtx = provider.GetService<IAppContext>();
-		try
-		{
-			if (appCtx.ShouldUseLogFile)
-			{
-				File.Delete(appCtx.TempLogFilePath);
-			}
-		}
-		catch
-		{
-			// if we cannot delete the temp file, then the worst outcome is that we are appending new data to it.
-		}
-
+		var config = provider.GetService<ConfigService>();
+		var binding = provider.GetService<BindingContext>();
+		config.SetupBasePath(binding);
+		
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
 		configureLogger ??= config =>
 		{
@@ -118,9 +110,27 @@ public class App
 					.WriteTo.BeamAnsi("{Message:lj}{NewLine}{Exception}")
 					.MinimumLevel.ControlledBy(app.LogLevel)
 			);
-			if (appCtx.ShouldUseLogFile)
+			if (appCtx.ShouldUseLogFile && appCtx.TryGetTempLogFilePath(out var logPath))
 			{
-				baseConfig.WriteTo.File(appCtx.TempLogFilePath, LogEventLevel.Verbose);
+				var path = Path.GetDirectoryName(logPath);
+				if (Directory.Exists(path))
+				{
+					var existingLogFiles = Directory.GetFiles(path);
+					// this is magic number... I guess its a rough estimate of a number of commands per day?
+					const int MaxNumberOfLogFilesBeforeAutoClean = 250;
+					if (existingLogFiles.Length > MaxNumberOfLogFilesBeforeAutoClean)
+					{
+						// clean up everything older than a day
+						ClearTempLogFilesCommand.CleanLogs(TimeSpan.FromDays(1), existingLogFiles);
+					}
+				}
+				baseConfig.WriteTo.File(logPath, LogEventLevel.Verbose);
+			}
+
+			if (appCtx.ShouldEmitLogs)
+			{
+				baseConfig.WriteTo.Sink(new ReporterSink(provider))
+					.MinimumLevel.ControlledBy(app.LogLevel);
 			}
 
 			return baseConfig.CreateLogger();
@@ -176,7 +186,7 @@ public class App
 		_serviceConfigurator?.Invoke(services);
 	}
 
-	private Action<IDependencyProvider> setLogger = _ =>
+	private Action<IDependencyProvider> _setLogger = _ =>
 	{
 		// no-op
 	};
@@ -196,9 +206,23 @@ public class App
 
 		if (overwriteLogger)
 		{
-			setLogger = (provider) =>
+			_setLogger = (provider) =>
 			{
 				ConfigureLogging(this, provider, configureLogger);
+				
+				TaskLocalLog.Instance.globalLogger = Log.Logger;
+				Log.Logger = TaskLocalLog.Instance;
+			};
+		}
+		else
+		{
+			_setLogger = (provider) =>
+			{
+				var appCtx = provider.GetService<IAppContext>();
+				if (appCtx.ShouldEmitLogs)
+				{
+					TaskLocalLog.Instance.CreateContext(provider);
+				}
 			};
 		}
 
@@ -254,6 +278,7 @@ public class App
 			root.AddGlobalOption(UnmaskLogsOption.Instance);
 			root.AddGlobalOption(NoLogFileOption.Instance);
 			root.AddGlobalOption(DockerPathOption.Instance);
+			root.AddGlobalOption(EmitLogsOption.Instance);
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
 			root.AddGlobalOption(provider.GetRequiredService<ShowRawOutput>());
 			root.AddGlobalOption(provider.GetRequiredService<ShowPrettyOutput>());
@@ -289,6 +314,8 @@ public class App
 		Commands.AddSubCommand<GenerateClientFileCommand, GenerateClientFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<GeneratePropertiesFileCommand, GeneratePropertiesFileCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<OpenSwaggerCommand, OpenSwaggerCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<ReadProjectSettingsCommand, ReadProjectSettingsCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<WriteProjectSettingsCommand, WriteProjectSettingsCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<TailLogsCommand, TailLogsCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<OpenMongoExpressCommand, OpenMongoExpressCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<AddUnityClientOutputCommand, AddProjectClientOutputCommandArgs, ProjectCommand>();
@@ -317,6 +344,10 @@ public class App
 		Commands.AddSubCommand<GetTokenViaRefreshCommand, GetTokenViaRefreshCommandArgs, TokenCommandGroup>();
 		Commands.AddSubCommand<GetTokenForGuestCommand, GetTokenForGuestCommandArgs, TokenCommandGroup>();
 
+		Commands.AddRootCommand<TempCommandGroup>();
+		Commands.AddSubCommand<TempClearCommandGroup, TempClearArgs, TempCommandGroup>();
+		Commands.AddSubCommandWithHandler<ClearTempLogFilesCommand, ClearTempLogFilesCommandArgs, TempClearCommandGroup>();
+		
 		Commands.AddRootCommand<PlayerCommand, PlayerCommandArgs>();
 		Commands.AddSubCommandWithHandler<AddPlayerToRealmCommand, AddPlayerToRealmCommandArgs, PlayerCommand>();
 		
@@ -438,7 +469,11 @@ public class App
 
 		CommandProvider = Commands.Build();
 
+		var sw = new Stopwatch();
+		sw.Start();
 		var _ = InstantiateAllCommands();
+		sw.Stop();
+		Log.Verbose("BUILD ALL COMMANDS TOOK : " + sw.ElapsedMilliseconds);
 
 		// sort the commands
 		var root = CommandProvider.GetService<RootCommand>();
@@ -642,6 +677,8 @@ public class App
 		
 		commandLineBuilder.AddMiddleware(async (ctx, next) =>
 		{
+			var sw = new Stopwatch();
+			sw.Start();
 			// create a scope for the execution of the command
 			var provider = CommandProvider.Fork(services =>
 			{
@@ -652,13 +689,19 @@ public class App
 				ConfigureServices(services);
 			});
 
+			Log.Verbose("command prep (make provider) took " + sw.ElapsedMilliseconds);
+
 			// update log information before dependency injection is sealed.
-			setLogger(provider);
+			_setLogger(provider);
+
+			Log.Verbose("command prep (make logs) took " + sw.ElapsedMilliseconds);
 
 			// we can take advantage of a feature of the CLI tool to use their slightly jank DI system to inject our DI system. DI in DI.
 			ctx.BindingContext.AddService(_ => new AppServices { duck = provider });
 			var appContext = provider.GetRequiredService<IAppContext>();
 			appContext.Apply(ctx.BindingContext);
+
+			Log.Verbose("command prep (app context) took " + sw.ElapsedMilliseconds);
 
 			// Check if we need to forward this command --- we only forward if the executing version of the CLI is different than the one locally installed on the project.
 			// As long as the versions are the same, running the local one or the global one changes nothing in behaviour.
@@ -676,27 +719,41 @@ public class App
 				}
 			}
 			
-			try
+			Log.Verbose("command prep (past proxy) took " + sw.ElapsedMilliseconds);
+			
+			var skip = ctx.ParseResult.CommandResult.Command is ISkipManifest;
+			if (skip)
 			{
-				var beamoSystem = provider.GetService<BeamoLocalSystem>();
-				beamoSystem.InitManifest().Wait();
-			}
-			catch (AggregateException aggregateException)
+				Log.Debug($"skipping manifest initialization because command=[{ctx.ParseResult.CommandResult.Command.GetType().Name}] is a {nameof(ISkipManifest)}");
+			} else 
 			{
-				foreach (var ex in aggregateException.InnerExceptions)
+				try
 				{
-					Log.Error(ex.GetType().Name + " -- " + ex.Message + "\n" + ex.StackTrace);
+					var beamoSystem = provider.GetService<BeamoLocalSystem>();
+					beamoSystem.InitManifest(useManifestCache: true).Wait();
 				}
-				throw;
+				catch (AggregateException aggregateException)
+				{
+					foreach (var ex in aggregateException.InnerExceptions)
+					{
+						Log.Error(ex.GetType().Name + " -- " + ex.Message + "\n" + ex.StackTrace);
+					}
+
+					throw;
+				}
 			}
 
+
+			Log.Verbose("command prep took " + sw.ElapsedMilliseconds);
 			await next(ctx);
 
+			sw.Stop();
+			Log.Verbose("command execution took " + sw.ElapsedMilliseconds);
 		}, MiddlewareOrder.Configuration);
 		commandLineBuilder.UseDefaults();
 		commandLineBuilder.UseSuggestDirective();
 		commandLineBuilder.UseTypoCorrections();
-		commandLineBuilder.UseHelpBuilder(context => helpBuilder);
+		commandLineBuilder.UseHelpBuilder(_ => helpBuilder);
 		commandLineBuilder.UseExceptionHandler((ex, context) =>
 		{
 			switch (ex)
@@ -748,9 +805,17 @@ public class App
 
 			if (appContext.ShouldUseLogFile)
 			{
-				Log.CloseAndFlush();
-				File.AppendAllText(appContext.TempLogFilePath, ex.ToString());
-				Console.Error.WriteLine("\nLogs at\n  " + appContext.TempLogFilePath);
+				if (!appContext.TryGetTempLogFilePath(out var logFile))
+				{
+					Log.Warning("Could not write logs because no .beamable project exists to host the log file. Please re-run the command with '--logs v', or, create a .beamable folder using 'beam init' and then re-run the command.");
+				}
+				else
+				{
+					Log.Error(ex.ToString());
+					Log.CloseAndFlush();
+					
+					Console.Error.WriteLine("\nLogs at\n  " + Path.GetFullPath(logFile));
+				}
 			}
 		});
 		return commandLineBuilder.Build();
@@ -828,7 +893,7 @@ public class App
 			// data _shouldn't_ sent, but it will be _anyway_. 
 			// so we can cheat it back and take the stderr (logs) and show them on stdOut. 
 			//   Note: stdout from the proxied process IS the data channel, but we
-			//         don't need it so it is lost.
+			//         don't need it, so it is lost.
 			proxy = proxy.WithStandardErrorPipe(stdOut);
 		}
 		
@@ -903,18 +968,10 @@ public class App
 
 					var channelInstance = (IResultChannel)Activator.CreateInstance(channelType);
 
-					object dataInstance = null;
 					var isSingle = single != null && dataType == single.ResultType;
-					if (isSingle)
-					{
-						dataInstance = single.CreateEmptyInstance();
-					}
-					else
-					{
-						dataInstance = Activator.CreateInstance(dataType);
-					}
+					object dataInstance = isSingle ? single.CreateEmptyInstance() : Activator.CreateInstance(dataType);
 
-					context.Output.WriteLine($"  Returns a {(isSingle ? "stream of" : "single message of")} {dataType.Name} object on the {channelInstance.ChannelName} stream, which each may resemble the following...");
+					context.Output.WriteLine($"  Returns a {(isSingle ? "stream of" : "single message of")} {dataType.Name} object on the {channelInstance!.ChannelName} stream, which each may resemble the following...");
 					var resultStreamData = new ReportDataPoint { data = dataInstance, type = channelInstance.ChannelName, ts = DateTimeOffset.Now.ToUnixTimeMilliseconds() };
 					var resultStreamJson = JsonConvert.SerializeObject(resultStreamData, Formatting.Indented);
 					context.Output.WriteLine("  " + resultStreamJson.ReplaceLineEndings("\n  "));
@@ -939,7 +996,11 @@ public class App
 
 	public virtual Task<int> RunWithSingleString(string commandLine)
 	{
+		var sw = new Stopwatch();
+		sw.Start();
 		var prog = GetProgram();
+		sw.Stop();
+		Log.Verbose("prepared virtual program instance in " + sw.ElapsedMilliseconds);
 		return prog.InvokeAsync(commandLine);
 	}
 }

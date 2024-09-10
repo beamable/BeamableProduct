@@ -37,9 +37,7 @@
     <PackageReference Include="EmbedIO" Version="3.4.*" />
     <PackageReference Include="LoxSmoke.DocXml" Version="3.4.*" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0-preview.6.21352.12" />
-    <PackageReference Include="Microsoft.OpenApi" Version="1.6.3" />
     <PackageReference Include="Microsoft.OpenApi.Readers" Version="1.3.2" />
-    <PackageReference Include="NetMQ" Version="4.0.1.11" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.*" />
     <PackageReference Include="Serilog" Version="2.10.*" />
     <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.*" />
@@ -51,28 +49,22 @@
     <PackageReference Include="MongoDB.Driver" Version="2.15.1"/>
   </ItemGroup>
   
-  <ItemGroup Label="Internal Beamable References">
-    <ProjectReference Include="..\beamable.tooling.common\beamable.tooling.common.csproj" PrivateAssets="All"/>
-  </ItemGroup>
-  
   <ItemGroup Label="Public Beamable References">
     <ProjectReference Include="..\..\cli\beamable.common\beamable.common.csproj"/>
     <ProjectReference Include="..\..\cli\beamable.server.common\beamable.server.common.csproj"/>
     <ProjectReference Include="..\unityenginestubs.addressables\unityenginestubs.addressables.csproj"/>
     <ProjectReference Include="..\unityEngineStubs\unityenginestubs.csproj"/>
+    <ProjectReference Include="..\beamable.tooling.common\beamable.tooling.common.csproj"/>
   </ItemGroup>
 
   <ItemGroup Label="Pack Internal Beamable References: Net6.0">
     <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build/net6.0" Pack="True"/>
-    <None Include="$(OutputPath)/net6.0/beamable.tooling.common*" PackagePath="lib/net6.0" Pack="True"/>
   </ItemGroup>
   <ItemGroup Label="Pack Internal Beamable References: Net7.0">
     <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build/net7.0" Pack="True"/>
-    <None Include="$(OutputPath)/net7.0/beamable.tooling.common*" PackagePath="lib/net7.0" Pack="True"/>
   </ItemGroup>
   <ItemGroup Label="Pack Internal Beamable References: Net8.0">
     <None Include="Targets/Beamable.Microservice.Runtime.*" PackagePath="build/net8.0" Pack="True"/>
-    <None Include="$(OutputPath)/net8.0/beamable.tooling.common*" PackagePath="lib/net8.0" Pack="True"/>
   </ItemGroup>
   
 

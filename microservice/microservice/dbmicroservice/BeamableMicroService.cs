@@ -102,6 +102,13 @@ namespace Beamable.Server
    {
       public string MicroserviceName => _serviceAttribute.MicroserviceName;
       
+      /// <summary>
+      /// The term, "micro_" is a legacy string from 1.x days.
+      /// If we remove it, it can break compatibility with existing deployed clients
+      ///  trying to communicate with services with a micro_ term.
+      /// </summary>
+      public string QualifiedName => "micro_" + MicroserviceName;
+      
       private ConcurrentDictionary<long, Task> _runningTaskTable = new ConcurrentDictionary<long, Task>();
       private const int EXIT_CODE_PENDING_TASKS_STILL_RUNNING = 11;
       private const int EXIT_CODE_FAILED_AUTH = 12;
@@ -264,7 +271,7 @@ namespace Beamable.Server
          // remove the service, so that no new messages are accepted
          try
          {
-            var promise = RemoveService(MicroserviceName);
+            var promise = RemoveService(QualifiedName);
             var startedWaitingAt = sw.ElapsedMilliseconds;
             while (!promise.IsCompleted)
             {
@@ -334,7 +341,7 @@ namespace Beamable.Server
 		      MicroserviceAttribute = _serviceAttribute, 
 		      MicroserviceType = MicroserviceType,
 		      routingKey = _args.NamePrefix,
-		      PublicHost = $"{_args.Host.Replace("wss://", "https://").Replace("/socket", "")}/basic/{_args.CustomerID}.{_args.ProjectName}.{MicroserviceName}/"
+		      PublicHost = $"{_args.Host.Replace("wss://", "https://").Replace("/socket", "")}/basic/{_args.CustomerID}.{_args.ProjectName}.{QualifiedName}/"
 	      };
 	      
 	      ServiceMethods = RouteTableGeneration.BuildRoutes(MicroserviceType, _serviceAttribute, adminRoutes, BuildServiceInstance);
@@ -384,7 +391,7 @@ namespace Beamable.Server
             var realmService = _args.ServiceScope.GetService<IRealmConfigService>();
             await realmService.GetRealmConfigSettings();
             
-            await ProvideService(MicroserviceName);
+            await ProvideService(QualifiedName);
 
             HasInitialized = true;
 
@@ -440,7 +447,7 @@ namespace Beamable.Server
       {
 	      var cid = _args.CustomerID;
 	      var pid = _args.ProjectName;
-	      var microName = _serviceAttribute.MicroserviceName;
+	      var microName = QualifiedName;
 	      var refreshToken = _args.RefreshToken;
 
 	      if (string.IsNullOrEmpty(refreshToken))
@@ -659,7 +666,7 @@ namespace Beamable.Server
                status = 500, // TODO: Catch a special type of exception, NackException?
                error = ex.GetType().Name,
                message = ex.Message,
-               service = MicroserviceName
+               service = QualifiedName
             });
          }
       }
@@ -702,7 +709,7 @@ namespace Beamable.Server
 
          try
          {
-            var route = ctx.Path.Substring(MicroserviceName.Length + 1);
+            var route = ctx.Path.Substring(QualifiedName.Length + 1);
 
             var parameterProvider = new AdaptiveParameterProvider(ctx);
             var responseJson = await ServiceMethods.Handle(ctx, route, parameterProvider);

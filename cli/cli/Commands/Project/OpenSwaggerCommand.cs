@@ -1,7 +1,10 @@
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Semantics;
+using cli.FederationCommands;
 using cli.Services;
 using cli.Utils;
+using Serilog;
 using Spectre.Console;
 using System.CommandLine;
 
@@ -9,7 +12,7 @@ namespace cli.Dotnet;
 
 public class OpenSwaggerCommandArgs : CommandArgs
 {
-	public bool IsRemote;
+	public string RoutingKey;
 	public ServiceName ServiceName;
 }
 
@@ -17,12 +20,47 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 {
 	public OpenSwaggerCommand() : base("open-swagger", "Opens the swagger page for a given service")
 	{
+		AddAlias("swagger");
 	}
 
 	public override void Configure()
 	{
 		AddArgument(new Argument<ServiceName>("service-name", () => new ServiceName(), "Name of the service to open swagger to"), (arg, i) => arg.ServiceName = i);
-		AddOption(new Option<bool>("--remote", "If passed, swagger will open to the remote version of this service. Otherwise, it will try and use the local version"), (arg, i) => arg.IsRemote = i);
+
+		var defaultRoutingKey = ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine();
+		
+		var remoteOption = new Option<bool>("--remote",
+			"When set, enforces the routing key to be the one for the service deployed to the realm. Cannot be specified when --routing-key is also set");
+		remoteOption.AddAlias("-r");
+		
+		var routingKeyOption = new Option<string>("--routing-key",
+			"The routing key for the service instance we want. If not passed, defaults to the local service");
+		routingKeyOption.SetDefaultValue(defaultRoutingKey);
+		routingKeyOption.AddAlias("-k");
+		
+		AddOption(routingKeyOption, (arg, ctx, key) =>
+		{
+			var remoteValue = ctx.ParseResult.GetValueForOption(remoteOption);
+			if (remoteValue)
+			{
+				if (key != defaultRoutingKey)
+				{
+					throw new CliException("Cannot specify both --routing-key and --remote");
+				}
+				else
+				{
+					key = "";
+				}
+			}
+
+			arg.RoutingKey = key;
+		});
+		
+		AddOption(remoteOption, (arg, i) =>
+		{
+			// nothing happens here, all logic handled in routingKeyOption binder
+		});
+
 	}
 
 	public override Task Handle(OpenSwaggerCommandArgs args)
@@ -31,67 +69,58 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 		{
 			var serviceDefinitions = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions
 				.Where(definition => definition.Protocol == BeamoProtocolType.HttpMicroservice).ToList();
-
+			
 			switch (serviceDefinitions.Count)
 			{
 				case 1:
 					args.ServiceName = new ServiceName(serviceDefinitions[0].BeamoId);
-					BeamableLogger.Log(
-						$"No service-name passed as argument. Running command for {args.ServiceName} since it is the only microservice in BeamoManifest.");
+					Log.Debug($"No service-name passed as argument. " +
+					          $"Running command for {args.ServiceName} since it is the only microservice in BeamoManifest.");
 					break;
 				case > 1:
-					BeamableLogger.Log("We found more than one microservices in the directory");
-					AskForServiceNameAndRunBeamCommandTask(serviceDefinitions, args,
-						!string.IsNullOrWhiteSpace(args.AppContext.WorkingDirectory)
-							? args.AppContext.WorkingDirectory
-							: string.Empty);
-					return Task.CompletedTask;
-				default:
-					BeamableLogger.Log("We couldn't find a service name in the directory");
-					AskForDirectoryAndRunBeamCommandTask(args);
-					return Task.CompletedTask;
+					Log.Information("Found more than one microservices in the directory");
+					args.ServiceName = new ServiceName(AskForServiceNameAndRunBeamCommandTask(serviceDefinitions));
+					break;
 			}
 		}
 
-		var cid = args.AppContext.Cid;
-		var pid = args.AppContext.Pid;
-		var refreshToken = args.AppContext.RefreshToken;
-		var queryArgs = new List<string>
+		if (string.IsNullOrWhiteSpace(args.ServiceName))
 		{
-			$"refresh_token={refreshToken}",
-			$"prefix={MachineHelper.GetUniqueDeviceId()}"
-		};
-		var joinedQueryString = string.Join("&", queryArgs);
-		var url = $"{args.AppContext.Host.Replace("dev.", "dev-").Replace("api", "portal")}/{cid}/games/{pid}/realms/{pid}/microservices/{args.ServiceName}/docs?{joinedQueryString}";
+			throw new CliException("No service found. Navigate to a .beamable workspace with valid Microservices. ");
+		}
 
-		MachineHelper.OpenBrowser(url);
+		OpenSwagger(args.AppContext, args.ServiceName, args.RoutingKey);
 		return Task.CompletedTask;
 	}
 
-	private static async void AskForDirectoryAndRunBeamCommandTask(OpenSwaggerCommandArgs args)
+	public static void OpenSwagger(IAppContext ctx, string beamoId, string routingKey)
 	{
-		string directory = AnsiConsole.Ask<string>("Enter the absolute or relative directory to use:");
-		await new BeamCommandAssistantBuilder("project open-swagger", args.AppContext)
-			.WithOption(true, "--dir", directory)
-			.WithOption(args.IsRemote, "--remote")
-			.RunAsync();
+		var cid = ctx.Cid;
+		var pid = ctx.Pid;
+		var refreshToken = ctx.RefreshToken;
+		var queryArgs = new List<string>
+		{
+			$"refresh_token={refreshToken}",
+		};
+		
+		if(!string.IsNullOrEmpty(routingKey))
+			queryArgs.Add($"routingKey={routingKey}");
+		
+		var joinedQueryString = string.Join("&", queryArgs);
+		var url = $"{ctx.Host.Replace("dev.", "dev-").Replace("api", "portal")}/{cid}/games/{pid}/realms/{pid}/microservices/micro_{beamoId}/docs?{joinedQueryString}";
+
+		MachineHelper.OpenBrowser(url);
 	}
 
-	private static async void AskForServiceNameAndRunBeamCommandTask(
-		IEnumerable<BeamoServiceDefinition> serviceDefinitions, OpenSwaggerCommandArgs args, string directory)
+	private static string AskForServiceNameAndRunBeamCommandTask(
+		IEnumerable<BeamoServiceDefinition> serviceDefinitions)
 	{
-		string serviceName = AnsiConsole.Prompt(
+		return AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
 				.Title("Select the service name to use:")
 				.PageSize(10)
 				.MoreChoicesText("[grey](Move up and down to reveal more service name)[/]")
 				.AddChoices(serviceDefinitions.Select(serviceDef => serviceDef.BeamoId))
 				.AddBeamHightlight());
-
-		await new BeamCommandAssistantBuilder("project open-swagger", args.AppContext)
-			.AddArgument(serviceName)
-			.WithOption(!string.IsNullOrWhiteSpace(directory), "--dir", directory)
-			.WithOption(args.IsRemote, "--remote")
-			.RunAsync();
 	}
 }
