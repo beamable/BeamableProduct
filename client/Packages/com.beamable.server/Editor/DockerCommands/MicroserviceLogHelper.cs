@@ -213,7 +213,7 @@ namespace Beamable.Server.Editor.DockerCommands
 				var objsToString = string.Join("\n", objs.Select(kvp => $"{kvp.Key}={Json.Serialize(kvp.Value, new StringBuilder())}"));
 
 				// report the log message to the right bucket.
-#if !BEAMABLE_LEGACY_MSW
+
 				if (!DateTime.TryParse(timestamp, out var time))
 				{
 					time = DateTime.Now;
@@ -233,16 +233,12 @@ namespace Beamable.Server.Editor.DockerCommands
 				{
 					Debug.Log($"{WithColor(Color.grey, $"[{label}]")} {WithColor(color, $"[{logLevel}]")} {WithColor(darkColor, $"{message}\n{objsToString}")}");
 				}
-#else
-            Debug.Log($"{WithColor(Color.grey, $"[{label}]")} {WithColor(color, $"[{logLevel}]")} {WithColor(darkColor, $"{message}\n{objsToString}")}");
-#endif
-
 
 				return true;
 			}
 			else
 			{
-#if !BEAMABLE_LEGACY_MSW
+
 				if (fallbackTime <= default(DateTime))
 				{
 					fallbackTime = DateTime.Now;
@@ -263,9 +259,6 @@ namespace Beamable.Server.Editor.DockerCommands
 
 				BeamEditorContext.Default.Dispatcher.Schedule(() => MicroservicesDataModel.Instance.AddLogMessage(descriptor, logMessage));
 				return !MicroserviceConfiguration.Instance.ForwardContainerLogsToUnityConsole;
-#else
-            return false;
-#endif
 			}
 		}
 
