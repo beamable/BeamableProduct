@@ -137,10 +137,8 @@ namespace Beamable.Server.Editor
 		   DOCKER_LOCATION :
 		   DockerCommand;
 
-#if !BEAMABLE_LEGACY_MSW
 		[Tooltip("Microservice Logs are sent to a dedicated logging window. If you enable this field, then service logs will also be sent to the Unity Console.")]
 		public bool ForwardContainerLogsToUnityConsole;
-#endif
 
 		public Color LogProcessLabelColor = Color.grey;
 		public Color LogStandardOutColor = Color.blue;
