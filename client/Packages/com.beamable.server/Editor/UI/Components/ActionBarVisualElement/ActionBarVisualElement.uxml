@@ -15,7 +15,7 @@
 
             <engine:Button name="dependencies" class="boundedButton">
                 <engine:Image name="dependenciesIcon"/>
-                <engine:Label class="buttonText" text="Dependencies"/>
+                <engine:Label class="buttonText" text="Settings"/>
             </engine:Button>
 
             <engine:Button name="createNew" class="boundedButton">

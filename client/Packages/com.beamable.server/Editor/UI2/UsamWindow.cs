@@ -71,9 +71,11 @@ namespace Beamable.Editor.Microservice.UI2
 			_actionBarVisualElement.UpdateButtonsState(_codeService.ServiceDefinitions.Count);
 
 			_actionBarVisualElement.OnRefreshButtonClicked += HandleRefreshButtonClicked;
+			_actionBarVisualElement.OnSettingsButtonClicked += HandleSettingsButtonClicked;
 			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
 			_microserviceBreadcrumbsVisualElement.Refresh();
 			_scrollView = new ScrollView(ScrollViewMode.Vertical);
+			_scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;;
 			var emptyContainer = new VisualElement { name = "listRoot" };
 
 			var microserviceContentVisualElement = root.Q("microserviceContentVisualElement");
@@ -128,6 +130,11 @@ namespace Beamable.Editor.Microservice.UI2
 		{
 			_codeService = Scope.GetService<CodeService>();
 			_codeService.RefreshServices().Then(_ => Build()).Error(Debug.LogError);
+		}
+
+		private void HandleSettingsButtonClicked()
+		{
+			SettingsService.OpenProjectSettings($"Project/Beamable Services");
 		}
 
 		private void HandleCreateNewButtonClicked(ServiceType serviceType)

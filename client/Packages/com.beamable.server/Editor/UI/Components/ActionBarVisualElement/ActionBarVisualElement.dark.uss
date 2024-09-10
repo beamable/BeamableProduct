@@ -34,5 +34,5 @@
 }
 
 #dependenciesIcon {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/dependencies_light.png");
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/popup.png");
 }

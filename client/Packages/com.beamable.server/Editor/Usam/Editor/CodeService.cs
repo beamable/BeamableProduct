@@ -426,7 +426,7 @@ namespace Beamable.Server.Editor.Usam
 		{
 			for (int i = 0; i < objData.BeamoIds.Count; i++)
 			{
-				if (!objData.ExistInLocal[i] && !objData.IsRunningRemotely[i]) //In this case the service was disabled in the remote, which means that it's irrelevant.
+				if (!objData.ExistInLocal[i]) //We only care about the local services and storages
 				{
 					continue;
 				}
@@ -749,12 +749,11 @@ namespace Beamable.Server.Editor.Usam
 				watch = true
 			}).OnStreamServiceDiscoveryEvent(cb =>
 			{
-				Debug.Log($"[{cb.data.service}] is running = {cb.data.isRunning}");
+				UsamLogger.Log($"[{cb.data.service}] is running = {cb.data.isRunning}");
 
 				var def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(cb.data.service));
 				if (def != null)
 				{
-					// def.IsRunningLocally = cb.data.isRunning;
 					def.Builder.IsRunning = cb.data.isRunning;
 				}
 				

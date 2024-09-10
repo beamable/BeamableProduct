@@ -53,7 +53,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 
 			foreach (var definition in codeService.ServiceDefinitions)
 			{
-				if (!definition.ExistLocally || definition.ServiceType != ServiceType.MicroService)
+				if (definition.ServiceType != ServiceType.MicroService)
 				{
 					continue;
 				}
@@ -138,7 +138,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 			_customSettings.ApplyModifiedProperties();
 		}
 
-		private void TrySaveChanges(BeamableMicroservicesSettings settings)
+		public static void TrySaveChanges(BeamableMicroservicesSettings settings)
 		{
 			if (!settings.CheckAllValidAssemblies(out string message))
 			{
@@ -166,7 +166,6 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 
 		public bool CheckAllValidAssemblies(out string validationMessage)
 		{
-
 			//Check if there is any null reference in the array
 			foreach (AssemblyDefinitionAsset assembly in assemblyReferences)
 			{

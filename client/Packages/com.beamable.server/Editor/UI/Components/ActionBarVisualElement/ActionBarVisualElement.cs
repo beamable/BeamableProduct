@@ -44,6 +44,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public event Action OnPublishClicked;
 		public event Action OnRefreshButtonClicked;
+
+		public event Action OnSettingsButtonClicked;
 		public event Action<ServiceType> OnCreateNewClicked;
 
 		private Button _refreshButton;
@@ -58,8 +60,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public bool HasPublishPermissions => BeamEditorContext.Default.Permissions.CanPublishMicroservices;
 		bool IsDockerActive => _codeService.IsDockerRunning;
-		bool CanHaveDependencies => IsDockerActive && Model.localServices.Count(x => !x.IsArchived) > 0 &&
-									Model.localStorages.Count(x => !x.IsArchived) > 0;
 
 		MicroservicesDataModel Model => MicroservicesDataModel.Instance;
 
@@ -82,7 +82,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_startAll.clickable.clicked += () => HandlePlayButton(_startAll.worldBound);
 
 			_dependencies = Root.Q<Button>("dependencies");
-			_dependencies.clickable.clicked += () => DependentServicesWindow.ShowWindow();
+			_dependencies.clickable.clicked += () => { OnSettingsButtonClicked?.Invoke(); };
 			_dependencies.tooltip = Tooltips.Microservice.DEPENDENCIES;
 
 			const string cannotPublishText = "Cannot open Publish Window, fix compilation errors first!";
@@ -117,7 +117,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_startAll.SetEnabled(IsDockerActive && servicesAmount > 0);
 			_publish.SetEnabled(canPublish);
-			_dependencies.SetEnabled(CanHaveDependencies);
 
 			if (!canPublish)
 			{
