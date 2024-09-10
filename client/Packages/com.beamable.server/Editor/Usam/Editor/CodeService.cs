@@ -20,6 +20,7 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
+using ProjectNewServiceArgs = Beamable.Editor.BeamCli.Commands.ProjectNewServiceArgs;
 
 namespace Beamable.Server.Editor.Usam
 {
@@ -938,12 +939,20 @@ namespace Beamable.Server.Editor.Usam
 
 			string errorMessage = string.Empty;
 
+			dependencies ??= new List<IBeamoServiceDefinition>();
+			string[] deps = new string[dependencies.Count];
+			for (int i = 0; i < dependencies.Count; i++)
+			{
+				deps[i] = dependencies[i].BeamoId;
+			}
+
 			var args = new ProjectNewServiceArgs()
 			{
 				name = service,
 				serviceDirectory = StandaloneMicroservicesPath,
 				sln = slnPath,
-				beamableDev = BeamableEnvironment.IsBeamableDeveloper
+				beamableDev = BeamableEnvironment.IsBeamableDeveloper,
+				linkTo = deps
 			};
 			var command = _cli.ProjectNewService(args).OnError((cb) =>
 			{

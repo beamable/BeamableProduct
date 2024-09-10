@@ -1,21 +1,13 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<engine:UXML
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns:engine="UnityEngine.Experimental.UIElements"
-        xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
-        xmlns:beamable="Beamable.Editor.UI.Components"
-        xmlns:beamableMS="Beamable.Editor.Microservice.UI.Components"
-        xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
-
-    <engine:VisualElement name="createServiceBaseMainVisualElement">
-        <engine:VisualElement name="header">
-            <engine:VisualElement name="serviceIcon"/>
-            <engine:TextField name="nameTextField"/>
-        </engine:VisualElement>
-        <engine:VisualElement name="buttonsSection">
-            <beamable:PrimaryButtonVisualElement name="createBtn" text="Create"/>
-            <beamable:PrimaryButtonVisualElement name="cancelBtn" text="Cancel"/>
-        </engine:VisualElement>
-    </engine:VisualElement>
-    
-</engine:UXML>
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.Experimental.UIElements" noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd" beamable="Beamable.Editor.UI.Components" beamableMS="Beamable.Editor.Microservice.UI.Components" schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement name="createServiceBaseMainVisualElement">
+        <ui:VisualElement name="header">
+            <ui:VisualElement name="serviceIcon" />
+            <ui:TextField name="nameTextField" />
+        </ui:VisualElement>
+        <ui:VisualElement name="dependentArea" style="flex-grow: 1; padding-top: 20px;" />
+        <ui:VisualElement name="buttonsSection">
+            <Beamable.Editor.UI.Components.PrimaryButtonVisualElement name="createBtn" text="Create" />
+            <Beamable.Editor.UI.Components.PrimaryButtonVisualElement name="cancelBtn" text="Cancel" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

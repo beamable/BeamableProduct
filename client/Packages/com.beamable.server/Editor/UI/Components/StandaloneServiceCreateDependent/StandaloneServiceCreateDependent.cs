@@ -15,6 +15,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 	public class StandaloneServiceCreateDependent : MicroserviceComponent
 	{
 		private VisualElement _mainContainer;
+		private ScrollView _scrollView;
 
 		private readonly Dictionary<IBeamoServiceDefinition, LabeledCheckboxVisualElement> _serviceModelBases =
 			new Dictionary<IBeamoServiceDefinition, LabeledCheckboxVisualElement>();
@@ -27,11 +28,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			base.Refresh();
 			_mainContainer = Root.Q("mainContainer");
+			_scrollView = Root.Q<ScrollView>("scrollView");
 		}
 
 		public void Init<T>(List<T> services, string serviceTypeName) where T : IBeamoServiceDefinition
 		{
 			Root.Q<Label>("header").text = $"Optional dependencies ({serviceTypeName}):";
+
 			foreach (var service in services)
 			{
 				var checkbox = new LabeledCheckboxVisualElement();
@@ -40,7 +43,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				checkbox.SetText(service.BeamoId);
 				checkbox.DisableIcon();
 				_serviceModelBases.Add(service, checkbox);
-				_mainContainer.Add(checkbox);
+				_scrollView.Add(checkbox);
 			}
 		}
 

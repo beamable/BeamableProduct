@@ -1,11 +1,11 @@
 using Beamable.Common;
 using Beamable.Common.Semantics;
-using Beamable.Common.Util;
 using cli.Dotnet;
 using cli.Services;
 using cli.Utils;
 using Newtonsoft.Json;
 using Serilog;
+using Spectre.Console;
 using System.CommandLine;
 
 namespace cli.Commands.Project;
@@ -14,6 +14,7 @@ public class NewProjectCommandArgs : CommandArgs
 {
 	public ServiceName ProjectName;
 	public bool AutoInit;
+	public List<string> LinkedServices;
 }
 
 public class AutoInitFlag : ConfigurableOptionFlag
@@ -189,6 +190,12 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 		AddArgument(new ServiceNameArgument(), (args, i) => args.ProjectName = i);
 		AddOption(new AutoInitFlag(), (args, b) => args.AutoInit = b);
 		SolutionCommandArgs.Configure(this);
+		var serviceDeps = new Option<List<string>>("--link-to", "The name of the storage to link this service to")
+		{
+			Arity = ArgumentArity.ZeroOrMore,
+			AllowMultipleArgumentsPerToken = true
+		};
+		AddOption(serviceDeps, (x, i) => x.LinkedServices = i);
 		AddOption(new Option<bool>(
 				name: "--generate-common",
 				description: "If passed, will create a common library for this project"),
@@ -245,6 +252,30 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 				File.Delete(beamableDevDockerfilePath);
 			}
 
+			// Add dependencies if they exist
+			string[] dependencies = null;
+			if ((args.LinkedServices == null || args.LinkedServices.Count == 0) && !args.Quiet)
+			{
+				dependencies = GetChoicesFromPrompt(args.BeamoLocalSystem);
+			}
+			else if (args.LinkedServices != null)
+			{
+				dependencies = GetDependenciesFromName(args.BeamoLocalSystem, args.LinkedServices);
+			}
+
+			if (dependencies != null)
+			{
+				foreach (var dependency in dependencies)
+				{
+					if (args.BeamoLocalSystem.BeamoManifest.TryGetDefinition(dependency, out var dependencyDefinition))
+					{
+						Log.Information("Adding {ArgsStorageName} reference to {Dependency}. ", dependency, args.ProjectName);
+						await args.BeamoLocalSystem.AddProjectDependency(sd, dependencyDefinition.ProjectPath);
+					}
+				}
+				await args.BeamoLocalSystem.UpdateDockerFile(sd); //Update dockerfile again in the case that dependencies were added
+			}
+
 
 		}
 		finally
@@ -254,5 +285,50 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 			args.BeamoLocalSystem.SaveBeamoLocalRuntime();
 		}
 
+	}
+
+	private string[] GetChoicesFromPrompt(BeamoLocalSystem localSystem)
+	{
+		// identify the linkable projects...
+		var storages = localSystem.BeamoManifest.EmbeddedMongoDbLocalProtocols;
+		var choices = storages.Select(storage => storage.Key).ToList();
+
+		var prompt = new MultiSelectionPrompt<string>()
+			.Title("Storage Dependencies")
+			.InstructionsText("Which storages will be added to this service?\n[grey](Press [blue]<space>[/] to toggle, " +
+			                  "[green]<enter>[/] to accept)[/]")
+			.AddChoices(choices)
+			.AddBeamHightlight()
+			.NotRequired();
+		foreach (string choice in choices)
+		{
+			prompt.Select(choice);
+		}
+		return AnsiConsole.Prompt(prompt).ToArray();
+	}
+
+	private string[] GetDependenciesFromName(BeamoLocalSystem localSystem, List<string> dependencies)
+	{
+		if (dependencies == null)
+		{
+			return Array.Empty<string>();
+		}
+
+		var storages = localSystem.BeamoManifest.EmbeddedMongoDbLocalProtocols;
+		var choices = new List<string>();
+		foreach (var dep in dependencies)
+		{
+			var localProtocol = storages.FirstOrDefault(x => x.Key.Equals(dep)).Value;
+			if (localProtocol != null)
+			{
+				choices.Add(dep);
+			}
+			else
+			{
+				Log.Warning($"The dependency {dep} does not exist in the local manifest and cannot be added as reference. Use `beam project deps add <service> <storage> to add after the storage is already created`");
+			}
+		}
+
+		return choices.ToArray();
 	}
 }
