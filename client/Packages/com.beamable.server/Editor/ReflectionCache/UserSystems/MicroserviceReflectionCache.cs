@@ -1117,7 +1117,7 @@ namespace Beamable.Server.Editor
 				{
 					var config = MicroserviceConfiguration.Instance.GetStorageEntry(storage.Name);
 					return
-						$"mongodb://{config.LocalInitUser}:{config.LocalInitPass}@gateway.docker.internal:{config.LocalDataPort}";
+						$"mongodb://{config.LocalInitUser}:{config.LocalInitPass}@host.docker.internal:{config.LocalDataPort}";
 				}
 				else
 				{

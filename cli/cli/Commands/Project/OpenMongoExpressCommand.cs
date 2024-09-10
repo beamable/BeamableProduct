@@ -36,22 +36,21 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
 			{
 				case 1:
 					args.storageName = new ServiceName(storages[0].BeamoId);
-					BeamableLogger.Log(
-						$"No service-name passed as argument. Running command for {args.storageName} since it is the only storage in BeamoManifest.");
+					Log.Debug($"No service-name passed as argument. " +
+					          $"Running command for {args.storageName} since it is the only storage in BeamoManifest.");
 					break;
 				case > 1:
-					BeamableLogger.Log("We found more than one storage in the directory");
-					AskForStorageAndRunBeamCommandTask(storages, args,
-						!string.IsNullOrWhiteSpace(args.AppContext.WorkingDirectory)
-							? args.AppContext.WorkingDirectory
-							: string.Empty);
-					return;
-				default:
-					BeamableLogger.Log("We couldn't find a storage in the directory");
-					AskForDirectoryAndRunBeamCommandTask(args);
+					Log.Information("Found more than one storage in the directory");
+					args.storageName = new ServiceName(AskForStorageAndRunBeamCommandTask(storages));
 					return;
 			}
 		}
+
+		if (string.IsNullOrWhiteSpace(args.storageName))
+		{
+			throw new CliException("No storage found. Navigate to a .beamable workspace with valid Microstorages. ");
+		}
+		
 		// first, get the local connection string,
 		await HandleLocalCase(args);
 	}
@@ -84,29 +83,16 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
 			throw;
 		}
 	}
-
-	private static async void AskForDirectoryAndRunBeamCommandTask(OpenMongoExpressCommandArgs args)
+	
+	private static string AskForStorageAndRunBeamCommandTask(
+		IEnumerable<BeamoServiceDefinition> storages)
 	{
-		string directory = AnsiConsole.Ask<string>("Enter the absolute or relative directory to use:");
-		await new BeamCommandAssistantBuilder("project open-mongo", args.AppContext)
-			.WithOption(true, "--dir", directory)
-			.RunAsync();
-	}
-
-	private static async void AskForStorageAndRunBeamCommandTask(
-		IEnumerable<BeamoServiceDefinition> storages, OpenMongoExpressCommandArgs args, string directory)
-	{
-		string serviceName = AnsiConsole.Prompt(
+		return AnsiConsole.Prompt(
 			new SelectionPrompt<string>()
 				.Title("Select the storage to use:")
 				.PageSize(10)
 				.MoreChoicesText("[grey](Move up and down to reveal more storage)[/]")
 				.AddChoices(storages.Select(serviceDef => serviceDef.BeamoId))
 				.AddBeamHightlight());
-
-		await new BeamCommandAssistantBuilder("project open-mongo", args.AppContext)
-			.AddArgument(serviceName)
-			.WithOption(!string.IsNullOrWhiteSpace(directory), "--dir", directory)
-			.RunAsync();
 	}
 }
