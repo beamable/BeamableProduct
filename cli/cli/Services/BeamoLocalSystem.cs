@@ -89,7 +89,7 @@ public partial class BeamoLocalSystem
 		_dockerListeningThreadCancel = new CancellationTokenSource();
 	}
 
-	public async Task InitManifest(bool useManifestCache=true)
+	public async Task InitManifest(bool useManifestCache = true)
 	{
 		// Load or create the local manifest
 		if (_configService.BaseDirectory == null)
@@ -103,21 +103,21 @@ public partial class BeamoLocalSystem
 			};
 			return;
 		}
-		
-		
-		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_configService.BaseDirectory, _ctx.DotnetPath, _beamo, _configService, useCache: useManifestCache);;
+
+
+		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_configService.BaseDirectory, _ctx.DotnetPath, _beamo, _configService, useCache: useManifestCache); ;
 	}
-	
+
 	private static Uri GetLocalDockerEndpoint(ConfigService config)
 	{
 		var custom = config.CustomDockerUri;
 		if (!string.IsNullOrEmpty(custom))
 		{
-			
+
 			Log.Verbose($"using custom docker uri=[{custom}]");
 			return new Uri(custom);
 		}
-		
+
 		var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 		if (isWindows)
 		{
@@ -128,13 +128,13 @@ public partial class BeamoLocalSystem
 
 		var possibleLocations = new string[]
 		{
-			"/var/run/docker.sock", 
+			"/var/run/docker.sock",
 			Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/.docker/run/docker.sock"
 		};
 		for (var i = 0; i < possibleLocations.Length; i++)
 		{
 			var location = possibleLocations[i];
-			if (i == possibleLocations.Length -1 || File.Exists(location))
+			if (i == possibleLocations.Length - 1 || File.Exists(location))
 			{
 				var uri = new Uri("unix:" + location);
 				Log.Verbose($"Using standard unix docker uri=[{uri}]");
@@ -145,7 +145,8 @@ public partial class BeamoLocalSystem
 		throw new CliException($"No docker address found. Use the {ConfigService.ENV_VAR_DOCKER_URI} environment variable to set a Docker Uri.");
 	}
 
-	public void SaveBeamoLocalRuntime() {
+	public void SaveBeamoLocalRuntime()
+	{
 		// TODO: remove this.
 	}
 
@@ -163,7 +164,7 @@ public partial class BeamoLocalSystem
 	public List<DependencyData> GetDependencies(string beamoServiceId, bool listAll = false)
 	{
 		if (!BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(beamoServiceId,
-			    out HttpMicroserviceLocalProtocol microservice))
+				out HttpMicroserviceLocalProtocol microservice))
 		{
 			return new List<DependencyData>(); // For now we only support dependencies for microservices depending on storages
 		}
@@ -184,7 +185,7 @@ public partial class BeamoLocalSystem
 			dependencies.Add(new DependencyData()
 			{
 				name = name,
-				projPath =  definition.ProjectDirectory,
+				projPath = definition.ProjectDirectory,
 				dllName = name, // TODO: We should have a better way to get this, for now we assume it's the same as the reference project name
 				type = "storage"
 			});
@@ -311,7 +312,7 @@ public partial class BeamoLocalSystem
 			Log.Verbose($"skipping dockerfile update for {serviceName} because no dockerfile is listed in the manifest.");
 			return; // there is no docker file.
 		}
-		
+
 		var dockerfilePath = service.RelativeDockerfilePath;
 		Log.Verbose($"Updating docker file, serviceName=[{serviceName}] service=[{service.DockerBuildContextPath}] dockerfilePath=[{dockerfilePath}]");
 		dockerfilePath = _configService.GetFullPath(dockerfilePath);
@@ -406,7 +407,7 @@ COPY {serviceFileTag} /subsrc/{servicePathTag}";
 			"# <BEAM-CLI-COPY-ENV> this line signals the start of environment variables copies into the built container. Do not remove it. This will be overwritten every time a variable changes in the execution of the CLI.";
 		const string servicePathTag = "<SERVICE_PATH>";
 		const string serviceNameTag = "<SERVICE_NAME>";
-		const string beamVersionTag = "<ENV_BEAM_VERSION>"; 
+		const string beamVersionTag = "<ENV_BEAM_VERSION>";
 
 		const string beamCsProjPath = @$"ENV BEAM_CSPROJ_PATH=""/subsrc/{servicePathTag}/{serviceNameTag}.csproj""";
 		const string beamVersion = @$"ENV BEAM_VERSION=""{beamVersionTag}""";
@@ -472,7 +473,7 @@ COPY {serviceFileTag} /subsrc/{servicePathTag}";
 
 		return rootSeenCount == 1;
 	}
-	
+
 	/// <summary>
 	/// Tries to run the given update task on the <see cref="IBeamoLocalProtocol"/> of the <see cref="BeamoServiceDefinition"/> with the given <paramref name="beamoId"/>.
 	/// </summary>
@@ -571,7 +572,7 @@ public class BeamoLocalManifest
 	/// </para>
 	/// </summary>
 	public Dictionary<string, string[]> ServiceGroupToBeamoIds;
-	
+
 	/// <summary>
 	/// This list contains all the <see cref="BeamoServiceDefinition"/> that the current machine knows about. TODO: At a minimum, this list is kept in sync with already deployed services?
 	/// </summary>
@@ -629,7 +630,7 @@ public class BeamoServiceDefinition
 	public bool IsLocal => !string.IsNullOrEmpty(ProjectDirectory);
 	public bool HasLocalDockerfile =>
 		Protocol == BeamoProtocolType.HttpMicroservice && !string.IsNullOrEmpty(ProjectDirectory);
-	
+
 	public enum ProjectLanguage { CSharpDotnet, }
 
 	/// <summary>
@@ -649,7 +650,7 @@ public class BeamoServiceDefinition
 	public BeamoProtocolType Protocol;
 
 
-	
+
 	/// <summary>
 	/// Gets the truncated version of the image id (used for deploying the service manifest to Beamo. TODO Ideally, we should make beamo use the full ID later...
 	/// </summary>
@@ -704,7 +705,7 @@ public class BeamoServiceDefinition
 	/// Path to the services csproj file
 	/// </summary>
 	public string ProjectPath;
-	
+
 	/// <summary>
 	/// Defines two services as being equal simply by using their <see cref="BeamoServiceDefinition.BeamoId"/>.
 	/// </summary>
