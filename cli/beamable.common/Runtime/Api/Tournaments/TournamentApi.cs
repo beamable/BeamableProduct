@@ -149,9 +149,9 @@ namespace Beamable.Common.Api.Tournaments
 
 		public Promise<TournamentPlayerStatus> JoinTournament(string tournamentId, double startScore = 0)
 		{
-			return GetPlayerStatus().FlatMap(allStatus =>
+			return GetPlayerStatus(tournamentId: tournamentId).FlatMap(playerStatus =>
 			{
-				var existing = allStatus.statuses.FirstOrDefault(status => status.tournamentId.Equals(tournamentId));
+				var existing = playerStatus.statuses.FirstOrDefault(status => status.tournamentId.Equals(tournamentId));
 				if (existing != null)
 				{
 					// we have already joined the tournament. Don't do anything.

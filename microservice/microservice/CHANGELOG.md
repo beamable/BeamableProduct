@@ -14,4 +14,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - services running locally will use adaptive port bindings to avoid port collisions
+- JoinTournaments api now propagates the tournamentId to the inner GetPlayerStatus call, which reduces the amount of data fetched
 - calling `Context.Services.Inventory.GetItems()` will no longer break when items reference deleted content
