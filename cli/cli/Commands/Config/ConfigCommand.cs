@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 namespace cli;
 
-public class ConfigCommand : AtomicCommand<ConfigCommandArgs, ConfigCommandResult>
+public class ConfigCommand : AtomicCommand<ConfigCommandArgs, ConfigCommandResult>, ISkipManifest
 {
 	public ConfigCommand() : base("config", "List the current beamable configuration")
 	{
