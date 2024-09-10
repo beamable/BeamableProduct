@@ -23,7 +23,8 @@ public class InitCommandArgs : LoginCommandArgs
 
 public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 	IStandaloneCommand,
-	IHaveRedirectionConcerns<InitCommandArgs>
+	IHaveRedirectionConcerns<InitCommandArgs>,
+	ISkipManifest
 {
 	private readonly LoginCommand _loginCommand;
 	private IRealmsApi _realmsApi;

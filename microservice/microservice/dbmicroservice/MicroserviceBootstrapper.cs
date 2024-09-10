@@ -570,13 +570,13 @@ namespace Beamable.Server
 	        //TODO: These events are still not working for some reason
 	        process.ErrorDataReceived += (sender, args) =>
 	        {
-				Log.Information($"Generate env process (error): [{args.Data}]");
+				Log.Verbose($"Generate env process (error): [{args.Data}]");
 				if(!string.IsNullOrEmpty(args.Data)) sublogs += args.Data;
 	        };
 
 	        process.OutputDataReceived += (sender, args) =>
 	        {
-		        Log.Information($"Generate env process (log): [{args.Data}]");
+		        Log.Verbose($"Generate env process (log): [{args.Data}]");
 		        if(!string.IsNullOrEmpty(args.Data)) result += args.Data;
 	        };
 
@@ -606,15 +606,14 @@ namespace Beamable.Server
 	        // Might be necessary due to stupid .NET thing that causes the Out/Err callbacks to trigger a bit after the process closes.
 	        await exitSignal;
 	        await Task.Delay(100);
-	        
-	        Log.Information($"Read StdOut: {result}");
-	        Log.Information($"Read StdErr: {sublogs}");
-	        Log.Information($"Awaited Exit!");
-			
+
+	     
 	        if (process.ExitCode != 0)
 	        {
+		        Log.Error($"generate-env output:\n{sublogs}");
 		        throw new Exception($"Failed to generate-env message=[{result}] sub-logs=[{sublogs}]");
 	        }
+	        Log.Information($"environment:\n{result}");
 	        
 	        var parsedOutput = JsonConvert.DeserializeObject<ReportDataPoint<GenerateEnvFileOutput>>(result);
 	        if (parsedOutput.type != "stream")
