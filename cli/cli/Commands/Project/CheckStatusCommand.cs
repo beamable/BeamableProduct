@@ -55,7 +55,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, ServiceD
 	{
 		var discovery = args.DependencyProvider.GetService<DiscoveryService>();
 
-		TimeSpan timeout = TimeSpan.FromMilliseconds(Beamable.Common.Constants.Features.Services.DISCOVERY_RECEIVE_PERIOD_MS * 2);
+		TimeSpan timeout = TimeSpan.FromMilliseconds(Beamable.Common.Constants.Features.Services.DISCOVERY_RECEIVE_PERIOD_MS);
 		if (args.watch)
 		{
 			timeout = default;

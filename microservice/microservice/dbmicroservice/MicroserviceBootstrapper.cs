@@ -138,6 +138,12 @@ namespace Beamable.Server
 	            case LogOutputType.FILE:
 		            logger = logConfig.WriteTo.File(args.LogOutputPath ?? "./service.log");
 		            break;
+	            
+	            case LogOutputType.STRUCTURED_AND_FILE:
+		            logger = logConfig
+			            .WriteTo.Console(new MicroserviceLogFormatter())
+			            .WriteTo.File(args.LogOutputPath ?? "./service.log");
+		            break;
 				default:
 					logger = logConfig.WriteTo.Console(new MicroserviceLogFormatter());
 					break;
@@ -554,7 +560,7 @@ namespace Beamable.Server
 	        var dotnetPath = Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.BEAM_DOTNET_PATH);
 	        var beamProgram = GetBeamProgram();
 
-	        string arguments = $"{beamProgram} project generate-env {serviceName} {customArgs} --logs v --pretty";
+	        string arguments = $"{beamProgram} project generate-env {serviceName} {customArgs} --logs v --pretty --no-log-file";
 	        string fileName = !string.IsNullOrEmpty(dotnetPath) ? dotnetPath : "dotnet";
 	        
 	        process.StartInfo.FileName = fileName;

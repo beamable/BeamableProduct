@@ -61,9 +61,10 @@ namespace Beamable.Server
    public class MicroserviceServiceProviderRequest
    {
 	   public string type = "basic";
-	   public string name;
+	   public string name; // the routable name of the service, which means it includes "micro_". Ex: "micro_Tuna"
+	   public string beamoName; // the name of the service, as written by the user. Ex: "Tuna"
 	   public string? routingKey; // Option[String] = None, // Arbitrary unique key. This should only be used for locally running services
-	   public long? startedByGamerTag; //: Option[Long] = None, // gamerTag of the user who started this service. This should only be used for locally running services
+	   public long? startedById; //: Option[Long] = None, // accountId of the user who started this service. This should only be used for locally running services
 
 	   public string ToJson()
 	   {
@@ -391,7 +392,7 @@ namespace Beamable.Server
             var realmService = _args.ServiceScope.GetService<IRealmConfigService>();
             await realmService.GetRealmConfigSettings();
             
-            await ProvideService(QualifiedName);
+            await ProvideService();
 
             HasInitialized = true;
 
@@ -850,16 +851,22 @@ namespace Beamable.Server
          }
       }
 
-      private async Promise ProvideService(string name)
+      private async Promise ProvideService()
       {
 	      var req = new MicroserviceServiceProviderRequest
 	      {
 		      type = "basic", 
-		      name = name,
+		      name = QualifiedName,
+		      beamoName = MicroserviceName,
 	      };
 	      if (_args.TryGetRoutingKey(out var routingKey))
 	      {
 		      req.routingKey = routingKey;
+	      }
+
+	      if (_args.AccountId > 0)
+	      {
+		      req.startedById = _args.AccountId;
 	      }
 
 	      var serviceProviderTask = _requester.Request<MicroserviceProviderResponse>(
@@ -876,11 +883,11 @@ namespace Beamable.Server
 		      }).ToUnit();
 
 	      await serviceProviderTask;
-	      await RegisterFederation(name, routingKey);
+	      await RegisterFederation(routingKey);
 	      await eventProvider;
       }
 
-      private async Promise RegisterFederation(string name, string routingKey)
+      private async Promise RegisterFederation(string routingKey)
       {
 	      if (_args.DisableCustomInitializationHooks) 
 		      return; // if this is a health-check, then we aren't going to auto-register federation at all.
@@ -888,7 +895,7 @@ namespace Beamable.Server
 	      IBeamoApi api = new BeamoApi(_requester);
 	      var federationRequest = new MicroserviceRegistrationRequest
 	      {
-		      serviceName = name,
+		      serviceName = QualifiedName, 
 		      trafficFilterEnabled = true,
 		      federation = new OptionalArrayOfSupportedFederation(FederationComponents.Select(component =>
 			      new SupportedFederation

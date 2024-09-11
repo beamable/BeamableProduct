@@ -5,8 +5,10 @@ using cli.Services;
 using CliWrap;
 using Newtonsoft.Json;
 using Serilog;
+using Serilog.Events;
 using System.CommandLine;
 using System.Text;
+using System.Text.Json;
 
 namespace cli.Commands.Project;
 
@@ -17,7 +19,26 @@ public class RunProjectCommandArgs : CommandArgs
 	public bool forceRestart;
 }
 
-public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
+public class RunProjectResultStream
+{
+	/// <summary>
+	/// for which service is this progress update for?
+	/// </summary>
+	public string serviceId;
+	
+	/// <summary>
+	/// a description of the progress
+	/// </summary>
+	public string message;
+	
+	/// <summary>
+	/// between 0 and 1, where 1 means the service is fully initialized and ready for traffic
+	/// </summary>
+	public float progressRatio;
+}
+
+public class RunProjectCommand : AppCommand<RunProjectCommandArgs>
+	, IResultSteam<DefaultStreamResultChannel, RunProjectResultStream>
 {
 	public RunProjectCommand()
 		: base("run", "Run a project")
@@ -32,9 +53,26 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 		});
 		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
 		AddOption<bool>(new Option<bool>("--force", "With this flag, we restart any running services. Without it, we skip running services"), (args, b) => args.forceRestart = b);
-		AddOption<bool>(new Option<bool>("--detach", "With this flag, we don't remain attached to the running service process"), (args, b) => args.detach = b);
+
+		var detachOption = new Option<bool>("--detach",
+			"With this flag, we don't remain attached to the running service process");
+		detachOption.AddAlias("-d");
+		AddOption<bool>(detachOption, (args, b) => args.detach = b);
 	}
 
+	const float MIN_PROGRESS = .05f;
+	void SendUpdate(string serviceId, string message=null, float progress=0)
+	{
+		// remap the progress between MIN and 1.
+		progress = MIN_PROGRESS + (progress * (1 - MIN_PROGRESS));
+		this.SendResults(new RunProjectResultStream
+		{
+			serviceId = serviceId,
+			message = message,
+			progressRatio = progress
+		});
+	}
+	
 	public override async Task Handle(RunProjectCommandArgs args)
 	{
 		ProjectCommand.FinalizeServicesArg(args, ref args.services);
@@ -45,10 +83,20 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 			            "Their log output will be shown interleaved; for optimal log viewing, use '--detach' and then use 'beam project logs --ids <BeamoId>' for each service whose logs you wish to tail");
 		}
 		
+		// Emit some progress messages to let any listeners know we are doing work...
+		foreach (var service in args.services)
+		{
+			SendUpdate(service, "discovering...", -MIN_PROGRESS * .9f);
+		}
+		
 		// First, we need to find out which services are currently running.
 		var runningServices = new Dictionary<string, ServiceDiscoveryEvent>();
 		var discovery = args.DependencyProvider.GetService<DiscoveryService>();
-		await foreach (var evt in discovery.StartDiscovery(args, TimeSpan.FromMilliseconds(Beamable.Common.Constants.Features.Services.DISCOVERY_RECEIVE_PERIOD_MS * 2)))
+		Log.Verbose("starting discovery");
+		await foreach (var evt in discovery.StartDiscovery(
+			               args: args, 
+			               timeout: TimeSpan.FromMilliseconds(Beamable.Common.Constants.Features.Services.DISCOVERY_RECEIVE_PERIOD_MS), 
+			               mode: DiscoveryMode.LOCAL))
 		{
 			// we don't care about this service, because we aren't stopping it.
 			if (!args.services.Contains(evt.service)) continue;
@@ -66,8 +114,15 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 		}
 
 		// Stop listening for discovery events.
-		await discovery.Stop();
+		Log.Verbose("finished discovery");
 
+		await discovery.Stop();
+		Log.Verbose("stopped discovery");
+
+		
+		foreach (var service in args.services)
+			SendUpdate(service, "resolving...", -MIN_PROGRESS * .7f);
+		
 		// Build out the list of services we'll actually want to start.
 		var serviceTable = new Dictionary<string, HttpMicroserviceLocalProtocol>();
 		var cancelTable = new Dictionary<string, CancellationTokenSource>();
@@ -91,29 +146,45 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 
 				// If we are forcing a restart, we stop the service and then start it up again.
 				var beamoLocalSystem = args.BeamoLocalSystem;
+				SendUpdate(serviceName, "stopping...", -MIN_PROGRESS * .6f);
 				await StopProjectCommand.StopRunningService(runningServiceEvt, beamoLocalSystem, serviceName, _ => { });
+				SendUpdate(serviceName, "stopping...", -MIN_PROGRESS * .5f);
 			}
 
 			// If the service is not running here, we add it to the list of services we want to start.
 			cancelTable[serviceName] = new CancellationTokenSource();
 			serviceTable[serviceName] = service;
 		}
+		
+		foreach (var service in args.services)
+			SendUpdate(service, "starting...", 0);
 
 		// For each of the filtered list of services, start a process that'll run it.
 		var runTasks = new List<Task>();
 		Log.Debug("Starting Services. SERVICES={Services}", string.Join(",", serviceTable.Keys));
 		foreach ((string serviceName, HttpMicroserviceLocalProtocol service) in serviceTable)
 		{
-			runTasks.Add(RunService(args, serviceName, !args.detach, cancelTable[serviceName]));
+			runTasks.Add(RunService(args, serviceName, !args.detach, cancelTable[serviceName], data =>
+			{
+				if (data.IsJson)
+				{
+					Log.Write(data.JsonLogLevel, data.JsonLogMessage);
+				}
+				else
+				{
+					Log.Information(data.rawLogMessage);
+				}
+			}));
 		}
 		
 		await Task.WhenAll(runTasks);
 	}
 
 
-	public static async Task RunService(CommandArgs args, string serviceName, bool watchProcess, CancellationTokenSource serviceToken)
+	public static async Task RunService(CommandArgs args, string serviceName, bool watchProcess, CancellationTokenSource serviceToken, Action<ProjectRunLogData> onLog=null)
 	{
 		var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(args.Lifecycle.CancellationToken, serviceToken.Token);
+		var serviceStartedLogsReceived = false;
 
 		// Setup a thread to run the server process.
 		// This runs the currently built MS .dll via `dotnet` and keeps a handle to the resulting process.
@@ -144,6 +215,7 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 						["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1",
 						["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1",
 						["LOG_PATH"] = logPath,
+						["LOG_TYPE"] = "structured+file",
 						["WATCH_TOKEN"] = "false",
 						[Beamable.Common.Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = args.AppContext.DotnetPath,
 					})
@@ -153,7 +225,35 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 					}))
 					.WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
 					{
-						Console.Error.WriteLine("(watch) " + line);
+						// this may be structured JSON, or it could be a valid build message....
+						try
+						{
+							var logData = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(line, new JsonSerializerOptions
+							{
+								IncludeFields = true
+							});
+
+							onLog?.Invoke(new ProjectRunLogData
+							{
+								rawLogMessage = line,
+								jsonData = logData
+							});
+						}
+						catch
+						{
+							onLog?.Invoke(new ProjectRunLogData
+							{
+								rawLogMessage = line,
+								jsonData = null
+							});
+						}
+
+						if (line.Contains(Beamable.Common.Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX))
+						{
+							serviceStartedLogsReceived = true;
+						}
+
+						// Console.Error.WriteLine("(watch) " + line);
 					}))
 					.WithValidation(CommandResultValidation.None)
 					.ExecuteAsync(tokenSource.Token);
@@ -169,50 +269,71 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>, IEmptyResult
 				Log.Error(e, e.Message);
 			}
 		}, tokenSource.Token);
-
-		// Setup the tail logs command so that we can keep track of the logs of the running service while it boots up.
-		var tailArgs = args.Create<TailLogsCommandArgs>();
-		tailArgs.reconnect = true;
-		tailArgs.service = new ServiceName(serviceName);
-
-		var serviceStartedLogsReceived = false;
-		var logCommand = ProjectLogsService.Handle(tailArgs, logMessage =>
-		{
-			Console.Error.WriteLine($"[{logMessage.logLevel}] {logMessage.message}");
-			if (logMessage.message.Contains("Service ready for traffic."))
-				serviceStartedLogsReceived = true;
-		}, tokenSource.Token);
-
-		var serviceStarted = false;
-		var healthCheckTask = Task.Run(async () =>
-		{
-			var route = $"https://dev.api.beamable.com/basic/{args.AppContext.Cid}.{args.AppContext.Pid}.micro_{serviceName}/admin/HealthCheck";
-			while (true)
-			{
-				try
-				{
-					await args.Requester.CustomRequest<object>(Method.GET, route,
-						customHeaders: new[] { $"{Beamable.Common.Constants.Requester.HEADER_ROUTINGKEY}={ServiceRoutingStrategyExtensions.GetRoutingKeyMap(new[] { serviceName })}" });
-					serviceStarted = true;
-					break;
-				}
-				catch (Exception)
-				{
-					await Task.Delay(50);
-				}
-			}
-		}, tokenSource.Token);
-
-		while (!serviceStarted || !serviceStartedLogsReceived)
+		
+		while (!serviceStartedLogsReceived)
 		{
 			await Task.Delay(50, tokenSource.Token);
 		}
 
 		if (watchProcess)
 		{
-			await healthCheckTask;
 			await serverTask;
-			await logCommand;
+		}
+		else
+		{
+			Log.Information($"Detaching from running service=[{serviceName}]");
+		}
+	}
+	
+	public class StructuredMicroserviceLog
+	{
+		[JsonProperty("__t")]
+		public string timeStamp;
+
+		[JsonProperty("__m")]
+		public string message;
+
+		[JsonProperty("__l")]
+		public string logLevel;
+
+		[JsonProperty("__x")]
+		public string exception;
+	}
+
+	public class ProjectRunLogData
+	{
+		public string rawLogMessage;
+		public Dictionary<string, object> jsonData;
+
+		public bool IsJson => jsonData != null;
+
+		public LogEventLevel JsonLogLevel
+		{
+			get
+			{
+				if (!IsJson) 
+					return LogEventLevel.Fatal;
+				if (!jsonData.TryGetValue("__l", out var logLevel))
+					return LogEventLevel.Fatal;
+				
+				if (!Enum.TryParse<LogEventLevel>(logLevel.ToString(), ignoreCase: true, out var level))
+					return LogEventLevel.Fatal;
+
+				return level;
+			}
+		}
+
+		public string JsonLogMessage
+		{
+			get
+			{
+				if (!IsJson) return rawLogMessage;
+				if (!jsonData.TryGetValue("__m", out var message))
+					return rawLogMessage;
+				return message.ToString();
+			}
 		}
 	}
 }
+
+

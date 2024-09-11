@@ -1,12 +1,12 @@
 
 namespace Beamable.Editor.BeamCli.Commands
 {
-    using Beamable.Common;
-    using Beamable.Common.BeamCli;
-    
-    [System.SerializableAttribute()]
-    public class BeamCliServiceComponent
-    {
-        public string name;
-    }
+	using Beamable.Common;
+	using Beamable.Common.BeamCli;
+
+	[System.SerializableAttribute()]
+	public class BeamCliServiceComponent
+	{
+		public string name;
+	}
 }
