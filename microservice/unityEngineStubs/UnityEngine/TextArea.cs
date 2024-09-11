@@ -1,4 +1,5 @@
 ﻿using System;
+// ReSharper disable InconsistentNaming
 
 namespace UnityEngine
 {
@@ -20,8 +21,6 @@ namespace UnityEngine
         /// <summary>
         ///   <para>Attribute to make a string be edited with a height-flexible and scrollable text area.</para>
         /// </summary>
-        /// <param name="minLines">The minimum amount of lines the text area will use.</param>
-        /// <param name="maxLines">The maximum amount of lines the text area can show before it starts using a scrollbar.</param>
         public TextAreaAttribute()
         {
             this.minLines = 3;
