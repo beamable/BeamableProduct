@@ -254,13 +254,18 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 
 			// Add dependencies if they exist
 			string[] dependencies = null;
-			if ((args.LinkedServices == null || args.LinkedServices.Count == 0) && !args.Quiet)
+			var storages = args.BeamoLocalSystem.BeamoManifest.EmbeddedMongoDbLocalProtocols;
+
+			if (storages.Count > 0)
 			{
-				dependencies = GetChoicesFromPrompt(args.BeamoLocalSystem);
-			}
-			else if (args.LinkedServices != null)
-			{
-				dependencies = GetDependenciesFromName(args.BeamoLocalSystem, args.LinkedServices);
+				if ((args.LinkedServices == null || args.LinkedServices.Count == 0) && !args.Quiet)
+				{
+					dependencies = GetChoicesFromPrompt(args.BeamoLocalSystem);
+				}
+				else if (args.LinkedServices != null)
+				{
+					dependencies = GetDependenciesFromName(args.BeamoLocalSystem, args.LinkedServices);
+				}
 			}
 
 			if (dependencies != null)

@@ -34,7 +34,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public void Init<T>(List<T> services, string serviceTypeName) where T : IBeamoServiceDefinition
 		{
 			Root.Q<Label>("header").text = $"Optional dependencies ({serviceTypeName}):";
-
+			var emptyContainer = new VisualElement { name = "listRoot" };
+			_scrollView.Add(emptyContainer);
 			foreach (var service in services)
 			{
 				var checkbox = new LabeledCheckboxVisualElement();
@@ -43,7 +44,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				checkbox.SetText(service.BeamoId);
 				checkbox.DisableIcon();
 				_serviceModelBases.Add(service, checkbox);
-				_scrollView.Add(checkbox);
+				emptyContainer.Add(checkbox);
 			}
 		}
 
