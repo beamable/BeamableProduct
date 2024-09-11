@@ -44,6 +44,7 @@ namespace Beamable.Editor.Microservice.UI2
 		public override bool ShowLoading => true;
 
 		private VisualElement _windowRoot;
+		private VisualElement _createServiceContainer;
 		private ActionBarVisualElement _actionBarVisualElement;
 		private MicroserviceBreadcrumbsVisualElement _microserviceBreadcrumbsVisualElement;
 		private CreateServiceVisualElement _createServiceElement;
@@ -74,18 +75,24 @@ namespace Beamable.Editor.Microservice.UI2
 			_actionBarVisualElement.OnSettingsButtonClicked += HandleSettingsButtonClicked;
 			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
 			_microserviceBreadcrumbsVisualElement.Refresh();
-			_scrollView = new ScrollView(ScrollViewMode.Vertical);
-			_scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;;
-			var emptyContainer = new VisualElement { name = "listRoot" };
+			var scrollViewParent = _windowRoot.Q<MicroserviceContentVisualElement>("microserviceContentVisualElement");
+			scrollViewParent.style.flexGrow = 1;
+			scrollViewParent.style.flexDirection = FlexDirection.Column;
+			_scrollView = _windowRoot.Q<ScrollView>("microScrollView");
+			_scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;//asd
+			_scrollView.style.flexGrow = 1;
+			_scrollView.style.overflow = Overflow.Hidden;
 
-			var microserviceContentVisualElement = root.Q("microserviceContentVisualElement");
-			microserviceContentVisualElement.Add(new VisualElement { name = "announcementList" });
+			var emptyContainer = new VisualElement { name = "listRoot" };
 
 			_createServiceElement = new CreateServiceVisualElement();
 			_createServiceElement.SetHidden(true);
-			microserviceContentVisualElement.Add(_createServiceElement);
 
-			microserviceContentVisualElement.Add(_scrollView);
+			_createServiceContainer = _windowRoot.Q<VisualElement>("createServiceElement");
+			_createServiceContainer.style.flexGrow = 0;
+			_createServiceContainer.style.display = DisplayStyle.None;
+			_createServiceContainer.Add(_createServiceElement);
+
 			_scrollView.Add(emptyContainer);
 			OnLoad().Then(_ =>
 			{
@@ -140,7 +147,19 @@ namespace Beamable.Editor.Microservice.UI2
 		private void HandleCreateNewButtonClicked(ServiceType serviceType)
 		{
 			_createServiceElement.ServiceType = serviceType;
-			_createServiceElement.Refresh(_actionBarVisualElement.Refresh);
+			_createServiceContainer.style.display = DisplayStyle.Flex;
+			_createServiceElement.Refresh(() =>
+			{
+				_actionBarVisualElement.Refresh();
+				_createServiceContainer.MarkDirtyRepaint();
+				rootVisualElement.MarkDirtyRepaint();
+			});
+			_createServiceElement.OnClose += () =>
+			{
+				_createServiceContainer.style.display = DisplayStyle.None;
+				_createServiceContainer.MarkDirtyRepaint();
+				rootVisualElement.MarkDirtyRepaint();
+			};
 			EditorApplication.delayCall += () => _scrollView.verticalScroller.value = 0f;
 		}
 

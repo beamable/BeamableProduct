@@ -116,6 +116,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_serviceCreateDependentService = new StandaloneServiceCreateDependent();
 			_serviceCreateDependentService.Refresh();
 			_serviceCreateDependentService.Init(_dependenciesCandidates, DependenciesType.ToString());
+			Root.MarkDirtyRepaint();
 			return _serviceCreateDependentService;
 		}
 

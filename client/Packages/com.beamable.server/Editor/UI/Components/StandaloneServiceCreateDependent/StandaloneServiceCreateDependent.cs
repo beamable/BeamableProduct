@@ -36,6 +36,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Root.Q<Label>("header").text = $"Optional dependencies ({serviceTypeName}):";
 			var emptyContainer = new VisualElement { name = "listRoot" };
 			_scrollView.Add(emptyContainer);
+			_scrollView.style.overflow = Overflow.Hidden;
 			foreach (var service in services)
 			{
 				var checkbox = new LabeledCheckboxVisualElement();
