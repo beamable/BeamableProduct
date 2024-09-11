@@ -349,7 +349,6 @@ public class App
 		Commands.AddSubCommandWithHandler<ClearTempLogFilesCommand, ClearTempLogFilesCommandArgs, TempClearCommandGroup>();
 		
 		Commands.AddRootCommand<PlayerCommand, PlayerCommandArgs>();
-		Commands.AddSubCommandWithHandler<AddPlayerToRealmCommand, AddPlayerToRealmCommandArgs, PlayerCommand>();
 		
 		Commands.AddRootCommand<PortalCommand, PortalCommandArgs>();
 		Commands.AddSubCommandWithHandler<PortalOpenCurrentAccountCommand, PortalOpenCurrentAccountCommandArgs, PortalCommand>();

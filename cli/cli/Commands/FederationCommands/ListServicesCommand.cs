@@ -30,12 +30,13 @@ public class ListServicesCommandOutput
 
 public class RunningService
 {
-	public string name;
+	public string serviceName;
+	public string beamoName;
 	public string routingKey;
 	public string fullName;
 	public int instanceCount;
 	public bool trafficFilterEnabled;
-	public long authorPlayerId;
+	public long startedByAccountId;
 
 	public List<RunningFederation> federations = new List<RunningFederation>();
 }
@@ -119,12 +120,13 @@ public class ListServicesCommand : StreamCommand<ListServicesCommandArgs, ListSe
 			pid = ctx.Pid,
 			services = res.registrations.Select(x => new RunningService
 			{
-				name = x.serviceName.Split('.')[2],
+				serviceName = x.serviceName.Split('.')[2], // should be micro_name (toLowered, likely)
+				beamoName = x.beamoName,
 				fullName = x.serviceName,
 				instanceCount = x.instanceCount,
 				trafficFilterEnabled = x.trafficFilterEnabled,
 				routingKey = x.routingKey,
-				authorPlayerId = x.startedByGamerTag.GetOrElse(0),
+				startedByAccountId = x.startedById.GetOrElse(0),
 				federations = x.federation.GetOrElse(() => null)?.Select(f => new RunningFederation { nameSpace = f.nameSpace, federationType = f.type.ToString() }).ToList()
 			}).ToList()
 		};
@@ -145,13 +147,13 @@ public class ListServicesCommand : StreamCommand<ListServicesCommandArgs, ListSe
 		if (!string.IsNullOrEmpty(args.nameFilter))
 		{
 			Log.Verbose($"applying federation name filter=[{args.nameFilter}]");
-			services = res.services.Where(x => x.name.ToLowerInvariant().Contains(args.nameFilter));
+			services = res.services.Where(x => x.beamoName.ToLowerInvariant().Contains(args.nameFilter));
 		}
 
 		if (args.authorFilter > 0)
 		{
 			Log.Verbose($"applying federation author filter=[{args.authorFilter}]");
-			services = res.services.Where(x => x.authorPlayerId == args.authorFilter);
+			services = res.services.Where(x => x.startedByAccountId == args.authorFilter);
 		}
 
 		if (!string.IsNullOrEmpty(args.federationNamespaceFilter))

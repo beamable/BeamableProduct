@@ -6,6 +6,7 @@ using Beamable.Server.Common;
 using cli.FederationCommands;
 using cli.Utils;
 using Newtonsoft.Json;
+using Serilog;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
@@ -13,6 +14,39 @@ using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace cli.Services;
+
+[Flags]
+public enum DiscoveryMode
+{
+	/// <summary>
+	/// This mode signals that all types of discovery should be used
+	/// </summary>
+	ALL = DiscoveryFlags.DOCKER + DiscoveryFlags.DOTNET + DiscoveryFlags.REMOTE,
+	
+	/// <summary>
+	/// this mode signals that only local discovery methods should be used. 
+	/// </summary>
+	LOCAL = DiscoveryFlags.DOTNET + DiscoveryFlags.DOCKER,
+}
+
+/// <summary>
+/// this enum is meant to be used in conjunction with <see cref="DiscoveryMode"/>.
+/// Each flag represents a type of discovery.
+/// </summary>
+public enum DiscoveryFlags
+{	
+	DOTNET = 1 << 0, // 1
+	DOCKER = 1 << 1, // 2
+	REMOTE = 1 << 2, // 4
+}
+
+public static class DiscoveryModeExtensions
+{
+	public static bool HasDiscoveryFlag(this DiscoveryMode mode, DiscoveryFlags flag)
+	{
+		return mode.HasFlag((DiscoveryMode)flag);
+	}
+}
 
 public class DiscoveryService
 {
@@ -27,7 +61,11 @@ public class DiscoveryService
 	private ConcurrentDictionary<string, string[]> _nameToRoutingKeys;
 	private ConcurrentQueue<ServiceDiscoveryEvent> _evtQueue;
 
-
+	/// <summary>
+	/// true if there are any on-going discovery tasks.
+	/// </summary>
+	public bool IsDiscovering { get; private set; }
+	
 	public DiscoveryService(BeamoLocalSystem localSystem, IAppContext appContext)
 	{
 		_localSystem = localSystem;
@@ -39,42 +77,326 @@ public class DiscoveryService
 		await _localSystem.StopListeningToDocker();
 	}
 
-	public string[] GetRoutingKeys(string beamoId) => _nameToRoutingKeys[beamoId.ToLower()];
-
-	public async IAsyncEnumerable<ServiceDiscoveryEvent> StartDiscovery(CommandArgs args, TimeSpan timeout = default, [EnumeratorCancellation] CancellationToken token = default)
+	public string[] GetRoutingKeys(string beamoId)
 	{
-		_nameToRoutingKeys = new ConcurrentDictionary<string, string[]>();
-		_localDiscoveryEntryWithTimestamp = new ConcurrentDictionary<string, (long, ServiceDiscoveryEntry)>();
-		_evtQueue = new ConcurrentQueue<ServiceDiscoveryEvent>();
-
-		// Get the list of registered services in the entire realm 
-		var realmRegisteredServices = await ListServicesCommand.GetRunningServices(args.DependencyProvider);
-		foreach (var s in realmRegisteredServices.services)
+		if (_nameToRoutingKeys.TryGetValue(beamoId, out var routingKeys))
 		{
-			// This is lower-case cause the backend lower-cases this stuff for reasons...
-			var beamoId = s.name;
-			var routingKey = s.routingKey;
-			if (!_nameToRoutingKeys.TryAdd(beamoId, new[] { routingKey }))
+			return routingKeys;
+		}
+
+		throw new CliException(
+			$"beamoId=[{beamoId}] does not exist in discovered routing key table. existing keys=[{string.Join(",", _nameToRoutingKeys.Keys)}]");
+	}
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="args"></param>
+	/// <param name="timeout"></param>
+	/// <param name="token"></param>
+	/// <param name="includeServerEvents">
+	///	When true (default), this discovery session will listen to server-side events over the beamable websocket to learn about services running remotely. 
+	/// </param>
+	/// <returns></returns>
+	public async IAsyncEnumerable<ServiceDiscoveryEvent> StartDiscovery(
+		CommandArgs args, 
+		TimeSpan timeout = default,
+		[EnumeratorCancellation] CancellationToken token = default, 
+		DiscoveryMode mode = DiscoveryMode.ALL)
+	{
+		if (IsDiscovering)
+		{
+			throw new CliException("Discovery is already on. This is a Beamable developer error. ");
+		}
+
+		IsDiscovering = true;
+		try
+		{
+			_nameToRoutingKeys = new ConcurrentDictionary<string, string[]>();
+			_localDiscoveryEntryWithTimestamp = new ConcurrentDictionary<string, (long, ServiceDiscoveryEntry)>();
+			_evtQueue = new ConcurrentQueue<ServiceDiscoveryEvent>();
+			var childCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(token);
+			
+			// Get the list of registered services in the entire realm 
+			var realmRegisteredServices = await ListServicesCommand.GetRunningServices(args.DependencyProvider);
+			// TODO: does this contain remote running services? (we want it)
+
+			foreach (var s in realmRegisteredServices.services)
 			{
-				var currentKeys = GetRoutingKeys(beamoId).ToList();
-				currentKeys.Add(routingKey);
-				_nameToRoutingKeys[beamoId] = currentKeys.ToArray();
+				// This is lower-case cause the backend lower-cases this stuff for reasons...
+				var beamoId = s.beamoName;
+				var routingKey = s.routingKey;
+				if (!_nameToRoutingKeys.TryAdd(beamoId, new[] { routingKey }))
+				{
+					var currentKeys = GetRoutingKeys(beamoId).ToList();
+					currentKeys.Add(routingKey);
+					_nameToRoutingKeys[beamoId] = currentKeys.ToArray();
+				}
+			}
+
+			// Prepare one event for every existing entry in the manifest
+			var currentEntries = _localSystem.BeamoManifest.ServiceDefinitions
+				.Select(sd => (Definition: sd, Entry: CreateEntryFromServiceDefinition(sd))).ToArray();
+			foreach (var e in currentEntries)
+			{
+				var beamoId = e.Definition.BeamoId.ToLower();
+				_nameToRoutingKeys.TryAdd(beamoId, Array.Empty<string>());
+				_evtQueue.Enqueue(CreateEvent(e.Entry, e.Definition, GetRoutingKeys(beamoId)));
+			}
+
+			// Set up a task that will listens for messages broadcast by any locally running microservices
+			// This then wraps it up in an event and enqueues it.
+			if (mode.HasDiscoveryFlag(DiscoveryFlags.DOTNET))
+			{
+				Log.Verbose("starting local discovery");
+				_localDiscoveryListen = StartLocalDiscoveryTask(childCancellationToken.Token);
+			}
+
+			// Start a websocket connection to listen for service registrations in the realm.
+			// This will listen for routing information that services register with our backend
+			// and enqueue events whenever updates are detected. 
+			if (mode.HasDiscoveryFlag(DiscoveryFlags.REMOTE))
+			{
+				Log.Verbose("starting remote discovery");
+				_routingDiscoveryListen = StartRoutingDiscoveryTask(args, childCancellationToken.Token);
+			}
+
+			// This looks for services running locally inside docker and emit events whenever they are turned on/off.
+			// If docker isn't running, this checks for docker to be running every 1-second.
+			if (mode.HasDiscoveryFlag(DiscoveryFlags.DOCKER))
+			{
+				Log.Verbose("starting docker discovery");
+				_dockerDiscoveryListen = StartDockerDiscoveryTask(childCancellationToken.Token);
+			}
+
+			// Cache the startup time
+			var toRemove = new HashSet<string>();
+			var startTime = DateTimeOffset.Now;
+			do
+			{
+				// return any messages to the caller.
+				while (_evtQueue.TryDequeue(out var evt))
+				{
+					yield return evt;
+				}
+
+				_evtQueue.Clear();
+
+				// check if we have exhausted our ps time.
+				var nowTime = DateTimeOffset.Now;
+				var duration = nowTime - startTime;
+				if (timeout != default && timeout < duration)
+				{
+					break;
+				}
+
+				if (token.IsCancellationRequested)
+				{
+					break;
+				}
+
+				// Wait for a bit.
+				await Task.Delay(50, token);
+
+				// Find out frow which services we have not received messages in the past DISCOVERY_RECEIVE_PERIOD_MS  
+				var now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+				foreach (var kvp in _localDiscoveryEntryWithTimestamp)
+				{
+					var age = now - kvp.Value.Item1;
+					if (age > Beamable.Common.Constants.Features.Services.DISCOVERY_RECEIVE_PERIOD_MS)
+					{
+						var sd = _localSystem.BeamoManifest.ServiceDefinitions.FirstOrDefault(sd =>
+							sd.BeamoId == kvp.Key);
+						_evtQueue.Enqueue(CreateEvent(kvp.Value.Item2, sd, GetRoutingKeys(sd.BeamoId), false));
+						toRemove.Add(kvp.Key);
+					}
+				}
+
+				// Remove all the entries that we haven't heard from in a while
+				foreach (var x in toRemove) _localDiscoveryEntryWithTimestamp.Remove(x, out _);
+				toRemove.Clear();
+
+			} while (true);
+			
+			// cancel the sub tasks.
+			await childCancellationToken.CancelAsync();
+
+			if (_dockerDiscoveryListen != null)
+			{
+				Log.Verbose("waiting for docker discovery to end");
+				await _dockerDiscoveryListen;
+				_dockerDiscoveryListen = null;
+			}
+
+			if (_localDiscoveryListen != null)
+			{
+				Log.Verbose("waiting for local discovery to end");
+				await _localDiscoveryListen;
+				_localDiscoveryListen = null;
+			}
+
+			if (_routingDiscoveryListen != null)
+			{
+				Log.Verbose("waiting for routing discovery to end");
+				await _routingDiscoveryListen;
+				_routingDiscoveryListen = null;
+			}
+
+			Log.Verbose("waiting for docker local system to end");
+			// Here because if we don't kill of the "listening to docker" underlying process, this command's process never closes even after this function completes.
+			var isDockerRunning = await _localSystem.CheckIsRunning();
+			if (isDockerRunning)
+			{
+				await _localSystem.StopListeningToDocker();
 			}
 		}
-
-		// Prepare one event for every existing entry in the manifest
-		var currentEntries = _localSystem.BeamoManifest.ServiceDefinitions.Select(sd => (Definition: sd, Entry: CreateEntryFromServiceDefinition(sd))).ToArray();
-		foreach (var e in currentEntries)
+		finally
 		{
-			var beamoId = e.Definition.BeamoId.ToLower();
-			_nameToRoutingKeys.TryAdd(beamoId, Array.Empty<string>());
-			_evtQueue.Enqueue(CreateEvent(e.Entry, e.Definition, GetRoutingKeys(beamoId)));
+			IsDiscovering = false;
 		}
+	}
 
-		// Set up a task that will listens for messages broadcast by any locally running microservices
-		// This then wraps it up in an event and enqueues it.
+	public Task StartDockerDiscoveryTask(CancellationToken token)
+	{
+		return Task.Run(async () =>
+		{
+			try
+			{
+				var isListeningToDocker = false;
+				var wasDockerRunningLastTick = false;
+				do
+				{
+					// Check if docker's state changed (on/off) so we can reset isListeningToDocker.
+					var isDockerRunning = await _localSystem.CheckIsRunning();
+					if ((!isDockerRunning && wasDockerRunningLastTick) ||
+					    (isDockerRunning && !wasDockerRunningLastTick)) isListeningToDocker = false;
+					wasDockerRunningLastTick = isDockerRunning;
+
+					// If docker isn't running, wait for X second and try again.
+					// If we already are listening to docker, just keep checking if docker is still running every 1 second.
+					if (!isDockerRunning || isListeningToDocker)
+					{
+						await Task.Delay(250, token);
+					}
+					// If we get here, its because we are not configured to listen to docker so...
+					// We emit events for the current state and then hook up a listener to the docker process
+					// so we get updates as users start/shutdown services. 
+					else
+					{
+						var runningServices = await _localSystem.GetDockerRunningServices();
+						foreach (KeyValuePair<string, string> pair in runningServices)
+						{
+							var beamoId = pair.Key;
+							var serviceDefinition =
+								_localSystem.BeamoManifest.ServiceDefinitions.FirstOrDefault(
+									sd => sd.BeamoId == beamoId);
+							var service = await CreateEntryFromDocker(beamoId, pair.Value);
+
+							var evt = CreateEvent(service, serviceDefinition, GetRoutingKeys(beamoId));
+							_evtQueue.Enqueue(evt);
+						}
+
+						// This doesn't actually block
+						await _localSystem.StartListeningToDockerRaw(async (beamoId, eventType, raw) =>
+						{
+							if (eventType != "start" && eventType != "destroy")
+							{
+								return;
+							}
+
+							var service = await CreateEntryFromDocker(beamoId, raw.ID);
+							var serviceDefinition =
+								_localSystem.BeamoManifest.ServiceDefinitions.FirstOrDefault(
+									sd => sd.BeamoId == beamoId);
+							var evt = CreateEvent(service, serviceDefinition, GetRoutingKeys(beamoId));
+							_evtQueue.Enqueue(evt);
+						});
+
+						isListeningToDocker = true;
+					}
+
+					if (token.IsCancellationRequested)
+						break;
+
+				} while (true);
+			}
+			catch (TaskCanceledException)
+			{
+				// this exception is "fine"
+				//  we can exit the task as though everything is "fine"
+			}
+			catch (Exception e)
+			{
+				BeamableLogger.LogException(e);
+				throw;
+			}
+		}, token);
+	}
+	
+	public Task StartRoutingDiscoveryTask(CommandArgs args, CancellationToken token)
+	{
+		return Task.Run(async () =>
+		{
+			try
+			{
+				var ws = await WebsocketUtil.ConfigureWebSocketForServerNotifications(args,
+					new[] { "beamo.service_registration_changed" }, token);
+				await WebsocketUtil.RunServerNotificationListenLoop(ws, message =>
+				{
+					var bodyJson = JsonConvert.SerializeObject(message.body);
+					var data = JsonConvert.DeserializeObject<MicroserviceRegistrationsResponse>(bodyJson,
+						UnitySerializationSettings.Instance);
+
+					// We clear the list of keys as we rebuild it from the ground up every notification we receive --- then ensure there's an entry for all services.
+					_nameToRoutingKeys.Clear();
+					foreach (string id in _localSystem.BeamoManifest.ServiceDefinitions.Select(sd => sd.BeamoId))
+						_nameToRoutingKeys.AddOrUpdate(id.ToLower(), Array.Empty<string>(),
+							(_, _) => Array.Empty<string>());
+
+					// Now we update the list of routing keys we do see.
+					foreach (var registration in data.registrations)
+					{
+						var beamoId = registration.beamoName;
+						var routingKey = registration.routingKey.GetNonEmptyOrElse(() => "");
+						if (_nameToRoutingKeys.TryGetValue(beamoId, out var keys))
+						{
+							var currentKeys = keys.ToList();
+							currentKeys.Add(routingKey);
+							_nameToRoutingKeys.AddOrUpdate(beamoId, currentKeys.ToArray(),
+								(_, _) => currentKeys.ToArray());
+						}
+					}
+
+					// For each existing service, emit an event with the updated routing keys
+					var existingServices = _localSystem.BeamoManifest.ServiceDefinitions;
+					foreach (var sd in existingServices)
+					{
+						var latestEntry = _localDiscoveryEntryWithTimestamp.TryGetValue(sd.BeamoId, out var entry)
+							? entry.Item2
+							: CreateEntryFromServiceDefinition(sd);
+						var latestEvent = CreateEvent(latestEntry, sd, GetRoutingKeys(sd.BeamoId));
+						_evtQueue.Enqueue(latestEvent);
+					}
+				}, token);
+			}
+			catch (TaskCanceledException)
+			{
+				// this exception is "fine"
+				//  we can exit the task as though everything is "fine"
+			}
+			catch (Exception e)
+			{
+				BeamableLogger.LogException(e);
+				throw;
+			}
+		}, token);
+	}
+	
+
+	public Task StartLocalDiscoveryTask(CancellationToken token)
+	{
 		var socketListener = new Socket(SocketType.Dgram, ProtocolType.Udp);
-		_localDiscoveryListen = Task.Run(async () =>
+		return Task.Run(async () =>
 		{
 			try
 			{
@@ -86,7 +408,7 @@ public class DiscoveryService
 				do
 				{
 					// Block and wait for a socket message.
-					var byteCount = await socketListener.ReceiveAsync(buffer);
+					var byteCount = await socketListener.ReceiveAsync(buffer, token);
 					if (byteCount != 0)
 					{
 						var json = Encoding.UTF8.GetString(buffer.Array!, 0, byteCount);
@@ -113,59 +435,17 @@ public class DiscoveryService
 					if (token.IsCancellationRequested)
 						break;
 					
-					await Task.Delay(50);
+					await Task.Delay(50, token);
 				} while (true);
 			}
-			catch (Exception e)
+			catch (TaskCanceledException)
 			{
-				BeamableLogger.LogException(e);
-				throw;
+				// this exception is "fine"
+				//  we can exit the task as though everything is "fine"
 			}
-		}, token);
-
-		// Start a websocket connection to listen for service registrations in the realm.
-		// This will listen for routing information that services register with our backend
-		// and enqueue events whenever updates are detected. 
-		_routingDiscoveryListen = Task.Run(async () =>
-		{
-			try
+			catch (OperationCanceledException)
 			{
-				var ws = await WebsocketUtil.ConfigureWebSocketForServerNotifications(args, new[] { "beamo.service_registration_changed" }, token);
-				await WebsocketUtil.RunServerNotificationListenLoop(ws, message =>
-				{
-					var bodyJson = JsonConvert.SerializeObject(message.body);
-					var data = JsonConvert.DeserializeObject<MicroserviceRegistrationsResponse>(bodyJson, UnitySerializationSettings.Instance);
-
-					// We clear the list of keys as we rebuild it from the ground up every notification we receive --- then ensure there's an entry for all services.
-					_nameToRoutingKeys.Clear();
-					foreach (string id in _localSystem.BeamoManifest.ServiceDefinitions.Select(sd => sd.BeamoId))
-						_nameToRoutingKeys.AddOrUpdate(id.ToLower(), Array.Empty<string>(), (_, _) => Array.Empty<string>());
-
-					// Now we update the list of routing keys we do see.
-					foreach (var registration in data.registrations)
-					{
-						// This is in the form {cid}.{pid}._micro{beamoId}.basic
-						// beamoId here is already all lower-case 
-						var splitServiceName = registration.serviceName.Split('.');
-						var beamoId = splitServiceName[2].StartsWith("_micro") ? splitServiceName[2].Substring(5) : splitServiceName[2];
-						var routingKey = registration.routingKey.GetNonEmptyOrElse(() => "");
-						if (_nameToRoutingKeys.TryGetValue(beamoId, out var keys))
-						{
-							var currentKeys = keys.ToList();
-							currentKeys.Add(routingKey);
-							_nameToRoutingKeys.AddOrUpdate(beamoId, currentKeys.ToArray(), (_, _) => currentKeys.ToArray());
-						}
-					}
-
-					// For each existing service, emit an event with the updated routing keys
-					var existingServices = _localSystem.BeamoManifest.ServiceDefinitions;
-					foreach (var sd in existingServices)
-					{
-						var latestEntry = _localDiscoveryEntryWithTimestamp.TryGetValue(sd.BeamoId, out var entry) ? entry.Item2 : CreateEntryFromServiceDefinition(sd);
-						var latestEvent = CreateEvent(latestEntry, sd, GetRoutingKeys(sd.BeamoId));
-						_evtQueue.Enqueue(latestEvent);
-					}
-				}, token);
+				// this comes from the ReceiveAsync being cancelled mid
 			}
 			catch (Exception e)
 			{
@@ -173,126 +453,6 @@ public class DiscoveryService
 				throw;
 			}
 		}, token);
-
-		// This looks for services running locally inside docker and emit events whenever they are turned on/off.
-		// If docker isn't running, this checks for docker to be running every 1-second.
-		_dockerDiscoveryListen = Task.Run(async () =>
-		{
-			try
-			{
-				var isListeningToDocker = false;
-				var wasDockerRunningLastTick = false;
-				do
-				{
-					// Check if docker's state changed (on/off) so we can reset isListeningToDocker.
-					var isDockerRunning = await _localSystem.CheckIsRunning();
-					if ((!isDockerRunning && wasDockerRunningLastTick) || (isDockerRunning && !wasDockerRunningLastTick)) isListeningToDocker = false;
-					wasDockerRunningLastTick = isDockerRunning;
-
-					// If docker isn't running, wait for X second and try again.
-					// If we already are listening to docker, just keep checking if docker is still running every 1 second.
-					if (!isDockerRunning || isListeningToDocker)
-					{
-						await Task.Delay(250, token);
-					}
-					// If we get here, its because we are not configured to listen to docker so...
-					// We emit events for the current state and then hook up a listener to the docker process
-					// so we get updates as users start/shutdown services. 
-					else
-					{
-						var runningServices = await _localSystem.GetDockerRunningServices();
-						foreach (KeyValuePair<string, string> pair in runningServices)
-						{
-							var beamoId = pair.Key;
-							var serviceDefinition = _localSystem.BeamoManifest.ServiceDefinitions.FirstOrDefault(sd => sd.BeamoId == beamoId);
-							var service = await CreateEntryFromDocker(beamoId, pair.Value);
-
-							var evt = CreateEvent(service, serviceDefinition, GetRoutingKeys(beamoId));
-							_evtQueue.Enqueue(evt);
-						}
-
-						// This doesn't actually block
-						await _localSystem.StartListeningToDockerRaw(async (beamoId, eventType, raw) =>
-						{
-							if (eventType != "start" && eventType != "destroy")
-							{
-								return;
-							}
-
-							var service = await CreateEntryFromDocker(beamoId, raw.ID);
-							var serviceDefinition = _localSystem.BeamoManifest.ServiceDefinitions.FirstOrDefault(sd => sd.BeamoId == beamoId);
-							var evt = CreateEvent(service, serviceDefinition, GetRoutingKeys(beamoId));
-							_evtQueue.Enqueue(evt);
-						});
-
-						isListeningToDocker = true;
-					}
-
-					if (token.IsCancellationRequested)
-						break;
-
-				} while (true);
-			}
-			catch (Exception e)
-			{
-				BeamableLogger.LogException(e);
-				throw;
-			}
-		}, token);
-
-		// Cache the startup time
-		var toRemove = new HashSet<string>();
-		var startTime = DateTimeOffset.Now;
-		do
-		{
-			// return any messages to the caller.
-			while (_evtQueue.TryDequeue(out var evt))
-			{
-				yield return evt;
-			}
-			_evtQueue.Clear();
-
-			// check if we have exhausted our ps time.
-			var nowTime = DateTimeOffset.Now;
-			var duration = nowTime - startTime;
-			if (timeout != default && timeout < duration)
-			{
-				break;
-			}
-
-			if (token.IsCancellationRequested)
-			{
-				break;
-			}
-
-			// Wait for a bit.
-			await Task.Delay(50, token);
-	
-			// Find out frow which services we have not received messages in the past DISCOVERY_RECEIVE_PERIOD_MS  
-			var now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-			foreach (var kvp in _localDiscoveryEntryWithTimestamp)
-			{
-				var age = now - kvp.Value.Item1;
-				if (age > Beamable.Common.Constants.Features.Services.DISCOVERY_RECEIVE_PERIOD_MS)
-				{
-					var sd = _localSystem.BeamoManifest.ServiceDefinitions.FirstOrDefault(sd => sd.BeamoId == kvp.Key);
-					_evtQueue.Enqueue(CreateEvent(kvp.Value.Item2, sd, GetRoutingKeys(sd.BeamoId), false));
-					toRemove.Add(kvp.Key);
-				}
-			}
-
-			// Remove all the entries that we haven't heard from in a while
-			foreach (var x in toRemove) _localDiscoveryEntryWithTimestamp.Remove(x, out _);
-			toRemove.Clear();
-
-		} while (true);
-
-		// Here because if we don't kill of the "listening to docker" underlying process, this command's process never closes even after this function completes.
-		var isDockerRunning = await _localSystem.CheckIsRunning();
-		if (isDockerRunning)
-		{
-			await _localSystem.StopListeningToDocker();
-		}
 	}
 
 	public ServiceDiscoveryEntry CreateEntryFromServiceDefinition(BeamoServiceDefinition definition)
