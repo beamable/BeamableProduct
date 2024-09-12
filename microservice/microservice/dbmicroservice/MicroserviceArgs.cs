@@ -197,7 +197,7 @@ namespace Beamable.Server
 			}
 		}
 
-		public long AccountId => GetIntFromEnvironmentVariable("USER_ACCOUNT_ID", 0);
+		public long AccountId => GetLongFromEnvironmentVariable("USER_ACCOUNT_ID", 0);
 
 		public string Host => Environment.GetEnvironmentVariable("HOST");
 		public string Secret => Environment.GetEnvironmentVariable("SECRET");

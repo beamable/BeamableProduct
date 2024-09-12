@@ -54,6 +54,26 @@ public partial class BeamoLocalSystem
 
 		return bindings[0].HostPort;
 	}
+	
+	public async Promise<Dictionary<string, string>> GetMicroserviceEnvironmentVariables(string serviceName)
+	{
+		var localMicroserviceName = GetBeamIdAsMicroserviceContainer(serviceName);
+
+		var container = await _client.Containers.InspectContainerAsync(localMicroserviceName);
+		var variables = new Dictionary<string, string>();
+		foreach (var envVar in container.Config.Env)
+		{
+			var equalIndex = envVar.IndexOf('=');
+			if (equalIndex > 0)
+			{
+				var left = envVar.Substring(0, equalIndex);
+				var right = envVar.Substring(equalIndex + 1);
+				variables[left] = right;
+			}
+		}
+
+		return variables;
+	}
 
 	public async Promise<string> GetStorageHostPort(string storageName)
 	{

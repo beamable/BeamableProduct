@@ -90,7 +90,7 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		}
 		
 		// First, we need to find out which services are currently running.
-		var runningServices = new Dictionary<string, ServiceDiscoveryEvent>();
+		var runningInstances = new Dictionary<string, List<ServiceInstanceState>>();
 		var discovery = args.DependencyProvider.GetService<DiscoveryService>();
 		Log.Verbose("starting discovery");
 		await foreach (var evt in discovery.StartDiscovery(
@@ -102,15 +102,16 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			if (!args.services.Contains(evt.service)) continue;
 
 			// We need to wait for when discovery emits the event with the health-port set up (meaning, they are running).
-			if (!runningServices.ContainsKey(evt.service) && evt.healthPort != 0)
+			if (!runningInstances.ContainsKey(evt.service))
 			{
-				runningServices[evt.service] = evt;
-				if (runningServices.Keys.Count == args.services.Count)
+				runningInstances[evt.service] = evt.LocalInstances;
+				if (runningInstances.Keys.Count == args.services.Count)
 				{
 					// we've found all the required services...
 					break;
 				}
 			}
+
 		}
 
 		// Stop listening for discovery events.
@@ -135,7 +136,7 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			}
 
 			// If the service is already running...
-			if (runningServices.TryGetValue(serviceName, out var runningServiceEvt))
+			if (runningInstances.TryGetValue(serviceName, out var runningServiceEvt))
 			{
 				// If we are not forcing restarts of running services, we skip this service and log it.
 				if (!args.forceRestart)
@@ -147,7 +148,10 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				// If we are forcing a restart, we stop the service and then start it up again.
 				var beamoLocalSystem = args.BeamoLocalSystem;
 				SendUpdate(serviceName, "stopping...", -MIN_PROGRESS * .6f);
-				await StopProjectCommand.StopRunningService(runningServiceEvt, beamoLocalSystem, serviceName, _ => { });
+				foreach (var instance in runningServiceEvt)
+				{
+					await StopProjectCommand.StopRunningService(instance, beamoLocalSystem, serviceName, _ => { });
+				}
 				SendUpdate(serviceName, "stopping...", -MIN_PROGRESS * .5f);
 			}
 

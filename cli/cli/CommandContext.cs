@@ -95,7 +95,8 @@ public abstract class StreamCommand<TArgs, TResult> : AppCommand<TArgs>,
 	where TResult : new()
 {
 	private DefaultStreamResultChannel _channel;
-
+	public override bool AutoLogOutput => false;
+	
 	protected StreamCommand(string name, string description = null) : base(name, description)
 	{
 		_channel = new DefaultStreamResultChannel();
@@ -105,6 +106,10 @@ public abstract class StreamCommand<TArgs, TResult> : AppCommand<TArgs>,
 	{
 		IResultSteam<DefaultStreamResultChannel, TResult> self = this;
 		self.Reporter.Report(_channel.ChannelName, result);
+		if (AutoLogOutput)
+		{
+			LogResult(result);
+		}
 	}
 
 	public Type ResultType => typeof(TResult);
@@ -118,6 +123,15 @@ public abstract class StreamCommand<TArgs, TResult> : AppCommand<TArgs>,
 	protected virtual TResult GetHelpInstance()
 	{
 		return default;
+	}
+	
+	protected virtual void LogResult(object result)
+	{
+		var json = JsonConvert.SerializeObject(result, UnitySerializationSettings.Instance);
+		AnsiConsole.Write(
+			new Panel(new JsonText(json))
+				.Collapse()
+				.NoBorder());
 	}
 }
 
