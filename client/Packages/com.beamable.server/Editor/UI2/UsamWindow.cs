@@ -85,7 +85,11 @@ namespace Beamable.Editor.Microservice.UI2
 			scrollViewParent.style.flexGrow = 1;
 			scrollViewParent.style.flexDirection = FlexDirection.Column;
 			_scrollView = _windowRoot.Q<ScrollView>("microScrollView");
+
+#if UNITY_2021_1_OR_NEWER
 			_scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+#endif
+
 			_scrollView.style.flexGrow = 1;
 			_scrollView.style.overflow = Overflow.Hidden;
 
