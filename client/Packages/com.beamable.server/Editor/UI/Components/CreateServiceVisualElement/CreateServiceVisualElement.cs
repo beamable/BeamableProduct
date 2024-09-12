@@ -46,6 +46,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private PrimaryButtonVisualElement _createBtn;
 		private PrimaryButtonVisualElement _cancelBtn;
 		private List<IBeamoServiceDefinition> _dependenciesCandidates;
+		private VisualElement _dependentArea;
 
 		private FormConstraint _isNameValid;
 		private FormConstraint _isNameSizedRight;
@@ -69,6 +70,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_nameTextField = Root.Q<TextField>("nameTextField");
 			_createBtn = Root.Q<PrimaryButtonVisualElement>("createBtn");
 			_cancelBtn = Root.Q<PrimaryButtonVisualElement>("cancelBtn");
+			_dependentArea = Root.Q<VisualElement>("dependentArea");
 		}
 		private void UpdateVisualElements()
 		{
@@ -93,7 +95,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_createBtn.AddGateKeeper(_isNameValid, _isNameSizedRight, _isNameUnique);
 
-			ShowServiceCreateDependentService();
+			var dependentElement = ShowServiceCreateDependentService();
+
+			if (dependentElement != null)
+			{
+				_dependentArea.Add(dependentElement);
+			}
+
 			_nameTextField.maxLength = MAX_NAME_LENGTH;
 			_nameTextField.RegisterCallback<FocusEvent>(HandleNameLabelFocus, TrickleDown.TrickleDown);
 			_nameTextField.RegisterCallback<KeyUpEvent>(HandleNameLabelKeyUp, TrickleDown.TrickleDown);
@@ -101,14 +109,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 			RenameGestureBegin();
 		}
 
-		private void ShowServiceCreateDependentService()
+		private StandaloneServiceCreateDependent ShowServiceCreateDependentService()
 		{
 			if (!ShouldShowCreateDependentService)
-				return;
+				return null;
 			_serviceCreateDependentService = new StandaloneServiceCreateDependent();
 			_serviceCreateDependentService.Refresh();
 			_serviceCreateDependentService.Init(_dependenciesCandidates, DependenciesType.ToString());
-			_createBtn.parent.parent.Insert(1, _serviceCreateDependentService);
+			Root.MarkDirtyRepaint();
+			return _serviceCreateDependentService;
 		}
 
 		private void HandleContinueButtonClicked()
