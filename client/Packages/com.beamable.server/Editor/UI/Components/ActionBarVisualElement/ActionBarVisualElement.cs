@@ -61,14 +61,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public bool HasPublishPermissions => BeamEditorContext.Default.Permissions.CanPublishMicroservices;
 		bool IsDockerActive => _codeService.IsDockerRunning;
 
-		MicroservicesDataModel Model => MicroservicesDataModel.Instance;
+		private List<IBeamoServiceDefinition> _allLocalServices;
 
 		public override void Refresh()
 		{
-			_codeService = Context.ServiceScope.GetService<CodeService>();
 			base.Refresh();
 
 			_codeService = Context.ServiceScope.GetService<CodeService>();
+			_allLocalServices = _codeService.ServiceDefinitions.Where(sd => sd.ServiceType == ServiceType.MicroService)
+			                                .ToList();
 
 			_refreshButton = Root.Q<Button>("refreshButton");
 			_refreshButton.clickable.clicked += () => { OnRefreshButtonClicked?.Invoke(); };
@@ -104,7 +105,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };
 			_infoButton.tooltip = Tooltips.Microservice.DOCUMENT;
 
-			UpdateButtonsState(Model.AllLocalServices.Count(x => !x.IsArchived));
+			UpdateButtonsState(_allLocalServices.Count(x => x.ShouldBeEnabledOnRemote));
 
 			Context.OnRealmChange += _ => Refresh();
 			Context.OnUserChange += _ => Refresh();
@@ -112,8 +113,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public void UpdateButtonsState(int servicesAmount)
 		{
-			var canPublish = IsDockerActive && servicesAmount > 0 && HasPublishPermissions &&
-							 !Model.HasAnyBrokenRemoteService;
+			var canPublish = IsDockerActive && servicesAmount > 0 && HasPublishPermissions;
 
 			_startAll.SetEnabled(IsDockerActive && servicesAmount > 0);
 			_publish.SetEnabled(canPublish);
@@ -122,8 +122,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				_publish.tooltip = !IsDockerActive ? "Docker is not running." :
 					servicesAmount == 0 ? "Nothing to publish." :
-					!HasPublishPermissions ? "Require publish permission." :
-					Model.HasAnyBrokenRemoteService ? "There are broken remote services." : string.Empty;
+					!HasPublishPermissions ? "Require publish permission." : string.Empty;
 			}
 		}
 
@@ -144,7 +143,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void HandlePlayButton(Rect visualElementBounds)
 		{
 			var popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
-			var services = Model.AllLocalServices.Where(x => !x.IsArchived).ToList();
+			var services = _allLocalServices.Where(x => x.ShouldBeEnabledOnRemote).ToList();
 			var content = new ServicesDropdownVisualElement(services);
 			var wnd = BeamablePopupWindow.ShowDropdown("Services", popupWindowRect, new Vector2(200, 50 + services.Count * 24), content);
 			content.Refresh();
