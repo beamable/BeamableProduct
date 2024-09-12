@@ -14,7 +14,7 @@ public class NewProjectCommandArgs : CommandArgs
 {
 	public ServiceName ProjectName;
 	public bool AutoInit;
-	public List<string> LinkedServices;
+	public List<string> LinkedStorages;
 }
 
 public class AutoInitFlag : ConfigurableOptionFlag
@@ -195,7 +195,7 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 			Arity = ArgumentArity.ZeroOrMore,
 			AllowMultipleArgumentsPerToken = true
 		};
-		AddOption(serviceDeps, (x, i) => x.LinkedServices = i);
+		AddOption(serviceDeps, (x, i) => x.LinkedStorages = i);
 		AddOption(new Option<bool>(
 				name: "--generate-common",
 				description: "If passed, will create a common library for this project"),
@@ -258,13 +258,13 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 
 			if (storages.Count > 0)
 			{
-				if ((args.LinkedServices == null || args.LinkedServices.Count == 0) && !args.Quiet)
+				if ((args.LinkedStorages == null || args.LinkedStorages.Count == 0) && !args.Quiet)
 				{
 					dependencies = GetChoicesFromPrompt(args.BeamoLocalSystem);
 				}
-				else if (args.LinkedServices != null)
+				else if (args.LinkedStorages != null)
 				{
-					dependencies = GetDependenciesFromName(args.BeamoLocalSystem, args.LinkedServices);
+					dependencies = GetDependenciesFromName(args.BeamoLocalSystem, args.LinkedStorages);
 				}
 			}
 
