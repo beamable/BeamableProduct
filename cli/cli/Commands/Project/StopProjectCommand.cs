@@ -37,15 +37,15 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 		ProjectCommand.FinalizeServicesArg(args, ref args.services);
 		var serviceSet = new HashSet<string>(args.services);
 		var discovery = args.DependencyProvider.GetService<DiscoveryService>();
-		var evtTable = new Dictionary<string, ServiceDiscoveryEvent>();
+		var evtTable = new Dictionary<string, List<ServiceInstanceState>>();
 		await foreach (var evt in discovery.StartDiscovery(args, TimeSpan.FromSeconds(1)))
 		{
 			if (!serviceSet.Contains(evt.service)) continue; // we don't care about this service, because we aren't stopping it.
 
 			// We need to wait for when discovery emits the event with the health-port set up.
-			if (!evtTable.ContainsKey(evt.service) && evt.healthPort != 0)
+			if (!evtTable.ContainsKey(evt.service))
 			{
-				evtTable[evt.service] = evt;
+				evtTable[evt.service] = evt.LocalInstances;
 				if (evtTable.Keys.Count == serviceSet.Count)
 				{
 					// we've found all the required services...
@@ -56,37 +56,40 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 
 		await discovery.Stop();
 
-		foreach ((string serviceName, ServiceDiscoveryEvent serviceEvt) in evtTable)
+		foreach ((string serviceName, List<ServiceInstanceState> instances) in evtTable)
 		{
 			var beamoLocalSystem = args.BeamoLocalSystem;
-			await StopRunningService(serviceEvt, beamoLocalSystem, serviceName, evt =>
+			foreach (var instance in instances)
 			{
-				SendResults(new StopProjectCommandOutput { didStop = true, serviceName = serviceName, });
-			});
+				await StopRunningService(instance, beamoLocalSystem, serviceName, evt =>
+				{
+					SendResults(new StopProjectCommandOutput { didStop = true, serviceName = serviceName, });
+				});
+			}
 		}
 	}
 
-	public static async Task StopRunningService(ServiceDiscoveryEvent serviceEvt, BeamoLocalSystem beamoLocalSystem, string serviceName, Action<ServiceDiscoveryEvent> onServiceStopped = null)
+	public static async Task StopRunningService(ServiceInstanceState serviceInstance, BeamoLocalSystem beamoLocalSystem, string serviceName, Action<ServiceInstanceState> onServiceStopped = null)
 	{
-		if (serviceEvt.isContainer)
+		if (serviceInstance.isContainer)
 		{
 			await beamoLocalSystem.SynchronizeInstanceStatusWithDocker(beamoLocalSystem.BeamoManifest, beamoLocalSystem.BeamoRuntime.ExistingLocalServiceInstances);
 			await beamoLocalSystem.StartListeningToDocker();
 
 			await ServicesResetContainerCommand.TurnOffContainers(beamoLocalSystem, new[] { serviceName }, _ =>
 			{
-				onServiceStopped?.Invoke(serviceEvt);
+				onServiceStopped?.Invoke(serviceInstance);
 			});
 		}
 		else
 		{
-			await SendKillMessage(serviceEvt);
+			await SendKillMessage(serviceName, serviceInstance);
 			Log.Information($"stopped {serviceName}.");
-			onServiceStopped?.Invoke(serviceEvt);
+			onServiceStopped?.Invoke(serviceInstance);
 		}
 	}
 
-	public static async Task SendKillMessage(ServiceDiscoveryEvent evt)
+	public static async Task SendKillMessage(string service, ServiceInstanceState evt)
 	{
 		using var client = new HttpClient();
 		// Set up the HTTP GET request
@@ -96,7 +99,7 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 		if (!response.IsSuccessStatusCode)
 		{
 			var message =
-				$"Could not stop service=[{evt.service}]. Kill-Command status code=[{(int)response.StatusCode}]. {await response.Content.ReadAsStringAsync()}";
+				$"Could not stop service=[{service}]. Kill-Command status code=[{(int)response.StatusCode}]. {await response.Content.ReadAsStringAsync()}";
 			if (response.StatusCode == HttpStatusCode.NotFound)
 			{
 				// because service-discovery JUST told us the service existed- if we got a 404- it is likely that the Microservice itself doesn't have the /stop endpoint, which is a 2.0 feature.

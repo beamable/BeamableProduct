@@ -19,29 +19,33 @@ public class ProjectLogsService
 		{
 			var discovery = args.DependencyProvider.GetService<DiscoveryService>();
 
-			ServiceDiscoveryEvent startEvt = null;
+			ServiceInstanceState instance = null;
 			await foreach (var evt in discovery.StartDiscovery(args, default, token))
 			{
-				if (evt.service == args.service && evt.isRunning)
+				if (evt.service == args.service && evt.LocalInstances.Count > 0)
 				{
-					startEvt = evt;
+					if (evt.LocalInstances.Count > 1)
+					{
+						Log.Warning("The log command can only track the logs for the first local service");
+					}
+					instance = evt.LocalInstances[0];
 					break;
 				}
 			}
 
-			if (startEvt == null)
+			if (instance == null)
 			{
 				Log.Verbose("no start event found");
 			}
 			else
 			{
-				if (startEvt.isContainer)
+				if (instance.isContainer)
 				{
-					await TailDockerContainer(startEvt.containerId, args.BeamoLocalSystem, LogHandler);
+					await TailDockerContainer(instance.containerId, args.BeamoLocalSystem, LogHandler);
 				}
 				else
 				{
-					await TailProcess(startEvt, LogHandler);
+					await TailProcess(instance, LogHandler);
 				}
 
 				Log.Verbose($"{args.service} has stopped.");
@@ -63,7 +67,7 @@ public class ProjectLogsService
 		}
 	}
 
-	static async Task TailProcess(ServiceDiscoveryEvent evt, Action<string> handleLog)
+	static async Task TailProcess(ServiceInstanceState evt, Action<string> handleLog)
 	{
 		using (var client = new HttpClient())
 		{
