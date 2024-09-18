@@ -20,6 +20,7 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
+using ProjectNewServiceArgs = Beamable.Editor.BeamCli.Commands.ProjectNewServiceArgs;
 
 namespace Beamable.Server.Editor.Usam
 {
@@ -49,11 +50,8 @@ namespace Beamable.Server.Editor.Usam
 		private const string MICROSERVICE_DLL_PATH = "bin/Debug/net6.0"; // is this true for all platforms and dotnet installations?
 		public static readonly string StandaloneMicroservicesFolderName = "StandaloneMicroservices~/";
 		private static readonly string StandaloneMicroservicesPath = $"{BEAMABLE_PATH}{StandaloneMicroservicesFolderName}";
-		public static readonly string LibrariesPathsFilePath = $"{BEAMABLE_LIB_PATH}/.libraries_paths";
-		public static readonly string ServicesDefinitionsFilePath = $"{BEAMABLE_LIB_PATH}/.services_definitions";
+
 		private IDependencyProvider _provider;
-		public static string LibrariesPathsDirectory => Path.GetDirectoryName(LibrariesPathsFilePath);
-		public static string ServicesDefinitionsDirectory => Path.GetDirectoryName(ServicesDefinitionsFilePath);
 
 		private bool _isBeamableDev;
 
@@ -69,9 +67,6 @@ namespace Beamable.Server.Editor.Usam
 		
 		public async Promise Init()
 		{
-			if (EditorApplication.isPlayingOrWillChangePlaymode)
-				return;
-
 			await BeamEditorContext.Default.OnReady;
 
 			while (BeamEditorContext.Default.Requester == null || BeamEditorContext.Default.Requester.Token == null)
@@ -426,7 +421,7 @@ namespace Beamable.Server.Editor.Usam
 		{
 			for (int i = 0; i < objData.BeamoIds.Count; i++)
 			{
-				if (!objData.ExistInLocal[i] && !objData.IsRunningRemotely[i]) //In this case the service was disabled in the remote, which means that it's irrelevant.
+				if (!objData.ExistInLocal[i]) //We only care about the local services and storages
 				{
 					continue;
 				}
@@ -749,12 +744,11 @@ namespace Beamable.Server.Editor.Usam
 				watch = true
 			}).OnStreamServiceDiscoveryEvent(cb =>
 			{
-				Debug.Log($"[{cb.data.service}] is running = {cb.data.isRunning}");
+				UsamLogger.Log($"[{cb.data.service}] is running = {cb.data.isRunning}");
 
 				var def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(cb.data.service));
 				if (def != null)
 				{
-					// def.IsRunningLocally = cb.data.isRunning;
 					def.Builder.IsRunning = cb.data.isRunning;
 				}
 				
@@ -945,12 +939,20 @@ namespace Beamable.Server.Editor.Usam
 
 			string errorMessage = string.Empty;
 
+			dependencies ??= new List<IBeamoServiceDefinition>();
+			string[] deps = new string[dependencies.Count];
+			for (int i = 0; i < dependencies.Count; i++)
+			{
+				deps[i] = dependencies[i].BeamoId;
+			}
+
 			var args = new ProjectNewServiceArgs()
 			{
 				name = service,
 				serviceDirectory = StandaloneMicroservicesPath,
 				sln = slnPath,
-				beamableDev = BeamableEnvironment.IsBeamableDeveloper
+				beamableDev = BeamableEnvironment.IsBeamableDeveloper,
+				linkTo = deps
 			};
 			var command = _cli.ProjectNewService(args).OnError((cb) =>
 			{

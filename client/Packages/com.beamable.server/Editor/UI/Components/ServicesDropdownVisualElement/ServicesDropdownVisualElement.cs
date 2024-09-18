@@ -11,12 +11,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 	{
 		public event Action OnCloseRequest;
 
-		private IReadOnlyList<IBeamableService> Services { get; }
+		private IReadOnlyList<IBeamoServiceDefinition> Services { get; }
 		private VisualElement _servicesList;
 		private PrimaryButtonVisualElement _playSelectedBtn;
 		private readonly List<ServiceEntry> _serviceEntries = new List<ServiceEntry>();
 
-		public ServicesDropdownVisualElement(IReadOnlyList<IBeamableService> services) : base(
+		public ServicesDropdownVisualElement(IReadOnlyList<IBeamoServiceDefinition> services) : base(
 			nameof(ServicesDropdownVisualElement))
 		{
 			Services = services;
@@ -33,6 +33,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void SetContent()
 		{
+			_serviceEntries.Clear();
+			_servicesList.Clear();
 			foreach (var service in Services)
 			{
 				var serviceEntry = new ServiceEntry(service);
@@ -41,29 +43,24 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_servicesList.Add(serviceEntry.Dropdown);
 			}
 
-			_playSelectedBtn.Button.SetEnabled(_serviceEntries.Any(x => x.Service.IsSelected));
+			_playSelectedBtn.Button.SetEnabled(_serviceEntries.Any(x => x.IsSelected));
 		}
 
 		private void HandleValueChanged(ServiceEntry serviceEntry, bool isSelected)
 		{
-			serviceEntry.Service.IsSelected = isSelected;
-			_playSelectedBtn.Button.SetEnabled(_serviceEntries.Any(x => x.Service.IsSelected));
+			serviceEntry.IsSelected = isSelected;
+			_playSelectedBtn.Button.SetEnabled(_serviceEntries.Any(x => x.IsSelected));
 		}
 
 		private void HandlePlaySelectedButton()
 		{
 			foreach (var serviceEntry in _serviceEntries)
-				if (serviceEntry.Service.IsSelected && !serviceEntry.Service.IsRunning)
+			{
+				if (serviceEntry.IsSelected && !serviceEntry.Service.IsRunningLocally)
 				{
-					if (serviceEntry.Service is IBeamableMicroservice ms)
-					{
-						ms.BuildAndStart();
-					}
-					else
-					{
-						serviceEntry.Service.Start();
-					}
+					serviceEntry.Service.Builder.TryToStart();
 				}
+			}
 
 			OnCloseRequest?.Invoke();
 		}
@@ -71,10 +68,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 	public class ServiceEntry
 	{
-		public IBeamableService Service { get; }
+		public IBeamoServiceDefinition Service { get; }
 		public LabeledCheckboxVisualElement Dropdown { get; private set; }
 
-		public ServiceEntry(IBeamableService service)
+		public bool IsSelected;
+
+		public ServiceEntry(IBeamoServiceDefinition service)
 		{
 			Service = service;
 			Setup();
@@ -82,12 +81,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void Setup()
 		{
-			Service.Name.TryEllipseText(20, out var formattedText);
+			IsSelected = true;
+			Service.BeamoId.TryEllipseText(20, out var formattedText);
 			Dropdown = new LabeledCheckboxVisualElement(formattedText, true, true);
 			Dropdown.Refresh();
 			Dropdown.name = $"{nameof(ServiceEntry)}-{Service.ServiceType}";
-			Dropdown.tooltip = Service.Name;
-			Dropdown.Value = Service.IsSelected;
+			Dropdown.tooltip = Service.BeamoId;
+			Dropdown.Value = IsSelected;
 		}
 	}
 }

@@ -14,8 +14,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 	{
 		public event Action<ServicesDisplayFilter> OnNewServicesDisplayFilterSelected;
 		private VisualElement _listRoot;
-		public ServiceFilterDropdownVisualElement() : base(nameof(ServiceFilterDropdownVisualElement))
+		private ServicesDisplayFilter _currentFilter;
+
+		public ServiceFilterDropdownVisualElement(ServicesDisplayFilter filter) : base(nameof(ServiceFilterDropdownVisualElement))
 		{
+			_currentFilter = filter;
 		}
 
 		public override void Refresh()
@@ -31,7 +34,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		void AddButton(ServicesDisplayFilter filter)
 		{
-			var currentFilter = MicroservicesDataModel.Instance.Filter;
 			var realmSelectButton = new Button();
 			switch (filter)
 			{
@@ -43,7 +45,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 					break;
 			}
 
-			realmSelectButton.SetEnabled(currentFilter != filter);
+			realmSelectButton.SetEnabled(_currentFilter != filter);
 			realmSelectButton.clickable.clicked += () => OnNewServicesDisplayFilterSelected?.Invoke(filter);
 			_listRoot.Add(realmSelectButton);
 		}
