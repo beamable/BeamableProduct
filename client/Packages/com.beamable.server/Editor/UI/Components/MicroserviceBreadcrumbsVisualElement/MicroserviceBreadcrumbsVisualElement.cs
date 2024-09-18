@@ -49,6 +49,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 		}
 
+		public void SetPreviousFilter(ServicesDisplayFilter filter)
+		{
+			_filter = filter;
+		}
+
 		public override void Refresh()
 		{
 			base.Refresh();
@@ -63,7 +68,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_servicesFilter.clickable.clicked += HandleServicesFilterButter;
 			OnNewServicesDisplayFilterSelected -= UpdateServicesFilterText;
 			OnNewServicesDisplayFilterSelected += UpdateServicesFilterText;
-			UpdateServicesFilterText(MicroservicesDataModel.Instance.Filter);
+			UpdateServicesFilterText(_filter);
 			_servicesFilter.visible = true;
 		}
 
@@ -89,13 +94,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			var popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
 
-			var content = new ServiceFilterDropdownVisualElement();
+			var content = new ServiceFilterDropdownVisualElement(_filter);
 			content.Refresh();
 			var wnd = BeamablePopupWindow.ShowDropdown("Select", popupWindowRect, new Vector2(150, 100), content);
 			content.OnNewServicesDisplayFilterSelected += filter =>
 			{
 				wnd.Close();
 				_filter = filter;
+				UpdateServicesFilterText(_filter);
 				OnNewServicesDisplayFilterSelected?.Invoke(filter);
 			};
 		}

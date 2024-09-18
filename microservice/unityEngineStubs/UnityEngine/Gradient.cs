@@ -32,9 +32,8 @@ namespace UnityEngine
 		/// <summary>
 		///   <para>Gradient color key.</para>
 		/// </summary>
-		/// <param name="color">Color of key.</param>
+		/// <param name="col">Color of key.</param>
 		/// <param name="time">Time of the key (0 - 1).</param>
-		/// <param name="col"></param>
 		public GradientColorKey(Color col, float time)
 		{
 			this.color = col;

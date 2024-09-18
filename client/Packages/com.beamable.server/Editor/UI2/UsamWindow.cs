@@ -9,6 +9,9 @@ using Beamable.Editor.UI;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.Usam;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Remoting.Contexts;
 using UnityEditor;
 using UnityEngine;
@@ -44,11 +47,13 @@ namespace Beamable.Editor.Microservice.UI2
 		public override bool ShowLoading => true;
 
 		private VisualElement _windowRoot;
+		private VisualElement _createServiceContainer;
 		private ActionBarVisualElement _actionBarVisualElement;
 		private MicroserviceBreadcrumbsVisualElement _microserviceBreadcrumbsVisualElement;
 		private CreateServiceVisualElement _createServiceElement;
 
 		private ScrollView _scrollView;
+		private ServicesDisplayFilter _activeFilter = ServicesDisplayFilter.AllTypes;
 
 		protected override void Build()
 		{
@@ -71,25 +76,40 @@ namespace Beamable.Editor.Microservice.UI2
 			_actionBarVisualElement.UpdateButtonsState(_codeService.ServiceDefinitions.Count);
 
 			_actionBarVisualElement.OnRefreshButtonClicked += HandleRefreshButtonClicked;
+			_actionBarVisualElement.OnSettingsButtonClicked += HandleSettingsButtonClicked;
 			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
+			_microserviceBreadcrumbsVisualElement.OnNewServicesDisplayFilterSelected += UpdateActiveFilter;
+			_microserviceBreadcrumbsVisualElement.SetPreviousFilter(_activeFilter);
 			_microserviceBreadcrumbsVisualElement.Refresh();
-			_scrollView = new ScrollView(ScrollViewMode.Vertical);
-			var emptyContainer = new VisualElement { name = "listRoot" };
+			var scrollViewParent = _windowRoot.Q<MicroserviceContentVisualElement>("microserviceContentVisualElement");
+			scrollViewParent.style.flexGrow = 1;
+			scrollViewParent.style.flexDirection = FlexDirection.Column;
+			_scrollView = _windowRoot.Q<ScrollView>("microScrollView");
 
-			var microserviceContentVisualElement = root.Q("microserviceContentVisualElement");
-			microserviceContentVisualElement.Add(new VisualElement { name = "announcementList" });
+#if UNITY_2021_1_OR_NEWER
+			_scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+#endif
+
+			_scrollView.style.flexGrow = 1;
+			_scrollView.style.overflow = Overflow.Hidden;
+
+			var emptyContainer = new VisualElement { name = "listRoot" };
 
 			_createServiceElement = new CreateServiceVisualElement();
 			_createServiceElement.SetHidden(true);
-			microserviceContentVisualElement.Add(_createServiceElement);
 
-			microserviceContentVisualElement.Add(_scrollView);
+			_createServiceContainer = _windowRoot.Q<VisualElement>("createServiceElement");
+			_createServiceContainer.style.flexGrow = 0;
+			_createServiceContainer.style.display = DisplayStyle.None;
+			_createServiceContainer.Add(_createServiceElement);
+
 			_scrollView.Add(emptyContainer);
 			OnLoad().Then(_ =>
 			{
 				_dataModel = Scope.GetService<UsamDataModel>();
+				var services = GetFilteredServicesDefinitions(_codeService, _activeFilter);
 
-				foreach (BeamoServiceDefinition beamoServiceDefinition in _codeService.ServiceDefinitions)
+				foreach (IBeamoServiceDefinition beamoServiceDefinition in services)
 				{
 					var model = _dataModel.GetModel(beamoServiceDefinition.BeamoId);
 					var el = new StandaloneMicroserviceVisualElement() { Model = beamoServiceDefinition };
@@ -106,6 +126,37 @@ namespace Beamable.Editor.Microservice.UI2
 
 			_actionBarVisualElement.OnCreateNewClicked += HandleCreateNewButtonClicked;
 			_actionBarVisualElement.OnPublishClicked += HandlePublishButtonClicked;
+		}
+
+		private static List<IBeamoServiceDefinition> GetFilteredServicesDefinitions(CodeService codeService, ServicesDisplayFilter filter)
+		{
+			var services = new List<IBeamoServiceDefinition>();
+
+			switch (filter)
+			{
+				case ServicesDisplayFilter.AllTypes:
+					services = codeService.ServiceDefinitions;
+					break;
+				case ServicesDisplayFilter.Microservices:
+					services = codeService.ServiceDefinitions.Where(sd => sd.ServiceType == ServiceType.MicroService).ToList();
+					break;
+				case ServicesDisplayFilter.Storages:
+					services = codeService.ServiceDefinitions.Where(sd => sd.ServiceType == ServiceType.StorageObject).ToList();
+					break;
+				case ServicesDisplayFilter.Archived:
+					services = codeService.ServiceDefinitions.Where(sd => !sd.ShouldBeEnabledOnRemote).ToList();
+					break;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(filter), filter, null);
+			}
+
+			return services;
+		}
+
+		private void UpdateActiveFilter(ServicesDisplayFilter filter)
+		{
+			_activeFilter = filter;
+			Build();
 		}
 
 		private void HandlePublishButtonClicked()
@@ -130,10 +181,27 @@ namespace Beamable.Editor.Microservice.UI2
 			_codeService.RefreshServices().Then(_ => Build()).Error(Debug.LogError);
 		}
 
+		private void HandleSettingsButtonClicked()
+		{
+			SettingsService.OpenProjectSettings($"Project/Beamable Services");
+		}
+
 		private void HandleCreateNewButtonClicked(ServiceType serviceType)
 		{
 			_createServiceElement.ServiceType = serviceType;
-			_createServiceElement.Refresh(_actionBarVisualElement.Refresh);
+			_createServiceContainer.style.display = DisplayStyle.Flex;
+			_createServiceElement.Refresh(() =>
+			{
+				_actionBarVisualElement.Refresh();
+				_createServiceContainer.MarkDirtyRepaint();
+				rootVisualElement.MarkDirtyRepaint();
+			});
+			_createServiceElement.OnClose += () =>
+			{
+				_createServiceContainer.style.display = DisplayStyle.None;
+				_createServiceContainer.MarkDirtyRepaint();
+				rootVisualElement.MarkDirtyRepaint();
+			};
 			EditorApplication.delayCall += () => _scrollView.verticalScroller.value = 0f;
 		}
 
