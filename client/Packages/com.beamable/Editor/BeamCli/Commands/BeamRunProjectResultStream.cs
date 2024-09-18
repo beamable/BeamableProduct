@@ -5,9 +5,10 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamProjectSettingsOutput
+	public class BeamRunProjectResultStream
 	{
-		public string serviceName;
-		public System.Collections.Generic.List<BeamSettingOutput> settings;
+		public string serviceId;
+		public string message;
+		public float progressRatio;
 	}
 }

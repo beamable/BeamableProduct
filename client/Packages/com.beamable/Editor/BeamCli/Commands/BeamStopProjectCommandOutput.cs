@@ -8,6 +8,6 @@ namespace Beamable.Editor.BeamCli.Commands
 	public class BeamStopProjectCommandOutput
 	{
 		public string serviceName;
-		public bool didStop;
+		public BeamServiceInstance instance;
 	}
 }

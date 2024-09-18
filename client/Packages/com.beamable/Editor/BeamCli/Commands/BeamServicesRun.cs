@@ -10,6 +10,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string[] ids;
 		/// <summary>Force the services to run with amd64 CPU architecture, useful when deploying from computers with ARM architecture</summary>
 		public bool forceAmdCpuArch;
+		/// <summary>Automatically remove service containers after they exit</summary>
+		public bool keepContainers;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -28,6 +30,11 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.forceAmdCpuArch != default(bool)))
 			{
 				genBeamCommandArgs.Add(("--force-amd-cpu-arch=" + this.forceAmdCpuArch));
+			}
+			// If the keepContainers value was not default, then add it to the list of args.
+			if ((this.keepContainers != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--keep-containers=" + this.keepContainers));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

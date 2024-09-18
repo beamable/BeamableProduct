@@ -74,5 +74,10 @@ namespace Beamable.Editor.BeamCli.Commands
 	}
 	public class ProjectRunWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
+		public virtual ProjectRunWrapper OnStreamRunProjectResultStream(System.Action<ReportDataPoint<BeamRunProjectResultStream>> cb)
+		{
+			this.Command.On("stream", cb);
+			return this;
+		}
 	}
 }

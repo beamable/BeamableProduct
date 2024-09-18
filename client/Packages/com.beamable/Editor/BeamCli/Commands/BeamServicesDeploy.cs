@@ -15,6 +15,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string[] serviceComments;
 		/// <summary>A custom docker registry url to use when uploading. By default, the result from the beamo/registry network call will be used, with minor string manipulation to add https scheme, remove port specificatino, and add /v2 </summary>
 		public string dockerRegistryUrl;
+		/// <summary>Automatically remove service containers after they exit</summary>
+		public bool keepContainers;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -46,6 +48,11 @@ namespace Beamable.Editor.BeamCli.Commands
 			{
 				genBeamCommandArgs.Add((("--docker-registry-url=\"" + this.dockerRegistryUrl)
 								+ "\""));
+			}
+			// If the keepContainers value was not default, then add it to the list of args.
+			if ((this.keepContainers != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--keep-containers=" + this.keepContainers));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces
