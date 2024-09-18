@@ -7,12 +7,13 @@ namespace Beamable.Editor.BeamCli.Commands
 	[System.SerializableAttribute()]
 	public class BeamRunningService
 	{
-		public string name;
+		public string serviceName;
+		public string beamoName;
 		public string routingKey;
 		public string fullName;
 		public int instanceCount;
 		public bool trafficFilterEnabled;
-		public long authorPlayerId;
+		public long startedByAccountId;
 		public System.Collections.Generic.List<BeamRunningFederation> federations;
 	}
 }
