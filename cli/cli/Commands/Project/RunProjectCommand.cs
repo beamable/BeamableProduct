@@ -90,43 +90,23 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		}
 		
 		// First, we need to find out which services are currently running.
-		var runningInstances = new Dictionary<string, List<ServiceInstanceState>>();
-		var discovery = args.DependencyProvider.GetService<DiscoveryService>();
-		Log.Verbose("starting discovery");
-		await foreach (var evt in discovery.StartDiscovery(
-			               args: args, 
-			               timeout: TimeSpan.FromMilliseconds(Beamable.Common.Constants.Features.Services.DISCOVERY_RECEIVE_PERIOD_MS), 
-			               mode: DiscoveryMode.LOCAL))
+		if (args.forceRestart)
 		{
-			// we don't care about this service, because we aren't stopping it.
-			if (!args.services.Contains(evt.service)) continue;
-
-			// We need to wait for when discovery emits the event with the health-port set up (meaning, they are running).
-			if (!runningInstances.ContainsKey(evt.service))
-			{
-				runningInstances[evt.service] = evt.LocalInstances;
-				if (runningInstances.Keys.Count == args.services.Count)
+			Log.Verbose("starting discovery");
+			await StopProjectCommand.DiscoverAndStopServices(args, new HashSet<string>(args.services), TimeSpan.FromMilliseconds(100),
+				evt =>
 				{
-					// we've found all the required services...
-					break;
-				}
-			}
-
+					// do nothing?
+				});
+			Log.Verbose("finished discovery");
 		}
-
-		// Stop listening for discovery events.
-		Log.Verbose("finished discovery");
-
-		await discovery.Stop();
-		Log.Verbose("stopped discovery");
-
+		
 		
 		foreach (var service in args.services)
 			SendUpdate(service, "resolving...", -MIN_PROGRESS * .7f);
 		
 		// Build out the list of services we'll actually want to start.
 		var serviceTable = new Dictionary<string, HttpMicroserviceLocalProtocol>();
-		var cancelTable = new Dictionary<string, CancellationTokenSource>();
 		foreach (var serviceName in args.services)
 		{
 			// If the service is not defined locally (as in, we can't run it locally for whatever reason)
@@ -135,28 +115,6 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				throw new CliException($"No service definition available locally for service=[{serviceName}]");
 			}
 
-			// If the service is already running...
-			if (runningInstances.TryGetValue(serviceName, out var runningServiceEvt))
-			{
-				// If we are not forcing restarts of running services, we skip this service and log it.
-				if (!args.forceRestart)
-				{
-					Log.Information("Service is already running. If you want to restart it automatically, use '--force'. SERVICE_NAME={ServiceName}", serviceName);
-					continue;
-				}
-
-				// If we are forcing a restart, we stop the service and then start it up again.
-				var beamoLocalSystem = args.BeamoLocalSystem;
-				SendUpdate(serviceName, "stopping...", -MIN_PROGRESS * .6f);
-				foreach (var instance in runningServiceEvt)
-				{
-					await StopProjectCommand.StopRunningService(instance, beamoLocalSystem, serviceName, _ => { });
-				}
-				SendUpdate(serviceName, "stopping...", -MIN_PROGRESS * .5f);
-			}
-
-			// If the service is not running here, we add it to the list of services we want to start.
-			cancelTable[serviceName] = new CancellationTokenSource();
 			serviceTable[serviceName] = service;
 		}
 		
@@ -168,7 +126,7 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		Log.Debug("Starting Services. SERVICES={Services}", string.Join(",", serviceTable.Keys));
 		foreach ((string serviceName, HttpMicroserviceLocalProtocol service) in serviceTable)
 		{
-			runTasks.Add(RunService(args, serviceName, !args.detach, cancelTable[serviceName], data =>
+			runTasks.Add(RunService(args, serviceName, !args.detach, new CancellationTokenSource(), data =>
 			{
 				if (data.IsJson)
 				{
@@ -225,6 +183,7 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 					})
 					.WithStandardErrorPipe(PipeTarget.ToDelegate(line =>
 					{
+						// TODO: do something smarter with the log, like log it as SendResults compiler error?
 						Console.Error.WriteLine("(watch error) " + line);
 					}))
 					.WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
@@ -256,8 +215,6 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 						{
 							serviceStartedLogsReceived = true;
 						}
-
-						// Console.Error.WriteLine("(watch) " + line);
 					}))
 					.WithValidation(CommandResultValidation.None)
 					.ExecuteAsync(tokenSource.Token);

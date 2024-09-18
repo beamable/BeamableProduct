@@ -17,7 +17,7 @@ public class BeamProjectNewFlows : CLITestExtensions
 	{
 		#region Arrange
 
-		SetupMocks();
+		SetupMocks(mockAdminMe: false);
 		Ansi.Input.PushTextWithEnter(alias); // enter alias
 		Ansi.Input.PushTextWithEnter(userName); // enter email
 		Ansi.Input.PushTextWithEnter(password); // enter password
@@ -77,7 +77,7 @@ public class BeamProjectNewFlows : CLITestExtensions
 	{
 		#region Arrange
 
-		SetupMocks(mockAlias: false, mockRealms: false);
+		SetupMocks(mockAlias: false, mockRealms: false, mockAdminMe: false);
 		Ansi.Input.PushTextWithEnter(userName); // enter email
 		Ansi.Input.PushTextWithEnter(password); // enter password
 		const string serviceName = "Example";
@@ -114,7 +114,7 @@ public class BeamProjectNewFlows : CLITestExtensions
 	{
 		#region Arrange
 
-		SetupMocks();
+		SetupMocks(mockAdminMe: false);
 		Ansi.Input.PushTextWithEnter(alias); // enter alias
 		Ansi.Input.PushTextWithEnter(userName); // enter email
 		Ansi.Input.PushTextWithEnter(password); // enter password
@@ -157,7 +157,7 @@ public class BeamProjectNewFlows : CLITestExtensions
 	{
 		#region Arrange
 
-		SetupMocks();
+		SetupMocks(mockAdminMe: false);
 		Ansi.Input.PushTextWithEnter(alias); // enter alias
 		Ansi.Input.PushTextWithEnter(userName); // enter email
 		Ansi.Input.PushTextWithEnter(password); // enter password
@@ -200,7 +200,7 @@ public class BeamProjectNewFlows : CLITestExtensions
 	{
 		#region Arrange
 
-		SetupMocks(mockBeamoManifest:false);
+		SetupMocks(mockBeamoManifest:false, mockAdminMe: false);
 		Ansi.Input.PushTextWithEnter(alias); // enter alias
 		Ansi.Input.PushTextWithEnter(userName); // enter email
 		Ansi.Input.PushTextWithEnter(password); // enter password
@@ -253,7 +253,7 @@ public class BeamProjectNewFlows : CLITestExtensions
 	{
 		#region Arrange
 
-		SetupMocks(mockBeamoManifest:false);
+		SetupMocks(mockBeamoManifest:false, mockAdminMe: false);
 		Ansi.Input.PushTextWithEnter(alias); // enter alias
 		Ansi.Input.PushTextWithEnter(userName); // enter email
 		Ansi.Input.PushTextWithEnter(password); // enter password
@@ -322,7 +322,7 @@ public class BeamProjectNewFlows : CLITestExtensions
 	{
 		#region Arrange
 
-		SetupMocks(mockBeamoManifest: false);
+		SetupMocks(mockBeamoManifest: false, mockAdminMe: false);
 		Ansi.Input.PushTextWithEnter(alias); // enter alias
 		Ansi.Input.PushTextWithEnter(userName); // enter email
 		Ansi.Input.PushTextWithEnter(password); // enter password

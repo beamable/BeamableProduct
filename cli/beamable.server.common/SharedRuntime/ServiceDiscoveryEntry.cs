@@ -19,6 +19,7 @@ namespace Beamable.Server
 		public int dataPort;
 		public bool isContainer;
 		public string containerId;
+		public long startedByAccountId;
 
 	}
 

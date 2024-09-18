@@ -5,7 +5,6 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Server;
 using Beamable.Server.Common;
-using cli.FederationCommands;
 using cli.Utils;
 using Newtonsoft.Json;
 using Serilog;
@@ -15,7 +14,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading.Channels;
 
 namespace cli.Services;
 
@@ -25,12 +23,12 @@ public enum DiscoveryMode
 	/// <summary>
 	/// This mode signals that all types of discovery should be used
 	/// </summary>
-	ALL = DiscoveryFlags.DOCKER + DiscoveryFlags.DOTNET + DiscoveryFlags.REMOTE,
+	ALL = DiscoveryFlags.DOCKER + DiscoveryFlags.HOST + DiscoveryFlags.REMOTE,
 	
 	/// <summary>
 	/// this mode signals that only local discovery methods should be used. 
 	/// </summary>
-	LOCAL = DiscoveryFlags.DOTNET + DiscoveryFlags.DOCKER,
+	LOCAL = DiscoveryFlags.HOST + DiscoveryFlags.DOCKER,
 }
 
 /// <summary>
@@ -39,7 +37,7 @@ public enum DiscoveryMode
 /// </summary>
 public enum DiscoveryFlags
 {	
-	DOTNET = 1 << 0, // 1
+	HOST = 1 << 0, // 1
 	DOCKER = 1 << 1, // 2
 	REMOTE = 1 << 2, // 4
 }
@@ -52,72 +50,6 @@ public static class DiscoveryModeExtensions
 	}
 }
 
-public enum ServiceDiscoverySource
-{
-	Unknown, Dotnet, Docker, Remote
-}
-
-[Serializable]
-public class ServiceDiscoveryEvent
-{
-	/// <summary>
-	/// Value has no semantic meaning when <see cref="isContainer"/> is true.
-	/// Otherwise, has the OS-level process id for the running microservice task.
-	/// </summary>
-	public int processId;
-
-	public string cid, pid;
-	public string prefix;
-	public string service;
-	public bool isContainer;
-	public string serviceType;
-	public int healthPort;
-	public int dataPort;
-	public string containerId;
-	public long startedByAccountId;
-	public ServiceDiscoverySource source;
-	/// <summary>
-	/// Array of user-defined groups to which this service belongs.
-	/// </summary>
-	public string[] groups;
-
-	public ServiceDiscoveryEvent()
-	{
-		
-	}
-
-	public ServiceDiscoveryEntryIdentity Identity =>
-		new ServiceDiscoveryEntryIdentity(service, prefix, startedByAccountId);
-}
-
-public class ServiceState
-{
-	public string service;
-	public string serviceType;
-	public Dictionary<ServiceDiscoveryEntryIdentity, ServiceInstanceState> instances;
-	
-	public List<ServiceInstanceState> LocalInstances => instances.Where(kvp => kvp.Value.IsLocal).Select(kvp => kvp.Value).ToList();
-}
-
-public class ServiceInstanceState
-{
-	public ServiceDiscoverySource source;
-	public string routingKey;
-	public bool isContainer;
-	public int healthPort;
-	public int dataPort;
-	public string containerId;
-	public long startedByAccountId;
-	public int processId;
-
-	public bool IsLocal => healthPort != 0 || isContainer;
-}
-
-public class ServiceInstanceExpiration
-{
-	public DateTimeOffset? expiresAt;
-}
-
 public class DiscoveryService
 {
 	private readonly BeamoLocalSystem _localSystem;
@@ -126,13 +58,7 @@ public class DiscoveryService
 	private Task _localDiscoveryListen;
 	private Task _dockerDiscoveryListen;
 	private Task _routingDiscoveryListen;
-
-	private ConcurrentDictionary<ServiceDiscoveryEntryIdentity, ServiceInstanceExpiration> _serviceExpiration;
-	// private ConcurrentDictionary<ServiceDiscoveryEntryIdentity, (long, ServiceDiscoveryEntry)> _localDiscoveryEntryWithTimestamp;
-	private ConcurrentQueue<ServiceDiscoveryEvent> _evtQueue;
 	
-	// private Channel<ServiceDiscoveryEvent>
-
 	private AccountPortalView _adminSelf;
 
 	private long SelfAccountId => _adminSelf.id;
@@ -163,7 +89,7 @@ public class DiscoveryService
 	///	When true (default), this discovery session will listen to server-side events over the beamable websocket to learn about services running remotely. 
 	/// </param>
 	/// <returns></returns>
-	public async IAsyncEnumerable<ServiceState> StartDiscovery(
+	public async IAsyncEnumerable<IDiscoveryEvent> StartDiscovery(
 		CommandArgs args, 
 		TimeSpan timeout = default,
 		[EnumeratorCancellation] CancellationToken token = default, 
@@ -178,10 +104,11 @@ public class DiscoveryService
 		try
 		{
 			var adminSelfTask = args.Provider.GetService<IAccountsApi>().GetAdminMe();
-
-			_serviceExpiration = new ConcurrentDictionary<ServiceDiscoveryEntryIdentity, ServiceInstanceExpiration>();
-			_evtQueue = new ConcurrentQueue<ServiceDiscoveryEvent>();
 			var childCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(token);
+			
+			var hostDiscoveryQueue = new ConcurrentQueue<HostServiceEvent>();
+			var dockerDiscoveryQueue = new ConcurrentQueue<DockerServiceEvent>();
+			var remoteDiscoveryQueue = new ConcurrentQueue<RemoteServiceEvent>();
 			
 			// start getting the list of registered services in the entire realm 
 			var realmRegisteredServicesTask = args.Provider.GetService<IBeamoApi>().PostMicroserviceRegistrations(new MicroserviceRegistrationsQuery());
@@ -189,7 +116,7 @@ public class DiscoveryService
 			_adminSelf = await adminSelfTask;
 			
 			
-			// TODO: does this contain remote running services? (we want it)
+			var serviceDict = new Dictionary<string, RemoteServiceDescriptor>();
 
 			// seed the event table with the services that are known to be running
 			//  this can happen while the other detector systems are starting
@@ -199,26 +126,36 @@ public class DiscoveryService
 				{
 					// this is only important for remote services. Local services will be caught locally.
 					if (registration.startedById == SelfAccountId) continue; 
-					
+					// TODO: subscription does not yet run on service exit
+
+					// TODO: think about methodizing this group-thing
 					var groups = Array.Empty<string>();
 					if (_localSystem.BeamoManifest.TryGetDefinition(registration.beamoName, out var definition))
 					{
 						groups = definition.ServiceGroupTags;
 					}
-					var entry = CreateEntryFromRoutingRegistration(registration);
-					var evt = CreateEvent(ServiceDiscoverySource.Remote, entry, groups, registration.startedById);
-					// TODO: these instances need to live until we hear that they are no longer running...
-					_evtQueue.Enqueue(evt);
+					var descriptor = new RemoteServiceDescriptor
+					{
+						startedByAccountId = registration.startedById,
+						routingKey = registration.routingKey,
+						service = registration.beamoName,
+						groups = groups,
+					};
+					serviceDict[descriptor.PKey] = descriptor;
+					remoteDiscoveryQueue.Enqueue(new RemoteServiceEvent
+					{
+						type = ServiceEventType.Running,
+						descriptor = descriptor,
+					});
 				}
 			});
-			
 
 			// Set up a task that will listens for messages broadcast by any locally running microservices
 			// This then wraps it up in an event and enqueues it.
-			if (mode.HasDiscoveryFlag(DiscoveryFlags.DOTNET))
+			if (mode.HasDiscoveryFlag(DiscoveryFlags.HOST))
 			{
-				Log.Verbose("starting local discovery");
-				_localDiscoveryListen = StartLocalDiscoveryTask(childCancellationToken.Token);
+				Log.Verbose("starting host discovery");
+				_localDiscoveryListen = StartHostDiscoveryTask(childCancellationToken.Token, hostDiscoveryQueue);
 			}
 
 			// Start a websocket connection to listen for service registrations in the realm.
@@ -227,7 +164,7 @@ public class DiscoveryService
 			if (mode.HasDiscoveryFlag(DiscoveryFlags.REMOTE))
 			{
 				Log.Verbose("starting remote discovery");
-				_routingDiscoveryListen = StartRoutingDiscoveryTask(args, childCancellationToken.Token);
+				_routingDiscoveryListen = StartRoutingDiscoveryTask(args, childCancellationToken.Token, remoteDiscoveryQueue, serviceDict);
 			}
 
 			// This looks for services running locally inside docker and emit events whenever they are turned on/off.
@@ -235,189 +172,33 @@ public class DiscoveryService
 			if (mode.HasDiscoveryFlag(DiscoveryFlags.DOCKER))
 			{
 				Log.Verbose("starting docker discovery");
-				_dockerDiscoveryListen = StartDockerDiscoveryTask(childCancellationToken.Token);
+				_dockerDiscoveryListen = StartDockerDiscoveryTask(childCancellationToken.Token, dockerDiscoveryQueue);
 			}
 
-			yield return new ServiceState();
-			try
+
+			var expireAt = DateTimeOffset.Now + timeout;
+			while (!token.IsCancellationRequested)
 			{
-				if (timeout.TotalMilliseconds <= 0)
+				while (hostDiscoveryQueue.Count > 0 && hostDiscoveryQueue.TryDequeue(out var evt))
 				{
-					await Task.Delay(-1, token);
+					yield return evt;
 				}
-				else
+				while (dockerDiscoveryQueue.Count > 0 && dockerDiscoveryQueue.TryDequeue(out var evt))
 				{
-					await Task.Delay(timeout, token);
+					yield return evt;
 				}
-			}
-			catch
-			{
-				// it is fine if this delay() cancels early...
-			}
+				while (remoteDiscoveryQueue.Count > 0 && remoteDiscoveryQueue.TryDequeue(out var evt))
+				{
+					yield return evt;
+				}
 
-
-			#region old code
-			// Cache the startup time
-			// var toRemove = new HashSet<ServiceDiscoveryEntryIdentity>();
-			// var startTime = DateTimeOffset.Now;
-			// var states = new Dictionary<string, ServiceState>();
-			// var client = new HttpClient();
-			// do
-			// {
-			// 	// exhaust the set of queued events
-			// 	var changedStates = new HashSet<ServiceState>();
-			// 	while (_evtQueue.TryDequeue(out var evt))
-			// 	{
-			// 		// the events need to be grouped by their common identity, the serviceName
-			// 		if (!states.TryGetValue(evt.service, out var state))
-			// 		{
-			// 			state = states[evt.service] = new ServiceState
-			// 			{
-			// 				service = evt.service, 
-			// 				serviceType = evt.serviceType,
-			// 				instances = new Dictionary<ServiceDiscoveryEntryIdentity, ServiceInstanceState>()
-			// 			};
-			// 		}
-			//
-			// 		var identity = evt.Identity;
-			// 		var nextInstance = new ServiceInstanceState
-			// 		{
-			// 			source = evt.source,
-			// 			routingKey = evt.prefix,
-			// 			containerId = evt.containerId,
-			// 			isContainer = evt.isContainer,
-			// 			startedByAccountId = evt.startedByAccountId,
-			// 			dataPort = evt.dataPort,
-			// 			healthPort = evt.healthPort,
-			// 			processId = evt.processId,
-			// 		};
-			// 		
-			// 		if (state.instances.TryGetValue(identity, out var existingInstance))
-			// 		{
-			// 			if (existingInstance.source != evt.source)
-			// 			{
-			// 				Log.Warning($"The service instance=[{identity}] has been detected by multiple sources, " +
-			// 				            $"first=[{existingInstance.source}] second=[{evt.source}], and the CLI does not support this use case. " +
-			// 				            $"The latest information will be ignored, which may produce unexpected behaviour. ");
-			// 			}
-			// 			else
-			// 			{
-			// 				// TODO: add change detection
-			// 				// state.instances[identity] = nextInstance;
-			// 				// changedStates.Add(state);
-			// 			}
-			// 		}
-			// 		else
-			// 		{
-			// 			state.instances[identity] = nextInstance;
-			// 			changedStates.Add(state);
-			// 		}
-			//
-			// 	}
-			// 	
-			// 	// Find out which services need to be removed  
-			// 	var now = DateTimeOffset.Now;
-			//
-			// 	foreach (var (service, state) in states)
-			// 	{
-			// 		var identsToRemove = new List<ServiceDiscoveryEntryIdentity>();
-			// 		foreach (var (identity, instance) in state.instances)
-			// 		{
-			// 			switch (instance.source)
-			// 			{
-			// 				case ServiceDiscoverySource.Dotnet:
-			// 					if (state.serviceType != "service")
-			// 					{
-			// 						Log.Warning($"service=[{service}] is not a microservice, this should not happen");
-			// 						continue;
-			// 					}
-			// 					
-			// 					// local instances should be able to respond to local health checks!
-			// 					var passedHealthCheck = false;
-			// 					try
-			// 					{
-			// 						var proc = Process.GetProcessById(instance.processId);
-			// 						passedHealthCheck = true;
-			// 						// var res = await client.GetAsync($"http://localhost:{instance.healthPort}/health");
-			// 						// passedHealthCheck = res.IsSuccessStatusCode;
-			// 					}
-			// 					catch
-			// 					{
-			// 						// let it die. If anything went wrong, the health check didn't work.
-			// 					}
-			//
-			// 					if (!passedHealthCheck)
-			// 					{
-			// 						// ah the thing is dead!!!
-			// 						identsToRemove.Add(identity);
-			// 					}
-			// 					
-			// 					break;
-			// 			}
-			//
-			// 			foreach (var removedIdent in identsToRemove)
-			// 			{
-			// 				state.instances.Remove(removedIdent);
-			// 			}
-			//
-			// 			if (identsToRemove.Count > 0)
-			// 			{
-			// 				changedStates.Add(state);
-			// 			}
-			// 		}
-			// 	}
-			// 	
-			// 	
-			// 	// foreach (var (identity, expiration) in _serviceExpiration)
-			// 	// {
-			// 	// 	if (!expiration.expiresAt.HasValue)
-			// 	// 		continue;
-			// 	//
-			// 	// 	if (now > expiration.expiresAt.Value)
-			// 	// 	{
-			// 	// 		toRemove.Add(identity);
-			// 	// 	}
-			// 	// }
-			// 	//
-			// 	// Remove all the entries that we haven't heard from in a while
-			// 	// foreach (var x in toRemove)
-			// 	// {
-			// 	// 	if (!states.TryGetValue(x.service, out var state))
-			// 	// 		continue;
-			// 	//
-			// 	// 	_serviceExpiration.TryRemove(x, out var _);
-			// 	// 	state.instances.Remove(x);
-			// 	// 	changedStates.Add(state);
-			// 	// }
-			// 	//
-			// 	// toRemove.Clear();
-			// 	
-			// 	// emit all states that have changed in this frame
-			// 	foreach (var state in changedStates)
-			// 	{
-			// 		yield return state;
-			// 	}
-			//
-			// 	_evtQueue.Clear();
-			//
-			// 	// check if we have exhausted our ps time.
-			// 	var nowTime = DateTimeOffset.Now;
-			// 	var duration = nowTime - startTime;
-			// 	if (timeout != default && timeout < duration)
-			// 	{
-			// 		break;
-			// 	}
-			//
-			// 	if (token.IsCancellationRequested)
-			// 	{
-			// 		break;
-			// 	}
-			//
-			// 	// Wait for a bit.
-			// 	await Task.Delay(50, token);
-			//
-			// } while (true);
-			#endregion
+				if (timeout.TotalMilliseconds > 0 && DateTimeOffset.Now > expireAt)
+				{
+					break;
+				}
+				
+				await Task.Delay(10, token);
+			}
 			
 			// cancel the sub tasks.
 			await childCancellationToken.CancelAsync();
@@ -457,7 +238,7 @@ public class DiscoveryService
 		}
 	}
 
-	public Task StartDockerDiscoveryTask(CancellationToken token)
+	public Task StartDockerDiscoveryTask(CancellationToken token, ConcurrentQueue<DockerServiceEvent> evtQueue)
 	{
 		return Task.Run(async () =>
 		{
@@ -465,6 +246,7 @@ public class DiscoveryService
 			{
 				var isListeningToDocker = false;
 				var wasDockerRunningLastTick = false;
+				var containerIdToService = new Dictionary<string, DockerServiceDescriptor>();
 				do
 				{
 					// Check if docker's state changed (on/off) so we can reset isListeningToDocker.
@@ -495,17 +277,21 @@ public class DiscoveryService
 							}
 							
 							var service = await CreateEntryFromDocker(serviceDefinition, containerId);
-							var evt = CreateEvent(ServiceDiscoverySource.Docker, service, serviceDefinition.ServiceGroupTags, SelfAccountId);
-							_evtQueue.Enqueue(evt);
+							containerIdToService[containerId] = service;
+							evtQueue.Enqueue(new DockerServiceEvent
+							{
+								type = ServiceEventType.Running,
+								descriptor = service
+							});
 						}
 
 						// This doesn't actually block
 						await _localSystem.StartListeningToDockerRaw(async (beamoId, eventType, raw) =>
 						{
-							if (eventType != "start" && eventType != "destroy")
-							{
-								return;
-							}
+							var isCreated = eventType == "create" || eventType == "start";
+							var isDeleted = eventType == "destroy";
+							
+							if (!isCreated && !isDeleted) return; // skip, because these events don't concern us
 
 							if (!_localSystem.BeamoManifest.TryGetDefinition(beamoId, out var serviceDefinition))
 							{
@@ -514,8 +300,27 @@ public class DiscoveryService
 							}
 
 							var service = await CreateEntryFromDocker(serviceDefinition, raw.ID);
-							var evt = CreateEvent(ServiceDiscoverySource.Docker, service, serviceDefinition.ServiceGroupTags, SelfAccountId);
-							_evtQueue.Enqueue(evt);
+							if (isCreated)
+							{
+								if (!containerIdToService.ContainsKey(raw.ID))
+								{
+									containerIdToService[raw.ID] = service;
+									evtQueue.Enqueue(new DockerServiceEvent
+									{
+										type = ServiceEventType.Running,
+										descriptor = service
+									});
+								}
+							} else if (containerIdToService.ContainsKey(raw.ID))
+							{
+								containerIdToService.Remove(raw.ID);
+								evtQueue.Enqueue(new DockerServiceEvent
+								{
+									type = ServiceEventType.Stopped,
+									descriptor = service
+								});
+							}
+							
 						});
 
 						isListeningToDocker = true;
@@ -539,12 +344,13 @@ public class DiscoveryService
 		}, token);
 	}
 	
-	public Task StartRoutingDiscoveryTask(CommandArgs args, CancellationToken token)
+	public Task StartRoutingDiscoveryTask(CommandArgs args, CancellationToken token, ConcurrentQueue<RemoteServiceEvent> evtQueue, Dictionary<string, RemoteServiceDescriptor> serviceDict)
 	{
 		return Task.Run(async () =>
 		{
 			try
 			{
+				
 				var ws = await WebsocketUtil.ConfigureWebSocketForServerNotifications(args,
 					new[] { "beamo.service_registration_changed" }, token);
 				await WebsocketUtil.RunServerNotificationListenLoop(ws, message =>
@@ -554,6 +360,7 @@ public class DiscoveryService
 						UnitySerializationSettings.Instance);
 
 					// Now we update the list of routing keys we do see.
+					var unseen = new HashSet<string>(serviceDict.Keys);
 					foreach (var registration in data.registrations)
 					{
 						/*
@@ -574,11 +381,37 @@ public class DiscoveryService
 						{
 							groups = definition.ServiceGroupTags;
 						}
-						
-						var entry = CreateEntryFromRoutingRegistration(registration);
-						var evt = CreateEvent(ServiceDiscoverySource.Remote, entry, groups, registration.startedById);
-						// TODO: how to get rid of old services? 
-						_evtQueue.Enqueue(evt);
+
+						var descriptor = new RemoteServiceDescriptor
+						{
+							startedByAccountId = registration.startedById,
+							routingKey = registration.routingKey,
+							service = registration.beamoName,
+							groups = groups,
+						};
+
+						unseen.Remove(descriptor.PKey);
+						if (!serviceDict.TryGetValue(descriptor.PKey, out var existing))
+						{
+							evtQueue.Enqueue(new RemoteServiceEvent()
+							{
+								descriptor = descriptor,
+								type = ServiceEventType.Running
+							});
+							serviceDict[descriptor.PKey] = descriptor;
+						}
+					}
+
+					// emit remove events for the services that did not appear in the latest update!
+					foreach (var unseenPKey in unseen)
+					{
+						var descriptor = serviceDict[unseenPKey];
+						evtQueue.Enqueue(new RemoteServiceEvent()
+						{
+							descriptor = descriptor,
+							type = ServiceEventType.Stopped
+						});
+						serviceDict.Remove(unseenPKey);
 					}
 					
 				}, token);
@@ -597,24 +430,31 @@ public class DiscoveryService
 	}
 	
 
-	public Task StartLocalDiscoveryTask(CancellationToken token)
+	public Task StartHostDiscoveryTask(CancellationToken token, ConcurrentQueue<HostServiceEvent> evtQueue)
 	{
-
 		return Task.Run(async () =>
 		{
 			try
 			{
-				var processIdToEntry = new Dictionary<int, ServiceDiscoveryEntry>();
+				var processIdToEntry = new Dictionary<int, HostServiceDescriptor>();
 				var socketListener = new Socket(SocketType.Dgram, ProtocolType.Udp);
 
 				var ed = new IPEndPoint(IPAddress.Any, Beamable.Common.Constants.Features.Services.DISCOVERY_PORT);
+				
+				// by setting the receive timeout to a millisecond, this allows the ReceiveAsync function 
+				//  to only block for a single millisecond, which means the Task code below can also
+				//  check for service deletion
 				socketListener.ReceiveTimeout = 1;
+				
+				// the important part is that this is a fixed number, the 4kb number is semi arbitrary.
+				//  the C#MS host emits a message every 10ms, so if this application pauses (with a breakpoint), 
+				//  then the buffer will fill up with messages every 10ms, which can result in ghost-like
+				//  messages appearing in the socket-read code AFTER the C#MS has been stopped
+				socketListener.ReceiveBufferSize = 4096;
 				socketListener.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 				socketListener.Bind(ed);
 				
-				var buffer = new ArraySegment<byte>(new byte[1024 * 2]);
-				
-				// var readTimeout = TimeSpan.FromMilliseconds(1);
+				var buffer = new ArraySegment<byte>(new byte[socketListener.ReceiveBufferSize]);
 				while (!token.IsCancellationRequested)
 				{
 
@@ -628,8 +468,12 @@ public class DiscoveryService
 							}
 							catch
 							{
-								// TODO: emit removed event.
-								Log.Information("removed " + entry.processId);
+								Log.Verbose("dotnet process removed " + entry.processId);
+								evtQueue.Enqueue(new HostServiceEvent
+								{
+									descriptor = entry,
+									type = ServiceEventType.Stopped
+								});
 								toRemove.Add(processId);
 							}
 						}
@@ -640,11 +484,10 @@ public class DiscoveryService
 						}
 					}
 
-
-
 					if (socketListener.Available == 0)
 						continue; // there is nothing to read, so don't bother.
-					// Block and wait for a socket message.
+					
+					// Block and wait for a socket message. 
 					var byteCount = await socketListener.ReceiveAsync(buffer, token);
 					
 					if (byteCount == 0)
@@ -655,15 +498,57 @@ public class DiscoveryService
 					// Deserialize the entry into an entry.
 					var service = JsonConvert.DeserializeObject<ServiceDiscoveryEntry>(json, UnitySerializationSettings.Instance);
 
+
+					{ 
+						// it is POSSIBLE that a dead service's message is in the socket receive queue, 
+						//  so before promising that this service exists, do a quick process-check to 
+						//  make sure it is actually alive.
+						var isProcessNotWorking = false;
+						try
+						{
+							Process.GetProcessById(service.processId);
+						}
+						catch
+						{
+							isProcessNotWorking = true;
+						}
+
+						if (isProcessNotWorking)
+							continue;
+					}
+
 					// If the message we got from a local service running that is not for this PID/CID, we ignore it.
 					if (service.cid != _appContext.Cid || service.pid != _appContext.Pid)
 						continue;
 					
 					if (!processIdToEntry.ContainsKey(service.processId))
 					{
-						// TODO: emit add event.
-						processIdToEntry[service.processId] = service;
-						Log.Information("added " + service.processId);
+						var groups = Array.Empty<string>();
+						if (_localSystem.BeamoManifest.TryGetDefinition(service.serviceName, out var definition))
+						{
+							groups = definition.ServiceGroupTags;
+						}
+						
+						var addition = processIdToEntry[service.processId] = new HostServiceDescriptor
+						{
+							processId = service.processId,
+							service = service.serviceName,
+							startedByAccountId = service.startedByAccountId,
+							healthPort = service.healthPort,
+							routingKey = service.prefix,
+							groups = groups
+						};
+						evtQueue.Enqueue(new HostServiceEvent
+						{
+							type = ServiceEventType.Running,
+							descriptor = addition
+						});
+						Log.Information("added dotnet process" + service.processId);
+					}
+					else
+					{
+						// it is not possible to change any of these fields while the service is running, so change detection 
+						//  is not useful.
 					}
 					
 					// the only reason to delay at all is to avoid task exhaustion on lower end systems. 
@@ -687,48 +572,13 @@ public class DiscoveryService
 		}, token);
 	}
 
-	public ServiceDiscoveryEntry CreateEntryFromServiceDefinition(BeamoServiceDefinition definition)
+	public async Promise<DockerServiceDescriptor> CreateEntryFromDocker(BeamoServiceDefinition serviceDefinition, string containerId)
 	{
-		return new ServiceDiscoveryEntry()
-		{
-			processId = 0,
-			cid = _appContext.Cid,
-			pid = _appContext.Pid,
-			prefix = ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine(),
-			serviceName = definition.BeamoId,
-			serviceType = definition.Protocol == BeamoProtocolType.HttpMicroservice ? "service" : "storage",
-			dataPort = 0,
-			healthPort = 0,
-			isContainer = false,
-			containerId = "",
-		};
-	}
-	
-	public ServiceDiscoveryEntry CreateEntryFromRoutingRegistration(MicroserviceRegistrations registration)
-	{
-		return new ServiceDiscoveryEntry()
-		{
-			processId = 0,
-			cid = _appContext.Cid,
-			pid = _appContext.Pid,
-			prefix = registration.routingKey.GetOrElse(""),
-			serviceName = registration.beamoName,
-			// it is safe to hardcode service here because only services CAN exist as routed registrations.
-			serviceType = "service",
-			dataPort = 0,
-			healthPort = 0,
-			isContainer = false,
-			containerId = "",
-		};
-	}
-
-	public async Promise<ServiceDiscoveryEntry> CreateEntryFromDocker(BeamoServiceDefinition serviceDefinition, string containerId)
-	{
-		// var serviceDefinition = _localSystem.BeamoManifest.ServiceDefinitions.FirstOrDefault(sd => sd.BeamoId == beamoId);
 		if (serviceDefinition == null) return null;
 
 		var healthPort = 0;
 		var dataPort = 0;
+		var startedByAccountId = 0L;
 		var beamoId = serviceDefinition.BeamoId;
 		
 		// this is a best guess until we find the env variables, NAME_PREFIX, which may have been overriden for the container. 
@@ -745,6 +595,11 @@ public class DiscoveryService
 				if (variables.TryGetValue("NAME_PREFIX", out var foundPrefix))
 				{
 					prefix = foundPrefix;
+				}
+
+				if (variables.TryGetValue("USER_ACCOUNT_ID", out var accountId) && long.TryParse(accountId, out var accountIdLong))
+				{
+					startedByAccountId = accountIdLong;
 				}
 			}
 			catch
@@ -765,48 +620,108 @@ public class DiscoveryService
 			}
 		}
 
-		var service = new ServiceDiscoveryEntry()
+		var groups = Array.Empty<string>();
+		if (_localSystem.BeamoManifest.TryGetDefinition(beamoId, out var definition))
 		{
-			processId = 0,
-			cid = _appContext.Cid,
-			pid = _appContext.Pid,
-			prefix = prefix,
-			serviceName = serviceDefinition.BeamoId,
+			groups = definition.ServiceGroupTags;
+		}
+		
+		var service = new DockerServiceDescriptor()
+		{
+			routingKey = prefix,
+			service = serviceDefinition.BeamoId,
 			serviceType = serviceDefinition.Protocol == BeamoProtocolType.HttpMicroservice ? "service" : "storage",
 			dataPort = dataPort,
 			healthPort = healthPort,
-			isContainer = true,
 			containerId = containerId,
+			startedByAccountId = startedByAccountId,
+			groups = groups
 		};
 
 		return service;
 	}
 
-	public static ServiceDiscoveryEvent CreateEvent(
-		ServiceDiscoverySource source,
-		ServiceDiscoveryEntry entry, 
-		string[] groupTags,
-		long startedById)
+	public class ServiceEvent<T>
 	{
-		return new ServiceDiscoveryEvent
-		{
-			source = source,
-			processId = entry.processId,
-			isContainer = entry.isContainer,
-			service = entry.serviceName,
-			pid = entry.pid,
-			cid = entry.cid,
-			serviceType = entry.serviceType,
-			groups = groupTags,
-
-			// This is no longer used by the backend/sdks
-			prefix = entry.prefix,
-
-			// Runtime only stuff
-			containerId = entry.containerId,
-			healthPort = entry.healthPort,
-			dataPort = entry.dataPort,
-			startedByAccountId = startedById,
-		};
+		public ServiceEventType type;
+		public T descriptor;
 	}
+}
+
+public enum ServiceEventType
+{
+	Running,
+	Stopped
+}
+
+public class DockerServiceDescriptor
+{
+	public string service;
+	public string serviceType;
+	public string containerId;
+	public int healthPort;
+	public int dataPort;
+	public string routingKey;
+	public long startedByAccountId;
+	public string[] groups;
+}
+
+public class HostServiceDescriptor
+{
+	public string service;
+	public int processId;
+	public int healthPort;
+	public string routingKey;
+	public long startedByAccountId;
+	public string[] groups;
+}
+
+public class RemoteServiceDescriptor
+{
+	public string service;
+	public string routingKey;
+	public long startedByAccountId;
+	public string[] groups;
+
+	public string PKey => $"remote-{service}-{startedByAccountId}-{routingKey}";
+}
+
+public interface IDiscoveryEvent
+{
+	public ServiceEventType Type { get; }
+	public long StartedByAccountId { get; }
+	public string Service { get; }
+	public string ServiceType { get; }
+	public string RoutingKey { get; }
+	public string PrimaryKey { get; }
+}
+
+public class DockerServiceEvent : DiscoveryService.ServiceEvent<DockerServiceDescriptor>, IDiscoveryEvent
+{
+	public ServiceEventType Type => type;
+	public string Service => descriptor.service;
+	public string ServiceType => descriptor.serviceType;
+	public string RoutingKey => descriptor.routingKey;
+	public string PrimaryKey => $"docker-{descriptor.containerId}";
+	public long StartedByAccountId => descriptor.startedByAccountId;
+}
+
+public class HostServiceEvent : DiscoveryService.ServiceEvent<HostServiceDescriptor>, IDiscoveryEvent
+{	
+	public ServiceEventType Type => type;
+	public string Service => descriptor.service;
+	public string ServiceType => "service"; // cannot run storages locally on the host without docker.
+	public long StartedByAccountId => descriptor.startedByAccountId;
+	public string RoutingKey => descriptor.routingKey;
+	public string PrimaryKey => $"host-{descriptor.processId}";
+}
+
+public class RemoteServiceEvent : DiscoveryService.ServiceEvent<RemoteServiceDescriptor>, IDiscoveryEvent
+{
+	public ServiceEventType Type => type;
+	public long StartedByAccountId => descriptor.startedByAccountId;
+	public string Service => descriptor.service;
+	public string ServiceType => "service"; // storages do not get broadcast
+	public string RoutingKey => descriptor.routingKey;
+	public string PrimaryKey => $"remote-{descriptor.service}-{descriptor.routingKey}";
 }
