@@ -1,11 +1,7 @@
-using Beamable.Common.Semantics;
 using cli.Dotnet;
 using cli.Services;
 using Newtonsoft.Json;
 using Serilog;
-using System.CommandLine;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.Net;
 
 namespace cli.Commands.Project;
@@ -18,7 +14,7 @@ public class StopProjectCommandArgs : CommandArgs
 public class StopProjectCommandOutput
 {
 	public string serviceName;
-	public bool didStop;
+	public ServiceInstance instance;
 }
 
 public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProjectCommandOutput>
@@ -35,66 +31,64 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 	public override async Task Handle(StopProjectCommandArgs args)
 	{
 		ProjectCommand.FinalizeServicesArg(args, ref args.services);
-		var serviceSet = new HashSet<string>(args.services);
-		var discovery = args.DependencyProvider.GetService<DiscoveryService>();
-		var evtTable = new Dictionary<string, List<ServiceInstanceState>>();
-		await foreach (var evt in discovery.StartDiscovery(args, TimeSpan.FromSeconds(1)))
-		{
-			if (!serviceSet.Contains(evt.service)) continue; // we don't care about this service, because we aren't stopping it.
 
-			// We need to wait for when discovery emits the event with the health-port set up.
-			if (!evtTable.ContainsKey(evt.service))
+		await DiscoverAndStopServices(args, new HashSet<string>(args.services), TimeSpan.FromSeconds(1),  SendResults);
+	}
+
+	public static async Task DiscoverAndStopServices(CommandArgs args, HashSet<string> serviceIds, TimeSpan discoveryPeriod, Action<StopProjectCommandOutput> onStopCallback)
+	{
+		
+		var stoppedInstances = new List<ServiceInstance>();
+		await foreach (var status in CheckStatusCommand.CheckStatus(args, discoveryPeriod, DiscoveryMode.LOCAL))
+		{
+			foreach (var service in status.services)
 			{
-				evtTable[evt.service] = evt.LocalInstances;
-				if (evtTable.Keys.Count == serviceSet.Count)
+				if (!serviceIds.Contains(service.service)) continue;
+				
+				foreach (var routable in service.availableRoutes)
 				{
-					// we've found all the required services...
-					break;
+					foreach (var instance in routable.instances)
+					{
+						await StopRunningService(instance, args.BeamoLocalSystem, service.service, evt =>
+						{
+							onStopCallback?.Invoke(new StopProjectCommandOutput { instance = instance, serviceName = service.service, });
+							stoppedInstances.Add(instance);
+						});
+					}
 				}
 			}
 		}
-
-		await discovery.Stop();
-
-		foreach ((string serviceName, List<ServiceInstanceState> instances) in evtTable)
-		{
-			var beamoLocalSystem = args.BeamoLocalSystem;
-			foreach (var instance in instances)
-			{
-				await StopRunningService(instance, beamoLocalSystem, serviceName, evt =>
-				{
-					SendResults(new StopProjectCommandOutput { didStop = true, serviceName = serviceName, });
-				});
-			}
-		}
+		
+		Log.Information($"Stopped {stoppedInstances.Count} instances.");
 	}
 
-	public static async Task StopRunningService(ServiceInstanceState serviceInstance, BeamoLocalSystem beamoLocalSystem, string serviceName, Action<ServiceInstanceState> onServiceStopped = null)
+	public static async Task StopRunningService(ServiceInstance instance, BeamoLocalSystem beamoLocalSystem, string serviceName, Action<ServiceInstance> onServiceStopped = null)
 	{
-		if (serviceInstance.isContainer)
+		Log.Debug($"stopping service=[{serviceName}]");
+		if (instance.latestDockerEvent is not null)
 		{
 			await beamoLocalSystem.SynchronizeInstanceStatusWithDocker(beamoLocalSystem.BeamoManifest, beamoLocalSystem.BeamoRuntime.ExistingLocalServiceInstances);
 			await beamoLocalSystem.StartListeningToDocker();
 
 			await ServicesResetContainerCommand.TurnOffContainers(beamoLocalSystem, new[] { serviceName }, _ =>
 			{
-				onServiceStopped?.Invoke(serviceInstance);
+				onServiceStopped?.Invoke(instance);
 			});
 		}
-		else
+		else if (instance.latestHostEvent is { } hostEvt)
 		{
-			await SendKillMessage(serviceName, serviceInstance);
+			await SendKillMessage(serviceName, hostEvt);
 			Log.Information($"stopped {serviceName}.");
-			onServiceStopped?.Invoke(serviceInstance);
+			onServiceStopped?.Invoke(instance);
 		}
 	}
 
-	public static async Task SendKillMessage(string service, ServiceInstanceState evt)
+	public static async Task SendKillMessage(string service, HostServiceDescriptor host)
 	{
 		using var client = new HttpClient();
 		// Set up the HTTP GET request
-		Log.Verbose($"Sending kill event, discovery=[{JsonConvert.SerializeObject(evt, Formatting.Indented)}]");
-		var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:{evt.healthPort}/stop?reason=cli-request");
+		Log.Verbose($"Sending kill event, host=[{JsonConvert.SerializeObject(host, Formatting.Indented)}]");
+		var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:{host.healthPort}/stop?reason=cli-request");
 		var response = await client.SendAsync(request);
 		if (!response.IsSuccessStatusCode)
 		{

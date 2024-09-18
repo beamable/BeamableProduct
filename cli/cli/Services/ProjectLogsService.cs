@@ -15,39 +15,41 @@ public class ProjectLogsService
 			handleLog(parsed);
 		}
 
+		
 		while (args.reconnect && !token.IsCancellationRequested)
 		{
 			var discovery = args.DependencyProvider.GetService<DiscoveryService>();
 
-			ServiceInstanceState instance = null;
+			Task tailTask = null;
+			// TODO: ignore remote, and also care about id filtering
 			await foreach (var evt in discovery.StartDiscovery(args, default, token))
 			{
-				if (evt.service == args.service && evt.LocalInstances.Count > 0)
+				if (evt.Type != ServiceEventType.Running)
+					continue;
+				
+				switch (evt)
 				{
-					if (evt.LocalInstances.Count > 1)
-					{
-						Log.Warning("The log command can only track the logs for the first local service");
-					}
-					instance = evt.LocalInstances[0];
+					case DockerServiceEvent dockerEvt:
+						tailTask = TailDockerContainer(dockerEvt.descriptor, args.BeamoLocalSystem, LogHandler);
+						break;
+					case HostServiceEvent hostEvt:
+						tailTask = TailProcess(hostEvt.descriptor, LogHandler);
+						break;
+				}
+
+				if (tailTask != null)
+				{
 					break;
 				}
 			}
 
-			if (instance == null)
+			if (tailTask == null)
 			{
 				Log.Verbose("no start event found");
 			}
 			else
 			{
-				if (instance.isContainer)
-				{
-					await TailDockerContainer(instance.containerId, args.BeamoLocalSystem, LogHandler);
-				}
-				else
-				{
-					await TailProcess(instance, LogHandler);
-				}
-
+				await tailTask;
 				Log.Verbose($"{args.service} has stopped.");
 			}
 
@@ -56,9 +58,9 @@ public class ProjectLogsService
 		}
 	}
 
-	async static Task TailDockerContainer(string containerId, BeamoLocalSystem beamo, Action<string> handleLog)
+	async static Task TailDockerContainer(DockerServiceDescriptor container, BeamoLocalSystem beamo, Action<string> handleLog)
 	{
-		await foreach (var line in beamo.TailLogs(containerId))
+		await foreach (var line in beamo.TailLogs(container.containerId))
 		{
 			if (!string.IsNullOrEmpty(line))
 			{
@@ -67,12 +69,12 @@ public class ProjectLogsService
 		}
 	}
 
-	static async Task TailProcess(ServiceInstanceState evt, Action<string> handleLog)
+	static async Task TailProcess(HostServiceDescriptor host, Action<string> handleLog)
 	{
 		using (var client = new HttpClient())
 		{
 			// Set up the HTTP GET request
-			var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:{evt.healthPort}/logs");
+			var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:{host.healthPort}/logs");
 
 			// Set the "text/event-stream" media type to indicate Server-Sent Events
 			request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("text/event-stream"));

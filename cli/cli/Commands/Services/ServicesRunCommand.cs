@@ -16,6 +16,7 @@ public class ServicesRunCommandArgs : LoginCommandArgs
 {
 	public string[] BeamoIdsToDeploy;
 	public bool forceAmdCpuArchitecture = false;
+	public bool autoDeleteContainers;
 }
 
 public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
@@ -39,6 +40,17 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 			new Option<bool>(new string[] { "--force-amd-cpu-arch", "-fcpu" }, () => false,
 				"Force the services to run with amd64 CPU architecture, useful when deploying from computers with ARM architecture"),
 			(args, i) => args.forceAmdCpuArchitecture = i);
+		
+		AddOption(
+			new Option<bool>(new string[] { "--keep-containers", "-k" }, () => false,
+				"Automatically remove service containers after they exit"),
+			
+			// it is mildly confusing to invert the logic here, but I think there is a good reason.
+			//  the default in docker is to require a user to specify --rm to remove the container, 
+			//  as beamable, we should flip that auto clean for folks. 
+			//  in that regard, the --keep-containers option needs to be set to NOT include the --rm
+			(args, i) => args.autoDeleteContainers = !i);
+		
 	}
 
 	public override async Task Handle(ServicesRunCommandArgs args)
@@ -121,12 +133,14 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 					var sequence = Promise.Sequence(promises);
 					await sequence;
 
-					await _localBeamo.DeployToLocal(_localBeamo, uniqueIds, args.forceAmdCpuArchitecture, (beamoId, progress) =>
+					await _localBeamo.DeployToLocal(_localBeamo, uniqueIds, args.forceAmdCpuArchitecture, 
+						autoDeleteContainers: args.autoDeleteContainers, 
+						buildPullImageProgress: (beamoId, progress) =>
 					{
 						var progressTask = allProgressTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
 						progressTask?.Increment((progress * 80) - progressTask.Value);
 						this.SendResults<ServiceRunProgressResult, ServiceRunProgressResult>(new ServiceRunProgressResult() { BeamoId = beamoId, LocalDeployProgress = progressTask?.Value ?? 0.0f, });
-					}, beamoId =>
+					}, onServiceDeployCompleted: beamoId =>
 					{
 						var progressTask = allProgressTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));
 						progressTask?.Increment(20);

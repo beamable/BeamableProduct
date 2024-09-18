@@ -417,7 +417,8 @@ namespace Beamable.Server
 		        prefix = args.NamePrefix,
 		        serviceName = attribute.MicroserviceName,
 		        healthPort = args.HealthPort,
-		        serviceType = "service" 
+		        serviceType = "service",
+		        startedByAccountId = args.AccountId
 	        };
 	        var msgJson = JsonConvert.SerializeObject(msg, UnitySerializationSettings.Instance);
 	        var msgBytes = Encoding.UTF8.GetBytes(msgJson);
