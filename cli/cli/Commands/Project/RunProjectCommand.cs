@@ -1,5 +1,4 @@
-using Beamable.Common.Api;
-using Beamable.Common.Semantics;
+using Beamable.Common.BeamCli;
 using cli.Dotnet;
 using cli.Services;
 using CliWrap;
@@ -7,15 +6,14 @@ using Newtonsoft.Json;
 using Serilog;
 using Serilog.Events;
 using System.CommandLine;
-using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace cli.Commands.Project;
 
 public class RunProjectCommandArgs : CommandArgs
 {
 	public List<string> services = new List<string>();
-	public bool detach;
 	public bool forceRestart;
 }
 
@@ -37,9 +35,25 @@ public class RunProjectResultStream
 	public float progressRatio;
 }
 
-public class RunProjectCommand : AppCommand<RunProjectCommandArgs>
-	, IResultSteam<DefaultStreamResultChannel, RunProjectResultStream>
+[Serializable]
+public class RunProjectBuildErrorStream
 {
+	public string serviceId;
+	public ProjectErrorReport report;
+}
+
+public class RunProjectBuildErrorStreamChannel : IResultChannel
+{
+	public string ChannelName => "buildErrors";
+}
+
+public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
+	, IResultSteam<DefaultStreamResultChannel, RunProjectResultStream>
+	, IResultSteam<RunProjectBuildErrorStreamChannel, RunProjectBuildErrorStream>
+{
+	[GeneratedRegex(": error CS(\\d\\d\\d\\d):")]
+	public static partial Regex ErrorLike();
+	
 	public RunProjectCommand()
 		: base("run", "Run a project")
 	{
@@ -54,10 +68,6 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
 		AddOption<bool>(new Option<bool>("--force", "With this flag, we restart any running services. Without it, we skip running services"), (args, b) => args.forceRestart = b);
 
-		var detachOption = new Option<bool>("--detach",
-			"With this flag, we don't remain attached to the running service process");
-		detachOption.AddAlias("-d");
-		AddOption<bool>(detachOption, (args, b) => args.detach = b);
 	}
 
 	const float MIN_PROGRESS = .05f;
@@ -65,7 +75,7 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 	{
 		// remap the progress between MIN and 1.
 		progress = MIN_PROGRESS + (progress * (1 - MIN_PROGRESS));
-		this.SendResults(new RunProjectResultStream
+		this.SendResults<DefaultStreamResultChannel, RunProjectResultStream>(new RunProjectResultStream
 		{
 			serviceId = serviceId,
 			message = message,
@@ -77,10 +87,10 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 	{
 		ProjectCommand.FinalizeServicesArg(args, ref args.services);
 
-		if (!args.detach && args.services.Count > 1)
+		if (args.services.Count > 1)
 		{
-			Log.Warning("You are starting multiple services without the '--detach' flag. " +
-			            "Their log output will be shown interleaved; for optimal log viewing, use '--detach' and then use 'beam project logs --ids <BeamoId>' for each service whose logs you wish to tail");
+			Log.Warning("You are starting multiple services " +
+			            "Their log output will be shown interleaved; for optimal log viewing, use the `beam project logs' command");
 		}
 		
 		// Emit some progress messages to let any listeners know we are doing work...
@@ -126,16 +136,32 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		Log.Debug("Starting Services. SERVICES={Services}", string.Join(",", serviceTable.Keys));
 		foreach ((string serviceName, HttpMicroserviceLocalProtocol service) in serviceTable)
 		{
-			runTasks.Add(RunService(args, serviceName, !args.detach, new CancellationTokenSource(), data =>
+			var name = serviceName;
+			runTasks.Add(RunService(args, serviceName, new CancellationTokenSource(), data =>
 			{
 				if (data.IsJson)
 				{
 					Log.Write(data.JsonLogLevel, data.JsonLogMessage);
+				} 
+				else if (data.forcedLogLevel.HasValue)
+				{
+					Log.Write(data.forcedLogLevel.Value, data.rawLogMessage);
 				}
 				else
 				{
 					Log.Information(data.rawLogMessage);
 				}
+			}, (errorReport, exitCode) =>
+			{
+				// Log.Fatal("failed to start service");
+				this.SendResults<RunProjectBuildErrorStreamChannel, RunProjectBuildErrorStream>(new RunProjectBuildErrorStream
+				{
+					serviceId = name,
+					report = errorReport
+				});
+			}, (progress, message) =>
+			{
+				SendUpdate(name, message, progress);
 			}));
 		}
 		
@@ -143,109 +169,147 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 	}
 
 
-	public static async Task RunService(CommandArgs args, string serviceName, bool watchProcess, CancellationTokenSource serviceToken, Action<ProjectRunLogData> onLog=null)
+	public static async Task RunService(
+		CommandArgs args,
+		string serviceName,
+		CancellationTokenSource serviceToken,
+		Action<ProjectRunLogData> onLog = null,
+		Action<ProjectErrorReport, int> onFailure = null,
+		Action<float, string> onProgress=null)
 	{
-		var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(args.Lifecycle.CancellationToken, serviceToken.Token);
-		var serviceStartedLogsReceived = false;
+		var tokenSource =
+			CancellationTokenSource.CreateLinkedTokenSource(args.Lifecycle.CancellationToken, serviceToken.Token);
+
+		var currentProgress = 0f;
+		var serviceLogProgressTable = new Dictionary<string, float>
+		{
+			[Beamable.Common.Constants.Features.Services.Logs.REGISTERING_STANDARD_SERVICES] = .42f,
+			[Beamable.Common.Constants.Features.Services.Logs.REGISTERING_CUSTOM_SERVICES] = .45f,
+			[Beamable.Common.Constants.Features.Services.Logs.SCANNING_CLIENT_PREFIX] = .5f,
+			[Beamable.Common.Constants.Features.Services.Logs.SERVICE_PROVIDER_INITIALIZED] = .7f,
+			[Beamable.Common.Constants.Features.Services.Logs.EVENT_PROVIDER_INITIALIZED] = .75f,
+			[Beamable.Common.Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX] = 1
+		};
+		var nonServiceLogProgressTable = new Dictionary<string, float>
+		{
+			["Determining projects to restore..."] = .1f,
+			["Bundling Beamable Properties..."] = .2f,
+			["Starting Prepare"] = .3f,
+		};
 
 		// Setup a thread to run the server process.
 		// This runs the currently built MS .dll via `dotnet` and keeps a handle to the resulting process.
 		// If it dies, this command exits with a non-zero error code.
-		var serverTask = Task.Run(async () =>
+		try
 		{
-			try
-			{
-				var service = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.FirstOrDefault(x => x.BeamoId == serviceName);
-				if (service == null)
-					throw new CliException($"service does not exist, service=[{serviceName}]");
+			var service =
+				args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.FirstOrDefault(x => x.BeamoId == serviceName);
+			if (service == null)
+				throw new CliException($"service does not exist, service=[{serviceName}]");
 
-				var projectPath = args.ConfigService.BeamableRelativeToExecutionRelative(service.ProjectDirectory);
-				Log.Debug("Found service definition, ctx=[{ServiceDockerBuildContextPath}] projectPath=[{ProjectPath}]", service.ProjectDirectory, projectPath);
+			var projectPath = args.ConfigService.BeamableRelativeToExecutionRelative(service.ProjectDirectory);
+			Log.Debug("Found service definition, ctx=[{ServiceDockerBuildContextPath}] projectPath=[{ProjectPath}]",
+				service.ProjectDirectory, projectPath);
 
-				var logPath = Path.Combine(args.ConfigService.ConfigDirectoryPath, "temp", "logs", $"{serviceName}-{DateTimeOffset.Now.ToUnixTimeMilliseconds()}-logs.txt");
-				Log.Debug($"service path=[{projectPath}]");
+			var logPath = Path.Combine(args.ConfigService.ConfigDirectoryPath, "temp", "serviceLogs",
+				$"{serviceName}-{DateTimeOffset.Now.ToUnixTimeMilliseconds()}-logs.txt");
+			Log.Debug($"service path=[{projectPath}]");
 
-				var commandStr = $"run --project {projectPath}";
-				await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, "--version")
-					.WithStandardOutputPipe(PipeTarget.ToDelegate(x => Log.Debug($"dotnet version: {x}")))
-					.ExecuteAsync();
-				Log.Debug($"Running {args.AppContext.DotnetPath} {commandStr}");
+			var errorPath = Path.Combine(args.ConfigService.ConfigDirectoryPath, "temp", "serviceBuildLogs",
+				$"{serviceName}.json");
+			var errorPathDir = Path.GetDirectoryName(errorPath);
+			Directory.CreateDirectory(errorPathDir);
 
-				var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, commandStr)
-					.WithEnvironmentVariables(new Dictionary<string, string>
+			var commandStr = $"run --project {projectPath} --verbosity minimal -p:ErrorLog=\"{errorPath}%2Cversion=2\" -p:WarningLevel=0";
+			Log.Debug($"Running {args.AppContext.DotnetPath} {commandStr}");
+
+			var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, commandStr)
+				.WithEnvironmentVariables(new Dictionary<string, string>
+				{
+					["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1",
+					["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1",
+					["LOG_PATH"] = logPath,
+					["LOG_LEVEL"] = "verbose",
+					["LOG_TYPE"] = "structured+file",
+					["WATCH_TOKEN"] = "false",
+					[Beamable.Common.Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = args.AppContext.DotnetPath,
+				})
+				.WithStandardErrorPipe(PipeTarget.ToDelegate(line =>
+				{
+					// TODO: do something smarter with the log, like log it as SendResults compiler error?
+					onLog?.Invoke(new ProjectRunLogData
 					{
-						["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1",
-						["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1",
-						["LOG_PATH"] = logPath,
-						["LOG_TYPE"] = "structured+file",
-						["WATCH_TOKEN"] = "false",
-						[Beamable.Common.Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = args.AppContext.DotnetPath,
-					})
-					.WithStandardErrorPipe(PipeTarget.ToDelegate(line =>
+						rawLogMessage = line, jsonData = null, forcedLogLevel = LogEventLevel.Error
+					});
+				}))
+				.WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
+				{
+					// this may be structured JSON, or it could be a valid build message....
+					try
 					{
-						// TODO: do something smarter with the log, like log it as SendResults compiler error?
-						Console.Error.WriteLine("(watch error) " + line);
-					}))
-					.WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
-					{
-						// this may be structured JSON, or it could be a valid build message....
-						try
+						var logData = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(line,
+							new JsonSerializerOptions { IncludeFields = true });
+
+
+						var matches = serviceLogProgressTable.Where(kvp => line.Contains(kvp.Key));
+						foreach (var kvp in matches)
 						{
-							var logData = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(line, new JsonSerializerOptions
+							if (currentProgress < kvp.Value)
 							{
-								IncludeFields = true
-							});
-
+								currentProgress = kvp.Value;
+								onProgress?.Invoke(kvp.Value, kvp.Key);
+							}
+							serviceLogProgressTable.Remove(kvp.Key);
+						}
+						
+						
+						onLog?.Invoke(new ProjectRunLogData { rawLogMessage = line, jsonData = logData });
+					}
+					catch
+					{
+						if (ErrorLike().Match(line).Success)
+						{
+							// this is a build failure message.
 							onLog?.Invoke(new ProjectRunLogData
 							{
-								rawLogMessage = line,
-								jsonData = logData
+								rawLogMessage = line, jsonData = null, forcedLogLevel = LogEventLevel.Error
 							});
 						}
-						catch
+						else
 						{
-							onLog?.Invoke(new ProjectRunLogData
+							
+							var matches = nonServiceLogProgressTable.Where(kvp => line.Contains(kvp.Key));
+							foreach (var kvp in matches)
 							{
-								rawLogMessage = line,
-								jsonData = null
-							});
+								if (currentProgress < kvp.Value)
+								{
+									currentProgress = kvp.Value;
+									onProgress?.Invoke(kvp.Value, kvp.Key);
+								}
+								nonServiceLogProgressTable.Remove(kvp.Key);
+							}
+
+							onLog?.Invoke(new ProjectRunLogData { rawLogMessage = line, jsonData = null });
 						}
+					}
 
-						if (line.Contains(Beamable.Common.Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX))
-						{
-							serviceStartedLogsReceived = true;
-						}
-					}))
-					.WithValidation(CommandResultValidation.None)
-					.ExecuteAsync(tokenSource.Token);
+				}))
+				.WithValidation(CommandResultValidation.None)
+				.ExecuteAsync(tokenSource.Token);
 
-				var res = await command;
-				tokenSource.Cancel();
-
-				if (res.ExitCode != 0)
-					throw new CliException($"Failed to run service with id: [{service.BeamoId}]. You can check the logs at {logPath}.", res.ExitCode, true);
-			}
-			catch (Exception e)
+			var res = await command;
+			if (res.ExitCode != 0)
 			{
-				Log.Error(e, e.Message);
+				var report = ProjectService.ReadErrorReport(errorPath);
+				onFailure?.Invoke(report, res.ExitCode);
 			}
-		}, tokenSource.Token);
-		
-		while (!serviceStartedLogsReceived)
-		{
-			await Task.Delay(50, tokenSource.Token);
 		}
-
-		if (watchProcess)
+		catch (Exception e)
 		{
-			await serverTask;
-		}
-		else
-		{
-			Log.Information($"Detaching from running service=[{serviceName}]");
+			Log.Error(e, e.Message);
 		}
 	}
-	
+
 	public class StructuredMicroserviceLog
 	{
 		[JsonProperty("__t")]
@@ -268,6 +332,8 @@ public class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 
 		public bool IsJson => jsonData != null;
 
+		public LogEventLevel? forcedLogLevel;
+		
 		public LogEventLevel JsonLogLevel
 		{
 			get

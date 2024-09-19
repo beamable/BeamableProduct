@@ -552,7 +552,7 @@ public class ProjectService
 		onReport?.Invoke(report);
 	}
 
-	static ProjectErrorReport ReadErrorReport(string errorLogPath)
+	public static ProjectErrorReport ReadErrorReport(string errorLogPath)
 	{
 		Log.Debug("Reading SARIF report at " + errorLogPath);
 		try
@@ -585,12 +585,14 @@ public class ProjectService
 	}
 }
 
+[Serializable]
 public class ProjectErrorReport
 {
 	public bool isSuccess;
 	public List<ProjectErrorResult> errors = new List<ProjectErrorResult>();
 }
 
+[Serializable]
 public class ProjectErrorResult
 {
 	public string level;
