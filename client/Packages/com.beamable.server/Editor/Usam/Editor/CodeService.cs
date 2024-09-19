@@ -608,7 +608,7 @@ namespace Beamable.Server.Editor.Usam
 
 		public Promise RunStandaloneMicroservice(string id)
 		{
-			var runCommand = _cli.ProjectRun(new ProjectRunArgs() {ids = new[] {id}, watch = false, detach = true}).OnError(ex =>
+			var runCommand = _cli.ProjectRun(new ProjectRunArgs() {ids = new[] {id}, watch = false}).OnError(ex =>
 			{
 				Debug.LogError(ex.data.message);
 			});

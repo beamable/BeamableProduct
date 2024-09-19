@@ -12,8 +12,6 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string[] ids;
 		/// <summary>With this flag, we restart any running services. Without it, we skip running services</summary>
 		public bool force;
-		/// <summary>With this flag, we don't remain attached to the running service process</summary>
-		public bool detach;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -37,11 +35,6 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.force != default(bool)))
 			{
 				genBeamCommandArgs.Add(("--force=" + this.force));
-			}
-			// If the detach value was not default, then add it to the list of args.
-			if ((this.detach != default(bool)))
-			{
-				genBeamCommandArgs.Add(("--detach=" + this.detach));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces
@@ -77,6 +70,11 @@ namespace Beamable.Editor.BeamCli.Commands
 		public virtual ProjectRunWrapper OnStreamRunProjectResultStream(System.Action<ReportDataPoint<BeamRunProjectResultStream>> cb)
 		{
 			this.Command.On("stream", cb);
+			return this;
+		}
+		public virtual ProjectRunWrapper OnBuildErrorsRunProjectBuildErrorStream(System.Action<ReportDataPoint<BeamRunProjectBuildErrorStream>> cb)
+		{
+			this.Command.On("buildErrors", cb);
 			return this;
 		}
 	}
