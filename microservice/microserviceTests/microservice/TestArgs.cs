@@ -127,5 +127,6 @@ namespace microserviceTests.microservice
       public bool EnableDangerousDeflateOptions => false;
       public string MetadataUrl { get; }
 	  public string RefreshToken { get; }
+	  public long AccountId => 0;
    }
 }

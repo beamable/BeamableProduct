@@ -378,7 +378,8 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public async Task DeployToLocal(BeamoLocalSystem localSystem, string[] deployBeamoIds = null,
 		bool forceAmdCpuArchitecture = false, Action<string, float> buildPullImageProgress = null,
-		Action<string> onServiceDeployCompleted = null, CancellationToken token = default)
+		Action<string> onServiceDeployCompleted = null, bool autoDeleteContainers = true, 
+		CancellationToken token = default)
 	{
 		var localManifest = localSystem.BeamoManifest;
 
@@ -431,7 +432,7 @@ public partial class BeamoLocalSystem
 			runContainerTasks.AddRange(microserviceContainers.Select(async sd =>
 			{
 				await RunLocalHttpMicroservice(sd, localManifest.HttpMicroserviceLocalProtocols[sd.BeamoId],
-					localSystem, token);
+					localSystem, autoDeleteContainers, token);
 				onServiceDeployCompleted?.Invoke(sd.BeamoId);
 			}));
 

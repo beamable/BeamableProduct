@@ -24,7 +24,7 @@ public class GenerateClientFileCommandArgs : CommandArgs
 	public bool outputToLinkedProjects = true;
 }
 
-public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArgs>, IEmptyResult
+public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArgs>, IEmptyResult, ISkipManifest
 {
 	public GenerateClientFileCommand() : base("generate-client", "Generate a C# client file based on a built C# microservice dll directory")
 	{
@@ -41,6 +41,12 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 	{
 		#region load client dll into current domain
 
+		var sw = new Stopwatch();
+		sw.Start();
+		await args.BeamoLocalSystem.InitManifest(fetchServerManifest: false);
+		Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - got manifest");
+
+		
 		// Get the list of all existing microservices
 		var allServices = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Where(sd => sd.Protocol is BeamoProtocolType.HttpMicroservice).ToArray();
 
@@ -55,9 +61,14 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 
 		// Get the list of all assemblies paired with their last edit time.
 		var allAssemblies = new List<Assembly>();
+		Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - starting");
 		foreach (string beamoId in allServicesToLoadDlls)
 		{
-			var isProjBuilt = await ProjectCommand.IsProjectBuilt(args, beamoId);
+			var project = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[beamoId].Metadata
+				.msbuildProject;
+			var isProjBuilt = ProjectCommand.IsProjectBuiltMsBuild(project);
+			Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - checked {beamoId} built=[{isProjBuilt}]");
+
 			if (isProjBuilt.isBuilt)
 			{
 				var dllPath = isProjBuilt.path;
@@ -100,6 +111,9 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 					allAssemblies.Add(loadContext.LoadFromAssemblyName(referencedAssembly));
 
 				allAssemblies.Add(userAssembly);
+				
+				Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - loaded all assemblies");
+
 			}
 		}
 
@@ -116,14 +130,16 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 			startCount = currentAssemblies.Count;
 			foreach (var currentAssembly in currentAssemblies)
 			{
-				Log.Verbose("Expanding types from " + currentAssembly.FullName);
+				Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - exanding types from {currentAssembly.FullName}");
+				// Log.Verbose("Expanding types from " + currentAssembly.FullName);
 				var _ = currentAssembly.GetExportedTypes();
 			}
 
 			finalCount = allAssemblies.Count;
 			Log.Verbose($"Loaded all types, and found {startCount} assemblies, and after, found {finalCount} assemblies.");
 		}
-
+		Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - done type loading");
+		
 		var allTypes = allAssemblies.SelectMany(asm => asm.GetExportedTypes()).ToArray();
 		var allMsTypes = allTypes.Where(t => t.IsSubclassOf(typeof(Microservice)) && t.GetCustomAttribute<MicroserviceAttribute>() != null).ToArray();
 		var allSchemaTypes = ServiceDocGenerator.LoadDotnetDeclaredSchemasFromTypes(allTypes, out var missingAttributes).Select(t => t.type).ToArray();
@@ -601,6 +617,8 @@ IMPLEMENT_MODULE(F{unrealProjectData.BlueprintNodesProjectName}Module, {unrealPr
 					MachineHelper.RunUnrealGenerateProjectFiles(Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.Path));
 			}
 		}
+		
+		Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - done generating");
 	}
 
 

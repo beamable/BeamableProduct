@@ -29,7 +29,7 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public async Task<ServiceManifest> DeployToRemote(BeamoLocalSystem localSystem, BeamoService remoteBeamo,string dockerRegistryUrl, string comments,
 		Dictionary<string, string> perServiceComments, Action<string, float> buildPullImageProgress = null, Action<string> onServiceDeployCompleted = null,
-		Action<string, float> onContainerUploadProgress = null, Action<string, bool> onContainerUploadCompleted = null, CancellationToken cancellationToken = default)
+		Action<string, float> onContainerUploadProgress = null, Action<string, bool> onContainerUploadCompleted = null, bool autoDeleteContainers = true, CancellationToken cancellationToken = default)
 	{
 		BeamoLocalManifest localManifest = localSystem.BeamoManifest;
 		BeamoLocalRuntime localRuntime = localSystem.BeamoRuntime;
@@ -43,7 +43,7 @@ public partial class BeamoLocalSystem
 		// Then, let's try to deploy locally first.
 		try
 		{
-			await DeployToLocal(localSystem, idsToDeployLocal.ToArray(), true, buildPullImageProgress, onServiceDeployCompleted, cancellationToken);
+			await DeployToLocal(localSystem, idsToDeployLocal.ToArray(), true, buildPullImageProgress, onServiceDeployCompleted, autoDeleteContainers, cancellationToken);
 		}
 		// If we fail, log out a message and the exception that caused the failure
 		catch (Exception e)

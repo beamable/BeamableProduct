@@ -42,11 +42,12 @@ namespace Beamable.Server
 		public bool EnableDangerousDeflateOptions { get; }
 		public string MetadataUrl { get; }
 		public string RefreshToken { get; }
+		public long AccountId { get; }
 	}
 
 	public enum LogOutputType
 	{
-		DEFAULT, STRUCTURED, UNSTRUCTURED, FILE
+		DEFAULT, STRUCTURED, UNSTRUCTURED, FILE, STRUCTURED_AND_FILE
 	}
 
 	public class MicroserviceArgs : IMicroserviceArgs
@@ -86,6 +87,7 @@ namespace Beamable.Server
 		public bool EnableDangerousDeflateOptions { get; set; }
 		public string MetadataUrl { get; set; }
 		public string RefreshToken { get; set; }
+		public long AccountId { get; set; }
 	}
 
 	public static class MicroserviceArgsExtensions
@@ -127,7 +129,8 @@ namespace Beamable.Server
 				LogOutputType = args.LogOutputType,
 				LogOutputPath = args.LogOutputPath,
 				EnableDangerousDeflateOptions = args.EnableDangerousDeflateOptions,
-				MetadataUrl = args.MetadataUrl
+				MetadataUrl = args.MetadataUrl,
+				AccountId = args.AccountId
 			};
 			configurator?.Invoke(next);
 			return next;
@@ -142,6 +145,16 @@ namespace Beamable.Server
 		static int GetIntFromEnvironmentVariable(string key, int defaultValue)
 		{
 			if (!int.TryParse(Environment.GetEnvironmentVariable(key), out int val))
+			{
+				val = defaultValue;
+			}
+
+			return val;
+		}
+		
+		static long GetLongFromEnvironmentVariable(string key, long defaultValue)
+		{
+			if (!long.TryParse(Environment.GetEnvironmentVariable(key), out long val))
 			{
 				val = defaultValue;
 			}
@@ -184,6 +197,8 @@ namespace Beamable.Server
 			}
 		}
 
+		public long AccountId => GetLongFromEnvironmentVariable("USER_ACCOUNT_ID", 0);
+
 		public string Host => Environment.GetEnvironmentVariable("HOST");
 		public string Secret => Environment.GetEnvironmentVariable("SECRET");
 		public string NamePrefix => Environment.GetEnvironmentVariable("NAME_PREFIX") ?? "";
@@ -199,12 +214,19 @@ namespace Beamable.Server
 		{
 			get
 			{
-				if (!string.IsNullOrEmpty(LogOutputPath))
+				var hasFilePath = !string.IsNullOrEmpty(LogOutputPath);
+				
+
+				var arg = Environment.GetEnvironmentVariable("LOG_TYPE")?.ToLowerInvariant();
+				if (arg == null && hasFilePath)
 				{
 					return LogOutputType.FILE;
 				}
-
-				var arg = Environment.GetEnvironmentVariable("LOG_TYPE")?.ToLowerInvariant();
+				if (hasFilePath && !arg.Contains("file"))
+				{
+					arg += "+file";
+				}
+				
 				switch (arg)
 				{
 					case "structured":
@@ -213,6 +235,10 @@ namespace Beamable.Server
 						return LogOutputType.UNSTRUCTURED;
 					case "file":
 						return LogOutputType.FILE;
+					
+					case "structured+file":
+					case "file+structured":
+						return LogOutputType.STRUCTURED_AND_FILE;
 					default:
 						return LogOutputType.DEFAULT;
 				}
