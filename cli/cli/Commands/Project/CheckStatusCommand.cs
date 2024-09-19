@@ -46,7 +46,7 @@ public class ServiceInstance
 	public long startedByAccountId;
 	public string startedByAccountEmail;
 	public string primaryKey;
-	
+
 	// avoid polymorphism, and put all the details in the correct field. These fields will be null for the wrong type. 
 	public DockerServiceDescriptor latestDockerEvent;
 	public HostServiceDescriptor latestHostEvent;
@@ -84,7 +84,7 @@ public static class ServiceInstanceExtensions
 		}
 		return false;
 	}
-	
+
 	public static bool TryGetInstance(this ServicesForRouteCollection collection, string primaryKey,
 		out ServiceInstance instance)
 	{
@@ -130,9 +130,9 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 	}
 
 	public static async IAsyncEnumerable<CheckStatusServiceResult> CheckStatus(
-		CommandArgs args, 
-		TimeSpan timeout=default, 
-		DiscoveryMode mode= DiscoveryMode.ALL,
+		CommandArgs args,
+		TimeSpan timeout = default,
+		DiscoveryMode mode = DiscoveryMode.ALL,
 		[EnumeratorCancellation] CancellationToken token = default)
 	{
 		var discovery = args.DependencyProvider.GetService<DiscoveryService>();
@@ -167,7 +167,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 
 		await foreach (var discoveryEvent in discovery.StartDiscovery(args, timeout, token, mode))
 		{
-			
+
 			if (!result.TryGetStatus(discoveryEvent.Service, out var status))
 			{
 				status = new ServiceStatus
@@ -223,7 +223,8 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 					// the service is being removed, but since we never saw it in the first place,
 					// we don't need to do anything.
 				}
-			} else if (discoveryEvent.Type == ServiceEventType.Stopped)
+			}
+			else if (discoveryEvent.Type == ServiceEventType.Stopped)
 			{
 				// the instance existed in our state, but now it is being stopped, so we should remove it
 				collection.instances.Remove(instance);

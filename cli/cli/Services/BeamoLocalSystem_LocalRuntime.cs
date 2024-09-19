@@ -147,8 +147,8 @@ public partial class BeamoLocalSystem
 
 		foreach (var info in currentInfo)
 		{
-			if (info.State == "exited") continue; 
-			
+			if (info.State == "exited") continue;
+
 			var beamoId = BeamoManifest.ServiceDefinitions.FirstOrDefault(c =>
 				{
 					switch (c.Protocol)
@@ -160,7 +160,7 @@ public partial class BeamoLocalSystem
 						default:
 							throw new CliException("Unknown protocol type");
 					}
-					
+
 				})
 				?.BeamoId;
 			Log.Verbose(beamoId + " found " + info.ID + " as " + info.State);
@@ -183,7 +183,7 @@ public partial class BeamoLocalSystem
 		// Cancel the thread if it's already running.
 		if (_dockerListeningThread != null && !_dockerListeningThread.IsCompleted)
 			_dockerListeningThreadCancel.Cancel();
-			
+
 		// Start the long running task. We don't "await" this task as it never yields until it's cancelled.
 		_dockerListeningThread = _client.System.MonitorEventsAsync(new ContainerEventsParameters(),
 			new Progress<Message>(DockerSystemEventHandler), _dockerListeningThreadCancel.Token);
@@ -261,7 +261,7 @@ public partial class BeamoLocalSystem
 					// TODO: Detect when people containers are running but their dependencies are not. Output a list of warnings that people can then print out.
 					break;
 				}
-				
+
 				case ("container", "stop"):
 				{
 					var beamoServiceInstance =
@@ -334,7 +334,7 @@ public partial class BeamoLocalSystem
 	private bool VerifyCanBeBuiltLocally(BeamoLocalManifest manifest, BeamoServiceDefinition toCheck)
 	{
 		var missingLocalSource = string.IsNullOrEmpty(toCheck.ProjectDirectory);
-		if (missingLocalSource) return false; 
+		if (missingLocalSource) return false;
 
 		switch (toCheck.Protocol)
 		{
@@ -346,7 +346,7 @@ public partial class BeamoLocalSystem
 				if (!hasDockerfile) return false;
 
 				return true;
-			
+
 			case BeamoProtocolType.EmbeddedMongoDb:
 				return true; // always pull down a version of mongo.
 			default:
@@ -378,7 +378,7 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	public async Task DeployToLocal(BeamoLocalSystem localSystem, string[] deployBeamoIds = null,
 		bool forceAmdCpuArchitecture = false, Action<string, float> buildPullImageProgress = null,
-		Action<string> onServiceDeployCompleted = null, bool autoDeleteContainers = true, 
+		Action<string> onServiceDeployCompleted = null, bool autoDeleteContainers = true,
 		CancellationToken token = default)
 	{
 		var localManifest = localSystem.BeamoManifest;
@@ -404,7 +404,7 @@ public partial class BeamoLocalSystem
 
 
 		// Builds all images for all services that are defined and can be built locally.
-		
+
 		var prepareImages = new List<Task>(serviceDefinitionsToDeploy.Select(c => PrepareBeamoServiceImage(c, buildPullImageProgress, forceAmdCpuArchitecture, token)));
 		await Task.WhenAll(prepareImages);
 
@@ -451,8 +451,8 @@ public partial class BeamoLocalSystem
 	{
 		// Split each definition by their BeamoProtocolType
 
-			splitContainers = serviceDefinitions.GroupBy(i => i.Protocol)
-				.ToDictionary(g => g.Key, g => g.ToList());
+		splitContainers = serviceDefinitions.GroupBy(i => i.Protocol)
+			.ToDictionary(g => g.Key, g => g.ToList());
 	}
 
 	public async IAsyncEnumerable<string> TailLogs(string containerId)

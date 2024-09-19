@@ -58,8 +58,8 @@ public class GetTokenListCommand : AtomicCommand<GetTokenListCommandArgs, GetTok
 				args.cid = i;
 			}
 		}, new string[] { "-c" });
-		
-		
+
+
 		AddOption(new Option<string>("--pid", "A pid"), (args, i) =>
 		{
 			args.pid = new Optional<string>();
@@ -79,19 +79,21 @@ public class GetTokenListCommand : AtomicCommand<GetTokenListCommandArgs, GetTok
 			var self = await accountApi.GetMe(true);
 			id = self.id;
 		}
-		
+
 		var api = args.Provider.GetService<IAuthApi>();
 
 		ListTokenResponse list = await api.GetTokenList(id, args.page, args.pageSize, args.cid, args.pid);
-		
-		return new GetTokenListCommandOutput {
+
+		return new GetTokenListCommandOutput
+		{
 			itemCount = list.items.Length,
 			items = list.items.Select(x => new GetTokenListElement
-		{
-			platform = x.platform,
-			created = x.created,
-			device = x.device,
-			token = x.token
-		}).ToList() };
+			{
+				platform = x.platform,
+				created = x.created,
+				device = x.device,
+				token = x.token
+			}).ToList()
+		};
 	}
 }
