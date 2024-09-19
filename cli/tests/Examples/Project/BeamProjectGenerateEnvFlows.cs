@@ -47,12 +47,6 @@ public class BeamProjectGenerateEnvFlows : CLITestExtensions
 				})
 				.Verifiable();
 		});
-		Mock<BeamoService>(mock =>
-		{
-			mock.Setup(x => x.GetCurrentManifest())
-				.ReturnsPromise(new ServiceManifest())
-				.Verifiable();
-		});
 		Mock<IRealmsApi>(mock =>
 		{
 			mock.Setup(x => x.GetAdminCustomer(true))
