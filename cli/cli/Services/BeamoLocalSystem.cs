@@ -89,7 +89,7 @@ public partial class BeamoLocalSystem
 		_dockerListeningThreadCancel = new CancellationTokenSource();
 	}
 
-	public async Task InitManifest(bool useManifestCache=true)
+	public async Task InitManifest(bool useManifestCache=true, bool fetchServerManifest=true)
 	{
 		// Load or create the local manifest
 		if (_configService.BaseDirectory == null)
@@ -105,7 +105,7 @@ public partial class BeamoLocalSystem
 		}
 		
 		
-		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_configService.BaseDirectory, _ctx.DotnetPath, _beamo, _configService, useCache: useManifestCache);;
+		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_configService.BaseDirectory, _ctx.DotnetPath, _beamo, _configService, useCache: useManifestCache, fetchServerManifest);
 	}
 	
 	private static Uri GetLocalDockerEndpoint(ConfigService config)

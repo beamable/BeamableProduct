@@ -37,27 +37,33 @@ public static class ProjectContextUtil
 		string dotnetPath, 
 		BeamoService beamo,
 		ConfigService configService,
-		bool useCache=true)
+		bool useCache=true,
+		bool fetchServerManifest=true)
 	{
-		lock (_existingManifestLock)
-		{
-			var now = DateTimeOffset.Now;
-			var ttlValid = now < _existingManifestCacheExpirationTime;
-			var hasValue = _existingManifest != null;
+		ServiceManifest remote = new ServiceManifest();
 
-			if (!useCache || !EnableManifestCache || !ttlValid || !hasValue)
+		if (fetchServerManifest)
+		{
+			lock (_existingManifestLock)
 			{
-				_existingManifest = beamo.GetCurrentManifest();
-				_existingManifestCacheExpirationTime = now + _existingManifestCacheTime;
-				Log.Verbose("cached manifest is a miss.");
+				var now = DateTimeOffset.Now;
+				var ttlValid = now < _existingManifestCacheExpirationTime;
+				var hasValue = _existingManifest != null;
+
+				if (!useCache || !EnableManifestCache || !ttlValid || !hasValue)
+				{
+					_existingManifest = beamo.GetCurrentManifest();
+					_existingManifestCacheExpirationTime = now + _existingManifestCacheTime;
+					Log.Verbose("cached manifest is a miss.");
+				}
+				else
+				{
+					Log.Verbose("using cached manifest.");
+				}
 			}
-			else
-			{
-				Log.Verbose("using cached manifest.");
-			}
+			remote = await _existingManifest;
 		}
-		var remote = await _existingManifest;
-		
+
 		// var remoteTask = beamo.GetCurrentManifest();
 		// find all local project files...
 		var sw = new Stopwatch();
@@ -305,7 +311,7 @@ public static class ProjectContextUtil
 			}
 
 			var projectRelativePath = Path.GetRelativePath(rootFolder, pathDir);
-			Log.Verbose($"Found csproj=[{path}]");
+			Log.Verbose($"Found csproj=[{path}] - {sw.ElapsedMilliseconds}");
 			projects[i] = new CsharpProjectMetadata
 			{
 				relativePath = Path.GetRelativePath(rootFolder, path),
@@ -317,6 +323,7 @@ public static class ProjectContextUtil
 			buildEngine.IsBuildEnabled = true;
 			var buildProject = buildEngine.LoadProject(Path.GetFullPath(path));
 
+			// Log.Verbose($"loaded csproj - {sw.ElapsedMilliseconds}");
 			projects[i].properties = new MsBuildProjectProperties()
 			{
 				BeamId = buildProject.GetPropertyValue(CliConstants.PROP_BEAMO_ID),

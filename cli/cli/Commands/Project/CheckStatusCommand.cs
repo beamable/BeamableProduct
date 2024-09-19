@@ -153,6 +153,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 		var accountIdToEmail = new ConcurrentDictionary<long, Promise<string>>();
 		async Task<string> GetEmail(long accountId)
 		{
+			if (accountId == 0) return "";
 			if (accountIdToEmail.TryGetValue(accountId, out var emailPromise))
 			{
 				return await emailPromise;

@@ -1,6 +1,7 @@
 using Beamable.Common.BeamCli.Contracts;
 using cli.Services;
 using CliWrap;
+using Microsoft.Build.Evaluation;
 using Serilog;
 using System.CommandLine;
 using System.Text;
@@ -157,40 +158,30 @@ public class ProjectCommand : CommandGroup
 			ref services);
 	}
 
-	public static async Task<ProjectBuildStatusReport> IsProjectBuilt(CommandArgs args, string beamoServiceId)
+	public static ProjectBuildStatusReport IsProjectBuiltMsBuild(Project project)
 	{
+		var outDir = project.GetPropertyValue("OutDir");
+		var fullOutDir = Path.GetFullPath(outDir);
+		var assemblyName = project.GetPropertyValue("AssemblyName");
 
+		var fileName = Path.Combine(fullOutDir, assemblyName + ".dll");
+		return new ProjectBuildStatusReport { path = fileName, isBuilt = File.Exists(fileName) };
+	}
+	
+	public static ProjectBuildStatusReport IsProjectBuiltMsBuild(CommandArgs args, string beamoServiceId)
+	{
 		var service = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.FirstOrDefault(x => x.BeamoId == beamoServiceId);
 		if (service == null)
 		{
 			throw new CliException($"service does not exist, service=[{beamoServiceId}]");
 		}
+		
+		var projectPath = args.ConfigService.BeamableRelativeToExecutionRelative(service.ProjectPath);
 
-		var deps = args.BeamoLocalSystem.GetDependencies(beamoServiceId);
-		Log.Debug("Found service definition, service=[{serviceId}] projectPath=[{ProjectPath}] deps=[{Dependencies}]", beamoServiceId, service.ProjectDirectory, string.Join(",", deps));
-		var projectPath = args.ConfigService.BeamableRelativeToExecutionRelative(service.ProjectDirectory);
-		Log.Debug("service path=[{ProjectPath}]", projectPath);
-		var commandStr = $"msbuild {projectPath} -t:GetTargetPath -verbosity:diag";
-		Log.Debug("running {AppContextDotnetPath} {CommandStr}", args.AppContext.DotnetPath, commandStr);
-		var stdOutBuilder = new StringBuilder();
-		var result = await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, commandStr)
-			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOutBuilder))
-			.WithValidation(CommandResultValidation.None)
-			.ExecuteAsync();
-		Log.Verbose("dotnet program exited with {ResultExitCode}", result.ExitCode);
-		var stdOut = stdOutBuilder.ToString();
-		var lines = stdOut.Split(Environment.NewLine);
-		Log.Verbose("msbuild logs\\n{StdOut}", stdOut);
-		var outputPathLine = lines.Select(l => l.ToLowerInvariant().Trim()).FirstOrDefault(l => l.StartsWith("finaloutputpath") && l.EndsWith(".dll"));
-
-		if (string.IsNullOrEmpty(outputPathLine))
-			throw new CliException(
-				$"service could not identify output path. service=[{beamoServiceId}] command=[{commandStr}]");
-
-		var report = new ProjectBuildStatusReport { path = outputPathLine.Substring("finaloutputpath = ".Length).Trim(), };
-		report.isBuilt = File.Exists(report.path);
-		Log.Debug("found output path, path=[{ReportPath}] exists=[{ReportIsBuilt}]", report.path, report.isBuilt);
-		return report;
+		Log.Debug("Found service definition, service=[{serviceId}] projectPath=[{ProjectPath}]", beamoServiceId, projectPath);
+		var collection = new ProjectCollection();
+		var project = collection.LoadProject(projectPath);
+		return IsProjectBuiltMsBuild(project);
 	}
 
 	public struct ProjectBuildStatusReport

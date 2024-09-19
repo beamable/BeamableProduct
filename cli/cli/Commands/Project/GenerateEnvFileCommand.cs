@@ -29,7 +29,7 @@ public class GenerateEnvFileCommandArgs : CommandArgs
 	public bool autoDeploy;
 }
 
-public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, GenerateEnvFileOutput>
+public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, GenerateEnvFileOutput>, ISkipManifest
 {
 	public override bool IsForInternalUse => true;
 
@@ -67,8 +67,12 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 	{
 		var accountApi = args.DependencyProvider.GetService<IAccountsApi>();
 		var userReq = accountApi.GetAdminMe();
-		var res = await GetAdminCustomer(args);
+		var custReq = GetAdminCustomer(args);
+		var manifestTask = args.BeamoLocalSystem.InitManifest(fetchServerManifest: false);
+		var res = await custReq;
 		var user = await userReq;
+		await manifestTask;
+
 		var accountId = user.id; //note; the admin/me call returns an accountId; but the /me returns a gamerTag
 		
 		var proj = res.customer.projects.FirstOrDefault(p => p.name == args.AppContext.Pid);
