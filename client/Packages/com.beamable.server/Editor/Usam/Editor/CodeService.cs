@@ -5,6 +5,7 @@ using Beamable.Common.Semantics;
 using Beamable.Editor;
 using Beamable.Editor.BeamCli;
 using Beamable.Editor.BeamCli.Commands;
+using Beamable.Editor.BeamCli.Extensions;
 using Beamable.Editor.Dotnet;
 using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.UI.Components;
@@ -607,7 +608,7 @@ namespace Beamable.Server.Editor.Usam
 
 		public Promise RunStandaloneMicroservice(string id)
 		{
-			var runCommand = _cli.ProjectRun(new ProjectRunArgs() {ids = new[] {id}, watch = false, detach = true}).OnError(ex =>
+			var runCommand = _cli.ProjectRun(new ProjectRunArgs() {ids = new[] {id}, watch = false}).OnError(ex =>
 			{
 				Debug.LogError(ex.data.message);
 			});
@@ -742,16 +743,19 @@ namespace Beamable.Server.Editor.Usam
 			var projectPs = _cli.ProjectPs(new ProjectPsArgs()
 			{
 				watch = true
-			}).OnStreamServiceDiscoveryEvent(cb =>
+			}).OnStreamCheckStatusServiceResult(cb =>
 			{
-				UsamLogger.Log($"[{cb.data.service}] is running = {cb.data.isRunning}");
-
-				var def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId.Equals(cb.data.service));
-				if (def != null)
+				// the callback contains the entire current set of services... 
+				foreach (var def in ServiceDefinitions)
 				{
-					def.Builder.IsRunning = cb.data.isRunning;
+					def.Builder.IsRunning = false;
+					var beamoId = def.BeamoId;
+					if (cb.data.TryGetAvailableRoutesForService(beamoId, out var routes))
+					{
+						var isLocal = routes.HasAnyLocalInstances();
+						def.Builder.IsRunning = isLocal;
+					}
 				}
-				
 			}).OnError(cb =>
 			{
 				Debug.LogError($"Error occured while listening for Microservice status updates. Message=[{cb.data.message}] CliStack=[{cb.data.stackTrace}]");

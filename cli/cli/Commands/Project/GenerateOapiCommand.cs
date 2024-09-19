@@ -40,14 +40,14 @@ public class GenerateOApiCommand : StreamCommand<GenerateOApiCommandArgs, Genera
 		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
 	}
 
-	public override async Task Handle(GenerateOApiCommandArgs args)
+	public override Task Handle(GenerateOApiCommandArgs args)
 	{
 		ProjectCommand.FinalizeServicesArg(args, ref args.services);
 
 		var generator = new ServiceDocGenerator();
 		foreach (var service in args.services)
 		{
-			var result = await ProjectCommand.IsProjectBuilt(args, service);
+			var result = ProjectCommand.IsProjectBuiltMsBuild(args, service);
 			if (!result.isBuilt)
 			{
 				Log.Information($"service=[{service}] is not built.");
@@ -90,6 +90,7 @@ public class GenerateOApiCommand : StreamCommand<GenerateOApiCommandArgs, Genera
 
 		}
 
+		return Task.CompletedTask;
 	}
 
 	static List<(MicroserviceDescriptor, MicroserviceAttribute)> LoadDotnetMicroserviceTypesFromAssembly(Assembly assembly)

@@ -19,6 +19,8 @@ public class ServicesDeployCommandArgs : LoginCommandArgs
 	public string RemoteComment;
 	public string[] RemoteServiceComments;
 	public string dockerRegistryUrl;
+	public bool autoDeleteContainers;
+
 }
 
 public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
@@ -56,6 +58,16 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 
 		AddOption(new Option<string>("--docker-registry-url", "A custom docker registry url to use when uploading. By default, the result from the beamo/registry network call will be used, " +
 		                                                      "with minor string manipulation to add https scheme, remove port specificatino, and add /v2 "), (args, i) => args.dockerRegistryUrl = i);
+		
+		AddOption(
+			new Option<bool>(new string[] { "--keep-containers", "-k" }, () => false,
+				"Automatically remove service containers after they exit"),
+			
+			// it is mildly confusing to invert the logic here, but I think there is a good reason.
+			//  the default in docker is to require a user to specify --rm to remove the container, 
+			//  as beamable, we should flip that auto clean for folks. 
+			//  in that regard, the --keep-containers option needs to be set to NOT include the --rm
+			(args, i) => args.autoDeleteContainers = !i);
 	}
 
 	public override async Task Handle(ServicesDeployCommandArgs args)
@@ -255,7 +267,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 							progressTask.Description = successful ? $"Success: {progressTask?.Description}" : $"Failure: {progressTask?.Description}";
 							atLeastOneFailed |= !successful;
 						}
-					}, _lifeCycle.CancellationToken);
+					}, args.autoDeleteContainers, _lifeCycle.CancellationToken);
 
 				// Finish the upload manifest task
 				uploadManifestTask.Increment(100);
