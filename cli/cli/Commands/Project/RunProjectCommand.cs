@@ -1,4 +1,5 @@
 using Beamable.Common.BeamCli;
+using Beamable.Server.Common;
 using cli.Dotnet;
 using cli.Services;
 using CliWrap;
@@ -342,10 +343,10 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 					return LogEventLevel.Fatal;
 				if (!jsonData.TryGetValue("__l", out var logLevel))
 					return LogEventLevel.Fatal;
-				
-				if (!Enum.TryParse<LogEventLevel>(logLevel.ToString(), ignoreCase: true, out var level))
-					return LogEventLevel.Fatal;
 
+				if (!LogUtil.TryParseLogLevel(logLevel.ToString(), out var level))
+					return LogEventLevel.Fatal;
+					
 				return level;
 			}
 		}
