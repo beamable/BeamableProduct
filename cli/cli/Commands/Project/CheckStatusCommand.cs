@@ -164,6 +164,24 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 				.Map(res => res.email.GetOrElse(""));
 			return await emailPromise;
 		}
+		
+		// before even bothering with discovery, emit all known services
+		foreach (var definition in args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions)
+		{
+			if (!definition.IsLocal) continue;
+			if (!result.TryGetStatus(definition.BeamoId, out var status))
+			{
+				status = new ServiceStatus
+				{
+					service = definition.BeamoId,
+					serviceType = definition.Protocol == BeamoProtocolType.HttpMicroservice ? "service" : "storage",
+					availableRoutes = new List<ServicesForRouteCollection>(),
+				};
+				result.services.Add(status);
+			}
+		}
+		// emit the status with local services as "off" until the discovery actually runs
+		yield return result;
 
 		await foreach (var discoveryEvent in discovery.StartDiscovery(args, timeout, token, mode))
 		{
