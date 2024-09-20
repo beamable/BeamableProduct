@@ -94,7 +94,7 @@ public class SwaggerService
 			OrderedSchemas = ExtractAllSchemas(allDocuments, resolutionStrategy),
 			ReplacementTypes = new Dictionary<OpenApiReferenceId, ReplacementTypeInfo>(),
 		};
-		
+
 		// TODO: FILTER we shouldn't really be using _all_ the given generators, we should be selecting between one based on an input argument.
 		var files = new List<GeneratedFileDescriptor>();
 		foreach (var generator in _generators.Where(g => string.IsNullOrEmpty(targetEngine) || g.GetType().Name.Contains(targetEngine, StringComparison.OrdinalIgnoreCase)))
@@ -426,16 +426,16 @@ public class SwaggerService
 		{
 			foreach (var path in documentResult.Document.Paths)
 			{
-				if(combinedDocument.Paths.ContainsKey(path.Key))
+				if (combinedDocument.Paths.ContainsKey(path.Key))
 					continue;
 				combinedDocument.Paths.Add(path.Key, path.Value);
 			}
 
 			foreach (var component in documentResult.Document.Components.Schemas)
 			{
-				if(combinedDocument.Components.Schemas.TryGetValue(component.Value.Reference.Id, out var schema))
+				if (combinedDocument.Components.Schemas.TryGetValue(component.Value.Reference.Id, out var schema))
 				{
-					if(NamedOpenApiSchema.AreEqual(schema, component.Value, out _))
+					if (NamedOpenApiSchema.AreEqual(schema, component.Value, out _))
 						continue;
 				}
 				combinedDocument.Components.Schemas.Add(component.Value.Reference.Id, component.Value);
@@ -1525,7 +1525,7 @@ public class NamedOpenApiSchema
 		if (a == null && b == null) return true;
 		if (a == null || b == null) return false;
 		if (a == b) return true;
-		
+
 
 		// type must match.
 		if (!string.Equals(a.Type, b.Type))
