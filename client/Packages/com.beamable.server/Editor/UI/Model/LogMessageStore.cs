@@ -38,6 +38,12 @@ namespace Beamable.Editor.UI.Model
 		public event Action OnSelectedMessageChanged;
 		public void AddMessage(LogMessage message)
 		{
+			if (message.Level == LogLevel.VERBOSE) 
+				// TODO: our C#MS log view cannot handle VERBOSE log messages
+				//  and that stinks. We should replace the log view with the IMGUI 
+				//  variant that powers the CLIDebuggerWindow
+				return; 
+			
 			if (DateTime.TryParse(message.Timestamp, out var messageTime))
 			{
 				if (messageTime.Ticks < LatestReceivedLogTime.Ticks)
