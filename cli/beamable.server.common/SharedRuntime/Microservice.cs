@@ -144,7 +144,7 @@ namespace Beamable.Server
 				throw new InvalidArgumentException(
 					nameof(userId), $"Invalid User Id of value: {userId}. Should be a positive value.");
 			}
-			
+
 			// require admin privs.
 			if (requireAdminUser)
 			{

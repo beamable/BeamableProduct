@@ -20,10 +20,10 @@ public class TaskLocalLog : ILogger
 	{
 		Context.Value = new NestedLogger(provider);
 	}
-	
-	
+
+
 	public ILogger globalLogger;
-	
+
 	public void Write(LogEvent logEvent)
 	{
 		globalLogger.Write(logEvent);

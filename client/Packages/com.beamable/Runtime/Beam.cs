@@ -147,10 +147,10 @@ namespace Beamable
 
 			// allow customization to the global scope
 			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(GlobalDependencyBuilder, RegistrationOrigin.RUNTIME_GLOBAL);
-			
+
 			// create the global scope
 			GlobalScope = _globalProviderScope = GlobalDependencyBuilder.Build();
-			
+
 			// Set the default promise error handlers
 			PromiseExtensions.SetupDefaultHandler();
 

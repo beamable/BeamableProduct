@@ -32,19 +32,19 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 	{
 		ProjectCommand.FinalizeServicesArg(args, ref args.services);
 
-		await DiscoverAndStopServices(args, new HashSet<string>(args.services), TimeSpan.FromSeconds(1),  SendResults);
+		await DiscoverAndStopServices(args, new HashSet<string>(args.services), TimeSpan.FromSeconds(1), SendResults);
 	}
 
 	public static async Task DiscoverAndStopServices(CommandArgs args, HashSet<string> serviceIds, TimeSpan discoveryPeriod, Action<StopProjectCommandOutput> onStopCallback)
 	{
-		
+
 		var stoppedInstances = new List<ServiceInstance>();
 		await foreach (var status in CheckStatusCommand.CheckStatus(args, discoveryPeriod, DiscoveryMode.LOCAL))
 		{
 			foreach (var service in status.services)
 			{
 				if (!serviceIds.Contains(service.service)) continue;
-				
+
 				foreach (var routable in service.availableRoutes)
 				{
 					foreach (var instance in routable.instances)
@@ -58,7 +58,7 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 				}
 			}
 		}
-		
+
 		Log.Information($"Stopped {stoppedInstances.Count} instances.");
 	}
 

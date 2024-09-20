@@ -15,7 +15,7 @@ public class ProjectLogsService
 			handleLog(parsed);
 		}
 
-		
+
 		while (args.reconnect && !token.IsCancellationRequested)
 		{
 			var discovery = args.DependencyProvider.GetService<DiscoveryService>();
@@ -26,7 +26,7 @@ public class ProjectLogsService
 			{
 				if (evt.Type != ServiceEventType.Running)
 					continue;
-				
+
 				switch (evt)
 				{
 					case DockerServiceEvent dockerEvt:
