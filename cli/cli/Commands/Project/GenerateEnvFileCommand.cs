@@ -58,8 +58,8 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 		{
 			throw new CliException(
 				message: $"The authorization context is not sufficient to start a microservice in the current realm=[{args.AppContext.Pid}]. " +
-				         $"If you have not logged into the current realm, then you must do so before running the service. " +
-				         $"Run the `beam login` command and retry. ");
+						 $"If you have not logged into the current realm, then you must do so before running the service. " +
+						 $"Run the `beam login` command and retry. ");
 		}
 	}
 
@@ -74,9 +74,9 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 		await manifestTask;
 
 		var accountId = user.id; //note; the admin/me call returns an accountId; but the /me returns a gamerTag
-		
+
 		var proj = res.customer.projects.FirstOrDefault(p => p.name == args.AppContext.Pid);
-		
+
 		var output = new GenerateEnvFileOutput
 		{
 			envVars = new List<EnvVarOutput>
@@ -91,7 +91,7 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 				EnvVarOutput.Create("USER_ACCOUNT_ID", accountId.ToString()),
 			}
 		};
-		
+
 		var sw = new Stopwatch();
 		sw.Start();
 
@@ -141,7 +141,7 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 				}
 			}
 		}
-		
+
 		{
 			/*
 			 * This command is going to write an .env file for legacy purposes.
