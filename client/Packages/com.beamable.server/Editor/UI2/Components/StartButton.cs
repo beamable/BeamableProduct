@@ -16,24 +16,24 @@ namespace Beamable.Editor.Microservice.UI2.Components
 		public void FeedData(IBeamoServiceDefinition definition, BeamEditorContext editorContext)
 		{
 			_definition = definition;
-			_definition.Builder.OnIsRunningChanged -= RefreshLocalStatus;
-			_definition.Builder.OnIsRunningChanged += RefreshLocalStatus;
+			_definition.Builder.OnIsRunningChanged -= HandleUpdate;
+			_definition.Builder.OnIsRunningChanged += HandleUpdate;
 			clickable.clicked -= HandleStartButtonClicked;
 			clickable.clicked += HandleStartButtonClicked;
 			_codeService = editorContext.ServiceScope.GetService<CodeService>();
 		}
 
-		private void RefreshLocalStatus(bool obj) => HandleUpdate();
-
-		private void HandleUpdate()
+		private void HandleUpdate(bool runningState)
 		{
-			EnableInClassList("building", enabledSelf);
-			var isRunning = _definition.IsRunningLocally;
-			EnableInClassList("running", isRunning);
+			SetEnabled(true);
+			EnableInClassList("building", false);
 		}
 
 		private void HandleStartButtonClicked()
 		{
+			EnableInClassList("building", true);
+			SetEnabled(false);
+			
 			if (_definition.IsRunningLocally)
 			{
 				_definition.Builder.TryToStop();
