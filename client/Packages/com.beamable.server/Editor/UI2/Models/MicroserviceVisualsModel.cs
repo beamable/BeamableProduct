@@ -112,9 +112,12 @@ namespace Beamable.Editor.Microservice.UI2.Models
 			switch (message.logLevel.ToLowerInvariant())
 			{
 				case "verbose":
+					logLevel = LogLevel.VERBOSE;
+					break;
 				case "debug":
 					logLevel = LogLevel.DEBUG;
 					break;
+				case "information":
 				case "info":
 					logLevel = LogLevel.INFO;
 					break;

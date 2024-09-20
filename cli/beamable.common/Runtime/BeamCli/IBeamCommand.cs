@@ -1,3 +1,4 @@
+using Beamable.Common.BeamCli.Contracts;
 using System;
 
 namespace Beamable.Common.BeamCli
@@ -26,6 +27,7 @@ namespace Beamable.Common.BeamCli
 		}
 
 		public IBeamCommand OnError(Action<ReportDataPoint<ErrorOutput>> cb) => Command.OnError(cb);
+		public IBeamCommand OnLog(Action<ReportDataPoint<CliLogMessage>> cb) => Command.On("logs", cb);
 	}
 
 	public interface IResultChannel
