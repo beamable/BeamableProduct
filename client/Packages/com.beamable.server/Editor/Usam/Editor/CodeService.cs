@@ -13,6 +13,7 @@ using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -608,7 +609,25 @@ namespace Beamable.Server.Editor.Usam
 
 		public Promise RunStandaloneMicroservice(string id)
 		{
-			var runCommand = _cli.ProjectRun(new ProjectRunArgs() {ids = new[] {id}, watch = false}).OnError(ex =>
+			var runCommand = _cli.ProjectRun(new ProjectRunArgs() {ids = new[] {id}, watch = false})
+			                     .OnLog(log =>
+			                     {
+				                     var message = new BeamTailLogMessageForClient();
+				                     message.message = log.data.message;
+				                     message.logLevel = log.data.logLevel;
+
+				                     if (log.data.message.Contains("ready for traffic"))
+				                     {
+				                     }
+				                     if (log.data.logLevel != "Verbose")
+				                     {
+					                     
+				                     }
+				                     message.timeStamp = DateTimeOffset.FromUnixTimeMilliseconds(log.data.timestamp).ToString("T");
+				                     
+				                     _dispatcher.Schedule(() => OnLogMessage?.Invoke(id, message));
+			                     })
+			                     .OnError(ex =>
 			{
 				Debug.LogError(ex.data.message);
 			});
@@ -732,7 +751,7 @@ namespace Beamable.Server.Editor.Usam
 
 					
 					UsamLogger.Log("Log: " + point.data.message);
-					_dispatcher.Schedule(() => OnLogMessage?.Invoke(definition.BeamoId, point.data));
+					// _dispatcher.Schedule(() => OnLogMessage?.Invoke(definition.BeamoId, point.data));
 				});
 				_logsCommands.Add(logs.Run());
 			}
