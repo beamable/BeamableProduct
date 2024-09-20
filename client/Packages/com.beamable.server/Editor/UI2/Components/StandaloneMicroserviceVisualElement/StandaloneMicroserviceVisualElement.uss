@@ -42,6 +42,16 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
     margin-left: 1px;
 }
 
+#logHeader #btnIcon,
+#logHeader #buildImage
+{
+    cursor: link;
+}
+#logHeader .building #buildImage {
+    cursor: arrow;
+}
+
+
 #logHeader > .leftArea,
 #logHeader > .rightArea {
     flex-grow: 1;

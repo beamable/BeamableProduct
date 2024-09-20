@@ -109,6 +109,13 @@ namespace Beamable.Editor.Microservice.UI2.Models
 		static LogMessage FromBeamTailLog(BeamTailLogMessageForClient message)
 		{
 			LogLevel logLevel;
+			var ts = message.timeStamp;
+			if (DateTimeOffset.TryParse(ts, out var dto))
+			{
+				ts = dto.ToLocalTime().ToString("[HH:mm:ss]");
+			}
+			// DateTimeOffset.FromUnixTimeMilliseconds(log.data.timestamp).ToLocalTime().ToString("T")
+			// message.timeStamp = 
 			switch (message.logLevel.ToLowerInvariant())
 			{
 				case "verbose":
@@ -132,7 +139,7 @@ namespace Beamable.Editor.Microservice.UI2.Models
 					break;
 			}
 
-			return new LogMessage() { Message = message.message, Level = logLevel, Timestamp = message.timeStamp };
+			return new LogMessage() { Message = message.message, Level = logLevel, Timestamp = ts };
 		}
 
 		public void DetachLogs()

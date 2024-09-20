@@ -609,24 +609,31 @@ namespace Beamable.Server.Editor.Usam
 
 		public Promise RunStandaloneMicroservice(string id)
 		{
-			var runCommand = _cli.ProjectRun(new ProjectRunArgs() {ids = new[] {id}, watch = false})
+			_dispatcher.Schedule(() => OnLogMessage?.Invoke(id, new BeamTailLogMessageForClient
+			{
+				message = "Requesting service startup...",
+				timeStamp = DateTimeOffset.Now.ToLocalTime().ToString("[HH:mm:ss]"),
+				logLevel = "info"
+			}));
+
+			var runCommand = _cli.ProjectRun(new ProjectRunArgs() {ids = new[] {id}, watch = false, force = true})
+			                     .OnStreamRunProjectResultStream(data =>
+			                     {
+			                     })
+			                     .OnBuildErrorsRunProjectBuildErrorStream(data =>
+			                     {
+				                     
+			                     })
 			                     .OnLog(log =>
 			                     {
 				                     var message = new BeamTailLogMessageForClient();
 				                     message.message = log.data.message;
 				                     message.logLevel = log.data.logLevel;
-
-				                     if (log.data.message.Contains("ready for traffic"))
-				                     {
-				                     }
-				                     if (log.data.logLevel != "Verbose")
-				                     {
-					                     
-				                     }
-				                     message.timeStamp = DateTimeOffset.FromUnixTimeMilliseconds(log.data.timestamp).ToString("T");
+				                     message.timeStamp = DateTimeOffset.FromUnixTimeMilliseconds(log.data.timestamp).ToLocalTime().ToString("[HH:mm:ss]");
 				                     
 				                     _dispatcher.Schedule(() => OnLogMessage?.Invoke(id, message));
 			                     })
+			                     
 			                     .OnError(ex =>
 			{
 				Debug.LogError(ex.data.message);
@@ -748,10 +755,8 @@ namespace Beamable.Server.Editor.Usam
 				});
 				logs.OnStreamTailLogMessageForClient(point =>
 				{
-
-					
 					UsamLogger.Log("Log: " + point.data.message);
-					// _dispatcher.Schedule(() => OnLogMessage?.Invoke(definition.BeamoId, point.data));
+					_dispatcher.Schedule(() => OnLogMessage?.Invoke(definition.BeamoId, point.data));
 				});
 				_logsCommands.Add(logs.Run());
 			}
@@ -1009,12 +1014,42 @@ namespace Beamable.Server.Editor.Usam
 
 		public Promise StopStandaloneMicroservice(string beamoId)
 		{
+		
 			return StopStandaloneMicroservice(new string[] {beamoId});
 		}
 
 		public async Promise StopStandaloneMicroservice(IEnumerable<string> beamoIds)
 		{
-			var stop = _cli.ProjectStop(new ProjectStopArgs() { ids = beamoIds.ToArray() });
+			foreach (var id in beamoIds)
+			{
+				_dispatcher.Schedule(() => OnLogMessage?.Invoke(
+					                     id,
+					                     new BeamTailLogMessageForClient
+					                     {
+						                     message = "Requesting service shutdown...",
+						                     timeStamp = DateTimeOffset.Now.ToLocalTime().ToString("[HH:mm:ss]"),
+						                     logLevel = "info"
+					                     }));
+			}
+
+			var stop = _cli.ProjectStop(new ProjectStopArgs() { ids = beamoIds.ToArray() })
+			               .OnStreamStopProjectCommandOutput(data =>
+			               {
+				               var matching =
+					               ServiceDefinitions.FirstOrDefault(x => x.ServiceInfo.name == data.data.serviceName);
+				               if (matching != null)
+				               {
+					               matching.Builder.IsRunning = false;
+					               OnLogMessage?.Invoke(
+						               data.data.serviceName,
+						               new BeamTailLogMessageForClient
+						               {
+							               message = "Finished service shutdown...",
+							               timeStamp = DateTimeOffset.Now.ToLocalTime().ToString("[HH:mm:ss]"),
+							               logLevel = "info"
+						               });
+				               }
+			               });
 			await stop.Run();
 		}
 
@@ -1044,5 +1079,6 @@ namespace Beamable.Server.Editor.Usam
 			var fileName = $@"{def.ServiceInfo.projectPath}/{serviceName}.cs";
 			EditorUtility.OpenWithDefaultApp(fileName);
 		}
+
 	}
 }
