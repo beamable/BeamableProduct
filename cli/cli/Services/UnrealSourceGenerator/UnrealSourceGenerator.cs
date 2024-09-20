@@ -1901,7 +1901,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 		public NamespacedType AsNamespacedType() => GetNamespacedTypeNameFromUnrealType(this);
 
-		public bool RequiresJsonUtils() => IsUnrealArray() || IsUnrealMap() || IsOptional() || IsUnrealUObject() || IsAnySemanticType();
+		public bool RequiresJsonUtils() => IsUnrealArray() || IsUnrealMap() || IsOptional() || IsUnrealUObject() || IsAnySemanticType() || IsUnrealJson();
 
 		#region Primitives
 
