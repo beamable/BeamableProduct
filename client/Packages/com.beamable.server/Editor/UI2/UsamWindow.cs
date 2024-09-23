@@ -202,6 +202,12 @@ namespace Beamable.Editor.Microservice.UI2
 				_createServiceContainer.MarkDirtyRepaint();
 				rootVisualElement.MarkDirtyRepaint();
 			};
+			_createServiceElement.OnCreateServiceFinished += () =>
+			{
+				_createServiceContainer.style.display = DisplayStyle.None;
+				_createServiceContainer.MarkDirtyRepaint();
+				rootVisualElement.MarkDirtyRepaint();
+			};
 			EditorApplication.delayCall += () => _scrollView.verticalScroller.value = 0f;
 		}
 

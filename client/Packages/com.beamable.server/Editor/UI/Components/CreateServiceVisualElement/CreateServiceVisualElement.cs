@@ -82,11 +82,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				Root.RemoveFromHierarchy();
 				OnClose?.Invoke();
 			};
-			_createBtn.Button.clicked += () =>
-			{
-				HandleContinueButtonClicked();
-				OnClose?.Invoke();
-			};
+			_createBtn.Button.clicked += HandleContinueButtonClicked;
 
 			_isNameValid = _nameTextField.AddErrorLabel("Name", PrimaryButtonVisualElement.IsValidClassName, .01);
 			_isNameSizedRight = _nameTextField.AddErrorLabel(
