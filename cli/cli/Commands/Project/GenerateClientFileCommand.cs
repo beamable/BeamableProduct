@@ -7,6 +7,7 @@ using Beamable.Tooling.Common.OpenAPI;
 using cli.Services;
 using cli.Unreal;
 using cli.Utils;
+using Microsoft.Build.Evaluation;
 using Newtonsoft.Json;
 using Serilog;
 using System.CommandLine;
@@ -64,8 +65,16 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 		Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - starting");
 		foreach (string beamoId in allServicesToLoadDlls)
 		{
-			var project = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols[beamoId].Metadata
-				.msbuildProject;
+			Project project = null;
+			if (args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(beamoId,
+				    out var httpLocal))
+			{
+				project = httpLocal.Metadata.msbuildProject;
+			} else if (args.BeamoLocalSystem.BeamoManifest.EmbeddedMongoDbLocalProtocols.TryGetValue(beamoId,
+				           out var dbLocal))
+			{
+				project = dbLocal.Metadata.msbuildProject;
+			}
 			var isProjBuilt = ProjectCommand.IsProjectBuiltMsBuild(project);
 			Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - checked {beamoId} built=[{isProjBuilt}]");
 

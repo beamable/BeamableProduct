@@ -1,4 +1,5 @@
 ﻿using Beamable.Common;
+using Beamable.Server.Editor;
 using Beamable.Server.Editor.Usam;
 using System;
 using System.Threading.Tasks;
@@ -32,6 +33,7 @@ namespace Beamable.Editor.UI.Model
 							  }).ToPromise();
 		}
 		public string BeamoId { get; set; }
+		public ServiceType ServiceType { get; set; }
 		public Action<bool> OnIsRunningChanged { get; set; }
 		public Action<int, int> OnBuildingProgress { get; set; }
 		public Action<int, int> OnStartingProgress { get; set; }

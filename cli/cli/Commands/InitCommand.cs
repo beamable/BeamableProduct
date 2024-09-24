@@ -157,7 +157,8 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		{
 			_ctx.Set(cid, args.pid, host);
 
-			var didLogin = await Login(args);
+			
+			var didLogin = !args.SaveToFile || await Login(args);
 			if (didLogin)
 			{
 				_configService.SetBeamableDirectory(_ctx.WorkingDirectory);

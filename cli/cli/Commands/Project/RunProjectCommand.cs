@@ -104,7 +104,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		if (args.forceRestart)
 		{
 			Log.Verbose("starting discovery");
-			await StopProjectCommand.DiscoverAndStopServices(args, new HashSet<string>(args.services), TimeSpan.FromMilliseconds(100),
+			await StopProjectCommand.DiscoverAndStopServices(args, new HashSet<string>(args.services), true, TimeSpan.FromMilliseconds(100),
 				evt =>
 				{
 					// do nothing?

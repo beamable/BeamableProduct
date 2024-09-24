@@ -10,11 +10,20 @@ public class ProjectLogsService
 	{
 		void LogHandler(string logMessage)
 		{
+			
 			var parsed = JsonConvert.DeserializeObject<TailLogMessage>(logMessage);
+			if (parsed.message == null)
+			{
+				var mongoParsed = JsonConvert.DeserializeObject<MongoLogMessage>(logMessage);
+				parsed.message = mongoParsed.message;
+				parsed.timeStamp = DateTimeOffset.Now.ToString("T");
+				parsed.logLevel = "info";
+			}
 			parsed.raw = logMessage;
 			handleLog(parsed);
+			
 		}
-
+		
 		
 		while (args.reconnect && !token.IsCancellationRequested)
 		{
@@ -25,6 +34,9 @@ public class ProjectLogsService
 			await foreach (var evt in discovery.StartDiscovery(args, default, token))
 			{
 				if (evt.Type != ServiceEventType.Running)
+					continue;
+				
+				if (evt.Service != args.service)
 					continue;
 				
 				switch (evt)

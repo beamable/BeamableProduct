@@ -543,7 +543,7 @@ public class DiscoveryService
 							type = ServiceEventType.Running,
 							descriptor = addition
 						});
-						Log.Information("added dotnet process" + service.processId);
+						Log.Verbose("added dotnet process" + service.processId);
 					}
 					else
 					{

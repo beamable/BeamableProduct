@@ -475,7 +475,11 @@ namespace Beamable.Server.Editor.Usam
 					}
 				});
 				dataIndex = ServiceDefinitions.Count - 1;
-				ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder() { BeamoId = name };
+				ServiceDefinitions[dataIndex].Builder = new BeamoServiceBuilder()
+				{
+					BeamoId = name,
+					ServiceType = type
+				};
 
 			}
 			ServiceDefinitions[dataIndex].HasLocalSource = hasLocalSource;
@@ -609,36 +613,60 @@ namespace Beamable.Server.Editor.Usam
 
 		public Promise RunStandaloneMicroservice(string id)
 		{
-			_dispatcher.Schedule(() => OnLogMessage?.Invoke(id, new BeamTailLogMessageForClient
-			{
-				message = "Requesting service startup...",
-				timeStamp = DateTimeOffset.Now.ToLocalTime().ToString("[HH:mm:ss]"),
-				logLevel = "info"
-			}));
 
-			var runCommand = _cli.ProjectRun(new ProjectRunArgs() {ids = new[] {id}, watch = false, force = true})
-			                     .OnStreamRunProjectResultStream(data =>
-			                     {
-			                     })
-			                     .OnBuildErrorsRunProjectBuildErrorStream(data =>
-			                     {
-				                     
-			                     })
-			                     .OnLog(log =>
-			                     {
-				                     var message = new BeamTailLogMessageForClient();
-				                     message.message = log.data.message;
-				                     message.logLevel = log.data.logLevel;
-				                     message.timeStamp = DateTimeOffset.FromUnixTimeMilliseconds(log.data.timestamp).ToLocalTime().ToString("[HH:mm:ss]");
-				                     
-				                     _dispatcher.Schedule(() => OnLogMessage?.Invoke(id, message));
-			                     })
-			                     
-			                     .OnError(ex =>
+			var definition = ServiceDefinitions.FirstOrDefault(x => x.BeamoId == id);
+			if (definition == null) throw new InvalidArgumentException(nameof(id), "given service id was not found");
+
+			if (definition.ServiceType == ServiceType.MicroService)
 			{
-				Debug.LogError(ex.data.message);
-			});
-			return runCommand.Run();
+				
+				_dispatcher.Schedule(() => OnLogMessage?.Invoke(id, new BeamTailLogMessageForClient
+				{
+					message = "Requesting service startup...",
+					timeStamp = DateTimeOffset.Now.ToLocalTime().ToString("[HH:mm:ss]"),
+					logLevel = "info"
+				}));
+
+				var runCommand = _cli.ProjectRun(new ProjectRunArgs() {ids = new[] {id}, watch = false, force = true})
+				                     .OnStreamRunProjectResultStream(data =>
+				                     {
+				                     })
+				                     .OnBuildErrorsRunProjectBuildErrorStream(data =>
+				                     {
+				                     
+				                     })
+				                     .OnLog(log =>
+				                     {
+					                     var message = new BeamTailLogMessageForClient();
+					                     message.message = log.data.message;
+					                     message.logLevel = log.data.logLevel;
+					                     message.timeStamp = DateTimeOffset.FromUnixTimeMilliseconds(log.data.timestamp).ToLocalTime().ToString("[HH:mm:ss]");
+				                     
+					                     _dispatcher.Schedule(() => OnLogMessage?.Invoke(id, message));
+				                     })
+			                     
+				                     .OnError(ex =>
+				                     {
+					                     Debug.LogError(ex.data.message);
+				                     });
+				return runCommand.Run();
+			}
+			else
+			{
+				_dispatcher.Schedule(() => OnLogMessage?.Invoke(id, new BeamTailLogMessageForClient
+				{
+					message = "Requesting storage startup...",
+					timeStamp = DateTimeOffset.Now.ToLocalTime().ToString("[HH:mm:ss]"),
+					logLevel = "info"
+				}));
+				
+				var runCommand = _cli.ServicesRun(new ServicesRunArgs() {ids = new[] {id}})
+				                     .OnError(ex =>
+				                     {
+					                     Debug.LogError(ex.data.message);
+				                     });
+				return runCommand.Run();
+			}
 		}
 
 		/// <summary>
@@ -755,8 +783,9 @@ namespace Beamable.Server.Editor.Usam
 				});
 				logs.OnStreamTailLogMessageForClient(point =>
 				{
+					
 					UsamLogger.Log("Log: " + point.data.message);
-					_dispatcher.Schedule(() => OnLogMessage?.Invoke(definition.BeamoId, point.data));
+					_dispatcher.Schedule(() => OnLogMessage?.Invoke(serviceId, point.data));
 				});
 				_logsCommands.Add(logs.Run());
 			}
@@ -1014,16 +1043,29 @@ namespace Beamable.Server.Editor.Usam
 
 		public Promise StopStandaloneMicroservice(string beamoId)
 		{
-		
 			return StopStandaloneMicroservice(new string[] {beamoId});
 		}
 
 		public async Promise StopStandaloneMicroservice(IEnumerable<string> beamoIds)
 		{
-			foreach (var id in beamoIds)
+			var definitions = beamoIds.Select(x =>
+			{
+				var def = ServiceDefinitions.FirstOrDefault(d => d.BeamoId == x);
+				if (def == null)
+				{
+					throw new InvalidArgumentException(nameof(beamoIds), $"given service id=[{x}] was not found");
+				}
+
+				return def;
+			}).ToList();
+
+			var storages = definitions.Where(x => x.ServiceType == ServiceType.StorageObject).ToList();
+			var services = definitions.Where(x => x.ServiceType == ServiceType.MicroService).ToList();
+			
+			foreach (var id in services)
 			{
 				_dispatcher.Schedule(() => OnLogMessage?.Invoke(
-					                     id,
+					                     id.BeamoId,
 					                     new BeamTailLogMessageForClient
 					                     {
 						                     message = "Requesting service shutdown...",
@@ -1031,26 +1073,53 @@ namespace Beamable.Server.Editor.Usam
 						                     logLevel = "info"
 					                     }));
 			}
+			foreach (var id in storages)
+			{
+				_dispatcher.Schedule(() => OnLogMessage?.Invoke(
+					                     id.BeamoId,
+					                     new BeamTailLogMessageForClient
+					                     {
+						                     message = "Requesting storage shutdown...",
+						                     timeStamp = DateTimeOffset.Now.ToLocalTime().ToString("[HH:mm:ss]"),
+						                     logLevel = "info"
+					                     }));
+			}
 
-			var stop = _cli.ProjectStop(new ProjectStopArgs() { ids = beamoIds.ToArray() })
-			               .OnStreamStopProjectCommandOutput(data =>
-			               {
-				               var matching =
-					               ServiceDefinitions.FirstOrDefault(x => x.ServiceInfo.name == data.data.serviceName);
-				               if (matching != null)
+			var tasks = new List<Promise>();
+			if (services.Count() > 0)
+			{
+				var stopCommand = _cli.ProjectStop(new ProjectStopArgs() { ids = services.Select(x => x.BeamoId).ToArray() })
+				               .OnStreamStopProjectCommandOutput(data =>
 				               {
-					               matching.Builder.IsRunning = false;
-					               OnLogMessage?.Invoke(
-						               data.data.serviceName,
-						               new BeamTailLogMessageForClient
-						               {
-							               message = "Finished service shutdown...",
-							               timeStamp = DateTimeOffset.Now.ToLocalTime().ToString("[HH:mm:ss]"),
-							               logLevel = "info"
-						               });
-				               }
-			               });
-			await stop.Run();
+					               var matching =
+						               ServiceDefinitions.FirstOrDefault(x => x.ServiceInfo.name == data.data.serviceName);
+					               if (matching != null)
+					               {
+						               matching.Builder.IsRunning = false;
+						               OnLogMessage?.Invoke(
+							               data.data.serviceName,
+							               new BeamTailLogMessageForClient
+							               {
+								               message = "Finished service shutdown...",
+								               timeStamp = DateTimeOffset.Now.ToLocalTime().ToString("[HH:mm:ss]"),
+								               logLevel = "info"
+							               });
+					               }
+				               });
+				tasks.Add(stopCommand.Run());
+			}
+
+			if (storages.Count() > 0)
+			{
+				var storageStop = _cli.ServicesStop(new ServicesStopArgs {ids = storages.Select(x => x.BeamoId).ToArray()})
+											 .Run();
+				tasks.Add(storageStop);
+			}
+
+			foreach (var t in tasks)
+			{
+				await t;
+			}
 		}
 
 		public async Promise OpenSwagger(string beamoId, bool remote = false)
@@ -1059,6 +1128,20 @@ namespace Beamable.Server.Editor.Usam
 			{
 				var cmd = _cli.ProjectOpenSwagger(
 					new ProjectOpenSwaggerArgs() { remote = remote, serviceName = new ServiceName(beamoId) });
+				await cmd.Run();
+			}
+			catch (Exception e)
+			{
+				UsamLogger.Log(e.GetType().Name, e.Message, e.StackTrace);
+			}
+		}
+		
+		public async Promise OpenMongoExpress(string beamoId)
+		{
+			try
+			{
+				var cmd = _cli.ProjectOpenMongo(
+					new ProjectOpenMongoArgs() { serviceName = new ServiceName(beamoId) });
 				await cmd.Run();
 			}
 			catch (Exception e)
