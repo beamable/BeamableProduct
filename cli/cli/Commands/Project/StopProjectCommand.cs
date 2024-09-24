@@ -44,8 +44,12 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 		await DiscoverAndStopServices(args, new HashSet<string>(args.services),  args.taskKill, TimeSpan.FromSeconds(1),  SendResults);
 	}
 
-	public static async Task DiscoverAndStopServices(CommandArgs args, HashSet<string> serviceIds, bool kill, TimeSpan discoveryPeriod, Action<StopProjectCommandOutput> onStopCallback)
+	public static async Task DiscoverAndStopServices(CommandArgs args, HashSet<string> serviceIds, bool kill, TimeSpan discoveryPeriod, Action<StopProjectCommandOutput> onStopCallback, Func<ServiceInstance, bool> filter=null)
 	{
+		if (filter == null)
+		{
+			filter = (_) => true;
+		}
 		
 		var stoppedInstances = new List<ServiceInstance>();
 		await foreach (var status in CheckStatusCommand.CheckStatus(args, discoveryPeriod, DiscoveryMode.LOCAL))
@@ -58,6 +62,7 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 				{
 					foreach (var instance in routable.instances)
 					{
+						if (!filter(instance)) continue;
 						await StopRunningService(instance, args.BeamoLocalSystem, service.service, kill, evt =>
 						{
 							onStopCallback?.Invoke(new StopProjectCommandOutput { instance = instance, serviceName = service.service, });
