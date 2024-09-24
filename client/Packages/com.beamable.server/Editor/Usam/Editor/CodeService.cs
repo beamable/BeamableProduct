@@ -627,24 +627,21 @@ namespace Beamable.Server.Editor.Usam
 					logLevel = "info"
 				}));
 
-				var runCommand = _cli.ProjectRun(new ProjectRunArgs() {ids = new[] {id}, watch = false, force = true})
-				                     .OnStreamRunProjectResultStream(data =>
-				                     {
-				                     })
-				                     .OnBuildErrorsRunProjectBuildErrorStream(data =>
-				                     {
-				                     
-				                     })
+				
+				var runCommand = _cli.ProjectRun(new ProjectRunArgs() {ids = new[] {id}, watch = false, force = true, detach = true})
+				                     .OnStreamRunProjectResultStream(data => { })
+				                     .OnBuildErrorsRunProjectBuildErrorStream(data => { })
 				                     .OnLog(log =>
 				                     {
 					                     var message = new BeamTailLogMessageForClient();
 					                     message.message = log.data.message;
 					                     message.logLevel = log.data.logLevel;
-					                     message.timeStamp = DateTimeOffset.FromUnixTimeMilliseconds(log.data.timestamp).ToLocalTime().ToString("[HH:mm:ss]");
-				                     
+					                     message.timeStamp = DateTimeOffset.FromUnixTimeMilliseconds(log.data.timestamp)
+					                                                       .ToLocalTime().ToString("[HH:mm:ss]");
+
 					                     _dispatcher.Schedule(() => OnLogMessage?.Invoke(id, message));
 				                     })
-			                     
+
 				                     .OnError(ex =>
 				                     {
 					                     Debug.LogError(ex.data.message);
@@ -1086,7 +1083,7 @@ namespace Beamable.Server.Editor.Usam
 			}
 
 			var tasks = new List<Promise>();
-			if (services.Count() > 0)
+			if (services.Any())
 			{
 				var stopCommand = _cli.ProjectStop(new ProjectStopArgs() { ids = services.Select(x => x.BeamoId).ToArray() })
 				               .OnStreamStopProjectCommandOutput(data =>
@@ -1109,7 +1106,7 @@ namespace Beamable.Server.Editor.Usam
 				tasks.Add(stopCommand.Run());
 			}
 
-			if (storages.Count() > 0)
+			if (storages.Any())
 			{
 				var storageStop = _cli.ServicesStop(new ServicesStopArgs {ids = storages.Select(x => x.BeamoId).ToArray()})
 											 .Run();

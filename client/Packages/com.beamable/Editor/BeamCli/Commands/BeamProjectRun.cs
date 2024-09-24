@@ -10,8 +10,14 @@ namespace Beamable.Editor.BeamCli.Commands
 		public bool watch;
 		/// <summary>The list of services to include, defaults to all local services (separated by whitespace)</summary>
 		public string[] ids;
+		/// <summary>A set of BeamServiceGroup tags that will exclude the associated services. Exclusion takes precedence over inclusion</summary>
+		public string[] withoutGroup;
+		/// <summary>A set of BeamServiceGroup tags that will include the associated services</summary>
+		public string[] withGroup;
 		/// <summary>With this flag, we restart any running services. Without it, we skip running services</summary>
 		public bool force;
+		/// <summary>With this flag, the service will run the background after it has reached basic startup</summary>
+		public bool detach;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -31,10 +37,33 @@ namespace Beamable.Editor.BeamCli.Commands
 					genBeamCommandArgs.Add(("--ids=" + this.ids[i]));
 				}
 			}
+			// If the withoutGroup value was not default, then add it to the list of args.
+			if ((this.withoutGroup != default(string[])))
+			{
+				for (int i = 0; (i < this.withoutGroup.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--without-group=" + this.withoutGroup[i]));
+				}
+			}
+			// If the withGroup value was not default, then add it to the list of args.
+			if ((this.withGroup != default(string[])))
+			{
+				for (int i = 0; (i < this.withGroup.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--with-group=" + this.withGroup[i]));
+				}
+			}
 			// If the force value was not default, then add it to the list of args.
 			if ((this.force != default(bool)))
 			{
 				genBeamCommandArgs.Add(("--force=" + this.force));
+			}
+			// If the detach value was not default, then add it to the list of args.
+			if ((this.detach != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--detach=" + this.detach));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

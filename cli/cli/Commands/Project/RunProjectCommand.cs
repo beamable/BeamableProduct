@@ -7,6 +7,8 @@ using Newtonsoft.Json;
 using Serilog;
 using Serilog.Events;
 using System.CommandLine;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -15,7 +17,11 @@ namespace cli.Commands.Project;
 public class RunProjectCommandArgs : CommandArgs
 {
 	public List<string> services = new List<string>();
+	public List<string> withServiceTags = new List<string>();
+	public List<string> withoutServiceTags = new List<string>();
+	
 	public bool forceRestart;
+	public bool detach;
 }
 
 public class RunProjectResultStream
@@ -67,7 +73,12 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			if (b) throw new CliException("The --watch flag is no longer supported due to underlying .NET issues");
 		});
 		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
+		ProjectCommand.AddServiceTagsOption(this, 
+			bindWithTags: (args, i) => args.withServiceTags = i,
+			bindWithoutTags: (args, i) => args.withoutServiceTags = i);
+		
 		AddOption<bool>(new Option<bool>("--force", "With this flag, we restart any running services. Without it, we skip running services"), (args, b) => args.forceRestart = b);
+		AddOption<bool>(new Option<bool>("--detach", "With this flag, the service will run the background after it has reached basic startup"), (args, b) => args.detach = b);
 
 	}
 
@@ -86,7 +97,11 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 	
 	public override async Task Handle(RunProjectCommandArgs args)
 	{
-		ProjectCommand.FinalizeServicesArg(args, ref args.services);
+		ProjectCommand.FinalizeServicesArg(args, 
+			withTags: args.withServiceTags, 
+			withoutTags: args.withoutServiceTags,
+			includeStorage: false, 
+			ref args.services);
 
 		if (args.services.Count > 1)
 		{
@@ -138,7 +153,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		foreach ((string serviceName, HttpMicroserviceLocalProtocol service) in serviceTable)
 		{
 			var name = serviceName;
-			runTasks.Add(RunService(args, serviceName, new CancellationTokenSource(), data =>
+			runTasks.Add(RunService(args, serviceName, new CancellationTokenSource(), args.detach, data =>
 			{
 				if (data.IsJson)
 				{
@@ -168,12 +183,12 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		
 		await Task.WhenAll(runTasks);
 	}
-
-
+	
 	public static async Task RunService(
 		CommandArgs args,
 		string serviceName,
 		CancellationTokenSource serviceToken,
+		bool detach,
 		Action<ProjectRunLogData> onLog = null,
 		Action<ProjectErrorReport, int> onFailure = null,
 		Action<float, string> onProgress=null)
@@ -221,11 +236,20 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			var errorPathDir = Path.GetDirectoryName(errorPath);
 			Directory.CreateDirectory(errorPathDir);
 
-			var commandStr = $"run --project {projectPath} --verbosity minimal -p:ErrorLog=\"{errorPath}%2Cversion=2\" -p:WarningLevel=0";
-			Log.Debug($"Running {args.AppContext.DotnetPath} {commandStr}");
-
-			var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, commandStr)
-				.WithEnvironmentVariables(new Dictionary<string, string>
+			var exe = args.AppContext.DotnetPath;
+			var commandStr = $"run --project {projectPath} --verbosity minimal -p:ErrorLog='{errorPath}%2Cversion=2' -p:WarningLevel=0";
+			
+			if (detach && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+			{
+				// on windows, detaching "just works" (thought Chris, who wasn't on a windows machine)
+				commandStr = $"sh -c \"{exe} {commandStr}\" &";
+				exe = "nohup";
+			}
+			
+			Log.Debug($"Running {exe} {commandStr}");
+			var startInfo = new ProcessStartInfo(exe, commandStr)
+			{
+				Environment =
 				{
 					["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1",
 					["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1",
@@ -233,26 +257,71 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 					["LOG_LEVEL"] = "verbose",
 					["LOG_TYPE"] = "structured+file",
 					["WATCH_TOKEN"] = "false",
-					[Beamable.Common.Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = args.AppContext.DotnetPath,
-				})
-				.WithStandardErrorPipe(PipeTarget.ToDelegate(line =>
-				{
-					// TODO: do something smarter with the log, like log it as SendResults compiler error?
-					onLog?.Invoke(new ProjectRunLogData
-					{
-						rawLogMessage = line, jsonData = null, forcedLogLevel = LogEventLevel.Error
-					});
-				}))
-				.WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
-				{
-					// this may be structured JSON, or it could be a valid build message....
-					try
-					{
-						var logData = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(line,
-							new JsonSerializerOptions { IncludeFields = true });
+					[Beamable.Common.Constants.EnvironmentVariables.BEAM_DOTNET_PATH] =
+						args.AppContext.DotnetPath
+				},
+				WindowStyle = ProcessWindowStyle.Normal,
+				UseShellExecute = false,
+				CreateNoWindow = true,
+				RedirectStandardError = true,
+				RedirectStandardOutput = true
+			};
 
-
-						var matches = serviceLogProgressTable.Where(kvp => line.Contains(kvp.Key));
+			// startInfo.
+			var proc = Process.Start(startInfo);
+			var cts = new TaskCompletionSource();
+			proc.Exited += (sender, eventArgs) =>
+			{
+				cts.TrySetResult();
+			};
+			proc.ErrorDataReceived += (sender, eventArgs) =>
+			{
+				var line = eventArgs.Data;
+				if (line == null) return;
+				onLog?.Invoke(new ProjectRunLogData
+				{
+					rawLogMessage = line, jsonData = null, forcedLogLevel = LogEventLevel.Error
+				});
+			};
+			proc.OutputDataReceived += (sender, eventArgs) =>
+			{
+				var line = eventArgs.Data;
+				if (line == null) return;
+				// this may be structured JSON, or it could be a valid build message....
+				try
+				{
+					var logData = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(line,
+						new JsonSerializerOptions { IncludeFields = true });
+		
+		
+					var matches = serviceLogProgressTable.Where(kvp => line.Contains(kvp.Key));
+					foreach (var kvp in matches)
+					{
+						if (currentProgress < kvp.Value)
+						{
+							currentProgress = kvp.Value;
+							onProgress?.Invoke(kvp.Value, kvp.Key);
+						}
+						serviceLogProgressTable.Remove(kvp.Key);
+					}
+					
+					
+					onLog?.Invoke(new ProjectRunLogData { rawLogMessage = line, jsonData = logData });
+				}
+				catch
+				{
+					if (ErrorLike().Match(line).Success)
+					{
+						// this is a build failure message.
+						onLog?.Invoke(new ProjectRunLogData
+						{
+							rawLogMessage = line, jsonData = null, forcedLogLevel = LogEventLevel.Error
+						});
+					}
+					else
+					{
+						
+						var matches = nonServiceLogProgressTable.Where(kvp => line.Contains(kvp.Key));
 						foreach (var kvp in matches)
 						{
 							if (currentProgress < kvp.Value)
@@ -260,49 +329,37 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 								currentProgress = kvp.Value;
 								onProgress?.Invoke(kvp.Value, kvp.Key);
 							}
-							serviceLogProgressTable.Remove(kvp.Key);
+							nonServiceLogProgressTable.Remove(kvp.Key);
 						}
-						
-						
-						onLog?.Invoke(new ProjectRunLogData { rawLogMessage = line, jsonData = logData });
+		
+						onLog?.Invoke(new ProjectRunLogData { rawLogMessage = line, jsonData = null });
 					}
-					catch
-					{
-						if (ErrorLike().Match(line).Success)
-						{
-							// this is a build failure message.
-							onLog?.Invoke(new ProjectRunLogData
-							{
-								rawLogMessage = line, jsonData = null, forcedLogLevel = LogEventLevel.Error
-							});
-						}
-						else
-						{
-							
-							var matches = nonServiceLogProgressTable.Where(kvp => line.Contains(kvp.Key));
-							foreach (var kvp in matches)
-							{
-								if (currentProgress < kvp.Value)
-								{
-									currentProgress = kvp.Value;
-									onProgress?.Invoke(kvp.Value, kvp.Key);
-								}
-								nonServiceLogProgressTable.Remove(kvp.Key);
-							}
-
-							onLog?.Invoke(new ProjectRunLogData { rawLogMessage = line, jsonData = null });
-						}
-					}
-
-				}))
-				.WithValidation(CommandResultValidation.None)
-				.ExecuteAsync(tokenSource.Token);
-
-			var res = await command;
-			if (res.ExitCode != 0)
+				}
+		
+			};
+			proc.EnableRaisingEvents = true;
+			proc.BeginErrorReadLine();
+			proc.BeginOutputReadLine();
+			
+			if (detach)
+			{
+				// wait for the progress to hit 1.
+				while (Math.Abs(currentProgress - 1) > .001f)
+				{
+					await Task.Delay(10);
+				}
+				
+			}
+			else
+			{
+				await cts.Task;
+			}
+			
+			// var res = await command;
+			if (proc.HasExited && proc.ExitCode != 0)
 			{
 				var report = ProjectService.ReadErrorReport(errorPath);
-				onFailure?.Invoke(report, res.ExitCode);
+				onFailure?.Invoke(report, proc.ExitCode);
 			}
 		}
 		catch (Exception e)
