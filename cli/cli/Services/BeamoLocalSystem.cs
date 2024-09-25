@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using Serilog;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace cli.Services;
 
@@ -788,6 +789,37 @@ public class BeamoServiceDefinition
 		ProjectLanguage.CSharpDotnet => "sln",
 		_ => throw new ArgumentOutOfRangeException()
 	};
+
+	public void SetBeamGroup(IEnumerable<string> groups, ConfigService config)
+	{
+		var relativeProjectPath = config.GetRelativeToBeamableFolderPath(ProjectPath);
+		var projectFile = File.ReadAllText(relativeProjectPath);
+				
+		// Parse the XML string into an XDocument
+		XDocument doc = XDocument.Parse(projectFile);
+
+		// Find the BeamServiceGroup element
+		XElement beamServiceGroupElement = doc.Descendants("BeamServiceGroup").FirstOrDefault();
+		var newGroupValue = string.Join(';',groups);
+		if (beamServiceGroupElement != null)
+		{
+			beamServiceGroupElement.Value = newGroupValue;
+		}
+		else
+		{
+			// Find the PropertyGroup element with Label="Beamable Settings"
+			XElement propertyGroupElement = doc.Descendants("PropertyGroup")
+				.FirstOrDefault(e => (string)e.Attribute("Label") == "Beamable Settings");
+			if (propertyGroupElement == null)
+			{
+				throw new CliException("Beamable Settings not found in project file.");
+			}
+			propertyGroupElement.Add(new XElement("BeamServiceGroup", newGroupValue));
+		}
+
+		var result = doc.ToString().Replace("<?xml version=\"1.0\" encoding=\"utf-8\"?>",string.Empty);
+		File.WriteAllText(relativeProjectPath, result);
+	}
 }
 
 /// <summary>
