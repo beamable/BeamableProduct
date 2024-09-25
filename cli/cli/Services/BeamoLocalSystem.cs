@@ -792,7 +792,7 @@ public class BeamoServiceDefinition
 
 	public void SetBeamGroup(IEnumerable<string> groups, ConfigService config)
 	{
-		var relativeProjectPath = config.GetRelativeToBeamableFolderPath(ProjectPath);
+		var relativeProjectPath = config.GetFullPath(ProjectPath);
 		var projectFile = File.ReadAllText(relativeProjectPath);
 				
 		// Parse the XML string into an XDocument
