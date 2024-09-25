@@ -5,7 +5,7 @@ namespace cli.Commands.Project;
 
 public class GroupCommand : CommandGroup
 {
-	public GroupCommand() : base("group", "Generate an ignore file in .beamable folder for given VCS")
+	public GroupCommand() : base("group", "List Service Groups")
 	{
 	}
 
