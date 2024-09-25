@@ -290,10 +290,7 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 
 			if (args.Groups.Count > 0)
 			{
-				if (args.BeamoLocalSystem.BeamoManifest.TryGetDefinition(args.ProjectName, out var definition))
-				{
-					definition.SetBeamGroup(args.Groups, args.ConfigService);
-				}
+				args.BeamoLocalSystem.SetBeamGroups(new UpdateGroupArgs{ToAddGroups = args.Groups, Name = args.ProjectName});
 			}
 		}
 		finally

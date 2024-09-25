@@ -2,7 +2,7 @@ using cli.Services;
 
 namespace cli.Commands.Project;
 
-public class GroupRemoveCommand : AppCommand<GroupModifyCommandArgs>
+public class GroupRemoveCommand : AppCommand<UpdateGroupArgs>
 {
 	public GroupRemoveCommand() : base("rm", "Remove a group from a project")
 	{
@@ -10,31 +10,29 @@ public class GroupRemoveCommand : AppCommand<GroupModifyCommandArgs>
 
 	public override void Configure()
 	{
-		AddArgument(new ServiceNameArgument("Name of the service"), (args, i) => args.ProjectName = i);
-		AddArgument(new ServiceNameArgument("Name of the group"), (args, i) => args.GroupName = i);
+		AddArgument(new ServiceNameArgument("Name of the service"), (args, i) => args.Name = i);
+		AddArgument(GroupCommand.GroupsArgument, (args, i) => args.ToRemoveGroups = i);
 	}
 	
-	public override Task Handle(GroupModifyCommandArgs args)
+	public override Task Handle(UpdateGroupArgs args)
 	{
 		BeamoServiceDefinition definition = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Find(
-			definition => definition.BeamoId == args.ProjectName);
+			definition => definition.BeamoId == args.Name);
 		if (definition == null)
 		{
-			throw new CliException($"Project not found, existing services: {string.Join(',', args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Select(definition=>definition.BeamoId))}'");
+			throw new CliException($"Project not found, existing services: {string.Join(',', args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Select(serviceDefinition=>serviceDefinition.BeamoId))}'");
 		}
 
-		if (!args.GroupName.All(char.IsAsciiLetter) || string.IsNullOrEmpty(args.GroupName))
+		if (!args.IsValid())
 		{
 			throw new CliException("Invalid group name, should be just Ascii letters");
 		}
 
-		if (!definition.ServiceGroupTags.Contains(args.GroupName))
+		if (!definition.ServiceGroupTags.Union(args.ToRemoveGroups).Any())
 		{
-			throw new CliException($"There is no group {args.GroupName} in project {args.ProjectName}. Valid groups: {string.Join(',', definition.ServiceGroupTags)}");
+			throw new CliException($"There is no groups {string.Join(',',args.ToRemoveGroups)} in project {args.Name}. Valid groups: {string.Join(',', definition.ServiceGroupTags)}");
 		}
-		var newGroupValue = definition.ServiceGroupTags.Where(tag => tag != args.GroupName).ToList();
-		
-		definition.SetBeamGroup(newGroupValue, args.ConfigService);
+		args.BeamoLocalSystem.SetBeamGroups(args);
 		return Task.CompletedTask;
 	}
 }

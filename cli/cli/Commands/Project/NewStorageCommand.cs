@@ -84,10 +84,7 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 
 		if (args.Groups.Count > 0)
 		{
-			if (args.BeamoLocalSystem.BeamoManifest.TryGetDefinition(args.ProjectName, out var definition))
-			{
-				definition.SetBeamGroup(args.Groups, args.ConfigService);
-			}
+			args.BeamoLocalSystem.SetBeamGroups(new UpdateGroupArgs{ToAddGroups = args.Groups, Name = args.ProjectName});
 		}
 
 		var promises = new List<Promise<Unit>>();

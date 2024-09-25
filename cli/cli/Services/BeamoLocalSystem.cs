@@ -2,6 +2,7 @@
 using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
+using cli.Commands.Project;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using Newtonsoft.Json;
@@ -290,6 +291,49 @@ public partial class BeamoLocalSystem
 		}
 
 		return allBeamoIdsDependencies;
+	}
+	
+	
+	public void SetBeamGroups(params UpdateGroupArgs[] args)
+	{
+		foreach (var arg in args)
+		{
+			if (!BeamoManifest.TryGetDefinition(arg.Name, out var definition))
+			{
+				throw new CliException($"Invalid service name: {arg.Name}");
+			}
+			var groups = definition.ServiceGroupTags.Union(arg.ToAddGroups).Except(arg.ToRemoveGroups).ToArray();
+			if (definition.ServiceGroupTags.SequenceEqual(groups))
+			{
+				continue;
+			}
+			var relativeProjectPath = _configService.GetFullPath(definition.ProjectPath);
+			var projectFile = File.ReadAllText(relativeProjectPath);
+			XDocument doc = XDocument.Parse(projectFile);
+
+			// Find the BeamServiceGroup element
+			XElement beamServiceGroupElement = doc.Descendants("BeamServiceGroup").FirstOrDefault();
+			var newGroupValue = string.Join(';',groups);
+			if (beamServiceGroupElement != null)
+			{
+				beamServiceGroupElement.Value = newGroupValue;
+			}
+			else
+			{
+				// Find the PropertyGroup element with Label="Beamable Settings"
+				XElement propertyGroupElement = doc.Descendants("PropertyGroup")
+					.FirstOrDefault(e => (string)e.Attribute("Label") == "Beamable Settings");
+				if (propertyGroupElement == null)
+				{
+					throw new CliException("Beamable Settings not found in project file.");
+				}
+				propertyGroupElement.Add(new XElement("BeamServiceGroup", newGroupValue));
+			}
+
+			var result = doc.ToString().Replace("<?xml version=\"1.0\" encoding=\"utf-8\"?>",string.Empty);
+			File.WriteAllText(relativeProjectPath, result);
+			
+		}
 	}
 
 	public async Promise UpdateDockerFile(BeamoServiceDefinition serviceDefinition)
@@ -789,37 +833,6 @@ public class BeamoServiceDefinition
 		ProjectLanguage.CSharpDotnet => "sln",
 		_ => throw new ArgumentOutOfRangeException()
 	};
-
-	public void SetBeamGroup(IEnumerable<string> groups, ConfigService config)
-	{
-		var relativeProjectPath = config.GetFullPath(ProjectPath);
-		var projectFile = File.ReadAllText(relativeProjectPath);
-				
-		// Parse the XML string into an XDocument
-		XDocument doc = XDocument.Parse(projectFile);
-
-		// Find the BeamServiceGroup element
-		XElement beamServiceGroupElement = doc.Descendants("BeamServiceGroup").FirstOrDefault();
-		var newGroupValue = string.Join(';',groups);
-		if (beamServiceGroupElement != null)
-		{
-			beamServiceGroupElement.Value = newGroupValue;
-		}
-		else
-		{
-			// Find the PropertyGroup element with Label="Beamable Settings"
-			XElement propertyGroupElement = doc.Descendants("PropertyGroup")
-				.FirstOrDefault(e => (string)e.Attribute("Label") == "Beamable Settings");
-			if (propertyGroupElement == null)
-			{
-				throw new CliException("Beamable Settings not found in project file.");
-			}
-			propertyGroupElement.Add(new XElement("BeamServiceGroup", newGroupValue));
-		}
-
-		var result = doc.ToString().Replace("<?xml version=\"1.0\" encoding=\"utf-8\"?>",string.Empty);
-		File.WriteAllText(relativeProjectPath, result);
-	}
 }
 
 /// <summary>

@@ -1,10 +1,16 @@
 using Beamable.Common.Semantics;
 using Spectre.Console;
+using System.CommandLine;
 
 namespace cli.Commands.Project;
 
 public class GroupCommand : CommandGroup
 {
+	public static Argument<List<string>> GroupsArgument = new("groups", "Beamable groups for this service")
+	{
+		Arity = ArgumentArity.ZeroOrMore,
+		
+	};
 	public GroupCommand() : base("group", "List Service Groups")
 	{
 	}
@@ -36,8 +42,14 @@ public class GroupCommand : CommandGroup
 }
 
 
-public class GroupModifyCommandArgs : CommandArgs
+public class UpdateGroupArgs : CommandArgs
 {
-	public ServiceName ProjectName;
-	public string GroupName;
+	public ServiceName Name { get; set; }
+	public List<string> ToAddGroups { get; set; } = new();
+	public List<string> ToRemoveGroups { get; set; } = new();
+	public bool IsValid()
+	{
+		var groupNames = ToRemoveGroups.Union(ToAddGroups).ToArray();
+		return groupNames.All(s => s.All(char.IsAsciiLetter)) && !groupNames.Any(string.IsNullOrWhiteSpace);
+	}
 }
