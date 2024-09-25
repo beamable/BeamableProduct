@@ -17,9 +17,9 @@ New Microservices, Storages, and Common projects can be created within an existi
 Use the `beam project new` commands to create new projects. 
 
 ```sh
-beam project new service <name> # create a new Microservice
-beam project new storage <name> # create a new Storage
-beam project new common-lib <name> # create a new Common Library
+dotnet beam project new service <name> # create a new Microservice
+dotnet beam project new storage <name> # create a new Storage
+dotnet beam project new common-lib <name> # create a new Common Library
 ```
 
 All of these commands will create a new `.csproj` project and configure it to work with Beamable. The new `.csproj` will be referenced in the `.sln` file. If there is already a `.sln` file, then the first `.sln` file detected in the `.beamable` workspace will be modified to include the `.csproj` reference. If there is no `.sln`, then a file called `BeamableServices.sln` will be created. However, the `--sln` option may be given to override this behavior and specify a .`sln` file to use.
@@ -31,7 +31,7 @@ Projects will be created in the `/services` directory by default.
 Once there is a Microservice in your `.beamable` workspace, you can check for its existence by running the [project list](doc:cli-project-list) command. It will return services detected in your workspace.
 
 ```sh
-MyProject % beam project list
+MyProject % dotnet beam project list
  {                                             
     "localServices": [                         
        {                                       
@@ -54,7 +54,7 @@ Microservices can be run in several ways,
 The [project run](doc:cli-project-run) command will turn on a service.
 
 ```sh
-beam project run --ids HelloWorld
+dotnet beam project run --ids HelloWorld
 ```
 
 Optionally, you can enable hot-reload by passing the `-w` flag.
@@ -64,7 +64,7 @@ Optionally, you can enable hot-reload by passing the `-w` flag.
 You can use the [project ps](doc:cli-project-ps) command to check for _running_ services. If you run the command while no services are running, the output will be empty. However, if the command is executed while a Microservice is running, then it will be displayed.
 
 ```sh
-MyProject % beam project ps
+MyProject % dotnet beam project ps
 HelloWorld is available prefix=[Chriss-MacBook-Pro-2] docker=[False]
 ```
 
@@ -77,7 +77,7 @@ Optionally, you can pass the `-w` flag to watch for changes to running services.
 If a service is running, then the [project stop](doc:cli-project-stop) command may be used to stop the program. If the service is not running, then the command will have no output. However, if the service is running, it will log a stop message. 
 
 ```sh
-MyProject % beam project stop --ids HelloWorld
+MyProject % dotnet beam project stop --ids HelloWorld
 stopped HelloWorld.
 ```
 
@@ -94,13 +94,13 @@ When a service is run, the process that starts the service should receive the lo
 For example, imagine that a service is run through `dotnet` directly,
 
 ```sh
-dotnet run --project services/HelloWorld
+dotnet dotnet run --project services/HelloWorld
 ```
 
 Then, in a separate terminal window, the [project logs](doc:cli-project-logs) command can be used to tail the logs.
 
 ```sh
-MyProject % beam project logs HelloWorld
+MyProject % dotnet beam project logs HelloWorld
 [Debug] Skipped get_ServiceProvider
 [Debug] Skipped ProvideContext
 ...
