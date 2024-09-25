@@ -20,7 +20,7 @@ public class ServicesResetContainerCommand : StreamCommand<ServicesResetContaine
 	public ServicesResetContainerCommand() : base("container", "Delete any containers associated with the given Beamable services")
 	{
 	}
-	
+
 
 	public override void Configure()
 	{
@@ -31,7 +31,7 @@ public class ServicesResetContainerCommand : StreamCommand<ServicesResetContaine
 	public override async Task Handle(ServicesResetContainerCommandArgs args)
 	{
 		ProjectCommand.FinalizeServicesArg(args, ref args.services);
-		
+
 		await args.BeamoLocalSystem.SynchronizeInstanceStatusWithDocker(args.BeamoLocalSystem.BeamoManifest, args.BeamoLocalSystem.BeamoRuntime.ExistingLocalServiceInstances);
 		await args.BeamoLocalSystem.StartListeningToDocker();
 
