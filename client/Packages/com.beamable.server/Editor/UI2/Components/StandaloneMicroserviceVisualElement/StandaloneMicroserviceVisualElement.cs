@@ -165,7 +165,7 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			_logContainerElement.Add(_logElement);
 			_logElement.Refresh();
 		}
-		
+
 		private void OnDrag(float value)
 		{
 			if (!_visualsModel.AreLogsAttached)
@@ -197,12 +197,12 @@ namespace Beamable.Editor.Microservice.UI2.Components
 			if (Model.ServiceType == ServiceType.MicroService)
 			{
 				BeamEditorContext.Default.ServiceScope.GetService<CodeService>()
-				                 .OpenSwagger(Model.BeamoId).Then(_ => { });
+								 .OpenSwagger(Model.BeamoId).Then(_ => { });
 			}
 			else
 			{
 				BeamEditorContext.Default.ServiceScope.GetService<CodeService>()
-				                 .OpenMongoExpress(Model.BeamoId).Then(_ => { });
+								 .OpenMongoExpress(Model.BeamoId).Then(_ => { });
 			}
 
 		}
