@@ -35,6 +35,12 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 			AllowMultipleArgumentsPerToken = true
 		};
 		AddOption(storageDeps, (x, i) => x.linkedServices = i);
+		var groups = new Option<List<string>>("--groups", "Specify BeamableGroups for this service")
+		{
+			Arity = ArgumentArity.ZeroOrMore,
+			AllowMultipleArgumentsPerToken = true
+		};
+		AddOption(groups, (x, i) => x.Groups = i);
 	}
 
 	public override async Task Handle(NewStorageCommandArgs args)
@@ -75,6 +81,11 @@ public class NewStorageCommand : AppCommand<NewStorageCommandArgs>, IStandaloneC
 		args.ConfigService.SetBeamableDirectory(newMicroserviceInfo.SolutionDirectory);
 
 		await args.BeamoLocalSystem.InitManifest();
+
+		if (args.Groups.Count > 0)
+		{
+			args.BeamoLocalSystem.SetBeamGroups(new UpdateGroupArgs{ToAddGroups = args.Groups, Name = args.ProjectName});
+		}
 
 		var promises = new List<Promise<Unit>>();
 
