@@ -6,6 +6,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
+using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.Modules.Account;
 using System;
 using System.Collections.Generic;
@@ -58,6 +59,9 @@ namespace Beamable.Editor
 		private StorageHandle<AccountService> _saveHandle;
 		private ConfigDefaultsService ConfigDefaultsService => _scope.GetService<ConfigDefaultsService>();
 		private IPlatformRequester Requester => _scope.GetService<IPlatformRequester>();
+
+		private BeamCli.BeamCli Cli => _scope.GetService<BeamCli.BeamCli>();
+		
 		public AccountService(IDependencyProviderScope scope)
 		{
 			_scope = scope;
@@ -98,6 +102,15 @@ namespace Beamable.Editor
 			return new AccountServiceInitResult { hasCid = false, account = account };
 		}
 
+		// public async Promise SetCliWorkspace()
+		// {
+		// 	Cli.Command.Init(new InitArgs
+		// 	{
+		// 		
+		// 	})
+		//
+		// }
+		
 		public async Promise<bool> SwitchToConfigDefaults()
 		{
 			await ConfigDefaultsService.LoadFromDisk();

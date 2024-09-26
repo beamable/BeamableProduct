@@ -15,6 +15,11 @@ public class TailLogsCommandArgs : CommandArgs
 	public ServiceName service;
 }
 
+public class MongoLogMessage
+{
+	[JsonProperty("msg")]
+	public string message;
+}
 
 public class TailLogMessage
 {

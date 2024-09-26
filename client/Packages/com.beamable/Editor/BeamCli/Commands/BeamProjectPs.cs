@@ -8,6 +8,12 @@ namespace Beamable.Editor.BeamCli.Commands
 	{
 		/// <summary>When true, the command will run forever and watch the state of the program</summary>
 		public bool watch;
+		/// <summary>The list of services to include, defaults to all local services (separated by whitespace)</summary>
+		public string[] ids;
+		/// <summary>A set of BeamServiceGroup tags that will exclude the associated services. Exclusion takes precedence over inclusion</summary>
+		public string[] withoutGroup;
+		/// <summary>A set of BeamServiceGroup tags that will include the associated services</summary>
+		public string[] withGroup;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -17,6 +23,33 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.watch != default(bool)))
 			{
 				genBeamCommandArgs.Add(("--watch=" + this.watch));
+			}
+			// If the ids value was not default, then add it to the list of args.
+			if ((this.ids != default(string[])))
+			{
+				for (int i = 0; (i < this.ids.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--ids=" + this.ids[i]));
+				}
+			}
+			// If the withoutGroup value was not default, then add it to the list of args.
+			if ((this.withoutGroup != default(string[])))
+			{
+				for (int i = 0; (i < this.withoutGroup.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--without-group=" + this.withoutGroup[i]));
+				}
+			}
+			// If the withGroup value was not default, then add it to the list of args.
+			if ((this.withGroup != default(string[])))
+			{
+				for (int i = 0; (i < this.withGroup.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--with-group=" + this.withGroup[i]));
+				}
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

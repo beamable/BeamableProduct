@@ -46,7 +46,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 		}
 		public IServiceLogsVisualModel Model { get; set; }
-		public event Action OnDetachLogs;
 		public bool EnableMoreButton = true;
 		public bool EnableDetatchButton = true;
 
@@ -63,7 +62,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Label _warningCountLbl;
 		private Label _errorCountLbl;
 		private Label _debugCountLbl;
-		private Button _popupBtn;
 		private Button _debugViewBtn;
 		private Button _infoViewBtn;
 		private Button _warningViewBtn;
@@ -93,10 +91,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Model.Logs.OnSelectedMessageChanged -= UpdateSelectedMessageText;
 			Model.Logs.OnViewFilterChanged -= LogsOnOnViewFilterChanged;
 		}
-
+		
 		public override void Refresh()
 		{
 			base.Refresh();
+			EditorApplication.update -= HandleScrollUpdates;
+			EditorApplication.update += HandleScrollUpdates;
+
 
 			var clearButton = Root.Q<Button>("clear");
 			clearButton.clickable.clicked += HandleClearButtonClicked;
@@ -107,12 +108,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
 				manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 			}
-
-			_popupBtn = Root.Q<Button>("popupBtn");
-			_popupBtn.clickable.clicked += OnPopoutButton_Clicked;
-			_popupBtn.AddToClassList(Model.AreLogsAttached ? "attached" : "detached");
-			_popupBtn.tooltip = Model.AreLogsAttached ? Tooltips.Logs.POP_OUT : Tooltips.Logs.ATTACH;
-
+			
 			_infoCountLbl = Root.Q<Label>("infoCount");
 			_warningCountLbl = Root.Q<Label>("warningCount");
 			_errorCountLbl = Root.Q<Label>("errorCount");
@@ -195,8 +191,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 				Model.Logs.HasScrolled = false;
 
 				_scrollView.verticalScroller.valueChanged += VerticalScrollerOnvalueChanged;
-				UpdateScroll();
-
 				Model.Logs.OnMessagesUpdated -= HandleMessagesUpdated;
 				Model.Logs.OnMessagesUpdated += HandleMessagesUpdated;
 
@@ -210,36 +204,44 @@ namespace Beamable.Editor.Microservice.UI.Components
 				UpdateSelectedMessageText();
 			}
 
-			if (!EnableDetatchButton)
-			{
-				_popupBtn.RemoveFromHierarchy();
-			}
-
 			_listView.RefreshPolyfill();
 			UpdateCounts();
 		}
 
-		private void UpdateScroll()
+		/// <summary>
+		/// This method should be registered with the EditorApplication.update method, and it will unsubscribe itself
+		/// when the panel becomes null (which happens when the window is closed)
+		/// </summary>
+		void HandleScrollUpdates()
 		{
-			EditorApplication.delayCall += () =>
+			if (panel == null)
 			{
-				_scrollView.verticalScroller.value = _scrollView.verticalScroller.highValue * Model.Logs.ScrollValue;
-				_scrollView.MarkDirtyRepaint();
-			};
+				EditorApplication.update -= HandleScrollUpdates;
+				return;
+			}
+			
+			UpdateLogTail();
 		}
 
-		private void OnPopoutButton_Clicked()
+		void UpdateLogTail()
 		{
-			if (Model.AreLogsAttached)
+			if (Model.Logs.IsTailingLog)
 			{
-				Model.DetachLogs();
-				OnDetachLogs?.Invoke();
+				var count = Model.Logs.FilteredMessages.Count;
+				var height = _scrollView.layout.height;
+				var maxHeight = ITEM_HEIGHT * count;
+				if (Math.Abs(height) > maxHeight)
+				{
+					_scrollView.verticalScroller.value = 0;
+					return;
+				}
+				var high = Mathf.Min(maxHeight, _scrollView.verticalScroller.highValue);
+				high = _scrollView.verticalScroller.highValue;
+				if (Math.Abs(high - _scrollView.verticalScroller.value) > 1)
+				{
+					_scrollView.verticalScroller.value = high;
+				}
 			}
-			else
-			{
-				Model.AttachLogs();
-			}
-			_popupBtn.tooltip = Model.AreLogsAttached ? Tooltips.Logs.POP_OUT : Tooltips.Logs.ATTACH;
 		}
 
 		private void LogsOnOnViewFilterChanged()
@@ -320,25 +322,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_pagination.EnableInClassList("hide", true);
 			_paginationIndex = 0;
 
-			EditorApplication.delayCall += () =>
-			{
-				_scrollView.verticalScroller.highValue = 0;
-				_scrollView.verticalScroller.value = 0;
-				Model.Logs.HasScrolled = false;
-			};
+			_scrollView.verticalScroller.highValue = 0;
+			_scrollView.verticalScroller.value = 0;
+			Model.Logs.HasScrolled = false;
 		}
 
 		private void HandleMessagesUpdated()
 		{
 			_logWindowBody.SetEnabled(Model.Logs.FilteredMessages.Count > 0);
 			UpdateCounts();
-			MaybeScrollToBottom();
-
-			EditorApplication.delayCall += () =>
-			{
-				_listView.RefreshPolyfill();
-				_listView.MarkDirtyRepaint();
-			};
+			_listView.RefreshPolyfill();
 		}
 
 		private void VerticalScrollerOnvalueChanged(float value)
@@ -349,42 +342,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var tolerance = .001f;
 			var isAtBottom = Math.Abs(scrollValue - highValue) < tolerance;
 
-			if (_scrollBlocker == 0)
-			{
-				Model.Logs.HasScrolled = true;
-				Model.Logs.ScrollValue = scrollValue / highValue;
-				Model.Logs.IsTailingLog = isAtBottom;
-			}
-			else
-			{
-				if (Model.Logs.IsTailingLog)
-				{
-					MaybeScrollToBottom();
-				}
-
-				_scrollBlocker = 0;
-			}
+			Model.Logs.IsTailingLog = isAtBottom;
+			
 		}
 
-		void MaybeScrollToBottom()
-		{
-			Model.Logs.IsTailingLog |= !Model.Logs.HasScrolled;
-
-			if (!Model.Logs.IsTailingLog)
-			{
-				return; // don't do anything. We aren't tailing.
-			}
-
-			ScrollToWithoutNotify(1f); // always jump to the end.
-		}
-
-		void ScrollToWithoutNotify(float normalizedValue)
-		{
-			_scrollBlocker++;
-			Model.Logs.ScrollValue = normalizedValue;
-			UpdateScroll();
-		}
-
+		private const int ITEM_HEIGHT = 24;
 		private ListView CreateListView()
 		{
 			var view = new ListView()
@@ -394,7 +356,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				selectionType = SelectionType.Single,
 				itemsSource = NoModel ? new List<LogMessage>() : Model.Logs.FilteredMessages
 			};
-			view.SetItemHeight(24);
+			view.SetItemHeight(ITEM_HEIGHT);
 			view.BeamableOnSelectionsChanged(ListView_OnSelectionChanged);
 			view.RefreshPolyfill();
 			return view;
@@ -403,6 +365,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		ConsoleLogVisualElement CreateListViewElement()
 		{
 			ConsoleLogVisualElement contentVisualElement = new ConsoleLogVisualElement();
+			contentVisualElement.Refresh();
 			return contentVisualElement;
 		}
 
@@ -412,13 +375,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 				return;
 
 			var consoleLogVisualElement = (ConsoleLogVisualElement)elem;
-			consoleLogVisualElement.Refresh();
 			consoleLogVisualElement.SetNewModel(_listView.itemsSource[index] as LogMessage);
 			consoleLogVisualElement.EnableInClassList("oddRow", index % 2 != 0);
 			consoleLogVisualElement.RemoveFromClassList("unity-list-view__item");
 			consoleLogVisualElement.RemoveFromClassList("unity-listview_item");
 			consoleLogVisualElement.RemoveFromClassList("unity-collection-view__item");
-			consoleLogVisualElement.MarkDirtyRepaint();
+
+			UpdateLogTail();
 		}
 
 		private void UpdateCounts()

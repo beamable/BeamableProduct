@@ -12,7 +12,6 @@
             <engine:VisualElement name="logWindowHeader">
                 <engine:VisualElement class="leftArea" name="clearContainer" >
                     <engine:Button name="clear" text="clear"/>
-                    <engine:Button name="popupBtn" class="squareBtn"/>
                 </engine:VisualElement>
                 <engine:VisualElement class="rightArea" name="white">
                   <beamable:SearchBarVisualElement name="searchBar"/>

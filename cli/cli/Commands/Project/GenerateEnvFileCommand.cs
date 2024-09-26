@@ -6,6 +6,7 @@ using Beamable.Common.Api;
 using Beamable.Common.BeamCli;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Semantics;
+using cli.Commands.Project;
 using cli.Services;
 using cli.Utils;
 using Docker.DotNet;
@@ -27,6 +28,7 @@ public class GenerateEnvFileCommandArgs : CommandArgs
 	public int instanceCount = 1;
 	public ServiceName serviceId;
 	public bool autoDeploy;
+	public int autoRemoveInstancesExceptProcessId;
 }
 
 public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, GenerateEnvFileOutput>, ISkipManifest
@@ -44,6 +46,7 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 		AddOption(new Option<bool>("--include-prefix", () => true, "If true, the generated .env file will include the local machine name as prefix"), (args, i) => args.includePrefix = i);
 		AddOption(new Option<int>("--instance-count", () => 1, "How many virtual websocket connections the server will open"), (args, i) => args.instanceCount = i);
 		AddOption(new Option<bool>("--auto-deploy", () => false, "When enabled, automatically deploy dependencies that aren't running"), (args, i) => args.autoDeploy = i);
+		AddOption(new Option<int>("--remove-all-except-pid",  "When enabled, automatically stop all other local instances of this service"), (args, i) => args.autoRemoveInstancesExceptProcessId = i);
 	}
 
 	async Promise<CustomerResponse> GetAdminCustomer(CommandArgs args)
@@ -65,10 +68,40 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 
 	public override async Task<GenerateEnvFileOutput> GetResult(GenerateEnvFileCommandArgs args)
 	{
+		Task shutdownTask = null;
+		var manifestTask = args.BeamoLocalSystem.InitManifest(fetchServerManifest: false);
+
+		if (args.autoRemoveInstancesExceptProcessId > 0)
+		{
+			shutdownTask = Task.Run(async () =>
+			{
+				try
+				{
+					await manifestTask;
+					await StopProjectCommand.DiscoverAndStopServices(args,
+						new HashSet<string>(new string[] { args.serviceId.Value }),
+						true, TimeSpan.FromMilliseconds(500), output =>
+						{
+							Log.Information($"Stopping other service key=[{output.instance.primaryKey}]");
+						}, filter: (instance) =>
+						{
+							// only remove instances that aren't the one we are turning on! 
+							var isSelf = instance.latestHostEvent?.processId == args.autoRemoveInstancesExceptProcessId;
+							return !isSelf;
+						});
+				}
+				catch (Exception ex)
+				{
+					Log.Error("Failed to shutdown existing services " + ex.Message);
+				}
+			});
+
+		}
+		
+		
 		var accountApi = args.DependencyProvider.GetService<IAccountsApi>();
 		var userReq = accountApi.GetAdminMe();
 		var custReq = GetAdminCustomer(args);
-		var manifestTask = args.BeamoLocalSystem.InitManifest(fetchServerManifest: false);
 		var res = await custReq;
 		var user = await userReq;
 		await manifestTask;
@@ -140,6 +173,12 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 						$"Service requires storage=[{dependency}] but it is not running. Please execute 'beam services run --ids {dependency}'", Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_CONTAINER_NOT_RUNNING, true);
 				}
 			}
+		}
+
+		if (shutdownTask != null)
+		{
+			// wait for other tasks to turn off
+			await shutdownTask;
 		}
 		
 		{

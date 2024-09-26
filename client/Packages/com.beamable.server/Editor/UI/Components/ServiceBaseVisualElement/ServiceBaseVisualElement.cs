@@ -258,22 +258,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			_logElement = new LogVisualElement { Model = Model };
 			_logElement.AddToClassList("logElement");
-			_logElement.OnDetachLogs += OnLogsDetached;
 			_logContainerElement.Add(_logElement);
 			_logElement.Refresh();
 		}
-		private void OnLogsDetached()
-		{
-			_logElement.OnDetachLogs -= OnLogsDetached;
-			Model.ElementHeight = _rootVisualElement.layout.height;
-
-#if UNITY_2019_1_OR_NEWER
-            _rootVisualElement.style.height = new StyleLength(DETACHED_HEIGHT);
-#elif UNITY_2018
-            _rootVisualElement.style.height =
-                StyleValue<float>.Create(DETACHED_HEIGHT);
-#endif
-		}
+	
 		protected virtual void SetupProgressBarForStart(Promise task)
 		{
 			// We have two ways. Either store reference or return instance as event parameter

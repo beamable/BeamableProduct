@@ -14,7 +14,7 @@ public class OpenMongoExpressCommandArgs : CommandArgs
 	public ServiceName storageName;
 }
 
-public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>
+public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>, IEmptyResult
 {
 	public OpenMongoExpressCommand() : base("open-mongo", "Opens a Mongo-Express web page for the given mongo storage object")
 	{
