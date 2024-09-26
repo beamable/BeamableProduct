@@ -15,6 +15,7 @@ public class NewProjectCommandArgs : CommandArgs
 	public ServiceName ProjectName;
 	public bool AutoInit;
 	public List<string> LinkedStorages;
+	public List<string> Groups = new();
 }
 
 public class AutoInitFlag : ConfigurableOptionFlag
@@ -196,6 +197,12 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 			AllowMultipleArgumentsPerToken = true
 		};
 		AddOption(serviceDeps, (x, i) => x.LinkedStorages = i);
+		var groups = new Option<List<string>>("--groups", "Specify BeamableGroups for this service")
+		{
+			Arity = ArgumentArity.ZeroOrMore,
+			AllowMultipleArgumentsPerToken = true
+		};
+		AddOption(groups, (x, i) => x.Groups = i);
 		AddOption(new Option<bool>(
 				name: "--generate-common",
 				description: "If passed, will create a common library for this project"),
@@ -281,7 +288,10 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 				await args.BeamoLocalSystem.UpdateDockerFile(sd); //Update dockerfile again in the case that dependencies were added
 			}
 
-
+			if (args.Groups.Count > 0)
+			{
+				args.BeamoLocalSystem.SetBeamGroups(new UpdateGroupArgs{ToAddGroups = args.Groups, Name = args.ProjectName});
+			}
 		}
 		finally
 		{
