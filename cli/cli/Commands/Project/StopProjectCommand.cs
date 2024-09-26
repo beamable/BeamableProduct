@@ -63,7 +63,7 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 					foreach (var instance in routable.instances)
 					{
 						if (!filter(instance)) continue;
-						await StopRunningService(instance, args.BeamoLocalSystem, service.service, kill, evt =>
+						await StopRunningService(instance, args.BeamoLocalSystem, service.service, kill: kill, evt =>
 						{
 							onStopCallback?.Invoke(new StopProjectCommandOutput { instance = instance, serviceName = service.service, });
 							stoppedInstances.Add(instance);

@@ -630,12 +630,15 @@ namespace Beamable.Server.Editor.Usam
 
 				
 				var runCommand = _cli.ProjectRun(new ProjectRunArgs() {ids = new[] {id}, watch = false, force = false, detach = true})
-				                     .OnStreamRunProjectResultStream(data => { })
+				                     .OnStreamRunProjectResultStream(data =>
+				                     {
+				                     })
 				                     .OnBuildErrorsRunProjectBuildErrorStream(data =>
 				                     {
 					                     var report = data.data.report;
 					                     if (!report.isSuccess)
 					                     {
+						                     definition.Builder.IsRunning = false;
 						                     var errCount = report.errors.Count;
 						                     var errorCountMsg = $"There are {errCount} messages";
 						                     if (errCount == 0)
@@ -649,17 +652,9 @@ namespace Beamable.Server.Editor.Usam
 						                     Debug.LogFormat(LogType.Error, LogOption.NoStacktrace, null, $"{data.data.serviceId} failed to build. {errorCountMsg}");
 						                     foreach (var err in report.errors)
 						                     {
-							                     Debug.LogFormat(LogType.Error, LogOption.NoStacktrace, null, " " + err.formattedMessage);
-							                     
+							                     var msg = $"<a href=\"{err.uri}\">{err.uri}</a>";
+							                     Debug.LogFormat(LogType.Error, LogOption.NoStacktrace, null, " " + err.formattedMessage + "\n" + msg);
 						                     }
-					                     }
-				                     })
-				                     .OnErrorRunFailErrorOutput(data =>
-				                     {
-					                     var failed = data.data.failedServices;
-					                     if (failed.Contains(id))
-					                     {
-						                     definition.Builder.IsRunning = false;
 					                     }
 				                     })
 				                     .OnLog(log =>

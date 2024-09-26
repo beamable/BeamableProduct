@@ -7,7 +7,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	[System.SerializableAttribute()]
 	public class BeamRunFailErrorOutput
 	{
-		public System.Collections.Generic.List<string> failedServices;
+		public System.Collections.Generic.List<BeamRunProjectBuildErrorStream> compilerErrors;
 		public string message;
 		public string invocation;
 		public int exitCode;

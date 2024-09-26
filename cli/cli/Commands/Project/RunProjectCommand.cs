@@ -44,7 +44,7 @@ public class RunProjectResultStream
 }
 
 [Serializable]
-public class RunProjectBuildErrorStream
+public class RunProjectBuildErrorStream  
 {
 	public string serviceId;
 	public ProjectErrorReport report;
@@ -57,7 +57,7 @@ public class RunProjectBuildErrorStreamChannel : IResultChannel
 
 public class RunFailErrorOutput : ErrorOutput
 {
-	public List<string> failedServices = new List<string>();
+	public List<RunProjectBuildErrorStream> compilerErrors = new List<RunProjectBuildErrorStream>();
 }
 
 public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
@@ -126,7 +126,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		if (args.forceRestart)
 		{
 			Log.Verbose("starting discovery");
-			await StopProjectCommand.DiscoverAndStopServices(args, new HashSet<string>(args.services), true, TimeSpan.FromMilliseconds(100),
+			await StopProjectCommand.DiscoverAndStopServices(args, new HashSet<string>(args.services), kill: true, TimeSpan.FromMilliseconds(100),
 				evt =>
 				{
 					// do nothing?
@@ -156,7 +156,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 
 		// For each of the filtered list of services, start a process that'll run it.
 		var runTasks = new List<Task>();
-		var failedTasks = new ConcurrentDictionary<string, int>();
+		var failedTasks = new ConcurrentDictionary<string, RunProjectBuildErrorStream>();
 		Log.Debug("Starting Services. SERVICES={Services}", string.Join(",", serviceTable.Keys));
 		foreach ((string serviceName, HttpMicroserviceLocalProtocol service) in serviceTable)
 		{
@@ -177,13 +177,9 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				}
 			}, (errorReport, exitCode) =>
 			{
-				failedTasks[name] = exitCode;
-				// Log.Fatal("failed to start service");
-				this.SendResults<RunProjectBuildErrorStreamChannel, RunProjectBuildErrorStream>(new RunProjectBuildErrorStream
-				{
-					serviceId = name,
-					report = errorReport
-				});
+				var error = new RunProjectBuildErrorStream { serviceId = name, report = errorReport };
+				failedTasks[name] = error;
+				this.SendResults<RunProjectBuildErrorStreamChannel, RunProjectBuildErrorStream>(error);
 			}, (progress, message) =>
 			{
 				SendUpdate(name, message, progress);
@@ -196,7 +192,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		{
 			throw new CliException<RunFailErrorOutput>("failed to start all services")
 			{
-				payload = new RunFailErrorOutput { failedServices = failedTasks.Keys.ToList() }
+				payload = new RunFailErrorOutput { compilerErrors = failedTasks.Select(x => x.Value).ToList() }
 			};
 		}
 	}
@@ -365,14 +361,12 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				{
 					await Task.Delay(10);
 				}
-				
 			}
 			else
 			{
 				await cts.Task;
 			}
 			
-			// var res = await command;
 			if (proc.HasExited && proc.ExitCode != 0)
 			{
 				var report = ProjectService.ReadErrorReport(errorPath);

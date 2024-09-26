@@ -44,7 +44,6 @@ namespace Beamable.Editor.UI.Model
 			get => _isRunning;
 			set
 			{
-				// if (value == _isRunning) return;
 				_isRunning = value;
 				BeamEditorContext.Default.Dispatcher.Schedule(() => OnIsRunningChanged?.Invoke(value));
 			}

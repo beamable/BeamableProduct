@@ -46,7 +46,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 		}
 		public IServiceLogsVisualModel Model { get; set; }
-		// public event Action OnDetachLogs;
 		public bool EnableMoreButton = true;
 		public bool EnableDetatchButton = true;
 
@@ -192,8 +191,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 				Model.Logs.HasScrolled = false;
 
 				_scrollView.verticalScroller.valueChanged += VerticalScrollerOnvalueChanged;
-				// UpdateScroll();
-			
 				Model.Logs.OnMessagesUpdated -= HandleMessagesUpdated;
 				Model.Logs.OnMessagesUpdated += HandleMessagesUpdated;
 
@@ -334,13 +331,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			_logWindowBody.SetEnabled(Model.Logs.FilteredMessages.Count > 0);
 			UpdateCounts();
-			// MaybeScrollToBottom();
-
-			// EditorApplication.delayCall += () =>
-			// {
-				_listView.RefreshPolyfill();
-			// 	_listView.MarkDirtyRepaint();
-			// };
+			_listView.RefreshPolyfill();
 		}
 
 		private void VerticalScrollerOnvalueChanged(float value)
@@ -352,41 +343,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var isAtBottom = Math.Abs(scrollValue - highValue) < tolerance;
 
 			Model.Logs.IsTailingLog = isAtBottom;
-			// if (_scrollBlocker == 0)
-			// {
-			// 	Model.Logs.HasScrolled = true;
-			// 	Model.Logs.ScrollValue = scrollValue / highValue;
-			// 	Model.Logs.IsTailingLog = isAtBottom;
-			// }
-			// else
-			// {
-			// 	if (Model.Logs.IsTailingLog)
-			// 	{
-			// 		MaybeScrollToBottom();
-			// 	}
-			//
-			// 	_scrollBlocker = 0;
-			// }
+			
 		}
-
-		// void MaybeScrollToBottom()
-		// {
-		// 	Model.Logs.IsTailingLog |= !Model.Logs.HasScrolled;
-		//
-		// 	if (!Model.Logs.IsTailingLog)
-		// 	{
-		// 		return; // don't do anything. We aren't tailing.
-		// 	}
-		//
-		// 	ScrollToWithoutNotify(1f); // always jump to the end.
-		// }
-		//
-		// void ScrollToWithoutNotify(float normalizedValue)
-		// {
-		// 	_scrollBlocker++;
-		// 	Model.Logs.ScrollValue = normalizedValue;
-		// 	// UpdateScroll();
-		// }
 
 		private const int ITEM_HEIGHT = 24;
 		private ListView CreateListView()

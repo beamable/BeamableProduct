@@ -89,8 +89,6 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 							var isSelf = instance.latestHostEvent?.processId == args.autoRemoveInstancesExceptProcessId;
 							return !isSelf;
 						});
-					var x = 3;
-					Log.Information("did it " + x);
 				}
 				catch (Exception ex)
 				{
