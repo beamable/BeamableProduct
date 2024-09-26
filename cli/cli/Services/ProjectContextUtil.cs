@@ -18,7 +18,7 @@ namespace cli.Services;
 public static class ProjectContextUtil
 {
 
-	private static Promise<ServiceManifest> _existingManifest;
+	public static Promise<ServiceManifest> _existingManifest;
 	private static DateTimeOffset _existingManifestCacheExpirationTime;
 	private static object _existingManifestLock = new();
 	private static readonly TimeSpan _existingManifestCacheTime = TimeSpan.FromSeconds(10);
