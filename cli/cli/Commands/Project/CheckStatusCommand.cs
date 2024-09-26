@@ -49,7 +49,7 @@ public class ServiceInstance
 	public long startedByAccountId;
 	public string startedByAccountEmail;
 	public string primaryKey;
-	
+
 	// avoid polymorphism, and put all the details in the correct field. These fields will be null for the wrong type. 
 	public DockerServiceDescriptor latestDockerEvent;
 	public HostServiceDescriptor latestHostEvent;
@@ -87,7 +87,7 @@ public static class ServiceInstanceExtensions
 		}
 		return false;
 	}
-	
+
 	public static bool TryGetInstance(this ServicesForRouteCollection collection, string primaryKey,
 		out ServiceInstance instance)
 	{
@@ -116,17 +116,17 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 	{
 		ProjectCommand.AddWatchOption(this, (args, i) => args.watch = i);
 		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
-		ProjectCommand.AddServiceTagsOption(this, 
+		ProjectCommand.AddServiceTagsOption(this,
 			bindWithTags: (args, i) => args.withServiceTags = i,
 			bindWithoutTags: (args, i) => args.withoutServiceTags = i);
 	}
 
 	public override async Task Handle(CheckStatusCommandArgs args)
 	{
-		ProjectCommand.FinalizeServicesArg(args, 
-			withTags: args.withServiceTags, 
+		ProjectCommand.FinalizeServicesArg(args,
+			withTags: args.withServiceTags,
 			withoutTags: args.withoutServiceTags,
-			includeStorage: true, 
+			includeStorage: true,
 			ref args.services);
 
 		TimeSpan timeout = TimeSpan.FromMilliseconds(Beamable.Common.Constants.Features.Services.DISCOVERY_RECEIVE_PERIOD_MS);
@@ -137,21 +137,21 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 
 		Log.Debug($"running status-check with watch=[{args.watch}] timeout=[{timeout.Milliseconds}]");
 		await foreach (var update in CheckStatus(
-			               args, 
-			               timeout, 
-			               DiscoveryMode.ALL, 
-			               args.services,
-			               args.Lifecycle.CancellationToken))
+						   args,
+						   timeout,
+						   DiscoveryMode.ALL,
+						   args.services,
+						   args.Lifecycle.CancellationToken))
 		{
 			SendResults(update);
 		}
 	}
 
 	public static async IAsyncEnumerable<CheckStatusServiceResult> CheckStatus(
-		CommandArgs args, 
-		TimeSpan timeout=default, 
-		DiscoveryMode mode= DiscoveryMode.ALL,
-		List<string> serviceFilter=null,
+		CommandArgs args,
+		TimeSpan timeout = default,
+		DiscoveryMode mode = DiscoveryMode.ALL,
+		List<string> serviceFilter = null,
 		[EnumeratorCancellation] CancellationToken token = default)
 	{
 		var discovery = args.DependencyProvider.GetService<DiscoveryService>();
@@ -183,7 +183,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 				.Map(res => res.email.GetOrElse(""));
 			return await emailPromise;
 		}
-		
+
 		// before even bothering with discovery, emit all known services
 		foreach (var definition in args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions)
 		{
@@ -262,7 +262,8 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 					// the service is being removed, but since we never saw it in the first place,
 					// we don't need to do anything.
 				}
-			} else if (discoveryEvent.Type == ServiceEventType.Stopped)
+			}
+			else if (discoveryEvent.Type == ServiceEventType.Stopped)
 			{
 				// the instance existed in our state, but now it is being stopped, so we should remove it
 				collection.instances.Remove(instance);
