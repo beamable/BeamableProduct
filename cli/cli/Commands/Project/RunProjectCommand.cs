@@ -6,6 +6,7 @@ using CliWrap;
 using Newtonsoft.Json;
 using Serilog;
 using Serilog.Events;
+using System.Collections.Concurrent;
 using System.CommandLine;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -54,9 +55,15 @@ public class RunProjectBuildErrorStreamChannel : IResultChannel
 	public string ChannelName => "buildErrors";
 }
 
+public class RunFailErrorOutput : ErrorOutput
+{
+	public List<string> failedServices = new List<string>();
+}
+
 public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 	, IResultSteam<DefaultStreamResultChannel, RunProjectResultStream>
 	, IResultSteam<RunProjectBuildErrorStreamChannel, RunProjectBuildErrorStream>
+	, IReportException<RunFailErrorOutput>
 {
 	[GeneratedRegex(": error CS(\\d\\d\\d\\d):")]
 	public static partial Regex ErrorLike();
@@ -149,6 +156,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 
 		// For each of the filtered list of services, start a process that'll run it.
 		var runTasks = new List<Task>();
+		var failedTasks = new ConcurrentDictionary<string, int>();
 		Log.Debug("Starting Services. SERVICES={Services}", string.Join(",", serviceTable.Keys));
 		foreach ((string serviceName, HttpMicroserviceLocalProtocol service) in serviceTable)
 		{
@@ -169,6 +177,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				}
 			}, (errorReport, exitCode) =>
 			{
+				failedTasks[name] = exitCode;
 				// Log.Fatal("failed to start service");
 				this.SendResults<RunProjectBuildErrorStreamChannel, RunProjectBuildErrorStream>(new RunProjectBuildErrorStream
 				{
@@ -182,6 +191,14 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		}
 		
 		await Task.WhenAll(runTasks);
+
+		if (failedTasks.Count > 0)
+		{
+			throw new CliException<RunFailErrorOutput>("failed to start all services")
+			{
+				payload = new RunFailErrorOutput { failedServices = failedTasks.Keys.ToList() }
+			};
+		}
 	}
 	
 	public static async Task RunService(
@@ -344,7 +361,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			if (detach)
 			{
 				// wait for the progress to hit 1.
-				while (Math.Abs(currentProgress - 1) > .001f)
+				while (!proc.HasExited && Math.Abs(currentProgress - 1) > .001f)
 				{
 					await Task.Delay(10);
 				}

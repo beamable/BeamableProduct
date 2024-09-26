@@ -611,6 +611,7 @@ namespace Beamable.Server.Editor.Usam
 		}
 
 
+		private Dictionary<string, long> serviceToLogSkip = new Dictionary<string, long>();
 		public Promise RunStandaloneMicroservice(string id)
 		{
 
@@ -619,7 +620,7 @@ namespace Beamable.Server.Editor.Usam
 
 			if (definition.ServiceType == ServiceType.MicroService)
 			{
-				
+				serviceToLogSkip[id] = 0;
 				_dispatcher.Schedule(() => OnLogMessage?.Invoke(id, new BeamTailLogMessageForClient
 				{
 					message = "Requesting service startup...",
@@ -628,11 +629,50 @@ namespace Beamable.Server.Editor.Usam
 				}));
 
 				
-				var runCommand = _cli.ProjectRun(new ProjectRunArgs() {ids = new[] {id}, watch = false, force = true, detach = true})
+				var runCommand = _cli.ProjectRun(new ProjectRunArgs() {ids = new[] {id}, watch = false, force = false, detach = true})
 				                     .OnStreamRunProjectResultStream(data => { })
-				                     .OnBuildErrorsRunProjectBuildErrorStream(data => { })
+				                     .OnBuildErrorsRunProjectBuildErrorStream(data =>
+				                     {
+					                     var report = data.data.report;
+					                     if (!report.isSuccess)
+					                     {
+						                     var errCount = report.errors.Count;
+						                     var errorCountMsg = $"There are {errCount} messages";
+						                     if (errCount == 0)
+						                     {
+							                     errorCountMsg = "There are mysteriously no build errors.";
+						                     } else if (errCount == 1)
+						                     {
+							                     errorCountMsg = "There is 1 build error.";
+						                     }
+						                     
+						                     Debug.LogFormat(LogType.Error, LogOption.NoStacktrace, null, $"{data.data.serviceId} failed to build. {errorCountMsg}");
+						                     foreach (var err in report.errors)
+						                     {
+							                     Debug.LogFormat(LogType.Error, LogOption.NoStacktrace, null, " " + err.formattedMessage);
+							                     
+						                     }
+					                     }
+				                     })
+				                     .OnErrorRunFailErrorOutput(data =>
+				                     {
+					                     var failed = data.data.failedServices;
+					                     if (failed.Contains(id))
+					                     {
+						                     definition.Builder.IsRunning = false;
+					                     }
+				                     })
 				                     .OnLog(log =>
 				                     {
+					                     if (log.data.message.Contains(
+						                         Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX))
+					                     {
+						                     // skip this message, because it is the first one that gets picked up by the `project logs` command. 
+						                     // return;
+						                     serviceToLogSkip[id] = log.ts; // at this point, we can get logs from the `logs command`
+
+					                     }
+					                     
 					                     var message = new BeamTailLogMessageForClient();
 					                     message.message = log.data.message;
 					                     message.logLevel = log.data.logLevel;
@@ -642,11 +682,18 @@ namespace Beamable.Server.Editor.Usam
 					                     _dispatcher.Schedule(() => OnLogMessage?.Invoke(id, message));
 				                     })
 
+				                     
 				                     .OnError(ex =>
 				                     {
+					                     // def.Builder.IsRunning = isLocal;
 					                     Debug.LogError(ex.data.message);
 				                     });
-				return runCommand.Run();
+				var runPromise = runCommand.Run();
+				runPromise.Error(e =>
+				{
+					Debug.Log("run fail " + e.Message);
+				});
+				return runPromise;
 			}
 			else
 			{
@@ -780,10 +827,15 @@ namespace Beamable.Server.Editor.Usam
 				});
 				logs.OnStreamTailLogMessageForClient(point =>
 				{
-					
+					if (serviceToLogSkip.TryGetValue(serviceId, out var continueAt))
+					{
+						const int magicPaddingNumber = 15;
+						if (point.ts <= continueAt + magicPaddingNumber) return;
+					}
 					UsamLogger.Log("Log: " + point.data.message);
 					_dispatcher.Schedule(() => OnLogMessage?.Invoke(serviceId, point.data));
 				});
+				
 				_logsCommands.Add(logs.Run());
 			}
 		}
@@ -804,6 +856,7 @@ namespace Beamable.Server.Editor.Usam
 					{
 						var isLocal = routes.HasAnyLocalInstances();
 						def.Builder.IsRunning = isLocal;
+						def.IsRunningOnRemote = routes.HasAnyRemoteInstances() ? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
 					}
 				}
 			}).OnError(cb =>

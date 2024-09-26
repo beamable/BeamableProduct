@@ -106,5 +106,10 @@ namespace Beamable.Editor.BeamCli.Commands
 			this.Command.On("buildErrors", cb);
 			return this;
 		}
+		public virtual ProjectRunWrapper OnErrorRunFailErrorOutput(System.Action<ReportDataPoint<BeamRunFailErrorOutput>> cb)
+		{
+			this.Command.On("errorRunFailErrorOutput", cb);
+			return this;
+		}
 	}
 }

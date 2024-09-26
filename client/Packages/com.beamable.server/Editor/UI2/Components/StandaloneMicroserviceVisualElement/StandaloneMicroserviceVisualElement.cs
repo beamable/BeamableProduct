@@ -162,17 +162,10 @@ namespace Beamable.Editor.Microservice.UI2.Components
 				Model = _visualsModel
 			};
 			_logElement.AddToClassList("logElement");
-			_logElement.OnDetachLogs += OnLogsDetached;
 			_logContainerElement.Add(_logElement);
 			_logElement.Refresh();
 		}
-		private void OnLogsDetached()
-		{
-			_logElement.OnDetachLogs -= OnLogsDetached;
-			_visualsModel.ElementHeight = _rootVisualElement.layout.height;
-
-			_rootVisualElement.style.height = new StyleLength(DETACHED_HEIGHT);
-		}
+		
 		private void OnDrag(float value)
 		{
 			if (!_visualsModel.AreLogsAttached)
