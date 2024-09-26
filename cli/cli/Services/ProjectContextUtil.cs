@@ -405,6 +405,7 @@ public static class ProjectContextUtil
 		protocol.BaseImage = MongoImage;
 		protocol.RootUsername = "beamable";
 		protocol.RootPassword = "beamable";
+		protocol.Metadata = project;
 		if (configService.UseWindowsStyleVolumeNames)
 		{
 			protocol.DataVolumeInContainerPath = "C:/data/db";
@@ -549,7 +550,6 @@ public static class ProjectContextUtil
 			: metadata.properties.BeamId;
 		
 		var definition = new BeamoServiceDefinition();
-
 		// the beamId will default to the csproj file name
 		definition.BeamoId = ConvertBeamoId(project);
 

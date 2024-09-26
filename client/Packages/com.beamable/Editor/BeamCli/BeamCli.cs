@@ -48,19 +48,31 @@ namespace Beamable.Editor.BeamCli
 		public async Promise Init()
 		{
 			await _ctx.OnReady;
-			while (BeamEditorContext.Default.Requester == null || BeamEditorContext.Default.Requester.Token == null)
-			{
-				await Task.Delay(500);
-			}
-
-			var initCommand = Command.Init(new InitArgs
+			
+			var args = new InitArgs
 			{
 				saveToFile = true,
-				refreshToken = _ctx.Requester.Token.RefreshToken,
+				noTokenSave = true,
 				cid = _ctx.Requester.Cid,
 				pid = _ctx.Requester.Pid,
 				host = BeamableEnvironment.ApiUrl,
-			});
+			};
+			
+			var token = _ctx.Requester.Token;
+			if (token == null)
+			{
+				// there is no token, but we can still save the cid/pid info.
+				args.noTokenSave = true;
+				args.saveToFile = false;
+			}
+			else
+			{
+				args.refreshToken = token.RefreshToken;
+				args.saveToFile = true;
+				args.noTokenSave = false;
+			}
+			
+			var initCommand = Command.Init(args);
 			await initCommand.Run();
 
 

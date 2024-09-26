@@ -16,6 +16,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public int instanceCount;
 		/// <summary>When enabled, automatically deploy dependencies that aren't running</summary>
 		public bool autoDeploy;
+		/// <summary>When enabled, automatically stop all other local instances of this service</summary>
+		public int removeAllExceptPid;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -39,6 +41,11 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.autoDeploy != default(bool)))
 			{
 				genBeamCommandArgs.Add(("--auto-deploy=" + this.autoDeploy));
+			}
+			// If the removeAllExceptPid value was not default, then add it to the list of args.
+			if ((this.removeAllExceptPid != default(int)))
+			{
+				genBeamCommandArgs.Add(("--remove-all-except-pid=" + this.removeAllExceptPid));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

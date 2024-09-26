@@ -15,6 +15,9 @@ namespace cli;
 public class CheckStatusCommandArgs : CommandArgs
 {
 	public bool watch;
+	public List<string> services;
+	public List<string> withServiceTags = new List<string>();
+	public List<string> withoutServiceTags = new List<string>();
 }
 
 [Serializable]
@@ -112,10 +115,20 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 	public override void Configure()
 	{
 		ProjectCommand.AddWatchOption(this, (args, i) => args.watch = i);
+		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
+		ProjectCommand.AddServiceTagsOption(this, 
+			bindWithTags: (args, i) => args.withServiceTags = i,
+			bindWithoutTags: (args, i) => args.withoutServiceTags = i);
 	}
 
 	public override async Task Handle(CheckStatusCommandArgs args)
 	{
+		ProjectCommand.FinalizeServicesArg(args, 
+			withTags: args.withServiceTags, 
+			withoutTags: args.withoutServiceTags,
+			includeStorage: true, 
+			ref args.services);
+
 		TimeSpan timeout = TimeSpan.FromMilliseconds(Beamable.Common.Constants.Features.Services.DISCOVERY_RECEIVE_PERIOD_MS);
 		if (args.watch)
 		{
@@ -123,7 +136,12 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 		}
 
 		Log.Debug($"running status-check with watch=[{args.watch}] timeout=[{timeout.Milliseconds}]");
-		await foreach (var update in CheckStatus(args, timeout, DiscoveryMode.ALL, args.Lifecycle.CancellationToken))
+		await foreach (var update in CheckStatus(
+			               args, 
+			               timeout, 
+			               DiscoveryMode.ALL, 
+			               args.services,
+			               args.Lifecycle.CancellationToken))
 		{
 			SendResults(update);
 		}
@@ -133,6 +151,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 		CommandArgs args, 
 		TimeSpan timeout=default, 
 		DiscoveryMode mode= DiscoveryMode.ALL,
+		List<string> serviceFilter=null,
 		[EnumeratorCancellation] CancellationToken token = default)
 	{
 		var discovery = args.DependencyProvider.GetService<DiscoveryService>();
@@ -169,6 +188,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 		foreach (var definition in args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions)
 		{
 			if (!definition.IsLocal) continue;
+			if (serviceFilter != null && !serviceFilter.Contains(definition.BeamoId)) continue;
 			if (!result.TryGetStatus(definition.BeamoId, out var status))
 			{
 				status = new ServiceStatus
@@ -185,7 +205,8 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 
 		await foreach (var discoveryEvent in discovery.StartDiscovery(args, timeout, token, mode))
 		{
-			
+			if (serviceFilter != null && !serviceFilter.Contains(discoveryEvent.Service)) continue;
+
 			if (!result.TryGetStatus(discoveryEvent.Service, out var status))
 			{
 				status = new ServiceStatus

@@ -5,6 +5,7 @@ using Beamable.Editor.Microservice.UI2.Models;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server;
+using Beamable.Server.Editor;
 using Beamable.Server.Editor.Usam;
 using System.Linq;
 using UnityEngine;
@@ -161,17 +162,10 @@ namespace Beamable.Editor.Microservice.UI2.Components
 				Model = _visualsModel
 			};
 			_logElement.AddToClassList("logElement");
-			_logElement.OnDetachLogs += OnLogsDetached;
 			_logContainerElement.Add(_logElement);
 			_logElement.Refresh();
 		}
-		private void OnLogsDetached()
-		{
-			_logElement.OnDetachLogs -= OnLogsDetached;
-			_visualsModel.ElementHeight = _rootVisualElement.layout.height;
-
-			_rootVisualElement.style.height = new StyleLength(DETACHED_HEIGHT);
-		}
+		
 		private void OnDrag(float value)
 		{
 			if (!_visualsModel.AreLogsAttached)
@@ -200,8 +194,17 @@ namespace Beamable.Editor.Microservice.UI2.Components
 
 		public void OpenLocalDocs()
 		{
-			BeamEditorContext.Default.ServiceScope.GetService<CodeService>()
-							 .OpenSwagger(Model.BeamoId).Then(_ => { });
+			if (Model.ServiceType == ServiceType.MicroService)
+			{
+				BeamEditorContext.Default.ServiceScope.GetService<CodeService>()
+				                 .OpenSwagger(Model.BeamoId).Then(_ => { });
+			}
+			else
+			{
+				BeamEditorContext.Default.ServiceScope.GetService<CodeService>()
+				                 .OpenMongoExpress(Model.BeamoId).Then(_ => { });
+			}
+
 		}
 
 

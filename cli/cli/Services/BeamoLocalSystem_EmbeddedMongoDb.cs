@@ -4,6 +4,8 @@
  * TODO: Always run the mongo-express data-explorer tool as part of the local deployment protocol. 
  */
 
+using Beamable.Server.Common;
+using Newtonsoft.Json;
 using Serilog;
 
 namespace cli.Services;
@@ -74,6 +76,10 @@ public class EmbeddedMongoDbLocalProtocol : IBeamoLocalProtocol
 
 	public string DataVolumeInContainerPath;
 	public string FilesVolumeInContainerPath;
+	
+	[System.Text.Json.Serialization.JsonIgnore]
+	[JsonIgnore]
+	public CsharpProjectMetadata Metadata;
 	
 	/// <summary>
 	/// A list of beamo ids for dependencies on storage projects
