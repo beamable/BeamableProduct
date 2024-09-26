@@ -161,7 +161,7 @@ public class ProjectCommand : CommandGroup
 	public static ProjectBuildStatusReport IsProjectBuiltMsBuild(Project project)
 	{
 		var outDir = project.GetPropertyValue("OutDir");
-		var fullOutDir = Path.GetFullPath(outDir);
+		var fullOutDir = Path.Combine(project.DirectoryPath, outDir);
 		var assemblyName = project.GetPropertyValue("AssemblyName");
 
 		var fileName = Path.Combine(fullOutDir, assemblyName + ".dll");

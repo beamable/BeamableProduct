@@ -33,6 +33,7 @@ public class ServiceStatus
 {
 	public string service;
 	public string serviceType;
+	public string[] groups;
 	public List<ServicesForRouteCollection> availableRoutes = new List<ServicesForRouteCollection>();
 }
 
@@ -196,6 +197,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 					service = definition.BeamoId,
 					serviceType = definition.Protocol == BeamoProtocolType.HttpMicroservice ? "service" : "storage",
 					availableRoutes = new List<ServicesForRouteCollection>(),
+					groups = definition.ServiceGroupTags,
 				};
 				result.services.Add(status);
 			}
@@ -213,6 +215,13 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 				{
 					service = discoveryEvent.Service,
 					serviceType = discoveryEvent.ServiceType,
+					groups = discoveryEvent switch
+					{
+						DockerServiceEvent dockerServiceEvent => dockerServiceEvent.descriptor.groups,
+						HostServiceEvent hostServiceEvent => hostServiceEvent.descriptor.groups ,
+						RemoteServiceEvent remoteServiceEvent => remoteServiceEvent.descriptor.groups,
+						_ => throw new ArgumentOutOfRangeException(nameof(discoveryEvent))
+					},
 					availableRoutes = new List<ServicesForRouteCollection>()
 				};
 				result.services.Add(status);
@@ -220,7 +229,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 
 			if (!status.TryGetRoutes(discoveryEvent.RoutingKey, out var collection))
 			{
-				collection = new ServicesForRouteCollection { routingKey = discoveryEvent.RoutingKey, };
+				collection = new ServicesForRouteCollection { routingKey = discoveryEvent.RoutingKey ?? "", };
 				status.availableRoutes.Add(collection);
 			}
 
@@ -240,12 +249,15 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 				{
 					case DockerServiceEvent dockerEvt:
 						instance.latestDockerEvent = dockerEvt.descriptor;
+						instance.latestDockerEvent.routingKey ??= "";
 						break;
 					case HostServiceEvent hostEvt:
 						instance.latestHostEvent = hostEvt.descriptor;
+						instance.latestHostEvent.routingKey ??= "";
 						break;
 					case RemoteServiceEvent remoteEvt:
 						instance.latestRemoteEvent = remoteEvt.descriptor;
+						instance.latestRemoteEvent.routingKey ??= "";
 						break;
 				}
 

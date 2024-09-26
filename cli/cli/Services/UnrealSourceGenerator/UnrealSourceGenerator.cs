@@ -1220,7 +1220,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 											serviceTitle.Contains("inventory", StringComparison.InvariantCultureIgnoreCase) ||
 											endpointData.Security[0].Any(kvp => kvp.Key.Reference.Id == "user");
 					unrealEndpoint.EndpointName = endpointPath;
-					unrealEndpoint.EndpointRoute = isMsGen ? $"_micro{openApiDocument.Info.Title}{endpointPath}" : endpointPath;
+					unrealEndpoint.EndpointRoute = isMsGen ? $"micro_{openApiDocument.Info.Title}{endpointPath}" : endpointPath;
 					unrealEndpoint.EndpointVerb = operationType switch
 					{
 						OperationType.Get => "Get",
@@ -1404,7 +1404,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 									unrealEndpoint.ResponseBodyUnrealType, sw);
 							}
 						}
-						else if (response.Content.TryGetValue("text/plain", out jsonResponse))
+						else if (response.Content.TryGetValue("text/plain", out jsonResponse) || response.Content.Count == 0)
 						{
 							var ueType = unrealEndpoint.ResponseBodyUnrealType = UNREAL_U_BEAM_PLAIN_TEXT_RESPONSE_TYPE;
 							unrealEndpoint.ResponseBodyNamespacedType = GetNamespacedTypeNameFromUnrealType(ueType);

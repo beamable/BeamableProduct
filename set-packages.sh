@@ -95,39 +95,39 @@ echo "Creating nupkg files for our packages"
 ## The "rm -rf" invalidates the nuget cache for the previous cached version of this package version  
 if printf '%s\0' "${PACKAGES_TO_SET_ARR[@]}" | grep -qwz "$PKG_COMMON"; then
     dotnet pack "$PKG_COMMON" --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION
-    rm -rf ~/.nuget/packages/beamable.common/$VERSION
+    rm -rf ~/.nuget/packages/beamable.common
 fi
 
 if printf '%s\0' "${PACKAGES_TO_SET_ARR[@]}" | grep -qwz "$PKG_SERVER_COMMON"; then
     dotnet pack "$PKG_SERVER_COMMON" --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION
-    rm -rf ~/.nuget/packages/beamable.tooling.common/$VERSION
+    rm -rf ~/.nuget/packages/beamable.tooling.common
 fi
 
 if printf '%s\0' "${PACKAGES_TO_SET_ARR[@]}" | grep -qwz "$PKG_MICROSERVICE_TOOLING_COMMON"; then
     dotnet pack "$PKG_MICROSERVICE_TOOLING_COMMON"  --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION
-    rm -rf ~/.nuget/packages/beamable.server/$VERSION
+    rm -rf ~/.nuget/packages/beamable.server
 fi
 
 if printf '%s\0' "${PACKAGES_TO_SET_ARR[@]}" | grep -qwz "$PKG_MICROSERVICE_UNITY_ENGINE_STUBS"; then
     dotnet pack "$PKG_MICROSERVICE_UNITY_ENGINE_STUBS" --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION
-    rm -rf ~/.nuget/packages/beamable.unityengine/$VERSION
+    rm -rf ~/.nuget/packages/beamable.unityengine
 fi
 
 if printf '%s\0' "${PACKAGES_TO_SET_ARR[@]}" | grep -qwz "$PKG_MICROSERVICE_UNITY_ENGINE_STUBS_ADDRESSABLES"; then
     dotnet pack "$PKG_MICROSERVICE_UNITY_ENGINE_STUBS_ADDRESSABLES"  --configuration Release --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:InformationalVersion=$VERSION
-    rm -rf ~/.nuget/packages/beamable.unity.addressables/$VERSION
+    rm -rf ~/.nuget/packages/beamable.unity.addressables
 fi
 
 if printf '%s\0' "${PACKAGES_TO_SET_ARR[@]}" | grep -qwz "$PKG_CLI"; then
     dotnet build "$PKG_CLI" --configuration Release -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION
     dotnet pack "$PKG_CLI"  --configuration Release --no-build --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION
-    rm -rf ~/.nuget/packages/beamable.microservice.runtime/$VERSION
+    rm -rf ~/.nuget/packages/beamable.microservice.runtime
 fi
 
 if printf '%s\0' "${PACKAGES_TO_SET_ARR[@]}" | grep -qwz "$PKG_MICROSERVICE"; then
     dotnet build "$PKG_MICROSERVICE"  --configuration Release -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION
     dotnet pack "$PKG_MICROSERVICE"  --configuration Release --no-build --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION
-    rm -rf ~/.nuget/packages/beamable.tools/$VERSION
+    rm -rf ~/.nuget/packages/beamable.tools
 fi
 
 if printf '%s\0' "${PACKAGES_TO_SET_ARR[@]}" | grep -qwz "$PKG_TEMPLATES"; then

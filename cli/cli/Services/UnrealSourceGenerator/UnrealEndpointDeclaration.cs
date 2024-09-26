@@ -44,7 +44,7 @@ public struct UnrealEndpointDeclaration
 			.Union(RequestBodyParameters)
 			.DistinctBy(p => p.PropertyUnrealType)
 			.Select(p => p.PropertyUnrealType)
-			.Union(new[] { ResponseBodyUnrealType }.Where(t => t.AsStr != null)).ToList();
+			.Union(new[] { ResponseBodyUnrealType }.Where(t => !string.IsNullOrEmpty(t.AsStr))).ToList();
 	}
 
 	public void IntoProcessMap(Dictionary<string, string> helperDict, List<UnrealJsonSerializableTypeDeclaration> serializableTypes = null)
