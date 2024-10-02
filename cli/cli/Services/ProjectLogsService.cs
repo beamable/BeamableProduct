@@ -10,7 +10,7 @@ public class ProjectLogsService
 	{
 		void LogHandler(string logMessage)
 		{
-			
+
 			var parsed = JsonConvert.DeserializeObject<TailLogMessage>(logMessage);
 			if (parsed.message == null)
 			{
@@ -21,10 +21,10 @@ public class ProjectLogsService
 			}
 			parsed.raw = logMessage;
 			handleLog(parsed);
-			
+
 		}
-		
-		
+
+
 		while (args.reconnect && !token.IsCancellationRequested)
 		{
 			var discovery = args.DependencyProvider.GetService<DiscoveryService>();
@@ -35,10 +35,10 @@ public class ProjectLogsService
 			{
 				if (evt.Type != ServiceEventType.Running)
 					continue;
-				
+
 				if (evt.Service != args.service)
 					continue;
-				
+
 				switch (evt)
 				{
 					case DockerServiceEvent dockerEvt:
