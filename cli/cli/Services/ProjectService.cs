@@ -604,14 +604,20 @@ public class ProjectErrorResult
 
 public static class CliExtensions
 {
-	public static async Task<(CommandResult, StringBuilder)> RunWithOutput(string dotnetPath, string arguments)
+	public static async Task<(CommandResult, StringBuilder)> RunWithOutput(string dotnetPath, string arguments, string workingDirectory = "")
 	{
 		var builder = new StringBuilder();
-		var result = await GetDotnetCommand(dotnetPath, arguments)
+		var cmd = GetDotnetCommand(dotnetPath, arguments)
 			.WithValidation(CommandResultValidation.None)
 			.WithStandardOutputPipe(PipeTarget.ToStringBuilder(builder))
-			.WithStandardErrorPipe(PipeTarget.ToStringBuilder(builder))
-			.ExecuteAsync();
+			.WithStandardErrorPipe(PipeTarget.ToStringBuilder(builder));
+
+		if (!string.IsNullOrWhiteSpace(workingDirectory))
+		{
+			cmd = cmd.WithWorkingDirectory(workingDirectory);
+		}
+		
+		var result = await cmd.ExecuteAsync();
 
 		return (result, builder);
 	}
