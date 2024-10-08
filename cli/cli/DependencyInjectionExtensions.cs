@@ -75,7 +75,7 @@ public static class DependencyInjectionExtensions
 				{
 					throw CliExceptions.CONFIG_DOES_NOT_EXISTS;
 				}
-				
+
 				if (ConfigService.IsRedirected && command is IHaveRedirectionConcerns<TArgs> redirectionValidation)
 				{
 					var tw = new StringBuilder();
@@ -89,7 +89,7 @@ public static class DependencyInjectionExtensions
 				}
 
 				await command.Handle(args);
-				
+
 			}, binder);
 			root.AddCommand(command);
 			return factory;

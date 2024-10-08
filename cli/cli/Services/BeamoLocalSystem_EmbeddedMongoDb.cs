@@ -76,11 +76,11 @@ public class EmbeddedMongoDbLocalProtocol : IBeamoLocalProtocol
 
 	public string DataVolumeInContainerPath;
 	public string FilesVolumeInContainerPath;
-	
+
 	[System.Text.Json.Serialization.JsonIgnore]
 	[JsonIgnore]
 	public CsharpProjectMetadata Metadata;
-	
+
 	/// <summary>
 	/// A list of beamo ids for dependencies on storage projects
 	/// </summary>
