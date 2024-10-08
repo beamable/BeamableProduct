@@ -225,11 +225,11 @@ namespace Beamable.Common.Content
 		public ContentCorruptedException ContentException { get; set; }
 		public bool IsDeprecated => Version == Constants.Features.Content.CONTENT_DEPRECATED;
 		/// <summary>
-		/// Set the &id and &version
+		/// Set the %id and %version
 		/// </summary>
-		/// <param name="id"></param>
-		/// <param name="version"></param>
-		/// <exception cref="Exception"></exception>
+		/// <param name="id">Content object Id</param>
+		/// <param name="version">Version of the content</param>
+		/// <exception cref="Exception">It is possible to throw an exception if content id does not start with type name</exception>
 		public void SetIdAndVersion(string id, string version)
 		{
 			// validate id.
