@@ -13,7 +13,7 @@ namespace Beamable.Common.Docs
 	/// <summary>
 	///	A content id should be a dot separated string, with at least 1 dot.
 	/// The right-most clause represents the content's <i>name</i>, and everything else represents the content's <i>type</i>.
-	/// A valid content id could be, "items.hat", "announcements.hello", or <
+	/// A valid content id could be e.g. "items.hat" or "announcements.hello"
 	/// </summary>
 	public sealed class ContentId
 	{

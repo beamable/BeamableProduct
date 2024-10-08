@@ -3,10 +3,8 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Server.Common;
 using Newtonsoft.Json;
-using Serilog;
 using Serilog.Events;
-using Swan.Logging;
-using System;
+#pragma warning disable CS0649
 
 namespace Beamable.Server.Api.RealmConfig
 {
@@ -86,7 +84,8 @@ namespace Beamable.Server.Api.RealmConfig
       [System.Serializable]
       private class GetRealmConfigResponse
       {
-         public Dictionary<string, string> config;
+	      // ReSharper disable once InconsistentNaming
+	      public Dictionary<string, string> config;
       }
 
       private static bool TryExtract(KeyValuePair<string, string> kvp, out string nameSpace, out string setting, out string configValue)
