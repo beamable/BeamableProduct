@@ -14,7 +14,7 @@ namespace Beamable.Common.Api.Auth
 		/// <param name="languageCodeISO6391">
 		/// The language code should be an ISO6391 string.
 		/// </param>
-		/// <returns>A <see cref="Promise{User"/> with the updated language information</returns>
+ 		/// <returns>A <see cref="Promise{User}"/> with the updated language information</returns>
 		Promise<User> SetLanguage(string languageCodeISO6391);
 
 		/// <summary>
@@ -211,13 +211,12 @@ namespace Beamable.Common.Api.Auth
 		Promise<User> RemoveThirdPartyAssociation(AuthThirdParty thirdParty, string token);
 
 		/// <summary>
-		/// Based on the logged in user, gets the current CID, PID and project name.
+		/// Based on the logged-in user, gets the current CID, PID and project name.
 		/// </summary>
 		Promise<CurrentProjectResponse> GetCurrentProject();
 
 		/// <summary>
 		/// Use a token issued by an external identity provider to retrieve a <see cref="TokenResponse"/>. The resulting token response
-
 		/// can be used to change the current <see cref="User"/>.
 		///
 		/// This method returns a <see cref="ExternalLoginResponse"/>, which will contain a <see cref="TokenResponse"/> if the

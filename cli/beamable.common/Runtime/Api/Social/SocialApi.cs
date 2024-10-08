@@ -249,13 +249,13 @@ namespace Beamable.Common.Api.Social
 		/// Use the <see cref="EventType"/> property for type safe access.
 		/// One of the following values:
 		/// <list type="bullet">
-		/// <item><b>friend<b> => A friend request related to the subscribed player was accepted.</item>
-		/// <item><b>cancel-friend-request<b> => A friend request related to the subscribed player was cancelled or declined.</item>
-		/// <item><b>unfriend<b> => ?? </item>
-		/// <item><b>block<b> => ?? </item>
-		/// <item><b>unblock<b> => ?? </item>
-		/// <item><b>mute<b> => ?? </item>
-		/// <item><b>unmute<b> => ?? </item>
+		/// <item><b>friend</b> => A friend request related to the subscribed player was accepted.</item>
+		/// <item><b>cancel-friend-request</b> => A friend request related to the subscribed player was cancelled or declined.</item>
+		/// <item><b>unfriend</b> => ?? </item>
+		/// <item><b>block</b> => ?? </item>
+		/// <item><b>unblock</b> => ?? </item>
+		/// <item><b>mute</b> => ?? </item>
+		/// <item><b>unmute</b> => ?? </item>
 		/// </list>
 		/// </summary>
 		public string etype;

@@ -187,7 +187,7 @@ namespace Beamable.Common
 		/// <summary>
 		/// Call to throw an exception and resolve the %Promise
 		/// </summary>
-		/// <param name="val"></param>
+		/// <param name="ex">exception to complete Promise with</param>
 		public void CompleteError(Exception ex)
 		{
 			lock (_lock)
@@ -229,7 +229,7 @@ namespace Beamable.Common
 		/// <summary>
 		/// Call to register a success completion handler callback for the %Promise
 		/// </summary>
-		/// <param name="val"></param>
+		/// <param name="callback"></param>
 		public Promise<T> Then(Action<T> callback)
 		{
 			lock (_lock)
@@ -289,7 +289,7 @@ namespace Beamable.Common
 		/// <summary>
 		/// Call to register a failure completion handler callback for the %Promise
 		/// </summary>
-		/// <param name="val"></param>
+		/// <param name="errback"></param>
 		public Promise<T> Error(Action<Exception> errback)
 		{
 			lock (_lock)
@@ -530,7 +530,7 @@ namespace Beamable.Common
 		public int Total => _errors.Count + _successes.Count;
 
 		/// <summary>
-		/// The number of promises that this sequence reprensents
+		/// The number of promises that this sequence represents
 		/// </summary>
 		public int Count { get; }
 
