@@ -27,20 +27,20 @@ namespace Beamable.Editor.BeamCli.UI
 		public EditorGUISplitView terminalSplitter = new EditorGUISplitView(EditorGUISplitView.Direction.Horizontal, .5f, .25f, .25f);
 		public EditorGUISplitView terminalSplitterVert = new EditorGUISplitView(EditorGUISplitView.Direction.Vertical, .85f, .15f);
 
-		
+
 		[NonSerialized]
 		private Promise _commandPromise;
-		
+
 		void OnTerminalGui()
 		{
 			{
-				
+
 				var style = new GUIStyle(EditorStyles.label)
 				{
-					wordWrap = true, 
+					wordWrap = true,
 					padding = new RectOffset(2, 2, 2, 2)
 				};
-				
+
 				// draw the log area..
 				// EditorGUILayout.SelectableLabel("blah!\ndop", style, GUILayout.ExpandHeight(true));
 
@@ -58,11 +58,11 @@ namespace Beamable.Editor.BeamCli.UI
 					{
 						EditorGUILayout.LabelField("Terminal Logs", EditorStyles.boldLabel);
 						this.DrawLogWindow(terminalLogView,
-						                   dataList: logProvider,
-						                   onClear: () =>
-						                   {
-							                   logProvider.data.Clear();
-						                   });
+										   dataList: logProvider,
+										   onClear: () =>
+										   {
+											   logProvider.data.Clear();
+										   });
 					}
 					EditorGUILayout.EndVertical();
 
@@ -111,7 +111,7 @@ namespace Beamable.Editor.BeamCli.UI
 					terminalSplitter.EndSplitView();
 				}
 				EditorGUILayout.EndHorizontal();
-				
+
 				EditorGUILayout.Space(10, false);
 				terminalSplitterVert.Split(this);
 				EditorGUILayout.Space(10, false);
@@ -127,7 +127,7 @@ namespace Beamable.Editor.BeamCli.UI
 					inputStyle.fontSize = 18;
 
 					if (!string.IsNullOrEmpty(terminalInput) && Event.current.isKey &&
-					    Event.current.keyCode == KeyCode.Return)
+						Event.current.keyCode == KeyCode.Return)
 					{
 						RunTerminalCommand();
 					}
@@ -135,16 +135,16 @@ namespace Beamable.Editor.BeamCli.UI
 					terminalInput = GUILayout.TextField(terminalInput, inputStyle, GUILayout.ExpandHeight(true));
 				}
 				EditorGUILayout.EndVertical();
-				
+
 				terminalSplitterVert.EndSplitView();
-			} 
+			}
 		}
 
 		void RunTerminalCommand()
 		{
 			var argStr = terminalInput;
 			terminalInput = ""; // clear
-			
+
 			var command = (BeamWebCommand)ActiveContext.Cli.CreateCustom(argStr);
 			Debug.Log(command.commandString);
 			var logs = new List<CliLogMessage>();
@@ -152,7 +152,7 @@ namespace Beamable.Editor.BeamCli.UI
 			terminalLogView = new LogView();
 			terminalErrors.Clear();
 			terminalResults.Clear();
-			
+
 			command.On(cb =>
 			{
 				if (cb.type == "logs")
@@ -160,8 +160,8 @@ namespace Beamable.Editor.BeamCli.UI
 					var msg = JsonUtility.FromJson<ReportDataPoint<CliLogMessage>>(cb.json);
 					logs.Add(msg.data);
 					terminalLogView.RebuildView();
-					
-				} 
+
+				}
 				else // data payload...
 				{
 					var dict = (ArrayDict)Json.Deserialize(cb.json);
@@ -180,7 +180,9 @@ namespace Beamable.Editor.BeamCli.UI
 						var logMessage = $"{msg.data.message} \n\n {msg.data.stackTrace}";
 						var log = new CliLogMessage()
 						{
-							logLevel = "Error", message = logMessage, timestamp = msg.ts
+							logLevel = "Error",
+							message = logMessage,
+							timestamp = msg.ts
 						};
 						logs.Add(log);
 						terminalLogView.RebuildView();
@@ -194,7 +196,7 @@ namespace Beamable.Editor.BeamCli.UI
 						});
 					}
 				}
-				
+
 			});
 			command.Run().Then(_ =>
 			{

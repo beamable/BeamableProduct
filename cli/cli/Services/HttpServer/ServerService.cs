@@ -26,7 +26,7 @@ public class ServerInfoResponse
 	/// the nuget id of the code executing the server
 	/// </summary>
 	public string version;
-	
+
 	/// <summary>
 	/// a server must be created with an "owner", some form of identification
 	/// that can be used to determine if the server is operating for a Unity-client, or
@@ -73,10 +73,10 @@ public class ServerService
 
 	public ServerService()
 	{
-		
+
 	}
 
-	public async Task RunServer(ServeCliCommandArgs args, Action<ServerAvailableData> onReady=null)
+	public async Task RunServer(ServeCliCommandArgs args, Action<ServerAvailableData> onReady = null)
 	{
 		if (_listener != null) throw new InvalidOperationException("already running");
 
@@ -89,7 +89,7 @@ public class ServerService
 			{
 				_listener = new HttpListener();
 				uri = $"http://127.0.0.1:{args.port}/";
-				
+
 				// it is important not to listen on ALL interfaces, because this server should only be accessible 
 				//  from the machine itself. It would be bad if another machine could start triggering CLI commands
 				//  because the server was public. 
@@ -115,7 +115,7 @@ public class ServerService
 			port = args.port,
 			uri = uri
 		});
-		
+
 		Log.Information("Cli available at " + uri);
 
 		var execString = @$" use /{EXEC_ROUTE} with a body of {{""commandLine"": ""config""}} to run commands. 
@@ -150,7 +150,7 @@ public class ServerService
 							//  There shouldn't be any due to the inflight check earlier,
 							//  however if there ARE due to threading issues,
 							//  then this will cause a unhappy termination at the client 
-							Environment.Exit(0); 
+							Environment.Exit(0);
 							keepAlive = false;
 						}
 					}
@@ -165,7 +165,7 @@ public class ServerService
 		while (keepAlive)
 		{
 			HttpListenerContext ctx = await _listener.GetContextAsync();
-			
+
 			Interlocked.Increment(ref _inflightRequests);
 			Log.Verbose($"Starting request. inflight=[{Interlocked.Read(ref _inflightRequests)}]");
 
@@ -190,7 +190,7 @@ public class ServerService
 			});
 		}
 		Log.Information("Shutting down...");
-		
+
 	}
 
 	static async Task HandleRequest(ServeCliCommandArgs args, HttpListenerContext ctx,
@@ -224,7 +224,8 @@ public class ServerService
 					Log.Information("Unknown route");
 					response = JsonConvert.SerializeObject(new ServerErrorResponse
 					{
-						message = "unknown route", type = "UnhandledRoute"
+						message = "unknown route",
+						type = "UnhandledRoute"
 					});
 					status = 400;
 					data = Encoding.UTF8.GetBytes(response);
@@ -237,7 +238,9 @@ public class ServerService
 		{
 			response = JsonConvert.SerializeObject(new ServerErrorResponse
 			{
-				message = ex.Message, type = ex.GetType().Name, stack = ex.StackTrace
+				message = ex.Message,
+				type = ex.GetType().Name,
+				stack = ex.StackTrace
 			});
 			status = 500;
 			data = Encoding.UTF8.GetBytes(response);
@@ -260,7 +263,7 @@ public class ServerService
 			inflightRequests = (long)inflightRequests
 		});
 	}
-	
+
 
 	static async Task HandleExec(ServeCliCommandArgs args, Stream networkRequestStream, HttpListenerResponse response)
 	{
@@ -268,9 +271,9 @@ public class ServerService
 		response.Headers.Set(HttpResponseHeader.ContentType, "text/event-stream; charset=utf-8");
 		var input = await inputStream.ReadToEndAsync();
 		var req = JsonConvert.DeserializeObject<ServerRequest>(input);
-		
+
 		Log.Verbose("virtualizing " + req.commandLine);
-		
+
 		var app = new App();
 
 		var sw = new Stopwatch();
@@ -283,7 +286,7 @@ public class ServerService
 		app.Build();
 		sw.Stop();
 		Log.Verbose("build virtual app in " + sw.ElapsedMilliseconds);
-		
+
 		await app.RunWithSingleString(req.commandLine);
 	}
 }
@@ -313,7 +316,7 @@ public class ServerReporterService : IDataReporterService
 					// check if the pipe is still open, because if it isn't, the invocation should cancel.
 					try
 					{
-						lock(_streamWriter)
+						lock (_streamWriter)
 						{
 							_streamWriter.Write("\u200b"); // write a zero-width character to test the connection.
 							_streamWriter.Flush();
@@ -335,15 +338,15 @@ public class ServerReporterService : IDataReporterService
 				TaskLocalLog.Instance.globalLogger.Error($"cli-server reporter service monitor task failed! type=[{ex.GetType().Name}] message=[{ex.Message}] stack=[{ex.StackTrace}]");
 			}
 		});
-	} 
-	
+	}
+
 	public void Report(string rawMessage)
 	{
 		try
 		{
 			var data = "data: " + rawMessage + Environment.NewLine;
 			var bytes = Encoding.UTF8.GetBytes(data);
-			lock(_streamWriter)
+			lock (_streamWriter)
 			{
 				_streamWriter.BaseStream.Write(bytes, 0, bytes.Length);
 				_streamWriter.Flush();
@@ -357,7 +360,7 @@ public class ServerReporterService : IDataReporterService
 			_lifecycle.Cancel();
 		}
 	}
-	
+
 	public void Report<T>(string type, T data)
 	{
 		var pt = new ReportDataPoint<T>

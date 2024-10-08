@@ -27,14 +27,14 @@ public class ClearTempLogFilesCommand : AtomicCommand<ClearTempLogFilesCommandAr
 		var olderThanOption = new Option<string>(
 			name: "--older-than",
 			description: "Only clear logs older than a given value. " +
-			             "This string should be in a duration format.\n\n " +
-			             "The duration format should be a number, followed by a time unit. Valid time units " +
-			             "include seconds (s), minutes (m), hours (h), days (d), and months(mo). Please note that " +
-			             "the month unit is short-hand for 30 days. " +
-			             "Here are a few examples, \n" +
-			             "	--older-than 30m (30 minutes)\n" +
-			             "  --older-than 18mo (18 months)\n" +
-			             "  --older-than 12d (12 days)\n");
+						 "This string should be in a duration format.\n\n " +
+						 "The duration format should be a number, followed by a time unit. Valid time units " +
+						 "include seconds (s), minutes (m), hours (h), days (d), and months(mo). Please note that " +
+						 "the month unit is short-hand for 30 days. " +
+						 "Here are a few examples, \n" +
+						 "	--older-than 30m (30 minutes)\n" +
+						 "  --older-than 18mo (18 months)\n" +
+						 "  --older-than 12d (12 days)\n");
 		olderThanOption.AddAlias("-ot");
 		AddOption(olderThanOption, (args, i) =>
 		{
@@ -48,7 +48,8 @@ public class ClearTempLogFilesCommand : AtomicCommand<ClearTempLogFilesCommandAr
 		if (string.IsNullOrEmpty(args.olderThan))
 		{
 			olderThan = TimeSpan.Zero;
-		} else if (!TryParse(args.olderThan, out olderThan))
+		}
+		else if (!TryParse(args.olderThan, out olderThan))
 		{
 			throw new CliException("Invalid --older-than value.");
 		}
@@ -70,7 +71,7 @@ public class ClearTempLogFilesCommand : AtomicCommand<ClearTempLogFilesCommandAr
 
 		return CleanLogs(olderThan, entries);
 	}
-	
+
 	public static ClearTempLogFilesCommandOutput CleanLogs(TimeSpan olderThan, string[] entries)
 	{
 		var now = DateTime.Now;
@@ -98,7 +99,7 @@ public class ClearTempLogFilesCommand : AtomicCommand<ClearTempLogFilesCommandAr
 
 		return new ClearTempLogFilesCommandOutput { deletedFiles = deletedFiles, failedToDeleteFiles = failedFiles };
 	}
-	
+
 	public static bool TryParse(string str, out TimeSpan value)
 	{
 		value = default;
@@ -121,7 +122,7 @@ public class ClearTempLogFilesCommand : AtomicCommand<ClearTempLogFilesCommandAr
 		{
 			return false;
 		}
-		
+
 		switch (unitSpan.Length)
 		{
 			case 1:
@@ -156,7 +157,7 @@ public class ClearTempLogFilesCommand : AtomicCommand<ClearTempLogFilesCommandAr
 			default:
 				return false;
 		}
-		
+
 		return true;
 	}
 }

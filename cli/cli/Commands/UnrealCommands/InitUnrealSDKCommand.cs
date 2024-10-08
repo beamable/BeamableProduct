@@ -141,8 +141,8 @@ public class InitUnrealSDKCommand : AppCommand<InitUnrealSDKCommandArgs>
 				var sdkContentPath = Path.Combine(sdkBeamablePluginPath, "Content", "Beamable");
 				Directory.Delete(gameMakerContentPath);
 				CopyDirectory(sdkContentPath, gameMakerContentPath);
-				
-				
+
+
 				// Copy the Build.cs file
 				BeamableLogger.Log("Copying OnlineSubsystemBeamable plugin's Build.cs file.");
 				var gameMakerBuildPath = Path.Combine(gameMakerOssPath, "Source", "OnlineSubsystemBeamable", "OnlineSubsystemBeamable.Build.cs");
@@ -162,7 +162,7 @@ public class InitUnrealSDKCommand : AppCommand<InitUnrealSDKCommandArgs>
 				BeamableLogger.Log("Copying OnlineSubsystemBeamable plugin.");
 				CopyDirectory(sdkBeamablePluginPath, gameMakerOssPath);
 			}
-			
+
 			BeamableLogger.Log("Installed OnlineSubsystemBeamable plugin.");
 		}
 
@@ -227,7 +227,7 @@ public class InitUnrealSDKCommand : AppCommand<InitUnrealSDKCommandArgs>
 				var gameMakerEndIdx = gameMakerTargetFile.IndexOf(endTag, StringComparison.Ordinal) + endTag.Length;
 				gameMakerTargetFile = gameMakerTargetFile.Remove(gameMakerStartIdx, gameMakerEndIdx - gameMakerStartIdx);
 			}
-			
+
 			var gameMakerUsingIdx = gameMakerTargetFile.IndexOf("using ", StringComparison.Ordinal);
 			gameMakerTargetFile = gameMakerTargetFile.Insert(gameMakerUsingIdx, $"{sdkBeamableUsingCode}");
 		}
@@ -237,7 +237,7 @@ public class InitUnrealSDKCommand : AppCommand<InitUnrealSDKCommandArgs>
 
 		// Regenerate project files as we made changes to the Target.cs file.
 		MachineHelper.RunUnrealGenerateProjectFiles(args.ConfigService.WorkingDirectory);
-		
+
 		return Task.CompletedTask;
 	}
 

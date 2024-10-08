@@ -27,7 +27,7 @@ public class StreamingDataTests
 		foreach (var command in commands)
 		{
 			if (CliGenerator.CommandTypesToReject.Contains(command.GetType())) continue;
-			
+
 			var commandType = command.GetType();
 			var resultStreamGenType = typeof(IResultSteam<,>);
 			var inputGenType = typeof(IHasArgs<>);

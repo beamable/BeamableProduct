@@ -26,7 +26,7 @@ namespace Beamable.Server.Tests.Runtime
 			public Promise<Dictionary<string, string>> GetServiceMap()
 			{
 				return Promise<Dictionary<string, string>>.Successful(
-					new Dictionary<string, string> {["test"] = "test"});
+					new Dictionary<string, string> { ["test"] = "test" });
 			}
 		}
 

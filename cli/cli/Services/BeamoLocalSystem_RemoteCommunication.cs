@@ -27,7 +27,7 @@ public partial class BeamoLocalSystem
 	/// <summary>
 	/// Deploys services defined in the given <see cref="localManifest"/>.
 	/// </summary>
-	public async Task<ServiceManifest> DeployToRemote(BeamoLocalSystem localSystem, BeamoService remoteBeamo,string dockerRegistryUrl, string comments,
+	public async Task<ServiceManifest> DeployToRemote(BeamoLocalSystem localSystem, BeamoService remoteBeamo, string dockerRegistryUrl, string comments,
 		Dictionary<string, string> perServiceComments, Action<string, float> buildPullImageProgress = null, Action<string> onServiceDeployCompleted = null,
 		Action<string, float> onContainerUploadProgress = null, Action<string, bool> onContainerUploadCompleted = null, bool autoDeleteContainers = true, CancellationToken cancellationToken = default)
 	{

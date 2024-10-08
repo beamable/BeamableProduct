@@ -19,7 +19,7 @@ public class AnsiConsoleRedirected : IAnsiConsole
 		Input = new StreamConsoleInput();
 		Profile.Capabilities.Interactive = true;
 	}
-	
+
 	public void Clear(bool home)
 	{
 		DefaultConsole.Clear(home);

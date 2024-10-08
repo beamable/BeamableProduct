@@ -51,7 +51,7 @@ namespace Beamable.Common.Dependencies
 			return builder;
 		}
 
-		public static IDependencyBuilder AddGlobalStorage<T, TStorageLayer>(this IDependencyBuilder builder, Func<Type, string> keyFunction = null, Func<T> instanceGenerator=null)
+		public static IDependencyBuilder AddGlobalStorage<T, TStorageLayer>(this IDependencyBuilder builder, Func<Type, string> keyFunction = null, Func<T> instanceGenerator = null)
 			where TStorageLayer : IStorageLayer
 		{
 			builder.AddSingleton<T>(provider =>

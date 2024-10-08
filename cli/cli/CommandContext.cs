@@ -30,7 +30,7 @@ public interface IResultProvider
 /// </summary>
 public interface ISkipManifest
 {
-	
+
 }
 
 public interface IResultSteam<TChannel, TData> : IResultProvider
@@ -96,7 +96,7 @@ public abstract class StreamCommand<TArgs, TResult> : AppCommand<TArgs>,
 {
 	private DefaultStreamResultChannel _channel;
 	public override bool AutoLogOutput => false;
-	
+
 	protected StreamCommand(string name, string description = null) : base(name, description)
 	{
 		_channel = new DefaultStreamResultChannel();
@@ -124,7 +124,7 @@ public abstract class StreamCommand<TArgs, TResult> : AppCommand<TArgs>,
 	{
 		return default;
 	}
-	
+
 	protected virtual void LogResult(object result)
 	{
 		var json = JsonConvert.SerializeObject(result, UnitySerializationSettings.Instance);
@@ -153,7 +153,7 @@ public abstract class AtomicCommand<TArgs, TResult> : AppCommand<TArgs>, IResult
 
 		var reporter = args.Provider.GetService<IDataReporterService>();
 		reporter.Report(_channel.ChannelName, result);
-		
+
 		if (AutoLogOutput)
 		{
 			LogResult(result);
@@ -253,7 +253,7 @@ public interface IHaveRedirectionConcernMessage
 			if (option is IAmRequiredForRedirection)
 			{
 				requiredOptions.Add(option);
-						
+
 			}
 		}
 
@@ -289,7 +289,7 @@ public interface IAmRequiredForRedirection<T>
 /// For now, we need to maintain this list declaratively. 
 /// </summary>
 public interface IHaveRedirectionConcerns<TArgs> : IHaveRedirectionConcernMessage
-	where TArgs : CommandArgs 
+	where TArgs : CommandArgs
 {
 	void ValidationRedirection(InvocationContext context, Command command, TArgs args, StringBuilder errorStream, out bool isValid)
 	{
@@ -381,12 +381,12 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IApp
 		return arg;
 	}
 
-	public Option<T> AddOption<T>(Option<T> arg, Action<TArgs, T> binder, string[] aliases=null)
+	public Option<T> AddOption<T>(Option<T> arg, Action<TArgs, T> binder, string[] aliases = null)
 	{
 		return AddOption<T>(arg, (args, _, b) => binder(args, b), aliases);
 	}
-	
-	public Option<T> AddOption<T>(Option<T> arg, Action<TArgs, BindingContext, T> binder, string[] aliases=null)
+
+	public Option<T> AddOption<T>(Option<T> arg, Action<TArgs, BindingContext, T> binder, string[] aliases = null)
 	{
 		ArgValidator<T> validator = CommandProvider.CanBuildService<ArgValidator<T>>()
 			? CommandProvider.GetService<ArgValidator<T>>()
@@ -399,7 +399,7 @@ public abstract partial class AppCommand<TArgs> : Command, IResultProvider, IApp
 				arg.AddAlias(alias);
 			}
 		}
-		
+
 		var set = new Action<BindingContext, BindingContext, TArgs>((ctx, parse, args) =>
 		{
 			if (validator != null)

@@ -68,7 +68,7 @@ public class AccountMeExternalIdentity
 }
 
 
-public class AccountMeCommand 
+public class AccountMeCommand
 	: AtomicCommand<AccountMeCommandArgs, AccountMeCommandOutput>
 {
 	public override int Order => 200;

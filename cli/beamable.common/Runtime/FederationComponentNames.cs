@@ -31,6 +31,6 @@ namespace Beamable.Common.Runtime
 					throw new InvalidOperationException(
 						$"the given federation name=[{federationName}] is not mapped to a federation enum value");
 			}
-		} 
+		}
 	}
 }
