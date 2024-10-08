@@ -114,7 +114,10 @@ public partial class BeamoLocalSystem
 		HttpMicroserviceLocalProtocol localProtocol, 
 		BeamoLocalSystem localSystem, 
 		bool autoDeleteContainer,
-		CancellationToken token = default)
+		CancellationToken token = default,
+		bool disableInitHooks=false,
+		string imageIdOverride=null,
+		string routingKey=null)
 	{
 		const string ENV_CID = "CID";
 		const string ENV_PID = "PID";
@@ -125,9 +128,10 @@ public partial class BeamoLocalSystem
 		const string ENV_WATCH_TOKEN = "WATCH_TOKEN";
 		const string ENV_INSTANCE_COUNT = "BEAM_INSTANCE_COUNT";
 		const string ENV_ACCOUNT_ID = "USER_ACCOUNT_ID";
+		const string ENV_DISABLE_CUSTOM_INITIALIZATION_HOOKS = "DISABLE_CUSTOM_INITIALIZATION_HOOKS";
 
 
-		var imageId = serviceDefinition.ImageId;
+		var imageId = imageIdOverride ?? serviceDefinition.ImageId;
 		var containerName = GetBeamIdAsMicroserviceContainer(serviceDefinition.BeamoId);
 
 		var portBindings = new List<DockerPortBinding>();
@@ -161,30 +165,34 @@ public partial class BeamoLocalSystem
 				Value = $"{_ctx.Host.Replace("http://", "wss://").Replace("https://", "wss://")}/socket"
 			},
 			new() { VariableName = ENV_LOG_LEVEL, Value = _ctx.LogLevel.ToString() },
-			new() { VariableName = ENV_NAME_PREFIX, Value = ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine() },
+			new() { VariableName = ENV_NAME_PREFIX, Value = routingKey ?? ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine() },
 			new() { VariableName = ENV_WATCH_TOKEN, Value = shouldPrepareWatch.ToString() },
 			new() { VariableName = ENV_INSTANCE_COUNT, Value = localProtocol.InstanceCount.ToString() },
+			new() { VariableName = ENV_DISABLE_CUSTOM_INITIALIZATION_HOOKS, Value = disableInitHooks.ToString()}
 		};
 		Log.Information("Building Env Vars.. {host} {prefix} {cid} {pid}",
 			(object)$"{_ctx.Host.Replace("http://", "wss://").Replace("https://", "wss://")}/socket",
-			(object)ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine(),
+			(object)(routingKey ?? ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine()),
 			(object)_ctx.Cid, (object)_ctx.Pid);
 
 
 		// add in connection string environment vars for mongo storage dependencies
-		var dependencies = localSystem.GetDependencies(serviceDefinition.BeamoId);
-		foreach (var dependencyId in dependencies)
+		if (!disableInitHooks) // when hooks are disabled, storages are not loaded.
 		{
-			token.ThrowIfCancellationRequested();
-			try
+			var dependencies = localSystem.GetDependencies(serviceDefinition.BeamoId);
+			foreach (var dependencyId in dependencies)
 			{
-				var connectionEnvVar = await GetLocalConnectionString(localSystem.BeamoManifest, dependencyId.name);
-				environmentVariables.Add(connectionEnvVar);
-			}
-			catch (Exception ex)
-			{
-				BeamableLogger.LogException(ex);
-				continue;
+				token.ThrowIfCancellationRequested();
+				try
+				{
+					var connectionEnvVar = await GetLocalConnectionString(localSystem.BeamoManifest, dependencyId.name);
+					environmentVariables.Add(connectionEnvVar);
+				}
+				catch (Exception ex)
+				{
+					BeamableLogger.LogException(ex);
+					continue;
+				}
 			}
 		}
 
@@ -193,14 +201,14 @@ public partial class BeamoLocalSystem
 
 		// Configures docker's own health check command to target our application's configured health check endpoint.
 		// It'll try these amount of times with a linear backoff (it's docker's default). If it ever fails, it'll terminate the application.
-		var reqTimeout = 1;
-		var waitRetryMax = 3;
-		var tries = 5;
+		// var reqTimeout = 1;
+		// var waitRetryMax = 3;
+		// var tries = 5;
 		var port = 6565;
 		var endpoint = "health";
 		var pipeCmd = "kill";
 		var cmdStr =
-			$"wget -O- -q --timeout={reqTimeout} --waitretry={waitRetryMax} --tries={tries} http://localhost:{port}/{endpoint} || {pipeCmd} 1";
+			$"wget -O- -q -t1 http://localhost:{port}/{endpoint} || {pipeCmd} 1";
 
 		// Creates and runs the container. This container will auto destroy when it stops.
 		await CreateAndRunContainer(imageId, containerName, cmdStr, autoDeleteContainer, portBindings, volumes, bindMounts,

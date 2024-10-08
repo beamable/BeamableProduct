@@ -1,0 +1,56 @@
+{
+  "id": "16d6d665-f201-4e36-8e5f-8064338194dc",
+  "manifest": [
+    {
+      "serviceName": "DemoDayHey",
+      "enabled": false,
+      "archived": true,
+      "imageId": "ea256fd6b60a",
+      "templateId": "small",
+      "comments": "",
+      "dependencies": [
+        {
+          "id": "BucketsForFish",
+          "storageType": "mongov1"
+        }
+      ],
+      "components": [],
+      "checksum": "738e938920a6ed2367f5ccdc19b911a2"
+    },
+    {
+      "serviceName": "Spiral",
+      "enabled": true,
+      "imageId": "d52635b584ac",
+      "templateId": "small",
+      "comments": "",
+      "dependencies": [
+        {
+          "id": "Datacenter",
+          "storageType": "mongov1"
+        }
+      ],
+      "components": [],
+      "checksum": "92e6c50cf8096ed147a0f7761ed1ae8e"
+    }
+  ],
+  "created": 1727359391,
+  "createdByAccountId": 1323424780808240,
+  "checksum": "8654eaf93f11b08e760bdca4592fa5c6",
+  "comments": "from-cli-testing",
+  "storageReference": [
+    {
+      "id": "BucketsForFish",
+      "storageType": "mongov1",
+      "enabled": false,
+      "templateId": "small",
+      "checksum": "f3db77eb3011a71bcd78f2a0319c9699"
+    },
+    {
+      "id": "Datacenter",
+      "storageType": "mongov1",
+      "enabled": true,
+      "templateId": "small",
+      "checksum": "58b021d95e60c0bbaee67b89d8d40599"
+    }
+  ]
+}

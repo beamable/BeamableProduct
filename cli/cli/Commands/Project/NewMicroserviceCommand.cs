@@ -162,7 +162,6 @@ public class SpecificVersionOption : Option<PackageVersion>
 public class NewMicroserviceArgs : SolutionCommandArgs
 {
 	public bool GenerateCommon;
-	public bool IsBeamableDev;
 }
 
 public class RegenerateSolutionFilesCommandArgs : SolutionCommandArgs
@@ -208,8 +207,22 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 				description: "If passed, will create a common library for this project"),
 			(args, i) => args.GenerateCommon = i);
 
-		AddOption(new Option<bool>("--beamable-dev", () => false, $"INTERNAL This enables a sane workflow for beamable developers to be happy and productive"),
-			(args, i) => args.IsBeamableDev = i);
+
+		{ // saved for legacy reasons. I don't want the old commands to CRASH
+			var hiddenDockerDevOption = new Option<bool>("--beamable-dev", () => false,
+				$"INTERNAL This enables a sane workflow for beamable developers to be happy and productive")
+			{
+				IsHidden = true
+			};
+			AddOption(hiddenDockerDevOption,
+				(args, i) =>
+				{
+					if (i)
+					{
+						Log.Warning("The --beamable-dev flag is obsolete and has no effect. ");
+					}
+				});
+		}
 	}
 
 	public override async Task Handle(NewMicroserviceArgs args)
@@ -217,8 +230,6 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 		await args.CreateConfigIfNeeded(_initCommand);
 
 		var newMicroserviceInfo = await args.ProjectService.CreateNewMicroservice(args);
-
-		var isBeamableDev = args.IsBeamableDev;
 
 		// refresh beamoManifest
 		Log.Verbose($"setting temp working dir solutiondir=[{newMicroserviceInfo.SolutionDirectory}]");
@@ -246,19 +257,7 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 			// Make sure we have the correct docker file
 			var regularDockerfilePath =
 				args.ConfigService.BeamableRelativeToExecutionRelative(service.RelativeDockerfilePath);
-			var beamableDevDockerfilePath = regularDockerfilePath + "-BeamableDev";
-			if (File.Exists(beamableDevDockerfilePath))
-			{
-				if (isBeamableDev)
-				{
-					var beamableDevDockerfileContents = await File.ReadAllTextAsync(beamableDevDockerfilePath);
-					await File.WriteAllTextAsync(regularDockerfilePath, beamableDevDockerfileContents);
-				}
-
-				// We always delete the -BeamableDev dockerfile from the template (for older versions of the template, this file does not exist so... we need to check for it).
-				File.Delete(beamableDevDockerfilePath);
-			}
-
+			
 			// Add dependencies if they exist
 			string[] dependencies = null;
 			var storages = args.BeamoLocalSystem.BeamoManifest.EmbeddedMongoDbLocalProtocols;

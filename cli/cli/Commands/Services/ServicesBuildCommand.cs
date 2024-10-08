@@ -174,6 +174,106 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		}
 	}
 
+	public static async Task<BuildImageSourceOutput> BuildLocalSource(
+		IDependencyProvider provider, 
+		string id, 
+		bool forceCpu,
+		Action<ServicesBuildCommandOutput> logMessage=null,
+		bool forProductionRelease=true
+	)
+	{
+		//dotnet publish ./services/Serv/Serv.csproj -r unix-x64 -c release -o ./beamApp --help
+		var beamoLocal = provider.GetService<BeamoLocalSystem>();
+		var app = provider.GetService<IAppContext>();
+		var config = provider.GetService<ConfigService>();
+
+		var dotnetPath = app.DotnetPath;
+		
+		if (!beamoLocal.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(id, out var http))
+		{
+			logMessage?.Invoke(new ServicesBuildCommandOutput
+			{
+				message = "no service protocol exists for the name",
+				isFailure = true
+			});
+			return new BuildImageSourceOutput
+			{
+				service = id
+			};
+		}
+
+		if (!beamoLocal.BeamoManifest.TryGetDefinition(id, out var definition))
+		{
+			logMessage?.Invoke(new ServicesBuildCommandOutput
+			{
+				message = "no service definition exists for the name",
+				isFailure = true
+			});
+			return new BuildImageSourceOutput
+			{
+				service = id
+			};
+		}
+
+		var buildDirRoot = Path.Combine(Path.GetFullPath(definition.ProjectDirectory), "bin", "beamApp");
+		if (Directory.Exists(buildDirRoot))
+		{
+			Directory.Delete(buildDirRoot, true);
+		}
+		var buildDirSupport = Path.Combine(buildDirRoot, "support");
+		var buildDirApp = Path.Combine(buildDirRoot, "app");
+		Directory.CreateDirectory(buildDirRoot);
+		Directory.CreateDirectory(buildDirSupport);
+		Directory.CreateDirectory(buildDirApp);
+
+		var errorPath = Path.Combine(config.ConfigDirectoryPath, "temp", "buildLogs", $"{id}.json");
+
+		var productionArgs = forProductionRelease
+			? "-p:BeamGenProps=\"disable\" -p:GenerateClientCode=\"false\""
+			: "";
+		var runtimeArg = forceCpu
+			? "--runtime unix-x64"
+			: "--use-current-runtime";
+		var buildArgs = $"publish {definition.ProjectPath} --verbosity minimal --no-self-contained {runtimeArg} --configuration Release -p:Deterministic=\"True\" -p:ErrorLog=\"{errorPath}%2Cversion=2\" {productionArgs} -o {buildDirSupport}";
+		Log.Verbose($"Running dotnet publish {buildArgs}");
+		using var cts = new CancellationTokenSource();
+
+		var command = CliExtensions.GetDotnetCommand(dotnetPath, buildArgs)
+			.WithEnvironmentVariables(new Dictionary<string, string> { ["DOTNET_WATCH_SUPPRESS_EMOJIS"] = "1", ["DOTNET_WATCH_RESTART_ON_RUDE_EDIT"] = "1", })
+			.WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
+			{
+				if (line == null) return;
+				logMessage?.Invoke(new ServicesBuildCommandOutput
+				{
+					message = line
+				});
+			}))
+			.WithValidation(CommandResultValidation.None)
+			.ExecuteAsync(cts.Token);
+		
+		await command;
+
+		// move some files from the build output into a different folder, so they can be copied in as separate docker copy instructions
+		{
+			var filesToMove = Directory.GetFiles(buildDirSupport, id + ".*", SearchOption.TopDirectoryOnly);
+			foreach (var fileToMove in filesToMove)
+			{
+				var target = Path.Combine(buildDirApp, Path.GetFileName(fileToMove));
+				File.Move(fileToMove, target);
+			}
+		}
+		
+		var report = ProjectService.ReadErrorReport(errorPath);
+		return new BuildImageSourceOutput
+		{
+			service = id,
+			outputDirRoot = buildDirRoot,
+			outputDirApp = buildDirApp,
+			outputDirSupport = buildDirSupport,
+			report = report
+		};
+	}
+
 	/// <summary>
 	/// Use docker buildkit to build a beamo service id.
 	/// </summary>
@@ -200,10 +300,23 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		const int tarBallSteps = 2;
 		const int estimatedSteps = 10;
 		const int stepPadding = 2;
-
 		var beamoLocal = provider.GetService<BeamoLocalSystem>();
 		var app = provider.GetService<IAppContext>();
+		var config = provider.GetService<ConfigService>();
+		var fullContextPath = Path.GetFullPath(config.BaseDirectory);
 
+		var report = await BuildLocalSource(provider, id, forceCpu, logMessage);
+		if (!report.Success){
+			return new BuildImageOutput
+			{
+				success = false,
+				service = id,
+				fullImageId = null,
+				sourceReport = report
+			};
+		}
+		
+		
 		var dockerPath = app.DockerPath;
 		if (!DockerPathOption.TryValidateDockerExec(dockerPath, out var dockerPathError))
 		{
@@ -247,12 +360,6 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			totalSteps = estimatedSteps
 		});
 		
-		logMessage?.Invoke(new ServicesBuildCommandOutput
-		{
-			message = "building tarball..."
-		});
-		var tarStream = await BeamoLocalSystem.GetTarfile(id, provider);
-		
 		progressMessage?.Invoke(new ServicesBuiltProgress
 		{
 			completedSteps = tarBallSteps,
@@ -265,9 +372,16 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		});
 
 		var tagString = string.Join(" ", tags.Select(tag => $"-t {id.ToLowerInvariant()}:{tag}"));
-		var argString = $"buildx build - -f {http.RelativeDockerfilePath} " +
+		
+		
+		
+		var contextPath = fullContextPath;
+		var argString = $"buildx build {contextPath} -f {http.RelativeDockerfilePath} " +
 		                $"{tagString} " +
 		                $"--progress rawjson " +
+		                $"--build-arg BEAM_SUPPORT_SRC_PATH={Path.GetRelativePath(config.BaseDirectory, report.outputDirSupport)} " +
+		                $"--build-arg BEAM_APP_SRC_PATH={Path.GetRelativePath(config.BaseDirectory,report.outputDirApp)} " +
+		                $"--build-arg BEAM_APP_DEST=/beamApp/{Path.GetRelativePath(config.BaseDirectory,definition.BeamoId)}.dll " +
 		                $"{(forceCpu ? "--platform linux/amd64 " : "")} " +
 		                $"{(noCache ? "--no-cache " : "")}" +
 		                $"{(pull ? "--pull " : "")}" +
@@ -390,7 +504,6 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			.Wrap(dockerPath)
 			.WithArguments(argString)
 			.WithValidation(CommandResultValidation.None)
-			.WithStandardInputPipe(PipeSource.FromStream(tarStream))
 			.WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
 			{
 				Log.Warning("Unexpected Docker output: " + line);
@@ -406,7 +519,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 					}
 				}
 			}));
-			
+
 		
 		var result = await command.ExecuteAsync();
 		var isSuccess = result.ExitCode == 0;
@@ -424,7 +537,8 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		{
 			success = isSuccess,
 			service = id,
-			fullImageId = imageId
+			fullImageId = imageId,
+			sourceReport = report
 		};
 	}
 
@@ -504,16 +618,29 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 	}
 }
 
+public struct BuildImageSourceOutput
+{
+	public string service;
+	public ProjectErrorReport report;
+	public string outputDirRoot;
+	public string outputDirApp;
+	public string outputDirSupport;
+	
+	public bool Success => report?.isSuccess ?? false;
+}
+
 public struct BuildImageOutput
 {
 	public bool success;
 	public string service;
 	public string fullImageId; // in the form of sha256:203948q30497q235498q734056982304598135
 
+	public BuildImageSourceOutput sourceReport;
 	public string LongImageId // in the form of 203948q30497q235498q734056982304598135
 	{
 		get
 		{
+			if (fullImageId == null) return null;
 			var schemeIndex = fullImageId.IndexOf(':');
 			if (schemeIndex > 0)
 			{
@@ -526,7 +653,14 @@ public struct BuildImageOutput
 		}
 	}
 
-	public string ShortImageId => LongImageId.Substring(0, Math.Min(12, LongImageId.Length)); // 203948q30497q2
-	
+	public string ShortImageId
+	{
+		get
+		{
+			if (fullImageId == null) return null;
+			return LongImageId.Substring(0, Math.Min(12, LongImageId.Length));
+		}
+	}
+
 	public string Display => $"{service}: {(success ? ShortImageId : "(failed)")}";
 }

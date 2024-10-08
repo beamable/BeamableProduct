@@ -561,7 +561,7 @@ public class ProjectService
 			SarifLog log = SarifLog.Load(errorLogPath);
 			foreach (var result in log.Results())
 			{
-				if (result.Level is FailureLevel.Note or FailureLevel.None) continue;
+				if (result.Level is FailureLevel.Note or FailureLevel.None or FailureLevel.Warning) continue;
 
 				var location = result.Locations.FirstOrDefault();
 
