@@ -10,7 +10,7 @@ public class AddFederationCommandArgs : CommandArgs
 {
 	public string BeamoId;
 	public string FederationId;
-	public FederationType FederationInterface;
+	public string FederationInterface;
 }
 
 public class AddFederationCommandOutput
@@ -33,7 +33,7 @@ public class AddFederationCommand : StreamCommand<AddFederationCommandArgs, AddF
 
 
 		var federationType = new Argument<FederationType>("fed-type", "The type of federation to add");
-		AddArgument(federationType, (args, i) => args.FederationInterface = i);
+		AddArgument(federationType, (args, i) => args.FederationInterface = i.ToString());
 	}
 
 	public override async Task Handle(AddFederationCommandArgs args)
@@ -56,7 +56,7 @@ public class AddFederationCommand : StreamCommand<AddFederationCommandArgs, AddF
 		var numberOfServicesWithId = manifest.ServiceDefinitions
 			.Where(sd => sd.Protocol is BeamoProtocolType.HttpMicroservice)
 			.Where(sd => sd.SourceGenConfig.Federations.ContainsKey(args.FederationId))
-			.Count(sd => sd.SourceGenConfig.Federations[args.FederationId].Any(f => f.Interface.Contains(args.FederationInterface.ToString())));
+			.Count(sd => sd.SourceGenConfig.Federations[args.FederationId].Any(f => f.Interface.Contains(args.FederationInterface)));
 		if (numberOfServicesWithId >= 1)
 		{
 			var err = $"FederationId [{args.FederationId}] already added for federation type [{args.FederationInterface}].";
@@ -64,13 +64,13 @@ public class AddFederationCommand : StreamCommand<AddFederationCommandArgs, AddF
 		}
 
 		// Now that we know the id/type pair is not in use, we can add it to the selected service.
-		selectedService.SourceGenConfig.Federations.Add(args.FederationId, new[] { new FederationInstanceConfig() { Interface = args.FederationInterface.ToString() } });
+		selectedService.SourceGenConfig.Federations.Add(args.FederationId, new[] { new FederationInstanceConfig { Interface = args.FederationInterface } });
 
 		// Serialize the updated source gen config to disk
 		await ProjectContextUtil.SerializeSourceGenConfigToDisk(args.ConfigService.BaseDirectory, selectedService);
 
 		// Log out which federations were removed and remind the user to remove the actual implementations of the interfaces
-		Log.Information("Added federation: {0}/{1}", args.FederationId, args.FederationInterface.ToString());
+		Log.Information("Added federation: {0}/{1}", args.FederationId, args.FederationInterface);
 		Log.Information("Make sure you implement the required functions in your microservice now!");
 	}
 }

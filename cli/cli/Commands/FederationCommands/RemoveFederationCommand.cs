@@ -10,7 +10,7 @@ public class RemoveFederationCommandArgs : CommandArgs
 {
 	public string BeamoId;
 	public string FederationId;
-	public FederationType FederationInterface;
+	public string FederationInterface;
 }
 
 public class RemoveFederationCommandOutput
@@ -19,7 +19,7 @@ public class RemoveFederationCommandOutput
 
 public class RemoveFederationCommand : StreamCommand<RemoveFederationCommandArgs, RemoveFederationCommandOutput>
 {
-	public RemoveFederationCommand() : base("remove", "Removes a federation to a particular microservice.")
+	public RemoveFederationCommand() : base("remove", "Removes a federation to a particular microservice")
 	{
 	}
 
@@ -32,7 +32,7 @@ public class RemoveFederationCommand : StreamCommand<RemoveFederationCommandArgs
 		AddArgument(federationId, (args, i) => args.FederationId = i);
 
 		var federationType = new Argument<FederationType>("fed-types", "The type of federation to remove. Empty string will remove all federations. This is applied as an \"AND\" filter with the `fed-id` argument");
-		AddArgument(federationType, (args, i) => args.FederationInterface = i);
+		AddArgument(federationType, (args, i) => args.FederationInterface = i.ToString());
 	}
 
 	public override async Task Handle(RemoveFederationCommandArgs args)
@@ -60,7 +60,7 @@ public class RemoveFederationCommand : StreamCommand<RemoveFederationCommandArgs
 			for (var i = federationsOfId.Count - 1; i >= 0; i--)
 			{
 				var fed = federationsOfId[i];
-				if (args.FederationInterface == Enum.Parse<FederationType>(fed.Interface))
+				if (Enum.Parse<FederationType>(args.FederationInterface) == Enum.Parse<FederationType>(fed.Interface))
 				{
 					federationsOfId.RemoveAt(i);
 				}
