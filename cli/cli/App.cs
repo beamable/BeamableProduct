@@ -336,7 +336,9 @@ public class App
 		Commands.AddRootCommand<GenerateDocsCommand, GenerateDocsCommandArgs>();
 
 		Commands.AddRootCommand<FederationCommand>();
-		Commands.AddSubCommand<ListServicesCommand, ListServicesCommandArgs, FederationCommand>();
+		Commands.AddSubCommand<ListFederationsCommand, ListServicesCommandArgs, FederationCommand>();
+		Commands.AddSubCommand<AddFederationCommand, AddFederationCommandArgs, FederationCommand>();
+		Commands.AddSubCommand<RemoveFederationCommand, RemoveFederationCommandArgs, FederationCommand>();
 		Commands.AddSubCommand<DisableFederationCommand, DisableFederationCommandArgs, FederationCommand>();
 		Commands.AddSubCommand<EnableFederationCommand, DisableFederationCommandArgs, FederationCommand>();
 		Commands.AddSubCommand<GetLocalRoutingKeyCommand, GetLocalRoutingKeyCommandArgs, FederationCommand>();

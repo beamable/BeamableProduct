@@ -30,7 +30,7 @@ namespace Beamable.Reflection
 		public class Registry : IReflectionSystem
 		{
 			private static readonly BaseTypeOfInterest I_THIRD_PARTY_CLOUD_IDENTITY_INTERFACE = new BaseTypeOfInterest(
-				typeof(IThirdPartyCloudIdentity));
+				typeof(IFederationId));
 
 			public List<string> ThirdPartiesOptions { get; private set; } = new List<string>();
 
@@ -51,7 +51,7 @@ namespace Beamable.Reflection
 				foreach (MemberInfo info in cachedSubTypes)
 				{
 					if (info is Type type &&
-						FormatterServices.GetUninitializedObject(type) is IThirdPartyCloudIdentity identity)
+						FormatterServices.GetUninitializedObject(type) is IFederationId identity)
 					{
 						list.Add(identity.UniqueName);
 					}
