@@ -1,0 +1,75 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <LangVersion>11</LangVersion>
+        <Version>0.0.123</Version>
+
+        <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+        <IsRoslynComponent>true</IsRoslynComponent>
+
+        <RootNamespace>Beamable.Microservice.SourceGen</RootNamespace>
+        <PackageId>Beamable.Microservice.SourceGen</PackageId>
+
+        <VersionPrefix>$(VersionPrefix)</VersionPrefix>
+        <Authors>Beamable Team</Authors>
+        <Company>Beamable</Company>
+        <PackageTags>Beamable;Game Server;Unity;Unreal;Games;Microservice</PackageTags>
+        <PackageProjectUrl>https://beamable.com</PackageProjectUrl>
+        <PackageIconUrl>https://beamable.com/wp-content/uploads/2024/01/kY9wLmfZ_400x400.jpg</PackageIconUrl>
+        <PackageReleaseNotes>https://beamable.github.io/changes/</PackageReleaseNotes>
+        <PackageLicenseUrl>https://beamable.com/license</PackageLicenseUrl>
+        <Description>
+            The Beamable.Microservice.SourceGen package contains the code for our SourceGenerator that runs over
+            your C# Microservices.
+        </Description>
+        <PackageOutputPath>./nupkg</PackageOutputPath>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild> <!-- Generates a package at build -->
+        <IncludeBuildOutput>false</IncludeBuildOutput> <!-- Do not include the generator as a lib dependency -->
+        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0"/>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.11.0"/>
+        <PackageReference Include="System.Text.Json" Version="8.0.4" />
+
+        <!-- Package the generator in the analyzer directory of the nuget package -->
+        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+        <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\cli\beamable.common\beamable.common.csproj" PrivateAssets="all" />
+        <ProjectReference Include="..\..\..\microservice\beamable.tooling.common\beamable.tooling.common.csproj" PrivateAssets="all"/>
+        
+        <!-- We need to add *.dll here so all dlls would be packed inside NuGet package as our DependencyB.dll is not a NuGet package -->
+        <None Include="$(OutputPath)\*.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+        
+    </ItemGroup>
+
+    <PropertyGroup>
+        <GetTargetPathDependsOn>$(GetTargetPathDependsOn);GetDependencyTargetPaths</GetTargetPathDependsOn>
+    </PropertyGroup>
+    <Target Name="GetDependencyTargetPaths">
+        <ItemGroup>            
+
+            <!-- our local project will not generate path variable so we need to find it from it's own build output-->
+            <!-- I used $(OutputPath) variable because the dependecy has the exact TFM and configuration as the generator 
+                 you might need to add configuration manually -->
+            <TargetPathWithTargetPlatformMoniker Include="..\..\..\cli\beamable.common\$(OutputPath)\*.dll" IncludeRuntimeDependency="false" />
+            <TargetPathWithTargetPlatformMoniker Include="..\..\..\microservice\beamable.tooling.common\$(OutputPath)\*.dll" IncludeRuntimeDependency="false" />
+        </ItemGroup>
+    </Target>
+    
+</Project>

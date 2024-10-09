@@ -103,16 +103,21 @@ public class ServiceDocGenerator
 
 		foreach (Type it in interfaces)
 		{
-			if (!it.IsGenericType) continue;
-
-			if (!FederationComponentNames.FederationComponentToName.TryGetValue(it.GetGenericTypeDefinition(), out string typeName))
-			{
+			// Skip non-generic types while we look for IFederation-derived implementations
+			if (!it.IsGenericType) 
 				continue;
-			}
 
+			// Make sure we found an IFederation interface
+			if (!it.GetGenericTypeDefinition().GetInterfaces().Contains(typeof(IFederation)))
+				continue;
+
+			// Get the cleaned-up type name (IFederatedGameServer`1 => IFederatedGameServer) 
+			var typeName = it.GetGenericTypeDefinition().Name;
+			typeName = typeName.Substring(0, typeName.IndexOf("`", StringComparison.Ordinal));
+			
+			// Get the IFederationId 
 			var federatedType = it.GetGenericArguments()[0];
-
-			if (Activator.CreateInstance(federatedType) is IThirdPartyCloudIdentity identity)
+			if (Activator.CreateInstance(federatedType) is IFederationId identity)
 			{
 				string componentName = $"{typeName}/{identity?.UniqueName}";
 				apiComponents.Add(new OpenApiString(componentName));

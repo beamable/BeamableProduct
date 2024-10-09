@@ -58,12 +58,8 @@ namespace Beamable.Server.Editor
 			private static readonly AttributeOfInterest STORAGE_OBJECT_ATTRIBUTE;
 			private static readonly List<AttributeOfInterest> ATTRIBUTES_OF_INTEREST;
 
-			private static Dictionary<Type, string> _federationComponentToName;
-
 			static Registry()
 			{
-				_federationComponentToName = FederationComponentNames.FederationComponentToName;
-
 				MICROSERVICE_BASE_TYPE = new BaseTypeOfInterest(typeof(Microservice));
 				MICROSERVICE_CLIENT_BASE_TYPE = new BaseTypeOfInterest(typeof(MicroserviceClient));
 				MICROSERVICE_ATTRIBUTE =
@@ -313,17 +309,21 @@ namespace Beamable.Server.Editor
 
 						foreach (var it in interfaces)
 						{
-							if (!it.IsGenericType) continue;
-
-							if (!_federationComponentToName.TryGetValue(it.GetGenericTypeDefinition(),
-																		out var typeName))
-							{
+							// Skip non-generic types while we look for IFederation-derived implementations
+							if (!it.IsGenericType) 
 								continue;
-							}
 
+							// Make sure we found an IFederation interface
+							if (!it.GetGenericTypeDefinition().GetInterfaces().Contains(typeof(IFederation)))
+								continue;
+
+							// Get the cleaned-up type name (IFederatedGameServer`1 => IFederatedGameServer) 
+							var typeName = it.GetGenericTypeDefinition().Name;
+							typeName = typeName.Substring(0, typeName.IndexOf("`", StringComparison.Ordinal));
+			
+							// Get the IFederationId 
 							var federatedType = it.GetGenericArguments()[0];
-
-							if (Activator.CreateInstance(federatedType) is IThirdPartyCloudIdentity identity)
+							if (Activator.CreateInstance(federatedType) is IFederationId identity)
 							{
 								descriptor.FederatedNamespaces.Add(identity.UniqueName);
 								descriptor.FederationComponents.Add(new FederationComponent
@@ -400,16 +400,21 @@ namespace Beamable.Server.Editor
 				var interfaces = clientType.GetInterfaces();
 				foreach (var it in interfaces)
 				{
-					if (!it.IsGenericType) continue;
-
-					if (!_federationComponentToName.TryGetValue(it.GetGenericTypeDefinition(),
-																out var typeName))
-					{
+					// Skip non-generic types while we look for IFederation-derived implementations
+					if (!it.IsGenericType) 
 						continue;
-					}
 
+					// Make sure we found an IFederation interface
+					if (!it.GetGenericTypeDefinition().GetInterfaces().Contains(typeof(IFederation)))
+						continue;
+
+					// Get the cleaned-up type name (IFederatedGameServer`1 => IFederatedGameServer) 
+					var typeName = it.GetGenericTypeDefinition().Name;
+					typeName = typeName.Substring(0, typeName.IndexOf("`", StringComparison.Ordinal));
+			
+					// Get the IFederationId 
 					var federatedType = it.GetGenericArguments()[0];
-					if (Activator.CreateInstance(federatedType) is IThirdPartyCloudIdentity identity)
+					if (Activator.CreateInstance(federatedType) is IFederationId identity)
 					{
 						info.FederationComponents.Add(new FederationComponent
 						{

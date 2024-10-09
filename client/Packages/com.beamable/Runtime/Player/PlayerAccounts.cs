@@ -187,11 +187,11 @@ namespace Beamable.Player
 		/// Given a combo of Microservice and Third Party Cloud Identity, this method will
 		/// return true if the user has a credential associated with the provider.
 		/// </summary>
-		/// <typeparam name="TCloudIdentity">A <see cref="IThirdPartyCloudIdentity"/> type</typeparam>
+		/// <typeparam name="TCloudIdentity">A <see cref="IFederationId"/> type</typeparam>
 		/// <typeparam name="TService">A <see cref="Microservice"/> that implements <see cref="TCloudIdentity"/></typeparam>
 		/// <returns>true if the user has an existing association with the <see cref="TCloudIdentity"/></returns>
 		public bool HasExternalIdentity<TCloudIdentity, TService>()
-			where TCloudIdentity : IThirdPartyCloudIdentity, new()
+			where TCloudIdentity : IFederationId, new()
 			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity> =>
 			TryGetExternalIdentity<TCloudIdentity, TService>(out _);
 
@@ -201,11 +201,11 @@ namespace Beamable.Player
 		/// is available as an out parameter
 		/// </summary>
 		/// <param name="identity"></param>
-		/// <typeparam name="TCloudIdentity">A <see cref="IThirdPartyCloudIdentity"/> type</typeparam>
+		/// <typeparam name="TCloudIdentity">A <see cref="IFederationId"/> type</typeparam>
 		/// <typeparam name="TService">A <see cref="Microservice"/> that implements <see cref="TCloudIdentity"/></typeparam>
 		/// <returns>true if the user has an existing association with the <see cref="TCloudIdentity"/></returns>
 		public bool TryGetExternalIdentity<TCloudIdentity, TService>(out ExternalIdentity identity)
-			where TCloudIdentity : IThirdPartyCloudIdentity, new()
+			where TCloudIdentity : IFederationId, new()
 			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity>
 		{
 			var client = _collection._provider.GetService<TService>();
@@ -310,7 +310,7 @@ namespace Beamable.Player
 
 		/// <inheritdoc cref="PlayerAccounts.AddExternalIdentity"/>
 		public Promise<RegistrationResult> AddExternalIdentity<TCloudIdentity, TService>(string token, ChallengeHandler challengeHandler)
-			where TCloudIdentity : IThirdPartyCloudIdentity, new()
+			where TCloudIdentity : IFederationId, new()
 			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity>
 		{
 			return _collection.AddExternalIdentity<TCloudIdentity, TService>(token, challengeHandler);
@@ -318,7 +318,7 @@ namespace Beamable.Player
 
 		/// <inheritdoc cref="PlayerAccounts.AddExternalIdentity"/>
 		public Promise<RegistrationResult> AddExternalIdentity<TCloudIdentity, TService>(string token, AsyncChallengeHandler challengeHandler = null)
-			where TCloudIdentity : IThirdPartyCloudIdentity, new()
+			where TCloudIdentity : IFederationId, new()
 			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity>
 		{
 			return _collection.AddExternalIdentity<TCloudIdentity, TService>(token, challengeHandler);
@@ -326,7 +326,7 @@ namespace Beamable.Player
 
 		/// <inheritdoc cref="PlayerAccounts.RemoveExternalIdentity"/>
 		public Promise<PlayerAccount> RemoveExternalIdentity<TCloudIdentity, TService>()
-			where TCloudIdentity : IThirdPartyCloudIdentity, new()
+			where TCloudIdentity : IFederationId, new()
 			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity>
 		{
 			return _collection.RemoveExternalIdentity<TCloudIdentity, TService>();
@@ -1485,7 +1485,7 @@ namespace Beamable.Player
 			string token,
 			ChallengeHandler challengeHandler,
 			bool attemptToMergeExistingAccount = true)
-			where TCloudIdentity : IThirdPartyCloudIdentity, new()
+			where TCloudIdentity : IFederationId, new()
 			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity> =>
 			RecoverAccountWithExternalIdentity<TCloudIdentity, TService>(
 				token, challenge => Promise<string>.Successful(challengeHandler(challenge)), attemptToMergeExistingAccount);
@@ -1523,14 +1523,14 @@ namespace Beamable.Player
 		/// and if it is not idempotent, that will cause an error. Therefor, <b> if the <see cref="ChallengeHandler"/> is not idempotent, please set this field to false.</b>
 		/// </para>
 		/// </param>
-		/// <typeparam name="TCloudIdentity">A <see cref="IThirdPartyCloudIdentity"/> type</typeparam>
+		/// <typeparam name="TCloudIdentity">A <see cref="IFederationId"/> type</typeparam>
 		/// <typeparam name="TService">A <see cref="Microservice"/> that implements <see cref="TCloudIdentity"/></typeparam>
 		/// <returns>A <see cref="PlayerRecoveryOperation"/> containing the <see cref="PlayerAccount"/> or a <see cref="PlayerRecoveryError"/> value.</returns>
 		public Promise<PlayerRecoveryOperation> RecoverAccountWithExternalIdentity<TCloudIdentity, TService>(
 			string token,
 			AsyncChallengeHandler challengeHandler = null,
 			bool attemptToMergeExistingAccount = true)
-			where TCloudIdentity : IThirdPartyCloudIdentity, new()
+			where TCloudIdentity : IFederationId, new()
 			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity>
 		{
 
@@ -1573,7 +1573,7 @@ namespace Beamable.Player
 			string token,
 			ChallengeHandler challengeHandler,
 			PlayerAccount account = null)
-			where TCloudIdentity : IThirdPartyCloudIdentity, new()
+			where TCloudIdentity : IFederationId, new()
 			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity> =>
 			AddExternalIdentity<TCloudIdentity, TService>(
 				token, challenge => Promise<string>.Successful(challengeHandler(challenge)), account);
@@ -1594,12 +1594,12 @@ namespace Beamable.Player
 		/// the challenge string from the server, and it must solve the challenge and return the solution. The solution
 		/// will be given back to the server to validate identity. 
 		/// </param>
-		/// <typeparam name="TCloudIdentity">A <see cref="IThirdPartyCloudIdentity"/> type</typeparam>
+		/// <typeparam name="TCloudIdentity">A <see cref="IFederationId"/> type</typeparam>
 		/// <typeparam name="TService">A <see cref="Microservice"/> that implements <see cref="TCloudIdentity"/></typeparam>
 		/// <param name="account"></param>
 		/// <returns>A <see cref="RegistrationResult"/> representing the result of the deviceId addition. </returns>
 		public async Promise<RegistrationResult> AddExternalIdentity<TCloudIdentity, TService>(string token, AsyncChallengeHandler challengeHandler = null, PlayerAccount account = null)
-			where TCloudIdentity : IThirdPartyCloudIdentity, new()
+			where TCloudIdentity : IFederationId, new()
 			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity>
 		{
 			await OnReady;
@@ -1676,11 +1676,11 @@ namespace Beamable.Player
 		/// <summary>
 		/// Removes the external identity from the given account.
 		/// </summary>
-		/// <typeparam name="TCloudIdentity">A <see cref="IThirdPartyCloudIdentity"/> type</typeparam>
+		/// <typeparam name="TCloudIdentity">A <see cref="IFederationId"/> type</typeparam>
 		/// <typeparam name="TService">A <see cref="Microservice"/> that implements <see cref="TCloudIdentity"/></typeparam>
 		/// <param name="account"></param>
 		public async Promise<PlayerAccount> RemoveExternalIdentity<TCloudIdentity, TService>(PlayerAccount account = null)
-			where TCloudIdentity : IThirdPartyCloudIdentity, new()
+			where TCloudIdentity : IFederationId, new()
 			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity>
 		{
 			await OnReady;
@@ -1708,7 +1708,7 @@ namespace Beamable.Player
 		}
 
 		public async Promise<bool> IsExternalIdentityAvailable<TCloudIdentity, TService>(string token, PlayerAccount account = null)
-			where TCloudIdentity : IThirdPartyCloudIdentity, new()
+			where TCloudIdentity : IFederationId, new()
 			where TService : IHaveServiceName, ISupportsFederatedLogin<TCloudIdentity>
 		{
 			await OnReady;

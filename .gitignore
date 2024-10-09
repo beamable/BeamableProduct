@@ -73,11 +73,11 @@ user-token.json
 
 /microservice/microservice/.idea/
 
-/cli/bin/
-/cli/obj
+/cli/**/bin/
+/cli/**/obj/
 /cli/.idea/
 /cli/cli/bin/
-/cli/cli/nupkg/
+/cli/**/nupkg/
 /cli/cli/obj/
 /cli/cli/.idea/
 /cli/tests/bin/
@@ -94,8 +94,9 @@ cli/cli/beamoLocalRuntime.json
 /cli/beamable.server.common/obj/
 
 /templates/artifacts/
-/templates/bin/
-/templates/obj
+/templates/**/bin/
+/templates/**/obj
+/templates/**/nupkg/
 /templates/.idea/
 /templates/templates/bin/
 /templates/templates/nupkg/

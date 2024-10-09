@@ -46,7 +46,7 @@ public class FederatedInventoryCallbackGenerator : ICallableGenerator
 
 			var map = type.GetInterfaceMap(interfaceType);
 			var federatedType = interfaceType.GetGenericArguments()[0];
-			var identity = Activator.CreateInstance(federatedType) as IThirdPartyCloudIdentity;
+			var identity = Activator.CreateInstance(federatedType) as IFederationId;
 
 			var federatedNamespace = identity.UniqueName;
 			for (var i = 0 ; i < map.TargetMethods.Length; i ++)
@@ -107,7 +107,7 @@ public class FederatedLoginCallableGenerator : ICallableGenerator
 
 			var map = type.GetInterfaceMap(interfaceType);
 			var federatedType = interfaceType.GetGenericArguments()[0];
-			var identity = Activator.CreateInstance(federatedType) as IThirdPartyCloudIdentity;
+			var identity = Activator.CreateInstance(federatedType) as IFederationId;
 
 			var federatedNamespace = identity.UniqueName;
 			var method = map.TargetMethods[0];
@@ -167,7 +167,7 @@ public class FederatedGameServerCallableGenerator : ICallableGenerator
 
 			var map = type.GetInterfaceMap(interfaceType);
 			var federatedType = interfaceType.GetGenericArguments()[0];
-			var identity = Activator.CreateInstance(federatedType) as IThirdPartyCloudIdentity;
+			var identity = Activator.CreateInstance(federatedType) as IFederationId;
 
 			var federatedNamespace = identity.UniqueName;
 			for (var i = 0 ; i < map.TargetMethods.Length; i ++)
@@ -208,7 +208,7 @@ public class FederatedGameServerCallableGenerator : ICallableGenerator
 /// this class is not meant to be used. It's sole purpose is to stand in
 /// when something in the outer class needs to access a method with nameof() 
 /// </summary>
-class DummyThirdParty : IThirdPartyCloudIdentity
+class DummyThirdParty : IFederationId
 {
 	public string UniqueName => "__temp__";
 }
