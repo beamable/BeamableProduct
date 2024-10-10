@@ -240,6 +240,7 @@ public class ServerService
 				message = ex.Message, type = ex.GetType().Name, stack = ex.StackTrace
 			});
 			status = 500;
+			Log.Error($"Message failed msg=[{ex.Message}]");
 			data = Encoding.UTF8.GetBytes(response);
 			await resp.OutputStream.WriteAsync(data, 0, data.Length);
 			resp.StatusCode = status;
@@ -283,8 +284,20 @@ public class ServerService
 		app.Build();
 		sw.Stop();
 		Log.Verbose("build virtual app in " + sw.ElapsedMilliseconds);
-		
-		await app.RunWithSingleString(req.commandLine);
+
+		int exitCode = -1;
+		try
+		{
+			exitCode = await app.RunWithSingleString(req.commandLine);
+		}
+		catch (Exception ex)
+		{
+			Log.Error($"CLI EXEC FINISHED WITH FAIL MESSAGE=[{ex.Message}]");
+		}
+		finally
+		{
+			Log.Verbose($"CLI EXEC FINISHED WITH EXIT=[{exitCode}] REQ=[{req.commandLine}]");
+		}
 	}
 }
 

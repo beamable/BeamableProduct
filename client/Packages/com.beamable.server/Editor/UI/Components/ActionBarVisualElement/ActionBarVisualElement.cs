@@ -86,20 +86,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_dependencies.clickable.clicked += () => { OnSettingsButtonClicked?.Invoke(); };
 			_dependencies.tooltip = Tooltips.Microservice.DEPENDENCIES;
 
-			const string cannotPublishText = "Cannot open Publish Window, fix compilation errors first!";
 			_publish = Root.Q<Button>("publish");
 			_publish.clickable.clicked += () =>
 			{
-				if (!NoErrorsValidator.LastCompilationSucceded)
-				{
-					Debug.LogError(cannotPublishText);
-					return;
-				}
 				OnPublishClicked?.Invoke();
 			};
 			_publish.tooltip = Tooltips.Microservice.PUBLISH;
-			if (!NoErrorsValidator.LastCompilationSucceded)
-				_publish.tooltip = cannotPublishText;
 
 			_infoButton = Root.Q<Button>("infoButton");
 			_infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };

@@ -244,7 +244,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				$"{serviceName}-{DateTimeOffset.Now.ToUnixTimeMilliseconds()}-logs.txt");
 			Log.Debug($"service path=[{projectPath}]");
 
-			var errorPath = Path.Combine(args.ConfigService.ConfigDirectoryPath, "temp", "serviceBuildLogs",
+			var errorPath = Path.Combine(args.ConfigService.ConfigDirectoryPath, "temp", "buildLogs",
 				$"{serviceName}.json");
 			var errorPathDir = Path.GetDirectoryName(errorPath);
 			Directory.CreateDirectory(errorPathDir);

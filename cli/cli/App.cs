@@ -11,6 +11,7 @@ using cli.Commands.Project;
 using cli.Commands.Project.Deps;
 using cli.Content;
 using cli.Content.Tag;
+using cli.DeploymentCommands;
 using cli.Docs;
 using cli.Dotnet;
 using cli.FederationCommands;
@@ -422,10 +423,16 @@ public class App
 		Commands.AddSubCommand<ServicesPromoteCommand, ServicesPromoteCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesGetConnectionStringCommand, ServicesGetConnectionStringCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesGenerateLocalManifestCommand, ServicesGenerateLocalManifestCommandArgs, ServicesCommand>();
-		Commands.AddSubCommand<ServicesGenerateTarballCommand, ServicesGenerateTarballCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesBuildCommand, ServicesBuildCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesUpdateDockerfileCommand, ServicesUpdateDockerfileCommandArgs, ServicesCommand>();
 		// content commands
+
+		Commands.AddRootCommand<DeploymentCommand>();
+		Commands.AddSubCommandWithHandler<GetDeploymentCommand, GetDeploymentCommandArgs, DeploymentCommand>();
+		Commands.AddSubCommandWithHandler<ListDeploymentsCommand, ListDeploymentsCommandArgs, DeploymentCommand>();
+		Commands.AddSubCommandWithHandler<ShowCurrentBeamoStatusCommand, ShowCurrentBeamoStatusCommandArgs, DeploymentCommand>();
+		Commands.AddSubCommandWithHandler<PlanDeploymentCommand, PlanDeploymentCommandArgs, DeploymentCommand>();
+		Commands.AddSubCommandWithHandler<ReleaseDeploymentCommand, ReleaseDeploymentCommandArgs, DeploymentCommand>();
 		
 		Commands.AddRootCommand<ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentPullCommand, ContentPullCommandArgs, ContentCommand>();
