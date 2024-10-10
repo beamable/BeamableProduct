@@ -5,11 +5,10 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamServiceStatus
+	public class BeamServiceImageIdChange
 	{
 		public string service;
-		public string serviceType;
-		public string[] groups;
-		public System.Collections.Generic.List<BeamServicesForRouteCollection> availableRoutes;
+		public string oldImageId;
+		public string nextImageId;
 	}
 }

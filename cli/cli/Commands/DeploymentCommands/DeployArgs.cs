@@ -6,7 +6,7 @@ using System.CommandLine;
 
 namespace cli.DeploymentCommands;
 
-public delegate void ProgressHandler(string name, float ratio, bool isKnownLength=true);
+public delegate void ProgressHandler(string name, float ratio, bool isKnownLength=true, string serviceName=null);
 
 public class DeployArgs
 {

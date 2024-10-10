@@ -11,7 +11,13 @@ public class GetDeploymentCommandArgs : CommandArgs
 	public string manifestIdFilter;
 	public string toFile;
 }
-public class GetDeploymentCommand : AtomicCommand<GetDeploymentCommandArgs, ManifestView>
+
+public class GetDeploymentCommandOutput
+{
+	public ManifestView manifestView;
+}
+
+public class GetDeploymentCommand : AtomicCommand<GetDeploymentCommandArgs, GetDeploymentCommandOutput>
 {
 	public GetDeploymentCommand() : base("get", "get a specific deployment")
 	{
@@ -27,7 +33,7 @@ public class GetDeploymentCommand : AtomicCommand<GetDeploymentCommandArgs, Mani
 				"find only the single manifest that matches the given id"), (args, i) => args.manifestIdFilter = i);
 	}
 
-	public override async Task<ManifestView> GetResult(GetDeploymentCommandArgs args)
+	public override async Task<GetDeploymentCommandOutput> GetResult(GetDeploymentCommandArgs args)
 	{
 		var api = args.DependencyProvider.GetService<IBeamoApi>();
 
@@ -46,7 +52,10 @@ public class GetDeploymentCommand : AtomicCommand<GetDeploymentCommandArgs, Mani
 
 		await DeployArgs.MaybeSaveToFile(args.toFile, manifest);
 		
-		return manifest;
+		return new GetDeploymentCommandOutput
+		{
+			manifestView = manifest
+		};
 
 	}
 }

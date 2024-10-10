@@ -227,7 +227,9 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		Directory.CreateDirectory(buildDirApp);
 
 		var errorPath = Path.Combine(config.ConfigDirectoryPath, "temp", "buildLogs", $"{id}.json");
-
+		var errorPathDir = Path.GetDirectoryName(errorPath);
+		Directory.CreateDirectory(errorPathDir);
+		
 		var productionArgs = forProductionRelease
 			? "-p:BeamGenProps=\"disable\" -p:GenerateClientCode=\"false\""
 			: "";

@@ -16,6 +16,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string serviceDirectory;
 		/// <summary>The name of the project to link this storage to</summary>
 		public string[] linkTo;
+		/// <summary>Specify BeamableGroups for this service</summary>
+		public string[] groups;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -47,6 +49,15 @@ namespace Beamable.Editor.BeamCli.Commands
 				{
 					// The parameter allows multiple values
 					genBeamCommandArgs.Add(("--link-to=" + this.linkTo[i]));
+				}
+			}
+			// If the groups value was not default, then add it to the list of args.
+			if ((this.groups != default(string[])))
+			{
+				for (int i = 0; (i < this.groups.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--groups=" + this.groups[i]));
 				}
 			}
 			string genBeamCommandStr = "";

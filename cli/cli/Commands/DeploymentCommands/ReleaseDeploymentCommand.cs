@@ -63,7 +63,7 @@ public class ReleaseDeploymentCommand
 	{
 		var remoteManifestTask = DeployUtil.CreateReleaseManifestFromRealm(args.DependencyProvider.GetService<IBeamoApi>());
 		
-		DeploymentPlan plan = null;
+		DeployablePlan plan = null;
 		string planPath = null;
 
 		
@@ -109,7 +109,7 @@ public class ReleaseDeploymentCommand
 				throw new CliException(
 					$"The file {args.fromPlanFile} does not contain a valid plan. Use the `dotnet beam deploy plan` command to create a plan.");
 			}
-			plan = JsonSerializable.FromJson<DeploymentPlan>(json);
+			plan = JsonSerializable.FromJson<DeployablePlan>(json);
 		}
 		else
 		{
@@ -160,7 +160,7 @@ public class ReleaseDeploymentCommand
 				await DeployUtil.Deploy(
 					plan, 
 					args.DependencyProvider, 
-					progressHandler: (name, progress, isKnownLength) =>
+					progressHandler: (name, progress, isKnownLength, serviceName) =>
 					{
 						if (!progressTasks.TryGetValue(name, out var progressTask))
 						{
@@ -176,7 +176,8 @@ public class ReleaseDeploymentCommand
 						{
 							ratio = progress,
 							name = name,
-							isKnownLength = isKnownLength
+							isKnownLength = isKnownLength,
+							serviceName = serviceName
 						});
 						
 						progressTask.Value = progress;

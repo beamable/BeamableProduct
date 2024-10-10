@@ -38,7 +38,7 @@ public enum DeployMode
 	Replace
 }
 
-public class DeploymentPlan : JsonSerializable.ISerializable
+public class DeployablePlan : JsonSerializable.ISerializable
 {
 	
 	/// <summary>
@@ -58,6 +58,7 @@ public class DeploymentPlan : JsonSerializable.ISerializable
 	public DeploymentDiffSummary diff;
 	public List<string> servicesToUpload = new List<string>();
 	public bool ranHealthChecks;
+	public int changeCount;
 	
 	public void Serialize(JsonSerializable.IStreamSerializer s)
 	{
@@ -65,6 +66,7 @@ public class DeploymentPlan : JsonSerializable.ISerializable
 		s.SerializeEnum(nameof(mode), ref mode);
 		s.Serialize(nameof(manifest), ref manifest);
 		s.Serialize(nameof(diff), ref diff);
+		s.Serialize(nameof(changeCount), ref changeCount);
 		s.Serialize(nameof(ranHealthChecks), ref ranHealthChecks);
 		s.SerializeList(nameof(servicesToUpload), ref servicesToUpload);
 	}
@@ -78,9 +80,29 @@ public enum DeploymentChangeType
 	Changed
 }
 
+public class DeploymentManifestJsonDiff : JsonSerializable.ISerializable
+{
+	public string jsonPath;
+	public string type;
+	public string currentValue;
+	public string nextValue;
+	public void Serialize(JsonSerializable.IStreamSerializer s)
+	{
+		s.Serialize(nameof(jsonPath), ref jsonPath);
+		s.Serialize(nameof(type), ref type);
+		s.Serialize(nameof(currentValue), ref currentValue);
+		s.Serialize(nameof(nextValue), ref nextValue);
+	}
+
+	public bool TryGetNextBooleanValue(out bool isTruthy)
+	{
+		return bool.TryParse(nextValue, out isTruthy);
+	}
+}
+
 public class DeploymentDiffSummary : JsonSerializable.ISerializable
 {
-	public DiffChangeSummary jsonChanges;
+	public List<DeploymentManifestJsonDiff> jsonChanges = new List<DeploymentManifestJsonDiff>();
 	public List<string> addedServices = new List<string>();
 	public List<string> removedServices = new List<string>();
 	
@@ -97,7 +119,7 @@ public class DeploymentDiffSummary : JsonSerializable.ISerializable
 	
 	public void Serialize(JsonSerializable.IStreamSerializer s)
 	{
-		s.Serialize(nameof(jsonChanges), ref jsonChanges);
+		s.SerializeList(nameof(jsonChanges), ref jsonChanges);
 		s.SerializeList(nameof(addedServices), ref addedServices);
 		s.SerializeList(nameof(removedServices), ref removedServices);
 		s.SerializeList(nameof(disabledServices), ref disabledServices);
@@ -170,12 +192,34 @@ public partial class DeployUtil
 		var summary = new DeploymentDiffSummary();
 		
 		// get the exact json field diff
-		summary.jsonChanges = DiffStream.FindChanges(old, next);
+		summary.jsonChanges = DiffStream.FindChanges(old, next).changes.Select(x =>
+		{
+			return new DeploymentManifestJsonDiff
+			{
+				jsonPath = x.jsonPath,
+				nextValue = x.nextValue,
+				currentValue = x.currentValue,
+				type = x.type switch
+				{
+					DiffType.Removed => "removed",
+					DiffType.Added => "added",
+					DiffType.Changed => "changed",
+					_ => throw new CliException("unknown json diff type")
+				}
+			};
+		}).ToList();
 
 		// there are certain semantic changes that we should highlight
-		foreach (var change in summary.jsonChanges.changes)
+		foreach (var change in summary.jsonChanges)
 		{
-			switch (change.type)
+			var diffType = change.type switch
+			{
+				"added" => DiffType.Added,
+				"removed" => DiffType.Removed,
+				"changed" => DiffType.Changed,
+				_ => throw new CliException("unknown change type")
+			};
+			switch (diffType)
 			{
 				case DiffType.Changed:
 					if (GetServiceNameRegex().IsMatch(change.jsonPath))
@@ -540,7 +584,7 @@ public partial class DeployUtil
 		return file?.FullName;
 	}
 	
-	public static async Task<string> SavePlanToTempFolder(IDependencyProvider provider, DeploymentPlan plan)
+	public static async Task<string> SavePlanToTempFolder(IDependencyProvider provider, DeployablePlan plan)
 	{
 		var logDir = GetPlanTempFolder(provider);
 		Directory.CreateDirectory(logDir);
@@ -582,7 +626,7 @@ public partial class DeployUtil
 		}
 	}
 	
-	public static void PrintPlanInfo(DeploymentPlan plan, IHasDeployPlanArgs args, out bool hasChanges)
+	public static void PrintPlanInfo(DeployablePlan plan, IHasDeployPlanArgs args, out bool hasChanges)
 	{
 		var detectedChangeCount = PrintChangesAndNoticeChange(plan.diff.disabledServices, "Disabling", "service");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.removedServices, "Removing", "service");
@@ -595,7 +639,7 @@ public partial class DeployUtil
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.enabledStorages, "Enabling", "storage");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.servicesToUpload, "Uploading", "service");
 
-		hasChanges = plan.diff.jsonChanges.changes.Count > 0;
+		hasChanges = plan.diff.jsonChanges.Count > 0;
 		var hasDetectedChanges = detectedChangeCount > 0;
 		if (hasChanges)
 		{
@@ -667,12 +711,12 @@ public partial class DeployUtil
 	public static bool IsJsonAPlan(IDictionary<string, object> data)
 	{
 		return data != null
-		        && data.ContainsKey(nameof(DeploymentPlan.builtFromRemoteChecksum))
-		        && data.ContainsKey(nameof(DeploymentPlan.servicesToUpload))
-		        && data.ContainsKey(nameof(DeploymentPlan.manifest))
-		        && data.ContainsKey(nameof(DeploymentPlan.diff))
-		        && data.ContainsKey(nameof(DeploymentPlan.mode))
-		        && data.ContainsKey(nameof(DeploymentPlan.ranHealthChecks))
+		        && data.ContainsKey(nameof(DeployablePlan.builtFromRemoteChecksum))
+		        && data.ContainsKey(nameof(DeployablePlan.servicesToUpload))
+		        && data.ContainsKey(nameof(DeployablePlan.manifest))
+		        && data.ContainsKey(nameof(DeployablePlan.diff))
+		        && data.ContainsKey(nameof(DeployablePlan.mode))
+		        && data.ContainsKey(nameof(DeployablePlan.ranHealthChecks))
 			;
 	}
 	public static bool IsJsonAManifest(IDictionary<string, object> data)
@@ -685,7 +729,7 @@ public partial class DeployUtil
 			;
 	}
 	
-	public static async Task<(DeploymentPlan, List<BuildImageOutput>)> Plan(
+	public static async Task<(DeployablePlan, List<BuildImageOutput>)> Plan(
 		IDependencyProvider provider, 
 		IHasDeployPlanArgs args,
 		ProgressHandler progressHandler)
@@ -877,15 +921,24 @@ public partial class DeployUtil
 		}
 		
 		progressHandler?.Invoke(MergingManifestProgressName, 1);
-		
-		return (new DeploymentPlan
+
+		return (new DeployablePlan
 		{
 			ranHealthChecks = args.RunHealthChecks,
 			builtFromRemoteChecksum = remote.checksum,
 			mode = args.DeployMode,
-			diff = diff, 
+			diff = diff,
 			manifest = next,
-			servicesToUpload = servicesToUpload
+			servicesToUpload = servicesToUpload,
+			changeCount = diff.addedStorage.Count
+			              + diff.removedStorage.Count
+			              + diff.disabledStorages.Count
+			              + diff.enabledStorages.Count
+			              + diff.addedServices.Count
+			              + diff.removedServices.Count
+			              + diff.disabledServices.Count
+			              + diff.enabledServices.Count
+			              + diff.serviceImageIdChanges.Count
 		}, localBuildReports);
 	}
 
@@ -934,7 +987,7 @@ public partial class DeployUtil
 		return request;
 	}
 	
-	public static async Task Deploy(DeploymentPlan plan, IDependencyProvider provider, ProgressHandler progressHandler, Task<ManifestView> remoteManifestTask=null)
+	public static async Task Deploy(DeployablePlan plan, IDependencyProvider provider, ProgressHandler progressHandler, Task<ManifestView> remoteManifestTask=null)
 	{
 		var api = provider.GetService<IBeamoApi>();
 		var beamoService = provider.GetService<BeamoService>();
@@ -961,7 +1014,8 @@ public partial class DeployUtil
 			if (!needsUpload)
 				continue;
 
-			var progressTaskName = $"upload {service.serviceName}";
+			var serviceName = service.serviceName;
+			var progressTaskName = $"upload {serviceName}";
 			var uploadTask = ServiceUploadUtil.Upload(
 				provider: provider,
 				beamoId: service.serviceName,
@@ -971,7 +1025,7 @@ public partial class DeployUtil
 				ct: CancellationToken.None, 
 				onProgressCallback: progressRatio =>
 				{
-					progressHandler?.Invoke(progressTaskName, progressRatio);
+					progressHandler?.Invoke(progressTaskName, progressRatio, serviceName: serviceName);
 				});
 
 			uploadTasks.Add(uploadTask);
@@ -1148,7 +1202,7 @@ public partial class DeployUtil
 			var progressName = "build " + definition.BeamoId;
 			try
 			{
-				progressHandler?.Invoke(progressName, 0);
+				progressHandler?.Invoke(progressName, 0, serviceName: definition.BeamoId);
 				var sb = new StringBuilder();
 				report = await ServicesBuildCommand.Build(provider, definition.BeamoId,
 					forceCpu: true,
@@ -1161,20 +1215,20 @@ public partial class DeployUtil
 						}
 					}, progressMessage: progress =>
 					{
-						progressHandler?.Invoke(progressName, progress.Ratio);
+						progressHandler?.Invoke(progressName, progress.Ratio, serviceName: definition.BeamoId);
 					});
 				progressHandler?.Invoke(progressName, 1);
 				imageId = report.ShortImageId;
 			}
 			catch (Exception ex)
 			{
-				progressHandler?.Invoke(progressName, -1);
+				progressHandler?.Invoke(progressName, -1, serviceName: definition.BeamoId);
 				Log.Error($"Could not build service=[{definition.BeamoId}] message=[{ex.Message}] stack=[{ex.StackTrace}]");
 				imageId = null;
 			}
 		}  else
 		{
-			progressHandler?.Invoke("skip  " + definition.BeamoId, 1);
+			progressHandler?.Invoke("skip  " + definition.BeamoId, 1, serviceName: definition.BeamoId);
 		}
 
 		var reference = new ServiceReference

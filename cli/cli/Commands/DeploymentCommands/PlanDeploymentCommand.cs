@@ -43,12 +43,13 @@ public class PlanReleaseProgress
 	public string name;
 	public float ratio;
 	public bool isKnownLength;
+	public string serviceName;
 }
 
 public class DeploymentPlanMetadata
 {
 	public bool success;
-	public DeploymentPlan plan;
+	public DeployablePlan plan;
 	public string planPath;
 }
 
@@ -57,7 +58,7 @@ public static class PlanCommandExtensions {
 	
 	
 
-	public static void InteractiveComments<TArgs>(this AppCommand<TArgs> self, DeploymentPlan plan, TArgs args)
+	public static void InteractiveComments<TArgs>(this AppCommand<TArgs> self, DeployablePlan plan, TArgs args)
 		where TArgs : CommandArgs, IHasDeployPlanArgs
 	{
 		{
@@ -101,7 +102,7 @@ public static class PlanCommandExtensions {
 		}
 	}
 	
-	public static async Task<(DeploymentPlan, string)> InteractivePlan<T, TArgs>(this T self, 
+	public static async Task<(DeployablePlan, string)> InteractivePlan<T, TArgs>(this T self, 
 		IDependencyProvider provider, 
 		TArgs args
 		)
@@ -112,7 +113,7 @@ public static class PlanCommandExtensions {
 	{
 		
 		var progressReporter = (IResultSteam<PlanReleaseProgressChannel, PlanReleaseProgress>)self;
-		DeploymentPlan plan = null;
+		DeployablePlan plan = null;
 		List<BuildImageOutput> buildResults = null;
 		await AnsiConsole
 			.Progress()
@@ -124,7 +125,7 @@ public static class PlanCommandExtensions {
 						provider, 
 						args,
 						progressHandler:
-						(name, progress, isKnownLength) =>
+						(name, progress, isKnownLength, serviceName) =>
 						{
 							if (!progressTasks.TryGetValue(name, out var progressTask))
 							{
@@ -139,7 +140,8 @@ public static class PlanCommandExtensions {
 							{
 								name = name,
 								isKnownLength = isKnownLength,
-								ratio = progress
+								ratio = progress,
+								serviceName = serviceName
 							});
 							
 							progressTask.Value = progress;
@@ -199,7 +201,7 @@ public class PlanDeploymentCommand
 
 	public override async Task Handle(PlanDeploymentCommandArgs args)
 	{
-		(DeploymentPlan plan, var planPath) = await this.InteractivePlan(
+		(DeployablePlan plan, var planPath) = await this.InteractivePlan(
 			args.DependencyProvider, 
 			args);
 		
