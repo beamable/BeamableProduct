@@ -1,6 +1,6 @@
 namespace tests;
 
-public static class OpenApiFixtures
+public static partial class OpenApiFixtures
 {
 	public const string SessionBasic = @"{
     ""info"": {

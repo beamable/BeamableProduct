@@ -1576,6 +1576,10 @@ public static class UnityHelper
 				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.ffffffffzzz"));
 				parameters.Add(new CodePrimitiveExpression("yyyy-MM-ddTHH:mm:ss.fffffffffzzz"));
 				return true;
+			case "object" when schema.Extensions.ContainsKey("x-beamable-json-object"):
+				methodExpr = new CodeMethodReferenceExpression(new CodeArgumentReferenceExpression(PARAM_SERIALIZER),
+					nameof(JsonSerializable.IStreamSerializer.SerializeNestedJson));
+				return true;
 			case "object" when schema.AdditionalPropertiesAllowed:
 				var method = new CodeMethodReferenceExpression(new CodeArgumentReferenceExpression(PARAM_SERIALIZER),
 					nameof(JsonSerializable.IStreamSerializer.SerializeDictionary));
@@ -1725,6 +1729,8 @@ public class GenSchema
 			case ("array", _, _) when Schema.Items.Reference != null:
 				var referenceType = new GenCodeTypeReference(Schema.Items.Reference.Id);
 				return new GenCodeTypeReference(referenceType, 1);
+			case ("object", _, var referenceId) when (referenceId == "OptionalJsonNodeWrapper" && (Schema?.Extensions.TryGetValue("x-beamable-json-object", out var _) ?? false)):
+				return new GenCodeTypeReference(typeof(JsonString));
 			case var (_, _, referenceId) when !string.IsNullOrEmpty(referenceId):
 				return new GenCodeTypeReference(referenceId);
 			case (_, _, _) when Schema.OneOf?.Count > 0:
