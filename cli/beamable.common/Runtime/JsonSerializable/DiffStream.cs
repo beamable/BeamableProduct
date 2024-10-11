@@ -4,22 +4,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace Beamable.Serialization
 {
-	public class Tuna : JsonSerializable.ISerializable
-	{
-		public int x;
-		public void Serialize(JsonSerializable.IStreamSerializer s)
-		{
-			s.Serialize("x", ref x);
-		}
-	}
-	
 	public enum DiffType
 	{
 		Added, Changed, Removed

@@ -12,20 +12,21 @@
             Project="$(BeamableLocalDevProjectsGlob)"/>
     
     <!-- After the build completes, we should auto-generate client code to any linked projects -->
-    <Target Name="generate-client" AfterTargets="Build" Condition="'$(BeamProjectType)'=='service' AND $(GenerateClientCode)==true AND $(DOTNET_RUNNING_IN_CONTAINER)!=true">
+    <Target Name="generate-client" AfterTargets="Build" Condition="'$(BeamProjectType)'=='service' AND $(GenerateClientCode)==true AND $(DOTNET_RUNNING_IN_CONTAINER)!=true" Inputs="@(Compile)" Outputs="$(IntermediateOutputPath)/generateClientFlag.txt">
         <Message Text="Generating client files..." Importance="high" />
         <Exec Command="$(BeamableDotnetPath) $(BeamableTool) project generate-client $(OutDir)/$(AssemblyName).dll --output-links $(Beam_GenerateClient_Args)" EnvironmentVariables="BEAM_DOTNET_MSBUILD_PATH=$(BEAM_DOTNET_MSBUILD_PATH)"/>
+        <WriteLinesToFile File="$(IntermediateOutputPath)/generateClientFlag.txt" Lines="flag" Overwrite="true"/>
     </Target>
     
-    <Target Name="BeamableBuildAttrs" BeforeTargets="BeforeResGen" Condition="'$(BeamProjectType)'=='service'">
+    <Target Name="BeamableBuildAttrs" BeforeTargets="BeforeResGen" Condition="'$(BeamProjectType)'=='service' AND '$(BeamGenProps)'!='disable'">
         <Message Importance="high" Text="Bundling Beamable Properties..."/>
         <PropertyGroup>
-            <PropertiesFile>$(IntermediateOutputPath)/beamableProps.txt</PropertiesFile>
+            <BeamPropertiesFile>$(IntermediateOutputPath)/beamableProps.txt</BeamPropertiesFile>
         </PropertyGroup>
-        <Delete Files="$(PropertiesFile)"/>
-        <WriteLinesToFile File="$(PropertiesFile)" Overwrite="false" Lines="%(BeamableSetting.Identity)=%(BeamableSetting.Value)__BEAM__SETTING__SPLIT__"/>
+        <Delete Files="$(BeamPropertiesFile)"/>
+        <WriteLinesToFile File="$(BeamPropertiesFile)" Overwrite="false" Lines="%(BeamableSetting.Identity)=%(BeamableSetting.Value)__BEAM__SETTING__SPLIT__"/>
         <ItemGroup>
-            <EmbeddedResource Include="$(PropertiesFile)" Type="Non-Resx" WithCulture="false" LogicalName="Beamable.properties"/>
+            <EmbeddedResource Include="$(BeamPropertiesFile)" Type="Non-Resx" WithCulture="false" LogicalName="Beamable.properties"/>
         </ItemGroup>
     </Target>
 

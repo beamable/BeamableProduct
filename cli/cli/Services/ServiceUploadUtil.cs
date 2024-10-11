@@ -75,6 +75,7 @@ public static class ServiceUploadUtil
 		}
 		
 		onProgressCallback?.Invoke(.02f);
+		// TODO: handle image deletion with a nicer exception, "plan references image that no longer exists locally", "replan"
 		using var memoryImageStream = await SaveDockerImage(provider.GetService<IAppContext>().DockerPath, imageId);
 		memoryImageStream.Position = 0;
 		
@@ -90,7 +91,9 @@ public static class ServiceUploadUtil
 		
 		onProgressCallback?.Invoke(.05f);
 		
-		var serviceUniqueName = GetHash($"{ctx.Cid}_{gamePid}_{beamoId}").Substring(0, 30);
+		var serviceUniqueName = GetHash($"{ctx.Cid}_{gamePid}_{beamoId}")
+			// This substring exists because there is a char-length limit on the remote beamo registry :(
+			.Substring(0, 30);
 		var baseUrl = dockerRegistryUrl + serviceUniqueName + "/";
 
 		var client = new HttpClient
@@ -113,8 +116,6 @@ public static class ServiceUploadUtil
 
 		LogTime("got manifest");
 
-		// token.ThrowIfCancellationRequested();
-		// var manifest = DockerManifest.FromBytes(await File.ReadAllBytesAsync($"{folder}/manifest.json", token));
 		var uploadManifest = new Dictionary<string, object>
 		{
 			{ "schemaVersion", 2 }, 
@@ -195,11 +196,10 @@ public static class ServiceUploadUtil
 		var manifestJson = Json.Serialize(uploadManifest, new StringBuilder());
 		var manifestBytes = Encoding.UTF8.GetBytes(manifestJson);
 		var streamContent = new ObservableByteArrayContent(manifestBytes);
-		streamContent.OnProgress += (bytes, ratio) =>
+		streamContent.OnProgress += (_, ratio) =>
 		{
 			onProgressCallback?.Invoke(ratio);
 		};
-		// var content = new StringContent(manifestJson, Encoding.Default, MEDIA_MANIFEST);
 		streamContent.Headers.ContentType =  new MediaTypeHeaderValue(MEDIA_MANIFEST);
 
 		var response = await http.PutAsync($"manifests/{imageId}", streamContent);
@@ -368,7 +368,9 @@ public static class ServiceUploadUtil
 		var request = new HttpRequestMessage(HttpMethod.Head, $"blobs/{digest}");
 		var response = await http.SendAsync(request);
 
-		if (response.StatusCode == HttpStatusCode.TemporaryRedirect)
+		// TODO: retest this.
+		var maxIter = 10;
+		while (maxIter-- > 0 && response.StatusCode == HttpStatusCode.TemporaryRedirect)
 		{
 			var nextLocation = response.Headers.Location;
 			response = await http.SendAsync(new HttpRequestMessage(HttpMethod.Head, nextLocation));

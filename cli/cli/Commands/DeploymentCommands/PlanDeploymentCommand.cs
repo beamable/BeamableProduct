@@ -58,7 +58,7 @@ public static class PlanCommandExtensions {
 	
 	
 
-	public static void InteractiveComments<TArgs>(this AppCommand<TArgs> self, DeployablePlan plan, TArgs args)
+	public static void ApplyDeployComments<TArgs>(this AppCommand<TArgs> self, DeployablePlan plan, TArgs args)
 		where TArgs : CommandArgs, IHasDeployPlanArgs
 	{
 		{
@@ -76,6 +76,7 @@ public static class PlanCommandExtensions {
 			plan.manifest.comments = args.Comment;
 		}
 
+		// TODO: maybe delete this?
 		if (args.ServiceComments != null)
 		{
 			foreach (var commentGroup in args.ServiceComments)
@@ -108,7 +109,7 @@ public static class PlanCommandExtensions {
 		)
 		where T : AppCommand<TArgs>
 				, IResultSteam<RunProjectBuildErrorStreamChannel, RunProjectBuildErrorStream>
-				, IResultSteam<PlanReleaseProgressChannel, PlanReleaseProgress>
+				, IResultSteam<PlanReleaseProgressChannel, PlanReleaseProgress> 
 		where TArgs : CommandArgs, IHasDeployPlanArgs
 	{
 		
@@ -167,7 +168,8 @@ public static class PlanCommandExtensions {
 					report = report.sourceReport.report
 				});
 			}
-			throw new CliException("There were build errors.", 2, true);
+			
+			throw new CliException("Unable to generate a plan. Please re-run with --logs v", 2, true);
 		}
 		else
 		{
@@ -206,7 +208,7 @@ public class PlanDeploymentCommand
 			args);
 		
 		DeployUtil.PrintPlanInfo(plan, args, out var hasChanges);
-		this.InteractiveComments(plan, args);
+		this.ApplyDeployComments(plan, args);
 		DeployUtil.PrintPlanNextSteps(args.toFile ?? planPath, hasChanges);
 		await DeployArgs.MaybeSaveToFile(args.toFile, plan);
 		Log.Information("Saved plan: " + planPath);

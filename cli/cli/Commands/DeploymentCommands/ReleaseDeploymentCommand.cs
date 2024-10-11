@@ -12,17 +12,7 @@ namespace cli.DeploymentCommands;
 
 public class ReleaseDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs
 {
-	
-	// [DONE] TODO: add a --from-manifest-id option that downloads a manifest directly 
-	// [DONE] TODO: add safety rails so that if the user passes a plan as a manifest, or vice versa, it explodes
-	// [DONE] TODO: add a "beam [re]deploy roll|restart|redeploy" or `beam deploy release --restart`
-	// [DONE] TODO: automatically keep plan files (from plan and release) in the /temp/plans folder, and display it in the command output, IN ADDITION to the -o flag
-	//       add a `beam deploy release --last-plan` that loads up the most recent plan from /temp/plans
-	// [DONE] TODO: deprecate `beam services deploy`
-	// [DONE] TODO: finish removing beamableDev dockerfile, and old docker code editing 
 	// TODO: add federation support
-	// TODO: research if the ENTRYPOINT can be a build-arg
-	// TODO: add full data stream support to commands, specifically the progress updates
 	
 	public string fromPlanFile;
 	public bool fromLastPlan;
@@ -35,10 +25,7 @@ public class ReleaseDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs
 	public bool RunHealthChecks { get; set; }
 }
 
-public class ReleaseDeploymentCommandOutput
-{
-	
-}
+
 public class ReleaseDeploymentCommand 
 	: AppCommand<ReleaseDeploymentCommandArgs>
 	, IResultSteam<DefaultStreamResultChannel, DeploymentPlanMetadata>
@@ -55,8 +42,9 @@ public class ReleaseDeploymentCommand
 		DeployArgs.AddPlanOptions(this);
 		AddOption(new Option<string>(new string[] { "--from-plan", "--plan", "-p" }, "the file path to a pre-generated plan file using the `deploy plan` command"),
 			(args, i) => args.fromPlanFile = i);
+		
+		// TODO: is this really helpful?
 		AddOption(new Option<bool>(new string[]{"--from-latest-plan", "--latest-plan", "--last-plan", "-lp"}, "use the most recent plan generated from the plan command"), (args, i) => args.fromLastPlan = i);
-
 	}
 
 	public override async Task Handle(ReleaseDeploymentCommandArgs args)
@@ -128,7 +116,7 @@ public class ReleaseDeploymentCommand
 		
 		
 		DeployUtil.PrintPlanInfo(plan, args, out var hasChanges);
-		this.InteractiveComments(plan, args);
+		this.ApplyDeployComments(plan, args);
 		if (!string.IsNullOrEmpty(planPath))
 		{
 			Log.Information("Saved plan: " + planPath);

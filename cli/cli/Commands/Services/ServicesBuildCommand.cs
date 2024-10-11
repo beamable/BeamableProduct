@@ -179,10 +179,9 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		string id, 
 		bool forceCpu,
 		Action<ServicesBuildCommandOutput> logMessage=null,
-		bool forProductionRelease=true
+		bool forDeployment=true
 	)
 	{
-		//dotnet publish ./services/Serv/Serv.csproj -r unix-x64 -c release -o ./beamApp --help
 		var beamoLocal = provider.GetService<BeamoLocalSystem>();
 		var app = provider.GetService<IAppContext>();
 		var config = provider.GetService<ConfigService>();
@@ -220,6 +219,8 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		{
 			Directory.Delete(buildDirRoot, true);
 		}
+		
+		// TODO: introduce more comments explaining why support/app are different, regarding docker layers.
 		var buildDirSupport = Path.Combine(buildDirRoot, "support");
 		var buildDirApp = Path.Combine(buildDirRoot, "app");
 		Directory.CreateDirectory(buildDirRoot);
@@ -230,7 +231,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		var errorPathDir = Path.GetDirectoryName(errorPath);
 		Directory.CreateDirectory(errorPathDir);
 		
-		var productionArgs = forProductionRelease
+		var productionArgs = forDeployment
 			? "-p:BeamGenProps=\"disable\" -p:GenerateClientCode=\"false\""
 			: "";
 		var runtimeArg = forceCpu
@@ -255,7 +256,8 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		
 		await command;
 
-		// move some files from the build output into a different folder, so they can be copied in as separate docker copy instructions
+		// move some files from the build output into a different folder,
+		// so they can be copied in as separate docker copy instructions
 		{
 			var filesToMove = Directory.GetFiles(buildDirSupport, id + ".*", SearchOption.TopDirectoryOnly);
 			foreach (var fileToMove in filesToMove)
@@ -299,7 +301,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		string[] tags=null)
 	{
 		// a fake number of "steps" that the tarball is allotted. 
-		const int tarBallSteps = 2;
+		const int tarBallSteps = 2; // TODO: there is no tarball step anymore, so the loading around it doesn't make sense
 		const int estimatedSteps = 10;
 		const int stepPadding = 2;
 		var beamoLocal = provider.GetService<BeamoLocalSystem>();
@@ -307,6 +309,8 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		var config = provider.GetService<ConfigService>();
 		var fullContextPath = Path.GetFullPath(config.BaseDirectory);
 
+		// TODO: consider using an enum Flags for the multitude of builds
+		// TODO: expose the `forDeploymentBuild` arg out to the Build param, so `beam services build` creates a local version
 		var report = await BuildLocalSource(provider, id, forceCpu, logMessage);
 		if (!report.Success){
 			return new BuildImageOutput
@@ -374,11 +378,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		});
 
 		var tagString = string.Join(" ", tags.Select(tag => $"-t {id.ToLowerInvariant()}:{tag}"));
-		
-		
-		
-		var contextPath = fullContextPath;
-		var argString = $"buildx build {contextPath} -f {http.RelativeDockerfilePath} " +
+		var argString = $"buildx build {fullContextPath} -f {http.RelativeDockerfilePath} " +
 		                $"{tagString} " +
 		                $"--progress rawjson " +
 		                $"--build-arg BEAM_SUPPORT_SRC_PATH={Path.GetRelativePath(config.BaseDirectory, report.outputDirSupport)} " +

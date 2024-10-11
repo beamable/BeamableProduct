@@ -224,11 +224,9 @@ public partial class DeployUtil
 				case DiffType.Changed:
 					if (GetServiceNameRegex().IsMatch(change.jsonPath))
 					{
-						// summary.removedServices.Add(change.currentValue);
 						summary.addedServices.Add(change.nextValue);
 					} else if (GetStorageNameRegex().IsMatch(change.jsonPath))
 					{
-						// summary.removedStorage.Add(change.currentValue);
 						summary.addedStorage.Add(change.nextValue);
 					} 
 					else if (GetServiceArchivedRegex().IsMatch(change.jsonPath))
@@ -324,11 +322,9 @@ public partial class DeployUtil
 					if (GetServiceNameRegex().IsMatch(change.jsonPath))
 					{
 						throw new CliException($"cannot remove a service reference=[{change.currentValue}] from the manifest");
-						// summary.removedServices.Add(change.currentValue);
 					} else if (GetStorageNameRegex().IsMatch(change.jsonPath))
 					{
 						throw new CliException($"cannot remove a storage reference=[{change.currentValue}] from the manifest");
-						// summary.removedStorage.Add(change.currentValue);
 					}
 					break;
 			}
@@ -338,16 +334,16 @@ public partial class DeployUtil
 		return summary;
 	}
 
-	public static ManifestView MergeAdditive(ManifestView current, ManifestView next)
+	public static ManifestView MergeAdditive(ManifestView remote, ManifestView next)
 	{
 		// clone the current...
-		var final = current.Copy();
+		var final = remote.Copy();
 		var finalServices = new List<ServiceReference>(final.manifest ?? Array.Empty<ServiceReference>());
 		var finalStorages =
 			new List<ServiceStorageReference>(final.storageReference.GetOrElse(Array.Empty<ServiceStorageReference>()));
 
 		{ // set the comment string; this may be changed later, but comments are not part of the diffing.
-			final.comments = current.comments;
+			final.comments = remote.comments;
 			
 			// note: all the other random field stuff (as of Oct 1 2024) are computed by the server.
 		}
@@ -418,11 +414,11 @@ public partial class DeployUtil
 		return final;
 	}
 
-	public static ManifestView MergeReplacement(ManifestView current, ManifestView next)
+	public static ManifestView MergeReplacement(ManifestView remote, ManifestView next)
 	{
 		// create an additive plan first, 
 		// and then adjust the elements to handle "deletions" 
-		var additive = MergeAdditive(current, next);
+		var additive = MergeAdditive(remote, next);
 		var nextStorages = next.storageReference.GetOrElse(Array.Empty<ServiceStorageReference>());
 
 		// everything that is in current that IS NOT in next, should be marked as archived, and disabled. 
@@ -645,7 +641,8 @@ public partial class DeployUtil
 		{
 			if (!plan.ranHealthChecks && plan.servicesToUpload.Count > 0)
 			{
-				Log.Information("Local Health-checks were not run! Services may work as expected, but they have not been explicitly tested locally. Consider re-running a plan command with the `--health` option. ");
+				Log.Warning("Local Health-checks were not run! Services may work as expected, but they have not been explicitly tested locally. \n" +
+				            "Consider re-running a plan command with the `--health` option. ");
 			}
 		}
 		switch (hasChanges, hasDetectedChanges)
@@ -653,7 +650,7 @@ public partial class DeployUtil
 			case (true, true):
 				if (detectedChangeCount == 1)
 				{
-					Log.Information($"This plan has 1 pending change! ");
+					Log.Information("This plan has 1 pending change! ");
 				}
 				else
 				{
@@ -662,7 +659,7 @@ public partial class DeployUtil
 
 				if (args.UseLatestDeployedManifest)
 				{
-					Log.Information("Somehow a change has been detected while trying to restart the services. Please try again, or contact Beamable. ");
+					Log.Warning("Somehow a change has been detected while trying to restart the services. Please try again, or contact Beamable. ");
 				}
 				break;
 			case (true, false):
@@ -690,7 +687,6 @@ public partial class DeployUtil
 		
 		int PrintChangesAndNoticeChange(List<string> changes, string verb, string noun)
 		{
-		
 			if (changes.Count == 0) return 0;
 			var sb = new StringBuilder();
 			sb.Append(verb);
@@ -745,6 +741,7 @@ public partial class DeployUtil
 		var isLoadingManifestId = !string.IsNullOrEmpty(args.ManifestId);
 		var isLoadingMostRecent = args.UseLatestDeployedManifest;
 
+		// TODO: explain the first step; set up util variables
 		{
 			// validate that we are only loading a manifest from one location.
 			var sources = new bool[] { isLoadingManifestFile, isLoadingManifestId, isLoadingMostRecent };
@@ -775,6 +772,7 @@ public partial class DeployUtil
 		progressHandler?.Invoke(FetchManifestProgressName, 0);
 		var remoteTask = CreateReleaseManifestFromRealm(api);
 
+		// TODO: scope better; explain how to resolve remote and local manifest
 		if (isLoadingManifestFile)
 		{
 			localTask = CreateReleaseManifestFromFile(provider, args.FromManifestFile, progressHandler);
@@ -895,7 +893,7 @@ public partial class DeployUtil
 				var routingKey = ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine() + "_healthCheck";
 				await beamo.RunLocalHttpMicroservice(definition, http, beamo, true, 
 					CancellationToken.None, 
-					disableInitHooks: true,
+					disableInitHooks: true, // TODO: should we make this false?
 					imageIdOverride: localService.imageId,
 					routingKey: routingKey);
 				progressHandler?.Invoke("verifying " + service, .5f);

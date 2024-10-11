@@ -17,6 +17,8 @@ public class DeployArgs
 		
 		command.AddOption(new Option<string>(new string[]{"--comment", "-c"}, () => "", $"Associates this comment along with the published Manifest. You'll be able to read it via the Beamable Portal"),
 			(args, i) => args.Comment = i);
+		
+		// TODO: is it ACTUALLY helpful to have service level comments anymore? Push on this again. 
 		command.AddOption(new Option<string[]>(new string[]{"--service-comments", "-sc"}, Array.Empty<string>, $"Any number of strings in the format BeamoId::Comment" +
 				$"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal")
 			{
@@ -66,12 +68,9 @@ public class DeployArgs
 	public static void AddModeOption<TArgs>(AppCommand<TArgs> command, Action<TArgs, DeployMode> binder)
 		where TArgs : CommandArgs
 	{
-		var additiveOption = new Option<bool>("--additive",  "use an additive method for deployment.");
-		additiveOption.AddAlias("-a");
+		var additiveOption = new Option<bool>("--merge",  "Create a Release that adds your current local environment to the existing remote services. Existing deployed services will not be removed. ");
+		var replacementOption = new Option<bool>("--replace", "(default) Create a Release that completely overrides the existing remote services. Existing deployed services that are not present locally will be removed. ");
 		
-		var replacementOption = new Option<bool>("--replace", "use a complete replacement method for deployment.");
-		replacementOption.AddAlias("-r");
-
 		command.AddOption(additiveOption, (_, _) => { });
 		command.AddOption(replacementOption, ((args, ctx, replace) =>
 		{
@@ -101,6 +100,7 @@ public class DeployArgs
 	{
 		if (string.IsNullOrEmpty(toFile))
 		{
+			// TODO: put this check at the call-sites.
 			return;
 		}
 		

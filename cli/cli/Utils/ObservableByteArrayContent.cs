@@ -24,36 +24,17 @@ public class ObservableByteArrayContent : ByteArrayContent
 	{
 		var mem = new ReadOnlySpan<byte>(_bytes);
 		
-		
 		for (int i = 0; i < _bytes.Length; i += _chunkSize)
 		{
 			var writeSize = Math.Min(_chunkSize, _bytes.Length - i);
-			// await stream.WriteAsync(_bytes, i, writeSize);
 			var chunk = mem.Slice(i, writeSize);
 			stream.Write(chunk);
-			var _ = stream.FlushAsync();
 			_position = i + writeSize;
 			Progress = _position / _length;
 			OnProgress?.Invoke(i, Progress);
 		}
 	
 		return Task.CompletedTask;
-		// stream.Close();
 	}
 
-	// protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
-	// {
-	//
-	// 	for (int i = 0; i < _bytes.Length; i += _chunkSize)
-	// 	{
-	// 		var writeSize = Math.Min(_chunkSize, _bytes.Length - i);
-	// 		await stream.WriteAsync(_bytes, i, writeSize);
-	// 		await stream.FlushAsync();
-	// 		_position = i + writeSize;
-	// 		Progress = _position / _length;
-	// 		OnProgress?.Invoke(i, Progress);
-	// 	}
-	// 	
-	// 	// stream.Close();
-	// }
 }
