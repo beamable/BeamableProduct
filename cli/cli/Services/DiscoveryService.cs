@@ -141,7 +141,7 @@ public class DiscoveryService
 
 						if (registration.beamoName == null)
 							throw new CliException($"Failed to convert serviceName of service deployed with old CLI to BeamoName. Please redeploy this service with this new and fancy CLI version." +
-							                       $" SERVICE_NAME={registration.serviceName}, CLOSEST_MATCH={closestMatch}");
+												   $" SERVICE_NAME={registration.serviceName}, CLOSEST_MATCH={closestMatch}");
 
 						Log.Warning("Detected a remote service deployed with previous CLI version. Please redeploy this service. ServiceName={ServiceName}, DerivedBeamoName={BeamoName}", registration.serviceName,
 							registration.beamoName.Value);
@@ -157,7 +157,10 @@ public class DiscoveryService
 
 					var descriptor = new RemoteServiceDescriptor
 					{
-						startedByAccountId = registration.startedById, routingKey = registration.routingKey, service = registration.beamoName, groups = groups,
+						startedByAccountId = registration.startedById,
+						routingKey = registration.routingKey,
+						service = registration.beamoName,
+						groups = groups,
 					};
 					serviceDict[descriptor.PKey] = descriptor;
 					remoteDiscoveryQueue.Enqueue(new RemoteServiceEvent { type = ServiceEventType.Running, descriptor = descriptor, });
@@ -295,7 +298,7 @@ public class DiscoveryService
 					// Check if docker's state changed (on/off) so we can reset isListeningToDocker.
 					var isDockerRunning = await _localSystem.CheckIsRunning();
 					if ((!isDockerRunning && wasDockerRunningLastTick) ||
-					    (isDockerRunning && !wasDockerRunningLastTick)) isListeningToDocker = false;
+						(isDockerRunning && !wasDockerRunningLastTick)) isListeningToDocker = false;
 					wasDockerRunningLastTick = isDockerRunning;
 
 					// If docker isn't running, wait for X second and try again.
@@ -422,7 +425,7 @@ public class DiscoveryService
 
 							if (registration.beamoName == null)
 								throw new CliException($"Failed to convert serviceName of service deployed with old CLI to BeamoName. Please redeploy this service with this new and fancy CLI version." +
-								                       $" SERVICE_NAME={registration.serviceName}, CLOSEST_MATCH={closestMatch}");
+													   $" SERVICE_NAME={registration.serviceName}, CLOSEST_MATCH={closestMatch}");
 						}
 
 						var groups = Array.Empty<string>();
@@ -433,7 +436,10 @@ public class DiscoveryService
 
 						var descriptor = new RemoteServiceDescriptor
 						{
-							startedByAccountId = registration.startedById, routingKey = registration.routingKey, service = registration.beamoName, groups = groups,
+							startedByAccountId = registration.startedById,
+							routingKey = registration.routingKey,
+							service = registration.beamoName,
+							groups = groups,
 						};
 
 						unseen.Remove(descriptor.PKey);

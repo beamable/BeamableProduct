@@ -73,7 +73,7 @@ public class ListServicesCommand : StreamCommand<ListServicesCommandArgs, ListSe
 		var playerIdOpt =
 			new Option<long>("--player", "Filter the services by the playerId of the author");
 		AddOption(playerIdOpt, (args, i) => args.authorFilter = i);
-		
+
 		var listenOpt =
 			new Option<bool>("--listen", "After piping the current list of services, keeps on listening and pipe them again every change");
 		AddOption(listenOpt, (args, i) => args.listen = i);
@@ -95,7 +95,7 @@ public class ListServicesCommand : StreamCommand<ListServicesCommandArgs, ListSe
 				var bodyJson = JsonConvert.SerializeObject(message.body);
 				Log.Verbose($"[{nameof(ServicesListCommand)}] Received new Json Payload:\n{bodyJson}");
 				var data = JsonConvert.DeserializeObject<MicroserviceRegistrationsResponse>(bodyJson, UnitySerializationSettings.Instance);
-				var evt =  BuildListOutput(args.AppContext, data);
+				var evt = BuildListOutput(args.AppContext, data);
 				ApplyFilters(args, evt);
 				Log.Verbose($"[{nameof(ServicesListCommand)}] Registered Services Changed. Here's the new list of filtered services:\n{JsonConvert.SerializeObject(evt)}");
 				SendResults(evt);
@@ -108,7 +108,7 @@ public class ListServicesCommand : StreamCommand<ListServicesCommandArgs, ListSe
 		var api = provider.GetService<IBeamoApi>();
 		var req = new MicroserviceRegistrationsQuery { };
 		var res = await api.PostMicroserviceRegistrations(req);
-		
+
 		Log.Verbose($"got federation response reg-count=[{res.registrations.Length}]");
 		var ctx = provider.GetService<IAppContext>();
 
@@ -132,15 +132,15 @@ public class ListServicesCommand : StreamCommand<ListServicesCommandArgs, ListSe
 				startedByAccountId = x.startedById.GetOrElse(0),
 				federations = x.federation.GetOrElse(() => null)?.Select(f => new RunningFederation
 				{
-					nameSpace = f.nameSpace, 
+					nameSpace = f.nameSpace,
 					federationType = f.type.ToString(),
 					settingJson = f.settings.Value?.Json
 				}).ToList()
 			}).ToList()
 		};
 	}
-	
-	
+
+
 
 	private static void ApplyFilters(ListServicesCommandArgs args, ListServicesCommandOutput res)
 	{
