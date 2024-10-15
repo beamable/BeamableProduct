@@ -5,6 +5,7 @@
 using Beamable.Common;
 using Beamable.Common.Pooling;
 using Beamable.Common.Spew;
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -68,6 +69,15 @@ namespace Beamable.Serialization
 			public void DeregisterISerializableFactory(ISerializableFactory factory)
 			{
 				factories.Remove(factory);
+			}
+
+			public bool SerializeNestedJson(string key, ref JsonString jsonString)
+			{
+				if (curDict.TryGetValue(key, out var tmp))
+				{
+					jsonString = JsonString.FromValue(tmp);
+				}
+				return true;
 			}
 
 			public bool Serialize(string key, ref IDictionary<string, object> target)
