@@ -50,10 +50,21 @@ namespace Beamable.Reflection
 
 				foreach (MemberInfo info in cachedSubTypes)
 				{
-					if (info is Type type &&
-						FormatterServices.GetUninitializedObject(type) is IFederationId identity)
+					
+					if (!(info is Type type)) continue;
+					if (type.IsInterface || type.IsAbstract) continue; // cannot create an instance
+					
+					try
 					{
-						list.Add(identity.UniqueName);
+						if (FormatterServices.GetUninitializedObject(type) is IFederationId identity)
+						{
+							list.Add(identity.UniqueName);
+						}
+					}
+					catch (MissingMethodException)
+					{
+						Debug.LogError($"Beamable unable to understand {nameof(IFederationId)} type=[{type.Name}]");
+						throw;
 					}
 				}
 

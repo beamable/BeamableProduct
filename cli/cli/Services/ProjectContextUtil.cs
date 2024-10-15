@@ -178,7 +178,12 @@ public static class ProjectContextUtil
 		}
 
 		// Let's make sure all the service definitions have a paired SourceGenConfig file
-		var microservicesOnly = manifest.ServiceDefinitions.Where(sd => sd.Protocol == BeamoProtocolType.HttpMicroservice);
+		var microservicesOnly = manifest.ServiceDefinitions.Where(sd =>
+		{
+			var isMicroservice = sd.Protocol == BeamoProtocolType.HttpMicroservice;
+			var isLocal = sd.IsLocal;
+			return isMicroservice && isLocal;
+		});
 		await Task.WhenAll(microservicesOnly.Select(sd =>
 		{
 			var projectDir = Path.GetDirectoryName(sd.ProjectPath);
