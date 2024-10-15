@@ -268,6 +268,9 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 			// maybe the instance already exists inside the collection of instances...
 			if (!collection.TryGetInstance(discoveryEvent.PrimaryKey, out var instance))
 			{
+				// Make sure the collection is defined as "running" now.
+				collection.knownToBeRunning = true;
+				
 				// generate an instance to describe this event.
 				instance = new ServiceInstance
 				{
@@ -309,6 +312,10 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 			{
 				// the instance existed in our state, but now it is being stopped, so we should remove it
 				collection.instances.Remove(instance);
+				
+				// Make sure the collection as "knownToBeRunning" now.
+				collection.knownToBeRunning = collection.instances.Count > 0;
+				
 				yield return result;
 
 				// TODO: include a changelog in the update

@@ -696,7 +696,9 @@ public class DiscoveryService
 			containerId = containerId,
 			startedByAccountId = startedByAccountId,
 			groups = groups,
-			federations = definition.SourceGenConfig.Federations.Select(kvp => new FederationInstance { FederationTypes = kvp.Value.Select(v => v.Interface).ToArray(), FederationId = kvp.Key }).ToArray()
+			federations = serviceDefinition.Protocol == BeamoProtocolType.HttpMicroservice ? 
+				definition.SourceGenConfig.Federations.Select(kvp => new FederationInstance { FederationTypes = kvp.Value.Select(v => v.Interface).ToArray(), FederationId = kvp.Key }).ToArray() :
+				Array.Empty<FederationInstance>(),
 		};
 
 		return service;
