@@ -14,6 +14,9 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 		
 		void DrawReviewUi(bool startedUpload)
 		{
+			var clickedRelease = false;
+			var clickedPortal = false;
+			
 			var anyChanges = _planMetadata.plan.changeCount > 0;
 			{ // title label
 				
@@ -23,7 +26,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 			}
 			
 			DrawConfigurationWarnings();
-
+			
 			if (anyChanges)
 			{
 				_contentScroll = EditorGUILayout.BeginScrollView(_contentScroll, false, false);
@@ -63,6 +66,15 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 					DrawChangeList("Enabling Storage", "Info@2x", "Learn about how storages can be enabled on Beamable",
 					               helpUrl, _planMetadata.plan.diff.enabledStorages.ToList());
 
+					
+					{ // review the portal link
+						if (EditorGUILayout.LinkButton("Review current deployment"))
+						{
+							clickedPortal = true;
+						}
+						EditorGUILayout.Space(4, false);
+					}
+					
 					EditorGUILayout.EndVertical();
 
 				}
@@ -88,21 +100,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 							var planRow = _releaseProgressToRatio
 							              .FirstOrDefault(x => x.Value.serviceName == serviceToUpload).Value;
 
-							DrawLoadingBar($"Uploading {serviceToUpload} ", planRow?.progress.ratio ?? 0,
-							               drawBelowLoadingBarUI: () =>
-							               {
-								               GUI.enabled = _releasePromise == null;
-								               if (!_serviceComments.ContainsKey(serviceToUpload))
-								               {
-									               _serviceComments[serviceToUpload] = null;
-								               }
-
-								               _serviceComments[serviceToUpload] =
-									               BeamGUI.LayoutPlaceholderTextField(
-										               _serviceComments[serviceToUpload], $"{serviceToUpload} comment",
-										               EditorStyles.textField);
-								               GUI.enabled = true;
-							               });
+							DrawLoadingBar($"Uploading {serviceToUpload} ", planRow?.progress.ratio ?? 0);
 						}
 					}
 
@@ -129,8 +127,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 			DrawManifestComment();
 
 			{ // render the action buttons
-				var clickedRelease = false;
-				var clickedPortal = false;
+				
 				{
 					EditorGUILayout.BeginHorizontal(new GUIStyle
 					{

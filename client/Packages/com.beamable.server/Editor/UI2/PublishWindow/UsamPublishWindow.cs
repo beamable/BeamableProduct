@@ -40,8 +40,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 		private bool isCancelPressed;
 
 		private Dictionary<string, PlanRow> _planProgressNameToRatio = new Dictionary<string, PlanRow>();
-		private Dictionary<string, string> _serviceComments = new Dictionary<string, string>();
-
+	
 		private Dictionary<string, PlanRow> _releaseProgressToRatio = new Dictionary<string, PlanRow>();
 		
 		private int _repaintRequest;
@@ -105,13 +104,13 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 					progress = new BeamPlanReleaseProgress {name = "fetching latest"}
 				};
 				
-				
 				state = State.PLAN;
 				var config = _ctx.ServiceScope.GetService<MicroserviceConfiguration>();
 
 				_planArgs = new DeploymentPlanArgs
 				{
-					runHealthChecks = config.EnablePrePublishHealthCheck, additive = config.EnableAdditiveDeploy
+					runHealthChecks = config.EnablePrePublishHealthCheck, 
+					additive = config.EnableAdditiveDeploy
 				};
 				_planCommand = _ctx.Cli.DeploymentPlan(_planArgs);
 				_planCommand.OnProgressPlanReleaseProgress(cb =>
@@ -125,7 +124,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 							serviceName = cb.data.serviceName
 						};
 					}
-
+					
 					existing.progress = cb.data;
 					_repaintRequest++;
 
@@ -159,12 +158,10 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 		{
 			_contentScroll = Vector2.zero;
 			state = State.UPLOAD;
-			var serviceComments = _serviceComments.Select(kvp => $"{kvp.Key}::\"{kvp.Value}\"").ToArray();
 			_releaseCommand = _ctx.Cli.DeploymentRelease(new DeploymentReleaseArgs
 			{
 				fromPlan = _planMetadata.planPath,
-				comment = manifestComment,
-				serviceComments = serviceComments
+				comment = manifestComment
 			});
 
 			_releaseCommand.OnProgressPlanReleaseProgress(cb =>
@@ -326,7 +323,11 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 
 		void DrawLoadingBar(string label, float value, bool failed=false, GUIStyle labelStyleBase=null, Action drawBelowLoadingBarUI=null)
 		{
-			EditorGUILayout.BeginHorizontal();
+			EditorGUILayout.BeginHorizontal(new GUIStyle
+			{
+				// leave some room for a loading indicator... 
+				padding = new RectOffset(0, 30, 0, 0)
+			});
 			var labelStyle = new GUIStyle(labelStyleBase ?? EditorStyles.miniLabel)
 			{
 				alignment = TextAnchor.UpperRight, 
@@ -365,7 +366,18 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 			                        
 			drawBelowLoadingBarUI?.Invoke();
 			EditorGUILayout.EndVertical();
-			
+
+			var numericRect = new Rect(progressRect.xMax + 4, 2 + progressRect.y - EditorGUIUtility.singleLineHeight*.5f, 30, EditorGUIUtility.singleLineHeight);
+			EditorGUI.SelectableLabel(numericRect, value < .01f ? "--" : $"{(value*100):00}%", new GUIStyle(EditorStyles.miniLabel)
+			{
+				alignment = TextAnchor.MiddleCenter,
+				normal = new GUIStyleState
+				{
+					textColor = value < .01f 
+						? new Color(0, 0, 0, .4f)
+						: color
+				}
+			});
 
 			EditorGUILayout.EndHorizontal();
 		}

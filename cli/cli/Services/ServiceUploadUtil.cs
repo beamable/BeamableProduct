@@ -59,7 +59,7 @@ public static class ServiceUploadUtil
 		string imageId,
 		string gamePid,
 		string dockerRegistryUrl,
-		CancellationToken ct,
+		CancellationTokenSource cts,
 		Action<float> onProgressCallback)
 	{
 		var sw = new Stopwatch();
@@ -130,11 +130,11 @@ public static class ServiceUploadUtil
 		var layers = (List<object>)uploadManifest["layers"];
 		
 		var manifestStream = await imageArchive.OpenEntryAsMemoryStream($"{manifest.config}");
-		var configResult = (await UploadFileBlob(client, manifestStream, ct, (bytes, progress) =>
+		var configResult = (await UploadFileBlob(client, manifestStream, cts.Token, (bytes, progress) =>
 		{
 			onProgressCallback?.Invoke(.05f + .05f * progress);
 		}));
-		ct.ThrowIfCancellationRequested();
+		cts.Token.ThrowIfCancellationRequested();
 		
 		config["digest"] = configResult.Digest;
 		config["size"] = configResult.Size;
@@ -163,7 +163,7 @@ public static class ServiceUploadUtil
 				progressBytes[index] = bytes;
 				var totalProgress = progressBytes.Sum() / (float)totalUploadSize;
 				onProgressCallback?.Invoke(.1f + totalProgress * .85f );
-			}, ct);
+			}, cts.Token);
 			uploadIndexToJob.Add(i, uploadTask);
 			uploadTasks.Add(uploadTask);
 		}

@@ -169,7 +169,9 @@ public class ReleaseDeploymentCommand
 						});
 						
 						progressTask.Value = progress;
-					}, remoteManifestTask);
+					}, 
+					args.Lifecycle.Source,
+					remoteManifestTask);
 	
 			});
 

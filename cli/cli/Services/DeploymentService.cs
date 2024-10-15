@@ -985,7 +985,12 @@ public partial class DeployUtil
 		return request;
 	}
 	
-	public static async Task Deploy(DeployablePlan plan, IDependencyProvider provider, ProgressHandler progressHandler, Task<ManifestView> remoteManifestTask=null)
+	public static async Task Deploy(
+		DeployablePlan plan, 
+		IDependencyProvider provider, 
+		ProgressHandler progressHandler, 
+		CancellationTokenSource cts,
+		Task<ManifestView> remoteManifestTask=null)
 	{
 		var api = provider.GetService<IBeamoApi>();
 		var beamoService = provider.GetService<BeamoService>();
@@ -1020,7 +1025,7 @@ public partial class DeployUtil
 				imageId: service.imageId, 
 				gamePid: gamePid,
 				dockerRegistryUrl: dockerRegistryUrl, 
-				ct: CancellationToken.None, 
+				cts: cts, 
 				onProgressCallback: progressRatio =>
 				{
 					progressHandler?.Invoke(progressTaskName, progressRatio, serviceName: serviceName);
@@ -1031,6 +1036,8 @@ public partial class DeployUtil
 
 		progressHandler?.Invoke("publish", 0);
 		await Task.WhenAll(uploadTasks);
+
+		cts.Token.ThrowIfCancellationRequested();
 		
 		// publish manifest. 
 		var manifest = new PostManifestRequest
