@@ -46,6 +46,7 @@ public class RunningFederation
 {
 	public string nameSpace;
 	public string federationType;
+	public string settingJson;
 }
 
 public class ListServicesCommand : StreamCommand<ListServicesCommandArgs, ListServicesCommandOutput>
@@ -129,7 +130,12 @@ public class ListServicesCommand : StreamCommand<ListServicesCommandArgs, ListSe
 				trafficFilterEnabled = x.trafficFilterEnabled,
 				routingKey = x.routingKey,
 				startedByAccountId = x.startedById.GetOrElse(0),
-				federations = x.federation.GetOrElse(() => null)?.Select(f => new RunningFederation { nameSpace = f.nameSpace, federationType = f.type.ToString() }).ToList()
+				federations = x.federation.GetOrElse(() => null)?.Select(f => new RunningFederation
+				{
+					nameSpace = f.nameSpace, 
+					federationType = f.type.ToString(),
+					settingJson = f.settings.Value?.Json
+				}).ToList()
 			}).ToList()
 		};
 	}
