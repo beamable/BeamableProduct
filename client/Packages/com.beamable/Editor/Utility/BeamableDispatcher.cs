@@ -18,13 +18,13 @@ namespace Beamable.Editor
 	public class BeamableDispatcher : IBeamableDisposable, ICoroutineService
 	{
 		private long jobIdCounter;
-		
+
 		public struct WorkItem
 		{
 			public Action action;
 			public long jobId;
 		}
-		
+
 		public const string DEFAULT_QUEUE_NAME = "beamable";
 		private Dictionary<string, Queue<WorkItem>> _workQueues;
 		private Dictionary<string, EditorCoroutine> _runningSchedulers;
@@ -41,7 +41,7 @@ namespace Beamable.Editor
 		}
 
 		public bool IsJobCompleted(long jobId) => completedJobIds.Contains(jobId);
-		
+
 		public Promise WaitForJobIds(List<long> dispatchedIds)
 		{
 			var idList = dispatchedIds.ToList();
@@ -61,13 +61,13 @@ namespace Beamable.Editor
 						yield return null;
 					}
 				}
-				
+
 				jobCompletionPromise.CompleteSuccess();
 			}
 			Run("waiting-for-jobs", Routine());
 			return jobCompletionPromise;
 		}
-		
+
 		IEnumerator Scheduler(string queueName, Queue<WorkItem> workQueue)
 		{
 			while (_workQueues.ContainsKey(queueName) && !_forceStop)

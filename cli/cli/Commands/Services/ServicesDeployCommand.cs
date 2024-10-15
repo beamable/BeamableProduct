@@ -50,19 +50,19 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 			(args, i) => args.RemoteComment = i);
 
 		AddOption(new Option<string[]>("--service-comments", Array.Empty<string>, $"Any number of strings in the format BeamoId::Comment" +
-		                                                                          $"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal")
-			{
-				AllowMultipleArgumentsPerToken = true
-			},
+																				  $"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal")
+		{
+			AllowMultipleArgumentsPerToken = true
+		},
 			(args, i) => args.RemoteServiceComments = i);
 
 		AddOption(new Option<string>("--docker-registry-url", "A custom docker registry url to use when uploading. By default, the result from the beamo/registry network call will be used, " +
-		                                                      "with minor string manipulation to add https scheme, remove port specificatino, and add /v2 "), (args, i) => args.dockerRegistryUrl = i);
-		
+															  "with minor string manipulation to add https scheme, remove port specificatino, and add /v2 "), (args, i) => args.dockerRegistryUrl = i);
+
 		AddOption(
 			new Option<bool>(new string[] { "--keep-containers", "-k" }, () => false,
 				"Automatically remove service containers after they exit"),
-			
+
 			// it is mildly confusing to invert the logic here, but I think there is a good reason.
 			//  the default in docker is to require a user to specify --rm to remove the container, 
 			//  as beamable, we should flip that auto clean for folks. 
@@ -160,7 +160,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 
 			return;
 		}
-		
+
 		// Parse and prepare per-service comments dictionary (BeamoId => CommentString) 
 		Log.Verbose("Parse and prepare per-service comments dictionary");
 		var perServiceComments = new Dictionary<string, string>();
@@ -183,7 +183,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 			if (_localBeamo.BeamoManifest.ServiceDefinitions.FindIndex(sd => sd.BeamoId == id) == -1)
 			{
 				var errMsg = $"ID [{id}] in the given service comment argument [{commentArg}] " +
-				             $"doesn't match any of the registered services [{string.Join(",", _localBeamo.BeamoManifest.ServiceDefinitions.Select(sd => sd.BeamoId))}]!";
+							 $"doesn't match any of the registered services [{string.Join(",", _localBeamo.BeamoManifest.ServiceDefinitions.Select(sd => sd.BeamoId))}]!";
 				Log.Error(errMsg);
 				throw new ArgumentOutOfRangeException($"{nameof(args.RemoteServiceComments)}[{i}]", errMsg);
 			}
@@ -229,7 +229,7 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 				var atLeastOneFailed = false;
 
 				Log.Verbose("Starting deployment...");
-				_ = await _localBeamo.DeployToRemote(_localBeamo, _remoteBeamo,dockerRegistryUrl,
+				_ = await _localBeamo.DeployToRemote(_localBeamo, _remoteBeamo, dockerRegistryUrl,
 					args.RemoteComment ?? string.Empty,
 					perServiceComments,
 					(beamoId, progress) =>

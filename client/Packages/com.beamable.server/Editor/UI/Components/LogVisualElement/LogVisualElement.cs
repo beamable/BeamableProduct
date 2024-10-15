@@ -91,7 +91,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Model.Logs.OnSelectedMessageChanged -= UpdateSelectedMessageText;
 			Model.Logs.OnViewFilterChanged -= LogsOnOnViewFilterChanged;
 		}
-		
+
 		public override void Refresh()
 		{
 			base.Refresh();
@@ -108,7 +108,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
 				manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 			}
-			
+
 			_infoCountLbl = Root.Q<Label>("infoCount");
 			_warningCountLbl = Root.Q<Label>("warningCount");
 			_errorCountLbl = Root.Q<Label>("errorCount");
@@ -219,7 +219,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				EditorApplication.update -= HandleScrollUpdates;
 				return;
 			}
-			
+
 			UpdateLogTail();
 		}
 
@@ -343,7 +343,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var isAtBottom = Math.Abs(scrollValue - highValue) < tolerance;
 
 			Model.Logs.IsTailingLog = isAtBottom;
-			
+
 		}
 
 		private const int ITEM_HEIGHT = 24;

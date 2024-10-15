@@ -54,13 +54,13 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 				{
 					if (!ConfigService.TryToFindBeamableFolder(".", out var beamableFolder))
 						return String.Empty; // will be converted into PROJECT/PROJECT.sln
-					
+
 					var path = Path.GetFullPath(Path.GetDirectoryName(beamableFolder));
 					Log.Verbose($"creating default --sln value, found /.beamable=[{path}]");
 					var firstSlnPath = Directory.EnumerateFiles(path, "*.sln", SearchOption.AllDirectories).FirstOrDefault();
 					if (string.IsNullOrEmpty(firstSlnPath))
 						return String.Empty; // will be converted into PROJECT/PROJECT.sln
-					
+
 					Log.Verbose($"found default .sln=[{firstSlnPath}]");
 					var relativePath = Path.GetRelativePath(".", firstSlnPath);
 					return relativePath;
@@ -232,7 +232,7 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 			if (!args.BeamoLocalSystem.BeamoManifest.TryGetDefinition(args.ProjectName, out var sd))
 			{
 				Log.Verbose("manifest... \n " +
-				            JsonConvert.SerializeObject(args.BeamoLocalSystem.BeamoManifest, Formatting.Indented));
+							JsonConvert.SerializeObject(args.BeamoLocalSystem.BeamoManifest, Formatting.Indented));
 				throw new CliException("cannot find recently generated project, " + args.ProjectName);
 			}
 
@@ -290,7 +290,7 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 
 			if (args.Groups.Count > 0)
 			{
-				args.BeamoLocalSystem.SetBeamGroups(new UpdateGroupArgs{ToAddGroups = args.Groups, Name = args.ProjectName});
+				args.BeamoLocalSystem.SetBeamGroups(new UpdateGroupArgs { ToAddGroups = args.Groups, Name = args.ProjectName });
 			}
 		}
 		finally
@@ -311,7 +311,7 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 		var prompt = new MultiSelectionPrompt<string>()
 			.Title("Storage Dependencies")
 			.InstructionsText("Which storages will be added to this service?\n[grey](Press [blue]<space>[/] to toggle, " +
-			                  "[green]<enter>[/] to accept)[/]")
+							  "[green]<enter>[/] to accept)[/]")
 			.AddChoices(choices)
 			.AddBeamHightlight()
 			.NotRequired();

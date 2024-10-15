@@ -63,7 +63,7 @@ public class BeamServicesFlows : CLITest
 				.ReturnsPromise(new ServiceManifest())
 				.Verifiable();
 		});
-		
+
 		Run("services", "reset", "container", "--ids", ServiceName);
 
 		// Check if the container with the specified name is not running

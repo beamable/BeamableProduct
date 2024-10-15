@@ -14,7 +14,7 @@ public class DiscoveryModeTests
 		Assert.That(mode.HasDiscoveryFlag(DiscoveryFlags.HOST), Is.True, "local mode should include dotnet");
 		Assert.That(mode.HasDiscoveryFlag(DiscoveryFlags.REMOTE), Is.False, "local mode should not include remote");
 	}
-	
+
 	[Test]
 	public void AllMode()
 	{

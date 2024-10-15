@@ -662,7 +662,7 @@ namespace Beamable.Common
 
 		public void CompleteSuccess() => CompleteSuccess(PromiseBase.Unit);
 
-		
+
 		/// <summary>
 		/// This function accepts a generator that will produce a promise, and then
 		/// that promise will be executed.
@@ -705,7 +705,7 @@ namespace Beamable.Common
 			throw new InvalidOperationException("promise failed to complete after maximum retry count", lastEx);
 		}
 
-		
+
 		/// <summary>
 		/// Create a <see cref="SequencePromise{T}"/> from List of <see cref="Promise{T}"/>
 		/// </summary>
