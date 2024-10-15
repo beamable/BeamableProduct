@@ -278,6 +278,17 @@ namespace Beamable.Serialization
 			}
 
 
+			public bool SerializeNestedJson(string key, ref JsonString jsonString)
+			{
+				// don't serialize the field at all if the json is null.
+				if (jsonString == null) return true; 
+				
+				AppendKey(key);
+				_builder.Append(jsonString.Json);
+				AppendSeperator();
+				return true;
+			}
+
 			public bool Serialize(string key, ref IDictionary<string, object> target)
 			{
 				Dictionary<string, object> asTarget = target as Dictionary<string, object>;
