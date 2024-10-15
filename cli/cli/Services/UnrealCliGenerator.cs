@@ -86,7 +86,7 @@ public:
 	₢{nameof(_streamFieldDeclarations)}₢	
 
 	TFunction<void (const int& ResCode, const FBeamOperationHandle& Op)> OnCompleted;
-	virtual void HandleStreamReceived(FBeamOperationHandle Op, FString ReceivedStreamType, int64 Timestamp, TSharedRef<FJsonObject> DataJson, bool isServer) override;
+	virtual bool HandleStreamReceived(FBeamOperationHandle Op, FString ReceivedStreamType, int64 Timestamp, TSharedRef<FJsonObject> DataJson, bool isServer) override;
 	virtual void HandleStreamCompleted(FBeamOperationHandle Op, int ResultCode, bool isServer) override;
 	virtual FString GetCommand() override;
 }};
@@ -102,9 +102,11 @@ FString U₢{nameof(CommandName)}₢Command::GetCommand()
 	return FString(TEXT(""₢{nameof(CommandKeywords)}₢""));
 }}
 		
-void U₢{nameof(CommandName)}₢Command::HandleStreamReceived(FBeamOperationHandle Op, FString ReceivedStreamType, int64 Timestamp, TSharedRef<FJsonObject> DataJson, bool isServer)
+bool U₢{nameof(CommandName)}₢Command::HandleStreamReceived(FBeamOperationHandle Op, FString ReceivedStreamType, int64 Timestamp, TSharedRef<FJsonObject> DataJson, bool isServer)
 {{
 	₢{nameof(_parseStreamDataImpl)}₢
+	
+	return false;
 }}
 
 void U₢{nameof(CommandName)}₢Command::HandleStreamCompleted(FBeamOperationHandle Op, int ResultCode, bool isServer)
@@ -232,7 +234,8 @@ public struct UnrealCliStreamDeclaration
 	UPROPERTY() TArray<int64> ₢{nameof(StreamName)}₢Timestamps;
 	TFunction<void (const TArray<₢{nameof(_rootDataType)}₢>& StreamData, const TArray<int64>& Timestamps, const FBeamOperationHandle& Op)> On₢{nameof(StreamName)}₢StreamOutput;";
 
-	public const string STREAM_PARSE_IMPL = $@"if(ReceivedStreamType.Equals(StreamType₢{nameof(StreamName)}₢) && On₢{nameof(StreamName)}₢StreamOutput)
+	public const string STREAM_PARSE_IMPL = $@"
+	if(ReceivedStreamType.Equals(StreamType₢{nameof(StreamName)}₢) && On₢{nameof(StreamName)}₢StreamOutput)
 	{{
 		₢{nameof(_rootDataType)}₢ Data = NewObject<U₢{nameof(_rootDataNamespacedType)}₢>(this);
 		Data->OuterOwner = this;
@@ -244,7 +247,9 @@ public struct UnrealCliStreamDeclaration
 		AsyncTask(ENamedThreads::GameThread, [this, Op]
 		{{
 			On₢{nameof(StreamName)}₢StreamOutput(₢{nameof(StreamName)}₢Stream, ₢{nameof(StreamName)}₢Timestamps, Op);
-		}});				
+		}});
+		
+		return true;				
 	}}";
 }
 

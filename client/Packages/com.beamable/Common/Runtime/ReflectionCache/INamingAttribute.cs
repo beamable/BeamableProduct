@@ -91,7 +91,7 @@ namespace Beamable.Common.Reflection
 		/// Expects <paramref name="memberAttributePairs"/> to contain the entire selection of attributes whose names can't collide.
 		/// </summary>
 		/// <param name="memberAttributePairs">
-		/// All <see cref="MemberAttribute"/> should contain attributes implementing <see cref="INamingAttribute{T}. 
+		/// All <see cref="MemberAttribute"/> should contain attributes implementing <see cref="INamingAttribute"/> 
 		/// </param>
 		/// <typeparam name="TNamingAttr">Any type implementing <see cref="INamingAttribute"/>.</typeparam>
 		/// <returns>A <see cref="UniqueNameValidationResults"/> data structure with the validation results that you can use to display errors and warnings or parse valid pairs.</returns>

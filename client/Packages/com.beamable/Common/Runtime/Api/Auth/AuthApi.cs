@@ -695,7 +695,7 @@ namespace Beamable.Common.Api.Auth
 		/// <summary>
 		/// Convert the given <see cref="AuthThirdParty"/> into a string format that can be sent to Beamable servers.
 		/// Also, the Beamable servers treat these strings as special code names for the various third party apps.
-		/// If you need to refer to a third party in Beamable's APIs, you should use this function to get the correct string value.
+		/// If you need to refer to a third party in Beamable APIs, you should use this function to get the correct string value.
 		/// </summary>
 		/// <param name="thirdParty">The <see cref="AuthThirdParty"/> to convert to a string</param>
 		/// <returns>The string format of the enum</returns>
@@ -797,17 +797,21 @@ namespace Beamable.Common.Api.Auth
 	}
 
 	/// <summary>
-	/// Class representing a solution for challenge given by a server. It needs to be send as a part of
+	/// Class representing a solution for challenge given by a server. It needs to be sent as a part of
 	/// <see cref="ChallengedAttachExternalIdentityRequest"/> or <see cref="ChallengedExternalAuthenticationRequest"/>.
 	/// To generate a solution You need to use only the first part of a challenge_token that can be retrieved using a
 	/// <see cref="IAuthApi.ParseChallengeToken"/> method.
-	/// <param name="challenge_token">Token received from a server</param>
-	/// <param name="solution">Signed/solved solution that needs to be delivered to server to verify current identity</param>
 	/// </summary>
 	[Serializable]
 	public class ChallengeSolution
 	{
+		/// <summary>
+		/// Token received from a server
+		/// </summary>
 		public string challenge_token;
+		/// <summary>
+		/// Signed/solved solution that needs to be delivered to server to verify current identity
+		/// </summary>
 		public string solution;
 	}
 

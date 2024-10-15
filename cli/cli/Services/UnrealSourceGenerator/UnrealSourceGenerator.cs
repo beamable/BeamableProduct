@@ -654,13 +654,13 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		}));
 
 		// Prints out all the identified semtype declarations
-		Console.Write(kSemTypeDeclarationPointsLog.ToString());
-		Console.Write(kReplacementTypeDeclarationPointsLog.ToString());
-		Console.Write(kSelfReferentialTypeDeclarationPointsLog.ToString());
+		Log.Verbose(kSemTypeDeclarationPointsLog.ToString());
+		Log.Verbose(kReplacementTypeDeclarationPointsLog.ToString());
+		Log.Verbose(kSelfReferentialTypeDeclarationPointsLog.ToString());
 		foreach ((string key, string value) in newGeneratedUnrealTypes)
 		{
 			previousGenerationPassesData.InEngineTypeToIncludePaths.Add(key, value);
-			Console.Write($"Mapped {key} to {value}");
+			Log.Verbose($"Mapped {key} to {value}");
 		}
 
 		outputFiles.Add(new GeneratedFileDescriptor() { FileName = $"{currentGenerationPassDataFilePath}.json", Content = JsonConvert.SerializeObject(previousGenerationPassesData), });

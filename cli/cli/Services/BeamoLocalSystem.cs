@@ -2,6 +2,7 @@
 using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
+using Beamable.Server;
 using cli.Commands.Project;
 using Docker.DotNet;
 using Docker.DotNet.Models;
@@ -552,7 +553,10 @@ public class BeamoServiceDefinition
 	/// </summary>
 	public BeamoProtocolType Protocol;
 
-
+	/// <summary>
+	/// The <see cref="MicroserviceSourceGenConfig"/> for this microservice.
+	/// </summary>
+	public MicroserviceSourceGenConfig SourceGenConfig;
 	
 	/// <summary>
 	/// Gets the truncated version of the image id (used for deploying the service manifest to Beamo. TODO Ideally, we should make beamo use the full ID later...
