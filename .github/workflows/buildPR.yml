@@ -152,6 +152,7 @@ jobs:
         working-directory: ./
         run: |
           ./set-packages.sh "${{ github.workspace }}/client" "UNITY_NugetSource" "" "Global"
+        shell: bash
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
           SKIP_GENERATION: true
