@@ -188,7 +188,7 @@ public class PlanDeploymentCommand
 {
 	public override bool AutoLogOutput => false;
 
-	public PlanDeploymentCommand() : base("plan", "plan a deployment for later release")
+	public PlanDeploymentCommand() : base("plan", "Plan a deployment for later release")
 	{
 	}
 
@@ -196,7 +196,7 @@ public class PlanDeploymentCommand
 	{
 		DeployArgs.AddPlanOptions(this);
 	
-		AddOption(new Option<string>(new string[] { "--to-file", "--out", "-o" }, "a file path to save the plan"),
+		AddOption(new Option<string>(new string[] { "--to-file", "--out", "-o" }, "A file path to save the plan"),
 			(args, i) => args.toFile = i);
 		
 	}

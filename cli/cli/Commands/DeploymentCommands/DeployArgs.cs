@@ -26,16 +26,16 @@ public class DeployArgs
 			},
 			(args, i) => args.ServiceComments = i);
 
-		command.AddOption(new Option<string>(new string[] { "--from-manifest", "--manifest", "-m" }, "a manifest json file to use to create a plan"),
+		command.AddOption(new Option<string>(new string[] { "--from-manifest", "--manifest", "-m" }, "A manifest json file to use to create a plan"),
 			(args, i) => args.FromManifestFile = i);
-		command.AddOption(new Option<string>(new string[] { "--from-manifest-id", "--manifest-id", "-i" }, "a manifest id to download and use to create a plan"),
+		command.AddOption(new Option<string>(new string[] { "--from-manifest-id", "--manifest-id", "-i" }, "A manifest id to download and use to create a plan"),
 			(args, i) => args.ManifestId = i);
 		
 		
-		command.AddOption(new Option<bool>(new string[] { "--run-health-checks", "--health", "-h" }, "run health checks on services"),
+		command.AddOption(new Option<bool>(new string[] { "--run-health-checks", "--health", "-h" }, "Run health checks on services"),
 			(args, i) => args.RunHealthChecks = i);
 		
-		command.AddOption(new Option<bool>(new string[] { "--restart", "--redeploy", "--roll" }, "restart existing deployed services"),
+		command.AddOption(new Option<bool>(new string[] { "--restart", "--redeploy", "--roll" }, "Restart existing deployed services"),
 			(args, i) => args.UseLatestDeployedManifest = i);
 		
 		AddModeOption(command, (args, i) => args.DeployMode = i);
@@ -48,7 +48,7 @@ public class DeployArgs
 	{
 		command.AddOption(
 			new Option<bool>(new string[] { "--show-archived", "-a" },
-				"include archived (removed) services"), (args, showArchived) =>
+				"Include archived (removed) services"), (args, showArchived) =>
 			{
 				var archivedOption = new OptionalBool(false);
 				if (showArchived)
@@ -68,8 +68,8 @@ public class DeployArgs
 	public static void AddModeOption<TArgs>(AppCommand<TArgs> command, Action<TArgs, DeployMode> binder)
 		where TArgs : CommandArgs
 	{
-		var additiveOption = new Option<bool>("--merge",  "Create a Release that adds your current local environment to the existing remote services. Existing deployed services will not be removed. ");
-		var replacementOption = new Option<bool>("--replace", "(default) Create a Release that completely overrides the existing remote services. Existing deployed services that are not present locally will be removed. ");
+		var additiveOption = new Option<bool>("--merge",  "Create a Release that adds your current local environment to the existing remote services. Existing deployed services will not be removed");
+		var replacementOption = new Option<bool>("--replace", "Create a Release that completely overrides the existing remote services. Existing deployed services that are not present locally will be removed (default)");
 		
 		command.AddOption(additiveOption, (_, _) => { });
 		command.AddOption(replacementOption, ((args, ctx, replace) =>

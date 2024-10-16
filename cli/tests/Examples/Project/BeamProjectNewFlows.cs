@@ -66,7 +66,8 @@ public class BeamProjectNewFlows : CLITestExtensions
 		Assert.That(hasNugetReference, "csproj must have nuget reference fragment\n" + localCsProjContent);
 		
 		string dockerfileContent = BFile.ReadAllText($"{serviceName}/services/{serviceName}/Dockerfile");
-		var hasCorrectCopyFragment = dockerfileContent.Contains($"COPY {serviceName}/services/{serviceName} ");
+		var hasCorrectCopyFragment = dockerfileContent.Contains("# <beamReserved>") &&
+		                             dockerfileContent.Contains("# </beamReserved>");
 		Assert.IsTrue(hasCorrectCopyFragment, "the docker file needs to have a copy line relative to the services folder.\n" + dockerfileContent);
 		
 		#endregion

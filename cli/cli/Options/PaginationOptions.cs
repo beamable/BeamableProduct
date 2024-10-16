@@ -22,8 +22,8 @@ public static class PaginationOptions
 		int defaultOffset=-1)
 		where TArgs : CommandArgs, IPaginationArgs
 	{
-		var limitOption = new Option<int>("--limit", () => defaultLimit, "the limit of resources. A value of -1 means no limit");
-		var offsetOption = new Option<int>("--offset", () => defaultOffset, "the offset of resources. A value of -1 means no offset");
+		var limitOption = new Option<int>("--limit", () => defaultLimit, "The limit of resources. A value of -1 means no limit");
+		var offsetOption = new Option<int>("--offset", () => defaultOffset, "The offset of resources. A value of -1 means no offset");
 
 		command.AddOption(limitOption, (args, context, limit) =>
 		{

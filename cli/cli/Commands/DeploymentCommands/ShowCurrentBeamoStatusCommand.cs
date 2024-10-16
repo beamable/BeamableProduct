@@ -18,7 +18,7 @@ public class ShowCurrentBeamoStatusCommandOutput
 
 public class ShowCurrentBeamoStatusCommand : AtomicCommand<ShowCurrentBeamoStatusCommandArgs, ShowCurrentBeamoStatusCommandOutput>
 {
-	public ShowCurrentBeamoStatusCommand() : base("status", "show the current deployment status")
+	public ShowCurrentBeamoStatusCommand() : base("status", "Show the current deployment status")
 	{
 		AddAlias("ps");
 	}

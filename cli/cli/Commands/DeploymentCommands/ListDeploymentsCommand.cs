@@ -23,7 +23,7 @@ public class ListDeploymentsCommandOutput
 public class ListDeploymentsCommand : AtomicCommand<ListDeploymentsCommandArgs, ListDeploymentsCommandOutput>
 	, ISkipManifest
 {
-	public ListDeploymentsCommand() : base("list", "list the deployments")
+	public ListDeploymentsCommand() : base("list", "List the deployments")
 	{
 	}
 

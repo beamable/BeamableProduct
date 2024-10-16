@@ -12,8 +12,6 @@ namespace cli.DeploymentCommands;
 
 public class ReleaseDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs
 {
-	// TODO: add federation support
-	
 	public string fromPlanFile;
 	public bool fromLastPlan;
 	public string Comment { get; set; }
@@ -32,7 +30,7 @@ public class ReleaseDeploymentCommand
 	, IResultSteam<RunProjectBuildErrorStreamChannel, RunProjectBuildErrorStream>
 	, IResultSteam<PlanReleaseProgressChannel, PlanReleaseProgress>
 {
-	public ReleaseDeploymentCommand() : base("release", "perform a release, this will modify remote running services")
+	public ReleaseDeploymentCommand() : base("release", "Perform a release, this will modify remote running services")
 	{
 		AddAlias("fire");
 	}
@@ -40,11 +38,11 @@ public class ReleaseDeploymentCommand
 	public override void Configure()
 	{
 		DeployArgs.AddPlanOptions(this);
-		AddOption(new Option<string>(new string[] { "--from-plan", "--plan", "-p" }, "the file path to a pre-generated plan file using the `deploy plan` command"),
+		AddOption(new Option<string>(new string[] { "--from-plan", "--plan", "-p" }, "The file path to a pre-generated plan file using the `deploy plan` command"),
 			(args, i) => args.fromPlanFile = i);
 		
 		// TODO: is this really helpful?
-		AddOption(new Option<bool>(new string[]{"--from-latest-plan", "--latest-plan", "--last-plan", "-lp"}, "use the most recent plan generated from the plan command"), (args, i) => args.fromLastPlan = i);
+		AddOption(new Option<bool>(new string[]{"--from-latest-plan", "--latest-plan", "--last-plan", "-lp"}, "Use the most recent plan generated from the plan command"), (args, i) => args.fromLastPlan = i);
 	}
 
 	public override async Task Handle(ReleaseDeploymentCommandArgs args)

@@ -19,18 +19,18 @@ public class GetDeploymentCommandOutput
 
 public class GetDeploymentCommand : AtomicCommand<GetDeploymentCommandArgs, GetDeploymentCommandOutput>
 {
-	public GetDeploymentCommand() : base("get", "get a specific deployment")
+	public GetDeploymentCommand() : base("get", "Get a specific deployment")
 	{
 	}
 
 	public override void Configure()
 	{
 		DeployArgs.AddArchivedOption(this, (args, i) => args.showArchived = i);
-		AddOption(new Option<string>(new string[] { "--to-file", "--out", "-o" }, "a file path to save the plan"),
+		AddOption(new Option<string>(new string[] { "--to-file", "--out", "-o" }, "A file path to save the plan"),
 			(args, i) => args.toFile = i);
 		AddOption(
 			new Option<string>(new string[] { "--id", "-i" },
-				"find only the single manifest that matches the given id"), (args, i) => args.manifestIdFilter = i);
+				"Find only the single manifest that matches the given id"), (args, i) => args.manifestIdFilter = i);
 	}
 
 	public override async Task<GetDeploymentCommandOutput> GetResult(GetDeploymentCommandArgs args)
