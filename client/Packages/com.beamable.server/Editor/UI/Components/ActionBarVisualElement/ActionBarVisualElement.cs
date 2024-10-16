@@ -69,7 +69,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_codeService = Context.ServiceScope.GetService<CodeService>();
 			_allLocalServices = _codeService.ServiceDefinitions.Where(sd => sd.ServiceType == ServiceType.MicroService)
-			                                .ToList();
+											.ToList();
 
 			_refreshButton = Root.Q<Button>("refreshButton");
 			_refreshButton.clickable.clicked += () => { OnRefreshButtonClicked?.Invoke(); };

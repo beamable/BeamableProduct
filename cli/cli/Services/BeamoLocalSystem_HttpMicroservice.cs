@@ -20,7 +20,7 @@ public partial class BeamoLocalSystem
 	public static string GetBeamIdAsMicroserviceContainer(string beamoId) => $"{beamoId}_httpMicroservice";
 
 	private const string HTTM_MICROSERVICE_CONTAINER_PORT = "6565";
-	
+
 	public async Task<List<DockerEnvironmentVariable>> GetLocalConnectionStrings(BeamoLocalManifest localManifest,
 		string host = "host.docker.internal")
 	{
@@ -55,7 +55,7 @@ public partial class BeamoLocalSystem
 
 		return bindings[0].HostPort;
 	}
-	
+
 	public async Promise<Dictionary<string, string>> GetMicroserviceEnvironmentVariables(string serviceName)
 	{
 		var localMicroserviceName = GetBeamIdAsMicroserviceContainer(serviceName);
@@ -81,13 +81,13 @@ public partial class BeamoLocalSystem
 		var localStorageContainerName = GetBeamIdAsMongoContainer(storageName);
 
 		ContainerInspectResponse storageDesc = await _client.Containers.InspectContainerAsync(localStorageContainerName);
-		
+
 		if (!storageDesc.NetworkSettings.Ports.TryGetValue($"{MONGO_DATA_CONTAINER_PORT}/tcp", out IList<PortBinding> bindings))
 		{
 			throw new Exception(
 				$"could not get host port of storage=[{storageName}] because it was not mapped in storage container");
 		}
-		
+
 		return bindings[0].HostPort;
 	}
 
@@ -98,7 +98,7 @@ public partial class BeamoLocalSystem
 		{
 			throw new Exception($"Could not find entry for {storageName}");
 		}
-		
+
 		var hostPort = await GetStorageHostPort(storageName);
 
 		var str = $"mongodb://{localStorage.RootUsername}:{localStorage.RootPassword}@{host}:{hostPort}";
@@ -111,13 +111,13 @@ public partial class BeamoLocalSystem
 	/// Runs a service locally, enforcing the <see cref="BeamoProtocolType.HttpMicroservice"/> protocol.
 	/// </summary>
 	public async Task RunLocalHttpMicroservice(BeamoServiceDefinition serviceDefinition,
-		HttpMicroserviceLocalProtocol localProtocol, 
-		BeamoLocalSystem localSystem, 
+		HttpMicroserviceLocalProtocol localProtocol,
+		BeamoLocalSystem localSystem,
 		bool autoDeleteContainer,
 		CancellationToken token = default,
-		bool disableInitHooks=false,
-		string imageIdOverride=null,
-		string routingKey=null)
+		bool disableInitHooks = false,
+		string imageIdOverride = null,
+		string routingKey = null)
 	{
 		const string ENV_CID = "CID";
 		const string ENV_PID = "PID";
@@ -214,7 +214,7 @@ public partial class BeamoLocalSystem
 		await CreateAndRunContainer(imageId, containerName, cmdStr, autoDeleteContainer, portBindings, volumes, bindMounts,
 			environmentVariables, token);
 	}
-	
+
 }
 
 public class HttpMicroserviceRemoteProtocol : IBeamoRemoteProtocol
@@ -243,7 +243,7 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 	public List<DockerEnvironmentVariable> CustomEnvironmentVariables;
 
 	public int InstanceCount = 1;
-	
+
 	/// <summary>
 	/// A list of beamo ids for dependencies on storage projects
 	/// </summary>

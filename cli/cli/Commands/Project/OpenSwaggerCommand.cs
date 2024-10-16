@@ -28,16 +28,16 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 		AddArgument(new Argument<ServiceName>("service-name", () => new ServiceName(), "Name of the service to open swagger to"), (arg, i) => arg.ServiceName = i);
 
 		var defaultRoutingKey = ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine();
-		
+
 		var remoteOption = new Option<bool>("--remote",
 			"When set, enforces the routing key to be the one for the service deployed to the realm. Cannot be specified when --routing-key is also set");
 		remoteOption.AddAlias("-r");
-		
+
 		var routingKeyOption = new Option<string>("--routing-key",
 			"The routing key for the service instance we want. If not passed, defaults to the local service");
 		routingKeyOption.SetDefaultValue(defaultRoutingKey);
 		routingKeyOption.AddAlias("-k");
-		
+
 		AddOption(routingKeyOption, (arg, ctx, key) =>
 		{
 			var remoteValue = ctx.ParseResult.GetValueForOption(remoteOption);
@@ -55,7 +55,7 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 
 			arg.RoutingKey = key;
 		});
-		
+
 		AddOption(remoteOption, (arg, i) =>
 		{
 			// nothing happens here, all logic handled in routingKeyOption binder
@@ -69,13 +69,13 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 		{
 			var serviceDefinitions = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions
 				.Where(definition => definition.Protocol == BeamoProtocolType.HttpMicroservice).ToList();
-			
+
 			switch (serviceDefinitions.Count)
 			{
 				case 1:
 					args.ServiceName = new ServiceName(serviceDefinitions[0].BeamoId);
 					Log.Debug($"No service-name passed as argument. " +
-					          $"Running command for {args.ServiceName} since it is the only microservice in BeamoManifest.");
+							  $"Running command for {args.ServiceName} since it is the only microservice in BeamoManifest.");
 					break;
 				case > 1:
 					Log.Information("Found more than one microservices in the directory");
@@ -102,10 +102,10 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 		{
 			$"refresh_token={refreshToken}",
 		};
-		
-		if(!string.IsNullOrEmpty(routingKey))
+
+		if (!string.IsNullOrEmpty(routingKey))
 			queryArgs.Add($"routingKey={routingKey}");
-		
+
 		var joinedQueryString = string.Join("&", queryArgs);
 		var url = $"{ctx.Host.Replace("dev.", "dev-").Replace("api", "portal")}/{cid}/games/{pid}/realms/{pid}/microservices/micro_{beamoId}/docs?{joinedQueryString}";
 

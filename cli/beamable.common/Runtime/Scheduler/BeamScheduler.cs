@@ -223,7 +223,7 @@ namespace Beamable.Common.Scheduler
 					id = job.id.GetOrThrow(() => new Exception("Job definition has no id.")),
 					action = job.jobAction.Convert(),
 					triggers = job.triggers.Select(t => t.Convert()).ToList(),
-					source =  job.source.GetOrElse(() => null),
+					source = job.source.GetOrElse(() => null),
 					name = job.name.GetOrThrow(() => new Exception("Job definition has no name")),
 					owner = job.owner.GetOrThrow(() => new Exception("Job definition has no owner")),
 					retryPolicy = new RetryPolicy

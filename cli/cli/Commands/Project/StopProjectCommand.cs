@@ -41,23 +41,23 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 	{
 		ProjectCommand.FinalizeServicesArg(args, ref args.services);
 
-		await DiscoverAndStopServices(args, new HashSet<string>(args.services),  args.taskKill, TimeSpan.FromSeconds(1),  SendResults);
+		await DiscoverAndStopServices(args, new HashSet<string>(args.services), args.taskKill, TimeSpan.FromSeconds(1), SendResults);
 	}
 
-	public static async Task DiscoverAndStopServices(CommandArgs args, HashSet<string> serviceIds, bool kill, TimeSpan discoveryPeriod, Action<StopProjectCommandOutput> onStopCallback, Func<ServiceInstance, bool> filter=null)
+	public static async Task DiscoverAndStopServices(CommandArgs args, HashSet<string> serviceIds, bool kill, TimeSpan discoveryPeriod, Action<StopProjectCommandOutput> onStopCallback, Func<ServiceInstance, bool> filter = null)
 	{
 		if (filter == null)
 		{
 			filter = (_) => true;
 		}
-		
+
 		var stoppedInstances = new List<ServiceInstance>();
 		await foreach (var status in CheckStatusCommand.CheckStatus(args, discoveryPeriod, DiscoveryMode.LOCAL))
 		{
 			foreach (var service in status.services)
 			{
 				if (!serviceIds.Contains(service.service)) continue;
-				
+
 				foreach (var routable in service.availableRoutes)
 				{
 					foreach (var instance in routable.instances)
@@ -72,10 +72,10 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 				}
 			}
 		}
-		
+
 		Log.Information($"Stopped {stoppedInstances.Count} instances.");
 	}
-	
+
 	public static async Task StopRunningService(ServiceInstance instance, BeamoLocalSystem beamoLocalSystem, string serviceName, bool kill, Action<ServiceInstance> onServiceStopped = null)
 	{
 		Log.Debug($"stopping service=[{serviceName}]");
