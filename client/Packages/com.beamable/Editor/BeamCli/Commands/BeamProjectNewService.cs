@@ -16,6 +16,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string serviceDirectory;
 		/// <summary>The name of the storage to link this service to</summary>
 		public string[] linkTo;
+		/// <summary>Specify BeamableGroups for this service</summary>
+		public string[] groups;
 		/// <summary>If passed, will create a common library for this project</summary>
 		public bool generateCommon;
 		/// <summary>INTERNAL This enables a sane workflow for beamable developers to be happy and productive</summary>
@@ -51,6 +53,15 @@ namespace Beamable.Editor.BeamCli.Commands
 				{
 					// The parameter allows multiple values
 					genBeamCommandArgs.Add(("--link-to=" + this.linkTo[i]));
+				}
+			}
+			// If the groups value was not default, then add it to the list of args.
+			if ((this.groups != default(string[])))
+			{
+				for (int i = 0; (i < this.groups.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--groups=" + this.groups[i]));
 				}
 			}
 			// If the generateCommon value was not default, then add it to the list of args.

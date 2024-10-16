@@ -19,6 +19,8 @@ namespace Beamable.Server.Editor
 			builder.AddSingleton<MicroserviceManager>();
 			builder.AddSingleton<MicroserviceDiscovery>();
 			builder.AddGlobalStorage<UsamDataModel, EditorStorageLayer>();
+
+			builder.AddSingleton(() => MicroserviceConfiguration.Instance);
 		}
 
 		[RegisterBeamableDependencies(-1000, RegistrationOrigin.RUNTIME)]

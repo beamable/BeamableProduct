@@ -300,7 +300,7 @@ public struct UnrealJsonSerializableTypeDeclaration
 		else
 		{
 			propertySerialization = "const auto Type = GetCurrentType();\n\t";
-			propertyDeserialization = "const auto Type = Bag->GetStringField(\"type\");\n\t";
+			propertyDeserialization = "const auto Type = Bag->GetStringField(TEXT(\"type\"));\n\t";
 
 			_declarePolyWrapperGetType = "FString GetCurrentType() const;";
 

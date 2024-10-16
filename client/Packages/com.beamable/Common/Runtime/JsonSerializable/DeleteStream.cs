@@ -61,6 +61,11 @@ namespace Beamable.Serialization
 				deleteListener = listener;
 			}
 
+			public bool SerializeNestedJson(string key, ref JsonString jsonString)
+			{
+				throw new NotImplementedException();
+			}
+
 			public bool Serialize(string key, ref IDictionary<string, object> target) { return false; }
 			public bool Serialize(string key, ref bool target) { return false; }
 			public bool Serialize(string key, ref bool? target) { return false; }

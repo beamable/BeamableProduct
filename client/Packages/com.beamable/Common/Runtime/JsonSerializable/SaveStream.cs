@@ -45,6 +45,11 @@ namespace Beamable.Serialization
 
 			Dictionary<string, object> curDict;
 
+			public bool SerializeNestedJson(string key, ref JsonString jsonString)
+			{
+				throw new NotImplementedException();
+			}
+
 			public bool Serialize(string key, ref IDictionary<string, object> target)
 			{
 				curDict[key] = target; return true;

@@ -506,7 +506,23 @@ public class ProjectService
 		return CliExtensions.GetDotnetCommand(_app.DotnetPath, arguments).ExecuteAsyncAndLog().Task;
 	}
 
-	public static async Task WatchBuild(BuildProjectCommandArgs args, ServiceName serviceName, Action<ProjectErrorReport> onReport)
+	
+	[System.Flags]
+	public enum BuildFlags
+	{
+		None,
+		DisableClientCodeGen
+	}
+	
+	
+	[System.Flags]
+	public enum RunFlags
+	{
+		None,
+		Detach
+	}
+	
+	public static async Task WatchBuild(BuildProjectCommandArgs args, ServiceName serviceName, BuildFlags buildFlags, Action<ProjectErrorReport> onReport)
 	{
 		var localServices = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols;
 		if (!localServices.TryGetValue(serviceName, out var service))
@@ -533,6 +549,11 @@ public class ProjectService
 		var commandStr = $"build {projectPath} -p:ErrorLog=\"{errorPath}%2Cversion=2\"";
 		Log.Debug($"dotnet command=[{args.AppContext.DotnetPath} {commandStr}]");
 
+		if (buildFlags.HasFlag(BuildFlags.DisableClientCodeGen))
+		{
+			commandStr += " -p:GenerateClientCode=false";
+		}
+		
 		using var cts = new CancellationTokenSource();
 
 		var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, commandStr)
@@ -561,7 +582,7 @@ public class ProjectService
 			SarifLog log = SarifLog.Load(errorLogPath);
 			foreach (var result in log.Results())
 			{
-				if (result.Level is FailureLevel.Note or FailureLevel.None) continue;
+				if (result.Level is FailureLevel.Note or FailureLevel.None or FailureLevel.Warning) continue;
 
 				var location = result.Locations.FirstOrDefault();
 

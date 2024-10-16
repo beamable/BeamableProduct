@@ -45,7 +45,7 @@ namespace Beamable.Common.Reflection
 		public readonly Type BaseType;
 
 		/// <summary>
-		/// Whether or not we should include <see cref="BaseType"/> itself in the mapping for this <see cref="BaseTypeOfInterest"/>.
+		/// Whether we should include <see cref="BaseType"/> itself in the mapping for this <see cref="BaseTypeOfInterest"/>.
 		/// </summary>
 		public readonly bool IncludesItself;
 
@@ -72,7 +72,7 @@ namespace Beamable.Common.Reflection
 		/// <param name="type">The current type being evaluated.</param>
 		/// <param name="baseTypesToSearchIn">The <see cref="BaseTypeOfInterest"/> to check <paramref name="type"/> against.</param>
 		/// <param name="foundType">The first <see cref="BaseTypeOfInterest"/> that matches.</param>
-		/// <returns><see cref="true"/>, if a type was found. <see cref="false"/> otherwise.</returns>
+		/// <returns><b>true</b>, if a type was found. <b>false</b> otherwise.</returns>
 		public bool TryFindBaseTypesOfInterest(Type type, IReadOnlyList<BaseTypeOfInterest> baseTypesToSearchIn, out BaseTypeOfInterest foundType)
 		{
 			for (var i = 0; i < baseTypesToSearchIn.Count; i++)

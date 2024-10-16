@@ -61,93 +61,26 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 			.Select(sd => sd.BeamoId).Union(allDeps.SelectMany(d => d)).Distinct().ToArray();
 
 		// Get the list of all assemblies paired with their last edit time.
-		var allAssemblies = new List<Assembly>();
 		Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - starting");
-		foreach (string beamoId in allServicesToLoadDlls)
+
+		// Check all the DLLs that currently exist.
+		var checkProjBuilt = allServicesToLoadDlls.Select(beamoId =>
 		{
 			Project project = null;
-			if (args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(beamoId,
-				    out var httpLocal))
-			{
+			if (args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(beamoId, out var httpLocal))
 				project = httpLocal.Metadata.msbuildProject;
-			} else if (args.BeamoLocalSystem.BeamoManifest.EmbeddedMongoDbLocalProtocols.TryGetValue(beamoId,
-				           out var dbLocal))
-			{
-				project = dbLocal.Metadata.msbuildProject;
-			}
-			var isProjBuilt = ProjectCommand.IsProjectBuiltMsBuild(project);
+			else if (args.BeamoLocalSystem.BeamoManifest.EmbeddedMongoDbLocalProtocols.TryGetValue(beamoId, out var dbLocal)) project = dbLocal.Metadata.msbuildProject;
+			
+			var isProjBuilt =  ProjectCommand.IsProjectBuiltMsBuild(project);
 			Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - checked {beamoId} built=[{isProjBuilt}]");
+			return isProjBuilt;
+		});
 
-			if (isProjBuilt.isBuilt)
-			{
-				var dllPath = isProjBuilt.path;
-				var absolutePath = Path.GetFullPath(dllPath);
-				var absoluteDir = Path.GetDirectoryName(absolutePath)!;
-				var loadContext = new AssemblyLoadContext($"generate-client-context-{beamoId}", false);
-				loadContext.Resolving += (context, name) =>
-				{
-					var assemblyPath = Path.Combine(absoluteDir, $"{name.Name}.dll");
-					try
-					{
-						Log.Verbose("loading dll name=[{Name}] version=[{Version}]", name.Name, name.Version);
-						var loadedDependentAsm = context.LoadFromAssemblyPath(assemblyPath);
-						allAssemblies.Add(loadedDependentAsm);
-						return loadedDependentAsm;
-					}
-					catch (Exception ex)
-					{
-						BeamableLogger.LogError($@"Unable to load dll at path=[{assemblyPath}] 
-name=[{name}] 
-context=[{context.Name}]
-message=[{ex.Message}]
-ex-type=[{ex.GetType().Name}]
-inner-message=[{ex.InnerException?.Message}]
-inner-type=[{ex.InnerException?.GetType().Name}]
-");
-						throw;
-					}
-				};
-
-				var userAssembly = loadContext.LoadFromAssemblyPath(absolutePath);
-				Log.Verbose("loading dll name=[{Name}] version=[{Version}] deps=[{Deps}]", userAssembly.GetName().Name, userAssembly.GetName().Version,
-					string.Join(", ", userAssembly.GetReferencedAssemblies().Select(n => n.Name)));
-
-				/// GHOST IN THE MACHINE ---> We need some time to investigate this stuff.
-				var requiredAssemblies = userAssembly.GetReferencedAssemblies()
-					.Where(asm => !asm.Name.Contains("BeamableMicroserviceBase") && !asm.Name.Contains("Beamable.Server"))
-					.ToList();
-				foreach (AssemblyName referencedAssembly in requiredAssemblies)
-					allAssemblies.Add(loadContext.LoadFromAssemblyName(referencedAssembly));
-
-				allAssemblies.Add(userAssembly);
-				
-				Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - loaded all assemblies");
-
-			}
-		}
-
-		Log.Verbose("finished loading all dll files.");
+		// Based on that, load all dlls that can be loaded.
+		var allAssemblies = ProjectCommand.LoadProjectDll(checkProjBuilt);
+		Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - done type loading");
 
 		#endregion
-
-		// need to turn the crank loading types until the spigot bleeds dry.
-		var startCount = allAssemblies.Count;
-		var finalCount = 0;
-		while (startCount != finalCount)
-		{
-			var currentAssemblies = allAssemblies.ToList(); // copy working set.
-			startCount = currentAssemblies.Count;
-			foreach (var currentAssembly in currentAssemblies)
-			{
-				Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - exanding types from {currentAssembly.FullName}");
-				// Log.Verbose("Expanding types from " + currentAssembly.FullName);
-				var _ = currentAssembly.GetExportedTypes();
-			}
-
-			finalCount = allAssemblies.Count;
-			Log.Verbose($"Loaded all types, and found {startCount} assemblies, and after, found {finalCount} assemblies.");
-		}
-		Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - done type loading");
 		
 		var allTypes = allAssemblies.SelectMany(asm => asm.GetExportedTypes()).ToArray();
 		var allMsTypes = allTypes.Where(t => t.IsSubclassOf(typeof(Microservice)) && t.GetCustomAttribute<MicroserviceAttribute>() != null).ToArray();

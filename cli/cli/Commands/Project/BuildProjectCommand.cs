@@ -36,7 +36,7 @@ public class BuildProjectCommand : StreamCommand<BuildProjectCommandArgs, BuildP
 		var serviceTasks = new List<Task>();
 		foreach (var service in args.services)
 		{
-			serviceTasks.Add(ProjectService.WatchBuild(args, new ServiceName(service), (report) =>
+			serviceTasks.Add(ProjectService.WatchBuild(args, new ServiceName(service), ProjectService.BuildFlags.None, (report) =>
 			{
 				SendResults(new BuildProjectCommandOutput
 				{

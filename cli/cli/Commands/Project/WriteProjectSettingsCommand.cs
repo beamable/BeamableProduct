@@ -189,7 +189,7 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
           //  but IDEs (like Rider) won't do that, and won't realize that the csproj file has a meaningful change. 
 			var subArgs = args.Create<BuildProjectCommandArgs>();
 			Log.Information("Building project to apply settings...");
-			await ProjectService.WatchBuild(subArgs, new ServiceName(beamoId), report =>
+			await ProjectService.WatchBuild(subArgs, new ServiceName(beamoId), ProjectService.BuildFlags.DisableClientCodeGen, report =>
 			{
 				if (report.isSuccess)
 				{

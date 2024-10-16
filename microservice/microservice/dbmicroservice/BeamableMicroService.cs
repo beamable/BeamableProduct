@@ -901,7 +901,7 @@ namespace Beamable.Server
 			      new SupportedFederation
 			      {
 				      nameSpace = component.identity.UniqueName,
-				      type = FederationComponentNames.GetFederationType(component.typeName),
+				      type = FederatedComponentGenerator.GetFederationType(component.typeName),
 				      //settings = ? // leave filter node empty for now
 			      }).ToArray())
 	      };

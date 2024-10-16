@@ -293,6 +293,12 @@ namespace Beamable.Common.Api.Inventory
 		public long Id;
 
 		/// <summary>
+		/// If the content type is deleted from beamable, then the content is considered deprecated.
+		/// The items may still exist in the inventory.
+		/// </summary>
+		public bool IsContentDeprecated => ItemContent.IsDeprecated;
+
+		/// <summary>
 		/// The timestamp of when the item was added to the player inventory.
 		/// </summary>
 		public long CreatedAt;

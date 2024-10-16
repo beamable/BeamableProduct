@@ -25,6 +25,7 @@
 
     <ItemGroup Label="Nuget References">
         <PackageReference Include="Beamable.Microservice.Runtime" Version="$(BeamableVersion)" />
+        <PackageReference Include="Beamable.Microservice.SourceGen" Version="$(BeamableVersion)" OutputItemType="Analyzer" />
     </ItemGroup>
 
 </Project>
