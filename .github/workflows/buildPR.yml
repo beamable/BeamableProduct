@@ -151,9 +151,10 @@ jobs:
       - name: Build and Install BEAM CLI 
         working-directory: ./
         run: |
-          SKIP_GENERATION=true ./set-packages.sh "${{ github.workspace }}/client" "UNITY_NugetSource" "" "Global"
+          ./set-packages.sh "${{ github.workspace }}/client" "UNITY_NugetSource" "" "Global"
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
+          SKIP_GENERATION: true
       - name: Check Beam CLI
         run: |
           pwd
@@ -161,8 +162,10 @@ jobs:
           beam version
       - name: Apply Nuget Version to Unity SDK
         run: |
-          ReleaseSharedCode=true dotnet build ./cli/beamable.common -t:CopyCodeToUnity
-          ReleaseSharedCode=true dotnet build ./cli/beamable.server.common -t:CopyCodeToUnity
+          dotnet build ./cli/beamable.common -t:CopyCodeToUnity
+          dotnet build ./cli/beamable.server.common -t:CopyCodeToUnity
+        env:
+          ReleaseSharedCode: true
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -181,8 +184,10 @@ jobs:
         if: ${{ steps.cache_docker.outputs.cache-hit }}
         run: |
           chmod +x ./build/prepare_base_image.sh
-          UNITY_VERSION=${{ matrix.unityVersion }} ./build/prepare_base_image.sh
+          ./build/prepare_base_image.sh
         shell: bash
+        env:
+          UNITY_VERSION: ${{ matrix.unityVersion }}
       - name: Cache Unity Folders
         uses: actions/cache@v3
         with:
@@ -216,8 +221,10 @@ jobs:
         if: ${{ !steps.cache_docker.outputs.cache-hit }}
         run: |
           chmod +x ./build/save_base_image.sh
-          UNITY_VERSION=${{ matrix.unityVersion }} ./build/save_base_image.sh
+          ./build/save_base_image.sh
         shell: bash
+        env:
+          UNITY_VERSION: ${{ matrix.unityVersion }}
 
   build:
     name: Build for ${{ matrix.targetPlatform }}
