@@ -23,6 +23,7 @@ public class RunProjectCommandArgs : CommandArgs
 	
 	public bool forceRestart;
 	public bool detach;
+	public bool disableClientCodeGen;
 }
 
 public class RunProjectResultStream
@@ -86,6 +87,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		
 		AddOption<bool>(new Option<bool>("--force", "With this flag, we restart any running services. Without it, we skip running services"), (args, b) => args.forceRestart = b);
 		AddOption<bool>(new Option<bool>("--detach", "With this flag, the service will run the background after it has reached basic startup"), (args, b) => args.detach = b);
+		AddOption<bool>(new Option<bool>("--no-client-gen", "We compile services that need compiling before running. This will disable the client-code generation part of the compilation"), (args, b) => args.disableClientCodeGen = b);
 
 	}
 
@@ -161,7 +163,11 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		foreach ((string serviceName, HttpMicroserviceLocalProtocol service) in serviceTable)
 		{
 			var name = serviceName;
-			runTasks.Add(RunService(args, serviceName, new CancellationTokenSource(), args.detach, data =>
+
+			var buildFlags = args.disableClientCodeGen ? ProjectService.BuildFlags.DisableClientCodeGen : ProjectService.BuildFlags.None;
+			var runFlags = args.detach ? ProjectService.RunFlags.Detach : ProjectService.RunFlags.None;
+			
+			runTasks.Add(RunService(args, serviceName, new CancellationTokenSource(), buildFlags, runFlags, data =>
 			{
 				if (data.IsJson)
 				{
@@ -201,7 +207,8 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		CommandArgs args,
 		string serviceName,
 		CancellationTokenSource serviceToken,
-		bool detach,
+		ProjectService.BuildFlags buildFlags,
+		ProjectService.RunFlags runFlags,
 		Action<ProjectRunLogData> onLog = null,
 		Action<ProjectErrorReport, int> onFailure = null,
 		Action<float, string> onProgress=null)
@@ -244,15 +251,20 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				$"{serviceName}-{DateTimeOffset.Now.ToUnixTimeMilliseconds()}-logs.txt");
 			Log.Debug($"service path=[{projectPath}]");
 
-			var errorPath = Path.Combine(args.ConfigService.ConfigDirectoryPath, "temp", "serviceBuildLogs",
+			var errorPath = Path.Combine(args.ConfigService.ConfigDirectoryPath, "temp", "buildLogs",
 				$"{serviceName}.json");
 			var errorPathDir = Path.GetDirectoryName(errorPath);
 			Directory.CreateDirectory(errorPathDir);
 
 			var exe = args.AppContext.DotnetPath;
 			var commandStr = $"run --project {projectPath} --verbosity minimal -p:ErrorLog=\"{errorPath}%2Cversion=2\" -p:WarningLevel=0";
+
+			if (buildFlags.HasFlag(ProjectService.BuildFlags.DisableClientCodeGen))
+			{
+				commandStr += " -p:GenerateClientCode=false";
+			}
 			
-			if (detach && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+			if (runFlags.HasFlag(ProjectService.RunFlags.Detach) && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 			{
 				// on windows, detaching "just works" (thought Chris, who wasn't on a windows machine)
 				commandStr = $"sh -c \"{exe} {commandStr}\" &";
@@ -354,7 +366,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			proc.BeginErrorReadLine();
 			proc.BeginOutputReadLine();
 			
-			if (detach)
+			if (runFlags.HasFlag(ProjectService.RunFlags.Detach))
 			{
 				// wait for the progress to hit 1.
 				while (!proc.HasExited && Math.Abs(currentProgress - 1) > .001f)

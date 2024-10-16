@@ -10,7 +10,7 @@ namespace Beamable.Server
 		private static readonly ConcurrentDictionary<Type, string> ServiceNamespaceCache =
 			new ConcurrentDictionary<Type, string>();
 
-		private static string GetServiceNamespace<T>() where T : IThirdPartyCloudIdentity, new()
+		private static string GetServiceNamespace<T>() where T : IFederationId, new()
 		{
 			return ServiceNamespaceCache.GetOrAdd(typeof(T), _ => new T().UniqueName);
 		}
@@ -18,7 +18,7 @@ namespace Beamable.Server
 		public static Promise<AttachExternalIdentityResponse> AttachIdentity<T>(this ISupportsFederatedLogin<T> client,
 			string token,
 			ChallengeSolution solution = null)
-			where T : IThirdPartyCloudIdentity, new()
+			where T : IFederationId, new()
 		{
 			var serviceNamespace = GetServiceNamespace<T>();
 			var api = client.Provider.GetService<IAuthApi>();
@@ -27,7 +27,7 @@ namespace Beamable.Server
 
 		public static Promise<DetachExternalIdentityResponse> DetachIdentity<T>(this ISupportsFederatedLogin<T> client,
 			string userId)
-			where T : IThirdPartyCloudIdentity, new()
+			where T : IFederationId, new()
 		{
 			var serviceNamespace = GetServiceNamespace<T>();
 			var api = client.Provider.GetService<IAuthApi>();
@@ -38,7 +38,7 @@ namespace Beamable.Server
 			this ISupportsFederatedLogin<T> client,
 			string token,
 			ChallengeSolution solution = null)
-			where T : IThirdPartyCloudIdentity, new()
+			where T : IFederationId, new()
 		{
 			var serviceNamespace = GetServiceNamespace<T>();
 			var api = client.Provider.GetService<IAuthApi>();
@@ -48,7 +48,7 @@ namespace Beamable.Server
 		}
 
 		public static Promise<bool> IsExternalIdentityAvailable<T>(this ISupportsFederatedLogin<T> client, string token)
-			where T : IThirdPartyCloudIdentity, new()
+			where T : IFederationId, new()
 		{
 			var providerService = client.ServiceName;
 			var providerNamespace = GetServiceNamespace<T>();

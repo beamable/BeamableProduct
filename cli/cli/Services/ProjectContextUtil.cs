@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.BeamCli.Contracts;
+using Beamable.Server;
 using Beamable.Server.Common;
 using CliWrap;
 using Microsoft.Build.Construction;
@@ -30,6 +31,18 @@ public static class ProjectContextUtil
 			_existingManifest = null;
 			_existingManifestCacheExpirationTime = DateTimeOffset.Now;
 		}
+	}
+
+	public static async Task SerializeSourceGenConfigToDisk(string rootFolder, BeamoServiceDefinition selectedService)
+	{
+		var serializedSourceGenConfig = System.Text.Json.JsonSerializer.Serialize(selectedService.SourceGenConfig, new JsonSerializerOptions { IncludeFields = true});
+		
+		var projectDir = Path.GetDirectoryName(selectedService.ProjectPath);
+		var sourceGenPath = Path.Combine(projectDir, MicroserviceSourceGenConfig.CONFIG_FILE_NAME);
+		// Because this can be invoked from any point inside the root folder,
+		// we have to figure out the absolute path to the file so we can call File.Write/Read apis correctly. 
+		sourceGenPath = Path.Combine(rootFolder, sourceGenPath);
+		await File.WriteAllTextAsync(sourceGenPath, serializedSourceGenConfig);
 	}
 	
 	public static async Task<BeamoLocalManifest> GenerateLocalManifest(
@@ -164,6 +177,61 @@ public static class ProjectContextUtil
 			existingDefinition.IsInRemote = true;
 		}
 
+		// Let's make sure all the service definitions have a paired SourceGenConfig file
+		var microservicesOnly = manifest.ServiceDefinitions.Where(sd =>
+		{
+			var isMicroservice = sd.Protocol == BeamoProtocolType.HttpMicroservice;
+			var isLocal = sd.IsLocal;
+			return isMicroservice && isLocal;
+		});
+		await Task.WhenAll(microservicesOnly.Select(sd =>
+		{
+			var projectDir = Path.GetDirectoryName(sd.ProjectPath);
+			var sourceGenPath = Path.Combine(projectDir, MicroserviceSourceGenConfig.CONFIG_FILE_NAME);
+			
+			// Because this can be invoked from any point inside the root folder,
+			// we have to figure out the absolute path to the file so we can call File.Write/Read apis correctly. 
+			sourceGenPath = Path.Combine(rootFolder, sourceGenPath);
+			
+			if (!File.Exists(sourceGenPath))
+				return File.WriteAllTextAsync(sourceGenPath, "{}");
+
+			return Task.CompletedTask;
+		}));
+		
+		// Let's load all the SourceGenConfig files
+		var sourceGenFiles = await Task.WhenAll(microservicesOnly.Select(sd =>
+		{
+			var projectDir = Path.GetDirectoryName(sd.ProjectPath);
+			var sourceGenPath = Path.Combine(projectDir, MicroserviceSourceGenConfig.CONFIG_FILE_NAME);
+			
+			// Because this can be invoked from any point inside the root folder,
+			// we have to figure out the absolute path to the file so we can call File.Write/Read apis correctly.
+			sourceGenPath = Path.Combine(rootFolder, sourceGenPath);
+			
+			return File.ReadAllTextAsync(sourceGenPath);
+		}));
+		
+		// Now we can deserialize and set it in the service definition
+		foreach (var (sd, cfg) in microservicesOnly.Zip(sourceGenFiles))
+		{
+			try
+			{
+				sd.SourceGenConfig = System.Text.Json.JsonSerializer.Deserialize<MicroserviceSourceGenConfig>(cfg, new JsonSerializerOptions(){ IncludeFields = true });
+			}
+			catch (Exception e)
+			{
+				var projectDir = Path.GetDirectoryName(sd.ProjectPath);
+				var sourceGenPath = Path.Combine(projectDir, MicroserviceSourceGenConfig.CONFIG_FILE_NAME);
+			
+				// Because this can be invoked from any point inside the root folder,
+				// we have to figure out the absolute path to the file so we can call File.Write/Read apis correctly.
+				sourceGenPath = Path.Combine(rootFolder, sourceGenPath);
+				
+				Log.Fatal(e, "Failed to load source gen config");
+				throw new CliException($"Failed to parse {nameof(MicroserviceSourceGenConfig)} at {sourceGenPath}. Please make sure the source gen config is valid json.");
+			}
+		}
 
 		manifest.ServiceGroupToBeamoIds =
 			ResolveServiceGroups(manifest.ServiceDefinitions, manifest.HttpMicroserviceLocalProtocols);

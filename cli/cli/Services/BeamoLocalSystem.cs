@@ -2,6 +2,7 @@
 using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
+using Beamable.Server;
 using cli.Commands.Project;
 using Docker.DotNet;
 using Docker.DotNet.Models;
@@ -57,6 +58,7 @@ public partial class BeamoLocalSystem
 	/// An instance of the docker client so that it can communicate with Docker for Windows and Docker for Mac ---- really, it should talk to any docker daemon.
 	/// </summary>
 	private readonly DockerClient _client;
+	public DockerClient Client => _client;
 
 	/// <summary>
 	/// <see cref="StartListeningToDocker"/> and <see cref="StopListeningToDocker"/>.
@@ -336,151 +338,9 @@ public partial class BeamoLocalSystem
 		}
 	}
 
-	public async Promise UpdateDockerFile(BeamoServiceDefinition serviceDefinition)
+	public Promise UpdateDockerFile(BeamoServiceDefinition serviceDefinition)
 	{
-		if (serviceDefinition.Protocol != BeamoProtocolType.HttpMicroservice)
-		{
-			return; // Only HttpMicroservices have dockerfiles
-		}
-
-		if (!serviceDefinition.HasLocalDockerfile)
-		{
-			return; // if no dockerfile; do nothing.
-		}
-
-		var serviceName = serviceDefinition.BeamoId;
-		var service = BeamoManifest.HttpMicroserviceLocalProtocols[serviceName];
-
-		if (string.IsNullOrEmpty(service.RelativeDockerfilePath))
-		{
-			Log.Verbose($"skipping dockerfile update for {serviceName} because no dockerfile is listed in the manifest.");
-			return; // there is no docker file.
-		}
-		
-		var dockerfilePath = service.RelativeDockerfilePath;
-		Log.Verbose($"Updating docker file, serviceName=[{serviceName}] service=[{service.DockerBuildContextPath}] dockerfilePath=[{dockerfilePath}]");
-		dockerfilePath = _configService.GetFullPath(dockerfilePath);
-		Log.Verbose($"Updating docker file at {dockerfilePath}");
-
-		await WriteDependenciesToDockerfile(dockerfilePath, serviceName, serviceDefinition.ProjectDirectory);
-		await WriteEnvVarsToDockerfile(dockerfilePath, serviceName, serviceDefinition.ProjectDirectory);
-	}
-
-	private async Promise WriteDependenciesToDockerfile(string dockerfilePath, string serviceName, string projectDir)
-	{
-		var dockerfileText = await File.ReadAllTextAsync(dockerfilePath);
-
-		const string endTag =
-			"# </BEAM-CLI-COPY-SRC> this line signals the end of Beamable Project Src copies. Do not remove it.";
-		const string startTag =
-			"# <BEAM-CLI-COPY-SRC> this line signals the start of Beamable Project Src copies into the built container. Do not remove it. The content between here and the closing tag will change anytime the Beam CLI modifies dependencies.";
-		const string legacyCopyLine =
-			"# <BEAM-CLI-INSERT-FLAG:COPY> do not delete this line. It is used by the beam CLI to insert custom actions";
-		const string servicePathTag = "<SERVICE_PATH>";
-		const string serviceFileTag = "<SERVICE_FILE>";
-
-		string toAdd = @$"RUN mkdir -p /subsrc/{servicePathTag}
-COPY {servicePathTag} /subsrc/{servicePathTag}";
-		var replacement = @$"{toAdd}
-{endTag}";
-
-		string toAddFile = @$"RUN mkdir -p /subsrc/{servicePathTag}
-COPY {serviceFileTag} /subsrc/{servicePathTag}";
-		var replacementFile = @$"{toAddFile}
-{endTag}";
-
-		var hasEndTag = dockerfileText.Contains(endTag);
-		var hasStartTag = dockerfileText.Contains(startTag);
-		var legacyIndex = dockerfileText.IndexOf(legacyCopyLine, StringComparison.Ordinal);
-		if ((!hasEndTag && hasStartTag) || (!hasStartTag && hasEndTag))
-		{
-			throw new CliException(
-				"The dockerfile is corrupted and cannot be used by Beamable. There is a tag mismatch." +
-				"Please make the file have a section like this," +
-				$"{startTag}\n# content will go here\n{endTag}");
-		}
-
-		if (!hasEndTag && !hasStartTag && legacyIndex > -1)
-		{
-			dockerfileText = dockerfileText.Replace(legacyCopyLine, $"{legacyCopyLine}{Environment.NewLine}{startTag}{Environment.NewLine}{endTag}{Environment.NewLine}");
-		}
-
-		//Remove old data
-		int startIndex = dockerfileText.LastIndexOf(startTag, StringComparison.Ordinal) + startTag.Length + 1;
-		int endIndex = dockerfileText.IndexOf(endTag, startIndex, StringComparison.Ordinal);
-		string newText = dockerfileText.Remove(startIndex, endIndex - startIndex);
-
-		var dependencies = GetDependencies(serviceName, true);
-		foreach (var dependency in dependencies)
-		{
-			newText = newText.Replace(endTag, replacement.Replace(servicePathTag, dependency.projPath).Replace('\\', '/').Insert(0, Environment.NewLine));
-		}
-
-		//Now Add all the included files in the project
-		var definition = BeamoManifest.ServiceDefinitions.FirstOrDefault(s => s.BeamoId.Equals(serviceName));
-		var allFiles = ProjectContextUtil.GetAllIncludedFiles(definition, _configService);
-		foreach (var file in allFiles)
-		{
-			var path = Path.GetDirectoryName(file);
-			newText = newText.Replace(endTag, replacementFile.Replace(servicePathTag, path).Replace(serviceFileTag, file).Replace('\\', '/').Insert(0, Environment.NewLine));
-		}
-
-		//Add all dll files in the project
-		var allDlls = ProjectContextUtil.GetAllIncludedDlls(definition, _configService);
-		foreach (var dll in allDlls)
-		{
-			var path = Path.GetDirectoryName(dll);
-			newText = newText.Replace(endTag, replacementFile.Replace(servicePathTag, path).Replace(serviceFileTag, dll).Replace('\\', '/').Insert(0, Environment.NewLine));
-		}
-
-		//Copy the services files
-		Log.Verbose($"adding service files projPath=[{projectDir}]");
-
-		newText = newText.Replace(endTag, replacement.Replace(servicePathTag, projectDir).Replace('\\', '/').Insert(0, Environment.NewLine));
-
-		await File.WriteAllTextAsync(dockerfilePath, newText);
-	}
-
-	private async Promise WriteEnvVarsToDockerfile(string dockerfilePath, string serviceName, string projectDir)
-	{
-		var dockerfileText = await File.ReadAllTextAsync(dockerfilePath);
-
-		const string endTag =
-			"# </BEAM-CLI-COPY-ENV> this line signals the end of environment variables copies into the built container. Do not remove it.";
-		const string startTag =
-			"# <BEAM-CLI-COPY-ENV> this line signals the start of environment variables copies into the built container. Do not remove it. This will be overwritten every time a variable changes in the execution of the CLI.";
-		const string servicePathTag = "<SERVICE_PATH>";
-		const string serviceNameTag = "<SERVICE_NAME>";
-		const string beamVersionTag = "<ENV_BEAM_VERSION>"; 
-
-		const string beamCsProjPath = @$"ENV BEAM_CSPROJ_PATH=""/subsrc/{servicePathTag}/{serviceNameTag}.csproj""";
-		const string beamVersion = @$"ENV BEAM_VERSION=""{beamVersionTag}""";
-		var replacement = @$"{beamCsProjPath}
-{beamVersion}
-{endTag}";
-
-		var hasEndTag = dockerfileText.Contains(endTag);
-		var hasStartTag = dockerfileText.Contains(startTag);
-		if ((!hasEndTag && hasStartTag) || (!hasStartTag && hasEndTag) || (!hasEndTag && !hasStartTag))
-		{
-			throw new CliException(
-				"The dockerfile is corrupted and cannot be used by Beamable. There is a tag mismatch." +
-				"Please make the file have a section like this," +
-				$"{startTag}\n# content will go here\n{endTag}");
-		}
-
-		//Remove old data
-		int startIndex = dockerfileText.LastIndexOf(startTag, StringComparison.Ordinal) + startTag.Length + 1;
-		int endIndex = dockerfileText.IndexOf(endTag, startIndex, StringComparison.Ordinal);
-		string newText = dockerfileText.Remove(startIndex, endIndex - startIndex);
-
-		var varsPlusEndTag = replacement.Replace(servicePathTag, projectDir)
-			.Replace(serviceNameTag, serviceName)
-			.Replace(beamVersionTag, VersionService.GetNugetPackagesForExecutingCliVersion().ToString())
-			.Replace('\\', '/').Insert(0, Environment.NewLine);
-		newText = newText.Replace(endTag, varsPlusEndTag);
-
-		await File.WriteAllTextAsync(dockerfilePath, newText);
+		return Promise.Success;
 	}
 
 	/// <summary>
@@ -692,6 +552,15 @@ public class BeamoServiceDefinition
 	/// The protocol this service respects.
 	/// </summary>
 	public BeamoProtocolType Protocol;
+
+	/// <summary>
+	/// The <see cref="MicroserviceSourceGenConfig"/> for this microservice.
+	/// </summary>
+	public MicroserviceSourceGenConfig SourceGenConfig 
+		// create a default instance so that downstream callers don't need to check for isLocal over and over again. 
+		//  although this feels a bit wrong, because perhaps we should populate it for remote services? 
+		//  Technically, it should exist in the remote manifest we get. 
+		= new MicroserviceSourceGenConfig();
 
 
 	

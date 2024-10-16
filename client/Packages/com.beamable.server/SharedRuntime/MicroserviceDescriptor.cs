@@ -67,7 +67,7 @@ namespace Beamable.Server.Editor
 	public class FederationComponent
 	{
 		public Type interfaceType;
-		public IThirdPartyCloudIdentity identity;
+		public IFederationId identity;
 		public string typeName;
 
 		public string ComponentName => $"{typeName}/{identity?.UniqueName}";

@@ -126,7 +126,16 @@ public partial class BeamoLocalSystem
 		// Build container health check
 		if (!string.IsNullOrEmpty(healthcheckCmd))
 		{
-			createParams.Healthcheck = new HealthConfig() { Test = new List<string>() { healthcheckCmd } };
+			// createParams.Healthcheck = new HealthConfig() { 
+			// 	Test = new List<string>()
+			// {
+			// 	healthcheckCmd,
+			// },
+			// 	Interval = TimeSpan.FromMilliseconds(500),
+			// 	Retries = 100,
+			// 	Timeout = TimeSpan.FromSeconds(1),
+			// 	// StartPeriod = 1500
+			// };
 		}
 
 		hostConfig.AutoRemove = autoRemoveWhenStopped;
@@ -291,34 +300,6 @@ public partial class BeamoLocalSystem
 		return BeamoLocalSystem.CreateTarballForDirectory(config, pathsList);
 	}
 	
-	public static async Task<ServicesGenerateTarballCommandOutput> WriteTarfileToDisk(string outputPath, string beamoId, CommandArgs args)
-	{
-		var isDockerRunning = await args.BeamoLocalSystem.CheckIsRunning();
-		if (!isDockerRunning)
-		{
-			throw CliExceptions.DOCKER_NOT_RUNNING;
-		}
-		
-		if (string.IsNullOrEmpty(outputPath))
-		{
-			outputPath = beamoId + ".tar";
-		} else if (!Path.HasExtension(outputPath))
-		{
-			outputPath += ".tar";
-		}
-
-		var stream = await GetTarfile(beamoId, args.DependencyProvider);
-		using var file = File.OpenWrite(outputPath);
-		await stream.CopyToAsync(file);
-
-		file.Close();
-
-		return new ServicesGenerateTarballCommandOutput
-		{
-			outputPath = outputPath
-		};
-	}
-
 	public static List<string> ParseDockerfile(ConfigService configService, string dockerFilePath)
 	{
 		var paths = new List<string>();

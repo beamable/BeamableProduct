@@ -3,6 +3,7 @@
 
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Content;
 using Beamable.Common.Scheduler;
 using Beamable.Serialization.SmallerJSON;
 using System;
@@ -124,7 +125,7 @@ namespace Beamable.Server
 			var uri = GetUri(info.pathName);
 			var json = GetBody(info.parameterNames, args);
 
-			var call = new ServiceAction { method = Method.POST, body = json, uri = uri };
+			var call = new ServiceAction { method = Method.POST, body = json, uri = uri, routingKey = info.routingKey };
 			return call;
 		}
 
@@ -142,11 +143,10 @@ namespace Beamable.Server
 
 		private string GetUri(string path)
 		{
-			var prefix = _useLocal ? _ctx.Prefix : "";
 			var uri = BeamScheduler.Utility.GetServiceUrl(
 				_ctx.Cid,
 				_ctx.Pid,
-				_ctx.ServiceName, path, prefix);
+				_ctx.ServiceName, path);
 
 			return uri;
 		}
@@ -203,15 +203,17 @@ namespace Beamable.Server
 
 				parameterNames[i] = parameterName;
 			}
+			var routingKey = _useLocal ? new OptionalString($"{_ctx.ServiceName}:{_ctx.Prefix}") : new OptionalString();
 
 
-			return new ServiceMethodInfo { parameterNames = parameterNames, pathName = pathName };
+			return new ServiceMethodInfo { parameterNames = parameterNames, pathName = pathName, routingKey = routingKey };
 		}
 
 		struct ServiceMethodInfo
 		{
 			public string pathName;
 			public string[] parameterNames;
+			public OptionalString routingKey;
 		}
 
 	}

@@ -71,6 +71,7 @@ namespace Beamable.Serialization
 			bool HasKey(string key);
 			JsonSerializable.ListMode Mode { get; }
 
+			bool SerializeNestedJson(string key, ref JsonString jsonString);
 			bool Serialize(string key, ref IDictionary<string, object> target);
 			bool Serialize(string key, ref bool target);
 			bool Serialize(string key, ref bool? target);
@@ -215,7 +216,8 @@ namespace Beamable.Serialization
 		/// Deserializes a JSON string into an ISerializable object
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
-		/// <param name="json"></param>
+		/// <param name="json">JSON to deserialize</param>
+		/// <param name="throwOnInvalidJson">Whether it should throw exception or return default value for a given type in case of failing to deserialize.</param>
 		/// <returns></returns>
 		public static T FromJson<T>(string json, bool throwOnInvalidJson = false) where T : ISerializable, new() => FromJson<T>(json, null, throwOnInvalidJson);
 

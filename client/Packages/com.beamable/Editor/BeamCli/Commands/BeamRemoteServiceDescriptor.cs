@@ -11,5 +11,6 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string routingKey;
 		public long startedByAccountId;
 		public string[] groups;
+		public Beamable.Common.FederationInstance[] federations;
 	}
 }

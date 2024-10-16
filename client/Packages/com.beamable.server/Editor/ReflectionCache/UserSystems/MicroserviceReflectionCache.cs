@@ -11,7 +11,6 @@ using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.ManagerClient;
 using Beamable.Server.Editor.UI;
 using Beamable.Server.Editor.UI.Components;
-using Beamable.Server.Editor.Uploader;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -25,6 +24,7 @@ using static Beamable.Common.Constants.Features.Docker;
 using static Beamable.Common.Constants.Features.Services;
 using static Beamable.Common.Constants.MenuItems.Assets.Orders;
 using LogMessage = Beamable.Editor.UI.Model.LogMessage;
+#pragma warning disable CS0067 // Event is never used
 
 namespace Beamable.Server.Editor
 {
@@ -58,12 +58,8 @@ namespace Beamable.Server.Editor
 			private static readonly AttributeOfInterest STORAGE_OBJECT_ATTRIBUTE;
 			private static readonly List<AttributeOfInterest> ATTRIBUTES_OF_INTEREST;
 
-			private static Dictionary<Type, string> _federationComponentToName;
-
 			static Registry()
 			{
-				_federationComponentToName = FederationComponentNames.FederationComponentToName;
-
 				MICROSERVICE_BASE_TYPE = new BaseTypeOfInterest(typeof(Microservice));
 				MICROSERVICE_CLIENT_BASE_TYPE = new BaseTypeOfInterest(typeof(MicroserviceClient));
 				MICROSERVICE_ATTRIBUTE =
@@ -313,17 +309,21 @@ namespace Beamable.Server.Editor
 
 						foreach (var it in interfaces)
 						{
-							if (!it.IsGenericType) continue;
-
-							if (!_federationComponentToName.TryGetValue(it.GetGenericTypeDefinition(),
-																		out var typeName))
-							{
+							// Skip non-generic types while we look for IFederation-derived implementations
+							if (!it.IsGenericType) 
 								continue;
-							}
 
+							// Make sure we found an IFederation interface
+							if (!it.GetGenericTypeDefinition().GetInterfaces().Contains(typeof(IFederation)))
+								continue;
+
+							// Get the cleaned-up type name (IFederatedGameServer`1 => IFederatedGameServer) 
+							var typeName = it.GetGenericTypeDefinition().Name;
+							typeName = typeName.Substring(0, typeName.IndexOf("`", StringComparison.Ordinal));
+			
+							// Get the IFederationId 
 							var federatedType = it.GetGenericArguments()[0];
-
-							if (Activator.CreateInstance(federatedType) is IThirdPartyCloudIdentity identity)
+							if (Activator.CreateInstance(federatedType) is IFederationId identity)
 							{
 								descriptor.FederatedNamespaces.Add(identity.UniqueName);
 								descriptor.FederationComponents.Add(new FederationComponent
@@ -400,16 +400,21 @@ namespace Beamable.Server.Editor
 				var interfaces = clientType.GetInterfaces();
 				foreach (var it in interfaces)
 				{
-					if (!it.IsGenericType) continue;
-
-					if (!_federationComponentToName.TryGetValue(it.GetGenericTypeDefinition(),
-																out var typeName))
-					{
+					// Skip non-generic types while we look for IFederation-derived implementations
+					if (!it.IsGenericType) 
 						continue;
-					}
 
+					// Make sure we found an IFederation interface
+					if (!it.GetGenericTypeDefinition().GetInterfaces().Contains(typeof(IFederation)))
+						continue;
+
+					// Get the cleaned-up type name (IFederatedGameServer`1 => IFederatedGameServer) 
+					var typeName = it.GetGenericTypeDefinition().Name;
+					typeName = typeName.Substring(0, typeName.IndexOf("`", StringComparison.Ordinal));
+			
+					// Get the IFederationId 
 					var federatedType = it.GetGenericArguments()[0];
-					if (Activator.CreateInstance(federatedType) is IThirdPartyCloudIdentity identity)
+					if (Activator.CreateInstance(federatedType) is IFederationId identity)
 					{
 						info.FederationComponents.Add(new FederationComponent
 						{
@@ -706,252 +711,13 @@ namespace Beamable.Server.Editor
 				return true;
 			}
 
-			private async Task<bool> PublishServices(ManifestModel model,
+			private Task<bool> PublishServices(ManifestModel model,
 													 CancellationToken token,
 													 BeamEditorContext context,
 													 Action<LogMessage> logger,
 													 Action<IDescriptor> onServiceDeployed)
 			{
-				var client = context.GetMicroserviceManager();
-				var existingManifest = await client.GetCurrentManifest();
-				var existingServiceToState = existingManifest.manifest.ToDictionary(s => s.serviceName);
-				var nameToImageDetails = new Dictionary<string, ImageDetails>();
-				var enabledServices = new List<string>();
-				var nameToDescriptor = Descriptors.ToDictionary(d => d.Name);
-
-				foreach (var descriptor in Descriptors)
-				{
-					var entryModel = model.Services[descriptor.Name];
-					if (entryModel.Archived || !entryModel.Enabled)
-						continue;
-
-					if (token.IsCancellationRequested)
-					{
-						var msg = $"Cancellation requested after build of {descriptor.Name}";
-						OnProgressInfoUpdated?.Invoke(msg, ServicePublishState.Failed);
-						OnDeployFailed?.Invoke(model, msg);
-						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
-						return false;
-					}
-
-					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Preparing image",
-												  ServicePublishState.InProgress);
-					UpdateServiceDeployStatus(descriptor, ServicePublishState.InProgress);
-
-					var uploader = new ContainerUploadHarness();
-					var msModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(descriptor);
-					uploader.onProgress += msModel.OnDeployProgress;
-					uploader.onProgress += (_, __, ___) => OnServiceDeployProgress?.Invoke(descriptor);
-
-					logger(new LogMessage
-					{
-						Level = LogLevel.INFO,
-						Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
-						Message = $"Getting Id service=[{descriptor.Name}]"
-					});
-
-					var imageDetails = await uploader.GetImageId(descriptor);
-					var imageId = imageDetails.imageId;
-					if (string.IsNullOrEmpty(imageId))
-					{
-						var msg = $"Failed due to failed Docker {nameof(GetImageDetailsCommand)} for {descriptor.Name}";
-						OnProgressInfoUpdated?.Invoke(msg, ServicePublishState.Failed);
-						OnDeployFailed?.Invoke(model, msg);
-						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
-						return false;
-					}
-
-					// the architecture needs to be one of the supported beamable architectures...
-					if (!CPU_SUPPORTED.Any(imageDetails.Platform.Contains))
-					{
-						var msg =
-							$"Beamable cannot accept an image built for {imageDetails.Platform}. Please use one of the following... {string.Join(",", CPU_SUPPORTED)}";
-						OnProgressInfoUpdated?.Invoke(msg, ServicePublishState.Failed);
-						OnDeployFailed?.Invoke(model, msg);
-						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
-						return false;
-					}
-
-					nameToImageDetails.Add(descriptor.Name, imageDetails);
-
-					if (existingServiceToState.TryGetValue(descriptor.Name, out var existingReference))
-					{
-						if (existingReference.imageId == imageId)
-						{
-							logger(new LogMessage
-							{
-								Level = LogLevel.INFO,
-								Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
-								Message = string.Format(CONTAINER_ALREADY_UPLOADED_MESSAGE, descriptor.Name)
-							});
-
-							onServiceDeployed?.Invoke(descriptor);
-							UpdateServiceDeployStatus(descriptor, ServicePublishState.Published);
-
-							foreach (var storage in descriptor.GetStorageReferences())
-							{
-								if (!enabledServices.Contains(storage.Name))
-									enabledServices.Add(storage.Name);
-							}
-
-							continue;
-						}
-					}
-
-					var serviceDependencies = new List<ServiceDependency>();
-					foreach (var storage in descriptor.GetStorageReferences())
-					{
-						if (!enabledServices.Contains(storage.Name))
-							enabledServices.Add(storage.Name);
-
-						serviceDependencies.Add(new ServiceDependency { id = storage.Name, storageType = "storage" });
-					}
-
-					entryModel.Dependencies = serviceDependencies;
-
-					logger(new LogMessage
-					{
-						Level = LogLevel.INFO,
-						Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
-						Message = $"Uploading container service=[{descriptor.Name}]"
-					});
-					OnProgressInfoUpdated?.Invoke($"[{descriptor.Name}] Uploading image",
-												  ServicePublishState.InProgress);
-					await uploader.UploadContainer(descriptor, token, () =>
-												   {
-													   Debug.Log(string.Format(UPLOAD_CONTAINER_MESSAGE,
-																			   descriptor.Name));
-													   onServiceDeployed?.Invoke(descriptor);
-													   UpdateServiceDeployStatus(
-														   descriptor, ServicePublishState.Published);
-												   },
-												   () =>
-												   {
-													   Debug.LogError(
-														   string.Format(
-															   CANT_UPLOAD_CONTAINER_MESSAGE, descriptor.Name));
-													   if (token.IsCancellationRequested)
-													   {
-														   var msg =
-															   $"Cancellation requested during upload of {descriptor.Name}";
-														   OnProgressInfoUpdated?.Invoke(
-															   msg, ServicePublishState.Failed);
-														   OnDeployFailed?.Invoke(model, msg);
-														   UpdateServiceDeployStatus(
-															   descriptor, ServicePublishState.Failed);
-													   }
-												   }, imageId);
-				}
-
-				// at this point, all storage objects should at least be marked as complete.
-				foreach (var storage in MicroserviceConfiguration.Instance.StorageObjects)
-				{
-					logger(new LogMessage
-					{
-						Level = LogLevel.INFO,
-						Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
-						Message = $"Comitting storage=[{storage.StorageName}]"
-					});
-					var storageDesc = new StorageObjectDescriptor { Name = storage.StorageName };
-					onServiceDeployed?.Invoke(storageDesc);
-					OnServiceDeployStatusChanged?.Invoke(storageDesc, ServicePublishState.Published);
-				}
-
-				// we should mark all remote services as complete as well.
-				var remoteOnlyServices = model.Services.Where(s => !nameToImageDetails.ContainsKey(s.Key)).ToList();
-				foreach (var remoteOnly in remoteOnlyServices)
-				{
-					var desc = new MicroserviceDescriptor { Name = remoteOnly.Key };
-					onServiceDeployed?.Invoke(desc);
-					OnServiceDeployStatusChanged?.Invoke(desc, ServicePublishState.Published);
-				}
-
-				logger(new LogMessage
-				{
-					Level = LogLevel.INFO,
-					Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
-					Message = $"Deploying Manifest..."
-				});
-
-				// Manifest Building:
-				// 1- Find all locally know services and build their references (using the latest uploaded image ids for them).
-				var localServiceReferences = nameToImageDetails.Select(kvp =>
-				{
-					var sa = model.Services[kvp.Key];
-					var desc = nameToDescriptor[kvp.Key];
-					return new ServiceReference()
-					{
-						serviceName = sa.Name,
-						templateId = sa.TemplateId,
-						enabled = sa.Enabled,
-						archived = sa.Archived,
-						comments = sa.Comment,
-						imageId = kvp.Value.imageId,
-						imageCpuArch = kvp.Value.cpuArch,
-						dependencies = sa.Dependencies,
-						components = desc?.FederationComponents?.Select(c => new ServiceComponent
-						{
-							name = c.ComponentName
-						})?.ToList()
-					};
-				}).Where(service => !service
-							 .archived); // If this is a local-only service, and its archived, best not to send it _at all_.
-
-				// 2- Finds all Known Remote Service (and their last uploaded configuration/image id).
-				var remoteServiceReferences = model.ServerManifest.Select(kvp => kvp.Value);
-
-				// 3- Join those two lists and configure the enabled status of all services based on the user input (stored in model.Services[serviceName].Enabled)
-				var manifest = localServiceReferences.Union(remoteServiceReferences).ToList();
-				foreach (var uploadServiceReference in manifest)
-				{
-					var sa = model.Services[uploadServiceReference.serviceName];
-					uploadServiceReference.enabled = sa.Enabled;
-					uploadServiceReference.templateId = sa.TemplateId;
-					uploadServiceReference.archived = sa.Archived;
-				}
-
-				// 4- Make sure we only have each service once on the list.
-				manifest = manifest.Distinct(new ServiceReferenceNameComp()).ToList();
-
-				// Identify storages to enable
-				// 1- Make a list of all dependencies that are depended on by any of the services that will be enabled
-				var allDependenciesThatMustBeEnabled = manifest
-													   .Where(serviceRef => serviceRef.enabled)
-													   .SelectMany(sr => sr.dependencies)
-													   .Select(deps => deps.id)
-													   .ToList();
-
-				// 2- Only enable storages that are actually depended on by services.
-				var storageManifest = model.Storages.Select(kvp =>
-				{
-					kvp.Value.Enabled &= allDependenciesThatMustBeEnabled.Contains(kvp.Value.Name);
-					return new ServiceStorageReference
-					{
-						id = kvp.Value.Name,
-						storageType = kvp.Value.Type,
-						templateId = kvp.Value.TemplateId,
-						enabled = kvp.Value.Enabled,
-						archived = kvp.Value.Archived
-					};
-				}).ToList();
-
-				await client.Deploy(new ServiceManifest
-				{
-					comments = model.Comment,
-					manifest = manifest,
-					storageReference = storageManifest
-				});
-				OnProgressInfoUpdated?.Invoke($"Services deploy process completed!", ServicePublishState.Published);
-				OnDeploySuccess?.Invoke(model, Descriptors.Count);
-
-				logger(new LogMessage
-				{
-					Level = LogLevel.INFO,
-					Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
-					Message = $"Service Deploy Complete"
-				});
-
-				return true;
+				throw new NotImplementedException();
 			}
 
 			private struct ServiceReferenceNameComp : IEqualityComparer<ServiceReference>

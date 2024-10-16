@@ -1,8 +1,10 @@
 using Beamable.Common;
+using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.Microservice.UI;
 using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.Microservice.UI2.Components;
 using Beamable.Editor.Microservice.UI2.Models;
+using Beamable.Editor.Microservice.UI2.PublishWindow;
 using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI;
@@ -161,7 +163,7 @@ namespace Beamable.Editor.Microservice.UI2
 
 		private void HandlePublishButtonClicked()
 		{
-			PublishStandaloneWindow.ShowPublishWindow(this, ActiveContext);
+			UsamPublishWindow.Init(BeamEditorContext.Default);
 		}
 
 		private void ShowDockerNotRunningAnnouncement()

@@ -35,8 +35,8 @@ namespace Beamable.Common
 				public const int HEALTH_PORT = 6565;
 				public const int DISCOVERY_PORT = 8624;
 
-				public const int DISCOVERY_BROADCAST_PERIOD_MS = 250;
-				public const int DISCOVERY_RECEIVE_PERIOD_MS = 350;
+				public const int DISCOVERY_BROADCAST_PERIOD_MS = 10;
+				public const int DISCOVERY_RECEIVE_PERIOD_MS = DISCOVERY_BROADCAST_PERIOD_MS * 2 + 1;
 
 				public const string UPLOAD_CONTAINER_MESSAGE = "Uploaded container service=[{0}]";
 				public const string CONTAINER_ALREADY_UPLOADED_MESSAGE = "Service [{0}] is already deployed at imageId";

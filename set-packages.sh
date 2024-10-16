@@ -27,6 +27,7 @@ PKG_MICROSERVICE_UNITY_ENGINE_STUBS_ADDRESSABLES="./microservice/unityEngineStub
 PKG_CLI="./cli/cli"
 PKG_MICROSERVICE="./microservice/microservice"
 PKG_TEMPLATES="./templates"
+PKG_MICROSERVICE_SOURCE_GEN="./templates/MicroserviceSourceGen/MicroserviceSourceGen"
 
 PACKAGES_TO_SET_ARR[0]=$PKG_COMMON
 PACKAGES_TO_SET_ARR[1]=$PKG_SERVER_COMMON
@@ -36,6 +37,7 @@ PACKAGES_TO_SET_ARR[4]=$PKG_MICROSERVICE_UNITY_ENGINE_STUBS_ADDRESSABLES
 PACKAGES_TO_SET_ARR[5]=$PKG_CLI
 PACKAGES_TO_SET_ARR[6]=$PKG_MICROSERVICE
 PACKAGES_TO_SET_ARR[7]=$PKG_TEMPLATES
+PACKAGES_TO_SET_ARR[8]=$PKG_MICROSERVICE_SOURCE_GEN
 
 if [[ "$PACKAGES_TO_SET" != "" ]]; then
     echo "Filtering packages to set..."
@@ -121,13 +123,19 @@ fi
 if printf '%s\0' "${PACKAGES_TO_SET_ARR[@]}" | grep -qwz "$PKG_CLI"; then
     dotnet build "$PKG_CLI" --configuration Release -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION
     dotnet pack "$PKG_CLI"  --configuration Release --no-build --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION
-    rm -rf ~/.nuget/packages/beamable.microservice.runtime
+    rm -rf ~/.nuget/packages/beamable.tools
 fi
 
 if printf '%s\0' "${PACKAGES_TO_SET_ARR[@]}" | grep -qwz "$PKG_MICROSERVICE"; then
     dotnet build "$PKG_MICROSERVICE"  --configuration Release -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION
     dotnet pack "$PKG_MICROSERVICE"  --configuration Release --no-build --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION
-    rm -rf ~/.nuget/packages/beamable.tools
+    rm -rf ~/.nuget/packages/beamable.microservice.runtime
+fi
+
+if printf '%s\0' "${PACKAGES_TO_SET_ARR[@]}" | grep -qwz "$PKG_MICROSERVICE_SOURCE_GEN"; then
+    dotnet build "$PKG_MICROSERVICE_SOURCE_GEN"  --configuration Release -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION
+    dotnet pack "$PKG_MICROSERVICE_SOURCE_GEN"  --configuration Release --no-build --include-source  -o $PROJECTS_DIR -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION
+    rm -rf ~/.nuget/packages/beamable.microservice.sourcegen
 fi
 
 if printf '%s\0' "${PACKAGES_TO_SET_ARR[@]}" | grep -qwz "$PKG_TEMPLATES"; then
