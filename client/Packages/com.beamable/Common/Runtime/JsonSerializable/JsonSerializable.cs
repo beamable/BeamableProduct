@@ -71,6 +71,7 @@ namespace Beamable.Serialization
 			bool HasKey(string key);
 			JsonSerializable.ListMode Mode { get; }
 
+			bool SerializeNestedJson(string key, ref JsonString jsonString);
 			bool Serialize(string key, ref IDictionary<string, object> target);
 			bool Serialize(string key, ref bool target);
 			bool Serialize(string key, ref bool? target);

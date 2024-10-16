@@ -54,7 +54,13 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 					DrawChangeList("Changing Services", "Info@2x", "Learn about how services changes work on Beamable",
 					               helpUrl,
 					               _planMetadata.plan.diff.serviceImageIdChanges.Select(x => x.service).ToList());
-					// DrawChangeList("Uploading Services","Learn about how services are uploaded to Beamable", helpUrl,  _planMetadata.plan.servicesToUpload.ToList());
+					
+					DrawChangeList("Adding Federations", "Toolbar Plus", "Learn about how services changes work on Beamable",
+					               helpUrl,
+					               _planMetadata.plan.diff.addedFederations.Select(x => $"{x.service} [{x.federationInterface}/{x.federationId}]").ToList());
+					DrawChangeList("Disabling Federations", "Warning@2x", "Learn about how services changes work on Beamable",
+					               helpUrl,
+					               _planMetadata.plan.diff.removedFederations.Select(x => $"{x.service} [{x.federationInterface}/{x.federationId}]").ToList());
 
 					DrawChangeList("Adding Storage", "Toolbar Plus", "Learn about new storages on Beamable", helpUrl,
 					               _planMetadata.plan.diff.addedStorage.ToList());

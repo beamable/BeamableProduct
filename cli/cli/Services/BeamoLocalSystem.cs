@@ -556,7 +556,13 @@ public class BeamoServiceDefinition
 	/// <summary>
 	/// The <see cref="MicroserviceSourceGenConfig"/> for this microservice.
 	/// </summary>
-	public MicroserviceSourceGenConfig SourceGenConfig;
+	public MicroserviceSourceGenConfig SourceGenConfig 
+		// create a default instance so that downstream callers don't need to check for isLocal over and over again. 
+		//  although this feels a bit wrong, because perhaps we should populate it for remote services? 
+		//  Technically, it should exist in the remote manifest we get. 
+		= new MicroserviceSourceGenConfig();
+
+
 	
 	/// <summary>
 	/// Gets the truncated version of the image id (used for deploying the service manifest to Beamo. TODO Ideally, we should make beamo use the full ID later...

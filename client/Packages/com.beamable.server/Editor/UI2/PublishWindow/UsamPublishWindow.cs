@@ -110,7 +110,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 				_planArgs = new DeploymentPlanArgs
 				{
 					runHealthChecks = config.EnablePrePublishHealthCheck, 
-					additive = config.EnableAdditiveDeploy
+					merge = config.EnableMergeDeploy
 				};
 				_planCommand = _ctx.Cli.DeploymentPlan(_planArgs);
 				_planCommand.OnProgressPlanReleaseProgress(cb =>
@@ -390,18 +390,18 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 				// draw warning about additive
 
 				EditorGUILayout.BeginVertical();
-				if (_planArgs.additive)
+				if (_planArgs.merge)
 				{
 					EditorGUILayout.HelpBox(
-						"The release is in 'additive' mode. This is controlled through Project Settings. This means that if a service has been deleted locally, it will not removed on the Realm", MessageType.Info);
+						"The release is in 'merge' mode. This is controlled through Project Settings. This means that if a service has been deleted locally, it will not removed on the Realm", MessageType.Info);
 					EditorGUILayout.Space(padding, expand:false);
 				}
 
-				if (!_planArgs.runHealthChecks)
-				{
-					EditorGUILayout.HelpBox($"Services are only compiled, but they are not being runtime verified. To change this, change the {nameof(MicroserviceConfiguration.EnablePrePublishHealthCheck)} setting in Project Settings. ", MessageType.Warning);
-					EditorGUILayout.Space(padding, expand:false);
-				}
+				// if (!_planArgs.runHealthChecks)
+				// {
+				// 	EditorGUILayout.HelpBox($"Services are only compiled, but they are not being runtime verified. To change this, change the {nameof(MicroserviceConfiguration.EnablePrePublishHealthCheck)} setting in Project Settings. ", MessageType.Warning);
+				// 	EditorGUILayout.Space(padding, expand:false);
+				// }
 				EditorGUILayout.EndVertical();
 				EditorGUILayout.Space(padding - 2, expand:false);
 

@@ -7,8 +7,10 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Dependencies;
+using Beamable.Experimental.Api.Lobbies;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
+using Beamable.Server;
 using cli.DeploymentCommands;
 using cli.Services;
 using Docker.DotNet.Models;
@@ -115,6 +117,8 @@ public class DeploymentDiffSummary : JsonSerializable.ISerializable
 	public List<string> disabledStorages = new List<string>();
 	public List<string> enabledStorages = new List<string>();
 
+	public List<ServiceFederationChange> addedFederations = new List<ServiceFederationChange>();
+	public List<ServiceFederationChange> removedFederations = new List<ServiceFederationChange>();
 	public List<ServiceImageIdChange> serviceImageIdChanges = new List<ServiceImageIdChange>();
 	
 	public void Serialize(JsonSerializable.IStreamSerializer s)
@@ -129,12 +133,33 @@ public class DeploymentDiffSummary : JsonSerializable.ISerializable
 		s.SerializeList(nameof(disabledStorages), ref disabledStorages);
 		s.SerializeList(nameof(enabledStorages), ref enabledStorages);
 		s.SerializeList(nameof(serviceImageIdChanges), ref serviceImageIdChanges);
+		s.SerializeList(nameof(addedFederations), ref addedFederations);
+		s.SerializeList(nameof(removedFederations), ref removedFederations);
 	}
 }
 
 public interface IServiceChangeDisplay
 {
 	string ToChangeString();
+}
+
+public struct ServiceFederationChange : IServiceChangeDisplay, JsonSerializable.ISerializable
+{
+	public string service;
+	public string federationId;
+	public string federationInterface;
+	
+	public string ToChangeString()
+	{
+		return $"{service} [{federationInterface}/{federationId}]";
+	}
+
+	public void Serialize(JsonSerializable.IStreamSerializer s)
+	{
+		s.Serialize(nameof(service), ref service);
+		s.Serialize(nameof(federationId), ref federationId);
+		s.Serialize(nameof(federationInterface), ref federationInterface);
+	}
 }
 
 public struct ServiceImageIdChange : IServiceChangeDisplay, JsonSerializable.ISerializable
@@ -158,7 +183,9 @@ public struct ServiceImageIdChange : IServiceChangeDisplay, JsonSerializable.ISe
 
 public partial class DeployUtil
 {
-
+	[GeneratedRegex($"^{nameof(ManifestView.manifest)}\\[(\\d+)\\].{nameof(ServiceReference.components)}\\[(\\d+)\\].{nameof(ServiceComponent.name)}", RegexOptions.None)]
+	public static partial Regex GetFederationRegex();
+	
 	[GeneratedRegex($"^{nameof(ManifestView.manifest)}\\[(\\d+)\\]", RegexOptions.None)]
 	public static partial Regex GetServiceRegex();
 	
@@ -219,6 +246,36 @@ public partial class DeployUtil
 				"changed" => DiffType.Changed,
 				_ => throw new CliException("unknown change type")
 			};
+			if (GetFederationRegex().IsMatch(change.jsonPath))
+			{
+				var serviceIndex = int.Parse(GetServiceRegex().Match(change.jsonPath).Groups[1].Value);
+				var name = next.manifest[serviceIndex].serviceName;
+
+				if (!string.IsNullOrEmpty(change.nextValue) && change.nextValue.Length > 0)
+				{
+					var nextParts = change.nextValue?.Split("/", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+					var add = new ServiceFederationChange
+					{
+						service = name,
+						federationId = nextParts[1],
+						federationInterface = nextParts[0]
+					};
+					summary.addedFederations.Add(add);
+				}
+				
+				if (!string.IsNullOrEmpty(change.currentValue) && change.currentValue.Length > 0)
+				{
+					var nextParts = change.currentValue?.Split("/", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+					var remove = new ServiceFederationChange
+					{
+						service = name,
+						federationId = nextParts[1],
+						federationInterface = nextParts[0]
+					};
+					summary.removedFederations.Add(remove);
+				}
+				
+			}
 			switch (diffType)
 			{
 				case DiffType.Changed:
@@ -629,6 +686,8 @@ public partial class DeployUtil
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.addedServices, "Adding", "service");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.enabledServices, "Enabling", "service");
 		detectedChangeCount += PrintChangesAndNoticeChangeT(plan.diff.serviceImageIdChanges, "Updating", "service");
+		detectedChangeCount += PrintChangesAndNoticeChangeT(plan.diff.addedFederations, "Enabling", "federation");
+		detectedChangeCount += PrintChangesAndNoticeChangeT(plan.diff.removedFederations, "Disabling", "federation");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.disabledStorages, "Disabling", "storage");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.removedStorage, "Removing", "storage");
 		detectedChangeCount += PrintChangesAndNoticeChange(plan.diff.addedStorage, "Adding", "storage");
@@ -937,6 +996,8 @@ public partial class DeployUtil
 			              + diff.disabledServices.Count
 			              + diff.enabledServices.Count
 			              + diff.serviceImageIdChanges.Count
+			              + diff.addedFederations.Count
+			              + diff.removedFederations.Count
 		}, localBuildReports);
 	}
 
@@ -1199,7 +1260,6 @@ public partial class DeployUtil
 		HttpMicroserviceLocalProtocol http,
 		ProgressHandler progressHandler)
 	{
-
 		string imageId = null;
 		BuildImageOutput report = default;
 		if (definition.ShouldBeEnabledOnRemote)
@@ -1236,6 +1296,15 @@ public partial class DeployUtil
 			progressHandler?.Invoke("skip  " + definition.BeamoId, 1, serviceName: definition.BeamoId);
 		}
 
+		var feds = definition.SourceGenConfig?.Federations ?? new FederationsConfig();
+		var components = feds.SelectMany(kvp =>
+		{
+			return kvp.Value.Select(x => new ServiceComponent
+			{
+				name = $"{x.Interface}/{kvp.Key}"
+			});
+		}).ToArray();
+		
 		var reference = new ServiceReference
 		{
 			serviceName = definition.BeamoId,
@@ -1243,8 +1312,7 @@ public partial class DeployUtil
 			templateId = "small",
 			archived = false,
 			imageId = imageId,
-			// TODO: Pedro is working on the ability to get access to federatedComponents via the local manifest
-			components = new OptionalArrayOfServiceComponent(),
+			components = new OptionalArrayOfServiceComponent(components),
 			dependencies = new OptionalArrayOfServiceDependencyReference(http.StorageDependencyBeamIds.Select(x => new ServiceDependencyReference
 			{
 				storageType = "mongov1",

@@ -19,9 +19,9 @@ namespace Beamable.Editor.BeamCli.Commands
 		public bool runHealthChecks;
 		/// <summary>restart existing deployed services</summary>
 		public bool redeploy;
-		/// <summary>use an additive method for deployment.</summary>
-		public bool additive;
-		/// <summary>use a complete replacement method for deployment.</summary>
+		/// <summary>Create a Release that adds your current local environment to the existing remote services. Existing deployed services will not be removed. </summary>
+		public bool merge;
+		/// <summary>(default) Create a Release that completely overrides the existing remote services. Existing deployed services that are not present locally will be removed. </summary>
 		public bool replace;
 		/// <summary>a file path to save the plan</summary>
 		public string toFile;
@@ -67,10 +67,10 @@ namespace Beamable.Editor.BeamCli.Commands
 			{
 				genBeamCommandArgs.Add(("--redeploy=" + this.redeploy));
 			}
-			// If the additive value was not default, then add it to the list of args.
-			if ((this.additive != default(bool)))
+			// If the merge value was not default, then add it to the list of args.
+			if ((this.merge != default(bool)))
 			{
-				genBeamCommandArgs.Add(("--additive=" + this.additive));
+				genBeamCommandArgs.Add(("--merge=" + this.merge));
 			}
 			// If the replace value was not default, then add it to the list of args.
 			if ((this.replace != default(bool)))

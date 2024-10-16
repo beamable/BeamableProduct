@@ -9,6 +9,6 @@ namespace Beamable.Editor.BeamCli.Commands
 	{
 		public string cid;
 		public string pid;
-		public System.Collections.Generic.List<BeamRunningService> services;
+		public System.Collections.Generic.List<BeamServiceFederations> services;
 	}
 }

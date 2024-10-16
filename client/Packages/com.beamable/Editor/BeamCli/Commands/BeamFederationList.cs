@@ -6,16 +6,12 @@ namespace Beamable.Editor.BeamCli.Commands
 
 	public class FederationListArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>Filter the services by the types of federations they provide</summary>
+		/// <summary>Filter the federations by the type</summary>
 		public string type;
-		/// <summary>Filter the services by the service name</summary>
-		public string name;
-		/// <summary>Filter the services by the federation namespace</summary>
-		public string @namespace;
-		/// <summary>Filter the services by the playerId of the author</summary>
-		public long player;
-		/// <summary>After piping the current list of services, keeps on listening and pipe them again every change</summary>
-		public bool listen;
+		/// <summary>Filter the federations by the service name</summary>
+		public string id;
+		/// <summary>Filter the federation by its federation id</summary>
+		public string fedIds;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -27,27 +23,17 @@ namespace Beamable.Editor.BeamCli.Commands
 				genBeamCommandArgs.Add((("--type=\"" + this.type)
 								+ "\""));
 			}
-			// If the name value was not default, then add it to the list of args.
-			if ((this.name != default(string)))
+			// If the id value was not default, then add it to the list of args.
+			if ((this.id != default(string)))
 			{
-				genBeamCommandArgs.Add((("--name=\"" + this.name)
+				genBeamCommandArgs.Add((("--id=\"" + this.id)
 								+ "\""));
 			}
-			// If the namespace value was not default, then add it to the list of args.
-			if ((this.@namespace != default(string)))
+			// If the fedIds value was not default, then add it to the list of args.
+			if ((this.fedIds != default(string)))
 			{
-				genBeamCommandArgs.Add((("--namespace=\"" + this.@namespace)
+				genBeamCommandArgs.Add((("--fed-ids=\"" + this.fedIds)
 								+ "\""));
-			}
-			// If the player value was not default, then add it to the list of args.
-			if ((this.player != default(long)))
-			{
-				genBeamCommandArgs.Add(("--player=" + this.player));
-			}
-			// If the listen value was not default, then add it to the list of args.
-			if ((this.listen != default(bool)))
-			{
-				genBeamCommandArgs.Add(("--listen=" + this.listen));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

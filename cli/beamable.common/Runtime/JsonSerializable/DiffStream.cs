@@ -156,6 +156,11 @@ namespace Beamable.Serialization
 		}
 
 		public JsonSerializable.ListMode Mode { get; }
+		public bool SerializeNestedJson(string key, ref JsonString jsonString)
+		{
+			throw new NotImplementedException();
+		}
+
 		public bool Serialize(string key, ref IDictionary<string, object> target)
 		{
 			throw new NotImplementedException();

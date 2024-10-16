@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Serialization;
 using static Beamable.Common.Constants;
 
 namespace Beamable.Server.Editor
@@ -87,8 +88,9 @@ namespace Beamable.Server.Editor
 		[Tooltip("It will enable microservice health check at the begining of publish process.")]
 		public bool EnablePrePublishHealthCheck = false;
 
+		[FormerlySerializedAs("EnableAdditiveDeploy")]
 		[Tooltip("Deploy microservices without removing existing services.")]
-		public bool EnableAdditiveDeploy;
+		public bool EnableMergeDeploy;
 
 		[Tooltip("When enabled, you can override microservice health check timeout on publish. This could be helpfull for slower machines. Value is in seconds.")]
 		public OptionalInt PrePublishHealthCheckTimeout;
