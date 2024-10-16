@@ -157,8 +157,6 @@ jobs:
           SKIP_GENERATION: true
       - name: Check Beam CLI
         run: |
-          pwd
-          ls -a
           beam version
       - name: Apply Nuget Version to Unity SDK
         run: |
@@ -181,7 +179,7 @@ jobs:
             Docker-gzipped-${{ matrix.unityVersion }}
       - name: Load Docker Image If Exits
         continue-on-error: true
-        if: ${{ steps.cache_docker.outputs.cache-hit }}
+        if: ${{ steps.cache_docker.outputs.cache-hit && matrix.runner-os == 'ubuntu-latest' }}
         run: |
           chmod +x ./build/prepare_base_image.sh
           ./build/prepare_base_image.sh
@@ -218,7 +216,7 @@ jobs:
           path: ${{ steps.tests.outputs.artifactsPath }}
           retention-days: 3
       - name: Save Docker Image If Exits
-        if: ${{ !steps.cache_docker.outputs.cache-hit }}
+        if: ${{ !steps.cache_docker.outputs.cache-hit && matrix.runner-os == 'ubuntu-latest' }}
         run: |
           chmod +x ./build/save_base_image.sh
           ./build/save_base_image.sh
