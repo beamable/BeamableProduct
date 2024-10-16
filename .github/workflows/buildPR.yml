@@ -114,10 +114,10 @@ jobs:
         run: dotnet test --configuration Release --no-restore cli/tests
   testAllModes:
     timeout-minutes: 30
-    name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
+    name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }} (${{ matrix.runner-os }})
     runs-on: ${{ matrix.runner-os }}
     concurrency:
-      group: unity-tests-${{ matrix.unityVersion }}-${{ matrix.testMode }}-${{ github.head_ref }}
+      group: unity-tests-${{ matrix.unityVersion }}-${{ matrix.testMode }}-${{ github.head_ref }}-${{ matrix.runner-os }}
       cancel-in-progress: true
     strategy:
       fail-fast: false
