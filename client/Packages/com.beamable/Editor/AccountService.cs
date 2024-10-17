@@ -31,9 +31,9 @@ namespace Beamable.Editor
 		void Clear();
 	}
 
-	public class AccountService : IAccountService, IStorageHandler<AccountService>, Beamable.Common.Dependencies.IServiceStorable
+	public class AccountService : IAccountService, IStorageHandler<AccountService>, Beamable.Common.Dependencies.IServiceStorable, IUserContext
 	{
-
+		public long UserId => Account.user.id;
 
 		public EditorAccountInfo Account
 		{
