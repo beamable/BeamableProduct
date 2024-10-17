@@ -56,11 +56,7 @@ namespace Beamable.Editor.BeamCli
 
 				if (USE_GLOBAL)
 				{
-#if UNITY_EDITOR_WIN
-                return System.Environment.ExpandEnvironmentVariables("%USERPROFILE%\\.dotnet\\tools");
-#else
 					return Path.Combine(DotnetUtil.DOTNET_GLOBAL_PATH, "tools");
-#endif
 				}
 				const string CLI_LIBRARY = "Library/BeamableEditor/BeamCLI";
 				return Path.Combine(CLI_LIBRARY, CLI_VERSION);
@@ -83,11 +79,9 @@ namespace Beamable.Editor.BeamCli
 		}
 
 		const string SRC_BEAM = "BUILDED_BEAM";
-#if UNITY_EDITOR_WIN
-       private const string EXEC = "beam.exe";
-#else
+
 		private const string EXEC = "beam";
-#endif
+
 
 		[System.Diagnostics.Conditional("SPEW_ALL")]
 		static void VerboseLog(string log)
