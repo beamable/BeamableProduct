@@ -24,7 +24,7 @@ public class ReleaseDeploymentCommandArgs : CommandArgs, IHasDeployPlanArgs
 }
 
 
-public class ReleaseDeploymentCommand 
+public class ReleaseDeploymentCommand
 	: AppCommand<ReleaseDeploymentCommandArgs>
 	, IResultSteam<DefaultStreamResultChannel, DeploymentPlanMetadata>
 	, IResultSteam<RunProjectBuildErrorStreamChannel, RunProjectBuildErrorStream>
@@ -40,19 +40,19 @@ public class ReleaseDeploymentCommand
 		DeployArgs.AddPlanOptions(this);
 		AddOption(new Option<string>(new string[] { "--from-plan", "--plan", "-p" }, "The file path to a pre-generated plan file using the `deploy plan` command"),
 			(args, i) => args.fromPlanFile = i);
-		
+
 		// TODO: is this really helpful?
-		AddOption(new Option<bool>(new string[]{"--from-latest-plan", "--latest-plan", "--last-plan", "-lp"}, "Use the most recent plan generated from the plan command"), (args, i) => args.fromLastPlan = i);
+		AddOption(new Option<bool>(new string[] { "--from-latest-plan", "--latest-plan", "--last-plan", "-lp" }, "Use the most recent plan generated from the plan command"), (args, i) => args.fromLastPlan = i);
 	}
 
 	public override async Task Handle(ReleaseDeploymentCommandArgs args)
 	{
 		var remoteManifestTask = DeployUtil.CreateReleaseManifestFromRealm(args.DependencyProvider.GetService<IBeamoApi>());
-		
+
 		DeployablePlan plan = null;
 		string planPath = null;
 
-		
+
 		var isLoadingPlan = !string.IsNullOrEmpty(args.fromPlanFile);
 		if (args.fromLastPlan)
 		{
@@ -70,17 +70,17 @@ public class ReleaseDeploymentCommand
 			isLoadingPlan = true;
 		}
 		var isLoadingManifest = !string.IsNullOrEmpty(args.FromManifestFile);
-		
+
 		if (isLoadingPlan && isLoadingManifest)
 		{
 			throw new CliException("Cannot specify both --from-plan and --from-manifest");
 		}
-		
+
 		if (isLoadingPlan)
 		{
 			Log.Information($"Loading release plan from file=[{args.fromPlanFile}]");
 			var json = await File.ReadAllTextAsync(args.fromPlanFile);
-			
+
 			// before deserializing it as a plan, check the fields to make sure its a valid plan.
 			var data = Json.Deserialize(json) as IDictionary<string, object>;
 			if (!DeployUtil.IsJsonAPlan(data))
@@ -101,18 +101,18 @@ public class ReleaseDeploymentCommand
 		{
 			Log.Information("Generating release plan...");
 			(plan, planPath) = await this.InteractivePlan(
-				args.DependencyProvider, 
+				args.DependencyProvider,
 				args);
 		}
-		
+
 		var remoteManifest = await remoteManifestTask;
 		if (remoteManifest.checksum != plan.builtFromRemoteChecksum)
 		{
 			throw new CliException(
 				"The given deployment plan was created with a different configuration of remote services than exists now. Please create a new plan and try again.");
 		}
-		
-		
+
+
 		DeployUtil.PrintPlanInfo(plan, args, out var hasChanges);
 		this.ApplyDeployComments(plan, args);
 		if (!string.IsNullOrEmpty(planPath))
@@ -142,22 +142,22 @@ public class ReleaseDeploymentCommand
 			{
 
 				var progressTasks = new Dictionary<string, ProgressTask>();
-			
+
 				await DeployUtil.Deploy(
-					plan, 
-					args.DependencyProvider, 
+					plan,
+					args.DependencyProvider,
 					progressHandler: (name, progress, isKnownLength, serviceName) =>
 					{
 						if (!progressTasks.TryGetValue(name, out var progressTask))
 						{
 							progressTasks[name] = progressTask = ctx.AddTask(name, maxValue: 1);
 						}
-						
+
 						if (!isKnownLength && progress > 0)
 						{
 							progressTask.IsIndeterminate = true;
 						}
-						
+
 						progressReporter.SendResults(new PlanReleaseProgress
 						{
 							ratio = progress,
@@ -165,12 +165,12 @@ public class ReleaseDeploymentCommand
 							isKnownLength = isKnownLength,
 							serviceName = serviceName
 						});
-						
+
 						progressTask.Value = progress;
-					}, 
+					},
 					args.Lifecycle.Source,
 					remoteManifestTask);
-	
+
 			});
 
 

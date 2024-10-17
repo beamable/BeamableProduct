@@ -31,8 +31,8 @@ public enum DeployMode
 	/// A deployment mode that only adds services found locally at the time of the deployment.
 	/// Any existing services that are not part of the local environment will remain unchanged. 
 	/// </summary>
-	Additive, 
-	
+	Additive,
+
 	/// <summary>
 	/// A deployment mode that will remove everything unless it is found locally during the time
 	/// of deployment. 
@@ -42,7 +42,7 @@ public enum DeployMode
 
 public class DeployablePlan : JsonSerializable.ISerializable
 {
-	
+
 	/// <summary>
 	/// This checksum represents the checksum of the remote manifest at the time the plan was made.
 	/// If the plan is going to be <i>used</i>, the checksum should be checked. When the checksum
@@ -50,9 +50,9 @@ public class DeployablePlan : JsonSerializable.ISerializable
 	/// </summary>
 	public string builtFromRemoteChecksum;
 
-	
+
 	public DeployMode mode;
-	
+
 	/// <summary>
 	/// The resulting manifest. After the plan is released, the server-side manifest will be this manifest. 
 	/// </summary>
@@ -61,7 +61,7 @@ public class DeployablePlan : JsonSerializable.ISerializable
 	public List<string> servicesToUpload = new List<string>();
 	public bool ranHealthChecks;
 	public int changeCount;
-	
+
 	public void Serialize(JsonSerializable.IStreamSerializer s)
 	{
 		s.Serialize(nameof(builtFromRemoteChecksum), ref builtFromRemoteChecksum);
@@ -107,20 +107,20 @@ public class DeploymentDiffSummary : JsonSerializable.ISerializable
 	public List<DeploymentManifestJsonDiff> jsonChanges = new List<DeploymentManifestJsonDiff>();
 	public List<string> addedServices = new List<string>();
 	public List<string> removedServices = new List<string>();
-	
+
 	public List<string> disabledServices = new List<string>();
 	public List<string> enabledServices = new List<string>();
-	
+
 	public List<string> addedStorage = new List<string>();
 	public List<string> removedStorage = new List<string>();
-	
+
 	public List<string> disabledStorages = new List<string>();
 	public List<string> enabledStorages = new List<string>();
 
 	public List<ServiceFederationChange> addedFederations = new List<ServiceFederationChange>();
 	public List<ServiceFederationChange> removedFederations = new List<ServiceFederationChange>();
 	public List<ServiceImageIdChange> serviceImageIdChanges = new List<ServiceImageIdChange>();
-	
+
 	public void Serialize(JsonSerializable.IStreamSerializer s)
 	{
 		s.SerializeList(nameof(jsonChanges), ref jsonChanges);
@@ -148,7 +148,7 @@ public struct ServiceFederationChange : IServiceChangeDisplay, JsonSerializable.
 	public string service;
 	public string federationId;
 	public string federationInterface;
-	
+
 	public string ToChangeString()
 	{
 		return $"{service} [{federationInterface}/{federationId}]";
@@ -185,39 +185,39 @@ public partial class DeployUtil
 {
 	[GeneratedRegex($"^{nameof(ManifestView.manifest)}\\[(\\d+)\\].{nameof(ServiceReference.components)}\\[(\\d+)\\].{nameof(ServiceComponent.name)}", RegexOptions.None)]
 	public static partial Regex GetFederationRegex();
-	
+
 	[GeneratedRegex($"^{nameof(ManifestView.manifest)}\\[(\\d+)\\]", RegexOptions.None)]
 	public static partial Regex GetServiceRegex();
-	
+
 	[GeneratedRegex($"^{nameof(ManifestView.storageReference)}\\[(\\d+)\\]", RegexOptions.None)]
 	public static partial Regex GetStorageRegex();
-	
+
 	[GeneratedRegex($"^{nameof(ManifestView.manifest)}\\[\\d+\\].{nameof(ServiceReference.serviceName)}", RegexOptions.None)]
 	public static partial Regex GetServiceNameRegex();
-	
+
 	[GeneratedRegex($"^{nameof(ManifestView.manifest)}\\[\\d+\\].{nameof(ServiceReference.enabled)}", RegexOptions.None)]
 	public static partial Regex GetServiceEnabledRegex();
-	
-		
+
+
 	[GeneratedRegex($"^{nameof(ManifestView.manifest)}\\[\\d+\\].{nameof(ServiceReference.archived)}", RegexOptions.None)]
 	public static partial Regex GetServiceArchivedRegex();
 
 	[GeneratedRegex($"^{nameof(ManifestView.storageReference)}\\[\\d+\\].{nameof(ServiceReference.archived)}", RegexOptions.None)]
 	public static partial Regex GetStorageArchivedRegex();
-	
+
 	[GeneratedRegex($"^{nameof(ManifestView.manifest)}\\[\\d+\\].{nameof(ServiceReference.imageId)}", RegexOptions.None)]
 	public static partial Regex GetServiceImageIdRegex();
-	
+
 	[GeneratedRegex($"^{nameof(ManifestView.storageReference)}\\[\\d+\\].{nameof(ServiceStorageReference.id)}", RegexOptions.None)]
 	public static partial Regex GetStorageNameRegex();
-	
+
 	[GeneratedRegex($"^{nameof(ManifestView.storageReference)}\\[\\d+\\].{nameof(ServiceStorageReference.enabled)}", RegexOptions.None)]
 	public static partial Regex GetStorageEnabledRegex();
-	
+
 	public static DeploymentDiffSummary FindChanges(ManifestView old, ManifestView next)
 	{
 		var summary = new DeploymentDiffSummary();
-		
+
 		// get the exact json field diff
 		summary.jsonChanges = DiffStream.FindChanges(old, next).changes.Select(x =>
 		{
@@ -262,7 +262,7 @@ public partial class DeployUtil
 					};
 					summary.addedFederations.Add(add);
 				}
-				
+
 				if (!string.IsNullOrEmpty(change.currentValue) && change.currentValue.Length > 0)
 				{
 					var nextParts = change.currentValue?.Split("/", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
@@ -274,7 +274,7 @@ public partial class DeployUtil
 					};
 					summary.removedFederations.Add(remove);
 				}
-				
+
 			}
 			switch (diffType)
 			{
@@ -282,10 +282,11 @@ public partial class DeployUtil
 					if (GetServiceNameRegex().IsMatch(change.jsonPath))
 					{
 						summary.addedServices.Add(change.nextValue);
-					} else if (GetStorageNameRegex().IsMatch(change.jsonPath))
+					}
+					else if (GetStorageNameRegex().IsMatch(change.jsonPath))
 					{
 						summary.addedStorage.Add(change.nextValue);
-					} 
+					}
 					else if (GetServiceArchivedRegex().IsMatch(change.jsonPath))
 					{
 						if (change.TryGetNextBooleanValue(out var isArchived))
@@ -336,7 +337,8 @@ public partial class DeployUtil
 								summary.disabledServices.Add(name);
 							}
 						}
-					} else if (GetStorageEnabledRegex().IsMatch(change.jsonPath))
+					}
+					else if (GetStorageEnabledRegex().IsMatch(change.jsonPath))
 					{
 						if (change.TryGetNextBooleanValue(out var isEnabled))
 						{
@@ -352,7 +354,8 @@ public partial class DeployUtil
 								summary.disabledStorages.Add(name);
 							}
 						}
-					} else if (GetServiceImageIdRegex().IsMatch(change.jsonPath))
+					}
+					else if (GetServiceImageIdRegex().IsMatch(change.jsonPath))
 					{
 						var serviceIndex = int.Parse(GetServiceRegex().Match(change.jsonPath).Groups[1].Value);
 						var name = next.manifest[serviceIndex].serviceName;
@@ -363,14 +366,15 @@ public partial class DeployUtil
 							nextImageId = change.nextValue
 						});
 					}
-					
+
 
 					break;
 				case DiffType.Added:
 					if (GetServiceNameRegex().IsMatch(change.jsonPath))
 					{
 						summary.addedServices.Add(change.nextValue);
-					} else if (GetStorageNameRegex().IsMatch(change.jsonPath))
+					}
+					else if (GetStorageNameRegex().IsMatch(change.jsonPath))
 					{
 						summary.addedStorage.Add(change.nextValue);
 					}
@@ -379,14 +383,15 @@ public partial class DeployUtil
 					if (GetServiceNameRegex().IsMatch(change.jsonPath))
 					{
 						throw new CliException($"cannot remove a service reference=[{change.currentValue}] from the manifest");
-					} else if (GetStorageNameRegex().IsMatch(change.jsonPath))
+					}
+					else if (GetStorageNameRegex().IsMatch(change.jsonPath))
 					{
 						throw new CliException($"cannot remove a storage reference=[{change.currentValue}] from the manifest");
 					}
 					break;
 			}
 		}
-		
+
 
 		return summary;
 	}
@@ -401,10 +406,10 @@ public partial class DeployUtil
 
 		{ // set the comment string; this may be changed later, but comments are not part of the diffing.
 			final.comments = remote.comments;
-			
+
 			// note: all the other random field stuff (as of Oct 1 2024) are computed by the server.
 		}
-		
+
 		{ // each service in the next set should be added in and/or overwrite the existing service for the name
 			foreach (var nextService in next.manifest)
 			{
@@ -414,7 +419,7 @@ public partial class DeployUtil
 					var currentService = finalServices[i];
 					if (!string.Equals(nextService.serviceName, currentService.serviceName))
 						continue;
-					
+
 					if (!nextService.enabled && string.IsNullOrEmpty(nextService.imageId))
 					{
 						// inherit the imageId from the existing service reference if we don't have one.
@@ -425,12 +430,12 @@ public partial class DeployUtil
 					// inherit the comments from the remote reference. Comments can be adjusted later, but
 					//  they don't matter as part of the diff.
 					nextService.comments = currentService.comments;
-					
+
 					// this serviceName already exists in the final set!
 					// overwrite it!
 					finalServices[i] = nextService;
 
-				
+
 					found = true;
 					break;
 				}
@@ -467,7 +472,7 @@ public partial class DeployUtil
 
 		final.manifest = finalServices.ToArray();
 		final.storageReference = new OptionalArrayOfServiceStorageReference(finalStorages.ToArray());
-		
+
 		return final;
 	}
 
@@ -501,14 +506,14 @@ public partial class DeployUtil
 				storage.enabled = false;
 			}
 		}
-		
+
 		return additive;
 	}
 
 	public static bool TryValidate(ManifestView current, out List<string> errors)
 	{
 		errors = new List<string>();
-		
+
 		// validate services
 		foreach (var service in current.manifest)
 		{
@@ -523,8 +528,8 @@ public partial class DeployUtil
 				errors.Add($"service=[{service.serviceName}] cannot be archived and enabled. ");
 			}
 		}
-		
-		
+
+
 		// validate storages
 		foreach (var storage in current.storageReference.GetOrElse(Array.Empty<ServiceStorageReference>()))
 		{
@@ -553,7 +558,7 @@ public partial class DeployUtil
 
 		return next;
 	}
-	
+
 	public static ManifestView EnsureArchivedServicesAreDisabled(ManifestView current)
 	{
 		var next = current.Copy();
@@ -576,7 +581,7 @@ public partial class DeployUtil
 
 		return next;
 	}
-	
+
 	public static ManifestView EnsureOnlyActiveStoragesAreEnabled(ManifestView current)
 	{
 		var next = current.Copy();
@@ -585,9 +590,9 @@ public partial class DeployUtil
 		//  The rule exists to prevent folks from having unreachable storages. 
 		//  NOTE: technically it is possible to get a secure connection string 
 		//        to a remote storage, but it isn't currently a well designed UX.
-		
+
 		var referencedStorageIds = new HashSet<string>();
-		
+
 		// scan through all services and keep track of the referenced storage names
 		{
 			foreach (var service in next.manifest)
@@ -596,7 +601,7 @@ public partial class DeployUtil
 					// only accumulate referenced storage ids from services that are actually enabled. 
 					//  otherwise, the storage is still "unreachable", because the service isn't running.
 					continue;
-				
+
 				var deps = service.dependencies.GetOrElse(Array.Empty<ServiceDependencyReference>());
 				foreach (var dep in deps)
 				{
@@ -636,7 +641,7 @@ public partial class DeployUtil
 		var file = info.GetFiles().MaxBy(p => p.CreationTime);
 		return file?.FullName;
 	}
-	
+
 	public static async Task<string> SavePlanToTempFolder(IDependencyProvider provider, DeployablePlan plan)
 	{
 		var logDir = GetPlanTempFolder(provider);
@@ -651,15 +656,15 @@ public partial class DeployUtil
 				files[i].Delete();
 			}
 		}
-			
+
 		var planJson = JsonSerializable.ToJson(plan);
-		var planPath = Path.Combine(logDir,$"plan-{DateTimeOffset.Now.ToUnixTimeMilliseconds()}.plan.json");
+		var planPath = Path.Combine(logDir, $"plan-{DateTimeOffset.Now.ToUnixTimeMilliseconds()}.plan.json");
 		Log.Verbose($"Saving plan: {planPath}");
 		await File.WriteAllTextAsync(planPath, planJson);
 
 		return planPath;
 	}
-	
+
 	public static void PrintPlanNextSteps(string planFile, bool hasChanges)
 	{
 		var isSavingPlan = !string.IsNullOrEmpty(planFile);
@@ -678,7 +683,7 @@ public partial class DeployUtil
 				break;
 		}
 	}
-	
+
 	public static void PrintPlanInfo(DeployablePlan plan, IHasDeployPlanArgs args, out bool hasChanges)
 	{
 		var detectedChangeCount = PrintChangesAndNoticeChange(plan.diff.disabledServices, "Disabling", "service");
@@ -701,7 +706,7 @@ public partial class DeployUtil
 			if (!plan.ranHealthChecks && plan.servicesToUpload.Count > 0)
 			{
 				Log.Warning("Local Health-checks were not run! Services may work as expected, but they have not been explicitly tested locally. \n" +
-				            "Consider re-running a plan command with the `--health` option. ");
+							"Consider re-running a plan command with the `--health` option. ");
 			}
 		}
 		switch (hasChanges, hasDetectedChanges)
@@ -743,7 +748,7 @@ public partial class DeployUtil
 		{
 			return PrintChangesAndNoticeChange(changes.Select(x => x.ToChangeString()).ToList(), verb, noun);
 		}
-		
+
 		int PrintChangesAndNoticeChange(List<string> changes, string verb, string noun)
 		{
 			if (changes.Count == 0) return 0;
@@ -757,7 +762,7 @@ public partial class DeployUtil
 			{
 				sb.AppendLine($" - {changes[i].ToString()}");
 			}
-		
+
 			Log.Warning(sb.ToString());
 			return changes.Count;
 		}
@@ -766,33 +771,33 @@ public partial class DeployUtil
 	public static bool IsJsonAPlan(IDictionary<string, object> data)
 	{
 		return data != null
-		        && data.ContainsKey(nameof(DeployablePlan.builtFromRemoteChecksum))
-		        && data.ContainsKey(nameof(DeployablePlan.servicesToUpload))
-		        && data.ContainsKey(nameof(DeployablePlan.manifest))
-		        && data.ContainsKey(nameof(DeployablePlan.diff))
-		        && data.ContainsKey(nameof(DeployablePlan.mode))
-		        && data.ContainsKey(nameof(DeployablePlan.ranHealthChecks))
+				&& data.ContainsKey(nameof(DeployablePlan.builtFromRemoteChecksum))
+				&& data.ContainsKey(nameof(DeployablePlan.servicesToUpload))
+				&& data.ContainsKey(nameof(DeployablePlan.manifest))
+				&& data.ContainsKey(nameof(DeployablePlan.diff))
+				&& data.ContainsKey(nameof(DeployablePlan.mode))
+				&& data.ContainsKey(nameof(DeployablePlan.ranHealthChecks))
 			;
 	}
 	public static bool IsJsonAManifest(IDictionary<string, object> data)
 	{
 		return data != null
-		        && data.ContainsKey(nameof(ManifestView.checksum))
-		        && data.ContainsKey(nameof(ManifestView.manifest))
-		        && data.ContainsKey(nameof(ManifestView.id))
+				&& data.ContainsKey(nameof(ManifestView.checksum))
+				&& data.ContainsKey(nameof(ManifestView.manifest))
+				&& data.ContainsKey(nameof(ManifestView.id))
 			// there are more fields we could check, btu this is "good enough"
 			;
 	}
-	
+
 	public static async Task<(DeployablePlan, List<BuildImageOutput>)> Plan(
-		IDependencyProvider provider, 
+		IDependencyProvider provider,
 		IHasDeployPlanArgs args,
 		ProgressHandler progressHandler)
 	{
 		const string FetchManifestProgressName = "fetching latest";
 		const string MergingManifestProgressName = "calculating plan";
 
-		
+
 		var api = provider.GetService<IBeamoApi>();
 		var beamo = provider.GetService<BeamoLocalSystem>();
 
@@ -822,12 +827,12 @@ public partial class DeployUtil
 				throw new CliException(sb.ToString());
 			}
 		}
-		
+
 		ManifestView localManifest = null;
 		ManifestView remote = null;
 		List<BuildImageOutput> localBuildReports = null;
 		Task<(ManifestView, List<BuildImageOutput>)> localTask = null;
-		
+
 		progressHandler?.Invoke(FetchManifestProgressName, 0);
 		var remoteTask = CreateReleaseManifestFromRealm(api);
 
@@ -835,10 +840,12 @@ public partial class DeployUtil
 		if (isLoadingManifestFile)
 		{
 			localTask = CreateReleaseManifestFromFile(provider, args.FromManifestFile, progressHandler);
-		} else if (isLoadingManifestId)
+		}
+		else if (isLoadingManifestId)
 		{
 			localTask = CreateReleaseManifestFromId(provider, args.ManifestId, progressHandler);
-		} else if (isLoadingMostRecent)
+		}
+		else if (isLoadingMostRecent)
 		{
 			localTask = CreateReleaseManifestFromId(remoteTask);
 		}
@@ -847,10 +854,10 @@ public partial class DeployUtil
 			localTask = CreateReleaseManifestFromLocal(provider, beamo.BeamoManifest, progressHandler);
 		}
 		progressHandler?.Invoke(MergingManifestProgressName, 0);
-		
+
 		remote = await remoteTask;
 		progressHandler?.Invoke(FetchManifestProgressName, 1);
-		
+
 		(localManifest, localBuildReports) = await localTask;
 
 		{ // if there are ANY failures in the build, then the entire plan is a failure.
@@ -859,10 +866,10 @@ public partial class DeployUtil
 				return (null, localBuildReports);
 			}
 		}
-		
+
 		ManifestView next = null;
 		DeploymentDiffSummary diff = null;
-		
+
 		switch (args.DeployMode)
 		{
 			case DeployMode.Additive:
@@ -875,13 +882,13 @@ public partial class DeployUtil
 				throw new NotImplementedException(
 					$"The only two supported deploy modes are {nameof(DeployMode.Additive)} and {nameof(DeployMode.Replace)}");
 		}
-		
+
 		// process transforms
 		{
 			var transforms = new List<Func<ManifestView, ManifestView>>
 			{
-				EnsureArchivedServicesAreDisabled, 
-				EnsureOnlyActiveStoragesAreEnabled, 
+				EnsureArchivedServicesAreDisabled,
+				EnsureOnlyActiveStoragesAreEnabled,
 				EnsureEntriesHaveChecksums
 			};
 			for (var i = 0; i < transforms.Count; i++)
@@ -901,7 +908,7 @@ public partial class DeployUtil
 		}
 
 		var servicesToUpload = new List<string>();
-		{ 
+		{
 			// calculate the set of services that actually need to build. 
 			//  it is the intersection of services that have differing imageIds in remote/local, 
 			//  AND those services that we just built locally. 
@@ -931,7 +938,7 @@ public partial class DeployUtil
 				if (localService == null)
 					throw new CliException("local service cannot be null. This is a beamable bug, please report");
 
-				
+
 				progressHandler?.Invoke("verifying " + service, 0);
 				if (!beamo.BeamoManifest.TryGetDefinition(service, out var definition))
 					throw new CliException("local definition cannot be null. This is a beamable bug, please report");
@@ -950,16 +957,16 @@ public partial class DeployUtil
 				}
 
 				var routingKey = ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine() + "_healthCheck";
-				await beamo.RunLocalHttpMicroservice(definition, http, beamo, true, 
-					CancellationToken.None, 
+				await beamo.RunLocalHttpMicroservice(definition, http, beamo, true,
+					CancellationToken.None,
 					disableInitHooks: true, // TODO: should we make this false?
 					imageIdOverride: localService.imageId,
 					routingKey: routingKey);
 				progressHandler?.Invoke("verifying " + service, .5f);
-				
+
 				var routingHeader = $"{Beamable.Common.Constants.Requester.HEADER_ROUTINGKEY}=micro_{service}:{routingKey}";
 				await RetryRequest(provider, container, service, routingHeader);
-				
+
 				progressHandler?.Invoke("verifying " + service, .9f);
 				try
 				{
@@ -970,13 +977,13 @@ public partial class DeployUtil
 				{
 					// do nothing.
 				}
-				
+
 				progressHandler?.Invoke("verifying " + service, 1);
 
-				
+
 			}
 		}
-		
+
 		progressHandler?.Invoke(MergingManifestProgressName, 1);
 
 		return (new DeployablePlan
@@ -988,29 +995,29 @@ public partial class DeployUtil
 			manifest = next,
 			servicesToUpload = servicesToUpload,
 			changeCount = diff.addedStorage.Count
-			              + diff.removedStorage.Count
-			              + diff.disabledStorages.Count
-			              + diff.enabledStorages.Count
-			              + diff.addedServices.Count
-			              + diff.removedServices.Count
-			              + diff.disabledServices.Count
-			              + diff.enabledServices.Count
-			              + diff.serviceImageIdChanges.Count
-			              + diff.addedFederations.Count
-			              + diff.removedFederations.Count
+						  + diff.removedStorage.Count
+						  + diff.disabledStorages.Count
+						  + diff.enabledStorages.Count
+						  + diff.addedServices.Count
+						  + diff.removedServices.Count
+						  + diff.disabledServices.Count
+						  + diff.enabledServices.Count
+						  + diff.serviceImageIdChanges.Count
+						  + diff.addedFederations.Count
+						  + diff.removedFederations.Count
 		}, localBuildReports);
 	}
 
-	
+
 	private static async Promise<string> RetryRequest(IDependencyProvider provider, string containerName, string serviceName, string routingHeader)
 	{
 		var app = provider.GetService<IAppContext>();
 		var url = $"/basic/{app.Cid}.{app.Pid}.micro_{serviceName}/admin/Metadata";
 		var requester = provider.GetService<CliRequester>();
-	
+
 		var isRunning = false;
 		string request = null;
-	
+
 		do
 		{
 			isRunning = false;
@@ -1035,30 +1042,30 @@ public partial class DeployUtil
 					isRunning = false;
 				}
 			}
-	
+
 		} while (isRunning);
-	
+
 		if (string.IsNullOrEmpty(request))
 		{
 			throw new CliException($"The service [{serviceName}] failed to register itself with Beamable.");
 		}
-	
+
 		return request;
 	}
-	
+
 	public static async Task Deploy(
-		DeployablePlan plan, 
-		IDependencyProvider provider, 
-		ProgressHandler progressHandler, 
+		DeployablePlan plan,
+		IDependencyProvider provider,
+		ProgressHandler progressHandler,
 		CancellationTokenSource cts,
-		Task<ManifestView> remoteManifestTask=null)
+		Task<ManifestView> remoteManifestTask = null)
 	{
 		var api = provider.GetService<IBeamoApi>();
 		var beamoService = provider.GetService<BeamoService>();
 
 		var gamePidPromise = provider.GetService<IRealmsApi>().GetRealm();
 		var dockerRegistryUrlPromise = beamoService.GetDockerImageRegistryUri();
-		
+
 		var remote = await (remoteManifestTask ?? CreateReleaseManifestFromRealm(api));
 		var gamePid = (await gamePidPromise).FindRoot().Pid; // TODO I really think we should move this to _ctx/ConfigService and grab it during init...
 		var dockerRegistryUrl = await dockerRegistryUrlPromise;
@@ -1068,7 +1075,7 @@ public partial class DeployUtil
 			throw new CliException(
 				"The given deployment plan was created with a different configuration of remote services than exists now. Please create a new plan and try again.");
 		}
-		
+
 		// identity the services we need to upload.
 		var uploadTasks = new List<Task>();
 		var servicesToUpload = new HashSet<string>(plan.servicesToUpload);
@@ -1083,10 +1090,10 @@ public partial class DeployUtil
 			var uploadTask = ServiceUploadUtil.Upload(
 				provider: provider,
 				beamoId: service.serviceName,
-				imageId: service.imageId, 
+				imageId: service.imageId,
 				gamePid: gamePid,
-				dockerRegistryUrl: dockerRegistryUrl, 
-				cts: cts, 
+				dockerRegistryUrl: dockerRegistryUrl,
+				cts: cts,
 				onProgressCallback: progressRatio =>
 				{
 					progressHandler?.Invoke(progressTaskName, progressRatio, serviceName: serviceName);
@@ -1099,7 +1106,7 @@ public partial class DeployUtil
 		await Task.WhenAll(uploadTasks);
 
 		cts.Token.ThrowIfCancellationRequested();
-		
+
 		// publish manifest. 
 		var manifest = new PostManifestRequest
 		{
@@ -1141,7 +1148,7 @@ public partial class DeployUtil
 		progressHandler?.Invoke("fetching manifest", 1);
 		return (manifest.manifest, new List<BuildImageOutput>());
 	}
-	
+
 	public static async Task<(ManifestView, List<BuildImageOutput>)> CreateReleaseManifestFromId(Task<ManifestView> remoteTask)
 	{
 		var manifest = await remoteTask;
@@ -1166,15 +1173,15 @@ public partial class DeployUtil
 
 			throw new CliException($"The file=[{manifestFile}] does not contain a valid plan file");
 		}
-			
-			
+
+
 		progressHandler?.Invoke(ReadingLocalManifestProgressName, 1);
 
-		
+
 		var localManifest = JsonSerializable.FromJson<ManifestView>(manifestJson);
 		return (localManifest, new List<BuildImageOutput>());
 	}
-	
+
 	public static async Task<(ManifestView, List<BuildImageOutput>)> CreateReleaseManifestFromLocal(IDependencyProvider provider, BeamoLocalManifest localManifest, ProgressHandler progressHandler)
 	{
 		var services = new ServiceReference[localManifest.HttpMicroserviceLocalProtocols.Count];
@@ -1187,19 +1194,19 @@ public partial class DeployUtil
 		for (var i = 0; i < localManifest.ServiceDefinitions.Count; i++)
 		{
 			var definition = localManifest.ServiceDefinitions[i];
-			
+
 			if (!definition.IsLocal)
 				// this function is explicitly about creating services from local source code.
 				continue;
-			
+
 			switch (definition.Protocol)
 			{
 				case BeamoProtocolType.HttpMicroservice:
 
 					var index = serviceIndex++;
 					var task = CreateServiceReference(
-						provider, 
-						definition, 
+						provider,
+						definition,
 						localManifest.HttpMicroserviceLocalProtocols[definition.BeamoId],
 						progressHandler
 					).ContinueWith(continueTask =>
@@ -1226,7 +1233,7 @@ public partial class DeployUtil
 		}
 
 		await Task.WhenAll(pendingTasks);
-		
+
 		return (new ManifestView
 		{
 			manifest = services,
@@ -1238,7 +1245,7 @@ public partial class DeployUtil
 		BeamoServiceDefinition definition,
 		EmbeddedMongoDbLocalProtocol mongo)
 	{
-		
+
 		var reference = new ServiceStorageReference
 		{
 			storageType = "mongov1",
@@ -1247,11 +1254,11 @@ public partial class DeployUtil
 			templateId = "small",
 			id = definition.BeamoId,
 		};
-		
+
 		return reference;
 	}
 
-	
+
 
 
 	static async Task<(ServiceReference, BuildImageOutput)> CreateServiceReference(
@@ -1291,7 +1298,8 @@ public partial class DeployUtil
 				Log.Error($"Could not build service=[{definition.BeamoId}] message=[{ex.Message}] stack=[{ex.StackTrace}]");
 				imageId = null;
 			}
-		}  else
+		}
+		else
 		{
 			progressHandler?.Invoke("skip  " + definition.BeamoId, 1, serviceName: definition.BeamoId);
 		}
@@ -1304,7 +1312,7 @@ public partial class DeployUtil
 				name = $"{x.Interface}/{kvp.Key}"
 			});
 		}).ToArray();
-		
+
 		var reference = new ServiceReference
 		{
 			serviceName = definition.BeamoId,
@@ -1319,7 +1327,7 @@ public partial class DeployUtil
 				id = x
 			}).ToArray())
 		};
-		
+
 		return (reference, report);
 	}
 }

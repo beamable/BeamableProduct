@@ -5,7 +5,7 @@ using Lobby = Beamable.Experimental.Api.Lobbies.Lobby;
 
 namespace Beamable.Common
 {
-	public interface IFederatedGameServer<in T> : IFederation  where T : IFederationId, new()
+	public interface IFederatedGameServer<in T> : IFederation where T : IFederationId, new()
 	{
 		Promise<ServerInfo> CreateGameServer(Lobby lobby);
 	}
@@ -14,7 +14,7 @@ namespace Beamable.Common
 	{
 		public string[] ContentIds;
 	}
-	
+
 	[Serializable]
 	public class ServerInfo
 	{

@@ -85,12 +85,12 @@ public class App
 
 	private static void ConfigureLogging(App app, IDependencyProvider provider, Func<LoggerConfiguration, ILogger> configureLogger = null)
 	{
-		
+
 		var appCtx = provider.GetService<IAppContext>();
 		var config = provider.GetService<ConfigService>();
 		var binding = provider.GetService<BindingContext>();
 		config.SetupBasePath(binding);
-		
+
 		// https://github.com/serilog/serilog/wiki/Configuration-Basics
 		configureLogger ??= config =>
 		{
@@ -105,7 +105,7 @@ public class App
 					options.MaskValue = "***";
 				});
 			}
-			
+
 			baseConfig = baseConfig.WriteTo.Logger(subConfig =>
 				subConfig
 					.WriteTo.BeamAnsi("{Message:lj}{NewLine}{Exception}")
@@ -181,7 +181,7 @@ public class App
 		services.AddSingleton<IDataReporterService, DataReporterService>();
 		services.AddSingleton<ServerService>();
 		services.AddSingleton<AppLifecycle>();
-		
+
 		OpenApiRegistration.RegisterOpenApis(services);
 
 		_serviceConfigurator?.Invoke(services);
@@ -210,7 +210,7 @@ public class App
 			_setLogger = (provider) =>
 			{
 				ConfigureLogging(this, provider, configureLogger);
-				
+
 				TaskLocalLog.Instance.globalLogger = Log.Logger;
 				Log.Logger = TaskLocalLog.Instance;
 			};
@@ -275,7 +275,7 @@ public class App
 			root.AddGlobalOption(provider.GetRequiredService<RefreshTokenOption>());
 			root.AddGlobalOption(provider.GetRequiredService<LogOption>());
 			root.AddGlobalOption(provider.GetRequiredService<NoForwardingOption>());
-			root.AddGlobalOption(AllHelpOption.Instance);;
+			root.AddGlobalOption(AllHelpOption.Instance); ;
 			root.AddGlobalOption(UnmaskLogsOption.Instance);
 			root.AddGlobalOption(NoLogFileOption.Instance);
 			root.AddGlobalOption(DockerPathOption.Instance);
@@ -308,7 +308,7 @@ public class App
 		Commands.AddSubCommand<SetEnabledCommand, SetEnabledCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<SetDisableCommand, SetEnabledCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<RegenerateSolutionFilesCommand, RegenerateSolutionFilesCommandArgs, ProjectCommand>();
-		Commands.AddSubCommand<GroupCommand,CommandGroupArgs, ProjectCommand>();
+		Commands.AddSubCommand<GroupCommand, CommandGroupArgs, ProjectCommand>();
 		Commands.AddSubCommand<GroupAddCommand, UpdateGroupArgs, GroupCommand>();
 		Commands.AddSubCommand<GroupRemoveCommand, UpdateGroupArgs, GroupCommand>();
 		Commands.AddSubCommand<ListCommand, ListCommandArgs, ProjectCommand>();
@@ -343,7 +343,7 @@ public class App
 		Commands.AddSubCommand<DisableFederationCommand, DisableFederationCommandArgs, FederationCommand>();
 		Commands.AddSubCommand<EnableFederationCommand, DisableFederationCommandArgs, FederationCommand>();
 		Commands.AddSubCommand<GetLocalRoutingKeyCommand, GetLocalRoutingKeyCommandArgs, FederationCommand>();
-		
+
 		Commands.AddRootCommand<TokenCommandGroup>();
 		Commands.AddSubCommand<GetTokenDetailsCommand, GetTokenDetailsCommandArgs, TokenCommandGroup>();
 		Commands.AddSubCommand<GetTokenListCommand, GetTokenListCommandArgs, TokenCommandGroup>();
@@ -353,12 +353,12 @@ public class App
 		Commands.AddRootCommand<TempCommandGroup>();
 		Commands.AddSubCommand<TempClearCommandGroup, TempClearArgs, TempCommandGroup>();
 		Commands.AddSubCommandWithHandler<ClearTempLogFilesCommand, ClearTempLogFilesCommandArgs, TempClearCommandGroup>();
-		
+
 		Commands.AddRootCommand<PlayerCommand, PlayerCommandArgs>();
-		
+
 		Commands.AddRootCommand<PortalCommand, PortalCommandArgs>();
 		Commands.AddSubCommandWithHandler<PortalOpenCurrentAccountCommand, PortalOpenCurrentAccountCommandArgs, PortalCommand>();
-		
+
 		Commands.AddRootCommand<ConfigCommand, ConfigCommandArgs>();
 		Commands.AddSubCommandWithHandler<ConfigSetCommand, ConfigSetCommandArgs, ConfigCommand>();
 		Commands.AddSubCommandWithHandler<ConfigGetSecret, ConfigGetSecretArgs, ConfigCommand>();
@@ -393,11 +393,11 @@ public class App
 				UnityGroupCommand>();
 		Commands.AddSubCommand<UpdateServiceAssemblyReferencesCommand, UpdateServiceAssemblyReferencesCommandArgs,
 			UnityGroupCommand>();
-		
+
 		// unreal commands
 		Commands.AddRootCommand<UnrealGroupCommand>();
 		Commands.AddSubCommand<InitUnrealSDKCommand, InitUnrealSDKCommandArgs, UnrealGroupCommand>();
-		
+
 		// version commands
 		Commands.AddRootCommand<VersionCommand, VersionCommandArgs>();
 		Commands.AddSubCommandWithHandler<VersionListCommand, VersionListCommandArgs, VersionCommand>();
@@ -435,7 +435,7 @@ public class App
 		Commands.AddSubCommandWithHandler<ShowCurrentBeamoStatusCommand, ShowCurrentBeamoStatusCommandArgs, DeploymentCommand>();
 		Commands.AddSubCommandWithHandler<PlanDeploymentCommand, PlanDeploymentCommandArgs, DeploymentCommand>();
 		Commands.AddSubCommandWithHandler<ReleaseDeploymentCommand, ReleaseDeploymentCommandArgs, DeploymentCommand>();
-		
+
 		Commands.AddRootCommand<ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentPullCommand, ContentPullCommandArgs, ContentCommand>();
 		Commands.AddSubCommandWithHandler<ContentStatusCommand, ContentStatusCommandArgs, ContentCommand>();
@@ -543,7 +543,7 @@ public class App
 		yield return (ctx) => new BeamHelpBuilder(ctx).WriteSubcommands(ctx);
 		yield return HelpBuilder.Default.AdditionalArgumentsSection();
 	}
-	
+
 	protected virtual Parser GetProgram()
 	{
 		var root = CommandProvider.GetRequiredService<RootCommand>();
@@ -552,7 +552,7 @@ public class App
 
 		helpBuilder.CustomizeLayout(c =>
 		{
-			
+
 			var defaultLayout = GetHelpLayout().ToList();
 			defaultLayout.Add(PrintOutputHelp);
 			defaultLayout.Add(ctx =>
@@ -563,15 +563,15 @@ public class App
 				}
 
 				var options = ctx.Command.Options;
-				
+
 				if (ctx.Command is IHaveRedirectionConcernMessage concernedCommand)
 				{
-					
+
 					ctx.Output.WriteLine("Redirection Warning:");
 					concernedCommand.WriteValidationMessage(ctx.Command, ctx.Output);
 				}
 
-				
+
 			});
 			var executingVersion = VersionService.GetNugetPackagesForExecutingCliVersion();
 
@@ -591,7 +591,7 @@ public class App
 					ctx.Output.WriteLine("  in the future. Happy spelunking!");
 				}
 			});
-			
+
 			defaultLayout.Insert(0, (ctx) =>
 			{
 				ctx.Output.WriteLine("CLI Version: " + executingVersion);
@@ -656,7 +656,7 @@ public class App
 			}
 			return next(ctx);
 		}, MiddlewareOrder.Configuration);
-		
+
 		// this middleware is responsible for catching parse errors and putting them on the data-out raw channel
 		commandLineBuilder.AddMiddleware((ctx, next) =>
 		{
@@ -670,7 +670,7 @@ public class App
 			var appContext = provider.GetService<IAppContext>();
 			var reporter = provider.GetService<IDataReporterService>();
 			var isPiping = appContext.UsePipeOutput || appContext.ShowRawOutput;
-			
+
 			if (!isPiping)
 			{
 				// we aren't using raw output, so this middleware has nothing to do.
@@ -682,10 +682,10 @@ public class App
 			reporter.Exception(ex, ctx.ExitCode, ctx.BindingContext.ParseResult.Diagram());
 			// don't call the next task, because we have "handled" the error by posting it to the error channel
 			return Task.CompletedTask;
-			
+
 		}, MiddlewareOrder.ErrorReporting);
-		
-		
+
+
 		commandLineBuilder.AddMiddleware(async (ctx, next) =>
 		{
 			var sw = new Stopwatch();
@@ -729,14 +729,15 @@ public class App
 					return;
 				}
 			}
-			
+
 			Log.Verbose("command prep (past proxy) took " + sw.ElapsedMilliseconds);
-			
+
 			var skip = ctx.ParseResult.CommandResult.Command is ISkipManifest;
 			if (skip)
 			{
 				Log.Debug($"skipping manifest initialization because command=[{ctx.ParseResult.CommandResult.Command.GetType().Name}] is a {nameof(ISkipManifest)}");
-			} else 
+			}
+			else
 			{
 				try
 				{
@@ -824,7 +825,7 @@ public class App
 				{
 					Log.Error(ex.ToString());
 					Log.CloseAndFlush();
-					
+
 					Console.Error.WriteLine("\nLogs at\n  " + Path.GetFullPath(logFile));
 				}
 			}
@@ -835,11 +836,11 @@ public class App
 	private void ProxyHelp(HelpContext helpContext)
 	{
 		var dotnetPath = helpContext.ParseResult.GetValueForOption(DotnetPathOption.Instance) ?? "dotnet"; // TODO: use IAppContext to get env var or option based dotnet path
-		var argumentsToForward= string.Join(" ", new []{"beam"}.Concat(Environment.GetCommandLineArgs()[1..]));
-		
+		var argumentsToForward = string.Join(" ", new[] { "beam" }.Concat(Environment.GetCommandLineArgs()[1..]));
+
 		var stdOut = PipeTarget.ToDelegate(line => helpContext.Output.WriteLine(line));
 		var stdErr = PipeTarget.ToStream(Console.OpenStandardError());
-		
+
 		var proxy = CliExtensions
 				.GetDotnetCommand(dotnetPath, argumentsToForward)
 				.WithValidation(CommandResultValidation.None)// it is okay if the sub command fails, hopefully it logs a useful error.
@@ -861,8 +862,8 @@ public class App
 		var isPretty = context.ParseResult.GetValueForOption(provider.GetService<ShowPrettyOutput>());
 		var appContext = provider.GetService<IAppContext>();
 		var shouldRedirect = (appContext.UsePipeOutput || appContext.ShowRawOutput);
-			
-		var argumentsToForward= string.Join(" ", new []{"beam", "--pretty"}.Concat(Environment.GetCommandLineArgs()[1..]));
+
+		var argumentsToForward = string.Join(" ", new[] { "beam", "--pretty" }.Concat(Environment.GetCommandLineArgs()[1..]));
 
 		var warningMessage =
 			$"You tried using a Beamable CLI version=[{executingVersion}] which is different than the one configured in this project=[{projectVersion}]. We are forwarding the command ({argumentsToForward}) to the version the project is using via dotnet=[{dotnetPath}]. Instead of relying on this forwarding, please 'dotnet beam' from inside the project directory.";
@@ -886,12 +887,12 @@ public class App
 			})
 			// TODO: ideally, support somehow std-in commands
 			// .WithStandardInputPipe(PipeSource.FromStream(Console.OpenStandardInput()))
-			
+
 			;
 		if (shouldRedirect) // the sub process _should_ be redirecting, 
 		{
 			// so take the data, and forward it
-			proxy = proxy.WithStandardOutputPipe(stdOut); 
+			proxy = proxy.WithStandardOutputPipe(stdOut);
 
 			// and if we are supposed to be showing logs, those appear on stderr
 			if (isPretty)
@@ -907,11 +908,11 @@ public class App
 			//         don't need it, so it is lost.
 			proxy = proxy.WithStandardErrorPipe(stdOut);
 		}
-		
+
 		var forwardedResult = await proxy.ExecuteAsync();
 		context.ExitCode = forwardedResult.ExitCode;
 	}
-	
+
 	static void PrintHelp(InvocationContext context)
 	{
 		var output = context.Console.Out.CreateTextWriter();
@@ -925,7 +926,7 @@ public class App
 
 	static void PrintOutputHelp(HelpContext context)
 	{
-		
+
 		switch (context.Command)
 		{
 			// case ISingleResult singleResult:
@@ -956,7 +957,7 @@ public class App
 				{
 					single = result;
 				}
-				
+
 				foreach (var subInterface in allInterfaces)
 				{
 					if (!subInterface.IsGenericType) continue;

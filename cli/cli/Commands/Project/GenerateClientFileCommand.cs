@@ -47,7 +47,7 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 		await args.BeamoLocalSystem.InitManifest(fetchServerManifest: false);
 		Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - got manifest");
 
-		
+
 		// Get the list of all existing microservices
 		var allServices = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Where(sd => sd.Protocol is BeamoProtocolType.HttpMicroservice).ToArray();
 
@@ -70,8 +70,8 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 			if (args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(beamoId, out var httpLocal))
 				project = httpLocal.Metadata.msbuildProject;
 			else if (args.BeamoLocalSystem.BeamoManifest.EmbeddedMongoDbLocalProtocols.TryGetValue(beamoId, out var dbLocal)) project = dbLocal.Metadata.msbuildProject;
-			
-			var isProjBuilt =  ProjectCommand.IsProjectBuiltMsBuild(project);
+
+			var isProjBuilt = ProjectCommand.IsProjectBuiltMsBuild(project);
 			Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - checked {beamoId} built=[{isProjBuilt}]");
 			return isProjBuilt;
 		});
@@ -81,18 +81,18 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 		Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - done type loading");
 
 		#endregion
-		
+
 		var allTypes = allAssemblies.SelectMany(asm => asm.GetExportedTypes()).ToArray();
 		var allMsTypes = allTypes.Where(t => t.IsSubclassOf(typeof(Microservice)) && t.GetCustomAttribute<MicroserviceAttribute>() != null).ToArray();
 		var allSchemaTypes = ServiceDocGenerator.LoadDotnetDeclaredSchemasFromTypes(allTypes, out var missingAttributes).Select(t => t.type).ToArray();
-		
+
 		if (missingAttributes.Count > 0)
 		{
 			var typesWithErr = string.Join(",", missingAttributes.Select(t => $"({t.Name}, {t.Assembly.GetName().Name})"));
 			throw new CliException($"Types [{typesWithErr}] should have {nameof(BeamGenerateSchemaAttribute)} as they are used as fields of a type with {nameof(BeamGenerateSchemaAttribute)}.",
 				2, true);
 		}
-		
+
 		foreach (var type in allMsTypes)
 		{
 			var attribute = type.GetCustomAttribute<MicroserviceAttribute>()!;
@@ -144,7 +144,7 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 			{
 				var schemasInSameAssembly = allSchemaTypes.Where(s => s.Assembly.Equals(t.Assembly)).ToArray();
 				schemasInSomeAssembly.AddRange(schemasInSameAssembly);
-				
+
 				var attribute = t.GetCustomAttribute<MicroserviceAttribute>();
 				var gen = new ServiceDocGenerator();
 				return gen.Generate(t, attribute, null, true, schemasInSameAssembly);
@@ -161,7 +161,7 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 				var doc = gen.Generate(kvp.Key, kvp.Value);
 				return doc;
 			})).ToArray();
-			
+
 			// Get the list of schemas
 			var orderedSchemas = SwaggerService.ExtractAllSchemas(docs, GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
 
@@ -555,11 +555,11 @@ IMPLEMENT_MODULE(F{unrealProjectData.BlueprintNodesProjectName}Module, {unrealPr
 				await Task.WhenAll(writeFiles);
 
 				// Run the Regenerate Project Files utility for the project (so that create files are automatically updated in IDEs).
-				if (needsProjectFilesRebuild) 
+				if (needsProjectFilesRebuild)
 					MachineHelper.RunUnrealGenerateProjectFiles(Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.Path));
 			}
 		}
-		
+
 		Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - done generating");
 	}
 
@@ -579,7 +579,7 @@ IMPLEMENT_MODULE(F{unrealProjectData.BlueprintNodesProjectName}Module, {unrealPr
 			{
 				var existingContent = File.ReadAllText(outputPath);
 				if (string.Compare(existingContent, descriptors[i].Content, CultureInfo.InvariantCulture,
-					    CompareOptions.IgnoreSymbols) == 0)
+						CompareOptions.IgnoreSymbols) == 0)
 				{
 					identicalFileCounter++;
 					continue;
