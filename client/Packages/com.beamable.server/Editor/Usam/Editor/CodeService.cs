@@ -47,6 +47,10 @@ namespace Beamable.Server.Editor.Usam
 
 		private const string BEAMABLE_MIGRATION_CANCELLATION_LOG = "Migration was cancelled!";
 
+
+		private const string SERVICES_FOLDER = "BeamableServices/";
+		private const string SERVICES_SLN_PATH = SERVICES_FOLDER + "beamableServices.sln";
+		
 		private const string BEAMABLE_PATH = "Assets/Beamable/";
 		private const string BEAMABLE_LIB_PATH = "Library/BeamableEditor";
 		private const string MICROSERVICE_DLL_PATH = "bin/Debug/net6.0"; // is this true for all platforms and dotnet installations?
@@ -84,27 +88,15 @@ namespace Beamable.Server.Editor.Usam
 			
 			UsamLogger.Log("Running init");
 
-			UsamLogger.Log("Setting properties file");
-			await SetPropertiesFile();
+			// UsamLogger.Log("Setting properties file");
+			// await SetPropertiesFile();
 
 			UsamLogger.Log("Saving all libraries referenced by services");
 			await SaveReferencedLibraries();
 
 			await RefreshServices();
 			UsamLogger.Log($"There are {ServiceDefinitions.Count} Service definitions");
-
-			SetSolution();
-			UsamLogger.Log("Solution set done");
-
-			const string updatedServicesKey = "BeamUpdatedServices";
-			if (!SessionState.GetBool(updatedServicesKey, false))
-			{
-				UsamLogger.Log("Update services version start");
-				await UpdateServicesVersions();
-				SessionState.SetBool(updatedServicesKey, true);
-				UsamLogger.Log("Update services version end");
-			}
-
+			
 			var _ = CheckMicroserviceStatus();
 			ConnectToLogs();
 
@@ -377,17 +369,6 @@ namespace Beamable.Server.Editor.Usam
 			Libraries = allDependencies.Distinct().ToList();
 		}
 
-		public async Promise UpdateServicesVersions()
-		{
-			var nugetVersion = GetCurrentNugetVersion();
-			var versions = _cli.ProjectVersion(new ProjectVersionArgs { requestedVersion = nugetVersion });
-			versions.OnStreamProjectVersionCommandResult(result =>
-			{
-				UsamLogger.Log($"Versions updated: {string.Join(",", result.data.packageVersions)}");
-			});
-			await versions.Run().Error(ex => UsamLogger.Log(ex));
-		}
-
 		public async Promise RefreshServices()
 		{
 			ServiceDefinitions.Clear();
@@ -491,22 +472,6 @@ namespace Beamable.Server.Editor.Usam
 
 
 		/// <summary>
-		/// Regenerates the files: Program.cs, Dockerfile and .csproj. Then copy these files
-		/// to the desired Standalone Microservice.
-		/// </summary>
-		/// <param name="signPost">The signpost asset that references to the project in which wants to regenerate the files.</param>
-		public async Promise RegenerateProjectFiles(IBeamoServiceDefinition definition)
-		{
-			var tempPath = $"Temp/{definition.BeamoId}";
-			var projName = new ServiceName(definition.BeamoId);
-			var projPath = definition.ServiceInfo.projectPath;
-
-			var args = new ProjectRegenerateArgs() { name = projName, output = tempPath, copyPath = projPath };
-			var command = _cli.ProjectRegenerate(args);
-			await command.Run();
-		}
-
-		/// <summary>
 		/// Creates a new Standalone Service or storage inside a hidden folder from Unity.
 		/// </summary>
 		/// <param name="name"> The name of the Service/Storage to be created.</param>
@@ -573,7 +538,6 @@ namespace Beamable.Server.Editor.Usam
 				//call the CsharpProjectUtil to regenerate the csproj for this specific file
 				await RefreshServices();
 				SolutionPostProcessor.OnPreGeneratingCSProjectFiles();
-				SetSolution();
 			}
 
 			UsamLogger.Log($"Finished updating references");
@@ -788,27 +752,7 @@ namespace Beamable.Server.Editor.Usam
 			throw new EntryPointNotFoundException(
 				$"The service {serviceName} was not found! The current list of services is: {allServices}");
 		}
-
-		/// <summary>
-		/// Get if the service should or not be enable on remote.
-		/// </summary>
-		/// <param name="serviceName">The name of the service</param>
-		/// <returns>True if should be enable and false if not.</returns>
-		public bool GetServiceShouldBeEnable(string serviceName)
-		{
-			foreach (IBeamoServiceDefinition service in ServiceDefinitions)
-			{
-				if (service.BeamoId.Equals(serviceName))
-				{
-					return service.ShouldBeEnabledOnRemote;
-				}
-			}
-
-			var allServices = String.Join(", ", ServiceDefinitions.Select(s => s.BeamoId));
-			throw new EntryPointNotFoundException(
-				$"The service {serviceName} was not found! The current list of services is: {allServices}");
-		}
-
+		
 		public void ConnectToLogs()
 		{
 			// TODO: re-attach if process dies
@@ -873,98 +817,10 @@ namespace Beamable.Server.Editor.Usam
 				});
 			}
 		}
-
-
-		/// <summary>
-		/// Update the sln file to add references to known beam services.
-		/// This may cause a script reload if the sln file needs to regenerate
-		/// </summary>
-		/// <param name="services"></param>
-		public static void SetSolution()
-		{
-			// find the local sln file
-			var slnPath = FindFirstSolutionFile();
-			if (string.IsNullOrEmpty(slnPath) || !File.Exists(slnPath))
-			{
-				UsamLogger.Log("Beam. No script file, so reloading scripts");
-				UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
-				return; // once scripts reload, the current invocation of scripts end.
-			}
-
-			var contents = File.ReadAllText(slnPath);
-
-			var generatedContent = SolutionPostProcessor.OnGeneratedSlnSolution(slnPath, contents);
-			var areDifferent =
-				generatedContent !=
-				contents; // TODO: is there a better way to check if the solution file needs to be regenerated? This feels like it could become a bottleneck.
-			if (areDifferent)
-			{
-				// Write over the sln file adding the hidden microservices/storages. // TODO: we'll need to "unlock" the file in certain VCS
-				File.WriteAllText(slnPath, generatedContent);
-				UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
-			}
-		}
-
-		private static string FindFirstSolutionFile()
-		{
-			var files = Directory.GetFiles(".");
-			foreach (var file in files)
-			{
-				if (Path.GetExtension(file) == ".sln")
-				{
-					return file;
-				}
-			}
-
-			return null;
-		}
-
-		private async Promise SetPropertiesFile()
-		{
-			var beamPath = BeamCliUtil.CLI_PATH.Replace(".dll", "");
-			var workingDir = Path.GetDirectoryName(Directory.GetCurrentDirectory());
-			if (beamPath.StartsWith(workingDir))
-			{
-				// when this case happens, we are developing locally, so put in a reference locally.
-				beamPath = "BEAM_SOLUTION_DIR/../cli/cli/bin/Debug/net8.0/Beamable.Tools";
-			}
-			else
-			{
-				beamPath = "BEAM_SOLUTION_DIR/" + beamPath;
-			}
-			var command = _cli.ProjectGenerateProperties(new ProjectGeneratePropertiesArgs()
-			{
-				output = ".",
-				beamPath = beamPath,
-				solutionDir = CliConstants.GENERATE_PROPS_SLN_NEXT_TO_PROPS,
-				buildDir = "/Temp/beam/USAMBuilds"
-			});
-
-
-			await command.Run();
-
-		}
-
-		/// <summary>
-		/// Update all service definitions with new enable state from editor window.
-		/// </summary>
-		/// <param name="allServices">All models of services that are not archived.</param>
-		public void UpdateServicesEnableState(List<IEntryModel> allServices)
-		{
-			foreach (IEntryModel service in allServices)
-			{
-				IBeamoServiceDefinition localDefinition = ServiceDefinitions.Find((s) => s.BeamoId == service.Name);
-				if (localDefinition != null)
-				{
-					localDefinition.ShouldBeEnabledOnRemote = service.Enabled;
-				}
-			}
-		}
-
+		
 		private async Promise CreateStorage(string storageName, List<IBeamoServiceDefinition> additionalReferences, bool shouldInitialize = true, Action errorCallback = null)
 		{
 			var service = new ServiceName(storageName);
-			var slnPath = FindFirstSolutionFile();
 			var relativePath = Path.Combine(StandaloneMicroservicesPath, storageName);
 			if (Directory.Exists(relativePath))
 			{
@@ -985,8 +841,8 @@ namespace Beamable.Server.Editor.Usam
 			var storageArgs = new ProjectNewStorageArgs
 			{
 				name = service,
-				serviceDirectory = StandaloneMicroservicesPath,
-				sln = slnPath,
+				serviceDirectory = SERVICES_FOLDER,
+				sln = SERVICES_SLN_PATH,
 				linkTo = deps,
 			};
 			var storageCommand = _cli.ProjectNewStorage(storageArgs).OnError((cb) =>
@@ -1031,14 +887,7 @@ namespace Beamable.Server.Editor.Usam
 		private async Promise CreateMicroService(string serviceName, List<IBeamoServiceDefinition> dependencies, List<AssemblyDefinitionAsset> assemblyReferences = null, bool shouldInitialize = true, Action errorCallback = null)
 		{
 			var service = new ServiceName(serviceName);
-			var slnPath = FindFirstSolutionFile();
-			var fullPath = Path.Combine(StandaloneMicroservicesPath, serviceName);
-			if (Directory.Exists(fullPath))
-			{
-				UsamLogger.Log($"{serviceName} already exists!");
-				return;
-			}
-
+			
 			string errorMessage = string.Empty;
 
 			dependencies ??= new List<IBeamoServiceDefinition>();
@@ -1051,8 +900,8 @@ namespace Beamable.Server.Editor.Usam
 			var args = new ProjectNewServiceArgs()
 			{
 				name = service,
-				serviceDirectory = StandaloneMicroservicesPath,
-				sln = slnPath,
+				serviceDirectory = SERVICES_FOLDER,
+				sln = SERVICES_SLN_PATH,
 				beamableDev = BeamableEnvironment.IsBeamableDeveloper,
 				linkTo = deps
 			};
