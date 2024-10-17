@@ -40,7 +40,7 @@ namespace Beamable.Common
 	{
 		// No longer used internally!!!
 	}
-	
+
 	/// <summary>
 	/// In various locations in code, we need a data structure to define all federations that exist for a particular <see cref="IFederationId"/>.
 	/// This structure holds that data.
@@ -52,7 +52,7 @@ namespace Beamable.Common
 		/// The federation id for this federation instance.
 		/// </summary>
 		public string FederationId;
-		
+
 		/// <summary>
 		/// The list of interface names of <see cref="IFederation"/> sub-interfaces.
 		/// </summary>

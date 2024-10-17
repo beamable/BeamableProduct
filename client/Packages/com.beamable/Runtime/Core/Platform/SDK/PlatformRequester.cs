@@ -50,12 +50,12 @@ namespace Beamable.Api
 	public static class ServiceRoutingResolutionExtensions
 	{
 		public static Dictionary<string, string> ApplyRoutingHeaders(this IServiceRoutingResolution self,
-		                                                             Dictionary<string, string> headers)
+																	 Dictionary<string, string> headers)
 		{
 			// if the routing map is empty, do not include the header
 			if (string.IsNullOrEmpty(self.RoutingMap))
 				return headers;
-			
+
 			headers[Constants.Requester.HEADER_ROUTINGKEY] = self.RoutingMap;
 			return headers;
 		}
@@ -509,7 +509,7 @@ namespace Beamable.Api
 			});
 
 		}
-		
+
 		[Conditional("BEAMABLE_ENABLE_VERSION_HEADERS")]
 		protected void AddVersionHeaders(Dictionary<string, string> headers)
 		{
@@ -584,14 +584,14 @@ namespace Beamable.Api
 
 			var headers = new Dictionary<string, string>();
 			headers["Accept"] = GetAcceptHeader();
-			
+
 			if (!opts.disableScopeHeaders)
 			{
 				AddCidPidHeaders(headers);
 			}
 
 			_routingKeyResolution?.ApplyRoutingHeaders(headers);
-			
+
 			AddVersionHeaders(headers);
 			AddAuthHeader(headers, opts);
 			AddShardHeader(headers);
@@ -609,7 +609,7 @@ namespace Beamable.Api
 			{
 				request.SetRequestHeader(kvp.Key, kvp.Value);
 			}
-			
+
 			return request;
 		}
 

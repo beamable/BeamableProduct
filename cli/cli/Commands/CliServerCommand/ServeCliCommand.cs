@@ -36,7 +36,7 @@ public class ServeCliCommand : StreamCommand<ServeCliCommandArgs, ServeCliComman
 			new Argument<string>("owner", () => "cli",
 				"The owner of the server is used to identify the server later with the /info endpoint"),
 			(args, owner) => args.owner = owner);
-		
+
 		var portOption = new Option<int>("--port", () => DEFAULT_PORT, "The port the local server will bind to");
 		portOption.AddAlias("-p");
 		AddOption(portOption, (args, port) => args.port = port);
@@ -45,7 +45,7 @@ public class ServeCliCommand : StreamCommand<ServeCliCommandArgs, ServeCliComman
 			"When true, if the given --port is not available, it will be incremented until an available port is discovered");
 		incPortOption.AddAlias("-i");
 		AddOption(incPortOption, (args, inc) => args.incPortUntilSuccess = inc);
-		
+
 		var timerOption = new Option<int>("--self-destruct-seconds", () => 0,
 			"The number of seconds the server will stay alive without receiving any traffic. A value of zero means there is no self destruct timer");
 		timerOption.AddAlias("-d");
@@ -56,7 +56,7 @@ public class ServeCliCommand : StreamCommand<ServeCliCommandArgs, ServeCliComman
 	public override async Task Handle(ServeCliCommandArgs args)
 	{
 		var server = args.Provider.GetService<ServerService>();
-		
+
 		await server.RunServer(args, data =>
 		{
 			this.SendResults(new ServeCliCommandOutput

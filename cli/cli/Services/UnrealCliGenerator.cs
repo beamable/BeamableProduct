@@ -120,8 +120,8 @@ void U₢{nameof(CommandName)}₢Command::HandleStreamCompleted(FBeamOperationHa
 	}}
 }}
 ";
-	
-	
+
+
 }
 
 public struct UnrealCliStreamDataDeclaration

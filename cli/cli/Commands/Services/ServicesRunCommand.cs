@@ -40,17 +40,17 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 			new Option<bool>(new string[] { "--force-amd-cpu-arch", "-fcpu" }, () => false,
 				"Force the services to run with amd64 CPU architecture, useful when deploying from computers with ARM architecture"),
 			(args, i) => args.forceAmdCpuArchitecture = i);
-		
+
 		AddOption(
 			new Option<bool>(new string[] { "--keep-containers", "-k" }, () => false,
 				"Automatically remove service containers after they exit"),
-			
+
 			// it is mildly confusing to invert the logic here, but I think there is a good reason.
 			//  the default in docker is to require a user to specify --rm to remove the container, 
 			//  as beamable, we should flip that auto clean for folks. 
 			//  in that regard, the --keep-containers option needs to be set to NOT include the --rm
 			(args, i) => args.autoDeleteContainers = !i);
-		
+
 	}
 
 	public override async Task Handle(ServicesRunCommandArgs args)
@@ -133,8 +133,8 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 					var sequence = Promise.Sequence(promises);
 					await sequence;
 
-					await _localBeamo.DeployToLocal(_localBeamo, uniqueIds, args.forceAmdCpuArchitecture, 
-						autoDeleteContainers: args.autoDeleteContainers, 
+					await _localBeamo.DeployToLocal(_localBeamo, uniqueIds, args.forceAmdCpuArchitecture,
+						autoDeleteContainers: args.autoDeleteContainers,
 						buildPullImageProgress: (beamoId, progress) =>
 					{
 						var progressTask = allProgressTasks.FirstOrDefault(pt => pt.Description.Contains(beamoId));

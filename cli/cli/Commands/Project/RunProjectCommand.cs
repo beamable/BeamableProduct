@@ -20,7 +20,7 @@ public class RunProjectCommandArgs : CommandArgs
 	public List<string> services = new List<string>();
 	public List<string> withServiceTags = new List<string>();
 	public List<string> withoutServiceTags = new List<string>();
-	
+
 	public bool forceRestart;
 	public bool detach;
 	public bool disableClientCodeGen;
@@ -32,12 +32,12 @@ public class RunProjectResultStream
 	/// for which service is this progress update for?
 	/// </summary>
 	public string serviceId;
-	
+
 	/// <summary>
 	/// a description of the progress
 	/// </summary>
 	public string message;
-	
+
 	/// <summary>
 	/// between 0 and 1, where 1 means the service is fully initialized and ready for traffic
 	/// </summary>
@@ -45,7 +45,7 @@ public class RunProjectResultStream
 }
 
 [Serializable]
-public class RunProjectBuildErrorStream  
+public class RunProjectBuildErrorStream
 {
 	public string serviceId;
 	public ProjectErrorReport report;
@@ -68,7 +68,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 {
 	[GeneratedRegex(": error CS(\\d\\d\\d\\d):")]
 	public static partial Regex ErrorLike();
-	
+
 	public RunProjectCommand()
 		: base("run", "Run a project")
 	{
@@ -81,10 +81,10 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			if (b) throw new CliException("The --watch flag is no longer supported due to underlying .NET issues");
 		});
 		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
-		ProjectCommand.AddServiceTagsOption(this, 
+		ProjectCommand.AddServiceTagsOption(this,
 			bindWithTags: (args, i) => args.withServiceTags = i,
 			bindWithoutTags: (args, i) => args.withoutServiceTags = i);
-		
+
 		AddOption<bool>(new Option<bool>("--force", "With this flag, we restart any running services. Without it, we skip running services"), (args, b) => args.forceRestart = b);
 		AddOption<bool>(new Option<bool>("--detach", "With this flag, the service will run the background after it has reached basic startup"), (args, b) => args.detach = b);
 		AddOption<bool>(new Option<bool>("--no-client-gen", "We compile services that need compiling before running. This will disable the client-code generation part of the compilation"), (args, b) => args.disableClientCodeGen = b);
@@ -92,7 +92,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 	}
 
 	const float MIN_PROGRESS = .05f;
-	void SendUpdate(string serviceId, string message=null, float progress=0)
+	void SendUpdate(string serviceId, string message = null, float progress = 0)
 	{
 		// remap the progress between MIN and 1.
 		progress = MIN_PROGRESS + (progress * (1 - MIN_PROGRESS));
@@ -103,27 +103,27 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			progressRatio = progress
 		});
 	}
-	
+
 	public override async Task Handle(RunProjectCommandArgs args)
 	{
-		ProjectCommand.FinalizeServicesArg(args, 
-			withTags: args.withServiceTags, 
+		ProjectCommand.FinalizeServicesArg(args,
+			withTags: args.withServiceTags,
 			withoutTags: args.withoutServiceTags,
-			includeStorage: false, 
+			includeStorage: false,
 			ref args.services);
 
 		if (args.services.Count > 1)
 		{
 			Log.Warning("You are starting multiple services " +
-			            "Their log output will be shown interleaved; for optimal log viewing, use the `beam project logs' command");
+						"Their log output will be shown interleaved; for optimal log viewing, use the `beam project logs' command");
 		}
-		
+
 		// Emit some progress messages to let any listeners know we are doing work...
 		foreach (var service in args.services)
 		{
 			SendUpdate(service, "discovering...", -MIN_PROGRESS * .9f);
 		}
-		
+
 		// First, we need to find out which services are currently running.
 		if (args.forceRestart)
 		{
@@ -135,11 +135,11 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				});
 			Log.Verbose("finished discovery");
 		}
-		
-		
+
+
 		foreach (var service in args.services)
 			SendUpdate(service, "resolving...", -MIN_PROGRESS * .7f);
-		
+
 		// Build out the list of services we'll actually want to start.
 		var serviceTable = new Dictionary<string, HttpMicroserviceLocalProtocol>();
 		foreach (var serviceName in args.services)
@@ -152,7 +152,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 
 			serviceTable[serviceName] = service;
 		}
-		
+
 		foreach (var service in args.services)
 			SendUpdate(service, "starting...", 0);
 
@@ -166,13 +166,13 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 
 			var buildFlags = args.disableClientCodeGen ? ProjectService.BuildFlags.DisableClientCodeGen : ProjectService.BuildFlags.None;
 			var runFlags = args.detach ? ProjectService.RunFlags.Detach : ProjectService.RunFlags.None;
-			
+
 			runTasks.Add(RunService(args, serviceName, new CancellationTokenSource(), buildFlags, runFlags, data =>
 			{
 				if (data.IsJson)
 				{
 					Log.Write(data.JsonLogLevel, data.JsonLogMessage);
-				} 
+				}
 				else if (data.forcedLogLevel.HasValue)
 				{
 					Log.Write(data.forcedLogLevel.Value, data.rawLogMessage);
@@ -191,7 +191,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				SendUpdate(name, message, progress);
 			}));
 		}
-		
+
 		await Task.WhenAll(runTasks);
 
 		if (failedTasks.Count > 0)
@@ -202,7 +202,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			};
 		}
 	}
-	
+
 	public static async Task RunService(
 		CommandArgs args,
 		string serviceName,
@@ -211,7 +211,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		ProjectService.RunFlags runFlags,
 		Action<ProjectRunLogData> onLog = null,
 		Action<ProjectErrorReport, int> onFailure = null,
-		Action<float, string> onProgress=null)
+		Action<float, string> onProgress = null)
 	{
 		var tokenSource =
 			CancellationTokenSource.CreateLinkedTokenSource(args.Lifecycle.CancellationToken, serviceToken.Token);
@@ -263,14 +263,14 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			{
 				commandStr += " -p:GenerateClientCode=false";
 			}
-			
+
 			if (runFlags.HasFlag(ProjectService.RunFlags.Detach) && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 			{
 				// on windows, detaching "just works" (thought Chris, who wasn't on a windows machine)
 				commandStr = $"sh -c \"{exe} {commandStr}\" &";
 				exe = "nohup";
 			}
-			
+
 			Log.Debug($"Running {exe} {commandStr}");
 			var startInfo = new ProcessStartInfo(exe, commandStr)
 			{
@@ -305,7 +305,9 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				if (line == null) return;
 				onLog?.Invoke(new ProjectRunLogData
 				{
-					rawLogMessage = line, jsonData = null, forcedLogLevel = LogEventLevel.Error
+					rawLogMessage = line,
+					jsonData = null,
+					forcedLogLevel = LogEventLevel.Error
 				});
 			};
 			proc.OutputDataReceived += (sender, eventArgs) =>
@@ -317,8 +319,8 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				{
 					var logData = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(line,
 						new JsonSerializerOptions { IncludeFields = true });
-		
-		
+
+
 					var matches = serviceLogProgressTable.Where(kvp => line.Contains(kvp.Key));
 					foreach (var kvp in matches)
 					{
@@ -329,8 +331,8 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 						}
 						serviceLogProgressTable.Remove(kvp.Key);
 					}
-					
-					
+
+
 					onLog?.Invoke(new ProjectRunLogData { rawLogMessage = line, jsonData = logData });
 				}
 				catch
@@ -340,12 +342,14 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 						// this is a build failure message.
 						onLog?.Invoke(new ProjectRunLogData
 						{
-							rawLogMessage = line, jsonData = null, forcedLogLevel = LogEventLevel.Error
+							rawLogMessage = line,
+							jsonData = null,
+							forcedLogLevel = LogEventLevel.Error
 						});
 					}
 					else
 					{
-						
+
 						var matches = nonServiceLogProgressTable.Where(kvp => line.Contains(kvp.Key));
 						foreach (var kvp in matches)
 						{
@@ -356,16 +360,16 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 							}
 							nonServiceLogProgressTable.Remove(kvp.Key);
 						}
-		
+
 						onLog?.Invoke(new ProjectRunLogData { rawLogMessage = line, jsonData = null });
 					}
 				}
-		
+
 			};
 			proc.EnableRaisingEvents = true;
 			proc.BeginErrorReadLine();
 			proc.BeginOutputReadLine();
-			
+
 			if (runFlags.HasFlag(ProjectService.RunFlags.Detach))
 			{
 				// wait for the progress to hit 1.
@@ -378,7 +382,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			{
 				await cts.Task;
 			}
-			
+
 			if (proc.HasExited && proc.ExitCode != 0)
 			{
 				var report = ProjectService.ReadErrorReport(errorPath);
@@ -414,19 +418,19 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		public bool IsJson => jsonData != null;
 
 		public LogEventLevel? forcedLogLevel;
-		
+
 		public LogEventLevel JsonLogLevel
 		{
 			get
 			{
-				if (!IsJson) 
+				if (!IsJson)
 					return LogEventLevel.Fatal;
 				if (!jsonData.TryGetValue("__l", out var logLevel))
 					return LogEventLevel.Fatal;
 
 				if (!LogUtil.TryParseLogLevel(logLevel.ToString(), out var level))
 					return LogEventLevel.Fatal;
-					
+
 				return level;
 			}
 		}

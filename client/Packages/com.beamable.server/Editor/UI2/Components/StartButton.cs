@@ -33,7 +33,7 @@ namespace Beamable.Editor.Microservice.UI2.Components
 		{
 			EnableInClassList("building", true);
 			SetEnabled(false);
-			
+
 			if (_definition.IsRunningLocally)
 			{
 				_definition.Builder.TryToStop();

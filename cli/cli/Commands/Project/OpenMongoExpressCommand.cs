@@ -37,7 +37,7 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>, 
 				case 1:
 					args.storageName = new ServiceName(storages[0].BeamoId);
 					Log.Debug($"No service-name passed as argument. " +
-					          $"Running command for {args.storageName} since it is the only storage in BeamoManifest.");
+							  $"Running command for {args.storageName} since it is the only storage in BeamoManifest.");
 					break;
 				case > 1:
 					Log.Information("Found more than one storage in the directory");
@@ -50,7 +50,7 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>, 
 		{
 			throw new CliException("No storage found. Navigate to a .beamable workspace with valid Microstorages. ");
 		}
-		
+
 		// first, get the local connection string,
 		await HandleLocalCase(args);
 	}
@@ -83,7 +83,7 @@ public class OpenMongoExpressCommand : AppCommand<OpenMongoExpressCommandArgs>, 
 			throw;
 		}
 	}
-	
+
 	private static string AskForStorageAndRunBeamCommandTask(
 		IEnumerable<BeamoServiceDefinition> storages)
 	{

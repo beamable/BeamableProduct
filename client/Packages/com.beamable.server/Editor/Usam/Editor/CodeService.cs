@@ -66,7 +66,7 @@ namespace Beamable.Server.Editor.Usam
 			OnReady = Init();
 		}
 
-		
+
 		public async Promise Init()
 		{
 			await BeamEditorContext.Default.OnReady;
@@ -79,9 +79,9 @@ namespace Beamable.Server.Editor.Usam
 			//Wait for the CLI to be initialized
 			var cli = BeamEditorContext.Default.ServiceScope.GetService<BeamCli>();
 			await cli.OnReady;
-			
+
 			UsamLogger.ResetLogTimer();
-			
+
 			UsamLogger.Log("Running init");
 
 			UsamLogger.Log("Setting properties file");
@@ -113,16 +113,16 @@ namespace Beamable.Server.Editor.Usam
 			{
 				var migrationVisualElement = new MigrationConfirmationVisualElement(oldServices);
 				var popup = BeamablePopupWindow.ShowUtility(Constants.Migration.MIGRATION_POPUP_NAME, migrationVisualElement, null,
-				                                            new Vector2(800, 400),  (window) =>
-				                                            {
-					                                            // trigger after Unity domain reload
-					                                            window.Close();
-				                                            });
+															new Vector2(800, 400), (window) =>
+														   {
+																// trigger after Unity domain reload
+																window.Close();
+														   });
 				migrationVisualElement.OnCancelled += popup.Close;
 				migrationVisualElement.OnClosed += popup.Close;
 			}
-			
-			
+
+
 			UsamLogger.Log("Completed");
 			UsamLogger.StopLogTimer();
 		}
@@ -150,11 +150,11 @@ namespace Beamable.Server.Editor.Usam
 
 				MicroserviceDescriptor serviceDesc = (MicroserviceDescriptor)descriptor;
 				pathsToDelete.Add(serviceDesc.SourcePath);
-				microPromises.Add( MigrateMicroservice(serviceDesc, (message, hasProgress) =>
-				{
-					updateCallback(progress, message);
-					progress += increment * hasProgress;
-				}));
+				microPromises.Add(MigrateMicroservice(serviceDesc, (message, hasProgress) =>
+			   {
+				   updateCallback(progress, message);
+				   progress += increment * hasProgress;
+			   }));
 			}
 
 			var microSequence = Promise.Sequence(microPromises);
@@ -172,11 +172,11 @@ namespace Beamable.Server.Editor.Usam
 				}
 
 				pathsToDelete.Add(Path.GetDirectoryName(descriptor.AttributePath));
-				storagePromises.Add( MigrateStorage((StorageObjectDescriptor)descriptor, (message, hasProgress) =>
-				{
-					updateCallback(progress, message);
-					progress += increment * hasProgress;
-				}));
+				storagePromises.Add(MigrateStorage((StorageObjectDescriptor)descriptor, (message, hasProgress) =>
+			   {
+				   updateCallback(progress, message);
+				   progress += increment * hasProgress;
+			   }));
 			}
 
 			var storageSequence = Promise.Sequence(storagePromises);
@@ -297,14 +297,14 @@ namespace Beamable.Server.Editor.Usam
 
 				var fileContent = File.ReadAllText(newFilePath);
 				fileContent = fileContent.Replace("namespace Beamable.Microservices",
-				                                  $"namespace Beamable.{microserviceName}");
+												  $"namespace Beamable.{microserviceName}");
 				File.WriteAllText(newFilePath, fileContent);
 			}
 		}
-		
+
 		private static List<IDescriptor> GetAllOldServices()
 		{
-			List<string> servicesToIgnore = new List<string>() {"CacheDependentMS"};
+			List<string> servicesToIgnore = new List<string>() { "CacheDependentMS" };
 			List<IDescriptor> allDescriptors = new List<IDescriptor>();
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			if (serviceRegistry != null)
@@ -315,7 +315,7 @@ namespace Beamable.Server.Editor.Usam
 					{
 						continue;
 					}
-					
+
 					allDescriptors.Add(descriptor);
 				}
 			}
@@ -326,8 +326,8 @@ namespace Beamable.Server.Editor.Usam
 		public static List<AssemblyDefinitionAsset> GetAssemblyDefinitionAssets(MicroserviceDescriptor descriptor)
 		{
 			List<AssemblyDefinitionAsset> assets = new List<AssemblyDefinitionAsset>();
-			List<string> mandatoryReferences = new List<string>() {"Unity.Beamable.Customer.Common"}; // Add the customer common asmdef even if it's not being used
-			
+			List<string> mandatoryReferences = new List<string>() { "Unity.Beamable.Customer.Common" }; // Add the customer common asmdef even if it's not being used
+
 			var dependencies = descriptor.Type.Assembly.GetReferencedAssemblies().Select(r => r.Name).ToList();
 			dependencies.AddRange(mandatoryReferences);
 			foreach (var name in dependencies)
@@ -345,19 +345,19 @@ namespace Beamable.Server.Editor.Usam
 					{
 						throw new Exception($"Found more than one assembly definition with the name: {name}");
 					}
-					
+
 					var path = AssetDatabase.GUIDToAssetPath(guid[0]);
 
 					if (string.IsNullOrEmpty(path)) continue;
 
 					var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(path);
-					if(asset != null && asset.name.Equals(name)) assets.Add(asset);
+					if (asset != null && asset.name.Equals(name)) assets.Add(asset);
 				}
 			}
 
 			return assets;
 		}
-		
+
 		private async Promise SaveReferencedLibraries()
 		{
 			List<BeamDependencyData> allDependencies = new List<BeamDependencyData>();
@@ -397,7 +397,7 @@ namespace Beamable.Server.Editor.Usam
 			{
 				UsamLogger.Log("refresh services from CLI start");
 				//Get remote only information from the CLI
-				var psRemote = _cli.ServicesPs(new ServicesPsArgs() { json = false});
+				var psRemote = _cli.ServicesPs(new ServicesPsArgs() { json = false });
 				psRemote.OnStreamServiceListResult(cb =>
 				{
 					IsDockerRunning = cb.data.IsDockerRunning;
@@ -438,7 +438,7 @@ namespace Beamable.Server.Editor.Usam
 
 				string assetProjectPath = objData.ProjectPath[i];
 
-				
+
 				AddServiceDefinition(name, type, assetProjectPath, runningState,
 									 objData.ShouldBeEnabledOnRemote[i], objData.ExistInLocal[i], objData.Dependencies[i], objData.UnityAssemblyDefinitions[i]);
 				UsamLogger.Log($"Handling {name} ended");
@@ -545,7 +545,7 @@ namespace Beamable.Server.Editor.Usam
 
 			UsamLogger.Log($"Finished updating microservice [{serviceName}] data");
 		}
-		
+
 		public async Promise UpdateServiceReferences(IBeamoServiceDefinition service, List<AssemblyDefinitionAsset> assemblyDefinitions, bool shouldRefresh = true)
 		{
 			UsamLogger.Log($"Starting updating references");
@@ -594,7 +594,8 @@ namespace Beamable.Server.Editor.Usam
 				UsamLogger.Log($"Removing dependency [{dep}] from service [{serviceName}]");
 				var removeCommand = _cli.ProjectDepsRemove(new ProjectDepsRemoveArgs()
 				{
-					microservice = serviceName, dependency = dep
+					microservice = serviceName,
+					dependency = dep
 				});
 				await removeCommand.Run();
 			}
@@ -604,7 +605,8 @@ namespace Beamable.Server.Editor.Usam
 				UsamLogger.Log($"Adding dependency [{dep}] to service [{serviceName}]");
 				var addCommand = _cli.ProjectDepsAdd(new ProjectDepsAddArgs()
 				{
-					microservice = serviceName, dependency = dep
+					microservice = serviceName,
+					dependency = dep
 				});
 				await addCommand.Run();
 			}
@@ -628,61 +630,62 @@ namespace Beamable.Server.Editor.Usam
 					logLevel = "info"
 				}));
 
-				
-				var runCommand = _cli.ProjectRun(new ProjectRunArgs() {ids = new[] {id}, watch = false, force = false, detach = true})
-				                     .OnStreamRunProjectResultStream(data =>
-				                     {
-				                     })
-				                     .OnBuildErrorsRunProjectBuildErrorStream(data =>
-				                     {
-					                     var report = data.data.report;
-					                     if (!report.isSuccess)
-					                     {
-						                     definition.Builder.IsRunning = false;
-						                     var errCount = report.errors.Count;
-						                     var errorCountMsg = $"There are {errCount} messages";
-						                     if (errCount == 0)
-						                     {
-							                     errorCountMsg = "There are mysteriously no build errors.";
-						                     } else if (errCount == 1)
-						                     {
-							                     errorCountMsg = "There is 1 build error.";
-						                     }
-						                     
-						                     Debug.LogFormat(LogType.Error, LogOption.NoStacktrace, null, $"{data.data.serviceId} failed to build. {errorCountMsg}");
-						                     foreach (var err in report.errors)
-						                     {
-							                     var msg = $"<a href=\"{err.uri}\">{err.uri}</a>";
-							                     Debug.LogFormat(LogType.Error, LogOption.NoStacktrace, null, " " + err.formattedMessage + "\n" + msg);
-						                     }
-					                     }
-				                     })
-				                     .OnLog(log =>
-				                     {
-					                     if (log.data.message.Contains(
-						                         Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX))
-					                     {
-						                     // skip this message, because it is the first one that gets picked up by the `project logs` command. 
-						                     // return;
-						                     serviceToLogSkip[id] = log.ts; // at this point, we can get logs from the `logs command`
 
-					                     }
-					                     
-					                     var message = new BeamTailLogMessageForClient();
-					                     message.message = log.data.message;
-					                     message.logLevel = log.data.logLevel;
-					                     message.timeStamp = DateTimeOffset.FromUnixTimeMilliseconds(log.data.timestamp)
-					                                                       .ToLocalTime().ToString("[HH:mm:ss]");
+				var runCommand = _cli.ProjectRun(new ProjectRunArgs() { ids = new[] { id }, watch = false, force = false, detach = true })
+									 .OnStreamRunProjectResultStream(data =>
+									 {
+									 })
+									 .OnBuildErrorsRunProjectBuildErrorStream(data =>
+									 {
+										 var report = data.data.report;
+										 if (!report.isSuccess)
+										 {
+											 definition.Builder.IsRunning = false;
+											 var errCount = report.errors.Count;
+											 var errorCountMsg = $"There are {errCount} messages";
+											 if (errCount == 0)
+											 {
+												 errorCountMsg = "There are mysteriously no build errors.";
+											 }
+											 else if (errCount == 1)
+											 {
+												 errorCountMsg = "There is 1 build error.";
+											 }
 
-					                     _dispatcher.Schedule(() => OnLogMessage?.Invoke(id, message));
-				                     })
+											 Debug.LogFormat(LogType.Error, LogOption.NoStacktrace, null, $"{data.data.serviceId} failed to build. {errorCountMsg}");
+											 foreach (var err in report.errors)
+											 {
+												 var msg = $"<a href=\"{err.uri}\">{err.uri}</a>";
+												 Debug.LogFormat(LogType.Error, LogOption.NoStacktrace, null, " " + err.formattedMessage + "\n" + msg);
+											 }
+										 }
+									 })
+									 .OnLog(log =>
+									 {
+										 if (log.data.message.Contains(
+												 Constants.Features.Services.Logs.READY_FOR_TRAFFIC_PREFIX))
+										 {
+											 // skip this message, because it is the first one that gets picked up by the `project logs` command. 
+											 // return;
+											 serviceToLogSkip[id] = log.ts; // at this point, we can get logs from the `logs command`
 
-				                     
-				                     .OnError(ex =>
-				                     {
-					                     // def.Builder.IsRunning = isLocal;
-					                     Debug.LogError(ex.data.message);
-				                     });
+										 }
+
+										 var message = new BeamTailLogMessageForClient();
+										 message.message = log.data.message;
+										 message.logLevel = log.data.logLevel;
+										 message.timeStamp = DateTimeOffset.FromUnixTimeMilliseconds(log.data.timestamp)
+																		   .ToLocalTime().ToString("[HH:mm:ss]");
+
+										 _dispatcher.Schedule(() => OnLogMessage?.Invoke(id, message));
+									 })
+
+
+									 .OnError(ex =>
+									 {
+										 // def.Builder.IsRunning = isLocal;
+										 Debug.LogError(ex.data.message);
+									 });
 				var runPromise = runCommand.Run();
 				runPromise.Error(e =>
 				{
@@ -698,12 +701,12 @@ namespace Beamable.Server.Editor.Usam
 					timeStamp = DateTimeOffset.Now.ToLocalTime().ToString("[HH:mm:ss]"),
 					logLevel = "info"
 				}));
-				
-				var runCommand = _cli.ServicesRun(new ServicesRunArgs() {ids = new[] {id}})
-				                     .OnError(ex =>
-				                     {
-					                     Debug.LogError(ex.data.message);
-				                     });
+
+				var runCommand = _cli.ServicesRun(new ServicesRunArgs() { ids = new[] { id } })
+									 .OnError(ex =>
+									 {
+										 Debug.LogError(ex.data.message);
+									 });
 				return runCommand.Run();
 			}
 		}
@@ -830,7 +833,7 @@ namespace Beamable.Server.Editor.Usam
 					UsamLogger.Log("Log: " + point.data.message);
 					_dispatcher.Schedule(() => OnLogMessage?.Invoke(serviceId, point.data));
 				});
-				
+
 				_logsCommands.Add(logs.Run());
 			}
 		}
@@ -858,7 +861,7 @@ namespace Beamable.Server.Editor.Usam
 			{
 				Debug.LogError($"Error occured while listening for Microservice status updates. Message=[{cb.data.message}] CliStack=[{cb.data.stackTrace}]");
 			});
-			
+
 			try
 			{
 				await projectPs.Run();
@@ -1088,7 +1091,7 @@ namespace Beamable.Server.Editor.Usam
 
 		public Promise StopStandaloneMicroservice(string beamoId)
 		{
-			return StopStandaloneMicroservice(new string[] {beamoId});
+			return StopStandaloneMicroservice(new string[] { beamoId });
 		}
 
 		public async Promise StopStandaloneMicroservice(IEnumerable<string> beamoIds)
@@ -1106,57 +1109,57 @@ namespace Beamable.Server.Editor.Usam
 
 			var storages = definitions.Where(x => x.ServiceType == ServiceType.StorageObject).ToList();
 			var services = definitions.Where(x => x.ServiceType == ServiceType.MicroService).ToList();
-			
+
 			foreach (var id in services)
 			{
 				_dispatcher.Schedule(() => OnLogMessage?.Invoke(
-					                     id.BeamoId,
-					                     new BeamTailLogMessageForClient
-					                     {
-						                     message = "Requesting service shutdown...",
-						                     timeStamp = DateTimeOffset.Now.ToLocalTime().ToString("[HH:mm:ss]"),
-						                     logLevel = "info"
-					                     }));
+										 id.BeamoId,
+										 new BeamTailLogMessageForClient
+										 {
+											 message = "Requesting service shutdown...",
+											 timeStamp = DateTimeOffset.Now.ToLocalTime().ToString("[HH:mm:ss]"),
+											 logLevel = "info"
+										 }));
 			}
 			foreach (var id in storages)
 			{
 				_dispatcher.Schedule(() => OnLogMessage?.Invoke(
-					                     id.BeamoId,
-					                     new BeamTailLogMessageForClient
-					                     {
-						                     message = "Requesting storage shutdown...",
-						                     timeStamp = DateTimeOffset.Now.ToLocalTime().ToString("[HH:mm:ss]"),
-						                     logLevel = "info"
-					                     }));
+										 id.BeamoId,
+										 new BeamTailLogMessageForClient
+										 {
+											 message = "Requesting storage shutdown...",
+											 timeStamp = DateTimeOffset.Now.ToLocalTime().ToString("[HH:mm:ss]"),
+											 logLevel = "info"
+										 }));
 			}
 
 			var tasks = new List<Promise>();
 			if (services.Any())
 			{
 				var stopCommand = _cli.ProjectStop(new ProjectStopArgs() { ids = services.Select(x => x.BeamoId).ToArray() })
-				               .OnStreamStopProjectCommandOutput(data =>
-				               {
-					               var matching =
-						               ServiceDefinitions.FirstOrDefault(x => x.ServiceInfo.name == data.data.serviceName);
-					               if (matching != null)
-					               {
-						               matching.Builder.IsRunning = false;
-						               OnLogMessage?.Invoke(
-							               data.data.serviceName,
-							               new BeamTailLogMessageForClient
-							               {
-								               message = "Finished service shutdown...",
-								               timeStamp = DateTimeOffset.Now.ToLocalTime().ToString("[HH:mm:ss]"),
-								               logLevel = "info"
-							               });
-					               }
-				               });
+							   .OnStreamStopProjectCommandOutput(data =>
+							   {
+								   var matching =
+									   ServiceDefinitions.FirstOrDefault(x => x.ServiceInfo.name == data.data.serviceName);
+								   if (matching != null)
+								   {
+									   matching.Builder.IsRunning = false;
+									   OnLogMessage?.Invoke(
+										   data.data.serviceName,
+										   new BeamTailLogMessageForClient
+										   {
+											   message = "Finished service shutdown...",
+											   timeStamp = DateTimeOffset.Now.ToLocalTime().ToString("[HH:mm:ss]"),
+											   logLevel = "info"
+										   });
+								   }
+							   });
 				tasks.Add(stopCommand.Run());
 			}
 
 			if (storages.Any())
 			{
-				var storageStop = _cli.ServicesStop(new ServicesStopArgs {ids = storages.Select(x => x.BeamoId).ToArray()})
+				var storageStop = _cli.ServicesStop(new ServicesStopArgs { ids = storages.Select(x => x.BeamoId).ToArray() })
 											 .Run();
 				tasks.Add(storageStop);
 			}
@@ -1180,7 +1183,7 @@ namespace Beamable.Server.Editor.Usam
 				UsamLogger.Log(e.GetType().Name, e.Message, e.StackTrace);
 			}
 		}
-		
+
 		public async Promise OpenMongoExpress(string beamoId)
 		{
 			try

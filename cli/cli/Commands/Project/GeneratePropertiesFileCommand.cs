@@ -40,7 +40,7 @@ The following values have special meaning and are not treated as paths...
 					args.SolutionDir = i;
 				}
 			});
-		
+
 
 		AddOption(new Option<string>("--build-dir", description: "A path relative to the given solution directory, that will be used to store the projects /bin and /obj directories. Note: the given path will have the project's assembly name and the bin or obj folder appended"),
 			(args, i) => args.RelativeBuildDir = i);
@@ -53,7 +53,7 @@ The following values have special meaning and are not treated as paths...
 			throw new CliException($"Output path argument passed does not exist. path=[{args.OutputPath}]");
 		}
 
-	
+
 		const string buildDirFlag = "BUILD_DIR_OPTIONS";
 		string msBuildPath = Environment.GetEnvironmentVariable(Beamable.Common.Constants.EnvironmentVariables.BEAM_DOTNET_MSBUILD_PATH, EnvironmentVariableTarget.Process);
 

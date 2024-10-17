@@ -52,7 +52,7 @@ namespace Beamable.Server.Editor
 			foreach (var service in status.services)
 			{
 				if (service.serviceType != "service") continue;
-				
+
 				foreach (var route in service.availableRoutes)
 				{
 					var hasLocal = route.instances.Any(i => i.IsLocal());
@@ -68,7 +68,7 @@ namespace Beamable.Server.Editor
 			}
 			_gotAnyDataPromise.CompleteSuccess();
 		}
-		
+
 		public bool TryIsRunning(string serviceName, out string prefix)
 		{
 			prefix = null;

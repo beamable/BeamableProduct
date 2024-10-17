@@ -16,7 +16,7 @@ public class DiffTest
 		}
 	}
 
-	
+
 	public class Ints : JsonSerializable.ISerializable
 	{
 		public int x;
@@ -27,7 +27,7 @@ public class DiffTest
 			s.Serialize("y", ref y);
 		}
 	}
-	
+
 	public class OptionalInts : JsonSerializable.ISerializable
 	{
 		public OptionalInt x;
@@ -35,24 +35,24 @@ public class DiffTest
 		public void Serialize(JsonSerializable.IStreamSerializer s)
 		{
 			if ((s.HasKey(nameof(x))
-			     || ((x != default(OptionalInt))
-			         && x.HasValue)))
+				 || ((x != default(OptionalInt))
+					 && x.HasValue)))
 			{
 				s.Serialize(nameof(x), ref x.Value);
 				x.HasValue = true;
 			}
-			
+
 			if ((s.HasKey(nameof(y))
-			     || ((y != default(OptionalInt))
-			         && y.HasValue)))
+				 || ((y != default(OptionalInt))
+					 && y.HasValue)))
 			{
 				s.Serialize(nameof(y), ref y.Value);
 				y.HasValue = true;
 			}
 		}
 	}
-	
-	
+
+
 	[Test]
 	public void Manifests()
 	{
@@ -82,7 +82,7 @@ public class DiffTest
 		};
 
 		var diff = DiffStream.FindChanges(a, b);
-		
+
 		// just assert doesn't explode.
 	}
 
@@ -94,22 +94,22 @@ public class DiffTest
 		var b = new Ints { x = 1, y = 2 };
 
 		var diff = DiffStream.FindChanges(a, b);
-		
+
 		Assert.That(diff.changes.Count, Is.EqualTo(1));
 		Assert.That(diff.changes[0].currentValue, Is.EqualTo("3"));
 		Assert.That(diff.changes[0].nextValue, Is.EqualTo("2"));
 		Assert.That(diff.changes[0].type, Is.EqualTo(DiffType.Changed));
 		Assert.That(diff.changes[0].jsonPath, Is.EqualTo("y"));
 	}
-	
+
 	[Test]
 	public void SimpleNested()
 	{
-		var a = new ObjectWithInts() { numbers = new Ints{ x = 1, y = 3 }};
-		var b = new ObjectWithInts() { numbers = new Ints{ x = 2, y = 3 }};
+		var a = new ObjectWithInts() { numbers = new Ints { x = 1, y = 3 } };
+		var b = new ObjectWithInts() { numbers = new Ints { x = 2, y = 3 } };
 
 		var diff = DiffStream.FindChanges(a, b);
-		
+
 		Assert.That(diff.changes.Count, Is.EqualTo(1));
 		Assert.That(diff.changes[0].currentValue, Is.EqualTo("1"));
 		Assert.That(diff.changes[0].nextValue, Is.EqualTo("2"));
@@ -117,15 +117,15 @@ public class DiffTest
 		Assert.That(diff.changes[0].jsonPath, Is.EqualTo("nums.x"));
 	}
 
-	
+
 	[Test]
 	public void SimpleNested_Removed()
 	{
-		var a = new ObjectWithInts() { numbers = new Ints{ x = 1, y = 3 }};
+		var a = new ObjectWithInts() { numbers = new Ints { x = 1, y = 3 } };
 		var b = new ObjectWithInts() { numbers = null };
 
 		var diff = DiffStream.FindChanges(a, b);
-		
+
 		Assert.That(diff.changes.Count, Is.EqualTo(2));
 		Assert.That(diff.changes[0].currentValue, Is.EqualTo("1"));
 		Assert.That(diff.changes[0].nextValue, Is.EqualTo(null));
@@ -136,7 +136,7 @@ public class DiffTest
 		Assert.That(diff.changes[1].type, Is.EqualTo(DiffType.Removed));
 		Assert.That(diff.changes[1].jsonPath, Is.EqualTo("nums.y"));
 	}
-	
+
 	[Test]
 	public void Simple_Optional()
 	{
@@ -144,14 +144,14 @@ public class DiffTest
 		var b = new OptionalInts { x = 1, y = 2 };
 
 		var diff = DiffStream.FindChanges(a, b);
-		
+
 		Assert.That(diff.changes.Count, Is.EqualTo(1));
 		Assert.That(diff.changes[0].currentValue, Is.EqualTo("3"));
 		Assert.That(diff.changes[0].nextValue, Is.EqualTo("2"));
 		Assert.That(diff.changes[0].type, Is.EqualTo(DiffType.Changed));
 		Assert.That(diff.changes[0].jsonPath, Is.EqualTo("y"));
 	}
-	
+
 	[Test]
 	public void Simple_Optional_RemovedValue()
 	{
@@ -159,23 +159,23 @@ public class DiffTest
 		var b = new OptionalInts { x = 1 };
 
 		var diff = DiffStream.FindChanges(a, b);
-		
+
 		Assert.That(diff.changes.Count, Is.EqualTo(1), "there is a diff");
 		Assert.That(diff.changes[0].currentValue, Is.EqualTo("3"));
 		Assert.That(diff.changes[0].nextValue, Is.EqualTo(null));
 		Assert.That(diff.changes[0].type, Is.EqualTo(DiffType.Removed));
 		Assert.That(diff.changes[0].jsonPath, Is.EqualTo("y"));
 	}
-	
-	
+
+
 	[Test]
 	public void Simple_Optional_AddedValue()
 	{
 		var a = new OptionalInts { x = 1 };
-		var b = new OptionalInts { x = 1, y = 2};
+		var b = new OptionalInts { x = 1, y = 2 };
 
 		var diff = DiffStream.FindChanges(a, b);
-		
+
 		Assert.That(diff.changes.Count, Is.EqualTo(1), "there is a diff");
 		Assert.That(diff.changes[0].currentValue, Is.EqualTo(null));
 		Assert.That(diff.changes[0].nextValue, Is.EqualTo("2"));

@@ -53,7 +53,7 @@ public class RemoveFederationCommand : StreamCommand<RemoveFederationCommandArgs
 
 		var knownFederations = selectedService.SourceGenConfig.Federations;
 		var idsWeCareAbout = knownFederations.Keys.Where(k => args.FederationId.Length == 0 || args.FederationId.Contains(k)).ToArray();
-		
+
 		foreach (string id in idsWeCareAbout)
 		{
 			var federationsOfId = new List<FederationInstanceConfig>(knownFederations[id]);

@@ -7,8 +7,8 @@ public class StreamConsoleInput : IAnsiConsoleInput
 	public StreamConsoleInput()
 	{
 		// Console.in
-	} 
-	
+	}
+
 	public bool IsKeyAvailable()
 	{
 		return Console.In.Peek() > 0;

@@ -54,9 +54,10 @@ public class DeploymentPlanMetadata
 }
 
 
-public static class PlanCommandExtensions {
-	
-	
+public static class PlanCommandExtensions
+{
+
+
 
 	public static void ApplyDeployComments<TArgs>(this AppCommand<TArgs> self, DeployablePlan plan, TArgs args)
 		where TArgs : CommandArgs, IHasDeployPlanArgs
@@ -97,22 +98,22 @@ public static class PlanCommandExtensions {
 					Log.Warning($"Invalid service-comment supplied. Must reference a service in the plan. invalid-comment=[{commentGroup}]");
 					continue;
 				}
-				
+
 				foundService.comments = comment;
 			}
 		}
 	}
-	
-	public static async Task<(DeployablePlan, string)> InteractivePlan<T, TArgs>(this T self, 
-		IDependencyProvider provider, 
+
+	public static async Task<(DeployablePlan, string)> InteractivePlan<T, TArgs>(this T self,
+		IDependencyProvider provider,
 		TArgs args
 		)
 		where T : AppCommand<TArgs>
 				, IResultSteam<RunProjectBuildErrorStreamChannel, RunProjectBuildErrorStream>
-				, IResultSteam<PlanReleaseProgressChannel, PlanReleaseProgress> 
+				, IResultSteam<PlanReleaseProgressChannel, PlanReleaseProgress>
 		where TArgs : CommandArgs, IHasDeployPlanArgs
 	{
-		
+
 		var progressReporter = (IResultSteam<PlanReleaseProgressChannel, PlanReleaseProgress>)self;
 		DeployablePlan plan = null;
 		List<BuildImageOutput> buildResults = null;
@@ -123,7 +124,7 @@ public static class PlanCommandExtensions {
 					var progressTasks = new Dictionary<string, ProgressTask>();
 
 					(plan, buildResults) = await DeployUtil.Plan(
-						provider, 
+						provider,
 						args,
 						progressHandler:
 						(name, progress, isKnownLength, serviceName) =>
@@ -144,11 +145,11 @@ public static class PlanCommandExtensions {
 								ratio = progress,
 								serviceName = serviceName
 							});
-							
+
 							progressTask.Value = progress;
 						});
-					
-					
+
+
 				}
 			);
 
@@ -168,7 +169,7 @@ public static class PlanCommandExtensions {
 					report = report.sourceReport.report
 				});
 			}
-			
+
 			throw new CliException("Unable to generate a plan. Please re-run with --logs v", 2, true);
 		}
 		else
@@ -180,7 +181,7 @@ public static class PlanCommandExtensions {
 
 }
 
-public class PlanDeploymentCommand 
+public class PlanDeploymentCommand
 	: AppCommand<PlanDeploymentCommandArgs>
 	, IResultSteam<DefaultStreamResultChannel, DeploymentPlanMetadata>
 	, IResultSteam<RunProjectBuildErrorStreamChannel, RunProjectBuildErrorStream>
@@ -195,18 +196,18 @@ public class PlanDeploymentCommand
 	public override void Configure()
 	{
 		DeployArgs.AddPlanOptions(this);
-	
+
 		AddOption(new Option<string>(new string[] { "--to-file", "--out", "-o" }, "A file path to save the plan"),
 			(args, i) => args.toFile = i);
-		
+
 	}
 
 	public override async Task Handle(PlanDeploymentCommandArgs args)
 	{
 		(DeployablePlan plan, var planPath) = await this.InteractivePlan(
-			args.DependencyProvider, 
+			args.DependencyProvider,
 			args);
-		
+
 		DeployUtil.PrintPlanInfo(plan, args, out var hasChanges);
 		this.ApplyDeployComments(plan, args);
 		DeployUtil.PrintPlanNextSteps(args.toFile ?? planPath, hasChanges);
@@ -216,7 +217,7 @@ public class PlanDeploymentCommand
 		var results = new DeploymentPlanMetadata
 		{
 			success = plan != null,
-			plan = plan, 
+			plan = plan,
 			planPath = args.toFile ?? planPath
 		};
 		this.SendResults<DefaultStreamResultChannel, DeploymentPlanMetadata>(results);

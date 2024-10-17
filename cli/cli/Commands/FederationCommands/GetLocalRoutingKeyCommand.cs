@@ -5,7 +5,7 @@ namespace cli.FederationCommands;
 
 public class GetLocalRoutingKeyCommandArgs : CommandArgs
 {
-	
+
 }
 
 public class GetLocalRoutingKeyCommandOutput
@@ -21,7 +21,7 @@ public class GetLocalRoutingKeyCommand : AtomicCommand<GetLocalRoutingKeyCommand
 
 	public override void Configure()
 	{
-		
+
 	}
 
 	public override Task<GetLocalRoutingKeyCommandOutput> GetResult(GetLocalRoutingKeyCommandArgs args)

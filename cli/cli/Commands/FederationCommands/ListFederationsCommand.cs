@@ -97,8 +97,8 @@ public class ListFederationsCommand : StreamCommand<ListServicesCommandArgs, Lis
 		foreach (var sd in args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions)
 		{
 			if (sd.Protocol is not BeamoProtocolType.HttpMicroservice) continue;
-			if (sd.IsLocal is not true) continue; 
-			
+			if (sd.IsLocal is not true) continue;
+
 			var service = new ServiceFederations();
 			service.beamoName = sd.BeamoId;
 			service.routingKey = ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine();
@@ -109,7 +109,7 @@ public class ListFederationsCommand : StreamCommand<ListServicesCommandArgs, Lis
 
 		ApplyFilters(args, output);
 		SendResults(output);
-		
+
 		await Task.CompletedTask;
 	}
 

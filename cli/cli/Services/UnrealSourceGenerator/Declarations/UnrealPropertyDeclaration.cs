@@ -223,8 +223,8 @@ public struct UnrealPropertyDeclaration
 
 
 		if (unrealType.IsUnrealString() || unrealType.IsUnrealBool() ||
-		    unrealType.IsUnrealByte() || unrealType.IsUnrealShort() || unrealType.IsUnrealInt() || unrealType.IsUnrealLong() ||
-		    unrealType.IsUnrealFloat() || unrealType.IsUnrealDouble())
+			unrealType.IsUnrealByte() || unrealType.IsUnrealShort() || unrealType.IsUnrealInt() || unrealType.IsUnrealLong() ||
+			unrealType.IsUnrealFloat() || unrealType.IsUnrealDouble())
 		{
 			return PRIMITIVE_U_PROPERTY_SERIALIZE;
 		}
