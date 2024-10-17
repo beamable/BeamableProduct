@@ -3,9 +3,6 @@
     <PropertyGroup Label="Beamable Settings">
         <!-- All Microservices must have the value, "service" -->
         <BeamProjectType>service</BeamProjectType>
-
-        <!-- When "true", this will auto-generate client code to any linked unity projects -->
-        <GenerateClientCode>true</GenerateClientCode>
     </PropertyGroup>
 
     <!-- These are special Beamable parameters that we use to keep the beamable packages in-sync to the CLI version your project is using. -->

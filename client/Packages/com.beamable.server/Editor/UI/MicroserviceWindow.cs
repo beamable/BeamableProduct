@@ -173,8 +173,7 @@ namespace Beamable.Editor.Microservice.UI
 
 			_actionBarVisualElement.OnCreateNewClicked += serviceType => _microserviceContentVisualElement.DisplayCreatingNewService(serviceType, _actionBarVisualElement.Refresh);
 
-			_actionBarVisualElement.OnPublishClicked += () => PublishWindow.ShowPublishWindow(this, ActiveContext);
-
+			
 			_actionBarVisualElement.OnRefreshButtonClicked += RefreshWindowContent;
 
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();

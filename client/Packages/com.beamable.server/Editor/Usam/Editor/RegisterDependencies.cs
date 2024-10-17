@@ -10,7 +10,6 @@ namespace Beamable.Server.Editor.Usam
 		public static void Register(IDependencyBuilder builder)
 		{
 			builder.AddSingleton<CodeService>();
-			builder.AddSingleton<PublishService>();
 		}
 
 	}
