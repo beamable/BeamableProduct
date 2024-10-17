@@ -20,10 +20,10 @@ namespace Beamable.Editor
 			if (string.IsNullOrEmpty(json)) return;
 			JsonUtility.FromJsonOverwrite(json, instance);
 		}
-		
+
 		private string GetSessionKey(string key)
 		{
-			return "beamable-session-data-"+key;
+			return "beamable-session-data-" + key;
 		}
 	}
 }

@@ -597,7 +597,7 @@ namespace Beamable
 				await resolution.Init();
 			}
 			#endregion
-			
+
 			#region load token from storage
 			_requester.Token = _tokenStorage.LoadTokenForRealmImmediate(Cid, Pid);
 			_beamableApiRequester.Token = _requester.Token;

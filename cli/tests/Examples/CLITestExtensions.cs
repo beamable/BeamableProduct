@@ -21,11 +21,11 @@ public class CLITestExtensions : CLITest
 	protected string pid = "456";
 
 	protected void SetupMocks(
-		bool mockAlias = true, 
-		bool mockAuth = true, 
-		bool mockRealms = true, 
-		bool mockBeamoManifest=true,
-		bool mockAdminMe=true)
+		bool mockAlias = true,
+		bool mockAuth = true,
+		bool mockRealms = true,
+		bool mockBeamoManifest = true,
+		bool mockAdminMe = true)
 	{
 		base.Setup();
 		_serilogLevel.MinimumLevel = LogEventLevel.Verbose;
@@ -39,7 +39,7 @@ public class CLITestExtensions : CLITest
 					.Verifiable();
 			});
 		}
-		
+
 		if (mockAlias)
 			Mock<IAliasService>(mock =>
 			{
@@ -51,7 +51,7 @@ public class CLITestExtensions : CLITest
 					})
 					.Verifiable();
 			});
-		
+
 		if (mockAdminMe)
 			Mock<IAccountsApi>(mock =>
 			{

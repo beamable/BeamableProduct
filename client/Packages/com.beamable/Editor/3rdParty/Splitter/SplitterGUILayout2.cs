@@ -1,6 +1,6 @@
 using System;
-using UnityEngine;
 using UnityEditor;
+using UnityEngine;
 
 namespace Beamable.Editor.ThirdParty.Splitter
 {
@@ -21,7 +21,7 @@ namespace Beamable.Editor.ThirdParty.Splitter
 
 		public int cellCount;
 		public float[] cellNormalizedSizes;
-		
+
 		public int resizingIndex = -1;
 		public Vector2[] scrollPositions;
 		public Rect availableRect;
@@ -48,7 +48,7 @@ namespace Beamable.Editor.ThirdParty.Splitter
 			}
 
 			scrollPositions = new Vector2[cellCount];
-			
+
 			this.splitDirection = splitDirection;
 		}
 
@@ -90,14 +90,14 @@ namespace Beamable.Editor.ThirdParty.Splitter
 
 		void StartSplit(int index)
 		{
-			
+
 			if (splitDirection == Direction.Horizontal)
 				scrollPositions[index] = GUILayout.BeginScrollView(scrollPositions[index],
-				                                           GUILayout.Width(
-					                                           availableRect.width * cellNormalizedSizes[index]));
+														   GUILayout.Width(
+															   availableRect.width * cellNormalizedSizes[index]));
 			else
 				scrollPositions[index] = GUILayout.BeginScrollView(scrollPositions[index],
-				                                           GUILayout.Height(availableRect.height * cellNormalizedSizes[index]));
+														   GUILayout.Height(availableRect.height * cellNormalizedSizes[index]));
 
 
 		}
@@ -129,14 +129,14 @@ namespace Beamable.Editor.ThirdParty.Splitter
 		private float GetSumForIndex(int index)
 		{
 			var value = 0f;
-			for (var i = 0; i <= index; i ++)
+			for (var i = 0; i <= index; i++)
 			{
 				value += cellNormalizedSizes[i];
 			}
 
 			return value;
 		}
-		
+
 		private void ResizeSplitFirstView(EditorWindow window, int index)
 		{
 
@@ -147,13 +147,13 @@ namespace Beamable.Editor.ThirdParty.Splitter
 			var value = GetSumForIndex(index);
 			if (splitDirection == Direction.Horizontal)
 				resizeHandleRect = new Rect(availableRect.width * value - halfWidth, availableRect.y, width,
-				                            availableRect.height);
+											availableRect.height);
 			else
 				resizeHandleRect = new Rect(availableRect.x, availableRect.height * value - halfWidth,
-				                            availableRect.width, width);
+											availableRect.width, width);
 
 			// GUI.DrawTexture(resizeHandleRect, EditorGUIUtility.whiteTexture);
-			EditorGUI.DrawRect(resizeHandleRect, new Color(0,0,0,.3f));
+			EditorGUI.DrawRect(resizeHandleRect, new Color(0, 0, 0, .3f));
 			if (splitDirection == Direction.Horizontal)
 				EditorGUIUtility.AddCursorRect(resizeHandleRect, MouseCursor.ResizeHorizontal);
 			else
@@ -168,7 +168,7 @@ namespace Beamable.Editor.ThirdParty.Splitter
 			{
 				if (splitDirection == Direction.Horizontal)
 				{
-					
+
 					var ratio = Event.current.mousePosition.x / availableRect.width;
 					var diff = ratio - value;
 
@@ -183,7 +183,7 @@ namespace Beamable.Editor.ThirdParty.Splitter
 					cellNormalizedSizes[index] += diff;
 					cellNormalizedSizes[index + 1] -= diff;
 				}
-				
+
 				window.Repaint();
 			}
 

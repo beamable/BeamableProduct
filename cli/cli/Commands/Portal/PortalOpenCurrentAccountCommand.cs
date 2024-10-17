@@ -20,7 +20,7 @@ public class PortalOpenCurrentAccountCommand : AppCommand<PortalOpenCurrentAccou
 	{
 		AddOption(new Option<long>("--player-id", "The playerId (gamerTag) for the player to open Portal"),
 			(args, i) => args.playerId = i, new string[] { "-i", "-p", "-gt" });
-		
+
 		AddOption(new Option<string>("--token", "The token for the player to open Portal. Cannot be specified when --player-id is set"),
 			(args, i) => args.token = i, new string[] { "-t" });
 	}
@@ -33,9 +33,9 @@ public class PortalOpenCurrentAccountCommand : AppCommand<PortalOpenCurrentAccou
 		{
 			throw new CliException("Cannot pass both player id and token");
 		}
-		
-		
-		if (hasId) 
+
+
+		if (hasId)
 			return args.playerId; // always use explicit id
 
 		if (hasToken)
@@ -44,16 +44,16 @@ public class PortalOpenCurrentAccountCommand : AppCommand<PortalOpenCurrentAccou
 			var (token, _) = await GetTokenDetailsCommand.ResolveToken(args, true, args.token);
 			return token.gamerTag;
 		}
-		
+
 		// use the default token...
 		var user = await args.AuthApi.GetUser();
 		return user.id;
 	}
-	
+
 	public override async Task Handle(PortalOpenCurrentAccountCommandArgs args)
 	{
 		var playerId = await ResolvePlayerId(args);
-		
+
 		// players/1651742188351488
 		PortalCommand.GetPortalBaseUrl(args, out var url, out var qb);
 		url = $"{url}/players/{playerId}/{qb}";

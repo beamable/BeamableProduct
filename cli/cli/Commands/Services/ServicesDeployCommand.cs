@@ -49,9 +49,9 @@ public class ServicesDeployCommand : AppCommand<ServicesDeployCommandArgs>,
 			AddOption(new Option<string[]>("--service-comments", Array.Empty<string>,
 					$"Any number of strings in the format BeamoId::Comment" +
 					$"\nAssociates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal")
-				{
-					AllowMultipleArgumentsPerToken = true
-				},
+			{
+				AllowMultipleArgumentsPerToken = true
+			},
 				(args, i) => { });
 
 			AddOption(new Option<string>("--docker-registry-url",

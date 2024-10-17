@@ -13,7 +13,7 @@ public class DownloadNugetDepToUnityCommandArgs : CommandArgs
 
 public class DownloadNugetDepToUnityCommandOutput
 {
-	
+
 }
 public class DownloadNugetDepToUnityCommand : AtomicCommand<DownloadNugetDepToUnityCommandArgs, DownloadNugetDepToUnityCommandOutput>
 {

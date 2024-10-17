@@ -196,7 +196,7 @@ public class Tests
 		}, "oapi", "generate", "--filter", "session,t:basic", "--engine", "unity");
 		Assert.AreEqual(0, status);
 	}
-	
+
 	[Test]
 	public async Task GenerateBeamo()
 	{

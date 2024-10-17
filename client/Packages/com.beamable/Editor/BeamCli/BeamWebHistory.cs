@@ -35,7 +35,7 @@ namespace Beamable.Editor.BeamCli
 		public float time;
 		public string message;
 	}
-	
+
 	[Serializable]
 	public class BeamWebCommandDescriptor
 	{
@@ -51,10 +51,10 @@ namespace Beamable.Editor.BeamCli
 		public List<ReportDataPointDescription> payloads = new List<ReportDataPointDescription>();
 		public List<CliLogMessage> logs = new List<CliLogMessage>();
 		public List<ErrorOutput> errors = new List<ErrorOutput>();
-		
+
 		// TODO: create a computed property from the argstring that turns it into a dictionary from ARG to VALUE
-		
-		
+
+
 		public BeamWebCommandDescriptorStatus Status
 		{
 			get
@@ -65,7 +65,7 @@ namespace Beamable.Editor.BeamCli
 				return BeamWebCommandDescriptorStatus.DONE;
 			}
 		}
-		
+
 		/// <summary>
 		/// this will be null after a reload.
 		/// </summary>
@@ -73,7 +73,7 @@ namespace Beamable.Editor.BeamCli
 		public BeamWebCommand instance;
 
 	}
-	
+
 	[Serializable]
 	public class BeamWebCliCommandHistory : IStorageHandler<BeamWebCliCommandHistory>, Beamable.Common.Dependencies.IServiceStorable
 	{
@@ -95,11 +95,12 @@ namespace Beamable.Editor.BeamCli
 		{
 			_options = options;
 		}
-		
+
 		public void AddCommand(BeamWebCommand command)
 		{
-			var desc = new BeamWebCommandDescriptor {
-				instance = command, 
+			var desc = new BeamWebCommandDescriptor
+			{
+				instance = command,
 				commandString = command.commandString,
 				id = command.id,
 				createdTime = DateTime.Now.ToFileTime()
@@ -168,19 +169,19 @@ namespace Beamable.Editor.BeamCli
 			var desc = GetCommand(id);
 			desc.resolveHostAtTime = DateTime.Now.ToFileTime();
 		}
-		
+
 		public void UpdateStartTime(string id)
 		{
 			var desc = GetCommand(id);
 			desc.startTime = DateTime.Now.ToFileTime();
 		}
-		
+
 		public void UpdateCompleteTime(string id)
 		{
 			var desc = GetCommand(id);
 			desc.endTime = DateTime.Now.ToFileTime();
 		}
-		
+
 		public void UpdateMessageTime(string id)
 		{
 			var desc = GetCommand(id);
@@ -195,7 +196,8 @@ namespace Beamable.Editor.BeamCli
 			{
 				var msg = JsonUtility.FromJson<ReportDataPoint<CliLogMessage>>(res.json);
 				desc.logs.Add(msg.data);
-			} else if (res.type.StartsWith("error"))
+			}
+			else if (res.type.StartsWith("error"))
 			{
 				var msg = JsonUtility.FromJson<ReportDataPoint<ErrorOutput>>(res.json);
 				desc.errors.Add(msg.data);
@@ -204,7 +206,9 @@ namespace Beamable.Editor.BeamCli
 				var logMessage = $"{msg.data.message} \n\n {msg.data.stackTrace}";
 				var log = new CliLogMessage()
 				{
-					logLevel = "Error", message = logMessage, timestamp = msg.ts
+					logLevel = "Error",
+					message = logMessage,
+					timestamp = msg.ts
 				};
 				desc.logs.Add(log);
 			}

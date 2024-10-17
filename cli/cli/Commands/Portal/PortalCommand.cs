@@ -5,7 +5,7 @@ namespace cli.Portal;
 
 public class PortalCommandArgs : CommandArgs
 {
-	
+
 }
 
 
@@ -17,7 +17,7 @@ public class PortalCommand : AppCommand<PortalCommandArgs>
 
 	public override void Configure()
 	{
-		
+
 	}
 
 	public override Task Handle(PortalCommandArgs args)

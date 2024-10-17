@@ -35,7 +35,7 @@ public class ShowCurrentBeamoStatusCommand : AtomicCommand<ShowCurrentBeamoStatu
 		{
 			var currentTask = api.GetManifestCurrent(archived: false);
 
-			Promise<GetCurrentManifestResponse> currentArchivedTask=null;
+			Promise<GetCurrentManifestResponse> currentArchivedTask = null;
 			if (args.showArchived)
 			{
 				currentArchivedTask = api.GetManifestCurrent(archived: true);
@@ -61,16 +61,19 @@ public class ShowCurrentBeamoStatusCommand : AtomicCommand<ShowCurrentBeamoStatu
 			}
 
 			status.services = finalServices.ToArray();
-			
+
 			return new ShowCurrentBeamoStatusCommandOutput { status = status };
 		}
 		catch (RequesterException ex) when (ex.Status == 404)
 		{
-			return new ShowCurrentBeamoStatusCommandOutput { status = new GetStatusResponse
+			return new ShowCurrentBeamoStatusCommandOutput
 			{
-				// there is nothing, but that is "correct"
-				isCurrent = true
-			} };
+				status = new GetStatusResponse
+				{
+					// there is nothing, but that is "correct"
+					isCurrent = true
+				}
+			};
 		}
 	}
 }
