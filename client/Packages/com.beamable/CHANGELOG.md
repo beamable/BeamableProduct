@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Content tags change marks corresponding `ScriptableObject` as dirty
+- Editor handles opening project when token is expired correctly.
 
 ## [1.19.22] - 2024-07-19
 ### Added
