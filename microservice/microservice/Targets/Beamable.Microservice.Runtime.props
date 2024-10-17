@@ -28,7 +28,7 @@
         <BeamableDotnetPath Condition="'$(BeamableDotnetPath)' == ''">$(BEAM_DOTNET_PATH)</BeamableDotnetPath>
         <BeamableDotnetPath Condition="'$(BeamableDotnetPath)' == ''">dotnet</BeamableDotnetPath>
 
-        <GenerateClientCode Condition="'$(GenerateClientCode)' == ''">true</GenerateClientCode>
+        <GenerateClientCode Condition="'$(GenerateClientCode)' == ''">false</GenerateClientCode>
     </PropertyGroup>
 
     <!-- Set some default Beamable options, https://docs.beamable.com/docs/cli-guide-microservice-configuration -->
