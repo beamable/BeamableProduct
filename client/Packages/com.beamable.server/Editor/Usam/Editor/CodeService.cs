@@ -12,6 +12,7 @@ using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.UI.Components;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -873,17 +874,6 @@ namespace Beamable.Server.Editor.Usam
 			UsamLogger.Log($"Finished creation of storage {storageName}");
 		}
 
-		/// <summary>
-		/// Given the current SDK version, we should be able to figure out which version of Nuget packages we need.
-		/// Note: if we're developing the SDK, the version will be 0.0.0, and the current local version of Nuget package is 0.0.123-local.
-		/// </summary>
-		/// <returns></returns>
-		public static string GetCurrentNugetVersion()
-		{
-			var version = BeamableEnvironment.NugetPackageVersion;
-			return version;
-		}
-
 		private async Promise CreateMicroService(string serviceName, List<IBeamoServiceDefinition> dependencies, List<AssemblyDefinitionAsset> assemblyReferences = null, bool shouldInitialize = true, Action errorCallback = null)
 		{
 			var service = new ServiceName(serviceName);
@@ -1053,8 +1043,22 @@ namespace Beamable.Server.Editor.Usam
 				UsamLogger.Log("Service does not exist!");
 				return;
 			}
+
+			var sln = SERVICES_SLN_PATH;
 			var fileName = $@"{def.ServiceInfo.projectPath}/{serviceName}.cs";
-			EditorUtility.OpenWithDefaultApp(fileName);
+			
+			// first open the sln, because in most IDEs multi-solution view is not supported. 
+			EditorUtility.OpenWithDefaultApp(sln);
+			
+			// and once enough time has passed, hopefully enough so that the IDE has focused
+			//  the solution; open the actual sub class file.
+			IEnumerator OpenFile()
+			{
+				const float hopefullyEnoughTimeForIDEToInitialize = .5f;
+				yield return new WaitForSecondsRealtime(hopefullyEnoughTimeForIDEToInitialize);
+				EditorUtility.OpenWithDefaultApp(fileName);
+			}
+			_dispatcher.Run("open-code", OpenFile());
 		}
 
 	}
