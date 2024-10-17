@@ -48,7 +48,7 @@ namespace Beamable.Editor.BeamCli
 		public async Promise Init()
 		{
 			await _ctx.OnReady;
-			
+
 			var args = new InitArgs
 			{
 				saveToFile = true,
@@ -57,7 +57,7 @@ namespace Beamable.Editor.BeamCli
 				pid = _ctx.Requester.Pid,
 				host = BeamableEnvironment.ApiUrl,
 			};
-			
+
 			var token = _ctx.Requester.Token;
 			if (token == null)
 			{
@@ -71,7 +71,7 @@ namespace Beamable.Editor.BeamCli
 				args.saveToFile = true;
 				args.noTokenSave = false;
 			}
-			
+
 			var initCommand = Command.Init(args);
 			await initCommand.Run();
 

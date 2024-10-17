@@ -261,7 +261,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_logContainerElement.Add(_logElement);
 			_logElement.Refresh();
 		}
-	
+
 		protected virtual void SetupProgressBarForStart(Promise task)
 		{
 			// We have two ways. Either store reference or return instance as event parameter

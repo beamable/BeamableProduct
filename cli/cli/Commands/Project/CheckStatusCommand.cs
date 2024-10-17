@@ -146,11 +146,11 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 
 		Log.Debug($"running status-check with watch=[{args.watch}] timeout=[{timeout.Milliseconds}]");
 		await foreach (var update in CheckStatus(
-			               args,
-			               timeout,
-			               DiscoveryMode.ALL,
-			               args.services,
-			               args.Lifecycle.CancellationToken))
+						   args,
+						   timeout,
+						   DiscoveryMode.ALL,
+						   args.services,
+						   args.Lifecycle.CancellationToken))
 		{
 			SendResults(update);
 		}
@@ -217,7 +217,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 					},
 					groups = definition.ServiceGroupTags,
 				};
-				
+
 				result.services.Add(status);
 			}
 		}
@@ -257,7 +257,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 					federations = discoveryEvent switch
 					{
 						DockerServiceEvent dockerEvt => dockerEvt.descriptor.federations?.ToList() ?? new List<FederationInstance>(),
-						HostServiceEvent hostEvt => hostEvt.descriptor.federations?.ToList() ?? new List<FederationInstance>(), 
+						HostServiceEvent hostEvt => hostEvt.descriptor.federations?.ToList() ?? new List<FederationInstance>(),
 						RemoteServiceEvent remoteEvt => remoteEvt.descriptor.federations?.ToList() ?? new List<FederationInstance>(),
 						_ => throw new ArgumentOutOfRangeException()
 					}
@@ -270,11 +270,13 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 			{
 				// Make sure the collection is defined as "running" now.
 				collection.knownToBeRunning = true;
-				
+
 				// generate an instance to describe this event.
 				instance = new ServiceInstance
 				{
-					startedByAccountId = discoveryEvent.StartedByAccountId, primaryKey = discoveryEvent.PrimaryKey, startedByAccountEmail = await GetEmail(discoveryEvent.StartedByAccountId),
+					startedByAccountId = discoveryEvent.StartedByAccountId,
+					primaryKey = discoveryEvent.PrimaryKey,
+					startedByAccountEmail = await GetEmail(discoveryEvent.StartedByAccountId),
 				};
 
 				// only fill in the field that corresponds to the main data.
@@ -312,10 +314,10 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 			{
 				// the instance existed in our state, but now it is being stopped, so we should remove it
 				collection.instances.Remove(instance);
-				
+
 				// Make sure the collection as "knownToBeRunning" now.
 				collection.knownToBeRunning = collection.instances.Count > 0;
-				
+
 				yield return result;
 
 				// TODO: include a changelog in the update

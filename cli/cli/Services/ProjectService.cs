@@ -72,7 +72,7 @@ public class ProjectData
 		public bool Equals(Unreal other) => Path == other.Path;
 
 		public override bool Equals(object obj) => (obj is Unreal unreal && Equals(unreal)) ||
-		                                           (obj is string unrealPath && Equals(unrealPath));
+												   (obj is string unrealPath && Equals(unrealPath));
 
 		public override int GetHashCode() => (Path != null ? Path.GetHashCode() : 0);
 
@@ -187,7 +187,7 @@ public class ProjectService
 		var info = await GetTemplateInfo();
 
 		if (!info.HasTemplates ||
-		    !string.Equals(version, info.templateVersion, StringComparison.CurrentCultureIgnoreCase))
+			!string.Equals(version, info.templateVersion, StringComparison.CurrentCultureIgnoreCase))
 		{
 			await PromptAndInstallTemplates(info.templateVersion, version, true);
 		}
@@ -506,22 +506,22 @@ public class ProjectService
 		return CliExtensions.GetDotnetCommand(_app.DotnetPath, arguments).ExecuteAsyncAndLog().Task;
 	}
 
-	
+
 	[System.Flags]
 	public enum BuildFlags
 	{
 		None,
 		DisableClientCodeGen
 	}
-	
-	
+
+
 	[System.Flags]
 	public enum RunFlags
 	{
 		None,
 		Detach
 	}
-	
+
 	public static async Task WatchBuild(BuildProjectCommandArgs args, ServiceName serviceName, BuildFlags buildFlags, Action<ProjectErrorReport> onReport)
 	{
 		var localServices = args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols;
@@ -553,7 +553,7 @@ public class ProjectService
 		{
 			commandStr += " -p:GenerateClientCode=false";
 		}
-		
+
 		using var cts = new CancellationTokenSource();
 
 		var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, commandStr)
@@ -637,7 +637,7 @@ public static class CliExtensions
 		{
 			cmd = cmd.WithWorkingDirectory(workingDirectory);
 		}
-		
+
 		var result = await cmd.ExecuteAsync();
 
 		return (result, builder);
