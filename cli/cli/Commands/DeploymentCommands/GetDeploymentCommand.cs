@@ -51,7 +51,7 @@ public class GetDeploymentCommand : AtomicCommand<GetDeploymentCommandArgs, GetD
 		}
 
 		await DeployArgs.MaybeSaveToFile(args.toFile, manifest);
-		
+
 		return new GetDeploymentCommandOutput
 		{
 			manifestView = manifest

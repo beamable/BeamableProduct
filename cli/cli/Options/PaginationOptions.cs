@@ -15,11 +15,11 @@ public static class PaginationOptions
 		public OptionalInt Limit { get; set; }
 		public OptionalInt Offset { get; set; }
 	}
-	
+
 	public static void AddPaginationOptions<TArgs>(
 		AppCommand<TArgs> command,
-		int defaultLimit=-1,
-		int defaultOffset=-1)
+		int defaultLimit = -1,
+		int defaultOffset = -1)
 		where TArgs : CommandArgs, IPaginationArgs
 	{
 		var limitOption = new Option<int>("--limit", () => defaultLimit, "The limit of resources. A value of -1 means no limit");

@@ -37,14 +37,14 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 
 	public override async Task Handle(VersionInstallCommandArgs args)
 	{
-		
+
 		var service = args.DependencyProvider.GetService<VersionService>();
 		var currentVersionInfo = await service.GetInformationData(args.ProjectService);
 
 		Log.Debug($"setting up CLI install... scope=[{currentVersionInfo.installType}] ");
 
 		var data = await service.GetBeamableToolPackageVersions();
-		
+
 		var packageVersion = args.version?.ToLower() switch
 		{
 			// 0.0.123 is a special "dev" version of the package. It is not supposed to exist on nuget.org. Instead, it comes from the developer's local machine's nuget source.

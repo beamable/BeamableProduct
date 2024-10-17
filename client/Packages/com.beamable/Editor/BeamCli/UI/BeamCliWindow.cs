@@ -17,7 +17,7 @@ namespace Beamable.Editor.BeamCli.UI
 		Terminal,
 		Overrides
 	}
-	
+
 	public partial class BeamCliWindow : BeamEditorWindow<BeamCliWindow>
 	{
 		private BeamWebCliCommandHistory _history;
@@ -40,12 +40,12 @@ namespace Beamable.Editor.BeamCli.UI
 				RequireLoggedUser = false,
 			};
 		}
-		
-		
+
+
 		// serialized state gets remembered between domain reloads...
 		[SerializeField]
 		public BeamCliWindowTab selectedTab;
-		
+
 		[NonSerialized]
 		public List<Action> delayedActions = new List<Action>();
 
@@ -101,7 +101,7 @@ namespace Beamable.Editor.BeamCli.UI
 
 			MainTabsGui();
 
-			
+
 			// run the actions at the end of the GUI loop, so that all GUI tags are closed.
 			foreach (var evt in delayedActions)
 			{
@@ -114,7 +114,7 @@ namespace Beamable.Editor.BeamCli.UI
 		{
 			GUILayout.Label("No context... (loading)");
 		}
-		
+
 		void OnNoHistoryGUI()
 		{
 			GUILayout.Label("No history... (broken?)");
@@ -125,7 +125,7 @@ namespace Beamable.Editor.BeamCli.UI
 			GUILayout.BeginHorizontal(EditorStyles.toolbar);
 			{
 				selectedTab = (BeamCliWindowTab)GUILayout.Toolbar((int)selectedTab, Enum.GetNames(typeof(BeamCliWindowTab)));
-			} 
+			}
 			GUILayout.EndHorizontal();
 
 			switch (selectedTab)

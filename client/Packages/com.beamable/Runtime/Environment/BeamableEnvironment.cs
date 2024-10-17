@@ -38,9 +38,9 @@ namespace Beamable
 
 		public static EnvironmentData Data { get; private set; } = new EnvironmentData();
 
-		
+
 		public static EnvironmentVersionData VersionData { get; private set; } = new EnvironmentVersionData();
-		
+
 		/// <inheritdoc cref="EnvironmentData.ApiUrl"/>
 		public static string ApiUrl => Data.ApiUrl;
 
@@ -97,8 +97,8 @@ namespace Beamable
 		/// Returns if the SDK is being run in a beamable developer environment
 		/// </summary>
 		public static bool IsBeamableDeveloper => VersionData.nugetPackageVersion.Contains("0.0.123");
-		
-		
+
+
 		/// <summary>
 		/// Read the data from the env-default.json file in Resources and reload all environment properties.
 		/// This function is called automatically by Beamable's initialization process. You shouldn't need to call it unless
@@ -143,7 +143,7 @@ namespace Beamable
 			return $"{url}/socket";
 		}
 	}
-	
+
 
 	[Serializable]
 	public class EnvironmentData : JsonSerializable.ISerializable, IPlatformRequesterHostResolver

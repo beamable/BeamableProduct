@@ -143,7 +143,7 @@ public class DiscoveryService
 
 						if (registration.beamoName == null)
 							throw new CliException($"Failed to convert serviceName of service deployed with old CLI to BeamoName. Please redeploy this service with this new and fancy CLI version." +
-							                       $" SERVICE_NAME={registration.serviceName}, CLOSEST_MATCH={closestMatch}");
+												   $" SERVICE_NAME={registration.serviceName}, CLOSEST_MATCH={closestMatch}");
 
 						Log.Warning("Detected a remote service deployed with previous CLI version. Please redeploy this service. ServiceName={ServiceName}, DerivedBeamoName={BeamoName}", registration.serviceName,
 							registration.beamoName.Value);
@@ -162,16 +162,16 @@ public class DiscoveryService
 					var federationInstances = registration.federation.GetOrElse(Array.Empty<SupportedFederation>())
 						.Select(sf => new FederationInstance() { FederationId = sf.nameSpace.GetOrElse(""), FederationTypes = new[] { sf.type.ToString() } })
 						.GroupBy(fi => fi.FederationId)
-						.Select(g => new FederationInstance(){FederationId = g.Key, FederationTypes = g.SelectMany(fi => fi.FederationTypes).ToArray()})
+						.Select(g => new FederationInstance() { FederationId = g.Key, FederationTypes = g.SelectMany(fi => fi.FederationTypes).ToArray() })
 						.ToArray();
-					
+
 					var descriptor = new RemoteServiceDescriptor
 					{
 						startedByAccountId = registration.startedById,
 						routingKey = registration.routingKey,
 						service = registration.beamoName,
 						groups = groups,
-						federations =  federationInstances
+						federations = federationInstances
 					};
 					serviceDict[descriptor.PKey] = descriptor;
 					remoteDiscoveryQueue.Enqueue(new RemoteServiceEvent { type = ServiceEventType.Running, descriptor = descriptor, });
@@ -309,7 +309,7 @@ public class DiscoveryService
 					// Check if docker's state changed (on/off) so we can reset isListeningToDocker.
 					var isDockerRunning = await _localSystem.CheckIsRunning();
 					if ((!isDockerRunning && wasDockerRunningLastTick) ||
-					    (isDockerRunning && !wasDockerRunningLastTick)) isListeningToDocker = false;
+						(isDockerRunning && !wasDockerRunningLastTick)) isListeningToDocker = false;
 					wasDockerRunningLastTick = isDockerRunning;
 
 					// If docker isn't running, wait for X second and try again.
@@ -436,7 +436,7 @@ public class DiscoveryService
 
 							if (registration.beamoName == null)
 								throw new CliException($"Failed to convert serviceName of service deployed with old CLI to BeamoName. Please redeploy this service with this new and fancy CLI version." +
-								                       $" SERVICE_NAME={registration.serviceName}, CLOSEST_MATCH={closestMatch}");
+													   $" SERVICE_NAME={registration.serviceName}, CLOSEST_MATCH={closestMatch}");
 						}
 
 						var groups = Array.Empty<string>();
@@ -450,12 +450,12 @@ public class DiscoveryService
 						var federationInstances = registration.federation.GetOrElse(Array.Empty<SupportedFederation>())
 							.Select(sf => new FederationInstance() { FederationId = sf.nameSpace.GetOrElse(""), FederationTypes = new[] { sf.type.ToString() } })
 							.GroupBy(fi => fi.FederationId)
-							.Select(g => new FederationInstance(){FederationId = g.Key, FederationTypes = g.SelectMany(fi => fi.FederationTypes).ToArray()})
+							.Select(g => new FederationInstance() { FederationId = g.Key, FederationTypes = g.SelectMany(fi => fi.FederationTypes).ToArray() })
 							.ToArray();
-						
+
 						var descriptor = new RemoteServiceDescriptor
 						{
-							startedByAccountId = registration.startedById, 
+							startedByAccountId = registration.startedById,
 							routingKey = registration.routingKey,
 							service = registration.beamoName,
 							groups = groups,
@@ -696,7 +696,7 @@ public class DiscoveryService
 			containerId = containerId,
 			startedByAccountId = startedByAccountId,
 			groups = groups,
-			federations = serviceDefinition.Protocol == BeamoProtocolType.HttpMicroservice ? 
+			federations = serviceDefinition.Protocol == BeamoProtocolType.HttpMicroservice ?
 				definition.SourceGenConfig.Federations.Select(kvp => new FederationInstance { FederationTypes = kvp.Value.Select(v => v.Interface).ToArray(), FederationId = kvp.Key }).ToArray() :
 				Array.Empty<FederationInstance>(),
 		};

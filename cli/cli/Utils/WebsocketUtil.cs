@@ -48,7 +48,8 @@ public class WebsocketUtil
 			using var stringBuilder = StringBuilderPool.StaticPool.Spawn();
 			var dict = new ArrayDict
 			{
-				["id"] = messageObj.id, ["status"] = 200,
+				["id"] = messageObj.id,
+				["status"] = 200,
 			};
 
 			var ack = Json.Serialize(dict, stringBuilder.Builder);
@@ -67,7 +68,7 @@ public class WebsocketUtil
 					Log.Error(e, "Error invoking Notification callback... You should not see this as a Beamable customer. If you do, please tell us");
 					throw;
 				}
-				
+
 				// Ack that we successfully processed the message
 				await WebsocketUtil.SendMessageAsync(ws, ack, cancellationToken);
 			}
@@ -114,7 +115,8 @@ public class WebsocketUtil
 				path = "gateway/provider",
 				body = new
 				{
-					type = "event", evtWhitelist = eventList
+					type = "event",
+					evtWhitelist = eventList
 					//new string[] { "content.manifest", "realm-config.refresh" }
 				}
 			};

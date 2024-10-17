@@ -21,7 +21,7 @@ namespace Beamable.Editor.BeamCli.UI
 		private const string VALUE_SEPARATOR = ", ";
 		private const string INDENT = "  ";
 		private const string LINEBREAK = "\n";
-		
+
 		public static string HighlightJson(string json)
 		{
 			var dict = (ArrayDict)Json.Deserialize(json);
@@ -30,7 +30,7 @@ namespace Beamable.Editor.BeamCli.UI
 			var formatted = sb.ToString();
 			return formatted;
 		}
-		
+
 		public static string HighlightJson(ArrayDict dict)
 		{
 			var sb = new StringBuilder();
@@ -38,7 +38,7 @@ namespace Beamable.Editor.BeamCli.UI
 			var formatted = sb.ToString();
 			return formatted;
 		}
-		
+
 
 		static void AppendIndents(StringBuilder sb, int indents)
 		{
@@ -46,7 +46,7 @@ namespace Beamable.Editor.BeamCli.UI
 			{
 				sb.Append(INDENT);
 			}
-			
+
 
 		}
 
@@ -58,7 +58,7 @@ namespace Beamable.Editor.BeamCli.UI
 			}
 			indents++;
 			sb.Append(OBJECT_OPEN);
-			
+
 			if (dict.Count > 0)
 			{
 				sb.Append(LINEBREAK);
@@ -73,7 +73,7 @@ namespace Beamable.Editor.BeamCli.UI
 				sb.Append(kvp.Key);
 				sb.Append(KEY_CLOSE);
 				sb.Append(KEY_SEPARATOR);
-				
+
 				HighlightValue(kvp.Value, sb, indents);
 
 				if (count > 0)
@@ -82,7 +82,7 @@ namespace Beamable.Editor.BeamCli.UI
 				}
 				sb.Append(LINEBREAK);
 			}
-			
+
 			indents--;
 			AppendIndents(sb, indents);
 			sb.Append(OBJECT_CLOSE);
@@ -95,7 +95,8 @@ namespace Beamable.Editor.BeamCli.UI
 				sb.Append(BOOL_OPEN);
 				sb.Append(value.ToString().ToLowerInvariant());
 				sb.Append(VAL_CLOSE);
-			} else if (value is string)
+			}
+			else if (value is string)
 			{
 				sb.Append(STR_OPEN);
 				sb.Append("\"");
@@ -108,10 +109,12 @@ namespace Beamable.Editor.BeamCli.UI
 				sb.Append(STR_OPEN);
 				sb.Append("\"");
 				sb.Append(VAL_CLOSE);
-			} else if (value is ArrayDict subDict)
+			}
+			else if (value is ArrayDict subDict)
 			{
 				Highlight2(subDict, sb, indents, false);
-			} else if (value is IList listable)
+			}
+			else if (value is IList listable)
 			{
 				sb.Append(ARRAY_OPEN);
 				var count = listable.Count;
@@ -120,7 +123,7 @@ namespace Beamable.Editor.BeamCli.UI
 					count--;
 					sb.Append(LINEBREAK);
 					AppendIndents(sb, indents + 1);
-					
+
 					// serialize value.
 					HighlightValue(element, sb, indents + 1);
 
@@ -132,7 +135,7 @@ namespace Beamable.Editor.BeamCli.UI
 				sb.Append(LINEBREAK);
 				AppendIndents(sb, indents);
 				sb.Append(ARRAY_CLOSE);
-				
+
 			}
 			else
 			{

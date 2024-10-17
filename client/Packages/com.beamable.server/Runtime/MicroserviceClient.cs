@@ -45,7 +45,7 @@ namespace Beamable.Server
 
 		// protected BeamContext _ctx;
 
-		protected MicroserviceClient(BeamContext ctx=null) : this(ctx?.ServiceProvider)
+		protected MicroserviceClient(BeamContext ctx = null) : this(ctx?.ServiceProvider)
 		{
 		}
 
@@ -331,7 +331,7 @@ namespace Beamable.Server
 		}
 
 		public static Dictionary<string, string> ApplyRoutingHeaders(this IDependencyProvider provider,
-		                                                             Dictionary<string, string> headers)
+																	 Dictionary<string, string> headers)
 		{
 			if (!provider.CanBuildService<IServiceRoutingResolution>())
 				return headers;
@@ -340,7 +340,7 @@ namespace Beamable.Server
 			return resolution.ApplyRoutingHeaders(headers);
 
 		}
-		
+
 		public static async Promise<T> Request<T>(IDependencyProvider provider, IBeamableRequester beamableRequester, string serviceName, string endpoint, string[] serializedFields)
 		{
 			if (!(beamableRequester is IRequester requester))
@@ -370,11 +370,11 @@ namespace Beamable.Server
 			{
 				payload = argArray
 			};
-			
+
 			return await requester.BeamableRequest(new SDKRequesterOptions<T>
 			{
-				body = req, 
-				method = Method.POST, 
+				body = req,
+				method = Method.POST,
 				uri = url,
 				parser = Parser,
 				includeAuthHeader = true,
@@ -395,13 +395,13 @@ namespace Beamable.Server
 					$"the microservice client must be given a {nameof(IRequester)} instance for the {nameof(beamableRequester)} field. " +
 					$"In a future version, this will be a compiler time check, but it exists as a runtime check to support mid-term backwards compatability. ");
 			}
-			
+
 			var url = CreateUrl(requester.AccessToken.Cid, requester.AccessToken.Pid, serviceName, endpoint);
 			var req = SerializeArgument(serializedFields);
 			return await requester.BeamableRequest(new SDKRequesterOptions<T>
 			{
-				body = req, 
-				method = Method.POST, 
+				body = req,
+				method = Method.POST,
 				uri = url,
 				parser = DeserializeResult<T>,
 				includeAuthHeader = true,
@@ -409,7 +409,7 @@ namespace Beamable.Server
 				headerInterceptor = provider.ApplyRoutingHeaders
 			});
 		}
-		
-		
+
+
 	}
 }

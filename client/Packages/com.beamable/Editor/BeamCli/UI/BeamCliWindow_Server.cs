@@ -21,14 +21,14 @@ namespace Beamable.Editor.BeamCli.UI
 		public LogView serverLogs = new LogView();
 		public LogView serverEvents = new LogView();
 		public Vector2 serverCliScroll;
-		
+
 		public EditorGUISplitView serverSplitter = new EditorGUISplitView(EditorGUISplitView.Direction.Horizontal, .2f, .8f);
-		
+
 		[NonSerialized]
 		public CliLogDataProvider serverLogProvider;
 		[NonSerialized]
 		public ServerEventLogDataProvider serverEventsProvider;
-		
+
 		void OnServerGui()
 		{
 			var service = ActiveContext.ServiceScope.GetService<BeamWebCommandFactory>();
@@ -40,7 +40,7 @@ namespace Beamable.Editor.BeamCli.UI
 				{
 					_history.serverEvents.Clear();
 					_history.serverLogs.Clear();
-					
+
 					serverLogs.BuildView(serverLogProvider, true);
 					serverEvents.BuildView(serverEventsProvider, true);
 				}
@@ -53,14 +53,14 @@ namespace Beamable.Editor.BeamCli.UI
 					service.KillServer();
 				}
 			});
-			
+
 			EditorGUILayout.BeginHorizontal();
 			{
 				GUILayout.Label("Server Ping", EditorStyles.boldLabel, new GUILayoutOption[]
 				{
 					GUILayout.ExpandWidth(false)
 				});
-				
+
 				GUILayout.Label("(readonly)", EditorStyles.miniLabel, new GUILayoutOption[]
 				{
 					GUILayout.ExpandWidth(true),
@@ -73,18 +73,18 @@ namespace Beamable.Editor.BeamCli.UI
 				// GUI.enabled = false;
 				EditorGUI.indentLevel++;
 				EditorGUILayout.TextField("status", _history.latestPing.result.ToString());
-				
+
 				DrawJsonBlock(_history.latestPing);
-				
+
 				// GUI.enabled = true;
 				EditorGUI.indentLevel--;
 			}
 			EditorGUILayout.EndVertical();
-			
-			
+
+
 			EditorGUILayout.BeginVertical();
 			var hasProcess = !string.IsNullOrEmpty(process);
-			
+
 			if (hasProcess)
 			{
 				EditorGUILayout.LabelField("Running local server", EditorStyles.boldLabel);
@@ -99,7 +99,7 @@ namespace Beamable.Editor.BeamCli.UI
 
 
 			{
-				
+
 				EditorGUILayout.BeginHorizontal();
 				serverSplitter.BeginSplitView();
 
@@ -113,20 +113,20 @@ namespace Beamable.Editor.BeamCli.UI
 					GUILayout.Label($"Server Events ({_history.serverEvents.Count})", EditorStyles.boldLabel);
 
 					this.DrawLogWindow(serverEvents,
-					                   dataList: serverEventsProvider,
-					                   onClear: () =>
-					                   {
-						                   _history.serverEvents.Clear();
-					                   });
+									   dataList: serverEventsProvider,
+									   onClear: () =>
+									   {
+										   _history.serverEvents.Clear();
+									   });
 					EditorGUILayout.EndVertical();
 				}
-				
-				
+
+
 				EditorGUILayout.Space(15, false);
 				serverSplitter.Split(this);
 				EditorGUILayout.Space(5, false);
 
-				
+
 				{
 					EditorGUILayout.BeginVertical(GUILayout.ExpandWidth(true));
 					GUILayout.Label($"Server Logs ({_history.serverLogs.Count})", EditorStyles.boldLabel);
@@ -137,17 +137,17 @@ namespace Beamable.Editor.BeamCli.UI
 					}
 
 					this.DrawLogWindow(serverLogs,
-					                   dataList: serverLogProvider,
-					                   onClear: () =>
-					                   {
-						                   _history.serverLogs.Clear();
-					                   });
+									   dataList: serverLogProvider,
+									   onClear: () =>
+									   {
+										   _history.serverLogs.Clear();
+									   });
 					EditorGUILayout.EndVertical();
 				}
 
 				serverSplitter.EndSplitView();
 				EditorGUILayout.EndHorizontal();
-				
+
 
 			}
 

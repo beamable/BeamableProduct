@@ -13,7 +13,7 @@ public class DisableFederationCommandArgs : CommandArgs
 
 public class DisableFederationCommandOutput
 {
-	
+
 }
 
 public class DisableFederationCommand : AtomicCommand<DisableFederationCommandArgs, DisableFederationCommandOutput>
@@ -52,9 +52,10 @@ public class DisableFederationCommand : AtomicCommand<DisableFederationCommandAr
 
 		await api.PutMicroserviceFederationTraffic(new MicroserviceRegistrationRequest
 		{
-			serviceName = registration.serviceName, trafficFilterEnabled = enabled
+			serviceName = registration.serviceName,
+			trafficFilterEnabled = enabled
 		});
-		
+
 		res = await api.PostMicroserviceFederation(new MicroserviceRegistrationsQuery
 		{
 			serviceName = args.serviceName,

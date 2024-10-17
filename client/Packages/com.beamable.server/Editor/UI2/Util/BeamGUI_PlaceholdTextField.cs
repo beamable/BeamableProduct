@@ -7,8 +7,8 @@ namespace Beamable.Editor.Util
 	public partial class BeamGUI
 	{
 		private static GUIStyle placeholderStyle;
-		
-		
+
+
 		public static string PlaceholderTextField(Rect rect, string text, string placeholder, GUIStyle styles)
 		{
 			var nextText = EditorGUI.TextField(rect, text, styles);
@@ -25,12 +25,12 @@ namespace Beamable.Editor.Util
 						}
 					};
 				}
-				
+
 				EditorGUI.LabelField(rect, placeholder, placeholderStyle);
 			}
 			return nextText;
 		}
-		
+
 		public static string LayoutPlaceholderTextField(string text, string placeholder, GUIStyle styles, params GUILayoutOption[] options)
 		{
 			var rect = GUILayoutUtility.GetRect(new GUIContent(text), styles, options);

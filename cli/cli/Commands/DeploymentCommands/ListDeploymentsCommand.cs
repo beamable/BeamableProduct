@@ -39,7 +39,7 @@ public class ListDeploymentsCommand : AtomicCommand<ListDeploymentsCommandArgs, 
 	{
 		var api = args.Provider.GetService<IBeamoApi>();
 
-		
+
 		var manifestsResponse = await api.GetManifests(args.showArchived, args.Limit, args.Offset);
 		return new ListDeploymentsCommandOutput { deployments = manifestsResponse.manifests };
 	}

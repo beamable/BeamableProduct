@@ -17,7 +17,7 @@ public class WriteProjectSettingsCommandArgs : CommandArgs
 	public List<SettingInput> settings = new List<SettingInput>();
 	public List<string> settingsToDelete = new List<string>();
 	public bool skipBuild;
-	
+
 }
 
 public class SettingInput
@@ -28,7 +28,7 @@ public class SettingInput
 
 public class WriteProjectSettingsCommandOutput
 {
-	
+
 }
 
 public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCommandArgs, WriteProjectSettingsCommandOutput>
@@ -45,31 +45,31 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 		AddArgument(new Argument<string>("beamoId", "The BeamoId to write the settings for"),
 			(args, i) => args.beamoId = i);
 
-		
+
 		var skipBuildOption = new Option<bool>(
-			name: "--skip-build", 
+			name: "--skip-build",
 			description: "If options are modified, the project needs to be re-built so that the " +
-			             "embedded resource is available on the next execution of the service. " +
-		                 "However, this build operation may be skipped when this option is set");
+						 "embedded resource is available on the next execution of the service. " +
+						 "However, this build operation may be skipped when this option is set");
 		skipBuildOption.AddAlias("--skip");
 		skipBuildOption.AddAlias("-s");
 		AddOption(skipBuildOption, (args, i) => args.skipBuild = i);
-		
+
 		var deleteOption = new Option<List<string>>("--delete-key", "The keys of the settings to be deleted. If the key is also set in a --key option, the key will not be deleted");
 		deleteOption.AddAlias("-d");
 		deleteOption.AllowMultipleArgumentsPerToken = true;
 		deleteOption.Arity = ArgumentArity.OneOrMore;
-		
+
 		var keyOption = new Option<List<string>>("--key", "The keys of the settings. The count must match the count of the --value options");
 		keyOption.AddAlias("-k");
 		keyOption.AllowMultipleArgumentsPerToken = true;
 		keyOption.Arity = ArgumentArity.OneOrMore;
-		
+
 		var valueOption = new Option<List<string>>("--value", "The values of the settings. The count must match the count of the --key options");
 		valueOption.AddAlias("-v");
 		valueOption.AllowMultipleArgumentsPerToken = true;
 		valueOption.Arity = ArgumentArity.OneOrMore;
-		
+
 		AddOption(keyOption, (args, i) =>
 		{
 			// do nothing; the binding happens in the value callback
@@ -80,7 +80,7 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 		});
 		AddOption(valueOption, (args, binder, values) =>
 		{
-			
+
 			var keys = binder.ParseResult.GetValueForOption(keyOption);
 
 			if (keys.Count != values.Count)
@@ -94,7 +94,7 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 				args.settings.Add(setting);
 			}
 		});
-		
+
 	}
 
 	public override async Task<WriteProjectSettingsCommandOutput> GetResult(WriteProjectSettingsCommandArgs args)
@@ -106,9 +106,9 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 			settings: args.settings,
 			skipBuild: args.skipBuild);
 	}
-	
+
 	public static async Task<WriteProjectSettingsCommandOutput> WriteSettings(
-		CommandArgs args, 
+		CommandArgs args,
 		string beamoId,
 		List<string> settingsToDelete,
 		List<SettingInput> settings,
@@ -124,12 +124,12 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 		var subPath = Path.Combine("temp", "localDev");
 		var localDevFolder = Path.GetFullPath(config.GetConfigPath(subPath));
 		Directory.CreateDirectory(localDevFolder);
-		
+
 		var imports = FindLocalDevImports(localDevFolder, http.Metadata.msbuildProject);
 		if (!TryFindExistingXmlSettings(imports, beamoId, out var docInfo))
 		{
 			// there is no existing ItemGroup for the given service, so we need to create one...
-			
+
 			if (imports.Count == 0)
 			{
 				// there were no files at all, so we need to create one
@@ -137,7 +137,7 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 				CreateBlankProjectFile(newProjectPath);
 				imports = new List<string> { newProjectPath };
 			}
-			
+
 			var file = imports[0];
 			if (!TryLoadDocument(file, out var doc, out var projectNode))
 			{
@@ -160,7 +160,7 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 
 			property.Remove();
 		}
-		
+
 		// add or set all the properties we do want
 		foreach (var setting in settings)
 		{
@@ -186,7 +186,7 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 		}
 
 		{ // build the project, otherwise the newly applied settings won't appear unless the user specifically does a `dotnet run` ahead of time.
-          //  but IDEs (like Rider) won't do that, and won't realize that the csproj file has a meaningful change. 
+		  //  but IDEs (like Rider) won't do that, and won't realize that the csproj file has a meaningful change. 
 			var subArgs = args.Create<BuildProjectCommandArgs>();
 			Log.Information("Building project to apply settings...");
 			await ProjectService.WatchBuild(subArgs, new ServiceName(beamoId), ProjectService.BuildFlags.DisableClientCodeGen, report =>
@@ -274,30 +274,30 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 		return itemGroup;
 	}
 
-	static void AddNewLineAndSpace(XElement element, int extraCount=0)
+	static void AddNewLineAndSpace(XElement element, int extraCount = 0)
 	{
 		element.Add(new XText(Environment.NewLine));
 		AddSpace(element, extraCount);
 	}
-	
+
 	static void AddNewLine(XElement element)
 	{
 		element.Add(new XText(Environment.NewLine));
 	}
 
-	static void AddSpace(XElement element, int extraCount=0)
+	static void AddSpace(XElement element, int extraCount = 0)
 	{
 		element.Add(new XText(new string('\t', extraCount + element.AncestorsAndSelf().Count())));
 	}
 
-	
+
 	static void CreateBlankProjectFile(string path)
 	{
 		var text = @"<Project>
 </Project>";
 		File.WriteAllText(path, text);
 	}
-	
+
 	/// <summary>
 	/// Given a set of possible import projects, try to find the first project that has an ItemGroup for the given beamoId.
 	/// </summary>
@@ -338,19 +338,19 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 		{
 			return false;
 		}
-		
+
 		foreach (var node in rootNode.Nodes())
 		{
 			// the node must be an element
 			if (!(node is XElement element)) continue;
-			
+
 			// and it must be an item group
 			if (element.Name != "ItemGroup") continue;
 
 			// and it must have a label in the correct format for the given BeamoId
 			var hasMatchingLabel = element.Attribute("Label")?.Value.Contains(CliConstants.BeamableSettingLabel(beamoId)) ?? false;
 			if (!hasMatchingLabel) continue;
-			
+
 			// if all that is true, then we've found the magic item group!!!
 			output.Item2 = element;
 			return true;
@@ -366,7 +366,7 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 		{
 			// the node must be an XElement
 			if (!(node is XElement element)) continue;
-			
+
 			// and the type must be BeamableSetting
 			if (element.Name != CliConstants.PROJECT_BEAMABLE_SETTING) continue;
 
@@ -391,7 +391,7 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 		{
 			property.Attribute("ValueTypeHint")?.Remove();
 		}
-		
+
 		var valueProp = property.Attribute("Value");
 		if (valueProp != null)
 		{
@@ -406,7 +406,7 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 			{
 				// add the value
 				AddNewLineAndSpace(property);
-				property.Add(new XElement("Value"){ Value = setting.value });
+				property.Add(new XElement("Value") { Value = setting.value });
 				AddNewLineAndSpace(property, -1);
 			}
 			else

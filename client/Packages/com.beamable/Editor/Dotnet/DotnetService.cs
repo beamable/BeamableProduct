@@ -169,7 +169,7 @@ namespace Beamable.Editor.Dotnet
 				Debug.LogException(e);
 				throw;
 			}
-			
+
 			return _resultBuffer;
 		}
 

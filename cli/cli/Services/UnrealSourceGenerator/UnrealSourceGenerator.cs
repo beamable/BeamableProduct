@@ -182,13 +182,13 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// Typically, this is the same as <see cref="headerFileOutputPath"/>. However, for microservice clients we remove the "Source/" part of the path.
 	/// </summary>
 	public static string includeStatementPrefix = "BeamableCore/Public/";
-	
+
 	/// <summary>
 	/// Set this before calling <see cref="Generate"/> when you want to describe a prefix to add before the path to the autogen folder in include statements.
 	/// Typically, this is the same as <see cref="blueprintHeaderFileOutputPath"/>. However, for microservice clients we remove the "Source/" part of the path.
 	/// </summary>
 	public static string blueprintIncludeStatementPrefix = "BeamableCoreBlueprintNodes/Public/BeamFlow/ApiRequest/";
-	
+
 	/// <summary>
 	/// Set this before calling <see cref="Generate"/> when you want to control where the AutoGen folder will be created.
 	/// It can be the same as <see cref="cppFileOutputPath"/>.
@@ -1969,7 +1969,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 		public bool ContainsAnySemanticType() => UNREAL_ALL_SEMTYPES_NAMESPACED_NAMES.Any(AsStr.Contains);
 
 		public bool IsUnrealJson() => AsStr.StartsWith(UNREAL_JSON);
-		
+
 		#endregion
 	}
 
@@ -2062,7 +2062,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 			case (_, _, _, _) when isArbitraryJsonObject:
 				return new UnrealType(nonOverridenType = UNREAL_JSON);
-			
+
 			// Handle replacement types (types that we replace by hand-crafted types inside the SDK)
 			case var (_, _, referenceId, _) when !string.IsNullOrEmpty(referenceId) && context.ReplacementTypes.TryGetValue(referenceId, out var replacementTypeInfo):
 			{
@@ -2492,7 +2492,7 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 			if (unrealType.IsUnrealJson())
 				return @"#include ""Dom/JsonObject.h""";
-			
+
 			if (context.ReplacementTypesIncludes.TryGetValue(unrealType, out var replacementTypeInclude))
 				return replacementTypeInclude;
 		}
