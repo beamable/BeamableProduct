@@ -418,9 +418,8 @@ namespace Beamable.Api
 			{
 				try
 				{
-					
 					var analytics = _provider.GetService<IAnalyticsTracker>();
-					var userId = _provider.GetService<IPlatformService>().User.id;
+					var userId = _provider.GetService<IUserContext>().UserId;
 					var settings = _provider.GetService<ITokenEventSettings>();
 					var oldToken = Token;
 					if (settings.EnableTokenAnalytics)
