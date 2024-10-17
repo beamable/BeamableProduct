@@ -102,7 +102,7 @@ namespace Beamable.Editor.Dotnet
 				process.StartInfo.Arguments = $"-c '{command}'";
 #else
 				process.StartInfo.FileName = "powershell.exe";
-				process.StartInfo.Arguments = "-ExecutionPolicy Bypass -File \"" + DotnetInstallScriptPath + $"\" -InstallDir \"{DOTNET_LIBRARY_PATH}\" -NoPath -Channel {version}"; //  "/C " + command + " > " + commandoutputfile + "'"; // TODO: I haven't tested this since refactor.
+				process.StartInfo.Arguments = "-ExecutionPolicy Bypass -File \"" + DotnetInstallScriptPath + $"\" -InstallDir \"{DOTNET_LIBRARY_PATH}\" -NoPath -Version {version}"; //  "/C " + command + " > " + commandoutputfile + "'"; // TODO: I haven't tested this since refactor.
 #endif
 				// Configure the process using the StartInfo properties.
 				process.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal;
