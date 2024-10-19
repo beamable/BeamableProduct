@@ -10,7 +10,7 @@ namespace Beamable.Server.Editor
 	{
 		static PackageAvailability()
 		{
-			BeamablePackages.ProvideServerWindow(UsamWindow.Init);
+			BeamablePackages.ProvideServerWindow(UsamWindow2.Init);
 		}
 	}
 }

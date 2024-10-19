@@ -74,13 +74,17 @@ namespace Beamable.Editor.BeamCli
 			
 			var initCommand = Command.Init(args);
 			await initCommand.Run();
-
-
+			
 			var linkCommand = Command.ProjectAddUnityProject(new ProjectAddUnityProjectArgs
 			{
 				path = "."
 			});
-			await linkCommand.Run();
+			linkCommand.OnError(cb =>
+			{
+				Debug.LogError("Unable to register Unity project with local CLI project." + cb.data.message);
+			});
+			var _ = linkCommand.Run();
+			// await linkCommand.Run();
 		}
 	}
 }

@@ -18,7 +18,7 @@ namespace Beamable.Editor.BeamCli.UI
 		Overrides
 	}
 	
-	public partial class BeamCliWindow : BeamEditorWindow<BeamCliWindow>
+	public partial class BeamCliWindow : BeamEditorWindow<BeamCliWindow>, IDelayedActionWindow
 	{
 		private BeamWebCliCommandHistory _history;
 
@@ -146,6 +146,11 @@ namespace Beamable.Editor.BeamCli.UI
 					GUILayout.Label("There is no tab implemented yet!");
 					break;
 			}
+		}
+
+		public void AddDelayedAction(Action act)
+		{
+			delayedActions.Add(act);
 		}
 	}
 }

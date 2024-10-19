@@ -60,16 +60,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_realmButton = Root.Q<RealmButtonVisualElement>("realmButton");
 			_realmButton.Refresh();
-
-			_servicesFilter = Root.Q<Button>("servicesFilter");
-			_servicesFilter.tooltip = Constants.Tooltips.Microservice.FILTER;
-			_servicesFilterLabel = _servicesFilter.Q<Label>();
-			_servicesFilter.clickable.clicked -= HandleServicesFilterButter;
-			_servicesFilter.clickable.clicked += HandleServicesFilterButter;
-			OnNewServicesDisplayFilterSelected -= UpdateServicesFilterText;
-			OnNewServicesDisplayFilterSelected += UpdateServicesFilterText;
-			UpdateServicesFilterText(_filter);
-			_servicesFilter.visible = true;
 		}
 
 		void UpdateServicesFilterText(ServicesDisplayFilter filter)
@@ -94,16 +84,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			var popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
 
-			var content = new ServiceFilterDropdownVisualElement(_filter);
-			content.Refresh();
-			var wnd = BeamablePopupWindow.ShowDropdown("Select", popupWindowRect, new Vector2(150, 100), content);
-			content.OnNewServicesDisplayFilterSelected += filter =>
-			{
-				wnd.Close();
-				_filter = filter;
-				UpdateServicesFilterText(_filter);
-				OnNewServicesDisplayFilterSelected?.Invoke(filter);
-			};
+			// var content = new ServiceFilterDropdownVisualElement(_filter);
+			// content.Refresh();
+			// var wnd = BeamablePopupWindow.ShowDropdown("Select", popupWindowRect, new Vector2(150, 100), content);
+			// content.OnNewServicesDisplayFilterSelected += filter =>
+			// {
+			// 	wnd.Close();
+			// 	_filter = filter;
+			// 	UpdateServicesFilterText(_filter);
+			// 	OnNewServicesDisplayFilterSelected?.Invoke(filter);
+			// };
 		}
 
 		public void RefreshFiltering()

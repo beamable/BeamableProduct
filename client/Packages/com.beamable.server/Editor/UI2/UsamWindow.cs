@@ -145,9 +145,6 @@ namespace Beamable.Editor.Microservice.UI2
 				case ServicesDisplayFilter.Storages:
 					services = codeService.ServiceDefinitions.Where(sd => sd.ServiceType == ServiceType.StorageObject).ToList();
 					break;
-				case ServicesDisplayFilter.Archived:
-					services = codeService.ServiceDefinitions.Where(sd => !sd.ShouldBeEnabledOnRemote).ToList();
-					break;
 				default:
 					throw new ArgumentOutOfRangeException(nameof(filter), filter, null);
 			}

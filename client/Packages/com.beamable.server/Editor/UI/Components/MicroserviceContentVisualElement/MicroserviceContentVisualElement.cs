@@ -338,8 +338,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 					return !isArchived && type == ServiceType.MicroService;
 				case ServicesDisplayFilter.Storages:
 					return !isArchived && type == ServiceType.StorageObject;
-				case ServicesDisplayFilter.Archived:
-					return isArchived;
 				default:
 					return false;
 			}

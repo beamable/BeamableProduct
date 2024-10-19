@@ -8,10 +8,6 @@
 
     <engine:VisualElement name="mainVisualElement">
         <beamable:LabeledCheckboxVisualElement flip="true" name="selectAllLabeledCheckbox" label="Select All"/>
-        <engine:Button name="servicesFilter" class="boundedButton">
-            <engine:Image name="dropDownIcon"/>
-            <engine:Label text="Filter" class="buttonText"/>
-        </engine:Button>
         <beamable:RealmButtonVisualElement name="realmButton"/>
     </engine:VisualElement>
 

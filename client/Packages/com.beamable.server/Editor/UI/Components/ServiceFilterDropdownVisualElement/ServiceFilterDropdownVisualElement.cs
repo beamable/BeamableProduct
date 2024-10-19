@@ -29,7 +29,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			AddButton(ServicesDisplayFilter.AllTypes);
 			AddButton(ServicesDisplayFilter.Microservices);
 			AddButton(ServicesDisplayFilter.Storages);
-			AddButton(ServicesDisplayFilter.Archived);
 		}
 
 		void AddButton(ServicesDisplayFilter filter)

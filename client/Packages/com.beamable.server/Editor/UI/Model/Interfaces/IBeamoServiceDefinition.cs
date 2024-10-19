@@ -29,12 +29,7 @@ namespace Beamable.Editor.UI.Model
 		/// The type this service represents.
 		/// </summary>
 		ServiceType ServiceType { get; set; }
-
-		/// <summary>
-		/// This is what we need for deployment.
-		/// </summary>
-		public string ImageId { get; set; }
-
+		
 		/// <summary>
 		/// Whether or not this service should be enabled when we deploy remotely.
 		/// </summary>

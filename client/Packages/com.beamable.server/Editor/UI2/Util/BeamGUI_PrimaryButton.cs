@@ -7,7 +7,22 @@ namespace Beamable.Editor.Util
 
 	public partial class BeamGUI
 	{
-		
+		private static GUIStyle _primaryButtonStyle = null;
+		public static bool PrimaryButton(GUIContent content)
+		{
+			if (_primaryButtonStyle == null)
+			{
+				_primaryButtonStyle = BeamGUI.ColorizeButton(loadingPrimary);
+				_primaryButtonStyle.padding = new RectOffset(6, 6, 6, 6);
+			}
+
+			return CustomButton(content, _primaryButtonStyle);
+		}
+
+		public static bool CancelButton()
+		{
+			return GUILayout.Button("Cancel", new GUIStyle(GUI.skin.button) {padding = new RectOffset(6, 6, 6, 6)});
+		}
 		
 		public static bool CustomButton(GUIContent content, GUIStyle style)
 		{

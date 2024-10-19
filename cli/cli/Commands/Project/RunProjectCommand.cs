@@ -366,17 +366,18 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			proc.BeginErrorReadLine();
 			proc.BeginOutputReadLine();
 			
+			
 			if (runFlags.HasFlag(ProjectService.RunFlags.Detach))
 			{
 				// wait for the progress to hit 1.
-				while (!proc.HasExited && Math.Abs(currentProgress - 1) > .001f)
+				while (!proc.HasExited && Math.Abs(currentProgress - 1) > .001f && !args.Lifecycle.IsCancelled)
 				{
 					await Task.Delay(10);
 				}
 			}
 			else
 			{
-				await cts.Task;
+				await cts.Task.WaitAsync(args.Lifecycle.CancellationToken);
 			}
 			
 			if (proc.HasExited && proc.ExitCode != 0)

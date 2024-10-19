@@ -194,7 +194,6 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 				
 				if (_primaryButtonStyle == null)
 				{
-					
 					_primaryButtonStyle = BeamGUI.ColorizeButton(loadingPrimary);
 					_primaryButtonStyle.padding = new RectOffset(6, 6, 6, 6);
 				}

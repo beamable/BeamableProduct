@@ -364,7 +364,6 @@ namespace Beamable.Editor.UI.Model
 	{
 		AllTypes,
 		Microservices,
-		Storages,
-		Archived
+		Storages
 	}
 }

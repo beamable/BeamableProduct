@@ -1,0 +1,228 @@
+using Beamable.Common.Semantics;
+using Beamable.Editor.Util;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEditor;
+using UnityEngine;
+
+namespace Beamable.Editor.Microservice.UI2
+{
+	public partial class UsamWindow2
+	{
+		// public bool isCreatingService = false;
+		public string newServiceName = "";
+		public List<string> newItemDependencies = new List<string>();
+
+		private const string textCreateNewServiceFirst =
+			"To get started, you should create a new Beamable Microservice! " +
+			"Microservices are dotnet projects that you can use to create cloud code " +
+			"for your game. The source code will be saved to your Unity project folder. " +
+			"\n\n" +
+			"Every Microservice needs a name. ";
+		
+		private const string textCreateNewStorageFirst =
+			"A Storage Object is a Mongo database you can use to manage custom game " +
+			"state. The database is represented by a local dotnet project that will " +
+			"be saved to your local Unity project folder. " +
+			"\n\n" +
+			"Every storage object needs a name.";
+
+		private const string textCreateNewService = 
+			"Additional Microservices are best when you want to group your cloud code " +
+			"by how often you expect to be invoked. " +
+			"\n\n" +
+			"Enter a name for the new Microservice. ";
+		
+		private const string textCreateNewStorage = 
+			"Additional Storage Objects are best when you need to completely segregate " +
+			"data. " +
+			"\n\n" +
+			"Enter a name for the new Storage Object. ";
+
+		private const string textSelectStorageDeps = 
+			"Microservices may depend on Storage Objects. A Storage Objct is a mongo " +
+			"database you can use to manage custom game state. " +
+			"\n\n" +
+			"[Optional] Select which Storage Objects should be linked to this Microservice. ";
+
+		private const string textSelectServiceDeps = 
+			"Storage Objects are only accessible by a Microservice. " +
+			"\n\n" +
+			"[Optional] Select which Microservices should be linked to this Storage Object. ";
+
+		
+		void DrawNewStorage()
+		{
+			var firstStorage = usam?.latestManifest?.storages?.Count == 0;
+			var deps = usam?.latestManifest?.services?.Select(x => x.beamoId).ToList();
+			DrawNew(noun: "Storage", 
+			        description: firstStorage ? textCreateNewStorageFirst : textCreateNewStorage,
+			        depDescription: textSelectServiceDeps,
+			        availableDependencyBeamoIds: deps,
+			        onCreate: usam.CreateStorage);
+		}
+
+		void DrawNewService()
+		{
+			var firstService = usam?.latestManifest?.services?.Count == 0;
+			var deps = usam?.latestManifest?.storages?.Select(x => x.beamoId).ToList();
+			
+			DrawNew(noun: "Service", 
+				description: firstService ? textCreateNewServiceFirst : textCreateNewService,
+				depDescription: textSelectStorageDeps,
+				availableDependencyBeamoIds: deps,
+				onCreate: usam.CreateService);
+			
+		}
+		
+		
+		void DrawNew(string noun, 
+		             string description, 
+		             string depDescription, 
+		             List<string> availableDependencyBeamoIds,
+		             Action<string, List<string>> onCreate)
+		{
+			{
+				EditorGUILayout.BeginVertical(new GUIStyle(EditorStyles.helpBox)
+				{
+					padding = new RectOffset(12, 12, 12, 12),
+					margin = new RectOffset(10, 10, 10, 10)
+				});
+
+				{ // describe making a new thingy...
+					EditorGUILayout.TextArea(description, new GUIStyle(EditorStyles.label) {wordWrap = true});
+				}
+				
+				EditorGUILayout.Space(4, false);
+				newServiceName =
+					BeamGUI.LayoutPlaceholderTextField(newServiceName, $"[{noun} Name]", EditorStyles.textField);
+
+				
+				var isValidServiceName = true;
+				string newServiceNameError = null;
+
+				{ // validate the service name :( 
+					try
+					{
+						// good heckin' this is a crummy thing.
+						var _ = new ServiceName(newServiceName);
+					}
+					catch (Exception ex)
+					{
+						newServiceNameError = ex.Message;
+					}
+
+					if (newServiceName.Length == 0)
+					{
+						newServiceNameError = "";
+					}
+					// TODO: add validations for existing services
+					
+					isValidServiceName = newServiceNameError == null;
+
+					if (!isValidServiceName && !string.IsNullOrEmpty(newServiceNameError))
+					{
+						var errorStyle = new GUIStyle(EditorStyles.miniLabel);
+						errorStyle.wordWrap = true;
+						errorStyle.active.textColor = errorStyle.focused.textColor = errorStyle.hover.textColor = errorStyle.normal.textColor = new Color(1f, .3f, .25f, 1);
+						EditorGUILayout.SelectableLabel($"{newServiceNameError.Replace(nameof(ServiceName), $"{noun}Name")}", errorStyle);
+					}
+				}
+
+				
+				{ // draw the dependencies 
+					if (availableDependencyBeamoIds.Count > 0)
+					{
+						EditorGUILayout.TextArea(depDescription, new GUIStyle(EditorStyles.label)
+						{
+							wordWrap = true,
+							padding = new RectOffset(0, 0, 12, 4)
+						});
+
+						EditorGUILayout.BeginVertical(new GUIStyle
+						{
+							padding = new RectOffset(6, 12, 4, 4)
+						});
+
+						var labelStyle = new GUIStyle(EditorStyles.label)
+						{
+							alignment = TextAnchor.MiddleLeft,
+							padding = new RectOffset(0, 0, 4, 4),
+						};
+						for (var i = 0; i < availableDependencyBeamoIds.Count; i++)
+						{
+							var depBeamoId = availableDependencyBeamoIds[i];
+					
+							EditorGUILayout.BeginHorizontal();
+							
+							var labelRect = GUILayoutUtility.GetRect(new GUIContent(depBeamoId), labelStyle);
+							var rowRect = new Rect(labelRect.x - 8, labelRect.y, labelRect.width + 39, 24);
+							EditorGUI.DrawRect(rowRect, new Color(0, 0, 0, (i%2 == 0) ? .1f : .2f));
+							EditorGUI.LabelField(labelRect, depBeamoId, labelStyle);
+
+							var isDependency = newItemDependencies.Contains(depBeamoId);
+							var shouldBeDependency = BeamGUI.LayoutToggle(isDependency, toggleSize:16, yShift: 6);
+
+							if (shouldBeDependency && !isDependency)
+							{
+								newItemDependencies.Add(depBeamoId);
+							} else if (!shouldBeDependency && isDependency)
+							{
+								newItemDependencies.Remove(depBeamoId);
+							}
+							
+							EditorGUILayout.EndHorizontal();
+						}
+						EditorGUILayout.EndVertical();
+					}
+				}
+
+				{ // draw the buttons
+					EditorGUILayout.BeginHorizontal(new GUIStyle
+					{
+						margin = new RectOffset(0, 0, 12, 12)
+					});
+
+					EditorGUILayout.Space(5, true);
+					EditorGUILayout.Space(5, true);
+
+					var clickedCancel = false;
+					if (cards.Count > 0)
+					{
+						// can only cancel if there are other services to look at. Otherwise; whats the point?
+						clickedCancel = BeamGUI.CancelButton();
+					}
+
+					GUI.enabled = isValidServiceName;
+					var clickedCreate = BeamGUI.PrimaryButton(new GUIContent($"Create {noun}"));
+					GUI.enabled = true;
+					if (clickedCancel)
+					{
+						newServiceName = "";
+						state = WindowState.NORMAL;
+					}
+
+					if (clickedCreate)
+					{
+						AddDelayedAction(() =>
+						{
+							onCreate?.Invoke(newServiceName, newItemDependencies);
+							selectedBeamoId = newServiceName;
+							newServiceName = "";
+							newItemDependencies.Clear();
+							state = WindowState.NORMAL;
+						});
+					}
+					
+					EditorGUILayout.EndHorizontal();
+
+				}
+				
+			
+				EditorGUILayout.EndVertical();
+			}
+
+		}
+	}
+}

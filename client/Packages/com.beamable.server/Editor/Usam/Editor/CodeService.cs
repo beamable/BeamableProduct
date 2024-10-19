@@ -11,9 +11,11 @@ using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.UI.Components;
+using MongoDB.Driver;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Data;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -75,12 +77,7 @@ namespace Beamable.Server.Editor.Usam
 		public async Promise Init()
 		{
 			await BeamEditorContext.Default.OnReady;
-
-			while (BeamEditorContext.Default.Requester == null || BeamEditorContext.Default.Requester.Token == null)
-			{
-				await Task.Delay(500);
-			}
-
+			
 			//Wait for the CLI to be initialized
 			var cli = BeamEditorContext.Default.ServiceScope.GetService<BeamCli>();
 			await cli.OnReady;
@@ -93,10 +90,7 @@ namespace Beamable.Server.Editor.Usam
 			// await SetPropertiesFile();
 
 			UsamLogger.Log("Saving all libraries referenced by services");
-			await SaveReferencedLibraries();
-
-			await RefreshServices();
-			UsamLogger.Log($"There are {ServiceDefinitions.Count} Service definitions");
+			// await SaveReferencedLibraries();
 			
 			var _ = CheckMicroserviceStatus();
 			ConnectToLogs();
@@ -370,35 +364,9 @@ namespace Beamable.Server.Editor.Usam
 			Libraries = allDependencies.Distinct().ToList();
 		}
 
-		public async Promise RefreshServices()
+		public Promise RefreshServices()
 		{
-			ServiceDefinitions.Clear();
-			Promise finishedPopulatingServices = new Promise();
-
-			try
-			{
-				UsamLogger.Log("refresh services from CLI start");
-				//Get remote only information from the CLI
-				var psRemote = _cli.ServicesPs(new ServicesPsArgs() { json = false});
-				psRemote.OnStreamServiceListResult(cb =>
-				{
-					IsDockerRunning = cb.data.IsDockerRunning;
-					UsamLogger.Log($"Found {cb.data.BeamoIds.Count} services");
-					PopulateDataWithRemote(cb.data);
-					finishedPopulatingServices.CompleteSuccess();
-				});
-				await psRemote.Run();
-				UsamLogger.Log("refresh services from CLI end");
-			}
-			catch
-			{
-				IsDockerRunning = false;
-				UsamLogger.Log("ERROR: Could not list services, skip", true);
-				return;
-			}
-
-			await finishedPopulatingServices;
-			OnServicesRefresh?.Invoke(ServiceDefinitions);
+			throw new NotImplementedException();
 		}
 
 		private void PopulateDataWithRemote(BeamServiceListResult objData)
@@ -425,6 +393,11 @@ namespace Beamable.Server.Editor.Usam
 									 objData.ShouldBeEnabledOnRemote[i], objData.ExistInLocal[i], objData.Dependencies[i], objData.UnityAssemblyDefinitions[i]);
 				UsamLogger.Log($"Handling {name} ended");
 			}
+		}
+
+		private void AddMicroserviceDefinition(string name)
+		{
+			
 		}
 
 		private void AddServiceDefinition(string name, ServiceType type, string assetProjectPath, BeamoServiceStatus status = BeamoServiceStatus.Unknown,
@@ -780,6 +753,46 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 
+		private bool TryGetServiceDefinition(string beamoId, out IBeamoServiceDefinition definition)
+		{
+			definition = ServiceDefinitions.FirstOrDefault(x => x.BeamoId == beamoId);
+			return definition != null;
+		}
+
+		private IBeamoServiceDefinition CreateDefinition(BeamServiceStatus status)
+		{
+			var serviceType = ServiceType.MicroService;
+			switch (status.serviceType)
+			{
+				case "service":
+					serviceType = ServiceType.MicroService;
+					break;
+				case "storage":
+					serviceType = ServiceType.StorageObject;
+					break;
+				default:
+					throw new InvalidOperationException($"invalid service type=[{status.serviceType}]");
+			}
+
+			var def = new BeamoServiceDefinition
+			{
+				ServiceInfo = new ServiceInfo
+				{
+					name = status.service, projectPath = null, // TODO:
+				},
+				ServiceType = serviceType,
+				HasLocalSource = true,
+				AssemblyDefinitionsNames = new List<string>(),
+				// ShouldBeEnabledOnRemote = 
+			};
+			return def;
+		}
+
+		private void UpdateDefinition(IBeamoServiceDefinition definition, BeamServiceStatus status)
+		{
+			
+		}
+
 		public async Promise CheckMicroserviceStatus()
 		{
 			var projectPs = _cli.ProjectPs(new ProjectPsArgs()
@@ -787,18 +800,44 @@ namespace Beamable.Server.Editor.Usam
 				watch = true
 			}).OnStreamCheckStatusServiceResult(cb =>
 			{
-				// the callback contains the entire current set of services... 
-				foreach (var def in ServiceDefinitions)
+				// construct the set of ServiceDefinitinos TODO:
+				foreach (var status in cb.data.services)
 				{
-					def.Builder.IsRunning = false;
-					var beamoId = def.BeamoId;
-					if (cb.data.TryGetAvailableRoutesForService(beamoId, out var routes))
+					if (!TryGetServiceDefinition(status.service, out var definition))
 					{
-						var isLocal = routes.HasAnyLocalInstances();
-						def.Builder.IsRunning = isLocal;
-						def.IsRunningOnRemote = routes.HasAnyRemoteInstances() ? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
+						definition = CreateDefinition(status);
+						ServiceDefinitions.Add(definition);
+					}
+					else
+					{
+						UpdateDefinition(definition, status);
+					}
+					
+					switch (status.serviceType)
+					{
+						case "service":
+							
+							break;
+						case "storage":
+							break;
+						default:
+							throw new InvalidOperationException(
+								"Unknown service type received from project-ps command");
 					}
 				}
+				
+				// the callback contains the entire current set of services... 
+				// foreach (var def in ServiceDefinitions)
+				// {
+				// 	def.Builder.IsRunning = false;
+				// 	var beamoId = def.BeamoId;
+				// 	if (cb.data.TryGetAvailableRoutesForService(beamoId, out var routes))
+				// 	{
+				// 		var isLocal = routes.HasAnyLocalInstances();
+				// 		def.Builder.IsRunning = isLocal;
+				// 		def.IsRunningOnRemote = routes.HasAnyRemoteInstances() ? BeamoServiceStatus.Running : BeamoServiceStatus.NotRunning;
+				// 	}
+				// }
 			}).OnError(cb =>
 			{
 				Debug.LogError($"Error occured while listening for Microservice status updates. Message=[{cb.data.message}] CliStack=[{cb.data.stackTrace}]");
@@ -901,7 +940,13 @@ namespace Beamable.Server.Editor.Usam
 			});
 			await command.Run();
 
-			await RefreshServices();
+			// TODO: add the service definition. we can fake it, because we have all the details!
+			var nextDefinition = new BeamoServiceDefinition
+			{
+				ServiceType = ServiceType.MicroService,
+				AssemblyDefinitionsNames = new List<string>(),
+				Dependencies = dependencies?.Select(x => x.BeamoId)?.ToList() ?? new List<string>(),
+			};
 
 			var definition = ServiceDefinitions.FirstOrDefault(def => def.BeamoId == serviceName);
 

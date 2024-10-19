@@ -163,10 +163,9 @@ namespace Beamable.Editor.Microservice.UI2.Models
 		{
 
 			var existsOnRemote = _serviceDefinition.IsRunningOnRemote == BeamoServiceStatus.Running;
-			var imageSuffix = !string.IsNullOrWhiteSpace(_serviceDefinition.ImageId) ? string.Empty : " (Build first)";
 			var localCategory = _serviceDefinition.IsRunningLocally ? "Local" : "Local (not running)";
 			var remoteCategory = existsOnRemote ? "Cloud" : "Cloud (not deployed)";
-			evt.menu.BeamableAppendAction($"Reveal build directory{imageSuffix}", pos =>
+			evt.menu.BeamableAppendAction($"Reveal build directory", pos =>
 			{
 				var full = Path.GetFullPath(_serviceDefinition.ServiceInfo.projectPath);
 				EditorUtility.RevealInFinder(full);
