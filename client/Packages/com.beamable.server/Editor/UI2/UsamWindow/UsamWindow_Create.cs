@@ -60,7 +60,14 @@ namespace Beamable.Editor.Microservice.UI2
 			        description: firstStorage ? textCreateNewStorageFirst : textCreateNewStorage,
 			        depDescription: textSelectServiceDeps,
 			        availableDependencyBeamoIds: deps,
-			        onCreate: usam.CreateStorage);
+			        onCreate: (name, deps) =>
+			        {
+				        CheckDocker("create a Storage Object", () =>
+				        {
+					        usam.CreateStorage(name, deps);
+				        }, out var cancelled);
+				        return !cancelled;
+			        });
 		}
 
 		void DrawNewService()
@@ -72,7 +79,11 @@ namespace Beamable.Editor.Microservice.UI2
 				description: firstService ? textCreateNewServiceFirst : textCreateNewService,
 				depDescription: textSelectStorageDeps,
 				availableDependencyBeamoIds: deps,
-				onCreate: usam.CreateService);
+				onCreate: (name, deps) =>
+				{
+					usam.CreateService(name, deps);
+					return true;
+				});
 			
 		}
 		
@@ -81,7 +92,7 @@ namespace Beamable.Editor.Microservice.UI2
 		             string description, 
 		             string depDescription, 
 		             List<string> availableDependencyBeamoIds,
-		             Action<string, List<string>> onCreate)
+		             Func<string, List<string>, bool> onCreate)
 		{
 			{
 				EditorGUILayout.BeginVertical(new GUIStyle(EditorStyles.helpBox)
@@ -207,11 +218,15 @@ namespace Beamable.Editor.Microservice.UI2
 					{
 						AddDelayedAction(() =>
 						{
-							onCreate?.Invoke(newServiceName, newItemDependencies);
-							selectedBeamoId = newServiceName;
-							newServiceName = "";
-							newItemDependencies.Clear();
-							state = WindowState.NORMAL;
+							var creationHappened = onCreate.Invoke(newServiceName, newItemDependencies);
+							if (creationHappened)
+							{
+								selectedBeamoId = newServiceName;
+								newServiceName = "";
+								newItemDependencies.Clear();
+								state = WindowState.NORMAL;
+							}
+							
 						});
 					}
 					

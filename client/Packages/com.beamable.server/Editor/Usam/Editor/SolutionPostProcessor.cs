@@ -14,6 +14,7 @@ namespace Beamable.Server.Editor.Usam
 	{
 		public static bool OnPreGeneratingCSProjectFiles()
 		{
+			
 			AssemblyUtil.Reload();
 			CsharpProjectUtil.GenerateAllReferencedAssemblies();
 			return false; // if we don't return false, then this methods PREVENTS Unity from generating csproj files what-so-ever.

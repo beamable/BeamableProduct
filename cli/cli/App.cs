@@ -12,6 +12,7 @@ using cli.Commands.Project.Deps;
 using cli.Content;
 using cli.Content.Tag;
 using cli.DeploymentCommands;
+using cli.DockerCommands;
 using cli.Docs;
 using cli.Dotnet;
 using cli.FederationCommands;
@@ -410,6 +411,11 @@ public class App
 
 		// beamo commands
 		Commands.AddRootCommand<ServicesCommand>();
+
+		Commands.AddSubCommand<DockerGroupCommand, CommandGroupArgs, ServicesCommand>();
+		Commands.AddSubCommand<DockerStatusCommand, DockerStatusCommandArgs, DockerGroupCommand>();
+		Commands.AddSubCommand<StartDockerCommand, StartDockerCommandArgs, DockerGroupCommand>();
+		
 		Commands.AddSubCommand<ServicesManifestsCommand, ServicesManifestsArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesListCommand, ServicesListCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesDeployCommand, ServicesDeployCommandArgs, ServicesCommand>();

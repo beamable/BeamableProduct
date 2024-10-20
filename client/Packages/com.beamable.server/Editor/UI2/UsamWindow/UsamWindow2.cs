@@ -17,6 +17,7 @@ namespace Beamable.Editor.Microservice.UI2
 		public static Texture iconService;
 		public static Texture iconStorage;
 		public static Texture iconOpenApi;
+		public static Texture iconSettings;
 		public static Texture iconOpenProject;
 		public static Texture iconMoreOptions;
 		public static Texture iconPlay;
@@ -103,12 +104,20 @@ namespace Beamable.Editor.Microservice.UI2
 					EditorResources.Load<Texture>(
 						"Packages/com.beamable.server/Editor/UI/Icons/MS not running without wifi.png", true);
 			}
-
+			
 			if (iconStorage == null)
 			{
 				iconStorage =
 					EditorResources.Load<Texture>("Packages/com.beamable.server/Editor/UI/Icons/SO running.png", true);
 			}
+			
+			
+			
+			if (iconSettings == null)
+			{
+				iconSettings = EditorGUIUtility.IconContent("Settings").image;
+			}
+
 
 			if (iconOpenApi == null)
 			{

@@ -90,7 +90,10 @@ namespace Beamable.Editor.Microservice.UI2
 				{
 					if (clickedRunToggle)
 					{
-						usam.ToggleRun(storage, status);
+						CheckDocker("start a Storage Object", () =>
+						{
+							usam.ToggleRun(storage, status);
+						}, out _);
 					}
 					
 					if (clickedOpenCode)

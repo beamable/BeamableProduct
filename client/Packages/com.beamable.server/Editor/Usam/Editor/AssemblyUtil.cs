@@ -40,12 +40,12 @@ namespace Beamable.Server.Editor.Usam
 				return;
 			}
 
-			var codeService = BeamEditorContext.Default.ServiceScope.GetService<CodeService>();
-			foreach (var definition in codeService.ServiceDefinitions)
+			var codeService = BeamEditorContext.Default.ServiceScope.GetService<UsamService>();
+			foreach (var definition in codeService.latestManifest.services)
 			{
-				foreach (var reference in definition.AssemblyDefinitionsNames)
+				foreach (var reference in definition.unityReferences)
 				{
-					if (!_nameToAssembly.TryGetValue(reference, out var assembly)) continue;
+					if (!_nameToAssembly.TryGetValue(reference.AssemblyName, out var assembly)) continue;
 					if (!CsharpProjectUtil.IsValidReference(assembly.name)) continue;
 					_referencedAssemblies.Add(assembly);
 					foreach (var subReference in GetDeeplyReferencedAssemblies(assembly))

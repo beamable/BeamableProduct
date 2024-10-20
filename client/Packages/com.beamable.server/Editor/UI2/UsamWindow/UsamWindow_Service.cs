@@ -44,7 +44,7 @@ namespace Beamable.Editor.Microservice.UI2
 				
 				// draw the background of the bar
 				const int toolbarHeight = 30;
-				const int buttonWidth = 40;
+				const int buttonWidth = 30;
 				var buttonBackgroundColor = new Color(.5f, .5f, .5f, .5f);
 
 				var lastRect = GUILayoutUtility.GetLastRect();
@@ -64,7 +64,7 @@ namespace Beamable.Editor.Microservice.UI2
 				                                     xOffset: (int)((buttonWidth * 3) * -.5f), // number of buttons to the right, split by half
 				                                     backgroundColor: isRunning ? primaryColor : buttonBackgroundColor,
 				                                     tooltip: isRunning ? "Shutdown the service " : "Start the service");
-				EditorGUILayout.Space(1, true);
+				EditorGUILayout.Space(5, true);
 				// GUI.enabled = true;
 
 				clickedOpenDocs = BeamGUI.HeaderButton(null, iconOpenApi,
@@ -90,7 +90,13 @@ namespace Beamable.Editor.Microservice.UI2
 				{
 					if (clickedRunToggle)
 					{
-						usam.ToggleRun(service, status);
+						if (service.storageDependencies.Count > 0)
+						{
+							CheckDocker("start a service with a Storage Object dependency", () =>
+							{
+								usam.ToggleRun(service, status);
+							}, out _);
+						}
 					}
 					
 					if (clickedOpenCode)

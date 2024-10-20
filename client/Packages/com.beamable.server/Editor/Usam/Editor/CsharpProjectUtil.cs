@@ -45,7 +45,7 @@ namespace Beamable.Server.Editor.Usam
 
     <!-- Project settings -->
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
         <ImplicitlyExpandNETStandardFacades>false</ImplicitlyExpandNETStandardFacades>
         <ImplicitlyExpandDesignTimeFacades>false</ImplicitlyExpandDesignTimeFacades>
         <EnableDefaultItems>false</EnableDefaultItems>

@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace Beamable.Server.Editor.Usam
@@ -30,15 +31,22 @@ namespace Beamable.Server.Editor.Usam
 		
 		private StorageHandle<UsamService> _handle;
 		private BeamCommands _cli;
-		private BeamableDispatcher _dispatcher;
+		public BeamableDispatcher _dispatcher;
 
 		public BeamShowManifestCommandOutput latestManifest = new BeamShowManifestCommandOutput{};
-		public List<BeamServiceStatus> _latestStatus;
+		public List<BeamServiceStatus> latestStatus;
+		public BeamDockerStatusCommandOutput latestDockerStatus;
 
 		public List<NamedLogView> _namedLogs = new List<NamedLogView>();
 		
 		[NonSerialized]
 		private ProjectPsWrapper _watchCommand;
+		
+		[NonSerialized]
+		private ServicesDockerStatusWrapper _listenDockerCommand;
+		
+		[NonSerialized]
+		public Promise receivedAnyDockerStateYet = new Promise();
 
 		[NonSerialized]
 		private Dictionary<string, ProjectLogsWrapper> _serviceToLogCommand =
@@ -52,7 +60,6 @@ namespace Beamable.Server.Editor.Usam
 
 		[NonSerialized]
 		private Promise _watchPromise;
-
 
 		private const string SERVICES_FOLDER = "BeamableServices/";
 		private const string SERVICES_SLN_PATH = SERVICES_FOLDER + "beamableServices.sln";
@@ -74,16 +81,18 @@ namespace Beamable.Server.Editor.Usam
 		{
 			_dispatcher = dispatcher;
 			_cli = cli;
+
+			// SolutionPostProcessor.OnPreGeneratingCSProjectFiles();
 		}
 
 		public bool TryGetStatus(string beamoId, out BeamServiceStatus status)
 		{
 			status = null;
-			for (var i = 0; i < _latestStatus.Count; i++)
+			for (var i = 0; i < latestStatus.Count; i++)
 			{
-				if (_latestStatus[i].service == beamoId)
+				if (latestStatus[i].service == beamoId)
 				{
-					status = _latestStatus[i];
+					status = latestStatus[i];
 					return true;
 				}
 			}
@@ -121,7 +130,128 @@ namespace Beamable.Server.Editor.Usam
 
 			latestManifest.services ??= new List<BeamManifestServiceEntry>();
 		}
+		
+		
+		
+		public async Promise SetMicroserviceChanges(string serviceName, List<AssemblyDefinitionAsset> assemblyDefinitions, List<string> dependencies)
+		{
+			var service = latestManifest.services.FirstOrDefault(s => s.beamoId == serviceName);
+			if (service == null)
+			{
+				throw new ArgumentException($"Invalid service name was passed: {serviceName}");
+			}
 
+			UsamLogger.Log($"Starting updating storage dependencies");
+			await UpdateServiceStoragesDependencies(service, dependencies);
+
+			await UpdateServiceReferences(service, assemblyDefinitions);
+
+			UsamLogger.Log($"Finished updating microservice [{serviceName}] data");
+		}
+		
+		public async Promise UpdateServiceStoragesDependencies(BeamManifestServiceEntry service, List<string> dependencies)
+		{
+			var serviceName = service.beamoId;
+			var currentDependencies = service.storageDependencies;
+
+			var dependenciesToRemove = currentDependencies.Where(dep => !dependencies.Contains(dep)).ToList();
+			var dependenciesToAdd = dependencies.Where(dep => !currentDependencies.Contains(dep)).ToList();
+
+			//TODO: can this be made asynchronous? not sure since all are changing the same csproj file
+
+			foreach (string dep in dependenciesToRemove)
+			{
+				UsamLogger.Log($"Removing dependency [{dep}] from service [{serviceName}]");
+				var removeCommand = _cli.ProjectDepsRemove(new ProjectDepsRemoveArgs()
+				{
+					microservice = serviceName, dependency = dep
+				});
+				await removeCommand.Run();
+			}
+
+			foreach (string dep in dependenciesToAdd)
+			{
+				UsamLogger.Log($"Adding dependency [{dep}] to service [{serviceName}]");
+				var addCommand = _cli.ProjectDepsAdd(new ProjectDepsAddArgs()
+				{
+					microservice = serviceName, dependency = dep
+				});
+				await addCommand.Run();
+			}
+		}
+		
+		public async Promise UpdateServiceReferences(BeamManifestServiceEntry service, List<AssemblyDefinitionAsset> assemblyDefinitions, bool shouldRefresh = true)
+		{
+			UsamLogger.Log($"Starting updating references");
+
+			var pathsList = new List<string>();
+			var namesList = new List<string>();
+			foreach (AssemblyDefinitionAsset asmdef in assemblyDefinitions)
+			{
+				namesList.Add(asmdef.name);
+				var pathFromRootFolder = CsharpProjectUtil.GenerateCsharpProjectFilename(asmdef.name);
+				var pathToService = service.csprojPath;
+				pathsList.Add(PackageUtil.GetRelativePath(pathToService, pathFromRootFolder));
+			}
+			
+			var updateCommand = _cli.UnityUpdateReferences(new UnityUpdateReferencesArgs()
+			{
+				service = service.beamoId,
+				paths = pathsList.ToArray(),
+				names = namesList.ToArray()
+			});
+			await updateCommand.Run();
+
+			if (shouldRefresh)
+			{
+				SolutionPostProcessor.OnPreGeneratingCSProjectFiles();
+			}
+		}
+
+		public void OpenDockerInstallPage()
+		{
+			var command = _cli.ServicesDockerStart(new ServicesDockerStartArgs
+			{
+				linksOnly = true
+			});
+			command.OnStreamStartDockerCommandOutput(cb =>
+			{
+				var links = cb.data;
+				Application.OpenURL(links.dockerDesktopUrl);
+				Application.OpenURL(links.downloadUrl);
+			});
+			command.Run();
+		}
+
+		public void StartDocker(Action<bool> afterStarted)
+		{
+			var command = _cli.ServicesDockerStart(new ServicesDockerStartArgs());
+			command.OnStreamStartDockerCommandOutput(cb =>
+			{
+				var running = cb.data.alreadyRunning || cb.data.attempted;
+				afterStarted?.Invoke(running);
+			});
+			var _ = command.Run();
+		}
+
+		public void ListenForDocker()
+		{
+			if (_listenDockerCommand != null)
+			{
+				_listenDockerCommand.Cancel();
+				_listenDockerCommand = null;
+			}
+			_listenDockerCommand = _cli.ServicesDockerStatus(new ServicesDockerStatusArgs {watch = true});
+
+			_listenDockerCommand.OnStreamDockerStatusCommandOutput(cb =>
+			{
+				latestDockerStatus = cb.data;
+				receivedAnyDockerStateYet.CompleteSuccess();
+			});
+			var _ = _listenDockerCommand.Run();
+		}
+
+		
 		public void ListenForStatus()
 		{
 			if (_watchCommand != null)
@@ -132,8 +262,8 @@ namespace Beamable.Server.Editor.Usam
 			_watchCommand = _cli.ProjectPs(new ProjectPsArgs {watch = true,});
 			_watchCommand.OnStreamCheckStatusServiceResult(cb =>
 			{
-				_latestStatus = cb.data.services;
-				foreach (var status in _latestStatus)
+				latestStatus = cb.data.services;
+				foreach (var status in latestStatus)
 				{
 					ListenForLogs(status.service);
 				}
@@ -182,8 +312,13 @@ namespace Beamable.Server.Editor.Usam
 			_serviceToLogPromise[service] = promise;
 			_serviceToLogCommand[service] = logCommand;
 		}
-		
+
 		public void Reload()
+		{
+			var _ = WaitReload();
+		}
+		
+		public Promise WaitReload()
 		{
 			var command = _cli.UnityManifest();
 			command.OnStreamShowManifestCommandOutput(cb =>
@@ -191,8 +326,10 @@ namespace Beamable.Server.Editor.Usam
 				latestManifest = cb.data;
 			});
 			
-			var _ = command.Run();
+			var p = command.Run();
 			ListenForStatus();
+			ListenForDocker();
+			return p;
 		}
 
 		public void OpenMongo(string beamoId)
@@ -447,7 +584,7 @@ namespace Beamable.Server.Editor.Usam
 				service = newStorageName, serviceType = "storage",
 				availableRoutes = new List<BeamServicesForRouteCollection>()
 			};
-			_latestStatus.Add(mockStatus);
+			latestStatus.Add(mockStatus);
 			
 			var action = SetServiceAction(newStorageName, ServiceCliActionType.Creating, command);
 
@@ -508,7 +645,7 @@ namespace Beamable.Server.Editor.Usam
 				service = newServiceName, serviceType = "service",
 				availableRoutes = new List<BeamServicesForRouteCollection>()
 			};
-			_latestStatus.Add(mockStatus);
+			latestStatus.Add(mockStatus);
 			
 			var action = SetServiceAction(newServiceName, ServiceCliActionType.Creating, command);
 

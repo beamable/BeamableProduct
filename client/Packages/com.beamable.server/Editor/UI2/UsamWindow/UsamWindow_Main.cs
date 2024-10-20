@@ -85,12 +85,13 @@ namespace Beamable.Editor.Microservice.UI2
 		
 		void DrawMain()
 		{
-
-			
 			DrawHeader();
-
+			
 			switch (state)
 			{
+				case WindowState.SETTINGS:
+					DrawSettings();
+					break;
 				case WindowState.CREATE_SERVICE:
 					DrawNewService();
 					break;
@@ -154,7 +155,9 @@ namespace Beamable.Editor.Microservice.UI2
 		{
 			CREATE_SERVICE,
 			CREATE_STORAGE,
-			NORMAL
+			NORMAL,
+			SETTINGS,
+			PUBLISH
 		}
 		
 		[Serializable]
@@ -187,10 +190,21 @@ namespace Beamable.Editor.Microservice.UI2
 			{ // draw button strip
 				EditorGUILayout.BeginHorizontal(new GUIStyle(), GUILayout.ExpandWidth(true), GUILayout.MinHeight(35));
 
-				clickedConfig = BeamGUI.HeaderButton("Config", EditorGUIUtility.FindTexture("Settings"));
-				clickedPublish = BeamGUI.HeaderButton("Publish", EditorGUIUtility.FindTexture("Profiler.GlobalIllumination"));
-				clickedCreate = BeamGUI.HeaderButton("Create", EditorGUIUtility.FindTexture("Toolbar Plus"));
 
+				if (state == WindowState.SETTINGS)
+				{
+					clickedConfig = BeamGUI.HeaderButton("Services", iconService);
+				}
+				else
+				{
+					clickedConfig = BeamGUI.HeaderButton("Config", EditorGUIUtility.FindTexture("Settings"));
+				}
+				clickedPublish = BeamGUI.HeaderButton("Publish", EditorGUIUtility.FindTexture("Profiler.GlobalIllumination"));
+
+
+				GUI.enabled = state != WindowState.CREATE_SERVICE && state != WindowState.CREATE_STORAGE;
+				clickedCreate = BeamGUI.HeaderButton("Create", EditorGUIUtility.FindTexture("Toolbar Plus"));
+				GUI.enabled = true;
 				
 				EditorGUILayout.Space(1, true);
 
@@ -253,12 +267,22 @@ namespace Beamable.Editor.Microservice.UI2
 
 			if (clickedPublish)
 			{
-				UsamPublishWindow.Init(ActiveContext);
+				CheckDocker("publish", () => UsamPublishWindow.Init(ActiveContext), out _);
 			}
 
 			if (clickedConfig)
 			{
-				SettingsService.OpenProjectSettings($"Project/Beamable Services");
+				AddDelayedAction(() =>
+				{
+					if (state == WindowState.SETTINGS)
+					{
+						state = WindowState.NORMAL;
+					}
+					else
+					{
+						ActivateSettings();
+					}
+				});
 			}
 
 			if (clickedHelp)

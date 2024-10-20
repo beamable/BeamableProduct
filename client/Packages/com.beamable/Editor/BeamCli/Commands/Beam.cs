@@ -31,7 +31,7 @@ namespace Beamable.Editor.BeamCli.Commands
 		/// <summary>By default, logs are automatically written to a temp file so that they can be used in an error case. However, when this option is enabled, logs are not written. Also, if the BEAM_CLI_NO_FILE_LOG environment variable is set, no log file will be written. </summary>
 		public bool noLogFile;
 		/// <summary>a custom location for docker. By default, the CLI will attempt to resolve docker through its usual install locations. You can also use the BEAM_DOCKER_EXE environment variable to specify. 
-		///Currently, a docker path has been automatically identified.</summary>
+		///Currently, no docker path is available, and you must set this option to use docker CLI.</summary>
 		public string dockerCliPath;
 		/// <summary>Out all log messages as data payloads in addition to however they are logged</summary>
 		public bool emitLogStreams;
