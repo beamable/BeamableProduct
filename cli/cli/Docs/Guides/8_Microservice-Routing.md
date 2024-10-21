@@ -13,7 +13,7 @@ In order to configure a Microservice, you also need to have a local `.beamable` 
 ```sh
 beam init MyProject
 cd MyProject
-beam project new service HelloWorld
+dotnet beam project new service HelloWorld
 ```
 
 ## Microservice Routing
@@ -23,7 +23,8 @@ Beamable Microservices use a privileged web socket to communicate with Beamable'
 
 1. The `uri` of the HTTP request must have a `path` that maps to the desired Microservice. 
 2. The HTTP request must have an `X-DE-SCOPE` header, and 
-3. _Optionally_, the HTTP request should have an `Authorization` header that carries a Bearer Token. 
+3. _Optionally_, the HTTP request should have a `X-BEAM-SERVICE-ROUTING-KEY` header that carries a map of service routing keys, and
+4. _Optionally_, the HTTP request should have an `Authorization` header that carries a Bearer Token. 
 
 #### Path Routing
 
@@ -35,16 +36,30 @@ var uri = 'https://' + host + '/basic/' + cid + '.' + pid + '.' + localPrefix + 
 
 The variables are described in the following table.
 
-| Variable      | Required | Example               | Description                                                                                                                                                                                                                                                                                |
-| ------------- | -------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `host`        | yes      | `api.beamable.com`    | In most cases, the host is always `api.beamable.com`. However, if you have a Beamable Private Cloud arrangement, this may vary.                                                                                                                                                            |
-| `cid`         | yes      | `1338004997867618`    | The Customer Id, or CID, is the ID that defines your organization apart from other Beamable developers.                                                                                                                                                                                    |
-| `pid`         | yes      | `DE_1752011665993728` | The Project Id, or PID, is the ID that defines your Realm.                                                                                                                                                                                                                                 |
-| `localPrefix` | no       | `Macbook-Pro`         | A Microservice may run locally on a developer's machine, and it may run remotely deployed to the Beamable Cloud. In this scenario, the two instances should not receive traffic from the same origin. Thus, a prefix is injected into the routing to distinguish between the two services. |
-| `serviceName` | yes      | `HelloWorld`          | The name of your service. This maps to the Beam Id of your service.                                                                                                                                                                                                                        |
-| `method`      | yes      | `Add`                 | The name of the Method you want to invoke.                                                                                                                                                                                                                                                 |
+| Variable      | Required | Example               | Description                                                                                                                                                                                                                                                                                                                                                      |
+| ------------- | -------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `host`        | yes      | `api.beamable.com`    | In most cases, the host is always `api.beamable.com`. However, if you have a Beamable Private Cloud arrangement, this may vary.                                                                                                                                                                                                                                  |
+| `cid`         | yes      | `1338004997867618`    | The Customer Id, or CID, is the ID that defines your organization apart from other Beamable developers.                                                                                                                                                                                                                                                          |
+| `pid`         | yes      | `DE_1752011665993728` | The Project Id, or PID, is the ID that defines your Realm.                                                                                                                                                                                                                                                                                                       |
+| `localPrefix` | no       | `Macbook-Pro`         | A Microservice may run locally on a developer's machine, and it may run remotely deployed to the Beamable Cloud. In this scenario, the two instances should not receive traffic from the same origin. Thus, a prefix is injected into the routing to distinguish between the two services. As of CLI 2.1.0, this concept is related to the `routingKey` notion.  |
+| `serviceName` | yes      | `HelloWorld`          | The name of your service. This maps to the Beam Id of your service.                                                                                                                                                                                                                                                                                              |
+| `method`      | yes      | `Add`                 | The name of the Method you want to invoke.                                                                                                                                                                                                                                                                                                                       |
 
 When the `host` (`api.beamable.com`) receives an HTTP request with the following `uri` format, the request will be deconstructed into the variable components, and the contents of the HTTP request will be forwarded to your Microservice via the _Thorium_ web socket protocol. The Microservice receives the request, and uses the `method` component of the original request to invoke the right `[Callable]` method.  
+
+#### X-BEAM-SERVICE-ROUTING-KEY
+
+When a Microservice is started locally, it may share the same name with a Microservice running in the Beamable cloud. When this happens, and your local development machine is generating traffic for the named service, the _routing key_ defines _which_ Microservice instance (the local or remote) receives the traffic. 
+
+A Microservice instance may optionally register a routing key, and if they do, then they will only receive traffic that includes the routing key in a custom `X-BEAM-SERVICE-ROUTING-KEY` header. 
+
+All microservice instances running on the Beamable cloud _do not_ register any routing keys, so they receive traffic that does not include any `X-BEAM-SERVICE-ROUTING-KEY` value. 
+
+The format of the `X-BEAM-SERVICE-ROUTING-KEY` value should be a series of `<service>:<routingKey>` pairs, separated by commas. Here is an example of a routing key header value that routes two services, 
+
+```
+serviceA:routingKeyA,serviceB:routingKeyB
+```
 
 #### X-DE-SCOPE Header
 
@@ -78,7 +93,7 @@ The account information is accessible via the `Context.UserId` property when exe
 Microservices can automatically generate client code for the Unity game engine. First, a Unity project needs to be linked to the `.beamable` workspace. To do this, use the [project add-unity-project](doc:cli-project-add-unity-project) command. 
 
 ```sh
-beam project add-unity-project <relative-path-to-unity-project>
+dotnet beam project add-unity-project <relative-path-to-unity-project>
 ```
 
 The given path should be the relative path to the Unity project. If it isn't right, the CLI will offer an explorative search flow to identify a valid Unity project. 
@@ -153,10 +168,9 @@ Then, a sample web page might use a similar script to interact with the Microser
             var cid = 'cid';
             var pid = 'pid';
             var refreshToken = 'redacted';
-            var localPrefix = 'local';
             var serviceName = 'HelloWorld';
 
-            var host = 'https://api.beamable.com/basic/' + cid + '.' + pid + '.' + localPrefix + 'micro_' + serviceName;
+            var host = 'https://api.beamable.com/basic/' + cid + '.' + pid + '.' + 'micro_' + serviceName;
             var client = new helloWorld.ApiClient(host);
             client.authentications['scope'].apiKey = cid + '.' + pid;
             client.authentications['user'].accessToken = refreshToken
