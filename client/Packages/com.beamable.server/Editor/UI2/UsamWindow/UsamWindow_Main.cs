@@ -27,10 +27,17 @@ namespace Beamable.Editor.Microservice.UI2
 
 		void PrepareCards()
 		{
+			{ // if migrating, do that before anything else
+				if (usam?.migrationPlan?.NeedsMigration ?? false)
+				{
+					state = WindowState.MIGRATE;
+					return;
+				}
+			}
 			
 			{ // refresh cards
 				cards.Clear();
-				
+
 				
 				for (var i = 0 ; i < usam?.latestManifest?.services?.Count; i ++)
 				{
@@ -89,6 +96,9 @@ namespace Beamable.Editor.Microservice.UI2
 			
 			switch (state)
 			{
+				case WindowState.MIGRATE:
+					DrawMigrate();
+					break;
 				case WindowState.SETTINGS:
 					DrawSettings();
 					break;
@@ -157,7 +167,8 @@ namespace Beamable.Editor.Microservice.UI2
 			CREATE_STORAGE,
 			NORMAL,
 			SETTINGS,
-			PUBLISH
+			PUBLISH,
+			MIGRATE
 		}
 		
 		[Serializable]
@@ -191,41 +202,47 @@ namespace Beamable.Editor.Microservice.UI2
 				EditorGUILayout.BeginHorizontal(new GUIStyle(), GUILayout.ExpandWidth(true), GUILayout.MinHeight(35));
 
 
-				if (state == WindowState.SETTINGS)
-				{
-					clickedConfig = BeamGUI.HeaderButton("Services", iconService);
-				}
-				else
-				{
-					clickedConfig = BeamGUI.HeaderButton("Config", EditorGUIUtility.FindTexture("Settings"));
-				}
-				clickedPublish = BeamGUI.HeaderButton("Publish", EditorGUIUtility.FindTexture("Profiler.GlobalIllumination"));
+				if (state != WindowState.MIGRATE)
+				{ // draw the left buttons
+					if (state == WindowState.SETTINGS)
+					{
+						clickedConfig = BeamGUI.HeaderButton("Services", iconService);
+					}
+					else
+					{
+						clickedConfig = BeamGUI.HeaderButton("Config", EditorGUIUtility.FindTexture("Settings"));
+					}
+
+					clickedPublish =
+						BeamGUI.HeaderButton("Publish", EditorGUIUtility.FindTexture("Profiler.GlobalIllumination"));
 
 
-				GUI.enabled = state != WindowState.CREATE_SERVICE && state != WindowState.CREATE_STORAGE;
-				clickedCreate = BeamGUI.HeaderButton("Create", EditorGUIUtility.FindTexture("Toolbar Plus"));
-				GUI.enabled = true;
-				
+					GUI.enabled = state != WindowState.CREATE_SERVICE && state != WindowState.CREATE_STORAGE;
+					clickedCreate = BeamGUI.HeaderButton("Create", EditorGUIUtility.FindTexture("Toolbar Plus"));
+					GUI.enabled = true;
+				}
+
 				EditorGUILayout.Space(1, true);
 
+				{ // draw the right buttons
+					clickedRefresh = BeamGUI.HeaderButton(null, EditorGUIUtility.FindTexture("Refresh"),
+					                                      width: 30,
+					                                      padding: 4,
+					                                      drawBorder: false);
 
-				clickedRefresh = BeamGUI.HeaderButton(null, EditorGUIUtility.FindTexture("Refresh"),
-				                                      width: 30,
-				                                      padding: 4,
-				                                      drawBorder: false);
+					clickedHelp = BeamGUI.HeaderButton(null, EditorGUIUtility.FindTexture("d__Help@2x"),
+					                                   width: 30,
+					                                   padding: 4,
+					                                   drawBorder: false);
+				}
 
-				clickedHelp = BeamGUI.HeaderButton(null, EditorGUIUtility.FindTexture("d__Help@2x"),
-				                                   width: 30,
-				                                   padding: 4,
-				                                   drawBorder: false);
-				
 				EditorGUILayout.Space(12, false);
 
 
 				EditorGUILayout.EndHorizontal();
 			}
 
-			{ // TODO: draw realm picker
+			{ 
 				var rect = new Rect(0, GUILayoutUtility.GetLastRect().yMax, position.width, 30);
 				EditorGUILayout.BeginHorizontal(new GUIStyle()
 				                                {
@@ -236,32 +253,33 @@ namespace Beamable.Editor.Microservice.UI2
 				
 				EditorGUILayout.Space(1, true);
 
-				if (cards.Count > 0) // if there are no cards, then there is nothing to pick.
-				{
-					
-					BeamGUI.LayoutDropDown(this, new GUIContent(selectedBeamoId), GUILayout.ExpandHeight(true),
-					                       () =>
-					                       {
-						                       var popup = CreateInstance<ServicePickerWindow>();
-						                       popup.usamWindow = this;
-						                       return popup;
-					                       }
-						// yPadding: 4,
-						// yShift: 0,
-						// backdropColor: new Color(0, 0, 0, .5f)
-					);
+				if (state != WindowState.MIGRATE)
+				{ // draw the dropdowns
+					if (cards.Count > 0) // if there are no cards, then there is nothing to pick.
+					{
+						BeamGUI.LayoutDropDown(this, new GUIContent(selectedBeamoId), GUILayout.ExpandHeight(true),
+						                       () =>
+						                       {
+							                       var popup = CreateInstance<ServicePickerWindow>();
+							                       popup.usamWindow = this;
+							                       return popup;
+						                       }
+						);
+					}
+
+					EditorGUILayout.Space(4, false);
+
+					BeamGUI.LayoutDropDown(this, new GUIContent("realm"), GUILayout.MaxWidth(80),
+					                       ScriptableObject.CreateInstance<BeamGuiPopup>);
+					EditorGUILayout.Space(4, false);
 				}
-
-				EditorGUILayout.Space(4, false);
-
-				BeamGUI.LayoutDropDown(this, new GUIContent("realm"), GUILayout.MaxWidth(80), ScriptableObject.CreateInstance<BeamGuiPopup>);
-				EditorGUILayout.Space(4, false);
-
+				
 				EditorGUILayout.EndHorizontal();
 			}
 
 			if (clickedRefresh)
 			{
+				activeMigration = null;
 				usam.Reload();
 			}
 

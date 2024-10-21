@@ -77,10 +77,10 @@ namespace Beamable.Server.Editor.Usam
 		public async Promise Init()
 		{
 			await BeamEditorContext.Default.OnReady;
-			
-			//Wait for the CLI to be initialized
-			var cli = BeamEditorContext.Default.ServiceScope.GetService<BeamCli>();
-			await cli.OnReady;
+			//
+			// //Wait for the CLI to be initialized
+			// var cli = BeamEditorContext.Default.ServiceScope.GetService<BeamCli>();
+			// await cli.OnReady;
 			
 			UsamLogger.ResetLogTimer();
 			
@@ -92,22 +92,22 @@ namespace Beamable.Server.Editor.Usam
 			UsamLogger.Log("Saving all libraries referenced by services");
 			// await SaveReferencedLibraries();
 			
-			var _ = CheckMicroserviceStatus();
-			ConnectToLogs();
+			// var _ = CheckMicroserviceStatus();
+			// ConnectToLogs();
 
-			var oldServices = GetAllOldServices();
-			if (oldServices.Count > 0)
-			{
-				var migrationVisualElement = new MigrationConfirmationVisualElement(oldServices);
-				var popup = BeamablePopupWindow.ShowUtility(Constants.Migration.MIGRATION_POPUP_NAME, migrationVisualElement, null,
-				                                            new Vector2(800, 400),  (window) =>
-				                                            {
-					                                            // trigger after Unity domain reload
-					                                            window.Close();
-				                                            });
-				migrationVisualElement.OnCancelled += popup.Close;
-				migrationVisualElement.OnClosed += popup.Close;
-			}
+			// var oldServices = GetAllOldServices();
+			// if (oldServices.Count > 0)
+			// {
+			// 	var migrationVisualElement = new MigrationConfirmationVisualElement(oldServices);
+			// 	var popup = BeamablePopupWindow.ShowUtility(Constants.Migration.MIGRATION_POPUP_NAME, migrationVisualElement, null,
+			// 	                                            new Vector2(800, 400),  (window) =>
+			// 	                                            {
+			// 		                                            // trigger after Unity domain reload
+			// 		                                            window.Close();
+			// 	                                            });
+			// 	migrationVisualElement.OnCancelled += popup.Close;
+			// 	migrationVisualElement.OnClosed += popup.Close;
+			// }
 			
 			
 			UsamLogger.Log("Completed");
@@ -469,21 +469,21 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 
-		public async Promise SetMicroserviceChanges(string serviceName, List<AssemblyDefinitionAsset> assemblyDefinitions, List<string> dependencies)
-		{
-			var service = ServiceDefinitions.FirstOrDefault(s => s.BeamoId == serviceName);
-			if (service == null)
-			{
-				throw new ArgumentException($"Invalid service name was passed: {serviceName}");
-			}
-
-			UsamLogger.Log($"Starting updating storage dependencies");
-			await UpdateServiceStoragesDependencies(service, dependencies);
-
-			await UpdateServiceReferences(service, assemblyDefinitions);
-
-			UsamLogger.Log($"Finished updating microservice [{serviceName}] data");
-		}
+		// public async Promise SetMicroserviceChanges(string serviceName, List<AssemblyDefinitionAsset> assemblyDefinitions, List<string> dependencies)
+		// {
+		// 	var service = ServiceDefinitions.FirstOrDefault(s => s.BeamoId == serviceName);
+		// 	if (service == null)
+		// 	{
+		// 		throw new ArgumentException($"Invalid service name was passed: {serviceName}");
+		// 	}
+		//
+		// 	UsamLogger.Log($"Starting updating storage dependencies");
+		// 	await UpdateServiceStoragesDependencies(service, dependencies);
+		//
+		// 	await UpdateServiceReferences(service, assemblyDefinitions);
+		//
+		// 	UsamLogger.Log($"Finished updating microservice [{serviceName}] data");
+		// }
 		
 		public async Promise UpdateServiceReferences(IBeamoServiceDefinition service, List<AssemblyDefinitionAsset> assemblyDefinitions, bool shouldRefresh = true)
 		{
@@ -511,7 +511,7 @@ namespace Beamable.Server.Editor.Usam
 			{
 				//call the CsharpProjectUtil to regenerate the csproj for this specific file
 				await RefreshServices();
-				SolutionPostProcessor.OnPreGeneratingCSProjectFiles();
+				// SolutionPostProcessor.OnPreGeneratingCSProjectFiles(this);
 			}
 
 			UsamLogger.Log($"Finished updating references");
@@ -913,61 +913,62 @@ namespace Beamable.Server.Editor.Usam
 			UsamLogger.Log($"Finished creation of storage {storageName}");
 		}
 
-		private async Promise CreateMicroService(string serviceName, List<IBeamoServiceDefinition> dependencies, List<AssemblyDefinitionAsset> assemblyReferences = null, bool shouldInitialize = true, Action errorCallback = null)
+		private Promise CreateMicroService(string serviceName, List<IBeamoServiceDefinition> dependencies, List<AssemblyDefinitionAsset> assemblyReferences = null, bool shouldInitialize = true, Action errorCallback = null)
 		{
-			var service = new ServiceName(serviceName);
-			
-			string errorMessage = string.Empty;
-
-			dependencies ??= new List<IBeamoServiceDefinition>();
-			string[] deps = new string[dependencies.Count];
-			for (int i = 0; i < dependencies.Count; i++)
-			{
-				deps[i] = dependencies[i].BeamoId;
-			}
-
-			var args = new ProjectNewServiceArgs()
-			{
-				name = service,
-				serviceDirectory = SERVICES_FOLDER,
-				sln = SERVICES_SLN_PATH,
-				beamableDev = BeamableEnvironment.IsBeamableDeveloper,
-				linkTo = deps
-			};
-			var command = _cli.ProjectNewService(args).OnError((cb) =>
-			{
-				errorMessage = $"Error creating service: {serviceName}. Message=[{cb.data.message}] Stacktrace=[{cb.data.stackTrace}]";
-			});
-			await command.Run();
-
-			// TODO: add the service definition. we can fake it, because we have all the details!
-			var nextDefinition = new BeamoServiceDefinition
-			{
-				ServiceType = ServiceType.MicroService,
-				AssemblyDefinitionsNames = new List<string>(),
-				Dependencies = dependencies?.Select(x => x.BeamoId)?.ToList() ?? new List<string>(),
-			};
-
-			var definition = ServiceDefinitions.FirstOrDefault(def => def.BeamoId == serviceName);
-
-			if (definition == null || !string.IsNullOrEmpty(errorMessage))
-			{
-				errorCallback?.Invoke();
-				throw new Exception(errorMessage ?? "no error message, but definition was null somehow");
-			}
-
-			if (assemblyReferences != null)
-			{
-				await UpdateServiceReferences(definition, assemblyReferences, false);
-			}
-
-			UsamLogger.Log($"Starting the initialization of CodeService");
-			if (shouldInitialize)
-			{
-				await Init();
-			}
-
-			UsamLogger.Log($"Finished creation of service {serviceName}");
+			throw new NotImplementedException();
+			// var service = new ServiceName(serviceName);
+			//
+			// string errorMessage = string.Empty;
+			//
+			// dependencies ??= new List<IBeamoServiceDefinition>();
+			// string[] deps = new string[dependencies.Count];
+			// for (int i = 0; i < dependencies.Count; i++)
+			// {
+			// 	deps[i] = dependencies[i].BeamoId;
+			// }
+			//
+			// var args = new ProjectNewServiceArgs()
+			// {
+			// 	name = service,
+			// 	serviceDirectory = SERVICES_FOLDER,
+			// 	sln = SERVICES_SLN_PATH,
+			// 	beamableDev = BeamableEnvironment.IsBeamableDeveloper,
+			// 	linkTo = deps
+			// };
+			// var command = _cli.ProjectNewService(args).OnError((cb) =>
+			// {
+			// 	errorMessage = $"Error creating service: {serviceName}. Message=[{cb.data.message}] Stacktrace=[{cb.data.stackTrace}]";
+			// });
+			// await command.Run();
+			//
+			// // TODO: add the service definition. we can fake it, because we have all the details!
+			// var nextDefinition = new BeamoServiceDefinition
+			// {
+			// 	ServiceType = ServiceType.MicroService,
+			// 	AssemblyDefinitionsNames = new List<string>(),
+			// 	Dependencies = dependencies?.Select(x => x.BeamoId)?.ToList() ?? new List<string>(),
+			// };
+			//
+			// var definition = ServiceDefinitions.FirstOrDefault(def => def.BeamoId == serviceName);
+			//
+			// if (definition == null || !string.IsNullOrEmpty(errorMessage))
+			// {
+			// 	errorCallback?.Invoke();
+			// 	throw new Exception(errorMessage ?? "no error message, but definition was null somehow");
+			// }
+			//
+			// if (assemblyReferences != null)
+			// {
+				// await UpdateServiceReferences(definition, assemblyReferences, false);
+			// }
+			//
+			// UsamLogger.Log($"Starting the initialization of CodeService");
+			// if (shouldInitialize)
+			// {
+			// 	await Init();
+			// }
+			//
+			// UsamLogger.Log($"Finished creation of service {serviceName}");
 		}
 
 		public Promise StopStandaloneMicroservice(string beamoId)

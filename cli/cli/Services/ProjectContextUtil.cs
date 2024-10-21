@@ -853,7 +853,7 @@ public static class ProjectContextUtil
 		for (int i = 0; i < assemblyNames.Count; i++)
 		{
 			var assemblyName = assemblyNames[i];
-			var projectPath = projectsPaths[i].Replace("/", "\\");
+			var projectPath = projectsPaths[i];// TODO: Chris removed the replace on Oct 20th; not sure why it was there. Unity should auto-correct these paths already. //.Replace("/", "\\");
 
 			buildProject.AddItem(ITEM_TYPE, projectPath,
 				new Dictionary<string, string> { { CliConstants.UNITY_ASSEMBLY_ITEM_NAME, assemblyName } });

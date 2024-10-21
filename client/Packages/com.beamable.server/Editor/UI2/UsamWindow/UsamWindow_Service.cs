@@ -97,6 +97,10 @@ namespace Beamable.Editor.Microservice.UI2
 								usam.ToggleRun(service, status);
 							}, out _);
 						}
+						else
+						{
+							usam.ToggleRun(service, status);
+						}
 					}
 					
 					if (clickedOpenCode)

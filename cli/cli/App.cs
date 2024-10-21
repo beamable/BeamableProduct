@@ -301,6 +301,7 @@ public class App
 		Commands.AddSubCommand<ProjectNewCommand, CommandGroupArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateOApiCommand, GenerateOApiCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<RunProjectCommand, RunProjectCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<DeleteProjectCommand, DeleteProjectCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<StopProjectCommand, StopProjectCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<BuildProjectCommand, BuildProjectCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<NewMicroserviceCommand, NewMicroserviceArgs, ProjectNewCommand>();
@@ -386,6 +387,7 @@ public class App
 
 		// unity commands
 		Commands.AddRootCommand<UnityGroupCommand>();
+		Commands.AddSubCommand<RestoreProjectCommand, RestoreProjectCommandArgs, UnityGroupCommand>();
 		Commands.AddSubCommand<CopyProjectSrcToUnityCommand, CopyProjectSrcToUnityCommandArgs, UnityGroupCommand>();
 		Commands.AddSubCommand<GetUnityVersionInfoCommand, GetUnityVersionInfoCommandArgs, UnityGroupCommand>();
 		Commands.AddSubCommand<ReleaseSharedUnityCodeCommand, ReleaseSharedUnityCodeCommandArgs, UnityGroupCommand>();

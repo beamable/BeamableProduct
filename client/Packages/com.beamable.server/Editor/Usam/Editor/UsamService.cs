@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.BeamCli;
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Reflection;
 using Beamable.Common.Scheduler;
 using Beamable.Common.Semantics;
 using Beamable.Editor;
@@ -31,6 +32,7 @@ namespace Beamable.Server.Editor.Usam
 		
 		private StorageHandle<UsamService> _handle;
 		private BeamCommands _cli;
+		public BeamCommands Cli => _cli;
 		public BeamableDispatcher _dispatcher;
 
 		public BeamShowManifestCommandOutput latestManifest = new BeamShowManifestCommandOutput{};
@@ -61,8 +63,12 @@ namespace Beamable.Server.Editor.Usam
 		[NonSerialized]
 		private Promise _watchPromise;
 
-		private const string SERVICES_FOLDER = "BeamableServices/";
-		private const string SERVICES_SLN_PATH = SERVICES_FOLDER + "beamableServices.sln";
+		private MicroserviceReflectionCache.Registry _microserviceCache;
+		public MigrationPlan migrationPlan;
+		
+
+		public const string SERVICES_FOLDER = "BeamableServices/";
+		public const string SERVICES_SLN_PATH = SERVICES_FOLDER + "beamableServices.sln";
 
 		public enum ServiceCliActionType
 		{
@@ -77,11 +83,15 @@ namespace Beamable.Server.Editor.Usam
 			public BeamCommandWrapper command;
 		}
 		
-		public UsamService(BeamCommands cli, BeamableDispatcher dispatcher)
+		public UsamService(
+			BeamCommands cli, 
+			BeamableDispatcher dispatcher,
+			ReflectionCache editorCache)
 		{
+			_microserviceCache = editorCache.GetFirstSystemOfType<MicroserviceReflectionCache.Registry>();
 			_dispatcher = dispatcher;
 			_cli = cli;
-
+			// microserviceCache.Cache.
 			// SolutionPostProcessor.OnPreGeneratingCSProjectFiles();
 		}
 
@@ -204,7 +214,7 @@ namespace Beamable.Server.Editor.Usam
 
 			if (shouldRefresh)
 			{
-				SolutionPostProcessor.OnPreGeneratingCSProjectFiles();
+				SolutionPostProcessor.OnPreGeneratingCSProjectFiles(this);
 			}
 		}
 
@@ -320,16 +330,24 @@ namespace Beamable.Server.Editor.Usam
 		
 		public Promise WaitReload()
 		{
+			LoadLegacyServices();
+
 			var command = _cli.UnityManifest();
 			command.OnStreamShowManifestCommandOutput(cb =>
 			{
 				latestManifest = cb.data;
+				SolutionPostProcessor.OnPreGeneratingCSProjectFiles(this);
 			});
 			
 			var p = command.Run();
 			ListenForStatus();
 			ListenForDocker();
 			return p;
+		}
+
+		void LoadLegacyServices()
+		{
+			migrationPlan = UsamMigrator.CreatePlan(_microserviceCache);
 		}
 
 		public void OpenMongo(string beamoId)
@@ -361,6 +379,7 @@ namespace Beamable.Server.Editor.Usam
 			
 			var sln = SERVICES_SLN_PATH;
 			var fileName = $@"{Path.GetDirectoryName(projectPath)}/{beamoId}.cs";
+			
 			
 			// first open the sln, because in most IDEs multi-solution view is not supported. 
 			EditorUtility.OpenWithDefaultApp(sln);
@@ -556,10 +575,14 @@ namespace Beamable.Server.Editor.Usam
 		public void DeleteProject(string beamoId, string csProjPath)
 		{
 			// TODO: Delete auto generated client. 
-			var dirName = Path.GetDirectoryName(csProjPath);
-			Directory.Delete(dirName, true);
+
+			_cli.ProjectRemove(new ProjectRemoveArgs {sln = SERVICES_SLN_PATH, ids = new string[] {beamoId}})
+			    .OnStreamDeleteProjectCommandOutput(_ =>
+			    {
+				    Reload();
+			    })
+			    .Run();
 			
-			Reload();
 		}
 
 		public void CreateStorage(string newStorageName, List<string> dependencies)
