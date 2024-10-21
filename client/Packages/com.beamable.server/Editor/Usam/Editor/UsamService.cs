@@ -35,11 +35,14 @@ namespace Beamable.Server.Editor.Usam
 		public BeamCommands Cli => _cli;
 		public BeamableDispatcher _dispatcher;
 
-		public BeamShowManifestCommandOutput latestManifest = new BeamShowManifestCommandOutput{};
+		public BeamShowManifestCommandOutput latestManifest;
 		public List<BeamServiceStatus> latestStatus;
 		public BeamDockerStatusCommandOutput latestDockerStatus;
 
 		public List<NamedLogView> _namedLogs = new List<NamedLogView>();
+
+		[NonSerialized]
+		public bool hasReceivedManifestThisDomain;
 		
 		[NonSerialized]
 		private ProjectPsWrapper _watchCommand;
@@ -335,6 +338,7 @@ namespace Beamable.Server.Editor.Usam
 			var command = _cli.UnityManifest();
 			command.OnStreamShowManifestCommandOutput(cb =>
 			{
+				hasReceivedManifestThisDomain = true;
 				latestManifest = cb.data;
 				CsProjUtil.OnPreGeneratingCSProjectFiles(this);
 			});

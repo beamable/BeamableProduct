@@ -143,7 +143,7 @@ namespace Beamable.Editor.Microservice.UI2
 
 				
 				{ // draw the dependencies 
-					if (availableDependencyBeamoIds.Count > 0)
+					if (availableDependencyBeamoIds?.Count > 0)
 					{
 						EditorGUILayout.TextArea(depDescription, new GUIStyle(EditorStyles.label)
 						{

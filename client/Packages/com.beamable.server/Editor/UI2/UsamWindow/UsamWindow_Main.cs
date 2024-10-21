@@ -34,10 +34,10 @@ namespace Beamable.Editor.Microservice.UI2
 					return;
 				}
 			}
+
 			
 			{ // refresh cards
 				cards.Clear();
-
 				
 				for (var i = 0 ; i < usam?.latestManifest?.services?.Count; i ++)
 				{
@@ -68,7 +68,11 @@ namespace Beamable.Editor.Microservice.UI2
 				if (cards.Count == 0)
 				{
 					selectedBeamoId = null;
-					if (state == WindowState.NORMAL)
+					
+					if (!usam.hasReceivedManifestThisDomain)
+					{
+						state = WindowState.NORMAL;
+					} else if (state == WindowState.NORMAL)
 					{
 						state = WindowState.CREATE_SERVICE;
 					}
@@ -168,7 +172,7 @@ namespace Beamable.Editor.Microservice.UI2
 			NORMAL,
 			SETTINGS,
 			PUBLISH,
-			MIGRATE
+			MIGRATE,
 		}
 		
 		[Serializable]
