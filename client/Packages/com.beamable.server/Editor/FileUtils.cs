@@ -1,4 +1,4 @@
-using Beamable.Server.Editor.DockerCommands;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -31,23 +31,6 @@ namespace Beamable.Server.Editor
 		}
 
 
-		public static void CopyDlls(MicroserviceDescriptor descriptor, MicroserviceDependencies dependencies)
-		{
-			string rootPath = Application.dataPath.Substring(0, Application.dataPath.Length - "Assets".Length);
-
-			var destinationDirectory = Path.Combine(descriptor.BuildPath, "libdll");
-			Directory.CreateDirectory(destinationDirectory);
-			foreach (var dll in dependencies.DllsToCopy)
-			{
-				var fullSource = Path.Combine(rootPath, dll.assetPath);
-				var fullDest = Path.Combine(destinationDirectory, Path.GetFileName(dll.assetPath));
-				MicroserviceLogHelper.HandleLog(descriptor, "Build", "Copying dll from " + fullSource);
-
-				File.Copy(fullSource, fullDest, true);
-			}
-		}
-
-
 		public static string GetFullSourcePath(AssemblyDefinitionInfo assemblyDependency)
 		{
 			string rootPath = Application.dataPath.Substring(0, Application.dataPath.Length - "Assets".Length);
@@ -60,59 +43,6 @@ namespace Beamable.Server.Editor
 		public static string GetBuildContextPath(AssemblyDefinitionInfo assemblyDependency)
 		{
 			return assemblyDependency.Name;
-		}
-
-		public static void CopyAssemblies(MicroserviceDescriptor descriptor, MicroserviceDependencies dependencies)
-		{
-			// copy over the assembly definition folders...
-			if (dependencies.Assemblies.Invalid.Any())
-			{
-				throw new Exception($"Invalid dependencies discovered for microservice. {string.Join(",", dependencies.Assemblies.Invalid.Select(x => x.Name))}");
-			}
-
-			foreach (var assemblyDependency in dependencies.Assemblies.ToCopy)
-			{
-				var fullSource = GetFullSourcePath(assemblyDependency);
-				MicroserviceLogHelper.HandleLog(descriptor, "Build", "Copying assembly from " + fullSource);
-
-				// TODO: better folder namespacing?
-				CopyFolderToBuildDirectory(fullSource, GetBuildContextPath(assemblyDependency), descriptor);
-			}
-		}
-
-		public static void CopyFile(MicroserviceDescriptor descriptor, string srcPath, string containerPath)
-		{
-
-			containerPath = Path.Combine(descriptor.BuildPath, containerPath);
-			MicroserviceLogHelper.HandleLog(descriptor, "Build", "Copying file to " + containerPath);
-
-
-			var targetDir = Path.GetDirectoryName(containerPath);
-			Directory.CreateDirectory(targetDir);
-
-			// to avoid any file issues, we load the file into memory
-			var src = File.ReadAllText(srcPath);
-			File.WriteAllText(containerPath, src);
-		}
-
-		public static void CopySingleFiles(MicroserviceDescriptor descriptor, MicroserviceDependencies dependencies)
-		{
-			// copy over the single files...
-			foreach (var dep in dependencies.FilesToCopy)
-			{
-				var targetRelative = dep.Agnostic.SourcePath.Substring(Application.dataPath.Length - "Assets/".Length);
-				var targetFull = descriptor.BuildPath + targetRelative;
-
-				MicroserviceLogHelper.HandleLog(descriptor, "Build", "Copying source code to " + targetFull);
-
-				var targetDir = Path.GetDirectoryName(targetFull);
-				Directory.CreateDirectory(targetDir);
-
-				// to avoid any file issues, we load the file into memory
-				var src = File.ReadAllText(dep.Agnostic.SourcePath);
-				File.WriteAllText(targetFull, src);
-			}
-
 		}
 
 		public static void CopyFolderToBuildDirectory(string sourceFolderPath, string subFolder, MicroserviceDescriptor descriptor)

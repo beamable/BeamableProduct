@@ -1,29 +1,15 @@
 using Beamable.Common;
-using Beamable.Common.Api;
-using Beamable.Common.BeamCli;
 using Beamable.Common.Reflection;
-using Beamable.Common.Runtime;
-using Beamable.Editor.Environment;
-using Beamable.Editor.Microservice.UI.Components;
-using Beamable.Editor.UI.Model;
 using Beamable.Reflection;
-using Beamable.Server.Editor.DockerCommands;
-using Beamable.Server.Editor.ManagerClient;
-using Beamable.Server.Editor.UI;
-using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
-using static Beamable.Common.Constants.Features.Docker;
-using static Beamable.Common.Constants.Features.Services;
 using static Beamable.Common.Constants.MenuItems.Assets.Orders;
-using LogMessage = Beamable.Editor.UI.Model.LogMessage;
+
 #pragma warning disable CS0067 // Event is never used
 
 namespace Beamable.Server.Editor
@@ -80,12 +66,6 @@ namespace Beamable.Server.Editor
 			public List<BaseTypeOfInterest> BaseTypesOfInterest => BASE_TYPES_OF_INTEREST;
 			public List<AttributeOfInterest> AttributesOfInterest => ATTRIBUTES_OF_INTEREST;
 
-			private Dictionary<string, MicroserviceBuilder> _serviceToBuilder =
-				new Dictionary<string, MicroserviceBuilder>();
-
-			private Dictionary<string, MongoStorageBuilder> _storageToBuilder =
-				new Dictionary<string, MongoStorageBuilder>();
-
 			public readonly List<StorageObjectDescriptor> StorageDescriptors = new List<StorageObjectDescriptor>();
 			public readonly List<MicroserviceDescriptor> Descriptors = new List<MicroserviceDescriptor>();
 			public readonly List<IDescriptor> AllDescriptors = new List<IDescriptor>();
@@ -94,9 +74,6 @@ namespace Beamable.Server.Editor
 
 			public void ClearCachedReflectionData()
 			{
-				_serviceToBuilder.Clear();
-				_storageToBuilder.Clear();
-
 				Descriptors.Clear();
 				StorageDescriptors.Clear();
 				AllDescriptors.Clear();
@@ -428,177 +405,6 @@ namespace Beamable.Server.Editor
 				return info;
 			}
 
-			#region Service Deployment
-
-			public const string SERVICE_PUBLISHED_KEY = "service_published_{0}";
-
-			public event Action<ManifestModel, int> OnBeforeDeploy;
-			public event Action<ManifestModel, int> OnDeploySuccess;
-			public event Action<ManifestModel, string> OnDeployFailed;
-			public event Action<IDescriptor> OnServiceDeployProgress;
-
-			public void MicroserviceCreated(string serviceName)
-			{
-				var key = string.Format(SERVICE_PUBLISHED_KEY, serviceName);
-				EditorPrefs.SetBool(key, false);
-			}
-
-			public Promise<ManifestModel> GenerateUploadModel()
-			{
-				// first, get the server manifest
-				var de = BeamEditorContext.Default;
-				var client = de.GetMicroserviceManager();
-				return client.GetCurrentManifest().Map(manifest =>
-				{
-					var allServices = new HashSet<string>();
-
-					// make sure all server-side things are represented
-					foreach (var serverSideService in manifest.manifest.Select(s => s.serviceName))
-					{
-						allServices.Add(serverSideService);
-					}
-
-					// add in anything locally...
-					foreach (var descriptor in Descriptors)
-					{
-						allServices.Add(descriptor.Name);
-					}
-
-					// get enablement for each service...
-					var entries = allServices.Select(name =>
-					{
-						var configEntry =
-							MicroserviceConfiguration.Instance
-													 .GetEntry(
-														 name); //config.FirstOrDefault(s => s.ServiceName == name);
-						var descriptor = Descriptors.FirstOrDefault(d => d.Name == configEntry.ServiceName);
-						var remote = manifest.manifest.FirstOrDefault(s => string.Equals(s.serviceName, name));
-						var serviceDependencies = new List<ServiceDependency>();
-						if (descriptor != null)
-						{
-							foreach (var storage in descriptor.GetStorageReferences())
-							{
-								serviceDependencies.Add(
-									new ServiceDependency { id = storage.Name, storageType = "storage" });
-							}
-						}
-						else if (remote != null)
-						{
-							// this is a remote service, and we should keep its references intact...
-							serviceDependencies.AddRange(remote.dependencies);
-						}
-
-						return new ManifestEntryModel
-						{
-							Comment = "",
-							Name = name,
-							Enabled = configEntry?.Enabled ?? true,
-							Archived = configEntry?.Archived ?? false,
-							TemplateId = configEntry?.TemplateId ?? "small",
-							Dependencies = serviceDependencies
-						};
-					}).ToList();
-
-					var allStorages = new HashSet<string>();
-
-					foreach (var serverSideStorage in manifest.storageReference.Select(s => s.id))
-					{
-						allStorages.Add(serverSideStorage);
-					}
-
-					foreach (var storageDescriptor in StorageDescriptors)
-					{
-						allStorages.Add(storageDescriptor.Name);
-					}
-
-					var storageEntries = allStorages.Select(name =>
-					{
-						var configEntry = MicroserviceConfiguration.Instance.GetStorageEntry(name);
-						return new StorageEntryModel
-						{
-							Name = name,
-							Type = configEntry?.StorageType ?? "mongov1",
-							Enabled = configEntry?.Enabled ?? true,
-							Archived = configEntry?.Archived ?? false,
-							TemplateId = configEntry?.TemplateId ?? "small",
-						};
-					}).ToList();
-
-					return new ManifestModel
-					{
-						ServerManifest = manifest.manifest.ToDictionary(e => e.serviceName),
-						Comment = "",
-						Services = entries.ToDictionary(e => e.Name),
-						Storages = storageEntries.ToDictionary(s => s.Name)
-					};
-				});
-			}
-
-
-			#endregion
-
-			#region Running Services
-
-			public async Promise<Dictionary<string, string>> GetConnectionStringEnvironmentVariables(
-				MicroserviceDescriptor service)
-			{
-				var env = new Dictionary<string, string>();
-				foreach (var reference in service.GetStorageReferences())
-				{
-					var key = $"STORAGE_CONNSTR_{reference.Name}";
-					env[key] = await GetConnectionString(reference);
-				}
-
-				return env;
-			}
-
-			public async Promise<string> GetConnectionString(StorageObjectDescriptor storage)
-			{
-				var storageCheck = new CheckImageReturnableCommand(storage);
-				var isStorageRunning = await storageCheck.StartAsync();
-				if (isStorageRunning)
-				{
-					var config = MicroserviceConfiguration.Instance.GetStorageEntry(storage.Name);
-					return
-						$"mongodb://{config.LocalInitUser}:{config.LocalInitPass}@host.docker.internal:{config.LocalDataPort}";
-				}
-				else
-				{
-					return "";
-				}
-			}
-
-			#endregion
-
-			#region Service Builders
-
-			public MicroserviceBuilder GetServiceBuilder(MicroserviceDescriptor descriptor)
-			{
-				var key = descriptor.Name;
-				if (!_serviceToBuilder.ContainsKey(key))
-				{
-					var builder = new MicroserviceBuilder();
-					builder.Init(descriptor);
-					_serviceToBuilder.Add(key, builder);
-				}
-
-				return _serviceToBuilder[key];
-			}
-
-			public MongoStorageBuilder GetStorageBuilder(StorageObjectDescriptor descriptor)
-			{
-				var key = descriptor.Name;
-
-				if (_storageToBuilder.ContainsKey(key))
-					return _storageToBuilder[key];
-
-				var builder = new MongoStorageBuilder();
-				builder.Init(descriptor);
-				_storageToBuilder.Add(key, builder);
-				return _storageToBuilder[key];
-			}
-
-			#endregion
 		}
 	}
 }

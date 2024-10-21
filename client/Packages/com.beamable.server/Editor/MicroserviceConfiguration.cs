@@ -1,11 +1,6 @@
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Content;
-using Beamable.Config;
-using Beamable.Editor;
-using Beamable.Editor.BeamCli.Commands;
-using Beamable.Editor.Microservice.UI;
-using Beamable.Editor.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -44,19 +39,6 @@ namespace Beamable.Server.Editor
 
 		public List<StorageConfigurationEntry> StorageObjects;
 
-#if !BEAMABLE_DEVELOPER
-		[HideInInspector]
-#endif
-		public List<BeamServiceCodeHandle> ServiceCodeHandlesOnLastDomainReload;
-
-#if !BEAMABLE_DEVELOPER
-		[HideInInspector]
-#endif
-		public List<BeamServiceCodeHandle> LastBuiltDockerImagesCodeHandles;
-
-#if !BEAMABLE_DEVELOPER
-		[HideInInspector]
-#endif
 		[Obsolete]
 		[Tooltip("When you run a microservice in the Editor, the prefix controls the flow of traffic. By default, the prefix is your MAC address. If two developers use the same prefix, their microservices will share traffic. The prefix is ignored for games running outside of the Editor."), Delayed]
 		public string CustomContainerPrefix;
@@ -259,17 +241,12 @@ namespace Beamable.Server.Editor
 
 		private void OnValidate()
 		{
-			ServiceCodeHandlesOnLastDomainReload = ServiceCodeHandlesOnLastDomainReload ?? new List<BeamServiceCodeHandle>();
-
+		
 			if (_dockerCommandCached != DockerCommand || _dockerCheckCached != DockerDesktopCheckInMicroservicesWindow)
 			{
 				_dockerCommandCached = DockerCommand;
 				_dockerCheckCached = DockerDesktopCheckInMicroservicesWindow;
-				if (MicroserviceWindow.IsInstantiated)
-				{
-					var tempQualifier = EditorWindow.GetWindow<MicroserviceWindow>();
-					tempQualifier.RefreshWindowContent();
-				}
+				
 			}
 
 			if (string.IsNullOrEmpty(WindowsDockerDesktopPath))

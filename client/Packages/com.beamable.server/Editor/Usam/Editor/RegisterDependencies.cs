@@ -9,7 +9,6 @@ namespace Beamable.Server.Editor.Usam
 		[RegisterBeamableDependencies(-1000, RegistrationOrigin.EDITOR)]
 		public static void Register(IDependencyBuilder builder)
 		{
-			builder.AddSingleton<CodeService>();
 			builder.AddGlobalStorage<UsamService, SessionStorageLayer>();
 		}
 

@@ -65,22 +65,17 @@ namespace Beamable.Server.Editor
 
 		public void AddFile(string srcPath, string containerPath)
 		{
-			FileUtils.CopyFile(Descriptor, srcPath, containerPath);
-			CommitFile(containerPath);
+			throw new NotSupportedException("Buildhooks are not supported in Beamable Unity 2.0+");
 		}
 
 		public void AddDirectory(string srcPath, string containerPath)
 		{
-			FileUtils.CopyFolderToBuildDirectory(srcPath, containerPath, Descriptor);
-			CommitFile(containerPath);
+			throw new NotSupportedException("Buildhooks are not supported in Beamable Unity 2.0+");
 		}
 
 		public void CommitFile(string containerPath)
 		{
-			FileAdditions.Add(new FileAddition
-			{
-				containerPath = containerPath
-			});
+			throw new NotSupportedException("Buildhooks are not supported in Beamable Unity 2.0+");
 		}
 
 		public class FileAddition

@@ -12,7 +12,7 @@ namespace Beamable.Editor.ToolbarExtender
 	{
 		public override void OnItemClicked(BeamEditorContext beamableApi)
 		{
-			Microservice.UI.MicroserviceWindow.Init();
+			// Microservice.UI.MicroserviceWindow.Init();
 		}
 	}
 }
