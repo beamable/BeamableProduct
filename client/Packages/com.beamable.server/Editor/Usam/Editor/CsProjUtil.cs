@@ -1,9 +1,6 @@
-using Beamable.Editor.BeamCli.Commands;
-using UnityEditor;
-
 namespace Beamable.Server.Editor.Usam
 {
-	public class SolutionPostProcessor
+	public class CsProjUtil
 	{
 		public static bool OnPreGeneratingCSProjectFiles(UsamService usam)
 		{

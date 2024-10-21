@@ -1,3 +1,5 @@
+using Beamable.Editor.Microservice.UI2;
+using Beamable.Server.Editor;
 using UnityEngine;
 
 namespace Beamable.Editor.ToolbarExtender
@@ -12,7 +14,7 @@ namespace Beamable.Editor.ToolbarExtender
 	{
 		public override void OnItemClicked(BeamEditorContext beamableApi)
 		{
-			// Microservice.UI.MicroserviceWindow.Init();
+			UsamWindow2.Init();
 		}
 	}
 }

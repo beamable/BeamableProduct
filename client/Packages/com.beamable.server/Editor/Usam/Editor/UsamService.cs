@@ -214,7 +214,7 @@ namespace Beamable.Server.Editor.Usam
 
 			if (shouldRefresh)
 			{
-				SolutionPostProcessor.OnPreGeneratingCSProjectFiles(this);
+				CsProjUtil.OnPreGeneratingCSProjectFiles(this);
 			}
 		}
 
@@ -336,7 +336,7 @@ namespace Beamable.Server.Editor.Usam
 			command.OnStreamShowManifestCommandOutput(cb =>
 			{
 				latestManifest = cb.data;
-				SolutionPostProcessor.OnPreGeneratingCSProjectFiles(this);
+				CsProjUtil.OnPreGeneratingCSProjectFiles(this);
 			});
 			
 			var p = command.Run();
