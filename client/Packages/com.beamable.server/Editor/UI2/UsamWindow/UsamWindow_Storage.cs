@@ -67,7 +67,7 @@ namespace Beamable.Editor.Microservice.UI2
 				EditorGUILayout.Space(1, true);
 				// GUI.enabled = true;
 
-				clickedOpenDocs = BeamGUI.HeaderButton(null, iconOpenApi,
+				clickedOpenDocs = BeamGUI.HeaderButton(null, iconOpenMongoExpress,
 				                                       width: buttonWidth,
 				                                       padding: 4,
 				                                       backgroundColor: Color.clear,
@@ -155,12 +155,55 @@ namespace Beamable.Editor.Microservice.UI2
 				usam.OpenProject(service.beamoId, service.csprojPath);
 			});
 			
+			menu.AddItem(new GUIContent("Copy Local Connection String"), false, () =>
+			{
+				usam.GetLocalConnectionString(service).Then(connStr =>
+				{
+					EditorGUIUtility.systemCopyBuffer = connStr;
+					Debug.Log("Copied connection string: " + connStr);
+				});
+			});
+
+			
 			menu.AddSeparator("");
 			
 			menu.AddItem(new GUIContent("Go to deployed storages"), false, () =>
 			{
-				throw new NotImplementedException("open up the remote portal page");
+				usam.OpenPortalToReleaseSection();
 			});
+			
+			menu.AddSeparator("");
+		
+			menu.AddItem(new GUIContent("Create Local Snapshot"), false, () =>
+			{
+				var dest = EditorUtility.OpenFolderPanel("Select where to save snapshot", "", "default");
+				if (string.IsNullOrEmpty(dest)) return;
+				Debug.Log("Starting snapshot...");
+				
+				usam.SnapshotMongo(service, dest);
+			});
+			
+			menu.AddItem(new GUIContent("Restore Local Snapshot"), false, () =>
+			{
+				var dest = EditorUtility.OpenFolderPanel("Select where to load snapshot", "", "default");
+				if (string.IsNullOrEmpty(dest)) return;
+				Debug.Log("Loading snapshot...");
+				usam.RestoreMongo(service, dest);
+			});
+			
+			menu.AddItem(new GUIContent("Erase data"), false, () =>
+			{
+				var confirm = EditorUtility.DisplayDialog(
+					title: "Erase Storage Object's Content",
+					message: $"Are you sure you want to erase the data inside the {service.beamoId} storage object? " +
+					         $"The data will be deleted locally. ",
+					ok: "Erase");
+				if (confirm)
+				{
+					usam.EraseMongo(service);
+				}
+			});
+
 			
 			menu.AddSeparator("");
 			menu.AddItem(new GUIContent("Delete storage"), false, () =>

@@ -162,17 +162,16 @@ namespace Beamable.Editor.Microservice.UI2
 			{
 				usam.OpenProject(service.beamoId, service.csprojPath);
 			});
-			menu.AddItem(new GUIContent("Generate client"), false, () =>
+			menu.AddItem(new GUIContent("Generate clients"), false, () =>
 			{
-				// TODO:
-				throw new NotImplementedException("add client generation!");
+				var _ = usam.GenerateClient();
 			});
 			
 			menu.AddSeparator("");
 			
 			menu.AddItem(new GUIContent("Go to deployed services"), false, () =>
 			{
-				throw new NotImplementedException("open up the remote portal page");
+				usam.OpenPortalToReleaseSection();
 			});
 			
 			menu.AddSeparator("");

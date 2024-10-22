@@ -17,6 +17,7 @@ namespace Beamable.Editor.Microservice.UI2
 		public static Texture iconService;
 		public static Texture iconStorage;
 		public static Texture iconOpenApi;
+		public static Texture iconOpenMongoExpress;
 		public static Texture iconSettings;
 		public static Texture iconOpenProject;
 		public static Texture iconMoreOptions;
@@ -121,7 +122,13 @@ namespace Beamable.Editor.Microservice.UI2
 
 			if (iconOpenApi == null)
 			{
-				iconOpenApi = EditorGUIUtility.IconContent("GUISkin Icon").image;
+				iconOpenApi = EditorGUIUtility.IconContent("BuildSettings.Web.Small").image;
+			}
+
+			if (iconOpenMongoExpress == null)
+			{
+				iconOpenMongoExpress =
+					EditorResources.Load<Texture>("Packages/com.beamable.server/Editor/UI/Icons/Database_light.png", true);
 			}
 
 			if (iconOpenProject == null)

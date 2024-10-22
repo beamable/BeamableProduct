@@ -39,6 +39,12 @@ namespace Beamable.Server.Editor.Usam
 		public List<BeamServiceStatus> latestStatus;
 		public BeamDockerStatusCommandOutput latestDockerStatus;
 
+		/// <summary>
+		/// This is a counter to track how many times the <see cref="ListenForBuildChanges"/> method has been called.
+		/// Internal to the method, this field is used to stop old invocations of the on-going coroutine
+		/// </summary>
+		public int latestListenTaskId;
+
 		public List<NamedLogView> _namedLogs = new List<NamedLogView>();
 
 		[NonSerialized]
@@ -49,6 +55,9 @@ namespace Beamable.Server.Editor.Usam
 		
 		[NonSerialized]
 		private ServicesDockerStatusWrapper _listenDockerCommand;
+		
+		[NonSerialized]
+		private ProjectStorageSnapshotWrapper _snapshotCommand;
 		
 		[NonSerialized]
 		public Promise receivedAnyDockerStateYet = new Promise();
@@ -65,10 +74,17 @@ namespace Beamable.Server.Editor.Usam
 
 		[NonSerialized]
 		private Promise _watchPromise;
+		
+		
+		
+		[NonSerialized]
+		private ProjectGenerateClientWrapper _generateClientCommand;
 
 		private MicroserviceReflectionCache.Registry _microserviceCache;
 		public MigrationPlan migrationPlan;
-		
+		private BeamEditorContext _ctx;
+		private ProjectStorageRestoreWrapper _restoreCommand;
+		private ProjectStorageEraseWrapper _eraseCommand;
 
 		public const string SERVICES_FOLDER = "BeamableServices/";
 		public const string SERVICES_SLN_PATH = SERVICES_FOLDER + "beamableServices.sln";
@@ -87,10 +103,12 @@ namespace Beamable.Server.Editor.Usam
 		}
 		
 		public UsamService(
+			BeamEditorContext ctx,
 			BeamCommands cli, 
 			BeamableDispatcher dispatcher,
 			ReflectionCache editorCache)
 		{
+			_ctx = ctx;
 			_microserviceCache = editorCache.GetFirstSystemOfType<MicroserviceReflectionCache.Registry>();
 			_dispatcher = dispatcher;
 			_cli = cli;
@@ -326,6 +344,49 @@ namespace Beamable.Server.Editor.Usam
 			_serviceToLogCommand[service] = logCommand;
 		}
 
+
+		public void ListenForBuildChanges()
+		{
+			latestListenTaskId++;
+			var beamoIdToWriteTime = new Dictionary<string, long>();
+
+			_dispatcher.Run("usam-build-generation", Run(latestListenTaskId));
+			
+			IEnumerator Run(int taskId)
+			{
+				while (taskId == latestListenTaskId)
+				{
+					yield return new WaitForSecondsRealtime(.5f); // wait half a second...
+
+					if (latestManifest?.services == null) continue;
+
+
+					var anyUpdates = false;
+					foreach (var service in latestManifest.services)
+					{
+						var path = service.buildDllPath;
+						if (string.IsNullOrEmpty(path)) continue;
+
+						if (!File.Exists(path)) continue;
+						
+						var writeTime = File.GetLastWriteTime(path).ToFileTime();
+						if (beamoIdToWriteTime.TryGetValue(service.beamoId, out var lastWriteTime) && writeTime > lastWriteTime)
+						{
+							anyUpdates = true;
+						}
+
+						beamoIdToWriteTime[service.beamoId] = writeTime;
+					}
+
+					if (anyUpdates)
+					{
+						var commandPromise = GenerateClient();
+						yield return commandPromise.ToYielder();
+					}
+				}
+			}
+		}
+
 		public void Reload()
 		{
 			var _ = WaitReload();
@@ -346,6 +407,7 @@ namespace Beamable.Server.Editor.Usam
 			var p = command.Run();
 			ListenForStatus();
 			ListenForDocker();
+			ListenForBuildChanges();
 			return p;
 		}
 
@@ -576,6 +638,65 @@ namespace Beamable.Server.Editor.Usam
 
 		}
 
+		public void OpenPortalToReleaseSection()
+		{
+			var url = $"{BeamableEnvironment.PortalUrl}/{_ctx.CurrentCustomer.Cid}/games/{_ctx.ProductionRealm.Pid}/realms/{_ctx.CurrentRealm.Pid}/microservices?refresh_token={_ctx.Requester.Token.RefreshToken}";
+			Application.OpenURL(url);
+		}
+
+		public void EraseMongo(BeamManifestStorageEntry storage)
+		{
+			if (_eraseCommand != null)
+			{
+				_eraseCommand.Cancel();
+				_eraseCommand = null;
+			}
+			_eraseCommand = _cli.ProjectStorageErase(new ProjectStorageEraseArgs {beamoId = storage.beamoId});
+			_eraseCommand.OnMongoLogsCliLogMessage(cb =>
+			{
+				AddLog(storage.beamoId, cb.data);
+			});
+			var _ = _eraseCommand.Run();
+		}
+
+		public void RestoreMongo(BeamManifestStorageEntry storage, string inputFolder)
+		{
+			if (_restoreCommand != null)
+			{
+				_restoreCommand.Cancel();
+				_restoreCommand = null;
+			}
+			_restoreCommand = _cli.ProjectStorageRestore(new ProjectStorageRestoreArgs
+			{
+				beamoId = storage.beamoId,
+				input = inputFolder,
+				merge = false
+			});
+			_restoreCommand.OnMongoLogsCliLogMessage(cb =>
+			{
+				AddLog(storage.beamoId, cb.data);
+			});
+			var _ = _restoreCommand.Run();
+		}
+
+		public void SnapshotMongo(BeamManifestStorageEntry storage, string outputFolder)
+		{
+			if (_snapshotCommand != null)
+			{
+				_snapshotCommand.Cancel();
+				_snapshotCommand = null;
+			}
+			_snapshotCommand = _cli.ProjectStorageSnapshot(new ProjectStorageSnapshotArgs
+			{
+				beamoId = storage.beamoId, output = outputFolder
+			});
+			_snapshotCommand.OnMongoLogsCliLogMessage(cb =>
+			{
+				AddLog(storage.beamoId, cb.data);
+			});
+			var _ = _snapshotCommand.Run();
+		}
+
 		public void DeleteProject(string beamoId, string csProjPath)
 		{
 			// TODO: Delete auto generated client. 
@@ -708,6 +829,50 @@ namespace Beamable.Server.Editor.Usam
 			{
 				action.isFailed = true;
 			});
+		}
+
+		public Promise GenerateClient()
+		{
+			if (_generateClientCommand != null)
+			{
+				_generateClientCommand.Cancel();
+				_generateClientCommand = null;
+			}
+			
+			_generateClientCommand = _cli.ProjectGenerateClient(
+				new ProjectGenerateClientArgs
+				{
+					outputLinks = true, 
+					
+					// the interface around this command has not aged well.
+					//  it actually generates clients for ALL services
+					source = "not-important"
+				});
+			_generateClientCommand.OnError(cb =>
+			{
+				Debug.LogError($"Failed to generate clients. message=[{cb.data.message}] ");
+			});
+			return _generateClientCommand.Run();
+		}
+
+		public Promise<string> GetLocalConnectionString(BeamManifestStorageEntry service)
+		{
+			var p = new Promise<string>();
+			_cli.ServicesGetConnectionString(new ServicesGetConnectionStringArgs
+			{
+				quiet = true, storageName = service.beamoId
+			}).OnStreamServicesGetConnectionStringCommandOutput(cb =>
+			{
+				var connStr = cb.data.connectionString;
+				p.CompleteSuccess(connStr);
+				
+			}).OnError(cb =>
+			{
+				Debug.LogError("connection string error: " +cb.data.message);
+				p.CompleteError(new Exception(cb.data.message));
+			}).Run();
+
+			return p;
 		}
 	}
 }

@@ -1,4 +1,5 @@
 using Beamable.Common.Api;
+using cli.Dotnet;
 using cli.Services;
 using cli.Utils;
 
@@ -21,6 +22,7 @@ public class ManifestServiceEntry
 	public string beamoId;
 	public bool shouldBeEnabledOnRemote;
 	public string csprojPath;
+	public string buildDllPath;
 	public List<string> storageDependencies;
 	public List<UnityAssemblyReferenceData> unityReferences;
 }
@@ -56,9 +58,12 @@ public class ShowManifestCommand : AtomicCommand<ShowManifestCommandArgs, ShowMa
 			{
 				throw new InvalidOperationException($"definition must exist for beamoId=[{beamoId}]");
 			}
+			var buildReport =  ProjectCommand.IsProjectBuiltMsBuild(http.Metadata.msbuildProject);
+			
 			var service = new ManifestServiceEntry
 			{
 				beamoId = beamoId,
+				buildDllPath = Path.GetFullPath(buildReport.path),
 				csprojPath = definition.ProjectPath,
 				shouldBeEnabledOnRemote = definition.ShouldBeEnabledOnRemote,
 				storageDependencies = http.StorageDependencyBeamIds,

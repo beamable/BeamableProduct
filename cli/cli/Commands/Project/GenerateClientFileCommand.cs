@@ -95,6 +95,7 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 		
 		foreach (var type in allMsTypes)
 		{
+			Log.Verbose($"Generating client for type {type.Name} ");
 			var attribute = type.GetCustomAttribute<MicroserviceAttribute>()!;
 			var descriptor = new MicroserviceDescriptor { Name = attribute.MicroserviceName, AttributePath = attribute.SourcePath, Type = type };
 

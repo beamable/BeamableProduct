@@ -13,10 +13,10 @@ namespace Beamable.Editor.Microservice.UI2
 		public UsamWindow2 usamWindow;
 		public Vector2 scrollPosition;
 
-		const int elementHeight = 35;
+		const int elementHeight = 39;
 		const int buttonWidth = 24;
 		const int buttonPadding = 2;
-		const int buttonYPadding = 3;
+		const int buttonYPadding = 7;
 
 		
 		private void OnInspectorUpdate()
@@ -74,9 +74,12 @@ namespace Beamable.Editor.Microservice.UI2
 		bool DrawCard(string beamoId, int index, Texture icon, Action drawButtons)
 		{
 			var bounds = new Rect(0, index * elementHeight, position.width, elementHeight);
+		
 			EditorGUILayout.BeginHorizontal(GUILayout.Height(elementHeight), GUILayout.ExpandWidth(true));
 
-			var clickableRect = new Rect(bounds.x, bounds.y, bounds.width - buttonWidth * 4 - 20,
+
+			var loadingRect = new Rect(bounds.x + 20, bounds.y, bounds.width - buttonWidth * 4 - 40, 4);
+			var clickableRect = new Rect(bounds.x, bounds.y + 4, bounds.width - buttonWidth * 4 - 20,
 			                             bounds.height);
 			EditorGUIUtility.AddCursorRect(clickableRect, MouseCursor.Link);
 
@@ -99,8 +102,18 @@ namespace Beamable.Editor.Microservice.UI2
 					EditorGUI.DrawRect(bounds, new Color(1,1,1, .05f));
 				}
 			}
-			
-			
+
+			{ // draw loading bar
+				if (usamWindow.usam.TryGetExistingAction(beamoId, out var progress))
+				{
+					var shouldAnimate = !progress.isComplete;
+					BeamGUI.LoadingRect(loadingRect, progress.progressRatio,
+					                    isFailed: progress.isFailed,
+					                    animate: shouldAnimate);
+				}
+			}
+
+
 			// space for icon
 			var iconRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.Width(elementHeight), GUILayout.Height(elementHeight));
 			var paddedIconRect = new Rect(iconRect.x + 16, iconRect.y + 8, iconRect.width - 16, iconRect.height - 16);
@@ -141,7 +154,7 @@ namespace Beamable.Editor.Microservice.UI2
 					                                         : default);
 				GUI.enabled = true;
 
-				var clickedOpenApi = BeamGUI.HeaderButton(null, UsamWindow2.iconOpenApi,
+				var clickedOpenApi = BeamGUI.HeaderButton(null, UsamWindow2.iconOpenMongoExpress,
 				                                          width: buttonWidth,
 				                                          padding: buttonPadding,
 				                                          yPadding: 3,

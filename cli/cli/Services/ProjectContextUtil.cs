@@ -392,12 +392,22 @@ public static class ProjectContextUtil
 			var buildProject = buildEngine.LoadProject(Path.GetFullPath(path));
 
 			// Log.Verbose($"loaded csproj - {sw.ElapsedMilliseconds}");
+
+			string NullifyIfEmpty(string str)
+			{
+				if (string.IsNullOrEmpty(str)) return null;
+				return str;
+			}
+			
 			projects[i].properties = new MsBuildProjectProperties()
 			{
 				BeamId = buildProject.GetPropertyValue(CliConstants.PROP_BEAMO_ID),
 				Enabled = buildProject.GetPropertyValue(CliConstants.PROP_BEAM_ENABLED),
 				ProjectType = buildProject.GetPropertyValue(CliConstants.PROP_BEAM_PROJECT_TYPE),
-				ServiceGroupString = buildProject.GetPropertyValue(CliConstants.PROP_BEAM_SERVICE_GROUP)
+				ServiceGroupString = buildProject.GetPropertyValue(CliConstants.PROP_BEAM_SERVICE_GROUP),
+				StorageDataVolumeName = NullifyIfEmpty(buildProject.GetPropertyValue(CliConstants.PROP_BEAM_STORAGE_DATA_VOLUME_NAME)),
+				StorageFilesVolumeName = NullifyIfEmpty(buildProject.GetPropertyValue(CliConstants.PROP_BEAM_STORAGE_FILES_VOLUME_NAME)),
+				MongoBaseImage = NullifyIfEmpty(buildProject.GetPropertyValue(CliConstants.PROP_BEAM_STORAGE_MONGO_BASE_IMAGE)),
 			};
 
 			{ // load up the settings
@@ -470,10 +480,21 @@ public static class ProjectContextUtil
 		var protocol = new EmbeddedMongoDbLocalProtocol();
 		
 		// TODO: we could extract these as options in the Csproj file.
-		protocol.BaseImage = MongoImage;
+		protocol.BaseImage = project.properties.MongoBaseImage ?? MongoImage;
 		protocol.RootUsername = "beamable";
 		protocol.RootPassword = "beamable";
 		protocol.Metadata = project;
+		
+		
+		{ 
+			// set the docker volume names. 
+			//  the default values exist as _legacy_ naming to support CLI 2. 
+			//  However, going forward, the names should be specified in the Storage Template
+			protocol.FilesVolumeName =
+				project.properties.StorageFilesVolumeName ?? $"{beamoServiceDefinition.BeamoId}_files";
+			protocol.DataVolumeName =
+				project.properties.StorageDataVolumeName ?? $"{beamoServiceDefinition.BeamoId}_data";
+		}
 		if (configService.UseWindowsStyleVolumeNames)
 		{
 			protocol.DataVolumeInContainerPath = "C:/data/db";
@@ -652,6 +673,15 @@ public static class ProjectContextUtil
 
 		[JsonProperty(CliConstants.PROP_BEAM_SERVICE_GROUP)]
 		public string ServiceGroupString;
+
+		[JsonProperty(CliConstants.PROP_BEAM_STORAGE_DATA_VOLUME_NAME)]
+		public string StorageDataVolumeName;
+		
+		[JsonProperty(CliConstants.PROP_BEAM_STORAGE_FILES_VOLUME_NAME)]
+		public string StorageFilesVolumeName;
+		
+		[JsonProperty(CliConstants.PROP_BEAM_STORAGE_MONGO_BASE_IMAGE)]
+		public string MongoBaseImage;
 	}
 	
 	public class MsBuildProjectReference

@@ -9,6 +9,7 @@ using Beamable.Common.Semantics;
 using cli.CliServerCommand;
 using cli.Commands.Project;
 using cli.Commands.Project.Deps;
+using cli.Commands.Project.StorageData;
 using cli.Content;
 using cli.Content.Tag;
 using cli.DeploymentCommands;
@@ -298,6 +299,12 @@ public class App
 		Commands.AddSubCommand<RequestCliCommand, RequestCliCommandArgs, ServerGroupCommand>();
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
 		Commands.AddRootCommand<ProjectCommand>();
+
+		Commands.AddSubCommand<StorageGroupCommand, CommandGroupArgs, ProjectCommand>();
+		Commands.AddSubCommand<SnapshotStorageObjectCommand, SnapshotStorageObjectCommandArgs, StorageGroupCommand>();
+		Commands.AddSubCommand<RestoreStorageObjectCommand, RestoreStorageObjectCommandArgs, StorageGroupCommand>();
+		Commands.AddSubCommand<EraseStorageObjectCommand, EraseStorageObjectCommandArgs, StorageGroupCommand>();
+		
 		Commands.AddSubCommand<ProjectNewCommand, CommandGroupArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateOApiCommand, GenerateOApiCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<RunProjectCommand, RunProjectCommandArgs, ProjectCommand>();
