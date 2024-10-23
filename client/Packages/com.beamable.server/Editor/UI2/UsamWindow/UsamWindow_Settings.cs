@@ -78,7 +78,7 @@ namespace Beamable.Editor.Microservice.UI2
 					padding = new RectOffset(2, 2, 8, 8),
 					margin = new RectOffset(12, 12, 12, 12)
 				});
-				EditorGUILayout.TextArea(foundService == null ? noServiceFound : settingHelp, new GUIStyle(EditorStyles.label)
+				EditorGUILayout.LabelField(foundService == null ? noServiceFound : settingHelp, new GUIStyle(EditorStyles.label)
 				{
 					wordWrap = true
 				});
@@ -107,22 +107,44 @@ namespace Beamable.Editor.Microservice.UI2
 
 				var settings = (BeamableMicroservicesSettings)serializedObj.targetObject;
 
-				EditorGUILayout.LabelField($"{settings.serviceName} Settings", new GUIStyle(EditorStyles.largeLabel));
+				{ // temp routing settings
+					// EditorGUILayout.LabelField($"Session {settings.serviceName} Settings", new GUIStyle(EditorStyles.largeLabel));
+					// EditorGUILayout.Separator();
+					//
+					// EditorGUI.indentLevel++;
+					//
+					// EditorGUILayout.Popup(new GUIContent("Routing Mode"), 0, new GUIContent[] {new GUIContent("beer")});
+					//
+					// EditorGUI.indentLevel--;
 
-				EditorGUI.indentLevel++;
-				EditorGUILayout.Separator();
-				// GUILayout.Label($"{settings.Key}:", serviceLabelStyle);
-				EditorGUILayout.Separator();
-				EditorGUILayout.PropertyField(
-					serializedObj.FindProperty(nameof(BeamableMicroservicesSettings.storageDependencies)),
-					new GUIContent("Storage Dependencies"));
-				EditorGUILayout.Separator();
-				EditorGUILayout.PropertyField(
-					serializedObj.FindProperty(nameof(BeamableMicroservicesSettings.assemblyReferences)),
-					new GUIContent("Assembly Definitions"));
-				EditorGUILayout.Separator();
-				serializedObj.ApplyModifiedProperties();
+				}
+				
+				EditorGUILayout.Space(30, false);
 
+
+				{ // reference settings
+					EditorGUILayout.LabelField($"{settings.serviceName} Settings",
+					                           new GUIStyle(EditorStyles.largeLabel));
+					EditorGUI.indentLevel++;
+					EditorGUILayout.Separator();
+					// GUILayout.Label($"{settings.Key}:", serviceLabelStyle);
+					EditorGUILayout.Separator();
+					
+					// EditorGUILayout.HelpBox(new GUIContent("blah blah"), false);
+					EditorGUILayout.PropertyField(
+						serializedObj.FindProperty(nameof(BeamableMicroservicesSettings.storageDependencies)),
+						new GUIContent("Storage Dependencies"));
+					EditorGUILayout.Separator();
+					
+					// EditorGUILayout.HelpBox(new GUIContent("blah blah"), false);
+					EditorGUILayout.PropertyField(
+						serializedObj.FindProperty(nameof(BeamableMicroservicesSettings.assemblyReferences)),
+						new GUIContent("Assembly Definitions"));
+					EditorGUILayout.Separator();
+					serializedObj.ApplyModifiedProperties();
+					EditorGUI.indentLevel--;
+				}
+				
 				if (settings.HasChanges())
 				{
 					
@@ -145,7 +167,6 @@ namespace Beamable.Editor.Microservice.UI2
 
 					}
 				}
-				EditorGUI.indentLevel--;
 
 				
 				EditorGUILayout.EndVertical();

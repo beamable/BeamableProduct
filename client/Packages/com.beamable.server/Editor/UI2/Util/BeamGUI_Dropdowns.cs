@@ -14,7 +14,8 @@ namespace Beamable.Editor.Util
 		                                     Func<T> windowFactory,
 		                                     int yPadding=5,
 		                                     int yShift=1,
-		                                     Color backdropColor=default)
+		                                     Color backdropColor=default,
+		                                     bool popupOnLeft=false)
 			where T : EditorWindow
 		{
 			if (backdropColor == default)
@@ -78,8 +79,13 @@ namespace Beamable.Editor.Util
 				// var popup = ScriptableObject.CreateInstance<T>();
 				const int tabHeight = 20;
 				var popupWidth = 300;
-				var popupPosition = new Rect(rootWindow.position.x + (paddedRect.xMax - popupWidth), rootWindow.position.y + tabHeight + paddedRect.yMax, 0, 0);
-	
+				var xCoord = rootWindow.position.x + (paddedRect.xMax - popupWidth);
+				if (popupOnLeft)
+				{
+					xCoord = rootWindow.position.x + paddedRect.xMin;
+				}
+				var popupPosition = new Rect(xCoord, rootWindow.position.y + tabHeight + paddedRect.yMax, 0, 0);
+				
 				popup.ShowAsDropDown(popupPosition, new Vector2(popupWidth, 100));
 			}
 		}

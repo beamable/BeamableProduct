@@ -3,6 +3,7 @@ using Beamable.Editor.UI;
 using Beamable.Server.Editor.Usam;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.Experimental;
 using UnityEngine;
@@ -22,6 +23,9 @@ namespace Beamable.Editor.Microservice.UI2
 		public static Texture iconOpenProject;
 		public static Texture iconMoreOptions;
 		public static Texture iconPlay;
+		
+		public CardButton selectedCard;
+
 		
 		static UsamWindow2()
 		{
@@ -85,6 +89,8 @@ namespace Beamable.Editor.Microservice.UI2
 			}
 
 			PrepareCards();
+			selectedCard = cards.FirstOrDefault(x => x.name == selectedBeamoId);
+
 			DrawMain();
 
 			{ // perform delayed actions
@@ -96,6 +102,7 @@ namespace Beamable.Editor.Microservice.UI2
 				_actions.Clear();
 			}
 		}
+
 
 		void LoadIcons()
 		{

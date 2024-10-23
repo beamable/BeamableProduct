@@ -18,6 +18,8 @@ namespace Beamable.Editor.Microservice.UI2
 		const int buttonPadding = 2;
 		const int buttonYPadding = 7;
 
+		private const int clickablePadding = 20;
+
 		
 		private void OnInspectorUpdate()
 		{
@@ -29,14 +31,40 @@ namespace Beamable.Editor.Microservice.UI2
 			var totalElementCount = usamWindow.usam.latestManifest.services.Count +
 			                        usamWindow.usam.latestManifest.storages.Count;
 			minSize = new Vector2(usamWindow.position.width-100, 
-			                      totalElementCount * elementHeight + 15);
+			                      totalElementCount * elementHeight + 40);
 
 			var usam = usamWindow.usam;
+			
+			
+			// _headerHeight = 0f;
+			{ // render a header bar
+				EditorGUILayout.BeginHorizontal();
+				// EditorGUILayout.Space(elementHeight + 4, false); // space for the icon
+				EditorGUILayout.LabelField("service name", new GUIStyle(EditorStyles.miniLabel)
+				                           {
+					                           padding = new RectOffset(elementHeight + 4, 0, 0, 0),
+					                           alignment = TextAnchor.MiddleLeft
+				                           }, 
+				                           GUILayout.Width(position.width - buttonWidth * 4 - clickablePadding));
+				EditorGUILayout.LabelField("local actions", new GUIStyle(EditorStyles.miniLabel)
+				                           {
+					                           padding = new RectOffset(clickablePadding - 2, 0, 0, 0),
+					                           alignment = TextAnchor.MiddleLeft
+				                           }, 
+				                           GUILayout.Width(buttonWidth * 4));
+
+				
+				// EditorGUILayout.LabelField("local actions", new GUIStyle(EditorStyles.miniLabel),
+				//                            GUILayout.Width(buttonWidth * 4 - 20));
+				EditorGUILayout.EndHorizontal();
+			}
+			
 			scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
 			EditorGUILayout.BeginVertical();
 
 			var clicked = false;
 			var totalIndex = 0;
+
 			
 			{ // render the services first, 
 				for (var i = 0; i < usam?.latestManifest?.services?.Count; i++, totalIndex++)
@@ -78,8 +106,8 @@ namespace Beamable.Editor.Microservice.UI2
 			EditorGUILayout.BeginHorizontal(GUILayout.Height(elementHeight), GUILayout.ExpandWidth(true));
 
 
-			var loadingRect = new Rect(bounds.x + 20, bounds.y, bounds.width - buttonWidth * 4 - 40, 4);
-			var clickableRect = new Rect(bounds.x, bounds.y + 4, bounds.width - buttonWidth * 4 - 20,
+			var loadingRect = new Rect(bounds.x + 20, bounds.y, bounds.width - buttonWidth * 4 - clickablePadding - 20, 4);
+			var clickableRect = new Rect(bounds.x, bounds.y + 4, bounds.width - buttonWidth * 4 - clickablePadding,
 			                             bounds.height);
 			EditorGUIUtility.AddCursorRect(clickableRect, MouseCursor.Link);
 
@@ -104,7 +132,7 @@ namespace Beamable.Editor.Microservice.UI2
 			}
 
 			{ // draw loading bar
-				if (usamWindow.usam.TryGetExistingAction(beamoId, out var progress))
+				if (usamWindow.usam.TryGetExistingAction(beamoId, out var progress) && progress.progressRatio > .01f)
 				{
 					var shouldAnimate = !progress.isComplete;
 					BeamGUI.LoadingRect(loadingRect, progress.progressRatio,

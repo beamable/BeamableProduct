@@ -164,6 +164,7 @@ namespace Beamable.Editor.BeamCli
 			yield return null; // important, wait a frame to accrue all requests in one "tick" 
 			var serverIdentified = false;
 			CliLogger.Log("Checking server init ....");
+			
 			while (!serverIdentified)
 			{
 				var pingPromise = PingServer();
@@ -248,11 +249,19 @@ namespace Beamable.Editor.BeamCli
 		{
 			try
 			{
+				
 // #if UNITY_2021_1_OR_NEWER
 				// var json = await localClient.GetStringAsync(InfoUrl);
 // #else
-				var json = await localClient.GetStringAsync(InfoUrl);;
+
+				var jsonTask = localClient.GetStringAsync(InfoUrl);;
+
+				await Task.WhenAny(jsonTask, Task.Delay(1000));
+
+				if (!jsonTask.IsCompleted) throw new TimeoutException("cli ping timed out");
+				var json = jsonTask.Result;
 // #endif
+
 				var res = JsonUtility.FromJson<ServerInfoResponse>(json);
 				
 				var ownerMatches = String.Equals(res.owner, Owner, StringComparison.OrdinalIgnoreCase);
@@ -377,7 +386,6 @@ namespace Beamable.Editor.BeamCli
 			{
 				if (!_cts.IsCancellationRequested)
 				{
-
 
 					using HttpResponseMessage response =
 						await _localClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);

@@ -5,6 +5,7 @@ using Beamable.Editor.Util;
 using Beamable.Server.Editor.Usam;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -55,6 +56,11 @@ namespace Beamable.Editor.Microservice.UI2
 				
 				EditorGUILayout.BeginHorizontal(new GUIStyle(), GUILayout.ExpandWidth(true), GUILayout.MinHeight(toolbarHeight));
 
+				// EditorGUILayout.Space(6, false);
+
+				
+				
+				
 				EditorGUILayout.Space(1, true);
 
 				// GUI.enabled = false;
@@ -64,7 +70,7 @@ namespace Beamable.Editor.Microservice.UI2
 				                                     xOffset: (int)((buttonWidth * 3) * -.5f), // number of buttons to the right, split by half
 				                                     backgroundColor: isRunning ? primaryColor : buttonBackgroundColor,
 				                                     tooltip: isRunning ? "Shutdown the service " : "Start the service");
-				EditorGUILayout.Space(5, true);
+				EditorGUILayout.Space(1, true);
 				// GUI.enabled = true;
 
 				clickedOpenDocs = BeamGUI.HeaderButton(null, iconOpenApi,

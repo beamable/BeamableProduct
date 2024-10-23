@@ -20,6 +20,40 @@ using UnityEngine;
 
 namespace Beamable.Server.Editor.Usam
 {
+	
+	[Serializable]
+	public class ServiceRoutingSetting
+	{
+		public string beamoId;
+
+		public RoutingOption selectedOption = null;
+
+		public List<RoutingOption> options = new List<RoutingOption>();
+		
+		public bool IsSelectedValid => options.Any(x => x.routingKey == selectedOption?.routingKey && x?.instance?.primaryKey == selectedOption?.instance?.primaryKey);
+
+	}
+	
+	public enum RoutingOptionType
+	{
+		REMOTE, 
+		LOCAL,
+		AUTO,
+		FRIEND
+	}
+
+	
+	[Serializable]
+	public class RoutingOption
+	{
+		public string display;
+		public string routingKey;
+		public RoutingOptionType type;
+		public BeamServiceInstance instance;
+		
+	}
+	
+	
 	public class UsamService : IStorageHandler<UsamService>, Beamable.Common.Dependencies.IServiceStorable
 	{
 		[Serializable]
@@ -29,6 +63,9 @@ namespace Beamable.Server.Editor.Usam
 			public LogView logView;
 			public List<CliLogMessage> logs;
 		}
+
+		
+		
 		
 		private StorageHandle<UsamService> _handle;
 		private BeamCommands _cli;
@@ -39,6 +76,11 @@ namespace Beamable.Server.Editor.Usam
 		public List<BeamServiceStatus> latestStatus;
 		public BeamDockerStatusCommandOutput latestDockerStatus;
 
+		/// <summary>
+		/// Controls where traffic will be directed
+		/// </summary>
+		public List<ServiceRoutingSetting> routingSettings = new List<ServiceRoutingSetting>();
+		
 		/// <summary>
 		/// This is a counter to track how many times the <see cref="ListenForBuildChanges"/> method has been called.
 		/// Internal to the method, this field is used to stop old invocations of the on-going coroutine
@@ -119,6 +161,8 @@ namespace Beamable.Server.Editor.Usam
 		public bool TryGetStatus(string beamoId, out BeamServiceStatus status)
 		{
 			status = null;
+			if (latestStatus == null) return false;
+			
 			for (var i = 0; i < latestStatus.Count; i++)
 			{
 				if (latestStatus[i].service == beamoId)
@@ -294,9 +338,12 @@ namespace Beamable.Server.Editor.Usam
 			_watchCommand.OnStreamCheckStatusServiceResult(cb =>
 			{
 				latestStatus = cb.data.services;
+				
 				foreach (var status in latestStatus)
 				{
 					ListenForLogs(status.service);
+
+					UpdateRoutingOptions(status);
 				}
 
 			});
@@ -304,6 +351,100 @@ namespace Beamable.Server.Editor.Usam
 			// TODO: add re-try logic
 		}
 
+		void UpdateRoutingOptions(BeamServiceStatus status)
+		{
+			if (!TryGetRoutingSetting(status.service, out var setting))
+			{
+				setting = new ServiceRoutingSetting
+				{
+					beamoId = status.service, selectedOption = null, options = new List<RoutingOption>()
+				};
+				routingSettings.Add(setting);
+			}
+			
+			// populate all the options
+			setting.options.Clear();
+			RoutingOption localOption = null;
+			RoutingOption remoteOption = null;
+
+			var autoOption = new RoutingOption
+			{
+				display = null, 
+				routingKey = latestManifest.localRoutingKey, 
+				type = RoutingOptionType.AUTO
+			};
+			setting.options.Add(autoOption);
+			
+			
+			for (var i = 0; i < status.availableRoutes.Count; i++)
+			{
+				var route = status.availableRoutes[i];
+				if (route.instances.Count == 0)
+				{
+					continue;
+				}
+
+				// Take the first instance, which is technical a bug.
+				//  it is possible that a federation could be backed by more than 1 instance,
+				//  but the instances have different emails. 
+				//  if this ever happens, this code is glitched, because we are assuming that
+				//  all instances of a routing key share the same author. 
+				var instance = route.instances[0];
+
+				if (route.routingKey == latestManifest.localRoutingKey)
+				{
+					localOption = new RoutingOption
+					{
+						display = "local",
+						type = RoutingOptionType.LOCAL,
+						instance = instance,
+						routingKey = latestManifest.localRoutingKey
+					};
+					setting.options.Add(localOption);
+				} else if (string.IsNullOrEmpty(route.routingKey))
+				{
+					// this is the remote-deployed service, because it has an empty routingKey
+					remoteOption = new RoutingOption
+					{
+						display = "realm", 
+						type = RoutingOptionType.REMOTE,
+						instance = instance
+					};
+					setting.options.Add(remoteOption);
+				}
+				else
+				{
+					setting.options.Add(new RoutingOption
+					{
+						display = instance.startedByAccountEmail,
+						type = RoutingOptionType.FRIEND,
+						routingKey = route.routingKey,
+						instance = instance
+					});
+				}
+			}
+
+			{
+				if (localOption != null)
+				{
+					autoOption.display = localOption.display;
+					autoOption.instance = localOption.instance;
+					// autoOption.routingKey = localOption.routingKey;
+				} else if (remoteOption != null)
+				{
+					autoOption.display = remoteOption.display;
+					autoOption.instance = remoteOption.instance;
+					// autoOption.routingKey = remoteOption.routingKey;
+				}
+			}
+			
+			// if the selection is no longer valid, then we jump to local first, 
+			if (setting.selectedOption == null || setting.selectedOption.type == RoutingOptionType.AUTO)
+			{
+				setting.selectedOption = autoOption;
+			}
+		}
+		
 		public void ListenForLogs(string service)
 		{
 			if (_serviceToLogCommand.TryGetValue(service, out _))
@@ -505,6 +646,12 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 
+		public bool TryGetRoutingSetting(string service, out ServiceRoutingSetting setting)
+		{
+			setting = routingSettings.FirstOrDefault(x => x.beamoId == service);
+			return setting != null;
+		}
+		
 		public bool TryGetExistingAction(string service, out ServiceCliAction action)
 		{
 			return _serviceToAction.TryGetValue(service, out action);
