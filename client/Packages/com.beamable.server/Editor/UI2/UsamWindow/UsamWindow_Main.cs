@@ -276,14 +276,7 @@ namespace Beamable.Editor.Microservice.UI2
 					}
 
 					EditorGUILayout.Space(4, false);
-
-					
-					BeamGUI.LayoutDropDown(this, new GUIContent("realm"), GUILayout.MaxWidth(80),
-					                       ScriptableObject.CreateInstance<BeamGuiPopup>, popupOnLeft: true);
-
-				
-					
-					
+					BeamGUI.LayoutRealmDropdown(this, ActiveContext);
 					EditorGUILayout.Space(4, false);
 				}
 				

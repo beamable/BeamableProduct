@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -6,12 +7,45 @@ namespace Beamable.Editor.Util
 {
 	public partial class BeamGUI
 	{
-		private static readonly Color backgroundColor = new Color(.5f, .5f, .5f, .65f);
+		private class PopupTime
+		{
+			public EditorWindow window;
+			public bool noticedClose;
+		}
 		
+		private static readonly Color backgroundColor = new Color(.5f, .5f, .5f, .65f);
+		private static Dictionary<Type, PopupTime> _popupTypeToCloseTime = new Dictionary<Type, PopupTime>();
+
+
+		private static void DropdownUpdate()
+		{
+			foreach (var kvp in _popupTypeToCloseTime)
+			{
+				if (kvp.Value.window == null && ! kvp.Value.noticedClose)
+				{
+					kvp.Value.noticedClose = true;
+				}
+			}
+		}
+		
+		public static void LayoutDropDown<T>(EditorWindow rootWindow,
+		                                     GUIContent current,
+		                                     GUILayoutOption widthOption,
+		                                     Func<T> windowFactory,
+		                                     int yPadding = 5,
+		                                     int yShift = 1,
+		                                     Color backdropColor = default,
+		                                     bool popupOnLeft = false
+		                                     )
+			where T : EditorWindow
+		{
+			LayoutDropDown(rootWindow, current,widthOption,windowFactory,out _,yPadding,yShift, backdropColor, popupOnLeft);
+		}
 		public static void LayoutDropDown<T>(EditorWindow rootWindow, 
 		                                     GUIContent current, 
 		                                     GUILayoutOption widthOption, 
 		                                     Func<T> windowFactory,
+		                                     out Rect contentBounds,
 		                                     int yPadding=5,
 		                                     int yShift=1,
 		                                     Color backdropColor=default,
@@ -22,10 +56,12 @@ namespace Beamable.Editor.Util
 			{
 				backdropColor = backgroundColor;
 			}
+			
 			const int arrowWidth = 25;
 
 			var bounds = GUILayoutUtility.GetRect(current, new GUIStyle
 			                                      {
+				                                      fontSize = 10,
 				                                      padding = new RectOffset(5, arrowWidth + 5, 0, 0)
 			                                      }, 
 			                                      GUILayout.ExpandWidth(false),
@@ -35,7 +71,7 @@ namespace Beamable.Editor.Util
 			// const int yPadding = 5;
 			// const int yShift = 1;
 			var paddedRect = new Rect(bounds.x, bounds.y + yPadding + yShift, bounds.width, bounds.height - yPadding * 2);
-			
+			contentBounds = paddedRect;
 			var contentRect = new Rect(paddedRect.x, paddedRect.y, paddedRect.width - arrowWidth, paddedRect.height);
 			var arrowRect = new Rect(paddedRect.xMax - arrowWidth, paddedRect.y, arrowWidth, paddedRect.height);
 
@@ -80,18 +116,36 @@ namespace Beamable.Editor.Util
 
 			if (buttonClicked)
 			{
-				var popup = windowFactory?.Invoke();
-				// var popup = ScriptableObject.CreateInstance<T>();
-				const int tabHeight = 20;
-				var popupWidth = 300;
-				var xCoord = rootWindow.position.x + (paddedRect.xMax - popupWidth);
-				if (popupOnLeft)
+
+				var shouldShow = true;
+				if (_popupTypeToCloseTime.TryGetValue(typeof(T), out var existing))
 				{
-					xCoord = rootWindow.position.x + paddedRect.xMin;
+					if (!existing.noticedClose)
+					{
+						shouldShow = false;
+					}
 				}
-				var popupPosition = new Rect(xCoord, rootWindow.position.y + tabHeight + paddedRect.yMax, 0, 0);
 				
-				popup.ShowAsDropDown(popupPosition, new Vector2(popupWidth, 100));
+				if (shouldShow)
+				{
+					
+					var popup = windowFactory?.Invoke();
+					_popupTypeToCloseTime[typeof(T)] = new PopupTime
+					{
+						window = popup
+					};
+					
+					const int tabHeight = 20;
+					var popupWidth = 300;
+					var xCoord = rootWindow.position.x + (paddedRect.xMax - popupWidth);
+					if (popupOnLeft)
+					{
+						xCoord = rootWindow.position.x + paddedRect.xMin;
+					}
+					var popupPosition = new Rect(xCoord, rootWindow.position.y + tabHeight + paddedRect.yMax, 0, 0);
+					popup.ShowAsDropDown(popupPosition, new Vector2(popupWidth, 100));
+
+				}
 			}
 		}
 	}
