@@ -583,11 +583,20 @@ public class DiscoveryService
 					if (!processIdToEntry.ContainsKey(service.processId))
 					{
 						var groups = Array.Empty<string>();
+						var fedConfig = default(FederationsConfig);
 						if (_localSystem.BeamoManifest.TryGetDefinition(service.serviceName, out var definition))
 						{
 							groups = definition.ServiceGroupTags;
+							fedConfig = definition.SourceGenConfig.Federations;
 						}
 
+						var feds = fedConfig?.Select(kvp =>
+							           new FederationInstance
+							           {
+								           FederationTypes = kvp.Value.Select(v => v.Interface).ToArray(),
+								           FederationId = kvp.Key
+							           }).ToArray()
+						           ?? Array.Empty<FederationInstance>();
 						var addition = processIdToEntry[service.processId] = new HostServiceDescriptor
 						{
 							processId = service.processId,
@@ -596,7 +605,7 @@ public class DiscoveryService
 							healthPort = service.healthPort,
 							routingKey = service.prefix,
 							groups = groups,
-							federations = definition.SourceGenConfig.Federations.Select(kvp => new FederationInstance { FederationTypes = kvp.Value.Select(v => v.Interface).ToArray(), FederationId = kvp.Key }).ToArray()
+							federations = feds
 						};
 						evtQueue.Enqueue(new HostServiceEvent
 						{

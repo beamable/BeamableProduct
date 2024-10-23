@@ -12,7 +12,11 @@ public class ServicesGetConnectionStringCommandArgs : CommandArgs
 	public bool IsQuiet;
 }
 
-public class ServicesGetConnectionStringCommand : AppCommand<ServicesGetConnectionStringCommandArgs>
+public class ServicesGetConnectionStringCommandOutput
+{
+	public string connectionString;
+}
+public class ServicesGetConnectionStringCommand : AtomicCommand<ServicesGetConnectionStringCommandArgs, ServicesGetConnectionStringCommandOutput>
 {
 	public ServicesGetConnectionStringCommand() : base("get-connection-string",
 		"Gets the Microstorage connection string")
@@ -32,7 +36,7 @@ public class ServicesGetConnectionStringCommand : AppCommand<ServicesGetConnecti
 			(arg, i) => arg.IsQuiet = i);
 	}
 
-	public override async Task Handle(ServicesGetConnectionStringCommandArgs args)
+	public override async Task<ServicesGetConnectionStringCommandOutput> GetResult(ServicesGetConnectionStringCommandArgs args)
 	{
 		var canProceed = args.IsQuiet || AnsiConsole.Confirm(
 			"[yellow]WARNING:[/] The MongoDB connection string allows full read/write access to your Storage. Before proceeding, make sure you are in a secure environment and your screen is not visible to anyone unauthorized. Proceed?",
@@ -40,17 +44,17 @@ public class ServicesGetConnectionStringCommand : AppCommand<ServicesGetConnecti
 
 		if (!canProceed)
 		{
-			return;
+			return new ServicesGetConnectionStringCommandOutput();
 		}
 
 		try
 		{
 			var connectionString = await args.GetLocalOrRemoteConnectionString();
-			BeamableLogger.Log(connectionString);
+			return new ServicesGetConnectionStringCommandOutput { connectionString = connectionString };
 		}
 		catch (Exception ex)
 		{
-			BeamableLogger.LogError(ex.Message);
+			throw new CliException(ex.Message);
 		}
 	}
 }

@@ -6,7 +6,7 @@ namespace Beamable.Editor.BeamCli.Commands
 
 	public class DeploymentStatusArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>include archived (removed) services</summary>
+		/// <summary>Include archived (removed) services</summary>
 		public bool showArchived;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()

@@ -160,6 +160,7 @@ namespace Beamable
 			{
 				BeamEditorContext.StopAll().Wait();
 			};
+			
 		}
 
 		private static int initializeAttemptCount = 0;

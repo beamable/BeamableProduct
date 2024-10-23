@@ -1,0 +1,74 @@
+using UnityEditor;
+using UnityEngine;
+
+namespace Beamable.Editor.Util
+{
+	public partial class BeamGUI
+	{
+		public static bool HeaderButton(string label, Texture icon, int width=80, 
+		                                string tooltip="", 
+		                                int padding=0, 
+		                                int yPadding=0,
+		                                int xOffset=0,
+		                                Color backgroundColor=default,
+		                                bool drawBorder=true)
+		{
+			var isDisabled = !GUI.enabled;
+			Color startColor = GUI.color;
+			if (isDisabled)
+			{
+				GUI.color = Color.Lerp(startColor, Color.clear, .3f);
+			}
+			
+			var rect = GUILayoutUtility.GetRect(GUIContent.none, new GUIStyle(),  GUILayout.Width(width), GUILayout.ExpandHeight(true));
+			rect = new Rect(rect.x + padding, rect.y + padding + yPadding, rect.width - padding * 2, rect.height - padding * 2 - yPadding * 2);
+
+			rect = new Rect(rect.x - xOffset, rect.y, rect.width, rect.height);
+			
+			var isButtonHover = rect.Contains(Event.current.mousePosition);
+			var buttonClicked = isButtonHover && Event.current.rawType == EventType.MouseDown;
+
+			{ // draw hover color
+				EditorGUI.DrawRect(rect, backgroundColor);
+				if (isButtonHover)
+				{
+					EditorGUI.DrawRect(rect, new Color(1,1,1, .05f));
+				}
+			}
+			GUI.Label(rect, new GUIContent(null, null, tooltip), GUIStyle.none);
+			
+			{ // draw the icon
+				var lowerPadding = label == null ? 2 : 15;
+				var texRect = new Rect(rect.x, rect.y+2, rect.width, rect.height - lowerPadding);
+				GUI.DrawTexture(texRect, icon, ScaleMode.ScaleToFit);
+				
+			}
+
+			{ // draw the label
+				var labelRect = new Rect(rect.x, rect.yMax - 15, rect.width, 15);
+				GUI.Label(labelRect, new GUIContent(label), new GUIStyle(EditorStyles.miniLabel)
+				{
+					alignment = TextAnchor.MiddleCenter
+				});
+			}
+
+			if (drawBorder)
+			{ // draw right-border (only right, because these feed out from the left)
+				var borderRect = new Rect(rect.xMax - 1, rect.y, 1, rect.height);
+				EditorGUI.DrawRect(borderRect, new Color(0, 0, 0, .3f));
+			}
+
+			if (isDisabled)
+			{
+				// EditorGUIUtility.AddCursorRect(rect, MouseCursor.);
+			}
+			else
+			{
+				EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
+			}
+
+			GUI.color = startColor;
+			return !isDisabled && buttonClicked;
+		}
+	}
+}

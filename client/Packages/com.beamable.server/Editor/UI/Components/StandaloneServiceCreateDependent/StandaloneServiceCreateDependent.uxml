@@ -1,6 +1,0 @@
-<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.Experimental.UIElements" noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd" beamable="Beamable.Editor.UI.Components" beamableMS="Beamable.Editor.Microservice.UI.Components" schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd" editor-extension-mode="False">
-    <ui:VisualElement name="mainContainer" style="min-height: auto; max-height: none; height: auto; flex-shrink: 0; padding-top: 5px; padding-bottom: 10px;">
-        <ui:Label name="header" text="Optional dependencies:" style="height: auto;" />
-        <ui:ScrollView name="scrollView" style="min-width: auto; max-width: none; min-height: auto; max-height: none; height: auto; flex-grow: 0; flex-shrink: 0;" />
-    </ui:VisualElement>
-</ui:UXML>

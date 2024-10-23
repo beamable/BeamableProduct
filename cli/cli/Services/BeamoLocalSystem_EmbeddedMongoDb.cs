@@ -14,7 +14,10 @@ public partial class BeamoLocalSystem
 {
 	public static string GetBeamIdAsMongoContainer(string beamoId) => $"{beamoId}_mongoDb";
 
-	const string MONGO_DATA_CONTAINER_PORT = "27017";
+	public static string GetDataVolumeName(string beamoId) => $"{beamoId}_data";
+	public static string GetFilesVolumeName(string beamoId) => $"{beamoId}_files";
+	
+	public const string MONGO_DATA_CONTAINER_PORT = "27017";
 
 	/// <summary>
 	/// Runs a service locally, enforcing the <see cref="BeamoProtocolType.EmbeddedMongoDb"/> protocol.
@@ -23,10 +26,7 @@ public partial class BeamoLocalSystem
 	{
 		const string ENV_MONGO_ROOT_USERNAME = "MONGO_INITDB_ROOT_USERNAME";
 		const string ENV_MONGO_ROOT_PASSWORD = "MONGO_INITDB_ROOT_PASSWORD";
-		const string VOL_NAME_DATA = "{0}_data";
-		const string VOL_NAME_FILES = "{0}_files";
-
-		var imageId = serviceDefinition.ImageId;
+		var imageId = localProtocol.BaseImage;
 		var containerName = GetBeamIdAsMongoContainer(serviceDefinition.BeamoId);
 
 		var portBindings = new List<DockerPortBinding>();
@@ -34,8 +34,8 @@ public partial class BeamoLocalSystem
 			portBindings.Add(new DockerPortBinding() { LocalPort = localProtocol.MongoLocalPort, InContainerPort = MONGO_DATA_CONTAINER_PORT });
 
 		var volumes = new List<DockerVolume>();
-		volumes.Add(new DockerVolume { VolumeName = string.Format(VOL_NAME_DATA, serviceDefinition.BeamoId), InContainerPath = localProtocol.DataVolumeInContainerPath });
-		volumes.Add(new DockerVolume { VolumeName = string.Format(VOL_NAME_FILES, serviceDefinition.BeamoId), InContainerPath = localProtocol.FilesVolumeInContainerPath });
+		volumes.Add(new DockerVolume { VolumeName = localProtocol.DataVolumeName, InContainerPath = localProtocol.DataVolumeInContainerPath });
+		volumes.Add(new DockerVolume { VolumeName = localProtocol.FilesVolumeName, InContainerPath = localProtocol.FilesVolumeInContainerPath });
 
 		var bindMounts = new List<DockerBindMount>();
 
@@ -74,6 +74,9 @@ public class EmbeddedMongoDbLocalProtocol : IBeamoLocalProtocol
 
 	public string MongoLocalPort;
 
+	public string DataVolumeName;
+	public string FilesVolumeName;
+	
 	public string DataVolumeInContainerPath;
 	public string FilesVolumeInContainerPath;
 	

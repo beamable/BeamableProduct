@@ -14,6 +14,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 {
 	public partial class UsamPublishWindow : EditorWindow
 	{
+		public static int instanceCount = 0;
 		public class PlanRow
 		{
 			public BeamPlanReleaseProgress progress;
@@ -74,11 +75,13 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 		
 		public void OnEnable()
 		{
+			instanceCount++;
 			EditorApplication.update += OnEditorUpdate;
 		}
 
 		private void OnDisable()
 		{
+			instanceCount--;
 			EditorApplication.update -= OnEditorUpdate;
 		}
 
@@ -194,7 +197,6 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 				
 				if (_primaryButtonStyle == null)
 				{
-					
 					_primaryButtonStyle = BeamGUI.ColorizeButton(loadingPrimary);
 					_primaryButtonStyle.padding = new RectOffset(6, 6, 6, 6);
 				}

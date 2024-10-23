@@ -190,9 +190,7 @@ namespace Beamable.Editor.BeamCli.UI
 			var viewRect = new Rect(0, 0, scrollRect.width - 15, totalHeight);
 
 			scrollPos = GUI.BeginScrollView(scrollRect, scrollPos, viewRect);
-			var areaRect = new Rect(scrollPos.x, scrollPos.y, scrollRect.width - 15, visHeight);
-			EditorGUI.DrawRect(areaRect, new Color(1,1,1,.1f));
-
+			
 			if (scrollPos.y > totalHeight - visHeight)
 			{
 				scrollPos.y = totalHeight - visHeight;

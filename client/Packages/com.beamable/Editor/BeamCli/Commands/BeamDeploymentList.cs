@@ -6,9 +6,9 @@ namespace Beamable.Editor.BeamCli.Commands
 
 	public class DeploymentListArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>the limit of resources. A value of -1 means no limit</summary>
+		/// <summary>The limit of resources. A value of -1 means no limit</summary>
 		public int limit;
-		/// <summary>include archived (removed) services</summary>
+		/// <summary>Include archived (removed) services</summary>
 		public bool showArchived;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()

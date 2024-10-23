@@ -52,7 +52,7 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 		}
 		
 		var stoppedInstances = new List<ServiceInstance>();
-		await foreach (var status in CheckStatusCommand.CheckStatus(args, discoveryPeriod, DiscoveryMode.LOCAL))
+		await foreach (var status in CheckStatusCommand.CheckStatus(args, discoveryPeriod, DiscoveryMode.LOCAL, token: args.Lifecycle.CancellationToken))
 		{
 			foreach (var service in status.services)
 			{
