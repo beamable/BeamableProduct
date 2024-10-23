@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] - 2024-09-25
+
+### Added
+- `matchType` field of the `Lobby` struct used by `IFederatedGameServer`
+
 ## [2.0.1] - 2024-06-17
 
 ### Added
@@ -13,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `beam project stop` will stop services running in docker
 - `beam service ps`  was not working when calling it because it was trying to get the ImageId of storage objects
-- common lib handling uses `.` as a default path instead of the empty string
+- common lib handling uses `.` as a default path instead of the empty string 
 - `UpdateDockerfile` update to fix common lib handling for docker builds
 
 ### Changed
@@ -90,7 +95,7 @@ no changes
 ## [1.19.14] - 2024-02-06
 
 ### Fixed
-- Docker path issue when adding storage objects 
+- Docker path issue when adding storage objects
 
 ## [1.19.13] - 2024-02-05
 no changes
@@ -165,7 +170,7 @@ no changes
 - `beam services deploy` no longer times out.
 
 ### Changed
- - Templates update with refactor to improve it receiving updates and fixes in the future.
+- Templates update with refactor to improve it receiving updates and fixes in the future.
 
 ## [1.19.1] - 2023-09-22
 
@@ -267,9 +272,9 @@ no changes
 
 - `beam project generate-ignore-file` command to generate an ignore file in config folder for given VCS
 - `beam services get-connection-string my-storage-name` retrieves the local connection string
-for the specified micro-storage
+  for the specified micro-storage
 - `beam services get-connection-string my-storage-name --remote` retrieves the remote connection string
-for the specified micro-storage
+  for the specified micro-storage
 - Add `--quiet` to ignore confirmation step when retrieving connection string
 
 ## [1.16.2] - 2023-07-12
