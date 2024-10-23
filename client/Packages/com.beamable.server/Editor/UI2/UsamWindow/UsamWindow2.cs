@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Editor.Microservice.UI2.PublishWindow;
 using Beamable.Editor.UI;
 using Beamable.Server.Editor.Usam;
 using System;
@@ -91,7 +92,13 @@ namespace Beamable.Editor.Microservice.UI2
 			PrepareCards();
 			selectedCard = cards.FirstOrDefault(x => x.name == selectedBeamoId);
 
+			if (UsamPublishWindow.instanceCount > 0)
+			{
+				GUI.enabled = false;
+			}
 			DrawMain();
+			GUI.enabled = true;
+
 
 			{ // perform delayed actions
 				foreach (var act in _actions)

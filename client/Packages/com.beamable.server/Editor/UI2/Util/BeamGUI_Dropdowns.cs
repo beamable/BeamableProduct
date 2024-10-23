@@ -39,9 +39,14 @@ namespace Beamable.Editor.Util
 			var contentRect = new Rect(paddedRect.x, paddedRect.y, paddedRect.width - arrowWidth, paddedRect.height);
 			var arrowRect = new Rect(paddedRect.xMax - arrowWidth, paddedRect.y, arrowWidth, paddedRect.height);
 
-			var isButtonHover = paddedRect.Contains(Event.current.mousePosition);
+			var isButtonHover = GUI.enabled && paddedRect.Contains(Event.current.mousePosition);
 			var buttonClicked = isButtonHover && Event.current.rawType == EventType.MouseDown;
-			EditorGUIUtility.AddCursorRect(paddedRect, MouseCursor.Link);
+
+			if (GUI.enabled)
+			{
+				EditorGUIUtility.AddCursorRect(paddedRect, MouseCursor.Link);
+			}
+			
 
 			{ // draw hover color
 				EditorGUI.DrawRect(paddedRect, backdropColor);

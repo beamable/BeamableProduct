@@ -131,7 +131,17 @@ namespace Beamable.Editor.Microservice.UI2
 				{
 					log = new UsamService.NamedLogView
 					{
-						beamoId = service.beamoId, logView = new LogView(), logs = new List<CliLogMessage>()
+						beamoId = service.beamoId, logView = new LogView
+						{
+							verbose = new LogLevelView
+							{
+								enabled = false,
+							},
+							debug = new LogLevelView
+							{
+								enabled = false
+							}
+						}, logs = new List<CliLogMessage>()
 					};
 					usam._namedLogs.Add(log);
 				}

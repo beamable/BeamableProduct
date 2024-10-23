@@ -220,9 +220,12 @@ namespace Beamable.Editor.Microservice.UI2
 						BeamGUI.HeaderButton("Publish", EditorGUIUtility.FindTexture("Profiler.GlobalIllumination"));
 
 
-					GUI.enabled = state != WindowState.CREATE_SERVICE && state != WindowState.CREATE_STORAGE;
-					clickedCreate = BeamGUI.HeaderButton("Create", EditorGUIUtility.FindTexture("Toolbar Plus"));
-					GUI.enabled = true;
+					BeamGUI.ShowDisabled(state != WindowState.CREATE_SERVICE && state != WindowState.CREATE_STORAGE,
+					                     () =>
+					                     {
+						                     BeamGUI.HeaderButton(
+							                     "Create", EditorGUIUtility.FindTexture("Toolbar Plus"));
+					                     });
 				}
 
 				EditorGUILayout.Space(1, true);
@@ -260,16 +263,6 @@ namespace Beamable.Editor.Microservice.UI2
 				{ // draw the dropdowns
 					
 					
-					BeamGUI.LayoutDropDown(this, new GUIContent("realm"), GUILayout.MaxWidth(80),
-					                       ScriptableObject.CreateInstance<BeamGuiPopup>, popupOnLeft: true);
-
-					// EditorGUILayout.Space(2, false);
-					EditorGUILayout.LabelField("/", new GUIStyle(EditorStyles.largeLabel)
-					{
-						margin = new RectOffset(2, 2, 0, 0),
-						alignment = TextAnchor.MiddleCenter
-					}, GUILayout.ExpandHeight(true), GUILayout.Width(8));
-
 					if (cards.Count > 0) // if there are no cards, then there is nothing to pick.
 					{
 						BeamGUI.LayoutDropDown(this, new GUIContent(selectedBeamoId), GUILayout.ExpandHeight(true),
@@ -282,39 +275,14 @@ namespace Beamable.Editor.Microservice.UI2
 						);
 					}
 
+					EditorGUILayout.Space(4, false);
+
 					
+					BeamGUI.LayoutDropDown(this, new GUIContent("realm"), GUILayout.MaxWidth(80),
+					                       ScriptableObject.CreateInstance<BeamGuiPopup>, popupOnLeft: true);
+
+				
 					
-					if (state == WindowState.NORMAL && selectedCard.serviceIndex >= 0)
-					{ // draw the routing dropdown 
-						EditorGUILayout.LabelField("/", new GUIStyle(EditorStyles.largeLabel)
-						{
-							margin = new RectOffset(2, 2, 0, 0),
-							alignment = TextAnchor.MiddleCenter
-						}, GUILayout.ExpandHeight(true), GUILayout.Width(8));
-						
-						var service = usam.latestManifest.services[selectedCard.serviceIndex];
-					
-						var selectedDisplay = "";
-						if (usam.TryGetRoutingSetting(service.beamoId, out var routingSetting))
-						{
-							selectedDisplay = routingSetting.selectedOption?.display ?? "(unavailable)";
-						}
-						// GUI.enabled = !shouldBeDisabled;
-						BeamGUI.LayoutDropDown(this, new GUIContent(selectedDisplay), null, () =>
-						                       {
-							                       var window = CreateInstance<RoutingPickerWindow>();
-							                       window.usamWindow = this;
-							                       window.service = service;
-							                       return window;
-						                       }
-						                       // backdropColor: new Color(.5f, .5f, .5f, .25f)
-						                       // yPadding:4
-						                       // yPadding: 4,
-						                       // yShift: -2,
-						                       // popupOnLeft: true
-						);
-						// GUI.enabled = true;
-					}
 					
 					EditorGUILayout.Space(4, false);
 				}

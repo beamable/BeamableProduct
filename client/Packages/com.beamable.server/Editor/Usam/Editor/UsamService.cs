@@ -458,20 +458,7 @@ namespace Beamable.Server.Editor.Usam
 			});
 			logCommand.OnStreamTailLogMessageForClient(cb =>
 			{
-				if (!TryGetLogs(service, out var logs))
-				{
-					logs = new NamedLogView
-					{
-						beamoId = service, 
-						logs = new List<CliLogMessage>(), 
-						logView = new LogView()
-					};
-					_namedLogs.Add(logs);
-				}
-				
-				// TODO: implement max size of log?
-				
-				logs.logs.Add(new CliLogMessage
+				AddLog(service, new CliLogMessage
 				{
 					message = cb.data.message,
 					timestamp = cb.ts,
@@ -695,7 +682,17 @@ namespace Beamable.Server.Editor.Usam
 			{
 				log = new NamedLogView
 				{
-					logs = new List<CliLogMessage>(), beamoId = beamoId, logView = new LogView()
+					logs = new List<CliLogMessage>(), beamoId = beamoId, logView = new LogView
+					{
+						verbose = new LogLevelView
+						{
+							enabled = false,
+						},
+						debug = new LogLevelView
+						{
+							enabled = false
+						}
+					}
 				};
 				_namedLogs.Add(log);
 			}
