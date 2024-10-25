@@ -577,6 +577,15 @@ public class ConfigService
 		File.WriteAllText(fullPath, json);
 	}
 
+	public void DeleteTokenFile()
+	{
+		string fullPath = Path.Combine(ConfigDirectoryPath, Constants.TEMP_FOLDER, Constants.CONFIG_TOKEN_FILE_NAME);
+		if (File.Exists(fullPath))
+		{
+			File.Delete(fullPath);
+		}
+	}
+
 	public void RemoveConfigFolderContent()
 	{
 		if (TryToFindBeamableConfigFolder(out var path))

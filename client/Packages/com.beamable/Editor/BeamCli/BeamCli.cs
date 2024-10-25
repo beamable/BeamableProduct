@@ -12,18 +12,14 @@ namespace Beamable.Editor.BeamCli
 	{
 		private readonly IDependencyProvider _provider;
 		private readonly BeamEditorContext _ctx;
-		private readonly IAccountService _accountService;
 
 		public Promise OnReady { get; }
 
-		public BeamCli(IDependencyProvider provider, BeamEditorContext ctx, IAccountService accountService)
+		public BeamCli(IDependencyProvider provider, BeamEditorContext ctx)
 		{
 			_provider = provider;
 			_ctx = ctx;
-			_accountService = accountService;
 			OnReady = Init();
-			_accountService.OnUserChanged(Init);
-			
 		}
 
 		public BeamCommands Command => DependencyBuilder.Instantiate<BeamCommands>(_provider);

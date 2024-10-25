@@ -377,6 +377,7 @@ public class App
 		Commands.AddSubCommandWithHandler<RealmConfigSetCommand, RealmConfigSetCommandArgs, RealmConfigCommand>();
 		Commands.AddSubCommandWithHandler<RealmConfigRemoveCommand, RealmConfigRemoveCommandArgs, RealmConfigCommand>();
 		Commands.AddRootCommand<LoginCommand, LoginCommandArgs>();
+		Commands.AddRootCommand<LogoutCommand, LogoutCommandArgs>();
 		Commands.AddRootCommand<OpenAPICommand>();
 		Commands.AddSubCommand<GenerateSdkCommand, GenerateSdkCommandArgs, OpenAPICommand>();
 		Commands.AddSubCommand<DownloadOpenAPICommand, DownloadOpenAPICommandArgs, OpenAPICommand>();
