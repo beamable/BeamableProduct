@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Serialization.SmallerJSON;
+using cli.Options;
 using cli.Services;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
@@ -35,10 +36,12 @@ public class ConfigService
 	[CanBeNull] private Dictionary<string, string> _config;
 
 	private string _dir;
+	private BindingContext _bindingCtx;
 	private string WorkingDirectoryFullPath => Path.GetFullPath(WorkingDirectory);
 
-	public ConfigService(CliEnvironment environment, ConfigDirOption configDirOption)
+	public ConfigService(CliEnvironment environment, ConfigDirOption configDirOption, BindingContext bindingCtx)
 	{
+		_bindingCtx = bindingCtx;
 		_environment = environment;
 		_configDirOption = configDirOption;
 	}
@@ -183,18 +186,29 @@ public class ConfigService
 
 	public void SaveDataFile<T>(string fileName, T data)
 	{
+	
 		var json = JsonConvert.SerializeObject(data,
 			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
 		var file = GetConfigPath(fileName);
+		var dir = Path.GetDirectoryName(file);
+		Directory.CreateDirectory(dir);
+
 		File.WriteAllText(file, json);
 	}
 
+	public List<string> LoadExtraPathsFromFile() => LoadDataFile<List<string>>(CONFIG_FILE_EXTRA_PATHS);
+	public void SaveExtraPathsToFile(List<string> paths) => SaveDataFile<List<string>>(CONFIG_FILE_EXTRA_PATHS, paths);
+	
 	public T LoadDataFile<T>(string fileName) where T : new() => LoadDataFile<T>(fileName, () => new T());
 
 	public T LoadDataFile<T>(string fileName, Func<T> defaultValueGenerator)
 	{
 		try
 		{
+			if (!File.Exists(fileName))
+			{
+				return defaultValueGenerator();
+			}
 			if (!DirectoryExists.GetValueOrDefault(false))
 			{
 				return defaultValueGenerator();
@@ -226,6 +240,8 @@ public class ConfigService
 	public const string ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND = "BEAM_CLI_IS_REDIRECTED_COMMAND";
 	public const string ENV_VAR_DOCKER_EXE = "BEAM_DOCKER_EXE";
 
+	public const string CONFIG_FILE_EXTRA_PATHS = "additional-project-paths.json";
+
 	public static bool IsRedirected => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND));
 	
 	/// <summary>
@@ -252,7 +268,58 @@ public class ConfigService
 		}
 	}
 
+	public void GetProjectSearchPaths(out string rootPath, out List<string> searchPaths)
+	{
+		searchPaths = new List<string>();
+		rootPath = BaseDirectory;
+		var extraPaths = GetExtraProjectPaths();
 
+		if (string.IsNullOrEmpty(rootPath))
+		{
+			rootPath = ".";
+		}
+		
+		searchPaths.Add(rootPath);
+		
+		foreach (var extra in extraPaths)
+		{
+			if (string.IsNullOrEmpty(extra)) continue;
+			
+			if (Path.IsPathRooted(extra))
+			{
+				searchPaths.Add(extra);
+			}
+			else
+			{
+				var full = Path.Combine(rootPath, extra);
+				searchPaths.Add(full);
+			}
+		}
+
+	}
+	
+	/// <summary>
+	/// 'extra project paths' tells the CLI to scan additional directories for .csproj files.
+	/// These paths can be stored in a config file in the .beamable folder, or can be given
+	/// on the CLI
+	/// </summary>
+	/// <param name="context"></param>
+	/// <returns>A non-null list of paths</returns>
+	public List<string> GetExtraProjectPaths()
+	{
+		var cliPaths = _bindingCtx.ParseResult.GetValueForOption(ExtraProjectPathOptions.Instance)?.ToList();
+		var fileBasedPaths = LoadExtraPathsFromFile();
+
+		var allPaths = new List<string>();
+		allPaths.AddRange(fileBasedPaths);
+		if (cliPaths != null)
+		{
+			allPaths.AddRange(cliPaths);
+		}
+		return allPaths;
+	}
+	
+	
 	public bool TryGetSetting(out string value, BindingContext context, ConfigurableOption option,
 		string defaultValue = null)
 	{

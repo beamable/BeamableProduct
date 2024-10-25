@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using Beamable.Editor.BeamCli.Commands;
+using Beamable.Editor.Environment;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -22,6 +23,7 @@ namespace Beamable.Editor.BeamCli
 			_accountService = accountService;
 			OnReady = Init();
 			_accountService.OnUserChanged(Init);
+			
 		}
 
 		public BeamCommands Command => DependencyBuilder.Instantiate<BeamCommands>(_provider);
@@ -48,6 +50,8 @@ namespace Beamable.Editor.BeamCli
 		public async Promise Init()
 		{
 			await _ctx.OnReady;
+
+			var extraPaths = BeamablePackages.GetManifestFileReferences();
 			
 			var args = new InitArgs
 			{
@@ -56,6 +60,7 @@ namespace Beamable.Editor.BeamCli
 				cid = _ctx.Requester.Cid,
 				pid = _ctx.Requester.Pid,
 				host = BeamableEnvironment.ApiUrl,
+				saveExtraPaths = extraPaths.ToArray()
 			};
 			
 			var token = _ctx.Requester.Token;

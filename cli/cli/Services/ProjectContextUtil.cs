@@ -46,7 +46,6 @@ public static class ProjectContextUtil
 	}
 	
 	public static async Task<BeamoLocalManifest> GenerateLocalManifest(
-		string rootFolder,
 		string dotnetPath, 
 		BeamoService beamo,
 		ConfigService configService,
@@ -77,11 +76,10 @@ public static class ProjectContextUtil
 			remote = await _existingManifest;
 		}
 
-		// var remoteTask = beamo.GetCurrentManifest();
-		// find all local project files...
+		configService.GetProjectSearchPaths(out var rootFolder, out var searchPaths);
 		var sw = new Stopwatch();
 		sw.Start();
-		var allProjects = FindCsharpProjects(rootFolder).ToArray();
+		var allProjects = FindCsharpProjects(rootFolder, searchPaths).ToArray();
 		sw.Stop();
 		Log.Verbose($"Gathering csprojs took {sw.Elapsed.TotalMilliseconds} ");
 		sw.Restart();
@@ -330,17 +328,19 @@ public static class ProjectContextUtil
 		_pathToMetadata[path] = metadata;
 	}
 	
-	public static CsharpProjectMetadata[] FindCsharpProjects(string rootFolder)
+	public static CsharpProjectMetadata[] FindCsharpProjects(string rootFolder, List<string> searchPaths)
 	{
 		var sw = new Stopwatch();
 		sw.Start();
-		
-		if (string.IsNullOrEmpty(rootFolder))
+
+		var pathList = new List<string>();
+		foreach (var searchPath in searchPaths)
 		{
-			rootFolder = ".";
+			var somePaths = Directory.GetFiles(searchPath, "*.csproj", SearchOption.AllDirectories);
+			pathList.AddRange(somePaths);
 		}
+		var paths = pathList.ToArray();
 		
-		var paths = Directory.GetFiles(rootFolder, "*.csproj", SearchOption.AllDirectories);
 		var projects = new CsharpProjectMetadata[paths.Length];
 
 		for (var i = 0 ; i < paths.Length; i ++)

@@ -259,6 +259,7 @@ public class App
 		Commands.AddSingleton<LogOption>();
 		Commands.AddSingleton<ShowRawOutput>();
 		Commands.AddSingleton<ShowPrettyOutput>();
+		Commands.AddSingleton(ExtraProjectPathOptions.Instance);
 		Commands.AddSingleton(DotnetPathOption.Instance);
 		Commands.AddSingleton(NoForwardingOption.Instance);
 		Commands.AddSingleton(AllHelpOption.Instance);
@@ -282,6 +283,7 @@ public class App
 			root.AddGlobalOption(NoLogFileOption.Instance);
 			root.AddGlobalOption(DockerPathOption.Instance);
 			root.AddGlobalOption(EmitLogsOption.Instance);
+			root.AddGlobalOption(ExtraProjectPathOptions.Instance);
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
 			root.AddGlobalOption(provider.GetRequiredService<ShowRawOutput>());
 			root.AddGlobalOption(provider.GetRequiredService<ShowPrettyOutput>());

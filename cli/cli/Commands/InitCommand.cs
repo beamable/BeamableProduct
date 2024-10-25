@@ -19,6 +19,7 @@ public class InitCommandArgs : LoginCommandArgs
 	public string cid;
 	public string pid;
 	public string path;
+	public List<string> addExtraPathsToFile = new List<string>();
 }
 
 public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
@@ -58,6 +59,18 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		AddOption(new PidOption(), (args, i) => args.pid = i);
 		AddOption(new RefreshTokenOption(), (args, i) => args.refreshToken = i);
 
+		AddOption(
+			new Option<List<string>>(new string[] { "--save-extra-paths" }, () => new List<string>(),
+				"overwrite the stored extra paths for where to find projects")
+			{
+				AllowMultipleArgumentsPerToken = true,
+				Arity = ArgumentArity.ZeroOrMore
+			},
+			(args, i) =>
+			{
+				args.addExtraPathsToFile = i;
+			});
+
 		AddOption(new SaveToEnvironmentOption(), (args, b) => args.saveToEnvironment = b);
 		SaveToFileOption.Bind(this);
 		AddOption(new CustomerScopedOption(), (args, b) => args.customerScoped = b);
@@ -87,6 +100,10 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			{
 				throw new CliException($"Failed to restore Dotnet tools, command output: {buffer}");
 			}
+		}
+
+		{ // save the extra-paths to the config folder
+			_configService.SaveExtraPathsToFile(args.addExtraPathsToFile);
 		}
 
 		if (!_retry) AnsiConsole.Write(new FigletText("Beam").Color(Color.Red));

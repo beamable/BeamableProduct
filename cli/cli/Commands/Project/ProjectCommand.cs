@@ -93,7 +93,7 @@ public class ProjectCommand : CommandGroup
 	/// <param name="includeStorage"></param>
 	/// <param name="services"></param>
 	/// <exception cref="CliException"></exception>
-	public static void FinalizeServicesArg(CommandArgs args, List<string> withTags, List<string> withoutTags, bool includeStorage, ref List<string> services)
+	public static void FinalizeServicesArg(CommandArgs args, List<string> withTags, List<string> withoutTags, bool includeStorage, ref List<string> services, bool allowEmptyServices=false)
 	{
 		services ??= new List<string>();
 		var noExplicitlyListedServices = services.Count == 0;
@@ -137,7 +137,7 @@ public class ProjectCommand : CommandGroup
 			}
 		}
 
-		if (services.Count == 0)
+		if (!allowEmptyServices && services.Count == 0)
 		{
 			throw new CliException("No services are listed.");
 		}
