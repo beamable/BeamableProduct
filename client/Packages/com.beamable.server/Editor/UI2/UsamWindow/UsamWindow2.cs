@@ -24,6 +24,8 @@ namespace Beamable.Editor.Microservice.UI2
 		public static Texture iconOpenProject;
 		public static Texture iconMoreOptions;
 		public static Texture iconPlay;
+		public static Texture iconHelp;
+		public static Texture iconRefresh;
 		
 		public CardButton selectedCard;
 
@@ -125,8 +127,18 @@ namespace Beamable.Editor.Microservice.UI2
 				iconStorage =
 					EditorResources.Load<Texture>("Packages/com.beamable.server/Editor/UI/Icons/SO running.png", true);
 			}
+
+			if (iconHelp == null)
+			{
+				iconHelp = EditorResources.Load<Texture>(
+					"Packages/com.beamable/Editor/UI/Toolbox/Icons/Info_Light.png");
+			}
 			
-			
+			if (iconRefresh == null)
+			{
+				iconRefresh = EditorResources.Load<Texture>(
+					"Packages/com.beamable/Editor/UI/Content/Icons/Refresh.png");
+			}
 			
 			if (iconSettings == null)
 			{

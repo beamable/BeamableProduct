@@ -56,10 +56,12 @@ namespace Beamable.Editor.Microservice.UI2
 				
 				EditorGUILayout.BeginHorizontal(new GUIStyle(), GUILayout.ExpandWidth(true), GUILayout.MinHeight(toolbarHeight));
 
-				// EditorGUILayout.Space(6, false);
 
-				
-				
+				{ // draw the icon
+					var iconRect = new Rect(backRect.x + 12, lastRect.y + 9, toolbarHeight - 12, toolbarHeight - 12);
+					GUI.DrawTexture(iconRect, iconService, ScaleMode.ScaleToFit);
+					GUI.Label(iconRect, new GUIContent(null, null, "This is a local service"), GUIStyle.none);
+				}
 				
 				EditorGUILayout.Space(1, true);
 
@@ -154,15 +156,43 @@ namespace Beamable.Editor.Microservice.UI2
 
 				EditorGUILayout.BeginHorizontal();
 				EditorGUILayout.Space(4, expand:false);
-				this.DrawLogWindow(log.logView, provider, () =>
-				{
-					log.logs.Clear();
-					log.logView.RebuildView();
-				});
+				
+				DrawLogs(log,provider);
 				EditorGUILayout.Space(4, expand:false);
 
 				EditorGUILayout.EndHorizontal();
 			}
+		}
+		
+
+		public void DrawLogs(UsamService.NamedLogView log, LogDataProvider provider)
+		{
+			this.DrawLogWindow(log.logView, provider, () =>
+			{
+				log.logs.Clear();
+				log.logView.RebuildView();
+			}, customClearGui: view =>
+			{
+				var isClear = GUILayout.Button("clear", new GUIStyle(EditorStyles.toolbarButton), GUILayout.Width(50));
+				var clearRect = GUILayoutUtility.GetLastRect();
+				var icon = EditorGUIUtility.IconContent("Icon Dropdown");
+
+				var isClearMenu = GUILayout.Button(icon, new GUIStyle(EditorStyles.toolbarButton)
+				{
+					padding = new RectOffset(2, 2, 4, 4),
+				}, GUILayout.ExpandWidth(false));
+				if (isClearMenu)
+				{
+					var menu = new GenericMenu();
+					menu.AddItem(new GUIContent("Clear on Start"), view.clearOnPlay, () =>
+					{
+						view.clearOnPlay = !view.clearOnPlay;
+					});
+					menu.DropDown(new Rect(clearRect.x, clearRect.yMax, 0, 0));
+				}
+					
+				return isClear;
+			});
 		}
 
 		public void ShowServiceMenu(BeamManifestServiceEntry service)

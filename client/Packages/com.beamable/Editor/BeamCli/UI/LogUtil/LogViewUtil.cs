@@ -35,6 +35,8 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 		public bool isTailing = true;
 		public string searchText;
 
+		public bool clearOnPlay = true;
+		
 		/// <summary>
 		/// this variable is used to process information across frames
 		/// </summary>
@@ -314,7 +316,11 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 	public static class LogUtil
 	{
 		
-		public static void DrawLogWindow(this IDelayedActionWindow window, LogView logView, LogDataProvider dataList, Action onClear)
+		public static void DrawLogWindow(this IDelayedActionWindow window, 
+		                                 LogView logView,
+		                                 LogDataProvider dataList, 
+		                                 Action onClear,
+		                                 Func<LogView, bool> customClearGui=null)
 		{
 			
 			logView.BuildView(dataList); 
@@ -328,7 +334,16 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 			EditorGUILayout.BeginVertical();
 			EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 			{
-				var isClear = GUILayout.Button("clear", EditorStyles.toolbarButton, GUILayout.Width(50));
+				bool isClear = false;
+				if (customClearGui == null)
+				{
+					isClear = GUILayout.Button("clear", EditorStyles.toolbarButton, GUILayout.Width(50));
+
+				}
+				else
+				{
+					isClear = customClearGui.Invoke(logView);
+				}
 				if (isClear)
 				{
 					window.AddDelayedAction(() =>
@@ -576,9 +591,15 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 
 			var count = view.lastCount == 0 ? view.count : view.lastCount;
 			var countStr = count > 999 ? "999+" : count.ToString();
-			var verboseContent = new GUIContent(countStr, verboseTexture, $"{logLevel} logs");
-			var nextEnabled = GUILayout.Toggle(view.enabled, verboseContent, 
-			                                        EditorStyles.toolbarButton, GUILayout.Width(52), GUILayout.ExpandWidth(false));
+			var nextEnabled = GUILayout.Toggle(view.enabled, countStr, 
+			                                        new GUIStyle(EditorStyles.toolbarButton)
+			                                        {
+				                                        padding = new RectOffset(24, 2, 0, 0),
+				                                        alignment = TextAnchor.MiddleLeft
+			                                        },  GUILayout.MinWidth(35), GUILayout.ExpandWidth(false));
+			var lastRect = GUILayoutUtility.GetLastRect();
+			var iconRect = new Rect(lastRect.x + 4, lastRect.y + 3, 16, lastRect.height - 6);
+			GUI.DrawTexture(iconRect, verboseTexture, ScaleMode.ScaleToFit);
 			if (nextEnabled != view.enabled)
 			{
 				window.AddDelayedAction(() =>

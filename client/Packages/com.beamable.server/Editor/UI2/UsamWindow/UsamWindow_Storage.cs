@@ -55,6 +55,13 @@ namespace Beamable.Editor.Microservice.UI2
 				
 				EditorGUILayout.BeginHorizontal(new GUIStyle(), GUILayout.ExpandWidth(true), GUILayout.MinHeight(toolbarHeight));
 
+				{ // draw the icon
+					var iconRect = new Rect(backRect.x + 12, lastRect.y + 9, toolbarHeight - 12, toolbarHeight - 12);
+					GUI.DrawTexture(iconRect, iconStorage, ScaleMode.ScaleToFit);
+					GUI.Label(iconRect, new GUIContent(null, null, "This is a local storage"), GUIStyle.none);
+				}
+
+				
 				EditorGUILayout.Space(1, true);
 
 				// GUI.enabled = false;
@@ -131,11 +138,8 @@ namespace Beamable.Editor.Microservice.UI2
 
 				EditorGUILayout.BeginHorizontal();
 				EditorGUILayout.Space(4, expand:false);
-				this.DrawLogWindow(log.logView, provider, () =>
-				{
-					log.logs.Clear();
-					log.logView.RebuildView();
-				});
+				DrawLogs(log,provider);
+				
 				EditorGUILayout.Space(4, expand:false);
 
 				EditorGUILayout.EndHorizontal();

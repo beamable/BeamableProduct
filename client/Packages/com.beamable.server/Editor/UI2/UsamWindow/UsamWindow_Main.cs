@@ -1,14 +1,8 @@
-using Beamable.Common.BeamCli.Contracts;
-using Beamable.Common.Semantics;
-using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.BeamCli.UI.LogHelpers;
 using Beamable.Editor.Microservice.UI2.PublishWindow;
-using Beamable.Editor.ThirdParty.Splitter;
 using Beamable.Editor.Util;
-using Beamable.Server.Editor.Usam;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -220,25 +214,24 @@ namespace Beamable.Editor.Microservice.UI2
 						BeamGUI.HeaderButton("Publish", EditorGUIUtility.FindTexture("Profiler.GlobalIllumination"));
 
 
-					BeamGUI.ShowDisabled(state != WindowState.CREATE_SERVICE && state != WindowState.CREATE_STORAGE,
-					                     () =>
-					                     {
-						                     BeamGUI.HeaderButton(
-							                     "Create", EditorGUIUtility.FindTexture("Toolbar Plus"));
-					                     });
+					clickedCreate = BeamGUI.ShowDisabled(state != WindowState.CREATE_SERVICE && state != WindowState.CREATE_STORAGE,
+					                     () => BeamGUI.HeaderButton(
+						                     "Create", EditorGUIUtility.FindTexture("Toolbar Plus")));
 				}
 
 				EditorGUILayout.Space(1, true);
 
 				{ // draw the right buttons
-					clickedRefresh = BeamGUI.HeaderButton(null, EditorGUIUtility.FindTexture("Refresh"),
+					clickedRefresh = BeamGUI.HeaderButton(null, iconRefresh,
 					                                      width: 30,
 					                                      padding: 4,
+					                                      iconPadding: -5,
 					                                      drawBorder: false);
 
-					clickedHelp = BeamGUI.HeaderButton(null, EditorGUIUtility.FindTexture("d__Help@2x"),
+					clickedHelp = BeamGUI.HeaderButton(null, iconHelp,
 					                                   width: 30,
 					                                   padding: 4,
+					                                   iconPadding: 5,
 					                                   drawBorder: false);
 				}
 

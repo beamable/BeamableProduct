@@ -753,7 +753,11 @@ namespace Beamable.Server.Editor.Usam
 				detach = true, ids = new string[] {service.beamoId}, watch = false, noClientGen = true,
 			});
 			var action = SetServiceAction(service.beamoId, ServiceCliActionType.Running, runCommand);
-
+			if (TryGetLogs(service.beamoId, out var log) && log.logView.clearOnPlay)
+			{
+				log.logs.Clear();
+				log.logView.RebuildView();
+			}
 			runCommand.OnStreamRunProjectResultStream(cb =>
 			{
 				action.progressRatio = cb.data.progressRatio;
@@ -791,7 +795,11 @@ namespace Beamable.Server.Editor.Usam
 				ids = new string[]{storage.beamoId},
 			});
 			var action = SetServiceAction(storage.beamoId, ServiceCliActionType.Running, runCommand);
-
+			if (TryGetLogs(storage.beamoId, out var log) && log.logView.clearOnPlay)
+			{
+				log.logs.Clear();
+				log.logView.RebuildView();
+			}
 			runCommand.OnLocal_progressServiceRunProgressResult(cb =>
 			{
 				action.progressRatio = (float)cb.data.LocalDeployProgress;
