@@ -295,6 +295,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			// startInfo.
 			var proc = Process.Start(startInfo);
 			var cts = new TaskCompletionSource();
+			
 			proc.Exited += (sender, eventArgs) =>
 			{
 				cts.TrySetResult();
@@ -373,6 +374,18 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				while (!proc.HasExited && Math.Abs(currentProgress - 1) > .001f && !args.Lifecycle.IsCancelled)
 				{
 					await Task.Delay(10);
+				}
+
+				if (args.Lifecycle.IsCancelled)
+				{
+					try
+					{
+						proc.Kill(true);
+					}
+					catch
+					{
+						// does not matter.
+					}
 				}
 			}
 			else

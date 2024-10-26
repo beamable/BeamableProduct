@@ -521,6 +521,13 @@ public class DiscoveryService
 				while (!token.IsCancellationRequested)
 				{
 					{
+						// the only reason to delay at all is to avoid task exhaustion on lower end systems. 
+						//  this should happen at the start of the loop so that it cannot be accidentally skipped
+						//  by `continue` statements
+						await Task.Delay(Beamable.Common.Constants.Features.Services.DISCOVERY_BROADCAST_PERIOD_MS, token);
+					}
+					
+					{
 						// check that all services still exist.
 						var toRemove = new HashSet<int>();
 						foreach (var (processId, entry) in processIdToEntry)
@@ -620,8 +627,6 @@ public class DiscoveryService
 						//  is not useful.
 					}
 
-					// the only reason to delay at all is to avoid task exhaustion on lower end systems. 
-					await Task.Delay(Beamable.Common.Constants.Features.Services.DISCOVERY_BROADCAST_PERIOD_MS, token);
 				}
 			}
 			catch (TaskCanceledException)
