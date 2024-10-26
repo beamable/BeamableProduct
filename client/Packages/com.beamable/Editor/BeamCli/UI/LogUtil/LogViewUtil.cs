@@ -513,7 +513,8 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 				if (dataList.showLogLevels)
 				{
 					var iconWidth = 32;
-					var iconRect = new Rect(position.x, position.y, iconWidth, position.height);
+					var iconPadding = 4;
+					var iconRect = new Rect(position.x + iconPadding, position.y + iconPadding, iconWidth - iconPadding*2, position.height - iconPadding*2);
 					var labelRect = new Rect(position.x + iconWidth, position.y, position.width - iconWidth,
 					                         position.height);
 					var logLevel = log.GetLogLevel();

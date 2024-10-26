@@ -112,9 +112,6 @@ namespace Beamable.Server.Editor.Usam
 		private Dictionary<string, ServiceCliAction> _serviceToAction = new Dictionary<string, ServiceCliAction>();
 		
 		[NonSerialized]
-		private Dictionary<string, Promise> _serviceToLogPromise = new Dictionary<string, Promise>();
-
-		[NonSerialized]
 		private Promise _watchPromise;
 		
 		
@@ -338,10 +335,29 @@ namespace Beamable.Server.Editor.Usam
 			_watchCommand.OnStreamCheckStatusServiceResult(cb =>
 			{
 				latestStatus = cb.data.services;
-				
 				foreach (var status in latestStatus)
 				{
-					ListenForLogs(status.service);
+					var shouldListenForLogs = false;
+					foreach (var route in status.availableRoutes)
+					{
+						if (route.knownToBeRunning)
+						{
+							foreach (var instance in route.instances)
+							{
+								var isLocal = instance.latestRemoteEvent?.service == null;
+								if (isLocal)
+								{
+									shouldListenForLogs = true;
+								}
+							}
+						}
+					}
+
+					if (shouldListenForLogs)
+					{
+						ListenForLogs(status.service);
+
+					}
 
 					UpdateRoutingOptions(status);
 				}
@@ -447,9 +463,10 @@ namespace Beamable.Server.Editor.Usam
 		
 		public void ListenForLogs(string service)
 		{
-			if (_serviceToLogCommand.TryGetValue(service, out _))
+			if (_serviceToLogCommand.TryGetValue(service, out var existingCommand))
 			{
-				return;
+				existingCommand.Cancel();
+				_serviceToLogCommand.Remove(service);
 			}
 			
 			var logCommand = _cli.ProjectLogs(new ProjectLogsArgs
@@ -466,9 +483,6 @@ namespace Beamable.Server.Editor.Usam
 				});
 			});
 			var promise = logCommand.Run();
-
-			// TODO: retry logic.
-			_serviceToLogPromise[service] = promise;
 			_serviceToLogCommand[service] = logCommand;
 		}
 
@@ -716,6 +730,19 @@ namespace Beamable.Server.Editor.Usam
 			{
 				AddLog(service, cb.data);
 			});
+			if (_serviceToLogCommand.TryGetValue(service.beamoId, out var logCommand))
+			{
+				logCommand.Cancel();
+				_serviceToLogCommand.Remove(service.beamoId);
+			}
+			// stopCommand.OnStreamStopProjectCommandOutput(cb =>
+			// {
+			// 	if (_serviceToLogCommand.TryGetValue(cb.data.serviceName, out var logCommand))
+			// 	{
+			// 		logCommand.Cancel();
+			// 		_serviceToLogCommand.Remove(cb.data.serviceName);
+			// 	}
+			// });
 			stopCommand.Run();
 		}
 

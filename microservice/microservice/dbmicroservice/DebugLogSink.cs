@@ -1,7 +1,10 @@
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Formatting;
+using System;
 using System.Collections.Concurrent;
+using System.IO;
+using System.Threading.Channels;
 
 namespace Beamable.Server.Common;
 
@@ -10,10 +13,10 @@ namespace Beamable.Server.Common;
 /// </summary>
 public class DebugLogSink : ILogEventSink
 {
-	/// <summary>
-	/// List to store captured log messages.
-	/// </summary>
-	public ConcurrentQueue<string> messages = new ConcurrentQueue<string>(); 
+
+
+	public ConcurrentDictionary<string, Channel<string>> subscriberToLogs =
+		new ConcurrentDictionary<string, Channel<string>>();
 
 	private readonly ITextFormatter _formatProvider;
 	private int _messageCount = 0;
@@ -31,27 +34,40 @@ public class DebugLogSink : ILogEventSink
 		_formatProvider = formatProvider;
 	}
 
-	/// <summary>
-	/// Attempt to get the next log message.
-	/// If the max message buffer is set to 25,
-	/// And there have been 30 messages, then the first 5 messages will be lost.
-	/// In this example, the first call to this method will return the 5th message (which is index=0)
-	/// </summary>
-	/// <param name="pointer">A reference pointer counting up the log message count. The expected use case is that the caller dedicate a ref int for this usage.</param>
-	/// <param name="message">The next log message if there is one, null otherwise.</param>
-	/// <returns>True if there is a log message, false otherwise.</returns>
-	public bool TryGetNextMessage(ref int pointer, out string message)
+	public void ReleaseSubscription(string name)
 	{
-		if (messages.TryDequeue(out message))
+		lock (subscriberToLogs)
 		{
-			pointer++;
-			return true;
+			subscriberToLogs.TryRemove(name, out _);
 		}
-
-		message = null;
-		return false;
 	}
+	
+	public Channel<string> GetMessageSubscription(string name, int capacity = 1024)
+	{
+		lock (subscriberToLogs)
+		{
+			if (subscriberToLogs.TryGetValue(name, out var existing))
+			{
+				return existing;
+			}
 
+			var channel = Channel.CreateBounded<string>(new BoundedChannelOptions(capacity)
+			{
+				AllowSynchronousContinuations = false,
+				FullMode = BoundedChannelFullMode.DropOldest,
+				SingleReader = true,
+				SingleWriter = true
+			});
+
+			if (!subscriberToLogs.TryAdd(name, channel))
+			{
+				throw new Exception("Failed to add log subscription");
+			}
+
+			return channel;
+		}
+	}
+	
 	/// <summary>
 	/// Emits a log event to the sink, capturing the log message.
 	/// </summary>
@@ -62,15 +78,15 @@ public class DebugLogSink : ILogEventSink
 		_formatProvider.Format(logEvent, _writer);
 		_writer.Flush();
 		var str = _writer.GetStringBuilder().ToString();
-		messages.Enqueue(str);
-		_messageCount++;
-		
-		while (messages.Count > MAX_MESSAGE_BUFFER)
+
+		lock (subscriberToLogs)
 		{
-			if(messages.TryDequeue(out _))
+			foreach (var kvp in subscriberToLogs)
 			{
-				_messageCount--;
+				kvp.Value.Writer.TryWrite(str);
 			}
 		}
+		
+		
 	}
 }

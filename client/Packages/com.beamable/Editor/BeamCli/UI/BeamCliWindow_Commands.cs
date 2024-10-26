@@ -216,6 +216,20 @@ namespace Beamable.Editor.BeamCli.UI
 			GUIStyle timeLabelsStyle = new GUIStyle( EditorStyles.boldLabel);
 			timeLabelsStyle.richText = true;
 
+
+			var wasEnabled = GUI.enabled;
+			GUI.enabled = command?.Status == BeamWebCommandDescriptorStatus.RUNNING && command.instance != null;
+			var isCancel = GUILayout.Button("Cancel");
+			GUI.enabled = wasEnabled;
+			if (isCancel)
+			{
+				var cachedCommand = command;
+				AddDelayedAction(() =>
+				{
+					cachedCommand?.instance.Cancel();
+				});
+			}
+
 			GUILayout.Label($"Created Time = [<color=yellow>{createdTime}</color>]", timeLabelsStyle);
 			GUILayout.Label($"Resolve Host Time = [<color=yellow>{resolveHostAtTime}</color>]", timeLabelsStyle);
 			GUILayout.Label($"Start Time = [<color=yellow>{startTime}</color>]", timeLabelsStyle);

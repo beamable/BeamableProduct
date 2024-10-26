@@ -492,6 +492,7 @@ namespace Beamable.Editor.BeamCli
 						{
 							CliLogger.Log("done", _command );
 						}
+						
 					}
 					_dispatcher.Run("beam-cli-defer", Defer());
 				}
