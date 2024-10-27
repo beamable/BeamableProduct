@@ -23,11 +23,17 @@ namespace Beamable.User.UsamMigrationHelper
 			CopyScenario("ServiceAndStorage");
 		}
 		
+		[MenuItem("Usam Migration/Copy Local Package")]
+		public static void CopyLocalPackage()
+		{
+			CopyScenario("SimpleLocalPackage/LegacyProjectPackage", "Packages/LegacyProjectPackage");
+		}
 		
-		public static void CopyScenario(string folderPath)
+		
+		public static void CopyScenario(string folderPath, string destFolder=null)
 		{
 			var sourceFolder = $"LegacyBeamableServices/{folderPath}";
-			var destFolder = $"Assets/UsamMigrations/{folderPath}";
+			destFolder ??= $"Assets/UsamMigrations/{folderPath}";
 			
 			CopyDirectory(sourceFolder, destFolder, true);
 			AssetDatabase.Refresh();

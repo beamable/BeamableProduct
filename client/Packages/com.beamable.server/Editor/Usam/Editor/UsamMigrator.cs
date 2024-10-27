@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditorInternal;
+using UnityEngine;
 
 namespace Beamable.Server.Editor.Usam
 {
@@ -71,11 +72,30 @@ namespace Beamable.Server.Editor.Usam
 		public string absoluteSourceFolder;
 		public string absoluteDestinationFolder;
 		public string includeNamespace;
+
+		public string RelativeSourceFolder => FileUtil.GetProjectRelativePath(absoluteSourceFolder);
+		public string RelativeDestFolder => FileUtil.GetProjectRelativePath(absoluteDestinationFolder);
 	}
 
 	public static class UsamMigrator
 	{
 
+		static void CreateNoticeFile(string beamoId, string noun, MigrationCopyStep copyStep){
+			var noticeFilePath = Path.Combine(copyStep.absoluteSourceFolder,
+			                                  $"{beamoId}_migration_notice.txt");
+			var relativeDest =
+				FileUtil.GetProjectRelativePath(copyStep.absoluteDestinationFolder);
+			
+			Directory.CreateDirectory(copyStep.absoluteSourceFolder);
+			File.WriteAllText(noticeFilePath, $"The {noun}, {beamoId}, was migrated " +
+			                                  $"on {DateTimeOffset.Now:f}. " +
+			                                  $"\n\n" +
+			                                  $"The {noun} has been moved outside of Unity, to {relativeDest}. " +
+			                                  $"\n\n" +
+			                                  $"Please delete this file. ");
+		}
+		
+		
 		public static ActiveMigration Migrate(MigrationPlan plan, UsamService usam, BeamCommands cli, BeamableDispatcher dispatcher)
 		{
 			var migration = new ActiveMigration();
@@ -194,6 +214,7 @@ namespace Beamable.Server.Editor.Usam
 						{
 							// delete code!
 							Directory.Delete(service.copyStep.absoluteSourceFolder, true);
+							CreateNoticeFile(service.beamoId, "storage object", service.copyStep);
 							active.stepRatios[2] = 1f;
 						}
 
@@ -300,6 +321,7 @@ namespace Beamable.Server.Editor.Usam
 						{
 							// delete code!
 							Directory.Delete(service.copyStep.absoluteSourceFolder, true);
+							CreateNoticeFile(service.beamoId, "service", service.copyStep);
 							active.stepRatios[3] = 1f;
 						}
 
@@ -319,6 +341,31 @@ namespace Beamable.Server.Editor.Usam
 			
 			return migration;
 		}
+
+		static string GetOutputFolder(IDescriptor descriptor)
+		{
+			string outputFolder = UsamService.SERVICES_FOLDER;
+			{ // depending on the origin of this service, it may go to different output folders
+				var sourcePath = descriptor.SourcePath;
+				var folders = sourcePath.Split(Path.DirectorySeparatorChar).SkipWhile(x => x == ".");
+				var firstFolder = folders.FirstOrDefault() ?? "";
+				
+				if (firstFolder.StartsWith("Packages"))
+				{
+					
+					if (descriptor.IsSourceCodeAvailableLocally())
+					{
+						outputFolder = Path.Combine(Path.GetDirectoryName(sourcePath), "BeamableServices~");
+					}
+					else
+					{
+						Debug.LogError("Uh oh this is not a valid migration pathway");
+						// TODO:
+					}
+				}
+			}
+			return outputFolder;
+		}
 		
 		public static MigrationPlan CreatePlan(MicroserviceReflectionCache.Registry registry)
 		{
@@ -336,11 +383,13 @@ namespace Beamable.Server.Editor.Usam
 					legacyDescriptor = storage
 				};
 
+				var outputFolder = GetOutputFolder(storage);
+				
 				{ // create the storage
 					migration.newStorageArgs = new ProjectNewStorageArgs
 					{
 						name = new ServiceName(storage.Name),
-						serviceDirectory = UsamService.SERVICES_FOLDER,
+						serviceDirectory = outputFolder,
 						sln = UsamService.SERVICES_SLN_PATH,
 					};
 					migration.stepNames.Add("Create Storage");
@@ -352,7 +401,7 @@ namespace Beamable.Server.Editor.Usam
 					{
 						includeNamespace = storage.Type.Namespace,
 						absoluteDestinationFolder =
-							Path.GetFullPath(Path.Combine(UsamService.SERVICES_FOLDER, storage.Name)),
+							Path.GetFullPath(Path.Combine(outputFolder, storage.Name)),
 						absoluteSourceFolder = Path.GetFullPath(storage.SourcePath)
 					};
 					migration.stepNames.Add("Copy Code");
@@ -390,11 +439,13 @@ namespace Beamable.Server.Editor.Usam
 					migration.storageDependencies = serviceDependencies;
 				}
 
+				var outputFolder = GetOutputFolder(service);
+
 				{ // first, create the service template. 
 					migration.newServiceArgs = new ProjectNewServiceArgs
 					{
 						name = new ServiceName(service.Name),
-						serviceDirectory = UsamService.SERVICES_FOLDER,
+						serviceDirectory = outputFolder,
 						sln = UsamService.SERVICES_SLN_PATH,
 						linkTo = migration.storageDependencies.ToArray()
 					};
@@ -406,7 +457,7 @@ namespace Beamable.Server.Editor.Usam
 					{
 						includeNamespace = service.Type.Namespace,
 						absoluteDestinationFolder =
-							Path.GetFullPath(Path.Combine(UsamService.SERVICES_FOLDER, service.Name)),
+							Path.GetFullPath(Path.Combine(outputFolder, service.Name)),
 						absoluteSourceFolder = Path.GetFullPath(service.SourcePath)
 					};
 					migration.stepNames.Add("Copy Code");
@@ -426,7 +477,7 @@ namespace Beamable.Server.Editor.Usam
 							namesList.Add(asmdef.name);
 							var pathFromRootFolder = CsharpProjectUtil.GenerateCsharpProjectFilename(asmdef.name);
 							var pathToService =
-								Path.Combine(UsamService.SERVICES_FOLDER, service.Name, $"{service.Name}.csproj");
+								Path.Combine(outputFolder, service.Name, $"{service.Name}.csproj");
 							pathsList.Add(PackageUtil.GetRelativePath(pathToService, pathFromRootFolder));
 						}
 
