@@ -81,7 +81,7 @@ namespace Beamable.Editor.Microservice.UI2
 				availableDependencyBeamoIds: deps,
 				onCreate: (name, deps) =>
 				{
-					usam.CreateService(name, deps);
+					var _ = usam.CreateService(name, deps);
 					return true;
 				});
 			

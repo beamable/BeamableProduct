@@ -954,7 +954,7 @@ namespace Beamable.Server.Editor.Usam
 			});
 		}
 		
-		public void CreateService(string newServiceName, List<string> dependencies)
+		public async Promise CreateService(string newServiceName, List<string> dependencies)
 		{
 			var command = _cli.ProjectNewService(new ProjectNewServiceArgs
 			{
@@ -997,37 +997,47 @@ namespace Beamable.Server.Editor.Usam
 				if (cb.data.logLevel.ToLowerInvariant().StartsWith("d")) return; // no debug
 				
 				logCount++;
-				action.progressRatio = logCount / 4f;
+				action.progressRatio = logCount / 8f;
 				AddLog(mockService, cb.data);
 			});
-			
 
-			command.Run().Then(_ =>
+			try
 			{
-				Reload();
-				action.progressRatio = 1;
+				
+				await command.Run();
+
+				action.progressRatio = .8f;
+				AddLog(mockService,
+				       new CliLogMessage
+				       {
+					       logLevel = "Info",
+					       message = $"Configuring common reference {newServiceName}",
+					       timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
+				       });
+
+				await UpdateServiceReferences(mockService, new List<AssemblyDefinitionAsset> {_commonAssemblyAsset},
+				                              shouldRefresh: false);
+				
+
+				AddLog(mockService,
+				       new CliLogMessage
+				       {
+					       logLevel = "Info",
+					       message = $"Created service {newServiceName}",
+					       timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
+				       });
+
 				action.isComplete = true;
-				AddLog(mockService, new CliLogMessage
-				{
-					logLevel = "Info",
-					message = $"Configuring common reference {newServiceName}",
-					timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
-				});
+				action.progressRatio = 1f;
 
-				UpdateServiceReferences(mockService, new List<AssemblyDefinitionAsset> {_commonAssemblyAsset}).Then(_ =>
-				{
-					AddLog(mockService, new CliLogMessage
-					{
-						logLevel = "Info",
-						message = $"Created service {newServiceName}",
-						timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
-					});
-				});
-
-			}).Error(_ =>
+				await WaitReload();
+			}
+			catch (Exception ex)
 			{
+				Debug.LogError("Failed to create service. " + ex.Message);
 				action.isFailed = true;
-			});
+			}
+
 		}
 
 		public async Promise GenerateClient(bool skipBuild=false)

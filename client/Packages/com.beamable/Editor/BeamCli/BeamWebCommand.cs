@@ -194,10 +194,13 @@ namespace Beamable.Editor.BeamCli
 					case PingResult.NoServer:
 						// bummer, no server exists for us, so we need to turn it on...
 						CliLogger.Log("Starting server.... " + port + " , " + Owner);
-						processCommands.defaultBeamArgs = processCommands.ConstructDefaultArgs();
-						processCommands.defaultBeamArgs.log = "verbose";
-						processCommands.defaultBeamArgs.pretty = true;
-
+					
+						processCommands.argModifier = (defaultArgs =>
+						{
+							defaultArgs.log = "verbose";
+							defaultArgs.pretty = true;
+						});
+					
 						var args = new ServerServeArgs()
 						{
 							port = port,
