@@ -124,6 +124,9 @@ namespace Beamable.Server.Editor.Usam
 		private BeamEditorContext _ctx;
 		private ProjectStorageRestoreWrapper _restoreCommand;
 		private ProjectStorageEraseWrapper _eraseCommand;
+		private CommonAreaService _commonArea;
+
+		private AssemblyDefinitionAsset _commonAssemblyAsset;
 
 		public const string SERVICES_FOLDER = "BeamableServices/";
 		public const string SERVICES_SLN_PATH = SERVICES_FOLDER + "beamableServices.sln";
@@ -144,15 +147,17 @@ namespace Beamable.Server.Editor.Usam
 		public UsamService(
 			BeamEditorContext ctx,
 			BeamCommands cli, 
+			CommonAreaService commonArea,
 			BeamableDispatcher dispatcher,
 			ReflectionCache editorCache)
 		{
+			_commonArea = commonArea;
 			_ctx = ctx;
 			_microserviceCache = editorCache.GetFirstSystemOfType<MicroserviceReflectionCache.Registry>();
 			_dispatcher = dispatcher;
 			_cli = cli;
-			// microserviceCache.Cache.
-			// SolutionPostProcessor.OnPreGeneratingCSProjectFiles();
+			
+			_commonArea.EnsureAreas(out _commonAssemblyAsset);
 		}
 
 		public bool TryGetStatus(string beamoId, out BeamServiceStatus status)
@@ -522,7 +527,7 @@ namespace Beamable.Server.Editor.Usam
 
 					if (anyUpdates)
 					{
-						var commandPromise = GenerateClient();
+						var commandPromise = GenerateClient(skipBuild: true);
 						yield return commandPromise.ToYielder();
 					}
 				}
@@ -964,6 +969,8 @@ namespace Beamable.Server.Editor.Usam
 			var mockService = new BeamManifestServiceEntry
 			{
 				beamoId = newServiceName,
+				csprojPath = Path.Combine(SERVICES_FOLDER, newServiceName, $"{newServiceName}.csproj"),
+				unityReferences = new List<BeamUnityAssemblyReferenceData>()
 				// TODO: other fields?
 			};
 			latestManifest.services.Add(mockService);
@@ -986,7 +993,9 @@ namespace Beamable.Server.Editor.Usam
 			action.progressRatio = .1f;
 			command.OnLog(cb =>
 			{
-				if (!cb.data.logLevel.ToLowerInvariant().StartsWith("i")) return;
+				if (cb.data.logLevel.ToLowerInvariant().StartsWith("v")) return; // no verbose
+				if (cb.data.logLevel.ToLowerInvariant().StartsWith("d")) return; // no debug
+				
 				logCount++;
 				action.progressRatio = logCount / 4f;
 				AddLog(mockService, cb.data);
@@ -1001,22 +1010,53 @@ namespace Beamable.Server.Editor.Usam
 				AddLog(mockService, new CliLogMessage
 				{
 					logLevel = "Info",
-					message = $"Created service {newServiceName}",
+					message = $"Configuring common reference {newServiceName}",
 					timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
 				});
+
+				UpdateServiceReferences(mockService, new List<AssemblyDefinitionAsset> {_commonAssemblyAsset}).Then(_ =>
+				{
+					AddLog(mockService, new CliLogMessage
+					{
+						logLevel = "Info",
+						message = $"Created service {newServiceName}",
+						timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
+					});
+				});
+
 			}).Error(_ =>
 			{
 				action.isFailed = true;
 			});
 		}
 
-		public Promise GenerateClient()
+		public async Promise GenerateClient(bool skipBuild=false)
 		{
 			if (_generateClientCommand != null)
 			{
 				_generateClientCommand.Cancel();
 				_generateClientCommand = null;
 			}
+			
+			var buildCommand = _cli.ProjectBuild(new ProjectBuildArgs { });
+			buildCommand.OnStreamBuildProjectCommandOutput(cb =>
+			{
+				if (!cb.data.report.isSuccess)
+				{
+					var errors = cb.data.report.errors;
+					foreach (var error in errors)
+					{
+						AddLog(cb.data.service, new CliLogMessage
+						{
+							logLevel = "Error",
+							message = error.formattedMessage,
+							timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
+						});
+					}
+				}
+			});
+			if (!skipBuild)
+				await buildCommand.Run();
 			
 			_generateClientCommand = _cli.ProjectGenerateClient(
 				new ProjectGenerateClientArgs
@@ -1031,7 +1071,7 @@ namespace Beamable.Server.Editor.Usam
 			{
 				Debug.LogError($"Failed to generate clients. message=[{cb.data.message}] ");
 			});
-			return _generateClientCommand.Run();
+			await _generateClientCommand.Run();
 		}
 
 		public Promise<string> GetLocalConnectionString(BeamManifestStorageEntry service)

@@ -27,7 +27,7 @@ namespace Beamable.Server.Editor.Usam
 		private static readonly string PROJECT_NAME = $"{PROJECT_NAME_PREFIX}{PROJECT_NAME_TAG}.csproj";
 		private static readonly string TEMPLATE_OUTPUT_DIR =
 			Path.Combine("Library", "BeamableEditor", "GeneratedProjects", KEY_FOLDER);
-		private static readonly string SOURCE_TEMPLATE = $"<Compile Include=\"{KEY_INCLUDE}\" />";
+		private static readonly string SOURCE_TEMPLATE = $"<Compile Include=\"{KEY_INCLUDE}\" Condition=\"Exists('{KEY_INCLUDE}')\" />";
 		private static readonly string PROJECT_TEMPLATE = $"<ProjectReference Include=\"{KEY_INCLUDE}\" />";
 		private static readonly string DLL_TEMPLATE = $"<Reference Include=\"{KEY_INCLUDE}\">\n\t\t\t<HintPath>{KEY_HINT}</HintPath>\n\t\t</Reference>";
 		private static readonly string TEMPLATE = $@"
@@ -193,18 +193,18 @@ namespace Beamable.Server.Editor.Usam
 		{
 			var invalidPrefixes = new string[] { "Unity.", "UnityEditor.", "UnityEngine." };
 			var invalidReferences = new string[] {"netstandard"};
-			var mandatoryReferences = new string[] {"Unity.Beamable.Customer.Common"};
 
-			if (mandatoryReferences.Contains(referenceName))
+			if (referenceName.StartsWith("Unity.Beamable.Customer."))
 			{
+				// special reference; but other "Unity.Beamable."
+				//  dlls are not valid; and should be referenced via nuget
 				return true;
 			}
-
+			
 			if (invalidReferences.Contains(referenceName))
 			{
 				return false;
 			}
-			
 			foreach (var prefix in invalidPrefixes)
 			{
 				if (referenceName.StartsWith(prefix))

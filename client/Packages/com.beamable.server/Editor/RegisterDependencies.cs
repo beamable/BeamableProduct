@@ -12,8 +12,8 @@ namespace Beamable.Server.Editor
 		[RegisterBeamableDependencies(-1000, RegistrationOrigin.EDITOR)]
 		public static void Register(IDependencyBuilder builder)
 		{
-			// builder.AddSingleton<MicroserviceDiscovery>();
 			builder.AddSingleton(() => MicroserviceConfiguration.Instance);
+			builder.AddSingleton<CommonAreaService>();
 		}
 
 		[RegisterBeamableDependencies(-1000, RegistrationOrigin.RUNTIME)]

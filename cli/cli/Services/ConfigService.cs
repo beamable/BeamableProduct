@@ -205,10 +205,6 @@ public class ConfigService
 	{
 		try
 		{
-			if (!File.Exists(fileName))
-			{
-				return defaultValueGenerator();
-			}
 			if (!DirectoryExists.GetValueOrDefault(false))
 			{
 				return defaultValueGenerator();
