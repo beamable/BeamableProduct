@@ -115,6 +115,11 @@ namespace Beamable.Editor.Microservice.UI2
 				
 
 				var settings = (BeamableMicroservicesSettings)serializedObj.targetObject;
+				if (settings == null)
+				{
+					EditorGUILayout.LabelField("Please refresh this page.");
+					return;
+				}
 
 				{ // temp routing settings
 					EditorGUILayout.LabelField($"Session {settings.serviceName} Settings", new GUIStyle(EditorStyles.largeLabel));

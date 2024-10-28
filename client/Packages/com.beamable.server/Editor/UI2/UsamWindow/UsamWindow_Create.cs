@@ -30,7 +30,7 @@ namespace Beamable.Editor.Microservice.UI2
 
 		private const string textCreateNewService = 
 			"Additional Microservices are best when you want to group your cloud code " +
-			"by how often you expect to be invoked. " +
+			"by how often you expect it to be invoked. " +
 			"\n\n" +
 			"Enter a name for the new Microservice. ";
 		
