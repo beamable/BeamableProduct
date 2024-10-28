@@ -975,7 +975,7 @@ namespace Beamable.Server.Editor.Usam
 		
 		public async Promise CreateService(string newServiceName, List<string> dependencies)
 		{
-			var command = _cli.ProjectNewService(new ProjectNewServiceArgs
+			var newProjectCommand = _cli.ProjectNewService(new ProjectNewServiceArgs
 			{
 				generateCommon = false,
 				name = new ServiceName(newServiceName),
@@ -1000,7 +1000,7 @@ namespace Beamable.Server.Editor.Usam
 			};
 			latestStatus.Add(mockStatus);
 			
-			var action = SetServiceAction(newServiceName, ServiceCliActionType.Creating, command);
+			var action = SetServiceAction(newServiceName, ServiceCliActionType.Creating, newProjectCommand);
 
 			var logCount = 0;
 			AddLog(mockService, new CliLogMessage
@@ -1010,20 +1010,27 @@ namespace Beamable.Server.Editor.Usam
 				timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
 			});
 			action.progressRatio = .1f;
-			command.OnLog(cb =>
+			newProjectCommand.OnLog(cb =>
 			{
-				if (cb.data.logLevel.ToLowerInvariant().StartsWith("v")) return; // no verbose
-				if (cb.data.logLevel.ToLowerInvariant().StartsWith("d")) return; // no debug
+				var isVerbose = cb.data.logLevel.ToLowerInvariant().StartsWith("v");
+				var isDebug = cb.data.logLevel.ToLowerInvariant().StartsWith("d");
+				if (!isDebug && !isVerbose)
+				{
+					logCount++;
+					
+					// I don't actually know the number of log messages and the
+					//  create-command doesn't emit progress specifically. So let's guess.
+					const float guessedNumberOfInfoLogsThatIndicateLoadingProgressForServiceCreation = 8f;
+					action.progressRatio = logCount / guessedNumberOfInfoLogsThatIndicateLoadingProgressForServiceCreation;
+				}
 				
-				logCount++;
-				action.progressRatio = logCount / 8f;
 				AddLog(mockService, cb.data);
 			});
 
 			try
 			{
 				
-				await command.Run();
+				await newProjectCommand.Run();
 
 				action.progressRatio = .8f;
 				AddLog(mockService,
@@ -1068,6 +1075,9 @@ namespace Beamable.Server.Editor.Usam
 			}
 
 			var idArr = new string[] {service.beamoId};
+			
+			// the client-code generation requires a built dll; so building the latest code
+			//  ensures we have the latest client generated
 			await Build(new ProjectBuildArgs {ids = idArr});
 
 			await GenerateClient(new ProjectGenerateClientArgs
@@ -1077,7 +1087,7 @@ namespace Beamable.Server.Editor.Usam
 
 				// the interface around this command has not aged well.
 				//  it actually generates clients for ALL services
-				source = "not-important"
+				source = "this-argument-is-not-used"
 			});
 			
 		}

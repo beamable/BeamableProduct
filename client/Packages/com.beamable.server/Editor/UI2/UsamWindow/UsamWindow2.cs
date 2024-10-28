@@ -72,7 +72,7 @@ namespace Beamable.Editor.Microservice.UI2
 				DrawNoContextGui();
 				return;
 			}
-
+			
 			if (!ctx.InitializePromise.IsCompleted)
 			{
 				DrawWaitingForContextGui();
@@ -87,7 +87,7 @@ namespace Beamable.Editor.Microservice.UI2
 
 			if (usam == null)
 			{
-				EditorGUILayout.SelectableLabel("Waiting for data...");
+				DrawUsamNullGui();
 				return;
 			}
 
@@ -184,6 +184,11 @@ namespace Beamable.Editor.Microservice.UI2
 		void DrawNotLoggedInGui()
 		{
 			EditorGUILayout.SelectableLabel("Must log into Beamable...");
+		}
+		
+		void DrawUsamNullGui()
+		{
+			EditorGUILayout.SelectableLabel("Waiting for data...");
 		}
 
 		public void AddDelayedAction(Action act)

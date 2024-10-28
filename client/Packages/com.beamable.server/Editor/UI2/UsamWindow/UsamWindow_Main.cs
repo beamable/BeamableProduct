@@ -110,22 +110,6 @@ namespace Beamable.Editor.Microservice.UI2
 					DrawContent();
 					break;
 			}
-			
-
-			// {
-			// 	EditorGUILayout.BeginHorizontal();
-			// 	serverSplitter.BeginSplitView();
-			//
-			// 	DrawCards();
-			// 	
-			// 	EditorGUILayout.Space(15, false);
-			// 	serverSplitter.Split(this);
-			// 	EditorGUILayout.Space(5, false);
-			// 	
-			// 	
-			// 	serverSplitter.EndSplitView();
-			// 	EditorGUILayout.EndHorizontal();
-			// }
 		}
 
 

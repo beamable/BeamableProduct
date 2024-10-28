@@ -49,8 +49,8 @@ namespace Beamable.Server.Editor.Usam
 						// do not set; an absence of value implies remote
 						break;
 					case RoutingOptionType.LOCAL:
-						//map[routableServiceName] = _usam.latestManifest.localRoutingKey;
-						
+					case RoutingOptionType.AUTO:
+
 						if (_usam.TryGetStatus(setting.beamoId, out status))
 						{
 							foreach (var route in status.availableRoutes)
@@ -62,28 +62,10 @@ namespace Beamable.Server.Editor.Usam
 								}
 							}
 						}
-
 						
 						break;
 					case RoutingOptionType.FRIEND:
 						map[routableServiceName] = setting.selectedOption.routingKey;
-						break;
-					case RoutingOptionType.AUTO:
-						
-						if (_usam.TryGetStatus(setting.beamoId, out status))
-						{
-							foreach (var route in status.availableRoutes)
-							{
-								if (route.routingKey == _usam.latestManifest.localRoutingKey && route.instances.Count > 0)
-								{
-									map[routableServiceName] = route.routingKey;
-									break;
-								}
-							}
-						}
-						
-						// if (_usam.latestStatus.)
-							// map[routableServiceName] = 
 						break;
 				}
 			}

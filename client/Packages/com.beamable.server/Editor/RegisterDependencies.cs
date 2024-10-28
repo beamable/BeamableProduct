@@ -26,14 +26,6 @@ namespace Beamable.Server.Editor
 				return new UsamRoutingStrategy(usam);
 			});
 			builder.AddSingleton<IServiceRoutingStrategy>(p => p.GetService<UsamRoutingStrategy>());
-
-			// builder.AddSingleton<IServiceRoutingResolution, DefaultServiceRoutingResolution>();
-			// builder.AddSingleton<IServiceRoutingStrategy, DefaultServiceRoutingStrategy>(provider =>
-			// {
-			// 	// need access to the editor's auth scope.
-			// 	var api = BeamEditorContext.Default.ServiceScope.GetService<IBeamoApi>();
-			// 	return new DefaultServiceRoutingStrategy(api);
-			// });
 		}
 	}
 }
