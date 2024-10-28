@@ -8,6 +8,12 @@ namespace Beamable.Editor.BeamCli.Commands
 	{
 		/// <summary>The .dll filepath for the built microservice</summary>
 		public string source;
+		/// <summary>The list of services to include, defaults to all local services (separated by whitespace)</summary>
+		public string[] ids;
+		/// <summary>A set of BeamServiceGroup tags that will exclude the associated services. Exclusion takes precedence over inclusion</summary>
+		public string[] withoutGroup;
+		/// <summary>A set of BeamServiceGroup tags that will include the associated services</summary>
+		public string[] withGroup;
 		/// <summary>Directory to write the output client at</summary>
 		public string outputDir;
 		/// <summary>When true, generate the source client files to all associated projects</summary>
@@ -19,6 +25,33 @@ namespace Beamable.Editor.BeamCli.Commands
 			System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
 			// Add the source value to the list of args.
 			genBeamCommandArgs.Add(this.source.ToString());
+			// If the ids value was not default, then add it to the list of args.
+			if ((this.ids != default(string[])))
+			{
+				for (int i = 0; (i < this.ids.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--ids=" + this.ids[i]));
+				}
+			}
+			// If the withoutGroup value was not default, then add it to the list of args.
+			if ((this.withoutGroup != default(string[])))
+			{
+				for (int i = 0; (i < this.withoutGroup.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--without-group=" + this.withoutGroup[i]));
+				}
+			}
+			// If the withGroup value was not default, then add it to the list of args.
+			if ((this.withGroup != default(string[])))
+			{
+				for (int i = 0; (i < this.withGroup.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--with-group=" + this.withGroup[i]));
+				}
+			}
 			// If the outputDir value was not default, then add it to the list of args.
 			if ((this.outputDir != default(string)))
 			{
@@ -61,5 +94,10 @@ namespace Beamable.Editor.BeamCli.Commands
 	}
 	public class ProjectGenerateClientWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
+		public virtual ProjectGenerateClientWrapper OnStreamGenerateClientFileEvent(System.Action<ReportDataPoint<BeamGenerateClientFileEvent>> cb)
+		{
+			this.Command.On("stream", cb);
+			return this;
+		}
 	}
 }

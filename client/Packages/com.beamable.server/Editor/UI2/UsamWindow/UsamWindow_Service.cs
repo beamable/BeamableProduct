@@ -208,9 +208,17 @@ namespace Beamable.Editor.Microservice.UI2
 			{
 				usam.OpenProject(service.beamoId, service.csprojPath);
 			});
-			menu.AddItem(new GUIContent("Generate clients"), false, () =>
+			
+			menu.AddSeparator("");
+
+			menu.AddItem(new GUIContent("Generate client"), false, () =>
 			{
-				var _ = usam.GenerateClient();
+				var _ = usam.GenerateClient(service);
+			});
+			
+			menu.AddItem(new GUIContent("Generate client on build"), usam.ShouldServiceAutoGenerateClient(service.beamoId), () =>
+			{
+				usam.ToggleServiceAutoGenerateClient(service.beamoId);
 			});
 			
 			menu.AddSeparator("");

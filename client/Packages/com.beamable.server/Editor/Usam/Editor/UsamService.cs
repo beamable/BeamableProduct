@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.BeamCli;
 using Beamable.Common.BeamCli.Contracts;
+using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
 using Beamable.Common.Scheduler;
@@ -75,6 +76,8 @@ namespace Beamable.Server.Editor.Usam
 		public BeamShowManifestCommandOutput latestManifest;
 		public List<BeamServiceStatus> latestStatus;
 		public BeamDockerStatusCommandOutput latestDockerStatus;
+
+		public SerializableDictionaryStringToBool serviceToAutoGenClient = new SerializableDictionaryStringToBool();
 
 		/// <summary>
 		/// Controls where traffic will be directed
@@ -158,6 +161,22 @@ namespace Beamable.Server.Editor.Usam
 			_cli = cli;
 			
 			_commonArea.EnsureAreas(out _commonAssemblyAsset);
+		}
+
+		public bool ShouldServiceAutoGenerateClient(string beamoId)
+		{
+			if (!serviceToAutoGenClient.TryGetValue(beamoId, out var value))
+			{
+				return true;
+			}
+
+			return value;
+		}
+
+		public void ToggleServiceAutoGenerateClient(string beamoId)
+		{
+			var value = ShouldServiceAutoGenerateClient(beamoId);
+			serviceToAutoGenClient[beamoId] = !value;
 		}
 
 		public bool TryGetStatus(string beamoId, out BeamServiceStatus status)
@@ -527,7 +546,7 @@ namespace Beamable.Server.Editor.Usam
 
 					if (anyUpdates)
 					{
-						var commandPromise = GenerateClient(skipBuild: true);
+						var commandPromise = GenerateClient();
 						yield return commandPromise.ToYielder();
 					}
 				}
@@ -1040,15 +1059,62 @@ namespace Beamable.Server.Editor.Usam
 
 		}
 
-		public async Promise GenerateClient(bool skipBuild=false)
+		public async Promise GenerateClient(BeamManifestServiceEntry service)
 		{
 			if (_generateClientCommand != null)
 			{
 				_generateClientCommand.Cancel();
 				_generateClientCommand = null;
 			}
+
+			var idArr = new string[] {service.beamoId};
+			await Build(new ProjectBuildArgs {ids = idArr});
+
+			await GenerateClient(new ProjectGenerateClientArgs
+			{
+				outputLinks = true,
+				ids = idArr,
+
+				// the interface around this command has not aged well.
+				//  it actually generates clients for ALL services
+				source = "not-important"
+			});
 			
-			var buildCommand = _cli.ProjectBuild(new ProjectBuildArgs { });
+		}
+
+		async Promise GenerateClient(ProjectGenerateClientArgs args)
+		{
+			var outputs = new List<BeamGenerateClientFileEvent>();
+			_generateClientCommand = _cli.ProjectGenerateClient(args);
+			_generateClientCommand.OnError(cb =>
+			{
+				Debug.LogError($"Failed to generate clients. message=[{cb.data.message}] ");
+			});
+			if (args.ids?.Length == 1)
+			{
+				_generateClientCommand.OnLog(cb =>
+				{
+					AddLog(args.ids[0], cb.data);
+				});
+			}
+		
+			
+			_generateClientCommand.OnStreamGenerateClientFileEvent(cb =>
+			{
+				outputs.Add(cb.data);
+			});
+			
+			await _generateClientCommand.Run();
+
+			if (outputs.Count > 0)
+			{
+				AssetDatabase.Refresh();
+			}
+		}
+
+		async Promise Build(ProjectBuildArgs args)
+		{
+			var buildCommand = _cli.ProjectBuild(args);
 			buildCommand.OnStreamBuildProjectCommandOutput(cb =>
 			{
 				if (!cb.data.report.isSuccess)
@@ -1065,23 +1131,29 @@ namespace Beamable.Server.Editor.Usam
 					}
 				}
 			});
-			if (!skipBuild)
-				await buildCommand.Run();
-			
-			_generateClientCommand = _cli.ProjectGenerateClient(
-				new ProjectGenerateClientArgs
-				{
-					outputLinks = true, 
-					
-					// the interface around this command has not aged well.
-					//  it actually generates clients for ALL services
-					source = "not-important"
-				});
-			_generateClientCommand.OnError(cb =>
+			await buildCommand.Run();
+		}
+
+		public async Promise GenerateClient()
+		{
+			if (_generateClientCommand != null)
 			{
-				Debug.LogError($"Failed to generate clients. message=[{cb.data.message}] ");
+				_generateClientCommand.Cancel();
+				_generateClientCommand = null;
+			}
+
+			var idArr = latestManifest.services
+			                           .Where(x => ShouldServiceAutoGenerateClient(x.beamoId))
+			                           .Select(x => x.beamoId)
+			                           .ToArray();
+			await GenerateClient(new ProjectGenerateClientArgs
+			{
+				outputLinks = true,
+				ids = idArr,
+				// the interface around this command has not aged well.
+				//  it actually generates clients for ALL services
+				source = "not-important"
 			});
-			await _generateClientCommand.Run();
 		}
 
 		public Promise<string> GetLocalConnectionString(BeamManifestStorageEntry service)
