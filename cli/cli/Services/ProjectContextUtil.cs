@@ -353,7 +353,7 @@ public static class ProjectContextUtil
 				continue;
 			}
 
-			var fileReader = File.OpenRead(path);
+			var fileReader = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 			using var streamReader = new StreamReader(fileReader);
 			string line = string.Empty;
 			while (string.IsNullOrEmpty(line))
@@ -731,7 +731,7 @@ public static class ProjectContextUtil
 	public static string ModifyProperty(BeamoServiceDefinition definition, string propertyName, string propertyValue)
 	{
 		var buildEngine = new ProjectCollection();
-		var stream = File.OpenRead(definition.ProjectPath);
+		var stream = File.Open(definition.ProjectPath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
 		var document = XDocument.Load(stream, LoadOptions.PreserveWhitespace);
 		var reader = document.CreateReader(ReaderOptions.None);
 		var buildProject = buildEngine.LoadProject(reader);

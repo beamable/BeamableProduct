@@ -347,6 +347,7 @@ public class App
 		Commands.AddRootCommand<BaseRequestDeleteCommand, BaseRequestArgs>();
 		Commands.AddRootCommand<GenerateDocsCommand, GenerateDocsCommandArgs>();
 
+		// FEDERATION COMMANDS
 		Commands.AddRootCommand<FederationCommand>();
 		Commands.AddSubCommand<ListFederationsCommand, ListServicesCommandArgs, FederationCommand>();
 		Commands.AddSubCommand<AddFederationCommand, AddFederationCommandArgs, FederationCommand>();
@@ -354,6 +355,14 @@ public class App
 		Commands.AddSubCommand<DisableFederationCommand, DisableFederationCommandArgs, FederationCommand>();
 		Commands.AddSubCommand<EnableFederationCommand, DisableFederationCommandArgs, FederationCommand>();
 		Commands.AddSubCommand<GetLocalRoutingKeyCommand, GetLocalRoutingKeyCommandArgs, FederationCommand>();
+		
+		// FEDERATION LOCAL SETTING COMMANDS
+		Commands.AddSubCommand<FederationLocalSettingsCommand, CommandGroupArgs, FederationCommand>();
+		Commands.AddSubCommand<FederationLocalSettingsCommand.Get, CommandGroupArgs, FederationLocalSettingsCommand>();
+		Commands.AddSubCommand<FederationLocalSettingsCommand.Set, CommandGroupArgs, FederationLocalSettingsCommand>();
+		Commands.AddSubCommand<GetLocalSettingsIFederatedGameServerCommand, GetLocalSettingsIFederatedGameServerCommandArgs, FederationLocalSettingsCommand.Get>();
+		Commands.AddSubCommand<SetLocalSettingsIFederatedGameServerCommand, SetLocalSettingsIFederatedGameServerCommandArgs, FederationLocalSettingsCommand.Set>();
+		
 		
 		Commands.AddRootCommand<TokenCommandGroup>();
 		Commands.AddSubCommand<GetTokenDetailsCommand, GetTokenDetailsCommandArgs, TokenCommandGroup>();

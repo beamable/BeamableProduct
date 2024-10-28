@@ -31,7 +31,9 @@ using System.Threading.Tasks;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Realms;
 using Beamable.Common.Reflection;
+using Beamable.Serialization;
 using Beamable.Server.Api.Usage;
+using Beamable.Server.Common;
 using Beamable.Server.Editor;
 using microservice.Common;
 using Newtonsoft.Json;
@@ -891,19 +893,36 @@ namespace Beamable.Server
       {
 	      if (_args.DisableCustomInitializationHooks) 
 		      return; // if this is a health-check, then we aren't going to auto-register federation at all.
-
+	      
+	      
 	      IBeamoApi api = new BeamoApi(_requester);
 	      var federationRequest = new MicroserviceRegistrationRequest
 	      {
 		      serviceName = QualifiedName, 
 		      trafficFilterEnabled = true,
 		      federation = new OptionalArrayOfSupportedFederation(FederationComponents.Select(component =>
-			      new SupportedFederation
+		      {
+			      var idToUse = component.identity.UniqueName;
+			      var typeToUse = FederatedComponentGenerator.GetFederationType(component.typeName);
+			      var settingsToUse = new OptionalJsonString();
+			      if (!string.IsNullOrEmpty(routingKey))
 			      {
-				      nameSpace = component.identity.UniqueName,
-				      type = FederatedComponentGenerator.GetFederationType(component.typeName),
-				      //settings = ? // leave filter node empty for now
-			      }).ToArray())
+				      var builtSettings = BuiltSettings.ReadBuiltSettings();
+				      foreach (var kvp in builtSettings)
+				      {
+					      if (FederationUtils.TrySplitLocalSettingKey(kvp.Key, out FederationType fedType, out var fedId) &&
+					          (fedType == typeToUse && fedId == idToUse))
+					      {
+						      settingsToUse.Set(JsonString.FromJson(kvp.Value));
+					      }
+				      }
+			      }
+			      
+			      return new SupportedFederation
+			      {
+				      nameSpace = idToUse, type = typeToUse, settings = settingsToUse
+			      };
+		      }).ToArray())
 	      };
 	      if (!string.IsNullOrEmpty(routingKey))
 	      {

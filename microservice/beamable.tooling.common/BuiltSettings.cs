@@ -22,7 +22,7 @@ namespace Beamable.Server.Common
 
 		public BuiltSettings(Dictionary<string, string> settings = null)
 		{
-			_settings = settings ?? new Dictionary<string, string>();
+			_settings = settings ?? new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
 		}
 
 		public static BuiltSettings FromResource()
@@ -37,7 +37,7 @@ namespace Beamable.Server.Common
 		/// <param name="value">The output value will the contents of the "Value" attribute. </param>
 		/// <returns>false if there was no setting. </returns>
 		public bool TryGetSetting(string key, out string value) =>
-			_settings.TryGetValue(key?.ToLowerInvariant(), out value);
+			_settings.TryGetValue(key, out value);
 
 		/// <summary>
 		/// Read a <c>BeamableSetting</c> from the .csproj file, and assume that the value is well formatted JSON
@@ -57,6 +57,17 @@ namespace Beamable.Server.Common
 		}
 
 		/// <summary>
+		/// Reads any <see cref="IFederation.ILocalSettings"/>-implementing structure from the <see cref="BuiltSettings"/>.
+		/// </summary>
+		public bool TryGetFederationLocalSettingFromJson<T>(string key, out T value) where T : class, IFederation.ILocalSettings
+		{
+			if (!FederationUtils.TrySplitLocalSettingKey(key, out _, out _))
+				throw new ArgumentException($"The given key is not a valid {nameof(IFederation.ILocalSettings)} key. You should never see this. If you do, please contact Beamable support.");
+
+			return TryGetSettingFromJson(key, out value);
+		}
+
+		/// <summary>
 		/// Reads the embedded resource, Beamable.properties, and returns a dictionary of the key value pairs.
 		/// 
 		/// <para>
@@ -70,7 +81,7 @@ namespace Beamable.Server.Common
 		{
 			var settings = new Dictionary<string, string>();
 			var assembly = Assembly.GetEntryAssembly();
-			
+
 			using var stream =
 				assembly.GetManifestResourceStream(Constants.Features.Config.BEAMABLE_SETTINGS_RESOURCE_NAME);
 			if (stream == null) return new Dictionary<string, string>();
@@ -80,10 +91,10 @@ namespace Beamable.Server.Common
 			var lines = result.Split(new string[] { Constants.Features.Config.BEAMABLE_SETTINGS_RESOURCE_SPLITTER }, StringSplitOptions.RemoveEmptyEntries);
 			foreach (var line in lines)
 			{
-				var parts = line.Split(new char[]{'='}, StringSplitOptions.RemoveEmptyEntries);
+				var parts = line.Split(new char[] { '=' }, StringSplitOptions.RemoveEmptyEntries);
 				if (parts.Length != 2) continue;
-				
-				var key = parts[0].Trim().ToLowerInvariant();
+
+				var key = parts[0].Trim();
 				var value = parts[1].Trim();
 
 				if (!settings.ContainsKey(key))
