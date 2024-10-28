@@ -49,7 +49,7 @@ public class ServicesForRouteCollection
 	public List<ServiceInstance> instances = new List<ServiceInstance>();
 	public List<FederationInstance> federations = new();
 }
-
+	
 [Serializable]
 public class ServiceInstance
 {
@@ -192,7 +192,8 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 		}
 
 		// Before even bothering with discovery, emit all known services
-		foreach (var definition in args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions)
+		var manifest = args.BeamoLocalSystem.BeamoManifest;
+		foreach (var definition in manifest.ServiceDefinitions)
 		{
 			if (!definition.IsLocal) continue;
 			if (serviceFilter != null && !serviceFilter.Contains(definition.BeamoId)) continue;
@@ -204,7 +205,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 					serviceType = definition.Protocol == BeamoProtocolType.HttpMicroservice ? "service" : "storage",
 					availableRoutes = new List<ServicesForRouteCollection>()
 					{
-						new()
+						new ()
 						{
 							knownToBeRunning = false,
 							routingKey = ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine(),
@@ -212,6 +213,14 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 							{
 								FederationId = kvp.Key,
 								FederationTypes = kvp.Value.Select(f => f.Interface).ToArray(),
+								LocalSettings = kvp.Value.Select(f =>
+								{
+									var key = FederationUtils.BuildLocalSettingKey(f.Interface, kvp.Key);
+									if (manifest.HttpMicroserviceLocalProtocols[definition.BeamoId].Settings.TryGetSetting(key, out var settingsJsonVal))
+										return settingsJsonVal;
+									
+									return "{}";
+								}).ToArray(),
 							}).ToList() : new List<FederationInstance>(),
 						}
 					},
