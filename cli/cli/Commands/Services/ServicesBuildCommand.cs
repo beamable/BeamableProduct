@@ -61,7 +61,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 	public override void Configure()
 	{
 		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
-		ProjectCommand.AddServiceTagsOption(this, 
+		ProjectCommand.AddServiceTagsOption(this,
 			bindWithTags: (args, i) => args.withServiceTags = i,
 			bindWithoutTags: (args, i) => args.withoutServiceTags = i);
 
@@ -69,24 +69,24 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			"When true, all build images will run in parallel");
 		serialOption.AddAlias("-s");
 		serialOption.SetDefaultValue(false);
-		
+
 		var forceCpuOption = new Option<bool>("--force-cpu-arch",
 			"When true, build an image for the Beamable Cloud architecture, amd64");
 		forceCpuOption.AddAlias("-fcpu");
 		forceCpuOption.SetDefaultValue(false);
-		
+
 		var pullOption = new Option<bool>("--pull",
 			"When true, force the docker build to pull all base images");
 		pullOption.AddAlias("-p");
 		pullOption.SetDefaultValue(false);
-		
+
 		var noCacheOption = new Option<bool>("--no-cache",
 			"When true, force the docker build to ignore all caches");
 		noCacheOption.SetDefaultValue(false);
-		
+
 		var tagsOption = new Option<string[]>("--tags",
 			"Provider custom tags for the resulting docker images");
-		tagsOption.SetDefaultValue(new string[]{"latest"});
+		tagsOption.SetDefaultValue(new string[] { "latest" });
 		tagsOption.AllowMultipleArgumentsPerToken = true;
 		tagsOption.Arity = ArgumentArity.ZeroOrMore;
 
@@ -100,10 +100,10 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 
 	public override async Task Handle(ServicesBuildCommandArgs args)
 	{
-		ProjectCommand.FinalizeServicesArg(args, 
-			withTags: args.withServiceTags, 
+		ProjectCommand.FinalizeServicesArg(args,
+			withTags: args.withServiceTags,
 			withoutTags: args.withoutServiceTags,
-			includeStorage: false, 
+			includeStorage: false,
 			ref args.services);
 
 		var failed = false;
@@ -117,12 +117,12 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 				{
 					visuals[i] = ctx.AddTask(args.services[i]);
 				}
-				for (var i = 0 ; i < args.services.Count; i ++)
+				for (var i = 0; i < args.services.Count; i++)
 				{
 					var index = i;
 					var service = args.services[i];
 					var buildTask = Build(
-						args.DependencyProvider, 
+						args.DependencyProvider,
 						service,
 						noCache: args.noCache,
 						pull: args.pull,
@@ -132,17 +132,17 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 					{
 						msg.id = service;
 						if (string.IsNullOrEmpty(msg.message)) return;
-						
+
 						if (msg.isFailure)
 						{
 							Log.Error(msg.message);
 							visuals[index].StopTask();
 						}
 						else
-						{						
+						{
 							Log.Information($"({service}): {msg.message}");
 						}
-						
+
 						this.SendResults<DefaultStreamResultChannel, ServicesBuildCommandOutput>(msg);
 					}, progressMessage: prog =>
 					{
@@ -175,11 +175,11 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 	}
 
 	public static async Task<BuildImageSourceOutput> BuildLocalSource(
-		IDependencyProvider provider, 
-		string id, 
+		IDependencyProvider provider,
+		string id,
 		bool forceCpu,
-		Action<ServicesBuildCommandOutput> logMessage=null,
-		bool forDeployment=true
+		Action<ServicesBuildCommandOutput> logMessage = null,
+		bool forDeployment = true
 	)
 	{
 		var beamoLocal = provider.GetService<BeamoLocalSystem>();
@@ -187,7 +187,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		var config = provider.GetService<ConfigService>();
 
 		var dotnetPath = app.DotnetPath;
-		
+
 		if (!beamoLocal.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(id, out var http))
 		{
 			logMessage?.Invoke(new ServicesBuildCommandOutput
@@ -219,7 +219,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		{
 			Directory.Delete(buildDirRoot, true);
 		}
-		
+
 		// TODO: introduce more comments explaining why support/app are different, regarding docker layers.
 		var buildDirSupport = Path.Combine(buildDirRoot, "support");
 		var buildDirApp = Path.Combine(buildDirRoot, "app");
@@ -230,7 +230,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		var errorPath = Path.Combine(config.ConfigDirectoryPath, "temp", "buildLogs", $"{id}.json");
 		var errorPathDir = Path.GetDirectoryName(errorPath);
 		Directory.CreateDirectory(errorPathDir);
-		
+
 		var productionArgs = forDeployment
 			? "-p:BeamGenProps=\"disable\" -p:GenerateClientCode=\"false\""
 			: "";
@@ -253,7 +253,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			}))
 			.WithValidation(CommandResultValidation.None)
 			.ExecuteAsync(cts.Token);
-		
+
 		await command;
 
 		// move some files from the build output into a different folder,
@@ -266,7 +266,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 				File.Move(fileToMove, target);
 			}
 		}
-		
+
 		var report = ProjectService.ReadErrorReport(errorPath);
 		return new BuildImageSourceOutput
 		{
@@ -291,14 +291,14 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 	/// <param name="tags">defaults to "latest", but allows for multiple tags</param>
 	/// <returns>a <see cref="BuildImageOutput"/> including success and image-id </returns>
 	public static async Task<BuildImageOutput> Build(
-		IDependencyProvider provider, 
-		string id, 
-		Action<ServicesBuildCommandOutput> logMessage=null, 
-		Action<ServicesBuiltProgress> progressMessage=null,
-		bool noCache=false,
-		bool forceCpu=false,
-		bool pull=false,
-		string[] tags=null)
+		IDependencyProvider provider,
+		string id,
+		Action<ServicesBuildCommandOutput> logMessage = null,
+		Action<ServicesBuiltProgress> progressMessage = null,
+		bool noCache = false,
+		bool forceCpu = false,
+		bool pull = false,
+		string[] tags = null)
 	{
 		// a fake number of "steps" that the tarball is allotted. 
 		const int tarBallSteps = 2; // TODO: there is no tarball step anymore, so the loading around it doesn't make sense
@@ -312,7 +312,8 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		// TODO: consider using an enum Flags for the multitude of builds
 		// TODO: expose the `forDeploymentBuild` arg out to the Build param, so `beam services build` creates a local version
 		var report = await BuildLocalSource(provider, id, forceCpu, logMessage);
-		if (!report.Success){
+		if (!report.Success)
+		{
 			return new BuildImageOutput
 			{
 				success = false,
@@ -321,19 +322,19 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 				sourceReport = report
 			};
 		}
-		
-		
+
+
 		var dockerPath = app.DockerPath;
 		if (!DockerPathOption.TryValidateDockerExec(dockerPath, out var dockerPathError))
 		{
 			throw new CliException(dockerPathError);
 		}
-		
+
 		if (tags == null)
 		{
 			tags = new string[] { "latest" };
 		}
-		
+
 		if (!beamoLocal.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(id, out var http))
 		{
 			logMessage?.Invoke(new ServicesBuildCommandOutput
@@ -359,19 +360,19 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 				service = id
 			};
 		}
-		
+
 		progressMessage?.Invoke(new ServicesBuiltProgress
 		{
 			completedSteps = 0,
 			totalSteps = estimatedSteps
 		});
-		
+
 		progressMessage?.Invoke(new ServicesBuiltProgress
 		{
 			completedSteps = tarBallSteps,
 			totalSteps = estimatedSteps
 		});
-		
+
 		logMessage?.Invoke(new ServicesBuildCommandOutput
 		{
 			message = "starting docker build..."
@@ -379,23 +380,23 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 
 		var tagString = string.Join(" ", tags.Select(tag => $"-t {id.ToLowerInvariant()}:{tag}"));
 		var argString = $"buildx build {fullContextPath} -f {http.RelativeDockerfilePath} " +
-		                $"{tagString} " +
-		                $"--progress rawjson " +
-		                $"--build-arg BEAM_SUPPORT_SRC_PATH={Path.GetRelativePath(config.BaseDirectory, report.outputDirSupport)} " +
-		                $"--build-arg BEAM_APP_SRC_PATH={Path.GetRelativePath(config.BaseDirectory,report.outputDirApp)} " +
-		                $"--build-arg BEAM_APP_DEST=/beamApp/{Path.GetRelativePath(config.BaseDirectory,definition.BeamoId)}.dll " +
-		                $"{(forceCpu ? "--platform linux/amd64 " : "")} " +
-		                $"{(noCache ? "--no-cache " : "")}" +
-		                $"{(pull ? "--pull " : "")}" +
-		                $"--label \"beamoId={id.ToLowerInvariant()}\" " +
-		                $"--label \"beamVersion={VersionService.GetNugetPackagesForExecutingCliVersion()}\" "
-		                ;
+						$"{tagString} " +
+						$"--progress rawjson " +
+						$"--build-arg BEAM_SUPPORT_SRC_PATH={Path.GetRelativePath(config.BaseDirectory, report.outputDirSupport)} " +
+						$"--build-arg BEAM_APP_SRC_PATH={Path.GetRelativePath(config.BaseDirectory, report.outputDirApp)} " +
+						$"--build-arg BEAM_APP_DEST=/beamApp/{Path.GetRelativePath(config.BaseDirectory, definition.BeamoId)}.dll " +
+						$"{(forceCpu ? "--platform linux/amd64 " : "")} " +
+						$"{(noCache ? "--no-cache " : "")}" +
+						$"{(pull ? "--pull " : "")}" +
+						$"--label \"beamoId={id.ToLowerInvariant()}\" " +
+						$"--label \"beamVersion={VersionService.GetNugetPackagesForExecutingCliVersion()}\" "
+						;
 
 		Log.Verbose($"running docker command with args=[{argString}]");
 		var buffer = new StringBuilder();
 		var digestToVertex = new Dictionary<string, BuildkitVertex>();
 		var idToStatus = new Dictionary<string, BuildkitStatus>();
-		string imageId = null; 
+		string imageId = null;
 		bool TryParse(out BuildkitMessage msg)
 		{
 			string json = buffer.ToString();
@@ -425,7 +426,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 					wasStarted = oldVertex.IsStarted;
 					wasFailed = oldVertex.IsFailed;
 				}
-				
+
 				if (!wasStarted && vertex.IsStarted)
 				{
 					// this is the first time we're seeing it, 
@@ -444,21 +445,21 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 						isFailure = true
 					});
 				}
-				
+
 				// always overwrite the vertex. Docker will change the started and completed times
 				digestToVertex[vertex.digest] = vertex;
 			}
-			
+
 			// compute the total steps
 			var totalSteps = tarBallSteps + digestToVertex.Count;
 			var completedSteps = tarBallSteps + digestToVertex.Count(kvp => kvp.Value.IsCompleted);
-			
+
 			progressMessage?.Invoke(new ServicesBuiltProgress
 			{
 				completedSteps = completedSteps,
 				totalSteps = totalSteps + stepPadding // add some padding to help mitigate when docker emits vertexes slowly
 			});
-			
+
 			// check for log updates on vertex data
 			foreach (var log in msg.logs)
 			{
@@ -473,7 +474,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 					message = log.DecodedMessage
 				});
 			}
-			
+
 			// check for status updates on vertex data
 			foreach (var status in msg.statuses)
 			{
@@ -499,7 +500,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 					logMessage?.Invoke(new ServicesBuildCommandOutput { message = status.id });
 				}
 			}
-			
+
 		}
 
 		var command = Cli
@@ -522,7 +523,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 				}
 			}));
 
-		
+
 		var result = await command.ExecuteAsync();
 		var isSuccess = result.ExitCode == 0;
 		if (isSuccess)
@@ -533,8 +534,8 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 				totalSteps = 1
 			});
 		}
-		
-		
+
+
 		return new BuildImageOutput
 		{
 			success = isSuccess,
@@ -576,9 +577,9 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		public bool IsFailed => !string.IsNullOrEmpty(error);
 
 		public string Display => $"{(IsCached ? "[cached] " : "")}{name}";
-		
+
 		// this will show graph dependencies between the vertex info, but I don't think we actually need it.
-		public List<string> inputs = new List<string>(); 
+		public List<string> inputs = new List<string>();
 	}
 
 	class BuildkitLogs
@@ -586,7 +587,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		public string vertex;
 		public DateTimeOffset timestamp;
 		public int stream;
-		
+
 		/// <summary>
 		/// the proto definition shows a byte[] msg stream,
 		/// but from observation, this is a base64 encoded string.
@@ -627,7 +628,7 @@ public struct BuildImageSourceOutput
 	public string outputDirRoot;
 	public string outputDirApp;
 	public string outputDirSupport;
-	
+
 	public bool Success => report?.isSuccess ?? false;
 }
 

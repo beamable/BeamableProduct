@@ -52,7 +52,7 @@ public class ConfigService
 		DirectoryExists = TryToFindBeamableConfigFolder(out var configPath);
 		ConfigDirectoryPath = configPath;
 	}
-	
+
 	public void Init(BindingContext bindingContext)
 	{
 		if (!TryGetSetting(out _dir, bindingContext, _configDirOption))
@@ -227,7 +227,7 @@ public class ConfigService
 	public const string ENV_VAR_DOCKER_EXE = "BEAM_DOCKER_EXE";
 
 	public static bool IsRedirected => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND));
-	
+
 	/// <summary>
 	/// Enabling a custom Docker Uri allows for a customer to have a customized docker install and still
 	/// tell the Beam CLI where the docker socket is available.
@@ -401,7 +401,7 @@ public class ConfigService
 	{
 		return TryGetProjectBeamableCLIVersion(ConfigDirectoryPath, out version);
 	}
-	
+
 	/// <summary>
 	/// Extract the CLI version registered in the ".config" directory sibling to the ".beamable" folder. 
 	/// </summary>
