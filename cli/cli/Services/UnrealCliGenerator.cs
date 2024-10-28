@@ -258,7 +258,9 @@ public class UnrealCliGenerator : ICliGenerator
 	public List<GeneratedFileDescriptor> Generate(CliGeneratorContext context)
 	{
 		// the following commands are more complicated and either use nullables or enums
-		var invalidCommands = new string[] { "beam", "beam services register", "beam services modify", "beam services enable", "beam oapi generate", };
+		var invalidCommands = new string[] { "beam", "beam services register", "beam services modify", "beam services enable", "beam oapi generate", 
+			"beam deployment", "beam deployment" };
+		var invalidCommandPallets = new string[] { "beam deployment" };
 
 		var files = new List<GeneratedFileDescriptor>();
 		var allDataTypes = new List<UnrealCliStreamDataDeclaration>();
@@ -266,6 +268,8 @@ public class UnrealCliGenerator : ICliGenerator
 		{
 			if (!command.hasValidOutput && command.executionPath != "beam") continue;
 			if (invalidCommands.Contains(command.executionPath)) continue;
+			if (invalidCommandPallets.Any(p => command.executionPath.StartsWith(p))) 
+				continue;
 
 			var nonBeamCommandNames = command.executionPath.Substring(command.executionPath.IndexOf(" ", StringComparison.Ordinal) + 1);
 			var commandName = $"BeamCli{string.Join("", nonBeamCommandNames.Split(" ").Select(c => c.Sanitize().Capitalize()))}";

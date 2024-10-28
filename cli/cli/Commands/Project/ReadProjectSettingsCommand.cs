@@ -1,12 +1,12 @@
 using cli.Dotnet;
 using Serilog;
+using System.CommandLine;
 
 namespace cli.Commands.Project;
 
 public class ReadProjectSettingsCommandArgs : CommandArgs
 {
 	public List<string> services = new List<string>();
-
 }
 
 [Serializable]
@@ -38,27 +38,26 @@ public class ReadProjectSettingsCommand : AtomicCommand<ReadProjectSettingsComma
 	public override void Configure()
 	{
 		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
-
 	}
 
 	public override Task<ReadProjectSettingsCommandOutput> GetResult(ReadProjectSettingsCommandArgs args)
 	{
-		var res = new ReadProjectSettingsCommandOutput();
 		ProjectCommand.FinalizeServicesArg(args, ref args.services);
+		return ReadSettings(args, args.services);
+	}
 
-		
+	public static Task<ReadProjectSettingsCommandOutput> ReadSettings(CommandArgs args, List<string> services)
+	{
+		var res = new ReadProjectSettingsCommandOutput();
 		foreach (var (service, http) in args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols)
 		{
-			if (!args.services.Contains(service)) continue; // skip
+			if (!services.Contains(service)) continue; // skip
 			var collection = new ProjectSettingsOutput { serviceName = service };
 			res.settings.Add(collection);
 			foreach (var (key, value) in http.Settings)
 			{
-				Log.Verbose($"found info service=[{service}] key=[{key}] val=[{value}]" );
-				collection.settings.Add(new SettingOutput
-				{
-					key = key, value = value
-				});
+				Log.Verbose($"found info service=[{service}] key=[{key}] val=[{value}]");
+				collection.settings.Add(new SettingOutput { key = key, value = value });
 			}
 		}
 

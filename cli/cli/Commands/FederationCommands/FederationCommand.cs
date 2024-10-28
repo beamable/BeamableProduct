@@ -1,5 +1,3 @@
-using JetBrains.Annotations;
-
 namespace cli.FederationCommands;
 
 public class FederationCommand : CommandGroup

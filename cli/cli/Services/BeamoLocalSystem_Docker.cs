@@ -381,7 +381,7 @@ public partial class BeamoLocalSystem
 			}
 
 			// Open the file we're putting into the tarball
-			using var fileStream = File.OpenRead(file);
+			using var fileStream = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
 			// When creating the tar file (using SharpZipLib) if I create the tar entries from the filenames,
 			// the tar will be created with the wrong slashes (\ instead of / for linux).

@@ -114,6 +114,8 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 		List<SettingInput> settings,
 		bool skipBuild)
 	{
+		ProjectContextUtil.EvictManifestCache();
+		
 		var beamo = args.BeamoLocalSystem;
 		var config = args.ConfigService;
 		if (!beamo.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(beamoId, out var http))
@@ -242,7 +244,8 @@ public class WriteProjectSettingsCommand : AtomicCommand<WriteProjectSettingsCom
 	/// <returns></returns>
 	public static bool TryLoadDocument(string csProjPath, out XDocument document, out XElement projectElement)
 	{
-		var reader = XmlReader.Create(csProjPath);
+		using var stream = File.Open(csProjPath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+		using var reader = XmlReader.Create(stream);
 		document = XDocument.Load(reader);
 		projectElement = default;
 

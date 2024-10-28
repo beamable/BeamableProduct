@@ -104,6 +104,8 @@ public class ContentLocalCache
 		return resultList;
 	}
 
+	public bool HasContent(string contentId) => Assets.TryGetValue(contentId, out _);
+
 	public bool HasSameVersion(ClientContentInfo contentInfo)
 	{
 		if (Assets.TryGetValue(contentInfo.contentId, out var localVersion))
