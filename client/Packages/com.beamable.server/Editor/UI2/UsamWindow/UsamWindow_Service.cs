@@ -64,8 +64,7 @@ namespace Beamable.Editor.Microservice.UI2
 				}
 				
 				EditorGUILayout.Space(1, true);
-
-				// GUI.enabled = false;
+				
 				clickedRunToggle = BeamGUI.HeaderButton(null, iconPlay, 
 				                                     width: buttonWidth, 
 				                                     padding: 4,
@@ -73,7 +72,6 @@ namespace Beamable.Editor.Microservice.UI2
 				                                     backgroundColor: isRunning ? primaryColor : buttonBackgroundColor,
 				                                     tooltip: isRunning ? "Shutdown the service " : "Start the service");
 				EditorGUILayout.Space(1, true);
-				// GUI.enabled = true;
 
 				clickedOpenDocs = BeamGUI.HeaderButton(null, iconOpenApi,
 				                                       width: buttonWidth,

@@ -42,7 +42,6 @@ namespace Beamable.Editor.Util
 				var lowerPadding = label == null ? 2 : 15;
 				var texRect = new Rect(rect.x+iconPadding, rect.y+2+iconPadding, rect.width-iconPadding*2, rect.height - lowerPadding -iconPadding*2);
 				GUI.DrawTexture(texRect, icon, ScaleMode.ScaleToFit);
-				// GUI.DrawTextureWithTexCoords(texRect, icon, new Rect(0, 0, 1, 1));
 			}
 
 			{ // draw the label
@@ -59,11 +58,7 @@ namespace Beamable.Editor.Util
 				EditorGUI.DrawRect(borderRect, new Color(0, 0, 0, .3f));
 			}
 
-			if (isDisabled)
-			{
-				// EditorGUIUtility.AddCursorRect(rect, MouseCursor.);
-			}
-			else
+			if (!isDisabled)
 			{
 				EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
 			}

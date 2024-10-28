@@ -116,28 +116,22 @@ namespace Beamable.Editor.Microservice.UI2
 
 		void DrawContent()
 		{
+			EditorGUILayout.BeginVertical();
 			
+			if (!string.IsNullOrEmpty(selectedCard.name))
 			{
-				EditorGUILayout.BeginVertical();
-
-
-
-				if (!string.IsNullOrEmpty(selectedCard.name))
+				if (selectedCard.serviceIndex >= 0)
 				{
-					if (selectedCard.serviceIndex >= 0)
-					{
-						var service = usam.latestManifest.services[selectedCard.serviceIndex];
-						DrawService(service);
-					} else if (selectedCard.storageIndex >= 0)
-					{
-						var storage = usam.latestManifest.storages[selectedCard.storageIndex];
-						DrawStorage(storage);
-					}
+					var service = usam.latestManifest.services[selectedCard.serviceIndex];
+					DrawService(service);
+				} else if (selectedCard.storageIndex >= 0)
+				{
+					var storage = usam.latestManifest.storages[selectedCard.storageIndex];
+					DrawStorage(storage);
 				}
+			}
 
-				EditorGUILayout.EndVertical();
-			} 
-			// depending on the card, rendering a storage object vs a service object is different. 
+			EditorGUILayout.EndVertical();
 		}
 
 

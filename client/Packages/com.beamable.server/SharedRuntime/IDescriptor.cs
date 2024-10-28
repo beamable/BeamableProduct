@@ -10,6 +10,7 @@ namespace Beamable.Server.Editor
 		string Name { get; }
 		string AttributePath { get; }
 		string SourcePath { get; }
+
 		Type Type { get; set; }
 
 		string ContainerName { get; }

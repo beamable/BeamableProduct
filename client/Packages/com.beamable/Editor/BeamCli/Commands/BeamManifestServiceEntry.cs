@@ -13,5 +13,6 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string buildDllPath;
 		public System.Collections.Generic.List<string> storageDependencies;
 		public System.Collections.Generic.List<BeamUnityAssemblyReferenceData> unityReferences;
+		public System.Collections.Generic.List<BeamFederationEntry> federations;
 	}
 }

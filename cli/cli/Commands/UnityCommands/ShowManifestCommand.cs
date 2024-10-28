@@ -25,6 +25,14 @@ public class ManifestServiceEntry
 	public string buildDllPath;
 	public List<string> storageDependencies;
 	public List<UnityAssemblyReferenceData> unityReferences;
+	public List<FederationEntry> federations;
+}
+
+[Serializable]
+public class FederationEntry
+{
+	public string interfaceName;
+	public string federationId;
 }
 
 public class ManifestStorageEntry
@@ -67,8 +75,22 @@ public class ShowManifestCommand : AtomicCommand<ShowManifestCommandArgs, ShowMa
 				csprojPath = definition.ProjectPath,
 				shouldBeEnabledOnRemote = definition.ShouldBeEnabledOnRemote,
 				storageDependencies = http.StorageDependencyBeamIds,
-				unityReferences = http.UnityAssemblyDefinitionProjectReferences
+				unityReferences = http.UnityAssemblyDefinitionProjectReferences,
+				federations = definition.SourceGenConfig.Federations.SelectMany(kvp =>
+				{
+					var results = new List<FederationEntry>();
+					foreach (var fed in kvp.Value)
+					{
+						results.Add(new FederationEntry
+						{
+							interfaceName = fed.Interface,
+							federationId = kvp.Key
+						});
+					}
+					return results;
+				}).ToList()
 			};
+			
 
 			services.Add(service);
 		}
