@@ -190,17 +190,19 @@ namespace Beamable.Server.Generator
 
 		}
 
-		CodeTypeReference GetTypeReference(Type federationType)
+		 bool GetTypeReference(Type federationType, out CodeTypeReference codeTypeReference)
 		{
 			var federationId = ((IFederationId)Activator.CreateInstance(federationType)).UniqueName;
 			var existingFederation = _existingFederations.FirstOrDefault(x => x.federationId == federationId);
 			if (existingFederation != null)
 			{
-				return new CodeTypeReference(existingFederation.federationIdTypeName);
+				codeTypeReference = new CodeTypeReference(existingFederation.federationIdTypeName);
+				return true;
 			}
 			else
 			{
-				return new CodeTypeReference(federationType);
+				codeTypeReference = null;
+				return false;
 			}
 		}
 
@@ -213,8 +215,11 @@ namespace Beamable.Server.Generator
 				{
 					var genericType = type.GetGenericArguments()[0];
 					var baseReference = new CodeTypeReference(typeof(ISupportsFederatedLogin<>));
-					baseReference.TypeArguments.Add(GetTypeReference(genericType));
-					targetClass.BaseTypes.Add(baseReference);
+					if (GetTypeReference(genericType, out var typeRef))
+					{
+						baseReference.TypeArguments.Add(typeRef);
+						targetClass.BaseTypes.Add(baseReference);
+					}
 				}
 			}
 		}
@@ -228,9 +233,12 @@ namespace Beamable.Server.Generator
 				{
 					var genericType = type.GetGenericArguments()[0];
 					var baseReference = new CodeTypeReference(typeof(ISupportsFederatedInventory<>));
-					baseReference.TypeArguments.Add(GetTypeReference(genericType));
 
-					targetClass.BaseTypes.Add(baseReference);
+					if (GetTypeReference(genericType, out var typeRef))
+					{
+						baseReference.TypeArguments.Add(typeRef);
+						targetClass.BaseTypes.Add(baseReference);
+					}
 				}
 			}
 		}
