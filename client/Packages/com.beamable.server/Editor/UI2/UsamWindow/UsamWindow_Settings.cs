@@ -183,19 +183,6 @@ namespace Beamable.Editor.Microservice.UI2
 						});
 					}
 					
-					// for (var i = 0; i < settings.options.Count; i++, totalIndex++)
-					// {
-					// 	var option = settings.options[i];
-					// 	if (DrawOption(settings, option, i))
-					// 	{
-					// 		clicked = true;
-					// 		settings.selectedOption = option;
-					// 	}
-					// }
-					
-					
-					
-					
 					EditorGUI.indentLevel--;
 
 				}
@@ -230,31 +217,47 @@ namespace Beamable.Editor.Microservice.UI2
 						serializedObj.FindProperty(nameof(BeamableMicroservicesSettings.assemblyReferences)),
 						new GUIContent("Assembly Definitions"));
 					EditorGUILayout.Separator();
-					serializedObj.ApplyModifiedProperties();
+					
+					DrawHelpBox("TODO: Fill out these settings for federation" );
+					EditorGUILayout.PropertyField(
+						serializedObj.FindProperty(nameof(BeamableMicroservicesSettings.federations)), 
+						new GUIContent("Federations"), true);
+					
+					EditorGUILayout.Separator();
+					
+					serializedObj.ApplyModifiedPropertiesWithoutUndo();
+		
 					EditorGUI.indentLevel--;
 				}
 				
+				
 				if (settings.HasChanges())
 				{
-					
-					if (!settings.CheckAllValidAssemblies(out var errorMessage))
+					EditorDebouncer.Debounce("save-beam-settings", () =>
 					{
-						Debug.LogError("error " + errorMessage);
-					}
-					else
-					{
-						settings.SaveChanges(usam).Then(_ =>
+						if (!settings.CheckAllValidAssemblies(out var errorMessage))
 						{
-							Debug.Log("Saved!");
-
-							usam.WaitReload().Then(_ =>
+							Debug.LogError("error " + errorMessage);
+						}
+						else if (!settings.CheckAllValidFederations())
+						{
+							// continue...
+						}
+						else
+						{
+							Debug.Log("auto saving settings...");
+							settings.SaveChanges(usam).Then(_ =>
 							{
-								// once the manifest is re-read, reserialize our own date!
-								hasSerializedSettingsYet = false;
-							});
-						});
+								Debug.Log("Saved!");
 
-					}
+								usam.WaitReload().Then(_ =>
+								{
+									// once the manifest is re-read, reserialize our own date!
+									hasSerializedSettingsYet = false;
+								});
+							});
+						}
+					}, .1f);
 				}
 
 				

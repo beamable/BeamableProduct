@@ -18,6 +18,10 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string outputDir;
 		/// <summary>When true, generate the source client files to all associated projects</summary>
 		public bool outputLinks;
+		/// <summary>A set of existing federation ids</summary>
+		public string[] existingFedIds;
+		/// <summary>A set of existing class names for federations</summary>
+		public string[] existingFedTypeNames;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -62,6 +66,24 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.outputLinks != default(bool)))
 			{
 				genBeamCommandArgs.Add(("--output-links=" + this.outputLinks));
+			}
+			// If the existingFedIds value was not default, then add it to the list of args.
+			if ((this.existingFedIds != default(string[])))
+			{
+				for (int i = 0; (i < this.existingFedIds.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--existing-fed-ids=" + this.existingFedIds[i]));
+				}
+			}
+			// If the existingFedTypeNames value was not default, then add it to the list of args.
+			if ((this.existingFedTypeNames != default(string[])))
+			{
+				for (int i = 0; (i < this.existingFedTypeNames.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--existing-fed-type-names=" + this.existingFedTypeNames[i]));
+				}
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

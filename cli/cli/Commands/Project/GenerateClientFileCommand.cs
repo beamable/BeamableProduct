@@ -14,6 +14,7 @@ using System.CommandLine;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.InteropServices.ComTypes;
 using System.Runtime.Loader;
 
 namespace cli.Dotnet;
@@ -26,6 +27,9 @@ public class GenerateClientFileCommandArgs : CommandArgs
 	public List<string> beamoIds;
 	public List<string> withTags;
 	public List<string> excludeTags;
+
+	public List<string> existingFederationIds;
+	public List<string> existingFederationTypeNames;
 }
 
 public class GenerateClientFileEvent
@@ -49,6 +53,24 @@ public class GenerateClientFileCommand
 		AddArgument(new Argument<string>("source", "The .dll filepath for the built microservice"), (arg, i) => arg.microserviceAssemblyPath = i);
 		AddOption(new Option<string>("--output-dir", "Directory to write the output client at"), (arg, i) => arg.outputDirectory = i);
 		AddOption(new Option<bool>("--output-links", () => true, "When true, generate the source client files to all associated projects"), (arg, i) => arg.outputToLinkedProjects = i);
+
+		var existingFedOption = new Option<List<string>>("--existing-fed-ids", "A set of existing federation ids")
+		{
+			Arity = ArgumentArity.ZeroOrMore, AllowMultipleArgumentsPerToken = true
+		};
+		AddOption(existingFedOption, (args, i) => { });
+		AddOption(
+			new Option<List<string>>("--existing-fed-type-names", "A set of existing class names for federations")
+			{
+				AllowMultipleArgumentsPerToken = true,
+				Arity = ArgumentArity.ZeroOrMore
+			},
+			(args, opts, i) =>
+			{
+				var ids = opts.ParseResult.GetValueForOption(existingFedOption);
+				args.existingFederationIds = ids;
+				args.existingFederationTypeNames = i;
+			});
 	}
 
 	public override async Task Handle(GenerateClientFileCommandArgs args)
@@ -123,10 +145,20 @@ public class GenerateClientFileCommand
 			if (args.outputToLinkedProjects)
 			{
 				// UNITY
+
 				Log.Verbose($"Linked project count {args.ProjectService.GetLinkedUnityProjects().Count}");
 				if (args.ProjectService.GetLinkedUnityProjects().Count > 0)
 				{
-					var generator = new ClientCodeGenerator(descriptor);
+					var existingFeds = new List<ExistingFederation>();
+					for (var i = 0; i < args.existingFederationIds.Count; i++)
+					{
+						existingFeds.Add(new ExistingFederation
+						{
+							federationId = args.existingFederationIds[i],
+							federationIdTypeName = args.existingFederationTypeNames[i]
+						});
+					}
+					var generator = new ClientCodeGenerator(descriptor, existingFeds);
 					if (!string.IsNullOrEmpty(args.outputDirectory))
 					{
 						Directory.CreateDirectory(args.outputDirectory);
@@ -584,8 +616,7 @@ IMPLEMENT_MODULE(F{unrealProjectData.BlueprintNodesProjectName}Module, {unrealPr
 		
 		Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - done generating");
 	}
-
-
+	
 	Task GenerateFile(MicroserviceDescriptor service, GeneratedFileDescriptor descriptor, GenerateClientFileCommandArgs args, string projectPath)
 	{
 		/*
