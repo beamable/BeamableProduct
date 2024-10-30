@@ -1,3 +1,4 @@
+using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -5,6 +6,77 @@ namespace Beamable.Editor.Util
 {
 	public partial class BeamGUI
 	{
+		
+		public static void DrawHeaderSection(
+			EditorWindow window, 
+			BeamEditorContext context, 
+			Action drawTopBarGui,
+			Action drawLowBarGui,
+			Action onClickedHelp,
+			Action onClickedRefresh
+			)
+		{
+			{ // hopefully a no-op, but we should make sure the icons are all ready to rock
+				LoadAllIcons();
+			}
+
+			var clickedRefresh = false;
+			var clickedHelp = false;
+			
+			{ // draw button strip
+				EditorGUILayout.BeginHorizontal(new GUIStyle(), GUILayout.ExpandWidth(true), GUILayout.MinHeight(35));
+
+				drawTopBarGui();
+				
+				EditorGUILayout.Space(1, true);
+
+				{ // draw the right buttons
+					clickedRefresh = BeamGUI.HeaderButton(null, iconRefresh,
+					                                      width: 30,
+					                                      padding: 4,
+					                                      iconPadding: -5,
+					                                      drawBorder: false);
+
+					clickedHelp = BeamGUI.HeaderButton(null, iconHelp,
+					                                   width: 30,
+					                                   padding: 4,
+					                                   iconPadding: 5,
+					                                   drawBorder: false);
+				}
+
+				EditorGUILayout.Space(12, false);
+
+
+				EditorGUILayout.EndHorizontal();
+			}
+
+			{ 
+				var rect = new Rect(0, GUILayoutUtility.GetLastRect().yMax, window.position.width, 30);
+				EditorGUILayout.BeginHorizontal(new GUIStyle()
+				                                {
+					                               
+				                                }, GUILayout.ExpandWidth(true),
+				                                GUILayout.Height(30));
+				EditorGUI.DrawRect(rect, new Color(0, 0, 0, .6f));
+				
+				EditorGUILayout.Space(1, true);
+
+				drawLowBarGui.Invoke();
+				
+				EditorGUILayout.EndHorizontal();
+			}
+
+			if (clickedRefresh)
+			{
+				onClickedRefresh?.Invoke();
+			}
+
+			if (clickedHelp)
+			{
+				onClickedHelp?.Invoke();
+			}
+		}
+		
 		public static bool HeaderButton(string label, Texture icon, int width=80, 
 		                                string tooltip="", 
 		                                int padding=0, 

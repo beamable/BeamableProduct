@@ -57,7 +57,7 @@ namespace Beamable.Editor.Microservice.UI2
 
 				{ // draw the icon
 					var iconRect = new Rect(backRect.x + 12, lastRect.y + 9, toolbarHeight - 12, toolbarHeight - 12);
-					GUI.DrawTexture(iconRect, iconStorage, ScaleMode.ScaleToFit);
+					GUI.DrawTexture(iconRect, BeamGUI.iconStorage, ScaleMode.ScaleToFit);
 					GUI.Label(iconRect, new GUIContent(null, null, "This is a local storage"), GUIStyle.none);
 				}
 
@@ -65,7 +65,7 @@ namespace Beamable.Editor.Microservice.UI2
 				EditorGUILayout.Space(1, true);
 
 				// GUI.enabled = false;
-				clickedRunToggle = BeamGUI.HeaderButton(null, iconPlay, 
+				clickedRunToggle = BeamGUI.HeaderButton(null, BeamGUI.iconPlay, 
 				                                     width: buttonWidth, 
 				                                     padding: 4,
 				                                     xOffset: (int)((buttonWidth * 3) * -.5f), // number of buttons to the right, split by half
@@ -74,18 +74,18 @@ namespace Beamable.Editor.Microservice.UI2
 				EditorGUILayout.Space(1, true);
 				// GUI.enabled = true;
 
-				clickedOpenDocs = BeamGUI.HeaderButton(null, iconOpenMongoExpress,
+				clickedOpenDocs = BeamGUI.HeaderButton(null, BeamGUI.iconOpenMongoExpress,
 				                                       width: buttonWidth,
 				                                       padding: 4,
 				                                       backgroundColor: Color.clear,
 				                                       tooltip: "open Mongo Express");
-				clickedOpenCode = BeamGUI.HeaderButton(null, iconOpenProject,
+				clickedOpenCode = BeamGUI.HeaderButton(null, BeamGUI.iconOpenProject,
 				                                       width: buttonWidth,
 				                                       padding: 4,
 				                                       backgroundColor: Color.clear,
 				                                       tooltip: "open source code");
 
-				clickedOpenMenu = BeamGUI.HeaderButton(null, iconMoreOptions,
+				clickedOpenMenu = BeamGUI.HeaderButton(null, BeamGUI.iconMoreOptions,
 				                                       width: buttonWidth,
 				                                       padding: 4,
 				                                       backgroundColor: Color.clear,

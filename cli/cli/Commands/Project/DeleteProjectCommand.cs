@@ -21,7 +21,7 @@ public class DeleteProjectCommandOutput
 
 public class DeleteProjectCommand : AtomicCommand<DeleteProjectCommandArgs, DeleteProjectCommandOutput>
 {
-	public DeleteProjectCommand() : base("remove", "removes the local source code for a service or storage.")
+	public DeleteProjectCommand() : base("remove", "Removes the local source code for a service or storage")
 	{
 	}
 

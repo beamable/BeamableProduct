@@ -22,7 +22,7 @@ public class RestoreProjectCommand : AtomicCommand<RestoreProjectCommandArgs, Re
 
 	public override void Configure()
 	{
-		AddOption(new Option<string>("--csproj", "the path to the dotnet csproj path"),
+		AddOption(new Option<string>("--csproj", "The path to the dotnet csproj path"),
 			(args, i) => args.csProjPath = i);
 	}
 

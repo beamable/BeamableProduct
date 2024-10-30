@@ -161,7 +161,7 @@ namespace Beamable.Editor.BeamCli.UI
 				var commandText = $"[{command.timeStamp}] {commandStringData.command}";
 				if (GUI.Button(buttonRect, commandText, buttonStyle))
 				{
-					delayedActions.Add(() =>
+					AddDelayedAction(() =>
 					{
 						OnCommandSelected(command.id);
 					});

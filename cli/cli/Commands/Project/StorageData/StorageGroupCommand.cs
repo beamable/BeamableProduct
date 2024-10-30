@@ -9,7 +9,7 @@ namespace cli.Commands.Project.StorageData;
 
 public class StorageGroupCommand : CommandGroup
 {
-	public StorageGroupCommand() : base("storage", "commands for managing storage data")
+	public StorageGroupCommand() : base("storage", "Commands for managing storage data")
 	{
 	}
 

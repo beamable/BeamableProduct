@@ -59,13 +59,13 @@ namespace Beamable.Editor.Microservice.UI2
 
 				{ // draw the icon
 					var iconRect = new Rect(backRect.x + 12, lastRect.y + 9, toolbarHeight - 12, toolbarHeight - 12);
-					GUI.DrawTexture(iconRect, iconService, ScaleMode.ScaleToFit);
+					GUI.DrawTexture(iconRect, BeamGUI.iconService, ScaleMode.ScaleToFit);
 					GUI.Label(iconRect, new GUIContent(null, null, "This is a local service"), GUIStyle.none);
 				}
 				
 				EditorGUILayout.Space(1, true);
 				
-				clickedRunToggle = BeamGUI.HeaderButton(null, iconPlay, 
+				clickedRunToggle = BeamGUI.HeaderButton(null, BeamGUI.iconPlay, 
 				                                     width: buttonWidth, 
 				                                     padding: 4,
 				                                     xOffset: (int)((buttonWidth * 3) * -.5f), // number of buttons to the right, split by half
@@ -73,18 +73,18 @@ namespace Beamable.Editor.Microservice.UI2
 				                                     tooltip: isRunning ? "Shutdown the service " : "Start the service");
 				EditorGUILayout.Space(1, true);
 
-				clickedOpenDocs = BeamGUI.HeaderButton(null, iconOpenApi,
+				clickedOpenDocs = BeamGUI.HeaderButton(null, BeamGUI.iconOpenApi,
 				                                       width: buttonWidth,
 				                                       padding: 4,
 				                                       backgroundColor: Color.clear,
 				                                       tooltip: "open Open API");
-				clickedOpenCode = BeamGUI.HeaderButton(null, iconOpenProject,
+				clickedOpenCode = BeamGUI.HeaderButton(null, BeamGUI.iconOpenProject,
 				                                       width: buttonWidth,
 				                                       padding: 4,
 				                                       backgroundColor: Color.clear,
 				                                       tooltip: "open source code");
 
-				clickedOpenMenu = BeamGUI.HeaderButton(null, iconMoreOptions,
+				clickedOpenMenu = BeamGUI.HeaderButton(null, BeamGUI.iconMoreOptions,
 				                                       width: buttonWidth,
 				                                       padding: 4,
 				                                       backgroundColor: Color.clear,
