@@ -5,7 +5,7 @@ namespace cli.DockerCommands;
 
 public class DockerGroupCommand : CommandGroup
 {
-	public DockerGroupCommand() : base("docker", "commands for managing docker")
+	public DockerGroupCommand() : base("docker", "Commands for managing docker")
 	{
 	}
 }

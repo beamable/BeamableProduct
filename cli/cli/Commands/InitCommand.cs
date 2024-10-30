@@ -61,7 +61,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 
 		AddOption(
 			new Option<List<string>>(new string[] { "--save-extra-paths" }, () => new List<string>(),
-				"overwrite the stored extra paths for where to find projects")
+				"Overwrite the stored extra paths for where to find projects")
 			{
 				AllowMultipleArgumentsPerToken = true,
 				Arity = ArgumentArity.ZeroOrMore

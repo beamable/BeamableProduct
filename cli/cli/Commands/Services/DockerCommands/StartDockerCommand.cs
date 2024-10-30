@@ -21,7 +21,7 @@ public class StartDockerCommandOutput
 
 public class StartDockerCommand : AtomicCommand<StartDockerCommandArgs ,StartDockerCommandOutput>
 {
-	public StartDockerCommand() : base("start", "Start the docker daemon.")
+	public StartDockerCommand() : base("start", "Start the docker daemon")
 	{
 	}
 
@@ -29,7 +29,7 @@ public class StartDockerCommand : AtomicCommand<StartDockerCommandArgs ,StartDoc
 	{
 		AddOption(
 			new Option<bool>(new string[] { "--links-only", "-l" },
-				"only return the links to download docker, but do not start."), (args, i) => args.linksOnly = i);
+				"Only return the links to download docker, but do not start"), (args, i) => args.linksOnly = i);
 	}
 
 	public override async Task<StartDockerCommandOutput> GetResult(StartDockerCommandArgs args)

@@ -29,7 +29,7 @@ public class DockerStatusCommand : StreamCommand<DockerStatusCommandArgs, Docker
 
 	public override void Configure()
 	{
-		AddOption(new Option<bool>(new string[] { "--watch", "-w" }, "emit a stream of updates as docker changes"),
+		AddOption(new Option<bool>(new string[] { "--watch", "-w" }, "Emit a stream of updates as docker changes"),
 			(args, i) =>
 			{
 				args.watch = i;

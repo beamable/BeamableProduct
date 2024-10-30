@@ -11,7 +11,7 @@ public class LogoutCommandResult
 }
 public class LogoutCommand : AtomicCommand<LogoutCommandArgs, LogoutCommandResult>
 {
-	public LogoutCommand() : base("logout", "removes any saved credentials.")
+	public LogoutCommand() : base("logout", "Removes any saved credentials")
 	{
 	}
 

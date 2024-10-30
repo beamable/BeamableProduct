@@ -34,12 +34,12 @@ public class SnapshotStorageObjectCommand
 
 	public override void Configure()
 	{
-		AddArgument(new Argument<string>("beamoId", "the beamoId for the storage object"),
+		AddArgument(new Argument<string>("beamoId", "The beamoId for the storage object"),
 			(args, i) => args.beamoId = i);
 		AddOption(new Option<string>(new string[] { "--output", "-o" }, () =>
 		{
 			return "snapshot";
-		}, "the output for the snapshot"), (args, i) => args.outputPath = i);
+		}, "The output for the snapshot"), (args, i) => args.outputPath = i);
 	}
 
 	public override async Task<SnapshotStorageObjectCommandOutput> GetResult(SnapshotStorageObjectCommandArgs args)
