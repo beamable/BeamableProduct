@@ -140,10 +140,5 @@ namespace Beamable.Editor.BeamCli.UI
 					break;
 			}
 		}
-
-		public void AddDelayedAction(Action act)
-		{
-			delayedActions.Add(act);
-		}
 	}
 }
