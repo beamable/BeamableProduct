@@ -15,7 +15,7 @@ namespace Beamable.Editor.Library
 		Texture LoadTexture(string path)
 		{
 			if (string.IsNullOrEmpty(path)) return null;
-			
+
 			if (!loadedTextures.TryGetValue(path, out var texture))
 			{
 				texture = loadedTextures[path] = EditorResources.Load<Texture>(path);
@@ -23,7 +23,7 @@ namespace Beamable.Editor.Library
 
 			return texture;
 		}
-		
+
 		const int minWidth = 240;
 		const int maxWidth = 300;
 		const int minHeight = 200;
@@ -45,7 +45,7 @@ namespace Beamable.Editor.Library
 			var heightPerCard = Mathf.Clamp(widthPerCard, minHeight, maxHeight);
 			var rows = Mathf.CeilToInt(count / (float)cardsPerRow);
 
-			
+
 			var xOffset = (width * .5f) - (widthPerCard * .5f * cardsPerRow); // center the cards
 			var index = 0;
 			var cardRects = new List<Rect>();
@@ -58,13 +58,13 @@ namespace Beamable.Editor.Library
 					{
 
 						var rect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none,
-						                                    GUILayout.Width(widthPerCard),
-						                                    GUILayout.Height(heightPerCard),
-						                                    GUILayout.ExpandWidth(false));
+															GUILayout.Width(widthPerCard),
+															GUILayout.Height(heightPerCard),
+															GUILayout.ExpandWidth(false));
 
 						int padding = 8;
 						var padded = new Rect(rect.x + padding + xOffset, rect.y + padding, rect.width - padding * 2,
-						                      rect.height - padding * 2);
+											  rect.height - padding * 2);
 						cardRects.Add(padded);
 					}
 
@@ -77,11 +77,11 @@ namespace Beamable.Editor.Library
 				for (var i = 0; i < library.lightbeams.Count; i++)
 				{
 					var rect = cardRects[i];
-					
+
 					var shadowOffset = 24;
 					var shadowRect = new Rect(rect.x - shadowOffset, rect.y + shadowOffset, rect.width, rect.height);
 					GUI.DrawTexture(shadowRect, shadowTexture, ScaleMode.StretchToFill, true);
-					
+
 					shadowOffset = 6;
 					shadowRect = new Rect(rect.x - shadowOffset, rect.y + shadowOffset, rect.width, rect.height);
 					GUI.DrawTexture(shadowRect, shadowTexture, ScaleMode.StretchToFill, true);
@@ -98,8 +98,8 @@ namespace Beamable.Editor.Library
 
 			EditorGUILayout.EndVertical();
 			EditorGUILayout.EndScrollView();
-			
-			
+
+
 		}
 
 		void DrawSample(Rect bounds, LightbeamSampleInfo lightBeam)
@@ -107,78 +107,78 @@ namespace Beamable.Editor.Library
 			bool clickedOpen = false;
 			bool clickedMore = false;
 			bool clickedDocs = false;
-			
+
 			const int padding = 4;
-			int cardTitleGap = (int) bounds.height - 140;
+			int cardTitleGap = (int)bounds.height - 140;
 			const int cardTitleHeight = 24;
 			const int buttonHeight = 30;
-			
-			
-			var titleRect = new Rect(bounds.x + padding, bounds.y + padding + cardTitleGap, bounds.width - padding*2, cardTitleHeight);
+
+
+			var titleRect = new Rect(bounds.x + padding, bounds.y + padding + cardTitleGap, bounds.width - padding * 2, cardTitleHeight);
 			var subTextRect = new Rect(titleRect.x, titleRect.yMax, titleRect.width, 20);
 			var descRect = new Rect(titleRect.x, subTextRect.yMax, titleRect.width, bounds.yMax - subTextRect.yMax - buttonHeight);
 			var contentRect = new Rect(titleRect.x, titleRect.y, titleRect.width, bounds.yMax - titleRect.yMin);
 
-			
+
 			// draw background
 			EditorGUI.DrawRect(bounds, new Color(.26f, .26f, .26f, 1));
-			
+
 			// draw texture
 			var texture = LoadTexture(lightBeam.texturePath);
-			
+
 			var gradient = LoadTexture("Packages/com.beamable/Editor/UI/Common/Icons/gradient-deep-space.jpg");
 			// var gradient = LoadTexture("Packages/com.beamable/Editor/UI/Toolbox/Icons/beamable_gradient.png");
 			var texRect = new Rect(bounds.x, bounds.y, bounds.width, contentRect.yMin - bounds.yMin);
-			
-			
+
+
 			GUI.DrawTexture(texRect, gradient, ScaleMode.ScaleAndCrop);
 
 			var uv = new Rect(texRect.xMin / position.width, 1 - (texRect.yMin - sampleScrollPosition.y) / position.height,
-			                  texRect.width / position.width, texRect.height / position.height);
+							  texRect.width / position.width, texRect.height / position.height);
 			GUI.DrawTextureWithTexCoords(texRect, gradient, uv, true);
-			
+
 			GUI.DrawTexture(texRect, texture, ScaleMode.ScaleToFit);
-			
+
 			// draw title
-			
-			var fontSize = Mathf.Lerp(15, 18, (bounds.width - minWidth ) / (maxWidth - minWidth));
+
+			var fontSize = Mathf.Lerp(15, 18, (bounds.width - minWidth) / (maxWidth - minWidth));
 			EditorGUI.LabelField(titleRect, lightBeam.name, new GUIStyle(EditorStyles.largeLabel)
 			{
 				fontStyle = FontStyle.Bold,
 				fontSize = (int)fontSize,
 				alignment = TextAnchor.UpperLeft,
-				padding = new RectOffset(8,4,4,0)
+				padding = new RectOffset(8, 4, 4, 0)
 			});
-			
-			
+
+
 			// draw subtext
 			EditorGUI.LabelField(subTextRect, lightBeam.subText, new GUIStyle(EditorStyles.miniLabel)
 			{
 				alignment = TextAnchor.UpperLeft,
-				padding = new RectOffset(8,4,0,0),
+				padding = new RectOffset(8, 4, 0, 0),
 				fontStyle = FontStyle.Italic
 			});
-			
 
-			
+
+
 			// draw desc
 			EditorGUI.LabelField(descRect, lightBeam.description, new GUIStyle(EditorStyles.label)
 			{
 				alignment = TextAnchor.UpperLeft,
 				wordWrap = true,
 				richText = true,
-				padding = new RectOffset(8,4,0,0)
+				padding = new RectOffset(8, 4, 0, 0)
 
 			});
-			
-			
+
+
 			{ // draw more button 
 				var moreBtnSize = 16;
 				var moreBtnRect = new Rect(bounds.xMax - moreBtnSize - padding, bounds.y + padding, moreBtnSize,
-				                           moreBtnSize);
+										   moreBtnSize);
 				EditorGUI.DrawRect(moreBtnRect, new Color(0, 0, 0, .4f));
 				clickedMore = GUI.Button(moreBtnRect, BeamGUI.iconMoreOptions,
-				                         new GUIStyle(EditorStyles.iconButton) {margin = new RectOffset(4, 4, 4, 4),});
+										 new GUIStyle(EditorStyles.iconButton) { margin = new RectOffset(4, 4, 4, 4), });
 			}
 
 
@@ -191,14 +191,14 @@ namespace Beamable.Editor.Library
 				}
 
 				var buttonRect = new Rect(bounds.xMax - 50, bounds.yMax - buttonHeight, 50 - padding,
-				                          buttonHeight - padding);
+										  buttonHeight - padding);
 				clickedOpen = BeamGUI.PrimaryButton(buttonRect, new GUIContent($"{verb} {noun}"));
 			}
-			
-			
+
+
 			{ // draw docs link
 				var docsRect = new Rect(bounds.x + padding, bounds.yMax - EditorGUIUtility.singleLineHeight - 5, 90,
-				                        EditorGUIUtility.singleLineHeight);
+										EditorGUIUtility.singleLineHeight);
 				clickedDocs = EditorGUI.LinkButton(docsRect, "Documentation");
 			}
 
@@ -230,7 +230,7 @@ namespace Beamable.Editor.Library
 		void OpenSampleMenu(LightbeamSampleInfo lightBeam)
 		{
 			var menu = new GenericMenu();
-			
+
 			menu.AddItem(new GUIContent("Open Sample"), false, () =>
 			{
 				library.OpenSample(lightBeam);
@@ -258,7 +258,7 @@ namespace Beamable.Editor.Library
 				menu.AddDisabledItem(new GUIContent("Show In Project"));
 				menu.AddDisabledItem(new GUIContent("Remove Sample"));
 			}
-			
+
 			menu.ShowAsContext();
 		}
 	}

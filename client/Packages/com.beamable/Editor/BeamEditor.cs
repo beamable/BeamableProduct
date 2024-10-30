@@ -112,16 +112,16 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IBeamableFilesystemAccessor, EditorFilesystemAccessor>();
 			DependencyBuilder.AddGlobalStorage<AccountService, EditorStorageLayer>();
 			DependencyBuilder.AddSingleton<IAccountService>(p => p.GetService<AccountService>());
-			
+
 			DependencyBuilder.AddGlobalStorage<LibraryService, SessionStorageLayer>();
 
 			DependencyBuilder.AddSingleton<BeamCommands>();
-			
+
 			DependencyBuilder.AddGlobalStorage<BeamWebCliCommandHistory, SessionStorageLayer>();
 			DependencyBuilder.AddGlobalStorage<BeamWebCommandFactoryOptions, SessionStorageLayer>(instanceGenerator: ScriptableObject.CreateInstance<BeamWebCommandFactoryOptions>);
 			DependencyBuilder.AddSingleton<IBeamCommandFactory>(p => p.GetService<BeamWebCommandFactory>());
 			DependencyBuilder.AddSingleton<BeamWebCommandFactory>();
-			
+
 			DependencyBuilder.AddSingleton<BeamCli>();
 			DependencyBuilder.AddSingleton<DotnetService>();
 			DependencyBuilder.AddSingleton<IRuntimeConfigProvider>(p => new EditorRuntimeConfigProvider(p.GetService<AccountService>()));
@@ -162,7 +162,7 @@ namespace Beamable
 			{
 				BeamEditorContext.StopAll().Wait();
 			};
-			
+
 		}
 
 		private static int initializeAttemptCount = 0;
@@ -799,7 +799,7 @@ namespace Beamable
 			EditorAccountService.WriteUnsetConfigValues();
 			await BeamCli.Init();
 			OnRealmChange?.Invoke(CurrentRealm);
-			
+
 		}
 
 

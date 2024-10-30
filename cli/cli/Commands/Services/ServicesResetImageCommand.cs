@@ -32,7 +32,7 @@ public class ServicesResetImageCommand : StreamCommand<ServicesResetImageCommand
 
 		await args.BeamoLocalSystem.SynchronizeInstanceStatusWithDocker(args.BeamoLocalSystem.BeamoManifest, args.BeamoLocalSystem.BeamoRuntime.ExistingLocalServiceInstances);
 		await args.BeamoLocalSystem.StartListeningToDocker();
-		
+
 		await AnsiConsole
 			.Progress()
 			.StartAsync(async ctx =>

@@ -35,8 +35,8 @@ public static class ProjectContextUtil
 
 	public static async Task SerializeSourceGenConfigToDisk(string rootFolder, BeamoServiceDefinition selectedService)
 	{
-		var serializedSourceGenConfig = System.Text.Json.JsonSerializer.Serialize(selectedService.SourceGenConfig, new JsonSerializerOptions { IncludeFields = true});
-		
+		var serializedSourceGenConfig = System.Text.Json.JsonSerializer.Serialize(selectedService.SourceGenConfig, new JsonSerializerOptions { IncludeFields = true });
+
 		var projectDir = Path.GetDirectoryName(selectedService.ProjectPath);
 		var sourceGenPath = Path.Combine(projectDir, MicroserviceSourceGenConfig.CONFIG_FILE_NAME);
 		// Because this can be invoked from any point inside the root folder,
@@ -44,13 +44,13 @@ public static class ProjectContextUtil
 		sourceGenPath = Path.Combine(rootFolder, sourceGenPath);
 		await File.WriteAllTextAsync(sourceGenPath, serializedSourceGenConfig);
 	}
-	
+
 	public static async Task<BeamoLocalManifest> GenerateLocalManifest(
-		string dotnetPath, 
+		string dotnetPath,
 		BeamoService beamo,
 		ConfigService configService,
-		bool useCache=true,
-		bool fetchServerManifest=true)
+		bool useCache = true,
+		bool fetchServerManifest = true)
 	{
 		ServiceManifest remote = new ServiceManifest();
 
@@ -90,8 +90,8 @@ public static class ProjectContextUtil
 		var manifest = new BeamoLocalManifest
 		{
 			ServiceDefinitions = new List<BeamoServiceDefinition>(),
-			HttpMicroserviceLocalProtocols = new BeamoLocalProtocolMap<HttpMicroserviceLocalProtocol>{},
-			EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>(){},
+			HttpMicroserviceLocalProtocols = new BeamoLocalProtocolMap<HttpMicroserviceLocalProtocol> { },
+			EmbeddedMongoDbLocalProtocols = new BeamoLocalProtocolMap<EmbeddedMongoDbLocalProtocol>() { },
 			EmbeddedMongoDbRemoteProtocols = new BeamoRemoteProtocolMap<EmbeddedMongoDbRemoteProtocol>(),
 			HttpMicroserviceRemoteProtocols = new BeamoRemoteProtocolMap<HttpMicroserviceRemoteProtocol>(),
 			ServiceGroupToBeamoIds = new Dictionary<string, string[]>()
@@ -126,8 +126,8 @@ public static class ProjectContextUtil
 			manifest.ServiceDefinitions.Add(definition);
 			manifest.EmbeddedMongoDbRemoteProtocols.Add(definition.BeamoId, new EmbeddedMongoDbRemoteProtocol());
 		}
-		
-		
+
+
 		// add in the remote knowledge of services and storages
 		foreach (var remoteService in remote.manifest)
 		{
@@ -143,7 +143,7 @@ public static class ProjectContextUtil
 				};
 				manifest.ServiceDefinitions.Add(existingDefinition);
 				manifest.HttpMicroserviceRemoteProtocols.Add(remoteService.serviceName, new HttpMicroserviceRemoteProtocol());
-				
+
 				existingDefinition.ShouldBeEnabledOnRemote = remoteService.enabled;
 			}
 
@@ -169,7 +169,7 @@ public static class ProjectContextUtil
 
 				existingDefinition.ShouldBeEnabledOnRemote = remoteStorage.enabled;
 			}
-			
+
 			// overwrite existing settings.
 			existingDefinition.ImageId = MongoImage;
 			existingDefinition.IsInRemote = true;
@@ -186,46 +186,46 @@ public static class ProjectContextUtil
 		{
 			var projectDir = Path.GetDirectoryName(sd.ProjectPath);
 			var sourceGenPath = Path.Combine(projectDir, MicroserviceSourceGenConfig.CONFIG_FILE_NAME);
-			
+
 			// Because this can be invoked from any point inside the root folder,
 			// we have to figure out the absolute path to the file so we can call File.Write/Read apis correctly. 
 			sourceGenPath = Path.Combine(rootFolder, sourceGenPath);
-			
+
 			if (!File.Exists(sourceGenPath))
 				return File.WriteAllTextAsync(sourceGenPath, "{}");
 
 			return Task.CompletedTask;
 		}));
-		
+
 		// Let's load all the SourceGenConfig files
 		var sourceGenFiles = await Task.WhenAll(microservicesOnly.Select(sd =>
 		{
 			var projectDir = Path.GetDirectoryName(sd.ProjectPath);
 			var sourceGenPath = Path.Combine(projectDir, MicroserviceSourceGenConfig.CONFIG_FILE_NAME);
-			
+
 			// Because this can be invoked from any point inside the root folder,
 			// we have to figure out the absolute path to the file so we can call File.Write/Read apis correctly.
 			sourceGenPath = Path.Combine(rootFolder, sourceGenPath);
-			
+
 			return File.ReadAllTextAsync(sourceGenPath);
 		}));
-		
+
 		// Now we can deserialize and set it in the service definition
 		foreach (var (sd, cfg) in microservicesOnly.Zip(sourceGenFiles))
 		{
 			try
 			{
-				sd.SourceGenConfig = System.Text.Json.JsonSerializer.Deserialize<MicroserviceSourceGenConfig>(cfg, new JsonSerializerOptions(){ IncludeFields = true });
+				sd.SourceGenConfig = System.Text.Json.JsonSerializer.Deserialize<MicroserviceSourceGenConfig>(cfg, new JsonSerializerOptions() { IncludeFields = true });
 			}
 			catch (Exception e)
 			{
 				var projectDir = Path.GetDirectoryName(sd.ProjectPath);
 				var sourceGenPath = Path.Combine(projectDir, MicroserviceSourceGenConfig.CONFIG_FILE_NAME);
-			
+
 				// Because this can be invoked from any point inside the root folder,
 				// we have to figure out the absolute path to the file so we can call File.Write/Read apis correctly.
 				sourceGenPath = Path.Combine(rootFolder, sourceGenPath);
-				
+
 				Log.Fatal(e, "Failed to load source gen config");
 				throw new CliException($"Failed to parse {nameof(MicroserviceSourceGenConfig)} at {sourceGenPath}. Please make sure the source gen config is valid json.");
 			}
@@ -252,10 +252,10 @@ public static class ProjectContextUtil
 		)
 	{
 		var intermediateResult = new Dictionary<string, HashSet<string>>();
-		
+
 		foreach (var definition in definitions)
 		{
-			
+
 			// add all the groups for this definition
 			foreach (var group in definition.ServiceGroupTags)
 			{
@@ -268,8 +268,8 @@ public static class ProjectContextUtil
 
 			// the only dependency we care about are service --> storage dependencies 
 			if (definition.Protocol == BeamoProtocolType.HttpMicroservice &&
-			    localServices.TryGetValue(definition.BeamoId, out var service) &&
-			    service.StorageDependencyBeamIds?.Count > 0)
+				localServices.TryGetValue(definition.BeamoId, out var service) &&
+				service.StorageDependencyBeamIds?.Count > 0)
 			{
 				foreach (var group in definition.ServiceGroupTags)
 				{
@@ -294,7 +294,7 @@ public static class ProjectContextUtil
 	private static Dictionary<string, DateTime> _pathToLastWriteTime = new Dictionary<string, DateTime>();
 	private static Dictionary<string, CsharpProjectMetadata> _pathToMetadata =
 		new Dictionary<string, CsharpProjectMetadata>();
-	
+
 	static bool TryGetCachedProject(string path, out CsharpProjectMetadata metadata)
 	{
 		metadata = null;
@@ -304,7 +304,7 @@ public static class ProjectContextUtil
 			// we've never seen this file before!
 			return false;
 		}
-		
+
 		var lastWriteTime = File.GetLastWriteTime(path);
 		if (lastWriteTime >= cachedWriteTime)
 		{
@@ -327,7 +327,7 @@ public static class ProjectContextUtil
 		_pathToLastWriteTime[path] = DateTime.Now;
 		_pathToMetadata[path] = metadata;
 	}
-	
+
 	public static CsharpProjectMetadata[] FindCsharpProjects(string rootFolder, List<string> searchPaths)
 	{
 		var sw = new Stopwatch();
@@ -340,10 +340,10 @@ public static class ProjectContextUtil
 			pathList.AddRange(somePaths);
 		}
 		var paths = pathList.ToArray();
-		
+
 		var projects = new CsharpProjectMetadata[paths.Length];
 
-		for (var i = 0 ; i < paths.Length; i ++)
+		for (var i = 0; i < paths.Length; i++)
 		{
 			var path = paths[i];
 
@@ -363,14 +363,14 @@ public static class ProjectContextUtil
 			}
 
 			if (!string.Equals("<Project Sdk=\"Microsoft.NET.Sdk\">", line,
-				    StringComparison.InvariantCultureIgnoreCase))
+					StringComparison.InvariantCultureIgnoreCase))
 			{
 				projects[i] = null;
 				CacheProjectNow(path, projects[i]);
 				continue;
 			}
-			
-			
+
+
 			var pathDir = Path.GetDirectoryName(path);
 
 			if (string.IsNullOrEmpty(pathDir))
@@ -398,7 +398,7 @@ public static class ProjectContextUtil
 				if (string.IsNullOrEmpty(str)) return null;
 				return str;
 			}
-			
+
 			projects[i].properties = new MsBuildProjectProperties()
 			{
 				BeamId = buildProject.GetPropertyValue(CliConstants.PROP_BEAMO_ID),
@@ -442,7 +442,7 @@ public static class ProjectContextUtil
 					}
 				}
 			}
-			
+
 
 			var references = buildProject.GetItemsIgnoringCondition("ProjectReference");
 			var allProjectRefs = new List<MsBuildProjectReference>();
@@ -465,7 +465,7 @@ public static class ProjectContextUtil
 		Log.Verbose("filtering csproj files only took " + sw.ElapsedMilliseconds);
 
 		var result = projects.Where(p => p != null).ToArray();
-		
+
 		Log.Verbose("csproj linq non-null files took " + sw.ElapsedMilliseconds);
 
 		sw.Stop();
@@ -478,15 +478,15 @@ public static class ProjectContextUtil
 		ConfigService configService)
 	{
 		var protocol = new EmbeddedMongoDbLocalProtocol();
-		
+
 		// TODO: we could extract these as options in the Csproj file.
 		protocol.BaseImage = project.properties.MongoBaseImage ?? MongoImage;
 		protocol.RootUsername = "beamable";
 		protocol.RootPassword = "beamable";
 		protocol.Metadata = project;
-		
-		
-		{ 
+
+
+		{
 			// set the docker volume names. 
 			//  the default values exist as _legacy_ naming to support CLI 2. 
 			//  However, going forward, the names should be specified in the Storage Template
@@ -505,10 +505,10 @@ public static class ProjectContextUtil
 			protocol.DataVolumeInContainerPath = "/data/db";
 			protocol.FilesVolumeInContainerPath = "/beamable";
 		}
-		
-		
+
+
 		protocol.MongoLocalPort = ""; // TODO: I don't think we actually need this, because we are getting the port via docker container inspection.
-		
+
 		foreach (var referencedProject in project.projectReferences)
 		{
 			if (!absPathToProject.TryGetValue(referencedProject.FullPath, out var knownProject))
@@ -528,7 +528,7 @@ public static class ProjectContextUtil
 
 		return protocol;
 	}
-	
+
 	public static HttpMicroserviceLocalProtocol ConvertProjectToLocalHttpProtocol(CsharpProjectMetadata project, Dictionary<string, CsharpProjectMetadata> absPathToProject)
 	{
 		var protocol = new HttpMicroserviceLocalProtocol();
@@ -540,7 +540,7 @@ public static class ProjectContextUtil
 		protocol.CustomBindMounts = new List<DockerBindMount>();
 		protocol.CustomPortBindings = new List<DockerPortBinding>();
 		protocol.CustomEnvironmentVariables = new List<DockerEnvironmentVariable>();
-		
+
 		foreach (MsBuildProjectReference referencedProject in project.projectReferences)
 		{
 			var referencedName = Path.GetFileNameWithoutExtension(referencedProject.RelativePath);
@@ -579,10 +579,10 @@ public static class ProjectContextUtil
 					break;
 			}
 		}
-		
+
 		return protocol;
 	}
-	
+
 	static string ConvertBeamoId(CsharpProjectMetadata metadata) => string.IsNullOrEmpty(metadata.properties.BeamId)
 		? metadata.fileNameWithoutExtension
 		: metadata.properties.BeamId;
@@ -590,8 +590,8 @@ public static class ProjectContextUtil
 	static string[] ExtractServiceGroupTags(CsharpProjectMetadata project)
 	{
 		return project.properties.ServiceGroupString?.Split(CliConstants.SPLIT_OPTIONS,
-			       StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-		       ?? Array.Empty<string>();
+				   StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+			   ?? Array.Empty<string>();
 	}
 
 	public static BeamoServiceDefinition ConvertProjectToServiceDefinition(CsharpProjectMetadata project)
@@ -621,11 +621,11 @@ public static class ProjectContextUtil
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet;
 
 		definition.ServiceGroupTags = ExtractServiceGroupTags(project);
-		
+
 
 		return definition;
 	}
-	
+
 	public static BeamoServiceDefinition ConvertProjectToStorageDefinition(CsharpProjectMetadata project, Dictionary<string, CsharpProjectMetadata> absPathToProject)
 	{
 		if (project.properties.ProjectType != "storage")
@@ -637,7 +637,7 @@ public static class ProjectContextUtil
 		string ConvertBeamoId(CsharpProjectMetadata metadata) => string.IsNullOrEmpty(metadata.properties.BeamId)
 			? metadata.fileNameWithoutExtension
 			: metadata.properties.BeamId;
-		
+
 		var definition = new BeamoServiceDefinition();
 		// the beamId will default to the csproj file name
 		definition.BeamoId = ConvertBeamoId(project);
@@ -676,14 +676,14 @@ public static class ProjectContextUtil
 
 		[JsonProperty(CliConstants.PROP_BEAM_STORAGE_DATA_VOLUME_NAME)]
 		public string StorageDataVolumeName;
-		
+
 		[JsonProperty(CliConstants.PROP_BEAM_STORAGE_FILES_VOLUME_NAME)]
 		public string StorageFilesVolumeName;
-		
+
 		[JsonProperty(CliConstants.PROP_BEAM_STORAGE_MONGO_BASE_IMAGE)]
 		public string MongoBaseImage;
 	}
-	
+
 	public class MsBuildProjectReference
 	{
 		[JsonProperty("Identity")]
@@ -706,7 +706,7 @@ public static class ProjectContextUtil
 	}
 
 
-	
+
 	[Serializable]
 	public class CsharpProjectBuildData
 	{
@@ -738,9 +738,9 @@ public static class ProjectContextUtil
 		Log.Verbose($"setting project=[{definition.ProjectPath}] property=[{propertyName}] value=[{propertyValue}]");
 
 		var prop = buildProject.SetProperty(propertyName, propertyValue);
-		
+
 		buildProject.Save(definition.ProjectPath);
-		
+
 		/*
 		 * if the property didn't exist, then dotnet's wisdom is to append <TheNewProperty> at the end of the last property...
 		 * Ugh...
@@ -755,7 +755,7 @@ public static class ProjectContextUtil
 		var searchTerm = $"><{propertyName}>";
 		var rawText = File.ReadAllText(definition.ProjectPath);
 
-		var formattedText = FixMissingBreaklineInProject(searchTerm, rawText);;
+		var formattedText = FixMissingBreaklineInProject(searchTerm, rawText); ;
 		File.WriteAllText(definition.ProjectPath, formattedText);
 
 		return prop.UnevaluatedValue;
@@ -907,7 +907,8 @@ public static class ProjectContextUtil
 	private static string FixMissingBreaklineInProject(string searchQuery, string fileContents)
 	{
 		var brokenIndex = fileContents.IndexOf(searchQuery, StringComparison.Ordinal);
-		if (brokenIndex == -1){
+		if (brokenIndex == -1)
+		{
 			return fileContents; // the glitch does not exist.
 		}
 

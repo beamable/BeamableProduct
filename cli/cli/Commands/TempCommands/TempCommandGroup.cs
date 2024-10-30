@@ -12,7 +12,7 @@ public class TempCommandGroup : CommandGroup
 
 public class TempClearArgs : CommandArgs
 {
-	
+
 }
 public class TempClearCommandGroup : CommandGroup<TempClearArgs>
 {
@@ -22,7 +22,7 @@ public class TempClearCommandGroup : CommandGroup<TempClearArgs>
 
 	public override void Configure()
 	{
-		
+
 	}
 
 	public override Task Handle(TempClearArgs args)

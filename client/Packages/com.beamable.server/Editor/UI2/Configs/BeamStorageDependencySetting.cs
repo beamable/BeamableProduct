@@ -12,8 +12,8 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 	{
 		public string StorageName;
 	}
-	
-	
+
+
 	[CustomPropertyDrawer(typeof(BeamStorageDependencySetting))]
 	public class StorageDependencyDrawer : PropertyDrawer
 	{
@@ -24,9 +24,9 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 		{
 			//load all possible dependencies
 			var codeService = BeamEditorContext
-			                  .Default.ServiceScope.GetService<UsamService>();
+							  .Default.ServiceScope.GetService<UsamService>();
 			var options = codeService.latestManifest.storages
-			                         .Select(sd => sd.beamoId).ToArray();
+									 .Select(sd => sd.beamoId).ToArray();
 
 			var storageNameProperty = property.FindPropertyRelative(nameof(BeamStorageDependencySetting.StorageName));
 

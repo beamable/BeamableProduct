@@ -19,13 +19,13 @@ namespace Beamable.Editor.UI
 	///
 	/// </summary>
 	/// <typeparam name="TWindow"></typeparam>
-	public abstract class BeamEditorWindow<TWindow> 
-		: EditorWindow, ISerializationCallbackReceiver 
+	public abstract class BeamEditorWindow<TWindow>
+		: EditorWindow, ISerializationCallbackReceiver
 		, IDelayedActionWindow
 		where TWindow : BeamEditorWindow<TWindow>, new()
 	{
 		private List<Action> _actions = new List<Action>();
-		
+
 		/// <summary>
 		/// The default <see cref="BeamEditorWindowInitConfig{TWindow}"/> struct that is used when initializing this window via <see cref="GetFullyInitializedWindow"/>.
 		/// </summary>
@@ -200,7 +200,7 @@ namespace Beamable.Editor.UI
 
 			await BuildAsync();
 		}
-		
+
 		/// <summary>
 		/// Rebuilds the window's entire content.
 		/// If it cares about whether or not the given <paramref name="context"/> is/isn't authenticated, it'll invoke either <see cref="Build"/> or <see cref="BuildWhenNotAuthenticated"/>.
@@ -283,7 +283,7 @@ namespace Beamable.Editor.UI
 			// copy the actions into a separate list, so if there is an error, at least they clear.
 			var copy = _actions.ToList();
 			_actions.Clear();
-			
+
 			// perform delayed actions
 			foreach (var act in copy)
 			{
@@ -298,12 +298,12 @@ namespace Beamable.Editor.UI
 		{
 			_actions.Add(act);
 		}
-		
+
 		protected void DrawNoContextGui()
 		{
 			EditorGUILayout.SelectableLabel("No Beamable context is available");
 		}
-		
+
 		protected void DrawWaitingForContextGui()
 		{
 			EditorGUILayout.SelectableLabel("Loading Beamable...");

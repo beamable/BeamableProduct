@@ -144,7 +144,7 @@ public class DiscoveryService
 
 						if (registration.beamoName == null)
 							throw new CliException($"Failed to convert serviceName of service deployed with old CLI to BeamoName. Please redeploy this service with this new and fancy CLI version." +
-							                       $" SERVICE_NAME={registration.serviceName}, CLOSEST_MATCH={closestMatch}");
+												   $" SERVICE_NAME={registration.serviceName}, CLOSEST_MATCH={closestMatch}");
 
 						Log.Warning("Detected a remote service deployed with previous CLI version. Please redeploy this service. ServiceName={ServiceName}, DerivedBeamoName={BeamoName}", registration.serviceName,
 							registration.beamoName.Value);
@@ -163,7 +163,7 @@ public class DiscoveryService
 					var federationInstances = registration.federation.GetOrElse(Array.Empty<SupportedFederation>())
 						.Select(sf => new FederationInstance()
 						{
-							FederationId = sf.nameSpace.GetOrElse(""), 
+							FederationId = sf.nameSpace.GetOrElse(""),
 							FederationTypes = new[] { sf.type.ToString() },
 							LocalSettings = new[] { sf.settings.GetOrElse(JsonString.FromJson("{}")).Json }
 						})
@@ -320,7 +320,7 @@ public class DiscoveryService
 					// Check if docker's state changed (on/off) so we can reset isListeningToDocker.
 					var isDockerRunning = await _localSystem.CheckIsRunning();
 					if ((!isDockerRunning && wasDockerRunningLastTick) ||
-					    (isDockerRunning && !wasDockerRunningLastTick)) isListeningToDocker = false;
+						(isDockerRunning && !wasDockerRunningLastTick)) isListeningToDocker = false;
 					wasDockerRunningLastTick = isDockerRunning;
 
 					// If docker isn't running, wait for X second and try again.
@@ -447,7 +447,7 @@ public class DiscoveryService
 
 							if (registration.beamoName == null)
 								throw new CliException($"Failed to convert serviceName of service deployed with old CLI to BeamoName. Please redeploy this service with this new and fancy CLI version." +
-								                       $" SERVICE_NAME={registration.serviceName}, CLOSEST_MATCH={closestMatch}");
+													   $" SERVICE_NAME={registration.serviceName}, CLOSEST_MATCH={closestMatch}");
 						}
 
 						var groups = Array.Empty<string>();
@@ -463,7 +463,7 @@ public class DiscoveryService
 							{
 								FederationId = sf.nameSpace.GetOrElse(""),
 								FederationTypes = new[] { sf.type.ToString() },
-								LocalSettings = new[]{ sf.settings.GetOrElse(JsonString.FromJson("{}")).Json},
+								LocalSettings = new[] { sf.settings.GetOrElse(JsonString.FromJson("{}")).Json },
 							})
 							.GroupBy(fi => fi.FederationId)
 							.Select(g => new FederationInstance()
@@ -547,7 +547,7 @@ public class DiscoveryService
 						//  by `continue` statements
 						await Task.Delay(Beamable.Common.Constants.Features.Services.DISCOVERY_BROADCAST_PERIOD_MS, token);
 					}
-					
+
 					{
 						// check that all services still exist.
 						var toRemove = new HashSet<int>();
@@ -619,12 +619,12 @@ public class DiscoveryService
 						}
 
 						var feds = fedConfig?.Select(kvp =>
-							           new FederationInstance
-							           {
-								           FederationTypes = kvp.Value.Select(v => v.Interface).ToArray(),
-								           FederationId = kvp.Key
-							           }).ToArray()
-						           ?? Array.Empty<FederationInstance>();
+									   new FederationInstance
+									   {
+										   FederationTypes = kvp.Value.Select(v => v.Interface).ToArray(),
+										   FederationId = kvp.Key
+									   }).ToArray()
+								   ?? Array.Empty<FederationInstance>();
 						var addition = processIdToEntry[service.processId] = new HostServiceDescriptor
 						{
 							processId = service.processId,

@@ -284,8 +284,8 @@ namespace Beamable.Serialization
 			public bool SerializeNestedJson(string key, ref JsonString jsonString)
 			{
 				// don't serialize the field at all if the json is null.
-				if (jsonString == null) return true; 
-				
+				if (jsonString == null) return true;
+
 				AppendKey(key);
 				_builder.Append(jsonString.Json);
 				AppendSeperator();

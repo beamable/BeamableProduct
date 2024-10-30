@@ -35,43 +35,43 @@ namespace Beamable.Editor.Microservice.UI2
 		{
 			isOpen = true;
 			var totalElementCount = usamWindow.usam.latestManifest.services.Count +
-			                        usamWindow.usam.latestManifest.storages.Count;
-			minSize = new Vector2(usamWindow.position.width-100, 
-			                      totalElementCount * elementHeight + 40);
+									usamWindow.usam.latestManifest.storages.Count;
+			minSize = new Vector2(usamWindow.position.width - 100,
+								  totalElementCount * elementHeight + 40);
 
 			var usam = usamWindow.usam;
-			
-			
+
+
 			// _headerHeight = 0f;
 			{ // render a header bar
 				EditorGUILayout.BeginHorizontal();
 				// EditorGUILayout.Space(elementHeight + 4, false); // space for the icon
 				EditorGUILayout.LabelField("service name", new GUIStyle(EditorStyles.miniLabel)
-				                           {
-					                           padding = new RectOffset(elementHeight + 4, 0, 0, 0),
-					                           alignment = TextAnchor.MiddleLeft
-				                           }, 
-				                           GUILayout.Width(position.width - buttonWidth * 4 - clickablePadding));
+				{
+					padding = new RectOffset(elementHeight + 4, 0, 0, 0),
+					alignment = TextAnchor.MiddleLeft
+				},
+										   GUILayout.Width(position.width - buttonWidth * 4 - clickablePadding));
 				EditorGUILayout.LabelField("local actions", new GUIStyle(EditorStyles.miniLabel)
-				                           {
-					                           padding = new RectOffset(clickablePadding - 2, 0, 0, 0),
-					                           alignment = TextAnchor.MiddleLeft
-				                           }, 
-				                           GUILayout.Width(buttonWidth * 4));
+				{
+					padding = new RectOffset(clickablePadding - 2, 0, 0, 0),
+					alignment = TextAnchor.MiddleLeft
+				},
+										   GUILayout.Width(buttonWidth * 4));
 
-				
+
 				// EditorGUILayout.LabelField("local actions", new GUIStyle(EditorStyles.miniLabel),
 				//                            GUILayout.Width(buttonWidth * 4 - 20));
 				EditorGUILayout.EndHorizontal();
 			}
-			
+
 			scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
 			EditorGUILayout.BeginVertical();
 
 			var clicked = false;
 			var totalIndex = 0;
 
-			
+
 			{ // render the services first, 
 				for (var i = 0; i < usam?.latestManifest?.services?.Count; i++, totalIndex++)
 				{
@@ -95,8 +95,8 @@ namespace Beamable.Editor.Microservice.UI2
 					}
 				}
 			}
-			
-			
+
+
 			EditorGUILayout.EndVertical();
 			EditorGUILayout.EndScrollView();
 
@@ -108,13 +108,13 @@ namespace Beamable.Editor.Microservice.UI2
 		bool DrawCard(string beamoId, int index, Texture icon, Action drawButtons)
 		{
 			var bounds = new Rect(0, index * elementHeight, position.width, elementHeight);
-		
+
 			EditorGUILayout.BeginHorizontal(GUILayout.Height(elementHeight), GUILayout.ExpandWidth(true));
 
 
 			var loadingRect = new Rect(bounds.x + 20, bounds.y, bounds.width - buttonWidth * 4 - clickablePadding - 20, 4);
 			var clickableRect = new Rect(bounds.x, bounds.y + 4, bounds.width - buttonWidth * 4 - clickablePadding,
-			                             bounds.height);
+										 bounds.height);
 			EditorGUIUtility.AddCursorRect(clickableRect, MouseCursor.Link);
 
 			var isButtonHover = clickableRect.Contains(Event.current.mousePosition);
@@ -126,14 +126,14 @@ namespace Beamable.Editor.Microservice.UI2
 					var selectionRect = new Rect(bounds.x, bounds.y, 4, bounds.height);
 					EditorGUI.DrawRect(selectionRect, new Color(.25f, .5f, 1f, .8f));
 				}
-				
+
 				{
-					EditorGUI.DrawRect(bounds, new Color(0, 0, 0, index%2 == 0 ? .1f : .2f));
+					EditorGUI.DrawRect(bounds, new Color(0, 0, 0, index % 2 == 0 ? .1f : .2f));
 				}
-				
+
 				if (isButtonHover)
 				{
-					EditorGUI.DrawRect(bounds, new Color(1,1,1, .05f));
+					EditorGUI.DrawRect(bounds, new Color(1, 1, 1, .05f));
 				}
 			}
 
@@ -142,8 +142,8 @@ namespace Beamable.Editor.Microservice.UI2
 				{
 					var shouldAnimate = !progress.isComplete;
 					BeamGUI.LoadingRect(loadingRect, progress.progressRatio,
-					                    isFailed: progress.isFailed,
-					                    animate: shouldAnimate);
+										isFailed: progress.isFailed,
+										animate: shouldAnimate);
 				}
 			}
 
@@ -158,7 +158,7 @@ namespace Beamable.Editor.Microservice.UI2
 				alignment = TextAnchor.MiddleLeft,
 				padding = new RectOffset(8, 0, 0, 0),
 			};
-			EditorGUILayout.LabelField(beamoId, labelStyle, GUILayout.MaxWidth(position.width - buttonWidth*4 - elementHeight - 8), GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(true));
+			EditorGUILayout.LabelField(beamoId, labelStyle, GUILayout.MaxWidth(position.width - buttonWidth * 4 - elementHeight - 8), GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(true));
 
 			drawButtons();
 			EditorGUILayout.EndHorizontal();
@@ -178,34 +178,34 @@ namespace Beamable.Editor.Microservice.UI2
 
 				GUI.enabled = status != null;
 				var clickedToggle = BeamGUI.HeaderButton(null, BeamGUI.iconPlay,
-				                                         width: buttonWidth,
-				                                         padding: buttonPadding,
-				                                         yPadding: buttonYPadding,
-				                                         drawBorder: false,
-				                                         tooltip: isRunning ? "Stop the storage" : "Start the storage",
-				                                         backgroundColor: isRunning
-					                                         ? usamWindow.primaryColor
-					                                         : default);
+														 width: buttonWidth,
+														 padding: buttonPadding,
+														 yPadding: buttonYPadding,
+														 drawBorder: false,
+														 tooltip: isRunning ? "Stop the storage" : "Start the storage",
+														 backgroundColor: isRunning
+															 ? usamWindow.primaryColor
+															 : default);
 				GUI.enabled = true;
 
 				var clickedOpenApi = BeamGUI.HeaderButton(null, BeamGUI.iconOpenMongoExpress,
-				                                          width: buttonWidth,
-				                                          padding: buttonPadding,
-				                                          yPadding: 3,
-				                                          tooltip: "Go to Mongo Express",
-				                                          drawBorder: false);
+														  width: buttonWidth,
+														  padding: buttonPadding,
+														  yPadding: 3,
+														  tooltip: "Go to Mongo Express",
+														  drawBorder: false);
 				var clickedOpenProject = BeamGUI.HeaderButton(null, BeamGUI.iconOpenProject,
-				                                              width: buttonWidth,
-				                                              padding: buttonPadding,
-				                                              yPadding: 3,
-				                                              tooltip: "Open project",
-				                                              drawBorder: false);
+															  width: buttonWidth,
+															  padding: buttonPadding,
+															  yPadding: 3,
+															  tooltip: "Open project",
+															  drawBorder: false);
 				var clickedOptions = BeamGUI.HeaderButton(null, BeamGUI.iconMoreOptions,
-				                                          width: buttonWidth,
-				                                          padding: buttonPadding,
-				                                          yPadding: 3,
-				                                          tooltip: "More options",
-				                                          drawBorder: false);
+														  width: buttonWidth,
+														  padding: buttonPadding,
+														  yPadding: 3,
+														  tooltip: "More options",
+														  drawBorder: false);
 				if (clickedOptions)
 				{
 					usamWindow.ShowStorageMenu(storage);
@@ -240,34 +240,34 @@ namespace Beamable.Editor.Microservice.UI2
 
 				GUI.enabled = status != null;
 				var clickedToggle = BeamGUI.HeaderButton(null, BeamGUI.iconPlay,
-				                                         width: buttonWidth,
-				                                         padding: buttonPadding,
-				                                         yPadding: buttonYPadding,
-				                                         drawBorder: false,
-				                                         tooltip: isRunning ? "Stop the service" : "Start the service",
-				                                         backgroundColor: isRunning
-					                                         ? usamWindow.primaryColor
-					                                         : default);
+														 width: buttonWidth,
+														 padding: buttonPadding,
+														 yPadding: buttonYPadding,
+														 drawBorder: false,
+														 tooltip: isRunning ? "Stop the service" : "Start the service",
+														 backgroundColor: isRunning
+															 ? usamWindow.primaryColor
+															 : default);
 				GUI.enabled = true;
 
 				var clickedOpenApi = BeamGUI.HeaderButton(null, BeamGUI.iconOpenApi,
-				                                          width: buttonWidth,
-				                                          padding: buttonPadding,
-				                                          yPadding: 3,
-				                                          tooltip: "Go to Open API",
-				                                          drawBorder: false);
+														  width: buttonWidth,
+														  padding: buttonPadding,
+														  yPadding: 3,
+														  tooltip: "Go to Open API",
+														  drawBorder: false);
 				var clickedOpenProject = BeamGUI.HeaderButton(null, BeamGUI.iconOpenProject,
-				                                              width: buttonWidth,
-				                                              padding: buttonPadding,
-				                                              yPadding: 3,
-				                                              tooltip: "Open project",
-				                                              drawBorder: false);
+															  width: buttonWidth,
+															  padding: buttonPadding,
+															  yPadding: 3,
+															  tooltip: "Open project",
+															  drawBorder: false);
 				var clickedOptions = BeamGUI.HeaderButton(null, BeamGUI.iconMoreOptions,
-				                                          width: buttonWidth,
-				                                          padding: buttonPadding,
-				                                          yPadding: 3,
-				                                          tooltip: "More options",
-				                                          drawBorder: false);
+														  width: buttonWidth,
+														  padding: buttonPadding,
+														  yPadding: 3,
+														  tooltip: "More options",
+														  drawBorder: false);
 				if (clickedOptions)
 				{
 					usamWindow.ShowServiceMenu(service);
@@ -289,6 +289,6 @@ namespace Beamable.Editor.Microservice.UI2
 				}
 			});
 		}
-		
+
 	}
 }
