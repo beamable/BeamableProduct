@@ -1,4 +1,6 @@
 using Beamable.Common;
+using Beamable.Serialization;
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -93,7 +95,37 @@ namespace Beamable.Editor.Environment
 
 			windowInitializer?.Invoke();
 		}
+		public static List<string> GetManifestFileReferences()
+		{
+			var referencePaths = new List<string>();
+			var filePath = "Packages/manifest.json";
+			if (!File.Exists(filePath))
+			{
+				return referencePaths;
+			}
+			var json = File.ReadAllText(filePath);
+			var manifest = (ArrayDict)Json.Deserialize(json);
+			if (!manifest.TryGetValue("dependencies", out var deps) )
+			{
+				return referencePaths;
+			}
 
+			var depDict = deps as ArrayDict;
+			if (depDict == null)
+			{
+				return referencePaths;
+			}
+
+			foreach (var kvp in depDict)
+			{
+				var value = kvp.Value?.ToString() ?? "";
+				if (!value.StartsWith("file://")) continue;
+				
+				referencePaths.Add(value.Substring("file://".Length));
+			}
+
+			return referencePaths;
+		}
 		public static Promise<PackageInfo> GetPackageInfo(string packageName)
 		{
 			var listReq = Client.List(true);

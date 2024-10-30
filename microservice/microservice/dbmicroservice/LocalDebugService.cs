@@ -87,18 +87,28 @@ namespace Beamable.Server {
 
 				var index = 0;
 				using var writer = this.HttpContext.OpenResponseText();
-				while (!HttpContext.CancellationToken.IsCancellationRequested)
+				var id = Guid.NewGuid().ToString();
+				var channel = _debugLogSink.GetMessageSubscription(id);
+				try
 				{
-					if (!_debugLogSink.TryGetNextMessage(ref index, out var message))
+					while (!HttpContext.CancellationToken.IsCancellationRequested)
 					{
-						Thread.Sleep(10);
-						continue;
-						
+						if (!channel.Reader.TryRead(out var message))
+						{
+							Thread.Sleep(10);
+							continue;
+						}
+
+						writer.WriteLine($"data: {message}");
+						writer.Flush();
 					}
-					writer.WriteLine($"data: {message}");
-					writer.Flush();
+
+					return "";
 				}
-				return "";
+				finally
+				{
+					_debugLogSink.ReleaseSubscription(id);
+				}
 			}
 			
 			[Route(HttpVerbs.Any, "/health")]

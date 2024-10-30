@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using Beamable.Editor.BeamCli.Commands;
+using Beamable.Editor.Environment;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -11,17 +12,14 @@ namespace Beamable.Editor.BeamCli
 	{
 		private readonly IDependencyProvider _provider;
 		private readonly BeamEditorContext _ctx;
-		private readonly IAccountService _accountService;
 
 		public Promise OnReady { get; }
 
-		public BeamCli(IDependencyProvider provider, BeamEditorContext ctx, IAccountService accountService)
+		public BeamCli(IDependencyProvider provider, BeamEditorContext ctx)
 		{
 			_provider = provider;
 			_ctx = ctx;
-			_accountService = accountService;
 			OnReady = Init();
-			_accountService.OnUserChanged(Init);
 		}
 
 		public BeamCommands Command => DependencyBuilder.Instantiate<BeamCommands>(_provider);
@@ -48,6 +46,8 @@ namespace Beamable.Editor.BeamCli
 		public async Promise Init()
 		{
 			await _ctx.OnReady;
+
+			var extraPaths = BeamablePackages.GetManifestFileReferences();
 			
 			var args = new InitArgs
 			{
@@ -56,6 +56,7 @@ namespace Beamable.Editor.BeamCli
 				cid = _ctx.Requester.Cid,
 				pid = _ctx.Requester.Pid,
 				host = BeamableEnvironment.ApiUrl,
+				saveExtraPaths = extraPaths.ToArray()
 			};
 			
 			var token = _ctx.Requester.Token;
@@ -74,13 +75,17 @@ namespace Beamable.Editor.BeamCli
 			
 			var initCommand = Command.Init(args);
 			await initCommand.Run();
-
-
+			
 			var linkCommand = Command.ProjectAddUnityProject(new ProjectAddUnityProjectArgs
 			{
 				path = "."
 			});
-			await linkCommand.Run();
+			linkCommand.OnError(cb =>
+			{
+				Debug.LogError("Unable to register Unity project with local CLI project." + cb.data.message);
+			});
+			var _ = linkCommand.Run();
+			// await linkCommand.Run();
 		}
 	}
 }

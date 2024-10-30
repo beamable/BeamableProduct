@@ -39,7 +39,10 @@ namespace Beamable.Editor.ToolbarExtender
 		{
 			_icon = new VisualElement
 			{
-				name = "icon", style = {backgroundImage = new StyleBackground(GetSprite())}
+				name = "icon", style =
+				{
+					backgroundImage = new StyleBackground(GetSprite())
+				}
 			};
 		}
 
@@ -102,7 +105,7 @@ namespace Beamable.Editor.ToolbarExtender
 		{
 			var noHintsTexture =
 				AssetDatabase.LoadAssetAtPath<Sprite>(
-					"Packages/com.beamable/Editor/UI/Toolbar/Icons/info.png");
+					"Packages/com.beamable/Editor/UI/Common/Icons/beam_icon_small_color.png");
 
 			return noHintsTexture;
 		}

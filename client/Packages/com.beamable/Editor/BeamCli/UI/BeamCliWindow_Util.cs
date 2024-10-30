@@ -63,7 +63,7 @@ namespace Beamable.Editor.BeamCli.UI
 					if (GUILayout.Button(tool.name, EditorStyles.miniButton))
 					{
 						// delay the action so that if an exception occurs in callback, GUI events will still be closed.
-						delayedActions.Add(tool.onClick);
+						AddDelayedAction(tool.onClick);
 					}
 				}
 			}
@@ -190,9 +190,7 @@ namespace Beamable.Editor.BeamCli.UI
 			var viewRect = new Rect(0, 0, scrollRect.width - 15, totalHeight);
 
 			scrollPos = GUI.BeginScrollView(scrollRect, scrollPos, viewRect);
-			var areaRect = new Rect(scrollPos.x, scrollPos.y, scrollRect.width - 15, visHeight);
-			EditorGUI.DrawRect(areaRect, new Color(1,1,1,.1f));
-
+			
 			if (scrollPos.y > totalHeight - visHeight)
 			{
 				scrollPos.y = totalHeight - visHeight;

@@ -184,7 +184,11 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 					{
 						var url = $"{BeamableEnvironment.PortalUrl}/{_ctx.CurrentCustomer.Cid}/games/{_ctx.ProductionRealm.Pid}/realms/{_ctx.CurrentRealm.Pid}/microservices?refresh_token={_ctx.Requester.Token.RefreshToken}";
 						Application.OpenURL(url);
-						isCancelPressed = true;
+						
+						if (_releasePromise.IsCompleted)
+						{
+							isCancelPressed = true;
+						}
 					}
 				}
 			}

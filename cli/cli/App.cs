@@ -9,9 +9,11 @@ using Beamable.Common.Semantics;
 using cli.CliServerCommand;
 using cli.Commands.Project;
 using cli.Commands.Project.Deps;
+using cli.Commands.Project.StorageData;
 using cli.Content;
 using cli.Content.Tag;
 using cli.DeploymentCommands;
+using cli.DockerCommands;
 using cli.Docs;
 using cli.Dotnet;
 using cli.FederationCommands;
@@ -257,6 +259,7 @@ public class App
 		Commands.AddSingleton<LogOption>();
 		Commands.AddSingleton<ShowRawOutput>();
 		Commands.AddSingleton<ShowPrettyOutput>();
+		Commands.AddSingleton(ExtraProjectPathOptions.Instance);
 		Commands.AddSingleton(DotnetPathOption.Instance);
 		Commands.AddSingleton(NoForwardingOption.Instance);
 		Commands.AddSingleton(AllHelpOption.Instance);
@@ -280,6 +283,7 @@ public class App
 			root.AddGlobalOption(NoLogFileOption.Instance);
 			root.AddGlobalOption(DockerPathOption.Instance);
 			root.AddGlobalOption(EmitLogsOption.Instance);
+			root.AddGlobalOption(ExtraProjectPathOptions.Instance);
 			root.AddGlobalOption(provider.GetRequiredService<ConfigDirOption>());
 			root.AddGlobalOption(provider.GetRequiredService<ShowRawOutput>());
 			root.AddGlobalOption(provider.GetRequiredService<ShowPrettyOutput>());
@@ -297,9 +301,16 @@ public class App
 		Commands.AddSubCommand<RequestCliCommand, RequestCliCommandArgs, ServerGroupCommand>();
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
 		Commands.AddRootCommand<ProjectCommand>();
+
+		Commands.AddSubCommand<StorageGroupCommand, CommandGroupArgs, ProjectCommand>();
+		Commands.AddSubCommand<SnapshotStorageObjectCommand, SnapshotStorageObjectCommandArgs, StorageGroupCommand>();
+		Commands.AddSubCommand<RestoreStorageObjectCommand, RestoreStorageObjectCommandArgs, StorageGroupCommand>();
+		Commands.AddSubCommand<EraseStorageObjectCommand, EraseStorageObjectCommandArgs, StorageGroupCommand>();
+		
 		Commands.AddSubCommand<ProjectNewCommand, CommandGroupArgs, ProjectCommand>();
 		Commands.AddSubCommand<GenerateOApiCommand, GenerateOApiCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<RunProjectCommand, RunProjectCommandArgs, ProjectCommand>();
+		Commands.AddSubCommand<DeleteProjectCommand, DeleteProjectCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<StopProjectCommand, StopProjectCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<BuildProjectCommand, BuildProjectCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<NewMicroserviceCommand, NewMicroserviceArgs, ProjectNewCommand>();
@@ -340,6 +351,7 @@ public class App
 		Commands.AddRootCommand<FederationCommand>();
 		Commands.AddSubCommand<ListFederationsCommand, ListServicesCommandArgs, FederationCommand>();
 		Commands.AddSubCommand<AddFederationCommand, AddFederationCommandArgs, FederationCommand>();
+		Commands.AddSubCommand<SetAllFederationsCommand, SetAllFederationsCommandArgs, FederationCommand>();
 		Commands.AddSubCommand<RemoveFederationCommand, RemoveFederationCommandArgs, FederationCommand>();
 		Commands.AddSubCommand<DisableFederationCommand, DisableFederationCommandArgs, FederationCommand>();
 		Commands.AddSubCommand<EnableFederationCommand, DisableFederationCommandArgs, FederationCommand>();
@@ -375,6 +387,7 @@ public class App
 		Commands.AddSubCommandWithHandler<RealmConfigSetCommand, RealmConfigSetCommandArgs, RealmConfigCommand>();
 		Commands.AddSubCommandWithHandler<RealmConfigRemoveCommand, RealmConfigRemoveCommandArgs, RealmConfigCommand>();
 		Commands.AddRootCommand<LoginCommand, LoginCommandArgs>();
+		Commands.AddRootCommand<LogoutCommand, LogoutCommandArgs>();
 		Commands.AddRootCommand<OpenAPICommand>();
 		Commands.AddSubCommand<GenerateSdkCommand, GenerateSdkCommandArgs, OpenAPICommand>();
 		Commands.AddSubCommand<DownloadOpenAPICommand, DownloadOpenAPICommandArgs, OpenAPICommand>();
@@ -394,6 +407,7 @@ public class App
 
 		// unity commands
 		Commands.AddRootCommand<UnityGroupCommand>();
+		Commands.AddSubCommand<RestoreProjectCommand, RestoreProjectCommandArgs, UnityGroupCommand>();
 		Commands.AddSubCommand<CopyProjectSrcToUnityCommand, CopyProjectSrcToUnityCommandArgs, UnityGroupCommand>();
 		Commands.AddSubCommand<GetUnityVersionInfoCommand, GetUnityVersionInfoCommandArgs, UnityGroupCommand>();
 		Commands.AddSubCommand<ReleaseSharedUnityCodeCommand, ReleaseSharedUnityCodeCommandArgs, UnityGroupCommand>();
@@ -402,6 +416,7 @@ public class App
 				UnityGroupCommand>();
 		Commands.AddSubCommand<UpdateServiceAssemblyReferencesCommand, UpdateServiceAssemblyReferencesCommandArgs,
 			UnityGroupCommand>();
+		Commands.AddSubCommand<ShowManifestCommand, ShowManifestCommandArgs, UnityGroupCommand>();
 		
 		// unreal commands
 		Commands.AddRootCommand<UnrealGroupCommand>();
@@ -418,6 +433,11 @@ public class App
 
 		// beamo commands
 		Commands.AddRootCommand<ServicesCommand>();
+
+		Commands.AddSubCommand<DockerGroupCommand, CommandGroupArgs, ServicesCommand>();
+		Commands.AddSubCommand<DockerStatusCommand, DockerStatusCommandArgs, DockerGroupCommand>();
+		Commands.AddSubCommand<StartDockerCommand, StartDockerCommandArgs, DockerGroupCommand>();
+		
 		Commands.AddSubCommand<ServicesManifestsCommand, ServicesManifestsArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesListCommand, ServicesListCommandArgs, ServicesCommand>();
 		Commands.AddSubCommand<ServicesDeployCommand, ServicesDeployCommandArgs, ServicesCommand>();

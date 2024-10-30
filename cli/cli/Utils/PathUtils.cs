@@ -4,7 +4,8 @@ public static class PathUtils
 {
 	public static string LocalizeSlashes(this string path)
 	{
-		return path.Replace('/', Path.DirectorySeparatorChar);
+		return path.Replace('/', Path.DirectorySeparatorChar)
+			.Replace('\\', Path.DirectorySeparatorChar);
 	}
 }
 

@@ -1,4 +1,7 @@
 ﻿using Beamable.Common.Content;
+using Beamable.Editor.BeamCli.Commands;
+using Beamable.Editor.UI;
+using Beamable.Server.Editor.Usam;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -12,8 +15,10 @@ namespace Beamable.Server.Editor
 	{
 		private const int PADDING = 2;
 
-		private List<MicroserviceClientInfo> _filteredDescriptors;
+		private List<BeamManifestServiceEntry> _filteredServiceEntries;
 		private readonly List<FederationOption> _options = new List<FederationOption>();
+
+		private static readonly List<string> _allowedInterfaces = new List<string>() {"IFederatedInventory"};
 
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
 		{
@@ -22,26 +27,24 @@ namespace Beamable.Server.Editor
 
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 		{
-			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			var usamService = BeamEditorContext.Default.ServiceScope.GetService<UsamService>();
 
-			if (_filteredDescriptors == null)
+			if (_filteredServiceEntries == null)
 			{
-				_filteredDescriptors = serviceRegistry.ClientInfos
-													  .FindAll(descriptor => descriptor.IsUsedForFederation)
-													  .ToList();
+				_filteredServiceEntries = usamService.latestManifest.services.FindAll(s => s.federations.Count > 0).ToList();
 			}
 
-			if (_filteredDescriptors.Count == 0)
+			if (_filteredServiceEntries.Count == 0)
 			{
 				position = EditorGUI.PrefixLabel(position, label);
 				EditorGUI.SelectableLabel(
 					position,
-					"You must create a Microservice implementing IFederatedLogin interface to configure a Federation",
+					"You must have a Microservice implementing IFederatedInventory before configuring it into an item or currency.",
 					EditorStyles.wordWrappedLabel);
 				return;
 			}
 
-			BuildOptions(_filteredDescriptors);
+			BuildOptions(_filteredServiceEntries);
 
 			var routeInfoPosition = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
 			EditorGUI.LabelField(routeInfoPosition, "Federation",
@@ -91,15 +94,19 @@ namespace Beamable.Server.Editor
 			}
 		}
 
-		private void BuildOptions(List<MicroserviceClientInfo> descriptors)
+		private void BuildOptions(List<BeamManifestServiceEntry> descriptors)
 		{
 			_options.Clear();
 
 			foreach (var descriptor in descriptors)
 			{
-				foreach (var federatedNamespace in descriptor.FederationComponents.Select(x => x.identity.UniqueName))
+				foreach (var federation in descriptor.federations)
 				{
-					_options.Add(new FederationOption { Microservice = descriptor.ServiceName, Namespace = federatedNamespace });
+					if(_allowedInterfaces.Contains(federation.interfaceName))
+					{
+						_options.Add(new FederationOption { Microservice = descriptor.beamoId, Namespace = federation.federationId });
+						break;
+					}
 				}
 			}
 		}

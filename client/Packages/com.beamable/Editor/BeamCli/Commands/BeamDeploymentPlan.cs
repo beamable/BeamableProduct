@@ -11,19 +11,19 @@ namespace Beamable.Editor.BeamCli.Commands
 		/// <summary>Any number of strings in the format BeamoId::Comment
 		///Associates each comment to the given Beamo Id if it's among the published services. You'll be able to read it via the Beamable Portal</summary>
 		public string[] serviceComments;
-		/// <summary>a manifest json file to use to create a plan</summary>
+		/// <summary>A manifest json file to use to create a plan</summary>
 		public string fromManifest;
-		/// <summary>a manifest id to download and use to create a plan</summary>
+		/// <summary>A manifest id to download and use to create a plan</summary>
 		public string fromManifestId;
-		/// <summary>run health checks on services</summary>
+		/// <summary>Run health checks on services</summary>
 		public bool runHealthChecks;
-		/// <summary>restart existing deployed services</summary>
+		/// <summary>Restart existing deployed services</summary>
 		public bool redeploy;
-		/// <summary>Create a Release that adds your current local environment to the existing remote services. Existing deployed services will not be removed. </summary>
+		/// <summary>Create a Release that adds your current local environment to the existing remote services. Existing deployed services will not be removed</summary>
 		public bool merge;
-		/// <summary>(default) Create a Release that completely overrides the existing remote services. Existing deployed services that are not present locally will be removed. </summary>
+		/// <summary>Create a Release that completely overrides the existing remote services. Existing deployed services that are not present locally will be removed (default)</summary>
 		public bool replace;
-		/// <summary>a file path to save the plan</summary>
+		/// <summary>A file path to save the plan</summary>
 		public string toFile;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()

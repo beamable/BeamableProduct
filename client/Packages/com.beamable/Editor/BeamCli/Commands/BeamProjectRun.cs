@@ -18,6 +18,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public bool force;
 		/// <summary>With this flag, the service will run the background after it has reached basic startup</summary>
 		public bool detach;
+		/// <summary>We compile services that need compiling before running. This will disable the client-code generation part of the compilation</summary>
+		public bool noClientGen;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -64,6 +66,11 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.detach != default(bool)))
 			{
 				genBeamCommandArgs.Add(("--detach=" + this.detach));
+			}
+			// If the noClientGen value was not default, then add it to the list of args.
+			if ((this.noClientGen != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--no-client-gen=" + this.noClientGen));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

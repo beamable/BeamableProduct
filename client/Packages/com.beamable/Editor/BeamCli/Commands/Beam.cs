@@ -35,6 +35,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string dockerCliPath;
 		/// <summary>Out all log messages as data payloads in addition to however they are logged</summary>
 		public bool emitLogStreams;
+		/// <summary>additional file paths to be included when building a local project manifest. </summary>
+		public string[] addProjectPath;
 		/// <summary>Directory to use for configuration</summary>
 		public string dir;
 		/// <summary>Output raw JSON to standard out. This happens by default when the command is being piped</summary>
@@ -130,6 +132,15 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.emitLogStreams != default(bool)))
 			{
 				genBeamCommandArgs.Add(("--emit-log-streams=" + this.emitLogStreams));
+			}
+			// If the addProjectPath value was not default, then add it to the list of args.
+			if ((this.addProjectPath != default(string[])))
+			{
+				for (int i = 0; (i < this.addProjectPath.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--add-project-path=" + this.addProjectPath[i]));
+				}
 			}
 			// If the dir value was not default, then add it to the list of args.
 			if ((this.dir != default(string)))

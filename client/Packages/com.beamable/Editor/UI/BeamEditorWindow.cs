@@ -6,6 +6,7 @@ using Beamable.Editor.Toolbox.UI;
 using Beamable.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.Experimental.UIElements;
@@ -18,8 +19,13 @@ namespace Beamable.Editor.UI
 	///
 	/// </summary>
 	/// <typeparam name="TWindow"></typeparam>
-	public abstract class BeamEditorWindow<TWindow> : EditorWindow, ISerializationCallbackReceiver where TWindow : BeamEditorWindow<TWindow>, new()
+	public abstract class BeamEditorWindow<TWindow> 
+		: EditorWindow, ISerializationCallbackReceiver 
+		, IDelayedActionWindow
+		where TWindow : BeamEditorWindow<TWindow>, new()
 	{
+		private List<Action> _actions = new List<Action>();
+		
 		/// <summary>
 		/// The default <see cref="BeamEditorWindowInitConfig{TWindow}"/> struct that is used when initializing this window via <see cref="GetFullyInitializedWindow"/>.
 		/// </summary>
@@ -271,6 +277,43 @@ namespace Beamable.Editor.UI
 			var label = new Label("Loading...");
 			root.Add(label);
 		}
+
+		protected void RunDelayedActions()
+		{
+			// copy the actions into a separate list, so if there is an error, at least they clear.
+			var copy = _actions.ToList();
+			_actions.Clear();
+			
+			// perform delayed actions
+			foreach (var act in copy)
+			{
+				act?.Invoke();
+			}
+
+
+		}
+
+
+		public void AddDelayedAction(Action act)
+		{
+			_actions.Add(act);
+		}
+		
+		protected void DrawNoContextGui()
+		{
+			EditorGUILayout.SelectableLabel("No Beamable context is available");
+		}
+		
+		protected void DrawWaitingForContextGui()
+		{
+			EditorGUILayout.SelectableLabel("Loading Beamable...");
+		}
+
+		protected void DrawNotLoggedInGui()
+		{
+			EditorGUILayout.SelectableLabel("Must log into Beamable...");
+		}
+
 	}
 
 	/// <summary>

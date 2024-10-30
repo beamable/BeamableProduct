@@ -20,6 +20,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string pid;
 		/// <summary>Refresh token to use for the requests</summary>
 		public string refreshToken;
+		/// <summary>overwrite the stored extra paths for where to find projects</summary>
+		public string[] saveExtraPaths;
 		/// <summary>Save login refresh token to environment variable</summary>
 		public bool saveToEnvironment;
 		/// <summary>Save login refresh token to file</summary>
@@ -75,6 +77,15 @@ namespace Beamable.Editor.BeamCli.Commands
 			{
 				genBeamCommandArgs.Add((("--refresh-token=\"" + this.refreshToken)
 								+ "\""));
+			}
+			// If the saveExtraPaths value was not default, then add it to the list of args.
+			if ((this.saveExtraPaths != default(string[])))
+			{
+				for (int i = 0; (i < this.saveExtraPaths.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--save-extra-paths=" + this.saveExtraPaths[i]));
+				}
 			}
 			// If the saveToEnvironment value was not default, then add it to the list of args.
 			if ((this.saveToEnvironment != default(bool)))

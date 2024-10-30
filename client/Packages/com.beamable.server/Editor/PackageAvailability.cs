@@ -1,5 +1,4 @@
 using Beamable.Editor.Environment;
-using Beamable.Editor.Microservice.UI;
 using Beamable.Editor.Microservice.UI2;
 using UnityEditor;
 
@@ -10,7 +9,7 @@ namespace Beamable.Server.Editor
 	{
 		static PackageAvailability()
 		{
-			BeamablePackages.ProvideServerWindow(UsamWindow.Init);
+			BeamablePackages.ProvideServerWindow(UsamWindow2.Init);
 		}
 	}
 }

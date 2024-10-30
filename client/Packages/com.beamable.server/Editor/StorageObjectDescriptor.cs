@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using UnityEngine;
 
 namespace Beamable.Server.Editor
@@ -14,6 +15,7 @@ namespace Beamable.Server.Editor
 			set => _name = value;
 		}
 		public string AttributePath { get; set; }
+		public string SourcePath => Path.GetDirectoryName(AttributePath);
 		public Type Type { get; set; }
 		public string ContainerName => $"db_{Name}_storage";
 		public string ImageName => "mongo:latest";

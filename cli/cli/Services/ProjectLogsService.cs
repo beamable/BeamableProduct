@@ -10,18 +10,25 @@ public class ProjectLogsService
 	{
 		void LogHandler(string logMessage)
 		{
-			
-			var parsed = JsonConvert.DeserializeObject<TailLogMessage>(logMessage);
-			if (parsed.message == null)
+			try
 			{
-				var mongoParsed = JsonConvert.DeserializeObject<MongoLogMessage>(logMessage);
-				parsed.message = mongoParsed.message;
-				parsed.timeStamp = DateTimeOffset.Now.ToString("T");
-				parsed.logLevel = "info";
+				var parsed = JsonConvert.DeserializeObject<TailLogMessage>(logMessage);
+				if (parsed.message == null)
+				{
+					var mongoParsed = JsonConvert.DeserializeObject<MongoLogMessage>(logMessage);
+					parsed.message = mongoParsed.message;
+					parsed.timeStamp = DateTimeOffset.Now.ToString("T");
+					parsed.logLevel = "info";
+				}
+
+				parsed.raw = logMessage;
+				handleLog(parsed);
 			}
-			parsed.raw = logMessage;
-			handleLog(parsed);
-			
+			catch (Exception ex)
+			{
+				// log an error, but continue parsing logs. 
+				Log.Error($"Unable to parse log=[{logMessage}] message=[{ex.Message}]" );
+			}
 		}
 		
 		
@@ -83,7 +90,10 @@ public class ProjectLogsService
 
 	static async Task TailProcess(HostServiceDescriptor host, Action<string> handleLog)
 	{
-		using (var client = new HttpClient())
+		using (var client = new HttpClient
+		       {
+			       Timeout = Timeout.InfiniteTimeSpan
+		       })
 		{
 			// Set up the HTTP GET request
 			var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:{host.healthPort}/logs");
@@ -106,7 +116,6 @@ public class ProjectLogsService
 					{
 						var line = await reader.ReadLineAsync();
 						var _ = await reader.ReadLineAsync(); // skip new line.
-
 						var substrLength = "data: ".Length;
 						if (line?.Length > substrLength)
 						{

@@ -136,7 +136,8 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 			withTags: args.withServiceTags,
 			withoutTags: args.withoutServiceTags,
 			includeStorage: true,
-			ref args.services);
+			ref args.services,
+			allowEmptyServices: true);
 
 		TimeSpan timeout = TimeSpan.FromMilliseconds(Beamable.Common.Constants.Features.Services.DISCOVERY_RECEIVE_PERIOD_MS);
 		if (args.watch)
