@@ -8,6 +8,7 @@ namespace Beamable.Editor.Util
 	public partial class BeamGUI
 	{
 		private static GUIStyle _primaryButtonStyle = null;
+
 		public static bool PrimaryButton(GUIContent content)
 		{
 			if (_primaryButtonStyle == null)
@@ -18,15 +19,30 @@ namespace Beamable.Editor.Util
 
 			return CustomButton(content, _primaryButtonStyle);
 		}
+		public static bool PrimaryButton(Rect rect, GUIContent content)
+		{
+			if (_primaryButtonStyle == null)
+			{
+				_primaryButtonStyle = BeamGUI.ColorizeButton(loadingPrimary);
+				_primaryButtonStyle.padding = new RectOffset(6, 6, 6, 6);
+			}
+
+			return CustomButton(rect, content, _primaryButtonStyle);
+		}
 
 		public static bool CancelButton()
 		{
 			return GUILayout.Button("Cancel", new GUIStyle(GUI.skin.button) {padding = new RectOffset(6, 6, 6, 6)});
 		}
-		
+
 		public static bool CustomButton(GUIContent content, GUIStyle style)
 		{
 			var rect = GUILayoutUtility.GetRect(content, style);
+			return CustomButton(rect, content, style);
+		}
+		
+		public static bool CustomButton(Rect rect, GUIContent content, GUIStyle style)
+		{
 			
 			var isHover = rect.Contains(Event.current.mousePosition);
 			var buttonClicked = isHover && Event.current.rawType == EventType.MouseDown;
@@ -40,11 +56,6 @@ namespace Beamable.Editor.Util
 			else if (isHover)
 			{
 				EditorGUI.DrawRect(rect, new Color(1, 1, 1, .1f));
-				// EditorGUI.DrawRect(rect, new Color(.25f, .5f, 1f, .5f));
-				// var subStyle = new GUIStyle(style);
-				// subStyle.normal = subStyle.onNormal = style.onHover;
-				// clicked = GUI.Button(rect, content, subStyle);
-				
 			}
 			else
 			{

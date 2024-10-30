@@ -94,7 +94,7 @@ namespace Beamable.Editor.Microservice.UI2
 						
 						BeamGUI.LoadingRect(loadingRect, migratingService?.TotalRatio ?? 0f, animate: (!(migratingService?.isComplete ?? true)));
 						
-						service.isFoldOut = EditorGUILayout.Foldout(service.isFoldOut, new GUIContent(service.beamoId, iconService));
+						service.isFoldOut = EditorGUILayout.Foldout(service.isFoldOut, new GUIContent(service.beamoId, BeamGUI.iconService));
 						
 						// TODO service icon
 						// EditorGUILayout.LabelField(service.beamoId);
@@ -145,7 +145,7 @@ namespace Beamable.Editor.Microservice.UI2
 						
 						BeamGUI.LoadingRect(loadingRect, migratingService?.TotalRatio ?? 0f, animate: (!(migratingService?.isComplete ?? true)));
 						
-						service.isFoldOut = EditorGUILayout.Foldout(service.isFoldOut, new GUIContent(service.beamoId, iconService), new GUIStyle(EditorStyles.foldout)
+						service.isFoldOut = EditorGUILayout.Foldout(service.isFoldOut, new GUIContent(service.beamoId, BeamGUI.iconService), new GUIStyle(EditorStyles.foldout)
 						{
 							fontSize = 12
 						});

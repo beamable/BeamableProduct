@@ -163,103 +163,69 @@ namespace Beamable.Editor.Microservice.UI2
 			Starting,
 			Running
 		}
-		
-		
+
 		void DrawHeader()
 		{
 			var clickedCreate = false;
-			var clickedRefresh = false;
-			var clickedHelp = false;
 			var clickedConfig = false;
 			var clickedPublish = false;
+			BeamGUI.DrawHeaderSection(this, ActiveContext, 
+				drawLowBarGui: () =>
+				{
+					if (state != WindowState.MIGRATE)
+					{ // draw the dropdowns
+						
+						if (cards.Count > 0) // if there are no cards, then there is nothing to pick.
+						{
+							BeamGUI.LayoutDropDown(this, new GUIContent(selectedBeamoId), GUILayout.ExpandHeight(true),
+							                       () =>
+							                       {
+								                       var popup = CreateInstance<ServicePickerWindow>();
+								                       popup.usamWindow = this;
+								                       return popup;
+							                       }
+							);
+						}
+
+						EditorGUILayout.Space(4, false);
+						BeamGUI.LayoutRealmDropdown(this, ActiveContext);
+						EditorGUILayout.Space(4, false);
+					}
+				},
+				drawTopBarGui: () =>
+				{
+					if (state != WindowState.MIGRATE)
+					{ // draw the left buttons
+						if (state == WindowState.SETTINGS)
+						{
+							clickedConfig = BeamGUI.HeaderButton("Services", BeamGUI.iconService);
+						}
+						else
+						{
+							clickedConfig = BeamGUI.HeaderButton("Config", EditorGUIUtility.FindTexture("Settings"));
+						}
+
+						clickedPublish =
+							BeamGUI.HeaderButton("Publish", EditorGUIUtility.FindTexture("Profiler.GlobalIllumination"));
+
+
+						clickedCreate = BeamGUI.ShowDisabled(state != WindowState.CREATE_SERVICE && state != WindowState.CREATE_STORAGE,
+						                                     () => BeamGUI.HeaderButton(
+							                                     "Create", EditorGUIUtility.FindTexture("Toolbar Plus")));
+					}
+
+				},
+				onClickedHelp: () =>
+				{
+					throw new NotImplementedException("sad no docs yet");
+				},
+				onClickedRefresh: () =>
+				{
+					activeMigration = null;
+					usam.Reload();
+				});
 			
-			{ // draw button strip
-				EditorGUILayout.BeginHorizontal(new GUIStyle(), GUILayout.ExpandWidth(true), GUILayout.MinHeight(35));
-
-
-				if (state != WindowState.MIGRATE)
-				{ // draw the left buttons
-					if (state == WindowState.SETTINGS)
-					{
-						clickedConfig = BeamGUI.HeaderButton("Services", iconService);
-					}
-					else
-					{
-						clickedConfig = BeamGUI.HeaderButton("Config", EditorGUIUtility.FindTexture("Settings"));
-					}
-
-					clickedPublish =
-						BeamGUI.HeaderButton("Publish", EditorGUIUtility.FindTexture("Profiler.GlobalIllumination"));
-
-
-					clickedCreate = BeamGUI.ShowDisabled(state != WindowState.CREATE_SERVICE && state != WindowState.CREATE_STORAGE,
-					                     () => BeamGUI.HeaderButton(
-						                     "Create", EditorGUIUtility.FindTexture("Toolbar Plus")));
-				}
-
-				EditorGUILayout.Space(1, true);
-
-				{ // draw the right buttons
-					clickedRefresh = BeamGUI.HeaderButton(null, iconRefresh,
-					                                      width: 30,
-					                                      padding: 4,
-					                                      iconPadding: -5,
-					                                      drawBorder: false);
-
-					clickedHelp = BeamGUI.HeaderButton(null, iconHelp,
-					                                   width: 30,
-					                                   padding: 4,
-					                                   iconPadding: 5,
-					                                   drawBorder: false);
-				}
-
-				EditorGUILayout.Space(12, false);
-
-
-				EditorGUILayout.EndHorizontal();
-			}
-
-			{ 
-				var rect = new Rect(0, GUILayoutUtility.GetLastRect().yMax, position.width, 30);
-				EditorGUILayout.BeginHorizontal(new GUIStyle()
-				                                {
-					                               
-				                                }, GUILayout.ExpandWidth(true),
-				                                GUILayout.Height(30));
-				EditorGUI.DrawRect(rect, new Color(0, 0, 0, .6f));
-				
-				EditorGUILayout.Space(1, true);
-
-				if (state != WindowState.MIGRATE)
-				{ // draw the dropdowns
-					
-					
-					if (cards.Count > 0) // if there are no cards, then there is nothing to pick.
-					{
-						BeamGUI.LayoutDropDown(this, new GUIContent(selectedBeamoId), GUILayout.ExpandHeight(true),
-						                       () =>
-						                       {
-							                       var popup = CreateInstance<ServicePickerWindow>();
-							                       popup.usamWindow = this;
-							                       return popup;
-						                       }
-						);
-					}
-
-					EditorGUILayout.Space(4, false);
-					BeamGUI.LayoutRealmDropdown(this, ActiveContext);
-					EditorGUILayout.Space(4, false);
-				}
-				
-				EditorGUILayout.EndHorizontal();
-			}
-
-			if (clickedRefresh)
-			{
-				activeMigration = null;
-				usam.Reload();
-			}
-
+			
 			if (clickedPublish)
 			{
 				CheckDocker("publish", () => UsamPublishWindow.Init(ActiveContext), out _);
@@ -280,10 +246,6 @@ namespace Beamable.Editor.Microservice.UI2
 				});
 			}
 
-			if (clickedHelp)
-			{
-				throw new NotImplementedException("No help yet"); // TODO: 
-			}
 			if (clickedCreate)
 			{
 				var menu = new GenericMenu();

@@ -168,7 +168,7 @@ namespace Beamable.Editor.Microservice.UI2
 
 		bool DrawStorage(BeamManifestStorageEntry storage, int index)
 		{
-			return DrawCard(storage.beamoId, index, UsamWindow2.iconStorage, () =>
+			return DrawCard(storage.beamoId, index, BeamGUI.iconStorage, () =>
 			{
 				var isRunning = false;
 				if (usamWindow.usam.TryGetStatus(storage.beamoId, out var status))
@@ -177,7 +177,7 @@ namespace Beamable.Editor.Microservice.UI2
 				}
 
 				GUI.enabled = status != null;
-				var clickedToggle = BeamGUI.HeaderButton(null, UsamWindow2.iconPlay,
+				var clickedToggle = BeamGUI.HeaderButton(null, BeamGUI.iconPlay,
 				                                         width: buttonWidth,
 				                                         padding: buttonPadding,
 				                                         yPadding: buttonYPadding,
@@ -188,19 +188,19 @@ namespace Beamable.Editor.Microservice.UI2
 					                                         : default);
 				GUI.enabled = true;
 
-				var clickedOpenApi = BeamGUI.HeaderButton(null, UsamWindow2.iconOpenMongoExpress,
+				var clickedOpenApi = BeamGUI.HeaderButton(null, BeamGUI.iconOpenMongoExpress,
 				                                          width: buttonWidth,
 				                                          padding: buttonPadding,
 				                                          yPadding: 3,
 				                                          tooltip: "Go to Mongo Express",
 				                                          drawBorder: false);
-				var clickedOpenProject = BeamGUI.HeaderButton(null, UsamWindow2.iconOpenProject,
+				var clickedOpenProject = BeamGUI.HeaderButton(null, BeamGUI.iconOpenProject,
 				                                              width: buttonWidth,
 				                                              padding: buttonPadding,
 				                                              yPadding: 3,
 				                                              tooltip: "Open project",
 				                                              drawBorder: false);
-				var clickedOptions = BeamGUI.HeaderButton(null, UsamWindow2.iconMoreOptions,
+				var clickedOptions = BeamGUI.HeaderButton(null, BeamGUI.iconMoreOptions,
 				                                          width: buttonWidth,
 				                                          padding: buttonPadding,
 				                                          yPadding: 3,
@@ -230,7 +230,7 @@ namespace Beamable.Editor.Microservice.UI2
 
 		bool DrawService(BeamManifestServiceEntry service, int index)
 		{
-			return DrawCard(service.beamoId, index, UsamWindow2.iconService, () =>
+			return DrawCard(service.beamoId, index, BeamGUI.iconService, () =>
 			{
 				var isRunning = false;
 				if (usamWindow.usam.TryGetStatus(service.beamoId, out var status))
@@ -239,7 +239,7 @@ namespace Beamable.Editor.Microservice.UI2
 				}
 
 				GUI.enabled = status != null;
-				var clickedToggle = BeamGUI.HeaderButton(null, UsamWindow2.iconPlay,
+				var clickedToggle = BeamGUI.HeaderButton(null, BeamGUI.iconPlay,
 				                                         width: buttonWidth,
 				                                         padding: buttonPadding,
 				                                         yPadding: buttonYPadding,
@@ -250,19 +250,19 @@ namespace Beamable.Editor.Microservice.UI2
 					                                         : default);
 				GUI.enabled = true;
 
-				var clickedOpenApi = BeamGUI.HeaderButton(null, UsamWindow2.iconOpenApi,
+				var clickedOpenApi = BeamGUI.HeaderButton(null, BeamGUI.iconOpenApi,
 				                                          width: buttonWidth,
 				                                          padding: buttonPadding,
 				                                          yPadding: 3,
 				                                          tooltip: "Go to Open API",
 				                                          drawBorder: false);
-				var clickedOpenProject = BeamGUI.HeaderButton(null, UsamWindow2.iconOpenProject,
+				var clickedOpenProject = BeamGUI.HeaderButton(null, BeamGUI.iconOpenProject,
 				                                              width: buttonWidth,
 				                                              padding: buttonPadding,
 				                                              yPadding: 3,
 				                                              tooltip: "Open project",
 				                                              drawBorder: false);
-				var clickedOptions = BeamGUI.HeaderButton(null, UsamWindow2.iconMoreOptions,
+				var clickedOptions = BeamGUI.HeaderButton(null, BeamGUI.iconMoreOptions,
 				                                          width: buttonWidth,
 				                                          padding: buttonPadding,
 				                                          yPadding: 3,
