@@ -18,7 +18,7 @@ namespace Beamable.Editor.BeamCli.UI
 		Overrides
 	}
 	
-	public partial class BeamCliWindow : BeamEditorWindow<BeamCliWindow>, IDelayedActionWindow
+	public partial class BeamCliWindow : BeamEditorWindow<BeamCliWindow>
 	{
 		private BeamWebCliCommandHistory _history;
 
