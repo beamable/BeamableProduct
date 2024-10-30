@@ -1,5 +1,6 @@
 using Beamable.Common.BeamCli.Contracts;
 using Beamable.Editor.ThirdParty.Splitter;
+using Beamable.Editor.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,6 +35,8 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 		public bool isTailing = true;
 		public string searchText;
 
+		public bool clearOnPlay = true;
+		
 		/// <summary>
 		/// this variable is used to process information across frames
 		/// </summary>
@@ -53,7 +56,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 		public bool initialized;
 
 		[NonSerialized]
-		private EditorWindow _window;
+		private IDelayedActionWindow _window;
 
 
 		public void Scan(int budget, out bool foundDiff)
@@ -159,7 +162,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 			}
 		}
 
-		public void Init(EditorWindow window)
+		public void Init(IDelayedActionWindow window)
 		{
 			_window = window;
 			if (!initialized)
@@ -313,7 +316,11 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 	public static class LogUtil
 	{
 		
-		public static void DrawLogWindow(this BeamCliWindow window, LogView logView, LogDataProvider dataList, Action onClear)
+		public static void DrawLogWindow(this IDelayedActionWindow window, 
+		                                 LogView logView,
+		                                 LogDataProvider dataList, 
+		                                 Action onClear,
+		                                 Func<LogView, bool> customClearGui=null)
 		{
 			
 			logView.BuildView(dataList); 
@@ -327,10 +334,19 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 			EditorGUILayout.BeginVertical();
 			EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 			{
-				var isClear = GUILayout.Button("clear", EditorStyles.toolbarButton, GUILayout.Width(50));
+				bool isClear = false;
+				if (customClearGui == null)
+				{
+					isClear = GUILayout.Button("clear", EditorStyles.toolbarButton, GUILayout.Width(50));
+
+				}
+				else
+				{
+					isClear = customClearGui.Invoke(logView);
+				}
 				if (isClear)
 				{
-					window.delayedActions.Add(() =>
+					window.AddDelayedAction(() =>
 					{
 						onClear();
 						logView.BuildView(dataList, true);
@@ -368,7 +384,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 
 							if (clearButtonClicked)
 							{
-								window.delayedActions.Add(() =>
+								window.AddDelayedAction(() =>
 								{
 									logView.searchText = null;
 									GUIUtility.hotControl = 0;
@@ -410,7 +426,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 
 			BeamCliWindow.DrawScrollableSelectableTextBox(text, ref logView.selectedScroll, 100);
 
-			var elementHeight = 40;
+			var elementHeight = (int)EditorGUIUtility.singleLineHeight * 2;
 			var maxScroll = logView.view.Count * elementHeight - scrollRect.height;
 			
 			if (logView.isTailing)
@@ -433,7 +449,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 					case CliLogLevel.Verbose:
 						if (!logView.verbose.enabled)
 						{
-							window.delayedActions.Add(() =>
+							window.AddDelayedAction(() =>
 							{
 								logView.view.Remove(log);
 							});
@@ -443,7 +459,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 					case CliLogLevel.Debug:
 						if (!logView.debug.enabled)
 						{
-							window.delayedActions.Add(() =>
+							window.AddDelayedAction(() =>
 							{
 								logView.view.Remove(log);
 							});
@@ -453,7 +469,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 					case CliLogLevel.Info:
 						if (!logView.info.enabled)
 						{
-							window.delayedActions.Add(() =>
+							window.AddDelayedAction(() =>
 							{
 								logView.view.Remove(log);
 							});
@@ -464,7 +480,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 					case CliLogLevel.Warning:
 						if (!logView.warning.enabled)
 						{
-							window.delayedActions.Add(() =>
+							window.AddDelayedAction(() =>
 							{
 								logView.view.Remove(log);
 							});
@@ -475,7 +491,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 					case CliLogLevel.Error:
 						if (!logView.error.enabled)
 						{
-							window.delayedActions.Add(() =>
+							window.AddDelayedAction(() =>
 							{
 								logView.view.Remove(log);
 							});
@@ -486,7 +502,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 					case CliLogLevel.Fatal:
 						if (!logView.fatal.enabled)
 						{
-							window.delayedActions.Add(() =>
+							window.AddDelayedAction(() =>
 							{
 								logView.view.Remove(log);
 							});
@@ -512,12 +528,15 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 				if (dataList.showLogLevels)
 				{
 					var iconWidth = 32;
-					var iconRect = new Rect(position.x, position.y, iconWidth, position.height);
+					var iconPadding = 4;
+					var iconRect = new Rect(position.x + iconPadding, position.y + iconPadding, iconWidth - iconPadding*2, position.height - iconPadding*2);
 					var labelRect = new Rect(position.x + iconWidth, position.y, position.width - iconWidth,
 					                         position.height);
 					var logLevel = log.GetLogLevel();
 					var hasTexture = TryGetTextureForLogLevel(logLevel, out var texture);
-					var logMessage = $"[{log.logLevel}] {log.message}";
+
+					var date = DateTimeOffset.FromUnixTimeMilliseconds(log.timestamp).ToLocalTime();
+					var logMessage = $"[{date:hh:mm:ss}] {log.message}";
 
 					EditorGUI.LabelField(labelRect, logMessage, labelStyle);
 
@@ -538,7 +557,7 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 				if (wasPressed)
 				{
 					var currIndex = index;
-					window.delayedActions.Add(() =>
+					window.AddDelayedAction(() =>
 					{
 						logView.selectedIndex = currIndex;
 						GUIUtility.hotControl = 0;
@@ -565,19 +584,25 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 			EditorGUILayout.EndVertical();
 		}
 
-		static void DrawLogLevelToggle(CliLogLevel logLevel, LogLevelView view, BeamCliWindow window, LogView serverLogs)
+		static void DrawLogLevelToggle(CliLogLevel logLevel, LogLevelView view, IDelayedActionWindow window, LogView serverLogs)
 		{
 			
 			TryGetTextureForLogLevel(logLevel, out var verboseTexture);
 
 			var count = view.lastCount == 0 ? view.count : view.lastCount;
 			var countStr = count > 999 ? "999+" : count.ToString();
-			var verboseContent = new GUIContent(countStr, verboseTexture, $"{logLevel} logs");
-			var nextEnabled = GUILayout.Toggle(view.enabled, verboseContent, 
-			                                        EditorStyles.toolbarButton, GUILayout.Width(52), GUILayout.ExpandWidth(false));
+			var nextEnabled = GUILayout.Toggle(view.enabled, countStr, 
+			                                        new GUIStyle(EditorStyles.toolbarButton)
+			                                        {
+				                                        padding = new RectOffset(24, 2, 0, 0),
+				                                        alignment = TextAnchor.MiddleLeft
+			                                        },  GUILayout.MinWidth(35), GUILayout.ExpandWidth(false));
+			var lastRect = GUILayoutUtility.GetLastRect();
+			var iconRect = new Rect(lastRect.x + 4, lastRect.y + 3, 16, lastRect.height - 6);
+			GUI.DrawTexture(iconRect, verboseTexture, ScaleMode.ScaleToFit);
 			if (nextEnabled != view.enabled)
 			{
-				window.delayedActions.Add(() =>
+				window.AddDelayedAction(() =>
 				{
 					view.enabled = nextEnabled;
 					serverLogs.RebuildView();

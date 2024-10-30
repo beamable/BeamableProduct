@@ -22,13 +22,22 @@ namespace Beamable.Editor.BeamCli.Commands
 	{
 		private readonly IBeamableRequester _requester;
 		private IBeamCommandFactory _factory;
-		public BeamArgs defaultBeamArgs;
+
+		public Action<BeamArgs> argModifier = null;
+		protected BeamArgs defaultBeamArgs
+		{
+			get
+			{
+				var args = ConstructDefaultArgs();
+				argModifier?.Invoke(args);
+				return args;
+			}
+		}
 
 		public BeamCommands(IBeamableRequester requester, IBeamCommandFactory factory)
 		{
 			_requester = requester;
 			_factory = factory;
-			defaultBeamArgs = ConstructDefaultArgs();
 		}
 
 		public IBeamCommand CreateCustom(string args)
@@ -69,11 +78,6 @@ namespace Beamable.Editor.BeamCli.Commands
 			return beamArgs;
 		}
 
-		public BeamCommands SetBeamArgs(BeamArgs args)
-		{
-			defaultBeamArgs = args;
-			return this;
-		}
 
 		public Promise OnDispose()
 		{
@@ -492,6 +496,7 @@ namespace Beamable.Editor.BeamCli
 						{
 							CliLogger.Log("done", _command );
 						}
+						
 					}
 					_dispatcher.Run("beam-cli-defer", Defer());
 				}

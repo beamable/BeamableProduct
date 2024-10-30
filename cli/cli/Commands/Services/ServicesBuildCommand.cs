@@ -378,7 +378,8 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		});
 
 		var tagString = string.Join(" ", tags.Select(tag => $"-t {id.ToLowerInvariant()}:{tag}"));
-		var argString = $"buildx build {fullContextPath} -f {http.RelativeDockerfilePath} " +
+		var fullDockerfilePath = Path.GetFullPath(http.RelativeDockerfilePath);
+		var argString = $"buildx build {fullContextPath} -f {fullDockerfilePath} " +
 		                $"{tagString} " +
 		                $"--progress rawjson " +
 		                $"--build-arg BEAM_SUPPORT_SRC_PATH={Path.GetRelativePath(config.BaseDirectory, report.outputDirSupport)} " +
@@ -481,9 +482,18 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 				//  writing image sha256:d3150be3b218a7f0327310ad97e06f7a1cd708548d01707371676262781b48f3
 				// we can use this to extract the image id without a second docker call!
 				const string prefix = "writing image ";
+				
+				// I updated docker one day (Oct 20th 2024) and this log line had changed and all my builds broke
+				//  and I lamented into the void, but no one answered, because Docker is
+				//  an absent god...
+				const string newPrefix = "exporting manifest list ";
 				if (status.id?.StartsWith(prefix) ?? false)
 				{
 					imageId = status.id.Substring(prefix.Length + 1);
+					Log.Verbose($"identified image id for service=[{id}] from line=[{status.id}] image=[{imageId}]");
+				} else if (status.id?.StartsWith(newPrefix) ?? false)
+				{
+					imageId = status.id.Substring(newPrefix.Length + 1);
 					Log.Verbose($"identified image id for service=[{id}] from line=[{status.id}] image=[{imageId}]");
 				}
 

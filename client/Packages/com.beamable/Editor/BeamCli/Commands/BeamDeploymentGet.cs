@@ -6,11 +6,11 @@ namespace Beamable.Editor.BeamCli.Commands
 
 	public class DeploymentGetArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>include archived (removed) services</summary>
+		/// <summary>Include archived (removed) services</summary>
 		public bool showArchived;
-		/// <summary>a file path to save the plan</summary>
+		/// <summary>A file path to save the plan</summary>
 		public string toFile;
-		/// <summary>find only the single manifest that matches the given id</summary>
+		/// <summary>Find only the single manifest that matches the given id</summary>
 		public string id;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()

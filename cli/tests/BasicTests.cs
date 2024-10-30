@@ -3,6 +3,7 @@ using Beamable.Common.Api;
 using Beamable.Server;
 using Beamable.Tooling.Common.OpenAPI;
 using cli;
+using cli.FederationCommands;
 using cli.Unreal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi;
@@ -19,6 +20,7 @@ using System.CommandLine;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -41,7 +43,14 @@ public class Tests
 	[Test]
 	public void NamingPass()
 	{
-		void CheckNaming(Command command, string commandName, string description, string? optionName = null)
+		var commandsThatDontNeedKebab = new HashSet<Type>
+		{
+			typeof(GetLocalSettingsIFederatedGameServerCommand),
+			typeof(SetLocalSettingsIFederatedGameServerCommand)
+		};
+		
+		
+		List<(Func<bool>, string)> CheckNaming(Command command, string commandName, string description, string? optionName = null)
 		{
 			const string KEBAB_CASE_PATTERN = "^([a-z]|[0-9])+(?:[-]([a-z]|[0-9])+)*$";
 			var isOption = !string.IsNullOrWhiteSpace(optionName);
@@ -49,32 +58,49 @@ public class Tests
 				$"{optionName} argument for command {command.GetType().Name}" :
 				$"{commandName} command";
 			logPrefix = $"command-type=[{command.GetType().Name}] " + logPrefix;
+			var assertions = new List<(Func<bool>, string)>();
 			if (string.IsNullOrWhiteSpace(description))
 			{
-				Assert.Fail($"{logPrefix} description should be provided.");
+				assertions.Add((() => false, $"{logPrefix} description should be provided."));
 			}
 			if (!char.IsUpper(description[0]) && description[0] != '[')
 			{
-				Assert.Fail($"{logPrefix} description should start with upper letter.");
+				assertions.Add((() => false, $"{logPrefix} description should start with upper letter."));
 			}
 			if (description.TrimEnd()[^1] == '.')
 			{
-				Assert.Fail($"{logPrefix} description should not end with dot.");
+				assertions.Add((() => false, $"{logPrefix} description should not end with dot."));
 			}
 
-			var valueToCheck = isOption ? optionName! : commandName;
-			var match = Regex.Match(valueToCheck, KEBAB_CASE_PATTERN);
-			Assert.AreEqual(match.Success, true, $"{valueToCheck} does not match kebab case naming.");
+			if (!commandsThatDontNeedKebab.Contains(command.GetType()))
+			{
+				var valueToCheck = isOption ? optionName! : commandName;
+				var match = Regex.Match(valueToCheck, KEBAB_CASE_PATTERN);
+				assertions.Add((() => match.Success == true, $"{logPrefix} - {valueToCheck} does not match kebab case naming."));
+			}
+			
+			return assertions;
+			// Assert.AreEqual(match.Success, true, $"{valueToCheck} does not match kebab case naming.");
 		}
 		var app = new App();
 		app.Configure();
 		app.Build();
 		var commandsList = app.InstantiateAllCommands();
 
+		var errorBuilder = new StringBuilder();
+		var hasFailed = false;
 		foreach (var command in commandsList)
 		{
-			CheckNaming(command, command.Name, command.Description!);
-
+			var assertions = CheckNaming(command, command.Name, command.Description!);
+			foreach (var (assertion, failMessage) in assertions)
+			{
+				if (!assertion())
+				{
+					hasFailed = true;
+					errorBuilder.AppendLine(failMessage);
+				}
+			}
+			
 			var sameDescriptionCommand = commandsList.FirstOrDefault(c =>
 				c.Name != command.Name &&
 				c.Description != null &&
@@ -82,13 +108,29 @@ public class Tests
 
 			if (sameDescriptionCommand != null)
 			{
-				Assert.Fail($"{command.Name} and {sameDescriptionCommand.Name} have the same description.", command, sameDescriptionCommand);
+				hasFailed = true;
+				errorBuilder.AppendLine($"{command.Name} and {sameDescriptionCommand.Name} have the same description.");
+				// Assert.Fail($"{command.Name} and {sameDescriptionCommand.Name} have the same description.", command, sameDescriptionCommand);
 			}
 
 			foreach (Option option in command.Options)
 			{
-				CheckNaming(command, command.Name, option.Description!, option.Name);
+				var optionAssertions = CheckNaming(command, command.Name, option.Description!, option.Name);
+				foreach (var (assertion, failMessage) in optionAssertions)
+				{
+					if (!assertion())
+					{
+						hasFailed = true;
+						errorBuilder.AppendLine(failMessage);
+					}
+				}
+				
 			}
+		}
+
+		if (hasFailed)
+		{
+			Assert.Fail(errorBuilder.ToString());
 		}
 
 

@@ -14,6 +14,7 @@ using System.CommandLine;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.InteropServices.ComTypes;
 using System.Runtime.Loader;
 
 namespace cli.Dotnet;
@@ -23,9 +24,23 @@ public class GenerateClientFileCommandArgs : CommandArgs
 	public string microserviceAssemblyPath;
 	public string outputDirectory;
 	public bool outputToLinkedProjects = true;
+	public List<string> beamoIds;
+	public List<string> withTags;
+	public List<string> excludeTags;
+
+	public List<string> existingFederationIds;
+	public List<string> existingFederationTypeNames;
 }
 
-public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArgs>, IEmptyResult, ISkipManifest
+public class GenerateClientFileEvent
+{
+	public string beamoId;
+	public string filePath;
+}
+
+public class GenerateClientFileCommand 
+	: AppCommand<GenerateClientFileCommandArgs>
+		, IResultSteam<DefaultStreamResultChannel, GenerateClientFileEvent>
 {
 	public GenerateClientFileCommand() : base("generate-client", "Generate a C# client file based on a built C# microservice dll directory")
 	{
@@ -33,13 +48,35 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 
 	public override void Configure()
 	{
+		ProjectCommand.AddIdsOption(this, (args, i) => args.beamoIds = i);
+		ProjectCommand.AddServiceTagsOption(this, (args, i) => args.withTags = i, (args, i) => args.excludeTags = i);
 		AddArgument(new Argument<string>("source", "The .dll filepath for the built microservice"), (arg, i) => arg.microserviceAssemblyPath = i);
 		AddOption(new Option<string>("--output-dir", "Directory to write the output client at"), (arg, i) => arg.outputDirectory = i);
 		AddOption(new Option<bool>("--output-links", () => true, "When true, generate the source client files to all associated projects"), (arg, i) => arg.outputToLinkedProjects = i);
+
+		var existingFedOption = new Option<List<string>>("--existing-fed-ids", "A set of existing federation ids")
+		{
+			Arity = ArgumentArity.ZeroOrMore, AllowMultipleArgumentsPerToken = true
+		};
+		AddOption(existingFedOption, (args, i) => { });
+		AddOption(
+			new Option<List<string>>("--existing-fed-type-names", "A set of existing class names for federations")
+			{
+				AllowMultipleArgumentsPerToken = true,
+				Arity = ArgumentArity.ZeroOrMore
+			},
+			(args, opts, i) =>
+			{
+				var ids = opts.ParseResult.GetValueForOption(existingFedOption);
+				args.existingFederationIds = ids;
+				args.existingFederationTypeNames = i;
+			});
 	}
 
 	public override async Task Handle(GenerateClientFileCommandArgs args)
 	{
+		ProjectCommand.FinalizeServicesArg(args, args.withTags, args.excludeTags, false, ref args.beamoIds, true);
+		
 		#region load client dll into current domain
 
 		var sw = new Stopwatch();
@@ -95,16 +132,33 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 		
 		foreach (var type in allMsTypes)
 		{
+			Log.Verbose($"Generating client for type {type.Name} links=[{args.outputToLinkedProjects}]");
 			var attribute = type.GetCustomAttribute<MicroserviceAttribute>()!;
 			var descriptor = new MicroserviceDescriptor { Name = attribute.MicroserviceName, AttributePath = attribute.SourcePath, Type = type };
 
+			if (!args.beamoIds.Contains(descriptor.Name))
+			{
+				Log.Debug($"Skipping client for name=[{descriptor.Name}] because it was not given as a project option.");
+				continue;
+			}
+			
 			if (args.outputToLinkedProjects)
 			{
 				// UNITY
 
+				Log.Verbose($"Linked project count {args.ProjectService.GetLinkedUnityProjects().Count}");
 				if (args.ProjectService.GetLinkedUnityProjects().Count > 0)
 				{
-					var generator = new ClientCodeGenerator(descriptor);
+					var existingFeds = new List<ExistingFederation>();
+					for (var i = 0; i < args.existingFederationIds.Count; i++)
+					{
+						existingFeds.Add(new ExistingFederation
+						{
+							federationId = args.existingFederationIds[i],
+							federationIdTypeName = args.existingFederationTypeNames[i]
+						});
+					}
+					var generator = new ClientCodeGenerator(descriptor, existingFeds);
 					if (!string.IsNullOrEmpty(args.outputDirectory))
 					{
 						Directory.CreateDirectory(args.outputDirectory);
@@ -114,17 +168,17 @@ public class GenerateClientFileCommand : AppCommand<GenerateClientFileCommandArg
 
 					foreach (var unityProjectPath in args.ProjectService.GetLinkedUnityProjects())
 					{
-						var unityAssetPath = Path.Combine(args.ConfigService.BaseDirectory, unityProjectPath, "Assets");
-
+						var unityPathRoot = Path.Combine(args.ConfigService.BaseDirectory, unityProjectPath);
+						var unityAssetPath = Path.Combine(unityPathRoot, "Assets");
 						if (!Directory.Exists(unityAssetPath))
 						{
-							BeamableLogger.LogError($"Could not generate [{descriptor.Name}] client linked unity project because directory doesn't exist [{unityAssetPath}]");
+							Log.Error($"Could not generate [{descriptor.Name}] client linked unity project because directory doesn't exist [{unityAssetPath}]");
 							continue;
 						}
 
 						GeneratedFileDescriptor fileDescriptor = new GeneratedFileDescriptor() { Content = generator.GetCSharpCodeString(), FileName = $"{descriptor.Name}Client.cs" };
 
-						Task generationTask = GenerateFile(new List<GeneratedFileDescriptor>() { fileDescriptor }, args, unityAssetPath);
+						Task generationTask = GenerateFile(descriptor, fileDescriptor, args, unityPathRoot);
 						if (generationTask != null)
 						{
 							await generationTask;
@@ -562,38 +616,59 @@ IMPLEMENT_MODULE(F{unrealProjectData.BlueprintNodesProjectName}Module, {unrealPr
 		
 		Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - done generating");
 	}
-
-
-	Task GenerateFile(List<GeneratedFileDescriptor> descriptors, GenerateClientFileCommandArgs args, string projectPath)
+	
+	Task GenerateFile(MicroserviceDescriptor service, GeneratedFileDescriptor descriptor, GenerateClientFileCommandArgs args, string projectPath)
 	{
-		var outputDirectory = Path.Combine(projectPath, "Beamable", "Autogenerated", "Microservices");
+		/*
+		 * By rule of thumb:
+		 *  if the service was inside the /BeamableServices folder, then generate it in the standard /Assets/Beamable/Autogen folder
+		 *  but if the service was inside the /Packages folder, then generate it in a custom folder, /Packages/XYZ/Beamable/Autogenerated
+		 *  and if the service is in neither, then DO NOT write the file out.
+		 *   because in this case, it is likely a read-only file system anyway. 
+		 */
+		
+		// TODO: 
+		var fullSourcePath = Path.GetFullPath(service.SourcePath);
+		var fullProjectPath = Path.GetFullPath(projectPath);
+		
+		var isChildOfUnityProject = fullSourcePath.StartsWith(fullProjectPath);
+
+		if (isChildOfUnityProject)
+		{
+			const int trailingDirectorySeparatorCount = 1;
+			var relativeSourcePath = fullSourcePath.Substring(fullProjectPath.Length + trailingDirectorySeparatorCount );
+			var isPackage = relativeSourcePath.StartsWith("Packages");
+			var isPackageCache = relativeSourcePath.StartsWith("Library");
+		}
+		
+		var outputDirectory = Path.Combine(projectPath, "Assets", "Beamable", "Autogenerated", "Microservices");
 		Directory.CreateDirectory(outputDirectory);
 
-		int identicalFileCounter = 0;
+		Log.Verbose($"Writing File to dir=[{outputDirectory}]");
 
-		for (int i = 0; i < descriptors.Count; i++)
+		var outputPath = Path.Combine(outputDirectory, $"{descriptor.FileName}");
+		Log.Verbose($"Writing File to path=[{outputPath}]");
+
+		if (File.Exists(outputPath))
 		{
-			var outputPath = Path.Combine(outputDirectory, $"{descriptors[i].FileName}");
-
-			if (File.Exists(outputPath))
+			var existingContent = File.ReadAllText(outputPath);
+			if (string.Compare(existingContent, descriptor.Content, CultureInfo.InvariantCulture,
+				    CompareOptions.IgnoreSymbols) == 0)
 			{
-				var existingContent = File.ReadAllText(outputPath);
-				if (string.Compare(existingContent, descriptors[i].Content, CultureInfo.InvariantCulture,
-					    CompareOptions.IgnoreSymbols) == 0)
-				{
-					identicalFileCounter++;
-					continue;
-				}
+				Log.Verbose("Not writing, because content is the same");
+				return Task.CompletedTask;
 			}
-
-			File.WriteAllText(outputPath, descriptors[i].Content);
 		}
 
+		File.WriteAllText(outputPath, descriptor.Content);
+		this.SendResults(new GenerateClientFileEvent
+		{
+			beamoId = service.Name,
+			filePath = outputPath
+		});
+		
+
 		// don't need to write anything, because the files are identical.
-
-		if (identicalFileCounter == descriptors.Count)
-			return Task.CompletedTask;
-
-		return null;
+		return Task.CompletedTask;
 	}
 }

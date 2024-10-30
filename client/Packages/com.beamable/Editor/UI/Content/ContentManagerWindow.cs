@@ -7,6 +7,7 @@ using Beamable.Editor.Login.UI;
 using Beamable.Editor.NoUser;
 using Beamable.Editor.UI;
 using Beamable.Editor.UI.Components;
+using Beamable.Editor.Util;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -77,6 +78,9 @@ namespace Beamable.Editor.Content
 			ContentIO.OnManifestChanged += OnManifestChanged;
 
 			minSize = new Vector2(600, 300);
+
+			BeamGUI.LoadAllIcons();
+			titleContent = new GUIContent("Content", BeamGUI.iconBeamableSmall);
 
 			Refresh();
 		}

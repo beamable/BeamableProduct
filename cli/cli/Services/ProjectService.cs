@@ -545,8 +545,7 @@ public class ProjectService
 		var dockerfilePath = Path.Combine(args.ConfigService.BeamableRelativeToExecutionRelative(service.DockerBuildContextPath),
 			service.RelativeDockerfilePath);
 		var projectPath = Path.GetDirectoryName(dockerfilePath);
-
-		var commandStr = $"build {projectPath} -p:ErrorLog=\"{errorPath}%2Cversion=2\"";
+		var commandStr = $"build {projectPath} -v n -p:ErrorLog=\"{errorPath}%2Cversion=2\"";
 		Log.Debug($"dotnet command=[{args.AppContext.DotnetPath} {commandStr}]");
 
 		if (buildFlags.HasFlag(BuildFlags.DisableClientCodeGen))
@@ -562,12 +561,21 @@ public class ProjectService
 			{
 				Log.Information(line);
 			}))
+			.WithStandardErrorPipe(PipeTarget.ToDelegate(line =>
+			{
+				Log.Error(line);
+			}))
 			.WithValidation(CommandResultValidation.None)
 			.ExecuteAsync(cts.Token);
 
 
-		await command;
+		var res = await command;
 
+		var exitCode = res.ExitCode;
+		if (exitCode != 0)
+		{
+			Log.Error($"Failed to build command=[{args.AppContext.DotnetPath} {commandStr}]");
+		}
 
 		var report = ReadErrorReport(errorPath);
 		onReport?.Invoke(report);
@@ -583,8 +591,7 @@ public class ProjectService
 			foreach (var result in log.Results())
 			{
 				if (result.Level is FailureLevel.Note or FailureLevel.None or FailureLevel.Warning) continue;
-
-				var location = result.Locations.FirstOrDefault();
+				var location = result.Locations?.FirstOrDefault();
 
 				outputs.Add(new ProjectErrorResult
 				{

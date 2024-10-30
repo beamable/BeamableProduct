@@ -1,3 +1,4 @@
+using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.Modules.EditorConfig;
 using System;
 using System.Collections.Generic;
@@ -26,7 +27,7 @@ namespace Beamable.Server.Editor.Usam
 		private static readonly string PROJECT_NAME = $"{PROJECT_NAME_PREFIX}{PROJECT_NAME_TAG}.csproj";
 		private static readonly string TEMPLATE_OUTPUT_DIR =
 			Path.Combine("Library", "BeamableEditor", "GeneratedProjects", KEY_FOLDER);
-		private static readonly string SOURCE_TEMPLATE = $"<Compile Include=\"{KEY_INCLUDE}\" />";
+		private static readonly string SOURCE_TEMPLATE = $"<Compile Include=\"{KEY_INCLUDE}\" Condition=\"Exists('{KEY_INCLUDE}')\" />";
 		private static readonly string PROJECT_TEMPLATE = $"<ProjectReference Include=\"{KEY_INCLUDE}\" />";
 		private static readonly string DLL_TEMPLATE = $"<Reference Include=\"{KEY_INCLUDE}\">\n\t\t\t<HintPath>{KEY_HINT}</HintPath>\n\t\t</Reference>";
 		private static readonly string TEMPLATE = $@"
@@ -43,9 +44,17 @@ namespace Beamable.Server.Editor.Usam
 		<GenerateClientCode>false</GenerateClientCode>
     </PropertyGroup>
 
+  <PropertyGroup Label=""Beamable Version"" Condition=""$(DOTNET_RUNNING_IN_CONTAINER)!=true"">
+    <DotNetConfigPath Condition=""'$(DotNetConfigPath)' == ''"">$([MSBuild]::GetDirectoryNameOfFileAbove(""$(MSBuildProjectDirectory)/.."", "".config/dotnet-tools.json""))</DotNetConfigPath>
+    <DotNetConfig Condition=""'$(DotNetConfig)' == ''"">$([System.IO.File]::ReadAllText(""$(DotNetConfigPath)/.config/dotnet-tools.json""))</DotNetConfig>
+    <!-- Extracts the version number from the first tool defined in 'dotnet-tools.json' that starts with ""beamable"". -->
+    <BeamableVersion Condition=""'$(BeamableVersion)' == ''"">$([System.Text.RegularExpressions.Regex]::Match(""$(DotNetConfig)"", ""beamable.*?\""([0-9]+\.[0-9]+\.[0-9]+.*?)\"","", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace).Groups[1].Value)</BeamableVersion>
+    <!-- When running from inside docker, this gets injected via the Dockerfile at build-time. -->
+  </PropertyGroup>
+
     <!-- Project settings -->
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
         <ImplicitlyExpandNETStandardFacades>false</ImplicitlyExpandNETStandardFacades>
         <ImplicitlyExpandDesignTimeFacades>false</ImplicitlyExpandDesignTimeFacades>
         <EnableDefaultItems>false</EnableDefaultItems>
@@ -53,9 +62,9 @@ namespace Beamable.Server.Editor.Usam
 
     <!-- Nuget references -->
     <ItemGroup>
-        <PackageReference Include=""Beamable.UnityEngine"" Version=""{KEY_BEAMABLE_VERSION}""/>
-        <PackageReference Include=""Beamable.Common"" Version=""{KEY_BEAMABLE_VERSION}""/>
-        <PackageReference Include=""Beamable.Microservice.Runtime"" Version=""{KEY_BEAMABLE_VERSION}""/>
+        <PackageReference Include=""Beamable.UnityEngine"" Version=""$(BeamableVersion)""/>
+        <PackageReference Include=""Beamable.Common"" Version=""$(BeamableVersion)""/>
+        <PackageReference Include=""Beamable.Microservice.Runtime"" Version=""$(BeamableVersion)""/>
     </ItemGroup>
 
     <!-- Source files -->
@@ -76,11 +85,11 @@ namespace Beamable.Server.Editor.Usam
 </Project>
 ";
 
-
 		/// <summary>
 		/// AssemblyUtil.Reload(); must be called before this
 		/// </summary>
-		public static void GenerateAllReferencedAssemblies()
+		/// <param name="beamCommands"></param>
+		public static void GenerateAllReferencedAssemblies(BeamCommands cli)
 		{
 			foreach (var assembly in AssemblyUtil.ReferencedAssemblies)
 			{
@@ -96,10 +105,12 @@ namespace Beamable.Server.Editor.Usam
 						continue;
 					}
 				}
-
+				
 				Debug.Log($"Writing generated project for assembly definition {assembly.name} in the file: {fileName}");
 				Directory.CreateDirectory(path);
 				File.WriteAllText(fileName, content);
+				
+				var _ = cli.UnityRestore(new UnityRestoreArgs {csproj = fileName}).Run();
 			}
 		}
 		
@@ -182,18 +193,18 @@ namespace Beamable.Server.Editor.Usam
 		{
 			var invalidPrefixes = new string[] { "Unity.", "UnityEditor.", "UnityEngine." };
 			var invalidReferences = new string[] {"netstandard"};
-			var mandatoryReferences = new string[] {"Unity.Beamable.Customer.Common"};
 
-			if (mandatoryReferences.Contains(referenceName))
+			if (referenceName.StartsWith("Unity.Beamable.Customer."))
 			{
+				// special reference; but other "Unity.Beamable."
+				//  dlls are not valid; and should be referenced via nuget
 				return true;
 			}
-
+			
 			if (invalidReferences.Contains(referenceName))
 			{
 				return false;
 			}
-			
 			foreach (var prefix in invalidPrefixes)
 			{
 				if (referenceName.StartsWith(prefix))
@@ -214,6 +225,10 @@ namespace Beamable.Server.Editor.Usam
 
 		static string GenerateCompileSourceEntry(string source, string csProjDir)
 		{
+			if (!csProjDir.EndsWith(Path.DirectorySeparatorChar))
+			{
+				csProjDir += Path.DirectorySeparatorChar;
+			}
 			source = PackageUtil.GetRelativePath(csProjDir, source);
 			return SOURCE_TEMPLATE.Replace(KEY_INCLUDE, source);
 		}

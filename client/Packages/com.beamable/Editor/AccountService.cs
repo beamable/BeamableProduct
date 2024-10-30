@@ -219,6 +219,7 @@ namespace Beamable.Editor
 				Requester.Pid = null;
 			}
 			_saveHandle?.Save();
+			var __ = Cli.Command.Logout().Run();
 			var _ = InvokeUserChangeCallbacks();
 		}
 

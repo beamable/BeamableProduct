@@ -109,7 +109,7 @@ public partial class BeamoLocalSystem
 		}
 		
 		
-		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_configService.BaseDirectory, _ctx.DotnetPath, _beamo, _configService, useCache: useManifestCache, fetchServerManifest);
+		BeamoManifest = await ProjectContextUtil.GenerateLocalManifest(_ctx.DotnetPath, _beamo, _configService, useCache: useManifestCache, fetchServerManifest);
 	}
 	
 	private static Uri GetLocalDockerEndpoint(ConfigService config)
@@ -558,8 +558,6 @@ public class BeamoServiceDefinition
 	/// </summary>
 	public MicroserviceSourceGenConfig SourceGenConfig 
 		// create a default instance so that downstream callers don't need to check for isLocal over and over again. 
-		//  although this feels a bit wrong, because perhaps we should populate it for remote services? 
-		//  Technically, it should exist in the remote manifest we get. 
 		= new MicroserviceSourceGenConfig();
 
 

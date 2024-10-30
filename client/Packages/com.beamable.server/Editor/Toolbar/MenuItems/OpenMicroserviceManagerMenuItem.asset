@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: OpenMicroserviceManagerMenuItem
   m_EditorClassIdentifier: 
   Order: 10
-  Text: Open Microservice Manager
+  Text: Open Beam Services

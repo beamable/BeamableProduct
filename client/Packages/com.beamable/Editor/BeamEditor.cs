@@ -113,6 +113,8 @@ namespace Beamable
 			DependencyBuilder.AddGlobalStorage<AccountService, EditorStorageLayer>();
 			DependencyBuilder.AddSingleton<IAccountService>(p => p.GetService<AccountService>());
 			
+			DependencyBuilder.AddGlobalStorage<LibraryService, SessionStorageLayer>();
+
 			DependencyBuilder.AddSingleton<BeamCommands>();
 			
 			DependencyBuilder.AddGlobalStorage<BeamWebCliCommandHistory, SessionStorageLayer>();
@@ -160,6 +162,7 @@ namespace Beamable
 			{
 				BeamEditorContext.StopAll().Wait();
 			};
+			
 		}
 
 		private static int initializeAttemptCount = 0;
@@ -437,7 +440,8 @@ namespace Beamable
 		public IPlatformRequester Requester => ServiceScope.GetService<PlatformRequester>();
 		public BeamableDispatcher Dispatcher => ServiceScope.GetService<BeamableDispatcher>();
 		public IAccountService EditorAccountService => ServiceScope.GetService<IAccountService>();
-		public BeamCommands Cli => ServiceScope.GetService<BeamCli>().Command;
+		public BeamCommands Cli => BeamCli.Command;
+		public BeamCli BeamCli => ServiceScope.GetService<BeamCli>();
 		public CustomerView CurrentCustomer => EditorAccount?.CustomerView;
 		public RealmView CurrentRealm => EditorAccount?.CurrentRealm?.GetOrElse(() => null);
 		public RealmView ProductionRealm => EditorAccount?.CurrentGame?.GetOrElse(() => null);
@@ -569,6 +573,7 @@ namespace Beamable
 			await token.SaveAsCustomerScoped();
 			Requester.Token = token;
 
+			await BeamCli.Init();
 			OnUserChange?.Invoke(CurrentUser);
 		}
 
@@ -792,7 +797,9 @@ namespace Beamable
 			await RefreshRealmSecret();
 
 			EditorAccountService.WriteUnsetConfigValues();
+			await BeamCli.Init();
 			OnRealmChange?.Invoke(CurrentRealm);
+			
 		}
 
 

@@ -46,7 +46,6 @@ public static class ProjectContextUtil
 	}
 	
 	public static async Task<BeamoLocalManifest> GenerateLocalManifest(
-		string rootFolder,
 		string dotnetPath, 
 		BeamoService beamo,
 		ConfigService configService,
@@ -77,11 +76,10 @@ public static class ProjectContextUtil
 			remote = await _existingManifest;
 		}
 
-		// var remoteTask = beamo.GetCurrentManifest();
-		// find all local project files...
+		configService.GetProjectSearchPaths(out var rootFolder, out var searchPaths);
 		var sw = new Stopwatch();
 		sw.Start();
-		var allProjects = FindCsharpProjects(rootFolder).ToArray();
+		var allProjects = FindCsharpProjects(rootFolder, searchPaths).ToArray();
 		sw.Stop();
 		Log.Verbose($"Gathering csprojs took {sw.Elapsed.TotalMilliseconds} ");
 		sw.Restart();
@@ -330,17 +328,19 @@ public static class ProjectContextUtil
 		_pathToMetadata[path] = metadata;
 	}
 	
-	public static CsharpProjectMetadata[] FindCsharpProjects(string rootFolder)
+	public static CsharpProjectMetadata[] FindCsharpProjects(string rootFolder, List<string> searchPaths)
 	{
 		var sw = new Stopwatch();
 		sw.Start();
-		
-		if (string.IsNullOrEmpty(rootFolder))
+
+		var pathList = new List<string>();
+		foreach (var searchPath in searchPaths)
 		{
-			rootFolder = ".";
+			var somePaths = Directory.GetFiles(searchPath, "*.csproj", SearchOption.AllDirectories);
+			pathList.AddRange(somePaths);
 		}
+		var paths = pathList.ToArray();
 		
-		var paths = Directory.GetFiles(rootFolder, "*.csproj", SearchOption.AllDirectories);
 		var projects = new CsharpProjectMetadata[paths.Length];
 
 		for (var i = 0 ; i < paths.Length; i ++)
@@ -392,12 +392,22 @@ public static class ProjectContextUtil
 			var buildProject = buildEngine.LoadProject(Path.GetFullPath(path));
 
 			// Log.Verbose($"loaded csproj - {sw.ElapsedMilliseconds}");
+
+			string NullifyIfEmpty(string str)
+			{
+				if (string.IsNullOrEmpty(str)) return null;
+				return str;
+			}
+			
 			projects[i].properties = new MsBuildProjectProperties()
 			{
 				BeamId = buildProject.GetPropertyValue(CliConstants.PROP_BEAMO_ID),
 				Enabled = buildProject.GetPropertyValue(CliConstants.PROP_BEAM_ENABLED),
 				ProjectType = buildProject.GetPropertyValue(CliConstants.PROP_BEAM_PROJECT_TYPE),
-				ServiceGroupString = buildProject.GetPropertyValue(CliConstants.PROP_BEAM_SERVICE_GROUP)
+				ServiceGroupString = buildProject.GetPropertyValue(CliConstants.PROP_BEAM_SERVICE_GROUP),
+				StorageDataVolumeName = NullifyIfEmpty(buildProject.GetPropertyValue(CliConstants.PROP_BEAM_STORAGE_DATA_VOLUME_NAME)),
+				StorageFilesVolumeName = NullifyIfEmpty(buildProject.GetPropertyValue(CliConstants.PROP_BEAM_STORAGE_FILES_VOLUME_NAME)),
+				MongoBaseImage = NullifyIfEmpty(buildProject.GetPropertyValue(CliConstants.PROP_BEAM_STORAGE_MONGO_BASE_IMAGE)),
 			};
 
 			{ // load up the settings
@@ -470,10 +480,21 @@ public static class ProjectContextUtil
 		var protocol = new EmbeddedMongoDbLocalProtocol();
 		
 		// TODO: we could extract these as options in the Csproj file.
-		protocol.BaseImage = MongoImage;
+		protocol.BaseImage = project.properties.MongoBaseImage ?? MongoImage;
 		protocol.RootUsername = "beamable";
 		protocol.RootPassword = "beamable";
 		protocol.Metadata = project;
+		
+		
+		{ 
+			// set the docker volume names. 
+			//  the default values exist as _legacy_ naming to support CLI 2. 
+			//  However, going forward, the names should be specified in the Storage Template
+			protocol.FilesVolumeName =
+				project.properties.StorageFilesVolumeName ?? $"{beamoServiceDefinition.BeamoId}_files";
+			protocol.DataVolumeName =
+				project.properties.StorageDataVolumeName ?? $"{beamoServiceDefinition.BeamoId}_data";
+		}
 		if (configService.UseWindowsStyleVolumeNames)
 		{
 			protocol.DataVolumeInContainerPath = "C:/data/db";
@@ -652,6 +673,15 @@ public static class ProjectContextUtil
 
 		[JsonProperty(CliConstants.PROP_BEAM_SERVICE_GROUP)]
 		public string ServiceGroupString;
+
+		[JsonProperty(CliConstants.PROP_BEAM_STORAGE_DATA_VOLUME_NAME)]
+		public string StorageDataVolumeName;
+		
+		[JsonProperty(CliConstants.PROP_BEAM_STORAGE_FILES_VOLUME_NAME)]
+		public string StorageFilesVolumeName;
+		
+		[JsonProperty(CliConstants.PROP_BEAM_STORAGE_MONGO_BASE_IMAGE)]
+		public string MongoBaseImage;
 	}
 	
 	public class MsBuildProjectReference
@@ -853,7 +883,7 @@ public static class ProjectContextUtil
 		for (int i = 0; i < assemblyNames.Count; i++)
 		{
 			var assemblyName = assemblyNames[i];
-			var projectPath = projectsPaths[i].Replace("/", "\\");
+			var projectPath = projectsPaths[i];// TODO: Chris removed the replace on Oct 20th; not sure why it was there. Unity should auto-correct these paths already. //.Replace("/", "\\");
 
 			buildProject.AddItem(ITEM_TYPE, projectPath,
 				new Dictionary<string, string> { { CliConstants.UNITY_ASSEMBLY_ITEM_NAME, assemblyName } });

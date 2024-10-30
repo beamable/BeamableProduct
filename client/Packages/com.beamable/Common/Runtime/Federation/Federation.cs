@@ -18,6 +18,13 @@ namespace Beamable.Common
 	/// </summary>
 	public interface IFederation
 	{
+		/// <summary>
+		/// This interface should be implemented by all types that define the local service configurable options for a particular federation type.
+		/// <see cref="IFederatedGameServer{T}"/> for an example of this. 
+		/// </summary>
+		public interface ILocalSettings
+		{
+		}
 	}
 
 	/// <summary>
@@ -43,7 +50,7 @@ namespace Beamable.Common
 	{
 		// No longer used internally!!!
 	}
-	
+
 	/// <summary>
 	/// In various locations in code, we need a data structure to define all federations that exist for a particular <see cref="IFederationId"/>.
 	/// This structure holds that data.
@@ -55,11 +62,16 @@ namespace Beamable.Common
 		/// The federation id for this federation instance.
 		/// </summary>
 		public string FederationId;
-		
+
 		/// <summary>
 		/// The list of interface names of <see cref="IFederation"/> sub-interfaces.
 		/// </summary>
 		public string[] FederationTypes;
+
+		/// <summary>
+		/// The list of serialized <see cref="IFederation.ILocalSettings"/> for each federation type here.
+		/// </summary>
+		public string[] LocalSettings;
 	}
 
 	public interface IHaveServiceName
@@ -75,5 +87,31 @@ namespace Beamable.Common
 	public interface ISupportsFederatedInventory<T> : ISupportsFederatedLogin<T>
 		where T : IFederationId, new()
 	{
+	}
+
+	/// <summary>
+	/// Utility class to help enforce federation-related conventions.
+	/// </summary>
+	public static class FederationUtils
+	{
+		public static string BuildLocalSettingKey(Type fedType, string fedId) => BuildLocalSettingKey(fedType.GetNameWithoutGenericArity(), fedId);
+		public static string BuildLocalSettingKey(string fedTypeName, string fedId) => $"LocalSetting₢{fedTypeName}₢{fedId}";
+
+		public static bool TrySplitLocalSettingKey(string key, out FederationType type, out string federationId)
+		{
+			type = FederationType.IFederatedPlayerInit;
+			federationId = string.Empty;
+
+			// Validate the key format
+			if (!key.Contains("₢")) return false;
+			var parts = key.Split('₢');
+			if (parts.Length != 3) return false;
+
+			// Parse and validate the enum name
+			if (!Enum.TryParse(parts[1], true, out type)) return false;
+
+			federationId = parts[2];
+			return true;
+		}
 	}
 }

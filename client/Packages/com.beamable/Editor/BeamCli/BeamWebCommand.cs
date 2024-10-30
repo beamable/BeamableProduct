@@ -164,6 +164,7 @@ namespace Beamable.Editor.BeamCli
 			yield return null; // important, wait a frame to accrue all requests in one "tick" 
 			var serverIdentified = false;
 			CliLogger.Log("Checking server init ....");
+			
 			while (!serverIdentified)
 			{
 				var pingPromise = PingServer();
@@ -193,10 +194,13 @@ namespace Beamable.Editor.BeamCli
 					case PingResult.NoServer:
 						// bummer, no server exists for us, so we need to turn it on...
 						CliLogger.Log("Starting server.... " + port + " , " + Owner);
-						processCommands.defaultBeamArgs = processCommands.ConstructDefaultArgs();
-						processCommands.defaultBeamArgs.log = "verbose";
-						processCommands.defaultBeamArgs.pretty = true;
-
+					
+						processCommands.argModifier = (defaultArgs =>
+						{
+							defaultArgs.log = "verbose";
+							defaultArgs.pretty = true;
+						});
+					
 						var args = new ServerServeArgs()
 						{
 							port = port,
@@ -248,11 +252,19 @@ namespace Beamable.Editor.BeamCli
 		{
 			try
 			{
+				
 // #if UNITY_2021_1_OR_NEWER
 				// var json = await localClient.GetStringAsync(InfoUrl);
 // #else
-				var json = await localClient.GetStringAsync(InfoUrl);;
+
+				var jsonTask = localClient.GetStringAsync(InfoUrl);;
+
+				await Task.WhenAny(jsonTask, Task.Delay(1000));
+
+				if (!jsonTask.IsCompleted) throw new TimeoutException("cli ping timed out");
+				var json = jsonTask.Result;
 // #endif
+
 				var res = JsonUtility.FromJson<ServerInfoResponse>(json);
 				
 				var ownerMatches = String.Equals(res.owner, Owner, StringComparison.OrdinalIgnoreCase);
@@ -295,6 +307,7 @@ namespace Beamable.Editor.BeamCli
 		private HttpClient _localClient;
 		private Action<ReportDataPointDescription> _callbacks = (_) => { };
 		private HashSet<string> _explicitOnCallbackTypes = new HashSet<string>();
+		private Action _terminationCallbacks = () => { };
 		private BeamWebCommandFactory _factory;
 		private CancellationTokenSource _cts;
 		private BeamWebCliCommandHistory _history;
@@ -374,55 +387,77 @@ namespace Beamable.Editor.BeamCli
 
 			try
 			{
-				_cts.Token.ThrowIfCancellationRequested();
-				using HttpResponseMessage response =
-					await _localClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
-				using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
-				using StreamReader reader = new StreamReader(streamToReadFrom);
-
-				while (!reader.EndOfStream)
+				if (!_cts.IsCancellationRequested)
 				{
-					
-					_cts.Token.ThrowIfCancellationRequested();
-					var line = await reader.ReadLineAsync();
-					if (string.IsNullOrEmpty(line)) continue; // TODO: what if the message contains a \n character?
 
-					// remove life-cycle zero-width character
-					line = line.Replace("\u200b", "");
-					if (!line.StartsWith("data: "))
+					using HttpResponseMessage response =
+						await _localClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+					using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
+					using StreamReader reader = new StreamReader(streamToReadFrom);
+
+					Task<string> readTask = null;
+					while (!reader.EndOfStream)
 					{
-						Debug.LogWarning(
-							$"CLI received a message over the local-server that did not start with the expected 'data: ' format. line=[{line}]");
-						continue;
+						if (_cts.Token.IsCancellationRequested)
+						{
+							break;
+						}
+
+						readTask = reader.ReadLineAsync();
+						while (!readTask.IsCompleted)
+						{
+							await Task.WhenAny(readTask, Task.Delay(50));
+							if (_cts.Token.IsCancellationRequested)
+							{
+								break;
+							}
+						}
+						if (_cts.Token.IsCancellationRequested)
+						{
+							break;
+						}
+						
+						var line = await readTask;
+						if (string.IsNullOrEmpty(line)) continue; // TODO: what if the message contains a \n character?
+
+						// remove life-cycle zero-width character
+						line = line.Replace("\u200b", "");
+						if (!line.StartsWith("data: "))
+						{
+							Debug.LogWarning(
+								$"CLI received a message over the local-server that did not start with the expected 'data: ' format. line=[{line}]");
+							continue;
+						}
+
+						var jobId = _factory.dispatcher.Schedule(() => // put callback on separate work queue.
+						{
+							var lineJson = line
+								.Substring("data: ".Length); // remove the Server-Side-Event notation
+
+							CliLogger.Log("received, " + lineJson, "from " + commandString);
+
+							var res = JsonUtility.FromJson<ReportDataPointDescription>(lineJson);
+							res.json = lineJson;
+
+
+							_history.HandleMessage(id, res);
+							_callbacks?.Invoke(res);
+						});
+						dispatchedIds.Add(jobId);
 					}
-
-					var jobId = _factory.dispatcher.Schedule(() => // put callback on separate work queue.
-					{
-						var lineJson = line
-							.Substring("data: ".Length); // remove the Server-Side-Event notation
-
-						CliLogger.Log("received, " + lineJson, "from " + commandString);
-
-						var res = JsonUtility.FromJson<ReportDataPointDescription>(lineJson);
-						res.json = lineJson;
-
-
-						_history.HandleMessage(id, res);
-						_callbacks?.Invoke(res);
-					});
-					dispatchedIds.Add(jobId);
 				}
-
 
 			}
 			finally
 			{
 				_history.UpdateCompleteTime(id);
 				await _factory.dispatcher.WaitForJobIds(dispatchedIds);
+				_terminationCallbacks?.Invoke();
 				req.Dispose();
 				p.CompleteSuccess();
 			}
 
+			
 			await p;
 		}
 
@@ -471,6 +506,10 @@ namespace Beamable.Editor.BeamCli
 
 		public IBeamCommand OnTerminate(Action<ReportDataPoint<EofOutput>> cb)
 		{
+			_terminationCallbacks += () =>
+			{
+				cb?.Invoke(new ReportDataPoint<EofOutput>());
+			};
 			return this;
 		}
 	}

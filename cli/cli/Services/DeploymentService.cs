@@ -1293,6 +1293,7 @@ public partial class DeployUtil
 			}
 		}  else
 		{
+			report = new BuildImageOutput { success = true };
 			progressHandler?.Invoke("skip  " + definition.BeamoId, 1, serviceName: definition.BeamoId);
 		}
 
