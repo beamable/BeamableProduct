@@ -1639,7 +1639,7 @@ namespace Beamable.Player
 				}
 			}
 
-			bool externalIdentityAvailable = await service.IsExternalIdentityAvailable(client.ServiceName, account._user.id.ToString());
+			bool externalIdentityAvailable = await service.IsExternalIdentityAvailable(client.ServiceName, account._user.id.ToString(), ident.UniqueName);
 
 			if (externalIdentityAvailable)
 			{

@@ -63,7 +63,7 @@ namespace Beamable.Editor.BeamCli.UI
 					if (GUILayout.Button(tool.name, EditorStyles.miniButton))
 					{
 						// delay the action so that if an exception occurs in callback, GUI events will still be closed.
-						delayedActions.Add(tool.onClick);
+						AddDelayedAction(tool.onClick);
 					}
 				}
 			}

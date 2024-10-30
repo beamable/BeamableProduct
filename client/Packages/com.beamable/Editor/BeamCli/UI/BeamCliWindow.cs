@@ -18,7 +18,7 @@ namespace Beamable.Editor.BeamCli.UI
 		Overrides
 	}
 	
-	public partial class BeamCliWindow : BeamEditorWindow<BeamCliWindow>, IDelayedActionWindow
+	public partial class BeamCliWindow : BeamEditorWindow<BeamCliWindow>
 	{
 		private BeamWebCliCommandHistory _history;
 
@@ -45,9 +45,6 @@ namespace Beamable.Editor.BeamCli.UI
 		// serialized state gets remembered between domain reloads...
 		[SerializeField]
 		public BeamCliWindowTab selectedTab;
-		
-		[NonSerialized]
-		public List<Action> delayedActions = new List<Action>();
 
 		private float lastTick;
 
@@ -103,11 +100,7 @@ namespace Beamable.Editor.BeamCli.UI
 
 			
 			// run the actions at the end of the GUI loop, so that all GUI tags are closed.
-			foreach (var evt in delayedActions)
-			{
-				evt?.Invoke();
-			}
-			delayedActions.Clear();
+			RunDelayedActions();
 		}
 
 		void OnNoContextGUI()
@@ -146,11 +139,6 @@ namespace Beamable.Editor.BeamCli.UI
 					GUILayout.Label("There is no tab implemented yet!");
 					break;
 			}
-		}
-
-		public void AddDelayedAction(Action act)
-		{
-			delayedActions.Add(act);
 		}
 	}
 }

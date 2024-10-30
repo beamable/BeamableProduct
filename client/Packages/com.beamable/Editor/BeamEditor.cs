@@ -113,6 +113,8 @@ namespace Beamable
 			DependencyBuilder.AddGlobalStorage<AccountService, EditorStorageLayer>();
 			DependencyBuilder.AddSingleton<IAccountService>(p => p.GetService<AccountService>());
 			
+			DependencyBuilder.AddGlobalStorage<LibraryService, SessionStorageLayer>();
+
 			DependencyBuilder.AddSingleton<BeamCommands>();
 			
 			DependencyBuilder.AddGlobalStorage<BeamWebCliCommandHistory, SessionStorageLayer>();

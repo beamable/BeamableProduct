@@ -1,32 +1,22 @@
 using Beamable.Common;
-using Beamable.Editor.Microservice.UI2.PublishWindow;
 using Beamable.Editor.UI;
 using Beamable.Editor.Util;
-using Beamable.Server.Editor.Usam;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEditor;
-using UnityEditor.Experimental;
 using UnityEngine;
 
-namespace Beamable.Editor.Microservice.UI2
+namespace Beamable.Editor.Library
 {
-	public partial class UsamWindow2 : BeamEditorWindow<UsamWindow2>
+	public partial class BeamLibraryWindow : BeamEditorWindow<BeamLibraryWindow>
 	{
-		public UsamService usam;
-
-		public CardButton selectedCard;
-
 		
-		static UsamWindow2()
+		static BeamLibraryWindow()
 		{
-			var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
 			WindowDefaultConfig = new BeamEditorWindowInitConfig()
 			{
-				Title = "Beam Services",
+				Title = "Beam Library",
 				FocusOnShow = false,
-				DockPreferenceTypeName = inspector.AssemblyQualifiedName,
+				DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName,
 				RequireLoggedUser = true,
 			};
 		}
@@ -34,18 +24,21 @@ namespace Beamable.Editor.Microservice.UI2
 		[MenuItem(
 			Constants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
 			Constants.Commons.OPEN + " " +
-			"Beam Services %q",
+			"Beam Library",
 			priority = Constants.MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
 		)]
 		public static async void Init() => _ = await GetFullyInitializedWindow();
 
+
+		public LibraryService library;
+		
 		
 		protected override void Build()
 		{
-			usam = ActiveContext.ServiceScope.GetService<UsamService>();
-			usam.Reload();
+			library = ActiveContext.ServiceScope.GetService<LibraryService>();
+			library.Reload();
 		}
-
+		
 		private void OnInspectorUpdate()
 		{
 			Repaint();
@@ -54,8 +47,7 @@ namespace Beamable.Editor.Microservice.UI2
 		private void OnGUI()
 		{
 			BeamGUI.LoadAllIcons();
-			titleContent = new GUIContent("Services", BeamGUI.iconBeamableSmall);
-			
+			titleContent = new GUIContent("Library", BeamGUI.iconBeamableSmall);
 			var ctx = ActiveContext;
 			if (ctx == null)
 			{
@@ -75,30 +67,15 @@ namespace Beamable.Editor.Microservice.UI2
 				return;
 			}
 
-			if (usam == null)
+			if (library == null)
 			{
-				DrawUsamNullGui();
+				EditorGUILayout.LabelField("No library available.");
 				return;
 			}
-
-			PrepareCards();
-			selectedCard = cards.FirstOrDefault(x => x.name == selectedBeamoId);
-
-			if (UsamPublishWindow.instanceCount > 0)
-			{
-				GUI.enabled = false;
-			}
+			
 			DrawMain();
-			GUI.enabled = true;
-
+			
 			RunDelayedActions();
 		}
-
-
-		void DrawUsamNullGui()
-		{
-			EditorGUILayout.SelectableLabel("Waiting for data...");
-		}
-
 	}
 }
