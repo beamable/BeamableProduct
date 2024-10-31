@@ -44,37 +44,16 @@ namespace Beamable.Editor.Library
 			Repaint();
 		}
 
-		private void OnGUI()
+		protected override void DrawGUI()
 		{
-			BeamGUI.LoadAllIcons();
-			titleContent = new GUIContent("Library", BeamGUI.iconBeamableSmall);
-			var ctx = ActiveContext;
-			if (ctx == null)
-			{
-				DrawNoContextGui();
-				return;
-			}
-			
-			if (!ctx.InitializePromise.IsCompleted)
-			{
-				DrawWaitingForContextGui();
-				return;
-			}
-
-			if (!ctx.IsAuthenticated)
-			{
-				DrawNotLoggedInGui();
-				return;
-			}
-
 			if (library == null)
 			{
-				EditorGUILayout.LabelField("No library available.");
+				DrawBlockLoading(null);
+				AddDelayedAction(Build);
 				return;
 			}
 			
 			DrawMain();
-			
 			RunDelayedActions();
 		}
 	}

@@ -1,6 +1,6 @@
 {
-   "references":[
-     "Beamable.Platform",
+  "references":[
+    "Beamable.Platform",
     "Unity.Beamable",
     "Unity.Beamable.Runtime.Common",
     "Unity.Beamable.Server.Runtime",

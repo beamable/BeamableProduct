@@ -25,8 +25,15 @@ public class CurrencyViewBehaviour : MonoBehaviour, ILightComponent<PlayerCurren
 
 		var contentService = beam.BeamContext.Content;
 		var content = await contentService.GetContent<CurrencyContent>(new CurrencyRef(model.CurrencyId));
-		var sprite = await content.icon.LoadSprite();
-		iconImage.sprite = sprite;
+
+		if (content.icon == null)
+		{
+			iconImage.sprite = null;
+		}
+		else
+		{
+			iconImage.sprite = await content.icon.LoadSprite();
+		}
 	}
 
 	private void OnDestroy()

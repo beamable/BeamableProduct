@@ -18,11 +18,86 @@ namespace Beamable.Editor.Util
 		public static Texture iconHelp;
 		public static Texture iconRefresh;
 		public static Texture iconBeamableSmall;
+		public static Texture iconLogoHeader;
+		public static Texture iconShadowSoftA;
 
+		public static Texture artGameServers;
+		public static Texture artLiveOps;
+		public static Texture artContent;
+		public static Texture artServerless;
+
+		public static Texture[] loginArts;
+
+
+		public static Texture[] unitySpinnerTextures;
+		
 		
 		public static void LoadAllIcons()
 		{
+			if (unitySpinnerTextures == null)
+			{
+				unitySpinnerTextures = new Texture[]
+				{
+					EditorGUIUtility.IconContent("WaitSpin00").image,
+					EditorGUIUtility.IconContent("WaitSpin01").image,
+					EditorGUIUtility.IconContent("WaitSpin02").image,
+					EditorGUIUtility.IconContent("WaitSpin03").image,
+					EditorGUIUtility.IconContent("WaitSpin04").image,
+					EditorGUIUtility.IconContent("WaitSpin05").image,
+					EditorGUIUtility.IconContent("WaitSpin06").image,
+					EditorGUIUtility.IconContent("WaitSpin07").image,
+					EditorGUIUtility.IconContent("WaitSpin08").image,
+					EditorGUIUtility.IconContent("WaitSpin09").image,
+					EditorGUIUtility.IconContent("WaitSpin10").image,
+					EditorGUIUtility.IconContent("WaitSpin11").image,
+				};
+			}
 			
+			
+			if (artGameServers == null)
+			{
+				artGameServers =
+					EditorResources.Load<Texture>(
+						"Packages/com.beamable/Editor/UI/Common/Icons/beam_art_gameservers.png", true);
+			}
+			if (artLiveOps == null)
+			{
+				artLiveOps =
+					EditorResources.Load<Texture>(
+						"Packages/com.beamable/Editor/UI/Common/Icons/beam_art_liveops.png", true);
+			}
+			if (artContent == null)
+			{
+				artContent =
+					EditorResources.Load<Texture>(
+						"Packages/com.beamable/Editor/UI/Common/Icons/beam_art_game_content.png", true);
+			}
+			if (artServerless == null)
+			{
+				artServerless =
+					EditorResources.Load<Texture>(
+						"Packages/com.beamable/Editor/UI/Common/Icons/beam_art_serverless.png", true);
+			}
+
+			if (loginArts == null)
+			{
+				loginArts = new Texture[] {artLiveOps, artGameServers, artContent, artServerless};
+			}
+			
+			
+			if (iconShadowSoftA == null)
+			{
+				iconShadowSoftA =
+					EditorResources.Load<Texture>(
+						"Packages/com.beamable/Editor/UI/Common/Icons/softShadow.png", true);
+			}
+			
+			if (iconLogoHeader == null)
+			{
+				iconLogoHeader =
+					EditorResources.Load<Texture>(
+						"Packages/com.beamable/Editor/UI/Login/UI/icon/logo2 L white.png", true);
+			}
 			if (iconBeamableSmall == null)
 			{
 				iconBeamableSmall =

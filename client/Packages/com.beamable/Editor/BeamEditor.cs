@@ -89,8 +89,6 @@ namespace Beamable
 
 			DependencyBuilder.AddSingleton<IEditorHttpRequester>(provider => new BeamableEditorWebRequester());
 
-			DependencyBuilder.AddSingleton<IWebsiteHook, WebsiteHook>();
-			DependencyBuilder.AddSingleton<IToolboxViewService, ToolboxViewService>();
 			DependencyBuilder.AddSingleton<OfflineCache>(p => new OfflineCache(p.GetService<IRuntimeConfigProvider>(), CoreConfiguration.Instance.UseOfflineCache));
 
 			DependencyBuilder.AddSingleton<ServiceStorage>();
@@ -333,11 +331,6 @@ namespace Beamable
 				// Initialize toolbar
 				BeamableToolbarExtender.LoadToolbarExtender();
 #endif
-				if (SessionState.GetBool(SESSION_STATE_INSTALL_DEPS, false) && !BeamEditorContext.HasDependencies())
-				{
-					await BeamEditorContext.Default.CreateDependencies();
-					SessionState.EraseBool(SESSION_STATE_INSTALL_DEPS);
-				}
 			}
 
 			InitDefaultContext().Error(Debug.LogError);
@@ -534,6 +527,12 @@ namespace Beamable
 				await RefreshRealmSecret();
 
 				var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
+
+				if (!HasDependencies())
+				{
+					await CreateDependencies();
+				}
+
 
 			}
 

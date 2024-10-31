@@ -7,27 +7,29 @@ namespace Beamable.Editor.Util
 
 	public partial class BeamGUI
 	{
-		private static GUIStyle _primaryButtonStyle = null;
+		private static bool _didCreatePrimary;
+		public static GUIStyle primaryButtonStyle;
 
+		public static void CreateButtonStyles()
+		{
+			
+			if (!_didCreatePrimary || primaryButtonStyle?.normal.background == null)
+			{
+				_didCreatePrimary = true;
+				primaryButtonStyle = ColorizeButton(loadingPrimary);
+				primaryButtonStyle.padding = new RectOffset(6, 6, 6, 6);
+			}
+		}
+		
 		public static bool PrimaryButton(GUIContent content)
 		{
-			if (_primaryButtonStyle == null)
-			{
-				_primaryButtonStyle = BeamGUI.ColorizeButton(loadingPrimary);
-				_primaryButtonStyle.padding = new RectOffset(6, 6, 6, 6);
-			}
-
-			return CustomButton(content, _primaryButtonStyle);
+			CreateButtonStyles();
+			return CustomButton(content, primaryButtonStyle);
 		}
 		public static bool PrimaryButton(Rect rect, GUIContent content)
 		{
-			if (_primaryButtonStyle == null)
-			{
-				_primaryButtonStyle = BeamGUI.ColorizeButton(loadingPrimary);
-				_primaryButtonStyle.padding = new RectOffset(6, 6, 6, 6);
-			}
-
-			return CustomButton(rect, content, _primaryButtonStyle);
+			CreateButtonStyles();
+			return CustomButton(rect, content, primaryButtonStyle);
 		}
 
 		public static bool CancelButton()
@@ -50,6 +52,7 @@ namespace Beamable.Editor.Util
 			bool clicked = false;
 			clicked = GUI.Button(rect, content, style);
 
+			
 			if (buttonClicked)
 			{
 			}
@@ -70,19 +73,6 @@ namespace Beamable.Editor.Util
 		public static GUIStyle ColorizeButton(Color color, float mix = .8f)
 		{
 			var style = ColorizeStyle(GUI.skin.button, color, mix);
-			// style.hover.background = new Texture2D(style.normal.background.width, style.normal.background.height, style.normal.background.graphicsFormat, style.normal.background.mipmapCount, TextureCreationFlags.MipChain);
-			// Graphics.CopyTexture(style.normal.background, style.hover.background);
-			//
-			// var pix = style.hover.background.GetPixels();
-			// for (var i = 0; i < pix.Length; i++)
-			// {
-			// 	var original = pix[i];
-			// 	pix[i] = Color.Lerp(pix[i], Color.white, original.a * .1f);
-			// }
-			// style.hover.background.SetPixels(pix);
-			// style.hover.background.Apply();
-			// style.onHover = style.hover;
-			
 			return style;
 		}
 		
@@ -90,10 +80,10 @@ namespace Beamable.Editor.Util
 		{
 			var colorized = new GUIStyle(style);
 
-			// colorized.onActive.scaledBackgrounds = ColorizeStateTextures(colorized.active, color, mix);
-			// if (colorized.onActive.scaledBackgrounds.Length > 0)
-			// 	colorized.onActive.background = colorized.onActive.scaledBackgrounds[0];
-			// colorized.active = colorized.onNormal;
+			colorized.onActive.scaledBackgrounds = ColorizeStateTextures(colorized.active, color, mix);
+			if (colorized.onActive.scaledBackgrounds.Length > 0)
+				colorized.onActive.background = colorized.onActive.scaledBackgrounds[0];
+			colorized.active = colorized.onNormal;
 
 			colorized.onNormal.scaledBackgrounds = ColorizeStateTextures(colorized.onNormal, color, mix);
 			if (colorized.onNormal.scaledBackgrounds.Length > 0)
@@ -106,10 +96,12 @@ namespace Beamable.Editor.Util
 				colorized.onHover.background = colorized.onHover.scaledBackgrounds[0];
 			colorized.hover = colorized.onNormal;
 			//
-			// colorized.onFocused.scaledBackgrounds = ColorizeStateTextures(colorized.focused, color, mix);
-			// if (colorized.onFocused.scaledBackgrounds.Length > 0)
-			// 	colorized.onFocused.background = colorized.onFocused.scaledBackgrounds[0];
-			// colorized.focused = colorized.onNormal;
+			colorized.onFocused.scaledBackgrounds = ColorizeStateTextures(colorized.focused, color, mix);
+			if (colorized.onFocused.scaledBackgrounds.Length > 0)
+				colorized.onFocused.background = colorized.onFocused.scaledBackgrounds[0];
+			colorized.focused = colorized.onNormal;
+			
+
 
 			return colorized;
 		}

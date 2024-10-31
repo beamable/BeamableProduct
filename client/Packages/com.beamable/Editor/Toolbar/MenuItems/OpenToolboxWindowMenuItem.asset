@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 00da71a362d44e0fb8df328a3c6d6026, type: 3}
   m_Name: OpenToolboxWindowMenuItem
   m_EditorClassIdentifier: 
-  Order: 0
-  Text: Open Toolbox
+  Order: 10
+  Text: Open Beam Library

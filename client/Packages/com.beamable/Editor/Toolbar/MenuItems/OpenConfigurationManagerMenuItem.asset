@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: OpenConfigurationManagerMenuItem
   m_EditorClassIdentifier: 
   Order: 10
-  Text: Open Configuration Manager
+  Text: Open Project Settings
