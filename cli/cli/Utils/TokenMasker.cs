@@ -12,13 +12,13 @@ public partial class TokenMasker : IMaskingOperator
 
 	[GeneratedRegex("((token|Token|TOKEN).?.?.?.?.?)\"........-....-....-....-............", RegexOptions.None, "en-US")]
 	public static partial Regex TokenRegex();
-	
+
 	public MaskingResult Mask(string input, string mask)
 	{
 		string input1 = this.PreprocessInput(input);
 		if (!this.ShouldMaskInput(input1))
 			return MaskingResult.NoMatch;
-		string str = TokenRegex().Replace(input1, (MatchEvaluator) (match => this.ShouldMaskMatch(match) ? match.Result(this.PreprocessMask(this.PreprocessMask(mask), match)) : match.Value));
+		string str = TokenRegex().Replace(input1, (MatchEvaluator)(match => this.ShouldMaskMatch(match) ? match.Result(this.PreprocessMask(this.PreprocessMask(mask), match)) : match.Value));
 		return new MaskingResult()
 		{
 			Result = str,

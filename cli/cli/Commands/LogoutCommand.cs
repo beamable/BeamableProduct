@@ -2,12 +2,12 @@ namespace cli;
 
 public class LogoutCommandArgs : CommandArgs
 {
-	
+
 }
 
 public class LogoutCommandResult
 {
-	
+
 }
 public class LogoutCommand : AtomicCommand<LogoutCommandArgs, LogoutCommandResult>
 {

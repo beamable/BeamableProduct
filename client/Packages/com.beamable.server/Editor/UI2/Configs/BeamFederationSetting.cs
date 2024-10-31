@@ -47,13 +47,13 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 			var federationTypeProp =
 				property.FindPropertyRelative(
 					$"{nameof(BeamFederationSetting.entry)}.{nameof(BeamFederationEntry.interfaceName)}");
-			
-			
+
+
 			var width = EditorGUIUtility.labelWidth;
 
 			var typeRect = new Rect(position.x + 1, position.y + 1, width - 2, EditorGUIUtility.singleLineHeight);
 			var idRect = new Rect(typeRect.xMax + 4, typeRect.y, position.width - width - 4,
-			                      EditorGUIUtility.singleLineHeight);
+								  EditorGUIUtility.singleLineHeight);
 
 
 			var types = usam.latestManifest.availableFederationTypes.ToArray();
@@ -69,7 +69,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 				{
 					richText = true,
 					wordWrap = true,
-					
+
 				});
 			}
 			else
@@ -79,7 +79,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 				if (nextSelectedId < 0) nextSelectedId = 0;
 				federationIdProp.stringValue = options[nextSelectedId];
 			}
-			
+
 		}
 	}
 
