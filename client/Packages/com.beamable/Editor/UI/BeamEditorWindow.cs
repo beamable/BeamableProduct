@@ -208,7 +208,7 @@ namespace Beamable.Editor.UI
 		
 		/// <summary>
 		/// Rebuilds the window's entire content.
-		/// If it cares about whether or not the given <paramref name="context"/> is/isn't authenticated, it'll invoke either <see cref="Build"/> or <see cref="BuildWhenNotAuthenticated"/>.
+		/// If it cares about whether or not the given <paramref name="context"/> is/isn't authenticated, it'll invoke <see cref="Build"/>
 		/// If the given <paramref name="context"/> is null, it will rebuild with the current <see cref="ActiveContext"/>.
 		/// </summary>
 		/// <param name="context">The <see cref="BeamEditorContext"/> to rebuild this window with. When null, re-uses the existing context.</param>
@@ -226,10 +226,6 @@ namespace Beamable.Editor.UI
 						if (ActiveContext.IsAuthenticated)
 						{
 							await BuildSetup();
-						}
-						else
-						{
-							// BuildWhenNotAuthenticated();
 						}
 					}
 					else
@@ -291,18 +287,6 @@ namespace Beamable.Editor.UI
 		{
 			
 		}
-
-		// protected virtual void BuildWhenNotAuthenticated()
-		// {
-		// 	var root = this.GetRootVisualContainer();
-		// 	root.Clear();
-		// 	var noUserVisualElement = new NoUserVisualElement();
-		// 	noUserVisualElement.OnLoginCheckComplete += () =>
-		// 	{
-		// 		BuildWithContext();
-		// 	};
-		// 	root.Add(noUserVisualElement);
-		// }
 
 		protected virtual void ShowFullWindowLoading()
 		{
