@@ -9,7 +9,7 @@ namespace Beamable.Editor.Library
 {
 	public partial class BeamLibraryWindow : BeamEditorWindow<BeamLibraryWindow>
 	{
-		
+
 		static BeamLibraryWindow()
 		{
 			WindowDefaultConfig = new BeamEditorWindowInitConfig()
@@ -20,7 +20,7 @@ namespace Beamable.Editor.Library
 				RequireLoggedUser = true,
 			};
 		}
-		
+
 		[MenuItem(
 			Constants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
 			Constants.Commons.OPEN + " " +
@@ -31,14 +31,14 @@ namespace Beamable.Editor.Library
 
 
 		public LibraryService library;
-		
-		
+
+
 		protected override void Build()
 		{
 			library = ActiveContext.ServiceScope.GetService<LibraryService>();
 			library.Reload();
 		}
-		
+
 		private void OnInspectorUpdate()
 		{
 			Repaint();
@@ -54,7 +54,7 @@ namespace Beamable.Editor.Library
 				DrawNoContextGui();
 				return;
 			}
-			
+
 			if (!ctx.InitializePromise.IsCompleted)
 			{
 				DrawWaitingForContextGui();
@@ -72,9 +72,9 @@ namespace Beamable.Editor.Library
 				EditorGUILayout.LabelField("No library available.");
 				return;
 			}
-			
+
 			DrawMain();
-			
+
 			RunDelayedActions();
 		}
 	}

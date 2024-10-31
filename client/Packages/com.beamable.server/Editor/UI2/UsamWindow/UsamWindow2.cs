@@ -18,7 +18,7 @@ namespace Beamable.Editor.Microservice.UI2
 
 		public CardButton selectedCard;
 
-		
+
 		static UsamWindow2()
 		{
 			var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
@@ -30,7 +30,7 @@ namespace Beamable.Editor.Microservice.UI2
 				RequireLoggedUser = true,
 			};
 		}
-		
+
 		[MenuItem(
 			Constants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
 			Constants.Commons.OPEN + " " +
@@ -39,7 +39,7 @@ namespace Beamable.Editor.Microservice.UI2
 		)]
 		public static async void Init() => _ = await GetFullyInitializedWindow();
 
-		
+
 		protected override void Build()
 		{
 			usam = ActiveContext.ServiceScope.GetService<UsamService>();
@@ -55,14 +55,14 @@ namespace Beamable.Editor.Microservice.UI2
 		{
 			BeamGUI.LoadAllIcons();
 			titleContent = new GUIContent("Services", BeamGUI.iconBeamableSmall);
-			
+
 			var ctx = ActiveContext;
 			if (ctx == null)
 			{
 				DrawNoContextGui();
 				return;
 			}
-			
+
 			if (!ctx.InitializePromise.IsCompleted)
 			{
 				DrawWaitingForContextGui();

@@ -9,7 +9,7 @@ namespace Beamable.Editor
 {
 	public static class TaskUtil
 	{
-		
+
 		/// <summary>
 		/// Start an editor coroutine to watch the task, and returns a promise that
 		/// will be completed from the coroutine when the task is finished. 

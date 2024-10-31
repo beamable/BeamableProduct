@@ -105,7 +105,7 @@ namespace Beamable.Editor.Environment
 			}
 			var json = File.ReadAllText(filePath);
 			var manifest = (ArrayDict)Json.Deserialize(json);
-			if (!manifest.TryGetValue("dependencies", out var deps) )
+			if (!manifest.TryGetValue("dependencies", out var deps))
 			{
 				return referencePaths;
 			}
@@ -120,7 +120,7 @@ namespace Beamable.Editor.Environment
 			{
 				var value = kvp.Value?.ToString() ?? "";
 				if (!value.StartsWith("file://")) continue;
-				
+
 				referencePaths.Add(value.Substring("file://".Length));
 			}
 

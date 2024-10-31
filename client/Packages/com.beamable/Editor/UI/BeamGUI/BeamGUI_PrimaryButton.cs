@@ -32,7 +32,7 @@ namespace Beamable.Editor.Util
 
 		public static bool CancelButton()
 		{
-			return GUILayout.Button("Cancel", new GUIStyle(GUI.skin.button) {padding = new RectOffset(6, 6, 6, 6)});
+			return GUILayout.Button("Cancel", new GUIStyle(GUI.skin.button) { padding = new RectOffset(6, 6, 6, 6) });
 		}
 
 		public static bool CustomButton(GUIContent content, GUIStyle style)
@@ -40,10 +40,10 @@ namespace Beamable.Editor.Util
 			var rect = GUILayoutUtility.GetRect(content, style);
 			return CustomButton(rect, content, style);
 		}
-		
+
 		public static bool CustomButton(Rect rect, GUIContent content, GUIStyle style)
 		{
-			
+
 			var isHover = rect.Contains(Event.current.mousePosition);
 			var buttonClicked = isHover && Event.current.rawType == EventType.MouseDown;
 
@@ -65,8 +65,8 @@ namespace Beamable.Editor.Util
 			}
 			return clicked;
 		}
-		
-		
+
+
 		public static GUIStyle ColorizeButton(Color color, float mix = .8f)
 		{
 			var style = ColorizeStyle(GUI.skin.button, color, mix);
@@ -82,11 +82,11 @@ namespace Beamable.Editor.Util
 			// style.hover.background.SetPixels(pix);
 			// style.hover.background.Apply();
 			// style.onHover = style.hover;
-			
+
 			return style;
 		}
-		
-		public static GUIStyle ColorizeStyle(GUIStyle style, Color color, float mix=.8f)
+
+		public static GUIStyle ColorizeStyle(GUIStyle style, Color color, float mix = .8f)
 		{
 			var colorized = new GUIStyle(style);
 
@@ -99,8 +99,8 @@ namespace Beamable.Editor.Util
 			if (colorized.onNormal.scaledBackgrounds.Length > 0)
 				colorized.onNormal.background = colorized.onNormal.scaledBackgrounds[0];
 			colorized.normal = colorized.onNormal;
-			
-			
+
+
 			colorized.onHover.scaledBackgrounds = ColorizeStateTextures(colorized.normal, Color.Lerp(color, Color.white, .1f), mix);
 			if (colorized.onHover.scaledBackgrounds.Length > 0)
 				colorized.onHover.background = colorized.onHover.scaledBackgrounds[0];
@@ -113,14 +113,14 @@ namespace Beamable.Editor.Util
 
 			return colorized;
 		}
-		
-		public static Texture2D[] ColorizeStateTextures(GUIStyleState styleState, Color color, float mix=.8f)
+
+		public static Texture2D[] ColorizeStateTextures(GUIStyleState styleState, Color color, float mix = .8f)
 		{
 			var backgrounds = styleState.scaledBackgrounds;
 			var colorizedBackgrounds = new Texture2D[backgrounds.Length];
 			for (var textureIndex = 0; textureIndex < backgrounds.Length; textureIndex++)
 			{
-						
+
 				var normal = backgrounds[textureIndex];
 				colorizedBackgrounds[textureIndex] = new Texture2D(normal.width, normal.height, normal.graphicsFormat, normal.mipmapCount, TextureCreationFlags.MipChain);
 				Graphics.CopyTexture(normal, colorizedBackgrounds[textureIndex]);
