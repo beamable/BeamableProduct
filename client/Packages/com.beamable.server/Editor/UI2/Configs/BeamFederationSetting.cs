@@ -25,11 +25,12 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 	[CustomPropertyDrawer(typeof(BeamFederationSetting))]
 	public class FederationEntryPropertyDraw : PropertyDrawer
 	{
-		private const int topLabelHeight = 8;
+		private const int warningHeight = 20;
+		private float _dynamicHeight =  EditorGUIUtility.singleLineHeight;
 
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
 		{
-			return EditorGUIUtility.singleLineHeight + topLabelHeight;
+			return _dynamicHeight;
 		}
 
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
@@ -41,39 +42,34 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 				return;
 			}
 
-			var federationIdProp =
-				property.FindPropertyRelative(
-					$"{nameof(BeamFederationSetting.entry)}.{nameof(BeamFederationEntry.federationId)}");
-			var federationTypeProp =
-				property.FindPropertyRelative(
-					$"{nameof(BeamFederationSetting.entry)}.{nameof(BeamFederationEntry.interfaceName)}");
-			
-			
-			var width = EditorGUIUtility.labelWidth;
-
-			var typeRect = new Rect(position.x + 1, position.y + 1, width - 2, EditorGUIUtility.singleLineHeight);
-			var idRect = new Rect(typeRect.xMax + 4, typeRect.y, position.width - width - 4,
-			                      EditorGUIUtility.singleLineHeight);
-
-
-			var types = usam.latestManifest.availableFederationTypes.ToArray();
-			var selectedType = Array.IndexOf(types, federationTypeProp.stringValue);
-			var nextSelectedType = EditorGUI.Popup(typeRect, selectedType, types);
-			if (nextSelectedType < 0) nextSelectedType = 0;
-			federationTypeProp.stringValue = types[nextSelectedType];
-
 			var options = BeamableMicroservicesSettings.availableFederationIds;
+			_dynamicHeight = EditorGUIUtility.singleLineHeight;
 			if (options.Count == 0)
 			{
-				EditorGUI.LabelField(idRect, "(create an <i>IFederationId</i> implementation)", new GUIStyle(EditorStyles.miniLabel)
-				{
-					richText = true,
-					wordWrap = true,
-					
-				});
+				_dynamicHeight += warningHeight;
+				EditorGUI.HelpBox(position, "A Federation Id is required to add federations to existing service. You can create a new one by clicking on Create->Federation Id.",MessageType.Warning);
 			}
 			else
 			{
+				var federationIdProp =
+					property.FindPropertyRelative(
+						$"{nameof(BeamFederationSetting.entry)}.{nameof(BeamFederationEntry.federationId)}");
+				var federationTypeProp =
+					property.FindPropertyRelative(
+						$"{nameof(BeamFederationSetting.entry)}.{nameof(BeamFederationEntry.interfaceName)}");
+
+				var width = EditorGUIUtility.labelWidth;
+
+				var typeRect = new Rect(position.x + 1, position.y + 1, width - 2, EditorGUIUtility.singleLineHeight);
+				var idRect = new Rect(typeRect.xMax + 4, typeRect.y, position.width - width - 4,
+				                      EditorGUIUtility.singleLineHeight);
+
+				var types = usam.latestManifest.availableFederationTypes.ToArray();
+				var selectedType = Array.IndexOf(types, federationTypeProp.stringValue);
+				var nextSelectedType = EditorGUI.Popup(typeRect, selectedType, types);
+				if (nextSelectedType < 0) nextSelectedType = 0;
+				federationTypeProp.stringValue = types[nextSelectedType];
+
 				var selectedId = options.IndexOf(federationIdProp.stringValue);
 				var nextSelectedId = EditorGUI.Popup(idRect, selectedId, options.ToArray());
 				if (nextSelectedId < 0) nextSelectedId = 0;
