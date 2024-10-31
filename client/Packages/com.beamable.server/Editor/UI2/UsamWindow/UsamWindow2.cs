@@ -51,33 +51,12 @@ namespace Beamable.Editor.Microservice.UI2
 			Repaint();
 		}
 
-		private void OnGUI()
+		protected override void DrawGUI()
 		{
-			BeamGUI.LoadAllIcons();
-			titleContent = new GUIContent("Services", BeamGUI.iconBeamableSmall);
-			
-			var ctx = ActiveContext;
-			if (ctx == null)
-			{
-				DrawNoContextGui();
-				return;
-			}
-			
-			if (!ctx.InitializePromise.IsCompleted)
-			{
-				DrawWaitingForContextGui();
-				return;
-			}
-
-			if (!ctx.IsAuthenticated)
-			{
-				DrawNotLoggedInGui();
-				return;
-			}
-
 			if (usam == null)
 			{
-				DrawUsamNullGui();
+				DrawBlockLoading(null);
+				AddDelayedAction(Build);
 				return;
 			}
 
@@ -92,12 +71,6 @@ namespace Beamable.Editor.Microservice.UI2
 			GUI.enabled = true;
 
 			RunDelayedActions();
-		}
-
-
-		void DrawUsamNullGui()
-		{
-			EditorGUILayout.SelectableLabel("Waiting for data...");
 		}
 
 	}

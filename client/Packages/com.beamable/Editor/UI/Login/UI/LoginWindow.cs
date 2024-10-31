@@ -29,7 +29,7 @@ namespace Beamable.Editor.Login.UI
 			if (b.IsAuthenticated)
 				return; // short circuit.
 
-			var wnd = Show(dockLocations);
+			var wnd = Show();
 			await wnd.LoginManager.OnComplete;
 			wnd.Close();
 		}
@@ -63,6 +63,9 @@ namespace Beamable.Editor.Login.UI
 
 		public static LoginWindow Show(params Type[] dockLocations)
 		{
+			
+			
+			
 			if (dockLocations == null) dockLocations = new Type[] { };
 			if (LoginWindow.IsInstantiated)
 			{

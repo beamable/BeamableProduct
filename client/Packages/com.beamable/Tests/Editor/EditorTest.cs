@@ -33,7 +33,6 @@ namespace Beamable.Editor.Tests
 		public IEnumerator Setup()
 		{
 			var builder = BeamEditorDependencies.DependencyBuilder.Clone();
-			builder.ReplaceSingleton<IWebsiteHook, MockWebsiteHook>();
 			builder.ReplaceSingleton<IRuntimeConfigProvider>(new TestConfigProvider
 			{
 				Cid = "000",

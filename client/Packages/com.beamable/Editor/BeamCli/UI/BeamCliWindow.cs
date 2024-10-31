@@ -81,7 +81,7 @@ namespace Beamable.Editor.BeamCli.UI
 			}
 		}
 
-		private void OnGUI()
+		protected override void DrawGUI()
 		{
 			if (ActiveContext == null)
 			{

@@ -26,6 +26,9 @@ namespace Beamable.Editor
 		#endregion
 
 		#region COMPUTED PROPERTIES
+		
+		public bool HasDocsUrl { get; set; }
+		
 		public bool isLocal { get; set; }
 		
 		/// <summary>
@@ -65,7 +68,7 @@ namespace Beamable.Editor
 
 		public void OpenDocumentation(LightbeamSampleInfo lb)
 		{
-			
+			Application.OpenURL(lb.docsUrl);
 		}
 		
 		public void OpenSample(LightbeamSampleInfo lb)
@@ -80,11 +83,7 @@ namespace Beamable.Editor
 					CopySampleIntoProject(lb);
 				}
 				
-				// if the scene has changes, we don't want to just SWITCH.
-				if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-				{
-					EditorSceneManager.OpenScene(lb.localCandidateAssetPath, OpenSceneMode.Single);
-				}
+				
 			}
 			finally
 			{
@@ -93,10 +92,18 @@ namespace Beamable.Editor
 				{
 					AssetDatabase.Refresh();
 				}
+				
+				// if the scene has changes, we don't want to just SWITCH.
+				if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+				{
+					EditorSceneManager.OpenScene(lb.localCandidateAssetPath, OpenSceneMode.Single);
+					ShowInProject(lb);
+					EditorWindow.GetWindow<SceneView>();
+				}
 			}
 			
 		}
-
+		
 		public void CopySampleIntoProject(LightbeamSampleInfo lb)
 		{
 
@@ -159,6 +166,8 @@ namespace Beamable.Editor
 			
 			// and delete the .meta folder that goes with it
 			File.Delete(lb.localCandidateFolderMetafile);
+			
+			AssetDatabase.Refresh();
 		}
 		
 		public void Reload()
@@ -214,18 +223,19 @@ namespace Beamable.Editor
 					: Path.Combine(lightbeam.localCandidateFolder, lightbeam.relativeMainAssetPath);
 				lightbeam.isLocal = File.Exists(lightbeam.localCandidateAssetPath);
 				lightbeam.localCandidateFolderMetafile = lightbeam.localCandidateFolder + ".meta";
+
+				lightbeam.HasDocsUrl = !string.IsNullOrEmpty(lightbeam.docsUrl);
 				lightbeams.Add(lightbeam);
 			}
 		}
 
 		public void ShowInProject(LightbeamSampleInfo lightBeam)
 		{
-			throw new NotImplementedException();
+			var asset = AssetDatabase.LoadMainAssetAtPath(lightBeam.localCandidateAssetPath);
+			var projectBrowserType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.ProjectBrowser");
+			EditorWindow.GetWindow(projectBrowserType)?.Focus();
+			EditorGUIUtility.PingObject(asset);
 		}
 
-		public void RemoveSample(LightbeamSampleInfo lightBeam)
-		{
-			throw new NotImplementedException();
-		}
 	}
 }
