@@ -406,9 +406,9 @@ public class DiscoveryService
 		{
 			try
 			{
-				var ws = await WebsocketUtil.ConfigureWebSocketForServerNotifications(args,
+				var handle = WebsocketUtil.ConfigureWebSocketForServerNotifications(args,
 					new[] { "beamo.service_registration_changed" }, token);
-				await WebsocketUtil.RunServerNotificationListenLoop(ws, message =>
+				await WebsocketUtil.RunServerNotificationListenLoop(handle, message =>
 				{
 					var bodyJson = JsonConvert.SerializeObject(message.body);
 					var data = JsonConvert.DeserializeObject<MicroserviceRegistrationsResponse>(bodyJson,

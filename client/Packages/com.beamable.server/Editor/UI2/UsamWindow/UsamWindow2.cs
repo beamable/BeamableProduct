@@ -56,7 +56,7 @@ namespace Beamable.Editor.Microservice.UI2
 			if (usam == null)
 			{
 				DrawBlockLoading(null);
-				AddDelayedAction(Build);
+				EditorApplication.delayCall += Build;
 				return;
 			}
 
