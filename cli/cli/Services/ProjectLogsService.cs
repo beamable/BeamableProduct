@@ -1,6 +1,7 @@
 using cli.Commands.Project;
 using Newtonsoft.Json;
 using Serilog;
+using UnityEngine;
 
 namespace cli.Services;
 
@@ -112,15 +113,27 @@ public class ProjectLogsService
 					// Read the content as a stream
 					using var stream = await response.Content.ReadAsStreamAsync();
 					using var reader = new StreamReader(stream);
-					while (!reader.EndOfStream)
+					try
 					{
-						var line = await reader.ReadLineAsync();
-						var _ = await reader.ReadLineAsync(); // skip new line.
-						var substrLength = "data: ".Length;
-						if (line?.Length > substrLength)
+						while (!reader.EndOfStream)
 						{
-							handleLog(line[substrLength..]);
+
+							var line = await reader.ReadLineAsync();
+							var _ = await reader.ReadLineAsync(); // skip new line.
+							var substrLength = "data: ".Length;
+							if (line?.Length > substrLength)
+							{
+								handleLog(line[substrLength..]);
+							}
 						}
+					}
+					catch (IOException ex) when (ex.Message.Contains("forcibly closed"))
+					{
+						// TODO: We are explicitly ignoring this exception until a later date.
+						// The problem is that if the request stream is closed by an external process that had invoked this command (such as CliServer OR the Stop server command),
+						// an exception is thrown about it.
+						// This is mostly inconsequential other than the fact that it makes this command not exit gracefully.
+						// Behavior-wise, this exception happening changes nothing about this command's execution, so... we are ignoring it until a later date.
 					}
 				}
 				else

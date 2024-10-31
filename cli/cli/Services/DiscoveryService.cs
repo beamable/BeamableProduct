@@ -240,7 +240,7 @@ public class DiscoveryService
 					break;
 				}
 
-				await Task.Delay(10, token);
+				await Task.Delay(10);
 			}
 
 			// cancel the sub tasks.
