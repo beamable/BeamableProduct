@@ -119,12 +119,21 @@ namespace Beamable.Editor.Microservice.UI2
 				margin = new RectOffset(0, 0, 12, 12)
 			});
 
-			//EditorGUILayout.Space(5, true);
-			EditorGUILayout.Space(6, true);
+			EditorGUILayout.Space(5, true);
+			EditorGUILayout.Space(5, true);
+			var clickedCancel = false;
+			clickedCancel = BeamGUI.CancelButton();
+
 			GUI.enabled = !string.IsNullOrEmpty(newFederationIdName) &&
 			              !usam.latestManifest.existingFederationIds.Contains(newFederationIdName);
 			var clickedCreate = BeamGUI.PrimaryButton(new GUIContent($"Create New Federation"));
 			GUI.enabled = true;
+
+			if (clickedCancel)
+			{
+				newFederationIdName = string.Empty;
+				state = WindowState.NORMAL;
+			}
 
 			if (clickedCreate)
 			{
