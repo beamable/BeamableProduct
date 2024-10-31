@@ -24,27 +24,46 @@
     {
       "displayName": "Account Management",
       "description": "Contains a simple user interface demonstrating how to use the Beamable Accounts SDK.",
-      "path": "SAMPLES_PATH/LightBeamSamples/AccountManager"
+      "path": "SAMPLES_PATH/LightBeamSamples/AccountManager",
+      "subText": "accounts",
+      "texturePath": "Packages/com.beamable/Editor/UI/Toolbox/Icons/Acoounnt Management.png",
+      "relativeMainAssetPath": "Sample_AccountManager.unity",
+      "docsUrl": "https://docs.beamable.com/docs/identity"
     },
     {
       "displayName": "Currency HUD",
       "description": "Contains a tiny user interface demonstrating how to show a Beamable Currency.",
-      "path": "SAMPLES_PATH/LightBeamSamples/CurrencyHud"
+      "path": "SAMPLES_PATH/LightBeamSamples/CurrencyHud",
+      "subText": "accounts",
+      "texturePath": "Packages/com.beamable/Editor/UI/Toolbox/Icons/Currency HUD 1.png",
+      "relativeMainAssetPath": "Sample_CurrencyHud.unity"
+      
     },
     {
       "displayName": "Inventory Management",
       "description": "Contains a modest user interface demonstrating how to access and how inventory items and currencies.",
-      "path": "SAMPLES_PATH/LightBeamSamples/Inventory"
+      "path": "SAMPLES_PATH/LightBeamSamples/Inventory",
+      "subText": "inventory",
+      "texturePath": "Packages/com.beamable/Editor/UI/Toolbox/Icons/Inventory.png",
+      "relativeMainAssetPath": "Sample_InventoryManager.unity"
+      
     },
     {
       "displayName": "Friends HUD",
       "description": "Contains a humble user interface demonstrating how to use social features to add, remove, block friends.",
-      "path": "SAMPLES_PATH/LightBeamSamples/FriendsManager"
+      "path": "SAMPLES_PATH/LightBeamSamples/FriendsManager",
+      "subText": "social",
+      "texturePath": "Packages/com.beamable/Editor/UI/Toolbox/Icons/Friends.png",
+      "relativeMainAssetPath": "Sample_FriendsManager.unity"
+      
     },
     {
       "displayName": "Lobby Management",
       "description": "Contains a unostentatious user interface demonstrating how to use the API for creating, joining and managing lobbies.",
-      "path": "SAMPLES_PATH/LightBeamSamples/LobbyManager"
+      "path": "SAMPLES_PATH/LightBeamSamples/LobbyManager",
+      "subText": "social",
+      "texturePath": "Packages/com.beamable/Editor/UI/Toolbox/Icons/lobby.png",
+      "relativeMainAssetPath": "Sample_LobbyManager.unity"
     }
   ]
 }

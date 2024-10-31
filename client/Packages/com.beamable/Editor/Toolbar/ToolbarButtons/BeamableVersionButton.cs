@@ -1,8 +1,12 @@
 ﻿#if UNITY_2022_1_OR_NEWER
+using Beamable.Editor.Login.UI;
 using Beamable.Editor.UI.Common;
+using Beamable.Editor.Util;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -25,6 +29,7 @@ namespace Beamable.Editor.ToolbarExtender
 		{
 			base.Init();
 
+			
 			RefreshIcon();
 			Root.Add(_icon);
 
@@ -33,6 +38,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 			Root.RegisterCallback<MouseDownEvent>(ButtonClicked);
 			EditorApplication.update += RefreshIcon;
+			
 		}
 
 		private void RefreshIcon()
@@ -50,6 +56,13 @@ namespace Beamable.Editor.ToolbarExtender
 		{
 			EditorApplication.update -= RefreshIcon;
 			Root.UnregisterCallback<MouseDownEvent>(ButtonClicked);
+		}
+
+		private class MenuItemInfo
+		{
+			public MenuItem menuItem;
+			public MethodBase method;
+			public string path;
 		}
 
 		private void ButtonClicked(MouseDownEvent evt)
@@ -73,7 +86,28 @@ namespace Beamable.Editor.ToolbarExtender
 			});
 
 			var menu = new GenericMenu();
-
+			
+			if (editorAPI.IsAuthenticated)
+			{
+				menu.AddItem(new GUIContent($"Account: {editorAPI.CurrentUser.email}"), false, () =>
+				{
+					var _ = LoginWindow.Init();
+				});
+				menu.AddItem(new GUIContent("Log Out"), false, () =>
+				{
+					editorAPI.Logout(false);
+				});
+				
+			}
+			else
+			{
+				menu.AddItem(new GUIContent("Log In"), false, () =>
+				{
+					var _ = LoginWindow.CheckLogin();
+				});
+			}
+			
+			
 			assistantMenuItems
 				.ForEach(item =>
 				{

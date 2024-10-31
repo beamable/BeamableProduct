@@ -73,18 +73,17 @@ namespace Beamable.Editor.Library
 			}
 
 			{ // draw drop shadow
-				var shadowTexture = LoadTexture("Packages/com.beamable/Editor/UI/Common/Icons/softShadow.png");
 				for (var i = 0; i < library.lightbeams.Count; i++)
 				{
 					var rect = cardRects[i];
 					
 					var shadowOffset = 24;
 					var shadowRect = new Rect(rect.x - shadowOffset, rect.y + shadowOffset, rect.width, rect.height);
-					GUI.DrawTexture(shadowRect, shadowTexture, ScaleMode.StretchToFill, true);
+					GUI.DrawTexture(shadowRect, BeamGUI.iconShadowSoftA, ScaleMode.StretchToFill, true);
 					
 					shadowOffset = 6;
 					shadowRect = new Rect(rect.x - shadowOffset, rect.y + shadowOffset, rect.width, rect.height);
-					GUI.DrawTexture(shadowRect, shadowTexture, ScaleMode.StretchToFill, true);
+					GUI.DrawTexture(shadowRect, BeamGUI.iconShadowSoftA, ScaleMode.StretchToFill, true);
 				}
 			}
 
@@ -183,23 +182,31 @@ namespace Beamable.Editor.Library
 
 
 			{ // draw button 
-				var verb = "Open";
-				var noun = "Sample";
-				if (lightBeam.isLocal)
+				var text = "Open Sample";
+				if (!lightBeam.isLocal)
 				{
-					verb = "Add and Open";
+					text = "Add To Project";
 				}
 
-				var buttonRect = new Rect(bounds.xMax - 50, bounds.yMax - buttonHeight, 50 - padding,
+				var content = new GUIContent(text);
+				var size = BeamGUI.primaryButtonStyle.CalcSize(content);
+				size.x += 5;
+				var buttonRect = new Rect(bounds.xMax - size.x, bounds.yMax - buttonHeight, size.x - padding,
 				                          buttonHeight - padding);
-				clickedOpen = BeamGUI.PrimaryButton(buttonRect, new GUIContent($"{verb} {noun}"));
+				clickedOpen = BeamGUI.PrimaryButton(buttonRect, content);
 			}
 			
 			
+			if (lightBeam.HasDocsUrl)
 			{ // draw docs link
-				var docsRect = new Rect(bounds.x + padding, bounds.yMax - EditorGUIUtility.singleLineHeight - 5, 90,
+
+				var docContent = new GUIContent(bounds.width > 260 ? "Documentation" : "Docs");
+
+				var size = EditorStyles.linkLabel.CalcSize(docContent);
+				var docsRect = new Rect(bounds.x + padding, bounds.yMax - EditorGUIUtility.singleLineHeight - 5, size.x + 4,
 				                        EditorGUIUtility.singleLineHeight);
-				clickedDocs = EditorGUI.LinkButton(docsRect, "Documentation");
+				
+				clickedDocs = EditorGUI.LinkButton(docsRect, docContent);
 			}
 
 			if (clickedOpen)
@@ -235,10 +242,19 @@ namespace Beamable.Editor.Library
 			{
 				library.OpenSample(lightBeam);
 			});
-			menu.AddItem(new GUIContent("Goto Documentation"), false, () =>
+
+			if (lightBeam.HasDocsUrl)
 			{
-				library.OpenDocumentation(lightBeam);
-			});
+				menu.AddItem(new GUIContent("Goto Documentation"), false, () =>
+				{
+					library.OpenDocumentation(lightBeam);
+				});
+			}
+			else
+			{
+				menu.AddDisabledItem(new GUIContent("Goto Documentation"));
+			}
+			
 
 			menu.AddSeparator("");
 
@@ -250,7 +266,7 @@ namespace Beamable.Editor.Library
 				});
 				menu.AddItem(new GUIContent("Remove Sample"), false, () =>
 				{
-					library.RemoveSample(lightBeam);
+					library.RemoveSampleFromProject(lightBeam);
 				});
 			}
 			else

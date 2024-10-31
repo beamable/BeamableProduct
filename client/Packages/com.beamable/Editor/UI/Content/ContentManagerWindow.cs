@@ -3,11 +3,10 @@ using Beamable.Common.Api.Realms;
 using Beamable.Common.Content;
 using Beamable.Editor.Content.Components;
 using Beamable.Editor.Content.Models;
-using Beamable.Editor.Login.UI;
-using Beamable.Editor.NoUser;
 using Beamable.Editor.UI;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.Util;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -73,15 +72,14 @@ namespace Beamable.Editor.Content
 		protected override void Build()
 		{
 			// Refresh if/when the user logs-in or logs-out while this window is open
+			ActiveContext.OnUserChange -= HandleUserChange;
 			ActiveContext.OnUserChange += HandleUserChange;
+			ActiveContext.OnRealmChange -= HandleRealmChange;
 			ActiveContext.OnRealmChange += HandleRealmChange;
+			ContentIO.OnManifestChanged -= OnManifestChanged;
 			ContentIO.OnManifestChanged += OnManifestChanged;
 
 			minSize = new Vector2(600, 300);
-
-			BeamGUI.LoadAllIcons();
-			titleContent = new GUIContent("Content", BeamGUI.iconBeamableSmall);
-
 			Refresh();
 		}
 
@@ -97,6 +95,15 @@ namespace Beamable.Editor.Content
 		private void HandleRealmChange(RealmView realm) => EditorApplication.delayCall += Refresh;
 		private void HandleUserChange(User user) => Refresh();
 		private void OnManifestChanged(string manifestId) => SoftReset();
+
+		protected override void DrawGUI()
+		{
+			// eh?
+			if (_contentManager == null)
+			{
+				Build();
+			}
+		}
 
 		public void Refresh()
 		{

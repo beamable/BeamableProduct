@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: OpenPortalMenuItem
   m_EditorClassIdentifier: 
   Order: 50
-  Text: Open Beamable Portal
+  Text: Goto Portal

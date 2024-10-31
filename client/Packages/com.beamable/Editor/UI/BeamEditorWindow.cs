@@ -1,17 +1,18 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
 using Beamable.Editor.Login.UI;
-using Beamable.Editor.NoUser;
-using Beamable.Editor.Toolbox.UI;
-using Beamable.Editor.UI.Components;
+using Beamable.Editor.Util;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.Experimental.UIElements;
+using UnityEditor.PackageManager.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Color = UnityEngine.Color;
 
 namespace Beamable.Editor.UI
 {
@@ -94,10 +95,13 @@ namespace Beamable.Editor.UI
 		/// Function that initializes a window based on it's given <paramref name="config"/>.
 		/// </summary>
 		/// <param name="config">A set of configuration parameters informing us how to initialize the window.</param>
-		protected static async Task InitBeamEditorWindow(BeamEditorWindowInitConfig config)
+		protected static Task InitBeamEditorWindow(BeamEditorWindowInitConfig config)
 		{
 			var requireLoggedUser = config.RequireLoggedUser;
-			if (requireLoggedUser) await LoginWindow.CheckLogin(typeof(SceneView));
+			if (requireLoggedUser)
+			{
+				var loginPromise = LoginWindow.CheckLogin();
+			}
 
 			// If it was already instantiated -- destroy the existing window.
 			var dockPreference = string.IsNullOrEmpty(config.DockPreferenceTypeName) ? null : Type.GetType(config.DockPreferenceTypeName);
@@ -111,6 +115,7 @@ namespace Beamable.Editor.UI
 				_instance.FullyInitializedWindowPromise = new Promise();
 
 			_instance.Show(true);
+			return Task.CompletedTask;
 		}
 
 		public virtual void OnEnable()
@@ -212,16 +217,6 @@ namespace Beamable.Editor.UI
 			ActiveContext = context ?? ActiveContext;
 
 			var dispatcher = ActiveContext.ServiceScope.GetService<BeamableDispatcher>();
-
-			// async Promise Setup()
-			// {
-			// 	await Load();
-			// 	var root = this.GetRootVisualContainer();
-			// 	root.Clear();
-			//
-			// 	await BuildAsync();
-			// }
-
 			dispatcher.Schedule(async () =>
 			{
 				try
@@ -234,7 +229,7 @@ namespace Beamable.Editor.UI
 						}
 						else
 						{
-							BuildWhenNotAuthenticated();
+							// BuildWhenNotAuthenticated();
 						}
 					}
 					else
@@ -258,17 +253,56 @@ namespace Beamable.Editor.UI
 			return Promise.Success;
 		}
 
-		protected virtual void BuildWhenNotAuthenticated()
+		private void OnGUI()
 		{
+			BeamGUI.LoadAllIcons();
+			BeamGUI.CreateButtonStyles();
+			
+			titleContent = new GUIContent(InitializedConfig.Title, BeamGUI.iconBeamableSmall);
 			var root = this.GetRootVisualContainer();
-			root.Clear();
-			var noUserVisualElement = new NoUserVisualElement();
-			noUserVisualElement.OnLoginCheckComplete += () =>
+
+			var ctx = ActiveContext;
+			if (ctx == null)
 			{
-				BuildWithContext();
-			};
-			root.Add(noUserVisualElement);
+				root.Clear();
+				DrawNoContextGui();
+				return;
+			}
+			
+			if (!ctx.InitializePromise.IsCompleted)
+			{
+				root.Clear();
+				DrawWaitingForContextGui();
+				return;
+			}
+
+			if (InitializedConfig.RequireLoggedUser && !ctx.IsAuthenticated)
+			{
+				root.Clear();
+				DrawNotLoggedInGui();
+				return;
+			}
+			
+			
+			DrawGUI();
 		}
+
+		protected virtual void DrawGUI()
+		{
+			
+		}
+
+		// protected virtual void BuildWhenNotAuthenticated()
+		// {
+		// 	var root = this.GetRootVisualContainer();
+		// 	root.Clear();
+		// 	var noUserVisualElement = new NoUserVisualElement();
+		// 	noUserVisualElement.OnLoginCheckComplete += () =>
+		// 	{
+		// 		BuildWithContext();
+		// 	};
+		// 	root.Add(noUserVisualElement);
+		// }
 
 		protected virtual void ShowFullWindowLoading()
 		{
@@ -301,17 +335,93 @@ namespace Beamable.Editor.UI
 		
 		protected void DrawNoContextGui()
 		{
-			EditorGUILayout.SelectableLabel("No Beamable context is available");
+			DrawBlockLoading("Resolving Beamable...");
 		}
 		
 		protected void DrawWaitingForContextGui()
 		{
-			EditorGUILayout.SelectableLabel("Loading Beamable...");
+			DrawBlockLoading("Loading Beamable...");
+		}
+
+		protected void DrawBlockLoading(string message)
+		{
+			BeamGUI.DrawHeaderSection(this, ActiveContext, () => { }, () => { }, () => { }, () => { });
+			EditorGUILayout.Space(12, false);
+			BeamGUI.LoadingSpinnerWithState(message);
+		}
+
+		public int backgroundImageIndex = 0;
+		protected void DrawBackgroundTexture()
+		{
+			{ // draw background image
+				var c = GUI.color;
+
+			
+				if (backgroundImageIndex == 0) // construct a background image if not assigned
+				{
+					backgroundImageIndex = (int)DateTimeOffset.Now.ToUnixTimeMilliseconds();
+				}
+				var backgroundImage = BeamGUI.loginArts[(Mathf.Abs(backgroundImageIndex) % BeamGUI.loginArts.Length)];
+				GUI.color = new Color(1, 1, 1, .05f);
+				GUI.DrawTexture(new Rect(0, 0, position.width, position.height), backgroundImage, ScaleMode.ScaleAndCrop);
+				GUI.color = c;
+			}
 		}
 
 		protected void DrawNotLoggedInGui()
 		{
-			EditorGUILayout.SelectableLabel("Must log into Beamable...");
+			EditorGUILayout.BeginVertical(new GUIStyle
+			{
+				margin = new RectOffset(12, 12, 12, 12)
+			});
+			
+			DrawBackgroundTexture();
+			var logo = BeamGUI.iconLogoHeader;
+
+			{ // draw the back-shadow and logo
+				var logoRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.Height(50),
+				                                        GUILayout.ExpandWidth(true));
+				var logoAspect = logo.width / (float)logo.height;
+				var shadowWidth = logoAspect * logoRect.height;
+
+				var shadowRect = new Rect(logoRect.x + logoRect.width * .5f - shadowWidth * .5f, logoRect.y,
+				                          shadowWidth, logoRect.height);
+
+				const int shadowYOffset = 6;
+				var leftShadowRect = new Rect(shadowRect.x - 12, shadowRect.y + shadowYOffset, 20, shadowRect.height);
+				var rightShadowRect =
+					new Rect(shadowRect.xMax - 20, shadowRect.y + shadowYOffset, 12, shadowRect.height);
+				var centerShadowRect = new Rect(leftShadowRect.xMax, shadowRect.y + shadowYOffset,
+				                                (rightShadowRect.xMin - leftShadowRect.xMax), shadowRect.height);
+				
+				// draw the shadow as 3 parts to avoid texture stretching
+				GUI.DrawTextureWithTexCoords(leftShadowRect, BeamGUI.iconShadowSoftA, new Rect(0, 0, .2f, 1f));
+				GUI.DrawTextureWithTexCoords(rightShadowRect, BeamGUI.iconShadowSoftA, new Rect(.8f, 0, .2f, 1f));
+				GUI.DrawTextureWithTexCoords(centerShadowRect, BeamGUI.iconShadowSoftA, new Rect(.2f, 0, .6f, 1f));
+
+				GUI.DrawTexture(logoRect, BeamGUI.iconLogoHeader, ScaleMode.ScaleToFit);
+			}
+
+			EditorGUILayout.Space(12, false);
+			
+			{ // draw a notice
+				EditorGUILayout.HelpBox(
+					$"Welcome to Beamable! You must Log-in before you can use the {titleContent.text} window. " +
+					$"If you don't have an account, use the Log-in button to create an account. ",
+					MessageType.Info);
+			}
+			
+			EditorGUILayout.Space(12, false);
+
+			{ // draw button to open
+				if (BeamGUI.PrimaryButton(new GUIContent("Log in")))
+				{
+					var _ = LoginWindow.CheckLogin();
+				}
+			}
+
+			EditorGUILayout.EndVertical();
+			
 		}
 
 	}
