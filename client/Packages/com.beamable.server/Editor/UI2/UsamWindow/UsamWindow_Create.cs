@@ -1,7 +1,9 @@
 using Beamable.Common.Semantics;
 using Beamable.Editor.Util;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -51,6 +53,13 @@ namespace Beamable.Editor.Microservice.UI2
 			"\n\n" +
 			"[Optional] Select which Microservices should be linked to this Storage Object. ";
 
+		private const string FederationTemplatePath = "Packages/com.beamable.server/Editor/UI2/ScriptTemplates/FederationId.cs.txt";
+		private const string CommonPath = "Assets/Beamable/Common/";
+		private const string ScriptNameReplaceTag = "#SCRIPTNAME#";
+		private const string ScriptNameLowerCaseReplaceTag = "#SCRIPTNAME_LOWER#";
+
+		private string newFederationIdName = string.Empty;
+
 		
 		void DrawNewStorage()
 		{
@@ -85,6 +94,79 @@ namespace Beamable.Editor.Microservice.UI2
 					return true;
 				});
 			
+		}
+
+		private void DrawNewFederationId()
+		{
+			EditorGUILayout.BeginVertical(new GUIStyle(EditorStyles.helpBox)
+			{
+				padding = new RectOffset(12, 12, 12, 12),
+				margin = new RectOffset(10, 10, 10, 10)
+			});
+
+			EditorGUILayout.TextArea("A Federation Id is required in order to add federation to your service.\n\n" +
+			                         "Enter the name of your Federation Id below:", new GUIStyle(EditorStyles.label) {wordWrap = true});
+
+			EditorGUILayout.Space(4, false);
+
+			newFederationIdName =
+				BeamGUI.LayoutPlaceholderTextField(newFederationIdName, $"[Federation Id Name]", EditorStyles.textField);
+
+			EditorGUILayout.Space(4, false);
+
+			EditorGUILayout.BeginHorizontal(new GUIStyle
+			{
+				margin = new RectOffset(0, 0, 12, 12)
+			});
+
+			EditorGUILayout.Space(5, true);
+			EditorGUILayout.Space(5, true);
+			var clickedCancel = false;
+			clickedCancel = BeamGUI.CancelButton();
+
+			GUI.enabled = !string.IsNullOrEmpty(newFederationIdName) &&
+			              !usam.latestManifest.existingFederationIds.Contains(newFederationIdName);
+			var clickedCreate = BeamGUI.PrimaryButton(new GUIContent($"Create New Federation"));
+			GUI.enabled = true;
+
+			if (clickedCancel)
+			{
+				newFederationIdName = string.Empty;
+				state = WindowState.NORMAL;
+			}
+
+			if (clickedCreate)
+			{
+				AddDelayedAction(() =>
+				{
+					var template = File.ReadAllText(FederationTemplatePath);
+					var lowerCaseName = newFederationIdName;
+					if ( !string.IsNullOrEmpty(lowerCaseName) && char.IsUpper(lowerCaseName[0]))
+						lowerCaseName = lowerCaseName.Length == 1 ? char.ToLower(lowerCaseName[0]).ToString() : char.ToLower(lowerCaseName[0]) + lowerCaseName[1..];
+
+					var newContent = template.Replace(ScriptNameReplaceTag, newFederationIdName)
+					                         .Replace(ScriptNameLowerCaseReplaceTag, lowerCaseName);
+
+					var newFilePath = CommonPath + $"{newFederationIdName}.cs";
+					File.WriteAllText(newFilePath, newContent);
+					newFederationIdName = string.Empty;
+
+					usam._dispatcher.Run("script-reload", ReloadScripts());
+
+					IEnumerator ReloadScripts()
+					{
+						while (!File.Exists(newFilePath))
+						{
+							yield return new WaitForSecondsRealtime(0.5f);
+						}
+						state = WindowState.NORMAL;
+						ActivateSettings();
+						AssetDatabase.Refresh();
+					}
+				});
+			}
+			EditorGUILayout.EndHorizontal();
+			EditorGUILayout.EndVertical();
 		}
 		
 		

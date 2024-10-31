@@ -1,0 +1,6 @@
+using Beamable.Common;
+
+public class #SCRIPTNAME#Federation : IFederationId
+{
+    public string UniqueName => "#SCRIPTNAME_LOWER#";
+}

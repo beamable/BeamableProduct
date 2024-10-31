@@ -106,13 +106,14 @@ namespace Beamable.Editor.Microservice.UI2
 				case WindowState.CREATE_STORAGE:
 					DrawNewStorage();
 					break;
+				case WindowState.CREATE_FEDERATION_ID:
+					DrawNewFederationId();
+					break;
 				case WindowState.NORMAL:
 					DrawContent();
 					break;
 			}
 		}
-
-
 
 		void DrawContent()
 		{
@@ -140,6 +141,7 @@ namespace Beamable.Editor.Microservice.UI2
 		{
 			CREATE_SERVICE,
 			CREATE_STORAGE,
+			CREATE_FEDERATION_ID,
 			NORMAL,
 			SETTINGS,
 			PUBLISH,
@@ -260,7 +262,10 @@ namespace Beamable.Editor.Microservice.UI2
 					state = WindowState.CREATE_STORAGE;
 					newServiceName = "";
 				});
-				
+				menu.AddItem(new GUIContent("Federation Id"), false, () =>
+				{
+					state = WindowState.CREATE_FEDERATION_ID;
+				});
 				
 				menu.ShowAsContext();
 			}
