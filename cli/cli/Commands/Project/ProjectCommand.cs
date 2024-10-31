@@ -37,7 +37,8 @@ public class ProjectCommand : CommandGroup
 	{
 		command.AddOption(new Option<List<string>>(
 			name: "--ids",
-			description: "The list of services to include, defaults to all local services (separated by whitespace)") { AllowMultipleArgumentsPerToken = true, Arity = ArgumentArity.ZeroOrMore }, binder);
+			description: "The list of services to include, defaults to all local services (separated by whitespace)")
+		{ AllowMultipleArgumentsPerToken = true, Arity = ArgumentArity.ZeroOrMore }, binder);
 	}
 
 	public static void AddServiceTagsOption<TArgs>(AppCommand<TArgs> command, Action<TArgs, List<string>> bindWithTags, Action<TArgs, List<string>> bindWithoutTags)
@@ -47,14 +48,16 @@ public class ProjectCommand : CommandGroup
 			name: "--with-group",
 			description:
 			$"A set of {CliConstants.PROP_BEAM_SERVICE_GROUP} tags that will include the associated services"
-		) { AllowMultipleArgumentsPerToken = true, Arity = ArgumentArity.ZeroOrMore };
+		)
+		{ AllowMultipleArgumentsPerToken = true, Arity = ArgumentArity.ZeroOrMore };
 		withTagsOption.AddAlias("--with-groups");
 
 		var withoutTagsOption = new Option<List<string>>(
 			name: "--without-group",
 			description:
 			$"A set of {CliConstants.PROP_BEAM_SERVICE_GROUP} tags that will exclude the associated services. Exclusion takes precedence over inclusion"
-		) { AllowMultipleArgumentsPerToken = true, Arity = ArgumentArity.ZeroOrMore };
+		)
+		{ AllowMultipleArgumentsPerToken = true, Arity = ArgumentArity.ZeroOrMore };
 		withoutTagsOption.AddAlias("--without-groups");
 
 		command.AddOption(withoutTagsOption, (args, option) =>
@@ -93,7 +96,7 @@ public class ProjectCommand : CommandGroup
 	/// <param name="includeStorage"></param>
 	/// <param name="services"></param>
 	/// <exception cref="CliException"></exception>
-	public static void FinalizeServicesArg(CommandArgs args, List<string> withTags, List<string> withoutTags, bool includeStorage, ref List<string> services, bool allowEmptyServices=false)
+	public static void FinalizeServicesArg(CommandArgs args, List<string> withTags, List<string> withoutTags, bool includeStorage, ref List<string> services, bool allowEmptyServices = false)
 	{
 		services ??= new List<string>();
 		var noExplicitlyListedServices = services.Count == 0;
@@ -156,7 +159,7 @@ public class ProjectCommand : CommandGroup
 
 	public static ProjectBuildStatusReport IsProjectBuiltMsBuild(Project project)
 	{
-		
+
 		var outDir = project.GetPropertyValue("OutDir");
 		outDir = outDir.LocalizeSlashes();
 		var fullOutDir = Path.Combine(project.DirectoryPath, outDir);
@@ -210,9 +213,9 @@ public class ProjectCommand : CommandGroup
 				{
 					Log.Verbose("loading dll name=[{Name}] version=[{Version}]", name.Name, name.Version);
 					var loadedDependentAsm = context.LoadFromAssemblyPath(assemblyPath);
-					if(!skipReferencedAssemblies)
+					if (!skipReferencedAssemblies)
 						allAssemblies.Add(loadedDependentAsm);
-					
+
 					return loadedDependentAsm;
 				}
 				catch (Exception ex)
@@ -230,7 +233,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 			};
 
 			var userAssembly = loadContext.LoadFromAssemblyPath(absolutePath);
-			if(!skipReferencedAssemblies)
+			if (!skipReferencedAssemblies)
 			{
 				Log.Verbose("loading dll name=[{Name}] version=[{Version}] deps=[{Deps}]", userAssembly.GetName().Name, userAssembly.GetName().Version,
 					string.Join(", ", userAssembly.GetReferencedAssemblies().Select(n => n.Name)));
@@ -253,7 +256,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 		Log.Verbose("finished loading all dll files.");
 
 		// need to turn the crank loading types until the spigot bleeds dry.
-		if(!skipAssemblyExpansion)
+		if (!skipAssemblyExpansion)
 		{
 			var startCount = allAssemblies.Count;
 			var finalCount = 0;

@@ -17,7 +17,7 @@ namespace Beamable.Common.Api.Auth
 		/// <param name="languageCodeISO6391">
 		/// The language code should be an ISO6391 string.
 		/// </param>
- 		/// <returns>A <see cref="Promise{User}"/> with the updated language information</returns>
+		/// <returns>A <see cref="Promise{User}"/> with the updated language information</returns>
 		Promise<User> SetLanguage(string languageCodeISO6391);
 
 		/// <summary>

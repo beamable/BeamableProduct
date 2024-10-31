@@ -45,7 +45,7 @@ namespace Beamable.Common
 
 			return retType.ToString();
 		}
-		
+
 		/// <summary>
 		/// From: https://stackoverflow.com/a/6386234/569302
 		/// </summary>

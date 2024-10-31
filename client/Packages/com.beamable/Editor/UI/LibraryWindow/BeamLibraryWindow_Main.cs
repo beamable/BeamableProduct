@@ -15,24 +15,24 @@ namespace Beamable.Editor.Library
 		void DrawHeader()
 		{
 			BeamGUI.DrawHeaderSection(this, ActiveContext,
-			                          drawTopBarGui: () =>
-			                          {
-				                          // there aren't really any options that make sense yet.
-			                          }, 
-			                          drawLowBarGui: () =>
-			                          {
-				                          EditorGUILayout.Space(4, false);
-				                          BeamGUI.LayoutRealmDropdown(this, ActiveContext);
-				                          EditorGUILayout.Space(4, false);
-			                          }, 
-			                          onClickedRefresh: () =>
-			                          {
-				                          library.Reload();
-			                          },
-			                          onClickedHelp: () =>
-			                          {
-				                          throw new NotImplementedException("go to docs");
-			                          });
+									  drawTopBarGui: () =>
+									  {
+										  // there aren't really any options that make sense yet.
+									  },
+									  drawLowBarGui: () =>
+									  {
+										  EditorGUILayout.Space(4, false);
+										  BeamGUI.LayoutRealmDropdown(this, ActiveContext);
+										  EditorGUILayout.Space(4, false);
+									  },
+									  onClickedRefresh: () =>
+									  {
+										  library.Reload();
+									  },
+									  onClickedHelp: () =>
+									  {
+										  throw new NotImplementedException("go to docs");
+									  });
 		}
 	}
 }

@@ -22,7 +22,7 @@ using UnityEngine;
 
 namespace Beamable.Server.Editor.Usam
 {
-	
+
 	[Serializable]
 	public class ServiceRoutingSetting
 	{
@@ -31,20 +31,20 @@ namespace Beamable.Server.Editor.Usam
 		public RoutingOption selectedOption = null;
 
 		public List<RoutingOption> options = new List<RoutingOption>();
-		
+
 		public bool IsSelectedValid => options.Any(x => x.routingKey == selectedOption?.routingKey && x?.instance?.primaryKey == selectedOption?.instance?.primaryKey);
 
 	}
-	
+
 	public enum RoutingOptionType
 	{
-		REMOTE, 
+		REMOTE,
 		LOCAL,
 		AUTO,
 		FRIEND
 	}
 
-	
+
 	[Serializable]
 	public class RoutingOption
 	{
@@ -52,10 +52,10 @@ namespace Beamable.Server.Editor.Usam
 		public string routingKey;
 		public RoutingOptionType type;
 		public BeamServiceInstance instance;
-		
+
 	}
-	
-	
+
+
 	public class UsamService : IStorageHandler<UsamService>, Beamable.Common.Dependencies.IServiceStorable
 	{
 		[Serializable]
@@ -67,12 +67,12 @@ namespace Beamable.Server.Editor.Usam
 		}
 
 		public static List<IFederationId> CompiledFederationIds = TypeCache.GetTypesDerivedFrom<IFederationId>()
-		                                                                   .Where(type => !type.IsAbstract && !type.IsInterface)
-		                                                                   .Select(
-			                                                                   type => (IFederationId)Activator.CreateInstance(type))
-		                                                                   .ToList();
-		
-		
+																		   .Where(type => !type.IsAbstract && !type.IsInterface)
+																		   .Select(
+																			   type => (IFederationId)Activator.CreateInstance(type))
+																		   .ToList();
+
+
 		private StorageHandle<UsamService> _handle;
 		private BeamCommands _cli;
 		public BeamCommands Cli => _cli;
@@ -88,7 +88,7 @@ namespace Beamable.Server.Editor.Usam
 		/// Controls where traffic will be directed
 		/// </summary>
 		public List<ServiceRoutingSetting> routingSettings = new List<ServiceRoutingSetting>();
-		
+
 		/// <summary>
 		/// This is a counter to track how many times the <see cref="ListenForBuildChanges"/> method has been called.
 		/// Internal to the method, this field is used to stop old invocations of the on-going coroutine
@@ -108,16 +108,16 @@ namespace Beamable.Server.Editor.Usam
 
 		[NonSerialized]
 		public bool hasReceivedManifestThisDomain;
-		
+
 		[NonSerialized]
 		private ProjectPsWrapper _watchCommand;
-		
+
 		[NonSerialized]
 		private ServicesDockerStatusWrapper _listenDockerCommand;
-		
+
 		[NonSerialized]
 		private ProjectStorageSnapshotWrapper _snapshotCommand;
-		
+
 		[NonSerialized]
 		public Promise receivedAnyDockerStateYet = new Promise();
 
@@ -127,12 +127,12 @@ namespace Beamable.Server.Editor.Usam
 
 		[NonSerialized]
 		private Dictionary<string, ServiceCliAction> _serviceToAction = new Dictionary<string, ServiceCliAction>();
-		
+
 		[NonSerialized]
 		private Promise _watchPromise;
-		
-		
-		
+
+
+
 		[NonSerialized]
 		private ProjectGenerateClientWrapper _generateClientCommand;
 
@@ -160,10 +160,10 @@ namespace Beamable.Server.Editor.Usam
 			public ServiceCliActionType label;
 			public BeamCommandWrapper command;
 		}
-		
+
 		public UsamService(
 			BeamEditorContext ctx,
-			BeamCommands cli, 
+			BeamCommands cli,
 			CommonAreaService commonArea,
 			BeamableDispatcher dispatcher,
 			ReflectionCache editorCache)
@@ -173,7 +173,7 @@ namespace Beamable.Server.Editor.Usam
 			_microserviceCache = editorCache.GetFirstSystemOfType<MicroserviceReflectionCache.Registry>();
 			_dispatcher = dispatcher;
 			_cli = cli;
-			
+
 			_commonArea.EnsureAreas(out _commonAssemblyAsset);
 		}
 
@@ -197,7 +197,7 @@ namespace Beamable.Server.Editor.Usam
 		{
 			status = null;
 			if (latestStatus == null) return false;
-			
+
 			for (var i = 0; i < latestStatus.Count; i++)
 			{
 				if (latestStatus[i].service == beamoId)
@@ -224,7 +224,7 @@ namespace Beamable.Server.Editor.Usam
 
 			return false;
 		}
-		
+
 		public void ReceiveStorageHandle(StorageHandle<UsamService> handle)
 		{
 			_handle = handle;
@@ -240,13 +240,13 @@ namespace Beamable.Server.Editor.Usam
 
 			latestManifest.services ??= new List<BeamManifestServiceEntry>();
 		}
-		
-		
-		
-		public async Promise SetMicroserviceChanges(string serviceName, 
-		                                            List<AssemblyDefinitionAsset> assemblyDefinitions, 
-		                                            List<string> dependencies,
-		                                            List<BeamFederationEntry> federations)
+
+
+
+		public async Promise SetMicroserviceChanges(string serviceName,
+													List<AssemblyDefinitionAsset> assemblyDefinitions,
+													List<string> dependencies,
+													List<BeamFederationEntry> federations)
 		{
 			var service = latestManifest.services.FirstOrDefault(s => s.beamoId == serviceName);
 			if (service == null)
@@ -256,7 +256,7 @@ namespace Beamable.Server.Editor.Usam
 
 			UsamLogger.Log($"Starting updating storage dependencies");
 			await UpdateServiceFederations(service, federations);
-			
+
 			await UpdateServiceStoragesDependencies(service, dependencies);
 
 			await UpdateServiceReferences(service, assemblyDefinitions);
@@ -265,7 +265,7 @@ namespace Beamable.Server.Editor.Usam
 		}
 
 		public async Promise UpdateServiceFederations(BeamManifestServiceEntry service,
-		                                              List<BeamFederationEntry> federations)
+													  List<BeamFederationEntry> federations)
 		{
 			var args = new FederationSetArgs
 			{
@@ -284,10 +284,10 @@ namespace Beamable.Server.Editor.Usam
 				args.clear = true;
 			}
 
-			
+
 			await _cli.FederationSet(args).Run();
 		}
-		
+
 		public async Promise UpdateServiceStoragesDependencies(BeamManifestServiceEntry service, List<string> dependencies)
 		{
 			var serviceName = service.beamoId;
@@ -303,7 +303,8 @@ namespace Beamable.Server.Editor.Usam
 				UsamLogger.Log($"Removing dependency [{dep}] from service [{serviceName}]");
 				var removeCommand = _cli.ProjectDepsRemove(new ProjectDepsRemoveArgs()
 				{
-					microservice = serviceName, dependency = dep
+					microservice = serviceName,
+					dependency = dep
 				});
 				await removeCommand.Run();
 			}
@@ -313,12 +314,13 @@ namespace Beamable.Server.Editor.Usam
 				UsamLogger.Log($"Adding dependency [{dep}] to service [{serviceName}]");
 				var addCommand = _cli.ProjectDepsAdd(new ProjectDepsAddArgs()
 				{
-					microservice = serviceName, dependency = dep
+					microservice = serviceName,
+					dependency = dep
 				});
 				await addCommand.Run();
 			}
 		}
-		
+
 		public async Promise UpdateServiceReferences(BeamManifestServiceEntry service, List<AssemblyDefinitionAsset> assemblyDefinitions, bool shouldRefresh = true)
 		{
 			UsamLogger.Log($"Starting updating references");
@@ -332,7 +334,7 @@ namespace Beamable.Server.Editor.Usam
 				var pathToService = service.csprojPath;
 				pathsList.Add(PackageUtil.GetRelativePath(pathToService, pathFromRootFolder));
 			}
-			
+
 			var updateCommand = _cli.UnityUpdateReferences(new UnityUpdateReferencesArgs()
 			{
 				service = service.beamoId,
@@ -380,7 +382,7 @@ namespace Beamable.Server.Editor.Usam
 				_listenDockerCommand.Cancel();
 				_listenDockerCommand = null;
 			}
-			_listenDockerCommand = _cli.ServicesDockerStatus(new ServicesDockerStatusArgs {watch = true});
+			_listenDockerCommand = _cli.ServicesDockerStatus(new ServicesDockerStatusArgs { watch = true });
 
 			_listenDockerCommand.OnStreamDockerStatusCommandOutput(cb =>
 			{
@@ -390,7 +392,7 @@ namespace Beamable.Server.Editor.Usam
 			var _ = _listenDockerCommand.Run();
 		}
 
-		
+
 		public void ListenForStatus()
 		{
 			if (_watchCommand != null)
@@ -398,7 +400,7 @@ namespace Beamable.Server.Editor.Usam
 				_watchCommand.Cancel();
 				_watchCommand = null;
 			}
-			_watchCommand = _cli.ProjectPs(new ProjectPsArgs {watch = true,});
+			_watchCommand = _cli.ProjectPs(new ProjectPsArgs { watch = true, });
 			_watchCommand.OnStreamCheckStatusServiceResult(cb =>
 			{
 				latestStatus = cb.data.services;
@@ -440,11 +442,13 @@ namespace Beamable.Server.Editor.Usam
 			{
 				setting = new ServiceRoutingSetting
 				{
-					beamoId = status.service, selectedOption = null, options = new List<RoutingOption>()
+					beamoId = status.service,
+					selectedOption = null,
+					options = new List<RoutingOption>()
 				};
 				routingSettings.Add(setting);
 			}
-			
+
 			// populate all the options
 			setting.options.Clear();
 			RoutingOption localOption = null;
@@ -452,13 +456,13 @@ namespace Beamable.Server.Editor.Usam
 
 			var autoOption = new RoutingOption
 			{
-				display = null, 
-				routingKey = latestManifest.localRoutingKey, 
+				display = null,
+				routingKey = latestManifest.localRoutingKey,
 				type = RoutingOptionType.AUTO
 			};
 			setting.options.Add(autoOption);
-			
-			
+
+
 			for (var i = 0; i < status.availableRoutes.Count; i++)
 			{
 				var route = status.availableRoutes[i];
@@ -484,12 +488,13 @@ namespace Beamable.Server.Editor.Usam
 						routingKey = latestManifest.localRoutingKey
 					};
 					setting.options.Add(localOption);
-				} else if (string.IsNullOrEmpty(route.routingKey))
+				}
+				else if (string.IsNullOrEmpty(route.routingKey))
 				{
 					// this is the remote-deployed service, because it has an empty routingKey
 					remoteOption = new RoutingOption
 					{
-						display = "realm", 
+						display = "realm",
 						type = RoutingOptionType.REMOTE,
 						instance = instance
 					};
@@ -513,21 +518,22 @@ namespace Beamable.Server.Editor.Usam
 					autoOption.display = localOption.display;
 					autoOption.instance = localOption.instance;
 					// autoOption.routingKey = localOption.routingKey;
-				} else if (remoteOption != null)
+				}
+				else if (remoteOption != null)
 				{
 					autoOption.display = remoteOption.display;
 					autoOption.instance = remoteOption.instance;
 					// autoOption.routingKey = remoteOption.routingKey;
 				}
 			}
-			
+
 			// if the selection is no longer valid, then we jump to local first, 
 			if (setting.selectedOption == null || setting.selectedOption.type == RoutingOptionType.AUTO)
 			{
 				setting.selectedOption = autoOption;
 			}
 		}
-		
+
 		public void ListenForLogs(string service)
 		{
 			if (_serviceToLogCommand.TryGetValue(service, out var existingCommand))
@@ -535,10 +541,11 @@ namespace Beamable.Server.Editor.Usam
 				existingCommand.Cancel();
 				_serviceToLogCommand.Remove(service);
 			}
-			
+
 			var logCommand = _cli.ProjectLogs(new ProjectLogsArgs
 			{
-				service = new ServiceName(service), reconnect = true
+				service = new ServiceName(service),
+				reconnect = true
 			});
 			logCommand.OnStreamTailLogMessageForClient(cb =>
 			{
@@ -560,7 +567,7 @@ namespace Beamable.Server.Editor.Usam
 			var beamoIdToWriteTime = new Dictionary<string, long>();
 
 			_dispatcher.Run("usam-build-generation", Run(latestListenTaskId));
-			
+
 			IEnumerator Run(int taskId)
 			{
 				while (taskId == latestListenTaskId)
@@ -577,7 +584,7 @@ namespace Beamable.Server.Editor.Usam
 						if (string.IsNullOrEmpty(path)) continue;
 
 						if (!File.Exists(path)) continue;
-						
+
 						var writeTime = File.GetLastWriteTime(path).ToFileTime();
 						if (beamoIdToWriteTime.TryGetValue(service.beamoId, out var lastWriteTime) && writeTime > lastWriteTime)
 						{
@@ -600,13 +607,13 @@ namespace Beamable.Server.Editor.Usam
 		{
 			var _ = WaitReload();
 		}
-		
-		
-		
+
+
+
 		public Promise WaitReload()
 		{
 			var taskId = ++latestReloadTaskId;
-			
+
 			LoadLegacyServices();
 
 			var command = _cli.UnityManifest();
@@ -614,12 +621,12 @@ namespace Beamable.Server.Editor.Usam
 			{
 				if (latestReloadTaskId != taskId)
 					return;
-				
+
 				hasReceivedManifestThisDomain = true;
 				latestManifest = cb.data;
 				CsProjUtil.OnPreGeneratingCSProjectFiles(this);
 			});
-			
+
 			var p = command.Run();
 			ListenForStatus();
 			ListenForDocker();
@@ -634,15 +641,15 @@ namespace Beamable.Server.Editor.Usam
 
 		public void OpenMongo(string beamoId)
 		{
-			var command = _cli.ProjectOpenMongo(new ProjectOpenMongoArgs {serviceName = new ServiceName(beamoId)});
+			var command = _cli.ProjectOpenMongo(new ProjectOpenMongoArgs { serviceName = new ServiceName(beamoId) });
 			command.OnLog(cb =>
 			{
 				AddLog(beamoId, cb.data);
 			});
 			var _ = command.Run();
 		}
-		
-		public void OpenSwagger(string beamoId, bool remote=false)
+
+		public void OpenSwagger(string beamoId, bool remote = false)
 		{
 			try
 			{
@@ -658,14 +665,14 @@ namespace Beamable.Server.Editor.Usam
 
 		public void OpenProject(string beamoId, string projectPath)
 		{
-			
+
 			var sln = SERVICES_SLN_PATH;
 			var fileName = $@"{Path.GetDirectoryName(projectPath)}/{beamoId}.cs";
-			
-			
+
+
 			// first open the sln, because in most IDEs multi-solution view is not supported. 
 			EditorUtility.OpenWithDefaultApp(sln);
-			
+
 			// and once enough time has passed, hopefully enough so that the IDE has focused
 			//  the solution; open the actual sub class file.
 			IEnumerator OpenFile()
@@ -680,13 +687,14 @@ namespace Beamable.Server.Editor.Usam
 		public bool IsRunningLocally(BeamServiceStatus status)
 		{
 			var actuallyRunning = status.availableRoutes.Any(x => x.knownToBeRunning &&
-			                                       x.routingKey == latestManifest.localRoutingKey);
+												   x.routingKey == latestManifest.localRoutingKey);
 			if (TryGetExistingAction(status.service, out var progress) && !progress.isComplete)
 			{
 				if (progress.label == ServiceCliActionType.Running)
 				{
 					return true;
-				} else if (progress.label == ServiceCliActionType.Stopping)
+				}
+				else if (progress.label == ServiceCliActionType.Stopping)
 				{
 					return false;
 				}
@@ -707,7 +715,7 @@ namespace Beamable.Server.Editor.Usam
 				StartStorage(storage);
 			}
 		}
-		
+
 		public void ToggleRun(BeamManifestServiceEntry service, BeamServiceStatus status)
 		{
 			var isRunning = IsRunningLocally(status);
@@ -726,7 +734,7 @@ namespace Beamable.Server.Editor.Usam
 			setting = routingSettings.FirstOrDefault(x => x.beamoId == service);
 			return setting != null;
 		}
-		
+
 		public bool TryGetExistingAction(string service, out ServiceCliAction action)
 		{
 			return _serviceToAction.TryGetValue(service, out action);
@@ -761,16 +769,18 @@ namespace Beamable.Server.Editor.Usam
 			// TODO: remove this method
 			AddLog(service.beamoId, logMessage);
 		}
-		
+
 		void AddLog(string beamoId, CliLogMessage logMessage)
 		{
 			if (string.IsNullOrEmpty(logMessage.message)) return;
-			
+
 			if (!TryGetLogs(beamoId, out var log))
 			{
 				log = new NamedLogView
 				{
-					logs = new List<CliLogMessage>(), beamoId = beamoId, logView = new LogView
+					logs = new List<CliLogMessage>(),
+					beamoId = beamoId,
+					logView = new LogView
 					{
 						verbose = new LogLevelView
 						{
@@ -784,20 +794,21 @@ namespace Beamable.Server.Editor.Usam
 				};
 				_namedLogs.Add(log);
 			}
-				
+
 			log.logs.Add(new CliLogMessage
 			{
-				message = logMessage.message.TrimStart(new char[]{' ', '\n', '\r'}),
+				message = logMessage.message.TrimStart(new char[] { ' ', '\n', '\r' }),
 				logLevel = logMessage.logLevel,
 				timestamp = logMessage.timestamp
 			});
 		}
-		
+
 		void StopService(BeamManifestServiceEntry service)
 		{
 			var stopCommand = _cli.ProjectStop(new ProjectStopArgs
 			{
-				ids = new string[] {service.beamoId}, killTask = true
+				ids = new string[] { service.beamoId },
+				killTask = true
 			});
 			var action = SetServiceAction(service.beamoId, ServiceCliActionType.Stopping, stopCommand);
 			stopCommand.OnLog(cb =>
@@ -824,7 +835,10 @@ namespace Beamable.Server.Editor.Usam
 		{
 			var runCommand = _cli.ProjectRun(new ProjectRunArgs
 			{
-				detach = true, ids = new string[] {service.beamoId}, watch = false, noClientGen = true,
+				detach = true,
+				ids = new string[] { service.beamoId },
+				watch = false,
+				noClientGen = true,
 			});
 			var action = SetServiceAction(service.beamoId, ServiceCliActionType.Running, runCommand);
 			if (TryGetLogs(service.beamoId, out var log) && log.logView.clearOnPlay)
@@ -847,12 +861,12 @@ namespace Beamable.Server.Editor.Usam
 			var _ = runCommand.Run();
 
 		}
-		
+
 		void StopStorage(BeamManifestStorageEntry storage)
 		{
 			var stopCommand = _cli.ServicesStop(new ServicesStopArgs()
 			{
-				ids = new string[] {storage.beamoId},
+				ids = new string[] { storage.beamoId },
 			});
 			var action = SetServiceAction(storage.beamoId, ServiceCliActionType.Stopping, stopCommand);
 			stopCommand.OnLog(cb =>
@@ -861,12 +875,12 @@ namespace Beamable.Server.Editor.Usam
 			});
 			stopCommand.Run();
 		}
-		
+
 		void StartStorage(BeamManifestStorageEntry storage)
 		{
 			var runCommand = _cli.ServicesRun(new ServicesRunArgs
 			{
-				ids = new string[]{storage.beamoId},
+				ids = new string[] { storage.beamoId },
 			});
 			var action = SetServiceAction(storage.beamoId, ServiceCliActionType.Running, runCommand);
 			if (TryGetLogs(storage.beamoId, out var log) && log.logView.clearOnPlay)
@@ -878,7 +892,7 @@ namespace Beamable.Server.Editor.Usam
 			{
 				action.progressRatio = (float)cb.data.LocalDeployProgress;
 			});
-			
+
 			runCommand.OnLog(cb =>
 			{
 				AddLog(storage.beamoId, cb.data);
@@ -904,7 +918,7 @@ namespace Beamable.Server.Editor.Usam
 				_eraseCommand.Cancel();
 				_eraseCommand = null;
 			}
-			_eraseCommand = _cli.ProjectStorageErase(new ProjectStorageEraseArgs {beamoId = storage.beamoId});
+			_eraseCommand = _cli.ProjectStorageErase(new ProjectStorageEraseArgs { beamoId = storage.beamoId });
 			_eraseCommand.OnMongoLogsCliLogMessage(cb =>
 			{
 				AddLog(storage.beamoId, cb.data);
@@ -941,7 +955,8 @@ namespace Beamable.Server.Editor.Usam
 			}
 			_snapshotCommand = _cli.ProjectStorageSnapshot(new ProjectStorageSnapshotArgs
 			{
-				beamoId = storage.beamoId, output = outputFolder
+				beamoId = storage.beamoId,
+				output = outputFolder
 			});
 			_snapshotCommand.OnMongoLogsCliLogMessage(cb =>
 			{
@@ -954,13 +969,13 @@ namespace Beamable.Server.Editor.Usam
 		{
 			// TODO: Delete auto generated client. 
 
-			_cli.ProjectRemove(new ProjectRemoveArgs {sln = SERVICES_SLN_PATH, ids = new string[] {beamoId}})
-			    .OnStreamDeleteProjectCommandOutput(_ =>
-			    {
-				    Reload();
-			    })
-			    .Run();
-			
+			_cli.ProjectRemove(new ProjectRemoveArgs { sln = SERVICES_SLN_PATH, ids = new string[] { beamoId } })
+				.OnStreamDeleteProjectCommandOutput(_ =>
+				{
+					Reload();
+				})
+				.Run();
+
 		}
 
 		public void CreateStorage(string newStorageName, List<string> dependencies)
@@ -972,7 +987,7 @@ namespace Beamable.Server.Editor.Usam
 				serviceDirectory = SERVICES_FOLDER,
 				linkTo = dependencies.ToArray()
 			});
-			
+
 			// mock out the expected results in the latestManifest&status
 			var mockService = new BeamManifestServiceEntry
 			{
@@ -982,11 +997,12 @@ namespace Beamable.Server.Editor.Usam
 			latestManifest.services.Add(mockService);
 			var mockStatus = new BeamServiceStatus
 			{
-				service = newStorageName, serviceType = "storage",
+				service = newStorageName,
+				serviceType = "storage",
 				availableRoutes = new List<BeamServicesForRouteCollection>()
 			};
 			latestStatus.Add(mockStatus);
-			
+
 			var action = SetServiceAction(newStorageName, ServiceCliActionType.Creating, command);
 
 			var logCount = 0;
@@ -1004,7 +1020,7 @@ namespace Beamable.Server.Editor.Usam
 				action.progressRatio = logCount / 4f;
 				AddLog(mockService, cb.data);
 			});
-			
+
 
 			command.Run().Then(_ =>
 			{
@@ -1022,7 +1038,7 @@ namespace Beamable.Server.Editor.Usam
 				action.isFailed = true;
 			});
 		}
-		
+
 		public async Promise CreateService(string newServiceName, List<string> dependencies)
 		{
 			var newProjectCommand = _cli.ProjectNewService(new ProjectNewServiceArgs
@@ -1033,7 +1049,7 @@ namespace Beamable.Server.Editor.Usam
 				serviceDirectory = SERVICES_FOLDER,
 				linkTo = dependencies.ToArray()
 			});
-			
+
 			// mock out the expected results in the latestManifest&status
 			var mockService = new BeamManifestServiceEntry
 			{
@@ -1045,11 +1061,12 @@ namespace Beamable.Server.Editor.Usam
 			latestManifest.services.Add(mockService);
 			var mockStatus = new BeamServiceStatus
 			{
-				service = newServiceName, serviceType = "service",
+				service = newServiceName,
+				serviceType = "service",
 				availableRoutes = new List<BeamServicesForRouteCollection>()
 			};
 			latestStatus.Add(mockStatus);
-			
+
 			var action = SetServiceAction(newServiceName, ServiceCliActionType.Creating, newProjectCommand);
 
 			var logCount = 0;
@@ -1067,41 +1084,41 @@ namespace Beamable.Server.Editor.Usam
 				if (!isDebug && !isVerbose)
 				{
 					logCount++;
-					
+
 					// I don't actually know the number of log messages and the
 					//  create-command doesn't emit progress specifically. So let's guess.
 					const float guessedNumberOfInfoLogsThatIndicateLoadingProgressForServiceCreation = 8f;
 					action.progressRatio = logCount / guessedNumberOfInfoLogsThatIndicateLoadingProgressForServiceCreation;
 				}
-				
+
 				AddLog(mockService, cb.data);
 			});
 
 			try
 			{
-				
+
 				await newProjectCommand.Run();
 
 				action.progressRatio = .8f;
 				AddLog(mockService,
-				       new CliLogMessage
-				       {
-					       logLevel = "Info",
-					       message = $"Configuring common reference {newServiceName}",
-					       timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
-				       });
+					   new CliLogMessage
+					   {
+						   logLevel = "Info",
+						   message = $"Configuring common reference {newServiceName}",
+						   timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
+					   });
 
-				await UpdateServiceReferences(mockService, new List<AssemblyDefinitionAsset> {_commonAssemblyAsset},
-				                              shouldRefresh: false);
-				
+				await UpdateServiceReferences(mockService, new List<AssemblyDefinitionAsset> { _commonAssemblyAsset },
+											  shouldRefresh: false);
+
 
 				AddLog(mockService,
-				       new CliLogMessage
-				       {
-					       logLevel = "Info",
-					       message = $"Created service {newServiceName}",
-					       timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
-				       });
+					   new CliLogMessage
+					   {
+						   logLevel = "Info",
+						   message = $"Created service {newServiceName}",
+						   timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
+					   });
 
 				action.isComplete = true;
 				action.progressRatio = 1f;
@@ -1124,11 +1141,11 @@ namespace Beamable.Server.Editor.Usam
 				_generateClientCommand = null;
 			}
 
-			var idArr = new string[] {service.beamoId};
-			
+			var idArr = new string[] { service.beamoId };
+
 			// the client-code generation requires a built dll; so building the latest code
 			//  ensures we have the latest client generated
-			await Build(new ProjectBuildArgs {ids = idArr});
+			await Build(new ProjectBuildArgs { ids = idArr });
 
 			await GenerateClient(new ProjectGenerateClientArgs
 			{
@@ -1139,7 +1156,7 @@ namespace Beamable.Server.Editor.Usam
 				//  it actually generates clients for ALL services
 				source = "this-argument-is-not-used"
 			});
-			
+
 		}
 
 		async Promise GenerateClient(ProjectGenerateClientArgs args)
@@ -1154,12 +1171,12 @@ namespace Beamable.Server.Editor.Usam
 				var availableFederationIds = CompiledFederationIds;
 				args.existingFedIds = new string[availableFederationIds.Count];
 				args.existingFedTypeNames = new string[availableFederationIds.Count];
-				
+
 				for (var i = 0; i < availableFederationIds.Count; i++)
 				{
 					var federation = availableFederationIds[i];
 					var federationType = federation.GetType();
-					
+
 					if (string.IsNullOrEmpty(federationType.Namespace))
 					{
 						args.existingFedTypeNames[i] = federationType.Name;
@@ -1184,13 +1201,13 @@ namespace Beamable.Server.Editor.Usam
 					AddLog(args.ids[0], cb.data);
 				});
 			}
-		
-			
+
+
 			_generateClientCommand.OnStreamGenerateClientFileEvent(cb =>
 			{
 				outputs.Add(cb.data);
 			});
-			
+
 			await _generateClientCommand.Run();
 
 			if (outputs.Count > 0)
@@ -1230,9 +1247,9 @@ namespace Beamable.Server.Editor.Usam
 			}
 
 			var idArr = latestManifest.services
-			                           .Where(x => ShouldServiceAutoGenerateClient(x.beamoId))
-			                           .Select(x => x.beamoId)
-			                           .ToArray();
+									   .Where(x => ShouldServiceAutoGenerateClient(x.beamoId))
+									   .Select(x => x.beamoId)
+									   .ToArray();
 			await GenerateClient(new ProjectGenerateClientArgs
 			{
 				outputLinks = true,
@@ -1248,15 +1265,16 @@ namespace Beamable.Server.Editor.Usam
 			var p = new Promise<string>();
 			_cli.ServicesGetConnectionString(new ServicesGetConnectionStringArgs
 			{
-				quiet = true, storageName = service.beamoId
+				quiet = true,
+				storageName = service.beamoId
 			}).OnStreamServicesGetConnectionStringCommandOutput(cb =>
 			{
 				var connStr = cb.data.connectionString;
 				p.CompleteSuccess(connStr);
-				
+
 			}).OnError(cb =>
 			{
-				Debug.LogError("connection string error: " +cb.data.message);
+				Debug.LogError("connection string error: " + cb.data.message);
 				p.CompleteError(new Exception(cb.data.message));
 			}).Run();
 

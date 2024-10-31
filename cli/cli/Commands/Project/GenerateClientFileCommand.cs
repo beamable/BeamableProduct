@@ -38,7 +38,7 @@ public class GenerateClientFileEvent
 	public string filePath;
 }
 
-public class GenerateClientFileCommand 
+public class GenerateClientFileCommand
 	: AppCommand<GenerateClientFileCommandArgs>
 		, IResultSteam<DefaultStreamResultChannel, GenerateClientFileEvent>
 {
@@ -56,7 +56,8 @@ public class GenerateClientFileCommand
 
 		var existingFedOption = new Option<List<string>>("--existing-fed-ids", "A set of existing federation ids")
 		{
-			Arity = ArgumentArity.ZeroOrMore, AllowMultipleArgumentsPerToken = true
+			Arity = ArgumentArity.ZeroOrMore,
+			AllowMultipleArgumentsPerToken = true
 		};
 		AddOption(existingFedOption, (args, i) => { });
 		AddOption(
@@ -76,7 +77,7 @@ public class GenerateClientFileCommand
 	public override async Task Handle(GenerateClientFileCommandArgs args)
 	{
 		ProjectCommand.FinalizeServicesArg(args, args.withTags, args.excludeTags, false, ref args.beamoIds, true);
-		
+
 		#region load client dll into current domain
 
 		var sw = new Stopwatch();
@@ -84,7 +85,7 @@ public class GenerateClientFileCommand
 		await args.BeamoLocalSystem.InitManifest(fetchServerManifest: false);
 		Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - got manifest");
 
-		
+
 		// Get the list of all existing microservices
 		var allServices = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Where(sd => sd.Protocol is BeamoProtocolType.HttpMicroservice).ToArray();
 
@@ -107,8 +108,8 @@ public class GenerateClientFileCommand
 			if (args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(beamoId, out var httpLocal))
 				project = httpLocal.Metadata.msbuildProject;
 			else if (args.BeamoLocalSystem.BeamoManifest.EmbeddedMongoDbLocalProtocols.TryGetValue(beamoId, out var dbLocal)) project = dbLocal.Metadata.msbuildProject;
-			
-			var isProjBuilt =  ProjectCommand.IsProjectBuiltMsBuild(project);
+
+			var isProjBuilt = ProjectCommand.IsProjectBuiltMsBuild(project);
 			Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - checked {beamoId} built=[{isProjBuilt}]");
 			return isProjBuilt;
 		});
@@ -118,18 +119,18 @@ public class GenerateClientFileCommand
 		Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - done type loading");
 
 		#endregion
-		
+
 		var allTypes = allAssemblies.SelectMany(asm => asm.GetExportedTypes()).ToArray();
 		var allMsTypes = allTypes.Where(t => t.IsSubclassOf(typeof(Microservice)) && t.GetCustomAttribute<MicroserviceAttribute>() != null).ToArray();
 		var allSchemaTypes = ServiceDocGenerator.LoadDotnetDeclaredSchemasFromTypes(allTypes, out var missingAttributes).Select(t => t.type).ToArray();
-		
+
 		if (missingAttributes.Count > 0)
 		{
 			var typesWithErr = string.Join(",", missingAttributes.Select(t => $"({t.Name}, {t.Assembly.GetName().Name})"));
 			throw new CliException($"Types [{typesWithErr}] should have {nameof(BeamGenerateSchemaAttribute)} as they are used as fields of a type with {nameof(BeamGenerateSchemaAttribute)}.",
 				2, true);
 		}
-		
+
 		foreach (var type in allMsTypes)
 		{
 			Log.Verbose($"Generating client for type {type.Name} links=[{args.outputToLinkedProjects}]");
@@ -141,7 +142,7 @@ public class GenerateClientFileCommand
 				Log.Debug($"Skipping client for name=[{descriptor.Name}] because it was not given as a project option.");
 				continue;
 			}
-			
+
 			if (args.outputToLinkedProjects)
 			{
 				// UNITY
@@ -198,7 +199,7 @@ public class GenerateClientFileCommand
 			{
 				var schemasInSameAssembly = allSchemaTypes.Where(s => s.Assembly.Equals(t.Assembly)).ToArray();
 				schemasInSomeAssembly.AddRange(schemasInSameAssembly);
-				
+
 				var attribute = t.GetCustomAttribute<MicroserviceAttribute>();
 				var gen = new ServiceDocGenerator();
 				return gen.Generate(t, attribute, null, true, schemasInSameAssembly);
@@ -215,7 +216,7 @@ public class GenerateClientFileCommand
 				var doc = gen.Generate(kvp.Key, kvp.Value);
 				return doc;
 			})).ToArray();
-			
+
 			// Get the list of schemas
 			var orderedSchemas = SwaggerService.ExtractAllSchemas(docs, GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
 
@@ -609,14 +610,14 @@ IMPLEMENT_MODULE(F{unrealProjectData.BlueprintNodesProjectName}Module, {unrealPr
 				await Task.WhenAll(writeFiles);
 
 				// Run the Regenerate Project Files utility for the project (so that create files are automatically updated in IDEs).
-				if (needsProjectFilesRebuild) 
+				if (needsProjectFilesRebuild)
 					MachineHelper.RunUnrealGenerateProjectFiles(Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.Path));
 			}
 		}
-		
+
 		Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - done generating");
 	}
-	
+
 	Task GenerateFile(MicroserviceDescriptor service, GeneratedFileDescriptor descriptor, GenerateClientFileCommandArgs args, string projectPath)
 	{
 		/*
@@ -626,21 +627,21 @@ IMPLEMENT_MODULE(F{unrealProjectData.BlueprintNodesProjectName}Module, {unrealPr
 		 *  and if the service is in neither, then DO NOT write the file out.
 		 *   because in this case, it is likely a read-only file system anyway. 
 		 */
-		
+
 		// TODO: 
 		var fullSourcePath = Path.GetFullPath(service.SourcePath);
 		var fullProjectPath = Path.GetFullPath(projectPath);
-		
+
 		var isChildOfUnityProject = fullSourcePath.StartsWith(fullProjectPath);
 
 		if (isChildOfUnityProject)
 		{
 			const int trailingDirectorySeparatorCount = 1;
-			var relativeSourcePath = fullSourcePath.Substring(fullProjectPath.Length + trailingDirectorySeparatorCount );
+			var relativeSourcePath = fullSourcePath.Substring(fullProjectPath.Length + trailingDirectorySeparatorCount);
 			var isPackage = relativeSourcePath.StartsWith("Packages");
 			var isPackageCache = relativeSourcePath.StartsWith("Library");
 		}
-		
+
 		var outputDirectory = Path.Combine(projectPath, "Assets", "Beamable", "Autogenerated", "Microservices");
 		Directory.CreateDirectory(outputDirectory);
 
@@ -653,7 +654,7 @@ IMPLEMENT_MODULE(F{unrealProjectData.BlueprintNodesProjectName}Module, {unrealPr
 		{
 			var existingContent = File.ReadAllText(outputPath);
 			if (string.Compare(existingContent, descriptor.Content, CultureInfo.InvariantCulture,
-				    CompareOptions.IgnoreSymbols) == 0)
+					CompareOptions.IgnoreSymbols) == 0)
 			{
 				Log.Verbose("Not writing, because content is the same");
 				return Task.CompletedTask;
@@ -666,7 +667,7 @@ IMPLEMENT_MODULE(F{unrealProjectData.BlueprintNodesProjectName}Module, {unrealPr
 			beamoId = service.Name,
 			filePath = outputPath
 		});
-		
+
 
 		// don't need to write anything, because the files are identical.
 		return Task.CompletedTask;

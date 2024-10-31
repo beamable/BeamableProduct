@@ -105,20 +105,20 @@ namespace Beamable.Server.Editor.Usam
 						continue;
 					}
 				}
-				
+
 				Debug.Log($"Writing generated project for assembly definition {assembly.name} in the file: {fileName}");
 				Directory.CreateDirectory(path);
 				File.WriteAllText(fileName, content);
-				
-				var _ = cli.UnityRestore(new UnityRestoreArgs {csproj = fileName}).Run();
+
+				var _ = cli.UnityRestore(new UnityRestoreArgs { csproj = fileName }).Run();
 			}
 		}
-		
+
 		public static string GenerateCsharpProjectPath(Assembly assembly)
 		{
 			return TEMPLATE_OUTPUT_DIR.Replace(KEY_FOLDER, assembly.name);
 		}
-		
+
 		public static string GenerateCsharpProjectPath(string assembly)
 		{
 			return TEMPLATE_OUTPUT_DIR.Replace(KEY_FOLDER, assembly);
@@ -188,11 +188,11 @@ namespace Beamable.Server.Editor.Usam
 				}
 			}
 		}
-		
+
 		public static bool IsValidReference(string referenceName)
 		{
 			var invalidPrefixes = new string[] { "Unity.", "UnityEditor.", "UnityEngine." };
-			var invalidReferences = new string[] {"netstandard"};
+			var invalidReferences = new string[] { "netstandard" };
 
 			if (referenceName.StartsWith("Unity.Beamable.Customer."))
 			{
@@ -200,7 +200,7 @@ namespace Beamable.Server.Editor.Usam
 				//  dlls are not valid; and should be referenced via nuget
 				return true;
 			}
-			
+
 			if (invalidReferences.Contains(referenceName))
 			{
 				return false;
