@@ -120,8 +120,8 @@ void U₢{nameof(CommandName)}₢Command::HandleStreamCompleted(FBeamOperationHa
 	}}
 }}
 ";
-	
-	
+
+
 }
 
 public struct UnrealCliStreamDataDeclaration
@@ -258,7 +258,7 @@ public class UnrealCliGenerator : ICliGenerator
 	public List<GeneratedFileDescriptor> Generate(CliGeneratorContext context)
 	{
 		// the following commands are more complicated and either use nullables or enums
-		var invalidCommands = new string[] { "beam", "beam services register", "beam services modify", "beam services enable", "beam oapi generate", 
+		var invalidCommands = new string[] { "beam", "beam services register", "beam services modify", "beam services enable", "beam oapi generate",
 			"beam deployment", "beam deployment" };
 		var invalidCommandPallets = new string[] { "beam deployment" };
 
@@ -268,7 +268,7 @@ public class UnrealCliGenerator : ICliGenerator
 		{
 			if (!command.hasValidOutput && command.executionPath != "beam") continue;
 			if (invalidCommands.Contains(command.executionPath)) continue;
-			if (invalidCommandPallets.Any(p => command.executionPath.StartsWith(p))) 
+			if (invalidCommandPallets.Any(p => command.executionPath.StartsWith(p)))
 				continue;
 
 			var nonBeamCommandNames = command.executionPath.Substring(command.executionPath.IndexOf(" ", StringComparison.Ordinal) + 1);

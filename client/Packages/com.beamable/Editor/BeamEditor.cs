@@ -98,7 +98,7 @@ namespace Beamable
 
 			DependencyBuilder.AddSingleton<IAnalyticsTracker, NoOpAnalyticsTracker>();
 			DependencyBuilder.AddSingleton<ITokenEventSettings>(() => CoreConfiguration.Instance);
-			
+
 			DependencyBuilder.AddSingleton<IValidationContext>(provider => provider.GetService<ValidationContext>());
 			DependencyBuilder.AddSingleton<ValidationContext>();
 			DependencyBuilder.AddSingleton<ContentDatabase>();
@@ -117,12 +117,12 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IUserContext>(p => p.GetService<AccountService>());
 
 			DependencyBuilder.AddSingleton<BeamCommands>();
-			
+
 			DependencyBuilder.AddGlobalStorage<BeamWebCliCommandHistory, SessionStorageLayer>();
 			DependencyBuilder.AddGlobalStorage<BeamWebCommandFactoryOptions, SessionStorageLayer>(instanceGenerator: ScriptableObject.CreateInstance<BeamWebCommandFactoryOptions>);
 			DependencyBuilder.AddSingleton<IBeamCommandFactory>(p => p.GetService<BeamWebCommandFactory>());
 			DependencyBuilder.AddSingleton<BeamWebCommandFactory>();
-			
+
 			DependencyBuilder.AddSingleton<BeamCli>();
 			DependencyBuilder.AddSingleton<DotnetService>();
 			DependencyBuilder.AddSingleton<IRuntimeConfigProvider>(p => new EditorRuntimeConfigProvider(p.GetService<AccountService>()));
@@ -163,7 +163,7 @@ namespace Beamable
 			{
 				BeamEditorContext.StopAll().Wait();
 			};
-			
+
 		}
 
 		private static int initializeAttemptCount = 0;
@@ -218,7 +218,7 @@ namespace Beamable
 				};
 				return;
 			}
-			
+
 			FixPathVariable(EditorConfiguration.Instance);
 
 			// Ensures we have the latest assembly definitions and paths are all correctly setup.
@@ -349,7 +349,7 @@ namespace Beamable
 		static void FixPathVariable(EditorConfiguration configuration)
 		{
 			const string PATH = "PATH";
-			
+
 			string PATH_DELIM = ";"; // WINDOWS
 			if (Application.platform == RuntimePlatform.OSXEditor)
 			{
@@ -840,7 +840,7 @@ namespace Beamable
 			EditorAccountService.WriteUnsetConfigValues();
 			await BeamCli.Init();
 			OnRealmChange?.Invoke(CurrentRealm);
-			
+
 		}
 
 

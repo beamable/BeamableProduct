@@ -7,7 +7,7 @@ namespace Beamable.Serialization
 	{
 		public OptionalJsonString()
 		{
-			
+
 		}
 
 		public OptionalJsonString(JsonString value)
@@ -16,11 +16,11 @@ namespace Beamable.Serialization
 			HasValue = true;
 		}
 	}
-	
+
 	/// <summary>
 	/// Represents a nested string of json that may be saved to json with the JsonSerializable type. 
 	/// </summary>
-	public class JsonString 
+	public class JsonString
 	{
 		private string _json;
 		private object _parsedValue;
@@ -60,12 +60,12 @@ namespace Beamable.Serialization
 		{
 			return JsonSerializable.FromJson<T>(Json);
 		}
-		
+
 		private JsonString()
 		{
-			
+
 		}
-		
+
 		/// <summary>
 		/// Construct a <see cref="JsonString"/> from a given json string.
 		/// </summary>

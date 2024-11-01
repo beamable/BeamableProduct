@@ -180,8 +180,8 @@ namespace Beamable.Player
 									string description = null,
 									string gameType = null,
 									int? maxPlayers = null,
-									IEnumerable<string> dataToRemove=null,
-									Dictionary<string, string> dataToUpdate=null)
+									IEnumerable<string> dataToRemove = null,
+									Dictionary<string, string> dataToUpdate = null)
 		{
 
 			var data = ConvertToUpdateData(dataToRemove, dataToUpdate);
@@ -193,8 +193,8 @@ namespace Beamable.Player
 												gameType,
 												maxPlayers, data);
 		}
-		
-		static OptionalUpdateData ConvertToUpdateData(IEnumerable<string> dataToRemove=null, Dictionary<string, string> dataToUpdate=null)
+
+		static OptionalUpdateData ConvertToUpdateData(IEnumerable<string> dataToRemove = null, Dictionary<string, string> dataToUpdate = null)
 		{
 			var data = new OptionalUpdateData
 			{
@@ -214,7 +214,7 @@ namespace Beamable.Player
 				data.HasValue = true;
 			}
 			return data;
-		} 
+		}
 
 
 		/// <inheritdoc cref="ILobbyApi.JoinLobby"/>

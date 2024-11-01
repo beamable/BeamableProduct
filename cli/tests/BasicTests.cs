@@ -48,8 +48,8 @@ public class Tests
 			typeof(GetLocalSettingsIFederatedGameServerCommand),
 			typeof(SetLocalSettingsIFederatedGameServerCommand)
 		};
-		
-		
+
+
 		List<(Func<bool>, string)> CheckNaming(Command command, string commandName, string description, string? optionName = null)
 		{
 			const string KEBAB_CASE_PATTERN = "^([a-z]|[0-9])+(?:[-]([a-z]|[0-9])+)*$";
@@ -78,7 +78,7 @@ public class Tests
 				var match = Regex.Match(valueToCheck, KEBAB_CASE_PATTERN);
 				assertions.Add((() => match.Success == true, $"{logPrefix} - {valueToCheck} does not match kebab case naming."));
 			}
-			
+
 			return assertions;
 			// Assert.AreEqual(match.Success, true, $"{valueToCheck} does not match kebab case naming.");
 		}
@@ -100,7 +100,7 @@ public class Tests
 					errorBuilder.AppendLine(failMessage);
 				}
 			}
-			
+
 			var sameDescriptionCommand = commandsList.FirstOrDefault(c =>
 				c.Name != command.Name &&
 				c.Description != null &&
@@ -124,7 +124,7 @@ public class Tests
 						errorBuilder.AppendLine(failMessage);
 					}
 				}
-				
+
 			}
 		}
 
@@ -238,7 +238,7 @@ public class Tests
 		}, "oapi", "generate", "--filter", "session,t:basic", "--engine", "unity");
 		Assert.AreEqual(0, status);
 	}
-	
+
 	[Test]
 	public async Task GenerateBeamo()
 	{

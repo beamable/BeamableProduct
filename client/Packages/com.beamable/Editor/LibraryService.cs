@@ -26,11 +26,11 @@ namespace Beamable.Editor
 		#endregion
 
 		#region COMPUTED PROPERTIES
-		
+
 		public bool HasDocsUrl { get; set; }
-		
+
 		public bool isLocal { get; set; }
-		
+
 		/// <summary>
 		/// The path to where the root asset would be if it was in the project
 		/// </summary>
@@ -43,16 +43,16 @@ namespace Beamable.Editor
 		public string localCandidateFolder { get; set; }
 
 		public string localCandidateFolderMetafile { get; set; }
-		
+
 		#endregion
 	}
-	
+
 	public class LibraryService : IStorageHandler<LibraryService>, Beamable.Common.Dependencies.IServiceStorable
 	{
 		private StorageHandle<LibraryService> _handle;
 
 		public List<LightbeamSampleInfo> lightbeams = new List<LightbeamSampleInfo>();
-		
+
 		public void ReceiveStorageHandle(StorageHandle<LibraryService> handle)
 		{
 			_handle = handle;
@@ -70,7 +70,7 @@ namespace Beamable.Editor
 		{
 			Application.OpenURL(lb.docsUrl);
 		}
-		
+
 		public void OpenSample(LightbeamSampleInfo lb)
 		{
 			var needsRefresh = false;
@@ -82,8 +82,8 @@ namespace Beamable.Editor
 					needsRefresh = true;
 					CopySampleIntoProject(lb);
 				}
-				
-				
+
+
 			}
 			finally
 			{
@@ -92,7 +92,7 @@ namespace Beamable.Editor
 				{
 					AssetDatabase.Refresh();
 				}
-				
+
 				// if the scene has changes, we don't want to just SWITCH.
 				if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
 				{
@@ -106,9 +106,9 @@ namespace Beamable.Editor
 					}
 				}
 			}
-			
+
 		}
-		
+
 		public void CopySampleIntoProject(LightbeamSampleInfo lb)
 		{
 
@@ -168,13 +168,13 @@ namespace Beamable.Editor
 			// delete the entire folder
 			// Directory.Delete(lb.LocalCandidateFolder, true);
 			FileUtil.DeleteFileOrDirectory(lb.localCandidateFolder);
-			
+
 			// and delete the .meta folder that goes with it
 			File.Delete(lb.localCandidateFolderMetafile);
-			
+
 			AssetDatabase.Refresh();
 		}
-		
+
 		public void Reload()
 		{
 			ResetSamples();
@@ -183,9 +183,9 @@ namespace Beamable.Editor
 		void ResetSamples()
 		{
 			lightbeams.Clear();
-			
+
 			var packageFile = $"Packages/{BeamablePackages.BeamablePackageName}/package.json";
-			if (!File.Exists(packageFile)) 
+			if (!File.Exists(packageFile))
 				return;
 
 			var json = File.ReadAllText(packageFile);

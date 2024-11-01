@@ -11,7 +11,7 @@ namespace Beamable.Editor.Microservice.UI2
 	public partial class UsamWindow2
 	{
 		public Color primaryColor = new Color(.25f, .5f, 1f, .8f);
-		
+
 		public List<CardButton> cards = new List<CardButton>();
 		public string selectedBeamoId;
 		public WindowState state = WindowState.NORMAL;
@@ -29,11 +29,11 @@ namespace Beamable.Editor.Microservice.UI2
 				}
 			}
 
-			
+
 			{ // refresh cards
 				cards.Clear();
-				
-				for (var i = 0 ; i < usam?.latestManifest?.services?.Count; i ++)
+
+				for (var i = 0; i < usam?.latestManifest?.services?.Count; i++)
 				{
 					var service = usam.latestManifest.services[i];
 					cards.Add(new CardButton
@@ -62,11 +62,12 @@ namespace Beamable.Editor.Microservice.UI2
 				if (cards.Count == 0)
 				{
 					selectedBeamoId = null;
-					
+
 					if (!usam.hasReceivedManifestThisDomain)
 					{
 						state = WindowState.NORMAL;
-					} else if (state == WindowState.NORMAL)
+					}
+					else if (state == WindowState.NORMAL)
 					{
 						state = WindowState.CREATE_SERVICE;
 					}
@@ -84,14 +85,14 @@ namespace Beamable.Editor.Microservice.UI2
 					}
 					selectedBeamoId = selectedCard.name;
 				}
-			
+
 			}
 		}
-		
+
 		void DrawMain()
 		{
 			DrawHeader();
-			
+
 			switch (state)
 			{
 				case WindowState.MIGRATE:
@@ -118,14 +119,15 @@ namespace Beamable.Editor.Microservice.UI2
 		void DrawContent()
 		{
 			EditorGUILayout.BeginVertical();
-			
+
 			if (!string.IsNullOrEmpty(selectedCard.name))
 			{
 				if (selectedCard.serviceIndex >= 0)
 				{
 					var service = usam.latestManifest.services[selectedCard.serviceIndex];
 					DrawService(service);
-				} else if (selectedCard.storageIndex >= 0)
+				}
+				else if (selectedCard.storageIndex >= 0)
 				{
 					var storage = usam.latestManifest.storages[selectedCard.storageIndex];
 					DrawStorage(storage);
@@ -162,7 +164,7 @@ namespace Beamable.Editor.Microservice.UI2
 			PUBLISH,
 			MIGRATE,
 		}
-		
+
 		[Serializable]
 		public struct CardButton
 		{
@@ -186,21 +188,21 @@ namespace Beamable.Editor.Microservice.UI2
 			var clickedCreate = false;
 			var clickedConfig = false;
 			var clickedPublish = false;
-			BeamGUI.DrawHeaderSection(this, ActiveContext, 
+			BeamGUI.DrawHeaderSection(this, ActiveContext,
 				drawLowBarGui: () =>
 				{
 					if (state != WindowState.MIGRATE)
 					{ // draw the dropdowns
-						
+
 						if (cards.Count > 0) // if there are no cards, then there is nothing to pick.
 						{
 							BeamGUI.LayoutDropDown(this, new GUIContent(selectedBeamoId), GUILayout.ExpandHeight(true),
-							                       () =>
-							                       {
-								                       var popup = CreateInstance<ServicePickerWindow>();
-								                       popup.usamWindow = this;
-								                       return popup;
-							                       }
+												   () =>
+												   {
+													   var popup = CreateInstance<ServicePickerWindow>();
+													   popup.usamWindow = this;
+													   return popup;
+												   }
 							);
 						}
 
@@ -227,8 +229,8 @@ namespace Beamable.Editor.Microservice.UI2
 
 
 						clickedCreate = BeamGUI.ShowDisabled(state != WindowState.CREATE_SERVICE && state != WindowState.CREATE_STORAGE,
-						                                     () => BeamGUI.HeaderButton(
-							                                     "Create", EditorGUIUtility.FindTexture("Toolbar Plus")));
+															 () => BeamGUI.HeaderButton(
+																 "Create", EditorGUIUtility.FindTexture("Toolbar Plus")));
 					}
 
 				},
@@ -241,8 +243,8 @@ namespace Beamable.Editor.Microservice.UI2
 					activeMigration = null;
 					usam.Reload();
 				});
-			
-			
+
+
 			if (clickedPublish)
 			{
 				CheckDocker("publish", () => UsamPublishWindow.Init(ActiveContext), out _);
@@ -266,7 +268,7 @@ namespace Beamable.Editor.Microservice.UI2
 			if (clickedCreate)
 			{
 				var menu = new GenericMenu();
-				
+
 				menu.AddItem(new GUIContent("Service"), false, () =>
 				{
 					state = WindowState.CREATE_SERVICE;
@@ -281,7 +283,7 @@ namespace Beamable.Editor.Microservice.UI2
 				{
 					state = WindowState.CREATE_FEDERATION_ID;
 				});
-				
+
 				menu.ShowAsContext();
 			}
 		}

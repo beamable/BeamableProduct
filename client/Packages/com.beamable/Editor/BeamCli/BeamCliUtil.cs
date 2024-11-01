@@ -40,7 +40,7 @@ namespace Beamable.Editor.BeamCli
 		{
 			get
 			{
-				if (USE_SRC) return "0.0.123"; 
+				if (USE_SRC) return "0.0.123";
 				return BeamableEnvironment.NugetPackageVersion;
 			}
 		}

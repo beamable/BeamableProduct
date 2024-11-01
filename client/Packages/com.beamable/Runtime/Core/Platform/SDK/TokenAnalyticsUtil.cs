@@ -8,8 +8,8 @@ namespace Beamable.Api
 	{
 		bool EnableTokenAnalytics { get; }
 	}
-	
-	
+
+
 	public class TokenEvent : CoreEvent
 	{
 		public static TokenEvent InvalidAccessToken(long playerId, string accessToken, string refreshToken, string error)
@@ -24,8 +24,8 @@ namespace Beamable.Api
 					["refresh-token-last-4"] = Last4(refreshToken)
 				});
 		}
-		
-		
+
+
 		public static TokenEvent GetNewToken(long playerId, string newAccessToken, string newRefreshToken, string oldAccessToken, string oldRefreshToken)
 		{
 			return new TokenEvent(
@@ -39,7 +39,7 @@ namespace Beamable.Api
 					["new-refresh-token-last-4"] = Last4(newRefreshToken)
 				});
 		}
-		
+
 		public static TokenEvent ChangingToken(long playerId, string newAccessToken, string newRefreshToken, string oldAccessToken, string oldRefreshToken)
 		{
 			return new TokenEvent(
@@ -59,7 +59,7 @@ namespace Beamable.Api
 			if (input == null) return null;
 			return input.Substring(Math.Max(input.Length - 4, 0));
 		}
-		
+
 		private TokenEvent(string eventName, IDictionary<string, object> eventParams) : base("user-tokens", eventName, eventParams) { }
 	}
 }

@@ -16,7 +16,7 @@ public class DeleteProjectCommandArgs : SolutionCommandArgs
 [Serializable]
 public class DeleteProjectCommandOutput
 {
-	
+
 }
 
 public class DeleteProjectCommand : AtomicCommand<DeleteProjectCommandArgs, DeleteProjectCommandOutput>
@@ -29,17 +29,17 @@ public class DeleteProjectCommand : AtomicCommand<DeleteProjectCommandArgs, Dele
 	{
 		SolutionCommandArgs.Configure(this);
 		ProjectCommand.AddIdsOption(this, (args, i) => args.services = i);
-		ProjectCommand.AddServiceTagsOption(this, 
-			bindWithTags: (args, i) => args.withServiceTags = i, 
+		ProjectCommand.AddServiceTagsOption(this,
+			bindWithTags: (args, i) => args.withServiceTags = i,
 			bindWithoutTags: (args, i) => args.withoutServiceTags = i);
 	}
 
 	public override async Task<DeleteProjectCommandOutput> GetResult(DeleteProjectCommandArgs args)
 	{
-		ProjectCommand.FinalizeServicesArg(args, 
-			args.withServiceTags, 
-			args.withoutServiceTags, 
-			true, 
+		ProjectCommand.FinalizeServicesArg(args,
+			args.withServiceTags,
+			args.withoutServiceTags,
+			true,
 			ref args.services);
 
 		var output = new DeleteProjectCommandOutput();
@@ -52,13 +52,13 @@ public class DeleteProjectCommand : AtomicCommand<DeleteProjectCommandArgs, Dele
 			{
 				throw new CliException($"no definition exists for service=[{service}]");
 			}
-			
+
 			Directory.Delete(sd.ProjectDirectory, recursive: true);
-			
+
 			var runTask = CliExtensions
 				.GetDotnetCommand(args.AppContext.DotnetPath, $"sln {slnFile} remove {sd.ProjectPath}")
 				.ExecuteAsyncAndLog();
-			
+
 			tasks.Add(runTask);
 		}
 
