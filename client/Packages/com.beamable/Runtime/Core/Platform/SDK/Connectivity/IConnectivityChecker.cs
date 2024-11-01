@@ -43,12 +43,13 @@ namespace Beamable.Api.Connectivity
 
 		public async Promise<bool> ForceCheck()
 		{
+			if (Application.internetReachability == NetworkReachability.NotReachable)
+			{
+				await _connectivityService.SetHasInternet(false);
+				return false;
+			}
 			try
 			{
-				if (Application.internetReachability == NetworkReachability.NotReachable)
-				{
-					throw new NoConnectivityException(nameof(Application.internetReachability) + " is not reachable.");
-				}
 				await _requester.BeamableRequest(new SDKRequesterOptions<EmptyResponse>
 				{
 					uri = ConnectivityRoute,

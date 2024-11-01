@@ -31,9 +31,16 @@ namespace Beamable.Common.Content
 			
 			// because the contentVersion field was added late, it may be blank, so we need to retrieve it
 			//  from the internal data structure.
-			var content = _serializer.Deserialize<ContentObject>(data, true);
-			contentVersion = content.Version;
+			var proxy = JsonUtility.FromJson<VersionProxy>(data);
+			contentVersion = proxy.version;
+
 			return contentVersion;
+		}
+
+		[Serializable]
+		class VersionProxy
+		{
+			public string version;
 		}
 	}
 
@@ -49,7 +56,10 @@ namespace Beamable.Common.Content
 
 		[NonSerialized]
 		public Dictionary<string, ContentDataInfo> KeyToContentData = new Dictionary<string, ContentDataInfo>();
-
+		
+		[NonSerialized]
+		public ulong cacheVersion;
+		
 		public static string GetCacheKey(string contentId, string contentVersion) => contentId + contentVersion;
 
 		/// <summary>
@@ -87,6 +97,7 @@ namespace Beamable.Common.Content
 				
 				// and we need to add it to the actual serialized data
 				content.Add(newItem);
+				cacheVersion++;
 				return true;
 			}
 		}

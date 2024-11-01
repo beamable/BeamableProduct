@@ -92,6 +92,43 @@ public partial class BeamoLocalSystem
 		// Make a cancellation token source to cancel the docker event stream we listen for updates. See StartListeningToDocker.
 		_dockerListeningThreadCancel = new CancellationTokenSource();
 	}
+	
+	private static Uri GetLocalDockerEndpoint(ConfigService config)
+	{
+		var custom = config.CustomDockerUri;
+		if (!string.IsNullOrEmpty(custom))
+		{
+			
+			Log.Verbose($"using custom docker uri=[{custom}]");
+			return new Uri(custom);
+		}
+		
+		var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+		if (isWindows)
+		{
+			var uri = new Uri("npipe://./pipe/docker_engine");
+			Log.Verbose($"Using standard windows docker uri=[{uri}]");
+			return uri;
+		}
+
+		var possibleLocations = new string[]
+		{
+			"/var/run/docker.sock", 
+			Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/.docker/run/docker.sock"
+		};
+		for (var i = 0; i < possibleLocations.Length; i++)
+		{
+			var location = possibleLocations[i];
+			if (i == possibleLocations.Length -1 || File.Exists(location))
+			{
+				var uri = new Uri("unix:" + location);
+				Log.Verbose($"Using standard unix docker uri=[{uri}]");
+				return uri;
+			}
+		}
+
+		throw new CliException($"No docker address found. Use the {ConfigService.ENV_VAR_DOCKER_URI} environment variable to set a Docker Uri.");
+	}
 
 	public async Task InitManifest(bool useManifestCache=true, bool fetchServerManifest=true)
 	{

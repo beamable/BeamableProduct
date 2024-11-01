@@ -1,3 +1,4 @@
+using Beamable.Api;
 using Beamable.Api.Commerce;
 using Beamable.Common.Content;
 using System.Collections.Generic;
@@ -16,7 +17,7 @@ namespace Beamable
 		menuName = Paths.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
 				   "Core Configuration")]
 #endif
-	public class CoreConfiguration : ModuleConfigurationObject, ICommerceConfig
+	public class CoreConfiguration : ModuleConfigurationObject, ICommerceConfig, ITokenEventSettings
 	{
 		public const string PROJECT_EDITOR_REFLECTION_SYSTEM_PATH = "Assets/Beamable/Editor/ReflectionCache/UserSystems";
 		public const string BEAMABLE_EDITOR_REFLECTION_SYSTEM_PATH = "Packages/com.beamable/Editor/ReflectionCache/UserSystems";
@@ -233,5 +234,8 @@ The default is 60 seconds.
 			return new string[] { };
 		}
 
+		[Tooltip("When true, token analytic events will be sent to Beamable. This may be useful to diagnose account switching errors related to expired tokens. Analytics are sent when a token expires (`access_token_invalid`), when a new token is issued via a refresh token (`got_new_token`), and when the beam context's token changes (`will_change_token`). \n **NOTE**: Only the last 4 digits of a token are sent with the analytics. ")]
+		public bool enableTokenAnalytics = false;
+		bool ITokenEventSettings.EnableTokenAnalytics => enableTokenAnalytics;
 	}
 }

@@ -7,7 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-
 ### Added
 
 - Global dependency injection scope
@@ -53,6 +52,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Marked `EventView` `endTime` field as obsolete, suggest using `GetEndTime` method instead.
 - `PlayerAccounts`, `PlayerAnnouncements`, `PlayerFiends`, `PlayerParty`, and `PlayerStats` automatically await their own initialization before running methods.
 
+## [1.19.23] - 2024-10-23
+
+### Fixed
+- Content tags change marks corresponding `ScriptableObject` as dirty
+- Editor handles opening project when token is expired correctly.
+
+## [1.19.22] - 2024-07-19
+### Added
+- All standard `ContentRef` subtypes have a constructor that takes a content id string
+- `IPlatformRequester` includes `LatestServerTime` utility properties and functions
+
+### Fixed
+- `IAnalyticsTracker` unavailable error no longer thrown in editor when token expires
+
+### Changed
+- `NoConnectivityException` error messaging has more detail
+- Content Manager publish popup no longer has "CHECK" tooltip
+
 ## [1.19.21] - 2024-06-18
 
 ### Added
@@ -80,6 +97,7 @@ no changes
 
 ### Fixed
 - Prevent `WebSocketConnection` burst of exceptions by adding a delayed retry logic
+
 
 ## [1.19.17] - 2024-04-04
 ### Changed
@@ -115,7 +133,6 @@ no changes
 ## [1.19.13] - 2024-02-05
 
 ### Changed
-
 - Marked `EventView` `endTime` field as obsolete, suggest using `GetEndTime` method instead.
 - `PlayerAccounts`, `PlayerAnnouncements`, `PlayerFiends`, `PlayerParty`, and `PlayerStats` automatically await their own initialization before running methods.
 
@@ -338,7 +355,7 @@ no changes
 - Detect issues with parsing baked content.
 - Exiting playmode early no longer causes a service scope exception.
 
-### Changed
+### Changed 
 
 - Beamable Environment window leaves version number and environment label unchanged when using preset buttons.
 

@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
 ## [Unreleased]
 
 ### Fixed
@@ -17,6 +18,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `admin/metadata` route will return sdk version and other metadata about a running service.
+
+## [1.19.23] - 2024-10-23
+
+no changes
+
+## [1.19.22] - 2024-07-19
+### Added
+- _Project Settings/Editor_ now has a `CustomPathInclusions` field that will update your $PATH variable for the lifecycle of the Unity application
+
+### Fixed
+- docker credential check can execute
 
 ## [1.19.21] - 2024-06-18
 

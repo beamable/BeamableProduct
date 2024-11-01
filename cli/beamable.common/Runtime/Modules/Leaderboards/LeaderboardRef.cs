@@ -33,7 +33,18 @@ namespace Beamable.Common.Leaderboards
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class LeaderboardRef : LeaderboardRef<LeaderboardContent> { }
+	public class LeaderboardRef : LeaderboardRef<LeaderboardContent>
+	{
+		public LeaderboardRef(string id) : base(id)
+		{
+			
+		}
+
+		public LeaderboardRef()
+		{
+			
+		}
+	}
 
 	/// <summary>
 	/// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
@@ -49,5 +60,16 @@ namespace Beamable.Common.Leaderboards
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class LeaderboardRef<TContent> : ContentRef<TContent> where TContent : LeaderboardContent, new() { }
+	public class LeaderboardRef<TContent> : ContentRef<TContent> where TContent : LeaderboardContent, new()
+	{
+		public LeaderboardRef(string id) : base(id)
+		{
+			
+		}
+
+		public LeaderboardRef()
+		{
+			
+		}
+	}
 }

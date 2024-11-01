@@ -152,20 +152,17 @@ namespace Beamable.Common.Content
 		public static SequencePromise<IContentObject> ResolveAll(this IEnumerable<IContentRef> refs, int batchSize = 50)
 		{
 			var theRefs = refs.ToList();
-			var seqPromise = new SequencePromise<IContentObject>(theRefs.Count);
+			SequencePromise<IContentObject> seqPromise = null;
 
-			var x = ContentApi.Instance.FlatMap<SequencePromise<IContentObject>, IList<IContentObject>>(api =>
+			var promise = ContentApi.Instance.Map(api =>
 			{
 				var promiseGenerators =
 					theRefs.Select(r => new Func<Promise<IContentObject>>(() => api.GetContent(r))).ToList();
-				var seq = Promise.ExecuteInBatchSequence(batchSize, promiseGenerators, () => !Application.isPlaying);
-				seq.OnElementSuccess(seqPromise.ReportEntrySuccess);
-				seq.OnElementError(seqPromise.ReportEntryError);
 
-				return seq;
-			}, () => seqPromise);
-
-			return x;
+				seqPromise = api.ConvertPromisesIntoSequence(batchSize, promiseGenerators);
+				return seqPromise;
+			});
+			return promise.FlatMap<SequencePromise<IContentObject>, IList<IContentObject>>(_ => seqPromise, () => seqPromise);
 		}
 	}
 
@@ -230,6 +227,15 @@ namespace Beamable.Common.Content
 	[System.Serializable]
 	public class ContentRef<TContent> : AbsContentRef<TContent> where TContent : ContentObject, IContentObject, new()
 	{
+		public ContentRef()
+		{
+			// default constructor
+		}
+		public ContentRef(string id)
+		{
+			this.Id = id;
+		}
+		
 		public override Promise<TContent> Resolve(string manifestID = "")
 		{
 			var api = ContentApi.Instance;

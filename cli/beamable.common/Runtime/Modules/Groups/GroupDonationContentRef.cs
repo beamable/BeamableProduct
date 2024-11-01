@@ -33,8 +33,18 @@ namespace Beamable.Common.Groups
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class GroupDonationContentRef : GroupDonationContentRef<GroupDonationsContent> { }
+	public class GroupDonationContentRef : GroupDonationContentRef<GroupDonationsContent>
+	{
+		public GroupDonationContentRef(string id) : base(id)
+		{
+			
+		}
 
+		public GroupDonationContentRef()
+		{
+			
+		}
+	}
 	/// <summary>
 	/// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
 	///
@@ -49,6 +59,16 @@ namespace Beamable.Common.Groups
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class GroupDonationContentRef<TContent> : ContentRef<TContent> where TContent : GroupDonationsContent, new() { }
+	public class GroupDonationContentRef<TContent> : ContentRef<TContent> where TContent : GroupDonationsContent, new()
+	{
+		public GroupDonationContentRef(string id) : base(id)
+		{
+			
+		}
 
+		public GroupDonationContentRef()
+		{
+			
+		}
+	}
 }

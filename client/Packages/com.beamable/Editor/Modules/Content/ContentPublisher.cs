@@ -6,9 +6,12 @@ using Beamable.Content;
 using Beamable.Editor.Content.SaveRequest;
 using Beamable.Serialization.SmallerJSON;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
+using Unity.EditorCoroutines.Editor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -72,6 +75,7 @@ namespace Beamable.Editor.Content
 			});
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		ContentDefinition PrepareContentForPublish(ContentObject content)
 		{
 			var definition = new ContentDefinition
@@ -220,7 +224,7 @@ namespace Beamable.Editor.Content
 				publishSet.ToModify[i].ContentException = null;
 			}
 
-			return Promise.ExecuteSerially(promiseGenerators).FlatMap(__ =>
+			return PromiseEditor.ExecuteOnRoutines(50, promiseGenerators).FlatMap(__ =>
 			   Promise.Sequence(progressPromises).Map(_ => workingReferenceSet));
 		}
 
