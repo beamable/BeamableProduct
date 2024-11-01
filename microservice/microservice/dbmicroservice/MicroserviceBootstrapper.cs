@@ -554,24 +554,7 @@ namespace Beamable.Server
 	        var serviceName = attribute.MicroserviceName;
 	        
 	        customArgs ??= ". --auto-deploy";
-	        
-	        
-	        // get version of CLI
-	        using var versionCheck = new Process();
-	        versionCheck.StartInfo.FileName = "beam";
-	        versionCheck.StartInfo.Arguments = "--version";
-	        versionCheck.StartInfo.RedirectStandardOutput = true;
-	        versionCheck.StartInfo.CreateNoWindow = true;
-	        versionCheck.StartInfo.UseShellExecute = false;
-	        
-	        versionCheck.Start();
-	        await versionCheck.WaitForExitAsync();
 			
-	        var versionOutput = await versionCheck.StandardOutput.ReadToEndAsync();
-	        if (!PackageVersion.TryFromSemanticVersionString(versionOutput, out var cliVersion))
-	        {
-		        cliVersion = "0.0.0";
-	        }
 	        using var process = new Process();
 
 	        var dotnetPath = Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.BEAM_DOTNET_PATH);
@@ -652,43 +635,6 @@ namespace Beamable.Server
 	        foreach (var envVar in envData.envVars)
 	        {
 		        Environment.SetEnvironmentVariable(envVar.name, envVar.value);
-	        }
-	        
-	        if (isLegacy1)
-	        {
-		        // need to extract data from stdout
-		        var startIndex = result.IndexOf(Reporting.PATTERN_START, StringComparison.Ordinal);
-		        var endIndex = result.IndexOf(Reporting.PATTERN_END, StringComparison.Ordinal);
-
-		        if (startIndex == -1 || endIndex == -1)
-			        throw new Exception($"Failed to parse env data from CLI data=[{result}]");
-
-		        startIndex += Reporting.PATTERN_START.Length;
-		        result = result.Substring(startIndex, endIndex - startIndex).ReplaceLineEndings("");
-	        }
-
-	        try
-	        {
-		        var parsedOutput = JsonConvert.DeserializeObject<ReportDataPoint<GenerateEnvFileOutput>>(result);
-		        if (parsedOutput.type != "stream")
-		        {
-			        // the output type needs to be "stream" (the default data output channel name). 
-			        //  if the type isn't "stream", it is likely doing to be "error", but even if it isn't, 
-			        //  it isn't the expected value.
-			        throw new Exception($"Failed to parse generate-env output. raw=[{result}]");
-		        }
-
-		        // apply the environment data to the local process.
-		        var envData = parsedOutput.data;
-		        foreach (var envVar in envData.envVars)
-		        {
-			        Environment.SetEnvironmentVariable(envVar.name, envVar.value);
-		        }
-	        }
-	        catch (Exception ex)
-	        {
-		        Console.WriteLine("Failed to handle env vars " + ex.GetType().Name + " -" + ex.Message);
-		        Console.WriteLine(ex.StackTrace);
 	        }
         }
 
