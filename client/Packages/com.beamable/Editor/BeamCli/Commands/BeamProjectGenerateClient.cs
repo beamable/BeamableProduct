@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ProjectGenerateClientArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ProjectGenerateClientArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The .dll filepath for the built microservice</summary>
 		public string source;
@@ -22,6 +22,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string[] existingFedIds;
 		/// <summary>A set of existing class names for federations</summary>
 		public string[] existingFedTypeNames;
+		/// <summary>A special format, BEAMOID=PATH, that tells the generator where to place the client. The path should be relative to the linked project root</summary>
+		public string[] outputPathHints;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -85,6 +87,15 @@ namespace Beamable.Editor.BeamCli.Commands
 					genBeamCommandArgs.Add(("--existing-fed-type-names=" + this.existingFedTypeNames[i]));
 				}
 			}
+			// If the outputPathHints value was not default, then add it to the list of args.
+			if ((this.outputPathHints != default(string[])))
+			{
+				for (int i = 0; (i < this.outputPathHints.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--output-path-hints=" + this.outputPathHints[i]));
+				}
+			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces
 			genBeamCommandStr = string.Join(" ", genBeamCommandArgs);
@@ -114,7 +125,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ProjectGenerateClientWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ProjectGenerateClientWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ProjectGenerateClientWrapper OnStreamGenerateClientFileEvent(System.Action<ReportDataPoint<BeamGenerateClientFileEvent>> cb)
 		{

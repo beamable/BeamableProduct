@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamDockerServiceDescriptor
+	public partial class BeamDockerServiceDescriptor
 	{
 		public string service;
 		public string serviceType;

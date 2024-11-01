@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamNotificationPlayerOutput
+	public partial class BeamNotificationPlayerOutput
 	{
 		public string context;
 		public string payload;

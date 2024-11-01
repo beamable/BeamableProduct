@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ServerServeArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ServerServeArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The owner of the server is used to identify the server later with the /info endpoint</summary>
 		public string owner;
@@ -68,7 +68,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ServerServeWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ServerServeWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ServerServeWrapper OnStreamServeCliCommandOutput(System.Action<ReportDataPoint<BeamServeCliCommandOutput>> cb)
 		{

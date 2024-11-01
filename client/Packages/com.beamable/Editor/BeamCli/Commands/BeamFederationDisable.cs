@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class FederationDisableArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class FederationDisableArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The service to disable federation</summary>
 		public string service;
@@ -44,7 +44,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class FederationDisableWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class FederationDisableWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual FederationDisableWrapper OnStreamDisableFederationCommandOutput(System.Action<ReportDataPoint<BeamDisableFederationCommandOutput>> cb)
 		{

@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamRunFailErrorOutput
+	public partial class BeamRunFailErrorOutput
 	{
 		public System.Collections.Generic.List<BeamRunProjectBuildErrorStream> compilerErrors;
 		public string message;

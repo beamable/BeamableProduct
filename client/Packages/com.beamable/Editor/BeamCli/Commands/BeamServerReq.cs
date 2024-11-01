@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ServerReqArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ServerReqArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The port where the CLI server is running</summary>
 		public int port;
@@ -55,7 +55,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ServerReqWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ServerReqWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ServerReqWrapper OnStreamRequestCliCommandOutput(System.Action<ReportDataPoint<BeamRequestCliCommandOutput>> cb)
 		{

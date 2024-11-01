@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamFederationEntry
+	public partial class BeamFederationEntry
 	{
 		public string interfaceName;
 		public string federationId;

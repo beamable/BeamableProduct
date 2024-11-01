@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ProjectNewStorageArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ProjectNewStorageArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>Name of the new project</summary>
 		public Beamable.Common.Semantics.ServiceName name;
@@ -90,7 +90,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ProjectNewStorageWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ProjectNewStorageWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 	}
 }

@@ -56,7 +56,7 @@ namespace Beamable.Server.Editor.Usam
 	}
 	
 	
-	public class UsamService : IStorageHandler<UsamService>, Beamable.Common.Dependencies.IServiceStorable
+	public partial class UsamService : IStorageHandler<UsamService>, Beamable.Common.Dependencies.IServiceStorable
 	{
 		[Serializable]
 		public struct NamedLogView
@@ -143,6 +143,9 @@ namespace Beamable.Server.Editor.Usam
 		private ProjectStorageEraseWrapper _eraseCommand;
 		private CommonAreaService _commonArea;
 
+		public UsamAssemblyService AssemblyService => _assemblyUtil;
+		private UsamAssemblyService _assemblyUtil;
+
 		private AssemblyDefinitionAsset _commonAssemblyAsset;
 
 		public const string SERVICES_FOLDER = "BeamableServices/";
@@ -175,22 +178,7 @@ namespace Beamable.Server.Editor.Usam
 			_cli = cli;
 			
 			_commonArea.EnsureAreas(out _commonAssemblyAsset);
-		}
-
-		public bool ShouldServiceAutoGenerateClient(string beamoId)
-		{
-			if (!serviceToAutoGenClient.TryGetValue(beamoId, out var value))
-			{
-				return true;
-			}
-
-			return value;
-		}
-
-		public void ToggleServiceAutoGenerateClient(string beamoId)
-		{
-			var value = ShouldServiceAutoGenerateClient(beamoId);
-			serviceToAutoGenClient[beamoId] = !value;
+			_assemblyUtil = new UsamAssemblyService(this);
 		}
 
 		public bool TryGetStatus(string beamoId, out BeamServiceStatus status)
@@ -239,6 +227,9 @@ namespace Beamable.Server.Editor.Usam
 			latestManifest ??= new BeamShowManifestCommandOutput();
 
 			latestManifest.services ??= new List<BeamManifestServiceEntry>();
+
+			_assemblyUtil.Reload();
+			Reload();
 		}
 		
 		
@@ -554,79 +545,7 @@ namespace Beamable.Server.Editor.Usam
 		}
 
 
-		public void ListenForBuildChanges()
-		{
-			latestListenTaskId++;
-			var beamoIdToWriteTime = new Dictionary<string, long>();
-
-			_dispatcher.Run("usam-build-generation", Run(latestListenTaskId));
-			
-			IEnumerator Run(int taskId)
-			{
-				while (taskId == latestListenTaskId)
-				{
-					yield return new WaitForSecondsRealtime(.5f); // wait half a second...
-
-					if (latestManifest?.services == null) continue;
-
-
-					var anyUpdates = false;
-					foreach (var service in latestManifest.services)
-					{
-						var path = service.buildDllPath;
-						if (string.IsNullOrEmpty(path)) continue;
-
-						if (!File.Exists(path)) continue;
-						
-						var writeTime = File.GetLastWriteTime(path).ToFileTime();
-						if (beamoIdToWriteTime.TryGetValue(service.beamoId, out var lastWriteTime) && writeTime > lastWriteTime)
-						{
-							anyUpdates = true;
-						}
-
-						beamoIdToWriteTime[service.beamoId] = writeTime;
-					}
-
-					if (anyUpdates)
-					{
-						var commandPromise = GenerateClient();
-						yield return commandPromise.ToYielder();
-					}
-				}
-			}
-		}
-
-		public void Reload()
-		{
-			var _ = WaitReload();
-		}
 		
-		
-		
-		public Promise WaitReload()
-		{
-			var taskId = ++latestReloadTaskId;
-			
-			LoadLegacyServices();
-
-			var command = _cli.UnityManifest();
-			command.OnStreamShowManifestCommandOutput(cb =>
-			{
-				if (latestReloadTaskId != taskId)
-					return;
-				
-				hasReceivedManifestThisDomain = true;
-				latestManifest = cb.data;
-				CsProjUtil.OnPreGeneratingCSProjectFiles(this);
-			});
-			
-			var p = command.Run();
-			ListenForStatus();
-			ListenForDocker();
-			ListenForBuildChanges();
-			return p;
-		}
-
 		void LoadLegacyServices()
 		{
 			migrationPlan = UsamMigrator.CreatePlan(_microserviceCache);
@@ -957,6 +876,12 @@ namespace Beamable.Server.Editor.Usam
 			_cli.ProjectRemove(new ProjectRemoveArgs {sln = SERVICES_SLN_PATH, ids = new string[] {beamoId}})
 			    .OnStreamDeleteProjectCommandOutput(_ =>
 			    {
+				    if (_assemblyUtil.beamoIdToClientHintPath.TryGetValue(beamoId, out var hintPath) && File.Exists(hintPath))
+				    {
+					    File.Delete(hintPath);
+					    File.Delete(hintPath + ".meta");
+				    }
+				    
 				    Reload();
 			    })
 			    .Run();
@@ -1116,88 +1041,7 @@ namespace Beamable.Server.Editor.Usam
 
 		}
 
-		public async Promise GenerateClient(BeamManifestServiceEntry service)
-		{
-			if (_generateClientCommand != null)
-			{
-				_generateClientCommand.Cancel();
-				_generateClientCommand = null;
-			}
-
-			var idArr = new string[] {service.beamoId};
-			
-			// the client-code generation requires a built dll; so building the latest code
-			//  ensures we have the latest client generated
-			await Build(new ProjectBuildArgs {ids = idArr});
-
-			await GenerateClient(new ProjectGenerateClientArgs
-			{
-				outputLinks = true,
-				ids = idArr,
-
-				// the interface around this command has not aged well.
-				//  it actually generates clients for ALL services
-				source = "this-argument-is-not-used"
-			});
-			
-		}
-
-		async Promise GenerateClient(ProjectGenerateClientArgs args)
-		{
-			var outputs = new List<BeamGenerateClientFileEvent>();
-
-			{
-				// update the args with the locally available federationIds, 
-				//  this is so that the generated clients won't have compile errors
-				//  NOTE: It is still required for developers in Unity to write their own
-				//        implementation of IFederationId
-				var availableFederationIds = CompiledFederationIds;
-				args.existingFedIds = new string[availableFederationIds.Count];
-				args.existingFedTypeNames = new string[availableFederationIds.Count];
-				
-				for (var i = 0; i < availableFederationIds.Count; i++)
-				{
-					var federation = availableFederationIds[i];
-					var federationType = federation.GetType();
-					
-					if (string.IsNullOrEmpty(federationType.Namespace))
-					{
-						args.existingFedTypeNames[i] = federationType.Name;
-					}
-					else
-					{
-						args.existingFedTypeNames[i] = $"{federationType.Namespace}.{federationType.Name}";
-					}
-					args.existingFedIds[i] = federation.UniqueName;
-				}
-			}
-
-			_generateClientCommand = _cli.ProjectGenerateClient(args);
-			_generateClientCommand.OnError(cb =>
-			{
-				Debug.LogError($"Failed to generate clients. message=[{cb.data.message}] ");
-			});
-			if (args.ids?.Length == 1)
-			{
-				_generateClientCommand.OnLog(cb =>
-				{
-					AddLog(args.ids[0], cb.data);
-				});
-			}
 		
-			
-			_generateClientCommand.OnStreamGenerateClientFileEvent(cb =>
-			{
-				outputs.Add(cb.data);
-			});
-			
-			await _generateClientCommand.Run();
-
-			if (outputs.Count > 0)
-			{
-				AssetDatabase.Refresh();
-			}
-		}
 
 		async Promise Build(ProjectBuildArgs args)
 		{
@@ -1219,28 +1063,6 @@ namespace Beamable.Server.Editor.Usam
 				}
 			});
 			await buildCommand.Run();
-		}
-
-		public async Promise GenerateClient()
-		{
-			if (_generateClientCommand != null)
-			{
-				_generateClientCommand.Cancel();
-				_generateClientCommand = null;
-			}
-
-			var idArr = latestManifest.services
-			                           .Where(x => ShouldServiceAutoGenerateClient(x.beamoId))
-			                           .Select(x => x.beamoId)
-			                           .ToArray();
-			await GenerateClient(new ProjectGenerateClientArgs
-			{
-				outputLinks = true,
-				ids = idArr,
-				// the interface around this command has not aged well.
-				//  it actually generates clients for ALL services
-				source = "not-important"
-			});
 		}
 
 		public Promise<string> GetLocalConnectionString(BeamManifestStorageEntry service)

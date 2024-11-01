@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ServicesResetImageArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ServicesResetImageArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The list of services to include, defaults to all local services (separated by whitespace)</summary>
 		public string[] ids;
@@ -52,7 +52,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ServicesResetImageWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ServicesResetImageWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ServicesResetImageWrapper OnStreamServicesResetImageCommandOutput(System.Action<ReportDataPoint<BeamServicesResetImageCommandOutput>> cb)
 		{

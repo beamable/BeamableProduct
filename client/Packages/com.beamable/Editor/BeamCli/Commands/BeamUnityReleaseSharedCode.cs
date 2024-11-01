@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class UnityReleaseSharedCodeArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class UnityReleaseSharedCodeArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>path to csproj project</summary>
 		public string csprojPath;
@@ -60,7 +60,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class UnityReleaseSharedCodeWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class UnityReleaseSharedCodeWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual UnityReleaseSharedCodeWrapper OnStreamReleaseSharedUnityCodeCommandOutput(System.Action<ReportDataPoint<BeamReleaseSharedUnityCodeCommandOutput>> cb)
 		{

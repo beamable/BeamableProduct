@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ListenServerArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ListenServerArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>When true, do not send any approved list of messages, such that all server messages will be sent</summary>
 		public bool noFilter;
@@ -47,7 +47,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ListenServerWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ListenServerWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ListenServerWrapper OnStreamNotificationServerOutput(System.Action<ReportDataPoint<BeamNotificationServerOutput>> cb)
 		{

@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ProjectGeneratePropertiesArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ProjectGeneratePropertiesArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>Where the file will be created</summary>
 		public string output;
@@ -62,7 +62,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ProjectGeneratePropertiesWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ProjectGeneratePropertiesWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 	}
 }

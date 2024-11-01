@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamServiceRemoteDeployProgressResult
+	public partial class BeamServiceRemoteDeployProgressResult
 	{
 		public string BeamoId;
 		public double BuildAndTestProgress;

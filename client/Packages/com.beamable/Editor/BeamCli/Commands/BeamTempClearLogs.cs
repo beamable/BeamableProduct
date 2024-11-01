@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class TempClearLogsArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class TempClearLogsArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>Only clear logs older than a given value. This string should be in a duration format.
 		///
@@ -55,7 +55,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class TempClearLogsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class TempClearLogsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual TempClearLogsWrapper OnStreamClearTempLogFilesCommandOutput(System.Action<ReportDataPoint<BeamClearTempLogFilesCommandOutput>> cb)
 		{

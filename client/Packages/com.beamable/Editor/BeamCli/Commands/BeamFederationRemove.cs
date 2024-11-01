@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class FederationRemoveArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class FederationRemoveArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The BeamoId of the microservice to add</summary>
 		public string microservice;
@@ -52,7 +52,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class FederationRemoveWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class FederationRemoveWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual FederationRemoveWrapper OnStreamRemoveFederationCommandOutput(System.Action<ReportDataPoint<BeamRemoveFederationCommandOutput>> cb)
 		{

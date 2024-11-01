@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ServicesRunArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ServicesRunArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The ids for the services you wish to deploy. Ignoring this option deploys all services</summary>
 		public string[] ids;
@@ -65,7 +65,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ServicesRunWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ServicesRunWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ServicesRunWrapper OnStreamServiceRunReportResult(System.Action<ReportDataPoint<BeamServiceRunReportResult>> cb)
 		{

@@ -4,9 +4,9 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ServicesDockerStartArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ServicesDockerStartArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>only return the links to download docker, but do not start.</summary>
+		/// <summary>Only return the links to download docker, but do not start</summary>
 		public bool linksOnly;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
@@ -48,7 +48,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ServicesDockerStartWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ServicesDockerStartWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ServicesDockerStartWrapper OnStreamStartDockerCommandOutput(System.Action<ReportDataPoint<BeamStartDockerCommandOutput>> cb)
 		{

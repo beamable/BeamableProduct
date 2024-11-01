@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class UnityDownloadNugetPackageArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class UnityDownloadNugetPackageArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>the nuget id of the package dep</summary>
 		public string packageId;
@@ -56,7 +56,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class UnityDownloadNugetPackageWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class UnityDownloadNugetPackageWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual UnityDownloadNugetPackageWrapper OnStreamDownloadNugetDepToUnityCommandOutput(System.Action<ReportDataPoint<BeamDownloadNugetDepToUnityCommandOutput>> cb)
 		{

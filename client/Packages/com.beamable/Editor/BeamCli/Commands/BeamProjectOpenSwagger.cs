@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ProjectOpenSwaggerArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ProjectOpenSwaggerArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>Name of the service to open swagger to</summary>
 		public Beamable.Common.Semantics.ServiceName serviceName;
@@ -62,7 +62,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ProjectOpenSwaggerWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ProjectOpenSwaggerWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 	}
 }

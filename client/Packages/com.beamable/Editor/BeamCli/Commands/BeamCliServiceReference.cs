@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamCliServiceReference
+	public partial class BeamCliServiceReference
 	{
 		public string serviceName;
 		public string checksum;

@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ProjectRunArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ProjectRunArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>When true, the command will run forever and watch the state of the program</summary>
 		public bool watch;
@@ -101,7 +101,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ProjectRunWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ProjectRunWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ProjectRunWrapper OnStreamRunProjectResultStream(System.Action<ReportDataPoint<BeamRunProjectResultStream>> cb)
 		{

@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamGetTokenListElement
+	public partial class BeamGetTokenListElement
 	{
 		public string created;
 		public string device;

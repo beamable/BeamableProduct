@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamListDepsCommandResults
+	public partial class BeamListDepsCommandResults
 	{
 		public System.Collections.Generic.List<BeamServiceDependenciesPair> Services;
 	}

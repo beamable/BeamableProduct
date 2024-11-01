@@ -4,9 +4,9 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class UnityRestoreArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class UnityRestoreArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>the path to the dotnet csproj path</summary>
+		/// <summary>The path to the dotnet csproj path</summary>
 		public string csproj;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
@@ -48,7 +48,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class UnityRestoreWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class UnityRestoreWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual UnityRestoreWrapper OnStreamRestoreProjectCommandOutput(System.Action<ReportDataPoint<BeamRestoreProjectCommandOutput>> cb)
 		{

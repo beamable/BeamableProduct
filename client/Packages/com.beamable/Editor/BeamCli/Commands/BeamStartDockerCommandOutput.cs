@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamStartDockerCommandOutput
+	public partial class BeamStartDockerCommandOutput
 	{
 		public bool attempted;
 		public bool alreadyRunning;

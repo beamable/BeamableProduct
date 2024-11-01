@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamServiceInstance
+	public partial class BeamServiceInstance
 	{
 		public long startedByAccountId;
 		public string startedByAccountEmail;

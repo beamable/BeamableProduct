@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class LogoutArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class LogoutArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
@@ -38,7 +38,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class LogoutWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class LogoutWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual LogoutWrapper OnStreamLogoutCommandResult(System.Action<ReportDataPoint<BeamLogoutCommandResult>> cb)
 		{

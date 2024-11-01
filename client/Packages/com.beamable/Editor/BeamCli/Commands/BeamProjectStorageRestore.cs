@@ -4,13 +4,13 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ProjectStorageRestoreArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ProjectStorageRestoreArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>the beamoId for the storage object</summary>
+		/// <summary>The beamoId for the storage object</summary>
 		public string beamoId;
-		/// <summary>when true, merges the snapshot into the existing data</summary>
+		/// <summary>When true, merges the snapshot into the existing data</summary>
 		public bool merge;
-		/// <summary>the input for the snapshot</summary>
+		/// <summary>The input for the snapshot</summary>
 		public string input;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
@@ -60,7 +60,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ProjectStorageRestoreWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ProjectStorageRestoreWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ProjectStorageRestoreWrapper OnStreamRestoreStorageObjectCommandOutput(System.Action<ReportDataPoint<BeamRestoreStorageObjectCommandOutput>> cb)
 		{

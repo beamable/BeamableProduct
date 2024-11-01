@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamNotificationServerOutput
+	public partial class BeamNotificationServerOutput
 	{
 		public string path;
 		public string body;
