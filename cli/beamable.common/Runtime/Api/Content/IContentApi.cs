@@ -1,5 +1,6 @@
 using Beamable.Common.Content;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.Common.Api.Content
@@ -144,6 +145,8 @@ namespace Beamable.Common.Api.Content
 		/// The manifest will only include entries that passed the given <see cref="filter"/>
 		/// </returns>
 		Promise<ClientManifest> GetManifest(ContentQuery query, string manifestID = "");
+
+		SequencePromise<T> ConvertPromisesIntoSequence<T>(int batchSize, List<Func<Promise<T>>> promiseGenerators);
 	}
 
 	public static class ContentApi

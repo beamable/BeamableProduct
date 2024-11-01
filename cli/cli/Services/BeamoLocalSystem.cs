@@ -92,6 +92,7 @@ public partial class BeamoLocalSystem
 		// Make a cancellation token source to cancel the docker event stream we listen for updates. See StartListeningToDocker.
 		_dockerListeningThreadCancel = new CancellationTokenSource();
 	}
+	
 
 	public async Task InitManifest(bool useManifestCache=true, bool fetchServerManifest=true)
 	{

@@ -1,14 +1,91 @@
 using Beamable.Common;
+using Beamable.Common.Runtime.Collections;
 using Beamable.Coroutines;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Beamable
 {
 	public static class PromiseExtensions
 	{
+
+		public static SequencePromise<T> ExecuteOnGameObjectRoutines<T>(int routineCount,
+		                                                              CoroutineService coroutineService,
+		                                                              List<Func<Promise<T>>> generators)
+		{
+			return ExecuteOnRoutines(
+				routineCount: routineCount,
+				coroutineExecutor: enumerator => coroutineService.StartCoroutine(enumerator),
+				generators: generators);
+		}
+		
+		/// <summary>
+		/// This function will execute a series of promises.
+		///
+		/// A set of consuming routines will be spawned immediately as the function is invoked,
+		/// and each routine will work on the next available promise in the given <see cref="generators"/> list.
+		///
+		/// When all the generators have been completed, the resulting sequence promise will complete.
+		///
+		/// </summary>
+		/// <param name="routineCount">The number of consuming routines</param>
+		/// <param name="coroutineExecutor">This method is not responsible for scheduling the routines, and relies on this proxy action to actually start the routine.
+		/// This action should enumerate the routine until completion. Ideally, all the routines should be enumerated in parallel. </param>
+		/// <param name="generators">The list of generators that will be invoked by this method. Each function callback will only be invoked once. </param>
+		/// <typeparam name="T"></typeparam>
+		/// <returns>
+		/// A sequence promise where the inner list of values maps to the results of each promise generator.
+		/// The order is maintained. 
+		/// </returns>
+		public static SequencePromise<T> ExecuteOnRoutines<T>(int routineCount,
+		                                                    Action<IEnumerator> coroutineExecutor,
+		                                                    List<Func<Promise<T>>> generators)
+		{
+			
+			var seq = new SequencePromise<T>(generators.Count);
+			var nextIndex = 0;
+			for (var i = 0; i < routineCount; i++)
+			{
+				coroutineExecutor(Routine());
+			}
+
+			IEnumerator Routine()
+			{
+				while (nextIndex < generators.Count())
+				{
+					var index = nextIndex++;
+					var generator = generators[index];
+					var promise = generator();
+					yield return promise.ToYielder();
+
+					if (promise.IsFailed)
+					{
+						Debug.LogWarning($"Failed promise index=[{index}]");
+						promise.Error(ex =>
+						{
+							seq.ReportEntryError(index, ex);
+						});
+					}
+					else
+					{
+						var result = promise.GetResult();
+						seq.ReportEntrySuccess(index, result);
+					}
+
+				}
+
+			}
+
+			return seq;
+		}
+
+		
+		private static IConcurrentDictionary<long, Task> _uncaughtTasks = new ConcurrentDictionary<long, Task>();
+
 		public static Promise WaitForAllUncaughtHandlers()
 		{
 			var handler = Beam.GlobalScope.GetService<DefaultUncaughtPromiseQueue>();

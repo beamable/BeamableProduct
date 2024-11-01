@@ -7,6 +7,7 @@ using Beamable.Common.Content.Validation;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Runtime;
 using Beamable.Content;
+using Beamable.Coroutines;
 using Beamable.Editor.Content.Models;
 using Beamable.Editor.Content.UI;
 using Beamable.Serialization;
@@ -52,14 +53,27 @@ namespace Beamable.Editor.Content
 			return AssetDeleteResult.DidNotDelete;
 		}
 
+		private static List<string> accruedSavedPaths = new List<string>();
 
 		private static string[] OnWillSaveAssets(string[] paths)
 		{
 			if (!BeamEditor.IsInitialized) return paths;
 
-			var db = BeamEditorContext.Default.ServiceScope.GetService<ContentDatabase>();
-			if (!db.ContainsAnyContentPaths(paths)) return paths;
+			accruedSavedPaths.AddRange(paths);
+			EditorDebouncer.Debounce("_content_will_save_assets", SaveAssetsDebounced);
 
+			return paths;
+		}
+		
+		private static void SaveAssetsDebounced()
+		{
+			var paths = accruedSavedPaths.ToArray();
+			accruedSavedPaths.Clear();
+			
+			var db = BeamEditorContext.Default.ServiceScope.GetService<ContentDatabase>();
+			if (!db.ContainsAnyContentPaths(paths)) return;
+			
+			
 			db.RecalculateIndex(); // update, because assets are new!
 			var listOfContent = new List<IContentObject>();
 			for (var i = 0; i < paths.Length; i++)
@@ -75,7 +89,6 @@ namespace Beamable.Editor.Content
 			}
 			ContentIO.NotifyCreated(listOfContent);
 
-			return paths;
 
 		}
 	}
@@ -207,7 +220,7 @@ namespace Beamable.Editor.Content
 		public static Action<IEnumerable<AvailableManifestModel>> OnArchivedManifestsFetched;
 
 		private ValidationContext ValidationContext => _provider.GetService<ValidationContext>();
-		private ContentDatabase ContentDatabase => _provider.GetService<ContentDatabase>();
+		public ContentDatabase ContentDatabase => _provider.GetService<ContentDatabase>();
 
 		public ContentIO(IDependencyProvider provider, IBeamableRequester requester)
 		{

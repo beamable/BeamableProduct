@@ -33,5 +33,15 @@ namespace Beamable.Common.Shop
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class SKURef : ContentRef<SKUContent> { }
+	public class SKURef : ContentRef<SKUContent>
+	{
+		public SKURef()
+		{
+
+		}
+
+		public SKURef(string id) : base(id)
+		{
+		}
+	}
 }

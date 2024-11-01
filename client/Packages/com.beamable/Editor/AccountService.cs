@@ -32,7 +32,7 @@ namespace Beamable.Editor
 		Promise<bool> SwitchToConfigDefaults();
 		void Clear();
 	}
-
+	
 	public class AccountServerData
 	{
 		public OptionalString cid = new OptionalString();
@@ -48,8 +48,9 @@ namespace Beamable.Editor
 		}
 	}
 
-	public class AccountService : AccountServerData, IAccountService, IStorageHandler<AccountService>, Beamable.Common.Dependencies.IServiceStorable
+	public class AccountService : AccountServerData, IAccountService, IStorageHandler<AccountService>, Beamable.Common.Dependencies.IServiceStorable, IUserContext
 	{
+		public long UserId => Account.user.id;
 		public List<Func<EditorAccountInfo, Promise>> _onUserChangeCallbacks = new List<Func<EditorAccountInfo, Promise>>();
 		private readonly IDependencyProviderScope _scope;
 

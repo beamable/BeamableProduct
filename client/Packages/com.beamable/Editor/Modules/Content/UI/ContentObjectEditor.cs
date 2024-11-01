@@ -102,6 +102,7 @@ namespace Beamable.Editor.Content.UI
 					otherContentObject.Tags = tags.ToArray(); // copy.
 
 					otherContentObject.ForceValidate();
+					EditorUtility.SetDirty(otherContentObject);
 				}
 			}
 		}

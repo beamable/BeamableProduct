@@ -25,9 +25,11 @@ namespace Beamable.Editor.Modules.EditorConfig
 		public AdvancedSettings Advanced = new AdvancedSettings();
 
 		[Tooltip("These are advanced Beamable CLI features. It should not be changed without deeper understanding of Beamable internals.")]
-
 		public OptionalAdvancedCliSettings AdvancedCli = new OptionalAdvancedCliSettings();
 
+		[Tooltip("UnityHub may delete your PATH variable for the process. In order to customize the path, use this variable. By default, the common usr/local/bin path is included.")]
+		public OptionalListString CustomPathInclusions = new OptionalListString();
+		
 		public override void OnFreshCopy()
 		{
 			var existing = GetDefineSymbols();

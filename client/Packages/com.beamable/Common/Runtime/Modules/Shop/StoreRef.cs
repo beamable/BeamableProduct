@@ -36,5 +36,16 @@ namespace Beamable.Common.Shop
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class StoreRef : ContentRef<StoreContent> { }
+	public class StoreRef : ContentRef<StoreContent>
+	{
+		public StoreRef()
+		{
+			
+		}
+
+		public StoreRef(string id) : base(id)
+		{
+			
+		}
+	}
 }

@@ -192,7 +192,7 @@ namespace Beamable.Api.Caches
 			{
 				if (!File.Exists(GetFullPathForKey(key)))
 				{
-					return Promise<T>.Failed(new NoConnectivityException($"{desc} {key} is not cached and requires internet connectivity."));
+					return Promise<T>.Failed(new OfflineCacheMissException(key, desc));
 				}
 				_offlineCacheData.Add(key, ReadCacheFromDisk<T>(key));
 				_localCacheResponse.CompleteSuccess((T)_offlineCacheData[key]);

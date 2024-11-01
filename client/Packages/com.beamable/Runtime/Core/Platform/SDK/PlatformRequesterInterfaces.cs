@@ -5,7 +5,7 @@ using System;
 
 namespace Beamable.Api
 {
-	public interface IPlatformRequester : IRequester
+	public interface IPlatformRequester : IRequester, IPlatformTimeObserver
 	{
 		AccessToken Token { get; set; }
 		string TimeOverride { get; set; }

@@ -16,13 +16,34 @@ namespace Beamable.Common.Content
 	[Serializable] public class OptionalMapOfLong : Optional<MapOfLong> { }
 	[Serializable] public class MapOfInt : SerializableDictionaryStringToInt { }
 	[Serializable] public class OptionalMapOfInt : Optional<MapOfInt> { }
-	[Serializable] public class MapOfString : SerializableDictionaryStringToString { }
+	[Serializable] public class MapOfString : SerializableDictionaryStringToString
+	{
+		public MapOfString()
+		{
+		}
+
+		public MapOfString(Dictionary<string, string> data) : base(data)
+		{
+		}
+	}
 
 	[Obsolete("use " + nameof(MapOfArrayOfString) + " instead")]
 	[Serializable] public class MapOfStringArray : SerializableDictionaryStringToSomething<string[]> { }
 	[Serializable] public class MapOfArrayOfString : SerializableDictionaryStringToSomething<string[]> { }
 	[Serializable] public class MapOfMapOfString : SerializableDictionaryStringToSomething<MapOfString> { }
-	[Serializable] public class OptionalMapOfString : Optional<MapOfString> { }
+	[Serializable] public class OptionalMapOfString : Optional<MapOfString>
+	{
+		public OptionalMapOfString()
+		{
+
+		}
+
+		public OptionalMapOfString(Dictionary<string, string> data)
+		{
+			Value = new MapOfString(data);
+			HasValue = true;
+		}
+	}
 	[Serializable] public class MapOfObject : SerializableDictionaryStringToObject { }
 	[Serializable] public class OptionalMapOfObject : Optional<MapOfObject> { }
 	[Serializable] public class MapOfBool : SerializableDictionaryStringToBool { }

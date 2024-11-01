@@ -38,7 +38,18 @@ namespace Beamable.Common.Content
 	///
 	/// </summary>
 	[Serializable]
-	public class SimGameTypeRef : ContentRef<SimGameType> { }
+	public class SimGameTypeRef : ContentRef<SimGameType>
+	{
+		public SimGameTypeRef()
+		{
+			
+		}
+
+		public SimGameTypeRef(string id) : base(id)
+		{
+			
+		}
+	}
 
 	/// <summary>
 	/// This type defines a %Beamable %ContentObject subclass for the %Multiplayer feature.

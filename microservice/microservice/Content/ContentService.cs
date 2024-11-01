@@ -413,5 +413,10 @@ namespace Beamable.Server.Content
       {
          return WaitForManifest(manifestID).Map(x => x.Filter(query));
       }
+
+      public SequencePromise<T> ConvertPromisesIntoSequence<T>(int batchSize, List<Func<Promise<T>>> promiseGenerators)
+      {
+	      return Promise.ExecuteInBatchSequence(batchSize, promiseGenerators, () => false);
+      }
    }
 }

@@ -42,9 +42,8 @@ namespace Beamable.Common.Inventory
 	{
 		public CurrencyRef() { }
 
-		public CurrencyRef(string id)
+		public CurrencyRef(string id) : base(id)
 		{
-			Id = id;
 		}
 
 		public static implicit operator string(CurrencyRef data) => data.GetId();
@@ -66,7 +65,8 @@ namespace Beamable.Common.Inventory
 	[System.Serializable]
 	public class CurrencyRef<TContent> : ContentRef<TContent> where TContent : CurrencyContent, new()
 	{
-
+		public CurrencyRef(string id) : base(id){}
+		public CurrencyRef(){}
 	}
 
 	[System.Serializable]

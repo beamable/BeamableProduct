@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.1.0]
+## [3.0.0]
 
 ### Added
 - `--unmask-logs` option will show full tokens in verbose logs
@@ -31,6 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JSON output will correctly render optional types
 - DockerHub 4.31 is supported via microservices using `host.docker.internal` instead of `gateway.docker.internal` to communicate to `localhost`
 
+## [2.0.2] - 2024-09-25
+
+### Added
+- `matchType` field of the `Lobby` struct used by `IFederatedGameServer`
+
 ## [2.0.1] - 2024-06-17
 
 ### Added
@@ -43,7 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `UpdateDockerfile` update to fix common lib handling for docker builds
 
 ### Changed
- - `beam service ps` now doesn't have the `--remote` flag and always return information updated with both local and remote
+
+- `beam service ps` now doesn't have the `--remote` flag and always return information updated with both local and remote
 
 ## [2.0.0] - 2024-05-24
 
@@ -89,6 +95,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - `beam content` no longer directly opens content folder.
+
+## [1.19.23] - 2024-10-23
+no changes
+
+## [1.19.22] - 2024-07-19
+no changes
+
+## [1.19.21] - 2024-06-18
+
+### Changed
+- config files use indented JSON
 
 ## [1.19.17] - 2024-04-04
 ### Changed

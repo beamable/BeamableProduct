@@ -49,18 +49,28 @@ namespace Beamable.Editor.Content
 
 				return new Func<Promise<Tuple<ContentObject, string>>>(() => FetchContentFromCDN(operation.Uri).Map(response =>
 				{
-					var contentType = contentTypeReflectionCache.GetTypeFromId(operation.ContentId);
-					var newAsset = serializer.DeserializeByType(response, contentType, disableExceptions);
-					newAsset.Tags = operation.Tags;
+					try
+					{
+						var contentType = contentTypeReflectionCache.GetTypeFromId(operation.ContentId);
+						var newAsset = serializer.DeserializeByType(response, contentType, disableExceptions);
+						newAsset.Tags = operation.Tags;
 
-					newAsset.LastChanged = operation.LastChanged == 0
-						? operation.Created == 0 ? 0 : operation.Created
-						: operation.LastChanged;
+						newAsset.LastChanged = operation.LastChanged == 0
+							? operation.Created == 0 ? 0 : operation.Created
+							: operation.LastChanged;
 
-					completed += 1;
-					progressCallback?.Invoke(completed / totalOperations, (int)completed, totalOperations);
+						completed += 1;
 
-					return new Tuple<ContentObject, string>(newAsset, operation.AssetPath);
+						operation.IsDownloaded = true;
+						progressCallback?.Invoke(completed / totalOperations, (int)completed, totalOperations);
+
+						return new Tuple<ContentObject, string>(newAsset, operation.AssetPath);
+					}
+					catch (Exception ex)
+					{
+						Debug.LogException(ex);
+						throw ex;
+					}
 				}));
 			}).ToList();
 
@@ -68,10 +78,11 @@ namespace Beamable.Editor.Content
 
 			var downloadPromises = new Promise<Unit>();
 			var batchSize = ContentConfiguration.Instance.EditorDownloadBatchSize.GetOrElse(100);
-			Promise.ExecuteInBatchSequence(batchSize, downloadPromiseGenerators).Map(assetsToBeWritten =>
+			
+			PromiseEditor.ExecuteOnRoutines(batchSize, downloadPromiseGenerators).Map(assetsToBeWritten =>
 			{
 				_io.CreateBatch(assetsToBeWritten);
-
+			
 				progressCallback?.Invoke(1, summary.TotalDownloadEntries, summary.TotalDownloadEntries);
 				downloadPromises.CompleteSuccess(PromiseBase.Unit);
 				return PromiseBase.Unit;
@@ -82,7 +93,11 @@ namespace Beamable.Editor.Content
 
 		private Promise<string> FetchContentFromCDN(string uri)
 		{
-			return _requester.Request(Method.GET, uri, includeAuthHeader: false, parser: s => s);
+			return _requester.Request(Method.GET, uri, includeAuthHeader: false, parser: s => s)
+			                 .Error(ex =>
+			                 {
+				                 Debug.LogWarning("Failed to download content " + uri + " / " + ex.Message);
+			                 });
 		}
 	}
 
@@ -138,7 +153,8 @@ namespace Beamable.Editor.Content
 					Operation = exists ? "MODIFY" : "ADD",
 					Tags = reference.Tags,
 					Created = reference.Created,
-					LastChanged = reference.LastChanged
+					LastChanged = reference.LastChanged,
+					IsDownloaded = false
 				};
 
 				var list = exists ? _overwrites : _additions;
@@ -174,5 +190,6 @@ namespace Beamable.Editor.Content
 		public long Created;
 		public long LastChanged;
 		public bool IsCorrupted;
+		public bool IsDownloaded;
 	}
 }

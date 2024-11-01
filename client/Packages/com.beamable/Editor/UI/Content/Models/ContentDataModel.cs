@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
@@ -707,7 +708,16 @@ namespace Beamable.Editor.Content.Models
 					}
 
 					ContentTypeDescriptor contentTypeDescriptor = _nameToType[typeName];
-					string assetPath = ContentIO.GetAssetPathByType(contentTypeDescriptor.ContentType, content);
+					string assetPath = null;
+					if (!ContentIO.ContentDatabase.TryGetContentById(content.Id, out var entry))
+					{
+						assetPath = ContentIO.GetAssetPathByType(contentTypeDescriptor.ContentType, content);
+					}
+					else
+					{
+						assetPath = entry.assetPath;
+					}
+					
 					var item = new ContentItemDescriptor(content, contentTypeDescriptor, assetPath);
 					AccumulateContentTags(item);
 
@@ -909,6 +919,7 @@ namespace Beamable.Editor.Content.Models
 			}
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool GetDescriptorForId(string contentId, out ContentItemDescriptor descriptor)
 		{
 			return _idToContent.TryGetValue(contentId, out descriptor);

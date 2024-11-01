@@ -1302,6 +1302,7 @@ namespace Beamable.Player
 			await Refresh();
 			return res;
 		}
+		
 
 		public async Promise ResetPassword(string email)
 		{
@@ -1508,6 +1509,19 @@ namespace Beamable.Player
 		/// will be given back to the server to validate identity.
 		/// <para>
 		/// If the <see cref="ChallengeHandler"/> is not idempotent, please set the <see cref="attemptToMergeExistingAccount"/> field to false.
+		/// </para>
+		/// </param>
+		/// <param name="attemptToMergeExistingAccount">
+		/// Defaults to true.
+		/// <para>
+		///		There may already be an account (on the CID) that has requested external identity associated with the account.
+		/// When there is an existing account, two outcomes are possible for this Recover method, either,
+		/// <list type="bullet">
+		/// <item> The current playerId can reference the existing account, or </item>
+		/// <item> A new playerId will be created that references the existing account </item>
+		/// </list>
+		/// By default, the first option is attempted. However, this approach requires two invocations of the <see cref="ChallengeHandler"/> ,
+		/// and if it is not idempotent, that will cause an error. Therefor, <b> if the <see cref="ChallengeHandler"/> is not idempotent, please set this field to false.</b>
 		/// </para>
 		/// </param>
 		/// <param name="attemptToMergeExistingAccount">

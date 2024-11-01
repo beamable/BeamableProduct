@@ -19,6 +19,12 @@ using System.Threading.Tasks;
 
 namespace Beamable.Server.Generator
 {
+	public class ExistingFederation
+	{
+		public string federationId;
+		public string federationIdTypeName;
+	}
+	
 	public class ClientCodeGenerator
 	{
 		private const string MicroserviceClients_TypeName = "MicroserviceClients";
@@ -46,6 +52,7 @@ namespace Beamable.Server.Generator
 		private string TargetExtensionClassName => $"ExtensionsFor{Descriptor.Name}Client";
 
 		private List<CallableMethodInfo> _callableMethods = new List<CallableMethodInfo>();
+		private List<ExistingFederation> _existingFederations;
 
 		public const string PARAMETER_STRING = "Parameter";
 		public const string CLIENT_NAMESPACE = "Beamable.Server.Clients";
@@ -70,8 +77,9 @@ namespace Beamable.Server.Generator
 		/// Define the class.
 		/// </summary>
 		/// <param name="serviceObject"></param>
-		public ClientCodeGenerator(MicroserviceDescriptor descriptor)
+		public ClientCodeGenerator(MicroserviceDescriptor descriptor, List<ExistingFederation> existingFederations)
 		{
+			_existingFederations = existingFederations;
 			Descriptor = descriptor;
 			targetUnit = new CodeCompileUnit();
 			CodeNamespace samples = new CodeNamespace(CLIENT_NAMESPACE);
@@ -185,6 +193,22 @@ namespace Beamable.Server.Generator
 
 		}
 
+		 bool GetTypeReference(Type federationType, out CodeTypeReference codeTypeReference)
+		{
+			var federationId = ((IFederationId)Activator.CreateInstance(federationType)).UniqueName;
+			var existingFederation = _existingFederations.FirstOrDefault(x => x.federationId == federationId);
+			if (existingFederation != null)
+			{
+				codeTypeReference = new CodeTypeReference(existingFederation.federationIdTypeName);
+				return true;
+			}
+			else
+			{
+				codeTypeReference = null;
+				return false;
+			}
+		}
+
 		void AddFederatedLoginInterfaces()
 		{
 			var interfaces = Descriptor.Type.GetInterfaces();
@@ -194,8 +218,11 @@ namespace Beamable.Server.Generator
 				{
 					var genericType = type.GetGenericArguments()[0];
 					var baseReference = new CodeTypeReference(typeof(ISupportsFederatedLogin<>));
-					baseReference.TypeArguments.Add(new CodeTypeReference(genericType));
-					targetClass.BaseTypes.Add(baseReference);
+					if (GetTypeReference(genericType, out var typeRef))
+					{
+						baseReference.TypeArguments.Add(typeRef);
+						targetClass.BaseTypes.Add(baseReference);
+					}
 				}
 			}
 		}
@@ -209,8 +236,12 @@ namespace Beamable.Server.Generator
 				{
 					var genericType = type.GetGenericArguments()[0];
 					var baseReference = new CodeTypeReference(typeof(ISupportsFederatedInventory<>));
-					baseReference.TypeArguments.Add(new CodeTypeReference(genericType));
-					targetClass.BaseTypes.Add(baseReference);
+
+					if (GetTypeReference(genericType, out var typeRef))
+					{
+						baseReference.TypeArguments.Add(typeRef);
+						targetClass.BaseTypes.Add(baseReference);
+					}
 				}
 			}
 		}

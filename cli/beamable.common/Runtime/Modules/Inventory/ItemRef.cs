@@ -40,9 +40,8 @@ namespace Beamable.Common.Inventory
 
 		}
 
-		public ItemRef(string id)
+		public ItemRef(string id) : base(id)
 		{
-			Id = id;
 		}
 
 
@@ -64,5 +63,15 @@ namespace Beamable.Common.Inventory
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class ItemRef<TContent> : ContentRef<TContent> where TContent : ContentObject, new() { }
+	public class ItemRef<TContent> : ContentRef<TContent> where TContent : ContentObject, new() { 
+		public ItemRef(string id) : base(id)
+		{
+			
+		}
+
+		public ItemRef()
+		{
+			
+		}
+	}
 }

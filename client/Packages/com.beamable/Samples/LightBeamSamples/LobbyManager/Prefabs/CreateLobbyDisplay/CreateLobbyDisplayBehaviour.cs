@@ -47,7 +47,8 @@ public class CreateLobbyDisplayBehaviour : MonoBehaviour, ILightComponent<Player
 
 		LobbyRestriction restrictionLevel = closedToggle.isOn ? LobbyRestriction.Closed : LobbyRestriction.Open;
 
-		await _playerLobby.Create(nameInput.text, restrictionLevel, description: descriptionInput.text);
+		// TODO: the gameTypeId needs to be filled out.
+		await _playerLobby.Create(nameInput.text, restrictionLevel, "", description: descriptionInput.text);
 		await _lightBeam.GotoPage<HomePage>();
 	}
 }

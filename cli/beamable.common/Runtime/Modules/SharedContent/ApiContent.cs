@@ -259,15 +259,20 @@ namespace Beamable.Common.Content
 
 		}
 
-		public ApiRef(string id)
+		public ApiRef(string id) : base(id)
 		{
-			Id = id;
 		}
 	}
 
 	[Serializable]
 	public class ApiRef : ApiRef<ApiContent>
 	{
+		public ApiRef()
+		{
+			
+		}
+
+		public ApiRef(string id) : base(id){}
 	}
 
 

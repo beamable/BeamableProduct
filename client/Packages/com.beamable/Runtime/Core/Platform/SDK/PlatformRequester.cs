@@ -4,6 +4,7 @@
 #undef BEAMABLE_ENABLE_VERSION_HEADERS
 #endif
 
+using Beamable.Api.Analytics;
 using Beamable.Api.Caches;
 using Beamable.Api.Connectivity;
 using Beamable.Common;
@@ -90,7 +91,7 @@ namespace Beamable.Api
 	/// ![img beamable-logo]
 	///
 	/// </summary>
-	public class PlatformRequester : IPlatformRequester, IHttpRequester, IRequester
+	public class PlatformRequester : IPlatformRequester, IHttpRequester, IRequester, IPlatformTimeObserver
 	{
 		private readonly IDependencyProvider _provider;
 		private const string ACCEPT_HEADER = "application/json";
@@ -427,9 +428,7 @@ namespace Beamable.Api
 						   }
 						   else if (httpNoInternet)
 						   {
-							   return Promise<T>.Failed(new NoConnectivityException(
-															opts.uri +
-															" should not be cached and requires internet connectivity. Internet connection lost. " + error.Message));
+							   return Promise<T>.Failed(error); 
 						   }
 
 						   return HandleError<T>(error, contentType, body, opts);
@@ -449,7 +448,7 @@ namespace Beamable.Api
 			}
 			else
 			{
-				return Promise<T>.Failed(new NoConnectivityException(opts.uri + " should not be cached and requires internet connectivity."));
+				return Promise<T>.Failed(new BeamableConnectionNotEstablishedException(opts));
 			}
 		}
 
@@ -463,9 +462,38 @@ namespace Beamable.Api
 			{
 				try
 				{
+					var analytics = _provider.GetService<IAnalyticsTracker>();
+					var userId = _provider.GetService<IUserContext>().UserId;
+					var settings = _provider.GetService<ITokenEventSettings>();
+					var oldToken = Token;
+					if (settings.EnableTokenAnalytics)
+					{
+						analytics.TrackEvent(TokenEvent.InvalidAccessToken(playerId: userId,
+						                                                   accessToken: oldToken?.Token, 
+						                                                   refreshToken: oldToken?.RefreshToken, 
+						                                                   error: code?.Error.error), true);
+					}
+					
 					var nextToken = await AuthService.LoginRefreshToken(Token.RefreshToken);
 					Token = new AccessToken(accessTokenStorage, Cid, Pid, nextToken.access_token,
 											nextToken.refresh_token, nextToken.expires_in);
+
+					if (settings.EnableTokenAnalytics)
+					{
+						analytics.TrackEvent(
+							TokenEvent.GetNewToken(playerId: userId, 
+							                       newAccessToken: Token?.Token, 
+							                       newRefreshToken: Token?.RefreshToken, 
+							                       oldAccessToken: oldToken?.Token,
+							                       oldRefreshToken: oldToken?.RefreshToken), true);
+						analytics.TrackEvent(
+							TokenEvent.ChangingToken(playerId: userId,
+							                         newAccessToken: Token?.Token,
+							                         newRefreshToken: Token?.RefreshToken,
+							                         oldAccessToken: oldToken?.Token,
+							                         oldRefreshToken: oldToken?.RefreshToken), true);
+					}
+
 					await Token.Save();
 				}
 				catch (Exception err)
@@ -630,10 +658,11 @@ namespace Beamable.Api
 				if (request.IsNetworkError())
 				{
 					PlatformLogger.Log($"<b>[PlatformRequester][NetworkError]</b> {typeof(T).Name}");
-					promise.CompleteError(new NoConnectivityException($"Unity webRequest failed with a network error. status=[{request.responseCode}] error=[{request.error}]"));
+					promise.CompleteError(new BeamableConnectionFailedException(opts, request));
 				}
 				else if (request.responseCode >= 300)
 				{
+					NoteServerTime(request);
 					// Handle errors
 					PlatformError platformError = null;
 					try
@@ -644,13 +673,12 @@ namespace Beamable.Api
 					{
 						// Swallow the exception and let the error be null
 					}
-
 					promise.CompleteError(new PlatformRequesterException(platformError, request, responsePayload));
-
 				}
 				else
 				{
 					// Parse JSON object and resolve promise
+					NoteServerTime(request);
 
 					if (string.IsNullOrWhiteSpace(responsePayload))
 					{
@@ -678,10 +706,25 @@ namespace Beamable.Api
 			}
 		}
 
+		protected virtual void NoteServerTime(UnityWebRequest request)
+		{
+			var dateHeaderValue = request.GetResponseHeader("Date");
+			LatestReceiveTime = DateTimeOffset.UtcNow;
+			if (!DateTimeOffset.TryParse(dateHeaderValue, out var parsedDate))
+			{
+				return;
+			}
+			
+			LatestServerTime = parsedDate;
+		}
+
 		protected virtual string GenerateAuthorizationHeader()
 		{
 			return Token != null ? $"Bearer {Token.Token}" : null;
 		}
+
+		public DateTimeOffset LatestServerTime { get; protected set; }
+		public DateTimeOffset LatestReceiveTime { get; protected set; }
 	}
 
 }

@@ -39,7 +39,11 @@ namespace Beamable.Common.Announcements
 	/// </summary>
 	[Agnostic]
 	[System.Serializable]
-	public class AnnouncementRef : AnnouncementRef<AnnouncementContent> { }
+	public class AnnouncementRef : AnnouncementRef<AnnouncementContent>
+	{
+		public AnnouncementRef(string id) : base(id) { }
+		public AnnouncementRef() { }
+	}
 
 	/// <summary>
 	/// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
@@ -54,8 +58,18 @@ namespace Beamable.Common.Announcements
 	///
 	/// </summary>
 	[System.Serializable]
-	public class AnnouncementRef<TContent> : ContentRef<TContent> where TContent : AnnouncementContent, new() { }
-
+	public class AnnouncementRef<TContent> : ContentRef<TContent> where TContent : AnnouncementContent, new()
+	{
+		public AnnouncementRef()
+		{
+			
+		}
+		public AnnouncementRef(string id) : base(id)
+		{
+			
+		}
+	}
+	
 	[System.Serializable]
 	[Agnostic]
 	public class AnnouncementAttachment : JsonSerializable.ISerializable

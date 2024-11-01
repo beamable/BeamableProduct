@@ -389,5 +389,8 @@ namespace Beamable.Platform.Tests
 		{
 			return Request<T>(req.method, req.uri, req.body, req.includeAuthHeader, parser: req.parser, useCache: req.useCache);
 		}
+
+		public DateTimeOffset LatestServerTime { get; }
+		public DateTimeOffset LatestReceiveTime { get; }
 	}
 }
