@@ -60,7 +60,7 @@ namespace Beamable.Editor.Microservice.UI2
 				EditorGUILayout.BeginHorizontal(new GUIStyle(), GUILayout.ExpandWidth(true), GUILayout.MinHeight(toolbarHeight));
 
 				
-				var badgeCount = DrawBadges(service);
+				var badgeCount = DrawBadges(service.Flags);
 				
 				EditorGUILayout.Space(1, true);
 				
@@ -159,37 +159,6 @@ namespace Beamable.Editor.Microservice.UI2
 
 				EditorGUILayout.EndHorizontal();
 			}
-		}
-
-		public int DrawBadges(BeamManifestServiceEntry service)
-		{
-			var iconStyle = new GUIStyle {margin = new RectOffset(12, 0, 3, 0)};
-			var badgeCount = 0;
-			
-			{ // draw the service icon
-				var iconRect = GUILayoutUtility.GetRect(GUIContent.none, iconStyle,
-				                                        GUILayout.Width(toolbarHeight - 12),
-				                                        GUILayout.Height(toolbarHeight - 12));
-				GUI.DrawTexture(iconRect, BeamGUI.iconService, ScaleMode.ScaleToFit);
-				GUI.Label(iconRect, new GUIContent(null, null, "This is a local service"), GUIStyle.none);
-				badgeCount++;
-			}
-			
-			if (service.IsReadonlyPackage)
-			{ // draw the readonly-badge
-				var iconRect = GUILayoutUtility.GetRect(GUIContent.none, iconStyle,
-				                                        GUILayout.Width(toolbarHeight - 12),
-				                                        GUILayout.Height(toolbarHeight - 12));
-				var c = GUI.color;
-				GUI.color = new Color(1, 1, 1, .8f);
-				int extraSize = 2;
-				GUI.DrawTexture(new Rect(iconRect.x - extraSize, iconRect.y - extraSize, iconRect.width + extraSize*2, iconRect.height + extraSize*2), BeamGUI.iconLocked, ScaleMode.ScaleToFit);
-				GUI.color = c;
-				GUI.Label(iconRect, new GUIContent(null, null, "This service is readonly"), GUIStyle.none);
-				badgeCount++;
-			}
-
-			return badgeCount;
 		}
 
 		public void DrawLogs(UsamService.NamedLogView log, LogDataProvider provider)

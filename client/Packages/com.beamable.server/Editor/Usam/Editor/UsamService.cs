@@ -899,12 +899,13 @@ namespace Beamable.Server.Editor.Usam
 			});
 			
 			// mock out the expected results in the latestManifest&status
-			var mockService = new BeamManifestServiceEntry
+			var mockService = new BeamManifestStorageEntry()
 			{
 				beamoId = newStorageName,
+				Flags = BeamManifestEntryFlags.IS_STORAGE
 				// TODO: other fields?
 			};
-			latestManifest.services.Add(mockService);
+			latestManifest.storages.Add(mockService);
 			var mockStatus = new BeamServiceStatus
 			{
 				service = newStorageName, serviceType = "storage",
@@ -915,7 +916,7 @@ namespace Beamable.Server.Editor.Usam
 			var action = SetServiceAction(newStorageName, ServiceCliActionType.Creating, command);
 
 			var logCount = 0;
-			AddLog(mockService, new CliLogMessage
+			AddLog(mockService.beamoId, new CliLogMessage
 			{
 				logLevel = "Info",
 				message = $"Creating storage {newStorageName}",
@@ -927,7 +928,7 @@ namespace Beamable.Server.Editor.Usam
 				if (!cb.data.logLevel.ToLowerInvariant().StartsWith("i")) return;
 				logCount++;
 				action.progressRatio = logCount / 4f;
-				AddLog(mockService, cb.data);
+				AddLog(mockService.beamoId, cb.data);
 			});
 			
 
@@ -936,7 +937,7 @@ namespace Beamable.Server.Editor.Usam
 				Reload();
 				action.progressRatio = 1;
 				action.isComplete = true;
-				AddLog(mockService, new CliLogMessage
+				AddLog(mockService.beamoId, new CliLogMessage
 				{
 					logLevel = "Info",
 					message = $"Created service {newStorageName}",
@@ -964,7 +965,9 @@ namespace Beamable.Server.Editor.Usam
 			{
 				beamoId = newServiceName,
 				csprojPath = Path.Combine(SERVICES_FOLDER, newServiceName, $"{newServiceName}.csproj"),
-				unityReferences = new List<BeamUnityAssemblyReferenceData>()
+				unityReferences = new List<BeamUnityAssemblyReferenceData>(),
+				Flags = BeamManifestEntryFlags.IS_SERVICE
+
 				// TODO: other fields?
 			};
 			latestManifest.services.Add(mockService);

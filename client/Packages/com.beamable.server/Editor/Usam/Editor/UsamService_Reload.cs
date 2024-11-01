@@ -29,7 +29,23 @@ namespace Beamable.Server.Editor.Usam
 
 				foreach (var service in latestManifest.services)
 				{
-					service.IsReadonlyPackage = BeamManifestServiceEntry.IsReadonlyProject(service.csprojPath);
+					service.Flags = BeamManifestEntryFlags.IS_SERVICE;
+					var isReadonly = service.IsReadonlyPackage = BeamManifestServiceEntry.IsReadonlyProject(service.csprojPath);
+					if (isReadonly)
+					{
+						service.Flags |= BeamManifestEntryFlags.IS_READONLY;
+					}
+				}
+
+				foreach (var storage in latestManifest.storages)
+				{
+					storage.Flags = BeamManifestEntryFlags.IS_STORAGE;
+					var isReadonly = storage.IsReadonlyPackage = BeamManifestServiceEntry.IsReadonlyProject(storage.csprojPath);
+					if (isReadonly)
+					{
+						storage.Flags |= BeamManifestEntryFlags.IS_READONLY;
+					}
+
 				}
 				
 				CsProjUtil.OnPreGeneratingCSProjectFiles(this);
