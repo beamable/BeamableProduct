@@ -62,8 +62,6 @@
 				public const string NEW_ADD = "New Add";
 				public const string MODIFIED = "Modified";
 				public const string DELETED = "Deleted";
-				public const string UNCHECK = "Uncheck";
-				public const string CHECKED = "Checked";
 			}
 
 			public static partial class Logs

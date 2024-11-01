@@ -8,6 +8,7 @@ using Core.Platform.SDK;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using UnityEngine;
@@ -41,21 +42,16 @@ namespace Beamable.Content
 			new Dictionary<string, ContentCacheEntry<TContent>>();
 
 		private readonly IHttpRequester _requester;
-		private readonly IBeamableFilesystemAccessor _filesystemAccessor;
-		private readonly CoroutineService _coroutineService;
 		private readonly ContentService _contentService;
 
-		private const float WriteToFileDelay = 5;
 
 		public ContentCache(
 			IHttpRequester requester, 
 			IBeamableFilesystemAccessor filesystemAccessor, 
 			ContentService contentService, 
-			CoroutineService coroutineService)
+			CoroutineService coroutineService) // not removing unused field so as to not cause a breaking change.
 		{
 			_requester = requester;
-			_filesystemAccessor = filesystemAccessor;
-			_coroutineService = coroutineService;
 			_contentService = contentService;
 		}
 
@@ -168,36 +164,9 @@ namespace Beamable.Content
 			return TryGetContentFromInfo(_contentService.CachedContentDataInfo, info, out content);
 		}
 
-		private Coroutine _updateDiskFileCoroutine;
-		private IEnumerator WriteToDisk()
-		{
-			yield return new WaitForSeconds(WriteToFileDelay);
-			var filePath = ContentService.ContentPath(_filesystemAccessor);
-
-			// Ensure the directory is created
-			Directory.CreateDirectory(Path.GetDirectoryName(filePath));
-			File.WriteAllText(filePath, JsonUtility.ToJson(_contentService.CachedContentDataInfo));
-		}
-
 		private void UpdateDiskFile(ClientContentInfo info, string raw)
 		{
-			var needsUpdating = _contentService.CachedContentDataInfo.TryUpdateContent(info, raw);
-			if (!needsUpdating)
-			{
-				return;
-			}
-			try
-			{
-				if (_updateDiskFileCoroutine != null)
-				{
-					_coroutineService.StopCoroutine(_updateDiskFileCoroutine);
-				}
-				_updateDiskFileCoroutine = _coroutineService.StartNew("ContentFileUpdate", WriteToDisk());
-			}
-			catch (Exception e)
-			{
-				PlatformLogger.Log($"ContentCache: Error saving content to disk: {e}");
-			}
+			_contentService.CachedContentDataInfo.TryUpdateContent(info, raw);
 		}
 
 		private static TContent DeserializeContent(ClientContentInfo info, string raw)

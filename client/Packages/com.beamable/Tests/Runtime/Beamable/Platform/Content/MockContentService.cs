@@ -127,6 +127,11 @@ namespace Beamable.Platform.Tests.Content
 			throw new NotImplementedException();
 		}
 
+		public SequencePromise<T> ConvertPromisesIntoSequence<T>(int batchSize, List<Func<Promise<T>>> promiseGenerators)
+		{
+			return Promise.ExecuteInBatchSequence(batchSize, promiseGenerators);
+		}
+
 		public Promise<ClientManifest> GetManifest(ContentQuery query)
 		{
 			throw new NotImplementedException();

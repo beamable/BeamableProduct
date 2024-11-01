@@ -42,7 +42,18 @@ namespace Beamable.Common.Tournaments
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class TournamentRef : ContentRef<TournamentContent> { }
+	public class TournamentRef : ContentRef<TournamentContent>
+	{
+		public TournamentRef()
+		{
+			
+		}
+
+		public TournamentRef(string id) : base(id)
+		{
+			
+		}
+	}
 
 	[System.Serializable]
 	[Agnostic]

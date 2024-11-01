@@ -17,6 +17,7 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.TestTools;
 using EmptyResponse = Beamable.Common.Api.EmptyResponse;
+#pragma warning disable CS0618 // Type or member is obsolete
 
 namespace Beamable.Tests.Runtime
 {

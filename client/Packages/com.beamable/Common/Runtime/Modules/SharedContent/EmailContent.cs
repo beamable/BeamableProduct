@@ -37,8 +37,18 @@ namespace Beamable.Common.Content
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class EmailRef : EmailRef<EmailContent> { }
+	public class EmailRef : EmailRef<EmailContent>
+	{
+		public EmailRef(string id) : base(id)
+		{
+			
+		}
 
+		public EmailRef()
+		{
+			
+		}
+	}	
 	/// <summary>
 	/// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
 	///
@@ -52,8 +62,18 @@ namespace Beamable.Common.Content
 	///
 	/// </summary>
 	[System.Serializable]
-	public class EmailRef<TContent> : ContentRef<TContent> where TContent : EmailContent, new() { }
+	public class EmailRef<TContent> : ContentRef<TContent> where TContent : EmailContent, new()
+	{
+		public EmailRef(string id) : base(id)
+		{
+			
+		}
 
+		public EmailRef()
+		{
+			
+		}
+	}
 	/// <summary>
 	/// This type defines a %Beamable %ContentObject subclass for the %MailService.
 	///
