@@ -212,7 +212,7 @@ namespace Beamable.Content
 		/// Member holds all content that has been cached as a result of fetching new content
 		/// </summary>
 		public ContentDataInfoWrapper CachedContentDataInfo = new ContentDataInfoWrapper();
-		
+
 		/// <summary>
 		/// Member holds all content that was baked into the current build
 		/// To resolve content, please use the <see cref="GetContent(string,string)"/> method.
@@ -319,7 +319,7 @@ namespace Beamable.Content
 					//  some more time to let all the changes roll in.
 					continue;
 				}
-				
+
 				// check if cache needs to be saved
 				if (CachedContentDataInfo.cacheVersion <= committedCacheVersion)
 					continue; // wait for another 5 seconds ? 
@@ -365,7 +365,7 @@ namespace Beamable.Content
 
 			return $"{fsa.GetPersistentDataPathWithoutTrailingSlash()}/{pid}-{cid}/content/content.json";
 		}
-		
+
 		/// <summary>
 		/// get the baked content and hold it as an in-memory dictionary for use later
 		/// </summary>
@@ -377,7 +377,7 @@ namespace Beamable.Content
 			{
 				return new ContentDataInfoWrapper();
 			}
-			
+
 			string json = bakedFile.text;
 			var isValidJson = Json.IsValidJson(json);
 			if (isValidJson)
@@ -527,7 +527,7 @@ namespace Beamable.Content
 
 		public Promise<IContentObject> GetContent(IContentRef reference, string manifestID = "")
 		{
-			
+
 			var referencedType = reflectionCache.GetTypeFromId(reference.GetId());
 			return GetContent(reference.GetId(), referencedType, DetermineManifestID(manifestID));
 		}
@@ -618,7 +618,7 @@ namespace Beamable.Content
 		public SequencePromise<T> ConvertPromisesIntoSequence<T>(int batchSize, List<Func<Promise<T>>> promiseGenerators)
 		{
 			return PromiseExtensions.ExecuteOnGameObjectRoutines(batchSize, _provider.GetService<CoroutineService>(),
-			                                              promiseGenerators);
+														  promiseGenerators);
 		}
 
 		private bool TryGetCachedManifest(string manifestID, out Promise<ClientManifest> promise)

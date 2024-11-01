@@ -50,11 +50,11 @@ public static class ServiceUploadUtil
 				Log.Error($"Failed to save docker image. imageId=[{imageId}] msg=[{line}]");
 			}));
 		await command.ExecuteAsync();
-		
+
 		return stream;
 	}
-	
-	public static async Task Upload(IDependencyProvider provider, 
+
+	public static async Task Upload(IDependencyProvider provider,
 		string beamoId,
 		string imageId,
 		string gamePid,
@@ -73,24 +73,24 @@ public static class ServiceUploadUtil
 			Log.Verbose($"upload perf timer -- {msg} -- {elapsed} - {diff}");
 			lastLogTime = sw.ElapsedMilliseconds;
 		}
-		
+
 		onProgressCallback?.Invoke(.02f);
 		// TODO: handle image deletion with a nicer exception, "plan references image that no longer exists locally", "replan"
 		using var memoryImageStream = await SaveDockerImage(provider.GetService<IAppContext>().DockerPath, imageId);
 		memoryImageStream.Position = 0;
-		
+
 		LogTime("copied image to local memory");
 
 		onProgressCallback?.Invoke(.04f);
 
 		memoryImageStream.Position = 0;
-		
+
 		using var imageArchive = TarArchive.Open(memoryImageStream);
 
 		var ctx = provider.GetService<IAppContext>();
-		
+
 		onProgressCallback?.Invoke(.05f);
-		
+
 		var serviceUniqueName = GetHash($"{ctx.Cid}_{gamePid}_{beamoId}")
 			// This substring exists because there is a char-length limit on the remote beamo registry :(
 			.Substring(0, 30);
@@ -111,38 +111,38 @@ public static class ServiceUploadUtil
 		var (hasManifest, manifestBytes) = await TryGetBytesForEntry(imageArchive, "manifest.json");
 		if (!hasManifest)
 			throw new CliException($"unable to find manifest.json entry in archive. service=[{beamoId}] image=[{imageId}]");
-		
+
 		var manifest = BeamoLocalSystem.DockerManifest.FromBytes(manifestBytes);
 
 		LogTime("got manifest");
 
 		var uploadManifest = new Dictionary<string, object>
 		{
-			{ "schemaVersion", 2 }, 
-			{ "mediaType", MEDIA_MANIFEST }, 
+			{ "schemaVersion", 2 },
+			{ "mediaType", MEDIA_MANIFEST },
 			{ "config", new Dictionary<string, object>
 			{
 				{ "mediaType", MEDIA_CONFIG }
-			} }, 
+			} },
 			{ "layers", new List<object>() },
 		};
 		var config = (Dictionary<string, object>)uploadManifest["config"];
 		var layers = (List<object>)uploadManifest["layers"];
-		
+
 		var manifestStream = await imageArchive.OpenEntryAsMemoryStream($"{manifest.config}");
 		var configResult = (await UploadFileBlob(client, manifestStream, cts.Token, (bytes, progress) =>
 		{
 			onProgressCallback?.Invoke(.05f + .05f * progress);
 		}));
 		cts.Token.ThrowIfCancellationRequested();
-		
+
 		config["digest"] = configResult.Digest;
 		config["size"] = configResult.Size;
 
 		// upload the blobs
 		var uploadIndexToJob = new SortedDictionary<int, Task<Dictionary<string, object>>>();
 		var uploadTasks = new List<Task>();
-		
+
 		var progressBytes = new long[manifest.layers.Length];
 		var layerStreams = new MemoryStream[manifest.layers.Length];
 		var totalUploadSize = 0L;
@@ -153,7 +153,7 @@ public static class ServiceUploadUtil
 			totalUploadSize += layerStream.Length;
 			layerStreams[index] = layerStream;
 		}
-		
+
 		for (var i = 0; i < manifest.layers.Length; i++)
 		{
 			var index = i;
@@ -162,15 +162,15 @@ public static class ServiceUploadUtil
 			{
 				progressBytes[index] = bytes;
 				var totalProgress = progressBytes.Sum() / (float)totalUploadSize;
-				onProgressCallback?.Invoke(.1f + totalProgress * .85f );
+				onProgressCallback?.Invoke(.1f + totalProgress * .85f);
 			}, cts.Token);
 			uploadIndexToJob.Add(i, uploadTask);
 			uploadTasks.Add(uploadTask);
 		}
-		
+
 		await Task.WhenAll(uploadTasks.ToArray());
 		onProgressCallback?.Invoke(.95f);
-		
+
 
 		foreach (var kvp in uploadIndexToJob)
 		{
@@ -182,11 +182,11 @@ public static class ServiceUploadUtil
 		{
 			onProgressCallback?.Invoke(.96f + .03f * progress);
 		});
-		
+
 		onProgressCallback?.Invoke(1);
 	}
-	
-	
+
+
 	/// <summary>
 	/// Upload the manifest JSON to complete the Docker image push.
 	/// </summary>
@@ -200,12 +200,12 @@ public static class ServiceUploadUtil
 		{
 			onProgressCallback?.Invoke(ratio);
 		};
-		streamContent.Headers.ContentType =  new MediaTypeHeaderValue(MEDIA_MANIFEST);
+		streamContent.Headers.ContentType = new MediaTypeHeaderValue(MEDIA_MANIFEST);
 
 		var response = await http.PutAsync($"manifests/{imageId}", streamContent);
 		response.EnsureSuccessStatusCode();
 	}
-	
+
 	/// <summary>
 	/// Upload one layer of a Docker image, adding its digest to the upload
 	/// manifest when complete.
@@ -213,12 +213,12 @@ public static class ServiceUploadUtil
 	/// <param name="layerPath">Filesystem path to the layer archive.</param>
 	private static async Task<Dictionary<string, object>> UploadLayer(HttpClient http, MemoryStream layerStream, Action<int, float> onContainerUploadProgress, CancellationToken token)
 	{
-		var layerDigest = await UploadFileBlob(http, layerStream, token, onContainerUploadProgress, chunkSize: 2<<13); // 2 << 13
+		var layerDigest = await UploadFileBlob(http, layerStream, token, onContainerUploadProgress, chunkSize: 2 << 13); // 2 << 13
 		return new Dictionary<string, object> { { "digest", layerDigest.Digest }, { "size", layerDigest.Size }, { "mediaType", MEDIA_LAYER } };
 	}
-	
-	
-	
+
+
+
 	/// <summary>
 	/// Upload a file blob, which may be config JSON or an image layer.
 	/// </summary>
@@ -229,7 +229,7 @@ public static class ServiceUploadUtil
 		MemoryStream stream,
 		CancellationToken token,
 		Action<int, float> onProgressCallback,
-		int chunkSize=4069)
+		int chunkSize = 4069)
 	{
 		token.ThrowIfCancellationRequested();
 		onProgressCallback?.Invoke(0, 0);
@@ -237,7 +237,7 @@ public static class ServiceUploadUtil
 		if (await CheckBlobExistence(http, digest))
 		{
 			onProgressCallback?.Invoke((int)stream.Length, 1);
-			return new FileBlobResult { Digest = digest, Size = stream.Length};
+			return new FileBlobResult { Digest = digest, Size = stream.Length };
 		}
 
 		stream.Position = 0;
@@ -245,11 +245,11 @@ public static class ServiceUploadUtil
 		var response = await UploadStream(http, stream, location, digest, onProgressCallback, token, chunkSize);
 
 		response.EnsureSuccessStatusCode();
-		
+
 		return new FileBlobResult { Digest = digest, Size = stream.Length };
 	}
-	
-	
+
+
 	/// <summary>
 	/// Upload a chunk of a file, using PATCH for intermediate chunks or PUT
 	/// for the final chunk.
@@ -257,7 +257,7 @@ public static class ServiceUploadUtil
 	/// <param name="chunk">File chunk including range information.</param>
 	/// <param name="location">URI for upload.</param>
 	/// <returns>HTTP response.</returns>
-	private static async Task<HttpResponseMessage> UploadStream(HttpClient http, MemoryStream dataStream, Uri location, string digest, Action<int, float> progressCallback, CancellationToken token, int chunkSize=4096)
+	private static async Task<HttpResponseMessage> UploadStream(HttpClient http, MemoryStream dataStream, Uri location, string digest, Action<int, float> progressCallback, CancellationToken token, int chunkSize = 4096)
 	{
 		var uri = location;
 		var method = HttpMethod.Put;
@@ -265,11 +265,11 @@ public static class ServiceUploadUtil
 		dataStream.Position = 0;
 		var content = new ObservableByteArrayContent(dataStream.ToArray(), chunkSize);
 		content.OnProgress = progressCallback;
-		
+
 		var request = new HttpRequestMessage(method, uri) { Content = content, Version = HttpVersion.Version20 };
 		request.Content.Headers.ContentLength = dataStream.Length;
 		request.Content.Headers.ContentRange = new ContentRangeHeaderValue(0, dataStream.Length, dataStream.Length);
-		
+
 		var response = await http.SendAsync(request, token);
 		try
 		{
@@ -288,8 +288,8 @@ public static class ServiceUploadUtil
 
 		return response;
 	}
-	
-	private static async Task<HttpResponseMessage> UploadStreamMulti(HttpClient http, MemoryStream dataStream, Uri location, string digest, Action<int, float> progressCallback, CancellationToken token, int chunkSize=4096)
+
+	private static async Task<HttpResponseMessage> UploadStreamMulti(HttpClient http, MemoryStream dataStream, Uri location, string digest, Action<int, float> progressCallback, CancellationToken token, int chunkSize = 4096)
 	{
 		// split the dataStream out into chunks...
 		var segments = new List<ArraySegment<byte>>();
@@ -305,13 +305,13 @@ public static class ServiceUploadUtil
 
 		var pendingTasks = new List<Task>();
 		var writtenAmounts = new int[segments.Count];
-		
+
 		for (var i = 0; i < segments.Count; i++)
 		{
 			var index = i;
 			var isLast = i == segments.Count - 1;
-			var method = isLast 
-				? HttpMethod.Put 
+			var method = isLast
+				? HttpMethod.Put
 				: new HttpMethod("PATCH");
 
 			var segment = segments[i];
@@ -325,7 +325,7 @@ public static class ServiceUploadUtil
 				progressCallback?.Invoke(total, wholeRatio);
 			};
 			// var content = new StreamContent(new MemoryStream(segment.ToArray()));
-			var request = new HttpRequestMessage(method, location) { Content = content};
+			var request = new HttpRequestMessage(method, location) { Content = content };
 			request.Content.Headers.ContentLength = segment.Count;
 			request.Content.Headers.ContentRange = new ContentRangeHeaderValue(segment.Offset, segment.Offset + segment.Count - 1, dataStream.Length);
 
@@ -357,7 +357,7 @@ public static class ServiceUploadUtil
 
 		return default;
 	}
-	
+
 	/// <summary>
 	/// Check whether a blob exists using a HEAD request.
 	/// </summary>
@@ -375,10 +375,10 @@ public static class ServiceUploadUtil
 			var nextLocation = response.Headers.Location;
 			response = await http.SendAsync(new HttpRequestMessage(HttpMethod.Head, nextLocation));
 		}
-		
+
 		return response.StatusCode == HttpStatusCode.OK;
 	}
-	
+
 	/// <summary>
 	/// Given an upload URI, make sure it uses secured HTTP and append the
 	/// </summary>
@@ -392,8 +392,8 @@ public static class ServiceUploadUtil
 		builder.Query += $"&digest={digest}";
 		return builder.Uri;
 	}
-	
-	
+
+
 	/// <summary>
 	/// Request an upload location for a blob by making POST request to the
 	/// upload path.
@@ -415,7 +415,7 @@ public static class ServiceUploadUtil
 
 		return response.Headers.Location;
 	}
-	
+
 
 	/// <summary>
 	/// Gets an MD5 hash as a string.
@@ -429,8 +429,8 @@ public static class ServiceUploadUtil
 			builder.Append(data[i].ToString("x2"));
 		return builder.ToString();
 	}
-	
-	
+
+
 	/// <summary>
 	/// Compute the SHA256 hash digest of the content stream.
 	/// </summary>
@@ -454,8 +454,8 @@ public static class ServiceUploadUtil
 		return entry != null;
 	}
 
-	
-	
+
+
 	static async Task<byte[]> GetBytesFromStream(Stream stream)
 	{
 		var mem = new MemoryStream();
@@ -463,7 +463,7 @@ public static class ServiceUploadUtil
 		mem.Position = 0;
 		return mem.ToArray();
 	}
-	
+
 	static async Task<(bool, byte[])> TryGetBytesForEntry(TarArchive archive, string entryName)
 	{
 		if (!TryGetEntry(archive, entryName, out var entry))
@@ -485,7 +485,7 @@ public static class ServiceUploadUtil
 
 		return entry.OpenEntryAsMemoryStream();
 	}
-	
+
 	public static async Task<MemoryStream> OpenEntryAsMemoryStream(this IArchiveEntry entry)
 	{
 		using var entryStream = entry.OpenEntryStream();

@@ -18,7 +18,7 @@ namespace Beamable.Server.Editor
 		private List<BeamManifestServiceEntry> _filteredServiceEntries;
 		private readonly List<FederationOption> _options = new List<FederationOption>();
 
-		private static readonly List<string> _allowedInterfaces = new List<string>() {"IFederatedInventory"};
+		private static readonly List<string> _allowedInterfaces = new List<string>() { "IFederatedInventory" };
 
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
 		{
@@ -102,7 +102,7 @@ namespace Beamable.Server.Editor
 			{
 				foreach (var federation in descriptor.federations)
 				{
-					if(_allowedInterfaces.Contains(federation.interfaceName))
+					if (_allowedInterfaces.Contains(federation.interfaceName))
 					{
 						_options.Add(new FederationOption { Microservice = descriptor.beamoId, Namespace = federation.federationId });
 						break;

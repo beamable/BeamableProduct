@@ -241,12 +241,12 @@ namespace Beamable.Server.Editor
 
 		private void OnValidate()
 		{
-		
+
 			if (_dockerCommandCached != DockerCommand || _dockerCheckCached != DockerDesktopCheckInMicroservicesWindow)
 			{
 				_dockerCommandCached = DockerCommand;
 				_dockerCheckCached = DockerDesktopCheckInMicroservicesWindow;
-				
+
 			}
 
 			if (string.IsNullOrEmpty(WindowsDockerDesktopPath))

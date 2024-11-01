@@ -16,7 +16,7 @@ public class SnapshotStorageObjectCommandArgs : CommandArgs
 
 public class SnapshotStorageObjectCommandOutput
 {
-	
+
 }
 
 public class MongoLogChannel : IResultChannel
@@ -24,7 +24,7 @@ public class MongoLogChannel : IResultChannel
 	public string ChannelName => "mongoLogs";
 }
 
-public class SnapshotStorageObjectCommand 
+public class SnapshotStorageObjectCommand
 	: AtomicCommand<SnapshotStorageObjectCommandArgs, SnapshotStorageObjectCommandOutput>
 	, IResultSteam<MongoLogChannel, CliLogMessage>
 {
@@ -45,7 +45,7 @@ public class SnapshotStorageObjectCommand
 	public override async Task<SnapshotStorageObjectCommandOutput> GetResult(SnapshotStorageObjectCommandArgs args)
 	{
 		StorageGroupCommand.GetInfo(args, args.beamoId, out var sd, out var db, out var dockerPath);
-		
+
 		var wasRunning = await StorageGroupCommand.EnsureStorageState(args, sd, db, true);
 		var containerName = BeamoLocalSystem.GetBeamIdAsMongoContainer(sd.BeamoId);
 		var argString = $"exec {containerName} mongodump --out=/beamable -u {db.RootUsername} -p {db.RootPassword}";
@@ -54,9 +54,9 @@ public class SnapshotStorageObjectCommand
 
 		var copySuccess = await DockerCopyUtil.Copy(dockerPath, containerName, "/beamable/.", args.outputPath,
 			DockerCopyUtil.CopyDirection.FROM_CONTAINER);
-		
+
 		Log.Debug($"copy success=[{copySuccess}]");
-		
+
 		await StorageGroupCommand.EnsureStorageState(args, sd, db, wasRunning);
 
 		return new SnapshotStorageObjectCommandOutput();

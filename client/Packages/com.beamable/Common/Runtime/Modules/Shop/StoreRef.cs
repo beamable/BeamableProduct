@@ -40,12 +40,12 @@ namespace Beamable.Common.Shop
 	{
 		public StoreRef()
 		{
-			
+
 		}
 
 		public StoreRef(string id) : base(id)
 		{
-			
+
 		}
 	}
 }

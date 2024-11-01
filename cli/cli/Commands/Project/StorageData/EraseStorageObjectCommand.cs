@@ -10,15 +10,15 @@ namespace cli.Commands.Project.StorageData;
 public class EraseStorageObjectCommandArgs : CommandArgs
 {
 	public string beamoId;
-	
+
 }
 
 public class EraseStorageObjectCommandOutput
 {
-	
+
 }
 
-public class EraseStorageObjectCommand 
+public class EraseStorageObjectCommand
 	: AtomicCommand<EraseStorageObjectCommandArgs, EraseStorageObjectCommandOutput>
 	, IResultSteam<MongoLogChannel, CliLogMessage>
 
@@ -37,17 +37,17 @@ public class EraseStorageObjectCommand
 	{
 		return await EraseVolumes(args, args.beamoId, this);
 	}
-	
+
 	public static async Task<EraseStorageObjectCommandOutput> EraseVolumes(CommandArgs args, string beamoId, IResultSteam<MongoLogChannel, CliLogMessage> stream)
 	{
 		StorageGroupCommand.GetInfo(args, beamoId, out var sd, out var db, out var dockerPath);
-		
+
 		// stop the storage if it is running
 		var wasRunning = await StorageGroupCommand.EnsureStorageState(args, sd, db, false);
 		var argString = $"volume rm --force {db.DataVolumeName} {db.FilesVolumeName}";
 		await StorageGroupCommand.RunDockerCommand(args, dockerPath, stream, argString);
 		await StorageGroupCommand.EnsureStorageState(args, sd, db, wasRunning);
-		
+
 		return new EraseStorageObjectCommandOutput();
 	}
 }

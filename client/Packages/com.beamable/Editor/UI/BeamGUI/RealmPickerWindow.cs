@@ -13,30 +13,31 @@ namespace Beamable.Editor.Util
 		{
 			var realm = ctx.CurrentRealm;
 			BeamGUI.LayoutDropDown(rootWindow, new GUIContent(realm.DisplayName), GUILayout.MaxWidth(80),
-			                       () =>
-			                       {
-				                       var wnd = ScriptableObject.CreateInstance<RealmPickerWindow>();
-				                       wnd.ctx = ctx;
-				                       return wnd;
-			                       }, out var dropDownBounds, popupOnLeft: true);
+								   () =>
+								   {
+									   var wnd = ScriptableObject.CreateInstance<RealmPickerWindow>();
+									   wnd.ctx = ctx;
+									   return wnd;
+								   }, out var dropDownBounds, popupOnLeft: true);
 			var bannerBounds = new Rect(dropDownBounds.x, dropDownBounds.y, 4, dropDownBounds.height);
 			if (realm.IsProduction)
 			{
 				EditorGUI.DrawRect(bannerBounds, new Color(1, 0, 0, .8f));
 
-			} else if (realm.IsStaging)
+			}
+			else if (realm.IsStaging)
 			{
 				EditorGUI.DrawRect(bannerBounds, new Color(1, .6f, 0, .8f));
 
 			}
-			
+
 		}
 	}
-	
+
 	public class RealmPickerWindow : EditorWindow
 	{
 		public static bool isOpen;
-		
+
 		public BeamEditorContext ctx;
 
 		public Vector2 scrollPosition;
@@ -47,7 +48,7 @@ namespace Beamable.Editor.Util
 
 		private void OnDestroy()
 		{
-			
+
 		}
 
 		private void OnGUI()
@@ -79,40 +80,40 @@ namespace Beamable.Editor.Util
 							continue;
 						}
 					}
-					
+
 					var isPartOfCurrentGame = realm.GamePid == ctx.EditorAccount.gamePid;
 					if (!isPartOfCurrentGame) continue;
 					view.Add(realm);
 				}
 				view.Sort((a, b) => b.Depth.CompareTo(a.Depth));
 			}
-			
+
 			{ // draw the search bar row
 				EditorGUILayout.BeginHorizontal(new GUIStyle
 				{
-					padding = new RectOffset(4, 2, 4,4 )
+					padding = new RectOffset(4, 2, 4, 4)
 				});
 				searchFilter = EditorGUILayout.TextField(searchFilter, new GUIStyle(EditorStyles.toolbarSearchField)
 				{
 					margin = new RectOffset(0, 0, 0, 0)
 				});
-				
+
 				BeamGUI.ShowDisabled(_refreshPromise == null, () =>
 				{
 					clickedRefresh = GUILayout.Button(EditorGUIUtility.IconContent("Refresh"), new GUIStyle(EditorStyles.iconButton)
 					{
 						padding = new RectOffset(2, 2, 2, 2)
 					}, GUILayout.Width(15));
-					
+
 				});
-				
+
 				EditorGUILayout.EndHorizontal();
 			}
 
 			{ // draw all the realms!
 				scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
 				EditorGUILayout.BeginVertical();
-				
+
 				BeamGUI.ShowDisabled(_refreshPromise == null, () =>
 				{
 					clickedRealm = DrawRealms(out var realm);
@@ -123,7 +124,7 @@ namespace Beamable.Editor.Util
 						_refreshPromise = p;
 					}
 				});
-				
+
 				if (_refreshPromise != null)
 				{
 					if (_refreshPromise.IsCompleted || _refreshPromise.IsFailed)
@@ -131,13 +132,13 @@ namespace Beamable.Editor.Util
 						_refreshPromise = null;
 					}
 				}
-				
+
 				EditorGUILayout.EndVertical();
 				EditorGUILayout.EndScrollView();
 
 			}
-			
-			
+
+
 			if (clickedRefresh)
 			{
 				_refreshPromise = ctx.EditorAccount.UpdateRealms(ctx.Requester);
@@ -152,7 +153,7 @@ namespace Beamable.Editor.Util
 				_refreshPromise = null;
 			}
 		}
-		
+
 		bool DrawRealms(out RealmView selectedRealm)
 		{
 			selectedRealm = null;
@@ -161,7 +162,7 @@ namespace Beamable.Editor.Util
 			{
 				var realm = view[i];
 				var isSelected = realm.Pid == ctx.EditorAccount.realmPid;
-				
+
 				int height = 25;
 				var clicked = GUILayout.Button(GUIContent.none, new GUIStyle(EditorStyles.miniButton)
 				{
@@ -176,8 +177,8 @@ namespace Beamable.Editor.Util
 				var bannerRect = new Rect(rect.x, rect.y, 4, rect.height);
 				var labelRect = new Rect(bannerRect.x + 12, bannerRect.y, rect.width - 21, rect.height);
 				var bannerColor = new Color(1, 1, 1, .4f);
-					
-					
+
+
 				if (realm.IsProduction)
 				{
 					EditorGUI.DrawRect(rect, new Color(.7f, 0, 0, isHover ? .6f : .4f));
@@ -190,7 +191,7 @@ namespace Beamable.Editor.Util
 					EditorGUI.DrawRect(rect, new Color(.7f, .7f, 0, isHover ? .6f : .4f));
 					bannerColor = new Color(1, .6f, 0, .7f);
 				}
-					
+
 				EditorGUI.DrawRect(bannerRect, bannerColor);
 
 				EditorGUI.LabelField(labelRect, realm.DisplayName, new GUIStyle(EditorStyles.label)

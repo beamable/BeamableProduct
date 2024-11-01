@@ -25,10 +25,10 @@ namespace Beamable.Editor.Content
 		}
 
 		public Promise<List<ContentExceptionCollection>> Validate(IValidationContext ctx,
-		                                                          int allContentCount,
-		                                                          IEnumerable<ContentItemDescriptor> allContent,
-		                                                          HandleContentProgress progressHandler = null,
-		                                                          HandleValidationErrors errorHandler = null)
+																  int allContentCount,
+																  IEnumerable<ContentItemDescriptor> allContent,
+																  HandleContentProgress progressHandler = null,
+																  HandleValidationErrors errorHandler = null)
 		{
 			progressHandler?.Invoke(0, 0, allContentCount);
 			var count = 0f;
@@ -84,13 +84,13 @@ namespace Beamable.Editor.Content
 						Debug.LogError($"Failed content validation - ");
 						Debug.LogException(ex);
 					}
-					
+
 					if (numberOfUpdatesBeforeRenderFrame != 0 && (n % numberOfUpdatesBeforeRenderFrame == 0))
 					{
 						yield return null; // delay a frame
 					}
 				}
-				
+
 				promise.CompleteSuccess(exceptionList);
 				progressHandler?.Invoke(1, allContentCount, allContentCount);
 				yield return null;
@@ -98,6 +98,6 @@ namespace Beamable.Editor.Content
 
 			return promise;
 		}
-		
+
 	}
 }
