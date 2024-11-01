@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ListenPlayerArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ListenPlayerArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>A regex to filter for notification channels</summary>
 		public string context;
@@ -48,7 +48,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ListenPlayerWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ListenPlayerWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ListenPlayerWrapper OnStreamNotificationPlayerOutput(System.Action<ReportDataPoint<BeamNotificationPlayerOutput>> cb)
 		{

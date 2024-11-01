@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ProjectLogsArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ProjectLogsArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The name of the service to view logs for</summary>
 		public Beamable.Common.Semantics.ServiceName service;
@@ -51,7 +51,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ProjectLogsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ProjectLogsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ProjectLogsWrapper OnStreamTailLogMessageForClient(System.Action<ReportDataPoint<BeamTailLogMessageForClient>> cb)
 		{

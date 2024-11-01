@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class BeamArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class BeamArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>Should any networking happen?</summary>
 		public bool dryrun;
@@ -205,7 +205,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class BeamWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class BeamWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 	}
 }

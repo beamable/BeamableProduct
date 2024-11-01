@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamGetTokenDetailsCommandOutput
+	public partial class BeamGetTokenDetailsCommandOutput
 	{
 		public bool wasRefreshToken;
 		public long accountId;

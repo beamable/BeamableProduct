@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class UnityManifestArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class UnityManifestArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
@@ -39,7 +39,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class UnityManifestWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class UnityManifestWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual UnityManifestWrapper OnStreamShowManifestCommandOutput(System.Action<ReportDataPoint<BeamShowManifestCommandOutput>> cb)
 		{

@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ContentPullArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ContentPullArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>Inform a subset of ','-separated manifest ids for which to return data. By default, will return all manifests</summary>
 		public string[] manifestIds;
@@ -48,7 +48,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ContentPullWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ContentPullWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ContentPullWrapper OnStreamLocalContentState(System.Action<ReportDataPoint<BeamLocalContentState>> cb)
 		{

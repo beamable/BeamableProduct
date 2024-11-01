@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ServicesPsArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ServicesPsArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>Outputs as json instead of summary table</summary>
 		public bool json;
@@ -47,7 +47,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ServicesPsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ServicesPsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ServicesPsWrapper OnStreamServiceListResult(System.Action<ReportDataPoint<BeamServiceListResult>> cb)
 		{

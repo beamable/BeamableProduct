@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamGetTokenViaRefreshCommandOutput
+	public partial class BeamGetTokenViaRefreshCommandOutput
 	{
 		public string accessToken;
 		public string challengeToken;

@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamManifestChecksums
+	public partial class BeamManifestChecksums
 	{
 		public System.Collections.Generic.List<BeamManifestChecksum> manifests;
 	}

@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class TokenInspectArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class TokenInspectArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>This command normally only works for an access token. However, if this option is enabled and a refresh token is given, then it will be automatically converted to the access token and this command is rerun</summary>
 		public bool resolve;
@@ -55,7 +55,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class TokenInspectWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class TokenInspectWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual TokenInspectWrapper OnStreamGetTokenDetailsCommandOutput(System.Action<ReportDataPoint<BeamGetTokenDetailsCommandOutput>> cb)
 		{

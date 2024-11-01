@@ -89,9 +89,11 @@ namespace Beamable.Server.Editor.Usam
 		/// AssemblyUtil.Reload(); must be called before this
 		/// </summary>
 		/// <param name="beamCommands"></param>
-		public static void GenerateAllReferencedAssemblies(BeamCommands cli)
+		public static void GenerateAllReferencedAssemblies(UsamService usam)
 		{
-			foreach (var assembly in AssemblyUtil.ReferencedAssemblies)
+			var asmUtil = usam.AssemblyService;
+			var cli = usam.Cli;
+			foreach (var assembly in asmUtil.ReferencedAssemblies)
 			{
 				var path = GenerateCsharpProjectPath(assembly);
 				var content = GenerateCsharpProject(assembly, path);

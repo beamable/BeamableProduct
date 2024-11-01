@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamHostServiceDescriptor
+	public partial class BeamHostServiceDescriptor
 	{
 		public string service;
 		public int processId;

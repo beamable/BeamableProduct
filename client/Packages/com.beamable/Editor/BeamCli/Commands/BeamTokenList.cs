@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class TokenListArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class TokenListArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The player or account id to fetch tokens for. When blank, the current player id will be used</summary>
 		public long id;
@@ -76,7 +76,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class TokenListWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class TokenListWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual TokenListWrapper OnStreamGetTokenListCommandOutput(System.Action<ReportDataPoint<BeamGetTokenListCommandOutput>> cb)
 		{

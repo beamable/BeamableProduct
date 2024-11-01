@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ProjectStorageEraseArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ProjectStorageEraseArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>the beamoId for the storage object</summary>
 		public string beamoId;
@@ -45,7 +45,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ProjectStorageEraseWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ProjectStorageEraseWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ProjectStorageEraseWrapper OnStreamEraseStorageObjectCommandOutput(System.Action<ReportDataPoint<BeamEraseStorageObjectCommandOutput>> cb)
 		{

@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ProjectStopArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ProjectStopArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The list of services to include, defaults to all local services (separated by whitespace)</summary>
 		public string[] ids;
@@ -58,7 +58,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ProjectStopWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ProjectStopWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ProjectStopWrapper OnStreamStopProjectCommandOutput(System.Action<ReportDataPoint<BeamStopProjectCommandOutput>> cb)
 		{

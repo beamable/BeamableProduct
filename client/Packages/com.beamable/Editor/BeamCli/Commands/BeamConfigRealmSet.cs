@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ConfigRealmSetArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ConfigRealmSetArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>A list of realm config key/value pairs in a 'namespace|key::value' format</summary>
 		public string[] keyValues;
@@ -53,7 +53,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ConfigRealmSetWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ConfigRealmSetWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ConfigRealmSetWrapper OnStreamRealmConfigOutput(System.Action<ReportDataPoint<BeamRealmConfigOutput>> cb)
 		{

@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ProjectGenerateEnvArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ProjectGenerateEnvArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>Which service to generate the .env file for</summary>
 		public Beamable.Common.Semantics.ServiceName service;
@@ -76,7 +76,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ProjectGenerateEnvWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ProjectGenerateEnvWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ProjectGenerateEnvWrapper OnStreamGenerateEnvFileOutput(System.Action<ReportDataPoint<Beamable.Common.BeamCli.Contracts.GenerateEnvFileOutput>> cb)
 		{

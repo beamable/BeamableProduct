@@ -187,9 +187,10 @@ public class ProjectCommand : CommandGroup
 		return IsProjectBuiltMsBuild(project);
 	}
 
-	public static List<Assembly> LoadProjectDll(IEnumerable<ProjectBuildStatusReport> builtProjects, bool skipReferencedAssemblies = false, bool skipAssemblyExpansion = false)
+	public static (List<Assembly>, List<AssemblyLoadContext>) LoadProjectDll(string sessionId, IEnumerable<ProjectBuildStatusReport> builtProjects, bool skipReferencedAssemblies = false, bool skipAssemblyExpansion = false)
 	{
 		var allAssemblies = new List<Assembly>();
+		var allContexts = new List<AssemblyLoadContext>();
 		foreach (ProjectBuildStatusReport isProjBuilt in builtProjects)
 		{
 			if (!isProjBuilt.isBuilt)
@@ -202,7 +203,8 @@ public class ProjectCommand : CommandGroup
 			var dllPath = isProjBuilt.path;
 			var absolutePath = Path.GetFullPath(dllPath);
 			var absoluteDir = Path.GetDirectoryName(absolutePath)!;
-			var loadContext = new AssemblyLoadContext($"generate-client-context-{beamoId}", false);
+			var loadContext = new AssemblyLoadContext($"generate-client-context-{sessionId}-{beamoId}", true);
+			allContexts.Add(loadContext);
 			loadContext.Resolving += (context, name) =>
 			{
 				var assemblyPath = Path.Combine(absoluteDir, $"{name.Name}.dll");
@@ -273,7 +275,7 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 			Log.Verbose($"Loaded all types, and found {startCount} assemblies, and after, found {finalCount} assemblies.");
 		}
 
-		return allAssemblies;
+		return (allAssemblies, allContexts);
 	}
 
 	public struct ProjectBuildStatusReport

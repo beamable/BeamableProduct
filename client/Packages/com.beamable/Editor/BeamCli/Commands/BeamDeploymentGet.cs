@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class DeploymentGetArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class DeploymentGetArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>Include archived (removed) services</summary>
 		public bool showArchived;
@@ -63,7 +63,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class DeploymentGetWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class DeploymentGetWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual DeploymentGetWrapper OnStreamGetDeploymentCommandOutput(System.Action<ReportDataPoint<BeamGetDeploymentCommandOutput>> cb)
 		{

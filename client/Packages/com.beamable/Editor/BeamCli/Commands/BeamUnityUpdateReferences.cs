@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class UnityUpdateReferencesArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class UnityUpdateReferencesArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The name of the service to update the references</summary>
 		public string service;
@@ -66,7 +66,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class UnityUpdateReferencesWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class UnityUpdateReferencesWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 	}
 }

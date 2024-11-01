@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ServicesServiceLogsArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ServicesServiceLogsArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The Unique Id for this service within this Beamable CLI context</summary>
 		public string id;
@@ -48,7 +48,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ServicesServiceLogsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ServicesServiceLogsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ServicesServiceLogsWrapper OnStreamGetSignedUrlResponse(System.Action<ReportDataPoint<BeamGetSignedUrlResponse>> cb)
 		{

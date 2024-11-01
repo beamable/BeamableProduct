@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ProfileCheckCountersArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ProfileCheckCountersArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The path to the dotnet-counters output json file</summary>
 		public string countersFilePath;
@@ -58,7 +58,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ProfileCheckCountersWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ProfileCheckCountersWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ProfileCheckCountersWrapper OnStreamCheckPerfCommandOutput(System.Action<ReportDataPoint<BeamCheckPerfCommandOutput>> cb)
 		{

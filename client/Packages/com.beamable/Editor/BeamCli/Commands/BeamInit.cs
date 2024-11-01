@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class InitArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class InitArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>the folder that will be initialized as a beamable project. </summary>
 		public string path;
@@ -20,7 +20,7 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string pid;
 		/// <summary>Refresh token to use for the requests</summary>
 		public string refreshToken;
-		/// <summary>overwrite the stored extra paths for where to find projects</summary>
+		/// <summary>Overwrite the stored extra paths for where to find projects</summary>
 		public string[] saveExtraPaths;
 		/// <summary>Save login refresh token to environment variable</summary>
 		public bool saveToEnvironment;
@@ -140,7 +140,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class InitWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class InitWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual InitWrapper OnStreamInitCommandResult(System.Action<ReportDataPoint<BeamInitCommandResult>> cb)
 		{

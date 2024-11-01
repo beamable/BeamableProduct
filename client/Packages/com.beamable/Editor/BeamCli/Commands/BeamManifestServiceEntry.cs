@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamManifestServiceEntry
+	public partial class BeamManifestServiceEntry
 	{
 		public string beamoId;
 		public bool shouldBeEnabledOnRemote;

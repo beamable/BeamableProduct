@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ServicesGetConnectionStringArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ServicesGetConnectionStringArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The name of the Microstorage</summary>
 		public string storageName;
@@ -58,7 +58,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ServicesGetConnectionStringWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ServicesGetConnectionStringWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ServicesGetConnectionStringWrapper OnStreamServicesGetConnectionStringCommandOutput(System.Action<ReportDataPoint<BeamServicesGetConnectionStringCommandOutput>> cb)
 		{

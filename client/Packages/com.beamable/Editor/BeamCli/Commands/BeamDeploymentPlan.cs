@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class DeploymentPlanArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class DeploymentPlanArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>Associates this comment along with the published Manifest. You'll be able to read it via the Beamable Portal</summary>
 		public string comment;
@@ -112,7 +112,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class DeploymentPlanWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class DeploymentPlanWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual DeploymentPlanWrapper OnStreamDeploymentPlanMetadata(System.Action<ReportDataPoint<BeamDeploymentPlanMetadata>> cb)
 		{

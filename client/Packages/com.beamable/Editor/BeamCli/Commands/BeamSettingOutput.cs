@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamSettingOutput
+	public partial class BeamSettingOutput
 	{
 		public string key;
 		public string value;

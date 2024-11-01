@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class MeArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class MeArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
@@ -38,7 +38,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class MeWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class MeWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual MeWrapper OnStreamAccountMeCommandOutput(System.Action<ReportDataPoint<BeamAccountMeCommandOutput>> cb)
 		{

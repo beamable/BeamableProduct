@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class UnityGetVersionInfoArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class UnityGetVersionInfoArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>the path to the root of the unity project</summary>
 		public string unityPath;
@@ -44,7 +44,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class UnityGetVersionInfoWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class UnityGetVersionInfoWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual UnityGetVersionInfoWrapper OnStreamGetUnityVersionInfoCommandOutput(System.Action<ReportDataPoint<BeamGetUnityVersionInfoCommandOutput>> cb)
 		{

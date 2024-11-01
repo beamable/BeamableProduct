@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ServicesRegistryArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ServicesRegistryArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
@@ -39,7 +39,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ServicesRegistryWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ServicesRegistryWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ServicesRegistryWrapper OnStreamServicesRegistryOutput(System.Action<ReportDataPoint<BeamServicesRegistryOutput>> cb)
 		{

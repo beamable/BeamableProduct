@@ -55,20 +55,16 @@ namespace Beamable.Editor.Microservice.UI2
 				
 				EditorGUILayout.BeginHorizontal(new GUIStyle(), GUILayout.ExpandWidth(true), GUILayout.MinHeight(toolbarHeight));
 
-				{ // draw the icon
-					var iconRect = new Rect(backRect.x + 12, lastRect.y + 9, toolbarHeight - 12, toolbarHeight - 12);
-					GUI.DrawTexture(iconRect, BeamGUI.iconStorage, ScaleMode.ScaleToFit);
-					GUI.Label(iconRect, new GUIContent(null, null, "This is a local storage"), GUIStyle.none);
-				}
+			
+				var badgeCount = DrawBadges(storage.Flags);
 
-				
 				EditorGUILayout.Space(1, true);
 
 				// GUI.enabled = false;
 				clickedRunToggle = BeamGUI.HeaderButton(null, BeamGUI.iconPlay, 
 				                                     width: buttonWidth, 
 				                                     padding: 4,
-				                                     xOffset: (int)((buttonWidth * 3) * -.5f), // number of buttons to the right, split by half
+				                                     xOffset: (int)((buttonWidth * 3 - badgeCount) * -.5f), // number of buttons to the right, split by half
 				                                     backgroundColor: isRunning ? primaryColor : buttonBackgroundColor,
 				                                     tooltip: isRunning ? "Shutdown the storage " : "Start the storage");
 				EditorGUILayout.Space(1, true);

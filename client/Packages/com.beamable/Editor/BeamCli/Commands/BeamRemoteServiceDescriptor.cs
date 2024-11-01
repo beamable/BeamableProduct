@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamRemoteServiceDescriptor
+	public partial class BeamRemoteServiceDescriptor
 	{
 		public string service;
 		public string routingKey;

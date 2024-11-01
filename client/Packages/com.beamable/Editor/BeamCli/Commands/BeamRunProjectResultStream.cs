@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamRunProjectResultStream
+	public partial class BeamRunProjectResultStream
 	{
 		public string serviceId;
 		public string message;

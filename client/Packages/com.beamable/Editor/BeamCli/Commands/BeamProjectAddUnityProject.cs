@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ProjectAddUnityProjectArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ProjectAddUnityProjectArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>Relative path to the Unity project</summary>
 		public string path;
@@ -44,7 +44,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ProjectAddUnityProjectWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ProjectAddUnityProjectWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 	}
 }

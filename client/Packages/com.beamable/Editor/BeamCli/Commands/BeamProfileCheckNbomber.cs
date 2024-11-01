@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ProfileCheckNbomberArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ProfileCheckNbomberArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The path to the nbomber output csv file</summary>
 		public string nbomberFilePath;
@@ -58,7 +58,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ProfileCheckNbomberWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ProfileCheckNbomberWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ProfileCheckNbomberWrapper OnStreamCheckPerfCommandOutput(System.Action<ReportDataPoint<BeamCheckPerfCommandOutput>> cb)
 		{

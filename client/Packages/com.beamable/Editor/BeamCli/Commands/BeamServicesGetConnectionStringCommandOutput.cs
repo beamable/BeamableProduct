@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamServicesGetConnectionStringCommandOutput
+	public partial class BeamServicesGetConnectionStringCommandOutput
 	{
 		public string connectionString;
 	}

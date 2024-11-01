@@ -20,6 +20,7 @@ namespace Beamable.Editor.Util
 		public static Texture iconBeamableSmall;
 		public static Texture iconLogoHeader;
 		public static Texture iconShadowSoftA;
+		public static Texture iconLocked;
 
 		public static Texture artGameServers;
 		public static Texture artLiveOps;
@@ -92,6 +93,13 @@ namespace Beamable.Editor.Util
 						"Packages/com.beamable/Editor/UI/Common/Icons/softShadow.png", true);
 			}
 			
+			
+			if (iconLocked == null)
+			{
+				iconLocked = EditorGUIUtility.IconContent("Locked").image;
+			}
+
+
 			if (iconLogoHeader == null)
 			{
 				iconLogoHeader =

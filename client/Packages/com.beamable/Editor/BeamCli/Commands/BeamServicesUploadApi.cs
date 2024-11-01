@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ServicesUploadApiArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ServicesUploadApiArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
@@ -39,7 +39,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ServicesUploadApiWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ServicesUploadApiWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ServicesUploadApiWrapper OnStreamServicesUploadApiOutput(System.Action<ReportDataPoint<BeamServicesUploadApiOutput>> cb)
 		{

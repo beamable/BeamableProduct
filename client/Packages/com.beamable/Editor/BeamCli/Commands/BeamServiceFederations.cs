@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamServiceFederations
+	public partial class BeamServiceFederations
 	{
 		public string beamoName;
 		public string routingKey;

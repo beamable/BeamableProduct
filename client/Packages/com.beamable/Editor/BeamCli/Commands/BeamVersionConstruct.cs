@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class VersionConstructArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class VersionConstructArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The major semantic version number</summary>
 		public int major;
@@ -87,7 +87,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class VersionConstructWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class VersionConstructWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual VersionConstructWrapper OnStreamConstructVersionOutput(System.Action<ReportDataPoint<BeamConstructVersionOutput>> cb)
 		{

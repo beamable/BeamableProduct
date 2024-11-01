@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ServicesManifestsArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ServicesManifestsArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>Limits amount of manifests</summary>
 		public int limit;
@@ -54,7 +54,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ServicesManifestsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ServicesManifestsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ServicesManifestsWrapper OnStreamServiceManifestOutput(System.Action<ReportDataPoint<BeamServiceManifestOutput>> cb)
 		{

@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamProjectErrorResult
+	public partial class BeamProjectErrorResult
 	{
 		public string level;
 		public string formattedMessage;

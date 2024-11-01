@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamDeploymentDiffSummary
+	public partial class BeamDeploymentDiffSummary
 	{
 		public System.Collections.Generic.List<BeamDeploymentManifestJsonDiff> jsonChanges;
 		public System.Collections.Generic.List<string> addedServices;

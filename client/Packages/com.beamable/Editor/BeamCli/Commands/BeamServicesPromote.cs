@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ServicesPromoteArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ServicesPromoteArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The PID for the realm from which you wish to pull the manifest from. 
 		///The current realm you are signed into will be updated to match the manifest in the given realm</summary>
@@ -49,7 +49,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ServicesPromoteWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ServicesPromoteWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ServicesPromoteWrapper OnStreamManifestChecksums(System.Action<ReportDataPoint<BeamManifestChecksums>> cb)
 		{

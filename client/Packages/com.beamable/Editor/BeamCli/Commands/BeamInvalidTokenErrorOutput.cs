@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamInvalidTokenErrorOutput
+	public partial class BeamInvalidTokenErrorOutput
 	{
 		public string refreshToken;
 		public string message;

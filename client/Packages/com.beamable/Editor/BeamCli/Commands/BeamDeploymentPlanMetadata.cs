@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamDeploymentPlanMetadata
+	public partial class BeamDeploymentPlanMetadata
 	{
 		public bool success;
 		public BeamDeployablePlan plan;

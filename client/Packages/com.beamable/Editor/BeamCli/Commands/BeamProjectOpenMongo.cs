@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ProjectOpenMongoArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ProjectOpenMongoArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>Name of the storage to open mongo-express to</summary>
 		public Beamable.Common.Semantics.ServiceName serviceName;
@@ -47,7 +47,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ProjectOpenMongoWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ProjectOpenMongoWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 	}
 }
