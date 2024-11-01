@@ -14,7 +14,7 @@ In order to use a Storage Object, you also need to have a local `.beamable` work
 ```sh
 beam init MyProject
 cd MyProject
-beam project new service HelloWorld
+dotnet beam project new service HelloWorld
 ```
 
 ## Storage Objects

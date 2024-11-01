@@ -29,7 +29,7 @@ The log levels are as follows,
 In order to set the log level, the full level name may be used (case insensitive), or simply the first letter of the level. For example, to use verbose logs, the following expression may be used. 
 
 ```sh
-beam config --logs v
+dotnet beam config --logs v
 ```
 
 
@@ -40,7 +40,7 @@ By default, the Beam CLI prints output in a variety of ways. Some commands will 
 The `--raw` flag will always print messages in JSON. The `--raw` message contains additional information than what may be printed for commands that already use JSON. For example, the `beam config` command prints JSON, 
 
 ```sh
-beam config
+dotnet beam config
  {                                                                 
     "host": "https://api.beamable.com",                            
     "cid": "123",                                     
@@ -52,7 +52,7 @@ beam config
 However, when the `--raw` flag is given, the output becomes, 
 
 ```sh
-beam config --raw
+dotnet beam config --raw
 {"ts":1716908373832,"type":"stream","data":{"host":"https://api.beamable.com","cid":"123","pid":"DE_123","configPath":"/Users/Test/MyProject/.beamable"}}
 ```
 
@@ -69,7 +69,7 @@ There are 3 top level parameters.
 When a Beam CLI command is piped into another process, the `--raw` flag is force enabled. For example, if `beam config` is piped into a file, then the contents of the file will be the `--raw` output.
 
 ```sh
-beam config > output.txt
+dotnet beam config > output.txt
 cat output.txt 
 {"ts":1716908709811,"type":"stream","data":{"host":"https://api.beamable.com","cid":"123","pid":"DE_123","configPath":"/Users/Test/MyProject/.beamable"}}
 ```
@@ -78,7 +78,7 @@ A common workflow is to use the [JQ](https://jqlang.github.io/jq/download/) tool
 
 In order to pipe the `data` to a file, we could write, 
 ```sh
-beam config | jq '.data' > output.txt
+dotnet beam config | jq '.data' > output.txt
 cat output.txt 
 {
   "host": "https://api.beamable.com",
@@ -90,7 +90,7 @@ cat output.txt
 
 In order to only print the `cid` value to console, we could write,
 ```sh
-beam config | jq '.data.cid'
+dotnet beam config | jq '.data.cid'
 "123"
 ```
 
@@ -123,11 +123,13 @@ GET call: /basic/beamo/manifest/current
 
 ## Error Logging
 
-The Beam CLI usually creates a temporary log file and emits verbose logs to the file for diagnostic purposes. This can be disabled if the environment variable, `BEAM_CLI_NO_FILE_LOG` is set to anything. 
+The Beam CLI usually creates a temporary log file and emits verbose logs to the file for diagnostic purposes. This can be disabled if the environment variable, `BEAM_CLI_NO_FILE_LOG` is set to anything, or if the `--no-log-file` file is passed.
 
 When an error occurs, the output log should include a line similar to,
 
 ```
 Logs at
-  /var/folders/ys/949qmfy15r7bl8x36s6wmm000000gn/T/beamCliLog.txt
+  .beamable/temp/logs/beamCliLog.txt
 ```
+
+Log files are only stored in your beamable workspace's `temp/logs` folder. If you are not in a beamable workspace, then no log file is created. These logs will remove themselves automatically as you use the CLI. Once there are more than 250 log files, every CLI invocation will remove all log files older than a day. You can remove the log files manually using the `dotnet beam temp clear logs` command. 

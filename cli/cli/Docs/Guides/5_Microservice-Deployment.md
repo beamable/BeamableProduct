@@ -20,7 +20,7 @@ In order to deploy a Microservice, you also need to have a local `.beamable` wor
 ```sh
 beam init MyProject
 cd MyProject
-beam project new service HelloWorld
+dotnet beam project new service HelloWorld
 ```
 
 ## Deployment
@@ -29,7 +29,7 @@ Beamable Standalone Microservices use Dotnet as the core technology to run local
 
 To deploy your local project, use the [services deploy](doc:cli-services-deploy) command.
 ```sh
-beam services deploy
+dotnet beam services deploy
 ```
 
 This will validate that your Standalone Microservice can be built, and that it will start accepting HTTPS traffic. Each Standalone Microservice will be built into a Docker image and then run locally as a Docker container. The `deploy` command will wait for the service to start responding to health check API calls. After the service responds as healthy, the `deploy` command will upload the Docker image to Beamable. 
@@ -72,28 +72,35 @@ You may change the dotnet framework version at your own peril. Beamable has vali
 
 Finally, the port `6565` **MUST** be exposed. The port is used as a health check mechanism within the Beamable Cloud. If you delete that line, your services will fail to pass health checks and cannot be uploaded. 
 
-Here is a sample `Dockerfile` from a service created with Beam CLI 2.0.0.
+Here is a sample `Dockerfile` from a service created with Beam CLI 2.1.0.
 
 ```Dockerfile
 # use the dotnet sdk as a build stage  
-FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine as build-env  
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0-alpine as build-env  
+ARG TARGETARCH  
   
 # <BEAM-CLI-COPY-ENV> this line signals the start of environment variables copies into the built container. Do not remove it. This will be overwritten every time a variable changes in the execution of the CLI.  
-ENV BEAM_CSPROJ_PATH="/subsrc/services/HelloWorld/HelloWorld.csproj"  
+  
+ENV BEAM_CSPROJ_PATH="/subsrc/services/Example4/Example4.csproj"  
+ENV BEAM_VERSION="2.1.0"  
 # </BEAM-CLI-COPY-ENV> this line signals the end of environment variables copies into the built container. Do not remove it.  
   
 # <BEAM-CLI-COPY-SRC> this line signals the start of Beamable Project Src copies into the built container. Do not remove it. The content between here and the closing tag will change anytime the Beam CLI modifies dependencies.  
-RUN mkdir -p /subsrc/services/HelloWorld  
-COPY services/HelloWorld /subsrc/services/HelloWorld  
+  
+RUN mkdir -p /subsrc/services/Data  
+COPY services/Data /subsrc/services/Data  
+  
+RUN mkdir -p /subsrc/services/Example4  
+COPY services/Example4 /subsrc/services/Example4  
 # </BEAM-CLI-COPY-SRC> this line signals the end of Beamable Project Src copies. Do not remove it.  
   
-# build the dotnet program  
 WORKDIR /  
   
-RUN dotnet publish ${BEAM_CSPROJ_PATH} -c release -o /beamApp  
+# build the dotnet program  
+RUN dotnet publish ${BEAM_CSPROJ_PATH} -p:BeamableVersion=${BEAM_VERSION} -a $TARGETARCH -c release -o /beamApp  
   
 # use the dotnet runtime as the final stage  
-FROM mcr.microsoft.com/dotnet/runtime:6.0-alpine  
+FROM mcr.microsoft.com/dotnet/runtime:8.0-alpine  
 WORKDIR /beamApp  
   
 # expose the health port  
@@ -102,7 +109,10 @@ EXPOSE 6565
 COPY --from=build-env /beamApp .  
   
 # when starting the container, run dotnet with the built dll  
-ENTRYPOINT ["dotnet", "/beamApp/HelloWorld.dll"]  
+ENTRYPOINT ["dotnet", "/beamApp/Example4.dll"]  
+  
+# Swap entrypoints if the container is exploding and you want to keep it alive indefinitely so you can go look into it.  
+#ENTRYPOINT ["tail", "-f", "/dev/null"]
 ```
 
 
@@ -113,18 +123,18 @@ The recommended developer workflow is to run your micro services using Dotnet. H
 The [services run](doc:cli-services-run) command will run your services on your local machine with Docker. It will build the `Dockerfile` into an image, and run a container for you. Remember that the [project run](doc:cli-project-run) command runs services locally as dotnet processes, where-as this command will start a Docker container. 
 
 ```sh
-beam services run --ids HelloWorld
+dotnet beam services run --ids HelloWorld
 ```
 
 You can validate that your services are running in docker using [project ps](doc:cli-project-ps) or by using Docker directly.
 
 ```sh
-beam project ps 
+dotnet beam project ps 
 docker ps
 ```
 
 After you are done testing, you can use Docker directly to stop all the containers, or your can use [services stop](doc:cli-services-stop) command. 
 
 ```sh
-beam services stop
+dotnet beam services stop
 ```

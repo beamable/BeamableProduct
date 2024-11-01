@@ -32,7 +32,7 @@ From any folder, you can run the [beam config](doc:cli-config)  command to print
 
 In the example directory structure above, if the `beam config` command was invoked from the `mainFolder`, it would log information about the `mainFolder/.beamable` folder. 
 ```sh
-mainFolder % beam config
+mainFolder % dotnet beam config
  {                                                             
     "host": "https://api.beamable.com",                        
     "cid": "<redacted>",                                 
@@ -44,7 +44,7 @@ mainFolder % beam config
 However, if the `beam config` command was invoked from the `someOtherFolder` path, you should expect to see an error, because there is no `.beamable` folder within the parent linear. 
 
 ```sh
-someOtherFolder % beam config
+someOtherFolder % dotnet beam config
 
 **Error** [0404]: Could not find any .beamable config folder which is required for this command.
 

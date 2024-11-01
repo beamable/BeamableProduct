@@ -14,7 +14,7 @@ In order to debug a Microservice, you also need to have a local `.beamable` work
 ```sh
 beam init MyProject
 cd MyProject
-beam project new service HelloWorld
+dotnet beam project new service HelloWorld
 ```
 
 ## Debugging 
@@ -27,7 +27,7 @@ Beamable Standalone Microservices run as vanilla dotnet processes on your machin
 
 If you run your service with hot reload enabled, then your code will be recompiled automatically as you make changes to your code, and your running service won't need to restart. 
 
-Unfortunately, JetBrains Rider has limited hot reload support out of the box. With that in mind, this guide will assume that if you want to use hot reload, you'll be using the CLI. The Beam CLI has support for hot reload, but you can also use the vanilla dotnet CLI. 
+Unfortunately, JetBrains Rider has limited hot reload support out of the box. With that in mind, this guide will assume that if you want to use hot reload, you'll be using the CLI. 
 
 Not all types of source code changes will work with hot reload. Only changes to the `.cs` files will be acceptable. No changes to the `.csproj` or other build-time configuration options will be reloaded.  
 
@@ -55,21 +55,4 @@ dotnet watch 🔥 Hot reload of changes succeeded.
 ```
 ### Beam CLI
 
-The [project run](doc:cli-project-run) command also supports starting a service with hot reload enabled. 
-```sh 
-MyProject % beam project run --ids HelloWorld -w
-(watch) dotnet watch : Hot reload enabled. For a list of supported edits, see https://aka.ms/dotnet/hot-reload.
-(watch)    Press "Ctrl + R" to restart.
-(watch) dotnet watch : Building...
-(watch)   Determining projects to restore...
-(watch)   All projects are up-to-date for restore.
-(watch)   HelloWorld -> /MyProject/services/HelloWorld/bin/Debug/net6.0/HelloWorld.dll
-(watch)   Creating beamable version file...
-(watch)   Generating client files...
-(watch) dotnet watch : Started
-```
-Once you make an edit, you'll see some logs that indicate the change.
-```
-(watch) dotnet watch : File changed: ./services/HelloWorld/HelloWorld.cs.
-(watch) dotnet watch : Hot reload of changes succeeded.
-```
+The Beam CLI no longer supports hot reload natively. It was supported in 2.0.1, but due to technical limitations, support was removed in 2.1.0 

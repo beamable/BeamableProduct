@@ -14,12 +14,12 @@ In order to configure a Microservice, you also need to have a local `.beamable` 
 ```sh
 beam init MyProject
 cd MyProject
-beam project new service HelloWorld
+dotnet beam project new service HelloWorld
 ```
 
 ## Project Configuration 
 
-Each Standalone Microservice is a dotnet project, and can be configured through the dotnet `.csproj`. In most IDEs, the `.csproj` file will be hidden automatically, but you can open it by right-clicking on the project in the IDE and opening the `.csproj` file. As of Beam CLI 2.0, the starting `.csproj` has the following structure. 
+Each Standalone Microservice is a dotnet project, and can be configured through the dotnet `.csproj`. In most IDEs, the `.csproj` file will be hidden automatically, but you can open it by right-clicking on the project in the IDE and opening the `.csproj` file. As of Beam CLI 2.1, the starting `.csproj` has the following structure. 
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">  
@@ -30,12 +30,20 @@ Each Standalone Microservice is a dotnet project, and can be configured through 
         <!-- When "true", this will auto-generate client code to any linked unity projects -->  
         <GenerateClientCode>true</GenerateClientCode>  
     </PropertyGroup>  
+    <!-- These are special Beamable parameters that we use to keep the beamable packages in-sync to the CLI version your project is using. -->  
+    <!-- This makes it so your microservices are auto-updated whenever you update the CLI installed in your project. -->    <PropertyGroup Label="Beamable Version" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true">  
+        <DotNetConfigPath Condition="'$(DotNetConfigPath)' == ''">$([MSBuild]::GetDirectoryNameOfFileAbove("$(MSBuildProjectDirectory)/..", ".config/dotnet-tools.json"))</DotNetConfigPath>  
+        <DotNetConfig Condition="'$(DotNetConfig)' == ''">$([System.IO.File]::ReadAllText("$(DotNetConfigPath)/.config/dotnet-tools.json"))</DotNetConfig>  
+        <!-- Extracts the version number from the first tool defined in 'dotnet-tools.json' that starts with "beamable". -->  
+        <BeamableVersion Condition="'$(BeamableVersion)' == ''">$([System.Text.RegularExpressions.Regex]::Match("$(DotNetConfig)", "beamable.*?\"([0-9]+\.[0-9]+\.[0-9]+.*?)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace).Groups[1].Value)</BeamableVersion>  
+        <!-- When running from inside docker, this gets injected via the Dockerfile at build-time. -->  
+    </PropertyGroup>  
     <PropertyGroup Label="Dotnet Settings">  
         <!-- net8.0 is the LTS version until 2026. To update your net version, update the <TargetFramework> when Beamable announces support. -->  
-        <TargetFramework>net6.0</TargetFramework>  
+        <TargetFramework>net8.0</TargetFramework>  
     </PropertyGroup>  
     <ItemGroup Label="Nuget References">  
-        <PackageReference Include="Beamable.Microservice.Runtime" Version="2.0.0" />  
+        <PackageReference Include="Beamable.Microservice.Runtime" Version="$(BeamableVersion)" />  
     </ItemGroup>  
 </Project>
 ```
@@ -124,5 +132,7 @@ Common Dotnet properties may be explored through [Dotnet's Documentation](https:
 >
 > The link above points to the cli-2.0.0 release tag version of the source code. Make sure that you are looking the same version as your `Beamable.Microservice.Runtime` nuget version is using in the `.csproj`. 
  
-Other than the default properties set in the `.props` file, a major requirement of Beamable Standalone Microservices is that they build for `net6.0`. This is because `net6.0` was the last major version of dotnet that supported native cross compilation for x86 and ARM CPU architectures. As of Beam CLI 2.0, the `<TargetFramework>` should be `net6.0`. 
+Other than the default properties set in the `.props` file, a major requirement of Beamable Standalone Microservices the `TargetFramework` property. If you are using CLI 2.1.0 and above, you may target `net8.0` . 
+
+If you are using CLI 2.0.1 or below, you must target `net6.0`. 
 
