@@ -30,9 +30,9 @@ public class StorageGroupCommand : CommandGroup
 			Log.Information("Starting storage...");
 			await args.BeamoLocalSystem.RunLocalEmbeddedMongoDb(sd, db);
 		}
-		
+
 		return isRunning;
-		
+
 		async Task<(bool, string)> IsRunning()
 		{
 			string containerId = null;
@@ -54,7 +54,7 @@ public class StorageGroupCommand : CommandGroup
 
 	public static void GetInfo(CommandArgs args, string beamoId, out BeamoServiceDefinition definition, out EmbeddedMongoDbLocalProtocol db, out string dockerPath)
 	{
-		if (!args.BeamoLocalSystem.BeamoManifest.TryGetDefinition(beamoId,out definition))
+		if (!args.BeamoLocalSystem.BeamoManifest.TryGetDefinition(beamoId, out definition))
 		{
 			throw new CliException($"no service definition available for id=[{beamoId}]");
 		}
@@ -63,17 +63,17 @@ public class StorageGroupCommand : CommandGroup
 		{
 			throw new CliException($"no local storage object exists for id=[{definition.BeamoId}]");
 		}
-		
+
 		dockerPath = args.AppContext.DockerPath;
 		if (!DockerPathOption.TryValidateDockerExec(dockerPath, out var dockerPathError))
 		{
 			throw new CliException(dockerPathError);
 		}
 	}
-	
-	public static async Task<bool> RunDockerCommand(CommandArgs args, string dockerPath, IResultSteam<MongoLogChannel, CliLogMessage> stream, string dockerArg, bool streamLogs=true)
+
+	public static async Task<bool> RunDockerCommand(CommandArgs args, string dockerPath, IResultSteam<MongoLogChannel, CliLogMessage> stream, string dockerArg, bool streamLogs = true)
 	{
-			
+
 		Log.Verbose($"docker exec string=[{dockerPath} {dockerArg}]");
 
 		var command = Cli
