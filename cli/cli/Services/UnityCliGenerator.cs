@@ -256,7 +256,10 @@ MonoImporter:
 
 
 		var name = GetArgClassName(descriptor);
-		var type = new CodeTypeDeclaration(name);
+		var type = new CodeTypeDeclaration(name)
+		{
+			IsPartial = true
+		};
 		type.BaseTypes.Add(new CodeTypeReference(typeof(IBeamCommandArgs)));
 
 
@@ -429,7 +432,8 @@ MonoImporter:
 			CustomAttributes = new CodeAttributeDeclarationCollection
 			{
 				new CodeAttributeDeclaration(new CodeTypeReference(typeof(SerializableAttribute)))
-			}
+			},
+			IsPartial = true
 		};
 
 		foreach (var field in UnityJsonContractResolver.GetSerializedFields(runtimeType))
@@ -451,6 +455,7 @@ MonoImporter:
 	{
 		var type = new CodeTypeDeclaration
 		{
+			IsPartial = true,
 			Name = GetReturnClassName(descriptor),
 			BaseTypes =
 			{

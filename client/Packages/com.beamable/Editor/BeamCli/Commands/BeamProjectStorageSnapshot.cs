@@ -4,11 +4,11 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ProjectStorageSnapshotArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ProjectStorageSnapshotArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>the beamoId for the storage object</summary>
+		/// <summary>The beamoId for the storage object</summary>
 		public string beamoId;
-		/// <summary>the output for the snapshot</summary>
+		/// <summary>The output for the snapshot</summary>
 		public string output;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
@@ -53,7 +53,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ProjectStorageSnapshotWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ProjectStorageSnapshotWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ProjectStorageSnapshotWrapper OnStreamSnapshotStorageObjectCommandOutput(System.Action<ReportDataPoint<BeamSnapshotStorageObjectCommandOutput>> cb)
 		{

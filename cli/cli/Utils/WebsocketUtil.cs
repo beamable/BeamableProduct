@@ -22,64 +22,112 @@ public class WebsocketUtil
 	}
 
 	/// <summary>
-	/// Use this if a command wants to configure a websocket to listen to a particular set of server events.
-	/// Then, use the resulting <see cref="ClientWebSocket"/> with <see cref="RunServerNotificationListenLoop"/> to keep listening for events.
+	/// The handle itself encapsulates the <see cref="ClientWebSocket"/> through multiple connection attempts.
+	/// When the gateway API closes the socket externally, then the socket instance needs to be rebuilt.
+	/// This class wraps up the function that creates and authenticates the socket. 
 	/// </summary>
-	public static async Task<ClientWebSocket> ConfigureWebSocketForServerNotifications(CommandArgs args, string[] events, CancellationToken cancellationToken)
+	public class WebsocketConnectionHandle
 	{
-		var socketAddress = GetSocketUrl(args.AppContext.Host);
-		var realmSecret = await GetRealmSecret(args);
-		var cid = args.AppContext.Cid;
-		var pid = args.AppContext.Pid;
-		return await ConfigureWebSocketForServerNotifications(cid, pid, socketAddress, realmSecret, events, cancellationToken);
+		private Func<Task<ClientWebSocket>> _connector;
+
+		private Task<ClientWebSocket> _socket;
+		public Task<ClientWebSocket> Socket
+		{
+			get
+			{
+				if (_socket == null)
+				{
+					_socket = _connector();
+				}
+				
+				return _socket;
+			}
+		}
+
+		public WebsocketConnectionHandle(Func<Task<ClientWebSocket>> connector)
+		{
+			_connector = connector;
+			var _ = Socket; // kick off connection immediately. 
+		}
+
+		public void ResetSocket()
+		{
+			_socket = null;
+		}
+	}
+
+	/// <summary>
+	/// Use this if a command wants to configure a websocket to listen to a particular set of server events.
+	/// Then, use the resulting <see cref="WebsocketConnectionHandle"/> with <see cref="RunServerNotificationListenLoop"/> to keep listening for events.
+	/// </summary>
+	public static WebsocketConnectionHandle ConfigureWebSocketForServerNotifications(CommandArgs args, string[] events, CancellationToken cancellationToken)
+	{
+		var connector = new Func<Task<ClientWebSocket>>(async () =>
+		{
+			var socketAddress = GetSocketUrl(args.AppContext.Host);
+			var realmSecret = await GetRealmSecret(args);
+			var cid = args.AppContext.Cid;
+			var pid = args.AppContext.Pid;
+			return await ConfigureWebSocketForServerNotifications(cid, pid, socketAddress, realmSecret, events,
+				cancellationToken);
+		});
+		return new WebsocketConnectionHandle(connector);
 	}
 
 	/// <summary>
 	/// Takes a <see cref="ClientWebSocket"/> configured via <see cref="ConfigureWebSocketForServerNotifications"/> and keeps listening for events while the connection is open.
 	/// </summary>
-	public static async Task<ClientWebSocket> RunServerNotificationListenLoop(ClientWebSocket ws, Action<ServerNotificationMessage> onNotification, CancellationToken cancellationToken,
+	public static async Task<ClientWebSocket> RunServerNotificationListenLoop(WebsocketConnectionHandle handle, Action<ServerNotificationMessage> onNotification, CancellationToken cancellationToken,
 		bool nackCallbackExceptions = false)
 	{
+		var ws = await handle.Socket;
 		do
 		{
-			var message = await WebsocketUtil.ReadMessage(ws, cancellationToken);
-			var messageObj = JsonConvert.DeserializeObject<ServerNotificationMessage>(message);
-
-			using var stringBuilder = StringBuilderPool.StaticPool.Spawn();
-			var dict = new ArrayDict
+			try
 			{
-				["id"] = messageObj.id, ["status"] = 200,
-			};
+				var message = await WebsocketUtil.ReadMessage(ws, cancellationToken);
+				var messageObj = JsonConvert.DeserializeObject<ServerNotificationMessage>(message);
 
-			var ack = Json.Serialize(dict, stringBuilder.Builder);
-			if (nackCallbackExceptions)
-			{
-				try
+				using var stringBuilder = StringBuilderPool.StaticPool.Spawn();
+				var dict = new ArrayDict { ["id"] = messageObj.id, ["status"] = 200, };
+
+				var ack = Json.Serialize(dict, stringBuilder.Builder);
+				if (nackCallbackExceptions)
+				{
+					try
+					{
+						onNotification?.Invoke(messageObj);
+					}
+					catch (Exception e)
+					{
+						onNotification?.Invoke(messageObj);
+						dict["status"] = 500;
+						var nack = Json.Serialize(dict, stringBuilder.Builder);
+						await WebsocketUtil.SendMessageAsync(ws, nack, cancellationToken);
+						Log.Error(e,
+							"Error invoking Notification callback... You should not see this as a Beamable customer. If you do, please tell us");
+						throw;
+					}
+
+					// Ack that we successfully processed the message
+					await WebsocketUtil.SendMessageAsync(ws, ack, cancellationToken);
+				}
+				else
 				{
 					onNotification?.Invoke(messageObj);
+					await WebsocketUtil.SendMessageAsync(ws, ack, cancellationToken);
 				}
-				catch (Exception e)
-				{
-					onNotification?.Invoke(messageObj);
-					dict["status"] = 500;
-					var nack = Json.Serialize(dict, stringBuilder.Builder);
-					await WebsocketUtil.SendMessageAsync(ws, nack, cancellationToken);
-					Log.Error(e, "Error invoking Notification callback... You should not see this as a Beamable customer. If you do, please tell us");
-					throw;
-				}
-				
-				// Ack that we successfully processed the message
-				await WebsocketUtil.SendMessageAsync(ws, ack, cancellationToken);
+
+
+				if (cancellationToken.IsCancellationRequested)
+					break;
 			}
-			else
+			catch (WebSocketException ex) when (ex.Message.Contains("remote party closed the WebSocket connection without completing the close handshake"))
 			{
-				onNotification?.Invoke(messageObj);
-				await WebsocketUtil.SendMessageAsync(ws, ack, cancellationToken);
+				handle.ResetSocket();
+				Log.Debug("websocket connection was closed by Beamable host. Reconnecting... ");
+				ws = await handle.Socket;
 			}
-
-
-			if (cancellationToken.IsCancellationRequested)
-				break;
 		} while (ws.State == WebSocketState.Open);
 
 		return ws;

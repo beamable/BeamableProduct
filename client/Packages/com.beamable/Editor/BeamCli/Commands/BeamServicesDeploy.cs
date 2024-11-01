@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ServicesDeployArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ServicesDeployArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>If this option is set to a valid path to a ServiceManifest JSON, deploys that instead</summary>
 		public string fromFile;
@@ -83,7 +83,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ServicesDeployWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ServicesDeployWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ServicesDeployWrapper OnStreamServiceDeployReportResult(System.Action<ReportDataPoint<BeamServiceDeployReportResult>> cb)
 		{

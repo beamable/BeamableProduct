@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class FederationListArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class FederationListArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>Filter the federations by the type</summary>
 		public string type;
@@ -64,7 +64,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class FederationListWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class FederationListWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual FederationListWrapper OnStreamListServicesCommandOutput(System.Action<ReportDataPoint<BeamListServicesCommandOutput>> cb)
 		{

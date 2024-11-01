@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamAccountMeCommandOutput
+	public partial class BeamAccountMeCommandOutput
 	{
 		public long id;
 		public string email;

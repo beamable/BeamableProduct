@@ -97,8 +97,13 @@ namespace Beamable.Editor
 				if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
 				{
 					EditorSceneManager.OpenScene(lb.localCandidateAssetPath, OpenSceneMode.Single);
-					ShowInProject(lb);
 					EditorWindow.GetWindow<SceneView>();
+					ShowInProject(lb);
+
+					if (needsRefresh)
+					{
+						EditorUtility.RequestScriptReload();
+					}
 				}
 			}
 			

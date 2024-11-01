@@ -4,9 +4,9 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ServicesDockerStatusArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ServicesDockerStatusArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
-		/// <summary>emit a stream of updates as docker changes</summary>
+		/// <summary>Emit a stream of updates as docker changes</summary>
 		public bool watch;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
@@ -48,7 +48,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ServicesDockerStatusWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ServicesDockerStatusWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ServicesDockerStatusWrapper OnStreamDockerStatusCommandOutput(System.Action<ReportDataPoint<BeamDockerStatusCommandOutput>> cb)
 		{

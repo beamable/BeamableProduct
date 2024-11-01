@@ -39,8 +39,8 @@ public class NotificationServerCommand : StreamCommand<NotificationServerCommand
 	public override async Task Handle(NotificationServerCommandArgs args)
 	{
 		var cancelToken = new CancellationToken();
-		var ws = await WebsocketUtil.ConfigureWebSocketForServerNotifications(args, new[] { "content.manifest", "realm-config.refresh", "beamo.service_registration_changed" }, cancelToken);
-		await WebsocketUtil.RunServerNotificationListenLoop(ws, message =>
+		var handle = WebsocketUtil.ConfigureWebSocketForServerNotifications(args, new[] { "content.manifest", "realm-config.refresh", "beamo.service_registration_changed" }, cancelToken);
+		await WebsocketUtil.RunServerNotificationListenLoop(handle, message =>
 		{
 			var bodyJson = JsonConvert.SerializeObject(message.body);
 			Log.Information($"{message.path} -- {bodyJson}");

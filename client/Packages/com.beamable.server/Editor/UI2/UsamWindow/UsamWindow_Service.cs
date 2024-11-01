@@ -5,14 +5,18 @@ using Beamable.Editor.Util;
 using Beamable.Server.Editor.Usam;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Beamable.Editor.Microservice.UI2
 {
 	public partial class UsamWindow2
-	{
+	{				
+		const int toolbarHeight = 30;
+
 		void DrawService(BeamManifestServiceEntry service)
 		{
 			var clickedOpenCode = false;
@@ -44,7 +48,6 @@ namespace Beamable.Editor.Microservice.UI2
 			{ // draw toolbar bar
 				
 				// draw the background of the bar
-				const int toolbarHeight = 30;
 				const int buttonWidth = 30;
 				var buttonBackgroundColor = new Color(.5f, .5f, .5f, .5f);
 
@@ -56,19 +59,15 @@ namespace Beamable.Editor.Microservice.UI2
 				
 				EditorGUILayout.BeginHorizontal(new GUIStyle(), GUILayout.ExpandWidth(true), GUILayout.MinHeight(toolbarHeight));
 
-
-				{ // draw the icon
-					var iconRect = new Rect(backRect.x + 12, lastRect.y + 9, toolbarHeight - 12, toolbarHeight - 12);
-					GUI.DrawTexture(iconRect, BeamGUI.iconService, ScaleMode.ScaleToFit);
-					GUI.Label(iconRect, new GUIContent(null, null, "This is a local service"), GUIStyle.none);
-				}
+				
+				var badgeCount = DrawBadges(service.Flags);
 				
 				EditorGUILayout.Space(1, true);
 				
 				clickedRunToggle = BeamGUI.HeaderButton(null, BeamGUI.iconPlay, 
 				                                     width: buttonWidth, 
 				                                     padding: 4,
-				                                     xOffset: (int)((buttonWidth * 3) * -.5f), // number of buttons to the right, split by half
+				                                     xOffset: (int)((buttonWidth * (3 - badgeCount)) * -.5f), // number of buttons to the right, split by half
 				                                     backgroundColor: isRunning ? primaryColor : buttonBackgroundColor,
 				                                     tooltip: isRunning ? "Shutdown the service " : "Start the service");
 				EditorGUILayout.Space(1, true);
@@ -161,7 +160,6 @@ namespace Beamable.Editor.Microservice.UI2
 				EditorGUILayout.EndHorizontal();
 			}
 		}
-		
 
 		public void DrawLogs(UsamService.NamedLogView log, LogDataProvider provider)
 		{
@@ -208,16 +206,36 @@ namespace Beamable.Editor.Microservice.UI2
 			});
 			
 			menu.AddSeparator("");
-
-			menu.AddItem(new GUIContent("Generate client"), false, () =>
-			{
-				var _ = usam.GenerateClient(service);
-			});
 			
-			menu.AddItem(new GUIContent("Generate client on build"), usam.ShouldServiceAutoGenerateClient(service.beamoId), () =>
+			if (!service.IsReadonlyPackage)
 			{
-				usam.ToggleServiceAutoGenerateClient(service.beamoId);
-			});
+				menu.AddItem(new GUIContent("Generate client"), false, () =>
+				{
+					var _ = usam.GenerateClient(service);
+				});
+
+				menu.AddItem(new GUIContent("Generate client on build"),
+				             usam.ShouldServiceAutoGenerateClient(service.beamoId), () =>
+				             {
+					             usam.ToggleServiceAutoGenerateClient(service.beamoId);
+				             });
+			}
+
+
+			if (usam.AssemblyService.beamoIdToClientHintPath.TryGetValue(service.beamoId, out var hintPath) && File.Exists(hintPath))
+			{
+				menu.AddItem(new GUIContent("Show client"), false, () =>
+				{
+					var projectBrowserType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.ProjectBrowser");
+					EditorWindow.GetWindow(projectBrowserType)?.Focus();
+					var asset = AssetDatabase.LoadAssetAtPath(hintPath, typeof(TextAsset));
+					EditorGUIUtility.PingObject(asset);
+				});
+			}
+			else
+			{
+				menu.AddDisabledItem(new GUIContent("Show client"));
+			}
 			
 			menu.AddSeparator("");
 			
@@ -225,25 +243,28 @@ namespace Beamable.Editor.Microservice.UI2
 			{
 				usam.OpenPortalToReleaseSection();
 			});
-			
-			menu.AddSeparator("");
-			menu.AddItem(new GUIContent("Delete service"), false, () =>
+
+			if (!service.IsReadonlyPackage)
 			{
-				var confirm = EditorUtility.DisplayDialog($"Delete {service.beamoId}",
-				                            @"Are you sure you want to delete all the local source code for the service? This will not remove any deployed services until a Release action is taken. ",
-				                            "Delete", "Cancel");
-				if (confirm)
+				menu.AddSeparator("");
+				menu.AddItem(new GUIContent("Delete service"), false, () =>
 				{
-					AddDelayedAction(() =>
-					{ 
-						// run this as a delayed action because it can change the layout of the GUI! 
-						//  and that can cause IMGUI to go bananas
-						selectedBeamoId = null;
-						usam.DeleteProject(service.beamoId, service.csprojPath);
-					});
-				}
-			});
-			
+					var confirm = EditorUtility.DisplayDialog($"Delete {service.beamoId}",
+					                                          @"Are you sure you want to delete all the local source code for the service? This will not remove any deployed services until a Release action is taken. ",
+					                                          "Delete", "Cancel");
+					if (confirm)
+					{
+						AddDelayedAction(() =>
+						{
+							// run this as a delayed action because it can change the layout of the GUI! 
+							//  and that can cause IMGUI to go bananas
+							selectedBeamoId = null;
+							usam.DeleteProject(service.beamoId, service.csprojPath);
+						});
+					}
+				});
+			}
+
 			menu.ShowAsContext();
 		}
 

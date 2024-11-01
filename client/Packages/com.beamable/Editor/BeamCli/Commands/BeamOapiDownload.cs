@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class OapiDownloadArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class OapiDownloadArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>When null or empty, the generated code will be sent to standard-out. When there is a output value, the file or files will be written to the path</summary>
 		public string output;
@@ -63,7 +63,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class OapiDownloadWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class OapiDownloadWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 	}
 }

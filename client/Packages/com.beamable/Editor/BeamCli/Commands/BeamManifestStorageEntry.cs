@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamManifestStorageEntry
+	public partial class BeamManifestStorageEntry
 	{
 		public string beamoId;
 		public string csprojPath;

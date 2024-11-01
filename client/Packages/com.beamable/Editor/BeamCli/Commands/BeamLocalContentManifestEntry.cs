@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamLocalContentManifestEntry
+	public partial class BeamLocalContentManifestEntry
 	{
 		public string FullId;
 		public string TypeName;

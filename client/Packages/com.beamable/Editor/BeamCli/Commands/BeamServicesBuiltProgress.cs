@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamServicesBuiltProgress
+	public partial class BeamServicesBuiltProgress
 	{
 		public string id;
 		public int totalSteps;

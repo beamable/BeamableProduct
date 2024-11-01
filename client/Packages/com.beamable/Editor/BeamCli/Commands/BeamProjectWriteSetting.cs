@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ProjectWriteSettingArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ProjectWriteSettingArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The BeamoId to write the settings for</summary>
 		public string beamoId;
@@ -84,7 +84,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ProjectWriteSettingWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ProjectWriteSettingWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ProjectWriteSettingWrapper OnStreamWriteProjectSettingsCommandOutput(System.Action<ReportDataPoint<BeamWriteProjectSettingsCommandOutput>> cb)
 		{

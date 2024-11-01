@@ -48,8 +48,8 @@ namespace Beamable.Editor.Library
 		{
 			if (library == null)
 			{
-				DrawBlockLoading(null);
-				AddDelayedAction(Build);
+				DrawBlockLoading("Fetching data...");
+				EditorApplication.delayCall += Build;
 				return;
 			}
 			

@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class DeploymentListArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class DeploymentListArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The limit of resources. A value of -1 means no limit</summary>
 		public int limit;
@@ -54,7 +54,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class DeploymentListWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class DeploymentListWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual DeploymentListWrapper OnStreamListDeploymentsCommandOutput(System.Action<ReportDataPoint<BeamListDeploymentsCommandOutput>> cb)
 		{

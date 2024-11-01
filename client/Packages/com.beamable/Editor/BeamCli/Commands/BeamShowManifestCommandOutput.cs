@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamShowManifestCommandOutput
+	public partial class BeamShowManifestCommandOutput
 	{
 		public string localRoutingKey;
 		public System.Collections.Generic.List<BeamManifestServiceEntry> services;

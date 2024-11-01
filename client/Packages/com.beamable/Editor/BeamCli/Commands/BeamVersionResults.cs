@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamVersionResults
+	public partial class BeamVersionResults
 	{
 		public string version;
 		public string location;

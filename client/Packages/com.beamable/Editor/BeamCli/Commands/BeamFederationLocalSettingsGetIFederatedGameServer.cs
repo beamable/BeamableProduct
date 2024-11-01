@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class FederationLocalSettingsGetIFederatedGameServerArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class FederationLocalSettingsGetIFederatedGameServerArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The Beamo ID for the microservice whose federation you want to configure</summary>
 		public string beamoId;
@@ -58,7 +58,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class FederationLocalSettingsGetIFederatedGameServerWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class FederationLocalSettingsGetIFederatedGameServerWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual FederationLocalSettingsGetIFederatedGameServerWrapper OnStreamLocalSettings_IFederatedGameServer(System.Action<ReportDataPoint<Beamable.Common.LocalSettings_IFederatedGameServer>> cb)
 		{

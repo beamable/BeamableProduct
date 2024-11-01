@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ProjectReadSettingsArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ProjectReadSettingsArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The list of services to include, defaults to all local services (separated by whitespace)</summary>
 		public string[] ids;
@@ -51,7 +51,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ProjectReadSettingsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ProjectReadSettingsWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ProjectReadSettingsWrapper OnStreamReadProjectSettingsCommandOutput(System.Action<ReportDataPoint<BeamReadProjectSettingsCommandOutput>> cb)
 		{

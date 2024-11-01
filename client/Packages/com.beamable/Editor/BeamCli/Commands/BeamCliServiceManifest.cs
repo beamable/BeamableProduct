@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamCliServiceManifest
+	public partial class BeamCliServiceManifest
 	{
 		public string id;
 		public long created;

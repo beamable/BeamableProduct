@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ProjectVersionArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ProjectVersionArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>Request specific version of Beamable packages</summary>
 		public string requestedVersion;
@@ -48,7 +48,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ProjectVersionWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ProjectVersionWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual ProjectVersionWrapper OnStreamProjectVersionCommandResult(System.Action<ReportDataPoint<BeamProjectVersionCommandResult>> cb)
 		{

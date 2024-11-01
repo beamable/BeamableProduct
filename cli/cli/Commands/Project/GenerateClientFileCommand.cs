@@ -30,6 +30,8 @@ public class GenerateClientFileCommandArgs : CommandArgs
 
 	public List<string> existingFederationIds;
 	public List<string> existingFederationTypeNames;
+
+	public List<string> outputPathHints;
 }
 
 public class GenerateClientFileEvent
@@ -71,230 +73,293 @@ public class GenerateClientFileCommand
 				args.existingFederationIds = ids;
 				args.existingFederationTypeNames = i;
 			});
+
+		AddOption(new Option<List<string>>(
+				name: "--output-path-hints",
+				description: "A special format, BEAMOID=PATH, that tells the generator where to place the client. The path should be relative to the linked project root"
+				)
+			{
+				AllowMultipleArgumentsPerToken = true,
+				Arity = ArgumentArity.ZeroOrMore
+			}, 
+			(args, i) => args.outputPathHints = i);
 	}
 
 	public override async Task Handle(GenerateClientFileCommandArgs args)
 	{
-		ProjectCommand.FinalizeServicesArg(args, args.withTags, args.excludeTags, false, ref args.beamoIds, true);
-		
-		#region load client dll into current domain
-
-		var sw = new Stopwatch();
-		sw.Start();
-		await args.BeamoLocalSystem.InitManifest(fetchServerManifest: false);
-		Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - got manifest");
-
-		
-		// Get the list of all existing microservices
-		var allServices = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Where(sd => sd.Protocol is BeamoProtocolType.HttpMicroservice).ToArray();
-
-		// Get the list of dependencies of each of these microservices
-		var allDepTasks = allServices.Select(sd => args.BeamoLocalSystem.GetDependencies(sd.BeamoId)).ToList();
-		var allDeps = allDepTasks.Select(deps => deps.Select(dep => dep.name));
-
-		// Get the list of all BeamoIds whose DLLs we need to have loaded for a single pass.
-		var allServicesToLoadDlls = allServices
-			.Where(sd => !string.IsNullOrEmpty(sd.ProjectDirectory)) // must have a valid local project directory.
-			.Select(sd => sd.BeamoId).Union(allDeps.SelectMany(d => d)).Distinct().ToArray();
-
-		// Get the list of all assemblies paired with their last edit time.
-		Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - starting");
-
-		// Check all the DLLs that currently exist.
-		var checkProjBuilt = allServicesToLoadDlls.Select(beamoId =>
+		List<AssemblyLoadContext> allLoadContexts = null;
+		try
 		{
-			Project project = null;
-			if (args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(beamoId, out var httpLocal))
-				project = httpLocal.Metadata.msbuildProject;
-			else if (args.BeamoLocalSystem.BeamoManifest.EmbeddedMongoDbLocalProtocols.TryGetValue(beamoId, out var dbLocal)) project = dbLocal.Metadata.msbuildProject;
-			
-			var isProjBuilt =  ProjectCommand.IsProjectBuiltMsBuild(project);
-			Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - checked {beamoId} built=[{isProjBuilt}]");
-			return isProjBuilt;
-		});
+			ProjectCommand.FinalizeServicesArg(args, args.withTags, args.excludeTags, false, ref args.beamoIds, true);
 
-		// Based on that, load all dlls that can be loaded.
-		var allAssemblies = ProjectCommand.LoadProjectDll(checkProjBuilt);
-		Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - done type loading");
+			#region load client dll into current domain
 
-		#endregion
-		
-		var allTypes = allAssemblies.SelectMany(asm => asm.GetExportedTypes()).ToArray();
-		var allMsTypes = allTypes.Where(t => t.IsSubclassOf(typeof(Microservice)) && t.GetCustomAttribute<MicroserviceAttribute>() != null).ToArray();
-		var allSchemaTypes = ServiceDocGenerator.LoadDotnetDeclaredSchemasFromTypes(allTypes, out var missingAttributes).Select(t => t.type).ToArray();
-		
-		if (missingAttributes.Count > 0)
-		{
-			var typesWithErr = string.Join(",", missingAttributes.Select(t => $"({t.Name}, {t.Assembly.GetName().Name})"));
-			throw new CliException($"Types [{typesWithErr}] should have {nameof(BeamGenerateSchemaAttribute)} as they are used as fields of a type with {nameof(BeamGenerateSchemaAttribute)}.",
-				2, true);
-		}
-		
-		foreach (var type in allMsTypes)
-		{
-			Log.Verbose($"Generating client for type {type.Name} links=[{args.outputToLinkedProjects}]");
-			var attribute = type.GetCustomAttribute<MicroserviceAttribute>()!;
-			var descriptor = new MicroserviceDescriptor { Name = attribute.MicroserviceName, AttributePath = attribute.SourcePath, Type = type };
+			var sessionId = Guid.NewGuid().ToString();
+			var sw = new Stopwatch();
+			sw.Start();
+			await args.BeamoLocalSystem.InitManifest(fetchServerManifest: false);
+			Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - got manifest");
 
-			if (!args.beamoIds.Contains(descriptor.Name))
+			var beamoIdToOutputHint = new Dictionary<string, string>();
 			{
-				Log.Debug($"Skipping client for name=[{descriptor.Name}] because it was not given as a project option.");
-				continue;
-			}
-			
-			if (args.outputToLinkedProjects)
-			{
-				// UNITY
-
-				Log.Verbose($"Linked project count {args.ProjectService.GetLinkedUnityProjects().Count}");
-				if (args.ProjectService.GetLinkedUnityProjects().Count > 0)
+				// popuate the hint map
+				foreach (var hintString in args.outputPathHints)
 				{
-					var existingFeds = new List<ExistingFederation>();
-					for (var i = 0; i < args.existingFederationIds.Count; i++)
+					var parts = hintString.Split('=',
+						StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+					if (parts.Length != 2)
 					{
-						existingFeds.Add(new ExistingFederation
-						{
-							federationId = args.existingFederationIds[i],
-							federationIdTypeName = args.existingFederationTypeNames[i]
-						});
-					}
-					var generator = new ClientCodeGenerator(descriptor, existingFeds);
-					if (!string.IsNullOrEmpty(args.outputDirectory))
-					{
-						Directory.CreateDirectory(args.outputDirectory);
-						var outputPath = Path.Combine(args.outputDirectory, $"{descriptor.Name}Client.cs");
-						generator.GenerateCSharpCode(outputPath);
+						throw new CliException($"Invalid hint path=[{hintString}], must be in form BEAMOID=PATH");
 					}
 
-					foreach (var unityProjectPath in args.ProjectService.GetLinkedUnityProjects())
+					beamoIdToOutputHint[parts[0]] = parts[1];
+				}
+			}
+
+			// Get the list of all existing microservices
+			var allServices = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions
+				.Where(sd => sd.Protocol is BeamoProtocolType.HttpMicroservice).ToArray();
+
+			// Get the list of dependencies of each of these microservices
+			var allDepTasks = allServices.Select(sd => args.BeamoLocalSystem.GetDependencies(sd.BeamoId)).ToList();
+			var allDeps = allDepTasks.Select(deps => deps.Select(dep => dep.name));
+
+			// Get the list of all BeamoIds whose DLLs we need to have loaded for a single pass.
+			var allServicesToLoadDlls = allServices
+				.Where(sd => !string.IsNullOrEmpty(sd.ProjectDirectory)) // must have a valid local project directory.
+				.Select(sd => sd.BeamoId).Union(allDeps.SelectMany(d => d)).Distinct().ToArray();
+
+			// Get the list of all assemblies paired with their last edit time.
+			Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - starting");
+
+			// Check all the DLLs that currently exist.
+			var checkProjBuilt = allServicesToLoadDlls.Select(beamoId =>
+			{
+				Project project = null;
+				if (args.BeamoLocalSystem.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(beamoId,
+					    out var httpLocal))
+					project = httpLocal.Metadata.msbuildProject;
+				else if (args.BeamoLocalSystem.BeamoManifest.EmbeddedMongoDbLocalProtocols.TryGetValue(beamoId,
+					         out var dbLocal)) project = dbLocal.Metadata.msbuildProject;
+
+				var isProjBuilt = ProjectCommand.IsProjectBuiltMsBuild(project);
+				Log.Verbose(
+					$"generate-client total ms {sw.ElapsedMilliseconds} - checked {beamoId} path=[{isProjBuilt.path}] built=[{isProjBuilt.isBuilt}]");
+				return isProjBuilt;
+			});
+
+			// Based on that, load all dlls that can be loaded.
+			(var allAssemblies, allLoadContexts) = ProjectCommand.LoadProjectDll(sessionId, checkProjBuilt);
+			Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - done type loading");
+
+			#endregion
+
+			var allTypes = allAssemblies.SelectMany(asm => asm.GetExportedTypes()).ToArray();
+			var allMsTypes = allTypes.Where(t =>
+					t.IsSubclassOf(typeof(Microservice)) && t.GetCustomAttribute<MicroserviceAttribute>() != null)
+				.ToArray();
+			var allSchemaTypes = ServiceDocGenerator
+				.LoadDotnetDeclaredSchemasFromTypes(allTypes, out var missingAttributes).Select(t => t.type).ToArray();
+
+			if (missingAttributes.Count > 0)
+			{
+				var typesWithErr = string.Join(",",
+					missingAttributes.Select(t => $"({t.Name}, {t.Assembly.GetName().Name})"));
+				throw new CliException(
+					$"Types [{typesWithErr}] should have {nameof(BeamGenerateSchemaAttribute)} as they are used as fields of a type with {nameof(BeamGenerateSchemaAttribute)}.",
+					2, true);
+			}
+
+			foreach (var type in allMsTypes)
+			{
+				Log.Verbose($"Generating client for type {type.Name} links=[{args.outputToLinkedProjects}]");
+				var attribute = type.GetCustomAttribute<MicroserviceAttribute>()!;
+				var descriptor = new MicroserviceDescriptor
+				{
+					Name = attribute.MicroserviceName, AttributePath = attribute.SourcePath, Type = type
+				};
+
+				if (!args.beamoIds.Contains(descriptor.Name))
+				{
+					Log.Debug(
+						$"Skipping client for name=[{descriptor.Name}] because it was not given as a project option.");
+					continue;
+				}
+
+				if (args.outputToLinkedProjects)
+				{
+					// UNITY
+
+					Log.Verbose($"Linked project count {args.ProjectService.GetLinkedUnityProjects().Count}");
+					if (args.ProjectService.GetLinkedUnityProjects().Count > 0)
 					{
-						var unityPathRoot = Path.Combine(args.ConfigService.BaseDirectory, unityProjectPath);
-						var unityAssetPath = Path.Combine(unityPathRoot, "Assets");
-						if (!Directory.Exists(unityAssetPath))
+						var existingFeds = new List<ExistingFederation>();
+						for (var i = 0; i < args.existingFederationIds.Count; i++)
 						{
-							Log.Error($"Could not generate [{descriptor.Name}] client linked unity project because directory doesn't exist [{unityAssetPath}]");
-							continue;
+							existingFeds.Add(new ExistingFederation
+							{
+								federationId = args.existingFederationIds[i],
+								federationIdTypeName = args.existingFederationTypeNames[i]
+							});
 						}
 
-						GeneratedFileDescriptor fileDescriptor = new GeneratedFileDescriptor() { Content = generator.GetCSharpCodeString(), FileName = $"{descriptor.Name}Client.cs" };
-
-						Task generationTask = GenerateFile(descriptor, fileDescriptor, args, unityPathRoot);
-						if (generationTask != null)
+						var generator = new ClientCodeGenerator(descriptor, existingFeds);
+						if (!string.IsNullOrEmpty(args.outputDirectory))
 						{
-							await generationTask;
-							break;
+							Directory.CreateDirectory(args.outputDirectory);
+							var outputPath = Path.Combine(args.outputDirectory, $"{descriptor.Name}Client.cs");
+							generator.GenerateCSharpCode(outputPath);
+						}
+
+						foreach (var unityProjectPath in args.ProjectService.GetLinkedUnityProjects())
+						{
+
+							var unityPathRoot = Path.Combine(args.ConfigService.BaseDirectory, unityProjectPath);
+							var unityAssetPath = Path.Combine(unityPathRoot, "Assets");
+							if (!Directory.Exists(unityAssetPath))
+							{
+								Log.Error(
+									$"Could not generate [{descriptor.Name}] client linked unity project because directory doesn't exist [{unityAssetPath}]");
+								continue;
+							}
+
+							beamoIdToOutputHint.TryGetValue(descriptor.Name, out var hintPath);
+
+							GeneratedFileDescriptor fileDescriptor =
+								new GeneratedFileDescriptor() { Content = generator.GetCSharpCodeString() };
+
+							Task generationTask =
+								GenerateFile(descriptor, fileDescriptor, args, unityPathRoot, hintPath);
+							if (generationTask != null)
+							{
+								await generationTask;
+								break;
+							}
 						}
 					}
 				}
 			}
-		}
 
-		// Handle Unreal code-gen
-		if (args.outputToLinkedProjects && args.ProjectService.GetLinkedUnrealProjects().Count > 0)
-		{
-			// Get the list of all microservice docs
-			var schemasInSomeAssembly = new List<Type>(1024);
-			var docs = allMsTypes.Select(t =>
+			// Handle Unreal code-gen
+			if (args.outputToLinkedProjects && args.ProjectService.GetLinkedUnrealProjects().Count > 0)
 			{
-				var schemasInSameAssembly = allSchemaTypes.Where(s => s.Assembly.Equals(t.Assembly)).ToArray();
-				schemasInSomeAssembly.AddRange(schemasInSameAssembly);
-				
-				var attribute = t.GetCustomAttribute<MicroserviceAttribute>();
-				var gen = new ServiceDocGenerator();
-				return gen.Generate(t, attribute, null, true, schemasInSameAssembly);
-			}).ToArray();
-
-			// Get all the schemas that are not declared in the same assembly as a microservice
-			var schemasInNonMicroserviceAssemblies = allSchemaTypes.Except(schemasInSomeAssembly).GroupBy(s => s.Assembly)
-				.ToDictionary(g => g.Key, g => g.ToArray());
-
-			// Make a new OpenApiDocument for each of these assemblies containing just its schemas.
-			docs = docs.Concat(schemasInNonMicroserviceAssemblies.Select(kvp =>
-			{
-				var gen = new ServiceDocGenerator();
-				var doc = gen.Generate(kvp.Key, kvp.Value);
-				return doc;
-			})).ToArray();
-			
-			// Get the list of schemas
-			var orderedSchemas = SwaggerService.ExtractAllSchemas(docs, GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
-
-			// For each linked project, we generate the SAMS-Client source code and inject it according to that project's linking configuration 
-			foreach (var unrealProjectData in args.ProjectService.GetLinkedUnrealProjects())
-			{
-				var unrealGenerator = new UnrealSourceGenerator();
-				var previousGenerationFilePath = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.BeamableBackendGenerationPassFile);
-
-				UnrealSourceGenerator.exportMacro = unrealProjectData.CoreProjectName.ToUpper() + "_API";
-
-				UnrealSourceGenerator.blueprintExportMacro = unrealProjectData.BlueprintNodesProjectName.ToUpper() + "_API";
-
-				UnrealSourceGenerator.blueprintIncludeStatementPrefix = unrealProjectData.MsBlueprintNodesHeaderPath[(unrealProjectData.MsCoreHeaderPath.IndexOf('/') + 1)..];
-				UnrealSourceGenerator.blueprintHeaderFileOutputPath = unrealProjectData.MsBlueprintNodesHeaderPath;
-				UnrealSourceGenerator.blueprintCppFileOutputPath = unrealProjectData.MsBlueprintNodesCppPath;
-
-				UnrealSourceGenerator.includeStatementPrefix = unrealProjectData.MsCoreHeaderPath[(unrealProjectData.MsCoreHeaderPath.IndexOf('/') + 1)..];
-				UnrealSourceGenerator.headerFileOutputPath = unrealProjectData.MsCoreHeaderPath;
-				UnrealSourceGenerator.cppFileOutputPath = unrealProjectData.MsCoreCppPath;
-
-				UnrealSourceGenerator.genType = UnrealSourceGenerator.GenerationType.Microservice;
-				UnrealSourceGenerator.previousGenerationPassesData = JsonConvert.DeserializeObject<PreviousGenerationPassesData>(File.ReadAllText(previousGenerationFilePath));
-				UnrealSourceGenerator.currentGenerationPassDataFilePath = $"{unrealProjectData.CoreProjectName}_GenerationPass";
-
-				var unrealFileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext
+				// Get the list of all microservice docs
+				var schemasInSomeAssembly = new List<Type>(1024);
+				var docs = allMsTypes.Select(t =>
 				{
-					Documents = docs,
-					OrderedSchemas = orderedSchemas,
-					ReplacementTypes = new Dictionary<OpenApiReferenceId, ReplacementTypeInfo>
+					var schemasInSameAssembly = allSchemaTypes.Where(s => s.Assembly.Equals(t.Assembly)).ToArray();
+					schemasInSomeAssembly.AddRange(schemasInSameAssembly);
+
+					var attribute = t.GetCustomAttribute<MicroserviceAttribute>();
+					var gen = new ServiceDocGenerator();
+					return gen.Generate(t, attribute, null, true, schemasInSameAssembly);
+				}).ToArray();
+
+				// Get all the schemas that are not declared in the same assembly as a microservice
+				var schemasInNonMicroserviceAssemblies = allSchemaTypes.Except(schemasInSomeAssembly)
+					.GroupBy(s => s.Assembly)
+					.ToDictionary(g => g.Key, g => g.ToArray());
+
+				// Make a new OpenApiDocument for each of these assemblies containing just its schemas.
+				docs = docs.Concat(schemasInNonMicroserviceAssemblies.Select(kvp =>
+				{
+					var gen = new ServiceDocGenerator();
+					var doc = gen.Generate(kvp.Key, kvp.Value);
+					return doc;
+				})).ToArray();
+
+				// Get the list of schemas
+				var orderedSchemas = SwaggerService.ExtractAllSchemas(docs,
+					GenerateSdkConflictResolutionStrategy.RenameUncommonConflicts);
+
+				// For each linked project, we generate the SAMS-Client source code and inject it according to that project's linking configuration 
+				foreach (var unrealProjectData in args.ProjectService.GetLinkedUnrealProjects())
+				{
+					var unrealGenerator = new UnrealSourceGenerator();
+					var previousGenerationFilePath = Path.Combine(args.ConfigService.BaseDirectory,
+						unrealProjectData.BeamableBackendGenerationPassFile);
+
+					UnrealSourceGenerator.exportMacro = unrealProjectData.CoreProjectName.ToUpper() + "_API";
+
+					UnrealSourceGenerator.blueprintExportMacro =
+						unrealProjectData.BlueprintNodesProjectName.ToUpper() + "_API";
+
+					UnrealSourceGenerator.blueprintIncludeStatementPrefix =
+						unrealProjectData.MsBlueprintNodesHeaderPath[
+							(unrealProjectData.MsCoreHeaderPath.IndexOf('/') + 1)..];
+					UnrealSourceGenerator.blueprintHeaderFileOutputPath = unrealProjectData.MsBlueprintNodesHeaderPath;
+					UnrealSourceGenerator.blueprintCppFileOutputPath = unrealProjectData.MsBlueprintNodesCppPath;
+
+					UnrealSourceGenerator.includeStatementPrefix =
+						unrealProjectData.MsCoreHeaderPath[(unrealProjectData.MsCoreHeaderPath.IndexOf('/') + 1)..];
+					UnrealSourceGenerator.headerFileOutputPath = unrealProjectData.MsCoreHeaderPath;
+					UnrealSourceGenerator.cppFileOutputPath = unrealProjectData.MsCoreCppPath;
+
+					UnrealSourceGenerator.genType = UnrealSourceGenerator.GenerationType.Microservice;
+					UnrealSourceGenerator.previousGenerationPassesData =
+						JsonConvert.DeserializeObject<PreviousGenerationPassesData>(
+							File.ReadAllText(previousGenerationFilePath));
+					UnrealSourceGenerator.currentGenerationPassDataFilePath =
+						$"{unrealProjectData.CoreProjectName}_GenerationPass";
+
+					var unrealFileDescriptors = unrealGenerator.Generate(new SwaggerService.DefaultGenerationContext
 					{
+						Documents = docs,
+						OrderedSchemas = orderedSchemas,
+						ReplacementTypes = new Dictionary<OpenApiReferenceId, ReplacementTypeInfo>
 						{
-							"ClientPermission", new ReplacementTypeInfo
 							{
-								ReferenceId = "ClientPermission",
-								EngineReplacementType = "FBeamClientPermission",
-								EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamClientPermission",
-								EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamClientPermission.h""",
-							}
-						},
-						{
-							"ExternalIdentity", new ReplacementTypeInfo
+								"ClientPermission", new ReplacementTypeInfo
+								{
+									ReferenceId = "ClientPermission",
+									EngineReplacementType = "FBeamClientPermission",
+									EngineOptionalReplacementType =
+										$"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamClientPermission",
+									EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamClientPermission.h""",
+								}
+							},
 							{
-								ReferenceId = "ExternalIdentity",
-								EngineReplacementType = "FBeamExternalIdentity",
-								EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamExternalIdentity",
-								EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamExternalIdentity.h""",
-							}
-						},
-						{
-							"Tag", new ReplacementTypeInfo
+								"ExternalIdentity", new ReplacementTypeInfo
+								{
+									ReferenceId = "ExternalIdentity",
+									EngineReplacementType = "FBeamExternalIdentity",
+									EngineOptionalReplacementType =
+										$"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamExternalIdentity",
+									EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamExternalIdentity.h""",
+								}
+							},
 							{
-								ReferenceId = "Tag",
-								EngineReplacementType = "FBeamTag",
-								EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamTag",
-								EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamTag.h""",
-							}
-						},
-						{
-							"ClientContentInfoJson", new ReplacementTypeInfo()
+								"Tag", new ReplacementTypeInfo
+								{
+									ReferenceId = "Tag",
+									EngineReplacementType = "FBeamTag",
+									EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamTag",
+									EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamTag.h""",
+								}
+							},
 							{
-								ReferenceId = "ClientContentInfoJson",
-								EngineReplacementType = "FBeamRemoteContentManifestEntry",
-								EngineOptionalReplacementType = $"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamRemoteContentManifestEntry",
-								EngineImport = @"#include ""BeamBackend/ReplacementTypes/BeamRemoteContentManifestEntry.h""",
+								"ClientContentInfoJson", new ReplacementTypeInfo()
+								{
+									ReferenceId = "ClientContentInfoJson",
+									EngineReplacementType = "FBeamRemoteContentManifestEntry",
+									EngineOptionalReplacementType =
+										$"{UnrealSourceGenerator.UNREAL_OPTIONAL}BeamRemoteContentManifestEntry",
+									EngineImport =
+										@"#include ""BeamBackend/ReplacementTypes/BeamRemoteContentManifestEntry.h""",
+								}
 							}
 						}
-					}
-				});
+					});
 
 
-				// Generate Microservice Plugin and Modules around the file descriptors 
-				{
-					// Generate Plugin file descriptor
+					// Generate Microservice Plugin and Modules around the file descriptors 
 					{
-						unrealFileDescriptors.Add(new()
+						// Generate Plugin file descriptor
 						{
-							FileName = $"{unrealProjectData.CoreProjectName}.uplugin",
-							Content = $@"{{
+							unrealFileDescriptors.Add(new()
+							{
+								FileName = $"{unrealProjectData.CoreProjectName}.uplugin",
+								Content = $@"{{
 	""FileVersion"": 3,
 	""Version"": 1,
 	""VersionName"": ""1.0"",
@@ -328,15 +393,16 @@ public class GenerateClientFileCommand
 		}}
 	]
 }}"
-						});
-					}
+							});
+						}
 
-					// Generate the ".Build.cs" file for the regular module 
-					{
-						unrealFileDescriptors.Add(new()
+						// Generate the ".Build.cs" file for the regular module 
 						{
-							FileName = $"Source/{unrealProjectData.CoreProjectName}/{unrealProjectData.CoreProjectName}.Build.cs",
-							Content = $@"// Copyright Epic Games, Inc. All Rights Reserved.
+							unrealFileDescriptors.Add(new()
+							{
+								FileName =
+									$"Source/{unrealProjectData.CoreProjectName}/{unrealProjectData.CoreProjectName}.Build.cs",
+								Content = $@"// Copyright Epic Games, Inc. All Rights Reserved.
 
 using UnrealBuildTool;
 
@@ -374,15 +440,16 @@ public class {unrealProjectData.CoreProjectName} : ModuleRules
 	}}
 	
 }}"
-						});
-					}
+							});
+						}
 
-					// Generate the ".Build.cs" file for the blueprint module 
-					{
-						unrealFileDescriptors.Add(new()
+						// Generate the ".Build.cs" file for the blueprint module 
 						{
-							FileName = $"Source/{unrealProjectData.BlueprintNodesProjectName}/{unrealProjectData.BlueprintNodesProjectName}.Build.cs",
-							Content = $@"// Copyright Epic Games, Inc. All Rights Reserved.
+							unrealFileDescriptors.Add(new()
+							{
+								FileName =
+									$"Source/{unrealProjectData.BlueprintNodesProjectName}/{unrealProjectData.BlueprintNodesProjectName}.Build.cs",
+								Content = $@"// Copyright Epic Games, Inc. All Rights Reserved.
 
 using UnrealBuildTool;
 
@@ -422,15 +489,15 @@ public class {unrealProjectData.BlueprintNodesProjectName} : ModuleRules
 	}}
 	
 }}"
-						});
-					}
+							});
+						}
 
-					// Generate the IModuleInterface Header and Cpp files for the Regular Module 
-					{
-						unrealFileDescriptors.Add(new()
+						// Generate the IModuleInterface Header and Cpp files for the Regular Module 
 						{
-							FileName = $"{unrealProjectData.MsCoreHeaderPath}{unrealProjectData.CoreProjectName}.h",
-							Content = $@"// Copyright Epic Games, Inc. All Rights Reserved.
+							unrealFileDescriptors.Add(new()
+							{
+								FileName = $"{unrealProjectData.MsCoreHeaderPath}{unrealProjectData.CoreProjectName}.h",
+								Content = $@"// Copyright Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -446,12 +513,12 @@ public:
 	virtual void ShutdownModule() override;
 }};
 "
-						});
+							});
 
-						unrealFileDescriptors.Add(new()
-						{
-							FileName = $"{unrealProjectData.MsCoreCppPath}{unrealProjectData.CoreProjectName}.cpp",
-							Content = $@"// Copyright Epic Games, Inc. All Rights Reserved.
+							unrealFileDescriptors.Add(new()
+							{
+								FileName = $"{unrealProjectData.MsCoreCppPath}{unrealProjectData.CoreProjectName}.cpp",
+								Content = $@"// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include ""{unrealProjectData.CoreProjectName}.h""
 
@@ -471,15 +538,16 @@ void F{unrealProjectData.CoreProjectName}Module::ShutdownModule()
 #undef LOCTEXT_NAMESPACE
 	
 IMPLEMENT_MODULE(F{unrealProjectData.CoreProjectName}Module, {unrealProjectData.CoreProjectName})"
-						});
-					}
+							});
+						}
 
-					// Generate the IModuleInterface Header and Cpp files for the Blueprint Module 
-					{
-						unrealFileDescriptors.Add(new()
+						// Generate the IModuleInterface Header and Cpp files for the Blueprint Module 
 						{
-							FileName = $"{unrealProjectData.MsBlueprintNodesHeaderPath}{unrealProjectData.BlueprintNodesProjectName}.h",
-							Content = $@"// Copyright Epic Games, Inc. All Rights Reserved.
+							unrealFileDescriptors.Add(new()
+							{
+								FileName =
+									$"{unrealProjectData.MsBlueprintNodesHeaderPath}{unrealProjectData.BlueprintNodesProjectName}.h",
+								Content = $@"// Copyright Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -495,12 +563,13 @@ public:
 	virtual void ShutdownModule() override;
 }};
 "
-						});
+							});
 
-						unrealFileDescriptors.Add(new()
-						{
-							FileName = $"{unrealProjectData.MsBlueprintNodesCppPath}{unrealProjectData.BlueprintNodesProjectName}.cpp",
-							Content = $@"// Copyright Epic Games, Inc. All Rights Reserved.
+							unrealFileDescriptors.Add(new()
+							{
+								FileName =
+									$"{unrealProjectData.MsBlueprintNodesCppPath}{unrealProjectData.BlueprintNodesProjectName}.cpp",
+								Content = $@"// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include ""{unrealProjectData.BlueprintNodesProjectName}.h""
 
@@ -520,104 +589,125 @@ void F{unrealProjectData.BlueprintNodesProjectName}Module::ShutdownModule()
 #undef LOCTEXT_NAMESPACE
 	
 IMPLEMENT_MODULE(F{unrealProjectData.BlueprintNodesProjectName}Module, {unrealProjectData.BlueprintNodesProjectName})"
-						});
+							});
+						}
 					}
-				}
 
-				var hasOutputPath = !string.IsNullOrEmpty(args.outputDirectory);
-				var outputDir = args.outputDirectory;
-				if (!hasOutputPath) outputDir = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.SourceFilesPath);
+					var hasOutputPath = !string.IsNullOrEmpty(args.outputDirectory);
+					var outputDir = args.outputDirectory;
+					if (!hasOutputPath)
+						outputDir = Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.SourceFilesPath);
 
-				var allFilesToCreate = unrealFileDescriptors.Select(fd => Path.Join(outputDir, $"{fd.FileName}")).ToList();
-				// We need to run the "generate project files if any file was created"
-				var needsProjectFilesRebuild = !allFilesToCreate.All(File.Exists);
-				// We always clean up the output directory's AutoGen folders  --- every file we create is in the AutoGen folder.
-				var outputDirInfo = new DirectoryInfo(outputDir);
-				if (outputDirInfo.Exists)
-				{
-					var autoGenDirs = outputDirInfo.GetDirectories("AutoGen", SearchOption.AllDirectories);
-					foreach (DirectoryInfo directoryInfo in autoGenDirs)
+					var allFilesToCreate = unrealFileDescriptors.Select(fd => Path.Join(outputDir, $"{fd.FileName}"))
+						.ToList();
+					// We need to run the "generate project files if any file was created"
+					var needsProjectFilesRebuild = !allFilesToCreate.All(File.Exists);
+					// We always clean up the output directory's AutoGen folders  --- every file we create is in the AutoGen folder.
+					var outputDirInfo = new DirectoryInfo(outputDir);
+					if (outputDirInfo.Exists)
 					{
+						var autoGenDirs = outputDirInfo.GetDirectories("AutoGen", SearchOption.AllDirectories);
+						foreach (DirectoryInfo directoryInfo in autoGenDirs)
+						{
+							// Because Microsoft does not give us a callback that runs after one or more projects have been recompiled in a solution and instead compiles all projects in-parallel), there is a chance
+							// that multiple instances of this command run simultaneously. When that happens, the directory might not be accessible --- in that case, we just have to busy wait until we can actually delete the directory.
+							// This guarantees that, when compiling the entire solution, the last instance of this command will do a clean rebuild of the microservice clients (which means it'll use the up-to-date dlls of
+							// all the projects in the solution).
+							bool successfulDelete;
+							do
+							{
+								try
+								{
+									Directory.Delete(directoryInfo.ToString(), true);
+									successfulDelete = true;
+								}
+								catch
+								{
+									successfulDelete = false;
+								}
+							} while (!successfulDelete);
+						}
+					}
+
+					var writeFiles = new List<Task>();
+					for (int i = 0; i < allFilesToCreate.Count; i++)
+					{
+						var fileIdx = i;
+						string filePath = allFilesToCreate[fileIdx];
+						var path = Path.GetDirectoryName(filePath);
+						if (path == null)
+							throw new CliException(
+								$"Parent path for file {filePath} is null. If you're a customer seeing this, report a bug.");
+
 						// Because Microsoft does not give us a callback that runs after one or more projects have been recompiled in a solution and instead compiles all projects in-parallel), there is a chance
 						// that multiple instances of this command run simultaneously. When that happens, the directory might not be accessible --- in that case, we just have to busy wait until we can actually delete the directory.
 						// This guarantees that, when compiling the entire solution, the last instance of this command will do a clean rebuild of the microservice clients (which means it'll use the up-to-date dlls of
 						// all the projects in the solution).
-						bool successfulDelete;
+						bool successfulCreate;
 						do
 						{
 							try
 							{
-								Directory.Delete(directoryInfo.ToString(), true);
-								successfulDelete = true;
+								Directory.CreateDirectory(path);
+								successfulCreate = true;
 							}
 							catch
 							{
-								successfulDelete = false;
+								successfulCreate = false;
 							}
-						} while (!successfulDelete);
+						} while (!successfulCreate);
+
+						writeFiles.Add(Task.Run(() =>
+						{
+							// Because Microsoft does not give us a callback that runs after one or more projects have been recompiled in a solution and instead compiles all projects in-parallel), there is a chance
+							// that multiple instances of this command run simultaneously. When that happens, the directory might not be accessible --- in that case, we just have to busy wait until we can actually delete the directory.
+							// This guarantees that, when compiling the entire solution, the last instance of this command will do a clean rebuild of the microservice clients (which means it'll use the up-to-date dlls of
+							// all the projects in the solution).
+							bool successfulWrite;
+							do
+							{
+								try
+								{
+									File.WriteAllText(filePath, unrealFileDescriptors[fileIdx].Content);
+									successfulWrite = true;
+								}
+								catch
+								{
+									successfulWrite = false;
+								}
+							} while (!successfulWrite);
+						}));
 					}
-				}
 
-				var writeFiles = new List<Task>();
-				for (int i = 0; i < allFilesToCreate.Count; i++)
+					await Task.WhenAll(writeFiles);
+
+					// Run the Regenerate Project Files utility for the project (so that create files are automatically updated in IDEs).
+					if (needsProjectFilesRebuild)
+						MachineHelper.RunUnrealGenerateProjectFiles(Path.Combine(args.ConfigService.BaseDirectory,
+							unrealProjectData.Path));
+				}
+			}
+
+			Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - done generating");
+		}
+		finally
+		{
+			if (allLoadContexts != null)
+			{
+				foreach (var context in allLoadContexts)
 				{
-					var fileIdx = i;
-					string filePath = allFilesToCreate[fileIdx];
-					var path = Path.GetDirectoryName(filePath);
-					if (path == null) throw new CliException($"Parent path for file {filePath} is null. If you're a customer seeing this, report a bug.");
-
-					// Because Microsoft does not give us a callback that runs after one or more projects have been recompiled in a solution and instead compiles all projects in-parallel), there is a chance
-					// that multiple instances of this command run simultaneously. When that happens, the directory might not be accessible --- in that case, we just have to busy wait until we can actually delete the directory.
-					// This guarantees that, when compiling the entire solution, the last instance of this command will do a clean rebuild of the microservice clients (which means it'll use the up-to-date dlls of
-					// all the projects in the solution).
-					bool successfulCreate;
-					do
-					{
-						try
-						{
-							Directory.CreateDirectory(path);
-							successfulCreate = true;
-						}
-						catch
-						{
-							successfulCreate = false;
-						}
-					} while (!successfulCreate);
-
-					writeFiles.Add(Task.Run(() =>
-					{
-						// Because Microsoft does not give us a callback that runs after one or more projects have been recompiled in a solution and instead compiles all projects in-parallel), there is a chance
-						// that multiple instances of this command run simultaneously. When that happens, the directory might not be accessible --- in that case, we just have to busy wait until we can actually delete the directory.
-						// This guarantees that, when compiling the entire solution, the last instance of this command will do a clean rebuild of the microservice clients (which means it'll use the up-to-date dlls of
-						// all the projects in the solution).
-						bool successfulWrite;
-						do
-						{
-							try
-							{
-								File.WriteAllText(filePath, unrealFileDescriptors[fileIdx].Content);
-								successfulWrite = true;
-							}
-							catch
-							{
-								successfulWrite = false;
-							}
-						} while (!successfulWrite);
-					}));
+					Log.Verbose($"Unloading context=[{context.Name}]");
+					context.Unload();
 				}
-
-				await Task.WhenAll(writeFiles);
-
-				// Run the Regenerate Project Files utility for the project (so that create files are automatically updated in IDEs).
-				if (needsProjectFilesRebuild) 
-					MachineHelper.RunUnrealGenerateProjectFiles(Path.Combine(args.ConfigService.BaseDirectory, unrealProjectData.Path));
 			}
 		}
-		
-		Log.Verbose($"generate-client total ms {sw.ElapsedMilliseconds} - done generating");
 	}
 	
-	Task GenerateFile(MicroserviceDescriptor service, GeneratedFileDescriptor descriptor, GenerateClientFileCommandArgs args, string projectPath)
+	Task GenerateFile(MicroserviceDescriptor service, 
+		GeneratedFileDescriptor descriptor, 
+		GenerateClientFileCommandArgs args, 
+		string projectPath,
+		string hintPath)
 	{
 		/*
 		 * By rule of thumb:
@@ -640,13 +730,19 @@ IMPLEMENT_MODULE(F{unrealProjectData.BlueprintNodesProjectName}Module, {unrealPr
 			var isPackage = relativeSourcePath.StartsWith("Packages");
 			var isPackageCache = relativeSourcePath.StartsWith("Library");
 		}
+
+		if (string.IsNullOrEmpty(hintPath))
+		{
+			hintPath = Path.Combine("Assets", "Beamable", "Autogenerated", "Microservices", $"{service.Name}Client.cs");
+		}
 		
-		var outputDirectory = Path.Combine(projectPath, "Assets", "Beamable", "Autogenerated", "Microservices");
+		var outputPath = Path.Combine(projectPath, hintPath);
+		var outputDirectory = Path.GetDirectoryName(outputPath);
+
 		Directory.CreateDirectory(outputDirectory);
 
 		Log.Verbose($"Writing File to dir=[{outputDirectory}]");
 
-		var outputPath = Path.Combine(outputDirectory, $"{descriptor.FileName}");
 		Log.Verbose($"Writing File to path=[{outputPath}]");
 
 		if (File.Exists(outputPath))

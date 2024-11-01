@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class TokenFromRefreshArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class TokenFromRefreshArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The token that you want to get information for. This must be a refresh token. By default, the current refresh token of the .beamable context is used</summary>
 		public string token;
@@ -48,7 +48,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class TokenFromRefreshWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class TokenFromRefreshWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 		public virtual TokenFromRefreshWrapper OnStreamGetTokenViaRefreshCommandOutput(System.Action<ReportDataPoint<BeamGetTokenViaRefreshCommandOutput>> cb)
 		{

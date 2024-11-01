@@ -130,9 +130,24 @@ namespace Beamable.Editor.Microservice.UI2
 					var storage = usam.latestManifest.storages[selectedCard.storageIndex];
 					DrawStorage(storage);
 				}
+				else
+				{
+					DrawTempLoading();
+				}
+			}
+			else
+			{
+				DrawTempLoading();
 			}
 
 			EditorGUILayout.EndVertical();
+		}
+
+		void DrawTempLoading()
+		{
+			EditorGUILayout.Space(12, false);
+			BeamGUI.LoadingSpinnerWithState("Loading...");
+
 		}
 
 

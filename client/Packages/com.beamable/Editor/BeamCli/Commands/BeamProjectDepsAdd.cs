@@ -4,7 +4,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common;
 	using Beamable.Common.BeamCli;
 
-	public class ProjectDepsAddArgs : Beamable.Common.BeamCli.IBeamCommandArgs
+	public partial class ProjectDepsAddArgs : Beamable.Common.BeamCli.IBeamCommandArgs
 	{
 		/// <summary>The microservice name that the dependency will be added to</summary>
 		public string microservice;
@@ -49,7 +49,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return genBeamCommandWrapper;
 		}
 	}
-	public class ProjectDepsAddWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
+	public partial class ProjectDepsAddWrapper : Beamable.Common.BeamCli.BeamCommandWrapper
 	{
 	}
 }

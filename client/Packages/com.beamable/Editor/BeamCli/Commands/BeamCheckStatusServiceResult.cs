@@ -5,7 +5,7 @@ namespace Beamable.Editor.BeamCli.Commands
 	using Beamable.Common.BeamCli;
 
 	[System.SerializableAttribute()]
-	public class BeamCheckStatusServiceResult
+	public partial class BeamCheckStatusServiceResult
 	{
 		public string cid;
 		public string pid;
