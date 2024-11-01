@@ -717,7 +717,7 @@ namespace Beamable.Editor.Content.Models
 					{
 						assetPath = entry.assetPath;
 					}
-					
+
 					var item = new ContentItemDescriptor(content, contentTypeDescriptor, assetPath);
 					AccumulateContentTags(item);
 

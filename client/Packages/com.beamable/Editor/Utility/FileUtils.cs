@@ -9,7 +9,7 @@ namespace Beamable.Editor
 {
 	public static class FileUtils
 	{
-	
+
 		// taken from: https://learn.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories
 		public static void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
 		{
@@ -43,7 +43,7 @@ namespace Beamable.Editor
 				}
 			}
 		}
-	
+
 		public static void DeleteDirectoryRecursively(string path)
 		{
 			foreach (string directory in Directory.GetDirectories(path))

@@ -19,7 +19,7 @@ public class StartDockerCommandOutput
 	public string downloadUrl;
 }
 
-public class StartDockerCommand : AtomicCommand<StartDockerCommandArgs ,StartDockerCommandOutput>
+public class StartDockerCommand : AtomicCommand<StartDockerCommandArgs, StartDockerCommandOutput>
 {
 	public StartDockerCommand() : base("start", "Start the docker daemon")
 	{
@@ -46,7 +46,7 @@ public class StartDockerCommand : AtomicCommand<StartDockerCommandArgs ,StartDoc
 
 		var status = await DockerStatusCommand.CheckDocker(args);
 
-	
+
 		if (!status.isCliAccessible)
 		{
 			output.unavailable = true;
@@ -61,7 +61,7 @@ public class StartDockerCommand : AtomicCommand<StartDockerCommandArgs ,StartDoc
 		if (!status.isDaemonRunning)
 		{
 			//https://forums.docker.com/t/start-and-stop-docker-deamon-by-windows-commandline/138122
-			
+
 			// start it up!
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
 			{
@@ -77,7 +77,7 @@ public class StartDockerCommand : AtomicCommand<StartDockerCommandArgs ,StartDoc
 		else
 		{
 			output.alreadyRunning = true;
-			
+
 		}
 
 		return output;
@@ -94,7 +94,8 @@ public class StartDockerCommand : AtomicCommand<StartDockerCommandArgs ,StartDoc
 				case Architecture.Arm64:
 					return "https://desktop.docker.com/win/main/arm64/Docker%20Desktop%20Installer.exe";
 			}
-		} else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+		}
+		else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
 		{
 			switch (RuntimeInformation.OSArchitecture)
 			{
@@ -103,11 +104,12 @@ public class StartDockerCommand : AtomicCommand<StartDockerCommandArgs ,StartDoc
 				case Architecture.Arm64:
 					return "https://desktop.docker.com/mac/main/arm64/Docker.dmg";
 			}
-		} else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+		}
+		else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 		{
 			return "https://docs.docker.com/desktop/linux/install/";
 		}
-		
+
 		throw new NotImplementedException("unsupported os");
 	}
 }

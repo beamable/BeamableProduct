@@ -6,7 +6,7 @@ namespace Beamable.Editor.Util
 {
 	public partial class BeamGUI
 	{
-		
+
 		public static Texture iconService;
 		public static Texture iconStorage;
 		public static Texture iconOpenApi;
@@ -31,8 +31,8 @@ namespace Beamable.Editor.Util
 
 
 		public static Texture[] unitySpinnerTextures;
-		
-		
+
+
 		public static void LoadAllIcons()
 		{
 			if (unitySpinnerTextures == null)
@@ -53,8 +53,8 @@ namespace Beamable.Editor.Util
 					EditorGUIUtility.IconContent("WaitSpin11").image,
 				};
 			}
-			
-			
+
+
 			if (artGameServers == null)
 			{
 				artGameServers =
@@ -82,18 +82,18 @@ namespace Beamable.Editor.Util
 
 			if (loginArts == null)
 			{
-				loginArts = new Texture[] {artLiveOps, artGameServers, artContent, artServerless};
+				loginArts = new Texture[] { artLiveOps, artGameServers, artContent, artServerless };
 			}
-			
-			
+
+
 			if (iconShadowSoftA == null)
 			{
 				iconShadowSoftA =
 					EditorResources.Load<Texture>(
 						"Packages/com.beamable/Editor/UI/Common/Icons/softShadow.png", true);
 			}
-			
-			
+
+
 			if (iconLocked == null)
 			{
 				iconLocked = EditorGUIUtility.IconContent("Locked").image;
@@ -112,15 +112,15 @@ namespace Beamable.Editor.Util
 					EditorResources.Load<Texture>(
 						"Packages/com.beamable/Editor/UI/Common/Icons/beam_icon_small.png", true);
 			}
-			
-			
+
+
 			if (iconService == null)
 			{
 				iconService =
 					EditorResources.Load<Texture>(
 						"Packages/com.beamable.server/Editor/UI/Icons/MS not running without wifi.png", true);
 			}
-			
+
 			if (iconStorage == null)
 			{
 				iconStorage =
@@ -132,13 +132,13 @@ namespace Beamable.Editor.Util
 				iconHelp = EditorResources.Load<Texture>(
 					"Packages/com.beamable/Editor/UI/Toolbox/Icons/Info_Light.png");
 			}
-			
+
 			if (iconRefresh == null)
 			{
 				iconRefresh = EditorResources.Load<Texture>(
 					"Packages/com.beamable/Editor/UI/Content/Icons/Refresh.png");
 			}
-			
+
 			if (iconSettings == null)
 			{
 				iconSettings = EditorGUIUtility.IconContent("Settings").image;

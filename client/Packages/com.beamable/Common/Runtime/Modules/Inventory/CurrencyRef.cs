@@ -65,8 +65,8 @@ namespace Beamable.Common.Inventory
 	[System.Serializable]
 	public class CurrencyRef<TContent> : ContentRef<TContent> where TContent : CurrencyContent, new()
 	{
-		public CurrencyRef(string id) : base(id){}
-		public CurrencyRef(){}
+		public CurrencyRef(string id) : base(id) { }
+		public CurrencyRef() { }
 	}
 
 	[System.Serializable]

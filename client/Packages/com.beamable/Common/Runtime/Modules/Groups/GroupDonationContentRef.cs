@@ -40,12 +40,12 @@ namespace Beamable.Common.Groups
 	{
 		public GroupDonationContentRef(string id) : base(id)
 		{
-			
+
 		}
 
 		public GroupDonationContentRef()
 		{
-			
+
 		}
 	}
 	/// <summary>
@@ -66,12 +66,12 @@ namespace Beamable.Common.Groups
 	{
 		public GroupDonationContentRef(string id) : base(id)
 		{
-			
+
 		}
 
 		public GroupDonationContentRef()
 		{
-			
+
 		}
 	}
 }

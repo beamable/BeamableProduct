@@ -20,7 +20,7 @@ namespace Beamable.Editor.Tests
 		{
 			public string version;
 		}
-		
+
 		[Performance]
 		[Test]
 		public void ContentJson_ShortClass()
@@ -28,18 +28,18 @@ namespace Beamable.Editor.Tests
 			var serializer = new ClientContentSerializer();
 			var count = 1000;
 			Measure.Method(() =>
-			       {
-				       for (var i = 0; i < count; i++)
-				       {
+				   {
+					   for (var i = 0; i < count; i++)
+					   {
 
-					       serializer.Deserialize<ContentObject>(currencyJson);
-				       }
-			       })
-			       .GC()
-			       .MeasurementCount(10)
-			       .Run();
+						   serializer.Deserialize<ContentObject>(currencyJson);
+					   }
+				   })
+				   .GC()
+				   .MeasurementCount(10)
+				   .Run();
 		}
-		
+
 		[Performance]
 		[Test]
 		public void ContentJson_LongClass()
@@ -47,16 +47,16 @@ namespace Beamable.Editor.Tests
 			var serializer = new ClientContentSerializer();
 			var count = 1000;
 			Measure.Method(() =>
-			       {
-				       for (var i = 0; i < count; i++)
-				       {
+				   {
+					   for (var i = 0; i < count; i++)
+					   {
 
-					       serializer.Deserialize<ContentObject>(tournamentJson);
-				       }
-			       })
-			       .GC()
-			       .MeasurementCount(10)
-			       .Run();
+						   serializer.Deserialize<ContentObject>(tournamentJson);
+					   }
+				   })
+				   .GC()
+				   .MeasurementCount(10)
+				   .Run();
 		}
 
 		[Performance]
@@ -65,32 +65,32 @@ namespace Beamable.Editor.Tests
 		{
 			var count = 1000;
 			Measure.Method(() =>
-			       {
-				       for (var i = 0; i < count; i++)
-				       { 
-					       JsonUtility.FromJson<VersionProxy>(currencyJson);
-				       }
-			       })
-			       .GC()
-			       .MeasurementCount(10)
-			       .Run();
+				   {
+					   for (var i = 0; i < count; i++)
+					   {
+						   JsonUtility.FromJson<VersionProxy>(currencyJson);
+					   }
+				   })
+				   .GC()
+				   .MeasurementCount(10)
+				   .Run();
 		}
-		
+
 		[Performance]
 		[Test]
 		public void UnityJson_LongClass()
 		{
 			var count = 1000;
 			Measure.Method(() =>
-			       {
-				       for (var i = 0; i < count; i++)
-				       {
-					       JsonUtility.FromJson<VersionProxy>(tournamentJson);
-				       }
-			       })
-			       .GC()
-			       .MeasurementCount(10)
-			       .Run();
+				   {
+					   for (var i = 0; i < count; i++)
+					   {
+						   JsonUtility.FromJson<VersionProxy>(tournamentJson);
+					   }
+				   })
+				   .GC()
+				   .MeasurementCount(10)
+				   .Run();
 		}
 	}
 }

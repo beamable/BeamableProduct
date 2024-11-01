@@ -16,7 +16,7 @@ public partial class BeamoLocalSystem
 
 	public static string GetDataVolumeName(string beamoId) => $"{beamoId}_data";
 	public static string GetFilesVolumeName(string beamoId) => $"{beamoId}_files";
-	
+
 	public const string MONGO_DATA_CONTAINER_PORT = "27017";
 
 	/// <summary>
@@ -76,14 +76,14 @@ public class EmbeddedMongoDbLocalProtocol : IBeamoLocalProtocol
 
 	public string DataVolumeName;
 	public string FilesVolumeName;
-	
+
 	public string DataVolumeInContainerPath;
 	public string FilesVolumeInContainerPath;
-	
+
 	[System.Text.Json.Serialization.JsonIgnore]
 	[JsonIgnore]
 	public CsharpProjectMetadata Metadata;
-	
+
 	/// <summary>
 	/// A list of beamo ids for dependencies on storage projects
 	/// </summary>

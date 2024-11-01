@@ -28,8 +28,9 @@ namespace Beamable.Editor.BeamCli.UI
 		private static string[] _fonts;
 		private static string[] fonts
 		{
-			get{
-				if(_fonts == null)
+			get
+			{
+				if (_fonts == null)
 				{
 					_fonts = Font.GetOSInstalledFontNames();
 				}
@@ -51,8 +52,8 @@ namespace Beamable.Editor.BeamCli.UI
 			}
 		}
 
-		
-		
+
+
 		void DrawTools(params CliWindowToolAction[] toolActions)
 		{
 			GUILayout.BeginHorizontal();
@@ -76,7 +77,7 @@ namespace Beamable.Editor.BeamCli.UI
 			var highlighted = JsonHighlighterUtil.HighlightJson(json);
 			DrawJsonBlock(highlighted);
 		}
-		
+
 		public static void DrawJsonBlock(ArrayDict dict)
 		{
 			var highlighted = JsonHighlighterUtil.HighlightJson(dict);
@@ -97,7 +98,7 @@ namespace Beamable.Editor.BeamCli.UI
 			{
 				size.x = position.width;
 			}
-			var view = new Rect(0,0, size.x, size.y);
+			var view = new Rect(0, 0, size.x, size.y);
 
 			data.scrollPosition = GUI.BeginScrollView(position, data.scrollPosition, view);
 			var copyButton = new Rect(position.xMax - 40, 10, 20, 20);
@@ -105,12 +106,12 @@ namespace Beamable.Editor.BeamCli.UI
 			var buttonClicked = isButtonHover && Event.current.rawType == EventType.MouseDown;
 
 			EditorGUI.SelectableLabel(view, data.highlightedJson, style);
-			
+
 			GUI.EndScrollView();
-			
+
 			// copy button...
 			var tempColor = GUI.color;
-			GUI.color = isButtonHover ? new Color(1,1,1,.8f) : new Color(1, 1, 1, .5f);
+			GUI.color = isButtonHover ? new Color(1, 1, 1, .8f) : new Color(1, 1, 1, .5f);
 			GUI.Button(copyButton, EditorGUIUtility.FindTexture("Clipboard"));
 			EditorGUIUtility.AddCursorRect(copyButton, MouseCursor.Link);
 			GUI.color = tempColor;
@@ -118,9 +119,9 @@ namespace Beamable.Editor.BeamCli.UI
 			{
 				EditorGUIUtility.systemCopyBuffer = data.originalJson;
 			}
-			
+
 		}
-		
+
 		public static void DrawJsonBlock(string formattedJson, params GUILayoutOption[] options)
 		{
 			Rect res = GetRectForFormattedJson(formattedJson, out var style, options);
@@ -128,7 +129,7 @@ namespace Beamable.Editor.BeamCli.UI
 			var indentedRect = EditorGUI.IndentedRect(res);
 			var outlineWidth = 1;
 			var outline = new Rect(indentedRect.x - outlineWidth, indentedRect.y - outlineWidth,
-			                       indentedRect.width + outlineWidth * 2, indentedRect.height + outlineWidth * 2);
+								   indentedRect.width + outlineWidth * 2, indentedRect.height + outlineWidth * 2);
 
 			EditorGUI.SelectableLabel(res, formattedJson, style);
 		}
@@ -158,10 +159,10 @@ namespace Beamable.Editor.BeamCli.UI
 		}
 
 		public static void DrawVirtualScroller(Rect scrollRect,
-		                         int elementHeight,
-		                         int totalElements,
-		                         ref Vector2 scrollPos,
-		                         Action<int, Rect> drawCallback)
+								 int elementHeight,
+								 int totalElements,
+								 ref Vector2 scrollPos,
+								 Action<int, Rect> drawCallback)
 		{
 			DrawVirtualScroller(scrollRect, elementHeight, totalElements, ref scrollPos, (index, rect) =>
 			{
@@ -169,28 +170,28 @@ namespace Beamable.Editor.BeamCli.UI
 				return true;
 			});
 		}
-		
-		public static void DrawVirtualScroller(Rect scrollRect, 
-		                         int elementHeight,
-		                         int totalElements,
-		                         ref Vector2 scrollPos,
-		                         Func<int, Rect, bool> drawCallback)
+
+		public static void DrawVirtualScroller(Rect scrollRect,
+								 int elementHeight,
+								 int totalElements,
+								 ref Vector2 scrollPos,
+								 Func<int, Rect, bool> drawCallback)
 		{
 			var totalHeight = elementHeight * totalElements;
 			var visHeight = (int)scrollRect.height;
 			int startIndex = (int)(scrollPos.y / elementHeight);
 			if (startIndex < 0) startIndex = 0;
-			
-			int rowsVisibleCount =( visHeight / elementHeight );
-			int endIndex = startIndex + rowsVisibleCount+1;
+
+			int rowsVisibleCount = (visHeight / elementHeight);
+			int endIndex = startIndex + rowsVisibleCount + 1;
 			if (endIndex >= totalElements) endIndex = totalElements;
-			
+
 			scrollPos.x = 0;
 			// var scrollRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.Height(visHeight));
 			var viewRect = new Rect(0, 0, scrollRect.width - 15, totalHeight);
 
 			scrollPos = GUI.BeginScrollView(scrollRect, scrollPos, viewRect);
-			
+
 			if (scrollPos.y > totalHeight - visHeight)
 			{
 				scrollPos.y = totalHeight - visHeight;
@@ -204,12 +205,12 @@ namespace Beamable.Editor.BeamCli.UI
 			{
 				var index = i + offset;
 				if (index >= totalElements) break;
-				
+
 				var rect = new Rect(0, i * elementHeight, viewRect.width, elementHeight);
 				if (i % 2 == 0 && i >= shadedIndex)
 				{
 					shadedIndex++;
-					EditorGUI.DrawRect(rect, new Color(0,0,0,.1f));
+					EditorGUI.DrawRect(rect, new Color(0, 0, 0, .1f));
 				}
 
 				var drawn = drawCallback(index, rect);
@@ -226,7 +227,7 @@ namespace Beamable.Editor.BeamCli.UI
 					//
 					offset++;
 					i--;
-					
+
 					// nothing was selected, so draw the next thing...
 				}
 				else
@@ -236,30 +237,32 @@ namespace Beamable.Editor.BeamCli.UI
 			}
 			GUI.EndScrollView();
 		}
-		
+
 		public static void DrawVirtualScroller(int elementHeight, int totalElements, ref Vector2 scrollPos, Action<int, Rect> drawCallback, int visHeight = 300)
 		{
 			var scrollRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.Height(visHeight));
 			DrawVirtualScroller(scrollRect, elementHeight, totalElements, ref scrollPos, drawCallback);
 		}
 
-		public static void DrawScrollableSelectableTextBox(string text, ref Vector2 scrollPos, int minHeight, GUIStyle baseStyle=null)
+		public static void DrawScrollableSelectableTextBox(string text, ref Vector2 scrollPos, int minHeight, GUIStyle baseStyle = null)
 		{
 
 			var content = new GUIContent(text);
 			baseStyle ??= EditorStyles.label;
 			var style = new GUIStyle(baseStyle)
 			{
-				wordWrap = true, padding = new RectOffset(2, 2, 2, 2), alignment = TextAnchor.UpperLeft
+				wordWrap = true,
+				padding = new RectOffset(2, 2, 2, 2),
+				alignment = TextAnchor.UpperLeft
 			};
 			var size = style.CalcSize(content);
-			
+
 			var fullRect = GUILayoutUtility.GetRect(content, style,
-			                                        options: new GUILayoutOption[]
-			                                        {
-				                                        GUILayout.ExpandWidth(true), GUILayout.MinHeight(minHeight),
-				                                        GUILayout.MaxHeight(minHeight),
-			                                        });
+													options: new GUILayoutOption[]
+													{
+														GUILayout.ExpandWidth(true), GUILayout.MinHeight(minHeight),
+														GUILayout.MaxHeight(minHeight),
+													});
 			if (size.y < fullRect.height)
 			{
 				size.y = fullRect.height;
@@ -295,6 +298,6 @@ namespace Beamable.Editor.BeamCli.UI
 
 
 	}
-	
-	
+
+
 }

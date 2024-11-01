@@ -269,10 +269,10 @@ namespace Beamable.Common.Content
 	{
 		public ApiRef()
 		{
-			
+
 		}
 
-		public ApiRef(string id) : base(id){}
+		public ApiRef(string id) : base(id) { }
 	}
 
 
