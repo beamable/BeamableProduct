@@ -28,10 +28,6 @@ namespace Beamable.Editor.BeamCli.Commands
 			var isPackageCached = csProjPath.StartsWith("Library/PackageCache");
 			if (isPackageCached)
 				return true;
-			if (csProjPath.Contains("Pocket"))
-			{
-				
-			}
 
 			return false;
 		}
