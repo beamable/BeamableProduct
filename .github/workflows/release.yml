@@ -144,3 +144,17 @@ jobs:
         env: 
           NODE_AUTH_TOKEN: ${{ secrets.NEXUS_NPM_AUTH }}
           NPM_AUTH: ${{secrets.NEXUS_NPM_AUTH}}
+
+      - name: Create Release
+        id: create_release
+        if: ${{ inputs.dryRun == false }} 
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: unity-sdk-${{ steps.version.outputs.VERSION }}
+          release_name: Unity Test SDK ${{ steps.version.outputs.VERSION }}
+          body: |
+            Unity Test SDK Release ${{ steps.version.outputs.VERSION }}
+          draft: false
+          prerelease: true
