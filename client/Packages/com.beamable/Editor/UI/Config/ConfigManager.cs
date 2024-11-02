@@ -78,6 +78,12 @@ namespace Beamable.Editor.Config
 						var hasInstanceProperty = staticInstanceProperty != null && staticInstanceProperty.CanRead;
 						if (!hasInstanceProperty) continue;
 
+						if (type.GetCustomAttribute<ObsoleteConfiguration>() != null)
+						{
+							// if the config is obsolete, then in 2.0+ we don't want to show it or create it by default. 
+							continue;
+						}
+
 						MethodInfo staticExistenceGenericMethod = null;
 						var searchType = type.BaseType;
 						while (staticExistenceGenericMethod == null)
@@ -141,33 +147,12 @@ namespace Beamable.Editor.Config
 			var iter = serialized.GetIterator();
 			iter.Next(true);
 
-			var asmName = typeof(PropertyDrawer).AssemblyQualifiedName;
-			var t2 = Type.GetType(asmName.Replace("UnityEditor.PropertyDrawer", "UnityEditor.ScriptAttributeUtility"));
-			var getFieldMethod = t2.GetMethod("GetFieldInfoFromProperty", BindingFlags.Static | BindingFlags.NonPublic);
-
 			while (iter.Next(false))
 			{
 				var likelyUnityInternal = iter.name.StartsWith("m_"); // TODO: Temporary solution to not showing Unity internal properties
 				if (likelyUnityInternal) continue;
 
-				var parameters = new[] { iter, null };
-				var fieldObj = (FieldInfo)getFieldMethod.Invoke(null, parameters);
-				var help = iter.tooltip;
-				if (fieldObj != null)
-				{
-					var tooltipAttr = fieldObj.GetCustomAttribute<TooltipAttribute>();
-					if (tooltipAttr != null)
-					{
-						help = tooltipAttr.tooltip;
-					}
-
-					var hideInInspector = fieldObj.GetCustomAttribute<HideInInspector>() != null;
-					if (hideInInspector)
-					{
-						continue;
-					}
-				}
-				output.Add(new ConfigOption(serialized, obj, iter.Copy(), help));
+				output.Add(new ConfigOption(serialized, obj, iter.Copy()));
 			}
 			return output;
 		}

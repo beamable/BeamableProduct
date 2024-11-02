@@ -20,6 +20,7 @@ namespace Beamable.Inventory.Scripts
 	   "Inventory Configuration",
 	   order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 #endif
+	[ObsoleteConfiguration]
 	public class InventoryConfiguration : ModuleConfigurationObject
 	{
 		public static InventoryConfiguration Instance => Get<InventoryConfiguration>();
