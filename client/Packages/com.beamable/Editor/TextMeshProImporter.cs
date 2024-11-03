@@ -25,10 +25,10 @@ namespace Beamable.Editor
 				}
 			}
 
-			string packageFullPath = GetTextmeshProPackagePath();
+			string tmpPath = GetTmpEssentialsResourcesPath();
 			AssetDatabase.importPackageCompleted += ImportCallback;
 
-			var tmpPath = packageFullPath + "/Package Resources/TMP Essential Resources.unitypackage";
+			// var tmpPath = packageFullPath + "/Package Resources/TMP Essential Resources.unitypackage";
 			if (File.Exists(tmpPath))
 			{
 				AssetDatabase.ImportPackage(tmpPath, false);
@@ -36,16 +36,26 @@ namespace Beamable.Editor
 			return promise;
 		}
 
-		static string GetTextmeshProPackagePath()
-		{
-			// Check for potential UPM package
-			string packagePath = Path.GetFullPath("Packages/com.unity.textmeshpro");
-			if (Directory.Exists(packagePath))
-			{
-				return packagePath;
-			}
+		private const string RELATIVE_TMP_RESOURCES_PATH = "Package Resources/TMP Essential Resources.unitypackage";
 
-			packagePath = Path.GetFullPath("Assets/..");
+		static string GetTmpEssentialsResourcesPath()
+		{
+			var packages = new string[]
+			{
+				$"Packages/com.unity.ugui/{RELATIVE_TMP_RESOURCES_PATH}", 
+				$"Packages/com.unity.textmeshpro/{RELATIVE_TMP_RESOURCES_PATH}"
+			};
+
+			foreach (var package in packages)
+			{
+				if (File.Exists(package))
+				{
+					return package;
+				}
+			}
+			
+			
+			var packagePath = Path.GetFullPath("Assets/..");
 			if (Directory.Exists(packagePath))
 			{
 				// Search default location for development package
@@ -61,14 +71,17 @@ namespace Beamable.Editor
 				}
 
 				// Search for potential alternative locations in the user project
-				string[] matchingPaths = Directory.GetDirectories(packagePath, "TextMesh Pro", SearchOption.AllDirectories);
+				string[] matchingPaths =
+					Directory.GetDirectories(packagePath, "TextMesh Pro", SearchOption.AllDirectories);
 				string path = ValidateLocation(matchingPaths, packagePath);
-				if (path != null) return packagePath + path;
+				if (path != null) 
+					return packagePath + path + "/" + RELATIVE_TMP_RESOURCES_PATH;
 			}
 
 			return null;
 		}
-
+		
+	
 		static string ValidateLocation(string[] paths, string projectPath)
 		{
 			for (int i = 0; i < paths.Length; i++)
