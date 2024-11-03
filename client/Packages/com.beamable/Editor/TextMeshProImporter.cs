@@ -28,7 +28,11 @@ namespace Beamable.Editor
 			string packageFullPath = GetTextmeshProPackagePath();
 			AssetDatabase.importPackageCompleted += ImportCallback;
 
-			AssetDatabase.ImportPackage(packageFullPath + "/Package Resources/TMP Essential Resources.unitypackage", false);
+			var tmpPath = packageFullPath + "/Package Resources/TMP Essential Resources.unitypackage";
+			if (File.Exists(tmpPath))
+			{
+				AssetDatabase.ImportPackage(tmpPath, false);
+			}
 			return promise;
 		}
 
