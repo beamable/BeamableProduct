@@ -54,24 +54,6 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		/// <summary>
-		/// Create CENTERED screen-relative, parent <see cref="VisualElement"/>-relative
-		/// <see cref="Rect"/> for new <see cref="ConfirmationPopupVisualElement"/>
-		/// </summary>
-		/// <param name="visualElementBounds"></param>
-		public static Rect GetCenteredScreenRectFromWorldBounds(Rect visualElementBounds, Vector2 newWindowSize)
-		{
-			//Get relative position
-			//TODO: Make this truely sit in the dead center of the window - WIP - srivello
-			var newWindowPosition = new Vector2(visualElementBounds.center.x, 0);
-			newWindowPosition = GUIUtility.GUIToScreenPoint(newWindowPosition);
-
-			//Adjust by absolute size
-			newWindowPosition.x -= newWindowSize.x / 2;
-
-			return new Rect(newWindowPosition.x, newWindowPosition.y, newWindowSize.x, newWindowSize.y);
-		}
-
-		/// <summary>
 		/// Create a Centered screen-relative rectangle, given a parent editor window
 		/// </summary>
 		/// <param name="window"></param>
@@ -81,50 +63,6 @@ namespace Beamable.Editor.UI.Components
 
 			var halfSize = size * .5f;
 			return new Rect(pt.x - halfSize.x, pt.y - halfSize.y, size.x, size.y);
-		}
-
-		private static Rect GetEditorMainWindowPos()
-		{
-			var containerWinType = Extensions.GetAllDerivedTypes(AppDomain.CurrentDomain, typeof(ScriptableObject))
-											 .FirstOrDefault(t => t.Name == "ContainerWindow");
-			if (containerWinType == null)
-				throw new MissingMemberException(
-					"Can't find internal type ContainerWindow. Maybe something has changed inside Unity");
-			var showModeField = containerWinType.GetField("m_ShowMode", BindingFlags.NonPublic | BindingFlags.Instance);
-			var positionProperty =
-				containerWinType.GetProperty("position", BindingFlags.Public | BindingFlags.Instance);
-			if (showModeField == null || positionProperty == null)
-				throw new MissingFieldException(
-					"Can't find internal fields 'm_ShowMode' or 'position'. Maybe something has changed inside Unity");
-			var windows = Resources.FindObjectsOfTypeAll(containerWinType);
-			foreach (var win in windows)
-			{
-				var showmode = (int)showModeField.GetValue(win);
-				if (showmode == 4) // main window
-				{
-					var pos = (Rect)positionProperty.GetValue(win, null);
-					return pos;
-				}
-			}
-
-			throw new NotSupportedException(
-				"Can't find internal main window. Maybe something has changed inside Unity");
-		}
-
-		/// <summary>
-		/// Centers the window relative to the editor. It uses <a href="https://answers.unity.com/questions/960413/editor-window-how-to-center-a-window.html">THIS</a> solution.
-		/// </summary>
-		/// <param name="wnd">Editor window</param>
-		/// <returns></returns>
-		public static Rect GetCenterOnMainWin(EditorWindow wnd)
-		{
-			var main = GetEditorMainWindowPos();
-			var pos = wnd.position;
-			float w = (main.width - pos.width) * 0.5f;
-			float h = (main.height - pos.height) * 0.5f;
-			pos.x = main.x + w;
-			pos.y = main.y + h;
-			return pos;
 		}
 
 		/// <summary>

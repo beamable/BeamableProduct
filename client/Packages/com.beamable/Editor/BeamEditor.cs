@@ -884,6 +884,8 @@ namespace Beamable
 				else
 					await PromiseBase.SuccessfulUnit;
 			}
+			
+			EditorUtility.RequestScriptReload();
 		}
 
 		#endregion
