@@ -30,6 +30,20 @@ namespace Beamable.Editor.Config
 			ConfigManager.Initialize(forceCreation: true);
 			SettingsService.OpenProjectSettings("Project/Beamable");
 		}
+		
+		static bool DoDrawDefaultInspector(SerializedObject obj)
+		{
+			EditorGUI.BeginChangeCheck();
+			obj.UpdateIfRequiredOrScript();
+			SerializedProperty iterator = obj.GetIterator();
+			for (bool enterChildren = true; iterator.NextVisible(enterChildren); enterChildren = false)
+			{
+				if ("m_Script" == iterator.propertyPath) continue;
+				EditorGUILayout.PropertyField(iterator, true);
+			}
+			obj.ApplyModifiedProperties();
+			return EditorGUI.EndChangeCheck();
+		}
 
 		[SettingsProvider]
 		public static SettingsProvider CreateBeamableProjectSettings()
@@ -55,7 +69,7 @@ namespace Beamable.Editor.Config
 							{
 								EditorGUILayout.LabelField(new GUIContent(editor.target.name), EditorStyles.largeLabel);
 								EditorGUI.indentLevel++;
-								editor.DrawDefaultInspector();
+								DoDrawDefaultInspector(editor.serializedObject);
 								EditorGUI.indentLevel--;
 								EditorGUILayout.Space(12, false);
 
@@ -171,7 +185,7 @@ namespace Beamable.Editor.Config
 								try
 								{
 									EditorGUIUtility.labelWidth = maxSize + 18;
-									editor.DrawDefaultInspector();
+									DoDrawDefaultInspector(editor.serializedObject);
 								}
 								finally
 								{

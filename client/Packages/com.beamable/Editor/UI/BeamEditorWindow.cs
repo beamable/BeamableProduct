@@ -352,7 +352,7 @@ namespace Beamable.Editor.UI
 			}
 		}
 
-		protected void DrawNotLoggedInGui()
+		protected virtual void DrawNotLoggedInGui()
 		{
 			EditorGUILayout.BeginVertical(new GUIStyle
 			{

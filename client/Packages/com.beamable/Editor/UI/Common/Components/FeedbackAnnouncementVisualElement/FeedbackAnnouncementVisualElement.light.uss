@@ -1,7 +1,0 @@
-#announcement-logo {
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/Share_feedback_dark.png");
-}
-
-#announcement-ignore {
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/close_dark_SM.png");
-}

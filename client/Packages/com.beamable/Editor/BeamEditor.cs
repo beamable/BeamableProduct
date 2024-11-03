@@ -43,7 +43,6 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
-using UnityEditor.VspAttribution.Beamable;
 using UnityEngine;
 using static Beamable.Common.Constants;
 using Debug = UnityEngine.Debug;
@@ -82,7 +81,6 @@ namespace Beamable
 			DependencyBuilder.AddScoped<AliasService>();
 			DependencyBuilder.AddSingleton(provider => new RealmsService(provider.GetService<PlatformRequester>()));
 
-			DependencyBuilder.AddSingleton<BeamableVsp>();
 			DependencyBuilder.AddSingleton<HubspotService>();
 			DependencyBuilder.AddSingleton<BeamableDispatcher>();
 
@@ -551,9 +549,6 @@ namespace Beamable
 				}
 
 				requester.Host = BeamableEnvironment.ApiUrl;
-
-				ServiceScope.GetService<BeamableVsp>()
-							.TryToEmitAttribution("login"); // this will no-op if the package isn't a VSP package.
 
 				var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
 				var accessToken = await accessTokenStorage.LoadTokenForCustomer(cid);

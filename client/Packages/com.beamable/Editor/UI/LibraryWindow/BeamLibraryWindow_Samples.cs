@@ -182,11 +182,28 @@ namespace Beamable.Editor.Library
 
 
 			{ // draw button 
-				var text = "Open Sample";
-				if (!lightBeam.isLocal)
+
+				string text = "";
+				if (lightBeam.SampleType == LightbeamSampleType.SCENE)
 				{
-					text = "Add To Project";
+					text = lightBeam.isLocal ? "Add Scene" : "Open Scene";
+				} else if (lightBeam.SampleType == LightbeamSampleType.PREFAB)
+				{
+					// if the prefab is already in the current scene; then the button should say, "Show Prefab"
+					if (lightBeam.ExistingPrefabInstance == null)
+					{
+						text = "Add Prefab";
+					}
+					else
+					{
+						text = "Select Prefab";
+					}
 				}
+				// var text = "Open Sample";
+				// if (!lightBeam.isLocal)
+				// {
+				// 	text = "Add To Project";
+				// }
 
 				var content = new GUIContent(text);
 				var size = BeamGUI.primaryButtonStyle.CalcSize(content);
