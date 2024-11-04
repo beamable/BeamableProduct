@@ -56,7 +56,9 @@ namespace Beamable.Server.Editor.Usam
 	}
 	
 	
-	public partial class UsamService : IStorageHandler<UsamService>, Beamable.Common.Dependencies.IServiceStorable
+	public partial class UsamService 
+		: IStorageHandler<UsamService>, Beamable.Common.Dependencies.IServiceStorable
+		, ILoadWithContext
 	{
 		[Serializable]
 		public struct NamedLogView
@@ -589,13 +591,20 @@ namespace Beamable.Server.Editor.Usam
 			//  the solution; open the actual sub class file.
 			IEnumerator OpenFile()
 			{
-				const float hopefullyEnoughTimeForIDEToInitialize = .5f;
+				const float hopefullyEnoughTimeForIDEToInitialize = .8f;
 				yield return new WaitForSecondsRealtime(hopefullyEnoughTimeForIDEToInitialize);
 				EditorUtility.OpenWithDefaultApp(fileName);
 			}
 			_dispatcher.Run("open-code", OpenFile());
 		}
 
+		public bool IsLoadingLocally(BeamServiceStatus status)
+		{
+			var actuallyRunning = status.availableRoutes.Any(x => x.knownToBeRunning &&
+			                                                      x.routingKey == latestManifest.localRoutingKey);
+			return actuallyRunning != IsRunningLocally(status);
+		}
+		
 		public bool IsRunningLocally(BeamServiceStatus status)
 		{
 			var actuallyRunning = status.availableRoutes.Any(x => x.knownToBeRunning &&

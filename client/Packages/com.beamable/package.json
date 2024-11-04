@@ -14,8 +14,8 @@
   "license": "ISC",
   "dependencies": {
     "com.unity.modules.uielements": "1.0.0",
-    "com.unity.addressables": "1.18.19",
-    "com.unity.textmeshpro": "1.4.1",
+    "com.unity.addressables": "1.21.21",
+    "com.unity.textmeshpro": "3.0.9",
     "com.unity.editorcoroutines": "1.0.0",
     "com.unity.test-framework": "1.1.19",
     "com.unity.test-framework.performance": "2.8.1-preview"
@@ -31,13 +31,13 @@
       "docsUrl": "https://docs.beamable.com/docs/identity"
     },
     {
-      "displayName": "Currency HUD",
-      "description": "Contains a tiny user interface demonstrating how to show a Beamable Currency.",
-      "path": "SAMPLES_PATH/LightBeamSamples/CurrencyHud",
-      "subText": "accounts",
-      "texturePath": "Packages/com.beamable/Editor/UI/Toolbox/Icons/Currency HUD 1.png",
-      "relativeMainAssetPath": "Sample_CurrencyHud.unity"
-      
+      "displayName": "Admin Console",
+      "description": "A debugging prefab used to run Beamable commands at runtime.",
+      "path": "SAMPLES_PATH/LightBeamSamples/AdminFlowPrefab",
+      "subText": "development",
+      "texturePath": "Packages/com.beamable/Editor/UI/Toolbox/Icons/Admin Flow 1.png",
+      "relativeMainAssetPath": "AdminFlow.prefab",
+      "docsUrl": "https://docs.beamable.com/docs/identity"
     },
     {
       "displayName": "Inventory Management",
@@ -46,7 +46,6 @@
       "subText": "inventory",
       "texturePath": "Packages/com.beamable/Editor/UI/Toolbox/Icons/Inventory.png",
       "relativeMainAssetPath": "Sample_InventoryManager.unity"
-      
     },
     {
       "displayName": "Friends HUD",

@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Editor.Eggs.Serpent;
 using Beamable.Editor.UI;
 using Beamable.Editor.Util;
 using System;
@@ -38,7 +39,17 @@ namespace Beamable.Editor.Library
 			library = ActiveContext.ServiceScope.GetService<LibraryService>();
 			library.Reload();
 		}
-		
+
+		public EggSerpent serpent = new EggSerpent();
+		protected override void DrawNotLoggedInGui()
+		{
+			serpent.OnGui(this, ActiveContext.Dispatcher);
+			if (!serpent.entry.entered)
+			{
+				base.DrawNotLoggedInGui();
+			}
+		}
+
 		private void OnInspectorUpdate()
 		{
 			Repaint();

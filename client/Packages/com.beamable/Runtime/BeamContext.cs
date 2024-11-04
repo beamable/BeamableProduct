@@ -356,7 +356,7 @@ namespace Beamable
 		/// Using the authorization associated with the current context, observe the public data of another player
 		/// </summary>
 		/// <param name="otherPlayerId"></param>
-		[Obsolete("?")]
+		[Obsolete("This will be removed in a future release.")]
 		public IObservedPlayer ObservePlayer(long otherPlayerId)
 		{
 			return Fork(builder =>

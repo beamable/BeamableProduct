@@ -12,6 +12,7 @@ namespace Beamable.Tournaments
 				  "Tournament Configuration",
 		order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 #endif
+	[ObsoleteConfiguration]
 	public class TournamentsConfiguration : ModuleConfigurationObject
 	{
 		public static TournamentsConfiguration Instance => Get<TournamentsConfiguration>();

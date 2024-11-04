@@ -201,6 +201,7 @@ namespace Beamable.Editor.BeamCli
 				WorkingDirectory = cliAbsolutePath,
 				Arguments = "build -c Release -f net6.0",
 				UseShellExecute = false,
+				CreateNoWindow = true,
 				RedirectStandardOutput = true,
 				RedirectStandardError = true
 			};
@@ -264,6 +265,7 @@ namespace Beamable.Editor.BeamCli
 				WorkingDirectory = Path.GetFullPath("."),
 				Arguments = installCommand,
 				UseShellExecute = false,
+				CreateNoWindow = true,
 				RedirectStandardOutput = true,
 				RedirectStandardError = true
 			};

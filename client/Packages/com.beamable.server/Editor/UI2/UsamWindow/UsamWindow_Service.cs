@@ -32,6 +32,7 @@ namespace Beamable.Editor.Microservice.UI2
 			}
 			
 			var isRunning = usam.IsRunningLocally(status);
+			var isLoading = usam.IsLoadingLocally(status);
 
 			{ // draw any loading bar we need...
 				var loadingRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandWidth(true),
@@ -63,10 +64,18 @@ namespace Beamable.Editor.Microservice.UI2
 				var badgeCount = DrawBadges(service.Flags);
 				
 				EditorGUILayout.Space(1, true);
-				
-				clickedRunToggle = BeamGUI.HeaderButton(null, BeamGUI.iconPlay, 
+
+				var icon = BeamGUI.iconPlay;
+				int iconPadding = 0;
+				if (isLoading)
+				{
+					icon = BeamGUI.GetSpinner(service.csprojPath?.Length ?? 0);
+					iconPadding = 2;
+				}
+				clickedRunToggle = BeamGUI.HeaderButton(null,icon, 
 				                                     width: buttonWidth, 
 				                                     padding: 4,
+				                                     iconPadding: iconPadding,
 				                                     xOffset: (int)((buttonWidth * (3 - badgeCount)) * -.5f), // number of buttons to the right, split by half
 				                                     backgroundColor: isRunning ? primaryColor : buttonBackgroundColor,
 				                                     tooltip: isRunning ? "Shutdown the service " : "Start the service");

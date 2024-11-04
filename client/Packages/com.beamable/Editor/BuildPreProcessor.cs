@@ -47,6 +47,7 @@ namespace Beamable.Editor
 				messages.Add(proguardMessage);
 			}
 
+#if !BEAMABLE_NO_CONTENT_WARNINGS_ON_BUILD
 			var hasLocalContentChangesPromise = ContentIO.HasLocalChanges();
 			if (hasLocalContentChangesPromise.IsCompleted)
 			{
@@ -60,6 +61,7 @@ namespace Beamable.Editor
 			{
 				Debug.LogWarning("Beamable wasn't able to detect if there was unpublished content, because the Beamable SDK wasn't initialized yet.");
 			}
+#endif
 
 			if (messages.Count > 0)
 			{

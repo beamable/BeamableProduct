@@ -11,6 +11,7 @@ namespace Beamable.Sound
 	   "Sound Configuration",
 	   order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 #endif
+	[ObsoleteConfiguration]
 	public class SoundConfiguration : ModuleConfigurationObject
 	{
 		public static SoundConfiguration Instance => Get<SoundConfiguration>();

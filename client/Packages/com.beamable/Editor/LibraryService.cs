@@ -4,14 +4,23 @@ using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Serialization;
+using Object = UnityEngine.Object;
 
 namespace Beamable.Editor
 {
+	public enum LightbeamSampleType
+	{
+		SCENE,
+		PREFAB
+	}
+	
+	
 	[Serializable]
 	public class LightbeamSampleInfo
 	{
@@ -27,6 +36,9 @@ namespace Beamable.Editor
 
 		#region COMPUTED PROPERTIES
 		
+		public LightbeamSampleType SampleType { get; set; }
+		public Object ExistingPrefabInstance { get; set; }
+		public Object PrefabObject { get; set; }
 		public bool HasDocsUrl { get; set; }
 		
 		public bool isLocal { get; set; }
@@ -70,7 +82,7 @@ namespace Beamable.Editor
 		{
 			Application.OpenURL(lb.docsUrl);
 		}
-		
+
 		public void OpenSample(LightbeamSampleInfo lb)
 		{
 			var needsRefresh = false;
@@ -82,8 +94,6 @@ namespace Beamable.Editor
 					needsRefresh = true;
 					CopySampleIntoProject(lb);
 				}
-				
-				
 			}
 			finally
 			{
@@ -94,17 +104,36 @@ namespace Beamable.Editor
 				}
 				
 				// if the scene has changes, we don't want to just SWITCH.
-				if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-				{
-					EditorSceneManager.OpenScene(lb.localCandidateAssetPath, OpenSceneMode.Single);
-					EditorWindow.GetWindow<SceneView>();
-					ShowInProject(lb);
 
-					if (needsRefresh)
-					{
-						EditorUtility.RequestScriptReload();
-					}
+				switch (lb.SampleType)
+				{
+					case LightbeamSampleType.SCENE:
+						if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+						{
+							EditorSceneManager.OpenScene(lb.localCandidateAssetPath, OpenSceneMode.Single);
+							EditorWindow.GetWindow<SceneView>();
+							ShowInProject(lb);
+
+							if (needsRefresh)
+							{
+								EditorUtility.RequestScriptReload();
+							}
+						}
+
+						break;
+					case LightbeamSampleType.PREFAB:
+						if (lb.ExistingPrefabInstance == null)
+						{
+							GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(lb.localCandidateAssetPath);
+							lb.PrefabObject = existing;
+							lb.ExistingPrefabInstance = PrefabUtility.InstantiatePrefab(lb.PrefabObject);
+						}
+						EditorGUIUtility.PingObject(lb.ExistingPrefabInstance);
+
+						break;
 				}
+				
+				
 			}
 			
 		}
@@ -170,7 +199,7 @@ namespace Beamable.Editor
 			FileUtil.DeleteFileOrDirectory(lb.localCandidateFolder);
 			
 			// and delete the .meta folder that goes with it
-			File.Delete(lb.localCandidateFolderMetafile);
+			FileUtils.DeleteFile(lb.localCandidateFolderMetafile);
 			
 			AssetDatabase.Refresh();
 		}
@@ -230,6 +259,28 @@ namespace Beamable.Editor
 				lightbeam.localCandidateFolderMetafile = lightbeam.localCandidateFolder + ".meta";
 
 				lightbeam.HasDocsUrl = !string.IsNullOrEmpty(lightbeam.docsUrl);
+
+				if (lightbeam.relativeMainAssetPath.EndsWith(".unity"))
+				{
+					lightbeam.SampleType = LightbeamSampleType.SCENE;
+				} else if (lightbeam.relativeMainAssetPath.EndsWith(".prefab"))
+				{
+					lightbeam.SampleType = LightbeamSampleType.PREFAB;
+
+					if (lightbeam.isLocal)
+					{
+						GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(lightbeam.localCandidateAssetPath);
+						lightbeam.PrefabObject = existing;
+						lightbeam.ExistingPrefabInstance =
+							PrefabUtility.FindAllInstancesOfPrefab(existing)?.FirstOrDefault();
+					
+					}
+				}
+				else
+				{
+					Debug.LogError($"Unknown sample type. name=[{lightbeam.name}] assetPath=[{lightbeam.relativeMainAssetPath}]");
+				}
+				
 				lightbeams.Add(lightbeam);
 			}
 		}

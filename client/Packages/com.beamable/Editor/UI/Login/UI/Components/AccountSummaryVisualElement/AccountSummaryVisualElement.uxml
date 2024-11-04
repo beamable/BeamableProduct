@@ -77,12 +77,19 @@
                                                              type="Link"
                                                              tooltip="Set your current CID/PID to the values stored in 'Assets/Beamable/Resources/config-defaults.txt'"
                         />-->
-            
-                        <engine:VisualElement name="actionBtn">
-                          <beamable:GenericButtonVisualElement name="logout" text="Log out" type ="Cancel"/>
-            <!--                <beamable:PrimaryButtonVisualElement name="signIn" text="Sign In"/>-->
-            </engine:VisualElement>
 
+            <engine:VisualElement name="summaryBtnStrip">
+
+
+                <engine:VisualElement name="actionBtn">
+                    <beamable:GenericButtonVisualElement name="logout" text="Log out" type ="Cancel"/>
+                </engine:VisualElement>
+                <engine:VisualElement name="actionBtnLibrary">
+                    <beamable:PrimaryButtonVisualElement name="library" text="See Samples"/>
+                </engine:VisualElement>
+    
+            </engine:VisualElement>
+                
         </engine:VisualElement>
     </engine:VisualElement>
 

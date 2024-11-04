@@ -31,7 +31,12 @@ namespace Beamable.Editor.Util
 
 
 		public static Texture[] unitySpinnerTextures;
-		
+
+		public static Texture GetSpinner(int offset=0)
+		{
+			var spinnerIndex = (int)( ((Time.realtimeSinceStartup*12f)+offset) % BeamGUI.unitySpinnerTextures.Length);
+			return unitySpinnerTextures[spinnerIndex];
+		}
 		
 		public static void LoadAllIcons()
 		{

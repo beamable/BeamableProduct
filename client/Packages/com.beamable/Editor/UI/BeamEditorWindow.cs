@@ -334,32 +334,14 @@ namespace Beamable.Editor.UI
 			BeamGUI.LoadingSpinnerWithState(message);
 		}
 
-		public int backgroundImageIndex = 0;
-		protected void DrawBackgroundTexture()
-		{
-			{ // draw background image
-				var c = GUI.color;
 
-			
-				if (backgroundImageIndex == 0) // construct a background image if not assigned
-				{
-					backgroundImageIndex = (int)DateTimeOffset.Now.ToUnixTimeMilliseconds();
-				}
-				var backgroundImage = BeamGUI.loginArts[(Mathf.Abs(backgroundImageIndex) % BeamGUI.loginArts.Length)];
-				GUI.color = new Color(1, 1, 1, .05f);
-				GUI.DrawTexture(new Rect(0, 0, position.width, position.height), backgroundImage, ScaleMode.ScaleAndCrop);
-				GUI.color = c;
-			}
-		}
-
-		protected void DrawNotLoggedInGui()
+		protected virtual void DrawNotLoggedInGui()
 		{
 			EditorGUILayout.BeginVertical(new GUIStyle
 			{
 				margin = new RectOffset(12, 12, 12, 12)
 			});
 			
-			DrawBackgroundTexture();
 			var logo = BeamGUI.iconLogoHeader;
 
 			{ // draw the back-shadow and logo

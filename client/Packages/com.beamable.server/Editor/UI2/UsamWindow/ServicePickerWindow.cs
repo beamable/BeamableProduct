@@ -112,7 +112,6 @@ namespace Beamable.Editor.Microservice.UI2
 			EditorGUILayout.BeginHorizontal(GUILayout.Height(elementHeight), GUILayout.ExpandWidth(true));
 
 
-			var loadingRect = new Rect(bounds.x + 20, bounds.y, bounds.width - buttonWidth * 4 - clickablePadding - 20, 4);
 			var clickableRect = new Rect(bounds.x, bounds.y + 4, bounds.width - buttonWidth * 4 - clickablePadding,
 			                             bounds.height);
 			EditorGUIUtility.AddCursorRect(clickableRect, MouseCursor.Link);
@@ -137,17 +136,6 @@ namespace Beamable.Editor.Microservice.UI2
 				}
 			}
 
-			{ // draw loading bar
-				if (usamWindow.usam.TryGetExistingAction(beamoId, out var progress) && progress.progressRatio > .01f)
-				{
-					var shouldAnimate = !progress.isComplete;
-					BeamGUI.LoadingRect(loadingRect, progress.progressRatio,
-					                    isFailed: progress.isFailed,
-					                    animate: shouldAnimate);
-				}
-			}
-
-
 			// space for icon
 			var iconRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.Width(elementHeight), GUILayout.Height(elementHeight));
 			var paddedIconRect = new Rect(iconRect.x + 16, iconRect.y + 8, iconRect.width - 16, iconRect.height - 16);
@@ -171,16 +159,26 @@ namespace Beamable.Editor.Microservice.UI2
 			return DrawCard(storage.beamoId, index, BeamGUI.iconStorage, () =>
 			{
 				var isRunning = false;
+				var isLoading = false;
 				if (usamWindow.usam.TryGetStatus(storage.beamoId, out var status))
 				{
 					isRunning = usamWindow.usam.IsRunningLocally(status);
+					isLoading = usamWindow.usam.IsLoadingLocally(status);
 				}
 
 				GUI.enabled = status != null;
-				var clickedToggle = BeamGUI.HeaderButton(null, BeamGUI.iconPlay,
+				var icon = BeamGUI.iconPlay;
+				int iconPadding = 0;
+				if (isLoading)
+				{
+					icon = BeamGUI.GetSpinner(3);
+					iconPadding = 2;
+				}
+				var clickedToggle = BeamGUI.HeaderButton(null, icon,
 				                                         width: buttonWidth,
 				                                         padding: buttonPadding,
 				                                         yPadding: buttonYPadding,
+				                                         iconPadding: iconPadding,
 				                                         drawBorder: false,
 				                                         tooltip: isRunning ? "Stop the storage" : "Start the storage",
 				                                         backgroundColor: isRunning
@@ -233,16 +231,26 @@ namespace Beamable.Editor.Microservice.UI2
 			return DrawCard(service.beamoId, index, BeamGUI.iconService, () =>
 			{
 				var isRunning = false;
+				var isLoading = false;
 				if (usamWindow.usam.TryGetStatus(service.beamoId, out var status))
 				{
 					isRunning = usamWindow.usam.IsRunningLocally(status);
+					isLoading = usamWindow.usam.IsLoadingLocally(status);
 				}
 
 				GUI.enabled = status != null;
-				var clickedToggle = BeamGUI.HeaderButton(null, BeamGUI.iconPlay,
+				var icon = BeamGUI.iconPlay;
+				int iconPadding = 0;
+				if (isLoading)
+				{
+					icon = BeamGUI.GetSpinner(3);
+					iconPadding = 2;
+				}
+				var clickedToggle = BeamGUI.HeaderButton(null, icon,
 				                                         width: buttonWidth,
 				                                         padding: buttonPadding,
 				                                         yPadding: buttonYPadding,
+				                                         iconPadding: iconPadding,
 				                                         drawBorder: false,
 				                                         tooltip: isRunning ? "Stop the service" : "Start the service",
 				                                         backgroundColor: isRunning
