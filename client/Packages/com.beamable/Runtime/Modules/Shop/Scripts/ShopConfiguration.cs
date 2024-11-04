@@ -12,6 +12,7 @@ namespace Beamable.Shop
 	   "Shop Configuration",
 	   order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 #endif
+	[ObsoleteConfiguration]
 	public class ShopConfiguration : ModuleConfigurationObject
 	{
 		public static ShopConfiguration Instance => Get<ShopConfiguration>();

@@ -94,11 +94,13 @@ ScrollView #unity-content-container {
     padding-right: 0px;
 }
 
+actionBtnLibrary,
 #actionBtn{
     flex-direction: row;
     margin-top: 20px;
     align-self: stretch;
 }
+#actionBtnLibrary PrimaryButtonVisualElement,
 #actionBtn PrimaryButtonVisualElement {
     flex-grow: 1;
     height: 35px;

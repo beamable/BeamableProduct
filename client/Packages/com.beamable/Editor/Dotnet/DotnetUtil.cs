@@ -94,6 +94,7 @@ namespace Beamable.Editor.Dotnet
 				WorkingDirectory = Path.GetFullPath("."),
 				Arguments = installCommand,
 				UseShellExecute = false,
+				CreateNoWindow = true,
 				RedirectStandardOutput = true,
 				RedirectStandardError = true
 			};
@@ -160,6 +161,7 @@ namespace Beamable.Editor.Dotnet
 				FileName = Path.GetFullPath(dotnetPath),
 				WorkingDirectory = Path.GetFullPath(dir),
 				Arguments = "--version",
+				CreateNoWindow = true,
 				UseShellExecute = false,
 				RedirectStandardOutput = true
 			};

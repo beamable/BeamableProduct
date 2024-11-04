@@ -15,6 +15,7 @@ namespace Beamable.AccountManagement
 	   "Account Management Configuration",
 	   order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 #endif
+	[ObsoleteConfiguration]
 	public class AccountManagementConfiguration : ModuleConfigurationObject, IAuthSettings
 	{
 		public struct UserThirdPartyAssociation

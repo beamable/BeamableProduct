@@ -1,21 +1,5 @@
-﻿using Beamable.Common.Dependencies;
-using Beamable.Editor.Toolbox.Components;
-using Beamable.Editor.Toolbox.Models;
-using Beamable.Editor.UI;
-using Beamable.Editor.UI.Components;
-using NUnit.Framework;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
-using UnityEditor.Events;
-using UnityEditor.EventSystems;
-using UnityEditor.UIElements;
+﻿using UnityEditor;
 using UnityEngine;
-using UnityEngine.Events;
-using UnityEngine.EventSystems;
-using UnityEngine.TestTools;
 using UnityEngine.UIElements;
 static class TestUtil
 {
