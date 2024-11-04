@@ -17,7 +17,7 @@ public interface IDataReporterService
 
 public static class IDataReporterServiceExtensions
 {
-	
+
 	public static void Exception(this IDataReporterService reporter, Exception ex, int exitCode, string invocationContext)
 	{
 		ErrorOutput result = null;
@@ -99,7 +99,7 @@ public class ReporterSink : ILogEventSink
 	{
 		_provider = provider;
 	}
-	
+
 	public void Emit(LogEvent logEvent)
 	{
 		var writer = new StringWriter();
@@ -109,7 +109,7 @@ public class ReporterSink : ILogEventSink
 			_provider.GetService<IDataReporterService>().Report("logs",
 				new CliLogMessage
 				{
-					message = writer.ToString(), 
+					message = writer.ToString(),
 					logLevel = logEvent.Level.ToString(),
 					timestamp = logEvent.Timestamp.ToUnixTimeMilliseconds()
 				}

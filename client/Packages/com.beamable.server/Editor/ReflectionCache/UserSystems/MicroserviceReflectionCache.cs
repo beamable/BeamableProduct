@@ -287,7 +287,7 @@ namespace Beamable.Server.Editor
 						foreach (var it in interfaces)
 						{
 							// Skip non-generic types while we look for IFederation-derived implementations
-							if (!it.IsGenericType) 
+							if (!it.IsGenericType)
 								continue;
 
 							// Make sure we found an IFederation interface
@@ -297,7 +297,7 @@ namespace Beamable.Server.Editor
 							// Get the cleaned-up type name (IFederatedGameServer`1 => IFederatedGameServer) 
 							var typeName = it.GetGenericTypeDefinition().Name;
 							typeName = typeName.Substring(0, typeName.IndexOf("`", StringComparison.Ordinal));
-			
+
 							// Get the IFederationId 
 							var federatedType = it.GetGenericArguments()[0];
 							if (Activator.CreateInstance(federatedType) is IFederationId identity)
@@ -378,7 +378,7 @@ namespace Beamable.Server.Editor
 				foreach (var it in interfaces)
 				{
 					// Skip non-generic types while we look for IFederation-derived implementations
-					if (!it.IsGenericType) 
+					if (!it.IsGenericType)
 						continue;
 
 					// Make sure we found an IFederation interface
@@ -388,7 +388,7 @@ namespace Beamable.Server.Editor
 					// Get the cleaned-up type name (IFederatedGameServer`1 => IFederatedGameServer) 
 					var typeName = it.GetGenericTypeDefinition().Name;
 					typeName = typeName.Substring(0, typeName.IndexOf("`", StringComparison.Ordinal));
-			
+
 					// Get the IFederationId 
 					var federatedType = it.GetGenericArguments()[0];
 					if (Activator.CreateInstance(federatedType) is IFederationId identity)

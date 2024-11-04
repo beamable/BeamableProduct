@@ -28,11 +28,11 @@ public class ProjectLogsService
 			catch (Exception ex)
 			{
 				// log an error, but continue parsing logs. 
-				Log.Error($"Unable to parse log=[{logMessage}] message=[{ex.Message}]" );
+				Log.Error($"Unable to parse log=[{logMessage}] message=[{ex.Message}]");
 			}
 		}
-		
-		
+
+
 		while (args.reconnect && !token.IsCancellationRequested)
 		{
 			var discovery = args.DependencyProvider.GetService<DiscoveryService>();
@@ -43,10 +43,10 @@ public class ProjectLogsService
 			{
 				if (evt.Type != ServiceEventType.Running)
 					continue;
-				
+
 				if (evt.Service != args.service)
 					continue;
-				
+
 				switch (evt)
 				{
 					case DockerServiceEvent dockerEvt:
@@ -92,9 +92,9 @@ public class ProjectLogsService
 	static async Task TailProcess(HostServiceDescriptor host, Action<string> handleLog)
 	{
 		using (var client = new HttpClient
-		       {
-			       Timeout = Timeout.InfiniteTimeSpan
-		       })
+		{
+			Timeout = Timeout.InfiniteTimeSpan
+		})
 		{
 			// Set up the HTTP GET request
 			var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:{host.healthPort}/logs");

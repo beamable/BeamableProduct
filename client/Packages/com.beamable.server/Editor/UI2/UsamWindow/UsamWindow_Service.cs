@@ -14,7 +14,7 @@ using Object = UnityEngine.Object;
 namespace Beamable.Editor.Microservice.UI2
 {
 	public partial class UsamWindow2
-	{				
+	{
 		const int toolbarHeight = 30;
 
 		void DrawService(BeamManifestServiceEntry service)
@@ -23,46 +23,46 @@ namespace Beamable.Editor.Microservice.UI2
 			var clickedOpenDocs = false;
 			var clickedOpenMenu = false;
 			var clickedRunToggle = false;
-			
-			
+
+
 			if (!usam.TryGetStatus(service.beamoId, out var status))
 			{
 				EditorGUILayout.LabelField("Loading service...");
 				return;
 			}
-			
+
 			var isRunning = usam.IsRunningLocally(status);
 			var isLoading = usam.IsLoadingLocally(status);
 
 			{ // draw any loading bar we need...
 				var loadingRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandWidth(true),
-				                         GUILayout.Height(4));
+										 GUILayout.Height(4));
 				if (usam.TryGetExistingAction(status.service, out var progress))
 				{
 					var shouldAnimate = !progress.isComplete;
-					BeamGUI.LoadingRect(loadingRect, progress.progressRatio, 
-					                    isFailed: progress.isFailed,
-					                    animate: shouldAnimate);
+					BeamGUI.LoadingRect(loadingRect, progress.progressRatio,
+										isFailed: progress.isFailed,
+										animate: shouldAnimate);
 				}
 			}
-			
+
 			{ // draw toolbar bar
-				
+
 				// draw the background of the bar
 				const int buttonWidth = 30;
 				var buttonBackgroundColor = new Color(.5f, .5f, .5f, .5f);
 
 				var lastRect = GUILayoutUtility.GetLastRect();
 				var backRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandWidth(true),
-				                                        GUILayout.Height(1));
+														GUILayout.Height(1));
 				EditorGUI.DrawRect(new Rect(backRect.x, lastRect.yMax, backRect.width, toolbarHeight), new Color(0, 0, 0, .25f));
-				
-				
+
+
 				EditorGUILayout.BeginHorizontal(new GUIStyle(), GUILayout.ExpandWidth(true), GUILayout.MinHeight(toolbarHeight));
 
-				
+
 				var badgeCount = DrawBadges(service.Flags);
-				
+
 				EditorGUILayout.Space(1, true);
 
 				var icon = BeamGUI.iconPlay;
@@ -72,34 +72,34 @@ namespace Beamable.Editor.Microservice.UI2
 					icon = BeamGUI.GetSpinner(service.csprojPath?.Length ?? 0);
 					iconPadding = 2;
 				}
-				clickedRunToggle = BeamGUI.HeaderButton(null,icon, 
-				                                     width: buttonWidth, 
-				                                     padding: 4,
-				                                     iconPadding: iconPadding,
-				                                     xOffset: (int)((buttonWidth * (3 - badgeCount)) * -.5f), // number of buttons to the right, split by half
-				                                     backgroundColor: isRunning ? primaryColor : buttonBackgroundColor,
-				                                     tooltip: isRunning ? "Shutdown the service " : "Start the service");
+				clickedRunToggle = BeamGUI.HeaderButton(null, icon,
+													 width: buttonWidth,
+													 padding: 4,
+													 iconPadding: iconPadding,
+													 xOffset: (int)((buttonWidth * (3 - badgeCount)) * -.5f), // number of buttons to the right, split by half
+													 backgroundColor: isRunning ? primaryColor : buttonBackgroundColor,
+													 tooltip: isRunning ? "Shutdown the service " : "Start the service");
 				EditorGUILayout.Space(1, true);
 
 				clickedOpenDocs = BeamGUI.HeaderButton(null, BeamGUI.iconOpenApi,
-				                                       width: buttonWidth,
-				                                       padding: 4,
-				                                       backgroundColor: Color.clear,
-				                                       tooltip: "open Open API");
+													   width: buttonWidth,
+													   padding: 4,
+													   backgroundColor: Color.clear,
+													   tooltip: "open Open API");
 				clickedOpenCode = BeamGUI.HeaderButton(null, BeamGUI.iconOpenProject,
-				                                       width: buttonWidth,
-				                                       padding: 4,
-				                                       backgroundColor: Color.clear,
-				                                       tooltip: "open source code");
+													   width: buttonWidth,
+													   padding: 4,
+													   backgroundColor: Color.clear,
+													   tooltip: "open source code");
 
 				clickedOpenMenu = BeamGUI.HeaderButton(null, BeamGUI.iconMoreOptions,
-				                                       width: buttonWidth,
-				                                       padding: 4,
-				                                       backgroundColor: Color.clear,
-				                                       tooltip: "extra options");
-				
+													   width: buttonWidth,
+													   padding: 4,
+													   backgroundColor: Color.clear,
+													   tooltip: "extra options");
+
 				EditorGUILayout.EndHorizontal();
-				
+
 				AddDelayedAction(() =>
 				{
 					if (clickedRunToggle)
@@ -116,7 +116,7 @@ namespace Beamable.Editor.Microservice.UI2
 							usam.ToggleRun(service, status);
 						}
 					}
-					
+
 					if (clickedOpenCode)
 					{
 						usam.OpenProject(service.beamoId, service.csprojPath);
@@ -139,7 +139,8 @@ namespace Beamable.Editor.Microservice.UI2
 				{
 					log = new UsamService.NamedLogView
 					{
-						beamoId = service.beamoId, logView = new LogView
+						beamoId = service.beamoId,
+						logView = new LogView
 						{
 							verbose = new LogLevelView
 							{
@@ -149,11 +150,12 @@ namespace Beamable.Editor.Microservice.UI2
 							{
 								enabled = false
 							}
-						}, logs = new List<CliLogMessage>()
+						},
+						logs = new List<CliLogMessage>()
 					};
 					usam._namedLogs.Add(log);
 				}
-				
+
 				if (!_beamoIdToLogProvider.TryGetValue(service.beamoId, out var provider))
 				{
 					provider = _beamoIdToLogProvider[service.beamoId] = new CliLogDataProvider(log.logs);
@@ -161,10 +163,10 @@ namespace Beamable.Editor.Microservice.UI2
 				}
 
 				EditorGUILayout.BeginHorizontal();
-				EditorGUILayout.Space(4, expand:false);
-				
-				DrawLogs(log,provider);
-				EditorGUILayout.Space(4, expand:false);
+				EditorGUILayout.Space(4, expand: false);
+
+				DrawLogs(log, provider);
+				EditorGUILayout.Space(4, expand: false);
 
 				EditorGUILayout.EndHorizontal();
 			}
@@ -195,7 +197,7 @@ namespace Beamable.Editor.Microservice.UI2
 					});
 					menu.DropDown(new Rect(clearRect.x, clearRect.yMax, 0, 0));
 				}
-					
+
 				return isClear;
 			});
 		}
@@ -204,7 +206,7 @@ namespace Beamable.Editor.Microservice.UI2
 		{
 			var menu = new GenericMenu();
 			// the openAPI and project buttons are in the same order as the buttons on the toolbar
-			
+
 			menu.AddItem(new GUIContent("Open openAPI"), false, () =>
 			{
 				usam.OpenSwagger(service.beamoId);
@@ -213,9 +215,9 @@ namespace Beamable.Editor.Microservice.UI2
 			{
 				usam.OpenProject(service.beamoId, service.csprojPath);
 			});
-			
+
 			menu.AddSeparator("");
-			
+
 			if (!service.IsReadonlyPackage)
 			{
 				menu.AddItem(new GUIContent("Generate client"), false, () =>
@@ -224,10 +226,10 @@ namespace Beamable.Editor.Microservice.UI2
 				});
 
 				menu.AddItem(new GUIContent("Generate client on build"),
-				             usam.ShouldServiceAutoGenerateClient(service.beamoId), () =>
-				             {
-					             usam.ToggleServiceAutoGenerateClient(service.beamoId);
-				             });
+							 usam.ShouldServiceAutoGenerateClient(service.beamoId), () =>
+							 {
+								 usam.ToggleServiceAutoGenerateClient(service.beamoId);
+							 });
 			}
 
 
@@ -245,9 +247,9 @@ namespace Beamable.Editor.Microservice.UI2
 			{
 				menu.AddDisabledItem(new GUIContent("Show client"));
 			}
-			
+
 			menu.AddSeparator("");
-			
+
 			menu.AddItem(new GUIContent("Go to deployed services"), false, () =>
 			{
 				usam.OpenPortalToReleaseSection();
@@ -259,8 +261,8 @@ namespace Beamable.Editor.Microservice.UI2
 				menu.AddItem(new GUIContent("Delete service"), false, () =>
 				{
 					var confirm = EditorUtility.DisplayDialog($"Delete {service.beamoId}",
-					                                          @"Are you sure you want to delete all the local source code for the service? This will not remove any deployed services until a Release action is taken. ",
-					                                          "Delete", "Cancel");
+															  @"Are you sure you want to delete all the local source code for the service? This will not remove any deployed services until a Release action is taken. ",
+															  "Delete", "Cancel");
 					if (confirm)
 					{
 						AddDelayedAction(() =>

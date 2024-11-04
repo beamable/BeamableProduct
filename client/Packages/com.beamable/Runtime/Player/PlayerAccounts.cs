@@ -1302,7 +1302,7 @@ namespace Beamable.Player
 			await Refresh();
 			return res;
 		}
-		
+
 
 		public async Promise ResetPassword(string email)
 		{
