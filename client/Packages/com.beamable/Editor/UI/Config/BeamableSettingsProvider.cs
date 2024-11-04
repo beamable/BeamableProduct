@@ -166,17 +166,22 @@ namespace Beamable.Editor.Config
 						var editor = UnityEditor.Editor.CreateEditor(config);
 
 						var maxSize = 0f;
-						foreach (var option in options)
-						{
-							var size = EditorStyles.label.CalcSize(new GUIContent(option.Property.name));
-							maxSize = Mathf.Max(maxSize, size.x);
-						}
+						
 
 						var settingsProvider = new SettingsProvider($"Project/Beamable/{options[0].Module}", SettingsScope.Project)
 						{
 							
 							guiHandler = (searchContext) =>
 							{
+								if (maxSize < 1)
+								{
+									foreach (var option in options)
+									{
+										var size = EditorStyles.label.CalcSize(new GUIContent(option.Property.name));
+										maxSize = Mathf.Max(maxSize, size.x);
+									}
+								}
+
 								EditorGUILayout.BeginVertical(new GUIStyle
 								{
 									padding = new RectOffset(10, 4, 10, 4)

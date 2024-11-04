@@ -124,6 +124,8 @@ namespace Beamable.Editor
 					case LightbeamSampleType.PREFAB:
 						if (lb.ExistingPrefabInstance == null)
 						{
+							GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(lb.localCandidateAssetPath);
+							lb.PrefabObject = existing;
 							lb.ExistingPrefabInstance = PrefabUtility.InstantiatePrefab(lb.PrefabObject);
 						}
 						EditorGUIUtility.PingObject(lb.ExistingPrefabInstance);
@@ -197,7 +199,7 @@ namespace Beamable.Editor
 			FileUtil.DeleteFileOrDirectory(lb.localCandidateFolder);
 			
 			// and delete the .meta folder that goes with it
-			File.Delete(lb.localCandidateFolderMetafile);
+			FileUtils.DeleteFile(lb.localCandidateFolderMetafile);
 			
 			AssetDatabase.Refresh();
 		}
