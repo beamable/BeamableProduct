@@ -43,3 +43,16 @@
 #commitConfigDefaults.writing {
     opacity: .5;
 }
+
+#summaryBtnStrip {
+    flex-direction: row;
+    flex-grow: 1;
+}
+#actionBtnLibrary {
+    margin-top: 19px;
+    flex-grow: 1;
+    flex-shrink: 0;
+}
+#actionBtnLibrary PrimaryButtonVisualElement {
+    height: 27px;
+}

@@ -598,6 +598,13 @@ namespace Beamable.Server.Editor.Usam
 			_dispatcher.Run("open-code", OpenFile());
 		}
 
+		public bool IsLoadingLocally(BeamServiceStatus status)
+		{
+			var actuallyRunning = status.availableRoutes.Any(x => x.knownToBeRunning &&
+			                                                      x.routingKey == latestManifest.localRoutingKey);
+			return actuallyRunning != IsRunningLocally(status);
+		}
+		
 		public bool IsRunningLocally(BeamServiceStatus status)
 		{
 			var actuallyRunning = status.availableRoutes.Any(x => x.knownToBeRunning &&

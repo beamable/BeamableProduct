@@ -23,8 +23,7 @@ namespace Beamable.Editor.Util
 			var labelRect = new Rect(bounds.x, bounds.yMax - size.y, bounds.width, size.y);
 			var spinnerRect = new Rect(bounds.x, bounds.y, bounds.width, bounds.height - size.y - padding);
 
-			var spinnerIndex = (int)( (Time.realtimeSinceStartup*12f) % BeamGUI.unitySpinnerTextures.Length);
-			GUI.DrawTexture(spinnerRect, BeamGUI.unitySpinnerTextures[spinnerIndex], ScaleMode.ScaleToFit);
+			GUI.DrawTexture(spinnerRect, GetSpinner(), ScaleMode.ScaleToFit);
 			
 			EditorGUI.LabelField(labelRect, content, style);
 

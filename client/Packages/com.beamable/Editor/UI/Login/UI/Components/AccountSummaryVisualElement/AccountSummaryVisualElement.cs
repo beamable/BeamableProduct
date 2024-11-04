@@ -1,3 +1,4 @@
+using Beamable.Editor.Library;
 using Beamable.Editor.UI.Components;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -66,31 +67,19 @@ namespace Beamable.Editor.Login.UI.Components
 				}, .1f);
 			};
 
-			/*
-						var loadConfigDefaults = Root.Q<GenericButtonVisualElement>("revertConfigToDefaults");
-						loadConfigDefaults.OnClick += () =>
-						{
-							loadConfigDefaults.EnableInClassList("writing", true);
-							EditorDebouncer.Debounce("load-defaults", () =>
-							{
-								Context.LoadConfig().Then(_ =>
-								{
-									Manager.Initialize(Model);
-									EditorDebouncer.Debounce("load-defaults-reset", () =>
-									{
-										loadConfigDefaults.EnableInClassList("writing", false);
-									}, .3f);
-								});
-							}, .1f);
-						};
-			*/
-
 			var resetPasswordButton = Root.Q<GenericButtonVisualElement>("resetPassword");
 			resetPasswordButton.OnClick += Manager.GotoForgotPassword;
 
 			var logoutButton = Root.Q<GenericButtonVisualElement>("logout");
 			logoutButton.OnClick += () => Manager.Logout(Model);
 
+			var libButton = Root.Q<PrimaryButtonVisualElement>("library");
+			libButton.Button.clickable.clicked += () =>
+			{
+				LoginWindow.Instance.Close();
+				BeamLibraryWindow.Init();
+			};
+			
 			SetView();
 			Model.OnStateChanged += _ => SetView();
 		}
