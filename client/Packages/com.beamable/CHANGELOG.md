@@ -5,17 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0]
 
 ### Added
 
 - Global dependency injection scope
 - Leaderboard PSDK
-- LightBeam UI framework
+- LightBeam UI Framework and several samples
 - `RecoverAccountWithExternalIdentity` method includes a parameter, `attemptToMergeExistingAccount` that will prevent automatic account merging.
 
 ### Changed
 
+- Editor Account info is in the top-right Beamable button
+- Editor Realm info is in the top-right Beamable button
 - Uncaught promises use dead letter queue
 - Cid and Pid are stored in `Beam.GlobalScope`
 - Dotnet is automatically installed to the project's /Library folder
@@ -38,19 +40,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix renaming content throwing infinite warnings
 - Content cache evicts old content for new content id versions
 - `PlatformRequester` will reattempt failed requests caused by SSL connection issues.
+- Logged out windows show logged out view
 
 ### Removed
 
 - Beamable Unity Style Sheet (BUSS)
-- Theme Manager
-- Beamable Assistant
+- Theme Manager no longer exists
+- Toolbox no longer exists
+- Beamable Assistant no longer exists
 - OpenAPI for Chatv2 and Matchmaking
 - Legacy static based `ServiceManager` class and the `Beamable.Service` namespace.
-
-### Changed
-
-- Marked `EventView` `endTime` field as obsolete, suggest using `GetEndTime` method instead.
-- `PlayerAccounts`, `PlayerAnnouncements`, `PlayerFiends`, `PlayerParty`, and `PlayerStats` automatically await their own initialization before running methods.
 
 ## [1.19.23] - 2024-10-23
 
