@@ -52,6 +52,8 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 		}
 		
 		var stoppedInstances = new List<ServiceInstance>();
+		var pKeySet = new HashSet<string>();
+		var instancesToKill = new List<(ServiceInstance, ServiceStatus)>();
 		await foreach (var status in CheckStatusCommand.CheckStatus(args, discoveryPeriod, DiscoveryMode.LOCAL, token: args.Lifecycle.CancellationToken))
 		{
 			foreach (var service in status.services)
@@ -62,15 +64,24 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 				{
 					foreach (var instance in routable.instances)
 					{
+						if (pKeySet.Contains(instance.primaryKey)) continue;
+						pKeySet.Add(instance.primaryKey);
+						
 						if (!filter(instance)) continue;
-						await StopRunningService(instance, args.BeamoLocalSystem, service.service, kill: kill, evt =>
-						{
-							onStopCallback?.Invoke(new StopProjectCommandOutput { instance = instance, serviceName = service.service, });
-							stoppedInstances.Add(instance);
-						});
+						instancesToKill.Add((instance, service));
+						
 					}
 				}
 			}
+		}
+
+		foreach (var (instance, service) in instancesToKill)
+		{
+			await StopRunningService(instance, args.BeamoLocalSystem, service.service, kill: kill, evt =>
+			{
+				onStopCallback?.Invoke(new StopProjectCommandOutput { instance = instance, serviceName = service.service, });
+				stoppedInstances.Add(instance);
+			});
 		}
 		
 		Log.Information($"Stopped {stoppedInstances.Count} instances.");

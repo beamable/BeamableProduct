@@ -289,7 +289,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				UseShellExecute = false,
 				CreateNoWindow = true,
 				RedirectStandardError = true,
-				RedirectStandardOutput = true
+				RedirectStandardOutput = true,
 			};
 
 			// startInfo.
@@ -366,7 +366,8 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			proc.EnableRaisingEvents = true;
 			proc.BeginErrorReadLine();
 			proc.BeginOutputReadLine();
-			
+
+			var shouldAutoKill = false;
 			
 			if (runFlags.HasFlag(ProjectService.RunFlags.Detach))
 			{
@@ -378,22 +379,34 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 
 				if (args.Lifecycle.IsCancelled)
 				{
-					try
-					{
-						proc.Kill(true);
-					}
-					catch
-					{
-						// does not matter.
-					}
+					shouldAutoKill = true;
 				}
 			}
 			else
 			{
-				await cts.Task.WaitAsync(args.Lifecycle.CancellationToken);
+				try
+				{
+					await cts.Task.WaitAsync(args.Lifecycle.CancellationToken);
+				}
+				catch (TaskCanceledException)
+				{
+					shouldAutoKill = true;
+
+				}
 			}
-			
-			if (proc.HasExited && proc.ExitCode != 0)
+
+			if (shouldAutoKill)
+			{
+				try
+				{
+					proc.Kill(true);
+				}
+				catch (Exception ex)
+				{
+					// does not matter.
+					Log.Verbose($"failed to kill microservice type=[{ex.GetType().Name}] message=[{ex.Message}]");
+				}
+			} else if (proc.HasExited && proc.ExitCode != 0)
 			{
 				var report = ProjectService.ReadErrorReport(errorPath);
 				onFailure?.Invoke(report, proc.ExitCode);
