@@ -14,15 +14,15 @@ namespace Beamable
 	{
 
 		public static SequencePromise<T> ExecuteOnGameObjectRoutines<T>(int routineCount,
-		                                                              CoroutineService coroutineService,
-		                                                              List<Func<Promise<T>>> generators)
+																	  CoroutineService coroutineService,
+																	  List<Func<Promise<T>>> generators)
 		{
 			return ExecuteOnRoutines(
 				routineCount: routineCount,
 				coroutineExecutor: enumerator => coroutineService.StartCoroutine(enumerator),
 				generators: generators);
 		}
-		
+
 		/// <summary>
 		/// This function will execute a series of promises.
 		///
@@ -42,10 +42,10 @@ namespace Beamable
 		/// The order is maintained. 
 		/// </returns>
 		public static SequencePromise<T> ExecuteOnRoutines<T>(int routineCount,
-		                                                    Action<IEnumerator> coroutineExecutor,
-		                                                    List<Func<Promise<T>>> generators)
+															Action<IEnumerator> coroutineExecutor,
+															List<Func<Promise<T>>> generators)
 		{
-			
+
 			var seq = new SequencePromise<T>(generators.Count);
 			var nextIndex = 0;
 			for (var i = 0; i < routineCount; i++)
@@ -83,7 +83,7 @@ namespace Beamable
 			return seq;
 		}
 
-		
+
 		private static IConcurrentDictionary<long, Task> _uncaughtTasks = new ConcurrentDictionary<long, Task>();
 
 		public static Promise WaitForAllUncaughtHandlers()

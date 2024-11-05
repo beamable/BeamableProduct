@@ -14,7 +14,7 @@ namespace Beamable.Editor.BeamCli.Extensions
 		{
 			return instance.latestRemoteEvent != null;
 		}
-		
+
 		public static bool HasAnyLocalInstances(this List<BeamServicesForRouteCollection> availableRoutes)
 		{
 			return availableRoutes.Any(a => a.instances.Any(i => i.IsLocal()));

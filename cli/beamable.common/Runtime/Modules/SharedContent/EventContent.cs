@@ -46,14 +46,14 @@ namespace Beamable.Common.Content
 	{
 		public EventRef(string id) : base(id)
 		{
-			
+
 		}
 
 		public EventRef()
 		{
-			
+
 		}
-	} 
+	}
 
 	/// <summary>
 	/// This type defines a %Beamable %ContentObject subclass for the %EventsService.

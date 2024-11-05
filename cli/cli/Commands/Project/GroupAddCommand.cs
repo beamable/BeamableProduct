@@ -13,10 +13,10 @@ public class GroupAddCommand : AppCommand<UpdateGroupArgs>
 		AddArgument(new ServiceNameArgument("Name of the service"), (args, i) => args.Name = i);
 		AddArgument(GroupCommand.GroupsArgument, (args, i) => args.ToAddGroups = i);
 	}
-	
+
 	public override Task Handle(UpdateGroupArgs args)
 	{
-		
+
 		BeamoServiceDefinition definition = args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions.Find(
 			definition => definition.BeamoId == args.Name);
 		if (definition == null)

@@ -51,7 +51,7 @@ namespace Beamable.Server.Editor.Usam
 					{
 						var matchesConvention =
 							kvp.Key.EndsWith($"{definition.beamoId}.client",
-							                 StringComparison.InvariantCultureIgnoreCase);
+											 StringComparison.InvariantCultureIgnoreCase);
 						if (matchesConvention)
 						{
 							var hintPath = Path.GetDirectoryName(kvp.Value.sourceFiles[0]);

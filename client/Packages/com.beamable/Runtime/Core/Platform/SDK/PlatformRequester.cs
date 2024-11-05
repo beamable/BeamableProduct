@@ -51,12 +51,12 @@ namespace Beamable.Api
 	public static class ServiceRoutingResolutionExtensions
 	{
 		public static Dictionary<string, string> ApplyRoutingHeaders(this IServiceRoutingResolution self,
-		                                                             Dictionary<string, string> headers)
+																	 Dictionary<string, string> headers)
 		{
 			// if the routing map is empty, do not include the header
 			if (string.IsNullOrEmpty(self.RoutingMap))
 				return headers;
-			
+
 			headers[Constants.Requester.HEADER_ROUTINGKEY] = self.RoutingMap;
 			return headers;
 		}
@@ -428,7 +428,7 @@ namespace Beamable.Api
 						   }
 						   else if (httpNoInternet)
 						   {
-							   return Promise<T>.Failed(error); 
+							   return Promise<T>.Failed(error);
 						   }
 
 						   return HandleError<T>(error, contentType, body, opts);
@@ -469,11 +469,11 @@ namespace Beamable.Api
 					if (settings.EnableTokenAnalytics)
 					{
 						analytics.TrackEvent(TokenEvent.InvalidAccessToken(playerId: userId,
-						                                                   accessToken: oldToken?.Token, 
-						                                                   refreshToken: oldToken?.RefreshToken, 
-						                                                   error: code?.Error.error), true);
+																		   accessToken: oldToken?.Token,
+																		   refreshToken: oldToken?.RefreshToken,
+																		   error: code?.Error.error), true);
 					}
-					
+
 					var nextToken = await AuthService.LoginRefreshToken(Token.RefreshToken);
 					Token = new AccessToken(accessTokenStorage, Cid, Pid, nextToken.access_token,
 											nextToken.refresh_token, nextToken.expires_in);
@@ -481,17 +481,17 @@ namespace Beamable.Api
 					if (settings.EnableTokenAnalytics)
 					{
 						analytics.TrackEvent(
-							TokenEvent.GetNewToken(playerId: userId, 
-							                       newAccessToken: Token?.Token, 
-							                       newRefreshToken: Token?.RefreshToken, 
-							                       oldAccessToken: oldToken?.Token,
-							                       oldRefreshToken: oldToken?.RefreshToken), true);
+							TokenEvent.GetNewToken(playerId: userId,
+												   newAccessToken: Token?.Token,
+												   newRefreshToken: Token?.RefreshToken,
+												   oldAccessToken: oldToken?.Token,
+												   oldRefreshToken: oldToken?.RefreshToken), true);
 						analytics.TrackEvent(
 							TokenEvent.ChangingToken(playerId: userId,
-							                         newAccessToken: Token?.Token,
-							                         newRefreshToken: Token?.RefreshToken,
-							                         oldAccessToken: oldToken?.Token,
-							                         oldRefreshToken: oldToken?.RefreshToken), true);
+													 newAccessToken: Token?.Token,
+													 newRefreshToken: Token?.RefreshToken,
+													 oldAccessToken: oldToken?.Token,
+													 oldRefreshToken: oldToken?.RefreshToken), true);
 					}
 
 					await Token.Save();
@@ -537,7 +537,7 @@ namespace Beamable.Api
 			});
 
 		}
-		
+
 		[Conditional("BEAMABLE_ENABLE_VERSION_HEADERS")]
 		protected void AddVersionHeaders(Dictionary<string, string> headers)
 		{
@@ -612,14 +612,14 @@ namespace Beamable.Api
 
 			var headers = new Dictionary<string, string>();
 			headers["Accept"] = GetAcceptHeader();
-			
+
 			if (!opts.disableScopeHeaders)
 			{
 				AddCidPidHeaders(headers);
 			}
 
 			_routingKeyResolution?.ApplyRoutingHeaders(headers);
-			
+
 			AddVersionHeaders(headers);
 			AddAuthHeader(headers, opts);
 			AddShardHeader(headers);
@@ -637,7 +637,7 @@ namespace Beamable.Api
 			{
 				request.SetRequestHeader(kvp.Key, kvp.Value);
 			}
-			
+
 			return request;
 		}
 
@@ -714,7 +714,7 @@ namespace Beamable.Api
 			{
 				return;
 			}
-			
+
 			LatestServerTime = parsedDate;
 		}
 

@@ -41,16 +41,16 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 	{
 		ProjectCommand.FinalizeServicesArg(args, ref args.services);
 
-		await DiscoverAndStopServices(args, new HashSet<string>(args.services),  args.taskKill, TimeSpan.FromSeconds(1),  SendResults);
+		await DiscoverAndStopServices(args, new HashSet<string>(args.services), args.taskKill, TimeSpan.FromSeconds(1), SendResults);
 	}
 
-	public static async Task DiscoverAndStopServices(CommandArgs args, HashSet<string> serviceIds, bool kill, TimeSpan discoveryPeriod, Action<StopProjectCommandOutput> onStopCallback, Func<ServiceInstance, bool> filter=null)
+	public static async Task DiscoverAndStopServices(CommandArgs args, HashSet<string> serviceIds, bool kill, TimeSpan discoveryPeriod, Action<StopProjectCommandOutput> onStopCallback, Func<ServiceInstance, bool> filter = null)
 	{
 		if (filter == null)
 		{
 			filter = (_) => true;
 		}
-		
+
 		var stoppedInstances = new List<ServiceInstance>();
 		var pKeySet = new HashSet<string>();
 		var instancesToKill = new List<(ServiceInstance, ServiceStatus)>();
@@ -59,17 +59,17 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 			foreach (var service in status.services)
 			{
 				if (!serviceIds.Contains(service.service)) continue;
-				
+
 				foreach (var routable in service.availableRoutes)
 				{
 					foreach (var instance in routable.instances)
 					{
 						if (pKeySet.Contains(instance.primaryKey)) continue;
 						pKeySet.Add(instance.primaryKey);
-						
+
 						if (!filter(instance)) continue;
 						instancesToKill.Add((instance, service));
-						
+
 					}
 				}
 			}
@@ -83,10 +83,10 @@ public class StopProjectCommand : StreamCommand<StopProjectCommandArgs, StopProj
 				stoppedInstances.Add(instance);
 			});
 		}
-		
+
 		Log.Information($"Stopped {stoppedInstances.Count} instances.");
 	}
-	
+
 	public static async Task StopRunningService(ServiceInstance instance, BeamoLocalSystem beamoLocalSystem, string serviceName, bool kill, Action<ServiceInstance> onServiceStopped = null)
 	{
 		Log.Debug($"stopping service=[{serviceName}]");
