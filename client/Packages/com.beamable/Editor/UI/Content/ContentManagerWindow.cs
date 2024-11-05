@@ -34,6 +34,7 @@ namespace Beamable.Editor.Content
 				DockPreferenceTypeName = typeof(SceneView).AssemblyQualifiedName,
 				FocusOnShow = true,
 				RequireLoggedUser = true,
+				RequirePid = true,
 			};
 		}
 

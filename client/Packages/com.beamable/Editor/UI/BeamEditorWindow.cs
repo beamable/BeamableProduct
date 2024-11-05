@@ -279,7 +279,7 @@ namespace Beamable.Editor.UI
 				return;
 			}
 			
-			if (ctx.CurrentRealm?.Pid == null)
+			if (InitializedConfig.RequirePid && ctx.CurrentRealm?.Pid == null)
 			{
 				root.Clear();
 				DrawNoRealmGui();
@@ -416,5 +416,6 @@ namespace Beamable.Editor.UI
 		public string DockPreferenceTypeName;
 		public bool FocusOnShow;
 		public bool RequireLoggedUser;
+		public bool RequirePid;
 	}
 }

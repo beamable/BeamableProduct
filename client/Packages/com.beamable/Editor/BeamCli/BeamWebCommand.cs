@@ -93,11 +93,11 @@ namespace Beamable.Editor.BeamCli
 
 		public Promise onReady = null;
 		private ServerServeWrapper _serverCommand;
-
-
+		private IBeamableRequester _requester;
 
 		public BeamWebCommandFactory(IBeamableRequester requester, BeamableDispatcher dispatcher, BeamWebCliCommandHistory history, BeamWebCommandFactoryOptions options)
 		{
+			_requester = requester;
 			this.dispatcher = dispatcher;
 			_history = history;
 			_options = options;
@@ -190,6 +190,10 @@ namespace Beamable.Editor.BeamCli
 						{
 							message = "server mismatched detected, bumping local port"
 						});
+						break;
+					case PingResult.NoServer when string.IsNullOrEmpty(_requester.Pid):
+						// waiting for pid to be selected...
+						yield return new WaitForSecondsRealtime(1);
 						break;
 					case PingResult.NoServer:
 						// bummer, no server exists for us, so we need to turn it on...

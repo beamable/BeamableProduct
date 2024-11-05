@@ -28,6 +28,7 @@ namespace Beamable.Editor.Microservice.UI2
 				FocusOnShow = false,
 				DockPreferenceTypeName = inspector.AssemblyQualifiedName,
 				RequireLoggedUser = true,
+				RequirePid = true
 			};
 		}
 		
