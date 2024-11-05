@@ -1,12 +1,10 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using Beamable.Common;
+using System.Collections.Generic;
 
 namespace Beamable.Api.Analytics
 {
-
 	public class LoginPanicEvent : CoreEvent
 	{
-
 		public LoginPanicEvent(string step, string error, bool retry)
 		: base("loading", "login_panic", new Dictionary<string, object>
 		{
@@ -15,10 +13,7 @@ namespace Beamable.Api.Analytics
 			["retry"] = retry
 		})
 		{
-			if (retry)
-				Debug.LogError("LOGIN PANIC (retry): " + step + " " + error);
-			else
-				Debug.LogError("LOGIN PANIC (terminal): " + step + " " + error);
+			BeamableLogger.LogError($"LOGIN PANIC ({(retry ? "retry" : "terminal")}): {step} {error}");
 		}
 	}
 }

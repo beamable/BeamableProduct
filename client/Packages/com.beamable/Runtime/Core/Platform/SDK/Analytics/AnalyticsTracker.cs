@@ -1,4 +1,5 @@
 using Beamable.Api.Analytics.Batch;
+using Beamable.Common.Api;
 using Beamable.Common.Spew;
 using Beamable.Coroutines;
 using Beamable.Serialization;
@@ -102,8 +103,7 @@ namespace Beamable.Api.Analytics
 		private const double _defaultBatchTimeout = 60f;
 
 		private List<AnalyticsEventRequest> _earlyRequests = new List<AnalyticsEventRequest>();
-		private IPlatformService _platform;
-		private AnalyticsService service;
+		private IBeamAnalyticsService _analyticsService;
 
 		/// <summary>
 		/// The Batch Manager responsible for managing analytics batches.
@@ -119,12 +119,11 @@ namespace Beamable.Api.Analytics
 		/// </summary>
 		/// <param name="batchTimeoutSeconds">Batch timeout seconds before expiration.</param>
 		/// <param name="batchMaxSize">Batch max size before expiration.</param>
-		public AnalyticsTracker(IPlatformService platform, PlatformRequester requester, CoroutineService coroutineService, int batchTimeoutSeconds, int batchMaxSize)
+		public AnalyticsTracker(IBeamAnalyticsService analyticsService, CoroutineService coroutineService, int batchTimeoutSeconds, int batchMaxSize)
 		{
-			_platform = platform;
 			batchManager = new PersistentBatchManager<AnalyticsEventRequest>(coroutineService, _storageKey, _defaultBatchCapacity, _defaultBatchTimeout);
 
-			this.service = new AnalyticsService(platform, requester);
+			_analyticsService = analyticsService;
 
 			// Set up default settings
 			_defaultBatchSettings.HeartbeatInterval = 1f;
@@ -151,12 +150,12 @@ namespace Beamable.Api.Analytics
 
 		public void TrackEvent(IAnalyticsEvent analyticsEvent, bool sendImmediately = false)
 		{
-			var analyticsEventRequest = BuildRequest(analyticsEvent);
+			var analyticsEventRequest = _analyticsService.BuildRequest(analyticsEvent);
 
 			if (sendImmediately)
 			{
 				AnalyticsLogger.LogFormat("AnalyticsTracker.TrackEvent: Immediate payload={0}", analyticsEventRequest.Payload);
-				service.SendAnalyticsEvent(analyticsEventRequest);
+				_analyticsService.SendAnalyticsEvent(analyticsEventRequest);
 			}
 			else
 			{
@@ -188,22 +187,6 @@ namespace Beamable.Api.Analytics
 			UpdateBatchSettingsInternal(_defaultBatchSettings, flush, true);
 		}
 
-		private AnalyticsEventRequest BuildRequest(IAnalyticsEvent analyticsEvent)
-		{
-			using (var jsonSaveStream = JsonSerializable.JsonSaveStream.Spawn())
-			{
-				// Start as Object and Serialize Directly, so that we can inject shard
-				jsonSaveStream.Init(JsonSerializable.JsonSaveStream.JsonType.Object);
-				analyticsEvent.Serialize(jsonSaveStream);
-				// TODO: Double check that we don't support shards anymore.
-				// string shard = _platform.Shard;
-				// if(shard != null)
-				// 	jsonSaveStream.Serialize("shard", ref shard);
-				jsonSaveStream.Conclude();
-				return new AnalyticsEventRequest(jsonSaveStream.ToString());
-			}
-		}
-
 		/// <summary>
 		/// Raises the batch expired event.
 		/// </summary>
@@ -211,7 +194,7 @@ namespace Beamable.Api.Analytics
 		private void OnBatchExpired(List<AnalyticsEventRequest> batchList)
 		{
 			AnalyticsLogger.LogFormat("AnalyticsTracker.OnBatchExpired: Sending {0} events.", batchList.Count);
-			service.SendAnalyticsEventBatch(batchList);
+			_analyticsService.SendAnalyticsEventBatch(batchList);
 		}
 	}
 }
