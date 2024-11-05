@@ -1,5 +1,7 @@
 #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 using Beamable.Common;
+using Beamable.Editor.Login.UI;
+using Beamable.Editor.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -305,28 +307,41 @@ namespace Beamable.Editor.ToolbarExtender
 			var beamableToolbarButtonEnd = rightRect.xMax -= space; // Space between collab and Beamable Toolbar
 			var beamableToolbarButtonStart = rightRect.xMax -= beamableToolbarButtonWidth; // Beamable Toolbar Button
 			var beamableToolbarButtonRect = new Rect(beamableToolbarButtonStart, rightRect.y + 2, beamableToolbarButtonEnd - beamableToolbarButtonStart, dropdownHeight);
-			var btnTexture = _noHintsTexture;
+			
+			GUILayout.BeginArea(beamableToolbarButtonRect, EditorStyles.toolbar);
 
-			GUILayout.BeginArea(beamableToolbarButtonRect);
-			var version = BeamableEnvironment.SdkVersion;
-			var versionStr = $"Beamable {version}";
-			if (version.IsReleaseCandidate)
+
+			var badgeColor = Color.clear;
+			if (_editorAPI.CurrentRealm?.IsProduction ?? false)
 			{
-				versionStr = $"Beamable {version.Major}.{version.Minor}.{version.Patch} RC{version.RC}";
-			}
-			if (version.IsNightly)
+				badgeColor = new Color(1, 0, 0, .5f);
+			} else if (_editorAPI.CurrentRealm?.IsStaging ?? false)
 			{
-				versionStr = $"BeamDev {version.NightlyTime}";
+				badgeColor = new Color(1, .5f, 0, .5f);
 			}
-			var titleContent = new GUIContent(versionStr, btnTexture);
-			if (GUILayout.Button(titleContent, GUILayout.Width(beamableToolbarButtonEnd - beamableToolbarButtonStart), GUILayout.Height(dropdownHeight)))
+
+			var badgeRect = new Rect(beamableToolbarButtonRect.x, beamableToolbarButtonRect.y, 4,
+			                         beamableToolbarButtonRect.height);
+			
+			
+			var titleContent = new GUIContent(_editorAPI.CurrentRealm?.DisplayName ?? "<no realm>");
+			if (GUILayout.Button(titleContent, new GUIStyle(EditorStyles.toolbarButton)
+			                     {
+				                     alignment = TextAnchor.MiddleLeft,
+				                     padding = new RectOffset(24, 0, 0, 0)
+			                     },
+			                     GUILayout.Width(beamableToolbarButtonEnd - beamableToolbarButtonStart), GUILayout.Height(dropdownHeight)))
 			{
 				// create the menu and add items to it
 				var menu = new GenericMenu();
 
+				
+
+				_assistantMenuItems.ForEach(item => item.ContextualizeMenu(_editorAPI, menu));
 				_assistantMenuItems
 					.ForEach(item =>
 					{
+						
 						menu.AddItem(item.RenderLabel(_editorAPI), false, data => item.OnItemClicked((BeamEditorContext)data), _editorAPI);
 					});
 
@@ -334,6 +349,10 @@ namespace Beamable.Editor.ToolbarExtender
 			}
 
 			GUILayout.EndArea();
+			
+			var iconRect = new Rect(beamableToolbarButtonRect.x+2, beamableToolbarButtonRect.y+2, 20, 18);
+			GUI.DrawTexture(iconRect, BeamGUI.iconBeamableSmall);
+			EditorGUI.DrawRect(badgeRect, badgeColor);
 #endif
 
 			GUILayout.BeginArea(leftRect);

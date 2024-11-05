@@ -18,6 +18,7 @@ namespace Beamable.Editor.Util
 		public static Texture iconHelp;
 		public static Texture iconRefresh;
 		public static Texture iconBeamableSmall;
+		public static Texture iconBeamableSmallColor;
 		public static Texture iconLogoHeader;
 		public static Texture iconShadowSoftA;
 		public static Texture iconLocked;
@@ -116,6 +117,13 @@ namespace Beamable.Editor.Util
 				iconBeamableSmall =
 					EditorResources.Load<Texture>(
 						"Packages/com.beamable/Editor/UI/Common/Icons/beam_icon_small.png", true);
+			}
+			if (iconBeamableSmallColor == null)
+			{
+				iconBeamableSmallColor =
+					EditorResources.Load<Texture>(
+						"Packages/com.beamable/Editor/UI/Common/Icons/beam_icon_small_color.png"
+					  , true);
 			}
 			
 			

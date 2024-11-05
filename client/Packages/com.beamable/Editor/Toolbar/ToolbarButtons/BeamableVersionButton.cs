@@ -107,7 +107,7 @@ namespace Beamable.Editor.ToolbarExtender
 				});
 			}
 			
-			
+			assistantMenuItems.ForEach(item => item.ContextualizeMenu(editorAPI, menu));
 			assistantMenuItems
 				.ForEach(item =>
 				{
