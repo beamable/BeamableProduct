@@ -17,7 +17,7 @@ namespace Beamable.Server.Editor.Usam
 		{
 			_strat = strat;
 		}
-		
+
 		public Promise Init()
 		{
 			// eh?
@@ -42,7 +42,7 @@ namespace Beamable.Server.Editor.Usam
 			{
 				var routableServiceName = $"micro_{setting.beamoId}";
 				BeamServiceStatus status = null;
-				
+
 				switch (setting.selectedOption.type)
 				{
 					case RoutingOptionType.REMOTE:
@@ -62,7 +62,7 @@ namespace Beamable.Server.Editor.Usam
 								}
 							}
 						}
-						
+
 						break;
 					case RoutingOptionType.FRIEND:
 						map[routableServiceName] = setting.selectedOption.routingKey;
@@ -72,7 +72,7 @@ namespace Beamable.Server.Editor.Usam
 
 			return map;
 		}
-		
+
 		public Promise<Dictionary<string, string>> GetServiceMap()
 		{
 			throw new NotImplementedException();

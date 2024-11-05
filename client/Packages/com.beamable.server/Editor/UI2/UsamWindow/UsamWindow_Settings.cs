@@ -18,7 +18,7 @@ namespace Beamable.Editor.Microservice.UI2
 		private bool hasSerializedSettingsYet = false;
 
 		private List<GUIContent> _routingOptionContents = new List<GUIContent>();
-		
+
 		void ActivateSettings()
 		{
 			state = WindowState.SETTINGS;
@@ -39,10 +39,10 @@ namespace Beamable.Editor.Microservice.UI2
 			}
 			hasSerializedSettingsYet = true;
 		}
-		
+
 		void DrawSettings()
 		{
-			
+
 			var hasServices = usam?.latestManifest?.services?.Count > 0;
 			if (!hasServices)
 			{
@@ -52,7 +52,7 @@ namespace Beamable.Editor.Microservice.UI2
 				});
 				return;
 			}
-			
+
 			ReserializeSettings();
 
 			// find the service
@@ -62,7 +62,7 @@ namespace Beamable.Editor.Microservice.UI2
 				foundService = serviceSettings[i];
 				var settings = (BeamableMicroservicesSettings)foundService.targetObject;
 				if (settings == null) continue;
-				
+
 				if (settings.serviceName != selectedBeamoId)
 				{
 					foundService = null;
@@ -70,9 +70,9 @@ namespace Beamable.Editor.Microservice.UI2
 				}
 				break;
 			}
-			
+
 			{ // draw a little explanation... 
-				const string settingHelp = 
+				const string settingHelp =
 					"Configure the settings for the service. ";
 
 				const string noServiceFound =
@@ -84,14 +84,14 @@ namespace Beamable.Editor.Microservice.UI2
 				});
 				EditorGUILayout.LabelField(foundService == null ? noServiceFound : settingHelp, new GUIStyle(EditorStyles.label)
 				{
-					padding = new RectOffset(0,0,0,0),
-					margin = new RectOffset(0,0,0,0),
+					padding = new RectOffset(0, 0, 0, 0),
+					margin = new RectOffset(0, 0, 0, 0),
 					richText = true,
 					wordWrap = true
 				});
 				EditorGUILayout.EndVertical();
 			}
-	
+
 			if (foundService != null)
 			{ // draw the selected service settings
 
@@ -103,7 +103,7 @@ namespace Beamable.Editor.Microservice.UI2
 			}
 		}
 
-	
+
 
 		void DrawServiceSettings(SerializedObject serializedObj)
 		{
@@ -112,7 +112,7 @@ namespace Beamable.Editor.Microservice.UI2
 				{
 					padding = new RectOffset(12, 12, 12, 12)
 				});
-				
+
 
 				var settings = (BeamableMicroservicesSettings)serializedObj.targetObject;
 				if (settings == null)
@@ -128,30 +128,30 @@ namespace Beamable.Editor.Microservice.UI2
 					EditorGUI.indentLevel++;
 
 					DrawHelpBox("<b>Editor Only</b> This option will <i>reset everytime you exit Unity!</i>. " +
-					            "When there are multiple versions of the service running, such as a deployed version, " +
-					            "a local version, or a friendly developer running a service on their machine, then " +
-					            "Unity Playmode needs to know which service to use for development. The routing mode controls " +
-					            "where your Playmode session will send Microservice requests. " +
-					            "\n\n" +
-					            "This setting resets after you quit Unity!" +
-					            "" );
+								"When there are multiple versions of the service running, such as a deployed version, " +
+								"a local version, or a friendly developer running a service on their machine, then " +
+								"Unity Playmode needs to know which service to use for development. The routing mode controls " +
+								"where your Playmode session will send Microservice requests. " +
+								"\n\n" +
+								"This setting resets after you quit Unity!" +
+								"");
 					var selectedDisplay = "";
 					if (usam.TryGetRoutingSetting(settings.serviceName, out var routingSetting))
 					{
 						selectedDisplay = routingSetting.selectedOption?.display ?? "(unavailable)";
 					}
-					
+
 					_routingOptionContents.Clear();
 					var selectedRoutingIndex = 0;
 					if (usam.TryGetRoutingSetting(settings.serviceName, out var routeSettings))
 					{
 						// foreach (var option in routeSettings.options)
-						for (var i = 0 ; i < routeSettings.options.Count; i ++)
+						for (var i = 0; i < routeSettings.options.Count; i++)
 						{
 							var option = routeSettings.options[i];
-							
+
 							if (option.routingKey == routeSettings.selectedOption.routingKey &&
-							    option.type == routeSettings.selectedOption.type)
+								option.type == routeSettings.selectedOption.type)
 							{
 								selectedRoutingIndex = i;
 							}
@@ -171,7 +171,7 @@ namespace Beamable.Editor.Microservice.UI2
 									break;
 							}
 						}
-						
+
 						var nextRouteSettingIndex = EditorGUILayout.Popup(new GUIContent("Routing Mode"), selectedRoutingIndex, _routingOptionContents.ToArray());
 						routeSettings.selectedOption = routeSettings.options[nextRouteSettingIndex];
 					}
@@ -179,58 +179,58 @@ namespace Beamable.Editor.Microservice.UI2
 					{
 						BeamGUI.ShowDisabled(false, () =>
 						{
-							EditorGUILayout.Popup(new GUIContent("Routing Mode"), 0, new string[] {"(unavailable)"});
+							EditorGUILayout.Popup(new GUIContent("Routing Mode"), 0, new string[] { "(unavailable)" });
 						});
 					}
-					
+
 					EditorGUI.indentLevel--;
 
 				}
-				
+
 				EditorGUILayout.Space(30, false);
 
 
 				{ // reference settings
 					EditorGUILayout.LabelField($"{settings.serviceName} Settings",
-					                           new GUIStyle(EditorStyles.largeLabel));
+											   new GUIStyle(EditorStyles.largeLabel));
 					EditorGUI.indentLevel++;
 					EditorGUILayout.Separator();
 					// GUILayout.Label($"{settings.Key}:", serviceLabelStyle);
 					EditorGUILayout.Separator();
-					
+
 					DrawHelpBox("In order to access a Storage Object, it must be referenced a dependency. " +
-					            "The data is stored in the service's <i>csproj</i> file as a <i>ProjectReference</i> " +
-					            "element. Once a Storage Object is listed as a dependency, the service can access " +
-					            "it through the <i>Storage</i> accessor, and the service will be given a secure " +
-					            "connection-string to the Storage Object on startup. " );
+								"The data is stored in the service's <i>csproj</i> file as a <i>ProjectReference</i> " +
+								"element. Once a Storage Object is listed as a dependency, the service can access " +
+								"it through the <i>Storage</i> accessor, and the service will be given a secure " +
+								"connection-string to the Storage Object on startup. ");
 					EditorGUILayout.PropertyField(
 						serializedObj.FindProperty(nameof(BeamableMicroservicesSettings.storageDependencies)),
 						new GUIContent("Storage Dependencies"));
 					EditorGUILayout.Separator();
-					
+
 					DrawHelpBox("Unity Assembly Definitions can be shared with the service by listing them " +
-					            "as dependencies. A shared assembly definition will generate a dotnet8 compatible " +
-					            "<i>csproj</i> file and list it as a <i>ProjectReference</i> in the service's " +
-					            "<i>csproj</i> file. Once an assembly definition is listed as a dependency, the code " +
-					            "in the assembly may be used freely from the service. " );
+								"as dependencies. A shared assembly definition will generate a dotnet8 compatible " +
+								"<i>csproj</i> file and list it as a <i>ProjectReference</i> in the service's " +
+								"<i>csproj</i> file. Once an assembly definition is listed as a dependency, the code " +
+								"in the assembly may be used freely from the service. ");
 					EditorGUILayout.PropertyField(
 						serializedObj.FindProperty(nameof(BeamableMicroservicesSettings.assemblyReferences)),
 						new GUIContent("Assembly Definitions"));
 					EditorGUILayout.Separator();
-					
-					DrawHelpBox("TODO: Fill out these settings for federation" );
+
+					DrawHelpBox("TODO: Fill out these settings for federation");
 					EditorGUILayout.PropertyField(
-						serializedObj.FindProperty(nameof(BeamableMicroservicesSettings.federations)), 
+						serializedObj.FindProperty(nameof(BeamableMicroservicesSettings.federations)),
 						new GUIContent("Federations"), true);
-					
+
 					EditorGUILayout.Separator();
-					
+
 					serializedObj.ApplyModifiedPropertiesWithoutUndo();
-		
+
 					EditorGUI.indentLevel--;
 				}
-				
-				
+
+
 				if (settings.HasChanges())
 				{
 					EditorDebouncer.Debounce("save-beam-settings", () =>
@@ -260,14 +260,14 @@ namespace Beamable.Editor.Microservice.UI2
 					}, .1f);
 				}
 
-				
+
 				EditorGUILayout.EndVertical();
 			}
-			
+
 			// EditorGUILayout.Space(100);
 			void DrawHelpBox(string message)
 			{
-			
+
 				EditorGUILayout.BeginVertical(new GUIStyle(EditorStyles.helpBox)
 				{
 					padding = new RectOffset(0, 12, 8, 8),
@@ -275,8 +275,8 @@ namespace Beamable.Editor.Microservice.UI2
 				});
 				EditorGUILayout.LabelField(message, new GUIStyle(EditorStyles.label)
 				{
-					padding = new RectOffset(0,0,0,0),
-					margin = new RectOffset(0,0,0,0),
+					padding = new RectOffset(0, 0, 0, 0),
+					margin = new RectOffset(0, 0, 0, 0),
 					richText = true,
 					wordWrap = true
 				});

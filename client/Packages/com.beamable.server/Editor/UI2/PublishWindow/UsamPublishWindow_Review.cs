@@ -11,22 +11,22 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 	public partial class UsamPublishWindow
 	{
 		private Dictionary<string, bool> reviewToFoldout = new Dictionary<string, bool>();
-		
+
 		void DrawReviewUi(bool startedUpload)
 		{
 			var clickedRelease = false;
 			var clickedPortal = false;
-			
+
 			var anyChanges = _planMetadata.plan.changeCount > 0;
 			{ // title label
-				
-				DrawHeader(anyChanges 
-				           ? "Clicking Release will perform the following changes on this realm."
-				           : "There are no changes. Clicking Release will restart all existing services. ");
+
+				DrawHeader(anyChanges
+						   ? "Clicking Release will perform the following changes on this realm."
+						   : "There are no changes. Clicking Release will restart all existing services. ");
 			}
-			
+
 			DrawConfigurationWarnings();
-			
+
 			if (anyChanges)
 			{
 				_contentScroll = EditorGUILayout.BeginScrollView(_contentScroll, false, false);
@@ -41,38 +41,38 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 
 					var helpUrl = "https://docs.beamable.com/docs/microservices-publishing";
 					DrawChangeList("Adding Services", "Toolbar Plus", "Learn about new services on Beamable", helpUrl,
-					               _planMetadata.plan.diff.addedServices.ToList());
+								   _planMetadata.plan.diff.addedServices.ToList());
 					DrawChangeList("Removing Services", "Warning@2x",
-					               "Learn about how services are archived on Beamable", helpUrl,
-					               _planMetadata.plan.diff.removedServices.ToList());
+								   "Learn about how services are archived on Beamable", helpUrl,
+								   _planMetadata.plan.diff.removedServices.ToList());
 					DrawChangeList("Disabling Services", "ProfilerColumn.WarningCount",
-					               "Learn about how services can be disabled on Beamable", helpUrl,
-					               _planMetadata.plan.diff.disabledServices.ToList());
+								   "Learn about how services can be disabled on Beamable", helpUrl,
+								   _planMetadata.plan.diff.disabledServices.ToList());
 					DrawChangeList("Enabling Services", "Info@2x",
-					               "Learn about how services can be enabled on Beamable", helpUrl,
-					               _planMetadata.plan.diff.enabledServices.ToList());
+								   "Learn about how services can be enabled on Beamable", helpUrl,
+								   _planMetadata.plan.diff.enabledServices.ToList());
 					DrawChangeList("Changing Services", "Info@2x", "Learn about how services changes work on Beamable",
-					               helpUrl,
-					               _planMetadata.plan.diff.serviceImageIdChanges.Select(x => x.service).ToList());
-					
+								   helpUrl,
+								   _planMetadata.plan.diff.serviceImageIdChanges.Select(x => x.service).ToList());
+
 					DrawChangeList("Adding Federations", "Toolbar Plus", "Learn about how services changes work on Beamable",
-					               helpUrl,
-					               _planMetadata.plan.diff.addedFederations.Select(x => $"{x.service} [{x.federationInterface}/{x.federationId}]").ToList());
+								   helpUrl,
+								   _planMetadata.plan.diff.addedFederations.Select(x => $"{x.service} [{x.federationInterface}/{x.federationId}]").ToList());
 					DrawChangeList("Disabling Federations", "Warning@2x", "Learn about how services changes work on Beamable",
-					               helpUrl,
-					               _planMetadata.plan.diff.removedFederations.Select(x => $"{x.service} [{x.federationInterface}/{x.federationId}]").ToList());
+								   helpUrl,
+								   _planMetadata.plan.diff.removedFederations.Select(x => $"{x.service} [{x.federationInterface}/{x.federationId}]").ToList());
 
 					DrawChangeList("Adding Storage", "Toolbar Plus", "Learn about new storages on Beamable", helpUrl,
-					               _planMetadata.plan.diff.addedStorage.ToList());
+								   _planMetadata.plan.diff.addedStorage.ToList());
 					DrawChangeList("Removing Storage", "Warning@2x", "Learn about removing storages from Beamable",
-					               helpUrl, _planMetadata.plan.diff.removedStorage.ToList());
+								   helpUrl, _planMetadata.plan.diff.removedStorage.ToList());
 					DrawChangeList("Disabling Storage", "ProfilerColumn.WarningCount",
-					               "Learn about how storages can be disabled on Beamable", helpUrl,
-					               _planMetadata.plan.diff.disabledStorages.ToList());
+								   "Learn about how storages can be disabled on Beamable", helpUrl,
+								   _planMetadata.plan.diff.disabledStorages.ToList());
 					DrawChangeList("Enabling Storage", "Info@2x", "Learn about how storages can be enabled on Beamable",
-					               helpUrl, _planMetadata.plan.diff.enabledStorages.ToList());
+								   helpUrl, _planMetadata.plan.diff.enabledStorages.ToList());
 
-					
+
 					{ // review the portal link
 						if (EditorGUILayout.LinkButton("Review current deployment"))
 						{
@@ -80,7 +80,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 						}
 						EditorGUILayout.Space(4, false);
 					}
-					
+
 					EditorGUILayout.EndVertical();
 
 				}
@@ -104,7 +104,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 							EditorGUILayout.Space(10, expand: false);
 
 							var planRow = _releaseProgressToRatio
-							              .FirstOrDefault(x => x.Value.serviceName == serviceToUpload).Value;
+										  .FirstOrDefault(x => x.Value.serviceName == serviceToUpload).Value;
 
 							DrawLoadingBar($"Uploading {serviceToUpload} ", planRow?.progress.ratio ?? 0);
 						}
@@ -125,7 +125,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 					EditorGUILayout.EndVertical();
 					EditorGUILayout.Space(5, expand: false);
 				}
-				
+
 				EditorGUILayout.EndScrollView();
 			}
 
@@ -133,13 +133,13 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 			DrawManifestComment();
 
 			{ // render the action buttons
-				
+
 				{
 					EditorGUILayout.BeginHorizontal(new GUIStyle
 					{
 						padding = new RectOffset(padding, padding, 0, 0)
 					});
-					
+
 					GUILayout.FlexibleSpace();
 
 					var btnStyle = new GUIStyle(GUI.skin.button)
@@ -169,9 +169,9 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 					}
 
 					EditorGUILayout.EndHorizontal();
-					
+
 				}
-				
+
 				EditorGUILayout.Space(15, expand: false);
 
 				{
@@ -184,7 +184,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 					{
 						var url = $"{BeamableEnvironment.PortalUrl}/{_ctx.CurrentCustomer.Cid}/games/{_ctx.ProductionRealm.Pid}/realms/{_ctx.CurrentRealm.Pid}/microservices?refresh_token={_ctx.Requester.Token.RefreshToken}";
 						Application.OpenURL(url);
-						
+
 						if (_releasePromise.IsCompleted)
 						{
 							isCancelPressed = true;
@@ -211,7 +211,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 			var headerRect = GUILayoutUtility.GetRect(foldoutContent, EditorStyles.foldout);
 			// foldOut = reviewToFoldout[title] = EditorGUILayout.Foldout(foldOut, new GUIContent(title + $"({list.Count})"), foldOut, EditorStyles.foldout);
 			var foldoutRect = new Rect(headerRect.x + headerRect.height, headerRect.y, headerRect.width - headerRect.height * 2,
-			                           headerRect.height);
+									   headerRect.height);
 			var iconRect = new Rect(headerRect.x, headerRect.y, headerRect.height, headerRect.height);
 			GUI.DrawTexture(iconRect, iconContent.image);
 			foldOut = reviewToFoldout[title] = EditorGUI.Foldout(foldoutRect, foldOut, foldoutContent, foldOut, EditorStyles.foldout);
@@ -228,21 +228,21 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 			{
 				Application.OpenURL(helpUrl);
 			}
-			
+
 			if (foldOut)
 			{
-				EditorGUI.indentLevel+=2;
+				EditorGUI.indentLevel += 2;
 				for (var i = 0; i < list.Count; i++)
 				{
 					var elem = list[i];
 					EditorGUILayout.SelectableLabel(elem, EditorStyles.label, GUILayout.Height(20));
 				}
-				EditorGUI.indentLevel-=2;
+				EditorGUI.indentLevel -= 2;
 			}
-			
-			
+
+
 			EditorGUILayout.Space(10, expand: false);
-			
+
 		}
 	}
 }

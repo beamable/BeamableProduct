@@ -13,10 +13,10 @@ namespace Beamable.Common.Content
 	public class ContentDataInfo
 	{
 		private static readonly ClientContentSerializer _serializer = new ClientContentSerializer();
-		
+
 		public string contentId;
 		public string data;
-		
+
 		/// <summary>
 		/// Added in 1.19.17; so may be absent from earlier records.
 		/// To safely access this property, please use <see cref="GetContentVersion"/>
@@ -31,7 +31,7 @@ namespace Beamable.Common.Content
 				// hooray, there is a content version hanging out we can use without needing to work for it.
 				return contentVersion;
 			}
-			
+
 			// because the contentVersion field was added late, it may be blank, so we need to retrieve it
 			//  from the internal data structure.
 			var proxy = JsonUtility.FromJson<VersionProxy>(data);
@@ -59,10 +59,10 @@ namespace Beamable.Common.Content
 
 		[NonSerialized]
 		public Dictionary<string, ContentDataInfo> KeyToContentData = new Dictionary<string, ContentDataInfo>();
-		
+
 		[NonSerialized]
 		public ulong cacheVersion;
-		
+
 		public static string GetCacheKey(string contentId, string contentVersion) => contentId + contentVersion;
 
 		/// <summary>
@@ -76,8 +76,8 @@ namespace Beamable.Common.Content
 		{
 			var key = GetCacheKey(contentId, version);
 			return KeyToContentData.TryGetValue(key, out contentInfo);
-		} 
-		
+		}
+
 		public bool TryUpdateContent(ClientContentInfo info, string raw)
 		{
 			// we only need one entry per content-id, and we'll save the latest version of it. 
@@ -93,18 +93,18 @@ namespace Beamable.Common.Content
 				// but much more likely, this acts as more of a NEW content write,
 				var newItem = KeyToContentData[key] = new ContentDataInfo
 				{
-					data = raw, 
-					contentVersion = info.version, 
+					data = raw,
+					contentVersion = info.version,
 					contentId = info.contentId
 				};
-				
+
 				// and we need to add it to the actual serialized data
 				content.Add(newItem);
 				cacheVersion++;
 				return true;
 			}
 		}
-		
+
 		public void OnBeforeSerialize()
 		{
 			content ??= new List<ContentDataInfo>();

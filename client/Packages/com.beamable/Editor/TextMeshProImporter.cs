@@ -42,7 +42,7 @@ namespace Beamable.Editor
 		{
 			var packages = new string[]
 			{
-				$"Packages/com.unity.ugui/{RELATIVE_TMP_RESOURCES_PATH}", 
+				$"Packages/com.unity.ugui/{RELATIVE_TMP_RESOURCES_PATH}",
 				$"Packages/com.unity.textmeshpro/{RELATIVE_TMP_RESOURCES_PATH}"
 			};
 
@@ -53,8 +53,8 @@ namespace Beamable.Editor
 					return package;
 				}
 			}
-			
-			
+
+
 			var packagePath = Path.GetFullPath("Assets/..");
 			if (Directory.Exists(packagePath))
 			{
@@ -74,14 +74,14 @@ namespace Beamable.Editor
 				string[] matchingPaths =
 					Directory.GetDirectories(packagePath, "TextMesh Pro", SearchOption.AllDirectories);
 				string path = ValidateLocation(matchingPaths, packagePath);
-				if (path != null) 
+				if (path != null)
 					return packagePath + path + "/" + RELATIVE_TMP_RESOURCES_PATH;
 			}
 
 			return null;
 		}
-		
-	
+
+
 		static string ValidateLocation(string[] paths, string projectPath)
 		{
 			for (int i = 0; i < paths.Length; i++)
