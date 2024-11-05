@@ -20,7 +20,7 @@ namespace Beamable.Editor.Util.PropertyDrawers
 		public override float GetHeight()
 		{
 			return style.CalcHeight(new GUIContent(HelpAttr.Tooltip),
-			                        EditorGUIUtility.currentViewWidth) + 8;
+									EditorGUIUtility.currentViewWidth) + 8;
 		}
 
 		public override void OnGUI(Rect position)
@@ -28,5 +28,5 @@ namespace Beamable.Editor.Util.PropertyDrawers
 			EditorGUI.LabelField(new Rect(position.x, position.y + 6, position.width, position.height - 6), HelpAttr.Tooltip, style);
 		}
 	}
-	
+
 }

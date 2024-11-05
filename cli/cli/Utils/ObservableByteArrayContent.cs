@@ -13,17 +13,17 @@ public class ObservableByteArrayContent : ByteArrayContent
 	private byte[] _bytes;
 	private readonly int _chunkSize;
 
-	public ObservableByteArrayContent(byte[] content, int chunkSize=4096) : base(content)
+	public ObservableByteArrayContent(byte[] content, int chunkSize = 4096) : base(content)
 	{
 		_bytes = content;
 		_chunkSize = chunkSize;
 		_length = content.Length;
 	}
-	
+
 	protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
 	{
 		var mem = new ReadOnlySpan<byte>(_bytes);
-		
+
 		for (int i = 0; i < _bytes.Length; i += _chunkSize)
 		{
 			var writeSize = Math.Min(_chunkSize, _bytes.Length - i);
@@ -33,7 +33,7 @@ public class ObservableByteArrayContent : ByteArrayContent
 			Progress = _position / _length;
 			OnProgress?.Invoke(i, Progress);
 		}
-	
+
 		return Task.CompletedTask;
 	}
 

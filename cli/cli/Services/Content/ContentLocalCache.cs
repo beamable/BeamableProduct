@@ -259,7 +259,7 @@ public class ContentLocalCache
 		// Add the unchanged content files directly to the list of content documents
 		var localContent = manifest.entries.Where(HasSameVersion).ToArray();
 		contents.AddRange(localContent.Select(c => GetContent(c.contentId)));
-		
+
 		// Download and overwrite the local content for things that have changed based on the hash. 
 		{
 			var requiresDownloadContent = manifest.entries.Except(localContent).ToArray();

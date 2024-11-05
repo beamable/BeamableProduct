@@ -39,7 +39,7 @@ namespace Beamable.Server.Editor
 			"When true, Beamable automatically generates a common assembly called Unity.Beamable.Customer.Common that is auto-referenced by Unity code, and automatically imported by Microservice assembly definitions. ";
 		[Tooltip(AutoBuildCommonAssemblyTooltip)]
 		public bool AutoBuildCommonAssembly = true;
-		
+
 		[Tooltip("It will enable microservice health check at the begining of publish process.")]
 		public bool EnablePrePublishHealthCheck = false;
 
