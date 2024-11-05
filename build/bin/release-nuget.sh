@@ -33,6 +33,7 @@ then
     dotnet pack ./microservice/beamable.tooling.common --configuration Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION
     dotnet pack ./microservice/unityEngineStubs --configuration Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION
     dotnet pack ./microservice/unityenginestubs.addressables --configuration Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION
+    dotnet pack ./templates/MicroserviceSourceGen/MicroserviceSourceGen --configuration Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION
     
     dotnet build ./microservice/microservice --configuration Release /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION /p:InformationalVersion=$VERSION
     dotnet pack ./microservice/microservice --configuration Release --no-build --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION /p:InformationalVersion=$VERSION
@@ -43,6 +44,7 @@ else
     dotnet pack ./microservice/beamable.tooling.common --configuration Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION
     dotnet pack ./microservice/unityEngineStubs --configuration Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION
     dotnet pack ./microservice/unityenginestubs.addressables --configuration Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION
+    dotnet pack ./templates/MicroserviceSourceGen/MicroserviceSourceGen --configuration Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION
     
     dotnet build ./microservice/microservice -c Release --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION /p:InformationalVersion=$VERSION
     dotnet pack ./microservice/microservice -c Release --no-build --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION /p:InformationalVersion=$VERSION
@@ -78,6 +80,9 @@ else
     
     dotnet nuget push ./microservice/unityenginestubs.addressables/nupkg/Beamable.UnityEngine.Addressables.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
     dotnet nuget push ./microservice/unityenginestubs.addressables/nupkg/Beamable.UnityEngine.Addressables.${VERSION}.snupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
+
+    dotnet nuget push ./templates/MicroserviceSourceGen/MicroserviceSourceGen/nupkg/Beamable.Microservice.SourceGen.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
+    dotnet nuget push ./templates/MicroserviceSourceGen/MicroserviceSourceGen/nupkg/Beamable.Microservice.SourceGen.${VERSION}.snupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
 
     dotnet nuget push ./microservice/microservice/nupkg/Beamable.Microservice.Runtime.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
     dotnet nuget push ./microservice/microservice/nupkg/Beamable.Microservice.Runtime.${VERSION}.snupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
