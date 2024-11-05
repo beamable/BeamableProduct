@@ -13,7 +13,7 @@ using Object = UnityEngine.Object;
 
 namespace Beamable.Editor.Microservice.UI2
 {
-	public partial class UsamWindow2
+	public partial class UsamWindow
 	{				
 		const int toolbarHeight = 30;
 

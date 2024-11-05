@@ -14,7 +14,7 @@ namespace Beamable.Editor.ToolbarExtender
 	{
 		public override void OnItemClicked(BeamEditorContext beamableApi)
 		{
-			UsamWindow2.Init();
+			UsamWindow.Init();
 		}
 	}
 }

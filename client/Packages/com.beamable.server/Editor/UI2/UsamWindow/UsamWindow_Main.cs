@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Beamable.Editor.Microservice.UI2
 {
-	public partial class UsamWindow2
+	public partial class UsamWindow
 	{
 		public Color primaryColor = new Color(.25f, .5f, 1f, .8f);
 		

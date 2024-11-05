@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Beamable.Editor.Microservice.UI2
 {
-	public partial class UsamWindow2
+	public partial class UsamWindow
 	{
 		bool clearDockerPendingActions = false;
 		void CheckDocker(string verb, Action afterDocker, out bool cancelled)

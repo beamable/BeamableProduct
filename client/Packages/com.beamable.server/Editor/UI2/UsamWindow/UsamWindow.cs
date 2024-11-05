@@ -12,14 +12,14 @@ using UnityEngine;
 
 namespace Beamable.Editor.Microservice.UI2
 {
-	public partial class UsamWindow2 : BeamEditorWindow<UsamWindow2>
+	public partial class UsamWindow : BeamEditorWindow<UsamWindow>
 	{
 		public UsamService usam;
 
 		public CardButton selectedCard;
 
 		
-		static UsamWindow2()
+		static UsamWindow()
 		{
 			var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
 			WindowDefaultConfig = new BeamEditorWindowInitConfig()
@@ -28,13 +28,14 @@ namespace Beamable.Editor.Microservice.UI2
 				FocusOnShow = false,
 				DockPreferenceTypeName = inspector.AssemblyQualifiedName,
 				RequireLoggedUser = true,
+				RequirePid = true
 			};
 		}
 		
 		[MenuItem(
 			Constants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
 			Constants.Commons.OPEN + " " +
-			"Beam Services %q",
+			"Beam Services",
 			priority = Constants.MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
 		)]
 		public static async void Init() => _ = await GetFullyInitializedWindow();

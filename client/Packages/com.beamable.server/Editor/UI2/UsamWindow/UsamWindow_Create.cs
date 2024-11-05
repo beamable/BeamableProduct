@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace Beamable.Editor.Microservice.UI2
 {
-	public partial class UsamWindow2
+	public partial class UsamWindow
 	{
 		// public bool isCreatingService = false;
 		public string newServiceName = "";
