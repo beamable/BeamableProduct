@@ -5,17 +5,17 @@ namespace Beamable.Server.Editor.Usam
 {
 	public partial class UsamService
 	{
-		
+
 
 		public void Reload()
 		{
 			var _ = WaitReload();
 		}
-		
+
 		public Promise WaitReload()
 		{
 			var taskId = ++latestReloadTaskId;
-			
+
 			LoadLegacyServices();
 
 			var command = _cli.UnityManifest();
@@ -23,7 +23,7 @@ namespace Beamable.Server.Editor.Usam
 			{
 				if (latestReloadTaskId != taskId)
 					return;
-				
+
 				hasReceivedManifestThisDomain = true;
 				latestManifest = cb.data;
 
@@ -47,10 +47,10 @@ namespace Beamable.Server.Editor.Usam
 					}
 
 				}
-				
+
 				CsProjUtil.OnPreGeneratingCSProjectFiles(this);
 			});
-			
+
 			var p = command.Run();
 			ListenForStatus();
 			ListenForDocker();

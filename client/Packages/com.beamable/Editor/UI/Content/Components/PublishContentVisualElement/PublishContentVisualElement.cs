@@ -64,7 +64,7 @@ namespace Beamable.Editor.Content.Components
 			_loadingBar = Root.Q<LoadingBarElement>();
 			_loadingBar.SmallBar = true;
 			_loadingBar.Refresh();
-			
+
 			var mainContent = Root.Q<VisualElement>("publish-mainVisualElement");
 			var loadingBlocker = Root.Q<LoadingIndicatorVisualElement>();
 

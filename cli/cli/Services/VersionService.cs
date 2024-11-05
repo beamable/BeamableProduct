@@ -25,7 +25,7 @@ public class VersionService
 		public string originalVersion;
 		public string packageVersion;
 	}
-	
+
 	public async Task<NugetPackages[]> GetBeamableToolPackageVersions(bool replaceDashWithDot = true,
 		string packageName = "beamable.tools")
 	{

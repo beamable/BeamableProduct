@@ -27,7 +27,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 		private List<BeamFederationSetting> originalFederations = new List<BeamFederationSetting>();
 
 		public static List<string> availableFederationIds = new List<string>();
-		
+
 		public string serviceName => service.beamoId;
 		public BeamManifestServiceEntry service;
 
@@ -37,7 +37,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 
 			return allValid;
 		}
-		
+
 		public bool CheckAllValidAssemblies(out string validationMessage)
 		{
 			//Check if there is any null reference in the array
@@ -77,17 +77,17 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 		{
 			// TODO: add federation change detection
 			if (originalAssemblyReferences == null || assemblyReferences == null ||
-			    originalStorageDependencies == null || storageDependencies == null
-			    || originalFederations == null || federations == null)
+				originalStorageDependencies == null || storageDependencies == null
+				|| originalFederations == null || federations == null)
 			{
 				return false;
 			}
 
 			var nonEmptyStorages = storageDependencies.ToList();
 			nonEmptyStorages.RemoveAll(x => string.IsNullOrEmpty(x.StorageName));
-			
+
 			var nonEmptyAssemblies = assemblyReferences.ToList();
-			nonEmptyAssemblies.RemoveAll(x => x==null);
+			nonEmptyAssemblies.RemoveAll(x => x == null);
 
 			var nonEmptyFederations = federations.ToList();
 			nonEmptyFederations.RemoveAll(x => x?.entry == null);
@@ -96,10 +96,10 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 				return true;
 			if (!ScrambledEquals(originalStorageDependencies, nonEmptyStorages))
 				return true;
-	
+
 			{ // do check for federations
 
-				
+
 				if (originalFederations.Count != federations.Count)
 				{
 					return true;
@@ -116,7 +116,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 
 				}
 			}
-			
+
 			return false;
 		}
 
@@ -136,7 +136,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 		{
 			throw new NotImplementedException();
 		}
-		
+
 		public static SerializedObject GetSerializedSettings(BeamManifestServiceEntry service)
 		{
 			var instance = CreateInstance<BeamableMicroservicesSettings>();
@@ -173,8 +173,8 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 			}
 
 			{ // update the storages
-				var dependencies = service.storageDependencies.Select(dp => new BeamStorageDependencySetting() {StorageName = dp})
-				                          .ToList();
+				var dependencies = service.storageDependencies.Select(dp => new BeamStorageDependencySetting() { StorageName = dp })
+										  .ToList();
 				instance.storageDependencies = dependencies;
 			}
 
@@ -189,7 +189,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 						}
 					}).ToList(); // copy the list
 			}
-			
+
 			instance.UpdateOriginalData();
 
 			return new SerializedObject(instance);
@@ -205,7 +205,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 			originalAssemblyReferences.Clear();
 			originalStorageDependencies.Clear();
 			originalFederations.Clear();
-			
+
 			assemblyReferences.ForEach(asmdef => originalAssemblyReferences.Add(asmdef));
 			storageDependencies.ForEach(dep => originalStorageDependencies.Add(dep));
 			federations.ForEach(f => originalFederations.Add(new BeamFederationSetting
@@ -216,12 +216,12 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 					interfaceName = f.entry.interfaceName
 				}
 			}));
-			
+
 			originalFederations.RemoveAll(x => x?.entry == null || string.IsNullOrEmpty(x?.entry.federationId));
 			originalStorageDependencies.RemoveAll(x => x.StorageName == null);
 			originalAssemblyReferences.RemoveAll(x => x == null);
 		}
 
-	
+
 	}
 }

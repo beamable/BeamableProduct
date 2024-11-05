@@ -38,14 +38,14 @@ namespace Beamable.Common.Content
 	{
 		public EmailRef(string id) : base(id)
 		{
-			
+
 		}
 
 		public EmailRef()
 		{
-			
+
 		}
-	}	
+	}
 	/// <summary>
 	/// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
 	///
@@ -63,12 +63,12 @@ namespace Beamable.Common.Content
 	{
 		public EmailRef(string id) : base(id)
 		{
-			
+
 		}
 
 		public EmailRef()
 		{
-			
+
 		}
 	}
 	/// <summary>

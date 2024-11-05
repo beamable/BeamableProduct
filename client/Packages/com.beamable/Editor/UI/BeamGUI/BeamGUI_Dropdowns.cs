@@ -12,7 +12,7 @@ namespace Beamable.Editor.Util
 			public EditorWindow window;
 			public bool noticedClose;
 		}
-		
+
 		private static readonly Color backgroundColor = new Color(.5f, .5f, .5f, .65f);
 		private static Dictionary<Type, PopupTime> _popupTypeToCloseTime = new Dictionary<Type, PopupTime>();
 
@@ -21,52 +21,52 @@ namespace Beamable.Editor.Util
 		{
 			foreach (var kvp in _popupTypeToCloseTime)
 			{
-				if (kvp.Value.window == null && ! kvp.Value.noticedClose)
+				if (kvp.Value.window == null && !kvp.Value.noticedClose)
 				{
 					kvp.Value.noticedClose = true;
 				}
 			}
 		}
-		
+
 		public static void LayoutDropDown<T>(EditorWindow rootWindow,
-		                                     GUIContent current,
-		                                     GUILayoutOption widthOption,
-		                                     Func<T> windowFactory,
-		                                     int yPadding = 5,
-		                                     int yShift = 1,
-		                                     Color backdropColor = default,
-		                                     bool popupOnLeft = false
-		                                     )
+											 GUIContent current,
+											 GUILayoutOption widthOption,
+											 Func<T> windowFactory,
+											 int yPadding = 5,
+											 int yShift = 1,
+											 Color backdropColor = default,
+											 bool popupOnLeft = false
+											 )
 			where T : EditorWindow
 		{
-			LayoutDropDown(rootWindow, current,widthOption,windowFactory,out _,yPadding,yShift, backdropColor, popupOnLeft);
+			LayoutDropDown(rootWindow, current, widthOption, windowFactory, out _, yPadding, yShift, backdropColor, popupOnLeft);
 		}
-		public static void LayoutDropDown<T>(EditorWindow rootWindow, 
-		                                     GUIContent current, 
-		                                     GUILayoutOption widthOption, 
-		                                     Func<T> windowFactory,
-		                                     out Rect contentBounds,
-		                                     int yPadding=5,
-		                                     int yShift=1,
-		                                     Color backdropColor=default,
-		                                     bool popupOnLeft=false)
+		public static void LayoutDropDown<T>(EditorWindow rootWindow,
+											 GUIContent current,
+											 GUILayoutOption widthOption,
+											 Func<T> windowFactory,
+											 out Rect contentBounds,
+											 int yPadding = 5,
+											 int yShift = 1,
+											 Color backdropColor = default,
+											 bool popupOnLeft = false)
 			where T : EditorWindow
 		{
 			if (backdropColor == default)
 			{
 				backdropColor = backgroundColor;
 			}
-			
+
 			const int arrowWidth = 25;
 
 			var bounds = GUILayoutUtility.GetRect(current, new GUIStyle
-			                                      {
-				                                      fontSize = 10,
-				                                      padding = new RectOffset(5, arrowWidth + 5, 0, 0)
-			                                      }, 
-			                                      GUILayout.ExpandWidth(false),
-			                                      GUILayout.ExpandHeight(true)
-			                         );
+			{
+				fontSize = 10,
+				padding = new RectOffset(5, arrowWidth + 5, 0, 0)
+			},
+												  GUILayout.ExpandWidth(false),
+												  GUILayout.ExpandHeight(true)
+									 );
 
 			// const int yPadding = 5;
 			// const int yShift = 1;
@@ -82,16 +82,16 @@ namespace Beamable.Editor.Util
 			{
 				EditorGUIUtility.AddCursorRect(paddedRect, MouseCursor.Link);
 			}
-			
+
 
 			{ // draw hover color
 				EditorGUI.DrawRect(paddedRect, backdropColor);
 				if (isButtonHover)
 				{
-					EditorGUI.DrawRect(paddedRect, new Color(1,1,1, .05f));
+					EditorGUI.DrawRect(paddedRect, new Color(1, 1, 1, .05f));
 				}
 			}
-			
+
 			{ // draw the preview
 				GUI.Label(contentRect, current, new GUIStyle(EditorStyles.label)
 				{
@@ -125,16 +125,16 @@ namespace Beamable.Editor.Util
 						shouldShow = false;
 					}
 				}
-				
+
 				if (shouldShow)
 				{
-					
+
 					var popup = windowFactory?.Invoke();
 					_popupTypeToCloseTime[typeof(T)] = new PopupTime
 					{
 						window = popup
 					};
-					
+
 					const int tabHeight = 20;
 					var popupWidth = 300;
 					var xCoord = rootWindow.position.x + (paddedRect.xMax - popupWidth);
@@ -154,11 +154,11 @@ namespace Beamable.Editor.Util
 	{
 		void Configure();
 	}
-	
+
 	public class BeamGuiPopup : EditorWindow
 	{
-		
-		
+
+
 		private void OnGUI()
 		{
 			EditorGUILayout.LabelField("hahah");

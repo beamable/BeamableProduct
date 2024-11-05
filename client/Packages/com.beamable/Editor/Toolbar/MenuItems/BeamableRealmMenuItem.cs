@@ -13,7 +13,7 @@ namespace Beamable.Editor.ToolbarExtender
 	public class BeamableRealmMenuItem : BeamableToolbarMenuItem
 	{
 		public GUIContent Display(BeamEditorContext editor) => new GUIContent("Realm: " + editor.CurrentRealm.DisplayName);
-		
+
 		public override void ContextualizeMenu(BeamEditorContext editor, GenericMenu menu)
 		{
 			var rootDisplay = Display(editor);
@@ -33,26 +33,26 @@ namespace Beamable.Editor.ToolbarExtender
 				{
 					return depthCompare;
 				}
-				
+
 				return String.Compare(a.ProjectName, b.ProjectName, StringComparison.Ordinal);
 			});
-				
+
 			foreach (var proj in projects)
 			{
 				var enabled = proj.Pid == editor.CurrentRealm.Pid;
-				
+
 				menu.AddItem(new GUIContent(rootDisplay.text + "/" + proj.DisplayName), enabled, () =>
 				{
 					editor.SwitchRealm(proj);
 				});
 			}
-			
+
 			menu.AddSeparator(rootDisplay.text + "/");
 			menu.AddItem(new GUIContent(rootDisplay.text + "/Refresh"), false, () =>
 			{
 				var _ = editor.EditorAccount.UpdateRealms(editor.Requester);
 			});
-			
+
 		}
 
 		public override GUIContent RenderLabel(BeamEditorContext beamableApi)
@@ -62,7 +62,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 		public override void OnItemClicked(BeamEditorContext beamableApi)
 		{
-			
+
 		}
 	}
 }
