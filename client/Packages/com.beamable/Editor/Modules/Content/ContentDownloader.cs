@@ -78,11 +78,11 @@ namespace Beamable.Editor.Content
 
 			var downloadPromises = new Promise<Unit>();
 			var batchSize = ContentConfiguration.Instance.EditorDownloadBatchSize.GetOrElse(100);
-			
+
 			PromiseEditor.ExecuteOnRoutines(batchSize, downloadPromiseGenerators).Map(assetsToBeWritten =>
 			{
 				_io.CreateBatch(assetsToBeWritten);
-			
+
 				progressCallback?.Invoke(1, summary.TotalDownloadEntries, summary.TotalDownloadEntries);
 				downloadPromises.CompleteSuccess(PromiseBase.Unit);
 				return PromiseBase.Unit;
@@ -94,10 +94,10 @@ namespace Beamable.Editor.Content
 		private Promise<string> FetchContentFromCDN(string uri)
 		{
 			return _requester.Request(Method.GET, uri, includeAuthHeader: false, parser: s => s)
-			                 .Error(ex =>
-			                 {
-				                 Debug.LogWarning("Failed to download content " + uri + " / " + ex.Message);
-			                 });
+							 .Error(ex =>
+							 {
+								 Debug.LogWarning("Failed to download content " + uri + " / " + ex.Message);
+							 });
 		}
 	}
 

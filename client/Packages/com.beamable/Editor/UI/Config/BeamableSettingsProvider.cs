@@ -30,7 +30,7 @@ namespace Beamable.Editor.Config
 			ConfigManager.Initialize(forceCreation: true);
 			SettingsService.OpenProjectSettings("Project/Beamable");
 		}
-		
+
 		static bool DoDrawDefaultInspector(SerializedObject obj)
 		{
 			EditorGUI.BeginChangeCheck();
@@ -162,15 +162,15 @@ namespace Beamable.Editor.Config
 						{
 							continue;
 						}
-						
+
 						var editor = UnityEditor.Editor.CreateEditor(config);
 
 						var maxSize = 0f;
-						
+
 
 						var settingsProvider = new SettingsProvider($"Project/Beamable/{options[0].Module}", SettingsScope.Project)
 						{
-							
+
 							guiHandler = (searchContext) =>
 							{
 								if (maxSize < 1)
@@ -199,7 +199,7 @@ namespace Beamable.Editor.Config
 
 								EditorGUILayout.EndVertical();
 							},
-						
+
 							keywords = new HashSet<string>(options.Select(o => o.Name))
 						};
 						providers.Add(settingsProvider);

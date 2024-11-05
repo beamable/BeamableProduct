@@ -26,7 +26,7 @@ namespace Beamable.Editor.Microservice.UI2
 				usam.receivedAnyDockerStateYet.Then(_ => afterDocker?.Invoke());
 				return;
 			}
-			
+
 			var cli = usam.latestDockerStatus.isCliAccessible;
 			var daemon = usam.latestDockerStatus.isDaemonRunning;
 
@@ -38,9 +38,9 @@ namespace Beamable.Editor.Microservice.UI2
 				var shouldDownload = EditorUtility.DisplayDialog(
 					title: "Install Docker",
 					message: $"Beamable requires Docker to {verb}. We could not find " +
-					         "Docker installed on your machine. Would you like to go the installation webpage " +
-					         "and automatically start downloading Docker? When it has finished downloading, you " +
-					         $"must run the installer. After you have installed Docker, try to {verb} again. ",
+							 "Docker installed on your machine. Would you like to go the installation webpage " +
+							 "and automatically start downloading Docker? When it has finished downloading, you " +
+							 $"must run the installer. After you have installed Docker, try to {verb} again. ",
 					ok: "Start Downloading Docker",
 					cancel: "Cancel");
 
@@ -58,7 +58,7 @@ namespace Beamable.Editor.Microservice.UI2
 				var shouldStart = EditorUtility.DisplayDialog(
 					title: "Start Docker",
 					message: $"Beamable requires Docker to {verb}. Docker appears to be installed " +
-					         "on your machine, but it is not running. Would you like to start Docker? ",
+							 "on your machine, but it is not running. Would you like to start Docker? ",
 					ok: "Start Docker",
 					cancel: "Cancel");
 				if (shouldStart)
@@ -73,7 +73,7 @@ namespace Beamable.Editor.Microservice.UI2
 							//  on the first boot of Docker Desktop
 
 							usam._dispatcher.Run("enqueue-docker-run", DelayRun());
-					
+
 						}
 						else
 						{

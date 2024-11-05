@@ -9,16 +9,16 @@ using static Beamable.Common.Constants.Features.Config;
 
 namespace Beamable
 {
-	
+
 	/// <summary>
 	/// Used to represent a config file that will be removed in a future version of Beamable. 
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Class)]
 	public class ObsoleteConfiguration : Attribute
 	{
-		
+
 	}
-	
+
 	public interface IConfigurationConstants
 	{
 

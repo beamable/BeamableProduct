@@ -32,7 +32,7 @@ namespace Beamable.Editor
 		Promise<bool> SwitchToConfigDefaults();
 		void Clear();
 	}
-	
+
 	public class AccountServerData
 	{
 		public OptionalString cid = new OptionalString();
@@ -62,7 +62,7 @@ namespace Beamable.Editor
 		private IPlatformRequester Requester => _scope.GetService<IPlatformRequester>();
 
 		private BeamCli.BeamCli Cli => _scope.GetService<BeamCli.BeamCli>();
-		
+
 		public AccountService(IDependencyProviderScope scope)
 		{
 			_scope = scope;
@@ -111,7 +111,7 @@ namespace Beamable.Editor
 		// 	})
 		//
 		// }
-		
+
 		public async Promise<bool> SwitchToConfigDefaults()
 		{
 			await ConfigDefaultsService.LoadFromDisk();

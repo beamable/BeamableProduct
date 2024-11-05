@@ -11,7 +11,7 @@ public class RestoreProjectCommandArgs : CommandArgs
 
 public class RestoreProjectCommandOutput
 {
-	
+
 }
 
 public class RestoreProjectCommand : AtomicCommand<RestoreProjectCommandArgs, RestoreProjectCommandOutput>
@@ -31,7 +31,7 @@ public class RestoreProjectCommand : AtomicCommand<RestoreProjectCommandArgs, Re
 		await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, $"build {args.csProjPath}")
 			.WithValidation(CommandResultValidation.None)
 			.ExecuteAsyncAndLog();
-		
+
 		return new RestoreProjectCommandOutput();
 	}
 }
