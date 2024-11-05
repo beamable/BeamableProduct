@@ -15,9 +15,9 @@ public class RestoreStorageObjectCommandArgs : CommandArgs
 
 public class RestoreStorageObjectCommandOutput
 {
-	
+
 }
-public class RestoreStorageObjectCommand 
+public class RestoreStorageObjectCommand
 	: AtomicCommand<RestoreStorageObjectCommandArgs, RestoreStorageObjectCommandOutput>
 	, IResultSteam<MongoLogChannel, CliLogMessage>
 {
@@ -45,16 +45,16 @@ public class RestoreStorageObjectCommand
 		{
 			await EraseStorageObjectCommand.EraseVolumes(args, args.beamoId, this);
 		}
-		
+
 		StorageGroupCommand.GetInfo(args, args.beamoId, out var sd, out var db, out var dockerPath);
 
 		var wasRunning = await StorageGroupCommand.EnsureStorageState(args, sd, db, true);
 		var containerName = BeamoLocalSystem.GetBeamIdAsMongoContainer(sd.BeamoId);
 		var copySuccess = await DockerCopyUtil.Copy(dockerPath, containerName, "/beamable/.", args.snapshotFolder + "/.",
 			DockerCopyUtil.CopyDirection.INTO_CONTAINER);
-		
+
 		Log.Debug($"copy success=[{copySuccess}]");
-		
+
 		var mongoAvailable = false;
 		do
 		{
@@ -62,12 +62,12 @@ public class RestoreStorageObjectCommand
 			mongoAvailable = await StorageGroupCommand.RunDockerCommand(args, dockerPath, this, $"exec {containerName} mongosh {connStr} ", false);
 		} while (!mongoAvailable);
 
-		
+
 		var argString = $"exec {containerName} mongorestore /beamable -u {db.RootUsername} -p {db.RootPassword}";
-		
+
 		var isSuccess = await StorageGroupCommand.RunDockerCommand(args, dockerPath, this, argString);
-		
-		
+
+
 		Log.Debug($"mongorestore success=[{isSuccess}]");
 		await StorageGroupCommand.EnsureStorageState(args, sd, db, wasRunning);
 

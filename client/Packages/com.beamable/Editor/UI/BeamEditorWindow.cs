@@ -20,13 +20,13 @@ namespace Beamable.Editor.UI
 	///
 	/// </summary>
 	/// <typeparam name="TWindow"></typeparam>
-	public abstract class BeamEditorWindow<TWindow> 
-		: EditorWindow, ISerializationCallbackReceiver 
+	public abstract class BeamEditorWindow<TWindow>
+		: EditorWindow, ISerializationCallbackReceiver
 		, IDelayedActionWindow
 		where TWindow : BeamEditorWindow<TWindow>, new()
 	{
 		private List<Action> _actions = new List<Action>();
-		
+
 		/// <summary>
 		/// The default <see cref="BeamEditorWindowInitConfig{TWindow}"/> struct that is used when initializing this window via <see cref="GetFullyInitializedWindow"/>.
 		/// </summary>
@@ -205,7 +205,7 @@ namespace Beamable.Editor.UI
 
 			await BuildAsync();
 		}
-		
+
 		/// <summary>
 		/// Rebuilds the window's entire content.
 		/// If it cares about whether or not the given <paramref name="context"/> is/isn't authenticated, it'll invoke <see cref="Build"/>
@@ -253,7 +253,7 @@ namespace Beamable.Editor.UI
 		{
 			BeamGUI.LoadAllIcons();
 			BeamGUI.CreateButtonStyles();
-			
+
 			titleContent = new GUIContent(InitializedConfig.Title, BeamGUI.iconBeamableSmall);
 			var root = this.GetRootVisualContainer();
 
@@ -264,7 +264,7 @@ namespace Beamable.Editor.UI
 				DrawNoContextGui();
 				return;
 			}
-			
+
 			if (!ctx.InitializePromise.IsCompleted)
 			{
 				root.Clear();
@@ -278,14 +278,14 @@ namespace Beamable.Editor.UI
 				DrawNotLoggedInGui();
 				return;
 			}
-			
-			
+
+
 			DrawGUI();
 		}
 
 		protected virtual void DrawGUI()
 		{
-			
+
 		}
 
 		protected virtual void ShowFullWindowLoading()
@@ -301,7 +301,7 @@ namespace Beamable.Editor.UI
 			// copy the actions into a separate list, so if there is an error, at least they clear.
 			var copy = _actions.ToList();
 			_actions.Clear();
-			
+
 			// perform delayed actions
 			foreach (var act in copy)
 			{
@@ -316,12 +316,12 @@ namespace Beamable.Editor.UI
 		{
 			_actions.Add(act);
 		}
-		
+
 		protected void DrawNoContextGui()
 		{
 			DrawBlockLoading("Resolving Beamable...");
 		}
-		
+
 		protected void DrawWaitingForContextGui()
 		{
 			DrawBlockLoading("Loading Beamable...");
@@ -341,25 +341,25 @@ namespace Beamable.Editor.UI
 			{
 				margin = new RectOffset(12, 12, 12, 12)
 			});
-			
+
 			var logo = BeamGUI.iconLogoHeader;
 
 			{ // draw the back-shadow and logo
 				var logoRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.Height(50),
-				                                        GUILayout.ExpandWidth(true));
+														GUILayout.ExpandWidth(true));
 				var logoAspect = logo.width / (float)logo.height;
 				var shadowWidth = logoAspect * logoRect.height;
 
 				var shadowRect = new Rect(logoRect.x + logoRect.width * .5f - shadowWidth * .5f, logoRect.y,
-				                          shadowWidth, logoRect.height);
+										  shadowWidth, logoRect.height);
 
 				const int shadowYOffset = 6;
 				var leftShadowRect = new Rect(shadowRect.x - 12, shadowRect.y + shadowYOffset, 20, shadowRect.height);
 				var rightShadowRect =
 					new Rect(shadowRect.xMax - 20, shadowRect.y + shadowYOffset, 12, shadowRect.height);
 				var centerShadowRect = new Rect(leftShadowRect.xMax, shadowRect.y + shadowYOffset,
-				                                (rightShadowRect.xMin - leftShadowRect.xMax), shadowRect.height);
-				
+												(rightShadowRect.xMin - leftShadowRect.xMax), shadowRect.height);
+
 				// draw the shadow as 3 parts to avoid texture stretching
 				GUI.DrawTextureWithTexCoords(leftShadowRect, BeamGUI.iconShadowSoftA, new Rect(0, 0, .2f, 1f));
 				GUI.DrawTextureWithTexCoords(rightShadowRect, BeamGUI.iconShadowSoftA, new Rect(.8f, 0, .2f, 1f));
@@ -369,14 +369,14 @@ namespace Beamable.Editor.UI
 			}
 
 			EditorGUILayout.Space(12, false);
-			
+
 			{ // draw a notice
 				EditorGUILayout.HelpBox(
 					$"Welcome to Beamable! You must Log-in before you can use the {titleContent.text} window. " +
 					$"If you don't have an account, use the Log-in button to create an account. ",
 					MessageType.Info);
 			}
-			
+
 			EditorGUILayout.Space(12, false);
 
 			{ // draw button to open
@@ -387,7 +387,7 @@ namespace Beamable.Editor.UI
 			}
 
 			EditorGUILayout.EndVertical();
-			
+
 		}
 
 	}

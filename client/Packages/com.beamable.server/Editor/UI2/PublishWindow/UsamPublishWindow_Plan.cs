@@ -14,7 +14,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 		void DrawPlanUI()
 		{
 			bool clickedReview = false;
-			
+
 			{
 				var text = _planPromise.IsCompleted
 					? "Continue to review the release plan."
@@ -23,7 +23,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 			}
 
 			DrawConfigurationWarnings();
-			
+
 			{
 				EditorGUILayout.BeginVertical(new GUIStyle(EditorStyles.helpBox)
 				{
@@ -53,20 +53,20 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 							progressLabel = $"<color=#{ColorUtility.ToHtmlStringRGBA(loadingFailed)}>{progressLabel}</color>";
 						}
 						DrawLoadingBar(progressLabel, value.progress.ratio,
-						               failed: failed,
-						               drawBelowLoadingBarUI: () =>
-						               {
-							               if (!failed) return;
-							               //
-							               var rect = GUILayoutUtility.GetLastRect();
-							               rect = new Rect(rect.x, rect.y + rect.height + 2, rect.width, EditorGUIUtility.singleLineHeight);
-							               var style = new GUIStyle(EditorStyles.miniLabel)
-							               {
-								               richText = true
-							               };
-							               // style.te
-							               EditorGUI.SelectableLabel(rect, failedMessage, style);
-						               });
+									   failed: failed,
+									   drawBelowLoadingBarUI: () =>
+									   {
+										   if (!failed) return;
+										   //
+										   var rect = GUILayoutUtility.GetLastRect();
+										   rect = new Rect(rect.x, rect.y + rect.height + 2, rect.width, EditorGUIUtility.singleLineHeight);
+										   var style = new GUIStyle(EditorStyles.miniLabel)
+										   {
+											   richText = true
+										   };
+										   // style.te
+										   EditorGUI.SelectableLabel(rect, failedMessage, style);
+									   });
 					}
 					EditorGUILayout.Space(10, expand: false);
 				}
@@ -86,14 +86,14 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 					{
 						padding = new RectOffset(padding, padding, 0, 0)
 					});
-					
+
 					GUILayout.FlexibleSpace();
 
 					var btnStyle = new GUIStyle(GUI.skin.button)
 					{
 						padding = new RectOffset(6, 6, 6, 6)
 					};
-					
+
 					isCancelPressed = GUILayout.Button("Cancel", btnStyle);
 
 					GUI.enabled = _planPromise.IsCompleted;
@@ -107,9 +107,9 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 					}
 					GUI.enabled = true;
 					EditorGUILayout.EndHorizontal();
-					
+
 				}
-				
+
 				EditorGUILayout.Space(15, expand: false);
 
 				{
@@ -119,7 +119,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 					}
 				}
 			}
-			
+
 		}
 	}
 }

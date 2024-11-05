@@ -206,7 +206,7 @@ namespace Beamable.Editor.BeamCli
 		{
 			return On<ErrorOutput>("error", cb);
 		}
-		
+
 		public IBeamCommand OnTerminate(Action<ReportDataPoint<EofOutput>> cb)
 		{
 			return On<EofOutput>("eof", cb);
@@ -355,8 +355,8 @@ namespace Beamable.Editor.BeamCli
 			if (string.IsNullOrEmpty(Command)) throw new InvalidOperationException("must set command before running");
 			_hasExecuted = true;
 
-			
-			
+
+
 			using (process = new System.Diagnostics.Process())
 			{
 				process.StartInfo.FileName = DotnetUtil.DotnetPath;
@@ -377,7 +377,7 @@ namespace Beamable.Editor.BeamCli
 				process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_PATH] = Path.GetFullPath(DotnetUtil.DotnetPath);
 				process.StartInfo.EnvironmentVariables[Constants.EnvironmentVariables.BEAM_DOTNET_MSBUILD_PATH] =
 					Path.GetFullPath(DotnetUtil.DotnetMSBuildPath);
-				
+
 				_status = new TaskCompletionSource<int>();
 				EventHandler eh = (s, e) =>
 				{
@@ -411,7 +411,7 @@ namespace Beamable.Editor.BeamCli
 					_exitCode = 0;
 					earlyExitTask.SetResult(1);
 				});
-				
+
 				var pid = 0;
 				try
 				{
@@ -428,7 +428,7 @@ namespace Beamable.Editor.BeamCli
 						_dispatcher.Schedule(() =>
 						{
 							CliLogger.Log("stdout", args.Data, System.Environment.NewLine + System.Environment.NewLine,
-							              _command);
+										  _command);
 						});
 						_dispatcher.Schedule(() =>
 						{
@@ -453,7 +453,7 @@ namespace Beamable.Editor.BeamCli
 						_dispatcher.Schedule(() =>
 						{
 							CliLogger.Log("stderr", args.Data, System.Environment.NewLine + System.Environment.NewLine,
-							              _command);
+										  _command);
 						});
 						_dispatcher.Schedule(() =>
 						{
@@ -481,7 +481,7 @@ namespace Beamable.Editor.BeamCli
 					IEnumerator Defer()
 					{
 						yield return null; // delay a single frame, because the stdout/stderr callbacks may not have fired yet.
-						
+
 						if (_exitCode != 0)
 						{
 							CliLogger.Log("failed", _command, $"errors-count=[{_errors.Count}]");
@@ -494,9 +494,9 @@ namespace Beamable.Editor.BeamCli
 						}
 						else
 						{
-							CliLogger.Log("done", _command );
+							CliLogger.Log("done", _command);
 						}
-						
+
 					}
 					_dispatcher.Run("beam-cli-defer", Defer());
 				}

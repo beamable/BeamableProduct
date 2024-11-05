@@ -21,7 +21,7 @@ namespace Beamable.Server.Generator
 		public string federationId;
 		public string federationIdTypeName;
 	}
-	
+
 	public class ClientCodeGenerator
 	{
 		private const string MicroserviceClients_TypeName = "MicroserviceClients";
@@ -190,7 +190,7 @@ namespace Beamable.Server.Generator
 
 		}
 
-		 bool GetTypeReference(Type federationType, out CodeTypeReference codeTypeReference)
+		bool GetTypeReference(Type federationType, out CodeTypeReference codeTypeReference)
 		{
 			var federationId = ((IFederationId)Activator.CreateInstance(federationType)).UniqueName;
 			var existingFederation = _existingFederations.FirstOrDefault(x => x.federationId == federationId);
