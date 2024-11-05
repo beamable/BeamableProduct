@@ -63,6 +63,7 @@ namespace Beamable.Server.Editor.Usam
 		public ProjectNewServiceArgs newServiceArgs = null;
 		public MigrationCopyStep copyStep = null;
 		public UnityUpdateReferencesArgs unityAssemblyDefinitionArgs = null;
+		public UnityUpdateDllsArgs unityUpdateDllsArgs = null;
 
 		public List<string> stepNames = new List<string>();
 	}
@@ -315,6 +316,11 @@ namespace Beamable.Server.Editor.Usam
 							// add references
 							var addRefCommand = cli.UnityUpdateReferences(service.unityAssemblyDefinitionArgs);
 							yield return addRefCommand.Run().ToYielder();
+
+							// add dlls references
+							var addDllsPathsCommand = cli.UnityUpdateDlls(service.unityUpdateDllsArgs);
+							yield return addDllsPathsCommand.Run().ToYielder();
+
 							active.stepRatios[2] = 1f;
 						}
 
@@ -367,7 +373,7 @@ namespace Beamable.Server.Editor.Usam
 			return outputFolder;
 		}
 		
-		public static MigrationPlan CreatePlan(MicroserviceReflectionCache.Registry registry)
+		public static MigrationPlan CreatePlan(MicroserviceReflectionCache.Registry registry, UsamAssemblyService assemblyUtil)
 		{
 			var plan = new MigrationPlan();
 			
@@ -487,6 +493,15 @@ namespace Beamable.Server.Editor.Usam
 						};
 					}
 
+					{ // add dlls refs
+						var assembly = assemblyUtil.AllAssemblies.FirstOrDefault(assembly =>
+							assembly.name.Equals(service.Type.Assembly.GetName().Name));
+						var dlls = CsharpProjectUtil.GetValidDllReferences(assembly);
+						migration.unityUpdateDllsArgs = new UnityUpdateDllsArgs()
+						{
+							service = service.Name, paths = dlls.ToArray()
+						};
+					}
 					
 
 					migration.stepNames.Add("Add References");

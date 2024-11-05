@@ -904,6 +904,22 @@ public static class ProjectContextUtil
 		File.WriteAllText(definition.ProjectPath, rawText);
 	}
 
+	public static void UpdateProjectDlls(BeamoServiceDefinition definition, List<string> dllPaths)
+	{
+		var buildEngine = new ProjectCollection();
+		const string REFERENCE_TYPE = "Reference";
+
+		var refProject = buildEngine.LoadProject(definition.ProjectPath);
+
+		foreach (var dllPath in dllPaths)
+		{
+			refProject.AddItem(REFERENCE_TYPE, dllPath);
+		}
+
+		refProject.FullPath = definition.ProjectPath;
+		refProject.Save();
+	}
+
 	private static string FixMissingBreaklineInProject(string searchQuery, string fileContents)
 	{
 		var brokenIndex = fileContents.IndexOf(searchQuery, StringComparison.Ordinal);

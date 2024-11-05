@@ -164,7 +164,7 @@ namespace Beamable.Server.Editor.Usam
 			return file;
 		}
 
-		static IEnumerable<string> GetValidDllReferences(Assembly assembly)
+		public static IEnumerable<string> GetValidDllReferences(Assembly assembly)
 		{
 			var projectRoot = UnityEngine.Application.dataPath.Substring(0, UnityEngine.Application.dataPath.Length - "/Assets".Length);
 
@@ -193,8 +193,8 @@ namespace Beamable.Server.Editor.Usam
 		
 		public static bool IsValidReference(string referenceName)
 		{
-			var invalidPrefixes = new string[] { "Unity.", "UnityEditor.", "UnityEngine." };
-			var invalidReferences = new string[] {"netstandard"};
+			var invalidPrefixes = new string[] { "Unity.", "UnityEditor.", "UnityEngine.", "MongoDB.", "DnsClient", "System.", "Newtonsoft.", "SharpCompress"};
+			var invalidReferences = new string[] {"netstandard", "nunit.framework"};
 
 			if (referenceName.StartsWith("Unity.Beamable.Customer."))
 			{
@@ -203,10 +203,14 @@ namespace Beamable.Server.Editor.Usam
 				return true;
 			}
 			
-			if (invalidReferences.Contains(referenceName))
+			foreach (var invalidRef in invalidReferences)
 			{
-				return false;
+				if (referenceName.Contains(invalidRef))
+				{
+					return false;
+				}
 			}
+
 			foreach (var prefix in invalidPrefixes)
 			{
 				if (referenceName.StartsWith(prefix))

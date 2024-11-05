@@ -550,7 +550,7 @@ namespace Beamable.Server.Editor.Usam
 		
 		void LoadLegacyServices()
 		{
-			migrationPlan = UsamMigrator.CreatePlan(_microserviceCache);
+			migrationPlan = UsamMigrator.CreatePlan(_microserviceCache, _assemblyUtil);
 		}
 
 		public void OpenMongo(string beamoId)
