@@ -12,17 +12,16 @@ namespace Beamable.Editor.ToolbarExtender
 #endif
 	public class BeamableRealmMenuItem : BeamableToolbarMenuItem
 	{
-		public GUIContent Display(BeamEditorContext editor) => new GUIContent("Realm: " + editor.CurrentRealm.DisplayName);
-		
+	
 		public override void ContextualizeMenu(BeamEditorContext editor, GenericMenu menu)
 		{
-			var rootDisplay = Display(editor);
+			var rootDisplay = RenderLabel(editor);
 
 			var projects = new List<RealmView>();
 			foreach (var proj in editor.CurrentCustomer.Projects)
 			{
 				if (proj.Archived) continue;
-				if (proj.GamePid != editor.CurrentRealm.GamePid) continue;
+				if (proj.GamePid != editor.CurrentRealm?.GamePid) continue;
 
 				projects.Add(proj);
 			}
@@ -57,7 +56,15 @@ namespace Beamable.Editor.ToolbarExtender
 
 		public override GUIContent RenderLabel(BeamEditorContext beamableApi)
 		{
-			return Display(beamableApi);
+			var realmName = beamableApi?.CurrentRealm?.DisplayName;
+			if (string.IsNullOrEmpty(realmName))
+			{
+				return new GUIContent($"Realm: {realmName}");
+			}
+			else
+			{
+				return new GUIContent("Select Realm");
+			}
 		}
 
 		public override void OnItemClicked(BeamEditorContext beamableApi)

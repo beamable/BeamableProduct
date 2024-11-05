@@ -93,11 +93,11 @@ namespace Beamable.Editor.BeamCli
 
 		public Promise onReady = null;
 		private ServerServeWrapper _serverCommand;
-
-
+		private IBeamableRequester _requester;
 
 		public BeamWebCommandFactory(IBeamableRequester requester, BeamableDispatcher dispatcher, BeamWebCliCommandHistory history, BeamWebCommandFactoryOptions options)
 		{
+			_requester = requester;
 			this.dispatcher = dispatcher;
 			_history = history;
 			_options = options;
@@ -190,6 +190,10 @@ namespace Beamable.Editor.BeamCli
 						{
 							message = "server mismatched detected, bumping local port"
 						});
+						break;
+					case PingResult.NoServer when string.IsNullOrEmpty(_requester.Pid):
+						// waiting for pid to be selected...
+						yield return new WaitForSecondsRealtime(1);
 						break;
 					case PingResult.NoServer:
 						// bummer, no server exists for us, so we need to turn it on...
@@ -328,48 +332,6 @@ namespace Beamable.Editor.BeamCli
 			_history.UpdateCommand(id, commandString);
 		}
 		
-
-		// async Task ReadLoop(HttpRequestMessage req, List<long> dispatchedIds)
-		// {
-		// 	using HttpResponseMessage response =
-		// 		await _localClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
-		// 	using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
-		// 	using StreamReader reader = new StreamReader(streamToReadFrom);
-		// 	
-		// 	while (!reader.EndOfStream)
-		// 	{
-		// 		_cts.Token.ThrowIfCancellationRequested();
-		// 		var line = await reader.ReadLineAsync();
-		// 		if (string.IsNullOrEmpty(line)) continue; // TODO: what if the message contains a \n character?
-		//
-		// 		// remove life-cycle zero-width character
-		// 		line = line.Replace("\u200b", "");
-		// 		if (!line.StartsWith("data: "))
-		// 		{
-		// 			Debug.LogWarning(
-		// 				$"CLI received a message over the local-server that did not start with the expected 'data: ' format. line=[{line}]");
-		// 			continue;
-		// 		}
-		//
-		// 		var jobId = _factory.dispatcher.Schedule(() => // put callback on separate work queue.
-		// 		{
-		// 			var lineJson = line
-		// 				.Substring("data: ".Length); // remove the Server-Side-Event notation
-		//
-		// 			CliLogger.Log("received, " + lineJson, "from " + commandString);
-		//
-		// 			var res = JsonUtility.FromJson<ReportDataPointDescription>(lineJson);
-		// 			res.json = lineJson;
-		//
-		// 				
-		// 			_history.HandleMessage(id, res);
-		// 			_callbacks?.Invoke(res);
-		// 		});
-		// 		dispatchedIds.Add(jobId);
-		// 	}
-		//
-		// }
-		//
 		public async Promise Run()
 		{
 			_history.UpdateResolvingHostTime(id);
