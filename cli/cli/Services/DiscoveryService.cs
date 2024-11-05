@@ -584,8 +584,7 @@ public class DiscoveryService
 
 					// Deserialize the entry into an entry.
 					var service = JsonConvert.DeserializeObject<ServiceDiscoveryEntry>(json, UnitySerializationSettings.Instance);
-
-
+					
 					{
 						// it is POSSIBLE that a dead service's message is in the socket receive queue, 
 						//  so before promising that this service exists, do a quick process-check to 
@@ -622,7 +621,14 @@ public class DiscoveryService
 							           new FederationInstance
 							           {
 								           FederationTypes = kvp.Value.Select(v => v.Interface).ToArray(),
-								           FederationId = kvp.Key
+								           FederationId = kvp.Key,
+								           LocalSettings = kvp.Value.Select(v =>
+								           {
+									           var fedKey = FederationUtils.BuildLocalSettingKey(v.Interface, kvp.Key);
+									           if (_localSystem.BeamoManifest.HttpMicroserviceLocalProtocols[service.serviceName].Settings.TryGetSetting(fedKey, out var settingsJsonVal))
+										           return settingsJsonVal;
+									           return "{}";
+								           }).ToArray()
 							           }).ToArray()
 						           ?? Array.Empty<FederationInstance>();
 						var addition = processIdToEntry[service.processId] = new HostServiceDescriptor
@@ -633,18 +639,7 @@ public class DiscoveryService
 							healthPort = service.healthPort,
 							routingKey = service.prefix,
 							groups = groups,
-							federations = definition.SourceGenConfig.Federations.Select(kvp => new FederationInstance
-							{
-								FederationId = kvp.Key,
-								FederationTypes = kvp.Value.Select(v => v.Interface).ToArray(),
-								LocalSettings = kvp.Value.Select(v =>
-								{
-									var fedKey = FederationUtils.BuildLocalSettingKey(v.Interface, kvp.Key);
-									if (_localSystem.BeamoManifest.HttpMicroserviceLocalProtocols[service.serviceName].Settings.TryGetSetting(fedKey, out var settingsJsonVal))
-										return settingsJsonVal;
-									return "{}";
-								}).ToArray()
-							}).ToArray()
+							federations = feds
 						};
 						evtQueue.Enqueue(new HostServiceEvent { type = ServiceEventType.Running, descriptor = addition });
 						Log.Verbose("added dotnet process" + service.processId);

@@ -1,3 +1,4 @@
+using UnityEditor;
 using UnityEngine;
 
 namespace Beamable.Editor.ToolbarExtender
@@ -22,6 +23,11 @@ namespace Beamable.Editor.ToolbarExtender
 		/// </summary>
 		public string Text;
 
+		public virtual void ContextualizeMenu(BeamEditorContext editorApi, GenericMenu menu)
+		{
+			
+		}
+		
 		public virtual GUIContent RenderLabel(BeamEditorContext beamableApi) => new GUIContent(Text);
 
 		/// <summary>
