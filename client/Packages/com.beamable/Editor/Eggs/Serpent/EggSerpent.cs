@@ -18,14 +18,14 @@ namespace Beamable.Editor.Eggs.Serpent
 		public bool wasEntered = false;
 		public Vector2Int direction = Vector2Int.right;
 		public bool isDead;
-		
+
 		double nextMoveAt = 0.0;
 
 		public void OnGui(EditorWindow window, BeamableDispatcher dispatcher)
 		{
 			entry.OnGui();
 			if (!entry.entered) return;
-			
+
 			var width = window.position.width;
 			var height = window.position.height;
 			const int cellSize = 10;
@@ -46,22 +46,22 @@ namespace Beamable.Editor.Eggs.Serpent
 					window.Repaint();
 				}
 			}
-			
+
 			{ // init
 				if (!wasEntered)
 				{
 					taskId++;
 					dispatcher.Run("serpent", Run(taskId));
-					
+
 					Debug.Log("Howdy, friend.");
 					isDead = false;
 					wasEntered = true;
 					direction = Vector2Int.right;
 					serpent.Clear();
 					food.Clear();
-					serpent.Add(new Vector2Int(cols/2, rows/2));
-					serpent.Add(new Vector2Int(cols/2 + 1, rows/2));
-					serpent.Add(new Vector2Int(cols/2 + 2, rows/2));
+					serpent.Add(new Vector2Int(cols / 2, rows / 2));
+					serpent.Add(new Vector2Int(cols / 2 + 1, rows / 2));
+					serpent.Add(new Vector2Int(cols / 2 + 2, rows / 2));
 					serpentLength = serpent.Count;
 					inputs.Clear();
 				}
@@ -86,7 +86,7 @@ namespace Beamable.Editor.Eggs.Serpent
 					food.Add(f);
 				}
 			}
-			
+
 			var head = serpent[0];
 			var eatIndex = -1;
 
@@ -110,10 +110,10 @@ namespace Beamable.Editor.Eggs.Serpent
 			}
 
 			{ // draw snake
-				
+
 				var cell = GetCellRectV(serpent[0]);
 				EditorGUI.DrawRect(cell, serpentColor);
-				
+
 				for (var i = 1; i < serpent.Count; i++)
 				{
 					if (head == serpent[i])
@@ -131,7 +131,7 @@ namespace Beamable.Editor.Eggs.Serpent
 					isDead = true;
 				}
 			}
-					
+
 			if (!isDead && time > nextMoveAt)
 			{ // move snake
 
@@ -142,7 +142,7 @@ namespace Beamable.Editor.Eggs.Serpent
 						direction = nextDir;
 					}
 				}
-				
+
 				var next = serpent[0] + direction;
 				serpent.Insert(0, next);
 				while (serpent.Count >= serpentLength)

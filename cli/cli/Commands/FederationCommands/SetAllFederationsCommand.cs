@@ -16,10 +16,10 @@ public class SetAllFederationsCommandArgs : CommandArgs
 
 public class SetAllFederationsCommandOutput
 {
-	
+
 }
 
-public class SetAllFederationsCommand 
+public class SetAllFederationsCommand
 	: AtomicCommand<SetAllFederationsCommandArgs, SetAllFederationsCommandOutput>
 {
 	public SetAllFederationsCommand() : base("set", "Set all federations for a particular service")
@@ -33,12 +33,12 @@ public class SetAllFederationsCommand
 
 		AddOption(new Option<bool>(new string[] { "--clear", "-c" }, "Erase all federations"),
 			(args, i) => args.clear = i);
-		
+
 		var idsOption =
 			new Option<List<string>>("--fed-id",
 				"A federation id, must be in a parallel layout to the --fed-type option")
 			{
-				AllowMultipleArgumentsPerToken = true, 
+				AllowMultipleArgumentsPerToken = true,
 				Arity = ArgumentArity.ZeroOrMore
 			};
 		AddOption(idsOption,
@@ -46,7 +46,7 @@ public class SetAllFederationsCommand
 			{
 				// empty; validation in --fed-type binding
 			});
-		
+
 		AddOption(
 			new Option<List<string>>("--fed-type", "A federation type, must be in a parallel layout to the --fed-id option")
 			{
@@ -69,7 +69,7 @@ public class SetAllFederationsCommand
 	public override async Task<SetAllFederationsCommandOutput> GetResult(SetAllFederationsCommandArgs args)
 	{
 		{ // validations
-			// validate that if the --clear flag was given, there are no --fed-ids given
+		  // validate that if the --clear flag was given, there are no --fed-ids given
 			if (args.clear && (args.FederationIds.Count > 0 || args.FederationInterfaces.Count > 0))
 			{
 				throw new CliException("cannot pass both --clear flag and federations.");
@@ -80,7 +80,7 @@ public class SetAllFederationsCommand
 				throw new CliException("must pass federations, or pass the --clear flag to erase all");
 			}
 		}
-		
+
 		var manifest = args.BeamoLocalSystem.BeamoManifest;
 
 		// Make sure the selected service exists.
@@ -120,7 +120,7 @@ public class SetAllFederationsCommand
 				selectedService.SourceGenConfig.Federations.Add(kvp.Key, kvp.Value.ToArray());
 			}
 		}
-		
+
 		// Serialize the updated source gen config to disk
 		await ProjectContextUtil.SerializeSourceGenConfigToDisk(args.ConfigService.BaseDirectory, selectedService);
 

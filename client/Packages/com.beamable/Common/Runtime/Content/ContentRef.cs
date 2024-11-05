@@ -235,7 +235,7 @@ namespace Beamable.Common.Content
 		{
 			this.Id = id;
 		}
-		
+
 		public override Promise<TContent> Resolve(string manifestID = "")
 		{
 			var api = ContentApi.Instance;

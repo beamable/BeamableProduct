@@ -42,12 +42,12 @@ namespace Beamable.Common.Content
 	{
 		public SimGameTypeRef()
 		{
-			
+
 		}
 
 		public SimGameTypeRef(string id) : base(id)
 		{
-			
+
 		}
 	}
 
