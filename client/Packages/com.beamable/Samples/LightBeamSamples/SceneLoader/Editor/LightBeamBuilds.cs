@@ -58,7 +58,7 @@ public class LightBeamBuilds
 		Debug.Log("LIGHTBEAM_OUTPUT " + outputDir);
 
 		var scenePaths = config.scenes.Select(x => x.scenePath).ToList();
-
+		Debug.Log("LIGHTBEAM_SCENE_PATHS " + string.Join(", ", scenePaths));
 		BuildOptions options;
 #if UNITY_EDITOR
 		options = BuildOptions.AutoRunPlayer;
