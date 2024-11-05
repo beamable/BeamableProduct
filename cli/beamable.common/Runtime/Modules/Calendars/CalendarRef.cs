@@ -37,9 +37,9 @@ namespace Beamable.Experimental.Common.Calendars
 	{
 		public CalendarRef(string id) : base(id)
 		{
-			
+
 		}
-		public CalendarRef() {}
+		public CalendarRef() { }
 	}
 
 	/// <summary>
@@ -58,8 +58,8 @@ namespace Beamable.Experimental.Common.Calendars
 	[Agnostic]
 	public class CalendarRef<TContent> : ContentRef<TContent> where TContent : CalendarContent, new()
 	{
-		public CalendarRef(){}
+		public CalendarRef() { }
 		public CalendarRef(string id) : base(id) { }
 	}
-	
+
 }

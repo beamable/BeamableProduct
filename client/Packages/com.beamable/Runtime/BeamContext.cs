@@ -563,10 +563,10 @@ namespace Beamable
 				var analytics = _serviceScope.GetService<IAnalyticsTracker>();
 				analytics.TrackEvent(
 					TokenEvent.ChangingToken(playerId: PlayerId,
-					                         newAccessToken: token?.Token,
-					                         newRefreshToken: token?.RefreshToken,
-					                         oldAccessToken: oldToken?.Token,
-					                         oldRefreshToken: oldToken?.RefreshToken), true);
+											 newAccessToken: token?.Token,
+											 newRefreshToken: token?.RefreshToken,
+											 oldAccessToken: oldToken?.Token,
+											 oldRefreshToken: oldToken?.RefreshToken), true);
 			}
 
 			await _requester.Token.Save();
@@ -611,7 +611,7 @@ namespace Beamable
 				await resolution.Init();
 			}
 			#endregion
-			
+
 			#region load token from storage
 			_requester.Token = _tokenStorage.LoadTokenForRealmImmediate(Cid, Pid);
 			_beamableApiRequester.Token = _requester.Token;
