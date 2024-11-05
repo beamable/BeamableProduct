@@ -52,10 +52,10 @@ public class GetTokenDetailsCommand : AtomicCommand<GetTokenDetailsCommandArgs, 
 	{
 		AddOption(new Option<bool>(name: "--resolve",
 				getDefaultValue: () => false,
-			description: "This command normally only works for an access token. However, if this option is enabled and a refresh token is given, then it will be automatically converted to the access token and this command is rerun"), 
-			(args, b) => args.autoResolve = b, 
-			new string[]{"-r"});
-		
+			description: "This command normally only works for an access token. However, if this option is enabled and a refresh token is given, then it will be automatically converted to the access token and this command is rerun"),
+			(args, b) => args.autoResolve = b,
+			new string[] { "-r" });
+
 		var tokenOpt = new Option<string>("--token",
 			"The token that you want to get information for. This must be an access token. By default, the current access token of the .beamable context is used");
 		tokenOpt.AddAlias("-t");
@@ -66,7 +66,7 @@ public class GetTokenDetailsCommand : AtomicCommand<GetTokenDetailsCommandArgs, 
 				args.token = value;
 				return;
 			}
-			
+
 			var provider = context.GetService<AppServices>();
 			var ctx = provider.GetService<IAppContext>();
 			args.token = ctx.Token.Token;
@@ -95,7 +95,7 @@ public class GetTokenDetailsCommand : AtomicCommand<GetTokenDetailsCommandArgs, 
 					refreshToken = token,
 				}
 			};
-			
+
 			// // TODO: it isn't a good idea to generate a new access token for this use-case :( 
 			// if (!autoResolve)
 			// {
@@ -117,9 +117,9 @@ public class GetTokenDetailsCommand : AtomicCommand<GetTokenDetailsCommandArgs, 
 		Log.Information("Checking for token " + args.token);
 
 		var api = new AccountsApi(args.Requester);
-		
+
 		var (res, wasRefresh) = await ResolveToken(args, args.autoResolve, args.token);
-		
+
 		return new GetTokenDetailsCommandOutput
 		{
 			wasRefreshToken = wasRefresh,
@@ -135,7 +135,7 @@ public class GetTokenDetailsCommand : AtomicCommand<GetTokenDetailsCommandArgs, 
 			token = res.token,
 			cid = res.cid,
 			pid = res.pid,
-			
+
 		};
 	}
 }

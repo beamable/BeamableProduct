@@ -104,7 +104,7 @@ namespace Beamable.Server.Editor
 			{
 				AssetDatabase.StopAssetEditing();
 			}
-			
+
 			if (asset == null)
 			{
 				asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(GetCommonAsmDefPath());
@@ -158,7 +158,7 @@ namespace Beamable.Server.Editor
 			}
 		}
 
-		
+
 		void WriteIfDifferent(string filePath, string text)
 		{
 			var originalText = "";
@@ -169,7 +169,7 @@ namespace Beamable.Server.Editor
 
 			if (originalText == text)
 				return;
-			
+
 			File.WriteAllText(filePath, text);
 		}
 	}

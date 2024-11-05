@@ -79,7 +79,7 @@ namespace Beamable.Editor.Login.UI.Components
 				LoginWindow.Instance.Close();
 				BeamLibraryWindow.Init();
 			};
-			
+
 			SetView();
 			Model.OnStateChanged += _ => SetView();
 		}

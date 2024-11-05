@@ -64,16 +64,16 @@ namespace Beamable.Editor.Content
 
 			return paths;
 		}
-		
+
 		private static void SaveAssetsDebounced()
 		{
 			var paths = accruedSavedPaths.ToArray();
 			accruedSavedPaths.Clear();
-			
+
 			var db = BeamEditorContext.Default.ServiceScope.GetService<ContentDatabase>();
 			if (!db.ContainsAnyContentPaths(paths)) return;
-			
-			
+
+
 			db.RecalculateIndex(); // update, because assets are new!
 			var listOfContent = new List<IContentObject>();
 			for (var i = 0; i < paths.Length; i++)
@@ -996,7 +996,7 @@ namespace Beamable.Editor.Content
 			content.SetContentName(nextName);
 			NotifyRenamed(oldId, content, nextAssetpath);
 			content.BroadcastUpdate();
-			
+
 			var result = AssetDatabase.MoveAsset(existingAssetPath, nextAssetpath);
 			if (!string.IsNullOrEmpty(result))
 			{
@@ -1181,7 +1181,7 @@ namespace Beamable.Editor.Content
 				content.SetIdAndVersion(content.Id, version);
 				contentData[i] = new ContentDataInfo
 				{
-					contentId = content.Id, 
+					contentId = content.Id,
 					contentVersion = content.Version,
 					data = content.ToJson()
 				};

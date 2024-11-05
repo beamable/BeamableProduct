@@ -18,7 +18,7 @@ public class ContentResetCommand : AtomicCommand<ContentResetCommandArgs, LocalC
 	public override async Task<LocalContentState> GetResult(ContentResetCommandArgs args)
 	{
 		_contentService = args.ContentService;
-		
+
 		// Prepare the filters (makes sure all the given manifests exist.
 		var manifestsToReset = await _contentService.PrepareManifestFilter(args.ManifestIdsToReset);
 
