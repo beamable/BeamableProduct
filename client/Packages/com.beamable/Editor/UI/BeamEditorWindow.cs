@@ -279,6 +279,13 @@ namespace Beamable.Editor.UI
 				return;
 			}
 			
+			if (InitializedConfig.RequirePid && ctx.CurrentRealm?.Pid == null)
+			{
+				root.Clear();
+				DrawNoRealmGui();
+				return;
+			}
+			
 			
 			DrawGUI();
 		}
@@ -325,6 +332,13 @@ namespace Beamable.Editor.UI
 		protected void DrawWaitingForContextGui()
 		{
 			DrawBlockLoading("Loading Beamable...");
+		}
+
+		protected void DrawNoRealmGui()
+		{
+			BeamGUI.DrawHeaderSection(this, ActiveContext, () => { }, () => { }, () => { }, () => { });
+			EditorGUILayout.Space(12, false);
+			EditorGUILayout.LabelField("There is no Realm selected. Please select a Realm. ");
 		}
 
 		protected void DrawBlockLoading(string message)
@@ -402,5 +416,6 @@ namespace Beamable.Editor.UI
 		public string DockPreferenceTypeName;
 		public bool FocusOnShow;
 		public bool RequireLoggedUser;
+		public bool RequirePid;
 	}
 }
