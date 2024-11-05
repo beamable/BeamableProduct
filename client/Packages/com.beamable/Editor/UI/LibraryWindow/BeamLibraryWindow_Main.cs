@@ -21,9 +21,6 @@ namespace Beamable.Editor.Library
 			                          }, 
 			                          drawLowBarGui: () =>
 			                          {
-				                          EditorGUILayout.Space(4, false);
-				                          BeamGUI.LayoutRealmDropdown(this, ActiveContext);
-				                          EditorGUILayout.Space(4, false);
 			                          }, 
 			                          onClickedRefresh: () =>
 			                          {
