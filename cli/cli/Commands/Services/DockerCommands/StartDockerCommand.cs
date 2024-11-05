@@ -71,7 +71,9 @@ public class StartDockerCommand : AtomicCommand<StartDockerCommandArgs ,StartDoc
 			}
 			else
 			{
-				throw new CliException("this command only works on mac at the moment");
+				var command = Cli.Wrap("C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe");
+				await command.ExecuteAsync();
+				output.attempted = true;
 			}
 		}
 		else
