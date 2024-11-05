@@ -88,6 +88,8 @@ else
     dotnet nuget push ./microservice/microservice/nupkg/Beamable.Microservice.Runtime.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
     dotnet nuget push ./microservice/microservice/nupkg/Beamable.Microservice.Runtime.${VERSION}.snupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
 
+    echo "source-gen-debug"
+    ls ./templates/MicroserviceSourceGen/MicroserviceSourceGen/nupkg/
     dotnet nuget push ./templates/MicroserviceSourceGen/MicroserviceSourceGen/nupkg/Beamable.Microservice.SourceGen.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
     dotnet nuget push ./templates/MicroserviceSourceGen/MicroserviceSourceGen/nupkg/Beamable.Microservice.SourceGen.${VERSION}.snupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
 
