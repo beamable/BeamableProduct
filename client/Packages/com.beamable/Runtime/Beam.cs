@@ -211,10 +211,11 @@ namespace Beamable
 				// the presence service needs a special instance of the beamable api requester
 				provider.GetService<IBeamableApiRequester>(),
 				provider.GetService<IUserContext>()));
+			DependencyBuilder.AddSingleton<IBeamAnalyticsService>(p => p.GetService<AnalyticsService>());
+			DependencyBuilder.AddSingleton<AnalyticsService>();
 			DependencyBuilder.AddSingleton<AnalyticsTracker>(provider =>
 																 new AnalyticsTracker(
-																	 provider.GetService<IPlatformService>(),
-																	 provider.GetService<PlatformRequester>(),
+																	 provider.GetService<IBeamAnalyticsService>(),
 																	 provider.GetService<CoroutineService>(), 30, 10)
 			);
 			DependencyBuilder.AddSingleton<IAnalyticsTracker>(provider => provider.GetService<AnalyticsTracker>());
