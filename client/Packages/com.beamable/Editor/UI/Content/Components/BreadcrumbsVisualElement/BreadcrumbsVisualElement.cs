@@ -57,7 +57,6 @@ namespace Beamable.Editor.Content.Components
 		private Label _counterLabel;
 		private IList<ContentTypeTreeViewItem> _selectedContentTypeBranch;
 		private ContentItemDescriptor _selectedContentItemDescriptor;
-		private RealmButtonVisualElement _realmButton;
 		private ManifestButtonVisualElement _manifestButton;
 		private Button _contentSorterButton;
 		private Label _contentSorterTitle;
@@ -70,8 +69,6 @@ namespace Beamable.Editor.Content.Components
 		{
 			base.Refresh();
 
-			_realmButton = Root.Q<RealmButtonVisualElement>("realmButton");
-			_realmButton.Refresh();
 			_manifestButton = Root.Q<ManifestButtonVisualElement>("manifestButton");
 			_manifestButton.Refresh();
 			_tokenListVisualElement = Root.Q<VisualElement>("tokenListVisualElement");

@@ -202,11 +202,10 @@ namespace Beamable.Editor.Microservice.UI2
 								                       return popup;
 							                       }
 							);
+							EditorGUILayout.Space(4, false);
+
 						}
 
-						EditorGUILayout.Space(4, false);
-						BeamGUI.LayoutRealmDropdown(this, ActiveContext);
-						EditorGUILayout.Space(4, false);
 					}
 				},
 				drawTopBarGui: () =>

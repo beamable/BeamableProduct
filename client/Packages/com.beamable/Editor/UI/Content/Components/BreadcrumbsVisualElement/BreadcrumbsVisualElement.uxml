@@ -18,7 +18,6 @@
             <engine:Label name="contentSorterTitle" text="Name (A-Z)" class="buttonText"/>
         </engine:Button>
         <beamable:ManifestButtonVisualElement name="manifestButton"/>
-        <beamable:RealmButtonVisualElement name="realmButton"/>
     </engine:VisualElement>
 
 </engine:UXML>
