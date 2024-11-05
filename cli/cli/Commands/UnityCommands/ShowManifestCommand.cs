@@ -8,7 +8,7 @@ namespace cli.UnityCommands;
 
 public class ShowManifestCommandArgs : CommandArgs
 {
-	
+
 }
 
 public class ShowManifestCommandOutput
@@ -16,7 +16,7 @@ public class ShowManifestCommandOutput
 	public string localRoutingKey;
 	public List<ManifestServiceEntry> services = new List<ManifestServiceEntry>();
 	public List<ManifestStorageEntry> storages = new List<ManifestStorageEntry>();
-	
+
 	public List<string> existingFederationIds = new List<string>();
 	public List<string> availableFederationTypes = new List<string>();
 }
@@ -54,24 +54,24 @@ public class ShowManifestCommand : AtomicCommand<ShowManifestCommandArgs, ShowMa
 
 	public override void Configure()
 	{
-		
+
 	}
 
 	public override Task<ShowManifestCommandOutput> GetResult(ShowManifestCommandArgs args)
 	{
 		var services = new List<ManifestServiceEntry>();
 		var storages = new List<ManifestStorageEntry>();
-		
+
 		var manifest = args.BeamoLocalSystem.BeamoManifest;
-		
+
 		foreach (var (beamoId, http) in manifest.HttpMicroserviceLocalProtocols)
 		{
 			if (!manifest.TryGetDefinition(beamoId, out var definition))
 			{
 				throw new InvalidOperationException($"definition must exist for beamoId=[{beamoId}]");
 			}
-			var buildReport =  ProjectCommand.IsProjectBuiltMsBuild(http.Metadata.msbuildProject);
-			
+			var buildReport = ProjectCommand.IsProjectBuiltMsBuild(http.Metadata.msbuildProject);
+
 			var service = new ManifestServiceEntry
 			{
 				beamoId = beamoId,
@@ -94,7 +94,7 @@ public class ShowManifestCommand : AtomicCommand<ShowManifestCommandArgs, ShowMa
 					return results;
 				}).ToList()
 			};
-			
+
 
 			services.Add(service);
 		}
@@ -108,7 +108,7 @@ public class ShowManifestCommand : AtomicCommand<ShowManifestCommandArgs, ShowMa
 
 			var storage = new ManifestStorageEntry
 			{
-				beamoId = beamoId, 
+				beamoId = beamoId,
 				csprojPath = definition.ProjectPath,
 				shouldBeEnabledOnRemote = definition.ShouldBeEnabledOnRemote
 			};

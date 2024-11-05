@@ -22,7 +22,7 @@ namespace Beamable.Editor.Microservice.UI2
 			"for your game. The source code will be saved to your Unity project folder. " +
 			"\n\n" +
 			"Every Microservice needs a name. ";
-		
+
 		private const string textCreateNewStorageFirst =
 			"A Storage Object is a Mongo database you can use to manage custom game " +
 			"state. The database is represented by a local dotnet project that will " +
@@ -30,25 +30,25 @@ namespace Beamable.Editor.Microservice.UI2
 			"\n\n" +
 			"Every storage object needs a name.";
 
-		private const string textCreateNewService = 
+		private const string textCreateNewService =
 			"Additional Microservices are best when you want to group your cloud code " +
 			"by how often you expect it to be invoked. " +
 			"\n\n" +
 			"Enter a name for the new Microservice. ";
-		
-		private const string textCreateNewStorage = 
+
+		private const string textCreateNewStorage =
 			"Additional Storage Objects are best when you need to completely segregate " +
 			"data. " +
 			"\n\n" +
 			"Enter a name for the new Storage Object. ";
 
-		private const string textSelectStorageDeps = 
+		private const string textSelectStorageDeps =
 			"Microservices may depend on Storage Objects. A Storage Objct is a mongo " +
 			"database you can use to manage custom game state. " +
 			"\n\n" +
 			"[Optional] Select which Storage Objects should be linked to this Microservice. ";
 
-		private const string textSelectServiceDeps = 
+		private const string textSelectServiceDeps =
 			"Storage Objects are only accessible by a Microservice. " +
 			"\n\n" +
 			"[Optional] Select which Microservices should be linked to this Storage Object. ";
@@ -60,31 +60,31 @@ namespace Beamable.Editor.Microservice.UI2
 
 		private string newFederationIdName = string.Empty;
 
-		
+
 		void DrawNewStorage()
 		{
 			var firstStorage = usam?.latestManifest?.storages?.Count == 0;
 			var deps = usam?.latestManifest?.services?.Select(x => x.beamoId).ToList();
-			DrawNew(noun: "Storage", 
-			        description: firstStorage ? textCreateNewStorageFirst : textCreateNewStorage,
-			        depDescription: textSelectServiceDeps,
-			        availableDependencyBeamoIds: deps,
-			        onCreate: (name, deps) =>
-			        {
-				        CheckDocker("create a Storage Object", () =>
-				        {
-					        usam.CreateStorage(name, deps);
-				        }, out var cancelled);
-				        return !cancelled;
-			        });
+			DrawNew(noun: "Storage",
+					description: firstStorage ? textCreateNewStorageFirst : textCreateNewStorage,
+					depDescription: textSelectServiceDeps,
+					availableDependencyBeamoIds: deps,
+					onCreate: (name, deps) =>
+					{
+						CheckDocker("create a Storage Object", () =>
+						{
+							usam.CreateStorage(name, deps);
+						}, out var cancelled);
+						return !cancelled;
+					});
 		}
 
 		void DrawNewService()
 		{
 			var firstService = usam?.latestManifest?.services?.Count == 0;
 			var deps = usam?.latestManifest?.storages?.Select(x => x.beamoId).ToList();
-			
-			DrawNew(noun: "Service", 
+
+			DrawNew(noun: "Service",
 				description: firstService ? textCreateNewServiceFirst : textCreateNewService,
 				depDescription: textSelectStorageDeps,
 				availableDependencyBeamoIds: deps,
@@ -93,7 +93,7 @@ namespace Beamable.Editor.Microservice.UI2
 					var _ = usam.CreateService(name, deps);
 					return true;
 				});
-			
+
 		}
 
 		private void DrawNewFederationId()
@@ -105,7 +105,7 @@ namespace Beamable.Editor.Microservice.UI2
 			});
 
 			EditorGUILayout.TextArea("A Federation Id is required in order to add federation to your service.\n\n" +
-			                         "Enter the name of your Federation Id below:", new GUIStyle(EditorStyles.label) {wordWrap = true});
+									 "Enter the name of your Federation Id below:", new GUIStyle(EditorStyles.label) { wordWrap = true });
 
 			EditorGUILayout.Space(4, false);
 
@@ -125,7 +125,7 @@ namespace Beamable.Editor.Microservice.UI2
 			clickedCancel = BeamGUI.CancelButton();
 
 			GUI.enabled = !string.IsNullOrEmpty(newFederationIdName) &&
-			              !usam.latestManifest.existingFederationIds.Contains(newFederationIdName);
+						  !usam.latestManifest.existingFederationIds.Contains(newFederationIdName);
 			var clickedCreate = BeamGUI.PrimaryButton(new GUIContent($"Create New Federation"));
 			GUI.enabled = true;
 
@@ -141,11 +141,11 @@ namespace Beamable.Editor.Microservice.UI2
 				{
 					var template = File.ReadAllText(FederationTemplatePath);
 					var lowerCaseName = newFederationIdName;
-					if ( !string.IsNullOrEmpty(lowerCaseName) && char.IsUpper(lowerCaseName[0]))
+					if (!string.IsNullOrEmpty(lowerCaseName) && char.IsUpper(lowerCaseName[0]))
 						lowerCaseName = lowerCaseName.Length == 1 ? char.ToLower(lowerCaseName[0]).ToString() : char.ToLower(lowerCaseName[0]) + lowerCaseName[1..];
 
 					var newContent = template.Replace(ScriptNameReplaceTag, newFederationIdName)
-					                         .Replace(ScriptNameLowerCaseReplaceTag, lowerCaseName);
+											 .Replace(ScriptNameLowerCaseReplaceTag, lowerCaseName);
 
 					var newFilePath = CommonPath + $"{newFederationIdName}.cs";
 					File.WriteAllText(newFilePath, newContent);
@@ -168,13 +168,13 @@ namespace Beamable.Editor.Microservice.UI2
 			EditorGUILayout.EndHorizontal();
 			EditorGUILayout.EndVertical();
 		}
-		
-		
-		void DrawNew(string noun, 
-		             string description, 
-		             string depDescription, 
-		             List<string> availableDependencyBeamoIds,
-		             Func<string, List<string>, bool> onCreate)
+
+
+		void DrawNew(string noun,
+					 string description,
+					 string depDescription,
+					 List<string> availableDependencyBeamoIds,
+					 Func<string, List<string>, bool> onCreate)
 		{
 			{
 				EditorGUILayout.BeginVertical(new GUIStyle(EditorStyles.helpBox)
@@ -184,14 +184,14 @@ namespace Beamable.Editor.Microservice.UI2
 				});
 
 				{ // describe making a new thingy...
-					EditorGUILayout.TextArea(description, new GUIStyle(EditorStyles.label) {wordWrap = true});
+					EditorGUILayout.TextArea(description, new GUIStyle(EditorStyles.label) { wordWrap = true });
 				}
-				
+
 				EditorGUILayout.Space(4, false);
 				newServiceName =
 					BeamGUI.LayoutPlaceholderTextField(newServiceName, $"[{noun} Name]", EditorStyles.textField);
 
-				
+
 				var isValidServiceName = true;
 				string newServiceNameError = null;
 
@@ -211,7 +211,7 @@ namespace Beamable.Editor.Microservice.UI2
 						newServiceNameError = "";
 					}
 					// TODO: add validations for existing services
-					
+
 					isValidServiceName = newServiceNameError == null;
 
 					if (!isValidServiceName && !string.IsNullOrEmpty(newServiceNameError))
@@ -223,7 +223,7 @@ namespace Beamable.Editor.Microservice.UI2
 					}
 				}
 
-				
+
 				{ // draw the dependencies 
 					if (availableDependencyBeamoIds?.Count > 0)
 					{
@@ -246,25 +246,26 @@ namespace Beamable.Editor.Microservice.UI2
 						for (var i = 0; i < availableDependencyBeamoIds.Count; i++)
 						{
 							var depBeamoId = availableDependencyBeamoIds[i];
-					
+
 							EditorGUILayout.BeginHorizontal();
-							
+
 							var labelRect = GUILayoutUtility.GetRect(new GUIContent(depBeamoId), labelStyle);
 							var rowRect = new Rect(labelRect.x - 8, labelRect.y, labelRect.width + 39, 24);
-							EditorGUI.DrawRect(rowRect, new Color(0, 0, 0, (i%2 == 0) ? .1f : .2f));
+							EditorGUI.DrawRect(rowRect, new Color(0, 0, 0, (i % 2 == 0) ? .1f : .2f));
 							EditorGUI.LabelField(labelRect, depBeamoId, labelStyle);
 
 							var isDependency = newItemDependencies.Contains(depBeamoId);
-							var shouldBeDependency = BeamGUI.LayoutToggle(isDependency, toggleSize:16, yShift: 6);
+							var shouldBeDependency = BeamGUI.LayoutToggle(isDependency, toggleSize: 16, yShift: 6);
 
 							if (shouldBeDependency && !isDependency)
 							{
 								newItemDependencies.Add(depBeamoId);
-							} else if (!shouldBeDependency && isDependency)
+							}
+							else if (!shouldBeDependency && isDependency)
 							{
 								newItemDependencies.Remove(depBeamoId);
 							}
-							
+
 							EditorGUILayout.EndHorizontal();
 						}
 						EditorGUILayout.EndVertical();
@@ -308,15 +309,15 @@ namespace Beamable.Editor.Microservice.UI2
 								newItemDependencies.Clear();
 								state = WindowState.NORMAL;
 							}
-							
+
 						});
 					}
-					
+
 					EditorGUILayout.EndHorizontal();
 
 				}
-				
-			
+
+
 				EditorGUILayout.EndVertical();
 			}
 

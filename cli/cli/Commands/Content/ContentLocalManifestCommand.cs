@@ -24,9 +24,9 @@ public class ContentLocalManifestCommand : AtomicCommand<ContentLocalManifestCom
 
 		// Prepare the filters (makes sure all the given manifests exist.
 		var manifestsToGet = await _contentService.PrepareManifestFilter(args.ManifestFilter);
-		
+
 		// If we have no manifests... auto-create a "global" one. 
-		if (manifestsToGet.Length == 0) 
+		if (manifestsToGet.Length == 0)
 			await _contentService.PublishContentAndManifest("global");
 
 		// Get the local content state for all the requested manifests

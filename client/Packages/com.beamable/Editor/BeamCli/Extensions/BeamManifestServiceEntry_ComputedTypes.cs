@@ -20,7 +20,7 @@ namespace Beamable.Editor.BeamCli.Commands
 			return flag.HasFlag(test);
 		}
 	}
-	
+
 	public partial class BeamManifestServiceEntry
 	{
 		/// <summary>
@@ -32,14 +32,14 @@ namespace Beamable.Editor.BeamCli.Commands
 		public bool IsReadonlyPackage;
 
 		public BeamManifestEntryFlags Flags;
-		
+
 		public static bool IsReadonlyProject(string csProjPath)
 		{
 			var root = System.Environment.CurrentDirectory;
 			var full = Path.GetFullPath(csProjPath);
 
 			var isChildOfProject = full.StartsWith(root);
-			
+
 			if (!isChildOfProject)
 				return true;
 

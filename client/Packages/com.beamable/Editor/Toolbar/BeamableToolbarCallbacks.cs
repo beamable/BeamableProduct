@@ -53,9 +53,9 @@ namespace Beamable.Editor.ToolbarExtender
 
 		static void OnUpdate()
 		{
-			
+
 			if (!BeamEditor.IsInitialized) return;
-			
+
 			// Relying on the fact that toolbar is ScriptableObject and gets deleted when layout changes
 			if (m_currentToolbar == null)
 			{

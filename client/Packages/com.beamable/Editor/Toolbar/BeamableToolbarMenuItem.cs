@@ -25,9 +25,9 @@ namespace Beamable.Editor.ToolbarExtender
 
 		public virtual void ContextualizeMenu(BeamEditorContext editorApi, GenericMenu menu)
 		{
-			
+
 		}
-		
+
 		public virtual GUIContent RenderLabel(BeamEditorContext beamableApi) => new GUIContent(Text);
 
 		/// <summary>

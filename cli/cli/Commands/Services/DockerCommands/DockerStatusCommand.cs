@@ -44,7 +44,7 @@ public class DockerStatusCommand : StreamCommand<DockerStatusCommandArgs, Docker
 			DockerStatusCommandOutput lastStatus = null;
 			while (!args.Lifecycle.IsCancelled)
 			{
-				
+
 				var status = await CheckDocker(args);
 
 				var changes = false;
@@ -62,8 +62,8 @@ public class DockerStatusCommand : StreamCommand<DockerStatusCommandArgs, Docker
 				{
 					SendResults(status);
 				}
-				
-				
+
+
 				lastStatus = status;
 				await Task.Delay(500);
 
@@ -73,14 +73,14 @@ public class DockerStatusCommand : StreamCommand<DockerStatusCommandArgs, Docker
 		{
 			this.SendResults(await CheckDocker(args));
 		}
-		
+
 	}
 
 	public static async Task<DockerStatusCommandOutput> CheckDocker(CommandArgs args)
 	{
 		var daemonTask = IsDaemonAvailable(args);
 		var cliTask = IsCliAvailable(args);
-		
+
 		var output = new DockerStatusCommandOutput
 		{
 			isDaemonRunning = await daemonTask,
