@@ -149,6 +149,7 @@ namespace Beamable.Server.Editor.Usam
 		private UsamAssemblyService _assemblyUtil;
 
 		private AssemblyDefinitionAsset _commonAssemblyAsset;
+		private MicroserviceConfiguration _config;
 
 		public const string SERVICES_FOLDER = "BeamableServices/";
 		public const string SERVICES_SLN_PATH = SERVICES_FOLDER + "beamableServices.sln";
@@ -171,8 +172,10 @@ namespace Beamable.Server.Editor.Usam
 			BeamCommands cli, 
 			CommonAreaService commonArea,
 			BeamableDispatcher dispatcher,
-			ReflectionCache editorCache)
+			ReflectionCache editorCache,
+			MicroserviceConfiguration config)
 		{
+			_config = config;
 			_commonArea = commonArea;
 			_ctx = ctx;
 			_microserviceCache = editorCache.GetFirstSystemOfType<MicroserviceReflectionCache.Registry>();
@@ -712,13 +715,20 @@ namespace Beamable.Server.Editor.Usam
 				};
 				_namedLogs.Add(log);
 			}
-				
+
+			var message = logMessage.message.TrimStart(new char[] {' ', '\n', '\r'});
 			log.logs.Add(new CliLogMessage
 			{
-				message = logMessage.message.TrimStart(new char[]{' ', '\n', '\r'}),
+				message = message,
 				logLevel = logMessage.logLevel,
 				timestamp = logMessage.timestamp
 			});
+			
+			
+			if (_config.LogErrorsToUnityConsole  && (logMessage.logLevel.ToLowerInvariant().StartsWith("f") || logMessage.logLevel.ToLowerInvariant().StartsWith("e"))) // fatal or error
+			{
+				Debug.LogFormat(LogType.Error, LogOption.NoStacktrace, null, $"[{beamoId}] {message}");
+			}
 		}
 		
 		void StopService(BeamManifestServiceEntry service)

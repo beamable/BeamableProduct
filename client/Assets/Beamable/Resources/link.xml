@@ -2,7 +2,6 @@
 <assembly fullname="PubNub" preserve="all"/>
 <assembly fullname="VirtualList" preserve="all"/>
 <assembly fullname="UnityUIExtensions" preserve="all"/>
-<assembly fullname="Beamable.AssetStoreTooling" preserve="all"/>
 <assembly fullname="Beamable.Commands" preserve="all"/>
 <assembly fullname="Beamable.Config" preserve="all"/>
 <assembly fullname="Beamable.ConsoleCommands" preserve="all"/>
