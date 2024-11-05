@@ -729,6 +729,29 @@ public class App
 				ConfigureServices(services);
 			});
 
+			{ // if the application is force-quit, then we should cancel our life-cycle to give commands a chance to clean up
+				Console.CancelKeyPress += (sender, eventArgs) =>
+				{
+					
+					// prevent the application from shutting down immediately after a CTRL+C appears, 
+					eventArgs.Cancel = true;
+					Log.Debug("Starting graceful shutdown...");
+					
+					// give the CLI stuff a chance to shutdown gracefully
+					var lifecycle = provider.GetService<AppLifecycle>();
+					lifecycle.Cancel();
+
+					// and schedule a hard exit in some short amount of time later
+					Task.Run(async () =>
+					{
+						const int GRACEFUL_SHUTDOWN_MILLISECOND_LIMIT = 250;
+						await Task.Delay(GRACEFUL_SHUTDOWN_MILLISECOND_LIMIT);
+						Log.Debug("Done waiting for graceful shutdown...");
+						Environment.Exit(0);
+					});
+				};
+			}
+
 			Log.Verbose("command prep (make provider) took " + sw.ElapsedMilliseconds);
 
 			// update log information before dependency injection is sealed.
