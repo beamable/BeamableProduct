@@ -25,7 +25,7 @@ namespace Beamable.Editor.BeamCli.UI
 		[MenuItem(
 			Constants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/" +
 			Constants.Commons.OPEN + " " +
-			"CLI Debugger %l",
+			"CLI Debugger",
 			priority = Constants.MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
 		)]
 		public static async Task Init() => await GetFullyInitializedWindow();

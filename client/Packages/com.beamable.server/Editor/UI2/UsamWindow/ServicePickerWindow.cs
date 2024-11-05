@@ -11,7 +11,7 @@ namespace Beamable.Editor.Microservice.UI2
 	public class ServicePickerWindow : EditorWindow
 	{
 		public static bool isOpen;
-		public UsamWindow2 usamWindow;
+		public UsamWindow usamWindow;
 		public Vector2 scrollPosition;
 
 		const int elementHeight = 39;
