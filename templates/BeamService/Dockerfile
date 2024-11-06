@@ -1,11 +1,18 @@
 ﻿ARG BEAM_DOTNET_VERSION="8.0-alpine"
 FROM mcr.microsoft.com/dotnet/runtime:${BEAM_DOTNET_VERSION}
 
-# these args are provided by the Beam CLI
+# These args are provided by the Beam CLI
 
-# TODO: describe what each arg _is_, and how to produce it by hand
+# Declares the relative path from the beamable workspace to the pre-build support binaries for BeamService
+#  Normally, this will be /services/BeamService/bin/beamApp/support
 ARG BEAM_SUPPORT_SRC_PATH
+
+# Declares the relative path from the beamable workspace to the pre-built binaries for BeamService
+#  Normally, this will be /services/BeamService/bin/beamApp/app
 ARG BEAM_APP_SRC_PATH
+
+# Declares where the built application will exist inside the Docker image.
+#  This value is usually /beamApp/BeamService
 ARG BEAM_APP_DEST
 
 # <beamReserved> Beamable may inject custom settings into this Dockerfile. Please do not remove these lines. 
