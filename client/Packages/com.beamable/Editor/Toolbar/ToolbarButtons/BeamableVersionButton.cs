@@ -17,6 +17,8 @@ namespace Beamable.Editor.ToolbarExtender
 	public class BeamableVersionButton : BeamableBasicVisualElement
 	{
 		private VisualElement _icon;
+		private VisualElement _badge;
+		private TextElement _label;
 
 		public BeamableVersionButton() :
 			base(
@@ -29,27 +31,34 @@ namespace Beamable.Editor.ToolbarExtender
 		{
 			base.Init();
 
-			
-			RefreshIcon();
+			_icon = new VisualElement {name = "icon", style = {backgroundImage = new StyleBackground(GetSprite())}};
 			Root.Add(_icon);
 
-			VisualElement label = new TextElement {name = "label", text = GetVersion()};
-			Root.Add(label);
+			_label = new TextElement {name = "label", text = GetVersion()};
+			Root.Add(_label);
+
+			_badge = new VisualElement {name = "badge"};
+			Root.Add(_badge);
+			RefreshIcon();
 
 			Root.RegisterCallback<MouseDownEvent>(ButtonClicked);
 			EditorApplication.update += RefreshIcon;
-			
 		}
 
 		private void RefreshIcon()
 		{
-			_icon = new VisualElement
+			BeamEditorContext ctx = BeamEditorContext.Default;
+
+			_label.text = ctx.CurrentRealm?.DisplayName ?? "<no realm>";
+			_badge?.ClearClassList();
+			if (ctx.CurrentRealm?.IsProduction ?? false)
 			{
-				name = "icon", style =
-				{
-					backgroundImage = new StyleBackground(GetSprite())
-				}
-			};
+				_badge?.AddToClassList("production");
+			}
+			if (ctx.CurrentRealm?.IsStaging ?? false)
+			{
+				_badge?.AddToClassList("staging");
+			}
 		}
 
 		protected override void OnDestroy()
@@ -86,26 +95,7 @@ namespace Beamable.Editor.ToolbarExtender
 			});
 
 			var menu = new GenericMenu();
-			
-			if (editorAPI.IsAuthenticated)
-			{
-				menu.AddItem(new GUIContent($"Account: {editorAPI.CurrentUser.email}"), false, () =>
-				{
-					var _ = LoginWindow.Init();
-				});
-				menu.AddItem(new GUIContent("Log Out"), false, () =>
-				{
-					editorAPI.Logout(false);
-				});
-				
-			}
-			else
-			{
-				menu.AddItem(new GUIContent("Log In"), false, () =>
-				{
-					var _ = LoginWindow.CheckLogin();
-				});
-			}
+		
 			
 			assistantMenuItems.ForEach(item => item.ContextualizeMenu(editorAPI, menu));
 			assistantMenuItems
@@ -139,7 +129,7 @@ namespace Beamable.Editor.ToolbarExtender
 		{
 			var noHintsTexture =
 				AssetDatabase.LoadAssetAtPath<Sprite>(
-					"Packages/com.beamable/Editor/UI/Common/Icons/beam_icon_small_color.png");
+					"Packages/com.beamable/Editor/UI/Common/Icons/beam_icon_small.png");
 
 			return noHintsTexture;
 		}

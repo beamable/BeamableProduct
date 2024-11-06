@@ -3,6 +3,7 @@
 
 using Beamable.Common.Scheduler;
 using Beamable.Server.Api;
+using Beamable.Server.Api.Analytics;
 using Beamable.Server.Api.Announcements;
 using Beamable.Server.Api.Calendars;
 using Beamable.Server.Api.Chat;
@@ -70,6 +71,8 @@ namespace Beamable.Server
 	/// </summary>
 	public interface IBeamableServices
 	{
+		IMicroserviceAnalyticsService Analytics { get; }
+
 		/// <summary>
 		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/announcements-feature-overview">Announcements</a> feature
 		/// </summary>

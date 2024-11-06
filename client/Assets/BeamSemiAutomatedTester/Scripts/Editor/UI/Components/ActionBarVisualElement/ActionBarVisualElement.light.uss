@@ -13,7 +13,7 @@
 }
 
 #scanIcon {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all D.png");
+    /*background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all D.png");*/
 }
 
 #createTestSceneIcon {

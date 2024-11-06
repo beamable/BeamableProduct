@@ -131,13 +131,13 @@ namespace Beamable.Editor.Util
 			{
 				iconService =
 					EditorResources.Load<Texture>(
-						"Packages/com.beamable.server/Editor/UI/Icons/MS not running without wifi.png", true);
+						"Packages/com.beamable/Editor/UI/Common/Icons/microservice.png", true);
 			}
 			
 			if (iconStorage == null)
 			{
 				iconStorage =
-					EditorResources.Load<Texture>("Packages/com.beamable.server/Editor/UI/Icons/SO running.png", true);
+					EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/storage.png", true);
 			}
 
 			if (iconHelp == null)
@@ -166,7 +166,7 @@ namespace Beamable.Editor.Util
 			if (iconOpenMongoExpress == null)
 			{
 				iconOpenMongoExpress =
-					EditorResources.Load<Texture>("Packages/com.beamable.server/Editor/UI/Icons/Database_light.png", true);
+					EditorResources.Load<Texture>("Packages/com.beamable/Editor/UI/Common/Icons/Database_light.png", true);
 			}
 
 			if (iconOpenProject == null)

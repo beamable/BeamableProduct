@@ -43,9 +43,11 @@ namespace Beamable.Server.Editor
 		[Tooltip("It will enable microservice health check at the begining of publish process.")]
 		public bool EnablePrePublishHealthCheck = false;
 
-		[FormerlySerializedAs("EnableAdditiveDeploy")]
 		[Tooltip("Deploy microservices without removing existing services.")]
 		public bool EnableMergeDeploy;
+
+		[Tooltip("When a log would be printed to the Beam Services tab, if it is an error, should the log also be printed to the Unity console?")]
+		public bool LogErrorsToUnityConsole = true;
 
 	}
 }

@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace Beamable.Editor.Microservice.UI2
 {
-	public partial class UsamWindow2
+	public partial class UsamWindow
 	{
 		public List<SerializedObject> serviceSettings = new List<SerializedObject>();
 		public Vector2 settingsScrollPosition;
@@ -127,14 +127,6 @@ namespace Beamable.Editor.Microservice.UI2
 
 					EditorGUI.indentLevel++;
 
-					DrawHelpBox("<b>Editor Only</b> This option will <i>reset everytime you exit Unity!</i>. " +
-					            "When there are multiple versions of the service running, such as a deployed version, " +
-					            "a local version, or a friendly developer running a service on their machine, then " +
-					            "Unity Playmode needs to know which service to use for development. The routing mode controls " +
-					            "where your Playmode session will send Microservice requests. " +
-					            "\n\n" +
-					            "This setting resets after you quit Unity!" +
-					            "" );
 					var selectedDisplay = "";
 					if (usam.TryGetRoutingSetting(settings.serviceName, out var routingSetting))
 					{
@@ -195,30 +187,18 @@ namespace Beamable.Editor.Microservice.UI2
 					                           new GUIStyle(EditorStyles.largeLabel));
 					EditorGUI.indentLevel++;
 					EditorGUILayout.Separator();
-					// GUILayout.Label($"{settings.Key}:", serviceLabelStyle);
 					EditorGUILayout.Separator();
 					
-					DrawHelpBox("In order to access a Storage Object, it must be referenced a dependency. " +
-					            "The data is stored in the service's <i>csproj</i> file as a <i>ProjectReference</i> " +
-					            "element. Once a Storage Object is listed as a dependency, the service can access " +
-					            "it through the <i>Storage</i> accessor, and the service will be given a secure " +
-					            "connection-string to the Storage Object on startup. " );
 					EditorGUILayout.PropertyField(
 						serializedObj.FindProperty(nameof(BeamableMicroservicesSettings.storageDependencies)),
 						new GUIContent("Storage Dependencies"));
 					EditorGUILayout.Separator();
 					
-					DrawHelpBox("Unity Assembly Definitions can be shared with the service by listing them " +
-					            "as dependencies. A shared assembly definition will generate a dotnet8 compatible " +
-					            "<i>csproj</i> file and list it as a <i>ProjectReference</i> in the service's " +
-					            "<i>csproj</i> file. Once an assembly definition is listed as a dependency, the code " +
-					            "in the assembly may be used freely from the service. " );
 					EditorGUILayout.PropertyField(
 						serializedObj.FindProperty(nameof(BeamableMicroservicesSettings.assemblyReferences)),
 						new GUIContent("Assembly Definitions"));
 					EditorGUILayout.Separator();
 					
-					DrawHelpBox("TODO: Fill out these settings for federation" );
 					EditorGUILayout.PropertyField(
 						serializedObj.FindProperty(nameof(BeamableMicroservicesSettings.federations)), 
 						new GUIContent("Federations"), true);
@@ -264,24 +244,6 @@ namespace Beamable.Editor.Microservice.UI2
 				EditorGUILayout.EndVertical();
 			}
 			
-			// EditorGUILayout.Space(100);
-			void DrawHelpBox(string message)
-			{
-			
-				EditorGUILayout.BeginVertical(new GUIStyle(EditorStyles.helpBox)
-				{
-					padding = new RectOffset(0, 12, 8, 8),
-					margin = new RectOffset(24, 12, 12, 12),
-				});
-				EditorGUILayout.LabelField(message, new GUIStyle(EditorStyles.label)
-				{
-					padding = new RectOffset(0,0,0,0),
-					margin = new RectOffset(0,0,0,0),
-					richText = true,
-					wordWrap = true
-				});
-				EditorGUILayout.EndVertical();
-			}
 		}
 	}
 }

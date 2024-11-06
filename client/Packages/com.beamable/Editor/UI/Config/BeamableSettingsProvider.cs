@@ -21,8 +21,8 @@ namespace Beamable.Editor.Config
 	{
 		[MenuItem(
 			MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
-			Commons.OPEN + " " +
-			MenuItems.Windows.Names.CONFIG_MANAGER,
+			Commons.OPEN + " Project Settings"
+			,
 			priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
 		)]
 		public static void Open()
