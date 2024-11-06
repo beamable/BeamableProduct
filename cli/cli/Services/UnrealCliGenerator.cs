@@ -154,7 +154,7 @@ public struct UnrealCliStreamDataDeclaration
 			return decl;
 		}));
 
-		var properties = string.Join("\n\t", StreamDataProperties.Select(p => $"UPROPERTY()\n\t{p.PropertyUnrealType} {p.PropertyName} = {{}};"));
+		var properties = string.Join("\n\t", StreamDataProperties.Select(p => $"UPROPERTY(EditAnywhere, BlueprintReadWrite)\n\t{p.PropertyUnrealType} {p.PropertyName} = {{}};"));
 
 		helperDict.Clear();
 		helperDict.Add(nameof(NamespacedStreamDataName), NamespacedStreamDataName);
@@ -166,7 +166,7 @@ public struct UnrealCliStreamDataDeclaration
 	}
 
 	public const string STREAM_OBJECTS_DECL = $@"
-UCLASS()
+UCLASS(BlueprintType)
 class U₢{nameof(NamespacedStreamDataName)}₢ : public UObject, public IBeamJsonSerializableUObject
 {{
 	GENERATED_BODY()
