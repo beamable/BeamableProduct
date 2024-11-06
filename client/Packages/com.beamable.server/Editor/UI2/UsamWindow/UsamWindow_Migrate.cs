@@ -94,10 +94,8 @@ namespace Beamable.Editor.Microservice.UI2
 						
 						BeamGUI.LoadingRect(loadingRect, migratingService?.TotalRatio ?? 0f, animate: (!(migratingService?.isComplete ?? true)));
 						
-						service.isFoldOut = EditorGUILayout.Foldout(service.isFoldOut, new GUIContent(service.beamoId, BeamGUI.iconService));
+						service.isFoldOut = EditorGUILayout.Foldout(service.isFoldOut, new GUIContent(service.beamoId, BeamGUI.iconStorage));
 						
-						// TODO service icon
-						// EditorGUILayout.LabelField(service.beamoId);
 						if (service.isFoldOut)
 						{
 							// draw the steps
@@ -149,19 +147,7 @@ namespace Beamable.Editor.Microservice.UI2
 						{
 							fontSize = 12
 						});
-
-						EditorGUILayout.LabelField($"source: {service.copyStep.RelativeSourceFolder}", new GUIStyle(EditorStyles.label)
-						{
-							wordWrap = true,
-							padding = new RectOffset(12, 0, 0, 0)
-						});
-						EditorGUILayout.LabelField($"output: {service.copyStep.RelativeDestFolder}", new GUIStyle(EditorStyles.label)
-						{
-							wordWrap = true,
-							padding = new RectOffset(12, 0, 0, 0)
-						});
-						// TODO service icon
-						// EditorGUILayout.LabelField(service.beamoId);
+						
 						if (service.isFoldOut)
 						{
 							// draw the steps
