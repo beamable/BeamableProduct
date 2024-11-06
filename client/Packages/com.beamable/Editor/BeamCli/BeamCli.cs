@@ -48,7 +48,7 @@ namespace Beamable.Editor.BeamCli
 			await _ctx.OnReady;
 
 			var extraPaths = BeamablePackages.GetManifestFileReferences();
-			
+
 			var args = new InitArgs
 			{
 				saveToFile = true,
@@ -58,7 +58,7 @@ namespace Beamable.Editor.BeamCli
 				host = BeamableEnvironment.ApiUrl,
 				saveExtraPaths = extraPaths.ToArray()
 			};
-			
+
 			var token = _ctx.Requester.Token;
 			if (token == null)
 			{
@@ -72,10 +72,10 @@ namespace Beamable.Editor.BeamCli
 				args.saveToFile = true;
 				args.noTokenSave = false;
 			}
-			
+
 			var initCommand = Command.Init(args);
 			await initCommand.Run();
-			
+
 			var linkCommand = Command.ProjectAddUnityProject(new ProjectAddUnityProjectArgs
 			{
 				path = "."

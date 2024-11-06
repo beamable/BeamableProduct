@@ -11,7 +11,7 @@ namespace Beamable.Editor
 	public static class PromiseEditor
 	{
 		public static SequencePromise<T> ExecuteOnRoutines<T>(int routineCount,
-		                                                    List<Func<Promise<T>>> generators)
+															List<Func<Promise<T>>> generators)
 		{
 			return PromiseExtensions.ExecuteOnRoutines(
 				routineCount: routineCount,

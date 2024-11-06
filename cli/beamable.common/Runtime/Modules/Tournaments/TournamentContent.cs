@@ -43,12 +43,12 @@ namespace Beamable.Common.Tournaments
 	{
 		public TournamentRef()
 		{
-			
+
 		}
 
 		public TournamentRef(string id) : base(id)
 		{
-			
+
 		}
 	}
 

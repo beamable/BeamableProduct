@@ -16,7 +16,7 @@ namespace Beamable.Serialization
 	{
 		Added, Changed, Removed
 	}
-	
+
 	[DebuggerDisplay("{GetDescription()}")]
 	public class DiffChange : JsonSerializable.ISerializable
 	{
@@ -63,13 +63,13 @@ namespace Beamable.Serialization
 			s.SerializeList(nameof(changes), ref changes);
 		}
 	}
-	
+
 	public class DiffStream
 	{
 		private JsonPathValueStream _currentValues;
 		private JsonPathValueStream _nextValues;
-		
-		public static DiffChangeSummary FindChanges<T>(T current, T next) 
+
+		public static DiffChangeSummary FindChanges<T>(T current, T next)
 			where T : JsonSerializable.ISerializable
 		{
 			var currentStream = new JsonPathValueStream();
@@ -92,7 +92,9 @@ namespace Beamable.Serialization
 						jsonPath = kvp.Key,
 						type = DiffType.Removed
 					});
-				} else {
+				}
+				else
+				{
 					// the value needs to be diff checked!
 					var currentValue = kvp.Value;
 
@@ -108,7 +110,7 @@ namespace Beamable.Serialization
 					}
 
 				}
-				
+
 				nextStream.jsonPathToValue.Remove(kvp.Key);
 			}
 
@@ -123,11 +125,11 @@ namespace Beamable.Serialization
 					type = DiffType.Added
 				});
 			}
-			
-			
+
+
 			return summary;
 		}
-		
+
 	}
 
 	public class JsonPathValueStream : JsonSerializable.IStreamSerializer
@@ -135,12 +137,12 @@ namespace Beamable.Serialization
 		private JsonSerializable.IStreamSerializer other;
 		public Dictionary<string, string> jsonPathToValue = new Dictionary<string, string>();
 		private string _prefix;
-		
+
 		public bool TryGetJsonPathValue(string jsonPath, out string stringifiedValue)
 		{
 			return jsonPathToValue.TryGetValue(jsonPath, out stringifiedValue);
 		}
-		
+
 		public bool isSaving { get; }
 		public bool isLoading { get; }
 		public object GetValue(string key)
@@ -299,7 +301,7 @@ namespace Beamable.Serialization
 			{
 				return true;
 			}
-			
+
 			var subStream = new JsonPathValueStream();
 			value.Serialize(subStream);
 
@@ -332,7 +334,7 @@ namespace Beamable.Serialization
 			{
 				throw new NotImplementedException("cannot do a diff check with this type");
 			}
-			
+
 			if (value == null)
 			{
 				return true;

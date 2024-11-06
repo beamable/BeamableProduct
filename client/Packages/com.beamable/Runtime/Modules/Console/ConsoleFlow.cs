@@ -179,7 +179,7 @@ namespace Beamable.Console
 			}
 
 			_console = ctx.ServiceProvider.GetService<BeamableConsole>();
-			
+
 			_console.OnLog += Log;
 			_console.OnExecute += ExecuteCommand;
 			_console.OnCommandRegistered += RegisterCommand;

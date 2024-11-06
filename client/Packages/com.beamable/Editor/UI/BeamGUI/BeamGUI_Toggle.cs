@@ -5,11 +5,11 @@ namespace Beamable.Editor.Util
 {
 	public partial class BeamGUI
 	{
-		
-		
-		public static bool LayoutToggle(bool on, int toggleSize=24, int yShift=0)
+
+
+		public static bool LayoutToggle(bool on, int toggleSize = 24, int yShift = 0)
 		{
-			
+
 			var normalOff = EditorGUIUtility.IconContent("ShurikenToggleNormal@2x");
 			var hoverOff = EditorGUIUtility.IconContent("ShurikenToggleHover@2x");
 			var normalOn = EditorGUIUtility.IconContent("ShurikenToggleNormalOn@2x");
@@ -21,11 +21,11 @@ namespace Beamable.Editor.Util
 
 			var isButtonHover = rect.Contains(Event.current.mousePosition);
 			var buttonClicked = isButtonHover && Event.current.rawType == EventType.MouseDown;
-			
+
 			var normal = on ? normalOn : normalOff;
 			var hover = on ? hoverOn : hoverOff;
 			var texture = isButtonHover ? hover : normal;
-			
+
 			{ // texture
 				GUI.DrawTexture(rect, texture.image);
 			}

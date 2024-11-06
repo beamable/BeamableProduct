@@ -55,7 +55,7 @@ public class ConfigService
 		DirectoryExists = TryToFindBeamableConfigFolder(out var configPath);
 		ConfigDirectoryPath = configPath;
 	}
-	
+
 	public void Init(BindingContext bindingContext)
 	{
 		if (!TryGetSetting(out _dir, bindingContext, _configDirOption))
@@ -186,7 +186,7 @@ public class ConfigService
 
 	public void SaveDataFile<T>(string fileName, T data)
 	{
-	
+
 		var json = JsonConvert.SerializeObject(data,
 			new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
 		var file = GetConfigPath(fileName);
@@ -198,7 +198,7 @@ public class ConfigService
 
 	public List<string> LoadExtraPathsFromFile() => LoadDataFile<List<string>>(CONFIG_FILE_EXTRA_PATHS);
 	public void SaveExtraPathsToFile(List<string> paths) => SaveDataFile<List<string>>(CONFIG_FILE_EXTRA_PATHS, paths);
-	
+
 	public T LoadDataFile<T>(string fileName) where T : new() => LoadDataFile<T>(fileName, () => new T());
 
 	public T LoadDataFile<T>(string fileName, Func<T> defaultValueGenerator)
@@ -239,7 +239,7 @@ public class ConfigService
 	public const string CONFIG_FILE_EXTRA_PATHS = "additional-project-paths.json";
 
 	public static bool IsRedirected => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND));
-	
+
 	/// <summary>
 	/// Enabling a custom Docker Uri allows for a customer to have a customized docker install and still
 	/// tell the Beam CLI where the docker socket is available.
@@ -274,13 +274,13 @@ public class ConfigService
 		{
 			rootPath = ".";
 		}
-		
+
 		searchPaths.Add(rootPath);
-		
+
 		foreach (var extra in extraPaths)
 		{
 			if (string.IsNullOrEmpty(extra)) continue;
-			
+
 			if (Path.IsPathRooted(extra))
 			{
 				searchPaths.Add(extra);
@@ -293,7 +293,7 @@ public class ConfigService
 		}
 
 	}
-	
+
 	/// <summary>
 	/// 'extra project paths' tells the CLI to scan additional directories for .csproj files.
 	/// These paths can be stored in a config file in the .beamable folder, or can be given
@@ -314,8 +314,8 @@ public class ConfigService
 		}
 		return allPaths;
 	}
-	
-	
+
+
 	public bool TryGetSetting(out string value, BindingContext context, ConfigurableOption option,
 		string defaultValue = null)
 	{
@@ -464,7 +464,7 @@ public class ConfigService
 	{
 		return TryGetProjectBeamableCLIVersion(ConfigDirectoryPath, out version);
 	}
-	
+
 	/// <summary>
 	/// Extract the CLI version registered in the ".config" directory sibling to the ".beamable" folder. 
 	/// </summary>
