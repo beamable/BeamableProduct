@@ -9,7 +9,7 @@ public class GroupCommand : CommandGroup
 	public static Argument<List<string>> GroupsArgument = new("groups", "Beamable groups for this service")
 	{
 		Arity = ArgumentArity.ZeroOrMore,
-		
+
 	};
 	public GroupCommand() : base("group", "List Service Groups")
 	{

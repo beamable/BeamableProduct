@@ -11,13 +11,13 @@ namespace Beamable.Editor.Microservice.UI2
 		public ActiveMigration activeMigration;
 
 		public Vector2 migrateScrollPosition;
-		
-		
+
+
 		void DrawMigrate()
 		{
 
 			// EditorGUILayout.BeginVertical();
-			
+
 			migrateScrollPosition = EditorGUILayout.BeginScrollView(migrateScrollPosition);
 
 			{ // draw explanation text
@@ -54,7 +54,7 @@ namespace Beamable.Editor.Microservice.UI2
 						// fontSize = 14
 					});
 				}
-				
+
 				{
 					// draw cta
 					const string notice =
@@ -71,31 +71,31 @@ namespace Beamable.Editor.Microservice.UI2
 				EditorGUILayout.EndVertical();
 			}
 
-			
+
 			{ // draw storages that will migrate
-				
+
 				for (var i = 0; i < usam.migrationPlan.storages.Count; i++)
 				{
 					EditorGUILayout.BeginVertical(new GUIStyle(EditorStyles.helpBox));
 					{
-						
+
 						var service = usam.migrationPlan.storages[i];
 						var migratingService = activeMigration?.services?.FirstOrDefault(x => x.name == service.beamoId);
 
 						const int foldoutLoadingPadding = 35;
 						var loadingRect = GUILayoutUtility.GetRect(GUIContent.none, new GUIStyle
-						                                           {
-							                                           margin = new RectOffset(0, 38, 2, 4)
-						                                           },
-						                                           GUILayout.ExpandWidth(true), GUILayout.Height(6));
+						{
+							margin = new RectOffset(0, 38, 2, 4)
+						},
+																   GUILayout.ExpandWidth(true), GUILayout.Height(6));
 						loadingRect = new Rect(loadingRect.x + foldoutLoadingPadding, loadingRect.y, loadingRect.width - foldoutLoadingPadding,
-						                       loadingRect.height);
-						
-						
+											   loadingRect.height);
+
+
 						BeamGUI.LoadingRect(loadingRect, migratingService?.TotalRatio ?? 0f, animate: (!(migratingService?.isComplete ?? true)));
-						
+
 						service.isFoldOut = EditorGUILayout.Foldout(service.isFoldOut, new GUIContent(service.beamoId, BeamGUI.iconStorage));
-						
+
 						if (service.isFoldOut)
 						{
 							// draw the steps
@@ -122,32 +122,32 @@ namespace Beamable.Editor.Microservice.UI2
 			}
 
 			{ // draw services that will migrate
-				
+
 				for (var i = 0; i < usam.migrationPlan.services.Count; i++)
 				{
 					EditorGUILayout.BeginVertical(new GUIStyle(EditorStyles.helpBox));
 					{
-						
+
 						var service = usam.migrationPlan.services[i];
 						var migratingService = activeMigration?.services?.FirstOrDefault(x => x.name == service.beamoId);
 
 						const int foldoutLoadingPadding = 35;
 						var loadingRect = GUILayoutUtility.GetRect(GUIContent.none, new GUIStyle
-						                                           {
-							                                           margin = new RectOffset(0, 38, 2, 4)
-						                                           },
-						                                           GUILayout.ExpandWidth(true), GUILayout.Height(6));
+						{
+							margin = new RectOffset(0, 38, 2, 4)
+						},
+																   GUILayout.ExpandWidth(true), GUILayout.Height(6));
 						loadingRect = new Rect(loadingRect.x + foldoutLoadingPadding, loadingRect.y, loadingRect.width - foldoutLoadingPadding,
-						                       loadingRect.height);
-						
-						
+											   loadingRect.height);
+
+
 						BeamGUI.LoadingRect(loadingRect, migratingService?.TotalRatio ?? 0f, animate: (!(migratingService?.isComplete ?? true)));
-						
+
 						service.isFoldOut = EditorGUILayout.Foldout(service.isFoldOut, new GUIContent(service.beamoId, BeamGUI.iconService), new GUIStyle(EditorStyles.foldout)
 						{
 							fontSize = 12
 						});
-						
+
 						if (service.isFoldOut)
 						{
 							// draw the steps
@@ -188,7 +188,8 @@ namespace Beamable.Editor.Microservice.UI2
 				if (activeMigration == null)
 				{
 					clickedMigrate = BeamGUI.PrimaryButton(new GUIContent("Migrate"));
-				} else if (!activeMigration.isComplete)
+				}
+				else if (!activeMigration.isComplete)
 				{
 					GUI.enabled = false;
 					BeamGUI.PrimaryButton(new GUIContent("Migrating"));

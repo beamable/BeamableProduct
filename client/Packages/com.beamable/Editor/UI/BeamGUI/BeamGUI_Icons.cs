@@ -6,7 +6,7 @@ namespace Beamable.Editor.Util
 {
 	public partial class BeamGUI
 	{
-		
+
 		public static Texture iconService;
 		public static Texture iconStorage;
 		public static Texture iconOpenApi;
@@ -33,12 +33,12 @@ namespace Beamable.Editor.Util
 
 		public static Texture[] unitySpinnerTextures;
 
-		public static Texture GetSpinner(int offset=0)
+		public static Texture GetSpinner(int offset = 0)
 		{
-			var spinnerIndex = (int)( ((Time.realtimeSinceStartup*12f)+offset) % BeamGUI.unitySpinnerTextures.Length);
+			var spinnerIndex = (int)(((Time.realtimeSinceStartup * 12f) + offset) % BeamGUI.unitySpinnerTextures.Length);
 			return unitySpinnerTextures[spinnerIndex];
 		}
-		
+
 		public static void LoadAllIcons()
 		{
 			if (unitySpinnerTextures == null)
@@ -59,8 +59,8 @@ namespace Beamable.Editor.Util
 					EditorGUIUtility.IconContent("WaitSpin11").image,
 				};
 			}
-			
-			
+
+
 			if (artGameServers == null)
 			{
 				artGameServers =
@@ -88,18 +88,18 @@ namespace Beamable.Editor.Util
 
 			if (loginArts == null)
 			{
-				loginArts = new Texture[] {artLiveOps, artGameServers, artContent, artServerless};
+				loginArts = new Texture[] { artLiveOps, artGameServers, artContent, artServerless };
 			}
-			
-			
+
+
 			if (iconShadowSoftA == null)
 			{
 				iconShadowSoftA =
 					EditorResources.Load<Texture>(
 						"Packages/com.beamable/Editor/UI/Common/Icons/softShadow.png", true);
 			}
-			
-			
+
+
 			if (iconLocked == null)
 			{
 				iconLocked = EditorGUIUtility.IconContent("Locked").image;
@@ -125,15 +125,15 @@ namespace Beamable.Editor.Util
 						"Packages/com.beamable/Editor/UI/Common/Icons/beam_icon_small_color.png"
 					  , true);
 			}
-			
-			
+
+
 			if (iconService == null)
 			{
 				iconService =
 					EditorResources.Load<Texture>(
 						"Packages/com.beamable/Editor/UI/Common/Icons/microservice.png", true);
 			}
-			
+
 			if (iconStorage == null)
 			{
 				iconStorage =
@@ -145,13 +145,13 @@ namespace Beamable.Editor.Util
 				iconHelp = EditorResources.Load<Texture>(
 					"Packages/com.beamable/Editor/UI/Toolbox/Icons/Info_Light.png");
 			}
-			
+
 			if (iconRefresh == null)
 			{
 				iconRefresh = EditorResources.Load<Texture>(
 					"Packages/com.beamable/Editor/UI/Content/Icons/Refresh.png");
 			}
-			
+
 			if (iconSettings == null)
 			{
 				iconSettings = EditorGUIUtility.IconContent("Settings").image;

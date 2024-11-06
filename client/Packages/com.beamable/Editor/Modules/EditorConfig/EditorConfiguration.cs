@@ -29,7 +29,7 @@ namespace Beamable.Editor.Modules.EditorConfig
 
 		[Tooltip("UnityHub may delete your PATH variable for the process. In order to customize the path, use this variable. By default, the common usr/local/bin path is included.")]
 		public OptionalListString CustomPathInclusions = new OptionalListString();
-		
+
 		public override void OnFreshCopy()
 		{
 			var existing = GetDefineSymbols();

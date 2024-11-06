@@ -11,7 +11,7 @@ namespace Beamable.Server.Editor.Usam
 {
 	public partial class UsamService
 	{
-		
+
 		public bool ShouldServiceAutoGenerateClient(string beamoId)
 		{
 			if (!serviceToAutoGenClient.TryGetValue(beamoId, out var value))
@@ -27,7 +27,7 @@ namespace Beamable.Server.Editor.Usam
 			var value = ShouldServiceAutoGenerateClient(beamoId);
 			serviceToAutoGenClient[beamoId] = !value;
 		}
-		
+
 		public async Promise GenerateClient(BeamManifestServiceEntry service)
 		{
 			if (_generateClientCommand != null)
@@ -36,11 +36,11 @@ namespace Beamable.Server.Editor.Usam
 				_generateClientCommand = null;
 			}
 
-			var idArr = new string[] {service.beamoId};
-			
+			var idArr = new string[] { service.beamoId };
+
 			// the client-code generation requires a built dll; so building the latest code
 			//  ensures we have the latest client generated
-			await Build(new ProjectBuildArgs {ids = idArr});
+			await Build(new ProjectBuildArgs { ids = idArr });
 
 			await GenerateClient(new ProjectGenerateClientArgs
 			{
@@ -51,7 +51,7 @@ namespace Beamable.Server.Editor.Usam
 				//  it actually generates clients for ALL services
 				source = "this-argument-is-not-used"
 			});
-			
+
 		}
 
 		async Promise GenerateClient(ProjectGenerateClientArgs args)
@@ -59,7 +59,7 @@ namespace Beamable.Server.Editor.Usam
 			var outputs = new List<BeamGenerateClientFileEvent>();
 
 			{ // filter ids by those services that are actually writable.
-				// if a service is readonly, then it should already have a client alongside it.
+			  // if a service is readonly, then it should already have a client alongside it.
 				args.ids = args.ids.Where(x =>
 				{
 					var service = latestManifest.services.FirstOrDefault(s => s.beamoId == x);
@@ -67,7 +67,7 @@ namespace Beamable.Server.Editor.Usam
 					return isWritable;
 				}).ToArray();
 			}
-			
+
 			{
 				// update the args with the locally available federationIds, 
 				//  this is so that the generated clients won't have compile errors
@@ -76,12 +76,12 @@ namespace Beamable.Server.Editor.Usam
 				var availableFederationIds = CompiledFederationIds;
 				args.existingFedIds = new string[availableFederationIds.Count];
 				args.existingFedTypeNames = new string[availableFederationIds.Count];
-				
+
 				for (var i = 0; i < availableFederationIds.Count; i++)
 				{
 					var federation = availableFederationIds[i];
 					var federationType = federation.GetType();
-					
+
 					if (string.IsNullOrEmpty(federationType.Namespace))
 					{
 						args.existingFedTypeNames[i] = federationType.Name;
@@ -116,13 +116,13 @@ namespace Beamable.Server.Editor.Usam
 					AddLog(args.ids[0], cb.data);
 				});
 			}
-		
-			
+
+
 			_generateClientCommand.OnStreamGenerateClientFileEvent(cb =>
 			{
 				outputs.Add(cb.data);
 			});
-			
+
 			await _generateClientCommand.Run();
 
 			if (outputs.Count > 0)
@@ -130,8 +130,8 @@ namespace Beamable.Server.Editor.Usam
 				AssetDatabase.Refresh();
 			}
 		}
-		
-		
+
+
 		public async Promise GenerateClient()
 		{
 			if (_generateClientCommand != null)
@@ -141,9 +141,9 @@ namespace Beamable.Server.Editor.Usam
 			}
 
 			var idArr = latestManifest.services
-			                          .Where(x => ShouldServiceAutoGenerateClient(x.beamoId))
-			                          .Select(x => x.beamoId)
-			                          .ToArray();
+									  .Where(x => ShouldServiceAutoGenerateClient(x.beamoId))
+									  .Select(x => x.beamoId)
+									  .ToArray();
 			await GenerateClient(new ProjectGenerateClientArgs
 			{
 				outputLinks = true,
@@ -161,7 +161,7 @@ namespace Beamable.Server.Editor.Usam
 			var beamoIdToWriteTime = new Dictionary<string, long>();
 
 			_dispatcher.Run("usam-build-generation", Run(latestListenTaskId));
-			
+
 			IEnumerator Run(int taskId)
 			{
 				var updates = new Dictionary<string, long>();
@@ -177,12 +177,12 @@ namespace Beamable.Server.Editor.Usam
 					foreach (var service in latestManifest.services)
 					{
 						if (service.IsReadonlyPackage) continue; // changes in read-only projects are ignored. 
-						
+
 						var path = service.buildDllPath;
 						if (string.IsNullOrEmpty(path)) continue;
 
 						if (!File.Exists(path)) continue;
-						
+
 						var writeTime = File.GetLastWriteTime(path).ToFileTime();
 						if (beamoIdToWriteTime.TryGetValue(service.beamoId, out var lastWriteTime))
 						{
@@ -208,7 +208,7 @@ namespace Beamable.Server.Editor.Usam
 							var path = service.buildDllPath;
 							if (string.IsNullOrEmpty(path)) continue;
 							if (!File.Exists(path)) continue;
-						
+
 							var writeTime = File.GetLastWriteTime(path).ToFileTime();
 							beamoIdToWriteTime[service.beamoId] = writeTime;
 						}

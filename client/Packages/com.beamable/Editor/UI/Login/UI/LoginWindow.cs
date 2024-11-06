@@ -63,9 +63,9 @@ namespace Beamable.Editor.Login.UI
 
 		public static LoginWindow Show(params Type[] dockLocations)
 		{
-			
-			
-			
+
+
+
 			if (dockLocations == null) dockLocations = new Type[] { };
 			if (LoginWindow.IsInstantiated)
 			{

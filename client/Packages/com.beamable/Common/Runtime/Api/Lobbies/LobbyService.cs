@@ -49,17 +49,17 @@ namespace Beamable.Experimental.Api.Lobbies
 
 		/// <inheritdoc cref="ILobbyApi.CreateLobby"/>
 		public async Promise<Lobby> CreateLobby(string name,
-		                                  LobbyRestriction restriction,
-		                                  string gameTypeId = null,
-		                                  string description = null,
-		                                  List<Tag> playerTags = null,
-		                                  int? maxPlayers = null,
-		                                  int? passcodeLength = null,
-		                                  Dictionary<string, string> statsToInclude = null,
-		                                  Dictionary<string, string> data = null)
+										  LobbyRestriction restriction,
+										  string gameTypeId = null,
+										  string description = null,
+										  List<Tag> playerTags = null,
+										  int? maxPlayers = null,
+										  int? passcodeLength = null,
+										  Dictionary<string, string> statsToInclude = null,
+										  Dictionary<string, string> data = null)
 		{
 			var createLobby = LobbyUtils.GetCreateLobbyType(name, restriction, gameTypeId, description, playerTags,
-			                                                maxPlayers, passcodeLength, data);
+															maxPlayers, passcodeLength, data);
 
 			var res = await _api.PostApiLobbies(createLobby);
 
@@ -84,7 +84,7 @@ namespace Beamable.Experimental.Api.Lobbies
 										  Dictionary<string, string> data = null)
 		{
 			return CreateLobby(name, restriction, gameTypeRef?.Id, description, playerTags, maxPlayers, passcodeLength,
-			                   null, data);
+							   null, data);
 
 
 

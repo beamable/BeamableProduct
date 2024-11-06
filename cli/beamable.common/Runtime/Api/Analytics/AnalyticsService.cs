@@ -12,7 +12,7 @@ namespace Beamable.Api.Analytics
 		private IBeamableRequester _requester;
 		private IUserContext _context;
 		StringBuilder _builder = new StringBuilder(string.Empty);
-		
+
 		public AnalyticsService(IUserContext context, IBeamableRequester requester)
 		{
 			_context = context;
@@ -21,7 +21,7 @@ namespace Beamable.Api.Analytics
 
 		public void SendAnalyticsEvent(AnalyticsEventRequest eventRequest)
 		{
-			AnalyticsEventBatchRequest(new []{eventRequest.Payload});
+			AnalyticsEventBatchRequest(new[] { eventRequest.Payload });
 		}
 
 		public void SendAnalyticsEventBatch(List<AnalyticsEventRequest> eventBatch)

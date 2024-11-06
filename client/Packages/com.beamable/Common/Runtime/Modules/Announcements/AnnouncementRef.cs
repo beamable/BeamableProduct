@@ -62,14 +62,14 @@ namespace Beamable.Common.Announcements
 	{
 		public AnnouncementRef()
 		{
-			
+
 		}
 		public AnnouncementRef(string id) : base(id)
 		{
-			
+
 		}
 	}
-	
+
 	[System.Serializable]
 	[Agnostic]
 	public class AnnouncementAttachment : JsonSerializable.ISerializable

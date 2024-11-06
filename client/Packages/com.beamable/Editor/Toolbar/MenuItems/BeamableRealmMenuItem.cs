@@ -12,13 +12,13 @@ namespace Beamable.Editor.ToolbarExtender
 #endif
 	public class BeamableRealmMenuItem : BeamableToolbarMenuItem
 	{
-	
+
 		public override void ContextualizeMenu(BeamEditorContext editor, GenericMenu menu)
 		{
 			var rootDisplay = RenderLabel(editor);
 
 			var projects = new List<RealmView>();
-			
+
 			if (editor.CurrentCustomer?.Projects != null)
 			{
 				foreach (var proj in editor.CurrentCustomer.Projects)
@@ -37,14 +37,14 @@ namespace Beamable.Editor.ToolbarExtender
 				{
 					return depthCompare;
 				}
-				
+
 				return String.Compare(a.ProjectName, b.ProjectName, StringComparison.Ordinal);
 			});
-				
+
 			foreach (var proj in projects)
 			{
 				var enabled = proj.Pid == editor.CurrentRealm.Pid;
-				
+
 				menu.AddItem(new GUIContent(rootDisplay.text + "/" + proj.DisplayName), enabled, () =>
 				{
 					editor.SwitchRealm(proj);
@@ -76,7 +76,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 		public override void OnItemClicked(BeamEditorContext beamableApi)
 		{
-			
+
 		}
 	}
 }

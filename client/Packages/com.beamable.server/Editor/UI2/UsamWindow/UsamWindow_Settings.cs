@@ -18,7 +18,7 @@ namespace Beamable.Editor.Microservice.UI2
 		private bool hasSerializedSettingsYet = false;
 
 		private List<GUIContent> _routingOptionContents = new List<GUIContent>();
-		
+
 		void ActivateSettings()
 		{
 			state = WindowState.SETTINGS;
@@ -39,10 +39,10 @@ namespace Beamable.Editor.Microservice.UI2
 			}
 			hasSerializedSettingsYet = true;
 		}
-		
+
 		void DrawSettings()
 		{
-			
+
 			var hasServices = usam?.latestManifest?.services?.Count > 0;
 			if (!hasServices)
 			{
@@ -52,7 +52,7 @@ namespace Beamable.Editor.Microservice.UI2
 				});
 				return;
 			}
-			
+
 			ReserializeSettings();
 
 			// find the service
@@ -62,7 +62,7 @@ namespace Beamable.Editor.Microservice.UI2
 				foundService = serviceSettings[i];
 				var settings = (BeamableMicroservicesSettings)foundService.targetObject;
 				if (settings == null) continue;
-				
+
 				if (settings.serviceName != selectedBeamoId)
 				{
 					foundService = null;
@@ -70,9 +70,9 @@ namespace Beamable.Editor.Microservice.UI2
 				}
 				break;
 			}
-			
+
 			{ // draw a little explanation... 
-				const string settingHelp = 
+				const string settingHelp =
 					"Configure the settings for the service. ";
 
 				const string noServiceFound =
@@ -84,14 +84,14 @@ namespace Beamable.Editor.Microservice.UI2
 				});
 				EditorGUILayout.LabelField(foundService == null ? noServiceFound : settingHelp, new GUIStyle(EditorStyles.label)
 				{
-					padding = new RectOffset(0,0,0,0),
-					margin = new RectOffset(0,0,0,0),
+					padding = new RectOffset(0, 0, 0, 0),
+					margin = new RectOffset(0, 0, 0, 0),
 					richText = true,
 					wordWrap = true
 				});
 				EditorGUILayout.EndVertical();
 			}
-	
+
 			if (foundService != null)
 			{ // draw the selected service settings
 
@@ -103,7 +103,7 @@ namespace Beamable.Editor.Microservice.UI2
 			}
 		}
 
-	
+
 
 		void DrawServiceSettings(SerializedObject serializedObj)
 		{
@@ -112,7 +112,7 @@ namespace Beamable.Editor.Microservice.UI2
 				{
 					padding = new RectOffset(12, 12, 12, 12)
 				});
-				
+
 
 				var settings = (BeamableMicroservicesSettings)serializedObj.targetObject;
 				if (settings == null)
@@ -132,18 +132,18 @@ namespace Beamable.Editor.Microservice.UI2
 					{
 						selectedDisplay = routingSetting.selectedOption?.display ?? "(unavailable)";
 					}
-					
+
 					_routingOptionContents.Clear();
 					var selectedRoutingIndex = 0;
 					if (usam.TryGetRoutingSetting(settings.serviceName, out var routeSettings))
 					{
 						// foreach (var option in routeSettings.options)
-						for (var i = 0 ; i < routeSettings.options.Count; i ++)
+						for (var i = 0; i < routeSettings.options.Count; i++)
 						{
 							var option = routeSettings.options[i];
-							
+
 							if (option.routingKey == routeSettings.selectedOption.routingKey &&
-							    option.type == routeSettings.selectedOption.type)
+								option.type == routeSettings.selectedOption.type)
 							{
 								selectedRoutingIndex = i;
 							}
@@ -163,7 +163,7 @@ namespace Beamable.Editor.Microservice.UI2
 									break;
 							}
 						}
-						
+
 						var nextRouteSettingIndex = EditorGUILayout.Popup(new GUIContent("Routing Mode"), selectedRoutingIndex, _routingOptionContents.ToArray());
 						routeSettings.selectedOption = routeSettings.options[nextRouteSettingIndex];
 					}
@@ -171,46 +171,46 @@ namespace Beamable.Editor.Microservice.UI2
 					{
 						BeamGUI.ShowDisabled(false, () =>
 						{
-							EditorGUILayout.Popup(new GUIContent("Routing Mode"), 0, new string[] {"(unavailable)"});
+							EditorGUILayout.Popup(new GUIContent("Routing Mode"), 0, new string[] { "(unavailable)" });
 						});
 					}
-					
+
 					EditorGUI.indentLevel--;
 
 				}
-				
+
 				EditorGUILayout.Space(30, false);
 
 
 				{ // reference settings
 					EditorGUILayout.LabelField($"{settings.serviceName} Settings",
-					                           new GUIStyle(EditorStyles.largeLabel));
+											   new GUIStyle(EditorStyles.largeLabel));
 					EditorGUI.indentLevel++;
 					EditorGUILayout.Separator();
 					EditorGUILayout.Separator();
-					
+
 					EditorGUILayout.PropertyField(
 						serializedObj.FindProperty(nameof(BeamableMicroservicesSettings.storageDependencies)),
 						new GUIContent("Storage Dependencies"));
 					EditorGUILayout.Separator();
-					
+
 					EditorGUILayout.PropertyField(
 						serializedObj.FindProperty(nameof(BeamableMicroservicesSettings.assemblyReferences)),
 						new GUIContent("Assembly Definitions"));
 					EditorGUILayout.Separator();
-					
+
 					EditorGUILayout.PropertyField(
-						serializedObj.FindProperty(nameof(BeamableMicroservicesSettings.federations)), 
+						serializedObj.FindProperty(nameof(BeamableMicroservicesSettings.federations)),
 						new GUIContent("Federations"), true);
-					
+
 					EditorGUILayout.Separator();
-					
+
 					serializedObj.ApplyModifiedPropertiesWithoutUndo();
-		
+
 					EditorGUI.indentLevel--;
 				}
-				
-				
+
+
 				if (settings.HasChanges())
 				{
 					EditorDebouncer.Debounce("save-beam-settings", () =>
@@ -240,10 +240,10 @@ namespace Beamable.Editor.Microservice.UI2
 					}, .1f);
 				}
 
-				
+
 				EditorGUILayout.EndVertical();
 			}
-			
+
 		}
 	}
 }

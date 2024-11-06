@@ -39,7 +39,7 @@ public class WebsocketUtil
 				{
 					_socket = _connector();
 				}
-				
+
 				return _socket;
 			}
 		}
@@ -162,7 +162,8 @@ public class WebsocketUtil
 				path = "gateway/provider",
 				body = new
 				{
-					type = "event", evtWhitelist = eventList
+					type = "event",
+					evtWhitelist = eventList
 					//new string[] { "content.manifest", "realm-config.refresh" }
 				}
 			};

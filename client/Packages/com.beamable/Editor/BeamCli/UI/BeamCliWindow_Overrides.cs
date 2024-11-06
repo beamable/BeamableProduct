@@ -11,7 +11,7 @@ namespace Beamable.Editor.BeamCli.UI
 
 		[NonSerialized]
 		public bool hasSerializedChanges;
-		
+
 		void OnOverridesGui()
 		{
 			if (serializedSettings == null)
@@ -22,7 +22,7 @@ namespace Beamable.Editor.BeamCli.UI
 				JsonUtility.FromJsonOverwrite(json, clone);
 				serializedSettings = new SerializedObject(clone);
 			}
-			
+
 			var mainStyle = new GUIStyle();
 			mainStyle.padding = new RectOffset(30, 30, 12, 0);
 
@@ -36,8 +36,8 @@ namespace Beamable.Editor.BeamCli.UI
 
 				EditorGUILayout.HelpBox(
 					message: "Server logs, server events, and commands will be saved between " +
-					         "domain reloads. These settings limit the number of instances that " +
-					         "will be saved. The limits are in place to avoid infinite growth.",
+							 "domain reloads. These settings limit the number of instances that " +
+							 "will be saved. The limits are in place to avoid infinite growth.",
 					type: MessageType.Info);
 				EditorGUILayout.PropertyField(
 					serializedSettings.FindProperty(nameof(BeamWebCommandFactoryOptions.serverLogCap)));
@@ -45,21 +45,21 @@ namespace Beamable.Editor.BeamCli.UI
 					serializedSettings.FindProperty(nameof(BeamWebCommandFactoryOptions.serverEventLogCap)));
 				EditorGUILayout.PropertyField(
 					serializedSettings.FindProperty(nameof(BeamWebCommandFactoryOptions.commandInstanceCap)));
-				
+
 				EditorGUILayout.Space(15, false);
 				EditorGUILayout.HelpBox(
-					message: "These settings control how the CLI server resolution happens. ", 
+					message: "These settings control how the CLI server resolution happens. ",
 					type: MessageType.Info);
-				
+
 				EditorGUILayout.SelectableLabel(BeamCliUtil.CLI_PATH.ToLowerInvariant(), labelStyle);
 				EditorGUILayout.PropertyField(
 					serializedSettings.FindProperty(nameof(BeamWebCommandFactoryOptions.ownerOverride)));
-			
-				
+
+
 				EditorGUILayout.SelectableLabel(BeamCliUtil.CLI_VERSION, labelStyle);
 				EditorGUILayout.PropertyField(
 					serializedSettings.FindProperty(nameof(BeamWebCommandFactoryOptions.versionOverride)));
-		
+
 				EditorGUILayout.PropertyField(
 					serializedSettings.FindProperty(nameof(BeamWebCommandFactoryOptions.selfDestructOverride)),
 					new GUIContent("Destruct Timer (s)", null, "a value of 0 means there is no timeout."));
@@ -72,9 +72,9 @@ namespace Beamable.Editor.BeamCli.UI
 				{
 					hasSerializedChanges = true;
 				}
-				
-				
-				
+
+
+
 				GUI.enabled = hasSerializedChanges;
 				bool apply = false, revert = false;
 				EditorGUILayout.BeginHorizontal();
@@ -95,7 +95,7 @@ namespace Beamable.Editor.BeamCli.UI
 				{
 					serializedSettings.ApplyModifiedProperties();
 
-					
+
 					var content = JsonUtility.ToJson(serializedSettings.targetObject);
 					var settings = ActiveContext.ServiceScope.GetService<BeamWebCommandFactoryOptions>();
 
@@ -110,7 +110,7 @@ namespace Beamable.Editor.BeamCli.UI
 					GUIUtility.keyboardControl = 0;
 				}
 
-			} 
+			}
 			EditorGUILayout.EndVertical();
 		}
 	}

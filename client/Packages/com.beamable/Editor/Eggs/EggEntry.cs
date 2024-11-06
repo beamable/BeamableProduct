@@ -13,7 +13,7 @@ namespace Beamable.Editor.Eggs
 
 		public int sequenceIndex = 0;
 		public bool entered = false;
-		
+
 		public void OnGui()
 		{
 			if (Event.current.type == EventType.KeyUp)

@@ -37,12 +37,12 @@ namespace Beamable.Common.Leaderboards
 	{
 		public LeaderboardRef(string id) : base(id)
 		{
-			
+
 		}
 
 		public LeaderboardRef()
 		{
-			
+
 		}
 	}
 
@@ -64,12 +64,12 @@ namespace Beamable.Common.Leaderboards
 	{
 		public LeaderboardRef(string id) : base(id)
 		{
-			
+
 		}
 
 		public LeaderboardRef()
 		{
-			
+
 		}
 	}
 }
