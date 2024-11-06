@@ -18,13 +18,18 @@ namespace Beamable.Editor.ToolbarExtender
 			var rootDisplay = RenderLabel(editor);
 
 			var projects = new List<RealmView>();
-			foreach (var proj in editor.CurrentCustomer.Projects)
+			
+			if (editor.CurrentCustomer?.Projects != null)
 			{
-				if (proj.Archived) continue;
-				if (proj.GamePid != editor.CurrentRealm?.GamePid) continue;
+				foreach (var proj in editor.CurrentCustomer.Projects)
+				{
+					if (proj.Archived) continue;
+					if (proj.GamePid != editor.CurrentRealm?.GamePid) continue;
 
-				projects.Add(proj);
+					projects.Add(proj);
+				}
 			}
+
 			projects.Sort((a, b) =>
 			{
 				var depthCompare = a.Depth.CompareTo(b.Depth);
@@ -45,13 +50,15 @@ namespace Beamable.Editor.ToolbarExtender
 					editor.SwitchRealm(proj);
 				});
 			}
-			
-			menu.AddSeparator(rootDisplay.text + "/");
-			menu.AddItem(new GUIContent(rootDisplay.text + "/Refresh"), false, () =>
+
+			if (projects.Count > 0)
 			{
-				var _ = editor.EditorAccount.UpdateRealms(editor.Requester);
-			});
-			
+				menu.AddSeparator(rootDisplay.text + "/");
+				menu.AddItem(new GUIContent(rootDisplay.text + "/Refresh"), false, () =>
+				{
+					var _ = editor.EditorAccount.UpdateRealms(editor.Requester);
+				});
+			}
 		}
 
 		public override GUIContent RenderLabel(BeamEditorContext beamableApi)
