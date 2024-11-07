@@ -369,11 +369,6 @@ namespace Beamable
 			AddressableAssetSettingsDefaultObject.GetSettings(true);
 			await TextMeshProImporter.ImportEssentials();
 		}
-
-		public static bool EnsureDefaultContent()
-		{
-			return ContentIO.EnsureAllDefaultContent();
-		}
 		
 		/// <summary>
 		/// UnityHub will sometimes erase the PATH variable, which means when we launch sub-processes, they won't
@@ -604,7 +599,7 @@ namespace Beamable
 				{ // initialize the default dependencies before a beam context ever gets going.
 					if (ContentIO.EnsureAllDefaultContent())
 					{
-						EditorUtility.RequestScriptReload();
+						AssetDatabase.ImportAsset(Constants.Directories.DATA_DIR, ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
 						AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
 					}
 				}
