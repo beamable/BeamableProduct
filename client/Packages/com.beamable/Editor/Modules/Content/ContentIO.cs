@@ -193,7 +193,7 @@ namespace Beamable.Editor.Content
 	{
 		public ContentManager ContentManager => _contentManager ?? (_contentManager = new ContentManager());
 		private ContentManager _contentManager;
-		private ContentTypeReflectionCache _contentTypeReflectionCache;
+		private static ContentTypeReflectionCache _contentTypeReflectionCache;
 
 		private readonly IBeamableRequester _requester;
 		private Promise<Manifest> _manifestPromise;
@@ -571,12 +571,12 @@ namespace Beamable.Editor.Content
 			return localManifest;
 		}
 
-		public IEnumerable<Type> GetContentTypes()
+		public static IEnumerable<Type> GetContentTypes()
 		{
 			return _contentTypeReflectionCache.GetContentTypes();
 		}
 
-		public IEnumerable<string> GetContentClassIds()
+		public static IEnumerable<string> GetContentClassIds()
 		{
 			return _contentTypeReflectionCache.GetContentClassIds();
 		}
@@ -601,22 +601,22 @@ namespace Beamable.Editor.Content
 			return content;
 		}
 
-		public void EnsureAllDefaultContent()
+		public static void EnsureAllDefaultContent()
 		{
 			foreach (var contentType in GetContentTypes())
 			{
-				EnsureDefaultContentByType(contentType);
+				EnsureDefaultContentByType(contentType, null);
 			}
 		}
 
-		public void EnsureDefaultContentByType(Type type)
+		public static void EnsureDefaultContentByType(Type type, ContentDatabase database)
 		{
 			var methodName = nameof(EnsureDefaultContent);
 			var method = typeof(ContentIO).GetMethod(methodName).MakeGenericMethod(type);
-			method.Invoke(this, null);
+			method.Invoke(null, new object[]{database});
 		}
 
-		public void EnsureDefaultContent<TContent>() where TContent : ContentObject
+		public static void EnsureDefaultContent<TContent>(ContentDatabase database) where TContent : ContentObject
 		{
 			string typeName = ContentObject.GetContentType<TContent>();
 			var dir = $"{Directories.DATA_DIR}/{typeName}";
@@ -646,7 +646,7 @@ namespace Beamable.Editor.Content
 
 			if (copiedAnydata)
 			{
-				ContentDatabase.RecalculateIndex();
+				database?.RecalculateIndex();
 			}
 		}
 
@@ -682,7 +682,7 @@ namespace Beamable.Editor.Content
 			method.Invoke(this, null);
 		}
 
-		public void EnsureDefaultAssets<TContent>() where TContent : ContentObject
+		public static void EnsureDefaultAssets<TContent>() where TContent : ContentObject
 		{
 			string contentType = ContentObject.GetContentType<TContent>();
 			var assetDir = $"{Directories.ASSET_DIR}/{contentType}";

@@ -168,6 +168,7 @@ namespace Beamable
 		private static List<Exception> initializationExceptions = new List<Exception>();
 		private const int WARN_ON_INITIALIZE_ATTEMPT = 50;
 
+		private static Promise _dependenciesLoadPromise = null;
 
 		static void Initialize()
 		{
@@ -181,6 +182,31 @@ namespace Beamable
 				foreach (var ex in initializationExceptions)
 				{
 					Debug.LogWarning($"-- {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+				}
+			}
+
+			{ // initialize the default dependencies before a beam context ever gets going.
+				if (!HasDependencies())
+				{
+					if (_dependenciesLoadPromise == null)
+					{
+						_dependenciesLoadPromise = ImportDependencies();
+					}
+					else if (!_dependenciesLoadPromise.IsCompleted)
+					{
+						EditorApplication.delayCall += () =>
+						{
+							// try again in a moment.
+							Initialize();
+						};
+						return;
+					}
+					else if (_dependenciesLoadPromise.IsCompleted)
+					{
+						ContentIO.EnsureAllDefaultContent();
+						AssetDatabase.Refresh();
+						EditorUtility.RequestScriptReload();
+					}
 				}
 			}
 
@@ -339,6 +365,25 @@ namespace Beamable
 			InitDefaultContext().Error(Debug.LogError);
 		}
 
+		public static bool HasDependencies()
+		{
+			var hasAddressables = AddressableAssetSettingsDefaultObject.GetSettings(false) != null;
+			var hasTextmeshPro = TextMeshProImporter.EssentialsLoaded;
+
+			return hasAddressables && hasTextmeshPro;
+		}
+
+		public static async Promise ImportDependencies()
+		{
+			AddressableAssetSettingsDefaultObject.GetSettings(true);
+			await TextMeshProImporter.ImportEssentials();
+		}
+
+		public static void EnsureDefaultContent()
+		{
+			ContentIO.EnsureAllDefaultContent();
+		}
+		
 		/// <summary>
 		/// UnityHub will sometimes erase the PATH variable, which means when we launch sub-processes, they won't
 		/// work because the PATH is bad. This function will patch up the PATH variable based on configured items.C
@@ -564,13 +609,18 @@ namespace Beamable
 				await RefreshRealmSecret();
 
 				var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
-
-				if (!HasDependencies())
+				
+				if (IsAuthenticated)
 				{
-					await CreateDependencies();
+					var silentPublishCheck = ContentIO.OnManifest.Then(serverManifest =>
+					{
+						var hasNoContent = serverManifest.References.Count == 0;
+						if (hasNoContent)
+						{
+							var _ = DoSilentContentPublish();
+						}
+					});
 				}
-
-
 			}
 
 			InitializePromise = Initialize().ToPromise();
@@ -838,55 +888,6 @@ namespace Beamable
 			
 		}
 
-
-		#endregion
-
-		#region TMP & Addressables Dependencies Check
-
-#if BEAMABLE_DEVELOPER
-		[MenuItem(MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + "/Force Refresh Content (New)")]
-		public static void ForceRefreshContent()
-		{
-			var contentIO = Default.ServiceScope.GetService<ContentIO>();
-			// Do these in parallel to simulate startup behavior.
-			_ = contentIO.BuildLocalManifest();
-			_ = Default.CreateDependencies().GetResult();
-		}
-#endif
-
-		public static bool HasDependencies()
-		{
-			var hasAddressables = AddressableAssetSettingsDefaultObject.GetSettings(false) != null;
-			var hasTextmeshPro = TextMeshProImporter.EssentialsLoaded;
-
-			return hasAddressables && hasTextmeshPro;
-		}
-
-		public async Promise CreateDependencies()
-		{
-			// import addressables...
-			AddressableAssetSettingsDefaultObject.GetSettings(true);
-
-			var contentIO = Default.ServiceScope.GetService<ContentIO>();
-			await TextMeshProImporter.ImportEssentials();
-
-			AssetDatabase.Refresh();
-			contentIO.EnsureAllDefaultContent();
-
-			ConfigManager.Initialize();
-
-			if (IsAuthenticated)
-			{
-				var serverManifest = await contentIO.OnManifest;
-				var hasNoContent = serverManifest.References.Count == 0;
-				if (hasNoContent)
-					await DoSilentContentPublish();
-				else
-					await PromiseBase.SuccessfulUnit;
-			}
-			
-			EditorUtility.RequestScriptReload();
-		}
 
 		#endregion
 
