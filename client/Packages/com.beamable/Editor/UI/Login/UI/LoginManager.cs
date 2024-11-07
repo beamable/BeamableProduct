@@ -4,6 +4,7 @@ using Beamable.Editor.Login.UI.Components;
 using Beamable.Editor.Login.UI.Model;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -175,6 +176,8 @@ namespace Beamable.Editor.Login.UI
 		{
 			return promise.Map(_ =>
 						  {
+							  Debug.Log($"beam login action complete : " + assumePage);
+
 							  if (assumePage)
 							  {
 								  model.Initialize().Then(AssumePage);
@@ -184,11 +187,11 @@ namespace Beamable.Editor.Login.UI
 						  })
 						  .Recover(ex =>
 						  {
-							  BeamableLogger.LogError(ex);
+							  Debug.LogError(ex);
 							  var message = handler.ProduceError(ex);
 							  return LoginManagerResult.Failed(message);
 						  })
-						  .Error(BeamableLogger.LogError);
+						  .Error(Debug.LogError);
 		}
 
 		public bool HasPreviousPage() => _history.Count > 1;

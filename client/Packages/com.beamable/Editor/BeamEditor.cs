@@ -335,14 +335,6 @@ namespace Beamable
 			// Set flag of SocialsImporter
 			BeamableSocialsImporter.SetFlag();
 			
-			
-			{ // initialize the default dependencies before a beam context ever gets going.
-				if (ContentIO.EnsureAllDefaultContent())
-				{
-					EditorUtility.RequestScriptReload();
-					AssetDatabase.Refresh();
-				}
-			}
 
 			async Promise InitDefaultContext()
 			{
@@ -609,6 +601,15 @@ namespace Beamable
 
 				var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
 				
+							
+				{ // initialize the default dependencies before a beam context ever gets going.
+					if (ContentIO.EnsureAllDefaultContent())
+					{
+						EditorUtility.RequestScriptReload();
+						AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
+					}
+				}
+
 				if (IsAuthenticated)
 				{
 					var silentPublishCheck = ContentIO.OnManifest.Then(serverManifest =>
