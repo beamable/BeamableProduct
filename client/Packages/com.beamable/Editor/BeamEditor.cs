@@ -597,8 +597,11 @@ namespace Beamable
 				
 							
 				{ // initialize the default dependencies before a beam context ever gets going.
+					Debug.Log("Beam check content");
 					if (ContentIO.EnsureAllDefaultContent())
 					{
+						Debug.Log("Beam wrote content");
+
 						AssetDatabase.ImportAsset(Constants.Directories.DATA_DIR, ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
 						AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
 					}
@@ -609,6 +612,8 @@ namespace Beamable
 					var silentPublishCheck = ContentIO.OnManifest.Then(serverManifest =>
 					{
 						var hasNoContent = serverManifest.References.Count == 0;
+						Debug.Log("Beam publishing content : " + hasNoContent);
+
 						if (hasNoContent)
 						{
 							var _ = DoSilentContentPublish();
