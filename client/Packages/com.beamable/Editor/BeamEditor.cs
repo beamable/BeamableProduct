@@ -599,7 +599,6 @@ namespace Beamable
 
 				await RefreshRealmSecret();
 
-				var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
 				
 							
 				{ // initialize the default dependencies before a beam context ever gets going.
@@ -609,7 +608,7 @@ namespace Beamable
 						AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
 					}
 				}
-
+				
 				if (IsAuthenticated)
 				{
 					var silentPublishCheck = ContentIO.OnManifest.Then(serverManifest =>
@@ -621,6 +620,9 @@ namespace Beamable
 						}
 					});
 				}
+				
+				var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
+
 			}
 
 			InitializePromise = Initialize().ToPromise();

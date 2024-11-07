@@ -762,7 +762,11 @@ namespace Beamable.Server.Editor.Usam
 		{
 			var runCommand = _cli.ProjectRun(new ProjectRunArgs
 			{
-				detach = true, ids = new string[] {service.beamoId}, watch = false, noClientGen = true,
+				detach = true,
+				ids = new string[] {service.beamoId},
+				force = true,
+				watch = false,
+				noClientGen = true,
 			});
 			var action = SetServiceAction(service.beamoId, ServiceCliActionType.Running, runCommand);
 			if (TryGetLogs(service.beamoId, out var log) && log.logView.clearOnPlay)

@@ -193,7 +193,9 @@ namespace Beamable.Editor.Content
 	{
 		public ContentManager ContentManager => _contentManager ?? (_contentManager = new ContentManager());
 		private ContentManager _contentManager;
-		private static ContentTypeReflectionCache _contentTypeReflectionCache;
+
+		private static ContentTypeReflectionCache _contentTypeReflectionCache =>
+			BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 
 		private readonly IBeamableRequester _requester;
 		private Promise<Manifest> _manifestPromise;
@@ -230,7 +232,6 @@ namespace Beamable.Editor.Content
 
 			OnContentsCreated += Internal_HandleContentCreated;
 			OnContentEntryDeleted += Internal_HandleContentDeleted;
-			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 
 		}
 

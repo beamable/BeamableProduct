@@ -41,12 +41,10 @@ namespace Beamable.Editor.BeamCli
 			}
 		}
 
-		async Promise Init(EditorAccountInfo _) => await Init();
-
 		public async Promise Init()
 		{
 			await _ctx.OnReady;
-
+			
 			var extraPaths = BeamablePackages.GetManifestFileReferences();
 			
 			var args = new InitArgs
