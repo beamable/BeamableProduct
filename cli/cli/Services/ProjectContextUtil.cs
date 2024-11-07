@@ -904,16 +904,16 @@ public static class ProjectContextUtil
 		File.WriteAllText(definition.ProjectPath, rawText);
 	}
 
-	public static void UpdateProjectDlls(BeamoServiceDefinition definition, List<string> dllPaths)
+	public static void UpdateProjectDlls(BeamoServiceDefinition definition, List<string> dllPaths, List<string> dllNames)
 	{
 		var buildEngine = new ProjectCollection();
 		const string REFERENCE_TYPE = "Reference";
 
 		var refProject = buildEngine.LoadProject(definition.ProjectPath);
 
-		foreach (var dllPath in dllPaths)
+		for (int i = 0; i < dllNames.Count; i++)
 		{
-			refProject.AddItem(REFERENCE_TYPE, dllPath);
+			refProject.AddItem(REFERENCE_TYPE, dllNames[i], new Dictionary<string, string> { { CliConstants.HINT_PATH_ITEM_TAG, dllPaths[i] } });
 		}
 
 		refProject.FullPath = definition.ProjectPath;

@@ -85,6 +85,9 @@ namespace Beamable.Server.Editor.Usam
 </Project>
 ";
 
+		private const string invalidAssembliesFilePath =
+			"Packages/com.beamable.server/Editor/invalid-assemblies.txt";
+
 		/// <summary>
 		/// AssemblyUtil.Reload(); must be called before this
 		/// </summary>
@@ -173,7 +176,7 @@ namespace Beamable.Server.Editor.Usam
 				if (!dll.StartsWith(projectRoot)) continue;
 				var dllPath = dll.Substring(projectRoot.Length + 1);
 				var dllName = Path.GetFileName(dllPath);
-				if (!IsValidReference(dllName)) continue;
+				if (!IsValidReference(dllName.Replace(".dll", ""))) continue;
 				yield return dllPath;
 			}
 
@@ -193,27 +196,19 @@ namespace Beamable.Server.Editor.Usam
 		
 		public static bool IsValidReference(string referenceName)
 		{
-			var invalidPrefixes = new string[] { "Unity.", "UnityEditor.", "UnityEngine.", "MongoDB.", "DnsClient", "System.", "Newtonsoft.", "SharpCompress"};
-			var invalidReferences = new string[] {"netstandard", "nunit.framework"};
-
-			if (referenceName.StartsWith("Unity.Beamable.Customer."))
-			{
-				// special reference; but other "Unity.Beamable."
-				//  dlls are not valid; and should be referenced via nuget
-				return true;
-			}
+			var invalidReferences = File.ReadAllLines(invalidAssembliesFilePath);
 			
 			foreach (var invalidRef in invalidReferences)
 			{
-				if (referenceName.Contains(invalidRef))
+				if (invalidRef.Contains("*"))
 				{
-					return false;
+					if (referenceName.StartsWith(invalidRef.Replace("*", "")))
+					{
+						return false;
+					}
 				}
-			}
 
-			foreach (var prefix in invalidPrefixes)
-			{
-				if (referenceName.StartsWith(prefix))
+				if (referenceName.Equals(invalidRef))
 				{
 					return false;
 				}

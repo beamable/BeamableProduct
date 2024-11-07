@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Semantics;
 using Beamable.Editor;
 using Beamable.Editor.BeamCli.Commands;
+using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -50,6 +51,12 @@ namespace Beamable.Server.Editor.Usam
 
 	}
 
+	public class MigrationFederationStep
+	{
+		public List<string> FederationIds;
+		public List<string> FederationTypes;
+	}
+
 	[Serializable]
 	public class MigrationService
 	{
@@ -62,6 +69,7 @@ namespace Beamable.Server.Editor.Usam
 
 		public ProjectNewServiceArgs newServiceArgs = null;
 		public MigrationCopyStep copyStep = null;
+		public MigrationFederationStep federationStep = null;
 		public UnityUpdateReferencesArgs unityAssemblyDefinitionArgs = null;
 		public UnityUpdateDllsArgs unityUpdateDllsArgs = null;
 
@@ -273,7 +281,21 @@ namespace Beamable.Server.Editor.Usam
 							{
 								var file = files[i];
 								var fileName = Path.GetFileName(file);
-								var newFilePath = Path.Combine(service.copyStep.absoluteDestinationFolder, fileName);
+								var relativePath = file.Replace(service.copyStep.absoluteSourceFolder, "");
+								var dirName = Path.GetDirectoryName("." + relativePath);
+								var destFolder = Path.Combine(service.copyStep.absoluteDestinationFolder, dirName);
+
+								if (string.IsNullOrEmpty(destFolder) || destFolder.Equals(Path.DirectorySeparatorChar.ToString()))
+								{
+									destFolder = service.copyStep.absoluteDestinationFolder;
+								}
+
+								if (!Directory.Exists(destFolder))
+								{
+									Directory.CreateDirectory(destFolder);
+								}
+
+								var newFilePath = Path.Combine(destFolder, fileName);
 								if (File.Exists(newFilePath))
 								{
 									File.Delete(newFilePath);
@@ -325,10 +347,22 @@ namespace Beamable.Server.Editor.Usam
 						}
 
 						{
+							// set federations
+							var setFederationCommand = cli.FederationSet(new FederationSetArgs()
+							{
+								microservice = service.beamoId,
+								fedId = service.federationStep.FederationIds.ToArray(),
+								fedType = service.federationStep.FederationTypes.ToArray()
+							});
+							yield return setFederationCommand.Run().ToYielder();
+							active.stepRatios[3] = 1f;
+						}
+
+						{
 							// delete code!
 							Directory.Delete(service.copyStep.absoluteSourceFolder, true);
 							CreateNoticeFile(service.beamoId, "service", service.copyStep);
-							active.stepRatios[3] = 1f;
+							active.stepRatios[4] = 1f;
 						}
 
 						active.isComplete = true;
@@ -497,9 +531,21 @@ namespace Beamable.Server.Editor.Usam
 						var assembly = assemblyUtil.AllAssemblies.FirstOrDefault(assembly =>
 							assembly.name.Equals(service.Type.Assembly.GetName().Name));
 						var dlls = CsharpProjectUtil.GetValidDllReferences(assembly);
+						var dllsNames = new List<string>();
+						var dllsPaths = new List<string>();
+
+						foreach (string dll in dlls)
+						{
+							var name = Path.GetFileName(dll).Replace(".dll", "");
+							var dllFullPath = Path.GetFullPath(dll);
+							var dllPath = Path.GetRelativePath(migration.copyStep.absoluteDestinationFolder, dllFullPath);
+							dllsNames.Add(name);
+							dllsPaths.Add(dllPath);
+						}
+
 						migration.unityUpdateDllsArgs = new UnityUpdateDllsArgs()
 						{
-							service = service.Name, paths = dlls.ToArray()
+							service = service.Name, paths = dllsPaths.ToArray(), names = dllsNames.ToArray()
 						};
 					}
 					
@@ -508,7 +554,20 @@ namespace Beamable.Server.Editor.Usam
 				}
 
 				{ // TODO: handle federations...
-					
+					var allFedIds = new List<string>();
+					var allFedTypes = new List<string>();
+					foreach (var federationComponent in service.FederationComponents)
+					{
+						allFedTypes.Add(federationComponent.typeName);
+						allFedIds.Add(federationComponent.identity.UniqueName);
+					}
+
+					migration.federationStep = new MigrationFederationStep()
+					{
+						FederationIds = allFedIds, FederationTypes = allFedTypes
+					};
+
+					migration.stepNames.Add("Set Existing Federations");
 				}
 
 				{ // delete old code
