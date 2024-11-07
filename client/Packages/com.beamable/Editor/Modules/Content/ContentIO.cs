@@ -601,22 +601,26 @@ namespace Beamable.Editor.Content
 			return content;
 		}
 
-		public static void EnsureAllDefaultContent()
+		public static bool EnsureAllDefaultContent()
 		{
+			var copiedAnyData = false;
 			foreach (var contentType in GetContentTypes())
 			{
-				EnsureDefaultContentByType(contentType, null);
+				copiedAnyData |= EnsureDefaultContentByType(contentType, null);
 			}
+
+			return copiedAnyData;
 		}
 
-		public static void EnsureDefaultContentByType(Type type, ContentDatabase database)
+		public static bool EnsureDefaultContentByType(Type type, ContentDatabase database)
 		{
 			var methodName = nameof(EnsureDefaultContent);
 			var method = typeof(ContentIO).GetMethod(methodName).MakeGenericMethod(type);
-			method.Invoke(null, new object[]{database});
+			var copiedAnyData = (bool)method.Invoke(null, new object[]{database});
+			return copiedAnyData;
 		}
 
-		public static void EnsureDefaultContent<TContent>(ContentDatabase database) where TContent : ContentObject
+		public static bool EnsureDefaultContent<TContent>(ContentDatabase database) where TContent : ContentObject
 		{
 			string typeName = ContentObject.GetContentType<TContent>();
 			var dir = $"{Directories.DATA_DIR}/{typeName}";
@@ -648,6 +652,8 @@ namespace Beamable.Editor.Content
 			{
 				database?.RecalculateIndex();
 			}
+
+			return copiedAnydata;
 		}
 
 		public string GetAssetPathByType(Type contentType, IContentObject content)

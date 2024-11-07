@@ -156,7 +156,22 @@ namespace Beamable
 
 		static BeamEditor()
 		{
-			Initialize();
+			if (!HasDependencies())
+			{
+				_dependenciesLoadPromise = ImportDependencies();
+				_dependenciesLoadPromise.Then(_ =>
+				{
+					EditorUtility.RequestScriptReload();
+					AssetDatabase.Refresh();
+					Initialize();
+				});
+			}
+			else
+			{
+				Initialize();
+			}
+			
+			
 			AssemblyReloadEvents.beforeAssemblyReload += () =>
 			{
 				BeamEditorContext.StopAll().Wait();
@@ -182,31 +197,6 @@ namespace Beamable
 				foreach (var ex in initializationExceptions)
 				{
 					Debug.LogWarning($"-- {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-				}
-			}
-
-			{ // initialize the default dependencies before a beam context ever gets going.
-				if (!HasDependencies())
-				{
-					if (_dependenciesLoadPromise == null)
-					{
-						_dependenciesLoadPromise = ImportDependencies();
-					}
-					else if (!_dependenciesLoadPromise.IsCompleted)
-					{
-						EditorApplication.delayCall += () =>
-						{
-							// try again in a moment.
-							Initialize();
-						};
-						return;
-					}
-					else if (_dependenciesLoadPromise.IsCompleted)
-					{
-						ContentIO.EnsureAllDefaultContent();
-						AssetDatabase.Refresh();
-						EditorUtility.RequestScriptReload();
-					}
 				}
 			}
 
@@ -344,6 +334,15 @@ namespace Beamable
 
 			// Set flag of SocialsImporter
 			BeamableSocialsImporter.SetFlag();
+			
+			
+			{ // initialize the default dependencies before a beam context ever gets going.
+				if (ContentIO.EnsureAllDefaultContent())
+				{
+					EditorUtility.RequestScriptReload();
+					AssetDatabase.Refresh();
+				}
+			}
 
 			async Promise InitDefaultContext()
 			{
@@ -379,9 +378,9 @@ namespace Beamable
 			await TextMeshProImporter.ImportEssentials();
 		}
 
-		public static void EnsureDefaultContent()
+		public static bool EnsureDefaultContent()
 		{
-			ContentIO.EnsureAllDefaultContent();
+			return ContentIO.EnsureAllDefaultContent();
 		}
 		
 		/// <summary>
