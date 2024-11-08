@@ -661,8 +661,6 @@ namespace Beamable
 			var silentPublishCheck = ContentIO.OnManifest.Then(serverManifest =>
 			{
 				var hasNoContent = serverManifest.References.Count == 0;
-				Debug.Log("Beam publishing content : " + hasNoContent);
-
 				if (hasNoContent)
 				{
 					var _ = DoSilentContentPublish();

@@ -192,7 +192,7 @@ namespace Beamable.Editor.Microservice.UI2
 				                                          yPadding: 3,
 				                                          tooltip: "Go to Mongo Express",
 				                                          drawBorder: false);
-				var clickedOpenProject = BeamGUI.HeaderButton(null, BeamGUI.iconOpenProject,
+				var clickedOpenProject = BeamGUI.HeaderButton(null, BeamGUI.iconFolder,
 				                                              width: buttonWidth,
 				                                              padding: buttonPadding,
 				                                              yPadding: 3,
@@ -264,7 +264,7 @@ namespace Beamable.Editor.Microservice.UI2
 				                                          yPadding: 3,
 				                                          tooltip: "Go to Open API",
 				                                          drawBorder: false);
-				var clickedOpenProject = BeamGUI.HeaderButton(null, BeamGUI.iconOpenProject,
+				var clickedOpenProject = BeamGUI.HeaderButton(null, BeamGUI.iconFolder,
 				                                              width: buttonWidth,
 				                                              padding: buttonPadding,
 				                                              yPadding: 3,

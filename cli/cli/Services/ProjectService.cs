@@ -501,7 +501,7 @@ public class ProjectService
 		return RunDotnetCommand($"add \"{projectPath}\" package {packageName}{versionToUpdate}");
 	}
 
-	private Task RunDotnetCommand(string arguments)
+	public Task RunDotnetCommand(string arguments)
 	{
 		return CliExtensions.GetDotnetCommand(_app.DotnetPath, arguments).ExecuteAsyncAndLog().Task;
 	}

@@ -302,6 +302,7 @@ public class App
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
 		Commands.AddRootCommand<ProjectCommand>();
 
+		Commands.AddSubCommand<OpenSolutionCommand, OpenSolutionCommandArgs, ProjectCommand>();
 		Commands.AddSubCommand<StorageGroupCommand, CommandGroupArgs, ProjectCommand>();
 		Commands.AddSubCommand<SnapshotStorageObjectCommand, SnapshotStorageObjectCommandArgs, StorageGroupCommand>();
 		Commands.AddSubCommand<RestoreStorageObjectCommand, RestoreStorageObjectCommandArgs, StorageGroupCommand>();

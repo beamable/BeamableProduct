@@ -83,7 +83,7 @@ namespace Beamable.Editor.Microservice.UI2
 				                                       padding: 4,
 				                                       backgroundColor: Color.clear,
 				                                       tooltip: "open Mongo Express");
-				clickedOpenCode = BeamGUI.HeaderButton(null, BeamGUI.iconOpenProject,
+				clickedOpenCode = BeamGUI.HeaderButton(null, BeamGUI.iconFolder,
 				                                       width: buttonWidth,
 				                                       padding: 4,
 				                                       backgroundColor: Color.clear,
