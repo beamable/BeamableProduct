@@ -416,6 +416,8 @@ public class App
 				UnityGroupCommand>();
 		Commands.AddSubCommand<UpdateServiceAssemblyReferencesCommand, UpdateServiceAssemblyReferencesCommandArgs,
 			UnityGroupCommand>();
+		Commands.AddSubCommand<UpdateServiceDllsReferenceCommand, UpdateServiceDllsReferenceCommandArgs,
+			UnityGroupCommand>();
 		Commands.AddSubCommand<ShowManifestCommand, ShowManifestCommandArgs, UnityGroupCommand>();
 		
 		// unreal commands

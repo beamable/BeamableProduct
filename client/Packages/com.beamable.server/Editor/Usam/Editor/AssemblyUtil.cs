@@ -19,6 +19,7 @@ namespace Beamable.Server.Editor.Usam
 		private string[] _invalidAssemblyPrefixes = new string[] { "UnityEngine.", "UnityEditor." };
 
 		public HashSet<Assembly> ReferencedAssemblies => _referencedAssemblies;
+		public Assembly[] AllAssemblies => _assemblies;
 
 		public UsamAssemblyService(UsamService usam)
 		{
