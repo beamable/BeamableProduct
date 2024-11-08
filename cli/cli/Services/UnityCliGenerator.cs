@@ -1,4 +1,12 @@
+using Beamable.Common.Announcements;
 using Beamable.Common.BeamCli;
+using Beamable.Common.Content;
+using Beamable.Common.Groups;
+using Beamable.Common.Inventory;
+using Beamable.Common.Leaderboards;
+using Beamable.Common.Shop;
+using Beamable.Common.Tournaments;
+using Beamable.Experimental.Common.Calendars;
 using Beamable.Server.Common;
 using cli.Unreal;
 using Serilog;
@@ -97,6 +105,27 @@ MonoImporter:
   assetBundleName: 
   assetBundleVariant: 
 ";
+
+	public static readonly Dictionary<string, string> sourceToHardcodedGuid = new Dictionary<string, string>
+	{
+		[nameof(LeaderboardContent)] = "ebf776d7c945048daab1e231d27dcdeb",
+		[nameof(AnnouncementContent)] = "8b8612187b1a246e5b691c90486deb34",
+		[nameof(AnnouncementApiContent)] = "4d6d527a776e4dad8b86964e1a98e8b0",
+		[nameof(CalendarContent)] = "0c222bf6b195348e5be37e5cf0169f08",
+		[nameof(GroupDonationsContent)] = "fb76ecebaba24fcd9f9c681e977213c1",
+		[nameof(CurrencyContent)] = "7071e886d4789435d9ad361e916b2207",
+		[nameof(ItemContent)] = "4e65df06d8f8e499788b3ed5b359d54a",
+		[nameof(VipContent)] = "d9d0bb41924546a4fb9bf0beb0a1f7ee",
+		[nameof(EmailContent)] = "b5d38e7e955cc47f9933ec9a3a1e2c5a",
+		[nameof(EventContent)] = "11f962489e5a44d7c877b4a5b71f4d0e",
+		[nameof(SimGameType)] = "404f8a85a397642f5b56ce1f2d8cebea",
+		[nameof(ListingContent)] = "14ae295abc57d4046906c98c15f3ea23",
+		[nameof(SKUContent)] = "b5bfeeca7cf3246b3a89418e98719de7",
+		[nameof(StoreContent)] = "a658558ea86c749979b310e828e3892e",
+		[nameof(TournamentContent)] = "6da5f82a5df104fd4b67a842fafa5c5a",
+		[nameof(ApiContent)] = "3c1cf2c6cf6d4c0c91cc218a5b733932",
+	};
+	
 	public static List<GeneratedFileDescriptor> GenerateMetaFiles(List<string> sourceFiles)
 	{
 		var metas = new List<GeneratedFileDescriptor>(sourceFiles.Count);
@@ -104,12 +133,18 @@ MonoImporter:
 		using var md5 = MD5.Create();
 		foreach (var sourceFile in sourceFiles)
 		{
-			var hashedBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(sourceFile));
-			var guid = new Guid(hashedBytes);
+
+			if (!sourceToHardcodedGuid.TryGetValue(Path.GetFileNameWithoutExtension(sourceFile), out var metaGuid))
+			{
+				var hashedBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(sourceFile));
+				var guid = new Guid(hashedBytes);
+				metaGuid = guid.ToString().Replace("-", "");
+			}
+			
 			metas.Add(new GeneratedFileDescriptor
 			{
 				FileName = sourceFile + ".meta",
-				Content = META_CONTENT_TEMPLATE.Replace(GUID_TEMPLATE, guid.ToString().Replace("-", ""))
+				Content = META_CONTENT_TEMPLATE.Replace(GUID_TEMPLATE, metaGuid)
 			});
 		}
 		return metas;
@@ -119,12 +154,18 @@ MonoImporter:
 	{
 		using var md5 = MD5.Create();
 		{
-			var hashedBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(sourceFile));
-			var guid = new Guid(hashedBytes);
+			if (!UnityCliGenerator.sourceToHardcodedGuid.TryGetValue(Path.GetFileNameWithoutExtension(sourceFile),
+				    out var metaGuid))
+			{
+				var hashedBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(sourceFile));
+				var guid = new Guid(hashedBytes);
+				metaGuid = guid.ToString().Replace("-", "");
+			}
+			
 			return new GeneratedFileDescriptor
 			{
 				FileName = sourceFile + ".meta",
-				Content = META_CONTENT_TEMPLATE.Replace(GUID_TEMPLATE, guid.ToString().Replace("-", ""))
+				Content = META_CONTENT_TEMPLATE.Replace(GUID_TEMPLATE, metaGuid)
 			};
 		}
 	}
