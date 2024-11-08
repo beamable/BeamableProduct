@@ -85,6 +85,9 @@ namespace Beamable.Server.Editor.Usam
 </Project>
 ";
 
+		private const string invalidAssembliesFilePath =
+			"Packages/com.beamable.server/Editor/invalid-assemblies.txt";
+
 		/// <summary>
 		/// AssemblyUtil.Reload(); must be called before this
 		/// </summary>
@@ -164,7 +167,7 @@ namespace Beamable.Server.Editor.Usam
 			return file;
 		}
 
-		static IEnumerable<string> GetValidDllReferences(Assembly assembly)
+		public static IEnumerable<string> GetValidDllReferences(Assembly assembly)
 		{
 			var projectRoot = UnityEngine.Application.dataPath.Substring(0, UnityEngine.Application.dataPath.Length - "/Assets".Length);
 
@@ -173,7 +176,7 @@ namespace Beamable.Server.Editor.Usam
 				if (!dll.StartsWith(projectRoot)) continue;
 				var dllPath = dll.Substring(projectRoot.Length + 1);
 				var dllName = Path.GetFileName(dllPath);
-				if (!IsValidReference(dllName)) continue;
+				if (!IsValidReference(dllName.Replace(".dll", ""))) continue;
 				yield return dllPath;
 			}
 
@@ -193,23 +196,19 @@ namespace Beamable.Server.Editor.Usam
 		
 		public static bool IsValidReference(string referenceName)
 		{
-			var invalidPrefixes = new string[] { "Unity.", "UnityEditor.", "UnityEngine." };
-			var invalidReferences = new string[] {"netstandard"};
-
-			if (referenceName.StartsWith("Unity.Beamable.Customer."))
-			{
-				// special reference; but other "Unity.Beamable."
-				//  dlls are not valid; and should be referenced via nuget
-				return true;
-			}
+			var invalidReferences = File.ReadAllLines(invalidAssembliesFilePath);
 			
-			if (invalidReferences.Contains(referenceName))
+			foreach (var invalidRef in invalidReferences)
 			{
-				return false;
-			}
-			foreach (var prefix in invalidPrefixes)
-			{
-				if (referenceName.StartsWith(prefix))
+				if (invalidRef.Contains("*"))
+				{
+					if (referenceName.StartsWith(invalidRef.Replace("*", "")))
+					{
+						return false;
+					}
+				}
+
+				if (referenceName.Equals(invalidRef))
 				{
 					return false;
 				}
