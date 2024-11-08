@@ -582,23 +582,7 @@ namespace Beamable.Server.Editor.Usam
 
 		public void OpenProject(string beamoId, string projectPath)
 		{
-			
-			var sln = SERVICES_SLN_PATH;
-			var fileName = $@"{Path.GetDirectoryName(projectPath)}/{beamoId}.cs";
-			
-			
-			// first open the sln, because in most IDEs multi-solution view is not supported. 
-			EditorUtility.OpenWithDefaultApp(sln);
-			
-			// and once enough time has passed, hopefully enough so that the IDE has focused
-			//  the solution; open the actual sub class file.
-			IEnumerator OpenFile()
-			{
-				const float hopefullyEnoughTimeForIDEToInitialize = .8f;
-				yield return new WaitForSecondsRealtime(hopefullyEnoughTimeForIDEToInitialize);
-				EditorUtility.OpenWithDefaultApp(fileName);
-			}
-			_dispatcher.Run("open-code", OpenFile());
+			OpenSolution();
 		}
 
 		public bool IsLoadingLocally(BeamServiceStatus status)
@@ -762,7 +746,11 @@ namespace Beamable.Server.Editor.Usam
 		{
 			var runCommand = _cli.ProjectRun(new ProjectRunArgs
 			{
-				detach = true, ids = new string[] {service.beamoId}, watch = false, noClientGen = true,
+				detach = true,
+				ids = new string[] {service.beamoId},
+				force = true,
+				watch = false,
+				noClientGen = true,
 			});
 			var action = SetServiceAction(service.beamoId, ServiceCliActionType.Running, runCommand);
 			if (TryGetLogs(service.beamoId, out var log) && log.logView.clearOnPlay)
@@ -1105,6 +1093,11 @@ namespace Beamable.Server.Editor.Usam
 			}).Run();
 
 			return p;
+		}
+
+		public void OpenSolution()
+		{
+			var _ = _cli.ProjectOpen(new ProjectOpenArgs {sln = SERVICES_SLN_PATH}).Run();
 		}
 	}
 }

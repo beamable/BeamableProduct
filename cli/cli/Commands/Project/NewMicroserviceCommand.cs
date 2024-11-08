@@ -35,18 +35,36 @@ public interface IHaveSolutionFlag
 
 public static class IHaveSolutionFlagExtensions
 {
-	public static string GetSlnDirectory(this SolutionCommandArgs instance) => Path.GetDirectoryName(instance.SlnFilePath);
-	public static bool GetSlnExists(this SolutionCommandArgs instance) => File.Exists(instance.SlnFilePath);
-	public static string GetSlnFileName(this SolutionCommandArgs instance) => Path.GetFileNameWithoutExtension(instance.SlnFilePath);
+	public static string GetSlnDirectory(this IHasSolutionFileArg instance) => Path.GetDirectoryName(instance.SolutionFilePath);
+	public static bool GetSlnExists(this IHasSolutionFileArg instance) => File.Exists(instance.SolutionFilePath);
+	public static string GetSlnFileName(this IHasSolutionFileArg instance) => Path.GetFileNameWithoutExtension(instance.SolutionFilePath);
 }
 
-public class SolutionCommandArgs : NewProjectCommandArgs
+public interface IHasSolutionFileArg
+{
+	public string SolutionFilePath { get; set; }
+}
+
+public class SolutionCommandArgs : NewProjectCommandArgs, IHasSolutionFileArg
 {
 	public string SlnFilePath;
+
+	public string SolutionFilePath
+	{
+		get => SlnFilePath;
+		set => SlnFilePath = value;
+	}
+
 	public string ServicesBaseFolderPath;
 
 	public static void ConfigureSolutionFlag<T>(AppCommand<T> command)
 		where T : SolutionCommandArgs
+	{
+		ConfigureSolutionFlag<T>(command, args => Path.Combine(args.ProjectName, args.ProjectName + ".sln"));
+	}
+	
+	public static void ConfigureSolutionFlag<T>(AppCommand<T> command, Func<T, string> generateSlnPathWhenNoBeamableFolderExists )
+		where T : CommandArgs, IHasSolutionFileArg
 	{
 		command.AddOption(new Option<string>(
 				name: "--sln",
@@ -81,21 +99,21 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 						// no sln path is given, so we use the defaults.
 						// this code-path really only exists when 
 						//  the user passes the hidden `-i` flag
-						args.SlnFilePath = Path.Combine(args.ProjectName, args.ProjectName + ".sln");
+						args.SolutionFilePath = generateSlnPathWhenNoBeamableFolderExists(args);
 					}
 					else
 					{
 						var path = Path.GetFullPath(Path.GetDirectoryName(beamableFolder));
-						args.SlnFilePath = Path.GetRelativePath(".", Path.Combine(path, Constants.DEFAULT_SLN_NAME));
+						args.SolutionFilePath = Path.GetRelativePath(".", Path.Combine(path, Constants.DEFAULT_SLN_NAME));
 					}
 
 				}
 				else
 				{
-					args.SlnFilePath = i;
-					if (!args.SlnFilePath.EndsWith(".sln"))
+					args.SolutionFilePath = i;
+					if (!args.SolutionFilePath.EndsWith(".sln"))
 					{
-						args.SlnFilePath += ".sln";
+						args.SolutionFilePath += ".sln";
 					}
 				}
 			});
@@ -141,7 +159,6 @@ public class SolutionCommandArgs : NewProjectCommandArgs
 		initArgs.ConfigService.SetBeamableDirectory(this.GetSlnDirectory());
 	}
 
-	// public void 
 }
 
 public class ServiceNameArgument : Argument<ServiceName>

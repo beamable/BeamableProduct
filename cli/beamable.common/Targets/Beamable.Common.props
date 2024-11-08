@@ -6,6 +6,7 @@
     <PropertyGroup>
         <!-- by default, no copy happens. It needs to be an opt-in -->
         <CopyToLinkedProjects Condition="$(CopyToLinkedProjects)==''">false</CopyToLinkedProjects>
+        <BeamExcludeDepsByPrefix Condition="$(BeamExcludeDepsByPrefix)==''">Newtonsoft,Unity.Beamable,UnityEngine,Unity.Addressables,System</BeamExcludeDepsByPrefix>
     </PropertyGroup>
 
     <!--  Settings for Beamable Build  -->

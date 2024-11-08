@@ -156,7 +156,22 @@ namespace Beamable
 
 		static BeamEditor()
 		{
-			Initialize();
+			if (!HasDependencies())
+			{
+				_dependenciesLoadPromise = ImportDependencies();
+				_dependenciesLoadPromise.Then(_ =>
+				{
+					EditorUtility.RequestScriptReload();
+					AssetDatabase.Refresh();
+					Initialize();
+				});
+			}
+			else
+			{
+				Initialize();
+			}
+			
+			
 			AssemblyReloadEvents.beforeAssemblyReload += () =>
 			{
 				BeamEditorContext.StopAll().Wait();
@@ -168,6 +183,7 @@ namespace Beamable
 		private static List<Exception> initializationExceptions = new List<Exception>();
 		private const int WARN_ON_INITIALIZE_ATTEMPT = 50;
 
+		private static Promise _dependenciesLoadPromise = null;
 
 		static void Initialize()
 		{
@@ -318,6 +334,7 @@ namespace Beamable
 
 			// Set flag of SocialsImporter
 			BeamableSocialsImporter.SetFlag();
+			
 
 			async Promise InitDefaultContext()
 			{
@@ -339,6 +356,20 @@ namespace Beamable
 			InitDefaultContext().Error(Debug.LogError);
 		}
 
+		public static bool HasDependencies()
+		{
+			var hasAddressables = AddressableAssetSettingsDefaultObject.GetSettings(false) != null;
+			var hasTextmeshPro = TextMeshProImporter.EssentialsLoaded;
+
+			return hasAddressables && hasTextmeshPro;
+		}
+
+		public static async Promise ImportDependencies()
+		{
+			AddressableAssetSettingsDefaultObject.GetSettings(true);
+			await TextMeshProImporter.ImportEssentials();
+		}
+		
 		/// <summary>
 		/// UnityHub will sometimes erase the PATH variable, which means when we launch sub-processes, they won't
 		/// work because the PATH is bad. This function will patch up the PATH variable based on configured items.C
@@ -529,6 +560,18 @@ namespace Beamable
 				var configService = ServiceScope.GetService<ConfigDefaultsService>();
 				var initResult = await EditorAccountService.TryInit();
 				var account = initResult.account;
+
+
+				{
+					// initialize the default dependencies before a beam context ever gets going.
+					if (ContentIO.EnsureAllDefaultContent())
+					{
+						AssetDatabase.ImportAsset(Constants.Directories.DATA_DIR,
+						                          ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
+						AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
+					}
+				}
+
 				if (!initResult.hasCid)
 				{
 					Requester.DeleteToken(); // not signed in... 
@@ -554,6 +597,8 @@ namespace Beamable
 				var accessToken = await accessTokenStorage.LoadTokenForCustomer(cid);
 				requester.Token = accessToken;
 
+				PublishDefaultContent();
+				
 				// it is possible that the requester cid/pid have been set, but the editor account service hasn't.
 				if (accessToken != null && account.HasEmptyCustomerView)
 				{
@@ -562,14 +607,8 @@ namespace Beamable
 				}
 
 				await RefreshRealmSecret();
-
+				
 				var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
-
-				if (!HasDependencies())
-				{
-					await CreateDependencies();
-				}
-
 
 			}
 
@@ -609,8 +648,24 @@ namespace Beamable
 			await token.SaveAsCustomerScoped();
 			Requester.Token = token;
 
+			PublishDefaultContent();
 			await BeamCli.Init();
 			OnUserChange?.Invoke(CurrentUser);
+		}
+
+		public void PublishDefaultContent()
+		{
+			if (!IsAuthenticated)
+				return;
+			
+			var silentPublishCheck = ContentIO.OnManifest.Then(serverManifest =>
+			{
+				var hasNoContent = serverManifest.References.Count == 0;
+				if (hasNoContent)
+				{
+					var _ = DoSilentContentPublish();
+				}
+			});
 		}
 
 		[Obsolete("this method is no longer supported, and will be removed in a future release")]
@@ -838,55 +893,6 @@ namespace Beamable
 			
 		}
 
-
-		#endregion
-
-		#region TMP & Addressables Dependencies Check
-
-#if BEAMABLE_DEVELOPER
-		[MenuItem(MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + "/Force Refresh Content (New)")]
-		public static void ForceRefreshContent()
-		{
-			var contentIO = Default.ServiceScope.GetService<ContentIO>();
-			// Do these in parallel to simulate startup behavior.
-			_ = contentIO.BuildLocalManifest();
-			_ = Default.CreateDependencies().GetResult();
-		}
-#endif
-
-		public static bool HasDependencies()
-		{
-			var hasAddressables = AddressableAssetSettingsDefaultObject.GetSettings(false) != null;
-			var hasTextmeshPro = TextMeshProImporter.EssentialsLoaded;
-
-			return hasAddressables && hasTextmeshPro;
-		}
-
-		public async Promise CreateDependencies()
-		{
-			// import addressables...
-			AddressableAssetSettingsDefaultObject.GetSettings(true);
-
-			var contentIO = Default.ServiceScope.GetService<ContentIO>();
-			await TextMeshProImporter.ImportEssentials();
-
-			AssetDatabase.Refresh();
-			contentIO.EnsureAllDefaultContent();
-
-			ConfigManager.Initialize();
-
-			if (IsAuthenticated)
-			{
-				var serverManifest = await contentIO.OnManifest;
-				var hasNoContent = serverManifest.References.Count == 0;
-				if (hasNoContent)
-					await DoSilentContentPublish();
-				else
-					await PromiseBase.SuccessfulUnit;
-			}
-			
-			EditorUtility.RequestScriptReload();
-		}
 
 		#endregion
 
