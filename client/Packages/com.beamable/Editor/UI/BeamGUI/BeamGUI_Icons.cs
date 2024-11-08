@@ -13,6 +13,7 @@ namespace Beamable.Editor.Util
 		public static Texture iconOpenMongoExpress;
 		public static Texture iconSettings;
 		public static Texture iconOpenProject;
+		public static Texture iconFolder;
 		public static Texture iconMoreOptions;
 		public static Texture iconPlay;
 		public static Texture iconHelp;
@@ -155,6 +156,11 @@ namespace Beamable.Editor.Util
 			if (iconSettings == null)
 			{
 				iconSettings = EditorGUIUtility.IconContent("Settings").image;
+			}
+
+			if (iconFolder == null)
+			{
+				iconFolder = EditorGUIUtility.IconContent("Folder Icon").image;
 			}
 
 

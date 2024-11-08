@@ -41,13 +41,9 @@ namespace Beamable.Editor.BeamCli
 			}
 		}
 
-		async Promise Init(EditorAccountInfo _) => await Init();
-
 		public async Promise Init()
 		{
 			await _ctx.OnReady;
-
-			var extraPaths = BeamablePackages.GetManifestFileReferences();
 			
 			var args = new InitArgs
 			{
@@ -55,9 +51,17 @@ namespace Beamable.Editor.BeamCli
 				noTokenSave = true,
 				cid = _ctx.Requester.Cid,
 				pid = _ctx.Requester.Pid,
-				host = BeamableEnvironment.ApiUrl,
-				saveExtraPaths = extraPaths.ToArray()
+				host = BeamableEnvironment.ApiUrl
 			};
+
+			if (string.IsNullOrEmpty(args.cid) || string.IsNullOrEmpty(args.pid))
+			{
+				// cannot call the init command with a blank cid/pid. 
+				return;
+			}
+			
+			var extraPaths = BeamablePackages.GetManifestFileReferences();
+			args.saveExtraPaths = extraPaths.ToArray();
 			
 			var token = _ctx.Requester.Token;
 			if (token == null)
@@ -85,7 +89,6 @@ namespace Beamable.Editor.BeamCli
 				Debug.LogError("Unable to register Unity project with local CLI project." + cb.data.message);
 			});
 			var _ = linkCommand.Run();
-			// await linkCommand.Run();
 		}
 	}
 }
