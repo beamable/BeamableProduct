@@ -564,11 +564,8 @@ namespace Beamable
 
 				{
 					// initialize the default dependencies before a beam context ever gets going.
-					Debug.Log("Beam check content");
 					if (ContentIO.EnsureAllDefaultContent())
 					{
-						Debug.Log("Beam wrote content");
-
 						AssetDatabase.ImportAsset(Constants.Directories.DATA_DIR,
 						                          ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
 						AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
@@ -600,6 +597,8 @@ namespace Beamable
 				var accessToken = await accessTokenStorage.LoadTokenForCustomer(cid);
 				requester.Token = accessToken;
 
+				PublishDefaultContent();
+				
 				// it is possible that the requester cid/pid have been set, but the editor account service hasn't.
 				if (accessToken != null && account.HasEmptyCustomerView)
 				{
@@ -608,7 +607,6 @@ namespace Beamable
 				}
 
 				await RefreshRealmSecret();
-				
 				
 				var _ = ServiceScope.GetService<SingletonDependencyList<ILoadWithContext>>();
 
@@ -650,24 +648,26 @@ namespace Beamable
 			await token.SaveAsCustomerScoped();
 			Requester.Token = token;
 
-			
-			
-			if (IsAuthenticated)
-			{
-				var silentPublishCheck = ContentIO.OnManifest.Then(serverManifest =>
-				{
-					var hasNoContent = serverManifest.References.Count == 0;
-					Debug.Log("Beam publishing content : " + hasNoContent);
-
-					if (hasNoContent)
-					{
-						var _ = DoSilentContentPublish();
-					}
-				});
-			}
-			
+			PublishDefaultContent();
 			await BeamCli.Init();
 			OnUserChange?.Invoke(CurrentUser);
+		}
+
+		public void PublishDefaultContent()
+		{
+			if (!IsAuthenticated)
+				return;
+			
+			var silentPublishCheck = ContentIO.OnManifest.Then(serverManifest =>
+			{
+				var hasNoContent = serverManifest.References.Count == 0;
+				Debug.Log("Beam publishing content : " + hasNoContent);
+
+				if (hasNoContent)
+				{
+					var _ = DoSilentContentPublish();
+				}
+			});
 		}
 
 		[Obsolete("this method is no longer supported, and will be removed in a future release")]

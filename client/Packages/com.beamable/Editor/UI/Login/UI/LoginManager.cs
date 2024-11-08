@@ -176,8 +176,6 @@ namespace Beamable.Editor.Login.UI
 		{
 			return promise.Map(_ =>
 						  {
-							  Debug.Log($"beam login action complete : " + assumePage);
-
 							  if (assumePage)
 							  {
 								  model.Initialize().Then(AssumePage);
