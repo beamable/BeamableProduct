@@ -189,6 +189,7 @@ namespace Beamable.Editor.ToolbarExtender
 			{
 				_commandStyle = new GUIStyle("CommandLeft");
 			}
+			BeamGUI.LoadAllIcons();
 
 			var screenWidth = EditorGUIUtility.currentViewWidth;
 
