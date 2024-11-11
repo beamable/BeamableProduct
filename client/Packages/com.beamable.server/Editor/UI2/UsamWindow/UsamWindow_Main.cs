@@ -228,6 +228,14 @@ namespace Beamable.Editor.Microservice.UI2
 						clickedCreate = BeamGUI.ShowDisabled(state != WindowState.CREATE_SERVICE && state != WindowState.CREATE_STORAGE,
 						                                     () => BeamGUI.HeaderButton(
 							                                     "Create", EditorGUIUtility.FindTexture("Toolbar Plus")));
+
+						if (BeamGUI.HeaderButton("Open", BeamGUI.iconFolder))
+						{
+							AddDelayedAction(() =>
+							{
+								usam.OpenSolution();
+							});
+						}
 					}
 
 				},

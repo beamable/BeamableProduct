@@ -193,7 +193,9 @@ namespace Beamable.Editor.Content
 	{
 		public ContentManager ContentManager => _contentManager ?? (_contentManager = new ContentManager());
 		private ContentManager _contentManager;
-		private ContentTypeReflectionCache _contentTypeReflectionCache;
+
+		private static ContentTypeReflectionCache _contentTypeReflectionCache =>
+			BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 
 		private readonly IBeamableRequester _requester;
 		private Promise<Manifest> _manifestPromise;
@@ -230,7 +232,6 @@ namespace Beamable.Editor.Content
 
 			OnContentsCreated += Internal_HandleContentCreated;
 			OnContentEntryDeleted += Internal_HandleContentDeleted;
-			_contentTypeReflectionCache = BeamEditor.GetReflectionSystem<ContentTypeReflectionCache>();
 
 		}
 
@@ -571,12 +572,12 @@ namespace Beamable.Editor.Content
 			return localManifest;
 		}
 
-		public IEnumerable<Type> GetContentTypes()
+		public static IEnumerable<Type> GetContentTypes()
 		{
 			return _contentTypeReflectionCache.GetContentTypes();
 		}
 
-		public IEnumerable<string> GetContentClassIds()
+		public static IEnumerable<string> GetContentClassIds()
 		{
 			return _contentTypeReflectionCache.GetContentClassIds();
 		}
@@ -601,22 +602,26 @@ namespace Beamable.Editor.Content
 			return content;
 		}
 
-		public void EnsureAllDefaultContent()
+		public static bool EnsureAllDefaultContent()
 		{
+			var copiedAnyData = false;
 			foreach (var contentType in GetContentTypes())
 			{
-				EnsureDefaultContentByType(contentType);
+				copiedAnyData |= EnsureDefaultContentByType(contentType, null);
 			}
+
+			return copiedAnyData;
 		}
 
-		public void EnsureDefaultContentByType(Type type)
+		public static bool EnsureDefaultContentByType(Type type, ContentDatabase database)
 		{
 			var methodName = nameof(EnsureDefaultContent);
 			var method = typeof(ContentIO).GetMethod(methodName).MakeGenericMethod(type);
-			method.Invoke(this, null);
+			var copiedAnyData = (bool)method.Invoke(null, new object[]{database});
+			return copiedAnyData;
 		}
 
-		public void EnsureDefaultContent<TContent>() where TContent : ContentObject
+		public static bool EnsureDefaultContent<TContent>(ContentDatabase database) where TContent : ContentObject
 		{
 			string typeName = ContentObject.GetContentType<TContent>();
 			var dir = $"{Directories.DATA_DIR}/{typeName}";
@@ -646,8 +651,10 @@ namespace Beamable.Editor.Content
 
 			if (copiedAnydata)
 			{
-				ContentDatabase.RecalculateIndex();
+				database?.RecalculateIndex();
 			}
+
+			return copiedAnydata;
 		}
 
 		public string GetAssetPathByType(Type contentType, IContentObject content)
@@ -682,7 +689,7 @@ namespace Beamable.Editor.Content
 			method.Invoke(this, null);
 		}
 
-		public void EnsureDefaultAssets<TContent>() where TContent : ContentObject
+		public static void EnsureDefaultAssets<TContent>() where TContent : ContentObject
 		{
 			string contentType = ContentObject.GetContentType<TContent>();
 			var assetDir = $"{Directories.ASSET_DIR}/{contentType}";
