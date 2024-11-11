@@ -257,7 +257,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			Directory.CreateDirectory(errorPathDir);
 
 			var exe = args.AppContext.DotnetPath;
-			var commandStr = $"run --project {projectPath} --verbosity minimal -p:ErrorLog=\"{errorPath}%2Cversion=2\" -p:WarningLevel=0";
+			var commandStr = $"run --project \"{projectPath}\" --verbosity minimal -p:ErrorLog=\"{errorPath}%2Cversion=2\" -p:WarningLevel=0";
 
 			if (buildFlags.HasFlag(ProjectService.BuildFlags.DisableClientCodeGen))
 			{
