@@ -56,7 +56,10 @@ namespace Beamable.Editor.Environment
 
 		public static List<string> CliPathsToIgnore = new List<string>()
 		{
-			"Packages/" + BeamablePackageName, "Packages/" + ServerPackageName
+			"Packages/" + BeamablePackageName,
+			"Packages/" + ServerPackageName,
+			"Library/PackageCache/" + BeamablePackageName,
+			"Library/PackageCache/" + ServerPackageName
 		};
 
 		private static Dictionary<string, Action> _packageToWindowInitialization = new Dictionary<string, Action>();

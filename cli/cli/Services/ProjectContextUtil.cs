@@ -353,6 +353,7 @@ public static class ProjectContextUtil
 				if (path.StartsWith(pathToIgnore))
 				{
 					canBeAdded = false;
+					break;
 				}
 			}
 
