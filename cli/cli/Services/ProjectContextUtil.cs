@@ -77,9 +77,10 @@ public static class ProjectContextUtil
 		}
 
 		configService.GetProjectSearchPaths(out var rootFolder, out var searchPaths);
+		var pathsToIgnore = configService.LoadPathsToIgnoreFromFile();
 		var sw = new Stopwatch();
 		sw.Start();
-		var allProjects = FindCsharpProjects(rootFolder, searchPaths).ToArray();
+		var allProjects = FindCsharpProjects(rootFolder, searchPaths, pathsToIgnore).ToArray();
 		sw.Stop();
 		Log.Verbose($"Gathering csprojs took {sw.Elapsed.TotalMilliseconds} ");
 		sw.Restart();
@@ -328,10 +329,12 @@ public static class ProjectContextUtil
 		_pathToMetadata[path] = metadata;
 	}
 	
-	public static CsharpProjectMetadata[] FindCsharpProjects(string rootFolder, List<string> searchPaths)
+	public static CsharpProjectMetadata[] FindCsharpProjects(string rootFolder, List<string> searchPaths, List<string> pathsToIgnore)
 	{
 		var sw = new Stopwatch();
 		sw.Start();
+
+		var fullPathsToIgnore = pathsToIgnore.Select(Path.GetFullPath).ToList();
 
 		var pathList = new List<string>();
 		foreach (var searchPath in searchPaths)
@@ -339,7 +342,24 @@ public static class ProjectContextUtil
 			var somePaths = Directory.GetFiles(searchPath, "*.csproj", SearchOption.AllDirectories);
 			pathList.AddRange(somePaths);
 		}
-		var paths = pathList.ToArray();
+
+		var filteredPaths = new List<string>();
+
+		foreach (var path in pathList)
+		{
+			var canBeAdded = true;
+			foreach (var pathToIgnore in fullPathsToIgnore)
+			{
+				if (path.StartsWith(pathToIgnore))
+				{
+					canBeAdded = false;
+				}
+			}
+
+			if(canBeAdded) filteredPaths.Add(path);
+		}
+
+		var paths = filteredPaths.ToArray();
 		
 		var projects = new CsharpProjectMetadata[paths.Length];
 

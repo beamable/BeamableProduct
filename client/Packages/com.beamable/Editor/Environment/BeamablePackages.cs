@@ -54,6 +54,11 @@ namespace Beamable.Editor.Environment
 
 		public const string SESSION_KEY_UPDATE_SERVER_REQUIRED = "beam-update-server-package-requested";
 
+		public static List<string> CliPathsToIgnore = new List<string>()
+		{
+			"Packages/" + BeamablePackageName, "Packages/" + ServerPackageName
+		};
+
 		private static Dictionary<string, Action> _packageToWindowInitialization = new Dictionary<string, Action>();
 
 		private static Promise<BeamablePackageMeta> _serverPackageMetaPromise;
