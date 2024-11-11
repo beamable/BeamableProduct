@@ -1,12 +1,12 @@
 
 namespace Beamable.Editor.BeamCli.Commands
 {
-    using Beamable.Common;
-    using Beamable.Common.BeamCli;
-    
-    [System.SerializableAttribute()]
-    public partial class BeamServicesUploadApiOutput
-    {
-        public string uploadUrl;
-    }
+	using Beamable.Common;
+	using Beamable.Common.BeamCli;
+
+	[System.SerializableAttribute()]
+	public partial class BeamServicesUploadApiOutput
+	{
+		public string uploadUrl;
+	}
 }

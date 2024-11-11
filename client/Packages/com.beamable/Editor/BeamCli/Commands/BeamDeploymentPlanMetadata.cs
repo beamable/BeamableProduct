@@ -1,14 +1,14 @@
 
 namespace Beamable.Editor.BeamCli.Commands
 {
-    using Beamable.Common;
-    using Beamable.Common.BeamCli;
-    
-    [System.SerializableAttribute()]
-    public partial class BeamDeploymentPlanMetadata
-    {
-        public bool success;
-        public BeamDeployablePlan plan;
-        public string planPath;
-    }
+	using Beamable.Common;
+	using Beamable.Common.BeamCli;
+
+	[System.SerializableAttribute()]
+	public partial class BeamDeploymentPlanMetadata
+	{
+		public bool success;
+		public BeamDeployablePlan plan;
+		public string planPath;
+	}
 }
