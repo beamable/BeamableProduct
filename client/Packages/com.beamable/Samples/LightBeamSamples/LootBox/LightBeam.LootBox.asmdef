@@ -7,8 +7,8 @@
         "Unity.Beamable.Customer.Common",
         "Unity.TextMeshPro",
         "Unity.Beamable.LightBeams",
-        "Unity.Beamable.Customer.MicroserviceClients",
-        "Unity.Beamable.Server.Runtime"
+        "Unity.Beamable.Server.Runtime",
+        "LootBoxService.Client"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
