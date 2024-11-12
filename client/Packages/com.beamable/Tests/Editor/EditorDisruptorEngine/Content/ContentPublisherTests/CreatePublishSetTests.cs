@@ -22,6 +22,7 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentPublisherTests
 		[SetUp]
 		public void Init()
 		{
+			var _ = BeamEditor.EditorReflectionCache;
 			_content = new List<ContentObject>() { };
 			_requester = new MockPlatformRequester();
 			_serverContent = new List<ContentManifestReference>();

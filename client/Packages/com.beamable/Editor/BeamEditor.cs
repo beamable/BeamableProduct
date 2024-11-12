@@ -164,13 +164,15 @@ namespace Beamable
 					EditorUtility.RequestScriptReload();
 					AssetDatabase.Refresh();
 					Initialize();
+				}).Error(_ =>
+				{
+					Initialize();
 				});
 			}
 			else
 			{
 				Initialize();
 			}
-			
 			
 			AssemblyReloadEvents.beforeAssemblyReload += () =>
 			{
