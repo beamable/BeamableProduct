@@ -36,9 +36,10 @@ namespace Beamable.Editor.Microservice.UI2
 			isOpen = true;
 			var totalElementCount = usamWindow.usam.latestManifest.services.Count +
 			                        usamWindow.usam.latestManifest.storages.Count;
+			var pos = position;
 			minSize = new Vector2(usamWindow.position.width-100, 
 			                      totalElementCount * elementHeight + 40);
-
+			position = pos;
 			var usam = usamWindow.usam;
 			
 			

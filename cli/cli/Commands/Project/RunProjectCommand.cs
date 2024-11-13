@@ -399,6 +399,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			{
 				try
 				{
+					Log.Verbose("Killing sub process microservice.");
 					proc.Kill(true);
 				}
 				catch (Exception ex)

@@ -34,12 +34,11 @@ namespace Beamable.Editor.Util
 		                                     Func<T> windowFactory,
 		                                     int yPadding = 5,
 		                                     int yShift = 1,
-		                                     Color backdropColor = default,
-		                                     bool popupOnLeft = false
+		                                     Color backdropColor = default
 		                                     )
 			where T : EditorWindow
 		{
-			LayoutDropDown(rootWindow, current,widthOption,windowFactory,out _,yPadding,yShift, backdropColor, popupOnLeft);
+			LayoutDropDown(rootWindow, current,widthOption,windowFactory,out _,yPadding,yShift, backdropColor);
 		}
 		public static void LayoutDropDown<T>(EditorWindow rootWindow, 
 		                                     GUIContent current, 
@@ -48,8 +47,7 @@ namespace Beamable.Editor.Util
 		                                     out Rect contentBounds,
 		                                     int yPadding=5,
 		                                     int yShift=1,
-		                                     Color backdropColor=default,
-		                                     bool popupOnLeft=false)
+		                                     Color backdropColor=default)
 			where T : EditorWindow
 		{
 			if (backdropColor == default)
@@ -134,14 +132,9 @@ namespace Beamable.Editor.Util
 					{
 						window = popup
 					};
-					
 					const int tabHeight = 20;
 					var popupWidth = 300;
 					var xCoord = rootWindow.position.x + (paddedRect.xMax - popupWidth);
-					if (popupOnLeft)
-					{
-						xCoord = rootWindow.position.x + paddedRect.xMin;
-					}
 					var popupPosition = new Rect(xCoord, rootWindow.position.y + tabHeight + paddedRect.yMax, 0, 0);
 					popup.ShowAsDropDown(popupPosition, new Vector2(popupWidth, 100));
 
