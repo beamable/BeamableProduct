@@ -197,8 +197,10 @@ public class ConfigService
 	}
 
 	public List<string> LoadExtraPathsFromFile() => LoadDataFile<List<string>>(CONFIG_FILE_EXTRA_PATHS);
+	public List<string> LoadPathsToIgnoreFromFile() => LoadDataFile<List<string>>(CONFIG_FILE_PATHS_TO_IGNORE);
 	public void SaveExtraPathsToFile(List<string> paths) => SaveDataFile<List<string>>(CONFIG_FILE_EXTRA_PATHS, paths);
-	
+	public void SavePathsToIgnoreToFile(List<string> paths) => SaveDataFile<List<string>>(CONFIG_FILE_PATHS_TO_IGNORE, paths);
+
 	public T LoadDataFile<T>(string fileName) where T : new() => LoadDataFile<T>(fileName, () => new T());
 
 	public T LoadDataFile<T>(string fileName, Func<T> defaultValueGenerator)
@@ -237,6 +239,7 @@ public class ConfigService
 	public const string ENV_VAR_DOCKER_EXE = "BEAM_DOCKER_EXE";
 
 	public const string CONFIG_FILE_EXTRA_PATHS = "additional-project-paths.json";
+	public const string CONFIG_FILE_PATHS_TO_IGNORE = "project-paths-to-ignore.json";
 
 	public static bool IsRedirected => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(ENV_VAR_BEAM_CLI_IS_REDIRECTED_COMMAND));
 	

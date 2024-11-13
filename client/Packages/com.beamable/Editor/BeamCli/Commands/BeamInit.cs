@@ -22,6 +22,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string refreshToken;
 		/// <summary>Overwrite the stored extra paths for where to find projects</summary>
 		public string[] saveExtraPaths;
+		/// <summary>Paths to ignore when searching for services</summary>
+		public string[] pathsToIgnore;
 		/// <summary>Save login refresh token to environment variable</summary>
 		public bool saveToEnvironment;
 		/// <summary>Save login refresh token to file</summary>
@@ -85,6 +87,15 @@ namespace Beamable.Editor.BeamCli.Commands
 				{
 					// The parameter allows multiple values
 					genBeamCommandArgs.Add(("--save-extra-paths=" + this.saveExtraPaths[i]));
+				}
+			}
+			// If the pathsToIgnore value was not default, then add it to the list of args.
+			if ((this.pathsToIgnore != default(string[])))
+			{
+				for (int i = 0; (i < this.pathsToIgnore.Length); i = (i + 1))
+				{
+					// The parameter allows multiple values
+					genBeamCommandArgs.Add(("--paths-to-ignore=" + this.pathsToIgnore[i]));
 				}
 			}
 			// If the saveToEnvironment value was not default, then add it to the list of args.

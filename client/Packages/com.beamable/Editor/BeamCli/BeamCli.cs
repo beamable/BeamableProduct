@@ -51,7 +51,8 @@ namespace Beamable.Editor.BeamCli
 				noTokenSave = true,
 				cid = _ctx.Requester.Cid,
 				pid = _ctx.Requester.Pid,
-				host = BeamableEnvironment.ApiUrl
+				host = BeamableEnvironment.ApiUrl,
+				pathsToIgnore = BeamablePackages.CliPathsToIgnore.ToArray()
 			};
 
 			if (string.IsNullOrEmpty(args.cid) || string.IsNullOrEmpty(args.pid))
