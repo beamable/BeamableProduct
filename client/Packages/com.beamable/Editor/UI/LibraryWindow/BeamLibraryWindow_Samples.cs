@@ -101,6 +101,9 @@ namespace Beamable.Editor.Library
 			
 		}
 
+		private Material iconMaterial;
+		private Material gradientMaterial; 
+
 		void DrawSample(Rect bounds, LightbeamSampleInfo lightBeam)
 		{
 			bool clickedOpen = false;
@@ -128,15 +131,44 @@ namespace Beamable.Editor.Library
 			var gradient = LoadTexture("Packages/com.beamable/Editor/UI/Common/Icons/gradient-deep-space.jpg");
 			// var gradient = LoadTexture("Packages/com.beamable/Editor/UI/Toolbox/Icons/beamable_gradient.png");
 			var texRect = new Rect(bounds.x, bounds.y, bounds.width, contentRect.yMin - bounds.yMin);
+
+			if (gradientMaterial == null)
+			{
+				gradientMaterial =
+					EditorResources.Load<Material>(
+						"Packages/com.beamable/Editor/UI/Common/Materials/BeamLibraryGradientMat.mat");
+			}
 			
-			
-			GUI.DrawTexture(texRect, gradient, ScaleMode.ScaleAndCrop);
+			// GUI.DrawTexture(texRect, gradient, ScaleMode.ScaleAndCrop);
 
 			var uv = new Rect(texRect.xMin / position.width, 1 - (texRect.yMin - sampleScrollPosition.y) / position.height,
 			                  texRect.width / position.width, texRect.height / position.height);
-			GUI.DrawTextureWithTexCoords(texRect, gradient, uv, true);
+			var paddedTexRect = new Rect(texRect.x, texRect.y +8 , texRect.width, texRect.height - 16);
 			
-			GUI.DrawTexture(texRect, texture, ScaleMode.ScaleToFit);
+			
+			gradientMaterial.SetVector("_RectPosition", new Vector4(texRect.x, texRect.y- sampleScrollPosition.y, texRect.width, texRect.height));
+			gradientMaterial.SetVector("_Size", new Vector4(position.x, position.y, position.width, position.height));
+			
+			EditorGUI.DrawPreviewTexture(texRect, gradient, gradientMaterial);
+			// GUI.DrawTextureWithTexCoords(texRect, gradient, uv, true);
+
+			
+			var originalColor = GUI.color;
+			GUI.color = new Color(0, 0, 0, .2f);
+			GUI.DrawTexture(paddedTexRect, BeamGUI.iconShadowSoftA, ScaleMode.ScaleToFit);
+			GUI.color = new Color(.6f, .65f, .7f, .5f);
+
+			if (iconMaterial == null)
+			{
+				iconMaterial =
+					EditorResources.Load<Material>(
+						"Packages/com.beamable/Editor/UI/Common/Materials/BeamIconMat.mat");
+			}
+			iconMaterial.SetVector("_RectPosition", new Vector4(paddedTexRect.x, paddedTexRect.y- sampleScrollPosition.y, paddedTexRect.width, paddedTexRect.height));
+			iconMaterial.SetVector("_Size", new Vector4(position.x, position.y, position.width, position.height));
+
+			EditorGUI.DrawPreviewTexture(paddedTexRect, texture, iconMaterial, ScaleMode.ScaleToFit);
+			GUI.color = originalColor;
 			
 			// draw title
 			
