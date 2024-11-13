@@ -251,7 +251,7 @@ namespace Beamable.Editor
 				}
 
 				lightbeam.localCandidateFolder =
-					Path.Combine("Assets", "Samples", "Beamable", BeamableEnvironment.SdkVersion.ToString(), lightbeam.name);
+					Path.Combine("Assets", "Samples", "Beamable", BeamableEnvironment.SdkVersion.ToString(), lightbeam.name.Replace(" ", string.Empty));
 				lightbeam.localCandidateAssetPath = lightbeam.relativeMainAssetPath == null
 					? null
 					: Path.Combine(lightbeam.localCandidateFolder, lightbeam.relativeMainAssetPath);

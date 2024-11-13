@@ -63,6 +63,14 @@
       "subText": "social",
       "texturePath": "Packages/com.beamable/Editor/UI/Toolbox/Icons/lobby.png",
       "relativeMainAssetPath": "Sample_LobbyManager.unity"
+    },
+    {
+      "displayName": "Loot Box",
+      "description": "Contains a friendly user interface demonstrating how to use a C#MS to create a Loot Box system.",
+      "path": "SAMPLES_PATH/LightBeamSamples/LootBox",
+      "subText": "social",
+      "texturePath": "Packages/com.beamable/Editor/UI/Toolbox/Icons/Admin Flow.png",
+      "relativeMainAssetPath": "Sample_LootBox.unity"
     }
   ]
 }

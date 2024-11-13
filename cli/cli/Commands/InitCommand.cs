@@ -20,6 +20,7 @@ public class InitCommandArgs : LoginCommandArgs
 	public string pid;
 	public string path;
 	public List<string> addExtraPathsToFile = new List<string>();
+	public List<string> pathsToIgnore = new List<string>();
 }
 
 public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
@@ -71,6 +72,18 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 				args.addExtraPathsToFile = i;
 			});
 
+		AddOption(
+			new Option<List<string>>(new string[] { "--paths-to-ignore" }, () => new List<string>(),
+				"Paths to ignore when searching for services")
+			{
+				AllowMultipleArgumentsPerToken = true,
+				Arity = ArgumentArity.ZeroOrMore
+			},
+			(args, i) =>
+			{
+				args.pathsToIgnore = i;
+			});
+
 		AddOption(new SaveToEnvironmentOption(), (args, b) => args.saveToEnvironment = b);
 		SaveToFileOption.Bind(this);
 		AddOption(new CustomerScopedOption(), (args, b) => args.customerScoped = b);
@@ -102,8 +115,9 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			}
 		}
 
-		{ // save the extra-paths to the config folder
+		{ // save the extra-paths and the paths to ignore to the config folder
 			_configService.SaveExtraPathsToFile(args.addExtraPathsToFile);
+			_configService.SavePathsToIgnoreToFile(args.pathsToIgnore);
 		}
 
 		if (!_retry) AnsiConsole.Write(new FigletText("Beam").Color(Color.Red));
