@@ -41,16 +41,6 @@ namespace Beamable.Server.Editor.Usam
 			// the client-code generation requires a built dll; so building the latest code
 			//  ensures we have the latest client generated
 			await Build(new ProjectBuildArgs {ids = idArr});
-
-			await GenerateClient(new ProjectGenerateClientArgs
-			{
-				outputLinks = true,
-				ids = idArr,
-
-				// the interface around this command has not aged well.
-				//  it actually generates clients for ALL services
-				source = "this-argument-is-not-used"
-			});
 			
 		}
 
@@ -104,7 +94,7 @@ namespace Beamable.Server.Editor.Usam
 				args.outputPathHints = hints.ToArray();
 			}
 
-			_generateClientCommand = _cli.ProjectGenerateClient(args);
+			_generateClientCommand = _webCommandFactory.processCommands.ProjectGenerateClient(args);
 			_generateClientCommand.OnError(cb =>
 			{
 				Debug.LogError($"Failed to generate clients. message=[{cb.data.message}] ");
@@ -134,12 +124,6 @@ namespace Beamable.Server.Editor.Usam
 		
 		public async Promise GenerateClient()
 		{
-			if (_generateClientCommand != null)
-			{
-				_generateClientCommand.Cancel();
-				_generateClientCommand = null;
-			}
-
 			var idArr = latestManifest.services
 			                          .Where(x => ShouldServiceAutoGenerateClient(x.beamoId))
 			                          .Select(x => x.beamoId)
@@ -163,7 +147,7 @@ namespace Beamable.Server.Editor.Usam
 			_dispatcher.Run("usam-build-generation", Run(latestListenTaskId));
 			
 			IEnumerator Run(int taskId)
-			{
+			{ //TODO THis is triggering again twice after domain reload, need to investigate it
 				var updates = new Dictionary<string, long>();
 				while (taskId == latestListenTaskId)
 				{

@@ -151,6 +151,8 @@ namespace Beamable.Server.Editor.Usam
 		private AssemblyDefinitionAsset _commonAssemblyAsset;
 		private MicroserviceConfiguration _config;
 
+		private BeamWebCommandFactory _webCommandFactory;
+
 		public const string SERVICES_FOLDER = "BeamableServices/";
 		public const string SERVICES_SLN_PATH = SERVICES_FOLDER + "beamableServices.sln";
 
@@ -173,7 +175,8 @@ namespace Beamable.Server.Editor.Usam
 			CommonAreaService commonArea,
 			BeamableDispatcher dispatcher,
 			ReflectionCache editorCache,
-			MicroserviceConfiguration config)
+			MicroserviceConfiguration config,
+			BeamWebCommandFactory webCommandFactory)
 		{
 			_config = config;
 			_commonArea = commonArea;
@@ -181,6 +184,7 @@ namespace Beamable.Server.Editor.Usam
 			_microserviceCache = editorCache.GetFirstSystemOfType<MicroserviceReflectionCache.Registry>();
 			_dispatcher = dispatcher;
 			_cli = cli;
+			_webCommandFactory = webCommandFactory;
 			
 			_commonArea.EnsureAreas(out _commonAssemblyAsset);
 			_assemblyUtil = new UsamAssemblyService(this);
