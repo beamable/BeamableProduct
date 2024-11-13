@@ -1,5 +1,9 @@
 using Beamable.Common;
+using Beamable.Common.Api.Realms;
 using Beamable.Editor.BeamCli.Commands;
+using Beamable.Editor.BeamCli.Extensions;
+using System.Linq;
+using UnityEditor;
 
 namespace Beamable.Server.Editor.Usam
 {
@@ -17,6 +21,9 @@ namespace Beamable.Server.Editor.Usam
 			var taskId = ++latestReloadTaskId;
 			
 			LoadLegacyServices();
+			
+			_ctx.OnRealmChange -= OnBeamEditorRealmChanged;
+			_ctx.OnRealmChange += OnBeamEditorRealmChanged;
 
 			var command = _cli.UnityManifest();
 			command.OnStreamShowManifestCommandOutput(cb =>
@@ -58,5 +65,28 @@ namespace Beamable.Server.Editor.Usam
 			return p;
 		}
 
+		private void OnBeamEditorRealmChanged(RealmView realm)
+		{
+			if (latestStatus?.Any(x => x.availableRoutes?.HasAnyLocalInstances() ?? false) ?? false)
+			{EditorUtility.DisplayDialog(
+				title: "Stopping Beam Services",
+				message: "We need to stop the running services because the realm has changed. " +
+				         "Please restart your services",
+				ok: "Ok");
+			}
+			var _ = StopAll();
+			async Promise StopAll(){
+				_serviceToAction.Clear();
+				var stopAllCommandArgs = new ProjectStopArgs
+				{
+					killTask = true
+				};
+				var command = _cli.ProjectStop(stopAllCommandArgs);
+				command.OnStreamStopProjectCommandOutput(cb => { });
+				await command.Run();
+				await WaitReload();
+			}
+			
+		}
 	}
 }

@@ -382,9 +382,9 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		var argString = $"buildx build {fullContextPath} -f {fullDockerfilePath} " +
 		                $"{tagString} " +
 		                $"--progress rawjson " +
-		                $"--build-arg BEAM_SUPPORT_SRC_PATH={Path.GetRelativePath(config.BaseDirectory, report.outputDirSupport)} " +
-		                $"--build-arg BEAM_APP_SRC_PATH={Path.GetRelativePath(config.BaseDirectory,report.outputDirApp)} " +
-		                $"--build-arg BEAM_APP_DEST=/beamApp/{Path.GetRelativePath(config.BaseDirectory,definition.BeamoId)}.dll " +
+		                $"--build-arg BEAM_SUPPORT_SRC_PATH={Path.GetRelativePath(config.BaseDirectory, report.outputDirSupport).Replace("\\", "/")} " +
+		                $"--build-arg BEAM_APP_SRC_PATH={Path.GetRelativePath(config.BaseDirectory,report.outputDirApp).Replace("\\", "/")} " +
+		                $"--build-arg BEAM_APP_DEST=/beamApp/{Path.GetRelativePath(config.BaseDirectory,definition.BeamoId).Replace("\\", "/")}.dll " +
 		                $"{(forceCpu ? "--platform linux/amd64 " : "")} " +
 		                $"{(noCache ? "--no-cache " : "")}" +
 		                $"{(pull ? "--pull " : "")}" +
