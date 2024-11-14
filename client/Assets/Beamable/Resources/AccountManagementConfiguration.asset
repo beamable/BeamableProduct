@@ -15,10 +15,14 @@ MonoBehaviour:
   Facebook: 0
   Apple: 0
   Google: 0
+  GoogleClientID: 
+  GoogleIosClientID: 
+  EnableGoogleSignInOnApple: 0
   DisplayNameStat: {fileID: 11400000, guid: 6b23cc10f2e954e67bd6c1760605d646, type: 2}
   SubtextLabel: 
   SubtextStat: {fileID: 0}
   AvatarStat: {fileID: 11400000, guid: 5997032e631864a83abe66bd3a36145c, type: 2}
+  PasswordResetCodeType: 1
   _overrides: {fileID: 0}
   AliasCharacterLimit: 18
   ShowPromotionalSlider: 0
