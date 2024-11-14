@@ -542,8 +542,7 @@ public class ProjectService
 		var errorDir = Path.GetDirectoryName(errorPath);
 		Directory.CreateDirectory(errorDir);
 		Log.Debug($"error log path=[{errorPath}]");
-		var dockerfilePath = Path.Combine(args.ConfigService.BeamableRelativeToExecutionRelative(service.DockerBuildContextPath),
-			service.RelativeDockerfilePath);
+		var dockerfilePath = service.AbsoluteDockerfilePath;
 		var projectPath = Path.GetDirectoryName(dockerfilePath);
 		var commandStr = $"build {projectPath} -v n -p:ErrorLog=\"{errorPath}%2Cversion=2\"";
 		Log.Debug($"dotnet command=[{args.AppContext.DotnetPath} {commandStr}]");

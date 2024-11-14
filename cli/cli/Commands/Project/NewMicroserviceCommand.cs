@@ -271,10 +271,6 @@ public class NewMicroserviceCommand : AppCommand<NewMicroserviceArgs>, IStandalo
 
 			await args.BeamoLocalSystem.InitManifest();
 
-			// Make sure we have the correct docker file
-			var regularDockerfilePath =
-				args.ConfigService.BeamableRelativeToExecutionRelative(service.RelativeDockerfilePath);
-			
 			// Add dependencies if they exist
 			string[] dependencies = null;
 			var storages = args.BeamoLocalSystem.BeamoManifest.EmbeddedMongoDbLocalProtocols;

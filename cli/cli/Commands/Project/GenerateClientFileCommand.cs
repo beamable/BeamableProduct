@@ -126,7 +126,7 @@ public class GenerateClientFileCommand
 
 			// Get the list of all BeamoIds whose DLLs we need to have loaded for a single pass.
 			var allServicesToLoadDlls = allServices
-				.Where(sd => !string.IsNullOrEmpty(sd.ProjectDirectory)) // must have a valid local project directory.
+				.Where(sd => !string.IsNullOrEmpty(sd.AbsoluteProjectDirectory)) // must have a valid local project directory.
 				.Select(sd => sd.BeamoId).Union(allDeps.SelectMany(d => d)).Distinct().ToArray();
 
 			// Get the list of all assemblies paired with their last edit time.

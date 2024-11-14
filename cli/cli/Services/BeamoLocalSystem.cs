@@ -213,7 +213,7 @@ public partial class BeamoLocalSystem
 			foreach (UnityAssemblyReferenceData unityAsmdefReference in microservice.UnityAssemblyDefinitionProjectReferences)
 			{
 				var name = Path.GetFileNameWithoutExtension(unityAsmdefReference.Path);
-				var microPath = Path.GetDirectoryName(microservice.RelativeDockerfilePath);
+				var microPath = Path.GetDirectoryName(microservice.AbsoluteDockerfilePath);
 				var relativeToContextPath = _configService.GetPathFromRelativeToService(unityAsmdefReference.Path, microPath);
 
 				dependencies.Add(new DependencyData()
@@ -310,7 +310,8 @@ public partial class BeamoLocalSystem
 			{
 				continue;
 			}
-			var relativeProjectPath = _configService.GetFullPath(definition.ProjectPath);
+
+			var relativeProjectPath = definition.AbsoluteProjectPath;
 			var projectFile = File.ReadAllText(relativeProjectPath);
 			XDocument doc = XDocument.Parse(projectFile);
 
@@ -533,9 +534,7 @@ public class BeamoServiceDefinition
 {
 	public bool IsInRemote;
 	public bool IsLocal => !string.IsNullOrEmpty(ProjectDirectory);
-	public bool HasLocalDockerfile =>
-		Protocol == BeamoProtocolType.HttpMicroservice && !string.IsNullOrEmpty(ProjectDirectory);
-	
+
 	public enum ProjectLanguage { CSharpDotnet, }
 
 	/// <summary>
@@ -613,10 +612,19 @@ public class BeamoServiceDefinition
 	/// </summary>
 	public string ProjectDirectory => ProjectPath == null ? null : Path.GetDirectoryName(ProjectPath);
 
+	public string AbsoluteProjectDirectory =>
+		AbsoluteProjectPath == null ? null : Path.GetDirectoryName(AbsoluteProjectPath);
+	
 	/// <summary>
-	/// Path to the services csproj file
+	/// Path to the services csproj file. This path is relative to the beamable workspace root.
+	/// Use <see cref="AbsoluteProjectPath"/> if you need to read/write the file. 
 	/// </summary>
 	public string ProjectPath;
+
+	/// <summary>
+	/// Absolute path to csproj file
+	/// </summary>
+	public string AbsoluteProjectPath;
 	
 	/// <summary>
 	/// Defines two services as being equal simply by using their <see cref="BeamoServiceDefinition.BeamoId"/>.

@@ -231,7 +231,7 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 	/// <summary>
 	/// This is for local and development things
 	/// </summary>
-	public string RelativeDockerfilePath;
+	public string AbsoluteDockerfilePath;
 
 	public DockerBindMount BindSrcForHotReloading;
 	public string HotReloadEnabledEndpoint;
@@ -268,7 +268,7 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 
 	public bool VerifyCanBeBuiltLocally(ConfigService configService)
 	{
-		var hasPaths = !string.IsNullOrEmpty(DockerBuildContextPath) && !string.IsNullOrEmpty(RelativeDockerfilePath);
+		var hasPaths = !string.IsNullOrEmpty(DockerBuildContextPath) && !string.IsNullOrEmpty(AbsoluteDockerfilePath);
 		if (!hasPaths)
 		{
 			return false;
@@ -278,7 +278,7 @@ public class HttpMicroserviceLocalProtocol : IBeamoLocalProtocol
 		if (!Directory.Exists(path))
 			throw new Exception($"DockerBuildContext doesn't exist: [{path}]");
 
-		var dockerfilePath = Path.Combine(path, RelativeDockerfilePath);
+		var dockerfilePath = AbsoluteDockerfilePath;
 		if (!File.Exists(dockerfilePath))
 			throw new Exception($"No Dockerfile found at path: [{dockerfilePath}]");
 

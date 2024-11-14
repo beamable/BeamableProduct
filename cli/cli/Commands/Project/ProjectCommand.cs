@@ -104,7 +104,7 @@ public class ProjectCommand : CommandGroup
 			services = args.BeamoLocalSystem?.BeamoManifest?.ServiceDefinitions
 				.Where(x =>
 				{
-					var hasLocalProjectFile = !string.IsNullOrEmpty(x.ProjectPath);
+					var hasLocalProjectFile = !string.IsNullOrEmpty(x.AbsoluteProjectPath);
 					var fitsTypeRequirement = includeStorage || x.Protocol == BeamoProtocolType.HttpMicroservice;
 					return hasLocalProjectFile && fitsTypeRequirement;
 				})
@@ -179,7 +179,7 @@ public class ProjectCommand : CommandGroup
 			throw new CliException($"service does not exist, service=[{beamoServiceId}]");
 		}
 
-		var projectPath = args.ConfigService.BeamableRelativeToExecutionRelative(service.ProjectPath);
+		var projectPath = service.AbsoluteProjectPath;
 
 		Log.Debug("Found service definition, service=[{serviceId}] projectPath=[{ProjectPath}]", beamoServiceId, projectPath);
 		var collection = new ProjectCollection();

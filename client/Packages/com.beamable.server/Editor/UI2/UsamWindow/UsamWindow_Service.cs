@@ -231,7 +231,8 @@ namespace Beamable.Editor.Microservice.UI2
 			}
 
 
-			if (usam.AssemblyService.beamoIdToClientHintPath.TryGetValue(service.beamoId, out var hintPath) && File.Exists(hintPath))
+			var hintPath = usam.GetClientFileCandidatePath(service.beamoId);
+			if (File.Exists(hintPath))
 			{
 				menu.AddItem(new GUIContent("Show client"), false, () =>
 				{

@@ -48,6 +48,6 @@ public class AddDepsCommand : AppCommand<AddDepsCommandArgs>, IEmptyResult
 		}
 
 		Log.Information("Adding {ArgsStorageName} reference to {Dependency}. ", args.Dependency, args.ServiceName);
-		await args.BeamoLocalSystem.AddProjectDependency(serviceDefinition, dependencyDefinition.ProjectDirectory);
+		await args.BeamoLocalSystem.AddProjectDependency(serviceDefinition, dependencyDefinition.AbsoluteProjectDirectory);
 	}
 }

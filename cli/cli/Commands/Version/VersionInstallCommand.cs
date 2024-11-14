@@ -106,16 +106,16 @@ public class VersionInstallCommand : AppCommand<VersionInstallCommandArgs>
 			{
 				// skip services that don't have local source code
 				if (!local.IsLocal) continue;
-				Log.Information($"Restoring local project=[{local.ProjectPath}]");
+				Log.Information($"Restoring local project=[{local.AbsoluteProjectPath}]");
 				try
 				{
-					await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, $"restore {local.ProjectPath}")
+					await CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, $"restore {local.AbsoluteProjectPath}")
 						.WithValidation(CommandResultValidation.ZeroExitCode)
 						.ExecuteAsyncAndLog();
 				}
 				catch (Exception ex)
 				{
-					Log.Error($"Failed to restore local project=[{local.ProjectPath}] message=[{ex.Message}]");
+					Log.Error($"Failed to restore local project=[{local.AbsoluteProjectPath}] message=[{ex.Message}]");
 				}
 			}
 		}
