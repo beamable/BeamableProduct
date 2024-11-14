@@ -259,9 +259,24 @@ namespace Beamable.Server.Editor.Usam
 			
 			await UpdateServiceStoragesDependencies(service, dependencies);
 
-			await UpdateServiceReferences(service, assemblyDefinitions);
+			await UpdateServiceReferences(service.beamoId, service.csprojPath, assemblyDefinitions);
 
 			UsamLogger.Log($"Finished updating microservice [{serviceName}] data");
+		}
+
+		public async Promise SetStorageChanges(string storageName, List<AssemblyDefinitionAsset> assemblyDefinitions)
+		{
+			UsamLogger.Log($"Starting updating storage changes");
+
+			var storage = latestManifest.storages.FirstOrDefault(s => s.beamoId == storageName);
+			if (storage == null)
+			{
+				throw new ArgumentException($"Invalid storage name was passed: {storageName}");
+			}
+
+			await UpdateServiceReferences(storage.beamoId, storage.csprojPath, assemblyDefinitions);
+
+			UsamLogger.Log($"Finished updating storage [{storageName}] changes");
 		}
 
 		public string GetClientFileCandidatePath(string beamoId)
@@ -329,7 +344,7 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 		
-		public async Promise UpdateServiceReferences(BeamManifestServiceEntry service, List<AssemblyDefinitionAsset> assemblyDefinitions, bool shouldRefresh = true)
+		public async Promise UpdateServiceReferences(string beamoId, string csprojPath, List<AssemblyDefinitionAsset> assemblyDefinitions, bool shouldRefresh = true)
 		{
 			UsamLogger.Log($"Starting updating references");
 
@@ -339,13 +354,13 @@ namespace Beamable.Server.Editor.Usam
 			{
 				namesList.Add(asmdef.name);
 				var pathFromRootFolder = CsharpProjectUtil.GenerateCsharpProjectFilename(asmdef.name);
-				var pathToService = service.csprojPath;
+				var pathToService = csprojPath;
 				pathsList.Add(PackageUtil.GetRelativePath(pathToService, pathFromRootFolder));
 			}
 			
 			var updateCommand = _cli.UnityUpdateReferences(new UnityUpdateReferencesArgs()
 			{
-				service = service.beamoId,
+				service = beamoId,
 				paths = pathsList.ToArray(),
 				names = namesList.ToArray()
 			});
@@ -909,7 +924,7 @@ namespace Beamable.Server.Editor.Usam
 			
 		}
 
-		public void CreateStorage(string newStorageName, List<string> dependencies)
+		public async Promise CreateStorage(string newStorageName, List<string> dependencies)
 		{
 			var command = _cli.ProjectNewStorage(new ProjectNewStorageArgs()
 			{
@@ -923,7 +938,9 @@ namespace Beamable.Server.Editor.Usam
 			var mockService = new BeamManifestStorageEntry()
 			{
 				beamoId = newStorageName,
-				Flags = BeamManifestEntryFlags.IS_STORAGE
+				Flags = BeamManifestEntryFlags.IS_STORAGE,
+				unityReferences = new List<BeamUnityAssemblyReferenceData>(),
+				csprojPath = Path.Combine(SERVICES_FOLDER, newStorageName, $"{newStorageName}.csproj"),
 				// TODO: other fields?
 			};
 			latestManifest.storages.Add(mockService);
@@ -953,20 +970,22 @@ namespace Beamable.Server.Editor.Usam
 			});
 			
 
-			command.Run().Then(_ =>
-			{
-				Reload();
-				action.progressRatio = 1;
-				action.isComplete = true;
-				AddLog(mockService.beamoId, new CliLogMessage
-				{
-					logLevel = "Info",
-					message = $"Created service {newStorageName}",
-					timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
-				});
-			}).Error(_ =>
+			await command.Run().Error(_ =>
 			{
 				action.isFailed = true;
+			});
+
+			await UpdateServiceReferences(mockService.beamoId, mockService.csprojPath, new List<AssemblyDefinitionAsset> {_commonAssemblyAsset},
+			                              shouldRefresh: false);
+
+			Reload();
+			action.progressRatio = 1;
+			action.isComplete = true;
+			AddLog(mockService.beamoId, new CliLogMessage
+			{
+				logLevel = "Info",
+				message = $"Created service {newStorageName}",
+				timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
 			});
 		}
 		
@@ -1040,7 +1059,7 @@ namespace Beamable.Server.Editor.Usam
 					       timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
 				       });
 
-				await UpdateServiceReferences(mockService, new List<AssemblyDefinitionAsset> {_commonAssemblyAsset},
+				await UpdateServiceReferences(mockService.beamoId, mockService.csprojPath, new List<AssemblyDefinitionAsset> {_commonAssemblyAsset},
 				                              shouldRefresh: false);
 				
 

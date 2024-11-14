@@ -73,7 +73,7 @@ namespace Beamable.Editor.Microservice.UI2
 			        {
 				        CheckDocker("create a Storage Object", () =>
 				        {
-					        usam.CreateStorage(name, deps);
+					        var _ = usam.CreateStorage(name, deps);
 				        }, out var cancelled);
 				        return !cancelled;
 			        });
@@ -93,7 +93,6 @@ namespace Beamable.Editor.Microservice.UI2
 					var _ = usam.CreateService(name, deps);
 					return true;
 				});
-			
 		}
 
 		private void DrawNewFederationId()
