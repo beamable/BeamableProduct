@@ -486,10 +486,15 @@ namespace Beamable.Editor.BeamCli
 						{
 							CliLogger.Log("failed", _command, $"errors-count=[{_errors.Count}]");
 
-							foreach (var err in _errors)
+							BeamEditorContext.Default.Dispatcher.Schedule(() =>
 							{
-								BeamEditorContext.Default.Dispatcher.Schedule(() => Debug.LogError(err.message));
-							}
+								Debug.LogError($"CLI Beam Command had {_errors.Count} errors");
+								foreach (var err in _errors)
+								{
+									Debug.LogError(err.message);
+								}
+							});
+							
 							throw new CliInvocationException(_command, _errors);
 						}
 						else
