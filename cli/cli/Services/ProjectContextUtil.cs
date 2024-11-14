@@ -16,6 +16,10 @@ using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace cli.Services;
 
+/// <summary>
+/// Note about <see cref="ProjectCollection"/>: <see cref="ProjectCollection.LoadProject(string)"/> has different semantics than if you give it a XML FileStream.
+/// Giving it the csproj File Path will correctly load up the MSBuild-specific properties, whereas if calling the FileStream version that doesn't happen.
+/// </summary>
 public static class ProjectContextUtil
 {
 
@@ -753,10 +757,7 @@ public static class ProjectContextUtil
 	public static string ModifyProperty(BeamoServiceDefinition definition, string propertyName, string propertyValue)
 	{
 		var buildEngine = new ProjectCollection();
-		var stream = File.Open(definition.AbsoluteProjectPath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
-		var document = XDocument.Load(stream, LoadOptions.PreserveWhitespace);
-		var reader = document.CreateReader(ReaderOptions.None);
-		var buildProject = buildEngine.LoadProject(reader);
+		var buildProject = buildEngine.LoadProject(definition.AbsoluteProjectPath);
 		Log.Verbose($"setting project=[{definition.AbsoluteProjectPath}] property=[{propertyName}] value=[{propertyValue}]");
 
 		var prop = buildProject.SetProperty(propertyName, propertyValue);
