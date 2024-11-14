@@ -275,31 +275,6 @@ public partial class BeamoLocalSystem
 		return _client.PullAndCreateImage(publicImageName, progressUpdateHandler);
 	}
 
-	public static async Task<Stream> GetTarfile(string beamoId, IDependencyProvider provider)
-	{
-		var beamo = provider.GetService<BeamoLocalSystem>();
-		var config = provider.GetService<ConfigService>();
-		if (!beamo.BeamoManifest.TryGetDefinition(beamoId, out var definition))
-		{
-			throw new CliException($"no service available for id=[{beamoId}]");
-		}
-
-		if (definition.Protocol != BeamoProtocolType.HttpMicroservice)
-		{
-			throw new CliException($"no service available for id=[{beamoId}]");
-		}
-
-		if (!beamo.BeamoManifest.HttpMicroserviceLocalProtocols.TryGetValue(beamoId, out var http))
-		{
-			throw new CliException($"no local http microservice for id=[{beamoId}]");
-		}
-		await beamo.UpdateDockerFile(definition); // TODO: make sure we aren't calling this more than we need to.
-
-		var pathToDockerfile = config.BeamableRelativeToExecutionRelative(http.RelativeDockerfilePath);
-		var pathsList = BeamoLocalSystem.ParseDockerfile(config, pathToDockerfile);
-		return BeamoLocalSystem.CreateTarballForDirectory(config, pathsList);
-	}
-	
 	public static List<string> ParseDockerfile(ConfigService configService, string dockerFilePath)
 	{
 		var paths = new List<string>();

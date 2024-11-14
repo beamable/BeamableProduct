@@ -158,9 +158,9 @@ inner-type=[{ex.InnerException?.GetType().Name}]
 		{
 			return new ProjectBuildStatusReport() { path = null, isBuilt = false };
 		}
-		Log.Debug($"Found service definition, ctx=[{service.DockerBuildContextPath}] dockerfile=[{service.RelativeDockerfilePath}]");
+		Log.Debug($"Found service definition, ctx=[{service.DockerBuildContextPath}] dockerfile=[{service.AbsoluteDockerfilePath}]");
 
-		var dockerfilePath = Path.Combine(args.ConfigService.GetRelativeToBeamableFolderPath(service.DockerBuildContextPath), service.RelativeDockerfilePath);
+		var dockerfilePath = service.AbsoluteDockerfilePath;
 		var projectPath = Path.GetDirectoryName(dockerfilePath);
 		Log.Debug($"service path=[{projectPath}]");
 		var commandStr = $"msbuild {projectPath} -t:GetTargetPath -verbosity:diag";

@@ -333,8 +333,7 @@ public partial class BeamoLocalSystem
 	/// </summary>
 	private bool VerifyCanBeBuiltLocally(BeamoLocalManifest manifest, BeamoServiceDefinition toCheck)
 	{
-		var missingLocalSource = string.IsNullOrEmpty(toCheck.ProjectDirectory);
-		if (missingLocalSource) return false; 
+		if (!toCheck.IsLocal) return false;
 
 		switch (toCheck.Protocol)
 		{

@@ -16,6 +16,10 @@ using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace cli.Services;
 
+/// <summary>
+/// Note about <see cref="ProjectCollection"/>: <see cref="ProjectCollection.LoadProject(string)"/> has different semantics than if you give it a XML FileStream.
+/// Giving it the csproj File Path will correctly load up the MSBuild-specific properties, whereas if calling the FileStream version that doesn't happen.
+/// </summary>
 public static class ProjectContextUtil
 {
 
@@ -37,7 +41,7 @@ public static class ProjectContextUtil
 	{
 		var serializedSourceGenConfig = System.Text.Json.JsonSerializer.Serialize(selectedService.SourceGenConfig, new JsonSerializerOptions { IncludeFields = true});
 		
-		var projectDir = Path.GetDirectoryName(selectedService.ProjectPath);
+		var projectDir = Path.GetDirectoryName(selectedService.AbsoluteProjectPath);
 		var sourceGenPath = Path.Combine(projectDir, MicroserviceSourceGenConfig.CONFIG_FILE_NAME);
 		// Because this can be invoked from any point inside the root folder,
 		// we have to figure out the absolute path to the file so we can call File.Write/Read apis correctly. 
@@ -139,6 +143,7 @@ public static class ProjectContextUtil
 					BeamoId = remoteService.serviceName,
 					Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet,
 					ProjectPath = null,
+					AbsoluteProjectPath = null,
 					Protocol = BeamoProtocolType.HttpMicroservice,
 					ServiceGroupTags = Array.Empty<string>()
 				};
@@ -163,6 +168,7 @@ public static class ProjectContextUtil
 					Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet,
 					Protocol = BeamoProtocolType.EmbeddedMongoDb,
 					ProjectPath = null,
+					AbsoluteProjectPath = null,
 					ServiceGroupTags = Array.Empty<string>()
 				};
 				manifest.ServiceDefinitions.Add(existingDefinition);
@@ -185,7 +191,7 @@ public static class ProjectContextUtil
 		});
 		await Task.WhenAll(microservicesOnly.Select(sd =>
 		{
-			var projectDir = Path.GetDirectoryName(sd.ProjectPath);
+			var projectDir = Path.GetDirectoryName(sd.AbsoluteProjectPath);
 			var sourceGenPath = Path.Combine(projectDir, MicroserviceSourceGenConfig.CONFIG_FILE_NAME);
 			
 			// Because this can be invoked from any point inside the root folder,
@@ -201,7 +207,7 @@ public static class ProjectContextUtil
 		// Let's load all the SourceGenConfig files
 		var sourceGenFiles = await Task.WhenAll(microservicesOnly.Select(sd =>
 		{
-			var projectDir = Path.GetDirectoryName(sd.ProjectPath);
+			var projectDir = Path.GetDirectoryName(sd.AbsoluteProjectPath);
 			var sourceGenPath = Path.Combine(projectDir, MicroserviceSourceGenConfig.CONFIG_FILE_NAME);
 			
 			// Because this can be invoked from any point inside the root folder,
@@ -220,7 +226,7 @@ public static class ProjectContextUtil
 			}
 			catch (Exception e)
 			{
-				var projectDir = Path.GetDirectoryName(sd.ProjectPath);
+				var projectDir = Path.GetDirectoryName(sd.AbsoluteProjectPath);
 				var sourceGenPath = Path.Combine(projectDir, MicroserviceSourceGenConfig.CONFIG_FILE_NAME);
 			
 				// Because this can be invoked from any point inside the root folder,
@@ -334,8 +340,6 @@ public static class ProjectContextUtil
 		var sw = new Stopwatch();
 		sw.Start();
 
-		var fullPathsToIgnore = pathsToIgnore.Select(Path.GetFullPath).ToList();
-
 		var pathList = new List<string>();
 		foreach (var searchPath in searchPaths)
 		{
@@ -348,7 +352,7 @@ public static class ProjectContextUtil
 		foreach (var path in pathList)
 		{
 			var canBeAdded = true;
-			foreach (var pathToIgnore in fullPathsToIgnore)
+			foreach (var pathToIgnore in pathsToIgnore)
 			{
 				if (path.StartsWith(pathToIgnore))
 				{
@@ -554,7 +558,7 @@ public static class ProjectContextUtil
 	{
 		var protocol = new HttpMicroserviceLocalProtocol();
 		protocol.DockerBuildContextPath = ".";
-		protocol.RelativeDockerfilePath = Path.Combine(Path.GetDirectoryName(project.relativePath), "Dockerfile");
+		protocol.AbsoluteDockerfilePath = Path.Combine(Path.GetDirectoryName(project.absolutePath), "Dockerfile");
 		protocol.Metadata = project;
 		protocol.CustomVolumes = new List<DockerVolume>();
 		protocol.InstanceCount = 1;
@@ -638,6 +642,7 @@ public static class ProjectContextUtil
 
 		// the project directory is just "where is the csproj" 
 		definition.ProjectPath = project.relativePath;
+		definition.AbsoluteProjectPath = project.absolutePath;
 		definition.Protocol = BeamoProtocolType.HttpMicroservice;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet;
 
@@ -671,7 +676,7 @@ public static class ProjectContextUtil
 
 		// the project directory is just "where is the csproj" 
 		definition.ProjectPath = project.relativePath;
-
+		definition.AbsoluteProjectPath = project.absolutePath;
 		definition.Protocol = BeamoProtocolType.EmbeddedMongoDb;
 		definition.Language = BeamoServiceDefinition.ProjectLanguage.CSharpDotnet;
 		definition.ServiceGroupTags = ExtractServiceGroupTags(project);
@@ -752,15 +757,12 @@ public static class ProjectContextUtil
 	public static string ModifyProperty(BeamoServiceDefinition definition, string propertyName, string propertyValue)
 	{
 		var buildEngine = new ProjectCollection();
-		var stream = File.Open(definition.ProjectPath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
-		var document = XDocument.Load(stream, LoadOptions.PreserveWhitespace);
-		var reader = document.CreateReader(ReaderOptions.None);
-		var buildProject = buildEngine.LoadProject(reader);
-		Log.Verbose($"setting project=[{definition.ProjectPath}] property=[{propertyName}] value=[{propertyValue}]");
+		var buildProject = buildEngine.LoadProject(definition.AbsoluteProjectPath);
+		Log.Verbose($"setting project=[{definition.AbsoluteProjectPath}] property=[{propertyName}] value=[{propertyValue}]");
 
 		var prop = buildProject.SetProperty(propertyName, propertyValue);
 		
-		buildProject.Save(definition.ProjectPath);
+		buildProject.Save(definition.AbsoluteProjectPath);
 		
 		/*
 		 * if the property didn't exist, then dotnet's wisdom is to append <TheNewProperty> at the end of the last property...
@@ -774,10 +776,10 @@ public static class ProjectContextUtil
 		 */
 
 		var searchTerm = $"><{propertyName}>";
-		var rawText = File.ReadAllText(definition.ProjectPath);
+		var rawText = File.ReadAllText(definition.AbsoluteProjectPath);
 
 		var formattedText = FixMissingBreaklineInProject(searchTerm, rawText);;
-		File.WriteAllText(definition.ProjectPath, formattedText);
+		File.WriteAllText(definition.AbsoluteProjectPath, formattedText);
 
 		return prop.UnevaluatedValue;
 	}
@@ -785,7 +787,7 @@ public static class ProjectContextUtil
 	public static List<string> GetAllIncludedFiles(BeamoServiceDefinition definition, ConfigService configService)
 	{
 		var buildEngine = new ProjectCollection();
-		Project buildProject = buildEngine.LoadProject(definition.ProjectPath);
+		Project buildProject = buildEngine.LoadProject(definition.AbsoluteProjectPath);
 
 		return GetAllIncludedFiles(buildProject, configService).Distinct().ToList();
 	}
@@ -839,7 +841,7 @@ public static class ProjectContextUtil
 	public static List<string> GetAllIncludedDlls(BeamoServiceDefinition definition, ConfigService configService)
 	{
 		var buildEngine = new ProjectCollection();
-		Project buildProject = buildEngine.LoadProject(definition.ProjectPath);
+		Project buildProject = buildEngine.LoadProject(definition.AbsoluteProjectPath);
 
 		return GetAllIncludedDlls(buildProject, configService);
 	}
@@ -888,7 +890,7 @@ public static class ProjectContextUtil
 		const string ITEM_TYPE = "ProjectReference";
 
 		var buildEngine = new ProjectCollection();
-		var buildProject = buildEngine.LoadProject(definition.ProjectPath);
+		var buildProject = buildEngine.LoadProject(definition.AbsoluteProjectPath);
 
 		var references = buildProject.GetItemsIgnoringCondition(ITEM_TYPE).ToArray();
 		for (int i = references.Length - 1; i >= 0; i--)
@@ -910,10 +912,10 @@ public static class ProjectContextUtil
 				new Dictionary<string, string> { { CliConstants.UNITY_ASSEMBLY_ITEM_NAME, assemblyName } });
 		}
 
-		buildProject.FullPath = definition.ProjectPath;
+		buildProject.FullPath = definition.AbsoluteProjectPath;
 		buildProject.Save();
 
-		var rawText = File.ReadAllText(definition.ProjectPath);
+		var rawText = File.ReadAllText(definition.AbsoluteProjectPath);
 
 		//TODO improve this, it's kind of dumb right now running the filter
 		// as many times as there were project references added
@@ -922,7 +924,7 @@ public static class ProjectContextUtil
 			rawText = FixMissingBreaklineInProject($"><{ITEM_TYPE}", rawText);
 		}
 
-		File.WriteAllText(definition.ProjectPath, rawText);
+		File.WriteAllText(definition.AbsoluteProjectPath, rawText);
 	}
 
 	public static void UpdateProjectDlls(BeamoServiceDefinition definition, List<string> dllPaths, List<string> dllNames)
@@ -930,14 +932,14 @@ public static class ProjectContextUtil
 		var buildEngine = new ProjectCollection();
 		const string REFERENCE_TYPE = "Reference";
 
-		var refProject = buildEngine.LoadProject(definition.ProjectPath);
+		var refProject = buildEngine.LoadProject(definition.AbsoluteProjectPath);
 
 		for (int i = 0; i < dllNames.Count; i++)
 		{
 			refProject.AddItem(REFERENCE_TYPE, dllNames[i], new Dictionary<string, string> { { CliConstants.HINT_PATH_ITEM_TAG, dllPaths[i] } });
 		}
 
-		refProject.FullPath = definition.ProjectPath;
+		refProject.FullPath = definition.AbsoluteProjectPath;
 		refProject.Save();
 	}
 

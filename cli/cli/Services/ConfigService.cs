@@ -197,7 +197,15 @@ public class ConfigService
 	}
 
 	public List<string> LoadExtraPathsFromFile() => LoadDataFile<List<string>>(CONFIG_FILE_EXTRA_PATHS);
-	public List<string> LoadPathsToIgnoreFromFile() => LoadDataFile<List<string>>(CONFIG_FILE_PATHS_TO_IGNORE);
+	public List<string> LoadPathsToIgnoreFromFile()
+	{
+		var paths = LoadDataFile<List<string>>(CONFIG_FILE_PATHS_TO_IGNORE);
+		return paths
+			.Select(BeamableRelativeToExecutionRelative)
+			.Select(Path.GetFullPath)
+			.ToList();
+	}
+
 	public void SaveExtraPathsToFile(List<string> paths) => SaveDataFile<List<string>>(CONFIG_FILE_EXTRA_PATHS, paths);
 	public void SavePathsToIgnoreToFile(List<string> paths) => SaveDataFile<List<string>>(CONFIG_FILE_PATHS_TO_IGNORE, paths);
 

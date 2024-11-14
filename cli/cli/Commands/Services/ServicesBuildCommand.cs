@@ -214,7 +214,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			};
 		}
 
-		var buildDirRoot = Path.Combine(Path.GetFullPath(definition.ProjectDirectory), "bin", "beamApp");
+		var buildDirRoot = Path.Combine(definition.AbsoluteProjectDirectory, "bin", "beamApp");
 		if (Directory.Exists(buildDirRoot))
 		{
 			Directory.Delete(buildDirRoot, true);
@@ -237,7 +237,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		var runtimeArg = forceCpu
 			? "--runtime unix-x64"
 			: "--use-current-runtime";
-		var buildArgs = $"publish {definition.ProjectPath} --verbosity minimal --no-self-contained {runtimeArg} --configuration Release -p:Deterministic=\"True\" -p:ErrorLog=\"{errorPath}%2Cversion=2\" {productionArgs} -o {buildDirSupport}";
+		var buildArgs = $"publish {definition.AbsoluteProjectPath} --verbosity minimal --no-self-contained {runtimeArg} --configuration Release -p:Deterministic=\"True\" -p:ErrorLog=\"{errorPath}%2Cversion=2\" {productionArgs} -o {buildDirSupport}";
 		Log.Verbose($"Running dotnet publish {buildArgs}");
 		using var cts = new CancellationTokenSource();
 
@@ -378,13 +378,13 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 		});
 
 		var tagString = string.Join(" ", tags.Select(tag => $"-t {id.ToLowerInvariant()}:{tag}"));
-		var fullDockerfilePath = Path.GetFullPath(http.RelativeDockerfilePath);
+		var fullDockerfilePath = http.AbsoluteDockerfilePath;
 		var argString = $"buildx build {fullContextPath} -f {fullDockerfilePath} " +
 		                $"{tagString} " +
 		                $"--progress rawjson " +
 		                $"--build-arg BEAM_SUPPORT_SRC_PATH={Path.GetRelativePath(config.BaseDirectory, report.outputDirSupport).Replace("\\", "/")} " +
 		                $"--build-arg BEAM_APP_SRC_PATH={Path.GetRelativePath(config.BaseDirectory,report.outputDirApp).Replace("\\", "/")} " +
-		                $"--build-arg BEAM_APP_DEST=/beamApp/{Path.GetRelativePath(config.BaseDirectory,definition.BeamoId).Replace("\\", "/")}.dll " +
+		                $"--build-arg BEAM_APP_DEST=/beamApp/{definition.BeamoId}.dll " +
 		                $"{(forceCpu ? "--platform linux/amd64 " : "")} " +
 		                $"{(noCache ? "--no-cache " : "")}" +
 		                $"{(pull ? "--pull " : "")}" +
