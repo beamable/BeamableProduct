@@ -184,3 +184,12 @@ netstandard
 nunit.framework
 DnsClient
 MongoDB.*
+Unity.VisualScripting.YamlDotNet
+Unity.Collections.LowLevel.ILSupport
+unityplastic
+Unity.Plastic.Antlr3.Runtime
+Unity.Plastic.Newtonsoft.Json
+log4netPlastic
+Unity.VisualScripting.IonicZip
+Unity.VisualScripting.Antlr3.Runtime
+Unity.VisualScripting.TextureAssets

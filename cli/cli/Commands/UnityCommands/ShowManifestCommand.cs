@@ -44,6 +44,7 @@ public class ManifestStorageEntry
 	public string beamoId;
 	public string csprojPath;
 	public bool shouldBeEnabledOnRemote;
+	public List<UnityAssemblyReferenceData> unityReferences;
 }
 
 public class ShowManifestCommand : AtomicCommand<ShowManifestCommandArgs, ShowManifestCommandOutput>
@@ -110,7 +111,8 @@ public class ShowManifestCommand : AtomicCommand<ShowManifestCommandArgs, ShowMa
 			{
 				beamoId = beamoId, 
 				csprojPath = definition.ProjectPath,
-				shouldBeEnabledOnRemote = definition.ShouldBeEnabledOnRemote
+				shouldBeEnabledOnRemote = definition.ShouldBeEnabledOnRemote,
+				unityReferences = db.UnityAssemblyDefinitionProjectReferences
 			};
 			storages.Add(storage);
 		}

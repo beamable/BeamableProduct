@@ -38,7 +38,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 			return allValid;
 		}
 		
-		public bool CheckAllValidAssemblies(out string validationMessage)
+		public static bool CheckAllValidAssemblies(List<AssemblyDefinitionAsset> assemblyReferences, out string validationMessage)
 		{
 			//Check if there is any null reference in the array
 			foreach (AssemblyDefinitionAsset assembly in assemblyReferences)
