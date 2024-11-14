@@ -44,7 +44,7 @@ public class OpenSolutionCommand : AppCommand<OpenSolutionCommandArgs>, IEmptyRe
 		foreach (var sd in args.BeamoLocalSystem.BeamoManifest.ServiceDefinitions)
 		{
 			if (!sd.IsLocal) continue;
-			var proj = Path.GetFullPath(sd.ProjectPath);
+			var proj = Path.GetFullPath(sd.AbsoluteProjectPath);
 		
 			Log.Debug($"adding project=[{proj}] to solution");
 			var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath, $"sln {solutionPath} add {proj}");

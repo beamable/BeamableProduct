@@ -243,9 +243,8 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 			if (service == null)
 				throw new CliException($"service does not exist, service=[{serviceName}]");
 
-			var projectPath = args.ConfigService.BeamableRelativeToExecutionRelative(service.ProjectDirectory);
-			Log.Debug("Found service definition, ctx=[{ServiceDockerBuildContextPath}] projectPath=[{ProjectPath}]",
-				service.ProjectDirectory, projectPath);
+			var projectPath = service.AbsoluteProjectDirectory;
+			Log.Debug("Found service definition, projectPath=[{ProjectPath}]", projectPath);
 
 			var logPath = Path.Combine(args.ConfigService.ConfigDirectoryPath, "temp", "serviceLogs",
 				$"{serviceName}-{DateTimeOffset.Now.ToUnixTimeMilliseconds()}-logs.txt");

@@ -53,10 +53,10 @@ public class DeleteProjectCommand : AtomicCommand<DeleteProjectCommandArgs, Dele
 				throw new CliException($"no definition exists for service=[{service}]");
 			}
 			
-			Directory.Delete(sd.ProjectDirectory, recursive: true);
+			Directory.Delete(sd.AbsoluteProjectDirectory, recursive: true);
 			
 			var runTask = CliExtensions
-				.GetDotnetCommand(args.AppContext.DotnetPath, $"sln {slnFile} remove {sd.ProjectPath}")
+				.GetDotnetCommand(args.AppContext.DotnetPath, $"sln {slnFile} remove {sd.AbsoluteProjectPath}")
 				.ExecuteAsyncAndLog();
 			
 			tasks.Add(runTask);

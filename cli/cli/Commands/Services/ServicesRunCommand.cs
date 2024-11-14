@@ -90,7 +90,7 @@ public class ServicesRunCommand : AppCommand<ServicesRunCommandArgs>,
 					var path = args.ConfigService.GetRelativeToBeamableFolderPath(microservice.DockerBuildContextPath);
 					if (!Directory.Exists(path))
 						diagnostics.Add(new Diagnostic($"[{id}] DockerBuildContext doesn't exist: [{path}]"));
-					var dockerfilePath = Path.Combine(path, microservice.RelativeDockerfilePath);
+					var dockerfilePath = microservice.AbsoluteDockerfilePath;
 					if (!File.Exists(dockerfilePath))
 						diagnostics.Add(new Diagnostic($"[{id}] No Dockerfile found at path: [{dockerfilePath}]"));
 				}
