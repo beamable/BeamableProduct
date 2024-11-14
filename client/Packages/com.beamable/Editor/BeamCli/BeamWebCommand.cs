@@ -159,16 +159,37 @@ namespace Beamable.Editor.BeamCli
 			}
 		}
 
+
+		public int initServerRequestCount = 0;
+		
 		IEnumerator InitServer()
 		{
+			initServerRequestCount++;
+			var invocationId = initServerRequestCount;
+
 			yield return null; // important, wait a frame to accrue all requests in one "tick" 
 			var serverIdentified = false;
 			CliLogger.Log("Checking server init ....");
+
+			bool ShouldCancel()
+			{
+				if (invocationId != initServerRequestCount)
+				{
+					Debug.Log("cancelling init-server routine because another invocation has begun.");
+					return true;
+				}
+
+				return false;
+			}
+
+			if (ShouldCancel()) yield break;
 			
 			while (!serverIdentified)
 			{
 				var pingPromise = PingServer();
 				yield return pingPromise.ToYielder();
+				if (ShouldCancel()) yield break;
+				
 				var pingResult = pingPromise.GetResult();
 					
 				switch (pingResult)
