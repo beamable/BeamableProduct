@@ -12,6 +12,7 @@ namespace Beamable.Editor.Microservice.UI2
 	public partial class UsamWindow
 	{
 		public List<SerializedObject> serviceSettings = new List<SerializedObject>();
+		public List<SerializedObject> storageSettings = new List<SerializedObject>();
 		public Vector2 settingsScrollPosition;
 		[NonSerialized]
 		// this is a flag that we'll use to re-serialize the settings when Unity domain-reloads
@@ -37,6 +38,15 @@ namespace Beamable.Editor.Microservice.UI2
 				var settings = BeamableMicroservicesSettings.GetSerializedSettings(service);
 				serviceSettings.Add(settings);
 			}
+
+			storageSettings.Clear();
+			for (var i = 0; i < usam.latestManifest.storages.Count; i++)
+			{
+				var storage = usam.latestManifest.storages[i];
+				var settings = BeamableStorageSettings.GetSerializedSettings(storage);
+				storageSettings.Add(settings);
+			}
+
 			hasSerializedSettingsYet = true;
 		}
 		
@@ -70,19 +80,55 @@ namespace Beamable.Editor.Microservice.UI2
 				}
 				break;
 			}
+
+			SerializedObject foundStorage = null;
+			if (foundService == null)
+			{
+				for (var i = 0; i < storageSettings.Count; i++)
+				{
+					foundStorage = storageSettings[i];
+					var settings = (BeamableStorageSettings)foundStorage.targetObject;
+					if (settings == null) continue;
+
+					if (settings.storageName != selectedBeamoId)
+					{
+						foundStorage = null;
+						continue;
+					}
+					break;
+				}
+			}
 			
 			{ // draw a little explanation... 
-				const string settingHelp = 
+				const string serviceSettingHelp =
 					"Configure the settings for the service. ";
 
-				const string noServiceFound =
-					"Storage objects have no configurable settings. Please select a Microservice instead. ";
+				const string storageSettingHelp =
+					"Configure the settings for the storage. ";
+
+				const string notFoundText =
+					"This should never happens. Something went terrible wrong!";
+
+				string textToShow;
+
+				if (foundService != null)
+				{
+					textToShow = serviceSettingHelp;
+				}else if (foundStorage != null)
+				{
+					textToShow = storageSettingHelp;
+				}
+				else
+				{
+					textToShow = notFoundText;
+				}
+
 				EditorGUILayout.BeginVertical(new GUIStyle(EditorStyles.helpBox)
 				{
 					padding = new RectOffset(12, 12, 8, 8),
 					margin = new RectOffset(12, 12, 12, 12),
 				});
-				EditorGUILayout.LabelField(foundService == null ? noServiceFound : settingHelp, new GUIStyle(EditorStyles.label)
+				EditorGUILayout.LabelField(textToShow, new GUIStyle(EditorStyles.label)
 				{
 					padding = new RectOffset(0,0,0,0),
 					margin = new RectOffset(0,0,0,0),
@@ -98,6 +144,16 @@ namespace Beamable.Editor.Microservice.UI2
 				settingsScrollPosition = EditorGUILayout.BeginScrollView(settingsScrollPosition);
 				EditorGUILayout.BeginVertical();
 				DrawServiceSettings(foundService);
+				EditorGUILayout.EndVertical();
+				EditorGUILayout.EndScrollView();
+			}
+
+			if (foundStorage != null)
+			{// draw the selected storage settings
+
+				settingsScrollPosition = EditorGUILayout.BeginScrollView(settingsScrollPosition);
+				EditorGUILayout.BeginVertical();
+				DrawStorageSettings(foundStorage);
 				EditorGUILayout.EndVertical();
 				EditorGUILayout.EndScrollView();
 			}
@@ -215,7 +271,7 @@ namespace Beamable.Editor.Microservice.UI2
 				{
 					EditorDebouncer.Debounce("save-beam-settings", () =>
 					{
-						if (!settings.CheckAllValidAssemblies(out var errorMessage))
+						if (!BeamableMicroservicesSettings.CheckAllValidAssemblies(settings.assemblyReferences, out var errorMessage))
 						{
 							Debug.LogError("error " + errorMessage);
 						}
@@ -244,6 +300,64 @@ namespace Beamable.Editor.Microservice.UI2
 				EditorGUILayout.EndVertical();
 			}
 			
+		}
+
+		void DrawStorageSettings(SerializedObject serializedObj)
+		{
+			EditorGUILayout.BeginVertical(new GUIStyle()
+			{
+				padding = new RectOffset(12, 12, 12, 12)
+			});
+
+
+			var settings = (BeamableStorageSettings)serializedObj.targetObject;
+			if (settings == null)
+			{
+				EditorGUILayout.LabelField("Please refresh this page.");
+				return;
+			}
+
+			{
+				// reference settings
+				EditorGUILayout.LabelField($"{settings.storageName} Settings",
+				                           new GUIStyle(EditorStyles.largeLabel));
+				EditorGUI.indentLevel++;
+				EditorGUILayout.Separator();
+				EditorGUILayout.Separator();
+
+				EditorGUILayout.PropertyField(
+					serializedObj.FindProperty(nameof(BeamableMicroservicesSettings.assemblyReferences)),
+					new GUIContent("Assembly Definitions"));
+				EditorGUILayout.Separator();
+			}
+
+			if (settings.HasChanges())
+			{
+				EditorDebouncer.Debounce("save-beam-settings", () =>
+				{
+					if (!BeamableMicroservicesSettings.CheckAllValidAssemblies(settings.assemblyReferences, out var errorMessage))
+					{
+						Debug.LogError("error " + errorMessage);
+					}
+					else
+					{
+						Debug.Log("auto saving settings...");
+						settings.SaveChanges(usam).Then(_ =>
+						{
+							Debug.Log("Saved!");
+
+							usam.WaitReload().Then(_ =>
+							{
+								// once the manifest is re-read, reserialize our own date!
+								hasSerializedSettingsYet = false;
+							});
+						});
+					}
+				}, .1f);
+			}
+
+
+			EditorGUILayout.EndVertical();
 		}
 	}
 }

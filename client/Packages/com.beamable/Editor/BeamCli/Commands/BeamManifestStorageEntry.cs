@@ -10,5 +10,6 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string beamoId;
 		public string csprojPath;
 		public bool shouldBeEnabledOnRemote;
+		public System.Collections.Generic.List<BeamUnityAssemblyReferenceData> unityReferences;
 	}
 }

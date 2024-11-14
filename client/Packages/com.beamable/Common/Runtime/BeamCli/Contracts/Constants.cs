@@ -1,5 +1,5 @@
-// this file was copied from nuget package Beamable.Common@3.0.0-PREVIEW.RC4
-// https://www.nuget.org/packages/Beamable.Common/3.0.0-PREVIEW.RC4
+// this file was copied from nuget package Beamable.Common@3.0.0-PREVIEW.RC6
+// https://www.nuget.org/packages/Beamable.Common/3.0.0-PREVIEW.RC6
 
 namespace Beamable.Common.BeamCli.Contracts
 {
@@ -24,6 +24,7 @@ namespace Beamable.Common.BeamCli.Contracts
 		public const string ATTR_BEAM_REF_TYPE = PROP_PREFIX + "RefType";
 		public static readonly char[] SPLIT_OPTIONS = new char[] { ',', ';' };
 		public const string UNITY_ASSEMBLY_ITEM_NAME = "UnityAssembly";
+		public const string HINT_PATH_ITEM_TAG = "HintPath";
 		public const string PROJECT_BEAMABLE_SETTING = "BeamableSetting";
 
 		public static string BeamableSettingLabel(string beamId) => "CLI_SETTINGS_" + beamId;

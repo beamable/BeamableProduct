@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Editor.BeamCli.Commands;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -57,15 +58,28 @@ namespace Beamable.Server.Editor.Usam
 					}
 				}
 
-				foreach (var reference in definition.unityReferences)
+				UpdateReferencedAssemblies(definition.unityReferences);
+			}
+
+			if (_usam.latestManifest.storages != null)
+			{
+				foreach (var storage in _usam.latestManifest.storages)
 				{
-					if (!_nameToAssembly.TryGetValue(reference.AssemblyName, out var assembly)) continue;
-					if (!CsharpProjectUtil.IsValidReference(assembly.name)) continue;
-					_referencedAssemblies.Add(assembly);
-					foreach (var subReference in GetDeeplyReferencedAssemblies(assembly))
-					{
-						_referencedAssemblies.Add(subReference);
-					}
+					UpdateReferencedAssemblies(storage.unityReferences);
+				}
+			}
+		}
+
+		private void UpdateReferencedAssemblies(List<BeamUnityAssemblyReferenceData> references)
+		{
+			foreach (var reference in references)
+			{
+				if (!_nameToAssembly.TryGetValue(reference.AssemblyName, out var assembly)) continue;
+				if (!CsharpProjectUtil.IsValidReference(assembly.name)) continue;
+				_referencedAssemblies.Add(assembly);
+				foreach (var subReference in GetDeeplyReferencedAssemblies(assembly))
+				{
+					_referencedAssemblies.Add(subReference);
 				}
 			}
 		}

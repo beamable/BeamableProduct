@@ -538,6 +538,17 @@ public static class ProjectContextUtil
 		{
 			if (!absPathToProject.TryGetValue(referencedProject.FullPath, out var knownProject))
 			{
+				// Check if this is a Unity Assembly reference that does not have it's csproj generated yet
+				if (!string.IsNullOrEmpty(referencedProject.BeamUnityAssemblyName))
+				{
+					protocol.UnityAssemblyDefinitionProjectReferences.Add(new UnityAssemblyReferenceData()
+					{
+						Path = referencedProject.RelativePath,
+						AssemblyName = referencedProject.BeamUnityAssemblyName
+					});
+					continue;
+				}
+
 				Log.Warning($"Project=[{project.relativePath}] references project=[${referencedProject.FullPath}] but that project was not detected in the beamable folder context. ");
 				continue;
 			}
@@ -545,6 +556,13 @@ public static class ProjectContextUtil
 			var referenceType = knownProject.properties.ProjectType;
 			switch (referenceType)
 			{
+				case "unity":
+					protocol.UnityAssemblyDefinitionProjectReferences.Add(new UnityAssemblyReferenceData()
+					{
+						Path = referencedProject.RelativePath,
+						AssemblyName = referencedProject.BeamUnityAssemblyName
+					});
+					break;
 				default:
 					protocol.GeneralDependencyProjectPaths.Add(knownProject.relativePath);
 					break;
