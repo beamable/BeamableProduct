@@ -16,8 +16,6 @@ namespace Beamable.Server.Editor.Usam
 		private HashSet<Assembly> _referencedAssemblies = new HashSet<Assembly>();
 		public Dictionary<string, string> beamoIdToClientHintPath = new Dictionary<string, string>();
 
-		private string[] _invalidAssemblyPrefixes = new string[] { "UnityEngine.", "UnityEditor." };
-
 		public HashSet<Assembly> ReferencedAssemblies => _referencedAssemblies;
 		public Assembly[] AllAssemblies => _assemblies;
 

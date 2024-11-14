@@ -88,6 +88,8 @@ namespace Beamable.Server.Editor.Usam
 		private const string invalidAssembliesFilePath =
 			"Packages/com.beamable.server/Editor/invalid-assemblies.txt";
 
+		private const string customInvalidAssembliesPath = "Assets/Beamable/Resources/custom-invalid-assemblies.txt";
+
 		/// <summary>
 		/// AssemblyUtil.Reload(); must be called before this
 		/// </summary>
@@ -197,6 +199,12 @@ namespace Beamable.Server.Editor.Usam
 		public static bool IsValidReference(string referenceName)
 		{
 			var invalidReferences = File.ReadAllLines(invalidAssembliesFilePath);
+
+			if (File.Exists(customInvalidAssembliesPath))
+			{
+				var customInvalidRefs = File.ReadAllLines(customInvalidAssembliesPath);
+				invalidReferences = invalidReferences.Concat(customInvalidRefs).ToArray();
+			}
 			
 			foreach (var invalidRef in invalidReferences)
 			{
