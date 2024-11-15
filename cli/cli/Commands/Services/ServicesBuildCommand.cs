@@ -561,7 +561,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			if (string.IsNullOrEmpty(imageId))
 			{
 				isSuccess = false;
-				Log.Error($"While [{id}] build succeeded, Beamable Tools we were not able to identify image ID from status updates. Try running command again with `--logs verbose` to gather more informations.");
+				Log.Error($"While [{id}] build succeeded, Beamable Tools were not able to identify image ID from status updates. Try running command again with `--logs verbose` to gather more informations.");
 			}
 			progressMessage?.Invoke(new ServicesBuiltProgress
 			{
