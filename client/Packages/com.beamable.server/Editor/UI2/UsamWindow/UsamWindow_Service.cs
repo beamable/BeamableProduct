@@ -72,13 +72,33 @@ namespace Beamable.Editor.Microservice.UI2
 					icon = BeamGUI.GetSpinner(service.csprojPath?.Length ?? 0);
 					iconPadding = 2;
 				}
-				clickedRunToggle = BeamGUI.HeaderButton(null,icon, 
-				                                     width: buttonWidth, 
-				                                     padding: 4,
-				                                     iconPadding: iconPadding,
-				                                     xOffset: (int)((buttonWidth * (3 - badgeCount)) * -.5f), // number of buttons to the right, split by half
-				                                     backgroundColor: isRunning ? primaryColor : buttonBackgroundColor,
-				                                     tooltip: isRunning ? "Shutdown the service " : "Start the service");
+
+				var isProductionRealm = ActiveContext.CurrentRealm.IsProduction;
+				BeamGUI.ShowDisabled(!isProductionRealm, () =>
+				{
+					var tooltip = isRunning
+						? "Shutdown the service "
+						: "Start the service";
+					if (isProductionRealm)
+					{
+						tooltip =
+							"Cannot start the service on a production realm. Please switch to a non production realm";
+					}
+
+					clickedRunToggle = BeamGUI.HeaderButton(null, icon,
+					                                        width: buttonWidth,
+					                                        padding: 4,
+					                                        iconPadding: iconPadding,
+					                                        xOffset: (int)((buttonWidth * (3 - badgeCount)) *
+					                                                       -.5f), // number of buttons to the right, split by half
+					                                        backgroundColor: isRunning
+						                                        ? primaryColor
+						                                        : buttonBackgroundColor,
+					                                        tooltip: tooltip
+					);
+				});
+				
+
 				EditorGUILayout.Space(1, true);
 
 				clickedOpenDocs = BeamGUI.HeaderButton(null, BeamGUI.iconOpenApi,
