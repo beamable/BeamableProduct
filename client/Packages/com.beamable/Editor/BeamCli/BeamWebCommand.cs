@@ -254,7 +254,7 @@ namespace Beamable.Editor.BeamCli
 				port = port,
 				owner = "\"" + Owner + "\"",
 				autoIncPort = true,
-				selfDestructSeconds = _options.selfDestructOverride.GetOrElse(5) // TODO: validate that a low ttl will restart the server
+				selfDestructSeconds = _options.selfDestructOverride.GetOrElse(15) // TODO: validate that a low ttl will restart the server
 			};
 			var p = args.port;
 			_serverCommand = processCommands.ServerServe(args);
