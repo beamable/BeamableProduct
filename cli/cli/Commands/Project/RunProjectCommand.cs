@@ -263,11 +263,22 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				commandStr += " -p:GenerateClientCode=false";
 			}
 			
-			if (runFlags.HasFlag(ProjectService.RunFlags.Detach) && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+			if (runFlags.HasFlag(ProjectService.RunFlags.Detach))
 			{
-				// on windows, detaching "just works" (thought Chris, who wasn't on a windows machine)
-				commandStr = $"sh -c \"{exe} {commandStr}\" &";
-				exe = "nohup";
+				// it varies based on the os, but in general, when we are detaching, then
+				//  when THIS process exits, we don't want the child-process to exit. 
+				//  The C# ProcessSDK makes that sort of difficult, but we can invoke programs
+				//  that themselves create separate process trees. Or, at least I think we can.
+				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+				{
+					commandStr = $"/C \"{exe} {commandStr}\"";
+					exe = "cmd.exe";
+				}
+				else
+				{
+					commandStr = $"sh -c \"{exe} {commandStr}\" &";
+					exe = "nohup";	
+				}
 			}
 			
 			Log.Debug($"Running {exe} {commandStr}");

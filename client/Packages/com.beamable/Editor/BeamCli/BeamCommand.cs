@@ -331,15 +331,15 @@ namespace Beamable.Editor.BeamCli
 		{
 			var beamCli = BeamCliUtil.CLI;
 
-#if UNITY_EDITOR_WIN
-			beamCli = $"\"{beamCli}\"";
-#endif
+			var isLocalDllFile = beamCli.Contains(".dll");
 
-			if (!beamCli.Contains(".dll"))
+			if (isLocalDllFile)
 			{
-				beamCli = $"tool run {beamCli}";
+#if UNITY_EDITOR_WIN
+				beamCli = $"\"{beamCli}\"";
+#endif
 			}
-
+			
 			return beamCli;
 		}
 
