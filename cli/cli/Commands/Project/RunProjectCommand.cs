@@ -271,8 +271,8 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				//  that themselves create separate process trees. Or, at least I think we can.
 				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 				{
-					commandStr = $"/b /C {exe} {commandStr}";
-					exe = "cmd.exe";
+					// commandStr = $"/C {exe} {commandStr}";
+					// exe = "cmd.exe";
 					// commandStr = $"\"BeamService {serviceName}\" /b {exe} {commandStr}";
 					// exe = "start";
 				}
@@ -303,6 +303,15 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				RedirectStandardError = true,
 				RedirectStandardOutput = true,
 			};
+
+			if (runFlags.HasFlag(ProjectService.RunFlags.Detach))
+			{
+				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+				{
+					startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+					startInfo.UseShellExecute = true; // ergh.
+				}
+			}
 
 			// startInfo.
 			var proc = Process.Start(startInfo);
