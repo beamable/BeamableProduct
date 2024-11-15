@@ -198,9 +198,11 @@ namespace Beamable.Editor.BeamCli.UI
 			string createdTime = string.Empty;
 			string resolveHostAtTime = string.Empty;
 			string timeFormat = "HH:mm:ss.ffff";
+			string url = "<?>";
 
 			if (command != null)
 			{
+				url = command.url;
 				commandString = command.commandString;
 				payloadsCount = command.payloads.Count;
 				errorsCount = command.errors.Count;
@@ -230,6 +232,7 @@ namespace Beamable.Editor.BeamCli.UI
 				});
 			}
 
+			GUILayout.Label($"URL = [{url}]", EditorStyles.label);
 			GUILayout.Label($"Created Time = [<color=yellow>{createdTime}</color>]", timeLabelsStyle);
 			GUILayout.Label($"Resolve Host Time = [<color=yellow>{resolveHostAtTime}</color>]", timeLabelsStyle);
 			GUILayout.Label($"Start Time = [<color=yellow>{startTime}</color>]", timeLabelsStyle);

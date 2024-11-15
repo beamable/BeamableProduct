@@ -331,15 +331,15 @@ namespace Beamable.Editor.BeamCli
 		{
 			var beamCli = BeamCliUtil.CLI;
 
-#if UNITY_EDITOR_WIN
-			beamCli = $"\"{beamCli}\"";
-#endif
+			var isLocalDllFile = beamCli.Contains(".dll");
 
-			if (!beamCli.Contains(".dll"))
+			if (isLocalDllFile)
 			{
-				beamCli = $"tool run {beamCli}";
+#if UNITY_EDITOR_WIN
+				beamCli = $"\"{beamCli}\"";
+#endif
 			}
-
+			
 			return beamCli;
 		}
 
@@ -361,6 +361,14 @@ namespace Beamable.Editor.BeamCli
 			{
 				process.StartInfo.FileName = DotnetUtil.DotnetPath;
 				process.StartInfo.Arguments = _command;
+				
+#if UNITY_EDITOR_WIN
+				// this will start the process in a sub-process, allowing the main Unity program to exit.
+				//  on mac the process-tree "just works" (thought Chris, who was up late at night at starting to hallucinate) 
+				process.StartInfo.FileName = "cmd.exe";
+				process.StartInfo.Arguments = $"/C {DotnetUtil.DotnetPath} {_command}";
+#endif
+			
 				// Configure the process using the StartInfo properties.
 				process.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal;
 				process.EnableRaisingEvents = true;
@@ -368,6 +376,7 @@ namespace Beamable.Editor.BeamCli
 				process.StartInfo.RedirectStandardOutput = CaptureStandardBuffers;
 				process.StartInfo.RedirectStandardError = CaptureStandardBuffers;
 				process.StartInfo.CreateNoWindow = true;
+				
 				process.StartInfo.UseShellExecute = false;
 
 				// prevent the beam CLI from saving any log information to file.
@@ -486,10 +495,15 @@ namespace Beamable.Editor.BeamCli
 						{
 							CliLogger.Log("failed", _command, $"errors-count=[{_errors.Count}]");
 
-							foreach (var err in _errors)
+							BeamEditorContext.Default.Dispatcher.Schedule(() =>
 							{
-								BeamEditorContext.Default.Dispatcher.Schedule(() => Debug.LogError(err.message));
-							}
+								Debug.LogError($"CLI Beam Command had {_errors.Count} errors");
+								foreach (var err in _errors)
+								{
+									Debug.LogError(err.message);
+								}
+							});
+							
 							throw new CliInvocationException(_command, _errors);
 						}
 						else

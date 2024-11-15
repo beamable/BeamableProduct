@@ -6,6 +6,7 @@ using cli.CliServerCommand;
 using cli.Utils;
 using Newtonsoft.Json;
 using Serilog;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using System.Text;
@@ -39,6 +40,11 @@ public class ServerInfoResponse
 	/// is positive, it will prevent the TTL from self-destructing the server.
 	/// </summary>
 	public long inflightRequests;
+
+	/// <summary>
+	/// The cli invocations currently inflight
+	/// </summary>
+	public List<string> inflightCommands = new List<string>();
 }
 
 [Serializable]
@@ -125,11 +131,19 @@ public class ServerService
 		Log.Information(infoString);
 		_selfDestructAt = DateTimeOffset.Now + TimeSpan.FromSeconds(args.selfDestructTimeSeconds);
 
+		var contexts = new List<HttpListenerContext>();
+		var contextLock = new object();
+
 		var keepAlive = true;
+		var scheduler = new TaskFactory(TaskCreationOptions.PreferFairness, TaskContinuationOptions.PreferFairness);
 		if (args.selfDestructTimeSeconds > 0)
 		{
-			var selfDestruct = Task.Run(async () =>
+			var selfDestruct = scheduler.StartNew(async () =>
 			{
+				
+			// })
+			// var selfDestruct = Task.Run(async () =>
+			// {
 				try
 				{
 					while (keepAlive)
@@ -145,13 +159,37 @@ public class ServerService
 
 						if (DateTimeOffset.Now >= _selfDestructAt)
 						{
-							Log.Information("auto self-destruct.");
-							// TODO: this does force-kill any existing connections.
-							//  There shouldn't be any due to the inflight check earlier,
-							//  however if there ARE due to threading issues,
-							//  then this will cause a unhappy termination at the client 
+							
+							keepAlive = false; // signal the program to stop accepting new requests.
+							Log.Information("auto self-destruct started.");
+						
+							
+							lock (contextLock)
+							{
+								foreach (var ctx in contexts.ToList())
+								{
+									// force-close all the ongoing requests...
+									Log.Debug("cancelling " + ctx.Request.Url.ToString());
+									ctx.Response.Close();
+								}
+							}
+							
+							_listener.Stop();
+
+							Log.Debug("entering 1 second grace period...");
+							await Task.Delay(1000);
+
+							Log.Debug("exiting 1 second grace period...");
+							lock (contextLock)
+							{
+								var remainingContexts = contexts.Count > 0;
+								if (remainingContexts)
+								{
+									Log.Error("self-destruct still has open requests. These requests may not terminate correctly.");
+								}
+							}
+							Log.Information("auto self-destruct finished.");
 							Environment.Exit(0); 
-							keepAlive = false;
 						}
 					}
 				}
@@ -164,13 +202,30 @@ public class ServerService
 
 		while (keepAlive)
 		{
-			HttpListenerContext ctx = await _listener.GetContextAsync();
-			
+			HttpListenerContext ctx;
+			try
+			{
+				ctx = await _listener.GetContextAsync();
+				Log.Information("RECEIVED SERVER REQUEST");
+				lock (contextLock)
+				{
+					contexts.Add(ctx);
+				}
+			}
+			catch (HttpListenerException) when (!keepAlive)
+			{
+				Log.Debug("exiting receive loop");
+				break;
+			}
 			Interlocked.Increment(ref _inflightRequests);
 			Log.Verbose($"Starting request. inflight=[{Interlocked.Read(ref _inflightRequests)}]");
 
-			var _ = Task.Run(async () =>
+			var _ = scheduler.StartNew(async () =>
 			{
+				
+			// })
+			// var _ = Task.Run(async () =>
+			// {
 				try
 				{
 					await HandleRequest(args, ctx, Interlocked.Read(ref _inflightRequests));
@@ -183,6 +238,11 @@ public class ServerService
 				}
 				finally
 				{
+					lock(contextLock)
+					{
+						contexts.Remove(ctx);
+					}
+
 					_selfDestructAt = DateTimeOffset.Now + TimeSpan.FromSeconds(args.selfDestructTimeSeconds);
 					Interlocked.Decrement(ref _inflightRequests);
 					Log.Verbose($"Finishing request. inflight=[{Interlocked.Read(ref _inflightRequests)}]");
@@ -211,6 +271,8 @@ public class ServerService
 			switch (routePath)
 			{
 				case INFO_ROUTE:
+					
+					
 					var info = await HandleInfo(args, inflightRequests);
 					response = JsonConvert.SerializeObject(info);
 					data = Encoding.UTF8.GetBytes(response);
@@ -221,10 +283,10 @@ public class ServerService
 					await HandleExec(args, req.InputStream, resp);
 					break;
 				default:
-					Log.Information("Unknown route");
+					Log.Information($"Unknown route=[{routePath}]");
 					response = JsonConvert.SerializeObject(new ServerErrorResponse
 					{
-						message = "unknown route", type = "UnhandledRoute"
+						message = $"unknown route=[{routePath}]", type = "UnhandledRoute"
 					});
 					status = 400;
 					data = Encoding.UTF8.GetBytes(response);
@@ -254,14 +316,17 @@ public class ServerService
 	static Task<ServerInfoResponse> HandleInfo(ServeCliCommandArgs args, ulong inflightRequests)
 	{
 		var version = VersionService.GetNugetPackagesForExecutingCliVersion();
+		
 		return Task.FromResult(new ServerInfoResponse
 		{
 			version = version.ToString(),
 			owner = args.owner,
-			inflightRequests = (long)inflightRequests
+			inflightRequests = (long)inflightRequests,
+			inflightCommands = cliInvocations
 		});
 	}
-	
+
+	public static List<string> cliInvocations = new List<string>();
 
 	static async Task HandleExec(ServeCliCommandArgs args, Stream networkRequestStream, HttpListenerResponse response)
 	{
@@ -269,7 +334,7 @@ public class ServerService
 		response.Headers.Set(HttpResponseHeader.ContentType, "text/event-stream; charset=utf-8");
 		var input = await inputStream.ReadToEndAsync();
 		var req = JsonConvert.DeserializeObject<ServerRequest>(input);
-		
+		cliInvocations.Add(input);
 		Log.Verbose("virtualizing " + req.commandLine);
 		
 		var app = new App();
@@ -296,6 +361,7 @@ public class ServerService
 		}
 		finally
 		{
+			cliInvocations.Remove(input);
 			Log.Verbose($"CLI EXEC FINISHED WITH EXIT=[{exitCode}] REQ=[{req.commandLine}]");
 		}
 	}

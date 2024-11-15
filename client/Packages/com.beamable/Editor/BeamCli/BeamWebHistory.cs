@@ -72,6 +72,7 @@ namespace Beamable.Editor.BeamCli
 		[NonSerialized]
 		public BeamWebCommand instance;
 
+		public string url;
 	}
 	
 	[Serializable]
@@ -169,10 +170,11 @@ namespace Beamable.Editor.BeamCli
 			desc.resolveHostAtTime = DateTime.Now.ToFileTime();
 		}
 		
-		public void UpdateStartTime(string id)
+		public void UpdateStartTime(string id, string url)
 		{
 			var desc = GetCommand(id);
 			desc.startTime = DateTime.Now.ToFileTime();
+			desc.url = url;
 		}
 		
 		public void UpdateCompleteTime(string id)
@@ -187,6 +189,17 @@ namespace Beamable.Editor.BeamCli
 			desc.latestMessageTime = Time.realtimeSinceStartup;
 		}
 
+		public void AddCustomLog(string id, string message, string level="Debug")
+		{
+			var desc = GetCommand(id);
+			desc.logs.Add(new CliLogMessage
+			{
+				timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
+				logLevel = level,
+				message = message
+			});
+		}
+		
 		public void HandleMessage(string id, ReportDataPointDescription res)
 		{
 			var desc = GetCommand(id);
@@ -233,6 +246,8 @@ namespace Beamable.Editor.BeamCli
 			beamCliServerEvent.time = Time.realtimeSinceStartup;
 			serverEvents.Add(beamCliServerEvent);
 		}
+
+		public void AddServerEvent(string message) => AddServerEvent(new BeamCliServerEvent {message = message});
 
 		public void AddServerLog(int port, string serverLog)
 		{
