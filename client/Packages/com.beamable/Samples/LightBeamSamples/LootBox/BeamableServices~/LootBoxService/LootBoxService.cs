@@ -8,7 +8,7 @@ namespace Beamable.LootBoxService
 	[Microservice("LootBoxService")]
 	public partial class LootBoxService : Microservice
 	{
-		public const int CLAIM_PERIOD_SECONDS = 60;
+		public const int CLAIM_PERIOD_SECONDS = 10;
 		public const string CLAIM_STAT = "lastClaimTime";
 
 		[ClientCallable]

@@ -9,6 +9,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
@@ -16,6 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Unity.EditorCoroutines.Editor;
 using UnityEngine;
+using UnityEngine.Networking;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Editor.BeamCli
@@ -63,12 +65,6 @@ namespace Beamable.Editor.BeamCli
 			NoServer
 		}
 		
-		public HttpClient localClient = new HttpClient
-		{
-			// this timeout is how long a single HTTP call can stay open receiving server-side-events.
-			Timeout = TimeSpan.FromDays(7)
-		};
-
 		public string Url => $"http://127.0.0.1:{port}";
 		public string ExecuteUrl => $"{Url}/execute";
 		public string InfoUrl => $"{Url}/info";
@@ -88,6 +84,7 @@ namespace Beamable.Editor.BeamCli
 		public BeamCommandFactory processFactory;
 		public BeamCommands processCommands;
 		public BeamableDispatcher dispatcher;
+
 		private readonly BeamWebCliCommandHistory _history;
 		private readonly BeamWebCommandFactoryOptions _options;
 
@@ -95,7 +92,11 @@ namespace Beamable.Editor.BeamCli
 		private ServerServeWrapper _serverCommand;
 		private IBeamableRequester _requester;
 
-		public BeamWebCommandFactory(IBeamableRequester requester, BeamableDispatcher dispatcher, BeamWebCliCommandHistory history, BeamWebCommandFactoryOptions options)
+		public BeamWebCommandFactory(
+			IBeamableRequester requester, 
+			BeamableDispatcher dispatcher, 
+			BeamWebCliCommandHistory history, 
+			BeamWebCommandFactoryOptions options)
 		{
 			_requester = requester;
 			this.dispatcher = dispatcher;
@@ -104,6 +105,8 @@ namespace Beamable.Editor.BeamCli
 			processFactory = new BeamCommandFactory(dispatcher);
 			processCommands = new BeamCommands(requester, processFactory);
 			_options.port = _options.startPortOverride.GetOrElse(8432);
+			
+			dispatcher.Run("cli-server-discovery", ServerDiscoveryLoop());
 		}
 		
 		public IBeamCommand Create()
@@ -112,34 +115,21 @@ namespace Beamable.Editor.BeamCli
 			return command;
 		}
 
+
+		private List<Action> serverReadyCallbacks = new List<Action>();
+
 		public async Promise EnsureServerIsRunning()
 		{
-			if (onReady != null)
+			var p = new Promise();
+			discoveryRequest++;
+			serverReadyCallbacks.Add(() =>
 			{
-				if (onReady.IsCompleted)
-				{
-					// in case the server dies, we should re-ping the server.
-					var ping = await PingServer();
-					if (ping != PingResult.Match)
-					{
-						onReady = null;
-
-						await EnsureServerIsRunning();
-						return;
-					}
-				}
-
-				await onReady;
-				return;
-			}
-			
-			onReady = new Beamable.Common.Promise();
-			
-			dispatcher.Run("cli-server-init", InitServer());
-
-			await onReady;
+				p.CompleteSuccess();
+			});
+			await p;
 		}
 		
+
 		public void KillServer()
 		{
 			_serverCommand?.Cancel();
@@ -159,143 +149,198 @@ namespace Beamable.Editor.BeamCli
 			}
 		}
 
-		IEnumerator InitServer()
+
+		private List<Action> serverCallbacks = new List<Action>();
+
+		class WaitForCliRequest : CustomYieldInstruction
 		{
-			yield return null; // important, wait a frame to accrue all requests in one "tick" 
-			var serverIdentified = false;
-			CliLogger.Log("Checking server init ....");
+			private readonly BeamWebCommandFactory _factory;
+
+			public WaitForCliRequest( BeamWebCommandFactory factory)
+			{
+				_factory = factory;
+			}
 			
-			while (!serverIdentified)
+			public override bool keepWaiting
 			{
-				var pingPromise = PingServer();
-				yield return pingPromise.ToYielder();
-				var pingResult = pingPromise.GetResult();
-					
-				switch (pingResult)
+				get
 				{
-					case PingResult.Match:
-						// perfect, the server is running! Nothing more to do :) 
-						CliLogger.Log("found server ! ");
-						serverIdentified = true;
-						_history.AddServerEvent(new BeamCliServerEvent
-						{
-							message = $"server identified at port=[{port}]"
-						});
-						break;
-					case PingResult.Mismatch:
-						// ah, this server is being used for a different project...
-						CliLogger.Log("mismatch server :(");
-						port++; // by increasing the port, maybe we'll find our server soon...
-						_history.AddServerEvent(new BeamCliServerEvent
-						{
-							message = "server mismatched detected, bumping local port"
-						});
-						break;
-					case PingResult.NoServer when string.IsNullOrEmpty(_requester.Pid):
-						// waiting for pid to be selected...
-						yield return new WaitForSecondsRealtime(1);
-						break;
-					case PingResult.NoServer:
-						// bummer, no server exists for us, so we need to turn it on...
-						CliLogger.Log("Starting server.... " + port + " , " + Owner);
-					
-						processCommands.argModifier = (defaultArgs =>
-						{
-							defaultArgs.log = "verbose";
-							defaultArgs.pretty = true;
-						});
-					
-						var args = new ServerServeArgs()
-						{
-							port = port,
-							owner = "\"" + Owner + "\"",
-							autoIncPort = true,
-							selfDestructSeconds = _options.selfDestructOverride.GetOrElse(15) // TODO: validate that a low ttl will restart the server
-						};
-						var p = args.port;
-						_serverCommand = processCommands.ServerServe(args);
-						
-						var waitForResult = new Promise();
-						_serverCommand.Command.On(data =>
-						{
-							if (data.type != "logs") return;
-							
-							_history.AddServerLog(p, data.json);
-						});
-						_serverCommand.OnStreamServeCliCommandOutput(data =>
-						{
-							port = data.data.port;
-							
-							_history.AddServerEvent(new BeamCliServerEvent
-							{
-								message = $"server established on port=[{port}] uri=[{data.data.uri}]"
-							});
-							waitForResult.CompleteSuccess();
-						});
-						_serverCommand.OnError(err =>
-						{
-							waitForResult.CompleteSuccess();
-						});
-						
-						_history.AddServerEvent(new BeamCliServerEvent
-						{
-							message = $"starting server on port=[{args.port}]"
-						});
-						var _ = _serverCommand.Run();
-							
-						yield return waitForResult.ToYielder();
-							
-						break;
+					var hasPendingRequests = _factory.discoveryRequest > 0;
+					return !hasPendingRequests;
 				}
-			}
-				
-			onReady.CompleteSuccess();
-		}
-
-		public async Promise<PingResult> PingServer()
-		{
-			try
-			{
-				
-// #if UNITY_2021_1_OR_NEWER
-				// var json = await localClient.GetStringAsync(InfoUrl);
-// #else
-
-				var jsonTask = localClient.GetStringAsync(InfoUrl);;
-
-				await Task.WhenAny(jsonTask, Task.Delay(1000));
-
-				if (!jsonTask.IsCompleted) throw new TimeoutException("cli ping timed out");
-				var json = jsonTask.Result;
-// #endif
-
-				var res = JsonUtility.FromJson<ServerInfoResponse>(json);
-				
-				var ownerMatches = String.Equals(res.owner, Owner, StringComparison.OrdinalIgnoreCase);
-				var versionMatches = res.version == Version;
-
-				_history.SetLatestServerPing(port, InfoUrl, res, ownerMatches, versionMatches);
-				
-				if (!ownerMatches || !versionMatches)
-				{
-					CliLogger.Log($"ping mismatch. Required version=[{Version}] Received version=[{res.version}] Required owner=[{Owner}] Received owner=[{res.owner}]");
-					return _history.SetLatestServerPingResult(PingResult.Mismatch);
-				}
-
-				return _history.SetLatestServerPingResult(PingResult.Match);
-
-			}
-			catch 
-			{
-				return _history.SetLatestServerPingResult(PingResult.NoServer);
 			}
 		}
 		
 
+		public int discoveryRequest = 0;
+
+		
+		IEnumerator ServerDiscoveryLoop()
+		{
+			while (true)
+			{
+				if (discoveryRequest > 0)
+				{
+					_history.AddServerEvent($"CLI Discovery taking a moment before attempting discovery for  {discoveryRequest} pending requests...");
+					yield return null;
+				}
+				else
+				{
+					_history.AddServerEvent($"CLI Discovery going into sleep waiting for discovery request");
+					yield return new WaitForCliRequest(this);
+				}
+				
+				_history.AddServerEvent($"CLI going into discovery process for {discoveryRequest} pending requests...");
+
+				var ping = PingServer();
+				ping.Error(e =>
+				{
+					Debug.LogError("PING FAILED: " + e.Message);
+				});
+				yield return ping.ToYielder();
+
+				var pingResult = ping.GetResult();
+
+				_history.AddServerEvent($"CLI received ping result={pingResult}");
+
+				var startServer = false;
+				switch (pingResult)
+				{
+					case PingResult.Match:
+						_history.AddServerEvent($"Found existing server at port=[{port}]. Resolving callbacks");
+
+						discoveryRequest = 0;
+						var callbacks = serverReadyCallbacks.ToList();
+						serverReadyCallbacks.Clear();
+						foreach (var cb in callbacks)
+						{
+							cb?.Invoke();
+						}
+						
+						// this is the happy case where the server is already running!
+						break;
+					case PingResult.Mismatch:
+						_history.AddServerEvent($"Found mismatch server at port=[{port}], trying again");
+						port++;
+						break;
+					case PingResult.NoServer:
+						startServer = true;
+						break;
+				}
+
+				if (startServer)
+				{
+					_history.AddServerEvent($"No server available, booting at port=[{port}]");
+					var start = StartServer();
+					yield return start.ToYielder();
+					_history.AddServerEvent($"booted at port=[{port}]");
+
+				}
+
+			}
+		}
+
+		async Promise StartServer()
+		{
+			// processFactory.ClearAll();
+			processCommands.argModifier = (defaultArgs =>
+			{
+				defaultArgs.log = "verbose";
+				defaultArgs.pretty = true;
+			});
+			
+			var args = new ServerServeArgs()
+			{
+				port = port,
+				owner = "\"" + Owner + "\"",
+				autoIncPort = true,
+				selfDestructSeconds = _options.selfDestructOverride.GetOrElse(15) // TODO: validate that a low ttl will restart the server
+			};
+			var p = args.port;
+			_serverCommand = processCommands.ServerServe(args);
+						
+			var waitForResult = new Promise();
+			_serverCommand.Command.On(data =>
+			{
+				if (data.type != "logs") return;
+							
+				_history.AddServerLog(p, data.json);
+			});
+			_serverCommand.OnStreamServeCliCommandOutput(data =>
+			{
+				port = data.data.port;
+							
+				_history.AddServerEvent(new BeamCliServerEvent
+				{
+					message = $"server established on port=[{port}] uri=[{data.data.uri}]"
+				});
+				waitForResult.CompleteSuccess();
+			});
+			_serverCommand.OnError(err =>
+			{
+				waitForResult.CompleteSuccess();
+				Debug.LogError(err.data.message);
+				Debug.LogError(err.data.fullTypeName);
+				Debug.LogError(err.data.stackTrace);
+				_history.AddServerEvent("ERROR! Server failed, killing old server.");
+			});
+						
+			_history.AddServerEvent(new BeamCliServerEvent
+			{
+				message = $"starting server on port=[{args.port}]"
+			});
+			var _ = _serverCommand.Run();
+			await waitForResult;
+		}
+
+		public async Promise<PingResult> PingServer()
+		{
+
+			var req = UnityWebRequest.Get(InfoUrl);
+			var op = req.SendWebRequest();
+			var p = new Promise();
+			PingResult pingResult = PingResult.NoServer;
+			
+			op.completed += _ =>
+			{
+				if (req.responseCode != 200)
+				{
+					pingResult = PingResult.NoServer;
+					p.CompleteSuccess();
+					return;
+				}
+				
+				var json = req.downloadHandler.text;
+				var res = JsonUtility.FromJson<ServerInfoResponse>(json);
+
+				var ownerMatches = String.Equals(res.owner, Owner, StringComparison.OrdinalIgnoreCase);
+				var versionMatches = res.version == Version;
+
+				_history.SetLatestServerPing(port, InfoUrl, res, ownerMatches, versionMatches);
+
+				if (!ownerMatches || !versionMatches)
+				{
+					CliLogger.Log(
+						$"ping mismatch. Required version=[{Version}] Received version=[{res.version}] Required owner=[{Owner}] Received owner=[{res.owner}]");
+					pingResult = PingResult.Mismatch;
+					p.CompleteSuccess();
+					return;
+				}
+
+				pingResult = PingResult.Match;
+				p.CompleteSuccess();
+			};
+			await p;
+			
+			return _history.SetLatestServerPingResult(pingResult);
+		}
+		
+		
 		public void ClearAll()
 		{
 			// TODO:
 		}
+
 	}
 
 	[Serializable]
@@ -308,7 +353,7 @@ namespace Beamable.Editor.BeamCli
 	{
 		public string id;
 		public string commandString;
-		private HttpClient _localClient;
+		// private HttpClient _localClient;
 		private Action<ReportDataPointDescription> _callbacks = (_) => { };
 		private HashSet<string> _explicitOnCallbackTypes = new HashSet<string>();
 		private Action _terminationCallbacks = () => { };
@@ -321,7 +366,7 @@ namespace Beamable.Editor.BeamCli
 			_history = history;
 			id = Guid.NewGuid().ToString();
 			_factory = factory;
-			_localClient = factory.localClient;
+			// _localClient = factory.localClient;
 			_cts = new CancellationTokenSource();
 			history.AddCommand(this);
 		}
@@ -338,7 +383,8 @@ namespace Beamable.Editor.BeamCli
 
 			await _factory.EnsureServerIsRunning();
 
-			_history.UpdateStartTime(id);
+			_history.UpdateStartTime(id, _factory.ExecuteUrl);
+			_history.AddCustomLog(id, "[Unity] starting request...");
 
 			var req = new HttpRequestMessage(HttpMethod.Post, _factory.ExecuteUrl);
 			var json = JsonUtility.ToJson(new BeamWebCommandRequest {commandLine = commandString});
@@ -351,10 +397,16 @@ namespace Beamable.Editor.BeamCli
 			{
 				if (!_cts.IsCancellationRequested)
 				{
+					var client = new HttpClient() {Timeout = TimeSpan.FromDays(7),};
+					var sendTask = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+					_history.AddCustomLog(id, "[Unity] sent request...");
 
-					using HttpResponseMessage response =
-						await _localClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+					using HttpResponseMessage response = await sendTask;
+					_history.AddCustomLog(id, "[Unity] opened response...");
+
 					using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
+					_history.AddCustomLog(id, "[Unity] opened response stream...");
+
 					using StreamReader reader = new StreamReader(streamToReadFrom);
 
 					Task<string> readTask = null;
@@ -412,6 +464,7 @@ namespace Beamable.Editor.BeamCli
 			}
 			finally
 			{
+				_history.AddCustomLog(id, "[Unity] ending...");
 				_history.UpdateCompleteTime(id);
 				await _factory.dispatcher.WaitForJobIds(dispatchedIds);
 				_terminationCallbacks?.Invoke();
