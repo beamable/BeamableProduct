@@ -62,24 +62,22 @@ public static partial class BuildkitStatusUtil
 
 	private static readonly string[] KnownCases = new[] { "writing image ", "exporting manifest list " };  
 
-	public static bool TryGetImageId(this string status, out string imageId)
+	public static bool TryGetImageId(string status, out string imageId)
 	{
 		imageId = string.Empty;
 		var matches = GetmageRegex().Matches(status);
-		if (matches.Count == 1)
+		if (matches.Count != 1)
 		{
-			if (!KnownCases.Any(status.StartsWith))
-			{
-				Log.Verbose($"Status contains sha for image, but it doesn't seem to be in a format that is supported by Beamable Tools. " +
-				            $"Ignoring. In case services deployment fails with this message, reach out to Beamable team with this message. " +
-				            $"Make sure to gather information about used OS and Docker version. Unknown status: {status}");
-				return false;
-			}
-			imageId = matches[0].Value;
-			return true;
+			return false;
 		}
 
-		return false;
+		if (!KnownCases.Any(status.StartsWith))
+		{
+			return false;
+		}
+		imageId = matches[0].Value;
+		return true;
+
 	}
 }
 
@@ -513,12 +511,12 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			foreach (var status in msg.statuses)
 			{
 				var textToCheck = status.id ?? string.Empty;
-				if (textToCheck.TryGetImageId(out var newImageId))
+				if (BuildkitStatusUtil.TryGetImageId(textToCheck, out var newImageId))
 				{
 					imageId = newImageId;
 					Log.Verbose($"identified image id for service=[{id}] from line=[{status.id}] image=[{imageId}]");
 				}
-				statusBuffer.AppendLine($"[{id}] {textToCheck}");
+				statusBuffer.AppendLine(textToCheck);
 
 				var wasStarted = false;
 				if (idToStatus.TryGetValue(status.id, out var oldStatus))
@@ -563,7 +561,9 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			if (string.IsNullOrEmpty(imageId))
 			{
 				isSuccess = false;
-				Log.Error($"While [{id}] build succeeded, Beamable Tools were not able to identify image ID from status updates. Try running command again with `--logs verbose` to gather more informations. Here are the status updates: {statusBuffer}");
+				Log.Error($"While [{id}] build succeeded, Beamable Tools we were not able to identify image ID from status updates. Try running command again with `--logs verbose` to gather more informations. In case services deployment fails with this message, reach out to Beamable team with this message. " +
+				          $"Make sure to gather information about used OS and Docker version." +
+				          $"Here are the status updates: {statusBuffer}");
 			}
 			progressMessage?.Invoke(new ServicesBuiltProgress
 			{
