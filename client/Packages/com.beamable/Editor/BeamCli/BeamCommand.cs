@@ -361,6 +361,14 @@ namespace Beamable.Editor.BeamCli
 			{
 				process.StartInfo.FileName = DotnetUtil.DotnetPath;
 				process.StartInfo.Arguments = _command;
+				
+#if UNITY_EDITOR_WIN
+				// this will start the process in a sub-process, allowing the main Unity program to exit.
+				//  on mac the process-tree "just works" (thought Chris, who was up late at night at starting to hallucinate) 
+				process.StartInfo.FileName = "cmd.exe";
+				process.StartInfo.Arguments = $"/C {DotnetUtil.DotnetPath} {_command}";
+#endif
+			
 				// Configure the process using the StartInfo properties.
 				process.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal;
 				process.EnableRaisingEvents = true;
@@ -368,6 +376,7 @@ namespace Beamable.Editor.BeamCli
 				process.StartInfo.RedirectStandardOutput = CaptureStandardBuffers;
 				process.StartInfo.RedirectStandardError = CaptureStandardBuffers;
 				process.StartInfo.CreateNoWindow = true;
+				
 				process.StartInfo.UseShellExecute = false;
 
 				// prevent the beam CLI from saving any log information to file.

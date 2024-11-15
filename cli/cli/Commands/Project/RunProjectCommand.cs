@@ -269,12 +269,14 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				//  when THIS process exits, we don't want the child-process to exit. 
 				//  The C# ProcessSDK makes that sort of difficult, but we can invoke programs
 				//  that themselves create separate process trees. Or, at least I think we can.
+				
+				// in windows, this doesn't actually really _work_. It is put onto a background process, 
+				//  and the main window may close for the parent, but the process is kept open
+				//  if you look in task-manager. 
 				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 				{
-					// commandStr = $"/C {exe} {commandStr}";
-					// exe = "cmd.exe";
-					// commandStr = $"\"BeamService {serviceName}\" /b {exe} {commandStr}";
-					// exe = "start";
+					commandStr = $"/C {exe} {commandStr}";
+					exe = "cmd.exe";
 				}
 				else
 				{
@@ -303,15 +305,6 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				RedirectStandardError = true,
 				RedirectStandardOutput = true,
 			};
-
-			if (runFlags.HasFlag(ProjectService.RunFlags.Detach))
-			{
-				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-				{
-					startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-					startInfo.UseShellExecute = true; // ergh.
-				}
-			}
 
 			// startInfo.
 			var proc = Process.Start(startInfo);
