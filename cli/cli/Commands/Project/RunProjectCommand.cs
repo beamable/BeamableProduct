@@ -271,8 +271,10 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				//  that themselves create separate process trees. Or, at least I think we can.
 				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 				{
-					commandStr = $"/C \"{exe} {commandStr}\"";
+					commandStr = $"/b /C {exe} {commandStr}";
 					exe = "cmd.exe";
+					// commandStr = $"\"BeamService {serviceName}\" /b {exe} {commandStr}";
+					// exe = "start";
 				}
 				else
 				{
