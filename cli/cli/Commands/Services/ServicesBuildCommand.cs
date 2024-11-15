@@ -11,6 +11,7 @@ using Spectre.Console;
 using System.CommandLine;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
 
@@ -48,6 +49,36 @@ public class ServicesBuiltProgress
 public class ProgressStream : IResultChannel
 {
 	public string ChannelName => "progress";
+}
+
+
+/// <summary>
+/// Utility for extracting image id from status updates
+/// </summary>
+public static partial class BuildkitStatusUtil
+{
+	[GeneratedRegex("sha256:[a-fA-F0-9]+", RegexOptions.None)]
+	public static partial Regex GetmageRegex();
+
+	private static readonly string[] KnownCases = new[] { "writing image ", "exporting manifest list " };  
+
+	public static bool TryGetImageId(string status, out string imageId)
+	{
+		imageId = string.Empty;
+		var matches = GetmageRegex().Matches(status);
+		if (matches.Count != 1)
+		{
+			return false;
+		}
+
+		if (!KnownCases.Any(status.StartsWith))
+		{
+			return false;
+		}
+		imageId = matches[0].Value;
+		return true;
+
+	}
 }
 
 public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
@@ -394,9 +425,10 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 
 		Log.Verbose($"running docker command with args=[{argString}]");
 		var buffer = new StringBuilder();
+		var statusBuffer = new StringBuilder();
 		var digestToVertex = new Dictionary<string, BuildkitVertex>();
 		var idToStatus = new Dictionary<string, BuildkitStatus>();
-		string imageId = null; 
+		string imageId = string.Empty; 
 		bool TryParse(out BuildkitMessage msg)
 		{
 			string json = buffer.ToString();
@@ -478,24 +510,13 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			// check for status updates on vertex data
 			foreach (var status in msg.statuses)
 			{
-				// there is a status with the follow format, 
-				//  writing image sha256:d3150be3b218a7f0327310ad97e06f7a1cd708548d01707371676262781b48f3
-				// we can use this to extract the image id without a second docker call!
-				const string prefix = "writing image ";
-				
-				// I updated docker one day (Oct 20th 2024) and this log line had changed and all my builds broke
-				//  and I lamented into the void, but no one answered, because Docker is
-				//  an absent god...
-				const string newPrefix = "exporting manifest list ";
-				if (status.id?.StartsWith(prefix) ?? false)
+				var textToCheck = status.id ?? string.Empty;
+				if (BuildkitStatusUtil.TryGetImageId(textToCheck, out var newImageId))
 				{
-					imageId = status.id.Substring(prefix.Length + 1);
-					Log.Verbose($"identified image id for service=[{id}] from line=[{status.id}] image=[{imageId}]");
-				} else if (status.id?.StartsWith(newPrefix) ?? false)
-				{
-					imageId = status.id.Substring(newPrefix.Length + 1);
+					imageId = newImageId;
 					Log.Verbose($"identified image id for service=[{id}] from line=[{status.id}] image=[{imageId}]");
 				}
+				statusBuffer.AppendLine(textToCheck);
 
 				var wasStarted = false;
 				if (idToStatus.TryGetValue(status.id, out var oldStatus))
@@ -531,12 +552,19 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 					}
 				}
 			}));
-
 		
 		var result = await command.ExecuteAsync();
 		var isSuccess = result.ExitCode == 0;
+		
 		if (isSuccess)
 		{
+			if (string.IsNullOrEmpty(imageId))
+			{
+				isSuccess = false;
+				Log.Error($"While [{id}] build succeeded, Beamable Tools we were not able to identify image ID from status updates. Try running command again with `--logs verbose` to gather more informations. In case services deployment fails with this message, reach out to Beamable team with this message. " +
+				          $"Make sure to gather information about used OS and Docker version." +
+				          $"Here are the status updates: {statusBuffer}");
+			}
 			progressMessage?.Invoke(new ServicesBuiltProgress
 			{
 				completedSteps = 1,
