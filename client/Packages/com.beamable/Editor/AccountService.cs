@@ -398,7 +398,18 @@ namespace Beamable.Editor
 		{
 			if (!gamePidToLatestRealmPid.TryGetValue(game.Pid, out var realmPid))
 			{
-				realmPid = gamePidToLatestRealmPid[game.Pid] = game.Pid;
+				var firstNonProdRealm = CustomerRealms.Where(x => x.GamePid == game.Pid)
+				                                      .FirstOrDefault(
+					                                      x => !x.IsStaging && !x.IsProduction && !x.Archived);
+				if (firstNonProdRealm == null)
+				{
+					realmPid = gamePidToLatestRealmPid[game.Pid] = game.Pid;
+				}
+				else
+				{
+					realmPid =  gamePidToLatestRealmPid[game.Pid] = firstNonProdRealm.Pid;
+				}
+				
 			}
 
 			return realmPid;
