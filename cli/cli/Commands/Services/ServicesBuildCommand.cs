@@ -427,6 +427,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 
 		Log.Verbose($"running docker command with args=[{argString}]");
 		var buffer = new StringBuilder();
+		var statusBuffer = new StringBuilder();
 		var digestToVertex = new Dictionary<string, BuildkitVertex>();
 		var idToStatus = new Dictionary<string, BuildkitStatus>();
 		string imageId = string.Empty; 
@@ -517,6 +518,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 					imageId = newImageId;
 					Log.Verbose($"identified image id for service=[{id}] from line=[{status.id}] image=[{imageId}]");
 				}
+				statusBuffer.AppendLine($"[{id}] {textToCheck}");
 
 				var wasStarted = false;
 				if (idToStatus.TryGetValue(status.id, out var oldStatus))
@@ -561,7 +563,7 @@ public class ServicesBuildCommand : AppCommand<ServicesBuildCommandArgs>
 			if (string.IsNullOrEmpty(imageId))
 			{
 				isSuccess = false;
-				Log.Error($"While [{id}] build succeeded, Beamable Tools were not able to identify image ID from status updates. Try running command again with `--logs verbose` to gather more informations.");
+				Log.Error($"While [{id}] build succeeded, Beamable Tools were not able to identify image ID from status updates. Try running command again with `--logs verbose` to gather more informations. Here are the status updates: {statusBuffer}");
 			}
 			progressMessage?.Invoke(new ServicesBuiltProgress
 			{
