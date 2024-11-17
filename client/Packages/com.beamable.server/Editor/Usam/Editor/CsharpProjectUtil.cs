@@ -29,6 +29,16 @@ namespace Beamable.Server.Editor.Usam
 		private static readonly string SOURCE_TEMPLATE = $"<Compile Include=\"{KEY_INCLUDE}\" Condition=\"Exists('{KEY_INCLUDE}')\" />";
 		private static readonly string PROJECT_TEMPLATE = $"<ProjectReference Include=\"{KEY_INCLUDE}\" />";
 		private static readonly string DLL_TEMPLATE = $"<Reference Include=\"{KEY_INCLUDE}\">\n\t\t\t<HintPath>{KEY_HINT}</HintPath>\n\t\t</Reference>";
+
+		public const string README_FILENAME = "_Unity Shared Code ReadMe.md";
+		private static readonly string README_TEMPLATE = $@"This is an auto-generated dotnet project.
+It references the class files from Unity that are part of the Assembly Definition. 
+
+**IMPORTANT**
+To add files, you must add them from Unity, or from the Unity's IDE integration.
+Do not add them from the custom solution file that opens from Beam Services window.
+";
+		
 		private static readonly string TEMPLATE = $@"
 <Project Sdk=""Microsoft.NET.Sdk"">
     <!-- Provide compiler symbol -->
@@ -69,6 +79,11 @@ namespace Beamable.Server.Editor.Usam
     <!-- Source files -->
     <ItemGroup>
 		{KEY_COMPILED_FILES}
+	</ItemGroup>
+
+    <!-- Readme file -->
+	<ItemGroup>
+		<None Include=""{README_FILENAME}""/>
 	</ItemGroup>
 
     <!-- Other projects -->
@@ -119,6 +134,9 @@ namespace Beamable.Server.Editor.Usam
 						$"Writing generated project for assembly definition {assembly.name} in the file: {fileName}");
 					Directory.CreateDirectory(path);
 					File.WriteAllText(fileName, content);
+
+					var readmeFilePath = Path.Combine(Path.GetDirectoryName(fileName), README_FILENAME);
+					File.WriteAllText(readmeFilePath, README_TEMPLATE);
 				}
 
 				var _ = cli.UnityRestore(new UnityRestoreArgs {csproj = fileName}).Run();
@@ -169,6 +187,7 @@ namespace Beamable.Server.Editor.Usam
 					.Replace(KEY_DLL_REFERENCES, dllReferences)
 					.Replace(KEY_BEAMABLE_VERSION, sdkVersion.ToString())
 				;
+			
 
 			return file;
 		}
