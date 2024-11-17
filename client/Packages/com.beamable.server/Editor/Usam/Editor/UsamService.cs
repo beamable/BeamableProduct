@@ -362,7 +362,8 @@ namespace Beamable.Server.Editor.Usam
 			{
 				service = beamoId,
 				paths = pathsList.ToArray(),
-				names = namesList.ToArray()
+				names = namesList.ToArray(),
+				sln = SERVICES_SLN_PATH
 			});
 			await updateCommand.Run();
 

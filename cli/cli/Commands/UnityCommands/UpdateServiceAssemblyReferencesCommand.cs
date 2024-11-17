@@ -1,13 +1,22 @@
+using cli.Commands.Project;
 using cli.Services;
 using System.CommandLine;
 
 namespace cli.UnityCommands;
 
-public class UpdateServiceAssemblyReferencesCommandArgs : CommandArgs
+public class UpdateServiceAssemblyReferencesCommandArgs : CommandArgs, IHasSolutionFileArg
 {
 	public string ServiceName;
 	public List<string> ReferencesPaths = new List<string>();
 	public List<string> ReferencesNames = new List<string>();
+	
+	public string SlnFilePath;
+
+	public string SolutionFilePath
+	{
+		get => SlnFilePath;
+		set => SlnFilePath = value;
+	}
 }
 
 public class UpdateServiceAssemblyReferencesCommand : AppCommand<UpdateServiceAssemblyReferencesCommandArgs>, IEmptyResult
@@ -22,6 +31,7 @@ public class UpdateServiceAssemblyReferencesCommand : AppCommand<UpdateServiceAs
 	{
 		AddArgument(new Argument<string>("service", "The name of the service to update the references"), (x, i) => x.ServiceName = i);
 
+		SolutionCommandArgs.ConfigureSolutionFlag(this, _ => throw new CliException("Must have a beamable workspace"));
 		var referencePaths = new Option<List<string>>("--paths", "The path of the project that will be referenced")
 		{
 			Arity = ArgumentArity.ZeroOrMore,
@@ -37,7 +47,7 @@ public class UpdateServiceAssemblyReferencesCommand : AppCommand<UpdateServiceAs
 		AddOption(referenceNames, (x, i) => x.ReferencesNames = i);
 	}
 
-	public override Task Handle(UpdateServiceAssemblyReferencesCommandArgs args)
+	public override async Task Handle(UpdateServiceAssemblyReferencesCommandArgs args)
 	{
 		if (args.ReferencesPaths.Count != args.ReferencesNames.Count)
 		{
@@ -51,8 +61,6 @@ public class UpdateServiceAssemblyReferencesCommand : AppCommand<UpdateServiceAs
 			throw new CliException($"Unknown service id=[{args.ServiceName}]");
 		}
 
-		ProjectContextUtil.UpdateUnityProjectReferences(definition, args.ReferencesPaths, args.ReferencesNames);
-
-		return Task.CompletedTask;
+		await ProjectContextUtil.UpdateUnityProjectReferences(args, args.SolutionFilePath, definition, args.ReferencesPaths, args.ReferencesNames);
 	}
 }

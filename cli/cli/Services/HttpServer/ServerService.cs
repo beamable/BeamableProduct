@@ -206,15 +206,19 @@ public class ServerService
 			try
 			{
 				ctx = await _listener.GetContextAsync();
-				Log.Information("RECEIVED SERVER REQUEST");
 				lock (contextLock)
 				{
 					contexts.Add(ctx);
 				}
 			}
+			catch (ObjectDisposedException) when (!keepAlive)
+			{
+				Log.Debug($"exiting receive loop because {nameof(ObjectDisposedException)}");
+				break;
+			}
 			catch (HttpListenerException) when (!keepAlive)
 			{
-				Log.Debug("exiting receive loop");
+				Log.Debug($"exiting receive loop because {nameof(HttpListenerException)}");
 				break;
 			}
 			Interlocked.Increment(ref _inflightRequests);

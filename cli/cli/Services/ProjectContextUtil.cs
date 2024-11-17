@@ -903,7 +903,12 @@ public static class ProjectContextUtil
 	}
 
 
-	public static void UpdateUnityProjectReferences(BeamoServiceDefinition definition, List<string> projectsPaths, List<string> assemblyNames)
+	public static async Task UpdateUnityProjectReferences(
+		CommandArgs args,
+		string solutionPath,
+		BeamoServiceDefinition definition, 
+		List<string> projectsPaths, 
+		List<string> assemblyNames)
 	{
 		const string ITEM_TYPE = "ProjectReference";
 
@@ -928,6 +933,20 @@ public static class ProjectContextUtil
 
 			buildProject.AddItem(ITEM_TYPE, projectPath,
 				new Dictionary<string, string> { { CliConstants.UNITY_ASSEMBLY_ITEM_NAME, assemblyName } });
+
+			// var pathRelativeToExecution = args.ConfigService.GetRelativeToBeamableFolderPath(projectPath);
+			// var pathRelativeToExecution = args.ConfigService.GetPathFromRelativeToService(projectPath, definition.AbsoluteProjectPath);
+			var fullSlnPath = Path.GetFullPath(solutionPath);
+			var slnProjPath = Path.Combine(definition.AbsoluteProjectDirectory, projectPath);
+			var slnArgStr = $"sln {fullSlnPath} add {slnProjPath} -s \"UnityAssemblies (shared)\"";
+			Log.Verbose($"adding assembly to solution, arg=[{slnArgStr}]");
+			var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath,slnArgStr)
+				.WithValidation(CommandResultValidation.None)
+				.WithStandardErrorPipe(PipeTarget.ToDelegate(err =>
+				{
+					Log.Error($"Could not add unity ref to sln. err=[{err}]");
+				}));
+			await command.ExecuteAsync();
 		}
 
 		buildProject.FullPath = definition.AbsoluteProjectPath;

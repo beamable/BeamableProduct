@@ -108,6 +108,7 @@ MonoImporter:
 
 	public static readonly Dictionary<string, string> sourceToHardcodedGuid = new Dictionary<string, string>
 	{
+		[nameof(ContentObject)] = "c658d5adea78044eb8b9a850f7830051",
 		[nameof(LeaderboardContent)] = "ebf776d7c945048daab1e231d27dcdeb",
 		[nameof(AnnouncementContent)] = "8b8612187b1a246e5b691c90486deb34",
 		[nameof(AnnouncementApiContent)] = "4d6d527a776e4dad8b86964e1a98e8b0",
