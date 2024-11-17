@@ -914,6 +914,7 @@ public static class ProjectContextUtil
 
 		var buildEngine = new ProjectCollection();
 		var buildProject = buildEngine.LoadProject(definition.AbsoluteProjectPath);
+		var fullSlnPath = Path.GetFullPath(solutionPath);
 
 		var references = buildProject.GetItemsIgnoringCondition(ITEM_TYPE).ToArray();
 		for (int i = references.Length - 1; i >= 0; i--)
@@ -923,6 +924,19 @@ public static class ProjectContextUtil
 			if (metaData != null)
 			{
 				buildProject.RemoveItem(reference);
+
+				var projPath = reference.UnevaluatedInclude;
+				Log.Verbose("Removing reference to " + projPath);
+				var slnProjPath = Path.Combine(definition.AbsoluteProjectDirectory, projPath);
+				var slnArgStr = $"sln {fullSlnPath} remove {slnProjPath}";
+				Log.Verbose($"removing assembly from solution, arg=[{slnArgStr}]");
+				var command = CliExtensions.GetDotnetCommand(args.AppContext.DotnetPath,slnArgStr)
+					.WithValidation(CommandResultValidation.None)
+					.WithStandardErrorPipe(PipeTarget.ToDelegate(err =>
+					{
+						Log.Error($"Could not remove unity ref from sln. err=[{err}]");
+					}));
+				await command.ExecuteAsync();
 			}
 		}
 
@@ -934,9 +948,6 @@ public static class ProjectContextUtil
 			buildProject.AddItem(ITEM_TYPE, projectPath,
 				new Dictionary<string, string> { { CliConstants.UNITY_ASSEMBLY_ITEM_NAME, assemblyName } });
 
-			// var pathRelativeToExecution = args.ConfigService.GetRelativeToBeamableFolderPath(projectPath);
-			// var pathRelativeToExecution = args.ConfigService.GetPathFromRelativeToService(projectPath, definition.AbsoluteProjectPath);
-			var fullSlnPath = Path.GetFullPath(solutionPath);
 			var slnProjPath = Path.Combine(definition.AbsoluteProjectDirectory, projectPath);
 			var slnArgStr = $"sln {fullSlnPath} add {slnProjPath} -s \"UnityAssemblies (shared)\"";
 			Log.Verbose($"adding assembly to solution, arg=[{slnArgStr}]");
