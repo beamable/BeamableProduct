@@ -8,6 +8,8 @@ namespace Beamable.Editor.BeamCli.Commands
 	{
 		/// <summary>The name of the service to update the references</summary>
 		public string service;
+		/// <summary>Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. When no option is configured, if this command is executing inside a .beamable folder, then the first .sln found in .beamable/.. will be used. If no .sln is found, the .sln path will be <name>.sln. If no .beamable folder exists, then the <project>/<project>.sln will be used</summary>
+		public string sln;
 		/// <summary>The path of the project that will be referenced</summary>
 		public string[] paths;
 		/// <summary>The name of the Assembly Definition</summary>
@@ -19,6 +21,12 @@ namespace Beamable.Editor.BeamCli.Commands
 			System.Collections.Generic.List<string> genBeamCommandArgs = new System.Collections.Generic.List<string>();
 			// Add the service value to the list of args.
 			genBeamCommandArgs.Add(this.service.ToString());
+			// If the sln value was not default, then add it to the list of args.
+			if ((this.sln != default(string)))
+			{
+				genBeamCommandArgs.Add((("--sln=\"" + this.sln)
+								+ "\""));
+			}
 			// If the paths value was not default, then add it to the list of args.
 			if ((this.paths != default(string[])))
 			{

@@ -22,9 +22,8 @@ namespace Beamable.Server.Editor.Usam
 		private const string KEY_FOLDER = "FOLDER";
 		private const string KEY_BEAMABLE_VERSION = "[BEAM_VERSION]";
 
-		public static readonly string PROJECT_NAME_PREFIX = "UNITY_GENERATED_PROJECT_";
 		private static readonly string PROJECT_NAME_TAG = "[ASSEMBLY_NAME]";
-		private static readonly string PROJECT_NAME = $"{PROJECT_NAME_PREFIX}{PROJECT_NAME_TAG}.csproj";
+		private static readonly string PROJECT_NAME = $"{PROJECT_NAME_TAG}.csproj";
 		private static readonly string TEMPLATE_OUTPUT_DIR =
 			Path.Combine("Library", "BeamableEditor", "GeneratedProjects", KEY_FOLDER);
 		private static readonly string SOURCE_TEMPLATE = $"<Compile Include=\"{KEY_INCLUDE}\" Condition=\"Exists('{KEY_INCLUDE}')\" />";
@@ -104,19 +103,24 @@ namespace Beamable.Server.Editor.Usam
 				var content = GenerateCsharpProject(assembly, path);
 				var fileName = GenerateCsharpProjectFilename(assembly);
 
+				var needsFileWrite = true;
 				if (File.Exists(fileName))
 				{
 					var oldContent = File.ReadAllText(fileName);
 					if (oldContent.Equals(content))
 					{
-						continue;
+						needsFileWrite = false;
 					}
 				}
-				
-				Debug.Log($"Writing generated project for assembly definition {assembly.name} in the file: {fileName}");
-				Directory.CreateDirectory(path);
-				File.WriteAllText(fileName, content);
-				
+
+				if (needsFileWrite)
+				{
+					Debug.Log(
+						$"Writing generated project for assembly definition {assembly.name} in the file: {fileName}");
+					Directory.CreateDirectory(path);
+					File.WriteAllText(fileName, content);
+				}
+
 				var _ = cli.UnityRestore(new UnityRestoreArgs {csproj = fileName}).Run();
 			}
 		}
@@ -228,7 +232,7 @@ namespace Beamable.Server.Editor.Usam
 		static string GenerateProjectReferenceEntry(Assembly reference, string csProjDir)
 		{
 			// the project will be generated in a folder next to the project path
-			var path = Path.Combine("..", reference.name, PROJECT_NAME_PREFIX + reference.name + ".csproj");
+			var path = Path.Combine("..", reference.name, reference.name + ".csproj");
 			return PROJECT_TEMPLATE.Replace(KEY_INCLUDE, path);
 		}
 
