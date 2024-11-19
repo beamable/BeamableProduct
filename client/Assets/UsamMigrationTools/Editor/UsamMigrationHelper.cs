@@ -11,6 +11,12 @@ namespace Beamable.User.UsamMigrationHelper
 			CopyScenario("SimpleTest");
 		}
 		
+		[MenuItem("Usam Migration/Copy Storage With Assembly Ref")]
+		public static void CopyStorageWithAssemblyRef()
+		{
+			CopyScenario("StorageWithAsmRef");
+		}
+		
 		[MenuItem("Usam Migration/Copy Simple (with file)")]
 		public static void CopySimpleWithCode()
 		{

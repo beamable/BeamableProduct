@@ -583,7 +583,7 @@ namespace Beamable.Server.Editor.Usam
 		
 		void LoadLegacyServices()
 		{
-			migrationPlan = UsamMigrator.CreatePlan(_microserviceCache, _assemblyUtil);
+			migrationPlan = UsamMigrator.CreatePlan(_microserviceCache, this);
 		}
 
 		public void OpenMongo(string beamoId)
@@ -1129,9 +1129,13 @@ namespace Beamable.Server.Editor.Usam
 			return p;
 		}
 
-		public void OpenSolution()
+		public void OpenSolution(bool onlyGenerate=false)
 		{
-			var _ = _cli.ProjectOpen(new ProjectOpenArgs {sln = SERVICES_SLN_PATH}).Run();
+			var _ = _cli.ProjectOpen(new ProjectOpenArgs
+			{
+				onlyGenerate = onlyGenerate,
+				sln = SERVICES_SLN_PATH
+			}).Run();
 		}
 	}
 }
