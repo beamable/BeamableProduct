@@ -130,6 +130,8 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 			bindWithoutTags: (args, i) => args.withoutServiceTags = i);
 	}
 
+	public int updateCount;
+
 	public override async Task Handle(CheckStatusCommandArgs args)
 	{
 		ProjectCommand.FinalizeServicesArg(args,
@@ -145,6 +147,8 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 			timeout = default;
 		}
 
+		var first = true;
+		updateCount = 0;
 		Log.Debug($"running status-check with watch=[{args.watch}] timeout=[{timeout.Milliseconds}]");
 		await foreach (var update in CheckStatus(
 			               args,
@@ -153,7 +157,25 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 			               args.services,
 			               args.Lifecycle.CancellationToken))
 		{
-			SendResults(update);
+			if (first)
+			{
+				// put a clock on, and emit this event if nothing else shows up...
+				//  Otherwise, emit the later event.
+				first = false;
+				var _ = Task.Delay(TimeSpan.FromMilliseconds(100)).ContinueWith(_ =>
+				{
+					if (updateCount > 0)
+					{
+						SendResults(update);
+					}
+				});
+			}
+			else
+			{
+				updateCount++;
+				SendResults(update);
+			}
+		
 		}
 	}
 
