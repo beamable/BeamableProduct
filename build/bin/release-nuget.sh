@@ -69,31 +69,23 @@ then
     exit $?
 else
     dotnet nuget push ./cli/cli/nupkg/Beamable.Tools.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
-    dotnet nuget push ./cli/cli/nupkg/Beamable.Tools.${VERSION}.snupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
     
     dotnet nuget push ./cli/beamable.common/nupkg/Beamable.Common.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
-    dotnet nuget push ./cli/beamable.common/nupkg/Beamable.Common.${VERSION}.snupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
     
     dotnet nuget push ./cli/beamable.server.common/nupkg/Beamable.Server.Common.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
-    dotnet nuget push ./cli/beamable.server.common/nupkg/Beamable.Server.Common.${VERSION}.snupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
-
+    
     dotnet nuget push ./microservice/beamable.tooling.common/nupkg/Beamable.Tooling.Common.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
-    dotnet nuget push ./microservice/beamable.tooling.common/nupkg/Beamable.Tooling.Common.${VERSION}.snupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
-
+    
     dotnet nuget push ./microservice/unityEngineStubs/nupkg/Beamable.UnityEngine.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
-    dotnet nuget push ./microservice/unityEngineStubs/nupkg/Beamable.UnityEngine.${VERSION}.snupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
     
     dotnet nuget push ./microservice/unityenginestubs.addressables/nupkg/Beamable.UnityEngine.Addressables.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
-    dotnet nuget push ./microservice/unityenginestubs.addressables/nupkg/Beamable.UnityEngine.Addressables.${VERSION}.snupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
-
+    
     dotnet nuget push ./microservice/microservice/nupkg/Beamable.Microservice.Runtime.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
-    dotnet nuget push ./microservice/microservice/nupkg/Beamable.Microservice.Runtime.${VERSION}.snupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
-
+    
     echo "source-gen-debug"
     ls ./templates/MicroserviceSourceGen/MicroserviceSourceGen/nupkg/
     dotnet nuget push ./templates/MicroserviceSourceGen/MicroserviceSourceGen/nupkg/Beamable.Microservice.SourceGen.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
-    dotnet nuget push ./templates/MicroserviceSourceGen/MicroserviceSourceGen/nupkg/Beamable.Microservice.SourceGen.${VERSION}.snupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
-
+    
     echo "Upgrading template reference"
 
     dotnet add ./templates/BeamService/BeamService.csproj package Beamable.Microservice.Runtime --version=$VERSION
