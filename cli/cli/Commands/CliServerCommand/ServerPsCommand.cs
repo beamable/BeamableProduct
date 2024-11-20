@@ -71,26 +71,31 @@ public class ServerPsCommand : StreamCommand<ServerPsCommandArgs, ServerPsComman
 
 	public override async Task Handle(ServerPsCommandArgs args)
 	{
-
+		var servers = await GetServers(args);
+		servers = servers.OrderBy(a => a.port).ToList();
+		
+		SendResults(new ServerPsCommandResult
+		{
+			servers = servers
+		});
+		
 		var table = new Table();
 		table.Border(TableBorder.Simple);
 		table.AddColumn("[bold]url[/]");
 		table.AddColumn("[bold]pid[/]");
 		table.AddColumn("[bold]owner[/]");
 		table.AddColumn("[bold]version[/]");
-		
-		var servers = await GetServers(args);
-		
-		// filter servers...
-		
-		SendResults(new ServerPsCommandResult
-		{
-			servers = servers
-		});
+		table.AddColumn("[bold]req count[/]");
 
 		foreach (var server in servers)
 		{
-			table.AddRow(new Text(server.url + "/info"), new Text(server.pid.ToString()), new TextPath(server.owner), new Text(server.version));
+			table.AddRow(
+				new Text(server.url + "/info"), 
+				new Text(server.pid.ToString()), 
+				new Text(server.owner),
+				new Text(server.version),
+				new Text(server.inflightRequests.ToString())
+				);
 		}
 		
 		AnsiConsole.Write(table);

@@ -27,7 +27,7 @@ echo "running dotnet packs"
 
 if [ -z "$SUFFIX" ]
 then
-    dotnet pack ./cli/cli --configuration Release /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION
+    dotnet pack ./cli/cli --configuration Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION
     dotnet pack ./cli/beamable.common --configuration Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION
     dotnet pack ./cli/beamable.server.common --configuration Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION
     dotnet pack ./microservice/beamable.tooling.common --configuration Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION
@@ -40,7 +40,7 @@ then
     dotnet build ./microservice/microservice --configuration Release /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION /p:InformationalVersion=$VERSION
     dotnet pack ./microservice/microservice --configuration Release --no-build --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg /p:VersionPrefix=$VERSION_PREFIX /p:CombinedVersion=$VERSION /p:InformationalVersion=$VERSION
 else
-    dotnet pack ./cli/cli --configuration Release --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION
+    dotnet pack ./cli/cli --configuration Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION
     dotnet pack ./cli/beamable.common --configuration Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION
     dotnet pack ./cli/beamable.server.common --configuration Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION
     dotnet pack ./microservice/beamable.tooling.common --configuration Release --include-source -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg --version-suffix=${SUFFIX-""} /p:VersionPrefix=$VERSION_PREFIX /p:InformationalVersion=$VERSION
@@ -69,6 +69,7 @@ then
     exit $?
 else
     dotnet nuget push ./cli/cli/nupkg/Beamable.Tools.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
+    dotnet nuget push ./cli/cli/nupkg/Beamable.Tools.${VERSION}.snupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
     
     dotnet nuget push ./cli/beamable.common/nupkg/Beamable.Common.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
     dotnet nuget push ./cli/beamable.common/nupkg/Beamable.Common.${VERSION}.snupkg --source https://api.nuget.org/v3/index.json --api-key ${NUGET_TOOLS_KEY}
