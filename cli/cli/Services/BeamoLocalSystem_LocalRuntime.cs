@@ -234,6 +234,7 @@ public partial class BeamoLocalSystem
 
 				case ("container", "destroy"):
 				{
+					
 					BeamoRuntime.ExistingLocalServiceInstances.RemoveAll(si =>
 					{
 						var wasDestroyed = message.Actor.Attributes["name"].Contains(si.BeamoId);
@@ -245,6 +246,7 @@ public partial class BeamoLocalSystem
 
 						return wasDestroyed;
 					});
+					
 					break;
 				}
 
@@ -286,25 +288,6 @@ public partial class BeamoLocalSystem
 	{
 		_dockerListeningThreadCancel.Cancel();
 		await Task.CompletedTask;
-	}
-
-	/// <summary>
-	/// Short hand to check if a service is running or not.
-	/// </summary>
-	public bool IsBeamoServiceRunningLocally(string beamoId)
-	{
-		var si = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.BeamoId == beamoId);
-		return si != null && si.IsRunning;
-	}
-
-	/// <summary>
-	/// Short hand to check if a specific service's container is running or not.
-	/// </summary>
-	public bool IsBeamoServiceRunningLocally(string beamoId, string containerName)
-	{
-		var si = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si =>
-			si.BeamoId == beamoId && si.ContainerName == containerName);
-		return si != null && si.IsRunning;
 	}
 
 	/// <summary>
