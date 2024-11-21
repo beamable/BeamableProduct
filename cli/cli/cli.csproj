@@ -31,13 +31,6 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <TargetFramework>net8.0</TargetFramework>
     <OutputType>Exe</OutputType>
-
-    <!-- Optional: Publish the repository URL in the built .nupkg (in the NuSpec <Repository> element) -->
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-
-    <!-- Optional: Embed source files that are not tracked by the source control manager in the PDB -->
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <DebugType>embedded</DebugType>
     
   </PropertyGroup>
 
@@ -57,8 +50,6 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
-
     <PackageReference Include="CliWrap" Version="3.6.0" />
     <PackageReference Include="Csv" Version="2.0.93" />
     <PackageReference Include="Docker.DotNet" Version="3.125.14" />

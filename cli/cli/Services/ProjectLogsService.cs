@@ -7,7 +7,7 @@ namespace cli.Services;
 
 public class ProjectLogsService
 {
-	public static async Task Handle(TailLogsCommandArgs args, Action<TailLogMessage> handleLog, CancellationToken token = default)
+	public static async Task Handle(TailLogsCommandArgs args, Action<TailLogMessage> handleLog, CancellationTokenSource cts)
 	{
 		void LogHandler(string logMessage)
 		{
@@ -32,14 +32,18 @@ public class ProjectLogsService
 			}
 		}
 		
+		/*
+		 * the discovery never exits.
+		 */
 		
-		while (args.reconnect && !token.IsCancellationRequested)
+		while (!cts.IsCancellationRequested)
 		{
 			var discovery = args.DependencyProvider.GetService<DiscoveryService>();
 
 			Task tailTask = null;
 			// TODO: ignore remote, and also care about id filtering
-			await foreach (var evt in discovery.StartDiscovery(args, default, token))
+			var discoveryCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token);
+			await foreach (var evt in discovery.StartDiscovery(args, default, discoveryCts.Token))
 			{
 				if (evt.Type != ServiceEventType.Running)
 					continue;
@@ -50,10 +54,10 @@ public class ProjectLogsService
 				switch (evt)
 				{
 					case DockerServiceEvent dockerEvt:
-						tailTask = TailDockerContainer(dockerEvt.descriptor, args.BeamoLocalSystem, LogHandler);
+						tailTask = TailDockerContainer(dockerEvt.descriptor, args.BeamoLocalSystem, LogHandler, cts);
 						break;
 					case HostServiceEvent hostEvt:
-						tailTask = TailProcess(hostEvt.descriptor, LogHandler);
+						tailTask = TailProcess(hostEvt.descriptor, LogHandler, cts);
 						break;
 				}
 
@@ -69,18 +73,23 @@ public class ProjectLogsService
 			}
 			else
 			{
+				Log.Verbose($"service=[{args.service}] is waiting for log observation");
+			
 				await tailTask;
+				
+				await discoveryCts.CancelAsync();
+				await discovery.Stop();
+
 				Log.Verbose($"{args.service} has stopped.");
 			}
 
-			await discovery.Stop();
 
 		}
 	}
 
-	async static Task TailDockerContainer(DockerServiceDescriptor container, BeamoLocalSystem beamo, Action<string> handleLog)
+	async static Task TailDockerContainer(DockerServiceDescriptor container, BeamoLocalSystem beamo, Action<string> handleLog, CancellationTokenSource cts)
 	{
-		await foreach (var line in beamo.TailLogs(container.containerId))
+		await foreach (var line in beamo.TailLogs(container.containerId, cts))
 		{
 			if (!string.IsNullOrEmpty(line))
 			{
@@ -89,62 +98,74 @@ public class ProjectLogsService
 		}
 	}
 
-	static async Task TailProcess(HostServiceDescriptor host, Action<string> handleLog)
+	static async Task TailProcess(HostServiceDescriptor host, Action<string> handleLog, CancellationTokenSource cts)
 	{
-		using (var client = new HttpClient
-		       {
-			       Timeout = Timeout.InfiniteTimeSpan
-		       })
+		using var client = new HttpClient();
+		client.Timeout = Timeout.InfiniteTimeSpan;
+		// Set up the HTTP GET request
+		var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:{host.healthPort}/logs");
+
+		// Set the "text/event-stream" media type to indicate Server-Sent Events
+		request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("text/event-stream"));
+
+		
+		// Send the request and get the response
+		try
 		{
-			// Set up the HTTP GET request
-			var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:{host.healthPort}/logs");
+			using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
 
-			// Set the "text/event-stream" media type to indicate Server-Sent Events
-			request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("text/event-stream"));
-
-			// Send the request and get the response
-			try
+			// Check if the response is successful
+			if (response.IsSuccessStatusCode)
 			{
-				var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
-
-				// Check if the response is successful
-				if (response.IsSuccessStatusCode)
+				// Read the content as a stream
+				using var stream = await response.Content.ReadAsStreamAsync(cts.Token);
+				using var reader = new StreamReader(stream);
+				try
 				{
-					// Read the content as a stream
-					using var stream = await response.Content.ReadAsStreamAsync();
-					using var reader = new StreamReader(stream);
-					try
+					while (true)
 					{
-						while (!reader.EndOfStream)
+						if (cts.IsCancellationRequested) break;
+						
+						var line = await reader.ReadLineAsync(cts.Token);
+						if (line == null)
 						{
+							Log.Verbose("invalid log, server is likely destroyed.");
+							break;
+						}
+						var _ = await reader.ReadLineAsync(cts.Token);
 
-							var line = await reader.ReadLineAsync();
-							var _ = await reader.ReadLineAsync(); // skip new line.
-							var substrLength = "data: ".Length;
-							if (line?.Length > substrLength)
-							{
-								handleLog(line[substrLength..]);
-							}
+						var substrLength = "data: ".Length;
+						if (line?.Length > substrLength)
+						{
+							handleLog(line[substrLength..]);
 						}
 					}
-					catch (IOException ex) when (ex.Message.Contains("forcibly closed"))
-					{
-						// TODO: We are explicitly ignoring this exception until a later date.
-						// The problem is that if the request stream is closed by an external process that had invoked this command (such as CliServer OR the Stop server command),
-						// an exception is thrown about it.
-						// This is mostly inconsequential other than the fact that it makes this command not exit gracefully.
-						// Behavior-wise, this exception happening changes nothing about this command's execution, so... we are ignoring it until a later date.
-					}
 				}
-				else
+				catch (IOException ex) when (ex.Message.Contains("forcibly closed"))
 				{
-					Log.Error("Error: {0} - {1}", (int)response.StatusCode, response.ReasonPhrase);
+					// TODO: We are explicitly ignoring this exception until a later date.
+					// The problem is that if the request stream is closed by an external process that had invoked this command (such as CliServer OR the Stop server command),
+					// an exception is thrown about it.
+					// This is mostly inconsequential other than the fact that it makes this command not exit gracefully.
+					// Behavior-wise, this exception happening changes nothing about this command's execution, so... we are ignoring it until a later date.
+				}
+				catch (TaskCanceledException)
+				{
+					Log.Verbose("log task cancelled");
 				}
 			}
-			catch (HttpRequestException ex) when (ex.Message.StartsWith("Connection refused"))
+			else
 			{
-				Log.Verbose("Service is not ready to accept connections yet... Retrying soon...");
+				Log.Error("Error: {0} - {1}", (int)response.StatusCode, response.ReasonPhrase);
 			}
+		}
+		catch (TaskCanceledException)
+		{
+			Log.Verbose("Task was cancelled, shutting down logs");
+		}
+		catch (HttpRequestException ex) when (ex.Message.StartsWith("Connection refused"))
+		{
+			Log.Verbose("Service is not ready to accept connections yet... Retrying soon...");
 		}
 	}
 }

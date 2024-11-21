@@ -437,7 +437,7 @@ public partial class BeamoLocalSystem
 				.ToDictionary(g => g.Key, g => g.ToList());
 	}
 
-	public async IAsyncEnumerable<string> TailLogs(string containerId)
+	public async IAsyncEnumerable<string> TailLogs(string containerId, CancellationTokenSource cts)
 	{
 		// _client.Containers.GetContainerLogsAsync()
 #pragma warning disable CS0618
@@ -452,12 +452,30 @@ public partial class BeamoLocalSystem
 		}
 
 		using var reader = new StreamReader(stream, Encoding.UTF8);
-		while (!reader.EndOfStream)
+
+		while (true)
 		{
-			var line = await reader.ReadLineAsync();
+			if (cts.IsCancellationRequested) break;
+
+			string line = null;
+			try
+			{
+				line = await reader.ReadLineAsync(cts.Token);
+				if (line == null)
+				{
+					Log.Verbose("Storage log returned null line, which likely means it has shutdown");
+					break;
+				}
+			}
+			catch (OperationCanceledException)
+			{
+				break;
+			}
+
 			if (line?.Length > 8 && line[0] < 'a')
 				yield return line[8..]; // substring 8 because of a strange encoding issue in docker dotnet.
 		}
+	
 	}
 }
 
