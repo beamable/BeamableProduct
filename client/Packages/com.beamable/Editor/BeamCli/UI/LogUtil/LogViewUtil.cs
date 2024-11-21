@@ -437,7 +437,8 @@ namespace Beamable.Editor.BeamCli.UI.LogHelpers
 			var startScrollPosition = logView.logScroll.y;
 			BeamCliWindow.DrawVirtualScroller(scrollRect, elementHeight, logView.view.Count, ref logView.logScroll, (index, position) =>
 			{
-				// var log = _history.serverLogs[index];
+				if (index >= logView.view.Count) return false;
+				
 				var log = logView.view[index];
 
 				/*

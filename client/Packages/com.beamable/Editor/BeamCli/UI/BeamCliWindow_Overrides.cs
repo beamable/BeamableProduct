@@ -51,7 +51,7 @@ namespace Beamable.Editor.BeamCli.UI
 					message: "These settings control how the CLI server resolution happens. ", 
 					type: MessageType.Info);
 				
-				EditorGUILayout.SelectableLabel(BeamCliUtil.CLI_PATH.ToLowerInvariant(), labelStyle);
+				EditorGUILayout.SelectableLabel(BeamCliUtil.OWNER, labelStyle);
 				EditorGUILayout.PropertyField(
 					serializedSettings.FindProperty(nameof(BeamWebCommandFactoryOptions.ownerOverride)));
 			

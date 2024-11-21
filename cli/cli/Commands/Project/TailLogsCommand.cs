@@ -11,7 +11,6 @@ namespace cli.Commands.Project;
 
 public class TailLogsCommandArgs : CommandArgs
 {
-	public bool reconnect;
 	public ServiceName service;
 }
 
@@ -67,12 +66,16 @@ public class TailLogsCommand : StreamCommand<TailLogsCommandArgs, TailLogMessage
 	{
 		AddArgument(new Argument<ServiceName>("service", "The name of the service to view logs for"),
 			(args, i) => args.service = i);
-		AddOption(new Option<bool>("--reconnect", getDefaultValue: () => true, "If the service stops, and reconnect is enabled, then the logs command will wait for the service to restart and then reattach to logs"), (args, i) => args.reconnect = i);
+		AddOption(new Option<bool>("--reconnect", getDefaultValue: () => true, "If the service stops, and reconnect is enabled, then the logs command will wait for the service to restart and then reattach to logs"),
+			(args, i) =>
+			{
+				// this is an obsolete field.
+			});
 	}
 
 	public override async Task Handle(TailLogsCommandArgs args)
 	{
-		await ProjectLogsService.Handle(args, HandleLog, args.Lifecycle.CancellationToken);
+		await ProjectLogsService.Handle(args, HandleLog, args.Lifecycle.Source);
 	}
 
 	void HandleLog(TailLogMessage logMessage)

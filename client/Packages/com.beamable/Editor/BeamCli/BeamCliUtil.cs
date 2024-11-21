@@ -77,6 +77,7 @@ namespace Beamable.Editor.BeamCli
 				return Path.Combine(CLI_VERSIONED_HOME, EXEC);
 			}
 		}
+		public static string OWNER => Path.GetFullPath(CLI_PATH).ToLowerInvariant();
 
 		const string SRC_BEAM = "BUILDED_BEAM";
 
