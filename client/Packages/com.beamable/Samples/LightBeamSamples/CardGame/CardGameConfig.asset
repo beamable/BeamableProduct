@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40a5204ecf1f4003a7a4be98c39d4583, type: 3}
+  m_Name: CardGameConfig
+  m_EditorClassIdentifier: 
+  homePage: {fileID: 4851017883579798377, guid: 7239036c7f9fb4feb801d4f8f199d1b7,
+    type: 3}
+  playerDisplay: {fileID: 1189426353214377703, guid: 4bb7a3576b634474a96d5a38925ed181,
+    type: 3}

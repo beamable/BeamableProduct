@@ -1,0 +1,12 @@
+{
+	"name": "NewAssembly",
+	"references": [
+		"Unity.Beamable",
+		"Unity.Beamable.Runtime.Common",
+		"Unity.Beamable.Customer.Common",
+		"Unity.TextMeshPro",
+		"Unity.Beamable.LightBeams",
+		"Unity.Beamable.Server.Runtime",
+		"LootBoxService.Client"
+	]
+}
