@@ -58,14 +58,14 @@ public class ServerPsCommand : StreamCommand<ServerPsCommandArgs, ServerPsComman
 	public static void ConfigureFilterArgs<T>(AppCommand<T> command)
 		where T : CommandArgs, IServerFilterArgs
 	{
-		command.AddOption(new Option<string>("--version", "only match servers that match the given version"),
+		command.AddOption(new Option<string>("--version", "Only match servers that match the given version"),
 			(args, i) => args.VersionFilter = i);
-		command.AddOption(new Option<string>("--owner", "only match servers that match the given owner"),
+		command.AddOption(new Option<string>("--owner", "Only match servers that match the given owner"),
 			(args, i) => args.OwnerFilter = i);
 		
-		command.AddOption(new Option<int>("--port", "only match servers that match the given port"),
+		command.AddOption(new Option<int>("--port", "Only match servers that match the given port"),
 			(args, i) => args.Port = i);
-		command.AddOption(new Option<int>("--pid", "only match servers that match the given process id"),
+		command.AddOption(new Option<int>("--pid", "Only match servers that match the given process id"),
 			(args, i) => args.Pid = i);
 	}
 

@@ -20,7 +20,7 @@ public class ServerKillCommand : AtomicCommand<ServerKillCommandArgs, ServerKill
 {
 	public override bool AutoLogOutput => false;
 
-	public ServerKillCommand() : base("clear", "kill a running server instance")
+	public ServerKillCommand() : base("clear", "Kill a running server instance")
 	{
 	}
 
