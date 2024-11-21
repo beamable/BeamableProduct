@@ -299,6 +299,8 @@ public class App
 		Commands.AddRootCommand<ServerGroupCommand>();
 		Commands.AddSubCommand<ServeCliCommand, ServeCliCommandArgs, ServerGroupCommand>();
 		Commands.AddSubCommand<RequestCliCommand, RequestCliCommandArgs, ServerGroupCommand>();
+		Commands.AddSubCommand<ServerPsCommand, ServerPsCommandArgs, ServerGroupCommand>();
+		Commands.AddSubCommand<ServerKillCommand, ServerKillCommandArgs, ServerGroupCommand>();
 		Commands.AddRootCommand<InitCommand, InitCommandArgs>();
 		Commands.AddRootCommand<ProjectCommand>();
 

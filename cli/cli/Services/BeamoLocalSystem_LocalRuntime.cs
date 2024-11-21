@@ -234,6 +234,7 @@ public partial class BeamoLocalSystem
 
 				case ("container", "destroy"):
 				{
+					
 					BeamoRuntime.ExistingLocalServiceInstances.RemoveAll(si =>
 					{
 						var wasDestroyed = message.Actor.Attributes["name"].Contains(si.BeamoId);
@@ -245,6 +246,7 @@ public partial class BeamoLocalSystem
 
 						return wasDestroyed;
 					});
+					
 					break;
 				}
 
@@ -286,25 +288,6 @@ public partial class BeamoLocalSystem
 	{
 		_dockerListeningThreadCancel.Cancel();
 		await Task.CompletedTask;
-	}
-
-	/// <summary>
-	/// Short hand to check if a service is running or not.
-	/// </summary>
-	public bool IsBeamoServiceRunningLocally(string beamoId)
-	{
-		var si = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si => si.BeamoId == beamoId);
-		return si != null && si.IsRunning;
-	}
-
-	/// <summary>
-	/// Short hand to check if a specific service's container is running or not.
-	/// </summary>
-	public bool IsBeamoServiceRunningLocally(string beamoId, string containerName)
-	{
-		var si = BeamoRuntime.ExistingLocalServiceInstances.FirstOrDefault(si =>
-			si.BeamoId == beamoId && si.ContainerName == containerName);
-		return si != null && si.IsRunning;
 	}
 
 	/// <summary>
@@ -454,7 +437,7 @@ public partial class BeamoLocalSystem
 				.ToDictionary(g => g.Key, g => g.ToList());
 	}
 
-	public async IAsyncEnumerable<string> TailLogs(string containerId)
+	public async IAsyncEnumerable<string> TailLogs(string containerId, CancellationTokenSource cts)
 	{
 		// _client.Containers.GetContainerLogsAsync()
 #pragma warning disable CS0618
@@ -469,12 +452,30 @@ public partial class BeamoLocalSystem
 		}
 
 		using var reader = new StreamReader(stream, Encoding.UTF8);
-		while (!reader.EndOfStream)
+
+		while (true)
 		{
-			var line = await reader.ReadLineAsync();
+			if (cts.IsCancellationRequested) break;
+
+			string line = null;
+			try
+			{
+				line = await reader.ReadLineAsync(cts.Token);
+				if (line == null)
+				{
+					Log.Verbose("Storage log returned null line, which likely means it has shutdown");
+					break;
+				}
+			}
+			catch (OperationCanceledException)
+			{
+				break;
+			}
+
 			if (line?.Length > 8 && line[0] < 'a')
 				yield return line[8..]; // substring 8 because of a strange encoding issue in docker dotnet.
 		}
+	
 	}
 }
 

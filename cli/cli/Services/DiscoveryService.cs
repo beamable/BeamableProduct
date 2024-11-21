@@ -351,12 +351,18 @@ public class DiscoveryService
 						}
 
 						// This doesn't actually block
+						await _localSystem.SynchronizeInstanceStatusWithDocker(_localSystem.BeamoManifest, _localSystem.BeamoRuntime.ExistingLocalServiceInstances);
 						await _localSystem.StartListeningToDockerRaw(async (beamoId, eventType, raw) =>
 						{
 							var isCreated = eventType == "create" || eventType == "start";
 							var isDeleted = eventType == "destroy";
 
-							if (!isCreated && !isDeleted) return; // skip, because these events don't concern us
+							if (!isCreated && !isDeleted)
+							{
+								Log.Verbose($"Discovery skipping docker event=[{eventType}]");
+								return; // skip, because these events don't concern us
+							}
+						
 
 							if (!_localSystem.BeamoManifest.TryGetDefinition(beamoId, out var serviceDefinition))
 							{

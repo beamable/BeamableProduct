@@ -8,6 +8,8 @@ namespace Beamable.Editor.BeamCli.Commands
 	{
 		/// <summary>Relative path to the .sln file to use for the new project. If the .sln file does not exist, it will be created. When no option is configured, if this command is executing inside a .beamable folder, then the first .sln found in .beamable/.. will be used. If no .sln is found, the .sln path will be <name>.sln. If no .beamable folder exists, then the <project>/<project>.sln will be used</summary>
 		public string sln;
+		/// <summary>Only generate the sln but do not open it</summary>
+		public bool onlyGenerate;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -18,6 +20,11 @@ namespace Beamable.Editor.BeamCli.Commands
 			{
 				genBeamCommandArgs.Add((("--sln=\"" + this.sln)
 								+ "\""));
+			}
+			// If the onlyGenerate value was not default, then add it to the list of args.
+			if ((this.onlyGenerate != default(bool)))
+			{
+				genBeamCommandArgs.Add(("--only-generate=" + this.onlyGenerate));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces

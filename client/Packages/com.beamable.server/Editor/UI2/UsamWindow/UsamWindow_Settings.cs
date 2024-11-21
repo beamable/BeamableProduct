@@ -54,7 +54,8 @@ namespace Beamable.Editor.Microservice.UI2
 		{
 			
 			var hasServices = usam?.latestManifest?.services?.Count > 0;
-			if (!hasServices)
+			var hasStorages = usam?.latestManifest?.storages?.Count > 0;
+			if (!hasServices && !hasStorages)
 			{
 				EditorGUILayout.LabelField("Please create a service. Until a service exists, there are no settings to configure.", new GUIStyle(EditorStyles.label)
 				{
@@ -326,10 +327,12 @@ namespace Beamable.Editor.Microservice.UI2
 				EditorGUILayout.Separator();
 
 				EditorGUILayout.PropertyField(
-					serializedObj.FindProperty(nameof(BeamableMicroservicesSettings.assemblyReferences)),
+					serializedObj.FindProperty(nameof(BeamableStorageSettings.assemblyReferences)),
 					new GUIContent("Assembly Definitions"));
 				EditorGUILayout.Separator();
 			}
+
+			serializedObj.ApplyModifiedPropertiesWithoutUndo();
 
 			if (settings.HasChanges())
 			{

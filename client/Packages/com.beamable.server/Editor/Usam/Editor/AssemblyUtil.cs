@@ -70,6 +70,20 @@ namespace Beamable.Server.Editor.Usam
 			}
 		}
 
+		public HashSet<Assembly> GetAssembliesByNames(IEnumerable<string> assemblyNames)
+		{
+			var output = new HashSet<Assembly>();
+			foreach (var name in assemblyNames)
+			{
+				if (_nameToAssembly.TryGetValue(name, out var assembly))
+				{
+					output.Add(assembly);
+				}
+			}
+
+			return output;
+		}
+
 		private void UpdateReferencedAssemblies(List<BeamUnityAssemblyReferenceData> references)
 		{
 			foreach (var reference in references)

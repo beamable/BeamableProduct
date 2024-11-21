@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.Compilation;
 using UnityEditorInternal;
 using UnityEngine;
 
@@ -17,9 +18,27 @@ namespace Beamable.Server.Editor.Usam
 	[Serializable]
 	public class MigrationPlan
 	{
-		public bool NeedsMigration => services.Count > 0;
+		public bool NeedsMigration => services.Count > 0 || storages.Count > 0;
 		public List<MigrationService> services = new List<MigrationService>();
 		public List<MigrationStorage> storages = new List<MigrationStorage>();
+
+		public HashSet<string> allReferencedAssemblies
+		{
+			get
+			{
+				var results = new HashSet<string>();
+				foreach (var name in services.SelectMany(x => x.refStep.referencedAssemblyNames))
+				{
+					results.Add(name);
+				}
+				foreach (var name in storages.SelectMany(x => x.refStep.referencedAssemblyNames))
+				{
+					results.Add(name);
+				}
+
+				return results;
+			}
+		}
 	}
 
 	public class ActiveMigration
@@ -47,6 +66,7 @@ namespace Beamable.Server.Editor.Usam
 		public MigrationCopyStep copyStep = null;
 		public ProjectNewStorageArgs newStorageArgs = null;
 		public List<string> stepNames = new List<string>();
+		public MigrationRefStep refStep;
 
 
 	}
@@ -70,10 +90,16 @@ namespace Beamable.Server.Editor.Usam
 		public ProjectNewServiceArgs newServiceArgs = null;
 		public MigrationCopyStep copyStep = null;
 		public MigrationFederationStep federationStep = null;
-		public UnityUpdateReferencesArgs unityAssemblyDefinitionArgs = null;
-		public UnityUpdateDllsArgs unityUpdateDllsArgs = null;
+		public MigrationRefStep refStep;
 
 		public List<string> stepNames = new List<string>();
+	}
+
+	public class MigrationRefStep
+	{
+		public UnityUpdateReferencesArgs unityAssemblyDefinitionArgs = null;
+		public UnityUpdateDllsArgs unityUpdateDllsArgs = null;
+		public string[] referencedAssemblyNames => unityAssemblyDefinitionArgs.names;
 	}
 
 	public class MigrationCopyStep
@@ -88,6 +114,83 @@ namespace Beamable.Server.Editor.Usam
 
 	public static class UsamMigrator
 	{
+
+		
+		
+		static IEnumerable DoReferenceStep(BeamCommands cli, MigrationRefStep refStep, Action<float> onProgress)
+		{
+			
+				// add references
+				var addRefCommand = cli.UnityUpdateReferences(refStep.unityAssemblyDefinitionArgs);
+				yield return addRefCommand.Run().ToYielder();
+				onProgress(.5f);
+
+				// add dlls references
+				var addDllsPathsCommand = cli.UnityUpdateDlls(refStep.unityUpdateDllsArgs);
+				yield return addDllsPathsCommand.Run().ToYielder();
+
+				onProgress(1);
+			
+		}
+		
+		static IEnumerable DoCopyStep(MigrationCopyStep copyStep, Action<float> onProgress, params Action[] extraSteps)
+		{
+			var files = Directory.EnumerateFiles(copyStep.absoluteSourceFolder,
+			                                     searchPattern: "*",
+			                                     searchOption: SearchOption.AllDirectories)
+			                     .Where(file =>
+			                     {
+				                     // it is POSSIBLE that someone has custom file types that their service needs, 
+				                     //  and since we are going to DELETE all these files after the migration, we
+				                     //  should as nice as possible, and only NOT copy stuff that we feel really
+				                     //  confident about. 
+				                     var isMetaFile = file.EndsWith(".meta");
+				                     var isAssemblyDef = file.EndsWith(".asmdef");
+				                     return !isMetaFile && !isAssemblyDef;
+			                     })
+			                     .ToList();
+			
+			var steps = (float)(extraSteps.Length + files.Count); // extra step to delete what-sit
+			
+			for (var i = 0; i < files.Count; i++)
+			{
+				var file = files[i];
+				var fileName = Path.GetFileName(file);
+				var relativePath = file.Replace(copyStep.absoluteSourceFolder, "");
+				var dirName = Path.GetDirectoryName("." + relativePath);
+				var destFolder = Path.Combine(copyStep.absoluteDestinationFolder, dirName);
+
+				if (string.IsNullOrEmpty(destFolder) || destFolder.Equals(Path.DirectorySeparatorChar.ToString()))
+				{
+					destFolder = copyStep.absoluteDestinationFolder;
+				}
+
+				if (!Directory.Exists(destFolder))
+				{
+					Directory.CreateDirectory(destFolder);
+				}
+
+				var newFilePath = Path.Combine(destFolder, fileName);
+				if (File.Exists(newFilePath))
+				{
+					File.Delete(newFilePath);
+				}
+
+				File.Copy(file, newFilePath);
+				yield return null;
+				onProgress((i + 1) / steps);
+
+			}
+
+
+			for (var i = 0; i < extraSteps.Length; i++)
+			{
+				extraSteps[i].Invoke();
+				onProgress((i + 1 + files.Count) / steps);
+			}
+			onProgress(1);
+		}
+
 
 		static void CreateNoticeFile(string beamoId, string noun, MigrationCopyStep copyStep){
 			var noticeFilePath = Path.Combine(copyStep.absoluteSourceFolder,
@@ -110,7 +213,8 @@ namespace Beamable.Server.Editor.Usam
 			var migration = new ActiveMigration();
 			var serviceToActive = new Dictionary<MigrationService, ActiveMigration.ActiveServiceMigration>();
 			var storageToActive = new Dictionary<MigrationStorage, ActiveMigration.ActiveServiceMigration>();
-			
+
+
 			foreach (var storage in plan.storages)
 			{
 				var active = new ActiveMigration.ActiveServiceMigration
@@ -176,55 +280,39 @@ namespace Beamable.Server.Editor.Usam
 						
 						{
 							// copy files
-							var files = Directory.EnumerateFiles(service.copyStep.absoluteSourceFolder,
-							                                     searchPattern: "*",
-							                                     searchOption: SearchOption.AllDirectories)
-							                     .Where(file =>
-							                     {
-								                     // it is POSSIBLE that someone has custom file types that their service needs, 
-								                     //  and since we are going to DELETE all these files after the migration, we
-								                     //  should as nice as possible, and only NOT copy stuff that we feel really
-								                     //  confident about. 
-								                     var isMetaFile = file.EndsWith(".meta");
-								                     var isAssemblyDef = file.EndsWith(".asmdef");
-								                     return !isMetaFile && !isAssemblyDef;
-							                     })
-
-
-							                     .ToList();
-							var steps = (float)(1 +
-							                    files
-								                    .Count); // extra step to delete what-sit
-							for (var i = 0; i < files.Count; i++)
+							var copier = DoCopyStep(service.copyStep, x => active.stepRatios[1] = x,
+							                        () =>
+							                        {
+								                        var newExtensionsFile =
+									                        Path.Combine(
+										                        service.copyStep.absoluteDestinationFolder,
+										                        "StorageExtensions.cs");
+								                        if (File.Exists(newExtensionsFile))
+								                        {
+									                        File.Delete(
+										                        newExtensionsFile); // Delete this file because in old storages the extensions class was already inside the storage main file
+								                        }
+							                        });
+							foreach (var prog in copier)
 							{
-								var file = files[i];
-								var fileName = Path.GetFileName(file);
-								var newFilePath = Path.Combine(service.copyStep.absoluteDestinationFolder, fileName);
-								if (File.Exists(newFilePath))
-								{
-									File.Delete(newFilePath);
-								}
-
-								File.Copy(file, newFilePath);
-								yield return null;
-								active.stepRatios[1] = (i + 1) / steps;
+								yield return prog;
 							}
-							
-							var newExtensionsFile = Path.Combine(service.copyStep.absoluteDestinationFolder, "StorageExtensions.cs");
-							if (File.Exists(newExtensionsFile))
+						}
+						
+						{
+							// add references
+							var step = DoReferenceStep(cli, service.refStep, x => active.stepRatios[2] = x);
+							foreach (var prog in step)
 							{
-								File.Delete(newExtensionsFile); // Delete this file because in old storages the extensions class was already inside the storage main file
+								yield return prog;
 							}
-
-							active.stepRatios[1] = 1f;
-
 						}
 						
 						{
 							// delete code!
 							Directory.Delete(service.copyStep.absoluteSourceFolder, true);
 							CreateNoticeFile(service.beamoId, "storage object", service.copyStep);
-							active.stepRatios[2] = 1f;
+							active.stepRatios[3] = 1f;
 						}
 
 						active.isComplete = true;
@@ -258,92 +346,45 @@ namespace Beamable.Server.Editor.Usam
 
 						{
 							// copy files
-							var files = Directory.EnumerateFiles(service.copyStep.absoluteSourceFolder,
-							                                     searchPattern: "*",
-							                                     searchOption: SearchOption.AllDirectories)
-							                     .Where(file =>
-							                     {
-								                     // it is POSSIBLE that someone has custom file types that their service needs, 
-								                     //  and since we are going to DELETE all these files after the migration, we
-								                     //  should as nice as possible, and only NOT copy stuff that we feel really
-								                     //  confident about. 
-								                     var isMetaFile = file.EndsWith(".meta");
-								                     var isAssemblyDef = file.EndsWith(".asmdef");
-								                     return !isMetaFile && !isAssemblyDef;
-							                     })
+							var copier = DoCopyStep(service.copyStep, x => active.stepRatios[1] = x,
+							           () =>
+							           {
+								           // modify the Program.cs file to include the right namespace (because its different in 1.x vs 2.x)
+								           var programFilePath =
+									           Path.Combine(service.copyStep.absoluteDestinationFolder, "Program.cs");
+								           var content = File.ReadAllText(programFilePath);
 
+								           content = content.Replace($"namespace Beamable.{service.beamoId}",
+								                                     "namespace Beamable.Microservices");
 
-							                     .ToList();
-							var steps = (float)(2 +
-							                    files
-								                    .Count); // extra step for the Program.cs write, and a second step for the partial class patch
-							for (var i = 0; i < files.Count; i++)
+								           File.WriteAllText(programFilePath, content);
+
+							           },
+							           () =>
+							           {
+								           // modify the main class file to be partial; in 2.x, there is a source generator that requires it to be partial
+								           var mainClassFilePath =
+									           Path.Combine(service.copyStep.absoluteDestinationFolder,
+									                        $"{service.beamoId}.cs");
+								           var content = File.ReadAllText(mainClassFilePath);
+								           content = content.Replace($"public class {service.beamoId}",
+								                                     $"public partial class {service.beamoId}");
+								           File.WriteAllText(mainClassFilePath, content);
+							           });
+							foreach (var prog in copier)
 							{
-								var file = files[i];
-								var fileName = Path.GetFileName(file);
-								var relativePath = file.Replace(service.copyStep.absoluteSourceFolder, "");
-								var dirName = Path.GetDirectoryName("." + relativePath);
-								var destFolder = Path.Combine(service.copyStep.absoluteDestinationFolder, dirName);
-
-								if (string.IsNullOrEmpty(destFolder) || destFolder.Equals(Path.DirectorySeparatorChar.ToString()))
-								{
-									destFolder = service.copyStep.absoluteDestinationFolder;
-								}
-
-								if (!Directory.Exists(destFolder))
-								{
-									Directory.CreateDirectory(destFolder);
-								}
-
-								var newFilePath = Path.Combine(destFolder, fileName);
-								if (File.Exists(newFilePath))
-								{
-									File.Delete(newFilePath);
-								}
-
-								File.Copy(file, newFilePath);
-								yield return null;
-								active.stepRatios[1] = (i + 1) / steps;
+								yield return prog;
 							}
-
-							{
-								// modify the Program.cs file to include the right namespace (because its different in 1.x vs 2.x)
-								var programFilePath =
-									Path.Combine(service.copyStep.absoluteDestinationFolder, "Program.cs");
-								var content = File.ReadAllText(programFilePath);
-
-								content = content.Replace($"namespace Beamable.{service.beamoId}",
-								                          "namespace Beamable.Microservices");
-
-								File.WriteAllText(programFilePath, content);
-								active.stepRatios[1] = (steps - 1) / steps;
-
-							}
-
-							{
-								// modify the main class file to be partial; in 2.x, there is a source generator that requires it to be partial
-								var mainClassFilePath =
-									Path.Combine(service.copyStep.absoluteDestinationFolder, $"{service.beamoId}.cs");
-								var content = File.ReadAllText(mainClassFilePath);
-								content = content.Replace($"public class {service.beamoId}",
-								                          $"public partial class {service.beamoId}");
-								File.WriteAllText(mainClassFilePath, content);
-							}
-
-							active.stepRatios[1] = 1f;
 						}
 
 
 						{
 							// add references
-							var addRefCommand = cli.UnityUpdateReferences(service.unityAssemblyDefinitionArgs);
-							yield return addRefCommand.Run().ToYielder();
-
-							// add dlls references
-							var addDllsPathsCommand = cli.UnityUpdateDlls(service.unityUpdateDllsArgs);
-							yield return addDllsPathsCommand.Run().ToYielder();
-
-							active.stepRatios[2] = 1f;
+							var step = DoReferenceStep(cli, service.refStep, x => active.stepRatios[2] = x);
+							foreach (var prog in step)
+							{
+								yield return prog;
+							}
 						}
 
 						{
@@ -370,6 +411,7 @@ namespace Beamable.Server.Editor.Usam
 					
 					yield return usam.WaitReload().ToYielder();
 
+					usam.OpenSolution(onlyGenerate: true);
 					migration.isComplete = true;
 				}
 				finally
@@ -407,9 +449,16 @@ namespace Beamable.Server.Editor.Usam
 			return outputFolder;
 		}
 		
-		public static MigrationPlan CreatePlan(MicroserviceReflectionCache.Registry registry, UsamAssemblyService assemblyUtil)
+		public static MigrationPlan CreatePlan(MicroserviceReflectionCache.Registry registry, UsamService usam)
 		{
 			var plan = new MigrationPlan();
+			var assemblyUtil = usam.AssemblyService;
+			
+			{ // create all referenced assemblies
+				var assemblies = assemblyUtil.GetAssembliesByNames(plan.allReferencedAssemblies);
+				CsharpProjectUtil.GenerateAllAssemblies(usam, assemblies.ToList());
+			}
+			
 			
 			var services = registry.Descriptors;
 			var storages = registry.StorageDescriptors;
@@ -420,7 +469,8 @@ namespace Beamable.Server.Editor.Usam
 				var migration = new MigrationStorage
 				{
 					beamoId = storage.Name, 
-					legacyDescriptor = storage
+					legacyDescriptor = storage,
+					refStep = new MigrationRefStep()
 				};
 
 				var outputFolder = GetOutputFolder(storage);
@@ -445,6 +495,56 @@ namespace Beamable.Server.Editor.Usam
 						absoluteSourceFolder = Path.GetFullPath(storage.SourcePath)
 					};
 					migration.stepNames.Add("Copy Code");
+				}
+				
+				{ // then, add refs
+
+					{ // assembly def refs
+						var assemblies = GetAssemblyDefinitionAssets(storage);
+						var pathsList = new List<string>();
+						var namesList = new List<string>();
+						foreach (AssemblyDefinitionAsset asmdef in assemblies)
+						{
+							// skip things that are storages...
+							if (storageAssets.Any(asset => asset.name == asmdef.name)) continue;
+							
+							namesList.Add(asmdef.name);
+							var pathFromRootFolder = CsharpProjectUtil.GenerateCsharpProjectFilename(asmdef.name);
+							var pathToService =
+								Path.Combine(outputFolder, storage.Name, $"{storage.Name}.csproj");
+							pathsList.Add(PackageUtil.GetRelativePath(pathToService, pathFromRootFolder));
+						}
+
+						migration.refStep.unityAssemblyDefinitionArgs = new UnityUpdateReferencesArgs
+						{
+							service = storage.Name, names = namesList.ToArray(), paths = pathsList.ToArray()
+						};
+					}
+
+					{ // add dlls refs
+						var assembly = assemblyUtil.AllAssemblies.FirstOrDefault(assembly =>
+							assembly.name.Equals(storage.Type.Assembly.GetName().Name));
+						var dlls = CsharpProjectUtil.GetValidDllReferences(assembly);
+						var dllsNames = new List<string>();
+						var dllsPaths = new List<string>();
+
+						foreach (string dll in dlls)
+						{
+							var name = Path.GetFileName(dll).Replace(".dll", "");
+							var dllFullPath = Path.GetFullPath(dll);
+							var dllPath = Path.GetRelativePath(migration.copyStep.absoluteDestinationFolder, dllFullPath);
+							dllsNames.Add(name);
+							dllsPaths.Add(dllPath);
+						}
+
+						migration.refStep.unityUpdateDllsArgs = new UnityUpdateDllsArgs()
+						{
+							service = storage.Name, paths = dllsPaths.ToArray(), names = dllsNames.ToArray()
+						};
+					}
+					
+
+					migration.stepNames.Add("Add References");
 				}
 				
 				{ // delete old code
@@ -521,7 +621,7 @@ namespace Beamable.Server.Editor.Usam
 							pathsList.Add(PackageUtil.GetRelativePath(pathToService, pathFromRootFolder));
 						}
 
-						migration.unityAssemblyDefinitionArgs = new UnityUpdateReferencesArgs
+						migration.refStep.unityAssemblyDefinitionArgs = new UnityUpdateReferencesArgs
 						{
 							service = service.Name, names = namesList.ToArray(), paths = pathsList.ToArray()
 						};
@@ -543,7 +643,7 @@ namespace Beamable.Server.Editor.Usam
 							dllsPaths.Add(dllPath);
 						}
 
-						migration.unityUpdateDllsArgs = new UnityUpdateDllsArgs()
+						migration.refStep.unityUpdateDllsArgs = new UnityUpdateDllsArgs()
 						{
 							service = service.Name, paths = dllsPaths.ToArray(), names = dllsNames.ToArray()
 						};
@@ -553,7 +653,7 @@ namespace Beamable.Server.Editor.Usam
 					migration.stepNames.Add("Add References");
 				}
 
-				{ // TODO: handle federations...
+				{ // handle federations...
 					var allFedIds = new List<string>();
 					var allFedTypes = new List<string>();
 					foreach (var federationComponent in service.FederationComponents)
@@ -580,7 +680,7 @@ namespace Beamable.Server.Editor.Usam
 			return plan;
 		}
 		
-		public static List<AssemblyDefinitionAsset> GetAssemblyDefinitionAssets(MicroserviceDescriptor descriptor)
+		public static List<AssemblyDefinitionAsset> GetAssemblyDefinitionAssets(IDescriptor descriptor)
 		{
 			List<AssemblyDefinitionAsset> assets = new List<AssemblyDefinitionAsset>();
 			List<string> mandatoryReferences = new List<string>() {"Unity.Beamable.Customer.Common"}; // Add the customer common asmdef even if it's not being used

@@ -68,7 +68,7 @@ namespace Beamable.Editor.BeamCli
 		public string Url => $"http://127.0.0.1:{port}";
 		public string ExecuteUrl => $"{Url}/execute";
 		public string InfoUrl => $"{Url}/info";
-		public string Owner => _options.ownerOverride.GetOrElse(BeamCliUtil.CLI_PATH.ToLowerInvariant());
+		public string Owner => _options.ownerOverride.GetOrElse(BeamCliUtil.OWNER);
 
 		public string Version => _options.versionOverride.GetOrElse(BeamCliUtil.CLI_VERSION);
 		

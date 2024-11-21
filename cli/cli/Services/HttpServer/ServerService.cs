@@ -42,6 +42,11 @@ public class ServerInfoResponse
 	public long inflightRequests;
 
 	/// <summary>
+	/// the process id of the server
+	/// </summary>
+	public int pid;
+
+	/// <summary>
 	/// The cli invocations currently inflight
 	/// </summary>
 	public List<string> inflightCommands = new List<string>();
@@ -326,6 +331,7 @@ public class ServerService
 			version = version.ToString(),
 			owner = args.owner,
 			inflightRequests = (long)inflightRequests,
+			pid = Environment.ProcessId,
 			inflightCommands = cliInvocations
 		});
 	}

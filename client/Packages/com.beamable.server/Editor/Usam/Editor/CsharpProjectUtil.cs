@@ -104,15 +104,24 @@ Do not add them from the custom solution file that opens from Beam Services wind
 
 		private const string customInvalidAssembliesPath = "Assets/Beamable/Resources/custom-invalid-assemblies.txt";
 
+		public static void GenerateAllAssemblies(List<Assembly> assemblies)
+		{
+			
+		}
+
+		public static void GenerateAllReferencedAssemblies(UsamService usam)
+		{
+			GenerateAllAssemblies(usam, usam.AssemblyService.ReferencedAssemblies.ToList());
+		}
+		
 		/// <summary>
 		/// AssemblyUtil.Reload(); must be called before this
 		/// </summary>
 		/// <param name="beamCommands"></param>
-		public static void GenerateAllReferencedAssemblies(UsamService usam)
+		public static void GenerateAllAssemblies(UsamService usam, List<Assembly> assemblies)
 		{
-			var asmUtil = usam.AssemblyService;
 			var cli = usam.Cli;
-			foreach (var assembly in asmUtil.ReferencedAssemblies)
+			foreach (var assembly in assemblies)
 			{
 				var path = GenerateCsharpProjectPath(assembly);
 				var content = GenerateCsharpProject(assembly, path);
@@ -198,11 +207,13 @@ Do not add them from the custom solution file that opens from Beam Services wind
 
 			foreach (var dll in assembly.compiledAssemblyReferences)
 			{
-				if (!dll.StartsWith(projectRoot)) continue;
-				var dllPath = dll.Substring(projectRoot.Length + 1);
-				var dllName = Path.GetFileName(dllPath);
+				var fullDllName = Path.GetFullPath(dll);
+				
+				if (!fullDllName.StartsWith(projectRoot)) continue;
+				// var dllPath = dll.Substring(fullDllName.Length + 1);
+				var dllName = Path.GetFileName(fullDllName);
 				if (!IsValidReference(dllName.Replace(".dll", ""))) continue;
-				yield return dllPath;
+				yield return FileUtil.GetProjectRelativePath(fullDllName);
 			}
 
 			yield break;
