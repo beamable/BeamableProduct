@@ -25,22 +25,10 @@ namespace Beamable.Editor.ToolbarExtender
 		{
 			if (editorApi.IsAuthenticated)
 			{
-				menu.AddItem(new GUIContent($"Account: {editorApi.CurrentUser.email}"), false, () =>
+				menu.AddItem(new GUIContent($"Account: {editorApi?.CurrentUser?.email ?? ("(unknown)")}"), false, () =>
 				{
 					var _ = LoginWindow.Init();
 				});
-				// menu.AddItem(new GUIContent("Log Out"), false, () =>
-				// {
-				// 	editorApi.Logout(false);
-				// });
-				//
-			}
-			else
-			{
-				// menu.AddItem(new GUIContent("Log In"), false, () =>
-				// {
-				// 	var _ = LoginWindow.CheckLogin();
-				// });
 			}
 		}
 

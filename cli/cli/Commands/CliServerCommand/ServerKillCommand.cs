@@ -16,7 +16,7 @@ public class ServerKillCommandResult
 	public List<ServerDescriptor> stoppedServers = new List<ServerDescriptor>();
 }
 
-public class ServerKillCommand : AtomicCommand<ServerKillCommandArgs, ServerKillCommandResult>
+public class ServerKillCommand : AtomicCommand<ServerKillCommandArgs, ServerKillCommandResult>, IStandaloneCommand, ISkipManifest
 {
 	public override bool AutoLogOutput => false;
 

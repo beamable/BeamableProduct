@@ -5,6 +5,7 @@ using Beamable.Common.Dependencies;
 using BeamableReflection;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using ItemProperty = Beamable.Common.Api.Inventory.ItemProperty;
 
 namespace Beamable.Common
@@ -25,27 +26,87 @@ namespace Beamable.Common
 	}
 
 	/// <summary>
+	/// Uniquely identifies a federation implementation. 
+	/// </summary>
+	[AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
+	public class FederationIdAttribute : System.Attribute
+	{
+		public string FederationId { get; }
+
+		public FederationIdAttribute(string federationId)
+		{
+			FederationId = federationId;
+		}
+	}
+
+	public static class FederationIdUtil
+	{
+
+		/// <summary>
+		/// Get the federation id string from a type of <see cref="IFederationId"/>.
+		/// The FederationId is the the unique name of a federation implementation. 
+		/// </summary>
+		/// <param name="federationId"></param>
+		/// <returns></returns>
+		public static string GetUniqueName(Type federationIdType)
+		{
+			var attribute = federationIdType.GetCustomAttribute<FederationIdAttribute>();
+			if (attribute == null)
+			{
+				throw new Exception(
+					$"{nameof(FederationIdAttribute)} is required on type {federationIdType.FullName}");
+			}
+			return attribute.FederationId;
+		}
+				
+		/// <summary>
+		/// Get the federation id string from a type of <see cref="IFederationId"/>.
+		/// The FederationId is the the unique name of a federation implementation. 
+		/// </summary>
+		/// <param name="federationId"></param>
+		/// <returns></returns>
+		public static string GetUniqueName<T>() where T : IFederationId
+		{
+			return GetUniqueName(typeof(T));
+		}
+
+		/// <summary>
+		/// Get the federation id string from an instance of <see cref="IFederationId"/>.
+		/// The FederationId is the the unique name of a federation implementation. 
+		/// </summary>
+		/// <param name="federationId"></param>
+		/// <returns></returns>
+		public static string GetUniqueName(this IFederationId federationId)
+		{
+			return GetUniqueName(federationId?.GetType());
+		}
+	}
+
+	/// <summary>
 	/// Uniquely identifies a federation implementation.
 	/// This enables different implementations of the same federation to be active at the same time.
 	///
+	/// Must have the <see cref="FederationIdAttribute"/> on the class. 
+	/// 
 	/// For example, <see cref="IFederatedLogin{T}"/> is used to implement external auth. A game might want different implementations for `epic`, `steam`, or some other third-party account holder.  
 	/// </summary>
 	[Preserve]
 	public interface IFederationId
 	{
-		/// <summary>
-		/// This should be a constant string: UniqueName => "my_federation_id".
-		/// </summary>
-		string UniqueName { get; }
+
 	}
 
 	/// <summary>
 	/// Old version of <see cref="IFederationId"/>. To be deleted at next major release.
 	/// </summary>
-	[Preserve, Obsolete("Please use IFederationId instead.")]
+	[Preserve, Obsolete("Please use " + nameof(IFederationId) + " instead.")]
 	public interface IThirdPartyCloudIdentity : IFederationId
 	{
-		// No longer used internally!!!
+		/// <summary>
+		/// This should be a constant string: UniqueName => "my_federation_id".
+		/// </summary>
+		[Obsolete("Please use " + nameof(FederationIdUtil.GetUniqueName) + "() instead.")]
+		string UniqueName { get; }
 	}
 
 	/// <summary>

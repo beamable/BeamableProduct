@@ -191,8 +191,9 @@ namespace Beamable.Server.Generator
 		}
 
 		 bool GetTypeReference(Type federationType, out CodeTypeReference codeTypeReference)
-		{
-			var federationId = ((IFederationId)Activator.CreateInstance(federationType)).UniqueName;
+		 {
+			 
+			var federationId = FederationIdUtil.GetUniqueName(federationType);
 			var existingFederation = _existingFederations.FirstOrDefault(x => x.federationId == federationId);
 			if (existingFederation != null)
 			{

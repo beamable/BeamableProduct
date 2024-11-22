@@ -73,7 +73,7 @@ public class FederationLocalSettingsCommand : CommandGroup
 		if (sd.Protocol is not BeamoProtocolType.HttpMicroservice)
 			throw new CliException("Non-Microservice beamo-id specified", 3, true);
 
-		if (!sd.SourceGenConfig.Federations.TryGetValue(args.FederationId, out var federations))
+		if (!sd.FederationsConfig.Federations.TryGetValue(args.FederationId, out var federations))
 			throw new CliException($"Specified beamo-id does not have a federation with the given id [{args.FederationId}]", 4, true);
 
 		var hasFederation = false;

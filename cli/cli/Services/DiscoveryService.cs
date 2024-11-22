@@ -620,7 +620,7 @@ public class DiscoveryService
 						if (_localSystem.BeamoManifest.TryGetDefinition(service.serviceName, out var definition))
 						{
 							groups = definition.ServiceGroupTags;
-							fedConfig = definition.SourceGenConfig.Federations;
+							fedConfig = definition.FederationsConfig.Federations;
 						}
 
 						var feds = fedConfig?.Select(kvp =>
@@ -740,7 +740,7 @@ public class DiscoveryService
 			startedByAccountId = startedByAccountId,
 			groups = groups,
 			federations = serviceDefinition.Protocol == BeamoProtocolType.HttpMicroservice
-				? definition.SourceGenConfig.Federations.Select(kvp => new FederationInstance
+				? definition.FederationsConfig.Federations.Select(kvp => new FederationInstance
 				{
 					FederationId = kvp.Key,
 					FederationTypes = kvp.Value.Select(v => v.Interface).ToArray(),

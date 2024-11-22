@@ -96,7 +96,7 @@ public class SetAllFederationsCommand
 		}
 
 		// clear the configuration, because we are about to completely set it.
-		selectedService.SourceGenConfig.Federations.Clear();
+		selectedService.FederationsConfig.Federations.Clear();
 
 		if (!args.clear)
 		{
@@ -117,7 +117,7 @@ public class SetAllFederationsCommand
 
 			foreach (var kvp in dict)
 			{
-				selectedService.SourceGenConfig.Federations.Add(kvp.Key, kvp.Value.ToArray());
+				selectedService.FederationsConfig.Federations.Add(kvp.Key, kvp.Value.ToArray());
 			}
 		}
 		

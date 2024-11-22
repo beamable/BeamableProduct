@@ -39,10 +39,10 @@ public static class ProjectContextUtil
 
 	public static async Task SerializeSourceGenConfigToDisk(string rootFolder, BeamoServiceDefinition selectedService)
 	{
-		var serializedSourceGenConfig = System.Text.Json.JsonSerializer.Serialize(selectedService.SourceGenConfig, new JsonSerializerOptions { IncludeFields = true});
+		var serializedSourceGenConfig = System.Text.Json.JsonSerializer.Serialize(selectedService.FederationsConfig, new JsonSerializerOptions { IncludeFields = true});
 		
 		var projectDir = Path.GetDirectoryName(selectedService.AbsoluteProjectPath);
-		var sourceGenPath = Path.Combine(projectDir, MicroserviceSourceGenConfig.CONFIG_FILE_NAME);
+		var sourceGenPath = Path.Combine(projectDir, MicroserviceFederationsConfig.CONFIG_FILE_NAME);
 		// Because this can be invoked from any point inside the root folder,
 		// we have to figure out the absolute path to the file so we can call File.Write/Read apis correctly. 
 		sourceGenPath = Path.Combine(rootFolder, sourceGenPath);
@@ -192,7 +192,7 @@ public static class ProjectContextUtil
 		await Task.WhenAll(microservicesOnly.Select(sd =>
 		{
 			var projectDir = Path.GetDirectoryName(sd.AbsoluteProjectPath);
-			var sourceGenPath = Path.Combine(projectDir, MicroserviceSourceGenConfig.CONFIG_FILE_NAME);
+			var sourceGenPath = Path.Combine(projectDir, MicroserviceFederationsConfig.CONFIG_FILE_NAME);
 			
 			// Because this can be invoked from any point inside the root folder,
 			// we have to figure out the absolute path to the file so we can call File.Write/Read apis correctly. 
@@ -208,7 +208,7 @@ public static class ProjectContextUtil
 		var sourceGenFiles = await Task.WhenAll(microservicesOnly.Select(sd =>
 		{
 			var projectDir = Path.GetDirectoryName(sd.AbsoluteProjectPath);
-			var sourceGenPath = Path.Combine(projectDir, MicroserviceSourceGenConfig.CONFIG_FILE_NAME);
+			var sourceGenPath = Path.Combine(projectDir, MicroserviceFederationsConfig.CONFIG_FILE_NAME);
 			
 			// Because this can be invoked from any point inside the root folder,
 			// we have to figure out the absolute path to the file so we can call File.Write/Read apis correctly.
@@ -222,19 +222,19 @@ public static class ProjectContextUtil
 		{
 			try
 			{
-				sd.SourceGenConfig = System.Text.Json.JsonSerializer.Deserialize<MicroserviceSourceGenConfig>(cfg, new JsonSerializerOptions(){ IncludeFields = true });
+				sd.FederationsConfig = System.Text.Json.JsonSerializer.Deserialize<MicroserviceFederationsConfig>(cfg, new JsonSerializerOptions(){ IncludeFields = true });
 			}
 			catch (Exception e)
 			{
 				var projectDir = Path.GetDirectoryName(sd.AbsoluteProjectPath);
-				var sourceGenPath = Path.Combine(projectDir, MicroserviceSourceGenConfig.CONFIG_FILE_NAME);
+				var sourceGenPath = Path.Combine(projectDir, MicroserviceFederationsConfig.CONFIG_FILE_NAME);
 			
 				// Because this can be invoked from any point inside the root folder,
 				// we have to figure out the absolute path to the file so we can call File.Write/Read apis correctly.
 				sourceGenPath = Path.Combine(rootFolder, sourceGenPath);
 				
 				Log.Fatal(e, "Failed to load source gen config");
-				throw new CliException($"Failed to parse {nameof(MicroserviceSourceGenConfig)} at {sourceGenPath}. Please make sure the source gen config is valid json.");
+				throw new CliException($"Failed to parse {nameof(MicroserviceFederationsConfig)} at {sourceGenPath}. Please make sure the source gen config is valid json.");
 			}
 		}
 

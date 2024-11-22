@@ -80,7 +80,7 @@ namespace Beamable.Server.Editor.Usam
 					{
 						args.existingFedTypeNames[i] = $"{federationType.Namespace}.{federationType.Name}";
 					}
-					args.existingFedIds[i] = federation.UniqueName;
+					args.existingFedIds[i] = federation.GetUniqueName();
 				}
 			}
 

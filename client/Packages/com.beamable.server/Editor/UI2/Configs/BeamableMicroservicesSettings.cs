@@ -146,7 +146,7 @@ namespace Beamable.Editor.Microservice.UI2.Configs
 				var federationIdTypes = UsamService.CompiledFederationIds;
 				foreach (var fedIdInstance in federationIdTypes)
 				{
-					availableFederationIds.Add(fedIdInstance.UniqueName);
+					availableFederationIds.Add(fedIdInstance.GetUniqueName());
 				}
 			}
 

@@ -12,7 +12,7 @@ namespace Beamable.Server
 
 		private static string GetServiceNamespace<T>() where T : IFederationId, new()
 		{
-			return ServiceNamespaceCache.GetOrAdd(typeof(T), _ => new T().UniqueName);
+			return ServiceNamespaceCache.GetOrAdd(typeof(T), _ => new T().GetUniqueName());
 		}
 
 		public static Promise<AttachExternalIdentityResponse> AttachIdentity<T>(this ISupportsFederatedLogin<T> client,
