@@ -119,7 +119,7 @@ public class ServiceDocGenerator
 			var federatedType = it.GetGenericArguments()[0];
 			if (Activator.CreateInstance(federatedType) is IFederationId identity)
 			{
-				string componentName = $"{typeName}/{identity?.UniqueName}";
+				string componentName = $"{typeName}/{identity?.GetUniqueName()}";
 				apiComponents.Add(new OpenApiString(componentName));
 			}
 		}

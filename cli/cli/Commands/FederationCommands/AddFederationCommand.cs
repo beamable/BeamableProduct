@@ -55,8 +55,8 @@ public class AddFederationCommand : StreamCommand<AddFederationCommandArgs, AddF
 		// Make sure this id/federation-type pair is not in use by any existing services.  
 		var numberOfServicesWithId = manifest.ServiceDefinitions
 			.Where(sd => sd.Protocol is BeamoProtocolType.HttpMicroservice)
-			.Where(sd => sd.SourceGenConfig.Federations.ContainsKey(args.FederationId))
-			.Count(sd => sd.SourceGenConfig.Federations[args.FederationId].Any(f => f.Interface.Contains(args.FederationInterface)));
+			.Where(sd => sd.FederationsConfig.Federations.ContainsKey(args.FederationId))
+			.Count(sd => sd.FederationsConfig.Federations[args.FederationId].Any(f => f.Interface.Contains(args.FederationInterface)));
 		if (numberOfServicesWithId >= 1)
 		{
 			var err = $"FederationId [{args.FederationId}] already added for federation type [{args.FederationInterface}].";
@@ -64,7 +64,7 @@ public class AddFederationCommand : StreamCommand<AddFederationCommandArgs, AddF
 		}
 
 		// Now that we know the id/type pair is not in use, we can add it to the selected service.
-		selectedService.SourceGenConfig.Federations.Add(args.FederationId, new[] { new FederationInstanceConfig { Interface = args.FederationInterface } });
+		selectedService.FederationsConfig.Federations.Add(args.FederationId, new[] { new FederationInstanceConfig { Interface = args.FederationInterface } });
 
 		// Serialize the updated source gen config to disk
 		await ProjectContextUtil.SerializeSourceGenConfigToDisk(args.ConfigService.BaseDirectory, selectedService);

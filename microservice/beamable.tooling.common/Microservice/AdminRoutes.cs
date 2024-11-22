@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Util;
 using beamable.server;
@@ -128,7 +129,7 @@ namespace microservice.Common
 		      routingKey = routingKey,
 		      federatedComponents = FederationComponents?.Select(x => new FederationComponentMetadata
 		      {
-			      federationNamespace = x.identity.UniqueName,
+			      federationNamespace = x.identity.GetUniqueName(),
 			      federationType = x.typeName
 		      }).ToList()
 	      };

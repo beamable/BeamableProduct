@@ -33,6 +33,7 @@ namespace Beamable.Editor.Microservice.UI2
 			
 			var isRunning = usam.IsRunningLocally(status);
 			var isLoading = usam.IsLoadingLocally(status);
+			var isCreating = usam.IsCreatingLocally(status.service);
 
 			{ // draw any loading bar we need...
 				var loadingRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandWidth(true),
@@ -74,7 +75,7 @@ namespace Beamable.Editor.Microservice.UI2
 				}
 
 				var isProductionRealm = ActiveContext.CurrentRealm.IsProduction;
-				BeamGUI.ShowDisabled(!isProductionRealm, () =>
+				BeamGUI.ShowDisabled(!isProductionRealm && !isCreating, () =>
 				{
 					var tooltip = isRunning
 						? "Shutdown the service "
@@ -83,6 +84,11 @@ namespace Beamable.Editor.Microservice.UI2
 					{
 						tooltip =
 							"Cannot start the service on a production realm. Please switch to a non production realm";
+					}
+
+					if (isCreating)
+					{
+						tooltip = "The service is still being created...";
 					}
 
 					clickedRunToggle = BeamGUI.HeaderButton(null, icon,

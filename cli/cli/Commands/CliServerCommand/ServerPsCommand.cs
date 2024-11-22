@@ -41,7 +41,7 @@ public class ServerDescriptor
 	public string version;
 }
 
-public class ServerPsCommand : StreamCommand<ServerPsCommandArgs, ServerPsCommandResult>
+public class ServerPsCommand : StreamCommand<ServerPsCommandArgs, ServerPsCommandResult>, IStandaloneCommand, ISkipManifest
 {
 	private static readonly IPAddress Ip = IPAddress.Loopback;
 	private static HttpClient _client = new HttpClient();

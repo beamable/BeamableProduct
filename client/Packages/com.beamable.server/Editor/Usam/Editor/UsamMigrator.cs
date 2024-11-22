@@ -659,7 +659,7 @@ namespace Beamable.Server.Editor.Usam
 					foreach (var federationComponent in service.FederationComponents)
 					{
 						allFedTypes.Add(federationComponent.typeName);
-						allFedIds.Add(federationComponent.identity.UniqueName);
+						allFedIds.Add(federationComponent.identity.GetUniqueName());
 					}
 
 					migration.federationStep = new MigrationFederationStep()

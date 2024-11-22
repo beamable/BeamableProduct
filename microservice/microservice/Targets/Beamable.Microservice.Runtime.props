@@ -59,7 +59,7 @@
     </ItemDefinitionGroup>
 
     <ItemGroup>
-        <AdditionalFiles Include="BeamSourceGenConfig.json">
+        <AdditionalFiles Include="federations.json">
             <Visible>false</Visible>
         </AdditionalFiles>
     </ItemGroup>

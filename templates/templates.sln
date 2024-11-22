@@ -30,6 +30,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "unityenginestubs.addressabl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "microserviceTests", "..\microservice\microserviceTests\microserviceTests.csproj", "{71D75B37-8C7E-43EE-8707-52C212979207}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MicroserviceSourceGen.Tests.DepTest", "SourceGen\MicroserviceSourceGen.Tests.DepTest\MicroserviceSourceGen.Tests.DepTest.csproj", "{6F707E72-9B5C-4D63-92D0-00CBE745AB4E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -96,5 +98,9 @@ Global
 		{71D75B37-8C7E-43EE-8707-52C212979207}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{71D75B37-8C7E-43EE-8707-52C212979207}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{71D75B37-8C7E-43EE-8707-52C212979207}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F707E72-9B5C-4D63-92D0-00CBE745AB4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F707E72-9B5C-4D63-92D0-00CBE745AB4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F707E72-9B5C-4D63-92D0-00CBE745AB4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F707E72-9B5C-4D63-92D0-00CBE745AB4E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

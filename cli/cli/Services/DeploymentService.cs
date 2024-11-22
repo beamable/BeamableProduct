@@ -1297,7 +1297,7 @@ public partial class DeployUtil
 			progressHandler?.Invoke("skip  " + definition.BeamoId, 1, serviceName: definition.BeamoId);
 		}
 
-		var feds = definition.SourceGenConfig?.Federations ?? new FederationsConfig();
+		var feds = definition.FederationsConfig?.Federations ?? new FederationsConfig();
 		var components = feds.SelectMany(kvp =>
 		{
 			return kvp.Value.Select(x => new ServiceComponent

@@ -902,7 +902,7 @@ namespace Beamable.Server
 		      trafficFilterEnabled = true,
 		      federation = new OptionalArrayOfSupportedFederation(FederationComponents.Select(component =>
 		      {
-			      var idToUse = component.identity.UniqueName;
+			      var idToUse = component.identity.GetUniqueName();
 			      var typeToUse = FederatedComponentGenerator.GetFederationType(component.typeName);
 			      var settingsToUse = new OptionalJsonString();
 			      if (!string.IsNullOrEmpty(routingKey))

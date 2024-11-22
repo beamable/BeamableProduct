@@ -81,7 +81,7 @@ public class ShowManifestCommand : AtomicCommand<ShowManifestCommandArgs, ShowMa
 				shouldBeEnabledOnRemote = definition.ShouldBeEnabledOnRemote,
 				storageDependencies = http.StorageDependencyBeamIds,
 				unityReferences = http.UnityAssemblyDefinitionProjectReferences,
-				federations = definition.SourceGenConfig.Federations.SelectMany(kvp =>
+				federations = definition.FederationsConfig.Federations.SelectMany(kvp =>
 				{
 					var results = new List<FederationEntry>();
 					foreach (var fed in kvp.Value)

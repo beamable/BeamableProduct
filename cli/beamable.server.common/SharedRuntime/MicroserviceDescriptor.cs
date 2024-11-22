@@ -67,7 +67,7 @@ namespace Beamable.Server.Editor
 		public IFederationId identity;
 		public string typeName;
 
-		public string ComponentName => $"{typeName}/{identity?.UniqueName}";
+		public string ComponentName => $"{typeName}/{identity?.GetUniqueName()}";
 	}
 
 	[Serializable]

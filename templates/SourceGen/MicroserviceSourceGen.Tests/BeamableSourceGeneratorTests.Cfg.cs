@@ -10,7 +10,7 @@ public partial class BeamableSourceGeneratorTests
 	public void Test_Diagnostic_Cfg_NoSourceGenConfigFound()
 	{
 		// We are testing the detection
-		PrepareForRun(Array.Empty<MicroserviceSourceGenConfig>(), new[] { "" });
+		PrepareForRun(Array.Empty<MicroserviceFederationsConfig>(), new[] { "" });
 
 		// Run generators and retrieve all results.
 		var runResult = Driver.RunGenerators(Compilation).GetRunResult();
@@ -23,7 +23,7 @@ public partial class BeamableSourceGeneratorTests
 	public void Test_Diagnostic_Cfg_MultipleSourceGenConfigsFound()
 	{
 		// We are testing the detection
-		PrepareForRun(new MicroserviceSourceGenConfig[] { new(), new() }, new[] { "" });
+		PrepareForRun(new MicroserviceFederationsConfig[] { new(), new() }, new[] { "" });
 
 		// Run generators and retrieve all results.
 		var runResult = Driver.RunGenerators(Compilation).GetRunResult();
@@ -36,7 +36,7 @@ public partial class BeamableSourceGeneratorTests
 	public void Test_Diagnostic_Cfg_FailedToDeserializeSourceGenConfig()
 	{
 		// We are testing the detection
-		PrepareForRun(new MicroserviceSourceGenConfig?[] { new() }, new[] { "" }, true);
+		PrepareForRun(new MicroserviceFederationsConfig?[] { new() }, new[] { "" }, true);
 
 		// Run generators and retrieve all results.
 		var runResult = Driver.RunGenerators(Compilation).GetRunResult();
@@ -48,7 +48,7 @@ public partial class BeamableSourceGeneratorTests
 	[Fact]
 	public void Test_Diagnostic_Cfg_SuccessfullyDeserializeSourceGenConfig()
 	{
-		var cfg = new MicroserviceSourceGenConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
 
 		// We are testing the detection
 		PrepareForRun(new[] { cfg }, new[] { "" });

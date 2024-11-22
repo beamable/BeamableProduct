@@ -24,6 +24,7 @@
         <ProjectReference Include="..\..\..\cli\beamable.common\beamable.common.csproj"/>
         <ProjectReference Include="..\..\..\microservice\beamable.tooling.common\beamable.tooling.common.csproj"/>
         <ProjectReference Include="..\..\MicroserviceSourceGen\MicroserviceSourceGen\MicroserviceSourceGen.csproj"/>
+        <ProjectReference Include="..\MicroserviceSourceGen.Tests.DepTest\MicroserviceSourceGen.Tests.DepTest.csproj" />
     </ItemGroup>
 
 </Project>
