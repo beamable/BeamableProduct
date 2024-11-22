@@ -5,10 +5,14 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
+using UnityEngine;
 using SourceProductionContext = Microsoft.CodeAnalysis.SourceProductionContext;
 
 namespace Beamable.Server;
@@ -75,9 +79,10 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 		if (!isFedValid)
 			return;
 
-		// Generate the code for federations
-		GenerateFederationCode(context, info, config);
-
+		// Add a report that we successfully generated the federation code.
+		var federationCodeGenSuccess = Diagnostic.Create(Diagnostics.Fed.FederationCodeGeneratedProperly, null);
+		context.ReportDiagnostic(federationCodeGenSuccess);
+		
 		return;
 
 		static MicroserviceSourceGenConfig? ParseBeamSourceGen(SourceProductionContext context, ImmutableArray<(string Path, string Text)> beamSourceGenConfigFiles)
@@ -187,35 +192,56 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 		{
 			var isValid = true;
 			var federations = beamSourceGenConfig.Federations;
-			foreach (var (id, _, federation) in info.ImplementedFederations)
-			{
-				if (string.IsNullOrEmpty(id))
-				{
-					// TODO: EMIT WE COULDN'T FIND YOUR ID FROM YOUR HANDWRITTEN TYPE BECAUSE IT WAS NOT A STRING LITERAL. PLEASE DO NOT USE CONSTS AND USE ONE OF THESE FORMATS.
-					var error = Diagnostic.Create(Diagnostics.Fed.DeclaredFederationMissingFederationId, info.MicroserviceClassLocation, info.Name, id, federation.Interface);
-					context.ReportDiagnostic(error);
-					isValid = false;
-				}
-				else if (!federations.TryGetValue(id, out var declaredInstances))
-				{
-					// EMIT FEDERATION_ID NOT DECLARED
-					var error = Diagnostic.Create(Diagnostics.Fed.DeclaredFederationMissingFromSourceGenConfig, info.MicroserviceClassLocation, info.Name, id, federation.Interface);
-					context.ReportDiagnostic(error);
-					isValid = false;
-				}
-				// If we can't find the specific interface declared for this Id in the config file, this is an error.
-				else if (!declaredInstances.Contains(federation))
-				{
-					// EMIT FEDERATION MISSING
-					var error = Diagnostic.Create(Diagnostics.Fed.DeclaredFederationMissingFromSourceGenConfig, info.MicroserviceClassLocation, info.Name, id, federation.Interface);
-					context.ReportDiagnostic(error);
-					isValid = false;
-				}
-				else
-				{
-					// No need to do anything if we are already declared.
-				}
 
+			Dictionary<string, (string Id, string Interface)> flatConfig = federations.SelectMany(kvp => kvp.Value.Select(f => (kvp.Key, f.Interface))).ToDictionary(x => $"{x.Key}/{x.Interface}");
+
+			var flatCode = info.ImplementedFederations.Where(f => f.Id != null).ToDictionary(x => $"{x.Id}/{x.Federation.Interface}");
+			var flatIds = flatConfig.Select(f => f.Value.Id).ToList();
+			flatIds.AddRange(flatCode.Where(f => f.Value.Id != null).Select(f => f.Value.Id));
+
+			foreach (var fed in info.ImplementedFederations)
+			{
+				if (fed.Id == null)
+				{
+					var error = Diagnostic.Create(Diagnostics.Fed.FederationIdMissingAttribute, fed.Location, fed.Id);
+					context.ReportDiagnostic(error);
+					isValid = false;
+				}
+			}
+			
+			var flatIdSet = new HashSet<string>(flatIds);
+			
+			var configsThatDoNotExistInCode = flatConfig.Keys.Except(flatCode.Keys).ToList();
+			var codeThatDoesNotExistInConfig = flatCode.Keys.Except(flatConfig.Keys).ToList();
+
+			foreach (var configKey in configsThatDoNotExistInCode)
+			{
+				var (fedId, fedInterface) = flatConfig[configKey];
+				isValid = false;
+				var error = Diagnostic.Create(
+					Diagnostics.Fed.ConfiguredFederationMissingFromCode,
+					info.MicroserviceClassLocation, 
+					info.Name, 
+					fedId, 
+					fedInterface);
+				context.ReportDiagnostic(error);
+			}
+
+			foreach (var codeKey in codeThatDoesNotExistInConfig)
+			{
+				var (fedId, fedClassName, fedInstConfig, location) = flatCode[codeKey];
+				isValid = false;
+				var error = Diagnostic.Create(
+					Diagnostics.Fed.DeclaredFederationMissingFromSourceGenConfig,
+					info.MicroserviceClassLocation, 
+					info.Name, 
+					fedId, 
+					fedInstConfig.Interface);
+				context.ReportDiagnostic(error);
+			}
+
+			foreach (var id in flatIdSet)
+			{
 				if (!ValidateId(id))
 				{
 					// EMIT FEDERATION INVALID ID
@@ -225,17 +251,6 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 				}
 			}
 			
-			foreach (var kvp in beamSourceGenConfig.Federations)
-			{
-				if (!ValidateId(kvp.Key))
-				{
-					// EMIT FEDERATION INVALID ID
-					var error = Diagnostic.Create(Diagnostics.Fed.DeclaredFederationInvalidFederationId, info.MicroserviceClassLocation, info.Name, kvp.Key);
-					context.ReportDiagnostic(error);
-					isValid = false;
-				}
-			}
-
 			return isValid;
 			
 			// First digit can't be a number
@@ -262,81 +277,6 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 			
 		}
 
-		static void GenerateFederationCode(SourceProductionContext sourceProductionContext, MicroserviceInfo microserviceInfo, MicroserviceSourceGenConfig beamSourceGenConfig)
-		{
-			// Declare the FederationId file's "header"
-			var federationIdsFile = new StringBuilder(2048);
-			federationIdsFile.Append($@"
-using Beamable.Common;
-using Beamable.Server;
-
-namespace {microserviceInfo.Namespace} {{
-");
-
-			// We have one partial file per-id that holds all the interfaces declarations for that id.
-			var partialFileBuilder = new StringBuilder(2048);
-
-			var federationIds = beamSourceGenConfig.Federations.Keys.ToImmutableArray();
-			foreach (string federationId in federationIds)
-			{
-				string federationIdClassName;
-				// If the Federation ID is NOT handwritten, generate code for the ID class.
-				var implementedFederationId = microserviceInfo.ImplementedFederations.FirstOrDefault(fed => fed.Id == federationId);
-				if (implementedFederationId == default)
-				{
-					federationIdClassName = string.Concat(federationId[0].ToString().ToUpper(), federationId.Substring(1, federationId.Length - 1), "Id");
-					// Add the IFederatedId implementation
-					federationIdsFile.AppendLine();
-					federationIdsFile.Append($@"
-	public class {federationIdClassName} : IFederationId {{
-		public string UniqueName => ""{federationId}"";
-	}}
-");
-				}
-				// If it is handwritten, capture the class name for the id class so we can declare federations that are NOT handwritten.
-				else
-				{
-					federationIdClassName = implementedFederationId.ClassName;
-				}
-
-				// Clear the text for this federation id's partial microservice declarations
-				partialFileBuilder.Clear();
-				partialFileBuilder.Append($@"
-using Beamable.Common;
-using Beamable.Server;
-
-namespace {microserviceInfo.Namespace} {{
-");
-
-				// Add the partial declarations that implements the federation interfaces
-				var interfaces = beamSourceGenConfig.Federations[federationId];
-				foreach (var instanceConfig in interfaces)
-				{
-					// Only generate code for the federations that the user does not Hand-write
-					var handwrittenImplementation = microserviceInfo.ImplementedFederations.FirstOrDefault(fed => fed.Id == federationId && fed.Federation.Interface == instanceConfig.Interface);
-					if (handwrittenImplementation == default)
-					{
-						partialFileBuilder.AppendLine();
-						partialFileBuilder.Append($@"
-	public partial class {microserviceInfo.Name} : {instanceConfig.Interface}<{federationIdClassName}> {{	
-	}}
-");
-					}
-				}
-
-				partialFileBuilder.AppendLine("}");
-
-				sourceProductionContext.AddSource($"{microserviceInfo.Name}.{federationId}.g.cs", partialFileBuilder.ToString());
-			}
-
-			federationIdsFile.AppendLine("}");
-
-			sourceProductionContext.AddSource($"{microserviceInfo.Name}.FederationIds.g.cs", federationIdsFile.ToString());
-
-			// Add a report that we successfully generated the federation code.
-			var federationCodeGenSuccess = Diagnostic.Create(Diagnostics.Fed.FederationCodeGeneratedProperly, null);
-			sourceProductionContext.ReportDiagnostic(federationCodeGenSuccess);
-		}
 	}
 
 	public readonly record struct MicroserviceInfo : IEquatable<MicroserviceInfo>
@@ -348,8 +288,8 @@ namespace {microserviceInfo.Namespace} {{
 		public bool HasMicroserviceAttribute { get; }
 		public Location? MicroserviceAttributeLocation { get; }
 		public bool IsPartial { get; }
-		public List<(string Id, string ClassName, FederationInstanceConfig Federation)> ImplementedFederations { get; }
-
+		public List<(string Id, string ClassName, FederationInstanceConfig Federation, Location Location)> ImplementedFederations { get; }
+		
 		public MicroserviceInfo(INamedTypeSymbol type)
 		{
 			Namespace = type.ContainingNamespace.IsGlobalNamespace
@@ -375,80 +315,45 @@ namespace {microserviceInfo.Namespace} {{
 				// Find the first type arg of the federation interface that implements IFederationId
 				var federationIdType = i.TypeArguments.First(t => t.Interfaces.Any(typeArgInterface => typeArgInterface.Name is nameof(IFederationId) or nameof(IThirdPartyCloudIdentity)));
 				var className = federationIdType.Name;
-				foreach (ISymbol m in federationIdType.GetMembers())
+
+				var fedAttribute = federationIdType
+					.GetAttributes()
+					.FirstOrDefault(a => a?.AttributeClass?.Name == nameof(FederationIdAttribute));
+
+				var fedValue = fedAttribute?.ConstructorArguments.FirstOrDefault();
+				if (fedValue == null)
 				{
-					// If we can't find the Unique Name declaration...
-					if (m is not IPropertySymbol { Name: nameof(IFederationId.UniqueName) } p)
-						continue;
-
-					// Find the id...
-					var syntaxNode = p.GetMethod?.DeclaringSyntaxReferences[0].GetSyntax();
-					if (syntaxNode is AccessorDeclarationSyntax accessor)
-					{
-						// UniqueName { get => "someId"; }
-						if (accessor.ExpressionBody is { } arrowClause)
-						{
-							// Return that literal as the id.
-							if (arrowClause!.Expression is LiteralExpressionSyntax) id = arrowClause!.Expression.ToString().Replace("\"", "");
-							else id = "";
-						}
-						// UniqueName { get { return "someId"; } }
-						else
-						{
-							// Find the return statement that returns a string literal
-							var returnStatement = accessor.Body?.ChildNodes()
-								.OfType<ReturnStatementSyntax>().First(r => r.Expression is LiteralExpressionSyntax);
-
-							// Return that literal as the id.
-							if (returnStatement!.Expression is LiteralExpressionSyntax) id = returnStatement!.Expression.ToString().Replace("\"", "");
-							else id = "";
-						}
-					}
-					// UniqueName => "someId";
-					else if (syntaxNode is ArrowExpressionClauseSyntax arrowClause)
-					{
-						if (arrowClause.Expression is LiteralExpressionSyntax) id = arrowClause.Expression.ToString().Replace("\"", "");
-						else id = "";
-					}
-					else
-					{
-						id = "";
-					}
+					id = null;
 				}
-
-				ImplementedFederations.Add((id, className, new FederationInstanceConfig() { Interface = federationInterfaceName }));
+				else
+				{
+					id = fedValue.Value.Value?.ToString();
+				}
+				
+				ImplementedFederations.Add((
+					id, 
+					className, 
+					new FederationInstanceConfig() { Interface = federationInterfaceName },
+					federationIdType.Locations[0]
+					));
 			}
 
 			// Check for the microservice attribute so we can validate its name does not have any invalid characters.
 			var serviceId = "";
-			var declaringClass = (ClassDeclarationSyntax)type.DeclaringSyntaxReferences[0].GetSyntax();
-			MicroserviceClassLocation = declaringClass.GetLocation();
-			foreach (var attrList in declaringClass.AttributeLists)
+
+			var microserviceAttr = type.GetAttributes().FirstOrDefault(a => a?.AttributeClass?.Name == nameof(MicroserviceAttribute));
+
+			HasMicroserviceAttribute = microserviceAttr != null;
+			if (microserviceAttr != null)
 			{
-				foreach (AttributeSyntax attr in attrList.Attributes)
-				{
-					HasMicroserviceAttribute = attr.Name.ToString().EndsWith(nameof(MicroserviceAttribute)) ||
-					                           attr.Name.ToString().EndsWith(nameof(MicroserviceAttribute).Substring(0, nameof(MicroserviceAttribute).Length - "Attribute".Length));
-
-					if (HasMicroserviceAttribute)
-					{
-						var argList = attr.ArgumentList;
-						if (argList != null)
-						{
-							var arg = argList.Arguments[0];
-							serviceId = arg.Expression.ToString().Replace("\"", "");
-						}
-
-						MicroserviceAttributeLocation = attr.GetLocation();
-
-						break;
-					}
-				}
-
-				if (HasMicroserviceAttribute)
-					break;
+				HasMicroserviceAttribute = true;
+				MicroserviceAttributeLocation = microserviceAttr.ApplicationSyntaxReference.GetSyntax().GetLocation();
 			}
-
+			if (microserviceAttr?.ConstructorArguments.Length > 0)
+			{
+				serviceId = microserviceAttr.ConstructorArguments[0].Value?.ToString();
+			}
+			
 			ServiceId = serviceId;
 		}
 

@@ -58,7 +58,7 @@ namespace Beamable.Reflection
 					{
 						if (FormatterServices.GetUninitializedObject(type) is IFederationId identity)
 						{
-							list.Add(identity.UniqueName);
+							list.Add(identity.GetUniqueName());
 						}
 					}
 					catch (MissingMethodException)

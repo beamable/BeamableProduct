@@ -6,6 +6,7 @@ using Beamable.Server;
 using cli.Dotnet;
 using cli.Services;
 using Serilog;
+using Spectre.Console;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
@@ -115,7 +116,6 @@ public static class ServiceInstanceExtensions
 
 public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckStatusServiceResult>
 {
-	public override bool AutoLogOutput => true;
 
 	public CheckStatusCommand() : base("ps", "List the running status of local services not running in docker")
 	{
@@ -141,7 +141,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 			ref args.services,
 			allowEmptyServices: true);
 
-		TimeSpan timeout = TimeSpan.FromMilliseconds(Beamable.Common.Constants.Features.Services.DISCOVERY_RECEIVE_PERIOD_MS);
+		TimeSpan timeout = TimeSpan.FromMilliseconds(250);
 		if (args.watch)
 		{
 			timeout = default;
@@ -150,6 +150,8 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 		var first = true;
 		updateCount = 0;
 		Log.Debug($"running status-check with watch=[{args.watch}] timeout=[{timeout.Milliseconds}]");
+
+		CheckStatusServiceResult latestUpdate = null;
 		await foreach (var update in CheckStatus(
 			               args,
 			               timeout,
@@ -157,26 +159,107 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 			               args.services,
 			               args.Lifecycle.CancellationToken))
 		{
+			// SendResults(update);
+			if (!args.watch)
+			{
+				latestUpdate = update;
+				continue;
+			}
 			if (first)
 			{
 				// put a clock on, and emit this event if nothing else shows up...
 				//  Otherwise, emit the later event.
 				first = false;
-				var _ = Task.Delay(TimeSpan.FromMilliseconds(100)).ContinueWith(_ =>
+				var _ = Task.Delay(TimeSpan.FromMilliseconds(150)).ContinueWith(_ =>
 				{
-					if (updateCount > 0)
+					if (updateCount == 0)
 					{
-						SendResults(update);
+						Report(update);
 					}
 				});
 			}
 			else
 			{
 				updateCount++;
-				SendResults(update);
+				Report(update);
+			}
+			
+		}
+
+		if (!args.watch)
+		{
+			Report(latestUpdate);
+		}
+
+	}
+	
+	
+	void Report(CheckStatusServiceResult update)
+	{
+		
+		SendResults(update);
+		var table = new Table();
+		table.Border(TableBorder.Simple);
+		void AddColumn(string header) => table.AddColumn($"[bold]{header}[/]");
+		
+		void AddRow(ServiceStatus service, ServicesForRouteCollection route, ServiceInstance instance)
+		{
+			var infoValue = "";
+			if (instance?.latestHostEvent != null)
+			{
+				infoValue = $"health={instance.latestHostEvent.healthPort},pid={instance.latestHostEvent.processId}";
 			}
 		
+			if (instance?.latestDockerEvent != null)
+			{
+				if (service.serviceType == "service")
+				{
+					infoValue =
+						$"health={instance.latestDockerEvent.healthPort},container={instance.latestDockerEvent.containerId.Substring(0,12)}";
+				}
+				else
+				{
+					infoValue =
+						$"data={instance.latestDockerEvent.dataPort},container={instance.latestDockerEvent.containerId.Substring(0,12)}";
+				}
+			}
+		
+			var originValue = "";
+			if (instance?.latestHostEvent != null) originValue = "local";
+			if (instance?.latestDockerEvent != null) originValue = "docker";
+			if (instance?.latestRemoteEvent != null) originValue = "remote";
+			table.AddRow(
+				service.service,
+				service.serviceType,
+				originValue,
+				instance?.startedByAccountEmail ?? "<?>" ,
+				infoValue,
+				string.Join(",", route?.federations?.SelectMany(f => f.FederationTypes?.Select(ft => $"{f.FederationId}/{ft}")) ?? Array.Empty<string>())
+			);
 		}
+		
+		AddColumn("beamoId");
+		AddColumn("type");
+		AddColumn("origin");
+		AddColumn("email");
+		AddColumn("info");
+		AddColumn("federations");
+		
+		foreach (var service in update.services)
+		{
+			foreach (var route in service.availableRoutes)
+			{
+				if (route.instances != null)
+				{
+					foreach (var instance in route.instances)
+					{
+						AddRow(service, route, instance);
+					}
+				}
+			}
+		}
+		Log.Information($"Updated at {DateTimeOffset.Now:T}");
+		AnsiConsole.Write(table);
 	}
 
 	public static async IAsyncEnumerable<CheckStatusServiceResult> CheckStatus(

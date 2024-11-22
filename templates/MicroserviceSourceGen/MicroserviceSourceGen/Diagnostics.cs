@@ -93,23 +93,18 @@ public static class Diagnostics
 			= new("BEAM_FED_O001",
 				$"Missing declared Federation in {nameof(MicroserviceSourceGenConfig)}",
 				$"Missing declared Federation in {nameof(MicroserviceSourceGenConfig)}. Microservice={{0}}, Id={{1}}, Interface={{2}}." +
-				$" Please add this Id by running `dotnet beam fed add {{0}} {{1}} {{2}}` from your project's root directory." +
-				$" Once you do, you may also remove the interface declaration (` : {{2}}`) if you wish as this source generator takes care of adding it for you." +
-				$" You can also leave it there, it makes no difference.",
+				$" Please add this Id by running `dotnet beam fed add {{0}} {{1}} {{2}}` from your project's root directory. " +
+				$"Or remove the {{2}} that references {{1}}  interface from the {{0}} Microservice class.",
 				Category_Federations,
 				DiagnosticSeverity.Error,
 				true);
 		
-		public static readonly DiagnosticDescriptor DeclaredFederationMissingFederationId
+		public static readonly DiagnosticDescriptor ConfiguredFederationMissingFromCode
 			= new("BEAM_FED_O002",
-				$"Hand-written {nameof(IFederationId)}.{nameof(IFederationId.UniqueName)} cannot be found",
-				$"You have a federation using a hand-written {nameof(IFederationId)}. Microservice={{0}}, Id={{1}}, Interface={{2}}." +
-				$" You can only declare {nameof(IFederationId.UniqueName)} in the following formats:" +
-				$" `public string UniqueName => \"my_name\"`, " +
-				$" `public string UniqueName {{ get => \"my_name\" }}`," +
-				$" `public string UniqueName {{ get {{ return \"my_name\"; }} }} `." +
-				$" Otherwise, our source generator cannot find it.",
-				
+				$"{nameof(MicroserviceSourceGenConfig)} contains Federations that do not exist in code",
+				$"You have configured federation, but the Microservice does not implement the required interface. Microservice={{0}}, Id={{1}}, Interface={{2}}. " +
+				$"Please remove this Id by running `dotnet beam fed remove {{0}} {{1}} {{2}}` from your project's root directory, " +
+				$"Or add the {{2}} that references {{1}} interface to the {{0}} Microservice class.",
 				Category_Federations,
 				DiagnosticSeverity.Error,
 				true);
@@ -128,6 +123,16 @@ public static class Diagnostics
 				$"The following {nameof(IFederationId)} is invalid. They must:" +
 				$" Start with a letter." +
 				$" Contain only alphanumeric characters and/or `_`. Microservice={{0}}, Id={{1}}.",
+				Category_Federations,
+				DiagnosticSeverity.Error,
+				true);
+		
+		public static readonly DiagnosticDescriptor FederationIdMissingAttribute
+			= new("BEAM_FED_O005",
+				$"IFederationId is missing FederationIdAttribute",
+				$"The following {nameof(IFederationId)} must be annotated with a {nameof(FederationIdAttribute)}. They must:" +
+				$" Start with a letter." +
+				$" Contain only alphanumeric characters and/or `_`. Id={{0}}.",
 				Category_Federations,
 				DiagnosticSeverity.Error,
 				true);

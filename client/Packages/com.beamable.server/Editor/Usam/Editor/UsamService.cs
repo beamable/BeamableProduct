@@ -446,7 +446,6 @@ namespace Beamable.Server.Editor.Usam
 					if (shouldListenForLogs)
 					{
 						ListenForLogs(status.service);
-
 					}
 
 					UpdateRoutingOptions(status);
@@ -635,6 +634,15 @@ namespace Beamable.Server.Editor.Usam
 			}
 
 			return actuallyRunning;
+		}
+
+		public bool IsCreatingLocally(string beamoId)
+		{
+			if (TryGetExistingAction(beamoId, out var progress) && !progress.isComplete)
+			{
+				return progress.label == ServiceCliActionType.Creating;
+			}
+			return false;
 		}
 
 		public void ToggleRun(BeamManifestStorageEntry storage, BeamServiceStatus status)

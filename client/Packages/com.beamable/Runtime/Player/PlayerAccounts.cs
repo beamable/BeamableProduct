@@ -214,7 +214,7 @@ namespace Beamable.Player
 			for (var i = 0; i < _externalIdentities.Length; i++)
 			{
 				var external = _externalIdentities[i];
-				var namespaceMath = external.providerNamespace == ident.UniqueName;
+				var namespaceMath = external.providerNamespace == ident.GetUniqueName();
 				var serviceMatch = external.providerService == client.ServiceName;
 
 				if (namespaceMath && serviceMatch)
@@ -1569,7 +1569,7 @@ namespace Beamable.Player
 														  "A challenge was requested, but no challenge handler was provided.");
 					}
 					var solution = await challengeHandler?.Invoke(challenge.challenge);
-					var nextRes = await auth.LoginExternalIdentity(token, client.ServiceName, ident.UniqueName, new ChallengeSolution
+					var nextRes = await auth.LoginExternalIdentity(token, client.ServiceName, ident.GetUniqueName(), new ChallengeSolution
 					{
 						challenge_token = challenge.challenge,
 						solution = solution
@@ -1577,7 +1577,7 @@ namespace Beamable.Player
 					return await HandleResponse(nextRes);
 				}
 
-				var loginRes = await auth.LoginExternalIdentity(token, client.ServiceName, ident.UniqueName, mergeGamerTagToAccount: merge);
+				var loginRes = await auth.LoginExternalIdentity(token, client.ServiceName, ident.GetUniqueName(), mergeGamerTagToAccount: merge);
 				return await HandleResponse(loginRes);
 			});
 		}
@@ -1639,7 +1639,7 @@ namespace Beamable.Player
 							throw new InvalidOperationException("A challenge was requested, but no challenge handler was provided.");
 						}
 						var solution = await challengeHandler.Invoke(response.challenge_token);
-						var solutionRes = await service.AttachIdentity(token, client.ServiceName, ident.UniqueName, new ChallengeSolution
+						var solutionRes = await service.AttachIdentity(token, client.ServiceName, ident.GetUniqueName(), new ChallengeSolution
 						{
 							challenge_token = response.challenge_token,
 							solution = solution
@@ -1653,13 +1653,13 @@ namespace Beamable.Player
 				}
 			}
 
-			bool externalIdentityAvailable = await service.IsExternalIdentityAvailable(client.ServiceName, account._user.id.ToString(), ident.UniqueName);
+			bool externalIdentityAvailable = await service.IsExternalIdentityAvailable(client.ServiceName, account._user.id.ToString(), ident.GetUniqueName());
 
 			if (externalIdentityAvailable)
 			{
 				try
 				{
-					var authorizeRes = await service.AttachIdentity(token, client.ServiceName, ident.UniqueName);
+					var authorizeRes = await service.AttachIdentity(token, client.ServiceName, ident.GetUniqueName());
 					var user = await HandleResponse(authorizeRes);
 					if (user == null)
 					{
@@ -1706,7 +1706,7 @@ namespace Beamable.Player
 
 			var authService = GetAuthServiceForAccount(account);
 			var providerService = _provider.GetService<TService>().ServiceName;
-			var providerNamespace = new TCloudIdentity().UniqueName;
+			var providerNamespace = new TCloudIdentity().GetUniqueName();
 
 			if (!account.TryGetExternalIdentity<TCloudIdentity, TService>(out var identity))
 			{
@@ -1734,7 +1734,7 @@ namespace Beamable.Player
 
 			var authService = GetAuthServiceForAccount(account);
 			var providerService = _provider.GetService<TService>().ServiceName;
-			var providerNamespace = new TCloudIdentity().UniqueName;
+			var providerNamespace = new TCloudIdentity().GetUniqueName();
 
 			return await authService.IsExternalIdentityAvailable(providerService, token, providerNamespace);
 		}

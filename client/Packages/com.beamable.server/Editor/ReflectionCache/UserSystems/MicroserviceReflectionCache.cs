@@ -302,7 +302,7 @@ namespace Beamable.Server.Editor
 							var federatedType = it.GetGenericArguments()[0];
 							if (Activator.CreateInstance(federatedType) is IFederationId identity)
 							{
-								descriptor.FederatedNamespaces.Add(identity.UniqueName);
+								descriptor.FederatedNamespaces.Add(identity.GetUniqueName());
 								descriptor.FederationComponents.Add(new FederationComponent
 								{
 									identity = identity,

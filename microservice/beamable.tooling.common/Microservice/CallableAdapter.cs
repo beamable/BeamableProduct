@@ -48,7 +48,7 @@ public class FederatedInventoryCallbackGenerator : ICallableGenerator
 			var federatedType = interfaceType.GetGenericArguments()[0];
 			var identity = Activator.CreateInstance(federatedType) as IFederationId;
 
-			var federatedNamespace = identity.UniqueName;
+			var federatedNamespace = identity.GetUniqueName();
 			for (var i = 0 ; i < map.TargetMethods.Length; i ++)
 			{
 				var method = map.TargetMethods[i];
@@ -109,7 +109,7 @@ public class FederatedLoginCallableGenerator : ICallableGenerator
 			var federatedType = interfaceType.GetGenericArguments()[0];
 			var identity = Activator.CreateInstance(federatedType) as IFederationId;
 
-			var federatedNamespace = identity.UniqueName;
+			var federatedNamespace = identity.GetUniqueName();
 			var method = map.TargetMethods[0];
 
 			var attribute = method.GetCustomAttribute<CallableAttribute>(true);
@@ -169,7 +169,7 @@ public class FederatedGameServerCallableGenerator : ICallableGenerator
 			var federatedType = interfaceType.GetGenericArguments()[0];
 			var identity = Activator.CreateInstance(federatedType) as IFederationId;
 
-			var federatedNamespace = identity.UniqueName;
+			var federatedNamespace = identity.GetUniqueName();
 			for (var i = 0 ; i < map.TargetMethods.Length; i ++)
 			{
 				var method = map.TargetMethods[i];

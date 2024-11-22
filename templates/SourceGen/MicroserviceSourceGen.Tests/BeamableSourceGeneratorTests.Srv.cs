@@ -1,10 +1,44 @@
 ﻿using Beamable.Server;
+using Microsoft.CodeAnalysis;
+using System.Linq;
 using Xunit;
 
 namespace Microservice.SourceGen.Tests;
 
 public partial class BeamableSourceGeneratorTests
 {
+	[Fact]
+	public void Test_Diagnostic_Srv_UsesFedFromAnotherProject()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+using Microservice.SourceGen.Tests.Dep;
+
+namespace TestNamespace;
+
+[Microservice(""TunaService"")]
+public partial class TunaService : Microservice, IFederatedLogin<ExampleFederationId>
+{		
+	public Promise<FederatedAuthenticationResponse> Authenticate(string token, string challenge, string solution)
+	{
+		throw new System.NotImplementedException();
+	}
+}";
+
+		var cfg = new MicroserviceSourceGenConfig() { Federations = new() { { "example", [new() { Interface = "IFederatedLogin" }] } } };
+
+		// We are testing the detection
+		PrepareForRun(new[] { cfg }, new[] { UserCode });
+
+		// Run generators and retrieve all results.
+		var runResult = Driver.RunGenerators(Compilation).GetRunResult();
+
+		// Ensure we have no errors
+		Assert.Empty(runResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+	}
+
+	
 	[Fact]
 	public void Test_Diagnostic_Srv_NoMicroserviceClassesDetected()
 	{
