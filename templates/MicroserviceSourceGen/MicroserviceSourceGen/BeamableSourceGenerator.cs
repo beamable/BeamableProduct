@@ -32,7 +32,7 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 			.Collect<MicroserviceInfo>();
 
 		var sourceConfigText = context.AdditionalTextsProvider
-			.Where(text => text.Path.EndsWith(MicroserviceSourceGenConfig.CONFIG_FILE_NAME, StringComparison.OrdinalIgnoreCase))
+			.Where(text => text.Path.EndsWith(MicroserviceFederationsConfig.CONFIG_FILE_NAME, StringComparison.OrdinalIgnoreCase))
 			.Select((text, token) => (Path: text.Path, Text: text.GetText(token)?.ToString()))
 			.Where(text => text.Item2 is not null)!
 			.Collect<ValueTuple<string, string>>();
@@ -85,18 +85,18 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 		
 		return;
 
-		static MicroserviceSourceGenConfig? ParseBeamSourceGen(SourceProductionContext context, ImmutableArray<(string Path, string Text)> beamSourceGenConfigFiles)
+		static MicroserviceFederationsConfig? ParseBeamSourceGen(SourceProductionContext context, ImmutableArray<(string Path, string Text)> federationConfigFiles)
 		{
-			if (beamSourceGenConfigFiles.Length <= 0)
+			if (federationConfigFiles.Length <= 0)
 			{
 				var err = Diagnostic.Create(Diagnostics.Cfg.NoSourceGenConfigFound, null);
 				context.ReportDiagnostic(err);
 				return null;
 			}
 
-			if (beamSourceGenConfigFiles.Length > 1)
+			if (federationConfigFiles.Length > 1)
 			{
-				var errDetails = string.Join("\n", beamSourceGenConfigFiles.Select(t => t.Path));
+				var errDetails = string.Join("\n", federationConfigFiles.Select(t => t.Path));
 				var error = Diagnostic.Create(Diagnostics.Cfg.MultipleSourceGenConfigsFound, null, errDetails);
 				context.ReportDiagnostic(error);
 				return null;
@@ -104,10 +104,10 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 
 			try
 			{
-				var sourceGenConfig = JsonSerializer.Deserialize<MicroserviceSourceGenConfig>(beamSourceGenConfigFiles[0].Text, new JsonSerializerOptions { IncludeFields = true });
+				var sourceGenConfig = JsonSerializer.Deserialize<MicroserviceFederationsConfig>(federationConfigFiles[0].Text, new JsonSerializerOptions { IncludeFields = true });
 				var success = Diagnostic.Create(Diagnostics.Cfg.DeserializedSourceGenConfig,
 					null,
-					beamSourceGenConfigFiles[0].Text);
+					federationConfigFiles[0].Text);
 				context.ReportDiagnostic(success);
 				return sourceGenConfig;
 			}
@@ -116,7 +116,7 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 				var error = Diagnostic.Create(Diagnostics.Cfg.FailedToDeserializeSourceGenConfig,
 					null,
 					ex.ToString(),
-					beamSourceGenConfigFiles[0].Text);
+					federationConfigFiles[0].Text);
 				context.ReportDiagnostic(error);
 
 				return null;
@@ -188,10 +188,10 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 			}
 		}
 
-		static bool ValidateFederations(SourceProductionContext context, MicroserviceInfo info, MicroserviceSourceGenConfig beamSourceGenConfig)
+		static bool ValidateFederations(SourceProductionContext context, MicroserviceInfo info, MicroserviceFederationsConfig federationConfig)
 		{
 			var isValid = true;
-			var federations = beamSourceGenConfig.Federations;
+			var federations = federationConfig.Federations;
 
 			Dictionary<string, (string Id, string Interface)> flatConfig = federations.SelectMany(kvp => kvp.Value.Select(f => (kvp.Key, f.Interface))).ToDictionary(x => $"{x.Key}/{x.Interface}");
 

@@ -7,9 +7,9 @@ using System.Text.Json.Serialization;
 namespace Beamable.Server;
 
 [Serializable, CliContractType]
-public class MicroserviceSourceGenConfig
+public class MicroserviceFederationsConfig
 {
-	public const string CONFIG_FILE_NAME = "BeamSourceGenConfig.json";
+	public const string CONFIG_FILE_NAME = "federations.json";
 
 	[JsonPropertyName("federations")] public FederationsConfig Federations { get; set; } = new();
 }

@@ -13,32 +13,32 @@ public static class Diagnostics
 	{
 		public static readonly DiagnosticDescriptor NoSourceGenConfigFound
 			= new("BEAM_CFG_O001",
-				$"No {nameof(MicroserviceSourceGenConfig)} file found",
-				$"No {nameof(MicroserviceSourceGenConfig)} file found. Please run `dotnet beam init` again so this will be created for you.",
+				$"No {nameof(MicroserviceFederationsConfig)} file found",
+				$"No {nameof(MicroserviceFederationsConfig)} file found. Please run `dotnet beam init` again so this will be created for you.",
 				Category_Config,
 				DiagnosticSeverity.Error,
 				true);
 
 		public static readonly DiagnosticDescriptor MultipleSourceGenConfigsFound
 			= new("BEAM_CFG_O002",
-				$"Multiple {nameof(MicroserviceSourceGenConfig)} files found",
-				$"Multiple {nameof(MicroserviceSourceGenConfig)} files found: {{0}}",
+				$"Multiple {nameof(MicroserviceFederationsConfig)} files found",
+				$"Multiple {nameof(MicroserviceFederationsConfig)} files found: {{0}}",
 				Category_Config,
 				DiagnosticSeverity.Error,
 				true);
 
 		public static readonly DiagnosticDescriptor FailedToDeserializeSourceGenConfig
 			= new("BEAM_CFG_O003",
-				$"{nameof(MicroserviceSourceGenConfig)} could not be deserialized",
-				$"{nameof(MicroserviceSourceGenConfig)} could not be deserialized. Ex={{0}}. JSON={{1}}.",
+				$"{nameof(MicroserviceFederationsConfig)} could not be deserialized",
+				$"{nameof(MicroserviceFederationsConfig)} could not be deserialized. Ex={{0}}. JSON={{1}}.",
 				Category_Config,
 				DiagnosticSeverity.Error,
 				true);
 
 		public static readonly DiagnosticDescriptor DeserializedSourceGenConfig
 			= new("BEAM_CFG_O004",
-				$"Loaded {nameof(MicroserviceSourceGenConfig)}",
-				$"Loaded {nameof(MicroserviceSourceGenConfig)}. Text={{1}}.",
+				$"Loaded {nameof(MicroserviceFederationsConfig)}",
+				$"Loaded {nameof(MicroserviceFederationsConfig)}. Text={{1}}.",
 				Category_Config,
 				DiagnosticSeverity.Hidden,
 				true);
@@ -91,8 +91,8 @@ public static class Diagnostics
 	{
 		public static readonly DiagnosticDescriptor DeclaredFederationMissingFromSourceGenConfig
 			= new("BEAM_FED_O001",
-				$"Missing declared Federation in {nameof(MicroserviceSourceGenConfig)}",
-				$"Missing declared Federation in {nameof(MicroserviceSourceGenConfig)}. Microservice={{0}}, Id={{1}}, Interface={{2}}." +
+				$"Missing declared Federation in {nameof(MicroserviceFederationsConfig)}",
+				$"Missing declared Federation in {nameof(MicroserviceFederationsConfig)}. Microservice={{0}}, Id={{1}}, Interface={{2}}." +
 				$" Please add this Id by running `dotnet beam fed add {{0}} {{1}} {{2}}` from your project's root directory. " +
 				$"Or remove the {{2}} that references {{1}}  interface from the {{0}} Microservice class.",
 				Category_Federations,
@@ -101,7 +101,7 @@ public static class Diagnostics
 		
 		public static readonly DiagnosticDescriptor ConfiguredFederationMissingFromCode
 			= new("BEAM_FED_O002",
-				$"{nameof(MicroserviceSourceGenConfig)} contains Federations that do not exist in code",
+				$"{nameof(MicroserviceFederationsConfig)} contains Federations that do not exist in code",
 				$"You have configured federation, but the Microservice does not implement the required interface. Microservice={{0}}, Id={{1}}, Interface={{2}}. " +
 				$"Please remove this Id by running `dotnet beam fed remove {{0}} {{1}} {{2}}` from your project's root directory, " +
 				$"Or add the {{2}} that references {{1}} interface to the {{0}} Microservice class.",

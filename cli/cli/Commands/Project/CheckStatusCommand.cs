@@ -315,7 +315,7 @@ public class CheckStatusCommand : StreamCommand<CheckStatusCommandArgs, CheckSta
 						{
 							knownToBeRunning = false,
 							routingKey = ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine(),
-							federations = definition.Protocol is BeamoProtocolType.HttpMicroservice ? definition.SourceGenConfig.Federations.Select(kvp => new FederationInstance()
+							federations = definition.Protocol is BeamoProtocolType.HttpMicroservice ? definition.FederationsConfig.Federations.Select(kvp => new FederationInstance()
 							{
 								FederationId = kvp.Key,
 								FederationTypes = kvp.Value.Select(f => f.Interface).ToArray(),

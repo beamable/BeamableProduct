@@ -102,7 +102,7 @@ public class ListFederationsCommand : StreamCommand<ListServicesCommandArgs, Lis
 			var service = new ServiceFederations();
 			service.beamoName = sd.BeamoId;
 			service.routingKey = ServiceRoutingStrategyExtensions.GetDefaultRoutingKeyForMachine();
-			service.federations = sd.SourceGenConfig.Federations;
+			service.federations = sd.FederationsConfig.Federations;
 
 			output.services.Add(service);
 		}

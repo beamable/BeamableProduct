@@ -26,7 +26,7 @@ public partial class TunaService : Microservice, IFederatedLogin<ExampleFederati
 	}
 }";
 
-		var cfg = new MicroserviceSourceGenConfig() { Federations = new() { { "example", [new() { Interface = "IFederatedLogin" }] } } };
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { "example", [new() { Interface = "IFederatedLogin" }] } } };
 
 		// We are testing the detection
 		PrepareForRun(new[] { cfg }, new[] { UserCode });
@@ -52,7 +52,7 @@ public class SomeUserMicroservice
 {		
 }";
 
-		var cfg = new MicroserviceSourceGenConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
 
 		// We are testing the detection
 		PrepareForRun(new[] { cfg }, new[] { UserCode });
@@ -82,7 +82,7 @@ public class SomeOtherUserMicroservice : Microservice
 }
 ";
 
-		var cfg = new MicroserviceSourceGenConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
 
 		// We are testing the detection
 		PrepareForRun(new[] { cfg }, new[] { UserCode });
@@ -108,7 +108,7 @@ public class SomeUserMicroservice : Microservice
 }
 ";
 
-		var cfg = new MicroserviceSourceGenConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
 
 		// We are testing the detection
 		PrepareForRun(new[] { cfg }, new[] { UserCode });
@@ -134,7 +134,7 @@ public partial class SomeUserMicroservice : Microservice
 }
 ";
 
-		var cfg = new MicroserviceSourceGenConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
 
 		// We are testing the detection
 		PrepareForRun(new[] { cfg }, new[] { UserCode });
@@ -161,7 +161,7 @@ public partial class SomeUserMicroservice : Microservice
 }
 ";
 
-		var cfg = new MicroserviceSourceGenConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
 
 		// We are testing the detection
 		PrepareForRun(new[] { cfg }, new[] { UserCode });

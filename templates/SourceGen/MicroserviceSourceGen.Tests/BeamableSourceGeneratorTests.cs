@@ -54,14 +54,14 @@ public partial class BeamableSourceGeneratorTests : IDisposable
 			References);
 	}
 
-	private void PrepareForRun(IEnumerable<MicroserviceSourceGenConfig?> configs, string[] csharpText, bool failConfig = false)
+	private void PrepareForRun(IEnumerable<MicroserviceFederationsConfig?> configs, string[] csharpText, bool failConfig = false)
 	{
 		// If we have the source-gen file, let's add it.
 		foreach (var config in configs)
 		{
 			var sourceGenConfigFile = failConfig ? "{ invalid json }" : JsonSerializer.Serialize(config, new JsonSerializerOptions { IncludeFields = true });
 			var additionalTexts = new List<AdditionalText>();
-			additionalTexts.Add(new TestAdditionalFile(MicroserviceSourceGenConfig.CONFIG_FILE_NAME, sourceGenConfigFile));
+			additionalTexts.Add(new TestAdditionalFile(MicroserviceFederationsConfig.CONFIG_FILE_NAME, sourceGenConfigFile));
 			Driver = Driver.AddAdditionalTexts(ImmutableArray.CreateRange(additionalTexts));
 		}
 

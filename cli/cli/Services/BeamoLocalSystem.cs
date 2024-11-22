@@ -554,11 +554,11 @@ public class BeamoServiceDefinition
 	public BeamoProtocolType Protocol;
 
 	/// <summary>
-	/// The <see cref="MicroserviceSourceGenConfig"/> for this microservice.
+	/// The <see cref="MicroserviceFederationsConfig"/> for this microservice.
 	/// </summary>
-	public MicroserviceSourceGenConfig SourceGenConfig 
+	public MicroserviceFederationsConfig FederationsConfig 
 		// create a default instance so that downstream callers don't need to check for isLocal over and over again. 
-		= new MicroserviceSourceGenConfig();
+		= new MicroserviceFederationsConfig();
 
 
 	

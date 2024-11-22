@@ -27,7 +27,7 @@ public partial class SomeUserMicroservice : Microservice, IFederatedLogin<MyFede
 {		
 }
 ";
-		var cfg = new MicroserviceSourceGenConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
 
 		// We are testing the detection
 		PrepareForRun(new[] { cfg }, new[] { UserCode });
@@ -53,7 +53,7 @@ public partial class SomeUserMicroservice : Microservice
 {		
 }
 ";
-		var cfg = new MicroserviceSourceGenConfig() { Federations = new() { { @"my_f!*&@¨&*¨@!*&", [new() { Interface = "IFederatedGameServer" }] } } };
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { @"my_f!*&@¨&*¨@!*&", [new() { Interface = "IFederatedGameServer" }] } } };
 
 		// We are testing the detection
 		PrepareForRun(new[] { cfg }, new[] { UserCode });
@@ -83,7 +83,7 @@ public partial class SomeUserMicroservice : Microservice, IFederatedLogin<MyFede
 {		
 }
 ";
-		var cfg = new MicroserviceSourceGenConfig() { Federations = new() };
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
 
 		// We are testing the detection
 		PrepareForRun(new[] { cfg }, new[] { UserCode });
@@ -115,7 +115,7 @@ public partial class SomeUserMicroservice : Microservice, IFederatedLogin<MyFede
 {		
 }
 ";
-		var cfg = new MicroserviceSourceGenConfig() { Federations = new() { { @"my_f!*&@¨&*¨@!*&", [new() { Interface = "IFederatedGameServer" }] } } };
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { @"my_f!*&@¨&*¨@!*&", [new() { Interface = "IFederatedGameServer" }] } } };
 
 		// We are testing the detection
 		PrepareForRun(new[] { cfg }, new[] { UserCode });
@@ -141,7 +141,7 @@ public partial class SomeUserMicroservice : Microservice
 {		
 }
 ";
-		var cfg = new MicroserviceSourceGenConfig()
+		var cfg = new MicroserviceFederationsConfig()
 		{
 			Federations = new()
 			{
@@ -188,7 +188,7 @@ namespace TestNamespace {
 	}
 }
 ";
-		var cfg = new MicroserviceSourceGenConfig()
+		var cfg = new MicroserviceFederationsConfig()
 		{
 			Federations = new()
 			{
@@ -227,7 +227,7 @@ public partial class SomeUserMicroservice : Microservice, IFederatedGameServer<H
 {		
 }
 ";
-		var cfg = new MicroserviceSourceGenConfig()
+		var cfg = new MicroserviceFederationsConfig()
 		{
 			Federations = new()
 			{
