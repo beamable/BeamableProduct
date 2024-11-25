@@ -66,7 +66,7 @@ namespace Beamable.Server.Editor.Usam
 		public MigrationCopyStep copyStep = null;
 		public ProjectNewStorageArgs newStorageArgs = null;
 		public List<string> stepNames = new List<string>();
-		public MigrationRefStep refStep;
+		public MigrationRefStep refStep = new MigrationRefStep();
 
 
 	}
@@ -90,7 +90,7 @@ namespace Beamable.Server.Editor.Usam
 		public ProjectNewServiceArgs newServiceArgs = null;
 		public MigrationCopyStep copyStep = null;
 		public MigrationFederationStep federationStep = null;
-		public MigrationRefStep refStep;
+		public MigrationRefStep refStep = new MigrationRefStep();
 
 		public List<string> stepNames = new List<string>();
 	}
