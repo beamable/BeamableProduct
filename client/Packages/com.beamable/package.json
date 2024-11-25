@@ -28,7 +28,7 @@
       "subText": "accounts",
       "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/Profiles_Violet@3x.png",
       "relativeMainAssetPath": "Sample_AccountManager.unity",
-      "docsUrl": "https://docs.beamable.com/docs/identity"
+      "docsUrl": "https://docs.beamable.com/v2.0.0/docs/account-management"
     },
     {
       "displayName": "Admin Console",
@@ -37,7 +37,7 @@
       "subText": "development",
       "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/AdminPortal_Violet@3x.png",
       "relativeMainAssetPath": "AdminFlow.prefab",
-      "docsUrl": "https://docs.beamable.com/docs/identity"
+      "docsUrl": "https://docs.beamable.com/v2.0.0/docs/admin-feature-overview"
     },
     {
       "displayName": "Inventory Management",
