@@ -219,6 +219,10 @@ namespace Beamable.Editor
 			{
 				Requester.Pid = null;
 			}
+
+			// clear the existing customer data so future calls don't get the old data. 
+			Account.SetCustomerViewResponse(new CustomerViewResponse());
+			
 			_saveHandle?.Save();
 			var __ = Cli.Command.Logout().Run();
 			var _ = InvokeUserChangeCallbacks();

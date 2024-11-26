@@ -280,6 +280,7 @@ namespace Beamable.Common.Api.Realms
 
 		public bool IsProduction => Depth == 0;
 		public bool IsStaging => Depth == 1;
+		public bool IsDev => Depth > 1;
 		public string GamePid;
 
 		public override bool Equals(object obj)

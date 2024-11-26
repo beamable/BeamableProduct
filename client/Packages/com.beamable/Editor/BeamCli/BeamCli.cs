@@ -79,6 +79,10 @@ namespace Beamable.Editor.BeamCli
 			}
 			
 			var initCommand = Command.Init(args);
+			initCommand.OnError(err =>
+			{
+				Debug.LogError(err.data.message);
+			});
 			await initCommand.Run();
 			
 			var linkCommand = Command.ProjectAddUnityProject(new ProjectAddUnityProjectArgs

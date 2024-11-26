@@ -242,11 +242,9 @@ namespace Beamable.Common.Api.Auth
 				method = Method.POST,
 				body = request,
 				disableScopeHeaders = true,
-				includeAuthHeader = true,
+				includeAuthHeader = false,
 				uri = "/basic/realms/customer"
 			});
-			// return _requester.Request<CustomerRegistrationResponse>(Method.POST, "/basic/realms/customer", request,
-			// false);
 		}
 
 		public Promise<CurrentProjectResponse> GetCurrentProject()
