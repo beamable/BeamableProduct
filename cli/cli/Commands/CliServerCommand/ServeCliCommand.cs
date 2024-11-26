@@ -20,7 +20,9 @@ public class ServeCliCommandOutput
 	public string uri;
 }
 
-public class ServeCliCommand : StreamCommand<ServeCliCommandArgs, ServeCliCommandOutput>
+public class ServeCliCommand 
+	: StreamCommand<ServeCliCommandArgs, ServeCliCommandOutput>
+	, ISkipManifest
 {
 	public override bool IsForInternalUse => true;
 

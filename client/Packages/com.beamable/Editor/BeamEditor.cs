@@ -627,8 +627,9 @@ namespace Beamable
 		/// <returns></returns>
 		public async Promise<Unit> LoginCustomer(string aliasOrCid, string email, string password)
 		{
-			var res = await AliasService.Resolve(aliasOrCid);
+			EditorAccountService.Logout(false);
 
+			var res = await AliasService.Resolve(aliasOrCid);
 			var cid = res.Cid.GetOrThrow();
 
 			var authFactory = ServiceScope.GetService<EditorAuthServiceFactory>();
@@ -638,21 +639,19 @@ namespace Beamable
 			var tokenRes = await authService.Login(email, password, mergeGamerTagToAccount: false, customerScoped: true);
 			var token = new AccessToken(accessTokenStorage, cid, null, tokenRes.access_token, tokenRes.refresh_token, tokenRes.expires_in);
 
-			await ApplyToken(cid, token);
-			await RefreshRealmSecret();
-			return PromiseBase.Unit;
-		}
-
-
-		private async Promise ApplyToken(string cid, AccessToken token)
-		{
 			var info = await EditorAccountService.Login(cid, token);
 			await token.SaveAsCustomerScoped();
 			Requester.Token = token;
-
+			Requester.Cid = EditorAccount.cid;
+			Requester.Pid = info.realmPid ??
+			                info.CustomerRealms?.FirstOrDefault(x => x.Cid == EditorAccount?.cid && x.IsDev)?.Pid;
+			
 			PublishDefaultContent();
 			await BeamCli.Init();
+			await RefreshRealmSecret();
+
 			OnUserChange?.Invoke(CurrentUser);
+			return PromiseBase.Unit;
 		}
 
 		public void PublishDefaultContent()
@@ -779,7 +778,9 @@ namespace Beamable
 
 		public async Promise CreateCustomer(string alias, string gameName, string email, string password)
 		{
+			EditorAccountService.Logout(false);
 			var customerResponse = await AuthService.RegisterCustomer(email, password, gameName, alias, alias);
+			
 			await SendHubspotRegistrationEvent(email, alias);
 
 			var cid = customerResponse.cid.ToString();
@@ -788,8 +789,29 @@ namespace Beamable
 			var accessTokenStorage = ServiceScope.GetService<AccessTokenStorage>();
 			var token = new AccessToken(accessTokenStorage, cid, pid, tokenResponse.access_token,
 										tokenResponse.refresh_token, tokenResponse.expires_in);
+			
+			var info = await EditorAccountService.Login(cid, token);
+			info.Refresh();
+			var realm = info.CustomerRealms.FirstOrDefault(x => x.IsDev);
+			var realmPid = realm.Pid;
+			
+			EditorAccountService.SetRealm(EditorAccount, realm.FindRoot(), realmPid);
+			Requester.Cid = EditorAccount.cid;
+			Requester.Pid = realmPid;
+			await token.SaveAsCustomerScoped();
+			Requester.Token = token;
 
-			await ApplyToken(cid, token);
+			await ContentIO.FetchManifest();
+			ContentDatabase.RecalculateIndex();
+			await RefreshRealmSecret();
+			EditorAccountService.WriteUnsetConfigValues();
+			PublishDefaultContent();
+			
+			await BeamCli.Init();
+			
+			OnUserChange?.Invoke(CurrentUser);
+			OnRealmChange?.Invoke(CurrentRealm);
+			
 		}
 
 		public async Promise SendPasswordReset(string cidOrAlias, string email)

@@ -89,7 +89,7 @@ namespace Beamable.Editor.ToolbarExtender
 			_assistantMenuItems.Sort((mi1, mi2) =>
 			{
 				var orderComp = mi1.Order.CompareTo(mi2.Order);
-				var labelComp = string.Compare(mi1.RenderLabel(_editorAPI).text, mi2.RenderLabel(_editorAPI).text, StringComparison.Ordinal);
+				var labelComp = string.Compare(mi1.RenderLabel(_editorAPI)?.text, mi2.RenderLabel(_editorAPI)?.text, StringComparison.Ordinal);
 
 				return orderComp == 0 ? labelComp : orderComp;
 			});
@@ -342,8 +342,10 @@ namespace Beamable.Editor.ToolbarExtender
 				_assistantMenuItems
 					.ForEach(item =>
 					{
+						var label = item.RenderLabel(_editorAPI);
+						if (label == null) return;
 						
-						menu.AddItem(item.RenderLabel(_editorAPI), false, data => item.OnItemClicked((BeamEditorContext)data), _editorAPI);
+						menu.AddItem(label, false, data => item.OnItemClicked((BeamEditorContext)data), _editorAPI);
 					});
 
 				menu.ShowAsContext();

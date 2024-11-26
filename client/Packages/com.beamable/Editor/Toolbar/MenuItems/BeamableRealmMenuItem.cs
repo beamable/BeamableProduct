@@ -66,7 +66,7 @@ namespace Beamable.Editor.ToolbarExtender
 			var realmName = beamableApi?.CurrentRealm?.DisplayName;
 			if (string.IsNullOrEmpty(realmName))
 			{
-				return new GUIContent($"Realm: {realmName}");
+				return null;
 			}
 			else
 			{
