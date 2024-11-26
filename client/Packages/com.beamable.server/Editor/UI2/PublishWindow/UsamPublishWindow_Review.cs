@@ -159,7 +159,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 						}
 
 						GUI.enabled = _releasePromise.IsCompleted;
-						clickedPortal = BeamGUI.CustomButton(new GUIContent("View"), _primaryButtonStyle);
+						clickedPortal = BeamGUI.CustomButton(new GUIContent("View in Portal"), _primaryButtonStyle);
 						GUI.enabled = true;
 					}
 					else
@@ -185,7 +185,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 						var url = $"{BeamableEnvironment.PortalUrl}/{_ctx.CurrentCustomer.Cid}/games/{_ctx.ProductionRealm.Pid}/realms/{_ctx.CurrentRealm.Pid}/microservices?refresh_token={_ctx.Requester.Token.RefreshToken}";
 						Application.OpenURL(url);
 						
-						if (_releasePromise.IsCompleted)
+						if (_releasePromise?.IsCompleted ?? false)
 						{
 							isCancelPressed = true;
 						}

@@ -1,6 +1,7 @@
 using Beamable.Editor.Util;
 using Beamable.Server.Editor.Usam;
 using System.Linq;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 
@@ -11,6 +12,8 @@ namespace Beamable.Editor.Microservice.UI2
 		public ActiveMigration activeMigration;
 
 		public Vector2 migrateScrollPosition;
+
+		private const string MIGRATION_DOCS_URL = "https://docs.beamable.com/v2.0.0/docs/migrating-from-beamable-119x";
 		
 		
 		void DrawMigrate()
@@ -38,37 +41,86 @@ namespace Beamable.Editor.Microservice.UI2
 					});
 				}
 
-				{
-					// draw text
+				if (activeMigration == null || !activeMigration.isComplete)
+				{ // the CTA before the migration starts, and while it is going.
+					{
+						// draw text
+						const string notice =
+							"Before you can continue, you must migrate or delete your existing Microservices and " +
+							"Storage Objects. Your current services are Unity Assembly Definitions and .cs class files. " +
+							"However, in the newer version of Beamable, services are separate dotnet projects that live " +
+							"alongside your <i>/Assets</i> folder";
+						EditorGUILayout.LabelField(notice, new GUIStyle(EditorStyles.label)
+						{
+							fixedHeight = 0, margin = new RectOffset(2, 2, 8, 8), wordWrap = true, richText = true,
+							// fontSize = 14
+						});
+					}
+
+					{
+						// draw cta
+						const string notice =
+							"Your services will automatically be migrated when you click the <i>Migrate Services</i> button. " +
+							"Before you migrate, please make sure you have a backup of your services. " +
+							"Learn about the migration process by checking our documentation. ";
+						EditorGUILayout.LabelField(notice, new GUIStyle(EditorStyles.label)
+						{
+							fixedHeight = 0, margin = new RectOffset(2, 2, 8, 8), wordWrap = true, richText = true,
+						});
+						var docsClick = EditorGUILayout.LinkButton("Read the docs");
+						if (docsClick)
+						{
+							AddDelayedAction(() =>
+							{
+								Application.OpenURL(MIGRATION_DOCS_URL);
+							});
+						}
+						
+					
+					}
+				} else if (activeMigration.isComplete)
+				{ // CTA for post-migration
 					const string notice =
-						"Before you can continue, you must migrate or delete your existing Microservices and " +
-						"Storage Objects. Your current services are Unity Assembly Definitions and .cs class files. " +
-						"However, in the newer version of Beamable, services are separate dotnet projects that live " +
-						"alongside your <i>/Assets</i> folder";
+						"Your services have been migrated. The service files exist in the <i>/BeamableServices</i> folder. ";
 					EditorGUILayout.LabelField(notice, new GUIStyle(EditorStyles.label)
 					{
-						fixedHeight = 0,
-						margin = new RectOffset(2, 2, 8, 8),
-						wordWrap = true,
-						richText = true,
-						// fontSize = 14
+						fixedHeight = 0, margin = new RectOffset(2, 2, 8, 8), wordWrap = true, richText = true,
 					});
-				}
-				
-				{
-					// draw cta
-					const string notice =
-						"Before you migrate, please make sure you have a backup of your services. ";
-					EditorGUILayout.LabelField(notice, new GUIStyle(EditorStyles.label)
+					
+					
+					var docsClick = EditorGUILayout.LinkButton("Read the docs");
+					if (docsClick)
 					{
-						fixedHeight = 0,
-						margin = new RectOffset(2, 2, 8, 8),
-						wordWrap = true,
-						richText = true,
-						// fontSize = 14
-					});
+						AddDelayedAction(() =>
+						{
+							Application.OpenURL(MIGRATION_DOCS_URL);
+						});
+					}
 				}
+
 				EditorGUILayout.EndVertical();
+				
+				
+				// if action is required, we should call that out!
+				if (usam.migrationPlan.manualSteps.Count > 0)
+				{
+					
+					var sb = new StringBuilder();
+					if (activeMigration == null || !activeMigration.isComplete)
+					{
+						sb.AppendLine(
+							"The migration will not be able to automatically perform every step. The following list of actions you must address after the migration. ");
+					}
+					else {
+						sb.AppendLine("The migration was not able to automatically perform every step. The following list of actions you must address. ");
+					}
+					foreach (var action in usam.migrationPlan.manualSteps)
+					{
+						sb.AppendLine("\n");
+						sb.AppendLine(action);
+					}
+					EditorGUILayout.HelpBox(sb.ToString(), MessageType.Warning);
+				}
 			}
 
 			
@@ -187,7 +239,7 @@ namespace Beamable.Editor.Microservice.UI2
 				bool clickedOkay = false;
 				if (activeMigration == null)
 				{
-					clickedMigrate = BeamGUI.PrimaryButton(new GUIContent("Migrate"));
+					clickedMigrate = BeamGUI.PrimaryButton(new GUIContent("Migrate Services"));
 				} else if (!activeMigration.isComplete)
 				{
 					GUI.enabled = false;
@@ -196,7 +248,17 @@ namespace Beamable.Editor.Microservice.UI2
 				}
 				else
 				{
-					clickedOkay = BeamGUI.PrimaryButton(new GUIContent("Okay"));
+					if (usam.migrationPlan.manualSteps.Count > 0)
+					{
+						if (BeamGUI.CancelButton("Open Solution"))
+						{
+							AddDelayedAction(() =>
+							{
+								usam.OpenSolution();
+							});
+						}
+					}
+					clickedOkay = BeamGUI.PrimaryButton(new GUIContent("View Services"));
 				}
 
 				if (clickedOkay)

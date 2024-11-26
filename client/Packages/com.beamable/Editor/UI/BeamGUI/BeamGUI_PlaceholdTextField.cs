@@ -11,6 +11,7 @@ namespace Beamable.Editor.Util
 		
 		public static string PlaceholderTextField(Rect rect, string text, string placeholder, GUIStyle styles)
 		{
+			var topRect = new Rect(rect.x, rect.y, rect.width, EditorGUIUtility.singleLineHeight);
 			var nextText = EditorGUI.TextField(rect, text, styles);
 			if (string.IsNullOrEmpty(text))
 			{
@@ -26,7 +27,7 @@ namespace Beamable.Editor.Util
 					};
 				}
 				
-				EditorGUI.LabelField(rect, placeholder, placeholderStyle);
+				EditorGUI.LabelField(topRect, placeholder, placeholderStyle);
 			}
 			return nextText;
 		}

@@ -21,6 +21,7 @@ namespace Beamable.Server.Editor.Usam
 		public bool NeedsMigration => services.Count > 0 || storages.Count > 0;
 		public List<MigrationService> services = new List<MigrationService>();
 		public List<MigrationStorage> storages = new List<MigrationStorage>();
+		public List<string> manualSteps = new List<string>();
 
 		public HashSet<string> allReferencedAssemblies
 		{
@@ -44,7 +45,7 @@ namespace Beamable.Server.Editor.Usam
 	public class ActiveMigration
 	{
 		public List<ActiveServiceMigration> services = new List<ActiveServiceMigration>();
-		// public List<ActiveServiceMigration> storages = new List<ActiveServiceMigration>();
+		
 		public bool isComplete;
 		public class ActiveServiceMigration
 		{
@@ -213,7 +214,6 @@ namespace Beamable.Server.Editor.Usam
 			var migration = new ActiveMigration();
 			var serviceToActive = new Dictionary<MigrationService, ActiveMigration.ActiveServiceMigration>();
 			var storageToActive = new Dictionary<MigrationStorage, ActiveMigration.ActiveServiceMigration>();
-
 
 			foreach (var storage in plan.storages)
 			{
@@ -389,13 +389,20 @@ namespace Beamable.Server.Editor.Usam
 
 						{
 							// set federations
-							var setFederationCommand = cli.FederationSet(new FederationSetArgs()
+							if (service.federationStep.FederationIds.Count > 0)
 							{
-								microservice = service.beamoId,
-								fedId = service.federationStep.FederationIds.ToArray(),
-								fedType = service.federationStep.FederationTypes.ToArray()
-							});
-							yield return setFederationCommand.Run().ToYielder();
+								var setFederationCommand = cli.FederationSet(new FederationSetArgs()
+								{
+									microservice = service.beamoId,
+									fedId = service.federationStep
+									               .FederationIds.ToArray(),
+									fedType = service.federationStep
+									                 .FederationTypes.ToArray()
+								});
+								
+								yield return setFederationCommand.Run().ToYielder();
+							}
+
 							active.stepRatios[3] = 1f;
 						}
 
@@ -524,7 +531,8 @@ namespace Beamable.Server.Editor.Usam
 					{ // add dlls refs
 						var assembly = assemblyUtil.AllAssemblies.FirstOrDefault(assembly =>
 							assembly.name.Equals(storage.Type.Assembly.GetName().Name));
-						var dlls = CsharpProjectUtil.GetValidDllReferences(assembly);
+						var dlls = CsharpProjectUtil.GetValidDllReferences(assembly, out var dllWarnings);
+						plan.manualSteps.AddRange(dllWarnings);
 						var dllsNames = new List<string>();
 						var dllsPaths = new List<string>();
 
@@ -630,7 +638,8 @@ namespace Beamable.Server.Editor.Usam
 					{ // add dlls refs
 						var assembly = assemblyUtil.AllAssemblies.FirstOrDefault(assembly =>
 							assembly.name.Equals(service.Type.Assembly.GetName().Name));
-						var dlls = CsharpProjectUtil.GetValidDllReferences(assembly);
+						var dlls = CsharpProjectUtil.GetValidDllReferences(assembly, out var dllWarnings);
+						plan.manualSteps.AddRange(dllWarnings);
 						var dllsNames = new List<string>();
 						var dllsPaths = new List<string>();
 
@@ -660,6 +669,7 @@ namespace Beamable.Server.Editor.Usam
 					{
 						allFedTypes.Add(federationComponent.typeName);
 						allFedIds.Add(federationComponent.identity.GetUniqueName());
+						plan.manualSteps.Add($"The federation with id=[{federationComponent.identity.GetUniqueName()}] needs to be refactored to use the {nameof(FederationIdAttribute)}.");
 					}
 
 					migration.federationStep = new MigrationFederationStep()
@@ -677,6 +687,7 @@ namespace Beamable.Server.Editor.Usam
 
 			}
 
+			plan.manualSteps = plan.manualSteps.Distinct().ToList();
 			return plan;
 		}
 		

@@ -113,10 +113,10 @@ namespace Beamable.Editor.Dotnet
 
 		static void InstallDotnetToLibrary()
 		{
-			EditorUtility.DisplayProgressBar("Downloading Dotnet", "Getting install script", .1f);
+			EditorUtility.DisplayProgressBar("Downloading Dotnet", "Beamable is fetching dotnet installer", .1f);
 			DownloadInstallScript();
 
-			EditorUtility.DisplayProgressBar("Downloading Dotnet", "installing dotnet in your Library folder", .2f);
+			EditorUtility.DisplayProgressBar("Downloading Dotnet", "Beamable is installing dotnet in your Library folder", .2f);
 			RunInstallScript(REQUIRED_INSTALL_VERSION.ToString());
 
 			EditorUtility.ClearProgressBar();

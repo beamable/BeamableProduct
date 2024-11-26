@@ -154,11 +154,11 @@ namespace Beamable.Editor.Microservice.UI2
 		{
 			var menu = new GenericMenu();
 			
-			menu.AddItem(new GUIContent("Open MongoExpress"), false, () =>
+			menu.AddItem(new GUIContent("Goto local MongoExpress"), false, () =>
 			{
 				usam.OpenMongo(service.beamoId);
 			});
-			menu.AddItem(new GUIContent("Open project"), false, () =>
+			menu.AddItem(new GUIContent("Open project solution"), false, () =>
 			{
 				usam.OpenProject(service.beamoId, service.csprojPath);
 			});
@@ -168,14 +168,14 @@ namespace Beamable.Editor.Microservice.UI2
 				usam.GetLocalConnectionString(service).Then(connStr =>
 				{
 					EditorGUIUtility.systemCopyBuffer = connStr;
-					Debug.Log("Copied connection string: " + connStr);
+					Debug.Log(connStr);
 				});
 			});
 
 			
 			menu.AddSeparator("");
 			
-			menu.AddItem(new GUIContent("Go to deployed storages"), false, () =>
+			menu.AddItem(new GUIContent("Go to deployed storages in Portal"), false, () =>
 			{
 				usam.OpenPortalToReleaseSection();
 			});
