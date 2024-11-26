@@ -22,8 +22,6 @@ public class ServeCliCommandOutput
 
 public class ServeCliCommand : StreamCommand<ServeCliCommandArgs, ServeCliCommandOutput>
 {
-
-	public const int DEFAULT_PORT = 8342;
 	public override bool IsForInternalUse => true;
 
 	public ServeCliCommand() : base("serve", "Create a local server for the cli")
@@ -37,9 +35,15 @@ public class ServeCliCommand : StreamCommand<ServeCliCommandArgs, ServeCliComman
 				"The owner of the server is used to identify the server later with the /info endpoint"),
 			(args, owner) => args.owner = owner);
 		
-		var portOption = new Option<int>("--port", () => DEFAULT_PORT, "The port the local server will bind to");
+		var portOption = new Option<int>("--port", () => ServerService.DEFAULT_PORT, "The port the local server will bind to");
 		portOption.AddAlias("-p");
-		AddOption(portOption, (args, port) => args.port = port);
+		AddOption(portOption, (args, port) =>
+		{
+			if (port is < ServerService.DEFAULT_PORT or > ServerService.MAX_PORT)
+				throw new CliException($"Port must be between {ServerService.DEFAULT_PORT} and {ServerService.MAX_PORT}");
+			
+			args.port = port;
+		});
 
 		var incPortOption = new Option<bool>("--auto-inc-port", () => true,
 			"When true, if the given --port is not available, it will be incremented until an available port is discovered");

@@ -2,8 +2,10 @@ using cli.Services.HttpServer;
 using Newtonsoft.Json;
 using Serilog;
 using Spectre.Console;
+using System.Collections.Concurrent;
 using System.CommandLine;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading.Channels;
 
@@ -128,34 +130,41 @@ public class ServerPsCommand : StreamCommand<ServerPsCommandArgs, ServerPsComman
 
 	public static async IAsyncEnumerable<ServerDescriptor> DiscoverServers(IServerFilterArgs filters)
 	{
-		var startPort = ServeCliCommand.DEFAULT_PORT - 1;
-		var endPort = startPort + 2000;
-		var port = startPort;
 		const int maxThreads = 100;
 
 		var channel = Channel.CreateUnbounded<ServerDescriptor>(new UnboundedChannelOptions
 		{
 			SingleReader = true, SingleWriter = false
 		});
-		var tasks = new List<Task>();
 		
+	
+		// Get the list of all locally open TCP listeners
+		var properties = IPGlobalProperties.GetIPGlobalProperties();
+		var tcpEndPoints = properties.GetActiveTcpListeners();
+		var endPoints = new ConcurrentQueue<IPEndPoint>();
+		
+		// We only care about the ones within our allowed range.
+		foreach (IPEndPoint tcpEndPoint in tcpEndPoints)
+		{
+			if(tcpEndPoint.Port is >= ServerService.DEFAULT_PORT - 1 and < ServerService.MAX_PORT)
+			{
+				endPoints.Enqueue(tcpEndPoint);
+			}
+		}
+		
+		// Kick a task that gets the info from each of these servers;
+		// This might mis-identify any process that has an /info route handler on that port AND it returns a JSON payload that is deserializable.
+		// This is low enough risk that we are fine with it until we're proven wrong --- at which point we can be more aggressive in identifying that the return was OUR "info" payload.
+		var tasks = new List<Task>();
 		for (var threadId = 0; threadId < maxThreads; threadId++)
 		{
 			var task = Task.Run(async () =>
 			{
-				while (true)
+				while (endPoints.TryDequeue(out var remoteEP))
 				{
-					var thisPort = Interlocked.Increment(ref port);
-					if (thisPort > endPort) break;
-
-					var remoteEP = new IPEndPoint(Ip, thisPort);
-					var sender = new Socket(Ip.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+					var thisPort = remoteEP.Port;
 					try
 					{
-						await sender.ConnectAsync(remoteEP);
-						sender.Shutdown(SocketShutdown.Both);
-						sender.Close();
-
 						var url = $"http://127.0.0.1:{thisPort}";
 						var info = await CheckServer(url);
 						if (info != null)

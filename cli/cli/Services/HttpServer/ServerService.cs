@@ -118,6 +118,9 @@ public class ServerService
 			{
 				Log.Information("incrementing port...");
 				args.port++;
+				if (args.port is < DEFAULT_PORT or > MAX_PORT)
+					throw new CliException($"Port must be between {DEFAULT_PORT} and {MAX_PORT}");
+
 			}
 		} while (!started && args.incPortUntilSuccess);
 
@@ -375,6 +378,9 @@ public class ServerService
 			Log.Verbose($"CLI EXEC FINISHED WITH EXIT=[{exitCode}] REQ=[{req.commandLine}]");
 		}
 	}
+
+	public const int DEFAULT_PORT = 8342;
+	public const int MAX_PORT = DEFAULT_PORT + 3000;
 }
 
 public class ServerReporterService : IDataReporterService
