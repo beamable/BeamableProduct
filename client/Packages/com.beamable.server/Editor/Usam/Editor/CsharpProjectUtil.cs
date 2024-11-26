@@ -139,8 +139,6 @@ Do not add them from the custom solution file that opens from Beam Services wind
 
 				if (needsFileWrite)
 				{
-					Debug.Log(
-						$"Writing generated project for assembly definition {assembly.name} in the file: {fileName}");
 					Directory.CreateDirectory(path);
 					File.WriteAllText(fileName, content);
 
@@ -186,7 +184,7 @@ Do not add them from the custom solution file that opens from Beam Services wind
 
 
 
-			var dlls = GetValidDllReferences(assembly);
+			var dlls = GetValidDllReferences(assembly, out var _);
 			var dllReferences = string.Join(Environment.NewLine + "\t\t",
 											dlls.Select(x => GenerateDllReferenceEntry(x, csProjDir)));
 
@@ -201,22 +199,30 @@ Do not add them from the custom solution file that opens from Beam Services wind
 			return file;
 		}
 
-		public static IEnumerable<string> GetValidDllReferences(Assembly assembly)
+		public static List<string> GetValidDllReferences(Assembly assembly, out List<string> warnings)
 		{
 			var projectRoot = UnityEngine.Application.dataPath.Substring(0, UnityEngine.Application.dataPath.Length - "/Assets".Length);
-
+			warnings = new List<string>();
+			var outputDlls = new List<string>();
 			foreach (var dll in assembly.compiledAssemblyReferences)
 			{
 				var fullDllName = Path.GetFullPath(dll);
+
+				var name = Path.GetFileName(dll);
+				if (dll.Contains("unity", StringComparison.InvariantCultureIgnoreCase) && name.Contains("newtonsoft", StringComparison.InvariantCultureIgnoreCase))
+				{
+					warnings.Add("Newtonsoft.JSON needs to be refactored to use Nuget");
+					continue;
+				}
 				
 				if (!fullDllName.StartsWith(projectRoot)) continue;
 				// var dllPath = dll.Substring(fullDllName.Length + 1);
 				var dllName = Path.GetFileName(fullDllName);
 				if (!IsValidReference(dllName.Replace(".dll", ""))) continue;
-				yield return FileUtil.GetProjectRelativePath(fullDllName);
+				outputDlls.Add(FileUtil.GetProjectRelativePath(fullDllName));
 			}
 
-			yield break;
+			return outputDlls;
 		}
 
 		static IEnumerable<Assembly> GetValidAssemblyReferences(Assembly assembly)

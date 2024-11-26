@@ -288,7 +288,7 @@ namespace Beamable.Editor.BeamCli.UI
 			GUI.color = tempColor;
 			if (buttonClicked)
 			{
-				Debug.Log("Copied! " + text);
+				Debug.Log(text);
 				EditorGUIUtility.systemCopyBuffer = text;
 			}
 		}

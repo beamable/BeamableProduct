@@ -304,7 +304,10 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 				padding = new RectOffset(padding, padding, 0, 0)
 			});
 			GUI.enabled = _releasePromise == null;
-			manifestComment = BeamGUI.LayoutPlaceholderTextField(manifestComment, "Deployment comment", EditorStyles.textField);
+			manifestComment = BeamGUI.LayoutPlaceholderTextField(manifestComment, "Deployment comment", new GUIStyle(EditorStyles.textArea)
+			{
+				alignment = TextAnchor.UpperLeft,
+			}, GUILayout.Height(EditorGUIUtility.singleLineHeight * 3));
 			EditorGUILayout.EndVertical();
 			GUI.enabled = true;
 			EditorGUILayout.Space(10, expand: false);

@@ -231,11 +231,11 @@ namespace Beamable.Editor.Microservice.UI2
 			var menu = new GenericMenu();
 			// the openAPI and project buttons are in the same order as the buttons on the toolbar
 			
-			menu.AddItem(new GUIContent("Open openAPI"), false, () =>
+			menu.AddItem(new GUIContent("Goto openAPI in Portal"), false, () =>
 			{
 				usam.OpenSwagger(service.beamoId);
 			});
-			menu.AddItem(new GUIContent("Open project"), false, () =>
+			menu.AddItem(new GUIContent("Open project solution"), false, () =>
 			{
 				usam.OpenProject(service.beamoId, service.csprojPath);
 			});
@@ -260,7 +260,7 @@ namespace Beamable.Editor.Microservice.UI2
 			var hintPath = usam.GetClientFileCandidatePath(service.beamoId);
 			if (File.Exists(hintPath))
 			{
-				menu.AddItem(new GUIContent("Show client"), false, () =>
+				menu.AddItem(new GUIContent("Show client in Unity"), false, () =>
 				{
 					var projectBrowserType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.ProjectBrowser");
 					EditorWindow.GetWindow(projectBrowserType)?.Focus();
@@ -270,12 +270,12 @@ namespace Beamable.Editor.Microservice.UI2
 			}
 			else
 			{
-				menu.AddDisabledItem(new GUIContent("Show client"));
+				menu.AddDisabledItem(new GUIContent("Show client in Unity"));
 			}
 			
 			menu.AddSeparator("");
 			
-			menu.AddItem(new GUIContent("Go to deployed services"), false, () =>
+			menu.AddItem(new GUIContent("Goto deployed services in Portal"), false, () =>
 			{
 				usam.OpenPortalToReleaseSection();
 			});

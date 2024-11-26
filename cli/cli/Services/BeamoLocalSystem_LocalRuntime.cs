@@ -402,9 +402,9 @@ public partial class BeamoLocalSystem
 		if (builtDefinitions.TryGetValue(BeamoProtocolType.EmbeddedMongoDb, out var microStorageContainers))
 			runContainerTasks.AddRange(microStorageContainers.Select(async sd =>
 			{
-				Log.Information("Started deploying service: " + sd.BeamoId);
+				Log.Debug("Started deploying service: " + sd.BeamoId);
 				await RunLocalEmbeddedMongoDb(sd, localManifest.EmbeddedMongoDbLocalProtocols[sd.BeamoId]);
-				Log.Information("Finished deploying service: " + sd.BeamoId);
+				Log.Debug("Finished deploying service: " + sd.BeamoId);
 				onServiceDeployCompleted?.Invoke(sd.BeamoId);
 				token.ThrowIfCancellationRequested(); //The first service to be deployed locally would throw the exception and prevent the others from continuing
 			}));

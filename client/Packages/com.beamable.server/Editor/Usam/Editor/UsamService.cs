@@ -530,6 +530,18 @@ namespace Beamable.Server.Editor.Usam
 			}
 
 			{
+				if (localOption == null)
+				{
+					setting.options.Add(new RoutingOption
+					{
+						display = "local",
+						type = RoutingOptionType.LOCAL,
+						instance = null,
+						routingKey = latestManifest.localRoutingKey
+					});
+				}
+				
+				
 				if (localOption != null)
 				{
 					autoOption.display = localOption.display;
