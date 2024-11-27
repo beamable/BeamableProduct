@@ -14,6 +14,7 @@ public class OpenSwaggerCommandArgs : CommandArgs
 {
 	public string RoutingKey;
 	public ServiceName ServiceName;
+	public string srcTool;
 }
 
 public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResult
@@ -61,6 +62,11 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 			// nothing happens here, all logic handled in routingKeyOption binder
 		});
 
+		AddOption(new Option<string>("--src-tool", () => "cli", "A hint to the Portal page which tool is being used."), (args, i) =>
+		{
+			args.srcTool = i;
+		});
+
 	}
 
 	public override Task Handle(OpenSwaggerCommandArgs args)
@@ -89,11 +95,11 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 			throw new CliException("No service found. Navigate to a .beamable workspace with valid Microservices. ");
 		}
 
-		OpenSwagger(args.AppContext, args.ServiceName, args.RoutingKey);
+		OpenSwagger(args.AppContext, args.ServiceName, args.RoutingKey, args.srcTool);
 		return Task.CompletedTask;
 	}
 
-	public static void OpenSwagger(IAppContext ctx, string beamoId, string routingKey)
+	public static void OpenSwagger(IAppContext ctx, string beamoId, string routingKey, string srcTool)
 	{
 		var cid = ctx.Cid;
 		var pid = ctx.Pid;
@@ -101,6 +107,7 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 		var queryArgs = new List<string>
 		{
 			$"refresh_token={refreshToken}",
+			$"srcTool={srcTool}"
 		};
 		
 		if(!string.IsNullOrEmpty(routingKey))
