@@ -111,6 +111,8 @@ namespace Beamable.Editor.Content.Components
 
 		private void ContentListVisualElement_OnItemDelete(ContentItemDescriptor contentItemDescriptor)
 		{
+			if (contentItemDescriptor.Status == ContentModificationStatus.SERVER_ONLY) return;
+
 			_itemsToDelete.Add(contentItemDescriptor);
 			EditorDebouncer.Debounce("content-deleting-lots-of-items", () =>
 			{
