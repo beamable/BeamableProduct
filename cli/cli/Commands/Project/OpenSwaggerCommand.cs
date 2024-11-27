@@ -62,7 +62,7 @@ public class OpenSwaggerCommand : AppCommand<OpenSwaggerCommandArgs>, IEmptyResu
 			// nothing happens here, all logic handled in routingKeyOption binder
 		});
 
-		AddOption(new Option<string>("--src-tool", () => "cli", "A hint to the Portal page which tool is being used."), (args, i) =>
+		AddOption(new Option<string>("--src-tool", () => "cli", "A hint to the Portal page which tool is being used"), (args, i) =>
 		{
 			args.srcTool = i;
 		});
