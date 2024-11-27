@@ -609,7 +609,12 @@ namespace Beamable.Server.Editor.Usam
 			try
 			{
 				var cmd = _cli.ProjectOpenSwagger(
-					new ProjectOpenSwaggerArgs() { remote = remote, serviceName = new ServiceName(beamoId) });
+					new ProjectOpenSwaggerArgs()
+					{
+						remote = remote, 
+						serviceName = new ServiceName(beamoId),
+						srcTool = "unity"
+					});
 				var _ = cmd.Run();
 			}
 			catch (Exception e)

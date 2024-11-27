@@ -12,6 +12,8 @@ namespace Beamable.Editor.BeamCli.Commands
 		public string routingKey;
 		/// <summary>When set, enforces the routing key to be the one for the service deployed to the realm. Cannot be specified when --routing-key is also set</summary>
 		public bool remote;
+		/// <summary>A hint to the Portal page which tool is being used.</summary>
+		public string srcTool;
 		/// <summary>Serializes the arguments for command line usage.</summary>
 		public virtual string Serialize()
 		{
@@ -32,6 +34,12 @@ namespace Beamable.Editor.BeamCli.Commands
 			if ((this.remote != default(bool)))
 			{
 				genBeamCommandArgs.Add(("--remote=" + this.remote));
+			}
+			// If the srcTool value was not default, then add it to the list of args.
+			if ((this.srcTool != default(string)))
+			{
+				genBeamCommandArgs.Add((("--src-tool=\"" + this.srcTool)
+								+ "\""));
 			}
 			string genBeamCommandStr = "";
 			// Join all the args with spaces
