@@ -47,8 +47,19 @@ namespace Beamable.Common
 			var attribute = federationIdType.GetCustomAttribute<FederationIdAttribute>();
 			if (attribute == null)
 			{
-				throw new Exception(
-					$"{nameof(FederationIdAttribute)} is required on type {federationIdType.FullName}");
+#pragma warning disable CS0618 // Type or member is obsolete
+				if (typeof(IThirdPartyCloudIdentity).IsAssignableFrom(federationIdType))
+
+				{
+					var thirdPartyType = (IThirdPartyCloudIdentity) Activator.CreateInstance(federationIdType);
+					return thirdPartyType.UniqueName;
+				}
+#pragma warning restore CS0618 // Type or member is obsolete
+				else
+				{
+					throw new Exception(
+						$"{nameof(FederationIdAttribute)} is required on type {federationIdType.FullName}");
+				}
 			}
 			return attribute.FederationId;
 		}

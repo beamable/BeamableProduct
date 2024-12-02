@@ -667,16 +667,10 @@ namespace Beamable.Server.Editor.Usam
 					var allFedTypes = new List<string>();
 					foreach (var federationComponent in service.FederationComponents)
 					{
-						try
-						{
-							allFedTypes.Add(federationComponent.typeName);
-							allFedIds.Add(federationComponent.identity.GetUniqueName());
-						}
-						catch
-						{
-							plan.manualSteps.Add($"The federation with type=[{federationComponent.typeName}] needs to be refactored to use the {nameof(FederationIdAttribute)}.\n\n " +
-							                     $"You can do it by adding the attribute [FederationId(\"<YourId>\")] and removing the UniqueName attribute.");
-						}
+						allFedTypes.Add(federationComponent.typeName);
+						allFedIds.Add(federationComponent.identity.GetUniqueName());
+						plan.manualSteps.Add($"The federation with type=[{federationComponent.typeName}] needs to be refactored to use the {nameof(FederationIdAttribute)}.\n\n " +
+						                     $"You can do it by adding the attribute [FederationId(\"<YourId>\")] and removing the UniqueName attribute.");
 					}
 
 					migration.federationStep = new MigrationFederationStep()
