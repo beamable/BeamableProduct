@@ -34,7 +34,21 @@ namespace Beamable.Server.Editor
 #endif
 
 		public static MicroserviceConfiguration Instance => Get<MicroserviceConfiguration>();
-
+		
+		/// <summary>
+		/// this exists to migrate data from 1.19.x into the 2.0 era. However, the enabled/disabled status is no longer kept in this field. 
+		/// </summary>
+		[Obsolete]
+		[HideInInspector]
+		public List<MicroserviceConfigurationEntry> Microservices;
+		
+		/// <summary>
+		/// this exists to migrate data from 1.19.x into the 2.0 era. However, the enabled/disabled status is no longer kept in this field. 
+		/// </summary>
+		[Obsolete]
+		[HideInInspector]
+		public List<StorageConfigurationEntry> StorageObjects;
+		
 		private const string AutoBuildCommonAssemblyTooltip =
 			"When true, Beamable automatically generates a common assembly called Unity.Beamable.Customer.Common that is auto-referenced by Unity code, and automatically imported by Microservice assembly definitions. ";
 		[Tooltip(AutoBuildCommonAssemblyTooltip)]
@@ -49,5 +63,29 @@ namespace Beamable.Server.Editor
 		[Tooltip("When a log would be printed to the Beam Services tab, if it is an error, should the log also be printed to the Unity console?")]
 		public bool LogErrorsToUnityConsole = true;
 
+	}
+	
+	/// <summary>
+	/// This type catpures a sub-set of the information it used in 1.19.x.
+	/// Check this link for the old schema. 
+	/// https://github.com/beamable/BeamableProduct/blob/1.19.23/client/Packages/com.beamable.server/Editor/MicroserviceConfiguration.cs#L395
+	/// </summary>
+	[Serializable]
+	public class MicroserviceConfigurationEntry
+	{
+		public string ServiceName;
+		public bool Enabled;
+	}
+	
+	/// <summary>
+	/// This type catpures a sub-set of the information it used in 1.19.x.
+	/// Check this link for the old schema. 
+	/// https://github.com/beamable/BeamableProduct/blob/1.19.23/client/Packages/com.beamable.server/Editor/MicroserviceConfiguration.cs#L395
+	/// </summary>
+	[Serializable]
+	public class StorageConfigurationEntry
+	{
+		public string StorageName;
+		public bool Enabled;
 	}
 }
