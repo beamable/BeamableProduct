@@ -21,6 +21,7 @@ namespace Beamable.Server.Editor.Usam
 		public bool NeedsMigration => services.Count > 0 || storages.Count > 0;
 		public List<MigrationService> services = new List<MigrationService>();
 		public List<MigrationStorage> storages = new List<MigrationStorage>();
+		public List<string> servicesToDisable = new List<string>();
 		public List<string> manualSteps = new List<string>();
 
 		public HashSet<string> allReferencedAssemblies
@@ -405,7 +406,7 @@ namespace Beamable.Server.Editor.Usam
 
 							active.stepRatios[3] = 1f;
 						}
-
+						
 						{
 							// delete code!
 							Directory.Delete(service.copyStep.absoluteSourceFolder, true);
@@ -414,6 +415,16 @@ namespace Beamable.Server.Editor.Usam
 						}
 
 						active.isComplete = true;
+					}
+
+
+					{ // disable services and storages that were disabled previously.
+						var args = new ProjectDisableArgs {ids = plan.servicesToDisable.ToArray()};
+						var disableCommand = cli.ProjectDisable(args).OnError(cb =>
+						{
+							Debug.LogError($"failed to mark services as disabled. type=[{cb.data.typeName}] message=[{cb.data.message}] cli-stack=[{cb.data.stackTrace}]" );
+						});
+						yield return disableCommand.Run().ToYielder();
 					}
 					
 					yield return usam.WaitReload().ToYielder();
@@ -470,7 +481,7 @@ namespace Beamable.Server.Editor.Usam
 			var services = registry.Descriptors;
 			var storages = registry.StorageDescriptors;
 			var storageAssets = storages.Select(x => x.ConvertToAsset()).ToList();
-
+			
 			foreach (var storage in storages)
 			{
 				var migration = new MigrationStorage
@@ -481,6 +492,19 @@ namespace Beamable.Server.Editor.Usam
 				};
 
 				var outputFolder = GetOutputFolder(storage);
+
+				{ // detect if the storage was disabled.
+#pragma warning disable CS0612 // Type or member is obsolete
+					var existingConfig = MicroserviceConfiguration.Instance.StorageObjects?.FirstOrDefault(
+						x => x.StorageName == storage.Name);
+
+					if (existingConfig != null && !existingConfig.Enabled)
+					{
+						plan.servicesToDisable.Add(storage.Name);
+					}
+					
+#pragma warning restore CS0612 // Type or member is obsolete
+				}
 				
 				{ // create the storage
 					migration.newStorageArgs = new ProjectNewStorageArgs
@@ -569,6 +593,19 @@ namespace Beamable.Server.Editor.Usam
 					beamoId = service.Name,
 					legacyDescriptor = service
 				};
+				
+				{ // detect if the service was disabled.
+#pragma warning disable CS0612 // Type or member is obsolete
+					var existingConfig = MicroserviceConfiguration.Instance.StorageObjects?.FirstOrDefault(
+						x => x.StorageName == service.Name);
+
+					if (existingConfig != null && !existingConfig.Enabled)
+					{
+						plan.servicesToDisable.Add(service.Name);
+					}
+					
+#pragma warning restore CS0612 // Type or member is obsolete
+				}
 				
 				{ // storage refs
 					var serviceInfo = service.ConvertToInfo();
