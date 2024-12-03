@@ -61,6 +61,7 @@ namespace Beamable.Editor.Microservice.UI2
 				return;
 			}
 
+			PrepareLogs();
 			PrepareCards();
 			selectedCard = cards.FirstOrDefault(x => x.name == selectedBeamoId);
 
