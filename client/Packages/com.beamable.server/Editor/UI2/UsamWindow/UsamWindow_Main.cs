@@ -19,6 +19,18 @@ namespace Beamable.Editor.Microservice.UI2
 		[NonSerialized]
 		private Dictionary<string, LogDataProvider> _beamoIdToLogProvider = new Dictionary<string, LogDataProvider>();
 
+		void PrepareLogs()
+		{
+			foreach (var namedLog in usam._namedLogs)
+			{
+				if (!_beamoIdToLogProvider.TryGetValue(namedLog.beamoId, out var provider))
+				{
+					provider = _beamoIdToLogProvider[namedLog.beamoId] = new CliLogDataProvider(namedLog.logs);
+					namedLog.logView.BuildView(provider);
+				}
+			}
+		}
+		
 		void PrepareCards()
 		{
 			{ // if migrating, do that before anything else
