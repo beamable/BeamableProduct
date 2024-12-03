@@ -17,22 +17,38 @@ You can also search for available versions with the [beam version ls](doc:cli-ve
 
 ## Migration Guide
 
-The Beamable CLI may include changes between versions that require developer intervention. If there are known steps that a developer must perform manually, they are documented below. The following sections describe the required updates from one version to another. These are ordered with the latest versions towards the top, and the older versions toward the bottom of the document. 
+The Beamable CLI may include changes between versions that require developer intervention. If there are known steps that a developer must perform manually, they are documented below. The following sections describe the required updates from one version to another. 
 
-### From 2.0.1 to 2.1.0
+These are ordered with the latest versions towards the top, and the older versions toward the bottom of the document. **When jumping multiple versions (A.A.A -> C.C.C), apply the migrations without skipping steps (A.A.A -> B.B.B -> C.C.C).**
 
-The upgrade from 2.0.1 to 2.1.0 brings a few critical updates to the `csproj` file, how the Beam CLI tool is managed, and the version of `dotnet`. 
+### From 2.0.2 to 3.0.0
+The upgrade from 2.0.x to 3.0.0 brings a few critical updates to the `csproj` file, how the Beam CLI tool is managed, and the version of `dotnet`. 
 
-Starting with CLI 2.1.0, you _may_ (and should) update to `net8.0`. The old `net6.0` framework will be end-of-life on November 12, 2024. 
+**To start this process, let's open a terminal and navigate to the directory containing your `.beamable` folder. All commands are written as though invoked from this directory.**
 
-##### CLI File Structure
+```shell
+# In this file structure...
+SomeDrive
+|---ProjectRoot
+|---|--- .beamable
 
-You no longer need the `.beamable/local-services-manifest.json` file. You may delete it. 
+# You should make sure you're in the directory containing the .beamable folder
+cd SomeDrive/ProjectRoot
+```
 
-More importantly, 2.1.0 changes how the CLI is installed for _new_ projects created with 2.1.0. However, nothing in 2.1.0 will _change_ your global CLI installation. We recommend you do the following steps to update the installation of the CLI. Previous to 2.1.0, the CLI was always installed globally, and all Beamable CLI projects on your computer had to share the same CLI version, or you would have had to un-install & re-install specific versions when switching projects. In 2.1.0, the CLI should be installed as a _local dotnet tool_. 
+#### CLI File Structure
+Starting with CLI 3.0.0, you should start by updating the CLI's file structure. The steps required are defined below:
 
-Open a terminal window to where your `.beamable` folder is located. To verify you are in the correct location, you should be able to emulate the following command, 
+1. Install [dotnet 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) in your machine (it is the new recommended version). The old `net6.0` framework's end-of-life arrived on November 12, 2024. 
+2. Delete the `.beamable/local-services-manifest.json` file. (It is no longer necessary)
 
+Previous to 3.0.0, the CLI was always installed globally and all Beamable CLI projects on your computer had to share the same CLI version. You could un-install & re-install specific versions when switching projects, but that is a bad workflow --- so... we changed it.
+
+In 3.0.0, the CLI should be installed as a _local dotnet tool_.
+
+The steps to change your project from using the global CLI tool to a *local dotnet tool* are defined below.
+
+Start by verifying you are in the correct location by running the following command.
 ```sh
 cat .beamable/connection-configuration.json 
 {
@@ -42,19 +58,14 @@ cat .beamable/connection-configuration.json
 }
 ```
 
-Then, run the following command to install the CLI as a local tool.
-```sh
-dotnet tool install --create-manifest-if-needed beamable.tools --version 2.1.0
-```
-
-This should create a file in a top level `.config/dotnet-tools.json` with the contents, 
+Next, run `dotnet tool install --create-manifest-if-needed beamable.tools --version 3.0.0`. This should create a file in a top level `.config/dotnet-tools.json` with the following contents.
 ```json
 {  
   "version": 1,  
   "isRoot": true,  
   "tools": {  
     "beamable.tools": {  
-      "version": "2.1.0",  
+      "version": "3.0.0",  
       "commands": [  
         "beam"  
       ],  
@@ -68,85 +79,166 @@ Finally, to verify that the tool is installed locally, run the following,
 ```sh
 dotnet beam version
  {                                                
-    "version": "2.1.0",               
+    "version": "3.0.0",               
     "location": "/usr/local/share/dotnet/dotnet", 
     "type": "LocalTool",                          
-    "templates": "2.1.0"              
+    "templates": "3.0.0"
  }   
 ```
 
-From now on, if you want to use the project specific CLI, run `dotnet beam` instead of `beam`. However, if you run `beam` in the context of a local project, _and_ the global version of your CLI is different than the local project version, the command will be automatically forwarded to the local version. You will see a warning message similar to this, 
+From here on out, if you want to use the project specific CLI run `dotnet beam` instead of `beam`. 
+
+However, if you run `beam` in the context of a local project _and_ the global version of your CLI is different than the local project version, the command will be automatically forwarded to the local version. This does add some latency so prefer `dotnet beam` whenever you can.
+
+You will see a warning message similar to this when invoking `beam` directly:
 ```
 You tried using a Beamable CLI version=[2.1.0] which is different than the one configured in this project=[2.1.0-PREVIEW.RC2]. We are forwarding the command (beam 
 --pretty version) to the version the project is using via dotnet=[dotnet]. Instead of relying on this forwarding, please 'dotnet beam' from inside the project directory.
 ```
 
-##### Dotnet Version
+#### Updating the `.csproj` Files
+The next step in this migration is to fix up the `.csproj` files for your microservices. The new `.csproj` file structure comes with a few new things:
 
-As mentioned earlier, CLI 2.1.0 adds support for `net8.0` . Given that `net6.0` will be end-of-life by the end of 2024, we recommend you update when you can. In order to update, you'll need to 
-1. install the [dotnet 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) (if you don't already have it)
-2. modify the `csproj`'s `TargetFramework` value, 
-3. modify the `Dockerfile` 
+- It will version-lock the package versions to the currently local CLI version (the one inside `.config/dotnet-tools.json`).
+	- This means updating the CLI is just changing that version number.
+	- You can manually edit this to dodge the version-lock if you want to risk it.
+- It includes a Roslyn Static Analyser to help you out with microservices and federation implementations.
+- It'll target `.net8`.
 
-The `TargetFramework` modification is straight forward. Find the `TargetFramework` property each Microservice's `.csproj` file and update the value from `net6.0` to `net8.0`. 
+In every `csproj` file for **Microservices**, **MicroStorages**, and **Common Libraries**, follow the steps below:
 
-```xml
-<TargetFramework>net8.0</TargetFramework>
-```
-
-The modification to the `Dockerfile` is a bit more difficult. 
-
-First, select the first `FROM` command in the file, and _replace_ it with the following snippet, 
-```Dockerfile
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0-alpine as build-env  
-ARG TARGETARCH
-```
-
-Then, find the line that starts with `RUN dotnet publish`, and _replace_ the line with the following, 
-```Dockerfile
-RUN dotnet publish ${BEAM_CSPROJ_PATH} -p:BeamableVersion=${BEAM_VERSION} -a $TARGETARCH -c release -o /beamApp
-```
-
-##### Microservices / MicroStorages
-
-Now that the CLI is installed as a local tool in the `.config/dotnet-tools`, Beamable attempts to treat that version number _as the only source of truth for SDK version_. Every other version reference to Beamable may be derived from that single file. New services built with CLI 2.1.0 will do this automatically, but unfortunately, existing services need to be updated manually. 
-
-In every `csproj` file for Microservices, MicroStorages, and Common libraries, following the steps below. 
-
-- For `csproj` files for MicroServices and MicroStorages, Ensure that the property group with a Label called `Beamable Settings` looks like this... For MicroStorage `csproj` files, the value should be `storage`. You do not need this for common libraries. 
-```xml
-<PropertyGroup Label="Beamable Settings">
-    <!-- All Microservices must have the value, "service" -->
-    <BeamProjectType>service</BeamProjectType>
-</PropertyGroup>
-```
-- Add a property group with a Label called `Beamable Version` that looks like this:
+ First, add a `PropertyGroup` with a `Label` called `Beamable Version` that looks like this:
 ```xml
 <!-- These are special Beamable parameters that we use to keep the beamable packages in-sync to the CLI version your project is using. -->  
 <!-- This makes it so your microservices are auto-updated whenever you update the CLI installed in your project. -->  
 <PropertyGroup Label="Beamable Version" Condition="$(DOTNET_RUNNING_IN_CONTAINER)!=true">  
-    <DotNetConfigPath Condition="'$(DotNetConfigPath)' == ''">$([MSBuild]::GetDirectoryNameOfFileAbove("$(MSBuildProjectDirectory)/..", ".config/dotnet-tools.json"))</DotNetConfigPath>  
-    <DotNetConfig Condition="'$(DotNetConfig)' == ''">$([System.IO.File]::ReadAllText("$(DotNetConfigPath)/.config/dotnet-tools.json"))</DotNetConfig>  
-    <!-- Extracts the version number from the first tool defined in 'dotnet-tools.json' that starts with "beamable". -->  
-    <BeamableVersion Condition="'$(BeamableVersion)' == ''">$([System.Text.RegularExpressions.Regex]::Match("$(DotNetConfig)", "beamable.*?\"([0-9]+\.[0-9]+\.[0-9]+.*?)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace).Groups[1].Value)</BeamableVersion>  
-    <!-- When running from inside docker, this gets injected via the Dockerfile at build-time. -->  
+  <DotNetConfigPath Condition="'$(DotNetConfigPath)' == ''">$([MSBuild]::GetDirectoryNameOfFileAbove("$(MSBuildProjectDirectory)/..", ".config/dotnet-tools.json"))</DotNetConfigPath>  
+  <DotNetConfig Condition="'$(DotNetConfig)' == ''">$([System.IO.File]::ReadAllText("$(DotNetConfigPath)/.config/dotnet-tools.json"))</DotNetConfig>  
+  <!-- Extracts the version number from the first tool defined in 'dotnet-tools.json' that starts with "beamable". -->  
+  <BeamableVersion Condition="'$(BeamableVersion)' == ''">$([System.Text.RegularExpressions.Regex]::Match("$(DotNetConfig)", "beamable.*?\"([0-9]+\.[0-9]+\.[0-9]+.*?)\",", RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace).Groups[1].Value)</BeamableVersion>  
+  <!-- When running from inside docker, this gets injected via the Dockerfile at build-time. -->  
 </PropertyGroup>
 ```
 
-- For all `<PackageReference>` elements that reference Beamable packages, change the version string to `$(BeamableVersion)`. 
-	- For Microservices and MicroStorages, this should look like the following, 
-	  ```xml
-<PackageReference Include="Beamable.Microservice.Runtime" Version="$(BeamableVersion)"/>
-```
-	- For Common Libraries, 
-	  ```xml
-	  <PackageReference Include="Beamable.Common" Version="$(BeamableVersion)"/>
+Then, we recommend you upgrade the `TargetFramework` to `.net8.0`:
+```xml
+<PropertyGroup Label="Dotnet Settings">  
+  <!-- net8.0 is the LTS version until 2026. To update your net version, update the <TargetFramework> when Beamable announces support. -->  
+  <TargetFramework>net8.0</TargetFramework>  
+</PropertyGroup>
 ```
 
-If you decided to _not_ update from `net6.0` to `net8.0`, then you _must_ make a small modification to the `Dockerfile`s for Microservices. Find the `RUN dotnet publish` line and add the following property... If you followed the dotnet upgrade steps, then you should ignore this final instruction, as it was already included. 
+##### Microservices
+For every Microservice project replace all `PackageReference` elements that reference a `Beamable.` with the following two references:
+```xml
+<PackageReference Include="Beamable.Microservice.Runtime" Version="$(BeamableVersion)" />  
+<PackageReference Include="Beamable.Microservice.SourceGen" Version="$(BeamableVersion)" OutputItemType="Analyzer" />  
 ```
--p:BeamableVersion=${BEAM_VERSION}
+
+Then, also add the following to the `Beamable Settings` `Property Group`:
+```xml
+<PropertyGroup Label="Beamable Settings">  
+  <!-- All Microservices must have the value, "service" -->  
+  <BeamProjectType>service</BeamProjectType>          
+</PropertyGroup>
 ```
+##### MicroStorages
+For every MicroStorage project, replace all `PackageReference` elements that reference a `Beamable.` with the following reference:
+```xml
+<PackageReference Include="Beamable.Microservice.Runtime" Version="$(BeamableVersion)" />
+```
+
+Then, add the following to the `Beamable Settings` `Property Group`. Please replace `MyStorage` with your `csproj`'s file name.
+```xml
+<BeamProjectType>storage</BeamProjectType>  
+<!-- When the Storage Object is running locally in Docker, these volume names are used to persist data between container restart events. -->  
+<MyStorageDockerDataVolume>beamable_storage_MyStorage_data</MyStorageDockerDataVolume>  
+<MyStorageDockerFilesVolume>beamable_storage_MyStorage_files</MyStorageDockerFilesVolume>
+```
+
+##### Common Libraries
+For every Common Library project, replace all `PackageReference` elements that reference a `Beamable.` with the following reference:
+```xml
+<PackageReference Include="Beamable.Microservice.Runtime" Version="$(BeamableVersion)" />
+```
+
+Then, also add the following to the `Beamable Settings` `Property Group`:
+```xml
+<PropertyGroup Label="Beamable Settings">  
+  <!-- All Microservices must have the value, "service" -->  
+  <BeamProjectType>service</BeamProjectType>          
+</PropertyGroup>
+```
+
+#### Microservice Code Changes - `partial` and `FederationId` 
+If you use any Federated endpoints as part of your Microservices, there a few code-changes you'll have to make:
+
+- Add `partial` to your Microservice class.
+- Replace all `IThirdPartyCloudIdentity` with `IFederationId`.
+- Add a `FederationId` attribute to the class `IFederationId` --- the `UniqueName` is the property.
+- If you were ever accessing the `UniqueName` property as part of your code, you'll need to replace those calls with `GetUniqueName()`.
+
+Once these are in, try to compile your services. The newly referenced Roslyn Static Analyzer should tell you if you made any mistakes.
+
+Finally, the analyzer will inform you that the federations you have in code are not in the `federation.json` file. The error will look something like this:
+```log
+Error BEAM_FED_O001 : Missing declared Federation in MicroserviceFederationsConfig. Microservice=SteamDemo, Id=steam, Interface=IFederatedLogin. Please add this Id by running `dotnet beam fed add SteamDemo steam IFederatedLogin` from your project's root directory. Or remove the IFederatedLogin that references steam  interface from the SteamDemo Microservice class.
+```
+
+You can run the command described in the error message to register the federation in the code with the `federation.json` file.
+
+> 📘 Why is this needed?
+>
+> We now support the ability to test federations locally (which was previously impossible due to architecture of 2.0.0). With this new ability, some UX requirements changed for our engine integrations. This change helps the development experience of such cases in the Unity/Unreal editor integrations.
+
+#### Updating the `Dockerfile` Files
+This is very simple: simply replace the contents of each Dockerfile with the following. After replacing it, you can re-add any previous modifications you might've had.
+
+Make sure that the version in this line  `ARG BEAM_DOTNET_VERSION="8.0-alpine"` matches the `.net` version in the `.csproj` file.
+
+```Dockerfile
+ARG BEAM_DOTNET_VERSION="8.0-alpine"  
+FROM mcr.microsoft.com/dotnet/runtime:${BEAM_DOTNET_VERSION}  
+  
+# These args are provided by the Beam CLI  
+  
+# Declares the relative path from the beamable workspace to the pre-build support binaries for BeamService  
+#  Normally, this will be /services/BeamService/bin/beamApp/support  
+ARG BEAM_SUPPORT_SRC_PATH  
+  
+# Declares the relative path from the beamable workspace to the pre-built binaries for BeamService  
+#  Normally, this will be /services/BeamService/bin/beamApp/app  
+ARG BEAM_APP_SRC_PATH  
+  
+# Declares where the built application will exist inside the Docker image.  
+#  This value is usually /beamApp/BeamService  
+ARG BEAM_APP_DEST  
+  
+# <beamReserved> Beamable may inject custom settings into this Dockerfile. Please do not remove these lines. # </beamReserved>  
+  
+# /beamApp is the directory that will hold the application  
+WORKDIR /beamApp  
+  
+# expose the health port  
+EXPOSE 6565   
+# copy general supporting files  
+COPY $BEAM_SUPPORT_SRC_PATH .  
+  
+# copy specific application code  
+COPY $BEAM_APP_SRC_PATH .  
+  
+# ensure that the application is runnable  
+RUN chmod +x $BEAM_APP_DEST  
+ENV BEAM_APP=$BEAM_APP_DEST  
+  
+# when starting the container, run dotnet with the built dll  
+ENTRYPOINT "dotnet" $BEAM_APP  
+  
+# Swap entrypoints if the container is exploding and you want to keep it alive indefinitely so you can go look into it.  
+#ENTRYPOINT ["tail", "-f", "/dev/null"]
+```
+
+
 ### From 1.19.22 to 2.0.1
 
 #### CLI File Structure
