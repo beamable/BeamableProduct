@@ -537,7 +537,7 @@ public partial class DeployUtil
 		return errors.Count == 0;
 	}
 
-	public static ManifestView EnsureEntriesHaveChecksums(ManifestView current)
+	public static ManifestView EnsureEntriesHaveChecksums(ManifestView current, ManifestView remote)
 	{
 		var next = current.Copy();
 		// compute the checksums for all services and storages
@@ -554,7 +554,51 @@ public partial class DeployUtil
 		return next;
 	}
 	
-	public static ManifestView EnsureArchivedServicesAreDisabled(ManifestView current)
+	public static ManifestView RemoveDisabledServicesThatWereNeverDeployed(ManifestView current, ManifestView remote)
+	{
+		var next = current.Copy();
+		var storagesToKeep = new HashSet<ServiceDependencyReference>();
+
+		var services = next.manifest.ToList();
+		for (int i = services.Count - 1; i >= 0; i--)
+		{
+			var sr = services[i];
+			
+			// If we have this service as disabled and have never published, we just remove them.
+			if (!sr.enabled && !remote.manifest.Any(s => s.serviceName.Equals(sr.serviceName)))
+			{
+				services.RemoveAt(i);
+			}
+			// Otherwise, we keep track of their dependencies so we can fix up the Storage References in another pass.
+			else
+			{
+				if (sr.dependencies.TryGet(out var deps))
+				{
+					foreach (ServiceDependencyReference serviceDependencyReference in deps)
+						storagesToKeep.Add(serviceDependencyReference);
+				}
+			}
+		}
+
+		next.manifest = services.ToArray();
+
+		// Make sure we are not adding storage object references for services that won't get uploaded.
+		var storages = next.storageReference.GetOrElse(Array.Empty<ServiceStorageReference>()).ToList();
+		for (int i = storages.Count - 1; i >= 0; i--)
+		{
+			ServiceStorageReference serviceStorageReference = storages[i];
+			var shouldKeep = storagesToKeep.Any(s => s.id.Equals(serviceStorageReference.id));
+			if (!shouldKeep)
+			{
+				storages.RemoveAt(i);
+			}
+		}
+		next.storageReference.Set(storages.ToArray());
+
+		return next;
+	}
+	
+	public static ManifestView EnsureArchivedServicesAreDisabled(ManifestView current, ManifestView remote)
 	{
 		var next = current.Copy();
 		// if a service or storage is archived, then it cannot be enabled. 
@@ -577,7 +621,7 @@ public partial class DeployUtil
 		return next;
 	}
 	
-	public static ManifestView EnsureOnlyActiveStoragesAreEnabled(ManifestView current)
+	public static ManifestView EnsureOnlyActiveStoragesAreEnabled(ManifestView current, ManifestView remote)
 	{
 		var next = current.Copy();
 		// there is a rule on the backend that a storage can only be enabled 
@@ -878,8 +922,9 @@ public partial class DeployUtil
 		
 		// process transforms
 		{
-			var transforms = new List<Func<ManifestView, ManifestView>>
+			var transforms = new List<Func<ManifestView, ManifestView, ManifestView>>
 			{
+				RemoveDisabledServicesThatWereNeverDeployed,
 				EnsureArchivedServicesAreDisabled, 
 				EnsureOnlyActiveStoragesAreEnabled, 
 				EnsureEntriesHaveChecksums
@@ -887,7 +932,7 @@ public partial class DeployUtil
 			for (var i = 0; i < transforms.Count; i++)
 			{
 				var r = .5f * ((i + 1f) / transforms.Count);
-				next = transforms[i](next);
+				next = transforms[i](next, remote);
 				progressHandler?.Invoke(MergingManifestProgressName, r);
 			}
 		}
@@ -907,17 +952,19 @@ public partial class DeployUtil
 			//  AND those services that we just built locally. 
 			//  If a service was not built locally, then we must assume the image already exists remotely. 
 			var locallyBuiltServices = localBuildReports.Select(x => x.service).ToArray();
-			foreach (var locallyBuiltService in locallyBuiltServices)
+			foreach (var serviceInManifest in next.manifest)
 			{
 				// find the service in the local and remote
-				var localService = next.manifest.FirstOrDefault(x => x.serviceName == locallyBuiltService);
-				var remoteService = remote.manifest.FirstOrDefault(x => x.serviceName == locallyBuiltService);
-				if (localService == null)
+				var localService = locallyBuiltServices.FirstOrDefault(x => x == serviceInManifest.serviceName);
+				var remoteService = remote.manifest.FirstOrDefault(x => x.serviceName == serviceInManifest.serviceName);
+				
+				// If the service is enabled and it wasn't built locally, this is a bug.
+				if (serviceInManifest.enabled && localService == null)
 					throw new CliException("local service cannot be null. This is a beamable bug, please report");
-				if (remoteService == null || localService.imageId != remoteService.imageId)
-				{
-					servicesToUpload.Add(locallyBuiltService);
-				}
+				
+				// If an enabled service did not exist in the remote service OR any service had its imageId change relative to the one in the manifest, it means we have to upload this new image.  
+				if ((serviceInManifest.enabled && remoteService == null) || (remoteService != null && serviceInManifest.imageId != remoteService.imageId)) 
+					servicesToUpload.Add(serviceInManifest.serviceName);
 			}
 		}
 

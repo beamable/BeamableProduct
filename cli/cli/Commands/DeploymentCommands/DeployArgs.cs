@@ -68,7 +68,7 @@ public class DeployArgs
 	public static void AddModeOption<TArgs>(AppCommand<TArgs> command, Action<TArgs, DeployMode> binder)
 		where TArgs : CommandArgs
 	{
-		var additiveOption = new Option<bool>("--merge",  "Create a Release that adds your current local environment to the existing remote services. Existing deployed services will not be removed");
+		var additiveOption = new Option<bool>("--merge",  "Create a Release that merges your current local environment to the existing remote services. Existing deployed services will not be removed");
 		var replacementOption = new Option<bool>("--replace", "Create a Release that completely overrides the existing remote services. Existing deployed services that are not present locally will be removed (default)");
 		
 		command.AddOption(additiveOption, (_, _) => { });
@@ -77,7 +77,7 @@ public class DeployArgs
 			var additive = ctx.ParseResult.GetValueForOption(additiveOption);
 			if (additive && replace)
 			{
-				throw new CliException("Cannot pass both --additive and --replace");
+				throw new CliException("Cannot pass both --merge and --replace");
 			}
 
 			if (additive)

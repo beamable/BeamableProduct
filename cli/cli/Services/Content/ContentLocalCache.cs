@@ -1,6 +1,8 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
+using Beamable.Common.Content.Serialization;
+using Beamable.Server.Common;
 using cli.Utils;
 using Errata;
 using JetBrains.Annotations;
@@ -244,8 +246,7 @@ public class ContentLocalCache
 		{
 			id = document!.id,
 			checksum = document.CalculateChecksum(),
-			properties =
-				JsonSerializer.Serialize(document.properties, new JsonSerializerOptions { WriteIndented = false }),
+			properties = JsonSerializer.Serialize(document.properties, new JsonSerializerOptions { WriteIndented = false } ),
 			tags = tags,
 			lastChanged = 0
 		};
