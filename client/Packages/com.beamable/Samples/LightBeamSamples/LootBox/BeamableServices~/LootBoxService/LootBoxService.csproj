@@ -21,5 +21,8 @@
     <PackageReference Include="Beamable.Microservice.SourceGen" Version="$(BeamableVersion)" OutputItemType="Analyzer" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(DotNetConfigPath)/Library/BeamableEditor/GeneratedProjects/Lightbeam.Lootbox.SharedCode/Lightbeam.Lootbox.SharedCode.csproj">
+      <UnityAssembly>Lightbeam.Lootbox.SharedCode</UnityAssembly>
+    </ProjectReference>
   </ItemGroup>
 </Project>

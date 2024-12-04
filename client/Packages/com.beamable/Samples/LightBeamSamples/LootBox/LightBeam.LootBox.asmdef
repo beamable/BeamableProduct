@@ -8,7 +8,8 @@
         "Unity.TextMeshPro",
         "Unity.Beamable.LightBeams",
         "Unity.Beamable.Server.Runtime",
-        "LootBoxService.Client"
+        "LootBoxService.Client",
+        "Lightbeam.Lootbox.SharedCode"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

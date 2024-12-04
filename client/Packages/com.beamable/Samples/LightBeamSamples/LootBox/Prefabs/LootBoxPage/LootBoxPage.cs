@@ -25,7 +25,7 @@ public class LootBoxPage : MonoBehaviour, ILightComponent
 	private async void Claim()
 	{
 		var client = new LootBoxServiceClient();
-		_startTimeLeft = 120;
+		_startTimeLeft = LootboxConstants.TIME_LIMIT;
 		await client.Claim();
 		_startTimeLeft = await client.GetTimeLeft();
 		_startTime = Time.realtimeSinceStartupAsDouble;
