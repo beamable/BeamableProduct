@@ -90,6 +90,10 @@ The account information is accessible via the `Context.UserId` property when exe
 
 ## Calling Microservice Code From Unity
 
+> 📘 Use the Unity SDK
+>
+> You should be using the Beamable SDK in your Unity projects that use Standalone Microservices. Otherwise, there will be many compile errors as the Beamable SDK is not available.
+
 Microservices can automatically generate client code for the Unity game engine. First, a Unity project needs to be linked to the `.beamable` workspace. To do this, use the [project add-unity-project](doc:cli-project-add-unity-project) command. 
 
 ```sh
