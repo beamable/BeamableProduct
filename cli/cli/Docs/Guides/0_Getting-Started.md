@@ -48,7 +48,7 @@ dotnet beam config
 ```
 You should expect to see your CID/PID printed out. 
 
-As of CLI 2.1.0, anytime you create a Beamable workspace, the CLI will be installed as a local tool next to the workspace's `.beamable` folder. This means that you can run the local tool with `dotnet beam`. If you continue to use `beam` in the workspace, the global installation will automatically forward your command to the local tool. This will be inefficient and lead to poor performance. We recommend you use `dotnet beam` wherever possible. 
+As of CLI 3.0.0, anytime you create a Beamable workspace, the CLI will be installed as a local tool next to the workspace's `.beamable` folder. This means that you can run the local tool with `dotnet beam`. If you continue to use `beam` in the workspace, the global installation will automatically forward your command to the local tool. This will be inefficient and lead to poor performance. We recommend you use `dotnet beam` wherever possible. 
 
 To check that everything is working correctly, you can use the [beam me](doc:cli-me) command. Now you have a configured CLI project! 
 

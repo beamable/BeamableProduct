@@ -19,7 +19,7 @@ dotnet beam project new service HelloWorld
 
 ## Project Configuration 
 
-Each Standalone Microservice is a dotnet project, and can be configured through the dotnet `.csproj`. In most IDEs, the `.csproj` file will be hidden automatically, but you can open it by right-clicking on the project in the IDE and opening the `.csproj` file. As of Beam CLI 2.1, the starting `.csproj` has the following structure. 
+Each Standalone Microservice is a dotnet project, and can be configured through the dotnet `.csproj`. In most IDEs, the `.csproj` file will be hidden automatically, but you can open it by right-clicking on the project in the IDE and opening the `.csproj` file. As of Beam CLI 3.0.0, the starting `.csproj` has the following structure. 
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">  
@@ -43,7 +43,8 @@ Each Standalone Microservice is a dotnet project, and can be configured through 
         <TargetFramework>net8.0</TargetFramework>  
     </PropertyGroup>  
     <ItemGroup Label="Nuget References">  
-        <PackageReference Include="Beamable.Microservice.Runtime" Version="$(BeamableVersion)" />  
+        <PackageReference Include="Beamable.Microservice.Runtime" Version="$(BeamableVersion)" />
+        <PackageReference Include="Beamable.Microservice.SourceGen" Version="$(BeamableVersion)" OutputItemType="Analyzer" />
     </ItemGroup>  
 </Project>
 ```
@@ -132,7 +133,7 @@ Common Dotnet properties may be explored through [Dotnet's Documentation](https:
 >
 > The link above points to the cli-2.0.0 release tag version of the source code. Make sure that you are looking the same version as your `Beamable.Microservice.Runtime` nuget version is using in the `.csproj`. 
  
-Other than the default properties set in the `.props` file, a major requirement of Beamable Standalone Microservices the `TargetFramework` property. If you are using CLI 2.1.0 and above, you may target `net8.0` . 
+Other than the default properties set in the `.props` file, a major requirement of Beamable Standalone Microservices the `TargetFramework` property. If you are using CLI 3.0.0 and above, you may target `net8.0` . 
 
 If you are using CLI 2.0.1 or below, you must target `net6.0`. 
 
