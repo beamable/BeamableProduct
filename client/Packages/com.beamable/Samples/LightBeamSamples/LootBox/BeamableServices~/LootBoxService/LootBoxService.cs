@@ -8,7 +8,6 @@ namespace Beamable.LootBoxService
 	[Microservice("LootBoxService")]
 	public partial class LootBoxService : Microservice
 	{
-		public const int CLAIM_PERIOD_SECONDS = 10;
 		public const string CLAIM_STAT = "lastClaimTime";
 
 		[ClientCallable]
@@ -25,7 +24,7 @@ namespace Beamable.LootBoxService
 			}
 
 			var diff = now - lastClaimTime;
-			var timeLeftInSeconds = CLAIM_PERIOD_SECONDS - diff.TotalSeconds;
+			var timeLeftInSeconds = LootboxConstants.TIME_LIMIT - diff.TotalSeconds;
 			timeLeftInSeconds = Math.Max(0, timeLeftInSeconds);
 			return timeLeftInSeconds;
 		}
