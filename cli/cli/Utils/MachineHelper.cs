@@ -1,7 +1,5 @@
-using Beamable.Common.Api;
+using Beamable.Common;
 using System.Diagnostics;
-using System.Net.NetworkInformation;
-using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 
 namespace cli.Utils;
@@ -44,34 +42,55 @@ public class MachineHelper
 	/// <param name="unrealRoot"></param>
 	public static void RunUnrealGenerateProjectFiles(string unrealRoot)
 	{
-		if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+		if (Environment.OSVersion.Platform != PlatformID.Win32NT)
 		{
-			// go into the unreal root
-			var cmd = $"cd {unrealRoot};";
-			// Get the name of the uproject
-			cmd += @"$uproject = Get-ChildItem ""*.uproject"" -Name;";
-			// Get the path to the UnrealEngine version for this project (this is stored here as-per UE -- https://forums.unrealengine.com/t/generate-vs-project-files-by-command-line/277707/18).
-			cmd += @"$bin = & { (Get-ItemProperty 'Registry::HKEY_CLASSES_ROOT\Unreal.ProjectFile\shell\rungenproj' -Name 'Icon' ).'Icon' };";
-			// Build the actual command to run at this path and pipe it into the cmd.exe.
-			cmd += @"$bin + ' -projectfiles %cd%\' + $uproject | cmd.exe";
+			BeamableLogger.LogWarning("Auto generation of Unreal project files is not yet supported on this platform. Remember to generate the Unreal project files manually.");
+			return;
+		}
 
-			// Run the command and print the result
-			var _ = ExecutePowershellCommand(cmd);
+		// Get the name of the uproject
+		var cmd = @"$uproject = Get-ChildItem ""*.uproject"" -Name;";
+		// Get the path to the UnrealEngine version for this project (this is stored here as-per UE -- https://forums.unrealengine.com/t/generate-vs-project-files-by-command-line/277707/18).
+		cmd += @"$bin = & { (Get-ItemProperty 'Registry::HKEY_CLASSES_ROOT\Unreal.ProjectFile\shell\rungenproj' -Name 'Icon' ).'Icon' };";
+		// Build the actual command to run at this path and pipe it into the cmd.exe.
+		cmd += @"$bin + ' -projectfiles %cd%\' + $uproject | cmd.exe";
+
+		var result = ExecutePowershellCommand(cmd, unrealRoot);
+		if (result.ExitCode != 0)
+		{
+			BeamableLogger.LogWarning("Auto generation of Unreal project files failed but it is still possible to generate the Unreal project files manually.");
+			throw new CliException($"Failed to generate project files. Command output:\n{result.Error}\n{result.StandardOut}");
 		}
 	}
 
-	public static string ExecutePowershellCommand(string command)
+	public static PowershellOutput ExecutePowershellCommand(string command, string directory)
 	{
 		var processStartInfo = new ProcessStartInfo();
 		processStartInfo.FileName = "powershell.exe";
 		processStartInfo.Arguments = $"-Command \"{command}\"";
+		processStartInfo.Environment["DOTNET_CLI_UI_LANGUAGE"] = "en";
+		processStartInfo.WorkingDirectory = directory;
 		processStartInfo.UseShellExecute = false;
 		processStartInfo.RedirectStandardOutput = true;
+		processStartInfo.RedirectStandardError = true;
 
 		using var process = new Process();
 		process.StartInfo = processStartInfo;
 		process.Start();
-		string output = process.StandardOutput.ReadToEnd();
-		return output;
+		process.WaitForExit();
+		return new PowershellOutput
+		{
+			ExitCode = process.ExitCode,
+			StandardOut = process.StandardOutput.ReadToEnd(),
+			Error = process.StandardError.ReadToEnd()
+		};
+	}
+
+	[Serializable]
+	public struct PowershellOutput
+	{
+		public string StandardOut;
+		public string Error;
+		public int ExitCode;
 	}
 }
