@@ -7,6 +7,13 @@ on:
         type: string
         description: Commit hash to deploy
         default: main
+      version:
+        type: choice
+        description: Which readMe version should be used?
+        required: true
+        options:
+          - v1.0.0
+          - v2.0.0
 
 jobs:
   generate:
@@ -28,7 +35,7 @@ jobs:
           dotnet build ./cli/cli 
       - name: Build and Publish Docs
         run: |
-          dotnet run --project ./cli/cli -- docs --readme-key ${{secrets.README_API_KEY}} --guide-slug cli-guides --command-slug cli-command-reference
+          dotnet run --project ./cli/cli -- docs --readme-key ${{secrets.README_API_KEY}} --guide-slug cli-guides --command-slug cli-command-reference --readme-version ${{ github.event.inputs.version }}
       - name: Post to a Slack channel
         id: slack
         uses: slackapi/slack-github-action@v1.21.0
