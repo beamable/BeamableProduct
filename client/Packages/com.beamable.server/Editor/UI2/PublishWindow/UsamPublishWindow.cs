@@ -60,7 +60,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 		private DeploymentPlanArgs _planArgs;
 
 		const int padding = 10;
-		const int labelWidth = 100;
+		const int labelWidth = 200;
 
 		public static void Init(BeamEditorContext ctx)
 		{
@@ -68,7 +68,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 			var window = CreateInstance<UsamPublishWindow>();
 			window.titleContent = new GUIContent("Planning Deployment");
 			window.StartPlan();
-			window.minSize = new Vector2(300, 500);
+			window.minSize = new Vector2(450, 500);
 			window.ShowUtility();
 			
 		}
@@ -335,7 +335,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 			});
 			var labelStyle = new GUIStyle(labelStyleBase ?? EditorStyles.miniLabel)
 			{
-				alignment = TextAnchor.UpperRight, 
+				alignment = TextAnchor.UpperLeft, 
 				wordWrap = true,
 				richText = true
 			};

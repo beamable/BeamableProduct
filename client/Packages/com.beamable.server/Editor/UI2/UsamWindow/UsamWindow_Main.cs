@@ -253,7 +253,7 @@ namespace Beamable.Editor.Microservice.UI2
 				},
 				onClickedHelp: () =>
 				{
-					throw new NotImplementedException("sad no docs yet");
+					Application.OpenURL("https://docs.beamable.com/v2.0.0/docs/getting-started");
 				},
 				onClickedRefresh: () =>
 				{
