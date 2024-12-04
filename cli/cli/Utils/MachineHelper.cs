@@ -69,7 +69,7 @@ public class MachineHelper
 		processStartInfo.FileName = "powershell.exe";
 		processStartInfo.Arguments = $"-Command \"{command}\"";
 		processStartInfo.Environment["DOTNET_CLI_UI_LANGUAGE"] = "en";
-		processStartInfo.WorkingDirectory = directory;
+		processStartInfo.WorkingDirectory = Path.GetFullPath(directory);
 		processStartInfo.UseShellExecute = false;
 		processStartInfo.RedirectStandardOutput = true;
 		processStartInfo.RedirectStandardError = true;
