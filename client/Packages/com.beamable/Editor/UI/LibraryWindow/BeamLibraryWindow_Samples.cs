@@ -218,7 +218,7 @@ namespace Beamable.Editor.Library
 				string text = "";
 				if (lightBeam.SampleType == LightbeamSampleType.SCENE)
 				{
-					text = lightBeam.isLocal ? "Add Scene" : "Open Scene";
+					text = lightBeam.isLocal ? "Open Scene" : "Add Scene";
 				} else if (lightBeam.SampleType == LightbeamSampleType.PREFAB)
 				{
 					// if the prefab is already in the current scene; then the button should say, "Show Prefab"

@@ -55,4 +55,4 @@ dotnet watch 🔥 Hot reload of changes succeeded.
 ```
 ### Beam CLI
 
-The Beam CLI no longer supports hot reload natively. It was supported in 2.0.1, but due to technical limitations, support was removed in 2.1.0 
+The Beam CLI no longer supports hot reload natively. It was supported in 2.0.1, but due to technical limitations, support was removed in 3.0.0 

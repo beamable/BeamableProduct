@@ -404,7 +404,7 @@ namespace Beamable.Server
 	            portalUrlLogline = $"portalURL={url}";
             }
             
-            Log.Information(Logs.READY_FOR_TRAFFIC_PREFIX + "baseVersion={baseVersion} executionVersion={executionVersion} {portalUrlLogline}", _args.SdkVersionBaseBuild, _args.SdkVersionExecution, portalUrlLogline);
+            Log.Information(Logs.READY_FOR_TRAFFIC_PREFIX + "baseVersion={baseVersion} executionVersion={executionVersion} " + portalUrlLogline, _args.SdkVersionBaseBuild, _args.SdkVersionExecution);
             realmService.UpdateLogLevel();
 
             _serviceInitialized.CompleteSuccess(PromiseBase.Unit);

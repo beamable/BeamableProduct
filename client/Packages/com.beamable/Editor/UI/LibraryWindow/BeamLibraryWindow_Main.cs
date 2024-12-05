@@ -1,6 +1,7 @@
 using Beamable.Editor.Util;
 using System;
 using UnityEditor;
+using UnityEngine;
 
 namespace Beamable.Editor.Library
 {
@@ -28,7 +29,7 @@ namespace Beamable.Editor.Library
 			                          },
 			                          onClickedHelp: () =>
 			                          {
-				                          throw new NotImplementedException("go to docs");
+				                          Application.OpenURL("https://docs.beamable.com/v2.0.0/docs/lightbeam-code-overview");
 			                          });
 		}
 	}
