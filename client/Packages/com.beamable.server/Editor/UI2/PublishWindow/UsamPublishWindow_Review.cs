@@ -39,7 +39,7 @@ namespace Beamable.Editor.Microservice.UI2.PublishWindow
 					});
 					EditorGUILayout.Space(10, expand: false);
 
-					var helpUrl = "https://docs.beamable.com/docs/microservices-publishing";
+					var helpUrl = "https://docs.beamable.com/v2.0.0/docs/publishing";
 					DrawChangeList("Adding Services", "Toolbar Plus", "Learn about new services on Beamable", helpUrl,
 					               _planMetadata.plan.diff.addedServices.ToList());
 					DrawChangeList("Removing Services", "Warning@2x",

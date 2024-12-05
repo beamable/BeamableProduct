@@ -45,7 +45,8 @@
       "path": "SAMPLES_PATH/LightBeamSamples/Inventory",
       "subText": "inventory",
       "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/Currency_Violet@3x.png",
-      "relativeMainAssetPath": "Sample_InventoryManager.unity"
+      "relativeMainAssetPath": "Sample_InventoryManager.unity",
+      "docsUrl": "https://docs.beamable.com/docs/inventory-feature-overview"
     },
     {
       "displayName": "Friends Management",
@@ -53,8 +54,8 @@
       "path": "SAMPLES_PATH/LightBeamSamples/FriendsManager",
       "subText": "social",
       "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/Serve_Violet@3x.png",
-      "relativeMainAssetPath": "Sample_FriendsManager.unity"
-      
+      "relativeMainAssetPath": "Sample_FriendsManager.unity",
+      "docsUrl": "https://docs.beamable.com/v2.0.0/docs/friends-management"
     },
     {
       "displayName": "Lobby Management",
@@ -62,7 +63,8 @@
       "path": "SAMPLES_PATH/LightBeamSamples/LobbyManager",
       "subText": "social",
       "texturePath": "Packages/com.beamable/Editor/UI/Common/Icons/BeamableWebIcons/BattleTested_Violet@3x.png",
-      "relativeMainAssetPath": "Sample_LobbyManager.unity"
+      "relativeMainAssetPath": "Sample_LobbyManager.unity",
+      "docsUrl": "https://docs.beamable.com/docs/lobbies-feature-overview"
     },
     {
       "displayName": "Loot Box",

@@ -445,10 +445,11 @@ public class DocService
 		return doc;
 	}
 
-	public void SetReadmeAuth(string argsReadmeApiKey)
+	public void SetReadmeAuth(string argsReadmeApiKey, string readmeVersion)
 	{
 		isAuthorized = !string.IsNullOrEmpty(argsReadmeApiKey);
 		_client.DefaultRequestHeaders.Add("Authorization", $"Basic {argsReadmeApiKey}");
+		_client.DefaultRequestHeaders.Add("x-readme-version", readmeVersion);
 	}
 }
 
