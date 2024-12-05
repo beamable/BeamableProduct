@@ -6,21 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [2.0.0]
+## [2.0.0] - 2024-12-05
 
 ### Changed
-- Microservices become Beamable Standalone Microservices
+- Unity Microservices become Beamable Standalone Microservices. Services exist in a sibling folder to `/Assets` called `/BeamableServices`. 
+- _Microservice Manager_ window replaced with _Beam Services_ window
+- Unity Microservice assembly references and storage references are controlled in _Beam Services_ window instead of associated Assembly Definition.
+- _Beam Services_ window release flow does not offer opportunity to disable & enable services at publish time. Instead, all services are assumed to be enabled. 
+- _Beam Services_ window only shows one service at a time instead of showing small cards for all services simulatenously. Use the drop-down to change the focused service. 
+- _Beam Services_ window re-written without using UIToolkit 
 
 ### Fixed
-
-- `[Callable]` methods no longer produce `AccountNotFoundError` errors when emitting Beamable API calls with valid playerIds.
-- Microservices with `.dll` references will match based on filename, instead of first matching suffix. This fixes a common `Newtonsoft.Json` collision between Unity.Plastic and Unity.Newtonsoft.
-- Microservices have improved thread-safety when sending messages to Beamable.
-- `AssumeUser` now returns a disposable object, memory usage improvements
+- Unity Playmode will send Microservice traffic to locally running services even if the service started after entering Playmode.
 
 ### Added
+- Unity Microservices have ability to modify the Dockerfile
+- Unity Microservices have ability to modify the `.csproj` file
+- Unity Microservices have ability to modify the `Program.cs` file for custom bootup logic
 
-- `admin/metadata` route will return sdk version and other metadata about a running service.
+### Removed
+- Unity Microservices no longer have an associated Assembly Definition
+- Unity Microservices no longer use _Build Hooks_ to configure Dockerfile. Instead, the Dockerfile may be edited directly
+- `CsProjFragment.xml` file no longer supported. Instead, modify the `.csproj` file directly.
 
 ## [1.19.23] - 2024-10-23
 
