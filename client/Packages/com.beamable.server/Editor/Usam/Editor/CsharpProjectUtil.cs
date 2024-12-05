@@ -211,7 +211,7 @@ Do not add them from the custom solution file that opens from Beam Services wind
 				var name = Path.GetFileName(dll);
 				if (dll.Contains("unity", StringComparison.InvariantCultureIgnoreCase) && name.Contains("newtonsoft", StringComparison.InvariantCultureIgnoreCase))
 				{
-					warnings.Add("Newtonsoft.JSON needs to be refactored to use Nuget");
+					warnings.Add("Any references Newtonsoft.JSON need to be refactored to use Nuget");
 					continue;
 				}
 				
