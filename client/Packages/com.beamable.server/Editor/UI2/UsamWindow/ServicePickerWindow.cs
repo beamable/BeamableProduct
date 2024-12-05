@@ -39,7 +39,9 @@ namespace Beamable.Editor.Microservice.UI2
 			var pos = position;
 			minSize = new Vector2(usamWindow.position.width-100, 
 			                      totalElementCount * elementHeight + 40);
+			#if !UNITY_EDITOR_WIN
 			pos = new Rect(pos.x, pos.y, Mathf.Max(minSize.x, pos.width), Mathf.Max(minSize.y, pos.height));
+			#endif
 			position = pos;
 			var usam = usamWindow.usam;
 			

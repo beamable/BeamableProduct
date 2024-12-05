@@ -57,7 +57,7 @@ public static class Diagnostics
 		public static readonly DiagnosticDescriptor MultipleMicroserviceClassesDetected
 			= new("BEAM_SRV_O002",
 				$"Multiple {nameof(Microservice)} classes detected",
-				$"Multiple Microservice classes detected. Make sure only a single class implementing {nameof(Microservice)} exists in each service project. ClassNames={{1}}.",
+				$"Multiple Microservice classes detected. Make sure only a single class implementing {nameof(Microservice)} exists in each service project. ClassNames={{0}}.",
 				Category_Services,
 				DiagnosticSeverity.Error,
 				true);
