@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - _Beam Services_ window release flow does not offer opportunity to disable & enable services at publish time. Instead, all services are assumed to be enabled. 
 - _Beam Services_ window only shows one service at a time instead of showing small cards for all services simulatenously. Use the drop-down to change the focused service. 
 - _Beam Services_ window re-written without using UIToolkit 
+- Deleting a Unity Microservice will automatically archive the service on the next release
 
 ### Fixed
 - Unity Playmode will send Microservice traffic to locally running services even if the service started after entering Playmode.

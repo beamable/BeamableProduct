@@ -606,6 +606,14 @@ namespace Beamable.Server.Editor.Usam
 					
 #pragma warning restore CS0612 // Type or member is obsolete
 				}
+
+				{ // detect if the CsProjFragment.xml file exists
+					if (service.TryGetCustomProjectFragment(out _))
+					{
+						plan.manualSteps.Add($"The {service.Name} has a CsProjFragment.xml file, which is not supported. Please make sure to update the resulting .csproj file with the lost fragment.");
+					}
+				}
+				
 				
 				{ // storage refs
 					var serviceInfo = service.ConvertToInfo();
