@@ -42,6 +42,7 @@ fi
 if [ "$COPY_CLI" = "true" ]
 then 
 cp -f ../BeamableProduct/BeamableProduct/cli/cli/CHANGELOG.md ./beamable-tools-changelog.md || true
+cp -f ../BeamableProduct/BeamableProduct/microservice/microservice/CHANGELOG.md ./beamable-server-changelog.md || true
 fi 
 
 git add .
