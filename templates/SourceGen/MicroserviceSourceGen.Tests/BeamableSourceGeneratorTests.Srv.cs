@@ -73,11 +73,44 @@ using Beamable.Common;
 
 namespace TestNamespace;
 
+[Microservice(""id"")]
 public class SomeUserMicroservice : Microservice
 {		
 }
 
+[Microservice(""id2"")]
 public class SomeOtherUserMicroservice : Microservice
+{		
+}
+";
+
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
+
+		// We are testing the detection
+		PrepareForRun(new[] { cfg }, new[] { UserCode });
+
+		// Run generators and retrieve all results.
+		var runResult = Driver.RunGenerators(Compilation).GetRunResult();
+
+		// Ensure we have a single diagnostic error.
+		Assert.Contains(runResult.Diagnostics, d => d.Descriptor.Equals(Diagnostics.Srv.MultipleMicroserviceClassesDetected));
+	}
+	
+	[Fact]
+	public void Test_Diagnostic_Srv_MultipleMicroserviceClassesDetected_PartialCompatibility()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+
+namespace TestNamespace;
+
+[Microservice(""someid"")]
+public partial class SomeUserMicroservice : Microservice
+{		
+}
+
+public partial class SomeUserMicroservice : Microservice
 {		
 }
 ";
@@ -91,7 +124,7 @@ public class SomeOtherUserMicroservice : Microservice
 		var runResult = Driver.RunGenerators(Compilation).GetRunResult();
 
 		// Ensure we have a single diagnostic error.
-		Assert.Contains(runResult.Diagnostics, d => d.Descriptor.Equals(Diagnostics.Srv.MultipleMicroserviceClassesDetected));
+		Assert.DoesNotContain(runResult.Diagnostics, d => d.Descriptor.Equals(Diagnostics.Srv.MultipleMicroserviceClassesDetected));
 	}
 
 	[Fact]
@@ -103,12 +136,13 @@ using Beamable.Common;
 
 namespace TestNamespace;
 
+[Microservice(""id"")]
 public class SomeUserMicroservice : Microservice
 {		
 }
 ";
 
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
 
 		// We are testing the detection
 		PrepareForRun(new[] { cfg }, new[] { UserCode });
@@ -161,7 +195,7 @@ public partial class SomeUserMicroservice : Microservice
 }
 ";
 
-		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { "hathora", [new() { Interface = "IFederatedGameServer" }] } } };
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() };
 
 		// We are testing the detection
 		PrepareForRun(new[] { cfg }, new[] { UserCode });

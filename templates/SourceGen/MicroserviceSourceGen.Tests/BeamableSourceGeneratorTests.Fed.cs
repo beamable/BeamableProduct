@@ -210,6 +210,50 @@ namespace TestNamespace {
 	}
 	
 	[Fact]
+	public void Test_Diagnostic_Fed_FederationsDeclaredOnDifferentPartsOfService()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+
+namespace TestNamespace {
+
+	[Beamable.Common.FederationId(""hathora"")]
+	public class HandwrittenHathoraId : Beamable.Common.IFederationId;
+
+	[Microservice(""some_user_service"")]
+	public partial class SomeUserMicroservice : Beamable.Server.Microservice
+	{
+	}
+
+	public partial class SomeUserMicroservice : Beamable.Server.Microservice, IFederatedGameServer<HandwrittenHathoraId>
+	{
+			public Promise<ServerInfo> CreateGameServer(Lobby lobby)
+			{
+				throw new System.NotImplementedException();
+			}
+	}
+}
+";
+		var cfg = new MicroserviceFederationsConfig()
+		{
+			Federations = new()
+			{
+				{ "hathora", [new() { Interface = "IFederatedGameServer" }] },
+			}
+		};
+
+		// We are testing the detection
+		PrepareForRun(new[] { cfg }, new[] { UserCode });
+
+		// Run generators and retrieve all results.
+		var runResult = Driver.RunGenerators(Compilation).GetRunResult();
+
+		// Assert that we didn't generate the HathoraId IFederationId class
+		Assert.DoesNotContain(runResult.Diagnostics, d => d.Severity is DiagnosticSeverity.Error);
+	}
+	
+	[Fact]
 	public void Test_Diagnostic_Fed_FederationCodeGeneratedProperly_WithPartialHandwrittenOverride()
 	{
 		const string UserCode = @"
