@@ -63,26 +63,51 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 
 		// Parse the config
 		var config = ParseBeamSourceGen(context, sourceGenConfig);
-
-		// Validate the microservice declaration.
-		var isMsValid = ValidateMicroserviceDeclaration(context, infos);
-
-		// If we don't have config OR the microservices are not one, we can't generate code. 
-		if (config == null || !isMsValid)
+		if (config == null)
 			return;
 
-		var info = infos[0];
 
 		// Generate the partial declarations with the interfaces based on the federation configs
-		var isFedValid = ValidateFederations(context, info, config);
+		var isFedValid = true;
+
+		// Each partial declaration results in a Microservice info
+		// We should keep only the one that has the declared attribute here for now.
+		// TODO: When we add ClientCallable signature validation, we'll need to apply it to each part of the class before moving along and
+		// TODO: validating that we only have a single microservice. 
+		var mergedInfos = new List<MicroserviceInfo>();
+		foreach (MicroserviceInfo microserviceInfo in infos)
+		{
+			isFedValid &= ValidateFederations(context, microserviceInfo, config);
+			if (!mergedInfos.Any(i => i.Name.Equals(microserviceInfo.Name)))
+			{
+				if (microserviceInfo.MicroserviceAttributeLocation != null)
+				{
+					mergedInfos.Add(microserviceInfo);
+				}
+			}
+		}
+
+		if (infos.Length > 0 && mergedInfos.Count == 0)
+		{
+			var err = Diagnostic.Create(Diagnostics.Srv.MissingMicroserviceId, infos[0].MicroserviceClassLocation);
+			context.ReportDiagnostic(err);
+			return;
+		}
 
 		if (!isFedValid)
+			return;
+
+		// Validate the microservice declaration.
+		var isMsValid = ValidateMicroserviceDeclaration(context, mergedInfos.ToImmutableArray());
+
+		// If we don't have config OR the microservices are not one, we can't generate code. 
+		if (!isMsValid)
 			return;
 
 		// Add a report that we successfully generated the federation code.
 		var federationCodeGenSuccess = Diagnostic.Create(Diagnostics.Fed.FederationCodeGeneratedProperly, null);
 		context.ReportDiagnostic(federationCodeGenSuccess);
-		
+
 		return;
 
 		static MicroserviceFederationsConfig? ParseBeamSourceGen(SourceProductionContext context, ImmutableArray<(string Path, string Text)> federationConfigFiles)
@@ -134,7 +159,7 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 
 			if (infos.Length > 1)
 			{
-				var errDetails = string.Join("\n", infos.Select(t => t.Name));
+				var errDetails = string.Join(", ", infos.Select(t => t.Name));
 				var error = Diagnostic.Create(Diagnostics.Srv.MultipleMicroserviceClassesDetected, null, errDetails);
 				context.ReportDiagnostic(error);
 				return false;
@@ -145,13 +170,6 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 			if (!info.IsPartial)
 			{
 				var err = Diagnostic.Create(Diagnostics.Srv.NonPartialMicroserviceClassDetected, info.MicroserviceClassLocation);
-				context.ReportDiagnostic(err);
-				isValid = false;
-			}
-
-			if (string.IsNullOrEmpty(info.ServiceId))
-			{
-				var err = Diagnostic.Create(Diagnostics.Srv.MissingMicroserviceId, info.MicroserviceClassLocation);
 				context.ReportDiagnostic(err);
 				isValid = false;
 			}
@@ -208,9 +226,9 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 					isValid = false;
 				}
 			}
-			
+
 			var flatIdSet = new HashSet<string>(flatIds);
-			
+
 			var configsThatDoNotExistInCode = flatConfig.Keys.Except(flatCode.Keys).ToList();
 			var codeThatDoesNotExistInConfig = flatCode.Keys.Except(flatConfig.Keys).ToList();
 
@@ -220,9 +238,9 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 				isValid = false;
 				var error = Diagnostic.Create(
 					Diagnostics.Fed.ConfiguredFederationMissingFromCode,
-					info.MicroserviceClassLocation, 
-					info.Name, 
-					fedId, 
+					info.MicroserviceClassLocation,
+					info.Name,
+					fedId,
 					fedInterface);
 				context.ReportDiagnostic(error);
 			}
@@ -233,9 +251,9 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 				isValid = false;
 				var error = Diagnostic.Create(
 					Diagnostics.Fed.DeclaredFederationMissingFromSourceGenConfig,
-					info.MicroserviceClassLocation, 
-					info.Name, 
-					fedId, 
+					info.MicroserviceClassLocation,
+					info.Name,
+					fedId,
 					fedInstConfig.Interface);
 				context.ReportDiagnostic(error);
 			}
@@ -250,9 +268,9 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 					isValid = false;
 				}
 			}
-			
+
 			return isValid;
-			
+
 			// First digit can't be a number
 			// Alphanumeric + "_"
 			static bool ValidateId(string id)
@@ -274,9 +292,7 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 
 				return isValid;
 			}
-			
 		}
-
 	}
 
 	public readonly record struct MicroserviceInfo : IEquatable<MicroserviceInfo>
@@ -289,7 +305,7 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 		public Location? MicroserviceAttributeLocation { get; }
 		public bool IsPartial { get; }
 		public List<(string Id, string ClassName, FederationInstanceConfig Federation, Location Location)> ImplementedFederations { get; }
-		
+
 		public MicroserviceInfo(INamedTypeSymbol type)
 		{
 			Namespace = type.ContainingNamespace.IsGlobalNamespace
@@ -329,13 +345,13 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 				{
 					id = fedValue.Value.Value?.ToString();
 				}
-				
+
 				ImplementedFederations.Add((
-					id, 
-					className, 
+					id,
+					className,
 					new FederationInstanceConfig() { Interface = federationInterfaceName },
 					federationIdType.Locations[0]
-					));
+				));
 			}
 
 			// Check for the microservice attribute so we can validate its name does not have any invalid characters.
@@ -349,11 +365,12 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 				HasMicroserviceAttribute = true;
 				MicroserviceAttributeLocation = microserviceAttr.ApplicationSyntaxReference.GetSyntax().GetLocation();
 			}
+
 			if (microserviceAttr?.ConstructorArguments.Length > 0)
 			{
 				serviceId = microserviceAttr.ConstructorArguments[0].Value?.ToString();
 			}
-			
+
 			ServiceId = serviceId;
 		}
 
