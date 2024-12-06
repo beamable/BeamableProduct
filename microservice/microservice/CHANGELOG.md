@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `IThirdPartyCloudId` subtypes require a `[FederationId]` attribute with a string argument equal to the old `.UniqueName` property
 - Microservice projects should reference `Beamable.Microservice.SourceGen`
 - Microservice uses `routingKey` instead of `prefix` for HTTP routing
+- `AssumeUser` was renamed to `AssumeNewUser`
+- `RequestDataHandler` was renamed to `UserRequestDataHandler`
 
 ### Fixed
 - services running locally will use adaptive port bindings to avoid port collisions
