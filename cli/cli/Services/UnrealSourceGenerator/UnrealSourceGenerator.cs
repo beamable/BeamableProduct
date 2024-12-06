@@ -683,6 +683,10 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 
 		// Add replacement types so that we don't generate them when we see them
 		listOfAlreadyDeclaredTypes.AddRange(context.AllNamespacedReplacementTypes);
+		if(genType == GenerationType.Microservice)
+		{
+			listOfAlreadyDeclaredTypes.AddRange(previousGenerationPassesData.InEngineTypeToIncludePaths.Keys.Select(s => GetNamespacedTypeNameFromUnrealType(new UnrealType() { TypeString = s })));
+		}
 
 		// Pre-declare things that we always want
 		if (genType != GenerationType.Microservice)
@@ -1887,9 +1891,9 @@ public class UnrealSourceGenerator : SwaggerService.ISourceGenerator
 	/// This is just a string type-def that enforces a specific format. 
 	/// This string represents a name free of conflict across all other names of that category. We generate these for schemas and endpoints before generating actual <see cref="UnrealType"/>s.
 	/// </summary>
-	public readonly struct UnrealType : IEquatable<string>, IEquatable<UnrealType>
+	public struct UnrealType : IEquatable<string>, IEquatable<UnrealType>
 	{
-		public readonly string TypeString;
+		public string TypeString;
 		public string AsStr => $"{TypeString}";
 		public UnrealType(string namespacedType) => TypeString = namespacedType;
 		public static implicit operator string(UnrealType w) => w.AsStr;
