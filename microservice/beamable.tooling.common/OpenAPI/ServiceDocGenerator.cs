@@ -134,7 +134,13 @@ public class ServiceDocGenerator
 		{
 			var schema = SchemaGenerator.Convert(type);
 			Log.Debug("Adding Schema to Microservice OAPI docs. Type={TypeName}", type.FullName);
-			doc.Components.Schemas.Add(SchemaGenerator.GetQualifiedReferenceName(type), schema);
+			
+			// We check because the same type can both be an extra type (declared via BeamGenerateSchema) AND be used in a signature; so we de-duplicate the concatenated lists.
+			var key = SchemaGenerator.GetQualifiedReferenceName(type);
+			if(!doc.Components.Schemas.ContainsKey(key))
+				doc.Components.Schemas.Add(key, schema);
+			else
+				Log.Debug("Tried to add Schema more than once. Type={TypeName}, SchemaKey={Key}", type.FullName, key);
 		}
 
 		foreach (var method in methods)
