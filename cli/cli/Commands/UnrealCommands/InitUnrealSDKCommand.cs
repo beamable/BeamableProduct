@@ -114,7 +114,6 @@ public class InitUnrealSDKCommand : AppCommand<InitUnrealSDKCommandArgs>
 		{
 			var gameMakerBeamablePluginPath = Path.Combine(args.ConfigService.WorkingDirectory, "Plugins", "BeamableCore");
 			var sdkBeamablePluginPath = Path.Combine(args.BeamableUnrealSdkRepoPath, "Plugins", "BeamableCore");
-
 			if (Directory.Exists(gameMakerBeamablePluginPath))
 			{
 				BeamableLogger.Log("Already installed BeamableCore plugin. Removing it so we can re-install it.");
@@ -139,23 +138,53 @@ public class InitUnrealSDKCommand : AppCommand<InitUnrealSDKCommandArgs>
 				BeamableLogger.Log("Copying OnlineSubsystemBeamable plugin's Beamable Content folder.");
 				var gameMakerContentPath = Path.Combine(gameMakerOssPath, "Content", "Beamable");
 				var sdkContentPath = Path.Combine(sdkBeamablePluginPath, "Content", "Beamable");
-				Directory.Delete(gameMakerContentPath);
-				CopyDirectory(sdkContentPath, gameMakerContentPath);
+				if(Path.Exists(gameMakerContentPath))
+				{
+					Directory.Delete(gameMakerContentPath, true);
+				}
 				
+				if(Path.Exists(sdkContentPath))
+				{
+					CopyDirectory(sdkContentPath, gameMakerContentPath);
+				}
+
 				
 				// Copy the Build.cs file
 				BeamableLogger.Log("Copying OnlineSubsystemBeamable plugin's Build.cs file.");
 				var gameMakerBuildPath = Path.Combine(gameMakerOssPath, "Source", "OnlineSubsystemBeamable", "OnlineSubsystemBeamable.Build.cs");
 				var sdkBuildPath = Path.Combine(sdkBeamablePluginPath, "Source", "OnlineSubsystemBeamable", "OnlineSubsystemBeamable.Build.cs");
-				Directory.Delete(gameMakerBuildPath);
-				CopyDirectory(sdkBuildPath, gameMakerBuildPath);
+				if(Path.Exists(gameMakerBuildPath))
+				{
+					File.Delete(gameMakerBuildPath);
+				}
+				File.Copy(sdkBuildPath, gameMakerBuildPath);
+				
 
 				// Copy the Source files
-				BeamableLogger.Log("Copying OnlineSubsystemBeamable plugin's Source/OnlineSubsystemBeamable/Beamable files.");
-				var gameMakerSourcePath = Path.Combine(gameMakerOssPath, "Source", "OnlineSubsystemBeamable", "Beamable");
-				var sdkSourcePath = Path.Combine(sdkBeamablePluginPath, "Source", "OnlineSubsystemBeamable", "Beamable");
-				Directory.Delete(gameMakerSourcePath);
-				CopyDirectory(sdkSourcePath, gameMakerSourcePath);
+				{
+					{
+						BeamableLogger.Log("Copying OnlineSubsystemBeamable plugin's Source/OnlineSubsystemBeamable/Beamable files.");
+						var gameMakerSourcePath = Path.Combine(gameMakerOssPath, "Source", "OnlineSubsystemBeamable", "Public", "Beamable");
+						var sdkSourcePath = Path.Combine(sdkBeamablePluginPath, "Source", "OnlineSubsystemBeamable", "Public", "Beamable");
+						if (Path.Exists(gameMakerSourcePath))
+						{
+							Directory.Delete(gameMakerSourcePath, true);
+						}
+
+						CopyDirectory(sdkSourcePath, gameMakerSourcePath);
+					}
+
+					{
+						var gameMakerSourcePath = Path.Combine(gameMakerOssPath, "Source", "OnlineSubsystemBeamable", "Private", "Beamable");
+						var sdkSourcePath = Path.Combine(sdkBeamablePluginPath, "Source", "OnlineSubsystemBeamable", "Private", "Beamable");
+						if (Path.Exists(gameMakerSourcePath))
+						{
+							Directory.Delete(gameMakerSourcePath, true);
+						}
+
+						CopyDirectory(sdkSourcePath, gameMakerSourcePath);
+					}
+				}
 			}
 			else
 			{
