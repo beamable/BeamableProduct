@@ -19,7 +19,8 @@ using static Beamable.Common.Constants;
 namespace Beamable.Editor.Content.Components
 {
 	// TODO: TD213896
-	public class ActionBarVisualElement : ContentManagerComponent
+	[UxmlElement]
+	public partial class ActionBarVisualElement : ContentManagerComponent
 	{
 		public event Action<ContentTypeDescriptor> OnAddItemButtonClicked;
 		public event Action OnValidateButtonClicked;

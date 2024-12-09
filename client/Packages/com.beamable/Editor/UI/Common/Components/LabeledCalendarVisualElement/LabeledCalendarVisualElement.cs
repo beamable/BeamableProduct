@@ -14,7 +14,7 @@ namespace Beamable.Editor.UI.Components
 #if UNITY_6000_0_OR_NEWER
 	[UxmlElement]
 #endif
-	public class LabeledCalendarVisualElement : ValidableVisualElement<int>
+	public partial class LabeledCalendarVisualElement : ValidableVisualElement<int>
 	{
 #if UNITY_6000_0_OR_NEWER
 		[UxmlAttribute]

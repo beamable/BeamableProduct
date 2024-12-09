@@ -16,7 +16,7 @@ namespace Beamable.Editor.UI.Components
 #if UNITY_6000_0_OR_NEWER
 	[UxmlElement]
 #endif
-	public class LabeledCheckboxVisualElement : BeamableVisualElement
+	public partial class LabeledCheckboxVisualElement : BeamableVisualElement
 	{
 		public static readonly string ComponentPath = $"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LabeledCheckboxVisualElement)}/{nameof(LabeledCheckboxVisualElement)}";
 

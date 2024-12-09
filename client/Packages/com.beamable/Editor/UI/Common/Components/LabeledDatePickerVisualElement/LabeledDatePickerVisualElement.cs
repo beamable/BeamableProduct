@@ -14,7 +14,7 @@ namespace Beamable.Editor.UI.Components
 #if UNITY_6000_0_OR_NEWER
 	[UxmlElement]
 #endif
-	public class LabeledDatePickerVisualElement : BeamableVisualElement
+	public partial class LabeledDatePickerVisualElement : BeamableVisualElement
 	{
 #if UNITY_6000_0_OR_NEWER
 		[UxmlAttribute]
