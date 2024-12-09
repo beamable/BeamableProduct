@@ -171,9 +171,11 @@ Then, also add the following to the `Beamable Settings` `Property Group`:
 ```
 
 #### Microservice Code Changes - `partial` and `FederationId` 
+
+With the introduction of the `Beamable.Microservice.SourceGen` library, all Microservice classes must be marked with the `partial` keyword. This will allow the source-generator to add custom implementations to Microservices in future releases. 
+
 If you use any Federated endpoints as part of your Microservices, there a few code-changes you'll have to make:
 
-- Add `partial` to your Microservice class.
 - Replace all `IThirdPartyCloudIdentity` with `IFederationId`.
 - Add a `FederationId` attribute to the class `IFederationId` --- the `UniqueName` is the property.
 - If you were ever accessing the `UniqueName` property as part of your code, you'll need to replace those calls with `GetUniqueName()`.
