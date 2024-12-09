@@ -17,29 +17,6 @@ namespace Beamable.Editor.UI.Components
 {
 	public class LoadingBarElement : BeamableVisualElement, ILoadingBar
 	{
-
-		public new class UxmlFactory : UxmlFactory<LoadingBarElement, LoadingBarElement.UxmlTraits>
-		{
-		}
-
-		public new class UxmlTraits : VisualElement.UxmlTraits
-		{
-			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
-			{ name = "custom-text", defaultValue = "nada" };
-
-			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-			{
-				get { yield break; }
-			}
-
-			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-			{
-				base.Init(ve, bag, cc);
-				var self = ve as LoadingBarElement;
-
-			}
-		}
-
 		private static Texture _animationTexture;
 
 		public LoadingBarElement() : base($"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LoadingBarElement)}/{nameof(LoadingBarElement)}") { }

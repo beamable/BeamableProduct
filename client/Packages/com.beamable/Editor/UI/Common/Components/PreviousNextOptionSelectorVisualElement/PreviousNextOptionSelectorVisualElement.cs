@@ -15,9 +15,6 @@ namespace Beamable.Editor.UI.Components
 {
 	public class PreviousNextOptionSelectorVisualElement : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<PreviousNextOptionSelectorVisualElement, UxmlTraits>
-		{
-		}
 
 		public PreviousNextOptionSelectorVisualElement() : base(
 			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(PreviousNextOptionSelectorVisualElement)}/{nameof(PreviousNextOptionSelectorVisualElement)}")

@@ -10,11 +10,8 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class DayToggleVisualElement : BeamableVisualElement
+	public partial class DayToggleVisualElement : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<DayToggleVisualElement, UxmlTraits>
-		{
-		}
 
 		public Action OnValueChanged;
 

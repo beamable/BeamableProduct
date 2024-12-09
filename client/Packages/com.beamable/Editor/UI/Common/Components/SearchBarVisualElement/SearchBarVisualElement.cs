@@ -20,28 +20,6 @@ namespace Beamable.Editor.UI.Components
 		public string Value => _textField.value;
 		public event Action<string> OnSearchChanged;
 
-		public new class UxmlFactory : UxmlFactory<SearchBarVisualElement, UxmlTraits> { }
-
-		public new class UxmlTraits : VisualElement.UxmlTraits
-		{
-			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
-			{
-				name = "custom-text",
-				defaultValue = "nada"
-			};
-
-			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-			{
-				get { yield break; }
-			}
-
-			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-			{
-				base.Init(ve, bag, cc);
-				var self = ve as SearchBarVisualElement;
-			}
-		}
-
 		public SearchBarVisualElement() : base(
 			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(SearchBarVisualElement)}/{nameof(SearchBarVisualElement)}")
 		{

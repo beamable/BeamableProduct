@@ -8,7 +8,10 @@ using UnityEditor.UIElements;
 #endif
 namespace Beamable.Editor.Content.Components
 {
-	public class CountVisualElement : ContentManagerComponent
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class CountVisualElement : ContentManagerComponent
 	{
 		private Label _countLabel;
 		private int _value;
@@ -24,19 +27,6 @@ namespace Beamable.Editor.Content.Components
 
 		private bool _isDangerous;
 
-		public bool IsDangerous
-		{
-			get => _isDangerous;
-			set
-			{
-				_isDangerous = value;
-				SetValue(Value);
-			}
-		}
-
-		public new class UxmlFactory : UxmlFactory<CountVisualElement, UxmlTraits>
-		{
-		}
 		public CountVisualElement() : base(nameof(CountVisualElement))
 		{
 		}
@@ -63,6 +53,31 @@ namespace Beamable.Editor.Content.Components
 				RemoveFromClassList("danger");
 			}
 		}
+#if UNITY_6000_0_OR_NEWER
+		[UxmlAttribute]
+		public bool IsDangerous
+		{
+			get => _isDangerous;
+			set
+			{
+				_isDangerous = value;
+				SetValue(Value);
+			}
+		}
+#else
+		public bool IsDangerous
+		{
+			get => _isDangerous;
+			set
+			{
+				_isDangerous = value;
+				SetValue(Value);
+			}
+		}
+
+		public new class UxmlFactory : UxmlFactory<CountVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
@@ -86,5 +101,6 @@ namespace Beamable.Editor.Content.Components
 				self.Refresh();
 			}
 		}
+#endif
 	}
 }

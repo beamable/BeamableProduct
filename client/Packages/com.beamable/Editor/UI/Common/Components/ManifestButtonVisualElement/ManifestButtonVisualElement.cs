@@ -18,23 +18,7 @@ namespace Beamable.Editor.UI.Components
 {
 	public class ManifestButtonVisualElement : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<ManifestButtonVisualElement, UxmlTraits>
-		{
-		}
-		public new class UxmlTraits : VisualElement.UxmlTraits
-		{
 
-			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-			{
-				get { yield break; }
-			}
-
-			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-			{
-				base.Init(ve, bag, cc);
-				var self = ve as ManifestButtonVisualElement;
-			}
-		}
 		private ManifestModel Model { get; set; }
 		private Button _manifestButton;
 		private Label _manifestLabel;

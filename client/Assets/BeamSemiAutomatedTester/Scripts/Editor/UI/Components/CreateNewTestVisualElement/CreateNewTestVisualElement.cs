@@ -20,8 +20,6 @@ namespace Beamable.BSAT.Editor.UI.Components
 		private TestConfiguration _testConfiguration;
 
 		private const string TEST_NAME_REGEX = "^[A-Z][A-Za-z]*$";
-		
-		public new class UxmlFactory : UxmlFactory<CreateNewTestVisualElement, UxmlTraits> { }
 		public CreateNewTestVisualElement() : base(nameof(CreateNewTestVisualElement)) { }
 
 		public void Init(TestConfiguration testConfiguration)

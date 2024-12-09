@@ -16,9 +16,6 @@ namespace Beamable.Editor.UI.Components
 {
 	public class DatePickerVisualElement : ValidableVisualElement<string>
 	{
-		public new class UxmlFactory : UxmlFactory<DatePickerVisualElement, UxmlTraits>
-		{
-		}
 
 		private Action _onDateChanged;
 

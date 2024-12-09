@@ -24,22 +24,6 @@ namespace Beamable.Editor.Content.Components
 	{
 		private SplitterVisualElement _splitter;
 
-		public new class UxmlFactory : UxmlFactory<HeaderVisualElement, UxmlTraits> { }
-		public new class UxmlTraits : VisualElement.UxmlTraits
-		{
-			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription { name = "custom-text", defaultValue = "nada" };
-
-			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-			{
-				get { yield break; }
-			}
-			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-			{
-				base.Init(ve, bag, cc);
-				var self = ve as HeaderVisualElement;
-			}
-		}
-
 		//      private Label _nameLabel;
 
 		//      public string Text { set; get; }

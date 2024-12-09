@@ -11,11 +11,14 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class LoadingIndicatorVisualElement : BeamableVisualElement
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class LoadingIndicatorVisualElement : BeamableVisualElement
 	{
 		private Label _loadingLabel;
 
-		public string LoadingText { get; private set; }
+
 
 		private PromiseBase _promise;
 
@@ -23,6 +26,11 @@ namespace Beamable.Editor.UI.Components
 		{
 		}
 
+#if UNITY_6000_0_OR_NEWER
+		[UxmlAttribute]
+		public string LoadingText { get; private set; } = "Loading";
+#else
+		public string LoadingText { get; private set; }
 		public new class UxmlFactory : UxmlFactory<LoadingIndicatorVisualElement, UxmlTraits> { }
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
@@ -45,6 +53,7 @@ namespace Beamable.Editor.UI.Components
 				self.Refresh();
 			}
 		}
+#endif
 
 		public override void Refresh()
 		{

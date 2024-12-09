@@ -11,8 +11,17 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
 	public class LabeledDatePickerVisualElement : BeamableVisualElement
 	{
+#if UNITY_6000_0_OR_NEWER
+		[UxmlAttribute]
+		public string Label { get; private set; }
+#else
+		public string Label { get; private set; }
+
 		public new class UxmlFactory : UxmlFactory<LabeledDatePickerVisualElement, UxmlTraits>
 		{
 		}
@@ -36,12 +45,12 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 		}
+#endif
 
 		public event Action OnValueChanged;
 		private Label _label;
 
 		public DatePickerVisualElement DatePicker { get; private set; }
-		public string Label { get; private set; }
 		public string SelectedDate => DatePicker.GetIsoDate();
 
 		public LabeledDatePickerVisualElement() : base(

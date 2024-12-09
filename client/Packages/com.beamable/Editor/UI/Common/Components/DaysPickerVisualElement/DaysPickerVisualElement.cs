@@ -15,9 +15,6 @@ namespace Beamable.Editor.UI.Components
 {
 	public class DaysPickerVisualElement : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<DaysPickerVisualElement, UxmlTraits>
-		{
-		}
 
 		public Action<List<string>> OnValueChanged;
 

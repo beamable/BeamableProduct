@@ -14,10 +14,6 @@ namespace Beamable.Editor.UI.Components
 {
 	public class HourPickerVisualElement : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<HourPickerVisualElement, UxmlTraits>
-		{
-		}
-
 		private LabeledNumberPicker _hourPicker;
 		private LabeledNumberPicker _minutePicker;
 		private LabeledNumberPicker _secondPicker;
