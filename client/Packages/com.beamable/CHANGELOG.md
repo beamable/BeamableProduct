@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `Party.Invite()` no longer throws a null reference exception. [https://github.com/beamable/BeamableProduct/issues/3797](#3797)
+- `Party.Invite()` no longer throws a null reference exception. [#3797](https://github.com/beamable/BeamableProduct/issues/3797)
 
 ## [2.0.0] - 2024-12-09
 
