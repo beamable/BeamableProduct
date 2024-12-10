@@ -258,8 +258,11 @@ namespace Beamable.BSAT.Editor.Models
 			results = null;
 			errorLog = string.Empty;
 
+#if UNITY_6000_0_OR_NEWER
+			var testables = Object.FindObjectsByType<Testable>(FindObjectsSortMode.None).ToList();
+#else
 			var testables = Object.FindObjectsOfType<Testable>().ToList();
-
+#endif
 			if (!testables.Any())
 				errorLog =
 					$"An error occured in scene=[{sceneName}]. Cannot find any \"Testable\" class. Inherit from the \"Testable\" class to access the functionality of the test tool. ";

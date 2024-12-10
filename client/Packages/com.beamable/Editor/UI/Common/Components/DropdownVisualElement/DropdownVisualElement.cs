@@ -10,7 +10,6 @@ namespace Beamable.Editor.UI.Components
 {
 	public class DropdownVisualElement : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<DropdownVisualElement, UxmlTraits> { }
 
 		private const float _SAFE_MIN_WIDTH = 1000;
 		private const float _SAFE_MIN_HEIGHT = 24.0f;

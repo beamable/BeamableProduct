@@ -12,7 +12,6 @@ namespace Beamable.Editor.UI.Components
 {
 	public class ColorPickerVisualElement : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<ColorPickerVisualElement, UxmlTraits> { }
 
 		public ColorPickerVisualElement() : base(
 			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(ColorPickerVisualElement)}/{nameof(ColorPickerVisualElement)}")

@@ -12,22 +12,6 @@ namespace Beamable.Editor.Content.Components
 	public class TagVisualElement : ContentManagerComponent
 	{
 
-		public new class UxmlFactory : UxmlFactory<TagVisualElement, UxmlTraits> { }
-		public new class UxmlTraits : VisualElement.UxmlTraits
-		{
-			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription { name = "custom-text", defaultValue = "nada" };
-
-			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-			{
-				get { yield break; }
-			}
-			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-			{
-				base.Init(ve, bag, cc);
-				var self = ve as TagVisualElement;
-			}
-		}
-
 		private VisualElement _backGroundElement;
 		private Label _label;
 

@@ -14,8 +14,6 @@ namespace Beamable.Editor.UI.Components
 {
 	public class CalendarVisualElement : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<CalendarVisualElement, UxmlTraits> { }
-
 		public CalendarVisualElement() : base(
 			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(CalendarVisualElement)}/{nameof(CalendarVisualElement)}")
 		{ }

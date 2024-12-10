@@ -13,8 +13,43 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class LabeledIntegerField : ValidableVisualElement<int>
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class LabeledIntegerField : ValidableVisualElement<int>
 	{
+
+#if UNITY_6000_0_OR_NEWER
+		[UxmlAttribute]
+		public int Value
+		{
+			get => _value;
+			set
+			{
+				int tempValue = Mathf.Clamp(value, _minValue, _maxValue);
+				_value = tempValue;
+				_integerFieldComponent?.SetValueWithoutNotify(_value);
+				_onValueChanged?.Invoke();
+			}
+		}
+
+		[UxmlAttribute]
+		private string Label { get; set; }
+#else
+		public int Value
+		{
+			get => _value;
+			set
+			{
+				int tempValue = Mathf.Clamp(value, _minValue, _maxValue);
+				_value = tempValue;
+				_integerFieldComponent?.SetValueWithoutNotify(_value);
+				_onValueChanged?.Invoke();
+			}
+		}
+
+		private string Label { get; set; }
+
 		public new class UxmlFactory : UxmlFactory<LabeledIntegerField, UxmlTraits>
 		{
 		}
@@ -42,7 +77,7 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 		}
-
+#endif
 
 		private Action _onValueChanged;
 		private Label _labelComponent;
@@ -51,20 +86,6 @@ namespace Beamable.Editor.UI.Components
 		private int _minValue;
 		private int _maxValue;
 		private VisualElement _mainElement;
-
-		public int Value
-		{
-			get => _value;
-			set
-			{
-				int tempValue = Mathf.Clamp(value, _minValue, _maxValue);
-				_value = tempValue;
-				_integerFieldComponent?.SetValueWithoutNotify(_value);
-				_onValueChanged?.Invoke();
-			}
-		}
-
-		private string Label { get; set; }
 
 		public LabeledIntegerField() : base(
 			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LabeledIntegerField)}/{nameof(LabeledIntegerField)}")

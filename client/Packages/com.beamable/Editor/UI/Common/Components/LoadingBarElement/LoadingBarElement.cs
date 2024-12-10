@@ -15,9 +15,12 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class LoadingBarElement : BeamableVisualElement, ILoadingBar
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class LoadingBarElement : BeamableVisualElement, ILoadingBar
 	{
-
+#if !UNITY_6000_0_OR_NEWER
 		public new class UxmlFactory : UxmlFactory<LoadingBarElement, LoadingBarElement.UxmlTraits>
 		{
 		}
@@ -25,7 +28,7 @@ namespace Beamable.Editor.UI.Components
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
-			{ name = "custom-text", defaultValue = "nada" };
+				{ name = "custom-text", defaultValue = "nada" };
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{
@@ -39,6 +42,8 @@ namespace Beamable.Editor.UI.Components
 
 			}
 		}
+#endif
+
 
 		private static Texture _animationTexture;
 

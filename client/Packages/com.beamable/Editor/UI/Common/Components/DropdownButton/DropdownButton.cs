@@ -6,8 +6,23 @@ using UnityEngine.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class DropdownButton : BeamableVisualElement
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class DropdownButton : BeamableVisualElement
 	{
+#if UNITY_6000_0_OR_NEWER
+		[UxmlAttribute]
+		private string Text { get; set; } = string.Empty;
+		[UxmlAttribute]
+		private string Tooltip { get; set; } = string.Empty;
+		[UxmlAttribute]
+		private bool ForceDropdown { get; set; } = false;
+#else
+		private string Text { get; set; }
+		private string Tooltip { get; set; }
+		private bool ForceDropdown { get; set; }
+
 		public new class UxmlFactory : UxmlFactory<DropdownButton, UxmlTraits>
 		{ }
 
@@ -37,13 +52,11 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 		}
+#endif
 
 		public event Action OnBaseClick;
 		public event Action<ContextualMenuPopulateEvent> OnDropdownClick;
 
-		private string Text { get; set; }
-		private string Tooltip { get; set; }
-		private bool ForceDropdown { get; set; }
 		private Button _baseButton;
 		private Button _dropdownButton;
 		private VisualElement _dropdownImg;

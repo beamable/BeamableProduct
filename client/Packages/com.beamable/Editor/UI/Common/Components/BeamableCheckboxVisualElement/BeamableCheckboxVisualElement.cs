@@ -12,10 +12,6 @@ namespace Beamable.Editor.UI.Components
 {
 	public class BeamableCheckboxVisualElement : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<BeamableCheckboxVisualElement, UxmlTraits>
-		{
-		}
-
 		// TODO: remove after implementing composite validation rules
 		public Action OnValueChangedNotifier;
 		public event Action<bool> OnValueChanged;
