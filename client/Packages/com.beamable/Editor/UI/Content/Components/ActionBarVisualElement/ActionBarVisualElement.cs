@@ -113,6 +113,7 @@ namespace Beamable.Editor.Content.Components
 
 		public void RefreshPublishDropdownVisibility()
 		{
+			_publishButton.Refresh();
 			_publishButton.EnableDropdown(ContentConfiguration.Instance.EnableMultipleContentNamespaces);
 		}
 

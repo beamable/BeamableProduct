@@ -24,6 +24,7 @@ namespace Beamable.Editor.UI.Components
 
 		public LoadingIndicatorVisualElement() : base($"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LoadingIndicatorVisualElement)}/{nameof(LoadingIndicatorVisualElement)}")
 		{
+			Refresh();
 		}
 
 #if UNITY_6000_0_OR_NEWER

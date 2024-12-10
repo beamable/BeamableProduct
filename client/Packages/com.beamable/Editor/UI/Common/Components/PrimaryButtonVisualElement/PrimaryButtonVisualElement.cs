@@ -37,12 +37,13 @@ namespace Beamable.Editor.UI.Components
 
 		public PrimaryButtonVisualElement() : base($"{Directories.COMMON_COMPONENTS_PATH}/{nameof(PrimaryButtonVisualElement)}/{nameof(PrimaryButtonVisualElement)}")
 		{
+			Refresh();
 		}
 
 
 #if UNITY_6000_0_OR_NEWER
 		[UxmlAttribute]
-		public string Text { get; private set; }
+		public string Text { get; private set; } = "Continue";
 #else
 		public string Text { get; private set; }
 		public new class UxmlFactory : UxmlFactory<PrimaryButtonVisualElement, UxmlTraits> { }

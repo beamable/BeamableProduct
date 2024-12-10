@@ -15,7 +15,10 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class LoadingBarElement : BeamableVisualElement, ILoadingBar
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class LoadingBarElement : BeamableVisualElement, ILoadingBar
 	{
 		private static Texture _animationTexture;
 

@@ -10,7 +10,10 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Content.Components
 {
-	public class TagListVisualElement : ContentManagerComponent
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class TagListVisualElement : ContentManagerComponent
 	{
 
 		private VisualElement _mainVisualElement;

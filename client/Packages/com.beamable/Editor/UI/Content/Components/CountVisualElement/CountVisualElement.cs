@@ -29,6 +29,7 @@ namespace Beamable.Editor.Content.Components
 
 		public CountVisualElement() : base(nameof(CountVisualElement))
 		{
+			Refresh();
 		}
 
 		public override void Refresh()

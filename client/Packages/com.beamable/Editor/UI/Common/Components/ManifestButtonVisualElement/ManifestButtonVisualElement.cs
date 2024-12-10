@@ -16,7 +16,10 @@ using static Beamable.Common.Constants.Features.ContentManager;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class ManifestButtonVisualElement : BeamableVisualElement
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class ManifestButtonVisualElement : BeamableVisualElement
 	{
 
 		private ManifestModel Model { get; set; }

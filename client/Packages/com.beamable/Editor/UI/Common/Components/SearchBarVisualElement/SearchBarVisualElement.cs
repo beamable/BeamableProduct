@@ -12,7 +12,10 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class SearchBarVisualElement : BeamableVisualElement
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class SearchBarVisualElement : BeamableVisualElement
 	{
 		private TextField _textField;
 		private double _lastChangedTime;
