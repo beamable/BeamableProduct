@@ -691,7 +691,22 @@ namespace Beamable.Api
 
 					try
 					{
-						T result = opts.parser == null ? JsonUtility.FromJson<T>(responsePayload) : opts.parser(responsePayload);
+						T result = default;
+						if (opts.parser != null)
+						{
+							result = opts.parser(responsePayload);
+						}
+						else if (typeof(T) == typeof(Unit) )
+						{
+							// don't even bother trying to interpret the response payload if our type is _Unit_. 
+							//  we don't care about the server response anyway.
+							//  btw, if the server returns `""` as a response, then the JsonUtility.FromJson call fails. 
+							result = default;
+						}
+						else
+						{
+							result = JsonUtility.FromJson<T>(responsePayload);
+						}
 						promise.CompleteSuccess(result);
 					}
 					catch (Exception ex)
