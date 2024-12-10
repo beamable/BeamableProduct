@@ -62,6 +62,7 @@ namespace Beamable.Editor.Content.Components
 			Model.OnUserCanPublishChanged += _publishButton.SetEnabled;
 
 			_downloadButton = Root.Q<DropdownButton>("downloadButton");
+			_downloadButton.Refresh();
 			_downloadButton.OnBaseClick += () => OnDownloadButtonClicked?.Invoke();
 			_downloadButton.OnDropdownClick += HandleDownloadDropdown;
 
