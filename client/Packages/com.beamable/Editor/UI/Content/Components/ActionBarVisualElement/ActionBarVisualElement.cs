@@ -19,9 +19,34 @@ using static Beamable.Common.Constants;
 namespace Beamable.Editor.Content.Components
 {
 	// TODO: TD213896
+#if UNITY_6000_0_OR_NEWER
 	[UxmlElement]
+#endif
 	public partial class ActionBarVisualElement : ContentManagerComponent
 	{
+#if !UNITY_6000_0_OR_NEWER
+		public new class UxmlFactory : UxmlFactory<ActionBarVisualElement, UxmlTraits>
+		{
+		}
+
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
+				{ name = "custom-text", defaultValue = "nada" };
+
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get { yield break; }
+			}
+
+			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+			{
+				base.Init(ve, bag, cc);
+				var self = ve as ActionBarVisualElement;
+			}
+		}
+#endif
+
 		public event Action<ContentTypeDescriptor> OnAddItemButtonClicked;
 		public event Action OnValidateButtonClicked;
 		public event Action<bool> OnPublishButtonClicked;
