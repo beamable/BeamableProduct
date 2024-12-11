@@ -10,8 +10,17 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class BeamableCheckboxVisualElement : BeamableVisualElement
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class BeamableCheckboxVisualElement : BeamableVisualElement
 	{
+#if !UNITY_6000_0_OR_NEWER
+		public new class UxmlFactory : UxmlFactory<BeamableCheckboxVisualElement, UxmlTraits>
+		{
+		}
+#endif
+
 		// TODO: remove after implementing composite validation rules
 		public Action OnValueChangedNotifier;
 		public event Action<bool> OnValueChanged;

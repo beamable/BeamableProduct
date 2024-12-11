@@ -14,8 +14,16 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class DatePickerVisualElement : ValidableVisualElement<string>
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class DatePickerVisualElement : ValidableVisualElement<string>
 	{
+#if !UNITY_6000_0_OR_NEWER
+		public new class UxmlFactory : UxmlFactory<DatePickerVisualElement, UxmlTraits>
+		{
+		}
+#endif
 
 		private Action _onDateChanged;
 

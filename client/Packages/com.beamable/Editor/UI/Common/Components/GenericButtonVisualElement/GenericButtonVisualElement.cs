@@ -52,13 +52,19 @@ namespace Beamable.Editor.UI.Components
 			private ButtonType _defaultType = ButtonType.Default;
 
 			readonly UxmlStringAttributeDescription _text = new UxmlStringAttributeDescription
-			{ name = "text", defaultValue = "" };
+			{
+				name = "text", defaultValue = ""
+			};
 
 			readonly UxmlStringAttributeDescription _tooltip = new UxmlStringAttributeDescription
-			{ name = "tooltip", defaultValue = "" };
+			{
+				name = "tooltip", defaultValue = ""
+			};
 
 			readonly UxmlStringAttributeDescription _type = new UxmlStringAttributeDescription
-			{ name = "type", defaultValue = "" };
+			{
+				name = "type", defaultValue = ""
+			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{
@@ -79,7 +85,7 @@ namespace Beamable.Editor.UI.Components
 					component.Refresh();
 				}
 			}
-
+		}
 #endif
 
 		private Button _button;

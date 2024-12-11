@@ -13,8 +13,16 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class DaysPickerVisualElement : BeamableVisualElement
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class DaysPickerVisualElement : BeamableVisualElement
 	{
+#if !UNITY_6000_0_OR_NEWER
+		public new class UxmlFactory : UxmlFactory<DaysPickerVisualElement, UxmlTraits>
+		{
+		}
+#endif
 
 		public Action<List<string>> OnValueChanged;
 

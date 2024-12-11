@@ -12,8 +12,14 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class CalendarVisualElement : BeamableVisualElement
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class CalendarVisualElement : BeamableVisualElement
 	{
+#if !UNITY_6000_0_OR_NEWER
+		public new class UxmlFactory : UxmlFactory<CalendarVisualElement, UxmlTraits> { }
+#endif
 		public CalendarVisualElement() : base(
 			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(CalendarVisualElement)}/{nameof(CalendarVisualElement)}")
 		{ }
