@@ -4,6 +4,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Spew;
 using Beamable.Coroutines;
 using Beamable.Endel.NativeWebSocket;
+using Core.Platform.SDK;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -30,17 +31,19 @@ namespace Beamable.Connection
 		private readonly CoroutineService _coroutineService;
 		private IEnumerator _dispatchMessagesRoutine;
 		private Promise _onConnectPromise;
+		private IBeamableApiRequester _apiRequester;
+		private string _connectAddress;
 
 		public WebSocketConnection(CoroutineService coroutineService)
 		{
 			_coroutineService = coroutineService;
 		}
 
-		public Promise Connect(string address, AccessToken token)
+		public Promise Connect(string address, IBeamableApiRequester requester)
 		{
-			string uri = $"{address}/connect";
-			_webSocket = CreateWebSocket(uri, token, _coroutineService);
-			SetUpEventCallbacks();
+			_connectAddress = $"{address}/connect";
+			_apiRequester = requester;
+			CreateWebSocket();
 			// This is a bit gross but the underlying library doesn't complete the connect task until the connection
 			// is closed.
 			DoConnect();
@@ -72,22 +75,27 @@ namespace Beamable.Connection
 			return _onConnectPromise;
 		}
 
-		private static WebSocket CreateWebSocket(string address, IAccessToken token, CoroutineService coroutineService)
+		private void CreateWebSocket()
 		{
+			_ = _webSocket?.Close();
+
+			string token = _apiRequester.Token.Token;
+			string address = _connectAddress;
 			var subprotocols = new List<string>();
 #if !UNITY_WEBGL
 			var headers = new Dictionary<string, string>
 			{
-				{"Authorization", $"Bearer {token.Token}"}
+				{"Authorization", $"Bearer {token}"}
 			};
-			return new WebSocket(address, subprotocols, headers, coroutineService);
+			_webSocket = new WebSocket(address, subprotocols, headers, coroutineService);
 #else
-			if(!string.IsNullOrWhiteSpace(token.Token))
+			if(!string.IsNullOrWhiteSpace(token))
 			{
-				address += "?access_token=" + token.Token;
+				address += "?access_token=" + token;
 			}
-			return new WebSocket(address, subprotocols, null, coroutineService);
+			_webSocket = new WebSocket(address, subprotocols, null, _coroutineService);
 #endif
+			SetUpEventCallbacks();
 		}
 
 		private void SetUpEventCallbacks()
@@ -97,7 +105,7 @@ namespace Beamable.Connection
 			{
 				if (state == UnityEditor.PlayModeStateChange.ExitingPlayMode)
 				{
-					var _ = Disconnect();
+					_ = Disconnect();
 				}
 			};
 #endif
@@ -164,6 +172,8 @@ namespace Beamable.Connection
 						_delay = Mathf.Clamp(_delay, MIN_DELAY, MAX_DELAY);
 						_retrying = true;
 
+						// Throw away old websocket and create a new one
+						CreateWebSocket();
 						await DoConnect();
 					}
 
