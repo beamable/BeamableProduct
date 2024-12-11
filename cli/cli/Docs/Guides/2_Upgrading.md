@@ -21,8 +21,8 @@ The Beamable CLI may include changes between versions that require developer int
 
 These are ordered with the latest versions towards the top, and the older versions toward the bottom of the document. **When jumping multiple versions (A.A.A -> C.C.C), apply the migrations without skipping steps (A.A.A -> B.B.B -> C.C.C).**
 
-### From 2.0.2 to 3.0.0
-The upgrade from 2.0.x to 3.0.0 brings a few critical updates to the `csproj` file, how the Beam CLI tool is managed, and the version of `dotnet`. 
+### From 2.0.2 to 3.0.1
+The upgrade from 2.0.x to 3.0.1 brings a few critical updates to the `csproj` file, how the Beam CLI tool is managed, and the version of `dotnet`. 
 
 **To start this process, let's open a terminal and navigate to the directory containing your `.beamable` folder. All commands are written as though invoked from this directory.**
 
@@ -37,7 +37,7 @@ cd SomeDrive/ProjectRoot
 ```
 
 #### CLI File Structure
-Starting with CLI 3.0.0, you should start by updating the CLI's file structure. The steps required are defined below:
+Starting with CLI 3.0.1, you should start by updating the CLI's file structure. The steps required are defined below:
 
 1. Install [dotnet 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) in your machine (it is the new recommended version). The old `net6.0` framework's end-of-life arrived on November 12, 2024. 
 2. Delete the `.beamable/local-services-manifest.json` file. (It is no longer necessary)
@@ -58,14 +58,14 @@ cat .beamable/connection-configuration.json
 }
 ```
 
-Next, run `dotnet tool install --create-manifest-if-needed beamable.tools --version 3.0.0`. This should create a file in a top level `.config/dotnet-tools.json` with the following contents.
+Next, run `dotnet tool install --create-manifest-if-needed beamable.tools --version 3.0.1`. This should create a file in a top level `.config/dotnet-tools.json` with the following contents.
 ```json
 {  
   "version": 1,  
   "isRoot": true,  
   "tools": {  
     "beamable.tools": {  
-      "version": "3.0.0",  
+      "version": "3.0.1",  
       "commands": [  
         "beam"  
       ],  
@@ -79,10 +79,10 @@ Finally, to verify that the tool is installed locally, run the following,
 ```sh
 dotnet beam version
  {                                                
-    "version": "3.0.0",               
+    "version": "3.0.1",               
     "location": "/usr/local/share/dotnet/dotnet", 
     "type": "LocalTool",                          
-    "templates": "3.0.0"
+    "templates": "3.0.1"
  }   
 ```
 
@@ -92,7 +92,7 @@ However, if you run `beam` in the context of a local project _and_ the global ve
 
 You will see a warning message similar to this when invoking `beam` directly:
 ```
-You tried using a Beamable CLI version=[3.0.0] which is different than the one configured in this project=[3.0.0-PREVIEW.RC2]. We are forwarding the command (beam 
+You tried using a Beamable CLI version=[3.0.1] which is different than the one configured in this project=[3.0.0-PREVIEW.RC2]. We are forwarding the command (beam 
 --pretty version) to the version the project is using via dotnet=[dotnet]. Instead of relying on this forwarding, please 'dotnet beam' from inside the project directory.
 ```
 
