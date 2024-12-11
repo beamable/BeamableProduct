@@ -68,6 +68,7 @@ namespace Beamable.Editor.Login.UI.Components
 			var isLegal = _legalCheckbox.AddErrorLabel("Legal", PrimaryButtonVisualElement.LegalErrorHandler);
 
 			_legalButton = Root.Q<GenericButtonVisualElement>("legalButton");
+			_legalButton.Refresh();
 			_legalButton.OnClick += () => { Application.OpenURL(URL_BEAMABLE_LEGAL_WEBSITE); };
 
 			_continueButton = Root.Q<PrimaryButtonVisualElement>();
@@ -77,6 +78,7 @@ namespace Beamable.Editor.Login.UI.Components
 			_continueButton.AddGateKeeper(constraints);
 
 			_switchCustomerButton = Root.Q<GenericButtonVisualElement>("existingOrganization");
+			_switchCustomerButton.Refresh();
 			_switchCustomerButton.OnClick += Manager.GotoExistingCustomer;
 
 			_errorText = Root.Q<Label>("errorLabel");
