@@ -86,7 +86,7 @@ namespace Beamable.Connection
 			{
 				{"Authorization", $"Bearer {token}"}
 			};
-			_webSocket = new WebSocket(address, subprotocols, headers, coroutineService);
+			_webSocket = new WebSocket(address, subprotocols, headers, _coroutineService);
 #else
 			if(!string.IsNullOrWhiteSpace(token))
 			{
