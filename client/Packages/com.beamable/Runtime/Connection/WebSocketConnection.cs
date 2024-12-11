@@ -43,7 +43,6 @@ namespace Beamable.Connection
 		{
 			_connectAddress = $"{address}/connect";
 			_apiRequester = requester;
-			CreateWebSocket();
 			// This is a bit gross but the underlying library doesn't complete the connect task until the connection
 			// is closed.
 			DoConnect();
@@ -68,11 +67,11 @@ namespace Beamable.Connection
 #endif
 		}
 
-		private Promise DoConnect()
+		private void DoConnect()
 		{
+			CreateWebSocket();
 			_onConnectPromise = new Promise();
 			Task _ = _webSocket.Connect();
-			return _onConnectPromise;
 		}
 
 		private void CreateWebSocket()
@@ -172,9 +171,7 @@ namespace Beamable.Connection
 						_delay = Mathf.Clamp(_delay, MIN_DELAY, MAX_DELAY);
 						_retrying = true;
 
-						// Throw away old websocket and create a new one
-						CreateWebSocket();
-						await DoConnect();
+						DoConnect();
 					}
 
 				}
