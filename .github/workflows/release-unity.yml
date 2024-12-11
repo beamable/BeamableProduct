@@ -109,7 +109,7 @@ jobs:
         run: beam version construct ${{ inputs.major }} ${{ inputs.minor }} ${{ inputs.patch }} --exp ${{ inputs.rcNumber }} > version.txt
       
       - name: Get Version Number (Prod)
-        if: ${{ inputs.releaseType == 'prod' }} 
+        if: ${{ inputs.releaseType == 'production' }} 
         run: beam version construct ${{ inputs.major }} ${{ inputs.minor }} ${{ inputs.patch }} --prod > version.txt
       
       - name: Store version number as output
