@@ -162,6 +162,9 @@ namespace Beamable.Connection
 					{
 						PlatformLogger.Log($"<b>[WebSocketConnection]</b> Ungraceful close of websocket. Reconnecting!");
 
+						// Let's make sure that we get a fresh new JWT before attempting to reconnect.
+						await _apiRequester.RefreshToken();
+
 						if (_retrying)
 						{
 							PlatformLogger.Log($"<b>[WebSocketConnection]</b> Retrying connection in {_delay / 1000} seconds");
