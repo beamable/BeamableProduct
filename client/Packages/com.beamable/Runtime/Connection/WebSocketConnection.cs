@@ -28,21 +28,21 @@ namespace Beamable.Connection
 		private bool _retrying;
 		private int _delay;
 		private WebSocket _webSocket;
+		private readonly IBeamableApiRequester _apiRequester;
 		private readonly CoroutineService _coroutineService;
 		private IEnumerator _dispatchMessagesRoutine;
 		private Promise _onConnectPromise;
-		private IBeamableApiRequester _apiRequester;
 		private string _connectAddress;
 
-		public WebSocketConnection(CoroutineService coroutineService)
+		public WebSocketConnection(IBeamableApiRequester apiRequester, CoroutineService coroutineService)
 		{
+			_apiRequester = apiRequester;
 			_coroutineService = coroutineService;
 		}
 
-		public Promise Connect(string address, IBeamableApiRequester requester)
+		public Promise Connect(string address)
 		{
 			_connectAddress = $"{address}/connect";
-			_apiRequester = requester;
 			// This is a bit gross but the underlying library doesn't complete the connect task until the connection
 			// is closed.
 			DoConnect();

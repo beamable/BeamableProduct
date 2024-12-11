@@ -13,7 +13,7 @@ namespace Beamable.Connection
 		event Action<string> Error;
 		event Action Close;
 
-		Promise Connect(string address, IBeamableApiRequester token);
+		Promise Connect(string address);
 		Promise Disconnect();
 	}
 }
