@@ -130,12 +130,17 @@ jobs:
         unityVersion:
           - 2021.3.29f1
           - 2022.3.7f1
+          - 6000.0.30f1
         include:
           - unityVersion: 2022.3.7f1
             unityEmailOverride: UNITY_EMAIL_DEVOPS
             unityPasswordOverride: UNITY_PASSWORD_DEVOPS
             unitySerialOverride: UNITY_SERIAL_DEVOPS
           - unityVersion: 2021.3.29f1
+            unityEmailOverride: UNITY_EMAIL_BUILD
+            unityPasswordOverride: UNITY_PASSWORD_BUILD
+            unitySerialOverride: UNITY_SERIAL_BUILD
+          - unityVersion: 6000.0.30f1
             unityEmailOverride: UNITY_EMAIL_BUILD
             unityPasswordOverride: UNITY_PASSWORD_BUILD
             unitySerialOverride: UNITY_SERIAL_BUILD
@@ -233,7 +238,7 @@ jobs:
           - iOS
           - StandaloneOSX
         unityVersion:
-          - 2022.3.7f1
+          - 6000.0.30f1
         projectPath:
           - client
         include:
