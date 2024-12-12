@@ -80,9 +80,17 @@ namespace Core.Server.Common
 	   /// <summary>
 	   /// Logs a debug-level message with formatted arguments.
 	   /// </summary>
-	   public void Debug(string message, params object[] args)
+	   public override void Verbose(string message, params object[] args)
 	   {
 		   LogContext.Value.Debug(message, args);
+	   }
+
+	   /// <summary>
+	   /// Logs a debug-level message.
+	   /// </summary>
+	   public override void Verbose(string message)
+	   {
+		   LogContext.Value.Debug(message);
 	   }
 
    }

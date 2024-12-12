@@ -29,8 +29,10 @@ public class CliToken : IAccessToken
 		ExpiresAt = DateTime.Now + TimeSpan.FromMinutes(3);
 	}
 	[JsonProperty("access_token")]
+	[SensitiveData]
 	public string Token { get; set; }
 	[JsonProperty("refresh_token")]
+	[SensitiveData]
 	public string RefreshToken { get; set; }
 	[JsonProperty("expires_at")]
 	public DateTime ExpiresAt { get; set; }

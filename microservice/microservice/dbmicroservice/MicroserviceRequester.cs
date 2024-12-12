@@ -317,7 +317,7 @@ namespace Beamable.Server
          var requestId = GetNextRequestId();
          if (_pendingMessages.ContainsKey(requestId))
          {
-            BeamableSerilogProvider.Instance.Debug("The request {id} was already taken", requestId);
+	         BeamableLogger.LogVerbose("The request {id} was already taken", requestId);
             return AddListener(req, uri, parser); // try again.
          }
 

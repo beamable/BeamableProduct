@@ -34,7 +34,7 @@ public class CliRequester : IRequester
 	public async Promise<T> CustomRequest<T>(Method method, string uri, object body = null, bool includeAuthHeader = true,
 										  Func<string, T> parser = null, bool customerScoped = false, IEnumerable<string> customHeaders = null)
 	{
-		Log.Verbose($"{method} call: {uri}");
+		BeamableLogger.LogVerbose($"{method} call: {uri}");
 
 		using HttpClient client = GetClient(includeAuthHeader, AccessToken?.Pid ?? Pid, AccessToken?.Cid ?? Cid, AccessToken, customerScoped);
 		var request = PrepareRequest(method, _ctx.Host, uri, body);
@@ -50,17 +50,17 @@ public class CliRequester : IRequester
 			}
 		}
 
-		Log.Verbose($"Calling: {request}");
+		BeamableLogger.LogVerbose($"Calling: {request}");
 
 		if (_ctx.IsDryRun)
 		{
-			Log.Verbose($"DRYRUN ENABLED: NO NETWORKING ALLOWED.");
+			BeamableLogger.LogVerbose($"DRYRUN ENABLED: NO NETWORKING ALLOWED.");
 			return default(T);
 		}
 
 		var result = await client.SendAsync(request);
 
-		Log.Verbose($"RESULT: {result}");
+		BeamableLogger.LogVerbose($"RESULT: {result}");
 
 		if (!result.IsSuccessStatusCode)
 		{
@@ -110,12 +110,12 @@ public class CliRequester : IRequester
 											   e.Status == 403 ||
 											   (!string.IsNullOrWhiteSpace(AccessToken.RefreshToken) &&
 												AccessToken.ExpiresAt < DateTime.Now):
-					Log.Debug(
+					BeamableLogger.LogVerbose(
 						"Got failure for token " + AccessToken.Token + " because " + e.RequestError.error);
 					var authService = new AuthApi(this);
 					return authService.LoginRefreshToken(AccessToken.RefreshToken).Map(rsp =>
 						{
-							Log.Debug(
+							BeamableLogger.LogVerbose(
 								$"Got new token: access=[{rsp.access_token}] refresh=[{rsp.refresh_token}] type=[{rsp.token_type}] ");
 							_ctx.UpdateToken(rsp);
 							return PromiseBase.Unit;

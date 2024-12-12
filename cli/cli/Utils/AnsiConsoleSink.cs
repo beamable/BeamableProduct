@@ -4,7 +4,7 @@ using Serilog.Core;
 using Serilog.Events;
 using Serilog.Formatting;
 using Serilog.Formatting.Display;
-using Serilog.Sinks.SystemConsole.Themes;
+// using Serilog.Sinks.SystemConsole.Themes;
 using Spectre.Console;
 using System.Text;
 

@@ -1,5 +1,7 @@
 ﻿using Beamable.Common;
-using Serilog;
+using Microsoft.Extensions.Logging;
+using ZLogger;
+
 
 namespace cli;
 
@@ -11,45 +13,46 @@ public class CliSerilogProvider : BeamableLogProvider
 
 	public override void Info(string message)
 	{
-		LogContext.Value!.Information(message);
+		LogContext.Value!.LogInformation(message);
 	}
 
 	public override void Info(string message, params object[] args)
 	{
-		LogContext.Value!.Information(message, args);
+		LogContext.Value!.LogInformation(message, args);
 	}
 
 	public override void Warning(string message)
 	{
-		LogContext.Value!.Warning(message);
+		LogContext.Value!.LogWarning(message);
 	}
 
 	public override void Warning(string message, params object[] args)
 	{
-		LogContext.Value!.Warning(message, args);
+		LogContext.Value!.LogWarning(message, args);
 	}
 
 	public override void Error(Exception ex)
 	{
-		LogContext.Value!.Error("[Exception] {type} {message} {stacktrace}", ex?.GetType(), ex?.Message, ex?.StackTrace);
+		LogContext.Value!.LogError("[Exception] {type} {message} {stacktrace}", ex?.GetType(), ex?.Message, ex?.StackTrace);
 	}
 
 	public override void Error(string error)
 	{
-		LogContext.Value!.Error(error);
+		LogContext.Value!.LogError(error);
 	}
 
 	public override void Error(string error, params object[] args)
 	{
-		LogContext.Value!.Error(error, args);
+		LogContext.Value!.LogError(error, args);
 	}
 
-	public void Debug(string message, params object[] args)
+	public override void Verbose(string message, params object[] args)
 	{
-		LogContext.Value!.Debug(message, args);
+		LogContext.Value!.LogDebug(message, args);
 	}
-	public void Debug(string message)
+	public override void Verbose(string message)
 	{
-		LogContext.Value!.Debug(message);
+		Console.WriteLine(message);
+		LogContext.Value!.ZLogDebug($"{message}");
 	}
 }

@@ -34,11 +34,15 @@ using cli.Version;
 using CliWrap;
 using Errata;
 using Microsoft.Build.Locator;
+using Microsoft.Extensions.Compliance.Classification;
+using Microsoft.Extensions.Compliance.Redaction;
+using ZLogger.Formatters;
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Serilog;
 using Serilog.Core;
-using Serilog.Enrichers.Sensitive;
 using Serilog.Events;
 using Spectre.Console;
 using System.CommandLine;
@@ -50,13 +54,29 @@ using System.CommandLine.IO;
 using System.CommandLine.Parsing;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text.RegularExpressions;
+using ZLogger;
 using Command = System.CommandLine.Command;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
+using MessageTemplate = ZLogger.MessageTemplate;
 
 namespace cli;
 
+public static class MyTaxonomy
+{
+	public static string TaxonomyName => typeof(MyTaxonomy).FullName!;
+
+	public static DataClassification SensitiveData => new(TaxonomyName, nameof(SensitiveData));
+}
+
+public class SensitiveDataAttribute : DataClassificationAttribute
+{
+	public SensitiveDataAttribute() : base(MyTaxonomy.SensitiveData) { }
+}
+
 public class App
 {
-	public LoggingLevelSwitch LogLevel { get; set; }
+	public LogLevel LogLevel { get; set; }
 
 	public IDependencyBuilder Commands { get; set; }
 	public IDependencyProviderScope CommandProvider { get; set; }
@@ -85,34 +105,60 @@ public class App
 
 	public bool IsBuilt => CommandProvider != null;
 
-	private static void ConfigureLogging(App app, IDependencyProvider provider, Func<LoggerConfiguration, ILogger> configureLogger = null)
+	private static void ConfigureLogging(App app, IDependencyProvider provider, Action<ILoggingBuilder> configure = null)
 	{
 		
 		var appCtx = provider.GetService<IAppContext>();
 		var config = provider.GetService<ConfigService>();
 		var binding = provider.GetService<BindingContext>();
 		config.SetupBasePath(binding);
-		
-		// https://github.com/serilog/serilog/wiki/Configuration-Basics
-		configureLogger ??= config =>
+		configure ??= logging =>
 		{
+			logging.Services.AddSingleton<IAppContext>(appCtx);
+			logging.Services.AddSingleton<SensitiveDataFilter>();
 
-			var baseConfig = config.MinimumLevel.Verbose();
-			if (appCtx.ShouldMaskLogs)
-			{
-				baseConfig = baseConfig.Enrich.WithSensitiveDataMasking(options =>
-				{
-					options.MaskingOperators.Clear();
-					options.MaskingOperators.Add(new TokenMasker());
-					options.MaskValue = "***";
-				});
-			}
+			logging.ClearProviders();
 			
-			baseConfig = baseConfig.WriteTo.Logger(subConfig =>
-				subConfig
-					.WriteTo.BeamAnsi("{Message:lj}{NewLine}{Exception}")
-					.MinimumLevel.ControlledBy(app.LogLevel)
-			);
+			logging.SetMinimumLevel(app.LogLevel);
+			// logging.AddFilter<SensitiveDataFilter>(op=> {  return true; });
+			logging.AddZLoggerConsole(options =>
+			{
+				options.UseJsonFormatter(formatter =>
+				{
+					// cache JsonEncodedText outside of the AdditionalFormatter
+					var labels = JsonEncodedText.Encode("logging.googleapis.com/labels");
+					var category = JsonEncodedText.Encode("category");
+					var eventId = JsonEncodedText.Encode("eventId");
+					var userId = JsonEncodedText.Encode("userId");
+
+					formatter.AdditionalFormatter = (Utf8JsonWriter writer, in LogInfo logInfo) =>
+					{
+						writer.WriteStartObject(labels);
+						writer.WriteString(category, logInfo.Category.JsonEncoded);
+						writer.WriteString(eventId, logInfo.EventId.Name);
+
+						if (logInfo.ScopeState != null && !logInfo.ScopeState.IsEmpty)
+						{
+							foreach (var item in logInfo.ScopeState.Properties)
+							{
+								if (item.Key == "userId")
+								{
+									writer.WriteString(userId, item.Value!.ToString());
+									break;
+								}
+							}
+						}
+
+						writer.WriteEndObject();
+					};
+				});
+				options.IncludeScopes = true;
+			});
+			logging.AddZLoggerConsole(options => options.UsePlainTextFormatter(formatter =>
+			{
+				formatter.SetPrefixFormatter($"{0}|{1}| ",
+					(in MessageTemplate template, in LogInfo info) => template.Format(info.Timestamp, info.LogLevel));
+			}));
 			if (appCtx.ShouldUseLogFile && appCtx.TryGetTempLogFilePath(out var logPath))
 			{
 				var path = Path.GetDirectoryName(logPath);
@@ -127,24 +173,66 @@ public class App
 						ClearTempLogFilesCommand.CleanLogs(TimeSpan.FromDays(1), existingLogFiles);
 					}
 				}
-				baseConfig.WriteTo.File(logPath, LogEventLevel.Verbose);
-			}
 
-			if (appCtx.ShouldEmitLogs)
-			{
-				baseConfig.WriteTo.Sink(new ReporterSink(provider))
-					.MinimumLevel.ControlledBy(app.LogLevel);
+				logging.AddZLoggerFile(logPath); //.WriteTo.File(logPath, LogEventLevel.Verbose);
 			}
-
-			return baseConfig.CreateLogger();
 		};
 
+		var factory = LoggerFactory.Create(configure);
+		
+		// https://github.com/serilog/serilog/wiki/Configuration-Basics
+		// configureLogger ??= config =>
+		// {
+		//
+		// 	var baseConfig = config.MinimumLevel.Verbose();
+		// 	if (appCtx.ShouldMaskLogs)
+		// 	{
+		// 		baseConfig = baseConfig.Enrich.WithSensitiveDataMasking(options =>
+		// 		{
+		// 			options.MaskingOperators.Clear();
+		// 			options.MaskingOperators.Add(new TokenMasker());
+		// 			options.MaskValue = "***";
+		// 		});
+		// 	}
+		// 	
+		// 	baseConfig = baseConfig.WriteTo.Logger(subConfig =>
+		// 		subConfig
+		// 			.WriteTo.BeamAnsi("{Message:lj}{NewLine}{Exception}")
+		// 			.MinimumLevel.ControlledBy(app.LogLevel)
+		// 	);
+		// 	if (appCtx.ShouldUseLogFile && appCtx.TryGetTempLogFilePath(out var logPath))
+		// 	{
+		// 		var path = Path.GetDirectoryName(logPath);
+		// 		if (Directory.Exists(path))
+		// 		{
+		// 			var existingLogFiles = Directory.GetFiles(path);
+		// 			// this is magic number... I guess its a rough estimate of a number of commands per day?
+		// 			const int MaxNumberOfLogFilesBeforeAutoClean = 250;
+		// 			if (existingLogFiles.Length > MaxNumberOfLogFilesBeforeAutoClean)
+		// 			{
+		// 				// clean up everything older than a day
+		// 				ClearTempLogFilesCommand.CleanLogs(TimeSpan.FromDays(1), existingLogFiles);
+		// 			}
+		// 		}
+		// 		baseConfig.WriteTo.File(logPath, LogEventLevel.Verbose);
+		// 	}
+		//
+		// 	if (appCtx.ShouldEmitLogs)
+		// 	{
+		// 		baseConfig.WriteTo.Sink(new ReporterSink(provider))
+		// 			.MinimumLevel.ControlledBy(app.LogLevel);
+		// 	}
+		//
+		// 	return baseConfig.CreateLogger();
+		// };
 
 
-		Log.Logger = configureLogger(new LoggerConfiguration());
 
+		// Log.Logger = //configureLogger(new LoggerConfiguration());
+		
 		BeamableLogProvider.Provider = new CliSerilogProvider();
-		CliSerilogProvider.LogContext.Value = Log.Logger;
+		CliSerilogProvider.LogContext.Value = factory.CreateLogger("Program");
+		// CliSerilogProvider.LogContext.Value = Log.Logger;
 	}
 
 	/// <summary>
@@ -154,7 +242,7 @@ public class App
 	private void ConfigureServices(IDependencyBuilder services)
 	{
 		// register services
-		services.AddSingleton<LoggingLevelSwitch>(LogLevel);
+		// services.AddSingleton<LoggingLevelSwitch>(LogLevel);
 		services.AddSingleton<IAppContext, DefaultAppContext>();
 		services.AddSingleton<IRealmsApi, RealmsService>();
 		services.AddSingleton<IAliasService, AliasService>();
@@ -197,7 +285,7 @@ public class App
 	public virtual void Configure(
 		Action<IDependencyBuilder> serviceConfigurator = null,
 		Action<IDependencyBuilder> commandConfigurator = null,
-		Func<LoggerConfiguration, ILogger> configureLogger = null,
+		Action<ILoggingBuilder> configureLogger = null,
 		bool overwriteLogger = true
 		)
 	{
@@ -205,10 +293,10 @@ public class App
 			throw new InvalidOperationException("The app has already been built, and cannot be configured anymore");
 
 		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
-		LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
-
-		if (overwriteLogger)
-		{
+		// LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
+		//
+		// if (overwriteLogger)
+		// {
 			_setLogger = (provider) =>
 			{
 				ConfigureLogging(this, provider, configureLogger);
@@ -216,18 +304,18 @@ public class App
 				TaskLocalLog.Instance.globalLogger = Log.Logger;
 				Log.Logger = TaskLocalLog.Instance;
 			};
-		}
-		else
-		{
-			_setLogger = (provider) =>
-			{
-				var appCtx = provider.GetService<IAppContext>();
-				if (appCtx.ShouldEmitLogs)
-				{
-					TaskLocalLog.Instance.CreateContext(provider);
-				}
-			};
-		}
+		// }
+		// else
+		// {
+		// 	_setLogger = (provider) =>
+		// 	{
+		// 		var appCtx = provider.GetService<IAppContext>();
+		// 		if (appCtx.ShouldEmitLogs)
+		// 		{
+		// 			TaskLocalLog.Instance.CreateContext(provider);
+		// 		}
+		// 	};
+		// }
 
 		Commands.AddSingleton(new ArgValidator<ServiceName>(arg => new ServiceName(arg)));
 		Commands.AddSingleton(new ArgValidator<PackageVersion>(arg =>
@@ -245,6 +333,7 @@ public class App
 
 		// add global options
 		Commands.AddSingleton<DryRunOption>();
+		Commands.AddSingleton<SensitiveDataFilter>();
 		Commands.AddSingleton<SkipStandaloneValidationOption>();
 		Commands.AddSingleton<CidOption>();
 		Commands.AddSingleton<QuietOption>();
@@ -1069,5 +1158,48 @@ public class App
 		sw.Stop();
 		Log.Verbose("prepared virtual program instance in " + sw.ElapsedMilliseconds);
 		return prog.InvokeAsync(commandLine);
+	}
+}
+
+public partial class SensitiveDataFilter : ILogger
+{
+	[GeneratedRegex("((token|Token|TOKEN).?.?.?.?.?)\"........-....-....-....-............", RegexOptions.None, "en-US")]
+	public static partial Regex TokenRegex();
+	private readonly ILogger _innerLogger;
+	private readonly IAppContext _appContext;
+
+	public SensitiveDataFilter(ILogger innerLogger, IAppContext appContext)
+	{
+		_innerLogger = innerLogger;
+		_appContext = appContext;
+	}
+	public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+	{
+		if (formatter != null)
+		{
+			var message = formatter(state, exception);
+			var sanitizedMessage = SanitizeSensitiveData(message);
+			_innerLogger.Log(logLevel, eventId, (TState)(object)sanitizedMessage, exception, (s, e) => sanitizedMessage);
+		}
+	}
+
+	public bool IsEnabled(LogLevel logLevel)
+	{
+		return _innerLogger.IsEnabled(logLevel);
+	}
+
+	public IDisposable BeginScope<TState>(TState state) where TState : notnull
+	{
+		return _innerLogger.BeginScope(state);
+	}
+
+	private string SanitizeSensitiveData(string message)
+	{
+		var match = TokenRegex().Match(message);
+		if (match.Success)
+		{
+			return $"{match.Groups[1].Value}\"<hidden_token last4=({match.Value.Substring(match.Value.Length - 4)})>";
+		}
+		return message;
 	}
 }

@@ -28,6 +28,8 @@ namespace Beamable.Common
 		public abstract void Error(Exception ex);
 		public abstract void Error(string error);
 		public abstract void Error(string error, params object[] args);
+		public abstract void Verbose(string error);
+		public abstract void Verbose(string error, params object[] args);
 	}
 
 	/// <summary>
@@ -75,6 +77,16 @@ namespace Beamable.Common
 		{
 			UnityEngine.Debug.LogError(string.Format(error, args));
 		}
+
+		public override void Verbose(string error)
+		{
+			// UnityEngine.Debug.Log(error);
+		}
+
+		public override void Verbose(string error, params object[] args)
+		{
+			// UnityEngine.Debug.Log(string.Format(error, args));
+		}
 	}
 #endif
 
@@ -97,6 +109,8 @@ namespace Beamable.Common
 		public override void Error(Exception ex) { }
 		public override void Error(string error) { }
 		public override void Error(string error, params object[] args) { }
+		public override void Verbose(string error) { }
+		public override void Verbose(string error, params object[] args) { }
 	}
 
 	/// <summary>
@@ -165,6 +179,18 @@ namespace Beamable.Common
 		public static void LogError(string error, params object[] args)
 		{
 			BeamableLogProvider.Provider.Error(error, args);
+		}
+
+
+		public static void LogVerbose(string error)
+		{
+			BeamableLogProvider.Provider.Verbose(error);
+		}
+
+
+		public static void LogVerbose(string error, params object[] args)
+		{
+			BeamableLogProvider.Provider.Verbose(error, args);
 		}
 
 		public static void LogErrorFormat(string format, params object[] args) =>

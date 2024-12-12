@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using Beamable.Serialization.SmallerJSON;
@@ -60,14 +61,18 @@ public static class DependencyInjectionExtensions
 			var binder = new AppCommand<TArgs>.Binder(command, commandProvider);
 			command.SetHandler(async (TArgs args) =>
 			{
-
-				Log.Verbose($@"app context= {JsonConvert.SerializeObject(args.AppContext, Formatting.Indented, new JsonSerializerSettings
-				{
-				})}");
-				Log.Verbose($"running command=[{command.GetType().Name}] with parsed arguments {Json.Serialize(args, new StringBuilder())}");
-				if (command is IResultProvider resultProvider)
-				{
-					resultProvider.Reporter = args.Provider.GetService<IDataReporterService>();
+				using( CliSerilogProvider.LogContext.Value.BeginScope(new Dictionary<string,object>
+				      {
+					      {"Token", args.AppContext.Token},
+					      {"Command", command}
+				      })){
+					BeamableLogger.LogVerbose("Starting command");
+					BeamableLogger.LogVerbose($"app context= {JsonConvert.SerializeObject(args.AppContext, Formatting.Indented, new JsonSerializerSettings())}");
+					BeamableLogger.LogVerbose("Running command");
+					if (command is IResultProvider resultProvider)
+					{
+						resultProvider.Reporter = args.Provider.GetService<IDataReporterService>();
+					}
 				}
 
 
