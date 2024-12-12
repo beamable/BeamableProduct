@@ -114,6 +114,7 @@ namespace Beamable.Editor.UI.Components
 			_confirmButton.Disable();
 
 			_cancelButton = Root.Q<GenericButtonVisualElement>("cancelBtn");
+			_cancelButton.Refresh();
 			_cancelButton.OnClick += CancelClicked;
 
 			// Groups
