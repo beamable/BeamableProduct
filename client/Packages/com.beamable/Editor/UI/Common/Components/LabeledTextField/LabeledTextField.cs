@@ -12,8 +12,40 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class LabeledTextField : ValidableVisualElement<string>
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class LabeledTextField : ValidableVisualElement<string>
 	{
+#if UNITY_6000_0_OR_NEWER
+		[UxmlAttribute]
+		public string Value
+		{
+			get => _value;
+			set
+			{
+				_value = value;
+				TextFieldComponent?.SetValueWithoutNotify(_value);
+				_onValueChanged?.Invoke(_value);
+			}
+		}
+
+		[UxmlAttribute]
+		private string Label { get; set; } = "Label";
+#else
+		public string Value
+		{
+			get => _value;
+			set
+			{
+				_value = value;
+				TextFieldComponent?.SetValueWithoutNotify(_value);
+				_onValueChanged?.Invoke(_value);
+			}
+		}
+
+		private string Label { get; set; }
+
 		public new class UxmlFactory : UxmlFactory<LabeledTextField, UxmlTraits> { }
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
@@ -41,6 +73,7 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 		}
+#endif
 
 		public TextField TextFieldComponent { get; private set; }
 
@@ -48,18 +81,6 @@ namespace Beamable.Editor.UI.Components
 		private Action<string> _onValueChanged;
 		private string _value;
 
-		public string Value
-		{
-			get => _value;
-			set
-			{
-				_value = value;
-				TextFieldComponent?.SetValueWithoutNotify(_value);
-				_onValueChanged?.Invoke(_value);
-			}
-		}
-
-		private string Label { get; set; }
 		public bool IsDelayed { get; set; }
 		public bool IsMultiline { get; set; }
 

@@ -77,7 +77,10 @@ public class BuildSampleProject
 	[MenuItem("Beamable/SampleBuild/Development")]
 	public static void Development()
 	{
-#if UNITY_2022_3_OR_NEWER
+#if UNITY_6000_0_OR_NEWER
+		PlayerSettings.SetIl2CppCompilerConfiguration(NamedBuildTarget.Android, Il2CppCompilerConfiguration.Debug);
+		PlayerSettings.SetIl2CppCodeGeneration(NamedBuildTarget.Android, Il2CppCodeGeneration.OptimizeSize);
+#elif UNITY_2022_3_OR_NEWER
 		PlayerSettings.SetIl2CppCompilerConfiguration(BuildTargetGroup.Android, Il2CppCompilerConfiguration.Debug);
 		PlayerSettings.SetIl2CppCodeGeneration(NamedBuildTarget.Android, Il2CppCodeGeneration.OptimizeSize);
 #endif

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEngine;
 using Logger = UnityEngine.Logger;
 
@@ -66,8 +67,11 @@ namespace Beamable.Spew
 				sb.Append(flags[i]);
 				sb.Append(";");
 			}
-
+#if UNITY_6000_0_OR_NEWER
+			PlayerSettings.SetScriptingDefineSymbols(NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup), sb.ToString());
+#else
 			PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup, sb.ToString());
+#endif
 		}
 
 		private void ScrapeAllFlags()
@@ -109,8 +113,13 @@ namespace Beamable.Spew
 
 		private List<string> GetFlagStates()
 		{
+#if UNITY_6000_0_OR_NEWER
+			string s = PlayerSettings.GetScriptingDefineSymbols(
+				NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup));
+#else
 			string s = PlayerSettings.GetScriptingDefineSymbolsForGroup(
 				EditorUserBuildSettings.selectedBuildTargetGroup);
+#endif
 			string[] split = s.Split(';');
 			return new List<string>(split);
 		}

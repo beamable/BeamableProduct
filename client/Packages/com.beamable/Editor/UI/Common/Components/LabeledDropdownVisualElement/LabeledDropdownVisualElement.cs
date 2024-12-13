@@ -11,8 +11,17 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class LabeledDropdownVisualElement : BeamableVisualElement
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class LabeledDropdownVisualElement : BeamableVisualElement
 	{
+#if UNITY_6000_0_OR_NEWER
+		[UxmlAttribute]
+		public string Label { get; set; } = "Label";
+#else
+		private string Label { get; set; }
+
 		public new class UxmlFactory : UxmlFactory<LabeledDropdownVisualElement, UxmlTraits>
 		{
 		}
@@ -36,14 +45,13 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 		}
+#endif
 
 		private Label _label;
 		private List<string> _labels;
 		private Action<int> _onOptionSelected;
 
 		public DropdownVisualElement Dropdown { get; private set; }
-
-		private string Label { get; set; }
 
 		public LabeledDropdownVisualElement() : base(
 			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LabeledDropdownVisualElement)}/{nameof(LabeledDropdownVisualElement)}")

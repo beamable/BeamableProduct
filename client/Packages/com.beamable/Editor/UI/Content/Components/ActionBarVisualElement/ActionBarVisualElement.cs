@@ -19,8 +19,12 @@ using static Beamable.Common.Constants;
 namespace Beamable.Editor.Content.Components
 {
 	// TODO: TD213896
-	public class ActionBarVisualElement : ContentManagerComponent
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class ActionBarVisualElement : ContentManagerComponent
 	{
+#if !UNITY_6000_0_OR_NEWER
 		public new class UxmlFactory : UxmlFactory<ActionBarVisualElement, UxmlTraits>
 		{
 		}
@@ -28,7 +32,7 @@ namespace Beamable.Editor.Content.Components
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
-			{ name = "custom-text", defaultValue = "nada" };
+				{ name = "custom-text", defaultValue = "nada" };
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{
@@ -41,6 +45,7 @@ namespace Beamable.Editor.Content.Components
 				var self = ve as ActionBarVisualElement;
 			}
 		}
+#endif
 
 		public event Action<ContentTypeDescriptor> OnAddItemButtonClicked;
 		public event Action OnValidateButtonClicked;
@@ -82,6 +87,7 @@ namespace Beamable.Editor.Content.Components
 			Model.OnUserCanPublishChanged += _publishButton.SetEnabled;
 
 			_downloadButton = Root.Q<DropdownButton>("downloadButton");
+			_downloadButton.Refresh();
 			_downloadButton.OnBaseClick += () => OnDownloadButtonClicked?.Invoke();
 			_downloadButton.OnDropdownClick += HandleDownloadDropdown;
 
@@ -133,6 +139,7 @@ namespace Beamable.Editor.Content.Components
 
 		public void RefreshPublishDropdownVisibility()
 		{
+			_publishButton.Refresh();
 			_publishButton.EnableDropdown(ContentConfiguration.Instance.EnableMultipleContentNamespaces);
 		}
 

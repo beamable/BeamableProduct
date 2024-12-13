@@ -11,9 +11,6 @@ namespace Beamable.Editor.Content.Components
 {
 	public class ContentValidationErrorVisualElement : ContentManagerComponent
 	{
-		public new class UxmlFactory : UxmlFactory<ContentValidationErrorVisualElement, UxmlTraits>
-		{
-		}
 
 		public override void Refresh()
 		{
@@ -24,23 +21,6 @@ namespace Beamable.Editor.Content.Components
 			var numberOfErrors = ExceptionCollection?.Exceptions?.Count ?? 0;
 			count.SetValue(numberOfErrors);
 			contentId.text = ExceptionCollection.Content.Id;
-		}
-
-		public new class UxmlTraits : VisualElement.UxmlTraits
-		{
-			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
-			{ name = "custom-text", defaultValue = "nada" };
-
-			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-			{
-				get { yield break; }
-			}
-
-			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-			{
-				base.Init(ve, bag, cc);
-				var self = ve as ContentValidationErrorVisualElement;
-			}
 		}
 
 		public ContentExceptionCollection ExceptionCollection { get; set; }

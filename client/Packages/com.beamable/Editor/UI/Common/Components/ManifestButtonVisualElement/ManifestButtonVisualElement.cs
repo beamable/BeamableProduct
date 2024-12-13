@@ -16,8 +16,13 @@ using static Beamable.Common.Constants.Features.ContentManager;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class ManifestButtonVisualElement : BeamableVisualElement
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class ManifestButtonVisualElement : BeamableVisualElement
 	{
+
+#if !UNITY_6000_0_OR_NEWER
 		public new class UxmlFactory : UxmlFactory<ManifestButtonVisualElement, UxmlTraits>
 		{
 		}
@@ -35,6 +40,8 @@ namespace Beamable.Editor.UI.Components
 				var self = ve as ManifestButtonVisualElement;
 			}
 		}
+#endif
+
 		private ManifestModel Model { get; set; }
 		private Button _manifestButton;
 		private Label _manifestLabel;

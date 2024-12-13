@@ -20,10 +20,13 @@ namespace Beamable.Editor.Content.Components
 
 	}
 
-	public class HeaderVisualElement : ContentManagerComponent
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class HeaderVisualElement : ContentManagerComponent
 	{
-		private SplitterVisualElement _splitter;
 
+#if !UNITY_6000_0_OR_NEWER
 		public new class UxmlFactory : UxmlFactory<HeaderVisualElement, UxmlTraits> { }
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
@@ -39,6 +42,9 @@ namespace Beamable.Editor.Content.Components
 				var self = ve as HeaderVisualElement;
 			}
 		}
+#endif
+
+		private SplitterVisualElement _splitter;
 
 		//      private Label _nameLabel;
 

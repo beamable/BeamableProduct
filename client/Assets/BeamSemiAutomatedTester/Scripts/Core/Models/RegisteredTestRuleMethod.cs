@@ -82,8 +82,12 @@ namespace Beamable.BSAT.Core.Models
 		{
 			if (displayLogs)
 				TestableDebug.Log($"Invoking test: Testable=[{TestableType.Name}] Order=[{orderIndex+1}] Case=[{caseIndex+1}] Method=[{MethodInfo.Name.WrapWithColor(Color.yellow)}]");
-			
+
+#if UNITY_6000_0_OR_NEWER
+			var obj = Object.FindFirstObjectByType(TestableType);
+#else
 			var obj = Object.FindObjectOfType(TestableType);
+#endif
 			return IsPromise
 				? await (Promise<TestResult>)MethodInfo.Invoke(obj, Arguments)
 				: IsTask

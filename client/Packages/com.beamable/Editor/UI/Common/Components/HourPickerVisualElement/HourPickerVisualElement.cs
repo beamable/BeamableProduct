@@ -12,11 +12,16 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class HourPickerVisualElement : BeamableVisualElement
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class HourPickerVisualElement : BeamableVisualElement
 	{
+#if !UNITY_6000_0_OR_NEWER
 		public new class UxmlFactory : UxmlFactory<HourPickerVisualElement, UxmlTraits>
 		{
 		}
+#endif
 
 		private LabeledNumberPicker _hourPicker;
 		private LabeledNumberPicker _minutePicker;

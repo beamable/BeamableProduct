@@ -19,7 +19,10 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class PrimaryButtonVisualElement : BeamableVisualElement
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class PrimaryButtonVisualElement : BeamableVisualElement
 	{
 		private static char[] _digitChars = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
 		private LoadingSpinnerVisualElement _spinner;
@@ -30,15 +33,19 @@ namespace Beamable.Editor.UI.Components
 		private const string CLASS_NAME_REGEX = "^[A-Za-z_][A-Za-z0-9_]*$";
 		private const string MANIFEST_NAME_REGEX = @"(^[0-9]*$)|(^[a-z][a-z0-9\-]*$)";
 		private const string ALIAS_REGEX = "^[a-z][a-z0-9-]*$";
-
-		public string Text { get; private set; }
-
 		public Button Button { get; private set; }
 
 		public PrimaryButtonVisualElement() : base($"{Directories.COMMON_COMPONENTS_PATH}/{nameof(PrimaryButtonVisualElement)}/{nameof(PrimaryButtonVisualElement)}")
 		{
+			Refresh();
 		}
 
+
+#if UNITY_6000_0_OR_NEWER
+		[UxmlAttribute]
+		public string Text { get; private set; } = "Continue";
+#else
+		public string Text { get; private set; }
 		public new class UxmlFactory : UxmlFactory<PrimaryButtonVisualElement, UxmlTraits> { }
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
@@ -61,6 +68,7 @@ namespace Beamable.Editor.UI.Components
 				self.Refresh();
 			}
 		}
+#endif
 
 		public void SetText(string text)
 		{

@@ -17,21 +17,7 @@ namespace Beamable.Editor.Content.Components
 {
 	public class StatusBarVisualElement : ContentManagerComponent
 	{
-		public new class UxmlFactory : UxmlFactory<StatusBarVisualElement, UxmlTraits> { }
-		public new class UxmlTraits : VisualElement.UxmlTraits
-		{
-			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription { name = "custom-text", defaultValue = "nada" };
 
-			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-			{
-				get { yield break; }
-			}
-			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-			{
-				base.Init(ve, bag, cc);
-				var self = ve as StatusBarVisualElement;
-			}
-		}
 		private Button _validationSwitchBtn, _modificationSwitchBtn;
 
 		private VisualElement _statusIcon;

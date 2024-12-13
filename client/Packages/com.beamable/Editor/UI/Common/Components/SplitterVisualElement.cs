@@ -25,10 +25,6 @@ namespace Beamable.Editor.UI.Components
            OnFlexChanged?.Invoke(flexValues);
         }
 
-        public new class UxmlFactory : UxmlFactory<SplitterVisualElement, UxmlTraits> {}
-
-        public new class UxmlTraits : VisualElement.UxmlTraits {}
-
         private class SplitManipulator : MouseManipulator
         {
             private int m_ActiveVisualElementIndex = -1;

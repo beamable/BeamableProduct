@@ -13,11 +13,16 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class PreviousNextOptionSelectorVisualElement : BeamableVisualElement
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class PreviousNextOptionSelectorVisualElement : BeamableVisualElement
 	{
+#if !UNITY_6000_0_OR_NEWER
 		public new class UxmlFactory : UxmlFactory<PreviousNextOptionSelectorVisualElement, UxmlTraits>
 		{
 		}
+#endif
 
 		public PreviousNextOptionSelectorVisualElement() : base(
 			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(PreviousNextOptionSelectorVisualElement)}/{nameof(PreviousNextOptionSelectorVisualElement)}")

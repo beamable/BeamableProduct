@@ -12,8 +12,24 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class LabeledNumberPicker : BeamableVisualElement
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class LabeledNumberPicker : BeamableVisualElement
 	{
+#if UNITY_6000_0_OR_NEWER
+		[UxmlAttribute]
+		private int MinValue { get; set; } = Int32.MinValue;
+
+		[UxmlAttribute]
+		private int MaxValue { get; set; } = Int32.MaxValue;
+
+		[UxmlAttribute]
+		private string Label { get; set; } = "Label";
+#else
+		private int MinValue { get; set; }
+		private int MaxValue { get; set; }
+		private string Label { get; set; }
 
 		public new class UxmlFactory : UxmlFactory<LabeledNumberPicker, UxmlTraits>
 		{
@@ -45,6 +61,7 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 		}
+#endif
 
 		private LabeledIntegerField _labeledIntegerFieldComponent;
 		private ContextualMenuManipulator _contextualMenuManipulator;
@@ -56,9 +73,6 @@ namespace Beamable.Editor.UI.Components
 		private Vector2 _cachedPos;
 
 		public string Value => _labeledIntegerFieldComponent.Value.ToString();
-		private int MinValue { get; set; }
-		private int MaxValue { get; set; }
-		private string Label { get; set; }
 
 		public LabeledNumberPicker() : base($"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LabeledNumberPicker)}/{nameof(LabeledNumberPicker)}")
 		{

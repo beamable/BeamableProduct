@@ -11,8 +11,16 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class LabeledDaysPickerVisualElement : ValidableVisualElement<int>
+	#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+	#endif
+	public partial class LabeledDaysPickerVisualElement : ValidableVisualElement<int>
 	{
+#if UNITY_6000_0_OR_NEWER
+		[UxmlAttribute]
+		public string label { get; set; } = "Label";
+#else
+
 		public new class UxmlFactory : UxmlFactory<LabeledDaysPickerVisualElement, UxmlTraits>
 		{
 		}
@@ -36,6 +44,7 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 		}
+#endif
 
 		private Label _label;
 
