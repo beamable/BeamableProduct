@@ -180,10 +180,13 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 
 	private async Task<bool> GetPidAndAuth(InitCommandArgs args, string cid, string host)
 	{
+		// [Tech_debt] This is quite hard to read, lots of duplication calls, could use some refactor, also it does way more stuff
+		//  then just returning the pid and auth
 		if (!string.IsNullOrEmpty(_ctx.Pid) && string.IsNullOrEmpty(args.pid))
 		{
 			_ctx.Set(cid, _ctx.Pid, host);
 			_configService.SetBeamableDirectory(_ctx.WorkingDirectory);
+			_configService.CreateIgnoreFile();
 			_configService.FlushConfig();
 
 			var didLogin = await Login(args);
@@ -202,6 +205,7 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			{
 				_configService.SetBeamableDirectory(_ctx.WorkingDirectory);
 				_configService.SetConfigString(Constants.CONFIG_PID, args.pid);
+				_configService.CreateIgnoreFile();
 				_configService.FlushConfig();
 			}
 			else
