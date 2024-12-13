@@ -186,8 +186,8 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 		{
 			_ctx.Set(cid, _ctx.Pid, host);
 			_configService.SetBeamableDirectory(_ctx.WorkingDirectory);
-			_configService.CreateIgnoreFile();
 			_configService.FlushConfig();
+			_configService.CreateIgnoreFile();
 
 			var didLogin = await Login(args);
 
@@ -205,8 +205,8 @@ public class InitCommand : AtomicCommand<InitCommandArgs, InitCommandResult>,
 			{
 				_configService.SetBeamableDirectory(_ctx.WorkingDirectory);
 				_configService.SetConfigString(Constants.CONFIG_PID, args.pid);
-				_configService.CreateIgnoreFile();
 				_configService.FlushConfig();
+				_configService.CreateIgnoreFile();
 			}
 			else
 			{
