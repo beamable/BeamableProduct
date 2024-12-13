@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Shared Assembly Definitions generate with C# _LangVersion_ `9.0` instead of `8.0`. 
 - Shared Assembly Definitions automatically reference `Beamable.Unity.Addressables` nuget package instead of incorrectly referencing the `Unity.Addressables.dll`.
+- Throwing error when migrating microservice that references Assembly Definition Assets that has more matches to it's name
+
 
 ## [2.0.0] - 2024-12-11
 
