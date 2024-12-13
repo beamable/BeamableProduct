@@ -2,35 +2,42 @@
 name: Bug report
 about: Create a report to help us improve
 title: ''
-labels: public-bug
+labels: ''
 assignees: ''
 
 ---
+## Describe the Bug 
 
-**Describe the bug**
 A clear and concise description of what the bug is.
 
-**To Reproduce**
-Steps to reproduce the behavior:
+## To Reproduce
+
+### Steps to reproduce the behavior:
+
 1. Go to '...'
 2. Click on '....'
 3. Scroll down to '....'
 4. See error
 
-**Expected behavior**
+### Expected Behavior
+
 A clear and concise description of what you expected to happen.
 
-**Actual behavior**
+### Actual Behavior
+
 A clear and concise description of what is actually happening.
 
-**Screenshots**
+## Screenshots
+
 If applicable, add screenshots to help explain your problem.
 
-**Metadata**
-Please include,
-- SDK version,
-- Engine version,
-- Operating System
+## Metadata
 
-**Additional context**
+- SDK version: 
+- Engine version: 
+- Operating System: 
+
+## Additional Context
+
 Add any other context about the problem here.
+If there is a known workaround, describe it here.
