@@ -1,6 +1,7 @@
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Dependencies;
+using Core.Platform.SDK;
 using System;
 
 namespace Beamable.Connection
@@ -12,7 +13,7 @@ namespace Beamable.Connection
 		event Action<string> Error;
 		event Action Close;
 
-		Promise Connect(string address, AccessToken token);
+		Promise Connect(string address);
 		Promise Disconnect();
 	}
 }
