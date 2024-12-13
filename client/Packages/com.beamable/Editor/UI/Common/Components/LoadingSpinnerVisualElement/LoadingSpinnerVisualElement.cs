@@ -12,14 +12,20 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class LoadingSpinnerVisualElement : BeamableVisualElement
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class LoadingSpinnerVisualElement : BeamableVisualElement
 	{
-		public float Size { get; private set; }
-		public float HalfSize => Size * .5f;
-
 		public LoadingSpinnerVisualElement() : base($"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LoadingSpinnerVisualElement)}/{nameof(LoadingSpinnerVisualElement)}")
 		{
 		}
+
+#if UNITY_6000_0_OR_NEWER
+		[UxmlAttribute]
+		public float Size { get; private set; } = 20;
+#else
+		public float Size { get; private set; }
 
 		public new class UxmlFactory : UxmlFactory<LoadingSpinnerVisualElement, UxmlTraits> { }
 		public new class UxmlTraits : VisualElement.UxmlTraits
@@ -40,6 +46,9 @@ namespace Beamable.Editor.UI.Components
 				self.Refresh();
 			}
 		}
+#endif
+
+		public float HalfSize => Size * .5f;
 
 		public float Angle;
 		public float Speed = .7f;

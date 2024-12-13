@@ -22,10 +22,6 @@ namespace Beamable.Editor.UI.Components
 		public float Height => _height;
 		public bool LineBelow => _lineBelow;
 
-		public new class UxmlFactory : UxmlFactory<DropdownSingleOptionVisualElement, UxmlTraits>
-		{
-		}
-
 		public DropdownSingleOptionVisualElement() : base(
 			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(DropdownVisualElement)}/{nameof(DropdownSingleOptionVisualElement)}/{nameof(DropdownSingleOptionVisualElement)}")
 		{

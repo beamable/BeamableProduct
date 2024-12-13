@@ -12,14 +12,12 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class SearchBarVisualElement : BeamableVisualElement
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class SearchBarVisualElement : BeamableVisualElement
 	{
-		private TextField _textField;
-		private double _lastChangedTime;
-		private bool _pendingChange;
-		public string Value => _textField.value;
-		public event Action<string> OnSearchChanged;
-
+#if !UNITY_6000_0_OR_NEWER
 		public new class UxmlFactory : UxmlFactory<SearchBarVisualElement, UxmlTraits> { }
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
@@ -41,6 +39,13 @@ namespace Beamable.Editor.UI.Components
 				var self = ve as SearchBarVisualElement;
 			}
 		}
+#endif
+
+		private TextField _textField;
+		private double _lastChangedTime;
+		private bool _pendingChange;
+		public string Value => _textField.value;
+		public event Action<string> OnSearchChanged;
 
 		public SearchBarVisualElement() : base(
 			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(SearchBarVisualElement)}/{nameof(SearchBarVisualElement)}")

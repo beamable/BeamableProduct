@@ -11,8 +11,17 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class LabeledCalendarVisualElement : ValidableVisualElement<int>
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class LabeledCalendarVisualElement : ValidableVisualElement<int>
 	{
+#if UNITY_6000_0_OR_NEWER
+		[UxmlAttribute]
+		public string Label { get; private set; }
+#else
+		public string Label { get; private set; }
+
 		public new class UxmlFactory : UxmlFactory<LabeledCalendarVisualElement, UxmlTraits>
 		{
 		}
@@ -36,11 +45,12 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 		}
+#endif
 
 		private Label _label;
 		private CalendarVisualElement _calendar;
 
-		public string Label { get; private set; }
+
 		public List<string> SelectedDays => _calendar.SelectedDays;
 		public CalendarVisualElement Calendar => _calendar;
 

@@ -13,13 +13,14 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class LabeledCheckboxVisualElement : BeamableVisualElement
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class LabeledCheckboxVisualElement : BeamableVisualElement
 	{
 		public static readonly string ComponentPath = $"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LabeledCheckboxVisualElement)}/{nameof(LabeledCheckboxVisualElement)}";
 
-		public new class UxmlFactory : UxmlFactory<LabeledCheckboxVisualElement, UxmlTraits>
-		{
-		}
+
 
 		public Action<bool> OnValueChanged;
 		public bool Value
@@ -30,6 +31,31 @@ namespace Beamable.Editor.UI.Components
 				SetWithoutNotify(value);
 				OnValueChanged?.Invoke(value);
 			}
+		}
+
+
+
+
+#if UNITY_6000_0_OR_NEWER
+		[UxmlAttribute]
+		private bool Flip { get; set; } = false;
+
+		[UxmlAttribute]
+		private bool FlipIconCheckbox { get; set; } = false;
+
+		[UxmlAttribute]
+		private string Label { get; set; } = "Label";
+
+		[UxmlAttribute]
+		private string Icon { get; set; } = string.Empty;
+#else
+		private bool Flip { get; set; }
+		private bool FlipIconCheckbox { get; set; }
+		private string Label { get; set; }
+		private string Icon { get; set; }
+
+		public new class UxmlFactory : UxmlFactory<LabeledCheckboxVisualElement, UxmlTraits>
+		{
 		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
@@ -64,16 +90,12 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 		}
+#endif
 
 		private Label _label;
 		private Image _icon;
 		private BeamableCheckboxVisualElement _checkbox;
 		private string _labelText;
-
-		private bool Flip { get; set; }
-		private bool FlipIconCheckbox { get; set; }
-		private string Label { get; set; }
-		private string Icon { get; set; }
 
 		public BeamableCheckboxVisualElement Checkbox => _checkbox;
 

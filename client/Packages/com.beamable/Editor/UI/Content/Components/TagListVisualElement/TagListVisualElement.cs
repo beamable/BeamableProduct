@@ -10,9 +10,12 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Content.Components
 {
-	public class TagListVisualElement : ContentManagerComponent
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class TagListVisualElement : ContentManagerComponent
 	{
-
+#if !UNITY_6000_0_OR_NEWER
 		public new class UxmlFactory : UxmlFactory<TagListVisualElement, UxmlTraits> { }
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
@@ -28,6 +31,8 @@ namespace Beamable.Editor.Content.Components
 				var self = ve as TagListVisualElement;
 			}
 		}
+#endif
+
 
 		private VisualElement _mainVisualElement;
 

@@ -11,8 +11,12 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class GenericButtonVisualElement : BeamableVisualElement
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class GenericButtonVisualElement : BeamableVisualElement
 	{
+		[Serializable]
 		public enum ButtonType
 		{
 			Default,
@@ -21,24 +25,46 @@ namespace Beamable.Editor.UI.Components
 			Link
 		}
 
+
+
+		public event Action OnClick;
+
+
+
+#if UNITY_6000_0_OR_NEWER
+		[UxmlAttribute]
+		private ButtonType Type { get; set; }
+		[UxmlAttribute]
+		private string Text { get; set; }
+		[UxmlAttribute]
+		private string Tooltip { get; set; }
+#else
+		private ButtonType Type { get; set; }
+		private string Text { get; set; }
+		private string Tooltip { get; set; }
+
 		public new class UxmlFactory : UxmlFactory<GenericButtonVisualElement, UxmlTraits>
 		{
 		}
-
-		public event Action OnClick;
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			private ButtonType _defaultType = ButtonType.Default;
 
 			readonly UxmlStringAttributeDescription _text = new UxmlStringAttributeDescription
-			{ name = "text", defaultValue = "" };
+			{
+				name = "text", defaultValue = ""
+			};
 
 			readonly UxmlStringAttributeDescription _tooltip = new UxmlStringAttributeDescription
-			{ name = "tooltip", defaultValue = "" };
+			{
+				name = "tooltip", defaultValue = ""
+			};
 
 			readonly UxmlStringAttributeDescription _type = new UxmlStringAttributeDescription
-			{ name = "type", defaultValue = "" };
+			{
+				name = "type", defaultValue = ""
+			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{
@@ -60,13 +86,10 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 		}
+#endif
 
 		private Button _button;
 		private VisualElement _mainVisualElement;
-
-		private ButtonType Type { get; set; }
-		private string Text { get; set; }
-		private string Tooltip { get; set; }
 
 		public GenericButtonVisualElement() : base(
 			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(GenericButtonVisualElement)}/{nameof(GenericButtonVisualElement)}")

@@ -15,6 +15,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using VirtualList;
 using Debug = UnityEngine.Debug;
+using Object = UnityEngine.Object;
 
 namespace Beamable.Tournaments
 {
@@ -512,7 +513,11 @@ namespace Beamable.Tournaments
 
 		private void RefreshColorConstraints()
 		{
+			#if UNITY_6000_0_OR_NEWER
+			var colorConstraints = Object.FindObjectsByType<TournamentColorConstraint>(FindObjectsSortMode.None);;
+			#else
 			var colorConstraints = FindObjectsOfType<TournamentColorConstraint>();
+			#endif
 			foreach (var constrained in colorConstraints)
 			{
 				if (constrained.isActiveAndEnabled)

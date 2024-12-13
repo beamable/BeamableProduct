@@ -17,8 +17,6 @@ namespace Beamable.BSAT.Editor.UI.Components
 		private LabeledTextField _title;
 		private LabeledTextField _description;
 		private VisualElement _testResult;
-		
-		public new class UxmlFactory : UxmlFactory<RegisteredTestRuleMethodVisualElement, UxmlTraits> { }
 
 		public RegisteredTestRuleMethodVisualElement() : base(nameof(RegisteredTestRuleMethodVisualElement)) { }
 		

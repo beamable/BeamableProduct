@@ -12,8 +12,29 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class LabeledHourPickerVisualElement : ValidableVisualElement<string>
+#if UNITY_6000_0_OR_NEWER
+	[UxmlElement]
+#endif
+	public partial class LabeledHourPickerVisualElement : ValidableVisualElement<string>
 	{
+#if UNITY_6000_0_OR_NEWER
+		[UxmlAttribute]
+		private bool ActiveHour { get; set; } = true;
+
+		[UxmlAttribute]
+		private bool ActiveMinute { get; set; } = true;
+
+		[UxmlAttribute]
+		private bool ActiveSecond { get; set; } = true;
+
+		[UxmlAttribute]
+		public string Label { get; private set; } = "Label";
+#else
+		private bool ActiveHour { get; set; }
+		private bool ActiveMinute { get; set; }
+		private bool ActiveSecond { get; set; }
+		public string Label { get; private set; }
+
 		public new class UxmlFactory : UxmlFactory<LabeledHourPickerVisualElement, UxmlTraits>
 		{
 		}
@@ -49,16 +70,14 @@ namespace Beamable.Editor.UI.Components
 				}
 			}
 		}
+#endif
 
 		public Action OnValueChanged;
 
 		private Label _label;
 		private HourPickerVisualElement _hourPicker;
 
-		private bool ActiveHour { get; set; }
-		private bool ActiveMinute { get; set; }
-		private bool ActiveSecond { get; set; }
-		public string Label { get; private set; }
+
 		public string SelectedHour => _hourPicker.GetFullHour();
 		public string Hour => _hourPicker.Hour;
 		public string Minute => _hourPicker.Minute;
