@@ -497,6 +497,7 @@ namespace Beamable.Endel
 					if (m_Socket != null)
 					{
 						m_TokenSource.Cancel();
+						m_TokenSource.Dispose();
 						m_Socket.Dispose();
 					}
 				}

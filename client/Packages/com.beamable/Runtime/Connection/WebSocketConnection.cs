@@ -4,6 +4,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Spew;
 using Beamable.Coroutines;
 using Beamable.Endel.NativeWebSocket;
+using Core.Platform.SDK;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -27,20 +28,21 @@ namespace Beamable.Connection
 		private bool _retrying;
 		private int _delay;
 		private WebSocket _webSocket;
+		private readonly IBeamableApiRequester _apiRequester;
 		private readonly CoroutineService _coroutineService;
 		private IEnumerator _dispatchMessagesRoutine;
 		private Promise _onConnectPromise;
+		private string _connectAddress;
 
-		public WebSocketConnection(CoroutineService coroutineService)
+		public WebSocketConnection(IBeamableApiRequester apiRequester, CoroutineService coroutineService)
 		{
+			_apiRequester = apiRequester;
 			_coroutineService = coroutineService;
 		}
 
-		public Promise Connect(string address, AccessToken token)
+		public Promise Connect(string address)
 		{
-			string uri = $"{address}/connect";
-			_webSocket = CreateWebSocket(uri, token, _coroutineService);
-			SetUpEventCallbacks();
+			_connectAddress = $"{address}/connect";
 			// This is a bit gross but the underlying library doesn't complete the connect task until the connection
 			// is closed.
 			DoConnect();
@@ -65,29 +67,34 @@ namespace Beamable.Connection
 #endif
 		}
 
-		private Promise DoConnect()
+		private void DoConnect()
 		{
+			CreateWebSocket();
 			_onConnectPromise = new Promise();
 			Task _ = _webSocket.Connect();
-			return _onConnectPromise;
 		}
 
-		private static WebSocket CreateWebSocket(string address, IAccessToken token, CoroutineService coroutineService)
+		private void CreateWebSocket()
 		{
+			_ = _webSocket?.Close();
+
+			string token = _apiRequester.Token.Token;
+			string address = _connectAddress;
 			var subprotocols = new List<string>();
 #if !UNITY_WEBGL
 			var headers = new Dictionary<string, string>
 			{
-				{"Authorization", $"Bearer {token.Token}"}
+				{"Authorization", $"Bearer {token}"}
 			};
-			return new WebSocket(address, subprotocols, headers, coroutineService);
+			_webSocket = new WebSocket(address, subprotocols, headers, _coroutineService);
 #else
-			if(!string.IsNullOrWhiteSpace(token.Token))
+			if(!string.IsNullOrWhiteSpace(token))
 			{
-				address += "?access_token=" + token.Token;
+				address += "?access_token=" + token;
 			}
-			return new WebSocket(address, subprotocols, null, coroutineService);
+			_webSocket = new WebSocket(address, subprotocols, null, _coroutineService);
 #endif
+			SetUpEventCallbacks();
 		}
 
 		private void SetUpEventCallbacks()
@@ -97,7 +104,7 @@ namespace Beamable.Connection
 			{
 				if (state == UnityEditor.PlayModeStateChange.ExitingPlayMode)
 				{
-					var _ = Disconnect();
+					_ = Disconnect();
 				}
 			};
 #endif
@@ -155,6 +162,9 @@ namespace Beamable.Connection
 					{
 						PlatformLogger.Log($"<b>[WebSocketConnection]</b> Ungraceful close of websocket. Reconnecting!");
 
+						// Let's make sure that we get a fresh new JWT before attempting to reconnect.
+						await _apiRequester.RefreshToken();
+
 						if (_retrying)
 						{
 							PlatformLogger.Log($"<b>[WebSocketConnection]</b> Retrying connection in {_delay / 1000} seconds");
@@ -164,7 +174,7 @@ namespace Beamable.Connection
 						_delay = Mathf.Clamp(_delay, MIN_DELAY, MAX_DELAY);
 						_retrying = true;
 
-						await DoConnect();
+						DoConnect();
 					}
 
 				}
