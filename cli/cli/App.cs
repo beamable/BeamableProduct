@@ -154,11 +154,13 @@ public class App
 				});
 				options.IncludeScopes = true;
 			});
-			logging.AddZLoggerConsole(options => options.UsePlainTextFormatter(formatter =>
-			{
-				formatter.SetPrefixFormatter($"{0}|{1}| ",
-					(in MessageTemplate template, in LogInfo info) => template.Format(info.Timestamp, info.LogLevel));
-			}));
+			logging.AddZLoggerInMemory(processor =>
+                {
+                    processor.MessageReceived += renderedLogString => 
+                    {
+                        AnsiConsole.WriteLine(renderedLogString);
+                    };
+                });
 			if (appCtx.ShouldUseLogFile && appCtx.TryGetTempLogFilePath(out var logPath))
 			{
 				var path = Path.GetDirectoryName(logPath);
