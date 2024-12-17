@@ -90,11 +90,12 @@ namespace Beamable.Editor.ToolbarExtender
 				var orderComp = mi1.Order.CompareTo(mi2.Order);
 				var mi1Label = mi1.RenderLabel(editorAPI);
 				var mi2Label = mi2.RenderLabel(editorAPI);
-				if (mi1Label == null && mi2Label == null) return 0;
-				if (mi1Label == null) return 1;
-				if (mi2Label == null) return -1;
-				var labelComp = string.Compare(mi1Label.text, mi2Label.text,
-				                               StringComparison.Ordinal);
+				var labelComp = 0;
+				if (mi1Label != null && mi2Label != null)
+				{
+					labelComp = string.Compare(mi1Label.text, mi2Label.text,
+					                           StringComparison.Ordinal);
+				}
 
 				return orderComp == 0 ? labelComp : orderComp;
 			});
