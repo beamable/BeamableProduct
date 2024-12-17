@@ -8,7 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.0.1] - 2024-12-17
 
 ### Changed
-- Unity uses CLI to 3.0.2
+- Upgrade CLI to 3.0.2
+
+### Fixed
+
+- `WebSocketConnection` no longer throws `WebSocketConnectionException` during normal reconnect flows
+- `WebSocketConnection` will use the most recent JWT to attempt reconnection
+- Possible `NRE` when opening the Beamable Button while having never logged in
 
 ### Fixed
 

@@ -88,7 +88,12 @@ namespace Beamable.Editor.ToolbarExtender
 			assistantMenuItems.Sort((mi1, mi2) =>
 			{
 				var orderComp = mi1.Order.CompareTo(mi2.Order);
-				var labelComp = string.Compare(mi1.RenderLabel(editorAPI).text, mi2.RenderLabel(editorAPI).text,
+				var mi1Label = mi1.RenderLabel(editorAPI);
+				var mi2Label = mi2.RenderLabel(editorAPI);
+				if (mi1Label == null && mi2Label == null) return 0;
+				if (mi1Label == null) return 1;
+				if (mi2Label == null) return -1;
+				var labelComp = string.Compare(mi1Label.text, mi2Label.text,
 				                               StringComparison.Ordinal);
 
 				return orderComp == 0 ? labelComp : orderComp;
