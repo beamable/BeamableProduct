@@ -740,32 +740,27 @@ namespace Beamable.Server.Editor.Usam
 		public static List<AssemblyDefinitionAsset> GetAssemblyDefinitionAssets(IDescriptor descriptor)
 		{
 			List<AssemblyDefinitionAsset> assets = new List<AssemblyDefinitionAsset>();
-			List<string> mandatoryReferences = new List<string>() {"Unity.Beamable.Customer.Common"}; // Add the customer common asmdef even if it's not being used
 			
 			var dependencies = descriptor.Type.Assembly.GetReferencedAssemblies().Select(r => r.Name).ToList();
-			dependencies.AddRange(mandatoryReferences);
 			foreach (var name in dependencies)
 			{
 				if (CsharpProjectUtil.IsValidReference(name))
 				{
-					var guid = AssetDatabase.FindAssets($"t:AssemblyDefinitionAsset {name}");
-
-					if (guid.Length == 0)
+					var guids = AssetDatabase.FindAssets($"{name} t:{nameof(AssemblyDefinitionAsset)}");
+					AssemblyDefinitionAsset asset = null;
+					foreach (var id in guids)
 					{
-						continue; //there is no asset of this assembly to reference
+						var assetPath = AssetDatabase.GUIDToAssetPath(id);
+						var nameQuery = $"{Path.DirectorySeparatorChar}{name}.asmdef";
+						if (!assetPath.Contains(nameQuery))
+						{
+							continue;
+						}
+
+						asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(assetPath);
 					}
 
-					if (guid.Length > 1)
-					{
-						throw new Exception($"Found more than one assembly definition with the name: {name}");
-					}
-					
-					var path = AssetDatabase.GUIDToAssetPath(guid[0]);
-
-					if (string.IsNullOrEmpty(path)) continue;
-
-					var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(path);
-					if(asset != null && asset.name.Equals(name)) assets.Add(asset);
+					assets.Add(asset);
 				}
 			}
 
