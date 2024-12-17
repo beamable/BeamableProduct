@@ -8,9 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-
 - `Party.Invite()` no longer throws a null reference exception. [#3797](https://github.com/beamable/BeamableProduct/issues/3797)
 
+
+## [2.0.2] - 2024-12-17
+
+### Fixed
+- Possible `NRE` when opening the Beamable Button while having never logged in
 
 ## [2.0.1] - 2024-12-17
 
@@ -18,11 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upgrade CLI to 3.0.2
 
 ### Fixed
-
 - `WebSocketConnection` no longer throws `WebSocketConnectionException` during normal reconnect flows
 - `WebSocketConnection` will use the most recent JWT to attempt reconnection
-- Possible `NRE` when opening the Beamable Button while having never logged in
-
 
 ## [2.0.0] - 2024-12-11
 
