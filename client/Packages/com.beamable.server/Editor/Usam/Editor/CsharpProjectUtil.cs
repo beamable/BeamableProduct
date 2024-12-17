@@ -49,7 +49,7 @@ Do not add them from the custom solution file that opens from Beam Services wind
 	<PropertyGroup Label=""Beamable Settings"">
         <!-- All Unity Assembly References must have the value: ""unity"" -->
         <BeamProjectType>unity</BeamProjectType>
-		<LangVersion>8.0</LangVersion>
+		<LangVersion>9.0</LangVersion>
 		<GenerateClientCode>false</GenerateClientCode>
     </PropertyGroup>
 
@@ -72,6 +72,7 @@ Do not add them from the custom solution file that opens from Beam Services wind
     <!-- Nuget references -->
     <ItemGroup>
         <PackageReference Include=""Beamable.UnityEngine"" Version=""$(BeamableVersion)""/>
+        <PackageReference Include=""Beamable.UnityEngine.Addressables"" Version=""$(BeamableVersion)""/>
         <PackageReference Include=""Beamable.Common"" Version=""$(BeamableVersion)""/>
         <PackageReference Include=""Beamable.Microservice.Runtime"" Version=""$(BeamableVersion)""/>
     </ItemGroup>

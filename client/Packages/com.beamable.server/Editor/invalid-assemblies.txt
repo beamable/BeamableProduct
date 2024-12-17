@@ -141,6 +141,7 @@ System
 mscorlib
 SharpCompress
 Unity.Timeline
+Unity.Addressables*
 Unity.Timeline.Editor
 Unity.2D.Tilemap.Editor
 Unity.Beamable
