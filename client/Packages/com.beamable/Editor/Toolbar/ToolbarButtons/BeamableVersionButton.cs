@@ -103,11 +103,13 @@ namespace Beamable.Editor.ToolbarExtender
 			var menu = new GenericMenu();
 		
 			
-			assistantMenuItems.ForEach(item => item.ContextualizeMenu(editorAPI, menu));
+			assistantMenuItems.ForEach(item => item?.ContextualizeMenu(editorAPI, menu));
 			assistantMenuItems
 				.ForEach(item =>
 				{
-					menu.AddItem(item.RenderLabel(editorAPI), false,
+					var label = item.RenderLabel(editorAPI);
+					if (label == null) return;
+					menu.AddItem(label, false,
 					             data => item.OnItemClicked((BeamEditorContext)data), editorAPI);
 				});
 
