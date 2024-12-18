@@ -80,12 +80,24 @@ namespace Beamable.Editor.UI.Environment
 			}
 
 
-			root.Q<GenericButtonVisualElement>("dev").OnClick += OnDevClicked;
-			root.Q<GenericButtonVisualElement>("stage").OnClick += OnStagingClicked;
-			root.Q<GenericButtonVisualElement>("prod").OnClick += OnProdClicked;
-			root.Q<GenericButtonVisualElement>("cancel").OnClick += OnRevertClicked;
+			var devBtn = root.Q<GenericButtonVisualElement>("dev");
+			devBtn.Refresh();
+			devBtn.OnClick += OnDevClicked;
+
+			var stagBtn = root.Q<GenericButtonVisualElement>("stage");
+			stagBtn.Refresh();
+			stagBtn.OnClick += OnStagingClicked;
+
+			var prodBtn = root.Q<GenericButtonVisualElement>("prod");
+			prodBtn.Refresh();
+			prodBtn.OnClick += OnProdClicked;
+
+			var cancelBtn = root.Q<GenericButtonVisualElement>("cancel");
+			cancelBtn.Refresh();
+			cancelBtn.OnClick += OnRevertClicked;
 
 			_applyButton = root.Q<PrimaryButtonVisualElement>();
+			_applyButton.Refresh();
 			_applyButton.AddGateKeeper(
 								_apiTextBox.AddErrorLabel("valid api url", CheckUrl),
 								_portalApiTextBox.AddErrorLabel("valid portal url", CheckUrl),
