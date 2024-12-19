@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Possible `NRE` when opening the Beamable Button while having never logged in
 
+### Changed
+- Added custom property drawer to federations in `SimGameType` scriptable objects
+
 ## [2.0.1] - 2024-12-17
 
 ### Changed
