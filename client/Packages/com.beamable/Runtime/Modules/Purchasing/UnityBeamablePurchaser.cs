@@ -58,24 +58,29 @@ namespace Beamable.Purchasing
 					return _initPromise;
 				}
 
+				
 #if USE_STEAMWORKS && !UNITY_EDITOR
                 var builder = ConfigurationBuilder.Instance(new Steam.SteamPurchasingModule(_serviceProvider));
                 foreach (var sku in rsp.skus.definitions)
                 {
-                    builder.AddProduct(sku.name, ProductType.Consumable, new IDs
-                    {
-                        { sku.productIds.steam, Steam.SteamStore.Name }
-                    });
+				   if (sku == null) continue;
+
+                   var ids = ExtractValidIdsFromSku(
+						new SkuIdPair {skuProductId = sku.productIds?.steam, storeId = Steam.SteamStore.Name,}
+				   );
+				   builder.AddProduct(sku.name, ProductType.Consumable, ids);
                 }
 #else
 				var builder = ConfigurationBuilder.Instance(StandardPurchasingModule.Instance());
 				foreach (var sku in rsp.skus.definitions)
 				{
-					builder.AddProduct(sku.name, ProductType.Consumable, new IDs
-					{
-						{ sku.productIds.itunes, AppleAppStore.Name },
-						{ sku.productIds.googleplay, GooglePlay.Name },
-					});
+					if (sku == null) continue;
+					
+					var ids = ExtractValidIdsFromSku(
+						new SkuIdPair {skuProductId = sku.productIds?.itunes, storeId = AppleAppStore.Name,},
+						new SkuIdPair {skuProductId = sku.productIds?.googleplay, storeId = GooglePlay.Name,}
+					);
+					builder.AddProduct(sku.name, ProductType.Consumable, ids);
 				}
 #endif
 
@@ -84,9 +89,25 @@ namespace Beamable.Purchasing
 				// response either in OnInitialized or OnInitializeFailed.
 				UnityPurchasing.Initialize(this, builder);
 				return _initPromise;
+				
+				// Create an IDs instance from a list of Beamable SKU product id and IAP store ids.
+				// This method will only add the beamable SKU product ids that are not null or empty strings.
+				IDs ExtractValidIdsFromSku(params SkuIdPair[] skuIdPairs)
+				{
+					var ids = new IDs();
+
+					foreach (var pair in skuIdPairs)
+					{
+						if (string.IsNullOrEmpty(pair.skuProductId)) continue;
+						ids.Add(pair.skuProductId, pair.storeId);
+					}
+			
+					return ids;
+				}
 			});
 
 		}
+
 
 		/// <summary>
 		/// Clear all the callbacks and zero out the transaction ID.
@@ -381,6 +402,41 @@ namespace Beamable.Purchasing
 			yield return new WaitForSeconds(waitTime);
 
 			FulfillTransaction(transaction, purchasedProduct);
+		}
+	}
+
+	public struct SkuIdPair
+	{
+		/// <summary>
+		/// The product id from Beamable's SKU content. <see cref="SKU.productIds"/>
+		/// </summary>
+		public string skuProductId;
+		
+		/// <summary>
+		/// The IAP store id
+		/// </summary>
+		public string storeId;
+	}
+	
+	public class UnityBeamablePurchaserUtil
+	{
+		/// <summary>
+		/// Create a <see cref="IDs"/> type from a list of Beamable SKU product id and IAP store ids.
+		/// This method will only add the beamable SKU product ids that are not null or empty strings.
+		/// </summary>
+		/// <param name="skuIdPairs"></param>
+		/// <returns></returns>
+		public static IDs CreateIdsFromSku(params SkuIdPair[] skuIdPairs)
+		{
+			var ids = new IDs();
+
+			foreach (var pair in skuIdPairs)
+			{
+				if (string.IsNullOrEmpty(pair.skuProductId)) continue;
+				ids.Add(pair.skuProductId, pair.storeId);
+			}
+			
+			return ids;
 		}
 	}
 
