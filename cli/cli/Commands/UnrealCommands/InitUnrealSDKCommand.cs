@@ -3,7 +3,6 @@ using Beamable.Serialization.SmallerJSON;
 using cli.Utils;
 using System.Collections;
 using System.CommandLine;
-using System.Diagnostics;
 using System.Text;
 
 namespace cli.UnrealCommands;
@@ -138,27 +137,28 @@ public class InitUnrealSDKCommand : AppCommand<InitUnrealSDKCommandArgs>
 				BeamableLogger.Log("Copying OnlineSubsystemBeamable plugin's Beamable Content folder.");
 				var gameMakerContentPath = Path.Combine(gameMakerOssPath, "Content", "Beamable");
 				var sdkContentPath = Path.Combine(sdkBeamablePluginPath, "Content", "Beamable");
-				if(Path.Exists(gameMakerContentPath))
+				if (Path.Exists(gameMakerContentPath))
 				{
 					Directory.Delete(gameMakerContentPath, true);
 				}
-				
-				if(Path.Exists(sdkContentPath))
+
+				if (Path.Exists(sdkContentPath))
 				{
 					CopyDirectory(sdkContentPath, gameMakerContentPath);
 				}
 
-				
+
 				// Copy the Build.cs file
 				BeamableLogger.Log("Copying OnlineSubsystemBeamable plugin's Build.cs file.");
 				var gameMakerBuildPath = Path.Combine(gameMakerOssPath, "Source", "OnlineSubsystemBeamable", "OnlineSubsystemBeamable.Build.cs");
 				var sdkBuildPath = Path.Combine(sdkBeamablePluginPath, "Source", "OnlineSubsystemBeamable", "OnlineSubsystemBeamable.Build.cs");
-				if(Path.Exists(gameMakerBuildPath))
+				if (Path.Exists(gameMakerBuildPath))
 				{
 					File.Delete(gameMakerBuildPath);
 				}
+
 				File.Copy(sdkBuildPath, gameMakerBuildPath);
-				
+
 
 				// Copy the Source files
 				{
@@ -191,7 +191,7 @@ public class InitUnrealSDKCommand : AppCommand<InitUnrealSDKCommandArgs>
 				BeamableLogger.Log("Copying OnlineSubsystemBeamable plugin.");
 				CopyDirectory(sdkBeamablePluginPath, gameMakerOssPath);
 			}
-			
+
 			BeamableLogger.Log("Installed OnlineSubsystemBeamable plugin.");
 		}
 
@@ -256,7 +256,7 @@ public class InitUnrealSDKCommand : AppCommand<InitUnrealSDKCommandArgs>
 				var gameMakerEndIdx = gameMakerTargetFile.IndexOf(endTag, StringComparison.Ordinal) + endTag.Length;
 				gameMakerTargetFile = gameMakerTargetFile.Remove(gameMakerStartIdx, gameMakerEndIdx - gameMakerStartIdx);
 			}
-			
+
 			var gameMakerUsingIdx = gameMakerTargetFile.IndexOf("using ", StringComparison.Ordinal);
 			gameMakerTargetFile = gameMakerTargetFile.Insert(gameMakerUsingIdx, $"{sdkBeamableUsingCode}");
 		}
@@ -266,7 +266,7 @@ public class InitUnrealSDKCommand : AppCommand<InitUnrealSDKCommandArgs>
 
 		// Regenerate project files as we made changes to the Target.cs file.
 		MachineHelper.RunUnrealGenerateProjectFiles(args.ConfigService.WorkingDirectory);
-		
+
 		return Task.CompletedTask;
 	}
 
