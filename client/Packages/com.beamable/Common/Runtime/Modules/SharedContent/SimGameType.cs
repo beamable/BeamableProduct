@@ -121,6 +121,7 @@ namespace Beamable.Common.Content
 		[Tooltip(ContentObject.TooltipRewardsPerRank1)]
 		public List<RewardsPerRank> rewards;
 
+		[IgnoreContentField]
 		private bool isFirstTime = true;
 
 		public int CalculateMaxPlayers()
