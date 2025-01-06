@@ -2,6 +2,7 @@
 using Beamable.Editor.BeamCli.Commands;
 using Beamable.Editor.UI;
 using Beamable.Server.Editor.Usam;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -122,5 +123,89 @@ namespace Beamable.Server.Editor
 				return $"{Microservice} / {Namespace}";
 			}
 		}
+	}
+
+	[CustomPropertyDrawer(typeof(Namespace))]
+	public class NamespacePropertyDrawer : PropertyDrawer
+	{
+		private const int PADDING = 2;
+		private const int OPTIONS_CELL_HEIGHT = 20;
+		private const int OPTIONS_CELL_TOP_PADDING = 20;
+		private const string INTERFACE_NAME = "IFederatedGameServer";
+
+		private List<BeamManifestServiceEntry> _filteredServiceEntries;
+		private int _previousIndex = -1;
+
+		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+		{
+			return EditorGUIUtility.singleLineHeight * 3 + PADDING * 2;
+		}
+
+		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+		{
+			var usamService = BeamEditorContext.Default.ServiceScope.GetService<UsamService>();
+			var lastPosition = new Rect(position.x, position.y + OPTIONS_CELL_TOP_PADDING, position.width, OPTIONS_CELL_HEIGHT);
+
+
+			if (_filteredServiceEntries == null)
+			{
+				_filteredServiceEntries = usamService.latestManifest.services.FindAll(s => (s.federations.Count > 0) &&
+																	s.federations.Where(e => e.interfaceName.Equals(INTERFACE_NAME)).ToList().Count > 0).ToList();
+			}
+
+			if (_filteredServiceEntries.Count == 0)
+			{
+				position = EditorGUI.PrefixLabel(position, label);
+				EditorGUI.SelectableLabel(
+					position,
+					"You must have a Microservice implementing IFederatedGameServer before configuring it into an item or currency.",
+					EditorStyles.wordWrappedLabel);
+				return;
+			}
+
+			SerializedProperty nameProperty = property.FindPropertyRelative(nameof(Namespace.Name));
+
+			var options = BuildOptions();
+
+			var previousIndex = Array.IndexOf(options.ToArray(), nameProperty.stringValue);
+
+			var index = EditorGUI.Popup(lastPosition, $"Federation Namespace: ", previousIndex, options);
+
+			if (_previousIndex == index)
+			{
+				return;
+			}
+
+			_previousIndex = index;
+
+			if (index >= 0)
+			{
+				nameProperty.stringValue = options[index];
+			}
+			else
+			{
+				nameProperty.stringValue = "<none>";
+			}
+
+			nameProperty.serializedObject.ApplyModifiedProperties();
+		}
+
+		private string[] BuildOptions()
+		{
+			var options = new List<string>();
+			foreach (BeamManifestServiceEntry entry in _filteredServiceEntries)
+			{
+				foreach (var fed in entry.federations)
+				{
+					if (fed.interfaceName.Equals(INTERFACE_NAME))
+					{
+						options.Add(fed.federationId);
+					}
+				}
+			}
+
+			return options.Distinct().ToArray();
+		}
+
 	}
 }
