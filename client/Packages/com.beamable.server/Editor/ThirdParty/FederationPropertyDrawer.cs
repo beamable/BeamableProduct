@@ -164,7 +164,6 @@ namespace Beamable.Server.Editor
 			}
 
 			SerializedProperty nameProperty = property.FindPropertyRelative(nameof(Namespace.Name));
-			SerializedProperty hasValueProperty = property.FindPropertyRelative(nameof(OptionalNamespace.HasValue));
 
 			var options = BuildOptions();
 
@@ -182,12 +181,10 @@ namespace Beamable.Server.Editor
 			if (index >= 0)
 			{
 				nameProperty.stringValue = options[index];
-				hasValueProperty.boolValue = true;
 			}
 			else
 			{
 				nameProperty.stringValue = "<none>";
-				hasValueProperty.boolValue = false;
 			}
 
 			nameProperty.serializedObject.ApplyModifiedProperties();

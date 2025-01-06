@@ -160,8 +160,7 @@ namespace Beamable.Common.Content
 			{
 				isFirstTime = false;
 				newFederatedGameServerNamespace.HasValue = true;
-				var nameSpace = new Namespace {Name = federatedGameServerNamespace};
-				newFederatedGameServerNamespace.Value = nameSpace;
+				newFederatedGameServerNamespace.Value = new Namespace {Name = federatedGameServerNamespace};
 			}
 
 			legacyTeams = null;
