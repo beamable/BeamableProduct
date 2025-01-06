@@ -10,14 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `Party.Invite()` no longer throws a null reference exception. [#3797](https://github.com/beamable/BeamableProduct/issues/3797)
 
+### Changed
+- Added custom property drawer to federations in `SimGameType` scriptable objects. [#3628](https://github.com/beamable/BeamableProduct/issues/3628)
+
 
 ## [2.0.2] - 2024-12-17
 
 ### Fixed
 - Possible `NRE` when opening the Beamable Button while having never logged in
-
-### Changed
-- Added custom property drawer to federations in `SimGameType` scriptable objects
 
 ## [2.0.1] - 2024-12-17
 
