@@ -64,6 +64,8 @@ public static class UnityProjectUtil
 			Directory.CreateDirectory(dir);
 			Log.Debug($"Writing {file.FileName} to {fullPath}");
 			File.WriteAllText(fullPath, file.Content);
+			
+			File.SetAttributes(fullPath, FileAttributes.ReadOnly);
 		}
 	}
 
@@ -304,6 +306,7 @@ public static class UnityProjectUtil
 			var filesToDelete = Directory.GetFiles(folder, $"*{ext}", SearchOption.AllDirectories);
 			foreach (var file in filesToDelete)
 			{
+				File.SetAttributes(file, FileAttributes.None);
 				File.Delete(file);
 			}
 		}
