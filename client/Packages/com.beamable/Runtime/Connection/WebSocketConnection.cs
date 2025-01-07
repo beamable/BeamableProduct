@@ -43,9 +43,14 @@ namespace Beamable.Connection
 		public Promise Connect(string address)
 		{
 			_connectAddress = $"{address}/connect";
-			// This is a bit gross but the underlying library doesn't complete the connect task until the connection
-			// is closed.
-			DoConnect();
+			if (_webSocket is not null)
+			{
+				Reconnect();
+			}
+			else
+			{
+				DoConnect();
+			}
 
 #if !UNITY_WEBGL || UNITY_EDITOR
 			_dispatchMessagesRoutine = DispatchMessages();
@@ -59,10 +64,12 @@ namespace Beamable.Connection
 			_disconnecting = true;
 
 			await _webSocket.Close();
+			_webSocket = null;
 #if !UNITY_WEBGL || UNITY_EDITOR
 			if (_dispatchMessagesRoutine != null)
 			{
 				_coroutineService.StopCoroutine(_dispatchMessagesRoutine);
+				_dispatchMessagesRoutine = null;
 			}
 #endif
 		}
@@ -74,10 +81,13 @@ namespace Beamable.Connection
 			Task _ = _webSocket.Connect();
 		}
 
+		private void Reconnect()
+		{
+			Disconnect().Then(_ => DoConnect());
+		}
+
 		private void CreateWebSocket()
 		{
-			_ = _webSocket?.Close();
-
 			string token = _apiRequester.Token.Token;
 			string address = _connectAddress;
 			var subprotocols = new List<string>();
@@ -174,7 +184,7 @@ namespace Beamable.Connection
 						_delay = Mathf.Clamp(_delay, MIN_DELAY, MAX_DELAY);
 						_retrying = true;
 
-						DoConnect();
+						Reconnect();
 					}
 
 				}

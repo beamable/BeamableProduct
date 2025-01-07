@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Added custom property drawer to federations in `SimGameType` scriptable objects. [#3628](https://github.com/beamable/BeamableProduct/issues/3628)
+- `WebSocketConnection` will ensure proper disconnect/reconnect when switching players
 
 
 ## [2.0.2] - 2024-12-17
