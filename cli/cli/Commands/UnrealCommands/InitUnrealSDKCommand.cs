@@ -239,7 +239,7 @@ public class InitUnrealSDKCommand : AppCommand<InitUnrealSDKCommandArgs>
 		// Add the using statements required by the utilities code 
 		{
 			string startTag = "/* BEAMABLE USINGS TO COPY PASTE START */";
-			string endTag = $"/* BEAMABLE USINGS TO COPY PASTE END */{Environment.NewLine}";
+			string endTag = $"/* BEAMABLE USINGS TO COPY PASTE END */";
 
 			var sdkStartIdx = sdkTargetFile.IndexOf(startTag, StringComparison.Ordinal);
 			var sdkEndIdx = sdkTargetFile.IndexOf(endTag, StringComparison.Ordinal) + endTag.Length;
@@ -258,7 +258,7 @@ public class InitUnrealSDKCommand : AppCommand<InitUnrealSDKCommandArgs>
 			}
 
 			var gameMakerUsingIdx = gameMakerTargetFile.IndexOf("using ", StringComparison.Ordinal);
-			gameMakerTargetFile = gameMakerTargetFile.Insert(gameMakerUsingIdx, $"{sdkBeamableUsingCode}");
+			gameMakerTargetFile = gameMakerTargetFile.Insert(gameMakerUsingIdx, $"{sdkBeamableUsingCode}\n");
 		}
 
 		// Write the file back in
