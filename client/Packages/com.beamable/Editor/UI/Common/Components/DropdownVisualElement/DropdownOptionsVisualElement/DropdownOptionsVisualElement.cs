@@ -18,10 +18,6 @@ namespace Beamable.Editor.UI.Components
 		private readonly List<DropdownSingleOptionVisualElement> _allOptions = new List<DropdownSingleOptionVisualElement>();
 		private Action _onDestroy;
 
-		public new class UxmlFactory : UxmlFactory<DropdownOptionsVisualElement, UxmlTraits>
-		{
-		}
-
 		public DropdownOptionsVisualElement() : base(
 			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(DropdownVisualElement)}/{nameof(DropdownOptionsVisualElement)}/{nameof(DropdownOptionsVisualElement)}")
 		{

@@ -5,8 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1]  - 2024-12-17
 
-## [2.0.0] - 2024-12-09
+### Fixed
+- Shared Assembly Definitions generate with C# _LangVersion_ `9.0` instead of `8.0`. 
+- Shared Assembly Definitions automatically reference `Beamable.Unity.Addressables` nuget package instead of incorrectly referencing the `Unity.Addressables.dll`.
+- Service migrator no longer throws exception when multiple Assembly Definitions match migration query.
+
+
+## [2.0.0] - 2024-12-11
 
 ### Changed
 - Unity Microservices become Beamable Standalone Microservices. Services exist in a sibling folder to `/Assets` called `/BeamableServices`. 

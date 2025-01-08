@@ -19,7 +19,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        dotnet-version: ['6.0.x', '7.0.x', '8.0.x' ]
+        dotnet-version: ['8.0.x' ]
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
@@ -49,7 +49,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        dotnet-version: ['6.0.x', '7.0.x', '8.0.x' ]
+        dotnet-version: ['8.0.x' ]
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
@@ -130,12 +130,17 @@ jobs:
         unityVersion:
           - 2021.3.29f1
           - 2022.3.7f1
+          - 6000.0.30f1
         include:
           - unityVersion: 2022.3.7f1
             unityEmailOverride: UNITY_EMAIL_DEVOPS
             unityPasswordOverride: UNITY_PASSWORD_DEVOPS
             unitySerialOverride: UNITY_SERIAL_DEVOPS
           - unityVersion: 2021.3.29f1
+            unityEmailOverride: UNITY_EMAIL_BUILD
+            unityPasswordOverride: UNITY_PASSWORD_BUILD
+            unitySerialOverride: UNITY_SERIAL_BUILD
+          - unityVersion: 6000.0.30f1
             unityEmailOverride: UNITY_EMAIL_BUILD
             unityPasswordOverride: UNITY_PASSWORD_BUILD
             unitySerialOverride: UNITY_SERIAL_BUILD
@@ -233,7 +238,7 @@ jobs:
           - iOS
           - StandaloneOSX
         unityVersion:
-          - 2022.3.7f1
+          - 6000.0.30f1
         projectPath:
           - client
         include:
@@ -312,7 +317,7 @@ jobs:
           sudo swapoff -a
           sudo rm -f /swapfile
           sudo apt clean
-          docker rmi $(docker images -q)
+          docker rmi $(docker images -q) || true
           df -h
       - uses: game-ci/unity-builder@v4
         timeout-minutes: 60

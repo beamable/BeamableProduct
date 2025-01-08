@@ -67,7 +67,7 @@ namespace Beamable.Common.Content
 	[ContentType("game_types")]
 	[Serializable]
 	[Agnostic]
-	public class SimGameType : ContentObject
+	public class SimGameType : ContentObject, ISerializationCallbackReceiver
 	{
 		[Obsolete("Use `CalculateMaxPlayers` instead.")]
 		[IgnoreContentField]
@@ -103,7 +103,12 @@ namespace Beamable.Common.Content
 		[MustBePositive]
 		public OptionalInt matchingIntervalSecs;
 
+		[IgnoreContentField]
+		[SerializeField]
 		[Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipFederatedGameServerNamespace)]
+		public OptionalNamespace newFederatedGameServerNamespace;
+
+		[HideInInspector]
 		public OptionalString federatedGameServerNamespace;
 
 		[Tooltip(ContentObject.TooltipLeaderboardUpdate1)]
@@ -111,6 +116,8 @@ namespace Beamable.Common.Content
 
 		[Tooltip(ContentObject.TooltipRewardsPerRank1)]
 		public List<RewardsPerRank> rewards;
+
+		private bool isFirstTime = true;
 
 		public int CalculateMaxPlayers()
 		{
@@ -127,6 +134,12 @@ namespace Beamable.Common.Content
 		{
 			// never save the legacy teams...
 			legacyTeams = null;
+
+			if (newFederatedGameServerNamespace.HasValue)
+			{
+				federatedGameServerNamespace.HasValue = true;
+				federatedGameServerNamespace.Value = $"{newFederatedGameServerNamespace.Value.Name}";
+			}
 		}
 
 		public void OnAfterDeserialize()
@@ -138,6 +151,14 @@ namespace Beamable.Common.Content
 				{
 					listData = legacyTeams.ToList()
 				};
+			}
+
+			if (federatedGameServerNamespace.HasValue && !newFederatedGameServerNamespace.HasValue && isFirstTime)
+			{
+				isFirstTime = false;
+				newFederatedGameServerNamespace.HasValue = true;
+				var nameSpace = new Namespace {Name = federatedGameServerNamespace};
+				newFederatedGameServerNamespace.Value = nameSpace;
 			}
 
 			legacyTeams = null;

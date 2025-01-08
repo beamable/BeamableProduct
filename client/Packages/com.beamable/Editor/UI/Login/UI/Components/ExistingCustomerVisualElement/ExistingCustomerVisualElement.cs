@@ -38,9 +38,11 @@ namespace Beamable.Editor.Login.UI.Components
 			base.Refresh();
 
 			_switchCustomerButton = Root.Q<GenericButtonVisualElement>("newOrganization");
+			_switchCustomerButton.Refresh();
 			_switchCustomerButton.OnClick += Manager.GotoNewCustomer;
 
 			_forgotPasswordButton = Root.Q<GenericButtonVisualElement>("forgotPassword");
+			_forgotPasswordButton.Refresh();
 			_forgotPasswordButton.OnClick += () =>
 			{
 				Model.Customer.SetExistingCustomerData(_cidTextField.value, _emailTextField.value, null);

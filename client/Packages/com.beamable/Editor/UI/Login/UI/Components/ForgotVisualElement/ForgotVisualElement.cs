@@ -70,10 +70,12 @@ namespace Beamable.Editor.Login.UI.Components
 			_getCodeButton.AddGateKeeper(isAlias, isEmail);
 
 			_backButton = Root.Q<GenericButtonVisualElement>("login");
+			_backButton.Refresh();
 			_backButton.SetText(Manager.IsPreviousPage<AccountSummaryVisualElement>() ? "Back to account" : "Back to login");
 			_backButton.OnClick += Manager.GoToPreviousPage;
 
 			_resendButton = Root.Q<GenericButtonVisualElement>("resend");
+			_resendButton.Refresh();
 			_resendButton.OnClick += ShowPhase1;
 
 			_continueButton = Root.Q<PrimaryButtonVisualElement>("signIn");

@@ -20,27 +20,6 @@ namespace Beamable.BSAT.Editor.UI.Components
 		private Button _openMainMenuSceneButton;
 		private Button _setupBuildSettingsButton;
 
-		public new class UxmlFactory : UxmlFactory<ActionBarVisualElement, UxmlTraits> { }
-
-		public new class UxmlTraits : VisualElement.UxmlTraits
-		{
-			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
-			{
-				name = "custom-text", defaultValue = "nada"
-			};
-
-			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-			{
-				get { yield break; }
-			}
-
-			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-			{
-				base.Init(ve, bag, cc);
-				var self = ve as ActionBarVisualElement;
-			}
-		}
-
 		public ActionBarVisualElement() : base(nameof(ActionBarVisualElement)) { }
 
 		public override void Refresh()

@@ -409,6 +409,7 @@ namespace Beamable.Editor.Content
 		ValidateContentVisualElement GetValidateContentVisualElementWithPublish()
 		{
 			var validatePopup = new ValidateContentVisualElement();
+			validatePopup.Refresh();
 			validatePopup.DataModel = _contentManager.Model;
 
 			validatePopup.OnCancelled += () =>
