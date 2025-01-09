@@ -297,8 +297,8 @@ public class App
 		// The LoggingLevelSwitch _could_ be controlled at runtime, if we ever wanted to do that.
 		// LogLevel = new LoggingLevelSwitch { MinimumLevel = LogEventLevel.Information };
 		//
-		// if (overwriteLogger)
-		// {
+		if (overwriteLogger)
+		{
 			_setLogger = (provider) =>
 			{
 				ConfigureLogging(this, provider, configureLogger);
@@ -306,18 +306,18 @@ public class App
 				TaskLocalLog.Instance.globalLogger = Log.Logger;
 				Log.Logger = TaskLocalLog.Instance;
 			};
-		// }
-		// else
-		// {
-		// 	_setLogger = (provider) =>
-		// 	{
-		// 		var appCtx = provider.GetService<IAppContext>();
-		// 		if (appCtx.ShouldEmitLogs)
-		// 		{
-		// 			TaskLocalLog.Instance.CreateContext(provider);
-		// 		}
-		// 	};
-		// }
+		}
+		else
+		{
+			_setLogger = (provider) =>
+			{
+				var appCtx = provider.GetService<IAppContext>();
+				if (appCtx.ShouldEmitLogs)
+				{
+					TaskLocalLog.Instance.CreateContext(provider);
+				}
+			};
+		}
 
 		Commands.AddSingleton(new ArgValidator<ServiceName>(arg => new ServiceName(arg)));
 		Commands.AddSingleton(new ArgValidator<PackageVersion>(arg =>

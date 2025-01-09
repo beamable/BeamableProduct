@@ -3,9 +3,9 @@ using Beamable.Common.Dependencies;
 using cli;
 using cli.Services;
 using Docker.DotNet;
+using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;
-using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Formatting.Display;
@@ -14,6 +14,9 @@ using Spectre.Console.Testing;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using ZLogger;
+using MessageTemplate = ZLogger.MessageTemplate;
+
 #pragma warning disable CS8618
 
 namespace tests.Examples;
@@ -127,12 +130,22 @@ public class CLITest
 			_configurator?.Invoke(builder);
 			configurator?.Invoke(builder);
 		},
-		logger => logger
-		.WriteTo.Console(new MessageTemplateTextFormatter(
-			"{Timestamp:HH:mm:ss.fff} [{Level:u4}] {Message:lj}{NewLine}{Exception}"))
-		.MinimumLevel.ControlledBy(_serilogLevel)
-		.CreateLogger(),
-
+		logger =>
+		{
+			logger.ClearProviders().AddZLoggerConsole(options =>
+			{
+				options.UsePlainTextFormatter(formatter =>
+				{
+					formatter.SetPrefixFormatter($"{0:utc-longdate} [{1:short}]", (in MessageTemplate template, in LogInfo info) => template.Format(info.Timestamp, info.LogLevel));
+				});
+			});
+		},
+		// logger.
+		// 		.WriteTo.Console(new MessageTemplateTextFormatter(
+		// 			"{Timestamp:HH:mm:ss.fff} [{Level:u4}] {Message:lj}{NewLine}{Exception}"))
+		// 		.MinimumLevel.ControlledBy(_serilogLevel)
+		// 		.CreateLogger();
+		// },
 		args);
 
 		if (assertExitCode)
