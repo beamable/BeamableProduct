@@ -172,8 +172,6 @@ namespace Beamable.Server
          60
       };
 
-      private int _connectionAttempt = 0;
-
       /// <summary>
       /// We need to guarantee <see cref="ResolveCustomInitializationHook"/> only gets run once when we <see cref="SetupWebsocket"/>.
       /// </summary>
@@ -592,7 +590,6 @@ namespace Beamable.Server
             ws.OnConnect(socket =>
             {
                Log.Debug("connection made.");
-               _connectionAttempt = 0;
                promise.CompleteSuccess(socket);
             });
             ws.OnDisconnect(async (socket, wasClean) =>
@@ -830,10 +827,6 @@ namespace Beamable.Server
          }
       }
 
-      private UserDataCache<RankEntry> _singleRankyEntryCache;
-      
-
-      private UserDataCache<Dictionary<string, string>> _singleStatsCache;
       public Type MicroserviceType { get; private set; }
 
 

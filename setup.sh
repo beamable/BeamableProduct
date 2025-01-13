@@ -7,17 +7,31 @@
 # in your Home directory. That feed will be used to 
 # store local packages as you develop. 
 
-
 echo "Setting up the Beamables!"
 
-FEED_NAME=BeamableNugetSource
-SOURCE_FOLDER=$HOME/BeamableNugetSource
+# the .dev.env file hosts some common variables
+source ./.dev.env
+SOURCE_FOLDER=$(pwd)/$SOURCE_FOLDER
+echo "Setting up $FEED_NAME at $SOURCE_FOLDER"
 
-# create the folder if it doesn't exist yet...
+
+
+# delete contents of old folder, and then re-create it. 
+#  this essentially removes all old packages as well. 
+rm -rf $SOURCE_FOLDER
 mkdir -p $SOURCE_FOLDER
 
 echo "Removing old source (if none exists, you'll see an error 'Unable to find any package', but that is okay)"
 dotnet nuget remove source $FEED_NAME || true
 
+
 echo "Adding new source!"
 dotnet nuget add source $SOURCE_FOLDER --name $FEED_NAME
+
+# reset the build number back to zero.
+echo "Creating build number file"
+echo 0 > build-number.txt
+
+
+# TODO: Consider running this as part of a post-pull git action
+# TODO: Should this run the `sync-rider-run-settings.sh` script? (probably)

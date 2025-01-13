@@ -19,7 +19,6 @@ public class DebugLogSink : ILogEventSink
 		new ConcurrentDictionary<string, Channel<string>>();
 
 	private readonly ITextFormatter _formatProvider;
-	private int _messageCount = 0;
 	private const int MAX_MESSAGE_BUFFER = 30;
 	private readonly StringWriter _writer;
 	

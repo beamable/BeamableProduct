@@ -776,7 +776,11 @@ public class App
 			var localVersion = appContext.LocalProjectVersion;
 			var isCalledFromInsideBeamableProject = localVersion != null;
 			Log.Verbose($"Checking for command redirect. is-local=[{isCalledFromInsideBeamableProject}] running-version=[{runningVersion}] project-version=[{localVersion}]");
-			if (isCalledFromInsideBeamableProject && runningVersion != localVersion)
+
+			var isMisalignedVersion = runningVersion != localVersion;
+			var areVersionsBothLocal = (runningVersion?.StartsWith("0.0.123") ?? false) && (localVersion?.StartsWith("0.0.123") ?? false);
+			var needsProxy = isMisalignedVersion && !areVersionsBothLocal;
+			if (isCalledFromInsideBeamableProject && needsProxy)
 			{
 				var preventRedirect = ctx.ParseResult.GetValueForOption(provider.GetService<NoForwardingOption>());
 				if (!preventRedirect)

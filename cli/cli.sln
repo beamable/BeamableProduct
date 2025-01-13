@@ -28,11 +28,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.templates", "beama
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TemplateProjects", "TemplateProjects", "{C7F833F5-4FC1-47A0-AE55-2EAACA51D519}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeamService", "beamable.templates\content\BeamService\BeamService.csproj", "{EF261D57-B886-47CD-80E0-5AB36C5AC531}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeamService", "beamable.templates\templates\BeamService\BeamService.csproj", "{EF261D57-B886-47CD-80E0-5AB36C5AC531}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeamStorage", "beamable.templates\content\BeamStorage\BeamStorage.csproj", "{C07C1A4B-0E5F-4CA8-8189-1892FACB8DB1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeamStorage", "beamable.templates\templates\BeamStorage\BeamStorage.csproj", "{C07C1A4B-0E5F-4CA8-8189-1892FACB8DB1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonLibrary", "beamable.templates\content\CommonLibrary\CommonLibrary.csproj", "{926D9559-C9B5-4CE9-BCEF-DB59E87ABC7E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonLibrary", "beamable.templates\templates\CommonLibrary\CommonLibrary.csproj", "{926D9559-C9B5-4CE9-BCEF-DB59E87ABC7E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
