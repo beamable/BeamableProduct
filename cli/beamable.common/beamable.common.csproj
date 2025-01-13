@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+    
     <PropertyGroup>
         <PackageId>Beamable.Common</PackageId>
         <Authors>Beamable Team</Authors>
@@ -20,9 +21,12 @@
 
         <OutputType>Library</OutputType>
         <VersionPrefix>$(VersionPrefix)</VersionPrefix>
+        
         <PackageOutputPath>./nupkg</PackageOutputPath>
         <LangVersion>8</LangVersion>
         <TargetFramework>netstandard2.0</TargetFramework>
+        <BeamCopyCommonFlags>--no-build</BeamCopyCommonFlags>
+        
     </PropertyGroup>
     <ItemGroup>
       <ProjectReference Include="..\..\microservice\unityenginestubs.addressables\unityenginestubs.addressables.csproj" />
@@ -38,9 +42,13 @@
     <ItemGroup>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
     </ItemGroup>
-    <Target Name="CopyCodeToUnity" AfterTargets="Build" Condition="Exists('../../client/Packages/com.beamable') AND Exists('../cli/bin/Debug/net8.0/Beamable.Tools.dll')">
-        <!-- This is sort of jank, but this will use the build of the cli bin if it exists to copy the src over to Unity. -->
-        <Exec Command="dotnet ../cli/bin/Debug/net8.0/Beamable.Tools.dll unity release-shared-code ../beamable.common/beamable.common.csproj ../../client com.beamable Common . --logs v --no-redirect --emit-log-streams --no-log-file"/>
+    
+    <Target Name="CopyCodeToUnity" 
+            BeforeTargets="Build" 
+            Condition="'$(BEAM_PREVENT_COPY_CODE_TO_UNITY)' == '' AND Exists('../../client/Packages/com.beamable')"
+    >
+        <!-- runu the CLI, only building it if it needs to be built by using `dotnet run`. Make sure to pass the BEAM_PREVENT_COPY_CODE_TO_UNITY property to prevent a recursive loop. -->
+        <Exec Command="dotnet run --project ../cli/ -p:BEAM_PREVENT_COPY_CODE_TO_UNITY=true $(BeamCopyCommonFlags) -- unity release-shared-code ../beamable.common/beamable.common.csproj ../../client com.beamable Common . --logs v --no-redirect --emit-log-streams --no-log-file"/>
     </Target>
     
 </Project>

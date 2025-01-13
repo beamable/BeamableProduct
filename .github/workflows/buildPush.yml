@@ -77,7 +77,8 @@ jobs:
       - name: Build and Install BEAM CLI 
         working-directory: ./
         run: |
-          SKIP_GENERATION=true ./set-packages.sh "${{ github.workspace }}/client" "UNITY_NugetSource" "" "Global"
+          ./setup.sh
+          SKIP_GENERATION=true ./dev.sh
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Check Beam CLI

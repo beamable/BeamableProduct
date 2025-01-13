@@ -50,7 +50,8 @@ jobs:
       - name: Install CLI
         working-directory: ./
         run: |
-          bash ./set-packages.sh "${{ github.workspace }}" "UNITY_NugetSource" "./cli/cli" "Local"
+          bash ./setup.sh
+          bash ./dev.sh 
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
 

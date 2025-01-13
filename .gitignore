@@ -2,6 +2,8 @@
 .p4config
 /ProjectsSource/
 /dist
+/BeamableNugetSource
+build-number.txt 
 
 .obsidian
 
@@ -72,7 +74,6 @@ user-token.json
 /microservice/*.sln.DotSettings.*
 
 /microservice/microservice/.idea/
-
 /cli/**/bin/
 /cli/**/obj/
 /cli/.idea/

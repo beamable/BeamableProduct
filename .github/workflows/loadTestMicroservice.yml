@@ -26,7 +26,8 @@ jobs:
       - name: Build and Install BEAM CLI 
         working-directory: ./
         run: |
-          ./set-packages.sh "${{ github.workspace }}/client" "UNITY_NugetSource" "" "Global"
+          ./setup.sh
+          ./dev.sh
         env:
           PROJECT_DIR_OVERRIDE: ${{ github.workspace }}/NugetBuildDir/
       - name: Login to BEAM CLI

@@ -34,13 +34,13 @@ PREVIOUS_VERSION=0.0.123.$PREVIOUS_BUILD_NUMBER
 SOLUTION=./build/LocalBuild/LocalBuild.sln
 TMP_BUILD_OUTPUT="TempBuild"
 
-RESTORE_ARGS="-p:Warn=0"
 BUILD_ARGS="--configuration Release -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION --no-dependencies -p:Warn=0 -p:BEAM_PREVENT_COPY_CODE_TO_UNITY=true" #-
-PACK_ARGS="--configuration Release --no-build -o $TMP_BUILD_OUTPUT -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION"
+PACK_ARGS="--configuration Release --no-build -o $TMP_BUILD_OUTPUT -p:PackageVersion=$VERSION -p:CombinedVersion=$VERSION -p:InformationalVersion=$VERSION -p:SKIP_GENERATION=true"
 PUSH_ARGS="--source $FEED_NAME"
 
-# dotnet restore $SOLUTION $RESTORE_ARGS # TODO: exp removing this, since build does it anyway
 dotnet build $SOLUTION $BUILD_ARGS
+dotnet build cli/beamable.common -t:CopyCodeToUnity 
+dotnet build cli/beamable.server.common -t:CopyCodeToUnity 
 dotnet pack $SOLUTION $PACK_ARGS
 dotnet nuget push $TMP_BUILD_OUTPUT/*.$VERSION.nupkg $PUSH_ARGS
 
