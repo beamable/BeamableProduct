@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cli", "..\..\cli\cli\cli.csproj", "{4BC076F4-CD04-44D3-A96C-DD4C98413F8E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "unityenginestubs.addressables", "..\..\microservice\unityEngineStubs.addressables\unityenginestubs.addressables.csproj", "{A42FEBD5-5ECE-40D5-B740-A372F49986BC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "unityenginestubs.addressables", "..\..\microservice\unityenginestubs.addressables\unityenginestubs.addressables.csproj", "{A42FEBD5-5ECE-40D5-B740-A372F49986BC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.tooling.common", "..\..\microservice\beamable.tooling.common\beamable.tooling.common.csproj", "{1FDE1946-8FCC-4A8F-87FB-E9E7FA6CDE22}"
 EndProject
