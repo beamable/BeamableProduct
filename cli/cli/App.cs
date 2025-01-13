@@ -425,6 +425,7 @@ public class App
 		// unreal commands
 		Commands.AddRootCommand<UnrealGroupCommand>();
 		Commands.AddSubCommand<InitUnrealSDKCommand, InitUnrealSDKCommandArgs, UnrealGroupCommand>();
+		Commands.AddSubCommand<SelectUnrealSampleCommand, SelectUnrealSampleCommandArgs, UnrealGroupCommand>();
 		
 		// version commands
 		Commands.AddRootCommand<VersionCommand, VersionCommandArgs>();
