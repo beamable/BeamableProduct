@@ -11,7 +11,22 @@ echo "Setting up the Beamables!"
 
 # the .dev.env file hosts some common variables
 source ./.dev.env
-SOURCE_FOLDER=$(pwd)/$SOURCE_FOLDER
+SOURCE_FOLDER=$(pwd)/./$SOURCE_FOLDER
+
+# Clean up the path so that it works on all OSs
+if [[ $PROJECTS_SOURCE == *:* ]];then
+    case "$OSTYPE" in
+    solaris*) SOURCE_FOLDER=$SOURCE_FOLDER ;;
+    darwin*)  SOURCE_FOLDER=$SOURCE_FOLDER ;; 
+    linux*)   SOURCE_FOLDER=$SOURCE_FOLDER ;;
+    bsd*)     SOURCE_FOLDER=$SOURCE_FOLDER ;;
+    msys*)    SOURCE_FOLDER=${SOURCE_FOLDER/\//\/\/} ;;
+    cygwin*)  SOURCE_FOLDER=${SOURCE_FOLDER/\//\/\/} ;;
+    *)        echo "Should never see this!!" ;;
+    esac
+fi
+
+
 echo "Setting up $FEED_NAME at $SOURCE_FOLDER"
 
 
