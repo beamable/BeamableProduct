@@ -22,11 +22,11 @@ case "$OSTYPE" in
     bsd*)     ROOT=$(pwd) ;;
     msys*)    
         ROOT=$(pwd -W) 
-        ROOT="${ROOT:0:2}PASTE${ROOT:2}"
+        ROOT="${ROOT:0:2}//${ROOT:2}"
         ;;
     cygwin*) 
         ROOT=$(pwd -W) 
-        ROOT="${ROOT:0:2}PASTE${ROOT:2}"
+        ROOT="${ROOT:0:2}//${ROOT:2}"
         ;;
     *)        echo "Should never see this!!" ;;
 esac
