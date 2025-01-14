@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.1.0]
 
+### Added
+- `project run` command includes `--require-process-id` option that will cause microservices to exit when given process terminates. [#3839](https://github.com/beamable/BeamableProduct/issues/3839)
+
 ### Fixed
 - Fixed issue in `unreal init` command that could cause the Target file to fail being modified.
 

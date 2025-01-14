@@ -445,6 +445,48 @@ namespace Beamable.Server
 	        });
         }
 
+        public static void ConfigureRequiredProcessIdWatcher(IMicroserviceArgs args)
+        {
+	        var requireProcessId = args.RequireProcessId;
+	        if (requireProcessId <= 0) return;
+
+	        var _ = Task.Run(async () =>
+	        {
+		        try
+		        {
+					Log.Debug($"Running process-watcher loop for required process id=[{requireProcessId}]");
+					var processExists = true;
+					do
+					{
+						await Task.Delay(TimeSpan.FromSeconds(1));
+						try
+						{
+							var p = Process.GetProcessById(requireProcessId);
+							if (p.HasExited)
+							{
+								processExists = false;
+							}
+						}
+						catch
+						{
+							processExists = false;
+						}
+						
+						
+					} while (processExists);
+					
+					// terminate. 
+					Log.Information("Quitting because required process no longer exists");
+					Environment.Exit(0);
+		        }
+		        catch (Exception ex)
+		        {
+			        Log.Error($"Error while watching for required process id. type=[{ex.GetType().Name}] message=[{ex.Message}]");
+		        }
+	        });
+	        
+        }
+
         public static async Task<string> ConfigureCid(IMicroserviceArgs args)
         {
 	        // it is possible that the user passed in an alias instead a cid for the env var, we should fix that...
@@ -549,11 +591,12 @@ namespace Beamable.Server
 	        var envArgs = new EnvironmentArgs();
 
 	        _sink = ConfigureLogging(envArgs, attribute);
-	        
 	        Log.Information($"Starting Prepare");
-	        
+
 	        var inDocker = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
 	        if (inDocker) return;
+
+	        ConfigureRequiredProcessIdWatcher(envArgs);
 
 	        var serviceName = attribute.MicroserviceName;
 	        
