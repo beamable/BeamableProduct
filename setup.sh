@@ -12,18 +12,17 @@ echo "Setting up the Beamables!"
 # the .dev.env file hosts some common variables
 source ./.dev.env
 
+echo "Checking OS=[$OSTYPE] type for root value"
 # Get the current directory in the right format...
 case "$OSTYPE" in
-    solaris*) ROOT=$(pwd) ;;
-    darwin*)  ROOT=$(pwd) ;;
-    linux*)   ROOT=$(pwd) ;;
-    bsd*)     ROOT=$(pwd) ;;
-    msys*)    ROOT=$(pwd -W) ;;
-    cygwin*)  ROOT=$(pwd -W) ;;
+    solaris*) SOURCE_FOLDER=$(pwd)/$SOURCE_FOLDER ;;
+    darwin*)  SOURCE_FOLDER=$(pwd)/$SOURCE_FOLDER ;;
+    linux*)   SOURCE_FOLDER=$(pwd)/$SOURCE_FOLDER ;;
+    bsd*)     SOURCE_FOLDER=$(pwd)/$SOURCE_FOLDER ;;
+    msys*)    SOURCE_FOLDER=$(pwd -W)\\$SOURCE_FOLDER ;;
+    cygwin*)  SOURCE_FOLDER=$(pwd -W)\\$SOURCE_FOLDER ;;
     *)        echo "Should never see this!!" ;;
 esac
-
-SOURCE_FOLDER=$ROOT/$SOURCE_FOLDER
 
 echo "Setting up $FEED_NAME at $SOURCE_FOLDER"
 
