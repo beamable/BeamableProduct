@@ -412,9 +412,7 @@ public class ConfigService
 		pathToToolsManifest = Path.Combine(pathToDotNetConfigFolder, "dotnet-tools.json");
 		string manifestString;
 
-		var versionStr = BeamAssemblyVersionUtil.GetVersion<BeamoService>();
-		// var executingCliVersion = VersionService.GetNugetPackagesForExecutingCliVersion().ToString();
-
+		var versionStr = BeamAssemblyVersionUtil.GetVersion<App>();
 		// Create the file if it doesn't exist with our default local tool and its correct version.
 		if (!File.Exists(pathToToolsManifest))
 		{
