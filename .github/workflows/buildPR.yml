@@ -105,12 +105,16 @@ jobs:
         run: |
           ./setup.sh
           ./dev.sh
+      - name: Check CLI
+        run: |
+          cat ./build-number.txt
+          beam --version
       - name: Install dependencies
         run: dotnet restore cli/tests
       - name: Build
-        run: dotnet build --configuration Release --no-restore cli/tests
+        run: dotnet build --configuration Release --no-restore cli/tests -p:BeamOverrideVersionWithLocalDev=true
       - name: Test
-        run: dotnet test --configuration Release --no-restore cli/tests
+        run: dotnet test --configuration Release --no-build cli/tests -p:BeamOverrideVersionWithLocalDev=true
   testAllModes:
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}

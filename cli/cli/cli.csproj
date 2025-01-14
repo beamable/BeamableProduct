@@ -23,6 +23,9 @@
 <!--    <GenerateDocumentationFile>true</GenerateDocumentationFile>-->
     <NoWarn>$(NoWarn);1591;1574;1572;1587;1573</NoWarn>
     <VersionPrefix>$(VersionPrefix)</VersionPrefix>
+    
+    <BeamLatestBuildNumber>$([System.IO.File]::ReadAllText("$(MSBuildThisFileDirectory)/../../build-number.txt").Trim())</BeamLatestBuildNumber>
+    <VersionPrefix Condition="'$(VersionPrefix)'=='' OR '$(BeamOverrideVersionWithLocalDev)'=='true'">0.0.123.$(BeamLatestBuildNumber)</VersionPrefix>
 
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>beam</ToolCommandName>
