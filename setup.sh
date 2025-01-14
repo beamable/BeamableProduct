@@ -19,8 +19,8 @@ case "$OSTYPE" in
     darwin*)  SOURCE_FOLDER=$(pwd)/$SOURCE_FOLDER ;;
     linux*)   SOURCE_FOLDER=$(pwd)/$SOURCE_FOLDER ;;
     bsd*)     SOURCE_FOLDER=$(pwd)/$SOURCE_FOLDER ;;
-    msys*)    SOURCE_FOLDER=$(pwd -W)\\$SOURCE_FOLDER ;;
-    cygwin*)  SOURCE_FOLDER=$(pwd -W)\\$SOURCE_FOLDER ;;
+    msys*)    SOURCE_FOLDER=$(pwd -W)/$SOURCE_FOLDER ;;
+    cygwin*)  SOURCE_FOLDER=$(pwd -W)/$SOURCE_FOLDER ;;
     *)        echo "Should never see this!!" ;;
 esac
 
