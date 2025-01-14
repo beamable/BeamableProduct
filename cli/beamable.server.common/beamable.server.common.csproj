@@ -47,11 +47,10 @@
     
     
     <Target Name="CopyCodeToUnity" 
-            BeforeTargets="Build" 
-            Condition="'$(BEAM_PREVENT_COPY_CODE_TO_UNITY)' == '' AND Exists('../../client/Packages/com.beamable')">
+            Condition="'$(BEAM_COPY_CODE_TO_UNITY)' == 'true' AND Exists('../../client/Packages/com.beamable')">
         <!-- This is sort of jank, but this will use the build of the cli bin if it exists to copy the src over to Unity. -->
-        <Exec Command="dotnet run --project ../cli/ -p:BEAM_PREVENT_COPY_CODE_TO_UNITY=true $(BeamCopyCommonFlags) -- unity release-shared-code ../beamable.server.common/beamable.server.common.csproj ../../client com.beamable.server Runtime/Common Runtime/Common --logs v --no-redirect --emit-log-streams --no-log-file"/>
-        <Exec Command="dotnet run --project ../cli/ -p:BEAM_PREVENT_COPY_CODE_TO_UNITY=true $(BeamCopyCommonFlags) -- unity release-shared-code ../beamable.server.common/beamable.server.common.csproj ../../client com.beamable.server SharedRuntime SharedRuntime --logs v --no-redirect --emit-log-streams --no-log-file"/>
+        <Exec Command="dotnet run --project ../cli/ -p:BEAM_COPY_CODE_TO_UNITY=false $(BeamCopyCommonFlags) -- unity release-shared-code ../beamable.server.common/beamable.server.common.csproj ../../client com.beamable.server Runtime/Common Runtime/Common --logs v --no-redirect --emit-log-streams --no-log-file"/>
+        <Exec Command="dotnet run --project ../cli/ -p:BEAM_COPY_CODE_TO_UNITY=false $(BeamCopyCommonFlags) -- unity release-shared-code ../beamable.server.common/beamable.server.common.csproj ../../client com.beamable.server SharedRuntime SharedRuntime --logs v --no-redirect --emit-log-streams --no-log-file"/>
     </Target>
 
 </Project>

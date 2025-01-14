@@ -28,7 +28,6 @@
              API descriptions. The OpenAPI page will break if there is no `serviceDocs.xml` file. -->
 <!--        <DocumentationFile>serviceDocs.xml</DocumentationFile>-->
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
-        <BEAM_PREVENT_COPY_CODE_TO_UNITY>true</BEAM_PREVENT_COPY_CODE_TO_UNITY>
     </PropertyGroup>
     
     <!-- Nuget references -->
