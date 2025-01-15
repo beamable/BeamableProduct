@@ -28,6 +28,9 @@ namespace Beamable.Common
 		}
 	}
 
+	/// <summary>
+	/// Uniquely identifies a federation implementation. 
+	/// </summary>
 	[AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
 	public class FederationIdAttribute : System.Attribute
 	{
@@ -42,6 +45,12 @@ namespace Beamable.Common
 	public static class FederationIdUtil
 	{
 
+		/// <summary>
+		/// Get the federation id string from a type of <see cref="IFederationId"/>.
+		/// The FederationId is the the unique name of a federation implementation. 
+		/// </summary>
+		/// <param name="federationId"></param>
+		/// <returns></returns>
 		public static string GetUniqueName(Type federationIdType)
 		{
 			var attribute = federationIdType.GetCustomAttribute<FederationIdAttribute>();
@@ -64,11 +73,23 @@ namespace Beamable.Common
 			return attribute.FederationId;
 		}
 				
+		/// <summary>
+		/// Get the federation id string from a type of <see cref="IFederationId"/>.
+		/// The FederationId is the the unique name of a federation implementation. 
+		/// </summary>
+		/// <param name="federationId"></param>
+		/// <returns></returns>
 		public static string GetUniqueName<T>() where T : IFederationId
 		{
 			return GetUniqueName(typeof(T));
 		}
 
+		/// <summary>
+		/// Get the federation id string from an instance of <see cref="IFederationId"/>.
+		/// The FederationId is the the unique name of a federation implementation. 
+		/// </summary>
+		/// <param name="federationId"></param>
+		/// <returns></returns>
 		public static string GetUniqueName(this IFederationId federationId)
 		{
 			return GetUniqueName(federationId?.GetType());
@@ -79,6 +100,8 @@ namespace Beamable.Common
 	/// Uniquely identifies a federation implementation.
 	/// This enables different implementations of the same federation to be active at the same time.
 	///
+	/// Must have the <see cref="FederationIdAttribute"/> on the class. 
+	/// 
 	/// For example, <see cref="IFederatedLogin{T}"/> is used to implement external auth. A game might want different implementations for `epic`, `steam`, or some other third-party account holder.  
 	/// </summary>
 	[Preserve]
@@ -96,7 +119,7 @@ namespace Beamable.Common
 		/// <summary>
 		/// This should be a constant string: UniqueName => "my_federation_id".
 		/// </summary>
-		[Obsolete("Please use " + nameof(FederationIdAttribute) + " instead.")]
+		[Obsolete("Please use " + nameof(FederationIdUtil.GetUniqueName) + "() instead.")]
 		string UniqueName { get; }
 	}
 

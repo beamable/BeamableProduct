@@ -170,7 +170,7 @@ public class GenerateEnvFileCommand : AtomicCommand<GenerateEnvFileCommandArgs, 
 				{
 					// uh oh, the storage isn't running
 					throw new CliException(
-						$"Service requires storage=[{dependency}] but it is not running. Please execute 'beam services run --ids {dependency}'", Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_CONTAINER_NOT_RUNNING, true);
+						$"Service requires storage=[{dependency.name}] but it is not running. Please execute 'beam services run --ids {dependency.name}'", Beamable.Common.Constants.Features.Services.CMD_RESULT_CODE_CONTAINER_NOT_RUNNING, true);
 				}
 			}
 		}
