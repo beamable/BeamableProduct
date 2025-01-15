@@ -94,7 +94,7 @@ public class FederatedPlayerInitCallableGenerator : ICallableGenerator
 		var interfaces = type.GetInterfaces();
 		var methodToPathMap = new Dictionary<string, string>
 		{
-			[nameof(IFederatedPlayerInit<DummyThirdParty>.CreatePlayer)] = "createPlayer",
+			[nameof(IFederatedPlayerInit<DummyThirdParty>.CreatePlayer)] = "player",
 		};
 
 		foreach (var interfaceType in interfaces)
@@ -117,7 +117,12 @@ public class FederatedPlayerInitCallableGenerator : ICallableGenerator
 				var err = $"Unable to map method name to path part. name=[{method.Name}]";
 				throw new Exception(err);
 			}
-			var path = $"{federatedNamespace}/{pathName}";
+			
+			// we use "default" as a hardcoded value here because this particular federation ignores
+			//  the registered namespace and uses the term, "default" always anyway. 
+			//  this means that the user can pick whatever string they want, and it literally has no
+			//  effect. :shrug: 
+			var path = $"default/{pathName}";
 			var tag = federatedNamespace;
 			
 			var serviceMethod = ServiceMethodHelper.CreateMethod(
