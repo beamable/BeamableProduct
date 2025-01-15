@@ -1,6 +1,8 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Mail;
+using Beamable.Common.Dependencies;
+using System;
 
 namespace Beamable.Server.Api.Mail
 {
@@ -8,7 +10,7 @@ namespace Beamable.Server.Api.Mail
    {
       public BeamableGetApiResource<MailQueryResponse> _getter;
 
-      public MicroserviceMailApi(IBeamableRequester requester, IUserContext ctx) : base(requester, ctx)
+      public MicroserviceMailApi(IBeamableRequester requester, IUserContext ctx, IDependencyProvider provider) : base(requester, ctx, provider)
       {
          _getter = new BeamableGetApiResource<MailQueryResponse>();
       }
