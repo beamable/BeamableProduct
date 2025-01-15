@@ -178,6 +178,8 @@ namespace Beamable.Common.Api.Leaderboards
 		/// Replace the score of the current player
 		/// Cohorted and Partitioned leaderboards will automatically update the correct child leaderboard
 		/// </summary>
+		/// <param name="leaderBoard"></param>
+		/// <param name="score"></param>
 		/// <param name="stats">
 		/// Arbitrary key/value pair associated with the current score entry of the requesting user.
 		///
@@ -191,6 +193,8 @@ namespace Beamable.Common.Api.Leaderboards
 		/// Replace the score of the current player
 		/// Cohorted and Partitioned leaderboards will automatically update the correct child leaderboard
 		/// </summary>
+		/// <param name="boardId"></param>
+		/// <param name="score"></param>
 		/// <param name="stats">
 		/// Arbitrary key/value pair associated with the current score entry of the requesting user.
 		///
@@ -204,6 +208,8 @@ namespace Beamable.Common.Api.Leaderboards
 		/// Increment (add to) the score of the current player
 		/// Cohorted and Partitioned leaderboards will automatically update the correct child leaderboard
 		/// </summary>
+		/// <param name="leaderBoard"></param>
+		/// <param name="score"></param>
 		/// <param name="stats">
 		/// Arbitrary key/value pair associated with the current score entry of the requesting user.
 		///
@@ -217,6 +223,8 @@ namespace Beamable.Common.Api.Leaderboards
 		/// Increment (add to) the score of the current player
 		/// Cohorted and Partitioned leaderboards will automatically update the correct child leaderboard
 		/// </summary>
+		/// <param name="boardId"></param>
+		/// <param name="score"></param>
 		/// <param name="stats">
 		/// Arbitrary key/value pair associated with the current score entry of the requesting user.
 		///
@@ -278,7 +286,7 @@ namespace Beamable.Common.Api.Leaderboards
 		public RankEntryColumns columns;
 
 		/// <summary>
-		/// Find the first stat in the <see cref="stats"/> array that matches the given <see cref="name"/> argument.
+		/// Find the first stat in the <see cref="stats"/> array that matches the given <paramref name="name"/> argument.
 		/// </summary>
 		/// <param name="name">A name of a stat</param>
 		/// <returns>The string value of the found stat, or null if the stat was not found.</returns>
@@ -303,12 +311,12 @@ namespace Beamable.Common.Api.Leaderboards
 		}
 
 		/// <summary>
-		/// Find the first stat in the <see cref="stats"/> array that matches the given <see cref="name"/> argument,
+		/// Find the first stat in the <see cref="stats"/> array that matches the given <paramref name="name"/> argument,
 		/// and parses the string value as a double.
 		/// </summary>
 		/// <param name="name">The name of a stat</param>
 		/// <param name="fallback">If the stat does not exist, or the value is not a parsable double, this value will be returned.</param>
-		/// <returns>The parsed value of the stat. If the stat was not found, or it had a non parsable value, the <see cref="fallback"/> value will be returned.</returns>
+		/// <returns>The parsed value of the stat. If the stat was not found, or it had a non parsable value, the <paramref name="fallback"/> value will be returned.</returns>
 		public double GetDoubleStat(string name, double fallback = 0)
 		{
 			var stringValue = GetStat(name);
@@ -364,7 +372,7 @@ namespace Beamable.Common.Api.Leaderboards
 
 		/// <summary>
 		/// A set of <see cref="RankEntry"/>s that represent this section of the leaderboard view.
-		/// Use the <see cref="ToDictionary"/> method to convert this list into a dictionary for more convenient access.
+		/// Use the <see cref="LeaderBoardView.ToDictionary()"/> method to convert this list into a dictionary for more convenient access.
 		/// </summary>
 		public List<RankEntry> rankings;
 
@@ -402,10 +410,12 @@ namespace Beamable.Common.Api.Leaderboards
 		/// Otherwise, this is the rank entry for the outlier.
 		/// </summary>
 		[SerializeField]
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
 		private new RankEntry rankgt;
+#pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
 
 		/// <summary>
-		/// Convert the <see cref="rankings"/> list into a dictionary from player id to <see cref="RankEntry"/>.
+		/// Convert the <see cref="LeaderboardViewBase.rankings"/> list into a dictionary from player id to <see cref="RankEntry"/>.
 		/// </summary>
 		/// <returns>A dictionary where each key is a player id, pointing the <see cref="RankEntry"/> for that player.</returns>
 		public Dictionary<long, RankEntry> ToDictionary()
@@ -421,9 +431,9 @@ namespace Beamable.Common.Api.Leaderboards
 		}
 
 		/// <summary>
-		/// Make a copy of the <see cref="rankings"/> list
+		/// Make a copy of the <see cref="LeaderboardViewBase.rankings"/> list
 		/// </summary>
-		/// <returns>A copy of the <see cref="rankings"/> list</returns>
+		/// <returns>A copy of the <see cref="LeaderboardViewBase.rankings"/> list</returns>
 		public List<RankEntry> ToList()
 		{
 			List<RankEntry> result = new List<RankEntry>();

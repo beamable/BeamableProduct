@@ -213,7 +213,7 @@ namespace Beamable.Server
          _serviceShutdownTokenSource = new CancellationTokenSource();
          (_socketDaemen, _socketRequesterContext.Daemon) = MicroserviceAuthenticationDaemon.Start(_args, _requester, _serviceShutdownTokenSource);
 
-         _serviceInitialized.Error(ex =>
+         var errorHandler = _serviceInitialized.Error(ex =>
          {
             Log.Error("Service failed to initialize {message} {stack}", ex.Message, ex.StackTrace);
          });
@@ -415,35 +415,7 @@ namespace Beamable.Server
          }
 
       }
-
-      private async Promise<long> GetExecutorPlayerId()
-      {
-	      if (string.IsNullOrEmpty(_args.RefreshToken))
-	      {
-		      // no refresh token was given, so there is no executor.
-		      // This very likely means the service is running as a deployed service.
-		      //  although it is possible through user-error, a C#MS could be started
-		      //  locally without the refresh-token :( 
-		      return 0; 
-	      }
-	      
-	      // a refresh token is resolvable to an access token, which can be used to fetch
-	      //  a playerId. Perhaps, there is no playerId in the realm yet.
-
-	      // var http = new MicroserviceHttpRequester(_args, new HttpClient());
-	      // var auth = new AuthApi(_requester);
-	      // var token = await auth.PostToken(new TokenRequestWrapper
-	      // {
-		     //  grant_type = "refresh_token", 
-		     //  refresh_token = _args.RefreshToken
-	      // }, includeAuthHeader: false);
-	      //
-	      // var account = new AccountsApi(http);
-	      // account.
-
-	      throw new NotImplementedException("cannot ensure playerId");
-      }
-
+      
       private bool TryBuildPortalUrl(out string portalUrl)
       {
 	      var cid = _args.CustomerID;
@@ -868,7 +840,7 @@ namespace Beamable.Server
 		      method: Method.POST,
 		      uri: "gateway/provider",
 		      body: req.ToJson());
-	      serviceProviderTask.Then(_ => Log.Debug(Logs.SERVICE_PROVIDER_INITIALIZED));
+	      var logCallback = serviceProviderTask.Then(_ => Log.Debug(Logs.SERVICE_PROVIDER_INITIALIZED));
 
 	      var eventProvider = _serviceAttribute.DisableAllBeamableEvents
 		      ? PromiseBase.SuccessfulUnit

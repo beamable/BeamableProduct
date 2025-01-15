@@ -17,6 +17,7 @@ namespace Beamable.Common
 	///
 	/// </summary>
 	/// <typeparam name="T"></typeparam>
+	/// <typeparam name="TEntry"></typeparam>
 	[Serializable]
 	public class Trie<T, TEntry> : ISerializationCallbackReceiver
 		where TEntry : TrieSerializationEntry<T>, new()
@@ -194,7 +195,7 @@ namespace Beamable.Common
 		/// all values at "a.b.c.x".
 		/// <para name="x">The returned <see cref="List{T}"/> should not be modified. No modifications will persist in the trie. Instead, use the <see cref="Insert"/>, <see cref="Remove"/>, or <see cref="SetRange"/> methods</para>
 		/// </summary>
-		/// <param name="key"></param>
+		/// <param name="keys"></param>
 		/// <returns></returns>
 		public List<T> GetAll(IEnumerable<string> keys)
 		{
@@ -310,7 +311,7 @@ namespace Beamable.Common
 		/// - a.b.c,
 		/// - a.b
 		///
-		/// And the following <see cref="keys"/> were passed to this method,
+		/// And the following <paramref name="keys"/> were passed to this method,
 		/// - a
 		/// - a.c
 		/// - a.b
@@ -338,7 +339,7 @@ namespace Beamable.Common
 		}
 
 		/// <summary>
-		/// Iterate through all <see cref="Node"/>s under the given <see cref="key"/>
+		/// Iterate through all <see cref="Node"/>s under the given <paramref name="key"/>
 		/// If the key was "a.b.c", then this would return every child of "a.b.c". 
 		/// </summary>
 		/// <param name="key"></param>
@@ -356,8 +357,8 @@ namespace Beamable.Common
 		}
 
 		/// <summary>
-		/// Iterate through the <see cref="Node"/>s along the given <see cref="key"/>
-		/// If the given <see cref="key"/> was "a.b.c", then the nodes returned would be
+		/// Iterate through the <see cref="Node"/>s along the given <paramref name="key"/>
+		/// If the given <paramref name="key"/> was "a.b.c", then the nodes returned would be
 		/// "a", "b", and then "c". 
 		/// </summary>
 		/// <param name="key"></param>

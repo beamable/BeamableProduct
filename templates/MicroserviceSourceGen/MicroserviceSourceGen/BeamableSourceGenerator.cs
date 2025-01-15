@@ -14,6 +14,7 @@ using System.Text.Json;
 using System.Threading;
 using UnityEngine;
 using SourceProductionContext = Microsoft.CodeAnalysis.SourceProductionContext;
+#pragma warning disable CS0618 // Type or member is obsolete
 
 namespace Beamable.Server;
 
@@ -110,7 +111,7 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 
 		return;
 
-		static MicroserviceFederationsConfig? ParseBeamSourceGen(SourceProductionContext context, ImmutableArray<(string Path, string Text)> federationConfigFiles)
+		static MicroserviceFederationsConfig ParseBeamSourceGen(SourceProductionContext context, ImmutableArray<(string Path, string Text)> federationConfigFiles)
 		{
 			if (federationConfigFiles.Length <= 0)
 			{
@@ -297,12 +298,12 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 
 	public readonly record struct MicroserviceInfo : IEquatable<MicroserviceInfo>
 	{
-		public string? Namespace { get; }
+		public string Namespace { get; }
 		public string Name { get; }
-		public Location? MicroserviceClassLocation { get; }
+		public Location MicroserviceClassLocation { get; }
 		public string ServiceId { get; }
 		public bool HasMicroserviceAttribute { get; }
-		public Location? MicroserviceAttributeLocation { get; }
+		public Location MicroserviceAttributeLocation { get; }
 		public bool IsPartial { get; }
 		public List<(string Id, string ClassName, FederationInstanceConfig Federation, Location Location)> ImplementedFederations { get; }
 
@@ -347,7 +348,7 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 				}
 
 				ImplementedFederations.Add((
-					id,
+					id!,
 					className,
 					new FederationInstanceConfig() { Interface = federationInterfaceName },
 					federationIdType.Locations[0]
@@ -363,7 +364,7 @@ public class BeamableSourceGenerator : IIncrementalGenerator
 			if (microserviceAttr != null)
 			{
 				HasMicroserviceAttribute = true;
-				MicroserviceAttributeLocation = microserviceAttr.ApplicationSyntaxReference.GetSyntax().GetLocation();
+				MicroserviceAttributeLocation = microserviceAttr.ApplicationSyntaxReference?.GetSyntax().GetLocation();
 			}
 
 			if (microserviceAttr?.ConstructorArguments.Length > 0)

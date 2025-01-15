@@ -11,7 +11,7 @@ namespace Beamable.Common.Api.Auth
 		protected const string TOKEN_URL = "/basic/auth/token";
 		public const string ACCOUNT_URL = "/basic/accounts";
 
-		private IRequester _requester;
+		protected IRequester _requester;
 		private readonly IAuthSettings _settings;
 
 		public IBeamableRequester Requester => _requester;

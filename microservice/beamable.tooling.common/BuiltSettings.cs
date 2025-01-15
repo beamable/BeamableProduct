@@ -20,11 +20,19 @@ namespace Beamable.Server.Common
 	{
 		private IReadOnlyDictionary<string, string> _settings;
 
+		/// <summary>
+		/// Create a <see cref="BuiltSettings"/> from a dictionary
+		/// </summary>
+		/// <param name="settings"></param>
 		public BuiltSettings(Dictionary<string, string> settings = null)
 		{
 			_settings = settings ?? new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
 		}
 
+		/// <summary>
+		/// Create a <see cref="BuiltSettings"/> from the built-in resources
+		/// </summary>
+		/// <returns></returns>
 		public static BuiltSettings FromResource()
 		{
 			return new BuiltSettings(ReadBuiltSettings());
@@ -41,7 +49,7 @@ namespace Beamable.Server.Common
 
 		/// <summary>
 		/// Read a <c>BeamableSetting</c> from the .csproj file, and assume that the value is well formatted JSON
-		/// for the <see cref="T"/> schema. 
+		/// for the <typeparamref name="T"/> schema. 
 		/// </summary>
 		/// <param name="key">The key should be the "Include" attribute, case insensitive.</param>
 		/// <param name="value">The output value will the contents of the "Value" attribute, deserialized from JSON</param>
