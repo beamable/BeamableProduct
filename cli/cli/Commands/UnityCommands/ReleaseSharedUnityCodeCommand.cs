@@ -83,7 +83,7 @@ public class ReleaseSharedUnityCodeCommand : AtomicCommand<ReleaseSharedUnityCod
 		
 		// we know that the CLI csproj is relative to the unity client path...
 		var info = UnityProjectUtil.GetUnityInfo(args.unityProjectPath, args.packageId);
-		if (info.beamableNugetVersion != "0.0.123")
+		if (info.beamableNugetVersion != "0.0.123" && info.sdkVersion != "0.0.0")
 		{
 			// in this case, we actually want to run a different command...
 			var subArgs = args.Create<DownloadAllNugetDepsToUnityCommandArgs>();

@@ -15,7 +15,7 @@ namespace Beamable.Common.Api.Mail
 		/// The response will include a set of <see cref="SearchMailResponseClause"/>s that correspond to
 		/// each <see cref="SearchMailRequestClause"/> in the request.
 		/// </returns>
-		Promise<SearchMailResponse> SearchMail(SearchMailRequest request);
+		Promise<SearchMailResponse> SearchMail(SearchMailRequest request, bool includeAuthHeader = true);
 
 		/// <summary>
 		/// Get the latest mail for a player

@@ -51,9 +51,11 @@ namespace Beamable.Editor.Login.UI.Components
 			_realmField.RegisterValueChangedCallback(evt => _realmField.SetValueWithoutNotify(Model?.CurrentRealm?.ProjectName));
 
 			_switchGameButton = Root.Q<GenericButtonVisualElement>("switchGame");
+			_switchGameButton.Refresh();
 			_switchGameButton.OnClick += Manager.GotoProjectSelectVisualElement;
 
 			var commitConfigDefaults = Root.Q<GenericButtonVisualElement>("commitConfigDefaults");
+			commitConfigDefaults.Refresh();
 			commitConfigDefaults.OnClick += () =>
 			{
 				commitConfigDefaults.EnableInClassList("writing", true);
@@ -68,12 +70,15 @@ namespace Beamable.Editor.Login.UI.Components
 			};
 
 			var resetPasswordButton = Root.Q<GenericButtonVisualElement>("resetPassword");
+			resetPasswordButton.Refresh();
 			resetPasswordButton.OnClick += Manager.GotoForgotPassword;
 
 			var logoutButton = Root.Q<GenericButtonVisualElement>("logout");
+			logoutButton.Refresh();
 			logoutButton.OnClick += () => Manager.Logout(Model);
 
 			var libButton = Root.Q<PrimaryButtonVisualElement>("library");
+			libButton.Refresh();
 			libButton.Button.clickable.clicked += () =>
 			{
 				LoginWindow.Instance.Close();

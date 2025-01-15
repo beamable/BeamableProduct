@@ -34,7 +34,7 @@ namespace Beamable.Api.Mail
 	{
 		public MailSubscription Subscribable { get; }
 
-		public MailService(IPlatformService platform, IBeamableRequester requester, IDependencyProvider provider) : base(requester, platform)
+		public MailService(IPlatformService platform, IBeamableRequester requester, IDependencyProvider provider) : base(requester, platform, provider)
 		{
 			Subscribable = new MailSubscription(provider);
 		}
