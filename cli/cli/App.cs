@@ -6,6 +6,7 @@ using Beamable.Common.Api.Realms;
 using Beamable.Common.BeamCli;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Semantics;
+using Beamable.Common.Util;
 using cli.CliServerCommand;
 using cli.Commands.Project;
 using cli.Commands.Project.Deps;
@@ -607,7 +608,7 @@ public class App
 
 				
 			});
-			var executingVersion = VersionService.GetNugetPackagesForExecutingCliVersion();
+			var executingVersion = BeamAssemblyVersionUtil.GetVersion<App>();
 
 			defaultLayout.Insert(0, (ctx) =>
 			{

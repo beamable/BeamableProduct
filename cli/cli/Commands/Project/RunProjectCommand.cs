@@ -24,6 +24,7 @@ public class RunProjectCommandArgs : CommandArgs
 	public bool forceRestart;
 	public bool detach;
 	public bool disableClientCodeGen;
+	public int requireProcessId;
 }
 
 public class RunProjectResultStream
@@ -89,6 +90,10 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 		AddOption<bool>(new Option<bool>("--detach", "With this flag, the service will run the background after it has reached basic startup"), (args, b) => args.detach = b);
 		AddOption<bool>(new Option<bool>("--no-client-gen", "We compile services that need compiling before running. This will disable the client-code generation part of the compilation"), (args, b) => args.disableClientCodeGen = b);
 
+		AddOption(
+			new Option<int>("--require-process-id",
+				$"Forwards the given process-id to the {Beamable.Common.Constants.EnvironmentVariables.BEAM_REQUIRE_PROCESS_ID} environment variable of the running Microservice. The Microservice will self-destruct if the given process exits"),
+			(args, i) => args.requireProcessId = i);
 	}
 
 	const float MIN_PROGRESS = .05f;
@@ -204,7 +209,7 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 	}
 	
 	public static async Task RunService(
-		CommandArgs args,
+		RunProjectCommandArgs args,
 		string serviceName,
 		CancellationTokenSource serviceToken,
 		ProjectService.BuildFlags buildFlags,
@@ -305,8 +310,11 @@ public partial class RunProjectCommand : AppCommand<RunProjectCommandArgs>
 				RedirectStandardError = true,
 				RedirectStandardOutput = true,
 			};
+			if (args.requireProcessId > 0)
+			{
+				startInfo.Environment.Add(Beamable.Common.Constants.EnvironmentVariables.BEAM_REQUIRE_PROCESS_ID, args.requireProcessId.ToString());
+			}
 
-			// startInfo.
 			var proc = Process.Start(startInfo);
 			var cts = new TaskCompletionSource();
 			
