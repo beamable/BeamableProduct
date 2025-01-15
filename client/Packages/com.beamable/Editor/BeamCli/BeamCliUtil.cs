@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Common.Scheduler;
 using Beamable.Editor.Dotnet;
 using Beamable.Editor.Modules.EditorConfig;
 using System;
@@ -7,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using UnityEditor;
 using Debug = UnityEngine.Debug;
 
@@ -122,7 +124,12 @@ namespace Beamable.Editor.BeamCli
 
 			if (!installResult)
 			{
-				throw new Exception("Beamable could not install the Beam CLI");
+				Debug.LogError("Beamable could not install the Beam CLI. Trying again in 1 second");
+				Task.Run(async () =>
+				{
+					await Task.Delay(1000); //Just wait a bit and try again
+					InitializeBeamCli();
+				});
 			}
 		}
 

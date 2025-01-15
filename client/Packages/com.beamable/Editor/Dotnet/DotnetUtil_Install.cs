@@ -117,8 +117,6 @@ namespace Beamable.Editor.Dotnet
 				{
 					if (data == null || string.IsNullOrEmpty(data.Data)) return;
 					Debug.Log("DOTNET ERROR INSTALL: " + data.Data);
-					process.Kill();
-					RunInstallScript(version); //try to install it again
 				};
 
 
