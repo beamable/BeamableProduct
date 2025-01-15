@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fixed issue in `unreal init` command that could cause the Target file to fail being modified.
+- `project generate-client` no longer fails on projects referencing `Microsoft.Extensions.Caching.Memory`, [#3844](https://github.com/beamable/BeamableProduct/issues/3844)
 
 ## [3.0.2] - 2024-12-17
 
