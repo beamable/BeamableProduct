@@ -7,7 +7,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Serialization;
 using UnityEngine;
 using UnityEngine.Serialization;
 #pragma warning disable CS0618
@@ -107,9 +106,9 @@ namespace Beamable.Common.Content
 		[MustBePositive]
 		public OptionalInt matchingIntervalSecs;
 
-		[Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipFederatedGameServerNamespace)]
 		[IgnoreContentField]
 		[SerializeField]
+		[Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipFederatedGameServerNamespace)]
 		public OptionalNamespace newFederatedGameServerNamespace;
 
 		[HideInInspector]
@@ -121,7 +120,6 @@ namespace Beamable.Common.Content
 		[Tooltip(ContentObject.TooltipRewardsPerRank1)]
 		public List<RewardsPerRank> rewards;
 
-		[IgnoreContentField]
 		private bool isFirstTime = true;
 
 		public int CalculateMaxPlayers()
@@ -139,6 +137,7 @@ namespace Beamable.Common.Content
 		{
 			// never save the legacy teams...
 			legacyTeams = null;
+
 			if (newFederatedGameServerNamespace.HasValue)
 			{
 				federatedGameServerNamespace.HasValue = true;
@@ -161,7 +160,8 @@ namespace Beamable.Common.Content
 			{
 				isFirstTime = false;
 				newFederatedGameServerNamespace.HasValue = true;
-				newFederatedGameServerNamespace.Value = new Namespace {Name = federatedGameServerNamespace};
+				var nameSpace = new Namespace {Name = federatedGameServerNamespace};
+				newFederatedGameServerNamespace.Value = nameSpace;
 			}
 
 			legacyTeams = null;
