@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Providing `BEAM_REQUIRE_PROCESS_ID` environment variable will cause microservice to quit when configured process terminates. [#3839](https://github.com/beamable/BeamableProduct/issues/3839)
+- Player initialization support through `IFederatedPlayerInit` interface. [#3838](https://github.com/beamable/BeamableProduct/issues/3838)
 
 ## [3.0.1] - 2024-12-09
 
