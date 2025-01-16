@@ -8,6 +8,39 @@ namespace Microservice.SourceGen.Tests;
 public partial class BeamableSourceGeneratorTests
 {
 	
+	
+	[Fact]
+	public void Test_Diagnostic_Fed_PlayerInitMustUseDefault()
+	{
+		const string UserCode = @"
+using Beamable.Server;
+using Beamable.Common;
+
+namespace TestNamespace;
+
+[FederationId(""notdefault"")]
+public class MyFederation : IFederationId {
+
+}
+
+[Microservice(""some_user_service"")]
+public partial class SomeUserMicroservice : Microservice, IFederatedPlayerInit<MyFederation>
+{		
+}
+";
+		var cfg = new MicroserviceFederationsConfig() { Federations = new() { { "notdefault", [new() { Interface = "IFederatedPlayerInit" }] } } };
+
+		// We are testing the detection
+		PrepareForRun(new[] { cfg }, new[] { UserCode });
+
+		// Run generators and retrieve all results.
+		var runResult = Driver.RunGenerators(Compilation).GetRunResult();
+
+		// Ensure we have a single diagnostic error.
+		Assert.Contains(runResult.Diagnostics, d => d.Descriptor.Equals(Diagnostics.Fed.FederationIdMustBeDefault));
+	}
+
+	
 	[Fact]
 	public void Test_Diagnostic_Fed_DeclaredFederationMissingFromSourceConfig()
 	{

@@ -118,11 +118,7 @@ public class FederatedPlayerInitCallableGenerator : ICallableGenerator
 				throw new Exception(err);
 			}
 			
-			// we use "default" as a hardcoded value here because this particular federation ignores
-			//  the registered namespace and uses the term, "default" always anyway. 
-			//  this means that the user can pick whatever string they want, and it literally has no
-			//  effect. :shrug: 
-			var path = $"default/{pathName}";
+			var path = $"{federatedNamespace}/{pathName}";
 			var tag = federatedNamespace;
 			
 			var serviceMethod = ServiceMethodHelper.CreateMethod(
